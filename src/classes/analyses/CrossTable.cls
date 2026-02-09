@@ -25,6 +25,8 @@ Private Type TCrossTable
     endCol As Long
     nbCols As Long
     tsHeader As String                           'Header for time series (used in go-to section)
+    deFactoNewSect As Boolean                    'Cached IsDeFactoNewSection result
+    deFactoNewSectCached As Boolean              'Whether the cache has been computed
 End Type
 
 Private this As TCrossTable
@@ -36,10 +38,26 @@ Private allRangeNames As BetterArray
 '@section Factory
 '===============================================================================
 
-' @description Create a cross-table from table specifications
-' @param specs Table specification row from setup
-' @param outputWksh Worksheet where the table will be built
-' @param trans Translation object for labels
+' @description Factory method that creates and returns a new ICrossTable instance from
+'              the given table specifications. A cross-table is a structured analysis
+'              output (univariate, bivariate, time series, spatial, spatio-temporal, or
+'              global summary) that is built on an output worksheet and contains row
+'              categories, column categories, named ranges, and formatting. This method
+'              validates all three required dependencies, then injects them into a
+'              fresh CrossTable instance via the PredeclaredId/New pattern and returns
+'              the interface reference.
+' @param specs An ITableSpecs object representing one row from the analysis setup sheet.
+'              It carries the table type, row/column variable names, category lists,
+'              percentage/missing/total flags, section membership, and the table ID
+'              used for named-range suffixes.
+' @param outputWksh The Excel Worksheet where this cross-table will physically write
+'                   its headers, row labels, column labels, data placeholders, and
+'                   named ranges. Multiple cross-tables in the same section share
+'                   one output worksheet.
+' @param trans An ITranslationObject that provides locale-aware label strings (e.g.,
+'              "Total", "Missing", "Percent", date-unit names) so that the built
+'              table uses the correct language for the current linelist.
+' @return A fully initialized ICrossTable ready for Build or individual step calls.
 Public Function Create(ByVal specs As ITableSpecs, _
                        ByVal outputWksh As Worksheet, _
                        ByVal trans As ITranslationObject) As ICrossTable
@@ -102,6 +120,24 @@ End Property
 '@section Position properties
 '===============================================================================
 
+' @description Checks whether a named range with the given name is defined and
+'              reachable on the current output worksheet. This is used extensively
+'              throughout the class to decide whether structural infrastructure
+'              (section headers, start rows, end-table markers, column setups, etc.)
+'              has already been created by a previous table in the same section, or
+'              whether it needs to be created for the first time. The check uses
+'              On Error Resume Next to silently swallow the error that Excel raises
+'              when a name does not exist, then inspects whether the resulting Range
+'              reference is Nothing.
+' @param rngName The string name of the named range to look up, e.g. "STARTROW_T3"
+'                or "ENDTABLE_T5". This is looked up within the scope of the output
+'                worksheet only (Wksh.Range), not at workbook level.
+' @return True if the named range exists and resolves to a valid Range on the output
+'         worksheet; False otherwise.
+' @remark This does not distinguish between workbook-scoped and worksheet-scoped names.
+'         If a workbook-level name exists but does not refer to a range on this sheet,
+'         the lookup may still succeed. All names in this class are created via
+'         Cell.Name which produces workbook-scoped names.
 Private Function RangeExists(ByVal rngName As String) As Boolean
     Dim rng As Range
     On Error Resume Next
@@ -110,11 +146,39 @@ Private Function RangeExists(ByVal rngName As String) As Boolean
     RangeExists = (Not rng Is Nothing)
 End Function
 
-' @description Starting row for this table on the output worksheet.
-'              For non-new-section temporal tables, uses previous table's start row.
-'              Bug #3 fix: if Previous start row can't be resolved (section infrastructure
-'              missing because previous table was invalid/not built), falls back to
-'              computing a fresh start row as if this were a new section.
+' @description Computes or retrieves the starting row for this cross-table on the
+'              output worksheet. The logic has three branches depending on whether the
+'              named range STARTROW_{tableId} already exists (reuse), the table is a
+'              new section or non-temporal type (compute fresh), or the table is a
+'              non-new-section temporal table (inherit from previous table).
+'
+'              For new sections and non-temporal tables: the start row is computed by
+'              finding the last used row in column C (STANDARD_START_COL) via
+'              End(xlUp), then adding vertical padding that varies by table type:
+'              +6 for spatial, +0 for global summary, +4 for all others. A special
+'              case handles the very first table on the sheet where End(xlUp) returns
+'              row 2 (empty sheet) by jumping to row 6. The computed position is then
+'              persisted as the named range STARTROW_{tableId} so future calls are
+'              idempotent.
+'
+'              For non-new-section temporal tables (time series / spatio-temporal): the
+'              start row is inherited from the Previous cross-table in the same section
+'              so that all temporal tables in a section are laid out side-by-side
+'              (sharing the same row range but advancing in columns).
+'
+'              Bug #3 fallback: if the previous table's ENDTABLE_ named range does not
+'              exist (meaning that table was invalid and never built), the code cannot
+'              inherit its start row. Instead, it falls back to computing a fresh start
+'              row as if this were a new section, and creates the STARTROW_ named range
+'              at that position. This prevents a cascading failure where one invalid
+'              table spec breaks all subsequent tables in the same section.
+' @return The 1-based row number on the output worksheet where this table's data area
+'         begins (the row containing the first header or label).
+' @remark This property is called many times during a single Build cycle (by
+'         StartColumn, AddRows, AddColumns, AddHeader, NameRanges, Format). After the
+'         first call creates the STARTROW_ named range, subsequent calls are cheap
+'         lookups. The property is Private because external consumers access it through
+'         the ICrossTable interface delegate.
 Private Property Get StartRow() As Long
     Dim sh As Worksheet
     Dim specs As ITableSpecs
@@ -164,13 +228,48 @@ Private Property Get StartRow() As Long
     End With
 End Property
 
-' @description Previous cross-table in the same section
+' @description Creates and returns an ICrossTable instance representing the table
+'              that immediately precedes this one within the same analysis section.
+'              This is used by temporal table types (time series and spatio-temporal)
+'              where multiple tables share the same row structure and are laid out
+'              side-by-side in columns. The previous table's start row and end column
+'              are needed to position the current table correctly. The method delegates
+'              to the Create factory, passing the Previous spec from the current
+'              table's ITableSpecs, along with the same output worksheet and
+'              translation object.
+' @return An ICrossTable for the previous table specification in this section. If
+'         there is no previous table (first in section), the specs.Previous call will
+'         fail, so callers should guard with On Error or check IsNewSection first.
+' @remark Each call creates a new CrossTable instance; the result is not cached. For
+'         temporal tables, this property is typically called once during StartRow
+'         resolution and should not be called in tight loops.
 Private Property Get Previous() As ICrossTable
     Set Previous = Create(Specifications.Previous, Wksh(), Translations())
 End Property
 
-' @description Starting column for this table.
-'              For non-new-section temporal tables, starts after the previous table's last column.
+' @description Computes or retrieves the starting column for this cross-table on the
+'              output worksheet. For most table types and for the first table in a
+'              temporal section, the start column is the constant STANDARD_START_COL
+'              (column C, index 3). For non-new-section temporal tables (time series
+'              and spatio-temporal), the start column is determined by finding the
+'              last used column in the row immediately below StartRow via
+'              End(xlToLeft). This produces the side-by-side horizontal layout where
+'              each successive temporal table in a section is placed to the right of
+'              the previous one.
+'
+'              The computed column is persisted as the named range STARTCOL_{tableId}
+'              (placed one row above StartRow, offset by +1 column) so that
+'              subsequent calls are idempotent. The STARTCOL_ cell also serves as a
+'              label holder: AddColumns writes the column variable label or the
+'              time-series header text into it.
+' @return The 1-based column number on the output worksheet where this table's row
+'         category labels begin. Data columns start at StartColumn + 1.
+' @remark The STARTCOL_ named range is stored at (StartRow - 1, strtCol + 1), meaning
+'         the actual named range cell is one column to the right and one row above the
+'         logical start column. When reading back, the code subtracts 1 from the
+'         named range's column to recover the true start column. This offset is
+'         intentional so the named range cell can hold a visible label without
+'         overlapping the data area.
 Private Property Get StartColumn() As Long
     Dim sh As Worksheet
     Dim specs As ITableSpecs
@@ -218,6 +317,18 @@ End Property
 '@section Range access properties
 '===============================================================================
 
+' @description Returns the Range object spanning the column header row of this
+'              cross-table. The range starts at (StartRow, StartColumn + 1) and
+'              extends to (StartRow, EndColumn), covering all column category cells
+'              but excluding the row-label column at StartColumn. This range is used
+'              by NameRanges to create the COLUMN_CATEGORIES_ named range, by Format
+'              to apply header styling, and by ColumnRange to search for a specific
+'              column value.
+' @return A single-row Range covering all column header cells. The range excludes
+'         the leftmost cell (row category label column) and includes every column
+'         from StartColumn+1 through EndColumn inclusive.
+' @remark EndColumn must be set (by AddColumns/BivariateColumns) before this
+'         property is called. If EndColumn is 0, the returned range will be invalid.
 Public Property Get HeaderRange() As Range
     Dim sh As Worksheet
     Set sh = Wksh()
@@ -226,14 +337,55 @@ Public Property Get HeaderRange() As Range
     End With
 End Property
 
+' @description Returns the composite header text for a time-series or spatio-temporal
+'              table. This text is a human-readable string like
+'              "Cases -- Notification date -- Region" built from the summary label,
+'              the time variable label, and optionally the column variable label,
+'              separated by horizontal-line Unicode characters (U+2500). It is stored
+'              in the STARTCOL_ named-range cell on the worksheet and used by the
+'              GoTo navigation dropdown so the user can jump to this table's section.
+' @return The cached header text string, or an empty string if it has not been set yet.
+' @remark This value is populated during AddColumns for temporal tables only.
+'         Non-temporal table types never set this property.
 Private Property Get TimeSeriesHeader() As String
     TimeSeriesHeader = this.tsHeader
 End Property
 
+' @description Stores the composite header text for a time-series or spatio-temporal
+'              table. Called internally by AddColumns after computing the header string
+'              from the summary label, time variable label, and column variable label.
+' @param headerText The full header string to cache, e.g. "Cases - Week - Region".
 Private Property Let TimeSeriesHeader(ByVal headerText As String)
     this.tsHeader = headerText
 End Property
 
+' @description Returns a Range covering the row category cells of this cross-table in
+'              column C (STANDARD_START_COL). The range can optionally include or
+'              exclude the header label row, and can be trimmed to only the "pure"
+'              category rows (excluding Total and Missing footer rows).
+'
+'              The start row varies by table type: for bivariate, time series, spatial,
+'              and spatio-temporal tables, the categories begin at StartRow + 1 (because
+'              StartRow is occupied by the column header row); for univariate tables,
+'              they begin at StartRow itself. If includeHeaders is False, an additional
+'              row is skipped (the row containing the row-variable label).
+'
+'              The end row also varies: when onlyCategories is True, footer rows are
+'              excluded. For time series / spatio-temporal tables, the last 2 rows
+'              (Total and Missing) are removed (EndRow - 2). For tables with HasTotal
+'              or spatial tables, the last 1 row (Total or Missing) is removed
+'              (EndRow - 1). When onlyCategories is False, the range extends all the
+'              way to EndRow.
+' @param includeHeaders When True (default), the returned range includes the row
+'                       variable label row (e.g., "Age group"). When False, only the
+'                       actual category values (e.g., "0-4", "5-14", ...) are included.
+' @param onlyCategories When True, the range excludes the Total and Missing footer
+'                       rows, returning only the data-category rows. When False
+'                       (default), the range includes Total and Missing rows.
+' @return A single-column Range in column C spanning the requested row categories.
+' @remark Raises an error for TypeGlobalSummary because global summary tables do not
+'         have row categories (they are single-row tables). EndRow must be set before
+'         calling this property.
 Public Property Get RowsCategoriesRange(Optional ByVal includeHeaders As Boolean = True, _
                                          Optional ByVal onlyCategories As Boolean = False) As Range
     Dim startRw As Long
@@ -268,10 +420,46 @@ Public Property Get RowsCategoriesRange(Optional ByVal includeHeaders As Boolean
     End With
 End Property
 
+' @description Checks whether a specific string value exists anywhere within the given
+'              Range by performing an exact, case-sensitive, whole-cell match using
+'              Excel's Range.Find method. This is used internally by RowRange and
+'              ColumnRange to verify that a category label (e.g., "Total", "Missing",
+'              or a specific category value) is present before attempting to locate its
+'              row or column position. The match is strict: partial matches and
+'              case-insensitive matches are both rejected.
+' @param rng The Range to search within, typically RowsCategoriesRange or HeaderRange.
+' @param searchValue The exact string to look for (case-sensitive, whole-cell match).
+' @return True if at least one cell in rng contains exactly searchValue; False otherwise.
+' @remark Uses xlWhole and MatchCase:=True, so "total" will NOT match "Total". This is
+'         important because translated labels may have specific capitalization.
 Private Function ValueExists(ByVal rng As Range, ByVal searchValue As String) As Boolean
     ValueExists = (Not rng.Find(What:=searchValue, LookAt:=xlWhole, MatchCase:=True) Is Nothing)
 End Function
 
+' @description Finds a row in the cross-table by its category label value and returns
+'              a horizontal Range spanning that entire row from the start column to the
+'              end column. The search is performed within RowsCategoriesRange using an
+'              exact case-sensitive match (via ValueExists/Find). If the value is found,
+'              the returned range includes either the full row from StartColumn (with
+'              the row-label cell) or from StartColumn + 1 (data cells only), depending
+'              on the includeHeaders parameter. If the value is not found, Nothing is
+'              returned.
+'
+'              This property is used by NameRanges to locate and name the Total, Missing,
+'              and Percent rows (e.g., TOTAL_ROW_{tabId}), and by Format to apply
+'              styling to those special rows.
+' @param rowVal The exact string value to search for in the row categories column,
+'               e.g., the translated "Total" or "Missing" label, or a specific
+'               category name like "Male".
+' @param includeHeaders When True (default), the returned range starts at StartColumn
+'                       (including the row-label cell). When False, it starts at
+'                       StartColumn + 1 (data values only, excluding the label).
+' @return A single-row Range from (valueRow, startCol) to (valueRow, EndColumn), or
+'         Nothing if rowVal is not found in the row categories.
+' @remark The search uses RowsCategoriesRange() with default parameters (includeHeaders
+'         and including Total/Missing), so it searches ALL row category cells including
+'         footer rows. The includeHeaders parameter on THIS property controls the
+'         column span of the result, not the search scope.
 Public Property Get RowRange(ByVal rowVal As String, _
                               Optional ByVal includeHeaders As Boolean = True) As Range
     Dim rng As Range
@@ -295,6 +483,34 @@ Public Property Get RowRange(ByVal rowVal As String, _
     End If
 End Property
 
+' @description Finds a column in the cross-table by its header label value and returns
+'              a vertical Range spanning that entire column from the first data row to
+'              the end row. The search is performed within HeaderRange using an exact
+'              case-sensitive match (via ValueExists/Find). The start row of the
+'              returned range varies by table type: for bivariate, time series, spatial,
+'              and spatio-temporal tables, data begins at StartRow + 2 (below both the
+'              column-category row and the column-label row); for univariate tables, it
+'              begins at StartRow + 1.
+'
+'              The end row can be trimmed to exclude footer rows when onlyCategories is
+'              True (same logic as RowsCategoriesRange). The includeHeaders parameter
+'              extends the range one row upward to include the column header cell.
+'
+'              This property is used by NameRanges to locate and name the Total, Missing,
+'              and Percent columns (e.g., TOTAL_COL_{tabId}), and by Format to apply
+'              column-specific styling.
+' @param colVal The exact string value to search for in the header row, e.g., the
+'               translated "Total", "Missing", or "%" label.
+' @param onlyCategories When True, the returned range excludes Total and Missing footer
+'                       rows (same trimming logic as RowsCategoriesRange). When False
+'                       (default), the range extends to EndRow.
+' @param includeHeaders When True, the returned range starts one row above the normal
+'                       data start row (including the column-label row). When False
+'                       (default), only data cells are included.
+' @return A single-column Range from (startRw, valueColumn) to (endRw, valueColumn),
+'         or Nothing if colVal is not found in the header range.
+' @remark If the value is not found in HeaderRange, the property returns Nothing
+'         (implicitly). Callers must check for Nothing before using the result.
 Public Property Get ColumnRange(ByVal colVal As String, _
                                  Optional ByVal onlyCategories As Boolean = False, _
                                  Optional ByVal includeHeaders As Boolean = False) As Range
@@ -334,6 +550,38 @@ End Property
 '@section AddRows — populate row categories
 '===============================================================================
 
+' @description Populates the row category labels in the leftmost column
+'              (STANDARD_START_COL) of this cross-table on the output worksheet. The
+'              row content depends entirely on the table type:
+'
+'              - TypeGlobalSummary: writes a single label cell at (StartRow, StartColumn)
+'                with the table's label value. No category rows are added.
+'
+'              - TypeUnivariate: writes the row variable's main label as a header, then
+'                lists all row categories from specs.RowCategories. If missing="yes",
+'                appends the translated "Missing" label. Always appends "Total" at the
+'                end. Sets EndRow to StartRow + number of rows.
+'
+'              - TypeBivariate: similar to univariate but offset by one extra row for
+'                the column header area. Appends "Missing" if missing="row" or "all".
+'                Always appends "Total". The row variable label is placed at
+'                StartRow + 1.
+'
+'              - TypeTimeSeries / TypeSpatioTemporal: only writes rows for new sections
+'                (or de-facto new sections per Bug #3). Creates a fixed-size grid of
+'                NB_ROWS_TIME_SERIES (56) rows: a "Period" header, 13 groups of 4
+'                blank rows (for date-period pairs), then Total and Missing. EndRow is
+'                always StartRow + 56 regardless of actual data.
+'
+'              - TypeSpatial: writes the geo-level label (admin unit or health facility)
+'                as a header, then reserves "geo max" blank rows for dynamic geo data,
+'                and appends "Missing". Sets EndRow accordingly.
+'
+'              After writing, this sub sets EndRow so that subsequent steps (AddColumns,
+'              NameRanges, Format) know the vertical extent of the table.
+' @remark For temporal tables, AddRows is only called once per section (the first table
+'         or the de-facto first table). Subsequent tables in the same temporal section
+'         reuse the row structure from the first table and only add columns.
 Private Sub AddRows()
     Dim startRw As Long
     Dim specs As ITableSpecs
@@ -421,6 +669,22 @@ End Sub
 '@section Percentage label helper
 '===============================================================================
 
+' @description Builds a display label for percentage columns by appending a directional
+'              Unicode arrow to the translated percentage string. The arrow indicates
+'              the direction of the percentage computation: a horizontal double arrow
+'              (U+2194) for row percentages (each row sums to 100%), and a vertical
+'              double arrow (U+2195) for column percentages (each column sums to 100%).
+'              When the percentage type is "all" or any other value, no arrow is
+'              appended and the plain percentage label is returned. This label is
+'              displayed in the column sub-header row so the user can visually
+'              distinguish the percentage direction at a glance.
+' @param percentVal The translated percentage label text (e.g., "%" or "Percent"),
+'                   obtained from trans.TranslatedValue("MSG_Percent").
+' @param percentType The percentage direction: "row" appends a horizontal arrow
+'                    (U+2194), "column" appends a vertical arrow (U+2195), and any
+'                    other value (including the default "all") returns the label
+'                    unchanged.
+' @return The formatted percentage label string with or without a directional arrow.
 Private Function PercentLabel(ByVal percentVal As String, _
                                Optional ByVal percentType As String = "all") As String
     Select Case percentType
@@ -436,6 +700,39 @@ End Function
 '@section BivariateColumns — shared column-building logic for bivariate/temporal/spatial
 '===============================================================================
 
+' @description Shared column-building logic used by bivariate, time series, spatial,
+'              and spatio-temporal table types. This sub writes the column category
+'              headers and column-label sub-headers to the output worksheet, starting
+'              at StartColumn + 1. It handles two layout scenarios:
+'
+'              1. When column categories exist (specs.ColumnCategories has items):
+'                 The categories are written to the header row (startRw). If the table
+'                 has percentages (specs.HasPercentage), each category value is followed
+'                 by an empty cell for the percentage column, and the sub-header row
+'                 (startRw + 1) alternates between the table label and the percentage
+'                 label (with directional arrow from PercentLabel). If there are no
+'                 percentages, each sub-header cell simply shows the table label.
+'                 Missing and Total columns are appended after the data categories.
+'
+'              2. When column categories are empty (summary function only):
+'                 A single column is created with just the table label in the header
+'                 row. A space character is written to the sub-header row as a
+'                 placeholder so that the next table's StartColumn detection via
+'                 End(xlToLeft) works correctly.
+'
+'              This sub also sets NumberOfColumns to the count of pure data columns
+'              (before Missing/Total are appended) and EndColumn to the last occupied
+'              column.
+' @param startRw The starting row for column headers (typically StartRow of the
+'                calling table).
+' @param specs The ITableSpecs providing column categories, percentage flag, missing
+'              flag, total flag, and the table label.
+' @param trans The ITranslationObject providing translated strings for "Missing",
+'              "Total", and "Percent".
+' @param sh The output Worksheet where the column headers are written.
+' @remark NumberOfColumns counts only the "pure" data columns (from
+'         specs.ColumnCategories), not including Missing or Total. However, EndColumn
+'         includes all columns written (data + Missing + Total + percentage interleaves).
 Private Sub BivariateColumns(ByVal startRw As Long, ByVal specs As ITableSpecs, _
                               ByVal trans As ITranslationObject, ByVal sh As Worksheet)
     Dim colLab As String
@@ -504,6 +801,38 @@ End Sub
 '@section AddColumns — populate column headers
 '===============================================================================
 
+' @description Writes column headers and category labels to the output worksheet. The
+'              column structure depends on the table type:
+'
+'              - TypeGlobalSummary: creates two fixed columns ("All data" and "Filtered
+'                data") one row above StartRow. These columns are shared across all
+'                global summary rows, so they are only created once (guarded by
+'                COLGS_SET named range).
+'
+'              - TypeUnivariate: creates one data column with the table label, plus an
+'                optional percentage column if percentageValue = "yes". Columns are
+'                written horizontally starting at StartColumn + 1.
+'
+'              - TypeBivariate: delegates to BivariateColumns for the main column
+'                layout, then writes the column variable's main label into the
+'                STARTCOL_ named range cell.
+'
+'              - TypeTimeSeries / TypeSpatioTemporal: delegates to BivariateColumns,
+'                then constructs a composite TimeSeriesHeader string from the summary
+'                label, time variable label, and column variable label (with Unicode
+'                horizontal-line separators). For spatio-temporal tables, the column
+'                variable label comes from the geo/hf variable. The header text is
+'                stored both in the TimeSeriesHeader property and in the STARTCOL_
+'                named range cell for GoTo navigation.
+'
+'              - TypeSpatial: delegates entirely to BivariateColumns with no additional
+'                header text.
+'
+'              After writing, this sub sets EndColumn and NumberOfColumns so that
+'              subsequent steps know the horizontal extent of the table.
+' @remark For global summary tables, the two-column header is created only once and
+'         shared by all subsequent global summary rows. The COLGS_SET named range acts
+'         as a guard to prevent duplicate creation.
 Private Sub AddColumns()
     Dim startRw As Long
     Dim specs As ITableSpecs
@@ -592,6 +921,48 @@ End Sub
 '@section AddHeader — create section headers, titles, date controls
 '===============================================================================
 
+' @description Inserts the structural header infrastructure above the data area of this
+'              cross-table: section titles, table titles, date/time input controls for
+'              temporal tables, and geo-level selection controls for spatial tables.
+'              This is the first step called by Build and may insert rows into the
+'              worksheet (shifting existing content down) to make room for the header.
+'
+'              Behavior by table type:
+'
+'              - TypeUnivariate / TypeBivariate: writes the table title at
+'                (StartRow - 2, column C). If this is a new section, inserts 3 blank
+'                rows above the title and writes the section name, creating the
+'                SECTION_ named range.
+'
+'              - TypeGlobalSummary: if the global summary header row has not been
+'                created yet (no ROWGS_SET range), inserts 3 rows and writes the
+'                translated "Global Summary" label. This is shared across all global
+'                summary tables.
+'
+'              - TypeTimeSeries / TypeSpatioTemporal: for new sections (or de-facto new
+'                sections per Bug #3), inserts a variable number of rows (7 for time
+'                series, nGeo+14 for spatio-temporal) to accommodate the section title,
+'                date controls (start date, time unit, end date with validation ranges),
+'                and optionally geo-level input controls. Creates numerous named ranges
+'                for user-input cells (USER_START_DATE_, TIME_UNIT_, USER_END_DATE_,
+'                etc.) and validation ranges (VALIDATION_MIN_DATE_, MAX_MAX_DATE_,
+'                etc.). Also creates the time-unit dropdown list (day/week/month/
+'                quarter/year) in column Z if it does not already exist.
+'
+'              - TypeSpatial: creates an admin-unit dropdown (ADM_DROPDOWN_) or
+'                health-facility dropdown (HF_DROPDOWN_) with associated controls for
+'                population factor division. If this is a new section, inserts rows for
+'                the section title. Also creates the admin-unit list and population-
+'                factor list in hidden columns (Z and AA) if they do not already exist.
+'
+'              This sub also initializes the allRangeNames BetterArray, which
+'              accumulates all named range names created during the build process for
+'              later retrieval via NamedRangesList.
+' @remark Row insertions shift the entire sheet down, which is why AddHeader must run
+'         before AddRows, AddColumns, and NameRanges. The SECTION_ and TITLE_ named
+'         ranges are created here and later used by Format for styling. For temporal
+'         tables, the date controls are unlocked (Locked = False) so the user can
+'         interactively change dates at runtime.
 Private Sub AddHeader()
     Dim startRw As Long
     Dim sh As Worksheet
@@ -818,6 +1189,58 @@ End Sub
 '@section NameRanges — create all named ranges for the table
 '===============================================================================
 
+' @description Creates all structural named ranges for this cross-table after the data
+'              area (rows and columns) has been populated. These named ranges serve as
+'              stable references for formula generation, VBA-driven data updates, and
+'              export tracking. The method creates the following categories of named
+'              ranges:
+'
+'              1. ENDTABLE_{tabId}: marks the cell one row below EndRow at StartColumn.
+'                 Used by subsequent tables to detect that this table was successfully
+'                 built, and by the Bug #3 logic to determine de-facto new sections.
+'
+'              2. ROW_CATEGORIES_{tabId} and LABEL_ROW_CATEGORIES_{tabId}: the range
+'                 of pure category rows (excluding Total/Missing) and the row-variable
+'                 label cell above them. Only created for new sections or non-temporal
+'                 tables; temporal tables in the same section share one row structure.
+'
+'              3. END_TIME_PERIOD_{tabId}, START_TIME_PERIOD_{tabId},
+'                 FIRST_VALUE_START_TIME_{tabId}: time-period marker ranges for
+'                 temporal tables, placed in the two columns to the left of the row
+'                 categories. Used by the date-computation formulas.
+'
+'              4. VALUES_COL_{n}_{tabId} and LABEL_COL_{n}_{tabId}: one range per data
+'                 column (numbered 1..nbCols), covering the data cells and the column
+'                 header label cell respectively. If percentages are enabled,
+'                 PERC_COL_{n}_{tabId} and optionally PERC_LABEL_COL_{tabId} are also
+'                 created for each percentage column.
+'
+'              5. MISSING_ROW_, TOTAL_ROW_, PERC_ROW_ (and _VALUES_ variants): named
+'                 ranges for the special footer rows, located by searching for the
+'                 translated labels. Similarly, MISSING_COL_, TOTAL_COL_, PERC_COL_
+'                 (and _VALUES_ and _PERC_VALUES_ variants) for the special columns.
+'
+'              6. Intersection cells: TOTAL_TOTAL_, MISSING_TOTAL_, MISSING_MISSING_,
+'                 TOTAL_MISSING_ — individual cells at the crossing of special rows
+'                 and columns, used by formulas for grand-total and cross-missing
+'                 computations.
+'
+'              7. INTERIOR_VALUES_{tabId}: a rectangular range covering all data cells
+'                 (from VALUES_COL_1 through the last PERC_COL or VALUES_COL). Used
+'                 for bulk formatting and conditional formatting.
+'
+'              8. OUTER_VALUES_{tabId}: for spatial tables only, an expanded range
+'                 around INTERIOR_VALUES that includes extra columns for population
+'                 computation formulas.
+'
+'              9. COLUMN_CATEGORIES_{tabId}: the HeaderRange, naming the column header
+'                 row for formula references.
+'
+'              All created range names are accumulated in the allRangeNames BetterArray
+'              for retrieval via NamedRangesList.
+' @remark Exits immediately for TypeGlobalSummary (which has no row categories or
+'         column structure beyond the two fixed columns). Raises an error if
+'         NumberOfColumns is 0, indicating AddColumns was not called or failed.
 Private Sub NameRanges()
     Dim specs As ITableSpecs
     Dim sh As Worksheet
@@ -1023,43 +1446,139 @@ End Sub
 '@section Bug #3 helper — detect de-facto new section
 '===============================================================================
 
-' @description Check if this is a de-facto new section: the specs say it's not a new
-'              section (same section string as previous row), but the previous table
-'              was never built (invalid or skipped), so section infrastructure is missing.
-'              In that case, this table should act as the section anchor.
+' @description Determines whether this table should be treated as a de-facto new
+'              section even though its ITableSpecs.IsNewSection returns False. This
+'              situation arises from Bug #3: when the previous table in the same section
+'              was invalid (e.g., referencing a nonexistent variable) and was therefore
+'              skipped during the build process, the section infrastructure (SECTION_,
+'              STARTROW_, ENDTABLE_ named ranges, row categories, date controls) was
+'              never created. Without this check, the current table would try to inherit
+'              the previous table's position and fail because the required named ranges
+'              do not exist.
+'
+'              The logic is: if this table is not marked as a new section AND it is a
+'              temporal type (time series or spatio-temporal), check whether the
+'              previous table's ENDTABLE_ named range exists. If it does not exist,
+'              that table was never built, and this table must act as the section
+'              anchor — creating the section header, row structure, and all
+'              infrastructure from scratch.
+'
+'              The result is cached in this.deFactoNewSect after the first computation,
+'              with this.deFactoNewSectCached serving as the "has been computed" flag.
+'              This caching is important because IsDeFactoNewSection is called multiple
+'              times during a single Build cycle (by AddRows, AddHeader, NameRanges,
+'              and Format).
+' @return True if this table's specs say it is NOT a new section but the previous
+'         table was never built, requiring this table to assume the section-anchor
+'         role. Returns False for actual new sections (those are handled by
+'         specs.IsNewSection), for non-temporal table types (which do not have
+'         side-by-side layout), and when the previous table was successfully built.
+' @remark For tables where specs.IsNewSection is True, this function always returns
+'         False — the caller should check IsNewSection first. The typical usage
+'         pattern is: "If specs.IsNewSection() Or IsDeFactoNewSection() Then ...".
 Private Function IsDeFactoNewSection() As Boolean
+
+    If this.deFactoNewSectCached Then
+        IsDeFactoNewSection = this.deFactoNewSect
+        Exit Function
+    End If
+
     Dim specs As ITableSpecs
+    Dim result As Boolean
     Set specs = Specifications
 
     ' Only relevant for non-new-section temporal tables
     If specs.IsNewSection() Then
-        IsDeFactoNewSection = False
-        Exit Function
+        result = False
+    ElseIf specs.TableType <> TypeTimeSeries And specs.TableType <> TypeSpatioTemporal Then
+        result = False
+    Else
+        Dim prevTabId As String
+        On Error Resume Next
+        prevTabId = specs.Previous.TableId
+        On Error GoTo 0
+
+        If prevTabId = vbNullString Then
+            result = True
+        Else
+            ' If the previous table's ENDTABLE range doesn't exist, it was never built
+            result = Not RangeExists("ENDTABLE_" & prevTabId)
+        End If
     End If
 
-    If specs.TableType <> TypeTimeSeries And specs.TableType <> TypeSpatioTemporal Then
-        IsDeFactoNewSection = False
-        Exit Function
-    End If
-
-    ' Check if the previous table's end marker exists
-    Dim prevTabId As String
-    On Error Resume Next
-    prevTabId = specs.Previous.TableId
-    On Error GoTo 0
-
-    If prevTabId = vbNullString Then
-        IsDeFactoNewSection = True
-        Exit Function
-    End If
-
-    ' If the previous table's ENDTABLE range doesn't exist, it was never built
-    IsDeFactoNewSection = Not RangeExists("ENDTABLE_" & prevTabId)
+    this.deFactoNewSect = result
+    this.deFactoNewSectCached = True
+    IsDeFactoNewSection = result
 End Function
 
 '@section Format — apply design formatting + Bug #1 fix
 '===============================================================================
 
+' @description Applies comprehensive visual formatting to every part of the cross-table
+'              using the design format object (ILLFormat). This is the final step after
+'              Build completes the structural layout. The formatting is applied in the
+'              following order, each section targeting specific named ranges:
+'
+'              1. Section header: applies AnalysisSection format to the SECTION_ range
+'                 for new sections. For global summary, formats ROWGS_SET once (tracked
+'                 by ROWGS_FORMATSET hidden name).
+'
+'              2. Table title: applies AnalysisTableTitle to the TITLE_ range. Skipped
+'                 for global summary and temporal tables (which have no per-table title).
+'
+'              3. Spatial dropdown: formats the admin-unit dropdown or health-facility
+'                 dropdown with LinelistSelectionDropdown or LinelistHiddenCell styles.
+'                 Also hides the auxiliary columns beside row categories.
+'
+'              4. Column headers: varies by type — AnalysisUnivariateHeader for
+'                 univariate and global summary, AnalysisCategoriesLabelRow and
+'                 AnalysisCategoriesLabelColumn for bivariate/spatial, and
+'                 AnalysisTimeSeriesHeader for temporal. For temporal tables, the header
+'                 spans from STARTCOL_ to EndColumn.
+'
+'              5. Row/column categories: applies row-category styling
+'                 (AnalysisCategoriesUnivariateRow, AnalysisCategoriesBivariateRow,
+'                 AnalysisGlobalSummaryRow) and column-category styling
+'                 (AnalysisCategoriesBivariateColumn). For temporal tables with new
+'                 sections, also formats hidden date cells and time-period columns.
+'                 Handles column-label cell merging (percentage pairs) tracked by
+'                 MERGED_ hidden name.
+'
+'              6. Interior values: applies AnalysisInteriorTable to the
+'                 INTERIOR_VALUES_ range (all data cells).
+'
+'              7. Total/Missing rows and columns: applies AnalysisMissingRow or
+'                 AnalysisMissingRowWithoutHeader (for non-new-section temporal) and
+'                 AnalysisMissingColumn formatting to the special footer rows/columns.
+'
+'              8. Single cells: formats intersection cells (TOTAL_TOTAL_, etc.), date
+'                 input cells, labels, and population factor cells with appropriate
+'                 single-cell styles (AnalysisOneCell, AnalysisOneCellCenter,
+'                 AnalysisUnivariateHeader, AnalysisInfoCell).
+'
+'              9. Hidden cells: hides auxiliary cells (PREVIOUS_ADM_, POPPREVFACT_,
+'                 etc.) with LinelistHiddenCell format.
+'
+'              10. Percentage columns: applies AnalysisPercent formatting to every
+'                  percentage column, and formats adjacent intersection percentage
+'                  cells.
+'
+'              11. Whole table: applies AnalysisWholeTable (borders) to the entire data
+'                  rectangle, and AnalysisEndTable to the gap row after the table.
+'
+'              12. Bug #1 fix: for temporal tables where HasTotal is True but
+'                  TotalRequested is False, hides the Total column entirely. This
+'                  handles the case where the Total column is needed internally for
+'                  percentage computation (when percentage="row" or "column") but the
+'                  user did not explicitly request it, so it should be invisible.
+' @param desFormat The ILLFormat design-format object that provides the ApplyFormat
+'                  method for each formatting scope (AnalysisSection, AnalysisInteriorTable,
+'                  etc.). This object encapsulates all colors, fonts, borders, and number
+'                  formats defined in the linelist design sheet.
+' @remark Format must be called after Build (or after AddHeader + AddRows + AddColumns +
+'         NameRanges) because it relies on named ranges being present. Some formatting
+'         operations are idempotent (guarded by HiddenNames like ROWGS_FORMATSET and
+'         MERGED_), allowing Format to be called multiple times without duplication.
 Private Sub Format(ByVal desFormat As ILLFormat)
     Dim sh As Worksheet
     Dim specs As ITableSpecs
@@ -1085,14 +1604,17 @@ Private Sub Format(ByVal desFormat As ILLFormat)
     newSection = specs.IsNewSection() Or IsDeFactoNewSection()
 
     With sh
+        Dim hn As IHiddenNames
+        Set hn = HiddenNames.Create(sh)
+
         ' Sections ==============================================================
         If newSection Then
             Set rng = .Range("SECTION_" & tabId)
             designFormat.ApplyFormat rng, AnalysisSection
-        ElseIf RangeExists("ROWGS_SET") And (Not RangeExists("ROWGS_FORMATSET")) Then
+        ElseIf RangeExists("ROWGS_SET") And (Not hn.HasName("ROWGS_FORMATSET")) Then
             Set rng = .Range("ROWGS_SET")
             designFormat.ApplyFormat rng, scope:=AnalysisSection
-            rng.Cells(1, 8).Name = "ROWGS_FORMATSET"
+            hn.EnsureName "ROWGS_FORMATSET", True, "Boolean"
         End If
 
         ' Title (GlobalSummary and TimeSeries don't have titles)
@@ -1122,11 +1644,11 @@ Private Sub Format(ByVal desFormat As ILLFormat)
         ' Headers ===============================================================
         Select Case tablType
         Case TypeGlobalSummary
-            If Not RangeExists("COLGS_FORMATSET") Then
+            If Not hn.HasName("COLGS_FORMATSET") Then
                 Set rng = .Range("COLGS_SET")
                 Set rng = .Range(rng.Cells(1, 1), rng.Cells(1, 2))
                 designFormat.ApplyFormat rng, scope:=AnalysisUnivariateHeader
-                rng.Cells(1, 3).Name = "COLGS_FORMATSET"
+                hn.EnsureName "COLGS_FORMATSET", True, "Boolean"
             End If
         Case TypeUnivariate
             Set rng = .Range("COLUMN_CATEGORIES_" & tabId)
@@ -1183,7 +1705,7 @@ Private Sub Format(ByVal desFormat As ILLFormat)
 
             ' Column label merging
             Set rng = .Range("LABEL_COL_1_" & tabId)
-            If Not RangeExists("MERGED_" & tabId) Then
+            If Not hn.HasName("MERGED_" & tabId) Then
                 Do While rng.Column <= EndColumn()
                     If hasPercent Then
                         Set rng = rng.Offset(, 2)
@@ -1192,7 +1714,7 @@ Private Sub Format(ByVal desFormat As ILLFormat)
                         Set rng = rng.Offset(, 1)
                     End If
                 Loop
-                rng.Cells(1, 3).Name = "MERGED_" & tabId
+                hn.EnsureName "MERGED_" & tabId, True, "Boolean"
             End If
 
             Set rng = .Range("COLUMN_CATEGORIES_" & tabId)
@@ -1342,6 +1864,31 @@ End Sub
 '@section Build — orchestrate table creation
 '===============================================================================
 
+' @description Orchestrates the complete construction of this cross-table by calling
+'              the four build steps in the correct order. The order is critical:
+'
+'              1. AddHeader — must run first because it may insert rows into the
+'                 worksheet (shifting content down), which would invalidate any
+'                 previously computed row positions. It also initializes the
+'                 allRangeNames array.
+'
+'              2. AddRows — populates the row category labels in column C and sets
+'                 EndRow. Depends on StartRow being stable (no more row insertions).
+'
+'              3. AddColumns — populates the column headers and sets EndColumn and
+'                 NumberOfColumns. Depends on StartRow and StartColumn being stable.
+'
+'              4. NameRanges — creates all named ranges for the table structure.
+'                 Depends on EndRow, EndColumn, and NumberOfColumns being set by the
+'                 previous two steps.
+'
+'              After Build completes, the table is structurally complete and ready for
+'              Format to apply visual styling, and for formula generation to populate
+'              the data cells with calculation formulas.
+' @remark Build does NOT call Format. Formatting is applied separately by the caller
+'         (typically the analysis builder) after all tables in a section have been
+'         built. This separation allows batch formatting and avoids redundant
+'         formatting of shared section headers.
 Private Sub Build()
     AddHeader
     AddRows

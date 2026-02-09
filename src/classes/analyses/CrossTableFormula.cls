@@ -31,9 +31,18 @@ Private Const CLASS_NAME As String = "CrossTableFormula"
 '@section Factory
 '===============================================================================
 
-' @description Create a cross-table formula writer
-' @param tabl Cross-table to write formulas into
-' @param fData Formula data for function lookups
+' @description Creates and returns a new CrossTableFormula instance bound to a specific cross-table
+'              and formula-data object. CrossTableFormula is responsible for writing Excel formulas
+'              into the cells of a pre-built cross-table on an analysis worksheet. It translates
+'              the table's specifications (row/column variables, summary function, table type) into
+'              concrete COUNTIFS/SUMPRODUCT-style array formulas that Excel can evaluate at runtime.
+' @param tabl The ICrossTable object representing the already-constructed cross-table layout
+'             (named ranges, headers, worksheet reference) that formulas will be written into.
+' @param fData The IFormulaData object that provides dictionary-based lookups for variable names,
+'              ranges, and formula templates used during formula generation.
+' @return An ICrossTableFormula interface reference to the newly created instance.
+' @remark Both parameters are required and must not be Nothing; an InvalidArgument error is
+'         raised otherwise. Uses the PredeclaredId factory pattern (With New CrossTableFormula).
 Public Function Create(ByVal tabl As ICrossTable, _
                        ByVal fData As IFormulaData) As ICrossTableFormula
 
@@ -73,26 +82,70 @@ End Property
 '@section Shortcut properties
 '===============================================================================
 
+' @description Provides a shortcut to the ITableSpecs object associated with this cross-table.
+'              ITableSpecs encapsulates all configuration metadata for a table: its row/column
+'              variable names, summary function, table type, missing/total/percentage flags,
+'              and the section it belongs to. This property avoids repeatedly chaining
+'              Table.Specifications throughout the class methods.
+' @return The ITableSpecs interface for the underlying cross-table's specification dictionary.
 Private Property Get Specifications() As ITableSpecs
     Set Specifications = Table.Specifications
 End Property
 
+' @description Returns the summary function name string from the table's specifications.
+'              The summary function determines the type of aggregation Excel will perform
+'              in the generated formulas. Common values include "N" (count non-empty),
+'              "N()" (count all), "SUM", "MEAN", "MEDIAN", and "MIN"/"MAX". This value
+'              drives formula generation logic throughout the class, especially in
+'              AddNonEmptyTableConditions where "N"/"N()" use a different operator pattern.
+' @return A String such as "N", "N()", "SUM", "MEAN", etc., as defined in the setup dictionary.
 Private Property Get SummaryFunction() As String
     SummaryFunction = Specifications.Value("summary function")
 End Property
 
+' @description Returns the unique identifier string for this cross-table. The table ID is
+'              used extensively as a suffix for named ranges on the analysis worksheet
+'              (e.g., "ROW_CATEGORIES_<id>", "VALUES_COL_1_<id>", "TOTAL_ROW_VALUES_<id>").
+'              Every named range that belongs to this table is suffixed with this ID, making
+'              it the primary key for locating table regions on the worksheet.
+' @return A String uniquely identifying this table within the analysis workbook.
 Private Property Get ID() As String
     ID = Specifications.TableId()
 End Property
 
+' @description Returns the section identifier for the group of tables this cross-table belongs to.
+'              A section is a logical grouping of related tables on the analysis worksheet (e.g.,
+'              all time-series tables sharing the same date controls). The section ID is the table
+'              ID of the first (anchor) table in the section. It is used to reference shared named
+'              ranges like "FIRST_VALUE_START_TIME_<sectionId>" and "TOTAL_ROW_<sectionId>" that
+'              are defined once per section rather than per table.
+' @return A String representing the anchor table's ID for this table's section.
 Private Property Get SectionId() As String
     SectionId = Specifications.TableSectionId
 End Property
 
+' @description Returns the AnalysisTablesType byte enum value indicating what kind of cross-table
+'              this is. The table type determines which branch of the AddFormulas Select Case is
+'              executed: TypeGlobalSummary, TypeUnivariate, TypeBivariate, TypeTimeSeries,
+'              TypeSpatioTemporal, or TypeSpatial. Each type has fundamentally different formula
+'              structures, named range layouts, and condition-building logic.
+' @return A Byte value corresponding to one of the AnalysisTablesType enum constants.
+' @remark Returns Byte rather than the enum type for macOS VBA compatibility.
 Private Property Get TableType() As Byte
     TableType = Specifications.TableType()
 End Property
 
+' @description Returns the IFormulas object for this table, creating it on first access via
+'              lazy initialization. The IFormulas object (created by Formulas.Create) is the
+'              core formula-parsing engine: it knows how to translate the table's summary function
+'              and variable dictionary into concrete Excel formula strings for both linelist-scope
+'              and analysis-scope contexts. Once created, the instance is cached in this.forml
+'              so subsequent calls reuse the same object without re-parsing.
+' @return An IFormulas interface that provides ParsedLinelistFormula and ParsedAnalysisFormula
+'         methods for generating Excel formula text.
+' @remark The IFormulas object is initialized with the table's specification dictionary,
+'         the IFormulaData reference, and the summary function string. This is intentionally
+'         lazy because not all code paths need the formula engine (e.g., if Valid is False).
 Private Property Get TableFormula() As IFormulas
     If this.forml Is Nothing Then
         Dim specs As ITableSpecs
@@ -102,6 +155,13 @@ Private Property Get TableFormula() As IFormulas
     Set TableFormula = this.forml
 End Property
 
+' @description Checks whether the formula engine considers this table's formula valid for
+'              analysis use. Validity is determined by the IFormulas.Valid method with the
+'              "analysis" formula type. A formula may be invalid if the summary function is
+'              unsupported, required variables are missing from the dictionary, or the formula
+'              template cannot be parsed. When Valid returns False, the AddFormulas method
+'              exits immediately without writing any formulas to the worksheet.
+' @return True if the formula can be used for analysis-scope formula generation, False otherwise.
 Private Property Get Valid() As Boolean
     Valid = TableFormula.Valid(formulaType:="analysis")
 End Property
@@ -109,6 +169,15 @@ End Property
 '@section Range and formula helpers
 '===============================================================================
 
+' @description Checks whether a named range exists on the cross-table's worksheet by attempting
+'              to resolve it. This is used before writing formulas to optional table regions
+'              (e.g., "MISSING_TOTAL_<id>", "MISSING_MISSING_<id>", "TOTAL_TOTAL_<id>") that
+'              may or may not be present depending on the table's missing/total configuration.
+'              The method uses On Error Resume Next to silently handle the case where the range
+'              does not exist, then checks whether the range variable was successfully set.
+' @param rngName The name of the named range to look up on the cross-table worksheet
+'                (e.g., "MISSING_TOTAL_T001").
+' @return True if the named range resolves to a valid Range object, False if it does not exist.
 Private Function RangeExists(ByVal rngName As String) As Boolean
     Dim sh As Worksheet
     Dim rng As Range
@@ -119,6 +188,19 @@ Private Function RangeExists(ByVal rngName As String) As Boolean
     RangeExists = (Not rng Is Nothing)
 End Function
 
+' @description Tests whether a generated Excel formula string is valid by attempting to write it
+'              as an array formula into cell(1,1) of the cross-table's worksheet, then immediately
+'              clearing that cell. If the assignment succeeds without error, the formula is
+'              considered valid and FailedFormula returns False. If an error occurs (e.g., invalid
+'              function name, bad range reference, or formula syntax error), execution jumps to the
+'              Fail label via On Error GoTo Fail and returns True. This acts as a safety net to
+'              prevent writing broken formulas into the actual table cells.
+' @param frmName The Excel formula string to test (without the leading "= " prefix, which is
+'                prepended internally). For example: "COUNTIFS(range1,cond1,range2,cond2)".
+' @return True if the formula assignment raised an error (formula is broken), False if it succeeded.
+' @remark Application.DisplayAlerts is temporarily disabled and restored afterward to suppress
+'         any Excel warning dialogs during the test. Cell(1,1) is always cleared regardless of
+'         success or failure to avoid leaving test artifacts on the worksheet.
 Private Function FailedFormula(ByVal frmName As String) As Boolean
     Dim prevAlert As Long
     Dim sh As Worksheet
@@ -142,14 +224,42 @@ Fail:
     Application.DisplayAlerts = prevAlert
 End Function
 
+' @description Returns a two-character string consisting of two double-quote characters (Chr(34) &
+'              Chr(34)), which represents the Excel formula literal for an empty string ("").
+'              This is used extensively when building condition expressions that test whether a
+'              cell is empty, e.g., '= ""' in COUNTIFS criteria. Using Chr(34) avoids VBA
+'              double-quote escaping issues and keeps the formula-building code readable.
+' @return The string consisting of two Chr(34) characters, i.e., the literal text: ""
 Private Function EmpStr() As String
     EmpStr = Chr(34) & Chr(34)
 End Function
 
+' @description Returns a four-character string representing the Excel formula literal "<>"
+'              (Chr(34) & "<>" & Chr(34)). This is the COUNTIFS criteria for "not empty" when
+'              used with the "N" or "N()" summary functions, which need a comparison operator
+'              inside the criteria string. For example, a COUNTIFS condition using this would
+'              look like: COUNTIFS(range, "<>") — matching any cell that is not blank.
+' @return The string literal "<>" wrapped in double-quote characters for Excel formula use.
 Private Function NonEmpStr() As String
     NonEmpStr = Chr(34) & "<>" & Chr(34)
 End Function
 
+' @description Builds an Excel formula string that computes a percentage (numerator / denominator)
+'              with an ISERR guard to handle division-by-zero or other errors gracefully. The
+'              generated formula follows the pattern: IF(ISERR(num/denom), "", num/denom). This
+'              ensures that when the denominator is zero or the ranges are empty, the cell displays
+'              blank instead of an #DIV/0! error. The address references use mixed absolute/relative
+'              addressing so the formula can be auto-filled down rows while keeping the denominator
+'              column fixed.
+' @param denomRng The Range whose address will be used as the denominator in the division.
+'                 Its column is always absolute; its row absoluteness is controlled by rowabs.
+' @param numRng The Range whose address will be used as the numerator. Its row reference is
+'               always relative (RowAbsolute:=False) so the formula adjusts when auto-filled.
+' @param rowabs Optional Boolean (default True). When True, the denominator's row reference is
+'               absolute (e.g., $A$5), locking it during auto-fill. When False, the row is
+'               relative (e.g., $A5), allowing it to shift — used for row-based percentages
+'               where each row has its own total.
+' @return A String containing the complete IF(ISERR(...)) Excel formula text (without "= " prefix).
 Private Function Percentage(ByVal denomRng As Range, ByVal numRng As Range, _
                             Optional ByVal rowabs As Boolean = True) As String
     Dim parsedForm As String
@@ -158,6 +268,21 @@ Private Function Percentage(ByVal denomRng As Range, ByVal numRng As Range, _
     Percentage = "IF(ISERR(" & parsedForm & ")," & EmpStr & "," & parsedForm & ")"
 End Function
 
+' @description Wraps a formula value inside an IF guard that returns an empty string when a
+'              specified condition cell is blank. The generated pattern is:
+'              IF(conditionCell = "", "", formulaValue). This is primarily used in time-series
+'              and spatio-temporal tables where formula cells should display blank when the
+'              corresponding time period label cell is empty (i.e., the row falls outside the
+'              user's selected date range). Without this guard, formulas would show misleading
+'              zero/error values for unused time period rows.
+' @param rngCondition The Range (typically a single cell) that is tested for blankness. If this
+'                     cell equals "", the formula returns "" instead of computing formulaValue.
+' @param formulaValue The Excel formula string to evaluate when rngCondition is not blank.
+'                     This should be a complete formula expression (without "= " prefix).
+' @param rowabs Optional Boolean (default False). Controls whether the rngCondition address
+'               uses an absolute row reference. False (relative) allows auto-fill to shift the
+'               condition cell row-by-row.
+' @return A String containing the complete IF(...="","",formulaValue) Excel formula text.
 Private Function Condition(ByVal rngCondition As Range, ByVal formulaValue As String, _
                            Optional ByVal rowabs As Boolean = False) As String
     Condition = "IF(" & rngCondition.Address(RowAbsolute:=rowabs) & "=" & _
@@ -167,6 +292,20 @@ End Function
 '@section Condition management
 '===============================================================================
 
+' @description Appends a variable name and its corresponding condition test string to the
+'              parallel accumulator arrays (condVars and condTests). These arrays are consumed
+'              by CurrentExcelFormula to build multi-criteria COUNTIFS/SUMPRODUCT formulas.
+'              Each call adds one criteria pair; for example, AddTableConditions "age_group",
+'              "= $A3" would produce a COUNTIFS criterion matching the age_group column against
+'              cell $A3. The BetterArray objects are lazily initialized on first use with a
+'              1-based lower bound. If varName is vbNullString, nothing is pushed (silent no-op).
+' @param varName The linelist variable name (e.g., "age_group", "sex", "adm1") that identifies
+'                which column of the linelist data the condition applies to.
+' @param conditionName The condition/criteria string for the formula (e.g., "= $A3", "= """,
+'                      "<>""", ">= $B2"). This becomes the criteria argument in COUNTIFS or
+'                      the comparison in SUMPRODUCT boolean arrays.
+' @remark condVars and condTests always have the same length and are consumed in parallel.
+'         Call ClearTableConditions to reset them before building a new formula.
 Private Sub AddTableConditions(ByVal varName As String, ByVal conditionName As String)
     If this.condVars Is Nothing Then
         Set this.condVars = New BetterArray
@@ -184,6 +323,18 @@ Private Sub AddTableConditions(ByVal varName As String, ByVal conditionName As S
     End If
 End Sub
 
+' @description Clears conditions from the condVars/condTests accumulator arrays. When called
+'              with removeNumber = 0 (the default), all accumulated conditions are cleared,
+'              resetting the formula builder to a blank state. When called with a positive
+'              removeNumber, only the last N condition pairs are popped off the arrays, leaving
+'              earlier conditions intact. This selective removal is useful when a base set of
+'              conditions is shared across multiple formulas and only the last few criteria
+'              need to change between iterations (e.g., switching column labels in a bivariate loop).
+' @param removeNumber Optional Long (default 0). The number of condition pairs to remove from
+'                     the end of the arrays. 0 means clear everything. A positive value pops
+'                     that many entries from both condVars and condTests.
+' @remark If the BetterArray objects have not been initialized yet (Nothing), they are created
+'         fresh and removeNumber is forced to 0 to avoid popping from an empty array.
 Private Sub ClearTableConditions(Optional ByVal removeNumber As Long = 0)
     Dim counter As Long
     Dim remNum As Long
@@ -213,6 +364,16 @@ Private Sub ClearTableConditions(Optional ByVal removeNumber As Long = 0)
     End If
 End Sub
 
+' @description Adds a "non-empty" filter condition for a variable, automatically adapting the
+'              condition operator to the current summary function. For count-based functions
+'              ("N" and "N()"), the condition uses the equality operator with the NonEmpStr
+'              literal ("= <>"), because COUNTIFS interprets "<>" as "not blank" inside a
+'              criteria string. For all other summary functions (SUM, MEAN, etc.), the condition
+'              uses the inequality operator with EmpStr ("<>"""), which is the standard
+'              SUMPRODUCT-style not-equal-to-empty test. This distinction is critical because
+'              COUNTIFS and SUMPRODUCT handle criteria strings differently.
+' @param varName The linelist variable name to add the non-empty filter for (e.g., "age_group").
+'                The condition will exclude rows where this variable's cell is blank.
 Private Sub AddNonEmptyTableConditions(ByVal varName As String)
     If SummaryFunction = "N" Or SummaryFunction = "N()" Then
         AddTableConditions varName, "= " & NonEmpStr()
@@ -224,6 +385,29 @@ End Sub
 '@section Excel formula builder
 '===============================================================================
 
+' @description Builds and returns the complete Excel formula string from the currently accumulated
+'              condition pairs (condVars/condTests). This is the central formula-generation entry
+'              point that all table-type branches in AddFormulas call after setting up their
+'              conditions. It operates in two modes depending on the scope parameter:
+'              (1) Linelist scope (FormulaScopeLinelist): calls ParsedLinelistFormula on the
+'              IFormulas object, which generates a formula referencing the linelist table directly
+'              without any condition filtering — used for global summaries and total rows.
+'              (2) Analysis scope (default, FormulaScopeAnalysis): wraps the accumulated condVars
+'              and condTests into a FormulaCondition object, then calls ParsedAnalysisFormula to
+'              generate a COUNTIFS/SUMPRODUCT formula with all the criteria baked in.
+'              After generating the formula string, it is validated via FailedFormula. If the
+'              formula fails validation (e.g., references a missing range), a fallback error
+'              string "##== formula parsing failed :( ==##" is returned instead.
+' @param scope Optional Byte (default 2 = FormulaScopeAnalysis). Use FormulaScopeLinelist (1)
+'              for formulas that operate on the entire linelist without conditions, or
+'              FormulaScopeAnalysis (2) for formulas with accumulated COUNTIFS/SUMPRODUCT criteria.
+' @param prefix Optional String (default "f"). The table name prefix passed to the formula parser,
+'               used to construct the linelist table reference (e.g., "f" produces "fTableName").
+'               Pass vbNullString for an unprefixed reference (used in GlobalSummary's "all data").
+' @return A String containing the Excel formula text (without "= " prefix) ready to be assigned
+'         to a cell's FormulaArray property, or an error placeholder string if parsing failed.
+' @remark If condVars or condTests is Nothing when scope is analysis, execution jumps to Fail
+'         immediately. Always call AddTableConditions before requesting an analysis-scope formula.
 Private Property Get CurrentExcelFormula(Optional ByVal scope As Byte = 2, _
                                          Optional ByVal prefix As String = "f") As String
     Dim cond As IFormulaCondition
@@ -253,6 +437,28 @@ End Property
 '@section Number format helper
 '===============================================================================
 
+' @description Applies an Excel NumberFormat string to a range based on a human-readable format
+'              keyword from the table specifications. This translates configuration-friendly names
+'              into proper Excel custom number format strings. Supported keywords and their formats:
+'              - "integer": ###0;-###0;;@ (whole numbers, no thousands separator)
+'              - "round0": #,##0;-#,##0;0;@ (whole numbers with thousands separator)
+'              - "percentage0": 0% (percentage with no decimals)
+'              - "roundN" (e.g., "round2"): #,###0.00;-#,###0.00;0.00;@ (N decimal places)
+'              - "percentageN" (e.g., "percentage1"): 0.0% (percentage with N decimals)
+'              - "euros": #,##0.00 $;-#,##0.00 $;0.00 $;@ (Euro currency format)
+'              - "dollars": [$$-en-US] #,##0.00 (US Dollar currency format)
+'              - "text": @ (text format)
+'              - Any other string: treated as a custom Excel NumberFormat applied directly.
+'              If formatValue is vbNullString, the sub exits without modifying the range.
+' @param formatValue The format keyword string from the table specifications (e.g., "integer",
+'                    "round2", "percentage1", "euros", "dollars", "text"), or a custom Excel
+'                    NumberFormat string if none of the keywords match.
+' @param rng The Range to apply the number format to. All cells in this range will receive
+'            the same NumberFormat.
+' @remark For "roundN" and "percentageN" keywords, the numeric suffix is extracted via Replace
+'         and CLng conversion. If the suffix is not a valid number, nbDecimals defaults to 1.
+'         Custom format strings are applied inside On Error Resume Next to silently ignore
+'         invalid format strings.
 Private Sub AddRngFormat(ByVal formatValue As String, ByVal rng As Range)
     Dim formatText As String
     Dim nbDecimals As Long
@@ -302,6 +508,53 @@ End Sub
 '@section AddFormulas — main formula writing logic
 '===============================================================================
 
+' @description The main entry point that writes all Excel formulas into the cross-table's worksheet
+'              cells. This is the largest and most important method in the class (~670 lines). It
+'              reads the table's type from Specifications and dispatches to one of five branches,
+'              each handling a fundamentally different table layout:
+'
+'              **TypeGlobalSummary**: The simplest case. Writes exactly two formulas into a single
+'              row: column 2 gets an unfiltered linelist formula (all data, prefix=vbNullString),
+'              and column 3 gets a filtered linelist formula (prefix="f"). Both use linelist scope
+'              (no conditions). Applies the table's number format to both cells.
+'
+'              **TypeUnivariate**: Writes formulas for a one-variable frequency table. Builds a
+'              condition matching the row variable against each row category label, then auto-fills
+'              down the VALUES_COL_1 range. Handles missing rows (empty row variable), total rows
+'              (sum of non-empty for N/N(), or full linelist formula for other functions), and
+'              optional percentage columns (value / total with ISERR guard).
+'
+'              **TypeBivariate**: Writes formulas for a two-variable cross-tabulation grid. Loops
+'              across columns from VALUES_COL_1 to the table's EndColumn, building row x column
+'              condition pairs. For each column: writes the value formula + auto-fills rows, handles
+'              missing-row cells, total-row cells, and percentage cells (supporting row/column/total
+'              percentage modes). After the column loop, handles missing-column ranges, total-column
+'              ranges, and all four corner cells (missing-total, missing-missing, total-missing,
+'              total-total). Total-total for N/N() uses SUM of the total column; other functions
+'              use conditional formulas adapted to the missing configuration.
+'
+'              **TypeTimeSeries / TypeSpatioTemporal**: The most complex branch. For new sections,
+'              sets up all the time infrastructure: date label formulas (FormatDateFromLastDay),
+'              start/end period columns, total period row, validation min/max dates, effective
+'              start/end dates, info cells, analysis period display, and time unit validation
+'              dropdown. Then loops across columns writing time-bounded conditions (>=startTime,
+'              <=endTime) wrapped in Condition() guards (blank if period label is empty). Handles
+'              missing rows, percentages, and spatio-temporal label formulas (INPUTSPTGEO/INPUTSPTHF
+'              lookups). For SpatioTemporal tables, the column variable is prefixed with "concat_adm1_"
+'              or "hf_" depending on the spatial table type.
+'
+'              **TypeSpatial**: Handles geographic and health-facility tables. Sets up validation
+'              dropdowns (ADM_DROPDOWN, DEVIDEPOP for geo type), order numbering (1, 2, 3...),
+'              row category formulas (FindTopAdmin/FindTopHF with population lookups for geo),
+'              then loops across columns similar to bivariate but with an extra non-empty guard on
+'              the row variable. Handles missing/total columns and corner cells. Finally creates a
+'              SpatialTables management object to register the table's formula engine for spatial
+'              table refresh operations.
+'
+'              The method exits immediately if Valid() returns False (formula cannot be parsed).
+' @remark This method modifies the worksheet extensively — it writes FormulaArray values, applies
+'         number formats, sets up data validation, and auto-fills ranges. It assumes all named
+'         ranges have already been created by the cross-table builder before this method is called.
 Private Sub AddFormulas()
     Dim tabId As String
     Dim tabType As Byte
