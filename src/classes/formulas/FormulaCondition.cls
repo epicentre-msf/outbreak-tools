@@ -11,19 +11,29 @@ Attribute VB_Description = "Conditions used to create formulas for analysis"
 
 '@PredeclaredId
 '@Folder("Formulas")
+'@ModuleDescription("Conditions used to create formulas for analysis")
 '@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
-'@ModuleDescription("Conditions used to create formulas for analysis")
-'@depends Checking
-'@section Overview
-'===============================================================================
-'@details Couples variables with their condition fragments, validates alignment, and produces structured Excel predicates for analysis formulas.
 Option Explicit
 Implements IFormulaCondition
 
+'@class FormulaCondition
+'@description
+'Couples variable names with their condition fragments, validates alignment
+'against the dictionary, and produces structured Excel predicates for
+'analysis formulas. The class pairs two BetterArray lists (variables and
+'conditions), validates that all variables belong to the same table, and
+'exposes methods to render IF-wrapped condition strings and joined predicates.
+'Consumers interact through the IFormulaCondition interface.
+'@depends BetterArray, Checking, LLVariables, LLdictionary
+'@version 1.0 (2026-02-09)
+'@author OutbreakTools
+
+
 '@section State
 '===============================================================================
-'@details Tracks the paired variable/condition lists alongside cached diagnostics.
+'@description Tracks the paired variable/condition lists alongside cached diagnostics.
+
 Private Type TFormulaCondition
     condList As BetterArray                     'Conditions for the formulas
     varList As BetterArray                      'Variables for the formulas
@@ -38,13 +48,19 @@ Private this As TFormulaCondition
 
 '@section Factory
 '===============================================================================
-'@details Validate paired arrays and expose the ready-to-use condition helper.
+'@description Validate paired arrays and expose the ready-to-use condition helper.
 
-'@label:Create
+'@label:create
 '@sub-title Construct a FormulaCondition instance from paired arrays
-'@param formVar BetterArray containing variable names.
-'@param formCond BetterArray containing predicate fragments.
-'@return IFormulaCondition ready for validation/formatting.
+'@details
+'Validates that both arrays are non-Nothing and have equal lengths, then
+'stores normalised copies with a lower bound of 1. The returned instance
+'is cast to IFormulaCondition for consistent downstream consumption.
+'@param formVar BetterArray. The array containing variable names.
+'@param formCond BetterArray. The array containing predicate fragments.
+'@return IFormulaCondition. A ready-to-use condition helper.
+'@throws ProjectError.InvalidArgument When formVar or formCond is Nothing or lengths differ.
+'@export
 Public Function Create(ByVal formVar As BetterArray, ByVal formCond As BetterArray) As IFormulaCondition
 
     If formVar Is Nothing Then ThrowError ProjectError.InvalidArgument, "Variables array cannot be null"
@@ -63,25 +79,35 @@ End Function
 
 '@section PublicAccessors
 '===============================================================================
-'@details Provide controlled access to stored collections and interface pointer.
+'@description Provide controlled access to stored collections and interface pointer.
 
-'@label:Self
-'@sub-title Return the interface pointer for the current instance
-'@return IFormulaCondition representing the current object.
+'@label:self
+'@prop-title Current object instance
+'@details
+'Returns the current instance cast to its interface. Used internally
+'by the factory method to return an IFormulaCondition reference.
+'@return IFormulaCondition. The current object.
 Public Property Get Self() As IFormulaCondition
     Set Self = Me
 End Property
 
-'@label:LstConditions
-'@sub-title Retrieve a clone of the stored condition fragments
-'@return BetterArray preserving the original order.
+'@label:conditions
+'@prop-title Retrieve the stored condition fragments
+'@details
+'Returns the internal BetterArray holding the condition predicates
+'in the same order they were supplied at creation.
+'@return BetterArray. The condition fragments preserving the original order.
 Public Property Get LstConditions() As BetterArray
     Set LstConditions = this.condList
 End Property
 
-'@label:LstConditions
-'@sub-title Store the condition fragments and reset caches
-'@param formCond BetterArray containing predicate fragments.
+'@label:conditions-set
+'@prop-title Store the condition fragments and reset caches
+'@details
+'Copies the incoming array into a new BetterArray normalised to a
+'lower bound of 1, then resets all cached validation artefacts so
+'the next call to Valid triggers a fresh check.
+'@param formCond BetterArray. The array containing predicate fragments.
 Public Property Set LstConditions(ByVal formCond As BetterArray)
     Set this.condList = New BetterArray
     this.condList.LowerBound = 1
@@ -89,16 +115,22 @@ Public Property Set LstConditions(ByVal formCond As BetterArray)
     ResetCaches
 End Property
 
-'@label:LstVars
-'@sub-title Retrieve a clone of the stored variables list
-'@return BetterArray preserving the original order.
+'@label:variables
+'@prop-title Retrieve the stored variables list
+'@details
+'Returns the internal BetterArray holding the variable names in the
+'same order they were supplied at creation.
+'@return BetterArray. The variable names preserving the original order.
 Public Property Get LstVars() As BetterArray
     Set LstVars = this.varList
 End Property
 
-'@label:LstVars
-'@sub-title Store the variables list, normalise bounds, and reset caches
-'@param formVar BetterArray containing variable identifiers.
+'@label:variables-set
+'@prop-title Store the variables list, normalise bounds, and reset caches
+'@details
+'Copies the incoming array into a new BetterArray normalised to a
+'lower bound of 1, then invalidates all cached data.
+'@param formVar BetterArray. The array containing variable identifiers.
 Public Property Set LstVars(ByVal formVar As BetterArray)
     Set this.varList = New BetterArray
     this.varList.LowerBound = 1
@@ -108,10 +140,14 @@ End Property
 
 '@section InternalState
 '===============================================================================
-'@details Maintain cached validation artefacts and diagnostics.
+'@description Maintain cached validation artefacts and diagnostics.
 
-'@label:ResetCaches
+'@label:reset-caches
 '@sub-title Clear cached table names and diagnostics information
+'@details
+'Resets all memoised validation state so the next call to Valid or
+'VariablesTable triggers a fresh evaluation. Also clears any
+'diagnostic entries accumulated during previous validations.
 Public Sub ResetCaches()
     this.cachedTableName = vbNullString
     this.hasChecks = False
@@ -119,9 +155,14 @@ Public Sub ResetCaches()
     Set this.internalChecks = Nothing
 End Sub
 
-'@label:LogInfo
+'@label:log-info
 '@sub-title Append a diagnostic entry to the internal checking log
-'@param message String describing the event.
+'@details
+'Creates the checking instance on first use and appends the message
+'using a monotonically increasing counter key. The checking store
+'is exposed through the interface for callers needing diagnostic traces.
+'@param message String. The event description to record.
+'@param scope Optional Byte. Severity level from CheckingLogType. Defaults to checkingInfo.
 Private Sub LogInfo(ByVal message As String, Optional ByVal scope As Byte = checkingInfo)
     If this.internalChecks Is Nothing Then Set this.internalChecks = Checking.Create("FormulaCondition trace")
     this.internalChecks.Add CStr(this.checkCounter), message, scope
@@ -129,28 +170,38 @@ Private Sub LogInfo(ByVal message As String, Optional ByVal scope As Byte = chec
     this.hasChecks = True
 End Sub
 
-'@label:HasInternalChecks
-'@sub-title Determine whether diagnostics have been captured
-'@return Boolean True when internal checks exist.
+'@label:has-internal-checks
+'@prop-title Determine whether diagnostics have been captured
+'@details
+'Returns True when at least one LogInfo call has been made since the
+'last ResetCaches, indicating that diagnostic information is available.
+'@return Boolean. True when internal checks exist.
 Private Property Get HasInternalChecks() As Boolean
     HasInternalChecks = this.hasChecks
 End Property
 
-'@label:CachedTable
-'@sub-title Retrieve the memoised table name resolved during validation
-'@return String cached table identifier.
+'@label:cached-table
+'@prop-title Retrieve the memoised table name resolved during validation
+'@details
+'Holds the table name that all variables were confirmed to share
+'after a successful call to Valid. Empty until validation completes.
+'@return String. Cached table identifier.
 Private Property Get CachedTable() As String
     CachedTable = this.cachedTableName
 End Property
 
 '@section MetadataHelpers
 '===============================================================================
-'@details Provide metadata derived from the last validation run.
+'@description Provide metadata derived from the last validation run.
 
-'@label:VariablesTable
-'@sub-title Resolve the table name shared by all tracked variables
-'@param dict ILLdictionary used when validation has not occurred yet.
-'@return String table identifier or empty string when unavailable.
+'@label:variables-table
+'@prop-title Resolve the table name shared by all tracked variables
+'@details
+'Returns the cached table name when validation has already occurred.
+'When the cache is empty, triggers a full validation pass against
+'the supplied dictionary before returning the result.
+'@param dict ILLdictionary. The dictionary used when validation has not occurred yet.
+'@return String. Table identifier or empty string when unavailable.
 Public Property Get VariablesTable(ByVal dict As ILLdictionary) As String
     If LenB(CachedTable) = 0 Then
         If Not Valid(dict) Then Exit Property
@@ -160,13 +211,19 @@ End Property
 
 '@section Validation
 '===============================================================================
-'@details Confirm that variables/conditions are aligned and belong to the same table.
+'@description Confirm that variables/conditions are aligned and belong to the same table.
 
-'@label:Valid
+'@label:valid
 '@sub-title Validate variable/condition lists against the dictionary
-'@param dict ILLdictionary metadata provider.
-'@param tablename Optional String forcing the expected table.
-'@return Boolean True when validation succeeds.
+'@details
+'Checks that both lists are non-empty and equal in length, then
+'verifies each variable exists in the dictionary and belongs to the
+'expected table. When a tablename argument is supplied it overrides
+'the table resolved from the first variable. Logs diagnostic entries
+'on every failure path for downstream inspection.
+'@param dict ILLdictionary. The metadata provider used for variable lookups.
+'@param tablename Optional String. When supplied, forces the expected table name. Defaults to vbNullString.
+'@return Boolean. True when validation succeeds.
 Public Function Valid(ByVal dict As ILLdictionary, Optional ByVal tablename As String = vbNullString) As Boolean
 
     Dim vars As ILLVariables
@@ -216,7 +273,7 @@ Public Function Valid(ByVal dict As ILLdictionary, Optional ByVal tablename As S
 
     Dim varName As String
     For idx = varList.LowerBound To varList.UpperBound
-        
+
         varName = CStr(varList.Item(idx))
 
         If Not vars.Contains(varName) Then
@@ -242,14 +299,19 @@ End Function
 
 '@section FormulaRendering
 '===============================================================================
-'@details Produce Excel-ready predicates and wrapper formulas.
+'@description Produce Excel-ready predicates and wrapper formulas.
 
-'@label:ConditionString
+'@label:condition-string
 '@sub-title Wrap the predicate in an IF expression referencing the supplied variable
-'@param tablename String structured reference table name.
-'@param varName String variable/column name.
-'@param Connector Optional String connector used between predicates.
-'@return String IF expression or empty string when predicate is empty.
+'@details
+'Joins all variable/condition pairs using ConditionPredicate, then
+'wraps the result in an IF function that returns the variable value
+'when the predicate evaluates to True. Returns an empty string when
+'the predicate is empty.
+'@param tablename String. Structured reference table name.
+'@param varName String. Variable/column name to return when the condition is met.
+'@param Connector Optional String. Connector used between predicates. Defaults to "*".
+'@return String. An IF expression or empty string when the predicate is empty.
 Public Function ConditionString(ByVal tablename As String, ByVal varName As String, _
                                 Optional ByVal Connector As String = "*") As String
 
@@ -261,11 +323,16 @@ Public Function ConditionString(ByVal tablename As String, ByVal varName As Stri
     ConditionString = "IF(" & predicate & " , " & tablename & "[" & varName & "]" & ")"
 End Function
 
-'@label:ConditionPredicate
+'@label:condition-predicate
 '@sub-title Join the variable predicates using the supplied connector
-'@param tablename String structured reference table name.
-'@param Connector Optional String connector between predicate fragments.
-'@return String concatenated predicate or empty string when inputs are missing.
+'@details
+'Iterates through all variable/condition pairs and concatenates them
+'into a single predicate string using the supplied connector (typically
+'"*" for AND logic). Each fragment is wrapped in parentheses using
+'structured table references.
+'@param tablename String. Structured reference table name.
+'@param Connector Optional String. Connector between predicate fragments. Defaults to "*".
+'@return String. Concatenated predicate or empty string when inputs are missing.
 Public Function ConditionPredicate(ByVal tablename As String, Optional ByVal Connector As String = "*") As String
     Dim counter As Long
     Dim parsed As String
@@ -283,19 +350,24 @@ End Function
 
 '@section ErrorHandling
 '===============================================================================
-'@details Centralised helper to raise ProjectError-compliant errors.
+'@description Centralised helper to raise ProjectError-compliant errors.
 
-'@label:ThrowError
+'@label:throw-error
 '@sub-title Raise a VBA error tagged with the class name
-'@param errNumb Long ProjectError code.
-'@param errorMessage String descriptive text.
+'@details
+'Wrapper around Err.Raise that standardises the source to
+'"FormulaCondition", providing a consistent stack trace.
+'@param errNumb Long. ProjectError code.
+'@param errorMessage String. Descriptive text.
+'@throws ProjectError.<varies> Always raises the specified error.
 Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
     Err.Raise errNumb, "FormulaCondition", errorMessage
 End Sub
 
 '@section Interface
 '===============================================================================
-'@details Explicit interface implementations delegating to the public members.
+'@description Explicit interface implementations delegating to the public members.
+
 Private Property Get IFormulaCondition_Variables() As BetterArray
     Set IFormulaCondition_Variables = LstVars.Clone()
 End Property

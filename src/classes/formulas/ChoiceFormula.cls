@@ -9,20 +9,29 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Attribute VB_Description = "Parse and expose CHOICE_FORMULA expressions"
 
-'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, ProcedureNotUsed, UseMeaningfulName, HungarianNotation
 '@PredeclaredId
-'@Folder("Custom Functions")
+'@Folder("Formulas")
 '@ModuleDescription("Parse and expose CHOICE_FORMULA expressions")
-'@depends CaseWhen, BetterArray
-'@label:ChoiceFormula
-'@section Overview
-'@details Converts CHOICE_FORMULA custom functions into CASE_WHEN representations, exposing helper metadata for downstream validation.
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, ProcedureNotUsed, UseMeaningfulName, HungarianNotation
 
 Option Explicit
 Implements IChoiceFormula
 
+'@class ChoiceFormula
+'@description
+'Converts CHOICE_FORMULA custom functions into CASE_WHEN representations
+'and exposes helper metadata for downstream validation. The first argument
+'of CHOICE_FORMULA is the choice list name; the remaining arguments form
+'condition/result pairs that are delegated to a CaseWhen instance for
+'nested IF conversion and category extraction.
+'@depends CaseWhen, BetterArray
+'@version 1.0 (2026-02-09)
+'@author OutbreakTools
+
+
 '@section State
 '===============================================================================
+'@description Backing UDT, constants, and lazily populated caches.
 
 Private Type TChoiceFormula
     formula As String              'Original formula specification
@@ -41,11 +50,15 @@ Private Const QUOTE_CHAR As String = """"
 '@section Factory
 '===============================================================================
 
-'@label:Create
+'@label:create
 '@sub-title Instantiate a ChoiceFormula parser bound to a formula
-'@details Trims the incoming formula and returns the interface for fluent operations.
-'@param formula String representation of a CHOICE_FORMULA call.
-'@return IChoiceFormula ready to be queried.
+'@details
+'Trims the incoming formula, stores it in a new instance, and returns
+'the IChoiceFormula interface for fluent downstream operations. No
+'eager parsing occurs; the formula is parsed lazily on first access.
+'@param formula String. Representation of a CHOICE_FORMULA call.
+'@return IChoiceFormula. A ready-to-query parser instance.
+'@export
 Public Function Create(ByVal formula As String) As IChoiceFormula
     With New ChoiceFormula
         .ChoiceSpecifications = formula
@@ -55,23 +68,34 @@ End Function
 
 '@section PublicAccessors
 '===============================================================================
+'@description Properties that expose internal state and the interface pointer.
 
-'@label:Self
-'@sub-title Expose the current instance through its interface
-'@return IChoiceFormula reference to the current object.
+'@label:self
+'@prop-title Current object instance
+'@details
+'Returns the current instance cast to its interface. Used internally
+'by the factory method to return an IChoiceFormula reference.
+'@return IChoiceFormula. Reference to the current object.
 Public Property Get Self() As IChoiceFormula
     Set Self = Me
 End Property
 
-'@label:ChoiceSpecifications
-'@sub-title Retrieve the stored CHOICE_FORMULA expression
-'@return String original formula specification.
+'@label:choice-specifications
+'@prop-title Retrieve the stored CHOICE_FORMULA expression
+'@details
+'Returns the original formula text as stored after trimming during
+'assignment. This is the full CHOICE_FORMULA(...) expression.
+'@return String. Original formula specification.
 Public Property Get ChoiceSpecifications() As String
     ChoiceSpecifications = this.formula
 End Property
 
-'@sub-title Store the CHOICE_FORMULA expression and reset caches
-'@param formula String expression to parse.
+'@label:choice-specifications-set
+'@prop-title Store the CHOICE_FORMULA expression and reset caches
+'@details
+'Trims the incoming formula and stores it, then invalidates all
+'cached artefacts so subsequent reads trigger a fresh parse.
+'@param formula String. Expression to parse.
 Public Property Let ChoiceSpecifications(ByVal formula As String)
     this.formula = Trim$(formula)
     ResetCaches
@@ -79,11 +103,15 @@ End Property
 
 '@section Validation
 '===============================================================================
+'@description Checks whether the stored formula matches the CHOICE_FORMULA pattern.
 
-'@label:Valid
-'@sub-title Determine whether the stored formula is a CHOICE_FORMULA with arguments
-'@details Requires the CHOICE_FORMULA token, balanced parentheses, and at least one condition/result pair.
-'@return Boolean True when the specification can be converted to CASE_WHEN.
+'@label:valid
+'@prop-title Determine whether the stored formula is a CHOICE_FORMULA with arguments
+'@details
+'Requires the CHOICE_FORMULA token, balanced parentheses, and at least
+'three arguments (name plus one condition/result pair). Returns False
+'when any argument is blank.
+'@return Boolean. True when the specification can be converted to CASE_WHEN.
 Private Property Get Valid() As Boolean
     Dim arguments As BetterArray
     Dim argumentCount As Long
@@ -105,11 +133,15 @@ End Property
 
 '@section Conversion
 '===============================================================================
+'@description Core conversion, category extraction, and choice name resolution.
 
-'@label:ParsedFormula
+'@label:parsed-formula
 '@sub-title Convert CHOICE_FORMULA into nested IF statements through CASE_WHEN
-'@details Relies on the CaseWhen class to build the Excel-compatible representation.
-'@return String expression ready for worksheet consumption.
+'@details
+'Builds the equivalent CASE_WHEN expression from the parsed arguments,
+'then delegates to the CaseWhen class to produce the nested IF output.
+'Returns an empty string when the formula is invalid or conversion fails.
+'@return String. Expression ready for worksheet consumption.
 Private Function parsedFormula() As String
     Dim caseObj As ICaseWhen
 
@@ -121,10 +153,13 @@ Private Function parsedFormula() As String
     parsedFormula = caseObj.parsedFormula()
 End Function
 
-'@label:Categories
+'@label:categories
 '@sub-title Extract textual labels from the CHOICE_FORMULA results
-'@details Delegates to the CaseWhen converter to reuse category parsing logic.
-'@return BetterArray containing quoted category labels.
+'@details
+'Delegates to the CaseWhen converter to reuse category parsing logic.
+'Returns an empty BetterArray when the formula is invalid or the
+'CaseWhen wrapper cannot be created.
+'@return BetterArray. Collection containing quoted category labels.
 Private Function Categories() As BetterArray
     Dim caseObj As ICaseWhen
     Dim categoriesTable As BetterArray
@@ -148,25 +183,40 @@ Private Function Categories() As BetterArray
     Set Categories = categoriesTable.Clone()
 End Function
 
-'@label:ChoiceName
+'@label:choice-name
 '@sub-title Retrieve the name of the choice list referenced by the formula
-'@return String choice list identifier.
+'@details
+'Returns the first argument of the CHOICE_FORMULA expression, which
+'identifies the choice list that provides the valid options. The value
+'is memoised after the first resolution.
+'@return String. Choice list identifier.
 Private Function choiceName() As String
     choiceName = ResolvedChoiceName()
 End Function
 
 '@section PrivateHelpers
 '===============================================================================
+'@description Internal utilities for cache management, argument parsing, and CASE_WHEN conversion.
 
+'@label:reset-caches
 '@sub-title Reset cached artefacts when the formula changes
+'@details
+'Clears the argument cache, the CaseWhen wrapper, and the memoised
+'choice name so the next access triggers a full reparse.
 Private Sub ResetCaches()
     Set this.cachedArguments = Nothing
     Set this.cachedCaseWhen = Nothing
     this.cachedChoiceName = vbNullString
 End Sub
 
+'@label:sanitised-formula
 '@sub-title Resolve the portion of the formula between parentheses
-'@return String containing the comma-delimited arguments.
+'@details
+'Strips the CHOICE_FORMULA token, the opening parenthesis, and the
+'closing parenthesis to expose the raw comma-delimited argument body.
+'Returns an empty string when the formula does not match the expected
+'pattern.
+'@return String. The comma-delimited arguments.
 Private Function SanitisedFormula() As String
     Dim working As String
     Dim openParen As Long
@@ -192,8 +242,13 @@ Private Function SanitisedFormula() As String
     SanitisedFormula = Trim$(working)
 End Function
 
+'@label:choice-arguments
 '@sub-title Split the sanitised formula into individual arguments
-'@return BetterArray containing the choice name and condition/result entries.
+'@details
+'Walks the sanitised body character by character, tracking quotation
+'state and parenthesis depth. Splits on top-level commas only. The
+'result is cached so subsequent calls avoid reparsing.
+'@return BetterArray. The choice name followed by condition/result entries.
 Private Function ChoiceArguments() As BetterArray
     Dim arguments As BetterArray
     Dim body As String
@@ -249,9 +304,13 @@ Private Function ChoiceArguments() As BetterArray
     Set ChoiceArguments = this.cachedArguments.Clone()
 End Function
 
+'@label:contains-empty-argument
 '@sub-title Determine whether the arguments contain empty entries
-'@param arguments BetterArray list of parsed arguments.
-'@return Boolean True when an argument is blank.
+'@details
+'Scans the BetterArray for any blank entry. Returns True on the first
+'empty string encountered.
+'@param arguments BetterArray. List of parsed arguments.
+'@return Boolean. True when an argument is blank.
 Private Function ContainsEmptyArgument(ByVal arguments As BetterArray) As Boolean
     Dim idx As Long
     Dim lower As Long
@@ -271,8 +330,14 @@ Private Function ContainsEmptyArgument(ByVal arguments As BetterArray) As Boolea
     Next idx
 End Function
 
+'@label:case-when-formula
 '@sub-title Build the equivalent CASE_WHEN formula from parsed arguments
-'@return String CASE_WHEN expression or empty when invalid.
+'@details
+'Skips the first argument (choice list name) and joins the remaining
+'condition/result entries into a CASE_WHEN(...) expression string.
+'Returns an empty string when fewer than two arguments exist beyond
+'the name.
+'@return String. CASE_WHEN expression or empty when invalid.
 Private Function CaseWhenFormula() As String
     Dim arguments As BetterArray
     Dim idx As Long
@@ -301,8 +366,14 @@ Private Function CaseWhenFormula() As String
     CaseWhenFormula = builder
 End Function
 
-'@sub-title Provide a lazily created CaseWhen instance
-'@return ICaseWhen representing the converted formula.
+'@label:case-when-wrapper
+'@prop-title Provide a lazily created CaseWhen instance
+'@details
+'Builds the CASE_WHEN expression from parsed arguments and delegates
+'to CaseWhen.Create to obtain the parser. The result is cached for
+'subsequent accesses. Raises an error when conversion fails.
+'@return ICaseWhen. The converted formula parser.
+'@throws ProjectError.ErrorUnexpectedState When conversion to CASE_WHEN fails.
 Private Property Get CaseWhenWrapper() As ICaseWhen
     Dim caseFormula As String
 
@@ -326,8 +397,13 @@ ConversionError:
                "Unable to convert CHOICE_FORMULA to CASE_WHEN: " & Err.Description
 End Property
 
+'@label:resolved-choice-name
 '@sub-title Resolve and cache the choice list name
-'@return String identifier extracted from the first argument.
+'@details
+'Extracts the first argument from the parsed argument list, which
+'is the choice list identifier. The value is memoised so subsequent
+'calls avoid re-parsing.
+'@return String. Identifier extracted from the first argument.
 Private Function ResolvedChoiceName() As String
     Dim arguments As BetterArray
     Dim lower As Long
@@ -347,15 +423,21 @@ Private Function ResolvedChoiceName() As String
     ResolvedChoiceName = this.cachedChoiceName
 End Function
 
+'@label:throw-error
 '@sub-title Raise a project-specific error
-'@param errNumber ProjectError describing the failure.
-'@param message String message to propagate.
+'@details
+'Wrapper around Err.Raise that standardises the source to the class
+'constant CLASSNAME for consistent stack traces.
+'@param errNumber ProjectError. The error code describing the failure.
+'@param message String. Error message to propagate.
+'@throws ProjectError.<varies> Always raises the specified error.
 Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal message As String)
     Err.Raise errNumber, CLASSNAME, message
 End Sub
 
 '@section Interface
 '===============================================================================
+'@description Delegated members satisfying the IChoiceFormula contract.
 
 Private Property Get IChoiceFormula_parsedFormula() As String
     IChoiceFormula_parsedFormula = parsedFormula()
