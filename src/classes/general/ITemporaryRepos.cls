@@ -10,48 +10,63 @@ Attribute VB_Exposed = False
 Attribute VB_Description = "Provides temporary folder and file utilities for the Linelist workflow"
 
 '@Interface
-'@Folder("Linelist")
+'@Folder("General")
 '@ModuleDescription("Provides temporary folder and file utilities for the Linelist workflow")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, UseMeaningfulName
 
 Option Explicit
 
+'@class ITemporaryRepos
+'@description
+'Defines the public contract for the TemporaryRepos class, exposing
+'temporary folder lifecycle, path generation, and file cleanup
+'operations used during linelist preparation.
+
+
 '@section Lifecycle
 '===============================================================================
-'@label:EnsureReady
-'@sub-title Prepare the repository so that file operations can be performed.
+'@description Readiness and cleanup.
+
+'@jump:ensure-ready
+'@sub-title Prepare the repository so that file operations can be performed
 Public Sub EnsureReady()
 End Sub
 
-'@label:Reset
-'@sub-title Clear the repository contents and mark it as uninitialised.
+'@jump:reset
+'@sub-title Clear the repository contents and mark it as uninitialised
 Public Sub Reset()
 End Sub
 
+
 '@section Paths
 '===============================================================================
-'@label:RootPath
-'@sub-title Provide the active repository root folder.
-'@return String absolute path.
+'@description Path accessors and generation.
+
+'@jump:root-path
+'@prop-title Active repository root folder
+'@return String. Fully-qualified absolute path.
 Public Property Get RootPath() As String
 End Property
 
-'@label:CreateFilePath
-'@sub-title Generate a sanitised file path within the repository.
-'@param fileName String requested file name.
-'@return String fully-qualified path.
+'@jump:create-file-path
+'@sub-title Generate a sanitised file path within the repository
+'@param fileName String. Requested file name.
+'@return String. Fully-qualified path.
 Public Function CreateFilePath(ByVal fileName As String) As String
 End Function
 
-'@section File operations
+
+'@section File Operations
 '===============================================================================
-'@label:DeleteFile
-'@sub-title Remove a single file from the repository if it exists.
-'@param path String absolute file path.
+'@description Deletion utilities.
+
+'@jump:delete-file
+'@sub-title Remove a single file from the repository if it exists
+'@param path String. Absolute file path.
 Public Sub DeleteFile(ByVal path As String)
 End Sub
 
-'@label:DeleteAll
-'@sub-title Remove every file created within the repository.
+'@jump:delete-all
+'@sub-title Remove every file created within the repository
 Public Sub DeleteAll()
 End Sub

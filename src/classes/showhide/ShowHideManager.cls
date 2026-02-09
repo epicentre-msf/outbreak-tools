@@ -29,6 +29,7 @@ Private Const PERSIST_LAYER As String = "layer"
 Private Const PERSIST_FIELD_KEY As String = "field_key"
 Private Const PERSIST_HEADER As String = "header_text"
 Private Const PERSIST_HIDDEN As String = "hidden_flag"
+Private Const PERSIST_WIDTH As String = "column_width"
 
 ' Dictionary column names
 Private Const COL_SHEET_NAME As String = "sheet name"
@@ -320,6 +321,154 @@ Public Sub ImportPlan(ByVal lo As ListObject)
                 ' Only update non-mandatory entries
                 If Not this.mandatory(entryIndex) Then
                     this.hidden(entryIndex) = rowHidden
+                End If
+            End If
+        End If
+    Next currentRow
+End Sub
+
+
+'@section Migration persistence
+'===============================================================================
+
+' @description Export visibility state with column widths for migration.
+' Writes entries to the ListObject including column_width read from the source worksheet.
+' Clears existing rows for this layer before writing.
+' @param lo Target ListObject (must have layer, field_key, header_text, hidden_flag, column_width).
+' @param sourceSh Source worksheet to read column/row widths from.
+Public Sub ExportForMigration(ByVal lo As ListObject, ByVal sourceSh As Worksheet)
+    Dim token As String
+    Dim layerCol As Long
+    Dim fieldCol As Long
+    Dim headerCol As Long
+    Dim hiddenCol As Long
+    Dim widthCol As Long
+    Dim idx As Long
+    Dim newRow As ListRow
+    Dim colWidth As Double
+    Dim posIdx As Long
+
+    If lo Is Nothing Then
+        ThrowError ProjectError.ObjectNotInitialized, _
+                   "Cannot export to an empty ListObject"
+    End If
+
+    If sourceSh Is Nothing Then
+        ThrowError ProjectError.ObjectNotInitialized, _
+                   "Source worksheet is required for migration export"
+    End If
+
+    token = LayerToken(this.targetLayer)
+    EnsurePersistColumns lo
+
+    ' Verify width column exists
+    widthCol = PersistColumnIndex(lo, PERSIST_WIDTH)
+    If widthCol = 0 Then
+        ThrowError ProjectError.ElementNotFound, _
+                   "Persistence table is missing column: " & PERSIST_WIDTH
+    End If
+
+    layerCol = PersistColumnIndex(lo, PERSIST_LAYER)
+    fieldCol = PersistColumnIndex(lo, PERSIST_FIELD_KEY)
+    headerCol = PersistColumnIndex(lo, PERSIST_HEADER)
+    hiddenCol = PersistColumnIndex(lo, PERSIST_HIDDEN)
+
+    ' Clear existing rows for this layer
+    ClearLayerRows lo, token, layerCol
+
+    ' Write entries with column widths
+    For idx = 1 To this.entryCount
+        Set newRow = lo.ListRows.Add
+        posIdx = this.positions(idx)
+
+        ' Read column/row width from source worksheet
+        colWidth = 0
+        If posIdx > 0 Then
+            On Error Resume Next
+            If this.targetLayer = ShowHideLayerVList Then
+                colWidth = sourceSh.Rows(posIdx).RowHeight
+            Else
+                colWidth = sourceSh.Columns(posIdx).ColumnWidth
+            End If
+            On Error GoTo 0
+        End If
+
+        With newRow.Range
+            .Cells(1, layerCol).Value = token
+            .Cells(1, fieldCol).Value = this.fieldKeys(idx)
+            .Cells(1, headerCol).Value = this.headers(idx)
+            .Cells(1, hiddenCol).Value = BoolToString(EffectiveHidden(idx))
+            .Cells(1, widthCol).Value = colWidth
+        End With
+    Next idx
+End Sub
+
+' @description Import persisted visibility with column widths for migration.
+' Updates hidden states and applies column/row widths to the target worksheet.
+' If the column_width column is absent, behaves like ImportPlan.
+' @param lo Source ListObject containing persisted data.
+' @param targetSh Target worksheet to apply column/row widths to.
+Public Sub ImportForMigration(ByVal lo As ListObject, ByVal targetSh As Worksheet)
+    Dim token As String
+    Dim layerCol As Long
+    Dim fieldCol As Long
+    Dim hiddenCol As Long
+    Dim widthCol As Long
+    Dim currentRow As ListRow
+    Dim rowLayer As String
+    Dim rowFieldKey As String
+    Dim rowHidden As Boolean
+    Dim rowWidth As Double
+    Dim entryIndex As Long
+    Dim posIdx As Long
+    Dim hasWidthCol As Boolean
+
+    If lo Is Nothing Then Exit Sub
+    If lo.ListRows.Count = 0 Then Exit Sub
+
+    token = LayerToken(this.targetLayer)
+    layerCol = PersistColumnIndex(lo, PERSIST_LAYER)
+    fieldCol = PersistColumnIndex(lo, PERSIST_FIELD_KEY)
+    hiddenCol = PersistColumnIndex(lo, PERSIST_HIDDEN)
+    widthCol = PersistColumnIndex(lo, PERSIST_WIDTH)
+    hasWidthCol = (widthCol > 0)
+
+    ' If any required column is missing, silently exit
+    If layerCol = 0 Or fieldCol = 0 Or hiddenCol = 0 Then Exit Sub
+
+    For Each currentRow In lo.ListRows
+        rowLayer = CStr(currentRow.Range.Cells(1, layerCol).Value)
+        If StrComp(rowLayer, token, vbTextCompare) = 0 Then
+            rowFieldKey = Trim$(CStr(currentRow.Range.Cells(1, fieldCol).Value))
+            rowHidden = ToBool(currentRow.Range.Cells(1, hiddenCol).Value)
+
+            entryIndex = IndexOf(rowFieldKey)
+            If entryIndex > 0 Then
+                ' Update hidden state (same as ImportPlan)
+                If Not this.mandatory(entryIndex) Then
+                    this.hidden(entryIndex) = rowHidden
+                End If
+
+                ' Apply column width if width column and target sheet are available
+                If hasWidthCol And Not targetSh Is Nothing Then
+                    posIdx = this.positions(entryIndex)
+                    If posIdx > 0 Then
+                        rowWidth = 0
+                        On Error Resume Next
+                        rowWidth = CDbl(currentRow.Range.Cells(1, widthCol).Value)
+                        On Error GoTo 0
+
+                        ' Apply width (0 = hidden column/row)
+                        If rowWidth >= 0 Then
+                            On Error Resume Next
+                            If this.targetLayer = ShowHideLayerVList Then
+                                targetSh.Rows(posIdx).RowHeight = rowWidth
+                            Else
+                                targetSh.Columns(posIdx).ColumnWidth = rowWidth
+                            End If
+                            On Error GoTo 0
+                        End If
+                    End If
                 End If
             End If
         End If
@@ -783,4 +932,12 @@ End Sub
 
 Private Sub IShowHideManager_ImportPlan(ByVal lo As ListObject)
     ImportPlan lo
+End Sub
+
+Private Sub IShowHideManager_ExportForMigration(ByVal lo As ListObject, ByVal sourceSh As Worksheet)
+    ExportForMigration lo, sourceSh
+End Sub
+
+Private Sub IShowHideManager_ImportForMigration(ByVal lo As ListObject, ByVal targetSh As Worksheet)
+    ImportForMigration lo, targetSh
 End Sub

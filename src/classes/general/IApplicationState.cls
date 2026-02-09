@@ -10,50 +10,75 @@ Attribute VB_Exposed = False
 Attribute VB_Description = "Application state guard for linelist busy operations"
 
 '@Interface
-'@Folder("Linelist")
+'@Folder("General")
 '@ModuleDescription("Application state guard for linelist busy operations")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, UseMeaningfulName
 
 Option Explicit
 
-'@section Busy state operations
+'@class IApplicationState
+'@description
+'Defines the public contract for the ApplicationState class, exposing
+'busy-state toggling and snapshot capture of Excel Application settings.
+'Callers apply a locked-down busy mode (no screen updates, manual calc,
+'alerts off) and later restore the original state from the snapshot.
+
+
+'@section Busy State
 '===============================================================================
+'@description Transition to and from the busy state.
+
+'@jump:apply-busy-state
 '@sub-title Transition to busy state
-'@details Applies the busy settings (ScreenUpdating False, DisplayAlerts False,
-'@details Calculation Manual, EnableAnimations False when available) over the
-'@details captured application snapshot.
-'@param busyCursor Optional cursor to display while busy; defaults to xlNorthWestArrow.
-Public Sub ApplyBusyState(Optional ByVal suppressEvents As Boolean = False, _ 
+'@details
+'Applies busy settings (ScreenUpdating False, DisplayAlerts False,
+'Calculation Manual, EnableAnimations False when available) over the
+'captured application snapshot.
+'@param suppressEvents Boolean. When True, disables Application.EnableEvents. Defaults to False.
+'@param calculateOnSave Boolean. Value for CalculateBeforeSave. Defaults to True.
+'@param busyCursor XlMousePointer. Cursor shown while busy. Defaults to xlNorthWestArrow.
+'@param blockSecurity Boolean. When True, forces AutomationSecurity to msoAutomationSecurityForceDisable. Defaults to False.
+Public Sub ApplyBusyState(Optional ByVal suppressEvents As Boolean = False, _
                           Optional ByVal calculateOnSave As Boolean = True, _
                           Optional ByVal busyCursor As XlMousePointer = xlNorthWestArrow, _
                           Optional ByVal blockSecurity As Boolean = False)
 End Sub
 
-'@sub-title Restore to original state
-'@details Restores the captured application settings, even when ApplyBusyState
-'@details was never called.
+'@jump:restore
+'@sub-title Restore the application to its pre-busy state
+'@details
+'Restores all captured application settings, even when ApplyBusyState
+'was never called. Clears the busy flag.
 Public Sub Restore()
 End Sub
 
-'@sub-title Refresh snapshot
-'@details Refreshes the stored snapshot with the application's current state so
-'@details subsequent Restore invocations return to the freshly captured values.
+'@jump:refresh-snapshot
+'@sub-title Refresh the stored snapshot with current application values
+'@details
+'Re-captures the application state so subsequent Restore invocations
+'return to the freshly captured values. Cannot be called while busy.
 Public Sub RefreshSnapshot()
 End Sub
 
+
 '@section Introspection
 '===============================================================================
-'@sub-title Application reference
-'@return Application currently guarded by the scope.
+'@description Read-only state accessors.
+
+'@jump:application-object
+'@prop-title Application reference currently guarded
+'@return Application. The Excel Application instance.
 Public Property Get ApplicationObject() As Application
 End Property
 
-'@sub-title Indicates whether ApplyBusyState was invoked and has not yet been
-'@details balanced by Restore.
+'@jump:is-busy
+'@prop-title Whether the busy state is currently active
+'@return Boolean. True when ApplyBusyState has been invoked without a matching Restore.
 Public Property Get IsBusy() As Boolean
 End Property
 
-'@sub-title Indicates whether a snapshot exists and the scope is ready to
-'@details restore values.
+'@jump:has-snapshot
+'@prop-title Whether a snapshot exists and restoration is possible
+'@return Boolean. True when a snapshot has been captured.
 Public Property Get HasSnapshot() As Boolean
 End Property

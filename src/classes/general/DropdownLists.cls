@@ -12,11 +12,21 @@ Attribute VB_Description = "A wrapper for dropdowns"
 '@PredeclaredId
 '@Folder("General")
 '@ModuleDescription("A wrapper for dropdowns")
-'@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument,   ExcelMemberMayReturnNothing,  SuperfluousAnnotationArgument, MissingAnnotationArgument, UseMeaningfulName, HungarianNotation
-'@depends HiddenNames, BetterArray, Checking
+'@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, MissingAnnotationArgument, UseMeaningfulName, HungarianNotation
 
 Option Explicit
 Implements IDropdownLists
+
+'@class DropdownLists
+'@description
+'Manages worksheet-based dropdown lists backed by one-column ListObjects.
+'Each dropdown is registered with an internal name-to-ListObject mapping
+'and a workbook-level named reference. Supports adding, removing,
+'updating, sorting, translating, and validating dropdown entries, plus
+'hyperlink navigation between the dropdown sheet and consuming cells.
+'@depends HiddenNames, BetterArray, Checking
+'@version 1.0 (2026-02-09)
+'@author OutbreakTools
 
 Private Type TDropdownLists
     sh As Worksheet
@@ -52,23 +62,21 @@ Private Const DROPDOWNSTARTROW As Integer = 2
 Private checkCounter As Long
 Private internalChecks As IChecking
 
-'@section Instanciation
+'@section Factory
 '===============================================================================
-'@label:Create
-'@prop-title Create a Dropdownlist Object
-'
+
+'@label:create
+'@sub-title Create a new DropdownLists instance
 '@details
-'A dropdownlist object is a worksheet with multiple listObjects of one column. Those
-'listObjects are used as dropdowns. The dropdowns can be used as data validation
-'or data entry tools elsewhere in the workbook. Using ListObjects of one columns
-'can help with dynamically extending the dropdown entries. The prefix can help 
-'with creating multiple dropdown lists in the same workbook as prefixes are used
-'when creating names for references.
-'
-'@param outsh A Worksheet Object. The worksheet of the listobjects
-'@hprefix Optional, String. The prefix used when creating the dropdown tables. Default is "dropdown_"
-'@returned A DropdowLists Object
-'@depends Checkings
+'Initialises a DropdownLists object on the given worksheet. Each
+'dropdown is stored as a one-column ListObject; the header prefix
+'distinguishes multiple dropdown worksheets in the same workbook.
+'On first use the worksheet is formatted (gridlines removed, registry
+'columns created) and an initialisation flag is stored via HiddenNames.
+'@param outsh Worksheet. The worksheet to host the dropdown ListObjects.
+'@param hprefix Optional String. Prefix for ListObject header names. Defaults to "dropdown_".
+'@return IDropdownLists. The new instance.
+'@throws ProjectError.ElementNotFound When outsh is Nothing.
 '@export
 Public Function Create(ByVal outsh As Worksheet, Optional ByVal hprefix As String = "dropdown_") As IDropdownLists
 
@@ -83,20 +91,30 @@ Public Function Create(ByVal outsh As Worksheet, Optional ByVal hprefix As Strin
     End With
 End Function
 
-'@label:elements
-'@section Dropdown Elements
+'@section Elements
 '===============================================================================
 
+'@label:self
+'@prop-title Self-reference returning the interface pointer
+'@return IDropdownLists. This instance.
 Public Property Get Self() As IDropdownLists
     Set Self = Me
 End Property
 
+'@label:wksh
+'@prop-title Worksheet hosting the dropdown lists
+'@return Worksheet. The host worksheet.
 Public Property Get Wksh() As Worksheet
     Set Wksh = this.sh
 End Property
 
-
-'@prop-title Worksheet of the dropdown list
+'@label:wksh-set
+'@prop-title Assign the worksheet and initialise the dropdown registry
+'@details
+'On first assignment, formats the worksheet (removes gridlines, creates
+'internal registry columns) and stores an initialisation flag. Resets
+'cached HiddenNames stores on every assignment.
+'@param outsh Worksheet. The worksheet to host dropdown ListObjects.
 Public Property Set Wksh(ByVal outsh As Worksheet)
     
     Dim store As IHiddenNames
@@ -124,6 +142,12 @@ Public Property Set Wksh(ByVal outsh As Worksheet)
 End Property
 
 
+'@label:all-dropdowns
+'@prop-title All registered dropdown names
+'@details
+'Scans the internal registry column and collects every dropdown name
+'into a BetterArray.
+'@return BetterArray. The dropdown name list.
 Private Property Get AllDropdowns() As BetterArray
     Dim sh As Worksheet
     Dim temp As BetterArray
@@ -159,29 +183,40 @@ Private Property Get AllDropdowns() As BetterArray
 End Property
 
 
-'@prop-title Header Prefix
+'@label:header-prefix
+'@prop-title Header prefix used for ListObject names
+'@return String. The current prefix.
 Public Property Get headerPrefix() As String
     headerPrefix = this.hprefix
 End Property
 
+'@label:header-prefix-set
+'@prop-title Assign the header prefix
+'@param hprefix String. The new prefix value.
 Public Property Let headerPrefix(ByVal hprefix As String)
     this.hprefix = hprefix
 End Property
 
-'@label:Name
+'@label:name
 '@prop-title Name of the dropdown object
 '@details
-'The name of the dropdown Object is the same as the name of the worksheet
-'where the dropdown lists are created.
-'@export
-'@returned As String
+'Returns the name of the worksheet that hosts the dropdown lists.
+'@return String. The worksheet name.
 Private Property Get Name() As String
     Name = Wksh.Name
 End Property
 
 
-'@section Workbook counter management
+'@section Workbook Counter
 '===============================================================================
+
+'@label:internal-store
+'@prop-title Lazy-loaded HiddenNames store for workbook or sheet scope
+'@details
+'Returns the cached IHiddenNames instance for either the workbook
+'(default) or the worksheet. Creates the store on first access.
+'@param sheetLevel Optional Boolean. When True, returns the worksheet-level store. Defaults to False.
+'@return IHiddenNames. The requested store.
 Private Property Get InternalStore(Optional ByVal sheetLevel As Boolean = False) As IHiddenNames
     Dim targetSheet As Worksheet
     Dim targetWb As Workbook
@@ -209,6 +244,8 @@ Private Property Get InternalStore(Optional ByVal sheetLevel As Boolean = False)
 End Property
 
 
+'@label:ensure-workbook-counter
+'@sub-title Ensure the workbook-level dropdown counter exists
 Private Sub EnsureWorkbookCounter()
     Dim store As IHiddenNames
 
@@ -218,6 +255,9 @@ Private Sub EnsureWorkbookCounter()
     End If
 End Sub
 
+'@label:workbook-counter-value
+'@sub-title Read the current workbook dropdown counter
+'@return Long. The counter value.
 Private Function WorkbookCounterValue() As Long
     Dim store As IHiddenNames
 
@@ -226,6 +266,9 @@ Private Function WorkbookCounterValue() As Long
     WorkbookCounterValue = store.ValueAsLong(WORKBOOKCOUNTERNAME, 1)
 End Function
 
+'@label:set-workbook-counter
+'@sub-title Write a new workbook dropdown counter value
+'@param newValue Long. The value to store.
 Private Sub SetWorkbookCounter(ByVal newValue As Long)
     Dim store As IHiddenNames
 
@@ -234,12 +277,16 @@ Private Sub SetWorkbookCounter(ByVal newValue As Long)
     store.SetValue WORKBOOKCOUNTERNAME, newValue
 End Sub
 
+'@label:increment-workbook-counter
+'@sub-title Increment the workbook dropdown counter by one
 Private Sub IncrementWorkbookCounter()
     Dim nextValue As Long
     nextValue = WorkbookCounterValue() + DROPDOWNCOUNTERINCREMENT
     SetWorkbookCounter nextValue
 End Sub
 
+'@label:decrement-workbook-counter
+'@sub-title Decrement the workbook dropdown counter by one
 Private Sub DecrementWorkbookCounter()
      Dim nextValue As Long
     nextValue = WorkbookCounterValue() - DROPDOWNCOUNTERINCREMENT
@@ -248,6 +295,8 @@ End Sub
 '@section Worksheet Counter
 '===============================================================================
 
+'@label:ensure-worksheet-counter
+'@sub-title Ensure the worksheet-level dropdown counter exists
 Private Sub EnsureWorksheetCounter()
     Dim store As IHiddenNames
 
@@ -258,6 +307,9 @@ Private Sub EnsureWorksheetCounter()
 End Sub
 
 
+'@label:sheet-counter-value
+'@sub-title Read the current worksheet dropdown counter
+'@return Long. The counter value.
 Private Function SheetCounterValue() As Long
     Dim store As IHiddenNames
 
@@ -266,6 +318,9 @@ Private Function SheetCounterValue() As Long
     SheetCounterValue = store.ValueAsLong(WORKSHEETCOUNTERNAME, 0)
 End Function
 
+'@label:set-sheet-counter
+'@sub-title Write a new worksheet dropdown counter value
+'@param newValue Long. The value to store (clamped to 0).
 Private Sub SetSheetCounter(ByVal newValue As Long)
     Dim store As IHiddenNames
 
@@ -276,41 +331,43 @@ Private Sub SetSheetCounter(ByVal newValue As Long)
     store.SetValue WORKSHEETCOUNTERNAME, newValue
 End Sub
 
+'@label:increment-sheet-counter
+'@sub-title Increment the worksheet dropdown counter by one
 Private Sub IncrementSheetCounter()
     Dim nextValue As Long
     nextValue = SheetCounterValue() + DROPDOWNCOUNTERINCREMENT
     SetSheetCounter nextValue
 End Sub
 
+'@label:decrement-sheet-counter
+'@sub-title Decrement the worksheet dropdown counter by one
 Private Sub DecrementSheetCounter()
     Dim nextValue As Long
     nextValue = SheetCounterValue() - DROPDOWNCOUNTERINCREMENT
     SetSheetCounter nextValue
 End Sub
 
-
-'@prop-title Update the counters of the dropdown
-'@details
-'The counter on the number of dropdown in the current dropdown worksheet
-'is store in the first cell of the worksheet. The UpdateDropdownCounter sub
-'adds the default increment to the counter stored in the first cell of the
-'worksheet.
+'@label:increment-counters
+'@sub-title Increment both workbook and worksheet counters
 Private Sub IncrementCounters()
     IncrementSheetCounter
     IncrementWorkbookCounter
 End Sub
 
+'@label:decrement-counters
+'@sub-title Decrement both workbook and worksheet counters
 Private Sub DecrementCounters()
     DecrementSheetCounter
     DecrementWorkbookCounter
 End Sub
 
-'@section Private class Helpers
+'@section Helpers
 '===============================================================================
 
-'@prop-title Helper to remove Gridlines
-'@param sh A Worksheet Object.
-'@param DisplayZeros Optional, Boolean. Display zeros in the worksheet. Default is False
+'@label:remove-gridlines
+'@sub-title Remove gridlines from a worksheet view
+'@param sh Worksheet. Target worksheet.
+'@param DisplayZeros Optional Boolean. When True, displays zeros. Defaults to False.
 Private Sub RemoveGridLines(ByVal sh As Worksheet, Optional DisplayZeros As Boolean = False)
     Dim View As WorksheetView
     For Each View In sh.Parent.Windows(1).SheetViews
@@ -323,11 +380,13 @@ Private Sub RemoveGridLines(ByVal sh As Worksheet, Optional DisplayZeros As Bool
 End Sub
 
 
-'@prop-title Find the lastColumn of the dropdown list
+'@label:last-column
+'@sub-title Find the next available column for a new dropdown
 '@details
-'The last column is the column where to start building new listObject. This 
-'is used when adding new dropdowns.
-'@returned A Long
+'Returns the column index two positions to the right of the rightmost
+'occupied header cell. This leaves a blank separator column between
+'adjacent ListObjects.
+'@return Long. The 1-based column index.
 Private Function LastColumn() As Long
     Dim sh As Worksheet
     Dim colIndex As Long
@@ -341,29 +400,29 @@ Private Function LastColumn() As Long
 End Function
 
 
-'@fun-title Name of a listobject related to one dropdown
-'@param listName A String. The name of the dropdown
-'@returned A String
+'@label:sanitized-list-name
+'@sub-title Sanitise a dropdown name for use in ListObject naming
+'@param listName String. The dropdown name.
+'@return String. The trimmed and space-replaced name.
 Private Function SanitizedListName(ByVal listName As String) As String
     SanitizedListName = Replace(Application.WorksheetFunction.Trim(listName), " ", "_")
 End Function
 
-'@fun-title Name of the first column of one specific dropdown
-'@param listName A String. The name of the dropdown
-'@returned As String
+'@label:list-object-header-name
+'@sub-title Build the ListObject header name for a dropdown
+'@param listName String. The dropdown name.
+'@return String. The prefixed header name.
 Private Function ListObjectHeaderName(ByVal listName As String) As String
     ListObjectHeaderName = headerPrefix() & SanitizedListName(listName)
 End Function
 
-'@prop-title Name of the name of dropdown used in reference
-'
+'@label:corresponding-workbook-name
+'@prop-title Workbook-level name used for the dropdown reference
 '@details
-'In references, the name used is a combination of the prefix and the name
-'of the first column. The default name is with choice_[headerName] in case there 
-'is no prefix.
-'
-'@param listName A String. The name of the dropdown
-'@returned A String
+'Combines the header prefix with the ListObject header name. When no
+'prefix is set, falls back to the DEFAULTNAMEPREFIX constant.
+'@param listName String. The dropdown name.
+'@return String. The workbook-level reference name.
 Private Property Get CorrespondingWorkbookName(ByVal listName As String) As String
     Dim headerName As String
 
@@ -371,9 +430,13 @@ Private Property Get CorrespondingWorkbookName(ByVal listName As String) As Stri
     CorrespondingWorkbookName = IIf(LenB(headerPrefix()) = 0, DEFAULTNAMEPREFIX & headerName, headerName)
 End Property
 
-'@prop-title Name of the listObject related to one dropdown
-'@param listName String. Dropdown name
-'@returned A String. Name of the corresponding listobject
+'@label:list-object-name
+'@prop-title ListObject name for a dropdown
+'@details
+'Returns the cached ListObject name for an existing dropdown, or
+'generates and registers a new one for a dropdown being created.
+'@param listName String. Dropdown name.
+'@return String. The ListObject name.
 Private Property Get ListObjectName(ByVal listName As String) As String
     Dim loName As String
 
@@ -387,10 +450,10 @@ Private Property Get ListObjectName(ByVal listName As String) As String
     ListObjectName = loName
 End Property
 
-'Add and Retrieve the listObject Name for a specific listName
-'@sub-title Add listObject Name
-'@param lst A String, the name of the dropdown
-'@param  lo A String, the name of the corresponding listObject
+'@label:add-lo-name
+'@sub-title Register a dropdown-to-ListObject name mapping
+'@param listName String. The dropdown name.
+'@param loName String. The corresponding ListObject name.
 Private Sub AddLoName(ByVal listName As String, ByVal loName As String)
 
     Dim cellRng As Range
@@ -408,9 +471,10 @@ Private Sub AddLoName(ByVal listName As String, ByVal loName As String)
 End Sub
 
 
-'@prop-title Retrieve a list object name of a dropdown
-'@param  lst A String, the name of the dropdown
-'@return A String
+'@label:retrieve-lo-name
+'@prop-title Retrieve the ListObject name for a dropdown
+'@param lst String. The dropdown name.
+'@return String. The ListObject name, or vbNullString when not found.
 Private Property Get RetrieveLoName(ByVal lst As String) As String
     Dim cellRng As Range
     Dim sh As Worksheet
@@ -428,7 +492,9 @@ Private Property Get RetrieveLoName(ByVal lst As String) As String
     Next
 End Property
 
-'@sub-title Remove the list object name
+'@label:remove-lo-name
+'@sub-title Remove a dropdown-to-ListObject name mapping
+'@param lst String. The dropdown name to unregister.
 Private Sub RemoveLoName(ByVal lst As String)
     Dim cellRng As Range
     Dim sh As Worksheet
@@ -448,21 +514,21 @@ Private Sub RemoveLoName(ByVal lst As String)
 End Sub
 
 
-'@label:Length
-'@prop-title Total Number of dropdowns in the worksheet
-'@return
-'@export
+'@label:length
+'@prop-title Total number of dropdowns on the worksheet
+'@return Long. The dropdown count.
 Private Property Get Length() As Long
     Length = SheetCounterValue()
 End Property
 
 
-'@prop-title Label of the dropdown
+'@label:current-dropdown-label
+'@sub-title Build the display label for the next dropdown
 '@details
-'The dropdown label is the label written at the top of the dropdown listObject.
-'It is for reading purposes and is only for user readability. In the linelist
-'for example, the label is "Custom dropdown"
-'@return String
+'Combines the prefix with the current counter to produce a
+'human-readable label (e.g. "Custom Dropdown 3").
+'@param labelPrefix String. Text prefix for the label.
+'@return String. The assembled label.
 Private Function CurrentDropdownLabel(ByVal labelPrefix As String) As String
     Dim dropCounter As Long
 
@@ -471,10 +537,9 @@ Private Function CurrentDropdownLabel(ByVal labelPrefix As String) As String
 End Function
 
 '@label:exists
-'@prop-title Test if a dropdown is present in the dropdown worksheets
-'@param listName A String. The name of dropdown searched
-'@export
-'@returned A Boolean
+'@sub-title Check whether a dropdown exists on the worksheet
+'@param listName String. Dropdown name to search for.
+'@return Boolean. True when the dropdown is found.
 Private Function Exists(ByVal listName As String) As Boolean
 
     Dim sh As Worksheet
@@ -494,11 +559,13 @@ Private Function Exists(ByVal listName As String) As Boolean
 
 End Function
 
-'@label:LabelRange
-'prop-title Retrieve the Range of one specific dropdown
-'@param listName A String, the name of the dropdown
-'@export
-'@return A Range object. The Label Range of the dropdown, generally the cell above the ListObject
+'@label:label-range
+'@prop-title Label cell above a dropdown ListObject
+'@details
+'Returns the cell directly above the header row of the specified
+'dropdown ListObject. Returns Nothing when the dropdown does not exist.
+'@param listName String. Dropdown name to look up.
+'@return Range. The label cell, or Nothing.
 Private Property Get LabelRange(ByVal listName As String) As Range
 
     Dim loName As String
@@ -512,11 +579,14 @@ Private Property Get LabelRange(ByVal listName As String) As Range
 End Property
 
 
-'@label:Values
-'@prop-title Retrieve values of a dropdown
-'@param listName A String, the name of the dropdown
-'@export
-'@return A BetterArray Object, elements of the dropdown
+'@label:values
+'@prop-title Retrieve the values of a dropdown
+'@details
+'Returns a BetterArray of the entries stored in the specified dropdown.
+'Logs a diagnostic note and exits when the dropdown does not exist.
+'@param listName String. Dropdown name to read from.
+'@param includeHeaders Optional Boolean. When True, includes the header row. Defaults to False.
+'@return BetterArray. The dropdown entries.
 Private Property Get Values(ByVal listName As String, Optional ByVal includeHeaders As Boolean = False) As BetterArray
 
     Dim lstVal As BetterArray
@@ -547,24 +617,21 @@ Private Property Get Values(ByVal listName As String, Optional ByVal includeHead
     Set Values = lstVal.Clone()
 End Property
 
-'@label:modify
-'@section Modify the dropdownlist
+'@section Modify
 '===============================================================================
 
-'@label:Add
-'@sub-title Add table values to the dropdown list
+'@label:add
+'@sub-title Add a new dropdown to the worksheet
 '@details
-'Given a onedimensional BetterArray, of strings, add the items of the betterArray 
-'to a new listObject and create references to the listObject for future use. Label
-'is added using the prefix provided by counterPrefix. For example (Custom Dropdown 1,
-' Custom Dropdown 2, etc.). If the table style does not exists,
-'the default table style when creating listObjects in the current excel version
-'is used.
-'
-'@param listValues BetterArray Object. Table of string values to fill the listObject
-'@param addLabel Optional, Boolean. Add label on top of the dropdown listobject. Default is False
-'@param conterPrefix Optional, String. Prefix to use when adding label. Default is vbNullString
-'@param tableStyle Optional, String. Table style to use for the listObject. Default is "TableStyleLight13".
+'Creates a one-column ListObject populated with the supplied values,
+'registers the name-to-ListObject mapping, and creates a workbook-level
+'named reference. Optionally writes a visible label above the ListObject
+'and applies a table style. Silently exits when the dropdown already exists.
+'@param listValues BetterArray. String values to populate the ListObject.
+'@param listName String. Name to assign to the dropdown.
+'@param addLabel Optional Boolean. When True, writes a label above the ListObject. Defaults to False.
+'@param counterPrefix Optional String. Prefix for the label text. Defaults to vbNullString.
+'@param tableStyle Optional String. Excel table style name. Defaults to "TableStyleLight13".
 '@export
 Private Sub Add(ByVal listValues As BetterArray, ByVal listName As String, _
     Optional ByVal addLabel As Boolean = False, _
@@ -637,13 +704,14 @@ Private Sub Add(ByVal listValues As BetterArray, ByVal listName As String, _
     rng.EntireColumn.AutoFit
 End Sub
 
-'@label:Remove
-'@sub-title Remove a dropdown that was added
+'@label:remove
+'@sub-title Remove a dropdown from the worksheet
 '@details
-'Use with caution as it will delete the listObject of the dropdown as well as 
-'any references in the workbook
-'@param listName A String, the dropdown name
-'@return
+'Deletes the ListObject, its workbook-level name reference, the
+'internal registry entry, and decrements both counters. Silently
+'exits when the dropdown does not exist.
+'@param listName String. Dropdown name to remove.
+'@export
 Private Sub Remove(ByVal listName As String)
     Dim sh As Worksheet
     Dim rng As Range
@@ -676,12 +744,12 @@ Private Sub Remove(ByVal listName As String)
     DecrementCounters
 End Sub
 
-'@label:ClearList
-'@sub-title Clear values in a dropdown table
+'@label:clear-list
+'@sub-title Clear entries of a dropdown
 '@details
-'Given one dropdown, clear the entries and remove all values, without deleting
-'the dropdown itself.
-'@param listName A String. The name of the dropdown
+'Removes all data rows from the dropdown ListObject without deleting
+'the dropdown itself. Silently exits when the dropdown does not exist.
+'@param listName String. Dropdown name to clear.
 '@export
 Private Sub ClearList(ByVal listName As String)
 
@@ -701,15 +769,17 @@ Private Sub ClearList(ByVal listName As String)
     On Error GoTo 0
 End Sub
 
-'@label:Update
-'@sub-title Update values in a dropdown table
+'@label:update
+'@sub-title Update a dropdown with new values
 '@details
-'Either replace all the values in a dropdown with new values, or add 
-'values at the bottom of the table. In the last case, if `pasteAtBottom=True`,
-'duplicate values are removed.
-'@param UpdateData A BetterArray, with new values to add
-'@param listName A String, the name of the dropdown to update
-'@param pasteAtBottom Boolean. Update by pasting new values at the bottom of the table. Default is False
+'Replaces or appends values in the specified dropdown. When
+'pasteAtBottom is True, appends below existing data. Duplicate
+'entries are removed when removeDuplicates is True. Silently exits
+'when the dropdown does not exist or the data is empty.
+'@param UpdateData BetterArray. New values to write.
+'@param listName String. Dropdown name to update.
+'@param pasteAtBottom Optional Boolean. When True, appends below existing rows. Defaults to False.
+'@param removeDuplicates Optional Boolean. When True, removes duplicate entries. Defaults to True.
 '@export
 Private Sub Update(ByVal UpdateData As BetterArray, ByVal listName As String, _
     Optional ByVal pasteAtBottom As Boolean = False, _
@@ -765,10 +835,14 @@ Private Sub Update(ByVal UpdateData As BetterArray, ByVal listName As String, _
     End If
 End Sub
 
-'@label:Sort
-'@sub-title Sort a dropdown listObject
-'@param listName A String, the dropdown name
-'@param sortOrder A Long, the sortOrder as a `xlSortOder` enumeration. Default is xlAscending
+'@label:sort
+'@sub-title Sort a dropdown ListObject
+'@details
+'Sorts the dropdown entries using the specified sort order. Silently
+'exits when the dropdown does not exist.
+'@param listName String. Dropdown name to sort.
+'@param sortOrder Optional Long. xlSortOrder enumeration value. Defaults to xlAscending.
+'@export
 Private Sub Sort(ByVal listName As String, _
     Optional ByVal sortOrder As Long = xlAscending)
 
@@ -791,7 +865,17 @@ Private Sub Sort(ByVal listName As String, _
     On Error GoTo 0
 End Sub
 
-'@label:Translate
+'@label:translate
+'@sub-title Translate all dropdowns on the worksheet
+'@details
+'Iterates over every registered ListObject and applies the supplied
+'TranslationObject to its data body. Skips translation when the
+'current language matches and force is False. ListObjects whose name
+'contains the exclude substring are skipped.
+'@param trads Object. A TranslationObject providing translations.
+'@param force Optional Boolean. When True, translates regardless of language match. Defaults to False.
+'@param exclude Optional String. Substring filter to skip matching ListObjects.
+'@export
 Private Sub Translate(ByVal trads As Object, Optional ByVal force As Boolean = False, Optional ByVal exclude As String)
     Dim sh As Worksheet
     Dim headerCell As Range
@@ -841,23 +925,22 @@ NextLo:
     store.EnsureName WORKSHEETLANGUAGENAME, trads.Language, HiddenNameTypeString
 End Sub
 
-'@label:operate
-'@section Operate with the outside world
+'@section Operations
 '===============================================================================
 
-'@label:SetValidation
-'@sub-title Use a dropdown to set validation on a Range
+'@label:set-validation
+'@sub-title Apply dropdown validation to a Range
 '@details
-'
-'alertType can take three values: "info" for raising information in case the entered values
-'are not present in the dropdown, "warning" for raising a warning and "error" for raising error.
-'"error" prevent entering values outside the dropdown values.
-' 
-'@param cellRng A Range object, where to se the validation
-'@param listName A String, the name of the dropdown to use for validation
-'@param alertType Optional, A String. Se details
-'@param message Optional, A String. Message to show the user in case validation failed. Default is vbNullString
-'@param showError Optional, Boolean. Show validation error. Default is True.
+'Sets data validation on the target Range using the specified dropdown
+'as the validation source. alertType controls the severity: "info"
+'shows an information alert, "warning" shows a warning, and "error"
+'prevents entry of values outside the list. Silently exits when the
+'dropdown or range does not exist.
+'@param cellRng Range. Target range to validate.
+'@param listName String. Dropdown name to use as the validation source.
+'@param alertType Optional String. Alert severity ("info", "warning", "error"). Defaults to "info".
+'@param message Optional String. Message shown on validation failure. Defaults to vbNullString.
+'@param showError Optional Boolean. When True, displays validation feedback. Defaults to True.
 '@export
 Private Sub SetValidation(ByVal cellRng As Range, ByVal listName As String, _
     Optional ByVal alertType As String = "info", _
@@ -907,9 +990,17 @@ Private Sub SetValidation(ByVal cellRng As Range, ByVal listName As String, _
 End Sub
 
 
-'@sub-title Add hyperlink on a range that targets or returns to the dropdown
-'@param listName A String, the name of the dropdown targeted
-'@param targetRng A Range. The Range where you want to return when you clik on the label.
+'@label:add-link
+'@sub-title Add a hyperlink between a dropdown and a cell
+'@details
+'Creates a hyperlink that navigates between the dropdown label cell
+'and the specified target range. When returnLink is True, the link
+'is placed on the dropdown label pointing at targetRng; when False,
+'the link is placed on targetRng pointing at the dropdown label.
+'Preserves the original cell formatting after link insertion.
+'@param listName String. Dropdown name whose label is involved.
+'@param targetRng Range. The other end of the hyperlink.
+'@param returnLink Optional Boolean. When True, link is on the dropdown side. Defaults to False.
 Private Sub AddLink(ByVal listName As String, ByVal targetRng As Range, _
     Optional ByVal returnLink As Boolean = False)
 
@@ -974,39 +1065,39 @@ Private Sub AddLink(ByVal listName As String, ByVal targetRng As Range, _
     End With
 End Sub
 
-'@label:AddReturnLink
-'@sub-title Add hyperlink on a dropdown header that targets one cell
+'@label:add-return-link
+'@sub-title Add a return hyperlink on the dropdown header
 '@details
-'The link is on the top of the header of one dropdown in the dropdownlist. The targeted adress is
-'the cell that links to the current dropdown.
-'@param listName A String, the name of dropdown to target
-'@param returnRng A Range. Where to add the link
+'Adds a hyperlink on the dropdown label cell that navigates back to
+'the specified range.
+'@param listName String. Dropdown whose label receives the link.
+'@param returnRng Range. Target destination of the hyperlink.
 '@export
 Private Sub AddReturnLink(ByVal listName As String, ByVal returnRng As Range)
     AddLink listName:=listName, targetRng:=returnRng, returnLink:=True
 End Sub
 
 
-'@label:AddHyperLink
-'@sub-title Add hyperlink on a cell header that targets one dropdown
+'@label:add-hyperlink
+'@sub-title Add a hyperlink on a cell targeting a dropdown
 '@details
-'The link will target one dropdown in the dropdownlist. The targeted adress is
-'the top of the dropdown, the label Range.
-'@param listName A String, the name of dropdown to target
-'@param linkRng A Range. Where to add the link
+'Adds a hyperlink on the specified range that navigates to the label
+'cell of the dropdown.
+'@param listName String. Dropdown to navigate to.
+'@param linkRng Range. Cell that receives the hyperlink.
 '@export
 Private Sub AddHyperLink(ByVal listName As String, ByVal linkRng As Range)
     AddLink listName:=listName, targetRng:=linkRng, returnLink:=False
 End Sub
 
 
-'@label:checkings
 '@section Checkings
+'===============================================================================
 
-'@sub-title Add elements to the checking object for future notes
-'@param Label String, the message to add.
-'@param scope Byte. The scope of the checking object.
-'@export
+'@label:log-info
+'@sub-title Record a diagnostic entry
+'@param label String. The message to log.
+'@param scope Optional Byte. Severity level. Defaults to checkingNote.
 Private Sub LogInfo(ByVal label As String, _
     Optional ByVal scope As Byte = checkingNote)
 
@@ -1024,16 +1115,16 @@ Private Sub LogInfo(ByVal label As String, _
     If Not this.hasChecks Then this.hasChecks = True
 End Sub
 
-'@label:HasCheckings
-'@prop-title Check if the object has checkings
-'@export
+'@label:has-checkings
+'@prop-title Whether the dropdown object has logged diagnostic messages
+'@return Boolean. True when diagnostic entries exist.
 Private Property Get HasCheckings() As Boolean
     HasCheckings = this.hasChecks
 End Property
 
-'@label:CheckingValues
-'@prop-title Get the cheking values
-'@export
+'@label:checking-values
+'@prop-title Retrieve the diagnostic log entries
+'@return Object. An IChecking instance, or Nothing.
 Private Property Get CheckingValues() As Object
 
     'If there is no checking, exit the property
@@ -1042,40 +1133,36 @@ Private Property Get CheckingValues() As Object
     Set CheckingValues = internalChecks
 End Property
 
+'@label:show-debug
+'@sub-title Print a debug trace to the Immediate window
 Private Sub ShowDebug()
     Debug.Print "Check the informations of dropdownlist object " & Name()
 End Sub
 
-'Errors
+'@label:throw-error
+'@sub-title Raise a ProjectError-based exception
+'@param errNumb Long. ProjectError code.
+'@param errorMessage String. Descriptive message.
+'@throws ProjectError.<varies> Always raises the specified error.
 Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
     Err.Raise errNumb, CLASSNAME, "Error : " & Chr(34) & errorMessage
 End Sub
 
-'@jump:Create
 '@section Interface
 '===============================================================================
 
-'@jump:elements
-'DropdownList Elements ---------------------------------------------------------
-
-'@jump:Wksh
 Private Property Get IDropdownLists_Wksh() As Worksheet
     Set IDropdownLists_Wksh = Wksh()
 End Property
 
-'@jump:exists
-'Test if a dropdown is present in the worksheet
 Private Property Get IDropdownLists_Exists(ByVal listName As String) As Boolean
     IDropdownLists_Exists = Exists(listName)
 End Property
 
-'@jump:Name
-'Get the name of the dropdown object
 Private Property Get IDropdownLists_Name() As String
     IDropdownLists_Name = Name()
 End Property
 
-'@jump:LabelRange
 Private Property Get IDropdownLists_LabelRange(ByVal listName As String) As Range
     Set IDropdownLists_LabelRange = LabelRange(listName)
 End Property
@@ -1084,7 +1171,6 @@ Private Property Get IDropdownLists_Values(ByVal listName As String, Optional By
     Set IDropdownLists_Values = Values(listName, includeHeaders)
 End Property
 
-'@jump:Length
 Private Property Get IDropdownLists_Length() As Long
     IDropdownLists_Length = Length()
 End Property
@@ -1093,10 +1179,6 @@ Private Property Get IDropdownLists_AllDropdowns() As BetterArray
     Set IDropdownLists_AllDropdowns = AllDropdowns
 End Property
 
-'@jump:modify
-'Modify the dropdownlist -------------------------------------------------------
-
-'@jump:Add
 Private Sub IDropdownLists_Add(ByVal listValues As BetterArray, _
     ByVal listName As String, _
     Optional ByVal addLabel As Boolean = False, _
@@ -1107,17 +1189,14 @@ Private Sub IDropdownLists_Add(ByVal listValues As BetterArray, _
         addLabel:=addLabel, counterPrefix:=counterPrefix, tableStyle:=tableStyle
 End Sub
 
-'@jump:Remove
 Private Sub IDropdownLists_Remove(ByVal listName As String)
     Remove listName:=listName
 End Sub
 
-'@jump:ClearList
 Private Sub IDropdownLists_ClearList(ByVal listName As String)
     ClearList listName
 End Sub
 
-'@jump:Update
 Private Sub IDropdownLists_Update(ByVal UpdateData As BetterArray, _
     ByVal listName As String, _
     Optional ByVal pasteAtBottom As Boolean = False, _
@@ -1128,21 +1207,15 @@ Private Sub IDropdownLists_Update(ByVal UpdateData As BetterArray, _
         removeDuplicates:=removeDuplicates
 End Sub
 
-'@jump:Sort
 Private Sub IDropdownLists_Sort(ByVal listName As String, _
     Optional ByVal sortOrder As Long = xlAscending)
     Sort listName, sortOrder
 End Sub
 
-'@jump:Translate
 Private Sub IDropdownLists_Translate(ByVal trads As Object, Optional ByVal force As Boolean = False, Optional ByVal exclude As String)
     Translate trads, force
 End Sub
 
-'@jump:operate
-'Operate with the outside world-------------------------------------------------
-
-'@jump:SetValidation
 Private Sub IDropdownLists_SetValidation(ByVal cellRng As Range, ByVal listName As String, _
     Optional ByVal alertType As String = "info", _
     Optional ByVal message As String = vbNullString, _
@@ -1153,28 +1226,19 @@ Private Sub IDropdownLists_SetValidation(ByVal cellRng As Range, ByVal listName 
         showError:=showError
 End Sub
 
-'@jump:AddReturnLink
 Private Sub IDropdownLists_AddReturnLink(ByVal listName As String, ByVal returnRng As Range)
     AddReturnLink listName, returnRng
 End Sub
 
 
-'@jump:AddHyperLink
 Private Sub IDropdownLists_AddHyperLink(ByVal listName As String, ByVal linkRng As Range)
     AddHyperLink listName, linkRng
 End Sub
 
-'@jump:checkings
-'Checkings----------------------------------------------------------------------
-
-'@jump:HasCheckings
-'Test if the object has checkings
 Private Property Get IDropdownLists_HasCheckings() As Boolean
     IDropdownLists_HasCheckings = HasCheckings()
 End Property
 
-'@jump:CheckingValues
-'Get the checking values
 Private Property Get IDropdownLists_CheckingValues() As Object
     Set IDropdownLists_CheckingValues = CheckingValues()
 End Property

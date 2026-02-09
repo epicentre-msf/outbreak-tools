@@ -19,6 +19,15 @@ Option Explicit
 
 Implements IPasswords
 
+'@class Passwords
+'@description
+'Manages workbook/worksheet protection, key generation, debug-mode
+'toggling, and import/export of password metadata. Uses TypeName
+'dispatch to handle Workbook, Worksheet, and String target arguments
+'through a single Protect/UnProtect entry point.
+'@depends Checking, BetterArray, ProjectError, ITranslationObject
+'@version 1.0 (2026-02-09)
+'@author OutbreakTools
 
 '@section State and Constants
 '===============================================================================
@@ -55,15 +64,18 @@ Private Const CHECKINGCONTEXT As String = "Passwords object trace"
 
 
 
-'@label:properties
-'@section Core accessors
+'@section Core Accessors
 '===============================================================================
+'Factory, accessors, and stored-value retrieval.
 
 '@label:create
 '@sub-title Create an instance of password
-'@details Factory returning an interface reference that wraps the provided password worksheet.
-'@param passwordSheet Worksheet hosting password tables and named ranges.
-'@return Fully initialised password handler implementing IPasswords.
+'@details
+'Factory returning an interface reference that wraps the provided
+'password worksheet.
+'@param sh Worksheet. Worksheet hosting password tables and named ranges.
+'@return IPasswords. Fully initialised password handler.
+'@export
 Public Function Create(ByVal sh As Worksheet) As IPasswords
 
     ValidateSheet sh
@@ -75,12 +87,16 @@ Public Function Create(ByVal sh As Worksheet) As IPasswords
 
 End Function
 
-'@sub-title Self instance
+'@label:self
+'@prop-title Self-reference as IPasswords
+'@return IPasswords. Self-reference.
 Public Property Get Self() As IPasswords
     Set Self = Me
 End Property
 
-'@sub-title Password woksheet
+'@label:password-sheet-set
+'@prop-title Assign the password worksheet and reset caches
+'@param sh Worksheet. The password worksheet to bind.
 Public Property Set PasswordSheet(ByVal sh As Worksheet)
     Set this.sh = sh
     Set this.wb = sh.Parent
@@ -91,39 +107,52 @@ Public Property Set PasswordSheet(ByVal sh As Worksheet)
     ResetCaches
 End Property
 
+'@label:name
+'@prop-title Name of the password worksheet
+'@return String. The worksheet name.
 Public Property Get Name() As String
     Name = this.nm
 End Property
 
-'@label:passwordsheet
-'@sub-title Password worksheet
-'@details Exposes the password sheet managed by this instance.
-'@return Worksheet reference backing the password object.
+'@label:password-sheet
+'@prop-title Worksheet hosting the password tables
+'@return Worksheet. The password worksheet.
 Public Property Get PasswordSheet() As Worksheet
     EnsureSheetReady
     Set PasswordSheet = this.sh
 End Property
 
-'@sub-title Password workbook
-'@details Exposes the workbook owning the password worksheet.
-'@return Workbook that contains the password sheet.
+'@label:password-workbook
+'@prop-title Workbook owning the password worksheet
+'@return Workbook. The parent workbook.
 Public Property Get PasswordWorkbook() As Workbook
     EnsureWorkbookReady
     Set PasswordWorkbook = this.wb
 End Property
 
+'@label:display-prompts
+'@prop-title Whether UI prompts are displayed during operations
+'@return Boolean. True when prompts are enabled.
 Public Property Get DisplayPrompts() As Boolean
     DisplayPrompts = this.displayPrompts
 End Property
 
+'@label:display-prompts-set
+'@prop-title Toggle UI prompt display
 Public Property Let DisplayPrompts(ByVal value As Boolean)
     this.displayPrompts = value
 End Property
 
+'@label:last-private-prompt
+'@prop-title Most recent private key prompt text
+'@return String. The prompt text.
 Public Property Get LastPrivatePrompt() As String
     LastPrivatePrompt = this.lastPrivatePrompt
 End Property
 
+'@label:last-private-prompt-title
+'@prop-title Most recent private key prompt title
+'@return String. The prompt title.
 Public Property Get LastPrivatePromptTitle() As String
     LastPrivatePromptTitle = this.lastPrivateTitle
 End Property
@@ -139,11 +168,10 @@ Public Property Get Value(ByVal tagName As String) As String
 End Property
 
 
-'@sub-title Retrieve a value from a tag
-'@details Retrieve the value stored in a named range identified by the byte-coded tag.
-'@param tagId Byte-coded identifier defined on IPasswords (PasswordTag* constants).
-'@return Value stored in the named range corresponding to the tag identifier.
-'@export
+'@label:tag-value
+'@prop-title Retrieve a value from a byte-coded tag
+'@param tagId Byte. PasswordTag constant.
+'@return String. The stored value.
 Private Property Get TagValue(ByVal tagId As Byte) As String
     Dim targetRange As Range
     Set targetRange = NamedRange(TagToRangeName(tagId))
@@ -152,12 +180,14 @@ Private Property Get TagValue(ByVal tagId As Byte) As String
     End If
 End Property
 
-'@label:tablerange
-'@sub-title Table with private/public keys of a password
-'@details Retrieve the range of a password-managed table.
-'@param tableName Table identifier (T_keys or T_ProtectedSheets).
-'@param includeHeaders When True, include header row in the returned range.
-'@return Range representing the requested listobject on the password sheet.
+'@label:table-range
+'@prop-title Retrieve the range of a password-managed table
+'@details
+'Looks up the specified ListObject on the password worksheet and
+'returns either the full range or data-only range.
+'@param tableName String. Table identifier (T_keys or T_ProtectedSheets). Defaults to TABLEKEYS.
+'@param includeHeaders Boolean. When True, includes the header row. Defaults to False.
+'@return Range. The requested table range.
 Public Property Get TableRange(Optional ByVal tableName As String = TABLEKEYS, _
                                Optional ByVal includeHeaders As Boolean = False) As Range
 
@@ -180,30 +210,30 @@ Public Property Get TableRange(Optional ByVal tableName As String = TABLEKEYS, _
     End If
 End Property
 
-'@label:hascheckings
-'@prop-title Indicates whether any informational diagnostics were recorded.
-'@label:haschecking
-'@return A boolean, True when at least one checking entry exists.
-'@export
+'@label:has-checkings
+'@prop-title Whether any diagnostic entries have been captured
+'@return Boolean. True when at least one entry exists.
 Public Property Get HasCheckings() As Boolean
     HasCheckings = this.hasChecks
 End Property
 
-'@label:checkingvalues
-'@prop-title Retrieve the aggregated checking entries for downstream reporting.
-'@return Checking object aggregating informational messages (Nothing when no entries exist).
-'@export
+'@label:checking-values
+'@prop-title Retrieve the aggregated checking entries
+'@return IChecking. The checking object, or Nothing.
 Public Property Get CheckingValues() As IChecking
     If this.hasChecks Then
         Set CheckingValues = this.checks
     End If
 End Property
 
-'@section Debug mode management
+'@section Debug Mode
 '===============================================================================
+'Toggle debug mode on the target workbook.
 
-'@details Puts the target workbook into a fully unprotected state, updating the debug mode flag and logging the transition.
-'@param targetWorkbook Optional workbook to toggle into debug mode (defaults to password workbook).
+'@label:enter-debug-mode
+'@sub-title Put the workbook into a fully unprotected debug state
+'@param targetWorkbook Optional Workbook. Target workbook. Defaults to the bound workbook.
+'@export
 Public Sub EnterDebugMode(Optional ByVal targetWorkbook As Workbook)
 
     Dim wb As Workbook
@@ -224,8 +254,10 @@ Public Sub EnterDebugMode(Optional ByVal targetWorkbook As Workbook)
     LogInfo "Workbook entered debug mode; protections removed", checkingWarning
 End Sub
 
-'@details Restores workbook structure protection and worksheet protections per stored policy.
-'@param targetWorkbook Optional workbook to restore protections for (defaults to password workbook).
+'@label:leave-debug-mode
+'@sub-title Restore protections after debug mode
+'@param targetWorkbook Optional Workbook. Target workbook. Defaults to the bound workbook.
+'@export
 Public Sub LeaveDebugMode(Optional ByVal targetWorkbook As Workbook)
 
     If Not InDebugMode() Then Exit Sub
@@ -242,8 +274,10 @@ Public Sub LeaveDebugMode(Optional ByVal targetWorkbook As Workbook)
 End Sub
 
 
-'@details Ensures the workbook exposes a named range referencing the protected sheets table.
-'@param targetWorkbook Optional workbook receiving or updating the named reference (defaults to password workbook).
+'@label:ensure-protected-sheets-name
+'@sub-title Ensure the workbook exposes a named range referencing the protection table
+'@param targetWorkbook Optional Workbook. Target workbook. Defaults to the bound workbook.
+'@export
 Public Sub EnsureProtectedSheetsName(Optional ByVal targetWorkbook As Workbook)
 
     Dim wb As Workbook
@@ -270,8 +304,10 @@ Public Sub EnsureProtectedSheetsName(Optional ByVal targetWorkbook As Workbook)
     End If
 End Sub
 
-'@details Injects before-close safeguards that automatically exit debug mode during workbook shutdown.
-'@param targetWorkbook Optional workbook where the guard procedures should be written (defaults to password workbook).
+'@label:ensure-debug-exit-handler
+'@sub-title Inject before-close procedures that leave debug mode automatically
+'@param targetWorkbook Optional Workbook. Target workbook. Defaults to the bound workbook.
+'@export
 Public Sub EnsureDebugExitHandler(Optional ByVal targetWorkbook As Workbook)
 
     Dim wb As Workbook
@@ -310,16 +346,16 @@ WorkbookModuleMissing:
 End Sub
 
 
-'@label:ProtectionApi
-'@section Worksheet protection management
+'@section Protection
 '===============================================================================
+'Protect and unprotect worksheets and workbooks.
 
-'@sub-title Protect a worksheet
-'@details Protect a worksheet with the debugging password and either supplied or stored options.
-'@param sheetObject Worksheet instance or sheet name to protect.
-'@param allowShapes Optional Boolean permitting shape manipulation (defaults to True when not supplied).
-'@param allowDeletingRows Optional Boolean enabling row deletion (defaults to True when not supplied).
-'@param registerState When True, reuse stored table settings instead of supplied arguments.
+'@label:protect-sheet
+'@sub-title Protect a worksheet with the debugging password
+'@param sheetObject Variant. Worksheet or sheet name.
+'@param allowShapes Boolean. Permit shape manipulation. Defaults to True.
+'@param allowDeletingRows Boolean. Enable row deletion. Defaults to True.
+'@param registerState Boolean. Reuse stored table settings. Defaults to True.
 Private Sub ProtectSheet(sheetObject As Variant, _
                         Optional ByVal allowShapes As Boolean = True, _
                         Optional ByVal allowDeletingRows As Boolean = True, _
@@ -355,9 +391,9 @@ Private Sub ProtectSheet(sheetObject As Variant, _
     ApplySheetProtection targetSheet, allowDraw, allowDelete
 End Sub
 
-'@sub-title Unprotect a Worksheet
-'@details Unlocks a worksheet using the stored debugging password.
-'@param sheetName Worksheet name to unlock; "_active" targets the current active sheet.
+'@label:unprotect-sheet
+'@sub-title Unprotect a worksheet using the stored debugging password
+'@param sheetObject Optional Variant. Worksheet reference or sheet name. Defaults to the active sheet.
 Private Sub UnprotectSheet(Optional sheetObject As Variant)
 
     Dim targetSheet As Worksheet
@@ -372,7 +408,13 @@ Private Sub UnprotectSheet(Optional sheetObject As Variant)
     On Error GoTo 0
 End Sub
 
-'@sub-title Protect / UnProtect a worksheet
+'@label:resolve-worksheet-protection
+'@sub-title Dispatch worksheet protect or unprotect
+'@param sheetObject Variant. Worksheet reference or sheet name.
+'@param allowShapes Optional Boolean. Allow shape editing when protected. Defaults to True.
+'@param allowDeletingRows Optional Boolean. Allow row deletion when protected. Defaults to True.
+'@param registerState Optional Boolean. Persist protection metadata. Defaults to True.
+'@param setProtection Optional Boolean. When True, protects; when False, unprotects. Defaults to True.
 Private Sub ResolveWorksheetProtection( sheetObject As Variant, _
                         Optional ByVal allowShapes As Boolean = True, _
                         Optional ByVal allowDeletingRows As Boolean = True, _
@@ -386,9 +428,9 @@ Private Sub ResolveWorksheetProtection( sheetObject As Variant, _
     End If
 End Sub
 
-'@sub-title Protect a Workbook
-'@details Protects workbook structure with the debugging password to prevent sheet renames.
-'@param wb Workbook whose structure should be protected.
+'@label:protect-workbook
+'@sub-title Protect workbook structure with the debugging password
+'@param targetObject Variant. Workbook reference.
 Private Sub ProtectWorkbook(targetObject As Variant)
     Dim pwd As String
     Dim wb As Workbook
@@ -399,9 +441,9 @@ Private Sub ProtectWorkbook(targetObject As Variant)
     wb.Protect Password:=pwd, Structure:=True
 End Sub
 
-'@sub-title UnProtect a Workbook
-'@details Unlocks workbook structure using the debugging password.
-'@param wb Workbook whose structure should be unlocked.
+'@label:unprotect-workbook
+'@sub-title Unprotect workbook structure using the debugging password
+'@param targetObject Variant. Workbook reference.
 Private Sub UnprotectWorkbook(targetObject As Variant)
     Dim pwd As String
     Dim wb As Workbook
@@ -414,7 +456,10 @@ Private Sub UnprotectWorkbook(targetObject As Variant)
     On Error GoTo 0
 End Sub
 
-'@sub-title Protect / Unprotect a workbook
+'@label:resolve-workbook-protection
+'@sub-title Dispatch workbook protect or unprotect
+'@param targetObject Variant. Workbook reference.
+'@param setProtection Optional Boolean. When True, protects; when False, unprotects. Defaults to True.
 Private Sub ResolveWorkbookProtection(targetObject As Variant, Optional ByVal setProtection As Boolean = True)
     If setProtection Then
         ProtectWorkbook targetObject
@@ -423,13 +468,16 @@ Private Sub ResolveWorkbookProtection(targetObject As Variant, Optional ByVal se
     End If
 End Sub
 
-'@label:protect
-'@sub-title Protect a worksheet/workbook according to supplied or stored rules.
-'@param targetObject A Variant. Could be a Workbook, a Worksheet or a String, the name of the worksheet to protect. "_active"
-'will protect the active worksheet. It is the default behavior. "_wbactive" will protect the active workbook.
-'@param allowShapes Allow manipulating drawing objects (optional).
-'@param allowDeletingRows Allow deleting rows (optional).
-'@param registerState When True, reuse stored table settings or create worksheet state.
+'@label:resolve-protection
+'@sub-title Dispatch protect/unprotect via TypeName
+'@details
+'Accepts a Workbook, Worksheet, or String. The string "_active"
+'targets the active worksheet; "_wbactive" targets the active workbook.
+'@param targetObject Optional Variant. Workbook, Worksheet, or String tag. Defaults to "_active".
+'@param allowShapes Optional Boolean. Allow shape editing when protected. Defaults to True.
+'@param allowDeletingRows Optional Boolean. Allow row deletion when protected. Defaults to True.
+'@param registerState Optional Boolean. Persist protection metadata. Defaults to True.
+'@param setProtection Optional Boolean. When True, protects; when False, unprotects. Defaults to True.
 Private Sub ResolveProtection(Optional  targetObject As Variant = "_active", _
                    Optional ByVal allowShapes As Boolean = True, _
                    Optional ByVal allowDeletingRows As Boolean = True, _
@@ -459,8 +507,13 @@ Private Sub ResolveProtection(Optional  targetObject As Variant = "_active", _
     End Select
 End Sub
 
-'@label:unprotect
-'@sub-title Unprotect a worksheet/workbook
+'@label:protect
+'@sub-title Protect a worksheet or workbook
+'@param targetObject Optional Variant. Workbook, Worksheet, or String tag. Defaults to "_active".
+'@param allowShapes Optional Boolean. Allow shape editing. Defaults to True.
+'@param allowDeletingRows Optional Boolean. Allow row deletion. Defaults to True.
+'@param registerState Optional Boolean. Persist protection metadata. Defaults to True.
+'@export
 Private Sub Protect(Optional  targetObject As Variant = "_active", _
                    Optional ByVal allowShapes As Boolean = True, _
                    Optional ByVal allowDeletingRows As Boolean = True, _
@@ -469,19 +522,23 @@ Private Sub Protect(Optional  targetObject As Variant = "_active", _
     ResolveProtection targetObject, allowShapes, allowDeletingRows, registerState, setProtection:=True
 End Sub
 
-'@label:unprotect 
-'@sub-title Unprotect a worksheet/workbook
+'@label:unprotect
+'@sub-title Unprotect a worksheet or workbook
+'@param targetObject Optional Variant. Workbook, Worksheet, or String tag. Defaults to "_active".
+'@export
 Private Sub UnProtect(Optional targetObject As Variant = "_active")
     ResolveProtection targetObject, setProtection:=False
 End Sub
 
 
-'@section Key management
+'@section Keys
 '===============================================================================
+'Key generation and display.
 
-'@sub-title Generate a new public/private key
-'@details Randomly selects a public/private key pair from the keys table and updates the worksheet.
-'@param trads Translation helper used to localise informational prompts.
+'@label:generate-key
+'@sub-title Randomly select a public/private key pair
+'@param trads ITranslationObject. Translation helper for prompts.
+'@export
 Private Sub GenerateKey(ByVal trads As ITranslationObject)
 
     Dim Lo As ListObject
@@ -516,9 +573,10 @@ Private Sub GenerateKey(ByVal trads As ITranslationObject)
     DisplayPrivateKey trads
 End Sub
 
-'@sub-title Show the actual private key
-'@details Displays the current private key to the user through a translated prompt.
-'@param trads Translation helper used to localise the message box.
+'@label:display-private-key
+'@sub-title Display the current private key via a translated prompt
+'@param trads ITranslationObject. Translation helper for the message.
+'@export
 Private Sub DisplayPrivateKey(ByVal trads As ITranslationObject)
 
     Dim promptText As String
@@ -540,12 +598,14 @@ Private Sub DisplayPrivateKey(ByVal trads As ITranslationObject)
     End If
 End Sub
 
-'@section Import/Export
+'@section DataExchange
 '===============================================================================
+'Import, export, and cloning operations.
 
-'@sub-title Export to another workbook
-'@details Exports the password sheet, copying tables and named ranges into another workbook.
-'@param destination Target workbook receiving a copy of the password sheet.
+'@label:export-to-workbook
+'@sub-title Export the password worksheet into another workbook
+'@param destination Workbook. Target workbook.
+'@export
 Private Sub ExportToWorkbook(ByVal destination As Workbook)
 
     Dim sourceSheet As Worksheet
@@ -577,9 +637,10 @@ Private Sub ExportToWorkbook(ByVal destination As Workbook)
     targetSheet.Visible = xlSheetVeryHidden
 End Sub
 
-'@sub-title Import from another password object
-'@details Imports keys and metadata from another password object instance.
-'@param source Password object providing data for import.
+'@label:import-from
+'@sub-title Import keys and metadata from another password handler
+'@param source IPasswords. Source password object.
+'@export
 Private Sub ImportFrom(ByVal source As IPasswords)
 
     Dim loSource As Range
@@ -612,6 +673,10 @@ Private Sub ImportFrom(ByVal source As IPasswords)
     ResetCaches
 End Sub
 
+'@label:new-debuging-password
+'@sub-title Update the debugging password stored on the password worksheet
+'@param newValue String. The new debugging password value.
+'@export
 Private Sub UpdateDebugingPassword(ByVal newValue As String)
     Dim target As Range
 
@@ -626,10 +691,11 @@ Private Sub UpdateDebugingPassword(ByVal newValue As String)
     target.Value = newValue
 End Sub
 
-'@fun-title Clone the password worksheet into another sheet
-'@details Creates a structural copy of the password worksheet on another sheet and returns its handler.
-'@param targetSheet Worksheet that will receive a cloned password setup.
-'@return Newly instantiated password handler bound to the cloned sheet.
+'@label:clone-to-worksheet
+'@sub-title Clone the password worksheet into another sheet
+'@param targetSheet Worksheet. Destination worksheet.
+'@return IPasswords. Handler bound to the cloned sheet.
+'@export
 Private Function CloneToWorksheet(ByVal targetSheet As Worksheet) As IPasswords
 
     Dim pass As IPasswords
@@ -649,12 +715,14 @@ Private Function CloneToWorksheet(ByVal targetSheet As Worksheet) As IPasswords
 End Function
 
 
-'@fun-title Clone the password worksheet into another workbook and returns its handler
+'@label:clone-to-workbook
+'@sub-title Clone the password worksheet into another workbook
 '@details
-'this will move the password Object focus to the added workbook. All the new
-'worksheets search (with worksheet name) are done on the added workbook. The
-'password is transfered to the new workbook (keys table and protection table),
-'and the new workbook has a debug mode exit handler.
+'Exports the password data to the target workbook and returns a
+'new handler bound to the cloned sheet.
+'@param wb Workbook. Destination workbook.
+'@return IPasswords. Handler bound to the cloned sheet.
+'@export
 Private Function CloneToWorkbook(ByVal wb As Workbook) As IPasswords
     Dim sh As Worksheet
     ExportToWorkbook wb
@@ -663,20 +731,18 @@ Private Function CloneToWorkbook(ByVal wb As Workbook) As IPasswords
 End Function
 
 
-'@section Interface implementation
+'@section Interface
 '===============================================================================
+'IPasswords delegation wiring.
 
-'@prop-title Password 's worksheet implementation
 Private Property Get IPasswords_PasswordSheet() As Worksheet
     Set IPasswords_PasswordSheet = PasswordSheet()
 End Property
 
-'@prop-title Named ranges values implementation
 Private Property Get IPasswords_Value(ByVal tagName As String) As String
     IPasswords_Value = Value(tagName)
 End Property
 
-'@prop-title Prompt display flag implementation
 Private Property Get IPasswords_DisplayPrompts() As Boolean
     IPasswords_DisplayPrompts = DisplayPrompts
 End Property
@@ -685,7 +751,6 @@ Private Property Let IPasswords_DisplayPrompts(ByVal value As Boolean)
     DisplayPrompts = value
 End Property
 
-'@prop-title Last private prompt text implementation
 Private Property Get IPasswords_LastPrivatePrompt() As String
     IPasswords_LastPrivatePrompt = LastPrivatePrompt
 End Property
@@ -694,42 +759,34 @@ Private Property Get IPasswords_LastPrivatePromptTitle() As String
     IPasswords_LastPrivatePromptTitle = LastPrivatePromptTitle
 End Property
 
-'@prop-title Table Range
 Private Property Get IPasswords_TableRange(ByVal tableName As String, Optional ByVal includeHeaders As Boolean = False) As Range
     Set IPasswords_TableRange = TableRange(tableName, includeHeaders:=includeHeaders)
 End Property
 
-'@prop-title Checkings implementation
 Private Property Get IPasswords_HasCheckings() As Boolean
     IPasswords_HasCheckings = HasCheckings
 End Property
 
-'@prop-title Debug Mode?
 Private Property Get IPasswords_IsInDebugMode() As Boolean
     IPasswords_IsInDebugMode = InDebugMode()
 End Property
 
-'@prop-title Checkings values implementation
 Private Property Get IPasswords_CheckingValues() As IChecking
     Set IPasswords_CheckingValues = CheckingValues
 End Property
 
-'@sub-title Enter debug mode impl.
 Private Sub IPasswords_EnterDebugMode(Optional ByVal targetWorkbook As Workbook)
     EnterDebugMode targetWorkbook
 End Sub
 
-'@sub-title Leave debug mode impl.
 Private Sub IPasswords_LeaveDebugMode(Optional ByVal targetWorkbook As Workbook)
     LeaveDebugMode targetWorkbook
 End Sub
 
-'@sub-title Inject before-close impl.
 Private Sub IPasswords_EnsureDebugExitHandler(Optional ByVal targetWorkbook As Workbook)
     EnsureDebugExitHandler targetWorkbook
 End Sub
 
-'@sub-title Protection impl.
 Private Sub IPasswords_Protect(Optional targetObject As Variant = "_active", _
                    Optional ByVal allowShapes As Boolean = True, _
                    Optional ByVal allowDeletingRows As Boolean = True, _
@@ -737,27 +794,22 @@ Private Sub IPasswords_Protect(Optional targetObject As Variant = "_active", _
     Protect targetObject, allowShapes, allowDeletingRows, registerState
 End Sub
 
-'@sub-title UnProtection impl.
 Private Sub IPasswords_UnProtect(Optional targetObject As Variant = "_active")
     UnProtect targetObject
 End Sub
 
-'@sub-title Generate key impl.
 Private Sub IPasswords_GenerateKey(ByVal trads As ITranslationObject)
     GenerateKey trads
 End Sub
 
-'@sub-title Display key impl.
 Private Sub IPasswords_DisplayPrivateKey(ByVal trads As ITranslationObject)
     DisplayPrivateKey trads
 End Sub
 
-'@sub-title Export to workbook impl
 Private Sub IPasswords_ExportToWorkbook(ByVal wb As Workbook)
     ExportToWorkbook wb
 End Sub
 
-'@sub-title Import from pass impl.
 Private Sub IPasswords_ImportFrom(ByVal source As IPasswords)
     ImportFrom source
 End Sub
@@ -766,33 +818,28 @@ Private Sub IPasswords_NewDebugingPassword(ByVal newValue As String)
     UpdateDebugingPassword newValue
 End Sub
 
-'@fun-title Clone to worksheet impl.
 Private Function IPasswords_CloneToWorksheet(ByVal targetSheet As Worksheet) As IPasswords
     Set IPasswords_CloneToWorksheet = CloneToWorksheet(targetSheet)
 End Function
 
-
-'@fun-title Clone to workbook impl.
 Private Function IPasswords_CloneToWorkbook(ByVal wb As Workbook) As IPasswords
     Set IPasswords_CloneToWorkbook = CloneToWorkbook(wb)
 End Function
 
-'@sub-title EnsureProtectedSheetNames
 Private Sub IPasswords_EnsureProtectedSheetsName(Optional ByVal targetWorkbook As Workbook)
     EnsureProtectedSheetsName targetWorkbook
 End Sub
 
-'@sub-title Apply the protection matrix to the password workbook
 Private Sub IPasswords_ApplyProtectionMatrix(ByVal wb As Workbook)
     ApplyProtectionMatrix wb
 End Sub
 
-'@section Private helpers - Validation & ensuring state
+'@section Private Helpers
 '===============================================================================
+'Validation, caching, and internal operations.
 
+'@label:validate-sheet
 '@sub-title Validate the password worksheet
-'@details
-'Validates that the provided worksheet contains the structures required for password management.
 Private Sub ValidateSheet(ByVal sh As Worksheet)
     If sh Is Nothing Then ThrowError ProjectError.ObjectNotInitialized, "Password sheet is required"
     EnsureLoExists sh, TABLEKEYS
@@ -804,26 +851,23 @@ Private Sub ValidateSheet(ByVal sh As Worksheet)
     EnsureRangeExists sh, NAMEVERSION
 End Sub
 
-'@sub-title Make sure password worksheet is initialised
-'@details 
-'Guards against use of the handler before a worksheet has been associated with it.
+'@label:ensure-sheet-ready
+'@sub-title Ensure password worksheet is initialised
 Private Sub EnsureSheetReady()
     If this.sh Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, "Password sheet is not initialised"
     End If
 End Sub
 
-'@sub-title Make sure the password workbook is initialised
-'@details
-'Ensures the workbook reference is resolved prior to operations that require it.
+'@label:ensure-workbook-ready
+'@sub-title Ensure the password workbook reference is resolved
 Private Sub EnsureWorkbookReady()
     EnsureSheetReady
     If this.wb Is Nothing Then Set this.wb = this.sh.Parent
 End Sub
 
-'@sub-title Make sure a ListObject is present
-'@details
-'Ensure a listObject is present in a worksheet
+'@label:ensure-lo-exists
+'@sub-title Validate that a ListObject exists on a worksheet
 Private Sub EnsureLoExists(ByVal sh As Worksheet, ByVal loName As String)
     Dim Lo As ListObject
 
@@ -836,15 +880,17 @@ Private Sub EnsureLoExists(ByVal sh As Worksheet, ByVal loName As String)
     End If
 End Sub
 
-'@sub-title Clear cached listobjects
+'@label:reset-caches
+'@sub-title Clear cached ListObject references
 Private Sub ResetCaches()
     Set this.keyTable = Nothing 'ListObject
     Set this.protectedTable = Nothing 'ListObject
 End Sub
 
-'@fun-title ListObject of public/private keys
+'@label:keys-table
+'@sub-title Retrieve and cache the keys ListObject
+'@return ListObject. The keys table.
 Private Function KeysTable() As ListObject
-    '@details Retrieves and caches the keys listobject, ensuring it exists on the password sheet.
     EnsureSheetReady
     If this.keyTable Is Nothing Then
         Set this.keyTable = this.sh.ListObjects(TABLEKEYS)
@@ -856,8 +902,9 @@ Private Function KeysTable() As ListObject
     Set KeysTable = this.keyTable
 End Function
 
-'@fun-title ListObject of protected sheets
-'@details Retrieves and caches the protected-sheets table.
+'@label:protected-sheets-table
+'@sub-title Retrieve and cache the protected-sheets ListObject
+'@return ListObject. The protection table.
 Private Function ProtectedSheetsTable() As ListObject
     EnsureSheetReady
     If this.protectedTable Is Nothing Then
@@ -870,7 +917,9 @@ Private Function ProtectedSheetsTable() As ListObject
     Set ProtectedSheetsTable = this.protectedTable
 End Function
 
-'@fun-title Retrieve a named range from the password worksheet
+'@label:named-range
+'@sub-title Retrieve a named range from the password worksheet
+'@return Range. The named range.
 Private Function NamedRange(ByVal rangeName As String) As Range
 
     Dim result As Range
@@ -889,9 +938,9 @@ Private Function NamedRange(ByVal rangeName As String) As Range
     Set NamedRange = result
 End Function
 
-'@fun-title Returns a either the current workbook or a provided workbook
-'@param candidate A Workbook. Returns the supplied workbook or falls back to the workbook backing the password sheet
-'@return A Workbook object
+'@label:resolve-workbook
+'@sub-title Resolve a workbook from optional candidate
+'@return Workbook. The resolved workbook.
 Private Function ResolveWorkbook(Optional candidate As Variant) As Workbook
 
     If IsMissing(candidate) Or IsEmpty(candidate) Then
@@ -928,9 +977,9 @@ Private Function ResolveWorkbook(Optional candidate As Variant) As Workbook
               "Expected workbook, or specific tags (_wbactive), received " & TypeName(candidate)
 End Function
 
-'@fun-title Returns the name of a provided worksheet
-'@param sheetObject A variant. Either a worksheet, a worksheet name or "_active" tag for the active worksheet
-'@return 
+'@label:resolve-sheet
+'@sub-title Resolve a worksheet from a Variant argument
+'@return Worksheet. The resolved worksheet.
 Private Function ResolveSheet(sheetObject As Variant) As Worksheet
 
     Dim typeNameValue As String
@@ -961,9 +1010,10 @@ Private Function ResolveSheet(sheetObject As Variant) As Worksheet
     End Select
 End Function
 
-'@fun-title Returns the name of a range from a key
+'@label:tag-to-range-name
+'@sub-title Map a tag identifier to its named range name
+'@return String. The named range identifier.
 Private Function TagToRangeName(ByVal tagId As Byte) As String
-    '@details Maps a tag identifier to the corresponding named range identifier.
     Select Case tagId
         Case PasswordTagDebug: TagToRangeName = NAMEDEBUGPASSWORD
         Case PasswordTagPublic: TagToRangeName = NAMEPUBLICKEY
@@ -977,7 +1027,9 @@ Private Function TagToRangeName(ByVal tagId As Byte) As String
     End Select
 End Function
 
-'@fun-title Converts a friendly tag label into the byte-coded identifier used internally.
+'@label:tag-from-name
+'@sub-title Convert a friendly tag label to a byte-coded identifier
+'@return Byte. The PasswordTag constant.
 Private Function TagFromName(ByVal tagName As String) As Byte
     Select Case LCase$(Trim$(tagName))
         Case "debuggingpassword": TagFromName = PasswordTagDebug
@@ -992,7 +1044,8 @@ Private Function TagFromName(ByVal tagName As String) As Byte
     End Select
 End Function
 
-'@fun-title Validates that a required named range exists on the password worksheet.
+'@label:ensure-range-exists
+'@sub-title Validate that a named range exists on a worksheet
 Private Sub EnsureRangeExists(ByVal targetSheet As Worksheet, ByVal rangeName As String)
     Dim rng As Range
     On Error Resume Next
@@ -1004,12 +1057,17 @@ Private Sub EnsureRangeExists(ByVal targetSheet As Worksheet, ByVal rangeName As
     End If
 End Sub
 
-'@fun-title Tests whether the password sheet declares the workbook in debug mode.
+'@label:is-in-debug-mode
+'@sub-title Test whether the workbook is in debug mode
+'@return Boolean. True when debug mode is active.
 Private Function InDebugMode() As Boolean
     InDebugMode = (StrComp(CStr(NamedRange(NAMEDEBUGMODE).Value), DEFAULTBOOLYES, vbTextCompare) = 0)
 End Function
 
-'@sub-title Applies stored protection settings to each worksheet listed in the protected-sheets table.
+'@label:apply-protection-matrix
+'@sub-title Apply stored protection settings to all listed worksheets
+'@param wb Workbook. Target workbook whose sheets will be protected.
+'@export
 Private Sub ApplyProtectionMatrix(ByVal wb As Workbook)
     Dim Lo As ListObject
     Dim bodyRange As Range
@@ -1037,7 +1095,8 @@ NextRow:
     Next rowIdx
 End Sub
 
-'@sub-title Protect a worksheet using debugging password and supplied capability flags
+'@label:apply-sheet-protection
+'@sub-title Protect a worksheet using debugging password and capability flags
 Private Sub ApplySheetProtection(ByVal targetSheet As Worksheet, _
                                  ByVal allowShapes As Boolean, _
                                  ByVal allowDeleting As Boolean)
@@ -1061,7 +1120,9 @@ Private Sub ApplySheetProtection(ByVal targetSheet As Worksheet, _
 
 End Sub
 
-'@fun-title  Retrieve stored protection preferences for the specified sheet, returning defaults when absent.
+'@label:protection-record
+'@sub-title Retrieve stored protection preferences for a sheet
+'@return BetterArray. Array(sheetName, allowShapes, allowDelete).
 Private Function ProtectionRecord(ByVal sheetName As String) As BetterArray
 
     Dim Lo As ListObject
@@ -1098,7 +1159,9 @@ Private Function ProtectionRecord(ByVal sheetName As String) As BetterArray
     Set ProtectionRecord = record
 End Function
 
-'@fun-title Constructs a BetterArray initialised with default protection settings.
+'@label:empty-protection-record
+'@sub-title Construct default protection settings for a sheet
+'@return BetterArray. Array(sheetName, "yes", "yes").
 Private Function EmptyProtectionRecord(ByVal sheetName As String) As BetterArray
 
     Dim record As BetterArray
@@ -1110,7 +1173,8 @@ Private Function EmptyProtectionRecord(ByVal sheetName As String) As BetterArray
     Set EmptyProtectionRecord = record
 End Function
 
-'@fun-title Inserts or updates the protection table entry for the specified sheet.
+'@label:persist-protection-settings
+'@sub-title Insert or update the protection table entry for a sheet
 Private Sub PersistProtectionSettings(ByVal sheetName As String, _
                                       ByVal allowShapes As Boolean, _
                                       ByVal allowDeletingRows As Boolean)
@@ -1142,8 +1206,10 @@ Private Sub PersistProtectionSettings(ByVal sheetName As String, _
 End Sub
 
 
+'@label:boolean-to-flag
+'@sub-title Convert a Boolean to "yes"/"no" text flag
+'@return String. "yes" or "no".
 Private Function BooleanToFlag(ByVal inpValue As Boolean) As String
-    '@details Converts a Boolean to the "yes"/"no" textual flag used in the protection table.
     If inpValue Then
         BooleanToFlag = DEFAULTBOOLYES
     Else
@@ -1151,14 +1217,18 @@ Private Function BooleanToFlag(ByVal inpValue As Boolean) As String
     End If
 End Function
 
+'@label:parse-boolean
+'@sub-title Parse a "yes"/"no" text flag to Boolean
+'@return Boolean. True unless the value is "no".
 Private Function ParseBoolean(ByVal inpValue As String) As Boolean
-    '@details Interprets stored textual flags where any inpValue other than "no" is treated as True.
     ParseBoolean = (StrComp(CStr(inpValue), DEFAULTBOOLNO, vbTextCompare) <> 0)
 End Function
 
 
+'@label:build-leave-debug-procedure
+'@sub-title Generate VBA code for the LeaveDebugModeOnClose procedure
+'@return String. VBA source code.
 Private Function BuildLeaveDebugProcedure() As String
-    '@details Generates VBA source code that exits debug mode safely when the workbook closes.
     Dim code As String
     code = "Private Sub LeaveDebugModeOnClose()" & vbNewLine & _
            "    On Error Resume Next" & vbNewLine & _
@@ -1174,8 +1244,10 @@ Private Function BuildLeaveDebugProcedure() As String
     BuildLeaveDebugProcedure = code
 End Function
 
+'@label:build-before-close-procedure
+'@sub-title Generate VBA code for the Workbook_BeforeClose handler
+'@return String. VBA source code.
 Private Function BuildBeforeCloseProcedure() As String
-    '@details Generates VBA source code wiring the workbook BeforeClose event to the debug exit helper.
     Dim code As String
     code = "Private Sub Workbook_BeforeClose(Cancel As Boolean)" & vbNewLine & _
            "    On Error Resume Next" & vbNewLine & _
@@ -1184,8 +1256,9 @@ Private Function BuildBeforeCloseProcedure() As String
     BuildBeforeCloseProcedure = code
 End Function
 
+'@label:ensure-workbook-before-close-hook
+'@sub-title Ensure Workbook_BeforeClose invokes the debug guard
 Private Sub EnsureWorkbookBeforeCloseHook(ByVal component As Object)
-    '@details Makes sure the Workbook_BeforeClose handler invokes the debug guard without clobbering user code.
     Dim codeModule As Object
     Dim procedureName As String
     Dim procStart As Long
@@ -1228,11 +1301,13 @@ Handler:
               "Unable to ensure Workbook_BeforeClose invokes LeaveDebugModeOnClose: " & Err.Description
 End Sub
 
+'@label:procedure-block-contains-token
+'@sub-title Scan a procedure block for a specific token
+'@return Boolean. True when the token is found.
 Private Function ProcedureBlockContainsToken(ByVal codeModule As Object, _
                                              ByVal startLine As Long, _
                                              ByVal lineCount As Long, _
                                              ByVal token As String) As Boolean
-    '@details Scans a procedure block for a specific token using case-insensitive comparison.
     Dim blockText As String
 
     If startLine <= 0 Or lineCount <= 0 Then Exit Function
@@ -1241,8 +1316,9 @@ Private Function ProcedureBlockContainsToken(ByVal codeModule As Object, _
     ProcedureBlockContainsToken = (InStr(1, blockText, token, vbTextCompare) > 0)
 End Function
 
+'@label:append-procedure
+'@sub-title Append generated code to the end of a code module
 Private Sub AppendProcedure(ByVal codeModule As Object, ByVal procedureCode As String)
-    '@details Appends generated code to the end of the module, normalising line breaks when necessary.
     Dim lineCount As Long
 
     lineCount = codeModule.CountOfLines
@@ -1251,11 +1327,11 @@ Private Sub AppendProcedure(ByVal codeModule As Object, ByVal procedureCode As S
 End Sub
 
 
+'@label:insert-or-replace-procedure
+'@sub-title Insert or replace a VBA procedure in a code module
 Private Sub InsertOrReplaceProcedure(ByVal component As Object, _
                                      ByVal procedureName As String, _
                                      ByVal procedureCode As String)
-
-    '@details Inserts the supplied code into the component, replacing any existing procedure with the same name.
 
     Dim codeModule As Object
     Dim startLine As Long
@@ -1282,7 +1358,8 @@ Private Sub InsertOrReplaceProcedure(ByVal component As Object, _
     codeModule.InsertLines lineCount + 1, procedureCode
 End Sub
 
-'@details Replicates every listobject from the source sheet into the target sheet, preserving style and name.
+'@label:copy-list-objects
+'@sub-title Replicate ListObjects from source to target sheet
 Private Sub CopyListObjects(ByVal sourceSheet As Worksheet, ByVal targetSheet As Worksheet)
 
     Dim Lo As ListObject
@@ -1301,7 +1378,8 @@ Private Sub CopyListObjects(ByVal sourceSheet As Worksheet, ByVal targetSheet As
     Next lo
 End Sub
 
-'@details Copies critical named ranges to the target sheet, preserving formulas and refreshing definitions.
+'@label:copy-named-ranges
+'@sub-title Copy critical named ranges to the target sheet
 Private Sub CopyNamedRanges(ByVal sourceSheet As Worksheet, ByVal targetSheet As Worksheet)
 
     Dim rangeNames As Variant
@@ -1325,10 +1403,11 @@ Private Sub CopyNamedRanges(ByVal sourceSheet As Worksheet, ByVal targetSheet As
     Next idx
 End Sub
 
-'@details Append an informational entry to the internal checking log, initialising it on first use.
-'@param label Message describing the event.
-'@param scope Checking severity classification (note/warning/error).
-'@param addTimeStamp Boolean, whether to add a time stamp to reporting, default is True.
+'@label:log-info
+'@sub-title Append a diagnostic entry to the internal checking log
+'@param label String. Message describing the event.
+'@param scope Byte. Checking severity. Defaults to checkingNote.
+'@param addTimeStamp Boolean. Whether to prepend a timestamp. Defaults to True.
 Private Sub LogInfo(ByVal label As String, _
                     Optional ByVal scope As Byte = checkingNote, _
                     Optional ByVal addTimeStamp As Boolean = True)
@@ -1347,7 +1426,8 @@ Private Sub LogInfo(ByVal label As String, _
     this.hasChecks = True
 End Sub
 
+'@label:throw-error
+'@sub-title Raise a typed project error
 Private Sub ThrowError(ByVal errNumber As Long, ByVal message As String)
-    '@details Raises a ProjectError-coded runtime error scoped to the Passwords class.
     Err.Raise errNumber, CLASSNAME, message
 End Sub

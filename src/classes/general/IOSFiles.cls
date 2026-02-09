@@ -10,103 +10,122 @@ Attribute VB_Exposed = False
 Attribute VB_Description = "Interface of OSFiles"
 
 '@Interface
-'@Folder("GeneralInterface")
+'@Folder("General")
 '@ModuleDescription("Interface of OSFiles")
-'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument,   ExcelMemberMayReturnNothing,  SuperfluousAnnotationArgument, MissingAnnotationArgument, UseMeaningfulName, HungarianNotation
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, MissingAnnotationArgument, UseMeaningfulName, HungarianNotation
 
 Option Explicit
 
-'The main advantage of OSFiles is that it could work on both Macos and Windows
-'The allowed filters are the following: "*.xls", "*.xlsx", "*.xlsb", "*.xlsb, *.xlsx"
-'If you want to use more filters, please remember to add them on Mac in the
-'SelectFileOnMac Sub of OSFiles, new filters like *.csv may be
-'accessible on windows, but if the filter is not in the previous list, it will 
-'default to xlsx files on Mac.
+'@class IOSFiles
+'@description
+'Defines the public contract for the OSFiles class, exposing
+'cross-platform file and folder selection dialogs (Windows FileDialog
+'and macOS AppleScript), iteration over multi-selections, and
+'validation helpers.
 
-'Ideas based on https://macexcel.com/examples/filesandfolders/selectfiles/
 
 '@section Elements
 '===============================================================================
+'@description File and folder path accessors.
 
-'@jump:File
-'Return back the loaded File/Folder
+'@jump:file
+'@prop-title Current loaded file path
+'@return String. The first selected file path.
 Public Property Get File() As String: End Property
 
-'@jump:Files
-'Return back all loaded files when multi-selection is used
+'@jump:files
+'@prop-title All loaded file paths from a multi-selection
+'@return Variant. Zero-based string array of file paths.
 Public Property Get Files() As Variant: End Property
 
-'@jump:Folder
-'Return back the loaded folder
+'@jump:folder
+'@prop-title Current loaded folder path
+'@return String. The first selected folder path.
 Public Property Get Folder() As String: End Property
 
-'@jump:Folders
-'Return back all loaded folders when multi-selection is used
+'@jump:folders
+'@prop-title All loaded folder paths from a multi-selection
+'@return Variant. Zero-based string array of folder paths.
 Public Property Get Folders() As Variant: End Property
+
 
 '@section Selecting
 '===============================================================================
+'@description File and folder picker operations.
 
-
-'@jump:LoadFile
-'Load a file by adding filtes
-Public Sub LoadFile(ByVal filters As String, _ 
+'@jump:load-file
+'@sub-title Show a single-file picker dialog
+'@param filters String. File type filters (e.g. "*.xlsx", "*.xlsb, *.xlsx").
+'@param customMacFilter String. Optional UTI override for macOS. Defaults to vbNullString.
+Public Sub LoadFile(ByVal filters As String, _
                     Optional ByVal customMacFilter As String = vbNullString)
 End Sub
 
-'@jump:LoadFiles
-'Load multiple files when the platform supports it
-Public Sub LoadFiles(ByVal filters As String, _ 
+'@jump:load-files
+'@sub-title Show a multi-file picker dialog
+'@param filters String. File type filters.
+'@param customMacFilter String. Optional UTI override for macOS. Defaults to vbNullString.
+Public Sub LoadFiles(ByVal filters As String, _
                      Optional ByVal customMacFilter As String = vbNullString)
 End Sub
 
-'@jump:LoadFolder
-'Load a folder
+'@jump:load-folder
+'@sub-title Show a single-folder picker dialog
 Public Sub LoadFolder(): End Sub
 
-'@jump:LoadFolders
-'Load multiple folders when the platform supports it
+'@jump:load-folders
+'@sub-title Show a multi-folder picker dialog
 Public Sub LoadFolders(): End Sub
 
-'@jump:ResetFilesIterator
-'Reset the iteration cursor over selected files
+'@jump:reset-files-iterator
+'@sub-title Reset the iteration cursor over selected files
 Public Sub ResetFilesIterator(): End Sub
 
-'@jump:HasNextFile
-'Check if there is another file available in the iterator
+'@jump:has-next-file
+'@sub-title Check if another file is available in the iterator
+'@return Boolean. True when the cursor has not reached the end.
 Public Function HasNextFile() As Boolean: End Function
 
-'@jump:NextFile
-'Retrieve the next file from the iterator
+'@jump:next-file
+'@sub-title Retrieve the next file path and advance the cursor
+'@return String. The next file path.
 Public Function NextFile() As String: End Function
 
-'@jump:ResetFoldersIterator
-'Reset the iteration cursor over selected folders
+'@jump:reset-folders-iterator
+'@sub-title Reset the iteration cursor over selected folders
 Public Sub ResetFoldersIterator(): End Sub
 
-'@jump:HasNextFolder
-'Check if there is another folder available in the iterator
+'@jump:has-next-folder
+'@sub-title Check if another folder is available in the iterator
+'@return Boolean. True when the cursor has not reached the end.
 Public Function HasNextFolder() As Boolean: End Function
 
-'@jump:NextFolder
-'Retrieve the next folder from the iterator
+'@jump:next-folder
+'@sub-title Retrieve the next folder path and advance the cursor
+'@return String. The next folder path.
 Public Function NextFolder() As String: End Function
+
 
 '@section Validation
 '===============================================================================
+'@description Selection validity checks.
 
-'@jump:HasValidFile
-'Test if the loaded file is valid (shoud be after loading)
+'@jump:has-valid-file
+'@sub-title Whether the loaded file path is valid
+'@return Boolean. True when a non-empty file path exists.
 Public Function HasValidFile() As Boolean: End Function
 
-'@jump:HasValidFiles
-'Test if the loaded files array is valid
+'@jump:has-valid-files
+'@sub-title Whether the loaded files array contains entries
+'@return Boolean. True when at least one file was selected.
 Public Function HasValidFiles() As Boolean: End Function
 
-'@jump:HasValidFolder
-'Test if the loaded folder is valid
+'@jump:has-valid-folder
+'@sub-title Whether the loaded folder path is valid
+'@return Boolean. True when a non-empty folder path exists.
 Public Function HasValidFolder() As Boolean: End Function
 
-'@jump:HasValidFolders
-'Test if the loaded folders array is valid
+'@jump:has-valid-folders
+'@sub-title Whether the loaded folders array contains entries
+'@return Boolean. True when at least one folder was selected.
 Public Function HasValidFolders() As Boolean: End Function

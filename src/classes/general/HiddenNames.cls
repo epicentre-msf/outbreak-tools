@@ -9,14 +9,25 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Attribute VB_Description = "Manages hidden worksheet name/value storage with metadata caching"
 
+'@PredeclaredId
 '@Folder("General")
 '@ModuleDescription("Manages hidden worksheet name/value storage with metadata caching")
 '@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing
-'@depends ProjectError, BetterArray
 
 Option Explicit
 
 Implements IHiddenNames
+
+'@class HiddenNames
+'@description
+'Manages hidden worksheet/workbook-level name-value storage with typed
+'serialization and metadata caching. Each name carries a type annotation
+'(String/Boolean/Long/Variant) and a last-updated timestamp stored in
+'the Name.Comment field. Supports cross-scope import/export between
+'worksheets and workbooks.
+'@depends ProjectError, BetterArray
+'@version 1.0 (2026-02-09)
+'@author OutbreakTools
 
 Private Type THiddenNames
     hostSh As Worksheet
@@ -39,8 +50,11 @@ Private Const META_FIELD_UPDATED As String = "updated"
 Private Const META_FIELD_DEFINITION As String = "definition"
 
 
-'@section Metadata helpers
+'@section Metadata Helpers
 '===============================================================================
+
+'@label:metadata-field-index
+'@sub-title Ordinal positions within a metadata record array
 Private Enum MetadataFieldIndex
     MetaFieldName = 0
     MetaFieldType = 1
@@ -48,6 +62,9 @@ Private Enum MetadataFieldIndex
     MetaFieldDefinition = 3
 End Enum
 
+'@label:metadata-store
+'@sub-title Lazy-initialised BetterArray holding all metadata records
+'@return BetterArray. The metadata cache.
 Private Function MetadataStore() As BetterArray
     If this.metadata Is Nothing Then
         Set this.metadata = New BetterArray
@@ -56,6 +73,8 @@ Private Function MetadataStore() As BetterArray
     Set MetadataStore = this.metadata
 End Function
 
+'@label:build-metadata-record
+'@sub-title Construct a metadata record array
 Private Function BuildMetadataRecord(ByVal nameId As String, _
                                      ByVal valueType As Byte, _
                                      ByVal lastUpdated As Date, _
@@ -70,36 +89,53 @@ Private Function BuildMetadataRecord(ByVal nameId As String, _
     BuildMetadataRecord = record
 End Function
 
+'@label:metadata-name
+'@sub-title Read the name field from a metadata record
 Private Function MetadataName(ByRef record As Variant) As String
     MetadataName = CStr(record(MetaFieldName))
 End Function
 
+'@label:metadata-type
+'@sub-title Read the type field from a metadata record
 Private Function MetadataType(ByRef record As Variant) As Byte
     MetadataType = CLng(record(MetaFieldType))
 End Function
 
+'@label:metadata-updated
+'@sub-title Read the last-updated field from a metadata record
 Private Function MetadataUpdated(ByRef record As Variant) As Date
     MetadataUpdated = record(MetaFieldUpdated)
 End Function
 
+'@label:metadata-definition
+'@sub-title Read the Name definition from a metadata record
 Private Function MetadataDefinition(ByRef record As Variant) As Name
     On Error Resume Next
         Set MetadataDefinition = record(MetaFieldDefinition)
     On Error GoTo 0
 End Function
 
+'@label:metadata-set-definition
+'@sub-title Write the Name definition into a metadata record
 Private Sub MetadataSetDefinition(ByRef record As Variant, ByVal definition As Name)
     Set record(MetaFieldDefinition) = definition
 End Sub
 
+'@label:metadata-set-updated
+'@sub-title Write the last-updated timestamp into a metadata record
 Private Sub MetadataSetUpdated(ByRef record As Variant, ByVal lastUpdated As Date)
     record(MetaFieldUpdated) = lastUpdated
 End Sub
 
+'@label:metadata-set-type
+'@sub-title Write the value type into a metadata record
 Private Sub MetadataSetType(ByRef record As Variant, ByVal valueType As Byte)
     record(MetaFieldType) = valueType
 End Sub
 
+'@label:metadata-index
+'@sub-title Find the index of a metadata record by name
+'@return Long. The index, or -1 when not found.
 Private Function MetadataIndex(ByVal nameId As String) As Long
     Dim store As BetterArray
     Dim idx As Long
@@ -120,6 +156,8 @@ Private Function MetadataIndex(ByVal nameId As String) As Long
     Next idx
 End Function
 
+'@label:store-metadata-record
+'@sub-title Insert or replace a metadata record in the cache
 Private Sub StoreMetadataRecord(ByVal nameId As String, ByRef record As Variant)
     Dim store As BetterArray
     Dim idx As Long
@@ -136,9 +174,17 @@ End Sub
 
 '@section Factory
 '===============================================================================
-'@sub-title Create a manager bound to a sheet
-'@param targetObj Worksheet Or workbook that hosts the hidden names.
-'@return Fully configured `IHiddenNames` instance.
+
+'@label:create
+'@sub-title Create a new HiddenNames instance
+'@details
+'Validates the input and creates a fully initialised manager bound to
+'the supplied worksheet or workbook.
+'@param targetObj Object. A Worksheet or Workbook hosting the hidden names.
+'@return IHiddenNames. The configured instance.
+'@throws ProjectError.ObjectNotInitialized When targetObj is Nothing.
+'@throws ProjectError.InvalidArgument When targetObj is not a Worksheet or Workbook.
+'@export
 Public Function Create(ByVal targetObj As Object) As IHiddenNames
     Dim manager As HiddenNames
 
@@ -149,7 +195,9 @@ Public Function Create(ByVal targetObj As Object) As IHiddenNames
     Set Create = manager.Self
 End Function
 
-'@sub-title Return the current instance as interface
+'@label:self
+'@prop-title Self-reference returning the interface pointer
+'@return IHiddenNames. This instance.
 Public Property Get Self() As IHiddenNames
     Set Self = Me
 End Property
@@ -157,6 +205,9 @@ End Property
 
 '@section Initialisation
 '===============================================================================
+
+'@label:initialise
+'@sub-title Bind the manager to a worksheet or workbook and load cache
 Public Sub Initialise(ByVal targetObj As Object)
     Set this.hostSh = Nothing
     Set this.hostWb = Nothing
@@ -172,6 +223,8 @@ Public Sub Initialise(ByVal targetObj As Object)
     LoadMetadataCache
 End Sub
 
+'@label:load-metadata-cache
+'@sub-title Scan existing hidden names and populate the metadata cache
 Private Sub LoadMetadataCache()
     Dim definition As Name
     Dim valueType As Byte
@@ -199,8 +252,11 @@ Private Sub LoadMetadataCache()
 End Sub
 
 
-'@section Interface helpers
+'@section Interface Helpers
 '===============================================================================
+
+'@label:validate-input
+'@sub-title Validate the factory input argument
 Private Sub ValidateInput(ByVal targetObj As Object)
 
     If targetObj Is Nothing Then
@@ -213,10 +269,15 @@ Private Sub ValidateInput(ByVal targetObj As Object)
     End If
 End Sub
 
+'@label:sheet
+'@prop-title Worksheet backing this manager
+'@export
 Private Property Get SheetInternal() As Worksheet
     Set SheetInternal = this.hostSh
 End Property
 
+'@label:name-owner
+'@sub-title Resolve the host object owning the names collection
 Private Function NameOwner() As Object
     If Not this.hostSh Is Nothing Then
         Set NameOwner = this.hostSh
@@ -225,6 +286,8 @@ Private Function NameOwner() As Object
     End If
 End Function
 
+'@label:scope-label
+'@sub-title Human-readable label for the current scope
 Private Function ScopeLabel() As String
     If Not this.hostSh Is Nothing Then
         ScopeLabel = "sheet '" & this.hostSh.Name & "'"
@@ -235,10 +298,15 @@ Private Function ScopeLabel() As String
     End If
 End Function
 
+'@label:metadata-key
+'@sub-title Normalise a name identifier for case-insensitive lookup
 Private Function MetadataKey(ByVal nameId As String) As String
     MetadataKey = LCase$(Trim$(nameId))
 End Function
 
+'@label:ensure-metadata-record
+'@sub-title Ensure a metadata record exists for the given name
+'@return Long. The record index, or -1 when the name is not defined.
 Private Function EnsureMetadataRecord(ByVal nameId As String) As Long
     Dim idx As Long
     Dim store As BetterArray
@@ -279,6 +347,8 @@ Private Function EnsureMetadataRecord(ByVal nameId As String) As Long
     EnsureMetadataRecord = idx
 End Function
 
+'@label:metadata-record
+'@sub-title Retrieve a metadata record by name
 Private Function MetadataRecord(ByVal nameId As String) As Variant
     Dim idx As Long
     Dim store As BetterArray
@@ -290,6 +360,8 @@ Private Function MetadataRecord(ByVal nameId As String) As Variant
     MetadataRecord = store.Item(idx)
 End Function
 
+'@label:remove-metadata-record
+'@sub-title Remove a metadata record from the cache
 Private Sub RemoveMetadataRecord(ByVal nameId As String)
     Dim idx As Long
     Dim store As BetterArray
@@ -313,8 +385,11 @@ Private Sub RemoveMetadataRecord(ByVal nameId As String)
 End Sub
 
 
-'@section Lookup helpers
+'@section Lookup Helpers
 '===============================================================================
+
+'@label:should-track
+'@sub-title Determine whether a Name definition belongs to this scope
 Private Function ShouldTrack(ByVal definition As Name) As Boolean
     Dim parentSh As Worksheet
     Dim refersTo As String
@@ -347,6 +422,8 @@ Private Function ShouldTrack(ByVal definition As Name) As Boolean
     End If
 End Function
 
+'@label:find-definition
+'@sub-title Locate a Name definition by identifier
 Private Function FindDefinition(ByVal nameId As String) As Name
     Dim definition As Name
 
@@ -366,10 +443,14 @@ Private Function FindDefinition(ByVal nameId As String) As Name
     Next definition
 End Function
 
+'@label:compare-name
+'@sub-title Case-insensitive comparison of a Name definition to an expected identifier
 Private Function CompareName(ByVal definition As Name, ByVal expected As String) As Boolean
     CompareName = (StrComp(ExtractSimpleName(definition.Name), expected, vbTextCompare) = 0)
 End Function
 
+'@label:extract-simple-name
+'@sub-title Strip sheet qualification from a Name string
 Private Function ExtractSimpleName(ByVal qualifiedName As String) As String
     Dim exclPos As Long
 
@@ -384,6 +465,9 @@ End Function
 
 '@section Serialization
 '===============================================================================
+
+'@label:serialize-value
+'@sub-title Convert a typed value to its RefersTo formula string
 Private Function SerializeValue(ByVal value As Variant, _
                                 ByVal valueType As Byte) As String
     Select Case valueType
@@ -402,6 +486,8 @@ Private Function SerializeValue(ByVal value As Variant, _
     End Select
 End Function
 
+'@label:serialize-variant
+'@sub-title Serialize a Variant value by inspecting its runtime type
 Private Function SerializeVariant(ByVal value As Variant) As String
     Select Case VarType(value)
         Case vbString
@@ -423,10 +509,14 @@ Private Function SerializeVariant(ByVal value As Variant) As String
     End Select
 End Function
 
+'@label:escape-string
+'@sub-title Escape double-quotes for formula embedding
 Private Function EscapeString(ByVal value As String) As String
     EscapeString = Replace(value, """", """""")
 End Function
 
+'@label:apply-comment
+'@sub-title Write the type and timestamp comment onto a Name definition
 Private Sub ApplyComment(ByVal definition As Name, _
                          ByVal valueType As Byte, _
                          ByVal updatedOn As Date)
@@ -435,6 +525,8 @@ Private Sub ApplyComment(ByVal definition As Name, _
     On Error GoTo 0
 End Sub
 
+'@label:build-comment
+'@sub-title Assemble the structured comment string
 Private Function BuildComment(ByVal valueType As Byte, ByVal updatedOn As Date) As String
     Dim comment As String
 
@@ -443,6 +535,8 @@ Private Function BuildComment(ByVal valueType As Byte, ByVal updatedOn As Date) 
     BuildComment = comment
 End Function
 
+'@label:name-type-from-comment
+'@sub-title Parse the value type from a Name comment
 Private Function NameTypeFromComment(ByVal comment As String) As Byte
     Dim typeValue As String
 
@@ -454,6 +548,8 @@ Private Function NameTypeFromComment(ByVal comment As String) As Byte
     End If
 End Function
 
+'@label:updated-from-comment
+'@sub-title Parse the last-updated timestamp from a Name comment
 Private Function UpdatedFromComment(ByVal comment As String) As Date
     Dim stamp As String
 
@@ -465,6 +561,8 @@ Private Function UpdatedFromComment(ByVal comment As String) As Date
     On Error GoTo 0
 End Function
 
+'@label:extract-comment-value
+'@sub-title Extract a key-value token from a structured comment
 Private Function ExtractCommentValue(ByVal comment As String, ByVal prefix As String) As String
     Dim lowerComment As String
     Dim lowerPrefix As String
@@ -490,6 +588,8 @@ Private Function ExtractCommentValue(ByVal comment As String, ByVal prefix As St
     ExtractCommentValue = Trim$(ExtractCommentValue)
 End Function
 
+'@label:value-type-name
+'@sub-title Convert a HiddenNameValueType to its string representation
 Private Function ValueTypeName(ByVal valueType As Byte) As String
     Select Case valueType
         Case HiddenNameTypeString: ValueTypeName = "string"
@@ -499,6 +599,8 @@ Private Function ValueTypeName(ByVal valueType As Byte) As String
     End Select
 End Function
 
+'@label:string-to-value-type
+'@sub-title Convert a string representation back to HiddenNameValueType
 Private Function StringToValueType(ByVal value As String) As Byte
     Select Case LCase$(value)
         Case "string": StringToValueType = HiddenNameTypeString
@@ -509,8 +611,11 @@ Private Function StringToValueType(ByVal value As String) As Byte
 End Function
 
 
-'@section Value coercion
+'@section Value Coercion
 '===============================================================================
+
+'@label:coerce-value
+'@sub-title Cast a raw value to the specified HiddenNameValueType
 Private Function CoerceValue(ByVal value As Variant, _
                              ByVal valueType As Byte) As Variant
     Select Case valueType
@@ -526,8 +631,11 @@ Private Function CoerceValue(ByVal value As Variant, _
 End Function
 
 
-'@section Core operations
+'@section Core Operations
 '===============================================================================
+
+'@label:ensure-definition
+'@sub-title Create a hidden Name definition if it does not exist
 Private Function EnsureDefinition(ByVal nameId As String, _
                                   ByVal initialValue As Variant, _
                                   ByVal valueType As Byte) As Name
@@ -559,6 +667,8 @@ Private Function EnsureDefinition(ByVal nameId As String, _
     Set EnsureDefinition = definition
 End Function
 
+'@label:update-definition-value
+'@sub-title Write a new value into an existing Name definition
 Private Sub UpdateDefinitionValue(ByVal definition As Name, _
                                   ByVal value As Variant, _
                                   ByVal valueType As Byte, _
@@ -576,6 +686,8 @@ Private Sub UpdateDefinitionValue(ByVal definition As Name, _
     ApplyComment definition, valueType, timestamp
 End Sub
 
+'@label:definition-stored-value
+'@sub-title Extract the raw stored value from a Name definition
 Private Function DefinitionStoredValue(ByVal definition As Name, _
                                        ByVal valueType As Byte) As Variant
     Dim raw As Variant
@@ -608,6 +720,8 @@ Private Function DefinitionStoredValue(ByVal definition As Name, _
     End If
 End Function
 
+'@label:remove-definition
+'@sub-title Delete a Name definition from the host scope
 Private Sub RemoveDefinition(ByVal nameId As String)
     Dim definition As Name
 
@@ -619,6 +733,8 @@ Private Sub RemoveDefinition(ByVal nameId As String)
     On Error GoTo 0
 End Sub
 
+'@label:ensure-ready
+'@sub-title Guard that the manager is properly initialised
 Private Sub EnsureReady()
     If NameOwner() Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, _
@@ -629,10 +745,17 @@ End Sub
 
 '@section Public API
 '===============================================================================
+
+'@label:has-name
+'@sub-title Check whether a hidden name exists
+'@export
 Private Function HasName(ByVal nameId As String) As Boolean
     HasName = (EnsureMetadataRecord(nameId) <> -1)
 End Function
 
+'@label:ensure-name
+'@sub-title Ensure a hidden name exists with the provided default
+'@export
 Private Function Ensure(ByVal nameId As String, _
                         ByVal initialValue As Variant, _
                         Optional ByVal valueType As Byte = HiddenNameTypeVariant) As Name
@@ -651,6 +774,9 @@ Private Function Ensure(ByVal nameId As String, _
     Set Ensure = definition
 End Function
 
+'@label:value
+'@sub-title Retrieve a hidden value without coercion
+'@export
 Private Function ValueOf(ByVal nameId As String, _
                          Optional ByVal defaultValue As Variant) As Variant
     Dim idx As Long
@@ -679,6 +805,9 @@ Private Function ValueOf(ByVal nameId As String, _
     ValueOf = CoerceValue(raw, MetadataType(record))
 End Function
 
+'@label:set-value
+'@sub-title Update the stored value of an existing hidden name
+'@export
 Private Sub Update(ByVal nameId As String, ByVal value As Variant)
     Dim idx As Long
     Dim store As BetterArray
@@ -707,6 +836,9 @@ Private Sub Update(ByVal nameId As String, ByVal value As Variant)
     store.Item(idx) = record
 End Sub
 
+'@label:value-as-string
+'@sub-title Retrieve the hidden value coerced to String
+'@export
 Private Function ValueAsString(ByVal nameId As String, _
                                Optional ByVal defaultValue As String = vbNullString) As String
     Dim value As Variant
@@ -715,6 +847,9 @@ Private Function ValueAsString(ByVal nameId As String, _
     ValueAsString = CStr(value)
 End Function
 
+'@label:value-as-boolean
+'@sub-title Retrieve the hidden value coerced to Boolean
+'@export
 Private Function ValueAsBoolean(ByVal nameId As String, _
                                 Optional ByVal defaultValue As Boolean = False) As Boolean
     Dim value As Variant
@@ -723,6 +858,9 @@ Private Function ValueAsBoolean(ByVal nameId As String, _
     ValueAsBoolean = CBool(value)
 End Function
 
+'@label:value-as-long
+'@sub-title Retrieve the hidden value coerced to Long
+'@export
 Private Function ValueAsLong(ByVal nameId As String, _
                              Optional ByVal defaultValue As Long = 0) As Long
     Dim value As Variant
@@ -731,12 +869,18 @@ Private Function ValueAsLong(ByVal nameId As String, _
     ValueAsLong = CLng(value)
 End Function
 
+'@label:remove-name
+'@sub-title Remove a hidden name definition
+'@export
 Private Sub Remove(ByVal nameId As String)
     EnsureReady
     RemoveDefinition nameId
     RemoveMetadataRecord Trim$(nameId)
 End Sub
 
+'@label:list-names
+'@sub-title Enumerate recorded hidden names filtered by optional prefix
+'@export
 Private Function Enumerate(Optional ByVal prefix As String = vbNullString) As BetterArray
     Dim result As BetterArray
     Dim store As BetterArray
@@ -780,6 +924,9 @@ Private Function Enumerate(Optional ByVal prefix As String = vbNullString) As Be
     Set Enumerate = result
 End Function
 
+'@label:export-names
+'@sub-title Export all tracked hidden names to another worksheet
+'@export
 Private Sub ExportAll(ByVal targetSh As Worksheet, _
                       Optional ByVal prefix As String = vbNullString)
     Dim store As BetterArray
@@ -815,6 +962,9 @@ Private Sub ExportAll(ByVal targetSh As Worksheet, _
     Next idx
 End Sub
 
+'@label:export-names-to-workbook
+'@sub-title Export tracked names to another workbook scope
+'@export
 Private Sub ExportAllToWorkbook(ByVal targetWb As Workbook, _
                                 Optional ByVal prefix As String = vbNullString)
     Dim store As BetterArray
@@ -855,6 +1005,9 @@ Private Sub ExportAllToWorkbook(ByVal targetWb As Workbook, _
     Next idx
 End Sub
 
+'@label:import-names
+'@sub-title Import hidden names from another worksheet
+'@export
 Private Sub ImportAll(ByVal sourceSh As Worksheet, _
                       Optional ByVal prefix As String = vbNullString, _
                       Optional ByVal overwriteExisting As Boolean = True)
@@ -893,6 +1046,9 @@ Private Sub ImportAll(ByVal sourceSh As Worksheet, _
     Next idx
 End Sub
 
+'@label:import-names-from-workbook
+'@sub-title Import hidden names from another workbook scope
+'@export
 Private Sub ImportAllFromWorkbook(ByVal sourceWb As Workbook, _
                                   Optional ByVal prefix As String = vbNullString, _
                                   Optional ByVal overwriteExisting As Boolean = True)
@@ -931,6 +1087,9 @@ Private Sub ImportAllFromWorkbook(ByVal sourceWb As Workbook, _
     Next idx
 End Sub
 
+'@label:set-list-object-header
+'@sub-title Create a workbook-level hidden name referencing a ListObject header
+'@export
 Public Sub SetListObjectHeader(ByVal nameId As String, _
                                ByVal Lo As ListObject, _
                                ByVal headerName As String)
@@ -982,8 +1141,11 @@ Public Sub SetListObjectHeader(ByVal nameId As String, _
 End Sub
 
 
-'@section Internal export helpers
+'@section Internal Export Helpers
 '===============================================================================
+
+'@label:persist-on-worksheet
+'@sub-title Write a hidden name onto a target worksheet
 Private Sub PersistOnWorksheet(ByVal targetSh As Worksheet, _
                                ByVal nameId As String, _
                                ByVal value As Variant, _
@@ -1000,6 +1162,8 @@ Private Sub PersistOnWorksheet(ByVal targetSh As Worksheet, _
     ApplyComment definition, valueType, timestamp
 End Sub
 
+'@label:remove-worksheet-name
+'@sub-title Delete a Name definition from a specific worksheet
 Private Sub RemoveWorksheetName(ByVal targetSh As Worksheet, ByVal nameId As String)
     Dim definition As Name
 
@@ -1013,6 +1177,8 @@ Private Sub RemoveWorksheetName(ByVal targetSh As Worksheet, ByVal nameId As Str
     Next definition
 End Sub
 
+'@label:remove-workbook-name
+'@sub-title Delete a Name definition from a workbook scope
 Private Sub RemoveWorkbookName(ByVal targetWb As Workbook, ByVal nameId As String)
     If targetWb Is Nothing Then Exit Sub
 
@@ -1022,6 +1188,8 @@ Private Sub RemoveWorkbookName(ByVal targetWb As Workbook, ByVal nameId As Strin
 End Sub
 
 
+'@label:update-stored-value
+'@sub-title Write a value and update the metadata cache
 Private Sub UpdateStoredValue(ByVal nameId As String, _
                               ByVal value As Variant, _
                               ByVal valueType As Byte, _
@@ -1061,14 +1229,17 @@ Private Sub UpdateStoredValue(ByVal nameId As String, _
 End Sub
 
 
-'@section Error handling
+'@section Error Handling
 '===============================================================================
+
+'@label:throw-error
+'@sub-title Raise a ProjectError-based exception
 Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal message As String)
     Err.Raise errNumber, CLASSNAME, message
 End Sub
 
 
-'@section Interface implementation
+'@section Interface
 '===============================================================================
 Private Property Get IHiddenNames_Sheet() As Worksheet
     Set IHiddenNames_Sheet = SheetInternal

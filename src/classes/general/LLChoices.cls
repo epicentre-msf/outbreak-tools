@@ -10,19 +10,23 @@ Attribute VB_Exposed = False
 Attribute VB_Description = "Linelist choice Class"
 
 
-'@PredeclaredID
+'@PredeclaredId
 '@Folder("General")
 '@ModuleDescription("Linelist choice Class")
-'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument,   ExcelMemberMayReturnNothing,  SuperfluousAnnotationArgument, MissingAnnotationArgument, UseMeaningfulName, HungarianNotation
-
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, MissingAnnotationArgument, UseMeaningfulName, HungarianNotation
 
 Option Explicit
 Implements ILLChoices
 
-'The linelist choices class encapsulates all behaviour required to manage the
-'Excel worksheets that store choice lists for dropdowns and cascading selectors.
-'It mirrors the structure adopted for the dictionary utilities so callers
-'interact with a single, well-documented surface.
+'@class LLChoices
+'@description
+'Manages worksheet-based choice lists used for dropdowns and cascading
+'selectors. Each choice is identified by a list name and carries long
+'labels, short labels, and an ordering column. Built on top of a
+'DataSheet for column-oriented data access.
+'@depends DataSheet, CustomTable, Checking, BetterArray, ITranslationObject
+'@version 1.0 (2026-02-09)
+'@author OutbreakTools
 
 '@section State
 '===============================================================================
@@ -48,31 +52,21 @@ Private internalChecks As IChecking
 
 'constant / keys for tracing something to the checks class
 
-'@label:instantiation
-'@section Instantiation
+'@section Factory
 '===============================================================================
-'Object creation and configuration.
 
-'@label:Create
-' Create a choice object
-'
+'@label:create
+'@sub-title Create a new LLChoices instance
 '@details
-'A choice Object is a worksheet which contains the definitions of the choices
-'used in dropdowns and multiple dropdown.
-'
-'@details
-'The choice object is bulit on top of a DataSheet, so it needs the startrow and
-' the starcolumn. In some cases, there is a translation object 
-'that goes with the choices. Translation are used to translate the headers of
-'choice worksheet. The default headers of a choice object are "list name", "label",
-'"short label", "ordering list". In case the headers are not in English, you
-'should use a translation when creating the object.
-'
-'@param choiceWorksheet Worksheet object. The worksheet where the choices are
-'@param choiceStartRow, choiceStartColumn Long. start row and column of the choices
-'@param trads Translation Object. Translation used for choices headers
+'Wraps the given worksheet in a DataSheet and returns a configured
+'ILLChoices instance. The default headers are "list name", "label",
+'"short label", and "ordering list".
+'@param choiceWorksheet Worksheet. The worksheet hosting the choices.
+'@param choiceStartRow Long. First row of choice data.
+'@param choiceStartColumn Long. First column of choice data.
+'@param choiceName Optional String. Name for the choice object. Defaults to vbNullString.
+'@return ILLChoices. The new instance.
 '@export
-'@return A Choice Object
 Public Function Create(ByVal choiceWorksheet As Worksheet, _ 
                        ByVal choiceStartRow As Long, _
                        ByVal choiceStartColumn As Long, _ 
@@ -91,8 +85,13 @@ Public Function Create(ByVal choiceWorksheet As Worksheet, _
 End Function
 
 
-'Choice Label extraction
-
+'@label:choice-label
+'@prop-title Resolve the label column name
+'@details
+'Returns the translated label column when available, otherwise falls
+'back to the default label column.
+'@param keepDefault Optional Boolean. When True, returns the default. Defaults to True.
+'@return String. The resolved column name.
 Private Property Get ChoiceLabel(Optional ByVal keepDefault As Boolean = True) As String
 
     If (Not keepDefault) Then
@@ -108,27 +107,27 @@ Private Property Get ChoiceLabel(Optional ByVal keepDefault As Boolean = True) A
     ChoiceLabel = LABELCODE
 End Property
 
-'@section Associated DataSheet Object properties
+'@section Elements
 '===============================================================================
-'Bridge accessors to the underlying DataSheet wrapper.
 
-'@label:ChoiceData
-'@prop-title Get the associated DataSheet Object
-'@return A DataSheet Object
+'@label:choice-data
+'@prop-title Associated DataSheet object
+'@return IDataSheet. The backing DataSheet.
 '@export
 Public Property Get ChoiceData() As IDataSheet
     Set ChoiceData = this.choiceDataSheet
 End Property
 
-'@prop-title Set the associated DataSheet object
-'@param customDataSheet DataSheet object
+'@label:choice-data-set
+'@prop-title Assign the backing DataSheet
+'@param customDataSheet IDataSheet. The DataSheet to assign.
 Public Property Set ChoiceData(ByVal customDataSheet As IDataSheet)
     Set this.choiceDataSheet = customDataSheet
 End Property
 
-'@label:Wksh
-'@prop-title Worksheet of the choice
-'@return A Worksheet Object
+'@label:wksh
+'@prop-title Worksheet hosting the choice lists
+'@return Worksheet. The host worksheet.
 '@export
 Public Property Get Wksh() As Worksheet
     Dim dataObject As IDataSheet
@@ -136,16 +135,18 @@ Public Property Get Wksh() As Worksheet
     Set Wksh = dataObject.Wksh()
 End Property
 
-'@prop-title StartRow
-'@return A Long. The row where the choices start
+'@label:start-row
+'@prop-title First row of choice data
+'@return Long. The start row.
 Public Property Get StartRow() As Long
     Dim dataObject As IDataSheet
     Set dataObject = ChoiceData()
     StartRow = dataObject.DataStartRow()
 End Property
 
-'@prop-title StartColumn
-'@return A Long. The column where the choices start
+'@label:start-column
+'@prop-title First column of choice data
+'@return Long. The start column.
 Public Property Get StartColumn() As Long
     Dim dataObject As IDataSheet
     Set dataObject = ChoiceData()
@@ -153,11 +154,10 @@ Public Property Get StartColumn() As Long
 End Property
 
 
-'@prop-title Get one data Range of the DataSheet
-'
-'@param colName Optional, A String. The column name of the range to return. 
-'       Default is all column names
-'@param includeHeaders. A Boolean. Include Headers in the Data Range?
+'@label:data-range
+'@prop-title Data range from the backing DataSheet
+'@param colName Optional String. Column name. Defaults to "__all__".
+'@param includeHeaders Optional Boolean. When True, includes headers. Defaults to True.
 Private Property Get DataRange( _ 
     Optional ByVal colName As String = "__all__", _
     Optional ByVal includeHeaders As Boolean = True) As Range
@@ -174,10 +174,10 @@ End Property
 
 '@section Validation
 '===============================================================================
-'Header validation helpers.
 
-'@prop-title Make sure all the headers exists (with or without translation)
-'@return Boolean
+'@label:has-valid-headers
+'@prop-title Check whether all required headers exist
+'@return Boolean. True when all four required columns are found.
 Private Property Get HasValidHeaders() As Boolean
 
     Dim dataObject As IDataSheet
@@ -190,13 +190,12 @@ Private Property Get HasValidHeaders() As Boolean
 
 End Property
 
-'@section Working with Choices
+'@section Choices
 '===============================================================================
-'High-level operations that manipulate choice lists.
 
-'@label:Name
+'@label:name
 '@prop-title Name of the choice object
-'@return String
+'@return String. The choice object name.
 '@export
 Public Property Get Name() As String
 
@@ -210,13 +209,17 @@ Public Property Get Name() As String
     Name = this.choiceName
 End Property
 
+'@label:name-set
+'@prop-title Assign the choice object name
+'@param choiceName String. The name to assign.
 Public Property Let Name(ByVal choiceName As String)
     this.choiceName = choiceName
 End Property
 
-'@label:ChoiceExists
-'@prop-title Test if a choice Exists
-'@param choiceName String. One choice in the worksheet
+'@label:choice-exists
+'@sub-title Check whether a choice exists
+'@param choiceName String. Choice name to search for.
+'@return Boolean. True when the choice is found.
 '@export
 Private Property Get ChoiceExists(ByVal choiceName As String) As Boolean
     Dim listRng As Range
@@ -246,8 +249,8 @@ ReturnExist:
     ChoiceExists = Exist
 End Property
 
-'@label:Sort
-'@sub-title Sort Choices in the choice Worksheet
+'@label:sort
+'@sub-title Sort choices in the worksheet
 '@export
 Private Sub Sort()
 
@@ -265,13 +268,16 @@ Private Sub Sort()
     choiceRng.Sort key1:=listRng, Order1:=xlAscending, key2:=orderRng, order2:=xlAscending, Header:=xlYes
 End Sub
 
-'@label:AddChoice
-'@sub-title Add new choices to the choice worksheet
-'@param choiceName String the name of the choice to add
-'@param longLabelData BetterArray. A table of all the long labels values of the choice
-'@param shortLabelData A BetterArray (Optional). A table of all the short labels values of the choice
+'@label:add-choice
+'@sub-title Add a new choice with its categories
+'@details
+'Appends a new choice entry with long labels and optional short labels.
+'Silently exits when the choice already exists or the data is empty.
+'@param choiceName String. Name of the choice to add.
+'@param longLabelData BetterArray. Long label values for the categories.
+'@param shortLabelData Optional Object. BetterArray of short label values. Defaults to Nothing.
 '@export
-Private Sub AddChoice(ByVal choiceName As String, _ 
+Private Sub AddChoice(ByVal choiceName As String, _
                       ByVal longLabelData As BetterArray, _ 
                       Optional ByVal shortLabelData As Object = Nothing)
 
@@ -340,8 +346,9 @@ Private Sub AddChoice(ByVal choiceName As String, _
     End With
 End Sub
 
-'@sub-title Remove one choice
-'@param choiceName String, the choice to remove
+'@label:remove-one-choice
+'@sub-title Remove a single choice by name
+'@param choiceName String. The choice to remove.
 Private Sub RemoveOneChoice(ByVal choiceName As String)
 
     Dim listRng As Range
@@ -388,10 +395,10 @@ Private Sub RemoveOneChoice(ByVal choiceName As String)
     Loop
 End Sub
 
-'@label:RemoveChoice
-'@sub-title Remove one or multiple choices at once, separated by a separator
-'@param choiNames String. A list of choice names separated by separator.
-'@param sep String, separator for choices. Default is semi-colon ";"
+'@label:remove-choice
+'@sub-title Remove one or multiple choices
+'@param choiceNames String. Choice names separated by sep.
+'@param sep Optional String. Delimiter. Defaults to ";".
 '@export
 Private Sub RemoveChoice(Byval choiceNames As String, Optional ByVal sep As String = ";")
     Dim namesData As BetterArray
@@ -407,9 +414,9 @@ Private Sub RemoveChoice(Byval choiceNames As String, Optional ByVal sep As Stri
     Next
 End Sub
 
-'@label:Translate
-'@sub-title Translate the current Choice worksheet
-'@param trads ITranslation object used for translations
+'@label:translate
+'@sub-title Translate the choice worksheet labels
+'@param trads ITranslationObject. Translation provider.
 '@export
 Private Sub Translate(ByVal trads As ITranslationObject)
 
@@ -429,12 +436,10 @@ Private Sub Translate(ByVal trads As ITranslationObject)
     trads.TranslateRange lblRng
 End Sub
 
-'@label:ManageRows
-'@sub-title Resize the custom table in the worksheet
-'@param del Boolean. Delete or Add new rows
-'@param nbRows Long, number of rows to add. Default is 5
-'@param insertShift Boolean. Insert new lines when Adding new rows (Default is False)
-'Add / Remove Rows
+'@label:manage-rows
+'@sub-title Add or remove rows via a single toggle
+'@param del Optional Boolean. When True, removes rows. Defaults to False.
+'@export
 Private Sub ManageRows(Optional ByVal del As Boolean = False)
     Dim sh As Worksheet
     Dim Lo As ListObject
@@ -455,24 +460,21 @@ Private Sub ManageRows(Optional ByVal del As Boolean = False)
     End If
 End Sub
 
-'@label:AddRows
-'@sub-title Add Rows to the choice associated custom table
-'@param nbRows Optional, Long. Number of Rows to add. Default is 5
-'@param insertShift Optional, Boolean. Insert new lines when Adding new rows. 
-'       Default is False
+'@label:add-rows
+'@sub-title Add rows to the choice table
 '@export
 Private Sub AddRows()
     ManageRows del:=False
 End Sub
 
-'@label:InsertRows
-'@sub-title Insert rows using the supplied selection
+'@label:insert-rows
+'@sub-title Insert rows at the selected position
 '@details
-'Mirrors the selection height inside the choices listobject so users can insert
-'rows exactly where required. When the selection is invalid the attempt is logged
-'and ignored.
-'@param targetCell Range describing the selection to mirror.
-'@param insertShift Optional Boolean to insert worksheet rows instead of resizing the table range.
+'Mirrors the selection height inside the choices ListObject. When the
+'selection is invalid the attempt is logged and ignored.
+'@param targetCell Range. Selection anchoring the insertion point.
+'@param insertShift Optional Boolean. When True, inserts worksheet rows. Defaults to False.
+'@export
 Private Sub InsertRows(ByVal targetCell As Range, _
                        Optional ByVal insertShift As Boolean = False)
     Dim lo As ListObject
@@ -485,7 +487,12 @@ Private Sub InsertRows(ByVal targetCell As Range, _
     tabl.InsertRowsAt targetCell:=targetCell, insertShift:=insertShift
 End Sub
 
-'@label:DeleteRows
+'@label:delete-rows
+'@sub-title Delete rows intersecting the selection
+'@param targetCell Range. Selection identifying rows to delete.
+'@param includeIds Optional Boolean. When True, renumbers the ID column. Defaults to True.
+'@param forceShift Optional Boolean. When True, forces worksheet row deletion. Defaults to False.
+'@export
 Private Sub DeleteRows(ByVal targetCell As Range, _
                        Optional ByVal includeIds As Boolean = True, _
                        Optional ByVal forceShift As Boolean = False)
@@ -501,13 +508,18 @@ Private Sub DeleteRows(ByVal targetCell As Range, _
                       forceShift:=forceShift
 End Sub
 
-'@label:RemoveRows
-'@sub-title Remove Rows in the choice associated custom table
+'@label:remove-rows
+'@sub-title Remove empty rows from the choice table
 '@export
 Private Sub RemoveRows()
     ManageRows del:=True
 End Sub
 
+'@label:resolve-row-target
+'@sub-title Validate a selection and resolve its ListObject
+'@param targetCell Range. The user-selected cell to validate.
+'@param actionLabel String. Human-readable action name used in warning messages.
+'@return ListObject. The ListObject, or Nothing when invalid.
 Private Function ResolveRowTarget(ByVal targetCell As Range, ByVal actionLabel As String) As ListObject
     'Validate that the provided selection belongs to the choices worksheet and intersects a listobject.
     Dim hostSheet As Worksheet
@@ -545,9 +557,9 @@ Private Function ResolveRowTarget(ByVal targetCell As Range, ByVal actionLabel A
     End If
 End Function
 
-'@label:AllChoices
-'@prop-title Get all the choices in a BetterArray
-'@return A BetterArray
+'@label:all-choices
+'@prop-title All distinct choice names
+'@return BetterArray. The distinct choice names.
 '@export
 Private Property Get AllChoices() As BetterArray
     Dim lstChoi As BetterArray
@@ -574,26 +586,20 @@ Private Property Get AllChoices() As BetterArray
 End Property
 
 
-'@section Working with Categories
+'@section Categories
 '===============================================================================
-'Category retrieval and formatting helpers.
 
-'@label:Categories
+'@label:categories
 '@prop-title Categories of a choice
-'
 '@details
-'Given a choice, get the list of all categories as a BetterArray Object.
-'If useShortLabels is True, the short label categories are used instead.
-'
-'In case there is no short label for one specific category, long labels are used
-'instead. So for one specific choice, you can end up with a mix of short/long
-'labels if short labels are missing for some values of long labels.
-'
-'@pram choiceName String. The name of choice where we want categories from
-'@param useShortlabels Boolean. Return the long or the Short labels. Default is False
-'@return A BetterArray with all the categories
+'Returns the long label categories for the specified choice. When
+'useShortlabels is True, short labels replace long labels where
+'available. Falls back to long labels for missing short entries.
+'@param choiceName String. The choice to retrieve categories from.
+'@param useShortlabels Optional Boolean. When True, uses short labels. Defaults to False.
+'@return BetterArray. The category values.
 '@export
-Public Property Get Categories(ByVal choiceName As String, _ 
+Public Property Get Categories(ByVal choiceName As String, _
                                Optional ByVal useShortlabels As Boolean = False) _ 
                                As BetterArray
     
@@ -653,22 +659,17 @@ ReturnLongCat:
 End Property
 
 
-'@label:ConcatenateCategories
-'@prop-title Concatenate all the categories of one choice
-'
+'@label:concatenate-categories
+'@prop-title Concatenate all categories of a choice
 '@details
-'Retrieve the categories, concatenated with a separator. The default separator 
-'is " | ". It is possible to get categories translated, if a translation object
-'is provided. In case the translation object is nothing, it is defaulted to the
-'simple categories.
-'
-'
-'@param choiceName String. The choice
-'@param sep String. The separator to use for concatenation
-'@param trads A Translation Object. Optional, see description.
-'@return String
-'@export A concatenated String, translated if a translation object is provided
-Private Property Get ConcatenateCategories( _ 
+'Joins the categories with a separator. Optionally translates each
+'category via the supplied TranslationObject.
+'@param choiceName String. The choice whose categories to concatenate.
+'@param sep Optional String. Separator. Defaults to " | ".
+'@param trads Optional Object. A TranslationObject. Defaults to Nothing.
+'@return String. The concatenated categories.
+'@export
+Private Property Get ConcatenateCategories( _
         ByVal choiceName As String, _ 
         Optional ByVal sep As String = " | ", _
         Optional ByVal trads As Object = Nothing) As String
@@ -695,12 +696,15 @@ Private Property Get ConcatenateCategories( _
                      QuoteStrings:=False)
 End Property
 
-'@section Export and Import
+'@section DataExchange
 '===============================================================================
 'Persist the choices sheet or hydrate from external sources.
 
-'@label:AddHeaders
-'@sub-title Add the headers to the current choice object
+'@label:add-headers
+'@sub-title Write the default headers to the choice worksheet
+'@details
+'Writes the four standard column headers (list name, ordering,
+'long label, short label) starting at the configured origin cell.
 '@export
 Private Sub AddHeaders()
 
@@ -716,22 +720,29 @@ Private Sub AddHeaders()
     cellRng.Offset(, 3).Value = LABELSHORTCODE
 End Sub
 
-'@label:Export
+'@label:export
 '@sub-title Export the current choice object to a workbook
-'@param wkb Workbook. Output workbook
-'@param Hide. Optional, Long. Sheet hidden attribute. Default is xlSheetHidden. 
+'@details
+'Delegates to DataSheet.Export, including hidden names.
+'@param Wkb Workbook. Destination workbook.
+'@param Hide Long. Worksheet visibility constant. Defaults to xlSheetHidden.
 '@export
 Private Sub Export(ByVal Wkb As Workbook, Optional ByVal Hide As Long = xlSheetHidden)
     ChoiceData.Export Wkb, Hide:=Hide, includeNames:=True
 End Sub
 
-'@label:Import
-'@sub-title Import elements of a worksheet into the current choice object
-'@param fromWksh A Worksheet containing the choices to import
-'@param fromStartRow, fromStartCol. Long, start row and column of the choice in 
-'        the imported worksheet
+'@label:import
+'@sub-title Import choices from a worksheet
+'@details
+'Optionally clears the sheet and rewrites headers before importing.
+'Creates a temporary DataSheet from the source range and delegates to
+'DataSheet.Import.
+'@param fromWksh Worksheet. Source worksheet containing choices.
+'@param fromStartRow Long. First data row in the source.
+'@param fromStartcol Long. First data column in the source.
+'@param clearSheet Boolean. When True, clears the sheet before import. Defaults to False.
 '@export
-Private Sub Import(ByVal fromWksh As Worksheet, _ 
+Private Sub Import(ByVal fromWksh As Worksheet, _
                    ByVal fromStartRow As Long, _
                    ByVal fromStartcol As Long, _ 
                    Optional ByVal clearSheet As Boolean = False)
@@ -758,9 +769,12 @@ Private Sub Import(ByVal fromWksh As Worksheet, _
 End Sub
 
 
-'@label:ImportChoice
-'@sub-title Import from a choice object
-'@param choiObj A Choice object to import 
+'@label:import-choice
+'@sub-title Import choices from another ILLChoices object
+'@details
+'Iterates all choices in the source object, retrieves both long and
+'short label categories, and adds each choice via AddChoice.
+'@param choiObj ILLChoices. Source choice object to import from.
 '@export
 Private Sub ImportChoice(ByVal choiObj As ILLChoices)
 
@@ -792,10 +806,13 @@ End Sub
 '===============================================================================
 'Internal logging helpers for the checking subsystem.
 
-'@sub-title Add elements to the checking object for future notes
-'
-'@param label. String, the message to add.
-'@param scope, Byte. The scope of the checking object
+'@label:log-info
+'@sub-title Append a diagnostic entry to the internal checking object
+'@details
+'Lazily creates the Checking instance on first call. Increments the
+'internal counter used as the entry key.
+'@param label String. The message to record.
+'@param scope Byte. Severity level. Defaults to checkingNote.
 Private Sub LogInfo(ByVal label As String, _ 
                     Optional ByVal scope As Byte = checkingNote)
 
@@ -813,19 +830,26 @@ Private Sub LogInfo(ByVal label As String, _
     If Not this.hasChecks Then this.hasChecks = True
 End Sub
 
+'@label:show-debug
+'@sub-title Print diagnostic summary to the Immediate window
 Private Sub ShowDebug()
     Debug.Print "Check the informations of CustomTable object " & Name()
 End Sub
 
-'@label:HasCheckings
-'@prop-title Check if the object has checkings 
+'@label:has-checkings
+'@prop-title Whether the choice object has logged diagnostic messages
+'@return Boolean. True when diagnostic entries exist.
 '@export
 Private Property Get HasCheckings() As Boolean
     HasCheckings = this.hasChecks
 End Property
 
-'@label:CheckingValues
-'@prop-title Get the cheking values
+'@label:checking-values
+'@prop-title Retrieve the diagnostic log entries
+'@details
+'Returns the internal IChecking object containing all logged messages.
+'Returns Nothing when no entries have been recorded.
+'@return Object. An IChecking instance, or Nothing.
 '@export
 Private Property Get CheckingValues() As Object
 
@@ -835,92 +859,63 @@ Private Property Get CheckingValues() As Object
     Set CheckingValues = internalChecks
 End Property
 
-'@jump:Create
-'@section Interfaces
+'@section Interface
 '===============================================================================
-'Interface delegation wiring.
+'ILLChoices delegation wiring.
 
-'Associated DataSheet Object properties ----------------------------------------
-
-'@jump:ChoiceData
-'Associated DataSheet Object
 Private Property Get ILLChoices_ChoiceData() As IDataSheet
     Set ILLChoices_ChoiceData = ChoiceData
 End Property
 
-'@jump:Wksh
-'Worksheet of the choices
 Private Property Get ILLChoices_Wksh() As Worksheet
     Set ILLChoices_Wksh = Wksh()
 End Property
 
-'Working with choices ----------------------------------------------------------
-
-'@jump:Name
-'Name of the choice object
 Private Property Get ILLChoices_Name() As String
     ILLChoices_Name = Name()
 End Property
 
-'@jump:ChoiceExists
-'Test if a choice Exists
 Private Property Get ILLChoices_ChoiceExists(ByVal choiceName As String) As Boolean
     ILLChoices_ChoiceExists = ChoiceExists(choiceName)
 End Property
 
-'@jump:Sort
-'Sort the choices in the choice worksheet
 Private Sub ILLChoices_Sort()
     Sort
 End Sub
 
-'@jump:AddChoice
-'Add new choices to the choice worksheet
-Private Sub ILLChoices_AddChoice(ByVal choiceName As String, _ 
+Private Sub ILLChoices_AddChoice(ByVal choiceName As String, _
                                  ByVal longLabelData As BetterArray, _
                                  Optional ByVal shortLabelData As Object = Nothing)
 
-    AddChoice choiceName:=choiceName, _ 
-             longLabelData:=longLabelData, _ 
+    AddChoice choiceName:=choiceName, _
+             longLabelData:=longLabelData, _
              shortLabelData:=shortLabelData
 End Sub
 
-'@jump:RemoveChoice
-'Remove one or multiple choices at once, separated by a separator
-Private Sub ILLChoices_RemoveChoice(ByVal choiceNames As String, _ 
+Private Sub ILLChoices_RemoveChoice(ByVal choiceNames As String, _
                                     Optional ByVal sep As String = ";")
     RemoveChoice choiceNames:=choiceNames, sep:=sep
 End Sub
 
-'@jump:Translate
-'Translate the current choice worksheet
 Private Sub ILLChoices_Translate(ByVal trads As ITranslationObject)
     Translate trads
 End Sub
 
-'@jump:AddRows
-'Add Rows to the choice associated custom table
 Private Sub ILLChoices_AddRows()
     AddRows
 End Sub
 
-'@jump:InsertRows
-'Insert rows in the choice associated custom table
 Private Sub ILLChoices_InsertRows(ByVal targetCell As Range, _
                                   Optional ByVal insertShift As Boolean = False)
     InsertRows targetCell, insertShift
 End Sub
 
-'@jump:DeleteRows
 Private Sub ILLChoices_DeleteRows(ByVal targetCell As Range, _
                                   Optional ByVal includeIds As Boolean = True, _
                                   Optional ByVal forceShift As Boolean = False)
     DeleteRows targetCell, includeIds, forceShift
 End Sub
 
-
-'@jump:RemoveRows
-'Remove Rows in the choice associated custom table
 Private Sub ILLChoices_RemoveRows()
    RemoveRows
 End Sub
@@ -929,27 +924,17 @@ Private Sub ILLChoices_ManageRows(Optional ByVal del As Boolean = False)
     ManageRows del
 End Sub
 
-'@jump:AllChoices
-'Get all the choices in a BetterArray
 Private Property Get ILLChoices_AllChoices() As BetterArray
     Set ILLChoices_AllChoices = AllChoices()
 End Property
 
-
-'Working with categories -------------------------------------------------------
-
-'@jump:Categories
-'Get the categories of one choice
-Private Property Get ILLChoices_Categories(ByVal choiceName As String, _ 
-                                        Optional ByVal useShortlabels As Boolean = False) _ 
+Private Property Get ILLChoices_Categories(ByVal choiceName As String, _
+                                        Optional ByVal useShortlabels As Boolean = False) _
                                         As BetterArray
     Set ILLChoices_Categories = Categories(choiceName, useShortlabels)
 End Property
 
-
-'@jump:ConcatenateCategories
-'Concatenate all categories of one choice
-Private Property Get ILLChoices_ConcatenateCategories( _ 
+Private Property Get ILLChoices_ConcatenateCategories( _
         ByVal choiceName As String, Optional ByVal sep As String = " | ", _
         Optional ByVal trads As Object = Nothing) As String
 
@@ -957,46 +942,30 @@ Private Property Get ILLChoices_ConcatenateCategories( _
 
 End Property
 
-'Export and Import -------------------------------------------------------------
-
-'@jump:AddHeaders
-'add the headers to the choice object
 Private Sub ILLChoices_AddHeaders()
     AddHeaders
 End Sub
 
-'@jump:Export
-'export the choice object to another workbook
-Private Sub ILLChoices_Export(ByVal toWkb As Workbook, _ 
+Private Sub ILLChoices_Export(ByVal toWkb As Workbook, _
                               Optional ByVal Hide As Long = xlSheetHidden)
     Export toWkb, Hide:=Hide
 End Sub
 
-'@jump:Import
-'import the choice object
-Private Sub ILLChoices_Import(ByVal fromWksh As Worksheet, _ 
-                              ByVal fromStartRow As Long, _ 
-                              ByVal fromStartcol As Long, _ 
+Private Sub ILLChoices_Import(ByVal fromWksh As Worksheet, _
+                              ByVal fromStartRow As Long, _
+                              ByVal fromStartcol As Long, _
                               Optional ByVal clearSheet As Boolean = False)
     Import fromWksh, fromStartRow, fromStartcol, clearSheet
 End Sub
 
-'@jump:ImportChoice
-'Import from a choice object
 Private Sub ILLChoices_ImportChoice(ByVal choiObj As ILLChoices)
     ImportChoice choiObj
 End Sub
 
-'Checkings ---------------------------------------------------------------------
-
-'@jump:HasCheckings
-'Check if the current choice has some checkings
 Private Property Get ILLChoices_HasCheckings() As Boolean
     ILLChoices_HasCheckings = HasCheckings()
 End Property
 
-'@jump:CheckingValues
-'Get the checking object
 Private Property Get ILLChoices_CheckingValues() As Object
      Set ILLChoices_CheckingValues = CheckingValues()
 End Property
