@@ -149,7 +149,10 @@ A "full doc block" means at minimum:
 ```
 
 Use `@sub-title` for `Sub` and `Function` members. Use `@prop-title` for
-`Property Get/Let/Set` members.
+`Property Get/Let/Set` members. Add `@export` on every member that external
+consumers are expected to call (factory methods, public operations like
+`AddRows`/`Sort`/`Import`/`Export`/`Translate`, etc.) -- not just `Create`.
+See `tag-reference.md` Section 5 for the full rules on when to apply it.
 
 #### 3.2 Interface Files Mirror Implementation Docs
 
@@ -327,7 +330,7 @@ After writing, verify each of these before delivering:
 | `@return` | Functions / Prop Get | Yes | Return value description |
 | `@throws` | Error-raising members | When applicable | Error condition |
 | `@depends` | Header / members | When applicable | Class dependencies |
-| `@export` | Public factory methods | When applicable | Marks public API |
+| `@export` | Any externally-called member | Yes (API surface) | Marks the callable public contract |
 | `@remarks` | Any member | Optional | Maintainer notes |
 | `@note` | Any member | Optional | Caller caveats |
 | `@version` | Class header | Optional | Version or date |

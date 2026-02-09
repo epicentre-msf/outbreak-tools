@@ -19,6 +19,16 @@ Attribute VB_Description = "Translate various objects from one language to anoth
 Option Explicit
 Implements ITranslationObject
 
+'@class TranslationObject
+'@description
+'Tag-based translator backed by a ListObject table. Looks up tags in
+'the first column and returns the value from the active language column.
+'Supports plain text, formula-aware translation (quoted chunks only),
+'range bulk-translation, and user-form caption translation.
+'@depends BetterArray, Checking, IChecking, ProjectError
+'@version 1.0 (2026-02-09)
+'@author OutbreakTools
+
 Private Const CLASSNAME As String = "TranslationObject"
 
 Private Type TTranslationObject
@@ -34,15 +44,19 @@ Private this As TTranslationObject
 Private checkCounter As Long
 Private internalChecks As IChecking
 
-'@label:Create
-'@prop-title Create a translation Object
+'@section Factory
+'===============================================================================
+'Initialisation and self-reference.
+
+'@label:create
+'@sub-title Factory returning an initialised interface
 '@details
-' A translation object is a listObject with a specific language which is the
-' language you want to translate elements to. 
-' The first column of the listObject contains the tags for translation. In 
-' case tags are not found during the translation process. The tag is returned
-' as is without any translation done.
-'@return A ITranslationObject
+'A translation object wraps a ListObject whose first column contains tags
+'and remaining columns hold language translations. Tags not found during
+'translation are returned as-is.
+'@param translationLo ListObject. The translation table.
+'@param translationLang String. The target language column header.
+'@return ITranslationObject. Ready to use.
 '@export
 Public Function Create(ByVal translationLo As ListObject, ByVal translationLang As String) As ITranslationObject
 
@@ -55,33 +69,45 @@ Public Function Create(ByVal translationLo As ListObject, ByVal translationLang 
     End With
 End Function
 
-'@label:elements
-'@section Translation elements
+'@section Elements
+'===============================================================================
+'Core translation accessors and lookups.
 
+'@label:self
+'@prop-title Self-reference as ITranslationObject
+'@return ITranslationObject. Self-reference.
 Public Property Get Self() As ITranslationObject
     Set Self = Me
 End Property
 
+'@label:table
+'@prop-title The backing ListObject translation table
+'@return ListObject. The translation table.
 Public Property Get Table() As ListObject
     Set Table = this.transLo
 End Property
 
+'@label:table-set
+'@prop-title Assign the backing ListObject and reset caches
+'@param lo ListObject. The translation table.
 Public Property Set Table(ByVal lo As ListObject)
     ValidateListObject lo, "Table"
     Set this.transLo = lo
     ResetCaches
 End Property
 
-'@prop-title Translation language to translate elements
-'@details
-'The languages are headers of the list Object (except the first column)
-'@return A String, one of the languages.
+'@label:language
+'@prop-title Current target language
+'@return String. One of the language column headers.
+'@export
 Public Property Get Language() As String
     Language = this.transLng
 End Property
 
-'@prop-title Translation list of Languages
-'@details Returns the language headers excluding the helper tag column.
+'@label:languages-list
+'@prop-title List of available language headers
+'@return BetterArray. Each language header, excluding the helper/tag column.
+'@export
 Public Property Get LanguagesList() As BetterArray
     Dim headerRow As Range
     Dim languages As BetterArray
@@ -110,13 +136,18 @@ Public Property Get LanguagesList() As BetterArray
 End Property
 
 
+'@label:language-set
+'@prop-title Set the target language and reset caches
+'@param transLng String. The new language column header.
 Public Property Let Language(ByVal transLng As String)
     this.transLng = Trim$(transLng)
     ResetCaches
 End Property
 
-'@label:Name
-'@prop-title Name of the translation Object
+'@label:name
+'@prop-title Descriptive name including table and language
+'@return String. Identifier for diagnostic output.
+'@export
 Private Property Get Name() As String
     If this.transLo Is Nothing Then
         Name = CLASSNAME & " (uninitialised)"
@@ -125,8 +156,9 @@ Private Property Get Name() As String
     End If
 End Property
 
-'@prop-title where is the language column
-'@return A Long
+'@label:language-index
+'@sub-title Resolve the one-based column index of the active language
+'@return Long. Column index, or -1 when not found.
 Private Function LanguageIndex() As Long
 
     Dim headerRow As Range
@@ -161,11 +193,10 @@ Private Function LanguageIndex() As Long
     LanguageIndex = this.languageColumnIndex
 End Function
 
-'@label:ValueExists
-'@prop-title Check if a tag is present in the first column of the 
-'@details
-'Check if a tag is present in the first column of the worksheet
-'@return A Boolean
+'@label:value-exists
+'@prop-title Whether a tag exists in the translation table
+'@param Text String. Tag to search.
+'@return Boolean. True when the tag is found.
 '@export
 Private Function ValueExists(ByVal Text As String) As Boolean
     Dim translationCell As Range
@@ -183,14 +214,14 @@ Private Function ValueExists(ByVal Text As String) As Boolean
     ValueExists = Not translationCell Is Nothing
 End Function
 
-'@label:TranslatedValue
-'@prop-title Translated value of a translation Object
+'@label:translated-value
+'@sub-title Translate a text tag or formula string
 '@details
-'In case here is a need to translate like formula, only characters present in quotes "
-'are translated. Unquoted characters are not.
-'@param textToTranslate A String
-'@param containsFormula Optional, Boolean translate the text as as Formula. Default is False
-'@return A String
+'When containsFormula is True, only double-quoted chunks inside the text
+'are translated; unquoted characters pass through unchanged.
+'@param textToTranslate String. Text to translate.
+'@param containsFormula Boolean. Translate as formula. Defaults to False.
+'@return String. The translated value, or the original text when not found.
 '@export
 Private Function TranslatedValue(ByVal textToTranslate As String, _ 
                                  Optional ByVal containsFormula As Boolean = False) As String
@@ -217,13 +248,14 @@ Private Function TranslatedValue(ByVal textToTranslate As String, _
     End If
 End Function
 
-'@label:operate
-'@section Operate with the outside world
+'@section Outside
+'===============================================================================
+'Bulk translation of forms and ranges.
 
-'@label:TranslateRange
-'@sub-title Translate a Range
-'@param colRng A Range Object to translate.
-'@param containsFormula Optional, Boolean. Translate each values in the range as formula. Default is False
+'@label:translate-range
+'@sub-title Translate all values in a column range
+'@param colRng Range. Column range whose values should be translated.
+'@param containsFormula Boolean. When True, translates as formulas. Defaults to False.
 '@export
 Private Sub TranslateRange(ByVal colRng As Range, Optional ByVal containsFormula As Boolean = False)
     Dim targetCell As Range
@@ -235,9 +267,9 @@ Private Sub TranslateRange(ByVal colRng As Range, Optional ByVal containsFormula
     Next targetCell
 End Sub
 
-'@label:TranslateForm
-'@sub-title Translate a Form
-'@param UserFrm A Form Object
+'@label:translate-form
+'@sub-title Translate all supported controls on a user form
+'@param UserFrm Object. Any user form exposing a Controls collection.
 '@export
 Private Sub TranslateForm(ByVal UserFrm As Object)
     Dim formControl As Control
@@ -262,13 +294,14 @@ Private Sub TranslateForm(ByVal UserFrm As Object)
     Next formControl
 End Sub
 
-'@label:checkings
-'@section Checkings and Errors
+'@section Checkings
+'===============================================================================
+'Diagnostic logging.
 
-'@sub-title Add elements to the checking object for future notes
-'@param Label String, the message to add.
-'@param scope Byte. The scope of the checking object.
-'@export
+'@label:log-info
+'@sub-title Record a diagnostic entry
+'@param label String. The message to add.
+'@param scope Byte. The checking scope. Defaults to checkingNote.
 Private Sub LogInfo(ByVal label As String, _ 
                     Optional ByVal scope As Byte = checkingNote)
 
@@ -286,15 +319,17 @@ Private Sub LogInfo(ByVal label As String, _
     If Not this.hasChecks Then this.hasChecks = True
 End Sub
 
-'@label:HasCheckings
-'@prop-title Check if the object has checkings
+'@label:has-checkings
+'@prop-title Whether diagnostic entries have been recorded
+'@return Boolean. True when at least one entry exists.
 '@export
 Private Property Get HasCheckings() As Boolean
     HasCheckings = this.hasChecks
 End Property
 
-'@label:CheckingValues
-'@prop-title Get the cheking values
+'@label:checking-values
+'@prop-title Retrieve the diagnostic log entries
+'@return Object. The checking instance, or Nothing.
 '@export
 Private Property Get CheckingValues() As Object
 
@@ -304,13 +339,20 @@ Private Property Get CheckingValues() As Object
     Set CheckingValues = internalChecks
 End Property
 
+'@label:show-debug
+'@sub-title Print diagnostic information to the Immediate window
 Private Sub ShowDebug()
     Debug.Print "Check the informations of Translation object " & Name()
 End Sub
 
-'@label:helpers
 '@section Helpers
+'===============================================================================
+'Internal utilities.
 
+'@label:sanitize-text
+'@sub-title Clean a raw value using worksheet functions
+'@param rawValue String. The raw text.
+'@return String. Cleaned text.
 Private Function SanitizeText(ByVal rawValue As String) As String
     Dim cleaned As String
 
@@ -321,6 +363,9 @@ Private Function SanitizeText(ByVal rawValue As String) As String
     SanitizeText = cleaned
 End Function
 
+'@label:header-row-range
+'@sub-title Retrieve the header row range of the translation table
+'@return Range. The header row, or Nothing.
 Private Function HeaderRowRange() As Range
     On Error Resume Next
     If Not this.transLo Is Nothing Then
@@ -329,6 +374,9 @@ Private Function HeaderRowRange() As Range
     On Error GoTo 0
 End Function
 
+'@label:keys-data-range
+'@sub-title Retrieve the data body range of the first (tags) column
+'@return Range. The keys column data, or Nothing.
 Private Function KeysDataRange() As Range
     On Error Resume Next
     If Not this.transLo Is Nothing Then
@@ -337,6 +385,10 @@ Private Function KeysDataRange() As Range
     On Error GoTo 0
 End Function
 
+'@label:resolve-translation-cell
+'@sub-title Find the translated cell for a given tag token
+'@param token String. The tag to look up.
+'@return Range. The cell in the language column, or Nothing.
 Private Function ResolveTranslationCell(ByVal token As String) As Range
     Dim keyRange As Range
     Dim found As Range
@@ -363,6 +415,10 @@ Private Function ResolveTranslationCell(ByVal token As String) As Range
     Set ResolveTranslationCell = bodyRange.Cells(relativeRow, languageColumn)
 End Function
 
+'@label:translate-formula-text
+'@sub-title Translate only the double-quoted chunks within a formula string
+'@param formulaText String. The formula text.
+'@return String. The formula with quoted chunks translated.
 Private Function TranslateFormulaText(ByVal formulaText As String) As String
     Dim strippedText As String
     Dim workingText As String
@@ -406,6 +462,10 @@ Private Function TranslateFormulaText(ByVal formulaText As String) As String
     TranslateFormulaText = workingText
 End Function
 
+'@label:supports-user-form-contract
+'@sub-title Check whether an object exposes a Controls collection
+'@param candidate Object. The object to test.
+'@return Boolean. True when a Controls property is accessible.
 Private Function SupportsUserFormContract(ByVal candidate As Object) As Boolean
     Dim controls As Object
 
@@ -418,6 +478,10 @@ Private Function SupportsUserFormContract(ByVal candidate As Object) As Boolean
     On Error GoTo 0
 End Function
 
+'@label:should-translate-control
+'@sub-title Determine whether a control type supports caption translation
+'@param controlType String. TypeName of the control.
+'@return Boolean. True for CommandButton, Label, OptionButton, Page, Frame, CheckBox.
 Private Function ShouldTranslateControl(ByVal controlType As String) As Boolean
     Select Case LCase$(controlType)
         Case "commandbutton", "label", "optionbutton", "page", "frame", "checkbox"
@@ -425,6 +489,9 @@ Private Function ShouldTranslateControl(ByVal controlType As String) As Boolean
     End Select
 End Function
 
+'@label:translate-multi-page-control
+'@sub-title Translate page captions within a MultiPage control
+'@param multiPageControl Object. The MultiPage control.
 Private Sub TranslateMultiPageControl(ByVal multiPageControl As Object)
     Dim pageIndex As Long
     Dim controlName As String
@@ -440,18 +507,30 @@ Private Sub TranslateMultiPageControl(ByVal multiPageControl As Object)
     Next pageIndex
 End Sub
 
+'@label:validate-list-object
+'@sub-title Guard against Nothing ListObject arguments
+'@param source ListObject. The table to validate.
+'@param sourceMember String. Calling member name for error context.
 Private Sub ValidateListObject(ByVal source As ListObject, ByVal sourceMember As String)
     If source Is Nothing Then
         RaiseError ProjectError.ObjectNotInitialized, "ListObject is not defined.", sourceMember
     End If
 End Sub
 
+'@label:reset-caches
+'@sub-title Invalidate cached column index
+'@param resetLanguageIndex Boolean. When True, clears the language column cache. Defaults to True.
 Private Sub ResetCaches(Optional ByVal resetLanguageIndex As Boolean = True)
     If resetLanguageIndex Then
         this.languageColumnIndex = 0
     End If
 End Sub
 
+'@label:raise-error
+'@sub-title Raise a typed project error with optional member context
+'@param errNumber ProjectError. The error code.
+'@param message String. Descriptive error message.
+'@param sourceMember String. Optional calling member name.
 Private Sub RaiseError(ByVal errNumber As ProjectError, ByVal message As String, Optional ByVal sourceMember As String = vbNullString)
     Dim sourceName As String
 
@@ -464,16 +543,13 @@ Private Sub RaiseError(ByVal errNumber As ProjectError, ByVal message As String,
 End Sub
 
 '@section Interface
+'===============================================================================
+'ITranslationObject delegation wiring.
 
-'@jump:elements
-'Elements----------------------------------------------------------------------
-
-'@jump:Name
 Private Property Get ITranslationObject_Name() As String
     ITranslationObject_Name = Name()
 End Property
 
-'@jump:Language
 Private Property Get ITranslationObject_Language() As String
     ITranslationObject_Language = Language
 End Property
@@ -482,44 +558,30 @@ Private Property Get ITranslationObject_LanguagesList() As BetterArray
     Set ITranslationObject_LanguagesList = LanguagesList
 End Property
 
-'@jump:ValueExists
 Private Property Get ITranslationObject_ValueExists(ByVal text As String) As Boolean
     ITranslationObject_ValueExists = ValueExists(text)
 End Property
 
-'@jump:TranslatedValue
-Private Function ITranslationObject_TranslatedValue(ByVal Text As String, _ 
-                                                   Optional ByVal containsFormula As Boolean = False) As String
+Private Function ITranslationObject_TranslatedValue( _
+    ByVal Text As String, _
+    Optional ByVal containsFormula As Boolean = False) As String
     ITranslationObject_TranslatedValue = TranslatedValue(Text, containsFormula)
 End Function
 
-'@jump:operate
-'Outside world -----------------------------------------------------------------
-
-'@jump:TranslateRange
-Private Sub ITranslationObject_TranslateRange(ByVal colRng As Range, _ 
-                                             Optional ByVal containsFormula As Boolean = False)
+Private Sub ITranslationObject_TranslateRange( _
+    ByVal colRng As Range, _
+    Optional ByVal containsFormula As Boolean = False)
     TranslateRange colRng:=colRng, containsFormula:=containsFormula
 End Sub
 
-
-'@jump:TranslateForm
 Private Sub ITranslationObject_TranslateForm(ByVal UserFrm As Object)
     TranslateForm UserFrm
 End Sub
 
-'@jump:checkings
-'checkings----------------------------------------------------------------------
-
-'@jump:HasCheckings
 Private Property Get ITranslationObject_HasCheckings() As Boolean
     ITranslationObject_HasCheckings = HasCheckings()
 End Property
 
-'@jump:CheckingValues
 Private Property Get ITranslationObject_CheckingValues() As Object
     Set ITranslationObject_CheckingValues = CheckingValues()
 End Property
-
-
-

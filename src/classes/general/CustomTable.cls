@@ -9,16 +9,29 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Attribute VB_Description = "Wrapper for Listobjects manipulations"
 
-'@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument,  ExcelMemberMayReturnNothing,  SuperfluousAnnotationArgument, MissingAnnotationArgument, ReadOnlyPropertyAssignment, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
-
 '@PredeclaredId
 '@Folder("General")
 '@ModuleDescription("Wrapper for Listobjects manipulations")
-
+'@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, MissingAnnotationArgument, ReadOnlyPropertyAssignment, UseMeaningfulName, HungarianNotation
 
 Option Explicit
 
 Implements ICustomTable
+
+'@class CustomTable
+'@description
+'Wraps an Excel ListObject with convenience methods for column lookup,
+'row insertion and deletion, sorting, validation, import/export, and
+'diagnostic logging. The class maintains a header-index cache for fast
+'repeated column lookups, supports snapshot-based rollback during import,
+'and tracks hidden-column state so that Find-based operations see all
+'columns. Consumers interact through the ICustomTable interface. An
+'optional ID column provides dictionary-style keyed access to individual
+'rows.
+'@depends BetterArray, Checking, HiddenNames, IDropdownLists
+'@version 1.0 (2026-02-09)
+'@author OutbreakTools
+
 Private Type TCustomTable
   Lo As ListObject
   idCol As String
@@ -47,8 +60,13 @@ Private internalChecks As IChecking
 
 '@section StateManagement
 '===============================================================================
-'@sub-title ResetCaches
-'Reset transient caches so column lookups remain accurate after structural changes.
+'@description Cache, backup, and guard helpers that keep internal state consistent.
+
+'@label:reset-caches
+'@sub-title Reset transient caches after structural changes
+'@details
+'Rebuilds the header index cache so column lookups remain accurate
+'after columns are added, removed, or renamed.
 Private Sub ResetCaches()
   'Always rebuild the header index cache after structural changes to the table.
   Set this.headerIndexCache = New BetterArray
@@ -56,8 +74,11 @@ Private Sub ResetCaches()
   this.hasShiftSetup = False
 End Sub
 
-'@sub-title ResetImportState
-'@details Reset the caches of import state so that imports start fresh
+'@label:reset-import-state
+'@sub-title Reset import state so that imports start fresh
+'@details
+'Clears the import flag, hidden-column list, not-imported-columns list,
+'and any saved backup so the next import begins from a clean slate.
 Private Sub ResetImportState()
   this.hasImport = False
   this.hasHiddenList = False
@@ -68,7 +89,11 @@ Private Sub ResetImportState()
   ClearBackUp
 End Sub
 
-'@label:ClearBackup
+'@label:clear-backup
+'@sub-title Release backup buffers
+'@details
+'Sets the backup header and row arrays to Nothing and clears the
+'hasBackup flag once the operation completes successfully.
 Private Sub ClearBackup()
   'Release backup buffers once the operation completes successfully.
   Set this.backupHeaders = Nothing
@@ -78,12 +103,15 @@ End Sub
 
 
 
-'@sub-title CacheKeyForHeader
-'@description Generates a unique cache key for header lookups combining search settings
-'@param String colName - The column name to look up
-'@param Boolean strictSearch - Whether to use exact matching
-'@param Boolean matchCase - Whether to match case
-'@return String The generated cache key
+'@label:cache-key-for-header
+'@sub-title Generate a unique cache key for header lookups
+'@details
+'Combines the column name with the search mode flags so that different
+'search configurations stay isolated in the cache.
+'@param colName String. The column name to look up.
+'@param strictSearch Boolean. Whether to use exact matching.
+'@param matchCase Boolean. Whether to match case.
+'@return String. The generated cache key.
 Private Function CacheKeyForHeader(ByVal colName As String, _
                                    ByVal strictSearch As Boolean, _
                                    ByVal matchCase As Boolean) As String
@@ -96,11 +124,14 @@ Private Function CacheKeyForHeader(ByVal colName As String, _
                       CStr(matchCase) & CACHE_SEPARATOR & headerToken
 End Function
 
-'@sub-title TryGetCachedIndex
-'@description Attempts to retrieve a cached column index
-'@param String cacheKey - The cache key to look up
-'@param Long cachedValue - Output parameter for the found index
-'@return Boolean True if found in cache, False otherwise
+'@label:try-get-cached-index
+'@sub-title Attempt to retrieve a cached column index
+'@details
+'Searches the lightweight BetterArray cache for a matching key. When
+'found, populates cachedValue with the stored column index.
+'@param cacheKey String. The cache key to look up.
+'@param cachedValue ByRef Long. Populated with the column index on hit.
+'@return Boolean. True when found in cache, False otherwise.
 Private Function TryGetCachedIndex(ByVal cacheKey As String, ByRef cachedValue As Long) As Boolean
   'Search the lightweight cache implemented with BetterArray pairs key, index.
   Dim idx As Long
@@ -124,11 +155,13 @@ Private Function TryGetCachedIndex(ByVal cacheKey As String, ByRef cachedValue A
   Next idx
 End Function
 
-'@sub-title StoreHeaderIndex
-'@description Stores a successful column lookup in the cache
-'@param String cacheKey - The cache key to store
-'@param Long columnIndexValue - The column index to cache
-'@private
+'@label:store-header-index
+'@sub-title Store a successful column lookup in the cache
+'@details
+'Persists a successful lookup so subsequent queries avoid a Range.Find call.
+'Ignores zero or negative column indexes.
+'@param cacheKey String. The cache key to store.
+'@param columnIndexValue Long. The column index to cache.
 Private Sub StoreHeaderIndex(ByVal cacheKey As String, ByVal columnIndexValue As Long)
 
   'Persist successful lookups so subsequent queries avoid a Range.Find call.
@@ -141,9 +174,14 @@ Private Sub StoreHeaderIndex(ByVal cacheKey As String, ByVal columnIndexValue As
   this.headerIndexCache.Push entry
 End Sub
 
-'@label:SaveTableSnapshot
-'@sub-title SaveTableSnapshot
-'@description Creates a backup of the current table state
+'@label:save-table-snapshot
+'@sub-title Save a snapshot of the current table state
+'@details
+'Captures the current headers and data rows into BetterArray buffers
+'so RestoreTableSnapshot can revert the table if an import fails.
+'Unhides hidden columns before reading to ensure full coverage.
+'@param returnHidden Optional Boolean. When True, re-hides columns after capture. Defaults to True.
+'@export
 Private Sub SaveTableSnapshot(Optional ByVal returnHidden As Boolean = True)
   'Capture the current table layout so we can restore it if an import fails.
   Dim lo As ListObject
@@ -167,7 +205,13 @@ Private Sub SaveTableSnapshot(Optional ByVal returnHidden As Boolean = True)
   If returnHidden Then ReturnBackHiddenColumns
 End Sub
 
-'@label:RestoreTableSnapshot
+'@label:restore-table-snapshot
+'@sub-title Restore the table from a previously saved snapshot
+'@details
+'Reapplies the cached headers and rows when an import needs to roll
+'back. Resizes the ListObject, writes the backup data, resets caches,
+'and re-hides previously hidden columns.
+'@export
 Private Sub RestoreTableSnapshot()
   'Reapply the cached headers and rows when an import needs to roll back.
   Dim lo As ListObject
@@ -219,7 +263,12 @@ Private Sub RestoreTableSnapshot()
 End Sub
 
 
-'@label:EnsureTableInitialized
+'@label:ensure-table-initialized
+'@sub-title Guard against calls before Create has run
+'@details
+'Raises an error when the ListObject reference is Nothing, preventing
+'all table operations from executing on an uninitialised instance.
+'@throws ProjectError.ObjectNotInitialized When the ListObject is Nothing.
 Private Sub EnsureTableInitialized()
   'Guard all table operations to avoid accidental calls before Create() runs.
   If this.Lo Is Nothing Then
@@ -228,29 +277,25 @@ Private Sub EnsureTableInitialized()
   End If
 End Sub
 
-'@section Instanciation
+'@section Factory
 '===============================================================================
+'@description Entry point for creating CustomTable instances.
 
-'@label:Create
-'@prop-title Create a CustomTable object
-
+'@label:create
+'@sub-title Create a CustomTable wrapper around a ListObject
 '@details
-'The custom data table is created just with one listObject. It is a wrapper arround
-'the listobject class. Which basically add some functionalities to ease the
-'data-manipulation process. A custom data table can have a "id" column. This 
-'is a column where values are not duplicated, used to locate lines. When adding
-'new rows to a table, one can decide to automatically number the id column in 
-'a sequential way (1, 2, 3, ...) or a a prefix before those numbers. ie "line 1", "line 2".
-'The prefix and the id column are provided at instanciation.
-'
-'
-'@param Lo A ListObject
-'@param idCol A String, the ID column of the CustomTable. Default is empty string
-'@param idPrefix A String. A prefix to add to each values of the ID column when adding rows.
-'       Default is empty string.
-'@return A CustomTable Object
+'Wraps the supplied ListObject with convenience methods for column
+'lookup, row manipulation, import/export, and diagnostic logging. An
+'optional ID column enables dictionary-style keyed row access. When
+'adding rows, the ID column is automatically numbered in sequence,
+'optionally prefixed (e.g. "line 1", "line 2").
+'@param Lo ListObject. The Excel table to wrap.
+'@param idCol Optional String. Name of the ID column. Defaults to vbNullString.
+'@param idPrefix Optional String. Prefix for auto-generated ID values. Defaults to vbNullString.
+'@return ICustomTable. A fully initialised CustomTable instance.
+'@throws ProjectError.ObjectNotInitialized When Lo is Nothing.
 '@depends BetterArray, Checking
-'@export        
+'@export
 Public Function Create(ByVal Lo As ListObject, _
                       Optional ByVal idCol As String = vbNullString, _
                       Optional ByVal idPrefix As String = vbNullString) As ICustomTable
@@ -265,28 +310,51 @@ Public Function Create(ByVal Lo As ListObject, _
   End With
 End Function
 
+'@label:self
+'@prop-title Current object instance
+'@details
+'Returns the current instance cast to ICustomTable. Used internally
+'by the factory method to return an interface reference.
+'@return ICustomTable. Reference to the current object.
 Public Property Get Self() As ICustomTable
   Set Self = Me
 End Property
 
-'@label:elements
 
-'@section CustomTable elements
+'@section Elements
 '===============================================================================
+'@description Properties that expose the table structure and cell access.
 
-'@prop-title Worksheet of the listObject
+'@label:wksh
+'@prop-title Worksheet hosting the ListObject
+'@details
+'Returns the parent worksheet of the underlying ListObject.
+'@return Worksheet. The host worksheet.
 Private Property Get Wksh() As Worksheet
   Dim Lo As ListObject
   Set Lo = Table()
   Set Wksh = Lo.Parent
 End Property
 
-'@prop-title Table listObject
+'@label:table
+'@prop-title Underlying ListObject reference
+'@details
+'Returns the ListObject wrapped by this CustomTable. Raises an error
+'when the reference has not been set.
+'@return ListObject. The wrapped table.
+'@throws ProjectError.ObjectNotInitialized When the ListObject is Nothing.
 Public Property Get Table() As ListObject
   EnsureTableInitialized
   Set Table = this.Lo
 End Property
 
+'@label:table-set
+'@prop-title Assign the ListObject reference
+'@details
+'Stores the ListObject, resets caches and backup, and caches the table
+'name. Raises an error when Lo is Nothing.
+'@param Lo ListObject. The table to assign.
+'@throws ProjectError.ObjectNotInitialized When Lo is Nothing.
 Public Property Set Table(ByVal Lo As ListObject)
   If Lo Is Nothing Then
     ThrowError ProjectError.ObjectNotInitialized, _
@@ -298,27 +366,44 @@ Public Property Set Table(ByVal Lo As ListObject)
   this.csName = Lo.Name
 End Property
 
-'@label:idvalue
-'@prop-title IDs
+'@label:id-value
+'@prop-title ID column name
+'@details
+'Returns the name of the column used as a unique row identifier.
+'@return String. The ID column name.
+'@export
 Public Property Get IdValue() As String
   IdValue = this.idCol
 End Property
 
+'@label:prefix-value
+'@prop-title ID prefix string
+'@details
+'Returns the prefix prepended to sequential ID values.
+'@return String. The prefix text.
 Public Property Get PrefixValue() As String
   PrefixValue = this.idPrefix
 End Property
 
+'@label:id-value-set
+'@prop-title Assign the ID column name
+'@param idCol String. Column name to use as the row key.
 Public Property Let IdValue(ByVal idCol As String)
   this.idCol = idCol
 End Property
 
+'@label:prefix-value-set
+'@prop-title Assign the ID prefix string
+'@param idPrefix String. Prefix to prepend to sequential ID values.
 Public Property Let PrefixValue(ByVal idPrefix As String)
   this.idPrefix = idPrefix
 End Property
 
-'@label:HeaderRange
+'@label:header-range
 '@prop-title Header row Range of the CustomTable
-'@return A Range object
+'@details
+'Returns the Range covering the header row of the underlying ListObject.
+'@return Range. The header row range.
 '@export
 Private Property Get HeaderRange() As Range
   Dim Lo As ListObject
@@ -326,14 +411,20 @@ Private Property Get HeaderRange() As Range
   Set HeaderRange = Lo.HeaderRowRange()
 End Property
 
-'@label:ColumnIndex
-'@prop-title Column index of a Range
+'@label:column-index
+'@sub-title Resolve the 1-based column index for a header name
 '@details
-'If the column is not found, returns -1.
-'@param colName A String. Column name
-'@param stricSearch Boolean. Should you search column strictly? Default is False.
-'@return A Long
-'@export
+'Searches the header row for colName using Range.Find, consulting the
+'cache first for speed. Returns 0 when not found. When required is
+'True, raises an error instead of returning 0.
+'@param colName String. Column name to look up.
+'@param strictSearch Optional Boolean. When True, uses exact whole-string matching. Defaults to False.
+'@param matchCase Optional Boolean. When True, matching is case-sensitive. Defaults to False.
+'@param required Optional Boolean. When True, raises an error if not found. Defaults to False.
+'@return Long. The 1-based column index, or 0 when not found.
+'@throws ProjectError.InvalidArgument When colName is empty and required is True.
+'@throws ProjectError.ObjectNotInitialized When the header range is Nothing and required is True.
+'@throws ProjectError.ElementNotFound When the column is not found and required is True.
 Private Function ColumnIndex(ByVal colName As String, _
                              Optional ByVal strictSearch As Boolean = False, _
                              Optional ByVal matchCase As Boolean = False, _
@@ -389,18 +480,31 @@ Private Function ColumnIndex(ByVal colName As String, _
 End Function
 
 
-'@label:ColumnExists
-'@prop-title Check if a column exists in the CustomTable
-'@param colName String. Column name to search
-'@param strictSearch Boolean. Whether to search strictly with matchase, and the whole string or not. Default is False
-'@return A Boolean
+'@label:column-exists
+'@sub-title Check whether a column exists in the table
+'@details
+'Delegates to ColumnIndex and returns True when the index is positive.
+'@param colName String. Column name to search.
+'@param strictSearch Optional Boolean. When True, uses exact matching. Defaults to False.
+'@param matchCase Optional Boolean. When True, matching is case-sensitive. Defaults to False.
+'@return Boolean. True when the column is found.
 Private Function ColumnExists(ByVal colName As String, _
                               Optional ByVal strictSearch As Boolean = False, _
                               Optional ByVal matchCase As Boolean = False) As Boolean
     ColumnExists = (ColumnIndex(colName, strictSearch, matchCase) > 0)
 End Function
 
-'@label:ResolveListColumn
+'@label:resolve-list-column
+'@sub-title Retrieve the ListColumn object for a header name
+'@details
+'Centralises ListColumn retrieval so every caller benefits from the
+'same guards. Returns Nothing when not found unless required is True.
+'@param colName String. Column header to resolve.
+'@param strictSearch Optional Boolean. When True, uses exact matching. Defaults to False.
+'@param matchCase Optional Boolean. When True, matching is case-sensitive. Defaults to False.
+'@param required Optional Boolean. When True, raises an error if not found. Defaults to False.
+'@return ListColumn. The resolved column, or Nothing.
+'@throws ProjectError.ElementNotFound When the column is not found and required is True.
 Private Function ResolveListColumn(ByVal colName As String, _
                                    Optional ByVal strictSearch As Boolean = False, _
                                    Optional ByVal matchCase As Boolean = False, _
@@ -422,23 +526,20 @@ Private Function ResolveListColumn(ByVal colName As String, _
 End Function
 
 
-'@label:DataRange
-'@prop-title Get the Range of a column
-'
+'@label:data-range
+'@prop-title Range of a column or the entire data body
 '@details
-'Return a Data Range given a column name. When strictSearch is false, the 
-'search for the column name is done using partial match. The first partial match
-'found is the returned column. If the column names of the CustomTable are quite
-'unique, the partial match returns unique values. In case some colunm names share
-'some text, make sure to use strictSearch = True to avoid unexpected output.
-'
-'
-'@param colName String, the name of the column to look for
-'@param includeHeaders Boolean. Whether to return the colunmn plus the headers, default is false
-'@param strictSearch Boolean. Look for partial values when searching the column name,
-'                    without case sensitive search. Default is False.
-'@return A Range object
-'@export                    
+'Returns a data Range for the specified column, or the entire data body
+'when colName is "__all__". When strictSearch is False, the search uses
+'partial matching; the first partial match is returned. Use strictSearch
+'when column names share common text to avoid unexpected output. Returns
+'Nothing when the column has no data rows or is not found.
+'@param colName Optional String. Column header to retrieve. Defaults to "__all__".
+'@param includeHeaders Optional Boolean. When True, includes the header row. Defaults to False.
+'@param strictSearch Optional Boolean. When True, uses exact whole-string matching. Defaults to False.
+'@param matchCase Optional Boolean. When True, matching is case-sensitive. Defaults to False.
+'@return Range. The requested data range, or Nothing when unavailable.
+'@export
 Private Property Get DataRange(Optional ByVal colName As String = "__all__", _
                                Optional ByVal includeHeaders As Boolean = False, _
                                Optional ByVal strictSearch As Boolean = False, _
@@ -473,22 +574,25 @@ Private Property Get DataRange(Optional ByVal colName As String = "__all__", _
   Set DataRange = rng
 End Property
 
-'@label:Name
+'@label:name
 '@prop-title Name of the attached ListObject
-'@return A String
+'@details
+'Returns the cached name of the ListObject assigned during creation.
+'@return String. The table name.
 '@export
 Private Property Get Name() As String
   Name = this.csName
 End Property
 
-'@label:CellRange
-'@prop-title A specific Cell of the CustomTable
+'@label:cell-range
+'@prop-title A specific cell in the CustomTable
 '@details
-'using the line number in a worksheet and a column name, get the corresponding
-'cell at the intersection of the line and the column name.
-'@param colName As String, the column of the cell
-'@param lineNum Long, the line number in the excel worksheet
-'@return A Range object
+'Returns the cell at the intersection of the given column and worksheet
+'row number. Returns Nothing when the column does not exist or the row
+'is out of bounds.
+'@param colName String. Column header identifying the column.
+'@param lineNum Long. Worksheet row number (1-based).
+'@return Range. The target cell, or Nothing when not found.
 '@export
 Private Property Get CellRange(ByVal colName As String, _
                                ByVal lineNum As Long) As Range
@@ -504,11 +608,16 @@ Private Property Get CellRange(ByVal colName As String, _
 End Property
 
 
-'@label:ValueRange
-'@prop-title The range of a value
-'@param colName String. The name of the column of the table
-'@param keyName String. Key. Keys should be unique.
-'@return Range
+'@label:value-range
+'@sub-title Locate the cell Range by column and key
+'@details
+'Returns the Range at the intersection of the specified column and the
+'row matching keyName in the ID column. Returns Nothing when the key or
+'column is not found, or when no ID column is configured.
+'@param colName String. Column header identifying the column.
+'@param keyName String. Key value identifying the row.
+'@return Range. The target cell range, or Nothing when not found.
+'@export
 Private Function ValueRange(ByVal colName As String, ByVal keyName As String) As Range
 
   Dim idRng As Range
@@ -540,19 +649,17 @@ Private Function ValueRange(ByVal colName As String, ByVal keyName As String) As
   End If
 End Function
 
-'@label:Value
-'@prop-title Get one specific value on a table with key
+'@label:value
+'@prop-title Retrieve a cell value by column and key
 '@details
-'
-'For tables with a key column, extract one specific value for a column name
-'and given a keyvalue. If the table does not have a key, it returns an empty
-'String. An empty string is returned in case it is impossible to convert the cell
-'value to string
-'
-'@param colName String, the column name to extract the value from
-'@param keyName String, the key
+'For tables with a key column, returns the cell value at the intersection
+'of the specified column and the row matching keyName. Returns an empty
+'string when the key or column is not found, or when the cell value
+'cannot be converted to string.
+'@param colName String. Column header to read from.
+'@param keyName String. Key value identifying the row.
+'@return String. The cell value converted to string, or vbNullString.
 '@export
-'@return A String. The value of the cell converted
 Private Property Get Value(ByVal colName As String, _
                            ByVal keyName As String) As String
   Dim retValue As String
@@ -568,12 +675,16 @@ Private Property Get Value(ByVal colName As String, _
 End Property
 
 
-'@label:modify
-'@section Modify the table
+'@section Modify
 '===============================================================================
+'@description Methods that add, remove, or reorganise table rows and columns.
 
-'@label:InsertShiftTracker
-'@sub-title Shift tracker
+'@label:add-shift-tracker
+'@sub-title Record that worksheet row insertion was used
+'@details
+'Persists a hidden name on the worksheet so future operations know to
+'delete entire worksheet rows instead of just ListRows.
+'@param value Optional String. Tracker value ("Yes" or "No"). Defaults to "Yes".
 Private Sub AddShiftTracker(Optional ByVal value As String = "Yes")
 
   Dim sh As Worksheet
@@ -592,6 +703,12 @@ Private Sub AddShiftTracker(Optional ByVal value As String = "Yes")
 End Sub
 
 
+'@label:has-shift-tracker
+'@sub-title Check whether worksheet row insertion was previously used
+'@details
+'Reads the hidden name from the worksheet to determine whether prior
+'operations used worksheet row insertion.
+'@return Boolean. True when the shift tracker is active.
 Private Function HasShiftTracker() As Boolean
 
   Dim store As IHiddenNames
@@ -606,13 +723,17 @@ Private Function HasShiftTracker() As Boolean
 
 End Function
 
-'@label:Resize
-'@sub-title Resize a CustomTable
-'@param addRows Optional, Boolean. Whether to Resize by adding rows. Default is False.
-'@param insertShift Optional, Boolean. When adding rows, insert new line. Default is True
-'@param totalRowCount Optional, Long. Row count threshold for deleting a line. Default is 0
-'@param nbRows Optional, Long. Number or fows to add when adding new rows. Default is 5.
-'@includeIds Optional, Boolean. Whether to number in a sequential way the ID column after resizing. Default is True.
+'@label:resize
+'@sub-title Resize the table by adding or removing rows
+'@details
+'Dispatches to AddTableRows or RemoveEmptyDataRows depending on the
+'addRows flag, then optionally renumbers the ID column.
+'@param addRows Optional Boolean. When True, adds rows; when False, removes empty rows. Defaults to False.
+'@param insertShift Optional Boolean. When True, inserts worksheet rows. Defaults to True.
+'@param totalRowCount Optional Long. Non-empty cell threshold for row removal. Defaults to 0.
+'@param nbRows Optional Long. Number of rows to add. Defaults to 5.
+'@param includeIds Optional Boolean. When True, renumbers the ID column. Defaults to True.
+'@param forceShift Optional Boolean. When True, forces worksheet row deletion. Defaults to False.
 Private Sub Resize(Optional ByVal addRows As Boolean = False, _
                    Optional ByVal insertShift As Boolean = True, _
                    Optional ByVal totalRowCount As Long = 0, _
@@ -633,7 +754,15 @@ Private Sub Resize(Optional ByVal addRows As Boolean = False, _
   If includeIds Then AddIds
 End Sub
 
-'@label:AddTableRows Helper
+'@label:add-table-rows
+'@sub-title Physically add rows to the ListObject
+'@details
+'Inserts worksheet rows below the table when insertShift is True
+'(protecting stacked tables), otherwise extends the ListObject range
+'directly. Resets caches after the operation.
+'@param lo ListObject. The table to extend.
+'@param nbRows Long. Number of rows to add.
+'@param insertShift Boolean. When True, inserts worksheet rows.
 Private Sub AddTableRows(ByVal lo As ListObject, ByVal nbRows As Long, ByVal insertShift As Boolean)
   'ListRows.Add preserves formulas and formats; AlwaysInsert prevents overlaps when tables stack.
   Dim sheet As Worksheet
@@ -670,8 +799,13 @@ Private Sub AddTableRows(ByVal lo As ListObject, ByVal nbRows As Long, ByVal ins
   ResetCaches
 End Sub
 
-'@label:EnsureSelectionSheet
+'@label:ensure-selection-on-table-sheet
 '@sub-title Ensure the provided range belongs to the table worksheet
+'@details
+'Validates that targetCell is not Nothing and resides on the same
+'worksheet as the wrapped ListObject.
+'@param targetCell Range. The range to validate.
+'@throws ProjectError.InvalidArgument When targetCell is Nothing, has no worksheet, or belongs to a different sheet.
 Private Sub EnsureSelectionOnTableSheet(ByVal targetCell As Range)
   Dim targetSheet As Worksheet
 
@@ -695,8 +829,15 @@ Private Sub EnsureSelectionOnTableSheet(ByVal targetCell As Range)
   End If
 End Sub
 
-'@label:SelectionRowNumbers
-'@sub-title Resolve worksheet row indexes intersecting the table
+'@label:selection-row-numbers
+'@sub-title Resolve worksheet row numbers intersecting the table
+'@details
+'Returns a BetterArray of worksheet row numbers where targetCell
+'intersects the table scope. When restrictToDataRows is True, only
+'data rows are considered; otherwise the full table range is used.
+'@param targetCell Range. The selection to intersect.
+'@param restrictToDataRows Boolean. When True, limits to data rows only.
+'@return BetterArray. Row numbers, or Nothing when no intersection.
 Private Function SelectionRowNumbers(ByVal targetCell As Range, _
                                      ByVal restrictToDataRows As Boolean) As BetterArray
   Dim lo As ListObject
@@ -735,12 +876,16 @@ Private Function SelectionRowNumbers(ByVal targetCell As Range, _
   Set SelectionRowNumbers = rowsList
 End Function
 
-'@label:InsertRowsAt
-'@sub-title Insert rows matching the selection height
-'@details Inserts worksheet rows when insertShift is True, otherwise inserts ListRows at the selection anchor.
-'@param targetCell Range. Selection used to anchor the insertion.
-'@param insertShift Boolean. Insert worksheet rows when True to preserve stacked tables.
-'@param includeIds Boolean. Renumber the ID column after insertion when True.
+'@label:insert-rows-at
+'@sub-title Insert rows at the selected position
+'@details
+'Inserts rows matching the height of targetCell. Uses worksheet row
+'insertion when insertShift is True to protect stacked tables, otherwise
+'adds ListRows at the selection anchor. Renumbers the ID column when
+'includeIds is True.
+'@param targetCell Range. Selection anchoring the insertion point.
+'@param insertShift Optional Boolean. When True, inserts worksheet rows. Defaults to False.
+'@param includeIds Optional Boolean. When True, renumbers the ID column. Defaults to True.
 '@export
 Private Sub InsertRowsAt(ByVal targetCell As Range, _
                          Optional ByVal insertShift As Boolean = False, _
@@ -796,6 +941,12 @@ End Sub
 
 
 
+'@label:get-total-formula-columns
+'@sub-title Count the number of columns containing formulas
+'@details
+'Scans the first data row and counts cells that have formulas. Used
+'to determine the baseline non-empty cell count for row removal.
+'@param rowCount ByRef Long. Populated with the formula column count.
 Private Sub GetTotalFormulaColumns(ByRef rowCount As Long)
   Dim rng As Range
   Dim counter As Long
@@ -812,7 +963,17 @@ Private Sub GetTotalFormulaColumns(ByRef rowCount As Long)
 End Sub
 
 
-'@label:RemoveEmptyDataRows
+'@label:remove-empty-data-rows
+'@sub-title Delete data rows that are effectively empty
+'@details
+'Scans from the bottom so deletions do not disturb subsequent indexes.
+'A row is considered empty when its non-empty cell count is at or below
+'totalRowCount. Deletes entire worksheet rows when the shift tracker is
+'active or forceShift is True; otherwise removes ListRows directly.
+'Always preserves the first data row to keep formulas and templates.
+'@param lo ListObject. The table to clean.
+'@param totalRowCount Optional Long. Non-empty cell threshold.
+'@param forceShift Optional Boolean. When True, forces worksheet row deletion.
 Private Sub RemoveEmptyDataRows(ByVal lo As ListObject, _ 
                                 Optional ByVal totalRowCount As Long, _
                                 Optional ByVal forceShift As Boolean)
@@ -852,12 +1013,16 @@ Private Sub RemoveEmptyDataRows(ByVal lo As ListObject, _
   Next rowIndex
 End Sub
 
-'@label:DeleteRowsAt
-'@sub-title Delete rows intersecting the provided selection
-'@details Deletes worksheet rows when forceShift (or a stored shift tracker) is enabled, otherwise removes ListRows directly.
-'@param targetCell Range. Selection used to determine which rows to delete.
-'@param includeIds Boolean. Renumber ID column after deletion when True.
-'@param forceShift Boolean. Force worksheet row deletion even if shift tracker is not set.
+'@label:delete-rows-at
+'@sub-title Delete rows intersecting the selection
+'@details
+'Removes data rows that intersect targetCell. Uses worksheet row
+'deletion when forceShift or the stored shift tracker is active,
+'otherwise removes ListRows directly. Adds a placeholder row when
+'all rows are deleted. Renumbers the ID column when includeIds is True.
+'@param targetCell Range. Selection identifying which rows to delete.
+'@param includeIds Optional Boolean. When True, renumbers the ID column. Defaults to True.
+'@param forceShift Optional Boolean. When True, forces worksheet row deletion. Defaults to False.
 '@export
 Private Sub DeleteRowsAt(ByVal targetCell As Range, _
                          Optional ByVal includeIds As Boolean = True, _
@@ -912,7 +1077,9 @@ Private Sub DeleteRowsAt(ByVal targetCell As Range, _
   If includeIds Then AddIds
 End Sub
 
-'@label:DataRowCount
+'@label:data-row-count
+'@sub-title Count the number of data rows in the table
+'@return Long. The data row count (excluding headers), or 0 when empty.
 Private Function DataRowCount() As Long
   'Return the number of data rows currently stored in the table (without headers).
   Dim body As Range
@@ -924,12 +1091,18 @@ Private Function DataRowCount() As Long
   DataRowCount = body.Rows.Count
 End Function
 
+'@label:data-column-count
+'@sub-title Count the number of columns in the table
+'@return Long. The column count.
 Private Function DataColumnCount() As Long
   EnsureTableInitialized
   DataColumnCount = Table.ListColumns.Count
 End Function
 
-'@label:EnsureRowCapacity
+'@label:ensure-row-capacity
+'@sub-title Guarantee the table has at least the requested data rows
+'@param requiredRows Long. Minimum number of data rows needed.
+'@param insertShift Boolean. When True, inserts worksheet rows.
 Private Sub EnsureRowCapacity(ByVal requiredRows As Long, ByVal insertShift As Boolean)
   'Guarantee the table contains at least the requested number of data rows.
   Dim currentRows As Long
@@ -945,7 +1118,12 @@ Private Sub EnsureRowCapacity(ByVal requiredRows As Long, ByVal insertShift As B
   AddTableRows Table(), missingRows, insertShift
 End Sub
 
-'@label: EnsureColumnCapacity
+'@label:ensure-column-capacity
+'@sub-title Guarantee the table has exactly the requested column count
+'@details
+'Adds or removes columns until the table matches requiredColumns. Trims
+'excess columns using a descending loop so index shifts do not skip columns.
+'@param requiredColumns Long. Target number of columns.
 Private Sub EnsureColumnCapacity(ByVal requiredColumns As Long)
 
   Dim currCols As Long
@@ -976,7 +1154,12 @@ Private Sub EnsureColumnCapacity(ByVal requiredColumns As Long)
   Loop
 End Sub
 
-'@label:TrimTableRows
+'@label:trim-table-rows
+'@sub-title Shrink the table to the requested number of data rows
+'@details
+'Resizes the ListObject so only targetRows data rows remain.
+'Exits when the table already has fewer rows than the target.
+'@param targetRows Long. Desired data row count.
 Private Sub TrimTableRows(ByVal targetRows As Long)
   'Shrink the table so only the requested number of data rows remain.
   Dim lo As ListObject
@@ -1004,7 +1187,13 @@ Private Sub TrimTableRows(ByVal targetRows As Long)
   ResetCaches
 End Sub
 
-'@label:SourceRowCount
+'@label:source-row-count
+'@sub-title Derive the data row count from an import source
+'@details
+'Reads the DataRange from the supplied CustomTable or DataSheet and
+'returns the number of data rows. Returns 0 when the source is empty.
+'@param impTab Object. A CustomTable or DataSheet to measure.
+'@return Long. The number of source data rows.
 Private Function SourceRowCount(ByVal impTab As Object) As Long
   'Derive the number of data rows provided by the import source (CustomTable or DataSheet).
   Dim srcRange As Range
@@ -1020,12 +1209,13 @@ Private Function SourceRowCount(ByVal impTab As Object) As Long
   SourceRowCount = srcRange.Rows.Count
 End Function
 
-'@label:AddIds
-'@sub-title Add Ids to the ID column in a sequential way
+'@label:add-ids
+'@sub-title Fill the ID column with sequential values
 '@details
-'For some tables with key columns when resizing it is possible to add automatically 
-'a sequential number (with prefix) to the ID column which is not modified by 
-'the user, and in general is locked.
+'Writes sequential numbers (optionally prefixed) to every cell in the
+'ID column. Silently exits when no ID column is configured or when the
+'column does not exist. The ID column is typically locked and not
+'modified by the user directly.
 '@export
 Private Sub AddIds()
   Dim rng As Range
@@ -1054,7 +1244,11 @@ Private Sub AddIds()
   Next
 End Sub
 
-'@label:FormatIdValue
+'@label:format-id-value
+'@sub-title Build an ID string from a prefix and numeric part
+'@param prefixText String. Prefix text, or empty for numeric-only IDs.
+'@param numericPart Long. The sequential number.
+'@return String. The formatted ID value.
 Private Function FormatIdValue(ByVal prefixText As String, ByVal numericPart As Long) As String
   'Build the ID value ensuring spacing is consistent when a prefix is supplied.
   If LenB(prefixText) = 0 Then
@@ -1065,23 +1259,17 @@ Private Function FormatIdValue(ByVal prefixText As String, ByVal numericPart As 
 End Function
 
 
-'@label:AddRows
-'@sub-title Add Rows to a CustomTable
-'
+'@label:add-rows
+'@sub-title Add rows to the CustomTable
 '@details
-'Add rows to a CustomTable, either by inserting rows before resizing the 
-'corresponding listObject or just by resizing the listObject directly. 
-'There are different ways to add new rows: insert rows in the worksheet, or just
-'expand the range of the listobject. The first option is useful when there are
-'multiple list objects on the same worksheet and avoids overlaps. 
-'On Linelist HList worksheet, there are no stacked listObjects on one worksheet.
-'So there is no need to insert shifts like in analysis. This is time consuming.
-'
-'@param nbRows Optional, Long. number of rows to add. Default is 5
-'@param insertShift Optional, Boolean. When adding rows, insert new line. Default is True
-'@includeIds Optional, Boolean. Whether to number in a sequential way the ID column after
-'            resizing. Default is True.
-'
+'Appends the requested number of rows, either by inserting worksheet
+'rows (to protect stacked tables) or by extending the ListObject range
+'directly. Insertion is useful when multiple ListObjects share a
+'worksheet and overlaps must be avoided. Optionally renumbers the ID
+'column afterwards.
+'@param nbRows Optional Long. Number of rows to add. Defaults to 5.
+'@param insertShift Optional Boolean. When True, inserts worksheet rows. Defaults to False.
+'@param includeIds Optional Boolean. When True, renumbers the ID column. Defaults to True.
 '@export
 Private Sub AddRows(Optional ByVal nbRows As Long = 5, _ 
                     Optional Byval insertShift As Boolean = False, _ 
@@ -1092,20 +1280,16 @@ Private Sub AddRows(Optional ByVal nbRows As Long = 5, _
 End Sub
 
 
-'@label:RemoveRows
-'@sub-title Remove empty rows from a CustomTable
-'
+'@label:remove-rows
+'@sub-title Remove empty rows from the CustomTable
 '@details
-'Delete some  empty rows in the CustomTable, and resize the listObject afterwards.
-'Empty rows are defined as rows where the total row count is less
-'than a given value provided by the user. The default value here is 0. In the
-'linelist HList, the total row count is number of  formulas on the line. Formulas
-'are considered as non empty cells.
-'
-'@param totalCount Optional, Long. total row count on the line
-'@param includeIds Optional Boolean. Whether to number in a sequential way the ID
-'       column after resizing. Default is true
-'
+'Deletes rows whose non-empty cell count falls at or below totalCount.
+'In the linelist, formula cells count as non-empty, so totalCount
+'should match the number of formula columns. Optionally renumbers the
+'ID column afterwards.
+'@param totalCount Optional Long. Maximum non-empty cells for a row to be considered empty. Defaults to 0.
+'@param includeIds Optional Boolean. When True, renumbers the ID column. Defaults to True.
+'@param forceShift Optional Boolean. When True, forces worksheet row deletion. Defaults to False.
 '@export
 Private Sub RemoveRows(Optional ByVal totalCount As Long = 0, _ 
                        Optional ByVal includeIds As Boolean = True, _
@@ -1114,13 +1298,17 @@ Private Sub RemoveRows(Optional ByVal totalCount As Long = 0, _
   Resize AddRows:=False, totalRowCount:=totalCount, includeIds:=includeIds, forceShift:=forceShift
 End Sub
 
-'@label:SetValidation
-'@sub-title Set some validations on the listObject cell
-'@param colName String. Name of column to set the validation on
-'@param drop A Dropdown Object.
-'@param dropName String. The name of the dropdown to select from the dropdown object
-'@param alertType Optional, String. Type of alert to raise if values are not in dropdown. Could take "info", "warning", "error". Default is "info".
-'@param message Optional, String. Message to raise if values are not in the dropdown. Default is vbNullString
+'@label:set-validation
+'@sub-title Set dropdown validation on a column
+'@details
+'Applies data validation from the supplied IDropdownLists to every cell
+'in the specified column. Silently exits when the column does not exist
+'or has no data range.
+'@param colName String. Column header to validate.
+'@param drop IDropdownLists. Dropdown source providing the validation list.
+'@param dropName String. Name of the dropdown list within the source.
+'@param alertType Optional String. Alert severity ("info", "warning", "error"). Defaults to "info".
+'@param message Optional String. Message shown when validation fails. Defaults to vbNullString.
 '@export
 Private Sub SetValidation(ByVal colName As String, _
                           ByVal drop As IDropdownLists, _
@@ -1140,17 +1328,15 @@ Private Sub SetValidation(ByVal colName As String, _
 End Sub
 
 
-'@label:SetValue
-'@sub-title Change the value of one specific cell in the CustomTable
+'@label:set-value
+'@sub-title Change the value of one specific cell
 '@details
-'
-'Given one specific cell in the CustomTable, change value of the cell. The
-'cell is identified using the key of the row and the column name of the column.
-'Use with caution as it modifies data inside the ListObject.
-'
-'@param colName String. Column name of the cell to modify
-'@param keyName String. They key of the cell to modify
-'@param newValue String. The new value to add
+'Writes newValue to the cell identified by column name and key.
+'Silently exits when the key or column is not found. Use with caution
+'as it modifies data inside the ListObject.
+'@param colName String. Column header identifying the cell.
+'@param keyName String. Key value identifying the row.
+'@param newValue String. The new value to assign.
 '@export
 Private Sub SetValue(ByVal colName As String, ByVal keyName As String, ByVal newValue As String)
 
@@ -1165,8 +1351,17 @@ Private Sub SetValue(ByVal colName As String, ByVal keyName As String, ByVal new
   cellRetRng.Value = newValue
 End Sub
 
-'@label:RenameColumn
+'@label:rename-column
 '@sub-title Rename a column header within the table
+'@details
+'Replaces the header text of the matched column with newName and resets
+'the lookup cache. Raises an error when newName is empty.
+'@param colName String. Current column header to find.
+'@param newName String. New header text to assign.
+'@param strictSearch Optional Boolean. When True, uses exact matching. Defaults to True.
+'@param matchCase Optional Boolean. When True, matching is case-sensitive. Defaults to False.
+'@throws ProjectError.InvalidArgument When newName is empty.
+'@export
 Private Sub RenameColumn(ByVal colName As String, _
                          ByVal newName As String, _
                          Optional ByVal strictSearch As Boolean = True, _
@@ -1185,8 +1380,12 @@ Private Sub RenameColumn(ByVal colName As String, _
   ResetCaches
 End Sub
 
-'@label:Clean
-'@sub-title Clean all the columns of the CustomTable except the key column
+'@label:clean
+'@sub-title Clear all non-formula, non-key columns
+'@details
+'Iterates every column in the table and clears the contents of those
+'that do not contain formulas. Key columns are preserved since they
+'are identified by their header, not by content.
 '@export
 Private Sub Clean()
   Dim rng As Range
@@ -1208,18 +1407,16 @@ Private Sub Clean()
   Next
 End Sub
 
-'@label:Sort
-'@sub-title Sort The Current table on some columns
+'@label:sort
+'@sub-title Sort the table on one or more columns
 '@details
-'
-'Sort the columns in Ascending order. One can either sort one column or 
-'sort multiple columns provided in a BetterArray Object. The sort is done
-'on the provided column first and then on the BetterArray if there is one.
-'
-'@param colName Optional String. The column to sort the table on. Default is vbNullString
-'@param colList Optional, an Object, expecting a BetterArray of colNames. Default is Nothing
-'@param directSort Optional, Boolean. Whether to sort on first element or to sort directly. Default is True, sort directly.
-'@param sortOrder Optional, String. Sort
+'Sorts in ascending order on the specified column, then on each column
+'in colList. When directSort is True, uses a simple Range.Sort; when
+'False, groups rows by first occurrence of each distinct value.
+'@param colName Optional String. Column header to sort on. Defaults to vbNullString.
+'@param colList Optional Object. BetterArray of additional column headers. Defaults to Nothing.
+'@param directSort Optional Boolean. When True, sorts directly. Defaults to True.
+'@param strictSearch Optional Boolean. When True, uses exact column matching. Defaults to True.
 '@export
 Private Sub Sort(Optional ByVal colName As String = vbNullString, _ 
                  Optional ByVal colList As Object = Nothing, _
@@ -1248,10 +1445,11 @@ Private Sub Sort(Optional ByVal colName As String = vbNullString, _
   End If
 End Sub
 
-'@label:SortHelper
-'@sub-title Helper for the sort sub
-'@colName String. The column to sort on
-'@directSort Boolean. Sort directly or on first element? Default is True.
+'@label:sort-helper
+'@sub-title Dispatch to the appropriate sort strategy
+'@param colName String. Column header to sort on.
+'@param directSort Optional Boolean. When True, sorts directly. Defaults to True.
+'@param strictSearch Optional Boolean. When True, uses exact column matching. Defaults to True.
 Private Sub SortHelper(ByVal colName As String, _ 
                        Optional ByVal directSort As Boolean = True, _ 
                       Optional ByVal strictSearch As Boolean = True)
@@ -1264,9 +1462,15 @@ Private Sub SortHelper(ByVal colName As String, _
   End If
 End Sub
 
-'@label:SortOnFirst
-'@sub-title Sort a column name by bringing together first values found
-'@param colName A String. The name of the column
+'@label:sort-on-first
+'@sub-title Sort by grouping rows by first occurrence of each value
+'@details
+'Adds a temporary "__number" column, assigns ascending numbers based on
+'first-seen order of each distinct value, sorts the table on that
+'column, then removes it. This groups identical values together while
+'preserving the original order of first appearance.
+'@param colName String. Column header to sort on.
+'@param strictSearch Optional Boolean. When True, uses exact column matching. Defaults to True.
 Private Sub SortOnFirst(ByVal colName As String, Optional ByVal strictSearch As Boolean = True)
 
   Dim numRng As Range 
@@ -1333,6 +1537,10 @@ Private Sub SortOnFirst(ByVal colName As String, Optional ByVal strictSearch As 
   Lo.ListColumns(hRng.Cells.Count + 1).Delete
 End Sub
 
+'@label:sort-simple
+'@sub-title Sort the table on a single column in ascending order
+'@param colName String. Column header to sort on.
+'@param strictSearch Optional Boolean. When True, uses exact column matching. Defaults to True.
 Private Sub SortSimple(ByVal colName As String, Optional ByVal strictSearch As Boolean = True)
 
   Dim colRng As Range
@@ -1348,27 +1556,23 @@ Private Sub SortSimple(ByVal colName As String, Optional ByVal strictSearch As B
 End Sub
 
 
-'@label:ImportExport
-'@section Import Exports
-'
-'@label:Import
-'@sub-title: Import a DataSheet or a CustomTable
-'
+'@section DataExchange
+'===============================================================================
+'@description Import, export, and snapshot operations.
+
+'@label:import
+'@sub-title Import data from a DataSheet or CustomTable
 '@details
-'
-'If keepSourceHeaders = True, the import process will import the incoming data, 
-'by keeping the imported data as "Master". All the the headers of the
-'incoming data are kept as is and all the headers of the current data are 
-'removed. keepSourceHeaders = True will completly clean the data in the current
-'CustomTable and import ALL data in the incoming object.
-'
-'
-'@param impTab DataSheet of CustomTable Object. The table to import
-'@param pasteAtBottom Optional, Boolean. Paste the data at the bottom of the current table. Default is False
-'@param strictColumnSearch Optional, Boolean. Use strict rules when searching column names in the current table. Default is False
-'@param keepSourceHeaders Optional, Boolean. Replace the headers of the current table by the imported ones. Default is False
-'@param insertShift Optional, Boolean. Insert some lines when extending the table. Default is True.
-'@param formatHeaders A BetterArray of headers names where column format should be kept intact
+'Copies column-matched data from the source object into this table.
+'When keepSourceHeaders is True, replaces all headers and data entirely.
+'Creates a snapshot before import and rolls back on error. Unhides
+'hidden columns during the operation and restores their state afterwards.
+'@param impTab Object. A DataSheet or CustomTable to import from.
+'@param pasteAtBottom Optional Boolean. When True, appends below existing data. Defaults to False.
+'@param strictColumnSearch Optional Boolean. When True, uses exact column matching. Defaults to False.
+'@param insertShift Optional Boolean. When True, inserts worksheet rows during resize. Defaults to True.
+'@param formatHeaders Optional Object. BetterArray of headers whose formatting to preserve. Defaults to Nothing.
+'@param keepSourceHeaders Optional Boolean. When True, replaces destination headers. Defaults to False.
 '@export
 Private Sub Import(ByVal impTab As Object, _
                    Optional ByVal pasteAtBottom As Boolean = False, _
@@ -1416,13 +1620,18 @@ RollbackImport:
   Err.Raise Err.Number, Err.Source, Err.Description
 End Sub
 
-'@sub-title Import a DataSheet or a CustomTable
-'@param impTab DataSheet of CustomTable Object. The table to import
-'@param pasteAtBottom Optional, Boolean. Paste the data at the bottom of the current table. Default is False
-'@param strictColumnSearch Optional, Boolean. Use strict rules when searching column names in the current table. Default is False
-'@param insertShift Optional, Boolean. Insert some lines when extending the table. Default is True.
-'@param formatHeaders A BetterArray of headers names where column format should be kept
-'@export
+'@label:import-object
+'@sub-title Import column-matched data from a source object
+'@details
+'Iterates the source headers, finds matching columns in this table,
+'and copies data cell by cell. Columns not found are tracked in
+'NOTIMPORTEDCOLUMNS. Optionally preserves formatting for specified
+'headers. Trims the table when insertShift is False.
+'@param impTab Object. A DataSheet or CustomTable to import from.
+'@param pasteAtBottom Optional Boolean. When True, appends below existing data. Defaults to False.
+'@param strictColumnSearch Optional Boolean. When True, uses exact column matching. Defaults to False.
+'@param insertShift Optional Boolean. When True, inserts worksheet rows during resize. Defaults to True.
+'@param formatHeaders Optional Object. BetterArray of headers whose formatting to preserve. Defaults to Nothing.
 Private Sub ImportObject(ByVal impTab As Object, _
                    Optional ByVal pasteAtBottom As Boolean = False, _
                    Optional ByVal strictColumnSearch As Boolean = False, _ 
@@ -1498,9 +1707,15 @@ ContinueImport:
   If (Not InsertShift) Then TrimTableRows targetRowCount 'Trim the table to the targetRowCount
 End Sub
 
-'@sub-title Import the formatting of a range into a currrent range
-'@param impRng The range to  importing range
-'@param currRng the current range in the current CustomTable
+'@label:import-format
+'@sub-title Copy formatting from a source range to a destination range
+'@details
+'Transfers comments, comment threads, interior colour, font colour,
+'bold, and italic from each cell in impRng to the corresponding cell
+'in currRng. Uses error suppression for Excel versions that do not
+'support CommentThreaded.
+'@param impRng Range. Source range with formatting to copy.
+'@param currRng Range. Destination range in this table.
 Private Sub ImportFormat(ByVal impRng As Range, ByVal currRng As Range)
 
   Dim formatCounter As Long
@@ -1559,14 +1774,15 @@ Private Sub ImportFormat(ByVal impRng As Range, ByVal currRng As Range)
 End Sub
 
 
-'@label:ImportAll
-'@sub-title Import a CustomTable and a DataSheet
+'@label:import-all
+'@sub-title Replace the entire table with imported data
 '@details
-'
-'All the columns of the imported Object ARE  imported, and
-'replace all the current columns WITH all the imported ones
-'
-'@param impTab A CustomTable or DataSheet Object
+'Replaces all headers and data with the content of the supplied object,
+'discarding the current structure entirely. Trims the table to one row,
+'adjusts column count to match the source, then overwrites headers and
+'data body.
+'@param impTab Object. A DataSheet or CustomTable to import from.
+'@param insertShift Optional Boolean. When True, inserts worksheet rows. Defaults to False.
 '@export
 Private Sub ImportAll(ByVal impTab As Object, Optional ByVal insertShift As Boolean = False)
 
@@ -1604,10 +1820,15 @@ Private Sub ImportAll(ByVal impTab As Object, Optional ByVal insertShift As Bool
 End Sub
 
 
-'@label:ImportColumnsNotFound
-'@prop-title After one import, get the columns not imported
+'@label:import-columns-not-found
+'@prop-title Columns not matched during the last import
+'@details
+'Returns a clone of the BetterArray containing column headers from the
+'source that had no match in this table. Only available after a
+'successful import; logs a diagnostic and exits when no import has
+'occurred.
+'@return BetterArray. Unmatched column headers, or Nothing.
 '@export
-'return A BetterArray object
 Private Property Get ImportColumnsNotFound() As BetterArray
 
   If Not this.hasImport Then
@@ -1620,23 +1841,26 @@ Private Property Get ImportColumnsNotFound() As BetterArray
   Set ImportColumnsNotFound = NOTIMPORTEDCOLUMNS.Clone()
 End Property
 
-'@label:HasColumnsNotImported
-'@prop-title Are there imports in the CustomTable?
+'@label:has-columns-not-imported
+'@prop-title Whether the last import had unmatched columns
+'@details
+'Returns True when the most recent import left some source columns
+'unmatched against this table.
+'@return Boolean. True when unmatched columns exist.
 '@export
-'@return A Boolean
 Private Property Get HasColumnsNotImported() As Boolean
   If Not this.hasImport Then Exit Property
   If NOTIMPORTEDCOLUMNS Is Nothing Then Exit Property
   HasColumnsNotImported = (NOTIMPORTEDCOLUMNS.Length >= 1)
 End Property
 
-'Those functions are for Unhiding and hiding back columns before Import or Exports
-'Sometimes CustomTable contains hidden columns, range.Find method does not include
-'hidden rows or column when searching, so we need to unhide all columns of
-'the worksheet before Import/Export and to return back the state of hidden columns
-'after import/export.
-
-'@sub-title UnhideHiddenColumns
+'@label:unhide-hidden-columns
+'@sub-title Unhide all hidden columns before import/export
+'@details
+'Range.Find does not include hidden columns, so all columns must be
+'made visible before import or export operations. Records the indexes
+'of previously hidden columns so ReturnBackHiddenColumns can restore
+'them afterwards.
 Private Sub UnhideHiddenColumns()
   Dim counter As Long
   Dim hRng As Range
@@ -1659,7 +1883,11 @@ Private Sub UnhideHiddenColumns()
   this.hasHiddenList = (HIDDENCOLUMNSLIST.Length > 0)
 End Sub
 
-'@sub-title ReturnBackHiddenColumns
+'@label:return-back-hidden-columns
+'@sub-title Restore previously hidden columns after import/export
+'@details
+'Re-hides columns that were recorded by UnhideHiddenColumns. Uses error
+'suppression as a safeguard against stale column indexes.
 Private Sub ReturnBackHiddenColumns()
   Dim counter As Long
   Dim hRng As Range
@@ -1679,15 +1907,19 @@ Private Sub ReturnBackHiddenColumns()
   this.hasHiddenList = False
 End Sub
 
-'@label:Export
-'@sub-title Export a CustomTable to a Worksheet
+'@label:export
+'@sub-title Export the table to a worksheet
 '@details
-'
-'Export the current CustomTable to a worksheet. The startLine is where to paste
-'the data in the current worksheet.
-'
-'@param hedersTable BetterArray Object, the list of the columns to export
-'@param startLine Optional, Long. The line where to start exporting in the worksheet. Default is 1.
+'Writes the requested columns (or all columns when headersTable is not
+'a BetterArray) to the target worksheet, optionally creating a
+'ListObject on the output range. Unhides hidden columns during the
+'operation and restores their state afterwards.
+'@param sh Worksheet. Target worksheet to write to.
+'@param headersTable Optional Object. BetterArray of column headers to export. Defaults to Nothing (all columns).
+'@param startLine Optional Long. Row to begin writing at. Defaults to 1.
+'@param startColumn Optional Long. Column to begin writing at. Defaults to 1.
+'@param addListObject Optional Boolean. When True, creates a ListObject on the output. Defaults to False.
+'@export
 Private Sub Export(ByVal sh As Worksheet, _ 
            Optional ByVal headersTable As Object = Nothing, _ 
            Optional ByVal startLine As Long = 1, _ 
@@ -1759,14 +1991,17 @@ Private Sub Export(ByVal sh As Worksheet, _
   ResetCaches
 End Sub
 
-'@label:Checkings
 '@section Checkings
 '===============================================================================
+'@description Diagnostic logging and error handling.
 
-'@sub-title Add elements to the checking object for future notes
-'@param Label String, the message to add.
-'@param scope Byte. The scope of the checking object.
-'@export
+'@label:log-info
+'@sub-title Log a diagnostic message
+'@details
+'Adds a message to the internal IChecking object, creating it on first
+'use. The checkCounter provides a unique key for each entry.
+'@param label String. The message to record.
+'@param scope Optional Byte. Severity level from CheckingScope. Defaults to checkingNote.
 Private Sub LogInfo(ByVal label As String, _ 
                     Optional ByVal scope As Byte = checkingNote)
 
@@ -1784,15 +2019,22 @@ Private Sub LogInfo(ByVal label As String, _
     If Not this.hasChecks Then this.hasChecks = True
 End Sub
 
-'@label:HasChecking
-'@prop-title Check if the object has checkings
+'@label:has-checkings
+'@prop-title Whether the table has logged diagnostic messages
+'@details
+'Returns True when at least one diagnostic entry has been recorded.
+'@return Boolean. True when diagnostic entries exist.
 '@export
 Private Property Get HasCheckings() As Boolean
     HasCheckings = this.hasChecks
 End Property
 
-'@label:CheckingValues
-'@prop-title Get the cheking values
+'@label:checking-values
+'@prop-title Retrieve the diagnostic log entries
+'@details
+'Returns the internal IChecking object containing all logged messages.
+'Returns Nothing when no entries have been recorded.
+'@return Object. An IChecking instance, or Nothing.
 '@export
 Private Property Get CheckingValues() As Object
 
@@ -1803,34 +2045,37 @@ Private Property Get CheckingValues() As Object
 End Property
 
 
+'@label:show-debug
+'@sub-title Print a debug trace to the Immediate window
 Private Sub ShowDebug()
     Debug.Print "Check the informations of custom table object " & Name()
 End Sub
 
-
+'@label:throw-error
+'@sub-title Raise a ProjectError-based exception
+'@details
+'Wrapper around Err.Raise that standardises the source to "CustomTable"
+'for consistent stack traces.
+'@param errNumb Long. ProjectError code.
+'@param errorMessage String. Descriptive message.
+'@throws ProjectError.<varies> Always raises the specified error.
 Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
     Err.Raise errNumb, "CustomTable", "Error: " & errorMessage
 End Sub
 
 
-'@jump:Create
+'@section Interface
+'===============================================================================
+'@description Delegated members satisfying the ICustomTable contract.
 
-'@jump:elements
-'CustomTable elements ----------------------------------------------------------
-
-'@jump:HeaderRange
-'Header row range
 Private Property Get ICustomTable_HeaderRange() As Range
   Set ICustomTable_HeaderRange = HeaderRange()
 End Property
 
-'@jump:idvalue
 Private Property Get ICustomTable_IdValue() As String
   ICustomTable_IdValue = IdValue()
 End Property
 
-'@jump:DataRange
-'Range of a column
 Private Property Get ICustomTable_DataRange( _
           Optional ByVal colName As String = "__all__", _
           Optional ByVal includeHeaders As Boolean = False, _
@@ -1839,21 +2084,15 @@ Private Property Get ICustomTable_DataRange( _
   Set ICustomTable_DataRange = DataRange(colName, includeHeaders, strictSearch, matchCase)
 End Property
 
-'@jump:Name
-'Name of attached listObject
 Private Property Get ICustomTable_Name() As String
   ICustomTable_Name = Name()
 End Property
 
-'@jump:CellRange
-'Specific cell in the customtable
 Private Property Get ICustomTable_CellRange(ByVal colName As String, _ 
                                             ByVal lineNum As Long) As Range
   Set ICustomTable_CellRange = CellRange(colName, lineNum)
 End Property
 
-'@jump:Value
-'Specific value of a customtable with ID column
 Private Property Get ICustomTable_Value(ByVal colName As String, _ 
                                         ByVal keyName As String) As String
   ICustomTable_Value = Value(colName, keyName)
@@ -1865,18 +2104,11 @@ Private Property Get ICustomTable_ValueRange(ByVal colName As String, _
     Set ICustomTable_ValueRange = ValueRange(colName, keyName)
 End Property
 
-'@jump:modify
-'Modify the CustomTable -------------------------------------------------------
-
-'@jump:AddIds
-'AddIds to the CustomTable
 Private Sub ICustomTable_AddIds()
     AddIds
 End Sub
 
 
-'@jump:AddRows
-'AddRows to a CustomTable
 Private Sub ICustomTable_AddRows(Optional ByVal nbRows As Long = 5, _ 
                                  Optional Byval insertShift As Boolean = False, _ 
                                  Optional ByVal includeIds As Boolean = True)
@@ -1886,8 +2118,6 @@ Private Sub ICustomTable_AddRows(Optional ByVal nbRows As Long = 5, _
             includeIds:=includeIds
 End Sub
 
-'@jump:RemoveRows
-'Remove rows to a CustomTable
 Private Sub ICustomTable_RemoveRows(Optional ByVal totalCount As Long = 0, _ 
                                     Optional ByVal includeIds As Boolean = True, _ 
                                     Optional ByVal forceShift As Boolean = False)
@@ -1895,8 +2125,6 @@ Private Sub ICustomTable_RemoveRows(Optional ByVal totalCount As Long = 0, _
 End Sub
 
 
-'@jump:SetValidation
-'Set validations on one specific column of the listObject
 Private Sub ICustomTable_SetValidation(ByVal colName As String, _ 
      ByVal drop As IDropdownLists, _
      ByVal dropName As String, _ 
@@ -1908,8 +2136,6 @@ Private Sub ICustomTable_SetValidation(ByVal colName As String, _
 End Sub
 
 
-'@jump:SetValue
-'change the values of one cell
 Private Sub ICustomTable_SetValue(ByVal colName As String, _ 
         ByVal keyName As String, _ 
         ByVal newValue As String)
@@ -1924,15 +2150,11 @@ Private Sub ICustomTable_RenameColumn(ByVal colName As String, _
 End Sub
 
 
-'@jump:Clean
-'Clean the CustomTable
 Private Sub ICustomTable_Clean()
   Clean
 End Sub
 
 
-'@jump:Sort
-'Sort a CustomTable
 Private Sub ICustomTable_Sort(Optional ByVal colName As String = vbNullString, _ 
                               Optional ByVal colList As Object = Nothing, _ 
                               Optional ByVal directSort As Boolean = True, _ 
@@ -1957,11 +2179,6 @@ Private Sub ICustomTable_DeleteRowsAt(ByVal targetCell As Range, _
                forceShift:=forceShift
 End Sub
 
-'@jump:ImportExport
-'Import Export Functions -------------------------------------------------------
-
-'@jump:Import
-'Imports an object
 Private Sub ICustomTable_Import( _
               ByVal impTab As Object, _
               Optional ByVal pasteAtBottom As Boolean = False, _
@@ -1979,8 +2196,6 @@ Private Sub ICustomTable_Import( _
 End Sub
 
 
-'@jump:Export
-'Export to a worksheet
 Private Sub ICustomTable_Export(ByVal sh As Worksheet, _
                                Optional ByVal headersTable As Object = Nothing, _
                                Optional ByVal startLine As Long = 1, _ 
@@ -1990,44 +2205,31 @@ Private Sub ICustomTable_Export(ByVal sh As Worksheet, _
 End Sub
 
 
-'@jump:ImportAll
-'import with imported as master
 Private Sub ICustomTable_ImportAll(ByVal impTab As Object)
   ImportAll impTab
 End Sub
 
-'@jump:RestoreTableSnapshot
 Private Sub ICustomTable_RestoreTableSnapshot()
   RestoreTableSnapshot
 End Sub
 
-'@jump:SaveTableSnapshot
 Private Sub ICustomTable_SaveTableSnapshot()
   SaveTableSnapshot
 End Sub
 
-'@jump:ImportColumnsNotFound
-'import columns not found
 Private Property Get ICustomTable_ImportColumnsNotFound() As BetterArray
   Set ICustomTable_ImportColumnsNotFound = ImportColumnsNotFound()
 End Property
 
-'@jump:HasColumnsNotImported
-'Test if there are imports in the CustomTable
 Private Property Get ICustomTable_HasColumnsNotImported() As Boolean
     ICustomTable_HasColumnsNotImported = HasColumnsNotImported()
 End Property
 
 
-'@jump:Checkings
-'Errors and checkings----------------------------------------------------------
-
-'@jump:HasCheckings
 Private Property Get ICustomTable_HasCheckings() As Boolean
     ICustomTable_HasCheckings = HasCheckings()
 End Property
 
-'@jump:CheckingValues
 Private Property Get ICustomTable_CheckingValues() As Object
      Set ICustomTable_CheckingValues = CheckingValues()
 End Property

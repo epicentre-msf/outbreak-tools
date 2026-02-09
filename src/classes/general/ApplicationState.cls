@@ -10,7 +10,7 @@ Attribute VB_Exposed = False
 Attribute VB_Description = "Guards Excel application settings while the linelist runs heavy operations"
 
 '@PredeclaredId
-'@Folder("Linelist")
+'@Folder("General")
 '@ModuleDescription("Guards Excel application settings while the linelist runs heavy operations")
 '@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 '@depends ProjectError
@@ -18,6 +18,16 @@ Attribute VB_Description = "Guards Excel application settings while the linelist
 Option Explicit
 
 Implements IApplicationState
+
+'@class ApplicationState
+'@description
+'Cell-based guard that snapshots Excel Application settings before
+'entering a locked-down busy mode and restores them afterwards.
+'Handles ScreenUpdating, DisplayAlerts, Calculation, EnableAnimations,
+'EnableEvents, AutomationSecurity, cursor, and CalculateBeforeSave.
+'@depends ProjectError
+'@version 1.0 (2026-02-09)
+'@author OutbreakTools
 
 '@section State and constants
 '===============================================================================
@@ -42,13 +52,18 @@ Private excelApp As Application
 Private Const CLASSNAME As String = "ApplicationState"
 
 
-'@section Factory helpers
+'@section Factory
 '===============================================================================
-'@sub-title Create a scope bound to an Excel application instance
-'@details Captures the current application state immediately so callers can
-'@details switch to busy mode without an additional call.
-'@param excelApplication Optional target application. Defaults to Excel.Application
-'@return A ready-to-use IApplicationState instance.
+'Initialisation and self-reference.
+
+'@label:create
+'@sub-title Factory returning an initialised interface
+'@details
+'Captures the current application state immediately so callers can
+'switch to busy mode without an additional call.
+'@param excelApplication Application. Target application. Defaults to Excel.Application.
+'@return IApplicationState. Ready to use.
+'@export
 Public Function Create(Optional ByVal excelApplication As Application) As IApplicationState
     Dim scope As ApplicationState
 
@@ -59,33 +74,47 @@ Public Function Create(Optional ByVal excelApplication As Application) As IAppli
     Set Create = scope.Self
 End Function
 
-'@sub-title Self reference
+'@label:self
+'@prop-title Self-reference as IApplicationState
+'@return IApplicationState. Self-reference.
 Public Property Get Self() As IApplicationState
     Set Self = Me
 End Property
 
 
-'@section Introspection helpers
+'@section Introspection
 '===============================================================================
-'@sub-title Application currently guarded
+'Read-only state accessors.
+
+'@label:application-object
+'@prop-title Application reference currently guarded
+'@return Application. The Excel Application instance.
 Public Property Get ApplicationObject() As Application
     Set ApplicationObject = TargetApplication
 End Property
 
-'@sub-title Indicates whether busy state is active
+'@label:is-busy
+'@prop-title Whether the busy state is currently active
+'@return Boolean. True when ApplyBusyState has been invoked without a matching Restore.
 Public Property Get IsBusy() As Boolean
     IsBusy = this.isBusy
 End Property
 
-'@sub-title Indicates whether a snapshot is available
+'@label:has-snapshot
+'@prop-title Whether a snapshot exists and restoration is possible
+'@return Boolean. True when a snapshot has been captured.
 Public Property Get HasSnapshot() As Boolean
     HasSnapshot = this.snapshotCaptured
 End Property
 
 
-'@section Internal workflow
+'@section Internal Workflow
 '===============================================================================
+'Friend helpers called by the factory.
+
+'@label:bind-application
 '@sub-title Bind a target application
+'@param excelApplication Application. The Excel Application to guard.
 Friend Sub BindApplication(ByVal excelApplication As Application)
     If excelApplication Is Nothing Then
         Set excelApp = Nothing
@@ -97,14 +126,31 @@ Friend Sub BindApplication(ByVal excelApplication As Application)
     End If
 End Sub
 
+'@label:capture-snapshot
 '@sub-title Capture current application settings
 Friend Sub CaptureSnapshot()
     CaptureSnapshotCore
 End Sub
 
 
-'@section Core logic
+'@section Core Logic
 '===============================================================================
+'Private implementation of busy-state, snapshot, and restore workflows.
+
+'@label:apply-busy-state
+'@sub-title Apply the busy state to the target application
+'@details
+'Switches the target Excel Application into a locked-down mode for heavy
+'operations: disables screen updating, alerts, automatic calculation, and
+'optionally suppresses events and blocks automation security.  Does nothing
+'when the scope is already busy.  On failure the busy flag is cleared and a
+'ProjectError is raised so the caller can attempt recovery.
+'@param suppressEvents Optional Boolean. When True, disables Application.EnableEvents. Defaults to False.
+'@param calculateOnSave Optional Boolean. Value assigned to CalculateBeforeSave. Defaults to True.
+'@param busyCursor Optional XlMousePointer. Cursor shown while busy. Defaults to xlNorthWestArrow.
+'@param blockSecurity Optional Boolean. When True, forces msoAutomationSecurityForceDisable. Defaults to False.
+'@throws ProjectError.ErrorUnexpectedState When the application settings cannot be applied.
+'@export
 Private Sub ApplyBusyStateCore(Optional ByVal suppressEvents As Boolean = False, _
                                Optional ByVal calculateOnSave As Boolean = True, _
                                Optional ByVal busyCursor As XlMousePointer = xlNorthWestArrow, _
@@ -141,6 +187,8 @@ ApplyFail:
               "Unable to apply busy state: " & Err.Description
 End Sub
 
+'@label:capture-snapshot-core
+'@sub-title Capture all application settings into the snapshot
 Private Sub CaptureSnapshotCore()
     Dim target As Application
 
@@ -158,11 +206,17 @@ Private Sub CaptureSnapshotCore()
     this.snapshotCaptured = True
 End Sub
 
+'@label:refresh-snapshot
+'@sub-title Re-capture the snapshot from the current application state
+'@export
 Private Sub RefreshSnapshotCore()
     EnsureNotBusy "RefreshSnapshot"
     CaptureSnapshotCore
 End Sub
 
+'@label:target-application
+'@sub-title Resolve the Excel Application reference
+'@return Application. The guarded Application instance.
 Private Function TargetApplication() As Application
     If excelApp Is Nothing Then
         Set excelApp = Application
@@ -176,6 +230,9 @@ Private Function TargetApplication() As Application
     Set TargetApplication = excelApp
 End Function
 
+'@label:ensure-snapshot
+'@sub-title Guard that a snapshot exists before proceeding
+'@param operationName String. Name of the calling operation for error messages.
 Private Sub EnsureSnapshot(ByVal operationName As String)
     If Not this.snapshotCaptured Then
         CaptureSnapshotCore
@@ -187,6 +244,9 @@ Private Sub EnsureSnapshot(ByVal operationName As String)
     End If
 End Sub
 
+'@label:ensure-not-busy
+'@sub-title Guard that the scope is not busy before proceeding
+'@param operationName String. Name of the calling operation for error messages.
 Private Sub EnsureNotBusy(ByVal operationName As String)
     If this.isBusy Then
         ThrowError ProjectError.ErrorUnexpectedState, _
@@ -194,6 +254,10 @@ Private Sub EnsureNotBusy(ByVal operationName As String)
     End If
 End Sub
 
+'@label:restore
+'@sub-title Restore all captured settings to the application
+'@param silent Boolean. When True, swallows errors instead of raising them.
+'@export
 Private Sub RestoreInternal(ByVal silent As Boolean)
     Dim target As Application
 
@@ -229,6 +293,10 @@ RestoreFail:
     End If
 End Sub
 
+'@label:safe-set-enable-animations
+'@sub-title Set EnableAnimations with graceful fallback on unsupported platforms
+'@param target Application. The Excel Application instance.
+'@param value Boolean. The desired EnableAnimations state.
 Private Sub SafeSetEnableAnimations(ByVal target As Application, ByVal value As Boolean)
     On Error GoTo Handler
         target.EnableAnimations = value
@@ -240,6 +308,11 @@ Handler:
     Err.Clear
 End Sub
 
+'@label:try-read-enable-animations
+'@sub-title Attempt to read EnableAnimations from the target application
+'@param target Application. The Excel Application instance.
+'@param value Boolean. ByRef. Receives the current EnableAnimations value on success.
+'@return Boolean. True when the property was read successfully.
 Private Function TryReadEnableAnimations(ByVal target As Application, _
                                          ByRef value As Boolean) As Boolean
     On Error GoTo Unavailable
@@ -254,16 +327,23 @@ Unavailable:
     Err.Clear
 End Function
 
+'@label:throw-error
+'@sub-title Raise a typed project error
+'@param errNumber ProjectError. The error code.
+'@param message String. Descriptive error message.
 Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal message As String)
     Err.Raise errNumber, "ApplicationState", message
 End Sub
 
-'@section Interface implementation
+'@section Interface
 '===============================================================================
-Private Sub IApplicationState_ApplyBusyState(Optional ByVal suppressEvents As Boolean = False, _
-                                             Optional ByVal calculateOnSave As Boolean = True, _
-                                             Optional ByVal busyCursor As XlMousePointer = xlNorthWestArrow, _
-                                             Optional ByVal blockSecurity As Boolean = False)
+'IApplicationState delegation wiring.
+
+Private Sub IApplicationState_ApplyBusyState( _
+    Optional ByVal suppressEvents As Boolean = False, _
+    Optional ByVal calculateOnSave As Boolean = True, _
+    Optional ByVal busyCursor As XlMousePointer = xlNorthWestArrow, _
+    Optional ByVal blockSecurity As Boolean = False)
     ApplyBusyStateCore suppressEvents, calculateOnSave, busyCursor, blockSecurity
 End Sub
 

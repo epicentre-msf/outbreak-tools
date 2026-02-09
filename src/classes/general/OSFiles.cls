@@ -18,6 +18,16 @@ Attribute VB_Description = "Importing files from the operating system"
 Option Explicit
 Implements IOSFiles
 
+'@class OSFiles
+'@description
+'Cross-platform file and folder selection helper. Wraps Windows
+'FileDialog and macOS AppleScript pickers behind a unified API.
+'Supports single and multi-selection for both files and folders,
+'persists the last-used folder across sessions, and provides
+'iterator-style enumeration over multi-selections.
+'@version 1.0 (2026-02-09)
+'@author OutbreakTools
+
 Private Type TOSFiles
     'State bag for OS detection, selections, and cursor positions.
     currentOS As String
@@ -36,10 +46,12 @@ Private this As TOSFiles
 'Workbook-level Name used to persist the last used folder path.
 Private Const LAST_FOLDER_STORAGE_NAME As String = "OSFiles_LastFolder"
 
-'@label:initialization
-'@section Initialization helpers
+'@section Initialization
 '===============================================================================
+'Construction, state reset, and low-level array utilities.
 
+'@label:class-initialize
+'@sub-title Set default values for file and folder state
 Private Sub Class_Initialize()
     'Ensure every new instance starts with clean selections and no cached folder.
     ResetFileState
@@ -47,25 +59,32 @@ Private Sub Class_Initialize()
     this.lastKnownFolder = vbNullString
 End Sub
 
+'@label:reset-file-state
+'@sub-title Clear file-related state and reset the iteration cursor
 Private Sub ResetFileState()
-    'Clear the current file-related state and reset the iteration cursor.
     this.currentLoadedFile = vbNullString
     this.currentLoadedFiles = EmptyStringArray()
     this.currentFileIndex = 0
 End Sub
 
+'@label:reset-folder-state
+'@sub-title Clear folder-related state and reset the iteration cursor
 Private Sub ResetFolderState()
-    'Clear the current folder-related state and reset the iteration cursor.
     this.currentLoadedFolder = vbNullString
     this.currentLoadedFolders = EmptyStringArray()
     this.currentFolderIndex = 0
 End Sub
 
+'@label:empty-string-array
+'@sub-title Return an empty variant array
+'@return Variant. Empty array.
 Private Function EmptyStringArray() As Variant
-    'Return an empty variant array that VBA callers can treat like a string list.
     EmptyStringArray = Array()
 End Function
 
+'@label:select-folders-on-windows
+'@sub-title Show the Windows multi-folder picker
+'@return Variant. Zero-based string array of folder paths.
 Private Function SelectFoldersOnWindows() As Variant
 
     Dim fDialog As Office.FileDialog
@@ -105,6 +124,8 @@ Private Function SelectFoldersOnWindows() As Variant
     End With
 End Function
 
+'@label:try-get-array-bounds
+'@sub-title Safely probe array bounds
 Private Function TryGetArrayBounds(ByVal candidate As Variant, _
                                    ByRef lowerBound As Long, _
                                    ByRef upperBound As Long) As Boolean
@@ -132,6 +153,8 @@ Private Function TryGetArrayBounds(ByVal candidate As Variant, _
     TryGetArrayBounds = True
 End Function
 
+'@label:count-array-items
+'@sub-title Count the number of items in a variant array
 Private Function CountArrayItems(ByVal candidate As Variant) As Long
     Dim lowerBound As Long
     Dim upperBound As Long
@@ -144,6 +167,8 @@ Private Function CountArrayItems(ByVal candidate As Variant) As Long
     CountArrayItems = (upperBound - lowerBound) + 1
 End Function
 
+'@label:to-string-array
+'@sub-title Coerce a variant into a zero-based string array
 Private Function ToStringArray(ByVal value As Variant) As Variant
     Dim normalized() As String
     Dim lowerBound As Long
@@ -196,11 +221,15 @@ Private Function ToStringArray(ByVal value As Variant) As Variant
     ToStringArray = normalized
 End Function
 
+'@label:clone-string-array
+'@sub-title Create a safe copy of a string array
 Private Function CloneStringArray(ByVal source As Variant) As Variant
     'Use ToStringArray to guarantee a safe copy that call sites cannot mutate.
     CloneStringArray = ToStringArray(source)
 End Function
 
+'@label:has-next-array-item
+'@sub-title Check whether the cursor is within array bounds
 Private Function HasNextArrayItem(ByVal items As Variant, ByVal cursor As Long) As Boolean
     Dim lowerBound As Long
     Dim upperBound As Long
@@ -217,6 +246,8 @@ Private Function HasNextArrayItem(ByVal items As Variant, ByVal cursor As Long) 
     HasNextArrayItem = (cursor <= (upperBound - lowerBound))
 End Function
 
+'@label:get-next-array-item
+'@sub-title Fetch the item at the cursor and advance it
 Private Function GetNextArrayItem(ByVal items As Variant, _
                                   ByRef cursor As Long) As String
     Dim lowerBound As Long
@@ -250,6 +281,8 @@ Private Function GetNextArrayItem(ByVal items As Variant, _
     GetNextArrayItem = resultValue
 End Function
 
+'@label:set-files-selection
+'@sub-title Persist file selections and prime the iterator
 Private Sub SetFilesSelection(ByVal selectedItems As Variant)
     Dim normalized As Variant
     normalized = ToStringArray(selectedItems)
@@ -260,6 +293,8 @@ Private Sub SetFilesSelection(ByVal selectedItems As Variant)
     this.currentFileIndex = 0
 End Sub
 
+'@label:set-folders-selection
+'@sub-title Persist folder selections and prime the iterator
 Private Sub SetFoldersSelection(ByVal selectedItems As Variant)
     Dim normalized As Variant
     normalized = ToStringArray(selectedItems)
@@ -270,6 +305,8 @@ Private Sub SetFoldersSelection(ByVal selectedItems As Variant)
     this.currentFolderIndex = 0
 End Sub
 
+'@label:first-string-or-empty
+'@sub-title Return the first array entry or an empty string
 Private Function FirstStringOrEmpty(ByVal source As Variant) As String
     Dim lowerBound As Long
     Dim upperBound As Long
@@ -288,6 +325,8 @@ Private Function FirstStringOrEmpty(ByVal source As Variant) As String
     FirstStringOrEmpty = CStr(source(lowerBound))
 End Function
 
+'@label:normalize-folder-path
+'@sub-title Trim trailing separators and clean the folder path
 Private Function NormalizeFolderPath(ByVal folderPath As String) As String
     Dim cleaned As String
 
@@ -327,6 +366,8 @@ Private Function NormalizeFolderPath(ByVal folderPath As String) As String
     NormalizeFolderPath = cleaned
 End Function
 
+'@label:extract-folder-from-path
+'@sub-title Identify the parent directory from a file path
 Private Function ExtractFolderFromPath(ByVal filePath As String) As String
     Dim cleaned As String
     Dim slashPos As Long
@@ -362,6 +403,8 @@ Private Function ExtractFolderFromPath(ByVal filePath As String) As String
     ExtractFolderFromPath = Left$(cleaned, delimiterPos - 1)
 End Function
 
+'@label:remember-folder
+'@sub-title Cache the folder locally and in the workbook
 Private Sub RememberFolder(ByVal folderPath As String)
     Dim normalized As String
 
@@ -375,6 +418,8 @@ Private Sub RememberFolder(ByVal folderPath As String)
     WriteLastFolderToWorkbook normalized
 End Sub
 
+'@label:remember-folder-from-files
+'@sub-title Persist the parent directory of the first selected file
 Private Sub RememberFolderFromFiles(ByVal filesSelection As Variant)
     Dim firstFile As String
 
@@ -387,6 +432,8 @@ Private Sub RememberFolderFromFiles(ByVal filesSelection As Variant)
     RememberFolder ExtractFolderFromPath(firstFile)
 End Sub
 
+'@label:remember-folder-from-folders
+'@sub-title Persist the first folder from a folder selection
 Private Sub RememberFolderFromFolders(ByVal folderSelection As Variant)
     Dim firstFolder As String
 
@@ -399,6 +446,8 @@ Private Sub RememberFolderFromFolders(ByVal folderSelection As Variant)
     RememberFolder firstFolder
 End Sub
 
+'@label:resolve-last-known-folder
+'@sub-title Resolve the last-used folder from cache or workbook storage
 Private Function ResolveLastKnownFolder() As String
     'Favor the in-memory cache, falling back to workbook storage when needed.
     If this.lastKnownFolder <> vbNullString Then
@@ -410,6 +459,8 @@ Private Function ResolveLastKnownFolder() As String
     ResolveLastKnownFolder = this.lastKnownFolder
 End Function
 
+'@label:has-workbook-context
+'@sub-title Check whether ThisWorkbook is accessible
 Private Function HasWorkbookContext() As Boolean
     Dim workbookName As String
 
@@ -421,6 +472,8 @@ Private Function HasWorkbookContext() As Boolean
     On Error GoTo 0
 End Function
 
+'@label:read-last-folder-from-workbook
+'@sub-title Read the last-used folder from a workbook-level Name
 Private Function ReadLastFolderFromWorkbook() As String
     Dim storedName As Name
     Dim refersToValue As String
@@ -458,6 +511,8 @@ Private Function ReadLastFolderFromWorkbook() As String
     ReadLastFolderFromWorkbook = DecodeWorkbookStorageValue(refersToValue)
 End Function
 
+'@label:write-last-folder-to-workbook
+'@sub-title Persist the folder path in a hidden workbook Name
 Private Sub WriteLastFolderToWorkbook(ByVal folderPath As String)
     Dim storedName As Name
     Dim storageValue As String
@@ -497,6 +552,8 @@ Private Sub WriteLastFolderToWorkbook(ByVal folderPath As String)
     End If
 End Sub
 
+'@label:encode-workbook-storage-value
+'@sub-title Convert a folder path into a Name.RefersTo-safe string literal
 Private Function EncodeWorkbookStorageValue(ByVal folderPath As String) As String
     Dim sanitized As String
 
@@ -508,6 +565,8 @@ Private Function EncodeWorkbookStorageValue(ByVal folderPath As String) As Strin
     EncodeWorkbookStorageValue = "=" & Chr(34) & sanitized & Chr(34)
 End Function
 
+'@label:decode-workbook-storage-value
+'@sub-title Undo Name serialization to recover the original folder path
 Private Function DecodeWorkbookStorageValue(ByVal storedValue As String) As String
     Dim valueText As String
 
@@ -523,6 +582,8 @@ Private Function DecodeWorkbookStorageValue(ByVal storedValue As String) As Stri
     DecodeWorkbookStorageValue = valueText
 End Function
 
+'@label:wrap-apple-script-string
+'@sub-title Escape a string for safe insertion into AppleScript
 Private Function WrapAppleScriptString(ByVal value As String) As String
     Dim sanitized As String
 
@@ -534,11 +595,15 @@ Private Function WrapAppleScriptString(ByVal value As String) As String
     WrapAppleScriptString = Chr(34) & sanitized & Chr(34)
 End Function
 
+'@label:wrap-apple-script-alias
+'@sub-title Build an AppleScript alias literal from a colon path
 Private Function WrapAppleScriptAlias(ByVal aliasPath As String) As String
     'Build the alias literal that AppleScript expects for default location.
     WrapAppleScriptAlias = "alias " & WrapAppleScriptString(aliasPath)
 End Function
 
+'@label:build-apple-script-list
+'@sub-title Translate a VBA array into an AppleScript list literal
 Private Function BuildAppleScriptList(ByVal entries As Variant) As String
     Dim lowerBound As Long
     Dim upperBound As Long
@@ -561,6 +626,8 @@ Private Function BuildAppleScriptList(ByVal entries As Variant) As String
     BuildAppleScriptList = "{" & builder & "}"
 End Function
 
+'@label:build-mac-filter-list
+'@sub-title Construct the UTI list for the AppleScript file picker
 Private Function BuildMacFilterList(ByVal filters As String, _
                                     ByVal customMacFilter As String) As String
     Dim filterEntries As Variant
@@ -588,6 +655,8 @@ Private Function BuildMacFilterList(ByVal filters As String, _
     BuildMacFilterList = BuildAppleScriptList(filterEntries)
 End Function
 
+'@label:parse-mac-selection-result
+'@sub-title Split newline-delimited POSIX paths from AppleScript output
 Private Function ParseMacSelectionResult(ByVal response As String) As Variant
     Dim cleaned As String
     Dim parts() As String
@@ -627,6 +696,8 @@ Private Function ParseMacSelectionResult(ByVal response As String) As Variant
     End If
 End Function
 
+'@label:normalize-folder-selections
+'@sub-title Normalize picker results into clean folder paths
 Private Function NormalizeFolderSelections(ByVal folderSelection As Variant) As Variant
     Dim selection As Variant
     Dim normalized() As String
@@ -664,6 +735,8 @@ Private Function NormalizeFolderSelections(ByVal folderSelection As Variant) As 
     End If
 End Function
 
+'@label:convert-posix-to-colon-path
+'@sub-title Translate a POSIX path to AppleScript colon-delimited format
 Private Function ConvertPosixToColonPath(ByVal posixPath As String) As String
     Dim script As String
     Dim result As String
@@ -686,6 +759,8 @@ Private Function ConvertPosixToColonPath(ByVal posixPath As String) As String
     ConvertPosixToColonPath = result
 End Function
 
+'@label:get-mac-default-folder-alias
+'@sub-title Resolve the default folder alias for macOS pickers
 Private Function GetMacDefaultFolderAlias() As String
     Dim storedFolder As String
     Dim aliasPath As String
@@ -711,6 +786,8 @@ Private Function GetMacDefaultFolderAlias() As String
     On Error GoTo 0
 End Function
 
+'@label:build-mac-file-selection-script
+'@sub-title Compose the AppleScript for file selection on macOS
 Private Function BuildMacFileSelectionScript(ByVal filters As String, _
                                              ByVal customMacFilter As String, _
                                              ByVal defaultAlias As String, _
@@ -743,6 +820,8 @@ Private Function BuildMacFileSelectionScript(ByVal filters As String, _
         "return posixPaths as string"
 End Function
 
+'@label:build-mac-folder-selection-script
+'@sub-title Compose the AppleScript for folder selection on macOS
 Private Function BuildMacFolderSelectionScript(ByVal defaultAlias As String, _
                                                ByVal allowMultiple As Boolean) As String
     Dim multipleFlag As String
@@ -770,6 +849,8 @@ Private Function BuildMacFolderSelectionScript(ByVal defaultAlias As String, _
         "return posixPaths as string"
 End Function
 
+'@label:run-mac-file-picker
+'@sub-title Execute the AppleScript file picker and return POSIX paths
 Private Function RunMacFilePicker(ByVal filters As String, _
                                   ByVal customMacFilter As String, _
                                   ByVal allowMultiple As Boolean) As Variant
@@ -794,6 +875,8 @@ Private Function RunMacFilePicker(ByVal filters As String, _
     RunMacFilePicker = ToStringArray(ParseMacSelectionResult(scriptResult))
 End Function
 
+'@label:run-mac-folder-picker
+'@sub-title Execute the AppleScript folder picker and return POSIX paths
 Private Function RunMacFolderPicker(ByVal allowMultiple As Boolean) As Variant
     Dim script As String
     Dim scriptResult As String
@@ -817,39 +900,9 @@ Private Function RunMacFolderPicker(ByVal allowMultiple As Boolean) As Variant
 End Function
 
 
-'@label:Create
-'@sub-title Create an OSFile object
-'@details
-'OSFile is a class to import files from different operation systems 
-'(Mac or Windows). 
-'The main advantage of OSFiles is that it could work on both Macos and Windows
-'The allowed filters are the following: "*.xls", "*.xlsx", "*.xlsb", "*.xlsb, *.xlsx"
-'If you want to use more filters, please remember to update the customMacFilter 
-'argument of `LoadFile` or `LoadFolder`. New filters like .csv may be accessible on 
-'windows, but if the filter is not in the previous list it will default to xlsx files
-'on Mac.
-' Here is the list of filters you can use on Mac:
-' - xls : com.microsoft.Excel.xls
-' - xlsx : org.openxmlformats.spreadsheetml.sheet
-' - xlsm : org.openxmlformats.spreadsheetml.sheet.macroenabled
-' - xlsb : com.microsoft.Excel.sheet.binary.macroenabled
-' - csv : public.comma-separated-values-text
-' - doc : com.microsoft.word.doc
-' - docx : org.openxmlformats.wordprocessingml.document
-' - docm : org.openxmlformats.wordprocessingml.document.macroenabled
-' - ppt : com.microsoft.powerpoint.ppt
-' - pptx : org.openxmlformats.presentationml.presentation
-' - pptm : org.openxmlformats.presentationml.presentation.macroenabled
-' - txt : public.plain-text
-' - pdf : com.adobe.pdf
-' - jpg : public.jpeg
-' - png : public.png
-' - QIF : com.apple.traditional-mac-plain-text
-' - htm : public.html
-'
-'Based on https://macexcel.com/examples/filesandfolders/selectfiles/.
-'
-'@return OSFile Object
+'@label:create
+'@sub-title Factory returning an initialised interface
+'@return IOSFiles. Ready to use.
 '@export
 Public Function Create() As IOSFiles
 
@@ -865,76 +918,80 @@ Public Function Create() As IOSFiles
     End With
 End Function
 
-'@label:elements
-'@section OSFiles elements
+'@section Elements
 '===============================================================================
+'File and folder path accessors.
 
-
+'@label:self
+'@prop-title Self-reference as IOSFiles
+'@return IOSFiles. Self-reference.
 Public Property Get Self() As IOSFiles
     'Return the class instance as the interface the consumer expects.
     Set Self = Me
 End Property
 
+'@label:os
+'@prop-title Current operating system flag
+'@return String. "Mac" or "Windows".
 Public Property Get OS() As String
-    'Expose the current operating system flag (Mac or Windows).
     OS = this.currentOS
 End Property
 
+'@label:os-set
+'@prop-title Override the detected OS flag
+'@param currentOS String. "Mac" or "Windows".
 Public Property Let OS(ByVal currentOS As String)
-    'Allow callers to override the detected OS, mainly for testing purposes.
     this.currentOS = currentOS
 End Property
 
-'@label:File
-'@prop-title Get the current loaded file path
-'@return A string, the file path
+'@label:file
+'@prop-title Current loaded file path
+'@return String. The first selected file path.
 '@export
 Private Property Get File() As String
-    'Return the first file path captured by the last selection.
     File = this.currentLoadedFile
 End Property
 
-'@label:Files
-'@prop-title Get the current loaded files paths
-'@return A Variant array containing file paths
+'@label:files
+'@prop-title All loaded file paths from a multi-selection
+'@return Variant. Zero-based string array of file paths.
 '@export
 Private Property Get Files() As Variant
-    'Return a copy of all file paths selected in the last picker session.
     Files = CloneStringArray(this.currentLoadedFiles)
 End Property
 
-'@label:Folder
-'@prop-title Get the current loaded folder path
-'@return A String, the folder path
+'@label:folder
+'@prop-title Current loaded folder path
+'@return String. The first selected folder path.
 '@export
 Private Property Get Folder() As String
-    'Return the first folder captured by the last selection.
     Folder = this.currentLoadedFolder
 End Property
 
-'@label:Folders
-'@prop-title Get the current loaded folders paths
-'@return A Variant array containing folder paths
+'@label:folders
+'@prop-title All loaded folder paths from a multi-selection
+'@return Variant. Zero-based string array of folder paths.
 '@export
 Private Property Get Folders() As Variant
-    'Return a copy of the selected folder paths without exposing internals.
     Folders = CloneStringArray(this.currentLoadedFolders)
 End Property
 
+'@label:file-set
+'@prop-title Assign a single file path through the selection pipeline
+'@param ff String. The file path.
 Private Property Let File(ByVal ff As String)
-    'Re-use the selection pipeline so validation remains consistent.
     SetFilesSelection ff
 End Property
 
+'@label:folder-set
+'@prop-title Assign a single folder path through the selection pipeline
+'@param ff String. The folder path.
 Private Property Let Folder(ByVal ff As String)
-    'Normalize single folder assignments through the selection helper.
     SetFoldersSelection ff
 End Property
 
-'Functions to select a folder
-
-
-'@prop-title Select a folder on MacOS
+'@label:select-folder-on-mac
+'@sub-title Show the macOS single-folder picker
 Private Function SelectFolderOnMac() As String
     Dim selection As Variant
 
@@ -943,15 +1000,15 @@ Private Function SelectFolderOnMac() As String
     SelectFolderOnMac = FirstStringOrEmpty(selection)
 End Function
 
-'@prop-title Select multiple folders on MacOS
-'@return A Variant array containing POSIX folder paths
+'@label:select-folders-on-mac
+'@sub-title Show the macOS multi-folder picker
 Private Function SelectFoldersOnMac() As Variant
     'Allow macOS users to return multiple folders in one interaction.
     SelectFoldersOnMac = RunMacFolderPicker(True)
 End Function
 
-'@prop-title Select a folder on windows OS
-'@return A String, the path to the folder on windows
+'@label:select-folder-on-windows
+'@sub-title Show the Windows single-folder picker
 Private Function SelectFolderOnWindows() As String
 
     Dim fDialog As Office.FileDialog
@@ -972,6 +1029,8 @@ Private Function SelectFolderOnWindows() As String
 
 End Function
 
+'@label:select-files-on-windows
+'@sub-title Show the Windows multi-file picker
 Private Function SelectFilesOnWindows(ByVal filters As String) As Variant
 
     Dim fDialog As Office.FileDialog
@@ -1011,10 +1070,8 @@ Private Function SelectFilesOnWindows(ByVal filters As String) As Variant
     End With
 End Function
 
-'@prop-title Select a file on MacOS
-'@param filters A String, filters to use during selection. See Create
-'@param customMacFilter Optional, a string. filter to use in case you want a specific filter on MacOS. See Create
-'@return A String, the path to the selected file on MacOS
+'@label:select-file-on-mac
+'@sub-title Show the macOS single-file picker
 Private Function SelectFileOnMac(ByVal filters As String, _ 
                                  Optional ByVal customMacFilter As String = vbNullString) As String
 
@@ -1025,17 +1082,16 @@ Private Function SelectFileOnMac(ByVal filters As String, _
     SelectFileOnMac = FirstStringOrEmpty(selection)
 End Function
 
-'@prop-title Select multiple files on MacOS
-'@return A Variant array containing POSIX file paths
+'@label:select-files-on-mac
+'@sub-title Show the macOS multi-file picker
 Private Function SelectFilesOnMac(ByVal filters As String, _
                                   Optional ByVal customMacFilter As String = vbNullString) As Variant
     'Collect multiple POSIX file paths when the AppleScript picker allows it.
     SelectFilesOnMac = RunMacFilePicker(filters, customMacFilter, True)
 End Function
 
-'@prop-title Select a file on Windows OS
-'@param filters A String, filters to use during selection. See Create
-'@return A String, the path to the file on Windows
+'@label:select-file-on-windows
+'@sub-title Show the Windows single-file picker
 Private Function SelectFileOnWindows(ByVal filters As String) As String
 
     Dim fDialog As Office.FileDialog
@@ -1057,14 +1113,12 @@ Private Function SelectFileOnWindows(ByVal filters As String) As String
 
 End Function
 
-'@label:selecting
-'@section selecting
+'@section Selecting
 '===============================================================================
+'File and folder picker operations.
 
-
-'@label:LoadFolder
-'@sub-title Select a folder
-'@return A String, The file path to the folder
+'@label:load-folder
+'@sub-title Show a single-folder picker dialog
 '@export
 Private Sub LoadFolder()
     Dim selectedFolder As String
@@ -1086,15 +1140,10 @@ Private Sub LoadFolder()
 End Sub
 
 
-'@label:LoadFile
-'@sub-title Select a file
-'@details
-'If the user aborts the selection process or something go wrong during the 
-'interaction, the internal object will have an empty file. There is a property
-'validate the selection process and make sur the file exists.
-'
-'@param filters A String, filters to use during selection. See Create
-'@param customMacFilter Optional, a string. filter to use in case you want a specific filter on MacOS. See Create
+'@label:load-file
+'@sub-title Show a single-file picker dialog
+'@param filters String. File type filters (e.g. "*.xlsx").
+'@param customMacFilter String. Optional UTI override for macOS. Defaults to vbNullString.
 '@export
 Private Sub LoadFile(ByVal filters As String, _ 
                      Optional ByVal customMacFilter As String = vbNullString)
@@ -1116,13 +1165,10 @@ Private Sub LoadFile(ByVal filters As String, _
     RememberFolderFromFiles this.currentLoadedFiles
 End Sub
 
-'@label:LoadFiles
-'@sub-title Select multiple files
-'@details
-'When multiple selection is enabled, the class stores all selected entries while
-'preserving the first item for backward compatibility.
-'@param filters A String, filters to use during selection.
-'@param customMacFilter Optional, a string. Filter to use on macOS.
+'@label:load-files
+'@sub-title Show a multi-file picker dialog
+'@param filters String. File type filters.
+'@param customMacFilter String. Optional UTI override for macOS. Defaults to vbNullString.
 '@export
 Private Sub LoadFiles(ByVal filters As String, _
                       Optional ByVal customMacFilter As String = vbNullString)
@@ -1144,10 +1190,8 @@ Private Sub LoadFiles(ByVal filters As String, _
     RememberFolderFromFiles this.currentLoadedFiles
 End Sub
 
-'@label:LoadFolders
-'@sub-title Select multiple folders
-'@details
-'macOS support relies on AppleScript multi-selection; Windows uses FileDialog.
+'@label:load-folders
+'@sub-title Show a multi-folder picker dialog
 '@export
 Private Sub LoadFolders()
 
@@ -1168,90 +1212,114 @@ Private Sub LoadFolders()
     RememberFolderFromFolders this.currentLoadedFolders
 End Sub
 
-'@label:iteration
-'@section Iteration helpers
+'@section Iteration
 '===============================================================================
+'Cursor-based enumeration over multi-selections.
 
+'@label:reset-files-iterator
+'@sub-title Reset the file iteration cursor to the beginning
+'@export
 Private Sub ResetFilesCursor()
     'Reset iteration so external callers can enumerate from the first file.
     this.currentFileIndex = 0
 End Sub
 
+'@label:reset-folders-iterator
+'@sub-title Reset the folder iteration cursor to the beginning
+'@export
 Private Sub ResetFoldersCursor()
     'Reset iteration so external callers can enumerate from the first folder.
     this.currentFolderIndex = 0
 End Sub
 
+'@label:has-next-file
+'@sub-title Check if another file is available in the iterator
+'@export
 Private Function HasNextFileValue() As Boolean
     'Expose whether the internal file iterator has another entry.
     HasNextFileValue = HasNextArrayItem(this.currentLoadedFiles, this.currentFileIndex)
 End Function
 
+'@label:has-next-folder
+'@sub-title Check if another folder is available in the iterator
+'@export
 Private Function HasNextFolderValue() As Boolean
     'Expose whether the internal folder iterator has another entry.
     HasNextFolderValue = HasNextArrayItem(this.currentLoadedFolders, this.currentFolderIndex)
 End Function
 
+'@label:next-file
+'@sub-title Return the next file path and advance the cursor
+'@export
 Private Function NextFileValue() As String
     'Return the next file path in sequence and advance the cursor.
     NextFileValue = GetNextArrayItem(this.currentLoadedFiles, this.currentFileIndex)
 End Function
 
+'@label:next-folder
+'@sub-title Return the next folder path and advance the cursor
+'@export
 Private Function NextFolderValue() As String
     'Return the next folder path in sequence and advance the cursor.
     NextFolderValue = GetNextArrayItem(this.currentLoadedFolders, this.currentFolderIndex)
 End Function
 
-'@label:tests
-'@section Test support
+'@section Test Support
 '===============================================================================
+'Hooks for injecting selections from unit tests.
 
+'@label:assign-files-for-testing
+'@sub-title Inject file selections without showing a dialog
+'@param selections Variant. File paths to assign.
 '@TestHook
 Public Sub AssignFilesForTesting(ByVal selections As Variant)
     'Bypass the dialogs and inject file selections from unit tests.
     SetFilesSelection selections
 End Sub
 
+'@label:assign-folders-for-testing
+'@sub-title Inject folder selections without showing a dialog
+'@param selections Variant. Folder paths to assign.
 '@TestHook
 Public Sub AssignFoldersForTesting(ByVal selections As Variant)
     'Bypass the dialogs and inject folder selections from unit tests.
     SetFoldersSelection selections
 End Sub
 
-'@label:validation
 '@section Validation
 '===============================================================================
+'Selection validity checks.
 
-'@label:HasValidFile
-'@prop-title Test if the internal loaded file is valid
-'@return A Boolean
+'@label:has-valid-file
+'@sub-title Whether the loaded file path is valid
+'@return Boolean. True when a non-empty file path exists.
 '@export
 Private Function HasValidFile() As Boolean
     'A simple sanity check used by clients before acting on File().
     HasValidFile = (File() <> vbNullString)
 End Function
 
-'@label:HasValidFiles
-'@prop-title Test if the internal loaded files collection is valid
-'@return A Boolean
+'@label:has-valid-files
+'@sub-title Whether the loaded files array contains entries
+'@return Boolean. True when at least one file was selected.
 '@export
 Private Function HasValidFiles() As Boolean
     'Report whether any file selections exist in the internal buffer.
     HasValidFiles = (CountArrayItems(this.currentLoadedFiles) > 0)
 End Function
 
-'@label:HasValidFolder
-'@prop-title Test if the internal loaded folder is valid
-'@return A Boolean
+'@label:has-valid-folder
+'@sub-title Whether the loaded folder path is valid
+'@return Boolean. True when a non-empty folder path exists.
 '@export
 Private Function HasValidFolder() As Boolean
     'A simple sanity check used by clients before acting on Folder().
     HasValidFolder = (Folder() <> vbNullString)
 End Function
 
-'@label:HasValidFolders
-'@prop-title Test if the internal loaded folders collection is valid
-'@return A Boolean
+'@label:has-valid-folders
+'@sub-title Whether the loaded folders array contains entries
+'@return Boolean. True when at least one folder was selected.
 '@export
 Private Function HasValidFolders() As Boolean
     'Report whether any folder selections exist in the internal buffer.
@@ -1259,129 +1327,83 @@ Private Function HasValidFolders() As Boolean
 End Function
 
 
-'@jump:Create
 '@section Interface
 '===============================================================================
+'IOSFiles delegation wiring.
 
-'These members fulfill the IOSFiles contract by delegating to the private logic.
-'@jump:elements
-'IOSFile elements
-
-'@jump:File
 Private Property Get IOSFiles_File() As String
-    'IOSFiles: expose the single-file selection value.
     IOSFiles_File = File()
 End Property
 
-'@jump:Files
 Private Property Get IOSFiles_Files() As Variant
-    'IOSFiles: expose the multi-file selection collection.
     IOSFiles_Files = Files()
 End Property
 
-'@jump:Folder
 Private Property Get IOSFiles_Folder() As String
-    'IOSFiles: expose the single-folder selection value.
     IOSFiles_Folder = Folder()
 End Property
 
-'@jump:Folders
 Private Property Get IOSFiles_Folders() As Variant
-    'IOSFiles: expose the multi-folder selection collection.
     IOSFiles_Folders = Folders()
 End Property
 
-'@jump:selecting
-'Selecting----------------------------------------------------------------------
-
-'@jump:LoadFolder
 Private Sub IOSFiles_LoadFolder()
-    'IOSFiles: pick a single folder and track it internally.
     LoadFolder
 End Sub
 
-'@jump:LoadFolders
 Private Sub IOSFiles_LoadFolders()
-    'IOSFiles: pick multiple folders and track them internally.
     LoadFolders
 End Sub
 
-'@jump:ResetFilesIterator
 Private Sub IOSFiles_ResetFilesIterator()
-    'IOSFiles: allow consumers to restart file enumeration.
     ResetFilesCursor
 End Sub
 
-'@jump:HasNextFile
 Private Function IOSFiles_HasNextFile() As Boolean
-    'IOSFiles: check if another file path is queued.
     IOSFiles_HasNextFile = HasNextFileValue()
 End Function
 
-'@jump:NextFile
 Private Function IOSFiles_NextFile() As String
-    'IOSFiles: fetch the next file path from the buffer.
     IOSFiles_NextFile = NextFileValue()
 End Function
 
-'@jump:ResetFoldersIterator
 Private Sub IOSFiles_ResetFoldersIterator()
-    'IOSFiles: allow consumers to restart folder enumeration.
     ResetFoldersCursor
 End Sub
 
-'@jump:HasNextFolder
 Private Function IOSFiles_HasNextFolder() As Boolean
-    'IOSFiles: check if another folder path is queued.
     IOSFiles_HasNextFolder = HasNextFolderValue()
 End Function
 
-'@jump:NextFolder
 Private Function IOSFiles_NextFolder() As String
-    'IOSFiles: fetch the next folder path from the buffer.
     IOSFiles_NextFolder = NextFolderValue()
 End Function
 
-'@jump:LoadFile
-Private Sub IOSFiles_LoadFile(ByVal filters As String, _ 
-                             Optional ByVal customMacFilter As String = vbNullString)
-    'IOSFiles: pick a single file using the supplied filters.
+Private Sub IOSFiles_LoadFile( _
+    ByVal filters As String, _
+    Optional ByVal customMacFilter As String = vbNullString)
     LoadFile filters:=filters, customMacFilter:=customMacFilter
 End Sub
 
-'@jump:LoadFiles
-Private Sub IOSFiles_LoadFiles(ByVal filters As String, _
-                               Optional ByVal customMacFilter As String = vbNullString)
-    'IOSFiles: pick multiple files using the supplied filters.
+Private Sub IOSFiles_LoadFiles( _
+    ByVal filters As String, _
+    Optional ByVal customMacFilter As String = vbNullString)
     LoadFiles filters:=filters, customMacFilter:=customMacFilter
 End Sub
 
-'@jump:validation
-'Validate-----------------------------------------------------------------------
-
-'@jump:HasValidFile
 Private Function IOSFiles_HasValidFile() As Boolean
-    'IOSFiles: mirror HasValidFile for interface consumers.
     IOSFiles_HasValidFile = HasValidFile()
 End Function
 
-'@jump:HasValidFiles
 Private Function IOSFiles_HasValidFiles() As Boolean
-    'IOSFiles: mirror HasValidFiles for interface consumers.
     IOSFiles_HasValidFiles = HasValidFiles()
 End Function
 
-'@jump:HasValidFolder
 Private Function IOSFiles_HasValidFolder() As Boolean
-    'IOSFiles: mirror HasValidFolder for interface consumers.
     IOSFiles_HasValidFolder = HasValidFolder()
 End Function
 
-'@jump:HasValidFolders
 Private Function IOSFiles_HasValidFolders() As Boolean
-    'IOSFiles: mirror HasValidFolders for interface consumers.
     IOSFiles_HasValidFolders = HasValidFolders()
 End Function
 
-
- 

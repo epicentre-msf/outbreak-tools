@@ -316,10 +316,64 @@ delegates to another class, mention that relationship.
 ### @export
 
 **Syntax:** `'@export`
-**Required:** On public factory methods (`Create`) and other members that form
-the intentional public API surface.
-**Purpose:** Signals to the HTML generator that this member is a primary entry
-point for external consumers.
+**Required:** On every member that is intentionally called from outside the
+class -- not just factory methods.
+**Purpose:** Signals to the HTML generator and to human readers that this member
+is part of the class's callable API surface. The parser uses `@export` to build
+the "Public API" index on each class page, separating outward-facing members
+from internal helpers that happen to be `Public` (e.g. `Self`, property setters
+used only during `Create`).
+
+**When to apply `@export`:**
+- Factory methods (`Create`)
+- Public operations invoked by modules or other classes (`AddRows`, `RemoveRows`,
+  `Sort`, `Import`, `Export`, `Translate`, `Prepare`, `Clean`, etc.)
+- Any `Public` member that external consumers are expected to call
+
+**When NOT to apply `@export`:**
+- `Self` property (internal wiring for the factory pattern)
+- `Property Set/Let` members used only by `Create` during initialisation
+- Members that are `Public` solely to satisfy VBA's `With New` pattern but are
+  not part of the intended caller contract
+
+**Examples from the codebase:**
+
+```vba
+'@label:create
+'@sub-title Create an Analysis instance
+'@export
+Public Function Create(ByVal hostsheet As Worksheet) As IAnalysis
+
+'@label:addrows
+'@sub-title Add rows based on worksheet header selection
+'@export
+Private Sub AddRows()
+
+'@label:sort
+'@sub-title Sort analysis listobjects and enforce minimum rows
+'@export
+Private Sub Sort()
+
+'@label:import
+'@sub-title Import analysis tables from an external worksheet
+'@export
+Private Sub Import(ByVal sourceSheet As Worksheet)
+
+'@label:export
+'@sub-title Export the analysis worksheet to a workbook
+'@export
+Private Sub Export(ByVal sourceWb As Workbook)
+
+'@label:translate
+'@sub-title Translate analysis labels using the provided engine
+'@export
+Private Sub Translate(ByVal TransObject As ITranslationObject)
+```
+
+**Note:** In the OutbreakTools architecture many exported members are declared
+`Private` in the implementation class because callers go through the interface
+(`IClassName`). The `@export` tag marks intent -- "this is part of the public
+contract" -- regardless of the VBA visibility keyword.
 
 ---
 

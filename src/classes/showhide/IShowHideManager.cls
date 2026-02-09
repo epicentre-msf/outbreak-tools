@@ -140,3 +140,25 @@ End Sub
 ' @param lo Source ListObject containing persisted data.
 Public Sub ImportPlan(ByVal lo As ListObject)
 End Sub
+
+
+'@section Migration persistence
+'===============================================================================
+
+' @description Export visibility state with column widths for migration.
+' Writes entries to the ListObject including column_width read from the source worksheet.
+' The ListObject must have columns: layer, field_key, header_text, hidden_flag, column_width.
+' Clears existing rows for this layer before writing.
+' @param lo Target ListObject for persistence.
+' @param sourceSh Source worksheet to read column/row widths from.
+Public Sub ExportForMigration(ByVal lo As ListObject, ByVal sourceSh As Worksheet)
+End Sub
+
+' @description Import persisted visibility with column widths for migration.
+' Reads hidden states and column widths from the ListObject, updating internal states
+' and setting column/row widths on the target worksheet.
+' If the column_width column is absent, behaves like ImportPlan.
+' @param lo Source ListObject containing persisted data.
+' @param targetSh Target worksheet to apply column/row widths to.
+Public Sub ImportForMigration(ByVal lo As ListObject, ByVal targetSh As Worksheet)
+End Sub
