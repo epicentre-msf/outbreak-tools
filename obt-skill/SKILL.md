@@ -52,9 +52,18 @@ This file contains ALL coding standards, naming conventions, architectural rules
 ```
 Read: <workspace_root>/.obt/implementations.md
 Read: <workspace_root>/.obt/tracking.md
+Read: <workspace_root>/.obt/context-history.md
 ```
-- `implementations.md` = Current goal, behaviors, and rules for the active task
-- `tracking.md` = Detailed task breakdown and progress tracking
+- `implementations.md` = Current goal, behaviors, and rules (user-set specification)
+- `tracking.md` = Detailed task breakdown and progress tracking (tactical)
+- `context-history.md` = Accumulated knowledge and learnings (strategic memory)
+
+**Why context-history.md matters:**
+This file prevents context loss over many iterations by preserving:
+- Important decisions and rationale
+- Patterns that work (and patterns that failed)
+- Architectural choices
+- Key learnings and gotchas
 
 **Step 1.3 - Understand Workspace Structure:**
 ```
@@ -71,8 +80,9 @@ Read: <workspace_root>/.obt/tracking.md
 │   ├── tests/               ← Test files
 │   └── [legacy folders]     ← DO NOT TOUCH - User will handle these
 ├── .obt/
-│   ├── tracking.md          ← Current progress tracking
-│   └── implementations.md   ← Current task specification
+│   ├── implementations.md   ← Current task specification (user-set)
+│   ├── tracking.md          ← Current progress tracking (tactical)
+│   └── context-history.md   ← Accumulated knowledge (strategic memory)
 └── obt-skill/
     ├── SKILL.md             ← This file
     └── project-rules.md     ← Coding standards (READ FIRST)
@@ -175,11 +185,59 @@ Update `.obt/tracking.md`:
 - Document what was accomplished and what remains
 - Include hour and minute in all timestamps
 
-**Step 4.3 - Document Progress:**
+**Step 4.3 - Update Context History (CRITICAL):**
+
+Update `.obt/context-history.md` when ANY of these triggers occur:
+
+**MANDATORY TRIGGERS:**
+1. ✅ **After completing a significant task** (marked [DONE] in tracking.md)
+2. ✅ **When making important architectural decisions**
+3. ✅ **When solving significant problems or overcoming challenges**
+4. ✅ **When discovering patterns that work well**
+5. ✅ **When discovering gotchas or anti-patterns**
+6. ✅ **At end of work session** (when stopping work)
+
+**How to add an entry:**
+```markdown
+### [YYYY-MM-DD HH:MM] Brief Session Title (3-5 words)
+**What:** One sentence describing what was done
+**Why:** One sentence explaining the motivation
+**Key Decision:** Most important choice made (if applicable)
+**Challenge:** Main obstacle encountered (if applicable)
+**Outcome:** ✅ success / ⚠️ partial / ❌ blocked
+```
+
+**What to include:**
+- ✅ Decisions and rationale
+- ✅ Challenges overcome
+- ✅ Patterns discovered
+- ✅ Gotchas found
+- ✅ Results/outcomes
+- ❌ NOT detailed code (that's in files)
+- ❌ NOT step-by-step details (that's in tracking.md)
+
+**Keep entries concise:** 3-5 sentences maximum per session entry.
+
+**FILE SIZE MONITORING (CRITICAL):**
+After adding a new session entry, check file health:
+- Count Recent Sessions entries
+- ⚠️ **If 25-30 entries:** Archive older sessions (keep most recent 10)
+- 🚨 **If 35+ entries:** Immediate archiving required
+- Check if file is approaching ~1500 lines (use `wc -l`)
+- If WARNING threshold reached, follow archiving strategy in project-rules.md Section 2.4
+
+**Also update Knowledge Base section when:**
+- You establish a new architectural pattern
+- You discover a failed approach worth documenting
+- You find an important gotcha
+- You learn a cross-platform consideration
+
+**Step 4.4 - Document Progress:**
 If you stop mid-implementation:
 - Update tracking.md State section with EXACTLY where you stopped
 - List next steps clearly so work can be resumed
 - Note any blockers or decisions needed
+- Add entry to context-history.md summarizing the session
 
 ---
 

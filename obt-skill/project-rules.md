@@ -83,14 +83,199 @@ This file contains:
 - Re-read implementations.md if necessary to know scope of work
 - NEVER modify implementations.md (it's set by the user)
 
-### 2.4 File Modification Scope
+### 2.4 Context History (CRITICAL for Long-Running Projects)
+
+**Context History File Location:** `<workspace_root>/.obt/context-history.md`
+
+**Purpose:**
+This file prevents context loss over many iterations by accumulating:
+- Important decisions and their rationale
+- Patterns that work (and patterns that failed)
+- Architectural choices and constraints
+- Key learnings and gotchas discovered during implementation
+
+**Difference from tracking.md:**
+- `tracking.md` = **Tactical** (current task execution, what's happening NOW)
+- `context-history.md` = **Strategic** (accumulated knowledge, what we've LEARNED)
+- `implementations.md` = **Specification** (user-set goals, what we're BUILDING)
+
+**Required Structure:**
+```markdown
+# OBT Context History
+
+## Recent Sessions (Most Recent First)
+
+### [YYYY-MM-DD HH:MM] Brief Session Title
+**What:** One sentence describing what was done
+**Why:** One sentence explaining the motivation or goal
+**Key Decision:** Most important choice made (if applicable)
+**Challenge:** Main obstacle encountered (if applicable)
+**Outcome:** Result - ✅ success, ⚠️ partial, ❌ blocked
+
+### [YYYY-MM-DD HH:MM] Another Session Title
+**What:** ...
+**Why:** ...
+**Key Decision:** ...
+**Challenge:** ...
+**Outcome:** ...
+
+---
+
+## Knowledge Base (Thematic)
+
+### Architectural Patterns Established
+- Pattern description with brief justification
+- Another pattern that works well
+
+### Failed Approaches (Don't Repeat)
+- ❌ What was tried → Why it failed → What to use instead
+- ❌ Another failed approach → Reason → Solution
+
+### Important Gotchas
+- Specific trap or edge case discovered
+- Another gotcha to remember
+
+### Cross-Platform Considerations
+- Windows vs macOS specific learnings
+- Platform compatibility patterns
+```
+
+**When to Update (MANDATORY TRIGGERS):**
+
+You MUST add an entry to context-history.md when ANY of these occur:
+
+1. **After completing a significant task** (marked [DONE] in tracking.md)
+   - Example: "Completed DataValidator class with all tests passing"
+
+2. **When making important architectural decisions**
+   - Example: "Decided to split ReportBuilder into 3 classes for single responsibility"
+
+3. **When solving significant problems or overcoming challenges**
+   - Example: "Resolved macOS enum parameter clash by using Byte instead of enum type"
+
+4. **When discovering patterns that work well**
+   - Example: "Established pattern: always create interface + implementation for classes"
+
+5. **When discovering gotchas or anti-patterns**
+   - Example: "Variable names matching function names cause VBA freeze - always use different names"
+
+6. **At end of work session** (when stopping work)
+   - Brief summary of what was accomplished in the session
+
+**What to Include (Keep Concise):**
+
+✅ **DO include:**
+- What was done (1 sentence)
+- Why it was done (1 sentence)
+- Key decisions made
+- Challenges overcome
+- Outcome/result
+- Lessons learned
+
+❌ **DON'T include:**
+- Detailed code snippets (that's in the actual files)
+- Step-by-step implementation details (that's in tracking.md)
+- Obvious or trivial information
+- Duplicate information already captured
+
+**Entry Writing Guidelines:**
+- Each session entry: 3-5 sentences maximum
+- Each knowledge base item: 1-2 sentences maximum
+- Use clear, precise language
+- Focus on "why" and "what" not detailed "how"
+- Link concepts (e.g., "See Session 2026-02-04 for initial implementation")
+
+**File Size Management (CRITICAL):**
+
+Context-history.md can become heavy and bloat context windows. Active monitoring and archiving is MANDATORY.
+
+**Monitoring Thresholds:**
+- ⚠️ **WARNING:** 25-30 session entries OR file approaching ~1500 lines
+- 🚨 **CRITICAL:** 35+ session entries OR file exceeding ~2000 lines
+- 📊 **Check size:** Count sessions when adding new entries
+
+**Archiving Strategy (When WARNING threshold reached):**
+
+**Step 1 - Archive Recent Sessions:**
+```markdown
+## Recent Sessions (Most Recent First)
+[Keep only most recent 10 sessions here]
+
+---
+
+## Archived Sessions (Oldest First)
+### Archive 2026-01 to 2026-02
+[Move older sessions here, grouped by month]
+
+### [2026-01-15 10:30] Old Session Title
+...
+```
+
+**Step 2 - Consolidate Knowledge Base:**
+When Knowledge Base sections grow beyond ~15 items each:
+- Merge similar items
+- Remove redundant entries
+- Keep only most critical patterns/gotchas
+- Consider if some items are now "obvious" and can be removed
+
+**Step 3 - Create Separate Archive File (If CRITICAL threshold reached):**
+```bash
+# Create archive file
+mv .obt/context-history.md .obt/context-history-archive-2026-Q1.md
+
+# Create fresh context-history.md with:
+# - Most recent 5 sessions from archive
+# - Consolidated Knowledge Base (top 10 most critical items)
+```
+
+**Archiving Rules:**
+1. **NEVER delete entries** - always move to archive section or file
+2. **Keep most recent 10 sessions** in main Recent Sessions section
+3. **Preserve all Knowledge Base** - but consolidate/merge when possible
+4. **Group archived sessions by month** for easy reference
+5. **Reference archive files** when relevant (e.g., "See context-history-archive-2026-Q1.md")
+
+**When to Archive:**
+- ✅ After every 5-10 new sessions, check entry count
+- ✅ If file exceeds 1500 lines, archive immediately
+- ✅ At start of new quarter/month, consider consolidation
+- ✅ When context loading feels slow, archive
+
+**Archive File Naming Convention:**
+- `context-history-archive-YYYY-QN.md` (quarterly archives)
+- Example: `context-history-archive-2026-Q1.md`
+- Keep archives in `.obt/` folder for reference
+
+**Example Consolidated Knowledge Base (after archiving):**
+```markdown
+### Architectural Patterns Established (Top 10)
+1. Class structure: IClassName.cls + ClassName.cls (macOS compatibility)
+2. Error handling: ProjectError.Raise + CustomTestLogFailure pattern
+3. Collections: BetterArray only (Dictionary fails on macOS)
+...
+
+### Failed Approaches (Top 5 Critical)
+1. ❌ Dictionary → macOS incompatible → Use BetterArray
+2. ❌ Enum types in parameters → macOS clash → Use Byte/Integer
+...
+```
+
+**Post-Archive Verification:**
+After archiving, ensure:
+- [ ] Recent Sessions has ≤10 entries
+- [ ] File size is <1500 lines
+- [ ] Knowledge Base has ≤15 items per section
+- [ ] Archive file exists and is properly named
+- [ ] Fresh context-history.md references archive location
+
+### 2.5 File Modification Scope
 
 **Rules:**
 - Modify ONLY the file explicitly requested
 - Do not touch other files unless explicitly instructed
 - Do not describe hypothetical changes to other files
 
-### 2.5 Specific File Exceptions ⚠️
+### 2.6 Specific File Exceptions ⚠️
 
 **CRITICAL - NEVER MODIFY:**
 - `DictionaryTestFixture.bas`
@@ -607,6 +792,7 @@ Before delivering code:
 - [ ] Full file returned (not diff/snippet)
 - [ ] unix2dos executed
 - [ ] tracking.md updated with progress
+- [ ] context-history.md updated (if triggers met)
 - [ ] Tests added for new classes
 - [ ] Test failures use `CustomTestLogFailure` (NOT `Err.Raise`)
 - [ ] Interface created for new classes (IClassName.cls + ClassName.cls)
