@@ -16,38 +16,68 @@ Attribute VB_Description = "Surface contract for VALUE_OF formula parsers"
 
 Option Explicit
 
-'@section Overview
-'===============================================================================
-'@details Implementations validate VALUE_OF expressions from the dictionary and expose the converted formula alongside lookup metadata for downstream consumers.
+'@class IValueOfFormula
+'@description
+'Defines the public contract for the ValueOfFormula class, exposing
+'validation, converted formula output, failure diagnostics, and lookup
+'metadata for VALUE_OF custom expressions. Implementations validate
+'VALUE_OF expressions from the dictionary and resolve sheet names and
+'column indices for downstream consumers.
 
-'@jump:ConvertedFormula
-'@sub-title Retrieve the converted VALUE_OF expression ready for workbook usage
-'@details Returns the string representation with sheet name and column indices resolved.
-'@return String converted VALUE_OF expression, or vbNullString when invalid.
+
+'@section Conversion
+'===============================================================================
+'@description Converted formula output and validation status.
+
+'@jump:converted-formula
+'@prop-title Retrieve the converted VALUE_OF expression ready for workbook usage
+'@details
+'Returns the string representation with sheet name and column indices
+'resolved. Returns vbNullString when the formula is invalid.
+'@return String. Converted VALUE_OF expression.
 Public Property Get ConvertedFormula() As String: End Property
 
-'@jump:Valid
-'@sub-title Report whether the VALUE_OF formula parsed successfully
-'@details Implementations perform syntax and dictionary lookups before returning True.
-'@return Boolean True when all checks passed.
+'@jump:valid
+'@prop-title Report whether the VALUE_OF formula parsed successfully
+'@details
+'Implementations perform syntax checks and dictionary lookups before
+'returning True. Returns False when any validation step fails.
+'@return Boolean. True when all checks passed.
 Public Property Get Valid() As Boolean: End Property
 
-'@jump:FailureReason
-'@sub-title Provide the human readable reason describing the failure
-'@return String explanation; vbNullString when the formula is valid.
+'@jump:failure-reason
+'@prop-title Provide the human-readable reason describing the failure
+'@details
+'Returns a diagnostic message explaining why parsing or validation
+'failed. Returns vbNullString when the formula is valid.
+'@return String. Explanation of the failure.
 Public Property Get FailureReason() As String: End Property
 
-'@jump:LookupSheetName
-'@sub-title Expose the resolved worksheet hosting the lookup table
-'@return String sheet name; vbNullString when unavailable.
+
+'@section LookupMetadata
+'===============================================================================
+'@description Resolved sheet name and column indices for lookup operations.
+
+'@jump:lookup-sheet-name
+'@prop-title Expose the resolved worksheet hosting the lookup table
+'@details
+'Returns the name of the worksheet containing the variable referenced
+'by the VALUE_OF expression. Returns vbNullString when unavailable.
+'@return String. Sheet name.
 Public Property Get LookupSheetName() As String: End Property
 
-'@jump:LookupColumnIndex
-'@sub-title Return the column index used for the lookup key
-'@return Long column index; zero when not resolved.
+'@jump:lookup-column-index
+'@prop-title Return the column index used for the lookup key
+'@details
+'Indicates the column position within the lookup table that holds the
+'key values. Returns zero when not resolved.
+'@return Long. Column index.
 Public Property Get LookupColumnIndex() As Long: End Property
 
-'@jump:ValueColumnIndex
-'@sub-title Return the column index providing the matched value
-'@return Long column index; zero when not resolved.
+'@jump:value-column-index
+'@prop-title Return the column index providing the matched value
+'@details
+'Indicates the column position within the lookup table that holds the
+'result values. Returns zero when not resolved.
+'@return Long. Column index.
 Public Property Get ValueColumnIndex() As Long: End Property
