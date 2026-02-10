@@ -17,15 +17,31 @@ Attribute VB_Description = "Interface describing the setup consistency checker"
 
 Option Explicit
 
+'@class ISetupErrors
+'@description
+'Defines the public contract for the SetupErrors class, exposing methods
+'to initialise a setup consistency checker, execute all validation checks
+'(dictionary, choices, exports, translations), and retrieve the resulting
+'collection of IChecking report objects.
+
+
 '@section Lifecycle
 '===============================================================================
-'@sub-title Bind the setup checker to a workbook and optional collaborators.
-'@param hostBook Workbook containing setup tables and helper sheets.
-'@param passwordService Optional password manager handling sheet protection.
-'@param dictionary Optional dictionary wrapper providing data access.
-'@param choices Optional choices wrapper exposing list names and categories.
-'@param formulaStore Optional formula data handler used to validate expressions.
-'@param stateScope Optional application state scope guarding Excel settings.
+
+'@jump:initialise
+'@sub-title Bind the setup checker to a workbook and optional collaborators
+'@details
+'Stores the workbook reference and optional collaborators (password manager,
+'dictionary, choices, formula store, application state). When optional
+'parameters are omitted, the checker creates default instances internally
+'during ConfigureDependencies.
+'@param hostBook Workbook. The workbook containing setup tables and helper sheets.
+'@param passwordService Optional IPasswords. Password manager handling sheet protection.
+'@param dictionary Optional ILLdictionary. Dictionary wrapper providing data access.
+'@param choices Optional ILLChoices. Choices wrapper exposing list names and categories.
+'@param formulaStore Optional IFormulaData. Formula data handler used to validate expressions.
+'@param stateScope Optional IApplicationState. Application state scope guarding Excel settings.
+'@export
 Public Sub Initialise(ByVal hostBook As Workbook, _
                       Optional ByVal passwordService As IPasswords, _
                       Optional ByVal dictionary As ILLdictionary, _
@@ -36,14 +52,28 @@ End Sub
 
 '@section Execution
 '===============================================================================
-'@sub-title Execute all setup consistency checks and publish the report.
+
+'@jump:run
+'@sub-title Execute all setup consistency checks and publish the report
+'@details
+'Suspends Excel UI, resets the internal check container, then runs each
+'checker in sequence (dictionary, choices, exports, translations). On
+'completion, publishes all collected IChecking objects to the reporting
+'worksheet. Restores Excel state even when an error occurs.
+'@export
 Public Sub Run()
 End Sub
 
 '@section Results
 '===============================================================================
-'@sub-title Retrieve the collection of generated checking objects.
-'@return BetterArray containing the generated IChecking instances.
+
+'@jump:checkings
+'@prop-title Collection of generated checking objects
+'@details
+'Returns a BetterArray containing the IChecking instances produced by the
+'most recent Run call. Each entry covers one validation domain (dictionary,
+'choices, exports, translations).
+'@return BetterArray. The generated IChecking instances.
+'@export
 Public Property Get Checkings() As BetterArray
 End Property
-

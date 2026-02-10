@@ -19,6 +19,16 @@ Option Explicit
 
 Implements ISetupErrors
 
+'@class SetupErrors
+'@description
+'Analyses setup sheets and publishes consistency reports. Validates the
+'dictionary for duplicate variables, missing labels, unknown controls,
+'and formula correctness; inspects choices for unused entries and missing
+'labels; audits exports for missing metadata and dictionary alignment;
+'and reviews translations for missing or duplicate labels. Results are
+'collected as IChecking objects and published to the __checkRep reporting
+'worksheet via CheckingOutput.
+
 '@section State
 '===============================================================================
 Private Type TSetupErrorsState
@@ -94,9 +104,23 @@ Private Const EXP_UNFOUND_DICTCOLUMN As String      = "Exports, line %1--The Exp
 
 '@section Factory
 '===============================================================================
-'@sub-title Create and initialise a setup checker instance.
-'@param hostBook Workbook containing setup data.
-'@return ISetupErrors ready to run checks.
+
+'@label:create
+'@sub-title Create and initialise a setup checker instance
+'@details
+'Factory method on the predeclared instance. Creates a new SetupErrors,
+'calls Initialise with the supplied workbook and optional collaborators,
+'then returns the instance through the ISetupErrors interface.
+'@param hostBook Workbook. The workbook containing setup data.
+'@param passwordService Optional IPasswords. Sheet protection handler.
+'@param dictionary Optional ILLdictionary. Dictionary data accessor.
+'@param choices Optional ILLChoices. Choices data accessor.
+'@param formulaStore Optional IFormulaData. Formula validation handler.
+'@param transManager Optional ISetupTranslationsTable. Translations table accessor.
+'@param stateScope Optional IApplicationState. Application state guard.
+'@return ISetupErrors. A fully initialised instance ready to run checks.
+'@throws ProjectError.ObjectNotInitialized When hostBook is Nothing.
+'@export
 Public Function Create(ByVal hostBook As Workbook, _
                        Optional ByVal passwordService As IPasswords, _
                        Optional ByVal dictionary As ILLdictionary, _
@@ -114,7 +138,22 @@ End Function
 
 '@section Initialisation
 '===============================================================================
-'@sub-title Bind the checker to required collaborators.
+
+'@label:initialise
+'@sub-title Bind the checker to a workbook and optional collaborators
+'@details
+'Validates the workbook reference, stores it along with optional
+'collaborators, then calls ConfigureDependencies to create any missing
+'default instances and EnsureCheckContainer to prepare the results array.
+'@param hostBook Workbook. The workbook containing setup tables.
+'@param passwordService Optional IPasswords. Sheet protection handler.
+'@param dictionary Optional ILLdictionary. Dictionary data accessor.
+'@param choices Optional ILLChoices. Choices data accessor.
+'@param formulaStore Optional IFormulaData. Formula validation handler.
+'@param transManager Optional ISetupTranslationsTable. Translations table accessor.
+'@param stateScope Optional IApplicationState. Application state guard.
+'@throws ProjectError.ObjectNotInitialized When hostBook is Nothing.
+'@export
 Public Sub Initialise(ByVal hostBook As Workbook, _
                       Optional ByVal passwordService As IPasswords, _
                       Optional ByVal dictionary As ILLdictionary, _
@@ -139,7 +178,16 @@ End Sub
 
 '@section Execution
 '===============================================================================
-'@sub-title Execute all setup checks and publish results.
+
+'@label:run
+'@sub-title Execute all setup checks and publish results
+'@details
+'Suspends Excel UI via EnterBusyState, resets the check container, then
+'runs each checker in sequence: CheckDictionary, CheckChoice, CheckExports,
+'CheckTranslations. On completion, publishes all collected IChecking objects
+'to the reporting worksheet via PrintReport. Restores Excel state even when
+'an error occurs during the checking run.
+'@export
 Public Sub Run()
     Dim errNumber As Long
     Dim errSource As String
@@ -171,7 +219,14 @@ End Sub
 
 '@section Results
 '===============================================================================
-'@sub-title Expose generated checkings for inspection.
+
+'@label:checkings
+'@prop-title Collection of generated checking objects
+'@details
+'Returns a BetterArray containing the IChecking instances produced by the
+'most recent Run call. Raises when the checker has not been initialised.
+'@return BetterArray. The generated IChecking instances.
+'@export
 Public Property Get Checkings() As BetterArray
     EnsureInitialised
     Set Checkings = this.checkTables
@@ -179,19 +234,30 @@ End Property
 
 '@section Helper workflow
 '===============================================================================
-'@sub-title Self reference used by factory helpers.
+
+'@label:self
+'@prop-title Current object instance
+'@return ISetupErrors. The current instance cast to the interface.
 Public Property Get Self() As ISetupErrors
     Set Self = Me
 End Property
 
-'@sub-title Ensure the checker has been initialised.
+'@label:ensure-initialised
+'@sub-title Ensure the checker has been initialised
+'@throws ProjectError.ObjectNotInitialized When the workbook reference is Nothing.
 Private Sub EnsureInitialised()
     If (this.hostBook Is Nothing) Then
         ThrowError ProjectError.ObjectNotInitialized, "SetupErrors.Initialise must be called before usage."
     End If
 End Sub
 
-'@sub-title Prepare collaborators when not provided.
+'@label:configure-dependencies
+'@sub-title Prepare collaborators when not provided
+'@details
+'Creates default instances for any optional collaborator that was not
+'supplied during Initialise: resolves the formula sheet, creates
+'Passwords, LLdictionary, LLChoices, FormulaData, and
+'SetupTranslationsTable instances from the host workbook.
 Private Sub ConfigureDependencies()
     Dim formulaSheet As Worksheet
 
@@ -227,7 +293,8 @@ Private Sub ConfigureDependencies()
     End If
 End Sub
 
-'@sub-title Ensure the internal container for checkings exists.
+'@label:ensure-check-container
+'@sub-title Ensure the internal container for checkings exists
 Private Sub EnsureCheckContainer()
     If this.checkTables Is Nothing Then
         Set this.checkTables = New BetterArray
@@ -236,7 +303,8 @@ Private Sub EnsureCheckContainer()
     End If
 End Sub
 
-'@sub-title Reset the container prior to running checks.
+'@label:reset-check-container
+'@sub-title Reset the container prior to running checks
 Private Sub ResetCheckContainer()
     If this.checkTables Is Nothing Then
         Set this.checkTables = New BetterArray
@@ -245,7 +313,9 @@ Private Sub ResetCheckContainer()
     End If
 End Sub
 
-'@sub-title Retrieve or create the application state scope.
+'@label:application-scope
+'@sub-title Retrieve or create the application state scope
+'@return IApplicationState. The cached or newly created scope.
 Private Function ApplicationScope() As IApplicationState
     If this.appScope Is Nothing Then
         Set this.appScope = ApplicationState.Create(Application)
@@ -254,7 +324,8 @@ Private Function ApplicationScope() As IApplicationState
     Set ApplicationScope = this.appScope
 End Function
 
-'@sub-title Suspend Excel UI features while running checks.
+'@label:enter-busy-state
+'@sub-title Suspend Excel UI features while running checks
 Private Sub EnterBusyState()
     Dim scope As IApplicationState
 
@@ -265,7 +336,9 @@ Private Sub EnterBusyState()
     End If
 End Sub
 
-'@sub-title Restore Excel UI configuration.
+'@label:leave-busy-state
+'@sub-title Restore Excel UI configuration
+'@param silent Optional Boolean. When True, suppresses errors during restore. Defaults to False.
 Private Sub LeaveBusyState(Optional ByVal silent As Boolean = False)
     Dim scope As IApplicationState
 
@@ -286,7 +359,11 @@ RestoreFailed:
     End If
 End Sub
 
-'@sub-title Resolve a workbook worksheet by name.
+'@label:resolve-worksheet
+'@sub-title Resolve a workbook worksheet by name
+'@param sheetName String. The worksheet name to look up.
+'@return Worksheet. The resolved worksheet.
+'@throws ProjectError.ElementNotFound When the worksheet does not exist.
 Private Function ResolveWorksheet(ByVal sheetName As String) As Worksheet
     Dim target As Worksheet
 
@@ -302,7 +379,10 @@ Private Function ResolveWorksheet(ByVal sheetName As String) As Worksheet
     Set ResolveWorksheet = target
 End Function
 
-'@sub-title Validate the incoming workbook reference.
+'@label:validate-workbook
+'@sub-title Validate the incoming workbook reference
+'@param hostBook Workbook. The workbook to validate.
+'@throws ProjectError.ObjectNotInitialized When hostBook is Nothing.
 Private Sub ValidateWorkbook(ByVal hostBook As Workbook)
     If hostBook Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, "SetupErrors requires a workbook reference."
@@ -311,7 +391,17 @@ End Sub
 
 '@section Core checking routines
 '===============================================================================
-'@sub-title Validate dictionary sheet for structure, duplicates, and formulas.
+
+'@label:check-dictionary
+'@sub-title Validate dictionary sheet for structure, duplicates, and formulas
+'@details
+'Unprotects the dictionary, exports, and choices sheets, then iterates
+'bottom-up through the dictionary rows checking for: duplicate variable
+'names, short variable names, missing main labels, missing sheet names,
+'unknown controls, choice formula mismatches, formula validity, min/max
+'validation types, format/type consistency, and export column alignment.
+'Collects all findings into a single IChecking object and re-protects
+'sheets on exit.
 Private Sub CheckDictionary()
 
     Dim check As IChecking
@@ -558,7 +648,13 @@ DictionaryFailed:
     If errNumber <> 0 Then Err.Raise errNumber, errSource, errDescription
 End Sub
 
-'@sub-title Inspect choices sheet for unused or inconsistent entries.
+'@label:check-choice
+'@sub-title Inspect choices sheet for unused or inconsistent entries
+'@details
+'Unprotects the choices sheet, builds a list of choice names actually
+'referenced in dictionary controls, then flags unused choices, missing
+'list names, missing ordering values, and missing labels. Collects all
+'findings into a single IChecking object and re-protects on exit.
 Private Sub CheckChoice()
     Dim check As IChecking
     Dim shChoices As Worksheet
@@ -691,7 +787,13 @@ ChoicesFailed:
     If errNumber <> 0 Then Err.Raise errNumber, errSource, errDescription
 End Sub
 
-'@sub-title Audit exports sheet for missing metadata and dictionary alignment.
+'@label:check-exports
+'@sub-title Audit exports sheet for missing metadata and dictionary alignment
+'@details
+'Iterates over each export row, checking active exports for missing label,
+'password, metadata, format, filename, and header values. Also validates
+'that the corresponding dictionary column exists and is not empty, checks
+'password/identifier consistency, and validates filename variable references.
 Private Sub CheckExports()
 
     Dim expTab As ICustomTable
@@ -809,7 +911,12 @@ Private Sub CheckExports()
     this.checkTables.Push check
 End Sub
 
-'@sub-title Review translations table for missing labels.
+'@label:check-translations
+'@sub-title Review translations table for missing and duplicate labels
+'@details
+'Unprotects the translations sheet, updates the translations manager from
+'the registry, then queries for missing and duplicate labels. Collects
+'findings into a single IChecking object and re-protects on exit.
 Private Sub CheckTranslations()
 
     Dim check As IChecking
@@ -864,7 +971,9 @@ TranslationsFailed:
     If errNumber <> 0 Then Err.Raise errNumber, errSource, errDescription
 End Sub
 
-'@sub-title Run analysis table checks across all sections.
+'@label:check-analysis
+'@sub-title Run analysis table checks across all sections
+'@remarks Currently disabled; the body is largely commented out.
 Private Sub CheckAnalysis()
     Dim analysisSheet As Worksheet
     Dim analysisManager As IAnalysis
@@ -1047,7 +1156,13 @@ End Sub
 '     this.checkTables.Push check
 ' End Sub
 
-'@sub-title Publish all collected checkings to the reporting worksheet.
+'@label:print-report
+'@sub-title Publish all collected checkings to the reporting worksheet
+'@details
+'Resolves the __checkRep worksheet, clears its content, creates a
+'CheckingOutput helper, and prints all collected IChecking objects.
+'Installs the worksheet change handler for filtering support and
+'activates the report sheet.
 Private Sub PrintReport()
     Dim checkOutput As ICheckingOutput
     Dim reportSheet As Worksheet
@@ -1070,6 +1185,15 @@ End Sub
 
 '@section Message helpers
 '===============================================================================
+
+'@label:format-message
+'@sub-title Format an error message by replacing numbered placeholders
+'@param messageTag String. The message template with %1..%4 placeholders.
+'@param valueOne Optional String. Replacement for %1.
+'@param valueTwo Optional String. Replacement for %2.
+'@param valueThree Optional String. Replacement for %3.
+'@param valueFour Optional String. Replacement for %4.
+'@return String. The formatted message.
 Private Function FormatMessage(ByVal messageTag As String, _
                                Optional ByVal valueOne As String = vbNullString, _
                                Optional ByVal valueTwo As String = vbNullString, _
@@ -1088,6 +1212,14 @@ Private Function FormatMessage(ByVal messageTag As String, _
     FormatMessage = template
 End Function
 
+'@label:formula-message
+'@sub-title Validate a formula string and return a formatted error when invalid
+'@param formValue String. The formula expression to validate.
+'@param messageTag String. The message template to use on failure.
+'@param valueOne Optional String. Replacement for %1.
+'@param valueTwo Optional String. Replacement for %2.
+'@param formulaType Optional String. Formula type ("linelist" or "analysis"). Defaults to "linelist".
+'@return String. The formatted error message, or empty when the formula is valid.
 Private Function FormulaMessage(ByVal formValue As String, _
                                 ByVal messageTag As String, _
                                 Optional ByVal valueOne As String = vbNullString, _
@@ -1111,6 +1243,12 @@ FormulaFail:
     Err.Clear
 End Function
 
+'@label:replace-placeholder
+'@sub-title Replace a single placeholder token in a template string
+'@param template String. The template containing the placeholder.
+'@param placeholder String. The token to replace (e.g. "%1").
+'@param replacement String. The value to substitute.
+'@return String. The template with the placeholder replaced.
 Private Function ReplacePlaceholder(ByVal template As String, _
                                     ByVal placeholder As String, _
                                     ByVal replacement As String) As String
@@ -1125,6 +1263,9 @@ End Function
 
 '@section Interface implementation
 '===============================================================================
+'@description Delegated members satisfying the ISetupErrors contract.
+'See the corresponding Public members above for full documentation.
+
 Private Sub ISetupErrors_Initialise(ByVal hostBook As Workbook, _
                                     Optional ByVal passwordService As IPasswords, _
                                     Optional ByVal dictionary As ILLdictionary, _
@@ -1142,8 +1283,14 @@ Private Property Get ISetupErrors_Checkings() As BetterArray
     Set ISetupErrors_Checkings = Checkings
 End Property
 
-'@label:ThrowError
-'@description Raise a ProjectError aligned error from the current class.
+'@label:throw-error
+'@sub-title Raise a ProjectError-based exception
+'@details
+'Wrapper around Err.Raise that standardises the source to CLASS_NAME,
+'providing a consistent stack trace across all methods in this class.
+'@param errNumber ProjectError. The error code to raise.
+'@param errorMessage String. Human-readable description of the failure.
+'@throws ProjectError Always raises the specified error.
 Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal errorMessage As String)
   Err.Raise CLng(errNumber), CLASS_NAME, "Error: " & errorMessage
 End Sub

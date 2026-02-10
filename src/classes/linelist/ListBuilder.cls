@@ -184,7 +184,7 @@ Private Sub BuildHList()
     Dim drop As IDropdownLists
     Dim pass As IPasswords
     Dim mainObj As IMain
-    Dim pivotObj As ICustomPivotTables
+    Dim pivotObj As ICustomPivotTable
     Dim trads As ITranslationObject
     Dim rng As Range
     Dim but As IButtons
