@@ -44,3 +44,5 @@ docs/
 **/~$*.xlsb
 **/.todo
 /.obt
+obt-skill/
+obt-doc-skill/
