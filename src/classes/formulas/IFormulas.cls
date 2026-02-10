@@ -13,7 +13,6 @@ Attribute VB_Description = "Contract for parsed setup formulas"
 '@Folder("Formulas")
 '@ModuleDescription("Contract for parsed setup formulas")
 '@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
-'@depends BetterArray, Checking, IFormulaCondition
 
 Option Explicit
 
@@ -22,6 +21,7 @@ Option Explicit
 'Defines the public contract for the Formulas class, exposing
 'read-only access to parsing results, validity checks, and derived
 'Excel expressions for both linelist and analysis contexts.
+'@depends BetterArray, Checking, IFormulaCondition
 
 
 '@section Elements

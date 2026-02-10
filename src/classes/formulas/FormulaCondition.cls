@@ -97,6 +97,7 @@ End Property
 'Returns the internal BetterArray holding the condition predicates
 'in the same order they were supplied at creation.
 '@return BetterArray. The condition fragments preserving the original order.
+'@export
 Public Property Get LstConditions() As BetterArray
     Set LstConditions = this.condList
 End Property
@@ -121,6 +122,7 @@ End Property
 'Returns the internal BetterArray holding the variable names in the
 'same order they were supplied at creation.
 '@return BetterArray. The variable names preserving the original order.
+'@export
 Public Property Get LstVars() As BetterArray
     Set LstVars = this.varList
 End Property
@@ -176,6 +178,7 @@ End Sub
 'Returns True when at least one LogInfo call has been made since the
 'last ResetCaches, indicating that diagnostic information is available.
 '@return Boolean. True when internal checks exist.
+'@export
 Private Property Get HasInternalChecks() As Boolean
     HasInternalChecks = this.hasChecks
 End Property
@@ -202,6 +205,7 @@ End Property
 'the supplied dictionary before returning the result.
 '@param dict ILLdictionary. The dictionary used when validation has not occurred yet.
 '@return String. Table identifier or empty string when unavailable.
+'@export
 Public Property Get VariablesTable(ByVal dict As ILLdictionary) As String
     If LenB(CachedTable) = 0 Then
         If Not Valid(dict) Then Exit Property
@@ -224,6 +228,7 @@ End Property
 '@param dict ILLdictionary. The metadata provider used for variable lookups.
 '@param tablename Optional String. When supplied, forces the expected table name. Defaults to vbNullString.
 '@return Boolean. True when validation succeeds.
+'@export
 Public Function Valid(ByVal dict As ILLdictionary, Optional ByVal tablename As String = vbNullString) As Boolean
 
     Dim vars As ILLVariables
@@ -312,6 +317,7 @@ End Function
 '@param varName String. Variable/column name to return when the condition is met.
 '@param Connector Optional String. Connector used between predicates. Defaults to "*".
 '@return String. An IF expression or empty string when the predicate is empty.
+'@export
 Public Function ConditionString(ByVal tablename As String, ByVal varName As String, _
                                 Optional ByVal Connector As String = "*") As String
 
@@ -333,6 +339,7 @@ End Function
 '@param tablename String. Structured reference table name.
 '@param Connector Optional String. Connector between predicate fragments. Defaults to "*".
 '@return String. Concatenated predicate or empty string when inputs are missing.
+'@export
 Public Function ConditionPredicate(ByVal tablename As String, Optional ByVal Connector As String = "*") As String
     Dim counter As Long
     Dim parsed As String
@@ -397,6 +404,7 @@ Private Function IFormulaCondition_HasCheckings() As Boolean
     IFormulaCondition_HasCheckings = HasInternalChecks
 End Function
 
+'@label:checking-values
 Private Property Get IFormulaCondition_CheckingValues() As IChecking
     If HasInternalChecks Then Set IFormulaCondition_CheckingValues = this.internalChecks
 End Property

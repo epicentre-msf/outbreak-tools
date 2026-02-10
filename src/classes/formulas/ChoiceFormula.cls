@@ -112,6 +112,7 @@ End Property
 'three arguments (name plus one condition/result pair). Returns False
 'when any argument is blank.
 '@return Boolean. True when the specification can be converted to CASE_WHEN.
+'@export
 Private Property Get Valid() As Boolean
     Dim arguments As BetterArray
     Dim argumentCount As Long
@@ -142,6 +143,7 @@ End Property
 'then delegates to the CaseWhen class to produce the nested IF output.
 'Returns an empty string when the formula is invalid or conversion fails.
 '@return String. Expression ready for worksheet consumption.
+'@export
 Private Function parsedFormula() As String
     Dim caseObj As ICaseWhen
 
@@ -160,6 +162,7 @@ End Function
 'Returns an empty BetterArray when the formula is invalid or the
 'CaseWhen wrapper cannot be created.
 '@return BetterArray. Collection containing quoted category labels.
+'@export
 Private Function Categories() As BetterArray
     Dim caseObj As ICaseWhen
     Dim categoriesTable As BetterArray
@@ -190,6 +193,7 @@ End Function
 'identifies the choice list that provides the valid options. The value
 'is memoised after the first resolution.
 '@return String. Choice list identifier.
+'@export
 Private Function choiceName() As String
     choiceName = ResolvedChoiceName()
 End Function

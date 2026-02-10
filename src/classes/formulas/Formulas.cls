@@ -13,7 +13,6 @@ Attribute VB_Description = "Convert formulas from setup to Excel"
 '@Folder("Formulas")
 '@ModuleDescription("Convert formulas from setup to Excel")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, MissingAnnotationArgument, ReadOnlyPropertyAssignment, UseMeaningfulName, HungarianNotation
-'@depends BetterArray, Checking, LLdictionary, LLVariables, LLSheets, CaseWhen, ChoiceFormula, ValueOfFormula
 
 Option Explicit
 Implements IFormulas
@@ -26,6 +25,7 @@ Implements IFormulas
 'an LLdictionary, and delegates to CaseWhen, ChoiceFormula, and
 'ValueOfFormula for custom function conversion. Grouped formulas are
 'detected and rewritten as aggregated Excel expressions.
+'@depends BetterArray, Checking, LLdictionary, LLVariables, LLSheets, CaseWhen, ChoiceFormula, ValueOfFormula
 '@version 1.0 (2026-02-09)
 '@author OutbreakTools
 
@@ -202,6 +202,7 @@ End Property
 'Returns True when numeric or text literals were encountered during
 'tokenisation. The flag is set during EvaluateFormula.
 '@return Boolean. True when literals are present.
+'@export
 Public Property Get HasSetupVariables() As Boolean
     HasSetupVariables = this.containsSetupVariables
 End Property
@@ -212,6 +213,7 @@ End Property
 'Forces evaluation in the "simple" context, then inspects the captured
 'group metadata. Returns "Yes" when grouped logic applies, "No" otherwise.
 '@return String. "Yes" for grouped formulas, "No" otherwise.
+'@export
 Public Property Get IsGrouped() As String
     Call EnsureEvaluation("simple")
 
@@ -231,6 +233,7 @@ End Property
 'otherwise the recorded invalidation reason is returned.
 '@param formulaType Optional String. Context (analysis/simple).
 '@return String. Explanation of the current validity state.
+'@export
 Public Property Get Reason(Optional ByVal formulaType As String = "analysis") As String
     If EnsureEvaluation(formulaType) Then
         If this.isValid Then
@@ -250,6 +253,7 @@ End Property
 'the cached validity flag.
 '@param formulaType Optional String. Context (analysis/simple).
 '@return Boolean. True when parsing succeeded.
+'@export
 Public Property Get Valid(Optional ByVal formulaType As String = "analysis") As Boolean
     Valid = EnsureEvaluation(formulaType)
 End Property
@@ -262,6 +266,7 @@ End Property
 'mutate the internal cache.
 '@param formulaType Optional String. Context (analysis/simple).
 '@return BetterArray. Variable names.
+'@export
 Public Property Get Varlists(Optional ByVal formulaType As String = "analysis") As BetterArray
     Dim result As BetterArray
 
@@ -288,6 +293,7 @@ End Property
 '@param useTableName Optional Boolean. Toggles structured references.
 '@param tablePrefix Optional String. Prefixed to structured references.
 '@return String. Excel formula referencing linelist variables.
+'@export
 Public Property Get ParsedLinelistFormula(Optional ByVal useTableName As Boolean = False, _
                                           Optional ByVal tablePrefix As String = vbNullString) As String
     Dim workingTokens As BetterArray
@@ -339,6 +345,7 @@ End Property
 '@param tablePrefix Optional String. Prefix for table references.
 '@param Connector Optional String. Connector between conditional fragments.
 '@return String. Excel expression ready for analysis worksheets.
+'@export
 Public Property Get ParsedAnalysisFormula(ByVal formCond As IFormulaCondition, _
                                           Optional ByVal tablePrefix As String = vbNullString, _
                                           Optional ByVal Connector As String = "*") As String
@@ -1239,6 +1246,7 @@ End Sub
 '@details
 'Returns the module-level flag set by LogCheck.
 '@return Boolean. True when checkings exist.
+'@export
 Private Property Get HasCheckings() As Boolean
     HasCheckings = hasChecks
 End Property
@@ -1249,6 +1257,7 @@ End Property
 'Returns the internal IChecking store when at least one entry has
 'been recorded. Returns Nothing otherwise.
 '@return IChecking. Logged diagnostics.
+'@export
 Private Property Get CheckingValues() As IChecking
     If Not HasCheckings Then Exit Property
     Set CheckingValues = internalChecks
@@ -1282,6 +1291,7 @@ Private Property Get IFormulas_Valid(Optional ByVal formulaType As String = "ana
     IFormulas_Valid = Valid(formulaType)
 End Property
 
+'@label:formula-table-list
 Private Property Get IFormulas_FormulaTableList() As BetterArray
     If EnsureEvaluation("analysis") Then
         Set IFormulas_FormulaTableList = this.tokens.Clone()

@@ -110,6 +110,7 @@ End Property
 '(case-insensitive) and contain content beyond the header. Returns
 'False for empty strings or formulas that do not match the token.
 '@return Boolean. True when the formula is parseable.
+'@export
 Private Property Get Valid() As Boolean
     Dim formula As String
     formula = Trim$(casewhenFormula)
@@ -166,6 +167,7 @@ End Property
 'string literal is appended as the fallback. Excel supports up to 64
 'nested IF calls.
 '@return String. Nested IF expression ready for worksheet consumption.
+'@export
 Private Function parsedFormula() As String
 
     Dim counter As Long
@@ -211,6 +213,7 @@ End Function
 'Quoted entries are stripped of their quotes; non-quoted entries are
 'wrapped in quotes for consistent downstream handling.
 '@return BetterArray. Collection containing quoted category labels.
+'@export
 Private Function Categories() As BetterArray
     Dim categoriesTable As BetterArray
     Dim counter As Long
