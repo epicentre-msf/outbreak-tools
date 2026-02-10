@@ -13,12 +13,20 @@ Attribute VB_Description = "Linelist data import operations"
 '@PredeclaredId
 '@Folder("DataIO")
 '@ModuleDescription("Linelist data import operations")
-'@depends ILLImporter, ILLdictionary, IPasswords, ILLTranslations
-'@depends ICustomTable, IDataSheet, IShowHideManager, ILLGeo, ILLChoices
-'@depends ILLVariables, IDropdownLists
 
 Option Explicit
 Implements ILLImporter
+
+'@class LLImporter
+'@description
+'Imports linelist data from external workbooks into the source linelist.
+'Supports importing HList/VList data, custom dropdowns, show/hide state,
+'editable labels, single metadata values, and geobase data. Tracks which
+'sheets and variables were imported, and builds a report of items not
+'imported or not touched. Consumers interact through the ILLImporter
+'interface.
+'@depends ILLdictionary, IPasswords, ILLTranslations, ICustomTable, IDataSheet
+'@depends IShowHideManager, ILLGeo, ILLChoices, ILLVariables, IDropdownLists
 
 
 '@section Constants
@@ -61,10 +69,16 @@ Private this As TLLImporter
 '@section Factory
 '===============================================================================
 
-' @description Create an importer from the source linelist workbook.
-' @param sourceWkb Workbook. The linelist workbook that will receive imported data.
-' @return ILLImporter ready for import operations.
-' @export
+'@label:create
+'@sub-title Create an importer from the source linelist workbook
+'@details
+'Factory method that validates the workbook is not Nothing, then constructs
+'and returns a new LLImporter instance through the ILLImporter interface.
+'Called on the predeclared instance.
+'@param sourceWkb Workbook. The linelist workbook that will receive imported data.
+'@return ILLImporter. A fully initialised instance ready for import operations.
+'@throws vbObjectError When the workbook is Nothing.
+'@export
 Public Function Create(ByVal sourceWkb As Workbook) As ILLImporter
 
     If sourceWkb Is Nothing Then
@@ -78,26 +92,42 @@ Public Function Create(ByVal sourceWkb As Workbook) As ILLImporter
 End Function
 
 
-'@section Public accessors
+'@section Public Accessors
 '===============================================================================
 
+'@label:self
+'@prop-title Current object instance
+'@return ILLImporter. The current instance cast to the interface.
 Public Property Get Self() As ILLImporter
     Set Self = Me
 End Property
 
+'@label:source-workbook
+'@prop-title Source linelist workbook
+'@return Workbook. The linelist workbook bound to this importer.
 Public Property Get SourceWorkbook() As Workbook
     Set SourceWorkbook = this.sourceWkb
 End Property
 
+'@label:source-workbook-set
+'@prop-title Assign the source linelist workbook
+'@param wb Workbook. The workbook to store.
 Public Property Set SourceWorkbook(ByVal wb As Workbook)
     Set this.sourceWkb = wb
 End Property
 
 
-'@section Data checks
+'@section Data Checks
 '===============================================================================
 
-' @description Check whether the workbook contains any user-entered data.
+'@label:has-data
+'@prop-title Whether the workbook contains user-entered data
+'@details
+'Scans all HList sheets for non-empty rows beyond the blank count
+'threshold stored in cell(1,6). Returns True as soon as a single row
+'has user data. Used to warn the user before clearing or overwriting.
+'@return Boolean. True when at least one HList row has user data.
+'@export
 Public Property Get HasData() As Boolean
 
     Dim sh As Worksheet
@@ -123,7 +153,17 @@ Public Property Get HasData() As Boolean
     Next sh
 End Property
 
-' @description Check whether the import workbook language matches.
+'@label:has-same-language
+'@sub-title Check whether the import workbook language matches
+'@details
+'Reads the language tag from the import workbook Metadata sheet and
+'compares it with the source workbook dictionary language via
+'LLTranslations. Stores the result internally so that ImportShowHide,
+'ImportEditableLabels, and ImportSingleValues silently skip when
+'languages differ. Returns False when the Metadata sheet is missing.
+'@param impwb Workbook. The opened import workbook.
+'@return Boolean. True when languages match.
+'@export
 Public Function HasSameLanguage(ByVal impwb As Workbook) As Boolean
 
     Dim metaTab As IDataSheet
@@ -165,10 +205,17 @@ Public Function HasSameLanguage(ByVal impwb As Workbook) As Boolean
 End Function
 
 
-'@section Data operations
+'@section Data Operations
 '===============================================================================
 
-' @description Clear all user-entered data from HList and VList sheets.
+'@label:clear-data
+'@sub-title Clear all user-entered data from HList and VList sheets
+'@details
+'Iterates over all worksheets in the source workbook. For HList sheets,
+'clears non-formula column values from the ListObject data body. For
+'VList sheets, clears non-formula named range values. Unprotects and
+'re-protects each sheet via IPasswords.
+'@export
 Public Sub ClearData()
 
     Dim sh As Worksheet
@@ -221,7 +268,17 @@ Public Sub ClearData()
     actsh.Activate
 End Sub
 
-' @description Import data from HList and VList worksheets.
+'@label:import-data
+'@sub-title Import data from HList and VList worksheets
+'@details
+'Iterates over the import workbook worksheets, matching them to source
+'workbook sheets by name. For HList sheets, delegates to
+'ImportHListSheet. For VList sheets, delegates to ImportVListSheet.
+'Tracks imported sheets and variables, and builds "not imported" report
+'entries for sheets and variables not found in the current workbook.
+'@param impwb Workbook. The opened import workbook.
+'@param pasteAtBottom Boolean. When True, appends data below existing rows.
+'@export
 Public Sub ImportData(ByVal impwb As Workbook, ByVal pasteAtBottom As Boolean)
 
     Dim dict As ILLdictionary
@@ -275,7 +332,17 @@ Public Sub ImportData(ByVal impwb As Workbook, ByVal pasteAtBottom As Boolean)
     Next impsh
 End Sub
 
-' @description Import custom dropdown choices.
+'@label:import-custom-dropdown
+'@sub-title Import custom dropdown choices from the import workbook
+'@details
+'Reads custom dropdown ListObjects from the source workbook custom
+'dropdown sheet, matches them to choices in the import workbook Choices
+'sheet, and updates each dropdown with the imported values. Silently
+'exits when the import workbook has no Choices sheet or the custom
+'dropdown sheet does not exist.
+'@param impwb Workbook. The opened import workbook.
+'@param pasteAtBottom Boolean. When True, appends choices below existing entries.
+'@export
 Public Sub ImportCustomDropdown(ByVal impwb As Workbook, ByVal pasteAtBottom As Boolean)
 
     Dim lltrads As ILLTranslations
@@ -319,10 +386,20 @@ Public Sub ImportCustomDropdown(ByVal impwb As Workbook, ByVal pasteAtBottom As 
 End Sub
 
 
-'@section Migration metadata
+'@section Migration Metadata
 '===============================================================================
 
-' @description Import show/hide visibility state and column widths.
+'@label:import-show-hide
+'@sub-title Import show/hide visibility state from a migration workbook
+'@details
+'Reads the show_hide_migration ListObject from the import workbook and
+'applies visibility and column/row sizes to each data sheet via
+'ShowHideManager.ImportForMigration. Silently skips when HasSameLanguage
+'returned False, when the import workbook lacks the required Metadata or
+'show_hide__ sheets, or when the metadata tag is not set to "update on
+'import".
+'@param impwb Workbook. The opened migration workbook.
+'@export
 Public Sub ImportShowHide(ByVal impwb As Workbook)
 
     Dim metaTab As IDataSheet
@@ -404,7 +481,16 @@ NextShowHideSheet:
     Next counter
 End Sub
 
-' @description Import editable labels from a migration workbook.
+'@label:import-editable-labels
+'@sub-title Import editable label values from a migration workbook
+'@details
+'Reads the import workbook dictionary for editable label values and
+'updates both the worksheet cells and dictionary entries in the source
+'workbook. Silently skips when HasSameLanguage returned False, the import
+'dictionary is not prepared, or the metadata tag is not set to "update on
+'import".
+'@param impwb Workbook. The opened migration workbook.
+'@export
 Public Sub ImportEditableLabels(ByVal impwb As Workbook)
 
     Dim metaTab As IDataSheet
@@ -498,7 +584,15 @@ NextLabel:
     Next counter
 End Sub
 
-' @description Import single values (epiweek start) from a migration workbook.
+'@label:import-single-values
+'@sub-title Import single metadata values from a migration workbook
+'@details
+'Reads the epiweek start value from the import workbook Metadata sheet
+'and updates the RNG_EpiWeekStart named range in the source workbook.
+'Silently skips when HasSameLanguage returned False or the Metadata
+'sheet is missing.
+'@param impwb Workbook. The opened migration workbook.
+'@export
 Public Sub ImportSingleValues(ByVal impwb As Workbook)
 
     Dim metaTab As IDataSheet
@@ -526,7 +620,16 @@ Public Sub ImportSingleValues(ByVal impwb As Workbook)
     End If
 End Sub
 
-' @description Import geobase data.
+'@label:import-geobase
+'@sub-title Import geobase data from a workbook
+'@details
+'Delegates to LLGeo.Import to load geobase data. When not histoOnly,
+'also updates geobase headers in HList worksheets via geo.Update,
+'dictionary geo labels via geo.UpdateDict, and show/hide tables for geo
+'variables via geo.UpdateShowHide.
+'@param impwb Workbook. The opened geobase workbook.
+'@param histoOnly Optional Boolean. When True, imports only historic geobase data. Defaults to False.
+'@export
 Public Sub ImportGeobase(ByVal impwb As Workbook, Optional ByVal histoOnly As Boolean = False)
 
     Dim geo As ILLGeo
@@ -559,15 +662,28 @@ Public Sub ImportGeobase(ByVal impwb As Workbook, Optional ByVal histoOnly As Bo
 End Sub
 
 
-'@section Import report
+'@section Import Report
 '===============================================================================
 
-' @description Whether the last import had issues.
+'@label:need-report
+'@prop-title Whether the last import had issues
+'@details
+'Returns True when at least one report entry exists, meaning some sheets
+'or variables were not imported or not touched during the last import.
+'@return Boolean. True when the import report has entries.
+'@export
 Public Property Get NeedReport() As Boolean
     NeedReport = this.needReport
 End Property
 
-' @description Build the "not touched" part of the import report.
+'@label:finalize-report
+'@sub-title Build the "not touched" part of the import report
+'@details
+'Compares source workbook sheets and variables against the imported items
+'tracked during ImportData. Identifies sheets not touched and variables
+'not touched, skipping formula-type variables (case_when, formula,
+'choice_formula). Call after ImportData to complete the report.
+'@export
 Public Sub FinalizeReport()
 
     Dim dict As ILLdictionary
@@ -623,7 +739,15 @@ NextReportSheet:
     Next counter
 End Sub
 
-' @description Report sheet names for the given scope.
+'@label:report-sheets
+'@sub-title Report sheet names for the given scope
+'@details
+'Returns a BetterArray of sheet names that were either not imported
+'(ImportReportNotImported) or not touched (ImportReportNotTouched).
+'Returns an empty BetterArray when no entries exist for the scope.
+'@param scope Byte. ImportReportNotImported or ImportReportNotTouched.
+'@return BetterArray. Sheet names matching the scope, or empty.
+'@export
 Public Function ReportSheets(ByVal scope As Byte) As BetterArray
 
     Select Case scope
@@ -648,7 +772,15 @@ Public Function ReportSheets(ByVal scope As Byte) As BetterArray
     End Select
 End Function
 
-' @description Report variable entries for the given scope.
+'@label:report-variables
+'@sub-title Report variable entries for the given scope
+'@details
+'Returns a BetterArray where each entry is a Variant array of
+'Array(variableName, sheetName). Returns an empty BetterArray when no
+'entries exist for the scope.
+'@param scope Byte. ImportReportNotImported or ImportReportNotTouched.
+'@return BetterArray. Variant arrays of (variableName, sheetName), or empty.
+'@export
 Public Function ReportVariables(ByVal scope As Byte) As BetterArray
 
     Select Case scope
@@ -673,7 +805,12 @@ Public Function ReportVariables(ByVal scope As Byte) As BetterArray
     End Select
 End Function
 
-' @description Reset report state.
+'@label:clear-report
+'@sub-title Reset report state
+'@details
+'Clears all report tracking arrays and resets the needReport flag. Call
+'before starting a new import session to ensure a clean report.
+'@export
 Public Sub ClearReport()
     this.needReport = False
     Set this.sheetsNotImported = New BetterArray
@@ -685,37 +822,46 @@ Public Sub ClearReport()
 End Sub
 
 
-'@section Private - Source object accessors
+'@section Private - Source Object Accessors
 '===============================================================================
 
-' @description Get the dictionary from the source workbook.
+'@label:source-dictionary
+'@sub-title Get the dictionary from the source workbook
+'@return ILLdictionary. Dictionary instance from the Dictionary sheet.
 Private Function SourceDictionary() As ILLdictionary
     Set SourceDictionary = LLdictionary.Create( _
         this.sourceWkb.Worksheets(DICTIONARYSHEET), 1, 1)
 End Function
 
-' @description Get passwords from the source workbook.
+'@label:passwords-object
+'@sub-title Get passwords from the source workbook
+'@return IPasswords. Passwords instance from the __pass sheet.
 Private Function PasswordsObject() As IPasswords
     Set PasswordsObject = Passwords.Create(this.sourceWkb.Worksheets(PASSWORDSHEET))
 End Function
 
-' @description Get LLTranslations from the source workbook.
+'@label:translations-object
+'@sub-title Get translations from the source workbook
+'@return ILLTranslations. Translations from LinelistTranslation and Translations sheets.
 Private Function TranslationsObject() As ILLTranslations
     Set TranslationsObject = LLTranslations.Create( _
         this.sourceWkb.Worksheets(MESSTRANSLATIONSHEET), _
         this.sourceWkb.Worksheets(DICTTRANSLATIONSHEET))
 End Function
 
-' @description Get the geo object from the source workbook.
+'@label:geo-object
+'@sub-title Get the geo object from the source workbook
+'@return ILLGeo. Geo instance from the Geo sheet.
 Private Function GeoObject() As ILLGeo
     Set GeoObject = LLGeo.Create(this.sourceWkb.Worksheets(GEOSHEET))
 End Function
 
 
-'@section Private - Import helpers
+'@section Private - Import Helpers
 '===============================================================================
 
-' @description Initialize tracking state for a new import session.
+'@label:initialize-tracking
+'@sub-title Initialize tracking state for a new import session
 Private Sub InitializeTracking()
     this.needReport = False
     Set this.sheetsNotImported = New BetterArray
@@ -724,7 +870,10 @@ Private Sub InitializeTracking()
     Set this.importedVars = New BetterArray
 End Sub
 
-' @description Check if a sheet name is reserved (metadata/infrastructure).
+'@label:is-reserved-sheet
+'@sub-title Check if a sheet name is reserved (metadata/infrastructure)
+'@param sheetName String. The sheet name to check.
+'@return Boolean. True when the name matches a reserved sheet.
 Private Function IsReservedSheet(ByVal sheetName As String) As Boolean
     IsReservedSheet = (sheetName = DICTIONARYSHEET) Or _
                       (sheetName = DICTTRANSLATIONSHEET) Or _
@@ -733,7 +882,15 @@ Private Function IsReservedSheet(ByVal sheetName As String) As Boolean
                       (sheetName = SHOWHIDESHEET)
 End Function
 
-' @description Import VList data from a single import sheet to the current sheet.
+'@label:import-vlist-sheet
+'@sub-title Import VList data from a single import sheet to the current sheet
+'@details
+'Iterates over the import sheet used range rows, resolving each variable
+'name to a named range on the current sheet. Copies the value when the
+'target cell has no formula. Tracks variables not found as "not imported"
+'report entries.
+'@param currsh Worksheet. The current source VList worksheet.
+'@param impsh Worksheet. The import VList worksheet.
 Private Sub ImportVListSheet(ByVal currsh As Worksheet, ByVal impsh As Worksheet)
 
     Dim usedRng As Range
@@ -769,7 +926,15 @@ Private Sub ImportVListSheet(ByVal currsh As Worksheet, ByVal impsh As Worksheet
     Next counter
 End Sub
 
-' @description Import HList data from a single import sheet to the current sheet.
+'@label:import-hlist-sheet
+'@sub-title Import HList data from a single import sheet to the current sheet
+'@details
+'Creates a CustomTable from the current sheet ListObject and a DataSheet
+'from the import sheet, then delegates to CustomTable.Import. Tracks
+'columns not found in the current table as "not imported" report entries.
+'@param currsh Worksheet. The current source HList worksheet.
+'@param impsh Worksheet. The import HList worksheet.
+'@param pasteAtBottom Boolean. When True, appends data below existing rows.
 Private Sub ImportHListSheet(ByVal currsh As Worksheet, ByVal impsh As Worksheet, _
                              ByVal pasteAtBottom As Boolean)
 
@@ -803,7 +968,11 @@ End Sub
 '@section Private - Helpers
 '===============================================================================
 
-' @description Check if a worksheet exists in a workbook.
+'@label:sheet-exists
+'@sub-title Check if a worksheet exists in a workbook
+'@param wb Workbook. The workbook to search.
+'@param sheetName String. The sheet name to look for.
+'@return Boolean. True when the sheet exists.
 Private Function SheetExists(ByVal wb As Workbook, ByVal sheetName As String) As Boolean
     Dim sh As Worksheet
     On Error Resume Next
@@ -813,17 +982,25 @@ Private Function SheetExists(ByVal wb As Workbook, ByVal sheetName As String) As
 End Function
 
 
-'@section Private - Error handling
+'@section Private - Error Handling
 '===============================================================================
 
-' @description Raise a class-level exception.
+'@label:throw-error
+'@sub-title Raise a class-level exception
+'@details
+'Raises a VBA error using vbObjectError + 516, standardising the source
+'to CLASS_NAME.
+'@param message String. Human-readable description of the failure.
+'@throws vbObjectError Always raises the error.
 Private Sub ThrowError(ByVal message As String)
     Err.Raise VBA.vbObjectError + 516, CLASS_NAME, message
 End Sub
 
 
-'@section Interface implementation
+'@section Interface Implementation
 '===============================================================================
+'@description Delegated members satisfying the ILLImporter contract.
+'See the corresponding members above for full documentation.
 
 Private Property Get ILLImporter_HasData() As Boolean
     ILLImporter_HasData = HasData
