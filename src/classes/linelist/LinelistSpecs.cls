@@ -16,6 +16,32 @@ Attribute VB_Exposed = False
 Option Explicit
 Implements ILinelistSpecs
 
+'@class LinelistSpecs
+'@description
+'Modern facade that wraps a specifications workbook and exposes lazy-loaded,
+'cached accessors for every collaborator object (dictionary, choices,
+'translations, geo, analysis, passwords, format, exports, formulas, main).
+'Provides lifecycle orchestration methods for importing data from external
+'setup workbooks, preparing the dictionary with preserved sheet names,
+'exporting specifications to a destination linelist workbook, and surfacing
+'user-facing error dialogs. Uses a PredeclaredId factory pattern so callers
+'construct instances via LinelistSpecs.Create(workbook) and receive an
+'ILinelistSpecs interface reference.
+'@depends ILLdictionary, ILLChoices, ILLTranslations, IDesTranslation
+'@depends ILLGeo, ILLExport, ILLAnalysis, IPasswords, ILLFormat
+'@depends IFormulaData, IMain, ILLVariables, IFormulas
+'@depends ITranslationObject, IApplicationState, ApplicationState
+'@depends BetterArray, LLdictionary, LLChoices, LLTranslations
+'@depends DesTranslation, LLGeo, LLExport, Analysis, Passwords
+'@depends LLFormat, FormulaData, Main, LLVariables, Formulas
+'@version 1.0 (2026-02-09)
+'@author Yves Amevoin
+
+
+'@section State
+'===============================================================================
+'@description Backing UDT, module-level constants, and cache separators.
+
 Private Type TLinelistSpecs
     specsWkb As Workbook
     dictionary As ILLdictionary
@@ -71,7 +97,19 @@ Private Const LLSPEC_TEMP_SHEET_SHOWHIDE As Byte = 8
 
 '@section Factory helpers
 '===============================================================================
-'@description Create a new specification facade while validating workbook structure upfront.
+'@description Construction and identity accessors.
+
+'@label:create
+'@sub-title Create a new specification facade from a workbook
+'@details
+'Validates the workbook structure upfront (checking for all required
+'worksheets and named ranges), then constructs a new LinelistSpecs
+'instance with caches initialised. Returns the ILinelistSpecs interface.
+'@param specsWorkbook Workbook. The specifications workbook to wrap.
+'@return ILinelistSpecs. A fully initialised facade ready for use.
+'@throws ProjectError.ObjectNotInitialized When specsWorkbook is Nothing.
+'@throws ProjectError.ElementNotFound When required worksheets are missing.
+'@export
 Public Function Create(ByVal specsWorkbook As Workbook) As ILinelistSpecs
     ValidateWorkbookReference specsWorkbook
 
@@ -82,24 +120,54 @@ Public Function Create(ByVal specsWorkbook As Workbook) As ILinelistSpecs
     End With
 End Function
 
-'@description Return the current instance cast as its interface for fluent construction patterns.
+'@label:self
+'@prop-title Interface-cast self reference
+'@details
+'Returns the current instance cast as ILinelistSpecs for fluent
+'construction patterns within the factory method.
+'@return ILinelistSpecs. This instance as its interface type.
 Public Property Get Self() As ILinelistSpecs
     Set Self = Me
 End Property
 
-'@description Primary workbook backing all specification queries.
+'@label:workbook
+'@prop-title Primary workbook backing all specification queries
+'@details
+'Returns the specifications workbook reference. Raises an error if
+'the workbook has not been assigned via the factory method.
+'@return Workbook. The specifications workbook.
+'@throws ProjectError.ObjectNotInitialized When the workbook is not set.
+'@remarks
+'The public property is named LLWorkbook to avoid colliding with the
+'VBA Workbook keyword; the ILinelistSpecs interface exposes this as
+'Workbook. The delegation stub ILinelistSpecs_Workbook calls Me.Workbook,
+'which resolves through the interface dispatch mechanism.
+'@export
 Public Property Get LLWorkbook() As Workbook
     EnsureWorkbook
     Set LLWorkbook = this.specsWkb
 End Property
 
+'@label:internal-workbook
+'@prop-title Setter for the backing workbook reference
+'@details
+'Used during construction to assign the workbook before caches are
+'initialised. Not part of the public interface.
 Public Property Set InternalWorkbook(ByVal specsWorkbook As Workbook)
     Set this.specsWkb = specsWorkbook
 End Property
 
 '@section State management
 '===============================================================================
-'@description Reset every cached collaborator so subsequent lookups hit the workbook again.
+'@description Cache invalidation for collaborator objects, sheets, translations, and categories.
+
+'@label:reset-caches
+'@sub-title Reset every cached collaborator
+'@details
+'Clears all cached collaborator objects, the sheet-name-to-worksheet
+'cache, the translation object cache, and the category list cache. Call
+'after importing new data so subsequent reads query the workbook again.
+'@export
 Public Sub ResetCaches()
     ResetObjectCaches
     ResetSheetCache
@@ -107,6 +175,8 @@ Public Sub ResetCaches()
     ResetCategoryCache
 End Sub
 
+'@label:reset-object-caches
+'@sub-title Clear all collaborator object references
 Private Sub ResetObjectCaches()
     Set this.dictionary = Nothing
     Set this.choices = Nothing
@@ -122,26 +192,39 @@ Private Sub ResetObjectCaches()
     Set this.variables = Nothing
 End Sub
 
+'@label:reset-sheet-cache
+'@sub-title Clear the worksheet name resolution cache
 Private Sub ResetSheetCache()
     Set this.sheetCache = Nothing
 End Sub
 
+'@label:reset-translation-cache
+'@sub-title Clear the translation object cache
 Private Sub ResetTranslationCache()
     Set this.translationCache = Nothing
 End Sub
 
+'@label:reset-category-cache
+'@sub-title Clear the category list cache
 Private Sub ResetCategoryCache()
     Set this.categoryCache = Nothing
 End Sub
 
 '@section Guard helpers
 '===============================================================================
+'@description Lazy-initialisation guards that create caches on first access.
+
+'@label:ensure-workbook
+'@sub-title Verify that the backing workbook is assigned
+'@throws ProjectError.ObjectNotInitialized When the workbook is Nothing.
 Private Sub EnsureWorkbook()
     If this.specsWkb Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, "Specifications workbook has not been assigned"
     End If
 End Sub
 
+'@label:ensure-sheet-cache
+'@sub-title Create the sheet cache if it does not exist
 Private Sub EnsureSheetCache()
     If this.sheetCache Is Nothing Then
         Set this.sheetCache = New BetterArray
@@ -149,6 +232,8 @@ Private Sub EnsureSheetCache()
     End If
 End Sub
 
+'@label:ensure-translation-cache
+'@sub-title Create the translation cache if it does not exist
 Private Sub EnsureTranslationCache()
     If this.translationCache Is Nothing Then
         Set this.translationCache = New BetterArray
@@ -156,6 +241,8 @@ Private Sub EnsureTranslationCache()
     End If
 End Sub
 
+'@label:ensure-category-cache
+'@sub-title Create the category cache if it does not exist
 Private Sub EnsureCategoryCache()
     If this.categoryCache Is Nothing Then
         Set this.categoryCache = New BetterArray
@@ -163,6 +250,11 @@ Private Sub EnsureCategoryCache()
     End If
 End Sub
 
+'@label:cache-entry-matches
+'@sub-title Check whether a cache entry's key matches the given key
+'@param entry Variant. A two-element array where element(0) is the key.
+'@param cacheKey String. The key to compare against.
+'@return Boolean. True when the entry's key matches cacheKey.
 Private Function CacheEntryMatches(ByVal entry As Variant, ByVal cacheKey As String) As Boolean
     If IsArray(entry) Then
         If LBound(entry) <= 0 And UBound(entry) >= 1 Then
@@ -171,6 +263,15 @@ Private Function CacheEntryMatches(ByVal entry As Variant, ByVal cacheKey As Str
     End If
 End Function
 
+'@label:try-get-cache-value
+'@sub-title Attempt to retrieve a value from a key-value BetterArray cache
+'@details
+'Scans a BetterArray of two-element arrays (key, value) for a matching
+'key. If found, assigns the value to the ByRef parameter and returns True.
+'@param cache BetterArray. The cache to search.
+'@param cacheKey String. The key to look up.
+'@param cachedValue Variant (ByRef). Receives the cached value when found.
+'@return Boolean. True when the key was found in the cache.
 Private Function TryGetCacheValue(ByVal cache As BetterArray, ByVal cacheKey As String, ByRef cachedValue As Variant) As Boolean
     Dim idx As Long
     Dim entry As Variant
@@ -189,6 +290,14 @@ Private Function TryGetCacheValue(ByVal cache As BetterArray, ByVal cacheKey As 
     Next idx
 End Function
 
+'@label:store-cache-value
+'@sub-title Store a key-value pair in a BetterArray cache
+'@details
+'Pushes a two-element array (key, value) onto the cache. Skips the
+'operation if the cache is Nothing or the key already exists.
+'@param cache BetterArray. The cache to store into.
+'@param cacheKey String. The key for the entry.
+'@param value Variant. The value to cache.
 Private Sub StoreCacheValue(ByVal cache As BetterArray, ByVal cacheKey As String, ByVal value As Variant)
     Dim entry As Variant
     Dim existing As Variant
@@ -202,12 +311,28 @@ End Sub
 
 '@section Worksheet resolution
 '===============================================================================
-'@description Normalise sheet names for cache keys.
+'@description Cached worksheet lookups by name within the specifications workbook.
+
+'@label:sheet-cache-key
+'@sub-title Normalise a sheet name for use as a cache key
+'@param sheetName String. The raw sheet name.
+'@return String. Lower-cased, trimmed key.
 Private Function SheetCacheKey(ByVal sheetName As String) As String
     SheetCacheKey = LCase$(Trim$(sheetName))
 End Function
 
-'@description Resolve a worksheet by name with optional caching and error surfacing.
+'@label:resolve-sheet
+'@sub-title Resolve a worksheet by name with caching and optional error surfacing
+'@details
+'Looks up a worksheet in the specifications workbook by name, checking
+'the sheet cache first. When the sheet is not found and allowMissing is
+'False, raises a descriptive error. Found sheets are stored in the cache
+'for future lookups.
+'@param sheetName String. The worksheet name to find.
+'@param allowMissing Boolean. When True, returns Nothing instead of raising.
+'@return Worksheet. The resolved worksheet, or Nothing if allowMissing.
+'@throws ProjectError.InvalidArgument When sheetName is empty and not allowMissing.
+'@throws ProjectError.ElementNotFound When the sheet is missing and not allowMissing.
 Private Function ResolveSheet(ByVal sheetName As String, _
                               Optional ByVal allowMissing As Boolean = False) As Worksheet
 
@@ -254,6 +379,15 @@ End Function
 
 '@section External workbook helpers
 '===============================================================================
+'@description Utilities for opening, closing, and validating external workbooks
+'during the Prepare workflow.
+
+'@label:enter-busy-state
+'@sub-title Transition the application into a busy state
+'@details
+'Creates or refreshes an ApplicationState snapshot and applies the busy
+'state (suppressing screen updates and calculation) if not already busy.
+'@param busyScope IApplicationState (ByRef). The state object to manage.
 Private Sub EnterBusyState(ByRef busyScope As IApplicationState)
     If busyScope Is Nothing Then
         Set busyScope = ApplicationState.Create(Application)
@@ -269,6 +403,9 @@ Private Sub EnterBusyState(ByRef busyScope As IApplicationState)
     End If
 End Sub
 
+'@label:exit-busy-state
+'@sub-title Restore the application from a busy state
+'@param busyScope IApplicationState (ByRef). The state object to restore and release.
 Private Sub ExitBusyState(ByRef busyScope As IApplicationState)
     If busyScope Is Nothing Then Exit Sub
 
@@ -278,6 +415,17 @@ Private Sub ExitBusyState(ByRef busyScope As IApplicationState)
     Set busyScope = Nothing
 End Sub
 
+'@label:open-workbook-internal
+'@sub-title Open a workbook by path with busy-state management
+'@details
+'Validates that the path is non-empty and the file exists, enters the
+'busy state, then opens the workbook. Raises descriptive errors on
+'failure.
+'@param workbookPath String. Full file path of the workbook to open.
+'@param busyScope IApplicationState (ByRef). The busy-state scope.
+'@return Workbook. The opened workbook.
+'@throws ProjectError.ElementNotFound When the path is empty or file missing.
+'@throws ProjectError.ErrorUnexpectedState When Workbooks.Open fails.
 Private Function OpenWorkbookInternal(ByVal workbookPath As String, _
                                       ByRef busyScope As IApplicationState) As Workbook
     Dim target As Workbook
@@ -308,6 +456,9 @@ HandleOpen:
               "Unable to open workbook '" & trimmedPath & "': " & Err.Description
 End Function
 
+'@label:close-workbook-quiet
+'@sub-title Close a workbook without saving, suppressing errors
+'@param target Workbook (ByRef). The workbook to close and release.
 Private Sub CloseWorkbookQuiet(ByRef target As Workbook)
     On Error Resume Next
         If Not target Is Nothing Then target.Close savechanges:=False
@@ -315,6 +466,11 @@ Private Sub CloseWorkbookQuiet(ByRef target As Workbook)
     Set target = Nothing
 End Sub
 
+'@label:resolve-external-sheet
+'@sub-title Resolve a worksheet in an external workbook, returning Nothing on failure
+'@param hostBook Workbook. The workbook to search.
+'@param sheetName String. The worksheet name.
+'@return Worksheet. The worksheet, or Nothing if not found.
 Private Function ResolveExternalSheet(ByVal hostBook As Workbook, _
                                       ByVal sheetName As String) As Worksheet
     On Error Resume Next
@@ -322,6 +478,9 @@ Private Function ResolveExternalSheet(ByVal hostBook As Workbook, _
     On Error GoTo 0
 End Function
 
+'@label:ensure-external-sheet-exists
+'@sub-title Verify a worksheet exists in an external workbook
+'@throws ProjectError.ElementNotFound When the sheet is missing.
 Private Sub EnsureExternalSheetExists(ByVal hostBook As Workbook, _
                                       ByVal sheetName As String)
     If ResolveExternalSheet(hostBook, sheetName) Is Nothing Then
@@ -330,6 +489,13 @@ Private Sub EnsureExternalSheetExists(ByVal hostBook As Workbook, _
     End If
 End Sub
 
+'@label:ensure-setup-workbook-sheets
+'@sub-title Validate that the setup workbook contains all required sheets
+'@details
+'Checks for Dictionary, Choices, Translations, Exports, and Analysis
+'worksheets in the setup workbook.
+'@param setupBook Workbook. The external setup workbook to validate.
+'@throws ProjectError.ElementNotFound When a required sheet is missing.
 Private Sub EnsureSetupWorkbookSheets(ByVal setupBook As Workbook)
     Dim requiredSheets As Variant
     Dim idx As Long
@@ -346,6 +512,13 @@ Private Sub EnsureSetupWorkbookSheets(ByVal setupBook As Workbook)
     Next idx
 End Sub
 
+'@label:ensure-dictionary-not-empty
+'@sub-title Verify that a dictionary worksheet contains data
+'@details
+'Creates a temporary LLdictionary to probe the sheet's DataRange.
+'Raises an error if the range is Nothing or entirely blank.
+'@param dictionarySheet Worksheet. The dictionary worksheet to check.
+'@throws ProjectError.ElementNotFound When the sheet has no data.
 Private Sub EnsureDictionaryNotEmpty(ByVal dictionarySheet As Worksheet)
     Dim importedDict As ILLdictionary
     Dim dataRange As Range
@@ -367,6 +540,15 @@ Private Sub EnsureDictionaryNotEmpty(ByVal dictionarySheet As Worksheet)
     End If
 End Sub
 
+'@label:build-preserved-sheet-names
+'@sub-title Build the list of sheet names to preserve during dictionary preparation
+'@details
+'Collects all specification sheet names and temporary sheet names into
+'a BetterArray, then appends translated linelist sheet names (Admin,
+'Analysis, Spatial, etc.) when message translations are available.
+'@param messageTranslations ITranslationObject. The message translations
+'for resolving linelist sheet names, or Nothing to skip translated names.
+'@return BetterArray. The list of preserved sheet names.
 Private Function BuildPreservedSheetNames(ByVal messageTranslations As ITranslationObject) As BetterArray
     Dim preserved As BetterArray
 
@@ -403,6 +585,11 @@ Private Function BuildPreservedSheetNames(ByVal messageTranslations As ITranslat
     Set BuildPreservedSheetNames = preserved
 End Function
 
+'@label:safe-translated-value
+'@sub-title Look up a translation key, falling back to the key itself on failure
+'@param translations ITranslationObject. The translation object to query.
+'@param key String. The translation key.
+'@return String. The translated value, or the key if translation fails.
 Private Function SafeTranslatedValue(ByVal translations As ITranslationObject, ByVal key As String) As String
     On Error Resume Next
         SafeTranslatedValue = translations.TranslatedValue(key)
@@ -411,6 +598,11 @@ Private Function SafeTranslatedValue(ByVal translations As ITranslationObject, B
     If LenB(SafeTranslatedValue) = 0 Then SafeTranslatedValue = key
 End Function
 
+'@label:reset-post-import-caches
+'@sub-title Clear caches that become stale after importing new data
+'@details
+'Resets the variables object, category cache, and translation cache
+'so they are rebuilt from the freshly imported data.
 Private Sub ResetPostImportCaches()
     Set this.variables = Nothing
     ResetCategoryCache
@@ -419,6 +611,12 @@ End Sub
 
 '@section Workbook validation
 '===============================================================================
+'@description Structural validation of specifications workbooks.
+
+'@label:validate-workbook-reference
+'@sub-title Validate a workbook reference and its structure
+'@throws ProjectError.ObjectNotInitialized When specsWorkbook is Nothing.
+'@throws ProjectError.ElementNotFound When required sheets are missing.
 Private Sub ValidateWorkbookReference(ByVal specsWorkbook As Workbook)
     If specsWorkbook Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, "A specifications workbook reference is required"
@@ -427,6 +625,14 @@ Private Sub ValidateWorkbookReference(ByVal specsWorkbook As Workbook)
     ValidateWorkbookStructure specsWorkbook
 End Sub
 
+'@label:validate-workbook-structure
+'@sub-title Check that a workbook contains all required worksheets and named ranges
+'@details
+'Iterates the list of required sheet names and collects any that are
+'missing. If the format sheet exists, also validates that the DESIGNTYPE
+'named range is present.
+'@param specsWorkbook Workbook. The workbook to validate.
+'@throws ProjectError.ElementNotFound When required sheets or ranges are missing.
 Private Sub ValidateWorkbookStructure(ByVal specsWorkbook As Workbook)
     Dim requiredSheets As Variant
     Dim missingSheets As BetterArray
@@ -462,6 +668,9 @@ Private Sub ValidateWorkbookStructure(ByVal specsWorkbook As Workbook)
     End If
 End Sub
 
+'@label:required-sheet-names
+'@sub-title Return the array of required specification worksheet names
+'@return Variant. Array of sheet name strings.
 Private Function RequiredSheetNames() As Variant
     RequiredSheetNames = Array( _
         SHEET_DICTIONARY, _
@@ -478,6 +687,11 @@ Private Function RequiredSheetNames() As Variant
         SHEET_DESIGNER_TRANSLATION)
 End Function
 
+'@label:worksheet-exists-internal
+'@sub-title Test whether a worksheet exists in a workbook
+'@param specsWorkbook Workbook. The workbook to search.
+'@param sheetName String. The worksheet name to look for.
+'@return Boolean. True when the worksheet exists.
 Private Function WorksheetExistsInternal(ByVal specsWorkbook As Workbook, _
                                          ByVal sheetName As String) As Boolean
     Dim target As Worksheet
@@ -487,6 +701,11 @@ Private Function WorksheetExistsInternal(ByVal specsWorkbook As Workbook, _
     WorksheetExistsInternal = Not (target Is Nothing)
 End Function
 
+'@label:range-exists-internal
+'@sub-title Test whether a named range exists on a worksheet
+'@param hostSheet Worksheet. The worksheet to search.
+'@param rangeName String. The named range to look for.
+'@return Boolean. True when the named range exists.
 Private Function RangeExistsInternal(ByVal hostSheet As Worksheet, _
                                      ByVal rangeName As String) As Boolean
     Dim rng As Range
@@ -496,6 +715,10 @@ Private Function RangeExistsInternal(ByVal hostSheet As Worksheet, _
     RangeExistsInternal = Not (rng Is Nothing)
 End Function
 
+'@label:join-names
+'@sub-title Join a BetterArray of names into a comma-separated, quoted string
+'@param values BetterArray. The names to join.
+'@return String. Formatted string like "'Sheet1', 'Sheet2'".
 Private Function JoinNames(ByVal values As BetterArray) As String
     Dim buffer As String
     Dim idx As Long
@@ -508,6 +731,10 @@ Private Function JoinNames(ByVal values As BetterArray) As String
     JoinNames = buffer
 End Function
 
+'@label:safe-workbook-name
+'@sub-title Safely retrieve a workbook's name, returning "<unknown>" on error
+'@param specsWorkbook Workbook. The workbook whose name to retrieve.
+'@return String. The workbook name or "<unknown>".
 Private Function SafeWorkbookName(ByVal specsWorkbook As Workbook) As String
     On Error Resume Next
         SafeWorkbookName = specsWorkbook.Name
@@ -517,6 +744,12 @@ End Function
 
 '@section Collaborator ensures
 '===============================================================================
+'@description Lazy-initialisation guards for each collaborator object. Each
+'EnsureXxx method creates the collaborator from its backing worksheet on first
+'access, then caches it for subsequent calls.
+
+'@label:ensure-exports
+'@sub-title Lazy-load the export collaborator
 Private Sub EnsureExports()
     If this.exports Is Nothing Then
         Dim exportSheet As Worksheet
@@ -525,6 +758,12 @@ Private Sub EnsureExports()
     End If
 End Sub
 
+'@label:ensure-dictionary
+'@sub-title Lazy-load the dictionary collaborator
+'@details
+'Requires the export collaborator to be available first (for the number
+'of exports parameter), then creates the dictionary from the Dictionary
+'worksheet.
 Private Sub EnsureDictionary()
     If this.dictionary Is Nothing Then
         EnsureExports
@@ -537,6 +776,8 @@ Private Sub EnsureDictionary()
     End If
 End Sub
 
+'@label:ensure-choices
+'@sub-title Lazy-load the choices collaborator
 Private Sub EnsureChoices()
     If this.choices Is Nothing Then
         Dim choicesSheet As Worksheet
@@ -547,6 +788,11 @@ Private Sub EnsureChoices()
     End If
 End Sub
 
+'@label:ensure-translations
+'@sub-title Lazy-load the translations collaborator
+'@details
+'Creates the LLTranslations instance from both the linelist translation
+'and dictionary translation worksheets.
 Private Sub EnsureTranslations()
     If this.translations Is Nothing Then
         Dim linelistTransSheet As Worksheet
@@ -557,6 +803,8 @@ Private Sub EnsureTranslations()
     End If
 End Sub
 
+'@label:ensure-designer-translations
+'@sub-title Lazy-load the designer translations collaborator
 Private Sub EnsureDesignerTranslations()
     If this.designerTranslations Is Nothing Then
         Dim designerSheet As Worksheet
@@ -565,6 +813,8 @@ Private Sub EnsureDesignerTranslations()
     End If
 End Sub
 
+'@label:ensure-geo
+'@sub-title Lazy-load the geo collaborator
 Private Sub EnsureGeo()
     If this.geo Is Nothing Then
         Dim geoSheet As Worksheet
@@ -573,6 +823,8 @@ Private Sub EnsureGeo()
     End If
 End Sub
 
+'@label:ensure-analysis
+'@sub-title Lazy-load the analysis collaborator
 Private Sub EnsureAnalysis()
     If this.analysis Is Nothing Then
         Dim analysisSheet As Worksheet
@@ -581,6 +833,8 @@ Private Sub EnsureAnalysis()
     End If
 End Sub
 
+'@label:ensure-passwords
+'@sub-title Lazy-load the passwords collaborator
 Private Sub EnsurePasswords()
     If this.passwords Is Nothing Then
         Dim passwordSheet As Worksheet
@@ -589,6 +843,8 @@ Private Sub EnsurePasswords()
     End If
 End Sub
 
+'@label:ensure-formula-data
+'@sub-title Lazy-load the formula data collaborator
 Private Sub EnsureFormulaData()
     If this.formulaData Is Nothing Then
         Dim formulaSheet As Worksheet
@@ -597,6 +853,8 @@ Private Sub EnsureFormulaData()
     End If
 End Sub
 
+'@label:ensure-main
+'@sub-title Lazy-load the main configuration collaborator
 Private Sub EnsureMain()
     If this.main Is Nothing Then
         Dim mainSheet As Worksheet
@@ -605,6 +863,11 @@ Private Sub EnsureMain()
     End If
 End Sub
 
+'@label:ensure-variables
+'@sub-title Lazy-load the variables collaborator
+'@details
+'Requires the dictionary to be available first, then creates the
+'LLVariables instance from it.
 Private Sub EnsureVariables()
     EnsureDictionary
     If this.variables Is Nothing Then
@@ -612,6 +875,11 @@ Private Sub EnsureVariables()
     End If
 End Sub
 
+'@label:ensure-format
+'@sub-title Lazy-load the format collaborator
+'@details
+'Resolves the design name from the DESIGNTYPE named range on the format
+'sheet, then creates the LLFormat instance.
 Private Sub EnsureFormat()
     If this.format Is Nothing Then
         Dim formatSheet As Worksheet
@@ -624,6 +892,11 @@ Private Sub EnsureFormat()
     End If
 End Sub
 
+'@label:resolve-design-name
+'@sub-title Extract the design name from the format worksheet's DESIGNTYPE range
+'@param formatSheet Worksheet. The format worksheet.
+'@return String. The trimmed design type name.
+'@throws ProjectError.ElementNotFound When the DESIGNTYPE range is missing.
 Private Function ResolveDesignName(ByVal formatSheet As Worksheet) As String
     Dim designRange As Range
 
@@ -639,17 +912,24 @@ Private Function ResolveDesignName(ByVal formatSheet As Worksheet) As String
     ResolveDesignName = Trim$(CStr(designRange.Cells(1, 1).Value))
 End Function
 
+'@label:ensure-translation-object-cache
+'@sub-title Ensure both translations and translation cache are ready
 Private Sub EnsureTranslationObjectCache()
     EnsureTranslations
     EnsureTranslationCache
 End Sub
 
+'@label:ensure-category-lookup
+'@sub-title Ensure choices, variables, and category cache are ready
 Private Sub EnsureCategoryLookup()
     EnsureChoices
     EnsureVariables
     EnsureCategoryCache
 End Sub
 
+'@label:number-of-exports
+'@sub-title Return the number of exports defined in the export specifications
+'@return Long. The export count.
 Private Function NumberOfExports() As Long
     EnsureExports
     NumberOfExports = this.exports.NumberOfExports()
@@ -657,6 +937,16 @@ End Function
 
 '@section List auto helpers
 '===============================================================================
+'@description Automatic list column generation for formula-based variables.
+
+'@label:add-list-auto
+'@sub-title Populate the "list auto" dictionary column for list_auto variables
+'@details
+'Adds a "list auto" column to the dictionary, then finds all variables
+'with control type "list_auto" and marks their control details with
+'"list_auto_origin". For formula-type variables (formula, case_when,
+'choice_formula), recursively traces referenced variables and marks
+'them as well.
 Private Sub AddListAuto()
     Dim dict As ILLdictionary
     Dim vars As ILLVariables
@@ -687,6 +977,14 @@ Private Sub AddListAuto()
     Next idx
 End Sub
 
+'@label:recursive-list-auto
+'@sub-title Recursively mark referenced variables in formula chains as list_auto
+'@details
+'Parses the control details of a formula-type variable using the Formulas
+'engine, extracts the list of referenced variables, marks each with
+'"list_auto_origin", and recurses into any that are themselves formulas
+'or case_when types.
+'@param varName String. The formula variable whose references to trace.
 Private Sub RecursiveListAuto(ByVal varName As String)
     Dim dict As ILLdictionary
     Dim vars As ILLVariables
@@ -728,6 +1026,22 @@ End Sub
 
 '@section Category helpers
 '===============================================================================
+'@description Category resolution and caching for choice-type variables.
+
+'@label:categories
+'@sub-title Resolve category values for a variable with caching
+'@details
+'Returns the list of category values for a choice-type variable
+'(choice_manual, choice_multiple, choice_custom, or choice_formula).
+'Results are cached per variable name and short-label flag combination.
+'Always returns a cloned BetterArray to prevent callers from modifying
+'the cached copy.
+'@param varName String. The variable name whose categories to resolve.
+'@param useShortlabels Boolean. When True, returns short labels. Defaults to False.
+'@return BetterArray. Cloned list of category values.
+'@throws ProjectError.InvalidArgument When varName is empty.
+'@throws ProjectError.ElementNotFound When the variable has no selectable categories.
+'@export
 Public Function Categories(ByVal varName As String, Optional ByVal useShortlabels As Boolean = False) As BetterArray
     Dim cacheKey As String
     Dim cached As BetterArray
@@ -751,6 +1065,16 @@ Public Function Categories(ByVal varName As String, Optional ByVal useShortlabel
     Set Categories = clone
 End Function
 
+'@label:resolve-category-list
+'@sub-title Build a category list from the choices sheet for a given variable
+'@details
+'Determines the category name from the variable's control type and
+'control details, then queries the choices collaborator.
+'@param varName String. The variable name.
+'@param useShortlabels Boolean. Whether to use short labels.
+'@return BetterArray. The resolved category list.
+'@throws ProjectError.InvalidArgument When varName is empty.
+'@throws ProjectError.ElementNotFound When the variable or category is not found.
 Private Function ResolveCategoryList(ByVal varName As String, _
                                      ByVal useShortlabels As Boolean) As BetterArray
     Dim normalizedName As String
@@ -792,11 +1116,20 @@ Private Function ResolveCategoryList(ByVal varName As String, _
     Set ResolveCategoryList = result
 End Function
 
+'@label:build-category-cache-key
+'@sub-title Construct the cache key for a category lookup
+'@param varName String. The variable name.
+'@param useShortlabels Boolean. The short-labels flag.
+'@return String. The composite cache key.
 Private Function BuildCategoryCacheKey(ByVal varName As String, _
                                        ByVal useShortlabels As Boolean) As String
     BuildCategoryCacheKey = LCase$(Trim$(varName)) & CATEGORY_CACHE_SEPARATOR & CStr(useShortlabels)
 End Function
 
+'@label:normalise-control-type
+'@sub-title Strip parenthesised suffixes from a control type string
+'@param controlValue String. The raw control type value.
+'@return String. The normalised, lower-cased control type.
 Private Function NormaliseControlType(ByVal controlValue As String) As String
     Dim trimmed As String
     Dim delimiterPos As Long
@@ -810,6 +1143,10 @@ Private Function NormaliseControlType(ByVal controlValue As String) As String
     NormaliseControlType = trimmed
 End Function
 
+'@label:extract-choice-formula
+'@sub-title Extract the choice name from a CHOICE_FORMULA(...) control details string
+'@param controlDetails String. The raw control details value.
+'@return String. The extracted choice name.
 Private Function ExtractChoiceFormula(ByVal controlDetails As String) As String
     Dim working As String
     Dim commaPosition As Long
@@ -828,61 +1165,152 @@ End Function
 
 '@section Core accessors
 '===============================================================================
+'@description Public property accessors for each collaborator object, exposing
+'the lazy-loaded instances through their respective interfaces.
+
+'@label:dictionary
+'@prop-title Linelist dictionary
+'@details
+'Returns the ILLdictionary instance providing column and row access to the
+'Dictionary worksheet. Lazy-loaded on first access.
+'@return ILLdictionary. The dictionary collaborator.
+'@export
 Public Property Get Dictionary() As ILLdictionary
     EnsureDictionary
     Set Dictionary = this.dictionary
 End Property
 
+'@label:choices
+'@prop-title Choices catalogue
+'@details
+'Returns the ILLChoices instance providing category lookups from the
+'Choices worksheet. Lazy-loaded on first access.
+'@return ILLChoices. The choices collaborator.
+'@export
 Public Property Get Choices() As ILLChoices
     EnsureChoices
     Set Choices = this.choices
 End Property
 
+'@label:design-format
+'@prop-title Visual formatting specifications
+'@details
+'Returns the ILLFormat instance providing sheet and cell formatting
+'methods based on the LinelistStyle worksheet. Lazy-loaded on first access.
+'@return ILLFormat. The format collaborator.
+'@export
 Public Property Get DesignFormat() As ILLFormat
     EnsureFormat
     Set DesignFormat = this.format
 End Property
 
+'@label:analysis
+'@prop-title Analysis setup specifications
+'@details
+'Returns the ILLAnalysis instance providing access to the Analysis
+'worksheet configuration. Lazy-loaded on first access.
+'@return ILLAnalysis. The analysis collaborator.
+'@export
 Public Property Get Analysis() As ILLAnalysis
     EnsureAnalysis
     Set Analysis = this.analysis
 End Property
 
+'@label:export-object
+'@prop-title Export column specifications
+'@details
+'Returns the ILLExport instance providing access to export column
+'definitions from the Exports worksheet. Lazy-loaded on first access.
+'@return ILLExport. The export collaborator.
+'@export
 Public Property Get ExportObject() As ILLExport
     EnsureExports
     Set ExportObject = this.exports
 End Property
 
+'@label:password
+'@prop-title Password manager
+'@details
+'Returns the IPasswords instance providing workbook and sheet protection
+'utilities from the __pass worksheet. Lazy-loaded on first access.
+'@return IPasswords. The password collaborator.
+'@export
 Public Property Get Password() As IPasswords
     EnsurePasswords
     Set Password = this.passwords
 End Property
 
+'@label:geo-object
+'@prop-title Geographic data manager
+'@details
+'Returns the ILLGeo instance providing geographic hierarchy lookups from
+'the Geo worksheet. Lazy-loaded on first access.
+'@return ILLGeo. The geo collaborator.
+'@export
 Public Property Get GeoObject() As ILLGeo
     EnsureGeo
     Set GeoObject = this.geo
 End Property
 
+'@label:formula-data-object
+'@prop-title Formula data provider
+'@details
+'Returns the IFormulaData instance providing formula parsing support from
+'the __formula worksheet. Lazy-loaded on first access.
+'@return IFormulaData. The formula data collaborator.
+'@export
 Public Property Get FormulaDataObject() As IFormulaData
     EnsureFormulaData
     Set FormulaDataObject = this.formulaData
 End Property
 
+'@label:main-object
+'@prop-title Main configuration sheet accessor
+'@details
+'Returns the IMain instance providing key-value configuration from the
+'Main worksheet. Lazy-loaded on first access.
+'@return IMain. The main configuration collaborator.
+'@export
 Public Property Get MainObject() As IMain
     EnsureMain
     Set MainObject = this.main
 End Property
 
+'@label:translations
+'@prop-title Translation tables manager
+'@details
+'Returns the ILLTranslations instance providing access to both the
+'linelist and dictionary translation worksheets. Lazy-loaded on first access.
+'@return ILLTranslations. The translations collaborator.
+'@export
 Public Property Get Translations() As ILLTranslations
     EnsureTranslations
     Set Translations = this.translations
 End Property
 
+'@label:designer-translations
+'@prop-title Designer translation accessor
+'@details
+'Returns the IDesTranslation instance providing designer UI translations
+'from the DesignerTranslation worksheet. Lazy-loaded on first access.
+'@return IDesTranslation. The designer translation collaborator.
+'@export
 Public Property Get DesignerTranslations() As IDesTranslation
     EnsureDesignerTranslations
     Set DesignerTranslations = this.designerTranslations
 End Property
 
+'@label:trans-object
+'@prop-title Scoped translation object
+'@details
+'Returns an ITranslationObject for the requested translation scope.
+'Results are cached per scope value for efficient repeated access.
+'@param translationScope Byte. The translation scope constant
+'(e.g., TranslationOfMessages, TranslationOfDictionary). Defaults to
+'TranslationOfMessages.
+'@return ITranslationObject. The scoped translation object.
+'@throws ProjectError.ElementNotFound When the scope is not available.
+'@export
 Public Property Get TransObject(Optional ByVal translationScope As Byte = TranslationOfMessages) As ITranslationObject
     Dim cacheKey As String
     Dim cached As ITranslationObject
@@ -910,6 +1338,16 @@ Public Property Get TransObject(Optional ByVal translationScope As Byte = Transl
     Set TransObject = cached
 End Property
 
+'@label:temporary-sheet-name
+'@prop-title Temporary sheet name for a given scope
+'@details
+'Returns the fixed worksheet name used for temporary internal sheets,
+'mapped from the scope constant (TEMP_SHEET_ANALYSIS, TEMP_SHEET_LIST,
+'etc.) to its canonical name string.
+'@param scope Byte. The temporary sheet scope constant.
+'@return String. The worksheet name string.
+'@throws ProjectError.InvalidArgument When the scope is not recognised.
+'@export
 Public Property Get TemporarySheetName(ByVal scope As Byte) As String
     Select Case scope
         Case TEMP_SHEET_ANALYSIS
@@ -934,6 +1372,15 @@ Public Property Get TemporarySheetName(ByVal scope As Byte) As String
     End Select
 End Property
 
+'@label:value
+'@prop-title Configuration value by tag name
+'@details
+'Returns a configuration value from the Main worksheet for the given
+'tag name. The special tag "numberofexports" returns the export count
+'from the Exports worksheet; all other tags delegate to MainObject.ValueOf.
+'@param tagName String. The configuration key to look up.
+'@return String. The configuration value, or empty string if tagName is empty.
+'@export
 Public Property Get Value(ByVal tagName As String) As String
     Dim normalizedTag As String
 
@@ -952,6 +1399,24 @@ End Property
 
 '@section Workbook orchestration
 '===============================================================================
+'@description Lifecycle methods for importing, preparing, exporting, and
+'error-managing the specifications workbook.
+
+'@label:prepare
+'@sub-title Import and prepare all specifications from external workbooks
+'@details
+'Orchestrates the full specification preparation workflow:
+'1. Validates Main sheet readiness via CheckReadiness.
+'2. Opens the setup workbook and validates its required sheets.
+'3. Imports exports, dictionary, choices, translations, and analysis data.
+'4. Optionally opens and imports geo data from a separate workbook.
+'5. Prepares the dictionary with preserved sheet names and geo references.
+'6. Adds the "list auto" column if not already present.
+'7. Translates and sorts all collaborators using dictionary translations.
+'Handles errors with cleanup of open workbooks and busy-state restoration.
+'@throws ProjectError.ElementNotFound When paths or sheets are missing.
+'@throws ProjectError.ErrorUnexpectedState When an unexpected error occurs.
+'@export
 Public Sub Prepare()
     Dim mainObj As IMain
     Dim designerTrads As IDesTranslation
@@ -1067,6 +1532,15 @@ CleanFail:
     End If
 End Sub
 
+'@label:export
+'@sub-title Export all specifications to an output workbook
+'@details
+'Exports dictionary, choices, translations, export specs, geo data, and
+'passwords to the given workbook, creating hidden worksheets for each.
+'@param toWkb Workbook. The destination workbook to export specifications into.
+'@throws ProjectError.ObjectNotInitialized When toWkb is Nothing.
+'@throws ProjectError.ErrorUnexpectedState When an unexpected error occurs.
+'@export
 Public Sub Export(ByVal toWkb As Workbook)
     Dim dict As ILLdictionary
     Dim choices As ILLChoices
@@ -1116,6 +1590,13 @@ HandleError:
     End If
 End Sub
 
+'@label:error-manage
+'@sub-title Display an error dialog for specification failures
+'@details
+'Shows a message box describing the error and informing the user that
+'the linelist creation process is being aborted.
+'@param textMessage String. Error description. Defaults to vbNullString.
+'@export
 Public Sub ErrorManage(Optional ByVal textMessage As String = vbNullString)
     Dim messageBody As String
 
@@ -1128,20 +1609,40 @@ End Sub
 
 '@section Error handling
 '===============================================================================
+'@description Internal error-raising utility.
+
+'@label:throw-error
+'@sub-title Raise a project error with the class name as source
+'@param errNumber Long. The ProjectError constant.
+'@param messageText String. The error description.
 Private Sub ThrowError(ByVal errNumber As Long, ByVal messageText As String)
     Err.Raise errNumber, CLASSNAME, messageText
 End Sub
 
 '@section Test support
 '===============================================================================
+'@description Backdoor setters for injecting mock collaborators during testing.
+
+'@label:test-assign-main
+'@sub-title Inject a mock IMain instance for testing
+'@param mainObj IMain. The mock main object.
 Public Sub TestAssignMain(ByVal mainObj As IMain)
     Set this.main = mainObj
 End Sub
 
+'@label:test-assign-designer-translations
+'@sub-title Inject a mock IDesTranslation instance for testing
+'@param designerTrads IDesTranslation. The mock designer translations object.
 Public Sub TestAssignDesignerTranslations(ByVal designerTrads As IDesTranslation)
     Set this.designerTranslations = designerTrads
 End Sub
 
+'@label:test-assign-translations
+'@sub-title Inject a mock ILLTranslations instance for testing
+'@details
+'Also resets the translation cache to ensure the mock object is used
+'for subsequent TransObject lookups.
+'@param translations ILLTranslations. The mock translations object.
 Public Sub TestAssignTranslations(ByVal translations As ILLTranslations)
     Set this.translations = translations
     ResetTranslationCache
@@ -1149,6 +1650,10 @@ End Sub
 
 '@section Interface implementation
 '===============================================================================
+'@description ILinelistSpecs delegation stubs. Each member forwards to its
+'corresponding public member on the concrete class. No @label tags are
+'needed on delegation stubs.
+
 Private Sub ILinelistSpecs_ResetCaches()
     ResetCaches
 End Sub
@@ -1228,5 +1733,3 @@ End Sub
 Private Sub ILinelistSpecs_ErrorManage(Optional ByVal textMessage As String = vbNullString)
     ErrorManage textMessage
 End Sub
-
-
