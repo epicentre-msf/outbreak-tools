@@ -17,6 +17,19 @@ Attribute VB_Description = "Spatial table creation at build time"
 Option Explicit
 Implements ISpatialTables
 
+'@class SpatialTables
+'@description
+'Creates spatial analysis ListObjects on the "spatial_tables__" worksheet at
+'linelist build time. For each cross-table row variable, builds either four
+'admin-level tables (adm1-adm4 for geo type) or one health-facility table
+'(for hf type), each with formula, population, and attack rate columns.
+'Manages formula conditions and validates that the spatial sheet exists
+'before writing.
+'@depends ICrossTable, ITableSpecs, IFormulas, IFormulaCondition, BetterArray
+'@version 2025-01-15
+'@author EpiData
+
+
 '@section State
 '===============================================================================
 
@@ -34,13 +47,23 @@ Private Const ADMIN As String = "adm"
 Private Const HF As String = "hf"
 Private Const CONCAT As String = "concat_"
 
-'@section Factory
+'@section Instantiation
 '===============================================================================
 
-' @description Create a new SpatialTables instance from a cross-table.
-'              Validates the cross-table and that the spatial sheet exists.
-' @param tabl The cross-table whose row variable defines the spatial tables
-' @return ISpatialTables interface pointer
+'@label:create
+'@sub-title Create a SpatialTables instance from a cross-table
+'@details
+'Factory method on the predeclared instance. Validates that the cross-table
+'is not Nothing and that the "spatial_tables__" worksheet exists in the same
+'workbook. Binds the cross-table to the new instance so subsequent Add calls
+'can read the row variable and table specifications.
+'@param tabl ICrossTable. The cross-table whose row variable defines the
+'spatial tables to create.
+'@return ISpatialTables. A fully initialised spatial tables builder.
+'@throws ProjectError.ObjectNotInitialized When tabl is Nothing.
+'@throws ProjectError.ElementNotFound When the spatial worksheet is missing.
+'@depends ICrossTable, ITableSpecs
+'@export
 Public Function Create(ByVal tabl As ICrossTable) As ISpatialTables
     CheckRequirements tabl
 
@@ -50,14 +73,29 @@ Public Function Create(ByVal tabl As ICrossTable) As ISpatialTables
     End With
 End Function
 
+'@label:self
+'@prop-title Current object instance
+'@details
+'Convenience accessor for fluent retrieval of the interface reference from
+'the predeclared Create method.
+'@return ISpatialTables. The current instance cast to the interface.
 Public Property Get Self() As ISpatialTables
     Set Self = Me
 End Property
 
+'@label:table
+'@prop-title Cross-table bound to this builder
+'@details
+'Returns the ICrossTable instance whose row variable and specifications
+'drive the spatial table creation in Add.
+'@return ICrossTable. The bound cross-table.
 Public Property Get Table() As ICrossTable
     Set Table = this.tab
 End Property
 
+'@label:table-set
+'@prop-title Assign the cross-table reference
+'@param tabl ICrossTable. The cross-table to bind.
 Public Property Set Table(ByVal tabl As ICrossTable)
     Set this.tab = tabl
 End Property
@@ -65,7 +103,12 @@ End Property
 '@section Worksheet
 '===============================================================================
 
-' @description Lazy-loaded spatial worksheet reference.
+'@label:wksh
+'@prop-title Lazy-loaded spatial worksheet reference
+'@details
+'Returns the "spatial_tables__" worksheet from the cross-table workbook.
+'The reference is cached after the first access to avoid repeated lookups.
+'@return Worksheet. The spatial analysis worksheet.
 Private Property Get Wksh() As Worksheet
     If this.sh Is Nothing Then
         Dim wb As Workbook
@@ -78,23 +121,45 @@ End Property
 
 '@section Naming Conventions
 '===============================================================================
+'@description Helpers for constructing spatial table and range names.
 
-' @description Build the header named range name for a spatial table.
+'@label:current-header-name
+'@prop-title Build the header named range name for a spatial table
+'@details
+'Concatenates "tabl_", the admin name, and the variable name to form a
+'unique header range name (e.g. "tabl_adm1_cases_sp1").
+'@param varName String. The spatial variable name.
+'@param adminName String. The admin level identifier (e.g. "adm1", "hf").
+'@return String. The header named range name.
 Private Property Get CurrentHeaderName(ByVal varName As String, _
                                        ByVal adminName As String) As String
     CurrentHeaderName = "tabl_" & adminName & "_" & varName
 End Property
 
-' @description Build the ListObject name for a spatial table.
+'@label:current-lo-name
+'@prop-title Build the ListObject name for a spatial table
+'@details
+'Concatenates "spatial_", the admin name, and the variable name to form a
+'unique ListObject name (e.g. "spatial_adm1_cases_sp1").
+'@param varName String. The spatial variable name.
+'@param adminName String. The admin level identifier.
+'@return String. The ListObject name.
 Private Property Get CurrentLoName(ByVal varName As String, _
                                    ByVal adminName As String) As String
     CurrentLoName = "spatial_" & adminName & "_" & varName
 End Property
 
-'@section Exists
+'@section Existence Checks
 '===============================================================================
 
-' @description Check if a variable already has all 4 admin-level ListObjects.
+'@label:exists
+'@sub-title Check if spatial ListObjects already exist for a variable
+'@details
+'Iterates through admin levels 1-4 and tests whether each corresponding
+'ListObject exists on the spatial worksheet. Returns True only when all
+'four exist. Used by Add to skip duplicate creation.
+'@param varName String. The spatial variable name to check.
+'@return Boolean. True when all four admin-level ListObjects exist.
 Private Function Exists(ByVal varName As String) As Boolean
     Dim counter As Long
     Dim testExistence As Boolean
@@ -107,7 +172,13 @@ Private Function Exists(ByVal varName As String) As Boolean
     Exists = testExistence
 End Function
 
-' @description Check if a ListObject exists on the spatial sheet.
+'@label:lo-exists
+'@sub-title Check if a ListObject exists on the spatial sheet
+'@details
+'Uses the standard VBA error-trapping pattern to test for ListObject
+'existence on the spatial worksheet.
+'@param loName String. The ListObject name to look for.
+'@return Boolean. True when the ListObject exists.
 Private Function LoExists(ByVal loName As String) As Boolean
     Dim Lo As ListObject
 
@@ -121,7 +192,13 @@ End Function
 '@section Column Helpers
 '===============================================================================
 
-' @description Find the next available column on the spatial sheet.
+'@label:last-column
+'@prop-title Next available column on the spatial sheet
+'@details
+'Finds the last used column on row 1 and returns the next available
+'position with a 2-column gap. Returns column 7 when the sheet only has
+'the initial 3-column setup (listofgeovars occupies column 3).
+'@return Long. The 1-based column index for the next spatial table.
 Private Property Get LastColumn() As Long
     Dim sh As Worksheet
     Dim colIndex As Long
@@ -135,8 +212,18 @@ End Property
 
 '@section Formula Helpers
 '===============================================================================
+'@description Helpers for building and testing Excel formula expressions.
 
-' @description Build a geo population INDEX/MATCH formula for an admin level.
+'@label:geo-population-function
+'@sub-title Build a geo population INDEX/MATCH formula for an admin level
+'@details
+'Constructs an INDEX/MATCH formula that looks up the population value for
+'an admin level from the corresponding geo reference table (T_ADM1 through
+'T_ADM4). The formula is wrapped in ISERROR to return 0 when the lookup
+'fails. The population column index is derived from the admin level number.
+'@param adminName String. The admin level identifier (e.g. "adm1").
+'@param rangeAddress String. The cell address used as the MATCH lookup value.
+'@return String. The complete INDEX/MATCH formula string.
 Private Function GeoPopulationFunction(ByVal adminName As String, _
                                        ByVal rangeAddress As String) As String
     Dim tabName As String
@@ -156,7 +243,15 @@ Private Function GeoPopulationFunction(ByVal adminName As String, _
     GeoPopulationFunction = "IF(ISERROR(" & centralPart & "), 0," & centralPart & ")"
 End Function
 
-' @description Test whether a formula expression is valid by evaluating it on a cell.
+'@label:failed-formula
+'@sub-title Test whether a formula expression is valid
+'@details
+'Writes the formula to cell A1 of the spatial sheet inside an error
+'handler. If the assignment succeeds, the formula is valid and the cell
+'is cleared. If it fails, the method returns True. DisplayAlerts is
+'temporarily disabled to suppress Excel prompts.
+'@param frmName String. The formula expression to test (without leading "=").
+'@return Boolean. True when the formula is invalid.
 Private Function FailedFormula(ByVal frmName As String) As Boolean
     Dim prevAlert As Long
     Dim sh As Worksheet
@@ -181,15 +276,27 @@ Fail:
     Application.DisplayAlerts = prevAlert
 End Function
 
-' @description Empty string constant for formula conditions.
+'@label:emp-str
+'@sub-title Empty string constant for formula conditions
+'@details
+'Returns a pair of double-quote characters for use in Excel formula strings.
+'@return String. Two double-quote characters (empty string literal in Excel).
 Private Function EmpStr() As String
     EmpStr = Chr(34) & Chr(34)
 End Function
 
 '@section Condition Management
 '===============================================================================
+'@description Manages variable/condition pairs for formula generation.
 
-' @description Add a variable/condition pair for formula generation.
+'@label:add-table-conditions
+'@sub-title Add a variable/condition pair for formula generation
+'@details
+'Pushes the variable name and condition test onto the parallel condVars
+'and condTests BetterArrays. Lazily initialises both arrays with
+'LowerBound 1 on first use. Ignores empty variable names.
+'@param varName String. The variable name for the condition.
+'@param conditionName String. The condition expression.
 Private Sub AddTableConditions(ByVal varName As String, ByVal conditionName As String)
     If this.condVars Is Nothing Then
         Set this.condVars = New BetterArray
@@ -207,7 +314,14 @@ Private Sub AddTableConditions(ByVal varName As String, ByVal conditionName As S
     End If
 End Sub
 
-' @description Clear condition arrays, optionally removing only the last N entries.
+'@label:clear-table-conditions
+'@sub-title Clear condition arrays
+'@details
+'When removeNumber is zero or negative, clears both arrays entirely.
+'When positive, removes only the last N entries from both arrays via Pop.
+'Lazily initialises the arrays if they are Nothing.
+'@param removeNumber Optional Long. Number of trailing entries to remove.
+'Defaults to 0 (clear all).
 Private Sub ClearTableConditions(Optional ByVal removeNumber As Long = 0)
     If this.condVars Is Nothing Then
         Set this.condVars = New BetterArray
@@ -233,7 +347,20 @@ Private Sub ClearTableConditions(Optional ByVal removeNumber As Long = 0)
     End If
 End Sub
 
-' @description Build an Excel formula string using the current conditions.
+'@label:current-excel-formula
+'@prop-title Build an Excel formula string using the current conditions
+'@details
+'Constructs a parsed formula from the IFormulas object, applying either
+'linelist scope (with table name prefix) or analysis scope (with condition
+'pairs from condVars/condTests). Validates the result via FailedFormula
+'and returns an empty string when the formula is invalid or the object
+'is not valid.
+'@param tabFormObject IFormulas. The formula definition to parse.
+'@param scope Optional Byte. FormulaScopeLinelist or FormulaScopeAnalysis.
+'Defaults to FormulaScopeAnalysis.
+'@param prefix Optional String. Table name prefix for linelist scope.
+'Defaults to "f".
+'@return String. The parsed formula string, or empty when invalid.
 Private Property Get CurrentExcelFormula(ByVal tabFormObject As IFormulas, _
                                          Optional ByVal scope As Byte = FormulaScopeAnalysis, _
                                          Optional ByVal prefix As String = "f") As String
@@ -255,11 +382,15 @@ Private Property Get CurrentExcelFormula(ByVal tabFormObject As IFormulas, _
     CurrentExcelFormula = eform
 End Property
 
-'@section Prepare
+'@section Preparation
 '===============================================================================
 
-' @description Initialize the spatial sheet with the "listofgeovars" ListObject
-'              and named ranges for scratch/test columns.
+'@label:prepare
+'@sub-title Initialise the spatial sheet with the listofgeovars ListObject
+'@details
+'Creates the "listofgeovars" ListObject in column 3 and defines the
+'RNG_PastingCol and RNG_TestingFormula named ranges. Called by Add when
+'the listofgeovars table does not yet exist.
 Private Sub Prepare()
     Dim rng As Range
     Dim sh As Worksheet
@@ -276,7 +407,12 @@ Private Sub Prepare()
     End With
 End Sub
 
-' @description Register a variable name in the listofgeovars ListObject.
+'@label:add-var-name-to-list
+'@sub-title Register a variable name in the listofgeovars ListObject
+'@details
+'Appends the variable name to the next empty row in the listofgeovars
+'ListObject. Uses CountA to determine the current row count.
+'@param varName String. The spatial variable name to register.
 Private Sub AddVarNameToList(ByVal varName As String)
     Dim sh As Worksheet
     Dim Lo As ListObject
@@ -292,9 +428,20 @@ End Sub
 '@section Add
 '===============================================================================
 
-' @description Create spatial ListObjects for the current table's row variable.
-'              Builds 4 admin-level tables (or 1 HF table) with formula,
-'              population, and attack rate columns.
+'@label:add
+'@sub-title Create spatial ListObjects for the cross-table row variable
+'@details
+'Builds the spatial table set for the current cross-table. For geo-type
+'tables, creates four admin-level tables (adm1-adm4) each with formula,
+'population, and attack rate columns. For hf-type tables, creates a single
+'health-facility table with a formula column only. Each table is created
+'as a 2-row ListObject (header + one data row) positioned at the next
+'available column on the spatial sheet. The formula column is populated
+'from the parsed analysis formula via CurrentExcelFormula. Skips creation
+'when the tables already exist for this variable.
+'@param formObject IFormulas. The formula object whose parsed expression
+'is written into each spatial table formula column.
+'@export
 Private Sub Add(ByVal formObject As IFormulas)
     Dim sh As Worksheet
     Dim colIndex As Long
@@ -392,7 +539,14 @@ End Sub
 '@section Validation
 '===============================================================================
 
-' @description Validate that the cross-table is not Nothing and the spatial sheet exists.
+'@label:check-requirements
+'@sub-title Validate cross-table and spatial sheet existence
+'@details
+'Guards the Create factory by ensuring the cross-table is not Nothing and
+'that a worksheet named "spatial_tables__" exists in the same workbook.
+'@param tabl ICrossTable. The cross-table to validate.
+'@throws ProjectError.ObjectNotInitialized When tabl is Nothing.
+'@throws ProjectError.ElementNotFound When the spatial worksheet is missing.
 Private Sub CheckRequirements(ByVal tabl As ICrossTable)
     Dim wb As Workbook
     Dim sh As Worksheet
@@ -418,13 +572,21 @@ End Sub
 '@section Error Handling
 '===============================================================================
 
-' @description Raise a ProjectError-based exception.
+'@label:throw-error
+'@sub-title Raise a ProjectError-based exception
+'@details
+'Wrapper around Err.Raise that standardises the source to CLASS_NAME.
+'@param errNumber Long. The ProjectError code to raise.
+'@param message String. Human-readable description of the failure.
+'@throws ProjectError. Always raises the specified error.
 Private Sub ThrowError(ByVal errNumber As Long, ByVal message As String)
     Err.Raise CLng(errNumber), CLASS_NAME, message
 End Sub
 
 '@section Interface Implementation
 '===============================================================================
+'@description Delegated members satisfying the ISpatialTables contract.
+'See the corresponding Private members above for full documentation.
 
 Private Property Get ISpatialTables_Exists(ByVal varName As String) As Boolean
     ISpatialTables_Exists = Exists(varName)
