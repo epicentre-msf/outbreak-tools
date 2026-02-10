@@ -171,6 +171,7 @@ End Property
 'flag. True indicates that all three arguments were resolved against
 'the dictionary and the lookup/value variables share the same sheet.
 '@return Boolean. True when parsing and dictionary lookups succeeded.
+'@export
 Public Property Get Valid() As Boolean
     EnsureParsed
     Valid = this.valid
@@ -182,6 +183,7 @@ End Property
 'Returns the converted expression with the sheet name and column
 'indices resolved. Returns vbNullString when the formula is invalid.
 '@return String. Converted expression; vbNullString when invalid.
+'@export
 Public Property Get ConvertedFormula() As String
     EnsureParsed
     ConvertedFormula = this.converted
@@ -193,6 +195,7 @@ End Property
 'Returns a human-readable explanation of the validation failure.
 'Returns vbNullString when the formula is valid.
 '@return String. Description; vbNullString for valid formulas.
+'@export
 Public Property Get FailureReason() As String
     EnsureParsed
     FailureReason = this.failureReason
@@ -204,6 +207,7 @@ End Property
 'Returns the worksheet name where the lookup and value variables
 'reside. Available only after successful parsing.
 '@return String. Sheet name or vbNullString when unavailable.
+'@export
 Public Property Get LookupSheetName() As String
     EnsureParsed
     LookupSheetName = this.lookupSheet
@@ -215,6 +219,7 @@ End Property
 'Returns the 1-based column index of the lookup variable within the
 'dictionary. Zero when the formula is invalid.
 '@return Long. Lookup column index; zero when the formula is invalid.
+'@export
 Public Property Get LookupColumnIndex() As Long
     EnsureParsed
     LookupColumnIndex = this.lookupColumnIndex
@@ -226,6 +231,7 @@ End Property
 'Returns the 1-based column index of the value variable within the
 'dictionary. Zero when the formula is invalid.
 '@return Long. Value column index; zero when the formula is invalid.
+'@export
 Public Property Get ValueColumnIndex() As Long
     EnsureParsed
     ValueColumnIndex = this.valueColumnIndex
