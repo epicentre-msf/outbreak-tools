@@ -16,6 +16,21 @@ Attribute VB_Exposed = False
 Option Explicit
 Implements IVarWriter
 
+'@class VarWriter
+'@description
+'Writes a single dictionary variable to one or more linelist worksheets.
+'For HList layers the writer targets the main sheet, a printed companion,
+'and a CRF companion; for VList layers only the main sheet is written.
+'Each invocation of WriteVariable applies label text, number formatting,
+'formulas, dropdown choices, data validation, and conditional formatting
+'to the resolved cell range. The class caches dictionary, variables, and
+'sheets accessors for performance across repeated calls.
+'@depends ILinelistSpecs, ILLdictionary, ILLVariables, ILLSheets, ILLFormat,
+'ITranslationObject, IFormulaData, IFormulas, IDropdownLists, ILLGeo,
+'Formulas, LLVariables, LLSheets, BetterArray
+'@version 1.0 (2026-02-10)
+'@author OutbreakTools
+
 Private Type TVarWriter
     layer As Byte
     specs As ILinelistSpecs
@@ -38,17 +53,27 @@ Private Const CLASS_NAME As String = "VarWriter"
 Private Const HLIST_START_ROW As Long = 8
 Private Const VLIST_START_COL As Long = 5
 
-'@section Factory
+'@section Instantiation
 '===============================================================================
 
-'@description Create a new VarWriter for the given layer and dependencies.
-'@param layer VarWriterLayer enum value (HList=1, VList=2). Use Byte for macOS compatibility.
-'@param specs The linelist specifications object providing dictionary, format, translations, etc.
-'@param wksh The target main worksheet.
-'@param printWksh Optional printed companion worksheet (HList only).
-'@param crfWksh Optional CRF companion worksheet (HList only).
-'@param dropdownObj Optional dropdown lists manager.
-'@param customDropdownObj Optional custom dropdown lists manager (for choice_custom).
+'@label:create
+'@sub-title Create a new VarWriter for the given layer and dependencies
+'@details
+'Factory method that instantiates and configures a VarWriter. The caller
+'must supply a valid ILinelistSpecs and target Worksheet at minimum.
+'Optional parameters allow attaching printed and CRF companion worksheets
+'(used only for HList layers) and dropdown list managers. Raises an error
+'if specs or wksh is Nothing.
+'@param layer Byte. VarWriterLayer enum value (HList=1, VList=2). Use Byte for macOS compatibility.
+'@param specs ILinelistSpecs. The linelist specifications object providing dictionary, format, translations, etc.
+'@param wksh Worksheet. The target main worksheet.
+'@param printWksh Optional Worksheet. Printed companion worksheet (HList only). Defaults to Nothing.
+'@param crfWksh Optional Worksheet. CRF companion worksheet (HList only). Defaults to Nothing.
+'@param dropdownObj Optional IDropdownLists. Dropdown lists manager. Defaults to Nothing.
+'@param customDropdownObj Optional IDropdownLists. Custom dropdown lists manager (for choice_custom). Defaults to Nothing.
+'@return IVarWriter. A fully initialised writer bound to the given layer and worksheets.
+'@throws VBA.vbObjectError + 516 if specs or wksh is Nothing.
+'@export
 Public Function Create(ByVal layer As Byte, _
                        ByVal specs As ILinelistSpecs, _
                        ByVal wksh As Worksheet, _
@@ -72,44 +97,74 @@ Public Function Create(ByVal layer As Byte, _
     End With
 End Function
 
+'@label:self
+'@prop-title Return the current instance cast to the IVarWriter interface
+'@details
+'Used by the factory pattern so that the With New block can return an
+'interface-typed reference instead of the concrete class.
+'@return IVarWriter. The current instance.
 Public Property Get Self() As IVarWriter
     Set Self = Me
 End Property
 
-'@section Internal setters (used by factory only)
+'@section Internal Setters
+'@description Properties used by the factory only during instantiation.
 '===============================================================================
 
+'@label:internal-specs
+'@prop-title Assign the linelist specifications object
 Public Property Set InternalSpecs(ByVal specs As ILinelistSpecs)
     Set this.specs = specs
 End Property
 
+'@label:internal-wksh
+'@prop-title Assign the target main worksheet
 Public Property Set InternalWksh(ByVal wksh As Worksheet)
     Set this.wksh = wksh
 End Property
 
+'@label:internal-layer
+'@prop-title Assign the writer layer (HList or VList)
 Public Property Let InternalLayer(ByVal layer As Byte)
     this.layer = layer
 End Property
 
+'@label:internal-print-wksh
+'@prop-title Assign the printed companion worksheet
 Public Property Set InternalPrintWksh(ByVal wksh As Worksheet)
     Set this.printWksh = wksh
 End Property
 
+'@label:internal-crf-wksh
+'@prop-title Assign the CRF companion worksheet
 Public Property Set InternalCRFWksh(ByVal wksh As Worksheet)
     Set this.crfWksh = wksh
 End Property
 
+'@label:internal-dropdown
+'@prop-title Assign the dropdown lists manager
 Public Property Set InternalDropdown(ByVal dropdownObj As IDropdownLists)
     Set this.dropdown = dropdownObj
 End Property
 
+'@label:internal-custom-dropdown
+'@prop-title Assign the custom dropdown lists manager
 Public Property Set InternalCustomDropdown(ByVal dropdownObj As IDropdownLists)
     Set this.customDropdown = dropdownObj
 End Property
 
-'@section Cached accessors
+'@section Cached Accessors
+'@description Lazy-loaded accessors for frequently used dependency objects.
 '===============================================================================
 
+'@label:dictionary
+'@prop-title Return the cached dictionary object
+'@details
+'Lazily loads the ILLdictionary from specs on first access and caches it
+'in the TVarWriter UDT. Subsequent calls return the cached instance
+'without re-querying specs, which improves performance when writing many
+'variables in sequence.
+'@return ILLdictionary. The linelist dictionary.
 Private Property Get Dictionary() As ILLdictionary
     If this.cachedDict Is Nothing Then
         Set this.cachedDict = this.specs.Dictionary()
@@ -117,6 +172,13 @@ Private Property Get Dictionary() As ILLdictionary
     Set Dictionary = this.cachedDict
 End Property
 
+'@label:variables
+'@prop-title Return the cached variables helper
+'@details
+'Creates an LLVariables wrapper around the dictionary on first access.
+'The wrapper provides convenient lookup methods such as Value and Contains
+'that are used throughout the writer.
+'@return ILLVariables. The variables helper object.
 Private Property Get Variables() As ILLVariables
     If this.cachedVars Is Nothing Then
         Set this.cachedVars = LLVariables.Create(Dictionary())
@@ -124,6 +186,13 @@ Private Property Get Variables() As ILLVariables
     Set Variables = this.cachedVars
 End Property
 
+'@label:sheets-object
+'@prop-title Return the cached sheets helper
+'@details
+'Creates an LLSheets wrapper around the dictionary on first access.
+'The wrapper provides VariableAddress and SheetInfo lookups used when
+'building conditional-formatting formulas and resolving table anchors.
+'@return ILLSheets. The sheets helper object.
 Private Property Get SheetsObject() As ILLSheets
     If this.cachedSheets Is Nothing Then
         Set this.cachedSheets = LLSheets.Create(Dictionary())
@@ -131,30 +200,64 @@ Private Property Get SheetsObject() As ILLSheets
     Set SheetsObject = this.cachedSheets
 End Property
 
+'@label:design-format
+'@prop-title Return the design format object from specs
+'@details
+'Delegates directly to specs.DesignFormat on every call because the
+'format object is lightweight and does not benefit from caching.
+'@return ILLFormat. The design format provider.
 Private Property Get DesignFormat() As ILLFormat
     Set DesignFormat = this.specs.DesignFormat()
 End Property
 
+'@label:trans
+'@prop-title Return the translation object from specs
+'@details
+'Delegates directly to specs.TransObject on every call. Used to fetch
+'translated UI messages such as MSG_Calculated and MSG_CustomChoice.
+'@return ITranslationObject. The translation provider.
 Private Property Get Trans() As ITranslationObject
     Set Trans = this.specs.TransObject()
 End Property
 
+'@label:formula-data-obj
+'@prop-title Return the formula data object from specs
+'@details
+'Delegates directly to specs.FormulaDataObject on every call. Provides
+'the lookup tables and metadata needed by the Formulas parser.
+'@return IFormulaData. The formula data provider.
 Private Property Get FormulaDataObj() As IFormulaData
     Set FormulaDataObj = this.specs.FormulaDataObject()
 End Property
 
-'@section Value lookup
+'@section Value Lookup
 '===============================================================================
 
-'@description Read a dictionary column value for the current variable.
+'@label:value-of
+'@prop-title Read a dictionary column value for the current variable
+'@details
+'Looks up the value stored in the specified dictionary column for the
+'variable that was most recently passed to WriteVariable. This is the
+'primary way all other methods retrieve variable metadata such as labels,
+'types, formats, and control information.
+'@param colName String. The dictionary column name to look up.
+'@return String. The column value for the current variable.
+'@export
 Public Property Get ValueOf(ByVal colName As String) As String
     ValueOf = Variables().Value(colName:=colName, varName:=this.varName)
 End Property
 
-'@section Cell range resolution
+'@section Cell Range Resolution
 '===============================================================================
 
-'@description Get the main cell range for the current variable.
+'@label:var-range
+'@prop-title Resolve the main cell range for the current variable
+'@details
+'Computes the target cell from the column index dictionary value and the
+'layer-specific start position. For HList the cell is in a column at
+'HLIST_START_ROW + 1; for VList it is in a row at VLIST_START_COL. The
+'result is cached until WriteVariable resets it for the next variable.
+'@return Range. The main cell range, or Nothing if the index is invalid.
 Private Property Get VarRange() As Range
     If this.cachedRange Is Nothing Then
         Dim idx As Long
@@ -170,7 +273,13 @@ Private Property Get VarRange() As Range
     Set VarRange = this.cachedRange
 End Property
 
-'@description Get the printed companion cell range (HList only).
+'@label:var-print-range
+'@prop-title Resolve the printed companion cell range (HList only)
+'@details
+'Returns the cell on the printed companion worksheet that corresponds to
+'the current variable. Uses the same column index as VarRange but targets
+'the printWksh. Returns Nothing when no printed worksheet is attached.
+'@return Range. The printed companion cell range, or Nothing.
 Private Property Get VarPrintRange() As Range
     If this.cachedPrintRange Is Nothing Then
         If Not this.printWksh Is Nothing Then
@@ -182,7 +291,13 @@ Private Property Get VarPrintRange() As Range
     Set VarPrintRange = this.cachedPrintRange
 End Property
 
-'@description Get the CRF companion cell range (HList only).
+'@label:var-crf-range
+'@prop-title Resolve the CRF companion cell range (HList only)
+'@details
+'Returns the cell on the CRF companion worksheet at the row specified by
+'the "crf index" dictionary value. Returns Nothing when no CRF worksheet
+'is attached or when the crf index is zero or missing.
+'@return Range. The CRF companion cell range, or Nothing.
 Private Property Get VarCRFRange() As Range
     If this.cachedCRFRange Is Nothing Then
         If Not this.crfWksh Is Nothing Then
@@ -199,10 +314,18 @@ Private Property Get VarCRFRange() As Range
     Set VarCRFRange = this.cachedCRFRange
 End Property
 
-'@section Main entry point
+'@section Entry Point
 '===============================================================================
 
-'@description Write one variable to the target worksheet(s).
+'@label:write-variable
+'@sub-title Write one variable to the target worksheet(s)
+'@details
+'Main public method called once per variable. It stores the variable name,
+'resets the cached cell ranges, then dispatches to WriteMainSheet. For
+'HList layers it additionally dispatches to WritePrintSheet and
+'WriteCRFSheet for the companion worksheets.
+'@param varName String. The variable name as it appears in the dictionary.
+'@export
 Public Sub WriteVariable(ByVal varName As String)
     this.varName = varName
 
@@ -221,10 +344,17 @@ Public Sub WriteVariable(ByVal varName As String)
     End If
 End Sub
 
-'@section Main sheet writing
+'@section Sheet Dispatch
 '===============================================================================
 
-'@description Write variable data to the main worksheet.
+'@label:write-main-sheet
+'@sub-title Dispatch all writing steps for the main worksheet
+'@details
+'Orchestrates the sequence of writing operations on the main worksheet:
+'label, formula, type formatting, choices, validation, and conditional
+'formatting. The exact set of conditional formatting steps depends on
+'the active layer (HList applies geo, standard, and unique formatting;
+'VList applies standard formatting only).
 Private Sub WriteMainSheet()
     AddLabel
     AddFormula
@@ -248,13 +378,23 @@ Private Sub WriteMainSheet()
     End If
 End Sub
 
-'@description Write variable label to the printed companion sheet (HList only).
+'@label:write-print-sheet
+'@sub-title Write variable label to the printed companion sheet (HList only)
+'@details
+'Delegates to AddLabel with usePrinted=True so that the label is written
+'to the printed companion worksheet instead of the main sheet. Exits
+'silently when no printed worksheet is attached.
 Private Sub WritePrintSheet()
     If this.printWksh Is Nothing Then Exit Sub
     AddLabel usePrinted:=True
 End Sub
 
-'@description Write variable data to the CRF companion sheet (HList only).
+'@label:write-crf-sheet
+'@sub-title Write variable data to the CRF companion sheet (HList only)
+'@details
+'Resolves the CRF cell range and delegates to AddCRFLabel, AddCRFType,
+'and AddCRFChoices. Exits silently when no CRF worksheet is attached or
+'when the variable has no CRF index.
 Private Sub WriteCRFSheet()
     If this.crfWksh Is Nothing Then Exit Sub
     Dim crfRng As Range
@@ -266,10 +406,19 @@ Private Sub WriteCRFSheet()
     AddCRFChoices crfRng
 End Sub
 
-'@section AddLabel
+'@section Label Writing
 '===============================================================================
 
-'@description Write the variable label, sublabel, name, notes, control info, and format.
+'@label:add-label
+'@sub-title Write variable label, sublabel, name, notes, and formatting
+'@details
+'Writes the main label, sublabel, variable name, notes, control info, and
+'design formatting to the target cell range. For HList layers this includes
+'header cells, named ranges for table anchors, comments for notes, hidden
+'control rows, geo-specific formatting, editable labels, and column hiding.
+'For VList layers the layout is row-based with adjacent cells for control
+'info and label formatting.
+'@param usePrinted Optional Boolean. When True, writes to the printed companion range instead of the main range. Defaults to False.
 Private Sub AddLabel(Optional ByVal usePrinted As Boolean = False)
     Dim varMainLab As String
     Dim varName As String
@@ -440,10 +589,16 @@ Private Sub AddLabel(Optional ByVal usePrinted As Boolean = False)
     End If
 End Sub
 
-'@section AddType
+'@section Type Formatting
 '===============================================================================
 
-'@description Apply number format based on variable type and format.
+'@label:add-type
+'@sub-title Apply Excel number format based on variable type and format
+'@details
+'Reads the variable type (text, date, decimal, integer) and optional
+'format string from the dictionary, then sets the NumberFormat property
+'on the main cell range. Supports built-in formats such as round, percentage,
+'euros, and dollars as well as custom format strings.
 Private Sub AddType()
     Dim varTypes As String
     Dim varFormat As String
@@ -508,10 +663,17 @@ Private Sub AddType()
     End Select
 End Sub
 
-'@section AddFormula
+'@section Formula Application
 '===============================================================================
 
-'@description Parse and apply formula/case_when/choice_formula to the variable cell.
+'@label:add-formula
+'@sub-title Parse and apply a formula to the variable cell
+'@details
+'Handles formula, case_when, and choice_formula control types. Parses the
+'control details string through the Formulas class, validates the result,
+'and writes the Excel formula to the cell. If the parsed formula fails a
+'test application it is replaced with a failure placeholder string. Also
+'applies calculated-formula design formatting to the cell and its header.
 Private Sub AddFormula()
     Dim varForm As String
     Dim excelForm As String
@@ -550,10 +712,19 @@ Private Sub AddFormula()
     End If
 End Sub
 
-'@section AddChoices
+'@section Choice Setup
 '===============================================================================
 
-'@description Set up dropdown validation for choice/list/geo variables.
+'@label:add-choices
+'@sub-title Set up dropdown validation for choice, list, and geo variables
+'@details
+'Handles choice_manual, choice_multiple, choice_custom, list_auto, and geo1
+'control types. For each type it populates a BetterArray of categories,
+'registers them with the appropriate IDropdownLists manager, and calls
+'SetValidation to apply dropdown data validation to the cell. The
+'choice_custom branch additionally creates a hyperlink from the label cell
+'to the dropdown worksheet and adds a return link. The geo1 branch sets up
+'admin1 through admin4 dropdown cascades.
 Private Sub AddChoices()
     Dim varControl As String
     Dim dropName As String
@@ -701,10 +872,17 @@ Private Sub AddChoices()
                        showError:=(varControl <> "choice_multiple")
 End Sub
 
-'@section AddValidation
+'@section Data Validation
 '===============================================================================
 
-'@description Add min/max data validation to the variable cell.
+'@label:add-validation
+'@sub-title Add min/max data validation to the variable cell
+'@details
+'Reads min and max values from the dictionary, converts them to Excel
+'validation formulas via the ExcelFormula helper, and applies whole-number,
+'date, or decimal validation with the configured alert style. Both OS-local
+'and standard formula variants are attempted to ensure cross-platform
+'compatibility. Text variables are skipped.
 Private Sub AddValidation()
     Dim varMin As String
     Dim varMax As String
@@ -793,10 +971,17 @@ Private Sub AddValidation()
     End With
 End Sub
 
-'@section Conditional formatting
+'@section Conditional Formatting
 '===============================================================================
 
-'@description Add expression-based conditional formatting.
+'@label:add-conditional-formatting
+'@sub-title Add expression-based conditional formatting
+'@details
+'Reads the formatting condition variable name from the dictionary, resolves
+'its address, and adds an xlExpression format condition that highlights the
+'cell when the condition variable equals 1. The interior colour, font
+'colour, bold, and italic properties are copied from the formatting values
+'cell in the dictionary.
 Private Sub AddConditionalFormatting()
     Dim varValid As String
     Dim cellRng As Range
@@ -828,7 +1013,13 @@ Private Sub AddConditionalFormatting()
     End With
 End Sub
 
-'@description Add unique/duplicate conditional formatting (HList only).
+'@label:add-unique-conditional-formatting
+'@sub-title Add unique/duplicate conditional formatting (HList only)
+'@details
+'When the dictionary marks a variable with unique=yes, adds a duplicate-
+'values format condition that highlights duplicate entries with a red
+'interior. This is typically used for patient IDs or other fields that
+'must be unique across records.
 Private Sub AddUniqueConditionalFormatting()
     Dim varUnique As String
     Dim cellRng As Range
@@ -844,7 +1035,13 @@ Private Sub AddUniqueConditionalFormatting()
     End With
 End Sub
 
-'@description Add geo pcode conditional formatting (HList only).
+'@label:add-geo-conditional-formatting
+'@sub-title Add geo pcode conditional formatting (HList only)
+'@details
+'For geo-type variables, adds a format condition that highlights the cell
+'in orange when the corresponding pcode variable is empty but the geo
+'variable itself is not. This alerts users that a geographic name was
+'entered but the pcode lookup failed.
 Private Sub AddGeoConditionalFormatting()
     Dim varValid As String
     Dim cellRng As Range
@@ -875,10 +1072,17 @@ Private Sub AddGeoConditionalFormatting()
     End With
 End Sub
 
-'@section CRF companion writing
+'@section CRF Companion
 '===============================================================================
 
-'@description Write CRF label for the current variable.
+'@label:add-crf-label
+'@sub-title Write CRF label for the current variable
+'@details
+'Writes the main label and sublabel to the CRF row, applies main-label
+'and sublabel character formatting, and hides the row for formula-based
+'or hidden variables. Also sets the table anchor named range on the first
+'CRF row.
+'@param crfRng Range. The target cell on the CRF companion worksheet.
 Private Sub AddCRFLabel(ByVal crfRng As Range)
     Dim design As ILLFormat
     Dim varMainLab As String
@@ -922,7 +1126,14 @@ Private Sub AddCRFLabel(ByVal crfRng As Range)
     crfRng.EntireRow.Hidden = hiddenRow
 End Sub
 
-'@description Apply CRF-specific type formatting.
+'@label:add-crf-type
+'@sub-title Apply CRF-specific type formatting
+'@details
+'Maps the variable type and format to a CRF design scope constant (such
+'as CRFText, CRFDate, CRFDecimal) and applies the corresponding visual
+'format to the CRF cell. Skips choice_manual variables because their
+'formatting is handled by AddCRFChoices instead.
+'@param crfRng Range. The target cell on the CRF companion worksheet.
 Private Sub AddCRFType(ByVal crfRng As Range)
     Dim varTypes As String
     Dim varFormat As String
@@ -974,7 +1185,14 @@ Private Sub AddCRFType(ByVal crfRng As Range)
     design.ApplyFormat crfRng, scope:=CByte(scope), nbDecimals:=nbDecimals
 End Sub
 
-'@description Write CRF choice headers and values.
+'@label:add-crf-choices
+'@sub-title Write CRF choice headers and value cells
+'@details
+'For choice_manual variables, retrieves the short-label categories from
+'specs, writes optional column headers above the CRF row, and applies
+'CRFChoiceValues formatting to each value cell. The headers are only
+'written when the "crf choices" dictionary value is "yes".
+'@param crfRng Range. The target cell on the CRF companion worksheet.
 Private Sub AddCRFChoices(ByVal crfRng As Range)
     Dim choiceHeader As String
     Dim cat As BetterArray
@@ -1011,10 +1229,19 @@ Private Sub AddCRFChoices(ByVal crfRng As Range)
     Next
 End Sub
 
-'@section Formula helpers
+'@section Formula Helpers
 '===============================================================================
 
-'@description Test if a formula fails when applied to a cell.
+'@label:failed-formula
+'@sub-title Test if a formula fails when applied to a cell
+'@details
+'Writes the formula to cell A1 of the main worksheet as a test. If the
+'assignment raises an error the function returns True, indicating the
+'formula is invalid. The cell is cleared after the test regardless of
+'outcome. Application.DisplayAlerts is temporarily suppressed during
+'the test.
+'@param frmName String. The Excel formula expression to test (without leading equals sign).
+'@return Boolean. True if the formula raised an error, False otherwise.
 Private Function FailedFormula(ByVal frmName As String) As Boolean
     Dim sh As Worksheet
     Dim prevAlert As Boolean
@@ -1037,7 +1264,18 @@ Fail:
     Application.DisplayAlerts = prevAlert
 End Function
 
-'@description Convert a formula value to an Excel-compatible format for validation.
+'@label:excel-formula
+'@sub-title Convert a formula value to an Excel-compatible format for validation
+'@details
+'Parses the given formula string through the Formulas class, optionally
+'converts it to an OS-local formula via OSFormula, and then converts the
+'result to the appropriate VBA type (CInt, CDate, or CLng) based on the
+'validation type when no formula literals are present. Returns Empty if
+'the formula is invalid or fails the FailedFormula test.
+'@param formVal String. The raw formula value from the dictionary (e.g. a min or max expression).
+'@param validationTypes Long. The Excel validation type constant (xlValidateWholeNumber, xlValidateDate, or xlValidateDecimal).
+'@param useOS Optional Boolean. When True, converts the formula to OS-local format via OSFormula. Defaults to False.
+'@return Variant. The converted formula value, or Empty if invalid.
 Private Function ExcelFormula(ByVal formVal As String, _
                               ByVal validationTypes As Long, _
                               Optional ByVal useOS As Boolean = False) As Variant
@@ -1078,7 +1316,16 @@ Private Function ExcelFormula(ByVal formVal As String, _
     End If
 End Function
 
-'@description Convert formula to OS-specific formula (handles macOS FormulaLocal).
+'@label:os-formula
+'@sub-title Convert a formula to OS-specific local format
+'@details
+'On macOS with VList layers, returns the formula as-is because FormulaLocal
+'is unreliable. On Windows or for HList layers, temporarily writes the
+'formula to cell A1, reads back FormulaLocal, and restores the previous
+'cell content. This ensures validation formulas use the correct locale-
+'aware separator characters.
+'@param formVal String. The Excel formula expression to convert.
+'@return String. The OS-local formula string.
 Private Function OSFormula(ByVal formVal As String) As String
     Dim sh As Worksheet
     Dim prevForm As String
@@ -1106,14 +1353,23 @@ Private Function OSFormula(ByVal formVal As String) As String
     End If
 End Function
 
-'@section Error handling
+'@section Error Handling
 '===============================================================================
 
+'@label:throw-error
+'@sub-title Raise a descriptive VBA error from this class
+'@details
+'Raises a custom VBA error with number vbObjectError + 516 and the
+'class name as the source. Called by Create when required arguments are
+'Nothing.
+'@param errorMessage String. The error description to include in the raised error.
+'@throws VBA.vbObjectError + 516 always.
 Private Sub ThrowError(ByVal errorMessage As String)
     Err.Raise VBA.vbObjectError + 516, CLASS_NAME, "Error : " & errorMessage
 End Sub
 
-'@section Interface implementation
+'@section Interface Implementation
+'@description Delegated members satisfying the IVarWriter contract.
 '===============================================================================
 
 Private Sub IVarWriter_WriteVariable(ByVal varName As String)
