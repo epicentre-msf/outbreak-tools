@@ -31,8 +31,8 @@ Implements ILinelist
 '`With New Linelist`.
 '@depends ILinelistSpecs, ILLdictionary, ITranslationObject, IMain,
 '  IPasswords, ILLFormat, ITemporaryRepos, ICodeTransfer, IHiddenNames,
-'  IButtons, IDropdownLists, ICustomPivotTables, DropdownLists,
-'  CustomPivotTables, TemporaryRepos, HiddenNames, Buttons, CodeTransfer,
+'  IButtons, IDropdownLists, ICustomPivotTable, DropdownLists,
+'  CustomPivotTable, TemporaryRepos, HiddenNames, Buttons, CodeTransfer,
 '  BetterArray, LinelistSpecConstants
 '@version 1.0 (2026-02-09)
 '@author Yves Amevoin
@@ -204,17 +204,17 @@ End Property
 '@label:pivots
 '@prop-title Pivot tables manager for the output workbook
 '@details
-'Returns an ICustomPivotTables instance backed by the translated custom
+'Returns an ICustomPivotTable instance backed by the translated custom
 'pivot table sheet in the output workbook.
-'@return ICustomPivotTables. The pivot tables manager.
+'@return ICustomPivotTable. The pivot tables manager.
 '@export
-Public Property Get Pivots() As ICustomPivotTables
+Public Property Get Pivots() As ICustomPivotTable
     Dim sh As Worksheet
     Dim trans As ITranslationObject
 
     Set trans = this.specs.TransObject
     Set sh = Wksh(trans.TranslatedValue("LLSHEET_CustomPivotTable"))
-    Set Pivots = CustomPivotTables.Create(sh)
+    Set Pivots = CustomPivotTable.Create(sh)
 End Property
 
 '@label:sheet-exists
@@ -853,7 +853,7 @@ Private Property Get ILinelist_Dropdown(Optional ByVal scope As Byte = 1) As IDr
     Set ILinelist_Dropdown = Dropdown(scope)
 End Property
 
-Private Property Get ILinelist_Pivots() As ICustomPivotTables
+Private Property Get ILinelist_Pivots() As ICustomPivotTable
     Set ILinelist_Pivots = Pivots
 End Property
 

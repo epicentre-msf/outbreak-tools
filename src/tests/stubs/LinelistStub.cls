@@ -55,7 +55,7 @@ Private Property Get ILinelist_Dropdown(Optional ByVal scope As Byte = 1) As IDr
     Set ILinelist_Dropdown = Nothing
 End Property
 
-Private Property Get ILinelist_Pivots() As ICustomPivotTables
+Private Property Get ILinelist_Pivots() As ICustomPivotTable
     Set ILinelist_Pivots = Nothing
 End Property
 
