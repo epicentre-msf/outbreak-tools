@@ -13,9 +13,19 @@ Attribute VB_Description = "WithEvents wrapper for export command buttons"
 '@PredeclaredId
 '@Folder("DataIO")
 '@ModuleDescription("WithEvents wrapper for export command buttons")
-'@depends ILLExporter, LLExporter, IApplicationState, ApplicationState, IOSFiles, OSFiles
 
 Option Explicit
+
+'@class ExportButton
+'@description
+'WithEvents wrapper that listens to an MSForms.CommandButton on a linelist
+'export sheet and performs a custom export when clicked. The factory wires
+'the button, an optional filter checkbox, and translation/workbook
+'references. On click, RunExport selects a folder, optionally confirms
+'filter usage, then delegates to LLExporter.ExportCustom. There is no
+'interface file because instances are held alive solely by their WithEvents
+'binding.
+'@depends ILLExporter, LLExporter, IApplicationState, ApplicationState, IOSFiles, OSFiles
 
 
 '@section Constants
@@ -43,13 +53,21 @@ Private this As TExportButton
 '@section Factory
 '===============================================================================
 
-' @description Create an export button wrapper.
-' @param sourceWkb Workbook. The linelist workbook.
-' @param trads ITranslationObject. Translations for messages.
-' @param expBtn MSForms.CommandButton. The button to listen to.
-' @param expChk MSForms.CheckBox. Optional filter checkbox.
-' @return ExportButton wired to the button.
-' @export
+'@label:create
+'@sub-title Create an export button wrapper
+'@details
+'Factory method that validates the workbook, translations, and button are
+'not Nothing, then wires the WithEvents binding and optional filter
+'checkbox. Called on the predeclared instance. Returns the concrete class
+'(not an interface) because callers hold a reference to keep the
+'WithEvents binding alive.
+'@param sourceWkb Workbook. The linelist workbook.
+'@param trads ITranslationObject. Translations for user-facing messages.
+'@param expBtn MSForms.CommandButton. The button to listen to.
+'@param expChk Optional MSForms.CheckBox. Filter checkbox, or Nothing. Defaults to Nothing.
+'@return ExportButton. A wired instance ready to handle click events.
+'@throws vbObjectError When sourceWkb, trads, or expBtn is Nothing.
+'@export
 Public Function Create(ByVal sourceWkb As Workbook, _
                        ByVal trads As ITranslationObject, _
                        ByVal expBtn As MSForms.CommandButton, _
@@ -69,53 +87,91 @@ Public Function Create(ByVal sourceWkb As Workbook, _
 End Function
 
 
-'@section Public accessors
+'@section Public Accessors
 '===============================================================================
 
+'@label:self
+'@prop-title Current object instance
+'@return ExportButton. The current instance.
 Public Property Get Self() As ExportButton
     Set Self = Me
 End Property
 
+'@label:source-workbook-set
+'@prop-title Assign the source linelist workbook
+'@param wb Workbook. The workbook to store.
 Public Property Set SourceWorkbook(ByVal wb As Workbook)
     Set this.sourceWkb = wb
 End Property
 
+'@label:translations-set
+'@prop-title Assign the translations object
+'@param trads ITranslationObject. The translations to store.
 Public Property Set Translations(ByVal trads As ITranslationObject)
     Set this.trads = trads
 End Property
 
+'@label:push-button-set
+'@prop-title Wire the WithEvents button binding
+'@param expBtn MSForms.CommandButton. The button to listen to.
 Public Property Set PushButton(ByVal expBtn As MSForms.CommandButton)
     Set Btn = expBtn
 End Property
 
+'@label:filter-checkbox-set
+'@prop-title Assign the optional filter checkbox
+'@param expChk MSForms.CheckBox. The checkbox to bind.
 Public Property Set FilterCheckBox(ByVal expChk As MSForms.CheckBox)
     Set chkFilt = expChk
 End Property
 
-' @description Export number derived from button name (e.g. CMDExport1 -> 1).
+'@label:export-number
+'@prop-title Export number derived from button name
+'@details
+'Parses the button Name property by removing the NAMETAG prefix
+'("CMDExport") and converting the remainder to Long. For example,
+'"CMDExport1" yields 1, "CMDExport3" yields 3.
+'@return Long. The 1-based export number.
+'@export
 Public Property Get ExportNumber() As Long
     ExportNumber = CLng(Replace(Btn.Name, NAMETAG, vbNullString))
 End Property
 
-' @description Whether the filter checkbox is checked.
+'@label:use-filter
+'@prop-title Whether the filter checkbox is checked
+'@details
+'Returns the current value of the filter checkbox. Returns False when
+'no checkbox was bound.
+'@return Boolean. True when the filter checkbox is checked.
+'@export
 Public Property Get UseFilter() As Boolean
     If Not chkFilt Is Nothing Then UseFilter = chkFilt.Value
 End Property
 
+'@label:use-filter-set
+'@prop-title Set the filter checkbox value
+'@param value Boolean. True to check, False to uncheck.
 Public Property Let UseFilter(ByVal value As Boolean)
     If Not chkFilt Is Nothing Then chkFilt.Value = value
 End Property
 
 
-'@section Event handler
+'@section Event Handler
 '===============================================================================
 
+'@label:btn-click
+'@sub-title Handle button click event
 Private Sub Btn_Click()
     RunExport
 End Sub
 
-' @description Perform a custom export.
-' Selects a folder, prepares filters if needed, delegates to LLExporter.
+'@label:run-export
+'@sub-title Perform a custom export
+'@details
+'Prompts the user to select a folder via OSFiles, applies busy state,
+'optionally confirms filter usage via MsgBox, then delegates to
+'LLExporter.ExportCustom. On error, displays a translated error message
+'and closes any orphaned output workbook.
 Private Sub RunExport()
 
     Dim exporter As ILLExporter
@@ -166,16 +222,23 @@ ErrHand:
 End Sub
 
 
-'@section Private helpers
+'@section Private Helpers
 '===============================================================================
 
-' @description Get a translated message value.
+'@label:translated-value
+'@sub-title Get a translated message value
+'@param msgCode String. The message code to translate.
+'@return String. The translated message text.
 Private Function TranslatedValue(ByVal msgCode As String) As String
     TranslatedValue = this.trads.TranslatedValue(msgCode)
 End Function
 
-' @description Sync filtered data sheets before a filtered export.
-' Copies HList data to companion filtered sheets, removing hidden rows.
+'@label:update-filtered-data
+'@sub-title Sync filtered data sheets before a filtered export
+'@details
+'Copies HList data to companion filtered sheets and removes hidden or
+'empty rows, ensuring the filtered export reflects the user current
+'filter state.
 Private Sub UpdateFilteredData()
 
     Dim sh As Worksheet
@@ -239,7 +302,13 @@ ErrUpdate:
            vbCritical + vbOKOnly
 End Sub
 
-' @description Raise a class-level exception.
+'@label:throw-error
+'@sub-title Raise a class-level exception
+'@details
+'Raises a VBA error using vbObjectError + 516, standardising the source
+'to CLASS_NAME.
+'@param message String. Human-readable description of the failure.
+'@throws vbObjectError Always raises the error.
 Private Sub ThrowError(ByVal message As String)
     Err.Raise VBA.vbObjectError + 516, CLASS_NAME, message
 End Sub

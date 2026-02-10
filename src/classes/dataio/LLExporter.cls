@@ -13,11 +13,20 @@ Attribute VB_Description = "Linelist data export operations"
 '@PredeclaredId
 '@Folder("DataIO")
 '@ModuleDescription("Linelist data export operations")
-'@depends ILLExporter, ILLdictionary, ILLExport, IPasswords, ILLTranslations
-'@depends ICustomTable, IDataSheet, IShowHideManager, IAnaTabIds, ILLGeo, ILLChoices
 
 Option Explicit
 Implements ILLExporter
+
+'@class LLExporter
+'@description
+'Exports linelist data into standalone workbooks for distribution. Supports
+'four export modes: custom filtered exports (ExportCustom), full migration
+'exports (ExportMigration), analysis-only exports (ExportAnalysis), and
+'geobase exports (ExportGeo). Each mode builds a temporary output workbook,
+'populates it with the relevant data, metadata, and formatting, then saves
+'and closes it. Consumers interact through the ILLExporter interface.
+'@depends ILLdictionary, ILLExport, IPasswords, ILLTranslations, ICustomTable
+'@depends IDataSheet, IShowHideManager, IAnaTabIds, ILLGeo, ILLChoices
 
 
 '@section Constants
@@ -64,10 +73,16 @@ Private this As TLLExporter
 '@section Factory
 '===============================================================================
 
-' @description Create an exporter from the source linelist workbook.
-' @param sourceWkb Workbook. The linelist workbook containing the data to export.
-' @return ILLExporter ready for export operations.
-' @export
+'@label:create
+'@sub-title Create an exporter from the source linelist workbook
+'@details
+'Factory method that validates the workbook is not Nothing, then constructs
+'and returns a new LLExporter instance through the ILLExporter interface.
+'Called on the predeclared instance.
+'@param sourceWkb Workbook. The linelist workbook containing the data to export.
+'@return ILLExporter. A fully initialised instance ready for export operations.
+'@throws ProjectError.ObjectNotInitialized When the workbook is Nothing.
+'@export
 Public Function Create(ByVal sourceWkb As Workbook) As ILLExporter
 
     If sourceWkb Is Nothing Then
@@ -82,30 +97,60 @@ Public Function Create(ByVal sourceWkb As Workbook) As ILLExporter
 End Function
 
 
-'@section Public accessors
+'@section Public Accessors
 '===============================================================================
 
+'@label:self
+'@prop-title Current object instance
+'@return ILLExporter. The current instance cast to the interface.
 Public Property Get Self() As ILLExporter
     Set Self = Me
 End Property
 
+'@label:source-workbook
+'@prop-title Source linelist workbook
+'@return Workbook. The linelist workbook bound to this exporter.
 Public Property Get SourceWorkbook() As Workbook
     Set SourceWorkbook = this.sourceWkb
 End Property
 
+'@label:source-workbook-set
+'@prop-title Assign the source linelist workbook
+'@param wb Workbook. The workbook to store.
 Public Property Set SourceWorkbook(ByVal wb As Workbook)
     Set this.sourceWkb = wb
 End Property
 
+'@label:last-export-password
+'@prop-title Password used in the last export operation
+'@details
+'Returns the password applied to the most recent custom export, or an
+'empty string when no password was used. Modules display this value to
+'the user after a successful export so they can share it securely.
+'@return String. The password, or vbNullString.
+'@export
 Public Property Get LastExportPassword() As String
     LastExportPassword = this.lastPassword
 End Property
 
 
-'@section Export methods
+'@section Export Methods
 '===============================================================================
 
-' @description Export a custom export (export 1, 2, 3, etc.).
+'@label:export-custom
+'@sub-title Export a numbered custom export definition
+'@details
+'Creates an output workbook containing filtered data, optional metadata
+'sheets, and optional analysis sheets according to the export definition
+'identified by exportNumber on the Exports sheet. Removes p-codes and
+'personal identifiers if configured, prepares a temp dictionary, sorts it,
+'then populates the output workbook with data sheets and formatting.
+'Saves the workbook with an optional password and returns the file path.
+'@param exportNumber Long. Which export definition to use (1-based).
+'@param folderPath String. Target folder for the saved file.
+'@param useFilters Optional Boolean. When True, exports filtered HList data. Defaults to False.
+'@return String. Saved file path, or vbNullString on failure.
+'@export
 Public Function ExportCustom(ByVal exportNumber As Long, _
                              ByVal folderPath As String, _
                              Optional ByVal useFilters As Boolean = False) As String
@@ -208,7 +253,18 @@ Public Function ExportCustom(ByVal exportNumber As Long, _
     ExportCustom = filePath
 End Function
 
-' @description Export all data for migration.
+'@label:export-migration
+'@sub-title Export all data for migration to another linelist
+'@details
+'Creates an output workbook with full unfiltered data, metadata sheets,
+'dictionary, choices, translations, and metadata tags for re-import.
+'Optionally includes show/hide state with column widths. No password is
+'applied. Returns the saved file path.
+'@param folderPath String. Target folder for the saved file.
+'@param includeShowHide Optional Boolean. When True, includes show/hide state. Defaults to False.
+'@param keepLabels Optional Boolean. When True, marks editable labels for update on import. Defaults to False.
+'@return String. Saved file path, or vbNullString on failure.
+'@export
 Public Function ExportMigration(ByVal folderPath As String, _
                                 Optional ByVal includeShowHide As Boolean = False, _
                                 Optional ByVal keepLabels As Boolean = False) As String
@@ -278,7 +334,16 @@ Public Function ExportMigration(ByVal folderPath As String, _
     ExportMigration = filePath
 End Function
 
-' @description Export analysis worksheets only.
+'@label:export-analysis
+'@sub-title Export analysis worksheets only
+'@details
+'Creates an output workbook containing only the four analysis sheets
+'(univariate, time series, spatial, spatio-temporal) with their values,
+'formatting, and graphs. No data or metadata sheets are included. Saves
+'as xlsx without password.
+'@param folderPath String. Target folder for the saved file.
+'@return String. Saved file path, or vbNullString on failure.
+'@export
 Public Function ExportAnalysis(ByVal folderPath As String) As String
 
     Dim outwb As Workbook
@@ -318,7 +383,17 @@ Public Function ExportAnalysis(ByVal folderPath As String) As String
     ExportAnalysis = filePath
 End Function
 
-' @description Export geobase data to a separate workbook.
+'@label:export-geo
+'@sub-title Export geobase data to a separate workbook
+'@details
+'Creates an output workbook and delegates to LLGeo.ExportToFile to write
+'the geobase data. When onlyHistoric is True, exports only the historic
+'subset. The file name includes a date stamp and optionally a "_historic"
+'suffix.
+'@param folderPath String. Target folder for the saved file.
+'@param onlyHistoric Optional Boolean. When True, exports only the historic geobase. Defaults to False.
+'@return String. Saved file path, or vbNullString on failure.
+'@export
 Public Function ExportGeo(ByVal folderPath As String, _
                            Optional ByVal onlyHistoric As Boolean = False) As String
 
@@ -349,7 +424,12 @@ Public Function ExportGeo(ByVal folderPath As String, _
     ExportGeo = filePath
 End Function
 
-' @description Close all output workbooks still open.
+'@label:close-all
+'@sub-title Close all output workbooks that may still be open
+'@details
+'Closes any output workbook left open after an export error, preventing
+'orphaned minimized windows. Safe to call even when no workbook is open.
+'@export
 Public Sub CloseAll()
     On Error Resume Next
     If Not this.activeWkb Is Nothing Then
@@ -360,49 +440,70 @@ Public Sub CloseAll()
 End Sub
 
 
-'@section Private - Source object accessors
+'@section Private - Source Object Accessors
 '===============================================================================
 
-' @description Get a dictionary from the source workbook.
+'@label:source-dictionary
+'@sub-title Get a dictionary from the source workbook
+'@param nbExp Long. Number of export columns to configure.
+'@return ILLdictionary. Dictionary instance from the Dictionary sheet.
 Private Function SourceDictionary(ByVal nbExp As Long) As ILLdictionary
     Set SourceDictionary = LLdictionary.Create( _
         this.sourceWkb.Worksheets(DICTIONARYSHEET), 1, 1, nbExp)
 End Function
 
-' @description Get the export configuration from the source workbook.
+'@label:export-object
+'@sub-title Get the export configuration from the source workbook
+'@return ILLExport. Export configuration from the Exports sheet.
 Private Function ExportObject() As ILLExport
     Set ExportObject = LLExport.Create(this.sourceWkb.Worksheets(EXPORTSHEET))
 End Function
 
-' @description Get passwords from the source workbook.
+'@label:passwords-object
+'@sub-title Get passwords from the source workbook
+'@return IPasswords. Passwords instance from the __pass sheet.
 Private Function PasswordsObject() As IPasswords
     Set PasswordsObject = Passwords.Create(this.sourceWkb.Worksheets(PASSWORDSHEET))
 End Function
 
-' @description Get LLTranslations from the source workbook.
+'@label:translations-object
+'@sub-title Get translations from the source workbook
+'@return ILLTranslations. Translations from LinelistTranslation and Translations sheets.
 Private Function TranslationsObject() As ILLTranslations
     Set TranslationsObject = LLTranslations.Create( _
         this.sourceWkb.Worksheets(MESSTRANSLATIONSHEET), _
         this.sourceWkb.Worksheets(DICTTRANSLATIONSHEET))
 End Function
 
-' @description Get the geo object from the source workbook.
+'@label:geo-object
+'@sub-title Get the geo object from the source workbook
+'@return ILLGeo. Geo instance from the Geo sheet.
 Private Function GeoObject() As ILLGeo
     Set GeoObject = LLGeo.Create(this.sourceWkb.Worksheets(GEOSHEET))
 End Function
 
 
-'@section Private - Output workbook management
+'@section Private - Output Workbook Management
 '===============================================================================
 
-' @description Create a new minimized output workbook.
+'@label:create-output-workbook
+'@sub-title Create a new minimized output workbook
+'@return Workbook. The newly created workbook.
 Private Function CreateOutputWorkbook() As Workbook
     Set this.activeWkb = Workbooks.Add
     ActiveWindow.WindowState = xlMinimized
     Set CreateOutputWorkbook = this.activeWkb
 End Function
 
-' @description Save and close the output workbook.
+'@label:save-workbook
+'@sub-title Save and close the output workbook
+'@details
+'Saves the workbook to the specified path with the given format and
+'optional password, then closes it without saving again.
+'@param outwb Workbook. The workbook to save.
+'@param filePath String. Full path including file name and extension.
+'@param fileFormat Long. Excel file format constant (xlOpenXMLWorkbook or xlExcel12).
+'@param password String. Password to apply, or vbNullString for none.
 Private Sub SaveWorkbook(ByVal outwb As Workbook, ByVal filePath As String, _
                          ByVal fileFormat As Long, ByVal password As String)
 
@@ -423,7 +524,12 @@ Private Sub SaveWorkbook(ByVal outwb As Workbook, ByVal filePath As String, _
     Set this.activeWkb = Nothing
 End Sub
 
-' @description Build a full file path from folder, name, and extension.
+'@label:build-file-path
+'@sub-title Build a full file path from folder, name, and extension
+'@param folderPath String. Target folder path.
+'@param fileName String. File name without extension.
+'@param fileExt String. File extension without dot.
+'@return String. The assembled file path.
 Private Function BuildFilePath(ByVal folderPath As String, ByVal fileName As String, _
                                ByVal fileExt As String) As String
     Dim cleanPath As String
@@ -438,10 +544,19 @@ Private Function BuildFilePath(ByVal folderPath As String, ByVal fileName As Str
 End Function
 
 
-'@section Private - Dictionary preparation
+'@section Private - Dictionary Preparation
 '===============================================================================
 
-' @description Remove p-codes variables from a custom export if configured.
+'@label:remove-pcodes
+'@sub-title Remove p-codes variables from a custom export if configured
+'@details
+'Checks the export configuration for "include p-codes". When set to "no",
+'clears the export column cells for all dictionary rows whose main label
+'matches a geo p-code or geo concat tag.
+'@param dict ILLdictionary. The source dictionary.
+'@param expObj ILLExport. The export configuration.
+'@param exportNumber Long. Which export definition to check.
+'@param expName String. The export column name (e.g. "export 1").
 Private Sub RemovePCodes(ByVal dict As ILLdictionary, ByVal expObj As ILLExport, _
                          ByVal exportNumber As Long, ByVal expName As String)
 
@@ -470,7 +585,16 @@ Private Sub RemovePCodes(ByVal dict As ILLdictionary, ByVal expObj As ILLExport,
     Next counter
 End Sub
 
-' @description Remove personal identifiers from a custom export if configured.
+'@label:remove-personal-identifiers
+'@sub-title Remove personal identifiers from a custom export if configured
+'@details
+'Checks the export configuration for "include personal identifiers". When
+'set to "no", clears the export column cells for all dictionary rows
+'flagged as personal identifiers.
+'@param dict ILLdictionary. The source dictionary.
+'@param expObj ILLExport. The export configuration.
+'@param exportNumber Long. Which export definition to check.
+'@param expName String. The export column name.
 Private Sub RemovePersonalIdentifiers(ByVal dict As ILLdictionary, ByVal expObj As ILLExport, _
                                       ByVal exportNumber As Long, ByVal expName As String)
 
@@ -492,8 +616,16 @@ Private Sub RemovePersonalIdentifiers(ByVal dict As ILLdictionary, ByVal expObj 
     Next counter
 End Sub
 
-' @description Write dictionary data to the temp sheet for export processing.
-' When fullExport is False, filters on the export column name.
+'@label:prepare-temp-dictionary
+'@sub-title Write dictionary data to the temp sheet for export processing
+'@details
+'When fullExport is True, copies the entire dictionary. When False,
+'filters on the export column name to include only rows assigned to that
+'export. Writes the result to the temp__ sheet and adds a blue font tag
+'to mark the dictionary as prepared.
+'@param dict ILLdictionary. The source dictionary.
+'@param expName String. The export column name to filter on, or vbNullString for full.
+'@param fullExport Boolean. When True, copies the entire dictionary unfiltered.
 Private Sub PrepareTempDictionary(ByVal dict As ILLdictionary, _
                                   ByVal expName As String, _
                                   ByVal fullExport As Boolean)
@@ -522,13 +654,19 @@ Private Sub PrepareTempDictionary(ByVal dict As ILLdictionary, _
     expDictRng.Cells(expDictRng.Rows.count + 1, 1).Font.Color = vbBlue
 End Sub
 
-' @description Create an export dictionary from the temp sheet.
+'@label:export-dictionary-from-temp
+'@sub-title Create an export dictionary from the temp sheet
+'@param nbExp Long. Number of export columns.
+'@return ILLdictionary. Dictionary built from the temp__ sheet.
 Private Function ExportDictionaryFromTemp(ByVal nbExp As Long) As ILLdictionary
     Set ExportDictionaryFromTemp = LLdictionary.Create( _
         this.sourceWkb.Worksheets(TEMPSHEET), 1, 1, nbExp)
 End Function
 
-' @description Sort the export dictionary by table name and export column.
+'@label:sort-export-dictionary
+'@sub-title Sort the export dictionary by table name and export column
+'@param expDict ILLdictionary. The dictionary to sort.
+'@param expName String. The export column name to use as secondary sort key.
 Private Sub SortExportDictionary(ByVal expDict As ILLdictionary, ByVal expName As String)
     Dim rng As Range
     Set rng = expDict.DataRange(includeHeaders:=True)
@@ -539,10 +677,14 @@ Private Sub SortExportDictionary(ByVal expDict As ILLdictionary, ByVal expName A
 End Sub
 
 
-'@section Private - Metadata and sheets
+'@section Private - Metadata and Sheets
 '===============================================================================
 
-' @description Add Metadata, Choices, and Translations sheets to the output workbook.
+'@label:add-metadata-sheets
+'@sub-title Add Metadata, Choices, and Translations sheets to the output workbook
+'@param outwb Workbook. The output workbook.
+'@param dict ILLdictionary. The source dictionary.
+'@param nbExp Long. Number of export columns.
 Private Sub AddMetadataSheets(ByVal outwb As Workbook, ByVal dict As ILLdictionary, _
                               ByVal nbExp As Long)
 
@@ -563,7 +705,15 @@ Private Sub AddMetadataSheets(ByVal outwb As Workbook, ByVal dict As ILLdictiona
     Next counter
 End Sub
 
-' @description Add the dictionary to the output workbook.
+'@label:add-dictionary
+'@sub-title Add the dictionary to the output workbook
+'@details
+'Exports the dictionary filtered by exportColumn, then marks the output
+'dictionary as prepared with a blue font tag.
+'@param outwb Workbook. The output workbook.
+'@param dict ILLdictionary. The source dictionary.
+'@param nbExp Long. Number of export columns.
+'@param exportColumn String. The export column to filter on, or "__all__".
 Private Sub AddDictionary(ByVal outwb As Workbook, ByVal dict As ILLdictionary, _
                           ByVal nbExp As Long, ByVal exportColumn As String)
 
@@ -579,7 +729,13 @@ Private Sub AddDictionary(ByVal outwb As Workbook, ByVal dict As ILLdictionary, 
     outDictRng.Cells(outDictRng.Rows.count + 1, 1).Font.Color = vbBlue
 End Sub
 
-' @description Add custom dropdowns to the Choices sheet in the output workbook.
+'@label:add-custom-dropdowns
+'@sub-title Add custom dropdowns to the Choices sheet in the output workbook
+'@details
+'Reads custom dropdown ListObjects from the source workbook custom
+'dropdown sheet and adds each one to the output Choices sheet. Silently
+'exits when no custom dropdown sheet exists.
+'@param outwb Workbook. The output workbook.
 Private Sub AddCustomDropdowns(ByVal outwb As Workbook)
     Dim lltrads As ILLTranslations
     Dim choi As ILLChoices
@@ -606,7 +762,17 @@ Private Sub AddCustomDropdowns(ByVal outwb As Workbook)
     Next lo
 End Sub
 
-' @description Add metadata tags to the Metadata sheet in the output workbook.
+'@label:add-metadata-tags
+'@sub-title Add metadata tags to the Metadata sheet in the output workbook
+'@details
+'Appends export_type, export_date, editable_labels, show_hide, and
+'epiweekstart tags to the Metadata sheet variable/value table. These tags
+'control import behaviour when the exported file is re-imported.
+'@param outwb Workbook. The output workbook.
+'@param scope Byte. ExportScope value (ExportScopeCustom or ExportScopeMigration).
+'@param exportNumber Long. The export number for custom exports.
+'@param includeShowHide Boolean. When True, tags show_hide as "update on import".
+'@param keepLabels Boolean. When True, tags editable_labels as "update on import".
 Private Sub AddMetadataTags(ByVal outwb As Workbook, ByVal scope As Byte, _
                             ByVal exportNumber As Long, _
                             ByVal includeShowHide As Boolean, _
@@ -653,8 +819,14 @@ Private Sub AddMetadataTags(ByVal outwb As Workbook, ByVal scope As Byte, _
     varRng.Cells(rowOffset + 5, 2).Value = epiWeekStart
 End Sub
 
-' @description Export show/hide state with column widths to the output workbook.
-' Creates a ListObject on a show_hide__ sheet with 5 columns.
+'@label:add-show-hide
+'@sub-title Export show/hide state with column widths to the output workbook
+'@details
+'Creates a show_hide__ sheet in the output workbook with a ListObject
+'containing layer, field_key, header_text, hidden_flag, and column_width
+'columns. For each data sheet, creates a ShowHideManager per applicable
+'layer (HList, Printed, VList) and exports the current visibility state.
+'@param outwb Workbook. The output workbook.
 Private Sub AddShowHide(ByVal outwb As Workbook)
 
     Dim outsh As Worksheet
@@ -739,8 +911,13 @@ NextSheet:
     On Error GoTo 0
 End Sub
 
-' @description Import current user overrides from the show_hide__ ListObject.
-' This ensures the exported show/hide reflects the user's actual choices.
+'@label:import-current-show-hide
+'@sub-title Import current user overrides from the show_hide__ ListObject
+'@details
+'Reads the show_hide__ sheet from the source workbook and imports the
+'user visibility plan into the ShowHideManager, ensuring the exported
+'show/hide reflects the user actual choices.
+'@param shm IShowHideManager. The manager to populate.
 Private Sub ImportCurrentShowHide(ByVal shm As IShowHideManager)
     Dim showHideSh As Worksheet
     Dim lo As ListObject
@@ -757,7 +934,15 @@ Private Sub ImportCurrentShowHide(ByVal shm As IShowHideManager)
     shm.ImportPlan lo
 End Sub
 
-' @description Add analysis worksheets to the output workbook.
+'@label:add-analysis-sheets
+'@sub-title Add analysis worksheets to the output workbook
+'@details
+'Copies values and formats from the four analysis sheets (univariate,
+'time series, spatial, spatio-temporal) in the source workbook to new
+'sheets in the output workbook. Removes gridlines and writes graph
+'objects via AnaTabIds.
+'@param outwb Workbook. The output workbook.
+'@param afterSheetName String. Name of the sheet to insert after.
 Private Sub AddAnalysisSheets(ByVal outwb As Workbook, ByVal afterSheetName As String)
 
     Dim lltrads As ILLTranslations
@@ -808,10 +993,21 @@ Private Sub AddAnalysisSheets(ByVal outwb As Workbook, ByVal afterSheetName As S
 End Sub
 
 
-'@section Private - Data export
+'@section Private - Data Export
 '===============================================================================
 
-' @description Add data to each output sheet from source HList/VList worksheets.
+'@label:add-data-sheets
+'@sub-title Add data to each output sheet from source HList/VList worksheets
+'@details
+'Iterates over the unique sheet names in the export dictionary, reads data
+'from the corresponding source sheet, and writes it to the output sheet.
+'For HList sheets, delegates to CustomTable.Export. For VList sheets,
+'delegates to ExportVListData. Applies formatting to each output sheet.
+'@param outwb Workbook. The output workbook.
+'@param expDict ILLdictionary. The export dictionary with variable assignments.
+'@param useLabels Boolean. When True, writes label row above data headers.
+'@param startLine Long. Data start row (2 when labels are on row 1).
+'@param useFilters Boolean. When True, reads from filtered companion sheets.
 Private Sub AddDataSheets(ByVal outwb As Workbook, ByVal expDict As ILLdictionary, _
                           ByVal useLabels As Boolean, ByVal startLine As Long, _
                           ByVal useFilters As Boolean)
@@ -867,7 +1063,16 @@ Private Sub AddDataSheets(ByVal outwb As Workbook, ByVal expDict As ILLdictionar
     Next counter
 End Sub
 
-' @description Export VList data (variable/value pairs) to the output sheet.
+'@label:export-vlist-data
+'@sub-title Export VList data (variable/value pairs) to the output sheet
+'@details
+'Writes variable names and their values as rows. When useLabels is True,
+'replaces variable names with their labels.
+'@param inpsh Worksheet. The source VList worksheet.
+'@param outsh Worksheet. The output worksheet.
+'@param headersList BetterArray. Variable names to export.
+'@param useLabels Boolean. When True, writes labels instead of variable names.
+'@param startLine Long. Column offset for data start.
 Private Sub ExportVListData(ByVal inpsh As Worksheet, ByVal outsh As Worksheet, _
                             ByVal headersList As BetterArray, _
                             ByVal useLabels As Boolean, ByVal startLine As Long)
@@ -906,10 +1111,16 @@ Private Sub ExportVListData(ByVal inpsh As Worksheet, ByVal outsh As Worksheet, 
 End Sub
 
 
-'@section Private - Formatting helpers
+'@section Private - Formatting Helpers
 '===============================================================================
 
-' @description Apply standard formatting to an output data sheet.
+'@label:format-output-sheet
+'@sub-title Apply standard formatting to an output data sheet
+'@details
+'Sets row heights, column widths, font, header styling, and auto-fits
+'columns. Wrapped in error handling to prevent failures on protected
+'or special sheets.
+'@param outsh Worksheet. The worksheet to format.
 Private Sub FormatOutputSheet(ByVal outsh As Worksheet)
     On Error Resume Next
     With outsh
@@ -927,7 +1138,9 @@ Private Sub FormatOutputSheet(ByVal outsh As Worksheet)
     On Error GoTo 0
 End Sub
 
-' @description Remove gridlines from an analysis output sheet.
+'@label:remove-gridlines
+'@sub-title Remove gridlines from an analysis output sheet
+'@param sh Worksheet. The worksheet to update.
 Private Sub RemoveGridLines(ByVal sh As Worksheet)
     Dim View As WorksheetView
 
@@ -943,17 +1156,25 @@ Private Sub RemoveGridLines(ByVal sh As Worksheet)
 End Sub
 
 
-'@section Private - Error handling
+'@section Private - Error Handling
 '===============================================================================
 
-' @description Raise a ProjectError-based exception.
+'@label:throw-error
+'@sub-title Raise a ProjectError-based exception
+'@details
+'Wrapper around Err.Raise that standardises the source to CLASS_NAME.
+'@param errNumber ProjectError. The error code to raise.
+'@param message String. Human-readable description of the failure.
+'@throws ProjectError.<varies> Always raises the specified error.
 Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal message As String)
     Err.Raise CLng(errNumber), CLASS_NAME, message
 End Sub
 
 
-'@section Interface implementation
+'@section Interface Implementation
 '===============================================================================
+'@description Delegated members satisfying the ILLExporter contract.
+'See the corresponding members above for full documentation.
 
 Private Function ILLExporter_ExportCustom(ByVal exportNumber As Long, _
                                           ByVal folderPath As String, _
