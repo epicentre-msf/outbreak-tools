@@ -17,6 +17,19 @@ Attribute VB_Description = "Spatial analysis table management"
 Option Explicit
 Implements ILLSpatial
 
+'@class LLSpatial
+'@description
+'Manages the spatial analysis tables that aggregate filtered linelist data
+'by geographic admin level and health facility. The spatial sheet contains
+'a "listofgeovars" ListObject that lists which variables have spatial
+'tables, and one ListObject per admin level per variable (named
+'"spatial_adm1_varname" etc.) holding aggregated values, formula columns,
+'and attack rate columns. This class populates those tables from filtered
+'companion sheets, sorts them by formula or attack rate, and retrieves
+'ranked values for use in analyses and graphs.
+'@depends BetterArray
+
+
 '@section State
 '===============================================================================
 
@@ -34,9 +47,18 @@ Private Const HF As String = "hf"
 '@section Factory
 '===============================================================================
 
-' @description Create a new LLSpatial instance from the spatial tables worksheet.
-' @param sh The spatial tables worksheet (must be named "spatial_tables__")
-' @return ILLSpatial interface pointer
+'@label:create
+'@sub-title Create a new LLSpatial instance from the spatial tables worksheet
+'@details
+'Factory method that validates the supplied worksheet meets requirements
+'(must be named "spatial_tables__" and contain the "listofgeovars"
+'ListObject), then returns a new instance through the ILLSpatial
+'interface. Called on the predeclared instance.
+'@param sh Worksheet. The spatial tables worksheet.
+'@return ILLSpatial. A fully initialised instance ready for use.
+'@throws ProjectError.ObjectNotInitialized When the worksheet is Nothing.
+'@throws ProjectError.InvalidArgument When the worksheet name is not "spatial_tables__".
+'@export
 Public Function Create(ByVal sh As Worksheet) As ILLSpatial
     CheckRequirements sh
 
@@ -46,14 +68,26 @@ Public Function Create(ByVal sh As Worksheet) As ILLSpatial
     End With
 End Function
 
+'@label:self
+'@prop-title Current object instance
+'@details
+'Convenience accessor so consuming code can fluently retrieve the
+'interface reference from the predeclared Create method.
+'@return ILLSpatial. The current instance cast to the interface.
 Public Property Get Self() As ILLSpatial
     Set Self = Me
 End Property
 
+'@label:wksh
+'@prop-title Spatial tables worksheet
+'@return Worksheet. The backing spatial tables worksheet.
 Public Property Get Wksh() As Worksheet
     Set Wksh = this.sh
 End Property
 
+'@label:wksh-set
+'@prop-title Assign the spatial tables worksheet
+'@param sh Worksheet. The worksheet to store.
 Public Property Set Wksh(ByVal sh As Worksheet)
     Set this.sh = sh
 End Property
@@ -61,13 +95,27 @@ End Property
 '@section Naming Conventions
 '===============================================================================
 
-' @description Build the header named range name for a spatial table.
+'@label:current-header-name
+'@prop-title Named range name for a spatial table header
+'@details
+'Builds the conventional named range name used to locate the header row
+'of a spatial table. The pattern is "tabl_{adminName}_{varName}".
+'@param varName String. The variable name component.
+'@param adminName String. The admin level component (e.g. "adm1", "hf").
+'@return String. The constructed named range name.
 Private Property Get CurrentHeaderName(ByVal varName As String, _
                                        ByVal adminName As String) As String
     CurrentHeaderName = "tabl_" & adminName & "_" & varName
 End Property
 
-' @description Build the ListObject name for a spatial table.
+'@label:current-lo-name
+'@prop-title ListObject name for a spatial table
+'@details
+'Builds the conventional ListObject name for a spatial table. The pattern
+'is "spatial_{adminName}_{varName}".
+'@param varName String. The variable name component.
+'@param adminName String. The admin level component (e.g. "adm1", "hf").
+'@return String. The constructed ListObject name.
 Private Property Get CurrentLoName(ByVal varName As String, _
                                    ByVal adminName As String) As String
     CurrentLoName = "spatial_" & adminName & "_" & varName
@@ -76,7 +124,16 @@ End Property
 '@section Exists
 '===============================================================================
 
-' @description Check if a variable name exists in the spatial variables list.
+'@label:exists
+'@sub-title Check if a variable name exists in the spatial variables list
+'@details
+'Searches the "listofgeovars" ListObject range for a partial match of the
+'supplied variable name using xlPart matching. Returns True when at least
+'one cell contains the variable name as a substring, indicating that
+'spatial analysis tables exist for this variable.
+'@param varName String. Variable name or partial name to look up.
+'@return Boolean. True when the variable is found in the list.
+'@export
 Private Function Exists(ByVal varName As String) As Boolean
     Dim listVarsRng As Range
     Set listVarsRng = Wksh().ListObjects("listofgeovars").Range
@@ -84,7 +141,14 @@ Private Function Exists(ByVal varName As String) As Boolean
                                    MatchCase:=True) Is Nothing)
 End Function
 
-' @description Check if a ListObject exists on the spatial sheet.
+'@label:lo-exists
+'@sub-title Check if a ListObject exists on the spatial sheet
+'@details
+'Attempts to retrieve the named ListObject from the spatial worksheet.
+'Returns True when the object is found, False otherwise. Uses error
+'trapping to handle the case where the name does not exist.
+'@param loName String. The ListObject name to check.
+'@return Boolean. True when the ListObject exists.
 Private Function LoExists(ByVal loName As String) As Boolean
     Dim Lo As ListObject
 
@@ -98,9 +162,18 @@ End Function
 '@section Update
 '===============================================================================
 
-' @description Update all spatial tables from HList filtered data.
-'              Iterates all HList worksheets, finds geo1/hf control columns,
-'              and populates the corresponding spatial ListObjects.
+'@label:update
+'@sub-title Update all spatial tables from HList filtered data
+'@details
+'Iterates all worksheets in the workbook looking for HList sheets. For
+'each HList sheet, locates its filtered companion sheet (from cell(1,5)),
+'then walks the variable columns looking for geo1 and hf control values.
+'When a geo1 column is found, extracts the concat column data from the
+'filtered companion and calls UpdateSpatialValue to populate the spatial
+'tables for all four admin levels. When an hf column is found, does the
+'same for the HF spatial table. After processing all sheets, recalculates
+'the spatial sheet so formula columns update.
+'@export
 Private Sub Update()
     Dim actsh As Worksheet
     Dim sh As Worksheet
@@ -186,8 +259,15 @@ End Sub
 '@section List of Variable Names
 '===============================================================================
 
-' @description Build a list of all spatial variable names matching a base name.
-'              Searches the "listofgeovars" ListObject for partial matches.
+'@label:list-of-existing-var-names
+'@sub-title Build a list of all spatial variable names matching a base name
+'@details
+'Searches the "listofgeovars" ListObject for all cells that partially
+'match the supplied variable name. Returns a BetterArray of the full
+'variable names found. The search progresses through the range by
+'narrowing it after each match to avoid finding the same cell again.
+'@param varName String. Base variable name to search for.
+'@return BetterArray. All matching spatial variable names.
 Private Function ListOfExistingVarNames(ByVal varName As String) As BetterArray
     Dim listRng As Range
     Dim cellRng As Range
@@ -219,9 +299,20 @@ End Function
 '@section Update Spatial Values
 '===============================================================================
 
-' @description Populate spatial ListObjects from a filtered input range.
-'              Extracts unique values, pastes into the spatial table, removes
-'              duplicates, resizes, and sorts by formula column.
+'@label:update-spatial-value
+'@sub-title Populate spatial ListObjects from a filtered input range
+'@details
+'For each matching variable name returned by ListOfExistingVarNames,
+'iterates admin levels 1 through 4 (or just HF when isHF is True). For
+'each admin level, pastes the input range values to a scratch column
+'(RNG_PastingCol), removes duplicates, clears the existing spatial table
+'data, pastes the deduplicated values into the ListObject first column,
+'resizes the table to fit, and sorts by the formula column in descending
+'order. The input range is shifted one column right for each admin level
+'to cascade through the concat columns.
+'@param inputRng Range. The filtered data range to extract values from.
+'@param inputVarName String. Base variable name to look up in the spatial list.
+'@param isHF Optional Boolean. True to update HF tables only, False for admin1-4. Defaults to False.
 Private Sub UpdateSpatialValue(ByVal inputRng As Range, _
                                ByVal inputVarName As String, _
                                Optional ByVal isHF As Boolean = False)
@@ -310,7 +401,17 @@ End Sub
 '@section Sort
 '===============================================================================
 
-' @description Sort spatial tables by formula value or attack rate for a given table id.
+'@label:sort
+'@sub-title Sort spatial tables by formula value or attack rate for a given table id
+'@details
+'Locates the spatial variable whose name partially matches tabId in the
+'"listofgeovars" list, then iterates admin1 through admin4 and sorts each
+'corresponding ListObject by either the formula column or the attack_rate
+'column in descending order. Silently skips tables that do not exist, have
+'no data body, or whose first column is empty.
+'@param tabId String. Table identifier used to locate the variable name via partial match.
+'@param onAR Optional Boolean. True to sort by attack_rate column, False for formula column. Defaults to False.
+'@export
 Private Sub Sort(ByVal tabId As String, Optional ByVal onAR As Boolean = False)
     Dim sortRng As Range
     Dim Lo As ListObject
@@ -353,7 +454,22 @@ End Sub
 '@section TopGeoValue / TopHFValue
 '===============================================================================
 
-' @description Get the value at a given rank from a sorted spatial geo table.
+'@label:top-geo-value
+'@prop-title Value at a given rank from a sorted spatial geo table
+'@details
+'Constructs the ListObject name from the admin name and variable name
+'(with tabId suffix), then retrieves the value at the requested rank
+'position. The concatValue parameter selects the column: 1 returns
+'the name column (first column), any other value returns the concat
+'column (third column). Returns an empty string when the table does
+'not exist, has no data, or the rank exceeds available rows.
+'@param adminName String. Admin level name ("adm1", "adm2", "adm3", or "adm4").
+'@param orderValue Long. Rank position in the sorted table (1-based).
+'@param inputVarName String. Base variable name.
+'@param tabId Optional String. Table identifier suffix appended to the variable name. Defaults to vbNullString.
+'@param concatValue Optional Byte. 1 for the name column, other values for the concat column. Defaults to 1.
+'@return String. The value at the requested rank, or empty string if not found.
+'@export
 Private Property Get TopGeoValue(ByVal adminName As String, _
                                  ByVal orderValue As Long, _
                                  ByVal inputVarName As String, _
@@ -383,7 +499,18 @@ Private Property Get TopGeoValue(ByVal adminName As String, _
     TopGeoValue = CStr(rng.Cells(orderValue, 1).Value)
 End Property
 
-' @description Get the value at a given rank from a sorted spatial HF table.
+'@label:top-hf-value
+'@prop-title Value at a given rank from a sorted spatial HF table
+'@details
+'Constructs the HF ListObject name from the variable name (with tabId
+'suffix), then retrieves the value at the requested rank position from
+'the first column. Returns an empty string when the table does not exist,
+'has no data, or the rank exceeds available rows.
+'@param orderValue Long. Rank position in the sorted table (1-based).
+'@param inputVarName String. Base variable name.
+'@param tabId Optional String. Table identifier suffix appended to the variable name. Defaults to vbNullString.
+'@return String. The value at the requested rank, or empty string if not found.
+'@export
 Private Property Get TopHFValue(ByVal orderValue As Long, _
                                 ByVal inputVarName As String, _
                                 Optional ByVal tabId As String = vbNullString) As String
@@ -410,7 +537,15 @@ End Property
 '@section Validation
 '===============================================================================
 
-' @description Validate that the worksheet is the spatial tables sheet.
+'@label:check-requirements
+'@sub-title Validate that the worksheet is the spatial tables sheet
+'@details
+'Guards the factory Create method by ensuring the worksheet is not
+'Nothing and its name matches the expected "spatial_tables__" constant.
+'Raises an error when either condition fails.
+'@param sh Worksheet. The worksheet to validate.
+'@throws ProjectError.ObjectNotInitialized When the worksheet is Nothing.
+'@throws ProjectError.InvalidArgument When the worksheet name does not match "spatial_tables__".
 Private Sub CheckRequirements(ByVal sh As Worksheet)
     If sh Is Nothing Then
         ThrowError ObjectNotInitialized, "Worksheet not provided"
@@ -425,13 +560,22 @@ End Sub
 '@section Error Handling
 '===============================================================================
 
-' @description Raise a ProjectError-based exception.
+'@label:throw-error
+'@sub-title Raise a ProjectError-based exception
+'@details
+'Wrapper around Err.Raise that standardises the source to CLASS_NAME,
+'providing a consistent stack trace across all methods in this class.
+'@param errNumber Long. The ProjectError error code to raise.
+'@param message String. Human-readable description of the failure.
+'@throws ProjectError.<varies> Always raises the specified error.
 Private Sub ThrowError(ByVal errNumber As Long, ByVal message As String)
     Err.Raise CLng(errNumber), CLASS_NAME, message
 End Sub
 
 '@section Interface Implementation
 '===============================================================================
+'@description Delegated members satisfying the ILLSpatial contract.
+'See the corresponding members above for full documentation.
 
 Private Property Get ILLSpatial_Exists(ByVal varName As String) As Boolean
     ILLSpatial_Exists = Exists(varName)
