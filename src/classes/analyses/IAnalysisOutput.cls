@@ -16,6 +16,14 @@ Attribute VB_Description = "Interface for analysis output orchestration"
 
 Option Explicit
 
+'@class IAnalysisOutput
+'@description
+'Defines the public contract for the AnalysisOutput class. Exposes a single
+'method that orchestrates the full analysis output pipeline: building
+'cross-tables, writing formulas, registering graphs, and rendering charts
+'across all analysis scopes.
+
+
 ' Scope for analysis worksheet selection
 Public Enum AnalysisScope
     AnalysisScopeTimeSeries = 1
@@ -24,5 +32,17 @@ Public Enum AnalysisScope
     AnalysisScopeSpatioTemporal = 4
 End Enum
 
-' @description Write all analysis tables, formulas, and graphs to the output worksheets
+
+'@section Methods
+'===============================================================================
+
+'@jump:write-analysis
+'@sub-title Write all analysis tables, formulas, and graphs to the output
+'@details
+'Orchestrates the complete analysis output pipeline. Iterates through
+'each analysis scope (normal, time series, spatial, spatio-temporal),
+'builds cross-tables from the table specifications, writes formulas via
+'CrossTableFormula, registers table and graph metadata in AnaTabIds,
+'and renders all tracked graphs on the output worksheets.
+'@export
 Public Sub WriteAnalysis(): End Sub
