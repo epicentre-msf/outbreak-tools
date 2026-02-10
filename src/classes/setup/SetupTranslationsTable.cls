@@ -19,6 +19,15 @@ Option Explicit
 
 Implements ISetupTranslationsTable
 
+'@class SetupTranslationsTable
+'@description
+'Manages a translations ListObject backed by a helper tag column and a
+'binary-search label cache. Synchronises translations from a watcher
+'registry, handles language column creation and promotion, removes
+'obsolete labels, reports missing and duplicate entries, and exports
+'the table to external workbooks. Uses HiddenNames for sequence
+'counters and formatting metadata persistence.
+
 '@section State and constants
 '===============================================================================
 Private Type TSetupTranslations
@@ -59,10 +68,12 @@ End Type
 
 '@section Factory helpers
 '===============================================================================
+'@label:create
 '@sub-title Create a configured translations table manager instance.
-'@param translationTable ListObject representing the translations table.
-'@param stateScope Optional scope guarding Excel state while updates run.
-'@return ISetupTranslationsTable ready to process registry updates.
+'@param translationTable ListObject. The managed translations table.
+'@param stateScope Optional IApplicationState. Guard for Excel settings during updates.
+'@return ISetupTranslationsTable. Ready to process registry updates.
+'@export
 Public Function Create(ByVal translationTable As ListObject, Optional ByVal stateScope As IApplicationState = Nothing) As ISetupTranslationsTable
     Dim instance As SetupTranslationsTable
 
@@ -74,6 +85,7 @@ Public Function Create(ByVal translationTable As ListObject, Optional ByVal stat
     Set Create = instance.Self
 End Function
 
+'@label:initialise-core
 '@sub-title Store the supplied table and optional scope inside the current instance.
 Public Sub InitialiseCore(ByVal translationTable As ListObject, Optional ByVal stateScope As IApplicationState = Nothing)
     With this
@@ -93,28 +105,33 @@ End Sub
 
 '@section Public configuration
 '===============================================================================
-'@sub-title Worksheet hosting the translations table.
+'@label:host-worksheet
+'@prop-title Worksheet hosting the translations table.
 Public Property Get HostWorksheet() As Worksheet
     ValidateInitialised
     Set HostWorksheet = this.table.Parent
 End Property
 
-'@sub-title Name of the managed translations listobject.
+'@label:table-name
+'@prop-title Name of the managed translations ListObject.
 Public Property Get TableName() As String
     ValidateInitialised
     TableName = this.table.Name
 End Property
 
-'@sub-title Self reference used by factories returning interface instances.
+'@label:self
+'@prop-title Self reference used by factories returning interface instances.
 Public Property Get Self() As ISetupTranslationsTable
     Set Self = Me
 End Property
 
+'@label:set-display-prompts
 '@sub-title Allow callers to toggle display prompts used during updates.
 Public Sub SetDisplayPrompts(ByVal state As Boolean)
     this.displayPrompts = state
 End Sub
 
+'@label:resolve-scope
 '@sub-title Guarded access to the application scope.
 Private Function ResolveScope() As IApplicationState
     If this.stateScope Is Nothing Then
@@ -127,6 +144,7 @@ End Function
 
 '@section Language management
 '===============================================================================
+'@label:ensure-languages
 '@sub-title Ensure all provided languages exist as table headers.
 Private Sub EnsureLanguages(Optional ByVal lang As String = vbNullString)
     ValidateInitialised
@@ -149,6 +167,8 @@ Private Sub EnsureLanguages(Optional ByVal lang As String = vbNullString)
     PersistLanguageList
 End Sub
 
+'@label:try-get-written-languages
+'@sub-title Collect language names written to the right of the table.
 Private Function TryGetWrittenLanguages(ByRef languages As String, ByVal newLang As String) As Boolean
 
     Dim cellRng As Range
@@ -172,6 +192,7 @@ Private Function TryGetWrittenLanguages(ByRef languages As String, ByVal newLang
     TryGetWrittenLanguages = (LenB(languages) <> 0)
 End Function
 
+'@label:ensure-language-column
 '@sub-title Create the language column when it does not exist.
 Private Sub EnsureLanguageColumn(ByVal languageName As String)
     Dim column As ListColumn
@@ -190,6 +211,7 @@ Private Sub EnsureLanguageColumn(ByVal languageName As String)
     End With
 End Sub
 
+'@label:persist-language-list
 '@sub-title Persist the available languages into the worksheet hidden names.
 Private Sub PersistLanguageList()
     Dim store As IHiddenNames
@@ -215,6 +237,7 @@ Private Sub PersistLanguageList()
     store.SetValue LANGUAGES_NAME_ID, buffer.ToString(Separator:=";", OpeningDelimiter:=vbNullString, ClosingDelimiter:=vbNullString)
 End Sub
 
+'@label:switch-default-language
 '@sub-title Promote the requested language column to become the primary language.
 Public Sub SwitchDefaultLanguage(ByVal languageName As String)
     Dim targetIndex As Long
@@ -252,6 +275,7 @@ CleanFail:
     ThrowProjectError ProjectError.SomethingWentWrong, "Failed to switch default language: " & Err.Description
 End Sub
 
+'@label:switchable-languages
 '@sub-title Retrieve the available languages excluding the default column.
 Public Function SwitchableLanguages() As BetterArray
     Dim languages As BetterArray
@@ -275,7 +299,8 @@ Public Function SwitchableLanguages() As BetterArray
     Set SwitchableLanguages = languages
 End Function
 
-'@sub-title Languages available for translation excluding the default column unless requested.
+'@label:languages
+'@prop-title Languages available for translation excluding the default column unless requested.
 Public Property Get Languages(Optional ByVal includeDefault As Boolean = False) As BetterArray
     Dim allLanguages As BetterArray
     Dim switchable As BetterArray
@@ -302,6 +327,7 @@ End Property
 
 '@section Language utilities
 '===============================================================================
+'@label:default-language-header
 '@sub-title Resolve the current default language header.
 Private Function DefaultLanguageHeader() As String
     Dim labelIndex As Long
@@ -317,6 +343,7 @@ Private Function DefaultLanguageHeader() As String
     On Error GoTo 0
 End Function
 
+'@label:language-column-index
 '@sub-title Resolve the column index for a provided language header.
 Private Function LanguageColumnIndex(ByVal languageName As String) As Long
     Dim trimmedName As String
@@ -335,6 +362,7 @@ Private Function LanguageColumnIndex(ByVal languageName As String) As Long
     Next columnIndex
 End Function
 
+'@label:resolve-language-column
 '@sub-title Resolve the data body range for a given language column.
 Private Function ResolveLanguageColumn(ByVal languageName As String) As Range
     Dim columnIndex As Long
@@ -350,6 +378,7 @@ Private Function ResolveLanguageColumn(ByVal languageName As String) As Range
     Set ResolveLanguageColumn = columnRange
 End Function
 
+'@label:swap-language-columns
 '@sub-title Swap the headers, data, and totals between two language columns.
 Private Sub SwapLanguageColumns(ByVal firstIndex As Long, ByVal secondIndex As Long)
     Dim firstColumn As ListColumn
@@ -411,6 +440,7 @@ Private Sub SwapLanguageColumns(ByVal firstIndex As Long, ByVal secondIndex As L
     Next rowIndex
 End Sub
 
+'@label:unique-temporary-header
 '@sub-title Generate a temporary header that does not collide with existing columns.
 Private Function UniqueTemporaryHeader() As String
     Dim candidate As String
@@ -425,6 +455,7 @@ Private Function UniqueTemporaryHeader() As String
     UniqueTemporaryHeader = candidate
 End Function
 
+'@label:swap-cell-contents
 '@sub-title Swap the formula and number format between two cells.
 Private Sub SwapCellContents(ByVal leftCell As Range, ByVal rightCell As Range)
     Dim tempFormula As Variant
@@ -442,6 +473,7 @@ End Sub
 
 '@section Registry processing
 '===============================================================================
+'@label:reset-sequence
 '@sub-title Reset the hidden update sequence counter to zero.
 Public Sub ResetSequence(ByVal registrySheet As Worksheet)
     ValidateInitialised
@@ -449,6 +481,7 @@ Public Sub ResetSequence(ByVal registrySheet As Worksheet)
     PersistCounterValue registrySheet, 0
 End Sub
 
+'@label:update-from-registry
 '@sub-title Update the translations table using the supplied registry sheet.
 Public Sub UpdateFromRegistry(ByVal registrySheet As Worksheet, _ 
                              Optional ByVal languages As String = vbNullString)
@@ -494,6 +527,7 @@ CleanFail:
     ThrowProjectError errNumb, "Failed to update translations: " & errDesc
 End Sub
 
+'@label:process-registry
 '@sub-title Iterate all registry tables and process each watcher row.
 Private Sub ProcessRegistry(ByVal registrySheet As Worksheet, ByVal updateSequence As Long)
     Dim registryTable As ListObject
@@ -503,7 +537,8 @@ Private Sub ProcessRegistry(ByVal registrySheet As Worksheet, ByVal updateSequen
     Next registryTable
 End Sub
 
-'@sub-title Process a single registry listobject.
+'@label:process-registry-table
+'@sub-title Process a single registry ListObject.
 Private Sub ProcessRegistryTable(ByVal registryTable As ListObject, ByVal updateSequence As Long)
     Dim rngName As String
     Dim status As String
@@ -554,6 +589,7 @@ Private Sub ProcessRegistryTable(ByVal registryTable As ListObject, ByVal update
     Next rowIndex
 End Sub
 
+'@label:should-process-range
 '@sub-title Determine whether the named range should be processed this cycle.
 Private Function ShouldProcessRange(ByVal status As String, ByVal updateSequence As Long) As Boolean
     If updateSequence = 1 Then
@@ -563,6 +599,7 @@ Private Function ShouldProcessRange(ByVal status As String, ByVal updateSequence
     End If
 End Function
 
+'@label:process-source-range
 '@sub-title Dispatch processing based on the requested translation mode.
 Private Sub ProcessSourceRange(ByVal sourceRange As Range, ByVal rngTag As String, ByVal mode As String)
     Select Case LCase$(Trim$(mode))
@@ -577,6 +614,7 @@ Private Sub ProcessSourceRange(ByVal sourceRange As Range, ByVal rngTag As Strin
     End Select
 End Sub
 
+'@label:process-text-range
 '@sub-title Add literal cell values to the translations table.
 Private Sub ProcessTextRange(ByVal sourceRange As Range, ByVal rngTag As String)
     Dim values As Variant
@@ -610,6 +648,7 @@ Private Sub ProcessTextRange(ByVal sourceRange As Range, ByVal rngTag As String)
     End If
 End Sub
 
+'@label:process-formula-range
 '@sub-title Extract quoted portions of formulas and add them as chunks.
 Private Sub ProcessFormulaRange(ByVal sourceRange As Range, ByVal rngTag As String)
     Dim formulas As Variant
@@ -655,6 +694,7 @@ Private Sub ProcessFormulaRange(ByVal sourceRange As Range, ByVal rngTag As Stri
     End If
 End Sub
 
+'@label:extract-formula-chunks
 '@sub-title Extract quoted text segments from a formula while handling escaped quotes.
 Private Function ExtractFormulaChunks(ByVal formulaText As String) As BetterArray
     Dim cleaned As String
@@ -684,6 +724,7 @@ End Function
 
 '@section Chunk management
 '===============================================================================
+'@label:add-chunk
 '@sub-title Add or update a translation chunk with caching support.
 Private Sub AddChunk(ByVal label As String, ByVal rngTag As String)
     Dim rowIndex As Long
@@ -710,6 +751,7 @@ Private Sub AddChunk(ByVal label As String, ByVal rngTag As String)
     End If
 End Sub
 
+'@label:cached-row-index
 '@sub-title Retrieve cached row index when the label exists.
 Private Function CachedRowIndex(ByVal label As String) As Long
     Dim cacheIndex As Long
@@ -722,6 +764,7 @@ Private Function CachedRowIndex(ByVal label As String) As Long
     End If
 End Function
 
+'@label:register-label-cache-entry
 '@sub-title Persist the label inside the cache for future lookups.
 Private Sub RegisterLabelCacheEntry(ByVal cacheIndex As Long, ByVal label As String, ByVal rowIndex As Long, ByVal replaceExisting As Boolean)
     Dim entry As Variant
@@ -750,6 +793,7 @@ Private Sub RegisterLabelCacheEntry(ByVal cacheIndex As Long, ByVal label As Str
     End If
 End Sub
 
+'@label:append-row
 '@sub-title Append a new list row and populate the mandatory cells.
 Private Function AppendRow(ByVal label As String, ByVal rngTag As String) As Long
     Dim newRow As ListRow
@@ -761,6 +805,7 @@ Private Function AppendRow(ByVal label As String, ByVal rngTag As String) As Lon
     AppendRow = newRow.Index
 End Function
 
+'@label:cache-row-at
 '@sub-title Retrieve the cached row index stored at a given cache position.
 Private Function CacheRowAt(ByVal cacheIndex As Long) As Long
     Dim entry As Variant
@@ -773,6 +818,7 @@ Private Function CacheRowAt(ByVal cacheIndex As Long) As Long
     CacheRowAt = CLng(entry(1))
 End Function
 
+'@label:locate-label-cache-index
 '@sub-title Locate the cache index for a label using binary search (also captures insertion index).
 Private Function LocateLabelCacheIndex(ByVal label As String, ByRef found As Boolean) As Long
     Dim low As Long
@@ -820,6 +866,7 @@ Private Function LocateLabelCacheIndex(ByVal label As String, ByRef found As Boo
     LocateLabelCacheIndex = low
 End Function
 
+'@label:set-tag-for-row
 '@sub-title Update the helper column with the latest tag for the given row.
 Private Sub SetTagForRow(ByVal rowIndex As Long, ByVal rngTag As String)
     Dim cell As Range
@@ -830,6 +877,7 @@ Private Sub SetTagForRow(ByVal rowIndex As Long, ByVal rngTag As String)
     cell.Value = rngTag
 End Sub
 
+'@label:ensure-cache
 '@sub-title Build or refresh the label cache from the current table state.
 Private Sub EnsureCache()
     Dim data As Range
@@ -870,6 +918,7 @@ Private Sub EnsureCache()
     End If
 End Sub
 
+'@label:reset-cache
 '@sub-title Clear the cached labels forcing the next EnsureCache to rebuild it.
 Private Sub ResetCache()
     Set this.labelCache = Nothing
@@ -880,6 +929,7 @@ End Sub
 
 '@section Process tracking
 '===============================================================================
+'@label:track-processed-range
 '@sub-title Track the ranges processed during the current registry cycle.
 Private Sub TrackProcessedRange(ByVal rngName As String)
     Dim trimmed As String
@@ -906,6 +956,7 @@ Private Sub TrackProcessedRange(ByVal rngName As String)
     this.processedRanges.Push trimmed
 End Sub
 
+'@label:was-range-processed
 '@sub-title Determine whether a registry range was processed during the active cycle.
 Private Function WasRangeProcessed(ByVal rngName As String) As Boolean
     Dim trimmed As String
@@ -923,11 +974,13 @@ Private Function WasRangeProcessed(ByVal rngName As String) As Boolean
     Next idx
 End Function
 
+'@label:reset-processed-ranges
 '@sub-title Reset processed ranges tracking.
 Private Sub ResetProcessedRanges()
     Set this.processedRanges = Nothing
 End Sub
 
+'@label:remove-obsolete-labels
 '@sub-title Remove labels that no longer exist in processed ranges.
 Private Sub RemoveObsoleteLabels(ByVal updateSequence As Long)
     Dim rowIndex As Long
@@ -1004,6 +1057,7 @@ Private Sub RemoveObsoleteLabels(ByVal updateSequence As Long)
     Loop
 End Sub
 
+'@label:delete-row-at
 '@sub-title Delete a row within the translations table when the index is valid.
 Private Sub DeleteRowAt(ByVal rowIndex As Long)
     Dim helperCell As Range
@@ -1023,6 +1077,7 @@ Private Sub DeleteRowAt(ByVal rowIndex As Long)
     this.table.ListRows(rowIndex).Delete
 End Sub
 
+'@label:parse-tag
 '@sub-title Parse helper tag text into its components.
 Private Function ParseTag(ByVal tagText As String, ByRef rangeName As String, ByRef sequenceValue As Long) As Boolean
     Dim parts() As String
@@ -1042,6 +1097,7 @@ Private Function ParseTag(ByVal tagText As String, ByRef rangeName As String, By
     ParseTag = True
 End Function
 
+'@label:create-buffer
 '@sub-title Create a BetterArray buffer with deterministic bounds.
 Private Function CreateBuffer() As BetterArray
     Dim buffer As BetterArray
@@ -1050,6 +1106,8 @@ Private Function CreateBuffer() As BetterArray
     Set CreateBuffer = buffer
 End Function
 
+'@label:build-duplicate-line
+'@sub-title Format a single duplicate-count line for reporting.
 Private Function BuildDuplicateLine(ByVal labelValue As String, ByVal occurrenceCount As Long) As String
     BuildDuplicateLine = """" & labelValue & """ has " & CStr(occurrenceCount) & " duplicates"
 End Function
@@ -1057,6 +1115,7 @@ End Function
 
 '@section Tag metadata caching
 '===============================================================================
+'@label:ensure-tag-formatting-state
 '@sub-title Ensure helper column formatting only runs when required.
 Private Sub EnsureTagFormattingState()
     If ShouldRefreshTagFormatting() Then
@@ -1066,6 +1125,7 @@ Private Sub EnsureTagFormattingState()
     End If
 End Sub
 
+'@label:should-refresh-tag-formatting
 '@sub-title Determine whether formatting must be refreshed.
 Private Function ShouldRefreshTagFormatting() As Boolean
     If Not TagFormattingMetadataCurrent() Then
@@ -1076,6 +1136,7 @@ Private Function ShouldRefreshTagFormatting() As Boolean
     ShouldRefreshTagFormatting = Not TagHeaderHasStealthFormatting()
 End Function
 
+'@label:tag-header-has-stealth-formatting
 '@sub-title Simple guard verifying the helper header retains stealth formatting.
 Private Function TagHeaderHasStealthFormatting() As Boolean
     Dim header As Range
@@ -1096,6 +1157,7 @@ Private Function TagHeaderHasStealthFormatting() As Boolean
     On Error GoTo 0
 End Function
 
+'@label:tag-formatting-metadata-current
 '@sub-title Validate whether metadata indicates formatting is current.
 Private Function TagFormattingMetadataCurrent() As Boolean
     Dim store As IHiddenNames
@@ -1108,6 +1170,7 @@ Private Function TagFormattingMetadataCurrent() As Boolean
     TagFormattingMetadataCurrent = (store.ValueAsLong(nameId, 0) = TAG_FORMAT_VERSION)
 End Function
 
+'@label:persist-tag-formatting-version
 '@sub-title Persist the latest formatting version.
 Private Sub PersistTagFormattingVersion()
     Dim store As IHiddenNames
@@ -1121,6 +1184,7 @@ Private Sub PersistTagFormattingVersion()
     store.SetValue nameId, TAG_FORMAT_VERSION
 End Sub
 
+'@label:invalidate-tag-formatting-cache
 '@sub-title Mark cached formatting metadata as stale.
 Private Sub InvalidateTagFormattingCache()
     Dim store As IHiddenNames
@@ -1134,6 +1198,7 @@ Private Sub InvalidateTagFormattingCache()
     store.SetValue nameId, 0
 End Sub
 
+'@label:metadata-store
 '@sub-title Resolve the hidden name store hosting metadata.
 Private Function MetadataStore() As IHiddenNames
     Dim hostSh As Worksheet
@@ -1147,6 +1212,7 @@ Private Function MetadataStore() As IHiddenNames
     On Error GoTo 0
 End Function
 
+'@label:tag-metadata-key
 '@sub-title Build the cached formatting key using sheet/table names.
 Private Function TagMetadataKey() As String
     Dim sheetName As String
@@ -1171,6 +1237,8 @@ End Function
 
 '@section Reporting
 '===============================================================================
+'@label:missing-labels
+'@sub-title Count missing translation labels for a specific language.
 Private Function MissingLabels(ByVal lang As String) As Long
     Dim trimmedLanguage As String
     Dim columnIndex As Long
@@ -1197,6 +1265,7 @@ Private Function MissingLabels(ByVal lang As String) As Long
     MissingLabels = Application.WorksheetFunction.CountBlank(dataRange)
 End Function
 
+'@label:number-of-missing
 '@sub-title Summarise missing translations per language and optionally prompt the user.
 Private Function NumberOfMissing() As String
     Dim columnIndex As Long
@@ -1238,7 +1307,8 @@ BuildSummary:
     End If
 End Function
 
-'@sub-title Update internal missing summary
+'@label:update-missing-summary
+'@sub-title Update internal missing summary.
 Private Sub UpdateMissingSummary(ByVal summary As BetterArray)
 
     If this.missingSummary Is Nothing Then
@@ -1248,6 +1318,8 @@ Private Sub UpdateMissingSummary(ByVal summary As BetterArray)
     Set this.missingSummary = summary.Clone()
 End Sub
 
+'@label:internal-missing-summary
+'@prop-title Cached missing-labels summary across languages.
 Private Property Get InternalMissingSummary() As BetterArray
     If this.missingSummary Is Nothing Then
         Set this.missingSummary = CreateBuffer()
@@ -1255,6 +1327,7 @@ Private Property Get InternalMissingSummary() As BetterArray
     Set InternalMissingSummary = this.missingSummary.Clone()
 End Property
 
+'@label:update-duplicates-summary
 '@sub-title Build duplicate summary for every language column.
 Private Sub UpdateDuplicatesSummary()
     Dim langs As BetterArray
@@ -1286,6 +1359,8 @@ Private Sub UpdateDuplicatesSummary()
 End Sub
 
 
+'@label:internal-duplicates-summary
+'@prop-title Cached duplicates summary across languages.
 Private Property Get InternalDuplicatesSummary() As BetterArray
     If this.duplicatesSummary Is Nothing Then
         Set this.duplicatesSummary = CreateBuffer()
@@ -1295,6 +1370,7 @@ Private Property Get InternalDuplicatesSummary() As BetterArray
 End Property
 
 
+'@label:duplicate-labels
 '@sub-title Report duplicate translation labels when they exist.
 Private Function DuplicateLabels(ByRef duplicateMessage As String, Optional ByVal languageName As String = vbNullString) As Boolean
     Dim summary As TDuplicateSummary
@@ -1304,6 +1380,8 @@ Private Function DuplicateLabels(ByRef duplicateMessage As String, Optional ByVa
     DuplicateLabels = summary.HasDuplicates
 End Function
 
+'@label:compute-duplicate-summary
+'@sub-title Compute duplicates for one language or all languages.
 Private Function ComputeDuplicateSummary(ByVal languageName As String) As TDuplicateSummary
     Dim labelRange As Range
     Dim targetRange As Range
@@ -1382,6 +1460,8 @@ Done:
     ComputeDuplicateSummary = summary
 End Function
 
+'@label:find-label-index
+'@sub-title Locate a label within a BetterArray using linear search.
 Private Function FindLabelIndex(ByVal labels As BetterArray, ByVal normalizedLabel As String) As Long
     Dim idx As Long
 
@@ -1396,6 +1476,7 @@ Private Function FindLabelIndex(ByVal labels As BetterArray, ByVal normalizedLab
     Next idx
 End Function
 
+'@label:label-column-data
 '@sub-title Access the label column data range.
 Private Function LabelColumnData() As Range
     If this.table.ListRows.Count = 0 Then Exit Function
@@ -1404,6 +1485,7 @@ Private Function LabelColumnData() As Range
     On Error GoTo 0
 End Function
 
+'@label:tag-column-data-range
 '@sub-title Retrieve the helper tag column data range.
 Private Function TagColumnDataRange() As Range
     Dim helperHeader As Range
@@ -1420,6 +1502,7 @@ Private Function TagColumnDataRange() As Range
     End If
 End Function
 
+'@label:apply-tag-column-formatting
 '@sub-title Ensure the helper column keeps its stealth formatting regardless of state.
 Private Sub ApplyTagColumnFormatting()
     Dim header As Range
@@ -1478,7 +1561,8 @@ Private Sub ApplyTagColumnFormatting()
     PersistTagFormattingVersion
 End Sub
 
-'@sub-title ApplyLangColumnFormatting
+'@label:apply-lang-column-formatting
+'@sub-title Apply font, sizing, and duplicate highlighting to a language column.
 Private Sub ApplyLangColumnFormatting(ByVal langRng As Range)
 
     If langRng Is Nothing Then Exit Sub
@@ -1506,6 +1590,7 @@ Private Sub ApplyLangColumnFormatting(ByVal langRng As Range)
 
 End Sub
 
+'@label:configure-tag-column
 '@sub-title Ensure the helper column header is located and configured.
 Private Sub ConfigureTagColumn()
     Dim header As Range
@@ -1534,11 +1619,15 @@ Private Sub ConfigureTagColumn()
     End If
 End Sub
 
+'@label:ensure-tag-column-ready
+'@sub-title Verify the helper tag column is accessible.
 Private Sub EnsureTagColumnReady()
     Dim unused As Range
     Set unused = RequireTagHeader()
 End Sub
 
+'@label:require-tag-header
+'@sub-title Return the tag header cell, raising an error when unavailable.
 Private Function RequireTagHeader() As Range
     If Not IsRangeValid(this.tagHeader) Then
         AttachTagHeader
@@ -1552,6 +1641,8 @@ Private Function RequireTagHeader() As Range
     Set RequireTagHeader = this.tagHeader
 End Function
 
+'@label:attach-tag-header
+'@sub-title Attempt to reconfigure and attach the tag header cell.
 Private Sub AttachTagHeader()
     On Error GoTo Failed
         ConfigureTagColumn
@@ -1561,6 +1652,8 @@ Failed:
     Set this.tagHeader = Nothing
 End Sub
 
+'@label:is-range-valid
+'@sub-title Test whether a Range reference is still alive and readable.
 Private Function IsRangeValid(ByVal candidate As Range) As Boolean
     Dim probe As Variant
 
@@ -1579,6 +1672,7 @@ End Function
 
 '@section Tag integration helpers
 '===============================================================================
+'@label:begin-tag-integration
 '@sub-title Temporarily include the helper tag column inside the managed table.
 Private Sub BeginTagIntegration()
     Dim helperHeader As Range
@@ -1600,6 +1694,7 @@ Private Sub BeginTagIntegration()
     ApplyTagColumnFormatting
 End Sub
 
+'@label:end-tag-integration
 '@sub-title Restore the translations table to exclude the helper tag column.
 Private Sub EndTagIntegration()
     Dim restoredStart As Range
@@ -1624,6 +1719,7 @@ Private Sub EndTagIntegration()
     ApplyTagColumnFormatting
 End Sub
 
+'@label:label-column-index
 '@sub-title Resolve the current column index storing translation labels.
 Private Function LabelColumnIndex() As Long
     If this.tagsIntegrated Then
@@ -1633,6 +1729,7 @@ Private Function LabelColumnIndex() As Long
     End If
 End Function
 
+'@label:tag-data-cell
 '@sub-title Resolve the current tag data cell for a provided row.
 Private Function TagDataCell(ByVal rowIndex As Long) As Range
     Dim tagRange As Range
@@ -1655,6 +1752,7 @@ Private Function TagDataCell(ByVal rowIndex As Long) As Range
     End If
 End Function
 
+'@label:tag-value-at
 '@sub-title Retrieve the stored tag text for the provided row index.
 Private Function TagValueAt(ByVal rowIndex As Long) As String
     Dim cell As Range
@@ -1668,6 +1766,7 @@ End Function
 
 '@section Sorting and formatting
 '===============================================================================
+'@label:sort-translations
 '@sub-title Sort the translations by their primary language column.
 Private Sub SortTranslations()
     On Error Resume Next
@@ -1680,6 +1779,7 @@ Private Sub SortTranslations()
     On Error GoTo 0
 End Sub
 
+'@label:apply-formatting
 '@sub-title Apply light formatting and duplicate highlighting once per update.
 Private Sub ApplyFormatting()
     Dim dataRange As Range
@@ -1732,6 +1832,7 @@ End Sub
 
 '@section Data exchange
 '===============================================================================
+'@label:export
 '@sub-title Export translations into a destination workbook.
 Public Sub Export(ByVal exportWorkbook As Workbook, Optional ByVal Hide As Long = xlSheetVisible)
     Dim exportSheet As Worksheet
@@ -1781,6 +1882,7 @@ End Sub
 
 '@section Registry bookkeeping
 '===============================================================================
+'@label:next-update-sequence
 '@sub-title Retrieve and increment the registry update sequence.
 Private Function NextUpdateSequence(ByVal registrySheet As Worksheet) As Long
     Dim currentValue As Long
@@ -1792,6 +1894,7 @@ Private Function NextUpdateSequence(ByVal registrySheet As Worksheet) As Long
     PersistCounterValue registrySheet, NextUpdateSequence
 End Function
 
+'@label:persist-counter-value
 '@sub-title Persist the counter value inside a hidden worksheet-level name.
 Private Sub PersistCounterValue(ByVal registrySheet As Worksheet, ByVal counterValue As Long)
     Dim store As IHiddenNames
@@ -1805,6 +1908,7 @@ Private Sub PersistCounterValue(ByVal registrySheet As Worksheet, ByVal counterV
     store.SetValue COUNTER_NAME, counterValue
 End Sub
 
+'@label:counter-numeric-value
 '@sub-title Retrieve the current counter value stored in worksheet names.
 Private Function CounterNumericValue(ByVal registrySheet As Worksheet) As Long
     Dim store As IHiddenNames
@@ -1820,6 +1924,8 @@ Private Function CounterNumericValue(ByVal registrySheet As Worksheet) As Long
     CounterNumericValue = store.ValueAsLong(COUNTER_NAME, 0)
 End Function
 
+'@label:hidden-name-store
+'@sub-title Create a HiddenNames wrapper for the supplied registry sheet.
 Private Function HiddenNameStore(ByVal registrySheet As Worksheet) As IHiddenNames
     If registrySheet Is Nothing Then Exit Function
     On Error Resume Next
@@ -1830,6 +1936,7 @@ End Function
 
 '@section Validation and utilities
 '===============================================================================
+'@label:validate-initialised
 '@sub-title Ensure the manager has been initialised before use.
 Private Sub ValidateInitialised()
     If this.table Is Nothing Then
@@ -1837,6 +1944,7 @@ Private Sub ValidateInitialised()
     End If
 End Sub
 
+'@label:validate-translation-table
 '@sub-title Validate the supplied translations table.
 Private Sub ValidateTranslationTable(ByVal translationTable As ListObject)
     If translationTable Is Nothing Then
@@ -1844,6 +1952,7 @@ Private Sub ValidateTranslationTable(ByVal translationTable As ListObject)
     End If
 End Sub
 
+'@label:validate-registry-sheet
 '@sub-title Validate the registry sheet before processing.
 Private Sub ValidateRegistrySheet(ByVal registrySheet As Worksheet)
     If registrySheet Is Nothing Then
@@ -1851,6 +1960,7 @@ Private Sub ValidateRegistrySheet(ByVal registrySheet As Worksheet)
     End If
 End Sub
 
+'@label:resolve-named-range
 '@sub-title Resolve a named range from the workbook, returning Nothing when missing.
 Private Function ResolveNamedRange(ByVal hostwb As Workbook, ByVal rangeName As String) As Range
     Dim definedName As Name
@@ -1865,6 +1975,7 @@ Private Function ResolveNamedRange(ByVal hostwb As Workbook, ByVal rangeName As 
     On Error GoTo 0
 End Function
 
+'@label:throw-project-error
 '@sub-title Raise a project error with a contextual message.
 Private Sub ThrowProjectError(ByVal errNumber As ProjectError, ByVal message As String)
     Err.Raise CLng(errNumber), CLASS_NAME, message
@@ -1873,6 +1984,10 @@ End Sub
 
 '@section Interface implementation
 '===============================================================================
+'@description
+'Thin delegation stubs wiring ISetupTranslationsTable members to
+'the corresponding public or private methods on this class.
+
 Private Sub ISetupTranslationsTable_EnsureLanguages(Optional ByVal languages As String = vbNullString)
     EnsureLanguages languages
 End Sub
@@ -1893,6 +2008,7 @@ Private Property Get ISetupTranslationsTable_HostWorksheet() As Worksheet
     Set ISetupTranslationsTable_HostWorksheet = HostWorksheet
 End Property
 
+'@label:initialise
 Private Sub ISetupTranslationsTable_Initialise(ByVal translationTable As ListObject, Optional ByVal stateScope As IApplicationState)
     ValidateTranslationTable translationTable
     InitialiseCore translationTable, stateScope
