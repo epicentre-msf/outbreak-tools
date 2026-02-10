@@ -149,6 +149,7 @@ End Property
 'from the T_ascii table on first access.
 '@param specialChar String. Single-character token to inspect.
 '@return Boolean. True when the character is listed in the lookup table.
+'@export
 Private Function SpecialCharacterIncludes(ByVal specialChar As String) As Boolean
     Dim characterLookup As BetterArray
 
@@ -166,6 +167,7 @@ End Function
 'is built lazily from the T_XlsFonctions table on first access.
 '@param ExcelFormula String. Function name to inspect.
 '@return Boolean. True when the function is listed in the lookup table.
+'@export
 Private Function ExcelFormulasIncludes(ByVal ExcelFormula As String) As Boolean
     Dim functionLookup As BetterArray
     Dim normalized As String
@@ -487,6 +489,7 @@ End Sub
 'registry is empty or no match is found.
 '@param functionName String. Grouped token to look up.
 '@return Boolean. True when the token is known.
+'@export
 Private Function GroupFunctionIncludes(ByVal functionName As String) As Boolean
     Dim idx As Long
     Dim entry As Variant
@@ -518,6 +521,7 @@ End Function
 'function name. Returns vbNullString when the token is not found.
 '@param functionName String. Grouped token to translate.
 '@return String. Aggregator name or vbNullString when unknown.
+'@export
 Private Function GroupAggregator(ByVal functionName As String) As String
     Dim idx As Long
     Dim entry As Variant
@@ -549,6 +553,7 @@ End Function
 'SUMIFS) instead of wrapping the aggregator in an IF block.
 '@param functionName String. Grouped token to inspect.
 '@return Boolean. True when the output uses the corresponding *IFS function directly.
+'@export
 Private Function GroupUsesNative(ByVal functionName As String) As Boolean
     Dim idx As Long
     Dim entry As Variant
