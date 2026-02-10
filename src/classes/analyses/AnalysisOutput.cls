@@ -17,6 +17,18 @@ Attribute VB_Description = "Build and format all analysis worksheets"
 Option Explicit
 Implements IAnalysisOutput
 
+'@class AnalysisOutput
+'@description
+'Orchestrates the complete analysis output pipeline for the linelist builder.
+'Given a setup worksheet containing analysis definition ListObjects and an
+'output linelist facade, this class iterates through each analysis scope
+'(normal, time series, spatial, spatio-temporal), builds cross-tables from
+'table specifications, writes formulas, registers metadata in AnaTabIds, and
+'renders charts. Consumers interact through the IAnalysisOutput interface.
+'@depends ILinelist, ILinelistSpecs, ILLFormat, ITranslationObject, ITableSpecs, ICrossTable, ICrossTableFormula, IGraphSpecs, IGraphs, IAnaTabIds, IButtons, IPasswords, IDropdownLists, ILLdictionary, ILLVariables, IFormulaData, IMain, BetterArray
+'@version 1.0 (2026-02-10)
+'@author Yves Amevoin
+
 Private Const UPDATEFILTERCOMMAND As String = "UpdateFilterTables"
 Private Const SHPFILTERNAME As String = "SHP_Filter"
 Private Const GOTOSECCODE As String = "go_to_section"
@@ -43,20 +55,27 @@ End Type
 
 Private this As TAnaOutput
 
-'@section Factory
+'@section Instantiation
 '===============================================================================
 
-' @description Create an AnalysisOutput orchestrator bound to a setup worksheet and
-'              output linelist. The setup worksheet contains the ListObjects that define
-'              which tables (global summary, univariate, bivariate, time series, spatial,
-'              spatio-temporal) should be generated. The linelist is the output workbook
-'              facade where analysis sheets will be created and populated.
-' @param specSh The setup worksheet containing analysis ListObjects (Tab_global_summary,
-'               Tab_Univariate_Analysis, Tab_Bivariate_Analysis, Tab_TimeSeries_Analysis,
-'               Tab_Spatial_Analysis, Tab_SpatioTemporal_Analysis)
-' @param ll     The output linelist workbook facade (ILinelist) where analysis sheets
-'               will be created
-' @return IAnalysisOutput interface to the new orchestrator instance
+'@label:create
+'@sub-title Create an AnalysisOutput orchestrator bound to a setup worksheet and output linelist.
+'@details
+'Factory method that creates a new AnalysisOutput instance tied to the given
+'setup worksheet and output linelist. The setup worksheet contains the
+'ListObjects that define which tables (global summary, univariate, bivariate,
+'time series, spatial, spatio-temporal) should be generated. The linelist is
+'the output workbook facade where analysis sheets will be created and
+'populated. Both parameters are validated before construction.
+'@param specSh Worksheet. The setup worksheet containing analysis ListObjects
+'(Tab_global_summary, Tab_Univariate_Analysis, Tab_Bivariate_Analysis,
+'Tab_TimeSeries_Analysis, Tab_Spatial_Analysis, Tab_SpatioTemporal_Analysis).
+'@param ll ILinelist. The output linelist workbook facade where analysis sheets
+'will be created.
+'@return IAnalysisOutput. A fully initialised orchestrator instance ready for use.
+'@throws InvalidArgument When the specifications worksheet is Nothing.
+'@throws InvalidArgument When the linelist is Nothing.
+'@export
 Public Function Create(ByVal specSh As Worksheet, _
                        ByVal ll As ILinelist) As IAnalysisOutput
 
@@ -70,74 +89,110 @@ Public Function Create(ByVal specSh As Worksheet, _
     End With
 End Function
 
-'@section Internal properties (factory use)
+'@section Internal Properties
 '===============================================================================
+'@description Properties used during factory construction and internal wiring.
 
+'@label:self
+'@prop-title Current object instance.
+'@details
+'Convenience accessor that returns the current instance cast to the
+'IAnalysisOutput interface, enabling the predeclared factory pattern.
+'@return IAnalysisOutput. The current instance cast to the interface.
 Public Property Get Self() As IAnalysisOutput
     Set Self = Me
 End Property
 
+'@label:output-ll-get
+'@prop-title Output linelist facade.
+'@details
+'Returns the ILinelist reference representing the output workbook where
+'analysis worksheets are created and populated.
+'@return ILinelist. The output linelist workbook facade.
 Public Property Get OutputLL() As ILinelist
     Set OutputLL = this.anaLL
 End Property
 
+'@label:output-ll-set
+'@prop-title Assign the output linelist facade.
+'@param ll ILinelist. The output linelist workbook facade to store.
 Public Property Set OutputLL(ByVal ll As ILinelist)
     Set this.anaLL = ll
 End Property
 
+'@label:wksh-get
+'@prop-title Setup worksheet reference.
+'@details
+'Returns the setup worksheet containing analysis definition ListObjects.
+'@return Worksheet. The setup worksheet containing analysis ListObjects.
 Public Property Get Wksh() As Worksheet
     Set Wksh = this.sh
 End Property
 
+'@label:wksh-set
+'@prop-title Assign the setup worksheet reference.
+'@param specSh Worksheet. The setup worksheet to store.
 Public Property Set Wksh(ByVal specSh As Worksheet)
     Set this.sh = specSh
 End Property
 
-'@section Dependency properties
+'@section Dependency Properties
 '===============================================================================
+'@description Convenience accessors for frequently used collaborators retrieved
+'through the output linelist and its metadata facade.
 
-' @description Convenience accessor that retrieves the ILinelistSpecs object from the
-'              stored output linelist. ILinelistSpecs is the central metadata facade
-'              providing access to the dictionary, translation objects, formula data,
-'              design format, passwords, and sheet configuration. This property avoids
-'              repeating OutputLL().LinelistData() throughout the class.
-' @return ILinelistSpecs metadata facade for the output linelist
+'@label:linelist-data
+'@prop-title Linelist metadata facade.
+'@details
+'Convenience accessor that retrieves the ILinelistSpecs object from the
+'stored output linelist. ILinelistSpecs is the central metadata facade
+'providing access to the dictionary, translation objects, formula data,
+'design format, passwords, and sheet configuration. This property avoids
+'repeating OutputLL().LinelistData() throughout the class.
+'@return ILinelistSpecs. Metadata facade for the output linelist.
 Private Property Get LinelistData() As ILinelistSpecs
     Set LinelistData = OutputLL().LinelistData()
 End Property
 
-' @description Convenience accessor for the ILLFormat design format object used to
-'              apply visual formatting (fonts, colours, borders, cell styles) to analysis
-'              worksheets, cells, and chart elements. Delegates through LinelistData to
-'              retrieve the shared format singleton so all analysis output uses consistent
-'              styling from the setup workbook.
-' @return ILLFormat design format object for the output linelist
+'@label:design-format
+'@prop-title Design format object.
+'@details
+'Convenience accessor for the ILLFormat design format object used to
+'apply visual formatting (fonts, colours, borders, cell styles) to analysis
+'worksheets, cells, and chart elements. Delegates through LinelistData to
+'retrieve the shared format singleton so all analysis output uses consistent
+'styling from the setup workbook.
+'@return ILLFormat. Design format object for the output linelist.
 Private Property Get DesignFormat() As ILLFormat
     Set DesignFormat = LinelistData().DesignFormat()
 End Property
 
-' @description Retrieve an ITranslationObject for the requested translation scope.
-'              Translation objects resolve human-readable labels, button captions, sheet
-'              names, and other locale-dependent strings from the setup workbook. The
-'              scope parameter controls which translation table is used: messages (default),
-'              shape names, or other categories defined by the TranslationScope enum.
-' @param scope A Byte constant from the TranslationScope enum. Defaults to
-'              TranslationOfMessages. Use TranslationOfShapes for button/shape labels.
-' @return ITranslationObject bound to the requested translation scope
+'@label:trans-object
+'@prop-title Translation object for a given scope.
+'@details
+'Retrieves an ITranslationObject for the requested translation scope.
+'Translation objects resolve human-readable labels, button captions, sheet
+'names, and other locale-dependent strings from the setup workbook. The
+'scope parameter controls which translation table is used: messages (default),
+'shape names, or other categories defined by the TranslationScope enum.
+'@param scope Optional Byte. A constant from the TranslationScope enum.
+'Defaults to TranslationOfMessages. Use TranslationOfShapes for button/shape labels.
+'@return ITranslationObject. Bound to the requested translation scope.
 Public Property Get TransObject(Optional ByVal scope As Byte = TranslationOfMessages) As ITranslationObject
     Set TransObject = LinelistData().TransObject(scope)
 End Property
 
-' @description Resolve the output worksheet in the linelist workbook for the given
-'              analysis scope. Each scope maps to a translated sheet name stored in
-'              the messages translation table (e.g. "LLSHEET_Analysis" for normal,
-'              "LLSHEET_TemporalAnalysis" for time series). The translation ensures
-'              the output sheet names match the user's configured language.
-' @param scope A Byte constant from the AnalysisScope enum indicating which analysis
-'              worksheet to return. Defaults to AnalysisScopeNormal (univariate/bivariate).
-'              Other valid values: AnalysisScopeTimeSeries, AnalysisScopeSpatial,
-'              AnalysisScopeSpatioTemporal.
-' @return Worksheet reference to the output analysis sheet in the linelist workbook
+'@label:output-sh
+'@prop-title Output worksheet for a given analysis scope.
+'@details
+'Resolves the output worksheet in the linelist workbook for the given
+'analysis scope. Each scope maps to a translated sheet name stored in
+'the messages translation table (e.g. "LLSHEET_Analysis" for normal,
+'"LLSHEET_TemporalAnalysis" for time series). The translation ensures
+'the output sheet names match the user's configured language.
+'@param scope Optional Byte. A constant from the AnalysisScope enum indicating
+'which analysis worksheet to return. Defaults to AnalysisScopeNormal.
+'@return Worksheet. The output analysis sheet in the linelist workbook.
 Private Property Get OutputSh(Optional ByVal scope As Byte = AnalysisScopeNormal) As Worksheet
     Dim trads As ITranslationObject
     Dim ll As ILinelist
@@ -157,15 +212,18 @@ Private Property Get OutputSh(Optional ByVal scope As Byte = AnalysisScopeNormal
     End Select
 End Property
 
-' @description Lazily-initialized accessor for the IAnaTabIds tracking object. AnaTabIds
-'              maintains a registry of all cross-table named ranges and graph metadata
-'              created during the analysis build. This registry is later used by the
-'              update/filter commands to locate tables and graphs at runtime. The object
-'              is created once on first access using the temporary analysis worksheet
-'              from the linelist, and all subsequent calls return the cached instance.
-' @return IAnaTabIds tracking object that records table and graph metadata
-' @remark The backing worksheet comes from lData.TemporarySheetName(TemporarySheetAnalysis),
-'         which must exist in the output linelist before this property is first accessed.
+'@label:names-object
+'@prop-title Lazily-initialised analysis tracking object.
+'@details
+'Lazily-initialised accessor for the IAnaTabIds tracking object. AnaTabIds
+'maintains a registry of all cross-table named ranges and graph metadata
+'created during the analysis build. This registry is later used by the
+'update/filter commands to locate tables and graphs at runtime. The object
+'is created once on first access using the temporary analysis worksheet
+'from the linelist, and all subsequent calls return the cached instance.
+'@return IAnaTabIds. Tracking object that records table and graph metadata.
+'@remarks The backing worksheet comes from lData.TemporarySheetName(TemporarySheetAnalysis),
+'which must exist in the output linelist before this property is first accessed.
 Private Property Get NamesObject() As IAnaTabIds
     If this.namObj Is Nothing Then
         Dim lData As ILinelistSpecs
@@ -180,18 +238,19 @@ Private Property Get NamesObject() As IAnaTabIds
     Set NamesObject = this.namObj
 End Property
 
-'@section Application helpers
+'@section Application Helpers
 '===============================================================================
 
-' @description Suppress all visual feedback and recalculation in the Excel Application
-'              object to maximise performance during batch write operations. Four settings
-'              are disabled: ScreenUpdating (prevents flicker as cells are written),
-'              DisplayAlerts (suppresses confirmation dialogs), Calculation (switches to
-'              manual to avoid formula recalc after every cell write), and EnableAnimations
-'              (prevents sheet-transition animations). These are restored externally after
-'              the full analysis build completes.
-' @remark This sub is called multiple times (e.g. inside SplitOutputSheet) because
-'         activating a worksheet can re-enable ScreenUpdating in some Excel versions.
+'@label:busy-app
+'@sub-title Suppress Excel visual feedback and recalculation for performance.
+'@details
+'Disables ScreenUpdating, DisplayAlerts, Calculation (switches to manual),
+'and EnableAnimations on the Application object to maximise performance during
+'batch write operations. These settings are restored externally after the
+'full analysis build completes.
+'@remarks This sub is called multiple times (e.g. inside SplitOutputSheet)
+'because activating a worksheet can re-enable ScreenUpdating in some Excel
+'versions.
 Private Sub BusyApp()
     Application.ScreenUpdating = False
     Application.DisplayAlerts = False
@@ -199,20 +258,22 @@ Private Sub BusyApp()
     Application.EnableAnimations = False
 End Sub
 
-' @description Apply a freeze-pane split to the output analysis worksheet so that
-'              header rows and the left navigation columns remain visible while the
-'              user scrolls through tables. The row split is 2 for normal/spatial
-'              scopes (one header row plus the command row) and 3 for time-series and
-'              spatio-temporal scopes (which have an extra GoTo-header dropdown row).
-'              The column split is always 3, keeping the section/GoTo columns pinned.
-'              Zoom is set to 80 % for a wider view of cross-tables.
-' @param scope A Byte constant from the AnalysisScope enum. Defaults to
-'              AnalysisScopeNormal. Time-series and spatio-temporal scopes get an
-'              extra frozen row.
-' @remark The sub activates the worksheet (required by the FreezePanes API), wraps
-'         everything in On Error Resume Next to tolerate protected-sheet or hidden-
-'         window conditions, and calls BusyApp twice because Activate can re-enable
-'         ScreenUpdating.
+'@label:split-output-sheet
+'@sub-title Apply freeze-pane split to an analysis output worksheet.
+'@details
+'Applies a freeze-pane split to the output analysis worksheet so that
+'header rows and the left navigation columns remain visible while the
+'user scrolls through tables. The row split is 2 for normal/spatial
+'scopes and 3 for time-series and spatio-temporal scopes (which have
+'an extra GoTo-header dropdown row). The column split is always 3.
+'Zoom is set to 80% for a wider view of cross-tables.
+'@param scope Optional Byte. A constant from the AnalysisScope enum.
+'Defaults to AnalysisScopeNormal. Time-series and spatio-temporal scopes
+'get an extra frozen row.
+'@remarks The sub activates the worksheet (required by the FreezePanes API),
+'wraps everything in On Error Resume Next to tolerate protected-sheet or
+'hidden-window conditions, and calls BusyApp twice because Activate can
+'re-enable ScreenUpdating.
 Private Sub SplitOutputSheet(Optional ByVal scope As Byte = AnalysisScopeNormal)
     Dim outsh As Worksheet
     Dim rowSplit As Long
@@ -233,22 +294,22 @@ Private Sub SplitOutputSheet(Optional ByVal scope As Byte = AnalysisScopeNormal)
     On Error GoTo 0
 End Sub
 
-'@section Sheet preparation
+'@section Sheet Preparation
 '===============================================================================
 
-' @description Add a filter/update command button to the analysis output worksheet.
-'              For most scopes the button triggers UPDATEFILTERCOMMAND which recalculates
-'              filtered cross-tables; for the spatial scope it triggers UPDATESPCOMMAND
-'              which additionally refreshes spatial joins. The button is placed at row 2,
-'              column 2 of the output sheet, styled using the design format, and labelled
-'              with the translated SHP_Filter shape name. If the linelist is built from a
-'              template (mainobj.HasTemplate), buttons are skipped entirely because the
-'              template already contains them.
-' @param scope A Byte constant from the AnalysisScope enum. Defaults to
-'              AnalysisScopeNormal. When AnalysisScopeSpatial, the spatial-specific
-'              update command is assigned instead of the standard filter command.
-' @remark The method exits early when HasTemplate is True, so calling it on a
-'         template-based build is safe but has no effect.
+'@label:add-commands
+'@sub-title Add a filter/update command button to the analysis output worksheet.
+'@details
+'Places a command button on the output worksheet that triggers either the
+'standard filter-update macro (UPDATEFILTERCOMMAND) or the spatial-specific
+'update macro (UPDATESPCOMMAND) depending on the scope. The button is placed
+'at row 2 col 2, styled using the design format, and labelled with the
+'translated SHP_Filter shape name. Exits early when the linelist is built
+'from a template (mainobj.HasTemplate), because the template already
+'contains the buttons.
+'@param scope Optional Byte. A constant from the AnalysisScope enum. Defaults
+'to AnalysisScopeNormal. When AnalysisScopeSpatial, the spatial-specific
+'update command is assigned.
 Private Sub AddCommands(Optional ByVal scope As Byte = AnalysisScopeNormal)
     Dim cellRng As Range
     Dim commandName As String
@@ -276,25 +337,20 @@ Private Sub AddCommands(Optional ByVal scope As Byte = AnalysisScopeNormal)
     but.Format design
 End Sub
 
-' @description Perform the five-step initialisation of an analysis output worksheet
-'              before any tables are written. The steps are:
-'              1. Write a scope-specific flag named range (e.g. RNG_HasTable_UNI) at
-'                 row 1 col 10, formatted as a hidden cell. This range is later set to
-'                 "yes" when at least one table is written, and checked post-build to
-'                 decide whether to hide the sheet.
-'              2. Apply the AllAnalysisSheet base format to the entire worksheet (sets
-'                 default font, column widths, and background colour).
-'              3. Write a sheet-info identifier (e.g. "Uni-Bi-Analysis") at row 1 col 3,
-'                 also formatted as hidden. WriteTable reads this cell to derive the
-'                 flag range name prefix.
-'              4. Place the ComputedOnFiltered() warning formula at row 2 col 5, styled
-'                 with LinelistWarning formatting, so the user sees a notice when the
-'                 analysis was computed on a filtered subset.
-'              5. Delegate to AddCommands (filter button) and SplitOutputSheet (freeze
-'                 panes) to complete the visual setup.
-' @param scope A Byte constant from the AnalysisScope enum. Defaults to
-'              AnalysisScopeNormal. Determines the flag range name, sheet-info string,
-'              and freeze-pane row count.
+'@label:prepare-sheet
+'@sub-title Perform five-step initialisation of an analysis output worksheet.
+'@details
+'Initialises an analysis output worksheet before any tables are written.
+'The five steps are: (1) write a scope-specific flag named range at row 1
+'col 10 (e.g. RNG_HasTable_UNI), formatted as a hidden cell; (2) apply
+'the AllAnalysisSheet base format to the entire worksheet; (3) write a
+'sheet-info identifier at row 1 col 3 as a hidden cell; (4) place the
+'ComputedOnFiltered() warning formula at row 2 col 5 with LinelistWarning
+'formatting; (5) delegate to AddCommands and SplitOutputSheet for button
+'and freeze-pane setup.
+'@param scope Optional Byte. A constant from the AnalysisScope enum. Defaults
+'to AnalysisScopeNormal. Determines the flag range name, sheet-info string,
+'and freeze-pane row count.
 Private Sub PrepareSheet(Optional ByVal scope As Byte = AnalysisScopeNormal)
     Dim outsh As Worksheet
     Dim cellRng As Range
@@ -338,29 +394,28 @@ Private Sub PrepareSheet(Optional ByVal scope As Byte = AnalysisScopeNormal)
     SplitOutputSheet scope:=scope
 End Sub
 
-'@section GoTo dropdown helpers
+'@section GoTo Dropdown Helpers
 '===============================================================================
 
-' @description Create a data-validation dropdown in a single cell that lets the user
-'              navigate to a named section, header, or graph on the analysis sheet. The
-'              entries in dropArray become the validation list; selecting one triggers a
-'              GoTo macro that scrolls to the corresponding named range. The cell is
-'              formatted as a LinelistSelectionDropdown, its initial value is set to
-'              goToLabel, and it receives a workbook-level name built from the prefix,
-'              the constant GOTOSECCODE ("go_to_section"), and the suffix. If dropArray
-'              is empty the method exits silently so callers do not need to guard.
-' @param cellRng   The single-cell Range where the dropdown will be placed
-' @param dropArray A BetterArray of display strings for the dropdown entries (e.g.
-'                  "GoTo Section: Epidemiology"). Must have Length > 0 or the method
-'                  exits early.
-' @param goToLabel The default display value written into the cell (e.g. the translated
-'                  "GoTo Section" label)
-' @param goToPrefix A short prefix for the named range and dropdown name, scoped per
-'                   analysis type. Defaults to "ua_" (univariate). Other values: "ts_",
-'                   "sp_", "spt_".
-' @param goToSuffix An optional suffix appended to the named range and dropdown name,
-'                   used to distinguish section-level vs graph-level vs header-level
-'                   dropdowns (e.g. "_graph", or a section id).
+'@label:add-goto
+'@sub-title Create a data-validation dropdown for section/graph navigation.
+'@details
+'Creates a data-validation dropdown in a single cell that lets the user
+'navigate to a named section, header, or graph on the analysis sheet. The
+'entries in dropArray become the validation list; selecting one triggers a
+'GoTo macro that scrolls to the corresponding named range. The cell is
+'formatted as a LinelistSelectionDropdown, its initial value is set to
+'goToLabel, and it receives a workbook-level named range. If dropArray
+'is empty the method exits silently so callers do not need to guard.
+'@param cellRng Range. The single-cell Range where the dropdown will be placed.
+'@param dropArray BetterArray. Display strings for the dropdown entries.
+'Must have Length > 0 or the method exits early.
+'@param goToLabel String. The default display value written into the cell.
+'@param goToPrefix Optional String. A short prefix for the named range,
+'scoped per analysis type. Defaults to "ua_".
+'@param goToSuffix Optional String. An optional suffix appended to the named
+'range, used to distinguish section-level vs graph-level dropdowns.
+'Defaults to vbNullString.
 Private Sub AddGoTo(ByVal cellRng As Range, _
                     ByVal dropArray As BetterArray, _
                     ByVal goToLabel As String, _
@@ -389,32 +444,33 @@ Private Sub AddGoTo(ByVal cellRng As Range, _
     cellRng.Name = goToPrefix & GOTOSECCODE & goToSuffix
 End Sub
 
-'@section Min/Max formula for temporal sections
+'@section Temporal Section Helpers
 '===============================================================================
+'@description Min/Max formula finalisation and GoTo header dropdown for temporal sections.
 
-' @description Finalise a temporal (time-series or spatio-temporal) section by writing
-'              its date-period boundary formulas and adding a GoTo Header dropdown. Each
-'              temporal section has two named ranges: MIN_MIN_DATE_{secId} and
-'              MAX_MAX_DATE_{secId}, which hold the overall minimum and maximum dates
-'              across all tables in that section. These are used by the time-series
-'              graphs and filter logic to determine the x-axis bounds. The minFormula
-'              and maxFormula strings are comma-separated MIN(...)/MAX(...) fragments
-'              accumulated by WriteTable as it processes each table in the section; this
-'              method wraps them in a final = MIN(...) / = MAX(...) worksheet formula.
-'              After writing the formulas, a GoTo Header dropdown is placed two rows
-'              below the SECTION_{secId} named range, allowing users to jump to
-'              individual table headers within the section.
-' @param outsh           The output analysis worksheet where formulas and dropdown are written
-' @param secId           The section identifier string (e.g. "SEC1") used to locate the
-'                        named ranges MIN_MIN_DATE_{secId}, MAX_MAX_DATE_{secId}, and
-'                        SECTION_{secId}
-' @param minFormula      A comma-separated string of MIN(...) expressions to wrap in the
-'                        final = MIN(...) formula for the section's minimum date
-' @param maxFormula      A comma-separated string of MAX(...) expressions to wrap in the
-'                        final = MAX(...) formula for the section's maximum date
-' @param goToPrefix      Prefix for the GoTo named range ("ts_" or "spt_")
-' @param headersList     BetterArray of header display strings for the dropdown entries
-' @param goToHeaderLabel Translated label for the GoTo Header dropdown default value
+'@label:min-max-formula
+'@sub-title Finalise temporal section date-period boundary formulas and GoTo header dropdown.
+'@details
+'Finalises a temporal (time-series or spatio-temporal) section by writing
+'its date-period boundary formulas and adding a GoTo Header dropdown. Each
+'temporal section has two named ranges: MIN_MIN_DATE_{secId} and
+'MAX_MAX_DATE_{secId}, which hold the overall minimum and maximum dates
+'across all tables in that section. The minFormula and maxFormula strings
+'are comma-separated MIN/MAX fragments accumulated by WriteTable; this
+'method wraps them in a final worksheet formula. After writing, a GoTo
+'Header dropdown is placed two rows below the SECTION_{secId} named range.
+'@param outsh Worksheet. The output analysis worksheet where formulas and
+'dropdown are written.
+'@param secId String. The section identifier string (e.g. "SEC1") used to
+'locate the named ranges.
+'@param minFormula String. Comma-separated MIN expressions to wrap in the
+'final = MIN(...) formula.
+'@param maxFormula String. Comma-separated MAX expressions to wrap in the
+'final = MAX(...) formula.
+'@param goToPrefix String. Prefix for the GoTo named range ("ts_" or "spt_").
+'@param headersList BetterArray. Header display strings for the dropdown entries.
+'@param goToHeaderLabel String. Translated label for the GoTo Header dropdown
+'default value.
 Private Sub MinMaxFormula(ByVal outsh As Worksheet, ByVal secId As String, _
                           ByVal minFormula As String, ByVal maxFormula As String, _
                           ByVal goToPrefix As String, _
@@ -431,38 +487,36 @@ Private Sub MinMaxFormula(ByVal outsh As Worksheet, ByVal secId As String, _
             goToPrefix:=goToPrefix, goToSuffix:=secId
 End Sub
 
-'@section WriteTable — main table creation loop
+'@section Table Creation
 '===============================================================================
+'@description Core table-creation loop and supporting write logic.
 
-' @description Core table-creation loop. Iterates over every data row of the setup
-'              ListObject identified by loName, and for each valid row: creates a
-'              TableSpecs, builds a CrossTable on the output sheet, applies
-'              CrossTableFormula formulas, formats the table with the design, registers
-'              the table's named ranges in the AnaTabIds tracking object, and optionally
-'              creates a chart (GraphSpecs + Graphs). For time-series and spatio-temporal
-'              scopes, additional logic accumulates MIN/MAX date formulas per section
-'              and writes them via MinMaxFormula when a section boundary is detected.
-'              GoTo section and header entries are pushed into the caller-provided
-'              sectionsList and headersList arrays, which are later used to build
-'              navigation dropdowns. Each table is wrapped in a per-table error handler
-'              (Bug #3 fix) so that a single malformed row does not abort the entire
-'              analysis; errors are logged to the Immediate window and processing
-'              continues with the next row.
-' @param loName       Name of the ListObject on the setup worksheet whose rows define
-'                     the tables to build (e.g. "Tab_global_summary",
-'                     "Tab_Univariate_Analysis")
-' @param sectionsList A BetterArray (passed ByVal but mutated via Push) accumulating
-'                     GoTo section entries. The caller owns this array and uses it
-'                     after the call to create the section-level dropdown.
-' @param headersList  A BetterArray accumulating GoTo header entries for time-series
-'                     and spatio-temporal scopes. Cleared by MinMaxFormula after each
-'                     section is finalised.
-' @param scope        A Byte constant from the AnalysisScope enum. Defaults to
-'                     AnalysisScopeNormal. Controls which output sheet receives the
-'                     tables and whether time-series logic runs.
-' @remark The loop uses Do...Loop While with Offset(1) advancement instead of a For
-'         loop, because the anchorRng boundary is computed once from the ListObject
-'         row count. If the ListObject has no DataBodyRange, the method exits early.
+'@label:write-table
+'@sub-title Iterate setup ListObject rows and build cross-tables on the output sheet.
+'@details
+'Core table-creation loop. Iterates over every data row of the setup
+'ListObject identified by loName, and for each valid row: creates a
+'TableSpecs, builds a CrossTable on the output sheet, applies
+'CrossTableFormula formulas, formats the table with the design, registers
+'the table's named ranges in the AnaTabIds tracking object, and optionally
+'creates a chart (GraphSpecs + Graphs). For time-series and spatio-temporal
+'scopes, additional logic accumulates MIN/MAX date formulas per section
+'and writes them via MinMaxFormula when a section boundary is detected.
+'GoTo section and header entries are pushed into the caller-provided
+'sectionsList and headersList arrays. Each table is wrapped in a per-table
+'error handler (Bug #3 fix) so that a single malformed row does not abort
+'the entire analysis; errors are logged to the Immediate window.
+'@param loName String. Name of the ListObject on the setup worksheet whose
+'rows define the tables to build.
+'@param sectionsList BetterArray. Accumulates GoTo section entries (passed
+'ByVal but mutated via Push). The caller uses this after the call to
+'create the section-level dropdown.
+'@param headersList BetterArray. Accumulates GoTo header entries for
+'time-series and spatio-temporal scopes.
+'@param scope Optional Byte. A constant from the AnalysisScope enum. Defaults
+'to AnalysisScopeNormal. Controls which output sheet receives the tables.
+'@remarks The loop uses Do...Loop While with Offset(1) advancement. If the
+'ListObject has no DataBodyRange, the method exits early.
 Private Sub WriteTable(ByVal loName As String, _
                        ByVal sectionsList As BetterArray, _
                        ByVal headersList As BetterArray, _
@@ -704,34 +758,32 @@ ContinueLoop:
     Loop While tabRng.Row <= anchorRng.Row
 End Sub
 
-'@section WriteTimeSeriesGraphs
+'@section Graph Creation
 '===============================================================================
+'@description Methods that build time-series and spatio-temporal charts after
+'tables have been written.
 
-' @description Build all time-series charts after the time-series tables have been
-'              written. Reads three setup ListObjects: the graph definition table
-'              (graphLoName), the graph title/label table (graphTitleLoName), and the
-'              original time-series table (tabLoName). These are bundled into a
-'              BetterArray and passed to GraphSpecs.CreateRangeSpecs, which operates
-'              in "complex mode" — resolving multi-series graphs with mixed chart types
-'              (e.g. bars + line) and separate axis positions. The method then loops
-'              over each graph returned by GraphSpecs, creates it via Graphs.Create,
-'              iterates its series to add data ranges and labels, formats the chart,
-'              records metadata in AnaTabIds, and advances the anchor cell by 50 rows
-'              to space consecutive charts. Finally, a GoTo graph dropdown is placed
-'              at row 3 col 3 of the time-series output sheet, allowing the user to
-'              jump directly to any chart.
-' @param graphLoName      Name of the ListObject defining graph series (e.g.
-'                         "Tab_Graph_TimeSeries")
-' @param graphTitleLoName Name of the ListObject defining graph titles/labels (e.g.
-'                         "Tab_Label_TSGraph")
-' @param tabLoName        Name of the time-series table ListObject (e.g.
-'                         "Tab_TimeSeries_Analysis"), used by GraphSpecs to resolve
-'                         named ranges for series data
-' @param graphsList       A BetterArray accumulating GoTo graph display strings. Each
-'                         graph's plot title is pushed here and the array is used to
-'                         build the navigation dropdown after all graphs are created.
-' @remark Exits early if the RNG_HasTable_TS flag is empty (no tables were written)
-'         or if either the graph or title ListObject has no data rows.
+'@label:write-time-series-graphs
+'@sub-title Build all time-series charts from the graph definition ListObjects.
+'@details
+'Reads three setup ListObjects: the graph definition table (graphLoName),
+'the graph title/label table (graphTitleLoName), and the original time-series
+'table (tabLoName). These are bundled into a BetterArray and passed to
+'GraphSpecs.CreateRangeSpecs, which operates in complex mode -- resolving
+'multi-series graphs with mixed chart types and separate axis positions.
+'The method then loops over each graph, creates it via Graphs.Create,
+'iterates its series to add data ranges and labels, formats the chart,
+'records metadata in AnaTabIds, and advances the anchor cell by 50 rows.
+'Finally, a GoTo graph dropdown is placed at row 3 col 3.
+'@param graphLoName String. Name of the ListObject defining graph series.
+'@param graphTitleLoName String. Name of the ListObject defining graph
+'titles and labels.
+'@param tabLoName String. Name of the time-series table ListObject, used by
+'GraphSpecs to resolve named ranges for series data.
+'@param graphsList BetterArray. Accumulates GoTo graph display strings for
+'the navigation dropdown.
+'@remarks Exits early if the RNG_HasTable_TS flag is empty (no tables were
+'written) or if either the graph or title ListObject has no data rows.
 Private Sub WriteTimeSeriesGraphs(ByVal graphLoName As String, _
                                    ByVal graphTitleLoName As String, _
                                    ByVal tabLoName As String, _
@@ -843,27 +895,24 @@ Private Sub WriteTimeSeriesGraphs(ByVal graphLoName As String, _
             goToLabel:=goToGraphLabel, goToPrefix:="ts_", goToSuffix:="_graph"
 End Sub
 
-'@section WriteSpatioTemporalGraph
-'===============================================================================
-
-' @description Build spatio-temporal charts by re-reading the same setup ListObject
-'              that was used to create the spatio-temporal tables (loName). Unlike
-'              WriteTimeSeriesGraphs which uses a separate graph-definition ListObject,
-'              this method iterates over the original table rows, checks HasGraph for
-'              each, and creates one chart per qualifying table using the simpler
-'              GraphSpecs.Create (non-complex) mode. Each graph's plot title is composed
-'              from the translated "MSG_Graph" label plus the STARTCOL named-range value
-'              for that table. Charts are spaced 50 rows apart starting from the
-'              START_GRAPHS_SPT anchor. After all charts are created, a GoTo graph
-'              dropdown is placed at row 3 col 3 of the spatio-temporal output sheet.
-' @param loName     Name of the spatio-temporal ListObject (e.g.
-'                   "Tab_SpatioTemporal_Analysis") whose rows define both the tables
-'                   and the graphs
-' @param graphsList A BetterArray accumulating GoTo graph display strings. Each chart's
-'                   plot title is pushed here and the array is used to build the
-'                   navigation dropdown at the end.
-' @remark Skips rows where ValidTable is False or HasGraph is False. Exits early if
-'         the ListObject has no DataBodyRange.
+'@label:write-spatio-temporal-graph
+'@sub-title Build spatio-temporal charts from the table definition ListObject.
+'@details
+'Builds spatio-temporal charts by re-reading the same setup ListObject
+'that was used to create the spatio-temporal tables (loName). Unlike
+'WriteTimeSeriesGraphs which uses a separate graph-definition ListObject,
+'this method iterates over the original table rows, checks HasGraph for
+'each, and creates one chart per qualifying table using the simpler
+'GraphSpecs.Create (non-complex) mode. Each graph's plot title is composed
+'from the translated "MSG_Graph" label plus the STARTCOL named-range value.
+'Charts are spaced 50 rows apart. After all charts are created, a GoTo
+'graph dropdown is placed at row 3 col 3.
+'@param loName String. Name of the spatio-temporal ListObject whose rows
+'define both the tables and the graphs.
+'@param graphsList BetterArray. Accumulates GoTo graph display strings for
+'the navigation dropdown.
+'@remarks Skips rows where ValidTable is False or HasGraph is False. Exits
+'early if the ListObject has no DataBodyRange.
 Private Sub WriteSpatioTemporalGraph(ByVal loName As String, _
                                       ByVal graphsList As BetterArray)
     Dim sh As Worksheet
@@ -961,26 +1010,29 @@ ContinueLoop:
             goToLabel:=goToGraphLabel, goToPrefix:="spt_", goToSuffix:="_graph"
 End Sub
 
-'@section WriteAnalysis — main orchestration
+'@section Orchestration
 '===============================================================================
+'@description Top-level entry point that builds all four analysis output worksheets.
 
-' @description Top-level orchestrator that builds all four analysis output worksheets in
-'              sequence: (1) Normal (univariate + bivariate + global summary), (2) Time
-'              Series, (3) Spatial, and (4) Spatio-Temporal. For each scope the method:
-'              prepares the sheet (PrepareSheet), allocates fresh local GoTo arrays
-'              (Bug #2 fix -- previously these were shared instance state causing cross-
-'              scope pollution), calls WriteTable for each relevant setup ListObject,
-'              optionally calls graph-creation subs (WriteTimeSeriesGraphs or
-'              WriteSpatioTemporalGraph), builds the section-level GoTo dropdown
-'              (AddGoTo), re-adds command buttons (AddCommands), password-protects the
-'              sheet, and hides it if no tables were actually written (the RNG_HasTable_*
-'              flag is still empty). Application performance mode is enabled once at the
-'              top via BusyApp and remains active for the entire build.
-' @remark The normal scope writes three ListObjects (GLOBALSUMMARY, UNIVARIATE,
-'         BIVARIATE) in sequence with a blank GoTo separator pushed between global
-'         summary and univariate. Time-series and spatio-temporal scopes also create
-'         graphs and a graph-level GoTo dropdown. The caller (IAnalysisOutput_WriteAnalysis)
-'         is responsible for restoring Application settings after this method returns.
+'@label:write-analysis
+'@sub-title Write all analysis tables, formulas, and graphs to the output.
+'@details
+'Top-level orchestrator that builds all four analysis output worksheets in
+'sequence: (1) Normal (univariate + bivariate + global summary), (2) Time
+'Series, (3) Spatial, and (4) Spatio-Temporal. For each scope the method
+'prepares the sheet (PrepareSheet), allocates fresh local GoTo arrays
+'(Bug #2 fix), calls WriteTable for each relevant setup ListObject,
+'optionally calls graph-creation subs, builds the section-level GoTo
+'dropdown (AddGoTo), re-adds command buttons (AddCommands), password-
+'protects the sheet, and hides it if no tables were written (the
+'RNG_HasTable_* flag is still empty). Application performance mode is
+'enabled once at the top via BusyApp.
+'@export
+'@remarks The normal scope writes three ListObjects (GLOBALSUMMARY,
+'UNIVARIATE, BIVARIATE) in sequence. Time-series and spatio-temporal
+'scopes also create graphs and a graph-level GoTo dropdown. The caller
+'(IAnalysisOutput_WriteAnalysis) is responsible for restoring Application
+'settings after this method returns.
 Private Sub WriteAnalysis()
     Dim outsh As Worksheet
     Dim cellRng As Range
@@ -1089,15 +1141,25 @@ Private Sub WriteAnalysis()
     If IsEmpty(outsh.Range("RNG_HasTable_SPT")) Then outsh.Visible = xlSheetHidden
 End Sub
 
-'@section Error handling
+'@section Error Handling
 '===============================================================================
 
+'@label:throw-error
+'@sub-title Raise a project error with standardised source.
+'@details
+'Wrapper around Err.Raise that standardises the source to CLASS_NAME,
+'providing a consistent stack trace across all methods in this class.
+'@param errNumber Long. The error code to raise.
+'@param message String. Human-readable description of the failure.
+'@throws ProjectError.<varies> Always raises the specified error.
 Private Sub ThrowError(ByVal errNumber As Long, ByVal message As String)
     Err.Raise CLng(errNumber), CLASS_NAME, message
 End Sub
 
-'@section Interface implementation
+'@section Interface Implementation
 '===============================================================================
+'@description Delegated members satisfying the IAnalysisOutput contract.
+'See the corresponding Public/Private members above for full documentation.
 
 Private Sub IAnalysisOutput_WriteAnalysis()
     WriteAnalysis

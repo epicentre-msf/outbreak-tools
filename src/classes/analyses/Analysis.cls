@@ -18,6 +18,18 @@ Option Explicit
 
 Implements IAnalysis
 
+'@class Analysis
+'@description
+'Manages an analysis worksheet within an outbreak linelist workbook. Provides
+'row manipulation (add, insert, delete, remove), data exchange (import, export,
+'sort, clean), translation of analysis labels, and validation of required
+'ListObjects. Each instance is bound to a single worksheet and delegates table
+'operations to CustomTable. Trace diagnostics are recorded via IChecking and
+'can be retrieved through HasCheckings and CheckingValues.
+'@depends CustomTable, Checking, ITranslationObject, BetterArray
+'@version 2025-01-15
+'@author EpiData
+
 Private Type TAnalysis
     hostsheet As Worksheet
     hasChecks As Boolean
@@ -46,13 +58,16 @@ Private Const CLASSNAME As String = "Analysis"
 '===============================================================================
 
 '@label:create
-'@prop-title Instantiate analysis controller
+'@sub-title Create an Analysis instance bound to a worksheet
 '@details
-'Creates a predeclared analysis manager bound to the supplied worksheet so
-'callers can immediately work with the analysis without additional setup.
-'@param hostsheet Worksheet hosting the analysis tables
-'@return IAnalysis
-'@depends Checking, CustomTable
+'Factory method on the predeclared instance. Validates that the worksheet
+'is not Nothing, binds a new Analysis to it, and populates the required-
+'tables cache on the predeclared instance. Callers interact with the
+'returned IAnalysis interface.
+'@param hostsheet Worksheet. The worksheet hosting the analysis tables.
+'@return IAnalysis. A fully initialised analysis controller.
+'@throws ProjectError.ObjectNotInitialized When hostsheet is Nothing.
+'@depends CustomTable, Checking
 '@export
 Public Function Create(ByVal hostsheet As Worksheet) As IAnalysis
     If hostsheet Is Nothing Then ThrowError ProjectError.ObjectNotInitialized, _
@@ -66,37 +81,45 @@ Public Function Create(ByVal hostsheet As Worksheet) As IAnalysis
     EnsureRequiredTables
 End Function
 
+'@label:self
 '@prop-title Current object instance
 '@details
-'Expose the current instance so callers can fluently retrieve the interface reference.
-'@return IAnalysis
+'Convenience accessor so consuming code can fluently retrieve the interface
+'reference from the predeclared Create method.
+'@return IAnalysis. The current instance cast to the interface.
 Public Property Get Self() As IAnalysis
     Set Self = Me
 End Property
 
 '@label:wksh
-'@prop-title Backing worksheet
+'@prop-title Backing analysis worksheet
 '@details
-'Return the worksheet that stores the analysis tables manipulated by this class.
-'@return Worksheet
+'Returns the worksheet that stores the analysis tables manipulated by
+'this class. Set during construction via the Create factory.
+'@return Worksheet. The bound analysis worksheet.
 Private Property Get Wksh() As Worksheet
     Set Wksh = this.hostsheet
 End Property
 
 '@label:wksh-set
-'@sub-title Store the backing worksheet
-'@param hostsheet Worksheet used to drive analysis automation.
+'@prop-title Assign the backing worksheet
+'@details
+'Stores the worksheet reference used by all subsequent operations.
+'Called internally by the Create factory.
+'@param hostsheet Worksheet. The worksheet to bind.
 Public Property Set Wksh(ByVal hostsheet As Worksheet)
     Set this.hostsheet = hostsheet
 End Property
 
 '@section RowManagement
 '===============================================================================
+'@description Add, insert, delete, and remove rows in analysis ListObjects.
 
 '@label:addrows
 '@sub-title Add rows based on worksheet header selection
 '@details
-'Delegates to the row manager to append the required rows to each target table.
+'Delegates to ManageRows in append mode to add rows to each target
+'analysis table based on the instruction in cell A1 of the worksheet.
 '@export
 Private Sub AddRows()
     ManageRows
@@ -105,11 +128,15 @@ End Sub
 '@label:insertrows
 '@sub-title Insert rows based on the supplied selection
 '@details
-'Determines which analysis table hosts the selection and mirrors the selection
-'height inside that table. Worksheet row insertion is enabled by default to
-'protect stacked listobjects.
-'@param targetCell Range describing the selection to mirror.
-'@param insertShift Optional Boolean. When True worksheet rows are inserted ahead of the resize.
+'Determines which analysis table hosts the selection by calling
+'ResolveSelectionTable, retrieves the table settings (prefix, id column,
+'minimum count), and delegates to CustomTable.InsertRowsAt to mirror the
+'selection height inside that table. Worksheet row insertion is enabled
+'by default to protect stacked ListObjects.
+'@param targetCell Range. Anchor describing the rows to mirror.
+'@param insertShift Optional Boolean. When True, worksheet rows are
+'inserted ahead of the resize. Defaults to True.
+'@export
 Private Sub InsertRows(ByVal targetCell As Range, _
                        Optional ByVal insertShift As Boolean = True)
     Dim targetList As ListObject
@@ -131,8 +158,19 @@ Private Sub InsertRows(ByVal targetCell As Range, _
                              includeIds:=shouldIncludeIds
 End Sub
 
-'@label:DeleteRows
+'@label:deleterows
 '@sub-title Delete rows intersecting the selection
+'@details
+'Locates the analysis table hosting the selection via ResolveSelectionTable,
+'retrieves its settings, and delegates to CustomTable.DeleteRowsAt. The
+'includeIds flag controls whether identifier columns are cleared, and
+'forceShift controls whether worksheet rows are shifted up after deletion.
+'@param targetCell Range. Anchor describing the rows to delete.
+'@param includeIds Optional Boolean. When True, identifiers are cleared
+'along with data. Defaults to True.
+'@param forceShift Optional Boolean. When True, worksheet rows are shifted
+'up after deletion. Defaults to True.
+'@export
 Private Sub DeleteRows(ByVal targetCell As Range, _
                        Optional ByVal includeIds As Boolean = True, _
                        Optional ByVal forceShift As Boolean = True)
@@ -158,17 +196,24 @@ End Sub
 '@label:removerows
 '@sub-title Remove rows while preserving minimum entries
 '@details
-'Calls the row manager in deletion mode to trim each table to its required length.
+'Calls ManageRows in deletion mode to trim each analysis table down to
+'its required minimum row count.
 '@export
 Private Sub RemoveRows()
     ManageRows True
 End Sub
 
 '@label:managerows
+'@sub-title Central row-management dispatcher
 '@details
-'Central routine that inspects the worksheet header instruction and adjusts
-'analysis tables accordingly, either by adding or deleting rows.
-'@param del Boolean. When True rows are removed; otherwise rows are added.
+'Reads the header instruction from cell A1 of the analysis worksheet and
+'determines which ListObject(s) to target. When del is False, rows are
+'appended via CustomTable.AddRows and identifiers are regenerated. When
+'del is True, rows are removed via CustomTable.RemoveRows down to the
+'required minimum. Falls back to processing all known tables when the
+'header text does not match a specific table name.
+'@param del Optional Boolean. When True, rows are removed; otherwise rows
+'are added. Defaults to False.
 Private Sub ManageRows(Optional ByVal del As Boolean = False)
     Dim listNames As BetterArray
     Dim selectionText As String
@@ -191,7 +236,7 @@ Private Sub ManageRows(Optional ByVal del As Boolean = False)
         selectionText = LCase$(CStr(headerValue))
         selectionText = Trim$(Replace(selectionText, "add or remove rows of", vbNullString))
     End If
-    
+
     Set listNames = New BetterArray
 
     Select Case selectionText
@@ -238,6 +283,17 @@ NextTable:
     Next idx
 End Sub
 
+'@label:resolve-selection-table
+'@sub-title Resolve the ListObject that hosts a worksheet selection
+'@details
+'Validates that the target cell belongs to the analysis worksheet and
+'intersects a ListObject. Logs a warning and returns Nothing when any
+'validation check fails. Used by InsertRows and DeleteRows to identify
+'the target table before delegating to CustomTable.
+'@param targetCell Range. The user selection to resolve.
+'@param actionLabel String. Human-readable action name for log messages
+'(e.g. "insert", "delete").
+'@return ListObject. The hosting ListObject, or Nothing when not found.
 Private Function ResolveSelectionTable(ByVal targetCell As Range, ByVal actionLabel As String) As ListObject
     'Ensure the provided selection belongs to the analysis worksheet and intersects a listobject.
     Dim hostSheet As Worksheet
@@ -275,13 +331,16 @@ Private Function ResolveSelectionTable(ByVal targetCell As Range, ByVal actionLa
     End If
 End Function
 
-'@label:tablesettings
+'@label:table-settings
+'@sub-title Derive prefix, identifier column, and minimum row counts
 '@details
-'Derives prefix, identifier column and minimum row counts for supported analysis tables.
-'@param loName String identifying the targeted listobject.
-'@param prefix String returned prefix applied to generated identifiers.
-'@param idColumn String returned identifier column name.
-'@param minimumCount Long returned minimum number of rows required.
+'Populates the three ByRef outputs based on the ListObject name. Only
+'TIMESERIES, TITLEGRAPHTIMESERIES, GRAPHTIMESERIES, and SPATIOTEMPORAL
+'have non-default settings; all other tables use empty strings and zero.
+'@param loName String. Name of the target ListObject.
+'@param prefix ByRef String. Populated with the identifier prefix.
+'@param idColumn ByRef String. Populated with the identifier column name.
+'@param minimumCount ByRef Long. Populated with the minimum row count.
 Private Sub GetTableSettings(ByVal loName As String, _
                              ByRef prefix As String, _
                              ByRef idColumn As String, _
@@ -306,12 +365,18 @@ Private Sub GetTableSettings(ByVal loName As String, _
     End Select
 End Sub
 
-'@section ImportExport
+'@section DataExchange
 '===============================================================================
+'@description Import, export, translate, sort, and clean operations.
 
-'@label:Clean
-'@sub-title Clean the analysis tables in the current worksheet
-Private Sub Clean() 
+'@label:clean
+'@sub-title Clean all analysis tables on the worksheet
+'@details
+'Iterates through all ListObjects on the analysis worksheet and delegates
+'to CustomTable.Clean for each one. Ensures the required-tables cache is
+'populated before processing.
+'@export
+Private Sub Clean()
     Dim hostLo As ListObject
     Dim hostTab As ICustomTable
     Dim hostSheet As Worksheet
@@ -328,9 +393,12 @@ End Sub
 '@label:import
 '@sub-title Import analysis tables from an external worksheet
 '@details
-'Copies each listobject (and associated headers) from the source worksheet into
-'the managed worksheet, preserving cell formatting before validating the result.
-'@param sourceSheet Worksheet providing the source analysis tables.
+'Copies each ListObject and its associated headers from the source worksheet
+'into the managed worksheet. The method first cleans existing tables, then
+'imports each valid ListObject via CustomTable.Import with strict column
+'matching. Missing source tables are logged as warnings. After import the
+'method validates all required tables and sorts them.
+'@param sourcesheet Worksheet. The worksheet providing the source analysis tables.
 '@export
 Private Sub Import(ByVal sourcesheet As Worksheet)
 
@@ -347,12 +415,12 @@ Private Sub Import(ByVal sourcesheet As Worksheet)
         Exit Sub
     End If
 
-    
+
     EnsureRequiredTables
-    
+
     'Clean actual elements before imports
     Clean
-    
+
     Set hostsheet = Wksh()
 
     For Each srcLo In sourcesheet.ListObjects
@@ -386,10 +454,12 @@ End Sub
 
 
 '@label:sort
-'@sub-title Sort analysis listobjects and enforce minimum rows
+'@sub-title Sort analysis ListObjects and enforce minimum rows
 '@details
-'Iterates through the known analysis tables, sorts them with the correct
-'priorities and trims trailing rows so every table meets its structural rules.
+'Iterates through the required-tables cache, sorts each table by its
+'primary key column (Section or Graph ID), applies secondary sorts where
+'needed (Table order, Graph order), and trims trailing rows via
+'CustomTable.RemoveRows to enforce structural rules.
 '@export
 Private Sub Sort()
     Dim sh As Worksheet
@@ -424,10 +494,10 @@ Private Sub Sort()
 
             csTab.Sort colName, directSort:=False
             If loName = TIMESERIES Then csTab.Sort "Table order", directSort:=True, strictSearch:=False
-            If ((loName = GRAPHTIMESERIES) Or (loName = TITLEGRAPHTIMESERIES)) Then 
+            If ((loName = GRAPHTIMESERIES) Or (loName = TITLEGRAPHTIMESERIES)) Then
                 csTab.Sort "Graph order", directSort:=True, strictSearch:=False
             End If
-        
+
             'Resize the listObject after sorting
             csTab.RemoveRows totalCount:=rowCount, forceShift:=True
         End If
@@ -440,9 +510,13 @@ End Sub
 '@label:export
 '@sub-title Export the analysis worksheet to a workbook
 '@details
-'Duplicates the managed worksheet into the provided workbook so external
-'processes can consume the analysis tables.
-'@param sourceWb Workbook receiving the exported worksheet.
+'Duplicates the managed worksheet into the provided workbook. If a sheet
+'with the same name already exists it is cleared and reused; otherwise a
+'new sheet is created. Each ListObject is copied by value and its header
+'rows (up to 3 rows above) are transferred with font formatting.
+'@param sourceWb Workbook. The workbook receiving the exported worksheet.
+'@param Hide Optional Long. Excel visibility constant applied to the
+'exported sheet. Defaults to xlSheetHidden.
 '@export
 Private Sub Export(ByVal sourceWb As Workbook, Optional ByVal Hide As Long = xlSheetHidden)
 
@@ -452,7 +526,7 @@ Private Sub Export(ByVal sourceWb As Workbook, Optional ByVal Hide As Long = xlS
     Dim sourceRange As Range
     Dim counter As Long
     Dim sourceLo As ListObject
-   
+
 
     If sourcewb Is Nothing Then
         LogInfo "Export aborted: destination workbook not provided", checkingWarning
@@ -497,15 +571,15 @@ Private Sub Export(ByVal sourceWb As Workbook, Optional ByVal Hide As Long = xlS
     Next
 End Sub
 
-'@section Translation
-'===============================================================================
-
 '@label:translate
 '@sub-title Translate analysis labels using the provided engine
 '@details
-'Pushes known textual columns through the translation object so the analysis
-'worksheet reflects the currently selected language.
-'@param TransObject ITranslationObject responsible for translating ranges.
+'Iterates through all ListObjects on the analysis worksheet and translates
+'known textual columns (Section, Table Title, Graph Title, Summary label,
+'Choices, Label, Section (select)) through the translation object. The
+'Summary function column is translated with formula awareness enabled.
+'Logs a note on completion and a warning when the translator is Nothing.
+'@param TransObject ITranslationObject. The translation engine to use.
 '@export
 Private Sub Translate(ByVal TransObject As ITranslationObject)
     Dim sh As Worksheet
@@ -543,15 +617,19 @@ End Sub
 
 
 
-'@label:checkings
-'@section Checkings and Errors
+'@section Checking
 '===============================================================================
+'@description Logging, validation, and error-raising support.
 
-'@label:loginfo
+'@label:log-info
+'@sub-title Log an informational or warning message
 '@details
-'Adds a trace entry to the internal checking object, initialising it when needed.
-'@param label String message describing the event.
-'@param scope Byte indicating CheckingScope severity. Defaults to note level.
+'Adds a trace entry to the internal IChecking instance, initialising it
+'on first use with a name derived from the class and worksheet. Each call
+'increments the check counter and sets the hasChecks flag.
+'@param label String. The message to record.
+'@param scope Optional Byte. Severity level from CheckingLogType. Defaults
+'to checkingNote.
 Private Sub LogInfo(ByVal label As String, Optional ByVal scope As Byte = checkingNote)
     Dim checkName As String
 
@@ -567,6 +645,8 @@ End Sub
 '@prop-title Whether trace entries were recorded
 '@details
 'Provides a quick way for callers to know if diagnostics are available.
+'Returns True when at least one trace entry has been logged via LogInfo.
+'@return Boolean. True when trace entries exist.
 Private Property Get HasCheckings() As Boolean
     HasCheckings = this.hasChecks
 End Property
@@ -574,32 +654,37 @@ End Property
 '@label:checkingvalues
 '@prop-title Retrieve collected trace entries
 '@details
-'Returns the underlying checking object when traces are available.
+'Returns the underlying IChecking object when traces are available.
+'Returns Nothing when no traces have been logged.
+'@return Object. The IChecking instance, or Nothing.
 Private Property Get CheckingValues() As Object
     If Not HasCheckings() Then Exit Property
     Set CheckingValues = internalChecks
 End Property
 
 
-'@label:throwerror
+'@label:throw-error
+'@sub-title Raise a ProjectError-based exception
 '@details
-'Raises a strongly typed project error so callers can react consistently.
-'@param errNumber ProjectError enumeration value describing the failure.
-'@param errorMessage String detailing the problem context.
+'Wrapper around Err.Raise that standardises the source to CLASSNAME,
+'providing a consistent stack trace across all methods in this class.
+'@param errNumber Long. The ProjectError code to raise.
+'@param errorMessage String. Human-readable description of the failure.
+'@throws ProjectError. Always raises the specified error.
 Private Sub ThrowError(ByVal errNumber As Long, ByVal errorMessage As String)
     Err.Raise errNumber, CLASSNAME, "Error message : " & Chr$(34) & errorMessage & Chr$(34)
 End Sub
 
-'@section Interface
+'@section Interface Implementation
 '===============================================================================
+'@description Delegated members satisfying the IAnalysis contract.
+'See the corresponding Private/Public members above for full documentation.
 
-'@jump:wksh
 Private Property Get IAnalysis_Wksh() As Worksheet
     Set IAnalysis_Wksh = Wksh()
 End Property
 
 
-'@jump:AddRows
 Private Sub IAnalysis_AddRows()
     AddRows
 End Sub
@@ -615,7 +700,6 @@ Private Sub IAnalysis_DeleteRows(ByVal targetCell As Range, _
     DeleteRows targetCell, includeIds, forceShift
 End Sub
 
-'@jump:RemoveRows
 Private Sub IAnalysis_RemoveRows()
     RemoveRows
 End Sub
@@ -624,27 +708,22 @@ Private Sub IAnalysis_ManageRows(Optional ByVal del As Boolean = False)
     ManageRows del
 End Sub
 
-'@jump:Import
 Private Sub IAnalysis_Import(ByVal sourcesheet As Worksheet)
     Import sourcesheet
 End Sub
 
-'@jump:Export
 Private Sub IAnalysis_Export(ByVal sourcewb As Workbook, Optional ByVal Hide As Long = xlSheetHidden)
     Export sourcewb, Hide
 End Sub
 
-'@jump:Translate
 Private Sub IAnalysis_Translate(ByVal translator As ITranslationObject)
     Translate translator
 End Sub
 
-'@jump:Sort
 Private Sub IAnalysis_Sort()
     Sort
 End Sub
 
-'@jump:Clean
 Private Sub IAnalysis_Clean()
     Clean
 End Sub
@@ -653,19 +732,24 @@ Private Sub IAnalysis_EnsureAnalysisTables()
     EnsureAnalysisTables True
 End Sub
 
-'@jump:HasCheckings
 Private Property Get IAnalysis_HasCheckings() As Boolean
     IAnalysis_HasCheckings = HasCheckings()
 End Property
 
-'@jump:CheckingValues
 Private Property Get IAnalysis_CheckingValues() As Object
     Set IAnalysis_CheckingValues = CheckingValues()
 End Property
 
 '@section Helpers
 '===============================================================================
+'@description Private helper methods supporting the public API.
 
+'@label:ensure-required-tables
+'@sub-title Populate the required-tables cache
+'@details
+'Lazily initialises the requiredTablesCaches BetterArray with the names
+'of all nine ListObjects expected on an analysis worksheet. Subsequent
+'calls are no-ops once the cache is populated.
 Private Sub EnsureRequiredTables()
     If requiredTablesCaches Is Nothing Then
         Set requiredTablesCaches = New BetterArray
@@ -674,7 +758,14 @@ Private Sub EnsureRequiredTables()
     End If
 End Sub
 
-'Check if a listObject is valid for the analysis
+'@label:is-valid-list-object
+'@sub-title Check if a ListObject is valid for this analysis
+'@details
+'Returns True when the ListObject name appears in the required-tables
+'cache and the corresponding ListObject exists on the host worksheet.
+'Used by Import to skip unrecognised tables from the source worksheet.
+'@param Lo ListObject. The ListObject to validate.
+'@return Boolean. True when the ListObject is valid for this analysis.
 Private Function IsValidListObject(ByVal Lo As ListObject) As Boolean
 
     If Lo Is Nothing Then Exit Function
@@ -689,9 +780,16 @@ Private Function IsValidListObject(ByVal Lo As ListObject) As Boolean
 End Function
 
 '@label:checktables
+'@sub-title Ensure all expected analysis tables are present
 '@details
-'Ensures all expected analysis tables exist and records warnings for any that
-'are missing so downstream processes can alert users.
+'Iterates through the required-tables cache and checks that each
+'ListObject exists on the analysis worksheet. When raiseError is True,
+'missing tables raise a ProjectError.ElementNotFound; otherwise a warning
+'is logged via LogInfo.
+'@param raiseError Optional Boolean. When True, raises an error for
+'missing tables instead of logging. Defaults to False.
+'@throws ProjectError.ElementNotFound When raiseError is True and a
+'required ListObject is missing.
 Private Sub EnsureAnalysisTables(Optional ByVal raiseError As Boolean = False)
     Dim idx As Long
     Dim loName As String
