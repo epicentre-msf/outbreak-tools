@@ -17,6 +17,14 @@ Option Explicit
 
 Implements IEventSetup
 
+'@class EventSetup
+'@description
+'Encapsulates workbook-level setup events and lazily-cached domain managers.
+'Handles worksheet activation, change, and open events, manages setup rows
+'(add, insert, delete, sort) through cached helpers (LLdictionary, LLChoices,
+'LLExport, Analysis), and provides analysis table value lookups.
+
+
 '@section State
 '===============================================================================
 Private Type TEventSetup
@@ -77,6 +85,11 @@ Private Const CLASSNAME              As String = "EventSetup"
 
 '@section Factory helpers
 '===============================================================================
+'@label:create
+'@sub-title Build a configured EventSetup instance bound to a host workbook.
+'@param hostBook Workbook. The workbook owning the setup sheets.
+'@return IEventSetup. Configured service instance.
+'@export
 Public Function Create(ByVal hostBook As Workbook) As IEventSetup
     Dim instance As EventSetup
 
@@ -85,12 +98,21 @@ Public Function Create(ByVal hostBook As Workbook) As IEventSetup
     Set Create = instance.Self
 End Function
 
+'@label:self
+'@prop-title Current object instance cast to the interface.
+'@return IEventSetup. The current instance.
 Public Property Get Self() As IEventSetup
     Set Self = Me
 End Property
 
 '@section IEventSetup implementation
+'@description Direct implementations and thin delegation stubs for each
+'IEventSetup interface member.
 '===============================================================================
+'@label:configure
+'@sub-title Configure the service with its host workbook context.
+'@param hostBook Workbook. The workbook providing setup worksheets and infrastructure.
+'@export
 Public Sub Configure(ByVal hostBook As Workbook)
     If (hostBook Is Nothing) Then
         ThrowError ProjectError.ObjectNotInitialized, "Host workbook is required to configure EventSetup"
@@ -104,6 +126,8 @@ Private Sub IEventSetup_Configure(ByVal hostBook As Workbook)
     Configure hostBook
 End Sub
 
+'@label:on-workbook-open
+'@sub-title React to workbook open notifications.
 Private Sub IEventSetup_OnWorkbookOpen()
     EnsureUpdatedValues
     If Not (this.updater Is Nothing) Then
@@ -121,6 +145,8 @@ Private Sub IEventSetup_OnWorkbookOpen()
     PasswordManager.ApplyProtectionMatrix this.hostBook
 End Sub
 
+'@label:on-sheet-activate
+'@sub-title Handle worksheet activation events.
 Private Sub IEventSetup_OnSheetActivate(ByVal sh As Worksheet)
     If (sh Is Nothing) Then Exit Sub
 
@@ -136,6 +162,8 @@ Private Sub IEventSetup_OnSheetActivate(ByVal sh As Worksheet)
     End If
 End Sub
 
+'@label:on-sheet-change
+'@sub-title Handle worksheet change events fired by Excel.
 Private Sub IEventSetup_OnSheetChange(ByVal sh As Worksheet, ByVal target As Range)
     If (sh Is Nothing) Or (target Is Nothing) Then Exit Sub
 
@@ -166,6 +194,8 @@ Private Sub IEventSetup_OnSheetChange(ByVal sh As Worksheet, ByVal target As Ran
     AddGeoDropdown target
 End Sub
 
+'@label:update-analysis-dropdowns
+'@sub-title Refresh cached dropdowns and related analysis helpers.
 Private Sub UpdateAnalysisDropdowns(Optional ByVal forceUpdate As Boolean = False)
 
     EnsureUpdatedValues
@@ -206,14 +236,17 @@ Private Sub IEventSetup_UpdateAnalysisDropdowns(Optional ByVal forceUpdate As Bo
     UpdateAnalysisDropdowns forceUpdate
 End Sub
 
+'@label:reset-caches
 Private Sub IEventSetup_ResetCaches()
     ResetInternalCaches
 End Sub
 
+'@label:recalculate-analysis
 Private Sub IEventSetup_RecalculateAnalysis()
     CalculateAnalysis
 End Sub
 
+'@label:reset-translation-counter
 Private Sub IEventSetup_ResetTranslationCounter()
     ResetTranslationCounter
 End Sub
@@ -238,22 +271,26 @@ Private Sub IEventSetup_SortTables(ByVal sheetName As String)
     SortTables sheetName
 End Sub
 
+'@label:build-time-series-header
 Private Function IEventSetup_BuildTimeSeriesHeader(ByVal timeVar As String, _
                                                    ByVal groupVar As String, _
                                                    ByVal sumLabel As String) As String
     IEventSetup_BuildTimeSeriesHeader = BuildTimeSeriesHeaderInternal(timeVar, groupVar, sumLabel)
 End Function
 
+'@label:analysis-graph-value
 Private Function IEventSetup_AnalysisGraphValue(ByVal graphTitle As String, _
                                                 Optional ByVal graphCol As String = "Graph ID") As String
     IEventSetup_AnalysisGraphValue = AnalysisGraphValueInternal(graphTitle, graphCol)
 End Function
 
+'@label:analysis-time-series-value
 Private Function IEventSetup_AnalysisTimeSeriesValue(ByVal seriesTitle As String, _
                                                      Optional ByVal tsColumn As String = "Series ID") As String
     IEventSetup_AnalysisTimeSeriesValue = AnalysisTimeSeriesValueInternal(seriesTitle, tsColumn)
 End Function
 
+'@label:spatio-temporal-spec-value
 Private Function IEventSetup_SpatioTemporalSpecValue(ByVal sectionName As String, _
                                                      Optional ByVal specColumn As String = "N geo max") As String
     IEventSetup_SpatioTemporalSpecValue = SpatioTemporalSpecValueInternal(sectionName, specColumn)
@@ -261,6 +298,11 @@ End Function
 
 '@section Row management and sorting
 '===============================================================================
+'@label:manage-rows
+'@sub-title Manage setup worksheet rows using cached helpers.
+'@param sheetName String. Worksheet name to process.
+'@param del Optional Boolean. When True, removes rows instead of adding them. Defaults to False.
+'@export
 Public Sub ManageRows(ByVal sheetName As String, Optional ByVal del As Boolean = False)
     Dim normalized As String
     Dim state As IApplicationState
@@ -336,6 +378,9 @@ CleanFail:
     If Not state Is Nothing Then state.Restore
 End Sub
 
+'@label:insert-rows
+'@sub-title Insert rows relative to a selection for supported setup sheets.
+'@export
 Public Sub InsertRows(ByVal sheetName As String, _
                       ByVal targetCell As Range, _
                       Optional ByVal insertShift As Boolean = False)
@@ -414,6 +459,9 @@ CleanFail:
     If Not state Is Nothing Then state.Restore
 End Sub
 
+'@label:delete-rows
+'@sub-title Delete rows relative to a selection for supported setup sheets.
+'@export
 Public Sub DeleteRows(ByVal sheetName As String, _
                       ByVal targetCell As Range, _
                       Optional ByVal forceShift As Boolean = False)
@@ -492,6 +540,9 @@ CleanFail:
     If Not state Is Nothing Then state.Restore
 End Sub
 
+'@label:sort-tables
+'@sub-title Sort setup worksheets leveraging cached managers.
+'@export
 Public Sub SortTables(ByVal sheetName As String)
     Dim normalized As String
     Dim state As IApplicationState
@@ -571,6 +622,8 @@ End Sub
 
 '@section Internal helpers
 '===============================================================================
+'@label:reset-internal-caches
+'@sub-title Clear all lazily-cached domain managers and table helpers.
 Private Sub ResetInternalCaches()
     Set this.updater = Nothing
     Set this.drop = Nothing
@@ -588,6 +641,8 @@ Private Sub ResetInternalCaches()
     Set this.translations = Nothing
 End Sub
 
+'@label:add-or-update-drop
+'@sub-title Add or update a dropdown list entry through the cached manager.
 Private Sub AddOrUpdateDrop(ByVal lst As BetterArray, ByVal dropName As String)
     EnsureDropdownValues
     If this.drop Is Nothing Then Exit Sub
@@ -599,6 +654,8 @@ Private Sub AddOrUpdateDrop(ByVal lst As BetterArray, ByVal dropName As String)
     End If
 End Sub
 
+'@label:ensure-updated-values
+'@sub-title Lazily initialise the update watcher from the registry worksheet.
 Private Sub EnsureUpdatedValues()
     If Not (this.updater Is Nothing) Then Exit Sub
 
@@ -612,6 +669,8 @@ Private Sub EnsureUpdatedValues()
     On Error GoTo 0
 End Sub
 
+'@label:ensure-dropdown-values
+'@sub-title Lazily initialise the dropdown manager from the variables worksheet.
 Private Sub EnsureDropdownValues()
     If Not (this.drop Is Nothing) Then Exit Sub
 
@@ -625,11 +684,15 @@ Private Sub EnsureDropdownValues()
     On Error GoTo 0
 End Sub
 
+'@label:ensure-ribbon
+'@sub-title Lazily cache the ribbon instance.
 Private Sub EnsureRibbon()
     If Not (this.ribbon Is Nothing) Then Exit Sub
     Set this.ribbon = RibbonDev.ActualRibbon()
 End Sub
 
+'@label:ensure-dictionary
+'@sub-title Lazily create the dictionary manager.
 Private Function EnsureDictionary() As Boolean
     If Not (this.dictionary Is Nothing) Then
         EnsureDictionary = True
@@ -647,6 +710,8 @@ Private Function EnsureDictionary() As Boolean
     EnsureDictionary = Not (this.dictionary Is Nothing)
 End Function
 
+'@label:ensure-vars
+'@sub-title Lazily initialise the variables helper from the cached dictionary.
 Private Sub EnsureVars()
     If Not (this.variables Is Nothing) Then Exit Sub
 
@@ -657,6 +722,8 @@ Private Sub EnsureVars()
     On Error GoTo 0
 End Sub
 
+'@label:ensure-choices
+'@sub-title Lazily create the choices manager.
 Private Function EnsureChoices() As Boolean
     If Not (this.choices Is Nothing) Then
         EnsureChoices = True
@@ -675,6 +742,8 @@ Private Function EnsureChoices() As Boolean
     EnsureChoices = Not (this.choices Is Nothing)
 End Function
 
+'@label:ensure-analysis-manager
+'@sub-title Lazily create the analysis manager.
 Private Function EnsureAnalysisManager() As Boolean
     If Not (this.ana Is Nothing) Then
         EnsureAnalysisManager = True
@@ -693,6 +762,8 @@ Private Function EnsureAnalysisManager() As Boolean
     EnsureAnalysisManager = Not (this.ana Is Nothing)
 End Function
 
+'@label:ensure-exports
+'@sub-title Lazily create the exports manager.
 Private Function EnsureExports() As Boolean
     If Not (this.exports Is Nothing) Then
         EnsureExports = True
@@ -711,6 +782,8 @@ Private Function EnsureExports() As Boolean
     EnsureExports = Not (this.exports Is Nothing)
 End Function
 
+'@label:ensure-translations-manager
+'@sub-title Lazily create the translations table manager.
 Private Function EnsureTranslationsManager() As Boolean
     If Not (this.translations Is Nothing) Then
         EnsureTranslationsManager = True
@@ -732,7 +805,8 @@ Private Function EnsureTranslationsManager() As Boolean
     EnsureTranslationsManager = Not (this.translations Is Nothing)
 End Function
 
-'Ensure the cached analysis tables are created lazily and reused.
+'@label:ensure-analysis-table
+'@sub-title Ensure the cached analysis tables are created lazily and reused.
 Private Function EnsureAnalysisTable(ByRef tableRef As ICustomTable, _
                                      ByVal listName As String, _
                                      ByVal keyColumn As String) As Boolean
@@ -752,7 +826,8 @@ Private Function EnsureAnalysisTable(ByRef tableRef As ICustomTable, _
     EnsureAnalysisTable = Not (tableRef Is Nothing)
 End Function
 
-'Calculate the associated listobject once the cache is primed.
+'@label:ensure-table-calculated
+'@sub-title Calculate the associated ListObject once the cache is primed.
 Private Sub EnsureTableCalculated(ByRef tableRef As ICustomTable, _
                                   ByVal listName As String, _
                                   ByVal keyColumn As String)
@@ -763,6 +838,8 @@ Private Sub EnsureTableCalculated(ByRef tableRef As ICustomTable, _
     On Error GoTo 0
 End Sub
 
+'@label:analysis-list-object
+'@sub-title Retrieve a ListObject from the Analysis worksheet by name.
 Private Function AnalysisListObject(ByVal loName As String) As ListObject
     Dim analysisSheet As Worksheet
     Dim lo As ListObject
@@ -777,6 +854,8 @@ Private Function AnalysisListObject(ByVal loName As String) As ListObject
     Set AnalysisListObject = lo
 End Function
 
+'@label:translations-list-object
+'@sub-title Retrieve the translations ListObject from the Translations worksheet.
 Private Function TranslationsListObject() As ListObject
     Dim translationsSheet As Worksheet
     Dim lo As ListObject
@@ -791,6 +870,8 @@ Private Function TranslationsListObject() As ListObject
     Set TranslationsListObject = lo
 End Function
 
+'@label:sheet-or-nothing
+'@sub-title Retrieve a worksheet from the host workbook or Nothing.
 Private Function SheetOrNothing(ByVal sheetName As String) As Worksheet
     Dim sh As Worksheet
 
@@ -803,10 +884,14 @@ Private Function SheetOrNothing(ByVal sheetName As String) As Worksheet
     Set SheetOrNothing = sh
 End Function
 
+'@label:normalised-sheet-name
+'@sub-title Normalise a sheet name to lowercase for comparison.
 Private Function NormalisedSheetName(ByVal sheetName As String) As String
     NormalisedSheetName = LCase$(Trim$(sheetName))
 End Function
 
+'@label:password-manager
+'@sub-title Build a password helper from the passwords worksheet.
 Private Function PasswordManager() As IPasswords
     Dim passSheet As Worksheet
 
@@ -818,7 +903,8 @@ Private Function PasswordManager() As IPasswords
     On Error GoTo 0
 End Function
 
-'Temporarily unlock the provided sheet and hand back the password helper.
+'@label:begin-sheet-update
+'@sub-title Temporarily unlock the provided sheet and return the password helper.
 Private Function BeginSheetUpdate(ByVal sheetName As String) As IPasswords
     Dim pass As IPasswords
 
@@ -830,13 +916,16 @@ Private Function BeginSheetUpdate(ByVal sheetName As String) As IPasswords
     Set BeginSheetUpdate = pass
 End Function
 
-'Restore sheet protection previously removed via BeginSheetUpdate.
+'@label:end-sheet-update
+'@sub-title Restore sheet protection previously removed via BeginSheetUpdate.
 Private Sub EndSheetUpdate(ByVal pass As IPasswords, ByVal sheetName As String)
     On Error Resume Next
         If Not pass Is Nothing Then pass.Protect sheetName
     On Error GoTo 0
 End Sub
 
+'@label:calculate-analysis
+'@sub-title Recalculate all cached analysis tables.
 Private Sub CalculateAnalysis()
     EnsureTableCalculated this.tsTable, LIST_TS_DATA, "title"
     EnsureTableCalculated this.graphTable, LIST_GRAPH_TS, "series title"
@@ -844,6 +933,8 @@ Private Sub CalculateAnalysis()
     EnsureTableCalculated this.spatioSpecsTable, LIST_SPATIO_TEMPORAL_SPECS, "section"
 End Sub
 
+'@label:handle-choices-change
+'@sub-title Recalculate label formulas when the Choices sheet changes.
 Private Sub HandleChoicesChange(ByVal target As Range)
     Dim choiceList As ListObject
     Dim choiceTable As ICustomTable
@@ -868,6 +959,8 @@ Private Sub HandleChoicesChange(ByVal target As Range)
     On Error GoTo 0
 End Sub
 
+'@label:reset-translation-counter-impl
+'@sub-title Reset the translation update counter stored in hidden names.
 Private Sub ResetTranslationCounter()
     Dim registrySheet As Worksheet
     Dim namesManager As IHiddenNames
@@ -882,6 +975,8 @@ Private Sub ResetTranslationCounter()
     On Error GoTo 0
 End Sub
 
+'@label:build-time-series-header-impl
+'@sub-title Compose the time-series header from variable labels and a separator.
 Private Function BuildTimeSeriesHeaderInternal(ByVal timeVar As String, _
                                                ByVal groupVar As String, _
                                                ByVal sumLabel As String) As String
@@ -907,6 +1002,8 @@ Private Function BuildTimeSeriesHeaderInternal(ByVal timeVar As String, _
     BuildTimeSeriesHeaderInternal = header
 End Function
 
+'@label:analysis-graph-value-impl
+'@sub-title Retrieve a value from the graph time-series table.
 Private Function AnalysisGraphValueInternal(ByVal graphTitle As String, _
                                              ByVal graphCol As String) As String
     AnalysisGraphValueInternal = AnalysisTableValue(this.graphTable, _
@@ -916,6 +1013,8 @@ Private Function AnalysisGraphValueInternal(ByVal graphTitle As String, _
                                                     graphTitle)
 End Function
 
+'@label:analysis-time-series-value-impl
+'@sub-title Retrieve a value from the time-series data table.
 Private Function AnalysisTimeSeriesValueInternal(ByVal seriesTitle As String, _
                                                   ByVal tsColumn As String) As String
     AnalysisTimeSeriesValueInternal = AnalysisTableValue(this.tsTable, _
@@ -925,6 +1024,8 @@ Private Function AnalysisTimeSeriesValueInternal(ByVal seriesTitle As String, _
                                                          seriesTitle)
 End Function
 
+'@label:spatio-temporal-spec-value-impl
+'@sub-title Retrieve a value from the spatio-temporal specifications table.
 Private Function SpatioTemporalSpecValueInternal(ByVal sectionName As String, _
                                                  ByVal specColumn As String) As String
     SpatioTemporalSpecValueInternal = AnalysisTableValue(this.spatioSpecsTable, _
@@ -934,6 +1035,8 @@ Private Function SpatioTemporalSpecValueInternal(ByVal sectionName As String, _
                                                          sectionName)
 End Function
 
+'@label:variable-label
+'@sub-title Resolve the main label for a variable name via the cached dictionary.
 Private Function VariableLabel(ByVal varName As String) As String
     Dim label As String
 
@@ -953,6 +1056,8 @@ Private Function VariableLabel(ByVal varName As String) As String
     VariableLabel = label
 End Function
 
+'@label:safe-table-value
+'@sub-title Safely retrieve a value from a CustomTable, returning empty on error.
 Private Function SafeTableValue(ByVal tableRef As ICustomTable, _
                                 ByVal columnName As String, _
                                 ByVal keyName As String) As String
@@ -969,7 +1074,8 @@ Private Function SafeTableValue(ByVal tableRef As ICustomTable, _
     SafeTableValue = CStr(value)
 End Function
 
-'Shared lookup helper for analysis listobjects.
+'@label:analysis-table-value
+'@sub-title Shared lookup helper for analysis ListObjects.
 Private Function AnalysisTableValue(ByRef tableRef As ICustomTable, _
                                     ByVal listName As String, _
                                     ByVal keyColumn As String, _
@@ -979,6 +1085,8 @@ Private Function AnalysisTableValue(ByRef tableRef As ICustomTable, _
     AnalysisTableValue = SafeTableValue(tableRef, valueColumn, keyValue)
 End Function
 
+'@label:add-geo-dropdown
+'@sub-title Apply geo-type dropdown validation to spatio-temporal analysis rows.
 Private Sub AddGeoDropdown(ByVal target As Range)
     Dim geoCell As Range
     Dim spatialType As String
@@ -1010,6 +1118,8 @@ Cleanup:
     EndSheetUpdate pass, ANALYSIS_SHEET
 End Sub
 
+'@label:add-choices-dropdown
+'@sub-title Apply choices dropdown validation to graph series rows.
 Private Sub AddChoicesDropdown(ByVal target As Range)
     Dim seriesRange As Range
     Dim columnVariable As String
@@ -1071,6 +1181,8 @@ Cleanup:
     EndSheetUpdate pass, SHEET_ANALYSIS
 End Sub
 
+'@label:get-categories
+'@sub-title Resolve choice categories for a graph column variable.
 Private Function GetCategories(ByVal columnVariable As String, _
                                ByVal seriesValue As String, _
                                ByRef choiceName As String) As BetterArray
@@ -1109,6 +1221,8 @@ ExitFunction:
     Set GetCategories = categoryList
 End Function
 
+'@label:choice-categories
+'@sub-title Return the BetterArray of categories for a named choice list.
 Private Function ChoiceCategories(ByVal listName As String) As BetterArray
     Dim emptyList As BetterArray
 
@@ -1129,6 +1243,8 @@ Private Function ChoiceCategories(ByVal listName As String) As BetterArray
     End If
 End Function
 
+'@label:format-lock-cell
+'@sub-title Toggle font styling and lock state on a single cell.
 Private Sub FormatLockCell(ByVal cellRng As Range, Optional ByVal locked As Boolean = True)
     If cellRng Is Nothing Then Exit Sub
 
@@ -1137,8 +1253,8 @@ Private Sub FormatLockCell(ByVal cellRng As Range, Optional ByVal locked As Bool
     cellRng.Locked = locked
 End Sub
 
-'@label:ThrowError
-'@description Raise a ProjectError aligned error from the current class.
+'@label:throw-error
+'@sub-title Raise a ProjectError-aligned error from the current class.
 Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal errorMessage As String)
   Err.Raise CLng(errNumber), CLASSNAME, "Error: " & errorMessage
 End Sub
