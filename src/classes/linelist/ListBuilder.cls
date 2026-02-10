@@ -18,6 +18,23 @@ Option Explicit
 
 Implements IListBuilder
 
+'@class ListBuilder
+'@description
+'Builds horizontal (HList) or vertical (VList) data entry sheets for the
+'linelist workbook. Each mode creates formatted sheets with freeze panes,
+'sections via SectionBuilder, a GoTo-section dropdown, and worksheet
+'protection. HList mode additionally creates a ListObject table, printed
+'and filtered companion sheets, action buttons, and a pivot table. VList
+'mode creates a PLAGEVALUES range reference for vertical data entry.
+'Consumers call Create with a layer mode, sheet name, and linelist
+'reference, then invoke Build to construct the sheet.
+'@depends ILinelist, ILLSheets, ILinelistSpecs, ILLFormat, IDropdownLists,
+'  IPasswords, ITranslationObject, IButtons, IHiddenNames, ISectionBuilder,
+'  ICustomPivotTables, IMain, BetterArray
+'@version 1.0 (2026-02-09)
+'@author Yves Amevoin
+
+
 Private Const CLASS_NAME As String = "ListBuilder"
 Private Const GOTO_SECTION_CODE As String = "go_to_section"
 Private Const FILTERED_PREFIX As String = "f"
@@ -38,9 +55,27 @@ End Type
 
 Private this As TListBuilder
 
-'@section Factory
-'===============================================================================
 
+'@section Instantiation
+'===============================================================================
+'@description Factory method and Friend bindings for construction.
+
+'@label:create
+'@sub-title Create a ListBuilder instance
+'@details
+'Creates a new ListBuilder wired to build a data entry sheet of the given
+'layer type (HList or VList) for the named sheet within the linelist. The
+'linelist object, sheet name, and presence in the dictionary are all
+'validated before construction.
+'@param layer Byte. The ListBuilderLayer mode (HList = 1, VList = 2).
+'@param sheetName String. The dictionary sheet name to build.
+'@param ll ILinelist. The linelist workbook facade providing worksheets,
+'  dropdowns, pivots, and specs.
+'@return IListBuilder. A fully initialised instance ready for Build.
+'@throws ProjectError.ObjectNotInitialized When ll is Nothing.
+'@throws ProjectError.InvalidArgument When sheetName is empty or not
+'  present in the dictionary.
+'@export
 Public Function Create(ByVal layer As Byte, _
                        ByVal sheetName As String, _
                        ByVal ll As ILinelist) As IListBuilder
@@ -71,24 +106,46 @@ Public Function Create(ByVal layer As Byte, _
     Set Create = instance
 End Function
 
+
 '@section Bindings
 '===============================================================================
+'@description Friend setters used only during factory construction.
 
+'@label:bin-layer
+'@prop-title Assign the builder layer mode
+'@param value Byte. The ListBuilderLayer constant (HList or VList).
 Friend Property Let BinLayer(ByVal value As Byte)
     this.layer = value
 End Property
 
+'@label:bin-sheet-name
+'@prop-title Assign the target sheet name
+'@param value String. The dictionary sheet name to build.
 Friend Property Let BinSheetName(ByVal value As String)
     this.sheetName = value
 End Property
 
+'@label:bin-linelist
+'@prop-title Assign the linelist facade
+'@param value ILinelist. The linelist workbook facade.
 Friend Property Set BinLinelist(ByVal value As ILinelist)
     Set this.ll = value
 End Property
 
+
 '@section Core
 '===============================================================================
+'@description Public entry point for building the data entry sheet.
 
+'@label:build
+'@sub-title Build the data entry sheet
+'@details
+'Dispatches to the appropriate private builder based on the layer mode set
+'during factory construction. HList mode delegates to BuildHList; VList
+'mode delegates to BuildVList. Raises an error for unknown layer values.
+'@throws ProjectError.InvalidArgument When the layer value is not
+'  ListBuilderLayerHList or ListBuilderLayerVList.
+'@export
 Public Sub Build()
     Select Case this.layer
         Case ListBuilderLayerHList
@@ -101,9 +158,21 @@ Public Sub Build()
     End Select
 End Sub
 
-'@section Private — HList build
-'===============================================================================
 
+'@section HListBuild
+'===============================================================================
+'@description Private implementation for horizontal data entry sheet construction.
+
+'@label:build-hlist
+'@sub-title Build a horizontal data entry sheet
+'@details
+'Constructs a full HList sheet: applies design formatting, freezes panes,
+'adds action buttons (Show/Hide, Add Rows, Clear Filters, Open Print, and
+'optionally Geo), builds sections via SectionBuilder, creates the GoTo
+'section dropdown, stores sheet metadata as hidden names, creates the main
+'ListObject table plus printed and filtered companion sheets, adds a pivot
+'table, and protects the sheet. When a template workbook is in use, buttons
+'are skipped and rows 3-4 are hidden instead.
 Private Sub BuildHList()
     Dim sh As Worksheet
     Dim printSh As Worksheet
@@ -306,9 +375,19 @@ Private Sub BuildHList()
     pass.Protect sh
 End Sub
 
-'@section Private — VList build
-'===============================================================================
 
+'@section VListBuild
+'===============================================================================
+'@description Private implementation for vertical data entry sheet construction.
+
+'@label:build-vlist
+'@sub-title Build a vertical data entry sheet
+'@details
+'Constructs a VList sheet: applies design formatting, freezes pane row 1,
+'builds sections via SectionBuilder, creates the GoTo section dropdown,
+'stores sheet metadata as hidden names, computes the PLAGEVALUES range
+'reference (the contiguous vertical data range starting at the table start
+'marker), and protects the active sheet.
 Private Sub BuildVList()
     Dim sh As Worksheet
     Dim dict As ILLdictionary
@@ -389,10 +468,20 @@ Private Sub BuildVList()
     pass.Protect "_active"
 End Sub
 
-'@section Private — Shared helpers
-'===============================================================================
 
-'Build sections using SectionBuilder (Phase 1 class).
+'@section Helpers
+'===============================================================================
+'@description Private utilities shared by both build modes.
+
+'@label:build-sections
+'@sub-title Build sections using SectionBuilder
+'@details
+'Creates a SectionBuilder in the appropriate mode (HList or VList) and
+'invokes its Build method. For HList mode, also retrieves the CRF companion
+'worksheet (if it exists). Both standard and custom dropdown objects are
+'passed to the builder for variable validation setup.
+'@param sh Worksheet. The main data entry sheet to build sections on.
+'@param printSh Worksheet. The printed companion sheet (Nothing for VList).
 Private Sub BuildSections(ByVal sh As Worksheet, ByVal printSh As Worksheet)
     Dim specs As ILinelistSpecs
     Dim llshs As ILLSheets
@@ -424,7 +513,17 @@ Private Sub BuildSections(ByVal sh As Worksheet, ByVal printSh As Worksheet)
     secBuilder.Build this.sheetName, startRow
 End Sub
 
-'Collect section names from the dictionary for the GoTo dropdown.
+'@label:collect-section-names
+'@sub-title Collect section names for the GoTo dropdown
+'@details
+'Iterates through the dictionary rows for the current sheet, extracting
+'unique section names in order. Each name is prefixed with the GoTo label
+'(e.g., "Go to section: SectionName"). Duplicate consecutive sections are
+'skipped to avoid redundant dropdown entries.
+'@param dict ILLdictionary. The linelist dictionary providing data ranges.
+'@param llshs ILLSheets. Sheet metadata for row indices and variable counts.
+'@param goToLabel String. The translated "Go to section" prefix label.
+'@return BetterArray. A 1-based array of prefixed section name strings.
 Private Function CollectSectionNames(ByVal dict As ILLdictionary, _
                                      ByVal llshs As ILLSheets, _
                                      ByVal goToLabel As String) As BetterArray
@@ -460,7 +559,12 @@ Private Function CollectSectionNames(ByVal dict As ILLdictionary, _
     Set CollectSectionNames = result
 End Function
 
-'Suppress UI updates for batch operations.
+'@label:busy-app
+'@sub-title Suppress UI updates for batch operations
+'@details
+'Disables screen updating, display alerts, automatic calculation, and
+'animations to improve performance during sheet construction. Called
+'after activating a sheet to set up freeze panes.
 Private Sub BusyApp()
     Application.ScreenUpdating = False
     Application.DisplayAlerts = False
@@ -468,13 +572,19 @@ Private Sub BusyApp()
     Application.EnableAnimations = False
 End Sub
 
-'Raise a project error with this class as the source.
+'@label:throw-error
+'@sub-title Raise a ProjectError-based exception
+'@param errNumber Long. The error code to raise.
+'@param errorMessage String. Human-readable description of the failure.
 Private Sub ThrowError(ByVal errNumber As Long, ByVal errorMessage As String)
     Err.Raise errNumber, CLASS_NAME, errorMessage
 End Sub
 
-'@section IListBuilder implementation
+
+'@section InterfaceImplementation
 '===============================================================================
+'@description Delegated members satisfying the IListBuilder contract.
+'See the corresponding Public members above for full documentation.
 
 Private Sub IListBuilder_Build()
     Build
