@@ -17,6 +17,18 @@ Attribute VB_Description = "Geobase management class"
 Option Explicit
 Implements ILLGeo
 
+'@class LLGeo
+'@description
+'Manages the geobase worksheet that stores the four-level administrative
+'hierarchy (admin1 through admin4), health facility data, translation
+'names, and historic entries used across the linelist. Provides factory
+'creation with worksheet validation, lazy-loaded translation caching via
+'parallel BetterArray keys/values, hierarchical geo-level lookups using
+'AutoFilter cascades, import/export in both flat-data and full-structure
+'modes, and synchronisation of translated labels across linelist sheets,
+'dictionary, and show/hide tables.
+'@depends BetterArray, IPasswords, ILLdictionary, ICustomTable, ILLVariables, IDropdownLists, DropdownLists, LLVariables, CustomTable
+
 '@section State
 '===============================================================================
 
@@ -44,10 +56,16 @@ Private Const METADATA As String = "METADATA"
 '@section Factory
 '===============================================================================
 
-' @description Create a new LLGeo instance from a geobase worksheet.
-'              Validates that all required tables and named ranges exist.
-' @param sh The geobase worksheet (must contain T_ADM1..T_ADM4, T_HF, etc.)
-' @return ILLGeo interface pointer
+'@label:create
+'@sub-title Create a new LLGeo instance from a geobase worksheet.
+'@details
+'Factory method that validates all required tables and named ranges on the
+'supplied worksheet, then constructs and returns a new LLGeo instance bound to
+'that worksheet. This is the only supported way to create a usable LLGeo object
+'because the class relies on specific ListObjects and named ranges being present.
+'@param sh Worksheet. The geobase worksheet containing T_ADM1 through T_ADM4, T_HF, T_NAMES, T_HISTOGEO, T_HISTOHF, T_METADATA, and required named ranges.
+'@return ILLGeo. A fully initialised LLGeo instance exposed through the ILLGeo interface.
+'@export
 Public Function Create(ByVal sh As Worksheet) As ILLGeo
     CheckRequirements sh
 
@@ -57,14 +75,34 @@ Public Function Create(ByVal sh As Worksheet) As ILLGeo
     End With
 End Function
 
+'@label:self
+'@prop-title Self-reference for factory pattern.
+'@details
+'Returns a reference to the current instance cast as ILLGeo. Used inside the
+'factory Create method to return the newly constructed object through its
+'interface type.
+'@return ILLGeo. The current instance.
 Public Property Get Self() As ILLGeo
     Set Self = Me
 End Property
 
+'@label:wksh
+'@prop-title Get the geobase worksheet.
+'@details
+'Returns the worksheet that holds all geobase ListObjects and named ranges.
+'This worksheet is set during factory creation and should not change during
+'the lifetime of the object.
+'@return Worksheet. The geobase worksheet.
 Public Property Get Wksh() As Worksheet
     Set Wksh = this.geosh
 End Property
 
+'@label:wksh-set
+'@prop-title Set the geobase worksheet.
+'@details
+'Assigns the internal worksheet reference. Called only from the factory Create
+'method after validation. Not intended for external use.
+'@param sh Worksheet. The geobase worksheet to bind to this instance.
 Public Property Set Wksh(ByVal sh As Worksheet)
     Set this.geosh = sh
 End Property
@@ -72,8 +110,14 @@ End Property
 '@section Table Names
 '===============================================================================
 
-' @description Get the list of all geobase table names in order:
-'              T_ADM1, T_ADM2, T_ADM3, T_ADM4, T_HF, T_NAMES, T_HISTOGEO, T_HISTOHF
+'@label:table-names
+'@prop-title Ordered list of all geobase table names.
+'@details
+'Builds and returns a BetterArray containing the eight canonical ListObject
+'names used on the geobase worksheet: T_ADM1, T_ADM2, T_ADM3, T_ADM4, T_HF,
+'T_NAMES, T_HISTOGEO, and T_HISTOHF. The order matches the admin hierarchy
+'followed by support tables.
+'@return BetterArray. Ordered list of table name strings.
 Public Property Get TableNames() As BetterArray
     Dim tabl As BetterArray
     Set tabl = New BetterArray
@@ -85,9 +129,14 @@ End Property
 '@section Translation Cache
 '===============================================================================
 
-' @description Ensure the translation name cache is loaded. The cache maps raw
-'              admin names (adm1_name, adm2_name, etc.) to their translated values
-'              from the geobase named ranges. Loaded lazily on first access.
+'@label:ensure-names-cache
+'@sub-title Ensure the translation name cache is loaded.
+'@details
+'Lazily initialises two parallel BetterArray instances (keys and values) that
+'map raw admin column names (adm1_name, adm2_name, etc.) to their translated
+'display names resolved from geobase named ranges. If the cache is already
+'loaded this method returns immediately. The worksheet is recalculated before
+'reading to ensure formula-driven names are up to date.
 Private Sub EnsureNamesCache()
     Dim sh As Worksheet
 
@@ -109,7 +158,16 @@ Private Sub EnsureNamesCache()
     this.namesCacheLoaded = True
 End Sub
 
-' @description Cache one translation: raw name -> resolved value from named range
+'@label:cache-one-name
+'@sub-title Cache one translation mapping from raw name to resolved value.
+'@details
+'Reads a single named range from the worksheet and stores the raw-name to
+'resolved-value pair in the parallel cache arrays. If the named range does
+'not exist or its value is not a string, the raw name is stored as both key
+'and value so lookups fall back gracefully.
+'@param sh Worksheet. The geobase worksheet to read from.
+'@param rawName String. The raw column name used as the cache key.
+'@param rngName String. The named range on the worksheet whose value provides the translation.
 Private Sub CacheOneName(ByVal sh As Worksheet, ByVal rawName As String, _
                          ByVal rngName As String)
     Dim actualName As Variant
@@ -135,16 +193,28 @@ Private Sub CacheOneName(ByVal sh As Worksheet, ByVal rawName As String, _
     End If
 End Sub
 
-' @description Reset the translation cache. Call after Import or Translate.
+'@label:reset-names-cache
+'@sub-title Reset the translation cache.
+'@details
+'Marks the cache as unloaded and releases the key/value BetterArray references.
+'Must be called after any operation that changes translation state (Import or
+'Translate) so the next GeoNames access rebuilds the cache from fresh data.
 Private Sub ResetNamesCache()
     this.namesCacheLoaded = False
     Set this.namesCacheKeys = Nothing
     Set this.namesCacheValues = Nothing
 End Sub
 
-' @description Convert a raw admin column name to its translated display name.
-'              Uses the cached translation table. Falls back to the raw name
-'              if no translation mapping exists.
+'@label:geo-names
+'@prop-title Translated display name for a raw admin column name.
+'@details
+'Converts a raw admin column name (such as "adm1_name", "hf_name", or
+'"geobase") to its translated display name by searching the lazily loaded
+'translation cache. If no mapping is found the raw name is returned unchanged.
+'The cache is built on first access from geobase named ranges.
+'@param admname String. Raw column name to translate.
+'@return String. Translated display name, or the raw name if no translation exists.
+'@export
 Private Property Get GeoNames(ByVal admname As String) As String
     Dim counter As Long
 
@@ -163,12 +233,17 @@ End Property
 '@section Column Helpers
 '===============================================================================
 
-' @description Find the 1-based column index of a column name within a header range.
-' @param colName The column name to search for
-' @param headerRng The header row range to search in
-' @param inRange True to return the position relative to the range start,
-'                False to return the absolute column number
-' @return Column index (1-based), or -1 if not found
+'@label:column-index
+'@sub-title Find the 1-based column index of a name within a header range.
+'@details
+'Searches a header row range for an exact case-sensitive match of the given
+'column name. When inRange is True the returned index is relative to the range
+'start (1-based); when False the absolute worksheet column number is returned.
+'Returns -1 when no match is found.
+'@param colName String. The column name to search for.
+'@param headerRng Range. The header row range to search in.
+'@param inRange Optional Boolean. True to return relative position, False for absolute column number. Defaults to True.
+'@return Long. Column index (1-based), or -1 if not found.
 Private Function ColumnIndex(ByVal colName As String, ByVal headerRng As Range, _
                              Optional ByVal inRange As Boolean = True) As Long
     Dim matchCell As Range
@@ -184,8 +259,17 @@ Private Function ColumnIndex(ByVal colName As String, ByVal headerRng As Range, 
     End If
 End Function
 
-' @description Resolve the column index for a geo admin table, applying
-'              translation if the geobase has been translated.
+'@label:geo-column-index
+'@sub-title Resolve the column index for a geo admin table.
+'@details
+'Looks up a column name in the header of the specified admin-level ListObject.
+'If the geobase is in translated state the column name is first converted to
+'its translated display name via GeoNames. Raises an error when the column
+'cannot be found in the table header.
+'@param colName String. The raw column name to look up.
+'@param adminLevel Byte. Admin level index selecting which table to search (0-3 for T_ADM1 through T_ADM4).
+'@return Long. 1-based column index within the table.
+'@throws ProjectError.ElementNotFound When the column is not found in the admin table.
 Private Function GeoColumnIndex(ByVal colName As String, ByVal adminLevel As Byte) As Long
     Dim sh As Worksheet
     Dim tabl As BetterArray
@@ -209,7 +293,15 @@ Private Function GeoColumnIndex(ByVal colName As String, ByVal adminLevel As Byt
     GeoColumnIndex = colIdx
 End Function
 
-' @description Resolve the column index for the HF table, applying translation.
+'@label:hf-column-index
+'@sub-title Resolve the column index for the HF table.
+'@details
+'Looks up a column name in the header of the T_HF ListObject. If the geobase
+'is in translated state the column name is first converted to its translated
+'display name via GeoNames. Raises an error when the column cannot be found.
+'@param colName String. The raw column name to look up.
+'@return Long. 1-based column index within the T_HF table.
+'@throws ProjectError.ElementNotFound When the column is not found in the HF table.
 Private Function HFColumnIndex(ByVal colName As String) As Long
     Dim sh As Worksheet
     Dim actualColName As String
@@ -229,7 +321,14 @@ Private Function HFColumnIndex(ByVal colName As String) As Long
     HFColumnIndex = colIdx
 End Function
 
-' @description Extract unique values from a range into a BetterArray.
+'@label:unique-range-value
+'@sub-title Extract unique values from a range into a BetterArray.
+'@details
+'Iterates every cell in the supplied range and collects values that have not
+'already been added, producing a deduplicated list in encounter order. Used
+'internally to build dropdown-ready lists from filtered or unfiltered columns.
+'@param rng Range. The range of cells to extract unique values from.
+'@return BetterArray. Deduplicated values in encounter order.
 Private Function UniqueRangeValue(ByVal rng As Range) As BetterArray
     Dim cellRng As Range
     Dim retVal As BetterArray
@@ -243,7 +342,14 @@ Private Function UniqueRangeValue(ByVal rng As Range) As BetterArray
     Set UniqueRangeValue = retVal.Clone()
 End Function
 
-' @description Get the data body range for a named column in the HF table.
+'@label:hf-range
+'@sub-title Get the data body range for a named column in the HF table.
+'@details
+'Resolves the column index for the given column name in T_HF and returns the
+'DataBodyRange of that ListColumn. Used by GeoLevel when retrieving health
+'facility data at admin level 1.
+'@param colName String. The raw column name whose data body range is needed.
+'@return Range. The DataBodyRange of the matching column in T_HF.
 Private Function HFRange(ByVal colName As String) As Range
     Dim colIdx As Long
     colIdx = HFColumnIndex(colName)
@@ -253,9 +359,22 @@ End Function
 '@section GeoLevel
 '===============================================================================
 
-' @description Get the list of values at a given admin level, optionally filtered
-'              by parent admin selections. Uses AutoFilter on the appropriate
-'              ListObject for hierarchical cascade (adm1 -> adm2 -> adm3 -> adm4).
+'@label:geo-level
+'@prop-title List of values at a given admin level.
+'@details
+'Returns a BetterArray of unique geographic names at the requested admin level,
+'optionally filtered by parent admin selections. For admin1 the full unfiltered
+'list is returned. For admin2 through admin4 the caller supplies parent
+'selections so the result cascades hierarchically via AutoFilter. The geoType
+'parameter switches between the admin hierarchy and the health facility table.
+'Calculation is temporarily disabled for performance during filtering.
+'@param adminLevel Byte. Admin level index (0-3 for admin1-admin4).
+'@param geoType Optional Byte. GeoScope value: GeoScopeAdmin (0) or GeoScopeHF (1). Defaults to GeoScopeAdmin.
+'@param adminNames Optional Variant. Parent admin selections for filtering: String for level 2, BetterArray for levels 3-4. Defaults to vbNullString.
+'@return BetterArray. Unique values at the requested level, or an empty array when the geobase is empty.
+'@throws ProjectError.InvalidArgument When adminNames has wrong type or length.
+'@throws ProjectError.ErrorUnexpectedState When the ListObject has no data.
+'@export
 Private Property Get GeoLevel(ByVal adminLevel As Byte, _
                               Optional ByVal geoType As Byte = GeoScopeAdmin, _
                               Optional adminNames As Variant = vbNullString) As BetterArray
@@ -393,9 +512,17 @@ End Property
 '@section Translate
 '===============================================================================
 
-' @description Translate or un-translate all geobase table headers. When rawNames
-'              is False, headers are translated to display names. When True, headers
-'              are reverted to raw column names.
+'@label:translate
+'@sub-title Translate or revert geobase table headers.
+'@details
+'Applies or reverts translated display names on all geobase table headers
+'(admin1 through admin4 and health facility). When rawNames is False, headers
+'are translated to display names read from the geobase named ranges. When True,
+'headers are reverted to raw column names. The method skips the operation when
+'the geobase is already in the requested translation state and resets the
+'translation cache both before and after the change.
+'@param rawNames Optional Boolean. True to revert to raw names, False to apply translated names. Defaults to False.
+'@export
 Private Sub Translate(Optional ByVal rawNames As Boolean = False)
     Dim sh As Worksheet
     Dim tabl As BetterArray
@@ -461,8 +588,14 @@ End Sub
 '@section Clear
 '===============================================================================
 
-' @description Clear all geobase data. Clears all ListObject data bodies except
-'              T_LevelNames and T_CONCAT, and sets the update flag to "empty".
+'@label:clear
+'@sub-title Clear all geobase data.
+'@details
+'Removes all data from every ListObject on the geobase worksheet except
+'T_LevelNames and T_CONCAT, and sets the update flag to "empty". Resets the
+'translation name cache so subsequent GeoNames lookups will rebuild from
+'fresh data.
+'@export
 Private Sub Clear()
     Dim sh As Worksheet
     Dim Lo As ListObject
@@ -481,7 +614,15 @@ Private Sub Clear()
     ResetNamesCache
 End Sub
 
-' @description Clear historic entries. scope: 0 = geo, 1 = hf, 3 = both.
+'@label:clear-historic
+'@sub-title Clear historic entries.
+'@details
+'Clears the data body of historic ListObjects. The scope parameter controls
+'which tables are cleared: 0 for geo only (T_HISTOGEO), 1 for HF only
+'(T_HISTOHF), and 3 for both. Errors are silently suppressed so the method
+'succeeds even when a table has no data body.
+'@param scope Optional Byte. 0 = geo only, 1 = HF only, 3 = both. Defaults to 3.
+'@export
 Private Sub ClearHistoric(Optional ByVal scope As Byte = 3)
     Dim sh As Worksheet
     Set sh = Wksh()
@@ -499,10 +640,19 @@ End Sub
 '@section Import
 '===============================================================================
 
-' @description Import geobase data from an external workbook. Each worksheet name
-'              matching a known table name (ADM1..ADM4, HF, NAMES, HISTOGEO, etc.)
-'              is imported column-by-column into the corresponding ListObject.
-'              Concat formulas are regenerated for filtered lookup support.
+'@label:import
+'@sub-title Import geobase data from an external workbook.
+'@details
+'Imports geographic data from the supplied workbook into the geobase worksheet.
+'Each worksheet whose name matches a known table name (ADM1 through ADM4, HF,
+'NAMES, HISTOGEO, HISTOHF, METADATA) is imported column by column into the
+'corresponding ListObject. Concat formulas are regenerated for filtered lookup
+'support. When histoOnly is True only historic tables are refreshed and the
+'main admin/HF data is left intact. After import, the geobase is marked as
+'updated and headers are translated.
+'@param fromWkb Workbook. Source workbook containing geo data sheets.
+'@param histoOnly Optional Boolean. True to import only historic data. Defaults to False.
+'@export
 Private Sub Import(ByVal fromWkb As Workbook, _
                    Optional ByVal histoOnly As Boolean = False)
 
@@ -624,7 +774,16 @@ End Sub
 '@section Export
 '===============================================================================
 
-' @description Export geobase tables to a new workbook with one sheet per table.
+'@label:export-to-file
+'@sub-title Export geobase tables to a workbook as flat data.
+'@details
+'Exports geobase tables to the target workbook with one sheet per table and a
+'Metadata sheet. Headers are reverted to raw names before export and restored
+'to translated form afterwards. When onlyHistory is True only the HISTOGEO and
+'HISTOHF tables are exported.
+'@param outputWkb Workbook. Target workbook to receive exported sheets.
+'@param onlyHistory Optional Boolean. True to export only historic tables. Defaults to False.
+'@export
 Private Sub ExportToFile(ByVal outputWkb As Workbook, _
                          Optional ByVal onlyHistory As Boolean = False)
 
@@ -679,9 +838,19 @@ Private Sub ExportToFile(ByVal outputWkb As Workbook, _
     Translate rawNames:=False
 End Sub
 
-' @description Export the geobase worksheet to a workbook preserving the layout,
-'              including ListObjects, named ranges, formulas, pcode references,
-'              concat references, and metadata.
+'@label:export-to-wkb
+'@sub-title Export the geobase worksheet structure to a workbook.
+'@details
+'Copies the entire geobase worksheet to the target workbook, preserving
+'ListObjects, named ranges, formulas, pcode references, concat references,
+'and metadata. Creates a hidden Metadata sheet with creation metadata including
+'linelist name, setup name, language, and timestamp. Raises an error when sheets
+'with conflicting names already exist in the target workbook.
+'@param outputWkb Workbook. Target workbook.
+'@param llName Optional String. Linelist name for metadata. Defaults to vbNullString.
+'@param setupPath Optional String. Setup file path for metadata. Defaults to vbNullString.
+'@throws ProjectError.ElementShouldNotExists When target sheets already exist.
+'@export
 Private Sub ExportToWkb(ByVal outputWkb As Workbook, _
                         Optional ByVal llName As String = vbNullString, _
                         Optional ByVal setupPath As String = vbNullString)
@@ -823,9 +992,16 @@ End Sub
 '@section Update
 '===============================================================================
 
-' @description Update linelist geo column headers and admin1 dropdown after
-'              geobase change. Iterates all HList worksheets, finds geo1-4/hf
-'              control columns, and updates their labels with translated names.
+'@label:update
+'@sub-title Update linelist geo column headers and dropdowns.
+'@details
+'Iterates all HList worksheets in the parent workbook, finds columns controlled
+'by geo1 through geo4 and hf, and updates their header labels with translated
+'geo display names. Also updates corresponding labels on print sheets. Finally,
+'refreshes the admin1 dropdown list on the dropdown_lists__ sheet so that it
+'reflects the current geobase content.
+'@param pass IPasswords. Password manager for sheet protection and unprotection.
+'@export
 Private Sub Update(ByVal pass As IPasswords)
 
     Const DROPDOWNSHEET As String = "dropdown_lists__"
@@ -892,7 +1068,15 @@ Private Sub Update(ByVal pass As IPasswords)
     drop.Update geoData, "admin1"
 End Sub
 
-' @description Update dictionary main labels for geo-related variables.
+'@label:update-dict
+'@sub-title Update dictionary labels for geo-related variables.
+'@details
+'Scans the dictionary control column for geo1 through geo4 and hf entries and
+'overwrites the corresponding main label cells with translated geo display
+'names from the geobase. This keeps the dictionary in sync after a geobase
+'import or translation change.
+'@param dict ILLdictionary. The linelist dictionary whose labels should be updated.
+'@export
 Private Sub UpdateDict(ByVal dict As ILLdictionary)
     Dim controlRng As Range
     Dim mainlabRng As Range
@@ -917,7 +1101,17 @@ Private Sub UpdateDict(ByVal dict As ILLdictionary)
     Next
 End Sub
 
-' @description Update show/hide tables with translated geo labels.
+'@label:update-show-hide
+'@sub-title Update show/hide tables with translated geo labels.
+'@details
+'Iterates all ListObjects on the show/hide worksheet, finds variables
+'controlled by geo1 through geo4 and hf via the dictionary, and updates their
+'main label cells to include the subsection prefix followed by the translated
+'geo display name. This keeps the show/hide interface labels in sync with the
+'current geobase translation.
+'@param sh Worksheet. The show/hide worksheet containing ListObjects to update.
+'@param dict ILLdictionary. The linelist dictionary for resolving control and subsection values.
+'@export
 Private Sub UpdateShowHide(ByVal sh As Worksheet, ByVal dict As ILLdictionary)
     Dim csTab As ICustomTable
     Dim vars As ILLVariables
@@ -965,8 +1159,16 @@ End Sub
 '@section Historic
 '===============================================================================
 
-' @description Add a new entry to the historic data, resizing the ListObject
-'              and removing duplicates.
+'@label:update-historic
+'@sub-title Add a new entry to the historic data.
+'@details
+'Appends a value to the appropriate historic ListObject (T_HISTOGEO or
+'T_HISTOHF), resizes the table to include the new row, removes duplicates,
+'and sorts alphabetically. Handles the edge case where the ListObject has no
+'data body or is empty by inserting at the first data row.
+'@param newValue String. The value to add to the historic list.
+'@param scope Optional Byte. 0 = geo historic (T_HISTOGEO), 1 = HF historic (T_HISTOHF). Defaults to 0.
+'@export
 Private Sub UpdateHistoric(ByVal newValue As String, _
                            Optional ByVal scope As Byte = 0)
     Dim sh As Worksheet
@@ -1001,7 +1203,16 @@ End Sub
 '@section AdminCode
 '===============================================================================
 
-' @description Resolve the admin code from a translated admin display name.
+'@label:admin-code
+'@sub-title Resolve the admin code from a translated display name.
+'@details
+'Compares the supplied translated admin name against GeoNames for each admin
+'level and returns the matching raw code ("adm1" through "adm4"). Falls back
+'to "adm1" when no match is found, which serves as a safe default for
+'downstream callers.
+'@param selectedAdmin String. The translated admin display name to resolve.
+'@return String. Admin code ("adm1", "adm2", "adm3", or "adm4").
+'@export
 Private Function AdminCode(ByVal selectedAdmin As String) As String
     Select Case selectedAdmin
     Case GeoNames("adm1_name")
@@ -1017,7 +1228,15 @@ Private Function AdminCode(ByVal selectedAdmin As String) As String
     End Select
 End Function
 
-' @description Whether the geobase has no imported data.
+'@label:has-no-data
+'@prop-title Whether the geobase has no imported data.
+'@details
+'Returns True when the geobase update flag (RNG_GeoUpdated) reads "empty",
+'indicating that no geo data has been imported yet or that all data has been
+'cleared. Used by consumers to skip geo-dependent operations when no data is
+'available.
+'@return Boolean. True when the geobase is empty.
+'@export
 Private Property Get HasNoData() As Boolean
     HasNoData = (Wksh().Range("RNG_GeoUpdated").Value = "empty")
 End Property
@@ -1025,7 +1244,13 @@ End Property
 '@section Internal Helpers
 '===============================================================================
 
-' @description Update the metadata sheet from the geo metadata table.
+'@label:update-metadata
+'@sub-title Update the metadata sheet from the geo metadata table.
+'@details
+'Copies the current content of T_METADATA into the hidden Metadata worksheet
+'at the RNG_Meta_Anchor position. Clears any previously written metadata rows
+'before writing the new data. Silently exits if the Metadata sheet or anchor
+'range does not exist.
 Private Sub UpdateMetadata()
     Const METADATASHEET As String = "Metadata"
 
@@ -1060,7 +1285,16 @@ End Sub
 '@section Validation
 '===============================================================================
 
-' @description Validate that the worksheet has all required tables and named ranges.
+'@label:check-requirements
+'@sub-title Validate that the worksheet has all required tables and named ranges.
+'@details
+'Checks that the supplied worksheet is not Nothing, then verifies the presence
+'of all nine required ListObjects (T_ADM1 through T_ADM4, T_HF, T_NAMES,
+'T_HISTOGEO, T_HISTOHF, T_METADATA) and eleven required named ranges. Raises
+'an appropriate error when any requirement is missing.
+'@param sh Worksheet. The worksheet to validate.
+'@throws ProjectError.ObjectNotInitialized When the worksheet is Nothing.
+'@throws ProjectError.ElementNotFound When required tables or named ranges are missing.
 Private Sub CheckRequirements(ByVal sh As Worksheet)
     Dim admTableNames As BetterArray
 
@@ -1087,6 +1321,14 @@ Private Sub CheckRequirements(ByVal sh As Worksheet)
     RangeExists sh, "RNG_MetaLang"
 End Sub
 
+'@label:range-exists
+'@sub-title Verify that a named range exists on a worksheet.
+'@details
+'Attempts to resolve a named range on the given worksheet. If the range cannot
+'be found, raises an ElementNotFound error with a descriptive message.
+'@param sh Worksheet. The worksheet to check.
+'@param rngName String. The named range to look for.
+'@throws ProjectError.ElementNotFound When the named range does not exist on the worksheet.
 Private Sub RangeExists(ByVal sh As Worksheet, ByVal rngName As String)
     Dim rng As Range
 
@@ -1100,6 +1342,15 @@ Private Sub RangeExists(ByVal sh As Worksheet, ByVal rngName As String)
     End If
 End Sub
 
+'@label:lo-exists
+'@sub-title Verify that all listed ListObjects exist on a worksheet.
+'@details
+'Iterates over the supplied BetterArray of table names and checks that each
+'ListObject can be found on the given worksheet. Raises an ElementNotFound
+'error for the first missing table encountered.
+'@param loNames BetterArray. List of ListObject names to verify.
+'@param sh Worksheet. The worksheet to check.
+'@throws ProjectError.ElementNotFound When a required ListObject does not exist on the worksheet.
 Private Sub LoExists(ByVal loNames As BetterArray, ByVal sh As Worksheet)
     Dim Lo As ListObject
     Dim counter As Long
@@ -1123,7 +1374,14 @@ End Sub
 '@section Error Handling
 '===============================================================================
 
-' @description Raise a ProjectError-based exception.
+'@label:throw-error
+'@sub-title Raise a ProjectError-based exception.
+'@details
+'Wraps Err.Raise to throw a structured error using a ProjectError error code
+'and a descriptive message. The error number is passed as Long because
+'ProjectError values exceed the Byte range (they start at 1001+).
+'@param errNumber Long. The ProjectError error code to raise.
+'@param message String. Descriptive error message.
 Private Sub ThrowError(ByVal errNumber As Long, ByVal message As String)
     Err.Raise CLng(errNumber), CLASS_NAME, message
 End Sub
