@@ -1008,13 +1008,13 @@ Private Sub CheckAnalysis()
         On Error GoTo 0
     End If
 
-    ' CheckTable "Global summary"
-    ' CheckTable "Univariate analysis"
-    ' CheckTable "Bivariate analysis"
-    ' CheckTable "Time series analysis"
-    ' CheckTable "Time series graphs"
-    ' CheckTable "Spatial analysis"
-    ' CheckTable "Spatio-temporal analysis"
+    CheckTable "Global summary"
+    CheckTable "Univariate analysis"
+    CheckTable "Bivariate analysis"
+    CheckTable "Time series analysis"
+    CheckTable "Time series graphs"
+    CheckTable "Spatial analysis"
+    CheckTable "Spatio-temporal analysis"
     Exit Sub
 
 AnalysisFailed:
@@ -1029,132 +1029,132 @@ AnalysisFailed:
 End Sub
 
 '@sub-title Evaluate a specific analysis section for structural errors.
-' Private Sub CheckTable(ByVal partName As String)
+Private Sub CheckTable(ByVal partName As String)
 
-'     Const TAB_GLOBAL_SUMMARY As String = "Tab_global_summary"
-'     Const TAB_UNIVARIATE As String = "Tab_Univariate_Analysis"
-'     Const TAB_BIVARIATE As String = "Tab_Bivariate_Analysis"
-'     Const TAB_TIME_SERIES As String = "Tab_TimeSeries_Analysis"
-'     Const TAB_SPATIAL As String = "Tab_Spatial_Analysis"
-'     Const TAB_SPATIOTEMP As String = "Tab_SpatioTemporal_Analysis"
-'     Const TAB_TIME_SERIES_GRAPHS As String = "Tab_Graph_TimeSeries"
+    Const TAB_GLOBAL_SUMMARY As String = "Tab_global_summary"
+    Const TAB_UNIVARIATE As String = "Tab_Univariate_Analysis"
+    Const TAB_BIVARIATE As String = "Tab_Bivariate_Analysis"
+    Const TAB_TIME_SERIES As String = "Tab_TimeSeries_Analysis"
+    Const TAB_SPATIAL As String = "Tab_Spatial_Analysis"
+    Const TAB_SPATIOTEMP As String = "Tab_SpatioTemporal_Analysis"
+    Const TAB_TIME_SERIES_GRAPHS As String = "Tab_Graph_TimeSeries"
 
-'     Dim listObject As ListObject
-'     Dim listName As String
-'     Dim headerRange As Range
-'     Dim specsRange As Range
-'     Dim specs As ITablesSpecs
-'     Dim analysisSheet As Worksheet
-'     Dim check As IChecking
-'     Dim rowIndex As Long
-'     Dim checkingCounter As Long
-'     Dim keyName As String
-'     Dim infoMessage As String
-'     Dim analysisFormula As String
-'     Dim workFun As WorksheetFunction
-'     Dim tableScope As Byte
+    Dim listObject As ListObject
+    Dim listName As String
+    Dim headerRange As Range
+    Dim specsRange As Range
+    Dim specs As ITablesSpecs
+    Dim analysisSheet As Worksheet
+    Dim check As IChecking
+    Dim rowIndex As Long
+    Dim checkingCounter As Long
+    Dim keyName As String
+    Dim infoMessage As String
+    Dim analysisFormula As String
+    Dim workFun As WorksheetFunction
+    Dim tableScope As Byte
 
-'     listName = Switch( _
-'         partName = "Global summary", TAB_GLOBAL_SUMMARY, _
-'         partName = "Univariate analysis", TAB_UNIVARIATE, _
-'         partName = "Bivariate analysis", TAB_BIVARIATE, _
-'         partName = "Time series analysis", TAB_TIME_SERIES, _
-'         partName = "Spatial analysis", TAB_SPATIAL, _
-'         partName = "Spatio-temporal analysis", TAB_SPATIOTEMP, _
-'         partName = "Time series graphs", TAB_TIME_SERIES_GRAPHS _
-'     )
+    listName = Switch( _
+        partName = "Global summary", TAB_GLOBAL_SUMMARY, _
+        partName = "Univariate analysis", TAB_UNIVARIATE, _
+        partName = "Bivariate analysis", TAB_BIVARIATE, _
+        partName = "Time series analysis", TAB_TIME_SERIES, _
+        partName = "Spatial analysis", TAB_SPATIAL, _
+        partName = "Spatio-temporal analysis", TAB_SPATIOTEMP, _
+        partName = "Time series graphs", TAB_TIME_SERIES_GRAPHS _
+    )
 
-'     Set analysisSheet = ResolveWorksheet(SHEET_ANALYSIS)
-'     Set workFun = Application.WorksheetFunction
-'     checkingCounter = 0
+    Set analysisSheet = ResolveWorksheet(SHEET_ANALYSIS)
+    Set workFun = Application.WorksheetFunction
+    checkingCounter = 0
 
-'     On Error Resume Next
-'         Set listObject = analysisSheet.ListObjects(listName)
-'     On Error GoTo 0
-'     If listObject Is Nothing Then Exit Sub
+    On Error Resume Next
+        Set listObject = analysisSheet.ListObjects(listName)
+    On Error GoTo 0
+    If listObject Is Nothing Then Exit Sub
 
-'     Set check = Checking.Create("Analysis incoherences", _
-'                                 partName & "--Where?--Details")
+    Set check = Checking.Create("Analysis incoherences", _
+                                partName & "--Where?--Details")
 
-'     Set headerRange = listObject.HeaderRowRange
+    Set headerRange = listObject.HeaderRowRange
 
-'     For rowIndex = 1 To listObject.ListRows.Count
-'         Set specsRange = listObject.ListRows(rowIndex).Range
+    For rowIndex = 1 To listObject.ListRows.Count
+        Set specsRange = listObject.ListRows(rowIndex).Range
 
-'         If ((workFun.CountBlank(specsRange) = specsRange.Columns.Count) And _
-'             (listName <> TAB_TIME_SERIES)) Or _
-'            (workFun.CountBlank(specsRange) >= specsRange.Columns.Count - 1) Then
+        If ((workFun.CountBlank(specsRange) = specsRange.Columns.Count) And _
+            (listName <> TAB_TIME_SERIES)) Or _
+           (workFun.CountBlank(specsRange) >= specsRange.Columns.Count - 1) Then
 
-'             keyName = "ana-empty-tab"
-'             checkingCounter = checkingCounter + 1
-'             infoMessage = FormatMessage(ANA_EMPTY_TAB, specsRange.Row)
-'             check.Add keyName & "-" & checkingCounter, infoMessage, checkingInfo
-'         Else
+            keyName = "ana-empty-tab"
+            checkingCounter = checkingCounter + 1
+            infoMessage = FormatMessage(ANA_EMPTY_TAB, specsRange.Row)
+            check.Add keyName & "-" & checkingCounter, infoMessage, checkingInfo
+        Else
 
-'             Set specs = TablesSpecs.Create(headerRange, specsRange, this.dictionary, this.choices)
-'             tableScope = specs.TableScope
+            Set specs = TablesSpecs.Create(headerRange, specsRange, this.dictionary, this.choices)
+            tableScope = specs.TableScope
 
-'             If (Not specs.ValidTable()) Then
-'                 checkingCounter = checkingCounter + 1
-'                 keyName = "ana-inv-tab"
-'                 infoMessage = FormatMessage(ANA_INV_TAB, specsRange.Row, specs.ValidityReason())
-'                 check.Add keyName & "-" & checkingCounter, infoMessage, checkingError
+            If (Not specs.ValidTable()) Then
+                checkingCounter = checkingCounter + 1
+                keyName = "ana-inv-tab"
+                infoMessage = FormatMessage(ANA_INV_TAB, specsRange.Row, specs.ValidityReason())
+                check.Add keyName & "-" & checkingCounter, infoMessage, checkingError
 
-'                 If (tableScope = ScopeTimeSeries) And (specs.IsNewSection()) _
-'                    And (workFun.CountBlank(specsRange) < specsRange.Columns.Count - 1) Then
-'                     keyName = "ana-ts-newsec"
-'                     infoMessage = FormatMessage(ANA_TS_NEWSEC, specsRange.Row)
-'                     check.Add keyName & "-" & checkingCounter, infoMessage, checkingError
-'                 End If
-'             End If
+                If (tableScope = ScopeTimeSeries) And (specs.IsNewSection()) _
+                   And (workFun.CountBlank(specsRange) < specsRange.Columns.Count - 1) Then
+                    keyName = "ana-ts-newsec"
+                    infoMessage = FormatMessage(ANA_TS_NEWSEC, specsRange.Row)
+                    check.Add keyName & "-" & checkingCounter, infoMessage, checkingError
+                End If
+            End If
 
-'             If (specs.Value("title") = vbNullString) And _
-'                (tableScope <> ScopeGlobalSummary) And _
-'                (tableScope <> ScopeTimeSeriesGraph) Then
+            If (specs.Value("title") = vbNullString) And _
+               (tableScope <> ScopeGlobalSummary) And _
+               (tableScope <> ScopeTimeSeriesGraph) Then
 
-'                 checkingCounter = checkingCounter + 1
-'                 keyName = "ana-empty-title"
-'                 infoMessage = FormatMessage(ANA_EMPTY_TITLE, specsRange.Row)
-'                 check.Add keyName & "-" & checkingCounter, infoMessage, checkingInfo
-'             End If
+                checkingCounter = checkingCounter + 1
+                keyName = "ana-empty-title"
+                infoMessage = FormatMessage(ANA_EMPTY_TITLE, specsRange.Row)
+                check.Add keyName & "-" & checkingCounter, infoMessage, checkingInfo
+            End If
 
-'             If (tableScope = ScopeUnivariate) And _
-'                specs.HasGraph() And _
-'                (specs.Value("flip") = "yes") And _
-'                (specs.Value("percentage") = "yes") Then
+            If (tableScope = ScopeUnivariate) And _
+               specs.HasGraph() And _
+               (specs.Value("flip") = "yes") And _
+               (specs.Value("percentage") = "yes") Then
 
-'                 checkingCounter = checkingCounter + 1
-'                 keyName = "ana-uaflip-perc"
-'                 infoMessage = FormatMessage(ANA_UAFLIP_PERC, specsRange.Row)
-'                 check.Add keyName & "-" & checkingCounter, infoMessage, checkingNote
-'             End If
+                checkingCounter = checkingCounter + 1
+                keyName = "ana-uaflip-perc"
+                infoMessage = FormatMessage(ANA_UAFLIP_PERC, specsRange.Row)
+                check.Add keyName & "-" & checkingCounter, infoMessage, checkingNote
+            End If
 
-'             If (tableScope <> ScopeTimeSeries) And (tableScope <> ScopeTimeSeriesGraph) Then
-'                 If (Not specs.HasGraph()) And (specs.Value("flip") = "yes") Then
-'                     checkingCounter = checkingCounter + 1
-'                     keyName = "ana-adgr-flip"
-'                     infoMessage = FormatMessage(ANA_ADGR_FLIP, specsRange.Row)
-'                     check.Add keyName & "-" & checkingCounter, infoMessage, checkingInfo
-'                 End If
-'             End If
+            If (tableScope <> ScopeTimeSeries) And (tableScope <> ScopeTimeSeriesGraph) Then
+                If (Not specs.HasGraph()) And (specs.Value("flip") = "yes") Then
+                    checkingCounter = checkingCounter + 1
+                    keyName = "ana-adgr-flip"
+                    infoMessage = FormatMessage(ANA_ADGR_FLIP, specsRange.Row)
+                    check.Add keyName & "-" & checkingCounter, infoMessage, checkingInfo
+                End If
+            End If
 
-'             If (tableScope <> ScopeTimeSeriesGraph) Then
-'                 analysisFormula = specs.Value("function")
-'                 If (analysisFormula <> vbNullString) Then
-'                     keyName = "ana-incor-form"
-'                     infoMessage = FormulaMessage(analysisFormula, ANA_INCOR_FORM, specsRange.Row, _
-'                                                  formulaType:="analysis")
-'                     If (infoMessage <> vbNullString) Then
-'                         checkingCounter = checkingCounter + 1
-'                         check.Add keyName & "-" & checkingCounter, infoMessage, checkingWarning
-'                     End If
-'                 End If
-'             End If
-'         End If
-'     Next rowIndex
+            If (tableScope <> ScopeTimeSeriesGraph) Then
+                analysisFormula = specs.Value("function")
+                If (analysisFormula <> vbNullString) Then
+                    keyName = "ana-incor-form"
+                    infoMessage = FormulaMessage(analysisFormula, ANA_INCOR_FORM, specsRange.Row, _
+                                                 formulaType:="analysis")
+                    If (infoMessage <> vbNullString) Then
+                        checkingCounter = checkingCounter + 1
+                        check.Add keyName & "-" & checkingCounter, infoMessage, checkingWarning
+                    End If
+                End If
+            End If
+        End If
+    Next rowIndex
 
-'     this.checkTables.Push check
-' End Sub
+    this.checkTables.Push check
+End Sub
 
 '@label:print-report
 '@sub-title Publish all collected checkings to the reporting worksheet
