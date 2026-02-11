@@ -23,7 +23,7 @@ Private Const COL_NGEO As Long = 10
 Private Const NUM_COLUMNS As Long = 10
 
 Private Assert As ICustomTest
-Private lDataStub As TableSpecsLinelistStub
+Private dictStub As ILLdictionary
 
 '@section Helpers
 '===============================================================================
@@ -80,7 +80,7 @@ Private Function CreateSpecs(ByVal dataRowIndex As Long) As ITableSpecs
     Set CreateSpecs = TableSpecs.Create( _
         FixtureHeaderRange(), _
         FixtureDataRange(dataRowIndex), _
-        lDataStub)
+        dictStub)
 End Function
 
 ' @description Standard time series data rows for most tests.
@@ -103,7 +103,7 @@ Private Sub ModuleInitialize()
     EnsureWorksheet TEST_OUTPUT_SHEET, clearSheet:=False
     Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
     Assert.SetModuleName "TestTableSpecs"
-    Set lDataStub = New TableSpecsLinelistStub
+    Set dictStub = New AnalysisDictionaryStub
 End Sub
 
 '@ModuleCleanup
@@ -113,7 +113,7 @@ Private Sub ModuleCleanup()
     End If
     DeleteWorksheet FIXTURE_SHEET
     RestoreApp
-    Set lDataStub = Nothing
+    Set dictStub = Nothing
     Set Assert = Nothing
 End Sub
 
@@ -145,7 +145,7 @@ Public Sub TestCreateRejectsNothingHeader()
 
     On Error Resume Next
     Dim specs As ITableSpecs
-    Set specs = TableSpecs.Create(Nothing, dataRng, lDataStub)
+    Set specs = TableSpecs.Create(Nothing, dataRng, dictStub)
     On Error GoTo 0
 
     Assert.IsTrue (specs Is Nothing), _
@@ -169,7 +169,7 @@ Public Sub TestCreateRejectsNothingRange()
 
     On Error Resume Next
     Dim specs As ITableSpecs
-    Set specs = TableSpecs.Create(hRng, Nothing, lDataStub)
+    Set specs = TableSpecs.Create(hRng, Nothing, dictStub)
     On Error GoTo 0
 
     Assert.IsTrue (specs Is Nothing), _
@@ -181,8 +181,8 @@ TestFail:
 End Sub
 
 '@TestMethod("TableSpecs")
-Public Sub TestCreateRejectsNothingLData()
-    CustomTestSetTitles Assert, "TableSpecs", "TestCreateRejectsNothingLData"
+Public Sub TestCreateRejectsNothingDict()
+    CustomTestSetTitles Assert, "TableSpecs", "TestCreateRejectsNothingDict"
     On Error GoTo TestFail
 
     Dim sh As Worksheet
@@ -199,11 +199,11 @@ Public Sub TestCreateRejectsNothingLData()
     On Error GoTo 0
 
     Assert.IsTrue (specs Is Nothing), _
-                  "Create with Nothing lData should fail (return Nothing)"
+                  "Create with Nothing dictionary should fail (return Nothing)"
 
     Exit Sub
 TestFail:
-    CustomTestLogFailure Assert, "TestCreateRejectsNothingLData", Err.Number, Err.Description
+    CustomTestLogFailure Assert, "TestCreateRejectsNothingDict", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("TableSpecs")
@@ -222,7 +222,7 @@ Public Sub TestCreateRejectsMismatchedColumns()
 
     On Error Resume Next
     Dim specs As ITableSpecs
-    Set specs = TableSpecs.Create(hRng, dataRng, lDataStub)
+    Set specs = TableSpecs.Create(hRng, dataRng, dictStub)
     On Error GoTo 0
 
     Assert.IsTrue (specs Is Nothing), _
@@ -728,7 +728,7 @@ Public Sub TestHasPercentageTimeSeriesNoTotal()
     CustomTestSetTitles Assert, "TableSpecs", "TestHasPercentageTimeSeriesNoTotal"
     On Error GoTo TestFail
 
-    ' percentage=row but no column → HasTotal=False → HasPercentage=False
+    ' percentage=row but no column -> HasTotal=False -> HasPercentage=False
     Dim rows As Variant
     rows = Array(Array("S1", "date_var", "", "no", "row", "no", "no", "", "", ""))
     BuildFixture "time series analysis", rows

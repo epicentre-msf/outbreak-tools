@@ -26,14 +26,14 @@ Implements ICrossTable
 'ranges, and visual formatting. Consumers interact through the ICrossTable
 'interface, and AnalysisOutput orchestrates the build sequence by calling
 'Build followed by Format for each table specification.
-'@depends ITableSpecs, ITranslationObject, ILLVariables, LLVariables, ILLFormat, IHiddenNames, HiddenNames, BetterArray
-'@version 1.0 (2026-02-10)
+'@depends ITableSpecs, ILinelistSpecs, ITranslationObject, ILLVariables, LLVariables, ILLFormat, IHiddenNames, HiddenNames, BetterArray
+'@version 1.1 (2026-02-11)
 '@author Yves Amevoin
 
 Private Type TCrossTable
     specs As ITableSpecs
     outputSh As Worksheet
-    trans As ITranslationObject
+    lData As ILinelistSpecs
     endRw As Long
     endCol As Long
     nbCols As Long
@@ -64,24 +64,26 @@ Private allRangeNames As BetterArray
 'the interface reference.
 '@param specs ITableSpecs. An ITableSpecs object representing one row from the analysis setup sheet.
 '@param outputWksh Worksheet. The Excel Worksheet where this cross-table will physically write its headers, row labels, column labels, data placeholders, and named ranges.
-'@param trans ITranslationObject. An ITranslationObject that provides locale-aware label strings so that the built table uses the correct language for the current linelist.
+'@param lData ILinelistSpecs. The linelist specifications object that provides the translation object
+'for locale-aware labels and is passed to ITableSpecs.RowCategories / ColumnCategories for
+'category resolution at build time.
 '@return ICrossTable. A fully initialized ICrossTable ready for Build or individual step calls.
 '@throws InvalidArgument When specs is Nothing.
 '@throws InvalidArgument When outputWksh is Nothing.
-'@throws InvalidArgument When trans is Nothing.
+'@throws InvalidArgument When lData is Nothing.
 '@export
 Public Function Create(ByVal specs As ITableSpecs, _
                        ByVal outputWksh As Worksheet, _
-                       ByVal trans As ITranslationObject) As ICrossTable
+                       ByRef lData As ILinelistSpecs) As ICrossTable
 
     If specs Is Nothing Then ThrowError InvalidArgument, "Table specifications not defined"
     If outputWksh Is Nothing Then ThrowError InvalidArgument, "Output worksheet not defined"
-    If trans Is Nothing Then ThrowError InvalidArgument, "Translations not defined"
+    If lData Is Nothing Then ThrowError InvalidArgument, "Linelist specifications not defined"
 
     With New CrossTable
         Set .Specifications = specs
         Set .Wksh = outputWksh
-        Set .Translations = trans
+        Set .LinelistData = lData
         Set Create = .Self
     End With
 End Function
@@ -137,21 +139,33 @@ Public Property Set Specifications(ByVal specs As ITableSpecs)
     Set this.specs = specs
 End Property
 
+'@label:linelist-data
+'@prop-title Linelist specifications providing translations and categories.
+'@details
+'Returns the ILinelistSpecs instance stored at construction time. Used to
+'extract the translation object and to pass as the lData parameter when
+'calling specs.RowCategories(lData) and specs.ColumnCategories(lData).
+'@return ILinelistSpecs. The linelist specifications.
+Public Property Get LinelistData() As ILinelistSpecs
+    Set LinelistData = this.lData
+End Property
+
+'@label:linelist-data-set
+'@prop-title Assign the linelist specifications.
+'@param lData ILinelistSpecs. The linelist specifications to assign.
+Public Property Set LinelistData(ByVal lData As ILinelistSpecs)
+    Set this.lData = lData
+End Property
+
 '@label:translations
 '@prop-title Translation object for locale-aware labels.
 '@details
-'Returns the ITranslationObject used to resolve translated strings
-'such as "Total", "Missing", "Percent", and date-unit names.
+'Returns the ITranslationObject extracted from the stored linelist
+'specifications. Resolves translated strings such as "Total", "Missing",
+'"Percent", and date-unit names.
 '@return ITranslationObject. The translation object.
 Public Property Get Translations() As ITranslationObject
-    Set Translations = this.trans
-End Property
-
-'@label:translations-set
-'@prop-title Assign the translation object.
-'@param trans ITranslationObject. The translation object to assign.
-Public Property Set Translations(ByVal trans As ITranslationObject)
-    Set this.trans = trans
+    Set Translations = this.lData.TransObject()
 End Property
 
 '@label:number-of-columns
@@ -639,7 +653,7 @@ Private Sub AddRows()
 
     transMissing = trans.TranslatedValue("MSG_NA")
     transTotal = trans.TranslatedValue("MSG_Total")
-    Set rowsData = specs.RowCategories()
+    Set rowsData = specs.RowCategories(LinelistData())
 
     With sh
         Select Case specs.TableScope()
@@ -775,7 +789,7 @@ Private Sub BivariateColumns(ByVal startRw As Long, ByVal specs As ITableSpecs, 
         colLab = specs.Value("label")
         If specs.HasMissing Then labData.Push transMissing
         If specs.HasTotal Then labData.Push transTotal
-        Set colData = specs.ColumnCategories()
+        Set colData = specs.ColumnCategories(LinelistData())
 
         If colData.Length > 0 Then
             NumberOfColumns = colData.Length

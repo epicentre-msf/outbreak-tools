@@ -199,17 +199,23 @@ Public Function Value(ByVal colName As String) As String: End Function
 '@prop-title Row variable categories from the dictionary
 '@details
 'Returns a BetterArray containing the category labels for the row
-'variable defined in this specification. The categories are read from
-'the linelist dictionary and used by CrossTable to populate row labels.
+'variable defined in this specification. When lData is a LinelistSpecs
+'instance, the categories are resolved from its dictionary and choices.
+'When lData is any other type (or Nothing), returns an empty BetterArray.
+'@param lData Object. A LinelistSpecs instance providing category lookups,
+'or any other Object (categories will be empty).
 '@return BetterArray. The row category list.
-Public Property Get RowCategories() As BetterArray: End Property
+Public Property Get RowCategories(ByRef lData As Object) As BetterArray: End Property
 
 '@jump:column-categories
 '@prop-title Column variable categories from the dictionary
 '@details
 'Returns a BetterArray containing the category labels for the column
-'variable defined in this specification. The categories are read from
-'the linelist dictionary and used by CrossTable to populate column
-'headers. Returns an empty array for univariate or global summary types.
+'variable defined in this specification. When lData is a LinelistSpecs
+'instance, the categories are resolved from its dictionary and choices.
+'When lData is any other type (or Nothing), returns an empty BetterArray.
+'Returns an empty array for univariate or global summary types.
+'@param lData Object. A LinelistSpecs instance providing category lookups,
+'or any other Object (categories will be empty).
 '@return BetterArray. The column category list.
-Public Property Get ColumnCategories() As BetterArray: End Property
+Public Property Get ColumnCategories(ByRef lData As Object) As BetterArray: End Property

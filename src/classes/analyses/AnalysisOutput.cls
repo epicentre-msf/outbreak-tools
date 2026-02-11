@@ -590,7 +590,7 @@ Private Sub WriteTable(ByVal loName As String, _
     Set tabRng = lo.ListRows(1).Range
 
     Do
-        Set specs = TableSpecs.Create(hRng, tabRng, lData)
+        Set specs = TableSpecs.Create(hRng, tabRng, lData.Dictionary())
         Set nextSpecs = Nothing
         addPrevSecMinMaxFormula = False
         addActSecMinMaxFormula = False
@@ -609,7 +609,7 @@ Private Sub WriteTable(ByVal loName As String, _
         ' Bug #3 fix: per-table error handling — wrap table creation in error handler
         On Error GoTo TableError
 
-        Set tabl = CrossTable.Create(specs, outsh, trads)
+        Set tabl = CrossTable.Create(specs, outsh, lData)
         tabl.Build
         Set tabform = CrossTableFormula.Create(tabl, formData)
         tabform.AddFormulas
@@ -952,13 +952,13 @@ Private Sub WriteSpatioTemporalGraph(ByVal loName As String, _
     Set tabRng = lo.ListRows(1).Range
 
     Do
-        Set specs = TableSpecs.Create(hRng, tabRng, lData)
+        Set specs = TableSpecs.Create(hRng, tabRng, lData.Dictionary())
 
         If Not specs.ValidTable() Then GoTo ContinueLoop
         If Not specs.HasGraph() Then GoTo ContinueLoop
 
         tabId = specs.TableId()
-        Set tabl = CrossTable.Create(specs, outsh, trads)
+        Set tabl = CrossTable.Create(specs, outsh, lData)
 
         Set grSpecs = GraphSpecs.Create(tabl)
         plotTitle = trads.TranslatedValue("MSG_Graph") & _
