@@ -32,5 +32,14 @@
         "editor.formatOnSave": true
     },
     "internalLinker.sourceFolders": ["src"],
-    "files.eol": "\r\n"
+    "files.eol": "\r\n",
+    "spellright.language": [
+        "en"
+    ],
+    "spellright.documentTypes": [
+        "markdown",
+        "latex",
+        "plaintext",
+        "VBA"
+    ]
 }
