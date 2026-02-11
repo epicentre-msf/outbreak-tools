@@ -272,8 +272,7 @@ Public Sub TestInsertRowsUsesSelectionHeight()
     initialRows = summaryTable.ListRows.Count
     originalUnivariateHeader = univariateTable.HeaderRowRange.Row
 
-    Set selectionRange = summaryTable.ListRows(1).Range
-    Set selectionRange = selectionRange.Resize(2, summaryTable.ListColumns.Count)
+    Set selectionRange = summaryTable.DataBodyRange.Rows("1:2")
 
     sut.InsertRows selectionRange
 
