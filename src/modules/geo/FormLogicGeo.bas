@@ -9,7 +9,6 @@ Option Explicit
 
 Private Const GEOSHEET As String = "Geo"
 Private Const LLSHEET As String = "LinelistTranslation"
-Private Const TRADSHEET As String = "Translations"
 Private Const SEP As String = " | "
 Private Const NACHAR As String = " | N/A"
 Private Const NACHARREV As String = "N/A | "
@@ -24,13 +23,11 @@ Private hfOrGeo As Byte
 
 ' @description Initialize translation objects and the LLGeo instance.
 Private Sub InitializeTrads()
-    Dim lltrads As ILLTranslations
+    Dim lltrads As ILLTranslation
     Dim wb As Workbook
 
     Set wb = ThisWorkbook
-    Set lltrads = LLTranslations.Create( _
-        wb.Worksheets(LLSHEET), _
-        wb.Worksheets(TRADSHEET))
+    Set lltrads = LLTranslation.Create(wb.Worksheets(LLSHEET))
     Set tradform = lltrads.TransObject(TranslationOfForms)
     Set tradmess = lltrads.TransObject()
     Set geo = LLGeo.Create(wb.Worksheets(GEOSHEET))

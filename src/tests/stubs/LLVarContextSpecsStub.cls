@@ -121,7 +121,7 @@ Private Property Get ILinelistSpecs_MainObject() As IMain
     Set ILinelistSpecs_MainObject = Nothing
 End Property
 
-Private Property Get ILinelistSpecs_Translations() As ILLTranslations
+Private Property Get ILinelistSpecs_Translations() As ILLTranslation
     Set ILinelistSpecs_Translations = Nothing
 End Property
 

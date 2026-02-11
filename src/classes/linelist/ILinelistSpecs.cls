@@ -136,10 +136,11 @@ End Property
 '@jump:translations
 '@prop-title Translation tables manager
 '@details
-'Returns the ILLTranslations instance providing access to both the linelist
-'and dictionary translation worksheets. Lazy-loaded on first access.
-'@return ILLTranslations. The translations collaborator.
-Public Property Get Translations() As ILLTranslations
+'Returns the ILLTranslation instance providing access to all translation
+'ListObjects on the consolidated translation worksheet. Lazy-loaded on
+'first access.
+'@return ILLTranslation. The translations collaborator.
+Public Property Get Translations() As ILLTranslation
 End Property
 
 '@jump:designer-translations
