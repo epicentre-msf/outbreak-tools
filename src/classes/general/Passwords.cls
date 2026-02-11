@@ -387,7 +387,7 @@ Private Sub ProtectSheet(sheetObject As Variant, _
     allowDelete = (allowDeletingRows And AllowDelete)
 
 
-    PersistProtectionSettings targetSheet.Name, allowDraw, allowDelete
+    If registerState Then PersistProtectionSettings targetSheet.Name, allowDraw, allowDelete
     ApplySheetProtection targetSheet, allowDraw, allowDelete
 End Sub
 
