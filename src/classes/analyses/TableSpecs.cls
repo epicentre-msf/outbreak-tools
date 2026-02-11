@@ -26,15 +26,30 @@ Implements ITableSpecs
 'header range and linelist specifications, providing typed access to the
 'table scope, identifiers, navigation to neighboring rows, validation
 'flags (total, missing, percentage, graph), and dictionary-based category
-'lookups. Consumers interact through the ITableSpecs interface.
+'lookups. Performance-sensitive data is cached eagerly at construction
+'time: column names, cell values, table scope, and dictionary reference.
+'Derived booleans (ValidTable, IsNewSection) are cached lazily on first
+'access. Consumers interact through the ITableSpecs interface.
 '@depends ILinelistSpecs, ILLdictionary, ILLVariables, LLVariables, BetterArray
-'@version 1.0 (2026-02-10)
+'@version 1.1 (2026-02-11)
 '@author Yves Amevoin
 
 Private Type TTableSpecs
     hRng As Range                                'Header range of the setup listobject
     tRng As Range                                'Row range for this table spec
     lData As ILinelistSpecs                      'Linelist specifications
+    ' --- Column and cell value caches (Tier 1 + Tier 3) ---
+    colNames As BetterArray                      'Column names from header (original case)
+    cellValues As BetterArray                    'Parallel cell values from spec row
+    ' --- Scalar caches (Tier 2 + Tier 4 + Tier 5) ---
+    cachedScope As Long                          'Cached AnalysisTableScope enum value
+    scopeCached As Boolean                       'Whether cachedScope is populated
+    dict As ILLdictionary                        'Cached dictionary reference
+    dictCached As Boolean                        'Whether dict is populated
+    cachedValid As Boolean                       'Cached ValidTable result
+    validCached As Boolean                       'Whether cachedValid is populated
+    cachedNewSection As Boolean                  'Cached IsNewSection result
+    newSectionCached As Boolean                  'Whether cachedNewSection is populated
 End Type
 
 Private this As TTableSpecs
@@ -52,7 +67,9 @@ Private Const CLASS_NAME As String = "TableSpecs"
 'The TableSpecs object wraps that row and exposes properties to query its
 'scope, validity, categories, navigation to neighboring rows, and display flags
 '(total, missing, percentage, graph). Validation is performed immediately via
-'CheckRequirements before the instance is populated.
+'CheckRequirements before the instance is populated. After property injection,
+'InitCache scans the header and data row once to build column name and cell
+'value caches, and eagerly resolves the table scope and dictionary reference.
 '@param headerRng Range. The header row Range of the analysis setup ListObject.
 'Column names in this range are used by Value() and ColumnIndex() to locate
 'fields such as "row", "column", "total", "section", etc.
@@ -73,29 +90,20 @@ Public Function Create(ByVal headerRng As Range, _
                        ByVal tableSpecsRng As Range, _
                        ByVal lData As ILinelistSpecs) As ITableSpecs
 
+    Dim instance As TableSpecs
     CheckRequirements headerRng, tableSpecsRng, lData
 
-    With New TableSpecs
-        Set .HeaderRange = headerRng
-        Set .TableRange = tableSpecsRng
-        Set .LinelistSpecifications = lData
-        Set Create = .Self
-    End With
+    Set instance = New TableSpecs
+    Set instance.HeaderRange = headerRng
+    Set instance.TableRange = tableSpecsRng
+    Set instance.LinelistSpecifications = lData
+    instance.InitCache
+    Set Create = instance
 End Function
 
 '@section Internal Properties
 '===============================================================================
 '@description Properties used by the factory pattern during initialisation.
-
-'@label:self
-'@prop-title Current object instance
-'@details
-'Convenience accessor so the predeclared Create method can return the
-'interface reference from the newly created instance.
-'@return ITableSpecs. The current instance cast to the interface.
-Public Property Get Self() As ITableSpecs
-    Set Self = Me
-End Property
 
 '@label:header-range
 '@prop-title Header range of the setup ListObject
@@ -149,6 +157,47 @@ Public Property Set LinelistSpecifications(ByVal lData As ILinelistSpecs)
     Set this.lData = lData
 End Property
 
+'@section Cache Initialization
+'===============================================================================
+'@description One-time cache population called from the factory.
+
+'@label:init-cache
+'@sub-title Populate all eager caches from header and data ranges
+'@details
+'Scans the header range once to build parallel BetterArray caches of column
+'names and cell values (Tier 1 + Tier 3). Also eagerly resolves the table
+'scope from the cell above the header (Tier 2) and the dictionary reference
+'from the linelist specifications (Tier 4). Must be called exactly once after
+'HeaderRange, TableRange, and LinelistSpecifications have been assigned.
+'Lazy caches (ValidTable, IsNewSection) are NOT populated here; they are
+'computed on first access.
+'@export
+Public Sub InitCache()
+    Dim colCount As Long
+    Dim idx As Long
+
+    Set this.colNames = New BetterArray
+    Set this.cellValues = New BetterArray
+    this.colNames.LowerBound = 1
+    this.cellValues.LowerBound = 1
+
+    colCount = this.hRng.Columns.Count
+
+    ' Tier 1 + Tier 3: One-time scan of header and data row
+    For idx = 1 To colCount
+        this.colNames.Push CStr(this.hRng.Cells(1, idx).Value)
+        this.cellValues.Push CStr(this.tRng.Cells(1, idx).Value)
+    Next idx
+
+    ' Tier 2: Eagerly cache table scope
+    this.cachedScope = ComputeTableScope()
+    this.scopeCached = True
+
+    ' Tier 4: Eagerly cache dictionary reference
+    Set this.dict = this.lData.Dictionary()
+    this.dictCached = True
+End Sub
+
 '@section Core Properties
 '===============================================================================
 '@description Type identification and identity properties for each table spec.
@@ -156,41 +205,20 @@ End Property
 '@label:table-scope
 '@prop-title Analysis table scope for this specification row
 '@details
-'Determines the AnalysisTableScope enum value by reading the type label
-'that sits two rows above the header range. In the setup workbook layout,
-'each analysis block has a merged title cell above its header; this property
-'reads that cell, trims and lowercases it, then maps it to the corresponding
-'enum constant: ScopeGlobalSummary (1), ScopeUnivariate (2), ScopeBivariate (3),
-'ScopeTimeSeries (4), ScopeSpatial (5), or ScopeSpatioTemporal (6). If the label
-'does not match any known type string, a runtime error is raised.
+'Returns the cached AnalysisTableScope enum value. The scope is computed
+'once eagerly during InitCache by reading the type label cell above the
+'header range. On subsequent calls the cached Long value is returned
+'directly without any worksheet access.
 '@return AnalysisTableScope. The table scope category.
-'@throws ErrorUnexpectedState When the type label does not match any known analysis type.
 '@export
 Public Property Get TableScope() As AnalysisTableScope
-    Dim hRng As Range
-    Dim anaType As String
-
-    Set hRng = HeaderRange()
-    ' The type label is two rows above the header (row offset -1 from header row)
-    anaType = LCase(Application.WorksheetFunction.Trim(hRng.Cells(-1, 1).Value))
-
-    Select Case anaType
-    Case "global summary"
-        TableScope = ScopeGlobalSummary
-    Case "univariate analysis"
-        TableScope = ScopeUnivariate
-    Case "bivariate analysis"
-        TableScope = ScopeBivariate
-    Case "time series analysis"
-        TableScope = ScopeTimeSeries
-    Case "spatial analysis"
-        TableScope = ScopeSpatial
-    Case "spatio-temporal analysis"
-        TableScope = ScopeSpatioTemporal
-    Case Else
-        ThrowError ErrorUnexpectedState, _
-                   "Could not find the table scope. Actual type is: " & anaType
-    End Select
+    If this.scopeCached Then
+        TableScope = this.cachedScope
+    Else
+        this.cachedScope = ComputeTableScope()
+        this.scopeCached = True
+        TableScope = this.cachedScope
+    End If
 End Property
 
 '@label:table-id
@@ -256,16 +284,20 @@ End Property
 '@label:dictionary
 '@prop-title Linelist dictionary bound to this specification
 '@details
-'Convenience shortcut that returns the ILLdictionary from the linelist
-'specifications object. The dictionary contains all variable definitions,
-'control types, category lists, and sheet metadata. Multiple properties in
-'this class need frequent access to the dictionary, so this property avoids
-'repeating the chained call LinelistSpecifications().Dictionary() throughout
-'the class.
+'Returns the cached ILLdictionary reference. The dictionary is resolved
+'once eagerly during InitCache from the linelist specifications object.
+'On subsequent calls the cached reference is returned directly without
+'property chain traversal.
 '@return ILLdictionary. The linelist dictionary instance.
 '@export
 Public Property Get Dictionary() As ILLdictionary
-    Set Dictionary = LinelistSpecifications().Dictionary()
+    If this.dictCached Then
+        Set Dictionary = this.dict
+    Else
+        Set this.dict = LinelistSpecifications().Dictionary()
+        this.dictCached = True
+        Set Dictionary = this.dict
+    End If
 End Property
 
 '@label:spatial-table-types
@@ -287,10 +319,10 @@ End Property
 '@export
 Public Property Get SpatialTableScopes() As String
     Dim rowVar As String
-    Dim dict As ILLdictionary
+    Dim cachedDict As ILLdictionary
     Dim spatType As String
 
-    Set dict = Dictionary()
+    Set cachedDict = Dictionary()
 
     ' For spatio-temporal, the spatial variable is in the "column" field
     If TableScope = ScopeSpatioTemporal Then
@@ -299,8 +331,8 @@ Public Property Get SpatialTableScopes() As String
         rowVar = Value("row")
     End If
 
-    spatType = Switch(dict.VariableExists("hf_" & rowVar), "hf", _
-                      dict.VariableExists("adm1_" & rowVar), "geo", _
+    spatType = Switch(cachedDict.VariableExists("hf_" & rowVar), "hf", _
+                      cachedDict.VariableExists("adm1_" & rowVar), "geo", _
                       True, vbNullString)
     SpatialTableScopes = spatType
 End Property
@@ -312,83 +344,37 @@ End Property
 '@label:valid-table
 '@prop-title Whether this table has a valid configuration
 '@details
-'Validates whether this table specification row contains all required fields
-'and references valid variables for its analysis type. Each table scope has
-'different validation rules: GlobalSummary requires non-empty "label" and
-'"function" fields; Univariate requires the "row" variable to be a choice
-'variable; Bivariate requires both "row" and "column" to be choice variables;
-'TimeSeries requires the "row" variable to be of type "date"; Spatial requires
-'a geographic prefix in the dictionary; SpatioTemporal requires a geographic
-'prefix on the column variable and a date-type row variable. Invalid table
-'specs are skipped during navigation (Previous, NextSpecs).
+'Returns the cached validation result. On first access, validates whether
+'this table specification row contains all required fields and references
+'valid variables for its analysis type. Each table scope has different
+'validation rules: GlobalSummary requires non-empty "label" and "function"
+'fields; Univariate requires the "row" variable to be a choice variable;
+'Bivariate requires both "row" and "column" to be choice variables;
+'TimeSeries requires the "row" variable to be of type "date"; Spatial
+'requires a geographic prefix in the dictionary; SpatioTemporal requires
+'a geographic prefix on the column variable and a date-type row variable.
+'Invalid table specs are skipped during navigation (Previous, NextSpecs).
 '@return Boolean. True if the table specification meets all requirements for its type.
 '@depends LLVariables
 '@export
 Public Property Get ValidTable() As Boolean
-    Dim dict As ILLdictionary
-    Dim vars As ILLVariables
-    Dim rowVar As String
-    Dim colVar As String
-    Dim colControl As String
-    Dim rowControl As String
-    Dim rowType As String
-    Dim isValid As Boolean
-
-    Set dict = Dictionary()
-    Set vars = LLVariables.Create(dict)
-
-    rowVar = Value("row")
-    rowControl = vars.Value(colName:="control", varName:=rowVar)
-    colVar = Value("column")
-    colControl = vars.Value(colName:="control", varName:=colVar)
-
-    Select Case TableScope
-
-    Case ScopeGlobalSummary
-        isValid = (Value("label") <> vbNullString) And _
-                  (Value("function") <> vbNullString)
-
-    Case ScopeUnivariate
-        isValid = vars.Contains(rowVar) And _
-                  (rowControl = "choice_manual" Or rowControl = "choice_formula")
-
-    Case ScopeBivariate
-        isValid = vars.Contains(rowVar) And vars.Contains(colVar) And _
-                  (colControl = "choice_manual" Or colControl = "choice_formula") And _
-                  (rowControl = "choice_manual" Or rowControl = "choice_formula")
-
-    Case ScopeTimeSeries
-        rowType = vars.Value(colName:="variable type", varName:=rowVar)
-        isValid = (colVar = vbNullString Or _
-                   colControl = "choice_manual" Or _
-                   colControl = "choice_formula") And _
-                  (rowType = "date")
-
-    Case ScopeSpatial
-        isValid = (dict.VariableExists("adm1_" & rowVar) Or _
-                   dict.VariableExists("hf_" & rowVar)) And _
-                  (colVar = vbNullString Or _
-                   colControl = "choice_manual" Or _
-                   colControl = "choice_formula")
-
-    Case ScopeSpatioTemporal
-        rowType = vars.Value(colName:="variable type", varName:=rowVar)
-        isValid = (dict.VariableExists("adm1_" & colVar) Or _
-                   dict.VariableExists("hf_" & colVar)) And _
-                  (rowType = "date")
-
-    End Select
-
-    ValidTable = isValid
+    If this.validCached Then
+        ValidTable = this.cachedValid
+    Else
+        this.cachedValid = ComputeValidTable()
+        this.validCached = True
+        ValidTable = this.cachedValid
+    End If
 End Property
 
 '@label:is-new-section
 '@prop-title Whether this table begins a new section group
 '@details
-'Determines whether this table specification row begins a new section within
-'the analysis setup block. Sections group related tables together. The method
-'checks the "section" column: if the current row's section value differs from
-'the previous row's section value, or if this is the first data row (where the
+'Returns the cached section-boundary result. On first access, determines
+'whether this table specification row begins a new section within the analysis
+'setup block. Sections group related tables together. The method checks the
+'"section" column: if the current row's section value differs from the
+'previous row's section value, or if this is the first data row (where the
 'previous row is the header), the table is considered a new section.
 'GlobalSummary tables are never considered new sections regardless of their
 'section value, because each GlobalSummary table is standalone and does not
@@ -400,27 +386,13 @@ End Property
 'with exact string equality (case-sensitive).
 '@export
 Public Property Get IsNewSection() As Boolean
-    Dim sectIndex As Long
-    Dim actualSection As String
-    Dim previousSection As String
-    Dim isSameSection As Boolean
-    Dim tRng As Range
-    Dim hRng As Range
-    Dim prevCell As Range
-
-    Set tRng = TableRange()
-    Set hRng = HeaderRange()
-    isSameSection = False
-
-    If ColumnExists("section") Then
-        sectIndex = ColumnIndex("section")
-        actualSection = Value("section")
-        Set prevCell = tRng.Cells(0, sectIndex)  '0 offset = previous row
-        previousSection = prevCell.Value
-        isSameSection = (actualSection = previousSection) And (prevCell.Row <> hRng.Row)
+    If this.newSectionCached Then
+        IsNewSection = this.cachedNewSection
+    Else
+        this.cachedNewSection = ComputeIsNewSection()
+        this.newSectionCached = True
+        IsNewSection = this.cachedNewSection
     End If
-
-    IsNewSection = (Not isSameSection) And (TableScope <> ScopeGlobalSummary)
 End Property
 
 '@section Flag Properties
@@ -694,25 +666,28 @@ End Property
 '@label:value
 '@sub-title Retrieve a value from the specification row by column name
 '@details
-'Retrieves the cell value from this table specification row for a given
-'column name. The column is located by searching the header range for a cell
-'whose value contains the requested name (case-insensitive, partial match via
-'xlPart). Once the column index is found, the corresponding cell in the table
-'range row is read. This is the fundamental data-access method used by nearly
-'every other property in this class. If the column name does not exist in the
-'header, the method returns vbNullString rather than raising an error.
-'@param colName String. The column name to search for in the header range
+'Retrieves the cached cell value from this table specification row for a
+'given column name. The column is located by scanning the cached column
+'names array for a case-insensitive substring match (replicating the
+'original Range.Find with xlPart and MatchCase:=False). Once found, the
+'corresponding value is returned from the parallel cellValues cache without
+'any worksheet access. If the column name does not exist in the header, the
+'method returns vbNullString.
+'@param colName String. The column name to search for in the header
 '(partial, case-insensitive).
 '@return String. The cell value, or vbNullString if the column is not found.
 '@export
 Public Function Value(ByVal colName As String) As String
-    Dim valIndex As Long
+    Dim idx As Long
 
     Value = vbNullString
-    If ColumnExists(colName) Then
-        valIndex = ColumnIndex(colName)
-        Value = TableRange.Cells(1, valIndex).Value
-    End If
+
+    For idx = 1 To this.colNames.Length
+        If InStr(1, this.colNames.Item(idx), colName, vbTextCompare) > 0 Then
+            Value = this.cellValues.Item(idx)
+            Exit Function
+        End If
+    Next idx
 End Function
 
 '@label:row-categories
@@ -753,40 +728,35 @@ End Property
 '@description Private helper methods that support data access and validation.
 
 '@label:column-exists
-'@sub-title Check whether a column name exists in the header range
+'@sub-title Check whether a column name exists in the header cache
 '@details
-'Uses Range.Find with xlPart matching and case-insensitive comparison. This
-'is a guard function called by Value and ColumnIndex before attempting to
-'read or locate a column, preventing errors when optional columns are absent
-'from the setup table.
+'Delegates to ColumnIndex and checks for a positive return value. Replaces
+'the original Range.Find call with a scan of the cached column names array.
 '@param colName String. The column name to search for (partial, case-insensitive).
-'@return Boolean. True if at least one cell in the header range contains the name.
+'@return Boolean. True if at least one cached column name contains the search term.
 Private Function ColumnExists(ByVal colName As String) As Boolean
-    ColumnExists = (Not HeaderRange.Find(What:=colName, _
-                                         lookAt:=xlPart, _
-                                         MatchCase:=False) Is Nothing)
+    ColumnExists = (ColumnIndex(colName) > 0)
 End Function
 
 '@label:column-index
 '@sub-title Return the 1-based column index of a named header column
 '@details
-'Returns the 1-based column index of a named column relative to the start
-'of the header range. The index is computed as the absolute column number
-'of the found cell minus the absolute column number of the header's first
-'cell, plus 1. This index can be used directly with TableRange.Cells(1,
-'index) to read the corresponding cell value. Returns -1 if the column
-'name is not found in the header.
+'Scans the cached column names array for a case-insensitive substring match
+'(replicating the original Range.Find with xlPart and MatchCase:=False).
+'Returns the 1-based position within the header range, or -1 if not found.
 '@param colName String. The column name to search for (partial, case-insensitive).
 '@return Long. The 1-based position within the header range, or -1 if not found.
 Private Function ColumnIndex(ByVal colName As String) As Long
-    If ColumnExists(colName) Then
-        ColumnIndex = HeaderRange.Find(What:=colName, _
-                                       lookAt:=xlPart, _
-                                       MatchCase:=False).Column - _
-                      HeaderRange.Column + 1
-    Else
-        ColumnIndex = -1
-    End If
+    Dim idx As Long
+
+    For idx = 1 To this.colNames.Length
+        If InStr(1, this.colNames.Item(idx), colName, vbTextCompare) > 0 Then
+            ColumnIndex = idx
+            Exit Function
+        End If
+    Next idx
+
+    ColumnIndex = -1
 End Function
 
 '@label:categories-data
@@ -832,6 +802,138 @@ Private Function CategoriesData(ByVal rowOrCol As String) As BetterArray
     End If
 
     Set CategoriesData = varsCat.Clone()
+End Function
+
+'@label:compute-table-scope
+'@sub-title Compute the AnalysisTableScope from the setup worksheet
+'@details
+'Reads the type label cell two rows above the header range, trims and
+'lowercases it, then maps it to the corresponding AnalysisTableScope enum
+'constant. Called once during InitCache to populate the scope cache.
+'@return AnalysisTableScope. The table scope category.
+'@throws ErrorUnexpectedState When the type label does not match any known analysis type.
+Private Function ComputeTableScope() As AnalysisTableScope
+    Dim hRng As Range
+    Dim anaType As String
+
+    Set hRng = HeaderRange()
+    anaType = LCase(Application.WorksheetFunction.Trim(hRng.Cells(-1, 1).Value))
+
+    Select Case anaType
+    Case "global summary"
+        ComputeTableScope = ScopeGlobalSummary
+    Case "univariate analysis"
+        ComputeTableScope = ScopeUnivariate
+    Case "bivariate analysis"
+        ComputeTableScope = ScopeBivariate
+    Case "time series analysis"
+        ComputeTableScope = ScopeTimeSeries
+    Case "spatial analysis"
+        ComputeTableScope = ScopeSpatial
+    Case "spatio-temporal analysis"
+        ComputeTableScope = ScopeSpatioTemporal
+    Case Else
+        ThrowError ErrorUnexpectedState, _
+                   "Could not find the table scope. Actual type is: " & anaType
+    End Select
+End Function
+
+'@label:compute-valid-table
+'@sub-title Compute whether this table has a valid configuration
+'@details
+'Validates whether this table specification row contains all required fields
+'and references valid variables for its analysis type. Called once on first
+'access of ValidTable to populate the Boolean cache.
+'@return Boolean. True if the table specification meets all requirements.
+'@depends LLVariables
+Private Function ComputeValidTable() As Boolean
+    Dim cachedDict As ILLdictionary
+    Dim vars As ILLVariables
+    Dim rowVar As String
+    Dim colVar As String
+    Dim colControl As String
+    Dim rowControl As String
+    Dim rowType As String
+    Dim isValid As Boolean
+
+    Set cachedDict = Dictionary()
+    Set vars = LLVariables.Create(cachedDict)
+
+    rowVar = Value("row")
+    rowControl = vars.Value(colName:="control", varName:=rowVar)
+    colVar = Value("column")
+    colControl = vars.Value(colName:="control", varName:=colVar)
+
+    Select Case TableScope
+
+    Case ScopeGlobalSummary
+        isValid = (Value("label") <> vbNullString) And _
+                  (Value("function") <> vbNullString)
+
+    Case ScopeUnivariate
+        isValid = vars.Contains(rowVar) And _
+                  (rowControl = "choice_manual" Or rowControl = "choice_formula")
+
+    Case ScopeBivariate
+        isValid = vars.Contains(rowVar) And vars.Contains(colVar) And _
+                  (colControl = "choice_manual" Or colControl = "choice_formula") And _
+                  (rowControl = "choice_manual" Or rowControl = "choice_formula")
+
+    Case ScopeTimeSeries
+        rowType = vars.Value(colName:="variable type", varName:=rowVar)
+        isValid = (colVar = vbNullString Or _
+                   colControl = "choice_manual" Or _
+                   colControl = "choice_formula") And _
+                  (rowType = "date")
+
+    Case ScopeSpatial
+        isValid = (cachedDict.VariableExists("adm1_" & rowVar) Or _
+                   cachedDict.VariableExists("hf_" & rowVar)) And _
+                  (colVar = vbNullString Or _
+                   colControl = "choice_manual" Or _
+                   colControl = "choice_formula")
+
+    Case ScopeSpatioTemporal
+        rowType = vars.Value(colName:="variable type", varName:=rowVar)
+        isValid = ( (colControl = "geo") Or (colControl = "hf") Or _
+                   cachedDict.VariableExists("adm1_" & colVar) Or _
+                   cachedDict.VariableExists("hf_" & colVar)) And _
+                  (rowType = "date")
+
+    End Select
+
+    ComputeValidTable = isValid
+End Function
+
+'@label:compute-is-new-section
+'@sub-title Compute whether this table begins a new section group
+'@details
+'Determines whether this table specification row begins a new section by
+'comparing the current and previous row section values. Called once on first
+'access of IsNewSection to populate the Boolean cache. The previous row cell
+'value is the only remaining worksheet read (the current row value comes
+'from the cellValues cache).
+'@return Boolean. True if this table starts a new section.
+Private Function ComputeIsNewSection() As Boolean
+    Dim sectIndex As Long
+    Dim actualSection As String
+    Dim previousSection As String
+    Dim isSameSection As Boolean
+    Dim prevCell As Range
+
+    isSameSection = False
+
+    sectIndex = ColumnIndex("section")
+
+    If sectIndex > 0 Then
+        actualSection = Value("section")
+        Set prevCell = this.tRng.Cells(0, sectIndex)
+        previousSection = prevCell.Value
+        isSameSection = (actualSection = previousSection) And _
+                        (prevCell.Row <> this.hRng.Row)
+    End If
+
+    ComputeIsNewSection = (Not isSameSection) And (TableScope <> ScopeGlobalSummary)
 End Function
 
 '@section Error Handling
