@@ -38,6 +38,7 @@ Private Const CLASS_NAME As String = "LLExporter"
 Private Const DICTIONARYSHEET As String = "Dictionary"
 Private Const CHOICESSHEET As String = "Choices"
 Private Const DICTTRANSLATIONSHEET As String = "Translations"
+Private Const LINELISTTRANSLATIONSHEET As String = "LinelistTranslation"
 Private Const METADATASHEET As String = "Metadata"
 Private Const PASSWORDSHEET As String = "__pass"
 Private Const TEMPSHEET As String = "temp__"
@@ -683,9 +684,10 @@ Private Sub AddMetadataSheets(ByVal outwb As Workbook, ByVal dict As ILLdictiona
     Dim sh As Worksheet
     Dim counter As Long
     Dim sheetName As String
+    Dim translations As ILLTranslation
 
     Set sheetNames = New BetterArray
-    sheetNames.Push METADATASHEET, CHOICESSHEET, DICTTRANSLATIONSHEET
+    sheetNames.Push METADATASHEET, CHOICESSHEET
 
     For counter = sheetNames.LowerBound To sheetNames.UpperBound
         sheetName = sheetNames.Item(counter)
@@ -693,6 +695,11 @@ Private Sub AddMetadataSheets(ByVal outwb As Workbook, ByVal dict As ILLdictiona
         Set csData = DataSheet.Create(sh, 1, 1)
         csData.Export toWkb:=outwb, Hide:=xlSheetVisible
     Next counter
+
+    ' Export dictionary translations via LLTranslation
+    Set translations = LLTranslation.Create( _
+        this.sourceWkb.Worksheets(LINELISTTRANSLATIONSHEET))
+    translations.ExportDictionary outwb
 End Sub
 
 '@label:add-dictionary

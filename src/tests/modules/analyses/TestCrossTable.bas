@@ -31,6 +31,7 @@ Private Const COL_NGEO As Long = 10
 Private Const NUM_COLUMNS As Long = 10
 
 Private Assert As ICustomTest
+Private dictStub As ILLdictionary
 Private lDataStub As TableSpecsLinelistStub
 Private transStub As LinelistSpecsTranslationStub
 
@@ -76,7 +77,7 @@ Private Function CreateSpecs(ByVal dataRowIndex As Long) As ITableSpecs
     Set CreateSpecs = TableSpecs.Create( _
         FixtureHeaderRange(), _
         FixtureDataRange(dataRowIndex), _
-        lDataStub)
+        dictStub)
 End Function
 
 Private Function OutputSheet() As Worksheet
@@ -100,6 +101,7 @@ Private Sub ModuleInitialize()
     EnsureWorksheet TEST_OUTPUT_SHEET, clearSheet:=False
     Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
     Assert.SetModuleName "TestCrossTable"
+    Set dictStub = New AnalysisDictionaryStub
     Set lDataStub = New TableSpecsLinelistStub
     Set transStub = New LinelistSpecsTranslationStub
     transStub.Initialise "TestTrans"
@@ -110,6 +112,8 @@ Private Sub ModuleInitialize()
     transStub.SetTranslation "MSG_FilteredData", "Filtered Data"
     transStub.SetTranslation "MSG_GlobalSummary", "Global Summary"
     transStub.SetTranslation "MSG_Period", "Period"
+    lDataStub.SetDictionary dictStub
+    lDataStub.SetTranslation transStub
 End Sub
 
 '@ModuleCleanup
@@ -120,6 +124,7 @@ Private Sub ModuleCleanup()
     DeleteWorksheet FIXTURE_SHEET
     DeleteWorksheet OUTPUT_SHEET
     RestoreApp
+    Set dictStub = Nothing
     Set lDataStub = Nothing
     Set transStub = Nothing
     Set Assert = Nothing
@@ -150,7 +155,7 @@ Public Sub TestCreateRejectsNothingSpecs()
 
     On Error Resume Next
     Dim ct As ICrossTable
-    Set ct = CrossTable.Create(Nothing, sh, transStub)
+    Set ct = CrossTable.Create(Nothing, sh, lDataStub)
     On Error GoTo 0
 
     Assert.IsTrue (ct Is Nothing), _
@@ -174,7 +179,7 @@ Public Sub TestCreateRejectsNothingWorksheet()
 
     On Error Resume Next
     Dim ct As ICrossTable
-    Set ct = CrossTable.Create(specs, Nothing, transStub)
+    Set ct = CrossTable.Create(specs, Nothing, lDataStub)
     On Error GoTo 0
 
     Assert.IsTrue (ct Is Nothing), _
@@ -186,8 +191,8 @@ TestFail:
 End Sub
 
 '@TestMethod("CrossTable")
-Public Sub TestCreateRejectsNothingTranslation()
-    CustomTestSetTitles Assert, "CrossTable", "TestCreateRejectsNothingTranslation"
+Public Sub TestCreateRejectsNothingLData()
+    CustomTestSetTitles Assert, "CrossTable", "TestCreateRejectsNothingLData"
     On Error GoTo TestFail
 
     BuildFixture "univariate analysis", Array( _
@@ -204,11 +209,11 @@ Public Sub TestCreateRejectsNothingTranslation()
     On Error GoTo 0
 
     Assert.IsTrue (ct Is Nothing), _
-                  "Create with Nothing translations should fail"
+                  "Create with Nothing linelist data should fail"
 
     Exit Sub
 TestFail:
-    CustomTestLogFailure Assert, "TestCreateRejectsNothingTranslation", Err.Number, Err.Description
+    CustomTestLogFailure Assert, "TestCreateRejectsNothingLData", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("CrossTable")
@@ -225,7 +230,7 @@ Public Sub TestCreateReturnsValidObject()
     Set sh = OutputSheet()
 
     Dim ct As ICrossTable
-    Set ct = CrossTable.Create(specs, sh, transStub)
+    Set ct = CrossTable.Create(specs, sh, lDataStub)
 
     Assert.IsTrue (Not ct Is Nothing), _
                   "Create with valid params should succeed"
@@ -252,7 +257,7 @@ Public Sub TestSpecificationsProperty()
     Set sh = OutputSheet()
 
     Dim ct As ICrossTable
-    Set ct = CrossTable.Create(specs, sh, transStub)
+    Set ct = CrossTable.Create(specs, sh, lDataStub)
 
     Assert.AreEqual specs.TableId, ct.Specifications.TableId, _
                     "Specifications should return the specs passed at creation"
@@ -276,7 +281,7 @@ Public Sub TestWkshProperty()
     Set sh = OutputSheet()
 
     Dim ct As ICrossTable
-    Set ct = CrossTable.Create(specs, sh, transStub)
+    Set ct = CrossTable.Create(specs, sh, lDataStub)
 
     Assert.AreEqual sh.Name, ct.Wksh.Name, _
                     "Wksh should return the output worksheet"
@@ -303,7 +308,7 @@ Public Sub TestBuildGlobalSummaryCreatesRowGsSet()
     Set sh = OutputSheet()
 
     Dim ct As ICrossTable
-    Set ct = CrossTable.Create(specs, sh, transStub)
+    Set ct = CrossTable.Create(specs, sh, lDataStub)
     ct.Build
 
     Assert.IsTrue RangeExistsOnSheet(sh, "ROWGS_SET"), _
@@ -328,7 +333,7 @@ Public Sub TestBuildGlobalSummaryCreatesColGsSet()
     Set sh = OutputSheet()
 
     Dim ct As ICrossTable
-    Set ct = CrossTable.Create(specs, sh, transStub)
+    Set ct = CrossTable.Create(specs, sh, lDataStub)
     ct.Build
 
     Assert.IsTrue RangeExistsOnSheet(sh, "COLGS_SET"), _
@@ -356,7 +361,7 @@ Public Sub TestBuildUnivariateCreatesNamedRanges()
     Set sh = OutputSheet()
 
     Dim ct As ICrossTable
-    Set ct = CrossTable.Create(specs, sh, transStub)
+    Set ct = CrossTable.Create(specs, sh, lDataStub)
     ct.Build
 
     Dim tabId As String
@@ -392,7 +397,7 @@ Public Sub TestBuildUnivariateEndRowSet()
     Set sh = OutputSheet()
 
     Dim ct As ICrossTable
-    Set ct = CrossTable.Create(specs, sh, transStub)
+    Set ct = CrossTable.Create(specs, sh, lDataStub)
     ct.Build
 
     Assert.IsTrue ct.EndRow > 0, _
@@ -419,7 +424,7 @@ Public Sub TestBuildUnivariateNumberOfColumns()
     Set sh = OutputSheet()
 
     Dim ct As ICrossTable
-    Set ct = CrossTable.Create(specs, sh, transStub)
+    Set ct = CrossTable.Create(specs, sh, lDataStub)
     ct.Build
 
     Assert.AreEqual 1&, ct.NumberOfColumns, _
@@ -447,7 +452,7 @@ Public Sub TestBuildUnivariateNewSectionCreatesSection()
     Set sh = OutputSheet()
 
     Dim ct As ICrossTable
-    Set ct = CrossTable.Create(specs, sh, transStub)
+    Set ct = CrossTable.Create(specs, sh, lDataStub)
     ct.Build
 
     Dim tabId As String
@@ -478,7 +483,7 @@ Public Sub TestNamedRangesListPopulatedAfterBuild()
     Set sh = OutputSheet()
 
     Dim ct As ICrossTable
-    Set ct = CrossTable.Create(specs, sh, transStub)
+    Set ct = CrossTable.Create(specs, sh, lDataStub)
     ct.Build
 
     Dim rangeNames As BetterArray

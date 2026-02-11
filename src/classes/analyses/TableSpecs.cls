@@ -23,29 +23,32 @@ Implements ITableSpecs
 'properties that describe the analysis table it defines. Each row in the
 'setup table specifies one output table (frequency, cross-tab, time series,
 'spatial, or spatio-temporal). The class wraps that row together with the
-'header range and linelist specifications, providing typed access to the
-'table scope, identifiers, navigation to neighboring rows, validation
-'flags (total, missing, percentage, graph), and dictionary-based category
-'lookups. Performance-sensitive data is cached eagerly at construction
-'time: column names, cell values, table scope, and dictionary reference.
-'Derived booleans (ValidTable, IsNewSection) are cached lazily on first
-'access. Consumers interact through the ITableSpecs interface.
-'@depends ILinelistSpecs, ILLdictionary, ILLVariables, LLVariables, BetterArray
-'@version 1.1 (2026-02-11)
+'header range and a dictionary, providing typed access to the table scope,
+'identifiers, navigation to neighboring rows, validation flags (total,
+'missing, percentage, graph), and dictionary-based category lookups.
+'Performance-sensitive data is cached eagerly at construction time: column
+'names, cell values, table scope, and dictionary reference. Derived booleans
+'(ValidTable, IsNewSection) are cached lazily on first access. Category
+'lookups (RowCategories, ColumnCategories) accept an Object parameter: when
+'a LinelistSpecs instance is passed, categories are resolved from its
+'dictionary and choices; otherwise an empty BetterArray is returned. This
+'design decouples TableSpecs from LinelistSpecs at instantiation, making it
+'usable in the setup error-checking context without geo or translation
+'dependencies. Consumers interact through the ITableSpecs interface.
+'@depends ILLdictionary, ILLVariables, LLVariables, BetterArray
+'@version 2.0 (2026-02-11)
 '@author Yves Amevoin
 
 Private Type TTableSpecs
     hRng As Range                                'Header range of the setup listobject
     tRng As Range                                'Row range for this table spec
-    lData As ILinelistSpecs                      'Linelist specifications
     ' --- Column and cell value caches (Tier 1 + Tier 3) ---
     colNames As BetterArray                      'Column names from header (original case)
     cellValues As BetterArray                    'Parallel cell values from spec row
     ' --- Scalar caches (Tier 2 + Tier 4 + Tier 5) ---
     cachedScope As Long                          'Cached AnalysisTableScope enum value
     scopeCached As Boolean                       'Whether cachedScope is populated
-    dict As ILLdictionary                        'Cached dictionary reference
-    dictCached As Boolean                        'Whether dict is populated
+    dict As ILLdictionary                        'Dictionary reference
     cachedValid As Boolean                       'Cached ValidTable result
     validCached As Boolean                       'Whether cachedValid is populated
     cachedNewSection As Boolean                  'Cached IsNewSection result
@@ -65,38 +68,40 @@ Private Const CLASS_NAME As String = "TableSpecs"
 'from an analysis setup ListObject. Each row in the setup table defines a
 'single analysis table (e.g. a univariate frequency table or a time series).
 'The TableSpecs object wraps that row and exposes properties to query its
-'scope, validity, categories, navigation to neighboring rows, and display flags
-'(total, missing, percentage, graph). Validation is performed immediately via
-'CheckRequirements before the instance is populated. After property injection,
-'InitCache scans the header and data row once to build column name and cell
-'value caches, and eagerly resolves the table scope and dictionary reference.
+'scope, validity, navigation to neighboring rows, and display flags (total,
+'missing, percentage, graph). Category lookups (RowCategories,
+'ColumnCategories) are resolved later at call time by passing a
+'LinelistSpecs object. Validation is performed immediately via
+'CheckRequirements before the instance is populated. After property
+'injection, InitCache scans the header and data row once to build column
+'name and cell value caches, and eagerly resolves the table scope.
 '@param headerRng Range. The header row Range of the analysis setup ListObject.
 'Column names in this range are used by Value() and ColumnIndex() to locate
 'fields such as "row", "column", "total", "section", etc.
 '@param tableSpecsRng Range. A single data-row Range from the same ListObject.
 'Must be below headerRng and have the same number of columns.
-'@param lData ILinelistSpecs. The linelist specifications object that provides
-'access to the dictionary, variable metadata, and category lists needed for
-'validation and category retrieval.
+'@param dict ILLdictionary. The linelist dictionary that provides variable
+'definitions, existence checks, and control type lookups needed for
+'validation and spatial type detection.
 '@return ITableSpecs. A fully initialised TableSpecs instance ready for use.
 '@throws InvalidArgument When headerRng is Nothing.
 '@throws InvalidArgument When tableSpecsRng is Nothing.
-'@throws InvalidArgument When lData is Nothing.
+'@throws InvalidArgument When dict is Nothing.
 '@throws InvalidArgument When headerRng and tableSpecsRng have different column counts.
 '@throws InvalidArgument When headerRng.Row is not above tableSpecsRng.Row.
 '@throws InvalidArgument When headerRng.Row is less than 1.
 '@export
 Public Function Create(ByVal headerRng As Range, _
                        ByVal tableSpecsRng As Range, _
-                       ByVal lData As ILinelistSpecs) As ITableSpecs
+                       ByVal dict As ILLdictionary) As ITableSpecs
 
     Dim instance As TableSpecs
-    CheckRequirements headerRng, tableSpecsRng, lData
+    CheckRequirements headerRng, tableSpecsRng, dict
 
     Set instance = New TableSpecs
     Set instance.HeaderRange = headerRng
     Set instance.TableRange = tableSpecsRng
-    Set instance.LinelistSpecifications = lData
+    Set instance.DictionaryObject = dict
     instance.InitCache
     Set Create = instance
 End Function
@@ -140,21 +145,22 @@ Public Property Set TableRange(ByVal tRng As Range)
     Set this.tRng = tRng
 End Property
 
-'@label:linelist-specifications
-'@prop-title Linelist specifications object
+'@label:dictionary-object
+'@prop-title Dictionary object used for validation and variable lookups
 '@details
-'Returns the ILinelistSpecs instance that provides access to the dictionary,
-'variable metadata, and category lists used throughout this class.
-'@return ILinelistSpecs. The linelist specifications.
-Public Property Get LinelistSpecifications() As ILinelistSpecs
-    Set LinelistSpecifications = this.lData
+'Returns the ILLdictionary instance that provides variable existence
+'checks, control type lookups, and spatial prefix detection. Set during
+'factory construction.
+'@return ILLdictionary. The dictionary object.
+Public Property Get DictionaryObject() As ILLdictionary
+    Set DictionaryObject = this.dict
 End Property
 
-'@label:linelist-specifications-set
-'@prop-title Assign the linelist specifications object
-'@param lData ILinelistSpecs. The linelist specifications to store.
-Public Property Set LinelistSpecifications(ByVal lData As ILinelistSpecs)
-    Set this.lData = lData
+'@label:dictionary-object-set
+'@prop-title Assign the dictionary object
+'@param dict ILLdictionary. The dictionary to store.
+Public Property Set DictionaryObject(ByVal dict As ILLdictionary)
+    Set this.dict = dict
 End Property
 
 '@section Cache Initialization
@@ -166,9 +172,8 @@ End Property
 '@details
 'Scans the header range once to build parallel BetterArray caches of column
 'names and cell values (Tier 1 + Tier 3). Also eagerly resolves the table
-'scope from the cell above the header (Tier 2) and the dictionary reference
-'from the linelist specifications (Tier 4). Must be called exactly once after
-'HeaderRange, TableRange, and LinelistSpecifications have been assigned.
+'scope from the cell above the header (Tier 2). Must be called exactly once
+'after HeaderRange, TableRange, and DictionaryObject have been assigned.
 'Lazy caches (ValidTable, IsNewSection) are NOT populated here; they are
 'computed on first access.
 '@export
@@ -192,10 +197,6 @@ Public Sub InitCache()
     ' Tier 2: Eagerly cache table scope
     this.cachedScope = ComputeTableScope()
     this.scopeCached = True
-
-    ' Tier 4: Eagerly cache dictionary reference
-    Set this.dict = this.lData.Dictionary()
-    this.dictCached = True
 End Sub
 
 '@section Core Properties
@@ -284,20 +285,14 @@ End Property
 '@label:dictionary
 '@prop-title Linelist dictionary bound to this specification
 '@details
-'Returns the cached ILLdictionary reference. The dictionary is resolved
-'once eagerly during InitCache from the linelist specifications object.
-'On subsequent calls the cached reference is returned directly without
-'property chain traversal.
+'Returns the ILLdictionary reference stored at construction time. The
+'dictionary provides variable existence checks, control type lookups,
+'and spatial prefix detection used throughout validation and category
+'resolution.
 '@return ILLdictionary. The linelist dictionary instance.
 '@export
 Public Property Get Dictionary() As ILLdictionary
-    If this.dictCached Then
-        Set Dictionary = this.dict
-    Else
-        Set this.dict = LinelistSpecifications().Dictionary()
-        this.dictCached = True
-        Set Dictionary = this.dict
-    End If
+    Set Dictionary = this.dict
 End Property
 
 '@label:spatial-table-types
@@ -604,12 +599,12 @@ Public Property Get Previous() As ITableSpecs
     Set prevRng = tRng.Offset(-1)
 
     ' Create spec for the row just above
-    Set prevSpec = Create(hRng, prevRng, LinelistSpecifications())
+    Set prevSpec = Create(hRng, prevRng, Dictionary())
     Set prevRng = prevRng.Offset(-1)
 
     ' Walk backward until we find a valid table or reach section boundary
     Do While (Not prevSpec.ValidTable()) And (Not (prevRng.Row <= hRng.Row))
-        Set prevSpec = Create(hRng, prevRng, LinelistSpecifications())
+        Set prevSpec = Create(hRng, prevRng, Dictionary())
         If prevSpec.IsNewSection() Then Exit Do
         Set prevRng = prevRng.Offset(-1)
     Loop
@@ -646,11 +641,11 @@ Public Property Get NextSpecs(ByVal anchorRng As Range) As ITableSpecs
 
     If tRng.Row > anchorRng.Row Then Exit Property
 
-    Set nextSpec = Create(hRng, tRng, LinelistSpecifications())
+    Set nextSpec = Create(hRng, tRng, Dictionary())
     Set tRng = tRng.Offset(1)
 
     Do While (Not nextSpec.ValidTable()) And (tRng.Row <= anchorRng.Row)
-        Set nextSpec = Create(hRng, tRng, LinelistSpecifications())
+        Set nextSpec = Create(hRng, tRng, Dictionary())
         Set tRng = tRng.Offset(1)
     Loop
 
@@ -694,33 +689,38 @@ End Function
 '@prop-title Row variable categories from the dictionary
 '@details
 'Returns a BetterArray of category values for the row variable of this table.
-'The categories are retrieved from the linelist specifications dictionary based
-'on the variable name in the "row" field. These categories are used to build
-'the row headers of the output analysis table. Internally delegates to
-'CategoriesData("row").
+'When lData is a LinelistSpecs instance, the categories are retrieved from
+'it based on the variable name in the "row" field. When lData is any other
+'type (or Nothing), returns an empty BetterArray. Internally delegates to
+'CategoriesData("row", lData).
+'@param lData Object. A LinelistSpecs instance providing category lookups,
+'or any other Object (categories will be empty).
 '@return BetterArray. The category strings for the row variable, or an empty
-'BetterArray if the row variable is not found in the dictionary.
+'BetterArray if the row variable is not found or lData is not LinelistSpecs.
 '@export
-Public Property Get RowCategories() As BetterArray
-    Set RowCategories = CategoriesData("row")
+Public Property Get RowCategories(ByRef lData As Object) As BetterArray
+    Set RowCategories = CategoriesData("row", lData)
 End Property
 
 '@label:column-categories
 '@prop-title Column variable categories from the dictionary
 '@details
 'Returns a BetterArray of category values for the column variable of this
-'table. For most table scopes, the categories come from the linelist dictionary
-'based on the variable name in the "column" field. For SpatioTemporal tables,
+'table. When lData is a LinelistSpecs instance, the categories come from it
+'based on the variable name in the "column" field. When lData is any other
+'type (or Nothing), returns an empty BetterArray. For SpatioTemporal tables,
 'the column categories are empty placeholder strings whose count is determined
 'by the "n geo" field in the setup row (defaulting to 5). These placeholders
 'are filled in later at runtime with actual geographic location names.
-'Internally delegates to CategoriesData("column").
+'Internally delegates to CategoriesData("column", lData).
+'@param lData Object. A LinelistSpecs instance providing category lookups,
+'or any other Object (categories will be empty).
 '@return BetterArray. The category strings for the column variable. For
 'SpatioTemporal, contains N empty strings. Returns an empty BetterArray if the
 'column variable is not found or not specified.
 '@export
-Public Property Get ColumnCategories() As BetterArray
-    Set ColumnCategories = CategoriesData("column")
+Public Property Get ColumnCategories(ByRef lData As Object) As BetterArray
+    Set ColumnCategories = CategoriesData("column", lData)
 End Property
 
 '@section Helpers
@@ -763,26 +763,35 @@ End Function
 '@sub-title Build a BetterArray of categories for a row or column variable
 '@details
 'Shared implementation for RowCategories and ColumnCategories. Reads the
-'variable name from the specified field using Value(rowOrCol), then retrieves
-'the categories from the linelist dictionary. Handles a special case for
-'SpatioTemporal tables: when rowOrCol is "column", the categories are not
-'looked up from the dictionary but instead populated with N empty strings
-'(where N comes from the "n geo" setup field, defaulting to 5). These empty
-'placeholders represent geographic locations filled in at runtime. The
-'resulting BetterArray is cloned before returning to prevent external
-'mutations from affecting internal state.
+'variable name from the specified field using Value(rowOrCol), then checks
+'whether lData is a LinelistSpecs instance via TypeName. If it is, the
+'categories are retrieved from lData.Categories(). If not, returns an empty
+'BetterArray. Handles a special case for SpatioTemporal tables: when
+'rowOrCol is "column", the categories are not looked up from the dictionary
+'but instead populated with N empty strings (where N comes from the "n geo"
+'setup field, defaulting to 5). These empty placeholders represent geographic
+'locations filled in at runtime. The resulting BetterArray is cloned before
+'returning to prevent external mutations from affecting internal state.
 '@param rowOrCol String. Either "row" or "column", indicating which variable
 'field to read from the setup row.
+'@param lData Object. A LinelistSpecs instance providing category lookups,
+'or any other Object (categories will be empty).
 '@return BetterArray. A cloned array containing the category strings.
 '@depends LLVariables
-Private Function CategoriesData(ByVal rowOrCol As String) As BetterArray
+Private Function CategoriesData(ByVal rowOrCol As String, _
+                                ByRef lData As Object) As BetterArray
     Dim varsCat As BetterArray
     Dim nameVar As String
     Dim vars As ILLVariables
     Dim nbGeo As Long
     Dim counter As Long
 
+    ' LLVariables.Create may fail if the dictionary lacks a Data sheet or
+    ' required columns (e.g. in the setup error-checking context).
+    On Error Resume Next
     Set vars = LLVariables.Create(Dictionary())
+    On Error GoTo 0
+
     Set varsCat = New BetterArray
     varsCat.LowerBound = 1
 
@@ -797,8 +806,15 @@ Private Function CategoriesData(ByVal rowOrCol As String) As BetterArray
         For counter = 1 To nbGeo
             varsCat.Push vbNullString
         Next
-    ElseIf vars.Contains(nameVar) Then
-        Set varsCat = LinelistSpecifications().Categories(nameVar)
+    ElseIf Not vars Is Nothing Then
+        If vars.Contains(nameVar) Then
+            ' Only resolve categories when lData is a LinelistSpecs instance
+            If Not lData Is Nothing Then
+                If TypeName(lData) = "LinelistSpecs" Then
+                    Set varsCat = lData.Categories(nameVar)
+                End If
+            End If
+        End If
     End If
 
     Set CategoriesData = varsCat.Clone()
@@ -856,8 +872,27 @@ Private Function ComputeValidTable() As Boolean
     Dim rowType As String
     Dim isValid As Boolean
 
+    ' GlobalSummary validates field presence only, no dictionary variable
+    ' lookups needed
+    If TableScope = ScopeGlobalSummary Then
+        ComputeValidTable = (Value("label") <> vbNullString) And _
+                            (Value("function") <> vbNullString)
+        Exit Function
+    End If
+
     Set cachedDict = Dictionary()
+
+    ' LLVariables.Create requires a fully-configured dictionary (Data sheet,
+    ' "variable name" column). In the setup error-checking context the
+    ' dictionary may not expose these, so fall back to False
+    On Error Resume Next
     Set vars = LLVariables.Create(cachedDict)
+    On Error GoTo 0
+
+    If vars Is Nothing Then
+        ComputeValidTable = False
+        Exit Function
+    End If
 
     rowVar = Value("row")
     rowControl = vars.Value(colName:="control", varName:=rowVar)
@@ -865,10 +900,6 @@ Private Function ComputeValidTable() As Boolean
     colControl = vars.Value(colName:="control", varName:=colVar)
 
     Select Case TableScope
-
-    Case ScopeGlobalSummary
-        isValid = (Value("label") <> vbNullString) And _
-                  (Value("function") <> vbNullString)
 
     Case ScopeUnivariate
         isValid = vars.Contains(rowVar) And _
@@ -956,17 +987,17 @@ End Sub
 '@sub-title Validate preconditions for the Create factory
 '@details
 'Validates all preconditions required by the Create factory before populating
-'a new TableSpecs instance. Checks that headerRng, tableSpecsRng, and lData
+'a new TableSpecs instance. Checks that headerRng, tableSpecsRng, and dict
 'are not Nothing, that the two ranges have the same column count, that the
 'header is above the specification row, and that the header row is at least 1.
 'If any check fails, a descriptive error is raised via ThrowError.
 '@param headerRng Range. The header range to validate.
 '@param tableSpecsRng Range. The table specification row range to validate.
-'@param lData ILinelistSpecs. The linelist specifications object to validate.
+'@param dict ILLdictionary. The dictionary object to validate.
 '@throws InvalidArgument When any precondition fails.
 Private Sub CheckRequirements(ByVal headerRng As Range, _
                               ByVal tableSpecsRng As Range, _
-                              ByVal lData As ILinelistSpecs)
+                              ByVal dict As ILLdictionary)
 
     If headerRng Is Nothing Then
         ThrowError InvalidArgument, "Header range not defined"
@@ -976,8 +1007,8 @@ Private Sub CheckRequirements(ByVal headerRng As Range, _
         ThrowError InvalidArgument, "Table specification range not defined"
     End If
 
-    If lData Is Nothing Then
-        ThrowError InvalidArgument, "Linelist specifications not defined"
+    If dict Is Nothing Then
+        ThrowError InvalidArgument, "Dictionary not defined"
     End If
 
     If headerRng.Columns.Count <> tableSpecsRng.Columns.Count Then
@@ -1008,12 +1039,12 @@ Private Property Get ITableSpecs_Dictionary() As ILLdictionary
     Set ITableSpecs_Dictionary = Dictionary()
 End Property
 
-Private Property Get ITableSpecs_RowCategories() As BetterArray
-    Set ITableSpecs_RowCategories = RowCategories()
+Private Property Get ITableSpecs_RowCategories(ByRef lData As Object) As BetterArray
+    Set ITableSpecs_RowCategories = RowCategories(lData)
 End Property
 
-Private Property Get ITableSpecs_ColumnCategories() As BetterArray
-    Set ITableSpecs_ColumnCategories = ColumnCategories()
+Private Property Get ITableSpecs_ColumnCategories(ByRef lData As Object) As BetterArray
+    Set ITableSpecs_ColumnCategories = ColumnCategories(lData)
 End Property
 
 Private Property Get ITableSpecs_IsNewSection() As Boolean
