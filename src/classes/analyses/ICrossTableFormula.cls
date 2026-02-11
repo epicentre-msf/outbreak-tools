@@ -51,7 +51,7 @@ Public Property Get Valid() As Boolean: End Property
 '@details
 'Iterates through the cross-table cells and writes the appropriate Excel
 'formula into each data cell. Handles column formulas, row formulas,
-'percentage formulas, and total formulas based on the table type and
+'percentage formulas, and total formulas based on the table scope and
 'specification flags. Skips writing when Valid returns False.
 '@export
 Public Sub AddFormulas(): End Sub

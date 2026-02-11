@@ -24,7 +24,7 @@ Implements ITableSpecs
 'setup table specifies one output table (frequency, cross-tab, time series,
 'spatial, or spatio-temporal). The class wraps that row together with the
 'header range and linelist specifications, providing typed access to the
-'table type, identifiers, navigation to neighboring rows, validation
+'table scope, identifiers, navigation to neighboring rows, validation
 'flags (total, missing, percentage, graph), and dictionary-based category
 'lookups. Consumers interact through the ITableSpecs interface.
 '@depends ILinelistSpecs, ILLdictionary, ILLVariables, LLVariables, BetterArray
@@ -50,7 +50,7 @@ Private Const CLASS_NAME As String = "TableSpecs"
 'from an analysis setup ListObject. Each row in the setup table defines a
 'single analysis table (e.g. a univariate frequency table or a time series).
 'The TableSpecs object wraps that row and exposes properties to query its
-'type, validity, categories, navigation to neighboring rows, and display flags
+'scope, validity, categories, navigation to neighboring rows, and display flags
 '(total, missing, percentage, graph). Validation is performed immediately via
 'CheckRequirements before the instance is populated.
 '@param headerRng Range. The header row Range of the analysis setup ListObject.
@@ -153,20 +153,20 @@ End Property
 '===============================================================================
 '@description Type identification and identity properties for each table spec.
 
-'@label:table-type
-'@prop-title Analysis table type for this specification row
+'@label:table-scope
+'@prop-title Analysis table scope for this specification row
 '@details
-'Determines the AnalysisTablesType enum value by reading the type label
+'Determines the AnalysisTableScope enum value by reading the type label
 'that sits two rows above the header range. In the setup workbook layout,
 'each analysis block has a merged title cell above its header; this property
 'reads that cell, trims and lowercases it, then maps it to the corresponding
-'enum constant: TypeGlobalSummary (1), TypeUnivariate (2), TypeBivariate (3),
-'TypeTimeSeries (4), TypeSpatial (5), or TypeSpatioTemporal (6). If the label
+'enum constant: ScopeGlobalSummary (1), ScopeUnivariate (2), ScopeBivariate (3),
+'ScopeTimeSeries (4), ScopeSpatial (5), or ScopeSpatioTemporal (6). If the label
 'does not match any known type string, a runtime error is raised.
-'@return AnalysisTablesType. The table type category.
+'@return AnalysisTableScope. The table scope category.
 '@throws ErrorUnexpectedState When the type label does not match any known analysis type.
 '@export
-Public Property Get TableType() As AnalysisTablesType
+Public Property Get TableScope() As AnalysisTableScope
     Dim hRng As Range
     Dim anaType As String
 
@@ -176,20 +176,20 @@ Public Property Get TableType() As AnalysisTablesType
 
     Select Case anaType
     Case "global summary"
-        TableType = TypeGlobalSummary
+        TableScope = ScopeGlobalSummary
     Case "univariate analysis"
-        TableType = TypeUnivariate
+        TableScope = ScopeUnivariate
     Case "bivariate analysis"
-        TableType = TypeBivariate
+        TableScope = ScopeBivariate
     Case "time series analysis"
-        TableType = TypeTimeSeries
+        TableScope = ScopeTimeSeries
     Case "spatial analysis"
-        TableType = TypeSpatial
+        TableScope = ScopeSpatial
     Case "spatio-temporal analysis"
-        TableType = TypeSpatioTemporal
+        TableScope = ScopeSpatioTemporal
     Case Else
         ThrowError ErrorUnexpectedState, _
-                   "Could not find the table type. Actual type is: " & anaType
+                   "Could not find the table scope. Actual type is: " & anaType
     End Select
 End Property
 
@@ -198,7 +198,7 @@ End Property
 '@details
 'Generates a unique string identifier by combining a short type-based
 'prefix with the row offset from the header. The prefix is derived from
-'the TableType: "GS" for GlobalSummary, "UA" for Univariate, "BA" for
+'the TableScope: "GS" for GlobalSummary, "UA" for Univariate, "BA" for
 'Bivariate, "TS" for TimeSeries, "SA" for Spatial, and "SPT" for
 'SpatioTemporal. The row offset is computed as TableRange.Row minus
 'HeaderRange.Row, producing a stable integer that uniquely locates this
@@ -212,18 +212,18 @@ Public Property Get TableId() As String
 
     lineNum = TableRange.Row - HeaderRange.Row
 
-    Select Case TableType
-    Case TypeGlobalSummary
+    Select Case TableScope
+    Case ScopeGlobalSummary
         prefix = "GS"
-    Case TypeUnivariate
+    Case ScopeUnivariate
         prefix = "UA"
-    Case TypeBivariate
+    Case ScopeBivariate
         prefix = "BA"
-    Case TypeTimeSeries
+    Case ScopeTimeSeries
         prefix = "TS"
-    Case TypeSpatial
+    Case ScopeSpatial
         prefix = "SA"
-    Case TypeSpatioTemporal
+    Case ScopeSpatioTemporal
         prefix = "SPT"
     End Select
 
@@ -246,7 +246,7 @@ End Property
 'tables short-circuit immediately because they are standalone.
 '@export
 Public Property Get TableSectionId() As String
-    If IsNewSection() Or (TableType = TypeGlobalSummary) Then
+    If IsNewSection() Or (TableScope = ScopeGlobalSummary) Then
         TableSectionId = TableId()
     Else
         TableSectionId = Previous.TableSectionId
@@ -281,11 +281,11 @@ End Property
 'geography, or vbNullString if neither prefix is found.
 '@return String. The spatial sub-type ("hf", "geo", or empty string).
 '@remarks This property is meaningful only for Spatial and SpatioTemporal
-'table types. Calling it on other table types will still execute but will
+'table scopes. Calling it on other table scopes will still execute but will
 'likely return vbNullString since those variables typically lack geo/hf
 'prefixes.
 '@export
-Public Property Get SpatialTableTypes() As String
+Public Property Get SpatialTableScopes() As String
     Dim rowVar As String
     Dim dict As ILLdictionary
     Dim spatType As String
@@ -293,7 +293,7 @@ Public Property Get SpatialTableTypes() As String
     Set dict = Dictionary()
 
     ' For spatio-temporal, the spatial variable is in the "column" field
-    If TableType = TypeSpatioTemporal Then
+    If TableScope = ScopeSpatioTemporal Then
         rowVar = Value("column")
     Else
         rowVar = Value("row")
@@ -302,7 +302,7 @@ Public Property Get SpatialTableTypes() As String
     spatType = Switch(dict.VariableExists("hf_" & rowVar), "hf", _
                       dict.VariableExists("adm1_" & rowVar), "geo", _
                       True, vbNullString)
-    SpatialTableTypes = spatType
+    SpatialTableScopes = spatType
 End Property
 
 '@section Validation Properties
@@ -313,7 +313,7 @@ End Property
 '@prop-title Whether this table has a valid configuration
 '@details
 'Validates whether this table specification row contains all required fields
-'and references valid variables for its analysis type. Each table type has
+'and references valid variables for its analysis type. Each table scope has
 'different validation rules: GlobalSummary requires non-empty "label" and
 '"function" fields; Univariate requires the "row" variable to be a choice
 'variable; Bivariate requires both "row" and "column" to be choice variables;
@@ -342,36 +342,36 @@ Public Property Get ValidTable() As Boolean
     colVar = Value("column")
     colControl = vars.Value(colName:="control", varName:=colVar)
 
-    Select Case TableType
+    Select Case TableScope
 
-    Case TypeGlobalSummary
+    Case ScopeGlobalSummary
         isValid = (Value("label") <> vbNullString) And _
                   (Value("function") <> vbNullString)
 
-    Case TypeUnivariate
+    Case ScopeUnivariate
         isValid = vars.Contains(rowVar) And _
                   (rowControl = "choice_manual" Or rowControl = "choice_formula")
 
-    Case TypeBivariate
+    Case ScopeBivariate
         isValid = vars.Contains(rowVar) And vars.Contains(colVar) And _
                   (colControl = "choice_manual" Or colControl = "choice_formula") And _
                   (rowControl = "choice_manual" Or rowControl = "choice_formula")
 
-    Case TypeTimeSeries
+    Case ScopeTimeSeries
         rowType = vars.Value(colName:="variable type", varName:=rowVar)
         isValid = (colVar = vbNullString Or _
                    colControl = "choice_manual" Or _
                    colControl = "choice_formula") And _
                   (rowType = "date")
 
-    Case TypeSpatial
+    Case ScopeSpatial
         isValid = (dict.VariableExists("adm1_" & rowVar) Or _
                    dict.VariableExists("hf_" & rowVar)) And _
                   (colVar = vbNullString Or _
                    colControl = "choice_manual" Or _
                    colControl = "choice_formula")
 
-    Case TypeSpatioTemporal
+    Case ScopeSpatioTemporal
         rowType = vars.Value(colName:="variable type", varName:=rowVar)
         isValid = (dict.VariableExists("adm1_" & colVar) Or _
                    dict.VariableExists("hf_" & colVar)) And _
@@ -420,7 +420,7 @@ Public Property Get IsNewSection() As Boolean
         isSameSection = (actualSection = previousSection) And (prevCell.Row <> hRng.Row)
     End If
 
-    IsNewSection = (Not isSameSection) And (TableType <> TypeGlobalSummary)
+    IsNewSection = (Not isSameSection) And (TableScope <> ScopeGlobalSummary)
 End Property
 
 '@section Flag Properties
@@ -432,7 +432,7 @@ End Property
 '@prop-title Whether totals are needed for computation
 '@details
 'Determines whether a total row/column is needed for this table. The logic
-'varies by table type: GlobalSummary and SpatioTemporal always return False;
+'varies by table scope: GlobalSummary and SpatioTemporal always return False;
 'Univariate and Bivariate always return True; TimeSeries returns True when
 'the user explicitly requested total="yes" or when percentage is set to "row"
 'or "column" (because percentage formulas need the total column as a
@@ -442,24 +442,24 @@ End Property
 '@return Boolean. True if a total row/column should be created.
 '@export
 Public Property Get HasTotal() As Boolean
-    Select Case TableType
+    Select Case TableScope
 
-    Case TypeGlobalSummary, TypeSpatioTemporal
+    Case ScopeGlobalSummary, ScopeSpatioTemporal
         HasTotal = False
 
-    Case TypeUnivariate
+    Case ScopeUnivariate
         HasTotal = True
 
-    Case TypeBivariate
+    Case ScopeBivariate
         HasTotal = True
 
-    Case TypeTimeSeries
+    Case ScopeTimeSeries
         HasTotal = ((Value("total") = "yes") Or _
                     (Value("percentage") = "row") Or _
                     (Value("percentage") = "column")) And _
                    (Value("column") <> vbNullString)
 
-    Case TypeSpatial
+    Case ScopeSpatial
         HasTotal = (Value("column") <> vbNullString)
 
     End Select
@@ -487,7 +487,7 @@ End Property
 '@prop-title Whether missing-data rows or columns are included
 '@details
 'Determines whether a "missing" row or column should be included in the
-'output table. The logic varies by table type: GlobalSummary and
+'output table. The logic varies by table scope: GlobalSummary and
 'SpatioTemporal always return False; Univariate returns True when
 'missing="yes"; Bivariate returns True when missing="row", "column", or
 '"all"; TimeSeries and Spatial return True when missing="yes" and a column
@@ -496,24 +496,24 @@ End Property
 '@return Boolean. True if missing data should be shown in the output table.
 '@export
 Public Property Get HasMissing() As Boolean
-    Select Case TableType
+    Select Case TableScope
 
-    Case TypeGlobalSummary, TypeSpatioTemporal
+    Case ScopeGlobalSummary, ScopeSpatioTemporal
         HasMissing = False
 
-    Case TypeUnivariate
+    Case ScopeUnivariate
         HasMissing = (Value("missing") = "yes")
 
-    Case TypeBivariate
+    Case ScopeBivariate
         HasMissing = (Value("missing") = "row") Or _
                      (Value("missing") = "column") Or _
                      (Value("missing") = "all")
 
-    Case TypeTimeSeries
+    Case ScopeTimeSeries
         HasMissing = (Value("missing") = "yes") And _
                      (Value("column") <> vbNullString)
 
-    Case TypeSpatial
+    Case ScopeSpatial
         HasMissing = (Value("missing") = "yes") And _
                      (Value("column") <> vbNullString)
 
@@ -524,7 +524,7 @@ End Property
 '@prop-title Whether percentage display is enabled
 '@details
 'Determines whether percentage values should be computed and displayed for
-'this table. The logic varies by table type: GlobalSummary and SpatioTemporal
+'this table. The logic varies by table scope: GlobalSummary and SpatioTemporal
 'always return False; Univariate returns True when percentage="yes"; Bivariate
 'returns True when percentage="row", "column", or "total"; TimeSeries returns
 'True when percentage="row" or "column" and HasTotal is True; Spatial returns
@@ -534,24 +534,24 @@ End Property
 '@return Boolean. True if percentage values should be included.
 '@export
 Public Property Get HasPercentage() As Boolean
-    Select Case TableType
+    Select Case TableScope
 
-    Case TypeGlobalSummary, TypeSpatioTemporal
+    Case ScopeGlobalSummary, ScopeSpatioTemporal
         HasPercentage = False
 
-    Case TypeUnivariate
+    Case ScopeUnivariate
         HasPercentage = (Value("percentage") = "yes")
 
-    Case TypeBivariate
+    Case ScopeBivariate
         HasPercentage = (Value("percentage") = "row") Or _
                         (Value("percentage") = "column") Or _
                         (Value("percentage") = "total")
 
-    Case TypeTimeSeries
+    Case ScopeTimeSeries
         HasPercentage = ((Value("percentage") = "row") Or _
                          (Value("percentage") = "column")) And HasTotal()
 
-    Case TypeSpatial
+    Case ScopeSpatial
         HasPercentage = (Value("percentage") = "yes") And HasTotal()
 
     End Select
@@ -561,7 +561,7 @@ End Property
 '@prop-title Whether a graph should be created for this table
 '@details
 'Determines whether a chart/graph should be generated alongside the output
-'table. The logic varies by table type: GlobalSummary always returns False;
+'table. The logic varies by table scope: GlobalSummary always returns False;
 'Univariate, TimeSeries, Spatial, and SpatioTemporal return True when
 'graph="yes"; Bivariate returns True when graph="percentage", "values", or
 '"both", letting the user choose whether the chart shows raw counts,
@@ -570,26 +570,26 @@ End Property
 '@return Boolean. True if a graph should be created for this table.
 '@export
 Public Property Get HasGraph() As Boolean
-    Select Case TableType
+    Select Case TableScope
 
-    Case TypeGlobalSummary
+    Case ScopeGlobalSummary
         HasGraph = False
 
-    Case TypeUnivariate
+    Case ScopeUnivariate
         HasGraph = (Value("graph") = "yes")
 
-    Case TypeBivariate
+    Case ScopeBivariate
         HasGraph = (Value("graph") = "percentage" Or _
                     Value("graph") = "values" Or _
                     Value("graph") = "both")
 
-    Case TypeTimeSeries
+    Case ScopeTimeSeries
         HasGraph = (Value("graph") = "yes")
 
-    Case TypeSpatial
+    Case ScopeSpatial
         HasGraph = (Value("graph") = "yes")
 
-    Case TypeSpatioTemporal
+    Case ScopeSpatioTemporal
         HasGraph = (Value("graph") = "yes")
 
     End Select
@@ -734,7 +734,7 @@ End Property
 '@prop-title Column variable categories from the dictionary
 '@details
 'Returns a BetterArray of category values for the column variable of this
-'table. For most table types, the categories come from the linelist dictionary
+'table. For most table scopes, the categories come from the linelist dictionary
 'based on the variable name in the "column" field. For SpatioTemporal tables,
 'the column categories are empty placeholder strings whose count is determined
 'by the "n geo" field in the setup row (defaulting to 5). These placeholders
@@ -819,7 +819,7 @@ Private Function CategoriesData(ByVal rowOrCol As String) As BetterArray
     nameVar = Value(rowOrCol)
 
     ' For SpatioTemporal, column categories are empty geo placeholders
-    If (TableType = TypeSpatioTemporal) And (rowOrCol = "column") Then
+    If (TableScope = ScopeSpatioTemporal) And (rowOrCol = "column") Then
         nbGeo = 5
         On Error Resume Next
         nbGeo = CLng(Value("n geo"))
@@ -898,8 +898,8 @@ End Sub
 '@description Delegated members satisfying the ITableSpecs contract.
 'See the corresponding Public members above for full documentation.
 
-Private Property Get ITableSpecs_TableType() As AnalysisTablesType
-    ITableSpecs_TableType = TableType()
+Private Property Get ITableSpecs_TableScope() As AnalysisTableScope
+    ITableSpecs_TableScope = TableScope()
 End Property
 
 Private Property Get ITableSpecs_Dictionary() As ILLdictionary
@@ -946,8 +946,8 @@ Private Property Get ITableSpecs_HasPercentage() As Boolean
     ITableSpecs_HasPercentage = HasPercentage()
 End Property
 
-Private Property Get ITableSpecs_SpatialTableTypes() As String
-    ITableSpecs_SpatialTableTypes = SpatialTableTypes()
+Private Property Get ITableSpecs_SpatialTableScopes() As String
+    ITableSpecs_SpatialTableScopes = SpatialTableScopes()
 End Property
 
 Private Property Get ITableSpecs_Previous() As ITableSpecs

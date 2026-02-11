@@ -79,10 +79,10 @@ Private Const CLASS_NAME As String = "GraphSpecs"
 'graphing). The returned IGraphSpecs instance stores a reference to the cross-table
 'and can later produce chart series definitions via CreateSeries.
 '@param tabl ICrossTable. The fully-built cross-table whose named ranges contain
-'the data to graph. Must not be Nothing, TypeTimeSeries, or TypeGlobalSummary.
+'the data to graph. Must not be Nothing, ScopeTimeSeries, or ScopeGlobalSummary.
 '@return IGraphSpecs. An instance configured in simple mode (GraphTypeSimple)
 'ready for series creation via CreateSeries.
-'@throws InvalidArgument When tabl is Nothing, TypeTimeSeries, or TypeGlobalSummary.
+'@throws InvalidArgument When tabl is Nothing, ScopeTimeSeries, or ScopeGlobalSummary.
 '@remarks After calling Create, you must call CreateSeries before accessing any
 'series properties (SeriesName, SeriesType, etc.). The cross-table must already
 'have its named ranges written to the worksheet before series data can be consumed.
@@ -92,12 +92,12 @@ Public Function Create(ByVal tabl As ICrossTable) As IGraphSpecs
         ThrowError InvalidArgument, "Cross-table is not defined"
     End If
 
-    If tabl.Specifications.TableType = TypeTimeSeries Then
+    If tabl.Specifications.TableScope = ScopeTimeSeries Then
         ThrowError InvalidArgument, _
                    "Simple mode is for non-time-series tables. Use CreateRangeSpecs for time series."
     End If
 
-    If tabl.Specifications.TableType = TypeGlobalSummary Then
+    If tabl.Specifications.TableScope = ScopeGlobalSummary Then
         ThrowError InvalidArgument, "Global summary tables do not support graphs"
     End If
 
@@ -277,15 +277,15 @@ End Sub
 '@label:build-simple-series
 '@sub-title Build chart series for a non-time-series cross-table
 '@details
-'Reads the table type and configuration from the cross-table's ITableSpecs to
+'Reads the table scope and configuration from the cross-table's ITableSpecs to
 'determine what kind of series to generate. The "flip" setting controls plot
 'direction: when flip is "yes", horizontal bars ("hbar") are used; otherwise
 'vertical bars ("bar") are the default. For spatio-temporal tables, the number
 'of columns is overridden by the "n geo" setting (defaulting to 5 if not
 'specified), and the section-level table ID (tabSecId) is captured for use as
 'row category ranges. After initializing fresh series arrays, dispatches to
-'BuildUnivariateSeries for TypeUnivariate tables, or BuildMultiColumnSeries
-'for TypeBivariate, TypeSpatial, and TypeSpatioTemporal tables.
+'BuildUnivariateSeries for ScopeUnivariate tables, or BuildMultiColumnSeries
+'for ScopeBivariate, ScopeSpatial, and ScopeSpatioTemporal tables.
 '@remarks The "n geo" override uses On Error Resume Next to gracefully handle
 'missing or non-numeric values, falling back to 5 columns.
 Private Sub BuildSimpleSeries()
@@ -300,11 +300,11 @@ Private Sub BuildSimpleSeries()
 
     Set specs = Table.Specifications
     tabId = specs.TableId
-    tabType = specs.TableType
+    tabType = specs.TableScope
     nbCols = Table.NumberOfColumns
 
     ' For spatio-temporal, column count comes from "n geo" setting
-    If tabType = TypeSpatioTemporal Then
+    If tabType = ScopeSpatioTemporal Then
         nbCols = 5
         On Error Resume Next
         nbCols = CLng(specs.Value("n geo"))
@@ -320,10 +320,10 @@ Private Sub BuildSimpleSeries()
 
     Select Case tabType
 
-    Case TypeUnivariate
+    Case ScopeUnivariate
         BuildUnivariateSeries tabId, plotType, specs.HasPercentage
 
-    Case TypeBivariate, TypeSpatial, TypeSpatioTemporal
+    Case ScopeBivariate, ScopeSpatial, ScopeSpatioTemporal
         BuildMultiColumnSeries specs, tabId, tabSecId, tabType, nbCols, plotType
 
     End Select
@@ -379,8 +379,8 @@ End Sub
 '@param tabId String. The unique table identifier for named range construction.
 '@param tabSecId String. The section-level table identifier, used only for
 'spatio-temporal tables. Empty for other types.
-'@param tabType Byte. The numeric table type (TypeBivariate, TypeSpatial, or
-'TypeSpatioTemporal).
+'@param tabType Byte. The numeric table scope (ScopeBivariate, ScopeSpatial, or
+'ScopeSpatioTemporal).
 '@param nbCols Long. The number of data columns to iterate over.
 '@param plotType String. Chart series type: "bar" or "hbar".
 '@remarks When graphValue is "both", percentage point series are only added if
@@ -404,7 +404,7 @@ Private Sub BuildMultiColumnSeries(ByVal specs As ITableSpecs, _
         For counter = 1 To nbCols
             PushSeries "VALUES_COL_" & counter & "_" & tabId, plotType, "left"
             ' Spatio-temporal uses section-level row categories
-            If tabType = TypeSpatioTemporal Then
+            If tabType = ScopeSpatioTemporal Then
                 rowCatName = "ROW_CATEGORIES_" & tabSecId
             Else
                 rowCatName = "ROW_CATEGORIES_" & tabId

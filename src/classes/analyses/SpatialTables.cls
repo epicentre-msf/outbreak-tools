@@ -462,7 +462,7 @@ Private Sub Add(ByVal formObject As IFormulas)
 
     Set tabl = Table
     Set specs = tabl.Specifications
-    spatType = specs.SpatialTableTypes()
+    spatType = specs.SpatialTableScopes()
     inputVarName = specs.Value("row")
     varName = inputVarName & "_" & specs.TableId()
 

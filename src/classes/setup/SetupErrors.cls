@@ -1092,7 +1092,7 @@ End Sub
 '         Else
 
 '             Set specs = TablesSpecs.Create(headerRange, specsRange, this.dictionary, this.choices)
-'             tableScope = specs.TableType
+'             tableScope = specs.TableScope
 
 '             If (Not specs.ValidTable()) Then
 '                 checkingCounter = checkingCounter + 1
@@ -1100,7 +1100,7 @@ End Sub
 '                 infoMessage = FormatMessage(ANA_INV_TAB, specsRange.Row, specs.ValidityReason())
 '                 check.Add keyName & "-" & checkingCounter, infoMessage, checkingError
 
-'                 If (tableScope = TypeTimeSeries) And (specs.IsNewSection()) _
+'                 If (tableScope = ScopeTimeSeries) And (specs.IsNewSection()) _
 '                    And (workFun.CountBlank(specsRange) < specsRange.Columns.Count - 1) Then
 '                     keyName = "ana-ts-newsec"
 '                     infoMessage = FormatMessage(ANA_TS_NEWSEC, specsRange.Row)
@@ -1109,8 +1109,8 @@ End Sub
 '             End If
 
 '             If (specs.Value("title") = vbNullString) And _
-'                (tableScope <> TypeGlobalSummary) And _
-'                (tableScope <> TypeTimeSeriesGraph) Then
+'                (tableScope <> ScopeGlobalSummary) And _
+'                (tableScope <> ScopeTimeSeriesGraph) Then
 
 '                 checkingCounter = checkingCounter + 1
 '                 keyName = "ana-empty-title"
@@ -1118,7 +1118,7 @@ End Sub
 '                 check.Add keyName & "-" & checkingCounter, infoMessage, checkingInfo
 '             End If
 
-'             If (tableScope = TypeUnivariate) And _
+'             If (tableScope = ScopeUnivariate) And _
 '                specs.HasGraph() And _
 '                (specs.Value("flip") = "yes") And _
 '                (specs.Value("percentage") = "yes") Then
@@ -1129,7 +1129,7 @@ End Sub
 '                 check.Add keyName & "-" & checkingCounter, infoMessage, checkingNote
 '             End If
 
-'             If (tableScope <> TypeTimeSeries) And (tableScope <> TypeTimeSeriesGraph) Then
+'             If (tableScope <> ScopeTimeSeries) And (tableScope <> ScopeTimeSeriesGraph) Then
 '                 If (Not specs.HasGraph()) And (specs.Value("flip") = "yes") Then
 '                     checkingCounter = checkingCounter + 1
 '                     keyName = "ana-adgr-flip"
@@ -1138,7 +1138,7 @@ End Sub
 '                 End If
 '             End If
 
-'             If (tableScope <> TypeTimeSeriesGraph) Then
+'             If (tableScope <> ScopeTimeSeriesGraph) Then
 '                 analysisFormula = specs.Value("function")
 '                 If (analysisFormula <> vbNullString) Then
 '                     keyName = "ana-incor-form"

@@ -10,7 +10,7 @@ Option Explicit
 ' Full integration tests with named ranges and formatting are exercised
 ' through TestAnalysisOutput. These tests verify:
 ' - Factory rejects Nothing parameters
-' - Build creates named ranges for simple table types
+' - Build creates named ranges for simple table scopes
 ' - Position properties are set after Build
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
@@ -37,7 +37,7 @@ Private transStub As LinelistSpecsTranslationStub
 '@section Helpers
 '===============================================================================
 
-Private Sub BuildFixture(ByVal tableTypeName As String, dataRows As Variant)
+Private Sub BuildFixture(ByVal tableScopeName As String, dataRows As Variant)
     Dim sh As Worksheet
     Dim headerArray As Variant
     Dim headerMatrix As Variant
@@ -45,7 +45,7 @@ Private Sub BuildFixture(ByVal tableTypeName As String, dataRows As Variant)
 
     Set sh = EnsureWorksheet(FIXTURE_SHEET, clearSheet:=True, visibility:=xlSheetHidden)
 
-    sh.Cells(1, 1).Value = tableTypeName
+    sh.Cells(1, 1).Value = tableScopeName
     headerArray = Array( _
         Array("section", "row", "column", "total", "percentage", _
               "missing", "graph", "label", "function", "n geo"))
