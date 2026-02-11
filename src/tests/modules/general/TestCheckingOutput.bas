@@ -199,8 +199,8 @@ Private Sub TestPrintOutputWritesRows()
     Assert.AreEqual "Missing identifier", sh.Cells(9, FIRST_VISIBLE_COLUMN_INDEX + 1).value, "First data row should include label"
     Assert.IsTrue (RGB(192, 0, 0) = sh.Cells(9, FIRST_VISIBLE_COLUMN_INDEX + 1).Font.Color), "Error rows should use red font"
     Assert.AreEqual "End of checkings ", sh.Cells(sh.UsedRange.rows.Count, FIRST_VISIBLE_COLUMN_INDEX).value, "Last row should match final entry"
-    Assert.IsTrue (RGB(112, 48, 160) = sh.Cells(14, FIRST_VISIBLE_COLUMN_INDEX).Font.Color), "Note rows should use purple font"
-    Assert.IsTrue (RGB(244, 236, 255) = sh.Cells(14, FIRST_VISIBLE_COLUMN_INDEX).Interior.Color), "Note rows should use purple fill"
+    Assert.IsTrue (RGB(112, 48, 160) = sh.Cells(16, FIRST_VISIBLE_COLUMN_INDEX).Font.Color), "Note rows should use purple font"
+    Assert.IsTrue (RGB(244, 236, 255) = sh.Cells(16, FIRST_VISIBLE_COLUMN_INDEX).Interior.Color), "Note rows should use purple fill"
     Assert.AreEqual "Data Validation Summary", sh.Cells(9, HIDDEN_TITLE_COLUMN_INDEX).value, "Hidden title column should store parent title"
     Assert.IsTrue (RGB(255, 255, 255) = sh.Cells(9, HIDDEN_TITLE_COLUMN_INDEX).Font.Color), "Hidden title column should render with white font"
 
