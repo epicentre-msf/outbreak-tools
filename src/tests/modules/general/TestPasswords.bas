@@ -132,7 +132,7 @@ End Sub
 '@TestMethod("Passwords")
 Public Sub TestProtectPersistsSettings()
     CustomTestSetTitles Assert, "Passwords", "TestProtectPersistsSettings"
-    PasswordSubject.Protect ProtectedSheet.Name, allowShapes:=False, allowDeletingRows:=True, registerState:=False
+    PasswordSubject.Protect ProtectedSheet.Name, allowShapes:=False, allowDeletingRows:=True, registerState:=True
 
     Assert.IsTrue ProtectedSheet.ProtectContents, "Protect should apply worksheet protection"
 
@@ -177,7 +177,7 @@ End Sub
 '@TestMethod("Passwords")
 Public Sub TestEnterAndLeaveDebugModeRestoresProtections()
     CustomTestSetTitles Assert, "Passwords", "TestEnterAndLeaveDebugModeRestoresProtections"
-    PasswordSubject.Protect ProtectedSheet.Name, allowShapes:=False, allowDeletingRows:=False, registerState:=False
+    PasswordSubject.Protect ProtectedSheet.Name, allowShapes:=False, allowDeletingRows:=False
     PasswordSubject.EnterDebugMode
 
     Assert.AreEqual DEFAULTBOOLYES, CStr(FixtureSheet.Range(NAMEDEBUGMODE).Value), _
@@ -640,7 +640,7 @@ Public Sub TestDebugExitHandlerRoundtripPersistsProtections()
         End If
         guardSheetName = guardSheet.Name
 
-        cloned.Protect guardSheetName, allowShapes:=False, allowDeletingRows:=False, registerState:=False
+        cloned.Protect guardSheetName, allowShapes:=False, allowDeletingRows:=False
         cloned.EnterDebugMode tempWb
         
         DoEvents
