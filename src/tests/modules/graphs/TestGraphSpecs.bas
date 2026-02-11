@@ -19,6 +19,17 @@ Private Assert As ICustomTest
 '@section Helpers
 '===============================================================================
 
+' @description Create a minimal lDataStub with a dictionary configured.
+'              GraphSpecs.CreateRangeSpecs stores lData and later passes
+'              lData.Dictionary() to TableSpecs.Create, so the dictionary
+'              must not be Nothing.
+Private Function CreateLDataStub() As TableSpecsLinelistStub
+    Dim stub As TableSpecsLinelistStub
+    Set stub = New TableSpecsLinelistStub
+    stub.SetDictionary New AnalysisDictionaryStub
+    Set CreateLDataStub = stub
+End Function
+
 ' @description Create a fixture worksheet with 3 listobjects for complex mode testing.
 '              Layout matches the expected order: graph table, time series table, titles table.
 Private Function BuildComplexFixture() As BetterArray
@@ -142,7 +153,7 @@ Public Sub TestCreateRangeSpecsRejectsNothingLoTable()
     Set sh = EnsureWorksheet(FIXTURE_SHEET, clearSheet:=True, visibility:=xlSheetHidden)
 
     Dim lDataStub As TableSpecsLinelistStub
-    Set lDataStub = New TableSpecsLinelistStub
+    Set lDataStub = CreateLDataStub()
 
     On Error Resume Next
     Dim specs As IGraphSpecs
@@ -166,7 +177,7 @@ Public Sub TestCreateRangeSpecsRejectsNothingSheet()
     Set loTable = BuildComplexFixture()
 
     Dim lDataStub As TableSpecsLinelistStub
-    Set lDataStub = New TableSpecsLinelistStub
+    Set lDataStub = CreateLDataStub()
 
     On Error Resume Next
     Dim specs As IGraphSpecs
@@ -228,7 +239,7 @@ Public Sub TestCreateRangeSpecsRejectsWrongCount()
     loTable.Push lo
 
     Dim lDataStub As TableSpecsLinelistStub
-    Set lDataStub = New TableSpecsLinelistStub
+    Set lDataStub = CreateLDataStub()
 
     On Error Resume Next
     Dim specs As IGraphSpecs
@@ -258,7 +269,7 @@ Public Sub TestComplexModeInitialState()
     Set sh = ThisWorkbook.Worksheets(FIXTURE_SHEET)
 
     Dim lDataStub As TableSpecsLinelistStub
-    Set lDataStub = New TableSpecsLinelistStub
+    Set lDataStub = CreateLDataStub()
 
     Dim specs As IGraphSpecs
     Set specs = GraphSpecs.CreateRangeSpecs(loTable, sh, lDataStub)
@@ -289,7 +300,7 @@ Public Sub TestComplexModeWkshReturnsOutputSheet()
     Set sh = ThisWorkbook.Worksheets(FIXTURE_SHEET)
 
     Dim lDataStub As TableSpecsLinelistStub
-    Set lDataStub = New TableSpecsLinelistStub
+    Set lDataStub = CreateLDataStub()
 
     Dim specs As IGraphSpecs
     Set specs = GraphSpecs.CreateRangeSpecs(loTable, sh, lDataStub)

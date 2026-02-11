@@ -530,7 +530,7 @@ Private Sub DefineGraphSpecs(ByVal graphId As String)
         If cellRng.Row <= hRng.Row Then GoTo ContinueLoop
 
         Set tabRng = tsLo.ListRows(cellRng.Row - hRng.Row).Range
-        Set specs = TableSpecs.Create(hRng, tabRng, LinelistSpecifications)
+        Set specs = TableSpecs.Create(hRng, tabRng, LinelistSpecifications.Dictionary())
         tabId = specs.TableId
         secId = specs.TableSectionId
         choiValue = choiceList.Item(counter)

@@ -38,6 +38,7 @@ Private Const CLASS_NAME As String = "LLImporter"
 Private Const DICTIONARYSHEET As String = "Dictionary"
 Private Const CHOICESSHEET As String = "Choices"
 Private Const DICTTRANSLATIONSHEET As String = "Translations"
+Private Const LINELISTTRANSLATIONSHEET As String = "LinelistTranslation"
 Private Const METADATASHEET As String = "Metadata"
 Private Const PASSWORDSHEET As String = "__pass"
 Private Const SHOWHIDESHEET As String = "show_hide__"
@@ -867,6 +868,7 @@ End Sub
 Private Function IsReservedSheet(ByVal sheetName As String) As Boolean
     IsReservedSheet = (sheetName = DICTIONARYSHEET) Or _
                       (sheetName = DICTTRANSLATIONSHEET) Or _
+                      (sheetName = LINELISTTRANSLATIONSHEET) Or _
                       (sheetName = CHOICESSHEET) Or _
                       (sheetName = METADATASHEET) Or _
                       (sheetName = SHOWHIDESHEET)

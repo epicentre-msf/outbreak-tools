@@ -28,6 +28,7 @@ Private Const COL_NGEO As Long = 10
 Private Const NUM_COLUMNS As Long = 10
 
 Private Assert As ICustomTest
+Private dictStub As ILLdictionary
 Private lDataStub As TableSpecsLinelistStub
 Private transStub As LinelistSpecsTranslationStub
 
@@ -73,7 +74,7 @@ Private Function CreateSpecs(ByVal dataRowIndex As Long) As ITableSpecs
     Set CreateSpecs = TableSpecs.Create( _
         FixtureHeaderRange(), _
         FixtureDataRange(dataRowIndex), _
-        lDataStub)
+        dictStub)
 End Function
 
 Private Function OutputSheet() As Worksheet
@@ -84,7 +85,7 @@ Private Function BuildCrossTable(ByVal specs As ITableSpecs) As ICrossTable
     Dim sh As Worksheet
     Set sh = OutputSheet()
     Dim ct As ICrossTable
-    Set ct = CrossTable.Create(specs, sh, transStub)
+    Set ct = CrossTable.Create(specs, sh, lDataStub)
     ct.Build
     Set BuildCrossTable = ct
 End Function
@@ -98,6 +99,7 @@ Private Sub ModuleInitialize()
     EnsureWorksheet TEST_OUTPUT_SHEET, clearSheet:=False
     Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
     Assert.SetModuleName "TestCrossTableFormula"
+    Set dictStub = New AnalysisDictionaryStub
     Set lDataStub = New TableSpecsLinelistStub
     Set transStub = New LinelistSpecsTranslationStub
     transStub.Initialise "TestTrans"
@@ -108,6 +110,8 @@ Private Sub ModuleInitialize()
     transStub.SetTranslation "MSG_FilteredData", "Filtered Data"
     transStub.SetTranslation "MSG_GlobalSummary", "Global Summary"
     transStub.SetTranslation "MSG_Period", "Period"
+    lDataStub.SetDictionary dictStub
+    lDataStub.SetTranslation transStub
 End Sub
 
 '@ModuleCleanup
@@ -118,6 +122,7 @@ Private Sub ModuleCleanup()
     DeleteWorksheet FIXTURE_SHEET
     DeleteWorksheet OUTPUT_SHEET
     RestoreApp
+    Set dictStub = Nothing
     Set lDataStub = Nothing
     Set transStub = Nothing
     Set Assert = Nothing
