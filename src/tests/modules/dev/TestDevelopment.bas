@@ -31,7 +31,7 @@ Private TestsPath As String
 Private Sub ModuleInitialize()
     BusyApp
     EnsureWorksheet TEST_OUTPUT_SHEET, clearSheet:=False
-    Set Assert = CustomTest.Create(ThisWorkbook, "testsOutputs")
+    Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
     Assert.SetModuleName "TestDevelopment"
 End Sub
 
@@ -82,7 +82,8 @@ End Sub
 '===============================================================================
 '@TestMethod("Development")
 Public Sub TestAddClassTableIncrementsCounters()
-    CustomTestSetTitles Assert, "Development", "AddClassTableIncrementsCounters"
+    CustomTestSetTitles Assert, "Development", "TestAddClassTableIncrementsCounters"
+    On Error GoTo TestFail
 
     Dim firstTable As ListObject
     Set firstTable = Manager.AddClassTable()
@@ -95,11 +96,16 @@ Public Sub TestAddClassTableIncrementsCounters()
     Assert.AreEqual firstTable.Range.Column + firstTable.ListColumns.Count + 1, _
                      secondTable.Range.Column, _
                      "Next classes table should be positioned one column after the previous block"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestAddClassTableIncrementsCounters", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("Development")
 Public Sub TestAddTableCreatesTestTag()
-    CustomTestSetTitles Assert, "Development", "AddModuleTableCreatesTestTag"
+    CustomTestSetTitles Assert, "Development", "TestAddTableCreatesTestTag"
+    On Error GoTo TestFail
 
     Dim testModules As ListObject
     Set testModules = Manager.AddModuleTable(True)
@@ -109,14 +115,18 @@ Public Sub TestAddTableCreatesTestTag()
 
     Dim classModules As ListObject
     Set classModules = Manager.AddClassTable(True)
-    Assert.AreEqual "tests classes", LCase$(CStr(classModules.Range.Cells(0, 1).Value)), _ 
+    Assert.AreEqual "tests classes", LCase$(CStr(classModules.Range.Cells(0, 1).Value)), _
                     "Adding a class table should tag it as test classes"
 
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestAddTableCreatesTestTag", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("Development")
 Public Sub TestImportAllLoadsModulesAndInterfaces()
-    CustomTestSetTitles Assert, "Development", "ImportAllLoadsModulesAndInterfaces"
+    CustomTestSetTitles Assert, "Development", "TestImportAllLoadsModulesAndInterfaces"
+    On Error GoTo TestFail
 
     PrepareGeneralFolders
 
@@ -154,11 +164,16 @@ Public Sub TestImportAllLoadsModulesAndInterfaces()
     AssertComponentExists "DevModuleSample", "Module should be imported into workbook"
     AssertComponentExists "DevClassSample", "Class should be imported into workbook"
     AssertComponentExists "IDevClassSample", "Interface should be imported when flagged"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestImportAllLoadsModulesAndInterfaces", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("Development")
 Public Sub TestExportAllWritesFiles()
-    CustomTestSetTitles Assert, "Development", "ExportAllWritesFiles"
+    CustomTestSetTitles Assert, "Development", "TestExportAllWritesFiles"
+    On Error GoTo TestFail
 
     PrepareGeneralFolders
 
@@ -168,15 +183,15 @@ Public Sub TestExportAllWritesFiles()
 
     Set moduleComponent = TestBook.VBProject.VBComponents.Add(1)
     moduleComponent.Name = "ExportModuleSample"
-    moduleComponent.CodeModule.AddFromString ModuleSourceCode("ExportModuleSample")
+    moduleComponent.CodeModule.AddFromString ModuleSourceCode("ExportModuleSample", False)
 
     Set classComponent = TestBook.VBProject.VBComponents.Add(2)
     classComponent.Name = "ExportClassSample"
-    classComponent.CodeModule.AddFromString ClassSourceCode("ExportClassSample")
+    classComponent.CodeModule.AddFromString ClassSourceCode("ExportClassSample", False)
 
     Set interfaceComponent = TestBook.VBProject.VBComponents.Add(2)
     interfaceComponent.Name = "IExportClassSample"
-    interfaceComponent.CodeModule.AddFromString ClassSourceCode("IExportClassSample")
+    interfaceComponent.CodeModule.AddFromString ClassSourceCode("IExportClassSample", False)
 
     Dim modulesTable As ListObject
     Set modulesTable = Manager.AddModuleTable()
@@ -208,11 +223,16 @@ Public Sub TestExportAllWritesFiles()
     Assert.IsTrue FileExists(moduleTarget), "Module export should create .bas file"
     Assert.IsTrue FileExists(classTarget), "Class export should create .cls file"
     Assert.IsTrue FileExists(interfaceTarget), "Interface export should create .cls file"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestExportAllWritesFiles", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("Development")
 Public Sub TestAddFormsCodesCopiesContent()
-    CustomTestSetTitles Assert, "Development", "AddFormsCodesCopiesContent"
+    CustomTestSetTitles Assert, "Development", "TestAddFormsCodesCopiesContent"
+    On Error GoTo TestFail
 
     Dim sourceComponent As Object
     Dim targetComponent As Object
@@ -239,11 +259,16 @@ Public Sub TestAddFormsCodesCopiesContent()
     Assert.AreEqual expectedCode, _
                      targetComponent.CodeModule.Lines(1, targetComponent.CodeModule.CountOfLines), _
                      "Target component should mirror source code after AddFormsCodes"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestAddFormsCodesCopiesContent", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("Development")
 Public Sub TestTablesFallbackToDevSheetWhenCodeWorksheetMissing()
-    CustomTestSetTitles Assert, "Development", "TablesFallbackToDevSheet"
+    CustomTestSetTitles Assert, "Development", "TestTablesFallbackToDevSheetWhenCodeWorksheetMissing"
+    On Error GoTo TestFail
 
     RemoveSheetName DevSheet, "Development_CodeSheet"
     Set Manager = Development.Create(DevSheet)
@@ -254,11 +279,16 @@ Public Sub TestTablesFallbackToDevSheetWhenCodeWorksheetMissing()
 
     Assert.AreEqual DevSheet.Name, fallbackTable.Parent.Name, _
                     "When no code worksheet is registered, tables should be created on the Dev sheet"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestTablesFallbackToDevSheetWhenCodeWorksheetMissing", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("Development")
 Public Sub TestAddCodeSheetsRegistersWorksheet()
-    CustomTestSetTitles Assert, "Development", "AddCodeSheetsRegistersWorksheet"
+    CustomTestSetTitles Assert, "Development", "TestAddCodeSheetsRegistersWorksheet"
+    On Error GoTo TestFail
 
     RemoveSheetName DevSheet, "Development_CodeSheet"
     Set Manager = Development.Create(DevSheet)
@@ -270,11 +300,16 @@ Public Sub TestAddCodeSheetsRegistersWorksheet()
     Assert.IsNotNothing registered, "AddCodeSheets should return the registered worksheet"
     Assert.AreEqual CODE_SHEET_NAME, registered.Name, "Code worksheet should match requested name"
     Assert.AreEqual CODE_SHEET_NAME, Manager.CodeWorksheet.Name, "Manager should retain registered code worksheet"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestAddCodeSheetsRegistersWorksheet", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("Development")
 Public Sub TestDeployHidesCodeSheetAndSetsFlag()
-    CustomTestSetTitles Assert, "Development", "DeployFinalisesWorkbook"
+    CustomTestSetTitles Assert, "Development", "TestDeployHidesCodeSheetAndSetsFlag"
+    On Error GoTo TestFail
 
     Dim sourceComponent As Object
     Dim targetComponent As Object
@@ -319,17 +354,26 @@ Public Sub TestDeployHidesCodeSheetAndSetsFlag()
     Assert.AreEqual "=""Yes""", deploymentName.RefersTo, _
                      "Deploy should mark workbook as in deployment via name value"
     Assert.IsTrue Manager.InDeployment, "InDeployment helper should reflect workbook flag after deployment"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestDeployHidesCodeSheetAndSetsFlag", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("Development")
 Public Sub TestInDeploymentFlag()
-    CustomTestSetTitles Assert, "Development", "InDeploymentFlag"
+    CustomTestSetTitles Assert, "Development", "TestInDeploymentFlag"
+    On Error GoTo TestFail
 
     RemoveWorkbookName "inDeployment"
     Assert.IsFalse Manager.InDeployment, "InDeployment should be False when workbook flag is absent"
 
     TestBook.Names.Add Name:="inDeployment", RefersTo:="=""Yes"""
     Assert.IsTrue Manager.InDeployment, "InDeployment should detect workbook flag value"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestInDeploymentFlag", Err.Number, Err.Description
 End Sub
 
 
@@ -400,28 +444,50 @@ Private Sub WriteTextFile(ByVal filePath As String, ByVal content As String)
     Close #fileNum
 End Sub
 
-Private Function ModuleSourceCode(ByVal moduleName As String) As String
-    ModuleSourceCode = "Attribute VB_Name = """ & moduleName & """" & vbNewLine & _
-                       "Option Explicit" & vbNewLine & _
-                       "Public Sub Execute()" & vbNewLine & _
-                       "    Debug.Print ""module""" & vbNewLine & _
-                       "End Sub"
+'Returns source code for a .bas module. When includeHeaders is True (default),
+'the Attribute VB_Name header is prepended for writing to disk. When False,
+'only the code body is returned for use with CodeModule.AddFromString.
+Private Function ModuleSourceCode(ByVal moduleName As String, _
+                                  Optional ByVal includeHeaders As Boolean = True) As String
+    Dim body As String
+    body = "Option Explicit" & vbNewLine & _
+           "Public Sub Execute()" & vbNewLine & _
+           "    Debug.Print ""module""" & vbNewLine & _
+           "End Sub"
+
+    If includeHeaders Then
+        ModuleSourceCode = "Attribute VB_Name = """ & moduleName & """" & vbNewLine & body
+    Else
+        ModuleSourceCode = body
+    End If
 End Function
 
-Private Function ClassSourceCode(ByVal className As String) As String
-    ClassSourceCode = "VERSION 1.0 CLASS" & vbNewLine & _
-                      "BEGIN" & vbNewLine & _
-                      "  MultiUse = -1  'True" & vbNewLine & _
-                      "END" & vbNewLine & _
-                      "Attribute VB_Name = """ & className & """" & vbNewLine & _
-                      "Attribute VB_GlobalNameSpace = False" & vbNewLine & _
-                      "Attribute VB_Creatable = False" & vbNewLine & _
-                      "Attribute VB_PredeclaredId = False" & vbNewLine & _
-                      "Attribute VB_Exposed = False" & vbNewLine & _
-                      "Option Explicit" & vbNewLine & _
-                      "Public Sub Execute()" & vbNewLine & _
-                      "    Debug.Print ""class""" & vbNewLine & _
-                      "End Sub"
+'Returns source code for a .cls class. When includeHeaders is True (default),
+'the VERSION/BEGIN/END block and Attribute headers are prepended for writing to
+'disk. When False, only the code body is returned for use with
+'CodeModule.AddFromString.
+Private Function ClassSourceCode(ByVal className As String, _
+                                 Optional ByVal includeHeaders As Boolean = True) As String
+    Dim body As String
+    body = "Option Explicit" & vbNewLine & _
+           "Public Sub Execute()" & vbNewLine & _
+           "    Debug.Print ""class""" & vbNewLine & _
+           "End Sub"
+
+    If includeHeaders Then
+        ClassSourceCode = "VERSION 1.0 CLASS" & vbNewLine & _
+                          "BEGIN" & vbNewLine & _
+                          "  MultiUse = -1  'True" & vbNewLine & _
+                          "END" & vbNewLine & _
+                          "Attribute VB_Name = """ & className & """" & vbNewLine & _
+                          "Attribute VB_GlobalNameSpace = False" & vbNewLine & _
+                          "Attribute VB_Creatable = False" & vbNewLine & _
+                          "Attribute VB_PredeclaredId = False" & vbNewLine & _
+                          "Attribute VB_Exposed = False" & vbNewLine & _
+                          body
+    Else
+        ClassSourceCode = body
+    End If
 End Function
 
 Private Sub RemoveComponentIfExists(ByVal componentName As String)
