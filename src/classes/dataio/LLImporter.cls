@@ -25,8 +25,8 @@ Implements ILLImporter
 'sheets and variables were imported, and builds a report of items not
 'imported or not touched. Consumers interact through the ILLImporter
 'interface.
-'@depends ILLdictionary, IPasswords, ILLTranslations, ICustomTable, IDataSheet
-'@depends IShowHideManager, ILLGeo, ILLChoices, ILLVariables, IDropdownLists
+'@depends ILLdictionary, IPasswords, ICustomTable, IDataSheet
+'@depends IShowHideManager, ILLGeo, ILLChoices, ILLVariables, IDropdownLists, IHiddenNames
 
 
 '@section Constants
@@ -39,7 +39,6 @@ Private Const DICTIONARYSHEET As String = "Dictionary"
 Private Const CHOICESSHEET As String = "Choices"
 Private Const DICTTRANSLATIONSHEET As String = "Translations"
 Private Const METADATASHEET As String = "Metadata"
-Private Const MESSTRANSLATIONSHEET As String = "LinelistTranslation"
 Private Const PASSWORDSHEET As String = "__pass"
 Private Const SHOWHIDESHEET As String = "show_hide__"
 Private Const GEOSHEET As String = "Geo"
@@ -171,7 +170,7 @@ Public Function HasSameLanguage(ByVal impwb As Workbook) As Boolean
     Dim cellRng As Range
     Dim impLang As String
     Dim currLang As String
-    Dim lltrads As ILLTranslations
+    Dim wkbNames As IHiddenNames
 
     this.hasSameLanguage = False
 
@@ -197,8 +196,8 @@ Public Function HasSameLanguage(ByVal impwb As Workbook) As Boolean
     End If
 
     ' Compare with current language
-    Set lltrads = TranslationsObject()
-    currLang = lltrads.Value("dictionarylanguage")
+    Set wkbNames = HiddenNames.Create(this.sourceWkb)
+    currLang = wkbNames.ValueAsString("RNG_DictionaryLanguage")
 
     this.hasSameLanguage = (impLang = currLang)
     HasSameLanguage = this.hasSameLanguage
@@ -345,7 +344,7 @@ End Sub
 '@export
 Public Sub ImportCustomDropdown(ByVal impwb As Workbook, ByVal pasteAtBottom As Boolean)
 
-    Dim lltrads As ILLTranslations
+    Dim wkbNames As IHiddenNames
     Dim choi As ILLChoices
     Dim lo As ListObject
     Dim drop As IDropdownLists
@@ -356,10 +355,10 @@ Public Sub ImportCustomDropdown(ByVal impwb As Workbook, ByVal pasteAtBottom As 
 
     If Not SheetExists(impwb, CHOICESSHEET) Then Exit Sub
 
-    Set lltrads = TranslationsObject()
+    Set wkbNames = HiddenNames.Create(this.sourceWkb)
 
     On Error Resume Next
-    Set dropsh = this.sourceWkb.Worksheets(lltrads.Value("customdropdown"))
+    Set dropsh = this.sourceWkb.Worksheets(wkbNames.ValueAsString("RNG_CustomDrop"))
     On Error GoTo 0
     If dropsh Is Nothing Then Exit Sub
 
@@ -838,15 +837,6 @@ End Function
 '@return IPasswords. Passwords instance from the __pass sheet.
 Private Function PasswordsObject() As IPasswords
     Set PasswordsObject = Passwords.Create(this.sourceWkb.Worksheets(PASSWORDSHEET))
-End Function
-
-'@label:translations-object
-'@sub-title Get translations from the source workbook
-'@return ILLTranslations. Translations from LinelistTranslation and Translations sheets.
-Private Function TranslationsObject() As ILLTranslations
-    Set TranslationsObject = LLTranslations.Create( _
-        this.sourceWkb.Worksheets(MESSTRANSLATIONSHEET), _
-        this.sourceWkb.Worksheets(DICTTRANSLATIONSHEET))
 End Function
 
 '@label:geo-object

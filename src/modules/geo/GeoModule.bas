@@ -14,7 +14,6 @@ Option Private Module
 
 Private Const GEOSHEET As String = "Geo"
 Private Const DROPDOWNSHEET As String = "dropdown_lists__"
-Private Const TRADSHEET As String = "Translations"
 Private Const LLSHEET As String = "LinelistTranslation"
 Private Const SPATIALSHEET As String = "spatial_tables__"
 Private Const PASSSHEET As String = "__pass"
@@ -29,7 +28,7 @@ Private concatenateHFTable As BetterArray
 Private geo As ILLGeo
 Private drop As IDropdownLists
 Private tradmess As ITranslationObject
-Private lltrads As ILLTranslations
+Private lltrads As ILLTranslation
 Private pass As IPasswords
 
 '@section Initialization
@@ -48,9 +47,7 @@ Private Sub InitializeGeoElements()
     Set geo = LLGeo.Create(wb.Worksheets(GEOSHEET))
     Set drop = DropdownLists.Create(wb.Worksheets(DROPDOWNSHEET))
 
-    Set lltrads = LLTranslations.Create( _
-        wb.Worksheets(LLSHEET), _
-        wb.Worksheets(TRADSHEET))
+    Set lltrads = LLTranslation.Create(wb.Worksheets(LLSHEET))
     Set tradmess = lltrads.TransObject()
 End Sub
 
@@ -59,9 +56,6 @@ Private Sub InitializeSpatialElements()
     Dim wb As Workbook
 
     Set wb = ThisWorkbook
-    Set lltrads = LLTranslations.Create( _
-        wb.Worksheets(LLSHEET), _
-        wb.Worksheets(TRADSHEET))
     Set pass = Passwords.Create(wb.Worksheets(PASSSHEET))
 End Sub
 
@@ -481,6 +475,7 @@ End Sub
 Public Sub FormatDevidePop(ByVal rngName As String)
     Dim sh As Worksheet
     Dim tabId As String
+    Dim wkbNames As IHiddenNames
 
     Set sh = ActiveSheet
 
@@ -489,8 +484,9 @@ Public Sub FormatDevidePop(ByVal rngName As String)
     pass.UnProtect "_active"
 
     tabId = Replace(rngName, "DEVIDEPOP_", vbNullString)
+    Set wkbNames = HiddenNames.Create(ThisWorkbook)
 
-    If sh.Range(rngName).Value = lltrads.Value("nodevide") Then
+    If sh.Range(rngName).Value = wkbNames.ValueAsString("RNG_NoDevide") Then
         sh.Range("POPFACT_" & tabId).Font.Color = vbWhite
         sh.Range("POPFACT_" & tabId).Locked = True
         sh.Range("POPFACTLABEL_" & tabId).Font.Color = vbWhite
@@ -499,7 +495,7 @@ Public Sub FormatDevidePop(ByVal rngName As String)
 
         DevideByPopulation rngName:="POPFACT_" & tabId, revertBack:=True
 
-    ElseIf sh.Range(rngName).Value = lltrads.Value("devide") Then
+    ElseIf sh.Range(rngName).Value = wkbNames.ValueAsString("RNG_Devide") Then
         sh.Range("POPFACT_" & tabId).Font.Color = vbBlack
         sh.Range("POPFACT_" & tabId).Locked = False
         sh.Range("POPFACT_" & tabId).FormulaHidden = False

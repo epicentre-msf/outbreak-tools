@@ -81,7 +81,7 @@ Public Sub SetMainObject(ByVal value As IMain)
     Set this.main = value
 End Sub
 
-Private Property Get ILinelistSpecs_Translations() As ILLTranslations
+Private Property Get ILinelistSpecs_Translations() As ILLTranslation
     Set ILinelistSpecs_Translations = Nothing
 End Property
 
