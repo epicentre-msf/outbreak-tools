@@ -30,9 +30,9 @@ Private lDataStub As TableSpecsLinelistStub
 
 ' @description Build a fixture sheet with type label, header, and data rows.
 '              Layout: Row 1 = type label, Row 2 = empty, Row 3 = header, Row 4+ = data.
-' @param tableTypeName The analysis type label (e.g. "time series analysis")
+' @param tableScopeName The analysis type label (e.g. "time series analysis")
 ' @param dataRows Array of row arrays, each containing NUM_COLUMNS values
-Private Sub BuildFixture(ByVal tableTypeName As String, dataRows As Variant)
+Private Sub BuildFixture(ByVal tableScopeName As String, dataRows As Variant)
     Dim sh As Worksheet
     Dim headerArray As Variant
     Dim headerMatrix As Variant
@@ -40,8 +40,8 @@ Private Sub BuildFixture(ByVal tableTypeName As String, dataRows As Variant)
 
     Set sh = EnsureWorksheet(FIXTURE_SHEET, clearSheet:=True, visibility:=xlSheetHidden)
 
-    ' Row 1: type label (read by TableType via hRng.Cells(-1, 1))
-    sh.Cells(1, 1).Value = tableTypeName
+    ' Row 1: type label (read by TableScope via hRng.Cells(-1, 1))
+    sh.Cells(1, 1).Value = tableScopeName
 
     ' Row 3: header row
     headerArray = Array( _
@@ -233,29 +233,29 @@ TestFail:
     CustomTestLogFailure Assert, "TestCreateRejectsMismatchedColumns", Err.Number, Err.Description
 End Sub
 
-'@section TableType tests
+'@section TableScope tests
 '===============================================================================
 
 '@TestMethod("TableSpecs")
-Public Sub TestTableTypeTimeSeries()
-    CustomTestSetTitles Assert, "TableSpecs", "TestTableTypeTimeSeries"
+Public Sub TestTableScopeTimeSeries()
+    CustomTestSetTitles Assert, "TableSpecs", "TestTableScopeTimeSeries"
     On Error GoTo TestFail
 
     BuildFixture "time series analysis", TimeSeriesDataRows()
     Dim specs As ITableSpecs
     Set specs = CreateSpecs(1)
 
-    Assert.AreEqual CLng(TypeTimeSeries), CLng(specs.TableType), _
-                    "Should parse 'time series analysis' as TypeTimeSeries"
+    Assert.AreEqual CLng(ScopeTimeSeries), CLng(specs.TableScope), _
+                    "Should parse 'time series analysis' as ScopeTimeSeries"
 
     Exit Sub
 TestFail:
-    CustomTestLogFailure Assert, "TestTableTypeTimeSeries", Err.Number, Err.Description
+    CustomTestLogFailure Assert, "TestTableScopeTimeSeries", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("TableSpecs")
-Public Sub TestTableTypeGlobalSummary()
-    CustomTestSetTitles Assert, "TableSpecs", "TestTableTypeGlobalSummary"
+Public Sub TestTableScopeGlobalSummary()
+    CustomTestSetTitles Assert, "TableSpecs", "TestTableScopeGlobalSummary"
     On Error GoTo TestFail
 
     Dim rows As Variant
@@ -265,17 +265,17 @@ Public Sub TestTableTypeGlobalSummary()
     Dim specs As ITableSpecs
     Set specs = CreateSpecs(1)
 
-    Assert.AreEqual CLng(TypeGlobalSummary), CLng(specs.TableType), _
-                    "Should parse 'global summary' as TypeGlobalSummary"
+    Assert.AreEqual CLng(ScopeGlobalSummary), CLng(specs.TableScope), _
+                    "Should parse 'global summary' as ScopeGlobalSummary"
 
     Exit Sub
 TestFail:
-    CustomTestLogFailure Assert, "TestTableTypeGlobalSummary", Err.Number, Err.Description
+    CustomTestLogFailure Assert, "TestTableScopeGlobalSummary", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("TableSpecs")
-Public Sub TestTableTypeUnivariate()
-    CustomTestSetTitles Assert, "TableSpecs", "TestTableTypeUnivariate"
+Public Sub TestTableScopeUnivariate()
+    CustomTestSetTitles Assert, "TableSpecs", "TestTableScopeUnivariate"
     On Error GoTo TestFail
 
     Dim rows As Variant
@@ -285,17 +285,17 @@ Public Sub TestTableTypeUnivariate()
     Dim specs As ITableSpecs
     Set specs = CreateSpecs(1)
 
-    Assert.AreEqual CLng(TypeUnivariate), CLng(specs.TableType), _
-                    "Should parse 'univariate analysis' as TypeUnivariate"
+    Assert.AreEqual CLng(ScopeUnivariate), CLng(specs.TableScope), _
+                    "Should parse 'univariate analysis' as ScopeUnivariate"
 
     Exit Sub
 TestFail:
-    CustomTestLogFailure Assert, "TestTableTypeUnivariate", Err.Number, Err.Description
+    CustomTestLogFailure Assert, "TestTableScopeUnivariate", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("TableSpecs")
-Public Sub TestTableTypeBivariate()
-    CustomTestSetTitles Assert, "TableSpecs", "TestTableTypeBivariate"
+Public Sub TestTableScopeBivariate()
+    CustomTestSetTitles Assert, "TableSpecs", "TestTableScopeBivariate"
     On Error GoTo TestFail
 
     Dim rows As Variant
@@ -305,17 +305,17 @@ Public Sub TestTableTypeBivariate()
     Dim specs As ITableSpecs
     Set specs = CreateSpecs(1)
 
-    Assert.AreEqual CLng(TypeBivariate), CLng(specs.TableType), _
-                    "Should parse 'bivariate analysis' as TypeBivariate"
+    Assert.AreEqual CLng(ScopeBivariate), CLng(specs.TableScope), _
+                    "Should parse 'bivariate analysis' as ScopeBivariate"
 
     Exit Sub
 TestFail:
-    CustomTestLogFailure Assert, "TestTableTypeBivariate", Err.Number, Err.Description
+    CustomTestLogFailure Assert, "TestTableScopeBivariate", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("TableSpecs")
-Public Sub TestTableTypeSpatial()
-    CustomTestSetTitles Assert, "TableSpecs", "TestTableTypeSpatial"
+Public Sub TestTableScopeSpatial()
+    CustomTestSetTitles Assert, "TableSpecs", "TestTableScopeSpatial"
     On Error GoTo TestFail
 
     Dim rows As Variant
@@ -325,17 +325,17 @@ Public Sub TestTableTypeSpatial()
     Dim specs As ITableSpecs
     Set specs = CreateSpecs(1)
 
-    Assert.AreEqual CLng(TypeSpatial), CLng(specs.TableType), _
-                    "Should parse 'spatial analysis' as TypeSpatial"
+    Assert.AreEqual CLng(ScopeSpatial), CLng(specs.TableScope), _
+                    "Should parse 'spatial analysis' as ScopeSpatial"
 
     Exit Sub
 TestFail:
-    CustomTestLogFailure Assert, "TestTableTypeSpatial", Err.Number, Err.Description
+    CustomTestLogFailure Assert, "TestTableScopeSpatial", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("TableSpecs")
-Public Sub TestTableTypeSpatioTemporal()
-    CustomTestSetTitles Assert, "TableSpecs", "TestTableTypeSpatioTemporal"
+Public Sub TestTableScopeSpatioTemporal()
+    CustomTestSetTitles Assert, "TableSpecs", "TestTableScopeSpatioTemporal"
     On Error GoTo TestFail
 
     Dim rows As Variant
@@ -345,12 +345,12 @@ Public Sub TestTableTypeSpatioTemporal()
     Dim specs As ITableSpecs
     Set specs = CreateSpecs(1)
 
-    Assert.AreEqual CLng(TypeSpatioTemporal), CLng(specs.TableType), _
-                    "Should parse 'spatio-temporal analysis' as TypeSpatioTemporal"
+    Assert.AreEqual CLng(ScopeSpatioTemporal), CLng(specs.TableScope), _
+                    "Should parse 'spatio-temporal analysis' as ScopeSpatioTemporal"
 
     Exit Sub
 TestFail:
-    CustomTestLogFailure Assert, "TestTableTypeSpatioTemporal", Err.Number, Err.Description
+    CustomTestLogFailure Assert, "TestTableScopeSpatioTemporal", Err.Number, Err.Description
 End Sub
 
 '@section TableId tests

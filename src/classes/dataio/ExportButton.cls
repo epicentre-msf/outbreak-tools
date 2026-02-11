@@ -16,16 +16,18 @@ Attribute VB_Description = "WithEvents wrapper for export command buttons"
 
 Option Explicit
 
+Implements IExportButton
+
 '@class ExportButton
 '@description
 'WithEvents wrapper that listens to an MSForms.CommandButton on a linelist
 'export sheet and performs a custom export when clicked. The factory wires
 'the button, an optional filter checkbox, and translation/workbook
 'references. On click, RunExport selects a folder, optionally confirms
-'filter usage, then delegates to LLExporter.ExportCustom. There is no
-'interface file because instances are held alive solely by their WithEvents
-'binding.
-'@depends ILLExporter, LLExporter, IApplicationState, ApplicationState, IOSFiles, OSFiles
+'filter usage, then delegates to LLExporter.ExportCustom. The factory
+'returns the concrete class (not IExportButton) because callers hold a
+'reference to keep the WithEvents binding alive.
+'@depends IExportButton, ILLExporter, LLExporter, IApplicationState, ApplicationState, IOSFiles, OSFiles
 
 
 '@section Constants
@@ -66,16 +68,22 @@ Private this As TExportButton
 '@param expBtn MSForms.CommandButton. The button to listen to.
 '@param expChk Optional MSForms.CheckBox. Filter checkbox, or Nothing. Defaults to Nothing.
 '@return ExportButton. A wired instance ready to handle click events.
-'@throws vbObjectError When sourceWkb, trads, or expBtn is Nothing.
+'@throws ProjectError.ObjectNotInitialized When sourceWkb, trads, or expBtn is Nothing.
 '@export
 Public Function Create(ByVal sourceWkb As Workbook, _
                        ByVal trads As ITranslationObject, _
                        ByVal expBtn As MSForms.CommandButton, _
                        Optional ByVal expChk As MSForms.CheckBox = Nothing) As ExportButton
 
-    If sourceWkb Is Nothing Then ThrowError "Workbook required"
-    If trads Is Nothing Then ThrowError "Translations required"
-    If expBtn Is Nothing Then ThrowError "Button required"
+    If sourceWkb Is Nothing Then
+        ThrowError ObjectNotInitialized, "Workbook required"
+    End If
+    If trads Is Nothing Then
+        ThrowError ObjectNotInitialized, "Translations required"
+    End If
+    If expBtn Is Nothing Then
+        ThrowError ObjectNotInitialized, "Button required"
+    End If
 
     With New ExportButton
         Set .SourceWorkbook = sourceWkb
@@ -303,12 +311,27 @@ ErrUpdate:
 End Sub
 
 '@label:throw-error
-'@sub-title Raise a class-level exception
-'@details
-'Raises a VBA error using vbObjectError + 516, standardising the source
-'to CLASS_NAME.
+'@sub-title Raise a ProjectError-based exception
+'@param errNumber Long. A ProjectError enum value (e.g. ObjectNotInitialized).
 '@param message String. Human-readable description of the failure.
-'@throws vbObjectError Always raises the error.
-Private Sub ThrowError(ByVal message As String)
-    Err.Raise VBA.vbObjectError + 516, CLASS_NAME, message
+'@throws ProjectError.<varies> Always raises the specified error.
+Private Sub ThrowError(ByVal errNumber As Long, ByVal message As String)
+    Err.Raise CLng(errNumber), CLASS_NAME, message
 End Sub
+
+
+'@section Interface Implementation
+'===============================================================================
+'@description Delegation to IExportButton interface members.
+
+Private Property Get IExportButton_ExportNumber() As Long
+    IExportButton_ExportNumber = ExportNumber
+End Property
+
+Private Property Get IExportButton_UseFilter() As Boolean
+    IExportButton_UseFilter = UseFilter
+End Property
+
+Private Property Let IExportButton_UseFilter(ByVal value As Boolean)
+    UseFilter = value
+End Property

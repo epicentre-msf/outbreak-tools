@@ -131,7 +131,7 @@ End Property
 '@details
 'Provides a shortcut to the ITableSpecs object associated with this cross-table.
 'ITableSpecs encapsulates all configuration metadata for a table: its row/column
-'variable names, summary function, table type, missing/total/percentage flags,
+'variable names, summary function, table scope, missing/total/percentage flags,
 'and the section it belongs to. This property avoids repeatedly chaining
 'Table.Specifications throughout the class methods.
 '@return ITableSpecs. The specification dictionary for the underlying cross-table.
@@ -181,17 +181,17 @@ Private Property Get SectionId() As String
 End Property
 
 '@label:table-type
-'@prop-title AnalysisTablesType byte value indicating the cross-table kind.
+'@prop-title AnalysisTableScope byte value indicating the cross-table kind.
 '@details
-'Returns the AnalysisTablesType byte enum value indicating what kind of
-'cross-table this is. The table type determines which branch of the AddFormulas
-'Select Case is executed: TypeGlobalSummary, TypeUnivariate, TypeBivariate,
-'TypeTimeSeries, TypeSpatioTemporal, or TypeSpatial. Each type has fundamentally
+'Returns the AnalysisTableScope byte enum value indicating what kind of
+'cross-table this is. The table scope determines which branch of the AddFormulas
+'Select Case is executed: ScopeGlobalSummary, ScopeUnivariate, ScopeBivariate,
+'ScopeTimeSeries, ScopeSpatioTemporal, or ScopeSpatial. Each type has fundamentally
 'different formula structures, named range layouts, and condition-building logic.
-'@return Byte. One of the AnalysisTablesType enum constants.
+'@return Byte. One of the AnalysisTableScope enum constants.
 '@remarks Returns Byte rather than the enum type for macOS VBA compatibility.
-Private Property Get TableType() As Byte
-    TableType = Specifications.TableType()
+Private Property Get TableScope() As Byte
+    TableScope = Specifications.TableScope()
 End Property
 
 '@label:table-formula
@@ -573,20 +573,20 @@ End Sub
 
 '@section Core Operations
 '===============================================================================
-'@description The main formula-writing method that dispatches by table type.
+'@description The main formula-writing method that dispatches by table scope.
 
 '@label:add-formulas
 '@sub-title Write all formulas to the cross-table on the worksheet.
 '@details
 'The main entry point that writes all Excel formulas into the cross-table
-'worksheet cells. It reads the table type from Specifications and dispatches to
+'worksheet cells. It reads the table scope from Specifications and dispatches to
 'one of five branches, each handling a fundamentally different table layout:
-'TypeGlobalSummary writes two unfiltered linelist formulas into a single row;
-'TypeUnivariate writes a one-variable frequency table with missing/total/percentage
-'support; TypeBivariate writes a two-variable cross-tabulation grid with column
-'loops and corner cells; TypeTimeSeries and TypeSpatioTemporal set up time-period
+'ScopeGlobalSummary writes two unfiltered linelist formulas into a single row;
+'ScopeUnivariate writes a one-variable frequency table with missing/total/percentage
+'support; ScopeBivariate writes a two-variable cross-tabulation grid with column
+'loops and corner cells; ScopeTimeSeries and ScopeSpatioTemporal set up time-period
 'scaffolding (date labels, validation, dropdowns) then write time-bounded conditions
-'wrapped in blank-when-empty guards; TypeSpatial sets up geographic or health-facility
+'wrapped in blank-when-empty guards; ScopeSpatial sets up geographic or health-facility
 'lookups, validation dropdowns, ordering, and registers the table with SpatialTables
 'for refresh operations. The method exits immediately if Valid returns False.
 '@export
@@ -627,7 +627,7 @@ Private Sub AddFormulas()
 
     tabId = ID()
     secId = SectionId()
-    tabType = TableType
+    tabType = TableScope
     hasMissing = specs.HasMissing
     hasTotal = specs.HasTotal
     hasPercentage = specs.HasPercentage
@@ -637,7 +637,7 @@ Private Sub AddFormulas()
 
         Select Case tabType
 
-        Case TypeGlobalSummary
+        Case ScopeGlobalSummary
             finalFormula = CurrentExcelFormula(scope:=FormulaScopeLinelist, prefix:=vbNullString)
             Set rng = .Range("STARTROW_" & tabId)
             rng.Cells(1, 2).FormulaArray = "= " & finalFormula
@@ -647,7 +647,7 @@ Private Sub AddFormulas()
             rng.Cells(1, 3).FormulaArray = "= " & finalFormula
             AddRngFormat tabFormat, rng.Cells(1, 3)
 
-        Case TypeUnivariate
+        Case ScopeUnivariate
 
             Set rng = .Range("ROW_CATEGORIES_" & tabId)
             rowVar = specs.Value("row")
@@ -697,7 +697,7 @@ Private Sub AddFormulas()
                 cellRng.Cells(1, 2).Formula = "= " & Percentage(cellRng.Cells(1, 1), cellRng.Cells(1, 1))
             End If
 
-        Case TypeBivariate
+        Case ScopeBivariate
 
             rowVar = specs.Value("row")
             colVar = specs.Value("column")
@@ -852,15 +852,15 @@ Private Sub AddFormulas()
                 AddRngFormat tabFormat, .Range("TOTAL_TOTAL_" & tabId)
             End If
 
-        Case TypeTimeSeries, TypeSpatioTemporal
+        Case ScopeTimeSeries, ScopeSpatioTemporal
 
             rowVar = specs.Value("time")
             colVar = specs.Value("column")
             counter = 1
 
             ' For spatio-temporal, column variable depends on geo/hf type
-            If tabType = TypeSpatioTemporal Then
-                spTabType = specs.SpatialTableTypes()
+            If tabType = ScopeSpatioTemporal Then
+                spTabType = specs.SpatialTableScopes()
                 colVar = Switch(spTabType = "geo", "concat_adm1_" & colVar, _
                                 spTabType = "hf", "hf_" & colVar, _
                                 True, vbNullString)
@@ -993,7 +993,7 @@ Private Sub AddFormulas()
                 End If
 
                 ' Spatio-temporal label formulas
-                If tabType = TypeSpatioTemporal Then
+                If tabType = ScopeSpatioTemporal Then
                     If spTabType = "geo" Then
                         rngLab.Formula = "= IF(ISBLANK(INPUTSPTGEO_" & counter & "_" & secId & ")" & _
                                          ", " & Chr(34) & Chr(34) & ", " & _
@@ -1093,9 +1093,9 @@ Private Sub AddFormulas()
                 AddRngFormat tabFormat, .Range("TOTAL_TOTAL_" & tabId)
             End If
 
-        Case TypeSpatial
+        Case ScopeSpatial
 
-            spTabType = specs.SpatialTableTypes()
+            spTabType = specs.SpatialTableScopes()
             rowVar = specs.Value("row")
             rowVar = Switch(spTabType = "geo", "concat_adm1_" & rowVar, _
                             spTabType = "hf", "hf_" & rowVar, _

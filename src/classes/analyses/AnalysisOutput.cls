@@ -598,9 +598,9 @@ Private Sub WriteTable(ByVal loName As String, _
 
         If Not specs.ValidTable() Then GoTo ContinueLoop
 
-        tabType = specs.TableType()
+        tabType = specs.TableScope()
         isNewSection = specs.IsNewSection()
-        containsTimeSeries = (tabType = TypeTimeSeries Or tabType = TypeSpatioTemporal)
+        containsTimeSeries = (tabType = ScopeTimeSeries Or tabType = ScopeSpatioTemporal)
         tabId = specs.TableId()
 
         ' Bug #2 fix: push to LOCAL sectionsList, not shared instance array
@@ -630,7 +630,7 @@ Private Sub WriteTable(ByVal loName As String, _
             On Error GoTo 0
 
             Set cellRng = outsh.Cells(tabl.StartRow - 2, tabl.EndColumn + 2)
-            If tabType = TypeSpatial Then Set cellRng = cellRng.Offset(, 2)
+            If tabType = ScopeSpatial Then Set cellRng = cellRng.Offset(, 2)
 
             Set grSpecs = GraphSpecs.Create(tabl)
             grSpecs.CreateSeries
@@ -677,7 +677,7 @@ Private Sub WriteTable(ByVal loName As String, _
 
         rowVar = specs.Value("row")
         tableName = vars.Value(colName:="table name", varName:=rowVar)
-        goToPrefix = IIf(tabType = TypeTimeSeries, "ts_", "spt_")
+        goToPrefix = IIf(tabType = ScopeTimeSeries, "ts_", "spt_")
 
         If prevSpecs Is Nothing Then
             minFormula = "MIN(" & tableName & "[" & rowVar & "])"
@@ -688,20 +688,20 @@ Private Sub WriteTable(ByVal loName As String, _
 
         If isNewSection And (Not prevSpecs Is Nothing) Then
             addPrevSecMinMaxFormula = True
-            addSpatioTemporalName = (tabType = TypeSpatioTemporal)
+            addSpatioTemporalName = (tabType = ScopeSpatioTemporal)
         End If
 
         If Not nextSpecs Is Nothing Then
             If nextSpecs.IsNewSection() And isNewSection Then
                 addActSecMinMaxFormula = True
-                addSpatioTemporalName = (tabType = TypeSpatioTemporal)
+                addSpatioTemporalName = (tabType = ScopeSpatioTemporal)
             End If
         Else
             addActSecMinMaxFormula = True
-            addSpatioTemporalName = (tabType = TypeSpatioTemporal)
+            addSpatioTemporalName = (tabType = ScopeSpatioTemporal)
             Set cellRng = outsh.Range("ENDTABLE_" & secId).Offset(5, 2)
-            If tabType = TypeTimeSeries Then cellRng.Name = "START_GRAPHS_TS"
-            If tabType = TypeSpatioTemporal Then cellRng.Name = "START_GRAPHS_SPT"
+            If tabType = ScopeTimeSeries Then cellRng.Name = "START_GRAPHS_TS"
+            If tabType = ScopeSpatioTemporal Then cellRng.Name = "START_GRAPHS_SPT"
             headersList.Push goToHeaderLabel & ": " & tabl.TimeSeriesHeader()
         End If
 
