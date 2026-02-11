@@ -104,7 +104,7 @@ Public Property Get Previous() As ICrossTable: End Property
 '@prop-title Table specifications used to build this cross-table
 '@details
 'Returns the ITableSpecs instance that defines the configuration for
-'this cross-table. Provides access to table type, variable names,
+'this cross-table. Provides access to table scope, variable names,
 'category lists, and validation flags.
 '@return ITableSpecs. The backing table specification.
 Public Property Get Specifications() As ITableSpecs: End Property
@@ -148,7 +148,7 @@ Public Property Get EndRow() As Long: End Property
 '@details
 'Returns the translated header text used for the time-period column in
 'time series cross-tables. Returns an empty string for non-time-series
-'table types.
+'table scopes.
 '@return String. The time series column header label.
 Public Property Get TimeSeriesHeader() As String: End Property
 
@@ -218,7 +218,7 @@ Public Sub Build(): End Sub
 'Applies visual formatting (borders, fills, fonts, number formats) to
 'the cross-table cells using the provided ILLFormat design specification.
 'Handles header rows, data cells, total rows, and percentage columns
-'according to the table type.
+'according to the table scope.
 '@param designFormat ILLFormat. The formatting specification to apply.
 '@export
 Public Sub Format(ByVal designFormat As ILLFormat): End Sub

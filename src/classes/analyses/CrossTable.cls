@@ -20,7 +20,7 @@ Implements ICrossTable
 '@class CrossTable
 '@description
 'The CrossTable class builds and formats structured analysis output tables
-'on an Excel worksheet. It supports six table types: univariate, bivariate,
+'on an Excel worksheet. It supports six table scopes: univariate, bivariate,
 'time series, spatial, spatio-temporal, and global summary. Each cross-table
 'occupies a rectangular region with row categories, column categories, named
 'ranges, and visual formatting. Consumers interact through the ICrossTable
@@ -122,7 +122,7 @@ End Property
 '@prop-title Table specifications used to build this cross-table.
 '@details
 'Returns the ITableSpecs instance that defines the configuration for
-'this cross-table. Provides access to table type, variable names,
+'this cross-table. Provides access to table scope, variable names,
 'category lists, and validation flags.
 '@return ITableSpecs. The backing table specification.
 '@export
@@ -223,7 +223,7 @@ End Function
 'non-new-section temporal table (inherit from previous table). For new
 'sections and non-temporal tables the start row is computed by finding
 'the last used row in column C via End(xlUp), then adding vertical
-'padding that varies by table type. For non-new-section temporal tables
+'padding that varies by table scope. For non-new-section temporal tables
 'the start row is inherited from the Previous cross-table so that all
 'temporal tables in a section are laid out side-by-side. Bug #3 fallback:
 'if the previous table was never built, the code computes a fresh start
@@ -246,13 +246,13 @@ Private Property Get StartRow() As Long
     With sh
         If Not RangeExists("STARTROW_" & tabId) Then
             If specs.IsNewSection() Or _
-               (specs.TableType <> TypeTimeSeries And specs.TableType <> TypeSpatioTemporal) Then
+               (specs.TableScope <> ScopeTimeSeries And specs.TableScope <> ScopeSpatioTemporal) Then
                 ' New section or non-temporal: compute from last used row
                 strtRow = .Cells(.Rows.Count, STANDARD_START_COL).End(xlUp).Row + 1
                 strtRow = IIf(strtRow = 2, 6, strtRow)
 
-                strtRow = Switch(specs.TableType = TypeSpatial, strtRow + 6, _
-                                 specs.TableType = TypeGlobalSummary, strtRow, _
+                strtRow = Switch(specs.TableScope = ScopeSpatial, strtRow + 6, _
+                                 specs.TableScope = ScopeGlobalSummary, strtRow, _
                                  True, strtRow + 4)
 
                 .Cells(strtRow, STANDARD_START_COL).Name = "STARTROW_" & tabId
@@ -287,7 +287,7 @@ End Property
 '@details
 'Creates and returns an ICrossTable instance representing the table
 'that immediately precedes this one within the same analysis section.
-'This is used by temporal table types (time series and spatio-temporal)
+'This is used by temporal table scopes (time series and spatio-temporal)
 'where multiple tables share the same row structure and are laid out
 'side-by-side in columns. The previous table's start row and end column
 'are needed to position the current table correctly. The method delegates
@@ -306,7 +306,7 @@ End Property
 '@prop-title Starting column of the table on the output worksheet.
 '@details
 'Computes or retrieves the starting column for this cross-table on the
-'output worksheet. For most table types and for the first table in a
+'output worksheet. For most table scopes and for the first table in a
 'temporal section, the start column is the constant STANDARD_START_COL
 '(column C, index 3). For non-new-section temporal tables (time series
 'and spatio-temporal), the start column is determined by finding the
@@ -329,12 +329,12 @@ Private Property Get StartColumn() As Long
 
     Set specs = Specifications
     tabId = specs.TableId
-    tablType = specs.TableType
+    tablType = specs.TableScope
     Set sh = Wksh
 
     With sh
         If Not RangeExists("STARTCOL_" & tabId) Then
-            If (tablType = TypeTimeSeries Or tablType = TypeSpatioTemporal) And _
+            If (tablType = ScopeTimeSeries Or tablType = ScopeSpatioTemporal) And _
                 (Not specs.IsNewSection()) Then
                 strtCol = .Cells(StartRow + 1, .Columns.Count).End(xlToLeft).Column
             Else
@@ -421,7 +421,7 @@ End Property
 'GoTo navigation dropdown so the user can jump to this table's section.
 '@return String. The cached header text string, or an empty string if not yet set.
 '@remarks This value is populated during AddColumns for temporal tables only.
-'Non-temporal table types never set this property.
+'Non-temporal table scopes never set this property.
 Private Property Get TimeSeriesHeader() As String
     TimeSeriesHeader = this.tsHeader
 End Property
@@ -440,7 +440,7 @@ End Property
 'column C (STANDARD_START_COL). The range can optionally include or
 'exclude the header label row, and can be trimmed to only the "pure"
 'category rows (excluding Total and Missing footer rows). The start row
-'varies by table type: for bivariate, time series, spatial, and
+'varies by table scope: for bivariate, time series, spatial, and
 'spatio-temporal tables, the categories begin at StartRow + 1; for
 'univariate tables, they begin at StartRow itself. If includeHeaders is
 'False, an additional row is skipped. The end row also varies based on
@@ -449,8 +449,8 @@ End Property
 '@param includeHeaders Optional Boolean. When True (default), includes the row variable label row. Defaults to True.
 '@param onlyCategories Optional Boolean. When True, excludes Total and Missing footer rows. Defaults to False.
 '@return Range. A single-column Range in column C spanning the requested row categories.
-'@throws ErrorUnexpectedState When the table type is TypeGlobalSummary.
-'@remarks Raises an error for TypeGlobalSummary because global summary tables do not
+'@throws ErrorUnexpectedState When the table scope is ScopeGlobalSummary.
+'@remarks Raises an error for ScopeGlobalSummary because global summary tables do not
 'have row categories.
 '@export
 Public Property Get RowsCategoriesRange(Optional ByVal includeHeaders As Boolean = True, _
@@ -462,23 +462,23 @@ Public Property Get RowsCategoriesRange(Optional ByVal includeHeaders As Boolean
     Dim tablType As Byte
 
     Set specs = Specifications
-    tablType = specs.TableType
-    If tablType = TypeGlobalSummary Then ThrowError ErrorUnexpectedState, "Global summary has no row categories"
+    tablType = specs.TableScope
+    If tablType = ScopeGlobalSummary Then ThrowError ErrorUnexpectedState, "Global summary has no row categories"
 
     Set sh = Wksh()
 
     Select Case tablType
-    Case TypeBivariate, TypeTimeSeries, TypeSpatial, TypeSpatioTemporal
+    Case ScopeBivariate, ScopeTimeSeries, ScopeSpatial, ScopeSpatioTemporal
         startRw = StartRow + 1
-    Case TypeUnivariate
+    Case ScopeUnivariate
         startRw = StartRow
     End Select
 
     If Not includeHeaders Then startRw = startRw + 1
 
     endRw = Switch( _
-        (tablType = TypeTimeSeries Or tablType = TypeSpatioTemporal) And onlyCategories, Me.EndRow - 2, _
-        (specs.HasTotal Or tablType = TypeSpatial) And onlyCategories, Me.EndRow - 1, _
+        (tablType = ScopeTimeSeries Or tablType = ScopeSpatioTemporal) And onlyCategories, Me.EndRow - 2, _
+        (specs.HasTotal Or tablType = ScopeSpatial) And onlyCategories, Me.EndRow - 1, _
         True, Me.EndRow)
 
     With sh
@@ -551,7 +551,7 @@ End Property
 'a vertical Range spanning that entire column from the first data row to
 'the end row. The search is performed within HeaderRange using an exact
 'case-sensitive match via ValueExists/Find. The start row of the
-'returned range varies by table type. The end row can be trimmed to
+'returned range varies by table scope. The end row can be trimmed to
 'exclude footer rows when onlyCategories is True. The includeHeaders
 'parameter extends the range one row upward to include the column header
 'cell. Returns Nothing if colVal is not found.
@@ -575,16 +575,16 @@ Public Property Get ColumnRange(ByVal colVal As String, _
     Set rng = HeaderRange()
     Set sh = Wksh()
     Set specs = Specifications
-    tablType = specs.TableType
+    tablType = specs.TableScope
 
-    startRw = Switch(tablType = TypeBivariate, StartRow + 2, _
-                     (tablType = TypeTimeSeries Or tablType = TypeSpatioTemporal), StartRow + 2, _
-                     tablType = TypeSpatial, StartRow + 2, _
+    startRw = Switch(tablType = ScopeBivariate, StartRow + 2, _
+                     (tablType = ScopeTimeSeries Or tablType = ScopeSpatioTemporal), StartRow + 2, _
+                     tablType = ScopeSpatial, StartRow + 2, _
                      True, StartRow + 1)
 
     endRw = Switch( _
-        (tablType = TypeTimeSeries Or tablType = TypeSpatioTemporal) And onlyCategories, Me.EndRow - 2, _
-        (specs.HasTotal Or tablType = TypeSpatial) And onlyCategories, Me.EndRow - 1, _
+        (tablType = ScopeTimeSeries Or tablType = ScopeSpatioTemporal) And onlyCategories, Me.EndRow - 2, _
+        (specs.HasTotal Or tablType = ScopeSpatial) And onlyCategories, Me.EndRow - 1, _
         True, Me.EndRow)
 
     If includeHeaders Then startRw = startRw - 1
@@ -606,12 +606,12 @@ End Property
 '@details
 'Populates the row category labels in the leftmost column
 '(STANDARD_START_COL) of this cross-table on the output worksheet. The
-'row content depends entirely on the table type: TypeGlobalSummary writes
-'a single label cell; TypeUnivariate writes the row variable's main label
-'then all row categories with optional Missing and Total; TypeBivariate
-'is similar but offset by one extra row; TypeTimeSeries and
-'TypeSpatioTemporal create a fixed-size grid of NB_ROWS_TIME_SERIES (56)
-'rows only for new sections; TypeSpatial writes the geo-level label then
+'row content depends entirely on the table scope: ScopeGlobalSummary writes
+'a single label cell; ScopeUnivariate writes the row variable's main label
+'then all row categories with optional Missing and Total; ScopeBivariate
+'is similar but offset by one extra row; ScopeTimeSeries and
+'ScopeSpatioTemporal create a fixed-size grid of NB_ROWS_TIME_SERIES (56)
+'rows only for new sections; ScopeSpatial writes the geo-level label then
 'reserves blank rows for dynamic geo data plus Missing. After writing,
 'this sub sets EndRow for subsequent steps.
 '@remarks For temporal tables, AddRows is only called once per section (the first table
@@ -642,12 +642,12 @@ Private Sub AddRows()
     Set rowsData = specs.RowCategories()
 
     With sh
-        Select Case specs.TableType()
+        Select Case specs.TableScope()
 
-        Case TypeGlobalSummary
+        Case ScopeGlobalSummary
             .Cells(startRw, StartColumn).Value = specs.Value("label")
 
-        Case TypeUnivariate
+        Case ScopeUnivariate
             If specs.Value("missing") = "yes" Then rowsData.Push transMissing
             rowsData.Push transTotal
             rowsData.ToExcelRange .Cells(startRw + 1, StartColumn)
@@ -655,7 +655,7 @@ Private Sub AddRows()
             .Cells(startRw, StartColumn).Value = vars.Value(colName:="main label", varName:=rowVar)
             EndRow = startRw + rowsData.Length
 
-        Case TypeBivariate
+        Case ScopeBivariate
             If specs.Value("missing") = "row" Or specs.Value("missing") = "all" Then
                 rowsData.Push transMissing
             End If
@@ -665,7 +665,7 @@ Private Sub AddRows()
             .Cells(startRw + 1, StartColumn).Value = vars.Value(colName:="main label", varName:=rowVar)
             EndRow = startRw + 1 + rowsData.Length
 
-        Case TypeTimeSeries, TypeSpatioTemporal
+        Case ScopeTimeSeries, ScopeSpatioTemporal
             ' Add rows only on new sections (or de-facto new sections for Bug #3)
             If specs.IsNewSection() Or IsDeFactoNewSection() Then
                 rowsData.Clear
@@ -679,10 +679,10 @@ Private Sub AddRows()
             End If
             EndRow = startRw + NB_ROWS_TIME_SERIES
 
-        Case TypeSpatial
+        Case ScopeSpatial
             rowVar = specs.Value("row")
             rowsData.Clear
-            spatType = specs.SpatialTableTypes()
+            spatType = specs.SpatialTableScopes()
 
             If spatType = "geo" Then
                 rowsData.Push vars.Value(colName:="sub section", varName:="adm1_" & rowVar)
@@ -734,7 +734,7 @@ End Function
 '@sub-title Write column headers for bivariate, temporal, and spatial tables.
 '@details
 'Shared column-building logic used by bivariate, time series, spatial,
-'and spatio-temporal table types. This sub writes the column category
+'and spatio-temporal table scopes. This sub writes the column category
 'headers and column-label sub-headers to the output worksheet, starting
 'at StartColumn + 1. It handles two layout scenarios: when column
 'categories exist, they are written to the header row with optional
@@ -820,12 +820,12 @@ End Sub
 '@sub-title Add column headers and column category labels to the worksheet.
 '@details
 'Writes column headers and category labels to the output worksheet. The
-'column structure depends on the table type: TypeGlobalSummary creates two
-'fixed columns; TypeUnivariate creates one data column plus an optional
-'percentage column; TypeBivariate delegates to BivariateColumns then writes
-'the column variable label; TypeTimeSeries and TypeSpatioTemporal delegate
+'column structure depends on the table scope: ScopeGlobalSummary creates two
+'fixed columns; ScopeUnivariate creates one data column plus an optional
+'percentage column; ScopeBivariate delegates to BivariateColumns then writes
+'the column variable label; ScopeTimeSeries and ScopeSpatioTemporal delegate
 'to BivariateColumns then construct a composite TimeSeriesHeader string;
-'TypeSpatial delegates entirely to BivariateColumns. After writing, this
+'ScopeSpatial delegates entirely to BivariateColumns. After writing, this
 'sub sets EndColumn and NumberOfColumns.
 '@remarks For global summary tables, the two-column header is created only once and
 'shared by all subsequent global summary rows. The COLGS_SET named range acts
@@ -853,17 +853,17 @@ Private Sub AddColumns()
     Set trans = Translations()
     Set vars = LLVariables.Create(specs.Dictionary)
     tabId = specs.TableId()
-    tablType = specs.TableType()
+    tablType = specs.TableScope()
     Set colData = New BetterArray
     colData.LowerBound = 1
-    spType = specs.SpatialTableTypes()
+    spType = specs.SpatialTableScopes()
     percentageValue = specs.Value("percentage")
     transPercent = trans.TranslatedValue("MSG_Percent")
 
     With sh
         Select Case tablType
 
-        Case TypeGlobalSummary
+        Case ScopeGlobalSummary
             If Not RangeExists("COLGS_SET") Then
                 .Cells(startRw - 1, StartColumn + 1).Value = trans.TranslatedValue("MSG_AllData")
                 .Cells(startRw - 1, StartColumn + 2).Value = trans.TranslatedValue("MSG_FilteredData")
@@ -872,7 +872,7 @@ Private Sub AddColumns()
             EndColumn = StartColumn + 2
             NumberOfColumns = 2
 
-        Case TypeUnivariate
+        Case ScopeUnivariate
             Dim colLab As String
             colLab = specs.Value("label")
             colData.Push colLab
@@ -881,15 +881,15 @@ Private Sub AddColumns()
             EndColumn = StartColumn + colData.Length
             NumberOfColumns = 1
 
-        Case TypeBivariate
+        Case ScopeBivariate
             BivariateColumns startRw, specs, trans, sh
             .Range("STARTCOL_" & tabId).Value = vars.Value( _
                 colName:="main label", varName:=specs.Value("column"))
 
-        Case TypeTimeSeries, TypeSpatioTemporal
+        Case ScopeTimeSeries, ScopeSpatioTemporal
             BivariateColumns startRw, specs, trans, sh
 
-            If tablType = TypeTimeSeries Then
+            If tablType = ScopeTimeSeries Then
                 colVarLab = vars.Value(colName:="main label", varName:=specs.Value("column"))
             ElseIf spType = "geo" Then
                 colVarLab = vars.Value(colName:="sub section", varName:="adm1_" & specs.Value("column"))
@@ -909,7 +909,7 @@ Private Sub AddColumns()
 
             .Range("STARTCOL_" & tabId).Value = TimeSeriesHeader
 
-        Case TypeSpatial
+        Case ScopeSpatial
             BivariateColumns startRw, specs, trans, sh
 
         End Select
@@ -928,7 +928,7 @@ End Sub
 'temporal tables, and geo-level selection controls for spatial tables.
 'This is the first step called by Build and may insert rows into the
 'worksheet (shifting existing content down) to make room for the header.
-'Behavior varies by table type: univariate and bivariate write a title
+'Behavior varies by table scope: univariate and bivariate write a title
 'and optional section header; global summary writes a shared label once;
 'temporal tables insert date controls and optional geo-level inputs;
 'spatial tables create admin-unit or health-facility dropdowns. This sub
@@ -961,14 +961,14 @@ Private Sub AddHeader()
 
     startRw = StartRow
     tabId = specs.TableId
-    tablType = specs.TableType
+    tablType = specs.TableScope
     sptGeoRngTag = "INPUTSPTGEO_"
     If specs.Value("spatial type") = "hf" Then sptGeoRngTag = "INPUTSPTHF_"
 
     With sh
         Select Case tablType
 
-        Case TypeUnivariate, TypeBivariate
+        Case ScopeUnivariate, ScopeBivariate
             .Cells(startRw - 2, STANDARD_START_COL).Value = specs.Value("title")
             .Cells(startRw - 2, STANDARD_START_COL).Name = "TITLE_" & tabId
             allRangeNames.Push "TITLE_" & tabId
@@ -982,7 +982,7 @@ Private Sub AddHeader()
                 allRangeNames.Push "SECTION_" & tabId
             End If
 
-        Case TypeGlobalSummary
+        Case ScopeGlobalSummary
             If Not RangeExists("ROWGS_SET") Then
                 For counter = 1 To 3
                     .Rows(startRw - 2).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
@@ -992,12 +992,12 @@ Private Sub AddHeader()
                 allRangeNames.Push "ROWGS_SET"
             End If
 
-        Case TypeTimeSeries, TypeSpatioTemporal
+        Case ScopeTimeSeries, ScopeSpatioTemporal
             ' Bug #3 fix: treat as new section if previous table was never built
             If (specs.IsNewSection() Or IsDeFactoNewSection()) And _
                (Not RangeExists("SECTION_" & tabId)) Then
 
-                If tablType = TypeSpatioTemporal Then
+                If tablType = ScopeSpatioTemporal Then
                     nGeo = 5
                     On Error Resume Next
                     nGeo = CLng(specs.Value("n geo"))
@@ -1017,7 +1017,7 @@ Private Sub AddHeader()
                 Set rng = .Range("SECTION_" & tabId)
 
                 ' Spatio-temporal geo-level selection
-                If tablType = TypeSpatioTemporal Then
+                If tablType = ScopeSpatioTemporal Then
                     Set rng = rng.Offset(4)
                     rng.Value = trans.TranslatedValue("MSG_InputGeoLevels")
                     rng.Name = "INPUTSPTGEO_LABEL_" & tabId
@@ -1072,7 +1072,7 @@ Private Sub AddHeader()
                     "INFO_END_DATE_" & tabId, "END_DATE_" & tabId
 
                 timeUnitName = "TIME_UNIT_LIST"
-                If tablType = TypeSpatioTemporal Then timeUnitName = "SP" & timeUnitName
+                If tablType = ScopeSpatioTemporal Then timeUnitName = "SP" & timeUnitName
 
                 Set cellRng = .Cells(1, 26)
                 If Not RangeExists(timeUnitName) Then
@@ -1090,7 +1090,7 @@ Private Sub AddHeader()
                 .Range("TIME_UNIT_" & tabId).Value = cellRng.Cells(2, 1).Value
             End If
 
-        Case TypeSpatial
+        Case ScopeSpatial
             If Not RangeExists("ADMIN_UNIT_LIST") Then
                 Set cellRng = .Cells(1, 26)
                 cellRng.Cells(1, 1).Formula = "= RNG_ADM1NAME"
@@ -1116,7 +1116,7 @@ Private Sub AddHeader()
             If (Not RangeExists("ADM_DROPDOWN_" & tabId)) And _
                (Not RangeExists("HF_DROPDOWN_" & tabId)) Then
 
-                If specs.SpatialTableTypes = "geo" Then
+                If specs.SpatialTableScopes = "geo" Then
                     .Cells(startRw - 2, STANDARD_START_COL).Name = "ADM_DROPDOWN_" & tabId
                     .Cells(startRw - 2, STANDARD_START_COL).Value = trans.TranslatedValue("MSG_SelectAdmin")
 
@@ -1135,7 +1135,7 @@ Private Sub AddHeader()
                     allRangeNames.Push "DEVIDEPOP_" & tabId, "POPFACT_" & tabId, _
                                         "ADM_DROPDOWN_" & tabId
 
-                ElseIf specs.SpatialTableTypes = "hf" Then
+                ElseIf specs.SpatialTableScopes = "hf" Then
                     .Cells(startRw - 2, STANDARD_START_COL).Name = "HF_DROPDOWN_" & tabId
                     Set rng = .Range("HF_DROPDOWN_" & tabId)
                     rng.Cells(1, 1).Value = trans.TranslatedValue("MSG_HF")
@@ -1178,7 +1178,7 @@ End Sub
 'All created range names are accumulated in the allRangeNames BetterArray
 'for retrieval via NamedRangesList.
 '@throws ErrorUnexpectedState When NumberOfColumns is 0, indicating AddColumns was not called.
-'@remarks Exits immediately for TypeGlobalSummary (which has no row categories or
+'@remarks Exits immediately for ScopeGlobalSummary (which has no row categories or
 'column structure beyond the two fixed columns).
 '@export
 Private Sub NameRanges()
@@ -1206,11 +1206,11 @@ Private Sub NameRanges()
     Set trans = Translations()
     Set specs = Specifications
     tabId = specs.TableId
-    tablType = specs.TableType
+    tablType = specs.TableScope
     ' Bug #3 fix: treat as new section if previous table was never built
     isNewSect = specs.IsNewSection() Or IsDeFactoNewSection()
 
-    If tablType = TypeGlobalSummary Then Exit Sub
+    If tablType = ScopeGlobalSummary Then Exit Sub
 
     With sh
         If Not RangeExists("ENDTABLE_" & tabId) Then
@@ -1222,14 +1222,14 @@ Private Sub NameRanges()
                                       "Table " & tabId & " has 0 columns"
 
         ' Row categories — only for new sections or non-temporal tables
-        If isNewSect Or (tablType <> TypeTimeSeries And tablType <> TypeSpatioTemporal) Then
+        If isNewSect Or (tablType <> ScopeTimeSeries And tablType <> ScopeSpatioTemporal) Then
             Set catRng = RowsCategoriesRange(onlyCategories:=True, includeHeaders:=False)
             catRng.Name = "ROW_CATEGORIES_" & tabId
             catRng.Cells(0, 1).Name = "LABEL_ROW_CATEGORIES_" & tabId
             allRangeNames.Push "LABEL_ROW_CATEGORIES_" & tabId
             allRangeNames.Push "ROW_CATEGORIES_" & tabId
 
-            If tablType = TypeTimeSeries Or tablType = TypeSpatioTemporal Then
+            If tablType = ScopeTimeSeries Or tablType = ScopeSpatioTemporal Then
                 Set rng = catRng.Offset(, -1)
                 rng.Name = "END_TIME_PERIOD_" & tabId
                 Set rng = rng.Offset(, -1)
@@ -1241,7 +1241,7 @@ Private Sub NameRanges()
 
         ' Non-new-section temporal: derive catRng from ENDTABLE position
         ' Bug #3 fix: only enter this block if section infrastructure actually exists
-        If (tablType = TypeTimeSeries Or tablType = TypeSpatioTemporal) And Not isNewSect Then
+        If (tablType = ScopeTimeSeries Or tablType = ScopeSpatioTemporal) And Not isNewSect Then
             Dim prevTabId As String
             prevTabId = specs.Previous.TableId
             If Not RangeExists("ENDTABLE_" & prevTabId) Then
@@ -1262,9 +1262,9 @@ Private Sub NameRanges()
             allRangeNames.Push "VALUES_COL_" & nbColCounter & "_" & tabId
 
             Select Case tablType
-            Case TypeBivariate, TypeTimeSeries, TypeSpatial, TypeSpatioTemporal
+            Case ScopeBivariate, ScopeTimeSeries, ScopeSpatial, ScopeSpatioTemporal
                 labCol = -1
-            Case TypeUnivariate
+            Case ScopeUnivariate
                 labCol = 0
             End Select
 
@@ -1277,7 +1277,7 @@ Private Sub NameRanges()
                 rng.Name = "PERC_COL_" & nbColCounter & "_" & tabId
                 allRangeNames.Push "PERC_COL_" & nbColCounter & "_" & tabId
 
-                If tablType = TypeUnivariate Then
+                If tablType = ScopeUnivariate Then
                     rng.Cells(labCol, 1).Name = "PERC_LABEL_COL_" & tabId
                     allRangeNames.Push "PERC_LABEL_COL_" & tabId
                 End If
@@ -1308,7 +1308,7 @@ Private Sub NameRanges()
             End If
 
             ' Column ranges (not for univariate)
-            If tablType <> TypeUnivariate Then
+            If tablType <> ScopeUnivariate Then
                 Set rng = ColumnRange(trans.TranslatedValue(tData.Item(counter)), _
                                       includeHeaders:=True, onlyCategories:=True)
                 If Not rng Is Nothing Then
@@ -1369,7 +1369,7 @@ Private Sub NameRanges()
         allRangeNames.Push "INTERIOR_VALUES_" & tabId
 
         ' Spatial outer values for population computation
-        If tablType = TypeSpatial Then
+        If tablType = ScopeSpatial Then
             Set rng = .Range("INTERIOR_VALUES_" & tabId)
             Set rng = .Range(rng.Cells(1, -1), rng.Cells(rng.Rows.Count + 1, rng.Columns.Count + 4))
             rng.Name = "OUTER_VALUES_" & tabId
@@ -1416,7 +1416,7 @@ Private Function IsDeFactoNewSection() As Boolean
     ' Only relevant for non-new-section temporal tables
     If specs.IsNewSection() Then
         result = False
-    ElseIf specs.TableType <> TypeTimeSeries And specs.TableType <> TypeSpatioTemporal Then
+    ElseIf specs.TableScope <> ScopeTimeSeries And specs.TableScope <> ScopeSpatioTemporal Then
         result = False
     Else
         Dim prevTabId As String
@@ -1479,7 +1479,7 @@ Private Sub Format(ByVal desFormat As ILLFormat)
     Set designFormat = desFormat
 
     tabId = specs.TableId
-    tablType = specs.TableType
+    tablType = specs.TableScope
     hasPercent = specs.HasPercentage
     newSection = specs.IsNewSection() Or IsDeFactoNewSection()
 
@@ -1498,20 +1498,20 @@ Private Sub Format(ByVal desFormat As ILLFormat)
         End If
 
         ' Title (GlobalSummary and TimeSeries don't have titles)
-        If (tablType <> TypeGlobalSummary) And (tablType <> TypeTimeSeries) And _
-           (tablType <> TypeSpatioTemporal) Then
+        If (tablType <> ScopeGlobalSummary) And (tablType <> ScopeTimeSeries) And _
+           (tablType <> ScopeSpatioTemporal) Then
             Set rng = .Range("TITLE_" & tabId)
             designFormat.ApplyFormat rng, AnalysisTableTitle
         End If
 
         ' Spatial dropdown formatting
-        If tablType = TypeSpatial Then
-            If specs.SpatialTableTypes = "geo" Then
+        If tablType = ScopeSpatial Then
+            If specs.SpatialTableScopes = "geo" Then
                 Set rng = .Range("ADM_DROPDOWN_" & tabId)
                 designFormat.ApplyFormat rng, scope:=LinelistSelectionDropdown
                 Set rng = .Range("DEVIDEPOP_" & tabId)
                 designFormat.ApplyFormat rng, scope:=LinelistSelectionDropdown
-            ElseIf specs.SpatialTableTypes = "hf" Then
+            ElseIf specs.SpatialTableScopes = "hf" Then
                 Set rng = .Range("HF_DROPDOWN_" & tabId)
                 designFormat.ApplyFormat rng, scope:=LinelistHiddenCell
             End If
@@ -1523,24 +1523,24 @@ Private Sub Format(ByVal desFormat As ILLFormat)
 
         ' Headers ===============================================================
         Select Case tablType
-        Case TypeGlobalSummary
+        Case ScopeGlobalSummary
             If Not hn.HasName("COLGS_FORMATSET") Then
                 Set rng = .Range("COLGS_SET")
                 Set rng = .Range(rng.Cells(1, 1), rng.Cells(1, 2))
                 designFormat.ApplyFormat rng, scope:=AnalysisUnivariateHeader
                 hn.EnsureName "COLGS_FORMATSET", True, "Boolean"
             End If
-        Case TypeUnivariate
+        Case ScopeUnivariate
             Set rng = .Range("COLUMN_CATEGORIES_" & tabId)
             designFormat.ApplyFormat rng, scope:=AnalysisUnivariateHeader
             Set rng = .Range("LABEL_ROW_CATEGORIES_" & tabId)
             designFormat.ApplyFormat rng, scope:=AnalysisCategoriesLabelRow
-        Case TypeBivariate, TypeSpatial
+        Case ScopeBivariate, ScopeSpatial
             Set rng = .Range("LABEL_ROW_CATEGORIES_" & tabId)
             designFormat.ApplyFormat rng, scope:=AnalysisCategoriesLabelRow
             Set rng = .Range("STARTCOL_" & tabId)
             designFormat.ApplyFormat rng, scope:=AnalysisCategoriesLabelColumn
-        Case TypeTimeSeries, TypeSpatioTemporal
+        Case ScopeTimeSeries, ScopeSpatioTemporal
             If newSection Then
                 Set rng = .Range("LABEL_ROW_CATEGORIES_" & tabId)
                 designFormat.ApplyFormat rng, scope:=AnalysisCategoriesLabelRow
@@ -1552,17 +1552,17 @@ Private Sub Format(ByVal desFormat As ILLFormat)
 
         ' Categories rows and columns ===========================================
         Select Case tablType
-        Case TypeGlobalSummary
+        Case ScopeGlobalSummary
             Set rng = .Range("STARTROW_" & tabId)
             designFormat.ApplyFormat rng, scope:=AnalysisGlobalSummaryRow
-        Case TypeUnivariate
+        Case ScopeUnivariate
             Set rng = .Range("ROW_CATEGORIES_" & tabId)
             designFormat.ApplyFormat rng, scope:=AnalysisCategoriesUnivariateRow
-        Case TypeBivariate, TypeTimeSeries, TypeSpatial, TypeSpatioTemporal
-            If ((tablType <> TypeTimeSeries) And (tablType <> TypeSpatioTemporal)) Or newSection Then
+        Case ScopeBivariate, ScopeTimeSeries, ScopeSpatial, ScopeSpatioTemporal
+            If ((tablType <> ScopeTimeSeries) And (tablType <> ScopeSpatioTemporal)) Or newSection Then
                 Set rng = .Range("ROW_CATEGORIES_" & tabId)
                 designFormat.ApplyFormat rng, scope:=AnalysisCategoriesBivariateRow
-                If tablType = TypeTimeSeries Or tablType = TypeSpatioTemporal Then
+                If tablType = ScopeTimeSeries Or tablType = ScopeSpatioTemporal Then
                     Set rng = rng.Offset(, -1)
                     Set rng = .Range(rng.Cells(1, 0), rng.Cells(rng.Rows.Count + 1, 1))
                     designFormat.ApplyFormat rng, scope:=LinelistHiddenCell
@@ -1604,7 +1604,7 @@ Private Sub Format(ByVal desFormat As ILLFormat)
         End Select
 
         ' Interior values =======================================================
-        If tablType <> TypeGlobalSummary Then
+        If tablType <> ScopeGlobalSummary Then
             Set rng = .Range("INTERIOR_VALUES_" & tabId)
             designFormat.ApplyFormat rng, scope:=AnalysisInteriorTable
         End If
@@ -1619,7 +1619,7 @@ Private Sub Format(ByVal desFormat As ILLFormat)
             rngName = rngTable.Item(counter) & tabId
             If (InStr(1, rngName, "ROW") > 0) And RangeExists(rngName) Then
                 Set rng = .Range(rngName)
-                If (tablType = TypeTimeSeries Or tablType = TypeSpatioTemporal) And _
+                If (tablType = ScopeTimeSeries Or tablType = ScopeSpatioTemporal) And _
                    (Not newSection) Then
                     designFormat.ApplyFormat rng, scope:=AnalysisMissingRowWithoutHeader
                 Else
@@ -1682,7 +1682,7 @@ Private Sub Format(ByVal desFormat As ILLFormat)
         ' Percentage columns ====================================================
         If hasPercent Then
             Set rng = .Range("PERC_COL_1_" & tabId)
-            If (specs.TableType <> TypeSpatial) Or specs.HasTotal Then
+            If (specs.TableScope <> ScopeSpatial) Or specs.HasTotal Then
                 Set rng = .Range(rng.Cells(1, 1), rng.Cells(rng.Rows.Count + 1, 1))
             End If
             Do While rng.Column <= EndColumn()
@@ -1702,23 +1702,23 @@ Private Sub Format(ByVal desFormat As ILLFormat)
 
         ' Whole table ===========================================================
         wholeTableStart = StartColumn
-        If (tablType = TypeTimeSeries Or tablType = TypeSpatioTemporal) And _
+        If (tablType = ScopeTimeSeries Or tablType = ScopeSpatioTemporal) And _
            (Not newSection) Then
             wholeTableStart = StartColumn + 1
         End If
 
-        If (tablType <> TypeUnivariate) And (tablType <> TypeGlobalSummary) Then
+        If (tablType <> ScopeUnivariate) And (tablType <> ScopeGlobalSummary) Then
             Set rng = .Range(.Cells(StartRow, wholeTableStart), .Cells(EndRow, EndColumn))
             designFormat.ApplyFormat rng, scope:=AnalysisWholeTable
-        ElseIf tablType = TypeUnivariate Then
+        ElseIf tablType = ScopeUnivariate Then
             Set rng = .Range(.Cells(StartRow + 1, wholeTableStart), .Cells(EndRow, EndColumn))
             designFormat.ApplyFormat rng, scope:=AnalysisWholeTable
         End If
 
         ' End table gap for graphs
         If RangeExists("ENDTABLE_" & tabId) And _
-           (tablType <> TypeTimeSeries) And _
-           (tablType <> TypeSpatioTemporal) Then
+           (tablType <> ScopeTimeSeries) And _
+           (tablType <> ScopeSpatioTemporal) Then
             Set rng = .Range("ENDTABLE_" & tabId)
             designFormat.ApplyFormat rng, scope:=AnalysisEndTable
         End If
@@ -1727,7 +1727,7 @@ Private Sub Format(ByVal desFormat As ILLFormat)
         ' For time series/spatio-temporal tables, HasTotal can be True because
         ' percentage="row"/"column" needs the total column for computation.
         ' When TotalRequested=False, hide the column to keep it invisible.
-        If (tablType = TypeTimeSeries Or tablType = TypeSpatioTemporal) And _
+        If (tablType = ScopeTimeSeries Or tablType = ScopeSpatioTemporal) And _
            specs.HasTotal And (Not specs.TotalRequested) Then
             If RangeExists("TOTAL_COL_" & tabId) Then
                 .Range("TOTAL_COL_" & tabId).EntireColumn.Hidden = True

@@ -28,25 +28,26 @@ Option Explicit
 '===============================================================================
 '@description Type, identity, and navigation properties for each table spec.
 
-' Analysis table types matching setup listobject types
-Public Enum AnalysisTablesType
-    TypeGlobalSummary = 1
-    TypeUnivariate = 2
-    TypeBivariate = 3
-    TypeTimeSeries = 4
-    TypeSpatial = 5
-    TypeSpatioTemporal = 6
+' Analysis table scopes matching setup listobject types
+Public Enum AnalysisTableScope
+    ScopeGlobalSummary = 1
+    ScopeUnivariate = 2
+    ScopeBivariate = 3
+    ScopeTimeSeries = 4
+    ScopeSpatial = 5
+    ScopeSpatioTemporal = 6
 End Enum
 
-'@jump:table-type
-'@prop-title Analysis table type for this specification row
+
+'@jump:table-scope
+'@prop-title Analysis table scope for this specification row
 '@details
-'Returns the AnalysisTablesType enum value that categorises this table
+'Returns the AnalysisTableScope enum value that categorises this table
 'as global summary, univariate, bivariate, time series, spatial, or
 'spatio-temporal. The type determines which cross-table layout and
 'formula logic apply at build time.
-'@return AnalysisTablesType. The table type category.
-Public Property Get TableType() As AnalysisTablesType: End Property
+'@return AnalysisTableScope. The table scope category.
+Public Property Get TableScope() As AnalysisTableScope: End Property
 
 '@jump:dictionary
 '@prop-title Linelist dictionary bound to this specification
@@ -88,7 +89,7 @@ Public Property Get IsNewSection() As Boolean: End Property
 '@prop-title Whether this table has a valid configuration
 '@details
 'Returns True when the specification row contains all required fields for
-'its AnalysisTablesType. Invalid specs are skipped during the build
+'its AnalysisTableScope. Invalid specs are skipped during the build
 'process so they do not produce broken output tables.
 '@return Boolean. True when the table configuration is complete.
 Public Property Get ValidTable() As Boolean: End Property
@@ -149,9 +150,9 @@ Public Property Get HasPercentage() As Boolean: End Property
 'Returns "hf" for health-facility-based spatial tables or "geo" for
 'administrative-boundary-based spatial tables. The sub-type is inferred
 'from the variable name prefix. Returns an empty string for non-spatial
-'table types.
+'table scopes.
 '@return String. The spatial sub-type ("hf" or "geo").
-Public Property Get SpatialTableTypes() As String: End Property
+Public Property Get SpatialTableScopes() As String: End Property
 
 
 '@section NavigationProperties

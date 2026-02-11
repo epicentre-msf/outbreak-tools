@@ -25,7 +25,7 @@ End Sub
 Private Sub TestInitialize()
     Set FixtureWorkbook = TestHelpers.NewWorkbook
     Set SpecsStub = New GraphTablesSpecsStub
-    SpecsStub.Configure TypeBivariate, "TEST_TABLE"
+    SpecsStub.Configure ScopeBivariate, "TEST_TABLE"
 End Sub
 
 '@TestCleanup
@@ -110,12 +110,12 @@ Private Sub TestLayoutPlannerUsesPreviousForTimeSeries()
     Set sheet = FixtureWorkbook.Worksheets(1)
 
     Set previousSpecs = New GraphTablesSpecsStub
-    previousSpecs.Configure TypeTimeSeries, "PREV_TABLE"
+    previousSpecs.Configure ScopeTimeSeries, "PREV_TABLE"
     previousSpecs.SetIsNewSection True
     FixtureWorkbook.Names.Add Name:="STARTROW_PREV_TABLE", _
         RefersTo:="=" & sheet.Cells(30, 3).Address(True, True, xlA1, True)
 
-    SpecsStub.Configure TypeTimeSeries, "CURR_TABLE"
+    SpecsStub.Configure ScopeTimeSeries, "CURR_TABLE"
     SpecsStub.SetIsNewSection False
     SpecsStub.SetPrevious previousSpecs
 
