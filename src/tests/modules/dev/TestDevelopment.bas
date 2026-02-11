@@ -182,14 +182,17 @@ Public Sub TestExportAllWritesFiles()
     Dim interfaceComponent As Object
 
     Set moduleComponent = TestBook.VBProject.VBComponents.Add(1)
+    DoEvents
     moduleComponent.Name = "ExportModuleSample"
     moduleComponent.CodeModule.AddFromString ModuleSourceCode("ExportModuleSample", False)
 
     Set classComponent = TestBook.VBProject.VBComponents.Add(2)
+    DoEvents
     classComponent.Name = "ExportClassSample"
     classComponent.CodeModule.AddFromString ClassSourceCode("ExportClassSample", False)
 
     Set interfaceComponent = TestBook.VBProject.VBComponents.Add(2)
+    DoEvents
     interfaceComponent.Name = "IExportClassSample"
     interfaceComponent.CodeModule.AddFromString ClassSourceCode("IExportClassSample", False)
 
@@ -238,12 +241,19 @@ Public Sub TestAddFormsCodesCopiesContent()
     Dim targetComponent As Object
 
     Set sourceComponent = TestBook.VBProject.VBComponents.Add(1)
+    DoEvents
     sourceComponent.Name = "FormLogicSource"
     sourceComponent.CodeModule.AddFromString "Public Sub Execute()" & vbNewLine & "    Debug.Print ""source""" & vbNewLine & "End Sub"
 
     Set targetComponent = TestBook.VBProject.VBComponents.Add(3)
+    DoEvents
     targetComponent.Name = "FormLogicTarget"
     targetComponent.CodeModule.AddFromString "Public Sub Execute()" & vbNewLine & "    Debug.Print ""target""" & vbNewLine & "End Sub"
+
+    'Capture source code now: CopyModuleCode removes the source component,
+    'making the reference stale and its CodeModule inaccessible afterwards.
+    Dim expectedCode As String
+    expectedCode = sourceComponent.CodeModule.Lines(1, sourceComponent.CodeModule.CountOfLines)
 
     Dim formsTable As ListObject
     Set formsTable = Manager.AddFormsTable()
@@ -251,10 +261,8 @@ Public Sub TestAddFormsCodesCopiesContent()
     formsTable.ListColumns(1).DataBodyRange.Cells(1, 1).Value = "FormLogicSource"
     formsTable.ListColumns(2).DataBodyRange.Cells(1, 1).Value = "FormLogicTarget"
 
+    DoEvents
     Manager.AddFormsCodes
-
-    Dim expectedCode As String
-    expectedCode = sourceComponent.CodeModule.Lines(1, sourceComponent.CodeModule.CountOfLines)
 
     Assert.AreEqual expectedCode, _
                      targetComponent.CodeModule.Lines(1, targetComponent.CodeModule.CountOfLines), _
@@ -315,16 +323,23 @@ Public Sub TestDeployHidesCodeSheetAndSetsFlag()
     Dim targetComponent As Object
 
     Set sourceComponent = TestBook.VBProject.VBComponents.Add(1)
+    DoEvents
     sourceComponent.Name = "DeploySource"
     sourceComponent.CodeModule.AddFromString "Public Sub Execute()" & vbNewLine & _
                                            "    Debug.Print ""deploy source""" & vbNewLine & _
                                            "End Sub"
 
     Set targetComponent = TestBook.VBProject.VBComponents.Add(2)
+    DoEvents
     targetComponent.Name = "DeployTarget"
     targetComponent.CodeModule.AddFromString "Public Sub Execute()" & vbNewLine & _
                                            "    Debug.Print ""deploy target""" & vbNewLine & _
                                            "End Sub"
+
+    'Capture source code now: Deploy calls CopyModuleCode which removes the
+    'source component, making the reference stale afterwards.
+    Dim expected As String
+    expected = sourceComponent.CodeModule.Lines(1, sourceComponent.CodeModule.CountOfLines)
 
     Dim formsTable As ListObject
     Set formsTable = Manager.AddFormsTable()
@@ -337,10 +352,8 @@ Public Sub TestDeployHidesCodeSheetAndSetsFlag()
     Dim pass As IPasswords
     Set pass = New LinelistPasswordStub
 
+    DoEvents
     Manager.Deploy pass
-
-    Dim expected As String
-    expected = sourceComponent.CodeModule.Lines(1, sourceComponent.CodeModule.CountOfLines)
 
     Assert.AreEqual expected, _
                      targetComponent.CodeModule.Lines(1, targetComponent.CodeModule.CountOfLines), _

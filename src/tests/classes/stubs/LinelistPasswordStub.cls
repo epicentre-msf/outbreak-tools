@@ -46,13 +46,13 @@ End Sub
 
 
 
-'@prop-title Password 's worksheet implementation
+'@prop-title Password worksheet implementation
 Private Property Get IPasswords_PasswordSheet() As Worksheet
 End Property
 
 '@prop-title Named ranges values implementation
 Private Property Get IPasswords_Value(ByVal tagName As String) As String
-    If tagName = "debugginpassword" Then Value = "1234"
+    If tagName = "debugginpassword" Then IPasswords_Value = "1234"
 End Property
 
 '@prop-title Prompt display flag implementation
@@ -64,7 +64,6 @@ End Property
 
 '@prop-title Last private prompt text implementation
 Private Property Get IPasswords_LastPrivatePrompt() As String
-    IPasswords_LastPrivatePrompt = LastPrivatePrompt
 End Property
 
 Private Property Get IPasswords_LastPrivatePromptTitle() As String
@@ -111,6 +110,14 @@ End Sub
 Private Sub IPasswords_UnProtect(Optional targetObject As Variant = "_active")
 End Sub
 
+'@sub-title Ensure protected sheet names impl.
+Private Sub IPasswords_EnsureProtectedSheetsName(Optional ByVal targetWorkbook As Workbook)
+End Sub
+
+'@sub-title Apply protection matrix impl.
+Private Sub IPasswords_ApplyProtectionMatrix(ByVal wb As Workbook)
+End Sub
+
 '@sub-title Generate key impl.
 Private Sub IPasswords_GenerateKey(ByVal trads As ITranslationObject)
 End Sub
@@ -131,11 +138,10 @@ End Sub
 Private Function IPasswords_CloneToWorksheet(ByVal targetSheet As Worksheet) As IPasswords
 End Function
 
-
 '@fun-title Clone to workbook impl.
 Private Function IPasswords_CloneToWorkbook(ByVal wb As Workbook) As IPasswords
 End Function
 
-'@sub-title EnsureProtectedSheetNames
-Private Sub IPasswords_EnsureProtectedSheetsName(Optional ByVal targetWorkbook As Workbook)
+'@sub-title New debugging password impl.
+Private Sub IPasswords_NewDebugingPassword(ByVal newValue As String)
 End Sub
