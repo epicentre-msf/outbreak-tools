@@ -138,7 +138,10 @@ Public Function PrepareFullAnalysisWorksheet(Optional ByVal headerInstruction As
 
     nextRow = 3
     nextRow = AddAnalysisTable(hostSheet, nextRow, TAB_GLOBAL_SUMMARY, _
-                               AnalysisHeaders(), AnalysisRows("Initial Section"))
+                               AnalysisHeaders(), _
+                               Array(Array("Initial Section", "Goodbye", "Summary"), _
+                                     Array("Initial Section", "Hello", "Count"), _
+                                     Array("Second Section", "World", "Percentage")))
     nextRow = AddAnalysisTable(hostSheet, nextRow, TAB_UNIVARIATE, _
                                AnalysisHeaders(), Array(Array("Univariate Section", "Univariate Title", "Summary Uni")))
     nextRow = AddAnalysisTable(hostSheet, nextRow, TAB_BIVARIATE, _

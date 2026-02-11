@@ -8,6 +8,7 @@ Option Explicit
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const FIXTURE_SHEET As String = "TableSpecsFixture"
+Private Const DICT_SHEET As String = "TableSpecsDict"
 
 ' Column layout for the fixture (must match header order)
 Private Const COL_SECTION As Long = 1
@@ -23,7 +24,7 @@ Private Const COL_NGEO As Long = 10
 Private Const NUM_COLUMNS As Long = 10
 
 Private Assert As ICustomTest
-Private dictStub As ILLdictionary
+Private dict As ILLdictionary
 
 '@section Helpers
 '===============================================================================
@@ -80,18 +81,19 @@ Private Function CreateSpecs(ByVal dataRowIndex As Long) As ITableSpecs
     Set CreateSpecs = TableSpecs.Create( _
         FixtureHeaderRange(), _
         FixtureDataRange(dataRowIndex), _
-        dictStub)
+        dict)
 End Function
 
 ' @description Standard time series data rows for most tests.
-'              Row 1: S1, date_var, choice_var, yes, row, yes, yes (all flags on)
-'              Row 2: S1, date_var, choice_var, no, no, no, no (same section, all flags off)
-'              Row 3: S2, date_var, "", no, no, no, no (new section, no column)
+'              Uses real dictionary variable names so ValidTable resolves correctly.
+'              Row 1: S1, date_v1, choi_v1, yes, row, yes, yes (all flags on)
+'              Row 2: S1, date_v1, choi_v1, no, no, no, no (same section, all flags off)
+'              Row 3: S2, date_v1, "", no, no, no, no (new section, no column)
 Private Function TimeSeriesDataRows() As Variant
     TimeSeriesDataRows = Array( _
-        Array("S1", "date_var", "choice_var", "yes", "row", "yes", "yes", "", "", ""), _
-        Array("S1", "date_var", "choice_var", "no", "no", "no", "no", "", "", ""), _
-        Array("S2", "date_var", "", "no", "no", "no", "no", "", "", ""))
+        Array("S1", "date_v1", "choi_v1", "yes", "row", "yes", "yes", "", "", ""), _
+        Array("S1", "date_v1", "choi_v1", "no", "no", "no", "no", "", "", ""), _
+        Array("S2", "date_v1", "", "no", "no", "no", "no", "", "", ""))
 End Function
 
 '@section Module lifecycle
@@ -103,7 +105,8 @@ Private Sub ModuleInitialize()
     EnsureWorksheet TEST_OUTPUT_SHEET, clearSheet:=False
     Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
     Assert.SetModuleName "TestTableSpecs"
-    Set dictStub = New AnalysisDictionaryStub
+    PrepareDictionaryFixture DICT_SHEET
+    Set dict = LLdictionary.Create(ThisWorkbook.Worksheets(DICT_SHEET), 1, 1)
 End Sub
 
 '@ModuleCleanup
@@ -112,8 +115,9 @@ Private Sub ModuleCleanup()
         Assert.PrintResults TEST_OUTPUT_SHEET
     End If
     DeleteWorksheet FIXTURE_SHEET
+    DeleteWorksheet DICT_SHEET
     RestoreApp
-    Set dictStub = Nothing
+    Set dict = Nothing
     Set Assert = Nothing
 End Sub
 
@@ -145,7 +149,7 @@ Public Sub TestCreateRejectsNothingHeader()
 
     On Error Resume Next
     Dim specs As ITableSpecs
-    Set specs = TableSpecs.Create(Nothing, dataRng, dictStub)
+    Set specs = TableSpecs.Create(Nothing, dataRng, dict)
     On Error GoTo 0
 
     Assert.IsTrue (specs Is Nothing), _
@@ -169,7 +173,7 @@ Public Sub TestCreateRejectsNothingRange()
 
     On Error Resume Next
     Dim specs As ITableSpecs
-    Set specs = TableSpecs.Create(hRng, Nothing, dictStub)
+    Set specs = TableSpecs.Create(hRng, Nothing, dict)
     On Error GoTo 0
 
     Assert.IsTrue (specs Is Nothing), _
@@ -222,7 +226,7 @@ Public Sub TestCreateRejectsMismatchedColumns()
 
     On Error Resume Next
     Dim specs As ITableSpecs
-    Set specs = TableSpecs.Create(hRng, dataRng, dictStub)
+    Set specs = TableSpecs.Create(hRng, dataRng, dict)
     On Error GoTo 0
 
     Assert.IsTrue (specs Is Nothing), _
@@ -279,7 +283,7 @@ Public Sub TestTableScopeUnivariate()
     On Error GoTo TestFail
 
     Dim rows As Variant
-    rows = Array(Array("S1", "var1", "", "", "yes", "yes", "yes", "", "", ""))
+    rows = Array(Array("S1", "choi_v1", "", "", "yes", "yes", "yes", "", "", ""))
     BuildFixture "univariate analysis", rows
 
     Dim specs As ITableSpecs
@@ -299,7 +303,7 @@ Public Sub TestTableScopeBivariate()
     On Error GoTo TestFail
 
     Dim rows As Variant
-    rows = Array(Array("S1", "var1", "var2", "", "row", "row", "values", "", "", ""))
+    rows = Array(Array("S1", "choi_v1", "choi_h2", "", "row", "row", "values", "", "", ""))
     BuildFixture "bivariate analysis", rows
 
     Dim specs As ITableSpecs
@@ -319,7 +323,7 @@ Public Sub TestTableScopeSpatial()
     On Error GoTo TestFail
 
     Dim rows As Variant
-    rows = Array(Array("S1", "geo_var", "choice_var", "", "yes", "yes", "yes", "", "", ""))
+    rows = Array(Array("S1", "geo_h2", "choi_v1", "", "yes", "yes", "yes", "", "", ""))
     BuildFixture "spatial analysis", rows
 
     Dim specs As ITableSpecs
@@ -339,7 +343,7 @@ Public Sub TestTableScopeSpatioTemporal()
     On Error GoTo TestFail
 
     Dim rows As Variant
-    rows = Array(Array("S1", "date_var", "geo_var", "", "", "", "yes", "", "", "5"))
+    rows = Array(Array("S1", "date_v1", "geo_h2", "", "", "", "yes", "", "", "5"))
     BuildFixture "spatio-temporal analysis", rows
 
     Dim specs As ITableSpecs
@@ -414,9 +418,9 @@ Public Sub TestValueReturnsColumnData()
 
     Assert.AreEqual "S1", specs.Value("section"), _
                     "Value('section') should return the section name"
-    Assert.AreEqual "date_var", specs.Value("row"), _
+    Assert.AreEqual "date_v1", specs.Value("row"), _
                     "Value('row') should return the row variable"
-    Assert.AreEqual "choice_var", specs.Value("column"), _
+    Assert.AreEqual "choi_v1", specs.Value("column"), _
                     "Value('column') should return the column variable"
     Assert.AreEqual "yes", specs.Value("total"), _
                     "Value('total') should return 'yes'"
@@ -533,7 +537,7 @@ Public Sub TestHasTotalTimeSeriesWithTotalYes()
     ' Row with total=yes and column variable present
     BuildFixture "time series analysis", TimeSeriesDataRows()
     Dim specs As ITableSpecs
-    Set specs = CreateSpecs(1)  ' total=yes, column=choice_var
+    Set specs = CreateSpecs(1)  ' total=yes, column=choi_v1
 
     Assert.IsTrue specs.HasTotal, _
                   "Time series with total='yes' and column present should have total"
@@ -550,7 +554,7 @@ Public Sub TestHasTotalTimeSeriesPercentageDriven()
 
     ' Row with total=no but percentage=row and column present
     Dim rows As Variant
-    rows = Array(Array("S1", "date_var", "choice_var", "no", "row", "no", "no", "", "", ""))
+    rows = Array(Array("S1", "date_v1", "choi_v1", "no", "row", "no", "no", "", "", ""))
     BuildFixture "time series analysis", rows
 
     Dim specs As ITableSpecs
@@ -570,7 +574,7 @@ Public Sub TestHasTotalTimeSeriesPercentageColumnDriven()
     On Error GoTo TestFail
 
     Dim rows As Variant
-    rows = Array(Array("S1", "date_var", "choice_var", "no", "column", "no", "no", "", "", ""))
+    rows = Array(Array("S1", "date_v1", "choi_v1", "no", "column", "no", "no", "", "", ""))
     BuildFixture "time series analysis", rows
 
     Dim specs As ITableSpecs
@@ -629,7 +633,7 @@ Public Sub TestHasTotalUnivariateAlwaysTrue()
     On Error GoTo TestFail
 
     Dim rows As Variant
-    rows = Array(Array("S1", "var1", "", "no", "no", "no", "no", "", "", ""))
+    rows = Array(Array("S1", "choi_v1", "", "no", "no", "no", "no", "", "", ""))
     BuildFixture "univariate analysis", rows
 
     Dim specs As ITableSpecs
@@ -670,7 +674,7 @@ Public Sub TestTotalRequestedFalseWhenPercentageDriven()
 
     ' HasTotal will be True (percentage=row + column present) but TotalRequested should be False
     Dim rows As Variant
-    rows = Array(Array("S1", "date_var", "choice_var", "no", "row", "no", "no", "", "", ""))
+    rows = Array(Array("S1", "date_v1", "choi_v1", "no", "row", "no", "no", "", "", ""))
     BuildFixture "time series analysis", rows
 
     Dim specs As ITableSpecs
@@ -730,7 +734,7 @@ Public Sub TestHasPercentageTimeSeriesNoTotal()
 
     ' percentage=row but no column -> HasTotal=False -> HasPercentage=False
     Dim rows As Variant
-    rows = Array(Array("S1", "date_var", "", "no", "row", "no", "no", "", "", ""))
+    rows = Array(Array("S1", "date_v1", "", "no", "row", "no", "no", "", "", ""))
     BuildFixture "time series analysis", rows
 
     Dim specs As ITableSpecs
@@ -750,7 +754,7 @@ Public Sub TestHasPercentageSpatioTemporalAlwaysFalse()
     On Error GoTo TestFail
 
     Dim rows As Variant
-    rows = Array(Array("S1", "date_var", "geo_var", "", "row", "", "yes", "", "", "5"))
+    rows = Array(Array("S1", "date_v1", "geo_h2", "", "row", "", "yes", "", "", "5"))
     BuildFixture "spatio-temporal analysis", rows
 
     Dim specs As ITableSpecs
@@ -770,7 +774,7 @@ Public Sub TestHasPercentageBivariateRow()
     On Error GoTo TestFail
 
     Dim rows As Variant
-    rows = Array(Array("S1", "var1", "var2", "", "row", "", "", "", "", ""))
+    rows = Array(Array("S1", "choi_v1", "choi_h2", "", "row", "", "", "", "", ""))
     BuildFixture "bivariate analysis", rows
 
     Dim specs As ITableSpecs
@@ -794,7 +798,7 @@ Public Sub TestHasMissingTimeSeriesWithColumn()
 
     BuildFixture "time series analysis", TimeSeriesDataRows()
     Dim specs As ITableSpecs
-    Set specs = CreateSpecs(1)  ' missing=yes, column=choice_var
+    Set specs = CreateSpecs(1)  ' missing=yes, column=choi_v1
 
     Assert.IsTrue specs.HasMissing, _
                   "Time series with missing='yes' and column present should have missing"
@@ -811,7 +815,7 @@ Public Sub TestHasMissingTimeSeriesNoColumn()
 
     ' missing=yes but no column
     Dim rows As Variant
-    rows = Array(Array("S1", "date_var", "", "no", "no", "yes", "no", "", "", ""))
+    rows = Array(Array("S1", "date_v1", "", "no", "no", "yes", "no", "", "", ""))
     BuildFixture "time series analysis", rows
 
     Dim specs As ITableSpecs
@@ -831,7 +835,7 @@ Public Sub TestHasMissingBivariateAll()
     On Error GoTo TestFail
 
     Dim rows As Variant
-    rows = Array(Array("S1", "var1", "var2", "", "", "all", "", "", "", ""))
+    rows = Array(Array("S1", "choi_v1", "choi_h2", "", "", "all", "", "", "", ""))
     BuildFixture "bivariate analysis", rows
 
     Dim specs As ITableSpecs
@@ -908,7 +912,7 @@ Public Sub TestHasGraphBivariateValues()
     On Error GoTo TestFail
 
     Dim rows As Variant
-    rows = Array(Array("S1", "var1", "var2", "", "", "", "values", "", "", ""))
+    rows = Array(Array("S1", "choi_v1", "choi_h2", "", "", "", "values", "", "", ""))
     BuildFixture "bivariate analysis", rows
 
     Dim specs As ITableSpecs
