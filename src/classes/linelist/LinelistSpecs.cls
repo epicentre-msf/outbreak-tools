@@ -27,11 +27,11 @@ Implements ILinelistSpecs
 'user-facing error dialogs. Uses a PredeclaredId factory pattern so callers
 'construct instances via LinelistSpecs.Create(workbook) and receive an
 'ILinelistSpecs interface reference.
-'@depends ILLdictionary, ILLChoices, ILLTranslations, IDesTranslation
+'@depends ILLdictionary, ILLChoices, ILLTranslation, IDesTranslation
 '@depends ILLGeo, ILLExport, ILLAnalysis, IPasswords, ILLFormat
 '@depends IFormulaData, IMain, ILLVariables, IFormulas
 '@depends ITranslationObject, IApplicationState, ApplicationState
-'@depends BetterArray, LLdictionary, LLChoices, LLTranslations
+'@depends BetterArray, LLdictionary, LLChoices, LLTranslation
 '@depends DesTranslation, LLGeo, LLExport, Analysis, Passwords
 '@depends LLFormat, FormulaData, Main, LLVariables, Formulas
 '@version 1.0 (2026-02-09)
@@ -46,7 +46,7 @@ Private Type TLinelistSpecs
     specsWkb As Workbook
     dictionary As ILLdictionary
     choices As ILLChoices
-    translations As ILLTranslations
+    translations As ILLTranslation
     designerTranslations As IDesTranslation
     geo As ILLGeo
     exports As ILLExport
@@ -71,29 +71,20 @@ Private Const DEFAULT_CHOICES_START_ROW As Long = 1
 Private Const DEFAULT_CHOICES_START_COLUMN As Long = 1
 
 'Linelist Spec constants
-Private Const LLSPEC_SHEET_DICTIONARY As String = "Dictionary"
-Private Const LLSPEC_SHEET_CHOICES As String = "Choices"
-Private Const LLSPEC_SHEET_GEO As String = "Geo"
-Private Const LLSPEC_SHEET_PASSWORDS As String = "__pass"
-Private Const LLSPEC_SHEET_FORMULAS As String = "__formula"
-Private Const LLSPEC_SHEET_DICT_TRANSLATIONS As String = "Translations"
-Private Const LLSPEC_SHEET_LL_TRANSLATIONS As String = "LinelistTranslation"
-Private Const LLSPEC_SHEET_ANALYSIS As String = "Analysis"
-Private Const LLSPEC_SHEET_EXPORTS As String = "Exports"
-Private Const LLSPEC_SHEET_FORMAT As String = "LinelistStyle"
-Private Const LLSPEC_SHEET_MAIN As String = "Main"
-Private Const LLSPEC_SHEET_DESIGNER_TRANSLATIONS As String = "DesignerTranslation"
+Private Const SHEET_DICTIONARY As String = "Dictionary"
+Private Const SHEET_CHOICES As String = "Choices"
+Private Const SHEET_GEO As String = "Geo"
+Private Const SHEET_PASSWORDS As String = "__pass"
+Private Const SHEET_FORMULAS As String = "__formula"
+Private Const SHEET_TRANSLATIONS_DICT As String = "Translations"
+Private Const SHEET_TRANSLATIONS_LL As String = "LinelistTranslation"
+Private Const SHEET_ANALYSIS As String = "Analysis"
+Private Const SHEET_EXPORT As String = "Exports"
+Private Const SHEET_FORMAT As String = "LinelistStyle"
+Private Const SHEET_MAIN As String = "Main"
+Private Const SHEET_DESIGNER_TRANSLATION As String = "DesignerTranslation"
 
-Private Const LLSPEC_RANGE_DESIGN_TYPE As String = "DESIGNTYPE"
-
-Private Const LLSPEC_TEMP_SHEET_ANALYSIS As Byte = 1
-Private Const LLSPEC_TEMP_SHEET_UPDATES As Byte = 2
-Private Const LLSPEC_TEMP_SHEET_METADATA As Byte = 3
-Private Const LLSPEC_TEMP_SHEET_LISTS As Byte = 4
-Private Const LLSPEC_TEMP_SHEET_IMPORT As Byte = 5
-Private Const LLSPEC_TEMP_SHEET_SINGLE As Byte = 6
-Private Const LLSPEC_TEMP_SHEET_SPATIAL As Byte = 7
-Private Const LLSPEC_TEMP_SHEET_SHOWHIDE As Byte = 8
+Private Const RANGE_DESIGN_TYPE As String = "DESIGNTYPE"
 
 '@section Factory helpers
 '===============================================================================
@@ -791,15 +782,12 @@ End Sub
 '@label:ensure-translations
 '@sub-title Lazy-load the translations collaborator
 '@details
-'Creates the LLTranslations instance from both the linelist translation
-'and dictionary translation worksheets.
+'Creates the LLTranslation instance from the linelist translation worksheet.
 Private Sub EnsureTranslations()
     If this.translations Is Nothing Then
         Dim linelistTransSheet As Worksheet
-        Dim dictTransSheet As Worksheet
         Set linelistTransSheet = ResolveSheet(SHEET_TRANSLATIONS_LL)
-        Set dictTransSheet = ResolveSheet(SHEET_TRANSLATIONS_DICT)
-        Set this.translations = LLTranslations.Create(linelistTransSheet, dictTransSheet)
+        Set this.translations = LLTranslation.Create(linelistTransSheet)
     End If
 End Sub
 
@@ -1279,11 +1267,11 @@ End Property
 '@label:translations
 '@prop-title Translation tables manager
 '@details
-'Returns the ILLTranslations instance providing access to both the
-'linelist and dictionary translation worksheets. Lazy-loaded on first access.
-'@return ILLTranslations. The translations collaborator.
+'Returns the ILLTranslation instance providing access to the linelist
+'translation worksheet. Lazy-loaded on first access.
+'@return ILLTranslation. The translations collaborator.
 '@export
-Public Property Get Translations() As ILLTranslations
+Public Property Get Translations() As ILLTranslation
     EnsureTranslations
     Set Translations = this.translations
 End Property
@@ -1425,7 +1413,7 @@ Public Sub Prepare()
     Dim dict As ILLdictionary
     Dim choices As ILLChoices
     Dim exports As ILLExport
-    Dim translations As ILLTranslations
+    Dim translations As ILLTranslation
     Dim analysisObj As ILLAnalysis
     Dim geoObj As ILLGeo
     Dim dictTrads As ITranslationObject
@@ -1474,7 +1462,15 @@ Public Sub Prepare()
     Set choicesSheet = setupBook.Worksheets(SHEET_CHOICES)
     choices.Import choicesSheet, fromStartRow:=4, fromStartcol:=1
 
-    translations.ImportTranslation setupBook
+    translations.Import setupBook
+
+    Dim dictSetupSheet As Worksheet
+    Set dictSetupSheet = ResolveExternalSheet(setupBook, SHEET_TRANSLATIONS_DICT)
+    If Not dictSetupSheet Is Nothing Then
+        If dictSetupSheet.ListObjects.Count > 0 Then
+            translations.ImportDictionary dictSetupSheet.ListObjects(1)
+        End If
+    End If
 
     Set analysisSheet = setupBook.Worksheets(SHEET_ANALYSIS)
     analysisObj.Import analysisSheet
@@ -1544,7 +1540,7 @@ End Sub
 Public Sub Export(ByVal toWkb As Workbook)
     Dim dict As ILLdictionary
     Dim choices As ILLChoices
-    Dim translations As ILLTranslations
+    Dim translations As ILLTranslation
     Dim exports As ILLExport
     Dim geo As ILLGeo
     Dim passwords As IPasswords
@@ -1567,7 +1563,7 @@ Public Sub Export(ByVal toWkb As Workbook)
 
     dict.Export toWkb, Hide:=xlSheetVeryHidden
     choices.Export toWkb, Hide:=xlSheetVeryHidden
-    translations.ExportToWkb toWkb
+    translations.Export toWkb
     exports.ExportSpecs toWkb, Hide:=xlSheetVeryHidden
     geo.ExportToWkb toWkb, mainObj.ValueOf("llname"), mainObj.ValueOf("setuppath")
     passwords.Export toWkb
@@ -1638,12 +1634,12 @@ Public Sub TestAssignDesignerTranslations(ByVal designerTrads As IDesTranslation
 End Sub
 
 '@label:test-assign-translations
-'@sub-title Inject a mock ILLTranslations instance for testing
+'@sub-title Inject a mock ILLTranslation instance for testing
 '@details
 'Also resets the translation cache to ensure the mock object is used
 'for subsequent TransObject lookups.
-'@param translations ILLTranslations. The mock translations object.
-Public Sub TestAssignTranslations(ByVal translations As ILLTranslations)
+'@param translations ILLTranslation. The mock translations object.
+Public Sub TestAssignTranslations(ByVal translations As ILLTranslation)
     Set this.translations = translations
     ResetTranslationCache
 End Sub
@@ -1698,7 +1694,7 @@ Private Property Get ILinelistSpecs_MainObject() As IMain
     Set ILinelistSpecs_MainObject = Me.MainObject
 End Property
 
-Private Property Get ILinelistSpecs_Translations() As ILLTranslations
+Private Property Get ILinelistSpecs_Translations() As ILLTranslation
     Set ILinelistSpecs_Translations = Me.Translations
 End Property
 

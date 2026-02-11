@@ -767,8 +767,8 @@ Private Sub TransferAllCode(ByVal codeTransfer As ICodeTransfer, _
                    "ILLExport", "LLChoices", "ILLChoices", _
                    "LLdictionary", "ILLdictionary", "LLGeo", _
                    "ILLGeo", "Passwords", "IPasswords", _
-                   "LLSheets", "ILLSheets", "LLTranslations", _
-                   "ILLTranslations", "OSFiles", "IOSFiles", _
+                   "LLSheets", "ILLSheets", "LLTranslation", _
+                   "ILLTranslation", "OSFiles", "IOSFiles", _
                    "TranslationObject", "ITranslationObject", "LLVariables", _
                    "ILLVariables", "ILLSpatial", "LLSpatial", _
                    "DropdownLists", "IDropdownLists", "LLShowHide", _

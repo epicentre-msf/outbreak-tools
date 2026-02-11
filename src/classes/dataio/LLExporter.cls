@@ -25,8 +25,8 @@ Implements ILLExporter
 'geobase exports (ExportGeo). Each mode builds a temporary output workbook,
 'populates it with the relevant data, metadata, and formatting, then saves
 'and closes it. Consumers interact through the ILLExporter interface.
-'@depends ILLdictionary, ILLExport, IPasswords, ILLTranslations, ICustomTable
-'@depends IDataSheet, IShowHideManager, IAnaTabIds, ILLGeo, ILLChoices
+'@depends ILLdictionary, ILLExport, IPasswords, ICustomTable
+'@depends IDataSheet, IShowHideManager, IAnaTabIds, ILLGeo, ILLChoices, IHiddenNames
 
 
 '@section Constants
@@ -43,7 +43,6 @@ Private Const PASSWORDSHEET As String = "__pass"
 Private Const TEMPSHEET As String = "temp__"
 Private Const EXPORTSHEET As String = "Exports"
 Private Const ANANAMESSHEET As String = "ana_tabnames__"
-Private Const MESSTRANSLATIONSHEET As String = "LinelistTranslation"
 Private Const SHOWHIDESHEET As String = "show_hide__"
 Private Const GEOSHEET As String = "Geo"
 
@@ -466,15 +465,6 @@ Private Function PasswordsObject() As IPasswords
     Set PasswordsObject = Passwords.Create(this.sourceWkb.Worksheets(PASSWORDSHEET))
 End Function
 
-'@label:translations-object
-'@sub-title Get translations from the source workbook
-'@return ILLTranslations. Translations from LinelistTranslation and Translations sheets.
-Private Function TranslationsObject() As ILLTranslations
-    Set TranslationsObject = LLTranslations.Create( _
-        this.sourceWkb.Worksheets(MESSTRANSLATIONSHEET), _
-        this.sourceWkb.Worksheets(DICTTRANSLATIONSHEET))
-End Function
-
 '@label:geo-object
 '@sub-title Get the geo object from the source workbook
 '@return ILLGeo. Geo instance from the Geo sheet.
@@ -737,19 +727,19 @@ End Sub
 'exits when no custom dropdown sheet exists.
 '@param outwb Workbook. The output workbook.
 Private Sub AddCustomDropdowns(ByVal outwb As Workbook)
-    Dim lltrads As ILLTranslations
+    Dim wkbNames As IHiddenNames
     Dim choi As ILLChoices
     Dim lo As ListObject
     Dim loValues As BetterArray
     Dim sh As Worksheet
     Dim choiceName As String
 
-    Set lltrads = TranslationsObject()
+    Set wkbNames = HiddenNames.Create(this.sourceWkb)
     Set choi = LLChoices.Create(outwb.Worksheets(CHOICESSHEET), 1, 1)
     Set loValues = New BetterArray
 
     On Error Resume Next
-    Set sh = this.sourceWkb.Worksheets(lltrads.Value("customdropdown"))
+    Set sh = this.sourceWkb.Worksheets(wkbNames.ValueAsString("RNG_CustomDrop"))
     On Error GoTo 0
     If sh Is Nothing Then Exit Sub
 
@@ -945,7 +935,7 @@ End Sub
 '@param afterSheetName String. Name of the sheet to insert after.
 Private Sub AddAnalysisSheets(ByVal outwb As Workbook, ByVal afterSheetName As String)
 
-    Dim lltrads As ILLTranslations
+    Dim wkbNames As IHiddenNames
     Dim sheetNamesList As BetterArray
     Dim scopesList As BetterArray
     Dim namObj As IAnaTabIds
@@ -955,13 +945,15 @@ Private Sub AddAnalysisSheets(ByVal outwb As Workbook, ByVal afterSheetName As S
     Dim counter As Long
     Dim prevSheetName As String
 
-    Set lltrads = TranslationsObject()
+    Set wkbNames = HiddenNames.Create(this.sourceWkb)
     Set sheetNamesList = New BetterArray
     Set scopesList = New BetterArray
     prevSheetName = afterSheetName
 
-    sheetNamesList.Push lltrads.Value("uasheet"), lltrads.Value("tssheet"), _
-                        lltrads.Value("spsheet"), lltrads.Value("sptsheet")
+    sheetNamesList.Push wkbNames.ValueAsString("RNG_UASheet"), _
+                        wkbNames.ValueAsString("RNG_TSSheet"), _
+                        wkbNames.ValueAsString("RNG_SPSheet"), _
+                        wkbNames.ValueAsString("RNG_SPTSheet")
 
     scopesList.Push AnalysisIdsScopeNormal, AnalysisIdsScopeTimeSeries, _
                     AnalysisIdsScopeSpatial, AnalysisIdsScopeSpatioTemporal
