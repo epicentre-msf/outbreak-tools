@@ -49,6 +49,27 @@
             "problemMatcher": []
         },
         {
+            "label": "add failure logging (perl)",
+            "type": "process",
+            "command": "perl",
+            "args": [
+                "automate/codes/add_failure_logging.pl",
+                "${file}"
+            ],
+            "windows": {
+                "command": "perl",
+                "args": [
+                    "automate/codes/add_failure_logging.pl",
+                    "${file}"
+                ]
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
             "label": "find private properties missing end",
             "type": "process",
             "command": "perl",

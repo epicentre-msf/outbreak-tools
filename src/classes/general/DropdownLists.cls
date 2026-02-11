@@ -1213,7 +1213,7 @@ Private Sub IDropdownLists_Sort(ByVal listName As String, _
 End Sub
 
 Private Sub IDropdownLists_Translate(ByVal trads As Object, Optional ByVal force As Boolean = False, Optional ByVal exclude As String)
-    Translate trads, force
+    Translate trads, force, exclude
 End Sub
 
 Private Sub IDropdownLists_SetValidation(ByVal cellRng As Range, ByVal listName As String, _
