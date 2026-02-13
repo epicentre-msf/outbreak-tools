@@ -2,6 +2,32 @@ Attribute VB_Name = "TestLLChoices"
 Attribute VB_Description = "Tests for LLChoices class"
 Option Explicit
 
+'===============================================================================
+' @ModuleDescription Tests for the LLChoices class, which manages linelist
+'   choice lists (dropdown options) stored on a dedicated worksheet. Each choice
+'   list is identified by a name and contains ordered rows of labels and short
+'   labels that drive data-validation dropdowns in the linelist.
+'
+' @description This module exercises the full public surface of the ILLChoices
+'   interface: factory construction via LLChoices.Create, enumeration of distinct
+'   list names (AllChoices), retrieval of categories with optional short-label
+'   substitution, sort-by-ordering-column, concatenation with configurable
+'   separators, export to an external workbook as a hidden sheet, CRUD
+'   operations (AddChoice, RemoveChoice, ChoiceExists), ListObject row
+'   manipulation (InsertRows, DeleteRows), bulk import from an external
+'   worksheet, and label translation through an ITranslationObject. The module
+'   also validates the edge case of requesting categories for a nonexistent
+'   choice list.
+'
+' @depends LLChoices, ILLChoices, TranslationObject, ITranslationObject,
+'   BetterArray, CustomTest, TestHelpers, ChoicesTestFixture
+'
+' Test fixture data is supplied by ChoicesTestFixture.bas, which provides three
+' named lists: "list_correct_order" (A/B/C in order 1-2-3),
+' "list_uncorrect_order" (A/B/C in order 3-1-2), and "list_multiple" (choice
+' 1-4 with some missing short labels). Translation and import fixtures are
+' built on-the-fly by private helpers within this module.
+'===============================================================================
 
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 '@Folder("CustomTests")
@@ -20,6 +46,11 @@ Private Choices As ILLChoices
 '@section Helpers
 '===============================================================================
 
+' @sub-title Reset the module-level Choices object to a clean fixture state.
+' @details Disables Application.EnableEvents while rebuilding the fixture sheet
+'   via PrepareChoicesFixture, then creates a fresh LLChoices instance targeted
+'   at that sheet. The sheet is hidden to prevent visual flicker during tests.
+'   On error the original EnableEvents state is restored before re-raising.
 Private Sub ResetChoices()
     Dim previousEventState As Boolean
     Dim errNumber As Long
@@ -50,6 +81,12 @@ CleanFail:
     Err.Raise errNumber, errSource, errDescription, errHelpFile, errHelpContext
 End Sub
 
+' @sub-title Create (or recreate) a ListObject on the choices sheet from the
+'   current data region.
+' @details Deletes any existing ListObject on the sheet, converts the
+'   CurrentRegion starting at A1 into a new ListObject named "tblLLChoices",
+'   and returns it. This helper is used by tests that exercise row-level
+'   ListObject operations (InsertRows, DeleteRows).
 Private Function EnsureChoicesListObject() As ListObject
     Dim choiceSheet As Worksheet
     Dim dataRange As Range
@@ -70,6 +107,11 @@ Private Function EnsureChoicesListObject() As ListObject
     Set EnsureChoicesListObject = lo
 End Function
 
+' @sub-title Provide translation mapping rows for the choices fixture.
+' @details Returns a Variant array of arrays, each containing (tag, English,
+'   Translated) triples. Covers both long and short labels for the three fixture
+'   lists, enabling TestTranslateUpdatesLabels to verify that Choices.Translate
+'   replaces labels with their translated counterparts.
 Private Function TranslatorDataRows() As Variant
     TranslatorDataRows = Array( _
         Array("A", "A", "Alpha"), _
@@ -87,13 +129,24 @@ Private Function TranslatorDataRows() As Variant
         Array("c4", "c4", "c4 fr"))
 End Function
 
+' @sub-title Provide import source rows for the import fixture.
+' @details Returns a Variant array of arrays matching the choices header layout
+'   (list name, ordering, label, short label). Contains two distinct list names
+'   ("imported_list" with one row, "imported_second" with one row) used by
+'   TestImportReplacesChoices to verify that Choices.Import completely replaces
+'   existing data.
 Private Function ImportDataRows() As Variant
     ImportDataRows = Array( _
         Array("imported_list", 1, "Label One", "Short One"), _
-        Array("imported_list", 2, "Label Two", "Short Two"), _
         Array("imported_second", 1, "Other Label", "Other Short"))
 End Function
 
+' @sub-title Build a translation table and return an ITranslationObject for it.
+' @details Creates (or resets) a hidden worksheet named CHOICESTRANSLATIONSHEET,
+'   writes header and data rows from TranslatorDataRows, wraps the region in a
+'   ListObject named CHOICESTRANSLATIONTABLE, and returns a TranslationObject
+'   targeting the CHOICESTRANSLATIONLANGUAGE column. The sheet is cleaned up by
+'   CleanupChoicesTranslation in TestCleanup.
 Private Function CreateChoicesTranslator() As ITranslationObject
     Dim translationSheet As Worksheet
     Dim headerMatrix As Variant
@@ -116,6 +169,11 @@ Private Function CreateChoicesTranslator() As ITranslationObject
     Set CreateChoicesTranslator = TranslationObject.Create(translationTable, CHOICESTRANSLATIONLANGUAGE)
 End Function
 
+' @sub-title Build a worksheet that acts as an import source for Choices.Import.
+' @details Creates a hidden worksheet named CHOICESIMPORTSHEET, writes the
+'   standard choices headers (from ChoicesFixtureHeaders) plus import data rows
+'   (from ImportDataRows), and returns the sheet. Cleaned up by
+'   CleanupChoicesImportSource in TestCleanup.
 Private Function CreateChoicesImportSheet() As Worksheet
     Dim importSheet As Worksheet
     Dim headerMatrix As Variant
@@ -132,11 +190,13 @@ Private Function CreateChoicesImportSheet() As Worksheet
     Set CreateChoicesImportSheet = importSheet
 End Function
 
+' @sub-title Delete the translation fixture worksheet if it exists.
 Private Sub CleanupChoicesTranslation()
     BusyApp
     DeleteWorksheet CHOICESTRANSLATIONSHEET
 End Sub
 
+' @sub-title Delete the import source fixture worksheet if it exists.
 Private Sub CleanupChoicesImportSource()
     BusyApp
     DeleteWorksheet CHOICESIMPORTSHEET
@@ -146,6 +206,10 @@ End Sub
 '===============================================================================
 
 '@ModuleInitialize
+' @sub-title One-time setup before any test in this module runs.
+' @details Ensures the test output sheet exists, creates the CustomTest assert
+'   object, registers the module name for reporting, and performs an initial
+'   ResetChoices to prepare the fixture sheet.
 Private Sub ModuleInitialize()
     BusyApp
     EnsureWorksheet TEST_OUTPUT_SHEET, clearSheet:=False
@@ -155,6 +219,10 @@ Private Sub ModuleInitialize()
 End Sub
 
 '@ModuleCleanup
+' @sub-title One-time teardown after all tests in this module have run.
+' @details Prints accumulated test results, removes all fixture worksheets
+'   (translation, import, choices), restores application state, and releases
+'   object references.
 Private Sub ModuleCleanup()
     If Not Assert Is Nothing Then
         Assert.PrintResults TEST_OUTPUT_SHEET
@@ -169,12 +237,19 @@ Private Sub ModuleCleanup()
 End Sub
 
 '@TestInitialize
+' @sub-title Per-test setup: rebuild the fixture from scratch.
+' @details Calls BusyApp to suppress screen updates, then ResetChoices to
+'   ensure each test starts with an identical, unmodified fixture.
 Private Sub TestInitialize()
     BusyApp
     ResetChoices
 End Sub
 
 '@TestCleanup
+' @sub-title Per-test teardown: flush assertions and remove ephemeral sheets.
+' @details Flushes any pending assertion output, removes translation and import
+'   sheets that may have been created during the test, and releases the Choices
+'   reference.
 Private Sub TestCleanup()
     If Not Assert Is Nothing Then
         Assert.Flush
@@ -188,6 +263,12 @@ End Sub
 '===============================================================================
 
 '@TestMethod("LLChoices")
+' @sub-title Verify that LLChoices.Create returns a properly initialised object.
+' @details Asserts that the module-level Choices variable, created during
+'   TestInitialize via LLChoices.Create, resolves to the concrete LLChoices
+'   type and that its Wksh property points to the expected fixture sheet. This
+'   is a smoke test that validates the factory pattern wiring before any
+'   behavioural tests run.
 Public Sub TestCreateInitialisesChoice()
     CustomTestSetTitles Assert, "LLChoices", "TestCreateInitialisesChoice"
     Assert.IsTrue (TypeName(Choices) = "LLChoices"), "Expected Create to return ILLChoices implementation"
@@ -195,6 +276,13 @@ Public Sub TestCreateInitialisesChoice()
 End Sub
 
 '@TestMethod("LLChoices")
+' @sub-title Verify that AllChoices returns every distinct list name from the
+'   fixture exactly once.
+' @details Arranges the expected distinct names from ChoicesFixtureDistinctLists
+'   (list_correct_order, list_uncorrect_order, list_multiple). Acts by calling
+'   Choices.AllChoices which returns a BetterArray. Asserts that the count
+'   matches and that every expected name is included, confirming correct
+'   deduplication across multiple fixture rows sharing the same list name.
 Public Sub TestAllChoicesReturnsDistinctNames()
     CustomTestSetTitles Assert, "LLChoices", "TestAllChoicesReturnsDistinctNames"
     On Error GoTo Fail
@@ -218,6 +306,13 @@ Fail:
 End Sub
 
 '@TestMethod("LLChoices")
+' @sub-title Verify that Categories with useShortlabels:=True returns short
+'   labels, falling back to long labels when no short label is present.
+' @details Targets the "list_multiple" fixture list whose third entry has an
+'   empty short label. The expected result is ("c1", "c2", "choice 3", "c4"),
+'   where "choice 3" is the long-label fallback for the missing short label.
+'   Asserts both the count and the positional content of every element to
+'   confirm short-label substitution logic.
 Public Sub TestCategoriesHonoursShortLabels()
     CustomTestSetTitles Assert, "LLChoices", "TestCategoriesHonoursShortLabels"
     On Error GoTo Fail
@@ -244,6 +339,13 @@ Fail:
 End Sub
 
 '@TestMethod("LLChoices")
+' @sub-title Verify that Sort reorders entries within each list by the ordering
+'   column.
+' @details Uses the "list_uncorrect_order" fixture list where rows are stored in
+'   order (A=3, B=1, C=2). First confirms the unsorted state starts with "A",
+'   then calls Choices.Sort and retrieves categories again. The expected post-
+'   sort order is ("B", "C", "A") corresponding to ordering values 1, 2, 3.
+'   Asserts both the count and exact positional sequence.
 Public Sub TestSortReordersChoicesByOrdering()
     CustomTestSetTitles Assert, "LLChoices", "TestSortReordersChoicesByOrdering"
     On Error GoTo Fail
@@ -276,6 +378,13 @@ Fail:
 End Sub
 
 '@TestMethod("LLChoices")
+' @sub-title Verify that ConcatenateCategories joins labels with the default
+'   separator and accepts a custom separator.
+' @details Calls ConcatenateCategories on "list_multiple" without a separator
+'   argument and asserts the result equals "choice 1 | choice 2 | choice 3 |
+'   choice 4", confirming the default separator is " | ". Then calls it again
+'   with sep:=" -- " and asserts the custom separator is honoured. This covers
+'   both the default and explicit-separator code paths.
 Public Sub TestConcatenateCategoriesUsesDefaultSeparator()
     CustomTestSetTitles Assert, "LLChoices", "TestConcatenateCategoriesUsesDefaultSeparator"
     On Error GoTo Fail
@@ -294,6 +403,14 @@ Fail:
 End Sub
 
 '@TestMethod("LLChoices")
+' @sub-title Verify that Export copies the choices sheet into an external
+'   workbook as a hidden sheet with intact headers and data.
+' @details Creates a new blank workbook, calls Choices.Export into it, and then
+'   asserts that the exported sheet exists with the expected name, that all
+'   fixture headers appear in order, that representative data cells match, that
+'   the sheet visibility is xlSheetHidden, and that the total row count matches
+'   the fixture. The temporary workbook is deleted after assertions. The Fail
+'   handler also deletes the workbook to avoid leaked temp files.
 Public Sub TestExportCreatesHiddenCopy()
     CustomTestSetTitles Assert, "LLChoices", "TestExportCreatesHiddenCopy"
     On Error GoTo Fail
@@ -330,6 +447,13 @@ Fail:
 End Sub
 
 '@TestMethod("LLChoices")
+' @sub-title Verify that AddChoice inserts a new named list with both long and
+'   short labels.
+' @details Arranges two BetterArrays of labels ("North"/"South") and short
+'   labels ("N"/"S"), then calls Choices.AddChoice with the name "geo_region".
+'   Asserts that ChoiceExists returns True for the new name, that the short
+'   categories count matches, and that the short labels include "N". This
+'   confirms end-to-end row insertion and in-memory cache invalidation.
 Public Sub TestAddChoiceAddsNewEntries()
     CustomTestSetTitles Assert, "LLChoices", "TestAddChoiceAddsNewEntries"
     On Error GoTo Fail
@@ -355,6 +479,12 @@ Fail:
 End Sub
 
 '@TestMethod("LLChoices")
+' @sub-title Verify that RemoveChoice deletes all rows belonging to a named
+'   list.
+' @details First asserts that the fixture contains "list_multiple" as a
+'   precondition, then calls Choices.RemoveChoice. Asserts that ChoiceExists
+'   returns False afterward, confirming that every row for that list name was
+'   removed from the underlying worksheet.
 Public Sub TestRemoveChoiceDeletesRequestedList()
     CustomTestSetTitles Assert, "LLChoices", "TestRemoveChoiceDeletesRequestedList"
     On Error GoTo Fail
@@ -369,6 +499,14 @@ Fail:
 End Sub
 
 '@TestMethod("LLChoices")
+' @sub-title Verify that InsertRows adds blank rows matching the height of the
+'   selection range while shifting existing data downward.
+' @details Wraps the fixture in a ListObject via EnsureChoicesListObject,
+'   captures the initial row count and the value in the second data row, then
+'   builds a two-row selection range starting at row 2. After calling
+'   Choices.InsertRows, asserts that the row count increased by 2, the first
+'   inserted row is blank, and the previously second row shifted down to row 3
+'   with its value preserved.
 Public Sub TestInsertRowsMirrorsSelectionHeight()
     CustomTestSetTitles Assert, "LLChoices", "TestInsertRowsMirrorsSelectionHeight"
     On Error GoTo Fail
@@ -400,6 +538,11 @@ Fail:
 End Sub
 
 '@TestMethod("LLChoices")
+' @sub-title Verify that DeleteRows removes the selected ListObject rows.
+' @details Wraps the fixture in a ListObject, records the baseline row count,
+'   targets the second data row for deletion, and calls Choices.DeleteRows.
+'   Asserts that the row count decreased by exactly one, confirming that only
+'   the targeted row was removed without side effects on adjacent rows.
 Public Sub TestDeleteRowsRemovesSelection()
     CustomTestSetTitles Assert, "LLChoices", "TestDeleteRowsRemovesSelection"
     On Error GoTo Fail
@@ -423,6 +566,12 @@ Fail:
 End Sub
 
 '@TestMethod("LLChoices")
+' @sub-title Verify that Categories returns an empty BetterArray when the
+'   requested choice name does not exist.
+' @details Calls Choices.Categories with a name ("missing_choice") that is not
+'   present in the fixture data. Asserts that the returned BetterArray has
+'   Length 0, confirming graceful handling of nonexistent list names rather than
+'   raising an error.
 Public Sub TestCategoriesReturnEmptyForMissingChoice()
     CustomTestSetTitles Assert, "LLChoices", "TestCategoriesReturnEmptyForMissingChoice"
     On Error GoTo Fail
@@ -439,6 +588,14 @@ End Sub
 
 
 '@TestMethod("LLChoices")
+' @sub-title Verify that Import fully replaces existing choices with data from
+'   an external worksheet.
+' @details Arranges a hidden import worksheet via CreateChoicesImportSheet
+'   containing two list names ("imported_list", "imported_second"). Calls
+'   Choices.Import and asserts that the underlying sheet now starts with the
+'   imported data, that AllChoices returns exactly two entries, and that both
+'   imported list names are present. This confirms that Import is destructive:
+'   all prior fixture data is replaced.
 Public Sub TestImportReplacesChoices()
     CustomTestSetTitles Assert, "LLChoices", "TestImportReplacesChoices"
     On Error GoTo Fail
@@ -464,6 +621,14 @@ Fail:
 End Sub
 
 '@TestMethod("LLChoices")
+' @sub-title Verify that Translate updates both labels and short labels using
+'   an ITranslationObject.
+' @details Arranges a translation table mapping "A" to "Alpha" and "A short" to
+'   "A court" (among others) via CreateChoicesTranslator. Calls
+'   Choices.Translate and reads the underlying sheet cells directly. Asserts
+'   that the label column now contains "Alpha" and the short-label column
+'   contains "A court" for the first data row, confirming that translation
+'   applies to both label types in-place on the worksheet.
 Public Sub TestTranslateUpdatesLabels()
     CustomTestSetTitles Assert, "LLChoices", "TestTranslateUpdatesLabels"
     On Error GoTo Fail

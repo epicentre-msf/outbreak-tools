@@ -97,7 +97,7 @@
             "problemMatcher": []
         },
         {
-            "label": "replace unit test dev",
+            "label": "update unit test dev",
             "type": "process",
             "command": "Rscript",
             "args": [

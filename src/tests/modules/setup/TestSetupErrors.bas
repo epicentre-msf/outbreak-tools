@@ -13,6 +13,7 @@ Private Const ANALYSIS_SHEET As String = "Analysis"
 Private Const TRANSLATIONS_SHEET As String = "Translations"
 Private Const DROPDOWN_SHEET As String = "__variables"
 Private Const CHECK_OUTPUT_SHEET As String = "__checkRep"
+Private Const REGISTRY_SHEET As String = "__updated"
 
 
 '@Folder("CustomTests")
@@ -363,6 +364,90 @@ Fail:
     Resume Cleanup
 End Sub
 
+'@TestMethod("SetupErrors")
+Public Sub TestAnalysisChecksDetectInvalidTables()
+    CustomTestSetTitles Assert, "SetupErrors", "TestAnalysisChecksDetectInvalidTables"
+    On Error GoTo Fail
+
+    Dim hostBook As Workbook
+    Dim checker As ISetupErrors
+    Dim results As BetterArray
+
+    Set hostBook = PrepareSetupWorkbook(includeIssues:=True)
+    Set checker = SetupErrors.Create(hostBook)
+    checker.Run
+    Set results = checker.Checkings
+
+    Assert.IsTrue CheckingsContain(results, "The table is invalid"), _
+                   "Analysis checks should report invalid tables."
+
+Cleanup:
+    Set checker = Nothing
+    TestHelpers.DeleteWorkbook hostBook
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestAnalysisChecksDetectInvalidTables", Err.Number, Err.Description
+    Resume Cleanup
+End Sub
+
+'@TestMethod("SetupErrors")
+Public Sub TestAnalysisChecksDetectEmptyRows()
+    CustomTestSetTitles Assert, "SetupErrors", "TestAnalysisChecksDetectEmptyRows"
+    On Error GoTo Fail
+
+    Dim hostBook As Workbook
+    Dim checker As ISetupErrors
+    Dim results As BetterArray
+
+    Set hostBook = PrepareSetupWorkbook(includeIssues:=True)
+
+    AddEmptyAnalysisRow hostBook
+
+    Set checker = SetupErrors.Create(hostBook)
+    checker.Run
+    Set results = checker.Checkings
+
+    Assert.IsTrue CheckingsContain(results, "This line is completely empty"), _
+                   "Analysis checks should report empty table rows."
+
+Cleanup:
+    Set checker = Nothing
+    TestHelpers.DeleteWorkbook hostBook
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestAnalysisChecksDetectEmptyRows", Err.Number, Err.Description
+    Resume Cleanup
+End Sub
+
+'@TestMethod("SetupErrors")
+Public Sub TestAnalysisChecksProduceCheckingObject()
+    CustomTestSetTitles Assert, "SetupErrors", "TestAnalysisChecksProduceCheckingObject"
+    On Error GoTo Fail
+
+    Dim hostBook As Workbook
+    Dim checker As ISetupErrors
+    Dim results As BetterArray
+
+    Set hostBook = PrepareSetupWorkbook(includeIssues:=True)
+    Set checker = SetupErrors.Create(hostBook)
+    checker.Run
+    Set results = checker.Checkings
+
+    Assert.IsTrue results.Length >= 5, _
+                   "Run should produce at least 5 checking objects (dict, choices, exports, analysis, translations). Actual: " & results.Length
+
+Cleanup:
+    Set checker = Nothing
+    TestHelpers.DeleteWorkbook hostBook
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestAnalysisChecksProduceCheckingObject", Err.Number, Err.Description
+    Resume Cleanup
+End Sub
+
 '@section Helpers
 '===============================================================================
 
@@ -380,10 +465,12 @@ Private Function PrepareSetupWorkbook(Optional ByVal includeIssues As Boolean = 
     SetupImportTestFixture.PrepareSetupTranslationsSheet TRANSLATIONS_SHEET, "Tab_Translations", "Label", "Translation", "tag", 5, 2, True, wb
     TestHelpers.EnsureWorksheet DROPDOWN_SHEET, wb, True
     TestHelpers.EnsureWorksheet CHECK_OUTPUT_SHEET, wb, True
+    TestHelpers.EnsureWorksheet REGISTRY_SHEET, wb, True
 
     ConfigureDictionarySheet wb, includeIssues
     ConfigureChoicesSheet wb, includeIssues
     ConfigureExportsSheet wb, includeIssues
+    ConfigureAnalysisSheet wb, includeIssues
 
     Set PrepareSetupWorkbook = wb
 End Function
@@ -689,6 +776,54 @@ Private Sub ConfigureExportsSheet(ByVal hostBook As Workbook, ByVal includeIssue
         exportsTable.ListColumns("header format").DataBodyRange.Cells(4, 1).Value = "variables names"
     End If
 End Sub
+
+Private Sub AddEmptyAnalysisRow(ByVal hostBook As Workbook)
+    Dim analysisSheet As Worksheet
+    Dim lo As ListObject
+
+    Set analysisSheet = hostBook.Worksheets(ANALYSIS_SHEET)
+    Set lo = analysisSheet.ListObjects("Tab_Univariate_Analysis")
+    'Insert inside the data body (not at the boundary) to avoid
+    'stacked-table conflicts. The ListObject auto-expands and
+    'the new row is empty. Existing data shifts to position 2.
+    analysisSheet.Rows(lo.DataBodyRange.Row).Insert Shift:=xlShiftDown
+End Sub
+
+Private Sub ConfigureAnalysisSheet(ByVal hostBook As Workbook, ByVal includeIssues As Boolean)
+    Dim analysisSheet As Worksheet
+    Dim lo As ListObject
+    Dim typeLabel As String
+
+    Set analysisSheet = hostBook.Worksheets(ANALYSIS_SHEET)
+
+    For Each lo In analysisSheet.ListObjects
+        typeLabel = AnalysisTableTypeLabel(lo.Name)
+        If LenB(typeLabel) > 0 Then
+            analysisSheet.Cells(lo.HeaderRowRange.Row - 2, 1).Value = typeLabel
+        End If
+    Next lo
+End Sub
+
+Private Function AnalysisTableTypeLabel(ByVal tableName As String) As String
+    Select Case tableName
+    Case "Tab_global_summary"
+        AnalysisTableTypeLabel = "Global summary"
+    Case "Tab_Univariate_Analysis"
+        AnalysisTableTypeLabel = "Univariate analysis"
+    Case "Tab_Bivariate_Analysis"
+        AnalysisTableTypeLabel = "Bivariate analysis"
+    Case "Tab_TimeSeries_Analysis"
+        AnalysisTableTypeLabel = "Time series analysis"
+    Case "Tab_Spatial_Analysis"
+        AnalysisTableTypeLabel = "Spatial analysis"
+    Case "Tab_Graph_TimeSeries"
+        AnalysisTableTypeLabel = "Time series graphs"
+    Case "Tab_SpatioTemporal_Analysis"
+        AnalysisTableTypeLabel = "Spatio-temporal analysis"
+    Case Else
+        AnalysisTableTypeLabel = vbNullString
+    End Select
+End Function
 
 Private Function CheckingsContain(ByVal source As BetterArray, ByVal expectedText As String) As Boolean
     Dim idx As Long

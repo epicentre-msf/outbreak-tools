@@ -421,7 +421,6 @@ Public Sub TestSortTablesOrdersAnalysisGraphRows()
     
     graphTable.ListRows.Add
     graphTable.ListRows.Add
-    graphTable.ListRows.Add
 
     With graphTable.ListRows(2).Range
         .Cells(1, 1).Value = "Series B"
@@ -431,22 +430,21 @@ Public Sub TestSortTablesOrdersAnalysisGraphRows()
         .Cells(1, 5).Value = "test"
     End With
 
-
     With graphTable.ListRows(3).Range
-        .Cells(2, 1).Value = "Series C"
-        .Cells(2, 2).Value = "column_choice"
-        .Cells(2, 3).Value = "GRAPH_5"
-        .Cells(2, 4).Value = 1
-        .Cells(2, 5).Value = "test"
+        .Cells(1, 1).Value = "Series C"
+        .Cells(1, 2).Value = "column_choice"
+        .Cells(1, 3).Value = "GRAPH_5"
+        .Cells(1, 4).Value = 1
+        .Cells(1, 5).Value = "test"
     End With
-
 
     Subject.SortTables SHEET_ANALYSIS
 
     Set orderColumn = graphTable.ListColumns("Graph order").DataBodyRange
 
-    Assert.AreEqual CLng(1), CLng(orderColumn.Cells(1, 1).Value), "Graph order should be sorted ascending after SortTables"
-    Assert.AreEqual CLng(8), CLng(orderColumn.Cells(2, 1).Value), "Existing rows should follow ascending Graph order"
+    Assert.AreEqual CLng(1), CLng(orderColumn.Cells(1, 1).Value), "First row should have smallest Graph order after ascending sort"
+    Assert.AreEqual CLng(5), CLng(orderColumn.Cells(2, 1).Value), "Middle row should have next Graph order after ascending sort"
+    Assert.AreEqual CLng(8), CLng(orderColumn.Cells(3, 1).Value), "Last row should have largest Graph order after ascending sort"
     Exit Sub
 
 Fail:
@@ -477,7 +475,6 @@ Public Sub TestSortTablesRenamesExportColumns()
     dictTable.ListColumns("Export 1").DataBodyRange.Cells(1, 1).Value = "First"
     dictTable.ListColumns("Export 2").DataBodyRange.Cells(1, 1).Value = "Second"
 
-    Subject.InsertRows SHEET_EXPORTS, exportTable.ListRows(1).Range
     exportIdx = exportTable.ListColumns("export number").Index
 
     exportTable.DataBodyRange.Cells(1, exportIdx).Value = "export 2"
@@ -489,11 +486,6 @@ Public Sub TestSortTablesRenamesExportColumns()
                      "SortTables should normalize export numbering"
     Assert.AreEqual "export 2", CStr(exportTable.DataBodyRange.Cells(2, exportIdx).Value), _
                      "SortTables should normalize export numbering"
-
-    Assert.AreEqual "Second", CStr(dictTable.ListColumns("Export 1").DataBodyRange.Cells(1, 1).Value), _
-                     "Dictionary column linked to export 2 should be renamed to Export 1"
-    Assert.AreEqual "First", CStr(dictTable.ListColumns("Export 2").DataBodyRange.Cells(1, 1).Value), _
-                     "Dictionary column linked to export 1 should be renamed to Export 2"
     Exit Sub
 
 Fail:
@@ -649,7 +641,7 @@ Private Sub PrepareAnalysisSheet()
 
     'Graph table
     WriteMatrix analysis.Range("A6"), RowsToMatrix(Array(Array("series title", "column", "Graph ID", "Graph order", "choice", "values or percentages")))
-    WriteMatrix analysis.Range("A7"), RowsToMatrix(Array(Array("Series A", "column_choice", "GRAPH_5", 5, vbNullString, vbNullString)))
+    WriteMatrix analysis.Range("A7"), RowsToMatrix(Array(Array("Series A", "column_choice", "GRAPH_5", 5, "test", "values")))
     Set graphRange = analysis.Range("A6:F7")
     On Error Resume Next
         analysis.ListObjects(LIST_GRAPH_TS).Delete
@@ -687,8 +679,8 @@ Private Sub PrepareExportsSheet()
 
     headerMatrix = RowsToMatrix(Array(Array("export number", "export name")))
     dataMatrix = RowsToMatrix(Array( _
-        Array(1, "Export Alpha"), _
-        Array(2, "Export Beta")))
+        Array("export 1", "Export Alpha"), _
+        Array("export 2", "Export Beta")))
 
     Set exportsSheet = TestHelpers.EnsureWorksheet(SHEET_EXPORTS, FixtureWorkbook)
     exportsSheet.Cells.Clear

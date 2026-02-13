@@ -6,6 +6,41 @@ Option Explicit
 '@Folder("CustomTests")
 '@ModuleDescription("Tests for ProgressBar class")
 
+' =============================================================================
+' TestProgressBar
+' =============================================================================
+'
+' @description
+'   Comprehensive test suite for the ProgressBar class, which provides a
+'   cell-range-based visual progress indicator with colour rendering.
+'   Tests cover the full lifecycle of a progress bar: factory construction
+'   with argument validation, value updates with boundary clamping, step-based
+'   increments, completion and reset behaviour, optional status cell messaging,
+'   dynamic maximum adjustment, value format configuration, and visual
+'   rendering of completed/pending cells with formatted text output.
+'
+'   The suite is organised into six logical sections:
+'     1. Factory and Attach   -- Create with explicit/default max, guard
+'                                clauses for Nothing range and zero maximum,
+'                                BarRange property after construction.
+'     2. Update and StepBy    -- Setting values directly, clamping overflow
+'                                and negative values, StepBy increments with
+'                                explicit and default step sizes, Complete
+'                                and Reset methods.
+'     3. Status Cell          -- Attaching an optional single-cell range for
+'                                status messages, verifying default Nothing
+'                                state, and rejecting multi-cell ranges.
+'     4. Maximum Property     -- Changing Maximum at runtime and verifying
+'                                that existing Value is re-clamped accordingly.
+'     5. ConfigureValueFormat -- Guard clause rejecting blank format patterns.
+'     6. Rendering            -- Verifying that Update paints cells with the
+'                                correct completed/pending colours and writes
+'                                a formatted "current / max" string to the
+'                                first cell of the bar range.
+'
+' @depends ProgressBar, IProgressBar, CustomTest, TestHelpers
+' =============================================================================
+
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const PROGRESSBAR_SHEET As String = "ProgressBarFixture"
 
@@ -15,6 +50,11 @@ Private FixtureSheet As Worksheet
 '@section Module lifecycle
 '===============================================================================
 
+' @sub-title ModuleInitialize
+' @details
+'   Runs once before any test in this module. Suppresses screen updates via
+'   BusyApp, ensures the shared test output sheet exists, and creates the
+'   CustomTest harness bound to this module name.
 '@ModuleInitialize
 Private Sub ModuleInitialize()
     BusyApp
@@ -23,6 +63,12 @@ Private Sub ModuleInitialize()
     Assert.SetModuleName "TestProgressBar"
 End Sub
 
+' @sub-title ModuleCleanup
+' @details
+'   Runs once after all tests in this module have executed. Prints accumulated
+'   test results to the output sheet, removes the fixture worksheet used for
+'   progress bar ranges, restores normal application state, and releases
+'   object references.
 '@ModuleCleanup
 Private Sub ModuleCleanup()
     If Not Assert Is Nothing Then
@@ -34,12 +80,22 @@ Private Sub ModuleCleanup()
     Set Assert = Nothing
 End Sub
 
+' @sub-title TestInitialize
+' @details
+'   Runs before each individual test. Suppresses screen updates and creates
+'   (or re-creates) a hidden fixture worksheet that provides cell ranges for
+'   progress bar attachment without visual interference.
 '@TestInitialize
 Private Sub TestInitialize()
     BusyApp
     Set FixtureSheet = EnsureWorksheet(PROGRESSBAR_SHEET, visibility:=xlSheetHidden)
 End Sub
 
+' @sub-title TestCleanup
+' @details
+'   Runs after each individual test. Flushes any pending assertions in the
+'   harness and clears the fixture worksheet so the next test starts with
+'   a clean range surface.
 '@TestCleanup
 Private Sub TestCleanup()
     If Not Assert Is Nothing Then
@@ -53,6 +109,14 @@ End Sub
 '@section Tests - Factory and Attach
 '===============================================================================
 
+' @sub-title TestCreateReturnsInitialisedBar
+' @details
+'   Verifies that ProgressBar.Create returns a properly initialised instance.
+'   Arranges a five-cell range on the fixture sheet and calls Create with an
+'   explicit maximum of 50. Asserts that the returned object is of type
+'   ProgressBar, the Maximum property equals 50, the Value starts at zero,
+'   and PercentComplete starts at zero. This is the primary happy-path test
+'   for factory construction.
 '@TestMethod("ProgressBar")
 Public Sub TestCreateReturnsInitialisedBar()
     CustomTestSetTitles Assert, "ProgressBar", "TestCreateReturnsInitialisedBar"
@@ -78,6 +142,12 @@ TestFail:
     CustomTestLogFailure Assert, "TestCreateReturnsInitialisedBar", Err.Number, Err.Description
 End Sub
 
+' @sub-title TestCreateDefaultMaximum
+' @details
+'   Verifies that Create uses a default maximum of 100 when no explicit
+'   maximum argument is supplied. Arranges a ten-cell range and calls Create
+'   with only the range parameter. Asserts that Maximum equals 100. This
+'   confirms the optional parameter default behaviour.
 '@TestMethod("ProgressBar")
 Public Sub TestCreateDefaultMaximum()
     CustomTestSetTitles Assert, "ProgressBar", "TestCreateDefaultMaximum"
@@ -97,6 +167,13 @@ TestFail:
     CustomTestLogFailure Assert, "TestCreateDefaultMaximum", Err.Number, Err.Description
 End Sub
 
+' @sub-title TestCreateRejectsNothingRange
+' @details
+'   Verifies the guard clause that rejects a Nothing range argument. Calls
+'   Create with Nothing and expects an error to be raised. Uses the
+'   ExpectError pattern: if execution reaches past Create, the test logs
+'   a failure; otherwise the error handler asserts that the error number
+'   matches ProjectError.InvalidArgument.
 '@TestMethod("ProgressBar")
 Public Sub TestCreateRejectsNothingRange()
     CustomTestSetTitles Assert, "ProgressBar", "TestCreateRejectsNothingRange"
@@ -113,6 +190,12 @@ ExpectError:
                      "Create should raise InvalidArgument for Nothing range"
 End Sub
 
+' @sub-title TestCreateRejectsZeroMaximum
+' @details
+'   Verifies the guard clause that rejects a zero maximum value, which would
+'   cause division-by-zero in percent calculations. Arranges a valid range
+'   and calls Create with maximum set to 0. Expects InvalidArgument to be
+'   raised, confirming the factory validates its numeric parameter.
 '@TestMethod("ProgressBar")
 Public Sub TestCreateRejectsZeroMaximum()
     CustomTestSetTitles Assert, "ProgressBar", "TestCreateRejectsZeroMaximum"
@@ -132,6 +215,12 @@ ExpectError:
                      "Create should raise InvalidArgument for zero maximum"
 End Sub
 
+' @sub-title TestAttachSetsBarRange
+' @details
+'   Verifies that the BarRange property correctly exposes the range that was
+'   passed to Create. Arranges a five-cell range, creates the bar with
+'   maximum 10, and asserts that the BarRange address matches the original
+'   range address. This confirms the range reference is stored, not copied.
 '@TestMethod("ProgressBar")
 Public Sub TestAttachSetsBarRange()
     CustomTestSetTitles Assert, "ProgressBar", "TestAttachSetsBarRange"
@@ -154,6 +243,12 @@ End Sub
 '@section Tests - Update and StepBy
 '===============================================================================
 
+' @sub-title TestUpdateSetsValueAndPercent
+' @details
+'   Verifies the core Update method sets both Value and PercentComplete.
+'   Creates a bar with maximum 50 on a ten-cell range, then calls Update
+'   with 25. Asserts Value equals 25 and PercentComplete equals 0.5
+'   (25/50). This is the primary happy-path test for the Update method.
 '@TestMethod("ProgressBar")
 Public Sub TestUpdateSetsValueAndPercent()
     CustomTestSetTitles Assert, "ProgressBar", "TestUpdateSetsValueAndPercent"
@@ -174,6 +269,12 @@ TestFail:
     CustomTestLogFailure Assert, "TestUpdateSetsValueAndPercent", Err.Number, Err.Description
 End Sub
 
+' @sub-title TestUpdateClampsToMaximum
+' @details
+'   Verifies that Update clamps values that exceed the maximum. Creates a bar
+'   with maximum 10 and updates with value 999. Asserts that Value is clamped
+'   to 10 and PercentComplete is exactly 1.0. This covers the overflow edge
+'   case to prevent the bar from exceeding 100%.
 '@TestMethod("ProgressBar")
 Public Sub TestUpdateClampsToMaximum()
     CustomTestSetTitles Assert, "ProgressBar", "TestUpdateClampsToMaximum"
@@ -194,6 +295,11 @@ TestFail:
     CustomTestLogFailure Assert, "TestUpdateClampsToMaximum", Err.Number, Err.Description
 End Sub
 
+' @sub-title TestUpdateClampsNegativeToZero
+' @details
+'   Verifies that Update clamps negative values to zero. Creates a bar with
+'   maximum 10 and updates with value -5. Asserts that Value is clamped to 0.
+'   This covers the underflow edge case to prevent negative progress display.
 '@TestMethod("ProgressBar")
 Public Sub TestUpdateClampsNegativeToZero()
     CustomTestSetTitles Assert, "ProgressBar", "TestUpdateClampsNegativeToZero"
@@ -212,6 +318,14 @@ TestFail:
     CustomTestLogFailure Assert, "TestUpdateClampsNegativeToZero", Err.Number, Err.Description
 End Sub
 
+' @sub-title TestStepByIncrementsValue
+' @details
+'   Verifies that StepBy accumulates value incrementally, both with an
+'   explicit step size and with the default step of 1. Creates a bar with
+'   maximum 100, then steps by 10, by default (1), and by 5 in sequence.
+'   Asserts the cumulative values are 10, 11, and 16 respectively. This
+'   confirms correct accumulation across multiple StepBy calls and that
+'   the optional parameter defaults to 1.
 '@TestMethod("ProgressBar")
 Public Sub TestStepByIncrementsValue()
     CustomTestSetTitles Assert, "ProgressBar", "TestStepByIncrementsValue"
@@ -237,6 +351,13 @@ TestFail:
     CustomTestLogFailure Assert, "TestStepByIncrementsValue", Err.Number, Err.Description
 End Sub
 
+' @sub-title TestCompleteReachesMaximum
+' @details
+'   Verifies that the Complete method sets Value to the Maximum regardless
+'   of the current progress. Creates a bar with maximum 80, updates to 30,
+'   then calls Complete. Asserts that Value equals 80 and PercentComplete
+'   equals 1.0. This confirms Complete provides a shortcut to mark the
+'   bar as fully done.
 '@TestMethod("ProgressBar")
 Public Sub TestCompleteReachesMaximum()
     CustomTestSetTitles Assert, "ProgressBar", "TestCompleteReachesMaximum"
@@ -258,6 +379,12 @@ TestFail:
     CustomTestLogFailure Assert, "TestCompleteReachesMaximum", Err.Number, Err.Description
 End Sub
 
+' @sub-title TestResetClearsValue
+' @details
+'   Verifies that Reset returns the bar to its initial zero state. Creates
+'   a bar with maximum 50, updates to 25, then calls Reset. Asserts that
+'   Value returns to 0 and PercentComplete returns to 0.0. This confirms
+'   Reset is the inverse of Complete, restoring the bar for potential reuse.
 '@TestMethod("ProgressBar")
 Public Sub TestResetClearsValue()
     CustomTestSetTitles Assert, "ProgressBar", "TestResetClearsValue"
@@ -282,6 +409,14 @@ End Sub
 '@section Tests - Status Cell
 '===============================================================================
 
+' @sub-title TestAttachStatusCellWritesMessages
+' @details
+'   Verifies that a status cell can be attached and that Update writes
+'   status messages to it. Arranges a progress bar and attaches cell G1 as
+'   the status cell. First asserts that the StatusCell address matches G1.
+'   Then calls Update with value 5 and message "Processing..." and asserts
+'   that G1 contains the expected text. This covers both the attachment and
+'   the message-writing behaviour in a single flow.
 '@TestMethod("ProgressBar")
 Public Sub TestAttachStatusCellWritesMessages()
     CustomTestSetTitles Assert, "ProgressBar", "TestAttachStatusCellWritesMessages"
@@ -307,6 +442,13 @@ TestFail:
     CustomTestLogFailure Assert, "TestAttachStatusCellWritesMessages", Err.Number, Err.Description
 End Sub
 
+' @sub-title TestStatusCellIsNothingByDefault
+' @details
+'   Verifies that StatusCell is Nothing when no cell has been explicitly
+'   attached. Creates a bar without calling AttachStatusCell and asserts
+'   that the StatusCell property returns Nothing. This confirms the safe
+'   default state that prevents null reference errors during Update calls
+'   when no status output is needed.
 '@TestMethod("ProgressBar")
 Public Sub TestStatusCellIsNothingByDefault()
     CustomTestSetTitles Assert, "ProgressBar", "TestStatusCellIsNothingByDefault"
@@ -323,6 +465,13 @@ TestFail:
     CustomTestLogFailure Assert, "TestStatusCellIsNothingByDefault", Err.Number, Err.Description
 End Sub
 
+' @sub-title TestAttachStatusCellRejectsMultiCellRange
+' @details
+'   Verifies the guard clause that rejects a multi-cell range as a status
+'   cell. Creates a bar and attempts to attach a two-cell range (G1:H1).
+'   Expects InvalidArgument to be raised. The status cell must be a single
+'   cell because the bar writes a single text message to it, and a
+'   multi-cell range would produce ambiguous output behaviour.
 '@TestMethod("ProgressBar")
 Public Sub TestAttachStatusCellRejectsMultiCellRange()
     CustomTestSetTitles Assert, "ProgressBar", "TestAttachStatusCellRejectsMultiCellRange"
@@ -344,6 +493,13 @@ End Sub
 '@section Tests - Maximum Property
 '===============================================================================
 
+' @sub-title TestMaximumSetterReclampsValue
+' @details
+'   Verifies that changing Maximum at runtime re-clamps the existing Value.
+'   Creates a bar with maximum 100 and updates to 80. Then sets Maximum to 50,
+'   which is below the current Value. Asserts that Maximum is now 50, Value
+'   has been clamped down to 50, and PercentComplete is 1.0. This confirms
+'   that the setter enforces the value-within-bounds invariant dynamically.
 '@TestMethod("ProgressBar")
 Public Sub TestMaximumSetterReclampsValue()
     CustomTestSetTitles Assert, "ProgressBar", "TestMaximumSetterReclampsValue"
@@ -370,6 +526,13 @@ End Sub
 '@section Tests - ConfigureValueFormat
 '===============================================================================
 
+' @sub-title TestConfigureValueFormatRejectsBlank
+' @details
+'   Verifies that ConfigureValueFormat rejects an empty format pattern string.
+'   Creates a bar and calls ConfigureValueFormat with vbNullString. Expects
+'   InvalidArgument to be raised. A blank pattern would produce empty or
+'   meaningless rendered text in the bar cells, so the guard clause prevents
+'   misconfiguration.
 '@TestMethod("ProgressBar")
 Public Sub TestConfigureValueFormatRejectsBlank()
     CustomTestSetTitles Assert, "ProgressBar", "TestConfigureValueFormatRejectsBlank"
@@ -391,6 +554,14 @@ End Sub
 '@section Tests - Rendering
 '===============================================================================
 
+' @sub-title TestRenderPaintsCompletedCells
+' @details
+'   Verifies that Update triggers visual rendering with correct cell colours.
+'   Creates a bar on a five-cell range with maximum 5 and updates to 3. Then
+'   iterates over each cell in the range, counting cells painted with the
+'   completed colour (hex 4DB870, a green) and the pending colour (hex EEF1F5,
+'   a light grey). Asserts 3 completed and 2 pending cells, confirming that
+'   the rendering maps progress value to proportional cell colouring.
 '@TestMethod("ProgressBar")
 Public Sub TestRenderPaintsCompletedCells()
     CustomTestSetTitles Assert, "ProgressBar", "TestRenderPaintsCompletedCells"
@@ -426,6 +597,13 @@ TestFail:
     CustomTestLogFailure Assert, "TestRenderPaintsCompletedCells", Err.Number, Err.Description
 End Sub
 
+' @sub-title TestRenderWritesFormattedValueToFirstCell
+' @details
+'   Verifies that Update writes a formatted "current / max" string into the
+'   first cell of the bar range. Creates a bar with maximum 200 on a
+'   five-cell range and updates to 50. Reads the text from the first cell
+'   and asserts it equals "50 / 200". This confirms the default value
+'   format pattern renders correctly in the visible cell.
 '@TestMethod("ProgressBar")
 Public Sub TestRenderWritesFormattedValueToFirstCell()
     CustomTestSetTitles Assert, "ProgressBar", "TestRenderWritesFormattedValueToFirstCell"

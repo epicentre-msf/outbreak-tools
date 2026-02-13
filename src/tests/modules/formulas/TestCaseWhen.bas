@@ -6,11 +6,17 @@ Option Explicit
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 
 
+'@Folder("CustomTests")
+'@ModuleDescription("Verifies the CaseWhen parser")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing
 
-'@Folder("CustomTests")
-
-'@ModuleDescription("Verifies the CaseWhen parser")
+'@description
+'Tests the CaseWhen class, which parses CASE_WHEN custom formulas into nested
+'Excel IF statements. The suite covers valid formulas with and without default
+'branches, category label extraction, and rejection of malformed input. Each
+'test creates a fresh ICaseWhen instance via the CreateCaseWhen helper using
+'module-level formula constants as fixtures.
+'@depends CaseWhen, ICaseWhen, BetterArray, CustomTest, ICustomTest
 
 Private Const VALID_FORMULA_DEFAULT As String = _
     "CASE_WHEN(A1=""Yes"", ""Choice is A"", B1>0, ""Choice is B"", ""Default Choice"")"
@@ -24,15 +30,19 @@ Private casewhenObject As ICaseWhen
 '@section Helpers
 '===============================================================================
 
-'Instantiate a CaseWhen parser for the provided formula.
+'@sub-title Instantiate a CaseWhen parser for the provided formula
 Private Function CreateCaseWhen(ByVal formula As String) As ICaseWhen
     Set CreateCaseWhen = CaseWhen.Create(formula)
 End Function
 
-'@section Module lifecycle
+'@section Module Lifecycle
 '===============================================================================
 
 '@ModuleInitialize
+'@sub-title Prepare the test output sheet and assertion engine
+'@details
+'Creates the shared output worksheet (if absent) and initialises the CustomTest
+'assertion object for the entire module run.
 Private Sub ModuleInitialize()
     EnsureWorksheet TEST_OUTPUT_SHEET, clearSheet:=False
     Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
@@ -40,6 +50,10 @@ Private Sub ModuleInitialize()
 End Sub
 
 '@ModuleCleanup
+'@sub-title Print results and release module-level references
+'@details
+'Writes accumulated test results to the output sheet, then tears down the
+'assertion object and the shared CaseWhen reference.
 Private Sub ModuleCleanup()
     If Not Assert Is Nothing Then
         Assert.PrintResults TEST_OUTPUT_SHEET
@@ -49,11 +63,18 @@ Private Sub ModuleCleanup()
 End Sub
 
 '@TestInitialize
+'@sub-title Reset the CaseWhen instance before each test
+'@details
+'Clears the module-level casewhenObject so each test begins with a clean state.
 Private Sub TestInitialize()
     Set casewhenObject = Nothing
 End Sub
 
 '@TestCleanup
+'@sub-title Flush assertion state and release the CaseWhen instance
+'@details
+'Flushes any buffered assertion output and resets the casewhenObject reference
+'after each test method completes.
 Private Sub TestCleanup()
     If Not Assert Is Nothing Then
         Assert.Flush
@@ -65,6 +86,13 @@ End Sub
 '===============================================================================
 
 '@TestMethod("CaseWhen")
+'@sub-title Verify a valid formula with default branch parses to nested IF
+'@details
+'Arranges a CASE_WHEN formula containing two condition/result pairs plus a
+'default branch. Acts by creating the parser and reading the parsedFormula
+'property. Asserts that the formula is marked valid and that the output matches
+'the expected nested IF(condition, result, IF(...)) structure with the default
+'value as the innermost else.
 Public Sub TestValidFormulaParsesToNestedIf()
     CustomTestSetTitles Assert, "CaseWhen", "TestValidFormulaParsesToNestedIf"
     On Error GoTo Fail
@@ -84,6 +112,12 @@ Fail:
 End Sub
 
 '@TestMethod("CaseWhen")
+'@sub-title Verify category extraction returns all branch labels
+'@details
+'Arranges a valid CASE_WHEN formula with two condition branches and a default.
+'Acts by reading the Categories property which returns a BetterArray of labels.
+'Asserts that exactly three categories are extracted in order: the two branch
+'result strings and the default value.
 Public Sub TestCategoriesExtractLabels()
     CustomTestSetTitles Assert, "CaseWhen", "TestCategoriesExtractLabels"
     On Error GoTo Fail
@@ -104,6 +138,11 @@ Fail:
 End Sub
 
 '@TestMethod("CaseWhen")
+'@sub-title Verify missing default produces an empty-string else branch
+'@details
+'Arranges a CASE_WHEN formula with two condition/result pairs but no trailing
+'default argument. Acts by parsing the formula and reading the output. Asserts
+'that the innermost else of the nested IF is an empty string literal ("").
 Public Sub TestMissingDefaultProducesEmptyString()
     CustomTestSetTitles Assert, "CaseWhen", "TestMissingDefaultProducesEmptyString"
     On Error GoTo Fail
@@ -121,6 +160,12 @@ Fail:
 End Sub
 
 '@TestMethod("CaseWhen")
+'@sub-title Verify an invalid formula is rejected with empty outputs
+'@details
+'Arranges a malformed formula that wraps CASE_WHEN inside IF with unbalanced
+'parentheses. Acts by creating the parser and querying Valid, parsedFormula,
+'and Categories. Asserts that the formula is marked invalid, the parsed output
+'is an empty string, and the category collection has zero length.
 Public Sub TestInvalidFormulaRejected()
     CustomTestSetTitles Assert, "CaseWhen", "TestInvalidFormulaRejected"
     On Error GoTo Fail

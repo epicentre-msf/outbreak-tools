@@ -6,10 +6,20 @@ Option Explicit
 '@Folder("CustomTests")
 '@ModuleDescription("Tests for CrossTableFormula class")
 
-' CrossTableFormula tests focus on factory validation and the Valid property.
-' Full formula writing tests require a complete linelist workbook with
-' dictionary tables and formula data sheets, and are exercised through
-' integration tests in TestAnalysisOutput.
+'@description
+'Validates the CrossTableFormula class, which writes Excel formulas into
+'cross-table cells on an analysis output sheet. Tests cover factory
+'rejection of Nothing parameters (cross-table and formula data), valid
+'object creation, and the Valid property that checks whether the table's
+'summary function is recognised. Full formula-writing tests require a
+'complete linelist workbook with dictionary tables and formula data sheets,
+'and are exercised through integration tests in TestAnalysisOutput. The
+'fixture builds a minimal CrossTable via stubs for the dictionary, linelist
+'data, and translation dependencies.
+'@depends CrossTableFormula, ICrossTableFormula, CrossTable, ICrossTable,
+'  FormulaData, IFormulaData, TableSpecs, ITableSpecs, TableSpecsLinelistStub,
+'  AnalysisDictionaryStub, LinelistSpecsTranslationStub, ILLdictionary,
+'  CustomTest, TestHelpers
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const FIXTURE_SHEET As String = "CTFormulaFixture"
@@ -35,6 +45,12 @@ Private transStub As LinelistSpecsTranslationStub
 '@section Helpers
 '===============================================================================
 
+'@sub-title Populate the fixture worksheet with a table-scope header and data rows.
+'@details
+'Creates or clears the fixture sheet, writes the table scope name in cell A1,
+'places the ten-column header row at row 3, and writes any supplied data rows
+'starting at row 4. The resulting layout mirrors a minimal analysis
+'dictionary sheet that TableSpecs.Create can consume.
 Private Sub BuildFixture(ByVal tableScopeName As String, dataRows As Variant)
     Dim sh As Worksheet
     Dim headerArray As Variant
@@ -56,12 +72,14 @@ Private Sub BuildFixture(ByVal tableScopeName As String, dataRows As Variant)
     End If
 End Sub
 
+'@sub-title Return the header range of the fixture sheet.
 Private Function FixtureHeaderRange() As Range
     Dim sh As Worksheet
     Set sh = ThisWorkbook.Worksheets(FIXTURE_SHEET)
     Set FixtureHeaderRange = sh.Range(sh.Cells(3, 1), sh.Cells(3, NUM_COLUMNS))
 End Function
 
+'@sub-title Return a single data row from the fixture sheet by index.
 Private Function FixtureDataRange(ByVal dataRowIndex As Long) As Range
     Dim sh As Worksheet
     Dim rowNum As Long
@@ -70,6 +88,7 @@ Private Function FixtureDataRange(ByVal dataRowIndex As Long) As Range
     Set FixtureDataRange = sh.Range(sh.Cells(rowNum, 1), sh.Cells(rowNum, NUM_COLUMNS))
 End Function
 
+'@sub-title Build a TableSpecs instance from the fixture header and a data row.
 Private Function CreateSpecs(ByVal dataRowIndex As Long) As ITableSpecs
     Set CreateSpecs = TableSpecs.Create( _
         FixtureHeaderRange(), _
@@ -77,10 +96,17 @@ Private Function CreateSpecs(ByVal dataRowIndex As Long) As ITableSpecs
         dictStub)
 End Function
 
+'@sub-title Return a clean output worksheet for cross-table and formula builds.
 Private Function OutputSheet() As Worksheet
     Set OutputSheet = EnsureWorksheet(OUTPUT_SHEET, clearSheet:=True, visibility:=xlSheetHidden)
 End Function
 
+'@sub-title Build a CrossTable from specs, calling Build to populate named ranges.
+'@details
+'Creates an output worksheet, constructs a CrossTable from the supplied
+'specs and linelist data stub, calls Build to write the table layout,
+'and returns the fully built ICrossTable. Used by tests that need a
+'valid cross-table before exercising CrossTableFormula.
 Private Function BuildCrossTable(ByVal specs As ITableSpecs) As ICrossTable
     Dim sh As Worksheet
     Set sh = OutputSheet()
@@ -93,6 +119,13 @@ End Function
 '@section Module lifecycle
 '===============================================================================
 
+'@sub-title Set up the test harness, stubs, and translation entries.
+'@details
+'Suppresses screen updates, creates the CustomTest assertion object, and
+'initialises the three stubs: AnalysisDictionaryStub for dictionary
+'lookups, LinelistSpecsTranslationStub with standard message keys
+'(MSG_NA, MSG_Total, MSG_Percent, etc.), and TableSpecsLinelistStub
+'wired to both. These stubs remain alive for all tests in the module.
 '@ModuleInitialize
 Private Sub ModuleInitialize()
     BusyApp
@@ -114,6 +147,11 @@ Private Sub ModuleInitialize()
     lDataStub.SetTranslation transStub
 End Sub
 
+'@sub-title Print test results and tear down all fixture resources.
+'@details
+'Outputs the accumulated test results to the output sheet, deletes both
+'fixture and output worksheets, restores the Excel application state,
+'and releases all stub and assertion references.
 '@ModuleCleanup
 Private Sub ModuleCleanup()
     If Not Assert Is Nothing Then
@@ -128,11 +166,13 @@ Private Sub ModuleCleanup()
     Set Assert = Nothing
 End Sub
 
+'@sub-title Suppress screen updates before each test.
 '@TestInitialize
 Private Sub TestInitialize()
     BusyApp
 End Sub
 
+'@sub-title Flush assertion state after each test.
 '@TestCleanup
 Private Sub TestCleanup()
     If Not Assert Is Nothing Then
@@ -143,6 +183,12 @@ End Sub
 '@section Factory validation tests
 '===============================================================================
 
+'@sub-title Verify Create rejects Nothing for the cross-table parameter.
+'@details
+'Arranges a valid FormulaData instance from a fresh output worksheet and
+'passes Nothing as the cross-table argument to CrossTableFormula.Create.
+'Asserts that the returned object is Nothing, confirming the factory
+'guards against a missing cross-table reference.
 '@TestMethod("CrossTableFormula")
 Public Sub TestCreateRejectsNothingTable()
     CustomTestSetTitles Assert, "CrossTableFormula", "TestCreateRejectsNothingTable"
@@ -168,6 +214,12 @@ TestFail:
     CustomTestLogFailure Assert, "TestCreateRejectsNothingTable", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify Create rejects Nothing for the formula-data parameter.
+'@details
+'Builds a valid CrossTable from a univariate fixture and passes Nothing
+'as the formula-data argument to CrossTableFormula.Create. Asserts that
+'the returned object is Nothing, confirming the factory guards against
+'a missing FormulaData reference.
 '@TestMethod("CrossTableFormula")
 Public Sub TestCreateRejectsNothingFormulaData()
     CustomTestSetTitles Assert, "CrossTableFormula", "TestCreateRejectsNothingFormulaData"
@@ -194,6 +246,11 @@ TestFail:
     CustomTestLogFailure Assert, "TestCreateRejectsNothingFormulaData", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify Create returns a valid CrossTableFormula with all valid arguments.
+'@details
+'Builds a valid CrossTable and FormulaData, then calls
+'CrossTableFormula.Create with both. Asserts that the returned object
+'is not Nothing, confirming successful factory initialisation.
 '@TestMethod("CrossTableFormula")
 Public Sub TestCreateReturnsValidObject()
     CustomTestSetTitles Assert, "CrossTableFormula", "TestCreateReturnsValidObject"
@@ -226,6 +283,13 @@ End Sub
 '@section Valid property tests
 '===============================================================================
 
+'@sub-title Verify Valid returns False when the summary function is not recognised.
+'@details
+'Arranges a univariate fixture whose function column contains
+'"InvalidFunc" instead of a known summary function (N, mean, etc.).
+'Builds the CrossTable and CrossTableFormula, then asserts that the
+'Valid property returns False. This guards against formula-writing
+'attempts with unsupported summary functions.
 '@TestMethod("CrossTableFormula")
 Public Sub TestValidReturnsFalseForInvalidFormula()
     CustomTestSetTitles Assert, "CrossTableFormula", "TestValidReturnsFalseForInvalidFormula"

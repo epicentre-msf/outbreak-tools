@@ -848,6 +848,8 @@ Private Function ComputeTableScope() As AnalysisTableScope
         ComputeTableScope = ScopeSpatial
     Case "spatio-temporal analysis"
         ComputeTableScope = ScopeSpatioTemporal
+    Case "time series graphs"
+        ComputeTableScope = ScopeTimeSeriesGraph
     Case Else
         ThrowError ErrorUnexpectedState, _
                    "Could not find the table scope. Actual type is: " & anaType

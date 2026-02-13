@@ -49,9 +49,9 @@ Private Const TRANSLATION_HOST_START_COLUMN As Long = 2
 Private Const SOURCE_START_ROW As Long = 1
 Private Const SOURCE_START_COLUMN As Long = 1
 Private Const TRANSLATION_SOURCE_START_ROW As Long = 1
-Private Const TRANSLATION_SOURCE_START_COLUMN As Long = 1
+Private Const TRANSLATION_SOURCE_START_COLUMN As Long = 2
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
-Private KeepExportArtifacts As Boolean
+Private KeepExportArtifacts As Boolean 
 
 '@section Module lifecycle
 '===============================================================================
