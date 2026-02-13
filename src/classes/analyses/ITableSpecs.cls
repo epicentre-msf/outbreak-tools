@@ -36,6 +36,7 @@ Public Enum AnalysisTableScope
     ScopeTimeSeries = 4
     ScopeSpatial = 5
     ScopeSpatioTemporal = 6
+    ScopeTimeSeriesGraph = 7
 End Enum
 
 

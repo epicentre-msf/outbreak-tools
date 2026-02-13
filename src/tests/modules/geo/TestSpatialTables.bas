@@ -6,13 +6,17 @@ Option Explicit
 '@Folder("CustomTests")
 '@ModuleDescription("Tests for SpatialTables class")
 
-' SpatialTables tests focus on factory validation.
-' Full integration tests require a complete linelist workbook with a
-' "spatial_tables__" worksheet, ICrossTable, and IFormulas — making them
-' unsuitable for unit tests. These tests verify:
-' - Factory rejects Nothing cross-table
-' - Factory rejects cross-table whose workbook lacks spatial sheet
-' - Exists returns False when no spatial ListObjects exist
+'@description
+'Validates the SpatialTables class, which creates spatial ListObjects on
+'the "spatial_tables__" worksheet at linelist build time. Tests focus on
+'factory validation since full integration tests require a complete
+'linelist workbook with ICrossTable and IFormulas dependencies. The fixture
+'creates minimal worksheets for factory rejection scenarios and verifies
+'that spatial ListObjects do not exist before Add is called. Tests verify:
+'factory rejects Nothing cross-table; missing spatial sheet scenario is
+'documented; Exists returns False when no spatial ListObjects have been
+'created.
+'@depends SpatialTables, ISpatialTables, CustomTest, TestHelpers
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const SPATIAL_SHEET As String = "spatial_tables__"
@@ -23,6 +27,11 @@ Private Assert As ICustomTest
 '@section Module lifecycle
 '===============================================================================
 
+'@sub-title Initialise the test module before any tests run.
+'@details
+'Suppresses screen updates via BusyApp, ensures the test output sheet
+'exists, creates the CustomTest assertion object targeting that sheet,
+'and sets the module name for result grouping.
 '@ModuleInitialize
 Private Sub ModuleInitialize()
     BusyApp
@@ -31,6 +40,11 @@ Private Sub ModuleInitialize()
     Assert.SetModuleName "TestSpatialTables"
 End Sub
 
+'@sub-title Tear down the module after all tests complete.
+'@details
+'Prints accumulated test results to the output sheet, restores the
+'application state via RestoreApp, releases the assertion object, and
+'deletes all temporary worksheets created during the test run.
 '@ModuleCleanup
 Private Sub ModuleCleanup()
     If Not Assert Is Nothing Then
@@ -41,11 +55,19 @@ Private Sub ModuleCleanup()
     DeleteWorksheets SPATIAL_SHEET, OUTPUT_SHEET
 End Sub
 
+'@sub-title Reset state before each individual test.
+'@details
+'Suppresses screen updates so worksheet operations during each test do
+'not trigger flickering or event cascades.
 '@TestInitialize
 Private Sub TestInitialize()
     BusyApp
 End Sub
 
+'@sub-title Clean up after each individual test.
+'@details
+'Flushes any pending assertion results to the output sheet so each test's
+'outcome is recorded before the next test begins.
 '@TestCleanup
 Private Sub TestCleanup()
     If Not Assert Is Nothing Then
@@ -56,6 +78,11 @@ End Sub
 '@section Factory validation tests
 '===============================================================================
 
+'@sub-title Verify Create returns Nothing when the cross-table argument is Nothing.
+'@details
+'Acts by calling SpatialTables.Create with Nothing under On Error Resume
+'Next. Asserts that the result is Nothing, confirming the guard clause
+'rejects invalid input without raising an unhandled error.
 '@TestMethod("SpatialTables")
 Public Sub TestCreateRejectsNothing()
     CustomTestSetTitles Assert, "SpatialTables", "TestCreateRejectsNothing"
@@ -74,6 +101,14 @@ TestFail:
     CustomTestLogFailure Assert, "TestCreateRejectsNothing", Err.Number, Err.Description
 End Sub
 
+'@sub-title Document the expected behaviour when the spatial sheet is missing.
+'@details
+'Arranges an output worksheet without the required "spatial_tables__"
+'sheet, explicitly deleting it if present. This test documents that
+'SpatialTables.Create should raise an error when the workbook lacks the
+'spatial sheet. A real ICrossTable cannot be easily constructed without
+'full table specs, so this test serves as a placeholder that confirms
+'the expected behaviour is captured in the test suite.
 '@TestMethod("SpatialTables")
 Public Sub TestCreateRejectsMissingSpatialSheet()
     CustomTestSetTitles Assert, "SpatialTables", "TestCreateRejectsMissingSpatialSheet"
@@ -103,6 +138,13 @@ TestFail:
     CustomTestLogFailure Assert, "TestCreateRejectsMissingSpatialSheet", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify Exists returns False when no spatial ListObjects have been created.
+'@details
+'Arranges a "spatial_tables__" worksheet with a "listofgeovars" ListObject
+'and an output worksheet, but without any spatial admin-level ListObjects.
+'Acts by checking whether a ListObject named "spatial_adm1_test_sp1" exists
+'on the spatial sheet. Asserts that it does not, confirming that spatial
+'tables are absent before the Add method has been called.
 '@TestMethod("SpatialTables")
 Public Sub TestExistsReturnsFalseWhenNoTablesExist()
     CustomTestSetTitles Assert, "SpatialTables", "TestExistsReturnsFalseWhenNoTablesExist"

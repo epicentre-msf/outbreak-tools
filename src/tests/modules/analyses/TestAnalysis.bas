@@ -7,6 +7,18 @@ Option Explicit
 '@Folder("CustomTests")
 '@Folder("Tests")
 
+'@description
+'Validates the Analysis class, which manages analysis worksheets containing
+'multiple ListObject tables for global summary, univariate, bivariate, time
+'series, spatial, and spatio-temporal analyses. Tests cover factory
+'initialisation (Create, Self, Wksh), row management (AddRows, RemoveRows,
+'InsertRows, DeleteRows), data exchange (Import, Export, Translate), sorting,
+'and diagnostic logging via the IChecking interface. The fixture uses
+'AnalysisTestFixture helpers to build throwaway worksheets with pre-populated
+'analysis tables, and tears down all temporary sheets on cleanup to ensure
+'test isolation.
+'@depends Analysis, IAnalysis, ITranslationObject, TranslationObject, IChecking, Checking, BetterArray, CustomTest, AnalysisTestFixture, TestHelpers
+
 Private Assert As ICustomTest
 Private CoreAnalysis As IAnalysis
 Private Translator As ITranslationObject
@@ -16,6 +28,7 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 '@section Helpers
 '===============================================================================
 
+'@sub-title Reset CoreAnalysis to a fresh instance backed by a new fixture sheet.
 Private Sub ResetAnalysis(Optional ByVal sectionValue As String = "Initial Section")
     Dim hostSheet As Worksheet
     Set hostSheet = PrepareAnalysisSheet(sectionValue)
@@ -25,6 +38,12 @@ End Sub
 '@section Module lifecycle
 '===============================================================================
 
+'@sub-title Initialise the test module before any tests run.
+'@details
+'Suppresses screen updates via BusyApp, creates the CustomTest assertion
+'object targeting the test output sheet, sets the module name for result
+'grouping, builds the default CoreAnalysis fixture, and prepares a shared
+'Translator instance for translation tests.
 '@ModuleInitialize
 Public Sub ModuleInitialize()
     BusyApp
@@ -34,6 +53,11 @@ Public Sub ModuleInitialize()
     Set Translator = CreateAnalysisTranslator()
 End Sub
 
+'@sub-title Tear down the module after all tests complete.
+'@details
+'Prints accumulated test results to the output sheet, removes all temporary
+'analysis worksheets created during the test run, and releases object
+'references to avoid memory leaks.
 '@ModuleCleanup
 Public Sub ModuleCleanup()
     If Not Assert Is Nothing Then
@@ -47,6 +71,11 @@ Public Sub ModuleCleanup()
     Set Assert = Nothing
 End Sub
 
+'@sub-title Reset state before each individual test.
+'@details
+'Suppresses screen updates, rebuilds CoreAnalysis from a clean fixture
+'worksheet, and creates a fresh Translator so each test starts with
+'pristine objects unaffected by prior test mutations.
 '@TestInitialize
 Public Sub TestInitialize()
     BusyApp
@@ -54,6 +83,10 @@ Public Sub TestInitialize()
     Set Translator = CreateAnalysisTranslator()
 End Sub
 
+'@sub-title Clean up after each individual test.
+'@details
+'Flushes any pending assertion results to the output sheet and releases
+'the CoreAnalysis reference so the next test starts without stale state.
 '@TestCleanup
 Public Sub TestCleanup()
     If Not Assert Is Nothing Then
@@ -65,6 +98,12 @@ End Sub
 '@section Tests
 '===============================================================================
 
+'@sub-title Verify Create binds the provided worksheet to the Analysis instance.
+'@details
+'Arranges a fresh worksheet with a single analysis table via
+'BuildAnalysisTable. Acts by calling Analysis.Create with that sheet.
+'Asserts that the Wksh property returns the same worksheet that was
+'provided. Cleans up the temporary worksheet on both success and failure.
 '@TestMethod("Analysis")
 Public Sub TestCreateInitialisesWorksheet()
     CustomTestSetTitles Assert, "Analysis", "TestCreateInitialisesWorksheet"
@@ -88,6 +127,11 @@ Fail:
     CustomTestLogFailure Assert, "TestCreateInitialisesWorksheet", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify Create raises ObjectNotInitialized when worksheet is Nothing.
+'@details
+'Acts by calling Analysis.Create with Nothing as the worksheet argument.
+'Asserts that the error number matches ProjectError.ObjectNotInitialized,
+'confirming the guard clause rejects invalid input.
 '@TestMethod("Analysis")
 Public Sub TestCreateRaisesWhenWorksheetMissing()
     CustomTestSetTitles Assert, "Analysis", "TestCreateRaisesWhenWorksheetMissing"
@@ -105,6 +149,12 @@ Handler:
                    "Create should raise ObjectNotInitialized for missing worksheet"
 End Sub
 
+'@sub-title Verify Self returns the same object reference as the instance.
+'@details
+'Arranges by creating a raw Analysis instance via New and assigning its
+'Wksh property directly. Acts by calling Self on the concrete instance.
+'Asserts that the returned IAnalysis reference is the same object (Is)
+'as the original instance, confirming the factory pattern wiring.
 '@TestMethod("Analysis")
 Public Sub TestSelfReturnsSameInstance()
     CustomTestSetTitles Assert, "Analysis", "TestSelfReturnsSameInstance"
@@ -131,6 +181,12 @@ Fail:
     CustomTestLogFailure Assert, "TestSelfReturnsSameInstance", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify the Wksh property round-trips the assigned worksheet.
+'@details
+'Arranges by creating an Analysis via the factory with a known worksheet.
+'Acts by reading Wksh back from the IAnalysis interface. Asserts that the
+'returned worksheet object Is the same as the one originally supplied,
+'confirming that Create correctly stores and exposes the host sheet.
 '@TestMethod("Analysis")
 Public Sub TestWkshPropertyRoundtrips()
     CustomTestSetTitles Assert, "Analysis", "TestWkshPropertyRoundtrips"
@@ -155,6 +211,12 @@ Fail:
     CustomTestLogFailure Assert, "TestWkshPropertyRoundtrips", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify HasCheckings is False and CheckingValues is Nothing on a fresh instance.
+'@details
+'Uses the default CoreAnalysis fixture which has had no operations that
+'produce diagnostics. Asserts that HasCheckings returns False and that
+'CheckingValues returns Nothing, confirming the initial clean state of the
+'internal IChecking store.
 '@TestMethod("Analysis")
 Public Sub TestHasCheckingsReturnsNothingWhenEmpty()
     CustomTestSetTitles Assert, "Analysis", "TestHasCheckingsReturnsNothingWhenEmpty"
@@ -168,6 +230,13 @@ Fail:
     CustomTestLogFailure Assert, "TestHasCheckingsReturnsNothingWhenEmpty", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify AddRows appends rows and RemoveRows trims blank trailing rows.
+'@details
+'Arranges by capturing the initial row count of the global summary table
+'via AnalysisTestFixture.AnalysisTable. Acts by calling AddRows then
+'RemoveRows. Asserts that AddRows increased the count by the default
+'increment (5) and that RemoveRows returned the count to the original
+'baseline, confirming both operations manipulate the correct table.
 '@TestMethod("Analysis")
 Public Sub TestAddAndRemoveRows()
     CustomTestSetTitles Assert, "Analysis", "TestAddAndRemoveRows"
@@ -192,6 +261,13 @@ Fail:
 CustomTestLogFailure Assert, "TestAddAndRemoveRows", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify AddRows targets only the table identified by the header instruction.
+'@details
+'Arranges a full analysis worksheet whose cell A1 instruction references
+'univariate analysis. Captures baseline row counts for both the univariate
+'and global summary tables. Acts by calling AddRows. Asserts that the
+'univariate table grew by the default increment while the summary table
+'remained unchanged, confirming table-targeting logic.
 '@TestMethod("Analysis")
 Public Sub TestAddRowsTargetsSelectedTable()
     CustomTestSetTitles Assert, "Analysis", "TestAddRowsTargetsSelectedTable"
@@ -224,6 +300,13 @@ Fail:
     CustomTestLogFailure Assert, "TestAddRowsTargetsSelectedTable", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify AddRows assigns sequential Series IDs to time series tables.
+'@details
+'Arranges a full analysis worksheet targeting time series analysis. Acts
+'by calling AddRows which appends rows to the time series table. Asserts
+'that the Series ID column contains sequential identifiers starting at
+'"Series 1" and ending at "Series 6" (one existing row plus five appended),
+'confirming the ID generation logic fills newly added rows.
 '@TestMethod("Analysis")
 Public Sub TestAddRowsAssignsIdsForTimeSeries()
     CustomTestSetTitles Assert, "Analysis", "TestAddRowsAssignsIdsForTimeSeries"
@@ -250,6 +333,15 @@ Fail:
     CustomTestLogFailure Assert, "TestAddRowsAssignsIdsForTimeSeries", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify InsertRows adds rows matching the selection height and shifts stacked tables.
+'@details
+'Arranges a full analysis worksheet and captures the baseline row count
+'of the global summary table and the header row position of the univariate
+'table stacked below it. Acts by calling InsertRows with a two-row
+'selection from the summary table. Asserts that the summary table gained
+'exactly two rows, that the univariate table header shifted down by two
+'(confirming worksheet-level row insertion), and that the inserted cells
+'at the anchor position are blank.
 '@TestMethod("Analysis")
 Public Sub TestInsertRowsUsesSelectionHeight()
     CustomTestSetTitles Assert, "Analysis", "TestInsertRowsUsesSelectionHeight"
@@ -288,6 +380,12 @@ Fail:
     CustomTestLogFailure Assert, "TestInsertRowsUsesSelectionHeight", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify DeleteRows removes the selected row from the analysis table.
+'@details
+'Arranges a full analysis worksheet and captures the baseline row count
+'of the global summary table. Acts by selecting the first data row and
+'calling DeleteRows with that range. Asserts that the table lost exactly
+'one row, confirming targeted row deletion works correctly.
 '@TestMethod("Analysis")
 Public Sub TestDeleteRowsRemovesSelectedRows()
     CustomTestSetTitles Assert, "Analysis", "TestDeleteRowsRemovesSelectedRows"
@@ -316,6 +414,13 @@ Fail:
     CustomTestLogFailure Assert, "TestDeleteRowsRemovesSelectedRows", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify RemoveRows preserves populated rows in spatio-temporal tables.
+'@details
+'Arranges a full analysis worksheet targeting spatio-temporal analysis
+'with five data rows (four populated and one blank). Acts by calling
+'RemoveRows. Asserts that the spatio-temporal table retains exactly four
+'rows, confirming that RemoveRows prunes only trailing blank rows and
+'preserves all populated data.
 '@TestMethod("Analysis")
 Public Sub TestRemoveRowsPreservesMinimumForSpatioTemporal()
     CustomTestSetTitles Assert, "Analysis", "TestRemoveRowsPreservesMinimumForSpatioTemporal"
@@ -337,6 +442,14 @@ Fail:
     CustomTestLogFailure Assert, "TestRemoveRowsPreservesMinimumForSpatioTemporal", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify AddRows logs a warning when the targeted ListObject is missing.
+'@details
+'Arranges by resetting CoreAnalysis with a simple fixture sheet and
+'changing the header instruction to target Spatial Analysis, whose
+'ListObject does not exist on the minimal sheet. Acts by calling AddRows.
+'Asserts that HasCheckings is True, and iterates the IChecking keys to
+'find a warning entry whose label contains "Tab_Spatial_Analysis",
+'confirming the diagnostic logging path for missing tables.
 '@TestMethod("Analysis")
 Public Sub TestAddRowsLogsMissingListObject()
 
@@ -377,6 +490,13 @@ Fail:
     CustomTestLogFailure Assert, "TestAddRowsLogsMissingListObject", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify Import with Nothing as source logs an error diagnostic.
+'@details
+'Acts by calling CoreAnalysis.Import with Nothing. Asserts that
+'HasCheckings is True, then iterates the IChecking keys to locate an
+'error entry whose label contains "source worksheet not provided",
+'confirming that the guard clause logs the expected error rather than
+'raising an exception.
 '@TestMethod("Analysis")
 Public Sub TestImportWithNothingLogsError()
     CustomTestSetTitles Assert, "Analysis", "TestImportWithNothingLogsError"
@@ -410,6 +530,14 @@ Fail:
     CustomTestLogFailure Assert, "TestImportWithNothingLogsError", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify Import records diagnostics when source sheet lacks expected tables.
+'@details
+'Arranges a minimal source worksheet with only a global summary table and
+'creates CoreAnalysis from a full worksheet containing all analysis tables.
+'Acts by calling Import with the minimal source. Asserts that HasCheckings
+'is True and that a diagnostic entry referencing "Tab_Univariate_Analysis"
+'exists in the checking log, confirming that Import warns about each table
+'present on the target but absent from the source.
 '@TestMethod("Analysis")
 Public Sub TestImportRecordsMissingTables()
     CustomTestSetTitles Assert, "Analysis", "TestImportRecordsMissingTables"
@@ -449,6 +577,12 @@ Fail:
     DeleteWorksheet "AnalysisSourceMinimal"
 End Sub
 
+'@sub-title Verify Translate with Nothing as translator logs a warning diagnostic.
+'@details
+'Acts by calling CoreAnalysis.Translate with Nothing. Asserts that
+'HasCheckings is True, then iterates the IChecking keys to locate a
+'warning entry whose label contains "translation object not provided",
+'confirming the guard clause logs a warning instead of raising an error.
 '@TestMethod("Analysis")
 Public Sub TestTranslateWithoutTranslatorRecordsWarning()
     CustomTestSetTitles Assert, "Analysis", "TestTranslateWithoutTranslatorRecordsWarning"
@@ -481,6 +615,13 @@ Fail:
     CustomTestLogFailure Assert, "TestTranslateWithoutTranslatorRecordsWarning", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify Sort orders spatio-temporal table rows by section ascending.
+'@details
+'Arranges a full analysis worksheet with an unsorted spatio-temporal table
+'containing rows for Region A, Region B, Region C, and Region A. Acts by
+'calling Sort. Asserts that the first two Section column values are both
+'"Region A", confirming that Sort groups rows by section and orders them
+'alphabetically.
 '@TestMethod("Analysis")
 Public Sub TestSortOrdersGraphTables()
     CustomTestSetTitles Assert, "Analysis", "TestSortOrdersGraphTables"
@@ -490,7 +631,7 @@ Public Sub TestSortOrdersGraphTables()
     Dim graphTable As ListObject
     Dim ids As Range
     Dim sec As Range
-    
+
     Set hostSheet = PrepareFullAnalysisWorksheet()
     Set CoreAnalysis = Analysis.Create(hostSheet)
 
@@ -507,6 +648,13 @@ Fail:
 End Sub
 
 
+'@sub-title Verify Export copies the analysis worksheet into a target workbook.
+'@details
+'Arranges a full analysis worksheet and a new empty workbook. Acts by
+'calling Export with the target workbook. Asserts that a sheet with the
+'same name as the source exists in the export workbook and that cell A3
+'values match, confirming that Export copies sheet content faithfully.
+'Cleans up the temporary workbook on both success and failure paths.
 '@TestMethod("Analysis")
 Public Sub TestExportCreatesSheet()
     CustomTestSetTitles Assert, "Analysis", "TestExportCreatesSheet"
@@ -532,6 +680,14 @@ Fail:
     DeleteWorkbook exportBook
 End Sub
 
+'@sub-title Verify Translate localises cell values using the translation dictionary.
+'@details
+'Arranges by writing known translation keys ("greeting" and "farewell")
+'into the first data row of the global summary table. Acts by calling
+'Translate with the shared Translator configured for French. Asserts that
+'the cells now contain "Bonjour" and "Au revoir" respectively, confirming
+'that Translate looks up each cell value in the translation table and
+'replaces it with the target-language equivalent.
 '@TestMethod("Analysis")
 Public Sub TestTranslateUpdatesValues()
     CustomTestSetTitles Assert, "Analysis", "TestTranslateUpdatesValues"

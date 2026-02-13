@@ -6,18 +6,20 @@ Option Explicit
 '@Folder("CustomTests")
 '@ModuleDescription("Tests for LLGeo class")
 
-' LLGeo tests focus on factory validation and lightweight property behavior.
-' Full integration tests with geo data and AutoFilter require a real geobase
-' worksheet with imported data — making them unsuitable for unit tests.
-' These tests verify:
-' - Factory rejects Nothing
-' - Factory rejects sheets missing required tables
-' - Factory succeeds with a full fixture
-' - HasNoData reflects RNG_GeoUpdated state
-' - GeoNames resolves from named range cache
-' - GeoNames falls back to raw name for unknown keys
-' - GeoLevel returns empty when geobase has no data
-' - AdminCode resolves translated names correctly
+'@description
+'Validates the LLGeo class, which manages the geobase worksheet containing
+'ListObjects for four admin levels (T_ADM1 through T_ADM4), health facilities
+'(T_HF), translation names (T_NAMES), historic entries, and metadata. Tests
+'focus on factory validation and lightweight property behaviour since full
+'integration tests with geo data and AutoFilter require a real geobase
+'worksheet with imported data. The fixture builds a minimal geobase worksheet
+'with all required tables and named ranges but no data rows, then tears it
+'down in ModuleCleanup to ensure isolation. Tests verify: factory rejects
+'Nothing; factory rejects sheets missing required tables; factory succeeds
+'with a full fixture; HasNoData reflects RNG_GeoUpdated state; GeoNames
+'resolves from named range cache; GeoNames falls back to raw name for unknown
+'keys; GeoLevel returns empty when geobase has no data.
+'@depends LLGeo, ILLGeo, BetterArray, CustomTest, TestHelpers
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const GEO_FIXTURE As String = "GeoFixture"
@@ -27,6 +29,11 @@ Private Assert As ICustomTest
 '@section Module lifecycle
 '===============================================================================
 
+'@sub-title Initialise the test module before any tests run.
+'@details
+'Suppresses screen updates via BusyApp, ensures the test output sheet
+'exists, creates the CustomTest assertion object targeting that sheet,
+'and sets the module name for result grouping.
 '@ModuleInitialize
 Private Sub ModuleInitialize()
     BusyApp
@@ -35,6 +42,11 @@ Private Sub ModuleInitialize()
     Assert.SetModuleName "TestLLGeo"
 End Sub
 
+'@sub-title Tear down the module after all tests complete.
+'@details
+'Prints accumulated test results to the output sheet, restores the
+'application state via RestoreApp, releases the assertion object, and
+'deletes all temporary worksheets created during the test run.
 '@ModuleCleanup
 Private Sub ModuleCleanup()
     If Not Assert Is Nothing Then
@@ -45,11 +57,19 @@ Private Sub ModuleCleanup()
     DeleteWorksheets GEO_FIXTURE, "GeoEmptyTest"
 End Sub
 
+'@sub-title Reset state before each individual test.
+'@details
+'Suppresses screen updates so worksheet operations during each test do
+'not trigger flickering or event cascades.
 '@TestInitialize
 Private Sub TestInitialize()
     BusyApp
 End Sub
 
+'@sub-title Clean up after each individual test.
+'@details
+'Flushes any pending assertion results to the output sheet so each test's
+'outcome is recorded before the next test begins.
 '@TestCleanup
 Private Sub TestCleanup()
     If Not Assert Is Nothing Then
@@ -60,8 +80,15 @@ End Sub
 '@section Helpers
 '===============================================================================
 
-' Build a minimal geobase fixture with all required tables and named ranges.
-' Tables have correct header columns but no data rows — RNG_GeoUpdated = "empty".
+'@sub-title Build a minimal geobase fixture with all required tables and named ranges.
+'@details
+'Creates a hidden worksheet named "GeoFixture" containing nine ListObjects
+'(T_ADM1 through T_ADM4, T_HF, T_NAMES, T_HISTOGEO, T_HISTOHF, T_METADATA)
+'with correct header columns but no data rows. Also creates all required
+'named ranges (RNG_GeoName, RNG_GeoUpdated, RNG_PastingGeoCol, etc.) in
+'row 5 to avoid table overlap. Sets RNG_GeoUpdated to "empty" and
+'RNG_GeoName to "test_geo" as the default state.
+'@return Worksheet. The fully prepared geobase fixture sheet.
 Private Function BuildGeoFixture() As Worksheet
     Dim sh As Worksheet
     Dim Lo As ListObject
@@ -144,6 +171,11 @@ End Function
 '@section Factory validation tests
 '===============================================================================
 
+'@sub-title Verify Create returns Nothing when the worksheet argument is Nothing.
+'@details
+'Acts by calling LLGeo.Create with Nothing under On Error Resume Next.
+'Asserts that the result is Nothing, confirming the guard clause rejects
+'invalid input without raising an unhandled error.
 '@TestMethod("LLGeo")
 Public Sub TestCreateRejectsNothing()
     CustomTestSetTitles Assert, "LLGeo", "TestCreateRejectsNothing"
@@ -162,6 +194,13 @@ TestFail:
     CustomTestLogFailure Assert, "TestCreateRejectsNothing", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify Create returns Nothing when the worksheet lacks required tables.
+'@details
+'Arranges a blank hidden worksheet named "GeoEmptyTest" with no ListObjects
+'or named ranges. Acts by calling LLGeo.Create with that sheet under On
+'Error Resume Next. Asserts that the result is Nothing, confirming the
+'factory validates the presence of required geobase tables before returning
+'an instance.
 '@TestMethod("LLGeo")
 Public Sub TestCreateRejectsSheetMissingTables()
     CustomTestSetTitles Assert, "LLGeo", "TestCreateRejectsSheetMissingTables"
@@ -183,6 +222,12 @@ TestFail:
     CustomTestLogFailure Assert, "TestCreateRejectsSheetMissingTables", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify Create succeeds with a fully populated geobase fixture.
+'@details
+'Arranges a complete geobase fixture via BuildGeoFixture containing all
+'nine ListObjects and all required named ranges. Acts by calling
+'LLGeo.Create with that sheet. Asserts that the result is not Nothing,
+'confirming the factory accepts a well-formed geobase worksheet.
 '@TestMethod("LLGeo")
 Public Sub TestCreateSucceedsWithFullFixture()
     CustomTestSetTitles Assert, "LLGeo", "TestCreateSucceedsWithFullFixture"
@@ -205,6 +250,12 @@ End Sub
 '@section HasNoData tests
 '===============================================================================
 
+'@sub-title Verify HasNoData returns True when RNG_GeoUpdated reads "empty".
+'@details
+'Arranges a geobase fixture whose RNG_GeoUpdated is set to "empty" by
+'default. Acts by creating an LLGeo instance and reading HasNoData.
+'Asserts that the property is True, confirming the class correctly
+'interprets the "empty" flag as having no imported data.
 '@TestMethod("LLGeo")
 Public Sub TestHasNoDataWhenEmpty()
     CustomTestSetTitles Assert, "LLGeo", "TestHasNoDataWhenEmpty"
@@ -224,6 +275,12 @@ TestFail:
     CustomTestLogFailure Assert, "TestHasNoDataWhenEmpty", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify HasNoData returns False when RNG_GeoUpdated indicates data exists.
+'@details
+'Arranges a geobase fixture and overwrites RNG_GeoUpdated with
+'"updated, not translated" to simulate imported data. Acts by creating
+'an LLGeo instance and reading HasNoData. Asserts that the property is
+'False, confirming the class detects the non-empty state.
 '@TestMethod("LLGeo")
 Public Sub TestHasNoDataFalseWhenUpdated()
     CustomTestSetTitles Assert, "LLGeo", "TestHasNoDataFalseWhenUpdated"
@@ -247,6 +304,14 @@ End Sub
 '@section GeoNames cache tests
 '===============================================================================
 
+'@sub-title Verify GeoNames resolves a translated name from the named range cache.
+'@details
+'Arranges a geobase fixture with RNG_ADM1NAME set to "Province" and
+'RNG_GeoUpdated set to "updated, not translated" so the cache is
+'populated. Acts by creating an LLGeo instance and calling
+'GeoNames("adm1_name"). Asserts that the result is "Province",
+'confirming the lazy-loaded BetterArray cache returns the translated
+'display name from the matching named range.
 '@TestMethod("LLGeo")
 Public Sub TestGeoNamesResolvesFromCache()
     CustomTestSetTitles Assert, "LLGeo", "TestGeoNamesResolvesFromCache"
@@ -268,6 +333,12 @@ TestFail:
     CustomTestLogFailure Assert, "TestGeoNamesResolvesFromCache", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify GeoNames falls back to the raw name for an unknown key.
+'@details
+'Arranges a geobase fixture with default named ranges. Acts by creating
+'an LLGeo instance and calling GeoNames("unknown_field"). Asserts that
+'the result equals "unknown_field", confirming the property returns the
+'raw input unchanged when no translation mapping exists in the cache.
 '@TestMethod("LLGeo")
 Public Sub TestGeoNamesFallsBackToRawName()
     CustomTestSetTitles Assert, "LLGeo", "TestGeoNamesFallsBackToRawName"
@@ -290,6 +361,13 @@ End Sub
 '@section GeoLevel tests
 '===============================================================================
 
+'@sub-title Verify GeoLevel returns an empty BetterArray when the geobase has no data.
+'@details
+'Arranges a geobase fixture with RNG_GeoUpdated set to "empty" (default)
+'and no data rows in any admin table. Acts by creating an LLGeo instance
+'and calling GeoLevel(LevelAdmin1). Asserts that the returned BetterArray
+'has zero length, confirming that GeoLevel handles empty tables gracefully
+'by returning an empty collection rather than raising an error.
 '@TestMethod("LLGeo")
 Public Sub TestGeoLevelReturnsEmptyWhenNoData()
     CustomTestSetTitles Assert, "LLGeo", "TestGeoLevelReturnsEmptyWhenNoData"

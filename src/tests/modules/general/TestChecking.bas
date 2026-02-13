@@ -7,6 +7,19 @@ Option Private Module
 
 '@TestModule
 '@Folder("Tests")
+'@ModuleDescription("Tests for the Checking class")
+
+'@description
+'Validates the Checking class, the project-wide log container that stores
+'keyed entries with a label, a severity type (Error, Warning, Note, Info,
+'Success), and a colour. Tests cover factory creation, name and heading
+'properties, entry addition, length tracking, key existence and retrieval,
+'value lookup by attribute (label, type, colour), deep-clone independence,
+'and the Append method that merges entries from one Checking into another.
+'A fresh Checking instance with four entries (one per severity) is created
+'in TestInitialize so every test starts from the same baseline.
+'Uses the Rubberduck test runner (Rubberduck.AssertClass).
+'@depends Checking, IChecking, TestHelpers
 
 Private Assert As Object
 Private Fakes As Object
@@ -17,6 +30,7 @@ Private checkingUnderTest As IChecking
 '@section Helpers
 '===============================================================================
 
+'@sub-title Populate a checking instance with four entries covering all severity levels.
 Private Sub PopulateDefaultEntries(ByVal checkingInstance As IChecking)
     checkingInstance.Add "key-1", "Key 1, error", checkingError
     checkingInstance.Add "key-2", "Key 2, warning", checkingWarning
@@ -24,6 +38,11 @@ Private Sub PopulateDefaultEntries(ByVal checkingInstance As IChecking)
     checkingInstance.Add "key-4", "Key 4, Info", checkingInfo
 End Sub
 
+'@sub-title Strip Unicode severity icons from a type label for comparison.
+'@details
+'The Checking class prepends emoji icons to type labels. This helper
+'removes known icon code points so assertions can compare the plain-text
+'severity name (Error, Warning, Note, Info, Success).
 Private Function NormaliseTypeLabel(ByVal typeLabel As String) As String
     Dim cleaned As String
 
@@ -68,6 +87,10 @@ End Sub
 '@section Tests
 '===============================================================================
 
+'@sub-title Verify factory creates a valid Checking with title only or title and subtitle.
+'@details
+'Calls Checking.Create with one argument and then with two. Both calls
+'must return a non-Nothing IChecking reference.
 '@TestMethod("Checkings")
 Public Sub TestCreateCheck()
     On Error GoTo Fail
@@ -86,6 +109,7 @@ Fail:
     FailUnexpectedError Assert, "TestCreateCheck"
 End Sub
 
+'@sub-title Verify the Name property returns the title passed to Create.
 '@TestMethod("Checkings")
 Public Sub TestNameCheck()
     On Error GoTo Fail
@@ -97,6 +121,10 @@ Fail:
     FailUnexpectedError Assert, "TestNameCheck"
 End Sub
 
+'@sub-title Verify Heading returns title by default and subtitle when requested.
+'@details
+'Heading without arguments should match Name. Heading(True) must return
+'the subtitle string provided at creation time.
 '@TestMethod("Checkings")
 Public Sub TestHeadingsCheck()
     On Error GoTo Fail
@@ -109,6 +137,10 @@ Fail:
     FailUnexpectedError Assert, "TestHeadingsCheck"
 End Sub
 
+'@sub-title Verify Add stores entries and Length reflects the count.
+'@details
+'Creates a new Checking, populates it with four entries via the helper,
+'then asserts that Length equals 4.
 '@TestMethod("Checkings")
 Public Sub TestAddValuesCheck()
     On Error GoTo Fail
@@ -124,6 +156,7 @@ Fail:
     FailUnexpectedError Assert, "TestAddValuesCheck"
 End Sub
 
+'@sub-title Verify Length returns the number of stored entries.
 '@TestMethod("Checkings")
 Public Sub TestLength()
     On Error GoTo Fail
@@ -135,6 +168,11 @@ Fail:
     FailUnexpectedError Assert, "TestLength"
 End Sub
 
+'@sub-title Verify key enumeration, existence checks, and duplicate rejection.
+'@details
+'Asserts ListOfKeys returns a 1-based BetterArray of length 4, that
+'KeyExists finds known keys and rejects absent ones, and that adding a
+'duplicate key raises ElementShouldNotExists.
 '@TestMethod("Checkings")
 Public Sub TestKeysCheck()
     On Error GoTo Fail
@@ -158,6 +196,11 @@ Fail:
     FailUnexpectedError Assert, "TestKeysCheck"
 End Sub
 
+'@sub-title Verify ValueOf returns correct label, type, and colour for each severity.
+'@details
+'Retrieves the label, normalised type text, and colour for each of the
+'four pre-populated entries. Asserts Error, Warning, Note, and Info are
+'stored and retrievable with the correct severity colour mapping.
 '@TestMethod("Checkings")
 Public Sub TestRetrieveValuesCheck()
     On Error GoTo Fail
@@ -175,6 +218,12 @@ Fail:
     FailUnexpectedError Assert, "TestRetrieveValuesCheck"
 End Sub
 
+'@sub-title Verify Clone produces a deep, independent copy.
+'@details
+'Clones an original Checking and confirms length, title, and subtitle are
+'copied. Then mutates the clone (add key-clone) and the original (add
+'key-original) independently, asserting that neither sees the other's new
+'entry. This proves the internal BetterArray storage is not shared.
 '@TestMethod("Checkings")
 Public Sub TestCloneProducesIndependentCopy()
     On Error GoTo Fail
@@ -210,6 +259,12 @@ Fail:
     FailUnexpectedError Assert, "TestCloneProducesIndependentCopy"
 End Sub
 
+'@sub-title Verify Append merges entries from source into destination.
+'@details
+'Creates a destination with four entries and a source with two new keys.
+'After Append, destination has six entries and source remains at two. Keys
+'and labels from the source are verified in the destination with correct
+'severity types preserved.
 '@TestMethod("Checkings")
 Public Sub TestAppendCopiesEntriesFromSource()
     On Error GoTo Fail
@@ -240,6 +295,11 @@ Fail:
     FailUnexpectedError Assert, "TestAppendCopiesEntriesFromSource"
 End Sub
 
+'@sub-title Verify Append raises when the source contains a duplicate key.
+'@details
+'Populates a destination with four entries including key-1, then creates a
+'source containing the same key-1. Calling Append should raise
+'ElementShouldNotExists. The handler confirms the error number and clears.
 '@TestMethod("Checkings")
 Public Sub TestAppendRaisesErrorWhenDuplicateKeyExists()
     On Error GoTo HandleDuplicate

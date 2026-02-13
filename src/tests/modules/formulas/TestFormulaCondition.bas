@@ -5,20 +5,46 @@ Option Explicit
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 
 
+'@ModuleDescription("Verifies FormulaCondition creation, validation, and predicate rendering")
 '@Folder("CustomTests")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
+
+'@description
+'Tests the FormulaCondition class, which pairs variable names with predicate
+'fragments and renders structured Excel expressions for analysis formulas.
+'Coverage includes factory guard clauses (mismatched array lengths), dictionary
+'validation (same table, different tables, missing variables, table override),
+'predicate rendering (ConditionPredicate and ConditionString), and the cached
+'VariablesTable accessor. Each test builds lightweight BetterArray fixtures
+'via BetterArrayFromList and a shared dictionary fixture seeded from
+'DictionaryTestFixture.
+'@depends FormulaCondition, IFormulaCondition, LLdictionary, ILLdictionary,
+'  LLVariables, ILLVariables, BetterArray, CustomTest, ICustomTest,
+'  DictionaryTestFixture, TestHelpers
 
 Private Const DICT_SHEET As String = "FormulaConditionDict"
 
 Private Assert As ICustomTest
 Private Dictionary As ILLdictionary
 
+'@section Helpers
+'===============================================================================
+
+'@sub-title Resolve the table name for a given variable through the dictionary
 Private Function TableNameFor(ByVal variableName As String) As String
     Dim vars As ILLVariables
     Set vars = LLVariables.Create(Dictionary)
     TableNameFor = vars.TableName(variableName)
 End Function
 
+'@section Module lifecycle
+'===============================================================================
+
+'@sub-title Initialise the test harness and seed the shared dictionary fixture
+'@details
+'Creates the test output sheet, sets up the CustomTest assertion object,
+'seeds a dictionary worksheet via PrepareDictionaryFixture, and wraps it
+'in an LLdictionary instance used by all tests.
 '@ModuleInitialize
 Private Sub ModuleInitialize()
     EnsureWorksheet TEST_OUTPUT_SHEET, clearSheet:=False
@@ -28,6 +54,10 @@ Private Sub ModuleInitialize()
     Set Dictionary = LLdictionary.Create(ThisWorkbook.Worksheets(DICT_SHEET), 1, 1)
 End Sub
 
+'@sub-title Print results and tear down the dictionary fixture
+'@details
+'Flushes remaining assertion output to the test sheet, deletes the
+'dictionary fixture worksheet, and releases object references.
 '@ModuleCleanup
 Private Sub ModuleCleanup()
     If Not Assert Is Nothing Then
@@ -38,6 +68,10 @@ Private Sub ModuleCleanup()
     Set Assert = Nothing
 End Sub
 
+'@sub-title Re-seed the dictionary fixture before each test
+'@details
+'Recreates the dictionary worksheet and prepares it via LLdictionary.Prepare
+'so that each test starts from a known clean state with prepared metadata.
 '@TestInitialize
 Private Sub TestInitialize()
     PrepareDictionaryFixture DICT_SHEET
@@ -45,6 +79,7 @@ Private Sub TestInitialize()
     Dictionary.Prepare
 End Sub
 
+'@sub-title Flush assertions and release the dictionary after each test
 '@TestCleanup
 Private Sub TestCleanup()
     If Not Assert Is Nothing Then
@@ -53,6 +88,14 @@ Private Sub TestCleanup()
     Set Dictionary = Nothing
 End Sub
 
+'@section Tests
+'===============================================================================
+
+'@sub-title Verify Create rejects variables and conditions arrays of different lengths
+'@details
+'Arranges a single-element variables array and a two-element conditions array,
+'then calls FormulaCondition.Create. Asserts that an InvalidArgument error is
+'raised, confirming the factory guard clause prevents mismatched inputs.
 '@TestMethod("FormulaCondition")
 Public Sub TestCreateRejectsMismatchedLengths()
     CustomTestSetTitles Assert, "FormulaCondition", "TestCreateRejectsMismatchedLengths"
@@ -74,6 +117,12 @@ ExpectError:
     Err.Clear
 End Sub
 
+'@sub-title Verify validation succeeds when all variables belong to the same table
+'@details
+'Creates a FormulaCondition with two variables from the same dictionary table
+'and two condition fragments. Asserts Valid returns True, HasCheckings returns
+'False (no diagnostics), and VariablesTable returns the expected table name
+'resolved from the first variable.
 '@TestMethod("FormulaCondition")
 Public Sub TestValidSucceedsForSameTable()
     CustomTestSetTitles Assert, "FormulaCondition", "TestValidSucceedsForSameTable"
@@ -91,6 +140,11 @@ Public Sub TestValidSucceedsForSameTable()
                     "VariablesTable should cache the resolved table"
 End Sub
 
+'@sub-title Verify validation fails and logs diagnostics when a variable is missing
+'@details
+'Uses one valid variable and one that does not exist in the dictionary.
+'Asserts Valid returns False, HasCheckings returns True, and the
+'CheckingValues object is available (not Nothing) for diagnostic inspection.
 '@TestMethod("FormulaCondition")
 Public Sub TestValidLogsWhenVariableMissing()
     CustomTestSetTitles Assert, "FormulaCondition", "TestValidLogsWhenVariableMissing"
@@ -108,6 +162,12 @@ Public Sub TestValidLogsWhenVariableMissing()
     Assert.IsTrue Not form.CheckingValues Is Nothing, "Checking log should be available after failure"
 End Sub
 
+'@sub-title Verify ConditionPredicate and ConditionString render correct Excel expressions
+'@details
+'Creates a FormulaCondition from two same-table variables with conditions
+'">0" and ">1", then calls ConditionPredicate with a "*" connector and
+'asserts the joined predicate string. Also calls ConditionString with a
+'"result" column and asserts the IF-wrapped expression is correctly formed.
 '@TestMethod("FormulaCondition")
 Public Sub TestConditionStringBuildsExpression()
     CustomTestSetTitles Assert, "FormulaCondition", "TestConditionStringBuildsExpression"
@@ -130,6 +190,11 @@ Public Sub TestConditionStringBuildsExpression()
                  "ConditionString should wrap the predicate in an IF expression"
 End Sub
 
+'@sub-title Verify VariablesTable returns the cached value after a prior Valid call
+'@details
+'Creates a FormulaCondition, explicitly calls Valid to populate the cache,
+'then asserts that VariablesTable returns the same resolved table name
+'without requiring a second validation pass.
 '@TestMethod("FormulaCondition")
 Public Sub TestVariablesTableUsesCachedValue()
     CustomTestSetTitles Assert, "FormulaCondition", "TestVariablesTableUsesCachedValue"
@@ -148,6 +213,12 @@ Public Sub TestVariablesTableUsesCachedValue()
                     "VariablesTable should reuse the cached table name after validation"
 End Sub
 
+'@sub-title Verify validation fails when variables belong to different tables
+'@details
+'Arranges two variables known to belong to different dictionary tables
+'(confirmed by a fixture assumption assertion). Creates a FormulaCondition
+'and asserts that Valid returns False and HasCheckings returns True,
+'confirming cross-table usage is rejected.
 '@TestMethod("FormulaCondition")
 Public Sub TestValidFailsForDifferentTables()
     CustomTestSetTitles Assert, "FormulaCondition", "TestValidFailsForDifferentTables"
@@ -171,6 +242,12 @@ Public Sub TestValidFailsForDifferentTables()
     Assert.IsTrue form.HasCheckings, "Cross-table validation failure should log diagnostics"
 End Sub
 
+'@sub-title Verify the optional table override parameter of Valid
+'@details
+'Creates a FormulaCondition with same-table variables, then validates with
+'an incorrect override table name and asserts failure with diagnostics.
+'Next validates with the correct override table and asserts success,
+'cleared diagnostics, and the expected VariablesTable cache value.
 '@TestMethod("FormulaCondition")
 Public Sub TestValidRespectsTableOverride()
     CustomTestSetTitles Assert, "FormulaCondition", "TestValidRespectsTableOverride"

@@ -30,11 +30,15 @@ Private Sub Quit_Click()
     Me.Hide
 End Sub
 
-Private Sub UserForm_Click()
+Private Sub UserForm_Activate()
+    NumberOfClicks = 0
+End Sub
+
+Private Sub LabPath_Click()
     NumberOfClicks = NumberOfClicks + 1
 
     If NumberOfClicks = (LimitOfClicks - 1) Then
-        Me.LabProgress.Caption = "click somewhere in the form again to enter debug mode"
+        Me.LabProgress.Caption = "click somewhere in the box again to enter debug mode"
         Exit Sub
     End If
 

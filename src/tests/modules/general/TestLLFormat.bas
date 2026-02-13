@@ -2,7 +2,37 @@ Attribute VB_Name = "TestLLFormat"
 Attribute VB_Description = "Behavioural tests for LLFormat"
 Option Explicit
 
-
+'===============================================================================
+' @ModuleDescription Behavioural tests for LLFormat
+'
+' @description
+'   Comprehensive test suite for the LLFormat class (ILLFormat interface), which
+'   manages linelist visual formatting including design colours, font sizes, cell
+'   styling, and import/export of format data between workbooks. Tests are grouped
+'   into seven logical areas:
+'
+'     1. Factory / Creation  -- fallback to default design when an unknown design
+'        name is supplied.
+'     2. DesignValue lookups -- colour retrieval, numeric value retrieval, and
+'        graceful fallback with checking log when a label is missing.
+'     3. ApplyFormat scopes  -- AnalysisSection, AnalysisOneCell, AllAnalysisSheet,
+'        and AnalysisPercent formatting applied to ranges and worksheets.
+'     4. Fixture preparation -- verifying that LLFormatTestFixture correctly seeds
+'        the DESIGNTYPE named range.
+'     5. Import behaviour    -- copying design colours and font colours from an
+'        import sheet into the active format instance.
+'     6. Export behaviour    -- seven tests covering new sheet creation, table data
+'        transfer, style copying, ListObject creation, named range creation, design
+'        value preservation, existing-sheet import fallback, and the Nothing guard.
+'     7. Error handling      -- InvalidArgument when Export receives Nothing.
+'
+'   Each test follows Arrange / Act / Assert. A fresh fixture worksheet is built
+'   before every test via TestInitialize and torn down in TestCleanup, ensuring
+'   test isolation.
+'
+' @depends LLFormat, ILLFormat, Checking, IChecking, BetterArray, CustomTest,
+'          TestHelpers, LLFormatTestFixture
+'===============================================================================
 
 '@Folder("CustomTests")
 '@ModuleDescription("Behavioural tests for LLFormat")
@@ -21,6 +51,14 @@ Private Const EXPORT_SHEET_NAME As String = "LLFormatExport_Test"
 Private Const LABEL_ANALYSIS_BASE_FONT_SIZE As String = "analysis base font size"
 Private Const LABEL_MISSING_FONT_COLOR As String = "missing font color"
 
+'-------------------------------------------------------------------------------
+' Private helpers
+'-------------------------------------------------------------------------------
+
+' @sub-title FixtureDefaultDesign
+' @description Retrieves the default design name from the fixture sheet via the
+'   LLFormatTestFixture helper. Raises an error if FormatSheet has not been
+'   initialised, protecting against out-of-order test execution.
 Private Function FixtureDefaultDesign() As String
     If FormatSheet Is Nothing Then
         Err.Raise vbObjectError + 601, "TestLLFormat.FixtureDefaultDesign", _
@@ -29,6 +67,10 @@ Private Function FixtureDefaultDesign() As String
     FixtureDefaultDesign = LLFormatTestFixture.DefaultDesignName(FormatSheet)
 End Function
 
+' @sub-title FixtureSecondaryDesign
+' @description Returns the second design name exposed by the fixture, used by
+'   tests that need to verify behaviour against a non-default design column.
+'   Raises if FormatSheet is Nothing or the fixture has fewer than two designs.
 Private Function FixtureSecondaryDesign() As String
     Dim names As Collection
     If FormatSheet Is Nothing Then
@@ -43,16 +85,29 @@ Private Function FixtureSecondaryDesign() As String
     FixtureSecondaryDesign = CStr(names.Item(2))
 End Function
 
+' @sub-title ExpectedDesignColour
+' @description Convenience wrapper that delegates to LLFormatTestFixture.DesignColour
+'   to obtain the expected interior colour for a given label/design pair. When
+'   designName is omitted the fixture returns the default design colour.
 Private Function ExpectedDesignColour(ByVal labelName As String, _
                                       Optional ByVal designName As String = vbNullString) As Long
     ExpectedDesignColour = LLFormatTestFixture.DesignColour(FormatSheet, labelName, designName)
 End Function
 
+' @sub-title ExpectedDesignValue
+' @description Convenience wrapper that delegates to LLFormatTestFixture.DesignNumericValue
+'   to obtain the expected numeric cell value for a given label/design pair.
 Private Function ExpectedDesignValue(ByVal labelName As String, _
                                      Optional ByVal designName As String = vbNullString) As Variant
     ExpectedDesignValue = LLFormatTestFixture.DesignNumericValue(FormatSheet, labelName, designName)
 End Function
 
+' @sub-title RequireNumericLong
+' @description Type-safe conversion helper that attempts to convert an arbitrary
+'   Variant to Long. When the candidate is an object, Null, Empty, an error value,
+'   an empty string, or otherwise unconvertible, the function logs a descriptive
+'   test failure via CustomTestLogFailure and returns 0 so the calling test can
+'   continue with meaningful assertion messages rather than crashing.
 Private Function RequireNumericLong(ByVal candidate As Variant, ByVal context As String) As Long
     On Error GoTo ConversionError
 
@@ -96,6 +151,11 @@ ConversionError:
     RequireNumericLong = 0
 End Function
 
+' @sub-title RequireNumericDouble
+' @description Type-safe conversion helper that attempts to convert an arbitrary
+'   Variant to Double. Mirrors the guard logic of RequireNumericLong but returns
+'   0# (Double zero) on failure. Used for font sizes and column widths where
+'   fractional precision matters.
 Private Function RequireNumericDouble(ByVal candidate As Variant, ByVal context As String) As Double
     On Error GoTo ConversionError
 
@@ -139,6 +199,10 @@ ConversionError:
     RequireNumericDouble = 0#
 End Function
 
+' @sub-title VerifyTableStructureMatches
+' @description Asserts that a source and target ListObject share the same column
+'   count and row count. Used by export tests to confirm that structural fidelity
+'   is preserved across workbook boundaries.
 Private Sub VerifyTableStructureMatches(ByVal sourceTable As ListObject, _
                                        ByVal targetTable As ListObject, _
                                        ByVal context As String)
@@ -148,6 +212,10 @@ Private Sub VerifyTableStructureMatches(ByVal sourceTable As ListObject, _
                      context & ": Row count should match between source and target"
 End Sub
 
+' @sub-title VerifyCellFormatting
+' @description Asserts that font colour, interior colour, and bold state match
+'   between a source and target cell. Provides per-label failure messages so
+'   formatting regressions are easy to localise.
 Private Sub VerifyCellFormatting(ByVal sourceCell As Range, _
                                 ByVal targetCell As Range, _
                                 ByVal labelName As String)
@@ -158,6 +226,10 @@ Private Sub VerifyCellFormatting(ByVal sourceCell As Range, _
     Assert.AreEqual sourceCell.Font.Bold, targetCell.Font.Bold, _
                      "Bold formatting for '" & labelName & "' should match between source and target"
 End Sub
+
+'-------------------------------------------------------------------------------
+' Test lifecycle
+'-------------------------------------------------------------------------------
 
 '@ModuleInitialize
 '@description Configure common test state and build the assertion helper.
@@ -214,8 +286,19 @@ Public Sub TestCleanup()
     Set FormatSheet = Nothing
 End Sub
 
+'===============================================================================
+'@section Factory and Creation Tests
+'===============================================================================
+
 '@TestMethod("LLFormat")
 '@description Creating with an unknown design should use the default design values.
+' @sub-title TestCreateFallsBackToDefaultDesign
+' @details Tests that LLFormat.Create gracefully handles an unrecognised design name
+'   by falling back to the default design. Arranges by creating an LLFormat with
+'   "unknown design", then compares the analysis base font size returned by the
+'   fallback instance against both the fixture expectation and the default-design
+'   instance. Asserts that all three values are equal, confirming the fallback
+'   path produces identical output to the explicit default.
 Public Sub TestCreateFallsBackToDefaultDesign()
     CustomTestSetTitles Assert, "LLFormat", "TestCreateFallsBackToDefaultDesign"
     On Error GoTo TestFail
@@ -250,8 +333,18 @@ TestFail:
     CustomTestLogFailure Assert, "TestCreateFallsBackToDefaultDesign", Err.Number, Err.Description
 End Sub
 
+'===============================================================================
+'@section DesignValue Lookup Tests
+'===============================================================================
+
 '@TestMethod("LLFormat")
 '@description DesignValue should return the configured colour for the default design.
+' @sub-title TestDesignValueReturnsConfiguredColour
+' @details Verifies that DesignValue returns the interior colour (Long) for a
+'   known label when the default returnColor parameter is used. Arranges by
+'   reading the "missing font color" from the fixture, acts by calling
+'   FormatUnderTest.DesignValue with the same label, and asserts that the returned
+'   colour matches the fixture expectation.
 Public Sub TestDesignValueReturnsConfiguredColour()
     CustomTestSetTitles Assert, "LLFormat", "TestDesignValueReturnsConfiguredColour"
     On Error GoTo TestFail
@@ -272,6 +365,11 @@ End Sub
 
 '@TestMethod("LLFormat")
 '@description DesignValue should expose the stored numeric value when colour is not requested.
+' @sub-title TestDesignValueReturnsCellValue
+' @details Verifies that calling DesignValue with returnColor:=False returns the
+'   raw numeric cell value rather than its interior colour. Arranges by obtaining
+'   the expected font size from the fixture, acts by calling DesignValue with
+'   False for the "analysis base font size" label, and asserts numeric equality.
 Public Sub TestDesignValueReturnsCellValue()
     CustomTestSetTitles Assert, "LLFormat", "TestDesignValueReturnsCellValue"
     On Error GoTo TestFail
@@ -295,6 +393,13 @@ End Sub
 
 '@TestMethod("LLFormat")
 '@description Missing labels should return fallback values and log a checking entry.
+' @sub-title TestDesignValueMissingLabelFallsBackAndLogs
+' @details Tests the edge case where a label does not exist in the format table.
+'   Arranges by using the standard FormatUnderTest, acts by requesting DesignValue
+'   with "missing label" for both colour and numeric modes. Asserts that the colour
+'   fallback is vbBlack, the numeric fallback is 0, that HasCheckings returns True,
+'   and that the IChecking log contains at least one entry referencing "missing label".
+'   This confirms graceful degradation and traceability for unrecognised labels.
 Public Sub TestDesignValueMissingLabelFallsBackAndLogs()
     CustomTestSetTitles Assert, "LLFormat", "TestDesignValueMissingLabelFallsBackAndLogs"
     On Error GoTo TestFail
@@ -333,8 +438,20 @@ TestFail:
     CustomTestLogFailure Assert, "TestDesignValueMissingLabelFallsBackAndLogs", Err.Number, Err.Description
 End Sub
 
+'===============================================================================
+'@section ApplyFormat Scope Tests
+'===============================================================================
+
 '@TestMethod("LLFormat")
 '@description Applying the analysis section scope should honour design-driven styling.
+' @sub-title TestApplyFormatAnalysisSectionUsesDesignSettings
+' @details Tests the AnalysisSection formatting scope, which styles section headers
+'   in analysis sheets. Arranges by writing "Section title" into cell G10, acts by
+'   calling ApplyFormat with AnalysisSection, then asserts across a 7-column merged
+'   region that the font colour matches "table sections font color", bold is True,
+'   font size equals the base size plus the +5 section boost, and WrapText is enabled.
+'   Covers the compound styling logic that combines design colour, size arithmetic,
+'   and cell layout properties.
 Public Sub TestApplyFormatAnalysisSectionUsesDesignSettings()
     CustomTestSetTitles Assert, "LLFormat", "TestApplyFormatAnalysisSectionUsesDesignSettings"
     On Error GoTo TestFail
@@ -370,6 +487,13 @@ End Sub
 
 '@TestMethod("LLFormat")
 '@description Applying the analysis one-cell scope should apply missing-value formatting.
+' @sub-title TestApplyFormatAnalysisOneCellAppliesMissingColours
+' @details Tests the AnalysisOneCell formatting scope, which styles individual cells
+'   that represent missing values. Arranges by writing "Missing value" into cell H15,
+'   acts by calling ApplyFormat with AnalysisOneCell, then asserts that the font colour
+'   matches "missing font color", the interior colour matches "missing interior color",
+'   and bold is True. Ensures the missing-value visual cues are faithfully applied from
+'   the design configuration.
 Public Sub TestApplyFormatAnalysisOneCellAppliesMissingColours()
     CustomTestSetTitles Assert, "LLFormat", "TestApplyFormatAnalysisOneCellAppliesMissingColours"
     On Error GoTo TestFail
@@ -395,6 +519,15 @@ End Sub
 
 '@TestMethod("LLFormat")
 '@description Applying the all-analysis scope should set worksheet font and dimensions.
+' @sub-title TestApplyFormatAllAnalysisSheetUsesDesignDimensions
+' @details Tests the AllAnalysisSheet formatting scope, which configures sheet-wide
+'   defaults. Arranges by creating a temporary worksheet, acts by calling ApplyFormat
+'   with AllAnalysisSheet, then asserts that the worksheet-level font size matches the
+'   design base size, the first column width matches "default analysis column width",
+'   and row 2 height is fixed at 25. Includes defensive defaults (9 for font size,
+'   25 for column width) if the fixture returns zero, ensuring the test does not
+'   produce false failures on incomplete fixture data. The temporary sheet is deleted
+'   in both the success and failure paths.
 Public Sub TestApplyFormatAllAnalysisSheetUsesDesignDimensions()
     CustomTestSetTitles Assert, "LLFormat", "TestApplyFormatAllAnalysisSheetUsesDesignDimensions"
     On Error GoTo TestFail
@@ -435,8 +568,19 @@ TestFail:
     CustomTestLogFailure Assert, "TestApplyFormatAllAnalysisSheetUsesDesignDimensions", Err.Number, Err.Description
 End Sub
 
+'===============================================================================
+'@section Fixture Preparation Tests
+'===============================================================================
+
 '@TestMethod("LLFormat")
 '@description Preparing a fixture should define the DESIGNTYPE named range with the default.
+' @sub-title TestPrepareFixtureDefinesDesignTypeRange
+' @details Validates the LLFormatTestFixture.PrepareLLFormatFixture helper itself.
+'   Arranges by cleaning up any leftover fixture sheet, acts by calling
+'   PrepareLLFormatFixture with a dedicated sheet name, then reads the DESIGNTYPE
+'   named range and asserts its value matches the default design name. The fixture
+'   sheet is deleted after the assertion. This meta-test ensures that other tests
+'   in this module receive a correctly seeded fixture.
 Public Sub TestPrepareFixtureDefinesDesignTypeRange()
     CustomTestSetTitles Assert, "LLFormat", "TestPrepareFixtureDefinesDesignTypeRange"
     On Error GoTo TestFail
@@ -469,6 +613,12 @@ End Sub
 
 '@TestMethod("LLFormat")
 '@description Percent scope formatting should enforce a two-decimal percent number format.
+' @sub-title TestApplyFormatPercentSetsNumberFormat
+' @details Tests the AnalysisPercent formatting scope. Arranges by clearing cell H1
+'   and writing 0.25, acts by calling ApplyFormat with AnalysisPercent, then asserts
+'   that the NumberFormat property is exactly "0.00%". This confirms that numeric
+'   cells intended for percentages receive a consistent, locale-independent format
+'   string with two decimal places.
 Public Sub TestApplyFormatPercentSetsNumberFormat()
     CustomTestSetTitles Assert, "LLFormat", "TestApplyFormatPercentSetsNumberFormat"
     On Error GoTo TestFail
@@ -490,8 +640,21 @@ TestFail:
     CustomTestLogFailure Assert, "TestApplyFormatPercentSetsNumberFormat", Err.Number, Err.Description
 End Sub
 
+'===============================================================================
+'@section Import Tests
+'===============================================================================
+
 '@TestMethod("LLFormat")
 '@description Importing from another sheet should copy font and interior colours for designs.
+' @sub-title TestImportCopiesDesignColours
+' @details Tests ILLFormat.Import by verifying that design colours are transferred
+'   from an import sheet into the active format instance. Arranges by preparing a
+'   secondary fixture sheet with green interior and blue font for the "missing font
+'   color" label under the secondary design, then sets the DESIGNTYPE to that design.
+'   Acts by calling FormatUnderTest.Import with the import sheet. Asserts that the
+'   DesignValue colour now returns green (the imported interior colour), the font
+'   colour on the format sheet cell is blue, and the DESIGNTYPE named range has
+'   switched to the secondary design name.
 Public Sub TestImportCopiesDesignColours()
     CustomTestSetTitles Assert, "LLFormat", "TestImportCopiesDesignColours"
     On Error GoTo TestFail
@@ -529,11 +692,18 @@ TestFail:
     CustomTestLogFailure Assert, "TestImportCopiesDesignColours", Err.Number, Err.Description
 End Sub
 
+'===============================================================================
 '@section Export Tests
 '===============================================================================
 
 '@TestMethod("LLFormat")
 '@description Export should create a new worksheet in the target workbook when it does not exist.
+' @sub-title TestExportCreatesNewSheetInTargetWorkbook
+' @details Tests that Export creates a new worksheet in a fresh target workbook.
+'   Arranges by creating an empty workbook via TestHelpers.NewWorkbook, acts by
+'   calling FormatUnderTest.Export, then asserts that a worksheet matching the
+'   source format sheet name exists in the target and is the last sheet in the
+'   workbook. The target workbook is deleted in both success and failure paths.
 Public Sub TestExportCreatesNewSheetInTargetWorkbook()
     CustomTestSetTitles Assert, "LLFormat", "TestExportCreatesNewSheetInTargetWorkbook"
     On Error GoTo TestFail
@@ -564,6 +734,12 @@ End Sub
 
 '@TestMethod("LLFormat")
 '@description Export should copy all table data to the target workbook.
+' @sub-title TestExportCopiesTableDataToNewWorkbook
+' @details Tests that Export faithfully transfers the format table structure. Arranges
+'   by referencing the source ListObject and creating a new target workbook, acts by
+'   calling Export, then delegates to VerifyTableStructureMatches to assert that
+'   column count and row count are identical between source and target. This ensures
+'   that no rows or columns are lost during the export process.
 Public Sub TestExportCopiesTableDataToNewWorkbook()
     CustomTestSetTitles Assert, "LLFormat", "TestExportCopiesTableDataToNewWorkbook"
     On Error GoTo TestFail
@@ -596,6 +772,12 @@ End Sub
 
 '@TestMethod("LLFormat")
 '@description Export should copy cell formatting including font and interior colors.
+' @sub-title TestExportCopiesFormatTableStyles
+' @details Tests that Export preserves cell-level formatting, not just data. Arranges
+'   by setting the "missing font color" cell in the default design to red font and
+'   green interior, acts by exporting to a new workbook, then locates the same cell
+'   in the target and asserts font and interior colours match. This verifies that
+'   the export mechanism copies PasteSpecial formatting rather than only values.
 Public Sub TestExportCopiesFormatTableStyles()
     CustomTestSetTitles Assert, "LLFormat", "TestExportCopiesFormatTableStyles"
     On Error GoTo TestFail
@@ -637,6 +819,13 @@ End Sub
 
 '@TestMethod("LLFormat")
 '@description Export should create a ListObject in the target worksheet.
+' @sub-title TestExportCreatesListObjectInTarget
+' @details Tests that Export creates a proper ListObject (structured table) in the
+'   target worksheet, not just raw cell data. Arranges by creating a new workbook,
+'   acts by calling Export, then asserts that the target sheet has at least one
+'   ListObject and that the first ListObject is a valid non-Nothing reference.
+'   This is essential because downstream code relies on ListObject methods for
+'   column and row access.
 Public Sub TestExportCreatesListObjectInTarget()
     CustomTestSetTitles Assert, "LLFormat", "TestExportCreatesListObjectInTarget"
     On Error GoTo TestFail
@@ -670,6 +859,12 @@ End Sub
 
 '@TestMethod("LLFormat")
 '@description Export should create a DESIGNTYPE named range in the target worksheet.
+' @sub-title TestExportCreatesDesignTypeNamedRange
+' @details Tests that Export creates the DESIGNTYPE named range in the target sheet.
+'   Arranges by creating a new workbook, acts by calling Export, then attempts to
+'   resolve the DESIGNTYPE range on the target sheet. Asserts that the range object
+'   is not Nothing. The DESIGNTYPE range is critical for Import to determine which
+'   design column to read on subsequent round-trips.
 Public Sub TestExportCreatesDesignTypeNamedRange()
     CustomTestSetTitles Assert, "LLFormat", "TestExportCreatesDesignTypeNamedRange"
     On Error GoTo TestFail
@@ -704,6 +899,13 @@ End Sub
 
 '@TestMethod("LLFormat")
 '@description Export should preserve the design type value in the target worksheet.
+' @sub-title TestExportPreservesDesignTypeValue
+' @details Tests that the DESIGNTYPE value in the target worksheet matches the
+'   source. Arranges by reading the current DESIGNTYPE from the source format sheet
+'   and creating a new workbook, acts by calling Export, then reads DESIGNTYPE from
+'   the target sheet and asserts string equality. This complements
+'   TestExportCreatesDesignTypeNamedRange by verifying the value, not just the
+'   existence, of the range.
 Public Sub TestExportPreservesDesignTypeValue()
     CustomTestSetTitles Assert, "LLFormat", "TestExportPreservesDesignTypeValue"
     On Error GoTo TestFail
@@ -737,6 +939,14 @@ End Sub
 
 '@TestMethod("LLFormat")
 '@description Export should call Import when target worksheet already exists.
+' @sub-title TestExportWithExistingSheetCallsImport
+' @details Tests the export fallback path where the target workbook already contains
+'   a sheet with the same name. Arranges by creating a target workbook, preparing a
+'   fixture sheet in it with the same name as the source, and setting a distinct grey
+'   interior colour on the "missing font color" cell. Acts by calling Export, which
+'   should detect the existing sheet and delegate to Import. Asserts that the
+'   FormatUnderTest now reflects the grey colour from the target, proving that Import
+'   was invoked instead of a destructive overwrite.
 Public Sub TestExportWithExistingSheetCallsImport()
     CustomTestSetTitles Assert, "LLFormat", "TestExportWithExistingSheetCallsImport"
     On Error GoTo TestFail
@@ -772,8 +982,19 @@ TestFail:
     CustomTestLogFailure Assert, "TestExportWithExistingSheetCallsImport", Err.Number, Err.Description
 End Sub
 
+'===============================================================================
+'@section Error Handling Tests
+'===============================================================================
+
 '@TestMethod("LLFormat")
 '@description Export should throw InvalidArgument error when workbook is Nothing.
+' @sub-title TestExportThrowsInvalidArgumentWhenWorkbookIsNothing
+' @details Tests the Nothing guard on Export. Arranges using the standard
+'   FormatUnderTest, acts by calling Export with Nothing under On Error Resume Next,
+'   then captures Err.Number and Err.Description. Asserts that the error number
+'   equals ProjectError.InvalidArgument and the description contains the word
+'   "workbook". This ensures callers receive a clear, typed error rather than a
+'   generic runtime 91 (Object variable not set).
 Public Sub TestExportThrowsInvalidArgumentWhenWorkbookIsNothing()
     CustomTestSetTitles Assert, "LLFormat", "TestExportThrowsInvalidArgumentWhenWorkbookIsNothing"
     On Error GoTo TestFail

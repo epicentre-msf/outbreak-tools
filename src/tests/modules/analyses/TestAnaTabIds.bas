@@ -6,9 +6,15 @@ Option Explicit
 '@Folder("CustomTests")
 '@ModuleDescription("Tests for AnaTabIds class")
 
-' AnaTabIds tests focus on factory validation and basic tracking operations.
-' Full integration tests require a linelist workbook with all 12 ListObjects
-' and 4 named sheet ranges, exercised through TestAnalysisOutput integration.
+'@description
+'Validates the AnaTabIds class, which records analysis table and graph metadata
+'into ListObjects on a hidden tracking worksheet for use during linelist export.
+'Tests cover factory guard behaviour (Nothing worksheet, with and without
+'CheckRequirements validation) and the AddTableInfos method that appends named
+'range entries to the tracking ListObject. The BuildFixtureSheet helper creates
+'a fully populated fixture with all 12 ListObjects and 4 named ranges so that
+'AnaTabIds.Create with check:=True can pass validation without a real linelist.
+'@depends AnaTabIds, IAnaTabIds, BetterArray, CustomTest, TestHelpers
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const FIXTURE_SHEET As String = "AnaTabIdsFixture"
@@ -18,8 +24,15 @@ Private Assert As ICustomTest
 '@section Helpers
 '===============================================================================
 
-' @description Create a fixture sheet with all required ListObjects and named ranges
-'              for AnaTabIds to pass CheckRequirements validation.
+'@sub-title Build a fixture sheet with all required ListObjects and named ranges
+'@details
+'Creates (or clears) a hidden worksheet and populates it with the 12 ListObjects
+'that AnaTabIds expects (3 prefixes -- tab_ids, graph_ids, graph_formats -- times
+'4 scope suffixes -- uba, sp, ts, sptemp). Each ListObject has columns "id",
+'"name", and "export" with one empty data row. After the tables, four named
+'ranges (RNG_SheetUAName, RNG_SheetTSName, RNG_SheetSPName, RNG_SheetSPTempName)
+'are created pointing back to the fixture sheet itself, making the fixture
+'self-contained for factory validation tests.
 Private Function BuildFixtureSheet() As Worksheet
     Dim sh As Worksheet
     Dim lo As ListObject
@@ -68,6 +81,11 @@ End Function
 '@section Module lifecycle
 '===============================================================================
 
+'@sub-title Set up the test output sheet and assertion harness
+'@details
+'Creates the shared test output worksheet (if absent), initialises the
+'CustomTest assertion object, and registers the module name for result
+'grouping. Called once before all tests in this module run.
 '@ModuleInitialize
 Private Sub ModuleInitialize()
     BusyApp
@@ -76,6 +94,11 @@ Private Sub ModuleInitialize()
     Assert.SetModuleName "TestAnaTabIds"
 End Sub
 
+'@sub-title Print results and tear down shared fixtures
+'@details
+'Prints accumulated test results to the output sheet, deletes the fixture
+'worksheet created by BuildFixtureSheet, restores the Excel application state,
+'and releases the assertion object. Called once after all tests have run.
 '@ModuleCleanup
 Private Sub ModuleCleanup()
     If Not Assert Is Nothing Then
@@ -86,11 +109,16 @@ Private Sub ModuleCleanup()
     Set Assert = Nothing
 End Sub
 
+'@sub-title Suppress screen updates before each test
 '@TestInitialize
 Private Sub TestInitialize()
     BusyApp
 End Sub
 
+'@sub-title Flush pending assertions after each test
+'@details
+'Ensures that any assertions recorded during the test are written to the
+'output sheet before the next test begins.
 '@TestCleanup
 Private Sub TestCleanup()
     If Not Assert Is Nothing Then
@@ -101,6 +129,12 @@ End Sub
 '@section Factory validation tests
 '===============================================================================
 
+'@sub-title Verify Create rejects a Nothing worksheet
+'@details
+'Arranges by passing Nothing as the worksheet argument to AnaTabIds.Create
+'under On Error Resume Next. Acts by attempting factory creation. Asserts
+'that the returned reference is Nothing, confirming the guard clause
+'prevents instantiation when no valid worksheet is supplied.
 '@TestMethod("AnaTabIds")
 Public Sub TestCreateRejectsNothingWorksheet()
     CustomTestSetTitles Assert, "AnaTabIds", "TestCreateRejectsNothingWorksheet"
@@ -119,6 +153,13 @@ TestFail:
     CustomTestLogFailure Assert, "TestCreateRejectsNothingWorksheet", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify Create succeeds with check enabled on a valid fixture
+'@details
+'Arranges by calling BuildFixtureSheet to produce a worksheet with all 12
+'ListObjects and 4 named ranges. Acts by calling AnaTabIds.Create with
+'check:=True so CheckRequirements validation runs. Asserts the returned
+'IAnaTabIds reference is not Nothing, confirming the fixture satisfies all
+'structural requirements.
 '@TestMethod("AnaTabIds")
 Public Sub TestCreateWithCheckPasses()
     CustomTestSetTitles Assert, "AnaTabIds", "TestCreateWithCheckPasses"
@@ -138,6 +179,13 @@ TestFail:
     CustomTestLogFailure Assert, "TestCreateWithCheckPasses", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify Create succeeds without check on any worksheet
+'@details
+'Arranges by creating a bare worksheet with no ListObjects or named ranges.
+'Acts by calling AnaTabIds.Create with check:=False to skip structural
+'validation. Asserts the returned IAnaTabIds reference is not Nothing,
+'confirming that factory creation works on any worksheet when validation
+'is bypassed.
 '@TestMethod("AnaTabIds")
 Public Sub TestCreateWithoutCheck()
     CustomTestSetTitles Assert, "AnaTabIds", "TestCreateWithoutCheck"
@@ -161,6 +209,14 @@ End Sub
 '@section AddTableInfos tests
 '===============================================================================
 
+'@sub-title Verify AddTableInfos appends rows to the tracking ListObject
+'@details
+'Arranges by building the full fixture sheet and creating an AnaTabIds instance
+'with validation enabled. Prepares a BetterArray containing three range names
+'(TITLE, ROW_CATEGORIES, VALUES_COL_1) for a test table. Acts by calling
+'AddTableInfos with AnalysisIdsScopeNormal scope and the prepared range names.
+'Asserts that the "tab_ids_uba" ListObject has been resized to at least 3 rows,
+'confirming that each named range was tracked as a separate entry.
 '@TestMethod("AnaTabIds")
 Public Sub TestAddTableInfosResizesListObject()
     CustomTestSetTitles Assert, "AnaTabIds", "TestAddTableInfosResizesListObject"

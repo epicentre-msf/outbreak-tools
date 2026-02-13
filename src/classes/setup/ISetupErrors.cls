@@ -40,6 +40,7 @@ Option Explicit
 '@param dictionary Optional ILLdictionary. Dictionary wrapper providing data access.
 '@param choices Optional ILLChoices. Choices wrapper exposing list names and categories.
 '@param formulaStore Optional IFormulaData. Formula data handler used to validate expressions.
+'@param transManager Optional ISetupTranslationsTable. Translations table accessor.
 '@param stateScope Optional IApplicationState. Application state scope guarding Excel settings.
 '@export
 Public Sub Initialise(ByVal hostBook As Workbook, _
@@ -47,6 +48,7 @@ Public Sub Initialise(ByVal hostBook As Workbook, _
                       Optional ByVal dictionary As ILLdictionary, _
                       Optional ByVal choices As ILLChoices, _
                       Optional ByVal formulaStore As IFormulaData, _
+                      Optional ByVal transManager As ISetupTranslationsTable, _
                       Optional ByVal stateScope As IApplicationState)
 End Sub
 

@@ -7,8 +7,22 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 
 Private Const TESTOUTPUTSHEET As String = "testsOutputs"
 
-'@Folder("CustomTests")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
+'@Folder("CustomTests")
+'@ModuleDescription("Tests for the ApplicationState class")
+
+'@description
+'Validates the ApplicationState class, which wraps Excel Application-level
+'settings (ScreenUpdating, DisplayAlerts, Calculation, EnableEvents,
+'CalculateBeforeSave, EnableAnimations) in an RAII-style scope object.
+'Tests confirm that ApplyBusyState switches each property to its expected
+'performance mode, Restore returns all properties to their captured
+'snapshot, RefreshSnapshot guards against misuse while busy, and the
+'optional suppressEvents / calculateOnSave overrides behave correctly.
+'Each test creates a fresh ApplicationState scope and restores the
+'original environment in TestInitialize / TestCleanup to prevent
+'cross-test interference.
+'@depends ApplicationState, IApplicationState, CustomTest, TestHelpers
 
 Private Assert As ICustomTest
 Private initialScreenUpdating As Boolean
@@ -22,6 +36,7 @@ Private animationsAvailable As Boolean
 
 '@section Module lifecycle
 '===============================================================================
+
 '@ModuleInitialize
 Private Sub ModuleInitialize()
     BusyApp
@@ -56,6 +71,8 @@ End Sub
 
 '@section Helper routines
 '===============================================================================
+
+'@sub-title Snapshot the current Application settings before any test runs.
 Private Sub CaptureInitialState()
     initialScreenUpdating = Application.ScreenUpdating
     initialDisplayAlerts = Application.DisplayAlerts
@@ -65,6 +82,7 @@ Private Sub CaptureInitialState()
     animationsAvailable = TryReadAnimations(initialEnableAnimations)
 End Sub
 
+'@sub-title Restore every Application property to its pre-test value.
 Private Sub ResetApplicationState()
     Application.ScreenUpdating = initialScreenUpdating
     Application.DisplayAlerts = initialDisplayAlerts
@@ -78,6 +96,12 @@ Private Sub ResetApplicationState()
     End If
 End Sub
 
+'@sub-title Probe whether EnableAnimations is available on this host.
+'@details
+'Some Excel versions or hosts do not expose EnableAnimations. This helper
+'attempts to read the property; on success the captured value and True are
+'returned via ByRef. On failure the value defaults to False so that
+'animation-related assertions are skipped gracefully.
 Private Function TryReadAnimations(ByRef value As Boolean) As Boolean
     On Error GoTo MissingProperty
         value = Application.EnableAnimations
@@ -93,6 +117,13 @@ End Function
 
 '@section Test cases
 '===============================================================================
+
+'@sub-title Verify ApplyBusyState switches all settings to performance mode.
+'@details
+'Creates a fresh scope, calls ApplyBusyState with default parameters, then
+'asserts ScreenUpdating=False, DisplayAlerts=False, Calculation=xlManual,
+'EnableEvents unchanged, and CalculateBeforeSave=True. When animations are
+'available, also checks EnableAnimations=False. Restores after assertions.
 '@TestMethod("ApplicationState")
 Public Sub TestApplyBusyStateSwitchesSettings()
     CustomTestSetTitles Assert, "ApplicationState", "ApplyBusyStateSwitchesSettings"
@@ -118,6 +149,11 @@ Public Sub TestApplyBusyStateSwitchesSettings()
     scope.Restore
 End Sub
 
+'@sub-title Verify Restore returns every setting to its captured snapshot.
+'@details
+'Creates a scope, applies busy state to mutate all settings, then calls
+'Restore. Each Application property is compared against the snapshot values
+'captured in CaptureInitialState to confirm full restoration.
 '@TestMethod("ApplicationState")
 Public Sub TestRestoreReturnsOriginalSettings()
     CustomTestSetTitles Assert, "ApplicationState", "RestoreReturnsOriginalSettings"
@@ -126,7 +162,7 @@ Public Sub TestRestoreReturnsOriginalSettings()
     Set scope = ApplicationState.Create(Application)
 
     scope.ApplyBusyState
-    
+
     scope.Restore
 
     Assert.AreEqual initialScreenUpdating, Application.ScreenUpdating, _
@@ -146,6 +182,12 @@ Public Sub TestRestoreReturnsOriginalSettings()
     End If
 End Sub
 
+'@sub-title Verify RefreshSnapshot raises when called while busy.
+'@details
+'ApplyBusyState puts the scope into the "busy" state. Calling
+'RefreshSnapshot in that state is a programming error, so the class must
+'raise ErrorUnexpectedState. This test confirms the error number matches
+'ProjectError.ErrorUnexpectedState.
 '@TestMethod("ApplicationState")
 Public Sub TestRefreshSnapshotRequiresIdle()
     CustomTestSetTitles Assert, "ApplicationState", "RefreshSnapshotRequiresIdle"
@@ -168,6 +210,11 @@ ExpectError:
     scope.Restore
 End Sub
 
+'@sub-title Verify suppressEvents parameter disables EnableEvents.
+'@details
+'By default, ApplyBusyState does not touch EnableEvents. Passing
+'suppressEvents:=True must set EnableEvents to False. After Restore the
+'original value must be reinstated.
 '@TestMethod("ApplicationState")
 Public Sub TestApplyBusyStateSuppressEventsWhenRequested()
     CustomTestSetTitles Assert, "ApplicationState", "TestApplyBusyStateSuppressEventsWhenRequested"
@@ -184,6 +231,11 @@ Public Sub TestApplyBusyStateSuppressEventsWhenRequested()
                      "Restore must bring back original EnableEvents value"
 End Sub
 
+'@sub-title Verify calculateOnSave parameter disables CalculateBeforeSave.
+'@details
+'The default busy state leaves CalculateBeforeSave enabled. Passing
+'calculateOnSave:=False should flip it to False. After Restore the
+'original value is confirmed.
 '@TestMethod("ApplicationState")
 Public Sub TestApplyBusyStateRespectsCalculateOnSaveParameter()
     CustomTestSetTitles Assert, "ApplicationState", "TestApplyBusyStateRespectsCalculateOnSaveParameter"

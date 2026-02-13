@@ -7,6 +7,19 @@ Option Private Module
 '@TestModule
 '@Folder("Tests")
 
+'@description
+'Validates the Graphs class, which wraps Excel ChartObject creation and
+'series management for analysis worksheets. Tests cover factory validation
+'(Create with valid arguments, rejection of Nothing worksheet and Nothing
+'range), chart creation via Add, single and multiple series attachment via
+'AddSeries (including primary and secondary axis placement and chart type
+'mapping), category and legend label assignment via AddLabels, and layout
+'formatting via Format (axis titles, chart title, scope-based sizing). The
+'fixture uses a dedicated "GraphOut" worksheet that is cleared before each
+'test and torn down in ModuleCleanup. Named ranges are created as
+'worksheet-level names to provide series, category, and label data sources.
+'@depends Graphs, IGraphs, CustomTest, TestHelpers
+
 Private Assert As Object
 Private Fakes As Object
 Private GeneralGraph As IGraphs
@@ -20,10 +33,21 @@ Private Const SERIESSECONDARY As String = "GraphSeriesSecondary"
 '@section Helpers
 '===============================================================================
 
+'@sub-title Return the dedicated graph output worksheet.
+'@return Worksheet. The "GraphOut" worksheet in ThisWorkbook.
 Private Function GraphSheet() As Worksheet
     Set GraphSheet = ThisWorkbook.Worksheets(GRAPHOUT)
 End Function
 
+'@sub-title Create or replace a worksheet-level named range.
+'@details
+'Deletes any existing name with the same text on the host worksheet,
+'then creates a new named range pointing to the supplied target range.
+'Used to wire up series, category, and label data sources for chart
+'construction in each test.
+'@param hostSheet Worksheet. The worksheet owning the named range.
+'@param nameText String. The name to assign.
+'@param target Range. The cell range the name should reference.
 Private Sub AssignNamedRange(ByVal hostSheet As Worksheet, ByVal nameText As String, ByVal target As Range)
     On Error Resume Next
         hostSheet.Names(nameText).Delete
@@ -32,6 +56,11 @@ Private Sub AssignNamedRange(ByVal hostSheet As Worksheet, ByVal nameText As Str
     hostSheet.Names.Add Name:=nameText, RefersTo:="='" & hostSheet.Name & "'!" & target.Address(True, True)
 End Sub
 
+'@sub-title Clear the graph output worksheet and remove all chart objects.
+'@details
+'Calls ClearWorksheet to wipe cell data and named ranges, then iterates
+'and deletes every ChartObject on the sheet so the next test starts with
+'a pristine canvas.
 Private Sub ResetGraphSheet()
     Dim hostSheet As Worksheet
 
@@ -45,6 +74,13 @@ Private Sub ResetGraphSheet()
     On Error GoTo 0
 End Sub
 
+'@sub-title Build a default IGraphs instance anchored at cell E5 on the graph sheet.
+'@details
+'Creates a Graphs object using the "GraphOut" worksheet and cell E5 as
+'the chart anchor position. The optional graphName parameter controls the
+'chart title label used during creation.
+'@param graphName Optional String. Display name for the chart. Defaults to "General Graph".
+'@return IGraphs. A fully initialised Graphs instance ready for Add/AddSeries.
 Private Function BuildGraph(Optional ByVal graphName As String = "General Graph") As IGraphs
     Dim hostSheet As Worksheet
 
@@ -56,6 +92,11 @@ End Function
 '@section Module lifecycle
 '===============================================================================
 
+'@sub-title Initialise the test module before any tests run.
+'@details
+'Creates the Rubberduck AssertClass and FakesProvider objects, suppresses
+'screen updates via BusyApp, ensures the "GraphOut" worksheet exists,
+'and resets it to a clean state.
 '@ModuleInitialize
 Private Sub ModuleInitialize()
     Dim wb As Workbook
@@ -70,6 +111,10 @@ Private Sub ModuleInitialize()
     ResetGraphSheet
 End Sub
 
+'@sub-title Tear down the module after all tests complete.
+'@details
+'Releases the Rubberduck assertion and fakes objects, resets the graph
+'output worksheet, and deletes it to leave the workbook clean.
 '@ModuleCleanup
 Private Sub ModuleCleanup()
     'this method runs once per module.
@@ -80,7 +125,11 @@ Private Sub ModuleCleanup()
     DeleteWorksheet GRAPHOUT
 End Sub
 
-
+'@sub-title Reset state before each individual test.
+'@details
+'Suppresses screen updates, clears the graph output worksheet and all
+'its chart objects, and releases any previously held GeneralGraph
+'reference so each test starts with a pristine environment.
 '@TestInitialize
 Private Sub TestInitialize()
     BusyApp
@@ -91,6 +140,13 @@ End Sub
 '@section Tests
 '===============================================================================
 
+'@sub-title Verify Create returns a valid IGraphs instance and rejects invalid arguments.
+'@details
+'Acts by calling Graphs.Create with a valid worksheet and target cell.
+'Asserts that the returned object has TypeName "Graphs". Then verifies
+'that Create raises ProjectError.ObjectNotInitialized when the target
+'range is Nothing and when the worksheet is Nothing, confirming both
+'guard clauses in the factory method.
 '@TestMethod("Graphs")
 Private Sub TestCreate()
 
@@ -129,6 +185,11 @@ End Sub
 
 
 
+'@sub-title Verify Add creates a single ChartObject on the worksheet.
+'@details
+'Arranges a fresh IGraphs instance via BuildGraph. Acts by calling Add.
+'Asserts that the host worksheet's ChartObjects count is exactly 1,
+'confirming that Add creates an empty chart at the anchor position.
 '@TestMethod("Graphs")
 Private Sub TestAddCreatesChartObject()
 
@@ -150,6 +211,13 @@ Fail:
 End Sub
 
 
+'@sub-title Verify AddSeries appends a single chart series with the correct type.
+'@details
+'Arranges a named range containing three numeric values and builds a
+'graph instance. Acts by calling AddSeries with "bar" as the chart type.
+'Asserts that a chart was created (lazy Add), that exactly one series
+'exists, and that its ChartType matches xlColumnClustered, confirming
+'the "bar" type mapping logic.
 '@TestMethod("Graphs")
 Private Sub TestAddSeriesAddsChartSeries()
 
@@ -178,6 +246,15 @@ Fail:
 End Sub
 
 
+'@sub-title Verify AddSeries handles multiple series with primary and secondary axes.
+'@details
+'Arranges category labels, two data series, and a legend label on the
+'graph sheet with corresponding named ranges. Acts by adding two series:
+'a "bar" on the primary axis and a "line" on the secondary ("right")
+'axis, then calling AddLabels. Asserts that two series exist, that
+'their axis groups are correct (primary vs secondary), that the
+'secondary axis is enabled on the chart, and that the secondary series
+'renders as xlLineMarkers, confirming multi-series and dual-axis support.
 '@TestMethod("Graphs")
 Private Sub TestAddSeriesHandlesMultipleSeries()
 
@@ -217,6 +294,14 @@ Fail:
 End Sub
 
 
+'@sub-title Verify AddLabels enables data labels and applies the legend entry prefix.
+'@details
+'Arranges category labels, series data, and a legend label cell on the
+'graph sheet. Acts by adding a "bar" series and calling AddLabels with
+'a "FY24" prefix. Asserts that the series has data labels enabled and
+'that the series Name combines the prefix and the label cell value,
+'confirming that AddLabels wires category data, enables labels, and
+'constructs the legend entry correctly.
 '@TestMethod("Graphs")
 Private Sub TestAddLabelsAnnotatesSeries()
 
@@ -250,6 +335,14 @@ Fail:
 End Sub
 
 
+'@sub-title Verify Format sets axis titles, chart title, and applies scope-based sizing.
+'@details
+'Arranges a "line" series and calls Format with axis titles, a chart
+'title, time series scope, and a height factor of 2. Asserts that the
+'value and category axis titles match the supplied strings, that the
+'chart has a title matching "Case Trend", and that the chart width
+'exceeds the default 488px threshold for time series scope, confirming
+'that Format applies all layout adjustments correctly.
 '@TestMethod("Graphs")
 Private Sub TestFormatAdjustsChartLayout()
 

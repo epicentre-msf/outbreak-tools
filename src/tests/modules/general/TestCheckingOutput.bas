@@ -7,6 +7,16 @@ Option Private Module
 
 '@TestModule
 '@Folder("Tests")
+'@ModuleDescription("Tests for the CheckingOutput class")
+
+'@description
+'   Tests the CheckingOutput class which writes IChecking entries to a worksheet
+'   and provides filter dropdowns for status and title. Tests cover PrintOutput row
+'   writing, filter dropdown validation, explicit and cell-based filtering,
+'   title-priority filtering when combined with status, Worksheet_Change handler
+'   injection, handler replacement of existing code, and append behavior across
+'   multiple print calls.
+'@depends CheckingOutput, ICheckingOutput, Checking, IChecking, HiddenNames, BetterArray, TestHelpers
 
 Private Const DEFAULTCHECKINGSHEET As String = "CheckingOutputFixture"
 Private Const DEFAULTFILTERCELL As String = "C1"
@@ -29,6 +39,10 @@ Private SecondaryCheck As IChecking
 '@section Helpers
 '===============================================================================
 
+'@sub-title Build an IChecking instance from a heading, subheading, and entry arrays
+'@details Each element of entries is expected to be a three-element Array(key, label,
+'   checkingType). The function creates a Checking, adds all entries, and returns
+'   the resulting IChecking interface.
 Private Function BuildChecking(ByVal Heading As String, ByVal subHeading As String, _
                                ParamArray entries() As Variant) As IChecking
     Dim checkingInstance As IChecking
@@ -42,10 +56,15 @@ Private Function BuildChecking(ByVal Heading As String, ByVal subHeading As Stri
     Set BuildChecking = checkingInstance
 End Function
 
+'@sub-title Return the fixture worksheet, creating it if absent
 Private Function OutputSheet() As Worksheet
     Set OutputSheet = EnsureWorksheet(DEFAULTCHECKINGSHEET)
 End Function
 
+'@sub-title Count visible-column occurrences of a text value on a worksheet
+'@details When includeHiddenColumns is False (default) the search is limited to
+'   columns FIRST_VISIBLE_COLUMN_INDEX through FIRST_VISIBLE_COLUMN_INDEX +
+'   VISIBLE_COLUMN_COUNT - 1. When True, the entire UsedRange is searched.
 Private Function CountOccurrences(ByVal sh As Worksheet, ByVal textValue As String, _
                                   Optional ByVal includeHiddenColumns As Boolean = False) As Long
     Dim searchRange As Range
@@ -65,12 +84,17 @@ Private Function CountOccurrences(ByVal sh As Worksheet, ByVal textValue As Stri
     On Error GoTo 0
 End Function
 
+'@sub-title Read a worksheet-level hidden name as a string
 Private Function GetHiddenNameValue(ByVal sh As Worksheet, ByVal nameId As String) As String
     Dim store As IHiddenNames
     Set store = HiddenNames.Create(sh)
     GetHiddenNameValue = store.ValueAsString(nameId)
 End Function
 
+'@sub-title Strip emoji icons from a type label and return the plain text
+'@details Removes cross mark, warning, info, scissors, and check mark Unicode
+'   characters that CheckingOutput prepends to type labels so that assertions
+'   can compare the underlying English text.
 Private Function NormaliseTypeLabel(ByVal typeLabel As String) As String
     Dim cleaned As String
 
@@ -84,6 +108,11 @@ Private Function NormaliseTypeLabel(ByVal typeLabel As String) As String
     NormaliseTypeLabel = Trim$(cleaned)
 End Function
 
+'@sub-title Locate the first output row whose hidden title column matches a target
+'@details Scans from FIRST_OUTPUT_ROW_INDEX downward in column HIDDEN_TITLE_COLUMN_INDEX.
+'   When requireDataLabel is True, the row must also have a non-empty data label in
+'   the column after the first visible column, which distinguishes data rows from
+'   title/subtitle rows.
 Private Function FindRowByHiddenTitle(ByVal sh As Worksheet, _
                                       ByVal targetTitle As String, _
                                       Optional ByVal requireDataLabel As Boolean = False) As Long
@@ -106,6 +135,10 @@ Private Function FindRowByHiddenTitle(ByVal sh As Worksheet, _
     Next rowIndex
 End Function
 
+'@sub-title Remove the event-installed marker and clear the worksheet code module
+'@details Deletes the CustomProperty and HiddenNames entries for the event and row
+'   markers, then removes all lines from the worksheet's VBComponent code module
+'   so that subsequent tests start with a clean slate.
 Private Sub ResetWorksheetModule(ByVal sh As Worksheet)
     Dim idx As Long
     Dim codeModule As Object
@@ -171,6 +204,12 @@ End Sub
 '@section Tests
 '===============================================================================
 
+'@sub-title Verify that PrintOutput writes rows, headers, dropdowns, colours, and named ranges
+'@details Arranges two IChecking objects with error, warning, note, and info entries,
+'   calls PrintOutput, then asserts on cell values (title, subtitle, type labels, data
+'   labels), dropdown validations, font and fill colours per type, the hidden title
+'   column content and styling, the event-installed marker, and the title named range
+'   contents and size.
 '@TestMethod("CheckingOutput")
 Private Sub TestPrintOutputWritesRows()
     On Error GoTo Fail
@@ -220,6 +259,10 @@ Fail:
     FailUnexpectedError Assert, "TestPrintOutputWritesRows"
 End Sub
 
+'@sub-title Verify that PrintOutput raises an error when items are not IChecking
+'@details Arranges a BetterArray containing a plain string instead of an IChecking
+'   object, calls PrintOutput, and asserts that the resulting error number equals
+'   ProjectError.InvalidArgument.
 '@TestMethod("CheckingOutput")
 Private Sub TestPrintOutputRejectsInvalidItems()
     Dim invalidChecks As BetterArray
@@ -231,6 +274,11 @@ Private Sub TestPrintOutputRejectsInvalidItems()
     On Error GoTo 0
 End Sub
 
+'@sub-title Verify that the status dropdown hides and reveals rows via Worksheet_Change
+'@details Arranges output with all four checking types, enables events, sets the
+'   status filter cell to "Warnings", and asserts that non-warning data rows are
+'   hidden while warning rows and subtitles remain visible. Resets the filter to
+'   "All" and asserts that all rows are restored.
 '@TestMethod("CheckingOutput")
 Private Sub TestFilterDropdownHidesRows()
     On Error GoTo Fail
@@ -260,6 +308,10 @@ Fail:
     FailUnexpectedError Assert, "TestFilterDropdownHidesRows"
 End Sub
 
+'@sub-title Verify that FilterWorksheet accepts an explicit status parameter
+'@details Arranges output with all four types, calls FilterWorksheet("Warnings"), and
+'   asserts that only warning rows and section headers remain visible. Then calls
+'   FilterWorksheet("All") and asserts all rows are restored to visible.
 '@TestMethod("CheckingOutput")
 Private Sub TestFilterWorksheetMethodAcceptsExplicitSelection()
     On Error GoTo Fail
@@ -291,6 +343,11 @@ Fail:
     FailUnexpectedError Assert, "TestFilterWorksheetMethodAcceptsExplicitSelection"
 End Sub
 
+'@sub-title Verify that FilterWorksheet reads the filter cell value when no parameter is given
+'@details Arranges output, programmatically sets the status filter cell to "Notes"
+'   while events are disabled, then calls FilterWorksheet with no arguments. Asserts
+'   that only note rows and section headers remain visible, confirming the method
+'   falls back to the cell value.
 '@TestMethod("CheckingOutput")
 Private Sub TestFilterWorksheetUsesCellValueWhenParameterMissing()
     On Error GoTo Fail
@@ -322,6 +379,11 @@ Fail:
     FailUnexpectedError Assert, "TestFilterWorksheetUsesCellValueWhenParameterMissing"
 End Sub
 
+'@sub-title Verify that PrintOutput appends content and extends the title named range
+'@details Writes a first IChecking ("Batch One"), records the last row, then writes a
+'   second IChecking ("Batch Two") and asserts the last row increased. Confirms that
+'   both titles and their entries appear exactly once, and that the title named range
+'   now contains three entries: the default, Batch One, and Batch Two.
 '@TestMethod("CheckingOutput")
 Private Sub TestPrintOutputAppendsContent()
     On Error GoTo Fail
@@ -373,6 +435,13 @@ Fail:
     FailUnexpectedError Assert, "TestPrintOutputAppendsContent"
 End Sub
 
+'@sub-title Verify that the title filter takes priority over the status filter
+'@details Arranges two IChecking groups under different titles, applies a title-only
+'   filter for "Quality Checks", then asserts that rows from the other title are
+'   hidden while all Quality Checks rows remain visible. Next applies both a status
+'   filter ("Errors") and the title filter, asserting that non-matching status rows
+'   within the selected title hide while the title row stays visible and rows from
+'   other titles remain hidden.
 '@TestMethod("CheckingOutput")
 Private Sub TestTitleFilterHasPriorityOverStatusFilter()
     On Error GoTo Fail
@@ -417,6 +486,11 @@ Fail:
     FailUnexpectedError Assert, "TestTitleFilterHasPriorityOverStatusFilter"
 End Sub
 
+'@sub-title Verify that changing the title filter resets the status filter to "All"
+'@details Arranges two titled groups and enables Worksheet_Change events. Sets the
+'   status filter to "Errors", then changes the title filter to "Quality Checks".
+'   Asserts that the status cell resets to "All", Quality Checks data rows remain
+'   visible, and rows from the primary title are hidden by the title constraint.
 '@TestMethod("CheckingOutput")
 Private Sub TestWorksheetChangeSyncsStatusWhenTitleChanges()
     On Error GoTo Fail
@@ -469,6 +543,12 @@ Fail:
     FailUnexpectedError Assert, "TestWorksheetChangeSyncsStatusWhenTitleChanges"
 End Sub
 
+'@sub-title Verify that FilterWorksheet ignores the status cell when only a title is provided
+'@details Arranges output with two titled groups, sets the status cell to "Errors"
+'   while events are disabled, then calls FilterWorksheet with only the title
+'   parameter ("Quality Checks"). Asserts that all Quality Checks data rows remain
+'   visible regardless of the lingering status value, and that rows from the other
+'   title are hidden.
 '@TestMethod("CheckingOutput")
 Private Sub TestFilterWorksheetIgnoresStatusWhenOnlyTitleProvided()
     On Error GoTo Fail
@@ -513,6 +593,12 @@ Fail:
     FailUnexpectedError Assert, "TestFilterWorksheetIgnoresStatusWhenOnlyTitleProvided"
 End Sub
 
+'@sub-title Verify that EnsureWorksheetChangeHandler injects a self-contained filtering handler
+'@details Resets the worksheet code module, calls PrintOutput and
+'   EnsureWorksheetChangeHandler, then reads the full module text. Asserts that the
+'   module contains exactly one Worksheet_Change declaration, a
+'   FilterCheckingOutputRows helper, a StripIcons function, a ResetUiState call,
+'   and no external references to CheckingOutput members.
 '@TestMethod("CheckingOutput")
 Private Sub TestWorksheetChangeHandlerInjectsFilteringLogic()
     On Error GoTo Fail
@@ -562,6 +648,12 @@ Fail:
     FailUnexpectedError Assert, "TestWorksheetChangeHandlerInjectsFilteringLogic"
 End Sub
 
+'@sub-title Verify that EnsureWorksheetChangeHandler replaces an existing Worksheet_Change
+'@details Seeds the worksheet code module with a dummy Worksheet_Change and a companion
+'   DummyChange sub, then calls EnsureWorksheetChangeHandler twice. Asserts that the
+'   resulting handler calls FilterCheckingOutputRows, no longer references DummyChange,
+'   contains no external CheckingOutput dependencies, and that only one
+'   Worksheet_Change declaration exists.
 '@TestMethod("CheckingOutput")
 Private Sub TestEnsureWorksheetChangeHandlerReplacesExistingCode()
     On Error GoTo Fail

@@ -6,10 +6,19 @@ Option Explicit
 '@Folder("CustomTests")
 '@ModuleDescription("Tests for GraphSpecs class")
 
-' GraphSpecs tests focus on factory validation and initial state.
-' Full series-building tests require ICrossTable (simple mode) or real
-' analysis listobjects with named ranges (complex mode), and are exercised
-' through integration tests in TestAnalysisOutput.
+'@description
+'Validates the GraphSpecs class, which builds chart series specifications
+'in two modes: simple (non-time-series from an ICrossTable) and complex
+'(time series from analysis ListObjects with graph, time series, and title
+'tables). Tests focus on factory validation and initial state since full
+'series-building tests require ICrossTable (simple mode) or real analysis
+'ListObjects with named ranges (complex mode), and are exercised through
+'integration tests in TestAnalysisOutput. Tests verify: Create rejects
+'Nothing cross-table (simple mode); CreateRangeSpecs rejects Nothing
+'loTable, Nothing sheet, Nothing lData, and wrong ListObject count
+'(complex mode); complex mode initial state has zero series and graphs
+'before CreateSeries; Wksh returns the output sheet in complex mode.
+'@depends GraphSpecs, IGraphSpecs, BetterArray, TableSpecsLinelistStub, AnalysisDictionaryStub, CustomTest, TestHelpers
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const FIXTURE_SHEET As String = "GraphSpecsFixture"
@@ -19,10 +28,13 @@ Private Assert As ICustomTest
 '@section Helpers
 '===============================================================================
 
-' @description Create a minimal lDataStub with a dictionary configured.
-'              GraphSpecs.CreateRangeSpecs stores lData and later passes
-'              lData.Dictionary() to TableSpecs.Create, so the dictionary
-'              must not be Nothing.
+'@sub-title Create a minimal lData stub with a dictionary configured.
+'@details
+'GraphSpecs.CreateRangeSpecs stores lData and later passes
+'lData.Dictionary() to TableSpecs.Create, so the dictionary must not be
+'Nothing. Instantiates a TableSpecsLinelistStub and assigns a fresh
+'AnalysisDictionaryStub to satisfy this requirement.
+'@return TableSpecsLinelistStub. A stub with a valid dictionary reference.
 Private Function CreateLDataStub() As TableSpecsLinelistStub
     Dim stub As TableSpecsLinelistStub
     Set stub = New TableSpecsLinelistStub
@@ -30,8 +42,17 @@ Private Function CreateLDataStub() As TableSpecsLinelistStub
     Set CreateLDataStub = stub
 End Function
 
-' @description Create a fixture worksheet with 3 listobjects for complex mode testing.
-'              Layout matches the expected order: graph table, time series table, titles table.
+'@sub-title Create a fixture worksheet with three ListObjects for complex mode testing.
+'@details
+'Builds a hidden worksheet named "GraphSpecsFixture" containing three
+'ListObjects in the expected order: a graph table (tblGraphTS with columns
+'graph id, series id, axis, percentages, type, choices, label), a time
+'series table (tblTimeSeries with columns row, column, section, total,
+'percentage, missing, graph), and a title table (tblGraphTitles with
+'columns title, subtitle, graph id). Each table has one data row with
+'realistic values. Returns a BetterArray (1-based) containing the three
+'ListObject references.
+'@return BetterArray. A 1-based array of [graphLo, tsLo, titleLo] ListObjects.
 Private Function BuildComplexFixture() As BetterArray
     Dim sh As Worksheet
     Dim loTable As BetterArray
@@ -90,6 +111,11 @@ End Function
 '@section Module lifecycle
 '===============================================================================
 
+'@sub-title Initialise the test module before any tests run.
+'@details
+'Suppresses screen updates via BusyApp, ensures the test output sheet
+'exists, creates the CustomTest assertion object targeting that sheet,
+'and sets the module name for result grouping.
 '@ModuleInitialize
 Private Sub ModuleInitialize()
     BusyApp
@@ -98,6 +124,11 @@ Private Sub ModuleInitialize()
     Assert.SetModuleName "TestGraphSpecs"
 End Sub
 
+'@sub-title Tear down the module after all tests complete.
+'@details
+'Prints accumulated test results to the output sheet, deletes the
+'fixture worksheet, restores the application state via RestoreApp,
+'and releases the assertion object.
 '@ModuleCleanup
 Private Sub ModuleCleanup()
     If Not Assert Is Nothing Then
@@ -108,11 +139,19 @@ Private Sub ModuleCleanup()
     Set Assert = Nothing
 End Sub
 
+'@sub-title Reset state before each individual test.
+'@details
+'Suppresses screen updates so worksheet operations during each test do
+'not trigger flickering or event cascades.
 '@TestInitialize
 Private Sub TestInitialize()
     BusyApp
 End Sub
 
+'@sub-title Clean up after each individual test.
+'@details
+'Flushes any pending assertion results to the output sheet so each test's
+'outcome is recorded before the next test begins.
 '@TestCleanup
 Private Sub TestCleanup()
     If Not Assert Is Nothing Then
@@ -123,6 +162,11 @@ End Sub
 '@section Factory validation tests - Create (simple mode)
 '===============================================================================
 
+'@sub-title Verify Create returns Nothing when the cross-table argument is Nothing.
+'@details
+'Acts by calling GraphSpecs.Create with Nothing under On Error Resume
+'Next. Asserts that the result is Nothing, confirming the guard clause
+'rejects invalid input in simple mode without raising an unhandled error.
 '@TestMethod("GraphSpecs")
 Public Sub TestCreateRejectsNothingTable()
     CustomTestSetTitles Assert, "GraphSpecs", "TestCreateRejectsNothingTable"
@@ -144,6 +188,12 @@ End Sub
 '@section Factory validation tests - CreateRangeSpecs (complex mode)
 '===============================================================================
 
+'@sub-title Verify CreateRangeSpecs returns Nothing when the loTable argument is Nothing.
+'@details
+'Arranges a fixture worksheet and a valid lData stub. Acts by calling
+'GraphSpecs.CreateRangeSpecs with Nothing as the loTable under On Error
+'Resume Next. Asserts that the result is Nothing, confirming the guard
+'clause rejects a missing ListObject collection.
 '@TestMethod("GraphSpecs")
 Public Sub TestCreateRangeSpecsRejectsNothingLoTable()
     CustomTestSetTitles Assert, "GraphSpecs", "TestCreateRangeSpecsRejectsNothingLoTable"
@@ -168,6 +218,12 @@ TestFail:
     CustomTestLogFailure Assert, "TestCreateRangeSpecsRejectsNothingLoTable", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify CreateRangeSpecs returns Nothing when the output sheet is Nothing.
+'@details
+'Arranges a valid complex fixture and lData stub. Acts by calling
+'GraphSpecs.CreateRangeSpecs with Nothing as the sheet under On Error
+'Resume Next. Asserts that the result is Nothing, confirming the guard
+'clause rejects a missing output worksheet.
 '@TestMethod("GraphSpecs")
 Public Sub TestCreateRangeSpecsRejectsNothingSheet()
     CustomTestSetTitles Assert, "GraphSpecs", "TestCreateRangeSpecsRejectsNothingSheet"
@@ -192,6 +248,12 @@ TestFail:
     CustomTestLogFailure Assert, "TestCreateRangeSpecsRejectsNothingSheet", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify CreateRangeSpecs returns Nothing when the lData argument is Nothing.
+'@details
+'Arranges a valid complex fixture and retrieves the fixture worksheet.
+'Acts by calling GraphSpecs.CreateRangeSpecs with Nothing as lData under
+'On Error Resume Next. Asserts that the result is Nothing, confirming the
+'guard clause rejects a missing linelist data reference.
 '@TestMethod("GraphSpecs")
 Public Sub TestCreateRangeSpecsRejectsNothingLData()
     CustomTestSetTitles Assert, "GraphSpecs", "TestCreateRangeSpecsRejectsNothingLData"
@@ -216,6 +278,13 @@ TestFail:
     CustomTestLogFailure Assert, "TestCreateRangeSpecsRejectsNothingLData", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify CreateRangeSpecs returns Nothing when the loTable has the wrong count.
+'@details
+'Arranges a fixture worksheet with only one ListObject instead of the
+'required three (graph, time series, title). Acts by calling
+'GraphSpecs.CreateRangeSpecs with the undersized loTable under On Error
+'Resume Next. Asserts that the result is Nothing, confirming the factory
+'validates the ListObject count before proceeding.
 '@TestMethod("GraphSpecs")
 Public Sub TestCreateRangeSpecsRejectsWrongCount()
     CustomTestSetTitles Assert, "GraphSpecs", "TestCreateRangeSpecsRejectsWrongCount"
@@ -257,6 +326,13 @@ End Sub
 '@section Initial state tests
 '===============================================================================
 
+'@sub-title Verify complex mode initial state reports zero series and zero graphs.
+'@details
+'Arranges a valid complex fixture with all three ListObjects. Acts by
+'calling GraphSpecs.CreateRangeSpecs and reading NumberOfSeries and
+'NumberOfGraphs before calling CreateSeries. Asserts that the factory
+'succeeds (not Nothing) and that both counts are zero, confirming the
+'class defers series population until CreateSeries is explicitly invoked.
 '@TestMethod("GraphSpecs")
 Public Sub TestComplexModeInitialState()
     CustomTestSetTitles Assert, "GraphSpecs", "TestComplexModeInitialState"
@@ -288,6 +364,12 @@ TestFail:
     CustomTestLogFailure Assert, "TestComplexModeInitialState", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify Wksh returns the output sheet in complex mode.
+'@details
+'Arranges a valid complex fixture. Acts by calling CreateRangeSpecs and
+'reading the Wksh property. Asserts that the returned worksheet name
+'matches the fixture sheet name, confirming that complex mode stores and
+'exposes the output worksheet supplied during construction.
 '@TestMethod("GraphSpecs")
 Public Sub TestComplexModeWkshReturnsOutputSheet()
     CustomTestSetTitles Assert, "GraphSpecs", "TestComplexModeWkshReturnsOutputSheet"

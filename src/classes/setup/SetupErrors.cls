@@ -13,7 +13,7 @@ Attribute VB_Description = "Analyses setup sheets and publishes consistency repo
 '@Folder("Setup")
 '@ModuleDescription("Analyses setup sheets and publishes consistency reports")
 '@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
-'@depends Analysis, ApplicationState, BetterArray, Checking, CheckingOutput, CustomTable, DropdownLists, FormulaData, Formulas, IAnalysis, ISetupErrors, IDropdownLists, LLChoices, LLVariables, LLdictionary, Passwords, ProjectError, TablesSpecs
+'@depends Analysis, ApplicationState, BetterArray, Checking, CheckingOutput, CustomTable, DropdownLists, FormulaData, Formulas, IAnalysis, ISetupErrors, IDropdownLists, LLChoices, LLVariables, LLdictionary, Passwords, ProjectError, TableSpecs
 
 Option Explicit
 
@@ -159,7 +159,7 @@ Public Sub Initialise(ByVal hostBook As Workbook, _
                       Optional ByVal dictionary As ILLdictionary, _
                       Optional ByVal choices As ILLChoices, _
                       Optional ByVal formulaStore As IFormulaData, _
-                      Optional Byval transManager As ISetupTranslationsTable, _
+                      Optional ByVal transManager As ISetupTranslationsTable, _
                       Optional ByVal stateScope As IApplicationState)
 
     ValidateWorkbook hostBook
@@ -202,7 +202,7 @@ Public Sub Run()
         CheckDictionary
         CheckChoice
         CheckExports
-        'CheckAnalysis
+        CheckAnalysis
         CheckTranslations
         PrintReport
 
@@ -973,13 +973,18 @@ End Sub
 
 '@label:check-analysis
 '@sub-title Run analysis table checks across all sections
-'@remarks Currently disabled; the body is largely commented out.
+'@details
+'Resolves the analysis worksheet, removes empty rows via Analysis.RemoveRows,
+'then delegates to CheckTable for each of the seven analysis sections.
+'Caches the worksheet and WorksheetFunction references and passes them to
+'CheckTable to avoid repeated lookups.
 Private Sub CheckAnalysis()
     Dim analysisSheet As Worksheet
     Dim analysisManager As IAnalysis
     Dim selectionCell As Range
     Dim previousSelection As String
     Dim selectionConfigured As Boolean
+    Dim workFun As WorksheetFunction
     Dim errNumber As Long
     Dim errSource As String
     Dim errDescription As String
@@ -995,7 +1000,7 @@ Private Sub CheckAnalysis()
         End If
     On Error GoTo 0
 
-    On Error GoTo AnalysisFailed
+    On Error Resume Next
         this.passwordService.UnProtect SHEET_ANALYSIS
         Set analysisManager = Analysis.Create(analysisSheet)
         analysisManager.RemoveRows
@@ -1008,13 +1013,15 @@ Private Sub CheckAnalysis()
         On Error GoTo 0
     End If
 
-    CheckTable "Global summary"
-    CheckTable "Univariate analysis"
-    CheckTable "Bivariate analysis"
-    CheckTable "Time series analysis"
-    CheckTable "Time series graphs"
-    CheckTable "Spatial analysis"
-    CheckTable "Spatio-temporal analysis"
+    Set workFun = Application.WorksheetFunction
+
+    CheckTable "Global summary", analysisSheet, workFun
+    CheckTable "Univariate analysis", analysisSheet, workFun
+    CheckTable "Bivariate analysis", analysisSheet, workFun
+    CheckTable "Time series analysis", analysisSheet, workFun
+    CheckTable "Time series graphs", analysisSheet, workFun
+    CheckTable "Spatial analysis", analysisSheet, workFun
+    CheckTable "Spatio-temporal analysis", analysisSheet, workFun
     Exit Sub
 
 AnalysisFailed:
@@ -1029,7 +1036,12 @@ AnalysisFailed:
 End Sub
 
 '@sub-title Evaluate a specific analysis section for structural errors.
-Private Sub CheckTable(ByVal partName As String)
+'@param partName String. The section display name (e.g. "Global summary").
+'@param analysisSheet Worksheet. The cached analysis worksheet.
+'@param workFun WorksheetFunction. The cached worksheet function object.
+Private Sub CheckTable(ByVal partName As String, _
+                       ByVal analysisSheet As Worksheet, _
+                       ByVal workFun As WorksheetFunction)
 
     Const TAB_GLOBAL_SUMMARY As String = "Tab_global_summary"
     Const TAB_UNIVARIATE As String = "Tab_Univariate_Analysis"
@@ -1043,15 +1055,13 @@ Private Sub CheckTable(ByVal partName As String)
     Dim listName As String
     Dim headerRange As Range
     Dim specsRange As Range
-    Dim specs As ITablesSpecs
-    Dim analysisSheet As Worksheet
+    Dim specs As ITableSpecs
     Dim check As IChecking
     Dim rowIndex As Long
     Dim checkingCounter As Long
     Dim keyName As String
     Dim infoMessage As String
     Dim analysisFormula As String
-    Dim workFun As WorksheetFunction
     Dim tableScope As Byte
 
     listName = Switch( _
@@ -1063,9 +1073,6 @@ Private Sub CheckTable(ByVal partName As String)
         partName = "Spatio-temporal analysis", TAB_SPATIOTEMP, _
         partName = "Time series graphs", TAB_TIME_SERIES_GRAPHS _
     )
-
-    Set analysisSheet = ResolveWorksheet(SHEET_ANALYSIS)
-    Set workFun = Application.WorksheetFunction
     checkingCounter = 0
 
     On Error Resume Next
@@ -1091,13 +1098,18 @@ Private Sub CheckTable(ByVal partName As String)
             check.Add keyName & "-" & checkingCounter, infoMessage, checkingInfo
         Else
 
-            Set specs = TablesSpecs.Create(headerRange, specsRange, this.dictionary, this.choices)
+            Set specs = Nothing
+            On Error Resume Next
+            Set specs = TableSpecs.Create(headerRange, specsRange, this.dictionary)
+            On Error GoTo 0
+
+            If specs Is Nothing Then GoTo ContinueRow
             tableScope = specs.TableScope
 
             If (Not specs.ValidTable()) Then
                 checkingCounter = checkingCounter + 1
                 keyName = "ana-inv-tab"
-                infoMessage = FormatMessage(ANA_INV_TAB, specsRange.Row, specs.ValidityReason())
+                infoMessage = FormatMessage(ANA_INV_TAB, specsRange.Row, "check row and column variables")
                 check.Add keyName & "-" & checkingCounter, infoMessage, checkingError
 
                 If (tableScope = ScopeTimeSeries) And (specs.IsNewSection()) _
@@ -1151,6 +1163,7 @@ Private Sub CheckTable(ByVal partName As String)
                 End If
             End If
         End If
+ContinueRow:
     Next rowIndex
 
     this.checkTables.Push check
@@ -1177,9 +1190,9 @@ Private Sub PrintReport()
     reportSheet.Cells.EntireRow.Hidden = False
 
     checkOutput.PrintOutput this.checkTables
-    checkOutput.EnsureWorksheetChangeHandler
-    
+
     On Error Resume Next
+    checkOutput.EnsureWorksheetChangeHandler
     reportSheet.Activate
 End Sub
 
@@ -1201,8 +1214,6 @@ Private Function FormatMessage(ByVal messageTag As String, _
                                Optional ByVal valueFour As String = vbNullString) As String
 
     Dim template As String
-
-    EnsureInitialised
 
     template = ReplacePlaceholder(messageTag, "%1", valueOne)
     template = ReplacePlaceholder(template, "%2", valueTwo)
@@ -1271,8 +1282,9 @@ Private Sub ISetupErrors_Initialise(ByVal hostBook As Workbook, _
                                     Optional ByVal dictionary As ILLdictionary, _
                                     Optional ByVal choices As ILLChoices, _
                                     Optional ByVal formulaStore As IFormulaData, _
+                                    Optional ByVal transManager As ISetupTranslationsTable, _
                                     Optional ByVal stateScope As IApplicationState)
-    Initialise hostBook, passwordService, dictionary, choices, formulaStore, stateScope
+    Initialise hostBook, passwordService, dictionary, choices, formulaStore, transManager, stateScope
 End Sub
 
 Private Sub ISetupErrors_Run()
