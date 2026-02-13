@@ -7,6 +7,21 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 '@Folder("CustomTests")
+'@ModuleDescription("Tests for the CustomTable class")
+'
+'@description
+'   Tests for the CustomTable class, which wraps an Excel ListObject with
+'   id-based CRUD operations, Import/Export, sort, and snapshot/restore
+'   capabilities. Tests cover factory creation (including rejection of Nothing),
+'   AddRows with sequential ID assignment, RemoveRows for trailing empties and
+'   explicit trimming, SetValue cell updates, SortOnFirst grouping by first
+'   occurrence, Import from both CustomTable and DataSheet sources with various
+'   options (keepSourceHeaders, strictColumnSearch, pasteAtBottom, formatHeaders,
+'   hidden column preservation, column expansion and trimming), stacked table
+'   shift behavior for InsertRowsAt/DeleteRowsAt, Export with header filtering
+'   and ListObject creation, DataRange returning Nothing when empty, and
+'   snapshot restoration on import failure.
+'@depends CustomTable, ICustomTable, DataSheet, IDataSheet, BetterArray, CustomTest, TestHelpers
 
 Private Const TABLESHEETNAME As String = "CustomTableFixture"
 Private Const TABLENAME As String = "tblCustom"
@@ -25,10 +40,12 @@ Private Fakes As Object
 '@section Helpers
 '===============================================================================
 
+'@sub-title Returns the standard three-column header array (ID, Name, Amount)
 Private Function CustomTableHeaders() As Variant
     CustomTableHeaders = Array("ID", "Name", "Amount")
 End Function
 
+'@sub-title Returns three default data rows for the standard fixture table
 Private Function CustomTableRows() As Variant
     CustomTableRows = Array( _
         Array(1, "Alpha", 10), _
@@ -36,6 +53,10 @@ Private Function CustomTableRows() As Variant
         Array(3, "Gamma", 30))
 End Function
 
+'@sub-title Creates a ListObject with a formula column for import-preserves-formulas tests
+'@details Builds a three-column table (ID, Value, Calc) on the given sheet where the Calc
+'   column contains an R1C1 formula (=RC[-1]*2). This allows tests to verify that importing
+'   data into a table with formulas preserves those formulas while updating value columns.
 Private Sub PrepareCustomTableWithFormula(ByVal sheetName As String, ByVal tableName As String)
 
     Dim hostSheet As Worksheet
@@ -67,6 +88,7 @@ Private Sub PrepareCustomTableWithFormula(ByVal sheetName As String, ByVal table
     Lo.ListColumns("Calc").DataBodyRange.FormulaR1C1 = "=RC[-1]*2"
 End Sub
 
+'@sub-title Creates a DataSheet from arbitrary headers and rows on a fresh worksheet
 Private Function CreateDataSheet(ByVal sheetName As String, headers As Variant, rows As Variant) As IDataSheet
 
     Dim hostSheet As Worksheet
@@ -84,6 +106,10 @@ Private Function CreateDataSheet(ByVal sheetName As String, headers As Variant, 
     Set CreateDataSheet = DataSheet.Create(hostSheet, 1, 1)
 End Function
 
+'@sub-title Prepares the standard fixture ListObject, optionally with or without data rows
+'@details Writes CustomTableHeaders and optionally CustomTableRows to the given sheet,
+'   then wraps the result in a ListObject. When includeData is False the table contains
+'   only a header row, which is useful for import-into-empty tests.
 Private Sub PrepareCustomTable(Optional ByVal includeData As Boolean = True, _
                                Optional ByVal sheetName As String = TABLESHEETNAME, _
                                Optional ByVal tableName As String = TABLENAME)
@@ -117,11 +143,16 @@ Private Sub PrepareCustomTable(Optional ByVal includeData As Boolean = True, _
     Lo.Name = tableName
 End Sub
 
+'@sub-title Convenience shortcut that prepares the default fixture and returns a CustomTable instance
 Private Function BuildCustomTable() As ICustomTable
     PrepareCustomTable
     Set BuildCustomTable = CustomTable.Create(ThisWorkbook.Worksheets(TABLESHEETNAME).ListObjects(TABLENAME), "ID", "row")
 End Function
 
+'@sub-title Creates a CustomTable from caller-supplied headers and rows on a dedicated sheet
+'@details Writes the provided headers and rows to a fresh worksheet, wraps them in a
+'   ListObject, and returns a fully initialised CustomTable. This allows tests to build
+'   ad-hoc tables with specific data layouts without reusing the default fixture constants.
 Private Function CreateCustomTableWithData(ByVal sheetName As String, _
                                           ByVal tableName As String, _
                                           headers As Variant, _
@@ -159,6 +190,7 @@ Private Function CreateCustomTableWithData(ByVal sheetName As String, _
     Set CreateCustomTableWithData = CustomTable.Create(Lo, idColumnName, idPrefix)
 End Function
 
+'@sub-title Creates a BetterArray pre-loaded with the given values (LowerBound = 1)
 Private Function NewBetterArray(ParamArray values() As Variant) As BetterArray
     Dim arr As BetterArray
     Dim idx As Long
@@ -175,6 +207,11 @@ Private Function NewBetterArray(ParamArray values() As Variant) As BetterArray
     Set NewBetterArray = arr
 End Function
 
+'@sub-title Builds two vertically stacked ListObjects on a single worksheet for shift tests
+'@details Creates a top table ("tblTop") with two data rows and a bottom table ("tblBottom")
+'   with one data row, separated by a gap row. Returns both ListObjects via ByRef parameters
+'   so tests can verify that row insertions or deletions in the top table correctly shift
+'   the bottom table up or down on the worksheet.
 Private Sub PrepareMultiTableFixture(ByRef topTable As ListObject, ByRef bottomTable As ListObject)
 
     Dim hostSheet As Worksheet
@@ -254,6 +291,10 @@ End Sub
 '@section Tests
 '===============================================================================
 
+'@sub-title Verifies that Create initialises the table name and id column from the ListObject
+'@details Arranges a standard fixture via BuildCustomTable, then asserts that the Name
+'   property matches the underlying ListObject name and IdValue reflects the requested
+'   id column header.
 '@TestMethod("CustomTable")
 Public Sub TestCreateInitialisesTable()
     CustomTestSetTitles Assert, "CustomTable", "TestCreateInitialisesTable"
@@ -270,6 +311,10 @@ Fail:
     CustomTestLogFailure Assert, "TestCreateInitialisesTable", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verifies that AddRows appends blank rows and AddIds fills them with sequential IDs
+'@details Builds the default three-row fixture, appends two rows via AddRows, then calls
+'   AddIds. Asserts the total row count is five and that the new rows receive IDs "row 4"
+'   and "row 5" following the existing sequence.
 '@TestMethod("CustomTable")
 Public Sub TestAddRowsAssignsIds()
     CustomTestSetTitles Assert, "CustomTable", "TestAddRowsAssignsIds"
@@ -294,6 +339,10 @@ Fail:
     CustomTestLogFailure Assert, "TestAddRowsAssignsIds", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verifies that RemoveRows deletes trailing empty rows and respects a totalCount cap
+'@details Blanks the last Name cell to simulate a trailing empty row, adds another empty
+'   ListRow, then calls RemoveRows(totalCount:=0) to strip empties. Asserts the table
+'   returns to three rows. A second call with totalCount:=2 further trims to two rows.
 '@TestMethod("CustomTable")
 Public Sub TestRemoveRowsDeletesEmpty()
     CustomTestSetTitles Assert, "CustomTable", "TestRemoveRowsDeletesEmpty"
@@ -318,6 +367,10 @@ Fail:
     CustomTestLogFailure Assert, "TestRemoveRowsDeletesEmpty", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verifies that SetValue persists a value update to the correct cell
+'@details Builds the default fixture, calls SetValue to write "99" into the Amount
+'   column at row index "2", then reads back via the Value property and asserts
+'   the update was applied.
 '@TestMethod("CustomTable")
 Public Sub TestSetValueUpdatesCell()
     CustomTestSetTitles Assert, "CustomTable", "TestSetValueUpdatesCell"
@@ -335,6 +388,11 @@ Fail:
     CustomTestLogFailure Assert, "TestSetValueUpdatesCell", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verifies that Sort with directSort=False groups rows by first occurrence order
+'@details Creates a four-row table where Name values appear as Gamma, Alpha, Gamma, Beta.
+'   Calls Sort with directSort:=False (SortOnFirst mode). Asserts that the two Gamma rows
+'   are grouped first, followed by Alpha and Beta in first-seen order, and that the
+'   temporary helper column is removed after sorting.
 '@TestMethod("CustomTable")
 Public Sub TestSortOnFirstGroupsByFirstOccurrence()
     CustomTestSetTitles Assert, "CustomTable", "TestSortOnFirstGroupsByFirstOccurrence"
@@ -373,6 +431,10 @@ Fail:
     CustomTestLogFailure Assert, "TestSortOnFirstGroupsByFirstOccurrence", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verifies that importing from a CustomTable with matching headers copies all rows
+'@details Creates an empty target table and a populated source table with the same three
+'   columns. Calls Import with keepSourceHeaders:=True. Asserts the target receives all
+'   three source rows and that the last row value matches "Gamma".
 '@TestMethod("CustomTable")
 Public Sub TestImportWithMatchingHeaders()
     CustomTestSetTitles Assert, "CustomTable", "TestImportWithMatchingHeaders"
@@ -399,6 +461,10 @@ Fail:
     CustomTestLogFailure Assert, "TestImportWithMatchingHeaders", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verifies that importing a smaller source shrinks the target to match
+'@details Pads the target with an extra row beyond the default three, then imports a
+'   source with only two rows. Asserts the target is trimmed to two rows and the second
+'   row value matches the source dataset.
 '@TestMethod("CustomTable")
 Public Sub TestImportShrinksTrailingRows()
     CustomTestSetTitles Assert, "CustomTable", "TestImportShrinksTrailingRows"
@@ -433,6 +499,10 @@ Fail:
     CustomTestLogFailure Assert, "TestImportShrinksTrailingRows", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verifies that importing from a DataSheet preserves formula columns
+'@details Creates a table with a Calc formula column (=Value*2), then imports a DataSheet
+'   containing only ID and Value columns. Asserts the formula survives the import, the
+'   Value column reflects imported data, and the Calc column recalculates correctly.
 '@TestMethod("CustomTable")
 Public Sub TestImportFromDataSheetPreservesFormulas()
     CustomTestSetTitles Assert, "CustomTable", "TestImportFromDataSheetPreservesFormulas"
@@ -470,6 +540,10 @@ Fail:
     CustomTestLogFailure Assert, "TestImportFromDataSheetPreservesFormulas", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verifies that AddRows with insertShift pushes a stacked table down
+'@details Builds two vertically stacked tables, records the bottom table header row
+'   position, then calls AddRows(nbRows:=2, insertShift:=True) on the top table. Asserts
+'   the bottom table header row shifted down by two and the top table gained two data rows.
 '@TestMethod("CustomTable")
 Public Sub TestAddRowsRespectsAdjacentTables()
     CustomTestSetTitles Assert, "CustomTable", "TestAddRowsRespectsAdjacentTables"
@@ -496,6 +570,10 @@ Fail:
     CustomTestLogFailure Assert, "TestAddRowsRespectsAdjacentTables", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verifies that InsertRowsAt adds blank rows matching the selection height
+'@details Builds the default three-row fixture, selects a two-row range starting at
+'   row 2, then calls InsertRowsAt. Asserts the table grows to five rows, blank rows
+'   appear before each selected row, and the original data shifts downward correctly.
 '@TestMethod("CustomTable")
 Public Sub TestInsertRowsAtInsertsSelectionRowCount()
     CustomTestSetTitles Assert, "CustomTable", "TestInsertRowsAtInsertsSelectionRowCount"
@@ -529,6 +607,10 @@ Fail:
     CustomTestLogFailure Assert, "TestInsertRowsAtInsertsSelectionRowCount", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verifies that DeleteRowsAt removes the selected rows from the table
+'@details Builds the default three-row fixture, selects the first two rows, then calls
+'   DeleteRowsAt. Asserts only one row remains and it contains the trailing record
+'   ("Gamma") that was not part of the selection.
 '@TestMethod("CustomTable")
 Public Sub TestDeleteRowsAtRemovesSelectedRows()
     CustomTestSetTitles Assert, "CustomTable", "TestDeleteRowsAtRemovesSelectedRows"
@@ -556,6 +638,10 @@ Fail:
     CustomTestLogFailure Assert, "TestDeleteRowsAtRemovesSelectedRows", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verifies that DeleteRowsAt preserves at least one blank template row
+'@details Reduces the fixture to a single row, then attempts to delete it. Asserts that
+'   the table still contains one row (the template row) and that the row is blank, ensuring
+'   the table structure is never fully emptied.
 '@TestMethod("CustomTable")
 Public Sub TestDeleteRowsAtKeepsTemplateRow()
     CustomTestSetTitles Assert, "CustomTable", "TestDeleteRowsAtKeepsTemplateRow"
@@ -585,6 +671,11 @@ Fail:
     CustomTestLogFailure Assert, "TestDeleteRowsAtKeepsTemplateRow", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verifies that InsertRowsAt with insertShift shifts a stacked table and DeleteRowsAt restores it
+'@details Builds stacked tables, inserts one row in the top table with insertShift:=True,
+'   then asserts the bottom table shifted down by one. After deleting the inserted row,
+'   asserts the bottom table returns to its original position and the top table regains
+'   its original row count.
 '@TestMethod("CustomTable")
 Public Sub TestInsertRowsAtWithShiftMovesStackedTables()
     CustomTestSetTitles Assert, "CustomTable", "TestInsertRowsAtWithShiftMovesStackedTables"
@@ -625,6 +716,10 @@ Fail:
     CustomTestLogFailure Assert, "TestInsertRowsAtWithShiftMovesStackedTables", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verifies that DeleteRowsAt with forceShift pulls a stacked table upward
+'@details Builds stacked tables, deletes the last row of the top table with
+'   forceShift:=True. Asserts the bottom table header row moved up by one and the
+'   top table lost one data row.
 '@TestMethod("CustomTable")
 Public Sub TestDeleteRowsAtForceShiftMovesStackedTables()
     CustomTestSetTitles Assert, "CustomTable", "TestDeleteRowsAtForceShiftMovesStackedTables"
@@ -656,6 +751,11 @@ Fail:
     CustomTestLogFailure Assert, "TestDeleteRowsAtForceShiftMovesStackedTables", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verifies that importing a DataSheet with extra columns records the missing ones
+'@details Builds the default fixture, then imports a DataSheet whose headers include an
+'   extra "NewValue" column not present in the target. Asserts HasColumnsNotImported is
+'   True, ImportColumnsNotFound contains exactly "NewValue", and existing columns still
+'   received their data.
 '@TestMethod("CustomTable")
 Public Sub TestImportRecordsMissingColumns()
     CustomTestSetTitles Assert, "CustomTable", "TestImportRecordsMissingColumns"
@@ -692,6 +792,10 @@ Fail:
     CustomTestLogFailure Assert, "TestImportRecordsMissingColumns", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verifies that pasteAtBottom appends imported rows below existing data
+'@details Builds the default three-row fixture, then imports a two-row source with
+'   pasteAtBottom:=True. Asserts the total grows to five rows, existing rows remain
+'   at the top, and appended rows appear in source order at positions 4 and 5.
 '@TestMethod("CustomTable")
 Public Sub TestImportPasteAtBottomAppendsData()
     CustomTestSetTitles Assert, "CustomTable", "TestImportPasteAtBottomAppendsData"
@@ -729,6 +833,10 @@ Fail:
     CustomTestLogFailure Assert, "TestImportPasteAtBottomAppendsData", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verifies that importing preserves hidden column state and still updates hidden values
+'@details Hides the Amount column, imports data via a DataSheet with keepSourceHeaders
+'   toggled both ways. Asserts the column remains hidden after import and that values
+'   in the hidden column are correctly updated regardless of the keepSourceHeaders setting.
 '@TestMethod("CustomTable")
 Public Sub TestImportPreservesHiddenColumns()
     CustomTestSetTitles Assert, "CustomTable", "TestImportPreservesHiddenColumns"
@@ -770,13 +878,18 @@ Public Sub TestImportPreservesHiddenColumns()
     hidVal = Lo.ListColumns("Amount").DataBodyRange.Cells(2, 1).Value
     Assert.AreEqual "123", CStr(hidVal), "Hidden column values should still update - value when keepSourceHeaders = no"
     Assert.IsTrue (Lo.ListColumns("Amount").DataBodyRange.Cells(3, 1).Value = vbNullString), "Hidden column values should be deleted - value when keepSourceHeaders = no"
- 
+
     Exit Sub
 
 Fail:
     CustomTestLogFailure Assert, "TestImportPreservesHiddenColumns", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verifies that strictColumnSearch rejects case-mismatched headers
+'@details Builds the default fixture and imports a DataSheet where "Name" is spelled as
+'   "name" (lowercase). Asserts HasColumnsNotImported flags the mismatch, the Name column
+'   stays blank because strict matching cannot resolve it, and exactly-matched columns
+'   (Amount) still receive their data.
 '@TestMethod("CustomTable")
 Public Sub TestImportStrictColumnSearchRequiresExactMatch()
     CustomTestSetTitles Assert, "CustomTable", "TestImportStrictColumnSearchRequiresExactMatch"
@@ -817,10 +930,15 @@ Fail:
     CustomTestLogFailure Assert, "TestImportStrictColumnSearchRequiresExactMatch", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verifies that RestoreTableSnapshot reverts the table after a failed import
+'@details Builds the default fixture, imports a DataSheet with a case-mismatched header
+'   (triggering HasColumnsNotImported), then calls RestoreTableSnapshot. Asserts the
+'   original first and third row values are restored and the Amount column still exists,
+'   confirming the snapshot captured the full table state before the import.
 '@TestMethod("CustomTable")
 Public Sub TestImportFailureRestoresSnapshot()
     CustomTestSetTitles Assert, "CustomTable", "TestImportFailureRestoresSnapshot"
-    
+
     Dim tableObject As ICustomTable
     Dim headers As Variant
     Dim rows As Variant
@@ -847,6 +965,10 @@ Public Sub TestImportFailureRestoresSnapshot()
       Assert.IsTrue Not (Lo.ListColumns("Amount") Is Nothing), "failed to estore listcolumns"
 End Sub
 
+'@sub-title Verifies that importing a larger CustomTable into a stacked top table shifts the bottom table
+'@details Builds stacked tables with two top rows, imports a four-row source into the top
+'   table. Asserts the top table resizes to four rows, the bottom table header shifts
+'   down by the row delta, and the last imported value matches the source.
 '@TestMethod("CustomTable")
 Public Sub TestImportAllCustomTableShiftsFollowingTables()
     CustomTestSetTitles Assert, "CustomTable", "TestImportAllCustomTableShiftsFollowingTables"
@@ -892,6 +1014,10 @@ Fail:
     CustomTestLogFailure Assert, "TestImportAllCustomTableShiftsFollowingTables", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verifies that importing a larger DataSheet into a stacked top table shifts the bottom table
+'@details Builds stacked tables with two top rows, imports a five-row DataSheet into the
+'   top table. Asserts the top table resizes to five rows, the bottom table shifts down
+'   accordingly, and the last value matches the DataSheet content.
 '@TestMethod("CustomTable")
 Public Sub TestImportAllDataSheetShiftsFollowingTables()
     CustomTestSetTitles Assert, "CustomTable", "TestImportAllDataSheetShiftsFollowingTables"
@@ -938,6 +1064,10 @@ Fail:
     CustomTestLogFailure Assert, "TestImportAllDataSheetShiftsFollowingTables", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verifies that importing a source with extra columns expands the target table
+'@details Creates a two-column target and a four-column source, then imports with
+'   keepSourceHeaders:=True. Asserts the target table gains the two extra columns, the
+'   new column names match the source, and imported data populates the newly added columns.
 '@TestMethod("CustomTable")
 Public Sub TestImportAllExpandsColumnsWithHeaders()
     CustomTestSetTitles Assert, "CustomTable", "TestImportAllExpandsColumnsWithHeaders"
@@ -972,6 +1102,10 @@ Fail:
     CustomTestLogFailure Assert, "TestImportAllExpandsColumnsWithHeaders", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verifies that importing a source with fewer columns trims the target table
+'@details Creates a four-column target and a two-column source, then imports with
+'   keepSourceHeaders:=True. Asserts the target is trimmed to two columns matching the
+'   source headers and that imported data fills the reduced table correctly.
 '@TestMethod("CustomTable")
 Public Sub TestImportAllTrimsExtraColumns()
     CustomTestSetTitles Assert, "CustomTable", "TestImportAllTrimsExtraColumns"
@@ -1006,6 +1140,11 @@ Fail:
     CustomTestLogFailure Assert, "TestImportAllTrimsExtraColumns", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verifies that formatHeaders copies cell styling (color, bold, comments) during import
+'@details Creates a source table with a styled Name cell (yellow background, bold font,
+'   comment "Important"), then imports into an empty target with formatHeaders listing
+'   "Name". Asserts the target cell inherits the interior color, font weight, and comment
+'   text from the source.
 '@TestMethod("CustomTable")
 Public Sub TestImportWithFormatHeadersCopiesStyling()
     CustomTestSetTitles Assert, "CustomTable", "TestImportWithFormatHeadersCopiesStyling"
@@ -1054,6 +1193,11 @@ Fail:
     CustomTestLogFailure Assert, "TestImportWithFormatHeadersCopiesStyling", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verifies that Export writes selected headers and data at the requested start line
+'@details Builds the default fixture, sets a value in cell A1, then exports only "Name"
+'   and "Amount" columns starting at row 3. Asserts the sheet is cleared before writing,
+'   headers appear at row 3 in the requested order, unrequested columns are absent, and
+'   data rows follow immediately below.
 '@TestMethod("CustomTable")
 Public Sub TestExportWritesSelectedHeadersAtRow()
     CustomTestSetTitles Assert, "CustomTable", "TestExportWritesSelectedHeadersAtRow"
@@ -1084,6 +1228,10 @@ Fail:
     CustomTestLogFailure Assert, "TestExportWritesSelectedHeadersAtRow", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verifies that Export restores hidden column state and includes hidden columns in output
+'@details Hides the Amount column, exports to a clean sheet without restricting headers.
+'   Asserts the Amount column remains hidden on the source table after export and that
+'   the export sheet includes Amount data in its output.
 '@TestMethod("CustomTable")
 Public Sub TestExportRestoresHiddenColumns()
     CustomTestSetTitles Assert, "CustomTable", "TestExportRestoresHiddenColumns"
@@ -1113,6 +1261,10 @@ Fail:
     CustomTestLogFailure Assert, "TestExportRestoresHiddenColumns", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verifies that Export creates a ListObject when addListObject is True
+'@details Builds the default fixture and exports with addListObject:=True. Asserts the
+'   export sheet contains exactly one ListObject whose name, table style, and row count
+'   match the source table.
 '@TestMethod("CustomTable")
 Public Sub TestExportAddsListObjectWhenRequested()
     CustomTestSetTitles Assert, "CustomTable", "TestExportAddsListObjectWhenRequested"
@@ -1142,6 +1294,10 @@ Fail:
     CustomTestLogFailure Assert, "TestExportAddsListObjectWhenRequested", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verifies that Create raises ObjectNotInitialized when given Nothing
+'@details Calls CustomTable.Create(Nothing) and expects the error handler to catch
+'   ProjectError.ObjectNotInitialized. Asserts the error number matches and logs a
+'   failure if no error is raised.
 '@TestMethod("CustomTable")
 Public Sub TestCreateRejectsMissingListObject()
     CustomTestSetTitles Assert, "CustomTable", "TestCreateRejectsMissingListObject"
@@ -1159,6 +1315,10 @@ ExpectError:
     Err.Clear
 End Sub
 
+'@sub-title Verifies that DataRange returns Nothing when the table has no data rows
+'@details Prepares a header-only fixture (includeData:=False), creates a CustomTable, then
+'   calls DataRange("Name"). Asserts the result Is Nothing, confirming no phantom range is
+'   returned for an empty column.
 '@TestMethod("CustomTable")
 Public Sub TestDataRangeReturnsNothingWhenEmpty()
     CustomTestSetTitles Assert, "CustomTable", "TestDataRangeReturnsNothingWhenEmpty"

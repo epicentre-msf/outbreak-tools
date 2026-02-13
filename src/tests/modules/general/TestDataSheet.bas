@@ -1,6 +1,23 @@
 Attribute VB_Name = "TestDataSheet"
 Option Explicit
 
+'@ModuleDescription("Unit tests for the DataSheet class (IDataSheet interface). Validates range-based " & _
+'                    "data access, column lookups, single and multi-condition filtering, export to " & _
+'                    "workbook (with and without hidden names), and import with case-insensitive " & _
+'                    "column matching. All tests run against a dictionary fixture sheet that " & _
+'                    "simulates a linelist dictionary layout.")
+'
+'@description        Test module for DataSheet / IDataSheet. Covers factory creation and property
+'                    initialization, DataRange retrieval for single columns and all columns,
+'                    ColumnExists with exact / case-insensitive / partial matching, AddFormatsColumns,
+'                    FilterData (single condition), FiltersData (multiple conditions with edge cases),
+'                    Export (data + formatting + hidden names), and Import (case-insensitive header
+'                    matching plus format import). Uses the CustomTest harness with the standard
+'                    CustomTestSetTitles / CustomTestLogFailure pattern.
+'
+'@depends            DataSheet, IDataSheet, HiddenNames, IHiddenNames, BetterArray, CustomTest,
+'                    TestHelpers, DictionaryTestFixture
+
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 
 
@@ -20,6 +37,9 @@ Private dataWorksheet As Worksheet
 '@section Helpers
 '===============================================================================
 
+'@sub-title ResetDataSheet
+'@description Rebuilds the dictionary fixture sheet and re-creates the DataSheet object so that
+'             every test starts from a known, clean state.
 Private Sub ResetDataSheet()
     PrepareDictionaryFixture DICTIONARYFIXTURESHEET
     Set dataWorksheet = ThisWorkbook.Worksheets(DICTIONARYFIXTURESHEET)
@@ -30,6 +50,11 @@ End Sub
 '===============================================================================
 
 '@ModuleInitialize
+'@sub-title ModuleInitialize
+'@description Sets up the shared test infrastructure once before all tests in the module run.
+'             Creates the test-output sheet, initializes the CustomTest assert object, prepares
+'             the dictionary fixture, and caches the expected row and column counts for later
+'             assertions.
 Public Sub ModuleInitialize()
     BusyApp
     EnsureWorksheet TEST_OUTPUT_SHEET, clearSheet:=False
@@ -42,6 +67,10 @@ Public Sub ModuleInitialize()
 End Sub
 
 '@ModuleCleanup
+'@sub-title ModuleCleanup
+'@description Prints accumulated test results to the output sheet and tears down all fixture
+'             worksheets (DICTOUTPUTSHEET and DICTIONARYFIXTURESHEET) that were created during
+'             module initialization.
 Public Sub ModuleCleanup()
     If Not Assert Is Nothing Then
         Assert.PrintResults TEST_OUTPUT_SHEET
@@ -52,6 +81,12 @@ Public Sub ModuleCleanup()
 End Sub
 
 '@TestInitialize
+'@sub-title TestInitialize
+'@description Runs before every individual test method. Resets the DataSheet object to a clean
+'             fixture state and pre-adds formatting columns (formatting condition, formatting
+'             values, lock cells) so that tests which depend on those columns do not need to add
+'             them individually. Errors during AddFormatsColumns are silently ignored because not
+'             all tests require format columns.
 Public Sub TestInitialize()
     BusyApp
     ResetDataSheet
@@ -61,6 +96,9 @@ Public Sub TestInitialize()
 End Sub
 
 '@TestCleanUp
+'@sub-title TestCleanUp
+'@description Runs after every individual test method. Flushes the CustomTest assert buffer so
+'             that each test's results are recorded independently.
 Public Sub TestCleanUp()
     Assert.Flush
 End Sub
@@ -69,6 +107,12 @@ End Sub
 '===============================================================================
 
 '@TestMethod("Datasheet")
+'@sub-title TestObjectInit
+'@details Verifies that the DataSheet factory method (DataSheet.Create) correctly initializes all
+'         read-only properties. Asserts that DataStartColumn, DataStartRow, Wksh.Name, HeaderRange
+'         address, DataEndRow, and DataEndColumn all match the expected values derived from the
+'         dictionary fixture dimensions. No arrange step beyond TestInitialize is needed; the act
+'         is the factory call that already happened in ResetDataSheet.
 Public Sub TestObjectInit()
     CustomTestSetTitles Assert, "Datasheet", "TestObjectInit"
     Assert.IsTrue (dataObject.DataStartColumn = 1), "Start column changed"
@@ -80,6 +124,14 @@ Public Sub TestObjectInit()
 End Sub
 
 '@TestMethod("Datasheet")
+'@sub-title TestDataRange
+'@details Exercises the DataRange method across several scenarios. First, retrieves a single
+'         column ("Variable Name") and verifies the length matches the fixture row count. Then
+'         retrieves the same column with includeHeaders:=True and confirms the extra header row.
+'         Next, uses the "__all__" sentinel to fetch all columns and checks that the result is a
+'         multidimensional BetterArray with the correct column count. Also validates a chunked
+'         column name ("Control"). Finally, asserts that requesting a non-existent column
+'         ("Formula") raises ProjectError.ElementNotFound.
 Public Sub TestDataRange()
     CustomTestSetTitles Assert, "Datasheet", "TestDataRange"
     On Error GoTo Fail
@@ -121,6 +173,12 @@ Fail:
 End Sub
 
 '@TestMethod("DataSheet")
+'@sub-title TestColumnExist
+'@details Tests the ColumnExists method under five conditions: a garbage string that should not
+'         match any header, an empty string, an exact case-sensitive match ("Variable Name"), a
+'         case-insensitive match ("variable name" with matchCase:=False), and a partial
+'         case-insensitive match ("variable" with strictSearch:=False). Each assertion confirms
+'         the expected Boolean return value.
 Public Sub TestColumnExist()
     CustomTestSetTitles Assert, "DataSheet", "TestColumnExist"
     Assert.IsFalse dataObject.ColumnExists("&222!\"), "Weird column Name found"
@@ -131,6 +189,11 @@ Public Sub TestColumnExist()
 End Sub
 
 '@TestMethod("DataSheet")
+'@sub-title TestAddFormat
+'@details Verifies that AddFormatsColumns completes without raising an error when called with
+'         valid formatting column names ("formatting condition" and "formatting values"). The
+'         test uses an On Error GoTo Fail pattern: if the call succeeds the test exits normally;
+'         if it throws, the failure is logged with CustomTestLogFailure.
 Public Sub TestAddFormat()
     CustomTestSetTitles Assert, "DataSheet", "TestAddFormat"
     On Error GoTo Fail
@@ -143,6 +206,13 @@ Fail:
 End Sub
 
 '@TestMethod("DataSheet")
+'@sub-title TestSimpleFilter
+'@details Validates single-condition filtering via FilterData. Arranges three scenarios: (1)
+'         filtering "Sheet Type" for "hlist2D" and returning "Variable Name" should yield a
+'         non-empty result; (2) the same filter returning "__all__" should produce a
+'         multidimensional BetterArray; (3) filtering on a nonsense value ("&&&&&") should return
+'         an empty array. Additionally verifies the error path: requesting columns that do not
+'         exist ("Sheet", "OO") raises ProjectError.ElementNotFound.
 Public Sub TestSimpleFilter()
     CustomTestSetTitles Assert, "DataSheet", "TestSimpleFilter"
     On Error GoTo Fail
@@ -160,7 +230,7 @@ Public Sub TestSimpleFilter()
 
     On Error Resume Next
         Err.Clear
-        '@Ignore AssignmentNotUsed 
+        '@Ignore AssignmentNotUsed
         Set values = dataObject.FilterData("Sheet", "Test", "OO")
         Assert.IsTrue (Err.Number = ProjectError.ElementNotFound), "Failed to raise error on unfound columns"
     On Error GoTo Fail
@@ -172,6 +242,14 @@ Fail:
 End Sub
 
 '@TestMethod("DataSheet")
+'@sub-title TestMultipleFilters
+'@details Exercises the multi-condition FiltersData method across four scenarios. First, applies
+'         two valid conditions (Sheet Name = "hlist2D-sheet1" AND Main Section = "Validation")
+'         and asserts a non-empty result. Second, uses nonsense condition values to confirm an
+'         empty result. Third, pops one element from variableData to create a length mismatch
+'         between variables and conditions, verifying that FiltersData handles this gracefully by
+'         returning an empty array. Fourth, passes completely unknown column names and asserts
+'         that ProjectError.ElementNotFound is raised.
 Public Sub TestMultipleFilters()
     CustomTestSetTitles Assert, "DataSheet", "TestMultipleFilters"
     On Error GoTo Fail
@@ -200,7 +278,7 @@ Public Sub TestMultipleFilters()
     Set returnedValues = Nothing
 
     On Error Resume Next
-    '@Ignore AssignmentNotUsed 
+    '@Ignore AssignmentNotUsed
     Set returnedValues = dataObject.FiltersData(BetterArrayFromList("Unknown"), BetterArrayFromList("Unknown"), returnData)
     Assert.IsTrue (Err.Number = ProjectError.ElementNotFound), "FiltersData should raise ElementNotFound for unknown columns"
     On Error GoTo Fail
@@ -212,6 +290,13 @@ Fail:
 End Sub
 
 '@TestMethod("DataSheet")
+'@sub-title TestExport
+'@details Tests that Export copies the DataSheet contents and formatting into a new workbook.
+'         Arranges by creating a fresh workbook, then acts by calling dataObject.Export. Asserts
+'         that (1) the exported workbook contains a worksheet with the same name as the source,
+'         (2) the workbook has at least one worksheet, and (3) cell-level formatting (interior
+'         color) in the last data cell matches between source and export. The temporary workbook
+'         is deleted in both the success and failure paths.
 Public Sub TestExport()
     CustomTestSetTitles Assert, "DataSheet", "TestExport"
     On Error GoTo Fail
@@ -241,6 +326,13 @@ Fail:
 End Sub
 
 '@TestMethod("DataSheet")
+'@sub-title TestExportIncludesHiddenNamesWhenRequested
+'@details Verifies that Export with includeNames:=True replicates worksheet-level hidden names to
+'         the target workbook. Arranges by creating a HiddenNames store on the source sheet and
+'         setting a Long value (42) under the key "__DataSheetHidden__". Acts by calling Export
+'         with includeNames:=True into a new workbook. Asserts that a HiddenNames store on the
+'         exported sheet returns the same Long value for the same key. Cleans up the temporary
+'         workbook in both success and failure paths.
 Public Sub TestExportIncludesHiddenNamesWhenRequested()
     CustomTestSetTitles Assert, "DataSheet", "TestExportIncludesHiddenNamesWhenRequested"
     On Error GoTo Fail
@@ -270,6 +362,14 @@ Fail:
 End Sub
 
 '@TestMethod("DataSheet")
+'@sub-title TestImport
+'@details Tests data import with case-insensitive column matching. Arranges by creating a target
+'         sheet with lower-cased copies of the source headers to simulate a case mismatch. Acts
+'         by calling importData.Import with strictColumnSearch:=False, which forces the DataSheet
+'         to match columns in a case-insensitive manner. Asserts that the imported sheet has the
+'         correct HeaderRange address, DataEndRow, and DataEndColumn matching the original fixture
+'         dimensions. Also exercises ImportFormat by importing the "Formatting Values" column to
+'         confirm no errors are raised during format transfer.
 Public Sub TestImport()
     CustomTestSetTitles Assert, "DataSheet", "TestImport"
     On Error GoTo Fail

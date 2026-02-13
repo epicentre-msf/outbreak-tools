@@ -12,6 +12,17 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 '@Folder("CustomTests")
+'@ModuleDescription("Unit tests for the LLdictionary class")
+
+'@description
+'Validates the LLdictionary class, which centralises all column-level and
+'row-level operations on the linelist dictionary worksheet. Tests cover
+'factory creation, column existence and validity checks, variable selectors,
+'column insert/remove/rename, row insert/delete, preparation helpers,
+'data exchange (import/export), and export-counter persistence through
+'hidden worksheet-level names.
+'@depends LLdictionary, ILLdictionary, DictionaryTestFixture, CustomTest,
+'  ICustomTest, BetterArray, DataSheet, IDataSheet
 
 
 Private Const DICT_SHEET As String = "LLDictTest"
@@ -20,14 +31,24 @@ Private Const EXPORT_TOTAL_NAME As String = "__ll_exports_total__"
 Private Assert As ICustomTest
 Private Dictionary As ILLdictionary
 
-'@section Fixture lifecycle
+'@section Fixture Lifecycle
 '===============================================================================
+'@description Private helpers that build and tear down the dictionary worksheet
+'fixture used by every test in this module.
 
+'@sub-title Reset the dictionary worksheet to its baseline fixture state
 Private Sub ResetDictionarySheet()
     PrepareDictionaryFixture DICT_SHEET
     RemoveDictionaryExportName ThisWorkbook.Worksheets(DICT_SHEET)
 End Sub
 
+'@sub-title Create a ListObject over the dictionary fixture data region
+'@details
+'Deletes any existing ListObject on the dictionary sheet and creates a fresh
+'one from the CurrentRegion of cell A1. The resulting table is named
+'"tblLLDictionary". Several tests that exercise row-level operations (insert,
+'delete) need a ListObject present on the sheet, so this helper guarantees one
+'exists in a known state before those tests run.
 Private Function EnsureDictionaryListObject() As ListObject
     Dim dictSheet As Worksheet
     Dim dataRange As Range
@@ -48,9 +69,12 @@ Private Function EnsureDictionaryListObject() As ListObject
     Set EnsureDictionaryListObject = listObj
 End Function
 
-'@section Module lifecycle
+'@section Module Lifecycle
 '===============================================================================
+'@description Rubberduck lifecycle hooks that initialise and clean up the test
+'module as a whole.
 
+'@sub-title Initialise the test module and create shared resources
 '@ModuleInitialize
 Private Sub ModuleInitialize()
     EnsureWorksheet TEST_OUTPUT_SHEET, clearSheet:=False
@@ -59,6 +83,7 @@ Private Sub ModuleInitialize()
     ResetDictionarySheet
 End Sub
 
+'@sub-title Print results and release all module-level resources
 '@ModuleCleanup
 Private Sub ModuleCleanup()
     If Not Assert Is Nothing Then
@@ -71,6 +96,7 @@ Private Sub ModuleCleanup()
     DeleteWorksheet DICT_SHEET
 End Sub
 
+'@sub-title Reset fixture and create a fresh dictionary before each test
 '@TestInitialize
 Private Sub TestInitialize()
     'Refresh the fixture worksheet ahead of each test to guarantee isolation.
@@ -78,6 +104,7 @@ Private Sub TestInitialize()
     Set Dictionary = LLdictionary.Create(ThisWorkbook.Worksheets(DICT_SHEET), 1, 1)
 End Sub
 
+'@sub-title Flush assertions and release per-test resources
 '@TestCleanup
 Private Sub TestCleanup()
     If Not Assert Is Nothing Then
@@ -89,6 +116,17 @@ Private Sub TestCleanup()
     Set Dictionary = Nothing
 End Sub
 
+'@section Creation Tests
+'===============================================================================
+'@description Tests that verify the LLdictionary.Create factory method
+'produces a correctly initialised instance.
+
+'@sub-title Verify that Create returns a valid ILLdictionary with correct data coordinates
+'@details
+'Arranges by relying on the dictionary created during TestInitialize. Acts by
+'inspecting the returned object type and its backing DataSheet properties.
+'Asserts that the result implements ILLdictionary and that the start row,
+'start column, and target sheet name match the values passed to Create.
 '@TestMethod("LLdictionary")
 Public Sub TestCreateInitialisesData()
     CustomTestSetTitles Assert, "LLdictionary", "TestCreateInitialisesData"
@@ -103,7 +141,18 @@ Fail:
     CustomTestLogFailure Assert, "TestCreateInitialisesData", Err.Number, Err.Description
 End Sub
 
+'@section Column Tests
+'===============================================================================
+'@description Tests that validate column existence checks, validity filtering,
+'column insertion, removal, and renaming.
 
+'@sub-title Verify ColumnExists with and without validity checking
+'@details
+'Arranges by using the default fixture dictionary. Acts by calling ColumnExists
+'for a known column ("variable name"), a missing column, a valid schema column
+'("control" with checkValidity), and an invalid schema column ("column indexes"
+'with checkValidity). Asserts that each call returns the expected Boolean,
+'confirming both presence-only and schema-validated lookups.
 '@TestMethod("LLdictionary")
 Public Sub TestColumnExistsAndValidity()
     CustomTestSetTitles Assert, "LLdictionary", "TestColumnExistsAndValidity"
@@ -118,6 +167,14 @@ Fail:
     CustomTestLogFailure Assert, "TestColumnExistsAndValidity", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify UniqueValues and VariableExists against fixture expectations
+'@details
+'Arranges by fetching UniqueValues for the "sheet name" column and the
+'corresponding expected values from DictionaryDistinctValues. Acts by comparing
+'the length and membership of both arrays, then checks VariableExists for the
+'first fixture variable and a missing variable name. Asserts that all expected
+'sheet names appear in the UniqueValues result, that the first variable is
+'found, and that a non-existent variable returns False.
 '@TestMethod("LLdictionary")
 Public Sub TestVariableAndUniqueValues()
     CustomTestSetTitles Assert, "LLdictionary", "TestVariableAndUniqueValues"
@@ -146,6 +203,14 @@ Fail:
     CustomTestLogFailure Assert, "TestVariableAndUniqueValues", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify ChoicesVars, GeoVars, and TimeVars return correct variable sets
+'@details
+'Arranges by retrieving the specialised variable selectors (ChoicesVars,
+'GeoVars, TimeVars) from the dictionary and computing expected results from
+'DictionaryControlMatches with the appropriate control or type filters. Acts by
+'comparing lengths and checking that every expected variable appears in the
+'returned BetterArray for each category. Asserts that choices, geo, and time
+'variable counts and memberships match the fixture expectations.
 '@TestMethod("LLdictionary")
 Public Sub TestSpecialVariableSelectors()
     CustomTestSetTitles Assert, "LLdictionary", "TestSpecialVariableSelectors"
@@ -188,6 +253,13 @@ Fail:
     CustomTestLogFailure Assert, "TestSpecialVariableSelectors", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify InsertColumn, RemoveColumn, and AddColumn modify headers correctly
+'@details
+'Arranges by using the default fixture dictionary. Acts by inserting a column
+'before "sheet type", confirming it exists, removing it, confirming it is gone,
+'then appending a column with AddColumn and verifying it appears. Cleans up by
+'removing the appended column. Asserts that InsertColumn places a header at the
+'specified position, RemoveColumn deletes it, and AddColumn appends to the end.
 '@TestMethod("LLdictionary")
 Public Sub TestInsertAndRemoveColumn()
     CustomTestSetTitles Assert, "LLdictionary", "TestInsertAndRemoveColumn"
@@ -209,6 +281,11 @@ Fail:
     CustomTestLogFailure Assert, "TestInsertAndRemoveColumn", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify RenameColumn updates the header and removes the old name
+'@details
+'Arranges by using the default fixture dictionary with an existing "main label"
+'column. Acts by renaming it to "main label renamed". Asserts that the new
+'header is found by ColumnExists and the original header is no longer present.
 '@TestMethod("LLdictionary")
 Public Sub TestRenameColumnUpdatesHeader()
     CustomTestSetTitles Assert, "LLdictionary", "TestRenameColumnUpdatesHeader"
@@ -224,6 +301,16 @@ Fail:
     CustomTestLogFailure Assert, "TestRenameColumnUpdatesHeader", Err.Number, Err.Description
 End Sub
 
+'@section Row Tests
+'===============================================================================
+'@description Tests that verify row-level operations such as deletion and
+'insertion within a ListObject-backed dictionary.
+
+'@sub-title Verify DeleteRows removes the targeted ListObject row
+'@details
+'Arranges by creating a ListObject over the fixture data and recording the
+'baseline row count. Acts by deleting the second list row via
+'Dictionary.DeleteRows. Asserts that the row count decreased by exactly one.
 '@TestMethod("LLdictionary")
 Public Sub TestDeleteRowsRemovesSelection()
     CustomTestSetTitles Assert, "LLdictionary", "TestDeleteRowsRemovesSelection"
@@ -244,26 +331,13 @@ Fail:
     CustomTestLogFailure Assert, "TestDeleteRowsRemovesSelection", Err.Number, Err.Description
 End Sub
 
-'@TestMethod("LLdictionary")
-Public Sub TestCleanRemovesUnknownColumns()
-    CustomTestSetTitles Assert, "LLdictionary", "TestCleanRemovesUnknownColumns"
-    Dim sh As Worksheet
-    Dim endCol As Long
-
-    On Error GoTo Fail
-
-    Set sh = Dictionary.Data.Wksh
-    endCol = sh.Cells(1, sh.Columns.Count).End(xlToLeft).Column + 1
-    sh.Cells(1, endCol).Value = "temp column"
-
-    Dictionary.Clean removeAddedColumns:=True
-    Assert.IsTrue (Not Dictionary.ColumnExists("temp column")), "Clean should remove unknown columns"
-    Exit Sub
-
-Fail:
-    CustomTestLogFailure Assert, "TestCleanRemovesUnknownColumns", Err.Number, Err.Description
-End Sub
-
+'@sub-title Verify InsertRows adds blank rows matching the selection height
+'@details
+'Arranges by creating a ListObject, capturing the initial row count and the
+'value in the second data row, then building a two-row selection range. Acts
+'by calling Dictionary.InsertRows with that selection. Asserts that the row
+'count increased by two, that the first inserted row is blank, and that the
+'original data shifted down below the inserted rows.
 '@TestMethod("LLdictionary")
 Public Sub TestInsertRowsMirrorsSelectionHeight()
     CustomTestSetTitles Assert, "LLdictionary", "TestInsertRowsMirrorsSelectionHeight"
@@ -295,6 +369,17 @@ Fail:
     CustomTestLogFailure Assert, "TestInsertRowsMirrorsSelectionHeight", Err.Number, Err.Description
 End Sub
 
+'@section Preparation Tests
+'===============================================================================
+'@description Tests that verify the Prepare method adds expected helper columns
+'and renames preserved sheet names.
+
+'@sub-title Verify Prepare appends all required helper columns
+'@details
+'Arranges by using the default fixture dictionary without preparation. Acts by
+'calling Dictionary.Prepare with no arguments. Asserts that the five expected
+'helper columns (column index, visibility, crf index, crf choices, crf status)
+'all appear in the dictionary after preparation.
 '@TestMethod("LLdictionary")
 Public Sub TestPrepareAddsHelperColumns()
     CustomTestSetTitles Assert, "LLdictionary", "TestPrepareAddsHelperColumns"
@@ -314,6 +399,13 @@ Fail:
     CustomTestLogFailure Assert, "TestPrepareAddsHelperColumns", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify Prepare renames sheet names that conflict with preserved names
+'@details
+'Arranges by building a BetterArray of two preserved sheet names that match
+'fixture values. Acts by calling Dictionary.Prepare with the preserved list,
+'then retrieving the unique sheet names. Asserts that the preserved names now
+'carry an underscore suffix and that the original unsuffixed names no longer
+'appear in the dictionary.
 '@TestMethod("LLdictionary")
 Public Sub TestPrepareRenamesPreservedSheetNames()
     CustomTestSetTitles Assert, "LLdictionary", "TestPrepareRenamesPreservedSheetNames"
@@ -339,6 +431,50 @@ Fail:
     CustomTestLogFailure Assert, "TestPrepareRenamesPreservedSheetNames", Err.Number, Err.Description
 End Sub
 
+'@section Clean Tests
+'===============================================================================
+'@description Tests that verify the Clean method removes columns that do not
+'belong to the dictionary schema.
+
+'@sub-title Verify Clean removes columns not recognised by the dictionary schema
+'@details
+'Arranges by writing a "temp column" header beyond the last used column on the
+'dictionary sheet. Acts by calling Dictionary.Clean with removeAddedColumns set
+'to True. Asserts that the temporary column is no longer found by ColumnExists,
+'confirming that Clean purges unknown headers.
+'@TestMethod("LLdictionary")
+Public Sub TestCleanRemovesUnknownColumns()
+    CustomTestSetTitles Assert, "LLdictionary", "TestCleanRemovesUnknownColumns"
+    Dim sh As Worksheet
+    Dim endCol As Long
+
+    On Error GoTo Fail
+
+    Set sh = Dictionary.Data.Wksh
+    endCol = sh.Cells(1, sh.Columns.Count).End(xlToLeft).Column + 1
+    sh.Cells(1, endCol).Value = "temp column"
+
+    Dictionary.Clean removeAddedColumns:=True
+    Assert.IsTrue (Not Dictionary.ColumnExists("temp column")), "Clean should remove unknown columns"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestCleanRemovesUnknownColumns", Err.Number, Err.Description
+End Sub
+
+'@section Data Exchange Tests
+'===============================================================================
+'@description Tests that verify Export and Import transfer dictionary data,
+'formatting, and metadata (export counter) between workbooks.
+
+'@sub-title Verify Export creates a table with formatting in the destination workbook
+'@details
+'Arranges by creating a new temporary workbook. Acts by calling
+'Dictionary.Export targeting that workbook. Asserts that the exported sheet
+'contains exactly one ListObject, that the row below the data has a blue font
+'marker indicating preparation, and that fixture cell formatting (interior
+'colour) was preserved during export. Cleans up by deleting the temporary
+'workbook.
 '@TestMethod("LLdictionary")
 Public Sub TestExportCreatesWorkbook()
     CustomTestSetTitles Assert, "LLdictionary", "TestExportCreatesWorkbook"
@@ -372,6 +508,18 @@ Fail:
     CustomTestLogFailure Assert, "TestExportCreatesWorkbook", Err.Number, Err.Description
 End Sub
 
+'@section Export Counter Tests
+'===============================================================================
+'@description Tests that verify the TotalNumberOfExports property persists via
+'hidden worksheet-level names and that Create, Export, and Import correctly
+'read, write, and restore the counter.
+
+'@sub-title Verify setting TotalNumberOfExports creates a hidden worksheet name
+'@details
+'Arranges by removing any existing export-counter name from the dictionary
+'sheet. Acts by setting Dictionary.TotalNumberOfExports to 37. Asserts that a
+'hidden Name object matching EXPORT_TOTAL_NAME exists on the sheet, that its
+'numeric value equals 37, and that the name is not visible.
 '@TestMethod("LLdictionary")
 Public Sub TestSetTotalNumberOfExportsPersistsName()
     CustomTestSetTitles Assert, "LLdictionary", "TestSetTotalNumberOfExportsPersistsName"
@@ -396,6 +544,13 @@ Fail:
     CustomTestLogFailure Assert, "TestSetTotalNumberOfExportsPersistsName", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify Create overrides an existing stored export counter
+'@details
+'Arranges by planting a hidden name with value 42 on the dictionary sheet,
+'then creating a new LLdictionary with numberOfExports set to 35. Acts by
+'reading back the hidden name and the exposed property. Asserts that the
+'name value changed to 35, confirming that Create honours its parameter
+'over any pre-existing stored counter.
 '@TestMethod("LLdictionary")
 Public Sub TestCreateOverridesStoredExportCounterWhenRequested()
     CustomTestSetTitles Assert, "LLdictionary", "TestCreateOverridesStoredExportCounterWhenRequested"
@@ -422,6 +577,13 @@ Fail:
     CustomTestLogFailure Assert, "TestCreateOverridesStoredExportCounterWhenRequested", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify Export writes the export counter to the destination sheet
+'@details
+'Arranges by setting Dictionary.TotalNumberOfExports to 29 and creating a
+'temporary workbook. Acts by exporting the dictionary to that workbook, then
+'reading the hidden name from the exported sheet. Asserts that the hidden name
+'exists, holds the value 29, and is not visible. Cleans up by deleting the
+'temporary workbook.
 '@TestMethod("LLdictionary")
 Public Sub TestExportWritesExportCounter()
     CustomTestSetTitles Assert, "LLdictionary", "TestExportWritesExportCounter"
@@ -452,6 +614,14 @@ Fail:
     CustomTestLogFailure Assert, "TestExportWritesExportCounter", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify Import restores the export counter from the source sheet
+'@details
+'Arranges by setting Dictionary.TotalNumberOfExports to 23, exporting to a
+'temporary workbook, then overwriting the exported hidden name with 11 and
+'resetting the local dictionary counter to 3. Acts by importing from the
+'temporary workbook sheet. Asserts that the dictionary property now reads 11
+'and that the local sheet hidden name also holds 11, confirming Import adopted
+'the source counter. Cleans up by deleting the temporary workbook.
 '@TestMethod("LLdictionary")
 Public Sub TestImportRestoresExportCounter()
     CustomTestSetTitles Assert, "LLdictionary", "TestImportRestoresExportCounter"
@@ -490,7 +660,15 @@ End Sub
 
 '@section Helpers
 '===============================================================================
+'@description Private utility functions used by the export-counter tests to
+'locate, read, and remove hidden worksheet-level Name objects.
 
+'@sub-title Find a worksheet-scoped Name definition by its local identifier
+'@details
+'Iterates the Names collection of the given worksheet, comparing each local
+'name (after stripping the sheet qualifier) against nameId using a
+'case-insensitive comparison. Returns the matching Name object or Nothing
+'when no match is found.
 Private Function SheetNameDefinition(ByVal sheet As Worksheet, ByVal nameId As String) As Name
     Dim definition As Name
 
@@ -504,6 +682,7 @@ Private Function SheetNameDefinition(ByVal sheet As Worksheet, ByVal nameId As S
     Next definition
 End Function
 
+'@sub-title Remove the export-counter hidden name from a worksheet
 Private Sub RemoveDictionaryExportName(ByVal sheet As Worksheet)
     Dim definition As Name
 
@@ -513,6 +692,11 @@ Private Sub RemoveDictionaryExportName(ByVal sheet As Worksheet)
     If Not definition Is Nothing Then definition.Delete
 End Sub
 
+'@sub-title Extract the local portion of a qualified worksheet name
+'@details
+'Splits a fully qualified name (e.g. "SheetName!__ll_exports_total__") at the
+'exclamation mark and returns only the portion after it. When no exclamation
+'mark is present, the entire string is returned unchanged.
 Private Function LocalName(ByVal qualifiedName As String) As String
     Dim exclPos As Long
 
@@ -524,6 +708,11 @@ Private Function LocalName(ByVal qualifiedName As String) As String
     End If
 End Function
 
+'@sub-title Parse the numeric value stored in a worksheet Name definition
+'@details
+'Extracts the formula string from the Name object, strips the leading equals
+'sign and whitespace, and converts the result to a Long. Returns zero when
+'the Name is Nothing or the stored value cannot be parsed.
 Private Function NameNumericValue(ByVal definition As Name) As Long
     Dim evaluated As String
     Dim hostWorkbook As Workbook

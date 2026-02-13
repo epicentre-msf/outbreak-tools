@@ -6,6 +6,29 @@ Option Explicit
 
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 '@Folder("CustomTests")
+'@ModuleDescription("Tests for the DropdownLists class")
+
+'@description
+'Validates the DropdownLists class, which manages named dropdown list storage
+'on hidden worksheets. Each DropdownLists instance wraps a single worksheet and
+'provides methods to add, remove, sort, update, clear, translate, validate, and
+'hyperlink named dropdown columns. Two fixtures are created in TestInitialize:
+'dropOne (no header prefix) and dropTwo (with "dropdown_" prefix), exercising
+'both prefix modes throughout the suite.
+'Tests cover: factory creation with error on Nothing sheet, Name property,
+'adding lists with labels and counter prefixes, duplicate detection surfaced
+'through IChecking, removal, HiddenNames-backed counter persistence at workbook
+'and worksheet scope, existence checks across instances, AllDropdowns enumeration
+'that excludes removed entries, translation of all lists via ITranslationObject,
+'LabelRange text with auto-incrementing counter prefixes, value retrieval with
+'and without headers plus unknown-list fallback, Length tracking after successive
+'adds, ascending and descending Sort, ClearList followed by Update with
+'deduplication and bottom-append, and finally SetValidation with error/warning
+'alert styles plus forward and return hyperlinks between output and dropdown
+'sheets.
+'Uses the CustomTest harness (ICustomTest), not Rubberduck.
+'@depends DropdownLists, IDropdownLists, Checking, IChecking, HiddenNames, IHiddenNames, TranslationObject, ITranslationObject, BetterArray, CustomTest, TestHelpers
+
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const DROPTESTONE As String = "DropTestList1"
 Private Const DROPTESTTWO As String = "DropTestList2"
@@ -22,12 +45,14 @@ Private dropTwo As IDropdownLists
 '@section Helpers
 '===============================================================================
 
+'@sub-title Ensure the three hidden worksheets used by dropdown tests exist.
 Private Sub EnsureDropSheets()
     EnsureWorksheet DROPOUTPUT, visibility:=xlSheetHidden
     EnsureWorksheet DROPTESTONE, visibility:=xlSheetHidden
     EnsureWorksheet DROPTESTTWO, visibility:=xlSheetHidden
 End Sub
 
+'@sub-title Clear the contents of all dropdown test worksheets, including the optional translations sheet.
 Private Sub ClearDropSheets()
     ClearWorksheet ThisWorkbook.Worksheets(DROPOUTPUT)
     ClearWorksheet ThisWorkbook.Worksheets(DROPTESTONE)
@@ -78,6 +103,13 @@ End Sub
 '@section Tests
 '===============================================================================
 
+'@sub-title Verify factory creation succeeds for both prefix modes and raises on Nothing worksheet.
+'@details
+'Creates dropOne with an empty prefix and dropTwo with "dropdown_" prefix,
+'asserting both return non-Nothing references. Then sets the worksheet
+'variable to Nothing and attempts creation, asserting that
+'ProjectError.ElementNotFound is raised. This tests the guard clause in
+'DropdownLists.Create against invalid input.
 '@TestMethod("DropdownLists")
 Public Sub TestCreateCheck()
     CustomTestSetTitles Assert, "DropdownLists", "TestCreateCheck"
@@ -111,6 +143,10 @@ Fail:
     CustomTestLogFailure Assert, "TestCreateCheck", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify Name property returns the underlying worksheet name.
+'@details
+'Reads the Name property of dropOne and asserts it matches the DROPTESTONE
+'constant, confirming the factory correctly wires the sheet identity.
 '@TestMethod("DropdownLists")
 Public Sub TestName()
     CustomTestSetTitles Assert, "DropdownLists", "TestName"
@@ -122,6 +158,13 @@ Fail:
     CustomTestLogFailure Assert, "TestName", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify Add writes multiple named lists with different label and prefix options.
+'@details
+'Adds three lists to dropOne with varying addLabel and counterPrefix
+'combinations, and three lists to dropTwo with a "dropdown_" prefix mode.
+'The test succeeds if no error is raised, confirming that Add handles all
+'parameter permutations without failing. This is a smoke test for Add
+'across both prefix modes.
 '@TestMethod("DropdownLists")
 Public Sub TestAdd()
     CustomTestSetTitles Assert, "DropdownLists", "TestAdd"
@@ -146,6 +189,13 @@ Fail:
 End Sub
 
 
+'@sub-title Verify adding a duplicate list name surfaces an error through IChecking.
+'@details
+'Adds "listValues" once, then adds the same name again. Asserts that
+'HasCheckings becomes True and that CheckingValues contains exactly one
+'entry, confirming the class records the duplicate rather than raising a
+'runtime error. This tests the internal error-collection path used during
+'linelist building where halting is not desired.
 '@TestMethod("DropdownLists")
 Public Sub TestAddExisting()
     CustomTestSetTitles Assert, "DropdownLists", "TestAddExisting"
@@ -173,6 +223,11 @@ Fail:
     CustomTestLogFailure Assert, "TestAddExisting", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify Remove deletes a previously added list without raising an error.
+'@details
+'Adds "removedListValues" with a label and counter, then removes it. The
+'test succeeds if no runtime error occurs, confirming the removal path
+'cleans up the internal storage correctly.
 '@TestMethod("DropdownLists")
 Public Sub TestRemove()
     CustomTestSetTitles Assert, "DropdownLists", "TestRemove"
@@ -190,6 +245,14 @@ Fail:
     CustomTestLogFailure Assert, "TestRemove", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify Add and Remove update HiddenNames counters at workbook and worksheet scope.
+'@details
+'Captures the current workbook-scope and worksheet-scope counter values
+'from HiddenNames, then adds a list and asserts both counters incremented
+'by one. After removing the list, asserts the worksheet counter reverts to
+'its original value. The fail handler restores original counter values to
+'avoid polluting subsequent tests. This confirms the DropdownLists class
+'persists counter state through HiddenNames rather than in-memory only.
 '@TestMethod("DropdownLists")
 Public Sub TestCountersPersistThroughHiddenNames()
     CustomTestSetTitles Assert, "DropdownLists", "TestCountersPersistThroughHiddenNames"
@@ -240,6 +303,12 @@ Fail:
 End Sub
 
 
+'@sub-title Verify Exists returns True for added lists and False for absent ones.
+'@details
+'Adds "listValues" to dropOne and "listValues3" to dropTwo, then asserts
+'Exists returns True for each added name on the correct instance. Also
+'asserts Exists returns False for "listValues4" on dropTwo, confirming the
+'negative case. This tests cross-instance isolation and name lookup.
 '@TestMethod("DropdownLists")
 Public Sub TestExists()
     CustomTestSetTitles Assert, "DropdownLists", "TestExists"
@@ -261,6 +330,13 @@ Fail:
     CustomTestLogFailure Assert, "TestExists", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify AllDropdowns excludes removed entries and preserves insertion order.
+'@details
+'Adds "firstList" and "secondList", removes the second, then calls
+'AllDropdowns. Asserts the returned BetterArray is not Nothing, has length
+'1, and its sole item is "firstList". This confirms removal marks entries
+'as cleared rather than leaving holes, and that the enumeration respects
+'original insertion order.
 '@TestMethod("DropdownLists")
 Public Sub TestAllDropdownsSkipsClearedEntries()
     CustomTestSetTitles Assert, "DropdownLists", "TestAllDropdownsSkipsClearedEntries"
@@ -289,6 +365,14 @@ Fail:
     CustomTestLogFailure Assert, "TestAllDropdownsSkipsClearedEntries", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify Translate applies a TranslationObject to all stored lists.
+'@details
+'Adds two lists ("firstList", "secondList") containing ("first", "second"),
+'builds a translation table mapping "first" to "uno" and "second" to "dos",
+'then calls Translate. Asserts the first value of firstList is "uno" and
+'the second value of secondList is "dos", confirming that translation is
+'applied to every list in the DropdownLists instance. Cleans up the
+'temporary translations sheet afterward.
 '@TestMethod("DropdownLists")
 Public Sub TestTranslateAppliesTranslatorToAllLists()
     CustomTestSetTitles Assert, "DropdownLists", "TestTranslateAppliesTranslatorToAllLists"
@@ -322,6 +406,11 @@ Fail:
     CustomTestLogFailure Assert, "TestTranslateAppliesTranslatorToAllLists", Err.Number, Err.Description
 End Sub
 
+'@sub-title Build a two-column ListObject for translation tests (key -> translated).
+'@details
+'Creates or clears the TEST_TRANSLATIONS_SHEET, writes a key/translated
+'header with two rows ("first"->"uno", "second"->"dos"), and wraps the
+'range in a ListObject named "__DropTranslations".
 Private Function BuildTranslationTable() As ListObject
     Dim hostSheet As Worksheet
     Dim lo As ListObject
@@ -344,6 +433,13 @@ Private Function BuildTranslationTable() As ListObject
     Set BuildTranslationTable = lo
 End Function
 
+'@sub-title Verify LabelRange returns the correct auto-generated label text with counter prefix.
+'@details
+'Adds two lists with different counterPrefix values ("List" and "Test"),
+'then reads the LabelRange cell value for each. Asserts the first returns
+'"List 1" and the second "Test 2", confirming that the auto-incrementing
+'counter pairs correctly with the prefix string and that each list gets a
+'unique label.
 '@TestMethod("DropdownLists")
 Public Sub TestLabelRange()
     CustomTestSetTitles Assert, "DropdownLists", "TestLabelRange"
@@ -369,6 +465,13 @@ Fail:
     CustomTestLogFailure Assert, "TestLabelRange", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify Values returns correct items, supports includeHeaders, and handles unknown lists.
+'@details
+'Adds a four-item list, retrieves values without headers and asserts length
+'is 4 with correct first item. Retrieves again with includeHeaders:=True
+'and asserts length is 5 with the list name as the first element. Finally,
+'calls Values on an unknown list name via dropTwo and asserts the returned
+'BetterArray has length 0, confirming graceful fallback for missing lists.
 '@TestMethod("DropdownLists, Values")
 Public Sub TestValues()
     CustomTestSetTitles Assert, "DropdownLists", "TestValues"
@@ -398,6 +501,11 @@ Fail:
     CustomTestLogFailure Assert, "TestValues", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify Length tracks the number of stored lists and updates after Add.
+'@details
+'Adds four lists in a loop, asserts Length is 4, then adds a fifth and
+'asserts Length is 5. This confirms the internal list counter increments
+'correctly with each Add call and is not off-by-one.
 '@TestMethod("DropdownLists, Length")
 Public Sub TestLength()
     CustomTestSetTitles Assert, "DropdownLists", "TestLength"
@@ -424,6 +532,13 @@ Fail:
     CustomTestLogFailure Assert, "TestLength", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify Sort arranges list values in ascending and descending order.
+'@details
+'Adds a mixed-type list (numeric 1, strings "AA", "BB", "DD"), sorts
+'ascending and asserts all four positions are in correct order. Then sorts
+'descending and asserts the reversed order. This exercises both the default
+'ascending and explicit xlDescending sort directions, and confirms that
+'mixed numeric/string content is handled correctly.
 '@TestMethod("DropdownLists")
 Public Sub TestSort()
     CustomTestSetTitles Assert, "DropdownLists", "TestSort"
@@ -458,6 +573,15 @@ Fail:
 End Sub
 
 
+'@sub-title Verify ClearList empties a list and Update repopulates with deduplication and append.
+'@details
+'Adds a six-item list with duplicates ("AA" appears three times), clears
+'it and asserts length is 0. Then calls Update with the same values and
+'asserts length is 4 (duplicates removed) with original insertion order
+'preserved. Next, appends four more values (one duplicate "AA") using
+'pasteAtBottom:=True and asserts final length is 7. Finally sorts and
+'verifies the numeric value 1 appears first, confirming that Sort works
+'correctly after an append-style Update.
 '@TestMethod("DropdownLists")
 Public Sub TestClearListAndUpdate()
     CustomTestSetTitles Assert, "DropdownLists", "TestClearListAndUpdate"
@@ -496,6 +620,17 @@ Fail:
     CustomTestLogFailure Assert, "TestClearListAndUpdate", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify SetValidation applies list validation with error/warning alerts, and hyperlinks link correctly.
+'@details
+'Adds a list to dropOne and applies SetValidation with alertType "error"
+'on one cell, confirming xlValidateList type and xlValidAlertStop style.
+'Applies again with "warning" on another cell and checks xlValidAlertWarning
+'plus the custom error message. Then creates a forward hyperlink from the
+'output sheet to the dropdown label range and verifies the anchor address
+'and sub-address point correctly. Finally creates a return link from the
+'dropdown sheet back to the output cell and asserts the reverse anchor and
+'sub-address are correct. This exercises the full validation-and-navigation
+'workflow used when building linelist sheets.
 '@TestMethod("DropdownLists")
 Public Sub TestValidationAndHyperLinks()
     CustomTestSetTitles Assert, "DropdownLists", "TestValidationAndHyperLinks"

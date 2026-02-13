@@ -7,11 +7,30 @@ Option Private Module
 '@ModuleDescription("Unit tests validating OSFiles default state and unsupported-platform fallbacks")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing
 
+'@description
+'Automated unit tests for the OSFiles class that run without user
+'interaction. The suite validates two key areas: (1) the default state
+'of a freshly-created OSFiles instance, ensuring all validity flags are
+'false and all collections are empty; and (2) the behaviour when the OS
+'property is set to an unrecognised platform string, verifying that
+'LoadFiles and LoadFolders silently no-op rather than raising errors.
+'Additionally, two tests exercise the file and folder iterators by
+'injecting test data via AssignFilesForTesting/AssignFoldersForTesting,
+'verifying sequential traversal, exhaustion semantics (vbNullString at
+'end), and correct restart after calling ResetFilesIterator or
+'ResetFoldersIterator.
+'Uses the CustomTest runner with results printed to the testsOutputs sheet.
+'@depends OSFiles, IOSFiles, CustomTest, ICustomTest, TestHelpers
+
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 
 Private Assert As ICustomTest
 
+'@section Module lifecycle
+'===============================================================================
+
 '@ModuleInitialize
+'@sub-title Prepare the test harness before the first test in this module runs.
 Private Sub ModuleInitialize()
     BusyApp
     EnsureWorksheet TEST_OUTPUT_SHEET, clearSheet:=False
@@ -20,6 +39,7 @@ Private Sub ModuleInitialize()
 End Sub
 
 '@ModuleCleanup
+'@sub-title Print accumulated results and release the test harness after all tests finish.
 Private Sub ModuleCleanup()
     If Not Assert Is Nothing Then
         Assert.PrintResults TEST_OUTPUT_SHEET
@@ -29,6 +49,7 @@ Private Sub ModuleCleanup()
 End Sub
 
 '@TestInitialize
+'@sub-title Flush previous assertions and suppress screen updating before each test.
 Private Sub TestInitialize()
     BusyApp
     If Not Assert Is Nothing Then
@@ -37,10 +58,20 @@ Private Sub TestInitialize()
 End Sub
 
 '@TestCleanup
+'@sub-title Restore normal application state after each test.
 Private Sub TestCleanup()
     RestoreApp
 End Sub
 
+'@section Helpers
+'===============================================================================
+
+'@sub-title Safely compute the number of elements in a Variant that may or may not be an initialised array.
+'@details
+'Uses On Error Resume Next to guard against uninitialised or empty
+'arrays where LBound/UBound would raise an error. Returns 0 for
+'non-array values, uninitialised arrays, or arrays whose UBound is
+'below their LBound.
 Private Function SafeArrayLength(ByVal candidate As Variant) As Long
     Dim lowerBound As Long
     Dim upperBound As Long
@@ -60,7 +91,18 @@ Private Function SafeArrayLength(ByVal candidate As Variant) As Long
     On Error GoTo 0
 End Function
 
+'@section Tests -- Initial State
+'===============================================================================
+
 '@TestMethod("OSFiles")
+'@sub-title Verify that a freshly-created OSFiles instance has no file selections and empty collections.
+'@details
+'Arranges by creating a new OSFiles via the factory method. Acts by
+'querying HasValidFiles, HasValidFile, Files(), and File(). Asserts
+'that both validity flags return False, that Files() is a Variant array
+'with zero elements (via SafeArrayLength), and that the scalar File()
+'accessor returns vbNullString. This ensures no stale data leaks from
+'previous uses or from uninitialised internal state.
 Public Sub TestFilesCollectionInitialState()
     CustomTestSetTitles Assert, "OSFiles", "FilesCollectionInitialState"
     On Error GoTo Fail
@@ -83,6 +125,14 @@ Fail:
 End Sub
 
 '@TestMethod("OSFiles")
+'@sub-title Verify that a freshly-created OSFiles instance has no folder selections and empty collections.
+'@details
+'Arranges by creating a new OSFiles via the factory method. Acts by
+'querying HasValidFolders, HasValidFolder, Folders(), and Folder().
+'Asserts that both validity flags return False, that Folders() is a
+'Variant array with zero elements, and that the scalar Folder()
+'accessor returns vbNullString. This mirrors the file-side initial
+'state test to confirm symmetry across the file and folder APIs.
 Public Sub TestFoldersCollectionInitialState()
     CustomTestSetTitles Assert, "OSFiles", "FoldersCollectionInitialState"
     On Error GoTo Fail
@@ -104,7 +154,19 @@ Fail:
     FailUnexpectedError Assert, "TestFoldersCollectionInitialState"
 End Sub
 
+'@section Tests -- Unsupported platform fallback
+'===============================================================================
+
 '@TestMethod("OSFiles")
+'@sub-title Verify that LoadFiles is a no-op when the OS property is set to an unrecognised platform.
+'@details
+'Arranges by instantiating OSFiles directly (not via Create) and
+'setting the OS property to "Unsupported" to simulate an unknown
+'platform. Acts by calling LoadFiles with a "*.xlsx" filter and
+'inspecting the results. Asserts that HasValidFiles remains False,
+'File() returns vbNullString, and Files() contains zero elements.
+'This confirms the class gracefully degrades rather than raising
+'runtime errors on platforms it does not recognise.
 Public Sub TestLoadFilesUnsupportedSystemDoesNotPopulate()
     CustomTestSetTitles Assert, "OSFiles", "LoadFilesUnsupportedSystemDoesNotPopulate"
     On Error GoTo Fail
@@ -130,6 +192,15 @@ Fail:
 End Sub
 
 '@TestMethod("OSFiles")
+'@sub-title Verify that LoadFolders is a no-op when the OS property is set to an unrecognised platform.
+'@details
+'Arranges by instantiating OSFiles directly (not via Create) and
+'setting the OS property to "Unsupported" to simulate an unknown
+'platform. Acts by calling LoadFolders and inspecting the results.
+'Asserts that HasValidFolders remains False, Folder() returns
+'vbNullString, and Folders() contains zero elements. This mirrors
+'the file-side unsupported platform test to confirm both picker
+'paths degrade gracefully.
 Public Sub TestLoadFoldersUnsupportedSystemDoesNotPopulate()
     CustomTestSetTitles Assert, "OSFiles", "LoadFoldersUnsupportedSystemDoesNotPopulate"
     On Error GoTo Fail
@@ -154,7 +225,21 @@ Fail:
     FailUnexpectedError Assert, "TestLoadFoldersUnsupportedSystemDoesNotPopulate"
 End Sub
 
+'@section Tests -- Iterator traversal
+'===============================================================================
+
 '@TestMethod("OSFiles")
+'@sub-title Verify file iterator traversal, exhaustion, and reset using injected test data.
+'@details
+'Arranges by instantiating OSFiles directly and calling
+'AssignFilesForTesting with a two-element array ("fileA", "fileB") to
+'bypass the native picker dialog. Acts by stepping through the iterator
+'with HasNextFile/NextFile and verifying each returned value in order.
+'Asserts that HasValidFiles becomes True after assignment, that
+'NextFile returns "fileA" then "fileB" in sequence, that HasNextFile
+'becomes False once exhausted, and that NextFile returns vbNullString
+'past the end. Then calls ResetFilesIterator and asserts that the
+'iterator restarts from "fileA", confirming reusability.
 Public Sub TestFileIteratorTraversesAssignedSelection()
     CustomTestSetTitles Assert, "OSFiles", "FileIteratorTraversesAssignedSelection"
     On Error GoTo Fail
@@ -187,6 +272,18 @@ Fail:
 End Sub
 
 '@TestMethod("OSFiles")
+'@sub-title Verify folder iterator traversal, exhaustion, and reset using injected test data.
+'@details
+'Arranges by instantiating OSFiles directly and calling
+'AssignFoldersForTesting with a two-element array ("/tmp", "/var") to
+'bypass the native picker dialog. Acts by stepping through the iterator
+'with HasNextFolder/NextFolder and verifying each returned value in
+'order. Asserts that HasValidFolders becomes True after assignment,
+'that NextFolder returns "/tmp" then "/var" in sequence, that
+'HasNextFolder becomes False once exhausted, and that NextFolder
+'returns vbNullString past the end. Then calls ResetFoldersIterator
+'and verifies the iterator restarts from "/tmp", confirming
+'reusability of the folder enumeration.
 Public Sub TestFolderIteratorTraversesAssignedSelection()
     CustomTestSetTitles Assert, "OSFiles", "FolderIteratorTraversesAssignedSelection"
     On Error GoTo Fail

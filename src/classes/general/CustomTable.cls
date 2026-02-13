@@ -1003,8 +1003,16 @@ Private Sub RemoveEmptyDataRows(ByVal lo As ListObject, _
     If WorksheetFunction.CountA(targetRow) <= rowCount Then
       If hasTracker Or forceShift Then
         Set sh = Wksh()
-        'Delete the entire worksheet Row
+        'Delete the entire worksheet Row, if it does not work, force listObject deletion.
+        'in case everything fail
+        On Error Resume Next
         sh.Rows(lo.ListRows(rowIndex).Range().Row).Delete
+        lo.ListRows(rowIndex).Delete
+        If Err.Number <> 0 Then
+          Err.Clear
+          ThrowError ProjectError.SomethingWentWrong, "Unable to resize the table (maybe tables are stacked?)"
+        End If
+        On Error GoTo 0
       Else
         'Either delele the entire worksheet row or the the listRow
         lo.ListRows(rowIndex).Delete

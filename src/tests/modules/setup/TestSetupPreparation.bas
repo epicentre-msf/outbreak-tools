@@ -3,6 +3,28 @@ Attribute VB_Description = "Unit tests for the SetupPreparation orchestration he
 
 Option Explicit
 
+'===============================================================================
+' @ModuleDescription Unit tests for the SetupPreparation orchestration helper.
+'
+' @description This module validates that the SetupPreparation class correctly
+'   registers dropdown list objects on the __variables worksheet, initialises
+'   the updated values registry on the __updated worksheet, and applies data
+'   validations to all setup tables (Dictionary, Exports, Analysis). Each test
+'   creates a fresh fixture workbook with the required sheets and ListObjects,
+'   calls Subject.Prepare, then asserts the expected side effects.
+'
+' @depends SetupPreparation, ISetupPreparation, Development, IDevelopment,
+'   BetterArray, CustomTest, ICustomTest, TestHelpers, DropdownLists,
+'   IDropdownLists, UpdatedValues, IUpdatedValues, CustomTable
+'
+' The fixture workbook is rebuilt before every test via TestInitialize so each
+' test runs in isolation. Dropdown content is verified by checking the
+' BetterArray returned from Subject.Dropdowns.Values. Registry initialisation
+' is verified by scanning ListObjects on the registry sheet for status and
+' rngname columns. Validations are verified by inspecting the
+' Range.Validation.Formula1 property on target columns.
+'===============================================================================
+
 '@Folder("CustomTests.Setup")
 '@ModuleDescription("Validates that SetupPreparation registers dropdowns, initialises updated values, and applies setup validations")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, ProcedureNotUsed
@@ -29,6 +51,15 @@ Private Const STATUS_DEFAULT As String = "no"
 Private Const STATUS_UPDATED As String = "yes"
 Private Const TAG_WATCH_UPDATE As String = "watch for update"
 
+'@section Lifecycle
+'===============================================================================
+'@description Module and test-level setup and teardown routines.
+
+'@sub-title Initialise the test module and configure the output sheet.
+'@details
+'Disables screen updating via TestHelpers.BusyApp, ensures the output sheet
+'exists, creates the CustomTest assertion object, and sets the module name
+'for grouped test reporting.
 '@ModuleInitialize
 Public Sub ModuleInitialize()
     TestHelpers.BusyApp
@@ -37,6 +68,11 @@ Public Sub ModuleInitialize()
     Assert.SetModuleName "TestSetupPreparation"
 End Sub
 
+'@sub-title Tear down the test module after all tests have run.
+'@details
+'Prints accumulated results to the output sheet and restores normal
+'Application state. Silently ignores errors during PrintResults to
+'ensure cleanup always completes.
 '@ModuleCleanup
 Public Sub ModuleCleanup()
     On Error Resume Next
@@ -48,6 +84,14 @@ Public Sub ModuleCleanup()
     TestHelpers.RestoreApp
 End Sub
 
+'@sub-title Build a fresh fixture workbook before each test.
+'@details
+'Creates a new workbook with all required worksheets (dropdown, registry,
+'Dictionary, Choices, Exports, Analysis, checking, formatter, formula, pass,
+'Dev), populates them with ListObjects matching the setup workbook layout,
+'defines the required named ranges (RNG_SelectTable, RNG_CheckingFilter,
+'ModulesCodes, ClassesImplementation), and creates the Subject and Manager
+'instances.
 '@TestInitialize
 Public Sub TestInitialize()
     TestHelpers.BusyApp
@@ -62,6 +106,7 @@ Public Sub TestInitialize()
     TestHelpers.EnsureWorksheet "__formatter", FixtureWorkbook
     TestHelpers.EnsureWorksheet "__formula", FixtureWorkbook
     TestHelpers.EnsureWorksheet "__pass", FixtureWorkbook
+    TestHelpers.EnsureWorksheet "Translations", FixtureWorkbook
 
     BuildWatchedTable VariablesSheet, "Tab_Dictionary", _
         Array("sheet type", "editable label", "status", "personal identifier", "variable type", "variable format", _
@@ -85,6 +130,10 @@ Public Sub TestInitialize()
     Set Manager = Development.Create(DevSheet)
 End Sub
 
+'@sub-title Destroy all fixture objects and close the fixture workbook.
+'@details
+'Flushes pending assertions, closes and deletes the fixture workbook, and
+'releases all module-level object references in reverse order of creation.
 '@TestCleanup
 Public Sub TestCleanup()
     If Not Assert Is Nothing Then
@@ -108,6 +157,17 @@ Public Sub TestCleanup()
     Set FixtureWorkbook = Nothing
 End Sub
 
+'@section Test Methods
+'===============================================================================
+'@description Verify the SetupPreparation preparation workflow.
+
+'@sub-title Verify that Prepare registers standard dropdown lists.
+'@details
+'Calls Subject.Prepare, then retrieves the __yesno and __formats
+'dropdowns via Subject.Dropdowns.Values. Asserts that __yesno contains
+'exactly two entries ("yes" and "no") and that __formats includes both
+'"percentage2" and "text", confirming that RegisterAllDropdowns populated
+'the expected dropdown list objects.
 '@TestMethod("SetupPreparation")
 Public Sub TestPrepareAddsDropdowns()
     CustomTestSetTitles Assert, "SetupPreparation", "TestPrepareAddsDropdowns"
@@ -134,6 +194,14 @@ Fail:
     ReportTestFailure "TestPrepareAddsDropdowns"
 End Sub
 
+'@sub-title Verify that Prepare initialises the updated values registry.
+'@details
+'Calls Subject.Prepare, then scans all ListObjects on the __updated sheet
+'(skipping the internal __UpLo__Names__ table). For each table that has
+'"updated" and "rngname" columns, verifies that every status cell is set
+'to the default "yes" value and that every non-empty rngname cell has a
+'corresponding workbook-level defined Name. Asserts that at least one
+'registry table was populated.
 '@TestMethod("SetupPreparation")
 Public Sub TestPrepareInitialisesUpdatedValuesRegistry()
     CustomTestSetTitles Assert, "SetupPreparation", "TestPrepareInitialisesUpdatedValuesRegistry"
@@ -186,6 +254,12 @@ Fail:
     ReportTestFailure "TestPrepareInitialisesUpdatedValuesRegistry"
 End Sub
 
+'@sub-title Verify that Prepare applies data validations to the Dictionary table.
+'@details
+'Calls Subject.Prepare, retrieves the Tab_Dictionary ListObject from the
+'Dictionary worksheet, and inspects the "sheet type" column. Asserts that
+'the column has a list-type data validation whose formula references the
+'"__sheet_type" dropdown name.
 '@TestMethod("SetupPreparation")
 Public Sub TestPrepareAppliesDictionaryValidation()
     CustomTestSetTitles Assert, "SetupPreparation", "TestPrepareAppliesDictionaryValidation"
@@ -206,6 +280,13 @@ Fail:
     ReportTestFailure "TestPrepareAppliesDictionaryValidation"
 End Sub
 
+'@sub-title Verify that Prepare applies data validations to Analysis tables.
+'@details
+'Calls Subject.Prepare, then checks two analysis-level validations: the
+'RNG_SelectTable named range should have a list validation referencing
+'"__swicth_tables", and the Tab_TimeSeries_Analysis table's "row" column
+'should reference "__time_vars". This confirms that both named-range and
+'table-column validations are applied correctly.
 '@TestMethod("SetupPreparation")
 Public Sub TestPrepareAppliesAnalysisValidation()
     CustomTestSetTitles Assert, "SetupPreparation", "TestPrepareAppliesAnalysisValidation"
@@ -231,11 +312,27 @@ End Sub
 
 '@section Helpers
 '===============================================================================
+'@description Private utilities for fixture construction and assertion support.
 
+'@sub-title Ensure the test output worksheet exists in ThisWorkbook.
 Private Sub AssertSheetSetup()
     TestHelpers.EnsureWorksheet TEST_OUTPUT_SHEET, ThisWorkbook, False
 End Sub
 
+'@sub-title Build a ListObject with a "watch for update" tag row above the header.
+'@details
+'Writes a three-row matrix (tag row, header row, data row) starting one row
+'above startRow, then creates a ListObject from the header and data rows.
+'The first cell of the tag row is set to TAG_WATCH_UPDATE so the updated
+'values registry can discover the table during registration. When dataRow
+'is omitted, generates placeholder values ("value_1", "value_2", etc.).
+'@param targetSheet Worksheet. The worksheet to write the table on.
+'@param tableName String. The name to assign to the new ListObject.
+'@param headers Variant. Array of column header strings.
+'@param dataRow Optional Variant. Array of data values for the first row. Defaults to generated placeholders.
+'@param startRow Optional Long. Header row position (1-based). Defaults to 2.
+'@param startColumn Optional Long. First column position (1-based). Defaults to 1.
+'@return ListObject. The newly created ListObject.
 Private Function BuildWatchedTable(ByVal targetSheet As Worksheet, _
                                    ByVal tableName As String, _
                                    ByVal headers As Variant, _
@@ -279,6 +376,16 @@ Private Function BuildWatchedTable(ByVal targetSheet As Worksheet, _
     Set BuildWatchedTable = table
 End Function
 
+'@sub-title Build a simple header-plus-data ListObject without a tag row.
+'@details
+'Writes a two-row matrix (header row, data row) starting at startRow, then
+'wraps it in a ListObject. Data values are generated by appending "_value"
+'to each header string.
+'@param targetSheet Worksheet. The worksheet to write the table on.
+'@param tableName String. The name to assign to the new ListObject.
+'@param headers Variant. Array of column header strings.
+'@param startRow Optional Long. Header row position (1-based). Defaults to 2.
+'@param startColumn Optional Long. First column position (1-based). Defaults to 1.
 Private Sub BuildSimpleTable(ByVal targetSheet As Worksheet, _
                              ByVal tableName As String, _
                              ByVal headers As Variant, _
@@ -306,6 +413,13 @@ Private Sub BuildSimpleTable(ByVal targetSheet As Worksheet, _
     lo.Name = tableName
 End Sub
 
+'@sub-title Build all eight analysis ListObjects on a single worksheet.
+'@details
+'Creates the full set of analysis tables (Global Summary, Univariate,
+'Bivariate, Time Series, Graph Time Series, Spatial, SpatioTemporal Specs,
+'SpatioTemporal) using BuildSimpleTable at staggered row offsets. The
+'column headers match those expected by SetupPreparation.ApplyAnalysisValidations.
+'@param analysisSheet Worksheet. The worksheet to populate with analysis tables.
 Private Sub BuildAnalysisTables(ByVal analysisSheet As Worksheet)
     BuildSimpleTable analysisSheet, "Tab_Global_Summary", Array("format"), startRow:=3, startColumn:=1
     BuildSimpleTable analysisSheet, "Tab_Univariate_Analysis", _
@@ -324,6 +438,14 @@ Private Sub BuildAnalysisTables(ByVal analysisSheet As Worksheet)
         Array("row", "column", "format", "flip coordinates", "add graph"), startRow:=28, startColumn:=1
 End Sub
 
+'@sub-title Check whether a BetterArray contains the expected string value.
+'@details
+'Performs a case-insensitive, trimmed comparison against every item in the
+'array. Returns True on the first match and False when no match is found
+'or when items is Nothing.
+'@param items BetterArray. The collection to search.
+'@param expected String. The value to look for.
+'@return Boolean. True when the value is found.
 Private Function ContainsValue(ByVal items As BetterArray, ByVal expected As String) As Boolean
     Dim idx As Long
     Dim candidate As Variant
@@ -339,10 +461,21 @@ Private Function ContainsValue(ByVal items As BetterArray, ByVal expected As Str
     Next idx
 End Function
 
+'@sub-title Normalise a string to lowercase trimmed form for comparisons.
+'@param valueText String. The text to normalise.
+'@return String. The trimmed, lowercased text.
 Private Function NormalizeText(ByVal valueText As String) As String
     NormalizeText = LCase$(Trim$(valueText))
 End Function
 
+'@sub-title Define or replace a workbook-level named range.
+'@details
+'Deletes any existing name with the given identifier, then creates a new
+'workbook-scoped name pointing to the supplied anchor cell. Used to set up
+'RNG_SelectTable and RNG_CheckingFilter for the fixture workbook.
+'@param wb Workbook. The workbook to define the name in.
+'@param nameId String. The name identifier to create.
+'@param anchor Range. The cell the name should refer to.
 Private Sub EnsureWorkbookName(ByVal wb As Workbook, ByVal nameId As String, ByVal anchor As Range)
     Dim refersTo As String
 
@@ -353,6 +486,14 @@ Private Sub EnsureWorkbookName(ByVal wb As Workbook, ByVal nameId As String, ByV
     wb.Names.Add Name:=nameId, RefersTo:=refersTo
 End Sub
 
+'@sub-title Define or replace a worksheet-level named range.
+'@details
+'Deletes any existing worksheet-scoped name with the given identifier,
+'then creates a new one pointing to the supplied anchor cell. Used to set
+'up the ModulesCodes and ClassesImplementation names on the Dev sheet.
+'@param targetSheet Worksheet. The worksheet to define the name on.
+'@param nameId String. The name identifier to create.
+'@param anchor Range. The cell the name should refer to.
 Private Sub EnsureLocalName(ByVal targetSheet As Worksheet, ByVal nameId As String, ByVal anchor As Range)
     Dim refersTo As String
 
@@ -363,6 +504,14 @@ Private Sub EnsureLocalName(ByVal targetSheet As Worksheet, ByVal nameId As Stri
     targetSheet.Names.Add Name:=nameId, RefersTo:=refersTo
 End Sub
 
+'@sub-title Assert that a range has a list validation referencing the expected dropdown tag.
+'@details
+'Verifies that the target range is not Nothing, that its validation type is
+'xlValidateList, and that its Formula1 contains the expected dropdown name
+'(case-insensitive). Used by test methods to confirm that
+'SetupPreparation wired the correct dropdown to each table column.
+'@param targetRange Range. The range whose validation to inspect.
+'@param expectedTag String. The dropdown name expected in the validation formula.
 Private Sub AssertValidationContains(ByVal targetRange As Range, ByVal expectedTag As String)
     Dim validationFormula As String
 
@@ -376,6 +525,12 @@ Private Sub AssertValidationContains(ByVal targetRange As Range, ByVal expectedT
     End With
 End Sub
 
+'@sub-title Log a test failure with error details and clear the error state.
+'@details
+'Formats a failure message including the error number, source, and
+'description, logs it through the Assert object, then clears the error.
+'Used as the common error handler across all test methods.
+'@param context String. The name of the failing test method.
 Private Sub ReportTestFailure(ByVal context As String)
     Dim message As String
 

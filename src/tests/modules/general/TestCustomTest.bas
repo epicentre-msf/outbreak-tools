@@ -4,6 +4,18 @@ Option Private Module
 
 '@TestModule
 '@Folder("Tests")
+'@ModuleDescription("Tests for the CustomTest harness class")
+
+'@description
+'  Unit tests for the CustomTest class, which is the project's own test harness
+'  replacing Rubberduck assertions with an IChecking-based result model. Tests
+'  validate that AreEqual, AreNotEqual, IsTrue, and IsFalse correctly log both
+'  successes and failures, that ObjectExists performs type checking and IsNothing
+'  detects unset references, that Flush queues results and BeginTest respects the
+'  resetNames flag, that direct LogFailure and LogSuccesses calls produce the
+'  expected entries, and that PrintResults writes structured output to a worksheet
+'  with filter integration and subtitle overrides.
+'@depends CustomTest, ICustomTest, Checking, IChecking, CheckingOutput, BetterArray, TestHelpers
 
 Private Const OUTPUT_SHEET_NAME As String = "HarnessOutput"
 Private Const VISIBLE_COLUMN_COUNT As Long = 3
@@ -53,6 +65,11 @@ Private Sub TestCleanup()
     Set Results = Nothing
 End Sub
 
+'@sub-title Verify AreEqual logs success for matching values and error for mismatched values
+'@details Arranges two AreEqual assertions: one with identical numbers (42, 42) and one
+'  with different strings ("alpha" vs "beta"). Flushes the current test to retrieve the
+'  IChecking log, then asserts that the first key is marked Success and the second is
+'  marked Error with the supplied failure message captured in the label.
 '@TestMethod("Harness")
 Private Sub TestAreEqualCapturesSuccessAndFailure()
     On Error GoTo Fail
@@ -92,6 +109,11 @@ Fail:
     FailUnexpectedError Assert, "TestAreEqualCapturesSuccessAndFailure"
 End Sub
 
+'@sub-title Verify AreNotEqual logs success for distinct values and error for matching values
+'@details Arranges two AreNotEqual assertions: one with different numbers (10, 42) and one
+'  with identical strings ("same", "same"). After flushing, confirms the first key is Success
+'  and the second is Error, with the failure label referencing both the expected inequality
+'  and the actual matched value.
 '@TestMethod("Harness")
 Private Sub TestAreNotEqualCapturesSuccessAndFailure()
     On Error GoTo Fail
@@ -130,6 +152,11 @@ Fail:
     FailUnexpectedError Assert, "TestAreNotEqualCapturesSuccessAndFailure"
 End Sub
 
+'@sub-title Verify IsFalse logs success for False conditions and error for True conditions
+'@details Arranges two IsFalse assertions: one passing False (expected success) and one
+'  passing True (expected failure). After flushing, confirms the first entry is logged as
+'  Success and the second as Error, with the failure label containing the user-supplied
+'  message describing the unexpected True condition.
 '@TestMethod("Harness")
 Private Sub TestIsFalseCapturesSuccessAndFailure()
     On Error GoTo Fail
@@ -166,6 +193,10 @@ Fail:
     FailUnexpectedError Assert, "TestIsFalseCapturesSuccessAndFailure"
 End Sub
 
+'@sub-title Verify SetTestSubtitle overrides the default subtitle in the checking heading
+'@details Sets a custom subtitle via SetTestSubtitle before calling BeginTest and IsTrue.
+'  After flushing, asserts that the checking Heading returns the test name for the main
+'  heading and the custom subtitle string for the secondary heading.
 '@TestMethod("Harness")
 Private Sub TestSubtitleOverridesDefault()
     On Error GoTo Fail
@@ -189,6 +220,12 @@ Fail:
     FailUnexpectedError Assert, "TestSubtitleOverridesDefault"
 End Sub
 
+'@sub-title Verify ObjectExists succeeds for valid references and fails for Nothing and type mismatches
+'@details Arranges three ObjectExists assertions: a live Worksheet (should pass), an unassigned
+'  Worksheet reference (Nothing -- should fail), and a Collection instance tested against the
+'  "Worksheet" type name (type mismatch -- should fail). After flushing, confirms the first
+'  entry is Success, the second is Error referencing the expected type, and the third is Error
+'  referencing the actual Collection type.
 '@TestMethod("Harness")
 Private Sub TestObjectExistsValidatesReferences()
     On Error GoTo Fail
@@ -241,6 +278,11 @@ Fail:
     FailUnexpectedError Assert, "TestObjectExistsValidatesReferences"
 End Sub
 
+'@sub-title Verify IsNothing logs success for Nothing references and error for assigned references
+'@details Arranges two IsNothing assertions: an unassigned Worksheet variable (should succeed)
+'  and the same variable after assignment to OutputSheet (should fail). After flushing, asserts
+'  that the first key is marked Success, and the second is Error with the label mentioning both
+'  "Nothing" and "Worksheet" to indicate the expected vs actual state.
 '@TestMethod("Harness")
 Private Sub TestIsNothingCapturesSuccessAndFailure()
     On Error GoTo Fail
@@ -283,6 +325,11 @@ Fail:
     FailUnexpectedError Assert, "TestIsNothingCapturesSuccessAndFailure"
 End Sub
 
+'@sub-title Verify Flush persists the current checking to the results buffer without returning it
+'@details Calls Flush (not FlushCurrentTest) after recording a single assertion, then inspects
+'  the Results buffer to confirm the checking was persisted with correct heading and subtitle.
+'  A second Flush call without an active checking verifies the no-op behavior by asserting the
+'  results length remains unchanged.
 '@TestMethod("Harness")
 Private Sub TestFlushQueuesCurrentCheckingWithoutReturn()
     On Error GoTo Fail
@@ -317,6 +364,11 @@ Fail:
     FailUnexpectedError Assert, "TestFlushQueuesCurrentCheckingWithoutReturn"
 End Sub
 
+'@sub-title Verify Flush and BeginTest respect the resetNames flag for sticky vs cleared names
+'@details Performs three rounds of flush: two with resetNames=False (names should persist) and
+'  one preceded by BeginTest(True) (names should reset to defaults). Asserts that the first two
+'  checkings retain the originally configured name and subtitle, while the third checking reverts
+'  both heading and subtitle to the default "test" value.
 '@TestMethod("Harness")
 Private Sub TestFlushRespectsResetNamesFlag()
     On Error GoTo Fail
@@ -361,6 +413,10 @@ Fail:
     FailUnexpectedError Assert, "TestFlushRespectsResetNamesFlag"
 End Sub
 
+'@sub-title Verify LogFailure and LogSuccesses directly record typed entries in the checking log
+'@details Calls LogSuccesses and LogFailure on the harness, then flushes and inspects the
+'  resulting IChecking. Asserts that the first entry is marked Success with the correct label
+'  text, and the second entry is marked Error with the corresponding failure message.
 '@TestMethod("Harness")
 Private Sub TestLogFailureAndLogSuccesses()
     On Error GoTo Fail
@@ -399,6 +455,12 @@ Fail:
     FailUnexpectedError Assert, "TestLogFailureAndLogSuccesses"
 End Sub
 
+'@sub-title Verify PrintResults clears the worksheet, writes batch output, and integrates with filtering
+'@details Queues two test checkings (one passing, one failing) to the harness while a sentinel
+'  value occupies an unrelated cell. After calling PrintResults, asserts the sentinel was cleared,
+'  the filter header was written, and both test names appear exactly once. Then exercises
+'  CheckingOutput.FilterWorksheet to confirm Success rows toggle visibility when the filter
+'  value switches between "Without Successes" and "Successes".
 '@TestMethod("Harness")
 Private Sub TestPrintResultsClearsWorksheetAndWritesBatch()
     On Error GoTo Fail
@@ -452,6 +514,7 @@ Fail:
     FailUnexpectedError Assert, "TestPrintResultsClearsWorksheetAndWritesBatch"
 End Sub
 
+'@sub-title Count occurrences of a text value in the visible (or full) used range of a worksheet
 Private Function CountOccurrences(ByVal sh As Worksheet, ByVal textValue As String, _
                                   Optional ByVal includeHiddenColumns As Boolean = False) As Long
     Dim searchRange As Range
@@ -470,4 +533,3 @@ Private Function CountOccurrences(ByVal sh As Worksheet, ByVal textValue As Stri
         CountOccurrences = Application.WorksheetFunction.CountIf(searchRange, textValue)
     On Error GoTo 0
 End Function
-

@@ -7,6 +7,17 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 '@Folder("CustomTests")
+'@ModuleDescription("Tests for the Buttons class")
+
+'@description
+'Validates the Buttons class, which creates and formats Excel worksheet
+'shapes used as clickable action buttons in linelist sheets. Tests cover
+'factory initialisation (anchor range, code name, scope), shape creation
+'via Add, duplicate-button checking logging, and visual formatting
+'against an LLFormat design template. The fixture creates a temporary
+'worksheet for each test and cleans up all shapes and format sheets on
+'teardown to guarantee isolation.
+'@depends Buttons, IButtons, LLFormat, ILLFormat, Checking, IChecking, CustomTest, TestHelpers, LLFormatTestFixture
 
 Private Const BUTTONS_SHEET As String = "ButtonsFixture"
 Private Const DEFAULT_BUTTON_NAME As String = "FixtureButton"
@@ -23,14 +34,21 @@ Private FixtureSheet As Worksheet
 '@section Helpers
 '===============================================================================
 
+'@sub-title Create or clear the fixture worksheet for button tests.
 Private Sub ResetButtonsSheet()
     Set FixtureSheet = EnsureWorksheet(BUTTONS_SHEET)
 End Sub
 
+'@sub-title Return the default anchor cell for button placement.
 Private Function AnchorCell() As Range
     Set AnchorCell = FixtureSheet.Range("B2")
 End Function
 
+'@sub-title Build a Buttons instance with sensible defaults.
+'@details
+'Creates a Buttons object using the fixture sheet anchor. The scope and
+'name can be overridden for specific tests; when no anchor is supplied the
+'default AnchorCell is used.
 Private Function BuildButton(Optional ByVal scope As ButtonScope = ButtonScopeSmall, _
                              Optional ByVal buttonName As String = DEFAULT_BUTTON_NAME, _
                              Optional ByVal anchor As Range) As IButtons
@@ -84,6 +102,12 @@ End Sub
 '@section Tests
 '===============================================================================
 
+'@sub-title Verify Create stores anchor, name, and scope.
+'@details
+'Creates a Buttons instance with an explicit anchor, code name, and
+'ButtonScopeLarge. Asserts that OutputRange, Name, and ShapeScope all
+'reflect the input values. Also verifies that passing Nothing as the
+'anchor raises ObjectNotInitialized.
 '@TestMethod("Buttons")
 Public Sub TestCreateInitialisesState()
     CustomTestSetTitles Assert, "Buttons", "TestCreateInitialisesState"
@@ -116,6 +140,12 @@ Fail:
     CustomTestLogFailure Assert, "TestCreateInitialisesState", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify Add places exactly one shape on the worksheet.
+'@details
+'Creates a button and calls Add with a macro name and label. Asserts that
+'the fixture sheet contains exactly one shape, its OnAction matches the
+'provided command, and the text label is applied. Also checks that no
+'checking entries are logged for the first creation.
 '@TestMethod("Buttons")
 Public Sub TestAddCreatesShape()
     CustomTestSetTitles Assert, "Buttons", "TestAddCreatesShape"
@@ -142,6 +172,11 @@ Fail:
     CustomTestLogFailure Assert, "TestAddCreatesShape", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify duplicate Add logs a checking instead of creating a second shape.
+'@details
+'Calls Add twice with the same button name. Asserts that only one shape
+'exists on the worksheet, HasCheckings is True, and CheckingValues contains
+'exactly one entry whose label describes the duplicate button.
 '@TestMethod("Buttons")
 Public Sub TestAddExistingRecordsCheckings()
     CustomTestSetTitles Assert, "Buttons", "TestAddExistingRecordsCheckings"
@@ -170,6 +205,12 @@ Fail:
     CustomTestLogFailure Assert, "TestAddExistingRecordsCheckings", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify Format applies design colours from an LLFormat template.
+'@details
+'Prepares an LLFormat fixture with known button interior and font colours,
+'creates a button, then calls Format with the design. Asserts that the
+'shape fill and text font colour match the expected values read from the
+'template sheet.
 '@TestMethod("Buttons")
 Public Sub TestFormatAppliesScopeUsingWorkbookDesign()
     CustomTestSetTitles Assert, "Buttons", "TestFormatAppliesScopeUsingWorkbookDesign"

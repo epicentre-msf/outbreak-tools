@@ -1,5 +1,39 @@
 Attribute VB_Name = "TestPasswords"
 
+'@ModuleDescription Tests for the Passwords class, covering factory creation, worksheet and workbook
+'   protection, debug mode lifecycle, key generation, import/export operations, cloning,
+'   and VBProject code injection for the debug exit handler.
+'
+' @description
+'   This test module exercises the full public surface of the IPasswords interface as
+'   implemented by the Passwords class. Tests are organised into logical groups:
+'
+'     - Creation and value retrieval: verifies that Passwords.Create correctly
+'       populates named ranges and exposes key values.
+'     - Protection: validates Protect/UnProtect on worksheets and workbooks, including
+'       settings persistence in the T_ProtectedSheets table.
+'     - Debug mode: ensures EnterDebugMode and LeaveDebugMode toggle protection state
+'       correctly and record diagnostic log entries via the Checking interface.
+'     - Import/Export/Clone: tests data transfer between IPasswords instances across
+'       worksheets and workbooks.
+'     - Key generation: confirms GenerateKey selects a valid key pair, updates named
+'       ranges, and captures the private key prompt.
+'     - VBProject injection: verifies EnsureDebugExitHandler injects the
+'       LeaveDebugModeOnClose routine into a workbook's ThisWorkbook module, preserves
+'       existing Workbook_BeforeClose code, and avoids duplicate injection.
+'     - Roundtrip: full save/reopen cycle to confirm the debug exit handler fires
+'       correctly on workbook close.
+'
+'   The module relies on PasswordsTestFixture to build a consistent fixture sheet with
+'   known named ranges and tables. A separate FixtureWorkbook is created per test to
+'   ensure full isolation. Tests that modify VBProject components require VBA project
+'   access to be enabled in the host application's Trust Center; when access is denied,
+'   those tests are skipped with an explicit log message.
+'
+' @depends Passwords, IPasswords, TranslationObject, ITranslationObject,
+'   ApplicationState, IApplicationState, HiddenNames, IHiddenNames, Checking,
+'   IChecking, BetterArray, CustomTest, TestHelpers, PasswordsTestFixture
+
 Option Explicit
 
 
@@ -35,6 +69,7 @@ Private Const ERR_VBPROJECT_NOT_SET As Long = 91
 '@section Helper builders
 '===============================================================================
 
+' @sub-title Build an in-memory TranslationObject for password prompt tests
 Private Function CreatePasswordTranslator() As ITranslationObject
     Dim translationSheet As Worksheet
     Dim headerMatrix As Variant
@@ -111,6 +146,13 @@ Private Sub TestCleanup()
     Set ProtectedSheet = Nothing
 End Sub
 
+' @sub-title Verify that Passwords.Create initialises named values and returns a valid PasswordSheet
+' @details Tests the factory method Passwords.Create by passing a prepared fixture sheet.
+'   Arrange: TestInitialize creates FixtureWorkbook and calls PreparePasswordsFixture to
+'   populate named ranges, then creates PasswordSubject via Passwords.Create. Act/Assert:
+'   verifies that Value("debuggingpassword") returns the expected fixture value "1234" and
+'   that PasswordSheet returns a Worksheet reference (not Nothing). This confirms that the
+'   factory correctly wires up the internal named-range lookup and sheet reference.
 '@TestMethod("Passwords")
 Public Sub TestCreateInitialisesNamedValues()
     CustomTestSetTitles Assert, "Passwords", "TestCreateInitialisesNamedValues"
@@ -120,6 +162,12 @@ Public Sub TestCreateInitialisesNamedValues()
                    "PasswordSheet must return a worksheet reference"
 End Sub
 
+' @sub-title Verify that Value exposes laboratory public and private keys
+' @details Tests that Value() correctly retrieves laboratory key values from the fixture.
+'   Arrange: the fixture sheet is pre-populated with labpublickey "LABPUB123" and
+'   labprivatekey "LABPRIV456" in named ranges. Act: calls Value("labpublickey") and
+'   Value("labprivatekey"). Assert: confirms both return the expected fixture strings,
+'   validating that the keys table lookup resolves multiple named key entries correctly.
 '@TestMethod("Passwords")
 Public Sub TestValueExposesLabKeys()
     CustomTestSetTitles Assert, "Passwords", "TestValueExposesLabKeys"
@@ -129,6 +177,15 @@ Public Sub TestValueExposesLabKeys()
                      "Value should expose the laboratory private key"
 End Sub
 
+' @sub-title Verify that Protect applies worksheet protection and persists settings in the table
+' @details Tests the Protect method by applying protection to a worksheet with specific
+'   options and then checking persistence. Arrange: ProtectedSheet is an unprotected
+'   fixture worksheet. Act: calls Protect with allowShapes=False, allowDeletingRows=True,
+'   and registerState=True. Assert: checks that ProtectContents is True on the worksheet,
+'   that the T_ProtectedSheets table now contains a data body range, that the sheet name
+'   appears in column 1, and that the allowShapes and allowDeletingRows flags are persisted
+'   as "no" and "yes" respectively. This validates both the runtime protection and the
+'   settings round-trip for the LeaveDebugMode restoration logic.
 '@TestMethod("Passwords")
 Public Sub TestProtectPersistsSettings()
     CustomTestSetTitles Assert, "Passwords", "TestProtectPersistsSettings"
@@ -152,6 +209,12 @@ Public Sub TestProtectPersistsSettings()
                      "AllowDeletingRows preference should be stored as 'yes'"
 End Sub
 
+' @sub-title Verify that UnProtect reverses worksheet protection
+' @details Tests the UnProtect method as the inverse of Protect. Arrange: the test first
+'   calls Protect on ProtectedSheet with registerState=False to apply protection without
+'   table registration. Act: calls UnProtect on the same sheet name. Assert: confirms
+'   that ProtectContents is now False, verifying that UnProtect correctly removes the
+'   worksheet protection that was previously applied.
 '@TestMethod("Passwords")
 Public Sub TestUnProtectReleasesWorksheet()
     CustomTestSetTitles Assert, "Passwords", "TestUnProtectReleasesWorksheet"
@@ -161,6 +224,14 @@ Public Sub TestUnProtectReleasesWorksheet()
     Assert.IsFalse ProtectedSheet.ProtectContents, "UnProtect should release worksheet protection"
 End Sub
 
+' @sub-title Verify that the "_wbactive" token routes Protect/UnProtect to the workbook level
+' @details Tests the special "_wbactive" token that dispatches protection to the workbook
+'   structure rather than a worksheet. Arrange: starts by calling UnProtect("_wbactive")
+'   to ensure a clean baseline. Act: calls Protect("_wbactive") then UnProtect("_wbactive")
+'   in sequence. Assert: checks ProtectStructure is False initially, True after Protect,
+'   and False again after UnProtect. This validates the TypeName dispatch path inside the
+'   Passwords class that routes workbook-level protection through the same Protect/UnProtect
+'   interface.
 '@TestMethod("Passwords")
 Public Sub TestProtectWorkbookUsingActiveToken()
     CustomTestSetTitles Assert, "Passwords", "TestProtectWorkbookUsingActiveToken"
@@ -174,6 +245,15 @@ Public Sub TestProtectWorkbookUsingActiveToken()
     Assert.IsFalse FixtureWorkbook.ProtectStructure, "UnProtect should unlock workbook structure"
 End Sub
 
+' @sub-title Verify that EnterDebugMode and LeaveDebugMode toggle protection and restore state
+' @details Tests the full debug mode lifecycle. Arrange: protects ProtectedSheet via Protect
+'   so it is registered in the protected sheets table. Act: calls EnterDebugMode, which
+'   should set the debug flag, unlock the workbook structure, and unprotect all tracked
+'   sheets; then calls LeaveDebugMode, which should reverse all of those changes. Assert:
+'   after EnterDebugMode checks that the debug flag is "yes", workbook structure is
+'   unprotected, and the tracked sheet is unprotected; after LeaveDebugMode checks that
+'   the debug flag is "no", workbook structure is protected, and the tracked sheet is
+'   re-protected. This is the core test for the debug mode contract.
 '@TestMethod("Passwords")
 Public Sub TestEnterAndLeaveDebugModeRestoresProtections()
     CustomTestSetTitles Assert, "Passwords", "TestEnterAndLeaveDebugModeRestoresProtections"
@@ -193,6 +273,13 @@ Public Sub TestEnterAndLeaveDebugModeRestoresProtections()
     Assert.IsTrue ProtectedSheet.ProtectContents, "LeaveDebugMode should reapply worksheet protection"
 End Sub
 
+' @sub-title Verify that EnsureProtectedSheetsName creates a workbook-level name with structured reference
+' @details Tests the creation of a workbook-scoped Name object that references the protected
+'   sheets table. Arrange: the fixture workbook has the T_ProtectedSheets table already
+'   populated by TestInitialize. Act: calls EnsureProtectedSheetsName. Assert: retrieves
+'   the Name object by constant NAMEPROTECTEDSHEETS from the workbook's Names collection,
+'   verifies it exists, and checks that its RefersTo value equals "=T_ProtectedSheets[#All]".
+'   This structured reference is required by the linelist builder at deployment time.
 '@TestMethod("Passwords")
 Public Sub TestEnsureProtectedSheetsNameUsesStructuredReference()
     CustomTestSetTitles Assert, "Passwords", "TestEnsureProtectedSheetsNameUsesStructuredReference"
@@ -208,6 +295,14 @@ Public Sub TestEnsureProtectedSheetsNameUsesStructuredReference()
                      "Workbook-level name should reference the protected table using structured syntax"
 End Sub
 
+' @sub-title Verify that HasCheckings and CheckingValues report diagnostics after debug transitions
+' @details Tests the diagnostic logging contract. Arrange: verifies that a freshly created
+'   PasswordSubject has no checkings. Act: performs a full debug mode cycle by calling
+'   EnterDebugMode followed by LeaveDebugMode. Assert: confirms HasCheckings is now True,
+'   that CheckingValues returns a valid Checking object, extracts the first key from the
+'   Checking's ListOfKeys, and verifies the log message contains the expected "Workbook
+'   entered debug mode" substring. This validates that internal state transitions are
+'   captured for downstream diagnostic display.
 '@TestMethod("Passwords")
 Public Sub TestHasCheckingsAfterDebugTransition()
     CustomTestSetTitles Assert, "Passwords", "TestHasCheckingsAfterDebugTransition"
@@ -230,6 +325,13 @@ Public Sub TestHasCheckingsAfterDebugTransition()
                   "Debug transition log should capture the entry message"
 End Sub
 
+' @sub-title Verify that TableRange returns the data body range of a named table
+' @details Tests the TableRange method, which provides access to ListObject data ranges
+'   by table name. Arrange: the fixture sheet contains T_keys with four data rows
+'   populated by PasswordsTestFixture. Act: calls TableRange(TABLEKEYS, includeHeaders:=False).
+'   Assert: checks that the returned range has exactly four rows and that the first cell
+'   contains "1234", matching the fixture data. This confirms the table lookup and header
+'   exclusion logic.
 '@TestMethod("Passwords")
 Public Sub TestTableRangeReturnsDataBody()
     CustomTestSetTitles Assert, "Passwords", "TestTableRangeReturnsDataBody"
@@ -240,6 +342,13 @@ Public Sub TestTableRangeReturnsDataBody()
     Assert.AreEqual "1234", CStr(keysBody.Cells(1, 1).Value), "First public key should match fixture data"
 End Sub
 
+' @sub-title Verify that ExportToWorkbook copies the password sheet as a hidden clone
+' @details Tests the ExportToWorkbook method, which transfers the password sheet to another
+'   workbook. Arrange: creates a new empty destination workbook. Act: calls ExportToWorkbook
+'   with the destination workbook. Assert: retrieves the cloned sheet by its expected name
+'   (DEFAULTPASSWORDSHEET) and verifies that its Visible property is xlSheetVeryHidden,
+'   ensuring the passwords remain hidden from end users. Cleanup: closes the destination
+'   workbook without saving.
 '@TestMethod("Passwords")
 Public Sub TestExportToWorkbookCreatesHiddenClone()
     CustomTestSetTitles Assert, "Passwords", "TestExportToWorkbookCreatesHiddenClone"
@@ -255,6 +364,13 @@ Public Sub TestExportToWorkbookCreatesHiddenClone()
     destination.Close SaveChanges:=False
 End Sub
 
+' @sub-title Verify that ImportFrom copies key values from a source Passwords instance
+' @details Tests the ImportFrom method by confirming that key values are transferred between
+'   two independent IPasswords instances. Arrange: creates a clone of PasswordSubject on a
+'   new worksheet, then overwrites the clone's public key, private key, and keys table with
+'   placeholder values. Act: calls clone.ImportFrom(PasswordSubject). Assert: checks that
+'   the clone's publickey value now matches the original source value. This validates the
+'   key transfer pathway used when updating an existing linelist with new credentials.
 '@TestMethod("Passwords")
 Public Sub TestImportFromCopiesKeys()
     CustomTestSetTitles Assert, "Passwords", "TestImportFromCopiesKeys"
@@ -280,6 +396,14 @@ Public Sub TestImportFromCopiesKeys()
                      "ImportFrom should copy public key value"
 End Sub
 
+' @sub-title Verify that ImportFrom from an empty source clears the target table and logs a checking
+' @details Tests the edge case where the source keys table is empty. Arrange: creates a
+'   clone on a new worksheet and places a "stale" value in the target keys table, then
+'   deletes all rows from the source keys table. Act: calls target.ImportFrom(PasswordSubject)
+'   where PasswordSubject now has an empty keys table. Assert: verifies that the target
+'   keys table data body is either Nothing or has zero non-empty cells (CountA = 0), that
+'   HasCheckings is True, and that the first log message contains the expected skip
+'   reasoning. This guards against stale key data persisting when the source is empty.
 '@TestMethod("Passwords")
 Public Sub TestImportFromEmptySourceClearsTable()
     CustomTestSetTitles Assert, "Passwords", "TestImportFromEmptySourceClearsTable"
@@ -325,6 +449,13 @@ Public Sub TestImportFromEmptySourceClearsTable()
                   "ImportFrom should record reasoning for skipped import"
 End Sub
 
+' @sub-title Verify that CloneToWorksheet creates an independent copy on a given sheet
+' @details Tests CloneToWorksheet by cloning the password data to a new worksheet within
+'   the same workbook. Arrange: creates a fresh worksheet named with a timestamp suffix.
+'   Act: calls CloneToWorksheet to produce a new IPasswords instance backed by the new
+'   sheet. Assert: confirms the cloned instance's publickey matches the original's value,
+'   proving that the clone received a faithful copy of the keys data. Cleanup: deletes
+'   the cloned worksheet to avoid polluting subsequent tests.
 '@TestMethod("Passwords")
 Public Sub TestCloneToWorksheetProducesIndependentSheet()
     CustomTestSetTitles Assert, "Passwords", "TestCloneToWorksheetProducesIndependentSheet"
@@ -343,6 +474,13 @@ Public Sub TestCloneToWorksheetProducesIndependentSheet()
     Application.DisplayAlerts = True
 End Sub
 
+' @sub-title Verify that CloneToWorkbook creates a new workbook-hosted Passwords handler
+' @details Tests CloneToWorkbook by cloning the password data into a separate workbook.
+'   Arrange: creates a new empty workbook. Act: calls CloneToWorkbook, which should copy
+'   the password sheet into the target workbook and return a new IPasswords instance.
+'   Assert: verifies the cloned handler's PasswordSheet.Name matches DEFAULTPASSWORDSHEET,
+'   confirming the sheet was created with the correct name. Cleanup: closes the temporary
+'   workbook without saving.
 '@TestMethod("Passwords")
 Public Sub TestCloneToWorkbookProducesHandler()
     CustomTestSetTitles Assert, "Passwords", "TestCloneToWorkbookProducesHandler"
@@ -359,6 +497,12 @@ Public Sub TestCloneToWorkbookProducesHandler()
 End Sub
 
 
+' @sub-title Verify that GenerateKey raises an error when the translator argument is Nothing
+' @details Tests the input guard on GenerateKey. Arrange: PasswordSubject is created
+'   normally. Act: calls GenerateKey(Nothing). Assert: expects the call to raise
+'   ProjectError.ObjectNotInitialized. If no error is raised, the test logs a failure.
+'   The On Error GoTo pattern captures the error number and compares it to the expected
+'   value, validating that the guard clause fires before any key generation logic runs.
 '@TestMethod("Passwords")
 Public Sub TestGenerateKeyWithoutTranslatorRaises()
     CustomTestSetTitles Assert, "Passwords", "TestGenerateKeyWithoutTranslatorRaises"
@@ -371,6 +515,11 @@ ExpectError:
                      "GenerateKey should guard against missing translator"
 End Sub
 
+' @sub-title Verify that DisplayPrivateKey raises an error when the translator argument is Nothing
+' @details Tests the input guard on DisplayPrivateKey. Arrange: PasswordSubject is created
+'   normally. Act: calls DisplayPrivateKey(Nothing). Assert: expects the call to raise
+'   ProjectError.ObjectNotInitialized. This mirrors the GenerateKey guard test and ensures
+'   both key-display methods enforce the translator precondition consistently.
 '@TestMethod("Passwords")
 Public Sub TestDisplayPrivateKeyWithoutTranslatorRaises()
     CustomTestSetTitles Assert, "Passwords", "TestDisplayPrivateKeyWithoutTranslatorRaises"
@@ -383,6 +532,14 @@ ExpectError:
                      "DisplayPrivateKey should guard against missing translator"
 End Sub
 
+' @sub-title Verify that DisplayPrivateKey in silent mode captures the prompt text without showing a dialog
+' @details Tests the DisplayPrompts=False path, which stores the private key prompt instead
+'   of displaying it in a message box. Arrange: creates a translator via
+'   CreatePasswordTranslator, sets DisplayPrompts to False. Act: calls DisplayPrivateKey.
+'   Assert: checks that LastPrivatePrompt contains "Password:" concatenated with the
+'   private key value, that LastPrivatePromptTitle equals "Credentials", that HasCheckings
+'   is True, and that the last checking log entry contains the expected prompt text. This
+'   is essential for automated testing since message boxes cannot be dismissed by code.
 '@TestMethod("Passwords")
 Public Sub TestDisplayPrivateKeySilentModeCapturesPrompt()
     CustomTestSetTitles Assert, "Passwords", "TestDisplayPrivateKeySilentModeCapturesPrompt"
@@ -419,6 +576,14 @@ Public Sub TestDisplayPrivateKeySilentModeCapturesPrompt()
                   "Checking log should contain the prompt text"
 End Sub
 
+' @sub-title Verify that GenerateKey selects a key pair, updates named ranges, and captures the prompt
+' @details Tests the full GenerateKey workflow. Arrange: records the current public and
+'   private key values, overwrites the keys table with four known pairs, creates a
+'   translator, and sets DisplayPrompts to False. Act: calls GenerateKey. Assert: confirms
+'   the new public and private key values differ from the originals, that the selected pair
+'   matches one of the four configured pairs (using a Collection-based lookup), and that
+'   LastPrivatePrompt and LastPrivatePromptTitle contain the expected prompt text. This
+'   covers the random selection, range update, and silent prompt capture in one test.
 '@TestMethod("Passwords")
 Public Sub TestGenerateKeyUpdatesRanges()
     CustomTestSetTitles Assert, "Passwords", "TestGenerateKeyUpdatesRanges"
@@ -477,6 +642,14 @@ Public Sub TestGenerateKeyUpdatesRanges()
 End Sub
 
 
+' @sub-title Verify that EnsureDebugExitHandler injects the LeaveDebugModeOnClose routine into a workbook
+' @details Tests VBProject code injection by calling EnsureDebugExitHandler on a temporary
+'   workbook. Arrange: creates a new workbook, clones PasswordSubject into it. Act: calls
+'   EnsureDebugExitHandler. Assert: reads the code from the workbook's ThisWorkbook module
+'   and confirms it contains "LeaveDebugModeOnClose", "Workbook_BeforeClose", and the
+'   conditional invocation "If Not Cancel Then LeaveDebugModeOnClose". If VBProject access
+'   is denied (error 1004 or 91), the test is skipped with an explicit log message rather
+'   than failing silently. Cleanup: deletes injected code lines and closes the temp workbook.
 '@TestMethod("Passwords")
 Public Sub TestEnsureDebugExitHandlerInjectsCode()
     CustomTestSetTitles Assert, "Passwords", "TestEnsureDebugExitHandlerInjectsCode"
@@ -521,6 +694,16 @@ InjectionAccessDenied:
     Resume InjectionCleanup
 End Sub
 
+' @sub-title Verify that EnsureDebugExitHandler preserves existing Workbook_BeforeClose code and avoids duplicates
+' @details Tests the merge behaviour when a Workbook_BeforeClose handler already exists.
+'   Arrange: creates a temp workbook, clones passwords into it, and manually injects a
+'   baseline Workbook_BeforeClose with a Debug.Print statement and error handling. Act:
+'   calls EnsureDebugExitHandler twice in succession to test idempotency. Assert: reads
+'   the merged procedure text and verifies it contains "If Not Cancel Then LeaveDebugModeOnClose"
+'   (the injected call), that the original "Debug.Print ""Closing""" statement is preserved,
+'   and that "LeaveDebugModeOnClose" appears exactly once (no duplicate injection). If
+'   VBProject access is denied, the test is skipped. Cleanup: deletes code lines via
+'   SafeDeleteLines and closes the temp workbook.
 '@TestMethod("Passwords")
 Public Sub TestEnsureDebugExitHandlerPreservesExistingBeforeCloseCode()
     CustomTestSetTitles Assert, "Passwords", "TestEnsureDebugExitHandlerPreservesExistingBeforeCloseCode"
@@ -559,7 +742,7 @@ Public Sub TestEnsureDebugExitHandlerPreservesExistingBeforeCloseCode()
         DoEvents
 
         Debug.Print "Sent the two debug handlers"
-        
+
         procStart = codeModule.ProcStartLine("Workbook_BeforeClose", 0)
         DoEvents
 
@@ -595,7 +778,7 @@ InjectionCleanup:
         SafeDeleteLines codeModule, 2, codeModule.CountOfLines
         DoEvents
         codeModule.InsertLines codeModule.CountOfLines + 1, vbCrLf & "' EOF pad (Mac)"
-        If Not (tempWb Is Nothing) Then 
+        If Not (tempWb Is Nothing) Then
             tempWb.Close SaveChanges:=False
         End If
         app.Restore
@@ -603,6 +786,19 @@ InjectionCleanup:
 End Sub
 
 
+' @sub-title Verify end-to-end debug exit handler roundtrip across save and reopen
+' @details Tests the full lifecycle: clone passwords into a temp workbook, inject the debug
+'   exit handler, enter debug mode, protect a sheet, leave debug mode, save to disk, close,
+'   and reopen the file. Arrange: creates a temp workbook and export folder, clones
+'   PasswordSubject, injects the handler, imports required VBA components (Passwords,
+'   Checking, BetterArray, TranslationObject, etc.) so the handler code can execute on
+'   reopen, protects a guard sheet, and enters debug mode. Act: calls LeaveDebugMode,
+'   saves the workbook to disk, closes it, then reopens it. Assert: verifies that the
+'   reopened workbook has ProtectStructure=True, the guard sheet has ProtectContents=True,
+'   and the debug flag is "no". This confirms the Workbook_BeforeClose handler fired
+'   correctly during the close event. If VBProject access is denied, the test is skipped.
+'   Cleanup: restores Application.EnableEvents, closes the reopened workbook, deletes
+'   exported files and the temp folder.
 '@TestMethod("Passwords")
 Public Sub TestDebugExitHandlerRoundtripPersistsProtections()
     CustomTestSetTitles Assert, "Passwords", "TestDebugExitHandlerRoundtripPersistsProtections"
@@ -642,7 +838,7 @@ Public Sub TestDebugExitHandlerRoundtripPersistsProtections()
 
         cloned.Protect guardSheetName, allowShapes:=False, allowDeletingRows:=False
         cloned.EnterDebugMode tempWb
-        
+
         DoEvents
 
         Application.EnableEvents = True
@@ -653,9 +849,9 @@ Public Sub TestDebugExitHandlerRoundtripPersistsProtections()
         cloned.LeaveDebugMode tempWb
 
         tempWb.SaveAs Filename:=workbookPath, FileFormat:=xlExcel12
-        
+
         tempWb.Close SaveChanges:=True
-        
+
         DoEvents
 
         Set reopened = Workbooks.Open(Filename:=workbookPath)
@@ -668,7 +864,7 @@ Public Sub TestDebugExitHandlerRoundtripPersistsProtections()
                       "Tracked worksheet should remain protected after debug handler runs"
 
         Set debugFlagCell = reopened.Worksheets(DEFAULTPASSWORDSHEET).Range(NAMEDEBUGMODE)
-        
+
         Assert.AreEqual DEFAULTBOOLNO, CStr(debugFlagCell.Value), _
                      "Debug mode flag should be cleared after workbook close handler runs"
 
@@ -697,6 +893,7 @@ End Sub
 '@section Helpers
 '===============================================================================
 
+' @sub-title Import required VBA components into a target workbook for roundtrip tests
 Private Sub ImportPasswordsComponents(ByVal targetWorkbook As Workbook, _
                                       ByVal exportFolder As String, _
                                       ByVal exportedFiles As Collection)
@@ -714,6 +911,7 @@ Private Sub ImportPasswordsComponents(ByVal targetWorkbook As Workbook, _
     Next idx
 End Sub
 
+' @sub-title Return the first worksheet in a workbook whose name does not match the excluded name
 Private Function FirstWorkbookSheet(ByVal wb As Workbook, ByVal excludedName As String) As Worksheet
     Dim sh As Worksheet
     For Each sh In wb.Worksheets
@@ -726,6 +924,7 @@ Private Function FirstWorkbookSheet(ByVal wb As Workbook, ByVal excludedName As 
 End Function
 
 
+' @sub-title Safely delete lines from a VBE CodeModule, respecting Attribute and Option lines on Mac
 Private Sub SafeDeleteLines(cm As Object, ByVal startLine As Long, ByVal count As Long)
     On Error GoTo Fail
 
