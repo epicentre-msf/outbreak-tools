@@ -26,7 +26,7 @@ Implements IButtons
 'button scopes with automatic placement offset calculations.
 '@depends Checking, ILLFormat, ProjectError
 '@version 1.0 (2026-02-09)
-'@author OutbreakTools
+'@author Yves Amevoin
 
 '@section State
 '===============================================================================

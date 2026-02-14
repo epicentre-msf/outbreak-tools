@@ -27,7 +27,7 @@ Implements IHiddenNames
 'worksheets and workbooks.
 '@depends ProjectError, BetterArray
 '@version 1.0 (2026-02-09)
-'@author OutbreakTools
+'@author Yves Amevoin
 
 Private Type THiddenNames
     hostSh As Worksheet

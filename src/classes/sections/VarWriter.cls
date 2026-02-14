@@ -29,7 +29,7 @@ Implements IVarWriter
 'ITranslationObject, IFormulaData, IFormulas, IDropdownLists, ILLGeo,
 'Formulas, LLVariables, LLSheets, BetterArray
 '@version 1.0 (2026-02-10)
-'@author OutbreakTools
+'@author Yves Amevoin
 
 Private Type TVarWriter
     layer As Byte

@@ -27,7 +27,7 @@ Implements IFormulas
 'detected and rewritten as aggregated Excel expressions.
 '@depends BetterArray, Checking, LLdictionary, LLVariables, LLSheets, CaseWhen, ChoiceFormula, ValueOfFormula
 '@version 1.0 (2026-02-09)
-'@author OutbreakTools
+'@author Yves Amevoin
 
 
 '@section State

@@ -29,7 +29,7 @@ Implements IFormulaData
 'exclusively through the IFormulaData interface.
 '@depends BetterArray
 '@version 1.0 (2026-02-09)
-'@author OutbreakTools
+'@author Yves Amevoin
 
 
 '@section State
