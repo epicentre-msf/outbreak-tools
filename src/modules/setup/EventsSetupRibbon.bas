@@ -34,13 +34,13 @@ Public Sub clickFilters(ByRef control As IRibbonControl)
 
     Set targetSheet = ActiveSheet
     If targetSheet Is Nothing Then Exit Sub
-    
+
     sheetName = targetSheet.Name
-    
+
     On Error GoTo Handler
-    
+
     Set app = ApplicationState.Create(Application)
-    app.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
+    app.ApplyBusyState suppressEvents:=True, calculateOnSave:=False, busyCursor:=xlWait
 
     UnProtectSetupSheet sheetName
 
@@ -59,7 +59,10 @@ Public Sub clickFilters(ByRef control As IRibbonControl)
     ProtectSetupSheet sheetName
 
 Cleanup:
+    On Error Resume Next
     If Not app Is Nothing Then app.Restore
+    Application.Cursor = xlDefault
+    On Error GoTo 0
     Exit Sub
 
 Handler:
@@ -73,9 +76,24 @@ End Sub
 Public Sub clickSortTables(ByRef control As IRibbonControl)
 
     Dim targetSheet As Worksheet
+    Dim app As IApplicationState
+
     Set targetSheet = ActiveSheet
 
+    On Error GoTo Cleanup
+
+    'Wrap in BusyState at ribbon level so that the sort AND any
+    'subsequent Workbook_SheetChange events run under the same guard
+    Set app = ApplicationState.Create(Application)
+    app.ApplyBusyState suppressEvents:=True, busyCursor:=xlWait
+
     SetupHelpers.SortSetupTables targetSheet.Name
+
+Cleanup:
+    On Error Resume Next
+    If Not app Is Nothing Then app.Restore
+    Application.Cursor = xlDefault
+    On Error GoTo 0
 End Sub
 
 '@Description("Insert a list row at the active position")
@@ -150,7 +168,7 @@ Public Sub clickResetTag(ByRef control As IRibbonControl)
    On Error GoTo Handler
 
    Set app = ApplicationState.Create(Application)
-   app.ApplyBusyState suppressEvents:=True
+   app.ApplyBusyState suppressEvents:=True, busyCursor:=xlWait
 
    Set prep = SetupPreparation.Create(ThisWorkbook)
    prep.EnsureUpdatedRegistry
@@ -161,7 +179,10 @@ Public Sub clickResetTag(ByRef control As IRibbonControl)
    Exit Sub
 Handler:
     Debug.Print "clickResetTag: "; Err.Number; Err.Description
+    On Error Resume Next
     If Not app Is Nothing Then app.Restore
+    Application.Cursor = xlDefault
+    On Error GoTo 0
 End Sub
 
 '@Description("Callback for editLang onChange: add translation language columns")
@@ -190,7 +211,7 @@ Public Sub clickAddLang(ByRef control As IRibbonControl, ByRef text As String)
     On Error GoTo Handler
 
     Set app = ApplicationState.Create(Application)
-    app.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
+    app.ApplyBusyState suppressEvents:=True, calculateOnSave:=False, busyCursor:=xlWait
 
     SetupHelpers.UnProtectSetupSheet TRADSHEETNAME
     sheetUnlocked = True
@@ -204,8 +225,11 @@ Public Sub clickAddLang(ByRef control As IRibbonControl, ByRef text As String)
     success = True
 
 Cleanup:
+    On Error Resume Next
     If sheetUnlocked Then SetupHelpers.ProtectSetupSheet TRADSHEETNAME
     If Not app Is Nothing Then app.Restore
+    Application.Cursor = xlDefault
+    On Error GoTo 0
     If success Then MsgBox "Done!", vbInformation
     Exit Sub
 
@@ -225,7 +249,7 @@ Public Sub clickAddTrans(ByRef control As IRibbonControl)
     Dim app As IApplicationState
     Dim sheetUnlocked As Boolean
     Dim upVal As IUpdatedValues
-   
+
     answer = MsgBox("Do you want to update the translation sheet?", vbYesNo + vbQuestion, "Confirm")
     If answer <> vbYes Then Exit Sub
 
@@ -244,7 +268,7 @@ Public Sub clickAddTrans(ByRef control As IRibbonControl)
     On Error GoTo Handler
 
     Set app = ApplicationState.Create(Application)
-    app.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
+    app.ApplyBusyState suppressEvents:=True, calculateOnSave:=False, busyCursor:=xlWait
 
     SetupHelpers.UnProtectSetupSheet TRADSHEETNAME
     sheetUnlocked = True
@@ -263,8 +287,11 @@ Public Sub clickAddTrans(ByRef control As IRibbonControl)
     upVal.SwitchTagsToNo
 
 Cleanup:
+    On Error Resume Next
     If sheetUnlocked Then SetupHelpers.ProtectSetupSheet TRADSHEETNAME
     If Not app Is Nothing Then app.Restore
+    Application.Cursor = xlDefault
+    On Error GoTo 0
     Exit Sub
 
 Handler:
@@ -303,7 +330,7 @@ Public Sub clickTransSetup(ByRef control As IRibbonControl)
     End If
 
     selectedLanguage = PromptTranslationLanguage(languages)
-    If LenB(selectedLanguage) = 0 Then 
+    If LenB(selectedLanguage) = 0 Then
         GoTo CleanUp
     End If
 
@@ -311,9 +338,9 @@ Public Sub clickTransSetup(ByRef control As IRibbonControl)
 
     'Provide the number of Mission Labels of one specific language
     nbMissing = manager.MissingLabels(selectedLanguage)
-    
+
     If (nbMissing > 0) Then
-        MsgBox "Aborted translation of the setup: Language " & selectedLanguage & _ 
+        MsgBox "Aborted translation of the setup: Language " & selectedLanguage & _
                " has " & nbMissing & " missing labels. Please fill them before attempting a translation.", vbExclamation
         GoTo CleanUp
     End If
@@ -324,7 +351,7 @@ Public Sub clickTransSetup(ByRef control As IRibbonControl)
     End If
 
     Set app = ApplicationState.Create(Application)
-    app.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
+    app.ApplyBusyState suppressEvents:=True, calculateOnSave:=False, busyCursor:=xlWait
 
     Set translator = TranslationObject.Create(translationsTable, selectedLanguage)
     SetupHelpers.ApplySetupTranslation translator
@@ -334,8 +361,11 @@ Public Sub clickTransSetup(ByRef control As IRibbonControl)
     success = True
 
 Cleanup:
+    On Error Resume Next
     If translationsUnlocked Then SetupHelpers.ProtectSetupSheet TRADSHEETNAME
     If Not app Is Nothing Then app.Restore
+    Application.Cursor = xlDefault
+    On Error GoTo 0
     If success Then MsgBox "Done!", vbInformation
     Exit Sub
 
@@ -386,18 +416,21 @@ Public Sub clickExport(ByRef control As IRibbonControl)
     Dim service As ISetupImportService
     Dim exportPath As String
     Dim app As IApplicationState
+    Dim analysisSheet As String
 
     On Error GoTo Handler
 
+    analysisSheet = ResolveSetupSheetName("ana")
+
     Set app = ApplicationState.Create(Application)
-    app.ApplyBusyState suppressEvents:=True
-    
+    app.ApplyBusyState suppressEvents:=True, busyCursor:=xlWait
+
     Set service = SetupImportService.Create(ThisWorkbook.FullName)
 
     'UnProtect the analysis before proceeding
-    UnProtectSetupSheet ResolveSetupSheetName("ana")
+    UnProtectSetupSheet analysisSheet
     service.Export
-    ProtectSetupSheet ResolveSetupSheetName("ana")
+    ProtectSetupSheet analysisSheet
 
     exportPath = service.LastExportFile
 
@@ -409,8 +442,12 @@ Public Sub clickExport(ByRef control As IRibbonControl)
     Exit Sub
 
 Handler:
-    If Not app Is Nothing Then app.Restore
+    'Re-protect BEFORE restoring screen state to avoid visible flash
+    On Error Resume Next
     ProtectSetupSheet ResolveSetupSheetName("ana")
+    If Not app Is Nothing Then app.Restore
+    Application.Cursor = xlDefault
+    On Error GoTo 0
     Debug.Print "clickExport: "; Err.Number; Err.Description
     MsgBox "Failed to export the setup: " & Err.Description, vbCritical
 End Sub
@@ -451,14 +488,17 @@ Public Sub clickImportFile(ByRef control As IRibbonControl)
     Set pass = SetupHelpers.ResolveSetupPasswords()
     Set sheets = SetupHelpers.BuildSelectedSheets(True, True, True, True, True)
     Set app = ApplicationState.Create(Application)
-    app.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
+    app.ApplyBusyState suppressEvents:=True, calculateOnSave:=False, busyCursor:=xlWait
 
     service.ImportFromWorkbook pass, sheets
     SetupHelpers.PostImportMaintenance
     success = True
 
 Cleanup:
+    On Error Resume Next
     If Not app Is Nothing Then app.Restore
+    Application.Cursor = xlDefault
+    On Error GoTo 0
     If success Then MsgBox "Import Done!"
     Exit Sub
 
@@ -470,7 +510,20 @@ Handler:
 End Sub
 
 Public Sub clickCheck(ByRef control As IRibbonControl)
+    Dim app As IApplicationState
+
+    On Error GoTo Cleanup
+
+    Set app = ApplicationState.Create(Application)
+    app.ApplyBusyState suppressEvents:=True, busyCursor:=xlWait
+
     SetupHelpers.CheckTheSetup
+
+Cleanup:
+    On Error Resume Next
+    If Not app Is Nothing Then app.Restore
+    Application.Cursor = xlDefault
+    On Error GoTo 0
 End Sub
 
 '@section Formatter
@@ -480,7 +533,7 @@ Public  Sub clickEditStyle(ByRef control As IRibbonControl)
     Static opened As Boolean
     Dim pass As IPasswords
     Dim targetsheet As Worksheet
-    
+
     On Error GoTo Handler
 
     Set pass = SetupHelpers.ResolveSetupPasswords()
@@ -494,7 +547,7 @@ Public  Sub clickEditStyle(ByRef control As IRibbonControl)
     Else
         targetSheet.Visible = xlSheetVeryHidden
     End If
-    
+
     opened = (Not opened)
     pass.Protect ThisWorkbook
 
@@ -514,14 +567,30 @@ Public Sub SetupButtonVisible(control As IRibbonControl, ByRef returnedVal)
 End Sub
 
 
-'@section Initializations 
+'@section Initializations
 '===============================================================================
 '@EntryPoint
 '@Description("Initialise development environment - logic provided by consuming workbook")
 Public Sub clickDevInitialize(ByRef control As IRibbonControl)
    Dim prep As ISetupPreparation
+   Dim app As IApplicationState
+
+   On Error GoTo Cleanup
+
+   Set app = ApplicationState.Create(Application)
+   app.ApplyBusyState suppressEvents:=True, busyCursor:=xlWait
 
    Set prep = SetupPreparation.Create(ThisWorkbook)
    prep.Prepare RibbonDev.EnsureDevelopment()
+
+   app.Restore
    MsgBox "Done!", vbInformation
+   Exit Sub
+
+Cleanup:
+   On Error Resume Next
+   If Not app Is Nothing Then app.Restore
+   Application.Cursor = xlDefault
+   On Error GoTo 0
+   Debug.Print "clickDevInitialize: "; Err.Number; Err.Description
 End Sub

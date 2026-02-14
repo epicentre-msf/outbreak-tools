@@ -47,6 +47,7 @@ Private Sub LabPath_Click()
     Dim pass As IPasswords
     Dim pwdUser As Variant
     Dim expectedPassword As String
+    Dim appState As IApplicationState
 
     Me.LabProgress.Caption = vbNullString
 
@@ -59,7 +60,15 @@ Private Sub LabPath_Click()
     If (VarType(pwdUser) = vbBoolean) And (pwdUser = False) Then GoTo cleanExit
 
     If StrComp(CStr(pwdUser), expectedPassword, vbBinaryCompare) = 0 Then
+        'Wrap EnterDebugMode in BusyState to suppress screen flickering
+        'while iterating through all worksheets to unprotect them
+        On Error GoTo DebugCleanup
+        Set appState = ApplicationState.Create(Application)
+        appState.ApplyBusyState suppressEvents:=True, busyCursor:=xlWait
         pass.EnterDebugMode
+        appState.Restore
+        On Error GoTo 0
+
         Me.LabProgress.Caption = vbNullString
         MsgBox "Setup in debug mode!"
         Me.Hide
@@ -69,5 +78,12 @@ Private Sub LabPath_Click()
 
 cleanExit:
     NumberOfClicks = 0
-End Sub
+    Exit Sub
 
+DebugCleanup:
+    On Error Resume Next
+    If Not appState Is Nothing Then appState.Restore
+    Application.Cursor = xlDefault
+    On Error GoTo 0
+    Resume cleanExit
+End Sub

@@ -349,9 +349,11 @@ Public Sub ImportOrCleanSetup()
     Dim sheets As BetterArray
     Dim infoText As String
     Dim completed As Boolean
+    Dim originalSheet As Worksheet
 
     On Error GoTo Handler
 
+    Set originalSheet = ActiveSheet
     Set formRef = [Imports]
     If formRef Is Nothing Then Exit Sub
 
@@ -386,7 +388,7 @@ Public Sub ImportOrCleanSetup()
     Set pass = ResolveSetupPasswords()
     Set app = ApplicationState.Create(Application)
 
-    app.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
+    app.ApplyBusyState suppressEvents:=True, calculateOnSave:=False, busyCursor:=xlWait
 
     Set service = SetupImportService.Create(servicePath, progressLabel)
     service.Check importDict, importChoi, importExp, importAna, importTrans, cleanSetup:=isClean
@@ -399,13 +401,20 @@ Public Sub ImportOrCleanSetup()
     completed = True
 
 Cleanup:
+    On Error Resume Next
     If Not app Is Nothing Then app.Restore
+    Application.Cursor = xlDefault
+    On Error GoTo 0
 
-    If completed Then 
+    If completed Then
         formRef.Hide
         If conformityCheck And Not isClean Then
             On Error Resume Next
                 ThisWorkbook.Worksheets(CHECKINGSHEETNAME).Activate
+            On Error GoTo 0
+        ElseIf Not originalSheet Is Nothing Then
+            On Error Resume Next
+                originalSheet.Activate
             On Error GoTo 0
         End If
         MsgBox infoText
