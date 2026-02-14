@@ -526,6 +526,7 @@ Private Sub Export(ByVal sourceWb As Workbook, Optional ByVal Hide As Long = xlS
     Dim sourceRange As Range
     Dim counter As Long
     Dim sourceLo As ListObject
+    Dim tempRange As Range
 
 
     If sourcewb Is Nothing Then
@@ -558,17 +559,17 @@ Private Sub Export(ByVal sourceWb As Workbook, Optional ByVal Hide As Long = xlS
         sourcesheet.ListObjects.Add(xlSrcRange, sourceRange, , xlYes).Name = hostLo.Name
         Set sourceLo = sourcesheet.ListObjects(hostLo.Name)
         sourceLo.TableStyle = hostLo.TableStyle
-        On Error Resume Next
             For counter = 0 To 4
+                Set tempRange = hostLo.HeaderRowRange.Offset(-counter).Cells(1, 1)
+                sourceLo.HeaderRowRange.Offset(-counter).Font.Color = tempRange.Font.Color
+                sourceLo.HeaderRowRange.Offset(-counter).Font.Size = tempRange.Font.Size
+                sourceLo.HeaderRowRange.Offset(-counter).Font.Name = tempRange.Font.Name
+                sourceLo.HeaderRowRange.Offset(-counter).Font.Bold = tempRange.Font.Bold
                 sourceLo.HeaderRowRange.Offset(-counter).Value = hostLo.HeaderRowRange.Offset(-counter).Value
-                sourceLo.HeaderRowRange.Offset(-counter).Font.Color = hostLo.HeaderRowRange.Offset(-counter).Font.Color
-                sourceLo.HeaderRowRange.Offset(-counter).Font.Size = hostLo.HeaderRowRange.Offset(-counter).Font.Size
-                sourceLo.HeaderRowRange.Offset(-counter).Font.Name = hostLo.HeaderRowRange.Offset(-counter).Font.Name
-                sourceLo.HeaderRowRange.Offset(-counter).Font.Bold = hostLo.HeaderRowRange.Offset(-counter).Font.Bold
             Next
-            sourceSheet.Cells.EntireColumn.AutoFit
-        On Error GoTo 0
     Next
+
+    sourceSheet.Cells.EntireColumn.AutoFit
 End Sub
 
 '@label:translate
