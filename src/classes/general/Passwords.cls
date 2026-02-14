@@ -402,8 +402,9 @@ Private Sub UnprotectSheet(Optional sheetObject As Variant)
     EnsureWorkbookReady
     Set targetSheet = ResolveSheet(sheetObject)
     pwd = TagValue(PasswordTagDebug)
-
+    
     On Error Resume Next
+        Application.ScreenUpdating = False
         If targetSheet.ProtectContents Then targetSheet.Unprotect pwd
     On Error GoTo 0
 End Sub
@@ -1105,6 +1106,7 @@ Private Sub ApplySheetProtection(ByVal targetSheet As Worksheet, _
     Dim pwd As String
     pwd = TagValue(PasswordTagDebug)
 
+    Application.ScreenUpdating = False
     targetSheet.Protect Password:=pwd, _
         DrawingObjects:=(Not allowShapes), _
         Contents:=True, _
@@ -1117,7 +1119,6 @@ Private Sub ApplySheetProtection(ByVal targetSheet As Worksheet, _
         AllowFormattingColumns:=True, _
         AllowFormattingRows:=True, _ 
         UserInterfaceOnly:=True
-
 End Sub
 
 '@label:protection-record

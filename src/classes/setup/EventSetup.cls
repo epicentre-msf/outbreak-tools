@@ -27,7 +27,7 @@ Implements IEventSetup
 '(LLdictionary, LLChoices, LLExport, Analysis), and provides analysis table
 'value lookups. All domain managers are created lazily on first use and cached
 'for the lifetime of the instance.
-'@depends BetterArray, HiddenNames, Passwords, UpdatedValues, DropdownLists, LLdictionary, LLVariables, LLChoices, LLExport, Analysis, SetupTranslationsTable, CustomTable, ChoiceFormula, RibbonDev, ProjectError, ApplicationState
+'@depends BetterArray, HiddenNames, Passwords, UpdatedValues, DropdownLists, LLdictionary, LLVariables, LLChoices, LLExport, Analysis, SetupTranslationsTable, CustomTable, ChoiceFormula, RibbonDev, ProjectError
 
 
 '@section State
@@ -375,7 +375,6 @@ End Function
 '@export
 Public Sub ManageRows(ByVal sheetName As String, Optional ByVal del As Boolean = False)
     Dim normalized As String
-    Dim state As IApplicationState
     Dim sheetPass As IPasswords
     Dim dictPass As IPasswords
     Dim unlockedSheet As String
@@ -383,11 +382,6 @@ Public Sub ManageRows(ByVal sheetName As String, Optional ByVal del As Boolean =
 
     normalized = NormalisedSheetName(sheetName)
     If LenB(normalized) = 0 Then Exit Sub
-
-    Set state = ApplicationState.Create(Application)
-    If Not state Is Nothing Then
-        state.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
-    End If
 
     On Error GoTo CleanFail
 
@@ -435,7 +429,6 @@ CleanExit:
         unlockedSheet = vbNullString
     End If
 
-    If Not state Is Nothing Then state.Restore
     Exit Sub
 
 CleanFail:
@@ -445,7 +438,6 @@ CleanFail:
     On Error GoTo 0
 
     ThrowError ProjectError.SomethingWentWrong, "Failed to manage rows on '" & sheetName & "': " & Err.Description
-    If Not state Is Nothing Then state.Restore
 End Sub
 
 '@label:insert-rows
@@ -465,7 +457,6 @@ Public Sub InsertRows(ByVal sheetName As String, _
                       ByVal targetCell As Range, _
                       Optional ByVal insertShift As Boolean = False)
     Dim normalized As String
-    Dim state As IApplicationState
     Dim sheetPass As IPasswords
     Dim dictPass As IPasswords
     Dim unlockedSheet As String
@@ -476,12 +467,8 @@ Public Sub InsertRows(ByVal sheetName As String, _
     If LenB(normalized) = 0 Then Exit Sub
     If targetCell Is Nothing Then Exit Sub
 
-    Set state = ApplicationState.Create(Application)
-    If Not state Is Nothing Then
-        state.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
-    End If
-
     On Error GoTo CleanFail
+    Application.ScreenUpdating = False
 
     Select Case normalized
         Case KEY_DICTIONARY
@@ -526,7 +513,6 @@ CleanExit:
         unlockedSheet = vbNullString
     End If
 
-    If Not state Is Nothing Then state.Restore
     Exit Sub
 
 CleanFail:
@@ -536,7 +522,6 @@ CleanFail:
     On Error GoTo 0
 
     ThrowError ProjectError.SomethingWentWrong, "Failed to insert rows on '" & sheetName & "': " & Err.Description
-    If Not state Is Nothing Then state.Restore
 End Sub
 
 '@label:delete-rows
@@ -556,7 +541,6 @@ Public Sub DeleteRows(ByVal sheetName As String, _
                       ByVal targetCell As Range, _
                       Optional ByVal forceShift As Boolean = False)
     Dim normalized As String
-    Dim state As IApplicationState
     Dim sheetPass As IPasswords
     Dim dictPass As IPasswords
     Dim unlockedSheet As String
@@ -566,12 +550,8 @@ Public Sub DeleteRows(ByVal sheetName As String, _
     If LenB(normalized) = 0 Then Exit Sub
     If targetCell Is Nothing Then Exit Sub
 
-    Set state = ApplicationState.Create(Application)
-    If Not state Is Nothing Then
-        state.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
-    End If
-
     On Error GoTo CleanFail
+    Application.ScreenUpdating = False
 
     Select Case normalized
         Case KEY_DICTIONARY
@@ -617,7 +597,6 @@ CleanExit:
         unlockedSheet = vbNullString
     End If
 
-    If Not state Is Nothing Then state.Restore
     Exit Sub
 
 CleanFail:
@@ -627,7 +606,6 @@ CleanFail:
     On Error GoTo 0
 
     ThrowError ProjectError.SomethingWentWrong, "Failed to delete rows on '" & sheetName & "': " & Err.Description
-    If Not state Is Nothing Then state.Restore
 End Sub
 
 '@label:sort-tables
@@ -642,7 +620,6 @@ End Sub
 '@export
 Public Sub SortTables(ByVal sheetName As String)
     Dim normalized As String
-    Dim state As IApplicationState
     Dim sheetPass As IPasswords
     Dim dictPass As IPasswords
     Dim unlockedSheet As String
@@ -651,12 +628,8 @@ Public Sub SortTables(ByVal sheetName As String)
     normalized = NormalisedSheetName(sheetName)
     If LenB(normalized) = 0 Then Exit Sub
 
-    Set state = ApplicationState.Create(Application)
-    If Not state Is Nothing Then
-        state.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
-    End If
-
     On Error GoTo CleanFail
+    Application.ScreenUpdating = False
 
     Select Case normalized
         Case KEY_DICTIONARY
@@ -704,7 +677,6 @@ CleanExit:
         unlockedSheet = vbNullString
     End If
 
-    If Not state Is Nothing Then state.Restore
     Exit Sub
 
 CleanFail:
@@ -713,7 +685,6 @@ CleanFail:
         If LenB(unlockedSheet) > 0 Then EndSheetUpdate sheetPass, unlockedSheet
     On Error GoTo 0
 
-    If Not state Is Nothing Then state.Restore
     ThrowError ProjectError.SomethingWentWrong, "Failed to sort sheet '" & sheetName & "': " & Err.Description
 End Sub
 
@@ -990,6 +961,7 @@ Private Sub EnsureTableCalculated(ByRef tableRef As ICustomTable, _
     If Not EnsureAnalysisTable(tableRef, listName, keyColumn) Then Exit Sub
 
     On Error Resume Next
+        Application.ScreenUpdating = False
         tableRef.DataRange.Calculate
     On Error GoTo 0
 End Sub
@@ -1140,6 +1112,7 @@ Private Sub HandleChoicesChange(ByVal target As Range)
     If labelRange Is Nothing Then Exit Sub
 
     On Error Resume Next
+        Application.ScreenUpdating = False
         labelRange.Calculate
     On Error GoTo 0
 End Sub
@@ -1393,6 +1366,7 @@ Private Sub AddChoicesDropdown(ByVal target As Range)
 
     listName = choiceName & "__"
 
+    Application.ScreenUpdating = False
     If this.drop.Exists(listName) Then
         this.drop.Update dropArray, listName
     Else

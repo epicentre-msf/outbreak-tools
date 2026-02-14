@@ -36,11 +36,11 @@ Option Explicit
 'captured application snapshot.
 '@param suppressEvents Boolean. When True, disables Application.EnableEvents. Defaults to False.
 '@param calculateOnSave Boolean. Value for CalculateBeforeSave. Defaults to True.
-'@param busyCursor XlMousePointer. Cursor shown while busy. Defaults to xlNorthWestArrow.
+'@param busyCursor Long. Cursor shown while busy. When 0 (default), leaves cursor unchanged.
 '@param blockSecurity Boolean. When True, forces AutomationSecurity to msoAutomationSecurityForceDisable. Defaults to False.
 Public Sub ApplyBusyState(Optional ByVal suppressEvents As Boolean = False, _
                           Optional ByVal calculateOnSave As Boolean = True, _
-                          Optional ByVal busyCursor As XlMousePointer = xlNorthWestArrow, _
+                          Optional ByVal busyCursor As Long = 0, _
                           Optional ByVal blockSecurity As Boolean = False)
 End Sub
 

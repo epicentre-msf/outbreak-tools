@@ -147,13 +147,13 @@ End Sub
 'ProjectError is raised so the caller can attempt recovery.
 '@param suppressEvents Optional Boolean. When True, disables Application.EnableEvents. Defaults to False.
 '@param calculateOnSave Optional Boolean. Value assigned to CalculateBeforeSave. Defaults to True.
-'@param busyCursor Optional XlMousePointer. Cursor shown while busy. Defaults to xlNorthWestArrow.
+'@param busyCursor Optional Long. Cursor shown while busy. When 0 (default), leaves cursor unchanged.
 '@param blockSecurity Optional Boolean. When True, forces msoAutomationSecurityForceDisable. Defaults to False.
 '@throws ProjectError.ErrorUnexpectedState When the application settings cannot be applied.
 '@export
 Private Sub ApplyBusyStateCore(Optional ByVal suppressEvents As Boolean = False, _
                                Optional ByVal calculateOnSave As Boolean = True, _
-                               Optional ByVal busyCursor As XlMousePointer = xlNorthWestArrow, _
+                               Optional ByVal busyCursor As Long = 0, _
                                Optional ByVal blockSecurity As Boolean = False)
     Dim target As Application
 
@@ -168,7 +168,7 @@ Private Sub ApplyBusyStateCore(Optional ByVal suppressEvents As Boolean = False,
         target.Calculation = xlCalculationManual
         If suppressEvents Then target.EnableEvents = (Not suppressEvents)
         target.CalculateBeforeSave = calculateOnSave
-        target.Cursor = busyCursor
+        If busyCursor <> 0 Then target.Cursor = busyCursor
         If blockSecurity And Not this.securityBlocked Then
             this.automationSecurity = target.AutomationSecurity
             target.AutomationSecurity = msoAutomationSecurityForceDisable
@@ -348,7 +348,7 @@ End Sub
 Private Sub IApplicationState_ApplyBusyState( _
     Optional ByVal suppressEvents As Boolean = False, _
     Optional ByVal calculateOnSave As Boolean = True, _
-    Optional ByVal busyCursor As XlMousePointer = xlNorthWestArrow, _
+    Optional ByVal busyCursor As Long = 0, _
     Optional ByVal blockSecurity As Boolean = False)
     ApplyBusyStateCore suppressEvents, calculateOnSave, busyCursor, blockSecurity
 End Sub
