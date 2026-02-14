@@ -345,7 +345,6 @@ Public Sub ImportOrCleanSetup()
     Dim servicePath As String
     Dim service As ISetupImportService
     Dim pass As IPasswords
-    Dim app As IApplicationState
     Dim sheets As BetterArray
     Dim infoText As String
     Dim completed As Boolean
@@ -386,9 +385,7 @@ Public Sub ImportOrCleanSetup()
 
     Set sheets = BuildSelectedSheets(importDict, importChoi, importExp, importAna, importTrans)
     Set pass = ResolveSetupPasswords()
-    Set app = ApplicationState.Create(Application)
-
-    app.ApplyBusyState suppressEvents:=True, calculateOnSave:=False, busyCursor:=xlWait
+    SetupEventsManager.EnterBusyState calculateOnSave:=False
 
     Set service = SetupImportService.Create(servicePath, progressLabel)
     service.Check importDict, importChoi, importExp, importAna, importTrans, cleanSetup:=isClean
@@ -401,10 +398,7 @@ Public Sub ImportOrCleanSetup()
     completed = True
 
 Cleanup:
-    On Error Resume Next
-    If Not app Is Nothing Then app.Restore
-    Application.Cursor = xlDefault
-    On Error GoTo 0
+    SetupEventsManager.ExitBusyState
 
     If completed Then
         formRef.Hide

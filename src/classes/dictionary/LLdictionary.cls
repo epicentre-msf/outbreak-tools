@@ -547,7 +547,9 @@ Public Sub RemoveColumn(ByVal colName As String)
 
     Set columnRange = DataRange(colName)
     On Error Resume Next
+        Application.ScreenUpdating = False
         columnRange.EntireColumn.Delete
+        Application.ScreenUpdating = False
     On Error GoTo 0
 End Sub
 
@@ -562,7 +564,9 @@ Public Sub RenameColumn(ByVal currentName As String, _
         ThrowError ProjectError.InvalidArgument, "New column name cannot be empty"
     End If
 
+    Application.ScreenUpdating = False
     Data.RenameColumn currentName, newName, strictSearch, matchCase
+    Application.ScreenUpdating = False
     ResetColumnCaches
 End Sub
 

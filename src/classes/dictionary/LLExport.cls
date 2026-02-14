@@ -689,7 +689,9 @@ Private Sub SyncDictionaryExportsCore(ByVal exportNumbers As BetterArray, ByVal 
         For idx = existing.LowerBound To existing.UpperBound
             number = CLng(existing.Item(idx))
             If Not ContainsNumber(exportNumbers, number) Then
+                this.exportSheet.Activate
                 dict.RemoveColumn ExportColumnName(number)
+                this.exportSheet.Activate
             ElseIf number > highest Then
                 highest = number
             End If
@@ -705,6 +707,7 @@ Private Sub EnsureDictionaryExportColumn(ByVal dict As ILLdictionary, ByVal expo
     Dim existing As BetterArray
 
     If dict Is Nothing Then Exit Sub
+    Application.ScreenUpdating = False
 
     columnName = ExportColumnName(exportIndex)
     If dict.ColumnExists(columnName) Then Exit Sub
@@ -724,7 +727,9 @@ Private Sub EnsureDictionaryExportColumn(ByVal dict As ILLdictionary, ByVal expo
         If dict.ColumnExists("unique") Then
             anchorName = "unique"
         Else
+            this.exportSheet.Activate
             dict.AddColumn columnName
+            this.exportSheet.Activate
             Exit Sub
         End If
     End If

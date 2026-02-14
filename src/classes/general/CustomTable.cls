@@ -787,12 +787,14 @@ Private Sub AddTableRows(ByVal lo As ListObject, ByVal nbRows As Long, ByVal ins
     sheet.Rows(insertStart).Resize(nbRows).Insert Shift:=xlShiftDown, CopyOrigin:=xlFormatFromLeftOrAbove
     Set newRange = sheet.Range(sheet.Cells(headerRow, headerCol), _
                                sheet.Cells(insertStart + nbRows - 1, headerCol + totalCols - 1))
-    AddShiftTracker "Yes"                         
+    AddShiftTracker "Yes"
+    Application.ScreenUpdating = False                         
     lo.Resize newRange
   Else
     'Extend the listobject in a single resize call when overlapping is not a concern.
     Set newRange = sheet.Range(sheet.Cells(headerRow, headerCol), _
                                sheet.Cells(headerRow + totalRows + nbRows - 1, headerCol + totalCols - 1))
+    Application.ScreenUpdating = False
     lo.Resize newRange
   End If
 
@@ -1007,15 +1009,19 @@ Private Sub RemoveEmptyDataRows(ByVal lo As ListObject, _
         'in case everything fail
         On Error Resume Next
         sh.Rows(lo.ListRows(rowIndex).Range().Row).Delete
+        Application.ScreenUpdating = False
         lo.ListRows(rowIndex).Delete
+        Application.ScreenUpdating = False
         If Err.Number <> 0 Then
           Err.Clear
           ThrowError ProjectError.SomethingWentWrong, "Unable to resize the table (maybe tables are stacked?)"
         End If
         On Error GoTo 0
       Else
+        Application.ScreenUpdating = False
         'Either delele the entire worksheet row or the the listRow
         lo.ListRows(rowIndex).Delete
+        Application.ScreenUpdating = False
       End If
     End If
   Next rowIndex
