@@ -27,7 +27,7 @@ Implements ISectionBuilder
 '@depends ILinelistSpecs, ILLdictionary, ILLVariables, ILLFormat,
 'IDropdownLists, VarWriter, LLVariables
 '@version 1.0 (2026-02-10)
-'@author OutbreakTools
+'@author Yves Amevoin
 
 
 Private Type TSectionBuilder

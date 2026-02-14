@@ -27,7 +27,7 @@ Implements ICheckingOutput
 'injection so that filter selections trigger row visibility changes
 'automatically.
 '@version 1.0 (2026-02-09)
-'@author OutbreakTools
+'@author Yves Amevoin
 
 
 '@section State

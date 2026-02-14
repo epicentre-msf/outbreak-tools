@@ -27,7 +27,7 @@ Implements IPasswords
 'through a single Protect/UnProtect entry point.
 '@depends Checking, BetterArray, ProjectError, ITranslationObject
 '@version 1.0 (2026-02-09)
-'@author OutbreakTools
+'@author Yves Amevoin
 
 '@section State and Constants
 '===============================================================================

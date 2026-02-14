@@ -30,7 +30,7 @@ Implements ICustomTable
 'rows.
 '@depends BetterArray, Checking, HiddenNames, IDropdownLists
 '@version 1.0 (2026-02-09)
-'@author OutbreakTools
+'@author Yves Amevoin
 
 Private Type TCustomTable
   Lo As ListObject

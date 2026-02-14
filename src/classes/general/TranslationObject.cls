@@ -27,7 +27,7 @@ Implements ITranslationObject
 'range bulk-translation, and user-form caption translation.
 '@depends BetterArray, Checking, IChecking, ProjectError
 '@version 1.0 (2026-02-09)
-'@author OutbreakTools
+'@author Yves Amevoin
 
 Private Const CLASSNAME As String = "TranslationObject"
 

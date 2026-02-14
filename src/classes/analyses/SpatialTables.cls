@@ -27,7 +27,7 @@ Implements ISpatialTables
 'before writing.
 '@depends ICrossTable, ITableSpecs, IFormulas, IFormulaCondition, BetterArray
 '@version 2025-01-15
-'@author EpiData
+'@author Yves Amevoin
 
 
 '@section State
