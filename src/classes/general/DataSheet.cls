@@ -29,7 +29,7 @@ Implements IDataSheet
 'IDataSheet interface.
 '@depends Checking, BetterArray, HiddenNames
 '@version 1.0 (2026-02-09)
-'@author OutbreakTools
+'@author Yves Amevoin
 Private Type TDataSheet
     sh As Worksheet                        'Worksheet of the data
     startLn As Long                              'The line where the data starts

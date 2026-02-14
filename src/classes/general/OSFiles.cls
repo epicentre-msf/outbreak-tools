@@ -26,7 +26,7 @@ Implements IOSFiles
 'persists the last-used folder across sessions, and provides
 'iterator-style enumeration over multi-selections.
 '@version 1.0 (2026-02-09)
-'@author OutbreakTools
+'@author Yves Amevoin
 
 Private Type TOSFiles
     'State bag for OS detection, selections, and cursor positions.

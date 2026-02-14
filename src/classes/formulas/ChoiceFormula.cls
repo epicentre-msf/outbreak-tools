@@ -26,7 +26,7 @@ Implements IChoiceFormula
 'nested IF conversion and category extraction.
 '@depends CaseWhen, BetterArray
 '@version 1.0 (2026-02-09)
-'@author OutbreakTools
+'@author Yves Amevoin
 
 
 '@section State

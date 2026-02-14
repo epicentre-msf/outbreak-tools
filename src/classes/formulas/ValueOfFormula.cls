@@ -27,7 +27,7 @@ Implements IValueOfFormula
 'through the IValueOfFormula interface.
 '@depends BetterArray, LLdictionary, LLVariables, LLSheets
 '@version 1.0 (2026-02-09)
-'@author OutbreakTools
+'@author Yves Amevoin
 
 
 '@section State

@@ -26,7 +26,7 @@ Implements ICaseWhen
 'also extracts textual category labels for downstream analysis consumers.
 '@depends BetterArray
 '@version 1.0 (2026-02-09)
-'@author OutbreakTools
+'@author Yves Amevoin
 
 
 '@section State
