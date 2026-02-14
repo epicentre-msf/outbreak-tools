@@ -1529,7 +1529,9 @@ Private Sub SortOnFirst(ByVal colName As String, Optional ByVal strictSearch As 
   num = 1 'Number to sort later on
 
   For counter = 1 To colRng.Cells.Count
-     sortedValue = colRng.Cells(counter, 1).Value
+     On Error Resume Next
+     sortedValue = Cstr(colRng.Cells(counter, 1).Value)
+     On Error GoTo 0
     If Not trackData.Includes(sortedValue) Then
       trackData.Push sortedValue
       numData.Push num

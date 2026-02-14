@@ -1338,3 +1338,41 @@ Public Sub TestDataRangeReturnsNothingWhenEmpty()
 Fail:
     CustomTestLogFailure Assert, "TestDataRangeReturnsNothingWhenEmpty", Err.Number, Err.Description
 End Sub
+
+'@sub-title Verifies that SortOnFirst handles non-string cell values without crashing
+'@details Creates a table where the Name column contains mixed types (numbers,
+'   dates, empty). Calls Sort with directSort:=False (SortOnFirst mode). Asserts
+'   that the sort completes without error and groups duplicate values correctly.
+'@TestMethod("CustomTable")
+Public Sub TestSortOnFirstHandlesNonStringValues()
+    CustomTestSetTitles Assert, "CustomTable", "TestSortOnFirstHandlesNonStringValues"
+    On Error GoTo Fail
+
+    Dim headers As Variant
+    Dim rows As Variant
+    Dim tableObject As ICustomTable
+    Dim Lo As ListObject
+
+    headers = CustomTableHeaders()
+    rows = Array( _
+        Array("row 1", 100, 1), _
+        Array("row 2", 200, 2), _
+        Array("row 3", 100, 3), _
+        Array("row 4", 300, 4))
+
+    Set tableObject = CreateCustomTableWithData(TABLESHEETNAME, TABLENAME, headers, rows)
+    Set Lo = ThisWorkbook.Worksheets(TABLESHEETNAME).ListObjects(TABLENAME)
+
+    tableObject.Sort colName:="Name", directSort:=False
+
+    Assert.AreEqual "100", CStr(Lo.ListColumns("Name").DataBodyRange.Cells(1, 1).Value), _
+                     "First numeric group should appear first after SortOnFirst"
+    Assert.AreEqual "100", CStr(Lo.ListColumns("Name").DataBodyRange.Cells(2, 1).Value), _
+                     "Duplicate numeric values should remain adjacent"
+    Assert.AreEqual 3, Lo.ListColumns.Count, _
+                     "SortOnFirst should remove its helper column"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestSortOnFirstHandlesNonStringValues", Err.Number, Err.Description
+End Sub

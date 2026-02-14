@@ -97,7 +97,7 @@ Public Sub PrepareSetupChoicesSheet(ByVal sheetName As String, _
     Set wb = ResolveWorkbook(targetBook)
     Set sh = TestHelpers.EnsureWorksheet(sheetName, wb, clearSheet:=True)
 
-    headers = ChoicesTestFixture.ChoicesFixtureHeaders()
+    headers = SetupChoicesHeaders()
     dataRows = ChoicesSampleRows()
 
     headerMatrix = TestHelpers.RowsToMatrix(Array(headers))
@@ -107,12 +107,22 @@ Public Sub PrepareSetupChoicesSheet(ByVal sheetName As String, _
     TestHelpers.WriteMatrix sh.Cells(startRow + 1, startColumn), dataMatrix
 End Sub
 
+'@sub-title Return the 6-column header layout used in setup workbooks.
+'@details The setup workbook choices table has 6 columns: list name,
+'   ordering list, non translated label, translated label, label,
+'   short label. This differs from the linelist LLChoices layout (4 columns).
+Private Function SetupChoicesHeaders() As Variant
+    SetupChoicesHeaders = Array("list name", "ordering list", _
+                                "non translated label", "translated label", _
+                                "label", "short label")
+End Function
+
 Private Function ChoicesSampleRows() As Variant
     ChoicesSampleRows = Array( _
-        Array("list_primary", 1, "Choice A", "Short A"), _
-        Array("list_primary", 2, "Choice B", "Short B"), _
-        Array("list_secondary", 1, "Option 1", "Opt1"), _
-        Array("list_secondary", 2, "Option 2", "Opt2"))
+        Array("list_primary", 1, "Choice A raw", "Choice A trans", "Choice A", "Short A"), _
+        Array("list_primary", 2, "Choice B raw", "Choice B trans", "Choice B", "Short B"), _
+        Array("list_secondary", 1, "Option 1 raw", "Option 1 trans", "Option 1", "Opt1"), _
+        Array("list_secondary", 2, "Option 2 raw", "Option 2 trans", "Option 2", "Opt2"))
 End Function
 
 

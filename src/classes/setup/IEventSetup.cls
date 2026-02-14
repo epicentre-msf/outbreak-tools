@@ -30,6 +30,9 @@ Option Explicit
 
 '@jump:configure
 '@sub-title Configure the service with its host workbook context.
+'@details
+'Binds the service to a host workbook and resets all cached helpers. Must be
+'called once before any event handler or row operation.
 '@param hostBook Workbook. The workbook providing setup worksheets and infrastructure.
 '@export
 Public Sub Configure(ByVal hostBook As Workbook)
@@ -76,12 +79,19 @@ End Sub
 
 '@jump:recalculate-analysis
 '@sub-title Recalculate analysis tables in response to structural edits.
+'@details
+'Forces recalculation of all cached analysis tables (time-series, graph,
+'spatio-temporal, spatio-temporal specifications). Call after structural
+'changes to analysis ListObjects.
 '@export
 Public Sub RecalculateAnalysis()
 End Sub
 
 '@jump:update-analysis-dropdowns
 '@sub-title Refresh cached dropdowns and related analysis helpers.
+'@details
+'Refreshes dropdown lists used by the Analysis sheet based on update watcher
+'flags. When forceUpdate is True, rebuilds all dropdowns regardless of flags.
 '@param forceUpdate Optional Boolean. When True, forces a full refresh regardless of update tags. Defaults to False.
 '@export
 Public Sub UpdateAnalysisDropdowns(Optional ByVal forceUpdate As Boolean = False)
@@ -89,6 +99,9 @@ End Sub
 
 '@jump:reset-translation-counter
 '@sub-title Reset the translation update counter stored in hidden names.
+'@details
+'Resets the hidden name counter that tracks translation updates back to zero.
+'Called on workbook open and after translation table management.
 '@export
 Public Sub ResetTranslationCounter()
 End Sub
@@ -110,6 +123,10 @@ End Sub
 
 '@jump:insert-rows
 '@sub-title Insert rows relative to a selection for supported setup sheets.
+'@details
+'Delegates to the appropriate domain manager to insert rows at the position
+'indicated by targetCell. Handles sheet protection around the operation. For
+'the Analysis sheet, insertShift is always forced to True.
 '@param sheetName String. Worksheet name identifying which helper should process the insertion.
 '@param targetCell Range. The worksheet selection to mirror.
 '@param insertShift Optional Boolean. Controls whether worksheet rows should be inserted to preserve stacked tables. Defaults to False.
@@ -121,6 +138,10 @@ End Sub
 
 '@jump:delete-rows
 '@sub-title Delete rows relative to a selection for supported setup sheets.
+'@details
+'Delegates to the appropriate domain manager to delete rows at the position
+'indicated by targetCell. Handles sheet protection around the operation. For
+'the Analysis sheet, forceShift is always forced to True.
 '@param sheetName String. Worksheet name identifying which helper should process the deletion.
 '@param targetCell Range. The worksheet selection to remove.
 '@param forceShift Optional Boolean. Controls whether worksheet rows should be deleted. Defaults to False.
@@ -132,6 +153,10 @@ End Sub
 
 '@jump:sort-tables
 '@sub-title Sort setup worksheets leveraging cached managers.
+'@details
+'Delegates to the appropriate domain manager to sort the worksheet tables.
+'Handles sheet protection around the operation. For exports, also unlocks
+'the dictionary sheet because sort results may propagate.
 '@param sheetName String. Worksheet name to sort.
 '@export
 Public Sub SortTables(ByVal sheetName As String)
@@ -139,6 +164,9 @@ End Sub
 
 '@jump:build-time-series-header
 '@sub-title Compose the time-series header displayed in analysis tables.
+'@details
+'Composes a display header by concatenating the summary label, time variable
+'label, and group variable label separated by a horizontal-rule character.
 '@param timeVar String. Time variable name.
 '@param groupVar String. Group variable name.
 '@param sumLabel String. Summary label prefix.
@@ -151,6 +179,9 @@ End Function
 
 '@jump:analysis-graph-value
 '@sub-title Retrieve a value from the analysis graph label table.
+'@details
+'Looks up a cell value from the graph time-series label table using
+'graphTitle as the row key and graphCol as the column header.
 '@param graphTitle String. Graph title used as the row key.
 '@param graphCol Optional String. Column to read. Defaults to "Graph ID".
 '@return String. The retrieved value, or empty.
@@ -161,6 +192,9 @@ End Function
 
 '@jump:analysis-time-series-value
 '@sub-title Retrieve a value from the analysis time-series table.
+'@details
+'Looks up a cell value from the time-series data table using seriesTitle as
+'the row key and tsColumn as the column header.
 '@param seriesTitle String. Series title used as the row key.
 '@param tsColumn Optional String. Column to read. Defaults to "Series ID".
 '@return String. The retrieved value, or empty.
@@ -171,6 +205,9 @@ End Function
 
 '@jump:spatio-temporal-spec-value
 '@sub-title Retrieve a value from the spatio-temporal specifications table.
+'@details
+'Looks up a cell value from the spatio-temporal specifications table using
+'sectionName as the row key and specColumn as the column header.
 '@param sectionName String. Section name used as the row key.
 '@param specColumn Optional String. Column to read. Defaults to "N geo max".
 '@return String. The retrieved value, or empty.
@@ -181,6 +218,9 @@ End Function
 
 '@jump:reset-caches
 '@sub-title Clear cached resources so they are lazily rebuilt on demand.
+'@details
+'Clears all lazily-cached domain managers and table wrappers so they are
+'rebuilt from scratch on the next access.
 '@export
 Public Sub ResetCaches()
 End Sub
