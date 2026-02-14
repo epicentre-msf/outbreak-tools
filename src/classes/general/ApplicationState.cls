@@ -266,9 +266,11 @@ Private Sub RestoreInternal(ByVal silent As Boolean)
     Set target = TargetApplication
 
     On Error GoTo RestoreFail
-        target.ScreenUpdating = this.screenUpdating
-        target.DisplayAlerts = this.displayAlerts
+        'Restore Calculation BEFORE ScreenUpdating so any recalculation
+        'triggered by switching from Manual to Automatic happens with
+        'the screen still suppressed, preventing a visible flash.
         target.Calculation = this.calculationMode
+        target.DisplayAlerts = this.displayAlerts
         target.EnableEvents = this.supportsEvents
         target.CalculateBeforeSave = this.calcBeforeSave
         If this.securityBlocked Then
@@ -279,6 +281,10 @@ Private Sub RestoreInternal(ByVal silent As Boolean)
         If this.supportsAnimations Then
             SafeSetEnableAnimations target, this.enableAnimations
         End If
+        'ScreenUpdating must be restored LAST so that all other settings
+        '(especially Calculation mode) are already in place before Excel
+        'repaints the screen.
+        target.ScreenUpdating = this.screenUpdating
         this.isBusy = False
     On Error GoTo 0
     Exit Sub

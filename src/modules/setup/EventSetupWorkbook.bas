@@ -12,7 +12,7 @@ Private Sub Workbook_Open()
     mBooting = True
 
     On Error GoTo Clean
-    
+
     SetupEventsManager.WorkbookOpened
 
 Clean:
@@ -39,7 +39,7 @@ Clean:
 End Sub
 
 Private Sub Workbook_SheetChange(ByVal sh As Object, ByVal Target As Range)
-    
+
     If mBooting Then Exit Sub
     If TypeName(sh) <> "Worksheet" Then Exit Sub
     If sh.Name = "__checkRep" Then Exit Sub
@@ -48,7 +48,7 @@ Private Sub Workbook_SheetChange(ByVal sh As Object, ByVal Target As Range)
     mBooting = True
 
     On Error GoTo Clean
-    
+
     SetupEventsManager.SheetChanged sh, Target
 
 Clean:
