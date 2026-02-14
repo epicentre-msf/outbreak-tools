@@ -27,6 +27,7 @@ Private Const CHOICES_START_ROW As Long = 4
 Private Const CHOICES_START_COLUMN As Long = 1
 Private Const LIST_TS_DATA As String = "Tab_TimeSeries_Analysis"
 Private Const LIST_GRAPH_TS As String = "Tab_Graph_TimeSeries"
+Private Const LIST_LAB_GRAPH_TS As String = "Tab_Label_TSGraph"
 Private Const LIST_SPATIO_TEMPORAL As String = "Tab_SpatioTemporal_Analysis"
 Private Const LIST_SPATIO_TEMPORAL_SPECS As String = "Tab_SpatioTemporal_Specs"
 Private Const TAB_TRANSLATIONS As String = "Tab_Translations"
@@ -150,13 +151,13 @@ End Sub
 
 '@TestMethod("EventSetup")
 Public Sub TestAnalysisGraphValueReturnsExpectedColumn()
-    CustomTestSetTitles Assert, "EventSetup", "Retrieves values from graph table"
+    CustomTestSetTitles Assert, "EventSetup", "Retrieves values from graph label table"
     On Error GoTo Fail
 
     Dim result As String
-    result = Subject.AnalysisGraphValue("Series A", "Graph ID")
+    result = Subject.AnalysisGraphValue("Graph A", "Graph ID")
 
-    Assert.AreEqual "GRAPH_5", result, "Graph value should match cached table content"
+    Assert.AreEqual "GRAPH_5", result, "Graph value should match graph label table content"
     Exit Sub
 
 Fail:
@@ -221,15 +222,15 @@ Public Sub TestRecalculateAnalysisEvaluatesFormulas()
 
     analysis.Range("B4").Formula = "=1+1"
     analysis.Range("D7").Formula = "=2+2"
-    analysis.Range("C11").Formula = "=3+3"
-    analysis.Range("B15").Formula = "=4+4"
+    analysis.Range("C14").Formula = "=3+3"
+    analysis.Range("B18").Formula = "=4+4"
 
     Subject.RecalculateAnalysis
 
     Assert.AreEqual CDbl(2), CDbl(analysis.Range("B4").Value), "Time-series table should be recalculated"
     Assert.AreEqual CDbl(4), CDbl(analysis.Range("D7").Value), "Graph table should be recalculated"
-    Assert.AreEqual CDbl(6), CDbl(analysis.Range("C11").Value), "Spatio-temporal table should be recalculated"
-    Assert.AreEqual CDbl(8), CDbl(analysis.Range("B15").Value), "Spatio-temporal spec table should be recalculated"
+    Assert.AreEqual CDbl(6), CDbl(analysis.Range("C14").Value), "Spatio-temporal table should be recalculated"
+    Assert.AreEqual CDbl(8), CDbl(analysis.Range("B18").Value), "Spatio-temporal spec table should be recalculated"
     Exit Sub
 
 Fail:
@@ -649,10 +650,21 @@ Private Sub PrepareAnalysisSheet()
     Set lo = analysis.ListObjects.Add(SourceType:=xlSrcRange, Source:=graphRange, XlListObjectHasHeaders:=xlYes)
     lo.Name = LIST_GRAPH_TS
 
+    'Graph label table
+    Dim graphLabRange As Range
+    WriteMatrix analysis.Range("A9"), RowsToMatrix(Array(Array("graph title", "Graph ID")))
+    WriteMatrix analysis.Range("A10"), RowsToMatrix(Array(Array("Graph A", "GRAPH_5")))
+    Set graphLabRange = analysis.Range("A9:B10")
+    On Error Resume Next
+        analysis.ListObjects(LIST_LAB_GRAPH_TS).Delete
+    On Error GoTo 0
+    Set lo = analysis.ListObjects.Add(SourceType:=xlSrcRange, Source:=graphLabRange, XlListObjectHasHeaders:=xlYes)
+    lo.Name = LIST_LAB_GRAPH_TS
+
     'Spatio temporal table
-    WriteMatrix analysis.Range("A10"), RowsToMatrix(Array(Array("section", "spatial type", "geo")))
-    WriteMatrix analysis.Range("A11"), RowsToMatrix(Array(Array("Section A", "geo", vbNullString)))
-    Set spatioRange = analysis.Range("A10:C11")
+    WriteMatrix analysis.Range("A13"), RowsToMatrix(Array(Array("section", "spatial type", "geo")))
+    WriteMatrix analysis.Range("A14"), RowsToMatrix(Array(Array("Section A", "geo", vbNullString)))
+    Set spatioRange = analysis.Range("A13:C14")
     On Error Resume Next
         analysis.ListObjects(LIST_SPATIO_TEMPORAL).Delete
     On Error GoTo 0
@@ -660,9 +672,9 @@ Private Sub PrepareAnalysisSheet()
     lo.Name = LIST_SPATIO_TEMPORAL
 
     'Spatio temporal specs table
-    WriteMatrix analysis.Range("A14"), RowsToMatrix(Array(Array("Section", "N geo max")))
-    WriteMatrix analysis.Range("A15"), RowsToMatrix(Array(Array("Section A", "5")))
-    Set spatioRange = analysis.Range("A14:B15")
+    WriteMatrix analysis.Range("A17"), RowsToMatrix(Array(Array("Section", "N geo max")))
+    WriteMatrix analysis.Range("A18"), RowsToMatrix(Array(Array("Section A", "5")))
+    Set spatioRange = analysis.Range("A17:B18")
     On Error Resume Next
         analysis.ListObjects(LIST_SPATIO_TEMPORAL_SPECS).Delete
     On Error GoTo 0
