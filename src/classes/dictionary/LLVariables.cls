@@ -232,7 +232,8 @@ Private Function SanitizeSearchTerm(ByVal value As String) As String
 End Function
 
 '@label:FindVariableCell
-Private Function FindVariableCell(ByVal varName As String, Optional ByVal matchCase As Boolean = True) As Range
+Private Function FindVariableCell(ByVal varName As String, _ 
+                                  Optional ByVal matchCase As Boolean = True) As Range
     Dim searchValue As String
 
     EnsureVariableRange

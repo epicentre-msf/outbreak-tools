@@ -739,7 +739,7 @@ Private Sub CheckChoice()
     Do While cellRng.Row >= choiNameRng.Row
         choiName = cellRng.Value
         sortValue = cellRng.Offset(, 1).Value
-        choiLabValue = cellRng.Offset(, 2).Value
+        choiLabValue = cellRng.Offset(, 4).Value
 
         If (choiLabValue <> vbNullString) And (choiName = vbNullString) Then
             checkingCounter = checkingCounter + 1
