@@ -324,6 +324,78 @@ Fail:
     ReportTestFailure "TestDeleteUpResetsPlacementAfterClearingSheet"
 End Sub
 
+'@TestMethod("UpdatedValues")
+Public Sub TestCheckUpdateWithWorksheetMarksMatchingRange()
+    CustomTestSetTitles Assert, "UpdatedValues", "TestCheckUpdateWithWorksheetMarksMatchingRange"
+    On Error GoTo Fail
+
+    Subject.AddColumns SourceTable
+
+    SourceTable.DataBodyRange.Cells(1, 1).Value = "Changed"
+    'Pass the Worksheet (not the table name) to mirror the EventSetup caller
+    Subject.CheckUpdate SourceSheet, SourceTable.DataBodyRange.Cells(1, 1)
+
+    Assert.AreEqual STATUS_UPDATED, RegistryStatusValue(RangeNameField, PrimaryRegistryName), "Worksheet-scoped CheckUpdate should mark the matching range"
+    Assert.AreEqual STATUS_DEFAULT, RegistryStatusValue(RangeNameLabel, PrimaryRegistryName), "Non-intersecting ranges should remain unchanged"
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestCheckUpdateWithWorksheetMarksMatchingRange"
+End Sub
+
+'@TestMethod("UpdatedValues")
+Public Sub TestCheckUpdateWithWorksheetReportsIsUpdated()
+    CustomTestSetTitles Assert, "UpdatedValues", "TestCheckUpdateWithWorksheetReportsIsUpdated"
+    On Error GoTo Fail
+
+    Subject.AddColumns SourceTable
+
+    Assert.IsFalse Subject.IsUpdated("Name"), "Column should not be updated before any change"
+
+    SourceTable.DataBodyRange.Cells(1, 1).Value = "Changed"
+    Subject.CheckUpdate SourceSheet, SourceTable.DataBodyRange.Cells(1, 1)
+
+    Assert.IsTrue Subject.IsUpdated("Name"), "IsUpdated should return True after worksheet-scoped CheckUpdate"
+    Assert.IsFalse Subject.IsUpdated("Label"), "Untouched column should remain not updated"
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestCheckUpdateWithWorksheetReportsIsUpdated"
+End Sub
+
+'@TestMethod("UpdatedValues")
+Public Sub TestCheckUpdateWithWorksheetMultiTableScoping()
+    CustomTestSetTitles Assert, "UpdatedValues", "TestCheckUpdateWithWorksheetMultiTableScoping"
+    On Error GoTo Fail
+
+    Dim secondary As ListObject
+    Dim secondaryRangeName As String
+
+    Set secondary = BuildSecondaryTable(SourceSheet)
+    secondaryRangeName = ExpectedRangeName(SECOND_TABLE_NAME, "Code", UpdatedSheet)
+
+    Subject.AddSheet SourceSheet
+
+    'Edit a cell in the primary table
+    SourceTable.DataBodyRange.Cells(1, 1).Value = "Changed"
+    Subject.CheckUpdate SourceSheet, SourceTable.DataBodyRange.Cells(1, 1)
+
+    Assert.AreEqual STATUS_UPDATED, RegistryStatusValue(RangeNameField, PrimaryRegistryName), "Primary table range should be marked as updated"
+    Assert.AreEqual STATUS_DEFAULT, RegistryStatusValue(secondaryRangeName, SecondaryRegistryName), "Secondary table range should remain unchanged when primary is edited"
+
+    'Reset and edit a cell in the secondary table
+    Subject.ClearUp
+    secondary.DataBodyRange.Cells(1, 1).Value = "S1-Changed"
+    Subject.CheckUpdate SourceSheet, secondary.DataBodyRange.Cells(1, 1)
+
+    Assert.AreEqual STATUS_DEFAULT, RegistryStatusValue(RangeNameField, PrimaryRegistryName), "Primary table range should remain unchanged when secondary is edited"
+    Assert.AreEqual STATUS_UPDATED, RegistryStatusValue(secondaryRangeName, SecondaryRegistryName), "Secondary table range should be marked as updated"
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestCheckUpdateWithWorksheetMultiTableScoping"
+End Sub
+
 '@section Helpers
 '===============================================================================
 

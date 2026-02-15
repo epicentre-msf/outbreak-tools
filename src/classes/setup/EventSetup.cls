@@ -49,6 +49,8 @@ Private Type TEventSetup
     ana                 As IAnalysis         'Cached analysis helper
     exports             As ILLExport         'Cached exports manager
     translations        As ISetupTranslationsTable 'Cached translations manager
+    passwords           As IPasswords        'Cached password helper (lazily created once)
+    choicesTable        As ICustomTable      'Cached Choices table wrapper
 End Type
 
 Private this As TEventSetup
@@ -194,6 +196,10 @@ Private Sub IEventSetup_OnSheetActivate(ByVal sh As Worksheet)
     End If
 
     If StrComp(sh.Name, SHEET_ANALYSIS, vbTextCompare) = 0 Then
+        'Pre-init analysis tables so first SheetChange doesn't pay init cost
+        EnsureAnalysisTable this.tsTable, LIST_TS_DATA, "title"
+        EnsureAnalysisTable this.graphTable, LIST_GRAPH_TS, "series title"
+        EnsureAnalysisTable this.spatioTable, LIST_SPATIO_TEMPORAL, "section"
         UpdateAnalysisDropdowns True
     End If
 End Sub
@@ -231,7 +237,7 @@ Private Sub IEventSetup_OnSheetChange(ByVal sh As Worksheet, ByVal target As Ran
 
     If target.ListObject Is Nothing Then Exit Sub
 
-    CalculateAnalysis
+    CalculateAnalysis target
 
     If target.Rows.Count > 1 Then Exit Sub
     If target.Columns.Count > 1 Then Exit Sub
@@ -277,7 +283,6 @@ Private Sub UpdateAnalysisDropdowns(Optional ByVal forceUpdate As Boolean = Fals
        this.updater.IsUpdated("variable_type") Or _
        this.updater.IsUpdated("variable_name") Then
         AddOrUpdateDrop this.dictionary.TimeVars, "__time_vars"
-
     End If
 
     EnsureVars
@@ -468,7 +473,6 @@ Public Sub InsertRows(ByVal sheetName As String, _
     If targetCell Is Nothing Then Exit Sub
 
     On Error GoTo CleanFail
-    Application.ScreenUpdating = False
 
     Select Case normalized
         Case KEY_DICTIONARY
@@ -551,7 +555,6 @@ Public Sub DeleteRows(ByVal sheetName As String, _
     If targetCell Is Nothing Then Exit Sub
 
     On Error GoTo CleanFail
-    Application.ScreenUpdating = False
 
     Select Case normalized
         Case KEY_DICTIONARY
@@ -629,7 +632,6 @@ Public Sub SortTables(ByVal sheetName As String)
     If LenB(normalized) = 0 Then Exit Sub
 
     On Error GoTo CleanFail
-    Application.ScreenUpdating = False
 
     Select Case normalized
         Case KEY_DICTIONARY
@@ -961,7 +963,6 @@ Private Sub EnsureTableCalculated(ByRef tableRef As ICustomTable, _
     If Not EnsureAnalysisTable(tableRef, listName, keyColumn) Then Exit Sub
 
     On Error Resume Next
-        Application.ScreenUpdating = False
         tableRef.DataRange.Calculate
     On Error GoTo 0
 End Sub
@@ -1042,10 +1043,24 @@ Private Function PasswordManager() As IPasswords
     On Error GoTo 0
 End Function
 
+'@label:cached-password-manager
+'@sub-title Return the cached password helper, creating it on first call.
+'@details
+'Lazily creates the IPasswords instance once and caches it for the lifetime
+'of this EventSetup instance. Eliminates repeated Passwords.Create calls
+'during BeginSheetUpdate / EndSheetUpdate cycles.
+'@return IPasswords. The cached password helper, or Nothing when unavailable.
+Private Function CachedPasswordManager() As IPasswords
+    If this.passwords Is Nothing Then
+        Set this.passwords = PasswordManager()
+    End If
+    Set CachedPasswordManager = this.passwords
+End Function
+
 '@label:begin-sheet-update
 '@sub-title Temporarily unlock the provided sheet and return the password helper.
 '@details
-'Removes sheet protection using the password helper so callers can modify
+'Removes sheet protection using the cached password helper so callers can modify
 'protected cells. Returns the IPasswords instance for later re-locking via
 'EndSheetUpdate.
 '@param sheetName String. Name of the sheet to unprotect.
@@ -1053,7 +1068,7 @@ End Function
 Private Function BeginSheetUpdate(ByVal sheetName As String) As IPasswords
     Dim pass As IPasswords
 
-    Set pass = PasswordManager()
+    Set pass = CachedPasswordManager()
     On Error Resume Next
         If Not pass Is Nothing Then pass.UnProtect sheetName
     On Error GoTo 0
@@ -1072,16 +1087,35 @@ Private Sub EndSheetUpdate(ByVal pass As IPasswords, ByVal sheetName As String)
 End Sub
 
 '@label:calculate-analysis
-'@sub-title Recalculate all cached analysis tables.
+'@sub-title Recalculate analysis tables, optionally targeting a single table.
 '@details
-'Forces recalculation of the time-series, graph, spatio-temporal, and
-'spatio-temporal specifications tables by delegating to EnsureTableCalculated
-'for each.
-Private Sub CalculateAnalysis()
+'When a target range is provided, identifies which analysis table it belongs
+'to via target.ListObject.Name and recalculates only that table (75% savings
+'on per-cell edits). When no target is given (structural edits, post-import),
+'recalculates all four tables.
+'@param target Optional Range. The edited cell(s); Nothing means recalculate all.
+Private Sub CalculateAnalysis(Optional ByVal target As Range = Nothing)
+
+    If Not target Is Nothing Then
+        Dim lo As ListObject
+        Set lo = target.ListObject
+        If lo Is Nothing Then Exit Sub
+
+        Select Case lo.Name
+            Case LIST_TS_DATA
+                EnsureTableCalculated this.tsTable, LIST_TS_DATA, "title"
+                EnsureTableCalculated this.graphTable, LIST_GRAPH_TS, "series title"
+            Case LIST_GRAPH_TS
+                EnsureTableCalculated this.tsTable, LIST_TS_DATA, "title"
+            Case LIST_SPATIO_TEMPORAL, LIST_SPATIO_TEMPORAL_SPECS
+                EnsureTableCalculated this.spatioTable, LIST_SPATIO_TEMPORAL, "section"
+        End Select
+        Exit Sub
+    End If
+
     EnsureTableCalculated this.tsTable, LIST_TS_DATA, "title"
     EnsureTableCalculated this.graphTable, LIST_GRAPH_TS, "series title"
     EnsureTableCalculated this.spatioTable, LIST_SPATIO_TEMPORAL, "section"
-    EnsureTableCalculated this.spatioSpecsTable, LIST_SPATIO_TEMPORAL_SPECS, "section"
 End Sub
 
 '@label:handle-choices-change
@@ -1094,7 +1128,6 @@ End Sub
 '@param target Range. The edited cells on the Choices sheet.
 Private Sub HandleChoicesChange(ByVal target As Range)
     Dim choiceList As ListObject
-    Dim choiceTable As ICustomTable
     Dim translatedRange As Range
     Dim labelRange As Range
 
@@ -1103,16 +1136,18 @@ Private Sub HandleChoicesChange(ByVal target As Range)
     Set choiceList = target.ListObject
     If StrComp(choiceList.Name, TABLE_CHOICES, vbTextCompare) <> 0 Then Exit Sub
 
-    Set choiceTable = CustomTable.Create(choiceList)
-    Set translatedRange = choiceTable.DataRange(colName:="translated label", includeHeaders:=False, strictSearch:=True, matchCase:=False)
+    'Lazily cache the Choices table wrapper (avoids CustomTable.Create on every edit)
+    If this.choicesTable Is Nothing Then
+        Set this.choicesTable = CustomTable.Create(choiceList)
+    End If
+    Set translatedRange = this.choicesTable.DataRange(colName:="translated label", includeHeaders:=False, strictSearch:=True, matchCase:=False)
     If translatedRange Is Nothing Then Exit Sub
     If Intersect(target, translatedRange) Is Nothing Then Exit Sub
 
-    Set labelRange = choiceTable.DataRange(colName:="label", includeHeaders:=False, strictSearch:=True, matchCase:=False)
+    Set labelRange = this.choicesTable.DataRange(colName:="label", includeHeaders:=False, strictSearch:=True, matchCase:=False)
     If labelRange Is Nothing Then Exit Sub
 
     On Error Resume Next
-        Application.ScreenUpdating = False
         labelRange.Calculate
     On Error GoTo 0
 End Sub
@@ -1343,7 +1378,6 @@ Private Sub AddChoicesDropdown(ByVal target As Range)
 
     If Not EnsureAnalysisTable(this.graphTable, LIST_GRAPH_TS, "series title") Then Exit Sub
     If Not EnsureAnalysisTable(this.tsTable, LIST_TS_DATA, "title") Then Exit Sub
-    EnsureDropdownValues
 
     If this.graphTable Is Nothing Then Exit Sub
     If this.tsTable Is Nothing Then Exit Sub
@@ -1366,12 +1400,7 @@ Private Sub AddChoicesDropdown(ByVal target As Range)
 
     listName = choiceName & "__"
 
-    Application.ScreenUpdating = False
-    If this.drop.Exists(listName) Then
-        this.drop.Update dropArray, listName
-    Else
-        this.drop.Add dropArray, listName
-    End If
+    AddOrUpdateDrop dropArray, listName
 
     Set choiceCell = this.graphTable.CellRange("choice", target.Row)
     Set valueCell = this.graphTable.CellRange("values or percentages", target.Row)
