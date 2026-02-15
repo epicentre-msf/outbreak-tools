@@ -194,6 +194,56 @@ Fail:
 End Sub
 
 '@TestMethod("EventSetup")
+Public Sub TestSyncGeoFromSpecsPropagatesDropdown()
+    CustomTestSetTitles Assert, "EventSetup", "Specs spatial type change propagates geo dropdown to analysis table"
+    On Error GoTo Fail
+
+    Dim analysis As Worksheet
+    Set analysis = FixtureWorkbook.Worksheets(SHEET_ANALYSIS)
+
+    'Ensure geo/hf dropdowns are available
+    Subject.UpdateAnalysisDropdowns True
+
+    'Find the specs table spatial type cell for "Section A"
+    Dim specsTable As ListObject
+    Set specsTable = analysis.ListObjects(LIST_SPATIO_TEMPORAL_SPECS)
+    Dim spatialTypeCol As Long
+    spatialTypeCol = specsTable.ListColumns("spatial type").Index
+    Dim spatialTypeCell As Range
+    Set spatialTypeCell = specsTable.ListRows(1).Range.Cells(1, spatialTypeCol)
+
+    'Change spatial type from "geo" to "hf"
+    spatialTypeCell.Value = "hf"
+
+    'Simulate OnSheetChange event
+    Subject.OnSheetChange analysis, spatialTypeCell
+
+    'Check that the geo cell in the analysis table was cleared
+    Dim spatioTable As ListObject
+    Set spatioTable = analysis.ListObjects(LIST_SPATIO_TEMPORAL)
+    Dim geoCol As Long
+    geoCol = spatioTable.ListColumns("geo").Index
+    Dim geoCell As Range
+    Set geoCell = spatioTable.ListRows(1).Range.Cells(1, geoCol)
+
+    Assert.AreEqual vbNullString, CStr(geoCell.Value), _
+        "Geo cell should be cleared when specs spatial type changes"
+
+    'Verify dropdown validation was applied
+    Dim hasValidation As Boolean
+    On Error Resume Next
+        hasValidation = (geoCell.Validation.Type = xlValidateList)
+    On Error GoTo 0
+    Assert.IsTrue hasValidation, _
+        "Geo cell should have list validation after specs spatial type change"
+
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestSyncGeoFromSpecsPropagatesDropdown", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("EventSetup")
 Public Sub TestResetTranslationCounterMethod()
     CustomTestSetTitles Assert, "EventSetup", "Resets translation counter on demand"
     On Error GoTo Fail
@@ -672,9 +722,9 @@ Private Sub PrepareAnalysisSheet()
     lo.Name = LIST_SPATIO_TEMPORAL
 
     'Spatio temporal specs table
-    WriteMatrix analysis.Range("A17"), RowsToMatrix(Array(Array("Section", "N geo max")))
-    WriteMatrix analysis.Range("A18"), RowsToMatrix(Array(Array("Section A", "5")))
-    Set spatioRange = analysis.Range("A17:B18")
+    WriteMatrix analysis.Range("A17"), RowsToMatrix(Array(Array("Section", "N geo max", "spatial type")))
+    WriteMatrix analysis.Range("A18"), RowsToMatrix(Array(Array("Section A", "5", "geo")))
+    Set spatioRange = analysis.Range("A17:C18")
     On Error Resume Next
         analysis.ListObjects(LIST_SPATIO_TEMPORAL_SPECS).Delete
     On Error GoTo 0

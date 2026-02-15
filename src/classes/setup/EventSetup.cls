@@ -244,6 +244,7 @@ Private Sub IEventSetup_OnSheetChange(ByVal sh As Worksheet, ByVal target As Ran
 
     AddChoicesDropdown target
     AddGeoDropdown target
+    SyncGeoFromSpecs target
 End Sub
 
 '@label:update-analysis-dropdowns
@@ -1327,7 +1328,9 @@ End Function
 'unlocks the Analysis sheet for the modification.
 '@param target Range. The edited cell on the Analysis sheet.
 Private Sub AddGeoDropdown(ByVal target As Range)
+    Dim sectionCell As Range
     Dim geoCell As Range
+    Dim spatialTypeCell As Range
     Dim spatialType As String
     Dim pass As IPasswords
     Const ANALYSIS_SHEET As String = SHEET_ANALYSIS
@@ -1336,18 +1339,88 @@ Private Sub AddGeoDropdown(ByVal target As Range)
     EnsureDropdownValues
     If this.drop Is Nothing Then Exit Sub
 
-    If this.spatioTable.CellRange("section", target.Row) Is Nothing Then Exit Sub
+    'Only process when the edit is in the "section" column —
+    'edits in other columns (e.g. "geo") must not clear the geo cell
+    Set sectionCell = this.spatioTable.CellRange("section", target.Row)
+    If sectionCell Is Nothing Then Exit Sub
+    If target.Column <> sectionCell.Column Then Exit Sub
 
     Set geoCell = this.spatioTable.CellRange("geo", target.Row)
     If geoCell Is Nothing Then Exit Sub
 
-    spatialType = CStr(this.spatioTable.Value("spatial type", target.Value))
+    'Read spatial type directly from the same row instead of using
+    'key-based lookup with target.Value (which fails when the edit
+    'is not in the key column)
+    Set spatialTypeCell = this.spatioTable.CellRange("spatial type", target.Row)
+    If spatialTypeCell Is Nothing Then Exit Sub
+    spatialType = CStr(spatialTypeCell.Value)
 
     Set pass = BeginSheetUpdate(ANALYSIS_SHEET)
     On Error GoTo Cleanup
         geoCell.ClearContents
 
         Select Case LCase$(spatialType)
+            Case "hf"
+                this.drop.SetValidation geoCell, "__hfonly_vars"
+            Case "geo"
+                this.drop.SetValidation geoCell, "__geoonly_vars"
+        End Select
+Cleanup:
+    EndSheetUpdate pass, ANALYSIS_SHEET
+End Sub
+
+'@label:sync-geo-from-specs
+'@sub-title Propagate spatial type changes from specs to analysis table.
+'@details
+'When the user changes the "spatial type" column in the spatio-temporal
+'specifications table, locates the matching section in the spatio-temporal
+'analysis table and clears + revalidates the "geo" column dropdown to
+'reflect the new type ("hf" or "geo"). Temporarily unlocks the Analysis
+'sheet for the modification.
+'@param target Range. The edited cell on the Analysis sheet.
+Private Sub SyncGeoFromSpecs(ByVal target As Range)
+    Dim sectionCell As Range
+    Dim geoCell As Range
+    Dim spatialTypeCell As Range
+    Dim sectionName As String
+    Dim newSpatialType As String
+    Dim pass As IPasswords
+    Const ANALYSIS_SHEET As String = SHEET_ANALYSIS
+
+    'Ensure the specs table is cached
+    If Not EnsureAnalysisTable(this.spatioSpecsTable, LIST_SPATIO_TEMPORAL_SPECS, "section") Then Exit Sub
+
+    'Only process when the edit is in the specs table
+    If target.ListObject Is Nothing Then Exit Sub
+    If StrComp(target.ListObject.Name, LIST_SPATIO_TEMPORAL_SPECS, vbTextCompare) <> 0 Then Exit Sub
+
+    'Only process when the edit is in the "spatial type" column
+    Set spatialTypeCell = this.spatioSpecsTable.CellRange("spatial type", target.Row)
+    If spatialTypeCell Is Nothing Then Exit Sub
+    If target.Column <> spatialTypeCell.Column Then Exit Sub
+
+    'Read the section name from the same row
+    Set sectionCell = this.spatioSpecsTable.CellRange("section", target.Row)
+    If sectionCell Is Nothing Then Exit Sub
+    sectionName = CStr(sectionCell.Value)
+    If LenB(sectionName) = 0 Then Exit Sub
+
+    newSpatialType = CStr(target.Value)
+
+    'Ensure the analysis table and dropdown manager are available
+    If Not EnsureAnalysisTable(this.spatioTable, LIST_SPATIO_TEMPORAL, "section") Then Exit Sub
+    EnsureDropdownValues
+    If this.drop Is Nothing Then Exit Sub
+
+    'Find the matching "geo" cell in the analysis table by section name
+    Set geoCell = this.spatioTable.ValueRange("geo", sectionName)
+    If geoCell Is Nothing Then Exit Sub
+
+    Set pass = BeginSheetUpdate(ANALYSIS_SHEET)
+    On Error GoTo Cleanup
+        geoCell.ClearContents
+
+        Select Case LCase$(newSpatialType)
             Case "hf"
                 this.drop.SetValidation geoCell, "__hfonly_vars"
             Case "geo"
