@@ -32,7 +32,7 @@ Implements IListBuilder
 '  IPasswords, ITranslationObject, IButtons, IHiddenNames, ISectionBuilder,
 '  ICustomPivotTables, IMain, BetterArray
 '@version 1.0 (2026-02-09)
-'@author Yves Amevoin
+
 
 
 Private Const CLASS_NAME As String = "ListBuilder"

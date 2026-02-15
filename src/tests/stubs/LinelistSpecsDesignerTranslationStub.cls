@@ -9,11 +9,11 @@ Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
 
 '@Folder("Tests.Stubs")
-'@ModuleDescription("Test double exposing a minimal IDesTranslation implementation")
+'@ModuleDescription("Test double exposing a minimal IDesignerTranslation implementation")
 '@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation
 
 Option Explicit
-Implements IDesTranslation
+Implements IDesignerTranslation
 
 Private translationObj As ITranslationObject
 
@@ -33,21 +33,16 @@ Private Function ResolveTranslationObject() As ITranslationObject
     Set ResolveTranslationObject = translationObj
 End Function
 
-'@section IDesTranslation implementation
+'@section IDesignerTranslation implementation
 '===============================================================================
-Private Property Get IDesTranslation_TransObject(Optional ByVal trans As Byte = TranslationOfMessages) As ITranslationObject
-    Set IDesTranslation_TransObject = ResolveTranslationObject()
+Private Property Get IDesignerTranslation_TransObject(Optional ByVal trans As Byte = TranslationOfMessages) As ITranslationObject
+    Set IDesignerTranslation_TransObject = ResolveTranslationObject()
 End Property
 
-Private Sub IDesTranslation_TranslateDesigner(ByVal mainsh As Worksheet)
+Private Sub IDesignerTranslation_TranslateDesigner(ByVal mainsh As Worksheet, ByVal language As String)
     'No-op for stub
 End Sub
 
-Private Property Get IDesTranslation_LangListRng() As Range
-    'No language list involved for the stub implementation
-End Property
-
-Private Function IDesTranslation_TranslationMsg(ByVal msgCode As String) As String
-    IDesTranslation_TranslationMsg = ResolveTranslationObject().TranslatedValue(msgCode)
+Private Function IDesignerTranslation_TranslatedValue(ByVal msgCode As String) As String
+    IDesignerTranslation_TranslatedValue = ResolveTranslationObject().TranslatedValue(msgCode)
 End Function
-

@@ -26,7 +26,7 @@ Implements IDropdownLists
 'hyperlink navigation between the dropdown sheet and consuming cells.
 '@depends HiddenNames, BetterArray, Checking
 '@version 1.0 (2026-02-09)
-'@author Yves Amevoin
+
 
 Private Type TDropdownLists
     sh As Worksheet

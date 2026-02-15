@@ -27,7 +27,7 @@ Private Const CLASSNAME As String = "LLFormat"
 'Ranges, Shapes, ListObjects, or Characters.
 '@depends CustomTable, Checking, BetterArray, ProjectError
 '@version 1.0 (2026-02-09)
-'@author Yves Amevoin
+
 
 Private Const DEFAULT_DESIGN As String = "design 1"
 Private Const COLUMN_LABEL As String = "Label"

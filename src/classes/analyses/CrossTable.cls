@@ -28,7 +28,7 @@ Implements ICrossTable
 'Build followed by Format for each table specification.
 '@depends ITableSpecs, ILinelistSpecs, ITranslationObject, ILLVariables, LLVariables, ILLFormat, IHiddenNames, HiddenNames, BetterArray
 '@version 1.1 (2026-02-11)
-'@author Yves Amevoin
+
 
 Private Type TCrossTable
     specs As ITableSpecs

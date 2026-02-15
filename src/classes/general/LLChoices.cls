@@ -26,7 +26,7 @@ Implements ILLChoices
 'DataSheet for column-oriented data access.
 '@depends DataSheet, CustomTable, Checking, BetterArray, ITranslationObject
 '@version 1.0 (2026-02-09)
-'@author Yves Amevoin
+
 
 '@section State
 '===============================================================================

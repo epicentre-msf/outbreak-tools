@@ -37,7 +37,7 @@ Implements ITableSpecs
 'dependencies. Consumers interact through the ITableSpecs interface.
 '@depends ILLdictionary, ILLVariables, LLVariables, BetterArray
 '@version 2.0 (2026-02-11)
-'@author Yves Amevoin
+
 
 Private Type TTableSpecs
     hRng As Range                                'Header range of the setup listobject

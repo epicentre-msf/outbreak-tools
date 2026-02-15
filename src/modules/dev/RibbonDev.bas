@@ -22,6 +22,7 @@ Public Sub OnRibbonLoad(ByVal ribbon As IRibbonUI)
     If ribbonRegistered Then Exit Sub
     Set gRibbon = ribbon
     ribbonRegistered = True
+    Debug.Print "Ribbon registered:", ribbonRegistered
 End Sub
 
 Public Function ActualRibbon() As IRibbonUI
@@ -261,7 +262,7 @@ Public Function EnsureDevelopment() As IDevelopment
             Set devManager = Development.Create(shdev)
         Else
             'Reuse stored code worksheet when available so tables remain on same sheet.
-            Set devManager = Development.Create(devSheet, shcod)
+            Set devManager = Development.Create(shdev, shcod)
         End If
     End If
 

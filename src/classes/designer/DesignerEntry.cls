@@ -12,7 +12,7 @@ Attribute VB_Description = "Coordinates clearing and translation behaviours for 
 '@PredeclaredId
 '@Folder("Designer")
 '@ModuleDescription("Coordinates clearing and translation behaviours for designer entry sheets.")
-'@depends ProjectError, Main, IMain, DesTranslation, IDesTranslation
+'@depends ProjectError, Main, IMain, DesignerTranslation, IDesignerTranslation
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, ParameterNotUsed
 
 Option Explicit
@@ -22,11 +22,11 @@ Implements IDesignerEntry
 '@description
 'Coordinates clearing and translation actions for a designer entry
 'worksheet. Lazily resolves an IMain entry manager (for clearing input
-'ranges) and an IDesTranslation translator (for applying language
+'ranges) and an IDesignerTranslation translator (for applying language
 'translations) from the host worksheet and its parent workbook. Both
 'dependencies can be replaced via setter injection for testing.
 'Consumers interact through the IDesignerEntry interface.
-'@depends Main, IMain, DesTranslation, IDesTranslation
+'@depends Main, IMain, DesignerTranslation, IDesignerTranslation
 
 
 '@section State
@@ -35,7 +35,7 @@ Implements IDesignerEntry
 Private Type TDesignerEntry
     hostSheet As Worksheet      'Worksheet hosting designer inputs
     entryManager As IMain       'Entry manager responsible for clearing values
-    translator As IDesTranslation 'Translation handler for the designer workbook
+    translator As IDesignerTranslation 'Translation handler for the designer workbook
 End Type
 
 Private this As TDesignerEntry
@@ -45,7 +45,6 @@ Private this As TDesignerEntry
 
 Private Const CLASS_NAME As String = "DesignerEntry"
 Private Const TRANSLATIONS_SHEET As String = "DesignerTranslation"
-Private Const LANGUAGE_CODE_RANGE As String = "RNG_MainLangCode"
 
 
 '@section Factory
@@ -113,11 +112,11 @@ End Sub
 '@label:use-translator
 '@sub-title Use a provided translations manager instead of creating one
 '@details
-'Replaces the internally resolved IDesTranslation translator with the
+'Replaces the internally resolved IDesignerTranslation translator with the
 'supplied instance. Primarily used in tests to inject a stub or mock.
-'@param translator IDesTranslation. The translations provider to use.
+'@param translator IDesignerTranslation. The translations provider to use.
 '@export
-Public Sub UseTranslator(ByVal translator As IDesTranslation)
+Public Sub UseTranslator(ByVal translator As IDesignerTranslation)
     Set this.translator = translator
 End Sub
 
@@ -132,28 +131,18 @@ Public Sub Clear()
 End Sub
 
 '@label:translate
-'@sub-title Translate the configured worksheet and optionally update the language code
+'@sub-title Translate the configured worksheet using the provided language
 '@details
-'When a non-empty language code is supplied, resolves the language code
-'range on the translation sheet and writes the new code, then
-'recalculates the sheet so translation formulas update. Finally
-'delegates to the translations provider to apply translated labels,
-'shapes, and dropdowns to the host worksheet.
-'@param languageCode Optional String. ISO language code to apply. Defaults to vbNullString.
+'Delegates to the translations provider to apply translated labels,
+'shapes, and dropdowns to the host worksheet. When a non-empty language
+'string is supplied (e.g. "FRA - Francais"), the translator extracts
+'the language code and persists it to the worksheet-level HiddenName.
+'@param language Optional String. Language string in "CODE - Label" format. Defaults to vbNullString.
 '@export
-Public Sub Translate(Optional ByVal languageCode As String = vbNullString)
-    Dim translator As IDesTranslation
-    Dim langRange As Range
-
+Public Sub Translate(Optional ByVal language As String = vbNullString)
+    Dim translator As IDesignerTranslation
     Set translator = ResolveTranslator()
-
-    If LenB(languageCode) > 0 Then
-        Set langRange = ResolveLanguageRange(translator)
-        langRange.Value = languageCode
-        langRange.Worksheet.Calculate
-    End If
-
-    translator.TranslateDesigner HostSheet
+    translator.TranslateDesigner HostSheet, language
 End Sub
 
 '@label:host-sheet
@@ -200,15 +189,15 @@ End Function
 '@label:resolve-translator
 '@sub-title Lazily resolve or return the translations provider
 '@details
-'Returns the cached IDesTranslation translator, or creates one via
-'DesTranslation.Create with the DesignerTranslation worksheet on first
+'Returns the cached IDesignerTranslation translator, or creates one via
+'DesignerTranslation.Create with the DesignerTranslation worksheet on first
 'access. Raises an error when the translation sheet cannot be found.
-'@return IDesTranslation. The translations provider instance.
+'@return IDesignerTranslation. The translations provider instance.
 '@throws ProjectError.ElementNotFound When the translation sheet is missing.
-Private Function ResolveTranslator() As IDesTranslation
+Private Function ResolveTranslator() As IDesignerTranslation
     If this.translator Is Nothing Then
         On Error GoTo Handler
-            Set this.translator = DesTranslation.Create(TranslationSheet())
+            Set this.translator = DesignerTranslation.Create(TranslationSheet())
         On Error GoTo 0
     End If
 
@@ -242,40 +231,6 @@ Private Function TranslationSheet() As Worksheet
     Set TranslationSheet = sh
 End Function
 
-'@label:resolve-language-range
-'@sub-title Resolve the language code range from the translator or translation sheet
-'@details
-'First attempts to read the language range from the translator's
-'LangListRng property. If that fails, falls back to the
-'RNG_MainLangCode named range on the translation sheet. Raises an error
-'when neither source yields a range.
-'@param translator IDesTranslation. The translator whose LangListRng is tried first.
-'@return Range. The language code range.
-'@throws ProjectError.ElementNotFound When no language code range is found.
-Private Function ResolveLanguageRange(ByVal translator As IDesTranslation) As Range
-    Dim candidate As Range
-    Dim fallback As Range
-
-    On Error Resume Next
-        Set candidate = translator.LangListRng
-    On Error GoTo 0
-
-    If Not candidate Is Nothing Then
-        Set ResolveLanguageRange = candidate
-        Exit Function
-    End If
-
-    On Error Resume Next
-        Set fallback = TranslationSheet.Range(LANGUAGE_CODE_RANGE)
-    On Error GoTo 0
-
-    If fallback Is Nothing Then
-        RaiseError ProjectError.ElementNotFound, "Language code range '" & LANGUAGE_CODE_RANGE & "' was not found."
-    End If
-
-    Set ResolveLanguageRange = fallback
-End Function
-
 '@label:raise-error
 '@sub-title Raise a ProjectError-based exception
 '@details
@@ -305,14 +260,14 @@ Private Property Get IDesignerEntry_HostSheet() As Worksheet
     Set IDesignerEntry_HostSheet = HostSheet
 End Property
 
-Private Sub IDesignerEntry_Translate(Optional ByVal languageCode As String = vbNullString)
-    Translate languageCode
+Private Sub IDesignerEntry_Translate(Optional ByVal language As String = vbNullString)
+    Translate language
 End Sub
 
 Private Sub IDesignerEntry_UseEntryManager(ByVal entryManager As IMain)
     UseEntryManager entryManager
 End Sub
 
-Private Sub IDesignerEntry_UseTranslator(ByVal translator As IDesTranslation)
+Private Sub IDesignerEntry_UseTranslator(ByVal translator As IDesignerTranslation)
     UseTranslator translator
 End Sub

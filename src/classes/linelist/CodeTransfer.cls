@@ -27,7 +27,7 @@ Implements ICodeTransfer
 'via Create and then call the transfer methods for each component type.
 '@depends ITemporaryRepos
 '@version 1.0 (2026-02-09)
-'@author Yves Amevoin
+
 
 
 Private Const CLASS_NAME As String = "CodeTransfer"

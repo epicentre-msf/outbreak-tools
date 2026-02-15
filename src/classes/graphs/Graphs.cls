@@ -27,7 +27,7 @@ Implements IGraphs
 'the GraphScope enum. Consumers interact through the IGraphs interface.
 '@depends Checking
 '@version 1.0 (2026-02-09)
-'@author Yves Amevoin
+
 
 
 '@section State

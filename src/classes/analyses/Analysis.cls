@@ -28,7 +28,7 @@ Implements IAnalysis
 'can be retrieved through HasCheckings and CheckingValues.
 '@depends CustomTable, Checking, ITranslationObject, BetterArray
 '@version 2025-01-15
-'@author Yves Amevoin
+
 
 Private Type TAnalysis
     hostsheet As Worksheet

@@ -30,7 +30,7 @@ Implements IGraphSpecs
 'IGraphSpecs interface.
 '@depends ICrossTable, ITableSpecs, TableSpecs, ILinelistSpecs, BetterArray
 '@version 1.0 (2026-02-09)
-'@author Yves Amevoin
+
 
 
 ' Table title constants used to validate listobject order
