@@ -32,7 +32,8 @@ Private Const START_COLUMN_DICTIONARY As Long = 1
 Private Const START_COLUMN_CHOICES As Long = 1
 Private Const START_COLUMN_EXPORTS As Long = 1
 
-'Implement the password protection for the workbook entirely
+'Cached password helper (lazily created once per VBA session)
+Private cachedPasswords As IPasswords
 
 '@section Basic Rows management in tables
 '===============================================================================
@@ -593,9 +594,12 @@ End Function
 
 '@Description("Provide the password manager used for setup protections")
 Public Function ResolveSetupPasswords() As IPasswords
-    Dim passSheet As Worksheet
-    Set passSheet = ThisWorkbook.Worksheets(PASSSHEETNAME)
-    Set ResolveSetupPasswords = Passwords.Create(passSheet)
+    If cachedPasswords Is Nothing Then
+        Dim passSheet As Worksheet
+        Set passSheet = ThisWorkbook.Worksheets(PASSSHEETNAME)
+        Set cachedPasswords = Passwords.Create(passSheet)
+    End If
+    Set ResolveSetupPasswords = cachedPasswords
 End Function
 
 Public Function ResolveUpdatedValues() As IUpdatedValues

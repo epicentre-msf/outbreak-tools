@@ -7,11 +7,11 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
-Attribute VB_Description = "Improved translations table manager leveraging caching and guarded updates"
+Attribute VB_Description = "Translations table manager with helper tag column"
 
 '@PredeclaredId
 '@Folder("Setup")
-'@ModuleDescription("Improved translations table manager leveraging caching and guarded updates")
+'@ModuleDescription("Translations table manager with helper tag column")
 '@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 '@depends ProjectError, ApplicationState, IApplicationState, HiddenNames, IHiddenNames, CustomTable, ICustomTable
 
@@ -21,28 +21,28 @@ Implements ISetupTranslationsTable
 
 '@class SetupTranslationsTable
 '@description
-'Manages a translations ListObject backed by a helper tag column and a
-'binary-search label cache. Synchronises translations from a watcher
-'registry, handles language column creation and promotion, removes
-'obsolete labels, reports missing and duplicate entries, and exports
-'the table to external workbooks. Uses HiddenNames for sequence
-'counters and formatting metadata persistence.
+'Manages a translations ListObject backed by a helper tag column.
+'Synchronises translations from a watcher registry, handles language
+'column creation and promotion, removes obsolete and duplicate labels,
+'reports missing and duplicate entries, and exports the table to
+'external workbooks. Uses HiddenNames for sequence counters.
 
 '@section State and constants
 '===============================================================================
 Private Type TSetupTranslations
     table As ListObject               'Managed translations table
     tagHeader As Range                'Header cell immediately to the left storing translation tags
-    labelCache As BetterArray         'Cached label lookups for label to row mappings
+    labelValues() As Variant          'In-memory label column for lookups during ProcessRegistry
+    labelCount As Long                'Number of entries in the label buffer
     processedRanges As BetterArray    'Ranges processed during the current update cycle
     displayPrompts As Boolean         'Toggle to avoid message prompts during automated tests
     stateScope As IApplicationState   'Optional application guard for busy sections
     tagsIntegrated As Boolean         'Tracks whether the helper tag column is currently merged in the table
-    lastLookupLabel As String         'Last label queried when resolving cached rows
-    lastLookupIndex As Long           'Insertion index captured during the last cache lookup
-    lastLookupFound As Boolean        'Tracks whether the last cache lookup found an existing label
     missingSummary As BetterArray     'Keep missing summary on non default languages
     duplicatesSummary As BetterArray  'keep duplicate summary on all the languages
+    tagBuffer() As Variant            'In-memory tag column buffer for batch writes during ProcessRegistry
+    tagBufferSize As Long             'Current number of entries in the tag buffer
+    dirty As Boolean                  'Tracks whether rows were added or removed during the current update
 End Type
 
 Private this As TSetupTranslations
@@ -55,8 +55,6 @@ Private Const MODE_FORMULA As String = "translate as formula"
 Private Const MODE_WATCH As String = "watch for update"
 Private Const TAG_HEADER_TITLE As String = "__TagInternal__"
 Private Const TAG_SEPARATOR As String = "__"
-Private Const TAG_METADATA_PREFIX As String = "__SetupTranslationsTagMeta__"
-Private Const TAG_FORMAT_VERSION As Long = 1
 Private Const LANGUAGES_NAME_ID As String = "__SetupTranslationsLanguages__"
 Private Const TRANSLATIONS_NAME_PREFIX As String = "__SetupTranslations"
 
@@ -96,8 +94,6 @@ Public Sub InitialiseCore(ByVal translationTable As ListObject, Optional ByVal s
     End With
 
     ConfigureTagColumn
-    EnsureTagFormattingState
-    ResetCache
     ResetProcessedRanges
     PersistLanguageList
 End Sub
@@ -176,10 +172,10 @@ Private Function TryGetWrittenLanguages(ByRef languages As String, ByVal newLang
     Set cellRng = this.table.ListColumns(this.table.ListColumns.Count).Range.Offset(, 1).Cells(1, 1)
 
     If (LenB(newLang) <> 0) Then languages = newLang
-    
+
     Do While (LenB(cellRng.Value) <> 0)
 
-        If (LenB(languages) <> 0) Then 
+        If (LenB(languages) <> 0) Then
             languages = languages & ";" & CStr(cellRng.Value)
         Else
             languages = CStr(cellRng.Value)
@@ -261,8 +257,6 @@ Public Sub SwitchDefaultLanguage(ByVal languageName As String)
     On Error GoTo CleanFail
 
     SwapLanguageColumns 1, targetIndex
-    ResetCache
-    EnsureCache
     SortTranslations
     ApplyFormatting
     PersistLanguageList
@@ -308,7 +302,7 @@ Public Property Get Languages(Optional ByVal includeDefault As Boolean = False) 
     Dim idx As Long
 
     Set switchable = SwitchableLanguages()
-    
+
     If Not includeDefault Then
         Set Languages = switchable
         Exit Property
@@ -483,7 +477,7 @@ End Sub
 
 '@label:update-from-registry
 '@sub-title Update the translations table using the supplied registry sheet.
-Public Sub UpdateFromRegistry(ByVal registrySheet As Worksheet, _ 
+Public Sub UpdateFromRegistry(ByVal registrySheet As Worksheet, _
                              Optional ByVal languages As String = vbNullString)
     Dim scope As IApplicationState
     Dim updateSequence As Long
@@ -504,14 +498,18 @@ Public Sub UpdateFromRegistry(ByVal registrySheet As Worksheet, _
     scope.ApplyBusyState True
 
     updateSequence = NextUpdateSequence(registrySheet)
-    ResetCache
     ResetProcessedRanges
-    EnsureCache
+    this.dirty = False
+
+    InitTagBuffer
+    InitLabelBuffer
     ProcessRegistry registrySheet, updateSequence
+    FlushTagBuffer
+
     RemoveObsoleteLabels updateSequence
-    ResetCache
+    DeduplicateLabels
     SortTranslations
-    ApplyFormatting
+    If this.dirty Then ApplyFormatting
     NumberOfMissing
     UpdateDuplicatesSummary
 
@@ -608,7 +606,7 @@ Private Sub ProcessSourceRange(ByVal sourceRange As Range, ByVal rngTag As Strin
         Case MODE_TEXT
             ProcessTextRange sourceRange, rngTag
         Case Else
-            If (mode <> MODE_WATCH) Then 
+            If (mode <> MODE_WATCH) Then
                 ThrowProjectError ProjectError.InvalidArgument, "Unknown translation mode '" & mode & "' for range '" & rngTag & "'."
             End If
     End Select
@@ -725,71 +723,22 @@ End Function
 '@section Chunk management
 '===============================================================================
 '@label:add-chunk
-'@sub-title Add or update a translation chunk with caching support.
+'@sub-title Add or update a translation chunk in the table.
 Private Sub AddChunk(ByVal label As String, ByVal rngTag As String)
     Dim rowIndex As Long
     Dim trimmedLabel As String
-    Dim cacheIndex As Long
-    Dim found As Boolean
 
     trimmedLabel = Trim$(label)
     If LenB(trimmedLabel) = 0 Then Exit Sub
 
-    cacheIndex = LocateLabelCacheIndex(trimmedLabel, found)
-
-    If found Then
-        rowIndex = CacheRowAt(cacheIndex)
-    Else
-        rowIndex = 0
-    End If
+    rowIndex = FindLabelRow(trimmedLabel)
 
     If rowIndex > 0 Then
-        SetTagForRow rowIndex, rngTag
+        If rowIndex <= this.tagBufferSize Then
+            this.tagBuffer(rowIndex) = rngTag
+        End If
     Else
-        rowIndex = AppendRow(trimmedLabel, rngTag)
-        RegisterLabelCacheEntry cacheIndex, trimmedLabel, rowIndex, False
-    End If
-End Sub
-
-'@label:cached-row-index
-'@sub-title Retrieve cached row index when the label exists.
-Private Function CachedRowIndex(ByVal label As String) As Long
-    Dim cacheIndex As Long
-    Dim found As Boolean
-
-    cacheIndex = LocateLabelCacheIndex(label, found)
-
-    If found Then
-        CachedRowIndex = CacheRowAt(cacheIndex)
-    End If
-End Function
-
-'@label:register-label-cache-entry
-'@sub-title Persist the label inside the cache for future lookups.
-Private Sub RegisterLabelCacheEntry(ByVal cacheIndex As Long, ByVal label As String, ByVal rowIndex As Long, ByVal replaceExisting As Boolean)
-    Dim entry As Variant
-    Dim idx As Long
-
-    entry = Array(label, rowIndex)
-
-
-    If this.labelCache Is Nothing Then
-        Set this.labelCache = CreateBuffer()
-    End If
-
-    If replaceExisting And cacheIndex >= this.labelCache.LowerBound And cacheIndex <= this.labelCache.UpperBound Then
-        this.labelCache.Item(cacheIndex) = entry
-        Exit Sub
-    End If
-
-    If this.labelCache.Length = 0 Then
-        this.labelCache.Push entry
-    ElseIf cacheIndex <= this.labelCache.LowerBound Then
-        this.labelCache.Unshift entry
-    ElseIf cacheIndex > this.labelCache.UpperBound Then
-        this.labelCache.Push entry
-    Else
-        this.labelCache.Splice cacheIndex, 0, entry
+        AppendRow trimmedLabel, rngTag
     End If
 End Sub
 
@@ -800,131 +749,116 @@ Private Function AppendRow(ByVal label As String, ByVal rngTag As String) As Lon
 
     Set newRow = this.table.ListRows.Add
     newRow.Range.Cells(1, LabelColumnIndex).Value = label
-    SetTagForRow newRow.Index, rngTag
 
+    this.tagBufferSize = this.tagBufferSize + 1
+    ReDim Preserve this.tagBuffer(1 To this.tagBufferSize)
+    this.tagBuffer(this.tagBufferSize) = rngTag
+
+    this.labelCount = this.labelCount + 1
+    ReDim Preserve this.labelValues(1 To this.labelCount)
+    this.labelValues(this.labelCount) = label
+
+    this.dirty = True
     AppendRow = newRow.Index
 End Function
 
-'@label:cache-row-at
-'@sub-title Retrieve the cached row index stored at a given cache position.
-Private Function CacheRowAt(ByVal cacheIndex As Long) As Long
-    Dim entry As Variant
 
-    If this.labelCache Is Nothing Then Exit Function
-    If cacheIndex < this.labelCache.LowerBound Then Exit Function
-    If cacheIndex > this.labelCache.UpperBound Then Exit Function
-
-    entry = this.labelCache.Item(cacheIndex)
-    CacheRowAt = CLng(entry(1))
-End Function
-
-'@label:locate-label-cache-index
-'@sub-title Locate the cache index for a label using binary search (also captures insertion index).
-Private Function LocateLabelCacheIndex(ByVal label As String, ByRef found As Boolean) As Long
-    Dim low As Long
-    Dim high As Long
-    Dim mid As Long
-    Dim comparison As Long
-    Dim entry As Variant
-    Dim normalized As String
-
-    normalized = Trim$(label)
-    EnsureCache
-
-    this.lastLookupLabel = normalized
-    this.lastLookupIndex = 0
-    this.lastLookupFound = False
-    found = False
-
-    If this.labelCache Is Nothing Then Exit Function
-    If this.labelCache.Length = 0 Then
-        LocateLabelCacheIndex = this.labelCache.LowerBound
-        Exit Function
-    End If
-
-    low = this.labelCache.LowerBound
-    high = this.labelCache.UpperBound
-
-    Do While low <= high
-        mid = (low + high) \ 2
-        entry = this.labelCache.Item(mid)
-        comparison = StrComp(CStr(entry(0)), normalized, vbTextCompare)
-        If comparison = 0 Then
-            found = True
-            this.lastLookupIndex = mid
-            this.lastLookupFound = True
-            LocateLabelCacheIndex = mid
-            Exit Function
-        ElseIf comparison < 0 Then
-            low = mid + 1
-        Else
-            high = mid - 1
-        End If
-    Loop
-
-    this.lastLookupIndex = low
-    LocateLabelCacheIndex = low
-End Function
-
-'@label:set-tag-for-row
-'@sub-title Update the helper column with the latest tag for the given row.
-Private Sub SetTagForRow(ByVal rowIndex As Long, ByVal rngTag As String)
-    Dim cell As Range
-
-    Set cell = TagDataCell(rowIndex)
-    If cell Is Nothing Then Exit Sub
-
-    cell.Value = rngTag
-End Sub
-
-'@label:ensure-cache
-'@sub-title Build or refresh the label cache from the current table state.
-Private Sub EnsureCache()
-    Dim data As Range
-    Dim rowIndex As Long
-    Dim label As String
-    Dim entry As Variant
+'@section Label buffer
+'===============================================================================
+'@label:init-label-buffer
+'@sub-title Read the label column into a 1D in-memory buffer for lookups.
+Private Sub InitLabelBuffer()
+    Dim dataRange As Range
     Dim rawValues As Variant
-    Dim rowCount As Long
+    Dim idx As Long
 
-    If Not this.labelCache Is Nothing Then Exit Sub
+    Set dataRange = LabelColumnData()
 
-    Set this.labelCache = CreateBuffer()
-    Set data = LabelColumnData()
-
-    If data Is Nothing Then Exit Sub
-    rawValues = data.Value2
-    If IsArray(rawValues) Then
-        rowCount = UBound(rawValues, 1)
-        For rowIndex = 1 To rowCount
-            label = Trim$(CStr(rawValues(rowIndex, 1)))
-            If LenB(label) > 0 Then
-                entry = Array(label, rowIndex)
-                this.labelCache.Push entry
-            End If
-        Next rowIndex
-    Else
-        label = Trim$(CStr(rawValues))
-        If LenB(label) > 0 Then
-            entry = Array(label, 1)
-            this.labelCache.Push entry
-        End If
+    If dataRange Is Nothing Then
+        this.labelCount = 0
+        ReDim this.labelValues(1 To 1)
+        Exit Sub
     End If
 
-    If this.labelCache.Length > 1 Then
-        'BetterArray.Sort expects a 1-based column index even when child arrays were rebased to zero.
-        'Omitting the argument keeps sorting aligned with the first entry element without shifting bounds.
-        this.labelCache.Sort
+    rawValues = dataRange.Value2
+
+    If IsArray(rawValues) Then
+        this.labelCount = UBound(rawValues, 1) - LBound(rawValues, 1) + 1
+        ReDim this.labelValues(1 To this.labelCount)
+        For idx = 1 To this.labelCount
+            this.labelValues(idx) = Trim$(CStr(rawValues(LBound(rawValues, 1) - 1 + idx, LBound(rawValues, 2))))
+        Next idx
+    Else
+        this.labelCount = 1
+        ReDim this.labelValues(1 To 1)
+        this.labelValues(1) = Trim$(CStr(rawValues))
     End If
 End Sub
 
-'@label:reset-cache
-'@sub-title Clear the cached labels forcing the next EnsureCache to rebuild it.
-Private Sub ResetCache()
-    Set this.labelCache = Nothing
-    this.lastLookupLabel = vbNullString
-    this.lastLookupIndex = 0
-    this.lastLookupFound = False
+'@label:find-label-row
+'@sub-title Find the row index for a label using a simple linear scan of the label buffer.
+Private Function FindLabelRow(ByVal label As String) As Long
+    Dim idx As Long
+
+    For idx = 1 To this.labelCount
+        If StrComp(CStr(this.labelValues(idx)), label, vbTextCompare) = 0 Then
+            FindLabelRow = idx
+            Exit Function
+        End If
+    Next idx
+End Function
+
+
+'@section Tag buffer
+'===============================================================================
+'@label:init-tag-buffer
+'@sub-title Read the tag column into a 1D in-memory buffer for batch writes.
+Private Sub InitTagBuffer()
+    Dim tagRange As Range
+    Dim rawTags As Variant
+    Dim idx As Long
+
+    Set tagRange = TagColumnDataRange()
+
+    If tagRange Is Nothing Then
+        this.tagBufferSize = 0
+        ReDim this.tagBuffer(1 To 1)
+        Exit Sub
+    End If
+
+    rawTags = tagRange.Value2
+
+    If IsArray(rawTags) Then
+        this.tagBufferSize = UBound(rawTags, 1) - LBound(rawTags, 1) + 1
+        ReDim this.tagBuffer(1 To this.tagBufferSize)
+        For idx = 1 To this.tagBufferSize
+            this.tagBuffer(idx) = rawTags(LBound(rawTags, 1) - 1 + idx, LBound(rawTags, 2))
+        Next idx
+    Else
+        this.tagBufferSize = 1
+        ReDim this.tagBuffer(1 To 1)
+        this.tagBuffer(1) = rawTags
+    End If
+End Sub
+
+'@label:flush-tag-buffer
+'@sub-title Write the accumulated tag buffer back to the tag column in one operation.
+Private Sub FlushTagBuffer()
+    Dim tagRange As Range
+    Dim outArr() As Variant
+    Dim idx As Long
+
+    If this.tagBufferSize = 0 Then Exit Sub
+
+    Set tagRange = TagColumnDataRange()
+    If tagRange Is Nothing Then Exit Sub
+
+    ReDim outArr(1 To this.tagBufferSize, 1 To 1)
+    For idx = 1 To this.tagBufferSize
+        outArr(idx, 1) = this.tagBuffer(idx)
+    Next idx
+
+    tagRange.Resize(this.tagBufferSize, 1).Value = outArr
 End Sub
 
 '@section Process tracking
@@ -981,21 +915,23 @@ Private Sub ResetProcessedRanges()
 End Sub
 
 '@label:remove-obsolete-labels
-'@sub-title Remove labels that no longer exist in processed ranges.
+'@sub-title Remove labels whose source ranges were processed but whose tags are stale.
 Private Sub RemoveObsoleteLabels(ByVal updateSequence As Long)
+    Dim rowCount As Long
     Dim rowIndex As Long
     Dim tagText As String
     Dim rangeName As String
     Dim sequenceValue As Long
-    Dim shouldDelete As Boolean
     Dim tagRange As Range
     Dim tagValues As Variant
     Dim hasArray As Boolean
     Dim firstTagRow As Long
     Dim tagColumnIndex As Long
 
-    If this.table.ListRows.Count = 0 Then Exit Sub
+    rowCount = this.table.ListRows.Count
+    If rowCount = 0 Then Exit Sub
 
+    'Batch-read all tag values in one operation
     Set tagRange = TagColumnDataRange()
     If tagRange Is Nothing Then Exit Sub
 
@@ -1006,75 +942,157 @@ Private Sub RemoveObsoleteLabels(ByVal updateSequence As Long)
         tagColumnIndex = LBound(tagValues, 2)
     End If
 
-    For rowIndex = this.table.ListRows.Count To 1 Step -1
+    'Walk rows from bottom to top so that deletions do not shift indices
+    For rowIndex = rowCount To 1 Step -1
         If hasArray Then
             tagText = Trim$(CStr(tagValues(firstTagRow - 1 + rowIndex, tagColumnIndex)))
         Else
             tagText = Trim$(CStr(tagValues))
         End If
-        shouldDelete = False
 
+        'Delete when: (a) tag is empty, or (b) range was processed and sequence is old
         If LenB(tagText) = 0 Then
-            shouldDelete = True
+            this.table.ListRows(rowIndex).Delete
+            this.dirty = True
         ElseIf ParseTag(tagText, rangeName, sequenceValue) Then
             If WasRangeProcessed(rangeName) And sequenceValue < updateSequence Then
-                shouldDelete = True
+                this.table.ListRows(rowIndex).Delete
+                this.dirty = True
             End If
-        End If
-
-        If shouldDelete Then
-            DeleteRowAt rowIndex
         End If
     Next rowIndex
-
-    Dim firstLangIndex As Long
-    Dim seenLabels As BetterArray
-    Dim langValue As String
-    Dim duplicate As Boolean
-
-    firstLangIndex = LabelColumnIndex()
-    If firstLangIndex > this.table.ListColumns.Count Then Exit Sub
-
-    Set seenLabels = New BetterArray
-
-    rowIndex = 1
-    Do While rowIndex <= this.table.ListRows.Count
-        duplicate = False
-        langValue = Trim$(CStr(this.table.DataBodyRange.Cells(rowIndex, firstLangIndex).Value))
-
-        If LenB(langValue) > 0 Then
-            If seenLabels.Length > 0 And seenLabels.Includes(langValue) Then
-                DeleteRowAt rowIndex
-                duplicate = True
-            Else
-                seenLabels.Push langValue
-            End If
-        End If
-    
-        If Not duplicate Then
-            rowIndex = rowIndex + 1
-        End If
-    Loop
 End Sub
 
-'@label:delete-row-at
-'@sub-title Delete a row within the translations table when the index is valid.
-Private Sub DeleteRowAt(ByVal rowIndex As Long)
-    Dim helperCell As Range
+'@label:deduplicate-labels
+'@sub-title Remove duplicate labels keeping the row with the oldest (lowest) tag sequence.
+Private Sub DeduplicateLabels()
+    Dim rowCount As Long
+    Dim rowIndex As Long
+    Dim firstLangIndex As Long
+    Dim labelData As Variant
+    Dim tagData As Variant
+    Dim tagRange As Range
+    Dim labelValue As String
+    Dim tagText As String
+    Dim rangeName As String
+    Dim seqValue As Long
 
-    If rowIndex < 1 Then Exit Sub
-    If rowIndex > this.table.ListRows.Count Then Exit Sub
+    'Parallel arrays: seenLabels(i), bestRows(i), bestSeqs(i) form a single record
+    Dim seenLabels As BetterArray
+    Dim bestRows As BetterArray
+    Dim bestSeqs As BetterArray
+    Dim foundIdx As Long
+    Dim searchIdx As Long
 
-    If Not this.tagsIntegrated Then
-        Set helperCell = TagDataCell(rowIndex)
-        If Not helperCell Is Nothing Then
-            On Error Resume Next
-                helperCell.Delete Shift:=xlShiftUp
-            On Error GoTo 0
+    'Collect row indices to delete, then delete from bottom to top
+    Dim indicesToDelete() As Long
+    Dim deleteCount As Long
+    Dim prevRow As Long
+    Dim idx As Long
+
+    firstLangIndex = LabelColumnIndex()
+    rowCount = this.table.ListRows.Count
+    If rowCount < 2 Then Exit Sub
+    If firstLangIndex > this.table.ListColumns.Count Then Exit Sub
+
+    'Batch-read label and tag data
+    On Error Resume Next
+        labelData = this.table.ListColumns(firstLangIndex).DataBodyRange.Value2
+        Set tagRange = TagColumnDataRange()
+        If Not tagRange Is Nothing Then tagData = tagRange.Value2
+    On Error GoTo 0
+
+    If IsEmpty(labelData) Then Exit Sub
+
+    Set seenLabels = New BetterArray
+    seenLabels.LowerBound = 0
+    Set bestRows = New BetterArray
+    bestRows.LowerBound = 0
+    Set bestSeqs = New BetterArray
+    bestSeqs.LowerBound = 0
+
+    deleteCount = 0
+    ReDim indicesToDelete(1 To rowCount)
+
+    For rowIndex = 1 To rowCount
+        'Read label
+        If IsArray(labelData) Then
+            labelValue = Trim$(CStr(labelData(rowIndex, 1)))
+        Else
+            labelValue = Trim$(CStr(labelData))
         End If
-    End If
+        If LenB(labelValue) = 0 Then GoTo NextDedupRow
 
-    this.table.ListRows(rowIndex).Delete
+        'Read tag sequence number
+        seqValue = 0
+        tagText = vbNullString
+        If IsArray(tagData) Then
+            tagText = Trim$(CStr(tagData(rowIndex, 1)))
+        ElseIf Not IsEmpty(tagData) Then
+            tagText = Trim$(CStr(tagData))
+        End If
+        If LenB(tagText) > 0 Then ParseTag tagText, rangeName, seqValue
+
+        'Search for this label in the already-seen list (case-sensitive)
+        foundIdx = -1
+        For searchIdx = seenLabels.LowerBound To seenLabels.UpperBound
+            If StrComp(CStr(seenLabels.Item(searchIdx)), labelValue, vbBinaryCompare) = 0 Then
+                foundIdx = searchIdx
+                Exit For
+            End If
+        Next searchIdx
+
+        If foundIdx >= 0 Then
+            'Duplicate: keep the row with the older (lower) sequence number
+            If seqValue < CLng(bestSeqs.Item(foundIdx)) Then
+                'Current row is older — mark previous best row for deletion
+                prevRow = CLng(bestRows.Item(foundIdx))
+                deleteCount = deleteCount + 1
+                indicesToDelete(deleteCount) = prevRow
+                bestRows.Item(foundIdx) = rowIndex
+                bestSeqs.Item(foundIdx) = seqValue
+            Else
+                'Stored row is older or equal — mark current row for deletion
+                deleteCount = deleteCount + 1
+                indicesToDelete(deleteCount) = rowIndex
+            End If
+        Else
+            'First time seeing this label
+            seenLabels.Push labelValue
+            bestRows.Push rowIndex
+            bestSeqs.Push seqValue
+        End If
+
+NextDedupRow:
+    Next rowIndex
+
+    'Sort indices descending so deletions do not shift remaining indices
+    If deleteCount > 0 Then
+        SortIndicesDescending indicesToDelete, deleteCount
+        For idx = 1 To deleteCount
+            this.table.ListRows(indicesToDelete(idx)).Delete
+        Next idx
+        this.dirty = True
+    End If
+End Sub
+
+'@label:sort-indices-descending
+'@sub-title Sort a 1-based Long array in descending order (simple insertion sort).
+Private Sub SortIndicesDescending(ByRef arr() As Long, ByVal count As Long)
+    Dim idx As Long
+    Dim jdx As Long
+    Dim temp As Long
+
+    For idx = 2 To count
+        temp = arr(idx)
+        jdx = idx - 1
+        Do While jdx >= 1
+            If arr(jdx) >= temp Then Exit Do
+            arr(jdx + 1) = arr(jdx)
+            jdx = jdx - 1
+        Loop
+        arr(jdx + 1) = temp
+    Next idx
 End Sub
 
 '@label:parse-tag
@@ -1110,128 +1128,6 @@ End Function
 '@sub-title Format a single duplicate-count line for reporting.
 Private Function BuildDuplicateLine(ByVal labelValue As String, ByVal occurrenceCount As Long) As String
     BuildDuplicateLine = """" & labelValue & """ has " & CStr(occurrenceCount) & " duplicates"
-End Function
-
-
-'@section Tag metadata caching
-'===============================================================================
-'@label:ensure-tag-formatting-state
-'@sub-title Ensure helper column formatting only runs when required.
-Private Sub EnsureTagFormattingState()
-    If ShouldRefreshTagFormatting() Then
-        ApplyTagColumnFormatting
-    ElseIf Not IsRangeValid(this.tagHeader) Then
-        EnsureTagColumnReady
-    End If
-End Sub
-
-'@label:should-refresh-tag-formatting
-'@sub-title Determine whether formatting must be refreshed.
-Private Function ShouldRefreshTagFormatting() As Boolean
-    If Not TagFormattingMetadataCurrent() Then
-        ShouldRefreshTagFormatting = True
-        Exit Function
-    End If
-
-    ShouldRefreshTagFormatting = Not TagHeaderHasStealthFormatting()
-End Function
-
-'@label:tag-header-has-stealth-formatting
-'@sub-title Simple guard verifying the helper header retains stealth formatting.
-Private Function TagHeaderHasStealthFormatting() As Boolean
-    Dim header As Range
-    Dim dataRange As Range
-
-    On Error Resume Next
-        Set header = RequireTagHeader()
-        TagHeaderHasStealthFormatting = Not header Is Nothing
-        If TagHeaderHasStealthFormatting Then
-            TagHeaderHasStealthFormatting = (header.Font.Color = vbWhite And header.Interior.Color = vbWhite)
-        End If
-        If TagHeaderHasStealthFormatting Then
-            Set dataRange = TagColumnDataRange()
-            If Not dataRange Is Nothing Then
-                TagHeaderHasStealthFormatting = (dataRange.Font.Color = vbWhite)
-            End If
-        End If
-    On Error GoTo 0
-End Function
-
-'@label:tag-formatting-metadata-current
-'@sub-title Validate whether metadata indicates formatting is current.
-Private Function TagFormattingMetadataCurrent() As Boolean
-    Dim store As IHiddenNames
-    Dim nameId As String
-
-    Set store = MetadataStore()
-    If store Is Nothing Then Exit Function
-
-    nameId = TagMetadataKey()
-    TagFormattingMetadataCurrent = (store.ValueAsLong(nameId, 0) = TAG_FORMAT_VERSION)
-End Function
-
-'@label:persist-tag-formatting-version
-'@sub-title Persist the latest formatting version.
-Private Sub PersistTagFormattingVersion()
-    Dim store As IHiddenNames
-    Dim nameId As String
-
-    Set store = MetadataStore()
-    If store Is Nothing Then Exit Sub
-
-    nameId = TagMetadataKey()
-    store.EnsureName nameId, TAG_FORMAT_VERSION, HiddenNameTypeLong
-    store.SetValue nameId, TAG_FORMAT_VERSION
-End Sub
-
-'@label:invalidate-tag-formatting-cache
-'@sub-title Mark cached formatting metadata as stale.
-Private Sub InvalidateTagFormattingCache()
-    Dim store As IHiddenNames
-    Dim nameId As String
-
-    Set store = MetadataStore()
-    If store Is Nothing Then Exit Sub
-
-    nameId = TagMetadataKey()
-    store.EnsureName nameId, 0, HiddenNameTypeLong
-    store.SetValue nameId, 0
-End Sub
-
-'@label:metadata-store
-'@sub-title Resolve the hidden name store hosting metadata.
-Private Function MetadataStore() As IHiddenNames
-    Dim hostSh As Worksheet
-
-    If this.table Is Nothing Then Exit Function
-    Set hostSh = this.table.Parent
-    If hostSh Is Nothing Then Exit Function
-
-    On Error Resume Next
-        Set MetadataStore = HiddenNames.Create(hostSh)
-    On Error GoTo 0
-End Function
-
-'@label:tag-metadata-key
-'@sub-title Build the cached formatting key using sheet/table names.
-Private Function TagMetadataKey() As String
-    Dim sheetName As String
-    Dim tableName As String
-
-    If this.table Is Nothing Then
-        TagMetadataKey = TAG_METADATA_PREFIX
-        Exit Function
-    End If
-
-    On Error Resume Next
-        tableName = this.table.Name
-        sheetName = this.table.Parent.Name
-    On Error GoTo 0
-
-    If LenB(sheetName) = 0 Then sheetName = "Translations"
-    If LenB(tableName) = 0 Then tableName = "Tab_Translations"
-
-    TagMetadataKey = TAG_METADATA_PREFIX & sheetName & "_" & tableName
 End Function
 
 
@@ -1314,7 +1210,7 @@ Private Sub UpdateMissingSummary(ByVal summary As BetterArray)
     If this.missingSummary Is Nothing Then
         Set this.missingSummary = CreateBuffer()
     End If
-    
+
     Set this.missingSummary = summary.Clone()
 End Sub
 
@@ -1381,22 +1277,24 @@ Private Function DuplicateLabels(ByRef duplicateMessage As String, Optional ByVa
 End Function
 
 '@label:compute-duplicate-summary
-'@sub-title Compute duplicates for one language or all languages.
+'@sub-title Compute duplicates for one language or all languages using simple linear counting.
 Private Function ComputeDuplicateSummary(ByVal languageName As String) As TDuplicateSummary
     Dim labelRange As Range
     Dim targetRange As Range
-    Dim seenLabels As BetterArray
-    Dim counts As BetterArray
-    Dim actualLabels As BetterArray
     Dim rowIndex As Long
     Dim currentLabel As String
-    Dim bucketIndex As Long
-    Dim duplicateCount As Long
     Dim summary As TDuplicateSummary
     Dim columnTitle As String
     Dim messageLines As BetterArray
     Dim duplicatesFound As Boolean
     Dim trimmedLanguage As String
+    Dim values As Variant
+    Dim rowCount As Long
+    Dim seenLabels As BetterArray
+    Dim seenCounts As BetterArray
+    Dim foundIdx As Long
+    Dim searchIdx As Long
+    Dim bucketIndex As Long
 
     ValidateInitialised
     Set labelRange = LabelColumnData()
@@ -1412,39 +1310,57 @@ Private Function ComputeDuplicateSummary(ByVal languageName As String) As TDupli
         columnTitle = trimmedLanguage
     End If
 
+    'Batch read entire column
+    values = targetRange.Value2
+    If IsArray(values) Then
+        rowCount = UBound(values, 1) - LBound(values, 1) + 1
+    Else
+        rowCount = 1
+    End If
+
     Set seenLabels = New BetterArray
-    seenLabels.LowerBound = 1
-    Set counts = New BetterArray
-    counts.LowerBound = 1
-    Set actualLabels = New BetterArray
-    actualLabels.LowerBound = 1
+    seenLabels.LowerBound = 0
+    Set seenCounts = New BetterArray
+    seenCounts.LowerBound = 0
     Set messageLines = CreateBuffer()
 
-    For rowIndex = 1 To targetRange.Rows.Count
-        currentLabel = Trim$(CStr(targetRange.Cells(rowIndex, 1).Value))
+    'Count occurrences using simple linear search
+    For rowIndex = 1 To rowCount
+        If IsArray(values) Then
+            currentLabel = Trim$(CStr(values(LBound(values, 1) - 1 + rowIndex, LBound(values, 2))))
+        Else
+            currentLabel = Trim$(CStr(values))
+        End If
         If LenB(currentLabel) = 0 Then GoTo ContinueLoop
 
-        bucketIndex = FindLabelIndex(seenLabels, currentLabel)
+        'Linear search for existing entry
+        foundIdx = -1
+        For searchIdx = seenLabels.LowerBound To seenLabels.UpperBound
+            If StrComp(CStr(seenLabels.Item(searchIdx)), currentLabel, vbBinaryCompare) = 0 Then
+                foundIdx = searchIdx
+                Exit For
+            End If
+        Next searchIdx
 
-        If bucketIndex = 0 Then
-            seenLabels.Push currentLabel
-            counts.Push 1
-            actualLabels.Push currentLabel
+        If foundIdx >= 0 Then
+            'Existing label: increment count
+            seenCounts.Item(foundIdx) = CLng(seenCounts.Item(foundIdx)) + 1
         Else
-            duplicateCount = CLng(counts.Item(bucketIndex)) + 1
-            counts.Item(bucketIndex) = duplicateCount
+            'New label: add to lists
+            seenLabels.Push currentLabel
+            seenCounts.Push CLng(1)
         End If
 
 ContinueLoop:
     Next rowIndex
 
     For bucketIndex = seenLabels.LowerBound To seenLabels.UpperBound
-        If counts.Item(bucketIndex) > 1 Then
+        If seenCounts.Item(bucketIndex) > 1 Then
             If Not duplicatesFound Then
                 messageLines.Push "Duplicate labels detected in column " & columnTitle & "!"
                 duplicatesFound = True
             End If
-            messageLines.Push BuildDuplicateLine(CStr(actualLabels.Item(bucketIndex)), CLng(counts.Item(bucketIndex)))
+            messageLines.Push BuildDuplicateLine(CStr(seenLabels.Item(bucketIndex)), CLng(seenCounts.Item(bucketIndex)))
         End If
     Next bucketIndex
 
@@ -1460,22 +1376,6 @@ Done:
     ComputeDuplicateSummary = summary
 End Function
 
-'@label:find-label-index
-'@sub-title Locate a label within a BetterArray using linear search.
-Private Function FindLabelIndex(ByVal labels As BetterArray, ByVal normalizedLabel As String) As Long
-    Dim idx As Long
-
-    If labels Is Nothing Then Exit Function
-    If labels.Length = 0 Then Exit Function
-
-    For idx = labels.LowerBound To labels.UpperBound
-        If StrComp(CStr(labels.Item(idx)), normalizedLabel, vbBinaryCompare) = 0 Then
-            FindLabelIndex = idx
-            Exit Function
-        End If
-    Next idx
-End Function
-
 '@label:label-column-data
 '@sub-title Access the label column data range.
 Private Function LabelColumnData() As Range
@@ -1485,6 +1385,9 @@ Private Function LabelColumnData() As Range
     On Error GoTo 0
 End Function
 
+
+'@section Tag column infrastructure
+'===============================================================================
 '@label:tag-column-data-range
 '@sub-title Retrieve the helper tag column data range.
 Private Function TagColumnDataRange() As Range
@@ -1558,7 +1461,6 @@ Private Sub ApplyTagColumnFormatting()
         End With
         On Error GoTo 0
     End If
-    PersistTagFormattingVersion
 End Sub
 
 '@label:apply-lang-column-formatting
@@ -1568,7 +1470,7 @@ Private Sub ApplyLangColumnFormatting(ByVal langRng As Range)
     If langRng Is Nothing Then Exit Sub
 
     With langRng
-    
+
         .Cells(0, 1).Locked = False 'Unlock the first cell for the language
         .Cells.Font.Name = "Consolas"
         .Cells.Font.Size = 16
@@ -1615,8 +1517,9 @@ Private Sub ConfigureTagColumn()
         On Error Resume Next
         helperHeader.Value = TAG_HEADER_TITLE
         On Error GoTo 0
-        InvalidateTagFormattingCache
     End If
+
+    ApplyTagColumnFormatting
 End Sub
 
 '@label:ensure-tag-column-ready
@@ -1729,40 +1632,6 @@ Private Function LabelColumnIndex() As Long
     End If
 End Function
 
-'@label:tag-data-cell
-'@sub-title Resolve the current tag data cell for a provided row.
-Private Function TagDataCell(ByVal rowIndex As Long) As Range
-    Dim tagRange As Range
-    Dim tagColumn As ListColumn
-
-    If rowIndex < 1 Then Exit Function
-    If rowIndex > this.table.ListRows.Count Then Exit Function
-
-    If this.tagsIntegrated Then
-        Set tagColumn = this.table.ListColumns(1)
-        If tagColumn.DataBodyRange Is Nothing Then Exit Function
-        On Error Resume Next
-            Set TagDataCell = tagColumn.DataBodyRange.Cells(rowIndex, 1)
-        On Error GoTo 0
-    Else
-        Set tagRange = TagColumnDataRange()
-        If tagRange Is Nothing Then Exit Function
-        If rowIndex > tagRange.Rows.Count Then Exit Function
-        Set TagDataCell = tagRange.Cells(rowIndex, 1)
-    End If
-End Function
-
-'@label:tag-value-at
-'@sub-title Retrieve the stored tag text for the provided row index.
-Private Function TagValueAt(ByVal rowIndex As Long) As String
-    Dim cell As Range
-
-    Set cell = TagDataCell(rowIndex)
-    If cell Is Nothing Then Exit Function
-
-    TagValueAt = Trim$(CStr(cell.Value))
-End Function
-
 
 '@section Sorting and formatting
 '===============================================================================
@@ -1788,7 +1657,7 @@ Private Sub ApplyFormatting()
     Dim unlockRange As Range
     Dim unlockOffset As Long
     Dim unlockWidth As Long
-    
+
 
     Set dataRange = this.table.DataBodyRange
     Set tableRange = this.table.Range
@@ -1867,7 +1736,7 @@ Public Sub Export(ByVal exportWorkbook As Workbook, Optional ByVal Hide As Long 
     Set store = MetadataStore()
     'Persist translation metadata (languages, formatting markers) alongside the exported table.
     If Not store Is Nothing Then store.ExportNames exportSheet
-    
+
     On Error Resume Next
         exportSheet.Rows(1).Font.Bold = True
         exportSheet.Cells.Font.Name = "Consolas"
@@ -1930,6 +1799,20 @@ Private Function HiddenNameStore(ByVal registrySheet As Worksheet) As IHiddenNam
     If registrySheet Is Nothing Then Exit Function
     On Error Resume Next
         Set HiddenNameStore = HiddenNames.Create(registrySheet)
+    On Error GoTo 0
+End Function
+
+'@label:metadata-store
+'@sub-title Resolve the hidden name store hosting metadata.
+Private Function MetadataStore() As IHiddenNames
+    Dim hostSh As Worksheet
+
+    If this.table Is Nothing Then Exit Function
+    Set hostSh = this.table.Parent
+    If hostSh Is Nothing Then Exit Function
+
+    On Error Resume Next
+        Set MetadataStore = HiddenNames.Create(hostSh)
     On Error GoTo 0
 End Function
 
