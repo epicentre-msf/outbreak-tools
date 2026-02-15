@@ -520,19 +520,23 @@ Private Function FilterData(ByVal varName As String, _
 
         On Error Resume Next
         Set returnedRng = .Range(.Cells(startRetRow, startRetColIndex), .Cells(endRow, endRetColIndex)).SpecialCells(xlCellTypeVisible)
-        .AutoFilter.ShowAllData
-        dataRng.AutoFilter.ShowAllData
         On Error GoTo 0
 
         If Not returnedRng Is Nothing Then
             Set outRng = .Cells(DataStartRow(), endCol + 2)
-            Set outRng = outRng.Resize(returnedRng.Rows.Count, returnedRng.Columns.Count)
+            Set outRng = .Range(outRng, outRng.Offset(returnedRng.Rows.Count - 1, returnedRng.Columns.Count))
             returnedRng.Copy
             outRng.PasteSpecial xlPasteValues
 
             returnedData.FromExcelRange outRng, DetectLastRow:=False, _
                                         DetectLastColumn:=False
-            outRng.Cells.ClearContents
+            On Error Resume Next
+                 .AutoFilter.ShowAllData
+                dataRng.AutoFilter.ShowAllData
+                If .AutoFilterMode Then .AutoFilterMode = False
+            On Error GoTo 0
+
+            outRng.ClearContents
         End If
     End With
 
@@ -616,6 +620,7 @@ Private Function FiltersData(ByVal varData As BetterArray, _
         On Error Resume Next
         .AutoFilter.ShowAllData
         dataRng.AutoFilter.ShowAllData
+        If .AutoFilterMode Then .AutoFilterMode = False
         On Error GoTo 0
 
         'end row and end columns of data to return
