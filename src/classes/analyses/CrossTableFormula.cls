@@ -30,7 +30,7 @@ Implements ICrossTableFormula
 'interface.
 '@depends ICrossTable, IFormulaData, IFormulas, Formulas, IFormulaCondition, FormulaCondition, ITableSpecs, ISpatialTables, SpatialTables, BetterArray
 '@version 1.0 (2026-02-10)
-'@author Yves Amevoin
+
 
 Private Type TCrossTableFormula
     tabl As ICrossTable

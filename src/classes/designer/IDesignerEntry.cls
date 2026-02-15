@@ -21,7 +21,7 @@ Option Explicit
 'Defines the public contract for the DesignerEntry class, exposing
 'methods to bind to a designer entry worksheet, inject test doubles for
 'the entry manager and translation provider, clear user input ranges,
-'and translate the worksheet to a given language code.
+'and translate the worksheet to a given language.
 
 
 '@section Lifecycle
@@ -50,11 +50,11 @@ End Sub
 '@jump:use-translator
 '@sub-title Swap in a custom translations provider
 '@details
-'Replaces the internally resolved IDesTranslation translator with the
+'Replaces the internally resolved IDesignerTranslation translator with the
 'supplied instance. Primarily used in tests to inject a stub or mock.
-'@param translator IDesTranslation. The translations provider to use.
+'@param translator IDesignerTranslation. The translations provider to use.
 '@export
-Public Sub UseTranslator(ByVal translator As IDesTranslation)
+Public Sub UseTranslator(ByVal translator As IDesignerTranslation)
 End Sub
 
 
@@ -71,15 +71,15 @@ Public Sub Clear()
 End Sub
 
 '@jump:translate
-'@sub-title Translate the configured worksheet to the provided language code
+'@sub-title Translate the configured worksheet to the provided language
 '@details
-'When a non-empty language code is supplied, updates the language code
-'range on the translation sheet before translating. Then delegates to
-'the translations provider to apply translated labels, shapes, and
-'dropdowns to the configured worksheet.
-'@param languageCode Optional String. ISO language code to apply. Defaults to vbNullString.
+'Delegates to the translations provider to apply translated labels,
+'shapes, and dropdowns to the configured worksheet. When a non-empty
+'language string is supplied (e.g. "FRA - Francais"), the translator
+'extracts the language code and persists it.
+'@param language Optional String. Language string in "CODE - Label" format. Defaults to vbNullString.
 '@export
-Public Sub Translate(Optional ByVal languageCode As String = vbNullString)
+Public Sub Translate(Optional ByVal language As String = vbNullString)
 End Sub
 
 

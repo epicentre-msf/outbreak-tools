@@ -7,20 +7,20 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = True
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
-Attribute VB_Description = "Stub implementation of IDesTranslation for designer ribbon tests"
+Attribute VB_Description = "Stub implementation of IDesignerTranslation for designer ribbon tests"
 
 '@Folder("Tests.Stubs")
-'@ModuleDescription("Stub implementation of IDesTranslation for designer ribbon tests.")
-'@depends IDesTranslation
+'@ModuleDescription("Stub implementation of IDesignerTranslation for designer ribbon tests.")
+'@depends IDesignerTranslation
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed, UseMeaningfulName, SuperfluousAnnotationArgument
 
 Option Explicit
-Implements IDesTranslation
+Implements IDesignerTranslation
 
 Private Type TDesignerTranslationStub
-    LangRange As Range
     TranslateCalled As Boolean
     TargetSheet As Worksheet
+    Language As String
     Messages As Collection
 End Type
 
@@ -28,10 +28,6 @@ Private this As TDesignerTranslationStub
 
 Private Sub Class_Initialize()
     Set this.Messages = New Collection
-End Sub
-
-Public Sub SetLanguageRange(ByVal langRange As Range)
-    Set this.LangRange = langRange
 End Sub
 
 Public Sub SetMessage(ByVal msgCode As String, ByVal messageText As String)
@@ -49,27 +45,28 @@ Public Property Get TargetSheet() As Worksheet
     Set TargetSheet = this.TargetSheet
 End Property
 
-'@section IDesTranslation implementation
-'===============================================================================
-Private Property Get IDesTranslation_TransObject(Optional ByVal trans As Byte = TranslationOfMessages) As ITranslationObject
-    Set IDesTranslation_TransObject = Nothing
+Public Property Get LastLanguage() As String
+    LastLanguage = this.Language
 End Property
 
-Private Sub IDesTranslation_TranslateDesigner(ByVal mainsh As Worksheet)
+'@section IDesignerTranslation implementation
+'===============================================================================
+Private Property Get IDesignerTranslation_TransObject(Optional ByVal trans As Byte = TranslationOfMessages) As ITranslationObject
+    Set IDesignerTranslation_TransObject = Nothing
+End Property
+
+Private Sub IDesignerTranslation_TranslateDesigner(ByVal mainsh As Worksheet, ByVal language As String)
     this.TranslateCalled = True
     Set this.TargetSheet = mainsh
+    this.Language = language
 End Sub
 
-Private Property Get IDesTranslation_LangListRng() As Range
-    Set IDesTranslation_LangListRng = this.LangRange
-End Property
-
-Private Function IDesTranslation_TranslationMsg(ByVal msgCode As String) As String
+Private Function IDesignerTranslation_TranslatedValue(ByVal msgCode As String) As String
     On Error Resume Next
-        IDesTranslation_TranslationMsg = CStr(this.Messages.Item(msgCode))
+        IDesignerTranslation_TranslatedValue = CStr(this.Messages.Item(msgCode))
     On Error GoTo 0
 
-    If LenB(IDesTranslation_TranslationMsg) = 0 Then
-        IDesTranslation_TranslationMsg = msgCode
+    If LenB(IDesignerTranslation_TranslatedValue) = 0 Then
+        IDesignerTranslation_TranslatedValue = msgCode
     End If
 End Function

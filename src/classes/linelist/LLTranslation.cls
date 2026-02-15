@@ -27,7 +27,7 @@ Implements ILLTranslation
 '@depends ITranslationObject, TranslationObject, ICustomTable, CustomTable
 '@depends IHiddenNames, HiddenNames, BetterArray
 '@version 1.0 (2026-02-10)
-'@author Yves Amevoin
+
 
 
 '@section State

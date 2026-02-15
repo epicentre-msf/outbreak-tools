@@ -27,7 +27,7 @@ Implements IAnaTabIds
 'series, spatial, spatio-temporal).
 '@depends CustomTable, Graphs, IGraphs, BetterArray, IFormulas
 '@version 2025-01-15
-'@author Yves Amevoin
+
 
 Private Type TAnaIds
     sh As Worksheet

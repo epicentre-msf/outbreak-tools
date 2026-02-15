@@ -77,19 +77,19 @@ Private Property Get IMain_LinelistPassWord() As String
     IMain_LinelistPassWord = this.Password
 End Property
 
-Private Sub IMain_AddInfo(ByVal trads As IDesTranslation, ByVal msgCode As String, Optional ByVal infoName As String = "edition")
+Private Sub IMain_AddInfo(ByVal trads As IDesignerTranslation, ByVal msgCode As String, Optional ByVal infoName As String = "edition")
     'No-op for stub
 End Sub
 
-Private Sub IMain_CheckReadiness(ByVal trads As IDesTranslation)
+Private Sub IMain_CheckReadiness(ByVal trads As IDesignerTranslation)
     'No-op for stub
 End Sub
 
-Private Sub IMain_CheckWarnings(ByVal trads As IDesTranslation, Optional ByVal passversion As String = vbNullString)
+Private Sub IMain_CheckWarnings(ByVal trads As IDesignerTranslation, Optional ByVal passversion As String = vbNullString)
     'No-op for stub
 End Sub
 
-Private Sub IMain_CheckFileExistence(ByVal trads As IDesTranslation)
+Private Sub IMain_CheckFileExistence(ByVal trads As IDesignerTranslation)
     'No-op for stub
 End Sub
 
@@ -110,6 +110,6 @@ Private Property Get IMain_HasTemplate() As Boolean
     IMain_HasTemplate = this.TemplateAvailable
 End Property
 
-Private Sub IMain_CheckRibbonExistence(ByVal trads As IDesTranslation)
+Private Sub IMain_CheckRibbonExistence(ByVal trads As IDesignerTranslation)
     'No-op for stub
 End Sub

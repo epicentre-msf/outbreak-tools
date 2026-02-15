@@ -19,9 +19,9 @@ Option Explicit
 '@class IDesignerPreparation
 '@description
 'Defines the public contract for the DesignerPreparation class, exposing
-'methods to bind to a designer workbook, run preparation tasks, and
-'persist or read ribbon checkbox flags (alert/instruct) through
-'workbook-level hidden names.
+'methods to bind to a designer workbook, run full preparation tasks
+'(import translations, hide worksheets, seed HiddenNames flags), and
+'persist or read ribbon checkbox flags through workbook-level hidden names.
 
 
 '@section Lifecycle
@@ -38,12 +38,14 @@ Public Sub Configure(ByVal hostBook As Workbook)
 End Sub
 
 '@jump:prepare
-'@sub-title Execute preparation tasks using the supplied development manager
+'@sub-title Execute all preparation tasks on the designer workbook
 '@details
-'Ensures the hidden names store and default ribbon flags exist on the
-'host workbook. The devManager parameter is accepted for interface parity
-'with setup preparation but is not currently used for designer-specific
-'work.
+'Runs the full preparation sequence: prompts the user to select a
+'translations workbook via OSFiles, imports translation tables into
+'LinelistTranslation and DesignerTranslation sheets, hides internal
+'worksheets (VeryHidden for __pass/__formatter/__formula, Hidden for
+'translation sheets), ensures workbook- and worksheet-level HiddenNames
+'flags, and registers hidden sheets with the development manager.
 '@param devManager IDevelopment. ByRef development manager instance, or Nothing.
 '@export
 Public Sub Prepare(ByRef devManager As IDevelopment)
