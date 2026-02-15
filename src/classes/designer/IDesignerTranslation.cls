@@ -2,7 +2,7 @@ VERSION 1.0 CLASS
 BEGIN
   MultiUse = -1  'True
 END
-Attribute VB_Name = "IDesTranslation"
+Attribute VB_Name = "IDesignerTranslation"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
@@ -16,14 +16,23 @@ Attribute VB_Description = "Interface for designer translation management"
 
 Option Explicit
 
-'@class IDesTranslation
+'@class IDesignerTranslation
 '@description
-'Defines the public contract for the DesTranslation class, exposing
+'Defines the public contract for the DesignerTranslation class, exposing
 'methods to retrieve translation objects for different content types
 '(messages, shapes, ranges, dropdowns), translate an entire designer
-'worksheet, resolve the language list range, and look up individual
-'translated message values.
+'worksheet with a language string, and look up individual translated
+'message values. The language code is persisted as a worksheet-level
+'HiddenName for cross-session persistence.
 
+
+
+Public Enum DesignerTranslationScope
+    DesignerTranslationOfMessages = 0
+    DesignerTranslationOfShapes = 2
+    DesignerTranslationOfRanges = 5
+    DesignerTranslationOfDropdowns = 6
+End Enum
 
 '@section Properties
 '===============================================================================
@@ -38,17 +47,7 @@ Option Explicit
 '@param trans Optional Byte. TranslationType value selecting the content scope. Defaults to TranslationOfMessages.
 '@return ITranslationObject. The translation object for the requested scope.
 '@export
-Public Property Get TransObject(Optional ByVal trans As Byte = TranslationOfMessages) As ITranslationObject: End Property
-
-'@jump:lang-list-rng
-'@prop-title Language list range on the translation sheet
-'@details
-'Returns the first cell of the LangDictList named range on the
-'translation sheet. Used by consumers to read or write the current
-'language code.
-'@return Range. The language list range cell.
-'@export
-Public Property Get LangListRng() As Range: End Property
+Public Property Get TransObject(Optional ByVal trans As Byte = DesignerTranslationOfMessages) As ITranslationObject: End Property
 
 
 '@section Methods
@@ -58,13 +57,15 @@ Public Property Get LangListRng() As Range: End Property
 '@sub-title Translate an entire designer worksheet
 '@details
 'Applies translations to all shapes, named ranges, and dropdown
-'validations on the supplied worksheet. Reads shape names, range codes,
-'and dropdown codes from the translation ListObjects and replaces their
-'content with translated values in the current designer language. Exits
-'silently when no language code is configured.
+'validations on the supplied worksheet. When a non-empty language string
+'is provided (e.g. "FRA - Francais"), extracts the language code and
+'persists it to the worksheet-level HiddenName. When language is empty,
+'reads the stored language code from the HiddenName. Exits silently
+'when no language code is available.
 '@param mainsh Worksheet. The designer worksheet to translate.
+'@param language String. Language string in "CODE - Label" format (e.g. "FRA - Francais"). Pass vbNullString to use the stored language.
 '@export
-Public Sub TranslateDesigner(ByVal mainsh As Worksheet): End Sub
+Public Sub TranslateDesigner(ByVal mainsh As Worksheet, ByVal language As String): End Sub
 
 '@jump:translation-msg
 '@sub-title Get the translated value of a message code
@@ -74,4 +75,4 @@ Public Sub TranslateDesigner(ByVal mainsh As Worksheet): End Sub
 '@param msgCode String. The message code to translate.
 '@return String. The translated message text.
 '@export
-Public Function TranslationMsg(ByVal msgCode As String) As String: End Function
+Public Function TranslatedValue(ByVal msgCode As String) As String: End Function

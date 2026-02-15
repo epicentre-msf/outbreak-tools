@@ -27,15 +27,15 @@ Implements ILinelistSpecs
 'user-facing error dialogs. Uses a PredeclaredId factory pattern so callers
 'construct instances via LinelistSpecs.Create(workbook) and receive an
 'ILinelistSpecs interface reference.
-'@depends ILLdictionary, ILLChoices, ILLTranslation, IDesTranslation
+'@depends ILLdictionary, ILLChoices, ILLTranslation, IDesignerTranslation
 '@depends ILLGeo, ILLExport, ILLAnalysis, IPasswords, ILLFormat
 '@depends IFormulaData, IMain, ILLVariables, IFormulas
 '@depends ITranslationObject, IApplicationState, ApplicationState
 '@depends BetterArray, LLdictionary, LLChoices, LLTranslation
-'@depends DesTranslation, LLGeo, LLExport, Analysis, Passwords
+'@depends DesignerTranslation, LLGeo, LLExport, Analysis, Passwords
 '@depends LLFormat, FormulaData, Main, LLVariables, Formulas
 '@version 1.0 (2026-02-09)
-'@author Yves Amevoin
+
 
 
 '@section State
@@ -47,7 +47,7 @@ Private Type TLinelistSpecs
     dictionary As ILLdictionary
     choices As ILLChoices
     translations As ILLTranslation
-    designerTranslations As IDesTranslation
+    designerTranslations As IDesignerTranslation
     geo As ILLGeo
     exports As ILLExport
     analysis As ILLAnalysis
@@ -797,7 +797,7 @@ Private Sub EnsureDesignerTranslations()
     If this.designerTranslations Is Nothing Then
         Dim designerSheet As Worksheet
         Set designerSheet = ResolveSheet(SHEET_DESIGNER_TRANSLATION)
-        Set this.designerTranslations = DesTranslation.Create(designerSheet)
+        Set this.designerTranslations = DesignerTranslation.Create(designerSheet)
     End If
 End Sub
 
@@ -1279,11 +1279,11 @@ End Property
 '@label:designer-translations
 '@prop-title Designer translation accessor
 '@details
-'Returns the IDesTranslation instance providing designer UI translations
+'Returns the IDesignerTranslation instance providing designer UI translations
 'from the DesignerTranslation worksheet. Lazy-loaded on first access.
-'@return IDesTranslation. The designer translation collaborator.
+'@return IDesignerTranslation. The designer translation collaborator.
 '@export
-Public Property Get DesignerTranslations() As IDesTranslation
+Public Property Get DesignerTranslations() As IDesignerTranslation
     EnsureDesignerTranslations
     Set DesignerTranslations = this.designerTranslations
 End Property
@@ -1407,7 +1407,7 @@ End Property
 '@export
 Public Sub Prepare()
     Dim mainObj As IMain
-    Dim designerTrads As IDesTranslation
+    Dim designerTrads As IDesignerTranslation
     Dim setupPath As String
     Dim geoPath As String
     Dim dict As ILLdictionary
@@ -1627,9 +1627,9 @@ Public Sub TestAssignMain(ByVal mainObj As IMain)
 End Sub
 
 '@label:test-assign-designer-translations
-'@sub-title Inject a mock IDesTranslation instance for testing
-'@param designerTrads IDesTranslation. The mock designer translations object.
-Public Sub TestAssignDesignerTranslations(ByVal designerTrads As IDesTranslation)
+'@sub-title Inject a mock IDesignerTranslation instance for testing
+'@param designerTrads IDesignerTranslation. The mock designer translations object.
+Public Sub TestAssignDesignerTranslations(ByVal designerTrads As IDesignerTranslation)
     Set this.designerTranslations = designerTrads
 End Sub
 
@@ -1698,7 +1698,7 @@ Private Property Get ILinelistSpecs_Translations() As ILLTranslation
     Set ILinelistSpecs_Translations = Me.Translations
 End Property
 
-Private Property Get ILinelistSpecs_DesignerTranslations() As IDesTranslation
+Private Property Get ILinelistSpecs_DesignerTranslations() As IDesignerTranslation
     Set ILinelistSpecs_DesignerTranslations = Me.DesignerTranslations
 End Property
 

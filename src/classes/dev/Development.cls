@@ -28,7 +28,7 @@ Implements IDevelopment
 'pattern (Development.Create).
 '@depends BetterArray, IPasswords
 '@version 1.0 (2026-02-09)
-'@author Yves Amevoin
+
 
 
 Private Type TDevelopment

@@ -1,124 +1,74 @@
-Attribute VB_Name = "EventsDesignerRibbon"
+Attribute VB_Name = "EventsDesignerCore"
 Option Explicit
 
 '@Folder("Designer")
 '@ModuleDescription("Ribbon callbacks for the designer workbook.")
-'@depends DesignerEntry, IDesignerEntry, DesignerPreparation, IDesignerPreparation, RibbonDev, LLGeo, ILLGeo, OSFiles, IOSFiles, BetterArray, CustomTable, ICustomTable, Passwords, IPasswords, LLFormat, ApplicationState, IApplicationState, DesTranslation, IDesTranslation
+'@depends DesignerPreparation, IDesignerPreparation, RibbonDev, OSFiles, IOSFiles, BetterArray, CustomTable, ICustomTable, Passwords, IPasswords, LLFormat, ILLFormat, ApplicationState, IApplicationState, DesignerTranslation, IDesignerTranslation
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
-Private Const SHEET_GEO As String = "Geo"
-Private Const SHEET_FORMAT As String = "LinelistStyle"
+Private Const SHEET_FORMAT As String = "__formatter"
+Private Const DESTRADSSHEET As String = "DesignerTranslation"
+Private Const MAINSHEET As String = "Main"
 Private Const PROMPT_TITLE As String = "Designer"
 
-Private gRibbon As IRibbonUI
-
+Private trads As IDesignerTranslation
+Private prep As IDesignerPreparation
 
 '@section Ribbon lifecycle
 '===============================================================================
-'@Description("Capture the ribbon instance when the UI loads.")
-'@EntryPoint
-Public Sub ribbonLoaded(ByRef ribbon As IRibbonUI)
-    Static ribbonRegistered As Boolean
-
-    If ribbonRegistered Then Exit Sub
-
-    Set gRibbon = ribbon
-    ribbonRegistered = True
-End Sub
-
-'@Description("Return the captured ribbon instance when available.")
-Public Function ActualRibbon() As IRibbonUI
-    If Not gRibbon Is Nothing Then
-        Set ActualRibbon = gRibbon
-    Else
-        Set ActualRibbon = RibbonDev.ActualRibbon
-    End If
-End Function
 
 '@Description("Return the translated label for a control; fallback to the control id.")
 '@EntryPoint
 Public Sub LangLabel(ByRef control As IRibbonControl, ByRef returnedVal)
-    Dim translations As IDesTranslation
 
     On Error GoTo Fallback
-    Set translations = ResolveTranslations()
-    returnedVal = translations.TranslationMsg(control.Id)
+    EnsureTranslation
+    If trads Is Nothing Then GoTo Fallback
+    returnedVal = trads.TranslatedValue(control.Id)
     Exit Sub
 
 Fallback:
     returnedVal = control.Id
 End Sub
 
+Private Sub EnsureTranslation()
 
-'@section Manage group callbacks
-'===============================================================================
-'@Description("Delete geobase content from the Geo worksheet.")
-'@EntryPoint
-Public Sub clickDelGeo(ByRef control As IRibbonControl)
-    Dim geoSheet As Worksheet
-    Dim geo As ILLGeo
-    Dim appScope As IApplicationState
+    On Error Resume Next
+    Dim sh As Worksheet
+    Set sh = ThisWorkbook.Worksheets(DESTRADSSHEET)
+    On Error GoTo 0
 
-    On Error GoTo Cleanup
+    If sh Is Nothing Then Exit Sub
 
-    Set geoSheet = ThisWorkbook.Worksheets(SHEET_GEO)
-    Set geo = LLGeo.Create(geoSheet)
-    Set appScope = ApplicationState.Create(Application)
-    appScope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
-
-    geo.Clear
-
-Cleanup:
-    If Not appScope Is Nothing Then appScope.Restore
-    If Err.Number <> 0 Then
-        Debug.Print "clickDelGeo: "; Err.Number; Err.Description
-        MsgBox "Unable to clear the geobase: " & Err.Description, vbExclamation + vbOKOnly, PROMPT_TITLE
-        Err.Clear
+    On Error Resume Next
+    If trads Is Nothing Then
+        Set trads = DesignerTranslation.Create(sh)
     End If
+    On Error GoTo 0
 End Sub
 
-'@Description("Clear designer entry ranges on the active worksheet.")
-'@EntryPoint
-Public Sub clickClearEnt(ByRef control As IRibbonControl)
-    Dim targetSheet As Worksheet
-    Dim entry As IDesignerEntry
-    Dim appScope As IApplicationState
-
-    If Not TypeName(ActiveSheet) = "Worksheet" Then Exit Sub
-    Set targetSheet = ActiveSheet
-
-    On Error GoTo Cleanup
-    Set appScope = ApplicationState.Create(Application)
-    appScope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
-
-    Set entry = DesignerEntry.Create(targetSheet)
-    entry.Clear
-
-Cleanup:
-    If Not appScope Is Nothing Then appScope.Restore
-    If Err.Number <> 0 Then
-        Debug.Print "clickClearEnt: "; Err.Number; Err.Description
-        MsgBox "Unable to clear entries: " & Err.Description, vbExclamation + vbOKOnly, PROMPT_TITLE
-        Err.Clear
-    End If
+Private Sub InvalidateRibbon()
+    Dim ribbon As IRibbonUI
+    Set ribbon = RibbonDev.ActualRibbon()
+    If Not ribbon Is Nothing Then ribbon.Invalidate
 End Sub
+
 
 '@Description("Switch designer language and re-run translations.")
 '@EntryPoint
 Public Sub clickLangChange(ByRef control As IRibbonControl, ByRef langId As String, ByRef Index As Integer)
     Dim targetSheet As Worksheet
-    Dim entry As IDesignerEntry
     Dim appScope As IApplicationState
 
-    If Not TypeName(ActiveSheet) = "Worksheet" Then Exit Sub
-    Set targetSheet = ActiveSheet
-
     On Error GoTo Cleanup
+    Set targetSheet = ThisWorkbook.Worksheets(MAINSHEET)
     Set appScope = ApplicationState.Create(Application)
-    appScope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
 
-    Set entry = DesignerEntry.Create(targetSheet)
-    entry.Translate langId
+    appScope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
+    EnsureTranslation
+
+    If trads Is Nothing Then GoTo Cleanup
+    trads.TranslateDesigner targetSheet, langId
     InvalidateRibbon
 
 Cleanup:
@@ -170,8 +120,12 @@ Public Sub clickImpTrans(ByRef control As IRibbonControl)
 
     For idx = sheetNames.LowerBound To sheetNames.UpperBound
         sheetName = sheetNames.Item(idx)
+        On Error Resume Next
         Set targetSheet = targetBook.Worksheets(CStr(sheetName))
         Set sourceSheet = importBook.Worksheets(CStr(sheetName))
+        On Error GoTo 0
+
+        If (targetSheet Is Nothing) Or (sourceSheet Is Nothing) Then GoTo Cleanup
 
         For Each lo In targetSheet.ListObjects
             If tableNames.Includes(LCase$(lo.Name)) Then
@@ -180,8 +134,6 @@ Public Sub clickImpTrans(ByRef control As IRibbonControl)
                 targetTable.Import sourceTable
             End If
         Next lo
-
-        targetSheet.Calculate
     Next idx
 
     MsgBox "Done!", vbInformation + vbOKOnly, PROMPT_TITLE
@@ -286,7 +238,7 @@ End Sub
 '@Description("Initialise checkbox state for alerts from persisted hidden names.")
 '@EntryPoint
 Public Sub initMainAlert(ByRef control As IRibbonControl, ByRef returnedVal)
-    returnedVal = ResolvePreparation().GetFlag("chkAlert", False)
+    returnedVal = ResolvePreparation().GetFlag("chkAlert", True)
 End Sub
 
 '@Description("Persist alert checkbox state.")
@@ -298,7 +250,7 @@ End Sub
 '@Description("Initialise checkbox state for instructions from persisted hidden names.")
 '@EntryPoint
 Public Sub initMainInstruct(ByRef control As IRibbonControl, ByRef returnedVal)
-    returnedVal = ResolvePreparation().GetFlag("chkInstruct", False)
+    returnedVal = ResolvePreparation().GetFlag("chkInstruct", True)
 End Sub
 
 '@Description("Persist instruction checkbox state.")
@@ -308,106 +260,13 @@ Public Sub clickMainInstruct(ByRef control As IRibbonControl, ByVal pressed As B
 End Sub
 
 
-'@section Multi group callbacks (to be implemented later)
+'@section Internal helpers
 '===============================================================================
-Public Sub clickFolderMulti(ByRef control As IRibbonControl)
-    NotifyPlannedWork
-End Sub
 
-Public Sub clickDupMulti(ByRef control As IRibbonControl)
-    NotifyPlannedWork
-End Sub
-
-Public Sub clickAddRowsMulti(ByRef control As IRibbonControl)
-    NotifyPlannedWork
-End Sub
-
-Public Sub clickResizeMulti(ByRef control As IRibbonControl)
-    NotifyPlannedWork
-End Sub
-
-Public Sub clickImpMulti(ByRef control As IRibbonControl)
-    NotifyPlannedWork
-End Sub
-
-Public Sub clickExportMulti(ByRef control As IRibbonControl)
-    NotifyPlannedWork
-End Sub
-
-
-'@section Dev group callbacks
-'===============================================================================
-'@Description("Initialise designer preparation using development helpers.")
-'@EntryPoint
-Public Sub clickDevInitialize(ByRef control As IRibbonControl)
-    Dim prep As IDesignerPreparation
-
-    Set prep = ResolvePreparation()
-    prep.Prepare RibbonDev.EnsureDevelopment()
-    MsgBox "Done!", vbInformation + vbOKOnly, PROMPT_TITLE
-End Sub
-
-Public Sub clickDevFolder(ByRef control As IRibbonControl)
-    RibbonDev.clickDevFolder control
-End Sub
-
-Public Sub clickDevImport(ByRef control As IRibbonControl)
-    RibbonDev.clickDevImport control
-End Sub
-
-Public Sub clickDevExport(ByRef control As IRibbonControl)
-    RibbonDev.clickDevExport control
-End Sub
-
-Public Sub clickDevVBE(ByRef control As IRibbonControl)
-    RibbonDev.clickDevVBE control
-End Sub
-
-Public Sub clickDevDeploy(ByRef control As IRibbonControl)
-    RibbonDev.clickDevDeploy control
-End Sub
-
-Public Sub clickDevAddRows(ByRef control As IRibbonControl)
-    RibbonDev.clickDevAddRows control
-End Sub
-
-Public Sub clicDevResize(ByRef control As IRibbonControl)
-    RibbonDev.clicDevResize control
-End Sub
-
-Public Sub clicDevAddFormTable(ByRef control As IRibbonControl)
-    RibbonDev.clicDevAddFormTable control
-End Sub
-
-Public Sub clickDevAddClassTable(ByRef control As IRibbonControl)
-    RibbonDev.clickDevAddClassTable control
-End Sub
-
-Public Sub clickDevAddFormTable(ByRef control As IRibbonControl)
-    RibbonDev.clickDevAddFormTable control
-End Sub
-
-Public Sub clickDevAddModulesTable(ByRef control As IRibbonControl)
-    RibbonDev.clickDevAddModulesTable control
-End Sub
-
-
-'@section Helpers
-'===============================================================================
-Private Sub NotifyPlannedWork()
-    MsgBox "This ribbon action will be implemented in a future update.", vbInformation + vbOKOnly, PROMPT_TITLE
-End Sub
-
-Private Sub InvalidateRibbon()
-    Dim ribbon As IRibbonUI
-    Set ribbon = ActualRibbon()
-    If Not ribbon Is Nothing Then ribbon.Invalidate
-End Sub
-
+'@Description("Lazily resolve and cache the designer preparation helper bound to ThisWorkbook.")
 Private Function ResolvePreparation() As IDesignerPreparation
-    Set ResolvePreparation = DesignerPreparation.Create(ThisWorkbook)
-End Function
-
-Private Function ResolveTranslations() As IDesTranslation
-    Set ResolveTranslations = DesTranslation.Create(ThisWorkbook.Worksheets("DesignerTranslation"))
+    If prep Is Nothing Then
+        Set prep = DesignerPreparation.Create(ThisWorkbook)
+    End If
+    Set ResolvePreparation = prep
 End Function

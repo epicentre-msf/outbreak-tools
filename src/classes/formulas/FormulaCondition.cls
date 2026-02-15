@@ -27,7 +27,7 @@ Implements IFormulaCondition
 'Consumers interact through the IFormulaCondition interface.
 '@depends BetterArray, Checking, LLVariables, LLdictionary
 '@version 1.0 (2026-02-09)
-'@author Yves Amevoin
+
 
 
 '@section State

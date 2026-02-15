@@ -26,7 +26,7 @@ Implements ITemporaryRepos
 'directory. Automatically deletes all content on termination.
 '@depends ProjectError
 '@version 1.0 (2026-02-09)
-'@author Yves Amevoin
+
 
 '@section State and constants
 '===============================================================================

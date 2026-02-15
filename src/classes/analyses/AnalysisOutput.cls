@@ -27,7 +27,7 @@ Implements IAnalysisOutput
 'renders charts. Consumers interact through the IAnalysisOutput interface.
 '@depends ILinelist, ILinelistSpecs, ILLFormat, ITranslationObject, ITableSpecs, ICrossTable, ICrossTableFormula, IGraphSpecs, IGraphs, IAnaTabIds, IButtons, IPasswords, IDropdownLists, ILLdictionary, ILLVariables, IFormulaData, IMain, BetterArray
 '@version 1.0 (2026-02-10)
-'@author Yves Amevoin
+
 
 Private Const UPDATEFILTERCOMMAND As String = "UpdateFilterTables"
 Private Const SHPFILTERNAME As String = "SHP_Filter"
