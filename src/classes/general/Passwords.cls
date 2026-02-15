@@ -388,7 +388,7 @@ Private Sub ProtectSheet(sheetObject As Variant, _
 
 
     If registerState Then PersistProtectionSettings targetSheet.Name, allowDraw, allowDelete
-    ApplySheetProtection targetSheet, allowDraw, allowDelete
+    ApplySheetProtection targetSheet, allowDraw, allowDelete, TagValue(PasswordTagDebug)
 End Sub
 
 '@label:unprotect-sheet
@@ -1076,21 +1076,26 @@ Private Sub ApplyProtectionMatrix(ByVal wb As Workbook)
     Dim sheetName As String
     Dim allowShapesValue As Boolean
     Dim allowDeleteRows As Boolean
-
+    Dim data As Variant
+    Dim pwd As String
 
     Set Lo = ProtectedSheetsTable()
     Set bodyRange = Lo.DataBodyRange
 
     If bodyRange Is Nothing Then Exit Sub
 
-    For rowIdx = 1 To bodyRange.Rows.Count
-        sheetName = CStr(bodyRange.Cells(rowIdx, 1).Value)
+    'Read password once (same for all sheets) and bulk-read the table
+    pwd = TagValue(PasswordTagDebug)
+    data = bodyRange.Value2
+
+    For rowIdx = 1 To UBound(data, 1)
+        sheetName = CStr(data(rowIdx, 1))
         If LenB(sheetName) = 0 Then GoTo NextRow
-        allowShapesValue = ParseBoolean(bodyRange.Cells(rowIdx, 2).Value)
-        allowDeleteRows = ParseBoolean(bodyRange.Cells(rowIdx, 3).Value)
+        allowShapesValue = ParseBoolean(data(rowIdx, 2))
+        allowDeleteRows = ParseBoolean(data(rowIdx, 3))
 
         On Error Resume Next
-            ApplySheetProtection wb.Worksheets(sheetName), allowShapesValue, allowDeleteRows
+            ApplySheetProtection wb.Worksheets(sheetName), allowShapesValue, allowDeleteRows, pwd
         On Error GoTo 0
 NextRow:
     Next rowIdx
@@ -1100,13 +1105,9 @@ End Sub
 '@sub-title Protect a worksheet using debugging password and capability flags
 Private Sub ApplySheetProtection(ByVal targetSheet As Worksheet, _
                                  ByVal allowShapes As Boolean, _
-                                 ByVal allowDeleting As Boolean)
+                                 ByVal allowDeleting As Boolean, _
+                                 ByVal pwd As String)
 
-
-    Dim pwd As String
-    pwd = TagValue(PasswordTagDebug)
-
-    Application.ScreenUpdating = False
     targetSheet.Protect Password:=pwd, _
         DrawingObjects:=(Not allowShapes), _
         Contents:=True, _

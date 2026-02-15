@@ -525,6 +525,42 @@ ExpectError:
     Err.Clear
 End Sub
 
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestUpdateFromRegistryKeepsEldestDuplicateRow()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestUpdateFromRegistryKeepsEldestDuplicateRow"
+    On Error GoTo Fail
+
+    'First update creates labels with sequence 1
+    Subject.UpdateFromRegistry RegistrySheet
+
+    'Manually add a duplicate "Hello" with an older tag (sequence 0)
+    Dim dupRow As ListRow
+    Set dupRow = TranslationsTable.ListRows.Add
+    dupRow.Range.Cells(1, 1).Value = "Hello"
+    dupRow.Range.Cells(1, 1).Offset(0, -1).Value = "EXTRA" & TAG_SEPARATOR & "0"
+
+    'Second update with all statuses "yes" triggers dedup
+    SetRegistryStatus "yes", "yes", "yes"
+    Subject.UpdateFromRegistry RegistrySheet
+
+    'After dedup only one "Hello" should remain with the oldest tag (sequence 0)
+    Dim helloCount As Long
+    Dim row As ListRow
+    For Each row In TranslationsTable.ListRows
+        If StrComp(CStr(row.Range.Cells(1, 1).Value), "Hello", vbBinaryCompare) = 0 Then
+            helloCount = helloCount + 1
+        End If
+    Next row
+
+    Assert.AreEqual CLng(1), helloCount, "Dedup should leave exactly one Hello row"
+    Assert.AreEqual "EXTRA" & TAG_SEPARATOR & "0", TagForLabel("Hello"), _
+                    "Dedup should keep the row with the oldest (lowest sequence) tag"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestUpdateFromRegistryKeepsEldestDuplicateRow", Err.Number, Err.Description
+End Sub
+
 '@section Helpers
 '===============================================================================
 Private Sub AssertSheetSetup()

@@ -936,6 +936,10 @@ Private Property Get IsUpdated(ByVal checkColName As String) As Boolean
   Dim columnLabel As String
   Dim rangeName As String
   Dim statusValue As String
+  Dim rangeData As Variant
+  Dim statusData As Variant
+  Dim labelData As Variant
+  Dim rowTotal As Long
 
   targetKey = NormalizeValue(checkColName)
   If targetKey = vbNullString Then Exit Property
@@ -952,10 +956,18 @@ Private Property Get IsUpdated(ByVal checkColName As String) As Boolean
     If statusColumn Is Nothing Then GoTo NextRegistry
     If labelColumn Is Nothing Then GoTo NextRegistry
 
-    For idx = 1 To rangeColumn.Rows.Count
-      rangeName = CStr(rangeColumn.Cells(idx, 1).Value)
-      columnLabel = CStr(labelColumn.Cells(idx, 1).Value)
-      statusValue = NormalizeValue(CStr(statusColumn.Cells(idx, 1).Value))
+    rowTotal = RowCount(rangeColumn)
+    If rowTotal = 0 Then GoTo NextRegistry
+
+    'Bulk-read all 3 columns (3 COM calls instead of 3*N cell reads)
+    rangeData = rangeColumn.Value2
+    statusData = statusColumn.Value2
+    labelData = labelColumn.Value2
+
+    For idx = 1 To rowTotal
+      rangeName = CStr(BulkValue(rangeData, idx, rowTotal))
+      columnLabel = CStr(BulkValue(labelData, idx, rowTotal))
+      statusValue = NormalizeValue(CStr(BulkValue(statusData, idx, rowTotal)))
 
       If ColumnMatchesIdentifier(columnLabel, rangeName, targetKey) Then
         IsUpdated = (statusValue = STATUS_UPDATED)
@@ -981,16 +993,28 @@ Private Sub CheckStatus(ByVal tagReference As Variant, ByVal Target As Range)
   Dim statusColumn As Range
   Dim idx As Long
   Dim rangeName As String
-  Dim statusCell As Range
   Dim namedRange As Range
   Dim registryName As String
   Dim rowRemoved As Boolean
   Dim newCount As Long
   Dim registryTag As String
+  Dim rangeData As Variant
+  Dim statusData As Variant
+  Dim rowTotal As Long
 
   If Target Is Nothing Then Exit Sub
 
   registryTag = RegistryTagFromVariant(tagReference)
+
+  'When a Worksheet is passed, RegistryTagFromVariant returns vbNullString.
+  'Fall back to the target's ListObject to scope the search to the correct
+  'registry rather than iterating every registry table on the sheet.
+  If NormalizeValue(registryTag) = vbNullString Then
+    If Not Target.ListObject Is Nothing Then
+      registryTag = Target.ListObject.Name
+    End If
+  End If
+
   If NormalizeValue(registryTag) <> vbNullString Then
     registryName = ResolveRegistryListName(registryTag)
   Else
@@ -1008,11 +1032,17 @@ Private Sub CheckStatus(ByVal tagReference As Variant, ByVal Target As Range)
     If rangeColumn Is Nothing Then GoTo NextRegistry
     If statusColumn Is Nothing Then GoTo NextRegistry
 
-    idx = RowCount(rangeColumn)
+    rowTotal = RowCount(rangeColumn)
+    If rowTotal = 0 Then GoTo NextRegistry
+
+    'Bulk-read both columns (2 COM calls instead of 2*N cell reads)
+    rangeData = rangeColumn.Value2
+    statusData = statusColumn.Value2
+
+    idx = rowTotal
 
     Do While idx >= 1
-      rangeName = CStr(rangeColumn.Cells(idx, 1).Value)
-      Set statusCell = statusColumn.Cells(idx, 1)
+      rangeName = CStr(BulkValue(rangeData, idx, rowTotal))
       rowRemoved = False
 
       If NormalizeValue(rangeName) = vbNullString Then
@@ -1023,7 +1053,7 @@ Private Sub CheckStatus(ByVal tagReference As Variant, ByVal Target As Range)
         GoTo NextIteration
       End If
 
-      If NormalizeValue(CStr(statusCell.Value)) = STATUS_UPDATED Then
+      If NormalizeValue(CStr(BulkValue(statusData, idx, rowTotal))) = STATUS_UPDATED Then
         GoTo NextIteration
       End If
 
@@ -1040,7 +1070,7 @@ Private Sub CheckStatus(ByVal tagReference As Variant, ByVal Target As Range)
         GoTo NextIteration
       End If
 
-      statusCell.Value = STATUS_UPDATED
+      statusColumn.Cells(idx, 1).Value = STATUS_UPDATED
       TrackLastRegistryName registry.Name
       Exit Sub
 
@@ -1048,10 +1078,14 @@ NextIteration:
       If Not rowRemoved Then
         idx = idx - 1
       Else
+        'Re-read arrays after row deletion
         Set rangeColumn = RegistryColumnData(registry, HEADER_RANGE_NAME)
         Set statusColumn = RegistryColumnData(registry, HEADER_STATUS)
         newCount = RowCount(rangeColumn)
         If newCount = 0 Then Exit Do
+        rowTotal = newCount
+        rangeData = rangeColumn.Value2
+        statusData = statusColumn.Value2
         If idx - 1 > newCount Then
           idx = newCount
         Else
@@ -1251,7 +1285,6 @@ Private Sub SwitchTags(ByVal value As String)
     Dim registries As Collection
     Dim registry As ListObject
     Dim rng As Range
-    Dim counter As Long
 
     Set registries = RegistryListObjects()
     If registries Is Nothing Then Exit Sub
@@ -1259,11 +1292,8 @@ Private Sub SwitchTags(ByVal value As String)
     For Each registry In registries
       Set rng = RegistryColumnData(registry, HEADER_STATUS)
       If Not rng Is Nothing Then
-        For counter = 1 To rng.Rows.Count
-          If NormalizeValue(CStr(rng.Cells(counter, 1).Value)) <> NormalizeValue(value) Then
-            rng.Cells(counter, 1).Value = value
-          End If
-        Next counter
+        'Bulk-write the entire status column in a single COM call
+        rng.Value = value
       End If
     Next registry
 End Sub
@@ -1288,12 +1318,21 @@ End Function
 
 '@label:registry-tag-from-variant
 '@sub-title Normalise a tag reference into a registry identifier string.
+'@details
+'Converts a Variant tag reference into a registry identifier:
+'- ListObject: returns ListObject.Name (scopes search to that table's registry).
+'- String: returns the string value (used as table name or registry identifier).
+'- Worksheet: returns vbNullString (caller should fall back to Target.ListObject).
+'@param tagReference Variant. The tag reference to normalise.
+'@return String. The registry identifier, or vbNullString when not resolvable.
 Private Function RegistryTagFromVariant(ByVal tagReference As Variant) As String
   If IsObject(tagReference) Then
     Select Case TypeName(tagReference)
       Case "ListObject"
         RegistryTagFromVariant = CStr(tagReference.Name)
       Case "Worksheet"
+        'A Worksheet has multiple ListObjects; the caller resolves via
+        'Target.ListObject instead of picking one here.
         RegistryTagFromVariant = vbNullString
       Case Else
         RegistryTagFromVariant = vbNullString
@@ -1438,6 +1477,23 @@ End Function
 '@sub-title Normalise text by trimming spaces and applying lower case.
 Private Function NormalizeValue(ByVal valueText As String) As String
   NormalizeValue = LCase$(Trim$(valueText))
+End Function
+
+'@label:bulk-value
+'@sub-title Read a value from a bulk-read .Value2 result.
+'@details
+'When a single-row Range is read via .Value2, VBA returns a scalar Variant
+'rather than a 2D array. This helper transparently handles both cases.
+'@param data Variant. The .Value2 result (scalar for 1 row, 2D array otherwise).
+'@param idx Long. The 1-based row index to read.
+'@param rowTotal Long. Total number of rows in the source range.
+'@return Variant. The cell value at the requested row.
+Private Function BulkValue(ByVal data As Variant, ByVal idx As Long, ByVal rowTotal As Long) As Variant
+  If rowTotal = 1 Then
+    BulkValue = data
+  Else
+    BulkValue = data(idx, 1)
+  End If
 End Function
 
 
