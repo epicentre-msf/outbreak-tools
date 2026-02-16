@@ -46,7 +46,7 @@ Public Sub checkUpdateStatus(ByVal sh As Worksheet, ByVal Target As Range)
     Dim wb As Workbook
     Dim choiObj As IChoices
     Dim pass As IPasswords
-    Dim ribTrads As ITranslation
+    Dim ribTrads As ITranslationObject
     Dim ribSh As Worksheet
 
     BusyApp
@@ -98,10 +98,10 @@ Public Sub UpdateDiseaseSheet(ByVal disSh As Worksheet, ByVal Target As Range)
 
     Dim Lo As ListObject
     Dim tradLo As ListObject
-    Dim ribTrads As ITranslation
+    Dim ribTrads As ITranslationObject
     Dim ribSh As Worksheet
     Dim varLo As ListObject
-    Dim trads As ITranslation
+    Dim trads As ITranslationObject
     Dim wb As Workbook
     Dim newLang As String
     Dim tradRng As Range
@@ -113,7 +113,7 @@ Public Sub UpdateDiseaseSheet(ByVal disSh As Worksheet, ByVal Target As Range)
     Dim statusValue As String
     Dim choiObj As IChoices
     Dim pass As IPasswords
-    Dim tradRib As ITranslation
+    Dim tradRib As ITranslationObject
 
     Set wb = ThisWorkbook
     Set ribSh = wb.Worksheets("__ribbonTranslation")
@@ -165,59 +165,5 @@ Public Sub UpdateDiseaseSheet(ByVal disSh As Worksheet, ByVal Target As Range)
         Next
     End If
 
-
-    'For core variables, update the visibility to always visible if possible
-    ' If Not (Intersect(Target, Lo.ListColumns(5).Range) Is Nothing) Then
-    '     For counter = 1 To Target.Rows.Count    
-    '         If Target.Cells(counter, 1).Value = ribTrads.TranslatedValue("coreVar") Then
-    '             On Error Resume Next
-    '                 Target.Cells(counter, 2).Value = ribTrads.TranslatedValue("alwaysVis")
-    '                 Target.Cells(counter, 2).Font.Color = RGB(59, 8, 145)
-    '                 Target.Cells(counter, 2).Font.Italic = True
-    '             On Error GoTo 0
-    '         Else
-    '             On Error Resume Next
-    '                 Target.Cells(counter, 2).ClearContents
-    '                 Target.Cells(counter, 2).Font.Color = vbBlack
-    '                 Target.Cells(counter, 2).Font.Italic = False
-    '             On Error GoTo 0
-    '         End If
-    '     Next
-    ' End If
-
     pass.Protect dissh
-End Sub
-
-
-'Filter the comparation report worksheet
-
-Public Sub ComparationSheet(ByVal Target As Range)
-    Dim wb As Workbook
-    Dim sh As Worksheet
-    Dim filterValue As String
-    Dim sheetRng As Range 'used range in the worksheet
-    Dim cellRng As Range 'corresponding cellRange
-    
-    On Error Resume Next
-
-    Set wb = ThisWorkbook
-    Set sh = wb.Worksheets("__compRep")
-    Set sheetRng = sh.UsedRange
-    If Intersect(Target, sh.Range("RNG_CheckingFilter")) Is Nothing Then Exit Sub
-    filterValue = Target.Value
-
-    If filterValue = vbNullString Then Exit Sub
-    sh.Cells.EntireRow.Hidden = False
-
-    If filterValue <> "All" Then
-        Set cellRng = sheetRng.Cells(sheetRng.Rows.Count, 1)
-        Do While cellRng.Row > sheetRng.Row
-            'Hide cells with values corresponding to those selected (keeping headers)
-            If (cellRng.Value <> filterValue) And (Not cellRng.Font.Size = 14) And (Not cellRng.Font.Size = 12) _
-             And (Not cellRng.Value = vbNullString) Then cellRng.EntireRow.Hidden = True
-            Set cellRng = cellRng.Offset(-1)
-        Loop
-    End If
-
-    On Error GoTo 0
 End Sub

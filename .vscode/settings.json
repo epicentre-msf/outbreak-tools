@@ -8,8 +8,8 @@
         "Rscripts/designer_prev.xlsb": true
     },
     "editor.lineNumbers": "on",
-    "editor.fontSize": 16,
-    "editor.fontFamily": "'Office Code Pro',  Menlo, 'Courier New', monospace",
+    "editor.fontSize": 14,
+    "editor.fontFamily": "'Fira Code', Menlo, 'Courier New', monospace",
     "editor.fontLigatures": true,
     "zenMode.hideStatusBar": false,
     "editor.minimap.scale": 1,
@@ -17,6 +17,22 @@
     "githubPullRequests.ignoredPullRequestBranches": [
         "dev"
     ],
+    "editor.rulers": [80, 120, 160],
+    "editor.inlineSuggest.enabled": false,
+    "terminal.integrated.fontSize": 16,
+    "terminal.integrated.fontFamily": "'Office Code Pro',  Menlo, 'Courier New', monospace",
+    "inline-bookmarks.default.words.green": "@prop\\-title[\\s]",
+    "inline-bookmarks.default.words.red": "@section[\\s]",
+    "inline-bookmarks.default.words.purple": "@sub\\-title[\\s]",
+    "inline-bookmarks.default.words.blue": "@fun\\-title[\\s]",
+    "inline-bookmarks.view.words.hide": false,
+    "inline-bookmarks.enable": true,
+    "inline-bookmarks.view.showVisibleFilesOnly": false,
+      "[r]": {
+        "editor.formatOnSave": true
+    },
+    "internalLinker.sourceFolders": ["src"],
+    "files.eol": "\r\n",
     "spellright.language": [
         "en"
     ],
@@ -24,21 +40,6 @@
         "markdown",
         "latex",
         "plaintext",
-        "vba"
-    ],
-    "spellright.parserByClass": {
-        "vba": {
-            "parser": "plain"
-        }
-    },
-    "r.lsp.promptToInstall": false,
-    "editor.rulers": [80, 120, 160],
-    "editor.inlineSuggest.enabled": false,
-    "terminal.integrated.fontSize": 16,
-    "terminal.integrated.fontFamily": "'Office Code Pro',  Menlo, 'Courier New', monospace",
-    "inline-bookmarks.default.words.blue": "@audit\\-info[\\s], @todo[\\s], @note[\\s], @remind[\\s], @info[\\s], @prop\\-title[\\s]",
-    "inline-bookmarks.default.words.green": "@audit\\-ok[\\s], @section[\\s], @sub\\-section[\\s]",
-    "inline-bookmarks.view.words.hide": false,
-    "inline-bookmarks.enable": true,
-    "inline-bookmarks.view.showVisibleFilesOnly": true
+        "VBA"
+    ]
 }

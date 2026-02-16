@@ -11,7 +11,7 @@ Private Const TRADTABLESHEET As String = "__ribbonTranslation"
 Private Const RNG_FileLang As String = "RNG_FileLang"
 Private Const DROPSHEET As String = "__dropdowns"
 
-'@IgnoreModule EmptyMethod
+'@IgnoreModule UnrecognizedAnnotation, EmptyMethod
 
 Public Sub TransferCodeWksh(ByVal sheetName As String)
 
@@ -57,7 +57,7 @@ Public Sub TranslateWbElmts(ByVal langId As String)
     Dim drop As IDropdownLists
     Dim sh As Worksheet
     Dim hRng As Range
-    Dim trads As ITranslation
+    Dim trads As ITranslationObject
     Dim selectValue As String
     
     Set wb = ThisWorkbook

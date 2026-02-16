@@ -1,12 +1,19 @@
 # create en empty file for creating an interface for each of the class
+pacman::p_load(here, glue)
 
+# @section Headers
+# ===============================================================================
 class_header <- function(
-    class_name, description = "", module_description = "",
-    interface = FALSE) { # nolint
+  class__name,
+  module_description = "",
+  interface = FALSE
+) {
+  # nolint
   interf <- ifelse(interface, "I", "")
   predeclare_id <- ifelse(interface, "False", "True")
 
-  glue::glue("
+  glue::glue(
+    "
 VERSION 1.0 CLASS
 BEGIN
   MultiUse = -1  'True
@@ -17,37 +24,42 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = {predeclare_id}
 Attribute VB_Exposed = False
-Attribute VB_Description = \"{description}\"
+Attribute VB_Description = \"{module_description}\"
 
 '@Folder(\"Dictionary\")
 '@ModuleDescription(\"{module_description}\")
-'@IgnoreModule
+'@IgnoreModule UnrecognizedAnnotation
 
 Option Explicit
-
-'Exposed methods
-")
+"
+  )
 }
 
 test_header <- function(class_name) {
   glue::glue(
     "
 Attribute VB_Name = \"Test{class_name}\"
+Attribute VB_Description = \"Tests for {class_name} class \"
 
 Option Explicit
-Option Private Module
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
+'@Folder(\"CustomTests\")
+'@ModuleDescription(\"Tests for {class_name} class \")
 
-'@TestModule
-'@Folder(\"Tests\")
-
-Private Assert As Object
-Private Fakes As Object
+Private Const TEST_OUTPUT_SHEET As String = \"testsOutputs\"
+'add other private constants if required
+  
+Private Assert As ICustomTest
 
 '@ModuleInitialize
 Private Sub ModuleInitialize()
+    BusyApp
+    EnsureWorksheet TEST_OUTPUT_SHEET, clearSheet:=False
     'this method runs once per module.
-    Set Assert = CreateObject(\"Rubberduck.AssertClass\")
-    Set Fakes = CreateObject(\"Rubberduck.FakesProvider\")
+    Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
+    Assert.SetModuleName = \"Test{class_name}\"
+
+    'Add other importants initialization logic
 End Sub
 
 '@ModuleCleanup
@@ -67,14 +79,30 @@ End Sub
   )
 }
 
-create_class <- function(class_name, description = "", module_description = "") { # nolint
+write_crlf <- function(path, contents) {
+  normalised <- gsub("\r?\n", "\n", contents, perl = TRUE)
+  crlf_text <- gsub("\n", "\r\n", normalised, fixed = TRUE)
+  con <- file(path, open = "wb")
+  on.exit(close(con))
+  writeBin(charToRaw(crlf_text), con)
+}
 
 
-  class_name_header <- class_header(class_name,
+create_class <- function(
+  class_path,
+  description = ""
+) {
+  class_name <- class_path |> basename() |> xfun::sans_ext()
+  folder_name <- class_path |> dirname() |> basename()
+  # nolint
+
+  class_name_header <- class_header(
+    class_name,
     description = description,
     module_description = module_description
   ) # nolint
-  class_interface_header <- class_header(class_name,
+  class_interface_header <- class_header(
+    class_name,
     interface = TRUE,
     description = description,
     module_description = glue::glue("Interface of {module_description}")
@@ -82,19 +110,18 @@ create_class <- function(class_name, description = "", module_description = "") 
 
   class_test_header <- test_header(class_name)
   # create the class
-  cat(class_name_header,
-    file = glue::glue("./src/classes/implements/{class_name}.cls")
+  write_crlf(
+    here("src", "classes", "implements", glue("{class_name}.cls")),
+    class_name_header
   )
   # create the interface of the class
-  cat(class_interface_header,
-    file = glue::glue("./src/classes/interfaces/I{class_name}.cls")
+  write_crlf(
+    here("src", "classes", "interfaces", glue("I{class_name}.cls")),
+    class_interface_header
   )
   # Add Test for the class
-  cat(class_test_header,
-    file = glue::glue("./src/modules/tests/Test{class_name}.bas")
+  write_crlf(
+    here("src", "tests", glue("Test{class_name}.bas")),
+    class_test_header
   )
 }
-
-# You can create the class here by precising the class name
-#create_class("ExportButtons") #nolint
-
