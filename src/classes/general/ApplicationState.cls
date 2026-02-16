@@ -165,7 +165,13 @@ Private Sub ApplyBusyStateCore(Optional ByVal suppressEvents As Boolean = False,
     On Error GoTo ApplyFail
         target.ScreenUpdating = False
         target.DisplayAlerts = False
+        'Setting Calculation to Manual can trigger a flush of pending
+        'worksheet calculations.  If any worksheet has a formula that
+        'cannot evaluate, the flush raises error 1004.  Isolate so the
+        'remaining settings are still applied.
+        On Error Resume Next
         target.Calculation = xlCalculationManual
+        On Error GoTo ApplyFail
         If suppressEvents Then target.EnableEvents = (Not suppressEvents)
         target.CalculateBeforeSave = calculateOnSave
         If busyCursor <> 0 Then target.Cursor = busyCursor
@@ -269,7 +275,11 @@ Private Sub RestoreInternal(ByVal silent As Boolean)
         'Restore Calculation BEFORE ScreenUpdating so any recalculation
         'triggered by switching from Manual to Automatic happens with
         'the screen still suppressed, preventing a visible flash.
+        'Isolated: restoring Auto can flush pending calculations and
+        'raise error 1004 if a worksheet formula cannot evaluate.
+        On Error Resume Next
         target.Calculation = this.calculationMode
+        On Error GoTo RestoreFail
         target.DisplayAlerts = this.displayAlerts
         target.EnableEvents = this.supportsEvents
         target.CalculateBeforeSave = this.calcBeforeSave

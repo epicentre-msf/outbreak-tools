@@ -425,6 +425,7 @@ Private Function ValidateGenerationReadiness(ByVal entry As IDesignerEntry) As B
     Dim setupPath As String
     Dim llDir As String
     Dim llName As String
+    Dim ribbonName As String
     Dim errors As BetterArray
 
     Set errors = New BetterArray
@@ -433,6 +434,7 @@ Private Function ValidateGenerationReadiness(ByVal entry As IDesignerEntry) As B
     setupPath = entry.ValueOf("setuppath")
     llDir = entry.ValueOf("lldir")
     llName = entry.ValueOf("llname")
+    ribbonName = entry.ValueOf("temppath")
 
     'Setup file path must be set and the file must exist on disk
     If LenB(setupPath) = 0 Then
@@ -451,6 +453,13 @@ Private Function ValidateGenerationReadiness(ByVal entry As IDesignerEntry) As B
     'Linelist name must be set
     If LenB(llName) = 0 Then
         errors.Push "Linelist name is missing."
+    End If
+
+    'temporary ribbon must exists
+    If LenB(ribbonName) <> 0 Then
+        If LenB(Dir(ribbonName)) = 0 Then
+            error.Push "template ribbon is missing."
+        End If
     End If
 
     If errors.Length > 0 Then
