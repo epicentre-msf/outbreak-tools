@@ -40,22 +40,24 @@ website:
     #    href: index.qmd
     
     right:
-      - text: "Getting started"
+      - text: Get started
         menu:
-          - text: Getting started with the linelist
+          - text: Get started with the linelist
             href: getting_started/home_linelist.qmd
         
-          - text: Getting started with OBT
+          - text: Get started with OBT
             href: getting_started/home_obt.qmd
+            
       
       - text: How-to 
         href: how_to/home_how_to.qmd
 
-      - text: "Ressources"
-        menu:
-          - text: Reference
-            href: reference/home_reference.qmd
 
+      - text: Reference
+        href: reference/home_reference.qmd
+
+      - text: Resources
+        menu:
           - text: Cheatsheets
             href: cheatsheets/home_cheatsheets.qmd
 
