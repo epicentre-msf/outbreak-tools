@@ -35,13 +35,13 @@ Implements ILinelistSpecs
 '@depends BetterArray, LLdictionary, LLChoices, LLTranslation
 '@depends DesignerTranslation, LLGeo, LLExport, Analysis, Passwords
 '@depends LLFormat, FormulaData, LLVariables, Formulas
-'@version 1.0 (2026-02-09)
+'@version 1.1 (2026-02-16)
 
 
 
 '@section State
 '===============================================================================
-'@description Backing UDT, module-level constants, and cache separators.
+'@description Backing UDT and module-level constants.
 
 Private Type TLinelistSpecs
     specsWkb As Workbook
@@ -56,9 +56,15 @@ Private Type TLinelistSpecs
     format As ILLFormat
     formulaData As IFormulaData
     variables As ILLVariables
-    translationCache As BetterArray
-    categoryCache As BetterArray
-    sheetCache As BetterArray
+    'Translation scope cache: direct fields for each TranslationScope value (0-4)
+    transMessages As ITranslationObject
+    transDictionary As ITranslationObject
+    transShapes As ITranslationObject
+    transForms As ITranslationObject
+    transRibbon As ITranslationObject
+    'Category cache: parallel arrays (same index = same entry)
+    catKeys As BetterArray
+    catValues As BetterArray
     outputWkb As Workbook
     tempRepos As ITemporaryRepos
 End Type
@@ -66,7 +72,6 @@ End Type
 Private this As TLinelistSpecs
 
 Private Const CLASSNAME As String = "LinelistSpecs"
-Private Const CATEGORY_CACHE_SEPARATOR As String = "|"
 Private Const DEFAULT_DICT_START_ROW As Long = 1
 Private Const DEFAULT_DICT_START_COLUMN As Long = 1
 Private Const DEFAULT_CHOICES_START_ROW As Long = 1
@@ -151,18 +156,17 @@ End Property
 
 '@section State management
 '===============================================================================
-'@description Cache invalidation for collaborator objects, sheets, translations, and categories.
+'@description Cache invalidation for collaborator objects, translations, and categories.
 
 '@label:reset-caches
 '@sub-title Reset every cached collaborator
 '@details
-'Clears all cached collaborator objects, the sheet-name-to-worksheet
-'cache, the translation object cache, and the category list cache. Call
-'after importing new data so subsequent reads query the workbook again.
+'Clears all cached collaborator objects, the translation scope cache,
+'and the category cache. Call after importing new data so subsequent
+'reads query the workbook again.
 '@export
 Public Sub ResetCaches()
     ResetObjectCaches
-    ResetSheetCache
     ResetTranslationCache
     ResetCategoryCache
 End Sub
@@ -185,27 +189,26 @@ Private Sub ResetObjectCaches()
     Set this.tempRepos = Nothing
 End Sub
 
-'@label:reset-sheet-cache
-'@sub-title Clear the worksheet name resolution cache
-Private Sub ResetSheetCache()
-    Set this.sheetCache = Nothing
-End Sub
-
 '@label:reset-translation-cache
-'@sub-title Clear the translation object cache
+'@sub-title Clear the translation scope cache
 Private Sub ResetTranslationCache()
-    Set this.translationCache = Nothing
+    Set this.transMessages = Nothing
+    Set this.transDictionary = Nothing
+    Set this.transShapes = Nothing
+    Set this.transForms = Nothing
+    Set this.transRibbon = Nothing
 End Sub
 
 '@label:reset-category-cache
 '@sub-title Clear the category list cache
 Private Sub ResetCategoryCache()
-    Set this.categoryCache = Nothing
+    Set this.catKeys = Nothing
+    Set this.catValues = Nothing
 End Sub
 
 '@section Guard helpers
 '===============================================================================
-'@description Lazy-initialisation guards that create caches on first access.
+'@description Lazy-initialisation guards for the workbook and category arrays.
 
 '@label:ensure-workbook
 '@sub-title Verify that the backing workbook is assigned
@@ -216,111 +219,26 @@ Private Sub EnsureWorkbook()
     End If
 End Sub
 
-'@label:ensure-sheet-cache
-'@sub-title Create the sheet cache if it does not exist
-Private Sub EnsureSheetCache()
-    If this.sheetCache Is Nothing Then
-        Set this.sheetCache = New BetterArray
-        this.sheetCache.LowerBound = 1
+'@label:ensure-category-arrays
+'@sub-title Create the parallel category arrays if they do not exist
+Private Sub EnsureCategoryArrays()
+    If this.catKeys Is Nothing Then
+        Set this.catKeys = New BetterArray
+        this.catKeys.LowerBound = 1
+        Set this.catValues = New BetterArray
+        this.catValues.LowerBound = 1
     End If
-End Sub
-
-'@label:ensure-translation-cache
-'@sub-title Create the translation cache if it does not exist
-Private Sub EnsureTranslationCache()
-    If this.translationCache Is Nothing Then
-        Set this.translationCache = New BetterArray
-        this.translationCache.LowerBound = 1
-    End If
-End Sub
-
-'@label:ensure-category-cache
-'@sub-title Create the category cache if it does not exist
-Private Sub EnsureCategoryCache()
-    If this.categoryCache Is Nothing Then
-        Set this.categoryCache = New BetterArray
-        this.categoryCache.LowerBound = 1
-    End If
-End Sub
-
-'@label:cache-entry-matches
-'@sub-title Check whether a cache entry's key matches the given key
-'@param entry Variant. A two-element array where element(0) is the key.
-'@param cacheKey String. The key to compare against.
-'@return Boolean. True when the entry's key matches cacheKey.
-Private Function CacheEntryMatches(ByVal entry As Variant, ByVal cacheKey As String) As Boolean
-    If IsArray(entry) Then
-        If LBound(entry) <= 0 And UBound(entry) >= 1 Then
-            CacheEntryMatches = (StrComp(CStr(entry(0)), cacheKey, vbBinaryCompare) = 0)
-        End If
-    End If
-End Function
-
-'@label:try-get-cache-value
-'@sub-title Attempt to retrieve a value from a key-value BetterArray cache
-'@details
-'Scans a BetterArray of two-element arrays (key, value) for a matching
-'key. If found, assigns the value to the ByRef parameter and returns True.
-'@param cache BetterArray. The cache to search.
-'@param cacheKey String. The key to look up.
-'@param cachedValue Variant (ByRef). Receives the cached value when found.
-'@return Boolean. True when the key was found in the cache.
-Private Function TryGetCacheValue(ByVal cache As BetterArray, ByVal cacheKey As String, ByRef cachedValue As Variant) As Boolean
-    Dim idx As Long
-    Dim entry As Variant
-
-    TryGetCacheValue = False
-    If cache Is Nothing Then Exit Function
-    If cache.Length = 0 Then Exit Function
-
-    For idx = cache.LowerBound To cache.UpperBound
-        entry = cache.Item(idx)
-        If CacheEntryMatches(entry, cacheKey) Then
-            cachedValue = entry(1)
-            TryGetCacheValue = True
-            Exit Function
-        End If
-    Next idx
-End Function
-
-'@label:store-cache-value
-'@sub-title Store a key-value pair in a BetterArray cache
-'@details
-'Pushes a two-element array (key, value) onto the cache. Skips the
-'operation if the cache is Nothing or the key already exists.
-'@param cache BetterArray. The cache to store into.
-'@param cacheKey String. The key for the entry.
-'@param value Variant. The value to cache.
-Private Sub StoreCacheValue(ByVal cache As BetterArray, ByVal cacheKey As String, ByVal value As Variant)
-    Dim entry As Variant
-    Dim existing As Variant
-
-    If cache Is Nothing Then Exit Sub
-    If TryGetCacheValue(cache, cacheKey, existing) Then Exit Sub
-
-    entry = Array(cacheKey, value)
-    cache.Push entry
 End Sub
 
 '@section Worksheet resolution
 '===============================================================================
-'@description Cached worksheet lookups by name within the specifications workbook.
-
-'@label:sheet-cache-key
-'@sub-title Normalise a sheet name for use as a cache key
-'@param sheetName String. The raw sheet name.
-'@return String. Lower-cased, trimmed key.
-Private Function SheetCacheKey(ByVal sheetName As String) As String
-    SheetCacheKey = LCase$(Trim$(sheetName))
-End Function
+'@description Direct worksheet lookups by name within the specifications workbook.
 
 '@label:resolve-sheet
-'@sub-title Resolve a worksheet by name with caching and optional error surfacing
+'@sub-title Resolve a worksheet by name with optional error surfacing
 '@details
-'Looks up a worksheet in the specifications workbook by name, checking
-'the sheet cache first. When the sheet is not found and allowMissing is
-'False, raises a descriptive error. Found sheets are stored in the cache
-'for future lookups.
+'Looks up a worksheet in the specifications workbook by name. When the
+'sheet is not found and allowMissing is False, raises a descriptive error.
 '@param sheetName String. The worksheet name to find.
 '@param allowMissing Boolean. When True, returns Nothing instead of raising.
 '@return Worksheet. The resolved worksheet, or Nothing if allowMissing.
@@ -329,11 +247,8 @@ End Function
 Private Function ResolveSheet(ByVal sheetName As String, _
                               Optional ByVal allowMissing As Boolean = False) As Worksheet
 
-    Dim key As String
-    Dim cachedSheet As Worksheet
     Dim target As Worksheet
     Dim normalisedName As String
-    Dim cacheEntry As Variant
 
     normalisedName = Trim$(sheetName)
     If LenB(normalisedName) = 0 Then
@@ -342,18 +257,6 @@ Private Function ResolveSheet(ByVal sheetName As String, _
     End If
 
     EnsureWorkbook
-    EnsureSheetCache
-
-    key = SheetCacheKey(normalisedName)
-
-    If TryGetCacheValue(this.sheetCache, key, cacheEntry) Then
-        If IsObject(cacheEntry) Then Set cachedSheet = cacheEntry
-    End If
-
-    If Not (cachedSheet Is Nothing) Then
-        Set ResolveSheet = cachedSheet
-        Exit Function
-    End If
 
     On Error Resume Next
         Set target = this.specsWkb.Worksheets(normalisedName)
@@ -364,8 +267,6 @@ Private Function ResolveSheet(ByVal sheetName As String, _
         ThrowError ProjectError.ElementNotFound, _
                   "Worksheet '" & normalisedName & "' not found in specifications workbook '" & SafeWorkbookName(this.specsWkb) & "'"
     End If
-
-    StoreCacheValue this.sheetCache, key, target
 
     Set ResolveSheet = target
 End Function
@@ -766,19 +667,12 @@ Private Function ResolveDesignName(ByVal formatSheet As Worksheet) As String
     ResolveDesignName = Trim$(CStr(designRange.Cells(1, 1).Value))
 End Function
 
-'@label:ensure-translation-object-cache
-'@sub-title Ensure both translations and translation cache are ready
-Private Sub EnsureTranslationObjectCache()
-    EnsureTranslations
-    EnsureTranslationCache
-End Sub
-
 '@label:ensure-category-lookup
-'@sub-title Ensure choices, variables, and category cache are ready
+'@sub-title Ensure choices, variables, and category arrays are ready
 Private Sub EnsureCategoryLookup()
     EnsureChoices
     EnsureVariables
-    EnsureCategoryCache
+    EnsureCategoryArrays
 End Sub
 
 '@label:number-of-exports
@@ -887,9 +781,9 @@ End Sub
 '@details
 'Returns the list of category values for a choice-type variable
 '(choice_manual, choice_multiple, choice_custom, or choice_formula).
-'Results are cached per variable name and short-label flag combination.
-'Always returns a cloned BetterArray to prevent callers from modifying
-'the cached copy.
+'Results are cached using parallel key/value BetterArrays for efficient
+'repeated access. Always returns a cloned BetterArray to prevent callers
+'from modifying the cached copy.
 '@param varName String. The variable name whose categories to resolve.
 '@param useShortlabels Boolean. When True, returns short labels. Defaults to False.
 '@return BetterArray. Cloned list of category values.
@@ -899,24 +793,43 @@ End Sub
 Public Function Categories(ByVal varName As String, Optional ByVal useShortlabels As Boolean = False) As BetterArray
     Dim cacheKey As String
     Dim cached As BetterArray
-    Dim clone As BetterArray
-    Dim cacheEntry As Variant
+    Dim cacheIdx As Long
 
     EnsureCategoryLookup
 
-    cacheKey = BuildCategoryCacheKey(varName, useShortlabels)
+    cacheKey = LCase$(Trim$(varName)) & "|" & CStr(useShortlabels)
 
-    If TryGetCacheValue(this.categoryCache, cacheKey, cacheEntry) Then
-        If IsObject(cacheEntry) Then Set cached = cacheEntry
+    'Look up in parallel arrays
+    cacheIdx = FindCategoryIndex(cacheKey)
+    If cacheIdx > 0 Then
+        Set cached = this.catValues.Item(cacheIdx)
     End If
 
     If cached Is Nothing Then
         Set cached = ResolveCategoryList(varName, useShortlabels)
-        StoreCacheValue this.categoryCache, cacheKey, cached
+        this.catKeys.Push cacheKey
+        this.catValues.Push cached
     End If
 
-    Set clone = cached.Clone
-    Set Categories = clone
+    Set Categories = cached.Clone
+End Function
+
+'@label:find-category-index
+'@sub-title Search the category keys array for a matching key
+'@param cacheKey String. The key to search for.
+'@return Long. The 1-based index if found, or 0 if not found.
+Private Function FindCategoryIndex(ByVal cacheKey As String) As Long
+    Dim idx As Long
+
+    If this.catKeys Is Nothing Then Exit Function
+    If this.catKeys.Length = 0 Then Exit Function
+
+    For idx = this.catKeys.LowerBound To this.catKeys.UpperBound
+        If StrComp(CStr(this.catKeys.Item(idx)), cacheKey, vbBinaryCompare) = 0 Then
+            FindCategoryIndex = idx
+            Exit Function
+        End If
+    Next idx
 End Function
 
 '@label:resolve-category-list
@@ -968,16 +881,6 @@ Private Function ResolveCategoryList(ByVal varName As String, _
     End If
 
     Set ResolveCategoryList = result
-End Function
-
-'@label:build-category-cache-key
-'@sub-title Construct the cache key for a category lookup
-'@param varName String. The variable name.
-'@param useShortlabels Boolean. The short-labels flag.
-'@return String. The composite cache key.
-Private Function BuildCategoryCacheKey(ByVal varName As String, _
-                                       ByVal useShortlabels As Boolean) As String
-    BuildCategoryCacheKey = LCase$(Trim$(varName)) & CATEGORY_CACHE_SEPARATOR & CStr(useShortlabels)
 End Function
 
 '@label:normalise-control-type
@@ -1161,7 +1064,8 @@ End Property
 '@prop-title Scoped translation object
 '@details
 'Returns an ITranslationObject for the requested translation scope.
-'Results are cached per scope value for efficient repeated access.
+'Results are cached per scope using direct fields for each TranslationScope
+'value (0-4), avoiding generic container overhead.
 '@param translationScope Byte. The translation scope constant
 '(e.g., TranslationOfMessages, TranslationOfDictionary). Defaults to
 'TranslationOfMessages.
@@ -1169,31 +1073,63 @@ End Property
 '@throws ProjectError.ElementNotFound When the scope is not available.
 '@export
 Public Property Get TransObject(Optional ByVal translationScope As Byte = TranslationOfMessages) As ITranslationObject
-    Dim cacheKey As String
-    Dim cached As ITranslationObject
     Dim resolved As ITranslationObject
-    Dim cacheEntry As Variant
 
-    EnsureTranslationObjectCache
+    EnsureTranslations
 
-    cacheKey = CStr(translationScope)
+    Select Case translationScope
+        Case TranslationOfMessages
+            If this.transMessages Is Nothing Then
+                Set this.transMessages = ResolveTranslationScope(translationScope)
+            End If
+            Set TransObject = this.transMessages
 
-    If TryGetCacheValue(this.translationCache, cacheKey, cacheEntry) Then
-        If IsObject(cacheEntry) Then Set cached = cacheEntry
-    End If
+        Case TranslationOfDictionary
+            If this.transDictionary Is Nothing Then
+                Set this.transDictionary = ResolveTranslationScope(translationScope)
+            End If
+            Set TransObject = this.transDictionary
 
-    If cached Is Nothing Then
-        Set resolved = this.translations.TransObject(translationScope)
-        If resolved Is Nothing Then
+        Case TranslationOfShapes
+            If this.transShapes Is Nothing Then
+                Set this.transShapes = ResolveTranslationScope(translationScope)
+            End If
+            Set TransObject = this.transShapes
+
+        Case TranslationOfForms
+            If this.transForms Is Nothing Then
+                Set this.transForms = ResolveTranslationScope(translationScope)
+            End If
+            Set TransObject = this.transForms
+
+        Case TranslationOfRibbon
+            If this.transRibbon Is Nothing Then
+                Set this.transRibbon = ResolveTranslationScope(translationScope)
+            End If
+            Set TransObject = this.transRibbon
+
+        Case Else
             ThrowError ProjectError.ElementNotFound, _
                       "Translation scope '" & CStr(translationScope) & "' is not available in the specifications workbook"
-        End If
-        StoreCacheValue this.translationCache, cacheKey, resolved
-        Set cached = resolved
+    End Select
+End Property
+
+'@label:resolve-translation-scope
+'@sub-title Query the translations collaborator for a given scope
+'@param translationScope Byte. The translation scope to resolve.
+'@return ITranslationObject. The resolved translation object.
+'@throws ProjectError.ElementNotFound When the scope returns Nothing.
+Private Function ResolveTranslationScope(ByVal translationScope As Byte) As ITranslationObject
+    Dim resolved As ITranslationObject
+
+    Set resolved = this.translations.TransObject(translationScope)
+    If resolved Is Nothing Then
+        ThrowError ProjectError.ElementNotFound, _
+                  "Translation scope '" & CStr(translationScope) & "' is not available in the specifications workbook"
     End If
 
-    Set TransObject = cached
-End Property
+    Set ResolveTranslationScope = resolved
+End Function
 
 '@label:temporary-sheet-name
 '@prop-title Temporary sheet name for a given scope
@@ -1308,7 +1244,7 @@ End Property
 '@sub-title Prepare all specifications using an import service
 '@details
 'Orchestrates the full specification preparation workflow:
-'1. Validates Main sheet readiness via CheckReadiness.
+'1. Creates a temporary repository for working files.
 '2. Creates a new output workbook (from template if configured).
 '3. Exports designer components via the import service.
 '4. Retrieves exported domain instances from the service.
@@ -1373,9 +1309,6 @@ Public Sub Prepare(ByVal importService As IDesignerImportService)
 
     Set this.outputWkb = outWkb
 
-    'Reset sheet cache since we now have data in the output workbook
-    ResetSheetCache
-
     Set dict = this.dictionary
     Set choicesObj = this.choices
     Set exportsObj = this.exports
@@ -1386,7 +1319,7 @@ Public Sub Prepare(ByVal importService As IDesignerImportService)
     Set msgTrads = TransObject()
 
     Set preservedNames = BuildPreservedSheetNames(msgTrads)
-    dict.Prepare preservedNames, geoObj, msgTrads, "table"
+    dict.Prepare preservedNames, geoObj, "table"
 
     If Not dict.ColumnExists("list auto") Then
         AddListAuto
