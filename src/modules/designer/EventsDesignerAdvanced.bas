@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Designer")
 '@ModuleDescription("Non-core ribbon callbacks for the designer workbook.")
-'@depends DesignerPreparation, IDesignerPreparation, DesignerEntry, IDesignerEntry, RibbonDev, LLGeo, ILLGeo, ApplicationState, IApplicationState, OSFiles, IOSFiles, HiddenNames, IHiddenNames, BetterArray, DropdownLists, IDropdownLists, SetupImportService, ISetupImportService
+'@depends DesignerPreparation, IDesignerPreparation, DesignerEntry, IDesignerEntry, RibbonDev, LLGeo, ILLGeo, ApplicationState, IApplicationState, OSFiles, IOSFiles, HiddenNames, IHiddenNames, BetterArray, DropdownLists, IDropdownLists, DesignerImportService, IDesignerImportService, LinelistSpecs, ILinelistSpecs
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 'Non-core ribbon logics are callbacks whose absence will not fire a
@@ -46,15 +46,20 @@ Public Sub clickDevInitialize(ByRef control As IRibbonControl)
     Exit Sub
 
 Cleanup:
-    If Not appScope Is Nothing Then appScope.Restore
+    Dim errNumber As Long
+    Dim errDesc As String
+    errNumber = Err.Number
+    errDesc = Err.Description
+
     On Error Resume Next
+    If Not appScope Is Nothing Then appScope.Restore
     Application.Cursor = xlDefault
     On Error GoTo 0
-    If Err.Number <> 0 Then
-        Debug.Print "clickDevInitialize: "; Err.Number; Err.Description
-        MsgBox "Unable to initialise designer: " & Err.Description, _
+
+    If errNumber <> 0 Then
+        Debug.Print "clickDevInitialize: "; errNumber; errDesc
+        MsgBox "Unable to initialise designer: " & errDesc, _
                vbExclamation + vbOKOnly, PROMPT_TITLE
-        Err.Clear
     End If
 End Sub
 
@@ -78,15 +83,20 @@ Public Sub clickDelGeo()
     geo.Clear
 
 Cleanup:
-    If Not appScope Is Nothing Then appScope.Restore
+    Dim errNumber As Long
+    Dim errDesc As String
+    errNumber = Err.Number
+    errDesc = Err.Description
+
     On Error Resume Next
+    If Not appScope Is Nothing Then appScope.Restore
     Application.Cursor = xlDefault
     On Error GoTo 0
-    If Err.Number <> 0 Then
-        Debug.Print "clickDelGeo: "; Err.Number; Err.Description
-        MsgBox "Unable to clear geobase: " & Err.Description, _
+
+    If errNumber <> 0 Then
+        Debug.Print "clickDelGeo: "; errNumber; errDesc
+        MsgBox "Unable to clear geobase: " & errDesc, _
                vbExclamation + vbOKOnly, PROMPT_TITLE
-        Err.Clear
     End If
 End Sub
 
@@ -104,15 +114,20 @@ Public Sub clickClearEnt()
     entry.Clear
 
 Cleanup:
-    If Not appScope Is Nothing Then appScope.Restore
+    Dim errNumber As Long
+    Dim errDesc As String
+    errNumber = Err.Number
+    errDesc = Err.Description
+
     On Error Resume Next
+    If Not appScope Is Nothing Then appScope.Restore
     Application.Cursor = xlDefault
     On Error GoTo 0
-    If Err.Number <> 0 Then
-        Debug.Print "clickClearEnt: "; Err.Number; Err.Description
-        MsgBox "Unable to clear entries: " & Err.Description, _
+
+    If errNumber <> 0 Then
+        Debug.Print "clickClearEnt: "; errNumber; errDesc
+        MsgBox "Unable to clear entries: " & errDesc, _
                vbExclamation + vbOKOnly, PROMPT_TITLE
-        Err.Clear
     End If
 End Sub
 
@@ -165,22 +180,24 @@ Public Sub clickLoadFileDic()
     ExtractAndUpdateLanguages tradSheet
 
 Cleanup:
+    Dim errNumber As Long
+    Dim errDesc As String
+    errNumber = Err.Number
+    errDesc = Err.Description
+
+    On Error Resume Next
     'Close the setup workbook if still open
     If Not setupBook Is Nothing Then
-        On Error Resume Next
         setupBook.Close saveChanges:=False
-        On Error GoTo 0
     End If
-
     If Not appScope Is Nothing Then appScope.Restore
-    On Error Resume Next
     Application.Cursor = xlDefault
     On Error GoTo 0
-    If Err.Number <> 0 Then
-        Debug.Print "clickLoadFileDic: "; Err.Number; Err.Description
-        MsgBox "Unable to load setup file: " & Err.Description, _
+
+    If errNumber <> 0 Then
+        Debug.Print "clickLoadFileDic: "; errNumber; errDesc
+        MsgBox "Unable to load setup file: " & errDesc, _
                vbExclamation + vbOKOnly, PROMPT_TITLE
-        Err.Clear
     End If
 End Sub
 
@@ -205,15 +222,20 @@ Public Sub clickLoadGeoFile()
     entry.AddInfo io.File(), "geopath"
 
 Cleanup:
-    If Not appScope Is Nothing Then appScope.Restore
+    Dim errNumber As Long
+    Dim errDesc As String
+    errNumber = Err.Number
+    errDesc = Err.Description
+
     On Error Resume Next
+    If Not appScope Is Nothing Then appScope.Restore
     Application.Cursor = xlDefault
     On Error GoTo 0
-    If Err.Number <> 0 Then
-        Debug.Print "clickLoadGeoFile: "; Err.Number; Err.Description
-        MsgBox "Unable to load geobase: " & Err.Description, _
+
+    If errNumber <> 0 Then
+        Debug.Print "clickLoadGeoFile: "; errNumber; errDesc
+        MsgBox "Unable to load geobase: " & errDesc, _
                vbExclamation + vbOKOnly, PROMPT_TITLE
-        Err.Clear
     End If
 End Sub
 
@@ -238,15 +260,20 @@ Public Sub clickLinelistDir()
     entry.AddInfo io.Folder(), "lldir"
 
 Cleanup:
-    If Not appScope Is Nothing Then appScope.Restore
+    Dim errNumber As Long
+    Dim errDesc As String
+    errNumber = Err.Number
+    errDesc = Err.Description
+
     On Error Resume Next
+    If Not appScope Is Nothing Then appScope.Restore
     Application.Cursor = xlDefault
     On Error GoTo 0
-    If Err.Number <> 0 Then
-        Debug.Print "clickLinelistDir: "; Err.Number; Err.Description
-        MsgBox "Unable to set linelist directory: " & Err.Description, _
+
+    If errNumber <> 0 Then
+        Debug.Print "clickLinelistDir: "; errNumber; errDesc
+        MsgBox "Unable to set linelist directory: " & errDesc, _
                vbExclamation + vbOKOnly, PROMPT_TITLE
-        Err.Clear
     End If
 End Sub
 
@@ -272,15 +299,20 @@ Public Sub clickLoadTemplate()
     entry.AddInfo entry.TranslateMessage("MSG_ChemFich"), "edition"
 
 Cleanup:
-    If Not appScope Is Nothing Then appScope.Restore
+    Dim errNumber As Long
+    Dim errDesc As String
+    errNumber = Err.Number
+    errDesc = Err.Description
+
     On Error Resume Next
+    If Not appScope Is Nothing Then appScope.Restore
     Application.Cursor = xlDefault
     On Error GoTo 0
-    If Err.Number <> 0 Then
-        Debug.Print "clickLoadTemplate: "; Err.Number; Err.Description
-        MsgBox "Unable to load template: " & Err.Description, _
+
+    If errNumber <> 0 Then
+        Debug.Print "clickLoadTemplate: "; errNumber; errDesc
+        MsgBox "Unable to load template: " & errDesc, _
                vbExclamation + vbOKOnly, PROMPT_TITLE
-        Err.Clear
     End If
 End Sub
 
@@ -288,12 +320,13 @@ End Sub
 '@section Generation callbacks
 '===============================================================================
 
-'@Description("Validate designer readiness and export setup components into the designer.")
+'@Description("Validate designer readiness and import setup components into the designer.")
 '@EntryPoint
 Public Sub clickGenerate()
     Dim entry As IDesignerEntry
     Dim appScope As IApplicationState
-    Dim importService As ISetupImportService
+    Dim importService As IDesignerImportService
+    Dim specs As ILinelistSpecs
     Dim setupPath As String
 
     On Error GoTo Cleanup
@@ -307,12 +340,15 @@ Public Sub clickGenerate()
 
     setupPath = entry.ValueOf("setuppath")
 
-    'Export all setup components from the setup file into the designer
+    'Import all setup components from the setup file into the designer
     entry.AddInfo entry.TranslateMessage("MSG_ReadSetup"), "edition"
 
-    Set importService = SetupImportService.Create(hostPath:=setupPath)
-    importService.DisplayPrompts = False
-    importService.Export ThisWorkbook
+    Set importService = DesignerImportService.Create(ThisWorkbook)
+    importService.ImportFromSetup setupPath
+
+    'Prepare specifications: create output workbook, export, translate
+    Set specs = LinelistSpecs.Create(ThisWorkbook)
+    specs.Prepare importService
 
     entry.AddInfo entry.TranslateMessage("MSG_LLCreated"), "edition"
 
@@ -321,15 +357,20 @@ Public Sub clickGenerate()
     Exit Sub
 
 Cleanup:
-    If Not appScope Is Nothing Then appScope.Restore
+    Dim errNumber As Long
+    Dim errDesc As String
+    errNumber = Err.Number
+    errDesc = Err.Description
+
     On Error Resume Next
+    If Not appScope Is Nothing Then appScope.Restore
     Application.Cursor = xlDefault
     On Error GoTo 0
-    If Err.Number <> 0 Then
-        Debug.Print "clickGenerate: "; Err.Number; Err.Description
-        MsgBox "Generation failed: " & Err.Description, _
+
+    If errNumber <> 0 Then
+        Debug.Print "clickGenerate: "; errNumber; errDesc
+        MsgBox "Generation failed: " & errDesc, _
                vbExclamation + vbOKOnly, PROMPT_TITLE
-        Err.Clear
     End If
 End Sub
 

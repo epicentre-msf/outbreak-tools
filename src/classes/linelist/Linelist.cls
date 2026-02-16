@@ -29,11 +29,11 @@ Implements ILinelist
 'with password protection. The class uses VB_Creatable = True so that
 'factory consumers create instances via `New Linelist` rather than
 '`With New Linelist`.
-'@depends ILinelistSpecs, ILLdictionary, ITranslationObject, IMain,
+'@depends ILinelistSpecs, ILLdictionary, ITranslationObject,
 '  IPasswords, ILLFormat, ITemporaryRepos, ICodeTransfer, IHiddenNames,
 '  IButtons, IDropdownLists, ICustomPivotTable, DropdownLists,
 '  CustomPivotTable, TemporaryRepos, HiddenNames, Buttons, CodeTransfer,
-'  BetterArray, LinelistSpecConstants
+'  BetterArray
 '@version 1.0 (2026-02-09)
 
 
@@ -190,7 +190,7 @@ Public Property Get Dropdown(Optional ByVal scope As Byte = 1) As IDropdownLists
 
     Select Case scope
         Case 1
-            listSheetName = this.specs.TemporarySheetName(TEMP_SHEET_LIST)
+            listSheetName = this.specs.TemporarySheetName(TempSheetList)
             headerPrefix = "dropdown_"
         Case 2
             listSheetName = trans.TranslatedValue("LLSHEET_CustomChoice")
@@ -311,12 +311,9 @@ Public Sub Prepare()
     Dim sheetName As String
     Dim outWkb As Workbook
     Dim prevAlert As Boolean
-    Dim mainObj As IMain
     Dim codeTransfer As ICodeTransfer
 
-    Set mainObj = this.specs.MainObject
-    Set this.tempRepos = TemporaryRepos.Create(mainObj.ValueOf("lldir"))
-    this.tempRepos.EnsureReady
+    Set this.tempRepos = this.specs.OutputTemporaryRepos
 
     Set outWkb = OutputWkb
     Set trans = this.specs.TransObject
@@ -324,17 +321,17 @@ Public Sub Prepare()
     Set sheetsList = New BetterArray
 
     'Handle instruction worksheet for template workbooks
-    If mainObj.HasTemplate() And (mainObj.ValueOf("instruct") = "add") Then
+    If this.specs.HasTemplate() And (this.specs.Value("instruct") = "add") Then
         outWkb.Worksheets(trans.TranslatedValue("INSTSHEETNAME")).Visible = xlSheetVisible
     End If
 
     'Add temporary sheets (6 sheets — TemporarySheetUpdates removed, flags are now workbook-level hidden names)
-    sheetsList.Push this.specs.TemporarySheetName(TEMP_SHEET_SINGLE), _
-                    this.specs.TemporarySheetName(TEMP_SHEET_LIST), _
-                    this.specs.TemporarySheetName(TEMP_SHEET_ANALYSIS), _
-                    this.specs.TemporarySheetName(TEMP_SHEET_IMPORT), _
-                    this.specs.TemporarySheetName(TEMP_SHEET_SPATIAL), _
-                    this.specs.TemporarySheetName(TEMP_SHEET_SHOWHIDE)
+    sheetsList.Push this.specs.TemporarySheetName(TempSheetSingle), _
+                    this.specs.TemporarySheetName(TempSheetList), _
+                    this.specs.TemporarySheetName(TempSheetAnalysis), _
+                    this.specs.TemporarySheetName(TempSheetImport), _
+                    this.specs.TemporarySheetName(TempSheetSpatial), _
+                    this.specs.TemporarySheetName(TempSheetShowHide)
 
     For counter = sheetsList.LowerBound To sheetsList.UpperBound
         sheetName = sheetsList.Item(counter)
@@ -343,9 +340,6 @@ Public Sub Prepare()
 
     'Prepare temporary sheets with hidden names and ListObjects
     PrepareTemporarySheets
-
-    'Export specifications to the workbook
-    this.specs.Export outWkb
 
     'Add analysis/custom sheets (reversed order to maintain dictionary order)
     sheetsList.Clear
@@ -376,7 +370,7 @@ Public Sub Prepare()
     End With
 
     'Add admin sheet if not using template
-    If Not mainObj.HasTemplate() Then
+    If Not this.specs.HasTemplate() Then
         AddOutputSheet trans.TranslatedValue("LLSHEET_Admin"), xlSheetVisible
         PrepareAdmin
     End If
@@ -389,7 +383,7 @@ Public Sub Prepare()
 
     'Transfer code via CodeTransfer
     Set codeTransfer = CodeTransfer.Create(this.specs.Workbook, outWkb, this.tempRepos)
-    TransferAllCode codeTransfer, mainObj
+    TransferAllCode codeTransfer
 End Sub
 
 '@label:save-ll
@@ -404,18 +398,16 @@ Public Sub SaveLL()
     Dim outWkb As Workbook
     Dim passwd As String
     Dim outPath As String
-    Dim mainObj As IMain
     Dim passObj As IPasswords
     Dim msgTrads As ITranslationObject
 
     Set outWkb = OutputWkb
-    Set mainObj = this.specs.MainObject
     Set passObj = this.specs.Password
     Set msgTrads = this.specs.TransObject
 
-    passwd = mainObj.ValueOf("llpassword")
-    outPath = mainObj.ValueOf("lldir") & Application.PathSeparator & _
-              mainObj.ValueOf("llname") & ".xlsb"
+    passwd = this.specs.Value("llpassword")
+    outPath = this.specs.Value("lldir") & Application.PathSeparator & _
+              this.specs.Value("llname") & ".xlsb"
 
     'Select an appropriate visible sheet before saving
     On Error Resume Next
@@ -467,33 +459,15 @@ End Sub
 'workbook and suppressing UI updates during batch operations.
 
 '@label:output-wkb
-'@prop-title Lazy-create or return the output workbook
+'@prop-title Return the output workbook from LinelistSpecs
 '@details
-'On first access, creates a new Workbook (or opens a template and saves
-'it as a temporary .xlsb) and caches it in the backing UDT. Subsequent
-'accesses return the cached reference. Also records the name of the
-'initial default sheet so Prepare can delete it later. Calls BusyApp
-'to suppress UI updates during workbook creation.
+'On first access, retrieves the output workbook that LinelistSpecs.Prepare
+'created and caches it locally. Also records the name of the initial
+'default sheet so Prepare can delete it later.
 '@return Workbook. The output workbook.
 Private Property Get OutputWkb() As Workbook
-    Dim mainObj As IMain
-    Dim outDir As String
-    Dim sep As String
-
     If this.outWkb Is Nothing Then
-        Set mainObj = this.specs.MainObject
-        sep = Application.PathSeparator
-        outDir = mainObj.ValueOf("lldir") & sep & "OBTApp_"
-
-        BusyApp
-
-        If mainObj.HasTemplate() Then
-            Set this.outWkb = Workbooks.Open(mainObj.ValueOf("temppath"))
-            this.outWkb.SaveAs fileName:=outDir & sep & "__temp.xlsb", fileFormat:=xlExcel12
-        Else
-            Set this.outWkb = Workbooks.Add
-        End If
-
+        Set this.outWkb = this.specs.OutputWorkbook
         this.firstSheet = this.outWkb.Worksheets(1).Name
     End If
 
@@ -590,7 +564,7 @@ Private Sub PrepareTemporarySheets()
     wkbNames.EnsureName "RNG_EpiWeekStart", this.specs.Value("epiweekstart"), HiddenNameTypeString
 
     'Import report sheet — create ListObjects
-    sheetName = this.specs.TemporarySheetName(TEMP_SHEET_IMPORT)
+    sheetName = this.specs.TemporarySheetName(TempSheetImport)
     Set sh = outWkb.Worksheets(sheetName)
 
     With sh
@@ -615,7 +589,7 @@ Private Sub PrepareTemporarySheets()
     End With
 
     'Analysis table IDs sheet — create ListObjects + worksheet-level hidden names
-    sheetName = this.specs.TemporarySheetName(TEMP_SHEET_ANALYSIS)
+    sheetName = this.specs.TemporarySheetName(TempSheetAnalysis)
     Set sh = outWkb.Worksheets(sheetName)
     Set cellRng = sh.Cells(1, 1)
 
@@ -753,9 +727,7 @@ End Sub
 '5. Transfers the workbook code module (LinelistWorkbook).
 '6. Cleans up temporary files via ITemporaryRepos.Reset.
 '@param codeTransfer ICodeTransfer. The code transfer engine.
-'@param mainObj IMain. The main configuration object.
-Private Sub TransferAllCode(ByVal codeTransfer As ICodeTransfer, _
-                            ByVal mainObj As IMain)
+Private Sub TransferAllCode(ByVal codeTransfer As ICodeTransfer)
     Dim codesList As BetterArray
     Dim counter As Long
     Dim codeName As String

@@ -30,7 +30,7 @@ Implements IListBuilder
 'reference, then invoke Build to construct the sheet.
 '@depends ILinelist, ILLSheets, ILinelistSpecs, ILLFormat, IDropdownLists,
 '  IPasswords, ITranslationObject, IButtons, IHiddenNames, ISectionBuilder,
-'  ICustomPivotTables, IMain, BetterArray
+'  ICustomPivotTables, BetterArray
 '@version 1.0 (2026-02-09)
 
 
@@ -183,7 +183,6 @@ Private Sub BuildHList()
     Dim design As ILLFormat
     Dim drop As IDropdownLists
     Dim pass As IPasswords
-    Dim mainObj As IMain
     Dim pivotObj As ICustomPivotTable
     Dim trads As ITranslationObject
     Dim rng As Range
@@ -209,7 +208,6 @@ Private Sub BuildHList()
     Set design = specs.DesignFormat
     Set drop = this.ll.Dropdown
     Set pass = specs.Password
-    Set mainObj = specs.MainObject
     Set pivotObj = this.ll.Pivots
 
     'Add printed companion sheet
@@ -232,7 +230,7 @@ Private Sub BuildHList()
     On Error GoTo 0
 
     'Add buttons (unless template workbook)
-    If Not mainObj.HasTemplate() Then
+    If Not specs.HasTemplate() Then
         Set trads = specs.TransObject(TranslationOfShapes)
 
         'Show/Hide button

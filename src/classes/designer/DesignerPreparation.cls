@@ -88,6 +88,12 @@ Private Const DROPDOWN_PREFIX As String = "dropdown_"
 'T_Multi table
 Private Const TABLE_MULTI As String = "T_Multi"
 
+'Main worksheet named ranges for dropdown validation
+Private Const SHEET_MAIN As String = "Main"
+Private Const RNG_LANG_SETUP As String = "RNG_LangSetup"
+Private Const RNG_DESIGN_LL As String = "RNG_DesignLL"
+Private Const RNG_LL_FORM As String = "RNG_LLForm"
+
 
 '@section Factory
 '===============================================================================
@@ -172,6 +178,7 @@ Public Sub Prepare(ByRef devManager As IDevelopment)
     EnsureWorkbookFlags
     EnsureGeoFlags
     ApplyMultiValidations
+    ApplyMainValidations
 End Sub
 
 '@label:set-flag
@@ -543,6 +550,56 @@ Private Sub ApplyMultiValidations()
                         drop:=drop, _
                         dropName:=DROP_DESIGN_VALUES, _
                         alertType:="info"
+End Sub
+
+
+'@section Main Validations
+'===============================================================================
+
+'@label:apply-main-validations
+'@sub-title Apply dropdown validation to named ranges on the Main worksheet
+'@details
+'Resolves the Main worksheet and applies data validation from the
+'registered dropdown lists to three named ranges: RNG_LangSetup
+'(setup language), RNG_DesignLL (design selection), and RNG_LLForm
+'(language of linelist interface). Silently exits when the Main
+'worksheet does not exist or individual named ranges are missing.
+Private Sub ApplyMainValidations()
+    Dim sh As Worksheet
+    Dim drop As IDropdownLists
+
+    Set sh = ResolveWorksheet(SHEET_MAIN)
+    If sh Is Nothing Then Exit Sub
+
+    EnsureDropdownManager
+    Set drop = this.dropdowns
+
+    ApplyRangeValidation sh, RNG_LANG_SETUP, drop, DROP_SETUP_LANGUAGES
+    ApplyRangeValidation sh, RNG_DESIGN_LL, drop, DROP_DESIGN_VALUES
+    ApplyRangeValidation sh, RNG_LL_FORM, drop, DROP_INTERFACE_LANGUAGES
+End Sub
+
+'@label:apply-range-validation
+'@sub-title Apply dropdown validation to a single named range
+'@details
+'Resolves the named range from the worksheet and applies list
+'validation using the specified dropdown. Silently exits when the
+'named range does not exist on the worksheet.
+'@param sh Worksheet. The worksheet containing the named range.
+'@param rngName String. The named range identifier.
+'@param drop IDropdownLists. The dropdown manager with registered lists.
+'@param dropName String. The dropdown list name to use as validation source.
+Private Sub ApplyRangeValidation(ByVal sh As Worksheet, ByVal rngName As String, _
+                                 ByVal drop As IDropdownLists, ByVal dropName As String)
+    Dim rng As Range
+
+    On Error Resume Next
+    Set rng = sh.Range(rngName)
+    On Error GoTo 0
+
+    If rng Is Nothing Then Exit Sub
+
+    drop.SetValidation cellRng:=rng, listName:=dropName, alertType:="info"
 End Sub
 
 

@@ -824,6 +824,58 @@ Fail:
 End Sub
 
 
+'@section Main Validation Tests
+'===============================================================================
+'@TestMethod("DesignerPreparation.MainValidation")
+Public Sub TestPrepareAppliesMainValidations()
+    CustomTestSetTitles Assert, "DesignerPreparation", "TestPrepareAppliesMainValidations"
+    On Error GoTo Fail
+
+    'Arrange: create the 3 named ranges on the Main (EntrySheet) worksheet
+    FixtureWorkbook.Names.Add Name:="RNG_LangSetup", RefersTo:=EntrySheet.Range("A1")
+    FixtureWorkbook.Names.Add Name:="RNG_DesignLL", RefersTo:=EntrySheet.Range("A2")
+    FixtureWorkbook.Names.Add Name:="RNG_LLForm", RefersTo:=EntrySheet.Range("A3")
+
+    'Act
+    Dim subject As IDesignerPreparation
+    Set subject = DesignerPreparation.Create(FixtureWorkbook)
+    subject.Prepare Nothing
+
+    'Assert: all 3 named ranges should have list validation
+    Assert.AreEqual CLng(xlValidateList), CLng(EntrySheet.Range("A1").Validation.Type), _
+                    "RNG_LangSetup should have list validation."
+    Assert.AreEqual CLng(xlValidateList), CLng(EntrySheet.Range("A2").Validation.Type), _
+                    "RNG_DesignLL should have list validation."
+    Assert.AreEqual CLng(xlValidateList), CLng(EntrySheet.Range("A3").Validation.Type), _
+                    "RNG_LLForm should have list validation."
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestPrepareAppliesMainValidations"
+End Sub
+
+'@TestMethod("DesignerPreparation.MainValidation")
+Public Sub TestPrepareSkipsMainValidationsWhenRangesMissing()
+    CustomTestSetTitles Assert, "DesignerPreparation", "TestPrepareSkipsMainValidationsWhenRangesMissing"
+    On Error GoTo Fail
+
+    'Arrange: do NOT create the named ranges on the Main sheet
+
+    'Act: should not raise an error
+    Dim subject As IDesignerPreparation
+    Set subject = DesignerPreparation.Create(FixtureWorkbook)
+    subject.Prepare Nothing
+
+    'Assert: preparation should succeed
+    Assert.IsTrue subject.Dropdowns.Exists("__setup_languages"), _
+                  "Preparation should succeed without Main named ranges."
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestPrepareSkipsMainValidationsWhenRangesMissing"
+End Sub
+
+
 '@section Internal helpers
 '===============================================================================
 
