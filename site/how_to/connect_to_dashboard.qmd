@@ -2,7 +2,6 @@
 title: "Connect to the dashboard"
 description: Connect to the intersectional dashboard
 categories: 
-  - Linelist
   - Dashboard
 ---
 
