@@ -1,6 +1,8 @@
 project:
   type: website
   output-dir: docs
+  resources:
+    - dev/**
   
 execute:
   freeze: auto
@@ -53,12 +55,17 @@ website:
         menu:
           - text: Reference
             href: reference/home_reference.qmd
-            
+
           - text: Cheatsheets
             href: cheatsheets/home_cheatsheets.qmd
 
           - text: Tutorial
             href: tutorial.qmd
+
+          - text: "---"
+
+          - text: Developer API
+            href: dev/index.html
 
     tools:
       - icon: github

@@ -421,29 +421,69 @@
             "problemMatcher": []
         },
         {
-            "label": "Docs: Generate Interface for Class",
+            "label": "Docs: Build full site",
             "type": "shell",
-            "command": "Rscript",
+            "command": "bash",
             "args": [
-                "automate/codes/create-docs.R",
-                "${input:className}"
+                "automate/codes/build-docs.sh"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"
             },
+            "windows": {
+                "command": "powershell",
+                "args": [
+                    "-NoProfile",
+                    "-Command",
+                    "Remove-Item -Recurse -Force src/docs -ErrorAction SilentlyContinue; Rscript automate/codes/create-docs.R --all; Rscript automate/codes/build-site.R"
+                ]
+            },
+            "group": "build",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
             "problemMatcher": []
         },
         {
-            "label": "Docs: Generate Class Documentation",
+            "label": "Docs: Generate class markdown",
             "type": "shell",
             "command": "Rscript",
             "args": [
                 "automate/codes/create-docs.R",
                 "class",
-                "${input:className}"
+                "${input:docClassName}"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"
+            },
+            "windows": {
+                "command": "${env:RPATH}\\bin\\Rscript.exe"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Docs: Generate interface markdown",
+            "type": "shell",
+            "command": "Rscript",
+            "args": [
+                "automate/codes/create-docs.R",
+                "--interface",
+                "${input:docClassName}"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "windows": {
+                "command": "${env:RPATH}\\bin\\Rscript.exe"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
             },
             "problemMatcher": []
         }
@@ -454,6 +494,12 @@
             "type": "promptString",
             "description": "Name of the VBA class to generate",
             "default": "NewClass"
+        },
+        {
+            "id": "docClassName",
+            "type": "promptString",
+            "description": "Name of the VBA class to document (e.g. Buttons, LLExporter)",
+            "default": "Buttons"
         },
         {
             "id": "testModulePath",
