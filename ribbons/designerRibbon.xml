@@ -1,24 +1,49 @@
-<customUI xmlns="http://schemas.microsoft.com/office/2009/07/customui" onLoad = "ribbonLoaded">
+<customUI xmlns="http://schemas.microsoft.com/office/2009/07/customui" onLoad = "OnRibbonLoad">
     <ribbon startFromScratch="false">
         <tabs>
-            <tab id="customTab" label="Designer">
-                <group id="customGroupManage" getLabel="LangLabel">
+            <tab id="customTab" label="OutbreakTools">
+                <group id="customGroupManage">
                     <button id="btnDelGeo" imageMso="ClearAll" getLabel="LangLabel" size="large" onAction="clickDelGeo"/>
                     <button id="btnClear"  getLabel = "LangLabel" imageMso="WordArtClear" size="large" onAction="clickClearEnt"/>
                     <dropDown id = "langDrop" imageMso="TranslationPane" onAction="clickLangChange" getLabel = "LangLabel">
-                        <item id = "FRA" label = "Français" />
-                        <item id = "ENG" label = "English" />
+                        <item id = "FRA" label = "Français"/>
+                        <item id = "ENG" label = "English"/>
                         <item id = "ARA" label = "عربى"/>
                         <item id = "SPA" label = "Español"/>
                         <item id = "POR" label = "Portugués"/>
                     </dropDown>
                 </group>
-                <group id="customGroupImp" getLabel="LangLabel">
-                    <button id="btnTransImp" getLabel="LangLabel" image="translation" size="large" onAction="clickImpTrans"/>
-                    <button id="btnImpPass" getLabel="LangLabel" image="dbpassword" size="large" onAction="clickImpPass"/>
+                <group id="customGroupImp">
+                    <button id="btnImpTrans" getLabel="LangLabel" image="translation" size="large" onAction="clickImpTrans"/>
+                    <button id="btnImpPass" getLabel="LangLabel" image="password" size="large" onAction="clickImpPass"/>
+                    <button id="btnImpStyle" getLabel="LangLabel" image="format" size="large" onAction="clickImpStyle"/>
                 </group>
-                <group id="customGroupAdvanced" getLabel="LangLabel">
-                    <button id="btnOpen" imageMso="FileOpen" size="large" getLabel = "LangLabel" onAction="clickOpen"/>
+                <group id="customGroupAdvanced">
+                    <button id="btnOpen" imageMso="FileOpen" size="normal" getLabel = "LangLabel" onAction="clickOpen"/>
+                    <checkBox id="chkAlert" getLabel = "LangLabel" getPressed = "initMainAlert" onAction="clickMainAlert"/>
+                    <checkBox id="chkInstruct" getLabel = "LangLabel" getPressed = "initMainInstruct" onAction="clickMainInstruct"/>
+                </group>
+                <group id="customGroupMulti">
+                    <button id="btnFolderMulti" getLabel="LangLabel" imageMso="Folder" size="large" onAction="clickFolderMulti"/>
+                    <button id="btnDupMulti" getLabel="LangLabel" image="listadd" size="large" onAction="clickDupMulti"/>
+                    <button id="btnAddMulti" getLabel="LangLabel" imageMso="QueryShowTable" size="large" onAction="clickAddRowsMulti"/>
+                    <button id="btnResMulti" getLabel="LangLabel" imageMso="SheetRowsDelete" size="large" onAction="clickResizeMulti"/>
+                    <button id="btnImpMulti" image="import" size="large" getLabel = "LangLabel" onAction="clickImpMulti"/>
+                    <button id="btnExportMulti"  getLabel = "LangLabel" image="download" size="large" onAction="clickExportMulti"/>
+                </group>
+                <group id="customGroupDev" label="Dev">
+                    <button id="btnInit" label="Initialize" image="initialise" size="large" onAction="clickDevInitialize"/>
+                    <button id="btnFolder" label="Codes Folder" image="folder" size="large" onAction="clickDevFolder"/>
+                    <button id="btnImpCodes" label="Import Codes" image="upload2" size="large" onAction="clickDevImport"/>
+                    <button id="btnExpCodes" label="Export Codes" image="download2" size="large" onAction="clickDevExport"/>
+                    <button id="btnVBEE" label="Open Editor" image="settings2" size="large" onAction="clickDevVBE"/>
+                    <button id="btnDeploy" label="Deploy" image="rocketlaunch" size="large" onAction="clickDevDeploy"/>
+                    <button id="btnAddRowsDev" label="AddRows to tables" image="addrowsdev" size ="normal" onAction="clickDevAddRows"/>
+                    <button id="btnResDev" label="Resize tables" image = "resizedev" size = "normal" onAction="clicDevResize"/>
+                    <button id="btnAddFormsDev" label="Add forms codes" image = "addformscodedev" size="normal" onAction="clicDevAddFormTable"/>
+                    <button id="btnAddTabClass" label="Add class table" image ="addclassdev" size="normal" onAction="clickDevAddClassTable"/>
+                    <button id="btnAddTabForm" label="Add Form table" image="addformsdev" size="normal" onAction="clickDevAddFormTable"/>
+                    <button id="btnAddTabMods" label="Add Modules table" image="addmodsdev" size="normal" onAction="clickDevAddModulesTable"/>
                 </group>
             </tab>
         </tabs>

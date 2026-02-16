@@ -1,0 +1,582 @@
+Attribute VB_Name = "EventsSetupRibbon"
+
+Option Explicit
+
+'@Folder("Events")
+'@IgnoreModule UnrecognizedAnnotation, SheetAccessedUsingString, ParameterCanBeByVal, ParameterNotUsed : some parameters of controls are not used
+
+'Private constants for Ribbon Events
+Private Const TRADSHEETNAME As String = "Translations"
+
+
+'@section Table Management: callbacks for group CustomGroupManage
+'===============================================================================
+'@Description("Resize the listObjects in the current sheet")
+'@EntryPoint
+Public Sub clickResize(ByRef control As IRibbonControl)
+    Application.ScreenUpdating = False
+
+    On Error GoTo Cleanup
+    SetupEventsManager.EnterBusyState persist:=False
+    SetupHelpers.ManageRows sheetName:=ActiveSheet.Name, del:=True
+Cleanup:
+    SetupEventsManager.ExitBusyState
+End Sub
+
+'@Description("add rows to listObject")
+'@EntryPoint
+Public Sub clickAddRows(ByRef control As Office.IRibbonControl)
+    Application.ScreenUpdating = False
+
+    On Error GoTo Cleanup
+    SetupEventsManager.EnterBusyState persist:=False
+    SetupHelpers.ManageRows sheetName:=ActiveSheet.Name, del:=False
+Cleanup:
+    SetupEventsManager.ExitBusyState
+End Sub
+
+'@Description("Clear all the filters in the current sheet")
+'@EntryPoint
+Public Sub clickFilters(ByRef control As IRibbonControl)
+    Application.ScreenUpdating = False
+
+    Dim targetSheet As Worksheet
+    Dim lo As ListObject
+    Dim sheetName As String
+
+    Set targetSheet = ActiveSheet
+    If targetSheet Is Nothing Then Exit Sub
+
+    sheetName = targetSheet.Name
+
+    On Error GoTo Handler
+
+    SetupEventsManager.EnterBusyState calculateOnSave:=False
+
+    UnProtectSetupSheet sheetName
+
+    For Each lo In targetSheet.ListObjects
+        If Not lo.AutoFilter Is Nothing Then
+            On Error Resume Next
+                lo.AutoFilter.ShowAllData
+            On Error GoTo 0
+        End If
+    Next lo
+
+    If targetSheet.AutoFilterMode Then
+        targetSheet.AutoFilterMode = False
+    End If
+
+    ProtectSetupSheet sheetName
+
+Cleanup:
+    SetupEventsManager.ExitBusyState
+
+    Exit Sub
+
+Handler:
+    Debug.Print "clickFilters: "; Err.Number; Err.Description
+    Resume Cleanup
+End Sub
+
+
+'@Description("Sort setup tables depending on active sheet")
+'@EntryPoint
+Public Sub clickSortTables(ByRef control As IRibbonControl)
+    Application.ScreenUpdating = False
+
+    Dim targetSheet As Worksheet
+
+    Set targetSheet = ActiveSheet
+
+    On Error GoTo Cleanup
+
+    SetupEventsManager.EnterBusyState
+    SetupHelpers.SortSetupTables targetSheet.Name
+
+Cleanup:
+    SetupEventsManager.ExitBusyState
+End Sub
+
+'@Description("Insert a list row at the active position")
+'@EntryPoint
+Public Sub clickInsertRow(ByRef control As IRibbonControl)
+    Application.ScreenUpdating = False
+
+    Dim targetSheet As Worksheet
+    Dim targetCell As Range
+
+    Set targetSheet = ActiveSheet
+    If TypeName(Selection) <> "Range" Then Exit Sub
+    Set targetCell = Selection
+
+    On Error GoTo Cleanup
+
+    SetupEventsManager.EnterBusyState
+    SetupHelpers.InsertListRowAt targetSheet.Name, targetCell
+
+Cleanup:
+    SetupEventsManager.ExitBusyState
+End Sub
+
+'@Description("Delete the current list row when the active cell belongs to a table")
+'@EntryPoint
+Public Sub clickDelLoRows(ByRef control As IRibbonControl)
+    Application.ScreenUpdating = False
+
+    Dim targetSheet As Worksheet
+    Dim targetCell As Range
+
+    Set targetSheet = ActiveSheet
+    If TypeName(Selection) <> "Range" Then Exit Sub
+    Set targetCell = Selection
+
+    On Error GoTo Cleanup
+
+    SetupEventsManager.EnterBusyState
+    SetupHelpers.DeleteListRowAt targetSheet.Name, targetCell
+
+Cleanup:
+    SetupEventsManager.ExitBusyState
+End Sub
+
+'@Description("Delete the current list column when the active cell belongs to a table")
+'@EntryPoint
+Public Sub clickDelLoColumn(ByRef control As IRibbonControl)
+
+    Dim targetSheet As Worksheet
+    Dim targetCell As Range
+
+    Set targetSheet = ActiveSheet
+    If targetSheet Is Nothing Then Exit Sub
+    Set targetCell = ActiveCell
+
+    On Error GoTo Cleanup
+
+    SetupEventsManager.EnterBusyState
+    SetupHelpers.DeleteListColumnAt targetSheet.Name, targetCell
+
+Cleanup:
+    SetupEventsManager.ExitBusyState
+End Sub
+
+
+'@section Translation Management: callbacks for group CustomGroupTrans
+'===============================================================================
+
+Public Sub clickResetTag(ByRef control As IRibbonControl)
+    Application.ScreenUpdating = False
+
+   Dim prep As ISetupPreparation
+
+   On Error GoTo Handler
+
+   SetupEventsManager.EnterBusyState
+
+   Set prep = SetupPreparation.Create(ThisWorkbook)
+   prep.EnsureUpdatedRegistry
+
+   SetupEventsManager.ExitBusyState
+   MsgBox "Done!", vbInformation
+
+   Exit Sub
+Handler:
+    Debug.Print "clickResetTag: "; Err.Number; Err.Description
+    SetupEventsManager.ExitBusyState
+End Sub
+
+'@Description("Callback for editLang onChange: add translation language columns")
+'@EntryPoint
+Public Sub clickAddLang(ByRef control As IRibbonControl, ByRef text As String)
+    Application.ScreenUpdating = False
+
+    Dim languages As String
+    Dim answer As VbMsgBoxResult
+    Dim translationsTable As ListObject
+    Dim manager As ISetupTranslationsTable
+    Dim sheetUnlocked As Boolean
+    Dim success As Boolean
+
+    languages = Trim$(text)
+    If LenB(languages) = 0 Then Exit Sub
+
+    answer = MsgBox("Do you really want to add language(s) " & languages & " to translations?", vbYesNo + vbQuestion, "Confirm")
+    If answer <> vbYes Then Exit Sub
+
+    Set translationsTable = SetupHelpers.ResolveTranslationsTable
+    If translationsTable Is Nothing Then
+        MsgBox "Translations table was not found.", vbExclamation
+        Exit Sub
+    End If
+
+    On Error GoTo Handler
+
+    SetupEventsManager.EnterBusyState calculateOnSave:=False
+
+    SetupHelpers.UnProtectSetupSheet TRADSHEETNAME
+    sheetUnlocked = True
+
+    Set manager = SetupTranslationsTable.Create(translationsTable)
+    manager.EnsureLanguages languages
+
+    SetupHelpers.ProtectSetupSheet TRADSHEETNAME
+    sheetUnlocked = False
+
+    success = True
+
+Cleanup:
+    On Error Resume Next
+    If sheetUnlocked Then SetupHelpers.ProtectSetupSheet TRADSHEETNAME
+    On Error GoTo 0
+    SetupEventsManager.ExitBusyState
+    If success Then MsgBox "Done!", vbInformation
+    Exit Sub
+
+Handler:
+    Debug.Print "clickAddLang: "; Err.Number; Err.Description
+    success = False
+    Resume Cleanup
+End Sub
+
+'@Description("Callback for btnTransAdd onAction: update translations from registry")
+'@EntryPoint
+Public Sub clickAddTrans(ByRef control As IRibbonControl)
+    Application.ScreenUpdating = False
+
+    Dim answer As VbMsgBoxResult
+    Dim translationsTable As ListObject
+    Dim registrySheet As Worksheet
+    Dim manager As ISetupTranslationsTable
+    Dim sheetUnlocked As Boolean
+    Dim upVal As IUpdatedValues
+
+    answer = MsgBox("Do you want to update the translation sheet?", vbYesNo + vbQuestion, "Confirm")
+    If answer <> vbYes Then Exit Sub
+
+    Set translationsTable = SetupHelpers.ResolveTranslationsTable
+    If translationsTable Is Nothing Then
+        MsgBox "Translations table was not found.", vbExclamation
+        Exit Sub
+    End If
+
+    Set registrySheet = SetupHelpers.ResolveRegistrySheet
+    If registrySheet Is Nothing Then
+        MsgBox "Registry sheet was not found.", vbExclamation
+        Exit Sub
+    End If
+
+    On Error GoTo Handler
+
+    SetupEventsManager.EnterBusyState calculateOnSave:=False
+
+    SetupHelpers.UnProtectSetupSheet TRADSHEETNAME
+    sheetUnlocked = True
+
+    On Error Resume Next
+        translationsTable.AutoFilter.ShowAllData
+    On Error GoTo 0
+
+    Set manager = SetupTranslationsTable.Create(translationsTable)
+    manager.UpdateFromRegistry registrySheet
+
+    SetupHelpers.ProtectSetupSheet TRADSHEETNAME
+    sheetUnlocked = False
+
+    Set upVal = SetupHelpers.ResolveUpdatedValues()
+    upVal.SwitchTagsToNo
+
+Cleanup:
+    On Error Resume Next
+    If sheetUnlocked Then SetupHelpers.ProtectSetupSheet TRADSHEETNAME
+    On Error GoTo 0
+    SetupEventsManager.ExitBusyState
+    Exit Sub
+
+Handler:
+    Debug.Print "clickAddTrans: "; Err.Number; Err.Description
+    MsgBox "An error occurred while updating translations.", vbCritical
+    Resume Cleanup
+End Sub
+'@Description("Callback for btnTransChange onAction: translate the setup to a selected language")
+'@EntryPoint
+Public Sub clickTransSetup(ByRef control As IRibbonControl)
+    Application.ScreenUpdating = False
+
+    Dim translationsTable As ListObject
+    Dim manager As ISetupTranslationsTable
+    Dim languages As BetterArray
+    Dim selectedLanguage As String
+    Dim translator As ITranslationObject
+    Dim translationsUnlocked As Boolean
+    Dim success As Boolean
+    Dim nbMissing As Long
+    Dim dupLabels As String
+
+    Set translationsTable = SetupHelpers.ResolveTranslationsTable
+    If translationsTable Is Nothing Then
+        MsgBox "Translations table was not found.", vbExclamation
+        Exit Sub
+    End If
+
+    SetupHelpers.UnProtectSetupSheet TRADSHEETNAME
+    translationsUnlocked = True
+
+    Set manager = SetupTranslationsTable.Create(translationsTable)
+    Set languages = manager.Languages
+    If (languages Is Nothing) Or (languages.Length = 0) Then
+        MsgBox "No translation languages were found. Add a language column first.", vbExclamation
+        GoTo CleanUp
+    End If
+
+    selectedLanguage = PromptTranslationLanguage(languages)
+    If LenB(selectedLanguage) = 0 Then
+        GoTo CleanUp
+    End If
+
+    On Error GoTo Handler
+
+    'Provide the number of Mission Labels of one specific language
+    nbMissing = manager.MissingLabels(selectedLanguage)
+
+    If (nbMissing > 0) Then
+        MsgBox "Aborted translation of the setup: Language " & selectedLanguage & _
+               " has " & nbMissing & " missing labels. Please fill them before attempting a translation.", vbExclamation
+        GoTo CleanUp
+    End If
+
+    If manager.DuplicateLabels(dupLabels, selectedLanguage) Then
+        MsgBox "Aborted translation of the setup. " & dupLabels, vbExclamation
+        GoTo CleanUp
+    End If
+
+    SetupEventsManager.EnterBusyState calculateOnSave:=False
+
+    Set translator = TranslationObject.Create(translationsTable, selectedLanguage)
+    SetupHelpers.ApplySetupTranslation translator
+
+    manager.SwitchDefaultLanguage selectedLanguage
+
+    success = True
+
+Cleanup:
+    On Error Resume Next
+    If translationsUnlocked Then SetupHelpers.ProtectSetupSheet TRADSHEETNAME
+    On Error GoTo 0
+    SetupEventsManager.ExitBusyState
+    If success Then MsgBox "Done!", vbInformation
+    Exit Sub
+
+Handler:
+    Debug.Print "clickTransSetup: "; Err.Number; Err.Description
+    success = False
+    MsgBox "Failed to translate the setup: " & Err.Description, vbCritical
+    Resume Cleanup
+End Sub
+
+Private Function PromptTranslationLanguage(ByVal languages As BetterArray) As String
+    Dim prompt As String
+    Dim idx As Long
+    Dim response As Variant
+    Dim numericResponse As Double
+    Dim selection As Long
+
+    If languages Is Nothing Then Exit Function
+    If languages.Length = 0 Then Exit Function
+
+    prompt = "Select the language to translate the setup to:" & vbLf
+    For idx = languages.LowerBound To languages.UpperBound
+        prompt = prompt & CStr(idx - languages.LowerBound + 1) & ". " & CStr(languages.Item(idx)) & vbLf
+    Next idx
+
+    response = Application.InputBox(prompt, "Translate the setup", Type:=1)
+    If VarType(response) = vbBoolean Then Exit Function
+
+    numericResponse = CDbl(response)
+    If numericResponse <> Int(numericResponse) Then GoTo InvalidSelection
+    If numericResponse < 1 Or numericResponse > languages.Length Then GoTo InvalidSelection
+
+    selection = CLng(numericResponse)
+    PromptTranslationLanguage = Trim$(CStr(languages.Item(languages.LowerBound + selection - 1)))
+    Exit Function
+
+InvalidSelection:
+    MsgBox "Invalid selection.", vbExclamation
+End Function
+
+
+'@section Import and Export management
+'===============================================================================
+
+'@Description("Callback for btnExport onAction: export the current setup to a workbook")
+'@EntryPoint
+Public Sub clickExport(ByRef control As IRibbonControl)
+    Application.ScreenUpdating = False
+
+    Dim service As ISetupImportService
+    Dim exportPath As String
+    Dim analysisSheet As String
+
+    On Error GoTo Handler
+
+    analysisSheet = ResolveSetupSheetName("ana")
+
+    SetupEventsManager.EnterBusyState
+
+    Set service = SetupImportService.Create(ThisWorkbook.FullName)
+
+    'UnProtect the analysis before proceeding
+    UnProtectSetupSheet analysisSheet
+    service.Export
+    ProtectSetupSheet analysisSheet
+
+    exportPath = service.LastExportFile
+
+    SetupEventsManager.ExitBusyState
+
+    If LenB(exportPath) > 0 Then
+        MsgBox "Setup exported to: " & vbCrLf & exportPath, vbInformation
+    End If
+
+    Exit Sub
+
+Handler:
+    'Re-protect BEFORE restoring screen state to avoid visible flash
+    On Error Resume Next
+    ProtectSetupSheet ResolveSetupSheetName("ana")
+    On Error GoTo 0
+    SetupEventsManager.ExitBusyState
+    Debug.Print "clickExport: "; Err.Number; Err.Description
+    MsgBox "Failed to export the setup: " & Err.Description, vbCritical
+End Sub
+
+'@Description("Callback for btnImp onAction: import setup content from another setup workbook")
+'@EntryPoint
+Public Sub clickImport(ByRef control As IRibbonControl)
+    SetupHelpers.PrepareImportsForm cleanSetup:=False
+    [Imports].Show
+End Sub
+
+
+'@Description("Callback for btnImp onAction: import setup content from another setup workbook")
+'@EntryPoint
+Public Sub clickClearSetup(ByRef control As IRibbonControl)
+    SetupHelpers.PrepareImportsForm cleanSetup:=True
+    [Imports].Show
+End Sub
+
+'@Description("Callback for btnImpExp onAction: import setup elements from a workbook using table mode")
+'@EntryPoint
+Public Sub clickImportFile(ByRef control As IRibbonControl)
+    Const SUCCESS_MESSAGE As String = "Workbook import completed."
+
+    Dim importPath As String
+    Dim service As ISetupImportService
+    Dim pass As IPasswords
+    Dim sheets As BetterArray
+    Dim success As Boolean
+    Dim originalSheet As Worksheet
+
+    On Error GoTo Handler
+    Application.ScreenUpdating = False
+
+    importPath = SetupHelpers.SelectSetupImportPath("*.xlsx")
+    If LenB(importPath) = 0 Then Exit Sub
+
+    Set service = SetupImportService.Create(importPath)
+    Set pass = SetupHelpers.ResolveSetupPasswords()
+    Set sheets = SetupHelpers.BuildSelectedSheets(True, True, True, True, True)
+    Set originalSheet = ActiveSheet
+
+    SetupEventsManager.EnterBusyState calculateOnSave:=False
+
+    service.ImportFromWorkbook pass, sheets
+    SetupHelpers.PostImportMaintenance
+    success = True
+
+Cleanup:
+    SetupEventsManager.ExitBusyState
+    originalSheet.Activate
+    Application.ScreenUpdating = True
+    If success Then MsgBox "Import Done!"
+    Exit Sub
+
+Handler:
+    Debug.Print "clickImportFile: "; Err.Number; Err.Description
+    success = False
+    MsgBox "Failed to import workbook data: " & Err.Description, vbCritical
+    Resume Cleanup
+End Sub
+
+Public Sub clickCheck(ByRef control As IRibbonControl)
+    On Error GoTo Cleanup
+
+    SetupEventsManager.EnterBusyState
+    SetupHelpers.CheckTheSetup
+
+Cleanup:
+    SetupEventsManager.ExitBusyState
+End Sub
+
+'@section Formatter
+'===============================================================================
+Public  Sub clickEditStyle(ByRef control As IRibbonControl)
+    Const FORMATSHEET As String = "__formatter"
+    Static opened As Boolean
+    Dim pass As IPasswords
+    Dim targetsheet As Worksheet
+
+    On Error GoTo Handler
+
+    Set pass = SetupHelpers.ResolveSetupPasswords()
+
+    pass.UnProtect ThisWorkbook
+    Set targetsheet = ThisWorkbook.Worksheets(FORMATSHEET)
+
+    If (Not opened) Then
+        ThisWorkbook.Worksheets(FORMATSHEET).Visible = xlSheetVisible
+        targetSheet.Activate
+    Else
+        targetSheet.Visible = xlSheetVeryHidden
+    End If
+
+    opened = (Not opened)
+    pass.Protect ThisWorkbook
+
+Handler:
+End Sub
+
+'@section Visibility of some buttons
+'===============================================================================
+Public Sub SetupButtonVisible(control As IRibbonControl, ByRef returnedVal)
+    If (control.Id = "btnDelLoRow") Or (control.Id="btnSort") Then
+        returnedVal = CBool((ActiveSheet.Name <> TRADSHEETNAME))
+    ElseIf (control.Id = "btnDelLoCol") Then
+        returnedVal = CBool((ActiveSheet.Name = TRADSHEETNAME))
+    Else
+        returnedVal = True
+    End If
+End Sub
+
+
+'@section Initializations
+'===============================================================================
+'@EntryPoint
+'@Description("Initialise development environment - logic provided by consuming workbook")
+Public Sub clickDevInitialize(ByRef control As IRibbonControl)
+   Dim prep As ISetupPreparation
+
+   On Error GoTo Cleanup
+
+   SetupEventsManager.EnterBusyState
+
+   Set prep = SetupPreparation.Create(ThisWorkbook)
+   prep.Prepare RibbonDev.EnsureDevelopment()
+
+   SetupEventsManager.ExitBusyState
+   MsgBox "Done!", vbInformation
+   Exit Sub
+
+Cleanup:
+   SetupEventsManager.ExitBusyState
+   Debug.Print "clickDevInitialize: "; Err.Number; Err.Description
+End Sub

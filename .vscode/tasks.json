@@ -1,0 +1,559 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "unix2dos src",
+            "type": "process",
+            "command": "/bin/bash",
+            "args": [
+                "-lc",
+                "find src -type f \\( -name '*.cls' -o -name '*.bas' \\) -print0 | xargs -0 unix2dos"
+            ],
+            "windows": {
+                "command": "powershell",
+                "args": [
+                    "-NoProfile",
+                    "-ExecutionPolicy",
+                    "Bypass",
+                    "-Command",
+                    "Get-ChildItem -Path src -Recurse -Include *.cls,*.bas -File | ForEach-Object { $content = Get-Content -LiteralPath $_.FullName -Raw; $normalized = $content -replace \"`r?`n\", \"`r`n\"; [System.IO.File]::WriteAllText($_.FullName, $normalized) }"
+                ]
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "convert harness (perl)",
+            "type": "process",
+            "command": "perl",
+            "args": [
+                "automate/codes/harness_test_replacements.pl",
+                "${file}"
+            ],
+            "windows": {
+                "command": "perl",
+                "args": [
+                    "automate/codes/harness_test_replacements.pl",
+                    "${file}"
+                ]
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "add failure logging (perl)",
+            "type": "process",
+            "command": "perl",
+            "args": [
+                "automate/codes/add_failure_logging.pl",
+                "${file}"
+            ],
+            "windows": {
+                "command": "perl",
+                "args": [
+                    "automate/codes/add_failure_logging.pl",
+                    "${file}"
+                ]
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "find private properties missing end",
+            "type": "process",
+            "command": "perl",
+            "args": [
+                "automate/codes/find_private_properties_missing_end.pl",
+                "--root",
+                "${workspaceFolder}",
+                "--output",
+                "temp/private_properties_missing_end.txt"
+            ],
+            "windows": {
+                "command": "perl",
+                "args": [
+                    "automate\\codes\\find_private_properties_missing_end.pl",
+                    "--root",
+                    "${workspaceFolder}",
+                    "--output",
+                    "temp\\private_properties_missing_end.txt"
+                ]
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "update unit test dev",
+            "type": "process",
+            "command": "Rscript",
+            "args": [
+                "-e",
+                "source('automate/codes/update_files.R'); update_unit_test('mock')"
+            ],
+            "windows": {
+                "command": "${env:RPATH}\\bin\\Rscript.exe"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "update designer dev",
+            "type": "process",
+            "command": "Rscript",
+            "args": [
+                "-e",
+                "source('automate/codes/update_files.R'); update_designer('dev')"
+            ],
+            "windows": {
+                "command": "${env:RPATH}\\bin\\Rscript.exe"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "update designer main",
+            "type": "process",
+            "command": "Rscript",
+            "args": [
+                "-e",
+                "source('automate/codes/update_files.R'); update_designer('main')"
+            ],
+            "windows": {
+                "command": "${env:RPATH}\\bin\\Rscript.exe"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "update setup dev",
+            "type": "process",
+            "command": "Rscript",
+            "args": [
+                "-e",
+                "source('automate/codes/update_files.R'); update_setup('mock')"
+            ],
+            "windows": {
+                "command": "${env:RPATH}\\bin\\Rscript.exe"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "update setup main",
+            "type": "process",
+            "command": "Rscript",
+            "args": [
+                "-e",
+                "source('automate/codes/update_files.R'); update_setup('main')"
+            ],
+            "windows": {
+                "command": "${env:RPATH}\\bin\\Rscript.exe"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "update master setup dev",
+            "type": "process",
+            "command": "Rscript",
+            "args": [
+                "-e",
+                "source('automate/codes/update_files.R'); update_master_setup('mock')"
+            ],
+            "windows": {
+                "command": "${env:RPATH}\\bin\\Rscript.exe"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "update master setup main",
+            "type": "process",
+            "command": "Rscript",
+            "args": [
+                "-e",
+                "source('automate/codes/update_files.R'); update_master_setup('main')"
+            ],
+            "windows": {
+                "command": "${env:RPATH}\\bin\\Rscript.exe"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "update unit test main",
+            "type": "process",
+            "command": "Rscript",
+            "args": [
+                "-e",
+                "source('automate/codes/update_files.R'); update_unit_test('main')"
+            ],
+            "windows": {
+                "command": "${env:RPATH}\\bin\\Rscript.exe"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "create vba class",
+            "type": "process",
+            "command": "Rscript",
+            "args": [
+                "-e",
+                "source('automate/codes/create_vba_classes.R'); create_class('${input:className}')"
+            ],
+            "windows": {
+                "command": "${env:RPATH}\\bin\\Rscript.exe"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "create vba module",
+            "type": "process",
+            "command": "Rscript",
+            "args": [
+                "-e",
+                "source('automate/codes/create_vba_modules.R'); create_modules('${input:className}')"
+            ],
+            "windows": {
+                "command": "${env:RPATH}\\bin\\Rscript.exe"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "remove const underscores (file)",
+            "type": "process",
+            "command": "perl",
+            "args": [
+                "automate/codes/remove_const_underscores.pl",
+                "${file}"
+            ],
+            "windows": {
+                "command": "perl",
+                "args": [
+                    "automate\\codes\\remove_const_underscores.pl",
+                    "${file}"
+                ]
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "remove const underscores (folder)",
+            "type": "process",
+            "command": "perl",
+            "args": [
+                "automate/codes/remove_const_underscores.pl",
+                "${input:constTargetFolder}"
+            ],
+            "windows": {
+                "command": "perl",
+                "args": [
+                    "automate\\codes\\remove_const_underscores.pl",
+                    "${input:constTargetFolder}"
+                ]
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "merge vba modules (file)",
+            "type": "process",
+            "command": "python3",
+            "args": [
+                "automate/codes/merge_vba_modules.py",
+                "--output",
+                "${input:mergeOutputPath}",
+                "${file}"
+            ],
+            "windows": {
+                "command": "python",
+                "args": [
+                    "automate\\codes\\merge_vba_modules.py",
+                    "--output",
+                    "${input:mergeOutputPath}",
+                    "${file}"
+                ]
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "merge vba modules (folder)",
+            "type": "process",
+            "command": "python3",
+            "args": [
+                "automate/codes/merge_vba_modules.py",
+                "--output",
+                "${input:mergeFolderOutputPath}",
+                "--recursive",
+                "${input:mergeTargetFolder}"
+            ],
+            "windows": {
+                "command": "python",
+                "args": [
+                    "automate\\codes\\merge_vba_modules.py",
+                    "--output",
+                    "${input:mergeFolderOutputPath}",
+                    "--recursive",
+                    "${input:mergeTargetFolder}"
+                ]
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "print vba to pdf (file)",
+            "type": "process",
+            "command": "perl",
+            "args": [
+                "automate/codes/print_vba_to_pdf.pl",
+                "--output",
+                "${input:printPdfOutputPath}",
+                "--title",
+                "${input:printPdfTitle}",
+                "${file}"
+            ],
+            "windows": {
+                "command": "perl",
+                "args": [
+                    "automate\\codes\\print_vba_to_pdf.pl",
+                    "--output",
+                    "${input:printPdfOutputPath}",
+                    "--title",
+                    "${input:printPdfTitle}",
+                    "${file}"
+                ]
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "print vba to pdf (folder)",
+            "type": "process",
+            "command": "perl",
+            "args": [
+                "automate/codes/print_vba_to_pdf.pl",
+                "--output",
+                "${input:printPdfFolderOutputPath}",
+                "--title",
+                "${input:printPdfTitle}",
+                "--recursive",
+                "${input:printPdfTargetFolder}"
+            ],
+            "windows": {
+                "command": "perl",
+                "args": [
+                    "automate\\codes\\print_vba_to_pdf.pl",
+                    "--output",
+                    "${input:printPdfFolderOutputPath}",
+                    "--title",
+                    "${input:printPdfTitle}",
+                    "--recursive",
+                    "${input:printPdfTargetFolder}"
+                ]
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Docs: Build full site",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "automate/codes/build-docs.sh"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "windows": {
+                "command": "powershell",
+                "args": [
+                    "-NoProfile",
+                    "-Command",
+                    "Remove-Item -Recurse -Force src/docs -ErrorAction SilentlyContinue; Rscript automate/codes/create-docs.R --all; Rscript automate/codes/build-site.R"
+                ]
+            },
+            "group": "build",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Docs: Generate class markdown",
+            "type": "shell",
+            "command": "Rscript",
+            "args": [
+                "automate/codes/create-docs.R",
+                "class",
+                "${input:docClassName}"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "windows": {
+                "command": "${env:RPATH}\\bin\\Rscript.exe"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Docs: Generate interface markdown",
+            "type": "shell",
+            "command": "Rscript",
+            "args": [
+                "automate/codes/create-docs.R",
+                "--interface",
+                "${input:docClassName}"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "windows": {
+                "command": "${env:RPATH}\\bin\\Rscript.exe"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        }
+    ],
+    "inputs": [
+        {
+            "id": "className",
+            "type": "promptString",
+            "description": "Name of the VBA class to generate",
+            "default": "NewClass"
+        },
+        {
+            "id": "docClassName",
+            "type": "promptString",
+            "description": "Name of the VBA class to document (e.g. Buttons, LLExporter)",
+            "default": "Buttons"
+        },
+        {
+            "id": "testModulePath",
+            "type": "promptString",
+            "description": "Path to the VBA test module to migrate (e.g. src/tests/modules/general/TestChecking.bas)",
+            "default": "src/tests/modules/general/TestChecking.bas"
+        },
+        {
+            "id": "constTargetFolder",
+            "type": "promptString",
+            "description": "Folder to process when stripping underscores from constant names",
+            "default": "src"
+        },
+        {
+            "id": "mergeOutputPath",
+            "type": "promptString",
+            "description": "Output file path for the merged VBA content",
+            "default": "merged_modules.bas"
+        },
+        {
+            "id": "mergeTargetFolder",
+            "type": "promptString",
+            "description": "Folder to merge recursively when combining VBA modules",
+            "default": "src"
+        },
+        {
+            "id": "mergeFolderOutputPath",
+            "type": "promptString",
+            "description": "Output file path when merging a VBA folder",
+            "default": "merged_folder_modules.bas"
+        },
+        {
+            "id": "printPdfOutputPath",
+            "type": "promptString",
+            "description": "PDF output path when printing the active file",
+            "default": "printed_module.pdf"
+        },
+        {
+            "id": "printPdfTargetFolder",
+            "type": "promptString",
+            "description": "Folder to include when printing modules to PDF",
+            "default": "src"
+        },
+        {
+            "id": "printPdfFolderOutputPath",
+            "type": "promptString",
+            "description": "PDF output path when printing a folder",
+            "default": "printed_folder_modules.pdf"
+        },
+        {
+            "id": "printPdfTitle",
+            "type": "promptString",
+            "description": "Title to display on the PDF output",
+            "default": "VBA Modules"
+        }
+    ]
+}

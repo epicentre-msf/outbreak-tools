@@ -28,12 +28,15 @@ local
 debug
 
 
+
 .DS_Store
 \\.vscode/
 
 .quarto/
 *.Rproj
 docs/
+.Rprofile
+.Renviron
 
 
 /.quarto/
@@ -42,3 +45,7 @@ docs/
 .Renviron
 **/~$*.xlsb
 **/.todo
+/.obt
+obt-skill/
+obt-doc-skill/
+src/.docignore
