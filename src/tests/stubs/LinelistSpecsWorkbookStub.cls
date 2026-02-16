@@ -19,7 +19,6 @@ Implements ILinelistSpecs
 Private Type TSpecs
     dictionary As ILLdictionary
     workbook As Workbook
-    main As IMain
     password As IPasswords
     translations As ITranslationObject
 End Type
@@ -27,11 +26,9 @@ End Type
 Private this As TSpecs
 
 Public Sub Initialise(ByVal dictionary As ILLdictionary, _
-                      ByVal workbook As Workbook, _
-                      Optional ByVal main As IMain)
+                      ByVal workbook As Workbook)
     Set this.dictionary = dictionary
     Set this.workbook = workbook
-    Set this.main = main
 End Sub
 
 Private Sub ILinelistSpecs_ResetCaches()
@@ -53,7 +50,7 @@ Private Property Get ILinelistSpecs_DesignFormat() As ILLFormat
     Set ILinelistSpecs_DesignFormat = Nothing
 End Property
 
-Private Property Get ILinelistSpecs_Analysis() As ILLAnalysis
+Private Property Get ILinelistSpecs_Analysis() As IAnalysis
     Set ILinelistSpecs_Analysis = Nothing
 End Property
 
@@ -73,13 +70,9 @@ Private Property Get ILinelistSpecs_FormulaDataObject() As IFormulaData
     Set ILinelistSpecs_FormulaDataObject = Nothing
 End Property
 
-Private Property Get ILinelistSpecs_MainObject() As IMain
-    Set ILinelistSpecs_MainObject = this.main
+Private Property Get ILinelistSpecs_HasTemplate() As Boolean
+    ILinelistSpecs_HasTemplate = False
 End Property
-
-Public Sub SetMainObject(ByVal value As IMain)
-    Set this.main = value
-End Sub
 
 Private Property Get ILinelistSpecs_Translations() As ILLTranslation
     Set ILinelistSpecs_Translations = Nothing
@@ -113,8 +106,16 @@ Private Function ILinelistSpecs_Categories(ByVal varName As String, Optional ByV
     Set ILinelistSpecs_Categories = Nothing
 End Function
 
-Private Sub ILinelistSpecs_Prepare()
+Private Sub ILinelistSpecs_Prepare(ByVal importService As IDesignerImportService)
 End Sub
+
+Private Property Get ILinelistSpecs_OutputWorkbook() As Workbook
+    Set ILinelistSpecs_OutputWorkbook = Nothing
+End Property
+
+Private Property Get ILinelistSpecs_OutputTemporaryRepos() As ITemporaryRepos
+    Set ILinelistSpecs_OutputTemporaryRepos = Nothing
+End Property
 
 Private Sub ILinelistSpecs_Export(ByVal toWkb As Workbook)
 End Sub

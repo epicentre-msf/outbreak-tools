@@ -16,11 +16,30 @@ Attribute VB_Description = "Contract describing reusable linelist specifications
 
 Option Explicit
 
+'@section Enumerations
+'===============================================================================
+'@description Scope identifiers for temporary internal worksheets.
+
+'@enum TempSheetScope
+'@description
+'Byte-valued scope identifiers passed to TemporarySheetName() to resolve the
+'canonical name of a temporary internal worksheet.
+Public Enum TempSheetScope
+    TempSheetSingle = 1
+    TempSheetList = 2
+    TempSheetUpdates = 3
+    TempSheetMetadata = 4
+    TempSheetAnalysis = 5
+    TempSheetImport = 6
+    TempSheetSpatial = 7
+    TempSheetShowHide = 8
+End Enum
+
 '@class ILinelistSpecs
 '@description
 'Defines the public contract for the LinelistSpecs class, exposing lazy-loaded
 'accessors for all specification collaborators (dictionary, choices, translations,
-'geo, analysis, passwords, format, exports, formulas, main), metadata helpers
+'geo, analysis, passwords, format, exports, formulas), metadata helpers
 'for temporary sheet names and category lookups, and lifecycle methods for
 'preparing, exporting, and error-managing the specifications workbook.
 
@@ -74,7 +93,7 @@ End Property
 '@prop-title Visual formatting specifications
 '@details
 'Returns the ILLFormat instance providing sheet and cell formatting methods
-'based on the LinelistStyle worksheet. Lazy-loaded on first access.
+'based on the __formatter worksheet. Lazy-loaded on first access.
 '@return ILLFormat. The format collaborator.
 Public Property Get DesignFormat() As ILLFormat
 End Property
@@ -82,10 +101,10 @@ End Property
 '@jump:analysis
 '@prop-title Analysis setup specifications
 '@details
-'Returns the ILLAnalysis instance providing access to the Analysis worksheet
+'Returns the IAnalysis instance providing access to the Analysis worksheet
 'configuration. Lazy-loaded on first access.
-'@return ILLAnalysis. The analysis collaborator.
-Public Property Get Analysis() As ILLAnalysis
+'@return IAnalysis. The analysis collaborator.
+Public Property Get Analysis() As IAnalysis
 End Property
 
 '@jump:export-object
@@ -124,13 +143,13 @@ End Property
 Public Property Get FormulaDataObject() As IFormulaData
 End Property
 
-'@jump:main-object
-'@prop-title Main configuration sheet accessor
+'@jump:has-template
+'@prop-title Whether the workbook uses a ribbon template
 '@details
-'Returns the IMain instance providing key-value configuration from the Main
-'worksheet. Lazy-loaded on first access.
-'@return IMain. The main configuration collaborator.
-Public Property Get MainObject() As IMain
+'Reads the RNG_MainTemp named range on the Main worksheet and returns True
+'when the value equals "has template".
+'@return Boolean. True when a template is configured.
+Public Property Get HasTemplate() As Boolean
 End Property
 
 '@jump:translations
@@ -173,8 +192,8 @@ End Property
 '@prop-title Temporary sheet name for a given scope
 '@details
 'Returns the fixed worksheet name used for temporary internal sheets, based
-'on the scope constant (TEMP_SHEET_ANALYSIS, TEMP_SHEET_LIST, etc.).
-'@param scope Byte. The temporary sheet scope constant.
+'on the TempSheetScope enum (TempSheetAnalysis, TempSheetList, etc.).
+'@param scope Byte. A TempSheetScope enum value.
 '@return String. The worksheet name string.
 Public Property Get TemporarySheetName(ByVal scope As Byte) As String
 End Property
@@ -184,7 +203,7 @@ End Property
 '@details
 'Returns a configuration value from the Main worksheet for the given tag name.
 'The special tag "numberofexports" returns the export count from the Exports
-'worksheet; all other tags delegate to MainObject.ValueOf.
+'worksheet; all other tags resolve the named range directly on the Main sheet.
 '@param tagName String. The configuration key to look up.
 '@return String. The configuration value.
 Public Property Get Value(ByVal tagName As String) As String
@@ -209,15 +228,35 @@ End Function
 '@description Preparation, export, and error management operations.
 
 '@jump:prepare
-'@sub-title Import and prepare all specifications from external workbooks
+'@sub-title Prepare all specifications using an import service
 '@details
-'Orchestrates the full specification preparation workflow: validates the Main
-'sheet readiness, opens the setup workbook, imports dictionary, choices,
-'translations, analysis, and optionally geo data, then prepares the dictionary
-'with preserved names, adds list auto columns, translates and sorts all
-'collaborators. Handles errors with cleanup of open workbooks.
-Public Sub Prepare()
+'Orchestrates the full specification preparation workflow: creates a new
+'output workbook, exports designer components via the import service,
+'retrieves exported domain instances, then prepares the dictionary with
+'preserved names, adds list auto columns, translates and sorts all
+'collaborators. Handles errors with cleanup.
+'@param importService IDesignerImportService. The configured import service
+'holding imported setup data.
+Public Sub Prepare(ByVal importService As IDesignerImportService)
 End Sub
+
+'@jump:output-workbook
+'@prop-title The output linelist workbook created during Prepare
+'@details
+'Returns the workbook created by Prepare that received exported data from
+'the import service. Returns Nothing before Prepare is called.
+'@return Workbook. The output workbook, or Nothing.
+Public Property Get OutputWorkbook() As Workbook
+End Property
+
+'@jump:output-temporary-repos
+'@prop-title The temporary repository created during Prepare
+'@details
+'Returns the ITemporaryRepos instance created by Prepare for working files.
+'Returns Nothing before Prepare is called.
+'@return ITemporaryRepos. The temporary repository, or Nothing.
+Public Property Get OutputTemporaryRepos() As ITemporaryRepos
+End Property
 
 '@jump:export
 '@sub-title Export all specifications to an output workbook

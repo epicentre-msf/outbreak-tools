@@ -97,7 +97,7 @@ Private Property Get ILinelistSpecs_DesignFormat() As ILLFormat
     Set ILinelistSpecs_DesignFormat = designFormat
 End Property
 
-Private Property Get ILinelistSpecs_Analysis() As ILLAnalysis
+Private Property Get ILinelistSpecs_Analysis() As IAnalysis
     Set ILinelistSpecs_Analysis = Nothing
 End Property
 
@@ -117,8 +117,8 @@ Private Property Get ILinelistSpecs_FormulaDataObject() As IFormulaData
     Set ILinelistSpecs_FormulaDataObject = formulaData
 End Property
 
-Private Property Get ILinelistSpecs_MainObject() As IMain
-    Set ILinelistSpecs_MainObject = Nothing
+Private Property Get ILinelistSpecs_HasTemplate() As Boolean
+    ILinelistSpecs_HasTemplate = False
 End Property
 
 Private Property Get ILinelistSpecs_Translations() As ILLTranslation
@@ -165,9 +165,17 @@ Private Function BuildCategoryKey(ByVal varName As String, ByVal useShortlabels 
     BuildCategoryKey = LCase$(Trim$(varName)) & "|" & CStr(useShortlabels)
 End Function
 
-Private Sub ILinelistSpecs_Prepare()
+Private Sub ILinelistSpecs_Prepare(ByVal importService As IDesignerImportService)
     'No-op
 End Sub
+
+Private Property Get ILinelistSpecs_OutputWorkbook() As Workbook
+    Set ILinelistSpecs_OutputWorkbook = Nothing
+End Property
+
+Private Property Get ILinelistSpecs_OutputTemporaryRepos() As ITemporaryRepos
+    Set ILinelistSpecs_OutputTemporaryRepos = Nothing
+End Property
 
 Private Sub ILinelistSpecs_Export(ByVal toWkb As Workbook)
     'Not required for tests

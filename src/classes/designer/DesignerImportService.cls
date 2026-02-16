@@ -41,6 +41,7 @@ Private Type TDesignerImportService
     exportedExport As ILLExport    'Export manager on exported workbook
     exportedGeo As ILLGeo          'Geo manager on exported workbook
     exportedPass As IPasswords     'Passwords manager on exported workbook
+    exportedTrans As ILLTranslation 'Translations manager on exported workbook
 End Type
 
 Private this As TDesignerImportService
@@ -230,6 +231,7 @@ Public Sub ExportToLinelist(ByVal targetBook As Workbook)
     ExportAnalysis hostBook, targetBook
     ExportGeo hostBook, targetBook
     ExportPasswords hostBook, targetBook
+    ExportTranslations hostBook, targetBook
     ExportFormatter hostBook, targetBook
 
     BuildExportedInstances targetBook
@@ -276,6 +278,11 @@ End Property
 '@label:exported-passwords
 Public Property Get ExportedPasswords() As IPasswords
     Set ExportedPasswords = this.exportedPass
+End Property
+
+'@label:exported-translations
+Public Property Get ExportedTranslations() As ILLTranslation
+    Set ExportedTranslations = this.exportedTrans
 End Property
 
 
@@ -477,6 +484,19 @@ Private Sub ExportPasswords(ByVal hostBook As Workbook, ByVal targetBook As Work
     passManager.ExportToWorkbook targetBook
 End Sub
 
+'@label:export-translations
+'@sub-title Export translations from host to target workbook
+Private Sub ExportTranslations(ByVal hostBook As Workbook, ByVal targetBook As Workbook)
+    Dim hostSheet As Worksheet
+    Dim translations As ILLTranslation
+
+    Set hostSheet = ResolveWorksheet(hostBook, SHEET_LL_TRANSLATION)
+    If hostSheet Is Nothing Then Exit Sub
+
+    Set translations = LLTranslation.Create(hostSheet)
+    translations.Export targetBook
+End Sub
+
 '@label:export-formatter
 '@sub-title Export formatter from host to target workbook
 Private Sub ExportFormatter(ByVal hostBook As Workbook, ByVal targetBook As Workbook)
@@ -556,6 +576,14 @@ Private Sub BuildExportedInstances(ByVal targetBook As Workbook)
         Set this.exportedPass = Passwords.Create(targetSheet)
         On Error GoTo 0
     End If
+
+    'Translations
+    Set targetSheet = ResolveWorksheet(targetBook, SHEET_LL_TRANSLATION)
+    If Not targetSheet Is Nothing Then
+        On Error Resume Next
+        Set this.exportedTrans = LLTranslation.Create(targetSheet)
+        On Error GoTo 0
+    End If
 End Sub
 
 '@label:clear-exported-instances
@@ -567,6 +595,7 @@ Private Sub ClearExportedInstances()
     Set this.exportedExport = Nothing
     Set this.exportedGeo = Nothing
     Set this.exportedPass = Nothing
+    Set this.exportedTrans = Nothing
 End Sub
 
 
@@ -665,6 +694,10 @@ End Property
 
 Private Property Get IDesignerImportService_ExportedPasswords() As IPasswords
     Set IDesignerImportService_ExportedPasswords = ExportedPasswords
+End Property
+
+Private Property Get IDesignerImportService_ExportedTranslations() As ILLTranslation
+    Set IDesignerImportService_ExportedTranslations = ExportedTranslations
 End Property
 
 Private Property Get IDesignerImportService_HostWorkbook() As Workbook

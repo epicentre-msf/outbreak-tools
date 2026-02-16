@@ -119,6 +119,13 @@ End Property
 Public Property Get ExportedPasswords() As IPasswords
 End Property
 
+'@jump:exported-translations
+'@prop-title Translations manager targeting the exported workbook
+'@return ILLTranslation. The exported translations manager, or Nothing.
+'@export
+Public Property Get ExportedTranslations() As ILLTranslation
+End Property
+
 
 '@section State
 '===============================================================================
