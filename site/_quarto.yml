@@ -1,6 +1,8 @@
 project:
   type: website
   output-dir: docs
+  resources:
+    - dev/**
   
 execute:
   freeze: auto
@@ -61,6 +63,11 @@ website:
 
           - text: Tutorial
             href: tutorial.qmd
+
+          - text: "---"
+
+          - text: Developer API
+            href: dev/index.html
 
     tools:
       - icon: github

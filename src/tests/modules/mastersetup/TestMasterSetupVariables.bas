@@ -1,0 +1,399 @@
+Attribute VB_Name = "TestMasterSetupVariables"
+Option Explicit
+
+'@Folder("CustomTests")
+'@Folder("Tests")
+'@ModuleDescription("Unit tests covering the MasterSetupVariables class")
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
+
+Private Assert As ICustomTest
+Private Manager As IMasterSetupVariables
+Private FixtureSheet As Worksheet
+
+Private Const VARIABLES_SHEET As String = "TST_MasterVariables"
+Private Const CHOICES_SHEET As String = "TST_MasterChoices"
+Private Const DROPDOWNS_SHEET As String = "TST_MasterDropdowns"
+Private Const SOURCE_SHEET As String = "TST_MasterSource"
+Private Const TARGET_SHEET As String = "TST_MasterTarget"
+Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
+Private Const VARIABLE_TABLE_NAME As String = "TST_MasterVariablesTable"
+Private Const STATUS_DROPDOWN_NAME As String = "__var_status"
+Private Const VARIABLE_WORKBOOK_NAME As String = "__Col__Variables"
+
+
+'@section Module lifecycle
+'===============================================================================
+'@ModuleInitialize
+Public Sub ModuleInitialize()
+    Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
+    Assert.SetModuleName "TestMasterSetupVariables"
+End Sub
+
+'@ModuleCleanup
+Public Sub ModuleCleanup()
+    If Not Assert Is Nothing Then
+        Assert.PrintResults TEST_OUTPUT_SHEET
+    End If
+    Set Assert = Nothing
+End Sub
+
+
+'@section Test lifecycle
+'===============================================================================
+'@TestInitialize
+Public Sub TestInitialize()
+    Dim lo As ListObject
+
+    TestHelpers.DeleteWorksheets VARIABLES_SHEET, CHOICES_SHEET, DROPDOWNS_SHEET, SOURCE_SHEET, TARGET_SHEET
+    Set FixtureSheet = TestHelpers.EnsureWorksheet(VARIABLES_SHEET)
+    RemoveWorkbookVariableName
+
+    With FixtureSheet
+        .Cells.Clear
+        .Range("A1").Value = "Variable Name"
+        .Range("B1").Value = "Variable Label"
+        .Range("A2:E2").Value = vbNullString
+        Set lo = .ListObjects.Add(xlSrcRange, .Range("A1:E2"), , xlYes)
+    End With
+
+    lo.Name = VARIABLE_TABLE_NAME
+    lo.HeaderRowRange.Cells(1, 1).Value = "Variable Order"
+    lo.HeaderRowRange.Cells(1, 2).Value = "Variable Section"
+    lo.HeaderRowRange.Cells(1, 3).Value = "Variable Name"
+    lo.HeaderRowRange.Cells(1, 4).Value = "Variable Label"
+    lo.HeaderRowRange.Cells(1, 5).Value = "Default Choice"
+    lo.DataBodyRange.Cells(1, 3).Value = "patient_status"
+    lo.DataBodyRange.Cells(1, 4).Value = "Patient status"
+    lo.DataBodyRange.Cells(1, 5).Value = "Choice"
+
+    Set Manager = MasterSetupVariables.Create(lo)
+End Sub
+
+'@TestCleanup
+Public Sub TestCleanup()
+    If Not Assert Is Nothing Then
+        Assert.Flush
+    End If
+    Set Manager = Nothing
+    RemoveWorkbookVariableName
+    Set FixtureSheet = Nothing
+    TestHelpers.DeleteWorksheets VARIABLES_SHEET, CHOICES_SHEET, DROPDOWNS_SHEET, SOURCE_SHEET, TARGET_SHEET
+End Sub
+
+
+'@section Tests
+'===============================================================================
+'@TestMethod("MasterSetupVariables")
+Public Sub TestCreateEnsuresAllColumns()
+    Dim lo As ListObject
+
+    CustomTestSetTitles Assert, "MasterSetupVariables", "TestCreateEnsuresAllColumns"
+
+    Set lo = FixtureSheet.ListObjects(VARIABLE_TABLE_NAME)
+
+    Assert.AreEqual 8&, lo.ListColumns.Count, "Expected eight columns created by the manager."
+    Assert.AreEqual "Variable Order", lo.ListColumns(1).Name, "Column name 'Variable Order' should be present"
+    Assert.AreEqual "Variable Section", lo.ListColumns(2).Name, "Column name 'Variable Section' should be present"
+    Assert.AreEqual "Variable Name", lo.ListColumns(3).Name, "Column name 'Variable Name' should be present"
+    Assert.AreEqual "Variable Label", lo.ListColumns(4).Name, "Column name 'Variable Label' should be present"
+    Assert.AreEqual "Default Choice", lo.ListColumns(5).Name, "Column name 'Default Choice' should be present"
+    Assert.AreEqual "Choices Values", lo.ListColumns(6).Name, "Column name 'Choices Values' should be present"
+    Assert.AreEqual "Default Status", lo.ListColumns(7).Name, "Column name 'Default Status' should be present"
+    Assert.AreEqual "Comments", lo.ListColumns(8).Name, "Column name 'Comments' should be present"
+End Sub
+
+'@TestMethod("MasterSetupVariables")
+Public Sub TestRefreshChoicesPopulatesConcatenatedValues()
+    Dim choices As ILLChoices
+    Dim result As String
+    Dim choicesColumn As Range
+
+    CustomTestSetTitles Assert, "MasterSetupVariables", "TestRefreshChoicesPopulatesConcatenatedValues"
+
+    Set choices = BuildChoicesStub()
+
+    Manager.RefreshChoices "patient_status", choices
+
+    Set choicesColumn = FixtureSheet.ListObjects(VARIABLE_TABLE_NAME).ListColumns("Choices Values").DataBodyRange
+    result = CStr(choicesColumn.Cells(1, 1).Value)
+
+    Assert.AreEqual "Active | Inactive", result, "Expected concatenated choices to match stub values."
+End Sub
+
+'@TestMethod("MasterSetupVariables")
+Public Sub TestInitialisePersistsMetadataAndValidation()
+    Dim dropdowns As IDropdownLists
+    Dim statusRange As Range
+    Dim hidden As IHiddenNames
+
+    CustomTestSetTitles Assert, "MasterSetupVariables", "TestInitialisePersistsMetadataAndValidation"
+
+    Set dropdowns = BuildDropdownsStub()
+    Manager.Initialise dropdowns
+
+    Set statusRange = FixtureSheet.ListObjects(VARIABLE_TABLE_NAME).ListColumns("Default Status").DataBodyRange
+    Assert.IsTrue Not statusRange Is Nothing, "Default Status column should expose a data range."
+    Assert.AreEqual xlValidateList, statusRange.Validation.Type, "Expected list validation applied to Default Status."
+    Assert.IsTrue InStr(1, statusRange.Validation.Formula1, STATUS_DROPDOWN_NAME, vbTextCompare) > 0, _
+                 "Validation should point to the master setup status dropdown."
+
+    Set hidden = HiddenNames.Create(FixtureSheet)
+    Assert.IsTrue hidden.HasName("__MSV__ColName"), "Expected hidden name for Variable Name column."
+    Assert.IsTrue Manager.Initialised, "Initialise should set the internal flag to True."
+End Sub
+
+'@TestMethod("MasterSetupVariables")
+Public Sub TestDataRangeExposesRequestedColumn()
+    Dim expectedData As Range
+    Dim expectedWithHeaders As Range
+    Dim result As Range
+    Dim headerResult As Range
+
+    CustomTestSetTitles Assert, "MasterSetupVariables", "TestDataRangeExposesRequestedColumn"
+
+    Set expectedData = FixtureSheet.ListObjects(VARIABLE_TABLE_NAME).ListColumns("Variable Name").DataBodyRange
+    Set expectedWithHeaders = FixtureSheet.ListObjects(VARIABLE_TABLE_NAME).ListColumns("Variable Name").Range
+
+    Set result = Manager.DataRange("Variable Name")
+    Assert.IsTrue (result.Address = expectedData.Address), "DataRange should proxy the data body range for the requested column."
+
+    Set headerResult = Manager.DataRange("Variable Name", True)
+    Assert.AreEqual expectedWithHeaders.Address(True, True, xlA1, True), _
+                     headerResult.Address(True, True, xlA1, True), _
+                     "Including headers should match the ListColumn range."
+
+    Assert.IsTrue Manager.DataRange("Unknown Header") Is Nothing, _
+                  "Unknown headers should return Nothing without raising errors."
+End Sub
+
+'@TestMethod("MasterSetupVariables")
+Public Sub TestSetVariableValidationAppliesWorkbookName()
+    Dim targetRange As Range
+
+    CustomTestSetTitles Assert, "MasterSetupVariables", "TestSetVariableValidationAppliesWorkbookName"
+
+    RegisterWorkbookVariableName
+    Set targetRange = FixtureSheet.Range("C2:C5")
+
+    Manager.SetVariableValidation targetRange
+
+    Assert.AreEqual xlValidateList, targetRange.Validation.Type, "Validation should be configured as a list."
+    Assert.AreEqual "=" & VARIABLE_WORKBOOK_NAME, targetRange.Validation.Formula1, _
+                     "Validation should point to the workbook-scoped variable range."
+End Sub
+
+'@TestMethod("MasterSetupVariables")
+Public Sub TestSetVariableValidationSkipsWhenNameMissing()
+    Dim targetRange As Range
+
+    CustomTestSetTitles Assert, "MasterSetupVariables", "TestSetVariableValidationSkipsWhenNameMissing"
+
+    RemoveWorkbookVariableName
+    Set targetRange = FixtureSheet.Range("D2:D4")
+
+    On Error Resume Next
+        targetRange.Validation.Delete
+    On Error GoTo 0
+
+    targetRange.Validation.Add Type:=xlValidateWholeNumber, _
+                               AlertStyle:=xlValidAlertStop, _
+                               Operator:=xlBetween, _
+                               Formula1:="1", _
+                               Formula2:="10"
+
+    Manager.SetVariableValidation targetRange
+
+    Assert.AreEqual xlValidateWholeNumber, targetRange.Validation.Type, _
+                     "Validation should stay unchanged when the workbook name is missing."
+End Sub
+
+'@TestMethod("MasterSetupVariables")
+Public Sub TestCloneToWorkbookCopiesStructureAndMetadata()
+    Dim dropdowns As IDropdownLists
+    Dim targetBook As Workbook
+    Dim clone As IMasterSetupVariables
+    Dim targetSheet As Worksheet
+    Dim targetHidden As IHiddenNames
+
+    CustomTestSetTitles Assert, "MasterSetupVariables", "TestCloneToWorkbookCopiesStructureAndMetadata"
+
+    Set dropdowns = BuildDropdownsStub()
+    Manager.Initialise dropdowns
+    FixtureSheet.ListObjects(VARIABLE_TABLE_NAME).ListColumns("Variable Section").DataBodyRange.Cells(1, 1).Value = "Core"
+    FixtureSheet.ListObjects(VARIABLE_TABLE_NAME).ListColumns("Default Status").DataBodyRange.Cells(1, 1).Value = "active"
+
+    Set targetBook = TestHelpers.NewWorkbook
+    On Error GoTo Cleanup
+
+    With targetBook.Worksheets(1)
+        .Name = FixtureSheet.Name
+        .Range("Z10").Value = "stale"
+    End With
+
+    Set clone = Manager.CloneToWorkbook(targetBook)
+    Assert.IsTrue Not clone Is Nothing, "Clone should return a new interface instance."
+    Assert.AreEqual FixtureSheet.Name, clone.Table.Parent.Name, "Clone should reuse the source sheet name by default."
+    Assert.AreEqual FixtureSheet.ListObjects(VARIABLE_TABLE_NAME).ListColumns.Count, _
+                    clone.Table.ListColumns.Count, _
+                    "Clone should reproduce all columns."
+    Assert.AreEqual FixtureSheet.ListObjects(VARIABLE_TABLE_NAME).ListRows.Count, _
+                    clone.Table.ListRows.Count, _
+                    "Clone should reproduce all rows."
+
+    Set targetSheet = targetBook.Worksheets(FixtureSheet.Name)
+    Set targetHidden = HiddenNames.Create(targetSheet)
+    Assert.IsTrue targetHidden.HasName("__MSV__ColDefaultStatus"), _
+                  "Expected hidden metadata copied to the target sheet."
+    Assert.AreEqual 1&, targetSheet.ListObjects.Count, "Target sheet should contain a single table."
+    Assert.AreEqual vbNullString, CStr(targetSheet.Range("Z10").Value), "Sheet content should be cleared before exporting."
+    AssertColumnOrder targetSheet.ListObjects(1)
+
+Cleanup:
+    TestHelpers.DeleteWorkbook targetBook
+End Sub
+
+'@TestMethod("MasterSetupVariables")
+Public Sub TestImportFromWorksheetHandlesOffsetHeaders()
+    Dim sourceSheet As Worksheet
+    Dim headers As Variant
+    Dim values As Variant
+    Dim idx As Long
+    Dim table As ListObject
+
+    CustomTestSetTitles Assert, "MasterSetupVariables", "TestImportFromWorksheetHandlesOffsetHeaders"
+
+    headers = Array("Variable Order", "Variable Section", "Variable Name", "Variable Label", _
+                    "Default Choice", "Choices Values", "Default Status", "Comments")
+    values = Array(5, "Vitals", "blood_pressure", "Blood pressure", "normal", _
+                   "normal | high", "mandatory", "Autogenerated")
+
+    Set sourceSheet = TestHelpers.EnsureWorksheet(SOURCE_SHEET)
+    sourceSheet.Cells.Clear
+
+    For idx = LBound(headers) To UBound(headers)
+        sourceSheet.Cells(5, 2 + idx).Value = headers(idx)
+        sourceSheet.Cells(6, 2 + idx).Value = values(idx)
+    Next idx
+
+    Manager.ImportFromWorksheet sourceSheet
+
+    Set table = FixtureSheet.ListObjects(VARIABLE_TABLE_NAME)
+    Assert.AreEqual 1&, table.DataBodyRange.Rows.Count, "Import should overwrite the table with a single row."
+    Assert.AreEqual values(0), table.ListColumns("Variable Order").DataBodyRange.Cells(1, 1).Value, "header 'Variable Order' should be exported correctly"
+    Assert.AreEqual values(1), table.ListColumns("Variable Section").DataBodyRange.Cells(1, 1).Value, "header 'Variable Section' should be exported correctly"
+    Assert.AreEqual values(2), table.ListColumns("Variable Name").DataBodyRange.Cells(1, 1).Value, "header 'Variable Name' should be exported correctly"
+    Assert.AreEqual values(4), table.ListColumns("Default Choice").DataBodyRange.Cells(1, 1).Value, "header 'Default Choice' should be exported correctly"
+    Assert.AreEqual values(5), table.ListColumns("Choices Values").DataBodyRange.Cells(1, 1).Value, "header 'Choices Values' should be exported correctly"
+    Assert.AreEqual values(6), table.ListColumns("Default Status").DataBodyRange.Cells(1, 1).Value, "header 'Default Status' should be exported correctly"
+    Assert.AreEqual values(7), table.ListColumns("Comments").DataBodyRange.Cells(1, 1).Value, "header 'Comments' should be exported correctly"
+End Sub
+
+'@TestMethod("MasterSetupVariables")
+Public Sub TestCopyToListObjectAppliesNameStyleAndOrder()
+    Dim dropdowns As IDropdownLists
+    Dim targetSheet As Worksheet
+    Dim targetTable As ListObject
+    Dim expectedStyle As String
+
+    CustomTestSetTitles Assert, "MasterSetupVariables", "TestCopyToListObjectAppliesNameStyleAndOrder"
+
+    expectedStyle = "TableStyleMedium2"
+    FixtureSheet.ListObjects(VARIABLE_TABLE_NAME).TableStyle = expectedStyle
+
+    Set dropdowns = BuildDropdownsStub()
+    Manager.Initialise dropdowns
+
+    Set targetSheet = TestHelpers.EnsureWorksheet(TARGET_SHEET)
+    targetSheet.Cells.Clear
+    targetSheet.Range("A1").Value = "Foo"
+    targetSheet.Range("B1").Value = "Bar"
+    targetSheet.Range("A2:B2").Value = vbNullString
+    Set targetTable = targetSheet.ListObjects.Add(xlSrcRange, targetSheet.Range("A1:B2"), XlListObjectHasHeaders:=xlYes)
+    targetTable.Name = "TempTable"
+
+    Manager.CopyToListObject targetTable
+
+    Assert.AreEqual FixtureSheet.ListObjects(VARIABLE_TABLE_NAME).Name, targetTable.Name, _
+                     "Copy should apply the source table name to the target."
+    Assert.AreEqual expectedStyle, targetTable.TableStyle, "Copy should apply the source table style."
+    AssertColumnOrder targetTable
+    Assert.AreEqual FixtureSheet.ListObjects(VARIABLE_TABLE_NAME).ListRows.Count, targetTable.ListRows.Count, _
+                     "Target table should contain the same number of rows."
+End Sub
+
+
+'@section Helpers
+'===============================================================================
+Private Function BuildChoicesStub() As ILLChoices
+    Dim sh As Worksheet
+
+    Set sh = TestHelpers.EnsureWorksheet(CHOICES_SHEET)
+    sh.Cells.Clear
+
+    sh.Cells(4, 1).Value = "list name"
+    sh.Cells(4, 2).Value = "label"
+    sh.Cells(4, 3).Value = "short label"
+    sh.Cells(4, 4).Value = "ordering list"
+
+    sh.Cells(5, 1).Value = "Choice"
+    sh.Cells(5, 2).Value = "Active"
+    sh.Cells(6, 1).Value = "Choice"
+    sh.Cells(6, 2).Value = "Inactive"
+
+    Set BuildChoicesStub = LLChoices.Create(sh, 4, 1)
+End Function
+
+Private Function BuildDropdownsStub() As IDropdownLists
+    Dim sh As Worksheet
+
+    Set sh = TestHelpers.EnsureWorksheet(DROPDOWNS_SHEET)
+    sh.Cells.Clear
+
+    Set BuildDropdownsStub = DropdownLists.Create(sh)
+End Function
+
+Private Sub AssertColumnOrder(ByVal lo As ListObject)
+    Dim expected As Variant
+    Dim idx As Long
+
+    expected = Array("Variable Order", "Variable Section", "Variable Name", "Variable Label", _
+                     "Default Choice", "Choices Values", "Default Status", "Comments")
+
+    For idx = LBound(expected) To UBound(expected)
+        Assert.AreEqual expected(idx), lo.ListColumns(idx + 1).Name, "Unexpected column order at position " & CStr(idx + 1)
+    Next idx
+End Sub
+
+Private Sub RegisterWorkbookVariableName()
+    Dim store As IHiddenNames
+    Dim lo As ListObject
+    Dim wb As Workbook
+
+    If FixtureSheet Is Nothing Then Exit Sub
+    Set lo = FixtureSheet.ListObjects(VARIABLE_TABLE_NAME)
+    If lo Is Nothing Then Exit Sub
+
+    Set wb = FixtureSheet.Parent
+    Set store = HiddenNames.Create(wb)
+
+    store.SetListObjectHeader VARIABLE_WORKBOOK_NAME, lo, "Variable Name"
+End Sub
+
+Private Sub RemoveWorkbookVariableName()
+    Dim wb As Workbook
+
+    Set wb = TargetWorkbook()
+    If wb Is Nothing Then Exit Sub
+
+    On Error Resume Next
+        wb.Names(VARIABLE_WORKBOOK_NAME).Delete
+    On Error GoTo 0
+End Sub
+
+Private Function TargetWorkbook() As Workbook
+    If Not FixtureSheet Is Nothing Then
+        Set TargetWorkbook = FixtureSheet.Parent
+    Else
+        Set TargetWorkbook = ThisWorkbook
+    End If
+End Function

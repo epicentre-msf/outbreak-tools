@@ -3,7 +3,7 @@ Attribute VB_Name = "EventsRibbon"
 Option Explicit
 
 '@Folder("Events")
-'@IgnoreModule SheetAccessedUsingString, ParameterCanBeByVal, ParameterNotUsed : some parameters of controls are not used
+'@IgnoreModule UnrecognizedAnnotation, SheetAccessedUsingString, ParameterCanBeByVal, ParameterNotUsed : some parameters of controls are not used
 
 'Private constants for Ribbon Events
 Private Const TRADSHEETNAME As String = "Translations"
@@ -151,7 +151,7 @@ Public Sub clickAddLang(ByRef Control As IRibbonControl, ByRef Text As String)
 Attribute clickAddLang.VB_Description = "Callback for editLang onChange: Add a language to translation table"
 
     Dim pass As IPasswords
-    Dim trads As ITranslation
+    Dim trads As ITranslationObject
     Dim tradchk As ITranslationChunks
     Dim wb As Workbook
     Dim tradsh As Worksheet
@@ -271,7 +271,7 @@ Public Sub clickAddTrans(ByRef Control As IRibbonControl)
 Attribute clickAddTrans.VB_Description = "Callback for btnTransAdd onAction: Import all words to be translated"
 
     Dim pass As IPasswords
-    Dim trads As ITranslation
+    Dim trads As ITranslationObject
     Dim tradchk As ITranslationChunks
     Dim wb As Workbook
     Dim tradsh As Worksheet
@@ -309,8 +309,6 @@ Attribute clickAddTrans.VB_Description = "Callback for btnTransAdd onAction: Imp
     tradchk.UpdateTrans upsh
     pass.Protect TRADSHEETNAME
 
-    'Set all updates to no (this sub is in the EventsGlobal module)
-    EventsGlobal.SetAllUpdatedTo "no"
     NotBusyApp
     Application.Cursor = xlDefault
     Exit Sub
@@ -397,7 +395,7 @@ End Sub
 Public Sub LangLabel(Control As IRibbonControl, ByRef returnedVal)
 Attribute LangLabel.VB_Description = "Callback for getLabel (Depending on the language)"
 
-    Dim trads As ITranslation
+    Dim trads As ITranslationObject
     Dim codeId As String
     Dim tradsh As Worksheet
     Dim wb As Workbook
