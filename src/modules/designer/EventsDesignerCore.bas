@@ -3,13 +3,14 @@ Option Explicit
 
 '@Folder("Designer")
 '@ModuleDescription("Ribbon callbacks for the designer workbook.")
-'@depends DesignerPreparation, IDesignerPreparation, RibbonDev, OSFiles, IOSFiles, BetterArray, CustomTable, ICustomTable, Passwords, IPasswords, LLFormat, ILLFormat, ApplicationState, IApplicationState, DesignerTranslation, IDesignerTranslation
+'@depends DesignerPreparation, IDesignerPreparation, RibbonDev, OSFiles, IOSFiles, BetterArray, CustomTable, ICustomTable, Passwords, IPasswords, LLFormat, ILLFormat, ApplicationState, IApplicationState, DesignerTranslation, IDesignerTranslation, HiddenNames, IHiddenNames
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Private Const SHEET_FORMAT As String = "__formatter"
 Private Const DESTRADSSHEET As String = "DesignerTranslation"
 Private Const MAINSHEET As String = "Main"
 Private Const PROMPT_TITLE As String = "Designer"
+Private Const TAG_FORMATTER_IMPORTED As String = "TAG_FORMATTER_IMPORTED"
 
 Private trads As IDesignerTranslation
 Private prep As IDesignerPreparation
@@ -201,6 +202,10 @@ Public Sub clickImpStyle(ByRef control As IRibbonControl)
     Set importBook = Workbooks.Open(io.File(), ReadOnly:=False)
     Set formatManager = LLFormat.Create(ThisWorkbook.Worksheets(SHEET_FORMAT))
     formatManager.Import importBook.Worksheets(1)
+
+    Dim store As IHiddenNames
+    Set store = HiddenNames.Create(ThisWorkbook)
+    store.Add TAG_FORMATTER_IMPORTED, "Yes"
 
     MsgBox "Done!", vbInformation + vbOKOnly, PROMPT_TITLE
 

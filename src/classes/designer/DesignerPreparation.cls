@@ -12,7 +12,7 @@ Attribute VB_Description = "Prepares designer workbooks and ribbon settings"
 '@PredeclaredId
 '@Folder("Designer")
 '@ModuleDescription("Prepares designer workbooks and persists ribbon settings through hidden names.")
-'@depends ProjectError, HiddenNames, IHiddenNames, IDevelopment, OSFiles, IOSFiles, CustomTable, ICustomTable, BetterArray
+'@depends ProjectError, HiddenNames, IHiddenNames, IDevelopment, OSFiles, IOSFiles, CustomTable, ICustomTable, BetterArray, DropdownLists, IDropdownLists
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, ParameterNotUsed
 
 Option Explicit
@@ -22,12 +22,15 @@ Implements IDesignerPreparation
 '@description
 'Prepares a designer workbook for ribbon interactions. The full
 'preparation sequence imports translation tables from a user-selected
-'workbook, hides internal worksheets (VeryHidden for __pass/__formatter/
-'__formula, Hidden for translation sheets), seeds workbook- and
-'worksheet-level HiddenNames flags, and registers hidden sheets with
-'the development manager. Also provides methods to read and write
-'ribbon checkbox flags persisted through workbook-level hidden names.
-'@depends HiddenNames, IHiddenNames, IDevelopment, OSFiles, IOSFiles, CustomTable, ICustomTable, BetterArray
+'workbook, creates a dropdown worksheet with standard dropdown lists
+'(setup languages, interface languages, epiweek start, design values),
+'hides internal worksheets (VeryHidden for __pass/__formatter/__formula/
+'__dropdowns, Hidden for translation sheets), seeds workbook- and
+'worksheet-level HiddenNames flags, applies data validation to the
+'T_Multi table on the GenerateMultiple worksheet, and registers hidden
+'sheets with the development manager. Also provides methods to read and
+'write ribbon checkbox flags persisted through workbook-level hidden names.
+'@depends HiddenNames, IHiddenNames, IDevelopment, OSFiles, IOSFiles, CustomTable, ICustomTable, BetterArray, DropdownLists, IDropdownLists
 
 
 '@section State
@@ -36,6 +39,8 @@ Implements IDesignerPreparation
 Private Type TDesignerPreparation
     hostBook As Workbook       'Designer workbook being prepared
     store As IHiddenNames      'Workbook-level hidden names manager
+    dropdowns As IDropdownLists 'Dropdown manager bound to dropdown sheet
+    dropSheet As Worksheet     'Worksheet hosting dropdown listobjects
 End Type
 
 Private this As TDesignerPreparation
@@ -56,6 +61,8 @@ Private Const SHEET_FORMULA As String = "__formula"
 Private Const SHEET_LL_TRANSLATION As String = "LinelistTranslation"
 Private Const SHEET_DES_TRANSLATION As String = "DesignerTranslation"
 Private Const SHEET_GEO As String = "Geo"
+Private Const SHEET_DROPDOWNS As String = "__dropdowns"
+Private Const SHEET_GENERATE_MULTIPLE As String = "GenerateMultiple"
 
 'Workbook-level HiddenNames
 Private Const TAG_DES_LANG As String = "TAG_DES_LANG"
@@ -70,6 +77,16 @@ Private Const GEO_META_LANG As String = "RNG_MetaLang"
 Private Const GEO_UPDATED As String = "RNG_GeoUpdated"
 Private Const GEO_PASTING_COL As String = "RNG_PastingGeoCol"
 Private Const GEO_FORM_LOADED As String = "RNG_FormLoaded"
+
+'Dropdown names
+Private Const DROP_SETUP_LANGUAGES As String = "__setup_languages"
+Private Const DROP_INTERFACE_LANGUAGES As String = "__interface_languages"
+Private Const DROP_EPIWEEK_START As String = "__epiweek_start"
+Private Const DROP_DESIGN_VALUES As String = "__design_values"
+Private Const DROPDOWN_PREFIX As String = "dropdown_"
+
+'T_Multi table
+Private Const TABLE_MULTI As String = "T_Multi"
 
 
 '@section Factory
@@ -111,8 +128,8 @@ End Property
 '@sub-title Bind the helper to the designer workbook
 '@details
 'Stores a reference to the host workbook and clears any previously
-'cached hidden names store so it will be rebuilt on next access. Raises
-'an error when the workbook is Nothing.
+'cached hidden names store and dropdown manager so they will be rebuilt
+'on next access. Raises an error when the workbook is Nothing.
 '@param hostBook Workbook. The designer workbook to bind to.
 '@throws ProjectError.ObjectNotInitialized When the workbook is Nothing.
 '@export
@@ -123,6 +140,8 @@ Public Sub Configure(ByVal hostBook As Workbook)
 
     Set this.hostBook = hostBook
     Set this.store = Nothing
+    Set this.dropdowns = Nothing
+    Set this.dropSheet = Nothing
 End Sub
 
 '@label:prepare
@@ -131,22 +150,28 @@ End Sub
 'Runs the full preparation sequence:
 '1. Prompts the user to select a translations workbook and imports
 '   translation tables into LinelistTranslation and DesignerTranslation.
-'2. Hides internal worksheets (VeryHidden for __pass, __formatter,
-'   __formula; Hidden for LinelistTranslation, DesignerTranslation).
-'3. Seeds workbook-level HiddenNames flags (ribbon checks, language
+'2. Creates the dropdown worksheet and registers all standard dropdown
+'   lists (setup languages, interface languages, epiweek start, design).
+'3. Hides internal worksheets (VeryHidden for __pass/__formatter/
+'   __formula/__dropdowns, Hidden for LinelistTranslation,
+'   DesignerTranslation).
+'4. Seeds workbook-level HiddenNames flags (ribbon checks, language
 '   codes, last opened date).
-'4. Seeds Geo worksheet-level HiddenNames flags (geo language, name,
+'5. Seeds Geo worksheet-level HiddenNames flags (geo language, name,
 '   update status).
+'6. Applies data validation to the T_Multi table on GenerateMultiple.
 'When devManager is provided, hidden sheets are also registered with
 'the manager for deployment.
 '@param devManager IDevelopment. ByRef development manager instance, or Nothing.
 '@export
 Public Sub Prepare(ByRef devManager As IDevelopment)
     ImportTranslations
+    EnsureDropdowns
     HideWorksheets devManager
     EnsureHiddenStore
     EnsureWorkbookFlags
     EnsureGeoFlags
+    ApplyMultiValidations
 End Sub
 
 '@label:set-flag
@@ -207,6 +232,19 @@ End Property
 Public Property Get HiddenStore() As IHiddenNames
     EnsureHiddenStore
     Set HiddenStore = this.store
+End Property
+
+'@label:dropdowns
+'@prop-title The dropdown manager created during preparation
+'@details
+'Returns the IDropdownLists manager bound to the designer dropdown
+'worksheet. Lazily initialises the manager on first access if it was
+'not already created by EnsureDropdowns or Prepare.
+'@return IDropdownLists. The dropdown manager instance.
+'@export
+Public Property Get Dropdowns() As IDropdownLists
+    EnsureDropdownManager
+    Set Dropdowns = this.dropdowns
 End Property
 
 
@@ -288,19 +326,31 @@ ImportCleanup:
     End If
 End Sub
 
+'@label:ensure-dropdowns
+'@sub-title Create the dropdown worksheet and register all standard dropdown lists
+'@details
+'Creates the dropdown manager if needed, then registers setup languages
+'(empty placeholder), interface languages, epiweek start (1-7), and
+'design values dropdown lists.
+Private Sub EnsureDropdowns()
+    EnsureDropdownManager
+    RegisterAllDropdowns
+End Sub
+
 '@label:hide-worksheets
 '@sub-title Hide internal worksheets and register them with the dev manager
 '@details
-'Sets __pass, __formatter, __formula to xlSheetVeryHidden. Sets
-'LinelistTranslation and DesignerTranslation to xlSheetHidden (visible
-'in the VBA editor for developers). When a development manager is
-'provided, all five sheets are also registered via AddHiddenSheet for
+'Sets __pass, __formatter, __formula, __dropdowns to xlSheetVeryHidden.
+'Sets LinelistTranslation and DesignerTranslation to xlSheetHidden
+'(visible in the VBA editor for developers). When a development manager
+'is provided, all sheets are also registered via AddHiddenSheet for
 'deployment. Silently skips any worksheet that does not exist.
 '@param devManager IDevelopment. Development manager for deployment registration, or Nothing.
 Private Sub HideWorksheets(ByRef devManager As IDevelopment)
     SetSheetVisibility SHEET_PASS, xlSheetVeryHidden
     SetSheetVisibility SHEET_FORMATTER, xlSheetVeryHidden
     SetSheetVisibility SHEET_FORMULA, xlSheetVeryHidden
+    SetSheetVisibility SHEET_DROPDOWNS, xlSheetVeryHidden
     SetSheetVisibility SHEET_LL_TRANSLATION, xlSheetHidden
     SetSheetVisibility SHEET_DES_TRANSLATION, xlSheetHidden
 
@@ -308,6 +358,7 @@ Private Sub HideWorksheets(ByRef devManager As IDevelopment)
         RegisterHiddenSheet devManager, SHEET_PASS
         RegisterHiddenSheet devManager, SHEET_FORMATTER
         RegisterHiddenSheet devManager, SHEET_FORMULA
+        RegisterHiddenSheet devManager, SHEET_DROPDOWNS
         RegisterHiddenSheet devManager, SHEET_LL_TRANSLATION
         RegisterHiddenSheet devManager, SHEET_DES_TRANSLATION
     End If
@@ -349,6 +400,149 @@ Private Sub EnsureGeoFlags()
     geoStore.EnsureName GEO_UPDATED, "empty", HiddenNameTypeString
     geoStore.EnsureName GEO_PASTING_COL, vbNullString, HiddenNameTypeString
     geoStore.EnsureName GEO_FORM_LOADED, vbNullString, HiddenNameTypeString
+End Sub
+
+
+'@section Dropdown Helpers
+'===============================================================================
+
+'@label:ensure-dropdown-manager
+'@sub-title Ensure the dropdown manager is initialised for the target workbook
+'@details
+'Exits immediately when the manager is already initialised. Otherwise
+'resolves or creates the dropdown worksheet, then creates a DropdownLists
+'instance bound to it with the standard dropdown prefix.
+Private Sub EnsureDropdownManager()
+    If Not this.dropdowns Is Nothing Then Exit Sub
+
+    Dim targetSheet As Worksheet
+
+    Set targetSheet = EnsureDropdownSheet
+    Set this.dropdowns = DropdownLists.Create(targetSheet, DROPDOWN_PREFIX)
+End Sub
+
+'@label:ensure-dropdown-sheet
+'@sub-title Ensure the dropdown worksheet exists and cache the reference
+'@details
+'Resolves the dropdown worksheet from the host workbook. If not found,
+'creates a new worksheet at the end and names it. Caches the reference
+'for subsequent calls.
+'@return Worksheet. The dropdown worksheet.
+Private Function EnsureDropdownSheet() As Worksheet
+    If Not this.dropSheet Is Nothing Then
+        Set EnsureDropdownSheet = this.dropSheet
+        Exit Function
+    End If
+
+    Dim sh As Worksheet
+    Dim wb As Workbook
+
+    Set wb = HostWorkbook
+
+    On Error Resume Next
+    Set sh = wb.Worksheets(SHEET_DROPDOWNS)
+    On Error GoTo 0
+
+    If sh Is Nothing Then
+        Set sh = wb.Worksheets.Add(After:=wb.Worksheets(wb.Worksheets.Count))
+        sh.Name = SHEET_DROPDOWNS
+    End If
+
+    Set this.dropSheet = sh
+    Set EnsureDropdownSheet = sh
+End Function
+
+'@label:register-all-dropdowns
+'@sub-title Register every standard dropdown list for designer worksheets
+'@details
+'Calls RegisterDropdown for each predefined dropdown: setup languages
+'(empty placeholder for later population), interface languages
+'(pre-populated with the five supported languages), epiweek start
+'(numbers 1 through 7), and design values (matching LLFormat design
+'constants).
+Private Sub RegisterAllDropdowns()
+    RegisterDropdown DROP_SETUP_LANGUAGES, Array(vbNullString, vbNullString)
+    RegisterDropdown DROP_INTERFACE_LANGUAGES, _
+        Array(ChrW$(1593) & ChrW$(1585) & ChrW$(1576) & ChrW$(1609), _
+              "English", _
+              "Fran" & ChrW$(231) & "ais", _
+              "Portugu" & ChrW$(233) & "s", _
+              "Espa" & ChrW$(241) & "ol")
+    RegisterDropdown DROP_EPIWEEK_START, Array("1", "2", "3", "4", "5", "6", "7")
+    RegisterDropdown DROP_DESIGN_VALUES, Array("design 1", "design 2", "user defined")
+End Sub
+
+'@label:register-dropdown
+'@sub-title Register a single dropdown by converting the values into a BetterArray
+'@details
+'Ensures the dropdown manager is initialised, converts the supplied Variant
+'array into a BetterArray (1-based), and adds it to the dropdown manager
+'under the given name.
+'@param dropdownName String. The name to register the dropdown under.
+'@param values Variant. An array of values to populate the dropdown.
+Private Sub RegisterDropdown(ByVal dropdownName As String, ByVal values As Variant)
+    Dim listValues As BetterArray
+    Dim idx As Long
+
+    EnsureDropdownManager
+
+    Set listValues = New BetterArray
+    listValues.LowerBound = 1
+
+    If IsArray(values) Then
+        For idx = LBound(values) To UBound(values)
+            listValues.Push values(idx)
+        Next idx
+    Else
+        listValues.Push values
+    End If
+
+    this.dropdowns.Add listValues, dropdownName
+End Sub
+
+
+'@section Multi Validations
+'===============================================================================
+
+'@label:apply-multi-validations
+'@sub-title Apply data validation to the T_Multi table on GenerateMultiple
+'@details
+'Resolves the GenerateMultiple worksheet and the T_Multi ListObject,
+'then wires the "language of the interface", "epiweek start", and
+'"design" columns to their corresponding dropdown lists via
+'CustomTable.SetValidation. Silently exits when the worksheet or
+'table does not exist in the host workbook.
+Private Sub ApplyMultiValidations()
+    Dim sh As Worksheet
+    Dim lo As ListObject
+    Dim table As ICustomTable
+    Dim drop As IDropdownLists
+
+    Set sh = ResolveWorksheet(SHEET_GENERATE_MULTIPLE)
+    If sh Is Nothing Then Exit Sub
+
+    On Error Resume Next
+    Set lo = sh.ListObjects(TABLE_MULTI)
+    On Error GoTo 0
+
+    If lo Is Nothing Then Exit Sub
+
+    Set table = CustomTable.Create(lo)
+    EnsureDropdownManager
+    Set drop = this.dropdowns
+
+    table.SetValidation colName:="language of the interface", _
+                        drop:=drop, _
+                        dropName:=DROP_INTERFACE_LANGUAGES, _
+                        alertType:="info"
+    table.SetValidation colName:="epiweek start", _
+                        drop:=drop, _
+                        dropName:=DROP_EPIWEEK_START, _
+                        alertType:="info"
+    table.SetValidation colName:="design", _
+                        drop:=drop, _
+                        dropName:=DROP_DESIGN_VALUES, _
+                        alertType:="info"
 End Sub
 
 
@@ -436,6 +630,10 @@ End Sub
 Private Sub IDesignerPreparation_Configure(ByVal hostBook As Workbook)
     Configure hostBook
 End Sub
+
+Private Property Get IDesignerPreparation_Dropdowns() As IDropdownLists
+    Set IDesignerPreparation_Dropdowns = Dropdowns
+End Property
 
 Private Function IDesignerPreparation_GetFlag(ByVal nameId As String, Optional ByVal defaultValue As Boolean = False) As Boolean
     IDesignerPreparation_GetFlag = GetFlag(nameId, defaultValue)
