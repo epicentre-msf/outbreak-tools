@@ -39,8 +39,6 @@ Public Enum TranslationScope
     TranslationOfShapes = 2
     TranslationOfForms = 3
     TranslationOfRibbon = 4
-    TranslationOfRanges = 5
-    TranslationOfDropdowns = 6
 End Enum
 
 

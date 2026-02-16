@@ -20,7 +20,7 @@ Implements ILinelistSpecs
 '@description
 'Modern facade that wraps a specifications workbook and exposes lazy-loaded,
 'cached accessors for every collaborator object (dictionary, choices,
-'translations, geo, analysis, passwords, format, exports, formulas, main).
+'translations, geo, analysis, passwords, format, exports, formulas).
 'Provides lifecycle orchestration methods for importing data from external
 'setup workbooks, preparing the dictionary with preserved sheet names,
 'exporting specifications to a destination linelist workbook, and surfacing
@@ -28,12 +28,13 @@ Implements ILinelistSpecs
 'construct instances via LinelistSpecs.Create(workbook) and receive an
 'ILinelistSpecs interface reference.
 '@depends ILLdictionary, ILLChoices, ILLTranslation, IDesignerTranslation
-'@depends ILLGeo, ILLExport, ILLAnalysis, IPasswords, ILLFormat
-'@depends IFormulaData, IMain, ILLVariables, IFormulas
+'@depends ILLGeo, ILLExport, IAnalysis, IPasswords, ILLFormat
+'@depends IDesignerImportService, ITemporaryRepos, TemporaryRepos
+'@depends IFormulaData, ILLVariables, IFormulas
 '@depends ITranslationObject, IApplicationState, ApplicationState
 '@depends BetterArray, LLdictionary, LLChoices, LLTranslation
 '@depends DesignerTranslation, LLGeo, LLExport, Analysis, Passwords
-'@depends LLFormat, FormulaData, Main, LLVariables, Formulas
+'@depends LLFormat, FormulaData, LLVariables, Formulas
 '@version 1.0 (2026-02-09)
 
 
@@ -50,15 +51,16 @@ Private Type TLinelistSpecs
     designerTranslations As IDesignerTranslation
     geo As ILLGeo
     exports As ILLExport
-    analysis As ILLAnalysis
+    analysis As IAnalysis
     passwords As IPasswords
     format As ILLFormat
     formulaData As IFormulaData
-    main As IMain
     variables As ILLVariables
     translationCache As BetterArray
     categoryCache As BetterArray
     sheetCache As BetterArray
+    outputWkb As Workbook
+    tempRepos As ITemporaryRepos
 End Type
 
 Private this As TLinelistSpecs
@@ -80,10 +82,9 @@ Private Const SHEET_TRANSLATIONS_DICT As String = "Translations"
 Private Const SHEET_TRANSLATIONS_LL As String = "LinelistTranslation"
 Private Const SHEET_ANALYSIS As String = "Analysis"
 Private Const SHEET_EXPORT As String = "Exports"
-Private Const SHEET_FORMAT As String = "LinelistStyle"
+Private Const SHEET_FORMAT As String = "__formatter"
 Private Const SHEET_MAIN As String = "Main"
 Private Const SHEET_DESIGNER_TRANSLATION As String = "DesignerTranslation"
-
 Private Const RANGE_DESIGN_TYPE As String = "DESIGNTYPE"
 
 '@section Factory helpers
@@ -179,8 +180,9 @@ Private Sub ResetObjectCaches()
     Set this.passwords = Nothing
     Set this.format = Nothing
     Set this.formulaData = Nothing
-    Set this.main = Nothing
     Set this.variables = Nothing
+    Set this.outputWkb = Nothing
+    Set this.tempRepos = Nothing
 End Sub
 
 '@label:reset-sheet-cache
@@ -406,131 +408,6 @@ Private Sub ExitBusyState(ByRef busyScope As IApplicationState)
     Set busyScope = Nothing
 End Sub
 
-'@label:open-workbook-internal
-'@sub-title Open a workbook by path with busy-state management
-'@details
-'Validates that the path is non-empty and the file exists, enters the
-'busy state, then opens the workbook. Raises descriptive errors on
-'failure.
-'@param workbookPath String. Full file path of the workbook to open.
-'@param busyScope IApplicationState (ByRef). The busy-state scope.
-'@return Workbook. The opened workbook.
-'@throws ProjectError.ElementNotFound When the path is empty or file missing.
-'@throws ProjectError.ErrorUnexpectedState When Workbooks.Open fails.
-Private Function OpenWorkbookInternal(ByVal workbookPath As String, _
-                                      ByRef busyScope As IApplicationState) As Workbook
-    Dim target As Workbook
-    Dim trimmedPath As String
-
-    trimmedPath = Trim$(workbookPath)
-    If LenB(trimmedPath) = 0 Then
-        ThrowError ProjectError.ElementNotFound, _
-                  "Workbook path has not been configured"
-    End If
-
-    If LenB(Dir$(trimmedPath)) = 0 Then
-        ThrowError ProjectError.ElementNotFound, _
-                  "Workbook '" & trimmedPath & "' cannot be located"
-    End If
-
-    EnterBusyState busyScope
-
-    On Error GoTo HandleOpen
-        Set target = Workbooks.Open(trimmedPath)
-    On Error GoTo 0
-
-    Set OpenWorkbookInternal = target
-    Exit Function
-
-HandleOpen:
-    ThrowError ProjectError.ErrorUnexpectedState, _
-              "Unable to open workbook '" & trimmedPath & "': " & Err.Description
-End Function
-
-'@label:close-workbook-quiet
-'@sub-title Close a workbook without saving, suppressing errors
-'@param target Workbook (ByRef). The workbook to close and release.
-Private Sub CloseWorkbookQuiet(ByRef target As Workbook)
-    On Error Resume Next
-        If Not target Is Nothing Then target.Close savechanges:=False
-    On Error GoTo 0
-    Set target = Nothing
-End Sub
-
-'@label:resolve-external-sheet
-'@sub-title Resolve a worksheet in an external workbook, returning Nothing on failure
-'@param hostBook Workbook. The workbook to search.
-'@param sheetName String. The worksheet name.
-'@return Worksheet. The worksheet, or Nothing if not found.
-Private Function ResolveExternalSheet(ByVal hostBook As Workbook, _
-                                      ByVal sheetName As String) As Worksheet
-    On Error Resume Next
-        Set ResolveExternalSheet = hostBook.Worksheets(sheetName)
-    On Error GoTo 0
-End Function
-
-'@label:ensure-external-sheet-exists
-'@sub-title Verify a worksheet exists in an external workbook
-'@throws ProjectError.ElementNotFound When the sheet is missing.
-Private Sub EnsureExternalSheetExists(ByVal hostBook As Workbook, _
-                                      ByVal sheetName As String)
-    If ResolveExternalSheet(hostBook, sheetName) Is Nothing Then
-        ThrowError ProjectError.ElementNotFound, _
-                  "Worksheet '" & sheetName & "' is missing from workbook '" & SafeWorkbookName(hostBook) & "'"
-    End If
-End Sub
-
-'@label:ensure-setup-workbook-sheets
-'@sub-title Validate that the setup workbook contains all required sheets
-'@details
-'Checks for Dictionary, Choices, Translations, Exports, and Analysis
-'worksheets in the setup workbook.
-'@param setupBook Workbook. The external setup workbook to validate.
-'@throws ProjectError.ElementNotFound When a required sheet is missing.
-Private Sub EnsureSetupWorkbookSheets(ByVal setupBook As Workbook)
-    Dim requiredSheets As Variant
-    Dim idx As Long
-
-    requiredSheets = Array( _
-        SHEET_DICTIONARY, _
-        SHEET_CHOICES, _
-        SHEET_TRANSLATIONS_DICT, _
-        SHEET_EXPORT, _
-        SHEET_ANALYSIS)
-
-    For idx = LBound(requiredSheets) To UBound(requiredSheets)
-        EnsureExternalSheetExists setupBook, CStr(requiredSheets(idx))
-    Next idx
-End Sub
-
-'@label:ensure-dictionary-not-empty
-'@sub-title Verify that a dictionary worksheet contains data
-'@details
-'Creates a temporary LLdictionary to probe the sheet's DataRange.
-'Raises an error if the range is Nothing or entirely blank.
-'@param dictionarySheet Worksheet. The dictionary worksheet to check.
-'@throws ProjectError.ElementNotFound When the sheet has no data.
-Private Sub EnsureDictionaryNotEmpty(ByVal dictionarySheet As Worksheet)
-    Dim importedDict As ILLdictionary
-    Dim dataRange As Range
-
-    Set importedDict = LLdictionary.Create(dictionarySheet, 5, 1)
-
-    On Error Resume Next
-        Set dataRange = importedDict.DataRange
-    On Error GoTo 0
-
-    If dataRange Is Nothing Then
-        ThrowError ProjectError.ElementNotFound, _
-                  "Dictionary worksheet '" & dictionarySheet.Name & "' does not expose any data"
-    End If
-
-    If Application.WorksheetFunction.CountA(dataRange) = 0 Then
-        ThrowError ProjectError.ElementNotFound, _
-                  "Dictionary worksheet '" & dictionarySheet.Name & "' is empty"
-    End If
-End Sub
-
 '@label:build-preserved-sheet-names
 '@sub-title Build the list of sheet names to preserve during dictionary preparation
 '@details
@@ -554,14 +431,14 @@ Private Function BuildPreservedSheetNames(ByVal messageTranslations As ITranslat
                    SHEET_TRANSLATIONS_DICT, _
                    SHEET_TRANSLATIONS_LL, _
                    SHEET_EXPORT, _
-                   TemporarySheetName(TEMP_SHEET_SINGLE), _
-                   TemporarySheetName(TEMP_SHEET_LIST), _
-                   TemporarySheetName(TEMP_SHEET_UPDATES), _
-                   TemporarySheetName(TEMP_SHEET_METADATA), _
-                   TemporarySheetName(TEMP_SHEET_ANALYSIS), _
-                   TemporarySheetName(TEMP_SHEET_IMPORT), _
-                   TemporarySheetName(TEMP_SHEET_SPATIAL), _
-                   TemporarySheetName(TEMP_SHEET_SHOWHIDE)
+                   TemporarySheetName(TempSheetSingle), _
+                   TemporarySheetName(TempSheetList), _
+                   TemporarySheetName(TempSheetUpdates), _
+                   TemporarySheetName(TempSheetMetadata), _
+                   TemporarySheetName(TempSheetAnalysis), _
+                   TemporarySheetName(TempSheetImport), _
+                   TemporarySheetName(TempSheetSpatial), _
+                   TemporarySheetName(TempSheetShowHide)
 
     If Not messageTranslations Is Nothing Then
         preserved.Push SafeTranslatedValue(messageTranslations, "LLSHEET_Admin"), _
@@ -669,7 +546,6 @@ Private Function RequiredSheetNames() As Variant
         SHEET_GEO, _
         SHEET_PASSWORDS, _
         SHEET_FORMULAS, _
-        SHEET_TRANSLATIONS_DICT, _
         SHEET_TRANSLATIONS_LL, _
         SHEET_ANALYSIS, _
         SHEET_EXPORT, _
@@ -838,16 +714,6 @@ Private Sub EnsureFormulaData()
         Dim formulaSheet As Worksheet
         Set formulaSheet = ResolveSheet(SHEET_FORMULAS)
         Set this.formulaData = FormulaData.Create(formulaSheet)
-    End If
-End Sub
-
-'@label:ensure-main
-'@sub-title Lazy-load the main configuration collaborator
-Private Sub EnsureMain()
-    If this.main Is Nothing Then
-        Dim mainSheet As Worksheet
-        Set mainSheet = ResolveSheet(SHEET_MAIN)
-        Set this.main = Main.Create(mainSheet)
     End If
 End Sub
 
@@ -1184,7 +1050,7 @@ End Property
 '@prop-title Visual formatting specifications
 '@details
 'Returns the ILLFormat instance providing sheet and cell formatting
-'methods based on the LinelistStyle worksheet. Lazy-loaded on first access.
+'methods based on the __formatter worksheet. Lazy-loaded on first access.
 '@return ILLFormat. The format collaborator.
 '@export
 Public Property Get DesignFormat() As ILLFormat
@@ -1195,11 +1061,11 @@ End Property
 '@label:analysis
 '@prop-title Analysis setup specifications
 '@details
-'Returns the ILLAnalysis instance providing access to the Analysis
+'Returns the IAnalysis instance providing access to the Analysis
 'worksheet configuration. Lazy-loaded on first access.
-'@return ILLAnalysis. The analysis collaborator.
+'@return IAnalysis. The analysis collaborator.
 '@export
-Public Property Get Analysis() As ILLAnalysis
+Public Property Get Analysis() As IAnalysis
     EnsureAnalysis
     Set Analysis = this.analysis
 End Property
@@ -1252,16 +1118,19 @@ Public Property Get FormulaDataObject() As IFormulaData
     Set FormulaDataObject = this.formulaData
 End Property
 
-'@label:main-object
-'@prop-title Main configuration sheet accessor
+'@label:has-template
+'@prop-title Whether the workbook uses a ribbon template
 '@details
-'Returns the IMain instance providing key-value configuration from the
-'Main worksheet. Lazy-loaded on first access.
-'@return IMain. The main configuration collaborator.
+'Reads the RNG_MainTemp named range on the Main worksheet and returns True
+'when the value equals "has template".
+'@return Boolean. True when a template is configured.
 '@export
-Public Property Get MainObject() As IMain
-    EnsureMain
-    Set MainObject = this.main
+Public Property Get HasTemplate() As Boolean
+    Dim mainSheet As Worksheet
+    Set mainSheet = ResolveSheet(SHEET_MAIN)
+    On Error Resume Next
+    HasTemplate = (mainSheet.Range("RNG_MainTemp").Value = "has template")
+    On Error GoTo 0
 End Property
 
 '@label:translations
@@ -1330,29 +1199,29 @@ End Property
 '@prop-title Temporary sheet name for a given scope
 '@details
 'Returns the fixed worksheet name used for temporary internal sheets,
-'mapped from the scope constant (TEMP_SHEET_ANALYSIS, TEMP_SHEET_LIST,
+'mapped from the TempSheetScope enum (TempSheetAnalysis, TempSheetList,
 'etc.) to its canonical name string.
-'@param scope Byte. The temporary sheet scope constant.
+'@param scope Byte. A TempSheetScope enum value.
 '@return String. The worksheet name string.
 '@throws ProjectError.InvalidArgument When the scope is not recognised.
 '@export
 Public Property Get TemporarySheetName(ByVal scope As Byte) As String
     Select Case scope
-        Case TEMP_SHEET_ANALYSIS
+        Case TempSheetAnalysis
             TemporarySheetName = "ana_tabnames__"
-        Case TEMP_SHEET_UPDATES
+        Case TempSheetUpdates
             TemporarySheetName = "updates__"
-        Case TEMP_SHEET_METADATA
+        Case TempSheetMetadata
             TemporarySheetName = "Metadata"
-        Case TEMP_SHEET_LIST
+        Case TempSheetList
             TemporarySheetName = "dropdown_lists__"
-        Case TEMP_SHEET_IMPORT
+        Case TempSheetImport
             TemporarySheetName = "import_rep__"
-        Case TEMP_SHEET_SINGLE
+        Case TempSheetSingle
             TemporarySheetName = "temp__"
-        Case TEMP_SHEET_SPATIAL
+        Case TempSheetSpatial
             TemporarySheetName = "spatial_tables__"
-        Case TEMP_SHEET_SHOWHIDE
+        Case TempSheetShowHide
             TemporarySheetName = "show_hide__"
         Case Else
             ThrowError ProjectError.InvalidArgument, _
@@ -1365,12 +1234,16 @@ End Property
 '@details
 'Returns a configuration value from the Main worksheet for the given
 'tag name. The special tag "numberofexports" returns the export count
-'from the Exports worksheet; all other tags delegate to MainObject.ValueOf.
+'from the Exports worksheet; all other tags resolve the named range directly
+'on the Main worksheet.
 '@param tagName String. The configuration key to look up.
 '@return String. The configuration value, or empty string if tagName is empty.
 '@export
 Public Property Get Value(ByVal tagName As String) As String
     Dim normalizedTag As String
+    Dim rngName As String
+    Dim mainSheet As Worksheet
+    Dim retVal As String
 
     normalizedTag = LCase$(Trim$(tagName))
     If LenB(normalizedTag) = 0 Then Exit Property
@@ -1378,10 +1251,51 @@ Public Property Get Value(ByVal tagName As String) As String
     Select Case normalizedTag
         Case "numberofexports"
             Value = CStr(NumberOfExports())
+            Exit Property
+        Case "llpassword"
+            rngName = "RNG_LLPwdOpen"
+        Case "geopath"
+            rngName = "RNG_PathGeo"
+        Case "setuppath"
+            rngName = "RNG_PathDico"
+        Case "lldir"
+            rngName = "RNG_LLDir"
+        Case "llname"
+            rngName = "RNG_LLName"
+        Case "setuplang"
+            rngName = "RNG_LangSetup"
+        Case "lllang"
+            rngName = "RNG_LLForm"
+        Case "askopen"
+            rngName = "RNG_AskOpen"
+        Case "instruct"
+            rngName = "RNG_MainInstruct"
+        Case "epiweekstart"
+            Set mainSheet = ResolveSheet(SHEET_MAIN)
+            On Error Resume Next
+            Value = "1"
+            Value = Split(mainSheet.Range("RNG_DefaultEpiWeek").Value, "-")(0)
+            On Error GoTo 0
+            Exit Property
+        Case "temppath"
+            Set mainSheet = ResolveSheet(SHEET_MAIN)
+            On Error Resume Next
+            retVal = mainSheet.Range("RNG_LLTemp").Value
+            On Error GoTo 0
+            If retVal = "_default" Or retVal = "default" Then
+                retVal = this.specsWkb.Path & Application.PathSeparator & _
+                         "_ribbontemplate.xlsb"
+            End If
+            Value = retVal
+            Exit Property
         Case Else
-            EnsureMain
-            Value = this.main.ValueOf(tagName)
+            Exit Property
     End Select
+
+    Set mainSheet = ResolveSheet(SHEET_MAIN)
+    On Error Resume Next
+    Value = mainSheet.Range(rngName).Value
+    On Error GoTo 0
 End Property
 
 
@@ -1391,97 +1305,82 @@ End Property
 'error-managing the specifications workbook.
 
 '@label:prepare
-'@sub-title Import and prepare all specifications from external workbooks
+'@sub-title Prepare all specifications using an import service
 '@details
 'Orchestrates the full specification preparation workflow:
 '1. Validates Main sheet readiness via CheckReadiness.
-'2. Opens the setup workbook and validates its required sheets.
-'3. Imports exports, dictionary, choices, translations, and analysis data.
-'4. Optionally opens and imports geo data from a separate workbook.
+'2. Creates a new output workbook (from template if configured).
+'3. Exports designer components via the import service.
+'4. Retrieves exported domain instances from the service.
 '5. Prepares the dictionary with preserved sheet names and geo references.
 '6. Adds the "list auto" column if not already present.
 '7. Translates and sorts all collaborators using dictionary translations.
-'Handles errors with cleanup of open workbooks and busy-state restoration.
-'@throws ProjectError.ElementNotFound When paths or sheets are missing.
+'Handles errors with cleanup and busy-state restoration.
+'@param importService IDesignerImportService. The configured import service.
+'@throws ProjectError.ObjectNotInitialized When importService is Nothing.
 '@throws ProjectError.ErrorUnexpectedState When an unexpected error occurs.
 '@export
-Public Sub Prepare()
-    Dim mainObj As IMain
-    Dim designerTrads As IDesignerTranslation
-    Dim setupPath As String
-    Dim geoPath As String
+Public Sub Prepare(ByVal importService As IDesignerImportService)
     Dim dict As ILLdictionary
-    Dim choices As ILLChoices
-    Dim exports As ILLExport
-    Dim translations As ILLTranslation
-    Dim analysisObj As ILLAnalysis
+    Dim choicesObj As ILLChoices
+    Dim exportsObj As ILLExport
+    Dim analysisObj As IAnalysis
     Dim geoObj As ILLGeo
     Dim dictTrads As ITranslationObject
     Dim msgTrads As ITranslationObject
     Dim preservedNames As BetterArray
-    Dim setupBook As Workbook
-    Dim geoBook As Workbook
     Dim busyScope As IApplicationState
     Dim prepared As Boolean
-    Dim dictionarySheet As Worksheet
-    Dim choicesSheet As Worksheet
-    Dim analysisSheet As Worksheet
+    Dim outWkb As Workbook
+    Dim templatePath As String
+    Dim tempPath As String
+
+    If importService Is Nothing Then
+        ThrowError ProjectError.ObjectNotInitialized, _
+                  "An import service is required to prepare specifications"
+    End If
 
     On Error GoTo CleanFail
 
-    Set mainObj = MainObject()
-    Set designerTrads = DesignerTranslations()
+    'Readiness is validated by the caller (e.g. clickGenerate) before Prepare
+    EnterBusyState busyScope
 
-    mainObj.CheckReadiness designerTrads
-    If Not mainObj.Ready Then GoTo CleanExit
+    'Create the temporary repository for working files
+    Set this.tempRepos = TemporaryRepos.Create(Value("lldir"))
+    this.tempRepos.EnsureReady
 
-    setupPath = Trim$(mainObj.ValueOf("setuppath"))
-    If LenB(setupPath) = 0 Then
-        ThrowError ProjectError.ElementNotFound, _
-                  "Setup workbook path is not configured on the Main sheet"
+    'Create the output workbook (from template when configured)
+    If HasTemplate() Then
+        templatePath = Trim$(Value("temppath"))
+        Set outWkb = Workbooks.Open(templatePath)
+        tempPath = this.tempRepos.CreateFilePath("__temp.xlsb")
+        outWkb.SaveAs fileName:=tempPath, fileFormat:=xlExcel12
+    Else
+        Set outWkb = Workbooks.Add
     End If
 
-    geoPath = Trim$(mainObj.ValueOf("geopath"))
+    'Export all designer components into the output workbook
+    importService.ExportToLinelist outWkb
 
-    Set dict = Dictionary()
-    Set choices = Choices()
-    Set exports = ExportObject()
-    Set translations = Translations()
-    Set analysisObj = Analysis()
-    Set geoObj = GeoObject()
+    'Retrieve exported domain instances from the service
+    Set this.dictionary = importService.ExportedDictionary
+    Set this.choices = importService.ExportedChoices
+    Set this.exports = importService.ExportedExport
+    Set this.analysis = importService.ExportedAnalysis
+    Set this.geo = importService.ExportedGeo
+    Set this.passwords = importService.ExportedPasswords
+    Set this.translations = importService.ExportedTranslations
 
-    Set setupBook = OpenWorkbookInternal(setupPath, busyScope)
-    EnsureSetupWorkbookSheets setupBook
+    Set this.outputWkb = outWkb
 
-    exports.ImportSpecs setupBook.Worksheets(SHEET_EXPORT), 4, 1
+    'Reset sheet cache since we now have data in the output workbook
+    ResetSheetCache
 
-    Set dictionarySheet = setupBook.Worksheets(SHEET_DICTIONARY)
-    EnsureDictionaryNotEmpty dictionarySheet
-    dict.Import dictionarySheet, fromStartRow:=5, fromStartcol:=1
-
-    Set choicesSheet = setupBook.Worksheets(SHEET_CHOICES)
-    choices.Import choicesSheet, fromStartRow:=4, fromStartcol:=1
-
-    translations.Import setupBook
-
-    Dim dictSetupSheet As Worksheet
-    Set dictSetupSheet = ResolveExternalSheet(setupBook, SHEET_TRANSLATIONS_DICT)
-    If Not dictSetupSheet Is Nothing Then
-        If dictSetupSheet.ListObjects.Count > 0 Then
-            translations.ImportDictionary dictSetupSheet.ListObjects(1)
-        End If
-    End If
-
-    Set analysisSheet = setupBook.Worksheets(SHEET_ANALYSIS)
-    analysisObj.Import analysisSheet
-
-    CloseWorkbookQuiet setupBook
-
-    If LenB(geoPath) > 0 Then
-        Set geoBook = OpenWorkbookInternal(geoPath, busyScope)
-        geoObj.Import geoBook
-        CloseWorkbookQuiet geoBook
-    End If
+    Set dict = this.dictionary
+    Set choicesObj = this.choices
+    Set exportsObj = this.exports
+    Set analysisObj = this.analysis
+    Set geoObj = this.geo
 
     Set dictTrads = TransObject(TranslationOfDictionary)
     Set msgTrads = TransObject()
@@ -1494,16 +1393,14 @@ Public Sub Prepare()
     End If
 
     dict.Translate dictTrads
-    choices.Translate dictTrads
-    choices.Sort
-    exports.Translate dictTrads
+    choicesObj.Translate dictTrads
+    choicesObj.Sort
+    exportsObj.Translate dictTrads
     analysisObj.Translate dictTrads
 
     prepared = True
 
 CleanExit:
-    CloseWorkbookQuiet setupBook
-    CloseWorkbookQuiet geoBook
     ExitBusyState busyScope
     If prepared Then ResetPostImportCaches
     Exit Sub
@@ -1515,8 +1412,6 @@ CleanFail:
     errNumber = Err.Number
     errDescription = Err.Description
 
-    CloseWorkbookQuiet setupBook
-    CloseWorkbookQuiet geoBook
     ExitBusyState busyScope
 
     If errNumber = 0 Then Exit Sub
@@ -1527,6 +1422,28 @@ CleanFail:
         ThrowError ProjectError.ErrorUnexpectedState, errDescription
     End If
 End Sub
+
+'@label:output-workbook
+'@prop-title The output linelist workbook created during Prepare
+'@details
+'Returns the workbook created by Prepare that received exported data from
+'the import service. Returns Nothing before Prepare is called.
+'@return Workbook. The output workbook, or Nothing.
+'@export
+Public Property Get OutputWorkbook() As Workbook
+    Set OutputWorkbook = this.outputWkb
+End Property
+
+'@label:temporary-repos
+'@prop-title The temporary repository created during Prepare
+'@details
+'Returns the ITemporaryRepos instance created by Prepare for working files.
+'Returns Nothing before Prepare is called.
+'@return ITemporaryRepos. The temporary repository, or Nothing.
+'@export
+Public Property Get OutputTemporaryRepos() As ITemporaryRepos
+    Set OutputTemporaryRepos = this.tempRepos
+End Property
 
 '@label:export
 '@sub-title Export all specifications to an output workbook
@@ -1544,7 +1461,6 @@ Public Sub Export(ByVal toWkb As Workbook)
     Dim exports As ILLExport
     Dim geo As ILLGeo
     Dim passwords As IPasswords
-    Dim mainObj As IMain
 
     On Error GoTo HandleError
 
@@ -1559,13 +1475,12 @@ Public Sub Export(ByVal toWkb As Workbook)
     Set exports = ExportObject()
     Set geo = GeoObject()
     Set passwords = Password()
-    Set mainObj = MainObject()
 
     dict.Export toWkb, Hide:=xlSheetVeryHidden
     choices.Export toWkb, Hide:=xlSheetVeryHidden
     translations.Export toWkb
     exports.ExportSpecs toWkb, Hide:=xlSheetVeryHidden
-    geo.ExportToWkb toWkb, mainObj.ValueOf("llname"), mainObj.ValueOf("setuppath")
+    geo.ExportToWkb toWkb, Value("llname"), Value("setuppath")
     passwords.Export toWkb
 
     Exit Sub
@@ -1619,13 +1534,6 @@ End Sub
 '===============================================================================
 '@description Backdoor setters for injecting mock collaborators during testing.
 
-'@label:test-assign-main
-'@sub-title Inject a mock IMain instance for testing
-'@param mainObj IMain. The mock main object.
-Public Sub TestAssignMain(ByVal mainObj As IMain)
-    Set this.main = mainObj
-End Sub
-
 '@label:test-assign-designer-translations
 '@sub-title Inject a mock IDesignerTranslation instance for testing
 '@param designerTrads IDesignerTranslation. The mock designer translations object.
@@ -1670,7 +1578,7 @@ Private Property Get ILinelistSpecs_DesignFormat() As ILLFormat
     Set ILinelistSpecs_DesignFormat = Me.DesignFormat
 End Property
 
-Private Property Get ILinelistSpecs_Analysis() As ILLAnalysis
+Private Property Get ILinelistSpecs_Analysis() As IAnalysis
     Set ILinelistSpecs_Analysis = Me.Analysis
 End Property
 
@@ -1690,8 +1598,8 @@ Private Property Get ILinelistSpecs_FormulaDataObject() As IFormulaData
     Set ILinelistSpecs_FormulaDataObject = Me.FormulaDataObject
 End Property
 
-Private Property Get ILinelistSpecs_MainObject() As IMain
-    Set ILinelistSpecs_MainObject = Me.MainObject
+Private Property Get ILinelistSpecs_HasTemplate() As Boolean
+    ILinelistSpecs_HasTemplate = Me.HasTemplate
 End Property
 
 Private Property Get ILinelistSpecs_Translations() As ILLTranslation
@@ -1718,9 +1626,17 @@ Private Function ILinelistSpecs_Categories(ByVal varName As String, Optional ByV
     Set ILinelistSpecs_Categories = Me.Categories(varName, useShortlabels)
 End Function
 
-Private Sub ILinelistSpecs_Prepare()
-    Prepare
+Private Sub ILinelistSpecs_Prepare(ByVal importService As IDesignerImportService)
+    Prepare importService
 End Sub
+
+Private Property Get ILinelistSpecs_OutputWorkbook() As Workbook
+    Set ILinelistSpecs_OutputWorkbook = Me.OutputWorkbook
+End Property
+
+Private Property Get ILinelistSpecs_OutputTemporaryRepos() As ITemporaryRepos
+    Set ILinelistSpecs_OutputTemporaryRepos = Me.OutputTemporaryRepos
+End Property
 
 Private Sub ILinelistSpecs_Export(ByVal toWkb As Workbook)
     Export toWkb

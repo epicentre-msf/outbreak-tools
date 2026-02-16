@@ -25,7 +25,7 @@ Implements IAnalysisOutput
 '(normal, time series, spatial, spatio-temporal), builds cross-tables from
 'table specifications, writes formulas, registers metadata in AnaTabIds, and
 'renders charts. Consumers interact through the IAnalysisOutput interface.
-'@depends ILinelist, ILinelistSpecs, ILLFormat, ITranslationObject, ITableSpecs, ICrossTable, ICrossTableFormula, IGraphSpecs, IGraphs, IAnaTabIds, IButtons, IPasswords, IDropdownLists, ILLdictionary, ILLVariables, IFormulaData, IMain, BetterArray
+'@depends ILinelist, ILinelistSpecs, ILLFormat, ITranslationObject, ITableSpecs, ICrossTable, ICrossTableFormula, IGraphSpecs, IGraphs, IAnaTabIds, IButtons, IPasswords, IDropdownLists, ILLdictionary, ILLVariables, IFormulaData, BetterArray
 '@version 1.0 (2026-02-10)
 
 
@@ -318,12 +318,10 @@ Private Sub AddCommands(Optional ByVal scope As Byte = AnalysisScopeNormal)
     Dim but As IButtons
     Dim outsh As Worksheet
     Dim trads As ITranslationObject
-    Dim mainobj As IMain
     Dim lData As ILinelistSpecs
 
     Set lData = LinelistData()
-    Set mainobj = lData.MainObject()
-    If mainobj.HasTemplate() Then Exit Sub
+    If lData.HasTemplate() Then Exit Sub
 
     Set design = DesignFormat()
     Set outsh = OutputSh(scope)
