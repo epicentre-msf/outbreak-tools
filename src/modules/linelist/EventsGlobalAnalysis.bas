@@ -38,10 +38,9 @@ Private Sub InitializeTrads()
 
     Set wb = ThisWorkbook
     Set lltranssh = wb.Worksheets(LLSHEET)
-    Set dicttranssh = wb.Worksheets(TRADSHEET)
 
     'Those are private elms defined on to the top
-    Set lltrads = LLTranslations.Create(lltranssh, dicttranssh)
+    Set lltrads = LLTranslation.Create(lltranssh)
     Set tradsmess = lltrads.TransObject()
 End Sub
 

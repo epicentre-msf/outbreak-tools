@@ -467,10 +467,26 @@ End Sub
 'filtering operations to guarantee a clean state.
 Private Sub RemoveAutoFilter()
     Dim sh As Worksheet
+    Dim Lo As ListObject
+
     Set sh = Wksh()
+    For Each lo In sh.ListObjects
+        If Not lo.AutoFilter Is Nothing Then
+            On Error Resume Next
+                lo.AutoFilter.ShowAllData
+            On Error GoTo 0
+        End If
+    Next lo
+
+    'ShowAllData unhides rows hidden by filter criteria.
+    'It errors when no criteria are active, so guard with On Error.
     On Error Resume Next
-    If sh.AutoFilterMode Then sh.AutoFilterMode = False
+    sh.AutoFilter.ShowAllData
+    sh.UsedRange.AutoFilter.ShowAllData
     On Error GoTo 0
+
+    'Remove the AutoFilter entirely (dropdown arrows)
+    If sh.AutoFilterMode Then sh.AutoFilterMode = False
 End Sub
 
 

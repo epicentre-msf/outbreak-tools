@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Designer")
 '@ModuleDescription("Non-core ribbon callbacks for the designer workbook.")
-'@depends DesignerPreparation, IDesignerPreparation, DesignerEntry, IDesignerEntry, RibbonDev, LLGeo, ILLGeo, ApplicationState, IApplicationState, OSFiles, IOSFiles, HiddenNames, IHiddenNames, BetterArray, DropdownLists, IDropdownLists, DesignerImportService, IDesignerImportService, LinelistSpecs, ILinelistSpecs
+'@depends DesignerPreparation, IDesignerPreparation, DesignerEntry, IDesignerEntry, RibbonDev, LLGeo, ILLGeo, ApplicationState, IApplicationState, OSFiles, IOSFiles, HiddenNames, IHiddenNames, BetterArray, DropdownLists, IDropdownLists, DesignerImportService, IDesignerImportService, LinelistSpecs, ILinelistSpecs, Linelist, ILinelist
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 'Non-core ribbon logics are callbacks whose absence will not fire a
@@ -320,13 +320,14 @@ End Sub
 '@section Generation callbacks
 '===============================================================================
 
-'@Description("Validate designer readiness and import setup components into the designer.")
+'@Description("Import setup, prepare specifications, build output linelist workbook, and save.")
 '@EntryPoint
 Public Sub clickGenerate()
     Dim entry As IDesignerEntry
     Dim appScope As IApplicationState
     Dim importService As IDesignerImportService
     Dim specs As ILinelistSpecs
+    Dim ll As ILinelist
     Dim setupPath As String
 
     On Error GoTo Cleanup
@@ -350,6 +351,13 @@ Public Sub clickGenerate()
     Set specs = LinelistSpecs.Create(ThisWorkbook)
     specs.Prepare importService
 
+    'Build the output linelist workbook (sheets, temp sheets, admin, code transfer)
+    Set ll = Linelist.Create(specs)
+    ll.Prepare
+
+    'Save the linelist as .xlsb with password protection
+    ll.SaveLL
+
     entry.AddInfo entry.TranslateMessage("MSG_LLCreated"), "edition"
 
     appScope.Restore
@@ -369,8 +377,15 @@ Cleanup:
 
     If errNumber <> 0 Then
         Debug.Print "clickGenerate: "; errNumber; errDesc
-        MsgBox "Generation failed: " & errDesc, _
-               vbExclamation + vbOKOnly, PROMPT_TITLE
+
+        'When the linelist object exists, offer the user to view the
+        'incomplete workbook or close it; otherwise show a simple error
+        If Not ll Is Nothing Then
+            ll.ErrorManage errDesc
+        Else
+            MsgBox "Generation failed: " & errDesc, _
+                   vbExclamation + vbOKOnly, PROMPT_TITLE
+        End If
     End If
 End Sub
 
@@ -455,10 +470,10 @@ Private Function ValidateGenerationReadiness(ByVal entry As IDesignerEntry) As B
         errors.Push "Linelist name is missing."
     End If
 
-    'temporary ribbon must exists
+    'Template ribbon must exist when configured
     If LenB(ribbonName) <> 0 Then
         If LenB(Dir(ribbonName)) = 0 Then
-            error.Push "template ribbon is missing."
+            errors.Push "Template ribbon file is missing: " & ribbonName
         End If
     End If
 

@@ -268,10 +268,8 @@ Public Sub AddOutputSheet(ByVal sheetName As String, _
 
     actSheetName = Left$(actSheetName, SHEET_NAME_MAX_LENGTH)
 
-    If SheetExists(actSheetName) Then
-        ThrowError ProjectError.InvalidArgument, _
-                   "The sheet " & actSheetName & " already exists in the output workbook"
-    End If
+    'Skip if the sheet already exists (template workbooks may contain pre-existing sheets)
+    If SheetExists(actSheetName) Then Exit Sub
 
     Set outWkb = OutputWkb
 
@@ -363,11 +361,13 @@ Public Sub Prepare()
         AddOutputSheet sheetName, xlSheetVisible
     Next
 
-    'Move instruction sheet before the last data entry sheet
-    With outWkb
-        .Worksheets(trans.TranslatedValue("INSTSHEETNAME")).Move _
-            Before:=.Worksheets(sheetsList.Item(counter - 1))
-    End With
+    'Move instruction sheet before the last data entry sheet (template only)
+    If this.specs.HasTemplate() Then
+        With outWkb
+            .Worksheets(trans.TranslatedValue("INSTSHEETNAME")).Move _
+                Before:=.Worksheets(sheetsList.Item(counter - 1))
+        End With
+    End If
 
     'Add admin sheet if not using template
     If Not this.specs.HasTemplate() Then
@@ -375,11 +375,13 @@ Public Sub Prepare()
         PrepareAdmin
     End If
 
-    'Delete the initial default sheet
-    prevAlert = Application.DisplayAlerts
-    Application.DisplayAlerts = False
-    outWkb.Worksheets(this.firstSheet).Delete
-    Application.DisplayAlerts = prevAlert
+    'Delete the initial default sheet (non-template only)
+    If Not this.specs.HasTemplate() Then
+        prevAlert = Application.DisplayAlerts
+        Application.DisplayAlerts = False
+        outWkb.Worksheets(this.firstSheet).Delete
+        Application.DisplayAlerts = prevAlert
+    End If
 
     'Transfer code via CodeTransfer
     Set codeTransfer = CodeTransfer.Create(this.specs.Workbook, outWkb, this.tempRepos)
@@ -473,19 +475,6 @@ Private Property Get OutputWkb() As Workbook
 
     Set OutputWkb = this.outWkb
 End Property
-
-'@label:busy-app
-'@sub-title Suppress UI updates for batch operations
-'@details
-'Disables screen updating, display alerts, animations, and switches
-'calculation to manual mode. Called before heavy workbook operations
-'to prevent flickering and improve performance.
-Private Sub BusyApp()
-    Application.ScreenUpdating = False
-    Application.DisplayAlerts = False
-    Application.Calculation = xlCalculationManual
-    Application.EnableAnimations = False
-End Sub
 
 '@label:resolve-wksh
 '@sub-title Resolve a worksheet from the output workbook with scope prefix
@@ -698,9 +687,7 @@ Private Sub PrepareAdmin()
     but.Add actionCommand:=EXPORT_COMMAND, shapeLabel:=trads.TranslatedValue(SHP_EXPORT)
     but.Format design
 
-    BusyApp
     sh.Activate
-    BusyApp
 
     pass.Protect "_active"
 End Sub
@@ -745,9 +732,9 @@ Private Sub TransferAllCode(ByVal codeTransfer As ICodeTransfer)
                    "ILLVariables", "ILLSpatial", "LLSpatial", _
                    "DropdownLists", "IDropdownLists", "LLShowHide", _
                    "ILLShowHide", "CustomTable", "ICustomTable", _
-                   "OutputSpecs", "IOutputSpecs", _
-                   "ImpRep", "IImpRep", "ImpSpecs", "IImpSpecs", _
-                   "UpVal", "IUpVal", "IGraphs", "Graphs", "AnaTabIds", _
+                   "LLExporter", "ILLExporter", _
+                   "ImpRep", "IImpRep", "LLImporter", "ILLImporter", _
+                   "IGraphs", "Graphs", "AnaTabIds", _
                    "IAnaTabIds", "ExportButtons", "IExportButtons"
 
     For counter = codesList.LowerBound To codesList.UpperBound
@@ -758,9 +745,8 @@ Private Sub TransferAllCode(ByVal codeTransfer As ICodeTransfer)
     'Transfer modules (6 modules)
     codesList.Clear
     codesList.Push "LinelistCustomFunctions", _
-                   "GeoModule", "LinelistEvents", _
-                   "EventsLinelistButtons", "EventsGlobalAnalysis", _
-                   "LLChange"
+                   "GeoModule", "LinelistEvents", "EventsLinelistRibbon", _
+                   "EventsLinelistButtons", "EventsGlobalAnalysis"
 
     For counter = codesList.LowerBound To codesList.UpperBound
         codeName = codesList.Item(counter)
@@ -784,9 +770,6 @@ Private Sub TransferAllCode(ByVal codeTransfer As ICodeTransfer)
 
     'Transfer workbook code
     codeTransfer.TransferWorkbookCode WORKBOOK_MODULE_NAME
-
-    'Clean up temp files
-    If Not this.tempRepos Is Nothing Then this.tempRepos.Reset
 End Sub
 
 '@section Private — Error handling

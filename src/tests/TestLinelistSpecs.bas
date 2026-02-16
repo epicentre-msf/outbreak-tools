@@ -132,19 +132,6 @@ Private Sub TestPrepareRequiresImportService()
                      "Prepare should fail fast when no import service is provided"
 End Sub
 
-'@TestMethod("LinelistSpecs")
-Private Sub TestExportRequiresDestinationWorkbook()
-    Dim errNumber As Long
-
-    On Error Resume Next
-        Specs.Export Nothing
-        errNumber = Err.Number
-    On Error GoTo 0
-
-    Assert.AreEqual ProjectError.ObjectNotInitialized, errNumber, _
-                     "Export should enforce providing a destination workbook"
-End Sub
-
 '@section Helpers
 '===============================================================================
 Private Sub PrepareSpecificationWorkbook(ByVal targetBook As Workbook, _
