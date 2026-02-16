@@ -19,10 +19,10 @@ Option Explicit
 '@class IDesignerEntry
 '@description
 'Defines the public contract for the DesignerEntry class, exposing
-'methods to bind to a designer entry worksheet, inject test doubles for
-'the entry manager and translation provider, clear user input ranges,
-'translate the worksheet to a given language, read and write info
-'fields on the Main sheet, and translate message codes.
+'methods to bind to a designer entry worksheet, inject a test double
+'for the translation provider, clear user input ranges, translate
+'the worksheet to a given language, read and write info fields on
+'the Main sheet, and translate message codes.
 
 
 '@section Lifecycle
@@ -36,16 +36,6 @@ Option Explicit
 '@param hostSheet Worksheet. The worksheet hosting designer inputs.
 '@export
 Public Sub Configure(ByVal hostSheet As Worksheet)
-End Sub
-
-'@jump:use-entry-manager
-'@sub-title Swap in a custom entry manager implementation
-'@details
-'Replaces the internally resolved IMain entry manager with the supplied
-'instance. Primarily used in tests to inject a stub or mock.
-'@param entryManager IMain. The entry manager to use.
-'@export
-Public Sub UseEntryManager(ByVal entryManager As IMain)
 End Sub
 
 '@jump:use-translator
@@ -65,8 +55,9 @@ End Sub
 '@jump:clear
 '@sub-title Clear user entry ranges on the configured worksheet
 '@details
-'Delegates to the entry manager to clear all input ranges on the
-'configured worksheet, removing user-entered values.
+'Clears all input ranges on the configured worksheet by resetting their
+'values to empty and setting backgrounds to white. Also clears any
+'warning messages below the RNG_Warning range.
 '@export
 Public Sub Clear()
 End Sub
@@ -90,7 +81,7 @@ End Sub
 'writes the supplied value, and sets the cell background to white.
 'Silently exits when the named range does not exist.
 'Valid infoName values: "edition", "setuppath", "geopath", "lldir",
-'"llname", "setuplang", "temppath".
+'"llname", "setuplang", "temppath", "lllang", "warning".
 '@param value String. The value to write (path, message text, etc.).
 '@param infoName String. The logical name identifying the target range.
 '@export

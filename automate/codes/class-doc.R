@@ -44,13 +44,32 @@ VBADocParser <- R6Class(
         lines <- read_lines(file)
         doc_info <- private$extract_doc_blocks(lines)
 
-        if (length(doc_info$internals) > 0 || length(doc_info$externals) > 0) {
+        # Fallback: use filesystem directory name as folder
+        if (!private$has_text(doc_info$header$folder)) {
+          doc_info$header$folder <- str_to_title(basename(dirname(file)))
+        }
+
+        # For interfaces, treat all members as external API
+        is_iface <- str_detect(
+          paste(lines, collapse = "\n"), "'@Interface"
+        )
+        if (is_iface) {
+          all_ext <- c(doc_info$externals, doc_info$internals)
+          ext <- all_ext
+          int <- list()
+        } else {
+          ext <- doc_info$externals
+          int <- doc_info$internals
+        }
+
+        if (length(ext) > 0 || length(int) > 0) {
           md <- private$build_markdown(
             class_name,
-            doc_info$externals,
-            doc_info$internals,
-            doc_info$tocs,
-            private$class_names
+            ext,
+            int,
+            private$class_names,
+            header = doc_info$header,
+            interface_mode = is_iface
           )
           write_file(md, path(self$write_folder(), glue("{class_name}.md")))
           cli::cli_inform(glue("Written: {class_name}.md"))
@@ -87,13 +106,17 @@ VBADocParser <- R6Class(
       lines <- read_lines(target_file)
       doc_info <- private$extract_doc_blocks(lines)
 
+      if (!private$has_text(doc_info$header$folder)) {
+        doc_info$header$folder <- str_to_title(basename(dirname(target_file)))
+      }
+
       if (length(doc_info$internals) > 0 || length(doc_info$externals) > 0) {
         md <- private$build_markdown(
           class_name,
           doc_info$externals,
           doc_info$internals,
-          doc_info$tocs,
           private$class_names,
+          header = doc_info$header,
           interface_mode = FALSE
         )
         write_file(md, path(self$write_folder(), glue("{class_name}.md")))
@@ -146,6 +169,10 @@ VBADocParser <- R6Class(
       lines <- read_lines(iface_file)
       doc_info <- private$extract_doc_blocks(lines)
 
+      if (!private$has_text(doc_info$header$folder)) {
+        doc_info$header$folder <- str_to_title(basename(dirname(iface_file)))
+      }
+
       # Treat all documented members as external API for interfaces
       docs_external <- c(doc_info$externals, doc_info$internals)
       docs_internal <- list()
@@ -155,8 +182,8 @@ VBADocParser <- R6Class(
           iface_name,
           docs_external,
           docs_internal,
-          doc_info$tocs,
           private$class_names,
+          header = doc_info$header,
           interface_mode = TRUE
         )
         write_file(md, path(self$write_folder(), glue("{iface_name}.md")))
@@ -259,112 +286,6 @@ VBADocParser <- R6Class(
 
       write_lines(out, path(self$write_folder(), "Enumerations.md"))
       cli::cli_inform("Written: Enumerations.md")
-    },
-
-    build_master_markdown = function(title = "Code Documentation") {
-      out_dir <- self$write_folder()
-      md_files <- dir_ls(out_dir, regexp = "\\.md$", type = "file")
-      md_files <- md_files[!basename(md_files) %in% c("CodeDocumentation.md")]
-      md_files <- md_files[order(tolower(basename(md_files)))]
-
-      header <- c(
-        "---",
-        glue("title: {title}"),
-        "format:",
-        "  html:",
-        "    toc: true",
-        "    theme: 'cosmo'",
-        "---",
-        "",
-        "# Class Index",
-        ""
-      )
-
-      index <- glue("- [{path_ext_remove(basename(f))}]({basename(f)})", f = md_files)
-
-      sections <- c()
-      for (f in md_files) {
-        sections <- c(
-          sections,
-          "",
-          glue("\n---\n# {path_ext_remove(basename(f))}\n"),
-          read_lines(f)
-        )
-      }
-
-      out <- c(header, index, sections)
-      write_lines(out, path(out_dir, "CodeDocumentation.md"))
-      cli::cli_inform("Written: CodeDocumentation.md")
-    },
-
-    build_site_index = function(title = "Code Documentation") {
-      out_dir <- self$write_folder()
-      md_files <- dir_ls(out_dir, regexp = "\\.md$", type = "file")
-      md_files <- md_files[order(tolower(basename(md_files)))]
-
-      items <- paste0(
-        '<li><a href="', basename(md_files), '">',
-        path_ext_remove(basename(md_files)),
-        '</a></li>'
-      )
-
-      html <- c(
-        '<!doctype html>',
-        '<html lang="en">',
-        '<head>',
-        '  <meta charset="utf-8"/>',
-        glue('  <title>{title}</title>'),
-        '  <meta name="viewport" content="width=device-width, initial-scale=1"/>',
-        '  <style>body{font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;margin:2rem;max-width:960px} h1{margin-top:0} ul{line-height:1.8} .muted{color:#666;font-size:0.9em} .card{border:1px solid #eee;border-radius:8px;padding:1rem;margin:1rem 0} .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1rem} </style>',
-        '</head>',
-        '<body>',
-        glue('<h1>{title}</h1>'),
-        '<p class="muted">Static index linking to per-class Markdown docs.</p>',
-        '<div class="card">',
-        '<h2>Classes</h2>',
-        '<ul>',
-        items,
-        '</ul>',
-        '</div>',
-        '<div class="card">',
-        '<h2>Combined Documentation</h2>',
-        '<ul>',
-        '<li><a href="CodeDocumentation.md">CodeDocumentation.md</a></li>',
-        '</ul>',
-        '</div>',
-        '</body>',
-        '</html>'
-      )
-
-      write_lines(html, path(out_dir, "index.html"))
-      cli::cli_inform("Written: index.html")
-
-      # Also emit a very simple HTML wrapper for the combined markdown
-      combined_md <- path(out_dir, "CodeDocumentation.md")
-      if (file_exists(combined_md)) {
-        md_text <- paste(read_lines(combined_md), collapse = "\n")
-        # Render markdown as preformatted text for offline viewing
-        book_html <- c(
-          '<!doctype html>',
-          '<html lang="en">',
-          '<head>',
-          '  <meta charset="utf-8"/>',
-          glue('  <title>{title}</title>'),
-          '  <meta name="viewport" content="width=device-width, initial-scale=1"/>',
-          '  <style>body{font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;margin:2rem;max-width:960px} pre{white-space:pre-wrap;word-wrap:break-word} .muted{color:#666}</style>',
-          '</head>',
-          '<body>',
-          glue('<h1>{title}</h1>'),
-          '<p class="muted">Combined markdown rendered as preformatted text. For rich rendering, open the .md in a markdown viewer or Quarto.</p>',
-          '<pre>',
-          md_text,
-          '</pre>',
-          '</body>',
-          '</html>'
-        )
-        write_lines(book_html, path(out_dir, "CodeDocumentation.html"))
-        cli::cli_inform("Written: CodeDocumentation.html")
-      }
     }
   ),
 
@@ -378,6 +299,14 @@ VBADocParser <- R6Class(
       externals <- list()
       internals <- list()
       tocs <- list()
+
+      # Class-level header metadata
+      header <- list(
+        class_name = NULL, folder = NULL, module_desc = NULL,
+        description = NULL, depends = NULL, version = NULL, author = NULL
+      )
+      in_header <- FALSE
+
       n <- length(lines)
       current_section <- NULL
       doc <- NULL
@@ -387,6 +316,7 @@ VBADocParser <- R6Class(
       last_remark_index <- NA_integer_
       last_throw_index <- NA_integer_
       last_depend_index <- NA_integer_
+      last_todo_index <- NA_integer_
       i <- 1L
 
       reset_tracking <- function() {
@@ -396,6 +326,7 @@ VBADocParser <- R6Class(
         last_remark_index <<- NA_integer_
         last_throw_index <<- NA_integer_
         last_depend_index <<- NA_integer_
+        last_todo_index <<- NA_integer_
       }
       reset_tracking()
 
@@ -441,21 +372,44 @@ VBADocParser <- R6Class(
           content <- str_trim(tag_match[3])
           tag <- str_to_lower(raw_tag)
 
+          # Normalize deprecated tag variants
           if (tag == "pram") tag <- "param"
           if (tag %in% c("params", "parameters")) tag <- "params"
           if (tag %in% c("returns", "returned")) tag <- "return"
+          if (tag == "fun-title") tag <- "sub-title"
+          if (tag == "remark") tag <- "remarks"
 
-          if (tag == "section") {
-            current_section <- if (private$has_text(content)) content else NULL
-            doc <- NULL
+          # --- @class: start header block ---
+          if (tag == "class") {
+            if (private$has_text(content)) header$class_name <- content
+            in_header <- TRUE
             reset_tracking()
             i <- i + 1L
             next
           }
 
+          # --- @folder: extract from ("Name") ---
+          if (tag == "folder") {
+            folder_match <- str_match(content, '\\("([^"]+)"\\)')
+            if (!is.na(folder_match[1])) {
+              header$folder <- folder_match[2]
+            }
+            i <- i + 1L
+            next
+          }
+
+          # --- @moduledescription: extract from ("text") ---
+          if (tag == "moduledescription") {
+            md_match <- str_match(content, '\\("([^"]+)"\\)')
+            if (!is.na(md_match[1])) {
+              header$module_desc <- md_match[2]
+            }
+            i <- i + 1L
+            next
+          }
+
+          # --- Other module-level tags: skip ---
           module_level <- c(
-            "folder",
-            "moduledescription",
             "interfacedescription",
             "interface",
             "ignoremodule",
@@ -468,6 +422,47 @@ VBADocParser <- R6Class(
             next
           }
 
+          # --- @section: end header mode, start section ---
+          if (tag == "section") {
+            current_section <- if (private$has_text(content)) content else NULL
+            in_header <- FALSE
+            doc <- NULL
+            reset_tracking()
+            i <- i + 1L
+            next
+          }
+
+          # --- Header-mode tags (before first @section) ---
+          if (in_header) {
+            if (tag %in% c("details", "description")) {
+              header$description <- private$append_text(
+                header$description, content
+              )
+              last_tag <- "header_description"
+            } else if (tag == "depends") {
+              deps <- if (private$has_text(content)) {
+                str_split(content, "\\s*,\\s*")[[1]]
+              } else {
+                character()
+              }
+              header$depends <- c(header$depends, deps)
+              last_tag <- "header_depends"
+            } else if (tag == "version") {
+              header$version <- content
+            } else if (tag == "author") {
+              header$author <- content
+            } else {
+              # Unrecognised header tag; exit header mode
+              in_header <- FALSE
+            }
+            if (in_header) {
+              i <- i + 1L
+              next
+            }
+            # Fell through: process as normal member tag below
+          }
+
+          # --- @jump outside a doc block: skip ---
           if (tag == "jump" && is.null(doc)) {
             i <- i + 1L
             next
@@ -487,7 +482,7 @@ VBADocParser <- R6Class(
             if (private$has_text(content)) {
               doc$label <- content
             }
-          } else if (tag %in% c("sub-title", "fun-title", "prop-title")) {
+          } else if (tag %in% c("sub-title", "prop-title")) {
             doc[[tag]] <- content
           } else if (tag %in% c("details", "description")) {
             doc$details <- private$append_text(doc$details, content)
@@ -505,7 +500,11 @@ VBADocParser <- R6Class(
             last_tag <- "throws"
             last_throw_index <- length(doc$throws)
           } else if (tag == "depends") {
-            deps <- if (private$has_text(content)) str_split(content, "\\s*,\\s*")[[1]] else ""
+            deps <- if (private$has_text(content)) {
+              str_split(content, "\\s*,\\s*")[[1]]
+            } else {
+              ""
+            }
             if (length(deps) == 0) deps <- ""
             doc$depends <- c(doc$depends, deps)
             last_tag <- "depends"
@@ -531,6 +530,14 @@ VBADocParser <- R6Class(
             last_tag <- "return"
           } else if (tag == "jump") {
             doc$jump <- c(doc$jump, content)
+          } else if (tag == "todo") {
+            doc$todo <- c(doc$todo, content)
+            last_tag <- "todo"
+            last_todo_index <- length(doc$todo)
+          } else if (tag == "version") {
+            doc$version <- content
+          } else if (tag == "author") {
+            doc$author <- content
           } else {
             if (str_detect(raw_tag, "^[A-Za-z0-9_]+$")) {
               param_info <- private$parse_param_line(content, raw_tag)
@@ -544,9 +551,26 @@ VBADocParser <- R6Class(
           next
         }
 
+        # --- Continuation comments ---
         if (str_detect(trimmed, "^'(?!@)")) {
+          text <- str_trim(str_remove(trimmed, "^'"))
+
+          # Header-mode continuation
+          if (in_header) {
+            if (identical(last_tag, "header_description")) {
+              header$description <- private$append_text(
+                header$description, text
+              )
+            } else if (identical(last_tag, "header_depends")) {
+              deps <- str_split(text, "\\s*,\\s*")[[1]]
+              header$depends <- c(header$depends, deps)
+            }
+            i <- i + 1L
+            next
+          }
+
+          # Member-level continuation
           if (!is.null(doc)) {
-            text <- str_trim(str_remove(trimmed, "^'"))
             if (identical(last_tag, "details") || identical(last_tag, "description")) {
               doc$details <- private$append_text(doc$details, text)
             } else if (identical(last_tag, "note") && !is.na(last_note_index)) {
@@ -557,6 +581,8 @@ VBADocParser <- R6Class(
               doc$throws[last_throw_index] <- private$append_text(doc$throws[last_throw_index], text)
             } else if (identical(last_tag, "depends") && !is.na(last_depend_index)) {
               doc$depends[last_depend_index] <- private$append_text(doc$depends[last_depend_index], text)
+            } else if (identical(last_tag, "todo") && !is.na(last_todo_index)) {
+              doc$todo[last_todo_index] <- private$append_text(doc$todo[last_todo_index], text)
             } else if (identical(last_tag, "return") && !is.null(doc$return)) {
               doc$return$details <- private$append_text(doc$return$details, text)
             } else if (identical(last_tag, "param") && !is.na(last_param_index)) {
@@ -577,6 +603,7 @@ VBADocParser <- R6Class(
           next
         }
 
+        # --- Code lines (signatures, blanks, attributes) ---
         if (!is.null(doc)) {
           if (str_detect(trimmed, "^(Public|Private|Friend|Global|Static)\\s+(Sub|Function|Property|Let|Set|Get)")) {
             signature_lines <- character()
@@ -612,54 +639,90 @@ VBADocParser <- R6Class(
         i <- i + 1L
       }
 
-      list(externals = externals, internals = internals, tocs = tocs)
+      list(
+        externals = externals,
+        internals = internals,
+        tocs = tocs,
+        header = header
+      )
     },
 
     build_markdown = function(
       class_name,
       externals,
       internals,
-      tocs,
       class_names,
+      header = list(),
       interface_mode = FALSE
     ) {
-      output <- c(
-        "---",
-        glue("title: {class_name}"),
-        "format:",
-        "  html:",
-        "    toc: true",
-        "    theme: 'cosmo'",
-        "---",
-        ""
-      )
+      output <- c()
 
-      # Primary section
+      # Folder metadata (consumed by build-site.R for index grouping)
+      folder_name <- if (private$has_text(header$folder)) header$folder else ""
+      output <- c(output, glue("<!-- folder: {folder_name} -->"), "")
+
+      # Class heading
+      output <- c(output, glue("# {class_name}"), "")
+
+      # Class description
+      if (private$has_text(header$description)) {
+        output <- c(output, header$description, "")
+      }
+
+      # Class-level depends
+      if (!is.null(header$depends) && length(header$depends) > 0) {
+        valid_deps <- header$depends[nzchar(str_trim(header$depends))]
+        if (length(valid_deps) > 0) {
+          dep_links <- vapply(valid_deps, function(d) {
+            d <- str_trim(d)
+            if (d %in% class_names) as.character(glue("[{d}]({d}.html)")) else d
+          }, character(1))
+          output <- c(
+            output,
+            glue("**Depends on:** {paste(dep_links, collapse = ', ')}"),
+            ""
+          )
+        }
+      }
+
+      # Version / Author
+      if (private$has_text(header$version)) {
+        output <- c(output, glue("**Version:** {header$version}"), "")
+      }
+      if (private$has_text(header$author)) {
+        output <- c(output, glue("**Author:** {header$author}"), "")
+      }
+
+      # Exported members
       external_md <- private$resolve_doc(externals, class_names)
       if (private$has_text(external_md)) {
         output <- c(output, external_md, "")
       }
 
-      # Interface mode: do not emit internals callout
+      # Internal members (not for interfaces)
       if (!interface_mode) {
         internal_md <- private$resolve_doc(internals, class_names)
         if (private$has_text(internal_md)) {
           output <- c(
             output,
             "",
-            "::: {.callout-note collapse=\"true\" title=\"Additional not exported Subs \"}",
+            "<details>",
+            "<summary>Internal members (not exported)</summary>",
+            "",
             internal_md,
-            ":::"
+            "",
+            "</details>"
           )
         }
       }
+
       paste(output, collapse = "\n")
     },
 
     resolve_links = function(text, class_names) {
       str_replace_all(text, "see::([A-Za-z0-9_]+)", function(m) {
         cls <- str_match(m, "see::([A-Za-z0-9_]+)")[, 2]
-        if (cls %in% class_names) glue("[{cls}]({cls}.md)") else cls
+        if (cls %in% class_names) glue("[{cls}]({cls}.html)") else cls
       })
     },
 
@@ -689,18 +752,9 @@ VBADocParser <- R6Class(
           summary <- doc[["prop-title"]]
         } else if (private$has_text(doc[["sub-title"]])) {
           summary <- doc[["sub-title"]]
-        } else if (private$has_text(doc[["fun-title"]])) {
-          summary <- doc[["fun-title"]]
         }
 
-        anchor_source <- if (private$has_text(summary)) summary else label
-        anchor <- private$slugify_anchor(anchor_source)
-
-        header <- if (private$has_text(anchor)) {
-          glue("### `{label}` {{#sec-{anchor}}}")
-        } else {
-          glue("### `{label}`")
-        }
+        header <- glue("### {label}")
 
         block <- c("", header)
 
@@ -733,7 +787,7 @@ VBADocParser <- R6Class(
         }
 
         if (!is.null(doc$return) && (private$has_text(doc$return$type) || private$has_text(doc$return$details))) {
-          return_type <- if (private$has_text(doc$return$type)) glue("{doc$return$type} – ") else ""
+          return_type <- if (private$has_text(doc$return$type)) glue("{doc$return$type} -- ") else ""
           return_details <- if (private$has_text(doc$return$details)) private$resolve_links(doc$return$details, class_names) else ""
           block <- c(block, "", glue("**Returns:** {return_type}{return_details}"))
         }
@@ -783,6 +837,18 @@ VBADocParser <- R6Class(
           }
           if (length(depends_block) > 0) {
             block <- c(block, "", "**Depends on:**", depends_block)
+          }
+        }
+
+        if (!is.null(doc$todo) && length(doc$todo) > 0) {
+          todo_block <- character()
+          for (todo_entry in doc$todo) {
+            if (private$has_text(todo_entry)) {
+              todo_block <- c(todo_block, glue("  - {todo_entry}"))
+            }
+          }
+          if (length(todo_block) > 0) {
+            block <- c(block, "", "**Todo:**", todo_block)
           }
         }
 
@@ -920,9 +986,3 @@ VBADocParser <- R6Class(
     }
   )
 )
-
-# Example usage:
-# parser <- VBADocParser$new("src")
-# parser$parse()
-# parser$detect_usages()
-# parser$extract_enums()

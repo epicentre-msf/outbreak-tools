@@ -1,4 +1,6 @@
 library(here)
+library(fs)
+library(stringr)
 
 source(here("automate/codes/class-doc.R"))
 
@@ -10,11 +12,52 @@ parser <- VBADocParser$new(
   output_folder = here("src", "docs")
 )
 
+# --- Read .docignore patterns ------------------------------------------------
+
+docignore_path <- here("src", ".docignore")
+exclude_files <- character()
+
+if (file_exists(docignore_path)) {
+  patterns <- readLines(docignore_path, warn = FALSE)
+  patterns <- str_trim(patterns)
+  patterns <- patterns[nzchar(patterns) & !str_starts(patterns, "#")]
+
+  # Resolve each pattern against the source tree
+  all_cls <- dir_ls(classes_folder, recurse = TRUE, regexp = "\\.cls$")
+  rel_paths <- path_rel(all_cls, classes_folder)
+
+  for (pat in patterns) {
+    # Directory pattern (ends with /): exclude anything under it
+    if (str_ends(pat, "/")) {
+      dir_pat <- str_remove(pat, "/$")
+      matches <- all_cls[str_detect(rel_paths, fixed(dir_pat))]
+    } else if (str_detect(pat, "[*?]")) {
+      # Glob pattern
+      matches <- all_cls[str_detect(
+        path_file(all_cls),
+        glob2rx(pat, trim.head = TRUE, trim.tail = TRUE)
+      )]
+    } else {
+      # Exact relative path
+      matches <- all_cls[str_detect(rel_paths, fixed(pat))]
+    }
+    exclude_files <- c(exclude_files, matches)
+  }
+  exclude_files <- unique(exclude_files)
+
+  if (length(exclude_files) > 0) {
+    cli::cli_inform(
+      "Excluding {length(exclude_files)} file(s) via .docignore"
+    )
+  }
+}
+
+# --- Parse --------------------------------------------------------------------
+
 args <- commandArgs(trailingOnly = TRUE)
-exclude_impl <- here("src/classes/implements/BetterArray.cls")
 
 if (length(args) == 0) {
-  parser$parse(exclude_files = exclude_impl)
+  parser$parse(exclude_files = exclude_files)
 } else {
   mode <- tolower(args[[1]])
   parse_mode <- NULL
@@ -40,7 +83,7 @@ if (length(args) == 0) {
     parse_mode <- "interface"
     target <- extract_target(args[[1]], args)
   } else if (mode %in% c("--all", "-a", "all")) {
-    parser$parse(exclude_files = exclude_impl)
+    parser$parse(exclude_files = exclude_files)
   } else {
     # Backwards compatibility: single argument treated as interface name
     parse_mode <- "interface"
@@ -53,17 +96,13 @@ if (length(args) == 0) {
     }
 
     if (parse_mode == "class") {
-      parser$parse_class(target, exclude_files = exclude_impl)
+      parser$parse_class(target, exclude_files = exclude_files)
     } else {
-      parser$parse_interface_for_class(target, exclude_files = exclude_impl)
+      parser$parse_interface_for_class(target, exclude_files = exclude_files)
     }
   }
 }
 
 # Optional extras
-parser$detect_usages(exclude_files = exclude_impl)
-parser$extract_enums(exclude_files = exclude_impl)
-
-# Build master markdown and a simple index page
-parser$build_master_markdown(title = "Outbreak Tools – Code Documentation")
-parser$build_site_index(title = "Outbreak Tools – Code Documentation")
+parser$detect_usages(exclude_files = exclude_files)
+parser$extract_enums(exclude_files = exclude_files)
