@@ -460,6 +460,19 @@ Private Sub Clean()
   Next
 End Sub
 
+'@label:remove-autofilter
+'@sub-title Turn off AutoFilter on the host worksheet
+'@details
+'Reliably removes any active AutoFilter. Called before and after
+'filtering operations to guarantee a clean state.
+Private Sub RemoveAutoFilter()
+    Dim sh As Worksheet
+    Set sh = Wksh()
+    On Error Resume Next
+    If sh.AutoFilterMode Then sh.AutoFilterMode = False
+    On Error GoTo 0
+End Sub
+
 
 '@label:filter-data
 '@sub-title Filter data on a single column and return the result
@@ -514,7 +527,7 @@ Private Function FilterData(ByVal varName As String, _
     End If
 
     With sh
-        If Not .AutoFilter Is Nothing Then .AutoFilter.ShowAllData
+        RemoveAutoFilter
 
         dataRng.AutoFilter Field:=ColumnIndex(varName, inDataRange:=True, shouldExist:=True, matchCase:=matchCase), Criteria1:=criteriaName
 
@@ -530,14 +543,10 @@ Private Function FilterData(ByVal varName As String, _
 
             returnedData.FromExcelRange outRng, DetectLastRow:=False, _
                                         DetectLastColumn:=False
-            On Error Resume Next
-                 .AutoFilter.ShowAllData
-                dataRng.AutoFilter.ShowAllData
-                If .AutoFilterMode Then .AutoFilterMode = False
-            On Error GoTo 0
-
             outRng.ClearContents
         End If
+
+        RemoveAutoFilter
     End With
 
     Set FilterData = returnedData.Clone()
@@ -592,7 +601,7 @@ Private Function FiltersData(ByVal varData As BetterArray, _
 
     With sh
 
-        If Not .AutoFilter Is Nothing Then .AutoFilter.ShowAllData
+        RemoveAutoFilter
         EndRow = DataEndRow()
         endCol = DataEndColumn()
 
@@ -617,11 +626,7 @@ Private Function FiltersData(ByVal varData As BetterArray, _
             Col = Col + 1
         Next
 
-        On Error Resume Next
-        .AutoFilter.ShowAllData
-        dataRng.AutoFilter.ShowAllData
-        If .AutoFilterMode Then .AutoFilterMode = False
-        On Error GoTo 0
+        RemoveAutoFilter
 
         'end row and end columns of data to return
         retEndRow = .Cells(.Rows.Count, endCol + 2).End(xlUp).Row

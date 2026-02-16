@@ -948,8 +948,8 @@ Private Sub Translate(ByVal trads As ITranslationObject)
         ThrowError ProjectError.ObjectNotInitialized, "Translations are not initialised"
     End If
 
-    trads.TranslateRange Data.DataRange("label button")
-    trads.TranslateRange Data.DataRange("file name"), containsFormula:=True
+    trads.TranslateRange Data.DataRange("label button", matchCase:=False)
+    trads.TranslateRange Data.DataRange("file name", matchCase:=False), containsFormula:=True
 
 End Sub
 

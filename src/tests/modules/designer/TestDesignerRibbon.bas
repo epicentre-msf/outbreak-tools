@@ -588,8 +588,14 @@ Public Sub TestPrepareCreatesGeoFlags()
     Assert.AreEqual vbNullString, geoStore.ValueAsString("RNG_GeoName"), "RNG_GeoName should default to empty."
     Assert.AreEqual vbNullString, geoStore.ValueAsString("RNG_MetaLang"), "RNG_MetaLang should default to empty."
     Assert.AreEqual "empty", geoStore.ValueAsString("RNG_GeoUpdated"), "RNG_GeoUpdated should default to empty."
-    Assert.AreEqual vbNullString, geoStore.ValueAsString("RNG_PastingGeoCol"), "RNG_PastingGeoCol should default to empty."
     Assert.AreEqual vbNullString, geoStore.ValueAsString("RNG_FormLoaded"), "RNG_FormLoaded should default to empty."
+
+    'Assert: RNG_PastingGeoCol should exist as a cell-based range (not a HiddenName)
+    Dim pastingRng As Range
+    On Error Resume Next
+    Set pastingRng = geoSheet.Range("RNG_PastingGeoCol")
+    On Error GoTo Fail
+    Assert.IsNotNothing pastingRng, "RNG_PastingGeoCol should exist as a cell-based range."
     Exit Sub
 
 Fail:

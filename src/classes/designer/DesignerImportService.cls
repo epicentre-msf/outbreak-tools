@@ -66,8 +66,13 @@ Private Const SHEET_LL_TRANSLATION As String = "LinelistTranslation"
 Private Const TAG_FORMATTER_IMPORTED As String = "TAG_FORMATTER_IMPORTED"
 
 'Sheet names in the designer workbook (for export to linelist)
+Private Const SHEET_MAIN As String = "Main"
 Private Const SHEET_GEO As String = "Geo"
 Private Const SHEET_PASS As String = "__pass"
+
+'Named ranges on the Main sheet (geo metadata)
+Private Const RNG_LL_NAME As String = "RNG_LLName"
+Private Const RNG_PATH_DICO As String = "RNG_PathDico"
 
 'Anchor positions for setup workbook tables
 Private Const SETUP_DICT_START_ROW As Long = 5
@@ -229,7 +234,8 @@ Public Sub ExportToLinelist(ByVal targetBook As Workbook)
     ExportChoices hostBook, targetBook
     ExportExports hostBook, targetBook
     ExportAnalysis hostBook, targetBook
-    ExportGeo hostBook, targetBook
+    ExportGeo hostBook, targetBook, ReadMainRange(hostBook, RNG_LL_NAME), _
+                                     ReadMainRange(hostBook, RNG_PATH_DICO)
     ExportPasswords hostBook, targetBook
     ExportTranslations hostBook, targetBook
     ExportFormatter hostBook, targetBook
@@ -291,6 +297,10 @@ End Property
 
 '@label:import-dictionary
 '@sub-title Export dictionary from setup into the host workbook
+'@details
+'The data start row depends on the setup file format: .xlsb files
+'have metadata rows above the data (row 5), while .xlsx files start
+'at row 1.
 Private Sub ImportDictionary(ByVal setupBook As Workbook, ByVal hostBook As Workbook)
     Dim setupSheet As Worksheet
     Dim dictManager As ILLdictionary
@@ -298,7 +308,8 @@ Private Sub ImportDictionary(ByVal setupBook As Workbook, ByVal hostBook As Work
     Set setupSheet = ResolveWorksheet(setupBook, SHEET_DICTIONARY)
     If setupSheet Is Nothing Then Exit Sub
 
-    Set dictManager = LLdictionary.Create(setupSheet, SETUP_DICT_START_ROW, SETUP_DICT_START_COLUMN)
+    Set dictManager = LLdictionary.Create(setupSheet, _
+                      SetupStartRow(setupBook, SETUP_DICT_START_ROW), SETUP_DICT_START_COLUMN)
     dictManager.Export hostBook, Hide:=xlSheetHidden
 End Sub
 
@@ -311,7 +322,8 @@ Private Sub ImportChoices(ByVal setupBook As Workbook, ByVal hostBook As Workboo
     Set setupSheet = ResolveWorksheet(setupBook, SHEET_CHOICES)
     If setupSheet Is Nothing Then Exit Sub
 
-    Set choicesManager = LLChoices.Create(setupSheet, SETUP_CHOICES_START_ROW, SETUP_CHOICES_START_COLUMN)
+    Set choicesManager = LLChoices.Create(setupSheet, _
+                         SetupStartRow(setupBook, SETUP_CHOICES_START_ROW), SETUP_CHOICES_START_COLUMN)
     choicesManager.Export hostBook, Hide:=xlSheetHidden
 End Sub
 
@@ -324,7 +336,8 @@ Private Sub ImportExports(ByVal setupBook As Workbook, ByVal hostBook As Workboo
     Set setupSheet = ResolveWorksheet(setupBook, SHEET_EXPORTS)
     If setupSheet Is Nothing Then Exit Sub
 
-    Set exportsManager = LLExport.Create(setupSheet, SETUP_EXPORT_START_ROW, SETUP_EXPORT_START_COLUMN)
+    Set exportsManager = LLExport.Create(setupSheet, _
+                         SetupStartRow(setupBook, SETUP_EXPORT_START_ROW), SETUP_EXPORT_START_COLUMN)
     exportsManager.ExportSpecs hostBook, Hide:=xlSheetHidden
 End Sub
 
@@ -408,6 +421,10 @@ End Sub
 
 '@label:export-dictionary
 '@sub-title Export dictionary from host to target workbook
+'@details
+'Data in the designer workbook always starts at row 1, col 1 (written
+'by DataSheet.Export during ImportFromSetup), regardless of the
+'original setup file format.
 Private Sub ExportDictionary(ByVal hostBook As Workbook, ByVal targetBook As Workbook)
     Dim hostSheet As Worksheet
     Dim dictManager As ILLdictionary
@@ -415,7 +432,7 @@ Private Sub ExportDictionary(ByVal hostBook As Workbook, ByVal targetBook As Wor
     Set hostSheet = ResolveWorksheet(hostBook, SHEET_DICTIONARY)
     If hostSheet Is Nothing Then Exit Sub
 
-    Set dictManager = LLdictionary.Create(hostSheet, SETUP_DICT_START_ROW, SETUP_DICT_START_COLUMN)
+    Set dictManager = LLdictionary.Create(hostSheet, EXPORTED_START_ROW, EXPORTED_START_COLUMN)
     dictManager.Export targetBook, Hide:=xlSheetVeryHidden
 End Sub
 
@@ -428,7 +445,7 @@ Private Sub ExportChoices(ByVal hostBook As Workbook, ByVal targetBook As Workbo
     Set hostSheet = ResolveWorksheet(hostBook, SHEET_CHOICES)
     If hostSheet Is Nothing Then Exit Sub
 
-    Set choicesManager = LLChoices.Create(hostSheet, SETUP_CHOICES_START_ROW, SETUP_CHOICES_START_COLUMN)
+    Set choicesManager = LLChoices.Create(hostSheet, EXPORTED_START_ROW, EXPORTED_START_COLUMN)
     choicesManager.Export targetBook, Hide:=xlSheetVeryHidden
 End Sub
 
@@ -441,7 +458,7 @@ Private Sub ExportExports(ByVal hostBook As Workbook, ByVal targetBook As Workbo
     Set hostSheet = ResolveWorksheet(hostBook, SHEET_EXPORTS)
     If hostSheet Is Nothing Then Exit Sub
 
-    Set exportsManager = LLExport.Create(hostSheet, SETUP_EXPORT_START_ROW, SETUP_EXPORT_START_COLUMN)
+    Set exportsManager = LLExport.Create(hostSheet, EXPORTED_START_ROW, EXPORTED_START_COLUMN)
     exportsManager.ExportSpecs targetBook, Hide:=xlSheetVeryHidden
 End Sub
 
@@ -460,7 +477,12 @@ End Sub
 
 '@label:export-geo
 '@sub-title Export geo from host to target workbook
-Private Sub ExportGeo(ByVal hostBook As Workbook, ByVal targetBook As Workbook)
+'@param hostBook Workbook. Designer workbook containing the Geo sheet.
+'@param targetBook Workbook. Linelist workbook receiving the geo data.
+'@param llName String. Linelist name written as geo metadata.
+'@param setupPath String. Setup file path written as geo metadata.
+Private Sub ExportGeo(ByVal hostBook As Workbook, ByVal targetBook As Workbook, _
+                      ByVal llName As String, ByVal setupPath As String)
     Dim hostSheet As Worksheet
     Dim geoManager As ILLGeo
 
@@ -468,7 +490,7 @@ Private Sub ExportGeo(ByVal hostBook As Workbook, ByVal targetBook As Workbook)
     If hostSheet Is Nothing Then Exit Sub
 
     Set geoManager = LLGeo.Create(hostSheet)
-    geoManager.ExportToWkb targetBook
+    geoManager.ExportToWkb targetBook, llName, setupPath
 End Sub
 
 '@label:export-passwords
@@ -617,6 +639,50 @@ End Function
 '@sub-title Check whether a worksheet exists in a workbook
 Private Function WorksheetExists(ByVal wb As Workbook, ByVal sheetName As String) As Boolean
     WorksheetExists = Not (ResolveWorksheet(wb, sheetName) Is Nothing)
+End Function
+
+'@label:setup-start-row
+'@sub-title Return the data start row based on the setup file format
+'@details
+'Setup workbooks saved as .xlsb have metadata rows above the data
+'tables (Dictionary at row 5, Choices/Exports at row 4).  In .xlsx
+'format the data always starts at row 1.
+'@param wb Workbook. The setup workbook to inspect.
+'@param xlsbRow Long. Start row to use for .xlsb files.
+'@return Long. The resolved start row (xlsbRow for .xlsb, 1 otherwise).
+Private Function SetupStartRow(ByVal wb As Workbook, ByVal xlsbRow As Long) As Long
+    If LCase$(Right$(wb.Name, 5)) = ".xlsb" Then
+        SetupStartRow = xlsbRow
+    Else
+        SetupStartRow = 1
+    End If
+End Function
+
+'@label:read-main-range
+'@sub-title Read a named range value from the Main worksheet
+'@details
+'Returns the string value of a named range on the Main sheet of the
+'supplied workbook.  Returns vbNullString when the sheet or range is
+'missing.
+'@param wb Workbook. Workbook containing the Main sheet.
+'@param rngName String. Named range to read.
+'@return String. Cell value or vbNullString.
+Private Function ReadMainRange(ByVal wb As Workbook, ByVal rngName As String) As String
+    Dim sh As Worksheet
+    Dim rng As Range
+
+    Set sh = ResolveWorksheet(wb, SHEET_MAIN)
+    If sh Is Nothing Then Exit Function
+
+    On Error Resume Next
+    Set rng = sh.Range(rngName)
+    On Error GoTo 0
+
+    If rng Is Nothing Then Exit Function
+
+    On Error Resume Next
+    ReadMainRange = CStr(rng.Value)
+    On Error GoTo 0
 End Function
 
 '@label:close-workbook

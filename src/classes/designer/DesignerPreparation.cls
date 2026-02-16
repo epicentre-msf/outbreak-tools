@@ -389,9 +389,11 @@ End Sub
 '@sub-title Ensure Geo worksheet-level HiddenNames flags exist
 '@details
 'Creates worksheet-level HiddenNames on the Geo worksheet for language
-'code, geobase name, metadata language, update status, pasting column,
-'and form loaded state. Silently exits when the Geo worksheet does not
-'exist in the host workbook.
+'code, geobase name, metadata language, update status, and form loaded
+'state. Also creates RNG_PastingGeoCol as a real cell-based named range
+'(not a HiddenName) because it is used as a paste anchor at runtime.
+'Silently exits when the Geo worksheet does not exist in the host
+'workbook.
 Private Sub EnsureGeoFlags()
     Dim geoSheet As Worksheet
     Dim geoStore As IHiddenNames
@@ -404,8 +406,10 @@ Private Sub EnsureGeoFlags()
     geoStore.EnsureName GEO_NAME, vbNullString, HiddenNameTypeString
     geoStore.EnsureName GEO_META_LANG, vbNullString, HiddenNameTypeString
     geoStore.EnsureName GEO_UPDATED, "empty", HiddenNameTypeString
-    geoStore.EnsureName GEO_PASTING_COL, vbNullString, HiddenNameTypeString
     geoStore.EnsureName GEO_FORM_LOADED, vbNullString, HiddenNameTypeString
+
+    'RNG_PastingGeoCol is a real cell-based named range, not a HiddenName
+    EnsureGeoRange geoSheet, "RNG_PastingGeoCol"
 End Sub
 
 
@@ -664,6 +668,28 @@ Private Sub RegisterHiddenSheet(ByRef manager As IDevelopment, ByVal sheetName A
     On Error Resume Next
     manager.AddHiddenSheet sheetName
     On Error GoTo 0
+End Sub
+
+'@label:ensure-geo-range
+'@sub-title Ensure a cell-based named range exists on the Geo worksheet
+'@details
+'Checks whether the named range already exists on the worksheet. If not,
+'creates the range in a free cell below the used area so it does not
+'overlap with existing ListObjects or other content.
+'@param sh Worksheet. The Geo worksheet.
+'@param rngName String. The named range identifier to create.
+Private Sub EnsureGeoRange(ByVal sh As Worksheet, ByVal rngName As String)
+    Dim rng As Range
+
+    On Error Resume Next
+    Set rng = sh.Range(rngName)
+    On Error GoTo 0
+
+    If rng Is Nothing Then
+        Dim lastRow As Long
+        lastRow = sh.UsedRange.Rows(sh.UsedRange.Rows.Count).Row
+        sh.Cells(lastRow + 2, 1).Name = rngName
+    End If
 End Sub
 
 '@label:raise-error
