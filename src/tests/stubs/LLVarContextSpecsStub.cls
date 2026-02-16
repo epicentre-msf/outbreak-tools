@@ -177,10 +177,6 @@ Private Property Get ILinelistSpecs_OutputTemporaryRepos() As ITemporaryRepos
     Set ILinelistSpecs_OutputTemporaryRepos = Nothing
 End Property
 
-Private Sub ILinelistSpecs_Export(ByVal toWkb As Workbook)
-    'Not required for tests
-End Sub
-
 Private Sub ILinelistSpecs_ErrorManage(Optional ByVal textMessage As String = vbNullString)
     'Not required for tests
 End Sub

@@ -258,15 +258,6 @@ End Property
 Public Property Get OutputTemporaryRepos() As ITemporaryRepos
 End Property
 
-'@jump:export
-'@sub-title Export all specifications to an output workbook
-'@details
-'Exports dictionary, choices, translations, export specs, geo data, and
-'passwords to the given workbook, creating hidden worksheets for each.
-'@param toWkb Workbook. The destination workbook to export specifications into.
-Public Sub Export(ByVal toWkb As Workbook)
-End Sub
-
 '@jump:error-manage
 '@sub-title Display an error dialog for specification failures
 '@details

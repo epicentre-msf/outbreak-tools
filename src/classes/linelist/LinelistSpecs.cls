@@ -1378,62 +1378,6 @@ Public Property Get OutputTemporaryRepos() As ITemporaryRepos
     Set OutputTemporaryRepos = this.tempRepos
 End Property
 
-'@label:export
-'@sub-title Export all specifications to an output workbook
-'@details
-'Exports dictionary, choices, translations, export specs, geo data, and
-'passwords to the given workbook, creating hidden worksheets for each.
-'@param toWkb Workbook. The destination workbook to export specifications into.
-'@throws ProjectError.ObjectNotInitialized When toWkb is Nothing.
-'@throws ProjectError.ErrorUnexpectedState When an unexpected error occurs.
-'@export
-Public Sub Export(ByVal toWkb As Workbook)
-    Dim dict As ILLdictionary
-    Dim choices As ILLChoices
-    Dim translations As ILLTranslation
-    Dim exports As ILLExport
-    Dim geo As ILLGeo
-    Dim passwords As IPasswords
-
-    On Error GoTo HandleError
-
-    If toWkb Is Nothing Then
-        ThrowError ProjectError.ObjectNotInitialized, _
-                  "Destination workbook is required to export specifications"
-    End If
-
-    Set dict = Dictionary()
-    Set choices = Choices()
-    Set translations = Translations()
-    Set exports = ExportObject()
-    Set geo = GeoObject()
-    Set passwords = Password()
-
-    dict.Export toWkb, Hide:=xlSheetVeryHidden
-    choices.Export toWkb, Hide:=xlSheetVeryHidden
-    translations.Export toWkb
-    exports.ExportSpecs toWkb, Hide:=xlSheetVeryHidden
-    geo.ExportToWkb toWkb, Value("llname"), Value("setuppath")
-    passwords.Export toWkb
-
-    Exit Sub
-
-HandleError:
-    Dim errNumber As Long
-    Dim errDescription As String
-
-    errNumber = Err.Number
-    errDescription = Err.Description
-
-    If errNumber = 0 Then Exit Sub
-
-    If errNumber >= ProjectError.ErrorNone And errNumber <= ProjectError.ElementNotFound Then
-        Err.Raise errNumber, CLASSNAME, errDescription
-    Else
-        ThrowError ProjectError.ErrorUnexpectedState, errDescription
-    End If
-End Sub
-
 '@label:error-manage
 '@sub-title Display an error dialog for specification failures
 '@details
@@ -1570,10 +1514,6 @@ End Property
 Private Property Get ILinelistSpecs_OutputTemporaryRepos() As ITemporaryRepos
     Set ILinelistSpecs_OutputTemporaryRepos = Me.OutputTemporaryRepos
 End Property
-
-Private Sub ILinelistSpecs_Export(ByVal toWkb As Workbook)
-    Export toWkb
-End Sub
 
 Private Sub ILinelistSpecs_ErrorManage(Optional ByVal textMessage As String = vbNullString)
     ErrorManage textMessage
