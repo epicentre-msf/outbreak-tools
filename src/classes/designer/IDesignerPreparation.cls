@@ -20,8 +20,9 @@ Option Explicit
 '@description
 'Defines the public contract for the DesignerPreparation class, exposing
 'methods to bind to a designer workbook, run full preparation tasks
-'(import translations, hide worksheets, seed HiddenNames flags), and
-'persist or read ribbon checkbox flags through workbook-level hidden names.
+'(import translations, create dropdown lists, hide worksheets, seed
+'HiddenNames flags, apply T_Multi validations), and persist or read
+'ribbon checkbox flags through workbook-level hidden names.
 
 
 '@section Lifecycle
@@ -42,10 +43,14 @@ End Sub
 '@details
 'Runs the full preparation sequence: prompts the user to select a
 'translations workbook via OSFiles, imports translation tables into
-'LinelistTranslation and DesignerTranslation sheets, hides internal
-'worksheets (VeryHidden for __pass/__formatter/__formula, Hidden for
+'LinelistTranslation and DesignerTranslation sheets, creates a dropdown
+'worksheet with standard dropdown lists (setup languages, interface
+'languages, epiweek start, design values), hides internal worksheets
+'(VeryHidden for __pass/__formatter/__formula/__dropdowns, Hidden for
 'translation sheets), ensures workbook- and worksheet-level HiddenNames
-'flags, and registers hidden sheets with the development manager.
+'flags, applies data validation to the T_Multi table on the
+'GenerateMultiple worksheet, and registers hidden sheets with the
+'development manager.
 '@param devManager IDevelopment. ByRef development manager instance, or Nothing.
 '@export
 Public Sub Prepare(ByRef devManager As IDevelopment)
@@ -103,4 +108,15 @@ End Property
 '@return IHiddenNames. The hidden names manager.
 '@export
 Public Property Get HiddenStore() As IHiddenNames
+End Property
+
+'@jump:dropdowns
+'@prop-title The dropdown manager created during preparation
+'@details
+'Returns the IDropdownLists manager bound to the designer dropdown
+'worksheet. Lazily initialises the manager on first access if it was
+'not already created by Prepare.
+'@return IDropdownLists. The dropdown manager instance.
+'@export
+Public Property Get Dropdowns() As IDropdownLists
 End Property

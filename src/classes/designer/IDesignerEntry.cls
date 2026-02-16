@@ -21,7 +21,8 @@ Option Explicit
 'Defines the public contract for the DesignerEntry class, exposing
 'methods to bind to a designer entry worksheet, inject test doubles for
 'the entry manager and translation provider, clear user input ranges,
-'and translate the worksheet to a given language.
+'translate the worksheet to a given language, read and write info
+'fields on the Main sheet, and translate message codes.
 
 
 '@section Lifecycle
@@ -81,6 +82,44 @@ End Sub
 '@export
 Public Sub Translate(Optional ByVal language As String = vbNullString)
 End Sub
+
+'@jump:add-info
+'@sub-title Write a value to a named info range on the host worksheet
+'@details
+'Resolves the named range matching infoName on the host worksheet,
+'writes the supplied value, and sets the cell background to white.
+'Silently exits when the named range does not exist.
+'Valid infoName values: "edition", "setuppath", "geopath", "lldir",
+'"llname", "setuplang", "temppath".
+'@param value String. The value to write (path, message text, etc.).
+'@param infoName String. The logical name identifying the target range.
+'@export
+Public Sub AddInfo(ByVal value As String, ByVal infoName As String)
+End Sub
+
+'@jump:value-of
+'@prop-title Read a value from a named info range on the host worksheet
+'@details
+'Resolves the named range matching infoName on the host worksheet and
+'returns its current value. Returns vbNullString when the range does
+'not exist.
+'@param infoName String. The logical name identifying the source range.
+'@return String. The current value of the named range.
+'@export
+Public Property Get ValueOf(ByVal infoName As String) As String
+End Property
+
+'@jump:translate-message
+'@sub-title Translate a message code using the designer translations
+'@details
+'Delegates to the internal translations provider to translate a message
+'code (e.g. "MSG_ChemFich") into the current designer language. Returns
+'the raw msgCode when no translation is available.
+'@param msgCode String. The message code to translate.
+'@return String. The translated message text.
+'@export
+Public Function TranslateMessage(ByVal msgCode As String) As String
+End Function
 
 
 '@section State

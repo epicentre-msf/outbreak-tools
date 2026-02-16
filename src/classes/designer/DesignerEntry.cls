@@ -20,11 +20,12 @@ Implements IDesignerEntry
 
 '@class DesignerEntry
 '@description
-'Coordinates clearing and translation actions for a designer entry
-'worksheet. Lazily resolves an IMain entry manager (for clearing input
-'ranges) and an IDesignerTranslation translator (for applying language
-'translations) from the host worksheet and its parent workbook. Both
-'dependencies can be replaced via setter injection for testing.
+'Coordinates clearing, translation, and info read/write actions for a
+'designer entry worksheet. Lazily resolves an IMain entry manager (for
+'clearing input ranges) and an IDesignerTranslation translator (for
+'applying language translations and translating message codes) from
+'the host worksheet and its parent workbook. Both dependencies can be
+'replaced via setter injection for testing.
 'Consumers interact through the IDesignerEntry interface.
 '@depends Main, IMain, DesignerTranslation, IDesignerTranslation
 
@@ -45,6 +46,15 @@ Private this As TDesignerEntry
 
 Private Const CLASS_NAME As String = "DesignerEntry"
 Private Const TRANSLATIONS_SHEET As String = "DesignerTranslation"
+
+'Named ranges on the Main worksheet (matching the designer layout)
+Private Const RNG_EDITION As String = "RNG_Edition"
+Private Const RNG_PATH_GEO As String = "RNG_PathGeo"
+Private Const RNG_PATH_DICO As String = "RNG_PathDico"
+Private Const RNG_LL_DIR As String = "RNG_LLDir"
+Private Const RNG_LL_NAME As String = "RNG_LLName"
+Private Const RNG_LANG_SETUP As String = "RNG_LangSetup"
+Private Const RNG_TEMP_PATH As String = "RNG_LLTemp"
 
 
 '@section Factory
@@ -145,6 +155,66 @@ Public Sub Translate(Optional ByVal language As String = vbNullString)
     translator.TranslateDesigner HostSheet, language
 End Sub
 
+'@label:add-info
+'@sub-title Write a value to a named info range on the host worksheet
+'@details
+'Maps the logical infoName to its corresponding named range on the host
+'worksheet, writes the value, and sets the background to white. Silently
+'exits when the named range does not exist on the worksheet.
+'@param value String. The value to write (path, translated message, etc.).
+'@param infoName String. The logical name identifying the target range.
+'@export
+Public Sub AddInfo(ByVal value As String, ByVal infoName As String)
+    Dim targetRange As Range
+
+    Set targetRange = ResolveInfoRange(infoName)
+    If targetRange Is Nothing Then Exit Sub
+
+    targetRange.value = value
+    targetRange.Interior.Color = vbWhite
+End Sub
+
+'@label:value-of
+'@prop-title Read a value from a named info range on the host worksheet
+'@details
+'Maps the logical infoName to its corresponding named range on the host
+'worksheet and returns the current cell value. Returns vbNullString when
+'the named range does not exist.
+'@param infoName String. The logical name identifying the source range.
+'@return String. The current value of the named range.
+'@export
+Public Property Get ValueOf(ByVal infoName As String) As String
+    Dim targetRange As Range
+
+    Set targetRange = ResolveInfoRange(infoName)
+    If targetRange Is Nothing Then Exit Property
+
+    On Error Resume Next
+    ValueOf = CStr(targetRange.value)
+    On Error GoTo 0
+End Property
+
+'@label:translate-message
+'@sub-title Translate a message code using the designer translations
+'@details
+'Delegates to the lazily resolved translations provider to translate a
+'message code into the current designer language. Returns the raw
+'msgCode unchanged when no translation is available.
+'@param msgCode String. The message code to translate.
+'@return String. The translated message text.
+'@export
+Public Function TranslateMessage(ByVal msgCode As String) As String
+    Dim translator As IDesignerTranslation
+    Dim result As String
+
+    Set translator = ResolveTranslator()
+    result = translator.TranslatedValue(msgCode)
+
+    'Fall back to raw code when translation returns empty
+    If LenB(result) = 0 Then result = msgCode
+    TranslateMessage = result
+End Function
+
 '@label:host-sheet
 '@prop-title The managed worksheet
 '@details
@@ -163,6 +233,41 @@ End Property
 
 '@section Internal Helpers
 '===============================================================================
+
+'@label:resolve-info-range
+'@sub-title Map a logical info name to its named range on the host worksheet
+'@details
+'Resolves an infoName string to the corresponding named range constant,
+'then returns the Range object from the host worksheet. Returns Nothing
+'when the infoName is unknown or the named range does not exist.
+'@param infoName String. The logical info name to resolve.
+'@return Range. The named range, or Nothing.
+Private Function ResolveInfoRange(ByVal infoName As String) As Range
+    Dim rngName As String
+
+    Select Case infoName
+    Case "edition"
+        rngName = RNG_EDITION
+    Case "setuppath"
+        rngName = RNG_PATH_DICO
+    Case "geopath"
+        rngName = RNG_PATH_GEO
+    Case "lldir"
+        rngName = RNG_LL_DIR
+    Case "llname"
+        rngName = RNG_LL_NAME
+    Case "setuplang"
+        rngName = RNG_LANG_SETUP
+    Case "temppath"
+        rngName = RNG_TEMP_PATH
+    Case Else
+        Exit Function
+    End Select
+
+    On Error Resume Next
+    Set ResolveInfoRange = this.hostSheet.Range(rngName)
+    On Error GoTo 0
+End Function
 
 '@label:resolve-entry-manager
 '@sub-title Lazily resolve or return the entry manager
@@ -248,6 +353,10 @@ End Sub
 '@description Delegated members satisfying the IDesignerEntry contract.
 'See the corresponding members above for full documentation.
 
+Private Sub IDesignerEntry_AddInfo(ByVal value As String, ByVal infoName As String)
+    AddInfo value, infoName
+End Sub
+
 Private Sub IDesignerEntry_Clear()
     Clear
 End Sub
@@ -264,6 +373,10 @@ Private Sub IDesignerEntry_Translate(Optional ByVal language As String = vbNullS
     Translate language
 End Sub
 
+Private Function IDesignerEntry_TranslateMessage(ByVal msgCode As String) As String
+    IDesignerEntry_TranslateMessage = TranslateMessage(msgCode)
+End Function
+
 Private Sub IDesignerEntry_UseEntryManager(ByVal entryManager As IMain)
     UseEntryManager entryManager
 End Sub
@@ -271,3 +384,7 @@ End Sub
 Private Sub IDesignerEntry_UseTranslator(ByVal translator As IDesignerTranslation)
     UseTranslator translator
 End Sub
+
+Private Property Get IDesignerEntry_ValueOf(ByVal infoName As String) As String
+    IDesignerEntry_ValueOf = ValueOf(infoName)
+End Property
