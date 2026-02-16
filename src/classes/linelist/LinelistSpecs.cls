@@ -708,14 +708,14 @@ Private Sub AddListAuto()
     Set vars = this.variables
 
     dict.AddColumn "list auto"
-    Set listVars = dict.Data.FilterData("control", "list_auto", "control details")
+    Set listVars = dict.Data.FilterData("control", "list_auto", "control details", matchCase:=False)
 
     If listVars Is Nothing Then Exit Sub
 
     For idx = listVars.LowerBound To listVars.UpperBound
         varName = CStr(listVars.Item(idx))
 
-        vars.SetValue varName:=varName, colName:="list auto", newValue:="list_auto_origin", onEmpty:=True
+        vars.SetValue varName:=varName, colName:="List Auto", newValue:="list_auto_origin", onEmpty:=True
 
         controlType = LCase$(Trim$(vars.Value(varName:=varName, colName:="control")))
         Select Case controlType
@@ -1032,7 +1032,7 @@ Public Property Get HasTemplate() As Boolean
     Dim mainSheet As Worksheet
     Set mainSheet = ResolveSheet(SHEET_MAIN)
     On Error Resume Next
-    HasTemplate = (mainSheet.Range("RNG_MainTemp").Value = "has template")
+    HasTemplate = (mainSheet.Range("RNG_LLTemp").Value <> vbNullString)
     On Error GoTo 0
 End Property
 

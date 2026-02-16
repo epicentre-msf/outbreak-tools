@@ -19,7 +19,7 @@ Option Explicit
 'with a full fixture; HasNoData reflects RNG_GeoUpdated state; GeoNames
 'resolves from named range cache; GeoNames falls back to raw name for unknown
 'keys; GeoLevel returns empty when geobase has no data.
-'@depends LLGeo, ILLGeo, BetterArray, CustomTest, TestHelpers
+'@depends LLGeo, ILLGeo, BetterArray, CustomTest, TestHelpers, HiddenNames, IHiddenNames
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const GEO_FIXTURE As String = "GeoFixture"
@@ -85,9 +85,10 @@ End Sub
 'Creates a hidden worksheet named "GeoFixture" containing nine ListObjects
 '(T_ADM1 through T_ADM4, T_HF, T_NAMES, T_HISTOGEO, T_HISTOHF, T_METADATA)
 'with correct header columns but no data rows. Also creates all required
-'named ranges (RNG_GeoName, RNG_GeoUpdated, RNG_PastingGeoCol, etc.) in
-'row 5 to avoid table overlap. Sets RNG_GeoUpdated to "empty" and
-'RNG_GeoName to "test_geo" as the default state.
+'cell-based named ranges (RNG_PastingGeoCol, RNG_HFNAME, RNG_ADM1NAME
+'through RNG_ADM4NAME) in row 5, and five HiddenNames (RNG_GeoUpdated,
+'RNG_GeoName, RNG_GeoLangCode, RNG_FormLoaded, RNG_MetaLang) as constant
+'values. Sets RNG_GeoUpdated to "empty" and RNG_GeoName to "test_geo".
 '@return Worksheet. The fully prepared geobase fixture sheet.
 Private Function BuildGeoFixture() As Worksheet
     Dim sh As Worksheet
@@ -151,19 +152,23 @@ Private Function BuildGeoFixture() As Worksheet
         startCol = startCol + CLng(tblCols(counter)) + 1
     Next counter
 
-    'Place named ranges in row 5 to avoid table overlap
-    rngNames = Array("RNG_GeoName", "RNG_GeoUpdated", "RNG_PastingGeoCol", _
-                     "RNG_GeoLangCode", "RNG_HFNAME", "RNG_ADM1NAME", _
-                     "RNG_ADM2NAME", "RNG_ADM3NAME", "RNG_ADM4NAME", _
-                     "RNG_FormLoaded", "RNG_MetaLang")
+    'Place cell-based named ranges in row 5 (only the 6 that remain as ranges)
+    rngNames = Array("RNG_PastingGeoCol", "RNG_HFNAME", "RNG_ADM1NAME", _
+                     "RNG_ADM2NAME", "RNG_ADM3NAME", "RNG_ADM4NAME")
 
     For counter = LBound(rngNames) To UBound(rngNames)
         Set rng = sh.Cells(5, counter - LBound(rngNames) + 1)
         rng.Name = CStr(rngNames(counter))
     Next counter
 
-    sh.Range("RNG_GeoUpdated").Value = "empty"
-    sh.Range("RNG_GeoName").Value = "test_geo"
+    'Create the 5 HiddenNames (constant values, not cell references)
+    Dim geoStore As IHiddenNames
+    Set geoStore = HiddenNames.Create(sh)
+    geoStore.EnsureName "RNG_GeoUpdated", "empty", HiddenNameTypeString
+    geoStore.EnsureName "RNG_GeoName", "test_geo", HiddenNameTypeString
+    geoStore.EnsureName "RNG_GeoLangCode", vbNullString, HiddenNameTypeString
+    geoStore.EnsureName "RNG_FormLoaded", vbNullString, HiddenNameTypeString
+    geoStore.EnsureName "RNG_MetaLang", vbNullString, HiddenNameTypeString
 
     Set BuildGeoFixture = sh
 End Function
@@ -288,7 +293,9 @@ Public Sub TestHasNoDataFalseWhenUpdated()
 
     Dim sh As Worksheet
     Set sh = BuildGeoFixture()
-    sh.Range("RNG_GeoUpdated").Value = "updated, not translated"
+    Dim geoStore As IHiddenNames
+    Set geoStore = HiddenNames.Create(sh)
+    geoStore.SetValue "RNG_GeoUpdated", "updated, not translated"
 
     Dim geo As ILLGeo
     Set geo = LLGeo.Create(sh)
@@ -320,7 +327,9 @@ Public Sub TestGeoNamesResolvesFromCache()
     Dim sh As Worksheet
     Set sh = BuildGeoFixture()
     sh.Range("RNG_ADM1NAME").Value = "Province"
-    sh.Range("RNG_GeoUpdated").Value = "updated, not translated"
+    Dim geoStore As IHiddenNames
+    Set geoStore = HiddenNames.Create(sh)
+    geoStore.SetValue "RNG_GeoUpdated", "updated, not translated"
 
     Dim geo As ILLGeo
     Set geo = LLGeo.Create(sh)

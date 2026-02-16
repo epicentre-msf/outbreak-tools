@@ -1042,25 +1042,23 @@ Private Sub AddVisibility()
     Next
 End Sub
 
-'Note: AppendGeoLines, AppendNumberColumn, AppendColumnIndex, AppendCRFLineIndex
-'retain much of the original designer implementation with minor guard rails.
+'Note: AppendNumberColumn, AppendColumnIndex, AppendCRFLineIndex retain much of
+'the original designer implementation with minor guard rails.
 
 Private Sub AppendGeoLines(ByVal geoObject As Object)
-    'Insert the extra hierarchy required for geographic controls. For each
-    '"geo" variable we duplicate the base row to create admin levels, pcodes,
-    'and concatenated helper fields. The implementation intentionally mirrors
-    'the original designer code so exported templates remain backward
-    'compatible.
-    Dim dictRange As Range
-    Dim geoRow As Long
+    'Expand each "geo" control variable into 12 contiguous rows:
+    '  4 admin levels  (adm1-4) with geo1-4 controls
+    '  4 p-codes       (pcode_adm1-4) hidden, formula-driven
+    '  4 concatenations (concat_adm1-4) hidden, formula-driven
+    '
+    'The original geo row is modified in-place to become adm1.
+    '11 new rows are inserted immediately after for adm2-4, pcodes, and concats.
+    'DictEndRow() is called each iteration so the search range stays current.
+    Const ADMIN_LEVELS As Long = 4
+    Const GEO_EXPANSION As Long = 12
+    Const INSERTED_ROWS As Long = 11
+
     Dim hostSheet As Worksheet
-    Dim endRow As Long
-    Dim endCol As Long
-    Dim baseRowRange As Range
-    Dim pastedRange As Range
-    Dim varName As String
-    Dim varPosition As Long
-    Dim counter As Long
     Dim controlIdx As Long
     Dim varIdx As Long
     Dim mainLabelIdx As Long
@@ -1069,10 +1067,20 @@ Private Sub AppendGeoLines(ByVal geoObject As Object)
     Dim statusIdx As Long
     Dim positionIdx As Long
     Dim controlDetailsIdx As Long
+    Dim endCol As Long
+    Dim geoRow As Long
+    Dim insertRow As Long
+    Dim varName As String
+    Dim varPosition As Long
+    Dim baseValues As Variant
+    Dim searchRange As Range
+    Dim foundCell As Range
+    Dim targetRange As Range
+    Dim counter As Long
+    Dim fillRow As Long
     Dim formulaValue As String
 
     Set hostSheet = Wksh()
-    Set dictRange = DataRange("control")
     controlIdx = ColumnIndex("control")
     varIdx = ColumnIndex("variable name")
     mainLabelIdx = ColumnIndex("main label")
@@ -1081,59 +1089,88 @@ Private Sub AppendGeoLines(ByVal geoObject As Object)
     statusIdx = ColumnIndex("status")
     positionIdx = ColumnIndex("column index")
     controlDetailsIdx = ColumnIndex("control details")
-    endRow = DictEndRow()
     endCol = DictEndColumn()
     geoRow = StartRow() + 1
 
-    Do While Not dictRange.Find(What:="geo", lookAt:=xlWhole, MatchCase:=True) Is Nothing
-        geoRow = dictRange.Find(What:="geo", lookAt:=xlWhole, MatchCase:=True).Row
-        Set baseRowRange = hostSheet.Range(hostSheet.Cells(geoRow, StartColumn()), hostSheet.Cells(geoRow, endCol))
+    Do
+        'Find next "geo" control from current position downward
+        Set searchRange = hostSheet.Range( _
+            hostSheet.Cells(geoRow, controlIdx), _
+            hostSheet.Cells(DictEndRow(), controlIdx))
+        Set foundCell = searchRange.Find(What:="geo", lookAt:=xlWhole, MatchCase:=True)
+        If foundCell Is Nothing Then Exit Do
+
+        geoRow = foundCell.Row
         varName = hostSheet.Cells(geoRow, varIdx).Value
         varPosition = hostSheet.Cells(geoRow, positionIdx).Value
 
-        If IsEmpty(hostSheet.Cells(geoRow, subSectionIdx)) And (Not IsEmpty(hostSheet.Cells(geoRow, mainLabelIdx))) Then
+        'Move main label into sub section when sub section is blank
+        If IsEmpty(hostSheet.Cells(geoRow, subSectionIdx)) And _
+           (Not IsEmpty(hostSheet.Cells(geoRow, mainLabelIdx))) Then
             hostSheet.Cells(geoRow, subSectionIdx).Value = hostSheet.Cells(geoRow, mainLabelIdx).Value
             hostSheet.Cells(geoRow, mainLabelIdx).Value = vbNullString
         End If
 
+        'Snapshot base row values before modification
+        baseValues = hostSheet.Range( _
+            hostSheet.Cells(geoRow, StartColumn()), _
+            hostSheet.Cells(geoRow, endCol)).Value
+
+        'Modify original row to adm1
         hostSheet.Cells(geoRow, varIdx).Value = "adm1_" & varName
         hostSheet.Cells(geoRow, mainLabelIdx).Value = geoObject.GeoNames("adm1_name")
         hostSheet.Cells(geoRow, controlIdx).Value = "geo1"
 
-        geoRow = geoRow + 1
-        For counter = 12 To 2 Step -1
-            hostSheet.Rows(geoRow).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
-            Set pastedRange = hostSheet.Range(hostSheet.Cells(geoRow, StartColumn()), hostSheet.Cells(geoRow, endCol))
-            pastedRange.Value = baseRowRange.Value
-            hostSheet.Cells(geoRow, varIdx).Value = "adm" & counter & "_" & varName
-            hostSheet.Cells(geoRow, controlIdx).Value = "geo" & counter
-            hostSheet.Cells(geoRow, mainLabelIdx).Value = geoObject.GeoNames("adm" & counter & "_name")
-            hostSheet.Cells(geoRow, positionIdx).Value = varPosition + counter - 1
-            geoRow = geoRow + 1
+        'Insert 11 rows right after adm1
+        insertRow = geoRow + 1
+        hostSheet.Rows(insertRow & ":" & (insertRow + INSERTED_ROWS - 1)).Insert _
+            Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
+
+        'Populate all inserted rows with base values
+        For counter = 0 To INSERTED_ROWS - 1
+            Set targetRange = hostSheet.Range( _
+                hostSheet.Cells(insertRow + counter, StartColumn()), _
+                hostSheet.Cells(insertRow + counter, endCol))
+            targetRange.Value = baseValues
         Next
 
-        For counter = 1 To 4
-            hostSheet.Cells(geoRow + counter, statusIdx).Value = "hidden"
-            hostSheet.Cells(geoRow + counter, registerIdx).Value = "hidden"
-            hostSheet.Cells(geoRow + counter, controlIdx).Value = "formula"
-            hostSheet.Cells(geoRow + counter, mainLabelIdx).Value = "geo_pcode_adm" & counter
-            hostSheet.Cells(geoRow + counter, varIdx).Value = "pcode_adm" & counter & "_" & varName
-            formulaValue = "INDEX(T_ADM" & counter & ", MATCH(concat_adm" & counter & "_" & varName & ", adm" & counter & "_concat, 0), " & (counter + 2) & ")"
-            hostSheet.Cells(geoRow + counter, controlDetailsIdx) = "IF(ISNA(" & formulaValue & "), """", " & formulaValue & ")"
+        'Admin levels 2-4
+        For counter = 2 To ADMIN_LEVELS
+            fillRow = insertRow + counter - 2
+            hostSheet.Cells(fillRow, varIdx).Value = "adm" & counter & "_" & varName
+            hostSheet.Cells(fillRow, controlIdx).Value = "geo" & counter
+            hostSheet.Cells(fillRow, mainLabelIdx).Value = geoObject.GeoNames("adm" & counter & "_name")
+            hostSheet.Cells(fillRow, positionIdx).Value = varPosition + counter - 1
         Next
 
-        geoRow = geoRow + 5
-        For counter = 1 To 4
-            hostSheet.Cells(geoRow + counter, statusIdx).Value = "hidden"
-            hostSheet.Cells(geoRow + counter, registerIdx).Value = "hidden"
-            hostSheet.Cells(geoRow + counter, controlIdx).Value = "formula"
-            hostSheet.Cells(geoRow + counter, mainLabelIdx).Value = "geo_concat_adm" & counter
-            hostSheet.Cells(geoRow + counter, varIdx).Value = "concat_adm" & counter & "_" & varName
-            hostSheet.Cells(geoRow + counter, controlDetailsIdx) = "GEOCONCAT(adm1_" & varName & ", " & counter & ")"
+        'P-codes 1-4 (offset past 3 admin rows)
+        For counter = 1 To ADMIN_LEVELS
+            fillRow = insertRow + (ADMIN_LEVELS - 1) + counter - 1
+            hostSheet.Cells(fillRow, statusIdx).Value = "hidden"
+            hostSheet.Cells(fillRow, registerIdx).Value = "hidden"
+            hostSheet.Cells(fillRow, controlIdx).Value = "formula"
+            hostSheet.Cells(fillRow, mainLabelIdx).Value = "geo_pcode_adm" & counter
+            hostSheet.Cells(fillRow, varIdx).Value = "pcode_adm" & counter & "_" & varName
+            formulaValue = "INDEX(T_ADM" & counter & ", MATCH(concat_adm" & counter & "_" & varName & _
+                           ", adm" & counter & "_concat, 0), " & (counter + 2) & ")"
+            hostSheet.Cells(fillRow, controlDetailsIdx).Value = _
+                "IF(ISNA(" & formulaValue & "), """", " & formulaValue & ")"
         Next
 
-        geoRow = geoRow + 5
-        Set dictRange = hostSheet.Range(hostSheet.Cells(geoRow, controlIdx), hostSheet.Cells(endRow, controlIdx))
+        'Concatenations 1-4 (offset past admin + pcode rows)
+        For counter = 1 To ADMIN_LEVELS
+            fillRow = insertRow + (ADMIN_LEVELS - 1) + ADMIN_LEVELS + counter - 1
+            hostSheet.Cells(fillRow, statusIdx).Value = "hidden"
+            hostSheet.Cells(fillRow, registerIdx).Value = "hidden"
+            hostSheet.Cells(fillRow, controlIdx).Value = "formula"
+            hostSheet.Cells(fillRow, mainLabelIdx).Value = "geo_concat_adm" & counter
+            hostSheet.Cells(fillRow, varIdx).Value = "concat_adm" & counter & "_" & varName
+            hostSheet.Cells(fillRow, controlDetailsIdx).Value = _
+                "GEOCONCAT(adm1_" & varName & ", " & counter & ")"
+        Next
+
+        'Advance past all expanded rows
+        geoRow = geoRow + GEO_EXPANSION
     Loop
 End Sub
 

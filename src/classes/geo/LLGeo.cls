@@ -27,13 +27,14 @@ Implements ILLGeo
 'AutoFilter cascades, import/export in both flat-data and full-structure
 'modes, and synchronisation of translated labels across linelist sheets,
 'dictionary, and show/hide tables.
-'@depends BetterArray, IPasswords, ILLdictionary, ICustomTable, ILLVariables, IDropdownLists, DropdownLists, LLVariables, CustomTable
+'@depends BetterArray, IPasswords, ILLdictionary, ICustomTable, ILLVariables, IDropdownLists, DropdownLists, LLVariables, CustomTable, HiddenNames, IHiddenNames
 
 '@section State
 '===============================================================================
 
 Private Type TGeo
     geosh As Worksheet
+    geoHidden As IHiddenNames
     namesCacheKeys As BetterArray
     namesCacheValues As BetterArray
     namesCacheLoaded As Boolean
@@ -53,17 +54,25 @@ Private Const HISTOHF As String = "HISTOHF"
 Private Const NAMES As String = "NAMES"
 Private Const METADATA As String = "METADATA"
 
+'HiddenNames identifiers (worksheet-level, not cell-based ranges)
+Private Const HN_GEO_UPDATED As String = "RNG_GeoUpdated"
+Private Const HN_GEO_NAME As String = "RNG_GeoName"
+Private Const HN_META_LANG As String = "RNG_MetaLang"
+Private Const HN_GEO_LANG_CODE As String = "RNG_GeoLangCode"
+Private Const HN_FORM_LOADED As String = "RNG_FormLoaded"
+
 '@section Factory
 '===============================================================================
 
 '@label:create
 '@sub-title Create a new LLGeo instance from a geobase worksheet.
 '@details
-'Factory method that validates all required tables and named ranges on the
-'supplied worksheet, then constructs and returns a new LLGeo instance bound to
-'that worksheet. This is the only supported way to create a usable LLGeo object
-'because the class relies on specific ListObjects and named ranges being present.
-'@param sh Worksheet. The geobase worksheet containing T_ADM1 through T_ADM4, T_HF, T_NAMES, T_HISTOGEO, T_HISTOHF, T_METADATA, and required named ranges.
+'Factory method that validates all required tables, named ranges, and
+'hidden names on the supplied worksheet, then constructs and returns a
+'new LLGeo instance bound to that worksheet. This is the only supported
+'way to create a usable LLGeo object because the class relies on
+'specific ListObjects, named ranges, and HiddenNames being present.
+'@param sh Worksheet. The geobase worksheet containing T_ADM1 through T_ADM4, T_HF, T_NAMES, T_HISTOGEO, T_HISTOHF, T_METADATA, and required named ranges/hidden names.
 '@return ILLGeo. A fully initialised LLGeo instance exposed through the ILLGeo interface.
 '@export
 Public Function Create(ByVal sh As Worksheet) As ILLGeo
@@ -107,6 +116,24 @@ Public Property Set Wksh(ByVal sh As Worksheet)
     Set this.geosh = sh
 End Property
 
+'@section Hidden Names Store
+'===============================================================================
+
+'@label:geo-hidden-store
+'@sub-title Lazy-loaded HiddenNames manager for the geo worksheet.
+'@details
+'Creates and caches an IHiddenNames instance bound to the geobase
+'worksheet on first access. Used by all methods that read or write
+'the 5 hidden name values (RNG_GeoUpdated, RNG_GeoName, RNG_MetaLang,
+'RNG_GeoLangCode, RNG_FormLoaded).
+'@return IHiddenNames. The worksheet-level hidden names manager.
+Private Function GeoHiddenStore() As IHiddenNames
+    If this.geoHidden Is Nothing Then
+        Set this.geoHidden = HiddenNames.Create(Wksh())
+    End If
+    Set GeoHiddenStore = this.geoHidden
+End Function
+
 '@section Table Names
 '===============================================================================
 
@@ -134,9 +161,9 @@ End Property
 '@details
 'Lazily initialises two parallel BetterArray instances (keys and values) that
 'map raw admin column names (adm1_name, adm2_name, etc.) to their translated
-'display names resolved from geobase named ranges. If the cache is already
-'loaded this method returns immediately. The worksheet is recalculated before
-'reading to ensure formula-driven names are up to date.
+'display names resolved from geobase named ranges or hidden names. If the
+'cache is already loaded this method returns immediately. The worksheet is
+'recalculated before reading to ensure formula-driven names are up to date.
 Private Sub EnsureNamesCache()
     Dim sh As Worksheet
 
@@ -153,7 +180,7 @@ Private Sub EnsureNamesCache()
     CacheOneName sh, "adm3_name", "RNG_ADM3NAME"
     CacheOneName sh, "adm4_name", "RNG_ADM4NAME"
     CacheOneName sh, "hf_name", "RNG_HFNAME"
-    CacheOneName sh, "geobase", "RNG_GeoName"
+    CacheOneName sh, "geobase", HN_GEO_NAME
 
     this.namesCacheLoaded = True
 End Sub
@@ -161,16 +188,35 @@ End Sub
 '@label:cache-one-name
 '@sub-title Cache one translation mapping from raw name to resolved value.
 '@details
-'Reads a single named range from the worksheet and stores the raw-name to
-'resolved-value pair in the parallel cache arrays. If the named range does
-'not exist or its value is not a string, the raw name is stored as both key
-'and value so lookups fall back gracefully.
+'Reads a single value from either a HiddenName or a cell-based named range
+'on the worksheet and stores the raw-name to resolved-value pair in the
+'parallel cache arrays. Tries the HiddenNames store first; if not found
+'falls back to sh.Range(). If neither exists or the value is not a non-empty
+'string, the raw name is stored as both key and value so lookups fall back
+'gracefully.
 '@param sh Worksheet. The geobase worksheet to read from.
 '@param rawName String. The raw column name used as the cache key.
-'@param rngName String. The named range on the worksheet whose value provides the translation.
+'@param rngName String. The named range or hidden name identifier whose value provides the translation.
 Private Sub CacheOneName(ByVal sh As Worksheet, ByVal rawName As String, _
                          ByVal rngName As String)
     Dim actualName As Variant
+    Dim hn As IHiddenNames
+
+    'Try HiddenNames first
+    Set hn = GeoHiddenStore()
+    If hn.HasName(rngName) Then
+        actualName = hn.ValueAsString(rngName)
+        If LenB(CStr(actualName)) > 0 Then
+            this.namesCacheKeys.Push rawName
+            this.namesCacheValues.Push CStr(actualName)
+        Else
+            this.namesCacheKeys.Push rawName
+            this.namesCacheValues.Push rawName
+        End If
+        Exit Sub
+    End If
+
+    'Fall back to cell-based named range
     Dim rng As Range
 
     On Error Resume Next
@@ -282,7 +328,7 @@ Private Function GeoColumnIndex(ByVal colName As String, ByVal adminLevel As Byt
     loName = tabl.Item(adminLevel)
     actualColName = colName
 
-    If sh.Range("RNG_GeoUpdated").Value = "updated, translated" Then
+    If GeoHiddenStore().ValueAsString(HN_GEO_UPDATED) = "updated, translated" Then
         actualColName = GeoNames(colName)
     End If
 
@@ -310,7 +356,7 @@ Private Function HFColumnIndex(ByVal colName As String) As Long
     Set sh = Wksh()
     actualColName = colName
 
-    If sh.Range("RNG_GeoUpdated").Value = "updated, translated" Then
+    If GeoHiddenStore().ValueAsString(HN_GEO_UPDATED) = "updated, translated" Then
         actualColName = GeoNames(colName)
     End If
 
@@ -408,7 +454,7 @@ Private Property Get GeoLevel(ByVal adminLevel As Byte, _
     End If
 
     'Empty geobase: return empty array
-    If sh.Range("RNG_GeoUpdated").Value = "empty" Then GoTo Cleanup
+    If GeoHiddenStore().ValueAsString(HN_GEO_UPDATED) = "empty" Then GoTo Cleanup
 
     'Validate adminNames
     If (adminLevel > 1) And (Not TypeName(adminNames) = "BetterArray") Then
@@ -533,16 +579,16 @@ Private Sub Translate(Optional ByVal rawNames As Boolean = False)
     Dim admname As String
     Dim transGeoName As String
     Dim hRng As Range
-    Dim rng As Range
     Dim cellRng As Range
+    Dim geoUpdatedVal As String
 
     Set sh = Wksh()
     sh.Calculate
-    Set rng = sh.Range("RNG_GeoUpdated")
+    geoUpdatedVal = GeoHiddenStore().ValueAsString(HN_GEO_UPDATED)
 
     'Skip if already in the requested state
-    If Not rawNames And (InStr(1, rng.Value, ", translated") > 0) Then Exit Sub
-    If rawNames And (InStr(1, rng.Value, ", not translated") > 0) Then Exit Sub
+    If Not rawNames And (InStr(1, geoUpdatedVal, ", translated") > 0) Then Exit Sub
+    If rawNames And (InStr(1, geoUpdatedVal, ", not translated") > 0) Then Exit Sub
 
     'Reset cache so GeoNames reads fresh values
     ResetNamesCache
@@ -576,10 +622,11 @@ Private Sub Translate(Optional ByVal rawNames As Boolean = False)
         cellRng.Offset(, -counter).Value = IIf(rawNames, admname, transGeoName)
     Next
 
-    'Update translation state flag
-    rng.Value = Replace(rng.Value, ", not translated", vbNullString)
-    rng.Value = Replace(rng.Value, ", translated", vbNullString)
-    rng.Value = IIf(rawNames, rng.Value & ", not translated", rng.Value & ", translated")
+    'Update translation state flag via HiddenNames
+    geoUpdatedVal = Replace(geoUpdatedVal, ", not translated", vbNullString)
+    geoUpdatedVal = Replace(geoUpdatedVal, ", translated", vbNullString)
+    geoUpdatedVal = IIf(rawNames, geoUpdatedVal & ", not translated", geoUpdatedVal & ", translated")
+    GeoHiddenStore().SetValue HN_GEO_UPDATED, geoUpdatedVal
 
     'Reset cache after translation change
     ResetNamesCache
@@ -610,7 +657,7 @@ Private Sub Clear()
         On Error GoTo 0
     Next
 
-    sh.Range("RNG_GeoUpdated").Value = "empty"
+    GeoHiddenStore().SetValue HN_GEO_UPDATED, "empty"
     ResetNamesCache
 End Sub
 
@@ -763,8 +810,8 @@ Private Sub Import(ByVal fromWkb As Workbook, _
         End With
     Next
 
-    sh.Range("RNG_GeoName").Value = Replace(fromWkb.Name, ".xlsx", vbNullString)
-    sh.Range("RNG_GeoUpdated").Value = "updated"
+    GeoHiddenStore().SetValue HN_GEO_NAME, Replace(fromWkb.Name, ".xlsx", vbNullString)
+    GeoHiddenStore().SetValue HN_GEO_UPDATED, "updated"
     Translate rawNames:=False
 
     UpdateMetadata
@@ -844,8 +891,11 @@ End Sub
 'Copies the entire geobase worksheet to the target workbook, preserving
 'ListObjects, named ranges, formulas, pcode references, concat references,
 'and metadata. Creates a hidden Metadata sheet with creation metadata including
-'linelist name, setup name, language, and timestamp. Raises an error when sheets
-'with conflicting names already exist in the target workbook.
+'linelist name, setup name, language, and timestamp. Cell-based named ranges
+'(RNG_PastingGeoCol, RNG_HFNAME, RNG_ADM1NAME-4) are exported as regular
+'named ranges. HiddenNames entries (RNG_GeoUpdated, RNG_GeoName, etc.) are
+'exported via the HiddenNames manager. Raises an error when sheets with
+'conflicting names already exist in the target workbook.
 '@param outputWkb Workbook. Target workbook.
 '@param llName Optional String. Linelist name for metadata. Defaults to vbNullString.
 '@param setupPath Optional String. Setup file path for metadata. Defaults to vbNullString.
@@ -913,12 +963,10 @@ Private Sub ExportToWkb(ByVal outputWkb As Workbook, _
     outsh.Range("A:AZ").Locked = False
     outsh.Range("A:AZ").EntireColumn.AutoFit
 
-    'Export named ranges
+    'Export cell-based named ranges (6 ranges that remain as cells)
     Set rngTable = New BetterArray
-    rngTable.Push "RNG_GeoName", "RNG_GeoUpdated", "RNG_PastingGeoCol", _
-                  "RNG_GeoLangCode", "RNG_HFNAME", "RNG_ADM1NAME", _
-                  "RNG_ADM2NAME", "RNG_ADM3NAME", "RNG_ADM4NAME", _
-                  "RNG_FormLoaded", "RNG_MetaLang"
+    rngTable.Push "RNG_PastingGeoCol", "RNG_HFNAME", "RNG_ADM1NAME", _
+                  "RNG_ADM2NAME", "RNG_ADM3NAME", "RNG_ADM4NAME"
 
     For counter = rngTable.LowerBound To rngTable.UpperBound
         rngName = rngTable.Item(counter)
@@ -936,13 +984,18 @@ Private Sub ExportToWkb(ByVal outputWkb As Workbook, _
         End If
     Next
 
+    'Export HiddenNames entries (5 ranges stored as hidden names)
+    GeoHiddenStore().ExportNames outsh
+
     'Create metadata sheet
     outputWkb.Worksheets.Add.Name = METADATASHEET
     Set outsh = outputWkb.Worksheets(METADATASHEET)
     Set rng = sh.ListObjects("T_" & METADATA).Range.Offset(1)
 
+    On Error Resume Next
     setupName = Split(setupPath, Application.PathSeparator)( _
         UBound(Split(setupPath, Application.PathSeparator)))
+    On Error GoTo 0
 
     Set metaKeys = New BetterArray
     Set metaValues = New BetterArray
@@ -950,7 +1003,7 @@ Private Sub ExportToWkb(ByVal outputWkb As Workbook, _
     metaKeys.Push "variable", "language", "linelist_creation_date", _
                   "linelist_creation_name", "used_setup_name", "used_designer_name"
 
-    metaValues.Push "value", sh.Range("RNG_MetaLang").Value, _
+    metaValues.Push "value", GeoHiddenStore().ValueAsString(HN_META_LANG), _
                     Format(Now(), "yyyy-mm-dd Hh:Nn"), _
                     llName, setupName, ThisWorkbook.Name
 
@@ -1238,7 +1291,7 @@ End Function
 '@return Boolean. True when the geobase is empty.
 '@export
 Private Property Get HasNoData() As Boolean
-    HasNoData = (Wksh().Range("RNG_GeoUpdated").Value = "empty")
+    HasNoData = (GeoHiddenStore().ValueAsString(HN_GEO_UPDATED) = "empty")
 End Property
 
 '@section Internal Helpers
@@ -1286,17 +1339,21 @@ End Sub
 '===============================================================================
 
 '@label:check-requirements
-'@sub-title Validate that the worksheet has all required tables and named ranges.
+'@sub-title Validate that the worksheet has all required tables, named ranges, and hidden names.
 '@details
 'Checks that the supplied worksheet is not Nothing, then verifies the presence
 'of all nine required ListObjects (T_ADM1 through T_ADM4, T_HF, T_NAMES,
-'T_HISTOGEO, T_HISTOHF, T_METADATA) and eleven required named ranges. Raises
-'an appropriate error when any requirement is missing.
+'T_HISTOGEO, T_HISTOHF, T_METADATA), five required HiddenNames entries
+'(RNG_GeoUpdated, RNG_GeoName, RNG_GeoLangCode, RNG_FormLoaded, RNG_MetaLang),
+'and six required cell-based named ranges (RNG_PastingGeoCol, RNG_HFNAME,
+'RNG_ADM1NAME through RNG_ADM4NAME). Raises an appropriate error when any
+'requirement is missing.
 '@param sh Worksheet. The worksheet to validate.
 '@throws ProjectError.ObjectNotInitialized When the worksheet is Nothing.
-'@throws ProjectError.ElementNotFound When required tables or named ranges are missing.
+'@throws ProjectError.ElementNotFound When required tables, named ranges, or hidden names are missing.
 Private Sub CheckRequirements(ByVal sh As Worksheet)
     Dim admTableNames As BetterArray
+    Dim geoStore As IHiddenNames
 
     If sh Is Nothing Then
         ThrowError ObjectNotInitialized, "Geo sheet not defined"
@@ -1308,17 +1365,36 @@ Private Sub CheckRequirements(ByVal sh As Worksheet)
                        "T_" & METADATA
     LoExists admTableNames, sh
 
-    RangeExists sh, "RNG_GeoName"
-    RangeExists sh, "RNG_GeoUpdated"
+    'Validate HiddenNames entries (5 names stored as hidden names)
+    Set geoStore = HiddenNames.Create(sh)
+    HiddenNameRequired geoStore, HN_GEO_NAME
+    HiddenNameRequired geoStore, HN_GEO_UPDATED
+    HiddenNameRequired geoStore, HN_GEO_LANG_CODE
+    HiddenNameRequired geoStore, HN_FORM_LOADED
+    HiddenNameRequired geoStore, HN_META_LANG
+
+    'Validate cell-based named ranges (6 ranges that remain as cells)
     RangeExists sh, "RNG_PastingGeoCol"
-    RangeExists sh, "RNG_GeoLangCode"
     RangeExists sh, "RNG_HFNAME"
     RangeExists sh, "RNG_ADM1NAME"
     RangeExists sh, "RNG_ADM2NAME"
     RangeExists sh, "RNG_ADM3NAME"
     RangeExists sh, "RNG_ADM4NAME"
-    RangeExists sh, "RNG_FormLoaded"
-    RangeExists sh, "RNG_MetaLang"
+End Sub
+
+'@label:hidden-name-required
+'@sub-title Verify that a hidden name exists in the store.
+'@details
+'Checks whether the specified name exists in the given HiddenNames store.
+'If not found, raises an ElementNotFound error with a descriptive message.
+'@param store IHiddenNames. The hidden names manager to check.
+'@param nameId String. The hidden name identifier to look for.
+'@throws ProjectError.ElementNotFound When the hidden name does not exist.
+Private Sub HiddenNameRequired(ByVal store As IHiddenNames, ByVal nameId As String)
+    If Not store.HasName(nameId) Then
+        ThrowError ElementNotFound, _
+            "Hidden name " & nameId & " does not exist on the geobase worksheet"
+    End If
 End Sub
 
 '@label:range-exists
