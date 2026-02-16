@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ITableSpecs - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>ITableSpecs</h1>
+<p>Defines the public contract for the TableSpecs class. Exposes read-only
+properties that describe a single analysis table row from the setup
+ListObject: type, identifiers, validation flags, navigation to sibling
+specs, and dictionary-based category lookups.</p>
+<h2>CoreProperties</h2>
+<h3>TableScope</h3>
+<p><strong>Analysis table scope for this specification row</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get TableScope() As AnalysisTableScope: End Property
+</code></pre>
+<p>Returns the AnalysisTableScope enum value that categorises this table
+as global summary, univariate, bivariate, time series, spatial, or
+spatio-temporal. The type determines which cross-table layout and
+formula logic apply at build time.</p>
+<p><strong>Returns:</strong> AnalysisTableScope. The table scope category.</p>
+<hr />
+<h3>Dictionary</h3>
+<p><strong>Linelist dictionary bound to this specification</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Dictionary() As ILLdictionary: End Property
+</code></pre>
+<p>Returns the dictionary instance that holds the variable definitions and
+category lists used by the analysis table. The dictionary is shared
+across all specs in the same linelist build.</p>
+<p><strong>Returns:</strong> ILLdictionary. The linelist dictionary.</p>
+<hr />
+<h3>TableId</h3>
+<p><strong>Unique identifier for this analysis table</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get TableId() As String: End Property
+</code></pre>
+<p>Returns a string identifier built from a type prefix and the row offset
+within the setup ListObject. Used as a key for tracking, named range
+creation, and graph association.</p>
+<p><strong>Returns:</strong> String. The unique table identifier.</p>
+<hr />
+<h3>TableSectionId</h3>
+<p><strong>Identifier of the first table in this section</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get TableSectionId() As String: End Property
+</code></pre>
+<p>Returns the TableId of the leading table in the current section group.
+Used to associate sibling tables for section-level operations like
+header placement and row alignment.</p>
+<p><strong>Returns:</strong> String. The section leader table identifier.</p>
+<hr />
+<h3>IsNewSection</h3>
+<p><strong>Whether this table begins a new section group</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get IsNewSection() As Boolean: End Property
+</code></pre>
+<p>Returns True when this specification row marks the start of a new
+analysis section. The Analysis class uses this flag to decide when to
+insert section headers on the output worksheet.</p>
+<p><strong>Returns:</strong> Boolean. True when this table starts a new section.</p>
+<hr />
+<h3>ValidTable</h3>
+<p><strong>Whether this table has a valid configuration</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ValidTable() As Boolean: End Property
+</code></pre>
+<p>Returns True when the specification row contains all required fields for
+its AnalysisTableScope. Invalid specs are skipped during the build
+process so they do not produce broken output tables.</p>
+<p><strong>Returns:</strong> Boolean. True when the table configuration is complete.</p>
+<hr />
+<h2>ValidationProperties</h2>
+<h3>HasTotal</h3>
+<p><strong>Whether totals are needed for computation</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get HasTotal() As Boolean: End Property
+</code></pre>
+<p>Flags controlling optional table features.
+Returns True when the table requires a total row or column, either
+because the user explicitly set total to &quot;yes&quot; or because a percentage
+mode (&quot;row&quot; or &quot;column&quot;) on a time series table implies totals. This
+flag drives cross-table formula generation.</p>
+<p><strong>Returns:</strong> Boolean. True when total computation is needed.</p>
+<hr />
+<h3>TotalRequested</h3>
+<p><strong>Whether total was explicitly requested by the user</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get TotalRequested() As Boolean: End Property
+</code></pre>
+<p>Returns True only when the setup row has total set to &quot;yes&quot;. Unlike
+HasTotal, this flag ignores implied totals from percentage mode. Used
+to decide whether the total column is visible in time series output.</p>
+<p><strong>Returns:</strong> Boolean. True when total was explicitly requested.</p>
+<hr />
+<h3>HasMissing</h3>
+<p><strong>Whether missing-data rows or columns are included</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get HasMissing() As Boolean: End Property
+</code></pre>
+<p>Returns True when the table should include a row or column for missing
+values. Determined by the &quot;missing&quot; field in the setup row.</p>
+<p><strong>Returns:</strong> Boolean. True when missing data is included.</p>
+<hr />
+<h3>HasGraph</h3>
+<p><strong>Whether a graph should be created for this table</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get HasGraph() As Boolean: End Property
+</code></pre>
+<p>Returns True when the specification row requests a graph to accompany
+the analysis table. The AnaTabIds class uses this flag to register
+graph series and formatting.</p>
+<p><strong>Returns:</strong> Boolean. True when a graph is requested.</p>
+<hr />
+<h3>HasPercentage</h3>
+<p><strong>Whether percentage display is enabled</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get HasPercentage() As Boolean: End Property
+</code></pre>
+<p>Returns True when the table should show percentage values. The mode
+(row or column) is read from the setup row and influences how
+cross-table formulas are built.</p>
+<p><strong>Returns:</strong> Boolean. True when percentage is enabled.</p>
+<hr />
+<h3>SpatialTableScopes</h3>
+<p><strong>Spatial analysis sub-type</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get SpatialTableScopes() As String: End Property
+</code></pre>
+<p>Returns &quot;hf&quot; for health-facility-based spatial tables or &quot;geo&quot; for
+administrative-boundary-based spatial tables. The sub-type is inferred
+from the variable name prefix. Returns an empty string for non-spatial
+table scopes.</p>
+<p><strong>Returns:</strong> String. The spatial sub-type (&quot;hf&quot; or &quot;geo&quot;).</p>
+<hr />
+<h2>NavigationProperties</h2>
+<h3>Previous</h3>
+<p><strong>Previous valid specification in the same section</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Previous() As ITableSpecs: End Property
+</code></pre>
+<p>Linked-list navigation between sibling specifications.
+Returns the ITableSpecs instance that precedes this one in the section
+list. Returns Nothing when this is the first table in its section.
+Used by CrossTable to compute start-row offsets and by AnalysisOutput
+to chain table builds.</p>
+<p><strong>Returns:</strong> ITableSpecs. The preceding specification, or Nothing.</p>
+<hr />
+<h3>NextSpecs</h3>
+<p><strong>Next valid specification following an anchor range</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get NextSpecs(ByVal anchorRng As Range) As ITableSpecs: End Property
+</code></pre>
+<p>Scans the setup ListObject rows after anchorRng to find the next valid
+specification. Returns Nothing when no further valid specs exist. Used
+to advance through the specification chain during the build loop.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>anchorRng</code>: Range. Anchor cell marking the last row of the current
+ListObject; scanning starts after this point.</li>
+</ul>
+<p><strong>Returns:</strong> ITableSpecs. The next valid specification, or Nothing.</p>
+<hr />
+<h2>DataAccess</h2>
+<h3>Value</h3>
+<p><strong>Retrieve a value from the specification row by column name</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Value(ByVal colName As String) As String: End Function
+</code></pre>
+<p>Value retrieval and category lookups.
+Looks up the named column in the setup ListObject header and returns
+the string value at the intersection of this specification row and that
+column. Returns an empty string when the column is not found.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>colName</code>: String. Column header name in the setup ListObject.</li>
+</ul>
+<p><strong>Returns:</strong> String. The cell value as a string.</p>
+<hr />
+<h3>RowCategories</h3>
+<p><strong>Row variable categories from the dictionary</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get RowCategories(ByRef lData As Object) As BetterArray: End Property
+</code></pre>
+<p>Returns a BetterArray containing the category labels for the row
+variable defined in this specification. When lData is a LinelistSpecs
+instance, the categories are resolved from its dictionary and choices.
+When lData is any other type (or Nothing), returns an empty BetterArray.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>lData</code>: Object. A LinelistSpecs instance providing category lookups,
+or any other Object (categories will be empty).</li>
+</ul>
+<p><strong>Returns:</strong> BetterArray. The row category list.</p>
+<hr />
+<h3>ColumnCategories</h3>
+<p><strong>Column variable categories from the dictionary</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ColumnCategories(ByRef lData As Object) As BetterArray: End Property
+</code></pre>
+<p>Returns a BetterArray containing the category labels for the column
+variable defined in this specification. When lData is a LinelistSpecs
+instance, the categories are resolved from its dictionary and choices.
+When lData is any other type (or Nothing), returns an empty BetterArray.
+Returns an empty array for univariate or global summary types.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>lData</code>: Object. A LinelistSpecs instance providing category lookups,
+or any other Object (categories will be empty).</li>
+</ul>
+<p><strong>Returns:</strong> BetterArray. The column category list.</p>
+<hr />
+
+  </main>
+</body>
+</html>
+

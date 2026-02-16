@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DiseaseImporter - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>DiseaseImporter</h1>
+<details>
+<summary>Internal members (not exported)</summary>
+<h2>Operations</h2>
+<h3>MergeDisease</h3>
+<p><strong>Import disease data, merging when requested.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function MergeDisease(ByVal targetTable As ListObject, ByVal sourceTable As ListObject, _
+                             Optional ByVal mergeValues As Boolean = True, _
+                             Optional ByVal priority As DiseaseImportPriority = DiseaseImportPriority_Foreign, _
+                             Optional ByVal logger As IDiseaseLogger = Nothing) As IDiseaseImportSummary
+</code></pre>
+<hr />
+<h2>Replacement</h2>
+<h3>ReplaceTable</h3>
+<p><strong>Replace the target table with the source content.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ReplaceTable(ByVal targetTable As ListObject, ByVal sourceTable As ListObject, ByVal summary As DiseaseImportSummary, ByVal logger As IDiseaseLogger)
+</code></pre>
+<hr />
+<h2>Merge</h2>
+<h3>MergeTables</h3>
+<p><strong>Merge the source data into the target according to the priority.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub MergeTables(ByVal targetTable As ListObject, ByVal sourceTable As ListObject, ByVal priority As DiseaseImportPriority, ByVal summary As DiseaseImportSummary, ByVal logger As IDiseaseLogger)
+</code></pre>
+<hr />
+<h3>BuildTargetIndex</h3>
+<p><strong>Build lookup structures for target variables.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function BuildTargetIndex(ByVal targetData As Variant, ByVal targetRows As Long, ByRef targetIndex As Collection) As String()
+</code></pre>
+<hr />
+<h3>ApplyMerge</h3>
+<p><strong>Perform the merge between target and source matrices.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ApplyMerge(ByRef targetData As Variant, ByRef sourceData As Variant, ByVal targetRows As Long, ByVal sourceRows As Long, _
+                       ByVal columnCount As Long, ByVal priority As DiseaseImportPriority, ByVal targetIndex As Collection, _
+                       ByVal seenSource As Collection, ByVal appendedRows As BetterArray, ByVal summary As DiseaseImportSummary, ByVal logger As IDiseaseLogger)
+</code></pre>
+<hr />
+<h3>AppendImportedRows</h3>
+<p><strong>Append merged rows to the target ListObject.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AppendImportedRows(ByVal targetTable As ListObject, ByVal appendedRows As BetterArray, ByVal logger As IDiseaseLogger)
+</code></pre>
+<hr />
+<h3>RegisterMissingVariables</h3>
+<p><strong>Determine which existing variables were missing from the import.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RegisterMissingVariables(ByVal targetData As Variant, ByVal targetRows As Long, ByVal targetNames() As String, ByVal seenSource As Collection, ByVal summary As DiseaseImportSummary, ByVal logger As IDiseaseLogger)
+</code></pre>
+<hr />
+<h2>Table Utilities</h2>
+<h3>ClearTable</h3>
+<p><strong>Remove all rows from the ListObject.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ClearTable(ByVal targetTable As ListObject)
+</code></pre>
+<hr />
+<h3>AppendBlankRows</h3>
+<p><strong>Append blank rows to the target table.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AppendBlankRows(ByVal targetTable As ListObject, ByVal rowCount As Long)
+</code></pre>
+<hr />
+<h3>BuildRow</h3>
+<p><strong>Create a row array from the source matrix.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function BuildRow(ByRef sourceData As Variant, ByVal rowIndex As Long, ByVal columnCount As Long) As Variant
+</code></pre>
+<hr />
+<h3>ConvertRowsToMatrix</h3>
+<p><strong>Convert a BetterArray of rows into a contiguous matrix.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ConvertRowsToMatrix(ByVal rows As BetterArray, ByVal appendCount As Long, ByVal columnCount As Long) As Variant
+</code></pre>
+<hr />
+<h3>Ensure2D</h3>
+<p><strong>Convert single values into 2D matrices when necessary.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function Ensure2D(ByVal values As Variant, ByVal columnCount As Long) As Variant
+</code></pre>
+<hr />
+<h2>Collections</h2>
+<h3>AddIfMissing</h3>
+<p><strong>Add row index to collection if the key is missing.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AddIfMissing(ByVal index As Collection, ByVal key As String, ByVal rowIndex As Long)
+</code></pre>
+<hr />
+<h3>AddIfMissingValue</h3>
+<p><strong>Register presence of a source variable.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AddIfMissingValue(ByVal seenSource As Collection, ByVal key As String)
+</code></pre>
+<hr />
+<h3>LookupRow</h3>
+<p><strong>Read a row index from the collection.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function LookupRow(ByVal index As Collection, ByVal key As String) As Long
+</code></pre>
+<hr />
+<h3>CollectionContains</h3>
+<p><strong>Test whether the collection contains the supplied key.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function CollectionContains(ByVal values As Collection, ByVal key As String) As Boolean
+</code></pre>
+<hr />
+<h2>Validation</h2>
+<h3>ValidateTable</h3>
+<p><strong>Guard against invalid ListObject references.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ValidateTable(ByVal table As ListObject, ByVal argumentName As String)
+</code></pre>
+<hr />
+<h2>Text Helpers</h2>
+<h3>Normalize</h3>
+<p><strong>Normalise identifiers for comparison.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function Normalize(ByVal value As String) As String
+</code></pre>
+<hr />
+<h2>ErrorHandling</h2>
+<h3>ThrowError</h3>
+<p><strong>Centralised error raising aligned with ProjectError codes.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal errMessage As String)
+</code></pre>
+<hr />
+</details>
+<details>
+<summary>Used in (4 file(s))</summary>
+<ul>
+<li><a href="src/classes/msetup/DiseaseImporter.cls">DiseaseImporter.cls</a></li>
+<li><a href="src/classes/msetup/IDiseaseImporter.cls">IDiseaseImporter.cls</a></li>
+<li><a href="src/tests/modules/mastersetup/TestDiseaseImporter.bas">TestDiseaseImporter.bas</a></li>
+<li><a href="src/tests/modules/mastersetup/TestDiseaseIntegration.bas">TestDiseaseIntegration.bas</a></li>
+</ul>
+</details>
+
+  </main>
+</body>
+</html>
+

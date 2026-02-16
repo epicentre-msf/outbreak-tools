@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ExportButton - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>ExportButton</h1>
+<p>WithEvents wrapper that listens to an MSForms.CommandButton on a linelist
+export sheet and performs a custom export when clicked. The factory wires
+the button, an optional filter checkbox, and translation/workbook
+references. On click, RunExport selects a folder, optionally confirms
+filter usage, then delegates to LLExporter.ExportCustom. The factory
+returns the concrete class (not IExportButton) because callers hold a
+reference to keep the WithEvents binding alive.</p>
+<p><strong>Depends on:</strong> <a href="IExportButton.html">IExportButton</a>, <a href="ILLExporter.html">ILLExporter</a>, <a href="LLExporter.html">LLExporter</a>, <a href="IApplicationState.html">IApplicationState</a>, <a href="ApplicationState.html">ApplicationState</a>, <a href="IOSFiles.html">IOSFiles</a>, <a href="OSFiles.html">OSFiles</a></p>
+<h2>Factory</h2>
+<h3>create</h3>
+<p><strong>Create an export button wrapper</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create(ByVal sourceWkb As Workbook, _
+                       ByVal trads As ITranslationObject, _
+                       ByVal expBtn As MSForms.CommandButton, _
+                       Optional ByVal expChk As MSForms.CheckBox = Nothing) As ExportButton
+</code></pre>
+<p>Factory method that validates the workbook, translations, and button are
+not Nothing, then wires the WithEvents binding and optional filter
+checkbox. Called on the predeclared instance. Returns the concrete class
+(not an interface) because callers hold a reference to keep the
+WithEvents binding alive.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sourceWkb</code>: Workbook. The linelist workbook.</li>
+<li><code>trads</code>: ITranslationObject. Translations for user-facing messages.</li>
+<li><code>expBtn</code>: MSForms.CommandButton. The button to listen to.</li>
+<li><code>expChk</code>: Optional MSForms.CheckBox. Filter checkbox, or Nothing. Defaults to Nothing.</li>
+</ul>
+<p><strong>Returns:</strong> ExportButton. A wired instance ready to handle click events.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When sourceWkb, trads, or expBtn is Nothing.</li>
+</ul>
+<hr />
+<h2>Public Accessors</h2>
+<h3>export-number</h3>
+<p><strong>Export number derived from button name</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ExportNumber() As Long
+</code></pre>
+<p>Parses the button Name property by removing the NAMETAG prefix
+(&quot;CMDExport&quot;) and converting the remainder to Long. For example,
+&quot;CMDExport1&quot; yields 1, &quot;CMDExport3&quot; yields 3.</p>
+<p><strong>Returns:</strong> Long. The 1-based export number.</p>
+<hr />
+<h3>use-filter</h3>
+<p><strong>Whether the filter checkbox is checked</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get UseFilter() As Boolean
+</code></pre>
+<p>Returns the current value of the filter checkbox. Returns False when
+no checkbox was bound.</p>
+<p><strong>Returns:</strong> Boolean. True when the filter checkbox is checked.</p>
+<hr />
+<details>
+<summary>Internal members (not exported)</summary>
+<h2>Public Accessors</h2>
+<h3>self</h3>
+<p><strong>Current object instance</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Self() As ExportButton
+</code></pre>
+<p><strong>Returns:</strong> ExportButton. The current instance.</p>
+<hr />
+<h3>source-workbook-set</h3>
+<p><strong>Assign the source linelist workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Set SourceWorkbook(ByVal wb As Workbook)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>wb</code>: Workbook. The workbook to store.</li>
+</ul>
+<hr />
+<h3>translations-set</h3>
+<p><strong>Assign the translations object</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Set Translations(ByVal trads As ITranslationObject)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>trads</code>: ITranslationObject. The translations to store.</li>
+</ul>
+<hr />
+<h3>push-button-set</h3>
+<p><strong>Wire the WithEvents button binding</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Set PushButton(ByVal expBtn As MSForms.CommandButton)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>expBtn</code>: MSForms.CommandButton. The button to listen to.</li>
+</ul>
+<hr />
+<h3>filter-checkbox-set</h3>
+<p><strong>Assign the optional filter checkbox</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Set FilterCheckBox(ByVal expChk As MSForms.CheckBox)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>expChk</code>: MSForms.CheckBox. The checkbox to bind.</li>
+</ul>
+<hr />
+<h3>use-filter-set</h3>
+<p><strong>Set the filter checkbox value</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Let UseFilter(ByVal value As Boolean)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>value</code>: Boolean. True to check, False to uncheck.</li>
+</ul>
+<hr />
+<h2>Event Handler</h2>
+<h3>btn-click</h3>
+<p><strong>Handle button click event</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub Btn_Click()
+</code></pre>
+<hr />
+<h3>run-export</h3>
+<p><strong>Perform a custom export</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RunExport()
+</code></pre>
+<p>Prompts the user to select a folder via OSFiles, applies busy state,
+optionally confirms filter usage via MsgBox, then delegates to
+LLExporter.ExportCustom. On error, displays a translated error message
+and closes any orphaned output workbook.</p>
+<hr />
+<h2>Private Helpers</h2>
+<h3>translated-value</h3>
+<p><strong>Get a translated message value</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function TranslatedValue(ByVal msgCode As String) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>msgCode</code>: String. The message code to translate.</li>
+</ul>
+<p><strong>Returns:</strong> String. The translated message text.</p>
+<hr />
+<h3>update-filtered-data</h3>
+<p><strong>Sync filtered data sheets before a filtered export</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub UpdateFilteredData()
+</code></pre>
+<p>Copies HList data to companion filtered sheets and removes hidden or
+empty rows, ensuring the filtered export reflects the user current
+filter state.</p>
+<hr />
+<h3>throw-error</h3>
+<p><strong>Raise a ProjectError-based exception</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As Long, ByVal message As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>errNumber</code>: Long. A ProjectError enum value (e.g. ObjectNotInitialized).</li>
+<li><code>message</code>: String. Human-readable description of the failure.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.<varies> Always raises the specified error.</li>
+</ul>
+<hr />
+<h2>Interface Implementation</h2>
+<h3>IExportButton_ExportNumber</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get IExportButton_ExportNumber() As Long
+</code></pre>
+<p>Delegation to IExportButton interface members.</p>
+<hr />
+</details>
+<details>
+<summary>Used in (5 file(s))</summary>
+<ul>
+<li><a href="src/classes/dataio/ExportButton.cls">ExportButton.cls</a></li>
+<li><a href="src/classes/dataio/IExportButton.cls">IExportButton.cls</a></li>
+<li><a href="src/classes/linelist/Linelist.cls">Linelist.cls</a></li>
+<li><a href="src/classes/stale/designer-codes/modules/implements/EventsLinelistButtons.bas">EventsLinelistButtons.bas</a></li>
+<li><a href="src/tests/modules/dataio/TestExportButton.bas">TestExportButton.bas</a></li>
+</ul>
+</details>
+
+  </main>
+</body>
+</html>
+

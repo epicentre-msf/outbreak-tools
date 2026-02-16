@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ValueOfFormula - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>ValueOfFormula</h1>
+<p>Converts VALUE_OF custom formulas written with dictionary variable names
+into workbook-ready expressions that supply sheet names and column indices.
+The class validates that all three arguments (key variable, lookup variable,
+value variable) exist in the dictionary and share the same worksheet, then
+resolves column indices for downstream consumption. Consumers interact
+through the IValueOfFormula interface.</p>
+<p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="LLdictionary.html">LLdictionary</a>, <a href="LLVariables.html">LLVariables</a>, <a href="LLSheets.html">LLSheets</a></p>
+<p><strong>Version:</strong> 1.0 (2026-02-09)</p>
+<h2>Factory</h2>
+<h3>create</h3>
+<p><strong>Instantiate a VALUE_OF parser bound to the supplied dictionary</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create(ByVal formula As String, _
+                       ByVal dict As ILLdictionary, _
+                       Optional ByVal variables As ILLVariables, _
+                       Optional ByVal sheets As ILLSheets) As IValueOfFormula
+</code></pre>
+<p>Validates that the dictionary is not Nothing, stores all dependencies,
+and returns the IValueOfFormula interface. Parsing is deferred until
+the first access to Valid, ConvertedFormula, or any result property.
+Optional variables and sheets helpers can be supplied to avoid
+redundant instantiation when the caller already holds them.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>formula</code>: String. Representation of the VALUE_OF call.</li>
+<li><code>dict</code>: ILLdictionary. The dictionary exposing variables and sheets metadata.</li>
+<li><code>variables</code>: Optional ILLVariables. Reuse an existing helper instance.</li>
+<li><code>sheets</code>: Optional ILLSheets. Reuse an existing helper instance.</li>
+</ul>
+<p><strong>Returns:</strong> IValueOfFormula. A ready-to-inspect parser instance.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When dict is Nothing.</li>
+</ul>
+<hr />
+<h2>Validation</h2>
+<h3>valid</h3>
+<p><strong>Determine whether the VALUE_OF expression parsed successfully</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Valid() As Boolean
+</code></pre>
+<p>Parsed results and diagnostic properties.
+Triggers lazy parsing on first access and returns the cached validity
+flag. True indicates that all three arguments were resolved against
+the dictionary and the lookup/value variables share the same sheet.</p>
+<p><strong>Returns:</strong> Boolean. True when parsing and dictionary lookups succeeded.</p>
+<hr />
+<h3>converted-formula</h3>
+<p><strong>Retrieve the workbook-ready VALUE_OF expression</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ConvertedFormula() As String
+</code></pre>
+<p>Returns the converted expression with the sheet name and column
+indices resolved. Returns vbNullString when the formula is invalid.</p>
+<p><strong>Returns:</strong> String. Converted expression; vbNullString when invalid.</p>
+<hr />
+<h3>failure-reason</h3>
+<p><strong>Provide a descriptive message when parsing fails</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get FailureReason() As String
+</code></pre>
+<p>Returns a human-readable explanation of the validation failure.
+Returns vbNullString when the formula is valid.</p>
+<p><strong>Returns:</strong> String. Description; vbNullString for valid formulas.</p>
+<hr />
+<h3>lookup-sheet-name</h3>
+<p><strong>Expose the resolved lookup worksheet name</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get LookupSheetName() As String
+</code></pre>
+<p>Returns the worksheet name where the lookup and value variables
+reside. Available only after successful parsing.</p>
+<p><strong>Returns:</strong> String. Sheet name or vbNullString when unavailable.</p>
+<hr />
+<h3>lookup-column-index</h3>
+<p><strong>Expose the column index used to locate the matching value</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get LookupColumnIndex() As Long
+</code></pre>
+<p>Returns the 1-based column index of the lookup variable within the
+dictionary. Zero when the formula is invalid.</p>
+<p><strong>Returns:</strong> Long. Lookup column index; zero when the formula is invalid.</p>
+<hr />
+<h3>value-column-index</h3>
+<p><strong>Expose the column index providing the returned value</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ValueColumnIndex() As Long
+</code></pre>
+<p>Returns the 1-based column index of the value variable within the
+dictionary. Zero when the formula is invalid.</p>
+<p><strong>Returns:</strong> Long. Value column index; zero when the formula is invalid.</p>
+<hr />
+<details>
+<summary>Internal members (not exported)</summary>
+<h2>PublicAccessors</h2>
+<h3>self</h3>
+<p><strong>Current object instance</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Self() As IValueOfFormula
+</code></pre>
+<p>Properties that expose internal state and the interface pointer.
+Returns the current instance cast to its interface. Used internally
+by the factory method to return an IValueOfFormula reference.</p>
+<p><strong>Returns:</strong> IValueOfFormula. Reference to the current object.</p>
+<hr />
+<h3>dictionary</h3>
+<p><strong>Retrieve the dictionary backing this instance</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Dictionary() As ILLdictionary
+</code></pre>
+<p>Returns the ILLdictionary reference that was supplied at creation
+and is used during lazy parsing.</p>
+<p><strong>Returns:</strong> ILLdictionary. The dictionary used during parsing.</p>
+<hr />
+<h3>dictionary-set</h3>
+<p><strong>Assign the dictionary and reset cached state</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Set Dictionary(ByVal dict As ILLdictionary)
+</code></pre>
+<p>Replaces the dictionary reference, clears the lazily created variable
+and sheet helpers, and resets all parsed outcomes so the next access
+triggers a fresh evaluation.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>dict</code>: ILLdictionary. The dictionary providing metadata.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When dict is Nothing.</li>
+</ul>
+<hr />
+<h3>value-of-expression</h3>
+<p><strong>Retrieve the stored VALUE_OF expression</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ValueOfExpression() As String
+</code></pre>
+<p>Returns the formula text as stored after trimming during assignment.</p>
+<p><strong>Returns:</strong> String. Expression as provided to the parser.</p>
+<hr />
+<h3>value-of-expression-set</h3>
+<p><strong>Store the VALUE_OF expression and reset cached results</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Let ValueOfExpression(ByVal formula As String)
+</code></pre>
+<p>Trims the incoming formula and stores it, then clears all cached
+parsing outcomes so the next access triggers a fresh parse.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>formula</code>: String. Representing the VALUE_OF call.</li>
+</ul>
+<hr />
+<h2>Parsing</h2>
+<h3>ensure-parsed</h3>
+<p><strong>Lazily parse the VALUE_OF expression and cache outcomes</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureParsed()
+</code></pre>
+<p>Lazy parsing engine and argument extraction.
+Executes the full parsing pipeline on first call: extracts three
+arguments, validates each against the dictionary, confirms sheet
+alignment, resolves column indices, and builds the converted formula.
+All outcomes are cached so subsequent calls are no-ops.</p>
+<hr />
+<h3>extract-arguments</h3>
+<p><strong>Split the VALUE_OF body into trimmed argument segments</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ExtractArguments() As BetterArray
+</code></pre>
+<p>Walks the sanitised body character by character, tracking quotation
+state and parenthesis depth. Splits on top-level commas and returns
+exactly three arguments for a well-formed VALUE_OF expression.</p>
+<p><strong>Returns:</strong> BetterArray. Up to three arguments; Nothing when malformed.</p>
+<hr />
+<h3>sanitised-formula</h3>
+<p><strong>Remove the VALUE_OF token and surrounding parenthesis</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SanitisedFormula() As String
+</code></pre>
+<p>Strips the VALUE_OF token, opening parenthesis, and closing
+parenthesis to expose the raw comma-delimited argument body.</p>
+<p><strong>Returns:</strong> String. The argument list; vbNullString when malformed.</p>
+<hr />
+<h3>build-converted-formula</h3>
+<p><strong>Compose the converted VALUE_OF expression</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function BuildConvertedFormula(ByVal keyVar As String, _
+                                       ByVal sheetName As String, _
+                                       ByVal lookupIndex As Long, _
+                                       ByVal valueIndex As Long) As String
+</code></pre>
+<p>Assembles the VALUE_OF output string with the key variable name, the
+quoted sheet name, and the two resolved column indices.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>keyVar</code>: String. Variable supplying the lookup key range.</li>
+<li><code>sheetName</code>: String. Worksheet name hosting the lookup table.</li>
+<li><code>lookupIndex</code>: Long. Column index for the lookup key.</li>
+<li><code>valueIndex</code>: Long. Column index for the return value.</li>
+</ul>
+<p><strong>Returns:</strong> String. Workbook-ready VALUE_OF expression.</p>
+<hr />
+<h3>quoted-text</h3>
+<p><strong>Wrap a value in double quotes while escaping embedded quotes</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function QuotedText(ByVal value As String) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>value</code>: String. The value to quote.</li>
+</ul>
+<p><strong>Returns:</strong> String. Quoted representation suitable for Excel formulas.</p>
+<hr />
+<h2>Helpers</h2>
+<h3>initialise</h3>
+<p><strong>Assign dependencies and prime the parser state</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Initialise(ByVal formula As String, _
+                       ByVal dict As ILLdictionary, _
+                       ByVal variables As ILLVariables, _
+                       ByVal sheets As ILLSheets)
+</code></pre>
+<p>Initialisation, state management, and lazy dependency providers.
+Stores the dictionary, optional helpers, and formula, then resets
+all cached state so the parser is ready for lazy evaluation.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>formula</code>: String. The VALUE_OF expression.</li>
+<li><code>dict</code>: ILLdictionary. The dictionary providing metadata.</li>
+<li><code>variables</code>: ILLVariables. Optional helper for variable lookups.</li>
+<li><code>sheets</code>: ILLSheets. Optional helper for sheet validation.</li>
+</ul>
+<hr />
+<h3>reset-state</h3>
+<p><strong>Clear cached parsing outcomes</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ResetState()
+</code></pre>
+<p>Marks the instance as unparsed and clears all result fields so the
+next property access triggers a full reparse.</p>
+<hr />
+<h3>reset-parsed-outcome</h3>
+<p><strong>Reset fields populated during parsing</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ResetParsedOutcome()
+</code></pre>
+<p>Clears validity, converted formula, failure reason, sheet name, and
+column indices to their default (empty/zero) values.</p>
+<hr />
+<h3>fail</h3>
+<p><strong>Record a parsing failure</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub Fail(ByVal message As String)
+</code></pre>
+<p>Stores the failure message and resets all result fields to their
+invalid defaults. Called from EnsureParsed on every error path.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>message</code>: String. Describing the failure.</li>
+</ul>
+<hr />
+<h3>variables-provider</h3>
+<p><strong>Lazily create the LLVariables helper</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function VariablesProvider() As ILLVariables
+</code></pre>
+<p>Ensures the dictionary is ready, creates the LLVariables helper on
+first access, and caches it for subsequent calls.</p>
+<p><strong>Returns:</strong> ILLVariables. Helper for the current dictionary.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When the dictionary is Nothing.</li>
+</ul>
+<hr />
+<h3>sheets-provider</h3>
+<p><strong>Lazily create the LLSheets helper</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SheetsProvider() As ILLSheets
+</code></pre>
+<p>Ensures the dictionary is ready, creates the LLSheets helper on
+first access, and caches it for subsequent calls.</p>
+<p><strong>Returns:</strong> ILLSheets. Helper for the current dictionary.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When the dictionary is Nothing.</li>
+</ul>
+<hr />
+<h3>ensure-dictionary-ready</h3>
+<p><strong>Guard against missing dictionary references</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureDictionaryReady()
+</code></pre>
+<p>Raises a ProjectError when the dictionary is Nothing, preventing
+downstream NullReference issues in the variable and sheet providers.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When the dictionary is Nothing.</li>
+</ul>
+<hr />
+<h3>throw-error</h3>
+<p><strong>Raise a project-specific error</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal message As String)
+</code></pre>
+<p>Wrapper around Err.Raise that standardises the source to the class
+constant CLASSNAME for consistent stack traces.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>errNumber</code>: ProjectError. The error code describing the failure.</li>
+<li><code>message</code>: String. Error message.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.<varies> Always raises the specified error.</li>
+</ul>
+<hr />
+<h2>Interface</h2>
+<h3>IValueOfFormula_ConvertedFormula</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get IValueOfFormula_ConvertedFormula() As String
+</code></pre>
+<p>Delegated members satisfying the IValueOfFormula contract.</p>
+<hr />
+</details>
+<details>
+<summary>Used in (4 file(s))</summary>
+<ul>
+<li><a href="src/classes/formulas/Formulas.cls">Formulas.cls</a></li>
+<li><a href="src/classes/formulas/IValueOfFormula.cls">IValueOfFormula.cls</a></li>
+<li><a href="src/classes/formulas/ValueOfFormula.cls">ValueOfFormula.cls</a></li>
+<li><a href="src/tests/modules/formulas/TestValueOfFormula.bas">TestValueOfFormula.bas</a></li>
+</ul>
+</details>
+
+  </main>
+</body>
+</html>
+

@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ITemporaryRepos - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>ITemporaryRepos</h1>
+<p>Defines the public contract for the TemporaryRepos class, exposing
+temporary folder lifecycle, path generation, and file cleanup
+operations used during linelist preparation.</p>
+<h2>Lifecycle</h2>
+<h3>EnsureReady</h3>
+<p><strong>Prepare the repository so that file operations can be performed</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub EnsureReady()
+</code></pre>
+<p>Readiness and cleanup.</p>
+<hr />
+<h3>Reset</h3>
+<p><strong>Clear the repository contents and mark it as uninitialised</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Reset()
+</code></pre>
+<hr />
+<h2>Paths</h2>
+<h3>RootPath</h3>
+<p><strong>Active repository root folder</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get RootPath() As String
+</code></pre>
+<p>Path accessors and generation.</p>
+<p><strong>Returns:</strong> String. Fully-qualified absolute path.</p>
+<hr />
+<h3>CreateFilePath</h3>
+<p><strong>Generate a sanitised file path within the repository</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function CreateFilePath(ByVal fileName As String) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>fileName</code>: String. Requested file name.</li>
+</ul>
+<p><strong>Returns:</strong> String. Fully-qualified path.</p>
+<hr />
+<h2>File Operations</h2>
+<h3>DeleteFile</h3>
+<p><strong>Remove a single file from the repository if it exists</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub DeleteFile(ByVal path As String)
+</code></pre>
+<p>Deletion utilities.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code>: String. Absolute file path.</li>
+</ul>
+<hr />
+<h3>DeleteAll</h3>
+<p><strong>Remove every file created within the repository</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub DeleteAll()
+</code></pre>
+<hr />
+
+  </main>
+</body>
+</html>
+

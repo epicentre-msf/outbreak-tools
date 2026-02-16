@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SetupPreparation - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>SetupPreparation</h1>
+<p>Orchestrates the preparation workflow for setup workbooks by registering
+dropdown list objects, initialising the updated values registry, applying
+data validations to setup tables (Dictionary, Exports, Analysis), and
+configuring hidden and protected sheets. Consumed by the setup entry
+point to prepare all worksheet assets before the workbook is ready for
+use. Uses the predeclared factory pattern through the ISetupPreparation
+interface.</p>
+<h2>Factory</h2>
+<h3>create</h3>
+<p><strong>Create an initialised SetupPreparation instance</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create(ByVal hostBook As Workbook) As ISetupPreparation
+</code></pre>
+<p>Factory method on the predeclared instance. Validates the workbook is
+not Nothing via Configure, then returns the new instance through the
+ISetupPreparation interface.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>hostBook</code>: Workbook. The workbook hosting setup worksheets.</li>
+</ul>
+<p><strong>Returns:</strong> ISetupPreparation. A fully initialised instance ready for use.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When hostBook is Nothing.</li>
+</ul>
+<hr />
+<h2>Public API</h2>
+<h3>configure</h3>
+<p><strong>Bind the preparation helper to a workbook hosting setup worksheets</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Configure(ByVal hostBook As Workbook)
+</code></pre>
+<p>Stores the workbook reference and resets all cached worksheet and manager
+objects to Nothing, forcing lazy re-initialisation on next access.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>hostBook</code>: Workbook. The workbook owning the setup assets.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When hostBook is Nothing.</li>
+</ul>
+<hr />
+<h3>prepare</h3>
+<p><strong>Execute the full preparation workflow</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Prepare(ByRef manager As IDevelopment)
+</code></pre>
+<p>Runs the complete preparation sequence: registers all dropdown list objects,
+initialises the updated values registry, applies data validations to the
+Dictionary, Exports, and Analysis tables, then registers hidden and
+protected sheets via the supplied development manager.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>manager</code>: IDevelopment. Development manager providing hidden/protected sheet registration.</li>
+</ul>
+<hr />
+<h3>ensure-dropdowns</h3>
+<p><strong>Ensure the dropdown manager has registered all default dropdown lists</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub EnsureDropdowns()
+</code></pre>
+<p>Creates the dropdown manager if needed, then calls RegisterAllDropdowns to
+populate every standard dropdown list on the dropdown worksheet. Safe to
+call multiple times; the manager creation is a no-op when already
+initialised.</p>
+<hr />
+<h3>ensure-updated-registry</h3>
+<p><strong>Initialise the updated values registry and register watched tables</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub EnsureUpdatedRegistry()
+</code></pre>
+<p>Creates the update watcher if needed, clears any existing registry data,
+registers the watched setup sheets (Dictionary, Choices, Analysis, Exports),
+and resets all status tags to &quot;yes&quot; (the default ready state).</p>
+<hr />
+<h3>dropdowns</h3>
+<p><strong>Dropdown manager for external callers</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Dropdowns() As IDropdownLists
+</code></pre>
+<p>Returns the IDropdownLists manager bound to the dropdown worksheet.
+Lazily initialises the manager on first access if it was not already
+created by EnsureDropdowns or Prepare.</p>
+<p><strong>Returns:</strong> IDropdownLists. The dropdown manager instance.</p>
+<hr />
+<h3>updated-watcher</h3>
+<p><strong>Updated values watcher for external callers</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get UpdatedWatcher() As IUpdatedValues
+</code></pre>
+<p>Returns the IUpdatedValues watcher bound to the registry worksheet.
+Lazily initialises the watcher on first access if it was not already
+created by EnsureUpdatedRegistry or Prepare.</p>
+<p><strong>Returns:</strong> IUpdatedValues. The update watcher instance.</p>
+<hr />
+<h3>host-workbook</h3>
+<p><strong>Workbook hosting setup assets</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get HostWorkbook() As Workbook
+</code></pre>
+<p>Returns the cached workbook reference stored during Configure.
+Delegates to EnsureWorkbook, which raises an error when the instance
+has not been configured.</p>
+<p><strong>Returns:</strong> Workbook. The bound workbook.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When the instance has not been configured.</li>
+</ul>
+<hr />
+<details>
+<summary>Internal members (not exported)</summary>
+<h2>Factory</h2>
+<h3>self</h3>
+<p><strong>Current object instance</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Self() As ISetupPreparation
+</code></pre>
+<p><strong>Returns:</strong> ISetupPreparation. The current instance cast to the interface.</p>
+<hr />
+<h2>ISetupPreparation implementation</h2>
+<h3>ISetupPreparation_Configure</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ISetupPreparation_Configure(ByVal hostBook As Workbook)
+</code></pre>
+<p>Delegated members satisfying the ISetupPreparation contract.
+See the corresponding Public members above for full documentation.</p>
+<hr />
+<h2>Preparation helpers</h2>
+<h3>reset-caches</h3>
+<p><strong>Reset cached references after reconfiguring the helper</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ResetCaches()
+</code></pre>
+<hr />
+<h3>ensure-dropdown-manager</h3>
+<p><strong>Ensure the dropdown manager is initialised for the target workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureDropdownManager()
+</code></pre>
+<p>Exits immediately when the manager is already initialised. Otherwise
+resolves or creates the dropdown worksheet, then creates a DropdownLists
+instance bound to it with the standard dropdown prefix.</p>
+<hr />
+<h3>ensure-updated-values-watcher</h3>
+<p><strong>Ensure the updated values watcher is initialised for the registry worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureUpdatedValuesWatcher()
+</code></pre>
+<p>Exits immediately when the watcher is already initialised. Otherwise
+resolves or creates the registry worksheet, then creates an UpdatedValues
+instance bound to it.</p>
+<hr />
+<h3>reset-updated-registry</h3>
+<p><strong>Reset the updated values registry prior to registering watched tables</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ResetUpdatedRegistry()
+</code></pre>
+<hr />
+<h3>apply-validations-and-updates</h3>
+<p><strong>Apply data validation rules to all setup tables</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ApplyValidationsAndUpdates()
+</code></pre>
+<p>Ensures the dropdown manager is initialised, then delegates to
+ApplyDictionaryValidations, ApplyExportsValidations, and
+ApplyAnalysisValidations to wire each table column to its dropdown list.</p>
+<hr />
+<h3>ensure-hidden-sheets</h3>
+<p><strong>Register internal worksheets as hidden via the development manager</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureHiddenSheets(ByRef manager As IDevelopment)
+</code></pre>
+<p>Calls manager.AddHiddenSheet for each internal worksheet constant
+(updated, variables, formatter, pass, formula, dev).</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>manager</code>: IDevelopment. Development manager to register with.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When manager is Nothing.</li>
+</ul>
+<hr />
+<h3>ensure-protected-sheets</h3>
+<p><strong>Register user-facing worksheets as protected via the development manager</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureProtectedSheets(ByRef manager As IDevelopment)
+</code></pre>
+<p>Calls manager.AddProtectedSheet for each user-facing worksheet, specifying
+whether filtering and sorting are allowed on the protected sheet.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>manager</code>: IDevelopment. Development manager to register with.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When manager is Nothing.</li>
+</ul>
+<hr />
+<h3>register-all-dropdowns</h3>
+<p><strong>Register every standard dropdown list for setup worksheets</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RegisterAllDropdowns()
+</code></pre>
+<p>Calls RegisterDropdown for each predefined dropdown (yes/no, formats,
+variable status/type/control, sheet type, export options, analysis
+parameters, geo variables, chart types, etc.). The dropdown names use
+the double-underscore prefix convention.</p>
+<hr />
+<h3>register-dropdown</h3>
+<p><strong>Register a single dropdown by converting the values into a BetterArray</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RegisterDropdown(ByVal dropdownName As String, ByVal values As Variant)
+</code></pre>
+<p>Ensures the dropdown manager is initialised, converts the supplied Variant
+array into a BetterArray (1-based), and adds it to the dropdown manager
+under the given name.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>dropdownName</code>: String. The name to register the dropdown under.</li>
+<li><code>values</code>: Variant. An array of values or a single value to populate the dropdown.</li>
+</ul>
+<hr />
+<h3>register-watched-sheets</h3>
+<p><strong>Register watched columns for every relevant setup sheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RegisterWatchedSheets()
+</code></pre>
+<p>Iterates over the list of watched sheet names, resolves each to a
+worksheet in the host workbook, and registers it with the update watcher
+via AddSheet. Raises an error when a required sheet is missing.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ElementNotFound When a watched sheet does not exist.</li>
+</ul>
+<hr />
+<h3>watched-sheet-names</h3>
+<p><strong>Return the list of setup sheets whose tables should be watched for updates</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function WatchedSheetNames() As BetterArray
+</code></pre>
+<p><strong>Returns:</strong> BetterArray. Sheet names (Dictionary, Choices, Analysis, Exports).</p>
+<hr />
+<h3>reset-registry-statuses</h3>
+<p><strong>Reset registry statuses to the default value after registration</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ResetRegistryStatuses()
+</code></pre>
+<hr />
+<h2>Worksheet helpers</h2>
+<h3>ensure-dropdown-sheet</h3>
+<p><strong>Ensure the dropdown worksheet exists and cache the reference</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function EnsureDropdownSheet() As Worksheet
+</code></pre>
+<p><strong>Returns:</strong> Worksheet. The dropdown worksheet.</p>
+<hr />
+<h3>ensure-registry-sheet</h3>
+<p><strong>Ensure the registry worksheet exists and cache the reference</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function EnsureRegistrySheet() As Worksheet
+</code></pre>
+<p><strong>Returns:</strong> Worksheet. The registry worksheet.</p>
+<hr />
+<h3>ensure-workbook</h3>
+<p><strong>Return the cached workbook reference, raising when missing</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function EnsureWorkbook() As Workbook
+</code></pre>
+<p><strong>Returns:</strong> Workbook. The host workbook.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When the instance has not been configured.</li>
+</ul>
+<hr />
+<h3>resolve-worksheet</h3>
+<p><strong>Resolve an existing worksheet by name without creating it</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ResolveWorksheet(ByVal sheetName As String) As Worksheet
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetName</code>: String. The worksheet name to look up.</li>
+</ul>
+<p><strong>Returns:</strong> Worksheet. The resolved worksheet, or Nothing when not found.</p>
+<hr />
+<h3>resolve-or-create-worksheet</h3>
+<p><strong>Resolve a worksheet if it exists, otherwise create one</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ResolveOrCreateWorksheet(ByVal sheetName As String, _
+                                          Optional ByVal visibility As XlSheetVisibility, _
+                                          Optional ByVal addVisibility As Boolean = True) As Worksheet
+</code></pre>
+<p>Looks up the worksheet by name in the host workbook. When not found,
+appends a new worksheet at the end and assigns the given name. Optionally
+applies the supplied visibility state.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetName</code>: String. The worksheet name to look up or create.</li>
+<li><code>visibility</code>: Optional XlSheetVisibility. Visibility state to apply when addVisibility is True.</li>
+<li><code>addVisibility</code>: Optional Boolean. When True, applies the visibility parameter. Defaults to True.</li>
+</ul>
+<p><strong>Returns:</strong> Worksheet. The resolved or newly created worksheet.</p>
+<hr />
+<h3>apply-dictionary-validations</h3>
+<p><strong>Apply data validation rules to the dictionary worksheet tables</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ApplyDictionaryValidations(ByVal drop As IDropdownLists)
+</code></pre>
+<p>Resolves the Dictionary worksheet and its Tab_Dictionary ListObject,
+then wires each column (sheet type, status, variable type, format,
+control, etc.) to its corresponding dropdown list via SetValidation.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>drop</code>: IDropdownLists. The dropdown manager providing validation ranges.</li>
+</ul>
+<hr />
+<h3>apply-exports-validations</h3>
+<p><strong>Apply export worksheet validations</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ApplyExportsValidations(ByVal drop As IDropdownLists)
+</code></pre>
+<p>Resolves the Exports worksheet and its Tab_Export ListObject, then wires
+each column (status, file format, password, etc.) to its dropdown list.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>drop</code>: IDropdownLists. The dropdown manager providing validation ranges.</li>
+</ul>
+<hr />
+<h3>apply-analysis-validations</h3>
+<p><strong>Apply validations to all analysis tables and named ranges</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ApplyAnalysisValidations(ByVal drop As IDropdownLists)
+</code></pre>
+<p>Resolves the Analysis worksheet, applies the table-switcher validation
+to the RNG_SelectTable named range, then wires every analysis table
+(global summary, univariate, bivariate, time series, graph, spatial,
+spatio-temporal specs, spatio-temporal) to their respective dropdown
+lists.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>drop</code>: IDropdownLists. The dropdown manager providing validation ranges.</li>
+</ul>
+<hr />
+<h3>require-worksheet</h3>
+<p><strong>Retrieve a worksheet or raise if unavailable</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function RequireWorksheet(ByVal sheetName As String) As Worksheet
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetName</code>: String. The worksheet name to resolve.</li>
+</ul>
+<p><strong>Returns:</strong> Worksheet. The resolved worksheet.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ElementNotFound When the worksheet does not exist.</li>
+</ul>
+<hr />
+<h3>require-list-object</h3>
+<p><strong>Retrieve a ListObject from a worksheet or raise when missing</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function RequireListObject(ByVal sh As Worksheet, ByVal listName As String) As ListObject
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The worksheet to search.</li>
+<li><code>listName</code>: String. The ListObject name to find.</li>
+</ul>
+<p><strong>Returns:</strong> ListObject. The resolved ListObject.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ElementNotFound When the ListObject does not exist.</li>
+</ul>
+<hr />
+<h3>require-custom-table</h3>
+<p><strong>Return a CustomTable helper for the requested ListObject</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function RequireCustomTable(ByVal sh As Worksheet, ByVal listName As String) As ICustomTable
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The worksheet hosting the ListObject.</li>
+<li><code>listName</code>: String. The ListObject name to wrap.</li>
+</ul>
+<p><strong>Returns:</strong> ICustomTable. A CustomTable wrapper for the ListObject.</p>
+<hr />
+<h3>resolve-named-range</h3>
+<p><strong>Resolve a named range within a worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ResolveNamedRange(ByVal sh As Worksheet, ByVal rangeName As String) As Range
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The worksheet to search.</li>
+<li><code>rangeName</code>: String. The named range to resolve.</li>
+</ul>
+<p><strong>Returns:</strong> Range. The resolved range, or Nothing when not available.</p>
+<hr />
+<h3>normalize-text</h3>
+<p><strong>Normalise a string for case-insensitive comparisons</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function NormalizeText(ByVal valueText As String) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>valueText</code>: String. The text to normalise.</li>
+</ul>
+<p><strong>Returns:</strong> String. The trimmed, lowercased text.</p>
+<hr />
+<h2>Error handling</h2>
+<h3>throw-error</h3>
+<p><strong>Raise a project-scoped error with the supplied message</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal message As String)
+</code></pre>
+<p>Wrapper around Err.Raise that standardises the source to
+&quot;SetupPreparation&quot;, providing a consistent stack trace across
+all methods in this class.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>errNumber</code>: ProjectError. The error code to raise.</li>
+<li><code>message</code>: String. Human-readable description of the failure.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError Always raises the specified error.</li>
+</ul>
+<hr />
+</details>
+<details>
+<summary>Used in (5 file(s))</summary>
+<ul>
+<li><a href="src/classes/setup/ISetupPreparation.cls">ISetupPreparation.cls</a></li>
+<li><a href="src/classes/setup/SetupPreparation.cls">SetupPreparation.cls</a></li>
+<li><a href="src/modules/setup/EventsSetupRibbon.bas">EventsSetupRibbon.bas</a></li>
+<li><a href="src/modules/setup/SetupHelpers.bas">SetupHelpers.bas</a></li>
+<li><a href="src/tests/modules/setup/TestSetupPreparation.bas">TestSetupPreparation.bas</a></li>
+</ul>
+</details>
+
+  </main>
+</body>
+</html>
+

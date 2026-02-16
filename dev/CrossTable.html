@@ -1,0 +1,729 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CrossTable - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>CrossTable</h1>
+<p>The CrossTable class builds and formats structured analysis output tables
+on an Excel worksheet. It supports six table scopes: univariate, bivariate,
+time series, spatial, spatio-temporal, and global summary. Each cross-table
+occupies a rectangular region with row categories, column categories, named
+ranges, and visual formatting. Consumers interact through the ICrossTable
+interface, and AnalysisOutput orchestrates the build sequence by calling
+Build followed by Format for each table specification.</p>
+<p><strong>Depends on:</strong> <a href="ITableSpecs.html">ITableSpecs</a>, <a href="ILinelistSpecs.html">ILinelistSpecs</a>, <a href="ITranslationObject.html">ITranslationObject</a>, <a href="ILLVariables.html">ILLVariables</a>, <a href="LLVariables.html">LLVariables</a>, <a href="ILLFormat.html">ILLFormat</a>, <a href="IHiddenNames.html">IHiddenNames</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="BetterArray.html">BetterArray</a></p>
+<p><strong>Version:</strong> 1.1 (2026-02-11)</p>
+<h2>Factory</h2>
+<h3>create</h3>
+<p><strong>Create a CrossTable instance from table specifications.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create(ByVal specs As ITableSpecs, _
+                       ByVal outputWksh As Worksheet, _
+                       ByRef lData As ILinelistSpecs) As ICrossTable
+</code></pre>
+<p>Factory method that creates and returns a new ICrossTable instance from
+the given table specifications. A cross-table is a structured analysis
+output (univariate, bivariate, time series, spatial, spatio-temporal, or
+global summary) that is built on an output worksheet and contains row
+categories, column categories, named ranges, and formatting. This method
+validates all three required dependencies, then injects them into a
+fresh CrossTable instance via the PredeclaredId/New pattern and returns
+the interface reference.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>specs</code>: ITableSpecs. An ITableSpecs object representing one row from the analysis setup sheet.</li>
+<li><code>outputWksh</code>: Worksheet. The Excel Worksheet where this cross-table will physically write its headers, row labels, column labels, data placeholders, and named ranges.</li>
+<li><code>lData</code>: ILinelistSpecs. The linelist specifications object that provides the translation object
+for locale-aware labels and is passed to ITableSpecs.RowCategories / ColumnCategories for
+category resolution at build time.</li>
+</ul>
+<p><strong>Returns:</strong> ICrossTable. A fully initialized ICrossTable ready for Build or individual step calls.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>InvalidArgument When specs is Nothing.</li>
+<li>InvalidArgument When outputWksh is Nothing.</li>
+<li>InvalidArgument When lData is Nothing.</li>
+</ul>
+<hr />
+<h2>Internal Properties</h2>
+<h3>wksh</h3>
+<p><strong>Output worksheet where the table is built.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Wksh() As Worksheet
+</code></pre>
+<p>Returns the Worksheet reference where this cross-table writes its
+headers, row labels, column labels, and data cells.</p>
+<p><strong>Returns:</strong> Worksheet. The output worksheet.</p>
+<hr />
+<h3>specifications</h3>
+<p><strong>Table specifications used to build this cross-table.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Specifications() As ITableSpecs
+</code></pre>
+<p>Returns the ITableSpecs instance that defines the configuration for
+this cross-table. Provides access to table scope, variable names,
+category lists, and validation flags.</p>
+<p><strong>Returns:</strong> ITableSpecs. The backing table specification.</p>
+<hr />
+<h2>Range Access</h2>
+<h3>header-range</h3>
+<p><strong>Header range of the table on the output worksheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get HeaderRange() As Range
+</code></pre>
+<p>Properties that return Range objects for structural regions of the table.
+Returns the Range object spanning the column header row of this
+cross-table. The range starts at (StartRow, StartColumn + 1) and
+extends to (StartRow, EndColumn), covering all column category cells
+but excluding the row-label column at StartColumn. This range is used
+by NameRanges to create the COLUMN_CATEGORIES_ named range, by Format
+to apply header styling, and by ColumnRange to search for a specific
+column value.</p>
+<p><strong>Returns:</strong> Range. The header row range excluding the leftmost row-label cell.</p>
+<p><strong>Remarks:</strong></p>
+<ul>
+<li>EndColumn must be set (by AddColumns/BivariateColumns) before this
+property is called. If EndColumn is 0, the returned range will be invalid.</li>
+</ul>
+<hr />
+<h3>rows-categories-range</h3>
+<p><strong>Row categories range with optional filtering.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get RowsCategoriesRange(Optional ByVal includeHeaders As Boolean = True, _
+                                         Optional ByVal onlyCategories As Boolean = False) As Range
+</code></pre>
+<p>Returns a Range covering the row category cells of this cross-table in
+column C (STANDARD_START_COL). The range can optionally include or
+exclude the header label row, and can be trimmed to only the &quot;pure&quot;
+category rows (excluding Total and Missing footer rows). The start row
+varies by table scope: for bivariate, time series, spatial, and
+spatio-temporal tables, the categories begin at StartRow + 1; for
+univariate tables, they begin at StartRow itself. If includeHeaders is
+False, an additional row is skipped. The end row also varies based on
+the onlyCategories flag, trimming footer rows for time series or tables
+with HasTotal.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>includeHeaders</code>: Optional Boolean. When True (default), includes the row variable label row. Defaults to True.</li>
+<li><code>onlyCategories</code>: Optional Boolean. When True, excludes Total and Missing footer rows. Defaults to False.</li>
+</ul>
+<p><strong>Returns:</strong> Range. A single-column Range in column C spanning the requested row categories.</p>
+<p><strong>Remarks:</strong></p>
+<ul>
+<li>Raises an error for ScopeGlobalSummary because global summary tables do not
+have row categories.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ErrorUnexpectedState When the table scope is ScopeGlobalSummary.</li>
+</ul>
+<hr />
+<h3>row-range</h3>
+<p><strong>Row data range for a specific row value.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get RowRange(ByVal rowVal As String, _
+                              Optional ByVal includeHeaders As Boolean = True) As Range
+</code></pre>
+<p>Finds a row in the cross-table by its category label value and returns
+a horizontal Range spanning that entire row from the start column to the
+end column. The search is performed within RowsCategoriesRange using an
+exact case-sensitive match via ValueExists/Find. If the value is found,
+the returned range includes either the full row from StartColumn (with
+the row-label cell) or from StartColumn + 1 (data cells only), depending
+on the includeHeaders parameter. If the value is not found, Nothing is
+returned.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>rowVal</code>: String. The exact string value to search for in the row categories column.</li>
+<li><code>includeHeaders</code>: Optional Boolean. When True (default), the returned range starts at StartColumn. Defaults to True.</li>
+</ul>
+<p><strong>Returns:</strong> Range. A single-row Range, or Nothing if rowVal is not found.</p>
+<p><strong>Remarks:</strong></p>
+<ul>
+<li>The search uses RowsCategoriesRange() with default parameters, so it searches
+ALL row category cells including footer rows.</li>
+</ul>
+<hr />
+<h3>column-range</h3>
+<p><strong>Column data range for a specific column value.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ColumnRange(ByVal colVal As String, _
+                                 Optional ByVal onlyCategories As Boolean = False, _
+                                 Optional ByVal includeHeaders As Boolean = False) As Range
+</code></pre>
+<p>Finds a column in the cross-table by its header label value and returns
+a vertical Range spanning that entire column from the first data row to
+the end row. The search is performed within HeaderRange using an exact
+case-sensitive match via ValueExists/Find. The start row of the
+returned range varies by table scope. The end row can be trimmed to
+exclude footer rows when onlyCategories is True. The includeHeaders
+parameter extends the range one row upward to include the column header
+cell. Returns Nothing if colVal is not found.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>colVal</code>: String. The exact string value to search for in the header row.</li>
+<li><code>onlyCategories</code>: Optional Boolean. When True, excludes Total and Missing footer rows. Defaults to False.</li>
+<li><code>includeHeaders</code>: Optional Boolean. When True, includes the column-label row. Defaults to False.</li>
+</ul>
+<p><strong>Returns:</strong> Range. A single-column Range, or Nothing if colVal is not found in the header range.</p>
+<p><strong>Remarks:</strong></p>
+<ul>
+<li>Callers must check for Nothing before using the result.</li>
+</ul>
+<hr />
+<h2>AddRows</h2>
+<h3>addrows</h3>
+<p><strong>Add row headers and row category labels to the worksheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AddRows()
+</code></pre>
+<p>Populate row categories on the output worksheet.
+Populates the row category labels in the leftmost column
+(STANDARD_START_COL) of this cross-table on the output worksheet. The
+row content depends entirely on the table scope: ScopeGlobalSummary writes
+a single label cell; ScopeUnivariate writes the row variable's main label
+then all row categories with optional Missing and Total; ScopeBivariate
+is similar but offset by one extra row; ScopeTimeSeries and
+ScopeSpatioTemporal create a fixed-size grid of NB_ROWS_TIME_SERIES (56)
+rows only for new sections; ScopeSpatial writes the geo-level label then
+reserves blank rows for dynamic geo data plus Missing. After writing,
+this sub sets EndRow for subsequent steps.</p>
+<p><strong>Remarks:</strong></p>
+<ul>
+<li>For temporal tables, AddRows is only called once per section (the first table
+or the de-facto first table). Subsequent tables in the same temporal section
+reuse the row structure from the first table and only add columns.</li>
+</ul>
+<hr />
+<h2>AddColumns</h2>
+<h3>addcolumns</h3>
+<p><strong>Add column headers and column category labels to the worksheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AddColumns()
+</code></pre>
+<p>Populate column headers on the output worksheet.
+Writes column headers and category labels to the output worksheet. The
+column structure depends on the table scope: ScopeGlobalSummary creates two
+fixed columns; ScopeUnivariate creates one data column plus an optional
+percentage column; ScopeBivariate delegates to BivariateColumns then writes
+the column variable label; ScopeTimeSeries and ScopeSpatioTemporal delegate
+to BivariateColumns then construct a composite TimeSeriesHeader string;
+ScopeSpatial delegates entirely to BivariateColumns. After writing, this
+sub sets EndColumn and NumberOfColumns.</p>
+<p><strong>Remarks:</strong></p>
+<ul>
+<li>For global summary tables, the two-column header is created only once and
+shared by all subsequent global summary rows. The COLGS_SET named range acts
+as a guard to prevent duplicate creation.</li>
+</ul>
+<hr />
+<h2>AddHeader</h2>
+<h3>addheader</h3>
+<p><strong>Add the table title and header to the worksheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AddHeader()
+</code></pre>
+<p>Create section headers, titles, and date/geo controls.
+Inserts the structural header infrastructure above the data area of this
+cross-table: section titles, table titles, date/time input controls for
+temporal tables, and geo-level selection controls for spatial tables.
+This is the first step called by Build and may insert rows into the
+worksheet (shifting existing content down) to make room for the header.
+Behavior varies by table scope: univariate and bivariate write a title
+and optional section header; global summary writes a shared label once;
+temporal tables insert date controls and optional geo-level inputs;
+spatial tables create admin-unit or health-facility dropdowns. This sub
+also initializes the allRangeNames BetterArray.</p>
+<p><strong>Remarks:</strong></p>
+<ul>
+<li>Row insertions shift the entire sheet down, which is why AddHeader must run
+before AddRows, AddColumns, and NameRanges. For temporal tables, the date
+controls are unlocked (Locked = False) so the user can interactively change
+dates at runtime.</li>
+</ul>
+<hr />
+<h2>NameRanges</h2>
+<h3>name-ranges</h3>
+<p><strong>Create all named ranges for the table data regions.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub NameRanges()
+</code></pre>
+<p>Create all structural named ranges for the table.
+Creates all structural named ranges for this cross-table after the data
+area (rows and columns) has been populated. These named ranges serve as
+stable references for formula generation, VBA-driven data updates, and
+export tracking. The method creates ENDTABLE_, ROW_CATEGORIES_,
+time-period markers, per-column VALUES_COL_ and LABEL_COL_ ranges,
+Missing/Total/Percent row and column ranges, intersection cells,
+INTERIOR_VALUES_, OUTER_VALUES_ (spatial only), and COLUMN_CATEGORIES_.
+All created range names are accumulated in the allRangeNames BetterArray
+for retrieval via NamedRangesList.</p>
+<p><strong>Remarks:</strong></p>
+<ul>
+<li>Exits immediately for ScopeGlobalSummary (which has no row categories or
+column structure beyond the two fixed columns).</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ErrorUnexpectedState When NumberOfColumns is 0, indicating AddColumns was not called.</li>
+</ul>
+<hr />
+<h2>Format</h2>
+<h3>format</h3>
+<p><strong>Apply formatting to the table using design specifications.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub Format(ByVal desFormat As ILLFormat)
+</code></pre>
+<p>Apply visual formatting to all structural regions of the cross-table.
+Applies comprehensive visual formatting to every part of the cross-table
+using the design format object (ILLFormat). This is the final step after
+Build completes the structural layout. Formatting is applied in order:
+section header, table title, spatial dropdown, column headers, row and
+column categories, interior values, Total/Missing rows and columns,
+single cells, info cells, hidden cells, percentage columns, whole table
+borders, and end-table gap. Bug #1 fix: for temporal tables where
+HasTotal is True but TotalRequested is False, hides the Total column
+entirely since it is needed internally for percentage computation but
+should be invisible to the user.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>desFormat</code>: ILLFormat. The formatting specification providing ApplyFormat for each scope.</li>
+</ul>
+<p><strong>Remarks:</strong></p>
+<ul>
+<li>Format must be called after Build because it relies on named ranges being
+present. Some operations are idempotent, guarded by HiddenNames like
+ROWGS_FORMATSET and MERGED_.</li>
+</ul>
+<hr />
+<h2>Build</h2>
+<h3>build</h3>
+<p><strong>Build the complete cross-table on the worksheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub Build()
+</code></pre>
+<p>Orchestrate the complete table construction sequence.
+Orchestrates the complete construction of this cross-table by calling
+the four build steps in the correct order: AddHeader (inserts rows),
+AddRows (populates row categories and sets EndRow), AddColumns
+(populates column headers and sets EndColumn/NumberOfColumns), and
+NameRanges (creates all named ranges). The order is critical because
+AddHeader may insert rows that shift content down. After Build
+completes, the table is structurally complete and ready for Format
+and formula generation.</p>
+<p><strong>Remarks:</strong></p>
+<ul>
+<li>Build does NOT call Format. Formatting is applied separately by the caller
+(typically the analysis builder) after all tables in a section have been built.</li>
+</ul>
+<hr />
+<details>
+<summary>Internal members (not exported)</summary>
+<h2>Internal Properties</h2>
+<h3>self</h3>
+<p><strong>Current object instance.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Self() As ICrossTable
+</code></pre>
+<p>Properties used during factory instantiation and internal wiring.
+Convenience accessor so consuming code can fluently retrieve the interface
+reference from the predeclared Create method.</p>
+<p><strong>Returns:</strong> ICrossTable. The current instance cast to the interface.</p>
+<hr />
+<h3>wksh-set</h3>
+<p><strong>Assign the output worksheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Set Wksh(ByVal sh As Worksheet)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The target worksheet to assign.</li>
+</ul>
+<hr />
+<h3>specifications-set</h3>
+<p><strong>Assign the table specifications.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Set Specifications(ByVal specs As ITableSpecs)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>specs</code>: ITableSpecs. The table specification to assign.</li>
+</ul>
+<hr />
+<h3>linelist-data</h3>
+<p><strong>Linelist specifications providing translations and categories.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get LinelistData() As ILinelistSpecs
+</code></pre>
+<p>Returns the ILinelistSpecs instance stored at construction time. Used to
+extract the translation object and to pass as the lData parameter when
+calling specs.RowCategories(lData) and specs.ColumnCategories(lData).</p>
+<p><strong>Returns:</strong> ILinelistSpecs. The linelist specifications.</p>
+<hr />
+<h3>linelist-data-set</h3>
+<p><strong>Assign the linelist specifications.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Set LinelistData(ByVal lData As ILinelistSpecs)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>lData</code>: ILinelistSpecs. The linelist specifications to assign.</li>
+</ul>
+<hr />
+<h3>translations</h3>
+<p><strong>Translation object for locale-aware labels.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Translations() As ITranslationObject
+</code></pre>
+<p>Returns the ITranslationObject extracted from the stored linelist
+specifications. Resolves translated strings such as &quot;Total&quot;, &quot;Missing&quot;,
+&quot;Percent&quot;, and date-unit names.</p>
+<p><strong>Returns:</strong> ITranslationObject. The translation object.</p>
+<hr />
+<h3>number-of-columns</h3>
+<p><strong>Number of data columns in the table.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get NumberOfColumns() As Long
+</code></pre>
+<p>Returns the count of data columns excluding the row-label column.
+For bivariate and time series tables this equals the number of column
+categories plus optional total and missing columns.</p>
+<p><strong>Returns:</strong> Long. The data column count.</p>
+<hr />
+<h3>number-of-columns-set</h3>
+<p><strong>Assign the number of data columns.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Let NumberOfColumns(ByVal col As Long)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>col</code>: Long. The data column count to store.</li>
+</ul>
+<hr />
+<h3>named-ranges-list</h3>
+<p><strong>List of named range names created by this table.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get NamedRangesList() As BetterArray
+</code></pre>
+<p>Returns a cloned BetterArray containing all the named range names that
+were accumulated during the build process. Used by AnaTabIds to register
+the ranges for export tracking.</p>
+<p><strong>Returns:</strong> BetterArray. The collection of named range names.</p>
+<hr />
+<h2>Position Properties</h2>
+<h3>range-exists</h3>
+<p><strong>Check whether a named range exists on the output worksheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function RangeExists(ByVal rngName As String) As Boolean
+</code></pre>
+<p>Properties that compute or retrieve the table position on the worksheet.
+Checks whether a named range with the given name is defined and
+reachable on the current output worksheet. This is used extensively
+throughout the class to decide whether structural infrastructure
+(section headers, start rows, end-table markers, column setups, etc.)
+has already been created by a previous table in the same section, or
+whether it needs to be created for the first time. The check uses
+On Error Resume Next to silently swallow the error that Excel raises
+when a name does not exist, then inspects whether the resulting Range
+reference is Nothing.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>rngName</code>: String. The string name of the named range to look up, e.g. &quot;STARTROW_T3&quot; or &quot;ENDTABLE_T5&quot;.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True if the named range exists and resolves to a valid Range on the output worksheet; False otherwise.</p>
+<p><strong>Remarks:</strong></p>
+<ul>
+<li>This does not distinguish between workbook-scoped and worksheet-scoped names.
+If a workbook-level name exists but does not refer to a range on this sheet,
+the lookup may still succeed. All names in this class are created via
+Cell.Name which produces workbook-scoped names.</li>
+</ul>
+<hr />
+<h3>start-row</h3>
+<p><strong>Starting row of the table on the output worksheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get StartRow() As Long
+</code></pre>
+<p>Computes or retrieves the starting row for this cross-table on the
+output worksheet. The logic has three branches depending on whether the
+named range STARTROW_{tableId} already exists (reuse), the table is a
+new section or non-temporal type (compute fresh), or the table is a
+non-new-section temporal table (inherit from previous table). For new
+sections and non-temporal tables the start row is computed by finding
+the last used row in column C via End(xlUp), then adding vertical
+padding that varies by table scope. For non-new-section temporal tables
+the start row is inherited from the Previous cross-table so that all
+temporal tables in a section are laid out side-by-side. Bug #3 fallback:
+if the previous table was never built, the code computes a fresh start
+row as if this were a new section.</p>
+<p><strong>Returns:</strong> Long. The 1-based row number on the output worksheet where this table begins.</p>
+<p><strong>Remarks:</strong></p>
+<ul>
+<li>This property is called many times during a single Build cycle (by
+StartColumn, AddRows, AddColumns, AddHeader, NameRanges, Format). After the
+first call creates the STARTROW_ named range, subsequent calls are cheap
+lookups.</li>
+</ul>
+<hr />
+<h3>previous</h3>
+<p><strong>Previous cross-table in the same section.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get Previous() As ICrossTable
+</code></pre>
+<p>Creates and returns an ICrossTable instance representing the table
+that immediately precedes this one within the same analysis section.
+This is used by temporal table scopes (time series and spatio-temporal)
+where multiple tables share the same row structure and are laid out
+side-by-side in columns. The previous table's start row and end column
+are needed to position the current table correctly. The method delegates
+to the Create factory, passing the Previous spec from the current
+table's ITableSpecs, along with the same output worksheet and
+translation object.</p>
+<p><strong>Returns:</strong> ICrossTable. The preceding cross-table, or Nothing when this is the first table.</p>
+<p><strong>Remarks:</strong></p>
+<ul>
+<li>Each call creates a new CrossTable instance; the result is not cached. For
+temporal tables, this property is typically called once during StartRow
+resolution and should not be called in tight loops.</li>
+</ul>
+<hr />
+<h3>start-column</h3>
+<p><strong>Starting column of the table on the output worksheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get StartColumn() As Long
+</code></pre>
+<p>Computes or retrieves the starting column for this cross-table on the
+output worksheet. For most table scopes and for the first table in a
+temporal section, the start column is the constant STANDARD_START_COL
+(column C, index 3). For non-new-section temporal tables (time series
+and spatio-temporal), the start column is determined by finding the
+last used column in the row immediately below StartRow via
+End(xlToLeft). This produces the side-by-side horizontal layout where
+each successive temporal table in a section is placed to the right of
+the previous one. The computed column is persisted as the named range
+STARTCOL_{tableId} so that subsequent calls are idempotent.</p>
+<p><strong>Returns:</strong> Long. The 1-based column number where this table's row category labels begin.</p>
+<p><strong>Remarks:</strong></p>
+<ul>
+<li>The STARTCOL_ named range is stored at (StartRow - 1, strtCol + 1), meaning
+the actual named range cell is one column to the right and one row above the
+logical start column. When reading back, the code subtracts 1 from the
+named range's column to recover the true start column.</li>
+</ul>
+<hr />
+<h3>end-row-set</h3>
+<p><strong>Assign the ending row index.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Let EndRow(ByVal rw As Long)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>rw</code>: Long. The 1-based ending row index.</li>
+</ul>
+<hr />
+<h3>end-column-set</h3>
+<p><strong>Assign the ending column index.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Let EndColumn(ByVal col As Long)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>col</code>: Long. The 1-based ending column index.</li>
+</ul>
+<hr />
+<h3>end-row</h3>
+<p><strong>Last row used by the table on the worksheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get EndRow() As Long
+</code></pre>
+<p>Returns the 1-based row index of the bottommost cell occupied by this
+cross-table. Used to compute the start row for the next stacked table.</p>
+<p><strong>Returns:</strong> Long. The ending row index.</p>
+<hr />
+<h3>end-column</h3>
+<p><strong>Last column used by the table on the worksheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get EndColumn() As Long
+</code></pre>
+<p>Returns the 1-based column index of the rightmost cell occupied by
+this cross-table. Used by sibling tables and formatting routines to
+avoid overlapping output.</p>
+<p><strong>Returns:</strong> Long. The ending column index.</p>
+<hr />
+<h2>Range Access</h2>
+<h3>time-series-header</h3>
+<p><strong>Header label for time series tables.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get TimeSeriesHeader() As String
+</code></pre>
+<p>Returns the composite header text for a time-series or spatio-temporal
+table. This text is a human-readable string like
+&quot;Cases -- Notification date -- Region&quot; built from the summary label,
+the time variable label, and optionally the column variable label,
+separated by horizontal-line Unicode characters (U+2500). It is stored
+in the STARTCOL_ named-range cell on the worksheet and used by the
+GoTo navigation dropdown so the user can jump to this table's section.</p>
+<p><strong>Returns:</strong> String. The cached header text string, or an empty string if not yet set.</p>
+<p><strong>Remarks:</strong></p>
+<ul>
+<li>This value is populated during AddColumns for temporal tables only.
+Non-temporal table scopes never set this property.</li>
+</ul>
+<hr />
+<h3>time-series-header-set</h3>
+<p><strong>Store the composite header text for temporal tables.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Let TimeSeriesHeader(ByVal headerText As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>headerText</code>: String. The full header string to cache.</li>
+</ul>
+<hr />
+<h3>value-exists</h3>
+<p><strong>Check whether a value exists in a given range.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ValueExists(ByVal rng As Range, ByVal searchValue As String) As Boolean
+</code></pre>
+<p>Checks whether a specific string value exists anywhere within the given
+Range by performing an exact, case-sensitive, whole-cell match using
+Excel's Range.Find method. This is used internally by RowRange and
+ColumnRange to verify that a category label is present before
+attempting to locate its row or column position.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>rng</code>: Range. The Range to search within, typically RowsCategoriesRange or HeaderRange.</li>
+<li><code>searchValue</code>: String. The exact string to look for (case-sensitive, whole-cell match).</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True if at least one cell in rng contains exactly searchValue; False otherwise.</p>
+<p><strong>Remarks:</strong></p>
+<ul>
+<li>Uses xlWhole and MatchCase:=True, so &quot;total&quot; will NOT match &quot;Total&quot;. This is
+important because translated labels may have specific capitalization.</li>
+</ul>
+<hr />
+<h2>Helpers</h2>
+<h3>percent-label</h3>
+<p><strong>Build a display label for percentage columns.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function PercentLabel(ByVal percentVal As String, _
+                               Optional ByVal percentType As String = &quot;all&quot;) As String
+</code></pre>
+<p>Private helper methods that support the public API.
+Builds a display label for percentage columns by appending a directional
+Unicode arrow to the translated percentage string. The arrow indicates
+the direction of the percentage computation: a horizontal double arrow
+(U+2194) for row percentages and a vertical double arrow (U+2195) for
+column percentages. When the percentage type is &quot;all&quot; or any other
+value, no arrow is appended.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>percentVal</code>: String. The translated percentage label text.</li>
+<li><code>percentType</code>: Optional String. The percentage direction: &quot;row&quot;, &quot;column&quot;, or &quot;all&quot;. Defaults to &quot;all&quot;.</li>
+</ul>
+<p><strong>Returns:</strong> String. The formatted percentage label string with or without a directional arrow.</p>
+<hr />
+<h3>bivariate-columns</h3>
+<p><strong>Write column headers for bivariate, temporal, and spatial tables.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub BivariateColumns(ByVal startRw As Long, ByVal specs As ITableSpecs, _
+                              ByVal trans As ITranslationObject, ByVal sh As Worksheet)
+</code></pre>
+<p>Shared column-building logic used by bivariate, time series, spatial,
+and spatio-temporal table scopes. This sub writes the column category
+headers and column-label sub-headers to the output worksheet, starting
+at StartColumn + 1. It handles two layout scenarios: when column
+categories exist, they are written to the header row with optional
+percentage interleaving; when column categories are empty, a single
+summary column is created. This sub also sets NumberOfColumns and
+EndColumn.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>startRw</code>: Long. The starting row for column headers.</li>
+<li><code>specs</code>: ITableSpecs. The ITableSpecs providing column categories and flags.</li>
+<li><code>trans</code>: ITranslationObject. The ITranslationObject providing translated strings.</li>
+<li><code>sh</code>: Worksheet. The output Worksheet where the column headers are written.</li>
+</ul>
+<p><strong>Remarks:</strong></p>
+<ul>
+<li>NumberOfColumns counts only the &quot;pure&quot; data columns, not including Missing
+or Total. However, EndColumn includes all columns written.</li>
+</ul>
+<hr />
+<h2>Bug #3 Helper</h2>
+<h3>is-de-facto-new-section</h3>
+<p><strong>Determine whether this table is a de-facto new section.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function IsDeFactoNewSection() As Boolean
+</code></pre>
+<p>Detect de-facto new sections when the previous table was never built.
+Determines whether this table should be treated as a de-facto new
+section even though its ITableSpecs.IsNewSection returns False. This
+situation arises from Bug #3: when the previous table in the same section
+was invalid and was therefore skipped during the build process, the
+section infrastructure was never created. The logic checks whether the
+previous table's ENDTABLE_ named range exists; if not, this table must
+act as the section anchor. The result is cached after the first
+computation since IsDeFactoNewSection is called multiple times during
+a single Build cycle.</p>
+<p><strong>Returns:</strong> Boolean. True if this table must assume the section-anchor role; False otherwise.</p>
+<p><strong>Remarks:</strong></p>
+<ul>
+<li>For tables where specs.IsNewSection is True, this function always returns
+False. The typical usage pattern is: &quot;If specs.IsNewSection() Or IsDeFactoNewSection() Then ...&quot;.</li>
+</ul>
+<hr />
+<h2>Error Handling</h2>
+<h3>throw-error</h3>
+<p><strong>Raise a ProjectError-based exception.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As Long, ByVal message As String)
+</code></pre>
+<p>Wrapper around Err.Raise that standardises the source to CLASS_NAME,
+providing a consistent stack trace across all methods in this class.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>errNumber</code>: Long. The error code to raise.</li>
+<li><code>message</code>: String. Human-readable description of the failure.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.<varies> Always raises the specified error.</li>
+</ul>
+<hr />
+<h2>Interface Implementation</h2>
+<h3>ICrossTable_AddRows</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ICrossTable_AddRows()
+</code></pre>
+<p>Delegated members satisfying the ICrossTable contract.
+See the corresponding Public members above for full documentation.</p>
+<hr />
+</details>
+<details>
+<summary>Used in (11 file(s))</summary>
+<ul>
+<li><a href="src/classes/analyses/AnalysisOutput.cls">AnalysisOutput.cls</a></li>
+<li><a href="src/classes/analyses/CrossTable.cls">CrossTable.cls</a></li>
+<li><a href="src/classes/analyses/CrossTableFormula.cls">CrossTableFormula.cls</a></li>
+<li><a href="src/classes/analyses/ICrossTable.cls">ICrossTable.cls</a></li>
+<li><a href="src/classes/analyses/ICrossTableFormula.cls">ICrossTableFormula.cls</a></li>
+<li><a href="src/classes/analyses/SpatialTables.cls">SpatialTables.cls</a></li>
+<li><a href="src/classes/graphs/GraphSpecs.cls">GraphSpecs.cls</a></li>
+<li><a href="src/tests/modules/analyses/TestCrossTable.bas">TestCrossTable.bas</a></li>
+<li><a href="src/tests/modules/analyses/TestCrossTableFormula.bas">TestCrossTableFormula.bas</a></li>
+<li><a href="src/tests/modules/geo/TestSpatialTables.bas">TestSpatialTables.bas</a></li>
+<li><a href="src/tests/modules/graphs/TestGraphSpecs.bas">TestGraphSpecs.bas</a></li>
+</ul>
+</details>
+
+  </main>
+</body>
+</html>
+

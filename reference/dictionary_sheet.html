@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.7.32">
+<meta name="generator" content="quarto-1.8.27">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -34,14 +34,15 @@ ul.task-list li input[type="checkbox"] {
 <link href="../images/icon.png" rel="icon" type="image/png">
 <script src="../site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/axe/axe-check.js" type="module"></script>
 <script src="../site_libs/quarto-html/popper.min.js"></script>
 <script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="../site_libs/quarto-html/anchor.min.js"></script>
 <link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-37eea08aefeeee20ff55810ff984fec1.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-ed96de9b727972fe78a7b5d16c58bf87.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../site_libs/bootstrap/bootstrap-6a4c75c897c7090e25337f92bebeec5a.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-28ce2f92125236a284ff4f393e5b0d14.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <link href="../site_libs/quarto-contrib/fontawesome6-0.1.0/all.css" rel="stylesheet">
 <link href="../site_libs/quarto-contrib/fontawesome6-0.1.0/latex-fontsize.css" rel="stylesheet">
 <script id="quarto-search-options" type="application/json">{
@@ -84,7 +85,8 @@ ul.task-list li input[type="checkbox"] {
       <div class="navbar-container container-fluid">
       <div class="navbar-brand-container mx-auto">
     <a href="../index.html" class="navbar-brand navbar-brand-logo">
-    <img src="../images/icon.png" alt="" class="navbar-logo">
+    <img src="../images/icon.png" alt="" class="navbar-logo light-content">
+    <img src="../images/icon.png" alt="" class="navbar-logo dark-content">
     </a>
     <a class="navbar-brand" href="../index.html">
     <span class="navbar-title">OutbreakTools</span>
@@ -131,6 +133,11 @@ ul.task-list li input[type="checkbox"] {
         <li>
     <a class="dropdown-item" href="../tutorial.html">
  <span class="dropdown-text">Tutorial</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li>
+    <a class="dropdown-item" href="../dev/index.html">
+ <span class="dropdown-text">Developer API</span></a>
   </li>  
     </ul>
   </li>
@@ -385,7 +392,7 @@ Tip
 <i class="callout-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-Names must be made unique
+<span class="screen-reader-only">Tip</span>Names must be made unique
 </div>
 </div>
 <div class="callout-body-container callout-body">
@@ -413,12 +420,12 @@ Tip
 <p>In the linelist, the main label appears in black and bold. It cannot be modified by the end user (with the exception of explicitly <a href="#sec-editable-label">editable labels</a>.</p>
 <p><img src="images/im-004-variable-names-and-labels.png" class="img-fluid"></p>
 <div class="callout callout-style-default callout-note callout-titled" title="Tip: add more information">
-<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-6-contents" aria-controls="callout-6" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-6-contents" aria-controls="callout-6" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-Tip: add more information
+<span class="screen-reader-only">Note</span>Tip: add more information
 </div>
 <div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
 </div>
@@ -433,12 +440,12 @@ Tip: add more information
 <h3 class="anchored" data-anchor-id="dev-comment">Dev Comment</h3>
 <p>This free text column is for the sole benefit of the <strong>setup file</strong> developer (in all probability, you), to add technical or practical information. <strong>It is not read by the designer and does not affect the generated file.</strong></p>
 <div class="callout callout-style-default callout-note callout-titled" title="Tip: Example of one user usage">
-<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-7-contents" aria-controls="callout-7" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-7-contents" aria-controls="callout-7" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-Tip: Example of one user usage
+<span class="screen-reader-only">Note</span>Tip: Example of one user usage
 </div>
 <div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
 </div>
@@ -465,7 +472,7 @@ Tip: Example of one user usage
 <i class="callout-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-Tip: add customisable variables in your linelists
+<span class="screen-reader-only">Tip</span>Tip: add customisable variables in your linelists
 </div>
 </div>
 <div class="callout-body-container callout-body">
@@ -491,12 +498,12 @@ Note
 </div>
 </div>
 <div class="callout callout-style-default callout-tip callout-titled" title="Tip: example of common sub-labels">
-<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-10-contents" aria-controls="callout-10" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-10-contents" aria-controls="callout-10" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-Tip: example of common sub-labels
+<span class="screen-reader-only">Tip</span>Tip: example of common sub-labels
 </div>
 <div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
 </div>
@@ -543,12 +550,12 @@ Tip: example of common sub-labels
 <p>This is a free text field that contains the <em>name of the sheet</em> in which the variable will appear.</p>
 <p>In general, your linelists will contain at least a patient data sheet, and an info/metadata sheet.</p>
 <div class="callout callout-style-default callout-note callout-titled" title="Note on linelist sheets">
-<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-11-contents" aria-controls="callout-11" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-11-contents" aria-controls="callout-11" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-Note on linelist sheets
+<span class="screen-reader-only">Note</span>Note on linelist sheets
 </div>
 <div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
 </div>
@@ -582,7 +589,7 @@ Note on linelist sheets
 <i class="callout-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-Tip: organise variables
+<span class="screen-reader-only">Tip</span>Tip: organise variables
 </div>
 </div>
 <div class="callout-body-container callout-body">
@@ -632,12 +639,12 @@ Tip: organise variables
 </ul>
 <p>Variables can be shown or hidden using the “Show/Hide” button of the <a href="../reference/ribbons_linelist.html">linelist OutbreakTools menu</a> in the <strong>linelist file</strong>. See the <a href="../how_to/show_hide_variables.html">how to</a>.</p>
 <div class="callout callout-style-default callout-note callout-titled" title="Note on showing and hiding columns manually">
-<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-13-contents" aria-controls="callout-13" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-13-contents" aria-controls="callout-13" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-Note on showing and hiding columns manually
+<span class="screen-reader-only">Note</span>Note on showing and hiding columns manually
 </div>
 <div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
 </div>
@@ -783,7 +790,7 @@ Note
 <i class="callout-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-Note on data validation
+<span class="screen-reader-only">Note</span>Note on data validation
 </div>
 </div>
 <div class="callout-body-container callout-body">
@@ -851,7 +858,7 @@ Note on data validation
 <i class="callout-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-Warning: cannot be used for analyses
+<span class="screen-reader-only">Warning</span>Warning: cannot be used for analyses
 </div>
 </div>
 <div class="callout-body-container callout-body">
@@ -864,7 +871,7 @@ Warning: cannot be used for analyses
 <i class="callout-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-Tip: inform the linelist user
+<span class="screen-reader-only">Tip</span>Tip: inform the linelist user
 </div>
 </div>
 <div class="callout-body-container callout-body">
@@ -996,7 +1003,7 @@ Note
 <i class="callout-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-Important: CASE_WHEN and analyses
+<span class="screen-reader-only">Important</span>Important: CASE_WHEN and analyses
 </div>
 </div>
 <div class="callout-body-container callout-body">
@@ -1018,12 +1025,12 @@ Warning
 </div>
 </div>
 <div class="callout callout-style-default callout-note callout-titled" title="Why not using more recent Excel functions?">
-<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-21-contents" aria-controls="callout-21" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-21-contents" aria-controls="callout-21" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-Why not using more recent Excel functions?
+<span class="screen-reader-only">Note</span>Why not using more recent Excel functions?
 </div>
 <div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
 </div>
@@ -1131,7 +1138,7 @@ Important
 <i class="callout-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-Important: english proof your formulas!
+<span class="screen-reader-only">Important</span>Important: english proof your formulas!
 </div>
 </div>
 <div class="callout-body-container callout-body">
@@ -1144,12 +1151,12 @@ Important: english proof your formulas!
 </div>
 </div>
 <div class="callout callout-style-default callout-tip callout-titled" title="Tip: improve formual readibility">
-<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-25-contents" aria-controls="callout-25" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-25-contents" aria-controls="callout-25" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-Tip: improve formual readibility
+<span class="screen-reader-only">Tip</span>Tip: improve formual readibility
 </div>
 <div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
 </div>
@@ -1267,7 +1274,7 @@ Note
 <i class="callout-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-Tip: create anonymous exports
+<span class="screen-reader-only">Tip</span>Tip: create anonymous exports
 </div>
 </div>
 <div class="callout-body-container callout-body">
@@ -1483,13 +1490,14 @@ Tip
       e.clearSelection();
     }
     const getTextToCopy = function(trigger) {
-        const codeEl = trigger.previousElementSibling.cloneNode(true);
-        for (const childEl of codeEl.children) {
-          if (isCodeAnnotation(childEl)) {
-            childEl.remove();
-          }
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
         }
-        return codeEl.innerText;
+      }
+      return codeEl.innerText;
     }
     const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
       text: getTextToCopy

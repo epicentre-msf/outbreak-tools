@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TranslationObject - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>TranslationObject</h1>
+<p>Tag-based translator backed by a ListObject table. Looks up tags in
+the first column and returns the value from the active language column.
+Supports plain text, formula-aware translation (quoted chunks only),
+range bulk-translation, and user-form caption translation.</p>
+<p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="Checking.html">Checking</a>, <a href="IChecking.html">IChecking</a>, ProjectError, checking objects</p>
+<p><strong>Version:</strong> 1.0 (2026-02-09)</p>
+<h2>Factory</h2>
+<h3>create</h3>
+<p><strong>Factory returning an initialised interface</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create(ByVal translationLo As ListObject, ByVal translationLang As String) As ITranslationObject
+</code></pre>
+<p>A translation object wraps a ListObject whose first column contains tags
+and remaining columns hold language translations. Tags not found during
+translation are returned as-is.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>translationLo</code>: ListObject. The translation table.</li>
+<li><code>translationLang</code>: String. The target language column header.</li>
+</ul>
+<p><strong>Returns:</strong> ITranslationObject. Ready to use.</p>
+<hr />
+<h2>Elements</h2>
+<h3>language</h3>
+<p><strong>Current target language</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Language() As String
+</code></pre>
+<p><strong>Returns:</strong> String. One of the language column headers.</p>
+<hr />
+<h3>languages-list</h3>
+<p><strong>List of available language headers</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get LanguagesList() As BetterArray
+</code></pre>
+<p><strong>Returns:</strong> BetterArray. Each language header, excluding the helper/tag column.</p>
+<hr />
+<h3>name</h3>
+<p><strong>Descriptive name including table and language</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get Name() As String
+</code></pre>
+<p><strong>Returns:</strong> String. Identifier for diagnostic output.</p>
+<hr />
+<h3>value-exists</h3>
+<p><strong>Whether a tag exists in the translation table</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ValueExists(ByVal Text As String) As Boolean
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>Text</code>: String. Tag to search.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the tag is found.</p>
+<hr />
+<h3>translated-value</h3>
+<p><strong>Translate a text tag or formula string</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function TranslatedValue(ByVal textToTranslate As String, _ 
+                                 Optional ByVal containsFormula As Boolean = False) As String
+</code></pre>
+<p>When containsFormula is True, only double-quoted chunks inside the text
+are translated; unquoted characters pass through unchanged.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>textToTranslate</code>: String. Text to translate.</li>
+<li><code>containsFormula</code>: Boolean. Translate as formula. Defaults to False.</li>
+</ul>
+<p><strong>Returns:</strong> String. The translated value, or the original text when not found.</p>
+<hr />
+<h2>Outside</h2>
+<h3>translate-range</h3>
+<p><strong>Translate all values in a column range</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub TranslateRange(ByVal colRng As Range, Optional ByVal containsFormula As Boolean = False)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>colRng</code>: Range. Column range whose values should be translated.</li>
+<li><code>containsFormula</code>: Boolean. When True, translates as formulas. Defaults to False.</li>
+</ul>
+<hr />
+<h3>translate-form</h3>
+<p><strong>Translate all supported controls on a user form</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub TranslateForm(ByVal UserFrm As Object)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>UserFrm</code>: Object. Any user form exposing a Controls collection.</li>
+</ul>
+<hr />
+<h2>Checkings</h2>
+<h3>has-checkings</h3>
+<p><strong>Whether diagnostic entries have been recorded</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get HasCheckings() As Boolean
+</code></pre>
+<p><strong>Returns:</strong> Boolean. True when at least one entry exists.</p>
+<hr />
+<h3>checking-values</h3>
+<p><strong>Retrieve the diagnostic log entries</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get CheckingValues() As Object
+</code></pre>
+<p><strong>Returns:</strong> Object. The checking instance, or Nothing.</p>
+<hr />
+<details>
+<summary>Internal members (not exported)</summary>
+<h2>Elements</h2>
+<h3>self</h3>
+<p><strong>Self-reference as ITranslationObject</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Self() As ITranslationObject
+</code></pre>
+<p><strong>Returns:</strong> ITranslationObject. Self-reference.</p>
+<hr />
+<h3>table</h3>
+<p><strong>The backing ListObject translation table</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Table() As ListObject
+</code></pre>
+<p><strong>Returns:</strong> ListObject. The translation table.</p>
+<hr />
+<h3>table-set</h3>
+<p><strong>Assign the backing ListObject and reset caches</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Set Table(ByVal lo As ListObject)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>lo</code>: ListObject. The translation table.</li>
+</ul>
+<hr />
+<h3>language-set</h3>
+<p><strong>Set the target language and reset caches</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Let Language(ByVal transLng As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>transLng</code>: String. The new language column header.</li>
+</ul>
+<hr />
+<h3>language-index</h3>
+<p><strong>Resolve the one-based column index of the active language</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function LanguageIndex() As Long
+</code></pre>
+<p><strong>Returns:</strong> Long. Column index, or -1 when not found.</p>
+<hr />
+<h2>Checkings</h2>
+<h3>log-info</h3>
+<p><strong>Record a diagnostic entry</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub LogInfo(ByVal label As String, _ 
+                    Optional ByVal scope As Byte = checkingNote)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>label</code>: String. The message to add.</li>
+<li><code>scope</code>: Byte. The checking scope. Defaults to checkingNote.</li>
+</ul>
+<hr />
+<h3>show-debug</h3>
+<p><strong>Print diagnostic information to the Immediate window</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ShowDebug()
+</code></pre>
+<hr />
+<h2>Helpers</h2>
+<h3>sanitize-text</h3>
+<p><strong>Clean a raw value using worksheet functions</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SanitizeText(ByVal rawValue As String) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>rawValue</code>: String. The raw text.</li>
+</ul>
+<p><strong>Returns:</strong> String. Cleaned text.</p>
+<hr />
+<h3>header-row-range</h3>
+<p><strong>Retrieve the header row range of the translation table</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function HeaderRowRange() As Range
+</code></pre>
+<p><strong>Returns:</strong> Range. The header row, or Nothing.</p>
+<hr />
+<h3>keys-data-range</h3>
+<p><strong>Retrieve the data body range of the first (tags) column</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function KeysDataRange() As Range
+</code></pre>
+<p><strong>Returns:</strong> Range. The keys column data, or Nothing.</p>
+<hr />
+<h3>resolve-translation-cell</h3>
+<p><strong>Find the translated cell for a given tag token</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ResolveTranslationCell(ByVal token As String) As Range
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>token</code>: String. The tag to look up.</li>
+</ul>
+<p><strong>Returns:</strong> Range. The cell in the language column, or Nothing.</p>
+<hr />
+<h3>translate-formula-text</h3>
+<p><strong>Translate only the double-quoted chunks within a formula string</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function TranslateFormulaText(ByVal formulaText As String) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>formulaText</code>: String. The formula text.</li>
+</ul>
+<p><strong>Returns:</strong> String. The formula with quoted chunks translated.</p>
+<hr />
+<h3>supports-user-form-contract</h3>
+<p><strong>Check whether an object exposes a Controls collection</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SupportsUserFormContract(ByVal candidate As Object) As Boolean
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>candidate</code>: Object. The object to test.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when a Controls property is accessible.</p>
+<hr />
+<h3>should-translate-control</h3>
+<p><strong>Determine whether a control type supports caption translation</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ShouldTranslateControl(ByVal controlType As String) As Boolean
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>controlType</code>: String. TypeName of the control.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True for CommandButton, Label, OptionButton, Page, Frame, CheckBox.</p>
+<hr />
+<h3>translate-multi-page-control</h3>
+<p><strong>Translate page captions within a MultiPage control</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub TranslateMultiPageControl(ByVal multiPageControl As Object)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>multiPageControl</code>: Object. The MultiPage control.</li>
+</ul>
+<hr />
+<h3>validate-list-object</h3>
+<p><strong>Guard against Nothing ListObject arguments</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ValidateListObject(ByVal source As ListObject, ByVal sourceMember As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>source</code>: ListObject. The table to validate.</li>
+<li><code>sourceMember</code>: String. Calling member name for error context.</li>
+</ul>
+<hr />
+<h3>reset-caches</h3>
+<p><strong>Invalidate cached column index</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ResetCaches(Optional ByVal resetLanguageIndex As Boolean = True)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>resetLanguageIndex</code>: Boolean. When True, clears the language column cache. Defaults to True.</li>
+</ul>
+<hr />
+<h3>raise-error</h3>
+<p><strong>Raise a typed project error with optional member context</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RaiseError(ByVal errNumber As ProjectError, ByVal message As String, Optional ByVal sourceMember As String = vbNullString)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>errNumber</code>: ProjectError. The error code.</li>
+<li><code>message</code>: String. Descriptive error message.</li>
+<li><code>sourceMember</code>: String. Optional calling member name.</li>
+</ul>
+<hr />
+</details>
+<details>
+<summary>Used in (82 file(s))</summary>
+<ul>
+<li><a href="src/classes/analyses/Analysis.cls">Analysis.cls</a></li>
+<li><a href="src/classes/analyses/AnalysisOutput.cls">AnalysisOutput.cls</a></li>
+<li><a href="src/classes/analyses/CrossTable.cls">CrossTable.cls</a></li>
+<li><a href="src/classes/analyses/IAnalysis.cls">IAnalysis.cls</a></li>
+<li><a href="src/classes/dataio/ExportButton.cls">ExportButton.cls</a></li>
+<li><a href="src/classes/designer/DesignerTranslation.cls">DesignerTranslation.cls</a></li>
+<li><a href="src/classes/designer/IDesignerTranslation.cls">IDesignerTranslation.cls</a></li>
+<li><a href="src/classes/dictionary/ILLdictionary.cls">ILLdictionary.cls</a></li>
+<li><a href="src/classes/dictionary/ILLExport.cls">ILLExport.cls</a></li>
+<li><a href="src/classes/dictionary/LLdictionary.cls">LLdictionary.cls</a></li>
+<li><a href="src/classes/dictionary/LLExport.cls">LLExport.cls</a></li>
+<li><a href="src/classes/general/ILLChoices.cls">ILLChoices.cls</a></li>
+<li><a href="src/classes/general/IPasswords.cls">IPasswords.cls</a></li>
+<li><a href="src/classes/general/ITranslationObject.cls">ITranslationObject.cls</a></li>
+<li><a href="src/classes/general/LLChoices.cls">LLChoices.cls</a></li>
+<li><a href="src/classes/general/Passwords.cls">Passwords.cls</a></li>
+<li><a href="src/classes/general/TranslationObject.cls">TranslationObject.cls</a></li>
+<li><a href="src/classes/linelist/ILinelistSpecs.cls">ILinelistSpecs.cls</a></li>
+<li><a href="src/classes/linelist/ILLTranslation.cls">ILLTranslation.cls</a></li>
+<li><a href="src/classes/linelist/Linelist.cls">Linelist.cls</a></li>
+<li><a href="src/classes/linelist/LinelistSpecs.cls">LinelistSpecs.cls</a></li>
+<li><a href="src/classes/linelist/ListBuilder.cls">ListBuilder.cls</a></li>
+<li><a href="src/classes/linelist/LLTranslation.cls">LLTranslation.cls</a></li>
+<li><a href="src/classes/mastersetup/DiseaseSheet.cls">DiseaseSheet.cls</a></li>
+<li><a href="src/classes/mastersetup/EventMasterSetup.cls">EventMasterSetup.cls</a></li>
+<li><a href="src/classes/mastersetup/IDiseaseSheet.cls">IDiseaseSheet.cls</a></li>
+<li><a href="src/classes/mastersetup/IEventMasterSetup.cls">IEventMasterSetup.cls</a></li>
+<li><a href="src/classes/mastersetup/IMasterSetupVariables.cls">IMasterSetupVariables.cls</a></li>
+<li><a href="src/classes/mastersetup/MasterSetupVariables.cls">MasterSetupVariables.cls</a></li>
+<li><a href="src/classes/msetup/DiseaseExporter.cls">DiseaseExporter.cls</a></li>
+<li><a href="src/classes/msetup/IDiseaseExporter.cls">IDiseaseExporter.cls</a></li>
+<li><a href="src/classes/sections/VarWriter.cls">VarWriter.cls</a></li>
+<li><a href="src/classes/stale/designer-codes/modules/implements/DevModule.bas">DevModule.bas</a></li>
+<li><a href="src/classes/stale/designer-codes/modules/implements/EventsGlobalAnalysis.bas">EventsGlobalAnalysis.bas</a></li>
+<li><a href="src/classes/stale/designer-codes/modules/implements/EventsLinelistButtons.bas">EventsLinelistButtons.bas</a></li>
+<li><a href="src/classes/stale/designer-codes/modules/implements/EventsLinelistRibbon.bas">EventsLinelistRibbon.bas</a></li>
+<li><a href="src/classes/stale/designer-codes/modules/implements/FormLogicAdvanced.bas">FormLogicAdvanced.bas</a></li>
+<li><a href="src/classes/stale/designer-codes/modules/implements/FormLogicEpiWeek.bas">FormLogicEpiWeek.bas</a></li>
+<li><a href="src/classes/stale/designer-codes/modules/implements/FormLogicExport.bas">FormLogicExport.bas</a></li>
+<li><a href="src/classes/stale/designer-codes/modules/implements/FormLogicExportMigration.bas">FormLogicExportMigration.bas</a></li>
+<li><a href="src/classes/stale/designer-codes/modules/implements/FormLogicGeo.bas">FormLogicGeo.bas</a></li>
+<li><a href="src/classes/stale/designer-codes/modules/implements/FormLogicImportRep.bas">FormLogicImportRep.bas</a></li>
+<li><a href="src/classes/stale/designer-codes/modules/implements/FormLogicShowVarLabels.bas">FormLogicShowVarLabels.bas</a></li>
+<li><a href="src/classes/stale/designer-codes/modules/implements/LinelistEvents.bas">LinelistEvents.bas</a></li>
+<li><a href="src/classes/stale/designer-codes/modules/implements/LinelistGeo.bas">LinelistGeo.bas</a></li>
+<li><a href="src/modules/dataio/FormLogicAdvanced.bas">FormLogicAdvanced.bas</a></li>
+<li><a href="src/modules/dataio/FormLogicExport.bas">FormLogicExport.bas</a></li>
+<li><a href="src/modules/dataio/FormLogicExportMig.bas">FormLogicExportMig.bas</a></li>
+<li><a href="src/modules/geo/FormLogicGeo.bas">FormLogicGeo.bas</a></li>
+<li><a href="src/modules/geo/GeoModule.bas">GeoModule.bas</a></li>
+<li><a href="src/modules/mastersetup/EventsMasterSetupRibbon.bas">EventsMasterSetupRibbon.bas</a></li>
+<li><a href="src/modules/mastersetup/MasterSetupHelpers.bas">MasterSetupHelpers.bas</a></li>
+<li><a href="src/modules/setup/EventsSetupRibbon.bas">EventsSetupRibbon.bas</a></li>
+<li><a href="src/modules/setup/SetupHelpers.bas">SetupHelpers.bas</a></li>
+<li><a href="src/msetup-codes/modules/EventsGlobal.bas">EventsGlobal.bas</a></li>
+<li><a href="src/msetup-codes/modules/EventsRibbon.bas">EventsRibbon.bas</a></li>
+<li><a href="src/msetup-codes/modules/Exports.bas">Exports.bas</a></li>
+<li><a href="src/msetup-codes/modules/ManageDiseases.bas">ManageDiseases.bas</a></li>
+<li><a href="src/msetup-codes/modules/Misc.bas">Misc.bas</a></li>
+<li><a href="src/tests/classes/stubs/LinelistPasswordStub.cls">LinelistPasswordStub.cls</a></li>
+<li><a href="src/tests/modules/analyses/TestAnalysis.bas">TestAnalysis.bas</a></li>
+<li><a href="src/tests/modules/dataio/TestExportButton.bas">TestExportButton.bas</a></li>
+<li><a href="src/tests/modules/general/TestDropdownLists.bas">TestDropdownLists.bas</a></li>
+<li><a href="src/tests/modules/general/TestLLChoices.bas">TestLLChoices.bas</a></li>
+<li><a href="src/tests/modules/general/TestPasswords.bas">TestPasswords.bas</a></li>
+<li><a href="src/tests/modules/general/TestTranslationObject.bas">TestTranslationObject.bas</a></li>
+<li><a href="src/tests/modules/helpers/AnalysisTestFixture.bas">AnalysisTestFixture.bas</a></li>
+<li><a href="src/tests/modules/linelist/TestLLTranslation.bas">TestLLTranslation.bas</a></li>
+<li><a href="src/tests/modules/mastersetup/TestDiseaseExporter.bas">TestDiseaseExporter.bas</a></li>
+<li><a href="src/tests/modules/mastersetup/TestDiseaseIntegration.bas">TestDiseaseIntegration.bas</a></li>
+<li><a href="src/tests/modules/mastersetup/TestDiseaseSheet.bas">TestDiseaseSheet.bas</a></li>
+<li><a href="src/tests/modules/mastersetup/TestDiseaseTranslationCache.bas">TestDiseaseTranslationCache.bas</a></li>
+<li><a href="src/tests/modules/mastersetup/TestEventMasterSetup.bas">TestEventMasterSetup.bas</a></li>
+<li><a href="src/tests/stubs/AnalysisDictionaryStub.cls">AnalysisDictionaryStub.cls</a></li>
+<li><a href="src/tests/stubs/DesignerTranslationStub.cls">DesignerTranslationStub.cls</a></li>
+<li><a href="src/tests/stubs/DictionaryMinimalStub.cls">DictionaryMinimalStub.cls</a></li>
+<li><a href="src/tests/stubs/LinelistSpecsDesignerTranslationStub.cls">LinelistSpecsDesignerTranslationStub.cls</a></li>
+<li><a href="src/tests/stubs/LinelistSpecsTranslationStub.cls">LinelistSpecsTranslationStub.cls</a></li>
+<li><a href="src/tests/stubs/LinelistSpecsWorkbookStub.cls">LinelistSpecsWorkbookStub.cls</a></li>
+<li><a href="src/tests/stubs/LinelistTranslationCounterStub.cls">LinelistTranslationCounterStub.cls</a></li>
+<li><a href="src/tests/stubs/LLVarContextSpecsStub.cls">LLVarContextSpecsStub.cls</a></li>
+<li><a href="src/tests/TableSpecsLinelistStub.cls">TableSpecsLinelistStub.cls</a></li>
+</ul>
+</details>
+
+  </main>
+</body>
+</html>
+

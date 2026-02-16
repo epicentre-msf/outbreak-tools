@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DesignerPreparation - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>DesignerPreparation</h1>
+<p>Prepares a designer workbook for ribbon interactions. The full
+preparation sequence imports translation tables from a user-selected
+workbook, creates a dropdown worksheet with standard dropdown lists
+(setup languages, interface languages, epiweek start, design values),
+hides internal worksheets (VeryHidden for __pass/__formatter/__formula/
+__dropdowns, Hidden for translation sheets), seeds workbook- and
+worksheet-level HiddenNames flags, applies data validation to the
+T_Multi table on the GenerateMultiple worksheet, and registers hidden
+sheets with the development manager. Also provides methods to read and
+write ribbon checkbox flags persisted through workbook-level hidden names.</p>
+<p><strong>Depends on:</strong> <a href="HiddenNames.html">HiddenNames</a>, <a href="IHiddenNames.html">IHiddenNames</a>, <a href="IDevelopment.html">IDevelopment</a>, <a href="OSFiles.html">OSFiles</a>, <a href="IOSFiles.html">IOSFiles</a>, <a href="CustomTable.html">CustomTable</a>, <a href="ICustomTable.html">ICustomTable</a>, <a href="BetterArray.html">BetterArray</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="IDropdownLists.html">IDropdownLists</a></p>
+<h2>Factory</h2>
+<h3>create</h3>
+<p><strong>Create and configure a designer preparation helper</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create(ByVal hostBook As Workbook) As IDesignerPreparation
+</code></pre>
+<p>Factory method that creates a new DesignerPreparation instance, binds
+it to the supplied designer workbook via Configure, and returns the
+result through the IDesignerPreparation interface. Called on the
+predeclared instance.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>hostBook</code>: Workbook. The designer workbook to prepare.</li>
+</ul>
+<p><strong>Returns:</strong> IDesignerPreparation. A fully initialised instance ready for use.</p>
+<hr />
+<h2>Public API</h2>
+<h3>configure</h3>
+<p><strong>Bind the helper to the designer workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Configure(ByVal hostBook As Workbook)
+</code></pre>
+<p>Stores a reference to the host workbook and clears any previously
+cached hidden names store and dropdown manager so they will be rebuilt
+on next access. Raises an error when the workbook is Nothing.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>hostBook</code>: Workbook. The designer workbook to bind to.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When the workbook is Nothing.</li>
+</ul>
+<hr />
+<h3>prepare</h3>
+<p><strong>Execute all preparation tasks on the designer workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Prepare(ByRef devManager As IDevelopment)
+</code></pre>
+<p>Runs the full preparation sequence:</p>
+<ol>
+<li>Prompts the user to select a translations workbook and imports
+translation tables into LinelistTranslation and DesignerTranslation.</li>
+<li>Creates the dropdown worksheet and registers all standard dropdown
+lists (setup languages, interface languages, epiweek start, design).</li>
+<li>Hides internal worksheets (VeryHidden for __pass/__formatter/
+__formula/__dropdowns, Hidden for LinelistTranslation,
+DesignerTranslation).</li>
+<li>Seeds workbook-level HiddenNames flags (ribbon checks, language
+codes, last opened date).</li>
+<li>Seeds Geo worksheet-level HiddenNames flags (geo language, name,
+update status).</li>
+<li>Applies data validation to the T_Multi table on GenerateMultiple.
+When devManager is provided, hidden sheets are also registered with
+the manager for deployment.</li>
+</ol>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>devManager</code>: IDevelopment. ByRef development manager instance, or Nothing.</li>
+</ul>
+<hr />
+<h3>set-flag</h3>
+<p><strong>Persist a ribbon checkbox flag as Yes/No in hidden names</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub SetFlag(ByVal nameId As String, ByVal enabled As Boolean)
+</code></pre>
+<p>Writes a boolean value to the workbook-level hidden names store as
+&quot;Yes&quot; or &quot;No&quot;. Ensures the store and default flags exist before writing.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>nameId</code>: String. The hidden name identifier for the flag (e.g. &quot;chkAlert&quot;).</li>
+<li><code>enabled</code>: Boolean. True to store &quot;Yes&quot;, False to store &quot;No&quot;.</li>
+</ul>
+<hr />
+<h3>get-flag</h3>
+<p><strong>Read a ribbon checkbox flag as a boolean from hidden names</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function GetFlag(ByVal nameId As String, Optional ByVal defaultValue As Boolean = False) As Boolean
+</code></pre>
+<p>Reads the named value from the hidden names store and returns True when
+the stored value equals &quot;Yes&quot; (case-insensitive comparison). Falls back
+to the defaultValue when the name is missing.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>nameId</code>: String. The hidden name identifier for the flag.</li>
+<li><code>defaultValue</code>: Optional Boolean. Value returned when the flag is missing. Defaults to False.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the stored value is &quot;Yes&quot;.</p>
+<hr />
+<h3>host-workbook</h3>
+<p><strong>The configured host workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get HostWorkbook() As Workbook
+</code></pre>
+<p>Returns the designer workbook that was bound via Configure. Raises an
+error when accessed before configuration.</p>
+<p><strong>Returns:</strong> Workbook. The host workbook.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When the workbook was not configured.</li>
+</ul>
+<hr />
+<h3>hidden-store</h3>
+<p><strong>The workbook-level hidden names manager</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get HiddenStore() As IHiddenNames
+</code></pre>
+<p>Returns the IHiddenNames instance lazily created from the host workbook.
+Used internally to persist and retrieve ribbon flag values.</p>
+<p><strong>Returns:</strong> IHiddenNames. The hidden names manager.</p>
+<hr />
+<h3>dropdowns</h3>
+<p><strong>The dropdown manager created during preparation</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Dropdowns() As IDropdownLists
+</code></pre>
+<p>Returns the IDropdownLists manager bound to the designer dropdown
+worksheet. Lazily initialises the manager on first access if it was
+not already created by EnsureDropdowns or Prepare.</p>
+<p><strong>Returns:</strong> IDropdownLists. The dropdown manager instance.</p>
+<hr />
+<details>
+<summary>Internal members (not exported)</summary>
+<h2>Factory</h2>
+<h3>self</h3>
+<p><strong>Current object instance</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Self() As IDesignerPreparation
+</code></pre>
+<p>Convenience accessor so consuming code can fluently retrieve the
+interface reference from the predeclared Create method.</p>
+<p><strong>Returns:</strong> IDesignerPreparation. The current instance cast to the interface.</p>
+<hr />
+<h2>Preparation Helpers</h2>
+<h3>import-translations</h3>
+<p><strong>Import translation tables from a user-selected workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ImportTranslations()
+</code></pre>
+<p>Prompts the user to select an xlsx file, then iterates through
+LinelistTranslation and DesignerTranslation sheets. For each sheet,
+imports matching ListObjects via CustomTable.Import. This is the same
+logic as the clickImpTrans ribbon callback, encapsulated here so it
+runs as part of the preparation sequence.</p>
+<hr />
+<h3>ensure-dropdowns</h3>
+<p><strong>Create the dropdown worksheet and register all standard dropdown lists</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureDropdowns()
+</code></pre>
+<p>Creates the dropdown manager if needed, then registers setup languages
+(empty placeholder), interface languages, epiweek start (1-7), and
+design values dropdown lists.</p>
+<hr />
+<h3>hide-worksheets</h3>
+<p><strong>Hide internal worksheets and register them with the dev manager</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub HideWorksheets(ByRef devManager As IDevelopment)
+</code></pre>
+<p>Sets __pass, __formatter, __formula, __dropdowns to xlSheetVeryHidden.
+Sets LinelistTranslation and DesignerTranslation to xlSheetHidden
+(visible in the VBA editor for developers). When a development manager
+is provided, all sheets are also registered via AddHiddenSheet for
+deployment. Silently skips any worksheet that does not exist.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>devManager</code>: IDevelopment. Development manager for deployment registration, or Nothing.</li>
+</ul>
+<hr />
+<h3>ensure-workbook-flags</h3>
+<p><strong>Ensure all workbook-level HiddenNames flags exist</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureWorkbookFlags()
+</code></pre>
+<p>Creates workbook-level HiddenNames for ribbon checkbox flags, language
+codes, and the last opened date. Checkbox flags default to &quot;Yes&quot; (on).
+Language codes default to empty strings. Last opened date is set to the
+current date.</p>
+<hr />
+<h3>ensure-geo-flags</h3>
+<p><strong>Ensure Geo worksheet-level HiddenNames flags exist</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureGeoFlags()
+</code></pre>
+<p>Creates worksheet-level HiddenNames on the Geo worksheet for language
+code, geobase name, metadata language, update status, pasting column,
+and form loaded state. Silently exits when the Geo worksheet does not
+exist in the host workbook.</p>
+<hr />
+<h2>Dropdown Helpers</h2>
+<h3>ensure-dropdown-manager</h3>
+<p><strong>Ensure the dropdown manager is initialised for the target workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureDropdownManager()
+</code></pre>
+<p>Exits immediately when the manager is already initialised. Otherwise
+resolves or creates the dropdown worksheet, then creates a DropdownLists
+instance bound to it with the standard dropdown prefix.</p>
+<hr />
+<h3>ensure-dropdown-sheet</h3>
+<p><strong>Ensure the dropdown worksheet exists and cache the reference</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function EnsureDropdownSheet() As Worksheet
+</code></pre>
+<p>Resolves the dropdown worksheet from the host workbook. If not found,
+creates a new worksheet at the end and names it. Caches the reference
+for subsequent calls.</p>
+<p><strong>Returns:</strong> Worksheet. The dropdown worksheet.</p>
+<hr />
+<h3>register-all-dropdowns</h3>
+<p><strong>Register every standard dropdown list for designer worksheets</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RegisterAllDropdowns()
+</code></pre>
+<p>Calls RegisterDropdown for each predefined dropdown: setup languages
+(empty placeholder for later population), interface languages
+(pre-populated with the five supported languages), epiweek start
+(numbers 1 through 7), and design values (matching LLFormat design
+constants).</p>
+<hr />
+<h3>register-dropdown</h3>
+<p><strong>Register a single dropdown by converting the values into a BetterArray</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RegisterDropdown(ByVal dropdownName As String, ByVal values As Variant)
+</code></pre>
+<p>Ensures the dropdown manager is initialised, converts the supplied Variant
+array into a BetterArray (1-based), and adds it to the dropdown manager
+under the given name.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>dropdownName</code>: String. The name to register the dropdown under.</li>
+<li><code>values</code>: Variant. An array of values to populate the dropdown.</li>
+</ul>
+<hr />
+<h2>Multi Validations</h2>
+<h3>apply-multi-validations</h3>
+<p><strong>Apply data validation to the T_Multi table on GenerateMultiple</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ApplyMultiValidations()
+</code></pre>
+<p>Resolves the GenerateMultiple worksheet and the T_Multi ListObject,
+then wires the &quot;language of the interface&quot;, &quot;epiweek start&quot;, and
+&quot;design&quot; columns to their corresponding dropdown lists via
+CustomTable.SetValidation. Silently exits when the worksheet or
+table does not exist in the host workbook.</p>
+<hr />
+<h2>Internal Helpers</h2>
+<h3>ensure-hidden-store</h3>
+<p><strong>Lazily initialise the hidden names store from the host workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureHiddenStore()
+</code></pre>
+<p>Creates the IHiddenNames instance on first access by calling
+HiddenNames.Create with the host workbook. Subsequent calls are no-ops.</p>
+<hr />
+<h3>ensure-default-flags</h3>
+<p><strong>Ensure both default ribbon flags exist in the hidden store</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureDefaultFlags()
+</code></pre>
+<p>Calls EnsureName for chkAlert and chkInstruct with &quot;Yes&quot; as default,
+creating the hidden names if they do not already exist. All checks
+default to enabled per specification.</p>
+<hr />
+<h3>resolve-worksheet</h3>
+<p><strong>Resolve a worksheet by name from the host workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ResolveWorksheet(ByVal sheetName As String) As Worksheet
+</code></pre>
+<p>Returns the worksheet with the given name from the host workbook, or
+Nothing when the sheet does not exist.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetName</code>: String. The worksheet name to resolve.</li>
+</ul>
+<p><strong>Returns:</strong> Worksheet. The resolved worksheet, or Nothing.</p>
+<hr />
+<h3>set-sheet-visibility</h3>
+<p><strong>Set the visibility of a worksheet by name</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub SetSheetVisibility(ByVal sheetName As String, ByVal visibility As Long)
+</code></pre>
+<p>Resolves the worksheet from the host workbook and sets its Visible
+property. Silently skips when the worksheet does not exist.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetName</code>: String. The worksheet name.</li>
+<li><code>visibility</code>: Long. The xlSheetVisibility constant to apply.</li>
+</ul>
+<hr />
+<h3>register-hidden-sheet</h3>
+<p><strong>Register a sheet with the development manager for deployment hiding</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RegisterHiddenSheet(ByRef manager As IDevelopment, ByVal sheetName As String)
+</code></pre>
+<p>Wraps manager.AddHiddenSheet in error handling so a missing sheet does
+not abort the preparation sequence.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>manager</code>: IDevelopment. The development manager to register with.</li>
+<li><code>sheetName</code>: String. The worksheet name to register.</li>
+</ul>
+<hr />
+<h3>raise-error</h3>
+<p><strong>Raise a ProjectError-based exception</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RaiseError(ByVal errorCode As ProjectError, ByVal messageText As String)
+</code></pre>
+<p>Wrapper around Err.Raise that standardises the source to CLASS_NAME.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>errorCode</code>: ProjectError. The error code to raise.</li>
+<li><code>messageText</code>: String. Human-readable description of the failure.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.<varies> Always raises the specified error.</li>
+</ul>
+<hr />
+<h2>Interface Implementation</h2>
+<h3>IDesignerPreparation_Configure</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub IDesignerPreparation_Configure(ByVal hostBook As Workbook)
+</code></pre>
+<p>Delegated members satisfying the IDesignerPreparation contract.
+See the corresponding members above for full documentation.</p>
+<hr />
+</details>
+<details>
+<summary>Used in (5 file(s))</summary>
+<ul>
+<li><a href="src/classes/designer/DesignerPreparation.cls">DesignerPreparation.cls</a></li>
+<li><a href="src/classes/designer/IDesignerPreparation.cls">IDesignerPreparation.cls</a></li>
+<li><a href="src/modules/designer/EventsDesignerAdvanced.bas">EventsDesignerAdvanced.bas</a></li>
+<li><a href="src/modules/designer/EventsDesignerCore.bas">EventsDesignerCore.bas</a></li>
+<li><a href="src/tests/modules/designer/TestDesignerRibbon.bas">TestDesignerRibbon.bas</a></li>
+</ul>
+</details>
+
+  </main>
+</body>
+</html>
+

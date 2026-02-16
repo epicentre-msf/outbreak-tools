@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IAnaTabIds - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>IAnaTabIds</h1>
+<p>Defines the public contract for the AnaTabIds class. Exposes methods to
+register graph series information, graph formatting metadata, table named
+ranges, and to write all tracked graphs to the output worksheet.
+Scope for analysis ID operations</p>
+<h2>GraphTracking</h2>
+<h3>AddGraphInfo</h3>
+<p><strong>Register a graph series in the tracking table</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub AddGraphInfo( _
+    ByVal scope As Byte, _
+    ByVal tabId As String, _
+    ByVal graphId As String, _
+    ByVal seriesName As String, _
+    ByVal seriesType As String, _
+    ByVal seriesPos As String, _
+    ByVal seriesLabel As String, _
+    ByVal seriesColumnLabel As String, _
+    ByVal outRangeAddress As String, _
+    Optional ByVal hardCodeLabels As Boolean = False, _
+    Optional ByVal prefix As String = vbNullString, _
+    Optional ByVal prefixOnly As Boolean = False)
+</code></pre>
+<p>Methods for registering graph series and formatting metadata.
+Adds one series entry to the internal graph-tracking table. Each call
+records the series name, chart type, position, label text, column label,
+and output range address. Optional parameters control label hard-coding
+and prefix filtering for spatial and spatio-temporal scopes.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>scope</code>: Byte. AnalysisIdsScope value selecting the target tracking table.</li>
+<li><code>tabId</code>: String. Identifier of the parent analysis table.</li>
+<li><code>graphId</code>: String. Identifier of the graph receiving this series.</li>
+<li><code>seriesName</code>: String. Name of the data series.</li>
+<li><code>seriesType</code>: String. Chart series type (e.g. &quot;bar&quot;, &quot;line&quot;).</li>
+<li><code>seriesPos</code>: String. Position index of the series within the graph.</li>
+<li><code>seriesLabel</code>: String. Display label for the series.</li>
+<li><code>seriesColumnLabel</code>: String. Column header label for the series data.</li>
+<li><code>outRangeAddress</code>: String. Worksheet address of the series data range.</li>
+<li><code>hardCodeLabels</code>: Optional Boolean. When True, labels are written as
+literal values rather than cell references. Defaults to False.</li>
+<li><code>prefix</code>: Optional String. Admin-level prefix for spatial graphs.
+Defaults to vbNullString.</li>
+<li><code>prefixOnly</code>: Optional Boolean. When True, only the prefix series is
+written. Defaults to False.</li>
+</ul>
+<hr />
+<h3>AddGraphFormat</h3>
+<p><strong>Register graph formatting metadata in the tracking table</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub AddGraphFormat( _
+    ByVal scope As Byte, _
+    ByVal tabId As String, _
+    ByVal graphId As String, _
+    ByVal catTitle As String, _
+    ByVal valuesTitle As String, _
+    Optional ByVal hardCodeLabels As Boolean = False, _
+    Optional ByVal heightFactor As Long = 1, _
+    Optional ByVal plotTitle As String = vbNullString)
+</code></pre>
+<p>Adds formatting information for a graph: category axis title, value axis
+title, optional plot title, and a height-factor multiplier. This data is
+consumed by WriteGraphs when rendering charts on the output worksheet.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>scope</code>: Byte. AnalysisIdsScope value selecting the target tracking table.</li>
+<li><code>tabId</code>: String. Identifier of the parent analysis table.</li>
+<li><code>graphId</code>: String. Identifier of the graph to format.</li>
+<li><code>catTitle</code>: String. Category (X) axis title.</li>
+<li><code>valuesTitle</code>: String. Value (Y) axis title.</li>
+<li><code>hardCodeLabels</code>: Optional Boolean. When True, axis labels are written
+as literal values. Defaults to False.</li>
+<li><code>heightFactor</code>: Optional Long. Multiplier for graph height. Defaults to 1.</li>
+<li><code>plotTitle</code>: Optional String. Title displayed above the chart area.
+Defaults to vbNullString.</li>
+</ul>
+<hr />
+<h2>TableTracking</h2>
+<h3>AddTableInfos</h3>
+<p><strong>Register table named ranges in the tracking table</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub AddTableInfos( _
+    ByVal scope As Byte, _
+    ByVal tabId As String, _
+    ByVal tabRangesNames As BetterArray, _
+    Optional ByVal exportTable As String = &quot;yes&quot;)
+</code></pre>
+<p>Methods for registering table named ranges for export.
+Adds the list of named range names created by a cross-table to the
+internal tracking table. These entries are used later during export to
+identify which ranges belong to each analysis table.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>scope</code>: Byte. AnalysisIdsScope value selecting the target tracking table.</li>
+<li><code>tabId</code>: String. Identifier of the analysis table.</li>
+<li><code>tabRangesNames</code>: BetterArray. Collection of named range names to register.</li>
+<li><code>exportTable</code>: Optional String. Export flag (&quot;yes&quot; or &quot;no&quot;). Defaults to &quot;yes&quot;.</li>
+</ul>
+<hr />
+<h2>GraphWriting</h2>
+<h3>WriteGraphs</h3>
+<p><strong>Write all tracked graphs to the output worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub WriteGraphs(ByVal outsh As Worksheet, ByVal scope As Byte): End Sub
+</code></pre>
+<p>Methods for rendering tracked graphs on output worksheets.
+Iterates through the graph-tracking table for the specified scope and
+creates Excel chart objects on the output worksheet. Each graph is built
+from its registered series data and formatted according to the stored
+formatting metadata.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>outsh</code>: Worksheet. The output worksheet receiving the chart objects.</li>
+<li><code>scope</code>: Byte. AnalysisIdsScope value selecting which tracking table to read.</li>
+</ul>
+<hr />
+
+  </main>
+</body>
+</html>
+

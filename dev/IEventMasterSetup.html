@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IEventMasterSetup - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>IEventMasterSetup</h1>
+<h2>Lifecycle</h2>
+<h3>Configure</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Configure(ByVal hostBook As Workbook)
+</code></pre>
+<p>(&quot;Bind the orchestrator to the workbook hosting master setup assets.&quot;)</p>
+<hr />
+<h3>OnWorkbookOpen</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub OnWorkbookOpen(Optional ByVal excelApplication As Application)
+</code></pre>
+<p>(&quot;Run initialisation logic when the workbook opens.&quot;)</p>
+<hr />
+<h3>OnRibbonLoad</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub OnRibbonLoad(ByVal ribbon As IRibbonUI)
+</code></pre>
+<p>(&quot;Capture the ribbon reference once callbacks load.&quot;)</p>
+<hr />
+<h3>RefreshTranslations</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub RefreshTranslations()
+</code></pre>
+<p>(&quot;Refresh translation-backed caches after a language change.&quot;)</p>
+<hr />
+<h2>Accessors</h2>
+<h3>HostWorkbook</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get HostWorkbook() As Workbook
+</code></pre>
+<p>(&quot;Expose the workbook configured for the master setup session.&quot;)</p>
+<hr />
+<h3>Dropdowns</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Dropdowns() As IDropdownLists
+</code></pre>
+<p>(&quot;Expose the dropdown manager ready for row operations.&quot;)</p>
+<hr />
+<h3>Variables</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Variables() As IMasterSetupVariables
+</code></pre>
+<p>(&quot;Expose the master setup variables manager.&quot;)</p>
+<hr />
+<h3>Choices</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Choices() As ILLChoices
+</code></pre>
+<p>(&quot;Expose the choices helper associated with the master setup workbook.&quot;)</p>
+<hr />
+<h3>Translations</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Translations() As ITranslationObject
+</code></pre>
+<p>(&quot;Expose the workbook translations used for headers and content.&quot;)</p>
+<hr />
+<h3>RibbonTranslations</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get RibbonTranslations() As ITranslationObject
+</code></pre>
+<p>(&quot;Expose the ribbon translations table for UI captions.&quot;)</p>
+<hr />
+<h3>Ribbon</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Ribbon() As IRibbonUI
+</code></pre>
+<p>(&quot;Expose the cached ribbon interface for invalidation scenarios.&quot;)</p>
+<hr />
+
+  </main>
+</body>
+</html>
+

@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ISpatialTables - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>ISpatialTables</h1>
+<p>Defines the public contract for the SpatialTables class. Exposes a check
+for existing spatial ListObjects and a method to create new spatial table
+sets on the &quot;spatial_tables__&quot; worksheet at linelist build time.</p>
+<h2>Methods</h2>
+<h3>Add</h3>
+<p><strong>Create spatial ListObjects for the current cross-table</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Add(ByVal formObject As IFormulas): End Sub
+</code></pre>
+<p>Creates a set of ListObjects on the &quot;spatial_tables__&quot; worksheet for the
+current cross-table row variable. For geo-type tables, four admin-level
+tables (adm1 through adm4) are created with formula, population, and
+attack rate columns. For hf-type tables, a single health-facility table
+is created. Skips creation when the tables already exist.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>formObject</code>: IFormulas. The formula object whose parsed expression
+is written into each spatial table formula column.</li>
+</ul>
+<hr />
+<h3>Exists</h3>
+<p><strong>Whether spatial ListObjects already exist for a variable</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Exists(ByVal varName As String) As Boolean: End Property
+</code></pre>
+<p>Returns True when the spatial worksheet already contains the full set
+of admin-level ListObjects (four for geo-type, one for hf-type) for
+the specified variable name. Used to avoid creating duplicate tables
+during the build loop.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>varName</code>: String. Fully qualified spatial variable name
+(e.g. &quot;cases_sp1&quot;).</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the spatial ListObjects already exist.</p>
+<hr />
+
+  </main>
+</body>
+</html>
+

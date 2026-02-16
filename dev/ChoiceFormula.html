@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ChoiceFormula - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>ChoiceFormula</h1>
+<p>Converts CHOICE_FORMULA custom functions into CASE_WHEN representations
+and exposes helper metadata for downstream validation. The first argument
+of CHOICE_FORMULA is the choice list name; the remaining arguments form
+condition/result pairs that are delegated to a CaseWhen instance for
+nested IF conversion and category extraction.</p>
+<p><strong>Depends on:</strong> <a href="CaseWhen.html">CaseWhen</a>, <a href="BetterArray.html">BetterArray</a></p>
+<p><strong>Version:</strong> 1.0 (2026-02-09)</p>
+<h2>Factory</h2>
+<h3>create</h3>
+<p><strong>Instantiate a ChoiceFormula parser bound to a formula</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create(ByVal formula As String) As IChoiceFormula
+</code></pre>
+<p>Trims the incoming formula, stores it in a new instance, and returns
+the IChoiceFormula interface for fluent downstream operations. No
+eager parsing occurs; the formula is parsed lazily on first access.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>formula</code>: String. Representation of a CHOICE_FORMULA call.</li>
+</ul>
+<p><strong>Returns:</strong> IChoiceFormula. A ready-to-query parser instance.</p>
+<hr />
+<h2>Validation</h2>
+<h3>valid</h3>
+<p><strong>Determine whether the stored formula is a CHOICE_FORMULA with arguments</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get Valid() As Boolean
+</code></pre>
+<p>Checks whether the stored formula matches the CHOICE_FORMULA pattern.
+Requires the CHOICE_FORMULA token, balanced parentheses, and at least
+three arguments (name plus one condition/result pair). Returns False
+when any argument is blank.</p>
+<p><strong>Returns:</strong> Boolean. True when the specification can be converted to CASE_WHEN.</p>
+<hr />
+<h2>Conversion</h2>
+<h3>parsed-formula</h3>
+<p><strong>Convert CHOICE_FORMULA into nested IF statements through CASE_WHEN</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function parsedFormula() As String
+</code></pre>
+<p>Core conversion, category extraction, and choice name resolution.
+Builds the equivalent CASE_WHEN expression from the parsed arguments,
+then delegates to the CaseWhen class to produce the nested IF output.
+Returns an empty string when the formula is invalid or conversion fails.</p>
+<p><strong>Returns:</strong> String. Expression ready for worksheet consumption.</p>
+<hr />
+<h3>categories</h3>
+<p><strong>Extract textual labels from the CHOICE_FORMULA results</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function Categories() As BetterArray
+</code></pre>
+<p>Delegates to the CaseWhen converter to reuse category parsing logic.
+Returns an empty BetterArray when the formula is invalid or the
+CaseWhen wrapper cannot be created.</p>
+<p><strong>Returns:</strong> BetterArray. Collection containing quoted category labels.</p>
+<hr />
+<h3>choice-name</h3>
+<p><strong>Retrieve the name of the choice list referenced by the formula</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function choiceName() As String
+</code></pre>
+<p>Returns the first argument of the CHOICE_FORMULA expression, which
+identifies the choice list that provides the valid options. The value
+is memoised after the first resolution.</p>
+<p><strong>Returns:</strong> String. Choice list identifier.</p>
+<hr />
+<details>
+<summary>Internal members (not exported)</summary>
+<h2>PublicAccessors</h2>
+<h3>self</h3>
+<p><strong>Current object instance</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Self() As IChoiceFormula
+</code></pre>
+<p>Properties that expose internal state and the interface pointer.
+Returns the current instance cast to its interface. Used internally
+by the factory method to return an IChoiceFormula reference.</p>
+<p><strong>Returns:</strong> IChoiceFormula. Reference to the current object.</p>
+<hr />
+<h3>choice-specifications</h3>
+<p><strong>Retrieve the stored CHOICE_FORMULA expression</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ChoiceSpecifications() As String
+</code></pre>
+<p>Returns the original formula text as stored after trimming during
+assignment. This is the full CHOICE_FORMULA(...) expression.</p>
+<p><strong>Returns:</strong> String. Original formula specification.</p>
+<hr />
+<h3>choice-specifications-set</h3>
+<p><strong>Store the CHOICE_FORMULA expression and reset caches</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Let ChoiceSpecifications(ByVal formula As String)
+</code></pre>
+<p>Trims the incoming formula and stores it, then invalidates all
+cached artefacts so subsequent reads trigger a fresh parse.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>formula</code>: String. Expression to parse.</li>
+</ul>
+<hr />
+<h2>PrivateHelpers</h2>
+<h3>reset-caches</h3>
+<p><strong>Reset cached artefacts when the formula changes</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ResetCaches()
+</code></pre>
+<p>Internal utilities for cache management, argument parsing, and CASE_WHEN conversion.
+Clears the argument cache, the CaseWhen wrapper, and the memoised
+choice name so the next access triggers a full reparse.</p>
+<hr />
+<h3>sanitised-formula</h3>
+<p><strong>Resolve the portion of the formula between parentheses</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SanitisedFormula() As String
+</code></pre>
+<p>Strips the CHOICE_FORMULA token, the opening parenthesis, and the
+closing parenthesis to expose the raw comma-delimited argument body.
+Returns an empty string when the formula does not match the expected
+pattern.</p>
+<p><strong>Returns:</strong> String. The comma-delimited arguments.</p>
+<hr />
+<h3>choice-arguments</h3>
+<p><strong>Split the sanitised formula into individual arguments</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ChoiceArguments() As BetterArray
+</code></pre>
+<p>Walks the sanitised body character by character, tracking quotation
+state and parenthesis depth. Splits on top-level commas only. The
+result is cached so subsequent calls avoid reparsing.</p>
+<p><strong>Returns:</strong> BetterArray. The choice name followed by condition/result entries.</p>
+<hr />
+<h3>contains-empty-argument</h3>
+<p><strong>Determine whether the arguments contain empty entries</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ContainsEmptyArgument(ByVal arguments As BetterArray) As Boolean
+</code></pre>
+<p>Scans the BetterArray for any blank entry. Returns True on the first
+empty string encountered.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>arguments</code>: BetterArray. List of parsed arguments.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when an argument is blank.</p>
+<hr />
+<h3>case-when-formula</h3>
+<p><strong>Build the equivalent CASE_WHEN formula from parsed arguments</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function CaseWhenFormula() As String
+</code></pre>
+<p>Skips the first argument (choice list name) and joins the remaining
+condition/result entries into a CASE_WHEN(...) expression string.
+Returns an empty string when fewer than two arguments exist beyond
+the name.</p>
+<p><strong>Returns:</strong> String. CASE_WHEN expression or empty when invalid.</p>
+<hr />
+<h3>case-when-wrapper</h3>
+<p><strong>Provide a lazily created CaseWhen instance</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get CaseWhenWrapper() As ICaseWhen
+</code></pre>
+<p>Builds the CASE_WHEN expression from parsed arguments and delegates
+to CaseWhen.Create to obtain the parser. The result is cached for
+subsequent accesses. Raises an error when conversion fails.</p>
+<p><strong>Returns:</strong> ICaseWhen. The converted formula parser.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ErrorUnexpectedState When conversion to CASE_WHEN fails.</li>
+</ul>
+<hr />
+<h3>resolved-choice-name</h3>
+<p><strong>Resolve and cache the choice list name</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ResolvedChoiceName() As String
+</code></pre>
+<p>Extracts the first argument from the parsed argument list, which
+is the choice list identifier. The value is memoised so subsequent
+calls avoid re-parsing.</p>
+<p><strong>Returns:</strong> String. Identifier extracted from the first argument.</p>
+<hr />
+<h3>throw-error</h3>
+<p><strong>Raise a project-specific error</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal message As String)
+</code></pre>
+<p>Wrapper around Err.Raise that standardises the source to the class
+constant CLASSNAME for consistent stack traces.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>errNumber</code>: ProjectError. The error code describing the failure.</li>
+<li><code>message</code>: String. Error message to propagate.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.<varies> Always raises the specified error.</li>
+</ul>
+<hr />
+<h2>Interface</h2>
+<h3>IChoiceFormula_parsedFormula</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get IChoiceFormula_parsedFormula() As String
+</code></pre>
+<p>Delegated members satisfying the IChoiceFormula contract.</p>
+<hr />
+</details>
+<details>
+<summary>Used in (4 file(s))</summary>
+<ul>
+<li><a href="src/classes/formulas/ChoiceFormula.cls">ChoiceFormula.cls</a></li>
+<li><a href="src/classes/formulas/Formulas.cls">Formulas.cls</a></li>
+<li><a href="src/classes/formulas/IChoiceFormula.cls">IChoiceFormula.cls</a></li>
+<li><a href="src/tests/modules/formulas/TestChoiceFormula.bas">TestChoiceFormula.bas</a></li>
+</ul>
+</details>
+
+  </main>
+</body>
+</html>
+

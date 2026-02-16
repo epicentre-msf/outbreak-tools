@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IGraphSpecs - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>IGraphSpecs</h1>
+<p>Defines the public contract for the GraphSpecs class, exposing series
+accessors for simple (non-time-series) charts and a nested collection
+of graph specification entries for complex (time series) charts.
+Consumers call CreateSeries to populate the series data, then read
+individual series properties or the SpecsLists collection depending
+on the graph mode.
+Graph specs creation mode</p>
+<h2>SeriesAccess</h2>
+<h3>NumberOfSeries</h3>
+<p><strong>Number of chart series in simple mode</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get NumberOfSeries() As Long: End Property
+</code></pre>
+<p>Series accessors for simple mode (non-time-series charts).
+Returns the count of series pushed during simple mode building.
+Always returns 0 in complex mode or before CreateSeries is called.</p>
+<p><strong>Returns:</strong> Long. Count of series entries (1-based).</p>
+<hr />
+<h3>SeriesName</h3>
+<p><strong>Named range reference for series data at a given index</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get SeriesName(ByVal index As Long) As String: End Property
+</code></pre>
+<p>Returns the Excel named range string (e.g. &quot;VALUES_COL_1_table1&quot;)
+that a chart builder uses as the data source for this series.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>index</code>: Long. 1-based index of the series (1 to NumberOfSeries).</li>
+</ul>
+<p><strong>Returns:</strong> String. Named range reference for the series data.</p>
+<hr />
+<h3>SeriesType</h3>
+<p><strong>Chart rendering type for a series at a given index</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get SeriesType(ByVal index As Long) As String: End Property
+</code></pre>
+<p>Returns the chart type string controlling how the series is rendered.
+Common values are &quot;bar&quot;, &quot;hbar&quot;, &quot;point&quot;, and &quot;line&quot;.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>index</code>: Long. 1-based series index.</li>
+</ul>
+<p><strong>Returns:</strong> String. Chart rendering type.</p>
+<hr />
+<h3>SeriesPos</h3>
+<p><strong>Axis position for a series at a given index</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get SeriesPos(ByVal index As Long) As String: End Property
+</code></pre>
+<p>Returns &quot;left&quot; for the primary value axis or &quot;right&quot; for the
+secondary axis, typically used for percentage overlays.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>index</code>: Long. 1-based series index.</li>
+</ul>
+<p><strong>Returns:</strong> String. Axis placement (&quot;left&quot; or &quot;right&quot;).</p>
+<hr />
+<h3>SeriesLabel</h3>
+<p><strong>Row category named range for a series at a given index</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get SeriesLabel(ByVal index As Long) As String: End Property
+</code></pre>
+<p>Returns the named range providing category axis labels (e.g.
+&quot;ROW_CATEGORIES_table1&quot;) displayed along the chart axis.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>index</code>: Long. 1-based series index.</li>
+</ul>
+<p><strong>Returns:</strong> String. Named range for row category labels.</p>
+<hr />
+<h3>SeriesColumnLabel</h3>
+<p><strong>Column label named range for a series at a given index</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get SeriesColumnLabel(ByVal index As Long) As String: End Property
+</code></pre>
+<p>Returns the named range providing the legend entry text (e.g.
+&quot;LABEL_COL_2_table1&quot;) that identifies this series in the chart legend.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>index</code>: Long. 1-based series index.</li>
+</ul>
+<p><strong>Returns:</strong> String. Named range for the legend entry.</p>
+<hr />
+<h3>SeriesLabelPrefix</h3>
+<p><strong>Label prefix for a series at a given index</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get SeriesLabelPrefix(ByVal index As Long) As String: End Property
+</code></pre>
+<p>Returns the optional display prefix prepended to the series legend
+entry. Always vbNullString in simple mode; populated in complex mode
+from the user-defined &quot;label&quot; column of the graph setup table.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>index</code>: Long. 1-based series index.</li>
+</ul>
+<p><strong>Returns:</strong> String. Prefix string or vbNullString when none is set.</p>
+<hr />
+<h2>ComplexAccess</h2>
+<h3>NumberOfGraphs</h3>
+<p><strong>Number of distinct graphs in complex mode</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get NumberOfGraphs() As Long: End Property
+</code></pre>
+<p>Multi-graph accessors for complex (time series) mode.
+Returns the count of unique graph IDs whose series were successfully
+built. Returns 0 in simple mode or before CreateSeries is called.</p>
+<p><strong>Returns:</strong> Long. Count of graph entries in the SpecsLists collection.</p>
+<hr />
+<h3>SpecsLists</h3>
+<p><strong>Nested collection of all graph specifications</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get SpecsLists() As BetterArray: End Property
+</code></pre>
+<p>Each element is a 7-element BetterArray representing one graph:
+[seriesNames, seriesTypes, seriesPositions, seriesLabels,
+seriesColumnLabels, seriesLabelPrefixes, titleString]. Returns
+an empty BetterArray in simple mode.</p>
+<p><strong>Returns:</strong> BetterArray. Cloned collection of graph spec entries.</p>
+<hr />
+<h3>GraphIDs</h3>
+<p><strong>Unique graph identifiers for complex mode</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get GraphIDs() As BetterArray: End Property
+</code></pre>
+<p>Returns a deduplicated list of graph ID strings in the order of
+first appearance in the graph setup ListObject. Useful for iterating
+over graphs independently of SpecsLists.</p>
+<p><strong>Returns:</strong> BetterArray. Cloned list of unique graph ID strings.</p>
+<hr />
+<h2>State</h2>
+<h3>Valid</h3>
+<p><strong>Whether the graph specifications were successfully built</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Valid() As Boolean: End Property
+</code></pre>
+<p>Validity and worksheet accessors.
+Triggers a lazy CreateSeries call on first access. In simple mode
+always returns True; in complex mode returns True only when at
+least one graph produced valid series definitions.</p>
+<p><strong>Returns:</strong> Boolean. True when series data is available for consumption.</p>
+<hr />
+<h3>Wksh</h3>
+<p><strong>Output worksheet where the chart will be drawn</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Wksh() As Worksheet: End Property
+</code></pre>
+<p>In simple mode returns the cross-table worksheet; in complex mode
+returns the dedicated output worksheet supplied during construction.</p>
+<p><strong>Returns:</strong> Worksheet. Target worksheet for chart creation.</p>
+<hr />
+<h2>Operations</h2>
+<h3>CreateSeries</h3>
+<p><strong>Build all series from the stored specifications</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub CreateSeries(): End Sub
+</code></pre>
+<p>Series building entry point.
+Dispatches to the appropriate builder based on the graph mode.
+Must be called before accessing series properties or SpecsLists.
+Also called lazily by the Valid property on first access.</p>
+<hr />
+
+  </main>
+</body>
+</html>
+

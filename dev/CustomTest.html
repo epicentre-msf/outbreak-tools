@@ -1,0 +1,630 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CustomTest - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>CustomTest</h1>
+<h2>Factory</h2>
+<h3>Create</h3>
+<p><strong>Build and configure a harness instance</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create(ByVal targetWorkbook As workbook, _
+                       Optional ByVal outputSheetName As String = vbNullString) As ICustomTest
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>targetWorkbook</code>: Workbook under test that receives logging output</li>
+<li><code>outputSheetName</code>: Optional name of the worksheet used for results</li>
+</ul>
+<p><strong>Returns:</strong> ICustomTest harness ready for use</p>
+<hr />
+<h3>Self</h3>
+<p><strong>Access the current harness reference</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Self() As ICustomTest
+</code></pre>
+<p><strong>Returns:</strong> ICustomTest reference for fluent usage</p>
+<hr />
+<h2>Public members</h2>
+<h3>Configure</h3>
+<p><strong>Configure the harness with the workbook and target sheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Configure(ByVal targetWorkbook As workbook, _
+                     Optional ByVal outputSheetName As String = vbNullString)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>targetWorkbook</code>: Workbook that supplies and receives output</li>
+<li><code>outputSheetName</code>: Optional sheet name where results will be written</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.InvalidArgument When workbook reference is invalid</li>
+</ul>
+<hr />
+<h3>ReleaseResources</h3>
+<p><strong>Clear references and reset harness state</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ReleaseResources()
+</code></pre>
+<hr />
+<h3>SetModuleName</h3>
+<p><strong>Set the VBA module name used in rendered output</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub SetModuleName(ByVal moduleName As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>moduleName</code>: Name displayed in result tables</li>
+</ul>
+<hr />
+<h3>SetTestName</h3>
+<p><strong>Set the pending test name for subsequent assertions</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub SetTestName(ByVal testName As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>testName</code>: Descriptive identifier of the current test</li>
+</ul>
+<hr />
+<h3>SetTestSubtitle</h3>
+<p><strong>Set an optional subtitle for the pending test</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub SetTestSubtitle(ByVal testSubtitle As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>testSubtitle</code>: Additional context for the test case</li>
+</ul>
+<hr />
+<h3>BeginTest</h3>
+<p><strong>Persist previous checking and start logging a new test</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub BeginTest(Optional ByVal resetNames As Boolean = False)
+</code></pre>
+<hr />
+<h3>Reset</h3>
+<p><strong>Clear current checking and accumulated results</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ResetInstance()
+</code></pre>
+<hr />
+<h3>FlushCurrentTest</h3>
+<p><strong>Persist active checking and return accumulated results</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function FlushCurrentTest(Optional ByVal resetNames As Boolean = True) As BetterArray
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>resetNames</code>: Optional Boolean specifying whether to reset names after clearing</li>
+</ul>
+<p><strong>Returns:</strong> BetterArray containing all persisted checkings</p>
+<hr />
+<h3>Flush</h3>
+<p><strong>Persist active checking without returning the accumulated results</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Flush(Optional ByVal resetNames As Boolean = True)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>resetNames</code>: Optional Boolean specifying whether to reset names after clearing</li>
+</ul>
+<hr />
+<h3>Results</h3>
+<p><strong>Clone accumulated checking results</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Results() As BetterArray
+</code></pre>
+<p><strong>Returns:</strong> BetterArray clone of collected checkings</p>
+<hr />
+<h3>PrintResults</h3>
+<p><strong>Write the results to a worksheet using CheckingOutput</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub PrintResults(Optional ByVal outputSheetName As String = vbNullString)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>outputSheetName</code>: Optional override for worksheet name</li>
+</ul>
+<p><strong>Depends on:</strong></p>
+<ul>
+<li>CheckingOutput</li>
+</ul>
+<hr />
+<h3>AreEqual</h3>
+<p><strong>Log an assertion comparing expected and actual values</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub AreEqual(expected As Variant, _
+                    actual As Variant, _
+                       ByVal message As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>expected</code>: Expected value</li>
+<li><code>actual</code>: Actual value</li>
+<li><code>message</code>: Message describing the assertion context</li>
+</ul>
+<hr />
+<h3>AreNotEqual</h3>
+<p><strong>Log an assertion confirming expected and actual values differ</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub AreNotEqual(expected As Variant, _
+                       actual As Variant, _
+                          ByVal message As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>expected</code>: Expected value</li>
+<li><code>actual</code>: Actual value</li>
+<li><code>message</code>: Message describing the assertion context</li>
+</ul>
+<hr />
+<h3>IsTrue</h3>
+<p><strong>Log that a boolean condition holds true</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub IsTrue(ByVal condition As Boolean, _
+                      ByVal message As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>condition</code>: Condition to evaluate</li>
+<li><code>message</code>: Message describing the assertion context</li>
+</ul>
+<hr />
+<h3>IsFalse</h3>
+<p><strong>Log that a boolean condition evaluates to False</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub IsFalse(ByVal condition As Boolean, _
+                       ByVal message As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>condition</code>: Condition to evaluate</li>
+<li><code>message</code>: Message describing the assertion context</li>
+</ul>
+<hr />
+<h3>ObjectExists</h3>
+<p><strong>Confirm an object reference exists and matches the expected type name</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ObjectExists(ByVal instance As Object, _
+                        ByVal expectedTypeName As String, _
+                        ByVal message As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>instance</code>: Object reference to validate</li>
+<li><code>expectedTypeName</code>: Expected VBA type name</li>
+<li><code>message</code>: Message describing the assertion context</li>
+</ul>
+<hr />
+<h3>LogFailure</h3>
+<p><strong>Log a failure message directly to the current checking</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub LogFailure(ByVal message As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>message</code>: Message describing the failure</li>
+</ul>
+<hr />
+<h3>LogSuccesses</h3>
+<p><strong>Log a success message directly to the current checking</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub LogSuccesses(ByVal message As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>message</code>: Message describing the success</li>
+</ul>
+<hr />
+<details>
+<summary>Internal members (not exported)</summary>
+<h2>ICustomTest implementation</h2>
+<h3>ICustomTest_Configure</h3>
+<p><strong>Forward interface calls to public Configure</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ICustomTest_Configure(ByVal targetWorkbook As workbook, _
+                                  Optional ByVal outputSheetName As String = vbNullString)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>targetWorkbook</code>: Workbook that stores test output</li>
+<li><code>outputSheetName</code>: Optional target worksheet name</li>
+</ul>
+<hr />
+<h3>ICustomTest_ReleaseResources</h3>
+<p><strong>Bridge interface ReleaseResources to public member</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ICustomTest_ReleaseResources()
+</code></pre>
+<hr />
+<h3>ICustomTest_SetModuleName</h3>
+<p><strong>Bridge interface SetModuleName to public member</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ICustomTest_SetModuleName(ByVal moduleName As String)
+</code></pre>
+<hr />
+<h3>ICustomTest_SetTestName</h3>
+<p><strong>Bridge interface SetTestName to public member</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ICustomTest_SetTestName(ByVal testName As String)
+</code></pre>
+<hr />
+<h3>ICustomTest_SetTestSubtitle</h3>
+<p><strong>Bridge interface SetTestSubtitle to public member</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ICustomTest_SetTestSubtitle(ByVal testSubtitle As String)
+</code></pre>
+<hr />
+<h3>ICustomTest_BeginTest</h3>
+<p><strong>Bridge interface BeginTest to public member</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ICustomTest_BeginTest(Optional ByVal resetNames As Boolean = False)
+</code></pre>
+<hr />
+<h3>ICustomTest_Reset</h3>
+<p><strong>Bridge interface Reset to public member</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ICustomTest_ResetInstance()
+</code></pre>
+<hr />
+<h3>ICustomTest_FlushCurrentTest</h3>
+<p><strong>Return results snapshot for interface callers</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ICustomTest_FlushCurrentTest(Optional ByVal resetNames As Boolean = True) As BetterArray
+</code></pre>
+<hr />
+<h3>ICustomTest_Flush</h3>
+<p><strong>Bridge interface Flush to public member</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ICustomTest_Flush(Optional ByVal resetNames As Boolean = True)
+</code></pre>
+<hr />
+<h3>ICustomTest_Results</h3>
+<p><strong>Provide a clone of accumulated results through the interface</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ICustomTest_Results() As BetterArray
+</code></pre>
+<hr />
+<h3>ICustomTest_PrintResults</h3>
+<p><strong>Bridge interface PrintResults to public member</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ICustomTest_PrintResults(Optional ByVal outputSheetName As String = vbNullString)
+</code></pre>
+<hr />
+<h3>ICustomTest_AreEqual</h3>
+<p><strong>Bridge interface AreEqual to public member</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ICustomTest_AreEqual(expected As Variant, _
+                                 actual As Variant, _
+                                    ByVal message As String)
+</code></pre>
+<hr />
+<h3>ICustomTest_AreNotEqual</h3>
+<p><strong>Bridge interface AreNotEqual to public member</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ICustomTest_AreNotEqual(expected As Variant, _
+                                    actual As Variant, _
+                                       ByVal message As String)
+</code></pre>
+<hr />
+<h3>ICustomTest_IsTrue</h3>
+<p><strong>Bridge interface IsTrue to public member</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ICustomTest_IsTrue(ByVal condition As Boolean, _
+                                   ByVal message As String)
+</code></pre>
+<hr />
+<h3>ICustomTest_IsFalse</h3>
+<p><strong>Bridge interface IsFalse to public member</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ICustomTest_IsFalse(ByVal condition As Boolean, _
+                                    ByVal message As String)
+</code></pre>
+<hr />
+<h3>ICustomTest_ObjectExists</h3>
+<p><strong>Bridge interface ObjectExists to public member</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ICustomTest_ObjectExists(ByVal instance As Object, _
+                                     ByVal expectedTypeName As String, _
+                                     ByVal message As String)
+</code></pre>
+<hr />
+<h3>ICustomTest_IsNothing</h3>
+<p><strong>Bridge interface IsNothing to helper member</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ICustomTest_IsNothing(ByVal instance As Object, ByVal message As String)
+</code></pre>
+<hr />
+<h3>ICustomTest_IsNotNothing</h3>
+<p><strong>Bridge interface IsNotNothing to public member</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ICustomTest_IsNotNothing(ByVal instance As Object, ByVal message As String)
+</code></pre>
+<hr />
+<h3>ICustomTest_LogFailure</h3>
+<p><strong>Bridge interface LogFailure to public member</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ICustomTest_LogFailure(ByVal message As String)
+</code></pre>
+<hr />
+<h3>ICustomTest_Fail</h3>
+<p><strong>Bridge interface for Fail, same as Logfailure, for compatibility purposes</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ICustomTest_Fail(ByVal message As String)
+</code></pre>
+<hr />
+<h3>ICustomTest_LogSuccesses</h3>
+<p><strong>Bridge interface LogSuccesses to public member</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ICustomTest_LogSuccesses(ByVal message As String)
+</code></pre>
+<hr />
+<h2>Public members</h2>
+<h3>IsNothing</h3>
+<p><strong>Validate that an object reference is Nothing</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub IsNothing(ByVal instance As Object, ByVal message As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>instance</code>: Object reference to validate</li>
+<li><code>message</code>: Message describing the assertion context</li>
+</ul>
+<hr />
+<h3>IsNotNothing</h3>
+<p><strong>Validate that an object is not Nothing</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub IsNotNothing(ByVal instance As Object, ByVal message As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>instance</code>: Object reference to validate</li>
+<li><code>message</code>: Message describing the assertion context</li>
+</ul>
+<hr />
+<h2>Internal helpers</h2>
+<h3>InitialiseCurrentChecking</h3>
+<p><strong>Instantiate a fresh checking object for the active test</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub InitialiseCurrentChecking()
+</code></pre>
+<hr />
+<h3>EnsureCurrentChecking</h3>
+<p><strong>Lazily initialise the current checking container</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureCurrentChecking()
+</code></pre>
+<hr />
+<h3>ClearCurrentChecking</h3>
+<p><strong>Drop the current checking reference and optionally reset names</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ClearCurrentChecking(Optional ByVal resetNames As Boolean = True)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>resetNames</code>: When True also reset pending titles to defaults</li>
+</ul>
+<hr />
+<h3>PersistActiveChecking</h3>
+<p><strong>Store the active checking into the results buffer when it has entries</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub PersistActiveChecking(Optional ByVal resetNames As Boolean = False)
+</code></pre>
+<hr />
+<h3>EnsureResults</h3>
+<p><strong>Create the BetterArray container when missing and return it</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function EnsureResults() As BetterArray
+</code></pre>
+<p><strong>Returns:</strong> BetterArray used to hold persisted checkings</p>
+<hr />
+<h3>LogEntry</h3>
+<p><strong>Append a formatted assertion outcome to the current checking</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub LogEntry(ByVal message As String, ByVal scope As Byte)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>message</code>: Text describing the result</li>
+<li><code>scope</code>: Checking scope (success, error, ...)</li>
+</ul>
+<hr />
+<h3>FormatSuccessMessage</h3>
+<p><strong>Build the message stored when an assertion succeeds</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function FormatSuccessMessage(ByVal mess As String) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>mess</code>: Optional message provided by the caller</li>
+</ul>
+<p><strong>Returns:</strong> Formatted message prefixed with Success</p>
+<hr />
+<h3>BuildFailureMessage</h3>
+<p><strong>Build the failure message including expected and actual values</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function BuildFailureMessage(ByVal message As String, _
+                                     expected As Variant, _
+                                     actual As Variant) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>message</code>: Assertion context supplied by caller</li>
+<li><code>expected</code>: Expected value</li>
+<li><code>actual</code>: Actual value</li>
+</ul>
+<p><strong>Returns:</strong> Failure message containing expected/actual details</p>
+<hr />
+<h3>ResolveTitle</h3>
+<p><strong>Normalise names used for modules and tests</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ResolveTitle(ByVal val As String) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>val</code>: Candidate name to store</li>
+</ul>
+<p><strong>Returns:</strong> Sanitised name or default label</p>
+<hr />
+<h3>ResolveFailurePrefix</h3>
+<p><strong>Normalize assertion failure prefix text</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ResolveFailurePrefix(ByVal mess As String) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>mess</code>: Optional message provided by the caller</li>
+</ul>
+<p><strong>Returns:</strong> Prefix used for failure messages</p>
+<hr />
+<h3>ResolveSheetName</h3>
+<p><strong>Normalise worksheet names used for output</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ResolveSheetName(ByVal shName As String) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>shName</code>: Optional sheet name override</li>
+</ul>
+<p><strong>Returns:</strong> Validated sheet name or default output sheet</p>
+<hr />
+<h3>PrintOutputWorksheet</h3>
+<p><strong>Retrieve or create the worksheet that receives test output</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function PrintOutputWorksheet(ByVal targetWorkbook As workbook, _
+                                 ByVal sheetName As String) As Worksheet
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>targetWorkbook</code>: Workbook where results will be printed</li>
+<li><code>sheetName</code>: Worksheet name to resolve</li>
+</ul>
+<p><strong>Returns:</strong> Worksheet ready for output</p>
+<hr />
+<h3>VariantsAreEqual</h3>
+<p><strong>Compare two Variant values using tolerant rules</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function VariantsAreEqual(leftValue As Variant, _
+                                  rightValue As Variant) As Boolean
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>leftValue</code>: First value to compare</li>
+<li><code>rightValue</code>: Second value to compare</li>
+</ul>
+<p><strong>Returns:</strong> True when the values are equal</p>
+<hr />
+<h3>VariantToString</h3>
+<p><strong>Convert a Variant into a readable String representation</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function VariantToString(value As Variant) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>value</code>: Variant to convert</li>
+</ul>
+<p><strong>Returns:</strong> String representation of the value</p>
+<hr />
+<h3>RaiseError</h3>
+<p><strong>Wrap Err.Raise to keep consistent error source</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RaiseError(ByVal errorCode As ProjectError, ByVal description As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>errorCode</code>: Project error identifier</li>
+<li><code>description</code>: Message supplied to Err.Raise</li>
+</ul>
+<hr />
+</details>
+<details>
+<summary>Used in (73 file(s))</summary>
+<ul>
+<li><a href="src/classes/rubberduck/CustomTest.cls">CustomTest.cls</a></li>
+<li><a href="src/classes/rubberduck/ICustomTest.cls">ICustomTest.cls</a></li>
+<li><a href="src/tests/modules/analyses/TestAnalysis.bas">TestAnalysis.bas</a></li>
+<li><a href="src/tests/modules/analyses/TestAnalysisOutput.bas">TestAnalysisOutput.bas</a></li>
+<li><a href="src/tests/modules/analyses/TestAnaTabIds.bas">TestAnaTabIds.bas</a></li>
+<li><a href="src/tests/modules/analyses/TestCrossTable.bas">TestCrossTable.bas</a></li>
+<li><a href="src/tests/modules/analyses/TestCrossTableFormula.bas">TestCrossTableFormula.bas</a></li>
+<li><a href="src/tests/modules/analyses/TestTableSpecs.bas">TestTableSpecs.bas</a></li>
+<li><a href="src/tests/modules/dataio/TestExportButton.bas">TestExportButton.bas</a></li>
+<li><a href="src/tests/modules/dataio/TestLLExporter.bas">TestLLExporter.bas</a></li>
+<li><a href="src/tests/modules/dataio/TestLLImporter.bas">TestLLImporter.bas</a></li>
+<li><a href="src/tests/modules/designer/TestDesignerImportService.bas">TestDesignerImportService.bas</a></li>
+<li><a href="src/tests/modules/designer/TestDesignerRibbon.bas">TestDesignerRibbon.bas</a></li>
+<li><a href="src/tests/modules/dev/TestDevelopment.bas">TestDevelopment.bas</a></li>
+<li><a href="src/tests/modules/dictionary/TestLLdictionary.bas">TestLLdictionary.bas</a></li>
+<li><a href="src/tests/modules/dictionary/TestLLExport.bas">TestLLExport.bas</a></li>
+<li><a href="src/tests/modules/dictionary/TestLLSheets.bas">TestLLSheets.bas</a></li>
+<li><a href="src/tests/modules/dictionary/TestLLSheetsExtra.bas">TestLLSheetsExtra.bas</a></li>
+<li><a href="src/tests/modules/dictionary/TestLLVariables.bas">TestLLVariables.bas</a></li>
+<li><a href="src/tests/modules/dictionary/TestLLVariablesExtra.bas">TestLLVariablesExtra.bas</a></li>
+<li><a href="src/tests/modules/formulas/TestCaseWhen.bas">TestCaseWhen.bas</a></li>
+<li><a href="src/tests/modules/formulas/TestChoiceFormula.bas">TestChoiceFormula.bas</a></li>
+<li><a href="src/tests/modules/formulas/TestFormulaCondition.bas">TestFormulaCondition.bas</a></li>
+<li><a href="src/tests/modules/formulas/TestFormulaData.bas">TestFormulaData.bas</a></li>
+<li><a href="src/tests/modules/formulas/TestFormulas.bas">TestFormulas.bas</a></li>
+<li><a href="src/tests/modules/formulas/TestValueOfFormula.bas">TestValueOfFormula.bas</a></li>
+<li><a href="src/tests/modules/general/TestApplicationState.bas">TestApplicationState.bas</a></li>
+<li><a href="src/tests/modules/general/TestButtons.bas">TestButtons.bas</a></li>
+<li><a href="src/tests/modules/general/TestCustomTable.bas">TestCustomTable.bas</a></li>
+<li><a href="src/tests/modules/general/TestCustomTest.bas">TestCustomTest.bas</a></li>
+<li><a href="src/tests/modules/general/TestDataSheet.bas">TestDataSheet.bas</a></li>
+<li><a href="src/tests/modules/general/TestDropdownLists.bas">TestDropdownLists.bas</a></li>
+<li><a href="src/tests/modules/general/TestHiddenNames.bas">TestHiddenNames.bas</a></li>
+<li><a href="src/tests/modules/general/TestLLChoices.bas">TestLLChoices.bas</a></li>
+<li><a href="src/tests/modules/general/TestLLFormat.bas">TestLLFormat.bas</a></li>
+<li><a href="src/tests/modules/general/TestManualOSFiles.bas">TestManualOSFiles.bas</a></li>
+<li><a href="src/tests/modules/general/TestOSFiles.bas">TestOSFiles.bas</a></li>
+<li><a href="src/tests/modules/general/TestPasswords.bas">TestPasswords.bas</a></li>
+<li><a href="src/tests/modules/general/TestProgressBar.bas">TestProgressBar.bas</a></li>
+<li><a href="src/tests/modules/general/TestTemporaryRepos.bas">TestTemporaryRepos.bas</a></li>
+<li><a href="src/tests/modules/general/TestTranslationObject.bas">TestTranslationObject.bas</a></li>
+<li><a href="src/tests/modules/geo/TestLLGeo.bas">TestLLGeo.bas</a></li>
+<li><a href="src/tests/modules/geo/TestLLSpatial.bas">TestLLSpatial.bas</a></li>
+<li><a href="src/tests/modules/geo/TestSpatialTables.bas">TestSpatialTables.bas</a></li>
+<li><a href="src/tests/modules/graphs/TestGraphSpecs.bas">TestGraphSpecs.bas</a></li>
+<li><a href="src/tests/modules/helpers/TestHelpers.bas">TestHelpers.bas</a></li>
+<li><a href="src/tests/modules/linelist/TestCodeTransfer.bas">TestCodeTransfer.bas</a></li>
+<li><a href="src/tests/modules/linelist/TestLinelist.bas">TestLinelist.bas</a></li>
+<li><a href="src/tests/modules/linelist/TestListBuilder.bas">TestListBuilder.bas</a></li>
+<li><a href="src/tests/modules/linelist/TestLLTranslation.bas">TestLLTranslation.bas</a></li>
+<li><a href="src/tests/modules/mastersetup/TestDiseaseApplicationState.bas">TestDiseaseApplicationState.bas</a></li>
+<li><a href="src/tests/modules/mastersetup/TestDiseaseExporter.bas">TestDiseaseExporter.bas</a></li>
+<li><a href="src/tests/modules/mastersetup/TestDiseaseExportWorkbook.bas">TestDiseaseExportWorkbook.bas</a></li>
+<li><a href="src/tests/modules/mastersetup/TestDiseaseImporter.bas">TestDiseaseImporter.bas</a></li>
+<li><a href="src/tests/modules/mastersetup/TestDiseaseIntegration.bas">TestDiseaseIntegration.bas</a></li>
+<li><a href="src/tests/modules/mastersetup/TestDiseaseLogger.bas">TestDiseaseLogger.bas</a></li>
+<li><a href="src/tests/modules/mastersetup/TestDiseaseReportManager.bas">TestDiseaseReportManager.bas</a></li>
+<li><a href="src/tests/modules/mastersetup/TestDiseaseSheet.bas">TestDiseaseSheet.bas</a></li>
+<li><a href="src/tests/modules/mastersetup/TestDiseaseTranslationCache.bas">TestDiseaseTranslationCache.bas</a></li>
+<li><a href="src/tests/modules/mastersetup/TestDiseaseWorksheetManager.bas">TestDiseaseWorksheetManager.bas</a></li>
+<li><a href="src/tests/modules/mastersetup/TestEventMasterSetup.bas">TestEventMasterSetup.bas</a></li>
+<li><a href="src/tests/modules/mastersetup/TestMasterSetupPreparation.bas">TestMasterSetupPreparation.bas</a></li>
+<li><a href="src/tests/modules/mastersetup/TestMasterSetupVariables.bas">TestMasterSetupVariables.bas</a></li>
+<li><a href="src/tests/modules/sections/TestSectionBuilder.bas">TestSectionBuilder.bas</a></li>
+<li><a href="src/tests/modules/sections/TestVarWriter.bas">TestVarWriter.bas</a></li>
+<li><a href="src/tests/modules/setup/TestEventSetup.bas">TestEventSetup.bas</a></li>
+<li><a href="src/tests/modules/setup/TestSetupErrors.bas">TestSetupErrors.bas</a></li>
+<li><a href="src/tests/modules/setup/TestSetupImportService.bas">TestSetupImportService.bas</a></li>
+<li><a href="src/tests/modules/setup/TestSetupPreparation.bas">TestSetupPreparation.bas</a></li>
+<li><a href="src/tests/modules/setup/TestSetupTranslationsTable.bas">TestSetupTranslationsTable.bas</a></li>
+<li><a href="src/tests/modules/setup/TestUpdatedValues.bas">TestUpdatedValues.bas</a></li>
+<li><a href="src/tests/modules/showhide/TestShowHideManager.bas">TestShowHideManager.bas</a></li>
+<li><a href="src/tests/modules/tables/TestCustomPivotTable.bas">TestCustomPivotTable.bas</a></li>
+</ul>
+</details>
+
+  </main>
+</body>
+</html>
+

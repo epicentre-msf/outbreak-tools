@@ -1,0 +1,539 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SetupTranslationsTable - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>SetupTranslationsTable</h1>
+<p>Manages a translations ListObject backed by a helper tag column.
+Synchronises translations from a watcher registry, handles language
+column creation and promotion, removes obsolete and duplicate labels,
+reports missing and duplicate entries, and exports the table to
+external workbooks. Uses HiddenNames for sequence counters.</p>
+<h2>Factory helpers</h2>
+<h3>create</h3>
+<p><strong>Create a configured translations table manager instance.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create(ByVal translationTable As ListObject, Optional ByVal stateScope As IApplicationState = Nothing) As ISetupTranslationsTable
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>translationTable</code>: ListObject. The managed translations table.</li>
+<li><code>stateScope</code>: Optional IApplicationState. Guard for Excel settings during updates.</li>
+</ul>
+<p><strong>Returns:</strong> ISetupTranslationsTable. Ready to process registry updates.</p>
+<hr />
+<details>
+<summary>Internal members (not exported)</summary>
+<h2>Factory helpers</h2>
+<h3>initialise-core</h3>
+<p><strong>Store the supplied table and optional scope inside the current instance.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub InitialiseCore(ByVal translationTable As ListObject, Optional ByVal stateScope As IApplicationState = Nothing)
+</code></pre>
+<hr />
+<h2>Public configuration</h2>
+<h3>host-worksheet</h3>
+<p><strong>Worksheet hosting the translations table.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get HostWorksheet() As Worksheet
+</code></pre>
+<hr />
+<h3>table-name</h3>
+<p><strong>Name of the managed translations ListObject.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get TableName() As String
+</code></pre>
+<hr />
+<h3>self</h3>
+<p><strong>Self reference used by factories returning interface instances.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Self() As ISetupTranslationsTable
+</code></pre>
+<hr />
+<h3>set-display-prompts</h3>
+<p><strong>Allow callers to toggle display prompts used during updates.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub SetDisplayPrompts(ByVal state As Boolean)
+</code></pre>
+<hr />
+<h3>resolve-scope</h3>
+<p><strong>Guarded access to the application scope.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ResolveScope() As IApplicationState
+</code></pre>
+<hr />
+<h2>Language management</h2>
+<h3>ensure-languages</h3>
+<p><strong>Ensure all provided languages exist as table headers.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureLanguages(Optional ByVal lang As String = vbNullString)
+</code></pre>
+<hr />
+<h3>try-get-written-languages</h3>
+<p><strong>Collect language names written to the right of the table.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function TryGetWrittenLanguages(ByRef languages As String, ByVal newLang As String) As Boolean
+</code></pre>
+<hr />
+<h3>ensure-language-column</h3>
+<p><strong>Create the language column when it does not exist.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureLanguageColumn(ByVal languageName As String)
+</code></pre>
+<hr />
+<h3>persist-language-list</h3>
+<p><strong>Persist the available languages into the worksheet hidden names.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub PersistLanguageList()
+</code></pre>
+<hr />
+<h3>switch-default-language</h3>
+<p><strong>Promote the requested language column to become the primary language.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub SwitchDefaultLanguage(ByVal languageName As String)
+</code></pre>
+<hr />
+<h3>switchable-languages</h3>
+<p><strong>Retrieve the available languages excluding the default column.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function SwitchableLanguages() As BetterArray
+</code></pre>
+<hr />
+<h3>languages</h3>
+<p><strong>Languages available for translation excluding the default column unless requested.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Languages(Optional ByVal includeDefault As Boolean = False) As BetterArray
+</code></pre>
+<hr />
+<h2>Language utilities</h2>
+<h3>default-language-header</h3>
+<p><strong>Resolve the current default language header.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function DefaultLanguageHeader() As String
+</code></pre>
+<hr />
+<h3>language-column-index</h3>
+<p><strong>Resolve the column index for a provided language header.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function LanguageColumnIndex(ByVal languageName As String) As Long
+</code></pre>
+<hr />
+<h3>resolve-language-column</h3>
+<p><strong>Resolve the data body range for a given language column.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ResolveLanguageColumn(ByVal languageName As String) As Range
+</code></pre>
+<hr />
+<h3>swap-language-columns</h3>
+<p><strong>Swap the headers, data, and totals between two language columns.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub SwapLanguageColumns(ByVal firstIndex As Long, ByVal secondIndex As Long)
+</code></pre>
+<hr />
+<h3>unique-temporary-header</h3>
+<p><strong>Generate a temporary header that does not collide with existing columns.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function UniqueTemporaryHeader() As String
+</code></pre>
+<hr />
+<h3>swap-cell-contents</h3>
+<p><strong>Swap the formula and number format between two cells.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub SwapCellContents(ByVal leftCell As Range, ByVal rightCell As Range)
+</code></pre>
+<hr />
+<h2>Registry processing</h2>
+<h3>reset-sequence</h3>
+<p><strong>Reset the hidden update sequence counter to zero.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ResetSequence(ByVal registrySheet As Worksheet)
+</code></pre>
+<hr />
+<h3>update-from-registry</h3>
+<p><strong>Update the translations table using the supplied registry sheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub UpdateFromRegistry(ByVal registrySheet As Worksheet, _
+                             Optional ByVal languages As String = vbNullString)
+</code></pre>
+<hr />
+<h3>process-registry</h3>
+<p><strong>Iterate all registry tables and process each watcher row.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ProcessRegistry(ByVal registrySheet As Worksheet, ByVal updateSequence As Long)
+</code></pre>
+<hr />
+<h3>process-registry-table</h3>
+<p><strong>Process a single registry ListObject.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ProcessRegistryTable(ByVal registryTable As ListObject, ByVal updateSequence As Long)
+</code></pre>
+<hr />
+<h3>should-process-range</h3>
+<p><strong>Determine whether the named range should be processed this cycle.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ShouldProcessRange(ByVal status As String, ByVal updateSequence As Long) As Boolean
+</code></pre>
+<hr />
+<h3>process-source-range</h3>
+<p><strong>Dispatch processing based on the requested translation mode.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ProcessSourceRange(ByVal sourceRange As Range, ByVal rngTag As String, ByVal mode As String)
+</code></pre>
+<hr />
+<h3>process-text-range</h3>
+<p><strong>Add literal cell values to the translations table.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ProcessTextRange(ByVal sourceRange As Range, ByVal rngTag As String)
+</code></pre>
+<hr />
+<h3>process-formula-range</h3>
+<p><strong>Extract quoted portions of formulas and add them as chunks.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ProcessFormulaRange(ByVal sourceRange As Range, ByVal rngTag As String)
+</code></pre>
+<hr />
+<h3>extract-formula-chunks</h3>
+<p><strong>Extract quoted text segments from a formula while handling escaped quotes.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ExtractFormulaChunks(ByVal formulaText As String) As BetterArray
+</code></pre>
+<hr />
+<h2>Chunk management</h2>
+<h3>add-chunk</h3>
+<p><strong>Add or update a translation chunk in the table.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AddChunk(ByVal label As String, ByVal rngTag As String)
+</code></pre>
+<hr />
+<h3>append-row</h3>
+<p><strong>Append a new list row and populate the mandatory cells.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function AppendRow(ByVal label As String, ByVal rngTag As String) As Long
+</code></pre>
+<hr />
+<h2>Label buffer</h2>
+<h3>init-label-buffer</h3>
+<p><strong>Read the label column into a 1D in-memory buffer for lookups.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub InitLabelBuffer()
+</code></pre>
+<hr />
+<h3>find-label-row</h3>
+<p><strong>Find the row index for a label using a simple linear scan of the label buffer.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function FindLabelRow(ByVal label As String) As Long
+</code></pre>
+<hr />
+<h2>Tag buffer</h2>
+<h3>init-tag-buffer</h3>
+<p><strong>Read the tag column into a 1D in-memory buffer for batch writes.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub InitTagBuffer()
+</code></pre>
+<hr />
+<h3>flush-tag-buffer</h3>
+<p><strong>Write the accumulated tag buffer back to the tag column in one operation.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub FlushTagBuffer()
+</code></pre>
+<hr />
+<h2>Process tracking</h2>
+<h3>track-processed-range</h3>
+<p><strong>Track the ranges processed during the current registry cycle.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub TrackProcessedRange(ByVal rngName As String)
+</code></pre>
+<hr />
+<h3>was-range-processed</h3>
+<p><strong>Determine whether a registry range was processed during the active cycle.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function WasRangeProcessed(ByVal rngName As String) As Boolean
+</code></pre>
+<hr />
+<h3>reset-processed-ranges</h3>
+<p><strong>Reset processed ranges tracking.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ResetProcessedRanges()
+</code></pre>
+<hr />
+<h3>remove-obsolete-labels</h3>
+<p><strong>Remove labels whose source ranges were processed but whose tags are stale.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RemoveObsoleteLabels(ByVal updateSequence As Long)
+</code></pre>
+<hr />
+<h3>deduplicate-labels</h3>
+<p><strong>Remove duplicate labels keeping the row with the oldest (lowest) tag sequence.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub DeduplicateLabels()
+</code></pre>
+<hr />
+<h3>sort-indices-descending</h3>
+<p><strong>Sort a 1-based Long array in descending order (simple insertion sort).</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub SortIndicesDescending(ByRef arr() As Long, ByVal count As Long)
+</code></pre>
+<hr />
+<h3>parse-tag</h3>
+<p><strong>Parse helper tag text into its components.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ParseTag(ByVal tagText As String, ByRef rangeName As String, ByRef sequenceValue As Long) As Boolean
+</code></pre>
+<hr />
+<h3>create-buffer</h3>
+<p><strong>Create a BetterArray buffer with deterministic bounds.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function CreateBuffer() As BetterArray
+</code></pre>
+<hr />
+<h3>build-duplicate-line</h3>
+<p><strong>Format a single duplicate-count line for reporting.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function BuildDuplicateLine(ByVal labelValue As String, ByVal occurrenceCount As Long) As String
+</code></pre>
+<hr />
+<h2>Reporting</h2>
+<h3>missing-labels</h3>
+<p><strong>Count missing translation labels for a specific language.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function MissingLabels(ByVal lang As String) As Long
+</code></pre>
+<hr />
+<h3>number-of-missing</h3>
+<p><strong>Summarise missing translations per language and optionally prompt the user.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function NumberOfMissing() As String
+</code></pre>
+<hr />
+<h3>update-missing-summary</h3>
+<p><strong>Update internal missing summary.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub UpdateMissingSummary(ByVal summary As BetterArray)
+</code></pre>
+<hr />
+<h3>internal-missing-summary</h3>
+<p><strong>Cached missing-labels summary across languages.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get InternalMissingSummary() As BetterArray
+</code></pre>
+<hr />
+<h3>update-duplicates-summary</h3>
+<p><strong>Build duplicate summary for every language column.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub UpdateDuplicatesSummary()
+</code></pre>
+<hr />
+<h3>internal-duplicates-summary</h3>
+<p><strong>Cached duplicates summary across languages.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get InternalDuplicatesSummary() As BetterArray
+</code></pre>
+<hr />
+<h3>duplicate-labels</h3>
+<p><strong>Report duplicate translation labels when they exist.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function DuplicateLabels(ByRef duplicateMessage As String, Optional ByVal languageName As String = vbNullString) As Boolean
+</code></pre>
+<hr />
+<h3>compute-duplicate-summary</h3>
+<p><strong>Compute duplicates for one language or all languages using simple linear counting.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ComputeDuplicateSummary(ByVal languageName As String) As TDuplicateSummary
+</code></pre>
+<hr />
+<h3>label-column-data</h3>
+<p><strong>Access the label column data range.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function LabelColumnData() As Range
+</code></pre>
+<hr />
+<h2>Tag column infrastructure</h2>
+<h3>tag-column-data-range</h3>
+<p><strong>Retrieve the helper tag column data range.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function TagColumnDataRange() As Range
+</code></pre>
+<hr />
+<h3>apply-tag-column-formatting</h3>
+<p><strong>Ensure the helper column keeps its stealth formatting regardless of state.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ApplyTagColumnFormatting()
+</code></pre>
+<hr />
+<h3>apply-lang-column-formatting</h3>
+<p><strong>Apply font, sizing, and duplicate highlighting to a language column.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ApplyLangColumnFormatting(ByVal langRng As Range)
+</code></pre>
+<hr />
+<h3>configure-tag-column</h3>
+<p><strong>Ensure the helper column header is located and configured.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ConfigureTagColumn()
+</code></pre>
+<hr />
+<h3>ensure-tag-column-ready</h3>
+<p><strong>Verify the helper tag column is accessible.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureTagColumnReady()
+</code></pre>
+<hr />
+<h3>require-tag-header</h3>
+<p><strong>Return the tag header cell, raising an error when unavailable.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function RequireTagHeader() As Range
+</code></pre>
+<hr />
+<h3>attach-tag-header</h3>
+<p><strong>Attempt to reconfigure and attach the tag header cell.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AttachTagHeader()
+</code></pre>
+<hr />
+<h3>is-range-valid</h3>
+<p><strong>Test whether a Range reference is still alive and readable.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function IsRangeValid(ByVal candidate As Range) As Boolean
+</code></pre>
+<hr />
+<h2>Tag integration helpers</h2>
+<h3>begin-tag-integration</h3>
+<p><strong>Temporarily include the helper tag column inside the managed table.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub BeginTagIntegration()
+</code></pre>
+<hr />
+<h3>end-tag-integration</h3>
+<p><strong>Restore the translations table to exclude the helper tag column.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EndTagIntegration()
+</code></pre>
+<hr />
+<h3>label-column-index</h3>
+<p><strong>Resolve the current column index storing translation labels.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function LabelColumnIndex() As Long
+</code></pre>
+<hr />
+<h2>Sorting and formatting</h2>
+<h3>sort-translations</h3>
+<p><strong>Sort the translations by their primary language column.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub SortTranslations()
+</code></pre>
+<hr />
+<h3>apply-formatting</h3>
+<p><strong>Apply light formatting and duplicate highlighting once per update.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ApplyFormatting()
+</code></pre>
+<hr />
+<h2>Data exchange</h2>
+<h3>export</h3>
+<p><strong>Export translations into a destination workbook.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Export(ByVal exportWorkbook As Workbook, Optional ByVal Hide As Long = xlSheetVisible)
+</code></pre>
+<hr />
+<h2>Registry bookkeeping</h2>
+<h3>next-update-sequence</h3>
+<p><strong>Retrieve and increment the registry update sequence.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function NextUpdateSequence(ByVal registrySheet As Worksheet) As Long
+</code></pre>
+<hr />
+<h3>persist-counter-value</h3>
+<p><strong>Persist the counter value inside a hidden worksheet-level name.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub PersistCounterValue(ByVal registrySheet As Worksheet, ByVal counterValue As Long)
+</code></pre>
+<hr />
+<h3>counter-numeric-value</h3>
+<p><strong>Retrieve the current counter value stored in worksheet names.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function CounterNumericValue(ByVal registrySheet As Worksheet) As Long
+</code></pre>
+<hr />
+<h3>hidden-name-store</h3>
+<p><strong>Create a HiddenNames wrapper for the supplied registry sheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function HiddenNameStore(ByVal registrySheet As Worksheet) As IHiddenNames
+</code></pre>
+<hr />
+<h3>metadata-store</h3>
+<p><strong>Resolve the hidden name store hosting metadata.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function MetadataStore() As IHiddenNames
+</code></pre>
+<hr />
+<h2>Validation and utilities</h2>
+<h3>validate-initialised</h3>
+<p><strong>Ensure the manager has been initialised before use.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ValidateInitialised()
+</code></pre>
+<hr />
+<h3>validate-translation-table</h3>
+<p><strong>Validate the supplied translations table.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ValidateTranslationTable(ByVal translationTable As ListObject)
+</code></pre>
+<hr />
+<h3>validate-registry-sheet</h3>
+<p><strong>Validate the registry sheet before processing.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ValidateRegistrySheet(ByVal registrySheet As Worksheet)
+</code></pre>
+<hr />
+<h3>resolve-named-range</h3>
+<p><strong>Resolve a named range from the workbook, returning Nothing when missing.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ResolveNamedRange(ByVal hostwb As Workbook, ByVal rangeName As String) As Range
+</code></pre>
+<hr />
+<h3>throw-project-error</h3>
+<p><strong>Raise a project error with a contextual message.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowProjectError(ByVal errNumber As ProjectError, ByVal message As String)
+</code></pre>
+<hr />
+<h2>Interface implementation</h2>
+<h3>ISetupTranslationsTable_EnsureLanguages</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ISetupTranslationsTable_EnsureLanguages(Optional ByVal languages As String = vbNullString)
+</code></pre>
+<p>Thin delegation stubs wiring ISetupTranslationsTable members to
+the corresponding public or private methods on this class.</p>
+<hr />
+<h3>initialise</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ISetupTranslationsTable_Initialise(ByVal translationTable As ListObject, Optional ByVal stateScope As IApplicationState)
+</code></pre>
+<hr />
+</details>
+<details>
+<summary>Used in (10 file(s))</summary>
+<ul>
+<li><a href="src/classes/setup/EventSetup.cls">EventSetup.cls</a></li>
+<li><a href="src/classes/setup/IEventSetup.cls">IEventSetup.cls</a></li>
+<li><a href="src/classes/setup/ISetupErrors.cls">ISetupErrors.cls</a></li>
+<li><a href="src/classes/setup/ISetupTranslationsTable.cls">ISetupTranslationsTable.cls</a></li>
+<li><a href="src/classes/setup/SetupErrors.cls">SetupErrors.cls</a></li>
+<li><a href="src/classes/setup/SetupImportService.cls">SetupImportService.cls</a></li>
+<li><a href="src/classes/setup/SetupTranslationsTable.cls">SetupTranslationsTable.cls</a></li>
+<li><a href="src/modules/mastersetup/EventsMasterSetupRibbon.bas">EventsMasterSetupRibbon.bas</a></li>
+<li><a href="src/modules/setup/EventsSetupRibbon.bas">EventsSetupRibbon.bas</a></li>
+<li><a href="src/tests/modules/setup/TestSetupTranslationsTable.bas">TestSetupTranslationsTable.bas</a></li>
+</ul>
+</details>
+
+  </main>
+</body>
+</html>
+

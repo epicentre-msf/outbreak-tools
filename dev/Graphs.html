@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Graphs - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>Graphs</h1>
+<p>Simplifies the creation and formatting of Excel ChartObject instances on
+analysis worksheets. The class wraps a single chart, allowing callers to
+attach data series from named ranges, assign category and legend labels,
+and apply scope-dependent formatting (time series, spatial, or standard).
+Charts are positioned at a caller-supplied Range and sized according to
+the GraphScope enum. Consumers interact through the IGraphs interface.</p>
+<p><strong>Depends on:</strong> <a href="Checking.html">Checking</a></p>
+<p><strong>Version:</strong> 1.0 (2026-02-09)</p>
+<h2>Instantiation</h2>
+<h3>create</h3>
+<p><strong>Create a Graph object bound to a worksheet and position</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create(sh As Worksheet, posRng As Range, Optional ByVal grName As String = vbNullString) As IGraphs
+</code></pre>
+<p>Graph objects simplify the manipulation of Excel graphs. They are based on a basic
+graphic grammar with the ability to stack graphs on top of each other.
+At its core, a graph object is created with a worksheet and a range where
+to write the graph. Values to be plotted should be in a named range on the
+worksheet used to instantiate the class.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The worksheet containing the values to be plotted.</li>
+<li><code>posRng</code>: Range. The cell or range determining where to position the graph.</li>
+<li><code>grName</code>: Optional String. Display name for the graph. Defaults to vbNullString.</li>
+</ul>
+<p><strong>Returns:</strong> IGraphs. A ready-to-use graph instance.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When sh is Nothing.</li>
+<li>ProjectError.ObjectNotInitialized When posRng is Nothing.</li>
+</ul>
+<p><strong>Depends on:</strong></p>
+<ul>
+<li>Checking</li>
+</ul>
+<hr />
+<h2>Operations</h2>
+<h3>add</h3>
+<p><strong>Create an empty chart on the worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub Add()
+</code></pre>
+<p>Chart creation, series attachment, labelling, and formatting.
+Creates an empty graph on a worksheet, ready for data to be
+attached to the graph. The graph is empty at creation. The width and height
+of the graph object may change depending on the scope in the future.</p>
+<hr />
+<h3>addseries</h3>
+<p><strong>Attach a data series from a named range</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AddSeries(ByVal rngName As String, ByVal chrtType As String, _
+                    Optional axisPos As String = vbNullString)
+</code></pre>
+<p>One graph can have multiple series added. Series are referenced using
+named ranges on the graph object worksheet. If the named range does not
+exist, the method logs a warning and exits silently. If no chart exists
+yet, Add is called lazily before attaching the series.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>rngName</code>: String. Named range containing the series values.</li>
+<li><code>chrtType</code>: String. Chart type: &quot;line&quot;, &quot;point&quot;, &quot;bar&quot;, or &quot;hbar&quot;. Defaults to &quot;bar&quot; for unknown values.</li>
+<li><code>axisPos</code>: Optional String. Axis position: &quot;right&quot; adds a secondary axis; any other value uses the primary axis. Defaults to vbNullString.</li>
+</ul>
+<hr />
+<h2>Checking</h2>
+<h3>has-checkings</h3>
+<p><strong>Determine whether diagnostics have been captured</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get HasCheckings() As Boolean
+</code></pre>
+<p>Returns True when at least one LogInfo call has been made,
+indicating that diagnostic information is available.</p>
+<p><strong>Returns:</strong> Boolean. True when internal checks exist.</p>
+<hr />
+<h3>checking-values</h3>
+<p><strong>Retrieve the collected checking entries</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get CheckingValues() As Object
+</code></pre>
+<p>Returns the internal IChecking store when at least one entry has
+been recorded. Returns Nothing otherwise.</p>
+<p><strong>Returns:</strong> Object. The IChecking instance with logged diagnostics.</p>
+<hr />
+<details>
+<summary>Internal members (not exported)</summary>
+<h2>Instantiation</h2>
+<h3>self</h3>
+<p><strong>Current object instance</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Self() As IGraphs
+</code></pre>
+<p>Returns the current instance cast to its interface. Used internally
+by the factory method to return an IGraphs reference.</p>
+<p><strong>Returns:</strong> IGraphs. Reference to the current object.</p>
+<hr />
+<h3>wksh</h3>
+<p><strong>Host worksheet for the graph</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Wksh() As Worksheet
+</code></pre>
+<p>Returns the worksheet reference stored during creation. All named
+ranges for series data reside on this worksheet.</p>
+<p><strong>Returns:</strong> Worksheet. The worksheet hosting the chart.</p>
+<hr />
+<h3>wksh-set</h3>
+<p><strong>Assign the host worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Set Wksh(ByVal sh As Worksheet)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The worksheet where graph data resides.</li>
+</ul>
+<hr />
+<h3>start-range</h3>
+<p><strong>Starting cell or range for the graph position</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get StartRange() As Range
+</code></pre>
+<p>Returns the Range that determines the top-left anchor point of the
+chart on the worksheet.</p>
+<p><strong>Returns:</strong> Range. The positioning range.</p>
+<hr />
+<h3>start-range-set</h3>
+<p><strong>Assign the starting position range</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Set StartRange(ByVal strtRng As Range)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>strtRng</code>: Range. The cell or range used to position the graph.</li>
+</ul>
+<hr />
+<h3>name-set</h3>
+<p><strong>Assign the graph display name</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Let Name(ByVal grName As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>grName</code>: String. The graph name.</li>
+</ul>
+<hr />
+<h3>name</h3>
+<p><strong>Retrieve the graph display name</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Name() As String
+</code></pre>
+<p><strong>Returns:</strong> String. The graph name.</p>
+<hr />
+<h2>GraphElements</h2>
+<h3>graph-chart</h3>
+<p><strong>Retrieve the internal ChartObject</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get graphChart() As ChartObject
+</code></pre>
+<p>Internal chart object and series index state.
+Returns the ChartObject created by Add. Nothing until Add is called.</p>
+<p><strong>Returns:</strong> ChartObject. The underlying Excel chart object.</p>
+<hr />
+<h3>series-index</h3>
+<p><strong>Latest series index</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get seriesIndex() As Long
+</code></pre>
+<p>Tracks the 1-based index of the most recently added series.
+Incremented by AddSeries and used by AddLabels to target the
+correct series entry.</p>
+<p><strong>Returns:</strong> Long. Current series index.</p>
+<hr />
+<h3>series-index-set</h3>
+<p><strong>Update the latest series index</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Let seriesIndex(ByVal ind As Long)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>ind</code>: Long. New index value.</li>
+</ul>
+<hr />
+<h2>Operations</h2>
+<h3>addlabels</h3>
+<p><strong>Assign category and legend labels to the current series</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AddLabels(ByVal catName As String, _
+                     ByVal lblName As String, _
+                     Optional ByVal prefix As String = vbNullString, _
+                     Optional ByVal prefixOnly As Boolean = False, _
+                     Optional ByVal hardCodeLabels As Boolean = True)
+</code></pre>
+<p>Sets the category axis values and legend entry for the most recently
+added series. The optional prefix is prepended to the legend name,
+separated by &quot; - &quot; unless prefixOnly is True. When hardCodeLabels is
+False, the legend entry references the named range dynamically rather
+than using a literal string.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>catName</code>: String. Named range for category axis labels.</li>
+<li><code>lblName</code>: String. Named range for the legend entry text.</li>
+<li><code>prefix</code>: Optional String. Display prefix prepended to the legend name. Defaults to vbNullString.</li>
+<li><code>prefixOnly</code>: Optional Boolean. When True, uses only the prefix as the legend entry. Defaults to False.</li>
+<li><code>hardCodeLabels</code>: Optional Boolean. When True, legend text is literal; when False, references the named range. Defaults to True.</li>
+</ul>
+<hr />
+<h3>format</h3>
+<p><strong>Apply layout and formatting to the chart</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub Format(Optional ByVal valuesTitle As String = vbNullString, _
+                  Optional ByVal catTitle As String = vbNullString, _
+                  Optional ByVal plotTitle As String = vbNullString, _
+                  Optional ByVal secondAxisTitle As String = vbNullString, _
+                  Optional ByVal scope As Byte = GraphScopeNormal, _
+                  Optional ByVal heightFactor As Long = 1, _
+                  Optional ByVal hardCodeLabels As Boolean = True)
+</code></pre>
+<p>Formats are defined based on the scope of the graph. For time series, graphs are larger;
+for spatio-temporal analyses, they are wider. The scope controls dimension coefficients,
+axis gridline colours, legend placement, and plot area reverse ordering. When
+hardCodeLabels is False, axis titles and the chart title reference named ranges
+dynamically rather than using literal strings.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>valuesTitle</code>: Optional String. Title for the value axis (Y-axis). Defaults to vbNullString.</li>
+<li><code>catTitle</code>: Optional String. Title for the category axis (X-axis). Defaults to vbNullString.</li>
+<li><code>plotTitle</code>: Optional String. Title displayed above the chart. Defaults to vbNullString.</li>
+<li><code>secondAxisTitle</code>: Optional String. Title for the secondary value axis. Defaults to vbNullString.</li>
+<li><code>scope</code>: Optional Byte. GraphScope value controlling layout sizing. Defaults to GraphScopeNormal.</li>
+<li><code>heightFactor</code>: Optional Long. Multiplicative factor applied to chart height. Defaults to 1.</li>
+<li><code>hardCodeLabels</code>: Optional Boolean. When True, axis titles are literal text. Defaults to True.</li>
+</ul>
+<hr />
+<h2>Helpers</h2>
+<h3>range-exist</h3>
+<p><strong>Test whether a named range exists on the host worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function RangeExist(ByVal rngName As String) As Boolean
+</code></pre>
+<p>Private utility functions for range validation and address resolution.
+Uses On Error Resume Next to attempt resolving the named range.
+Returns True when the range is valid and non-Nothing.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>rngName</code>: String. Named range to check.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the named range exists.</p>
+<hr />
+<h3>rng-address</h3>
+<p><strong>Return the full worksheet-qualified address of a named range</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function RngAddress(ByVal rngName As String) As String
+</code></pre>
+<p>Resolves the named range on the host worksheet and returns its address
+in the format 'SheetName'!$A$1. Returns vbNullString when the range
+does not exist.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>rngName</code>: String. Named range to resolve.</li>
+</ul>
+<p><strong>Returns:</strong> String. Worksheet-qualified address or vbNullString.</p>
+<hr />
+<h2>Checking</h2>
+<h3>log-info</h3>
+<p><strong>Record a diagnostic entry in the internal checking store</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub LogInfo(ByVal label As String, _
+                    Optional ByVal scope As Byte = checkingNote)
+</code></pre>
+<p>Logging and validation support via the IChecking interface.
+Lazily creates the Checking instance on first use and appends the
+message using a monotonically increasing counter key. The checking
+store is exposed through HasCheckings and CheckingValues.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>label</code>: String. The message to record.</li>
+<li><code>scope</code>: Optional Byte. Severity level from CheckingLogType. Defaults to checkingNote.</li>
+</ul>
+<hr />
+<h2>ErrorHandling</h2>
+<h3>show-debug</h3>
+<p><strong>Print debug information to the Immediate window</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ShowDebug()
+</code></pre>
+<p>Centralised error-raising and debug helpers.
+Outputs basic debug information including the graph name.</p>
+<hr />
+<h3>throw-error</h3>
+<p><strong>Raise a ProjectError-based exception</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
+</code></pre>
+<p>Wrapper around Err.Raise that standardises the source for consistent
+stack traces across all methods in this class.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>errNumb</code>: Long. ProjectError code describing the failure.</li>
+<li><code>errorMessage</code>: String. Descriptive error message.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.<varies> Always raises the specified error.</li>
+</ul>
+<hr />
+<h2>Interface</h2>
+<h3>IGraphs_Add</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub IGraphs_Add()
+</code></pre>
+<p>Delegated members satisfying the IGraphs contract.</p>
+<hr />
+</details>
+<details>
+<summary>Used in (6 file(s))</summary>
+<ul>
+<li><a href="src/classes/analyses/AnalysisOutput.cls">AnalysisOutput.cls</a></li>
+<li><a href="src/classes/analyses/AnaTabIds.cls">AnaTabIds.cls</a></li>
+<li><a href="src/classes/graphs/Graphs.cls">Graphs.cls</a></li>
+<li><a href="src/classes/graphs/IGraphs.cls">IGraphs.cls</a></li>
+<li><a href="src/classes/linelist/Linelist.cls">Linelist.cls</a></li>
+<li><a href="src/tests/modules/graphs/TestGraphs.bas">TestGraphs.bas</a></li>
+</ul>
+</details>
+
+  </main>
+</body>
+</html>
+

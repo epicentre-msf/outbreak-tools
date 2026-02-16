@@ -1,0 +1,589 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>UpdatedValues - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>UpdatedValues</h1>
+<p>Tracks watched setup columns and exposes update status to events. Maintains
+a registry of ListObjects on a dedicated worksheet, backed by workbook-level
+named ranges, to detect column-level changes and report update flags.</p>
+<h2>Factory</h2>
+<h3>create</h3>
+<p><strong>Build a new watcher bound to the specified registry worksheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create(ByVal sh As Worksheet, Optional ByVal ignoredId As String = vbNullString) As IUpdatedValues
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. Registry worksheet hosting the watcher tables.</li>
+<li><code>ignoredId</code>: Optional String. Reserved for future use (ignored).</li>
+</ul>
+<p><strong>Returns:</strong> IUpdatedValues. Configured watcher instance.</p>
+<hr />
+<h2>PublicState</h2>
+<h3>worksheet</h3>
+<p><strong>Worksheet hosting the watcher registry table.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Wksh() As Worksheet
+</code></pre>
+<p><strong>Returns:</strong> Worksheet. The registry worksheet.</p>
+<hr />
+<h2>Interface implementation</h2>
+<h3>exists</h3>
+<p><strong>Determine whether a registry ListObject already exists for the supplied identifier.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Exists(ByVal listName As String) As Boolean
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>listName</code>: String. Table or registry identifier to look up.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when a matching registry ListObject exists.</p>
+<hr />
+<details>
+<summary>Internal members (not exported)</summary>
+<h2>Factory</h2>
+<h3>self</h3>
+<p><strong>Current object instance cast to the interface.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Self() As IUpdatedValues
+</code></pre>
+<p><strong>Returns:</strong> IUpdatedValues. The current instance.</p>
+<hr />
+<h2>PublicState</h2>
+<h3>worksheet-set</h3>
+<p><strong>Bind the watcher to a registry worksheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Set Wksh(ByVal sh As Worksheet)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The worksheet to assign.</li>
+</ul>
+<hr />
+<h2>PrivateAccessors</h2>
+<h3>ensure-worksheet</h3>
+<p><strong>Guard that the registry worksheet reference is initialised before use.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function EnsureWorksheet() As Worksheet
+</code></pre>
+<hr />
+<h3>registry-list-object-for-table</h3>
+<p><strong>Retrieve or create the registry ListObject that stores watchers for the supplied source table.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function RegistryListObjectForTable(ByVal tableName As String, _
+                                            ByVal createWhenMissing As Boolean) As ListObject
+</code></pre>
+<hr />
+<h3>registry-list-object-by-name</h3>
+<p><strong>Locate a registry ListObject on the worksheet by its name.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function RegistryListObjectByName(ByVal listName As String) As ListObject
+</code></pre>
+<hr />
+<h3>registry-table</h3>
+<p><strong>Return a CustomTable helper for the specified registry ListObject name or the last accessed one.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get RegistryTable(Optional ByVal tableName As String = vbNullString) As ICustomTable
+</code></pre>
+<hr />
+<h3>reset-registry-cache</h3>
+<p><strong>Clear cached references so subsequent calls rebuild registry helpers.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ResetRegistryCache()
+</code></pre>
+<hr />
+<h3>track-last-registry-name</h3>
+<p><strong>Remember the most recently accessed registry ListObject name.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub TrackLastRegistryName(ByVal listName As String)
+</code></pre>
+<hr />
+<h3>resolve-registry-list-name</h3>
+<p><strong>Determine the registry ListObject name to use for the provided identifier or the last accessed registry.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ResolveRegistryListName(ByVal candidate As String) As String
+</code></pre>
+<hr />
+<h3>last-registry-list-name</h3>
+<p><strong>Retrieve the most recently added registry ListObject name on the worksheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function LastRegistryListName() As String
+</code></pre>
+<hr />
+<h3>registry-list-objects</h3>
+<p><strong>Enumerate every registry ListObject hosted on the watcher worksheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function RegistryListObjects(Optional ByVal preferredName As String = vbNullString) As Collection
+</code></pre>
+<hr />
+<h2>NameIndex</h2>
+<h3>registry-list-name-for-table</h3>
+<p><strong>Resolve the registry ListObject name for the supplied table, creating a new identifier when requested.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function RegistryListNameForTable(ByVal tableName As String, _
+                                          ByVal allowCreateEntry As Boolean) As String
+</code></pre>
+<hr />
+<h3>build-registry-list-name</h3>
+<p><strong>Compose the registry ListObject name for the supplied table.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function BuildRegistryListName(ByVal tableName As String) As String
+</code></pre>
+<hr />
+<h3>ensure-name-index-table</h3>
+<p><strong>Guarantee the registry name index ListObject exists on the worksheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function EnsureNameIndexTable() As ListObject
+</code></pre>
+<hr />
+<h3>ensure-name-index-headers</h3>
+<p><strong>Apply the expected headers to the name index ListObject.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureNameIndexHeaders(ByVal lo As ListObject)
+</code></pre>
+<hr />
+<h3>ensure-name-index-entry</h3>
+<p><strong>Insert or refresh the name index entry for the supplied table.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureNameIndexEntry(ByVal tableName As String, ByVal registryName As String)
+</code></pre>
+<hr />
+<h3>remove-name-index-entry</h3>
+<p><strong>Remove the name index entry associated with the supplied registry.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RemoveNameIndexEntry(ByVal tableName As String, ByVal registryName As String)
+</code></pre>
+<hr />
+<h3>reset-registry-name-cache</h3>
+<p><strong>Clear the cached registry name lookup.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ResetRegistryNameCache()
+</code></pre>
+<hr />
+<h3>registry-name-cache</h3>
+<p><strong>Load or retrieve the cached registry names for the current worksheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function RegistryNameCache() As Collection
+</code></pre>
+<hr />
+<h3>lookup-registry-name</h3>
+<p><strong>Retrieve the registry ListObject name associated with the supplied table.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function LookupRegistryName(ByVal tableName As String) As String
+</code></pre>
+<hr />
+<h3>lookup-table-name-from-registry</h3>
+<p><strong>Attempt to determine the original table name from a registry ListObject.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function LookupTableNameFromRegistry(ByVal registryName As String) As String
+</code></pre>
+<hr />
+<h3>clear-name-index-entries</h3>
+<p><strong>Remove every entry from the registry name index.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ClearNameIndexEntries()
+</code></pre>
+<hr />
+<h3>clamp-start-column</h3>
+<p><strong>Ensure a proposed registry column start fits within the worksheet boundaries.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ClampStartColumn(ByVal startColumn As Long, _
+                                  Optional ByVal targetSh As Worksheet) As Long
+</code></pre>
+<hr />
+<h3>worksheet-last-used-column</h3>
+<p><strong>Determine the last used column on the registry worksheet using End(xlToLeft).</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function WorksheetLastUsedColumn(ByVal sh As Worksheet) As Long
+</code></pre>
+<hr />
+<h3>next-available-column</h3>
+<p><strong>Determine the next column available for placing the registry table.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function NextAvailableColumn() As Long
+</code></pre>
+<hr />
+<h3>create-registry-list-object</h3>
+<p><strong>Build an empty registry ListObject with the expected headers.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function CreateRegistryListObject(ByVal sh As Worksheet, ByVal loName As String) As ListObject
+</code></pre>
+<hr />
+<h3>ensure-registry-headers</h3>
+<p><strong>Guarantee the registry ListObject exposes the expected header names.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureRegistryHeaders(ByVal lo As ListObject)
+</code></pre>
+<hr />
+<h2>ColumnRegistration</h2>
+<h3>add-columns</h3>
+<p><strong>Register or refresh watched columns for the supplied ListObject.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AddColumns(ByVal source As ListObject)
+</code></pre>
+<p>Scans the source ListObject header row for metadata tags and synchronises
+the registry table so named ranges remain aligned with the current layout.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>source</code>: ListObject. Table to inspect for update tags.</li>
+</ul>
+<hr />
+<h3>add-sheet</h3>
+<p><strong>Register tagged columns for every ListObject on the provided worksheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AddSheet(ByVal targetSheet As Worksheet)
+</code></pre>
+<hr />
+<h3>remove-lo</h3>
+<p><strong>Remove registry entries associated with the supplied ListObject.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RemoveListObject(ByVal target As ListObject)
+</code></pre>
+<hr />
+<h3>column-label-matches-table</h3>
+<p><strong>Determine whether a registry column label belongs to the provided ListObject name.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ColumnLabelMatchesTable(ByVal columnLabel As String, _
+                                         ByVal tableName As String) As Boolean
+</code></pre>
+<hr />
+<h3>column-tag</h3>
+<p><strong>Read the metadata tag associated with a column header, searching above the header row.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ColumnTag(ByVal headerCell As Range) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>headerCell</code>: Range. The target header cell.</li>
+</ul>
+<hr />
+<h3>should-watch-column</h3>
+<p><strong>Determine whether a column should be monitored based on its tag value.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ShouldWatchColumn(ByVal tagValue As String) As Boolean
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>tagValue</code>: String. Tag retrieved from worksheet metadata.</li>
+</ul>
+<hr />
+<h3>build-registry-index</h3>
+<p><strong>Create a lightweight lookup of existing registry rows keyed by normalised range name.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function BuildRegistryIndex(ByVal registry As ListObject) As BetterArray
+</code></pre>
+<hr />
+<h3>ensure-registry-row-from-index</h3>
+<p><strong>Locate or append a registry row for the provided range name.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function EnsureRegistryRowFromIndex(ByVal registry As ListObject, _
+                                            ByVal registryIndex As BetterArray, _
+                                            ByVal rangeName As String, _
+                                            ByRef isNew As Boolean) As Long
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>registryIndex</code>: BetterArray. Index built from existing entries.</li>
+<li><code>rangeName</code>: String. Normalised range identifier.</li>
+<li><code>isNew</code>: Boolean. Output flag indicating whether a new row was added.</li>
+</ul>
+<hr />
+<h3>find-registry-row-in-index</h3>
+<p><strong>Locate a registry row index in the cached index by its normalised key.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function FindRegistryRowInIndex(ByVal registryIndex As BetterArray, _
+                                        ByVal key As String) As Long
+</code></pre>
+<hr />
+<h3>populate-registry-row</h3>
+<p><strong>Write watcher metadata to the specified registry row and initialise status flags.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub PopulateRegistryRow(ByVal registry As ListObject, _
+                                ByVal rowIndex As Long, _
+                                ByVal columnLabel As String, _
+                                ByVal rangeName As String, _
+                                ByVal tagValue As String, _
+                                ByVal isNew As Boolean)
+</code></pre>
+<hr />
+<h3>ensure-named-range</h3>
+<p><strong>Create or refresh the workbook defined name pointing to the watched column.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureNamedRange(ByVal source As ListObject, _
+                             ByVal columnName As String, _
+                             ByVal rangeName As String)
+</code></pre>
+<hr />
+<h3>add-expected-key</h3>
+<p><strong>Track range names detected during scanning to support registry pruning.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AddExpectedKey(ByVal expected As BetterArray, ByVal rangeName As String)
+</code></pre>
+<hr />
+<h3>expected-contains</h3>
+<p><strong>Test whether the expected list already includes the provided range name.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ExpectedContains(ByVal expected As BetterArray, ByVal rangeName As String) As Boolean
+</code></pre>
+<hr />
+<h3>prune-obsolete-entries</h3>
+<p><strong>Remove registry rows and named ranges for columns no longer tagged for watching.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub PruneObsoleteEntries(ByVal registry As ListObject, _
+                                 ByVal expected As BetterArray, _
+                                 ByVal tableName As String)
+</code></pre>
+<hr />
+<h2>StatusTracking</h2>
+<h3>is-updated</h3>
+<p><strong>Determine whether the tracked column has been marked as updated.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get IsUpdated(ByVal checkColName As String) As Boolean
+</code></pre>
+<p>Searches across all registry ListObjects for a matching entry and returns
+True when the column is flagged as updated since the last reset.</p>
+<hr />
+<h3>check-update</h3>
+<p><strong>Evaluate a range change against the registered watchers and flag updates.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub CheckStatus(ByVal tagReference As Variant, ByVal Target As Range)
+</code></pre>
+<p>Compares the changed range with named ranges tracked in the registry and
+marks the first matching entry as updated.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>tagReference</code>: Variant. Identifier selecting the registry scope.</li>
+<li><code>Target</code>: Range. The changed cells to evaluate.</li>
+</ul>
+<hr />
+<h3>resolve-named-range</h3>
+<p><strong>Attempt to resolve the workbook defined name into a concrete Range reference.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ResolveNamedRange(ByVal rangeName As String) As Range
+</code></pre>
+<hr />
+<h3>update-status-for-cell</h3>
+<p><strong>Write the supplied status flag into the registry row matching the range cell.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub UpdateStatusForCell(ByVal rangeCell As Range, ByVal statusValue As String)
+</code></pre>
+<hr />
+<h3>remove-outdated-entry</h3>
+<p><strong>Clean registry rows that point to missing or invalid named ranges.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function RemoveOutdatedEntry(ByVal registry As ListObject, _
+                                     ByVal rangeCell As Range) As Boolean
+</code></pre>
+<hr />
+<h3>reset-update-status</h3>
+<p><strong>Reset every registry row to the default (non-updated) status value.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ResetUpdateStatus()
+</code></pre>
+<hr />
+<h2>CleanupHelpers</h2>
+<h3>clear-up</h3>
+<p><strong>Reset all tracked columns to the default (not updated) status.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ClearUp()
+</code></pre>
+<hr />
+<h3>delete-up</h3>
+<p><strong>Remove the watcher registry and associated workbook named ranges.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub DeleteUp()
+</code></pre>
+<hr />
+<h3>remove-registry-table</h3>
+<p><strong>Remove an entire registry ListObject and associated named ranges from the worksheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RemoveRegistryTable(ByVal registry As ListObject, _
+                                Optional ByVal tableName As String = vbNullString)
+</code></pre>
+<hr />
+<h3>remove-all-named-ranges</h3>
+<p><strong>Delete all workbook defined names created for watcher columns.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RemoveAllNamedRanges()
+</code></pre>
+<hr />
+<h3>remove-named-range</h3>
+<p><strong>Delete a single defined name if it exists in the workbook.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RemoveNamedRange(ByVal rangeName As String)
+</code></pre>
+<hr />
+<h3>switch-tags</h3>
+<p><strong>Set every registry status flag to the supplied value.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub SwitchTags(ByVal value As String)
+</code></pre>
+<hr />
+<h2>Utilities</h2>
+<h3>registry-column-data</h3>
+<p><strong>Return the DataBodyRange for the specified registry column if available.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function RegistryColumnData(ByVal registry As ListObject, _
+                                    ByVal headerName As String) As Range
+</code></pre>
+<hr />
+<h3>registry-tag-from-variant</h3>
+<p><strong>Normalise a tag reference into a registry identifier string.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function RegistryTagFromVariant(ByVal tagReference As Variant) As String
+</code></pre>
+<p>Converts a Variant tag reference into a registry identifier:</p>
+<ul>
+<li>ListObject: returns ListObject.Name (scopes search to that table's registry).</li>
+<li>String: returns the string value (used as table name or registry identifier).</li>
+<li>Worksheet: returns vbNullString (caller should fall back to Target.ListObject).</li>
+</ul>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>tagReference</code>: Variant. The tag reference to normalise.</li>
+</ul>
+<p><strong>Returns:</strong> String. The registry identifier, or vbNullString when not resolvable.</p>
+<hr />
+<h3>row-count</h3>
+<p><strong>Return the number of rows contained in the supplied range.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function RowCount(ByVal target As Range) As Long
+</code></pre>
+<hr />
+<h3>current-lo-name</h3>
+<p><strong>Compose the ListObject name used when storing the registry table.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function CurrentLoName(ByVal tableName As String) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>tableName</code>: String. Source ListObject name associated with the registry.</li>
+</ul>
+<hr />
+<h3>build-column-label</h3>
+<p><strong>Compose the descriptive label stored in the registry for a watched column.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function BuildColumnLabel(ByVal tableName As String, ByVal columnName As String) As String
+</code></pre>
+<hr />
+<h3>extract-column-name-from-label</h3>
+<p><strong>Retrieve the column portion from a table-column label.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ExtractColumnNameFromLabel(ByVal columnLabel As String) As String
+</code></pre>
+<hr />
+<h3>column-matches-identifier</h3>
+<p><strong>Determine whether the supplied registry label or range name matches the target identifier.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ColumnMatchesIdentifier(ByVal columnLabel As String, _
+                                         ByVal rangeName As String, _
+                                         ByVal targetKey As String) As Boolean
+</code></pre>
+<hr />
+<h3>build-range-name</h3>
+<p><strong>Generate the workbook defined name for a watched column, including table context.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function BuildRangeName(ByVal tableKey As String, ByVal normalizedColumnKey As String) As String
+</code></pre>
+<hr />
+<h3>normalize-column-key</h3>
+<p><strong>Produce a workbook-friendly identifier from a column header.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function NormalizeColumnKey(ByVal columnName As String) As String
+</code></pre>
+<hr />
+<h3>normalize-identifier</h3>
+<p><strong>Produce a safe workbook-level identifier from free-form text.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function NormalizeIdentifier(ByVal valueText As String) As String
+</code></pre>
+<hr />
+<h3>replace-repeated-underscores</h3>
+<p><strong>Collapse multiple underscores into a single instance.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ReplaceRepeatedUnderscores(ByVal valueText As String) As String
+</code></pre>
+<hr />
+<h3>trim-underscores</h3>
+<p><strong>Remove leading and trailing underscore characters.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function TrimUnderscores(ByVal valueText As String) As String
+</code></pre>
+<hr />
+<h3>normalize-value</h3>
+<p><strong>Normalise text by trimming spaces and applying lower case.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function NormalizeValue(ByVal valueText As String) As String
+</code></pre>
+<hr />
+<h3>bulk-value</h3>
+<p><strong>Read a value from a bulk-read .Value2 result.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function BulkValue(ByVal data As Variant, ByVal idx As Long, ByVal rowTotal As Long) As Variant
+</code></pre>
+<p>When a single-row Range is read via .Value2, VBA returns a scalar Variant
+rather than a 2D array. This helper transparently handles both cases.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>data</code>: Variant. The .Value2 result (scalar for 1 row, 2D array otherwise).</li>
+<li><code>idx</code>: Long. The 1-based row index to read.</li>
+<li><code>rowTotal</code>: Long. Total number of rows in the source range.</li>
+</ul>
+<p><strong>Returns:</strong> Variant. The cell value at the requested row.</p>
+<hr />
+<h3>throw-error</h3>
+<p><strong>Raise a ProjectError aligned error from the current class.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal errorMessage As String)
+</code></pre>
+<hr />
+<h2>Interface implementation</h2>
+<h3>IUpdatedValues_AddColumns</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub IUpdatedValues_AddColumns(ByVal Lo As ListObject)
+</code></pre>
+<h1>Thin delegation stubs forwarding each IUpdatedValues member
+to the corresponding internal implementation above.</h1>
+<hr />
+<h3>switch-tags-to-no</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub IUpdatedValues_SwitchTagsToNo()
+</code></pre>
+<hr />
+<h3>switch-tags-to-yes</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub IUpdatedValues_SwitchTagsToYes()
+</code></pre>
+<hr />
+</details>
+<details>
+<summary>Used in (14 file(s))</summary>
+<ul>
+<li><a href="src/classes/setup/EventSetup.cls">EventSetup.cls</a></li>
+<li><a href="src/classes/setup/IEventSetup.cls">IEventSetup.cls</a></li>
+<li><a href="src/classes/setup/ISetupPreparation.cls">ISetupPreparation.cls</a></li>
+<li><a href="src/classes/setup/IUpdatedValues.cls">IUpdatedValues.cls</a></li>
+<li><a href="src/classes/setup/SetupPreparation.cls">SetupPreparation.cls</a></li>
+<li><a href="src/classes/setup/UpdatedValues.cls">UpdatedValues.cls</a></li>
+<li><a href="src/modules/mastersetup/EventsMasterSetupRibbon.bas">EventsMasterSetupRibbon.bas</a></li>
+<li><a href="src/modules/mastersetup/MasterSetupHelpers.bas">MasterSetupHelpers.bas</a></li>
+<li><a href="src/modules/setup/EventsSetupRibbon.bas">EventsSetupRibbon.bas</a></li>
+<li><a href="src/modules/setup/SetupHelpers.bas">SetupHelpers.bas</a></li>
+<li><a href="src/msetup-codes/modules/EventsGlobal.bas">EventsGlobal.bas</a></li>
+<li><a href="src/msetup-codes/modules/EventsRibbon.bas">EventsRibbon.bas</a></li>
+<li><a href="src/tests/modules/setup/TestSetupPreparation.bas">TestSetupPreparation.bas</a></li>
+<li><a href="src/tests/modules/setup/TestUpdatedValues.bas">TestUpdatedValues.bas</a></li>
+</ul>
+</details>
+
+  </main>
+</body>
+</html>
+

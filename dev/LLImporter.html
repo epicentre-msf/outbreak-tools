@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LLImporter - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>LLImporter</h1>
+<p>Imports linelist data from external workbooks into the source linelist.
+Supports importing HList/VList data, custom dropdowns, show/hide state,
+editable labels, single metadata values, and geobase data. Tracks which
+sheets and variables were imported, and builds a report of items not
+imported or not touched. Consumers interact through the ILLImporter
+interface.</p>
+<p><strong>Depends on:</strong> <a href="ILLdictionary.html">ILLdictionary</a>, <a href="IPasswords.html">IPasswords</a>, <a href="ICustomTable.html">ICustomTable</a>, <a href="IDataSheet.html">IDataSheet</a>, <a href="IShowHideManager.html">IShowHideManager</a>, <a href="ILLGeo.html">ILLGeo</a>, <a href="ILLChoices.html">ILLChoices</a>, <a href="ILLVariables.html">ILLVariables</a>, <a href="IDropdownLists.html">IDropdownLists</a>, <a href="IHiddenNames.html">IHiddenNames</a></p>
+<h2>Factory</h2>
+<h3>create</h3>
+<p><strong>Create an importer from the source linelist workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create(ByVal sourceWkb As Workbook) As ILLImporter
+</code></pre>
+<p>Factory method that validates the workbook is not Nothing, then constructs
+and returns a new LLImporter instance through the ILLImporter interface.
+Called on the predeclared instance.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sourceWkb</code>: Workbook. The linelist workbook that will receive imported data.</li>
+</ul>
+<p><strong>Returns:</strong> ILLImporter. A fully initialised instance ready for import operations.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>vbObjectError When the workbook is Nothing.</li>
+</ul>
+<hr />
+<h2>Data Checks</h2>
+<h3>has-data</h3>
+<p><strong>Whether the workbook contains user-entered data</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get HasData() As Boolean
+</code></pre>
+<p>Scans all HList sheets for non-empty rows beyond the blank count
+threshold stored in cell(1,6). Returns True as soon as a single row
+has user data. Used to warn the user before clearing or overwriting.</p>
+<p><strong>Returns:</strong> Boolean. True when at least one HList row has user data.</p>
+<hr />
+<h3>has-same-language</h3>
+<p><strong>Check whether the import workbook language matches</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function HasSameLanguage(ByVal impwb As Workbook) As Boolean
+</code></pre>
+<p>Reads the language tag from the import workbook Metadata sheet and
+compares it with the source workbook dictionary language via
+LLTranslations. Stores the result internally so that ImportShowHide,
+ImportEditableLabels, and ImportSingleValues silently skip when
+languages differ. Returns False when the Metadata sheet is missing.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>impwb</code>: Workbook. The opened import workbook.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when languages match.</p>
+<hr />
+<h2>Data Operations</h2>
+<h3>clear-data</h3>
+<p><strong>Clear all user-entered data from HList and VList sheets</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ClearData()
+</code></pre>
+<p>Iterates over all worksheets in the source workbook. For HList sheets,
+clears non-formula column values from the ListObject data body. For
+VList sheets, clears non-formula named range values. Unprotects and
+re-protects each sheet via IPasswords.</p>
+<hr />
+<h3>import-data</h3>
+<p><strong>Import data from HList and VList worksheets</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ImportData(ByVal impwb As Workbook, ByVal pasteAtBottom As Boolean)
+</code></pre>
+<p>Iterates over the import workbook worksheets, matching them to source
+workbook sheets by name. For HList sheets, delegates to
+ImportHListSheet. For VList sheets, delegates to ImportVListSheet.
+Tracks imported sheets and variables, and builds &quot;not imported&quot; report
+entries for sheets and variables not found in the current workbook.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>impwb</code>: Workbook. The opened import workbook.</li>
+<li><code>pasteAtBottom</code>: Boolean. When True, appends data below existing rows.</li>
+</ul>
+<hr />
+<h3>import-custom-dropdown</h3>
+<p><strong>Import custom dropdown choices from the import workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ImportCustomDropdown(ByVal impwb As Workbook, ByVal pasteAtBottom As Boolean)
+</code></pre>
+<p>Reads custom dropdown ListObjects from the source workbook custom
+dropdown sheet, matches them to choices in the import workbook Choices
+sheet, and updates each dropdown with the imported values. Silently
+exits when the import workbook has no Choices sheet or the custom
+dropdown sheet does not exist.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>impwb</code>: Workbook. The opened import workbook.</li>
+<li><code>pasteAtBottom</code>: Boolean. When True, appends choices below existing entries.</li>
+</ul>
+<hr />
+<h2>Migration Metadata</h2>
+<h3>import-show-hide</h3>
+<p><strong>Import show/hide visibility state from a migration workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ImportShowHide(ByVal impwb As Workbook)
+</code></pre>
+<p>Reads the show_hide_migration ListObject from the import workbook and
+applies visibility and column/row sizes to each data sheet via
+ShowHideManager.ImportForMigration. Silently skips when HasSameLanguage
+returned False, when the import workbook lacks the required Metadata or
+show_hide__ sheets, or when the metadata tag is not set to &quot;update on
+import&quot;.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>impwb</code>: Workbook. The opened migration workbook.</li>
+</ul>
+<hr />
+<h3>import-editable-labels</h3>
+<p><strong>Import editable label values from a migration workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ImportEditableLabels(ByVal impwb As Workbook)
+</code></pre>
+<p>Reads the import workbook dictionary for editable label values and
+updates both the worksheet cells and dictionary entries in the source
+workbook. Silently skips when HasSameLanguage returned False, the import
+dictionary is not prepared, or the metadata tag is not set to &quot;update on
+import&quot;.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>impwb</code>: Workbook. The opened migration workbook.</li>
+</ul>
+<hr />
+<h3>import-single-values</h3>
+<p><strong>Import single metadata values from a migration workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ImportSingleValues(ByVal impwb As Workbook)
+</code></pre>
+<p>Reads the epiweek start value from the import workbook Metadata sheet
+and updates the RNG_EpiWeekStart named range in the source workbook.
+Silently skips when HasSameLanguage returned False or the Metadata
+sheet is missing.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>impwb</code>: Workbook. The opened migration workbook.</li>
+</ul>
+<hr />
+<h3>import-geobase</h3>
+<p><strong>Import geobase data from a workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ImportGeobase(ByVal impwb As Workbook, Optional ByVal histoOnly As Boolean = False)
+</code></pre>
+<p>Delegates to LLGeo.Import to load geobase data. When not histoOnly,
+also updates geobase headers in HList worksheets via geo.Update,
+dictionary geo labels via geo.UpdateDict, and show/hide tables for geo
+variables via geo.UpdateShowHide.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>impwb</code>: Workbook. The opened geobase workbook.</li>
+<li><code>histoOnly</code>: Optional Boolean. When True, imports only historic geobase data. Defaults to False.</li>
+</ul>
+<hr />
+<h2>Import Report</h2>
+<h3>need-report</h3>
+<p><strong>Whether the last import had issues</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get NeedReport() As Boolean
+</code></pre>
+<p>Returns True when at least one report entry exists, meaning some sheets
+or variables were not imported or not touched during the last import.</p>
+<p><strong>Returns:</strong> Boolean. True when the import report has entries.</p>
+<hr />
+<h3>finalize-report</h3>
+<p><strong>Build the &quot;not touched&quot; part of the import report</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub FinalizeReport()
+</code></pre>
+<p>Compares source workbook sheets and variables against the imported items
+tracked during ImportData. Identifies sheets not touched and variables
+not touched, skipping formula-type variables (case_when, formula,
+choice_formula). Call after ImportData to complete the report.</p>
+<hr />
+<h3>report-sheets</h3>
+<p><strong>Report sheet names for the given scope</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function ReportSheets(ByVal scope As Byte) As BetterArray
+</code></pre>
+<p>Returns a BetterArray of sheet names that were either not imported
+(ImportReportNotImported) or not touched (ImportReportNotTouched).
+Returns an empty BetterArray when no entries exist for the scope.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>scope</code>: Byte. ImportReportNotImported or ImportReportNotTouched.</li>
+</ul>
+<p><strong>Returns:</strong> BetterArray. Sheet names matching the scope, or empty.</p>
+<hr />
+<h3>report-variables</h3>
+<p><strong>Report variable entries for the given scope</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function ReportVariables(ByVal scope As Byte) As BetterArray
+</code></pre>
+<p>Returns a BetterArray where each entry is a Variant array of
+Array(variableName, sheetName). Returns an empty BetterArray when no
+entries exist for the scope.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>scope</code>: Byte. ImportReportNotImported or ImportReportNotTouched.</li>
+</ul>
+<p><strong>Returns:</strong> BetterArray. Variant arrays of (variableName, sheetName), or empty.</p>
+<hr />
+<h3>clear-report</h3>
+<p><strong>Reset report state</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ClearReport()
+</code></pre>
+<p>Clears all report tracking arrays and resets the needReport flag. Call
+before starting a new import session to ensure a clean report.</p>
+<hr />
+<details>
+<summary>Internal members (not exported)</summary>
+<h2>Public Accessors</h2>
+<h3>self</h3>
+<p><strong>Current object instance</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Self() As ILLImporter
+</code></pre>
+<p><strong>Returns:</strong> ILLImporter. The current instance cast to the interface.</p>
+<hr />
+<h3>source-workbook</h3>
+<p><strong>Source linelist workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get SourceWorkbook() As Workbook
+</code></pre>
+<p><strong>Returns:</strong> Workbook. The linelist workbook bound to this importer.</p>
+<hr />
+<h3>source-workbook-set</h3>
+<p><strong>Assign the source linelist workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Set SourceWorkbook(ByVal wb As Workbook)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>wb</code>: Workbook. The workbook to store.</li>
+</ul>
+<hr />
+<h2>Private - Source Object Accessors</h2>
+<h3>source-dictionary</h3>
+<p><strong>Get the dictionary from the source workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SourceDictionary() As ILLdictionary
+</code></pre>
+<p><strong>Returns:</strong> ILLdictionary. Dictionary instance from the Dictionary sheet.</p>
+<hr />
+<h3>passwords-object</h3>
+<p><strong>Get passwords from the source workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function PasswordsObject() As IPasswords
+</code></pre>
+<p><strong>Returns:</strong> IPasswords. Passwords instance from the __pass sheet.</p>
+<hr />
+<h3>geo-object</h3>
+<p><strong>Get the geo object from the source workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function GeoObject() As ILLGeo
+</code></pre>
+<p><strong>Returns:</strong> ILLGeo. Geo instance from the Geo sheet.</p>
+<hr />
+<h2>Private - Import Helpers</h2>
+<h3>initialize-tracking</h3>
+<p><strong>Initialize tracking state for a new import session</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub InitializeTracking()
+</code></pre>
+<hr />
+<h3>is-reserved-sheet</h3>
+<p><strong>Check if a sheet name is reserved (metadata/infrastructure)</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function IsReservedSheet(ByVal sheetName As String) As Boolean
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetName</code>: String. The sheet name to check.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the name matches a reserved sheet.</p>
+<hr />
+<h3>import-vlist-sheet</h3>
+<p><strong>Import VList data from a single import sheet to the current sheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ImportVListSheet(ByVal currsh As Worksheet, ByVal impsh As Worksheet)
+</code></pre>
+<p>Iterates over the import sheet used range rows, resolving each variable
+name to a named range on the current sheet. Copies the value when the
+target cell has no formula. Tracks variables not found as &quot;not imported&quot;
+report entries.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>currsh</code>: Worksheet. The current source VList worksheet.</li>
+<li><code>impsh</code>: Worksheet. The import VList worksheet.</li>
+</ul>
+<hr />
+<h3>import-hlist-sheet</h3>
+<p><strong>Import HList data from a single import sheet to the current sheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ImportHListSheet(ByVal currsh As Worksheet, ByVal impsh As Worksheet, _
+                             ByVal pasteAtBottom As Boolean)
+</code></pre>
+<p>Creates a CustomTable from the current sheet ListObject and a DataSheet
+from the import sheet, then delegates to CustomTable.Import. Tracks
+columns not found in the current table as &quot;not imported&quot; report entries.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>currsh</code>: Worksheet. The current source HList worksheet.</li>
+<li><code>impsh</code>: Worksheet. The import HList worksheet.</li>
+<li><code>pasteAtBottom</code>: Boolean. When True, appends data below existing rows.</li>
+</ul>
+<hr />
+<h2>Private - Helpers</h2>
+<h3>sheet-exists</h3>
+<p><strong>Check if a worksheet exists in a workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SheetExists(ByVal wb As Workbook, ByVal sheetName As String) As Boolean
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>wb</code>: Workbook. The workbook to search.</li>
+<li><code>sheetName</code>: String. The sheet name to look for.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the sheet exists.</p>
+<hr />
+<h2>Private - Error Handling</h2>
+<h3>throw-error</h3>
+<p><strong>Raise a class-level exception</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowError(ByVal message As String)
+</code></pre>
+<p>Raises a VBA error using vbObjectError + 516, standardising the source
+to CLASS_NAME.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>message</code>: String. Human-readable description of the failure.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>vbObjectError Always raises the error.</li>
+</ul>
+<hr />
+<h2>Interface Implementation</h2>
+<h3>ILLImporter_HasData</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get ILLImporter_HasData() As Boolean
+</code></pre>
+<p>Delegated members satisfying the ILLImporter contract.
+See the corresponding members above for full documentation.</p>
+<hr />
+</details>
+<details>
+<summary>Used in (4 file(s))</summary>
+<ul>
+<li><a href="src/classes/dataio/ILLImporter.cls">ILLImporter.cls</a></li>
+<li><a href="src/classes/dataio/LLImporter.cls">LLImporter.cls</a></li>
+<li><a href="src/modules/dataio/FormLogicAdvanced.bas">FormLogicAdvanced.bas</a></li>
+<li><a href="src/tests/modules/dataio/TestLLImporter.bas">TestLLImporter.bas</a></li>
+</ul>
+</details>
+
+  </main>
+</body>
+</html>
+

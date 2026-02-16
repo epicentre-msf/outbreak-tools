@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IDiseaseImportSummary - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>IDiseaseImportSummary</h1>
+<h2>State</h2>
+<h3>MissingVariables</h3>
+<p><strong>List of variables that were missing from the import data.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get MissingVariables() As BetterArray
+</code></pre>
+<p><strong>Returns:</strong> BetterArray clone containing variable names.</p>
+<hr />
+<h3>UpdatedVariables</h3>
+<p><strong>List of variables updated from the import data.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get UpdatedVariables() As BetterArray
+</code></pre>
+<p><strong>Returns:</strong> BetterArray clone containing variable names.</p>
+<hr />
+<h3>AppendedVariables</h3>
+<p><strong>List of variables appended to the target table.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get AppendedVariables() As BetterArray
+</code></pre>
+<p><strong>Returns:</strong> BetterArray clone containing variable names.</p>
+<hr />
+<h3>RequiresReport</h3>
+<p><strong>Indicates whether the merge requires a follow-up report.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get RequiresReport() As Boolean
+</code></pre>
+<hr />
+<h2>Mutators</h2>
+<h3>RegisterMissing</h3>
+<p><strong>Register a variable that was missing from the import.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub RegisterMissing(ByVal varName As String)
+</code></pre>
+<hr />
+<h3>RegisterUpdated</h3>
+<p><strong>Register a variable whose details were updated.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub RegisterUpdated(ByVal varName As String)
+</code></pre>
+<hr />
+<h3>RegisterAppended</h3>
+<p><strong>Register a variable appended from the import.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub RegisterAppended(ByVal varName As String)
+</code></pre>
+<hr />
+
+  </main>
+</body>
+</html>
+

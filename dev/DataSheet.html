@@ -1,0 +1,549 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DataSheet - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>DataSheet</h1>
+<p>Provides low-level data manipulation on a worksheet with a table-like
+structure identified by a starting row and column. Unlike CustomTable,
+DataSheet does not require a ListObject — it works directly with cell
+ranges. Supports column lookup, filtering (single and multi-column),
+import/export to other DataSheets or CustomTables, and formatting
+transfer for designated columns. Consumers interact through the
+IDataSheet interface.</p>
+<p><strong>Depends on:</strong> <a href="Checking.html">Checking</a>, <a href="BetterArray.html">BetterArray</a>, <a href="HiddenNames.html">HiddenNames</a>, Formated columns list, checking objects</p>
+<p><strong>Version:</strong> 1.0 (2026-02-09)</p>
+<h2>Factory</h2>
+<h3>create</h3>
+<p><strong>Create a DataSheet wrapper around a worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create(ByVal sh As Worksheet, ByVal startLn As Long, _
+                       ByVal startCl As Long, _
+                       Optional ByVal forceEndRow As Boolean = False, _
+                       Optional ByVal objName As String = vbNullString) As IDataSheet
+</code></pre>
+<p>Entry point for creating DataSheet instances.
+Wraps the supplied worksheet with convenience methods for column
+lookup, filtering, import/export, and formatting transfer. The data
+structure is identified by a starting row and column; end row and
+column are computed dynamically. Unlike CustomTable, no ListObject
+is required.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The worksheet hosting the data.</li>
+<li><code>startLn</code>: Long. The 1-based header row index.</li>
+<li><code>startCl</code>: Long. The 1-based starting column index.</li>
+<li><code>forceEndRow</code>: Optional Boolean. When True, scans all columns to find the last row. Defaults to False.</li>
+<li><code>objName</code>: Optional String. Object name. Defaults to the worksheet name.</li>
+</ul>
+<p><strong>Returns:</strong> IDataSheet. A fully initialised DataSheet instance.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When sh is Nothing.</li>
+<li>ProjectError.InvalidArgument When startLn or startCl is less than 1.</li>
+</ul>
+<p><strong>Depends on:</strong></p>
+<ul>
+<li>Checking</li>
+<li>BetterArray</li>
+</ul>
+<hr />
+<h2>Elements</h2>
+<h3>wksh</h3>
+<p><strong>Worksheet backing the DataSheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Wksh() As Worksheet
+</code></pre>
+<p>Properties that expose the worksheet layout and column access.
+Returns the worksheet that hosts the table-like data.</p>
+<p><strong>Returns:</strong> Worksheet. The host worksheet.</p>
+<hr />
+<h3>data-start-row</h3>
+<p><strong>First row of data (header row)</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get DataStartRow() As Long
+</code></pre>
+<p><strong>Returns:</strong> Long. The 1-based header row index.</p>
+<hr />
+<h3>data-start-column</h3>
+<p><strong>First column of data</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get DataStartColumn() As Long
+</code></pre>
+<p><strong>Returns:</strong> Long. The 1-based starting column index.</p>
+<hr />
+<h3>name</h3>
+<p><strong>Name of the DataSheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get Name() As String
+</code></pre>
+<p>Returns the assigned object name. When no name was provided during
+creation, defaults to the worksheet name.</p>
+<p><strong>Returns:</strong> String. The DataSheet name.</p>
+<hr />
+<h3>data-end-row</h3>
+<p><strong>Last row containing data</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get DataEndRow() As Long
+</code></pre>
+<p>Dynamically computes the last occupied row. When StrictEnd is True,
+scans all non-formula columns for the furthest row. Guarantees at
+least one data row below the header.</p>
+<p><strong>Returns:</strong> Long. The 1-based last data row index.</p>
+<hr />
+<h3>data-end-column</h3>
+<p><strong>Last column containing data</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get DataEndColumn() As Long
+</code></pre>
+<p><strong>Returns:</strong> Long. The 1-based last column index.</p>
+<hr />
+<h3>header-range</h3>
+<p><strong>Header row Range</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get HeaderRange() As Range
+</code></pre>
+<p>Returns the Range spanning from the start column to the end column
+on the header row.</p>
+<p><strong>Returns:</strong> Range. The header row range.</p>
+<hr />
+<h3>column-exists</h3>
+<p><strong>Check whether a column exists in the DataSheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ColumnExists(ByVal colName As String, _ 
+                              Optional ByVal strictSearch As Boolean = True, _
+                              Optional ByVal matchCase As Boolean = True) As Boolean
+</code></pre>
+<p>Searches the header row for the specified column name using Range.Find.
+Returns False for empty column names.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>colName</code>: String. Column header to search for.</li>
+<li><code>strictSearch</code>: Optional Boolean. When True, uses exact whole-string matching. Defaults to True.</li>
+<li><code>matchCase</code>: Optional Boolean. When True, matching is case-sensitive. Defaults to True.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the column is found.</p>
+<hr />
+<h3>column-index</h3>
+<p><strong>Resolve the column index for a header name</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ColumnIndex(ByVal colName As String, _
+                             Optional ByVal inDataRange As Boolean = False, _
+                             Optional ByVal shouldExist As Boolean = False, _ 
+                             Optional ByVal strictSearch As Boolean = True, _
+                             Optional ByVal matchCase As Boolean = True) As Long
+</code></pre>
+<p>Returns the worksheet column index, or the data-range-relative index
+when inDataRange is True. Returns -1 when the column is not found and
+shouldExist is False; raises an error when shouldExist is True.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>colName</code>: String. Column header to look up.</li>
+<li><code>inDataRange</code>: Optional Boolean. When True, returns the index relative to the data range. Defaults to False.</li>
+<li><code>shouldExist</code>: Optional Boolean. When True, raises an error if not found. Defaults to False.</li>
+<li><code>strictSearch</code>: Optional Boolean. When True, uses exact whole-string matching. Defaults to True.</li>
+<li><code>matchCase</code>: Optional Boolean. When True, matching is case-sensitive. Defaults to True.</li>
+</ul>
+<p><strong>Returns:</strong> Long. The column index, or -1 when not found.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ElementNotFound When the column is not found and shouldExist is True.</li>
+</ul>
+<hr />
+<h3>data-range</h3>
+<p><strong>Range of a column or the entire data body</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get DataRange(Optional ByVal colName As String = &quot;__all__&quot;, _
+                              Optional ByVal includeHeaders As Boolean = False, _ 
+                              Optional ByVal strictSearch As Boolean = True, _ 
+                              Optional ByVal matchCase As Boolean = True) As Range
+</code></pre>
+<p>Returns a data Range for the specified column, or the entire data body
+when colName is &quot;<strong>all</strong>&quot;. When strictSearch is False, partial matching
+is used. Use strictSearch when column names share common text.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>colName</code>: Optional String. Column header to retrieve. Defaults to &quot;<strong>all</strong>&quot;.</li>
+<li><code>includeHeaders</code>: Optional Boolean. When True, includes the header row. Defaults to False.</li>
+<li><code>strictSearch</code>: Optional Boolean. When True, uses exact matching. Defaults to True.</li>
+<li><code>matchCase</code>: Optional Boolean. When True, matching is case-sensitive. Defaults to True.</li>
+</ul>
+<p><strong>Returns:</strong> Range. The requested data range.</p>
+<hr />
+<h3>rename-column</h3>
+<p><strong>Rename a header in the DataSheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub RenameColumn(ByVal currentName As String, _
+                        ByVal newName As String, _
+                        Optional ByVal strictSearch As Boolean = True, _
+                        Optional ByVal matchCase As Boolean = False)
+</code></pre>
+<p>Replaces the header text of the matched column with newName. Raises
+an error when newName is empty or the column is not found.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>currentName</code>: String. Current column header to find.</li>
+<li><code>newName</code>: String. New header text to assign.</li>
+<li><code>strictSearch</code>: Optional Boolean. When True, uses exact matching. Defaults to True.</li>
+<li><code>matchCase</code>: Optional Boolean. When True, matching is case-sensitive. Defaults to False.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.InvalidArgument When newName is empty.</li>
+<li>ProjectError.ElementNotFound When the column is not found.</li>
+</ul>
+<hr />
+<h2>Operations</h2>
+<h3>clean</h3>
+<p><strong>Clear all non-formula columns</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub Clean()
+</code></pre>
+<p>Filtering, cleaning, import, and export operations.
+Iterates every column in the header row and clears the contents of
+those that do not contain formulas in their first data cell.</p>
+<hr />
+<h3>filter-data</h3>
+<p><strong>Filter data on a single column and return the result</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function FilterData(ByVal varName As String, _
+                            ByVal criteriaName As String, _
+                            ByVal returnedColumnName As String, _
+                            Optional ByVal includeHeaders As Boolean = False, _
+                            Optional ByVal matchCase As Boolean = True) _
+</code></pre>
+<p>Applies an AutoFilter on varName with criteriaName, extracts the
+visible rows from returnedColumnName into a temporary output area,
+reads them into a BetterArray, then cleans up. The filter is removed
+after the operation, leaving the DataSheet untouched.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>varName</code>: String. Column to filter on.</li>
+<li><code>criteriaName</code>: String. Filter criteria to apply.</li>
+<li><code>returnedColumnName</code>: String. Column whose values to return (&quot;<strong>all</strong>&quot; for all columns).</li>
+<li><code>includeHeaders</code>: Optional Boolean. When True, includes the header row. Defaults to False.</li>
+<li><code>matchCase</code>: Optional Boolean. When True, column lookup is case-sensitive. Defaults to True.</li>
+</ul>
+<p><strong>Returns:</strong> BetterArray. The filtered values.</p>
+<hr />
+<h3>filters-data</h3>
+<p><strong>Filter data on multiple columns and return the result</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function FiltersData(ByVal varData As BetterArray, _
+                             ByVal criteriaData As BetterArray, _
+                             ByVal returnedColumnsData As BetterArray) As BetterArray
+</code></pre>
+<p>Applies multiple AutoFilters (one per entry in varData/criteriaData)
+and returns the visible values from each column in returnedColumnsData
+as a two-dimensional BetterArray. Exits when varData and criteriaData
+have different lengths.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>varData</code>: BetterArray. Column names to filter on.</li>
+<li><code>criteriaData</code>: BetterArray. Criteria corresponding to each column.</li>
+<li><code>returnedColumnsData</code>: BetterArray. Columns whose values to return.</li>
+</ul>
+<p><strong>Returns:</strong> BetterArray. A two-dimensional array of filtered values.</p>
+<hr />
+<h3>import</h3>
+<p><strong>Import data from another DataSheet or CustomTable</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub Import(ByVal importData As Object, Optional ByVal strictColumnSearch As Boolean = True)
+</code></pre>
+<p>Cleans this DataSheet, then iterates the source headers and copies
+matching column data. Formula columns are preserved. Applies format
+import for registered formatting columns after the data copy.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>importData</code>: Object. A DataSheet or CustomTable to import from.</li>
+<li><code>strictColumnSearch</code>: Optional Boolean. When True, uses case-sensitive column matching. Defaults to True.</li>
+</ul>
+<hr />
+<h3>import-format</h3>
+<p><strong>Import column formatting from a source object</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ImportFormat(ByVal importData As Object, Optional ByVal matchColumnsCase As Boolean = True)
+</code></pre>
+<p>Copies visual formatting (colours, font weight, italic) from the
+source for all columns registered via AddFormatsColumns. Logs a
+warning when the source and destination row counts differ.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>importData</code>: Object. A DataSheet or CustomTable to copy formatting from.</li>
+<li><code>matchColumnsCase</code>: Optional Boolean. When True, uses case-sensitive column matching. Defaults to True.</li>
+</ul>
+<hr />
+<h3>export</h3>
+<p><strong>Export the DataSheet to a workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub Export(ByVal Wkb As Workbook, Optional ByVal filteredVarName As String = &quot;__all__&quot;, _
+                   Optional ByVal filteredCondition As String = &quot;&lt;&gt;&quot;, _ 
+                   Optional ByVal Hide As Long = xlSheetHidden, _ 
+                   Optional ByVal includeNames As Boolean = False)
+</code></pre>
+<p>Creates (or clears) a worksheet in the target workbook with the same
+name as this DataSheet, then writes all data. Optionally filters rows
+on a single column before export. The exported sheet is hidden by
+default. Applies formatting for registered columns and optionally
+exports hidden names.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>Wkb</code>: Workbook. Destination workbook.</li>
+<li><code>filteredVarName</code>: Optional String. Column used for filtering. Defaults to &quot;<strong>all</strong>&quot; (no filter).</li>
+<li><code>filteredCondition</code>: Optional String. Filter criteria. Defaults to &quot;&lt;&gt;&quot;.</li>
+<li><code>Hide</code>: Optional Long. Worksheet visibility after export. Defaults to xlSheetHidden.</li>
+<li><code>includeNames</code>: Optional Boolean. When True, exports hidden names alongside data. Defaults to False.</li>
+</ul>
+<hr />
+<h2>Checkings</h2>
+<h3>has-checkings</h3>
+<p><strong>Whether the DataSheet has logged diagnostic messages</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get HasCheckings() As Boolean
+</code></pre>
+<p><strong>Returns:</strong> Boolean. True when diagnostic entries exist.</p>
+<hr />
+<h3>checking-values</h3>
+<p><strong>Retrieve the diagnostic log entries</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get CheckingValues() As Object
+</code></pre>
+<p><strong>Returns:</strong> Object. An IChecking instance, or Nothing.</p>
+<hr />
+<details>
+<summary>Internal members (not exported)</summary>
+<h2>Factory</h2>
+<h3>self</h3>
+<p><strong>Current object instance</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Self() As IDataSheet
+</code></pre>
+<p><strong>Returns:</strong> IDataSheet. Reference to the current object.</p>
+<hr />
+<h3>wksh-set</h3>
+<p><strong>Assign the worksheet reference</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Set Wksh(ByVal sh As Worksheet)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The worksheet to assign.</li>
+</ul>
+<hr />
+<h3>data-start-row-set</h3>
+<p><strong>Assign the header row index</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Let DataStartRow(ByVal startLn As Long)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>startLn</code>: Long. The 1-based header row index.</li>
+</ul>
+<hr />
+<h3>data-start-column-set</h3>
+<p><strong>Assign the starting column index</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Let DataStartColumn(ByVal startCl As Long)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>startCl</code>: Long. The 1-based starting column index.</li>
+</ul>
+<hr />
+<h3>strict-end-set</h3>
+<p><strong>Assign the strict end row flag</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Let StrictEnd(ByVal forceEnd As Boolean)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>forceEnd</code>: Boolean. When True, scans all columns for the last row.</li>
+</ul>
+<hr />
+<h3>name-set</h3>
+<p><strong>Assign the DataSheet name</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Let Name(ByVal objName As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>objName</code>: String. The name to assign.</li>
+</ul>
+<hr />
+<h2>Elements</h2>
+<h3>strict-end</h3>
+<p><strong>Whether to scan all columns for the last row</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get StrictEnd() As Boolean
+</code></pre>
+<p><strong>Returns:</strong> Boolean. True when all columns are scanned.</p>
+<hr />
+<h3>matched-column-name</h3>
+<p><strong>Return the actual header text for a column name match</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function MatchedColumnName(ByVal colName As String, _
+                                Optional ByVal strictSearch As Boolean = True, _
+                                Optional ByVal matchCase As Boolean = True) As String
+</code></pre>
+<p>Searches the header row and returns the exact text of the matched
+cell. Returns vbNullString when no match is found.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>colName</code>: String. Column name to search for.</li>
+<li><code>strictSearch</code>: Optional Boolean. When True, uses exact matching. Defaults to True.</li>
+<li><code>matchCase</code>: Optional Boolean. When True, matching is case-sensitive. Defaults to True.</li>
+</ul>
+<p><strong>Returns:</strong> String. The matched header text, or vbNullString.</p>
+<hr />
+<h2>Operations</h2>
+<h3>apply-format</h3>
+<p><strong>Copy formatting from one Range to another</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ApplyFormat(ByVal actRng As Range, ByVal impRng As Range)
+</code></pre>
+<p>Transfers interior colour, font colour, bold, and italic from each
+cell in impRng to the corresponding cell in actRng.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>actRng</code>: Range. Destination range to format.</li>
+<li><code>impRng</code>: Range. Source range with formatting to copy.</li>
+</ul>
+<hr />
+<h2>Checkings</h2>
+<h3>log-info</h3>
+<p><strong>Log a diagnostic message</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub LogInfo(ByVal label As String, _ 
+                    Optional ByVal scope As Byte = checkingNote)
+</code></pre>
+<p>Diagnostic logging and error handling.
+Adds a message to the internal IChecking object, creating it on first
+use. The checkCounter provides a unique key for each entry.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>label</code>: String. The message to record.</li>
+<li><code>scope</code>: Optional Byte. Severity level from CheckingScope. Defaults to checkingNote.</li>
+</ul>
+<hr />
+<h3>show-debug</h3>
+<p><strong>Print a debug trace to the Immediate window</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ShowDebug()
+</code></pre>
+<hr />
+<h3>throw-error</h3>
+<p><strong>Raise a ProjectError-based exception</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>errNumb</code>: Long. ProjectError code.</li>
+<li><code>errorMessage</code>: String. Descriptive message.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.<varies> Always raises the specified error.</li>
+</ul>
+<hr />
+<h3>throw-error-empty-sheet</h3>
+<p><strong>Raise an error for a Nothing worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowErrorEmptySheetGiven()
+</code></pre>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized Always.</li>
+</ul>
+<hr />
+<h3>throw-error-start-number</h3>
+<p><strong>Raise an error for an invalid start row or column</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowErrorStartNumber(Optional ByVal startNumber As Long = -1, _
+                                  Optional ByVal startLabel As String = &quot;start row&quot;)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>startNumber</code>: Optional Long. The invalid value. Defaults to -1.</li>
+<li><code>startLabel</code>: Optional String. Label identifying the parameter. Defaults to &quot;start row&quot;.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.InvalidArgument Always.</li>
+</ul>
+<hr />
+<h3>throw-error-unfound-column</h3>
+<p><strong>Raise an error for a missing column</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowErrorUnFoundColumn(ByVal colName As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>colName</code>: String. The column name that was not found.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ElementNotFound Always.</li>
+</ul>
+<hr />
+<h2>Interface</h2>
+<h3>IDataSheet_Wksh</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get IDataSheet_Wksh() As Worksheet
+</code></pre>
+<p>Delegated members satisfying the IDataSheet contract.</p>
+<hr />
+<h3>add-formats-columns</h3>
+<p><strong>Register columns for formatting import/export</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub IDataSheet_AddFormatsColumns(ByVal matchColumnsCase As Boolean, ByVal resetColumns As Boolean, ParamArray lsCols() As Variant)
+</code></pre>
+<p>Adds the specified column names to the internal formatting list so that
+Import and Export preserve their visual formatting. Validates each
+column exists before registering it.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>matchColumnsCase</code>: Boolean. When True, uses case-sensitive column matching.</li>
+<li><code>resetColumns</code>: Boolean. When True, clears the existing list before adding.</li>
+<li><code>lsCols</code>: ParamArray Variant. Column names to register for formatting.</li>
+</ul>
+<hr />
+</details>
+<details>
+<summary>Used in (22 file(s))</summary>
+<ul>
+<li><a href="src/classes/dataio/LLExporter.cls">LLExporter.cls</a></li>
+<li><a href="src/classes/dataio/LLImporter.cls">LLImporter.cls</a></li>
+<li><a href="src/classes/dictionary/ILLdictionary.cls">ILLdictionary.cls</a></li>
+<li><a href="src/classes/dictionary/ILLExport.cls">ILLExport.cls</a></li>
+<li><a href="src/classes/dictionary/LLdictionary.cls">LLdictionary.cls</a></li>
+<li><a href="src/classes/dictionary/LLExport.cls">LLExport.cls</a></li>
+<li><a href="src/classes/dictionary/LLSheets.cls">LLSheets.cls</a></li>
+<li><a href="src/classes/dictionary/LLVariables.cls">LLVariables.cls</a></li>
+<li><a href="src/classes/general/DataSheet.cls">DataSheet.cls</a></li>
+<li><a href="src/classes/general/IDataSheet.cls">IDataSheet.cls</a></li>
+<li><a href="src/classes/general/ILLChoices.cls">ILLChoices.cls</a></li>
+<li><a href="src/classes/general/LLChoices.cls">LLChoices.cls</a></li>
+<li><a href="src/classes/linelist/Linelist.cls">Linelist.cls</a></li>
+<li><a href="src/classes/mastersetup/MasterSetupVariables.cls">MasterSetupVariables.cls</a></li>
+<li><a href="src/classes/setup/SetupImportService.cls">SetupImportService.cls</a></li>
+<li><a href="src/classes/stale/designer-codes/modules/implements/DevModule.bas">DevModule.bas</a></li>
+<li><a href="src/tests/modules/dictionary/TestLLdictionary.bas">TestLLdictionary.bas</a></li>
+<li><a href="src/tests/modules/general/TestCustomTable.bas">TestCustomTable.bas</a></li>
+<li><a href="src/tests/modules/general/TestDataSheet.bas">TestDataSheet.bas</a></li>
+<li><a href="src/tests/modules/setup/TestSetupErrors.bas">TestSetupErrors.bas</a></li>
+<li><a href="src/tests/stubs/AnalysisDictionaryStub.cls">AnalysisDictionaryStub.cls</a></li>
+<li><a href="src/tests/stubs/DictionaryMinimalStub.cls">DictionaryMinimalStub.cls</a></li>
+</ul>
+</details>
+
+  </main>
+</body>
+</html>
+

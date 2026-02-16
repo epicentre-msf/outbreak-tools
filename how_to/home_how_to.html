@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.7.32">
+<meta name="generator" content="quarto-1.8.27">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -35,14 +35,15 @@ ul.task-list li input[type="checkbox"] {
 <script src="../site_libs/quarto-listing/quarto-listing.js"></script>
 <script src="../site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/axe/axe-check.js" type="module"></script>
 <script src="../site_libs/quarto-html/popper.min.js"></script>
 <script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="../site_libs/quarto-html/anchor.min.js"></script>
 <link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-37eea08aefeeee20ff55810ff984fec1.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-ed96de9b727972fe78a7b5d16c58bf87.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../site_libs/bootstrap/bootstrap-6a4c75c897c7090e25337f92bebeec5a.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-28ce2f92125236a284ff4f393e5b0d14.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <link href="../site_libs/quarto-contrib/fontawesome6-0.1.0/all.css" rel="stylesheet">
 <link href="../site_libs/quarto-contrib/fontawesome6-0.1.0/latex-fontsize.css" rel="stylesheet">
 <script id="quarto-search-options" type="application/json">{
@@ -116,7 +117,7 @@ const typesetMath = (el) => {
     var macros = [];
     for (var i = 0; i < mathElements.length; i++) {
       var texText = mathElements[i].firstChild;
-      if (mathElements[i].tagName == "SPAN") {
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
         window.katex.render(texText.data, mathElements[i], {
           displayMode: mathElements[i].classList.contains('display'),
           throwOnError: false,
@@ -143,7 +144,8 @@ window.Quarto = {
       <div class="navbar-container container-fluid">
       <div class="navbar-brand-container mx-auto">
     <a href="../index.html" class="navbar-brand navbar-brand-logo">
-    <img src="../images/icon.png" alt="" class="navbar-logo">
+    <img src="../images/icon.png" alt="" class="navbar-logo light-content">
+    <img src="../images/icon.png" alt="" class="navbar-logo dark-content">
     </a>
     <a class="navbar-brand" href="../index.html">
     <span class="navbar-title">OutbreakTools</span>
@@ -191,6 +193,11 @@ window.Quarto = {
     <a class="dropdown-item" href="../tutorial.html">
  <span class="dropdown-text">Tutorial</span></a>
   </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li>
+    <a class="dropdown-item" href="../dev/index.html">
+ <span class="dropdown-text">Developer API</span></a>
+  </li>  
     </ul>
   </li>
 </ul>
@@ -236,7 +243,7 @@ window.Quarto = {
 
 <div class="quarto-listing quarto-listing-container-default" id="listing-listing">
 <div class="list quarto-listing-default">
-<div class="quarto-post image-right" data-index="0" data-categories="RGFzaGJvYXJk" data-listing-file-modified-sort="1750153475331" data-listing-reading-time-sort="1" data-listing-word-count-sort="126">
+<div class="quarto-post image-right" data-index="0" data-categories="RGFzaGJvYXJk" data-listing-file-modified-sort="1771230007125" data-listing-reading-time-sort="1" data-listing-word-count-sort="126">
 <div class="thumbnail"><a href="../how_to/connect_to_dashboard.html" class="no-external">
 
 <p class="card-img-top"><img src="images/img-007-connect-dashboard.png"  class="thumbnail-image card-img"/></p>
@@ -260,7 +267,7 @@ window.Quarto = {
 </a>
 </div>
 </div>
-<div class="quarto-post image-right" data-index="1" data-categories="TGluZWxpc3Q=" data-listing-file-modified-sort="1750153475348" data-listing-reading-time-sort="2" data-listing-word-count-sort="258">
+<div class="quarto-post image-right" data-index="1" data-categories="TGluZWxpc3Q=" data-listing-file-modified-sort="1771230007142" data-listing-reading-time-sort="2" data-listing-word-count-sort="258">
 <div class="thumbnail"><a href="../how_to/import_geobase.html" class="no-external">
 
 <p class="card-img-top"><img src="../getting_started/images/img-006-geobase-process.png"  class="thumbnail-image card-img"/></p>
@@ -284,7 +291,7 @@ window.Quarto = {
 </a>
 </div>
 </div>
-<div class="quarto-post image-right" data-index="2" data-categories="TGluZWxpc3Q=" data-listing-file-modified-sort="1750153475348" data-listing-reading-time-sort="5" data-listing-word-count-sort="939">
+<div class="quarto-post image-right" data-index="2" data-categories="TGluZWxpc3Q=" data-listing-file-modified-sort="1771230007142" data-listing-reading-time-sort="5" data-listing-word-count-sort="939">
 <div class="thumbnail"><a href="../how_to/migrate_linelist.html" class="no-external">
 
 <p class="card-img-top"><img src="images/img-005-migration-linelist.png"  class="thumbnail-image card-img"/></p>
@@ -308,7 +315,7 @@ window.Quarto = {
 </a>
 </div>
 </div>
-<div class="quarto-post image-right" data-index="3" data-categories="TGluZWxpc3Q=" data-listing-file-modified-sort="1750153475349" data-listing-reading-time-sort="2" data-listing-word-count-sort="369">
+<div class="quarto-post image-right" data-index="3" data-categories="TGluZWxpc3Q=" data-listing-file-modified-sort="1771230007142" data-listing-reading-time-sort="2" data-listing-word-count-sort="369">
 <div class="thumbnail"><a href="../how_to/show_hide_variables.html" class="no-external">
 
 <p class="card-img-top"><img src="../reference/images/img-012-ll-show-hide.png"  class="thumbnail-image card-img"/></p>
@@ -332,7 +339,7 @@ window.Quarto = {
 </a>
 </div>
 </div>
-<div class="quarto-post image-right" data-index="4" data-categories="TGluZWxpc3QlMkNEYXNoYm9hcmQ=" data-listing-file-modified-sort="1750153475331" data-listing-reading-time-sort="1" data-listing-word-count-sort="126">
+<div class="quarto-post image-right" data-index="4" data-categories="TGluZWxpc3QlMkNEYXNoYm9hcmQ=" data-listing-file-modified-sort="1771230007125" data-listing-reading-time-sort="1" data-listing-word-count-sort="126">
 <div class="thumbnail"><a href="../how_to/connect_dashboard.html" class="no-external">
 
 <p class="card-img-top"><img src="images/img-007-connect-dashboard.png"  class="thumbnail-image card-img"/></p>
@@ -358,7 +365,7 @@ window.Quarto = {
 </a>
 </div>
 </div>
-<div class="quarto-post image-right" data-index="5" data-categories="TGluZWxpc3QlMkNEYXNoYm9hcmQ=" data-listing-file-modified-sort="1750153475349" data-listing-reading-time-sort="3" data-listing-word-count-sort="534">
+<div class="quarto-post image-right" data-index="5" data-categories="TGluZWxpc3QlMkNEYXNoYm9hcmQ=" data-listing-file-modified-sort="1771230007142" data-listing-reading-time-sort="3" data-listing-word-count-sort="534">
 <div class="thumbnail"><a href="../how_to/send_data_to_dashboard.html" class="no-external">
 
 <p class="card-img-top"><img src="images/img-006-export-dashboard.png" alt="Send data to dashboard"  class="thumbnail-image card-img"/></p>
@@ -384,7 +391,7 @@ window.Quarto = {
 </a>
 </div>
 </div>
-<div class="quarto-post image-right" data-index="6" data-categories="TGluZWxpc3QlMkNEYXNoYm9hcmQ=" data-listing-file-modified-sort="1750153475349" data-listing-reading-time-sort="3" data-listing-word-count-sort="594">
+<div class="quarto-post image-right" data-index="6" data-categories="TGluZWxpc3QlMkNEYXNoYm9hcmQ=" data-listing-file-modified-sort="1771230007142" data-listing-reading-time-sort="3" data-listing-word-count-sort="594">
 <div class="thumbnail"><a href="../how_to/troubleshoot_linelist.html" class="no-external">
 
 <p class="card-img-top"><img src="images/img-008-troubleshooting.png"  class="thumbnail-image card-img"/></p>
@@ -410,7 +417,7 @@ window.Quarto = {
 </a>
 </div>
 </div>
-<div class="quarto-post image-right" data-index="7" data-categories="U2V0dXA=" data-listing-file-modified-sort="1750153475331" data-listing-reading-time-sort="2" data-listing-word-count-sort="288">
+<div class="quarto-post image-right" data-index="7" data-categories="U2V0dXA=" data-listing-file-modified-sort="1771230007124" data-listing-reading-time-sort="2" data-listing-word-count-sort="288">
 <div class="thumbnail"><a href="../how_to/add_language.html" class="no-external">
 
 <p class="card-img-top"><img src="images/img-003-ribbon-setup-translations.png"  class="thumbnail-image card-img"/></p>
@@ -434,7 +441,7 @@ window.Quarto = {
 </a>
 </div>
 </div>
-<div class="quarto-post image-right" data-index="8" data-categories="U2V0dXA=" data-listing-file-modified-sort="1750153475331" data-listing-reading-time-sort="2" data-listing-word-count-sort="346">
+<div class="quarto-post image-right" data-index="8" data-categories="U2V0dXA=" data-listing-file-modified-sort="1771230007125" data-listing-reading-time-sort="2" data-listing-word-count-sort="346">
 <div class="thumbnail"><a href="../how_to/export_subset_geo.html" class="no-external">
 
 <p class="card-img-top"><img src="images/im-123-export-a-subset-of-geographic-columns.png"  class="thumbnail-image card-img"/></p>
@@ -458,7 +465,7 @@ window.Quarto = {
 </a>
 </div>
 </div>
-<div class="quarto-post image-right" data-index="9" data-categories="U2V0dXA=" data-listing-file-modified-sort="1750153475348" data-listing-reading-time-sort="4" data-listing-word-count-sort="754">
+<div class="quarto-post image-right" data-index="9" data-categories="U2V0dXA=" data-listing-file-modified-sort="1771230007142" data-listing-reading-time-sort="4" data-listing-word-count-sort="754">
 <div class="thumbnail"><a href="../how_to/link_tables.html" class="no-external">
 
 <p class="card-img-top"><img src="../images/im-130-list-auto-3.png"  class="thumbnail-image card-img"/></p>
@@ -482,7 +489,7 @@ window.Quarto = {
 </a>
 </div>
 </div>
-<div class="quarto-post image-right" data-index="10" data-categories="U2V0dXA=" data-listing-file-modified-sort="1750153475348" data-listing-reading-time-sort="1" data-listing-word-count-sort="108">
+<div class="quarto-post image-right" data-index="10" data-categories="U2V0dXA=" data-listing-file-modified-sort="1771230007142" data-listing-reading-time-sort="1" data-listing-word-count-sort="108">
 <div class="thumbnail"><a href="../how_to/migrate_setup.html" class="no-external">
 
 <p class="card-img-top"><img src="../reference/images/img-003-ribbon-setup-import.png"  class="thumbnail-image card-img"/></p>
@@ -560,13 +567,14 @@ window.Quarto = {
       e.clearSelection();
     }
     const getTextToCopy = function(trigger) {
-        const codeEl = trigger.previousElementSibling.cloneNode(true);
-        for (const childEl of codeEl.children) {
-          if (isCodeAnnotation(childEl)) {
-            childEl.remove();
-          }
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
         }
-        return codeEl.innerText;
+      }
+      return codeEl.innerText;
     }
     const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
       text: getTextToCopy

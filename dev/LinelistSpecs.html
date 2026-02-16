@@ -1,0 +1,973 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LinelistSpecs - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>LinelistSpecs</h1>
+<p>Modern facade that wraps a specifications workbook and exposes lazy-loaded,
+cached accessors for every collaborator object (dictionary, choices,
+translations, geo, analysis, passwords, format, exports, formulas, main).
+Provides lifecycle orchestration methods for importing data from external
+setup workbooks, preparing the dictionary with preserved sheet names,
+exporting specifications to a destination linelist workbook, and surfacing
+user-facing error dialogs. Uses a PredeclaredId factory pattern so callers
+construct instances via LinelistSpecs.Create(workbook) and receive an
+ILinelistSpecs interface reference.</p>
+<p><strong>Depends on:</strong> <a href="ILLdictionary.html">ILLdictionary</a>, <a href="ILLChoices.html">ILLChoices</a>, <a href="ILLTranslation.html">ILLTranslation</a>, <a href="IDesignerTranslation.html">IDesignerTranslation</a>, <a href="ILLGeo.html">ILLGeo</a>, <a href="ILLExport.html">ILLExport</a>, ILLAnalysis, <a href="IPasswords.html">IPasswords</a>, <a href="ILLFormat.html">ILLFormat</a>, <a href="IFormulaData.html">IFormulaData</a>, <a href="IMain.html">IMain</a>, <a href="ILLVariables.html">ILLVariables</a>, <a href="IFormulas.html">IFormulas</a>, <a href="ITranslationObject.html">ITranslationObject</a>, <a href="IApplicationState.html">IApplicationState</a>, <a href="ApplicationState.html">ApplicationState</a>, <a href="BetterArray.html">BetterArray</a>, <a href="LLdictionary.html">LLdictionary</a>, <a href="LLChoices.html">LLChoices</a>, <a href="LLTranslation.html">LLTranslation</a>, <a href="DesignerTranslation.html">DesignerTranslation</a>, <a href="LLGeo.html">LLGeo</a>, <a href="LLExport.html">LLExport</a>, <a href="Analysis.html">Analysis</a>, <a href="Passwords.html">Passwords</a>, <a href="LLFormat.html">LLFormat</a>, <a href="FormulaData.html">FormulaData</a>, <a href="Main.html">Main</a>, <a href="LLVariables.html">LLVariables</a>, <a href="Formulas.html">Formulas</a></p>
+<p><strong>Version:</strong> 1.0 (2026-02-09)</p>
+<h2>Factory helpers</h2>
+<h3>create</h3>
+<p><strong>Create a new specification facade from a workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create(ByVal specsWorkbook As Workbook) As ILinelistSpecs
+</code></pre>
+<p>Construction and identity accessors.
+Validates the workbook structure upfront (checking for all required
+worksheets and named ranges), then constructs a new LinelistSpecs
+instance with caches initialised. Returns the ILinelistSpecs interface.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>specsWorkbook</code>: Workbook. The specifications workbook to wrap.</li>
+</ul>
+<p><strong>Returns:</strong> ILinelistSpecs. A fully initialised facade ready for use.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When specsWorkbook is Nothing.</li>
+<li>ProjectError.ElementNotFound When required worksheets are missing.</li>
+</ul>
+<hr />
+<h3>workbook</h3>
+<p><strong>Primary workbook backing all specification queries</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get LLWorkbook() As Workbook
+</code></pre>
+<p>Returns the specifications workbook reference. Raises an error if
+the workbook has not been assigned via the factory method.</p>
+<p><strong>Returns:</strong> Workbook. The specifications workbook.</p>
+<p><strong>Remarks:</strong></p>
+<ul>
+<li>The public property is named LLWorkbook to avoid colliding with the
+VBA Workbook keyword; the ILinelistSpecs interface exposes this as
+Workbook. The delegation stub ILinelistSpecs_Workbook calls Me.Workbook,
+which resolves through the interface dispatch mechanism.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When the workbook is not set.</li>
+</ul>
+<hr />
+<h2>State management</h2>
+<h3>reset-caches</h3>
+<p><strong>Reset every cached collaborator</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ResetCaches()
+</code></pre>
+<p>Cache invalidation for collaborator objects, sheets, translations, and categories.
+Clears all cached collaborator objects, the sheet-name-to-worksheet
+cache, the translation object cache, and the category list cache. Call
+after importing new data so subsequent reads query the workbook again.</p>
+<hr />
+<h2>Category helpers</h2>
+<h3>categories</h3>
+<p><strong>Resolve category values for a variable with caching</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Categories(ByVal varName As String, Optional ByVal useShortlabels As Boolean = False) As BetterArray
+</code></pre>
+<p>Category resolution and caching for choice-type variables.
+Returns the list of category values for a choice-type variable
+(choice_manual, choice_multiple, choice_custom, or choice_formula).
+Results are cached per variable name and short-label flag combination.
+Always returns a cloned BetterArray to prevent callers from modifying
+the cached copy.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>varName</code>: String. The variable name whose categories to resolve.</li>
+<li><code>useShortlabels</code>: Boolean. When True, returns short labels. Defaults to False.</li>
+</ul>
+<p><strong>Returns:</strong> BetterArray. Cloned list of category values.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.InvalidArgument When varName is empty.</li>
+<li>ProjectError.ElementNotFound When the variable has no selectable categories.</li>
+</ul>
+<hr />
+<h2>Core accessors</h2>
+<h3>dictionary</h3>
+<p><strong>Linelist dictionary</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Dictionary() As ILLdictionary
+</code></pre>
+<p>Public property accessors for each collaborator object, exposing
+the lazy-loaded instances through their respective interfaces.
+Returns the ILLdictionary instance providing column and row access to the
+Dictionary worksheet. Lazy-loaded on first access.</p>
+<p><strong>Returns:</strong> ILLdictionary. The dictionary collaborator.</p>
+<hr />
+<h3>choices</h3>
+<p><strong>Choices catalogue</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Choices() As ILLChoices
+</code></pre>
+<p>Returns the ILLChoices instance providing category lookups from the
+Choices worksheet. Lazy-loaded on first access.</p>
+<p><strong>Returns:</strong> ILLChoices. The choices collaborator.</p>
+<hr />
+<h3>design-format</h3>
+<p><strong>Visual formatting specifications</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get DesignFormat() As ILLFormat
+</code></pre>
+<p>Returns the ILLFormat instance providing sheet and cell formatting
+methods based on the LinelistStyle worksheet. Lazy-loaded on first access.</p>
+<p><strong>Returns:</strong> ILLFormat. The format collaborator.</p>
+<hr />
+<h3>analysis</h3>
+<p><strong>Analysis setup specifications</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Analysis() As ILLAnalysis
+</code></pre>
+<p>Returns the ILLAnalysis instance providing access to the Analysis
+worksheet configuration. Lazy-loaded on first access.</p>
+<p><strong>Returns:</strong> ILLAnalysis. The analysis collaborator.</p>
+<hr />
+<h3>export-object</h3>
+<p><strong>Export column specifications</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ExportObject() As ILLExport
+</code></pre>
+<p>Returns the ILLExport instance providing access to export column
+definitions from the Exports worksheet. Lazy-loaded on first access.</p>
+<p><strong>Returns:</strong> ILLExport. The export collaborator.</p>
+<hr />
+<h3>password</h3>
+<p><strong>Password manager</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Password() As IPasswords
+</code></pre>
+<p>Returns the IPasswords instance providing workbook and sheet protection
+utilities from the __pass worksheet. Lazy-loaded on first access.</p>
+<p><strong>Returns:</strong> IPasswords. The password collaborator.</p>
+<hr />
+<h3>geo-object</h3>
+<p><strong>Geographic data manager</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get GeoObject() As ILLGeo
+</code></pre>
+<p>Returns the ILLGeo instance providing geographic hierarchy lookups from
+the Geo worksheet. Lazy-loaded on first access.</p>
+<p><strong>Returns:</strong> ILLGeo. The geo collaborator.</p>
+<hr />
+<h3>formula-data-object</h3>
+<p><strong>Formula data provider</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get FormulaDataObject() As IFormulaData
+</code></pre>
+<p>Returns the IFormulaData instance providing formula parsing support from
+the __formula worksheet. Lazy-loaded on first access.</p>
+<p><strong>Returns:</strong> IFormulaData. The formula data collaborator.</p>
+<hr />
+<h3>main-object</h3>
+<p><strong>Main configuration sheet accessor</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get MainObject() As IMain
+</code></pre>
+<p>Returns the IMain instance providing key-value configuration from the
+Main worksheet. Lazy-loaded on first access.</p>
+<p><strong>Returns:</strong> IMain. The main configuration collaborator.</p>
+<hr />
+<h3>translations</h3>
+<p><strong>Translation tables manager</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Translations() As ILLTranslation
+</code></pre>
+<p>Returns the ILLTranslation instance providing access to the linelist
+translation worksheet. Lazy-loaded on first access.</p>
+<p><strong>Returns:</strong> ILLTranslation. The translations collaborator.</p>
+<hr />
+<h3>designer-translations</h3>
+<p><strong>Designer translation accessor</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get DesignerTranslations() As IDesignerTranslation
+</code></pre>
+<p>Returns the IDesignerTranslation instance providing designer UI translations
+from the DesignerTranslation worksheet. Lazy-loaded on first access.</p>
+<p><strong>Returns:</strong> IDesignerTranslation. The designer translation collaborator.</p>
+<hr />
+<h3>trans-object</h3>
+<p><strong>Scoped translation object</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get TransObject(Optional ByVal translationScope As Byte = TranslationOfMessages) As ITranslationObject
+</code></pre>
+<p>Returns an ITranslationObject for the requested translation scope.
+Results are cached per scope value for efficient repeated access.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>translationScope</code>: Byte. The translation scope constant
+(e.g., TranslationOfMessages, TranslationOfDictionary). Defaults to
+TranslationOfMessages.</li>
+</ul>
+<p><strong>Returns:</strong> ITranslationObject. The scoped translation object.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ElementNotFound When the scope is not available.</li>
+</ul>
+<hr />
+<h3>temporary-sheet-name</h3>
+<p><strong>Temporary sheet name for a given scope</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get TemporarySheetName(ByVal scope As Byte) As String
+</code></pre>
+<p>Returns the fixed worksheet name used for temporary internal sheets,
+mapped from the scope constant (TEMP_SHEET_ANALYSIS, TEMP_SHEET_LIST,
+etc.) to its canonical name string.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>scope</code>: Byte. The temporary sheet scope constant.</li>
+</ul>
+<p><strong>Returns:</strong> String. The worksheet name string.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.InvalidArgument When the scope is not recognised.</li>
+</ul>
+<hr />
+<h3>value</h3>
+<p><strong>Configuration value by tag name</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Value(ByVal tagName As String) As String
+</code></pre>
+<p>Returns a configuration value from the Main worksheet for the given
+tag name. The special tag &quot;numberofexports&quot; returns the export count
+from the Exports worksheet; all other tags delegate to MainObject.ValueOf.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>tagName</code>: String. The configuration key to look up.</li>
+</ul>
+<p><strong>Returns:</strong> String. The configuration value, or empty string if tagName is empty.</p>
+<hr />
+<h2>Workbook orchestration</h2>
+<h3>prepare</h3>
+<p><strong>Import and prepare all specifications from external workbooks</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Prepare()
+</code></pre>
+<p>Lifecycle methods for importing, preparing, exporting, and
+error-managing the specifications workbook.
+Orchestrates the full specification preparation workflow:</p>
+<ol>
+<li>Validates Main sheet readiness via CheckReadiness.</li>
+<li>Opens the setup workbook and validates its required sheets.</li>
+<li>Imports exports, dictionary, choices, translations, and analysis data.</li>
+<li>Optionally opens and imports geo data from a separate workbook.</li>
+<li>Prepares the dictionary with preserved sheet names and geo references.</li>
+<li>Adds the &quot;list auto&quot; column if not already present.</li>
+<li>Translates and sorts all collaborators using dictionary translations.
+Handles errors with cleanup of open workbooks and busy-state restoration.</li>
+</ol>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ElementNotFound When paths or sheets are missing.</li>
+<li>ProjectError.ErrorUnexpectedState When an unexpected error occurs.</li>
+</ul>
+<hr />
+<h3>export</h3>
+<p><strong>Export all specifications to an output workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Export(ByVal toWkb As Workbook)
+</code></pre>
+<p>Exports dictionary, choices, translations, export specs, geo data, and
+passwords to the given workbook, creating hidden worksheets for each.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>toWkb</code>: Workbook. The destination workbook to export specifications into.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When toWkb is Nothing.</li>
+<li>ProjectError.ErrorUnexpectedState When an unexpected error occurs.</li>
+</ul>
+<hr />
+<h3>error-manage</h3>
+<p><strong>Display an error dialog for specification failures</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ErrorManage(Optional ByVal textMessage As String = vbNullString)
+</code></pre>
+<p>Shows a message box describing the error and informing the user that
+the linelist creation process is being aborted.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>textMessage</code>: String. Error description. Defaults to vbNullString.</li>
+</ul>
+<hr />
+<details>
+<summary>Internal members (not exported)</summary>
+<h2>Factory helpers</h2>
+<h3>self</h3>
+<p><strong>Interface-cast self reference</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Self() As ILinelistSpecs
+</code></pre>
+<p>Returns the current instance cast as ILinelistSpecs for fluent
+construction patterns within the factory method.</p>
+<p><strong>Returns:</strong> ILinelistSpecs. This instance as its interface type.</p>
+<hr />
+<h3>internal-workbook</h3>
+<p><strong>Setter for the backing workbook reference</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Set InternalWorkbook(ByVal specsWorkbook As Workbook)
+</code></pre>
+<p>Used during construction to assign the workbook before caches are
+initialised. Not part of the public interface.</p>
+<hr />
+<h2>State management</h2>
+<h3>reset-object-caches</h3>
+<p><strong>Clear all collaborator object references</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ResetObjectCaches()
+</code></pre>
+<hr />
+<h3>reset-sheet-cache</h3>
+<p><strong>Clear the worksheet name resolution cache</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ResetSheetCache()
+</code></pre>
+<hr />
+<h3>reset-translation-cache</h3>
+<p><strong>Clear the translation object cache</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ResetTranslationCache()
+</code></pre>
+<hr />
+<h3>reset-category-cache</h3>
+<p><strong>Clear the category list cache</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ResetCategoryCache()
+</code></pre>
+<hr />
+<h2>Guard helpers</h2>
+<h3>ensure-workbook</h3>
+<p><strong>Verify that the backing workbook is assigned</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureWorkbook()
+</code></pre>
+<p>Lazy-initialisation guards that create caches on first access.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When the workbook is Nothing.</li>
+</ul>
+<hr />
+<h3>ensure-sheet-cache</h3>
+<p><strong>Create the sheet cache if it does not exist</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureSheetCache()
+</code></pre>
+<hr />
+<h3>ensure-translation-cache</h3>
+<p><strong>Create the translation cache if it does not exist</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureTranslationCache()
+</code></pre>
+<hr />
+<h3>ensure-category-cache</h3>
+<p><strong>Create the category cache if it does not exist</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureCategoryCache()
+</code></pre>
+<hr />
+<h3>cache-entry-matches</h3>
+<p><strong>Check whether a cache entry's key matches the given key</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function CacheEntryMatches(ByVal entry As Variant, ByVal cacheKey As String) As Boolean
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>entry</code>: Variant. A two-element array where element(0) is the key.</li>
+<li><code>cacheKey</code>: String. The key to compare against.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the entry's key matches cacheKey.</p>
+<hr />
+<h3>try-get-cache-value</h3>
+<p><strong>Attempt to retrieve a value from a key-value BetterArray cache</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function TryGetCacheValue(ByVal cache As BetterArray, ByVal cacheKey As String, ByRef cachedValue As Variant) As Boolean
+</code></pre>
+<p>Scans a BetterArray of two-element arrays (key, value) for a matching
+key. If found, assigns the value to the ByRef parameter and returns True.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>cache</code>: BetterArray. The cache to search.</li>
+<li><code>cacheKey</code>: String. The key to look up.</li>
+<li><code>cachedValue</code>: Variant (ByRef). Receives the cached value when found.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the key was found in the cache.</p>
+<hr />
+<h3>store-cache-value</h3>
+<p><strong>Store a key-value pair in a BetterArray cache</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub StoreCacheValue(ByVal cache As BetterArray, ByVal cacheKey As String, ByVal value As Variant)
+</code></pre>
+<p>Pushes a two-element array (key, value) onto the cache. Skips the
+operation if the cache is Nothing or the key already exists.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>cache</code>: BetterArray. The cache to store into.</li>
+<li><code>cacheKey</code>: String. The key for the entry.</li>
+<li><code>value</code>: Variant. The value to cache.</li>
+</ul>
+<hr />
+<h2>Worksheet resolution</h2>
+<h3>sheet-cache-key</h3>
+<p><strong>Normalise a sheet name for use as a cache key</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SheetCacheKey(ByVal sheetName As String) As String
+</code></pre>
+<p>Cached worksheet lookups by name within the specifications workbook.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetName</code>: String. The raw sheet name.</li>
+</ul>
+<p><strong>Returns:</strong> String. Lower-cased, trimmed key.</p>
+<hr />
+<h3>resolve-sheet</h3>
+<p><strong>Resolve a worksheet by name with caching and optional error surfacing</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ResolveSheet(ByVal sheetName As String, _
+                              Optional ByVal allowMissing As Boolean = False) As Worksheet
+</code></pre>
+<p>Looks up a worksheet in the specifications workbook by name, checking
+the sheet cache first. When the sheet is not found and allowMissing is
+False, raises a descriptive error. Found sheets are stored in the cache
+for future lookups.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetName</code>: String. The worksheet name to find.</li>
+<li><code>allowMissing</code>: Boolean. When True, returns Nothing instead of raising.</li>
+</ul>
+<p><strong>Returns:</strong> Worksheet. The resolved worksheet, or Nothing if allowMissing.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.InvalidArgument When sheetName is empty and not allowMissing.</li>
+<li>ProjectError.ElementNotFound When the sheet is missing and not allowMissing.</li>
+</ul>
+<hr />
+<h2>External workbook helpers</h2>
+<h3>enter-busy-state</h3>
+<p><strong>Transition the application into a busy state</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnterBusyState(ByRef busyScope As IApplicationState)
+</code></pre>
+<p>Utilities for opening, closing, and validating external workbooks
+during the Prepare workflow.
+Creates or refreshes an ApplicationState snapshot and applies the busy
+state (suppressing screen updates and calculation) if not already busy.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>busyScope</code>: IApplicationState (ByRef). The state object to manage.</li>
+</ul>
+<hr />
+<h3>exit-busy-state</h3>
+<p><strong>Restore the application from a busy state</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ExitBusyState(ByRef busyScope As IApplicationState)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>busyScope</code>: IApplicationState (ByRef). The state object to restore and release.</li>
+</ul>
+<hr />
+<h3>open-workbook-internal</h3>
+<p><strong>Open a workbook by path with busy-state management</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function OpenWorkbookInternal(ByVal workbookPath As String, _
+                                      ByRef busyScope As IApplicationState) As Workbook
+</code></pre>
+<p>Validates that the path is non-empty and the file exists, enters the
+busy state, then opens the workbook. Raises descriptive errors on
+failure.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>workbookPath</code>: String. Full file path of the workbook to open.</li>
+<li><code>busyScope</code>: IApplicationState (ByRef). The busy-state scope.</li>
+</ul>
+<p><strong>Returns:</strong> Workbook. The opened workbook.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ElementNotFound When the path is empty or file missing.</li>
+<li>ProjectError.ErrorUnexpectedState When Workbooks.Open fails.</li>
+</ul>
+<hr />
+<h3>close-workbook-quiet</h3>
+<p><strong>Close a workbook without saving, suppressing errors</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub CloseWorkbookQuiet(ByRef target As Workbook)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>target</code>: Workbook (ByRef). The workbook to close and release.</li>
+</ul>
+<hr />
+<h3>resolve-external-sheet</h3>
+<p><strong>Resolve a worksheet in an external workbook, returning Nothing on failure</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ResolveExternalSheet(ByVal hostBook As Workbook, _
+                                      ByVal sheetName As String) As Worksheet
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>hostBook</code>: Workbook. The workbook to search.</li>
+<li><code>sheetName</code>: String. The worksheet name.</li>
+</ul>
+<p><strong>Returns:</strong> Worksheet. The worksheet, or Nothing if not found.</p>
+<hr />
+<h3>ensure-external-sheet-exists</h3>
+<p><strong>Verify a worksheet exists in an external workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureExternalSheetExists(ByVal hostBook As Workbook, _
+                                      ByVal sheetName As String)
+</code></pre>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ElementNotFound When the sheet is missing.</li>
+</ul>
+<hr />
+<h3>ensure-setup-workbook-sheets</h3>
+<p><strong>Validate that the setup workbook contains all required sheets</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureSetupWorkbookSheets(ByVal setupBook As Workbook)
+</code></pre>
+<p>Checks for Dictionary, Choices, Translations, Exports, and Analysis
+worksheets in the setup workbook.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>setupBook</code>: Workbook. The external setup workbook to validate.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ElementNotFound When a required sheet is missing.</li>
+</ul>
+<hr />
+<h3>ensure-dictionary-not-empty</h3>
+<p><strong>Verify that a dictionary worksheet contains data</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureDictionaryNotEmpty(ByVal dictionarySheet As Worksheet)
+</code></pre>
+<p>Creates a temporary LLdictionary to probe the sheet's DataRange.
+Raises an error if the range is Nothing or entirely blank.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>dictionarySheet</code>: Worksheet. The dictionary worksheet to check.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ElementNotFound When the sheet has no data.</li>
+</ul>
+<hr />
+<h3>build-preserved-sheet-names</h3>
+<p><strong>Build the list of sheet names to preserve during dictionary preparation</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function BuildPreservedSheetNames(ByVal messageTranslations As ITranslationObject) As BetterArray
+</code></pre>
+<p>Collects all specification sheet names and temporary sheet names into
+a BetterArray, then appends translated linelist sheet names (Admin,
+Analysis, Spatial, etc.) when message translations are available.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>messageTranslations</code>: ITranslationObject. The message translations
+for resolving linelist sheet names, or Nothing to skip translated names.</li>
+</ul>
+<p><strong>Returns:</strong> BetterArray. The list of preserved sheet names.</p>
+<hr />
+<h3>safe-translated-value</h3>
+<p><strong>Look up a translation key, falling back to the key itself on failure</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SafeTranslatedValue(ByVal translations As ITranslationObject, ByVal key As String) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>translations</code>: ITranslationObject. The translation object to query.</li>
+<li><code>key</code>: String. The translation key.</li>
+</ul>
+<p><strong>Returns:</strong> String. The translated value, or the key if translation fails.</p>
+<hr />
+<h3>reset-post-import-caches</h3>
+<p><strong>Clear caches that become stale after importing new data</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ResetPostImportCaches()
+</code></pre>
+<p>Resets the variables object, category cache, and translation cache
+so they are rebuilt from the freshly imported data.</p>
+<hr />
+<h2>Workbook validation</h2>
+<h3>validate-workbook-reference</h3>
+<p><strong>Validate a workbook reference and its structure</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ValidateWorkbookReference(ByVal specsWorkbook As Workbook)
+</code></pre>
+<p>Structural validation of specifications workbooks.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When specsWorkbook is Nothing.</li>
+<li>ProjectError.ElementNotFound When required sheets are missing.</li>
+</ul>
+<hr />
+<h3>validate-workbook-structure</h3>
+<p><strong>Check that a workbook contains all required worksheets and named ranges</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ValidateWorkbookStructure(ByVal specsWorkbook As Workbook)
+</code></pre>
+<p>Iterates the list of required sheet names and collects any that are
+missing. If the format sheet exists, also validates that the DESIGNTYPE
+named range is present.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>specsWorkbook</code>: Workbook. The workbook to validate.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ElementNotFound When required sheets or ranges are missing.</li>
+</ul>
+<hr />
+<h3>required-sheet-names</h3>
+<p><strong>Return the array of required specification worksheet names</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function RequiredSheetNames() As Variant
+</code></pre>
+<p><strong>Returns:</strong> Variant. Array of sheet name strings.</p>
+<hr />
+<h3>worksheet-exists-internal</h3>
+<p><strong>Test whether a worksheet exists in a workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function WorksheetExistsInternal(ByVal specsWorkbook As Workbook, _
+                                         ByVal sheetName As String) As Boolean
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>specsWorkbook</code>: Workbook. The workbook to search.</li>
+<li><code>sheetName</code>: String. The worksheet name to look for.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the worksheet exists.</p>
+<hr />
+<h3>range-exists-internal</h3>
+<p><strong>Test whether a named range exists on a worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function RangeExistsInternal(ByVal hostSheet As Worksheet, _
+                                     ByVal rangeName As String) As Boolean
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>hostSheet</code>: Worksheet. The worksheet to search.</li>
+<li><code>rangeName</code>: String. The named range to look for.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the named range exists.</p>
+<hr />
+<h3>join-names</h3>
+<p><strong>Join a BetterArray of names into a comma-separated, quoted string</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function JoinNames(ByVal values As BetterArray) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>values</code>: BetterArray. The names to join.</li>
+</ul>
+<p><strong>Returns:</strong> String. Formatted string like &quot;'Sheet1', 'Sheet2'&quot;.</p>
+<hr />
+<h3>safe-workbook-name</h3>
+<p><strong>Safely retrieve a workbook's name, returning &quot;<unknown>&quot; on error</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SafeWorkbookName(ByVal specsWorkbook As Workbook) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>specsWorkbook</code>: Workbook. The workbook whose name to retrieve.</li>
+</ul>
+<p><strong>Returns:</strong> String. The workbook name or &quot;<unknown>&quot;.</p>
+<hr />
+<h2>Collaborator ensures</h2>
+<h3>ensure-exports</h3>
+<p><strong>Lazy-load the export collaborator</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureExports()
+</code></pre>
+<p>Lazy-initialisation guards for each collaborator object. Each
+EnsureXxx method creates the collaborator from its backing worksheet on first
+access, then caches it for subsequent calls.</p>
+<hr />
+<h3>ensure-dictionary</h3>
+<p><strong>Lazy-load the dictionary collaborator</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureDictionary()
+</code></pre>
+<p>Requires the export collaborator to be available first (for the number
+of exports parameter), then creates the dictionary from the Dictionary
+worksheet.</p>
+<hr />
+<h3>ensure-choices</h3>
+<p><strong>Lazy-load the choices collaborator</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureChoices()
+</code></pre>
+<hr />
+<h3>ensure-translations</h3>
+<p><strong>Lazy-load the translations collaborator</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureTranslations()
+</code></pre>
+<p>Creates the LLTranslation instance from the linelist translation worksheet.</p>
+<hr />
+<h3>ensure-designer-translations</h3>
+<p><strong>Lazy-load the designer translations collaborator</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureDesignerTranslations()
+</code></pre>
+<hr />
+<h3>ensure-geo</h3>
+<p><strong>Lazy-load the geo collaborator</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureGeo()
+</code></pre>
+<hr />
+<h3>ensure-analysis</h3>
+<p><strong>Lazy-load the analysis collaborator</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureAnalysis()
+</code></pre>
+<hr />
+<h3>ensure-passwords</h3>
+<p><strong>Lazy-load the passwords collaborator</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsurePasswords()
+</code></pre>
+<hr />
+<h3>ensure-formula-data</h3>
+<p><strong>Lazy-load the formula data collaborator</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureFormulaData()
+</code></pre>
+<hr />
+<h3>ensure-main</h3>
+<p><strong>Lazy-load the main configuration collaborator</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureMain()
+</code></pre>
+<hr />
+<h3>ensure-variables</h3>
+<p><strong>Lazy-load the variables collaborator</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureVariables()
+</code></pre>
+<p>Requires the dictionary to be available first, then creates the
+LLVariables instance from it.</p>
+<hr />
+<h3>ensure-format</h3>
+<p><strong>Lazy-load the format collaborator</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureFormat()
+</code></pre>
+<p>Resolves the design name from the DESIGNTYPE named range on the format
+sheet, then creates the LLFormat instance.</p>
+<hr />
+<h3>resolve-design-name</h3>
+<p><strong>Extract the design name from the format worksheet's DESIGNTYPE range</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ResolveDesignName(ByVal formatSheet As Worksheet) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>formatSheet</code>: Worksheet. The format worksheet.</li>
+</ul>
+<p><strong>Returns:</strong> String. The trimmed design type name.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ElementNotFound When the DESIGNTYPE range is missing.</li>
+</ul>
+<hr />
+<h3>ensure-translation-object-cache</h3>
+<p><strong>Ensure both translations and translation cache are ready</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureTranslationObjectCache()
+</code></pre>
+<hr />
+<h3>ensure-category-lookup</h3>
+<p><strong>Ensure choices, variables, and category cache are ready</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureCategoryLookup()
+</code></pre>
+<hr />
+<h3>number-of-exports</h3>
+<p><strong>Return the number of exports defined in the export specifications</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function NumberOfExports() As Long
+</code></pre>
+<p><strong>Returns:</strong> Long. The export count.</p>
+<hr />
+<h2>List auto helpers</h2>
+<h3>add-list-auto</h3>
+<p><strong>Populate the &quot;list auto&quot; dictionary column for list_auto variables</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AddListAuto()
+</code></pre>
+<p>Automatic list column generation for formula-based variables.
+Adds a &quot;list auto&quot; column to the dictionary, then finds all variables
+with control type &quot;list_auto&quot; and marks their control details with
+&quot;list_auto_origin&quot;. For formula-type variables (formula, case_when,
+choice_formula), recursively traces referenced variables and marks
+them as well.</p>
+<hr />
+<h3>recursive-list-auto</h3>
+<p><strong>Recursively mark referenced variables in formula chains as list_auto</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RecursiveListAuto(ByVal varName As String)
+</code></pre>
+<p>Parses the control details of a formula-type variable using the Formulas
+engine, extracts the list of referenced variables, marks each with
+&quot;list_auto_origin&quot;, and recurses into any that are themselves formulas
+or case_when types.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>varName</code>: String. The formula variable whose references to trace.</li>
+</ul>
+<hr />
+<h2>Category helpers</h2>
+<h3>resolve-category-list</h3>
+<p><strong>Build a category list from the choices sheet for a given variable</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ResolveCategoryList(ByVal varName As String, _
+                                     ByVal useShortlabels As Boolean) As BetterArray
+</code></pre>
+<p>Determines the category name from the variable's control type and
+control details, then queries the choices collaborator.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>varName</code>: String. The variable name.</li>
+<li><code>useShortlabels</code>: Boolean. Whether to use short labels.</li>
+</ul>
+<p><strong>Returns:</strong> BetterArray. The resolved category list.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.InvalidArgument When varName is empty.</li>
+<li>ProjectError.ElementNotFound When the variable or category is not found.</li>
+</ul>
+<hr />
+<h3>build-category-cache-key</h3>
+<p><strong>Construct the cache key for a category lookup</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function BuildCategoryCacheKey(ByVal varName As String, _
+                                       ByVal useShortlabels As Boolean) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>varName</code>: String. The variable name.</li>
+<li><code>useShortlabels</code>: Boolean. The short-labels flag.</li>
+</ul>
+<p><strong>Returns:</strong> String. The composite cache key.</p>
+<hr />
+<h3>normalise-control-type</h3>
+<p><strong>Strip parenthesised suffixes from a control type string</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function NormaliseControlType(ByVal controlValue As String) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>controlValue</code>: String. The raw control type value.</li>
+</ul>
+<p><strong>Returns:</strong> String. The normalised, lower-cased control type.</p>
+<hr />
+<h3>extract-choice-formula</h3>
+<p><strong>Extract the choice name from a CHOICE_FORMULA(...) control details string</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ExtractChoiceFormula(ByVal controlDetails As String) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>controlDetails</code>: String. The raw control details value.</li>
+</ul>
+<p><strong>Returns:</strong> String. The extracted choice name.</p>
+<hr />
+<h2>Error handling</h2>
+<h3>throw-error</h3>
+<p><strong>Raise a project error with the class name as source</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As Long, ByVal messageText As String)
+</code></pre>
+<p>Internal error-raising utility.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>errNumber</code>: Long. The ProjectError constant.</li>
+<li><code>messageText</code>: String. The error description.</li>
+</ul>
+<hr />
+<h2>Test support</h2>
+<h3>test-assign-main</h3>
+<p><strong>Inject a mock IMain instance for testing</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub TestAssignMain(ByVal mainObj As IMain)
+</code></pre>
+<p>Backdoor setters for injecting mock collaborators during testing.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>mainObj</code>: IMain. The mock main object.</li>
+</ul>
+<hr />
+<h3>test-assign-designer-translations</h3>
+<p><strong>Inject a mock IDesignerTranslation instance for testing</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub TestAssignDesignerTranslations(ByVal designerTrads As IDesignerTranslation)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>designerTrads</code>: IDesignerTranslation. The mock designer translations object.</li>
+</ul>
+<hr />
+<h3>test-assign-translations</h3>
+<p><strong>Inject a mock ILLTranslation instance for testing</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub TestAssignTranslations(ByVal translations As ILLTranslation)
+</code></pre>
+<p>Also resets the translation cache to ensure the mock object is used
+for subsequent TransObject lookups.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>translations</code>: ILLTranslation. The mock translations object.</li>
+</ul>
+<hr />
+<h2>Interface implementation</h2>
+<h3>ILinelistSpecs_ResetCaches</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ILinelistSpecs_ResetCaches()
+</code></pre>
+<p>ILinelistSpecs delegation stubs. Each member forwards to its
+corresponding public member on the concrete class. No @label tags are
+needed on delegation stubs.</p>
+<hr />
+</details>
+<details>
+<summary>Used in (16 file(s))</summary>
+<ul>
+<li><a href="src/classes/analyses/AnalysisOutput.cls">AnalysisOutput.cls</a></li>
+<li><a href="src/classes/analyses/CrossTable.cls">CrossTable.cls</a></li>
+<li><a href="src/classes/graphs/GraphSpecs.cls">GraphSpecs.cls</a></li>
+<li><a href="src/classes/linelist/ILinelist.cls">ILinelist.cls</a></li>
+<li><a href="src/classes/linelist/ILinelistSpecs.cls">ILinelistSpecs.cls</a></li>
+<li><a href="src/classes/linelist/Linelist.cls">Linelist.cls</a></li>
+<li><a href="src/classes/linelist/LinelistSpecs.cls">LinelistSpecs.cls</a></li>
+<li><a href="src/classes/linelist/ListBuilder.cls">ListBuilder.cls</a></li>
+<li><a href="src/classes/sections/SectionBuilder.cls">SectionBuilder.cls</a></li>
+<li><a href="src/classes/sections/VarWriter.cls">VarWriter.cls</a></li>
+<li><a href="src/classes/stale/designer-codes/modules/implements/DesignerMain.bas">DesignerMain.bas</a></li>
+<li><a href="src/tests/stubs/LinelistSpecsWorkbookStub.cls">LinelistSpecsWorkbookStub.cls</a></li>
+<li><a href="src/tests/stubs/LinelistStub.cls">LinelistStub.cls</a></li>
+<li><a href="src/tests/stubs/LLVarContextSpecsStub.cls">LLVarContextSpecsStub.cls</a></li>
+<li><a href="src/tests/TableSpecsLinelistStub.cls">TableSpecsLinelistStub.cls</a></li>
+<li><a href="src/tests/TestLinelistSpecs.bas">TestLinelistSpecs.bas</a></li>
+</ul>
+</details>
+
+  </main>
+</body>
+</html>
+

@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DesignerEntry - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>DesignerEntry</h1>
+<p>Coordinates clearing, translation, and info read/write actions for a
+designer entry worksheet. Lazily resolves an IDesignerTranslation
+translator (for applying language translations and translating message
+codes) from the host worksheet and its parent workbook. The translator
+can be replaced via setter injection for testing.
+Consumers interact through the IDesignerEntry interface.</p>
+<p><strong>Depends on:</strong> <a href="DesignerTranslation.html">DesignerTranslation</a>, <a href="IDesignerTranslation.html">IDesignerTranslation</a></p>
+<h2>Factory</h2>
+<h3>create</h3>
+<p><strong>Create and configure a designer entry helper</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create(ByVal hostSheet As Worksheet) As IDesignerEntry
+</code></pre>
+<p>Factory method that creates a new DesignerEntry instance, binds it to
+the supplied worksheet via Configure, and returns the result through
+the IDesignerEntry interface. Called on the predeclared instance.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>hostSheet</code>: Worksheet. The worksheet hosting designer inputs.</li>
+</ul>
+<p><strong>Returns:</strong> IDesignerEntry. A fully initialised instance ready for use.</p>
+<hr />
+<h2>Public API</h2>
+<h3>configure</h3>
+<p><strong>Bind the helper to the target worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Configure(ByVal hostSheet As Worksheet)
+</code></pre>
+<p>Stores a reference to the host worksheet. Raises an error when the
+worksheet is Nothing. Does not reset the translator so that a
+previously injected test double is preserved.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>hostSheet</code>: Worksheet. The worksheet hosting designer inputs.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When the worksheet is Nothing.</li>
+</ul>
+<hr />
+<h3>use-translator</h3>
+<p><strong>Use a provided translations manager instead of creating one</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub UseTranslator(ByVal translator As IDesignerTranslation)
+</code></pre>
+<p>Replaces the internally resolved IDesignerTranslation translator with the
+supplied instance. Primarily used in tests to inject a stub or mock.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>translator</code>: IDesignerTranslation. The translations provider to use.</li>
+</ul>
+<hr />
+<h3>clear</h3>
+<p><strong>Clear user inputs on the configured worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Clear()
+</code></pre>
+<p>Resets all input ranges on the configured worksheet by clearing their
+values and setting backgrounds to white. Also clears any warning
+messages below the RNG_Warning range. Silently skips any named range
+that does not exist on the worksheet.</p>
+<hr />
+<h3>translate</h3>
+<p><strong>Translate the configured worksheet using the provided language</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Translate(Optional ByVal language As String = vbNullString)
+</code></pre>
+<p>Delegates to the translations provider to apply translated labels,
+shapes, and dropdowns to the host worksheet. When a non-empty language
+string is supplied (e.g. &quot;FRA - Francais&quot;), the translator extracts
+the language code and persists it to the worksheet-level HiddenName.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>language</code>: Optional String. Language string in &quot;CODE - Label&quot; format. Defaults to vbNullString.</li>
+</ul>
+<hr />
+<h3>add-info</h3>
+<p><strong>Write a value to a named info range on the host worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub AddInfo(ByVal value As String, ByVal infoName As String)
+</code></pre>
+<p>Maps the logical infoName to its corresponding named range on the host
+worksheet, writes the value, and sets the background to white. Silently
+exits when the named range does not exist on the worksheet.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>value</code>: String. The value to write (path, translated message, etc.).</li>
+<li><code>infoName</code>: String. The logical name identifying the target range.</li>
+</ul>
+<hr />
+<h3>value-of</h3>
+<p><strong>Read a value from a named info range on the host worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ValueOf(ByVal infoName As String) As String
+</code></pre>
+<p>Maps the logical infoName to its corresponding named range on the host
+worksheet and returns the current cell value. Returns vbNullString when
+the named range does not exist.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>infoName</code>: String. The logical name identifying the source range.</li>
+</ul>
+<p><strong>Returns:</strong> String. The current value of the named range.</p>
+<hr />
+<h3>translate-message</h3>
+<p><strong>Translate a message code using the designer translations</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function TranslateMessage(ByVal msgCode As String) As String
+</code></pre>
+<p>Delegates to the lazily resolved translations provider to translate a
+message code into the current designer language. Returns the raw
+msgCode unchanged when no translation is available.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>msgCode</code>: String. The message code to translate.</li>
+</ul>
+<p><strong>Returns:</strong> String. The translated message text.</p>
+<hr />
+<h3>host-sheet</h3>
+<p><strong>The managed worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get HostSheet() As Worksheet
+</code></pre>
+<p>Returns the designer entry worksheet that was bound via Configure.
+Raises an error when accessed before configuration.</p>
+<p><strong>Returns:</strong> Worksheet. The host worksheet.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When the worksheet was not configured.</li>
+</ul>
+<hr />
+<details>
+<summary>Internal members (not exported)</summary>
+<h2>Factory</h2>
+<h3>self</h3>
+<p><strong>Current object instance</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Self() As IDesignerEntry
+</code></pre>
+<p>Convenience accessor so consuming code can fluently retrieve the
+interface reference from the predeclared Create method.</p>
+<p><strong>Returns:</strong> IDesignerEntry. The current instance cast to the interface.</p>
+<hr />
+<h2>Internal Helpers</h2>
+<h3>clear-range</h3>
+<p><strong>Clear a single named range value and reset its background</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ClearRange(ByVal rngName As String)
+</code></pre>
+<p>Resolves the named range from the host worksheet, sets its value to
+empty, and resets the background to white. Silently skips when the
+named range does not exist.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>rngName</code>: String. The named range identifier on the worksheet.</li>
+</ul>
+<hr />
+<h3>clear-warnings</h3>
+<p><strong>Clear the warning range and all contiguous non-empty cells below it</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ClearWarnings()
+</code></pre>
+<p>Resolves RNG_Warning and walks downward, clearing the value and
+background of each non-empty cell until an empty cell is encountered.
+Silently exits when RNG_Warning does not exist.</p>
+<hr />
+<h3>resolve-info-range</h3>
+<p><strong>Map a logical info name to its named range on the host worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ResolveInfoRange(ByVal infoName As String) As Range
+</code></pre>
+<p>Resolves an infoName string to the corresponding named range constant,
+then returns the Range object from the host worksheet. Returns Nothing
+when the infoName is unknown or the named range does not exist.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>infoName</code>: String. The logical info name to resolve.</li>
+</ul>
+<p><strong>Returns:</strong> Range. The named range, or Nothing.</p>
+<hr />
+<h3>resolve-translator</h3>
+<p><strong>Lazily resolve or return the translations provider</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ResolveTranslator() As IDesignerTranslation
+</code></pre>
+<p>Returns the cached IDesignerTranslation translator, or creates one via
+DesignerTranslation.Create with the DesignerTranslation worksheet on first
+access. Raises an error when the translation sheet cannot be found.</p>
+<p><strong>Returns:</strong> IDesignerTranslation. The translations provider instance.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ElementNotFound When the translation sheet is missing.</li>
+</ul>
+<hr />
+<h3>translation-sheet</h3>
+<p><strong>Locate the DesignerTranslation worksheet in the parent workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function TranslationSheet() As Worksheet
+</code></pre>
+<p>Searches the parent workbook of the host worksheet for a sheet named
+&quot;DesignerTranslation&quot;. Raises an error when not found.</p>
+<p><strong>Returns:</strong> Worksheet. The translations worksheet.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ElementNotFound When the translations worksheet is missing.</li>
+</ul>
+<hr />
+<h3>raise-error</h3>
+<p><strong>Raise a ProjectError-based exception</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RaiseError(ByVal errorCode As ProjectError, ByVal messageText As String)
+</code></pre>
+<p>Wrapper around Err.Raise that standardises the source to CLASS_NAME.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>errorCode</code>: ProjectError. The error code to raise.</li>
+<li><code>messageText</code>: String. Human-readable description of the failure.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.<varies> Always raises the specified error.</li>
+</ul>
+<hr />
+<h2>Interface Implementation</h2>
+<h3>IDesignerEntry_AddInfo</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub IDesignerEntry_AddInfo(ByVal value As String, ByVal infoName As String)
+</code></pre>
+<p>Delegated members satisfying the IDesignerEntry contract.
+See the corresponding members above for full documentation.</p>
+<hr />
+</details>
+<details>
+<summary>Used in (4 file(s))</summary>
+<ul>
+<li><a href="src/classes/designer/DesignerEntry.cls">DesignerEntry.cls</a></li>
+<li><a href="src/classes/designer/IDesignerEntry.cls">IDesignerEntry.cls</a></li>
+<li><a href="src/modules/designer/EventsDesignerAdvanced.bas">EventsDesignerAdvanced.bas</a></li>
+<li><a href="src/tests/modules/designer/TestDesignerRibbon.bas">TestDesignerRibbon.bas</a></li>
+</ul>
+</details>
+
+  </main>
+</body>
+</html>
+

@@ -1,0 +1,483 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LLExport - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>LLExport</h1>
+<details>
+<summary>Internal members (not exported)</summary>
+<h2>Factory</h2>
+<h3>Create</h3>
+<p><strong>Create a unified export handler</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create(ByVal exportSheet As Worksheet, _
+                       Optional ByVal startRow As Long = 1, _
+                       Optional ByVal startColumn As Long = 1) As ILLExport
+</code></pre>
+<p>Creates a linelist export handler over the specification sheet provided by the
+caller. The implementation caches the underlying datasheet, worksheet, and
+sanitisation rules so subsequent calls can resolve filenames and table rows
+without repeatedly scanning the workbook.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>exportSheet</code>: Worksheet hosting the export specification table.</li>
+<li><code>startRow</code>: Optional; first row of the export table (defaults to 1).</li>
+<li><code>startColumn</code>: Optional; first column of the export table (defaults to 1).</li>
+</ul>
+<p><strong>Returns:</strong> A fully initialised <code>ILLExport</code> instance.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized when the worksheet is missing.</li>
+</ul>
+<hr />
+<h3>SetInternalData</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Set InternalData(ByVal exportData As IDataSheet)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>exportData</code>: Datasheet wrapper over the specification table.</li>
+</ul>
+<hr />
+<h3>SetInternalWorksheet</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Set InternalWorksheet(ByVal exportSheet As Worksheet)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>exportSheet</code>: Worksheet that stores the export specification table.</li>
+</ul>
+<hr />
+<h3>Self</h3>
+<p><strong>Return the current instance as interface</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Self() As ILLExport
+</code></pre>
+<p><strong>Returns:</strong> The object cast as <code>ILLExport</code>.</p>
+<hr />
+<h2>Properties</h2>
+<h3>Data</h3>
+<p><strong>Underlying export datasheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Data() As IDataSheet
+</code></pre>
+<p><strong>Returns:</strong> Datasheet abstraction wrapping the export specification table.</p>
+<hr />
+<h3>Worksheet</h3>
+<p><strong>Worksheet hosting the export specification table</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Worksheet() As Worksheet
+</code></pre>
+<p><strong>Returns:</strong> Worksheet reference used by the handler.</p>
+<hr />
+<h3>NumberOfExports</h3>
+<p><strong>Count the configured export rows</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get NumberOfExports() As Long
+</code></pre>
+<p>Counts rows within the specification table excluding headers.</p>
+<p><strong>Returns:</strong> Total number of export definitions currently present.</p>
+<hr />
+<h3>HasCheckings</h3>
+<p><strong>Whether informational checkings were captured</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get HasCheckings() As Boolean
+</code></pre>
+<hr />
+<h3>CheckingValues</h3>
+<p><strong>Collected informational diagnostics</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get CheckingValues() As IChecking
+</code></pre>
+<p><strong>Returns:</strong> Checking object containing log entries, if any.</p>
+<hr />
+<h2>Row Management</h2>
+<h3>ManageRows</h3>
+<p><strong>Align export rows and dictionary columns</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ManageRows(Optional ByVal del As Boolean = False, _ 
+                       Optional ByVal dict As ILLdictionary, _
+                       Optional ByVal rowCount As Long = 2)
+</code></pre>
+<p>Handle the addition or removal of export rows while keeping the dictionary
+columns aligned with the actual identifiers present in the worksheet. The
+logic operates on identifiers rather than simple counts so arbitrary deletions
+do not remove unrelated export columns.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>dict</code>: Optional dictionary used to add/remove export columns.</li>
+<li><code>del</code>: Optional flag switching to row removal mode.</li>
+<li><code>rowCount</code>: Optional threshold for row removal; rows with non-empty cells at or below the threshold are trimmed (defaults to 0, removing empty rows).</li>
+</ul>
+<hr />
+<h3>InsertRows</h3>
+<p><strong>Insert export rows and keep dictionary columns aligned</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub InsertRows(ByVal targetCell As Range, _
+                      Optional ByVal dict As ILLdictionary, _
+                      Optional ByVal insertShift As Boolean = False)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>targetCell</code>: Range anchor representing where to mirror inserted rows.</li>
+<li><code>dict</code>: Optional dictionary to shift export columns.</li>
+<li><code>insertShift</code>: Optional Boolean to insert worksheet rows when necessary. Defaults to False.</li>
+</ul>
+<hr />
+<h3>DeleteRows</h3>
+<p><strong>Delete export rows intersecting the supplied selection</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub DeleteRows(ByVal targetCell As Range, _
+                      Optional ByVal dict As ILLdictionary, _
+                      Optional ByVal forceShift As Boolean = False)
+</code></pre>
+<hr />
+<h3>AddRows</h3>
+<p><strong>Append export definition rows</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub AddRows(Optional ByVal dict As ILLdictionary)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>dict</code>: Optional dictionary to align export columns with.</li>
+</ul>
+<hr />
+<h3>RemoveRows</h3>
+<p><strong>Remove empty export rows</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub RemoveRows(Optional ByVal dict As ILLdictionary, _ 
+                      Optional ByVal rowCount As Long = 2)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>rowCount</code>: Optional threshold; rows with non-empty cell counts at or below this value are removed (defaults to 0).</li>
+</ul>
+<hr />
+<h3>SyncDictionaryExports</h3>
+<p><strong>Synchronise dictionary export columns</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub SyncDictionaryExports(Optional ByVal dict As ILLdictionary)
+</code></pre>
+<hr />
+<h3>Sort</h3>
+<p><strong>Sort export definitions and normalize identifiers</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Sort(Optional ByVal dict As ILLdictionary)
+</code></pre>
+<hr />
+<h2>SpecManagement</h2>
+<h3>ImportSpecs</h3>
+<p><strong>Import export specifications from another worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ImportSpecs(ByVal fromWksh As Worksheet, _
+                       ByVal fromStartRow As Long, _
+                       ByVal fromStartColumn As Long)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>fromWksh</code>: Source worksheet containing the export table.</li>
+<li><code>fromStartRow</code>: First row of the source data.</li>
+<li><code>fromStartColumn</code>: First column of the source data.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized when the source worksheet is missing.</li>
+</ul>
+<hr />
+<h3>ExportSpecs</h3>
+<p><strong>Export specifications into another workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ExportSpecs(ByVal toWkb As Workbook, _
+                       Optional ByVal Hide As Long = xlSheetHidden)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>toWkb</code>: Destination workbook.</li>
+<li><code>Hide</code>: Optional visibility flag for the exported sheet.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized when the target workbook is missing.</li>
+</ul>
+<hr />
+<h2>FileName</h2>
+<h3>ExportFileName</h3>
+<p><strong>Build the filename for a specific export definition</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function ExportFileName(ByVal exportNumber As Long, _
+                               ByVal dict As ILLdictionary, _
+                               ByVal pass As IPasswords, _
+                               Optional ByVal exportAll As Boolean = False) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>exportNumber</code>: Target export definition number starting at 1.</li>
+<li><code>dict</code>: Dictionary providing metadata for chunk substitutions.</li>
+<li><code>pass</code>: Password provider used to append version/public key information.</li>
+<li><code>exportAll</code>: Optional flag forcing the &quot;export all&quot; naming schema.</li>
+</ul>
+<p><strong>Returns:</strong> Sanitised filename incorporating dictionary-driven chunks and metadata.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.InvalidArgument when the export number is invalid.</li>
+<li>ProjectError.ObjectNotInitialized when required collaborators are missing.</li>
+</ul>
+<hr />
+<h2>Export Count Tracking</h2>
+<h3>HiddenNameStore</h3>
+<p><strong>Resolve worksheet name manager</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function HiddenNameStore() As IHiddenNames
+</code></pre>
+<hr />
+<h2>Utilities</h2>
+<h3>IsActive</h3>
+<p><strong>Determine whether an export is marked active</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function IsActive(ByVal exportNumber As Long) As Boolean
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>exportNumber</code>: Export definition number to inspect.</li>
+</ul>
+<p><strong>Returns:</strong> True when the status column contains &quot;active&quot; (case-insensitive).</p>
+<hr />
+<h3>ColumnValue</h3>
+<p><strong>Retrieve a column value for a given export row</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function ColumnValue(ByVal exportNumber As Long, ByVal columnName As String) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>exportNumber</code>: Export definition number to read.</li>
+<li><code>columnName</code>: Column header to retrieve.</li>
+</ul>
+<p><strong>Returns:</strong> Column value as string (empty string when not found).</p>
+<hr />
+<h3>ActiveExportNumbers</h3>
+<p><strong>Enumerate export numbers marked as active</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function ActiveExportNumbers() As BetterArray
+</code></pre>
+<p><strong>Returns:</strong> BetterArray containing active export numbers using 1-based numbering.</p>
+<hr />
+<h3>Translate</h3>
+<p><strong>Translate the current LLExport</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub Translate(ByVal trads As ITranslationObject)
+</code></pre>
+<hr />
+<h2>Private Helpers</h2>
+<h3>EnsureDataReady</h3>
+<p><strong>Ensure the datasheet state is initialised</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureDataReady()
+</code></pre>
+<hr />
+<h3>EnsureWorksheetReady</h3>
+<p><strong>Ensure the worksheet reference is initialised</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureWorksheetReady()
+</code></pre>
+<hr />
+<h3>EnsureDictionaryReady</h3>
+<p><strong>Validate dictionary dependency</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureDictionaryReady(Optional ByVal dict As ILLdictionary, Optional ByVal resetInt As Boolean = False, Optional ByVal required As Boolean = True)
+</code></pre>
+<hr />
+<h3>EnsureVariablesReady</h3>
+<p><strong>Lazily instantiate dictionary-backed variable helper</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureVariablesReady(Optional ByVal dict As ILLdictionary)
+</code></pre>
+<hr />
+<h3>InternalDictionary</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get InternalDictionary() As ILLdictionary
+</code></pre>
+<hr />
+<h3>InternalDictionary</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Set InternalDictionary(ByVal dict As ILLdictionary)
+</code></pre>
+<hr />
+<h3>ValidateExportNumber</h3>
+<p><strong>Validate export number bounds</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ValidateExportNumber(ByVal exportNumber As Long)
+</code></pre>
+<hr />
+<h3>ValidatePasswords</h3>
+<p><strong>Validate password provider dependency</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ValidatePasswords(ByVal pass As IPasswords)
+</code></pre>
+<hr />
+<h3>ExportTable</h3>
+<p><strong>Retrieve export table wrapper</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ExportTable() As ICustomTable
+</code></pre>
+<hr />
+<h3>ReadValue</h3>
+<p><strong>Read a column value from the cached datasheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ReadValue(ByVal columnName As String, _
+                           ByVal exportNumber As Long, _
+                           Optional ByVal required As Boolean = False) As String
+</code></pre>
+<hr />
+<h3>ResolveColumnRange</h3>
+<p><strong>Resolve and cache a specification column</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ResolveColumnRange(ByVal columnName As String, _
+                                    ByVal required As Boolean) As Range
+</code></pre>
+<hr />
+<h3>ResetCaches</h3>
+<p><strong>Reset cached references and diagnostics</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ResetCaches()
+</code></pre>
+<hr />
+<h3>ComposeTemplatePath</h3>
+<p><strong>Build the filename path from template chunks</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ComposeTemplatePath(ByVal template As String) As String
+</code></pre>
+<hr />
+<h3>ResolveTemplateChunk</h3>
+<p><strong>Resolve a single template chunk into a safe string</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ResolveTemplateChunk(ByVal rawChunk As String, _
+                                      ByVal workbook As Workbook) As String
+</code></pre>
+<hr />
+<h3>IsLiteralTemplateChunk</h3>
+<p><strong>Determine whether a chunk represents a literal string</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function IsLiteralTemplateChunk(ByVal chunk As String) As Boolean
+</code></pre>
+<hr />
+<h3>StripLiteralChunk</h3>
+<p><strong>Remove wrapping quotes from literal chunk values</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function StripLiteralChunk(ByVal chunk As String) As String
+</code></pre>
+<hr />
+<h3>ResolveVariableChunk</h3>
+<p><strong>Resolve dictionary-driven chunk value</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ResolveVariableChunk(ByVal chunk As String, _
+                                       ByVal workbook As Workbook) As String
+</code></pre>
+<hr />
+<h3>TryGetWorksheet</h3>
+<p><strong>Safely retrieve a worksheet by name</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function TryGetWorksheet(ByVal workbook As Workbook, ByVal sheetName As String) As Worksheet
+</code></pre>
+<hr />
+<h3>TryGetNamedRange</h3>
+<p><strong>Safely retrieve a named range for a chunk</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function TryGetNamedRange(ByVal workbook As Workbook, _
+                                  ByVal chunk As String, _
+                                  ByVal targetSheet As Worksheet) As Range
+</code></pre>
+<hr />
+<h3>SanitizeChunk</h3>
+<p><strong>Sanitise individual chunk values for filenames</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SanitizeChunk(ByVal chunk As String) As String
+</code></pre>
+<hr />
+<h3>ReplaceInvalidCharacters</h3>
+<p><strong>Replace characters unsupported in filenames</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ReplaceInvalidCharacters(ByVal value As String) As String
+</code></pre>
+<hr />
+<h3>EnsureSanitizeList</h3>
+<p><strong>Initialise invalid filename character list</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureSanitizeList()
+</code></pre>
+<hr />
+<h3>BuildVersionSuffix</h3>
+<p><strong>Compose version/public key suffix for filenames</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function BuildVersionSuffix(ByVal pass As IPasswords) As String
+</code></pre>
+<hr />
+<h3>BuildTimestamp</h3>
+<p><strong>Compose timestamp fragment for filenames</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function BuildTimestamp() As String
+</code></pre>
+<hr />
+<h3>DefaultTemplate</h3>
+<p><strong>Provide fallback filename template</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function DefaultTemplate(ByVal exportNumber As Long) As String
+</code></pre>
+<hr />
+<h3>WorkbookBaseName</h3>
+<p><strong>Remove Excel extensions from workbook name</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function WorkbookBaseName(ByVal workbook As Workbook) As String
+</code></pre>
+<hr />
+<h3>LogInfo</h3>
+<p><strong>Append informational diagnostics to the Checking log</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub LogInfo(ByVal label As String, Optional ByVal scope As Byte = checkingInfo)
+</code></pre>
+<hr />
+<h2>Error Handling</h2>
+<h3>ThrowError</h3>
+<p><strong>Raise a ProjectError coded runtime error</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
+</code></pre>
+<hr />
+</details>
+<details>
+<summary>Used in (22 file(s))</summary>
+<ul>
+<li><a href="src/classes/dataio/ExportButton.cls">ExportButton.cls</a></li>
+<li><a href="src/classes/dataio/ILLExporter.cls">ILLExporter.cls</a></li>
+<li><a href="src/classes/dataio/LLExporter.cls">LLExporter.cls</a></li>
+<li><a href="src/classes/designer/DesignerImportService.cls">DesignerImportService.cls</a></li>
+<li><a href="src/classes/designer/IDesignerImportService.cls">IDesignerImportService.cls</a></li>
+<li><a href="src/classes/dictionary/ILLExport.cls">ILLExport.cls</a></li>
+<li><a href="src/classes/dictionary/LLExport.cls">LLExport.cls</a></li>
+<li><a href="src/classes/linelist/ILinelistSpecs.cls">ILinelistSpecs.cls</a></li>
+<li><a href="src/classes/linelist/Linelist.cls">Linelist.cls</a></li>
+<li><a href="src/classes/linelist/LinelistSpecs.cls">LinelistSpecs.cls</a></li>
+<li><a href="src/classes/setup/EventSetup.cls">EventSetup.cls</a></li>
+<li><a href="src/classes/setup/IEventSetup.cls">IEventSetup.cls</a></li>
+<li><a href="src/classes/setup/SetupImportService.cls">SetupImportService.cls</a></li>
+<li><a href="src/classes/stale/designer-codes/modules/implements/EventsLinelistButtons.bas">EventsLinelistButtons.bas</a></li>
+<li><a href="src/modules/dataio/FormLogicExport.bas">FormLogicExport.bas</a></li>
+<li><a href="src/modules/dataio/FormLogicExportMig.bas">FormLogicExportMig.bas</a></li>
+<li><a href="src/modules/setup/SetupHelpers.bas">SetupHelpers.bas</a></li>
+<li><a href="src/tests/modules/dataio/TestLLExporter.bas">TestLLExporter.bas</a></li>
+<li><a href="src/tests/modules/dictionary/TestLLExport.bas">TestLLExport.bas</a></li>
+<li><a href="src/tests/stubs/LinelistSpecsWorkbookStub.cls">LinelistSpecsWorkbookStub.cls</a></li>
+<li><a href="src/tests/stubs/LLVarContextSpecsStub.cls">LLVarContextSpecsStub.cls</a></li>
+<li><a href="src/tests/TableSpecsLinelistStub.cls">TableSpecsLinelistStub.cls</a></li>
+</ul>
+</details>
+
+  </main>
+</body>
+</html>
+

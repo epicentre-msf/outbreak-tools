@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DiseaseSheet - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>DiseaseSheet</h1>
+<details>
+<summary>Internal members (not exported)</summary>
+<h2>Factory</h2>
+<h3>Create</h3>
+<p><strong>Instantiate a sheet builder with provided dependencies.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create(ByVal hostWorkbook As Workbook, _
+                       ByVal dropdowns As IDropdownLists, _
+                       ByVal translator As ITranslationObject, _ 
+                       ByVal varObj As IMasterSetupVariables) As IDiseaseSheet
+</code></pre>
+<hr />
+<h3>Self</h3>
+<p><strong>Return the current instance as its interface.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Self() As IDiseaseSheet
+</code></pre>
+<hr />
+</details>
+<details>
+<summary>Used in (5 file(s))</summary>
+<ul>
+<li><a href="src/classes/mastersetup/DiseaseSheet.cls">DiseaseSheet.cls</a></li>
+<li><a href="src/classes/mastersetup/IDiseaseSheet.cls">IDiseaseSheet.cls</a></li>
+<li><a href="src/modules/mastersetup/EventsMasterSetupRibbon.bas">EventsMasterSetupRibbon.bas</a></li>
+<li><a href="src/tests/modules/mastersetup/TestDiseaseIntegration.bas">TestDiseaseIntegration.bas</a></li>
+<li><a href="src/tests/modules/mastersetup/TestDiseaseSheet.bas">TestDiseaseSheet.bas</a></li>
+</ul>
+</details>
+
+  </main>
+</body>
+</html>
+

@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IDiseaseImporter - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>IDiseaseImporter</h1>
+<h2>Operations</h2>
+<h3>MergeDisease</h3>
+<p><strong>Import a disease table, optionally merging with the existing one.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function MergeDisease(ByVal targetTable As ListObject, ByVal sourceTable As ListObject, _
+                             Optional ByVal mergeValues As Boolean = True, _
+                             Optional ByVal priority As DiseaseImportPriority = DiseaseImportPriority_Foreign, _
+                             Optional ByVal logger As IDiseaseLogger) As IDiseaseImportSummary
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>targetTable</code>: ListObject representing the existing disease worksheet data.</li>
+<li><code>sourceTable</code>: ListObject containing the imported disease data.</li>
+<li><code>mergeValues</code>: Optional Boolean. When False the target table is replaced.</li>
+<li><code>priority</code>: Optional DiseaseImportPriority controlling conflict resolution. Defaults to foreign.</li>
+</ul>
+<p><strong>Returns:</strong> IDiseaseImportSummary containing the merge outcome.</p>
+<hr />
+
+  </main>
+</body>
+</html>
+

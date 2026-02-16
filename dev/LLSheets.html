@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LLSheets - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>LLSheets</h1>
+<h2>Factory</h2>
+<h3>Create</h3>
+<p><strong>Instantiate a sheet helper bound to the supplied dictionary</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create(ByVal dict As ILLdictionary) As ILLSheets
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>dict</code>: ILLdictionary providing sheet metadata.</li>
+</ul>
+<p><strong>Returns:</strong> ILLSheets fully initialised helper.</p>
+<hr />
+<details>
+<summary>Internal members (not exported)</summary>
+<h2>Public Accessors</h2>
+<h3>Self</h3>
+<p><strong>Expose the interface reference of this predeclared instance</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Self() As ILLSheets
+</code></pre>
+<p><strong>Returns:</strong> ILLSheets reference to the current object.</p>
+<hr />
+<h3>Dictionary</h3>
+<p><strong>Retrieve the backing dictionary</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Dictionary() As ILLdictionary
+</code></pre>
+<p><strong>Returns:</strong> ILLdictionary reference captured during initialisation.</p>
+<hr />
+<h3>Dictionary</h3>
+<p><strong>Store the backing dictionary and prime cached lookups</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Set Dictionary(ByVal dict As ILLdictionary)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>dict</code>: ILLdictionary holding linelist metadata.</li>
+</ul>
+<hr />
+<h3>SheetRange</h3>
+<p><strong>Return the cached range referencing sheet names</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get SheetRange(Optional ByVal requirePrepared As Boolean = False) As Range
+</code></pre>
+<p><strong>Returns:</strong> Range spanning the sheet-name column including the header.</p>
+<hr />
+<h2>Sheet Queries</h2>
+<h3>Contains</h3>
+<p><strong>Determine whether the dictionary includes the supplied sheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function Contains(ByVal sheetName As String) As Boolean
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetName</code>: String. Sheet identifier to locate.</li>
+</ul>
+<p><strong>Returns:</strong> True when the sheet exists.</p>
+<hr />
+<h3>RowIndex</h3>
+<p><strong>Lookup the worksheet row hosting the sheet metadata</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function RowIndex(ByVal sheetName As String) As Long
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetName</code>: String. Sheet identifier to locate.</li>
+</ul>
+<p><strong>Returns:</strong> Worksheet row index for the sheet entry, or 0 when not found.</p>
+<hr />
+<h3>SheetInfo</h3>
+<p><strong>Fetch additional metadata about a sheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function SheetInfo(ByVal sheetName As String, Optional ByVal info As Byte = SheetInfoType.SheetInfoSheetType) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetName</code>: String. Sheet identifier.</li>
+<li><code>info</code>: Byte. Requested metadata selector.</li>
+</ul>
+<p><strong>Returns:</strong> Requested metadata value; raises when selector is unknown.</p>
+<hr />
+<h3>VarList</h3>
+<p><strong>Retrieve the ordered list of variables belonging to a sheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function Varlist(ByVal sheetName As String) As BetterArray
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetName</code>: String. Sheet identifier.</li>
+</ul>
+<p><strong>Returns:</strong> BetterArray containing variable names for the sheet.</p>
+<hr />
+<h3>NumberVars</h3>
+<p><strong>Count the variables associated with a sheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function NumberVars(ByVal sheetName As String) As Long
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetName</code>: String. Sheet identifier.</li>
+</ul>
+<p><strong>Returns:</strong> Long number of variables present on the sheet.</p>
+<hr />
+<h3>DataBounds</h3>
+<p><strong>Compute the data boundaries for a sheet layout</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function DataBounds(ByVal sheetName As String, _
+                            Optional ByVal Bound As Byte = SheetBound.RowSart) As Long
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetName</code>: String. Sheet identifier.</li>
+<li><code>Bound</code>: Byte. Selector from SheetBound enumeration.</li>
+</ul>
+<p><strong>Returns:</strong> Long representing the requested bound.</p>
+<hr />
+<h3>ContainsControl</h3>
+<p><strong>Test whether a sheet exposes a control of the requested type</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ContainsControl(ByVal sheetName As String, _
+                                 Optional ByVal Control As String = &quot;list_auto&quot;, _
+                                 Optional ByVal colName As String = COL_CONTROL) As Boolean
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetName</code>: String. Sheet identifier.</li>
+<li><code>Control</code>: String. Control type to search for.</li>
+<li><code>colName</code>: String. Column hosting the control types. Defaults to &quot;control&quot;.</li>
+</ul>
+<p><strong>Returns:</strong> True when the control type exists on the sheet.</p>
+<hr />
+<h3>VariableAddress</h3>
+<p><strong>Build an Excel address pointing to the variable slot on its sheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function VariableAddress(ByVal varName As String, Optional ByVal onSheet As String = vbNullString) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>varName</code>: String. Variable identifier.</li>
+<li><code>onSheet</code>: Optional String. Sheet where the reference will be consumed; suppresses sheet prefix when matching.</li>
+</ul>
+<p><strong>Returns:</strong> String Excel address for the variable.</p>
+<hr />
+<h2>State Validation</h2>
+<h3>EnsureDictionaryReady</h3>
+<p><strong>Confirm the backing dictionary and cached range are initialised</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureDictionaryReady(Optional ByVal requirePrepared As Boolean = False)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>requirePrepared</code>: Optional Boolean. When True, the dictionary must be prepared.</li>
+</ul>
+<hr />
+<h3>EnsureSheetExists</h3>
+<p><strong>Raise a descriptive error when the sheet does not exist</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureSheetExists(ByVal sheetName As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetName</code>: String. Sheet identifier to validate.</li>
+</ul>
+<hr />
+<h3>EnsureSheetRow</h3>
+<p><strong>Retrieve the worksheet row for the sheet or raise when absent</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function EnsureSheetRow(ByVal sheetName As String) As Long
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetName</code>: String. Sheet identifier.</li>
+</ul>
+<p><strong>Returns:</strong> Long worksheet row index.</p>
+<hr />
+<h3>EnsureControlColumnExists</h3>
+<p><strong>Guarantee the control column exists before filtering</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureControlColumnExists(ByVal colName As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>colName</code>: String. Column header to validate.</li>
+</ul>
+<hr />
+<h3>EnsureValidSheetName</h3>
+<p><strong>Validate that the supplied sheet name is usable</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureValidSheetName(ByVal sheetName As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetName</code>: String. Sheet identifier to validate.</li>
+</ul>
+<hr />
+<h2>Lookup Helpers</h2>
+<h3>SheetInfoValue</h3>
+<p><strong>Resolve sheet metadata based on the selector</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SheetInfoValue(ByVal sheetName As String, ByVal infoSelector As Byte) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetName</code>: String. Sheet identifier.</li>
+<li><code>infoSelector</code>: Byte. Selector from LLSheetInfoField.</li>
+</ul>
+<p><strong>Returns:</strong> String metadata value.</p>
+<hr />
+<h3>SheetTypeColumnIndex</h3>
+<p><strong>Cache the column index for sheet type lookups</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SheetTypeColumnIndex() As Long
+</code></pre>
+<p><strong>Returns:</strong> Long worksheet column index.</p>
+<hr />
+<h3>TableNameColumnIndex</h3>
+<p><strong>Cache the column index for table name lookups and raise if missing</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function TableNameColumnIndex() As Long
+</code></pre>
+<p><strong>Returns:</strong> Long worksheet column index.</p>
+<hr />
+<h3>VariablesProvider</h3>
+<p><strong>Lazily initialise the LLVariables helper for address resolution</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function VariablesProvider() As ILLVariables
+</code></pre>
+<p><strong>Returns:</strong> ILLVariables cached instance.</p>
+<hr />
+<h3>ColumnIndex</h3>
+<p><strong>Wrapper around IDataSheet.ColumnIndex with optional caching</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ColumnIndex(ByVal colName As String, ByVal allowMissing As Boolean) As Long
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>colName</code>: String. Column header to locate.</li>
+<li><code>allowMissing</code>: Boolean. When False, raises when the column is absent.</li>
+</ul>
+<p><strong>Returns:</strong> Long worksheet column index.</p>
+<hr />
+<h3>FindSheetCell</h3>
+<p><strong>Locate the range corresponding to a sheet name</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function FindSheetCell(ByVal sheetName As String) As Range
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetName</code>: String. Sheet identifier (may be empty).</li>
+</ul>
+<p><strong>Returns:</strong> Range when found; Nothing otherwise.</p>
+<hr />
+<h3>SanitizeSearchTerm</h3>
+<p><strong>Escape Excel wildcard characters before using Range.Find</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SanitizeSearchTerm(ByVal value As String) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>value</code>: String. Raw search term.</li>
+</ul>
+<p><strong>Returns:</strong> String sanitized search term.</p>
+<hr />
+<h3>BuildSheetPrefix</h3>
+<p><strong>Produce a quoted sheet prefix for addresses</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function BuildSheetPrefix(ByVal sheetName As String) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetName</code>: String. Sheet identifier to encode.</li>
+</ul>
+<p><strong>Returns:</strong> String sheet prefix including trailing exclamation mark.</p>
+<hr />
+<h3>ResetCaches</h3>
+<p><strong>Reset cached lookups following dictionary changes</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ResetCaches()
+</code></pre>
+<hr />
+<h3>InvalidateCaches</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub InvalidateCaches()
+</code></pre>
+<hr />
+<h3>ValidateDictionary</h3>
+<p><strong>Ensure the supplied dictionary exposes the required columns</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ValidateDictionary(ByVal dict As ILLdictionary)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>dict</code>: ILLdictionary to validate.</li>
+</ul>
+<hr />
+<h3>EnsureColumnExists</h3>
+<p><strong>Validate that a dictionary column is present</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureColumnExists(ByVal dict As ILLdictionary, ByVal colName As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>dict</code>: ILLdictionary to inspect.</li>
+<li><code>colName</code>: String. Column header to verify.</li>
+</ul>
+<hr />
+<h2>Error Handling</h2>
+<h3>ThrowError</h3>
+<p><strong>Raise a ProjectError-coded runtime error</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>errNumb</code>: ProjectError enumeration value.</li>
+<li><code>errorMessage</code>: String human readable description.</li>
+</ul>
+<hr />
+</details>
+<details>
+<summary>Used in (11 file(s))</summary>
+<ul>
+<li><a href="src/classes/dictionary/ILLSheets.cls">ILLSheets.cls</a></li>
+<li><a href="src/classes/dictionary/LLSheets.cls">LLSheets.cls</a></li>
+<li><a href="src/classes/formulas/Formulas.cls">Formulas.cls</a></li>
+<li><a href="src/classes/formulas/ValueOfFormula.cls">ValueOfFormula.cls</a></li>
+<li><a href="src/classes/linelist/Linelist.cls">Linelist.cls</a></li>
+<li><a href="src/classes/linelist/ListBuilder.cls">ListBuilder.cls</a></li>
+<li><a href="src/classes/sections/VarWriter.cls">VarWriter.cls</a></li>
+<li><a href="src/classes/stale/designer-codes/modules/implements/DesignerMain.bas">DesignerMain.bas</a></li>
+<li><a href="src/tests/modules/dictionary/TestLLSheets.bas">TestLLSheets.bas</a></li>
+<li><a href="src/tests/modules/dictionary/TestLLSheetsExtra.bas">TestLLSheetsExtra.bas</a></li>
+<li><a href="src/tests/modules/formulas/TestFormulas.bas">TestFormulas.bas</a></li>
+</ul>
+</details>
+
+  </main>
+</body>
+</html>
+

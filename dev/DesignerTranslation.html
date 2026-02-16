@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DesignerTranslation - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>DesignerTranslation</h1>
+<p>Manages translation of the designer workbook by reading translation
+tables (shapes, ranges, messages, dropdowns) from a dedicated
+translation worksheet. Provides factory creation with requirement
+validation, returns cached ITranslationObject instances scoped to
+each content type, and applies translations to an entire designer
+worksheet by updating shape text, named range values, and dropdown
+validations. The current language code is extracted from a language
+string (e.g. &quot;FRA - Francais&quot;) and persisted as a worksheet-level
+HiddenName for cross-session persistence. All translation objects
+and name lists are cached for fast repeated access.
+Consumers interact through the IDesignerTranslation interface.</p>
+<p><strong>Depends on:</strong> <a href="TranslationObject.html">TranslationObject</a>, <a href="ITranslationObject.html">ITranslationObject</a>, <a href="BetterArray.html">BetterArray</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="IHiddenNames.html">IHiddenNames</a></p>
+<h2>Factory</h2>
+<h3>create</h3>
+<p><strong>Create a new DesignerTranslation instance from a translation worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create(ByVal sh As Worksheet) As IDesignerTranslation
+</code></pre>
+<p>Factory method that validates all required ListObjects on the supplied
+worksheet, then constructs and returns a new instance through the
+IDesignerTranslation interface. Called on the predeclared instance.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The translation worksheet containing T_tradShape, T_tradRange, T_tradMsg, T_tradDrop.</li>
+</ul>
+<p><strong>Returns:</strong> IDesignerTranslation. A fully initialised instance ready for use.</p>
+<hr />
+<h2>Translation Objects</h2>
+<h3>trans-object</h3>
+<p><strong>Translation object for a given content type</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get TransObject(Optional ByVal trans As Byte = DesignerTranslationOfMessages) As ITranslationObject
+</code></pre>
+<p>Returns a cached ITranslationObject for the requested translation
+scope. Ensures caches are built using the current language code.
+Returns Nothing when no language code is configured.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>trans</code>: Optional Byte. TranslationType value selecting the content scope. Defaults to TranslationOfMessages.</li>
+</ul>
+<p><strong>Returns:</strong> ITranslationObject. The translation object for the requested scope.</p>
+<hr />
+<h2>Translation Application</h2>
+<h3>translate-designer</h3>
+<p><strong>Translate an entire designer worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub TranslateDesigner(ByVal mainsh As Worksheet, ByVal language As String)
+</code></pre>
+<p>Applies translations to all shapes, named ranges, and dropdown
+validations on the supplied worksheet. When a non-empty language string
+is provided (e.g. &quot;FRA - Francais&quot;), extracts the language code and
+persists it to the worksheet-level HiddenName. When the language string
+is empty, reads the stored language code. Exits silently when no
+language code is available.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>mainsh</code>: Worksheet. The designer worksheet to translate.</li>
+<li><code>language</code>: String. Language string in &quot;CODE - Label&quot; format. Pass vbNullString to use the stored language.</li>
+</ul>
+<hr />
+<h2>Message Lookup</h2>
+<h3>translation-msg</h3>
+<p><strong>Get the translated value of a message code</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function TranslatedValue(ByVal msgCode As String) As String
+</code></pre>
+<p>Returns the translated text for the supplied message code using the
+cached messages translation object. Ensures caches are built before
+lookup. Returns vbNullString when no language code is configured.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>msgCode</code>: String. The message code to translate.</li>
+</ul>
+<p><strong>Returns:</strong> String. The translated message text.</p>
+<hr />
+<details>
+<summary>Internal members (not exported)</summary>
+<h2>Factory</h2>
+<h3>wksh</h3>
+<p><strong>Translation worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Wksh() As Worksheet
+</code></pre>
+<p><strong>Returns:</strong> Worksheet. The backing translation worksheet.</p>
+<hr />
+<h3>wksh-set</h3>
+<p><strong>Assign the translation worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Set Wksh(ByVal sh As Worksheet)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The worksheet to store.</li>
+</ul>
+<hr />
+<h2>Translation Objects</h2>
+<h3>designer-language</h3>
+<p><strong>Current designer language code</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get DesignerLanguage() As String
+</code></pre>
+<p>Returns the cached language code if available, otherwise reads from the
+worksheet-level HiddenName. Returns an empty string when no language
+code is stored.</p>
+<p><strong>Returns:</strong> String. The current language code, or vbNullString when not set.</p>
+<hr />
+<h2>Translation Application</h2>
+<h3>translate-shapes</h3>
+<p><strong>Apply shape translations on the target worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub TranslateShapes(ByVal mainsh As Worksheet)
+</code></pre>
+<p>Iterates over all shapes in the worksheet and replaces text content
+for shapes whose names appear in the cached shape names list. Preserves
+the original font name on each shape.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>mainsh</code>: Worksheet. The worksheet containing shapes to translate.</li>
+</ul>
+<hr />
+<h3>translate-ranges</h3>
+<p><strong>Apply named range translations on the target worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub TranslateRanges(ByVal mainsh As Worksheet)
+</code></pre>
+<p>Iterates over the cached range names and updates each matching named
+range on the worksheet with its translated value.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>mainsh</code>: Worksheet. The worksheet containing named ranges to translate.</li>
+</ul>
+<hr />
+<h3>translate-dropdowns</h3>
+<p><strong>Apply dropdown validation translations on the target worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub TranslateDropdowns(ByVal mainsh As Worksheet)
+</code></pre>
+<p>Iterates over the cached dropdown names, deletes existing validation on
+each matching range, and creates a new list validation with the
+translated formula. Clears any existing cell content after applying
+the validation.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>mainsh</code>: Worksheet. The worksheet containing dropdowns to translate.</li>
+</ul>
+<hr />
+<h2>Language Code Management</h2>
+<h3>extract-lang-code</h3>
+<p><strong>Extract the language code from a language string</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ExtractLangCode(ByVal language As String) As String
+</code></pre>
+<p>Parses a language string in &quot;CODE - Label&quot; format (e.g. &quot;FRA - Francais&quot;)
+and returns the code portion. If no separator is found, returns the
+trimmed input as-is.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>language</code>: String. The language string to parse.</li>
+</ul>
+<p><strong>Returns:</strong> String. The extracted language code.</p>
+<hr />
+<h3>update-language-code</h3>
+<p><strong>Persist the language code to the worksheet-level HiddenName</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub UpdateLanguageCode(ByVal langCode As String)
+</code></pre>
+<p>Writes the language code to the TAG_DES_LANG HiddenName on the
+translation worksheet. Creates the name if it does not exist yet.
+Does not update the in-memory langCode field; EnsureCaches owns that
+so the cache-invalidation check remains correct.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>langCode</code>: String. The language code to persist.</li>
+</ul>
+<hr />
+<h3>wksh-names</h3>
+<p><strong>Cached HiddenNames accessor for the translation worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get WkshNames() As IHiddenNames
+</code></pre>
+<p>Lazily creates and returns an IHiddenNames instance scoped to the
+translation worksheet.</p>
+<p><strong>Returns:</strong> IHiddenNames. The HiddenNames manager for the translation worksheet.</p>
+<hr />
+<h2>Cache Management</h2>
+<h3>ensure-caches</h3>
+<p><strong>Build or refresh translation caches for the given language code</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureCaches(ByVal langCode As String)
+</code></pre>
+<p>When the caches are not yet built or the language code has changed,
+creates four TranslationObject instances and reads three name lists
+from the translation ListObjects. Skips rebuilding when the caches
+are already populated for the same language code.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>langCode</code>: String. The language code to cache translations for.</li>
+</ul>
+<hr />
+<h2>Validation</h2>
+<h3>check-requirements</h3>
+<p><strong>Validate that the worksheet has all required ListObjects</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub CheckRequirements(ByVal sh As Worksheet)
+</code></pre>
+<p>Checks that the supplied worksheet is not Nothing, then verifies the
+presence of four required ListObjects (T_tradShape, T_tradRange,
+T_tradMsg, T_tradDrop). Raises an error when any requirement is
+missing.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The worksheet to validate.</li>
+</ul>
+<hr />
+<h2>Error Handling</h2>
+<h3>throw-error</h3>
+<p><strong>Raise a ProjectError-based exception</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As Long, ByVal message As String)
+</code></pre>
+<p>Raises a VBA error using the supplied ProjectError code and message.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>errNumber</code>: Long. The ProjectError error code.</li>
+<li><code>message</code>: String. Human-readable description of the failure.</li>
+</ul>
+<hr />
+<h3>lo-exists</h3>
+<p><strong>Verify that all listed ListObjects exist on a worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub LoExists(sh As Worksheet, ByVal loNames As BetterArray)
+</code></pre>
+<p>Iterates over the supplied BetterArray of table names and checks that
+each ListObject can be found on the given worksheet. Raises an error
+for the first missing table encountered.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The worksheet to check.</li>
+<li><code>loNames</code>: BetterArray. List of ListObject names to verify.</li>
+</ul>
+<hr />
+<h2>Interface Implementation</h2>
+<h3>IDesignerTranslation_TransObject</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get IDesignerTranslation_TransObject(Optional ByVal trans As Byte = DesignerTranslationOfMessages) As ITranslationObject
+</code></pre>
+<p>Delegated members satisfying the IDesignerTranslation contract.
+See the corresponding members above for full documentation.</p>
+<hr />
+</details>
+<details>
+<summary>Used in (13 file(s))</summary>
+<ul>
+<li><a href="src/classes/designer/DesignerEntry.cls">DesignerEntry.cls</a></li>
+<li><a href="src/classes/designer/DesignerTranslation.cls">DesignerTranslation.cls</a></li>
+<li><a href="src/classes/designer/IDesignerEntry.cls">IDesignerEntry.cls</a></li>
+<li><a href="src/classes/designer/IDesignerTranslation.cls">IDesignerTranslation.cls</a></li>
+<li><a href="src/classes/linelist/ILinelistSpecs.cls">ILinelistSpecs.cls</a></li>
+<li><a href="src/classes/linelist/LinelistSpecs.cls">LinelistSpecs.cls</a></li>
+<li><a href="src/modules/designer/EventsDesignerCore.bas">EventsDesignerCore.bas</a></li>
+<li><a href="src/tests/stubs/DesignerTranslationStub.cls">DesignerTranslationStub.cls</a></li>
+<li><a href="src/tests/stubs/LinelistSpecsDesignerTranslationStub.cls">LinelistSpecsDesignerTranslationStub.cls</a></li>
+<li><a href="src/tests/stubs/LinelistSpecsMainStub.cls">LinelistSpecsMainStub.cls</a></li>
+<li><a href="src/tests/stubs/LinelistSpecsWorkbookStub.cls">LinelistSpecsWorkbookStub.cls</a></li>
+<li><a href="src/tests/stubs/LLVarContextSpecsStub.cls">LLVarContextSpecsStub.cls</a></li>
+<li><a href="src/tests/TableSpecsLinelistStub.cls">TableSpecsLinelistStub.cls</a></li>
+</ul>
+</details>
+
+  </main>
+</body>
+</html>
+

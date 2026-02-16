@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IEventSetup - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>IEventSetup</h1>
+<p>Defines the public contract for the EventSetup class, exposing methods
+to handle workbook-level setup events (open, activate, change), manage
+setup worksheet rows, sort tables, recalculate analysis helpers, and
+retrieve values from analysis-related ListObjects.</p>
+<p><strong>Depends on:</strong> <a href="IPasswords.html">IPasswords</a>, <a href="BetterArray.html">BetterArray</a>, <a href="IUpdatedValues.html">IUpdatedValues</a>, <a href="IDropdownLists.html">IDropdownLists</a>, <a href="ILLdictionary.html">ILLdictionary</a>, <a href="ILLChoices.html">ILLChoices</a>, <a href="ILLExport.html">ILLExport</a>, <a href="IAnalysis.html">IAnalysis</a>, <a href="ISetupTranslationsTable.html">ISetupTranslationsTable</a></p>
+<h2>Lifecycle</h2>
+<h3>Configure</h3>
+<p><strong>Configure the service with its host workbook context.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Configure(ByVal hostBook As Workbook)
+</code></pre>
+<p>Binds the service to a host workbook and resets all cached helpers. Must be
+called once before any event handler or row operation.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>hostBook</code>: Workbook. The workbook providing setup worksheets and infrastructure.</li>
+</ul>
+<hr />
+<h3>OnWorkbookOpen</h3>
+<p><strong>React to workbook open notifications.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub OnWorkbookOpen()
+</code></pre>
+<p>Switches update watcher tags to &quot;yes&quot;, resets the translation counter,
+disables stale value formatting, and applies the protection matrix.</p>
+<hr />
+<h2>Workbook events</h2>
+<h3>OnSheetActivate</h3>
+<p><strong>Handle worksheet activation events.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub OnSheetActivate(ByVal sh As Worksheet)
+</code></pre>
+<p>Invalidates relevant ribbon controls and refreshes analysis dropdowns
+when the Analysis sheet becomes active.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The worksheet that became active.</li>
+</ul>
+<hr />
+<h3>OnSheetChange</h3>
+<p><strong>Handle worksheet change events fired by Excel.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub OnSheetChange(ByVal sh As Worksheet, ByVal target As Range)
+</code></pre>
+<p>Forwards the change to the update watcher, processes choices label
+recalculation when the Choices sheet changes, and manages analysis
+dropdowns and calculations when the Analysis sheet changes.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The worksheet raising the change event.</li>
+<li><code>target</code>: Range. The edited cells.</li>
+</ul>
+<hr />
+<h2>Auxiliary operations</h2>
+<h3>RecalculateAnalysis</h3>
+<p><strong>Recalculate analysis tables in response to structural edits.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub RecalculateAnalysis()
+</code></pre>
+<p>Forces recalculation of all cached analysis tables (time-series, graph,
+spatio-temporal, spatio-temporal specifications). Call after structural
+changes to analysis ListObjects.</p>
+<hr />
+<h3>UpdateAnalysisDropdowns</h3>
+<p><strong>Refresh cached dropdowns and related analysis helpers.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub UpdateAnalysisDropdowns(Optional ByVal forceUpdate As Boolean = False)
+</code></pre>
+<p>Refreshes dropdown lists used by the Analysis sheet based on update watcher
+flags. When forceUpdate is True, rebuilds all dropdowns regardless of flags.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>forceUpdate</code>: Optional Boolean. When True, forces a full refresh regardless of update tags. Defaults to False.</li>
+</ul>
+<hr />
+<h3>ResetTranslationCounter</h3>
+<p><strong>Reset the translation update counter stored in hidden names.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ResetTranslationCounter()
+</code></pre>
+<p>Resets the hidden name counter that tracks translation updates back to zero.
+Called on workbook open and after translation table management.</p>
+<hr />
+<h2>Row operations</h2>
+<h3>ManageRows</h3>
+<p><strong>Manage setup worksheet rows using cached helpers.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ManageRows(ByVal sheetName As String, Optional ByVal del As Boolean = False)
+</code></pre>
+<p>Delegates to the appropriate domain manager (dictionary, choices, analysis,
+exports) to add or remove rows, handling sheet protection around each operation.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetName</code>: String. Worksheet name to process.</li>
+<li><code>del</code>: Optional Boolean. When True, removes rows instead of adding them. Defaults to False.</li>
+</ul>
+<hr />
+<h3>InsertRows</h3>
+<p><strong>Insert rows relative to a selection for supported setup sheets.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub InsertRows(ByVal sheetName As String, _
+                      ByVal targetCell As Range, _
+                      Optional ByVal insertShift As Boolean = False)
+</code></pre>
+<p>Delegates to the appropriate domain manager to insert rows at the position
+indicated by targetCell. Handles sheet protection around the operation. For
+the Analysis sheet, insertShift is always forced to True.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetName</code>: String. Worksheet name identifying which helper should process the insertion.</li>
+<li><code>targetCell</code>: Range. The worksheet selection to mirror.</li>
+<li><code>insertShift</code>: Optional Boolean. Controls whether worksheet rows should be inserted to preserve stacked tables. Defaults to False.</li>
+</ul>
+<hr />
+<h3>DeleteRows</h3>
+<p><strong>Delete rows relative to a selection for supported setup sheets.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub DeleteRows(ByVal sheetName As String, _
+                      ByVal targetCell As Range, _
+                      Optional ByVal forceShift As Boolean = False)
+</code></pre>
+<p>Delegates to the appropriate domain manager to delete rows at the position
+indicated by targetCell. Handles sheet protection around the operation. For
+the Analysis sheet, forceShift is always forced to True.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetName</code>: String. Worksheet name identifying which helper should process the deletion.</li>
+<li><code>targetCell</code>: Range. The worksheet selection to remove.</li>
+<li><code>forceShift</code>: Optional Boolean. Controls whether worksheet rows should be deleted. Defaults to False.</li>
+</ul>
+<hr />
+<h3>SortTables</h3>
+<p><strong>Sort setup worksheets leveraging cached managers.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub SortTables(ByVal sheetName As String)
+</code></pre>
+<p>Delegates to the appropriate domain manager to sort the worksheet tables.
+Handles sheet protection around the operation. For exports, also unlocks
+the dictionary sheet because sort results may propagate.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetName</code>: String. Worksheet name to sort.</li>
+</ul>
+<hr />
+<h3>BuildTimeSeriesHeader</h3>
+<p><strong>Compose the time-series header displayed in analysis tables.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function BuildTimeSeriesHeader(ByVal timeVar As String, _
+                                      ByVal groupVar As String, _
+                                      ByVal sumLabel As String) As String
+</code></pre>
+<p>Composes a display header by concatenating the summary label, time variable
+label, and group variable label separated by a horizontal-rule character.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>timeVar</code>: String. Time variable name.</li>
+<li><code>groupVar</code>: String. Group variable name.</li>
+<li><code>sumLabel</code>: String. Summary label prefix.</li>
+</ul>
+<p><strong>Returns:</strong> String. The composed header text.</p>
+<hr />
+<h3>AnalysisGraphValue</h3>
+<p><strong>Retrieve a value from the analysis graph label table.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function AnalysisGraphValue(ByVal graphTitle As String, _
+                                   Optional ByVal graphCol As String = &quot;Graph ID&quot;) As String
+</code></pre>
+<p>Looks up a cell value from the graph time-series label table using
+graphTitle as the row key and graphCol as the column header.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>graphTitle</code>: String. Graph title used as the row key.</li>
+<li><code>graphCol</code>: Optional String. Column to read. Defaults to &quot;Graph ID&quot;.</li>
+</ul>
+<p><strong>Returns:</strong> String. The retrieved value, or empty.</p>
+<hr />
+<h3>AnalysisTimeSeriesValue</h3>
+<p><strong>Retrieve a value from the analysis time-series table.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function AnalysisTimeSeriesValue(ByVal seriesTitle As String, _
+                                        Optional ByVal tsColumn As String = &quot;Series ID&quot;) As String
+</code></pre>
+<p>Looks up a cell value from the time-series data table using seriesTitle as
+the row key and tsColumn as the column header.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>seriesTitle</code>: String. Series title used as the row key.</li>
+<li><code>tsColumn</code>: Optional String. Column to read. Defaults to &quot;Series ID&quot;.</li>
+</ul>
+<p><strong>Returns:</strong> String. The retrieved value, or empty.</p>
+<hr />
+<h3>SpatioTemporalSpecValue</h3>
+<p><strong>Retrieve a value from the spatio-temporal specifications table.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function SpatioTemporalSpecValue(ByVal sectionName As String, _
+                                        Optional ByVal specColumn As String = &quot;N geo max&quot;) As String
+</code></pre>
+<p>Looks up a cell value from the spatio-temporal specifications table using
+sectionName as the row key and specColumn as the column header.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sectionName</code>: String. Section name used as the row key.</li>
+<li><code>specColumn</code>: Optional String. Column to read. Defaults to &quot;N geo max&quot;.</li>
+</ul>
+<p><strong>Returns:</strong> String. The retrieved value, or empty.</p>
+<hr />
+<h3>ResetCaches</h3>
+<p><strong>Clear cached resources so they are lazily rebuilt on demand.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ResetCaches()
+</code></pre>
+<p>Clears all lazily-cached domain managers and table wrappers so they are
+rebuilt from scratch on the next access.</p>
+<hr />
+
+  </main>
+</body>
+</html>
+

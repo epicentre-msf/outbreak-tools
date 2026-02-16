@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SpatialTables - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>SpatialTables</h1>
+<p>Creates spatial analysis ListObjects on the &quot;spatial_tables__&quot; worksheet at
+linelist build time. For each cross-table row variable, builds either four
+admin-level tables (adm1-adm4 for geo type) or one health-facility table
+(for hf type), each with formula, population, and attack rate columns.
+Manages formula conditions and validates that the spatial sheet exists
+before writing.</p>
+<p><strong>Depends on:</strong> <a href="ICrossTable.html">ICrossTable</a>, <a href="ITableSpecs.html">ITableSpecs</a>, <a href="IFormulas.html">IFormulas</a>, <a href="IFormulaCondition.html">IFormulaCondition</a>, <a href="BetterArray.html">BetterArray</a></p>
+<p><strong>Version:</strong> 2025-01-15</p>
+<h2>Instantiation</h2>
+<h3>create</h3>
+<p><strong>Create a SpatialTables instance from a cross-table</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create(ByVal tabl As ICrossTable) As ISpatialTables
+</code></pre>
+<p>Factory method on the predeclared instance. Validates that the cross-table
+is not Nothing and that the &quot;spatial_tables__&quot; worksheet exists in the same
+workbook. Binds the cross-table to the new instance so subsequent Add calls
+can read the row variable and table specifications.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>tabl</code>: ICrossTable. The cross-table whose row variable defines the
+spatial tables to create.</li>
+</ul>
+<p><strong>Returns:</strong> ISpatialTables. A fully initialised spatial tables builder.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When tabl is Nothing.</li>
+<li>ProjectError.ElementNotFound When the spatial worksheet is missing.</li>
+</ul>
+<p><strong>Depends on:</strong></p>
+<ul>
+<li>ICrossTable</li>
+<li>ITableSpecs</li>
+</ul>
+<hr />
+<h2>Add</h2>
+<h3>add</h3>
+<p><strong>Create spatial ListObjects for the cross-table row variable</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub Add(ByVal formObject As IFormulas)
+</code></pre>
+<p>Builds the spatial table set for the current cross-table. For geo-type
+tables, creates four admin-level tables (adm1-adm4) each with formula,
+population, and attack rate columns. For hf-type tables, creates a single
+health-facility table with a formula column only. Each table is created
+as a 2-row ListObject (header + one data row) positioned at the next
+available column on the spatial sheet. The formula column is populated
+from the parsed analysis formula via CurrentExcelFormula. Skips creation
+when the tables already exist for this variable.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>formObject</code>: IFormulas. The formula object whose parsed expression
+is written into each spatial table formula column.</li>
+</ul>
+<hr />
+<details>
+<summary>Internal members (not exported)</summary>
+<h2>Instantiation</h2>
+<h3>self</h3>
+<p><strong>Current object instance</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Self() As ISpatialTables
+</code></pre>
+<p>Convenience accessor for fluent retrieval of the interface reference from
+the predeclared Create method.</p>
+<p><strong>Returns:</strong> ISpatialTables. The current instance cast to the interface.</p>
+<hr />
+<h3>table</h3>
+<p><strong>Cross-table bound to this builder</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Table() As ICrossTable
+</code></pre>
+<p>Returns the ICrossTable instance whose row variable and specifications
+drive the spatial table creation in Add.</p>
+<p><strong>Returns:</strong> ICrossTable. The bound cross-table.</p>
+<hr />
+<h3>table-set</h3>
+<p><strong>Assign the cross-table reference</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Set Table(ByVal tabl As ICrossTable)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>tabl</code>: ICrossTable. The cross-table to bind.</li>
+</ul>
+<hr />
+<h2>Worksheet</h2>
+<h3>wksh</h3>
+<p><strong>Lazy-loaded spatial worksheet reference</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get Wksh() As Worksheet
+</code></pre>
+<p>Returns the &quot;spatial_tables__&quot; worksheet from the cross-table workbook.
+The reference is cached after the first access to avoid repeated lookups.</p>
+<p><strong>Returns:</strong> Worksheet. The spatial analysis worksheet.</p>
+<hr />
+<h2>Naming Conventions</h2>
+<h3>current-header-name</h3>
+<p><strong>Build the header named range name for a spatial table</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get CurrentHeaderName(ByVal varName As String, _
+                                       ByVal adminName As String) As String
+</code></pre>
+<p>Helpers for constructing spatial table and range names.
+Concatenates &quot;tabl_&quot;, the admin name, and the variable name to form a
+unique header range name (e.g. &quot;tabl_adm1_cases_sp1&quot;).</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>varName</code>: String. The spatial variable name.</li>
+<li><code>adminName</code>: String. The admin level identifier (e.g. &quot;adm1&quot;, &quot;hf&quot;).</li>
+</ul>
+<p><strong>Returns:</strong> String. The header named range name.</p>
+<hr />
+<h3>current-lo-name</h3>
+<p><strong>Build the ListObject name for a spatial table</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get CurrentLoName(ByVal varName As String, _
+                                   ByVal adminName As String) As String
+</code></pre>
+<p>Concatenates &quot;spatial_&quot;, the admin name, and the variable name to form a
+unique ListObject name (e.g. &quot;spatial_adm1_cases_sp1&quot;).</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>varName</code>: String. The spatial variable name.</li>
+<li><code>adminName</code>: String. The admin level identifier.</li>
+</ul>
+<p><strong>Returns:</strong> String. The ListObject name.</p>
+<hr />
+<h2>Existence Checks</h2>
+<h3>exists</h3>
+<p><strong>Check if spatial ListObjects already exist for a variable</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function Exists(ByVal varName As String) As Boolean
+</code></pre>
+<p>Iterates through admin levels 1-4 and tests whether each corresponding
+ListObject exists on the spatial worksheet. Returns True only when all
+four exist. Used by Add to skip duplicate creation.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>varName</code>: String. The spatial variable name to check.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when all four admin-level ListObjects exist.</p>
+<hr />
+<h3>lo-exists</h3>
+<p><strong>Check if a ListObject exists on the spatial sheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function LoExists(ByVal loName As String) As Boolean
+</code></pre>
+<p>Uses the standard VBA error-trapping pattern to test for ListObject
+existence on the spatial worksheet.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>loName</code>: String. The ListObject name to look for.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the ListObject exists.</p>
+<hr />
+<h2>Column Helpers</h2>
+<h3>last-column</h3>
+<p><strong>Next available column on the spatial sheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get LastColumn() As Long
+</code></pre>
+<p>Finds the last used column on row 1 and returns the next available
+position with a 2-column gap. Returns column 7 when the sheet only has
+the initial 3-column setup (listofgeovars occupies column 3).</p>
+<p><strong>Returns:</strong> Long. The 1-based column index for the next spatial table.</p>
+<hr />
+<h2>Formula Helpers</h2>
+<h3>geo-population-function</h3>
+<p><strong>Build a geo population INDEX/MATCH formula for an admin level</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function GeoPopulationFunction(ByVal adminName As String, _
+                                       ByVal rangeAddress As String) As String
+</code></pre>
+<p>Helpers for building and testing Excel formula expressions.
+Constructs an INDEX/MATCH formula that looks up the population value for
+an admin level from the corresponding geo reference table (T_ADM1 through
+T_ADM4). The formula is wrapped in ISERROR to return 0 when the lookup
+fails. The population column index is derived from the admin level number.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>adminName</code>: String. The admin level identifier (e.g. &quot;adm1&quot;).</li>
+<li><code>rangeAddress</code>: String. The cell address used as the MATCH lookup value.</li>
+</ul>
+<p><strong>Returns:</strong> String. The complete INDEX/MATCH formula string.</p>
+<hr />
+<h3>failed-formula</h3>
+<p><strong>Test whether a formula expression is valid</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function FailedFormula(ByVal frmName As String) As Boolean
+</code></pre>
+<p>Writes the formula to cell A1 of the spatial sheet inside an error
+handler. If the assignment succeeds, the formula is valid and the cell
+is cleared. If it fails, the method returns True. DisplayAlerts is
+temporarily disabled to suppress Excel prompts.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>frmName</code>: String. The formula expression to test (without leading &quot;=&quot;).</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the formula is invalid.</p>
+<hr />
+<h3>emp-str</h3>
+<p><strong>Empty string constant for formula conditions</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function EmpStr() As String
+</code></pre>
+<p>Returns a pair of double-quote characters for use in Excel formula strings.</p>
+<p><strong>Returns:</strong> String. Two double-quote characters (empty string literal in Excel).</p>
+<hr />
+<h2>Condition Management</h2>
+<h3>add-table-conditions</h3>
+<p><strong>Add a variable/condition pair for formula generation</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AddTableConditions(ByVal varName As String, ByVal conditionName As String)
+</code></pre>
+<p>Manages variable/condition pairs for formula generation.
+Pushes the variable name and condition test onto the parallel condVars
+and condTests BetterArrays. Lazily initialises both arrays with
+LowerBound 1 on first use. Ignores empty variable names.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>varName</code>: String. The variable name for the condition.</li>
+<li><code>conditionName</code>: String. The condition expression.</li>
+</ul>
+<hr />
+<h3>clear-table-conditions</h3>
+<p><strong>Clear condition arrays</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ClearTableConditions(Optional ByVal removeNumber As Long = 0)
+</code></pre>
+<p>When removeNumber is zero or negative, clears both arrays entirely.
+When positive, removes only the last N entries from both arrays via Pop.
+Lazily initialises the arrays if they are Nothing.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>removeNumber</code>: Optional Long. Number of trailing entries to remove.
+Defaults to 0 (clear all).</li>
+</ul>
+<hr />
+<h3>current-excel-formula</h3>
+<p><strong>Build an Excel formula string using the current conditions</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get CurrentExcelFormula(ByVal tabFormObject As IFormulas, _
+                                         Optional ByVal scope As Byte = FormulaScopeAnalysis, _
+                                         Optional ByVal prefix As String = &quot;f&quot;) As String
+</code></pre>
+<p>Constructs a parsed formula from the IFormulas object, applying either
+linelist scope (with table name prefix) or analysis scope (with condition
+pairs from condVars/condTests). Validates the result via FailedFormula
+and returns an empty string when the formula is invalid or the object
+is not valid.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>tabFormObject</code>: IFormulas. The formula definition to parse.</li>
+<li><code>scope</code>: Optional Byte. FormulaScopeLinelist or FormulaScopeAnalysis.
+Defaults to FormulaScopeAnalysis.</li>
+<li><code>prefix</code>: Optional String. Table name prefix for linelist scope.
+Defaults to &quot;f&quot;.</li>
+</ul>
+<p><strong>Returns:</strong> String. The parsed formula string, or empty when invalid.</p>
+<hr />
+<h2>Preparation</h2>
+<h3>prepare</h3>
+<p><strong>Initialise the spatial sheet with the listofgeovars ListObject</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub Prepare()
+</code></pre>
+<p>Creates the &quot;listofgeovars&quot; ListObject in column 3 and defines the
+RNG_PastingCol and RNG_TestingFormula named ranges. Called by Add when
+the listofgeovars table does not yet exist.</p>
+<hr />
+<h3>add-var-name-to-list</h3>
+<p><strong>Register a variable name in the listofgeovars ListObject</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AddVarNameToList(ByVal varName As String)
+</code></pre>
+<p>Appends the variable name to the next empty row in the listofgeovars
+ListObject. Uses CountA to determine the current row count.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>varName</code>: String. The spatial variable name to register.</li>
+</ul>
+<hr />
+<h2>Validation</h2>
+<h3>check-requirements</h3>
+<p><strong>Validate cross-table and spatial sheet existence</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub CheckRequirements(ByVal tabl As ICrossTable)
+</code></pre>
+<p>Guards the Create factory by ensuring the cross-table is not Nothing and
+that a worksheet named &quot;spatial_tables__&quot; exists in the same workbook.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>tabl</code>: ICrossTable. The cross-table to validate.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When tabl is Nothing.</li>
+<li>ProjectError.ElementNotFound When the spatial worksheet is missing.</li>
+</ul>
+<hr />
+<h2>Error Handling</h2>
+<h3>throw-error</h3>
+<p><strong>Raise a ProjectError-based exception</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As Long, ByVal message As String)
+</code></pre>
+<p>Wrapper around Err.Raise that standardises the source to CLASS_NAME.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>errNumber</code>: Long. The ProjectError code to raise.</li>
+<li><code>message</code>: String. Human-readable description of the failure.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError. Always raises the specified error.</li>
+</ul>
+<hr />
+<h2>Interface Implementation</h2>
+<h3>ISpatialTables_Exists</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get ISpatialTables_Exists(ByVal varName As String) As Boolean
+</code></pre>
+<p>Delegated members satisfying the ISpatialTables contract.
+See the corresponding Private members above for full documentation.</p>
+<hr />
+</details>
+<details>
+<summary>Used in (4 file(s))</summary>
+<ul>
+<li><a href="src/classes/analyses/CrossTableFormula.cls">CrossTableFormula.cls</a></li>
+<li><a href="src/classes/analyses/ISpatialTables.cls">ISpatialTables.cls</a></li>
+<li><a href="src/classes/analyses/SpatialTables.cls">SpatialTables.cls</a></li>
+<li><a href="src/tests/modules/geo/TestSpatialTables.bas">TestSpatialTables.bas</a></li>
+</ul>
+</details>
+
+  </main>
+</body>
+</html>
+

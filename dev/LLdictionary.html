@@ -1,0 +1,567 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LLdictionary - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>LLdictionary</h1>
+<h2>Instantiation</h2>
+<h3>create</h3>
+<p><strong>Create a dictionary object</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create(ByVal dictWksh As Worksheet, ByVal dictStartRow As Long, _
+                       ByVal dictStartColumn As Long, _
+                       Optional ByVal numberOfExports As Long = DEFAULTNUMBEROFEXPORTS) As ILLdictionary
+</code></pre>
+<p>Creates a linelist dictionary wrapper around the supplied worksheet. The
+routine initialises a backing <code>DataSheet</code> so all subsequent access goes through
+a consistent abstraction and callers interact with a predeclared instance.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>dictWksh</code>: Worksheet hosting the dictionary data</li>
+<li><code>dictStartRow</code>: Long. Header row of the dictionary</li>
+<li><code>dictStartColumn</code>: Long. First column of the dictionary</li>
+<li><code>numberOfExports</code>: Optional Long. Expected number of export columns</li>
+</ul>
+<p><strong>Returns:</strong> An ILLdictionary instance</p>
+<p><strong>Depends on:</strong></p>
+<ul>
+<li>DataSheet</li>
+<li>Checking</li>
+</ul>
+<hr />
+<details>
+<summary>Internal members (not exported)</summary>
+<h2>Instantiation</h2>
+<h3>init-exports</h3>
+<p><strong>Initialise total export counter</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub InitialiseTotalExports(ByVal requestedTotal As Long)
+</code></pre>
+<p>Loads the stored number of export columns from the worksheet when available.
+When no persisted value exists, the routine falls back to the requested input
+and persists it so subsequent sessions pick up the same configuration.</p>
+<hr />
+<h3>self</h3>
+<p><strong>Current object instance</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Self() As ILLdictionary
+</code></pre>
+<p>Convenience accessor so consuming code can fluently retrieve the instance
+returned by <code>Create</code> without repeatedly typing <code>Set x = New LLdictionary</code>.</p>
+<p><strong>Returns:</strong> ILLdictionary</p>
+<hr />
+<h2>Data Elements</h2>
+<h3>data</h3>
+<p><strong>DataSheet backing store</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Data() As IDataSheet
+</code></pre>
+<p>Expose the lazily initialised <code>DataSheet</code> wrapper used for all worksheet
+interactions. Consumers rely on this to perform advanced queries without
+directly manipulating Excel ranges.</p>
+<p><strong>Returns:</strong> IDataSheet</p>
+<hr />
+<h3>exports</h3>
+<p><strong>Number of export columns</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get TotalNumberOfExports() As Long
+</code></pre>
+<p>Number of export slots currently configured for the dictionary. This mirrors
+the legacy behaviour where designer workflows expect a bounded set of export
+columns ready for mapping.</p>
+<p><strong>Returns:</strong> Long</p>
+<hr />
+<h3>exports-set</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Let TotalNumberOfExports(ByVal numberOfExports As Long)
+</code></pre>
+<p>Persist the number of configured export columns while defaulting back to the
+class constant when an invalid value is provided.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>numberOfExports</code>: Long. Requested number of export columns.</li>
+</ul>
+<hr />
+<h2>ExportCounterManagement</h2>
+<h3>apply-exports</h3>
+<p><strong>Normalise and persist export counters</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ApplyTotalExports(ByVal requestedTotal As Long, _
+                              Optional ByVal persist As Boolean = True, _
+                              Optional ByVal suppressInvalidLog As Boolean = False)
+</code></pre>
+<p>Centralises validation, caching and persistence of the export counter so every
+entry point (creation, import, manual setter) behaves consistently. The helper
+optionally suppresses warnings for legacy workbooks that do not yet store the
+hidden counter.</p>
+<hr />
+<h3>normalise-exports</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function NormaliseTotalExports(ByVal requestedTotal As Long, ByVal suppressInvalidLog As Boolean) As Long
+</code></pre>
+<hr />
+<h3>reset-export-cache</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ResetColumnCaches()
+</code></pre>
+<hr />
+<h3>persist-exports</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub PersistTotalExports(ByVal totalCount As Long)
+</code></pre>
+<hr />
+<h3>persist-exports-sheet</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub PersistTotalExportsOnSheet(ByVal sheet As Worksheet, ByVal totalCount As Long)
+</code></pre>
+<hr />
+<h3>stored-exports</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function StoredTotalExportsFromSheet(ByVal sheet As Worksheet) As Long
+</code></pre>
+<hr />
+<h3>hidden-name-store</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function HiddenNameStore(Optional ByVal sheet As Worksheet) As IHiddenNames
+</code></pre>
+<hr />
+<h3>try-sheet-name</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function TrySheetNameDefinition(ByVal sheet As Worksheet, ByVal nameId As String) As Name
+</code></pre>
+<hr />
+<h3>extract-name</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ExtractSimpleName(ByVal qualifiedName As String) As String
+</code></pre>
+<hr />
+<h3>wksh</h3>
+<p><strong>Host worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Wksh() As Worksheet
+</code></pre>
+<p>Expose the worksheet currently backing this dictionary. Primarily used by
+helpers that need to perform sheet-level operations such as adding columns or
+listobjects.</p>
+<p><strong>Returns:</strong> Worksheet</p>
+<hr />
+<h3>startrow</h3>
+<p><strong>Header row index</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get StartRow() As Long
+</code></pre>
+<p><strong>Returns:</strong> Long</p>
+<hr />
+<h3>startcol</h3>
+<p><strong>First column index</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get StartColumn() As Long
+</code></pre>
+<p><strong>Returns:</strong> Long</p>
+<hr />
+<h3>endrow</h3>
+<p><strong>Last data row</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get DictEndRow() As Long
+</code></pre>
+<p><strong>Returns:</strong> Long</p>
+<hr />
+<h3>endcol</h3>
+<p><strong>Last data column</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get DictEndColumn() As Long
+</code></pre>
+<p><strong>Returns:</strong> Long</p>
+<hr />
+<h3>datarange</h3>
+<p><strong>Dictionary range accessor</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get DataRange(Optional ByVal colName As String = &quot;__all__&quot;, _
+                              Optional ByVal includeHeaders As Boolean = False) As Range
+</code></pre>
+<p>Central entry point to retrieve ranges from the dictionary, either by column
+name or the full table. The helper delegates to the underlying <code>DataSheet</code>
+so filtering or header inclusion behaves consistently everywhere.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>colName</code>: Optional column header name</li>
+<li><code>includeHeaders</code>: Optional flag to include header row</li>
+</ul>
+<p><strong>Returns:</strong> Range</p>
+<hr />
+<h2>Column Configuration</h2>
+<h3>columnexists</h3>
+<p><strong>Test if a column exists</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function ColumnExists(ByVal colName As String, Optional ByVal checkValidity As Boolean = False) As Boolean
+</code></pre>
+<p>Checks whether a column header is present in the dictionary and optionally
+verifies it belongs to the known schema. Recording the attempt helps capture
+incomplete dictionaries during setup.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>colName</code>: Column header to look for</li>
+<li><code>checkValidity</code>: Optional: ensure the column belongs to the expected list</li>
+</ul>
+<p><strong>Returns:</strong> Boolean</p>
+<hr />
+<h3>columnindex</h3>
+<p><strong>Column index lookup</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ColumnIndex(ByVal colName As String, Optional ByVal inDataRange As Boolean = False) As Long
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>colName</code>: Column header name</li>
+<li><code>inDataRange</code>: Optional flag to restrict index to the data range</li>
+</ul>
+<p><strong>Returns:</strong> Long</p>
+<hr />
+<h3>uniquevalues</h3>
+<p><strong>Unique values in a column</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function UniqueValues(ByVal colName As String) As BetterArray
+</code></pre>
+<p>Collects a distinct list of values for the requested column, ignoring
+case-sensitive duplicates to reflect how dictionary metadata is typically
+interpreted.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>colName</code>: Column header</li>
+</ul>
+<p><strong>Returns:</strong> BetterArray</p>
+<hr />
+<h3>variableexists</h3>
+<p><strong>Variable presence test</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function VariableExists(ByVal varName As String) As Boolean
+</code></pre>
+<p>Tests the dictionary for a specific variable identifier by scanning the
+&quot;variable name&quot; column. Used to guard operations that may attempt to insert
+duplicate entries.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>varName</code>: Variable identifier</li>
+</ul>
+<p><strong>Returns:</strong> Boolean</p>
+<hr />
+<h3>addcolumn</h3>
+<p><strong>Append a column at the end</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub AddColumn(ByVal colName As String)
+</code></pre>
+<p>Adds a new column header after the current data block. No data is populated,
+allowing callers to later fill values or formulas as required.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>colName</code>: Column header to append</li>
+</ul>
+<hr />
+<h3>insertcolumn</h3>
+<p><strong>Insert a column relative to another</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub InsertColumn(ByVal colName As String, ByVal After As String)
+</code></pre>
+<p>Inserts a column immediately after the specified anchor, ensuring the header
+is merged with surrounding formatting when available so designer tables retain
+their layout.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>colName</code>: Column to insert</li>
+<li><code>After</code>: Existing column used as anchor</li>
+</ul>
+<hr />
+<h3>removecolumn</h3>
+<p><strong>Remove a column by name</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub RemoveColumn(ByVal colName As String)
+</code></pre>
+<p>Deletes the specified column from the dictionary, logging diagnostics when the
+column cannot be located to aid troubleshooting in designer flows.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>colName</code>: Column header name</li>
+</ul>
+<hr />
+<h3>RenameColumn</h3>
+<p><strong>Rename a dictionary column header</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub RenameColumn(ByVal currentName As String, _
+                        ByVal newName As String, _
+                        Optional ByVal strictSearch As Boolean = True, _
+                        Optional ByVal matchCase As Boolean = False)
+</code></pre>
+<hr />
+<h2>Row Operations</h2>
+<h3>addrows</h3>
+<p><strong>Append rows via listobject</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub AddRows()
+</code></pre>
+<p>Adds rows to the listobject backing the dictionary while preserving table
+formatting. When no listobject is available the action is logged for
+traceability.</p>
+<hr />
+<h3>InsertRows</h3>
+<p><strong>Insert rows relative to a target selection</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub InsertRows(ByVal targetCell As Range, _
+                      Optional ByVal insertShift As Boolean = False)
+</code></pre>
+<p>Uses the worksheet selection height to determine how many rows to insert in the
+dictionary listobject. When the selection falls outside the table the request
+is logged and ignored to keep the structure stable.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>targetCell</code>: Range anchor describing the selection to mirror.</li>
+<li><code>insertShift</code>: Optional Boolean. When True worksheet rows are inserted to protect stacked tables.</li>
+</ul>
+<hr />
+<h3>DeleteRows</h3>
+<p><strong>Delete rows intersecting the supplied selection</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub DeleteRows(ByVal targetCell As Range, _
+                      Optional ByVal includeIds As Boolean = True, _
+                      Optional ByVal forceShift As Boolean = False)
+</code></pre>
+<hr />
+<h3>removerows</h3>
+<p><strong>Remove rows via listobject</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub RemoveRows()
+</code></pre>
+<p>Removes rows from the dictionary listobject using the shared <code>ManageRows</code>
+helper. Logs a note when a listobject is not present.</p>
+<hr />
+<h2>Specialised Views</h2>
+<h3>specialvars</h3>
+<p><strong>Filtered variable list by criteria</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get SpecialVars(ByVal firstCondition As String, _
+                                Optional ByVal secondCondition As String = vbNullString, _
+                                Optional ByVal conditionName As String = &quot;Control&quot;) As BetterArray
+</code></pre>
+<p>Returns variables that match one or two control values within a chosen column.
+Only considers variables on horizontal sheets to align with designer
+expectations.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>firstCondition</code>: Primary tag to match</li>
+<li><code>secondCondition</code>: Optional secondary tag</li>
+<li><code>conditionName</code>: Optional column header that stores the tags. Defaults to</li>
+<li><code>param</code>: &quot;Control&quot;</li>
+</ul>
+<hr />
+<h3>choicesvars</h3>
+<p><strong>Choice variables list</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ChoicesVars() As BetterArray
+</code></pre>
+<p>Shortcut returning variables controlled by manual or formula-driven choice
+lists.</p>
+<p><strong>Returns:</strong> BetterArray</p>
+<hr />
+<h3>geovars</h3>
+<p><strong>Geographic variables list</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get GeoVars() As BetterArray
+</code></pre>
+<p>Convenience accessor for variables whose controls drive geographic selections
+(geo/hf).</p>
+<p><strong>Returns:</strong> BetterArray</p>
+<hr />
+<h3>timevars</h3>
+<p><strong>Time variables list</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get TimeVars() As BetterArray
+</code></pre>
+<p>Returns variables tied to dates by filtering through the <code>Variable Type</code>
+column.</p>
+<p><strong>Returns:</strong> BetterArray</p>
+<hr />
+<h2>Preparation</h2>
+<h3>prepared</h3>
+<p><strong>Dictionary preparation flag</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Prepared() As Boolean
+</code></pre>
+<p>Indicates whether all helper columns have been generated for designer
+workflows. The heuristic mirrors the legacy implementation by inspecting
+specific markers instead of tracking explicit state.</p>
+<p><strong>Returns:</strong> Boolean</p>
+<hr />
+<h3>prepare</h3>
+<p><strong>Prepare dictionary for designer workflows</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Prepare(Optional ByVal PreservedSheetNames As BetterArray, _
+                   Optional ByVal geoObject As Object, _
+                   Optional ByVal tablePrefix As String = &quot;table&quot;)
+</code></pre>
+<p>Extends the dictionary with all helper metadata required by the designer:
+table names, CRF indices, geo duplications, and visibility columns. The method
+guards against repeated execution by checking the <code>Prepared</code> flag and logs
+issues discovered during enrichment.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>PreservedSheetNames</code>: BetterArray of sheet names that should keep their</li>
+<li><code>original</code>: values</li>
+<li><code>geoObject</code>: LLGeo instance required for geo expansions</li>
+<li><code>msgTrads</code>: ITranslationObject used during column creation</li>
+<li><code>tablePrefix</code>: Optional String prefix applied to generated table names</li>
+</ul>
+<hr />
+<h3>EnsureRequiredColumns</h3>
+<p><strong>Ensure required columns are present in the dictionary</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureRequiredColumns()
+</code></pre>
+<hr />
+<h3>clean</h3>
+<p><strong>Remove unexpected columns</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Clean(Optional ByVal removeAddedColumns As Boolean = False)
+</code></pre>
+<p>Deletes columns that fall outside the supported dictionary schema. When the
+optional argument is True, helper columns introduced during preparation are
+removed as well so the dictionary reverts to the user-provided structure.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>removeAddedColumns</code>: Optional Boolean. Remove preparation columns too.</li>
+</ul>
+<hr />
+<h2>Data Exchange</h2>
+<h3>import</h3>
+<p><strong>Import dictionary data</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Import(ByVal fromWksh As Worksheet, _
+                  ByVal fromStartRow As Long, _
+                  ByVal fromStartcol As Long, _
+                  Optional ByVal clearSheet As Boolean = False)
+</code></pre>
+<p>Replaces the current dictionary content with data copied from another
+worksheet. The incoming data is wrapped in a temporary <code>DataSheet</code> so the
+existing cleaning and formatting routines can be reused.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>fromWksh</code>: Source worksheet</li>
+<li><code>fromStartRow</code>: Long. Start row of the source data</li>
+<li><code>fromStartcol</code>: Long. Start column of the source data</li>
+</ul>
+<hr />
+<h3>export</h3>
+<p><strong>Export dictionary data</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Export(ByVal toWkb As Workbook, _
+                  Optional ByVal exportType As String = &quot;__all__&quot;, _
+                  Optional ByVal addListObject As Boolean = True, _
+                  Optional ByVal Hide As Long = xlSheetHidden)
+</code></pre>
+<p>Copies the dictionary into the destination workbook with optional filtering,
+table creation, and sheet visibility adjustments to mirror the interactive
+export workflow.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>toWkb</code>: Destination workbook</li>
+<li><code>exportType</code>: Optional String. Filter by column name. Defaults to &quot;<strong>all</strong>&quot;</li>
+<li><code>addListObject</code>: Optional Boolean. Create a listobject in the destination.</li>
+<li><code>Defaults</code>: to True</li>
+<li><code>Hide</code>: Optional Long. Visibility setting applied after export. Defaults to</li>
+<li><code>xlSheetHidden</code></li>
+</ul>
+<hr />
+<h3>translate</h3>
+<p><strong>Translate dictionary labels</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Translate(ByVal TransObject As ITranslationObject)
+</code></pre>
+<p>Delegates the translation of user-facing columns (labels, notes, sections) to
+the provided translation object while protecting formula columns from direct
+text replacement.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>TransObject</code>: ITranslationObject responsible for translations</li>
+</ul>
+<hr />
+</details>
+<details>
+<summary>Used in (66 file(s))</summary>
+<ul>
+<li><a href="src/classes/analyses/AnalysisOutput.cls">AnalysisOutput.cls</a></li>
+<li><a href="src/classes/analyses/ITableSpecs.cls">ITableSpecs.cls</a></li>
+<li><a href="src/classes/analyses/TableSpecs.cls">TableSpecs.cls</a></li>
+<li><a href="src/classes/dataio/LLExporter.cls">LLExporter.cls</a></li>
+<li><a href="src/classes/dataio/LLImporter.cls">LLImporter.cls</a></li>
+<li><a href="src/classes/designer/DesignerImportService.cls">DesignerImportService.cls</a></li>
+<li><a href="src/classes/designer/IDesignerImportService.cls">IDesignerImportService.cls</a></li>
+<li><a href="src/classes/dictionary/ILLdictionary.cls">ILLdictionary.cls</a></li>
+<li><a href="src/classes/dictionary/ILLExport.cls">ILLExport.cls</a></li>
+<li><a href="src/classes/dictionary/ILLSheets.cls">ILLSheets.cls</a></li>
+<li><a href="src/classes/dictionary/ILLVariables.cls">ILLVariables.cls</a></li>
+<li><a href="src/classes/dictionary/LLdictionary.cls">LLdictionary.cls</a></li>
+<li><a href="src/classes/dictionary/LLExport.cls">LLExport.cls</a></li>
+<li><a href="src/classes/dictionary/LLSheets.cls">LLSheets.cls</a></li>
+<li><a href="src/classes/dictionary/LLVariables.cls">LLVariables.cls</a></li>
+<li><a href="src/classes/formulas/FormulaCondition.cls">FormulaCondition.cls</a></li>
+<li><a href="src/classes/formulas/Formulas.cls">Formulas.cls</a></li>
+<li><a href="src/classes/formulas/IFormulaCondition.cls">IFormulaCondition.cls</a></li>
+<li><a href="src/classes/formulas/ValueOfFormula.cls">ValueOfFormula.cls</a></li>
+<li><a href="src/classes/geo/ILLGeo.cls">ILLGeo.cls</a></li>
+<li><a href="src/classes/geo/LLGeo.cls">LLGeo.cls</a></li>
+<li><a href="src/classes/linelist/ILinelist.cls">ILinelist.cls</a></li>
+<li><a href="src/classes/linelist/ILinelistSpecs.cls">ILinelistSpecs.cls</a></li>
+<li><a href="src/classes/linelist/Linelist.cls">Linelist.cls</a></li>
+<li><a href="src/classes/linelist/LinelistSpecs.cls">LinelistSpecs.cls</a></li>
+<li><a href="src/classes/linelist/ListBuilder.cls">ListBuilder.cls</a></li>
+<li><a href="src/classes/sections/SectionBuilder.cls">SectionBuilder.cls</a></li>
+<li><a href="src/classes/sections/VarWriter.cls">VarWriter.cls</a></li>
+<li><a href="src/classes/setup/EventSetup.cls">EventSetup.cls</a></li>
+<li><a href="src/classes/setup/IEventSetup.cls">IEventSetup.cls</a></li>
+<li><a href="src/classes/setup/ISetupErrors.cls">ISetupErrors.cls</a></li>
+<li><a href="src/classes/setup/SetupErrors.cls">SetupErrors.cls</a></li>
+<li><a href="src/classes/setup/SetupImportService.cls">SetupImportService.cls</a></li>
+<li><a href="src/classes/showhide/ShowHideManager.cls">ShowHideManager.cls</a></li>
+<li><a href="src/classes/stale/designer-codes/modules/implements/DesignerMain.bas">DesignerMain.bas</a></li>
+<li><a href="src/classes/stale/designer-codes/modules/implements/DevModule.bas">DevModule.bas</a></li>
+<li><a href="src/classes/stale/designer-codes/modules/implements/EventsLinelistButtons.bas">EventsLinelistButtons.bas</a></li>
+<li><a href="src/classes/stale/designer-codes/modules/implements/LinelistEvents.bas">LinelistEvents.bas</a></li>
+<li><a href="src/modules/mastersetup/MasterSetupHelpers.bas">MasterSetupHelpers.bas</a></li>
+<li><a href="src/modules/setup/SetupHelpers.bas">SetupHelpers.bas</a></li>
+<li><a href="src/tests/modules/analyses/TestCrossTable.bas">TestCrossTable.bas</a></li>
+<li><a href="src/tests/modules/analyses/TestCrossTableFormula.bas">TestCrossTableFormula.bas</a></li>
+<li><a href="src/tests/modules/analyses/TestTableSpecs.bas">TestTableSpecs.bas</a></li>
+<li><a href="src/tests/modules/dictionary/TestLLdictionary.bas">TestLLdictionary.bas</a></li>
+<li><a href="src/tests/modules/dictionary/TestLLExport.bas">TestLLExport.bas</a></li>
+<li><a href="src/tests/modules/dictionary/TestLLSheets.bas">TestLLSheets.bas</a></li>
+<li><a href="src/tests/modules/dictionary/TestLLSheetsExtra.bas">TestLLSheetsExtra.bas</a></li>
+<li><a href="src/tests/modules/dictionary/TestLLVariables.bas">TestLLVariables.bas</a></li>
+<li><a href="src/tests/modules/dictionary/TestLLVariablesExtra.bas">TestLLVariablesExtra.bas</a></li>
+<li><a href="src/tests/modules/formulas/TestFormulaCondition.bas">TestFormulaCondition.bas</a></li>
+<li><a href="src/tests/modules/formulas/TestFormulas.bas">TestFormulas.bas</a></li>
+<li><a href="src/tests/modules/formulas/TestValueOfFormula.bas">TestValueOfFormula.bas</a></li>
+<li><a href="src/tests/modules/linelist/TestLinelist.bas">TestLinelist.bas</a></li>
+<li><a href="src/tests/modules/linelist/TestListBuilder.bas">TestListBuilder.bas</a></li>
+<li><a href="src/tests/modules/sections/TestSectionBuilder.bas">TestSectionBuilder.bas</a></li>
+<li><a href="src/tests/modules/sections/TestVarWriter.bas">TestVarWriter.bas</a></li>
+<li><a href="src/tests/modules/showhide/TestShowHideManager.bas">TestShowHideManager.bas</a></li>
+<li><a href="src/tests/stubs/AnalysisDictionaryStub.cls">AnalysisDictionaryStub.cls</a></li>
+<li><a href="src/tests/stubs/DictionaryMinimalStub.cls">DictionaryMinimalStub.cls</a></li>
+<li><a href="src/tests/stubs/LinelistSpecsWorkbookStub.cls">LinelistSpecsWorkbookStub.cls</a></li>
+<li><a href="src/tests/stubs/LinelistStub.cls">LinelistStub.cls</a></li>
+<li><a href="src/tests/stubs/LLGeoDropdownStub.cls">LLGeoDropdownStub.cls</a></li>
+<li><a href="src/tests/stubs/LLVarContextSpecsStub.cls">LLVarContextSpecsStub.cls</a></li>
+<li><a href="src/tests/stubs/LLVarContextVariablesStub.cls">LLVarContextVariablesStub.cls</a></li>
+<li><a href="src/tests/TableSpecsLinelistStub.cls">TableSpecsLinelistStub.cls</a></li>
+<li><a href="src/tests/TestLinelistSpecs.bas">TestLinelistSpecs.bas</a></li>
+</ul>
+</details>
+
+  </main>
+</body>
+</html>
+

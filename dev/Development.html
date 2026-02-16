@@ -1,0 +1,1232 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Development - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>Development</h1>
+<p>The Development class is the central orchestrator for workbook development
+workflows in OutbreakTools. It manages code tables (ListObjects that list
+VBA classes, modules, forms, and tests), drives bulk import and export of
+code artefacts between disk and the host workbook VBProject, and executes
+deployment by protecting and hiding registered worksheets. Consumers
+interact through the IDevelopment interface using the predeclared factory
+pattern (Development.Create).</p>
+<p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="IPasswords.html">IPasswords</a></p>
+<p><strong>Version:</strong> 1.0 (2026-02-09)</p>
+<h2>Factory</h2>
+<h3>create</h3>
+<p><strong>Create a Development instance.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create(ByVal devSheet As Worksheet, Optional ByVal codeSheet As Worksheet) As IDevelopment
+</code></pre>
+<p>Predeclared factory entry point for creating Development instances.
+Factory method on the predeclared instance that allocates a new Development
+object and binds it to the supplied Dev worksheet via Initialise. When a
+codeSheet is provided, it is registered as the target for new development
+tables. The returned object is cast to the IDevelopment interface so
+consumers program against the contract rather than the concrete class.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>devSheet</code>: Worksheet. The worksheet hosting development named ranges
+such as module and class folder paths.</li>
+<li><code>codeSheet</code>: Optional Worksheet. A separate worksheet to host code
+ListObjects. When omitted, tables are placed on devSheet.</li>
+</ul>
+<p><strong>Returns:</strong> IDevelopment. A fully initialised instance ready for use.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When devSheet is Nothing.</li>
+<li>ProjectError.ElementNotFound When required named ranges are missing
+on the Dev worksheet.</li>
+</ul>
+<p><strong>Depends on:</strong></p>
+<ul>
+<li>BetterArray</li>
+</ul>
+<hr />
+<details>
+<summary>Internal members (not exported)</summary>
+<h2>Initialisation</h2>
+<h3>initialise</h3>
+<p><strong>Bind this instance to a Dev worksheet and optional code sheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Initialise(ByVal devSheet As Worksheet, Optional ByVal codeSheet As Worksheet)
+</code></pre>
+<p>Instance setup that binds internal state to the host workbook.
+Validates that devSheet is not Nothing, stores the worksheet and its parent
+workbook, enables user confirmation prompts, and initialises the hidden and
+protected sheet collections. Required named ranges for module and class
+folder paths are verified on the Dev sheet. Any previously registered code
+worksheet is restored from a persisted worksheet-level name. When a
+codeSheet argument is supplied, it replaces the restored worksheet.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>devSheet</code>: Worksheet. The development worksheet carrying configuration
+named ranges.</li>
+<li><code>codeSheet</code>: Optional Worksheet. A worksheet to register as the code
+table host. When omitted, any previously persisted code worksheet is used.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When devSheet is Nothing.</li>
+<li>ProjectError.ElementNotFound When required named ranges are missing.</li>
+</ul>
+<hr />
+<h2>Sheet Preparation API</h2>
+<h3>add-code-sheets</h3>
+<p><strong>Register an existing worksheet to host future development tables.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function AddCodeSheets(ByVal sheetName As String) As Worksheet
+</code></pre>
+<p>Public methods for registering worksheets and creating
+development tables (classes, modules, forms, tests).
+Validates that the supplied name is non-empty and that the worksheet exists
+in the host workbook. When user prompts are enabled, a confirmation dialog
+is displayed before proceeding. The registered worksheet is persisted via a
+worksheet-level named range so it survives workbook close/reopen cycles.
+(&quot;Register an existing worksheet so future tables are created on it.&quot;)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetName</code>: String. Name of the worksheet to register as the code
+table host.</li>
+</ul>
+<p><strong>Returns:</strong> Worksheet. The registered worksheet reference, or Nothing when the
+user declines the confirmation prompt.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When Initialise has not been called.</li>
+<li>ProjectError.InvalidArgument When sheetName is empty.</li>
+<li>ProjectError.ElementNotFound When the worksheet does not exist in
+the host workbook.</li>
+</ul>
+<hr />
+<h3>add-class-table</h3>
+<p><strong>Create a classes table on the code worksheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function AddClassTable(Optional ByVal includeTests As Boolean = False) As ListObject
+</code></pre>
+<p>Creates a new ListObject with columns for class names and an interface
+Yes/No flag. The includeTests parameter switches the table tag between
+&quot;general classes&quot; and &quot;tests classes&quot;, which determines the destination
+folder during code transfers. A confirmation dialog is shown when prompts
+are enabled. The table is placed at the next available horizontal anchor
+on the code worksheet (or the Dev sheet when no code worksheet is registered).
+(&quot;Create a classes table, optionally scoped to tests.&quot;)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>includeTests</code>: Optional Boolean. When True, creates a test-scoped
+classes table. Defaults to False.</li>
+</ul>
+<p><strong>Returns:</strong> ListObject. The newly created table, or Nothing when the user
+declines the confirmation prompt.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When Initialise has not been called.</li>
+</ul>
+<hr />
+<h3>add-module-table</h3>
+<p><strong>Create a modules table on the code worksheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function AddModuleTable(Optional ByVal includeTests As Boolean = False) As ListObject
+</code></pre>
+<p>Creates a new ListObject with a single column for module names. The
+includeTests parameter switches the table tag between &quot;general modules&quot;
+and &quot;tests modules&quot;, controlling the destination folder during transfers.
+A confirmation dialog is shown when prompts are enabled.
+(&quot;Create a modules table, optionally scoped to tests.&quot;)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>includeTests</code>: Optional Boolean. When True, creates a test-scoped
+modules table. Defaults to False.</li>
+</ul>
+<p><strong>Returns:</strong> ListObject. The newly created table, or Nothing when the user
+declines the confirmation prompt.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When Initialise has not been called.</li>
+</ul>
+<hr />
+<h3>add-forms-table</h3>
+<p><strong>Create a forms mapping table on the code worksheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function AddFormsTable() As ListObject
+</code></pre>
+<p>Creates a new ListObject with two columns: &quot;modules&quot; and &quot;corresponding
+form&quot;. Entries in this table drive the AddFormsCodes and Deploy workflows,
+which copy code from a standard module into the code-behind of a UserForm
+component. A confirmation dialog is shown when prompts are enabled.
+(&quot;Create a forms mapping table used for code transfers to userforms.&quot;)</p>
+<p><strong>Returns:</strong> ListObject. The newly created table, or Nothing when the user
+declines the confirmation prompt.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When Initialise has not been called.</li>
+</ul>
+<hr />
+<h3>add-test-table</h3>
+<p><strong>Create a test modules table on the code worksheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function AddTestTable() As ListObject
+</code></pre>
+<p>Creates a new ListObject configured for test module entries with a single
+&quot;modules&quot; column. The table is tagged as &quot;tests modules&quot; so that code
+transfers target the tests folder. A confirmation dialog is shown when
+prompts are enabled.
+(&quot;Create a test modules table for organising test imports/exports.&quot;)</p>
+<p><strong>Returns:</strong> ListObject. The newly created table, or Nothing when the user
+declines the confirmation prompt.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When Initialise has not been called.</li>
+</ul>
+<hr />
+<h2>Deployment Configuration</h2>
+<h3>add-hidden-sheet</h3>
+<p><strong>Track a worksheet that must be hidden during deployment.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub AddHiddenSheet(ByVal sheetName As String)
+</code></pre>
+<p>Methods for registering worksheets that must be hidden or
+protected when the workbook is deployed.
+Appends the supplied worksheet name to the internal hiddenSheets
+collection. During Deploy, every entry in this collection is set to
+xlSheetVeryHidden. The worksheet must exist in the host workbook.
+(&quot;Track a worksheet that must be hidden during deployment.&quot;)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetName</code>: String. Name of the worksheet to hide during deployment.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When Initialise has not been called.</li>
+<li>ProjectError.InvalidArgument When sheetName is empty.</li>
+<li>ProjectError.ElementNotFound When the worksheet does not exist.</li>
+</ul>
+<hr />
+<h3>add-protected-sheet</h3>
+<p><strong>Track a worksheet that needs protection during deployment.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub AddProtectedSheet(ByVal sheetName As String,  _
+                          Optional ByVal allowShapes As Boolean = True, _
+                          Optional ByVal allowDeletingRows As Boolean = True)
+</code></pre>
+<p>Registers a worksheet by name so that it will be protected when Deploy is
+called. The optional parameters control whether shapes and row deletion
+are permitted on the protected sheet. The registration is stored as a
+BetterArray triplet (name, allowShapes, allowDeletingRows) inside the
+protectedSheets collection.
+(&quot;Track a worksheet that needs to be protected during deployment.&quot;)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetName</code>: String. Name of the worksheet to protect during deployment.</li>
+<li><code>allowShapes</code>: Optional Boolean. When True, shapes remain editable on
+the protected sheet. Defaults to True.</li>
+<li><code>allowDeletingRows</code>: Optional Boolean. When True, row deletion is
+allowed on the protected sheet. Defaults to True.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When Initialise has not been called.</li>
+<li>ProjectError.InvalidArgument When sheetName is empty.</li>
+<li>ProjectError.ElementNotFound When the worksheet does not exist.</li>
+</ul>
+<hr />
+<h2>Code Transfer</h2>
+<h3>import-all</h3>
+<p><strong>Import every module and class listed in Dev tables into the host workbook.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ImportAll()
+</code></pre>
+<p>Bulk import and export of VBA components listed in
+development tables.
+Iterates every ListObject on the Dev sheet and any registered code
+worksheet. Each table tag is read to determine the transfer scope (modules
+or classes) and the target disk folder. For each entry in the table, the
+corresponding .bas or .cls file is imported from disk into the host
+workbook VBProject, replacing any existing component of the same name. A
+timestamped status message is written to the Dev sheet Informations range
+upon completion. Requires that host sheets are unlocked.
+(&quot;Import every module/class listed in Dev tables into this workbook.&quot;)</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When Initialise has not been called.</li>
+<li>ProjectError.ErrorUnexpectedState When a host sheet is protected.</li>
+</ul>
+<hr />
+<h3>export-all</h3>
+<p><strong>Export every module and class listed in Dev tables to disk.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ExportAll()
+</code></pre>
+<p>Iterates every ListObject on the Dev sheet and any registered code
+worksheet. Each table tag is read to determine the transfer scope and the
+source disk folder. For each entry, the VBA component is exported from
+the host workbook VBProject to disk, overwriting any existing file. A
+timestamped status message is written upon completion. Requires that host
+sheets are unlocked.
+(&quot;Export every module/class listed in Dev tables to disk.&quot;)</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When Initialise has not been called.</li>
+<li>ProjectError.ErrorUnexpectedState When a host sheet is protected.</li>
+</ul>
+<hr />
+<h3>add-forms-codes</h3>
+<p><strong>Copy module code into mapped UserForm components.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub AddFormsCodes()
+</code></pre>
+<p>Synchronises form modules by copying the code from each source module
+listed in forms tables into the corresponding UserForm component. A
+confirmation dialog is shown when prompts are enabled. After copying, the
+source module is removed from the VBProject to prevent duplication.
+Requires that host sheets are unlocked.
+(&quot;Copy module code into mapped forms according to the forms table.&quot;)</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When Initialise has not been called.</li>
+<li>ProjectError.ErrorUnexpectedState When a host sheet is protected.</li>
+</ul>
+<hr />
+<h2>Deployment</h2>
+<h3>deploy</h3>
+<p><strong>Protect worksheets, hide Dev assets, copy forms code, and set the deployment marker.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Deploy(ByVal pass As IPasswords, Optional ByVal lockWorkbook As Boolean = False)
+</code></pre>
+<p>Full deployment workflow: protect, hide, and lock the workbook.
+Executes the full deployment workflow. First applies the default password
+from the Dev sheet, then synchronises form modules without confirmation.
+Every worksheet registered via AddHiddenSheet is set to xlSheetVeryHidden.
+Every worksheet registered via AddProtectedSheet is protected using the
+supplied IPasswords handler with the recorded permission flags. When
+lockWorkbook is True, the host workbook itself is locked. The code
+worksheet (if distinct from the Dev sheet) is hidden. Finally, a debug
+exit handler is installed and the workbook-level deployment flag is set
+to &quot;Yes&quot;.
+(&quot;Protect worksheets, hide Dev assets, copy forms code, and set deployment marker.&quot;)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>pass</code>: IPasswords. The password handler used to apply protection to
+worksheets and optionally lock the workbook.</li>
+<li><code>lockWorkbook</code>: Optional Boolean. When True, the host workbook
+structure is locked after protecting sheets. Defaults to False.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When Initialise has not been
+called or when pass is Nothing.</li>
+<li>ProjectError.ErrorUnexpectedState When a host sheet is protected.</li>
+</ul>
+<hr />
+<h3>in-deployment</h3>
+<p><strong>Check whether the workbook has already been deployed.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function InDeployment() As Boolean
+</code></pre>
+<p>Reads the workbook-level named range &quot;inDeployment&quot; and performs a
+case-insensitive comparison against &quot;Yes&quot;. Returns True when the stored
+value matches, indicating that Deploy has already been executed. Returns
+False when the name does not exist or contains any other value.
+(&quot;Return True when the workbook has already been deployed (flag equals 'Yes').&quot;)</p>
+<p><strong>Returns:</strong> Boolean. True when the deployment flag equals &quot;Yes&quot;.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When Initialise has not been called.</li>
+</ul>
+<hr />
+<h2>Properties</h2>
+<h3>dev-worksheet</h3>
+<p><strong>Development worksheet reference.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get DevWorksheet() As Worksheet
+</code></pre>
+<p>Read-only and read-write properties exposing the internal state.
+Returns the Dev worksheet that stores configuration named ranges such as
+folder paths and counter values. Set during Initialise and never changed
+afterwards.
+(&quot;Development worksheet storing configuration named ranges.&quot;)</p>
+<p><strong>Returns:</strong> Worksheet. The development worksheet bound to this instance.</p>
+<hr />
+<h3>code-worksheet</h3>
+<p><strong>Worksheet registered to host development tables.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get CodeWorksheet() As Worksheet
+</code></pre>
+<p>Returns the worksheet currently registered to host development ListObjects.
+May be Nothing when no code worksheet has been registered, in which case
+new tables are created on the Dev sheet itself.
+(&quot;Worksheet currently registered to host development tables (may be Dev sheet).&quot;)</p>
+<p><strong>Returns:</strong> Worksheet. The code worksheet, or Nothing when none is registered.</p>
+<hr />
+<h3>display-prompts</h3>
+<p><strong>Whether confirmation prompts are displayed.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get DisplayPrompts() As Boolean
+</code></pre>
+<p>Controls whether confirmation dialogs are shown before mutating operations
+such as importing, exporting, or adding tables. Defaults to True after
+Initialise. Set to False to suppress prompts during automated or batch
+workflows.
+(&quot;Whether user confirmation prompts are displayed before mutating operations.&quot;)</p>
+<p><strong>Returns:</strong> Boolean. True when prompts are enabled.</p>
+<hr />
+<h3>display-prompts-set</h3>
+<p><strong>Set the confirmation prompt toggle.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Let DisplayPrompts(ByVal value As Boolean)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>value</code>: Boolean. True to enable prompts, False to suppress them.</li>
+</ul>
+<hr />
+<h2>Worksheet Helpers</h2>
+<h3>ensure-collections</h3>
+<p><strong>Initialise sheet tracking collections when not yet allocated.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureCollections()
+</code></pre>
+<p>Private helpers that manage worksheet discovery, validation,
+and collection initialisation.
+(&quot;Initialise sheet tracking collections for hidden/protected lists.&quot;)</p>
+<hr />
+<h3>ensure-named-ranges</h3>
+<p><strong>Validate that required Dev sheet named ranges exist.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureNamedRanges()
+</code></pre>
+<p>Checks that the module and class folder named ranges are present on the
+Dev sheet. The tests folder range is optional and is only validated when
+its name definition already exists at the workbook level.
+(&quot;Validate Dev sheet named ranges for module/class/test folders.&quot;)</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ElementNotFound When a required named range is missing.</li>
+</ul>
+<hr />
+<h3>restore-code-worksheet</h3>
+<p><strong>Restore a previously registered code worksheet from persisted state.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RestoreCodeWorksheet()
+</code></pre>
+<p>Reads the worksheet-level named range CODE_SHEET_NAMEDEF. When a valid
+sheet name is found and the worksheet exists, it is set as the active
+code worksheet. Silently exits when no persisted name exists.
+(&quot;Restore previously registered code worksheet if stored.&quot;)</p>
+<hr />
+<h3>ensure-worksheet</h3>
+<p><strong>Resolve a worksheet by name, raising on empty name or missing sheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function EnsureWorksheet(ByVal sheetName As String, ByVal purpose As String) As Worksheet
+</code></pre>
+<p>Trims the supplied name and attempts to resolve it in the host workbook.
+Raises InvalidArgument when the name is empty and ElementNotFound when no
+matching worksheet exists. The purpose parameter is included in error
+messages to help callers identify the context.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetName</code>: String. Name of the worksheet to resolve.</li>
+<li><code>purpose</code>: String. Label included in error messages for context.</li>
+</ul>
+<p><strong>Returns:</strong> Worksheet. The resolved worksheet reference.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.InvalidArgument When sheetName is empty.</li>
+<li>ProjectError.ElementNotFound When the worksheet does not exist.</li>
+</ul>
+<hr />
+<h3>try-resolve-worksheet</h3>
+<p><strong>Attempt to resolve a worksheet by name without raising.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function TryResolveWorksheet(ByVal sheetName As String) As Worksheet
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetName</code>: String. Name of the worksheet to look up.</li>
+</ul>
+<p><strong>Returns:</strong> Worksheet. The resolved worksheet, or Nothing when not found.</p>
+<hr />
+<h3>ensure-range-exists</h3>
+<p><strong>Validate that a named range exists on a worksheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureRangeExists(ByVal sheet As Worksheet, _
+                              ByVal rangeName As String, _
+                              Optional ByVal required As Boolean = True)
+</code></pre>
+<p>(&quot;Ensure a named range exists on a worksheet, raising when mandatory.&quot;)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheet</code>: Worksheet. The worksheet to check.</li>
+<li><code>rangeName</code>: String. The named range to locate.</li>
+<li><code>required</code>: Optional Boolean. When True, raises an error if the range
+is missing. Defaults to True.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ElementNotFound When required is True and the range
+is not found.</li>
+</ul>
+<hr />
+<h3>register-code-worksheet</h3>
+<p><strong>Persist a worksheet as the active code table host.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RegisterCodeWorksheet(ByVal sheetName As String)
+</code></pre>
+<p>(&quot;Persist the supplied worksheet as the active code worksheet.&quot;)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetName</code>: String. Name of the worksheet to register.</li>
+</ul>
+<hr />
+<h3>resolve-table-host</h3>
+<p><strong>Return the worksheet where new tables should be created.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ResolveTableHost() As Worksheet
+</code></pre>
+<p>(&quot;Return the worksheet where new development tables should be created.&quot;)</p>
+<p><strong>Returns:</strong> Worksheet. The code worksheet when registered, otherwise the Dev sheet.</p>
+<hr />
+<h3>table-host-sheets</h3>
+<p><strong>Collect worksheets that may contain development tables.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function TableHostSheets() As Collection
+</code></pre>
+<p>Returns a Collection containing the Dev sheet and, when registered and
+distinct, the code worksheet. Used by import/export and form
+synchronisation routines to iterate all possible table hosts.
+(&quot;Return worksheets that may contain development tables for processing.&quot;)</p>
+<p><strong>Returns:</strong> Collection. One or two Worksheet references.</p>
+<hr />
+<h3>ensure-host-sheets-unlocked</h3>
+<p><strong>Verify that candidate worksheets are not protected.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureHostSheetsUnlocked()
+</code></pre>
+<p>Iterates every worksheet returned by TableHostSheets and raises an error
+when any of them has ProtectContents set to True. This guard prevents
+import, export, and deployment operations from failing mid-way due to
+sheet protection.
+(&quot;Confirm candidate worksheets are unprotected before modification.&quot;)</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ErrorUnexpectedState When a host sheet is protected.</li>
+</ul>
+<hr />
+<h3>ensure-initialised</h3>
+<p><strong>Guard public API calls when Development has not been initialised.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureInitialised()
+</code></pre>
+<p>(&quot;Guard public API calls when Development has not been initialised.&quot;)</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When Initialise has not been called.</li>
+</ul>
+<hr />
+<h2>Code Transfer Helpers</h2>
+<h3>process-all-tables</h3>
+<p><strong>Iterate every development table and dispatch import or export.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ProcessAllTables(ByVal mode As DevelopmentTransferMode)
+</code></pre>
+<p>Private helpers that drive the import and export of VBA
+components listed in development tables.
+Reads folder settings from the Dev sheet, then walks every ListObject on
+each host worksheet. Each table is passed to ProcessListObject, which
+interprets the tag above the table to decide scope (modules or classes),
+target folder, and whether interfaces should be included.
+(&quot;Iterate every development table and process it for import/export.&quot;)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>mode</code>: DevelopmentTransferMode. Whether to import or export.</li>
+</ul>
+<hr />
+<h3>resolve-folder-settings</h3>
+<p><strong>Read module, class, and test folder paths from the Dev sheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ResolveFolderSettings() As TFolderSettings
+</code></pre>
+<p>(&quot;Read module/class/test folder settings from the Dev sheet.&quot;)</p>
+<p><strong>Returns:</strong> TFolderSettings. The resolved folder paths.</p>
+<hr />
+<h3>read-sheet-value</h3>
+<p><strong>Return the trimmed string value of a named range on the Dev sheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ReadSheetValue(ByVal rangeName As String, Optional ByVal required As Boolean = True) As String
+</code></pre>
+<p>Locates the named range by first checking worksheet-level names, then
+falling back to workbook-level names. When the range cannot be resolved
+and required is True, an error is raised. Returns an empty string when
+the range is missing and required is False.
+(&quot;Return the string value of a named range, enforcing presence when required.&quot;)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>rangeName</code>: String. The named range to read.</li>
+<li><code>required</code>: Optional Boolean. When True, raises an error if the range
+is missing. Defaults to True.</li>
+</ul>
+<p><strong>Returns:</strong> String. The trimmed cell value, or empty string when not found.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ElementNotFound When required is True and the range
+is missing.</li>
+</ul>
+<hr />
+<h3>process-list-object</h3>
+<p><strong>Process a single ListObject for import or export.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ProcessListObject(ByVal lo As ListObject, _
+                                   ByVal mode As DevelopmentTransferMode, _
+                                   ByRef folders As TFolderSettings) As Boolean
+</code></pre>
+<p>Reads the tag cell above the table to determine the scope (modules,
+classes, tests, or forms) and the base folder. Reads the folder cell two
+rows above the table to determine the subfolder. Combines both paths and
+verifies the directory exists on disk. Delegates to TransferListEntries
+for actual component-by-component processing. Forms-tagged tables are
+skipped here (handled by SynchroniseFormsTables instead). Returns True
+when at least one component was transferred.
+(&quot;Process a single ListObject, importing or exporting its entries.&quot;)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>lo</code>: ListObject. The development table to process.</li>
+<li><code>mode</code>: DevelopmentTransferMode. Whether to import or export.</li>
+<li><code>folders</code>: TFolderSettings. The resolved folder paths.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when at least one entry was processed.</p>
+<hr />
+<h3>list-tag</h3>
+<p><strong>Retrieve the scope tag stored in the cell above the table.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ListTag(ByVal lo As ListObject) As String
+</code></pre>
+<p>(&quot;Retrieve the tag stored above the table (scope identifier).&quot;)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>lo</code>: ListObject. The target table.</li>
+</ul>
+<p><strong>Returns:</strong> String. The trimmed tag value, or empty string when absent.</p>
+<hr />
+<h3>compare-tag</h3>
+<p><strong>Case-insensitive comparison between a table tag and an expected value.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function CompareTag(ByVal lo As ListObject, ByVal expected As String) As Boolean
+</code></pre>
+<p>(&quot;Case-insensitive comparison between a table tag and expected text.&quot;)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>lo</code>: ListObject. The table whose tag is compared.</li>
+<li><code>expected</code>: String. The expected tag text.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the tags match.</p>
+<hr />
+<h3>list-folder</h3>
+<p><strong>Retrieve the subfolder path stored two rows above the table.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ListFolder(ByVal lo As ListObject) As String
+</code></pre>
+<p>(&quot;Retrieve the folder path written above the table (relative folder).&quot;)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>lo</code>: ListObject. The target table.</li>
+</ul>
+<p><strong>Returns:</strong> String. The trimmed subfolder path, or empty string when absent.</p>
+<hr />
+<h3>append-path</h3>
+<p><strong>Combine a base path and subpath using the platform separator.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function AppendPath(ByVal basePath As String, ByVal subPath As String) As String
+</code></pre>
+<p>(&quot;Combine base and sub-path using the platform path separator.&quot;)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>basePath</code>: String. The root folder path.</li>
+<li><code>subPath</code>: String. The relative subfolder to append.</li>
+</ul>
+<p><strong>Returns:</strong> String. The combined path.</p>
+<hr />
+<h3>directory-exists</h3>
+<p><strong>Return True when the supplied directory exists on disk.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function DirectoryExists(ByVal pathValue As String) As Boolean
+</code></pre>
+<p>(&quot;Return True when the supplied directory exists on disk.&quot;)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>pathValue</code>: String. The directory path to check.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the directory exists.</p>
+<hr />
+<h3>transfer-list-entries</h3>
+<p><strong>Iterate table rows and import or export each listed component.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function TransferListEntries(ByVal lo As ListObject, _
+                                     ByVal destinationFolder As String, _
+                                     ByVal scope As DevelopmentTransferScope, _
+                                     ByVal mode As DevelopmentTransferMode, _
+                                     ByVal includeInterface As Boolean) As Boolean
+</code></pre>
+<p>Reads the first column for component names and, when includeInterface is
+True, the second column for a Yes/No interface flag. For each non-empty
+entry the component is transferred via TransferComponent. When the flag
+is &quot;yes&quot;, the corresponding interface file (prefixed with &quot;I&quot;) is also
+transferred. Returns True when at least one component was processed.
+(&quot;Iterate table rows and import/export each listed component.&quot;)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>lo</code>: ListObject. The development table containing component entries.</li>
+<li><code>destinationFolder</code>: String. The disk folder for the transfer.</li>
+<li><code>scope</code>: DevelopmentTransferScope. Whether entries are modules or classes.</li>
+<li><code>mode</code>: DevelopmentTransferMode. Whether to import or export.</li>
+<li><code>includeInterface</code>: Boolean. When True, also transfer interface files.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when at least one entry was transferred.</p>
+<hr />
+<h3>resolve-interface-flag</h3>
+<p><strong>Read the Yes/No interface flag for a given table row.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ResolveInterfaceFlag(ByVal interfaceColumn As Range, ByVal rowIndex As Long) As String
+</code></pre>
+<p>(&quot;Return lowercase 'yes'/'no' flag for interface duplication, handling missing cells.&quot;)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>interfaceColumn</code>: Range. The second column range, or Nothing.</li>
+<li><code>rowIndex</code>: Long. The 1-based row index within the column.</li>
+</ul>
+<p><strong>Returns:</strong> String. Lowercase &quot;yes&quot; or &quot;no&quot;, or empty string when unavailable.</p>
+<hr />
+<h3>transfer-component</h3>
+<p><strong>Build the file path and delegate to import or export.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub TransferComponent(ByVal componentName As String, _
+                              ByVal destinationFolder As String, _
+                              ByVal scope As DevelopmentTransferScope, _
+                              ByVal mode As DevelopmentTransferMode)
+</code></pre>
+<p>(&quot;Import or export a single component based on mode and scope.&quot;)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>componentName</code>: String. The VBA component name.</li>
+<li><code>destinationFolder</code>: String. The disk folder for the transfer.</li>
+<li><code>scope</code>: DevelopmentTransferScope. Determines the file extension.</li>
+<li><code>mode</code>: DevelopmentTransferMode. Whether to import or export.</li>
+</ul>
+<hr />
+<h3>import-component</h3>
+<p><strong>Import a VBA component from disk, replacing any existing one.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ImportComponent(ByVal componentName As String, ByVal filePath As String)
+</code></pre>
+<p>Checks that the file exists on disk, then removes any existing component
+with the same name from the VBProject so that VB attributes are refreshed
+on import. Delegates to VBComponents.Import to perform the actual import.
+(&quot;Import a code component from disk, replacing any existing component.&quot;)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>componentName</code>: String. The VBA component name to replace.</li>
+<li><code>filePath</code>: String. The full disk path of the .bas or .cls file.</li>
+</ul>
+<hr />
+<h3>export-component</h3>
+<p><strong>Export a VBA component to disk, overwriting any previous file.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ExportComponent(ByVal componentName As String, ByVal filePath As String)
+</code></pre>
+<p>Looks up the component in the VBProject. When found, deletes any existing
+file at the target path and exports the component. Silently exits when
+the component does not exist in the project.
+(&quot;Export a code component to disk, overwriting any previous file.&quot;)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>componentName</code>: String. The VBA component name to export.</li>
+<li><code>filePath</code>: String. The full disk path for the exported file.</li>
+</ul>
+<hr />
+<h3>append-information-log</h3>
+<p><strong>Append a timestamped entry describing the transfer action performed.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AppendInformationLog(ByVal targetPath As String, _
+                                 ByVal scope As DevelopmentTransferScope, _
+                                 ByVal mode As DevelopmentTransferMode)
+</code></pre>
+<p>(&quot;Append a timestamped entry describing the import/export action performed.&quot;)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>targetPath</code>: String. The folder path that was processed.</li>
+<li><code>scope</code>: DevelopmentTransferScope. Whether modules or classes were transferred.</li>
+<li><code>mode</code>: DevelopmentTransferMode. Whether an import or export was performed.</li>
+</ul>
+<hr />
+<h3>write-information</h3>
+<p><strong>Write a status message to the Dev sheet Informations cell.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub WriteInformation(ByVal messageText As String)
+</code></pre>
+<p>(&quot;Write a status message in the Dev sheet informations cell.&quot;)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>messageText</code>: String. The message to display.</li>
+</ul>
+<hr />
+<h3>ensure-information-cell</h3>
+<p><strong>Locate the Dev sheet status cell from the Informations named range.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function EnsureInformationCell() As Range
+</code></pre>
+<p>(&quot;Locate the Dev sheet status cell (Informations named range).&quot;)</p>
+<p><strong>Returns:</strong> Range. The target cell, or Nothing when the range is not defined.</p>
+<hr />
+<h2>Form Synchronisation</h2>
+<h3>synchronise-forms-tables</h3>
+<p><strong>Enumerate forms tables and copy code into mapped UserForm components.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub SynchroniseFormsTables(ByVal requireConfirmation As Boolean)
+</code></pre>
+<p>Private helpers that copy code from standard modules into
+UserForm components based on forms tables.
+Walks every ListObject on each host worksheet and identifies those tagged
+as &quot;general form modules&quot;. For each matching table, ProcessFormsTable is
+called to copy module code into the corresponding form component. When
+requireConfirmation is True, a dialog is shown before proceeding.
+(&quot;Enumerate all forms tables and optionally prompt before synchronising code.&quot;)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>requireConfirmation</code>: Boolean. When True, prompts the user first.</li>
+</ul>
+<hr />
+<h3>apply-default-password</h3>
+<p><strong>Read and apply the default password from the Dev sheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ApplyDefaultPassword(ByVal passwords As IPasswords)
+</code></pre>
+<p>Checks for a named range &quot;DefaultPassword&quot; on the Dev sheet. When found
+and non-empty, passes its value to the IPasswords handler via
+NewDebugingPassword. Silently exits when no default password is configured.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>passwords</code>: IPasswords. The password handler to configure.</li>
+</ul>
+<hr />
+<h3>process-forms-table</h3>
+<p><strong>Copy code for each module/form pair defined in a forms ListObject.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ProcessFormsTable(ByVal lo As ListObject)
+</code></pre>
+<p>Reads the first column for source module names and the second column for
+target form names. For each non-empty pair, CopyModuleCode transfers the
+code from the module into the form component and removes the source.
+(&quot;Copy code for each module/form pair defined in the supplied ListObject.&quot;)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>lo</code>: ListObject. The forms mapping table to process.</li>
+</ul>
+<hr />
+<h3>copy-module-code</h3>
+<p><strong>Copy the VBIDE code from one component into another.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub CopyModuleCode(ByVal sourceName As String, ByVal targetName As String)
+</code></pre>
+<p>Reads all lines from the source component CodeModule, clears the target
+component CodeModule, and writes the source content into it. The source
+component is then removed from the VBProject. Raises ElementNotFound when
+either the source or target component does not exist.
+(&quot;Copy the VBIDE code from one component into another.&quot;)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sourceName</code>: String. Name of the VBA component to copy from.</li>
+<li><code>targetName</code>: String. Name of the VBA component to copy into.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ElementNotFound When the source or target component
+is not found in the VBProject.</li>
+</ul>
+<hr />
+<h2>ListObject Builders</h2>
+<h3>create-list-object</h3>
+<p><strong>Create a table with standardised headers, tag, and naming.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function CreateListObject(ByVal headers As Variant, _
+                                  ByVal tagValue As String, _
+                                  ByVal counterName As String, _
+                                  ByVal prefix As String, _
+                                  Optional ByVal addYesNoValidation As Boolean = False) As ListObject
+</code></pre>
+<p>Private helpers that create, format, and name development
+tables on the code worksheet.
+Resolves the host worksheet, calculates the next available horizontal
+anchor, writes the folder and tag cells above the table, creates a
+ListObject from a two-row range (header + one data row), applies project
+formatting, generates a unique name via the persisted counter, and
+optionally adds Yes/No data validation to the second column.
+(&quot;Create a table with the supplied headers, tag, and standardised naming.&quot;)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>headers</code>: Variant. Array of column header strings.</li>
+<li><code>tagValue</code>: String. The scope tag written above the table.</li>
+<li><code>counterName</code>: String. The worksheet-level name storing the counter.</li>
+<li><code>prefix</code>: String. The prefix for the generated ListObject name.</li>
+<li><code>addYesNoValidation</code>: Optional Boolean. When True, applies a Yes/No
+dropdown to the second column. Defaults to False.</li>
+</ul>
+<p><strong>Returns:</strong> ListObject. The newly created and formatted table.</p>
+<hr />
+<h3>apply-lo-format</h3>
+<p><strong>Apply project formatting to a development ListObject.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ApplyLoFormat(ByVal Lo As Listobject)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>Lo</code>: ListObject. The table to format.</li>
+</ul>
+<hr />
+<h3>write-headers</h3>
+<p><strong>Populate a table header row with the provided field names.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub WriteHeaders(ByVal lo As ListObject, ByVal headers As Variant)
+</code></pre>
+<p>(&quot;Populate table header row with provided field names.&quot;)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>lo</code>: ListObject. The table whose headers are written.</li>
+<li><code>headers</code>: Variant. Array of header strings.</li>
+</ul>
+<hr />
+<h3>apply-yes-no-validation</h3>
+<p><strong>Apply a Yes/No dropdown validation to the second column.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ApplyYesNoValidation(ByVal lo As ListObject)
+</code></pre>
+<p>(&quot;Apply Yes/No validation to the second column when applicable.&quot;)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>lo</code>: ListObject. The table to configure.</li>
+</ul>
+<hr />
+<h3>next-anchor-range</h3>
+<p><strong>Find the next available anchor position for a table.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function NextAnchorRange(ByVal sheet As Worksheet, ByVal columnCount As Long) As Range
+</code></pre>
+<p>Scans existing ListObjects and occupied cells on the header row to find
+the rightmost occupied column. The anchor is placed two columns to the
+right of this boundary. When the sheet lacks sufficient columns for the
+requested table width, an error is raised.
+(&quot;Find the next available anchor position for a table, growing to the right.&quot;)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheet</code>: Worksheet. The worksheet to scan.</li>
+<li><code>columnCount</code>: Long. Number of columns needed for the new table.</li>
+</ul>
+<p><strong>Returns:</strong> Range. The top-left anchor cell for the new table.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ErrorUnexpectedState When there is not enough space.</li>
+</ul>
+<hr />
+<h3>next-list-object-name</h3>
+<p><strong>Generate a unique ListObject name using the persisted counter.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function NextListObjectName(ByVal sheet As Worksheet, _
+                                    ByVal prefix As String, _
+                                    ByVal counterName As String) As String
+</code></pre>
+<p>(&quot;Generate a unique ListObject name using the persisted counter.&quot;)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheet</code>: Worksheet. The worksheet hosting the table.</li>
+<li><code>prefix</code>: String. The name prefix (e.g. &quot;ClassesLo&quot;).</li>
+<li><code>counterName</code>: String. The worksheet-level name storing the counter.</li>
+</ul>
+<p><strong>Returns:</strong> String. A unique name such as &quot;ClassesLo3&quot;.</p>
+<hr />
+<h3>has-list-object</h3>
+<p><strong>Check whether a worksheet already defines a ListObject with the given name.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function HasListObject(ByVal sheet As Worksheet, ByVal listName As String) As Boolean
+</code></pre>
+<p>(&quot;Check whether the worksheet already defines a ListObject with the given name.&quot;)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheet</code>: Worksheet. The worksheet to search.</li>
+<li><code>listName</code>: String. The ListObject name to look for.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when a matching ListObject exists.</p>
+<hr />
+<h2>Counter Helpers</h2>
+<h3>read-counter</h3>
+<p><strong>Read the persisted numeric counter stored as a worksheet name.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ReadCounter(ByVal nameId As String) As Long
+</code></pre>
+<p>Private helpers that read and write persisted numeric
+counters stored as worksheet-level names.
+(&quot;Read the persisted numeric counter stored as a worksheet name.&quot;)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>nameId</code>: String. The name definition identifier.</li>
+</ul>
+<p><strong>Returns:</strong> Long. The current counter value, or 0 when not found.</p>
+<hr />
+<h3>update-counter</h3>
+<p><strong>Persist the next counter value back to the Dev sheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub UpdateCounter(ByVal nameId As String, ByVal value As Long)
+</code></pre>
+<p>(&quot;Persist the next counter value back to the Dev sheet.&quot;)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>nameId</code>: String. The name definition identifier.</li>
+<li><code>value</code>: Long. The counter value to store.</li>
+</ul>
+<hr />
+<h3>sheet-name-definition</h3>
+<p><strong>Locate a worksheet-level name definition matching the supplied id.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SheetNameDefinition(ByVal nameId As String) As Name
+</code></pre>
+<p>(&quot;Locate a worksheet-level name definition matching the supplied id.&quot;)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>nameId</code>: String. The name to look up (ignoring sheet prefix).</li>
+</ul>
+<p><strong>Returns:</strong> Name. The matching definition, or Nothing when not found.</p>
+<hr />
+<h3>try-name-definition</h3>
+<p><strong>Locate a name definition at worksheet or workbook level.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function TryNameDefinition(ByVal nameId As String) As Name
+</code></pre>
+<p>Checks worksheet-level names first via SheetNameDefinition, then falls
+back to the workbook-level Names collection.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>nameId</code>: String. The name to look up.</li>
+</ul>
+<p><strong>Returns:</strong> Name. The matching definition, or Nothing when not found.</p>
+<hr />
+<h3>assign-sheet-name</h3>
+<p><strong>Assign or replace a worksheet-level name with the supplied formula.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AssignSheetName(ByVal nameId As String, ByVal refersTo As String)
+</code></pre>
+<p>(&quot;Assign or replace a worksheet-level name with the supplied formula.&quot;)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>nameId</code>: String. The name definition identifier.</li>
+<li><code>refersTo</code>: String. The formula or value to store.</li>
+</ul>
+<hr />
+<h3>remove-sheet-name</h3>
+<p><strong>Remove a worksheet-level name if it already exists.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RemoveSheetName(ByVal nameId As String)
+</code></pre>
+<p>(&quot;Remove a worksheet-level name if it already exists.&quot;)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>nameId</code>: String. The name definition to delete.</li>
+</ul>
+<hr />
+<h3>assign-workbook-name</h3>
+<p><strong>Create or replace a workbook-level name with the supplied formula.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AssignWorkbookName(ByVal nameId As String, ByVal refersTo As String)
+</code></pre>
+<p>(&quot;Create or replace a workbook-level name with the supplied formula.&quot;)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>nameId</code>: String. The name definition identifier.</li>
+<li><code>refersTo</code>: String. The formula or value to store.</li>
+</ul>
+<hr />
+<h3>remove-workbook-name</h3>
+<p><strong>Delete a workbook-level name when present.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RemoveWorkbookName(ByVal nameId As String)
+</code></pre>
+<p>(&quot;Delete a workbook-level name when present.&quot;)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>nameId</code>: String. The name definition to delete.</li>
+</ul>
+<hr />
+<h3>compare-workbook-name</h3>
+<p><strong>Case-insensitive comparison for workbook-level names.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function CompareWorkbookName(ByVal definition As Name, ByVal targetName As String) As Boolean
+</code></pre>
+<p>(&quot;Case-insensitive comparison for workbook-level names.&quot;)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>definition</code>: Name. The name definition to compare.</li>
+<li><code>targetName</code>: String. The expected name string.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when names match.</p>
+<hr />
+<h3>compare-name</h3>
+<p><strong>Case-insensitive comparison for worksheet-level names, ignoring sheet prefix.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function CompareName(ByVal definition As Name, ByVal targetName As String) As Boolean
+</code></pre>
+<p>Worksheet-level names are stored as &quot;SheetName!DefinitionName&quot;. This
+method strips the sheet prefix before comparing.
+(&quot;Case-insensitive comparison for worksheet-level names, ignoring sheet prefix.&quot;)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>definition</code>: Name. The name definition to compare.</li>
+<li><code>targetName</code>: String. The expected name string (without prefix).</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when names match.</p>
+<hr />
+<h2>Name Utilities</h2>
+<h3>name-numeric-value</h3>
+<p><strong>Convert a name definition to a numeric value.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function NameNumericValue(ByVal definition As Name) As Long
+</code></pre>
+<p>Private helpers for encoding, decoding, and reading values
+from Excel Name definitions.
+Attempts to parse the RefersTo formula as a number. When the formula is
+not numeric, falls back to reading the value of the referred range.
+Returns 0 when neither approach yields a number.
+(&quot;Convert a name definition to a numeric value, using RefersTo or range value.&quot;)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>definition</code>: Name. The name definition to read.</li>
+</ul>
+<p><strong>Returns:</strong> Long. The numeric value, or 0 when not parseable.</p>
+<hr />
+<h3>name-string-value</h3>
+<p><strong>Return the decoded string value stored in a name definition.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function NameStringValue(ByVal definition As Name) As String
+</code></pre>
+<p>(&quot;Return the string value stored in a name definition.&quot;)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>definition</code>: Name. The name definition to read.</li>
+</ul>
+<p><strong>Returns:</strong> String. The decoded plain text value.</p>
+<hr />
+<h3>encode-name-value</h3>
+<p><strong>Encode plain text as a quoted formula suitable for Name.RefersTo.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function EncodeNameValue(ByVal value As String) As String
+</code></pre>
+<p>(&quot;Encode plain text as a quoted formula suitable for Name.RefersTo.&quot;)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>value</code>: String. The text to encode.</li>
+</ul>
+<p><strong>Returns:</strong> String. The encoded formula string (e.g. =&quot;Hello&quot;).</p>
+<hr />
+<h3>decode-name-value</h3>
+<p><strong>Decode a Name.RefersTo formula to raw string content.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function DecodeNameValue(ByVal refersTo As String) As String
+</code></pre>
+<p>Strips the leading &quot;=&quot; and surrounding double quotes, then unescapes
+embedded doubled quotes back to single quotes.
+(&quot;Decode a Name.RefersTo formula to raw string content.&quot;)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>refersTo</code>: String. The raw Name.Value or Name.RefersTo string.</li>
+</ul>
+<p><strong>Returns:</strong> String. The decoded plain text.</p>
+<hr />
+<h2>Registration Helpers</h2>
+<h3>register-sheet</h3>
+<p><strong>Register a worksheet name with permission flags in a BetterArray.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RegisterSheet(ByVal registry As BetterArray, ByVal sheetName As String, _
+                          Optional ByVal allowShape As Boolean = True, _
+                          Optional ByVal allowDeletingRows As Boolean = True)
+</code></pre>
+<p>Private helper for registering worksheet entries into the
+protected sheets collection.
+Wraps the sheet name, allowShape, and allowDeletingRows values into a
+BetterArray triplet and pushes it onto the registry. Used by
+AddProtectedSheet to build the protectedSheets collection that Deploy
+iterates during deployment.
+(&quot;Register a worksheet name in the provided BetterArray if not already tracked.&quot;)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>registry</code>: BetterArray. The collection to append to.</li>
+<li><code>sheetName</code>: String. The worksheet name to register.</li>
+<li><code>allowShape</code>: Optional Boolean. Whether shapes remain editable. Defaults to True.</li>
+<li><code>allowDeletingRows</code>: Optional Boolean. Whether row deletion is permitted. Defaults to True.</li>
+</ul>
+<hr />
+<h2>Prompts</h2>
+<h3>request-confirmation</h3>
+<p><strong>Display a confirmation dialog when prompts are enabled.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function RequestConfirmation(ByVal action As String) As Boolean
+</code></pre>
+<p>User confirmation dialog management.
+When displayPrompts is False, returns True immediately without showing a
+dialog. Otherwise displays a Yes/No message box. Returns True only when
+the user selects Yes.
+(&quot;Display a confirmation dialog when prompts are enabled.&quot;)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>action</code>: String. A verb phrase describing the action being confirmed.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the user confirms or prompts are disabled.</p>
+<hr />
+<h2>Error Handling</h2>
+<h3>throw-error</h3>
+<p><strong>Raise a ProjectError-based exception with a prefixed message.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal message As String)
+</code></pre>
+<p>Centralised error-raising helper.
+(&quot;Raise a project-scoped runtime error with prefixed message.&quot;)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>errNumber</code>: ProjectError. The error code to raise.</li>
+<li><code>message</code>: String. Human-readable description of the failure.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.<varies> Always raises the specified error.</li>
+</ul>
+<hr />
+<h2>Interface Implementation</h2>
+<h3>IDevelopment_Initialise</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub IDevelopment_Initialise(ByVal devSheet As Worksheet, Optional ByVal codeSheet As Worksheet)
+</code></pre>
+<p>Delegated members that satisfy the IDevelopment contract.
+See the corresponding Public members above for full documentation.</p>
+<hr />
+</details>
+<details>
+<summary>Used in (10 file(s))</summary>
+<ul>
+<li><a href="src/classes/designer/DesignerPreparation.cls">DesignerPreparation.cls</a></li>
+<li><a href="src/classes/designer/IDesignerPreparation.cls">IDesignerPreparation.cls</a></li>
+<li><a href="src/classes/dev/Development.cls">Development.cls</a></li>
+<li><a href="src/classes/dev/IDevelopment.cls">IDevelopment.cls</a></li>
+<li><a href="src/classes/setup/ISetupPreparation.cls">ISetupPreparation.cls</a></li>
+<li><a href="src/classes/setup/SetupPreparation.cls">SetupPreparation.cls</a></li>
+<li><a href="src/modules/dev/RibbonDev.bas">RibbonDev.bas</a></li>
+<li><a href="src/modules/mastersetup/MasterSetupHelpers.bas">MasterSetupHelpers.bas</a></li>
+<li><a href="src/tests/modules/dev/TestDevelopment.bas">TestDevelopment.bas</a></li>
+<li><a href="src/tests/modules/setup/TestSetupPreparation.bas">TestSetupPreparation.bas</a></li>
+</ul>
+</details>
+
+  </main>
+</body>
+</html>
+

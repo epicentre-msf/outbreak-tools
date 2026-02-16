@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SectionBuilder - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>SectionBuilder</h1>
+<p>Builds all sections, subsections, and variables for a single linelist
+worksheet. Given a sheet name and dictionary start row, the builder
+scans the dictionary for matching rows, groups them by section and
+subsection, delegates variable writing to VarWriter, and applies
+merged-cell section and subsection header formatting. Supports both
+HList (horizontal) and VList (vertical) layouts via the layer byte.</p>
+<p><strong>Depends on:</strong> <a href="ILinelistSpecs.html">ILinelistSpecs</a>, <a href="ILLdictionary.html">ILLdictionary</a>, <a href="ILLVariables.html">ILLVariables</a>, <a href="ILLFormat.html">ILLFormat</a>, <a href="IDropdownLists.html">IDropdownLists</a>, <a href="VarWriter.html">VarWriter</a>, <a href="LLVariables.html">LLVariables</a>, Row/column constants for section and subsection headers</p>
+<p><strong>Version:</strong> 1.0 (2026-02-10)</p>
+<h2>Instantiation</h2>
+<h3>create</h3>
+<p><strong>Create a new SectionBuilder instance</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create(ByVal layer As Byte, _
+                       ByVal specs As ILinelistSpecs, _
+                       ByVal wksh As Worksheet, _
+                       Optional ByVal printWksh As Worksheet = Nothing, _
+                       Optional ByVal crfWksh As Worksheet = Nothing, _
+                       Optional ByVal dropdownObj As IDropdownLists = Nothing, _
+                       Optional ByVal customDropdownObj As IDropdownLists = Nothing) As ISectionBuilder
+</code></pre>
+<p>Factory method on the predeclared instance. Validates that specs and
+wksh are not Nothing, then initialises a new SectionBuilder with the
+given layer, specifications, and optional companion worksheets and
+dropdown managers. Returns the instance through the ISectionBuilder
+interface.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>layer</code>: Byte. SectionBuilderMode enum value (HList=1, VList=2).</li>
+<li><code>specs</code>: ILinelistSpecs. The linelist specifications object.</li>
+<li><code>wksh</code>: Worksheet. The target main worksheet.</li>
+<li><code>printWksh</code>: Optional Worksheet. Printed companion worksheet (HList only).</li>
+<li><code>crfWksh</code>: Optional Worksheet. CRF companion worksheet (HList only).</li>
+<li><code>dropdownObj</code>: Optional IDropdownLists. Dropdown lists manager.</li>
+<li><code>customDropdownObj</code>: Optional IDropdownLists. Custom dropdown lists manager.</li>
+</ul>
+<p><strong>Returns:</strong> ISectionBuilder. A fully initialised instance ready for use.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>VbObjectError+516 When specs or wksh is Nothing.</li>
+</ul>
+<hr />
+<h2>Entry Point</h2>
+<h3>build</h3>
+<p><strong>Build all sections, subsections, and variables for a sheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Build(ByVal sheetName As String, ByVal startRow As Long)
+</code></pre>
+<p>Scans the dictionary for rows matching sheetName starting from
+startRow. Groups consecutive rows by their &quot;main section&quot; column value,
+then delegates to BuildSubSections for subsection grouping and variable
+writing. After all variables in a section are written, applies
+merged-cell section header formatting via FormatSection. Stops when the
+sheet name changes or the dictionary ends.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetName</code>: String. The sheet name as it appears in the dictionary &quot;sheet name&quot; column.</li>
+<li><code>startRow</code>: Long. The first data row index in the dictionary for this sheet (1-based).</li>
+</ul>
+<hr />
+<details>
+<summary>Internal members (not exported)</summary>
+<h2>Instantiation</h2>
+<h3>self</h3>
+<p><strong>Current object instance</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Self() As ISectionBuilder
+</code></pre>
+<p>Returns the current instance cast to the ISectionBuilder interface,
+used by the Create factory to return the newly built object.</p>
+<p><strong>Returns:</strong> ISectionBuilder. The current instance.</p>
+<hr />
+<h2>Internal Setters</h2>
+<h3>internal-layer</h3>
+<p><strong>Assign the layer mode</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Let InternalLayer(ByVal layer As Byte)
+</code></pre>
+<p>Properties used by the factory only during instantiation.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>layer</code>: Byte. SectionBuilderMode enum value.</li>
+</ul>
+<hr />
+<h3>internal-specs</h3>
+<p><strong>Assign the linelist specifications</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Set InternalSpecs(ByVal specs As ILinelistSpecs)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>specs</code>: ILinelistSpecs. The specifications object.</li>
+</ul>
+<hr />
+<h3>internal-wksh</h3>
+<p><strong>Assign the target main worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Set InternalWksh(ByVal wksh As Worksheet)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>wksh</code>: Worksheet. The main worksheet to build on.</li>
+</ul>
+<hr />
+<h3>internal-print-wksh</h3>
+<p><strong>Assign the printed companion worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Set InternalPrintWksh(ByVal wksh As Worksheet)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>wksh</code>: Worksheet. The printed companion worksheet.</li>
+</ul>
+<hr />
+<h3>internal-crf-wksh</h3>
+<p><strong>Assign the CRF companion worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Set InternalCRFWksh(ByVal wksh As Worksheet)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>wksh</code>: Worksheet. The CRF companion worksheet.</li>
+</ul>
+<hr />
+<h3>internal-dropdown</h3>
+<p><strong>Assign the dropdown lists manager</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Set InternalDropdown(ByVal dropdownObj As IDropdownLists)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>dropdownObj</code>: IDropdownLists. The dropdown manager.</li>
+</ul>
+<hr />
+<h3>internal-custom-dropdown</h3>
+<p><strong>Assign the custom dropdown lists manager</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Set InternalCustomDropdown(ByVal dropdownObj As IDropdownLists)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>dropdownObj</code>: IDropdownLists. The custom dropdown manager.</li>
+</ul>
+<hr />
+<h2>Cached Accessors</h2>
+<h3>dictionary</h3>
+<p><strong>Lazy-loaded dictionary accessor</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get Dictionary() As ILLdictionary
+</code></pre>
+<p>Lazy-loaded accessors for frequently used dependency objects.
+Returns the cached ILLdictionary instance. On first access, retrieves
+it from the specifications object and caches it for subsequent calls.</p>
+<p><strong>Returns:</strong> ILLdictionary. The linelist dictionary.</p>
+<hr />
+<h3>variables</h3>
+<p><strong>Lazy-loaded variables accessor</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get Variables() As ILLVariables
+</code></pre>
+<p>Returns the cached ILLVariables instance. On first access, creates it
+from the dictionary via LLVariables.Create and caches it.</p>
+<p><strong>Returns:</strong> ILLVariables. The variables helper for dictionary lookups.</p>
+<hr />
+<h3>design-format</h3>
+<p><strong>Design format accessor</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get DesignFormat() As ILLFormat
+</code></pre>
+<p><strong>Returns:</strong> ILLFormat. The formatting object from the specifications.</p>
+<hr />
+<h2>Section Boundary Detection</h2>
+<h3>find-section-end</h3>
+<p><strong>Find the last row of a section</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function FindSectionEnd(ByVal startRow As Long, _
+                                 ByVal sectionName As String, _
+                                 ByVal sheetName As String, _
+                                 ByVal sectionRng As Range, _
+                                 ByVal sheetRng As Range, _
+                                 ByVal dataEndRow As Long) As Long
+</code></pre>
+<p>Starting from startRow, scans forward until the section name or sheet
+name changes, then returns the row just before the change. When the
+end of the data range is reached without a change, returns the last
+data row.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>startRow</code>: Long. The row to start scanning from.</li>
+<li><code>sectionName</code>: String. The current section name to match.</li>
+<li><code>sheetName</code>: String. The current sheet name to match.</li>
+<li><code>sectionRng</code>: Range. The &quot;main section&quot; data column range.</li>
+<li><code>sheetRng</code>: Range. The &quot;sheet name&quot; data column range.</li>
+<li><code>dataEndRow</code>: Long. The last row of data in the dictionary.</li>
+</ul>
+<p><strong>Returns:</strong> Long. The 1-based row index of the last row in the section.</p>
+<hr />
+<h2>Subsection Processing</h2>
+<h3>build-sub-sections</h3>
+<p><strong>Build all subsections within a section range</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub BuildSubSections(ByVal sectionStart As Long, _
+                              ByVal sectionEnd As Long, _
+                              ByVal sheetName As String)
+</code></pre>
+<p>Iterates through dictionary rows from sectionStart to sectionEnd,
+grouping consecutive rows by the &quot;sub section&quot; column value. For each
+subsection group, delegates variable writing to BuildVariables and then
+applies subsection header formatting via FormatSubSection.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sectionStart</code>: Long. The first row of the section.</li>
+<li><code>sectionEnd</code>: Long. The last row of the section.</li>
+<li><code>sheetName</code>: String. The current sheet name.</li>
+</ul>
+<hr />
+<h3>find-sub-section-end</h3>
+<p><strong>Find the last row of a subsection</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function FindSubSectionEnd(ByVal startRow As Long, _
+                                    ByVal subSectionName As String, _
+                                    ByVal sectionName As String, _
+                                    ByVal sheetName As String, _
+                                    ByVal subSectionRng As Range, _
+                                    ByVal sectionRng As Range, _
+                                    ByVal sheetRng As Range, _
+                                    ByVal maxRow As Long) As Long
+</code></pre>
+<p>Starting from startRow, scans forward until the subsection name,
+section name, or sheet name changes, then returns the row just before
+the change. Constrained by maxRow (the section boundary).</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>startRow</code>: Long. The row to start scanning from.</li>
+<li><code>subSectionName</code>: String. The current subsection name to match.</li>
+<li><code>sectionName</code>: String. The current section name to match.</li>
+<li><code>sheetName</code>: String. The current sheet name to match.</li>
+<li><code>subSectionRng</code>: Range. The &quot;sub section&quot; data column range.</li>
+<li><code>sectionRng</code>: Range. The &quot;main section&quot; data column range.</li>
+<li><code>sheetRng</code>: Range. The &quot;sheet name&quot; data column range.</li>
+<li><code>maxRow</code>: Long. The last row of the enclosing section.</li>
+</ul>
+<p><strong>Returns:</strong> Long. The 1-based row index of the last row in the subsection.</p>
+<hr />
+<h2>Variable Building</h2>
+<h3>build-variables</h3>
+<p><strong>Build all variables within a subsection range</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub BuildVariables(ByVal subSecStart As Long, ByVal subSecEnd As Long)
+</code></pre>
+<p>Creates a single VarWriter instance configured with the current layer,
+specifications, worksheets, and dropdown managers, then iterates from
+subSecStart to subSecEnd, calling WriteVariable for each variable name
+found in the dictionary. Reusing one VarWriter across the subsection
+avoids repeated factory overhead.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>subSecStart</code>: Long. The first dictionary row of the subsection.</li>
+<li><code>subSecEnd</code>: Long. The last dictionary row of the subsection.</li>
+</ul>
+<p><strong>Depends on:</strong></p>
+<ul>
+<li>VarWriter</li>
+</ul>
+<hr />
+<h2>Section Formatting</h2>
+<h3>format-section</h3>
+<p><strong>Format a section header</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub FormatSection(ByVal sectionName As String, _
+                           ByVal startRow As Long, _
+                           ByVal endRow As Long, _
+                           ByVal sheetName As String)
+</code></pre>
+<p>Dispatches to FormatHListSection or FormatVListSection based on the
+current layer. Resolves the first and last variable names for the
+section range to calculate column or row indices for the merged header.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sectionName</code>: String. The section title to display.</li>
+<li><code>startRow</code>: Long. The first dictionary row of the section.</li>
+<li><code>endRow</code>: Long. The last dictionary row of the section.</li>
+<li><code>sheetName</code>: String. The current sheet name.</li>
+</ul>
+<hr />
+<h3>format-hlist-section</h3>
+<p><strong>Format an HList section header</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub FormatHListSection(ByVal sectionName As String, _
+                                ByVal firstVarName As String, _
+                                ByVal lastVarName As String, _
+                                ByVal sheetName As String)
+</code></pre>
+<p>Merges cells horizontally across the column range at HLIST_SEC_ROW on
+the main sheet, writes the section name, and applies HListSection
+formatting. Repeats for the printed companion when available. Also
+writes a CRF section header when a CRF worksheet is present, using the
+first variable's &quot;crf index&quot; to calculate the CRF row offset.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sectionName</code>: String. The section title to display.</li>
+<li><code>firstVarName</code>: String. The first variable name in the section.</li>
+<li><code>lastVarName</code>: String. The last variable name in the section.</li>
+<li><code>sheetName</code>: String. The current sheet name.</li>
+</ul>
+<hr />
+<h3>format-vlist-section</h3>
+<p><strong>Format a VList section header</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub FormatVListSection(ByVal sectionName As String, _
+                                ByVal firstVarName As String, _
+                                ByVal lastVarName As String, _
+                                ByVal sheetName As String)
+</code></pre>
+<p>Merges cells vertically across the row range at VLIST_SEC_COL on the
+main sheet, writes the section name, and applies VListSection
+formatting. No companion sheets are involved for VList layers.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sectionName</code>: String. The section title to display.</li>
+<li><code>firstVarName</code>: String. The first variable name in the section.</li>
+<li><code>lastVarName</code>: String. The last variable name in the section.</li>
+<li><code>sheetName</code>: String. The current sheet name.</li>
+</ul>
+<hr />
+<h2>Subsection Formatting</h2>
+<h3>format-sub-section</h3>
+<p><strong>Format a subsection header</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub FormatSubSection(ByVal subSectionName As String, _
+                              ByVal startRow As Long, _
+                              ByVal endRow As Long, _
+                              ByVal sheetName As String)
+</code></pre>
+<p>Dispatches to FormatHListSubSection or FormatVListSubSection based on
+the current layer.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>subSectionName</code>: String. The subsection title to display.</li>
+<li><code>startRow</code>: Long. The first dictionary row of the subsection.</li>
+<li><code>endRow</code>: Long. The last dictionary row of the subsection.</li>
+<li><code>sheetName</code>: String. The current sheet name.</li>
+</ul>
+<hr />
+<h3>format-hlist-sub-section</h3>
+<p><strong>Format an HList subsection header</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub FormatHListSubSection(ByVal subSectionName As String, _
+                                   ByVal startRow As Long, _
+                                   ByVal endRow As Long, _
+                                   ByVal sheetName As String)
+</code></pre>
+<p>Merges cells horizontally across the column range at HLIST_SUBSEC_ROW
+on the main sheet, writes the subsection name, and applies
+HListSubSection formatting. Repeats for the printed companion when
+available. Also writes a CRF subsection header when a CRF worksheet
+is present.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>subSectionName</code>: String. The subsection title to display.</li>
+<li><code>startRow</code>: Long. The first dictionary row of the subsection.</li>
+<li><code>endRow</code>: Long. The last dictionary row of the subsection.</li>
+<li><code>sheetName</code>: String. The current sheet name.</li>
+</ul>
+<hr />
+<h3>format-vlist-sub-section</h3>
+<p><strong>Format a VList subsection header</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub FormatVListSubSection(ByVal subSectionName As String, _
+                                   ByVal startRow As Long, _
+                                   ByVal endRow As Long, _
+                                   ByVal sheetName As String)
+</code></pre>
+<p>Merges cells vertically across the row range at VLIST_SUBSEC_COL on
+the main sheet, writes the subsection name, and applies
+VListSubSection formatting.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>subSectionName</code>: String. The subsection title to display.</li>
+<li><code>startRow</code>: Long. The first dictionary row of the subsection.</li>
+<li><code>endRow</code>: Long. The last dictionary row of the subsection.</li>
+<li><code>sheetName</code>: String. The current sheet name.</li>
+</ul>
+<hr />
+<h2>Error Handling</h2>
+<h3>throw-error</h3>
+<p><strong>Raise an error with the class name as source</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowError(ByVal errorMessage As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>errorMessage</code>: String. Human-readable description of the failure.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>VbObjectError+516 Always raises the specified error.</li>
+</ul>
+<hr />
+<h2>Interface Implementation</h2>
+<h3>ISectionBuilder_Build</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ISectionBuilder_Build(ByVal sheetName As String, ByVal startRow As Long)
+</code></pre>
+<p>Delegated members satisfying the ISectionBuilder contract.</p>
+<hr />
+</details>
+<details>
+<summary>Used in (4 file(s))</summary>
+<ul>
+<li><a href="src/classes/linelist/ListBuilder.cls">ListBuilder.cls</a></li>
+<li><a href="src/classes/sections/ISectionBuilder.cls">ISectionBuilder.cls</a></li>
+<li><a href="src/classes/sections/SectionBuilder.cls">SectionBuilder.cls</a></li>
+<li><a href="src/tests/modules/sections/TestSectionBuilder.bas">TestSectionBuilder.bas</a></li>
+</ul>
+</details>
+
+  </main>
+</body>
+</html>
+

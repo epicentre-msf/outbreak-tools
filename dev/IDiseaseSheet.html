@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IDiseaseSheet - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>IDiseaseSheet</h1>
+<h2>Configuration</h2>
+<h3>Initialise</h3>
+<p><strong>Configure builder dependencies.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Initialise(ByVal hostWorkbook As Workbook, _
+                      ByVal dropdowns As IDropdownLists, _
+                      ByVal translations As ITranslationObject, _
+                      ByVal varObj As IMasterSetupVariables)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>hostWorkbook</code>: Workbook where disease sheets are created.</li>
+<li><code>dropdowns</code>: IDropdownLists providing data validation helpers.</li>
+<li><code>translations</code>: ITranslationObject supplying translated labels.</li>
+</ul>
+<hr />
+<h2>Worksheet Construction</h2>
+<h3>Build</h3>
+<p><strong>Create a disease worksheet populated with metadata, headers, and validations.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Build(ByVal diseaseName As String, _
+                      Optional ByVal languageTag As String = vbNullString) As Worksheet
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>diseaseName</code>: String worksheet name to create.</li>
+<li><code>diseaseIndex</code>: Long sequential index used for names and counters.</li>
+<li><code>languageTag</code>: Optional String initial language value; defaults to translated prompt.</li>
+<li><code>options</code>: Optional Dictionary-like BetterArray containing overrides (languageList, statusList, etc.).</li>
+</ul>
+<p><strong>Returns:</strong> Worksheet freshly created and formatted.</p>
+<hr />
+<h2>Maintenance</h2>
+<h3>Reset</h3>
+<p><strong>Reset cached state so the builder can be reused safely.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Reset()
+</code></pre>
+<hr />
+
+  </main>
+</body>
+</html>
+

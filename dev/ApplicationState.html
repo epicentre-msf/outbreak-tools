@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ApplicationState - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>ApplicationState</h1>
+<p>Cell-based guard that snapshots Excel Application settings before
+entering a locked-down busy mode and restores them afterwards.
+Handles ScreenUpdating, DisplayAlerts, Calculation, EnableAnimations,
+EnableEvents, AutomationSecurity, cursor, and CalculateBeforeSave.</p>
+<p><strong>Depends on:</strong> ProjectError</p>
+<p><strong>Version:</strong> 1.0 (2026-02-09)</p>
+<h2>Factory</h2>
+<h3>create</h3>
+<p><strong>Factory returning an initialised interface</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create(Optional ByVal excelApplication As Application) As IApplicationState
+</code></pre>
+<p>Captures the current application state immediately so callers can
+switch to busy mode without an additional call.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>excelApplication</code>: Application. Target application. Defaults to Excel.Application.</li>
+</ul>
+<p><strong>Returns:</strong> IApplicationState. Ready to use.</p>
+<hr />
+<h2>Core Logic</h2>
+<h3>apply-busy-state</h3>
+<p><strong>Apply the busy state to the target application</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ApplyBusyStateCore(Optional ByVal suppressEvents As Boolean = False, _
+                               Optional ByVal calculateOnSave As Boolean = True, _
+                               Optional ByVal busyCursor As Long = 0, _
+                               Optional ByVal blockSecurity As Boolean = False)
+</code></pre>
+<p>Switches the target Excel Application into a locked-down mode for heavy
+operations: disables screen updating, alerts, automatic calculation, and
+optionally suppresses events and blocks automation security.  Does nothing
+when the scope is already busy.  On failure the busy flag is cleared and a
+ProjectError is raised so the caller can attempt recovery.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>suppressEvents</code>: Optional Boolean. When True, disables Application.EnableEvents. Defaults to False.</li>
+<li><code>calculateOnSave</code>: Optional Boolean. Value assigned to CalculateBeforeSave. Defaults to True.</li>
+<li><code>busyCursor</code>: Optional Long. Cursor shown while busy. When 0 (default), leaves cursor unchanged.</li>
+<li><code>blockSecurity</code>: Optional Boolean. When True, forces msoAutomationSecurityForceDisable. Defaults to False.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ErrorUnexpectedState When the application settings cannot be applied.</li>
+</ul>
+<hr />
+<h3>refresh-snapshot</h3>
+<p><strong>Re-capture the snapshot from the current application state</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RefreshSnapshotCore()
+</code></pre>
+<hr />
+<h3>restore</h3>
+<p><strong>Restore all captured settings to the application</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RestoreInternal(ByVal silent As Boolean)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>silent</code>: Boolean. When True, swallows errors instead of raising them.</li>
+</ul>
+<hr />
+<details>
+<summary>Internal members (not exported)</summary>
+<h2>Factory</h2>
+<h3>self</h3>
+<p><strong>Self-reference as IApplicationState</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Self() As IApplicationState
+</code></pre>
+<p><strong>Returns:</strong> IApplicationState. Self-reference.</p>
+<hr />
+<h2>Introspection</h2>
+<h3>application-object</h3>
+<p><strong>Application reference currently guarded</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ApplicationObject() As Application
+</code></pre>
+<p><strong>Returns:</strong> Application. The Excel Application instance.</p>
+<hr />
+<h3>is-busy</h3>
+<p><strong>Whether the busy state is currently active</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get IsBusy() As Boolean
+</code></pre>
+<p><strong>Returns:</strong> Boolean. True when ApplyBusyState has been invoked without a matching Restore.</p>
+<hr />
+<h3>has-snapshot</h3>
+<p><strong>Whether a snapshot exists and restoration is possible</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get HasSnapshot() As Boolean
+</code></pre>
+<p><strong>Returns:</strong> Boolean. True when a snapshot has been captured.</p>
+<hr />
+<h2>Internal Workflow</h2>
+<h3>bind-application</h3>
+<p><strong>Bind a target application</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Friend Sub BindApplication(ByVal excelApplication As Application)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>excelApplication</code>: Application. The Excel Application to guard.</li>
+</ul>
+<hr />
+<h3>capture-snapshot</h3>
+<p><strong>Capture current application settings</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Friend Sub CaptureSnapshot()
+</code></pre>
+<hr />
+<h2>Core Logic</h2>
+<h3>capture-snapshot-core</h3>
+<p><strong>Capture all application settings into the snapshot</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub CaptureSnapshotCore()
+</code></pre>
+<hr />
+<h3>target-application</h3>
+<p><strong>Resolve the Excel Application reference</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function TargetApplication() As Application
+</code></pre>
+<p><strong>Returns:</strong> Application. The guarded Application instance.</p>
+<hr />
+<h3>ensure-snapshot</h3>
+<p><strong>Guard that a snapshot exists before proceeding</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureSnapshot(ByVal operationName As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>operationName</code>: String. Name of the calling operation for error messages.</li>
+</ul>
+<hr />
+<h3>ensure-not-busy</h3>
+<p><strong>Guard that the scope is not busy before proceeding</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureNotBusy(ByVal operationName As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>operationName</code>: String. Name of the calling operation for error messages.</li>
+</ul>
+<hr />
+<h3>safe-set-enable-animations</h3>
+<p><strong>Set EnableAnimations with graceful fallback on unsupported platforms</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub SafeSetEnableAnimations(ByVal target As Application, ByVal value As Boolean)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>target</code>: Application. The Excel Application instance.</li>
+<li><code>value</code>: Boolean. The desired EnableAnimations state.</li>
+</ul>
+<hr />
+<h3>try-read-enable-animations</h3>
+<p><strong>Attempt to read EnableAnimations from the target application</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function TryReadEnableAnimations(ByVal target As Application, _
+                                         ByRef value As Boolean) As Boolean
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>target</code>: Application. The Excel Application instance.</li>
+<li><code>value</code>: Boolean. ByRef. Receives the current EnableAnimations value on success.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the property was read successfully.</p>
+<hr />
+<h3>throw-error</h3>
+<p><strong>Raise a typed project error</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal message As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>errNumber</code>: ProjectError. The error code.</li>
+<li><code>message</code>: String. Descriptive error message.</li>
+</ul>
+<hr />
+</details>
+<details>
+<summary>Used in (20 file(s))</summary>
+<ul>
+<li><a href="src/classes/dataio/ExportButton.cls">ExportButton.cls</a></li>
+<li><a href="src/classes/general/ApplicationState.cls">ApplicationState.cls</a></li>
+<li><a href="src/classes/general/IApplicationState.cls">IApplicationState.cls</a></li>
+<li><a href="src/classes/linelist/LinelistSpecs.cls">LinelistSpecs.cls</a></li>
+<li><a href="src/classes/mastersetup/MasterSetupPreparation.cls">MasterSetupPreparation.cls</a></li>
+<li><a href="src/classes/setup/ISetupErrors.cls">ISetupErrors.cls</a></li>
+<li><a href="src/classes/setup/ISetupTranslationsTable.cls">ISetupTranslationsTable.cls</a></li>
+<li><a href="src/classes/setup/SetupErrors.cls">SetupErrors.cls</a></li>
+<li><a href="src/classes/setup/SetupImportService.cls">SetupImportService.cls</a></li>
+<li><a href="src/classes/setup/SetupTranslationsTable.cls">SetupTranslationsTable.cls</a></li>
+<li><a href="src/modules/dataio/FormLogicAdvanced.bas">FormLogicAdvanced.bas</a></li>
+<li><a href="src/modules/dataio/FormLogicExportMig.bas">FormLogicExportMig.bas</a></li>
+<li><a href="src/modules/designer/EventsDesignerAdvanced.bas">EventsDesignerAdvanced.bas</a></li>
+<li><a href="src/modules/designer/EventsDesignerCore.bas">EventsDesignerCore.bas</a></li>
+<li><a href="src/modules/mastersetup/EventsMasterSetupRibbon.bas">EventsMasterSetupRibbon.bas</a></li>
+<li><a href="src/modules/mastersetup/MasterSetupHelpers.bas">MasterSetupHelpers.bas</a></li>
+<li><a href="src/modules/setup/ImportForm.bas">ImportForm.bas</a></li>
+<li><a href="src/modules/setup/SetupEventsManager.bas">SetupEventsManager.bas</a></li>
+<li><a href="src/tests/modules/general/TestApplicationState.bas">TestApplicationState.bas</a></li>
+<li><a href="src/tests/modules/general/TestPasswords.bas">TestPasswords.bas</a></li>
+</ul>
+</details>
+
+  </main>
+</body>
+</html>
+

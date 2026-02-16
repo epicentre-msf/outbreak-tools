@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Checking - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>Checking</h1>
+<p>Stores a collection of diagnostic messages, each tagged with a unique
+key, a label, and a severity scope (Error, Warning, Info, Note, or
+Success). Checking objects serve as lightweight log containers that
+other classes populate during validation or build processes. The entries
+are stored in three parallel BetterArray tables (keys, labels, scopes).
+Presentation to a worksheet is handled by the separate CheckingOutput
+class.</p>
+<p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a></p>
+<p><strong>Version:</strong> 1.0 (2026-02-09)</p>
+<h2>Factory</h2>
+<h3>create</h3>
+<p><strong>Create a Checking instance for logging diagnostic messages</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create(ByVal titleName As String, _
+                       Optional ByVal subtitleName As String = vbNullString) As _
+</code></pre>
+<p>Entry point for creating Checking instances.
+Checking objects are collections of messages tagged with a scope
+(Error, Warning, Info, Note, or Success) for logging purposes. The
+entries are stored in three parallel BetterArray tables (keys, labels,
+scopes). Checkings must have a title identifying the topic. Optionally,
+a subtitle provides further context. Titles and subtitles are used
+when printing the messages to a worksheet via CheckingOutput.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>titleName</code>: String. Title of the checkings topic.</li>
+<li><code>subtitleName</code>: Optional String. Subtitle of the checkings. Defaults to vbNullString.</li>
+</ul>
+<p><strong>Returns:</strong> IChecking. A ready-to-use Checking instance.</p>
+<p><strong>Depends on:</strong></p>
+<ul>
+<li>BetterArray</li>
+</ul>
+<hr />
+<h2>Elements</h2>
+<h3>name</h3>
+<p><strong>Name of the checking object</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get Name() As String
+</code></pre>
+<p>Read-only metadata properties exposed through the interface.
+Returns the checking title as the object name. Used for identification
+in output and presentation contexts.</p>
+<p><strong>Returns:</strong> String. The checking title.</p>
+<hr />
+<h3>heading</h3>
+<p><strong>Title or subtitle of the checking object</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get Heading(Optional ByVal subtitle As Boolean = False) As String
+</code></pre>
+<p>Returns the subtitle when the subtitle flag is True, otherwise returns
+the title. Used by CheckingOutput for heading display.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>subtitle</code>: Optional Boolean. When True, returns the subtitle. Defaults to False.</li>
+</ul>
+<p><strong>Returns:</strong> String. The title or subtitle.</p>
+<hr />
+<h3>length</h3>
+<p><strong>Total number of entries in the checking</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get Length() As Long
+</code></pre>
+<p>Returns the count of diagnostic messages stored in the parallel arrays.</p>
+<p><strong>Returns:</strong> Long. Number of entries.</p>
+<hr />
+<h2>Keys</h2>
+<h3>list-of-keys</h3>
+<p><strong>Get the list of keys in the checking</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get ListOfKeys() As BetterArray
+</code></pre>
+<p>Key lookup and enumeration.
+Returns a clone of the internal keys BetterArray. When the keys table
+is uninitialised, creates an empty BetterArray with LowerBound 1.</p>
+<p><strong>Returns:</strong> BetterArray. Clone of stored keys.</p>
+<hr />
+<h3>key-exists</h3>
+<p><strong>Test whether a key is present in the checking</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function KeyExists(ByVal keyName As String) As Boolean
+</code></pre>
+<p>Searches the keys BetterArray for the specified key name. Returns
+False immediately for empty strings.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>keyName</code>: String. Key to search for.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the key is found.</p>
+<hr />
+<h2>InputOutput</h2>
+<h3>add</h3>
+<p><strong>Add a new entry to the checking</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Add(ByVal keyName As String, ByVal label As String, _
+                Optional ByVal scope As Byte = checkingNote)
+</code></pre>
+<p>Adding, retrieving, cloning, and appending diagnostic entries.
+Adds a key, the corresponding label, and the scope to the checking.
+Keys must be unique; duplicate keys raise an error. On first call,
+initialises the three parallel BetterArray tables.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>keyName</code>: String. Unique identifier for the entry.</li>
+<li><code>label</code>: String. Diagnostic message for the entry.</li>
+<li><code>scope</code>: Optional Byte. Severity scope (checkingError, checkingWarning, etc.). Defaults to checkingNote.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ElementShouldNotExists When the key already exists.</li>
+</ul>
+<hr />
+<h3>value-of</h3>
+<p><strong>Retrieve a property of one specific key</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb"> Private Property Get ValueOf(ByVal keyName As String, Optional ByVal retrievedValue As Byte = 1) As String
+</code></pre>
+<p>Returns the label, the type descriptor (with icon), or the colour
+string for the specified key depending on the retrievedValue selector.
+Raises an error when the key does not exist.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>keyName</code>: String. Key from which to retrieve values.</li>
+<li><code>retrievedValue</code>: Optional Byte. CheckingValue enum selector. Defaults to checkingLabel.</li>
+</ul>
+<p><strong>Returns:</strong> String. The requested property value.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ElementShouldExists When the key is not found.</li>
+</ul>
+<hr />
+<h3>clone</h3>
+<p><strong>Produce a deep copy of the current checking entries</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function Clone() As IChecking
+</code></pre>
+<p>Creates a new Checking instance with the same title, subtitle, and
+logged entries. Required so that flushing a checking into another
+container does not keep a live reference to the current object.</p>
+<p><strong>Returns:</strong> IChecking. Independent clone.</p>
+<hr />
+<h3>append</h3>
+<p><strong>Append entries from another checking to the current one</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub Append(ByVal checks As IChecking)
+</code></pre>
+<p>Iterates through the supplied IChecking entries and adds each one
+to the current checking. Silently exits when the supplied checking
+is Nothing or empty.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>checks</code>: IChecking. Source checking to merge from.</li>
+</ul>
+<hr />
+<details>
+<summary>Internal members (not exported)</summary>
+<h2>PublicAccessors</h2>
+<h3>self</h3>
+<p><strong>Current object instance</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Self() As IChecking
+</code></pre>
+<p>Properties that expose internal state and the interface pointer.
+Returns the current instance cast to its interface. Used internally
+by the factory method to return an IChecking reference.</p>
+<p><strong>Returns:</strong> IChecking. Reference to the current object.</p>
+<hr />
+<h3>checking-title</h3>
+<p><strong>Title of the checking topic</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get CheckingTitle() As String
+</code></pre>
+<p>Returns the title string assigned during creation or via the setter.</p>
+<p><strong>Returns:</strong> String. Title of the checkings.</p>
+<hr />
+<h3>checking-subtitle</h3>
+<p><strong>Subtitle of the checking topic</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get CheckingSubTitle() As String
+</code></pre>
+<p>Returns the subtitle string assigned during creation or via the setter.</p>
+<p><strong>Returns:</strong> String. Subtitle of the checkings.</p>
+<hr />
+<h3>checking-title-set</h3>
+<p><strong>Assign the checking title</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Let CheckingTitle(ByVal titleName As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>titleName</code>: String. Title to assign.</li>
+</ul>
+<hr />
+<h3>checking-subtitle-set</h3>
+<p><strong>Assign the checking subtitle</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Let CheckingSubTitle(ByVal subtitleName As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>subtitleName</code>: String. Subtitle to assign.</li>
+</ul>
+<hr />
+<h2>Helpers</h2>
+<h3>scope-from-type-label</h3>
+<p><strong>Convert a type label string back to its CheckingScope byte value</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ScopeFromTypeLabel(ByVal typeLabel As String) As Byte
+</code></pre>
+<p>Private utility methods.
+Parses the human-readable type label (e.g. &quot;Error&quot;, &quot;Warning&quot;) and
+returns the corresponding CheckingScope enum value. Defaults to
+checkingNote when no match is found.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>typeLabel</code>: String. Human-readable type label.</li>
+</ul>
+<p><strong>Returns:</strong> Byte. CheckingScope value.</p>
+<hr />
+<h2>ErrorHandling</h2>
+<h3>throw-error</h3>
+<p><strong>Raise a VBA error with the class signature</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
+</code></pre>
+<p>Centralised error-raising pattern.
+Wrapper around Err.Raise that standardises the source to CLASSNAME
+for consistent stack traces.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>errNumb</code>: Long. ProjectError code.</li>
+<li><code>errorMessage</code>: String. Descriptive message.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.<varies> Always raises the specified error.</li>
+</ul>
+<hr />
+<h2>Interface</h2>
+<h3>IChecking_Name</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get IChecking_Name() As String
+</code></pre>
+<p>Delegated members satisfying the IChecking contract.</p>
+<hr />
+</details>
+<details>
+<summary>Used in (46 file(s))</summary>
+<ul>
+<li><a href="src/classes/analyses/Analysis.cls">Analysis.cls</a></li>
+<li><a href="src/classes/analyses/IAnalysis.cls">IAnalysis.cls</a></li>
+<li><a href="src/classes/dictionary/ILLExport.cls">ILLExport.cls</a></li>
+<li><a href="src/classes/dictionary/ILLVariables.cls">ILLVariables.cls</a></li>
+<li><a href="src/classes/dictionary/LLdictionary.cls">LLdictionary.cls</a></li>
+<li><a href="src/classes/dictionary/LLExport.cls">LLExport.cls</a></li>
+<li><a href="src/classes/dictionary/LLVariables.cls">LLVariables.cls</a></li>
+<li><a href="src/classes/formulas/FormulaCondition.cls">FormulaCondition.cls</a></li>
+<li><a href="src/classes/formulas/Formulas.cls">Formulas.cls</a></li>
+<li><a href="src/classes/formulas/IFormulaCondition.cls">IFormulaCondition.cls</a></li>
+<li><a href="src/classes/formulas/IFormulas.cls">IFormulas.cls</a></li>
+<li><a href="src/classes/general/Buttons.cls">Buttons.cls</a></li>
+<li><a href="src/classes/general/Checking.cls">Checking.cls</a></li>
+<li><a href="src/classes/general/CheckingOutput.cls">CheckingOutput.cls</a></li>
+<li><a href="src/classes/general/CustomTable.cls">CustomTable.cls</a></li>
+<li><a href="src/classes/general/DataSheet.cls">DataSheet.cls</a></li>
+<li><a href="src/classes/general/DropdownLists.cls">DropdownLists.cls</a></li>
+<li><a href="src/classes/general/IChecking.cls">IChecking.cls</a></li>
+<li><a href="src/classes/general/ICheckingOutput.cls">ICheckingOutput.cls</a></li>
+<li><a href="src/classes/general/ICustomTable.cls">ICustomTable.cls</a></li>
+<li><a href="src/classes/general/IDataSheet.cls">IDataSheet.cls</a></li>
+<li><a href="src/classes/general/IDropdownLists.cls">IDropdownLists.cls</a></li>
+<li><a href="src/classes/general/ILLChoices.cls">ILLChoices.cls</a></li>
+<li><a href="src/classes/general/ILLFormat.cls">ILLFormat.cls</a></li>
+<li><a href="src/classes/general/IPasswords.cls">IPasswords.cls</a></li>
+<li><a href="src/classes/general/LLChoices.cls">LLChoices.cls</a></li>
+<li><a href="src/classes/general/LLFormat.cls">LLFormat.cls</a></li>
+<li><a href="src/classes/general/Passwords.cls">Passwords.cls</a></li>
+<li><a href="src/classes/general/TranslationObject.cls">TranslationObject.cls</a></li>
+<li><a href="src/classes/graphs/Graphs.cls">Graphs.cls</a></li>
+<li><a href="src/classes/rubberduck/CustomTest.cls">CustomTest.cls</a></li>
+<li><a href="src/classes/setup/ISetupErrors.cls">ISetupErrors.cls</a></li>
+<li><a href="src/classes/setup/SetupErrors.cls">SetupErrors.cls</a></li>
+<li><a href="src/classes/showhide/ShowHideManager.cls">ShowHideManager.cls</a></li>
+<li><a href="src/tests/classes/stubs/LinelistPasswordStub.cls">LinelistPasswordStub.cls</a></li>
+<li><a href="src/tests/modules/analyses/TestAnalysis.bas">TestAnalysis.bas</a></li>
+<li><a href="src/tests/modules/general/TestButtons.bas">TestButtons.bas</a></li>
+<li><a href="src/tests/modules/general/TestChecking.bas">TestChecking.bas</a></li>
+<li><a href="src/tests/modules/general/TestCheckingOutput.bas">TestCheckingOutput.bas</a></li>
+<li><a href="src/tests/modules/general/TestCustomTest.bas">TestCustomTest.bas</a></li>
+<li><a href="src/tests/modules/general/TestDropdownLists.bas">TestDropdownLists.bas</a></li>
+<li><a href="src/tests/modules/general/TestLLFormat.bas">TestLLFormat.bas</a></li>
+<li><a href="src/tests/modules/general/TestPasswords.bas">TestPasswords.bas</a></li>
+<li><a href="src/tests/modules/setup/TestSetupErrors.bas">TestSetupErrors.bas</a></li>
+<li><a href="src/tests/stubs/LLFormatStub.cls">LLFormatStub.cls</a></li>
+<li><a href="src/tests/stubs/LLVarContextVariablesStub.cls">LLVarContextVariablesStub.cls</a></li>
+</ul>
+</details>
+
+  </main>
+</body>
+</html>
+

@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MasterSetupVariables - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>MasterSetupVariables</h1>
+<details>
+<summary>Internal members (not exported)</summary>
+<h2>Factory helpers</h2>
+<h3>Create</h3>
+<p><strong>Create a configured variables table manager instance.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create(ByVal listObject As ListObject) As IMasterSetupVariables
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>listObject</code>: ListObject representing the Master Setup Variables worksheet table.</li>
+</ul>
+<p><strong>Returns:</strong> IMasterSetupVariables ready to manage the associated ListObject.</p>
+<hr />
+<h3>Self</h3>
+<p><strong>Self reference used by factories returning interface instances.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Self() As IMasterSetupVariables
+</code></pre>
+<hr />
+<h2>Public API</h2>
+<h3>Initialise</h3>
+<p><strong>Initialise validation, hidden names, and duplicate detection.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Initialise(ByVal dropdowns As IDropdownLists)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>dropdowns</code>: IDropdownLists provider used to configure the Default Status validation.</li>
+</ul>
+<hr />
+<h3>RefreshChoices</h3>
+<p><strong>Refresh the concatenated choices values for the supplied variable.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub RefreshChoices(ByVal variableName As String, ByVal choices As ILLChoices)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>variableName</code>: String identifier of the variable row to update.</li>
+<li><code>choices</code>: ILLChoices providing category listings.</li>
+</ul>
+<hr />
+<h3>LabelFor</h3>
+<p><strong>Retrieve the label for the supplied variable.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function LabelFor(ByVal variableName As String) As String
+</code></pre>
+<hr />
+<h3>DefaultChoiceFor</h3>
+<p><strong>Retrieve the default choice for the supplied variable.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function DefaultChoiceFor(ByVal variableName As String) As String
+</code></pre>
+<hr />
+<h3>ChoicesFor</h3>
+<p><strong>Retrieve the concatenated choices values for the supplied variable.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function ChoicesFor(ByVal variableName As String) As String
+</code></pre>
+<hr />
+<h3>DefaultStatusFor</h3>
+<p><strong>Retrieve the default status for the supplied variable.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function DefaultStatusFor(ByVal variableName As String) As String
+</code></pre>
+<hr />
+<h3>SectionFor</h3>
+<p><strong>Retrieve the section label for the supplied variable.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function SectionFor(ByVal variableName As String) As String
+</code></pre>
+<hr />
+<h3>AddRows</h3>
+<p><strong>Append rows to the underlying table.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub AddRows(Optional ByVal rowCount As Long = 20)
+</code></pre>
+<hr />
+<h3>RemoveRows</h3>
+<p><strong>Remove rows from the underlying table.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub RemoveRows(Optional ByVal rowCount As Long = 1)
+</code></pre>
+<hr />
+<h3>TranslateHeaders</h3>
+<p><strong>Translate the header row with the supplied translations object.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub TranslateHeaders(ByVal trads As ITranslationObject)
+</code></pre>
+<hr />
+<h3>TranslateContent</h3>
+<p><strong>Translate the key content columns without affecting headers.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub TranslateContent(ByVal trads As ITranslationObject)
+</code></pre>
+<hr />
+<h3>TranslateAll</h3>
+<p><strong>Translate both headers and content using the supplied translation object.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub TranslateAll(ByVal contentsTrads As ITranslationObject, Optional ByVal ribbonTrads As ITranslationObject)
+</code></pre>
+<hr />
+<h3>SetVariableValidation</h3>
+<p><strong>Apply workbook-scoped validation for variable names onto the supplied range.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub SetVariableValidation(ByVal targetRange As Range)
+</code></pre>
+<hr />
+<h3>CloneToWorkbook</h3>
+<p><strong>Clone the managed table into another workbook.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function CloneToWorkbook(ByVal targetWorkbook As Workbook, _
+                                Optional ByVal sheetName As String = vbNullString, _
+                                Optional ByVal startCell As Range = Nothing) As IMasterSetupVariables
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>targetWorkbook</code>: Workbook receiving the cloned table.</li>
+<li><code>sheetName</code>: Optional sheet name; defaults to the source worksheet name.</li>
+<li><code>startCell</code>: Optional starting cell; defaults to the source table anchor.</li>
+</ul>
+<p><strong>Returns:</strong> IMasterSetupVariables bound to the cloned ListObject.</p>
+<hr />
+<h3>RestoreFrom</h3>
+<p><strong>Restore current table contents from a peer instance.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub RestoreFrom(ByVal source As IMasterSetupVariables)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>source</code>: IMasterSetupVariables providing data and metadata.</li>
+</ul>
+<hr />
+<h3>ExportToWorksheet</h3>
+<p><strong>Export the managed table to a plain worksheet range.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ExportToWorksheet(ByVal targetSheet As Worksheet)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>targetSheet</code>: Worksheet receiving the exported values.</li>
+</ul>
+<hr />
+<h3>ImportFromWorksheet</h3>
+<p><strong>Import table data from a plain worksheet range.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ImportFromWorksheet(ByVal sourceSheet As Worksheet)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sourceSheet</code>: Worksheet containing headers and rows matching the variables schema.</li>
+</ul>
+<hr />
+<h3>CopyToListObject</h3>
+<p><strong>Copy the managed table content into a supplied ListObject.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub CopyToListObject(ByVal targetTable As ListObject)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>targetTable</code>: ListObject receiving headers, values, and formatting.</li>
+</ul>
+<hr />
+<h3>ExportMetadata</h3>
+<p><strong>Export the hidden metadata required to resolve translated columns.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ExportMetadata(ByVal targetSheet As Worksheet)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>targetSheet</code>: Worksheet receiving the hidden name definitions.</li>
+</ul>
+<hr />
+<h3>Table</h3>
+<p><strong>Expose the managed ListObject.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Table() As ListObject
+</code></pre>
+<hr />
+<h3>Initialised</h3>
+<p><strong>Indicates whether initialisation logic already executed.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Initialised() As Boolean
+</code></pre>
+<hr />
+<h3>DataRange</h3>
+<p><strong>Return the range for the supplied column header, optionally including headers.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function DataRange(ByVal headerName As String, _
+                          Optional ByVal includeHeaders As Boolean = False) As Range
+</code></pre>
+<hr />
+<h2>Interface implementation</h2>
+<h3>IMasterSetupVariables_SetVariableValidation</h3>
+<p><strong>Apply workbook-scoped variable dropdown validation to a target range.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub IMasterSetupVariables_SetVariableValidation(ByVal targetRange As Range)
+</code></pre>
+<hr />
+</details>
+<details>
+<summary>Used in (12 file(s))</summary>
+<ul>
+<li><a href="src/classes/mastersetup/DiseaseSheet.cls">DiseaseSheet.cls</a></li>
+<li><a href="src/classes/mastersetup/EventMasterSetup.cls">EventMasterSetup.cls</a></li>
+<li><a href="src/classes/mastersetup/IDiseaseSheet.cls">IDiseaseSheet.cls</a></li>
+<li><a href="src/classes/mastersetup/IEventMasterSetup.cls">IEventMasterSetup.cls</a></li>
+<li><a href="src/classes/mastersetup/IMasterSetupPreparation.cls">IMasterSetupPreparation.cls</a></li>
+<li><a href="src/classes/mastersetup/IMasterSetupVariables.cls">IMasterSetupVariables.cls</a></li>
+<li><a href="src/classes/mastersetup/MasterSetupPreparation.cls">MasterSetupPreparation.cls</a></li>
+<li><a href="src/classes/mastersetup/MasterSetupVariables.cls">MasterSetupVariables.cls</a></li>
+<li><a href="src/tests/modules/mastersetup/TestDiseaseSheet.bas">TestDiseaseSheet.bas</a></li>
+<li><a href="src/tests/modules/mastersetup/TestEventMasterSetup.bas">TestEventMasterSetup.bas</a></li>
+<li><a href="src/tests/modules/mastersetup/TestMasterSetupPreparation.bas">TestMasterSetupPreparation.bas</a></li>
+<li><a href="src/tests/modules/mastersetup/TestMasterSetupVariables.bas">TestMasterSetupVariables.bas</a></li>
+</ul>
+</details>
+
+  </main>
+</body>
+</html>
+

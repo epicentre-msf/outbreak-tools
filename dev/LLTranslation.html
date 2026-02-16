@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LLTranslation - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>LLTranslation</h1>
+<p>Manages translation ListObjects hosted on a single worksheet and provides
+scoped ITranslationObject accessors, import/export of full translation
+tables, dictionary-specific exchange, and workbook-level hidden name
+initialisation for translated configuration values.</p>
+<p><strong>Depends on:</strong> <a href="ITranslationObject.html">ITranslationObject</a>, <a href="TranslationObject.html">TranslationObject</a>, <a href="ICustomTable.html">ICustomTable</a>, <a href="CustomTable.html">CustomTable</a>, <a href="IHiddenNames.html">IHiddenNames</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="BetterArray.html">BetterArray</a></p>
+<p><strong>Version:</strong> 1.0 (2026-02-10)</p>
+<h2>Factory</h2>
+<h3>create</h3>
+<p><strong>Create a new LLTranslation from a translation worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create(ByVal translationSheet As Worksheet) As ILLTranslation
+</code></pre>
+<p>Instance creation via VB_PredeclaredId factory pattern.
+Validates that the worksheet is not Nothing and that all required
+ListObjects are present (T_TradLLMsg, T_TradLLShapes, T_TradLLForms,
+Tab_Translations). T_TradLLRibbon is optional.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>translationSheet</code>: Worksheet. The worksheet hosting all translation
+ListObjects.</li>
+</ul>
+<p><strong>Returns:</strong> ILLTranslation. A fully initialised facade.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When translationSheet is Nothing.</li>
+<li>ProjectError.ElementNotFound When a required ListObject is missing.</li>
+</ul>
+<hr />
+<h2>Properties</h2>
+<h3>wksh</h3>
+<p><strong>Host translation worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Wksh() As Worksheet
+</code></pre>
+<p>Accessors for translation objects and the host worksheet.
+Returns the worksheet bound to this instance.</p>
+<p><strong>Returns:</strong> Worksheet. The host translation worksheet.</p>
+<hr />
+<h3>trans-object</h3>
+<p><strong>Scoped translation object</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get TransObject(Optional ByVal trans As Byte = TranslationOfMessages) As ITranslationObject
+</code></pre>
+<p>Returns an ITranslationObject configured for the requested translation
+scope. The language code is resolved from the host workbook HiddenNames
+(RNG_LLLanguageCode or RNG_DictionaryLanguage depending on scope).</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>trans</code>: Optional Byte. TranslationScope value selecting the content
+scope. Defaults to TranslationOfMessages.</li>
+</ul>
+<p><strong>Returns:</strong> ITranslationObject. The translation object for the requested scope.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ElementNotFound When the requested ListObject does
+not exist on the host worksheet.</li>
+</ul>
+<hr />
+<h2>DataExchange</h2>
+<h3>export</h3>
+<p><strong>Export all translation tables to an output workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Export(ByVal outputWkb As Workbook, _
+                  Optional ByVal Hide As Long = xlSheetVeryHidden)
+</code></pre>
+<p>Import, export, and dictionary exchange operations.
+Creates or clears a worksheet in the output workbook matching the host
+sheet name, then exports every ListObject from the host sheet using
+CustomTable.Export with stacking. Applies basic formatting and sets
+the sheet visibility to the Hide parameter value.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>outputWkb</code>: Workbook. The destination workbook.</li>
+<li><code>Hide</code>: Optional Long. Sheet visibility after export. Defaults to
+xlSheetVeryHidden.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When outputWkb is Nothing.</li>
+</ul>
+<hr />
+<h3>import</h3>
+<p><strong>Import translation tables from another workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Import(ByVal fromWkb As Workbook)
+</code></pre>
+<p>Finds a worksheet in the source workbook matching the host sheet name.
+Cleans the dictionary ListObject before import. For each ListObject on
+the host sheet, imports data from the matching ListObject on the source
+sheet. Missing source tables are silently skipped.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>fromWkb</code>: Workbook. The source workbook containing translation data.</li>
+</ul>
+<hr />
+<h3>import-dictionary</h3>
+<p><strong>Import dictionary translations from a raw ListObject</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ImportDictionary(ByVal dictionaryTable As ListObject)
+</code></pre>
+<p>Overwrites the host dictionary table with data from the supplied
+ListObject, preserving the source column headers via keepSourceHeaders.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>dictionaryTable</code>: ListObject. The source dictionary ListObject.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When dictionaryTable is Nothing.</li>
+<li>ProjectError.ElementNotFound When the host dictionary table is
+not found.</li>
+</ul>
+<hr />
+<h3>export-dictionary</h3>
+<p><strong>Export the dictionary table to a named worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ExportDictionary(ByVal outputWkb As Workbook, _
+                            Optional ByVal sheetName As String = &quot;Translations&quot;, _
+                            Optional ByVal Hide As Long = xlSheetVisible)
+</code></pre>
+<p>Creates or clears a worksheet in the output workbook with the given
+name, then exports the dictionary ListObject using CustomTable.Export.
+Applies formatting and sets the sheet visibility.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>outputWkb</code>: Workbook. The destination workbook.</li>
+<li><code>sheetName</code>: Optional String. Worksheet name for the export.
+Defaults to &quot;Translations&quot;.</li>
+<li><code>Hide</code>: Optional Long. Sheet visibility after export. Defaults to
+xlSheetVisible.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When outputWkb is Nothing.</li>
+<li>ProjectError.ElementNotFound When the host dictionary table is
+not found.</li>
+</ul>
+<hr />
+<h2>HiddenNames</h2>
+<h3>initialise-hidden-names</h3>
+<p><em><em>Create RNG_</em> hidden names on a target workbook</em>*</p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub InitialiseHiddenNames(ByVal targetWkb As Workbook)
+</code></pre>
+<p>Workbook-level hidden name initialisation from translations.
+Translates message and sheet-name tags using the TranslationOfMessages
+scope, then writes each translated value as a workbook-level hidden name
+on the target workbook. The RNG_LLLanguage, RNG_LLLanguageCode, and
+RNG_DictionaryLanguage names are NOT created here as they are expected
+to already exist in the designer workbook HiddenNames.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>targetWkb</code>: Workbook. The workbook receiving the hidden names.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When targetWkb is Nothing.</li>
+</ul>
+<hr />
+<details>
+<summary>Internal members (not exported)</summary>
+<h2>Factory</h2>
+<h3>self</h3>
+<p><strong>Interface-cast self reference</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Self() As ILLTranslation
+</code></pre>
+<p><strong>Returns:</strong> ILLTranslation. This instance as its interface type.</p>
+<hr />
+<h3>internal-sheet</h3>
+<p><strong>Friend setter for the host worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Friend Property Set InternalSheet(ByVal value As Worksheet)
+</code></pre>
+<p>Used by the factory method during construction.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>value</code>: Worksheet. The translation worksheet to bind.</li>
+</ul>
+<hr />
+<h2>Internal Helpers</h2>
+<h3>resolve-list-object</h3>
+<p><strong>Resolve a ListObject by name from the host worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ResolveListObject(ByVal tableName As String) As ListObject
+</code></pre>
+<p>Private utility methods.
+Returns the ListObject with the given name from the host translation
+worksheet. Raises an error when the table is not found.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>tableName</code>: String. The ListObject name to resolve.</li>
+</ul>
+<p><strong>Returns:</strong> ListObject. The resolved table.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ElementNotFound When the table is not found.</li>
+</ul>
+<hr />
+<h3>find-or-create-sheet</h3>
+<p><strong>Find or create a worksheet in the target workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function FindOrCreateSheet(ByVal targetWkb As Workbook, _
+                                   ByVal targetName As String) As Worksheet
+</code></pre>
+<p>Attempts to find a worksheet with the given name in the target workbook.
+If found, clears its contents entirely. If not found, creates a new
+worksheet with the name appended at the end.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>targetWkb</code>: Workbook. The target workbook.</li>
+<li><code>targetName</code>: String. The worksheet name to find or create.</li>
+</ul>
+<p><strong>Returns:</strong> Worksheet. The resolved or newly created worksheet.</p>
+<hr />
+<h3>format-export-sheet</h3>
+<p><strong>Apply standard formatting to an exported sheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub FormatExportSheet(ByVal sh As Worksheet, ByVal Hide As Long)
+</code></pre>
+<p>Sets font, alignment, autofit, and visibility on the exported sheet.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The sheet to format.</li>
+<li><code>Hide</code>: Long. Sheet visibility constant.</li>
+</ul>
+<hr />
+<h3>clean-dictionary</h3>
+<p><strong>Clear the dictionary ListObject data</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub CleanDictionary()
+</code></pre>
+<p>Wraps the host dictionary table in a CustomTable and calls Clean to
+clear all non-formula, non-key columns. Silently exits when the
+dictionary table does not exist.</p>
+<hr />
+<h3>check-requirements</h3>
+<p><strong>Validate that the translation sheet has all required tables</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub CheckRequirements(ByVal translationSheet As Worksheet)
+</code></pre>
+<p>Ensures the worksheet is not Nothing and that the required ListObjects
+(T_TradLLMsg, T_TradLLShapes, T_TradLLForms, Tab_Translations) are
+present. T_TradLLRibbon is optional and not validated.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>translationSheet</code>: Worksheet. The worksheet to validate.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When the sheet is Nothing.</li>
+<li>ProjectError.ElementNotFound When a required table is missing.</li>
+</ul>
+<hr />
+<h2>Error Handling</h2>
+<h3>throw-error</h3>
+<p><strong>Raise a ProjectError-based exception</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As Long, ByVal message As String)
+</code></pre>
+<p>Centralised error raising.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>errNumber</code>: ProjectError. The error constant.</li>
+<li><code>message</code>: String. Descriptive error message.</li>
+</ul>
+<hr />
+<h2>Interface Implementation</h2>
+<h3>ILLTranslation_TransObject</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get ILLTranslation_TransObject(Optional ByVal trans As Byte = TranslationOfMessages) As ITranslationObject
+</code></pre>
+<p>Delegated members satisfying the ILLTranslation contract.</p>
+<hr />
+</details>
+<details>
+<summary>Used in (27 file(s))</summary>
+<ul>
+<li><a href="src/classes/dataio/LLExporter.cls">LLExporter.cls</a></li>
+<li><a href="src/classes/designer/DesignerImportService.cls">DesignerImportService.cls</a></li>
+<li><a href="src/classes/linelist/ILinelistSpecs.cls">ILinelistSpecs.cls</a></li>
+<li><a href="src/classes/linelist/ILLTranslation.cls">ILLTranslation.cls</a></li>
+<li><a href="src/classes/linelist/Linelist.cls">Linelist.cls</a></li>
+<li><a href="src/classes/linelist/LinelistSpecs.cls">LinelistSpecs.cls</a></li>
+<li><a href="src/classes/linelist/LLTranslation.cls">LLTranslation.cls</a></li>
+<li><a href="src/classes/stale/designer-codes/modules/implements/DevModule.bas">DevModule.bas</a></li>
+<li><a href="src/classes/stale/designer-codes/modules/implements/EventsGlobalAnalysis.bas">EventsGlobalAnalysis.bas</a></li>
+<li><a href="src/classes/stale/designer-codes/modules/implements/EventsLinelistButtons.bas">EventsLinelistButtons.bas</a></li>
+<li><a href="src/classes/stale/designer-codes/modules/implements/EventsLinelistRibbon.bas">EventsLinelistRibbon.bas</a></li>
+<li><a href="src/classes/stale/designer-codes/modules/implements/EventsSpatialAnalysis.bas">EventsSpatialAnalysis.bas</a></li>
+<li><a href="src/classes/stale/designer-codes/modules/implements/FormLogicAdvanced.bas">FormLogicAdvanced.bas</a></li>
+<li><a href="src/classes/stale/designer-codes/modules/implements/FormLogicEpiWeek.bas">FormLogicEpiWeek.bas</a></li>
+<li><a href="src/classes/stale/designer-codes/modules/implements/FormLogicExport.bas">FormLogicExport.bas</a></li>
+<li><a href="src/classes/stale/designer-codes/modules/implements/FormLogicExportMigration.bas">FormLogicExportMigration.bas</a></li>
+<li><a href="src/classes/stale/designer-codes/modules/implements/FormLogicGeo.bas">FormLogicGeo.bas</a></li>
+<li><a href="src/classes/stale/designer-codes/modules/implements/FormLogicImportRep.bas">FormLogicImportRep.bas</a></li>
+<li><a href="src/classes/stale/designer-codes/modules/implements/FormLogicShowVarLabels.bas">FormLogicShowVarLabels.bas</a></li>
+<li><a href="src/classes/stale/designer-codes/modules/implements/LinelistEvents.bas">LinelistEvents.bas</a></li>
+<li><a href="src/classes/stale/designer-codes/modules/implements/LinelistGeo.bas">LinelistGeo.bas</a></li>
+<li><a href="src/modules/geo/FormLogicGeo.bas">FormLogicGeo.bas</a></li>
+<li><a href="src/modules/geo/GeoModule.bas">GeoModule.bas</a></li>
+<li><a href="src/tests/modules/linelist/TestLLTranslation.bas">TestLLTranslation.bas</a></li>
+<li><a href="src/tests/stubs/LinelistSpecsWorkbookStub.cls">LinelistSpecsWorkbookStub.cls</a></li>
+<li><a href="src/tests/stubs/LLVarContextSpecsStub.cls">LLVarContextSpecsStub.cls</a></li>
+<li><a href="src/tests/TableSpecsLinelistStub.cls">TableSpecsLinelistStub.cls</a></li>
+</ul>
+</details>
+
+  </main>
+</body>
+</html>
+

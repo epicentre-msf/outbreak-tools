@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IDesignerEntry - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>IDesignerEntry</h1>
+<p>Defines the public contract for the DesignerEntry class, exposing
+methods to bind to a designer entry worksheet, inject a test double
+for the translation provider, clear user input ranges, translate
+the worksheet to a given language, read and write info fields on
+the Main sheet, and translate message codes.</p>
+<h2>Lifecycle</h2>
+<h3>Configure</h3>
+<p><strong>Bind the entry helper to the worksheet hosting designer inputs</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Configure(ByVal hostSheet As Worksheet)
+</code></pre>
+<p>Sets the internal host worksheet reference. Must be called before any
+other operation. Raises an error when the worksheet is Nothing.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>hostSheet</code>: Worksheet. The worksheet hosting designer inputs.</li>
+</ul>
+<hr />
+<h3>UseTranslator</h3>
+<p><strong>Swap in a custom translations provider</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub UseTranslator(ByVal translator As IDesignerTranslation)
+</code></pre>
+<p>Replaces the internally resolved IDesignerTranslation translator with the
+supplied instance. Primarily used in tests to inject a stub or mock.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>translator</code>: IDesignerTranslation. The translations provider to use.</li>
+</ul>
+<hr />
+<h2>Operations</h2>
+<h3>Clear</h3>
+<p><strong>Clear user entry ranges on the configured worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Clear()
+</code></pre>
+<p>Clears all input ranges on the configured worksheet by resetting their
+values to empty and setting backgrounds to white. Also clears any
+warning messages below the RNG_Warning range.</p>
+<hr />
+<h3>Translate</h3>
+<p><strong>Translate the configured worksheet to the provided language</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Translate(Optional ByVal language As String = vbNullString)
+</code></pre>
+<p>Delegates to the translations provider to apply translated labels,
+shapes, and dropdowns to the configured worksheet. When a non-empty
+language string is supplied (e.g. &quot;FRA - Francais&quot;), the translator
+extracts the language code and persists it.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>language</code>: Optional String. Language string in &quot;CODE - Label&quot; format. Defaults to vbNullString.</li>
+</ul>
+<hr />
+<h3>AddInfo</h3>
+<p><strong>Write a value to a named info range on the host worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub AddInfo(ByVal value As String, ByVal infoName As String)
+</code></pre>
+<p>Resolves the named range matching infoName on the host worksheet,
+writes the supplied value, and sets the cell background to white.
+Silently exits when the named range does not exist.
+Valid infoName values: &quot;edition&quot;, &quot;setuppath&quot;, &quot;geopath&quot;, &quot;lldir&quot;,
+&quot;llname&quot;, &quot;setuplang&quot;, &quot;temppath&quot;, &quot;lllang&quot;, &quot;warning&quot;.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>value</code>: String. The value to write (path, message text, etc.).</li>
+<li><code>infoName</code>: String. The logical name identifying the target range.</li>
+</ul>
+<hr />
+<h3>ValueOf</h3>
+<p><strong>Read a value from a named info range on the host worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ValueOf(ByVal infoName As String) As String
+</code></pre>
+<p>Resolves the named range matching infoName on the host worksheet and
+returns its current value. Returns vbNullString when the range does
+not exist.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>infoName</code>: String. The logical name identifying the source range.</li>
+</ul>
+<p><strong>Returns:</strong> String. The current value of the named range.</p>
+<hr />
+<h3>TranslateMessage</h3>
+<p><strong>Translate a message code using the designer translations</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function TranslateMessage(ByVal msgCode As String) As String
+</code></pre>
+<p>Delegates to the internal translations provider to translate a message
+code (e.g. &quot;MSG_ChemFich&quot;) into the current designer language. Returns
+the raw msgCode when no translation is available.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>msgCode</code>: String. The message code to translate.</li>
+</ul>
+<p><strong>Returns:</strong> String. The translated message text.</p>
+<hr />
+<h2>State</h2>
+<h3>HostSheet</h3>
+<p><strong>The worksheet managed by this helper</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get HostSheet() As Worksheet
+</code></pre>
+<p>Returns the designer entry worksheet that was bound via Configure.
+Raises an error when accessed before configuration.</p>
+<p><strong>Returns:</strong> Worksheet. The host worksheet.</p>
+<hr />
+
+  </main>
+</body>
+</html>
+

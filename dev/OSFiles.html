@@ -1,0 +1,539 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OSFiles - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>OSFiles</h1>
+<p>Cross-platform file and folder selection helper. Wraps Windows
+FileDialog and macOS AppleScript pickers behind a unified API.
+Supports single and multi-selection for both files and folders,
+persists the last-used folder across sessions, and provides
+iterator-style enumeration over multi-selections.
+State bag for OS detection, selections, and cursor positions.
+Exposed methods
+Workbook-level Name used to persist the last used folder path.</p>
+<p><strong>Version:</strong> 1.0 (2026-02-09)</p>
+<h2>Initialization</h2>
+<h3>create</h3>
+<p><strong>Factory returning an initialised interface</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create() As IOSFiles
+</code></pre>
+<p><strong>Returns:</strong> IOSFiles. Ready to use.</p>
+<hr />
+<h2>Elements</h2>
+<h3>file</h3>
+<p><strong>Current loaded file path</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get File() As String
+</code></pre>
+<p><strong>Returns:</strong> String. The first selected file path.</p>
+<hr />
+<h3>files</h3>
+<p><strong>All loaded file paths from a multi-selection</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get Files() As Variant
+</code></pre>
+<p><strong>Returns:</strong> Variant. Zero-based string array of file paths.</p>
+<hr />
+<h3>folder</h3>
+<p><strong>Current loaded folder path</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get Folder() As String
+</code></pre>
+<p><strong>Returns:</strong> String. The first selected folder path.</p>
+<hr />
+<h3>folders</h3>
+<p><strong>All loaded folder paths from a multi-selection</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get Folders() As Variant
+</code></pre>
+<p><strong>Returns:</strong> Variant. Zero-based string array of folder paths.</p>
+<hr />
+<h2>Selecting</h2>
+<h3>load-folder</h3>
+<p><strong>Show a single-folder picker dialog</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub LoadFolder()
+</code></pre>
+<hr />
+<h3>load-file</h3>
+<p><strong>Show a single-file picker dialog</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub LoadFile(ByVal filters As String, _ 
+                     Optional ByVal customMacFilter As String = vbNullString)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>filters</code>: String. File type filters (e.g. &quot;*.xlsx&quot;).</li>
+<li><code>customMacFilter</code>: String. Optional UTI override for macOS. Defaults to vbNullString.</li>
+</ul>
+<hr />
+<h3>load-files</h3>
+<p><strong>Show a multi-file picker dialog</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub LoadFiles(ByVal filters As String, _
+                      Optional ByVal customMacFilter As String = vbNullString)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>filters</code>: String. File type filters.</li>
+<li><code>customMacFilter</code>: String. Optional UTI override for macOS. Defaults to vbNullString.</li>
+</ul>
+<hr />
+<h3>load-folders</h3>
+<p><strong>Show a multi-folder picker dialog</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub LoadFolders()
+</code></pre>
+<hr />
+<h2>Iteration</h2>
+<h3>reset-files-iterator</h3>
+<p><strong>Reset the file iteration cursor to the beginning</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ResetFilesCursor()
+</code></pre>
+<hr />
+<h3>reset-folders-iterator</h3>
+<p><strong>Reset the folder iteration cursor to the beginning</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ResetFoldersCursor()
+</code></pre>
+<hr />
+<h3>has-next-file</h3>
+<p><strong>Check if another file is available in the iterator</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function HasNextFileValue() As Boolean
+</code></pre>
+<hr />
+<h3>has-next-folder</h3>
+<p><strong>Check if another folder is available in the iterator</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function HasNextFolderValue() As Boolean
+</code></pre>
+<hr />
+<h3>next-file</h3>
+<p><strong>Return the next file path and advance the cursor</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function NextFileValue() As String
+</code></pre>
+<hr />
+<h3>next-folder</h3>
+<p><strong>Return the next folder path and advance the cursor</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function NextFolderValue() As String
+</code></pre>
+<hr />
+<h2>Validation</h2>
+<h3>has-valid-file</h3>
+<p><strong>Whether the loaded file path is valid</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function HasValidFile() As Boolean
+</code></pre>
+<p><strong>Returns:</strong> Boolean. True when a non-empty file path exists.</p>
+<hr />
+<h3>has-valid-files</h3>
+<p><strong>Whether the loaded files array contains entries</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function HasValidFiles() As Boolean
+</code></pre>
+<p><strong>Returns:</strong> Boolean. True when at least one file was selected.</p>
+<hr />
+<h3>has-valid-folder</h3>
+<p><strong>Whether the loaded folder path is valid</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function HasValidFolder() As Boolean
+</code></pre>
+<p><strong>Returns:</strong> Boolean. True when a non-empty folder path exists.</p>
+<hr />
+<h3>has-valid-folders</h3>
+<p><strong>Whether the loaded folders array contains entries</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function HasValidFolders() As Boolean
+</code></pre>
+<p><strong>Returns:</strong> Boolean. True when at least one folder was selected.</p>
+<hr />
+<details>
+<summary>Internal members (not exported)</summary>
+<h2>Initialization</h2>
+<h3>class-initialize</h3>
+<p><strong>Set default values for file and folder state</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub Class_Initialize()
+</code></pre>
+<hr />
+<h3>reset-file-state</h3>
+<p><strong>Clear file-related state and reset the iteration cursor</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ResetFileState()
+</code></pre>
+<hr />
+<h3>reset-folder-state</h3>
+<p><strong>Clear folder-related state and reset the iteration cursor</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ResetFolderState()
+</code></pre>
+<hr />
+<h3>empty-string-array</h3>
+<p><strong>Return an empty variant array</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function EmptyStringArray() As Variant
+</code></pre>
+<p><strong>Returns:</strong> Variant. Empty array.</p>
+<hr />
+<h3>select-folders-on-windows</h3>
+<p><strong>Show the Windows multi-folder picker</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SelectFoldersOnWindows() As Variant
+</code></pre>
+<p><strong>Returns:</strong> Variant. Zero-based string array of folder paths.</p>
+<hr />
+<h3>try-get-array-bounds</h3>
+<p><strong>Safely probe array bounds</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function TryGetArrayBounds(ByVal candidate As Variant, _
+                                   ByRef lowerBound As Long, _
+                                   ByRef upperBound As Long) As Boolean
+</code></pre>
+<hr />
+<h3>count-array-items</h3>
+<p><strong>Count the number of items in a variant array</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function CountArrayItems(ByVal candidate As Variant) As Long
+</code></pre>
+<hr />
+<h3>to-string-array</h3>
+<p><strong>Coerce a variant into a zero-based string array</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ToStringArray(ByVal value As Variant) As Variant
+</code></pre>
+<hr />
+<h3>clone-string-array</h3>
+<p><strong>Create a safe copy of a string array</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function CloneStringArray(ByVal source As Variant) As Variant
+</code></pre>
+<hr />
+<h3>has-next-array-item</h3>
+<p><strong>Check whether the cursor is within array bounds</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function HasNextArrayItem(ByVal items As Variant, ByVal cursor As Long) As Boolean
+</code></pre>
+<hr />
+<h3>get-next-array-item</h3>
+<p><strong>Fetch the item at the cursor and advance it</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function GetNextArrayItem(ByVal items As Variant, _
+                                  ByRef cursor As Long) As String
+</code></pre>
+<hr />
+<h3>set-files-selection</h3>
+<p><strong>Persist file selections and prime the iterator</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub SetFilesSelection(ByVal selectedItems As Variant)
+</code></pre>
+<hr />
+<h3>set-folders-selection</h3>
+<p><strong>Persist folder selections and prime the iterator</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub SetFoldersSelection(ByVal selectedItems As Variant)
+</code></pre>
+<hr />
+<h3>first-string-or-empty</h3>
+<p><strong>Return the first array entry or an empty string</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function FirstStringOrEmpty(ByVal source As Variant) As String
+</code></pre>
+<hr />
+<h3>normalize-folder-path</h3>
+<p><strong>Trim trailing separators and clean the folder path</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function NormalizeFolderPath(ByVal folderPath As String) As String
+</code></pre>
+<hr />
+<h3>extract-folder-from-path</h3>
+<p><strong>Identify the parent directory from a file path</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ExtractFolderFromPath(ByVal filePath As String) As String
+</code></pre>
+<hr />
+<h3>remember-folder</h3>
+<p><strong>Cache the folder locally and in the workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RememberFolder(ByVal folderPath As String)
+</code></pre>
+<hr />
+<h3>remember-folder-from-files</h3>
+<p><strong>Persist the parent directory of the first selected file</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RememberFolderFromFiles(ByVal filesSelection As Variant)
+</code></pre>
+<hr />
+<h3>remember-folder-from-folders</h3>
+<p><strong>Persist the first folder from a folder selection</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RememberFolderFromFolders(ByVal folderSelection As Variant)
+</code></pre>
+<hr />
+<h3>resolve-last-known-folder</h3>
+<p><strong>Resolve the last-used folder from cache or workbook storage</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ResolveLastKnownFolder() As String
+</code></pre>
+<hr />
+<h3>has-workbook-context</h3>
+<p><strong>Check whether ThisWorkbook is accessible</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function HasWorkbookContext() As Boolean
+</code></pre>
+<hr />
+<h3>read-last-folder-from-workbook</h3>
+<p><strong>Read the last-used folder from a workbook-level Name</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ReadLastFolderFromWorkbook() As String
+</code></pre>
+<hr />
+<h3>write-last-folder-to-workbook</h3>
+<p><strong>Persist the folder path in a hidden workbook Name</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub WriteLastFolderToWorkbook(ByVal folderPath As String)
+</code></pre>
+<hr />
+<h3>encode-workbook-storage-value</h3>
+<p><strong>Convert a folder path into a Name.RefersTo-safe string literal</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function EncodeWorkbookStorageValue(ByVal folderPath As String) As String
+</code></pre>
+<hr />
+<h3>decode-workbook-storage-value</h3>
+<p><strong>Undo Name serialization to recover the original folder path</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function DecodeWorkbookStorageValue(ByVal storedValue As String) As String
+</code></pre>
+<hr />
+<h3>wrap-apple-script-string</h3>
+<p><strong>Escape a string for safe insertion into AppleScript</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function WrapAppleScriptString(ByVal value As String) As String
+</code></pre>
+<hr />
+<h3>wrap-apple-script-alias</h3>
+<p><strong>Build an AppleScript alias literal from a colon path</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function WrapAppleScriptAlias(ByVal aliasPath As String) As String
+</code></pre>
+<hr />
+<h3>build-apple-script-list</h3>
+<p><strong>Translate a VBA array into an AppleScript list literal</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function BuildAppleScriptList(ByVal entries As Variant) As String
+</code></pre>
+<hr />
+<h3>build-mac-filter-list</h3>
+<p><strong>Construct the UTI list for the AppleScript file picker</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function BuildMacFilterList(ByVal filters As String, _
+                                    ByVal customMacFilter As String) As String
+</code></pre>
+<hr />
+<h3>parse-mac-selection-result</h3>
+<p><strong>Split newline-delimited POSIX paths from AppleScript output</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ParseMacSelectionResult(ByVal response As String) As Variant
+</code></pre>
+<hr />
+<h3>normalize-folder-selections</h3>
+<p><strong>Normalize picker results into clean folder paths</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function NormalizeFolderSelections(ByVal folderSelection As Variant) As Variant
+</code></pre>
+<hr />
+<h3>convert-posix-to-colon-path</h3>
+<p><strong>Translate a POSIX path to AppleScript colon-delimited format</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ConvertPosixToColonPath(ByVal posixPath As String) As String
+</code></pre>
+<hr />
+<h3>get-mac-default-folder-alias</h3>
+<p><strong>Resolve the default folder alias for macOS pickers</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function GetMacDefaultFolderAlias() As String
+</code></pre>
+<hr />
+<h3>build-mac-file-selection-script</h3>
+<p><strong>Compose the AppleScript for file selection on macOS</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function BuildMacFileSelectionScript(ByVal filters As String, _
+                                             ByVal customMacFilter As String, _
+                                             ByVal defaultAlias As String, _
+                                             ByVal allowMultiple As Boolean) As String
+</code></pre>
+<hr />
+<h3>build-mac-folder-selection-script</h3>
+<p><strong>Compose the AppleScript for folder selection on macOS</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function BuildMacFolderSelectionScript(ByVal defaultAlias As String, _
+                                               ByVal allowMultiple As Boolean) As String
+</code></pre>
+<hr />
+<h3>run-mac-file-picker</h3>
+<p><strong>Execute the AppleScript file picker and return POSIX paths</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function RunMacFilePicker(ByVal filters As String, _
+                                  ByVal customMacFilter As String, _
+                                  ByVal allowMultiple As Boolean) As Variant
+</code></pre>
+<hr />
+<h3>run-mac-folder-picker</h3>
+<p><strong>Execute the AppleScript folder picker and return POSIX paths</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function RunMacFolderPicker(ByVal allowMultiple As Boolean) As Variant
+</code></pre>
+<hr />
+<h2>Elements</h2>
+<h3>self</h3>
+<p><strong>Self-reference as IOSFiles</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Self() As IOSFiles
+</code></pre>
+<p><strong>Returns:</strong> IOSFiles. Self-reference.</p>
+<hr />
+<h3>os</h3>
+<p><strong>Current operating system flag</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get OS() As String
+</code></pre>
+<p><strong>Returns:</strong> String. &quot;Mac&quot; or &quot;Windows&quot;.</p>
+<hr />
+<h3>os-set</h3>
+<p><strong>Override the detected OS flag</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Let OS(ByVal currentOS As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>currentOS</code>: String. &quot;Mac&quot; or &quot;Windows&quot;.</li>
+</ul>
+<hr />
+<h3>file-set</h3>
+<p><strong>Assign a single file path through the selection pipeline</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Let File(ByVal ff As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>ff</code>: String. The file path.</li>
+</ul>
+<hr />
+<h3>folder-set</h3>
+<p><strong>Assign a single folder path through the selection pipeline</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Let Folder(ByVal ff As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>ff</code>: String. The folder path.</li>
+</ul>
+<hr />
+<h3>select-folder-on-mac</h3>
+<p><strong>Show the macOS single-folder picker</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SelectFolderOnMac() As String
+</code></pre>
+<hr />
+<h3>select-folders-on-mac</h3>
+<p><strong>Show the macOS multi-folder picker</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SelectFoldersOnMac() As Variant
+</code></pre>
+<hr />
+<h3>select-folder-on-windows</h3>
+<p><strong>Show the Windows single-folder picker</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SelectFolderOnWindows() As String
+</code></pre>
+<hr />
+<h3>select-files-on-windows</h3>
+<p><strong>Show the Windows multi-file picker</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SelectFilesOnWindows(ByVal filters As String) As Variant
+</code></pre>
+<hr />
+<h3>select-file-on-mac</h3>
+<p><strong>Show the macOS single-file picker</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SelectFileOnMac(ByVal filters As String, _ 
+                                 Optional ByVal customMacFilter As String = vbNullString) As String
+</code></pre>
+<hr />
+<h3>select-files-on-mac</h3>
+<p><strong>Show the macOS multi-file picker</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SelectFilesOnMac(ByVal filters As String, _
+                                  Optional ByVal customMacFilter As String = vbNullString) As Variant
+</code></pre>
+<hr />
+<h3>select-file-on-windows</h3>
+<p><strong>Show the Windows single-file picker</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SelectFileOnWindows(ByVal filters As String) As String
+</code></pre>
+<hr />
+<h2>Test Support</h2>
+<h3>assign-files-for-testing</h3>
+<p><strong>Inject file selections without showing a dialog</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub AssignFilesForTesting(ByVal selections As Variant)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>selections</code>: Variant. File paths to assign.</li>
+<li><code>TestHook</code></li>
+</ul>
+<hr />
+<h3>assign-folders-for-testing</h3>
+<p><strong>Inject folder selections without showing a dialog</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub AssignFoldersForTesting(ByVal selections As Variant)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>selections</code>: Variant. Folder paths to assign.</li>
+<li><code>TestHook</code></li>
+</ul>
+<hr />
+</details>
+<details>
+<summary>Used in (18 file(s))</summary>
+<ul>
+<li><a href="src/classes/dataio/ExportButton.cls">ExportButton.cls</a></li>
+<li><a href="src/classes/designer/DesignerPreparation.cls">DesignerPreparation.cls</a></li>
+<li><a href="src/classes/general/IOSFiles.cls">IOSFiles.cls</a></li>
+<li><a href="src/classes/general/OSFiles.cls">OSFiles.cls</a></li>
+<li><a href="src/classes/linelist/Linelist.cls">Linelist.cls</a></li>
+<li><a href="src/classes/setup/SetupImportService.cls">SetupImportService.cls</a></li>
+<li><a href="src/classes/stale/designer-codes/modules/implements/DesignerMain.bas">DesignerMain.bas</a></li>
+<li><a href="src/classes/stale/designer-codes/modules/implements/DevModule.bas">DevModule.bas</a></li>
+<li><a href="src/classes/stale/designer-codes/modules/implements/EventsDesignerRibbon.bas">EventsDesignerRibbon.bas</a></li>
+<li><a href="src/modules/dataio/FormLogicAdvanced.bas">FormLogicAdvanced.bas</a></li>
+<li><a href="src/modules/dataio/FormLogicExportMig.bas">FormLogicExportMig.bas</a></li>
+<li><a href="src/modules/designer/EventsDesignerAdvanced.bas">EventsDesignerAdvanced.bas</a></li>
+<li><a href="src/modules/designer/EventsDesignerCore.bas">EventsDesignerCore.bas</a></li>
+<li><a href="src/modules/dev/RibbonDev.bas">RibbonDev.bas</a></li>
+<li><a href="src/modules/setup/SetupHelpers.bas">SetupHelpers.bas</a></li>
+<li><a href="src/msetup-codes/modules/Exports.bas">Exports.bas</a></li>
+<li><a href="src/tests/modules/general/TestManualOSFiles.bas">TestManualOSFiles.bas</a></li>
+<li><a href="src/tests/modules/general/TestOSFiles.bas">TestOSFiles.bas</a></li>
+</ul>
+</details>
+
+  </main>
+</body>
+</html>
+

@@ -1,5 +1,13 @@
 [
   {
+    "listing": "/getting_started/home_linelist.html",
+    "items": [
+      "/getting_started/get_linelist.html",
+      "/getting_started/use_linelist.html",
+      "/getting_started/use_analyses_sheets.html"
+    ]
+  },
+  {
     "listing": "/reference/home_reference.html",
     "items": [
       "/reference/ribbons_designer.html",
@@ -11,30 +19,6 @@
       "/reference/dictionary_sheet.html",
       "/reference/exports_sheet.html",
       "/reference/translations_sheet.html"
-    ]
-  },
-  {
-    "listing": "/getting_started/home_linelist.html",
-    "items": [
-      "/getting_started/get_linelist.html",
-      "/getting_started/use_linelist.html",
-      "/getting_started/use_analyses_sheets.html"
-    ]
-  },
-  {
-    "listing": "/how_to/home_how_to.html",
-    "items": [
-      "/how_to/connect_to_dashboard.html",
-      "/how_to/import_geobase.html",
-      "/how_to/migrate_linelist.html",
-      "/how_to/show_hide_variables.html",
-      "/how_to/connect_dashboard.html",
-      "/how_to/send_data_to_dashboard.html",
-      "/how_to/troubleshoot_linelist.html",
-      "/how_to/add_language.html",
-      "/how_to/export_subset_geo.html",
-      "/how_to/link_tables.html",
-      "/how_to/migrate_setup.html"
     ]
   },
   {
@@ -51,6 +35,22 @@
       "/getting_started/workflow.html",
       "/getting_started/create_dic.html",
       "/getting_started/compile.html"
+    ]
+  },
+  {
+    "listing": "/how_to/home_how_to.html",
+    "items": [
+      "/how_to/connect_to_dashboard.html",
+      "/how_to/import_geobase.html",
+      "/how_to/migrate_linelist.html",
+      "/how_to/show_hide_variables.html",
+      "/how_to/connect_dashboard.html",
+      "/how_to/send_data_to_dashboard.html",
+      "/how_to/troubleshoot_linelist.html",
+      "/how_to/add_language.html",
+      "/how_to/export_subset_geo.html",
+      "/how_to/link_tables.html",
+      "/how_to/migrate_setup.html"
     ]
   }
 ]

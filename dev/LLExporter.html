@@ -1,0 +1,514 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LLExporter - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>LLExporter</h1>
+<p>Exports linelist data into standalone workbooks for distribution. Supports
+four export modes: custom filtered exports (ExportCustom), full migration
+exports (ExportMigration), analysis-only exports (ExportAnalysis), and
+geobase exports (ExportGeo). Each mode builds a temporary output workbook,
+populates it with the relevant data, metadata, and formatting, then saves
+and closes it. Consumers interact through the ILLExporter interface.</p>
+<p><strong>Depends on:</strong> <a href="ILLdictionary.html">ILLdictionary</a>, <a href="ILLExport.html">ILLExport</a>, <a href="IPasswords.html">IPasswords</a>, <a href="ICustomTable.html">ICustomTable</a>, <a href="IDataSheet.html">IDataSheet</a>, <a href="IShowHideManager.html">IShowHideManager</a>, <a href="IAnaTabIds.html">IAnaTabIds</a>, <a href="ILLGeo.html">ILLGeo</a>, <a href="ILLChoices.html">ILLChoices</a>, <a href="IHiddenNames.html">IHiddenNames</a></p>
+<h2>Factory</h2>
+<h3>create</h3>
+<p><strong>Create an exporter from the source linelist workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create(ByVal sourceWkb As Workbook) As ILLExporter
+</code></pre>
+<p>Factory method that validates the workbook is not Nothing, then constructs
+and returns a new LLExporter instance through the ILLExporter interface.
+Called on the predeclared instance.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sourceWkb</code>: Workbook. The linelist workbook containing the data to export.</li>
+</ul>
+<p><strong>Returns:</strong> ILLExporter. A fully initialised instance ready for export operations.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When the workbook is Nothing.</li>
+</ul>
+<hr />
+<h2>Public Accessors</h2>
+<h3>last-export-password</h3>
+<p><strong>Password used in the last export operation</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get LastExportPassword() As String
+</code></pre>
+<p>Returns the password applied to the most recent custom export, or an
+empty string when no password was used. Modules display this value to
+the user after a successful export so they can share it securely.</p>
+<p><strong>Returns:</strong> String. The password, or vbNullString.</p>
+<hr />
+<h2>Export Methods</h2>
+<h3>export-custom</h3>
+<p><strong>Export a numbered custom export definition</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function ExportCustom(ByVal exportNumber As Long, _
+                             ByVal folderPath As String, _
+                             Optional ByVal useFilters As Boolean = False) As String
+</code></pre>
+<p>Creates an output workbook containing filtered data, optional metadata
+sheets, and optional analysis sheets according to the export definition
+identified by exportNumber on the Exports sheet. Removes p-codes and
+personal identifiers if configured, prepares a temp dictionary, sorts it,
+then populates the output workbook with data sheets and formatting.
+Saves the workbook with an optional password and returns the file path.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>exportNumber</code>: Long. Which export definition to use (1-based).</li>
+<li><code>folderPath</code>: String. Target folder for the saved file.</li>
+<li><code>useFilters</code>: Optional Boolean. When True, exports filtered HList data. Defaults to False.</li>
+</ul>
+<p><strong>Returns:</strong> String. Saved file path, or vbNullString on failure.</p>
+<hr />
+<h3>export-migration</h3>
+<p><strong>Export all data for migration to another linelist</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function ExportMigration(ByVal folderPath As String, _
+                                Optional ByVal includeShowHide As Boolean = False, _
+                                Optional ByVal keepLabels As Boolean = False) As String
+</code></pre>
+<p>Creates an output workbook with full unfiltered data, metadata sheets,
+dictionary, choices, translations, and metadata tags for re-import.
+Optionally includes show/hide state with column widths. No password is
+applied. Returns the saved file path.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>folderPath</code>: String. Target folder for the saved file.</li>
+<li><code>includeShowHide</code>: Optional Boolean. When True, includes show/hide state. Defaults to False.</li>
+<li><code>keepLabels</code>: Optional Boolean. When True, marks editable labels for update on import. Defaults to False.</li>
+</ul>
+<p><strong>Returns:</strong> String. Saved file path, or vbNullString on failure.</p>
+<hr />
+<h3>export-analysis</h3>
+<p><strong>Export analysis worksheets only</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function ExportAnalysis(ByVal folderPath As String) As String
+</code></pre>
+<p>Creates an output workbook containing only the four analysis sheets
+(univariate, time series, spatial, spatio-temporal) with their values,
+formatting, and graphs. No data or metadata sheets are included. Saves
+as xlsx without password.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>folderPath</code>: String. Target folder for the saved file.</li>
+</ul>
+<p><strong>Returns:</strong> String. Saved file path, or vbNullString on failure.</p>
+<hr />
+<h3>export-geo</h3>
+<p><strong>Export geobase data to a separate workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function ExportGeo(ByVal folderPath As String, _
+                           Optional ByVal onlyHistoric As Boolean = False) As String
+</code></pre>
+<p>Creates an output workbook and delegates to LLGeo.ExportToFile to write
+the geobase data. When onlyHistoric is True, exports only the historic
+subset. The file name includes a date stamp and optionally a &quot;_historic&quot;
+suffix.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>folderPath</code>: String. Target folder for the saved file.</li>
+<li><code>onlyHistoric</code>: Optional Boolean. When True, exports only the historic geobase. Defaults to False.</li>
+</ul>
+<p><strong>Returns:</strong> String. Saved file path, or vbNullString on failure.</p>
+<hr />
+<h3>close-all</h3>
+<p><strong>Close all output workbooks that may still be open</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub CloseAll()
+</code></pre>
+<p>Closes any output workbook left open after an export error, preventing
+orphaned minimized windows. Safe to call even when no workbook is open.</p>
+<hr />
+<details>
+<summary>Internal members (not exported)</summary>
+<h2>Public Accessors</h2>
+<h3>self</h3>
+<p><strong>Current object instance</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Self() As ILLExporter
+</code></pre>
+<p><strong>Returns:</strong> ILLExporter. The current instance cast to the interface.</p>
+<hr />
+<h3>source-workbook</h3>
+<p><strong>Source linelist workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get SourceWorkbook() As Workbook
+</code></pre>
+<p><strong>Returns:</strong> Workbook. The linelist workbook bound to this exporter.</p>
+<hr />
+<h3>source-workbook-set</h3>
+<p><strong>Assign the source linelist workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Set SourceWorkbook(ByVal wb As Workbook)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>wb</code>: Workbook. The workbook to store.</li>
+</ul>
+<hr />
+<h2>Private - Source Object Accessors</h2>
+<h3>source-dictionary</h3>
+<p><strong>Get a dictionary from the source workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SourceDictionary(ByVal nbExp As Long) As ILLdictionary
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>nbExp</code>: Long. Number of export columns to configure.</li>
+</ul>
+<p><strong>Returns:</strong> ILLdictionary. Dictionary instance from the Dictionary sheet.</p>
+<hr />
+<h3>export-object</h3>
+<p><strong>Get the export configuration from the source workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ExportObject() As ILLExport
+</code></pre>
+<p><strong>Returns:</strong> ILLExport. Export configuration from the Exports sheet.</p>
+<hr />
+<h3>passwords-object</h3>
+<p><strong>Get passwords from the source workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function PasswordsObject() As IPasswords
+</code></pre>
+<p><strong>Returns:</strong> IPasswords. Passwords instance from the __pass sheet.</p>
+<hr />
+<h3>geo-object</h3>
+<p><strong>Get the geo object from the source workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function GeoObject() As ILLGeo
+</code></pre>
+<p><strong>Returns:</strong> ILLGeo. Geo instance from the Geo sheet.</p>
+<hr />
+<h2>Private - Output Workbook Management</h2>
+<h3>create-output-workbook</h3>
+<p><strong>Create a new minimized output workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function CreateOutputWorkbook() As Workbook
+</code></pre>
+<p><strong>Returns:</strong> Workbook. The newly created workbook.</p>
+<hr />
+<h3>save-workbook</h3>
+<p><strong>Save and close the output workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub SaveWorkbook(ByVal outwb As Workbook, ByVal filePath As String, _
+                         ByVal fileFormat As Long, ByVal password As String)
+</code></pre>
+<p>Saves the workbook to the specified path with the given format and
+optional password, then closes it without saving again.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>outwb</code>: Workbook. The workbook to save.</li>
+<li><code>filePath</code>: String. Full path including file name and extension.</li>
+<li><code>fileFormat</code>: Long. Excel file format constant (xlOpenXMLWorkbook or xlExcel12).</li>
+<li><code>password</code>: String. Password to apply, or vbNullString for none.</li>
+</ul>
+<hr />
+<h3>build-file-path</h3>
+<p><strong>Build a full file path from folder, name, and extension</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function BuildFilePath(ByVal folderPath As String, ByVal fileName As String, _
+                               ByVal fileExt As String) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>folderPath</code>: String. Target folder path.</li>
+<li><code>fileName</code>: String. File name without extension.</li>
+<li><code>fileExt</code>: String. File extension without dot.</li>
+</ul>
+<p><strong>Returns:</strong> String. The assembled file path.</p>
+<hr />
+<h2>Private - Dictionary Preparation</h2>
+<h3>remove-pcodes</h3>
+<p><strong>Remove p-codes variables from a custom export if configured</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RemovePCodes(ByVal dict As ILLdictionary, ByVal expObj As ILLExport, _
+                         ByVal exportNumber As Long, ByVal expName As String)
+</code></pre>
+<p>Checks the export configuration for &quot;include p-codes&quot;. When set to &quot;no&quot;,
+clears the export column cells for all dictionary rows whose main label
+matches a geo p-code or geo concat tag.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>dict</code>: ILLdictionary. The source dictionary.</li>
+<li><code>expObj</code>: ILLExport. The export configuration.</li>
+<li><code>exportNumber</code>: Long. Which export definition to check.</li>
+<li><code>expName</code>: String. The export column name (e.g. &quot;export 1&quot;).</li>
+</ul>
+<hr />
+<h3>remove-personal-identifiers</h3>
+<p><strong>Remove personal identifiers from a custom export if configured</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RemovePersonalIdentifiers(ByVal dict As ILLdictionary, ByVal expObj As ILLExport, _
+                                      ByVal exportNumber As Long, ByVal expName As String)
+</code></pre>
+<p>Checks the export configuration for &quot;include personal identifiers&quot;. When
+set to &quot;no&quot;, clears the export column cells for all dictionary rows
+flagged as personal identifiers.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>dict</code>: ILLdictionary. The source dictionary.</li>
+<li><code>expObj</code>: ILLExport. The export configuration.</li>
+<li><code>exportNumber</code>: Long. Which export definition to check.</li>
+<li><code>expName</code>: String. The export column name.</li>
+</ul>
+<hr />
+<h3>prepare-temp-dictionary</h3>
+<p><strong>Write dictionary data to the temp sheet for export processing</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub PrepareTempDictionary(ByVal dict As ILLdictionary, _
+                                  ByVal expName As String, _
+                                  ByVal fullExport As Boolean)
+</code></pre>
+<p>When fullExport is True, copies the entire dictionary. When False,
+filters on the export column name to include only rows assigned to that
+export. Writes the result to the temp__ sheet and adds a blue font tag
+to mark the dictionary as prepared.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>dict</code>: ILLdictionary. The source dictionary.</li>
+<li><code>expName</code>: String. The export column name to filter on, or vbNullString for full.</li>
+<li><code>fullExport</code>: Boolean. When True, copies the entire dictionary unfiltered.</li>
+</ul>
+<hr />
+<h3>export-dictionary-from-temp</h3>
+<p><strong>Create an export dictionary from the temp sheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ExportDictionaryFromTemp(ByVal nbExp As Long) As ILLdictionary
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>nbExp</code>: Long. Number of export columns.</li>
+</ul>
+<p><strong>Returns:</strong> ILLdictionary. Dictionary built from the temp__ sheet.</p>
+<hr />
+<h3>sort-export-dictionary</h3>
+<p><strong>Sort the export dictionary by table name and export column</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub SortExportDictionary(ByVal expDict As ILLdictionary, ByVal expName As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>expDict</code>: ILLdictionary. The dictionary to sort.</li>
+<li><code>expName</code>: String. The export column name to use as secondary sort key.</li>
+</ul>
+<hr />
+<h2>Private - Metadata and Sheets</h2>
+<h3>add-metadata-sheets</h3>
+<p><strong>Add Metadata, Choices, and Translations sheets to the output workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AddMetadataSheets(ByVal outwb As Workbook, ByVal dict As ILLdictionary, _
+                              ByVal nbExp As Long)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>outwb</code>: Workbook. The output workbook.</li>
+<li><code>dict</code>: ILLdictionary. The source dictionary.</li>
+<li><code>nbExp</code>: Long. Number of export columns.</li>
+</ul>
+<hr />
+<h3>add-dictionary</h3>
+<p><strong>Add the dictionary to the output workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AddDictionary(ByVal outwb As Workbook, ByVal dict As ILLdictionary, _
+                          ByVal nbExp As Long, ByVal exportColumn As String)
+</code></pre>
+<p>Exports the dictionary filtered by exportColumn, then marks the output
+dictionary as prepared with a blue font tag.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>outwb</code>: Workbook. The output workbook.</li>
+<li><code>dict</code>: ILLdictionary. The source dictionary.</li>
+<li><code>nbExp</code>: Long. Number of export columns.</li>
+<li><code>exportColumn</code>: String. The export column to filter on, or &quot;<strong>all</strong>&quot;.</li>
+</ul>
+<hr />
+<h3>add-custom-dropdowns</h3>
+<p><strong>Add custom dropdowns to the Choices sheet in the output workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AddCustomDropdowns(ByVal outwb As Workbook)
+</code></pre>
+<p>Reads custom dropdown ListObjects from the source workbook custom
+dropdown sheet and adds each one to the output Choices sheet. Silently
+exits when no custom dropdown sheet exists.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>outwb</code>: Workbook. The output workbook.</li>
+</ul>
+<hr />
+<h3>add-metadata-tags</h3>
+<p><strong>Add metadata tags to the Metadata sheet in the output workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AddMetadataTags(ByVal outwb As Workbook, ByVal scope As Byte, _
+                            ByVal exportNumber As Long, _
+                            ByVal includeShowHide As Boolean, _
+                            ByVal keepLabels As Boolean)
+</code></pre>
+<p>Appends export_type, export_date, editable_labels, show_hide, and
+epiweekstart tags to the Metadata sheet variable/value table. These tags
+control import behaviour when the exported file is re-imported.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>outwb</code>: Workbook. The output workbook.</li>
+<li><code>scope</code>: Byte. ExportScope value (ExportScopeCustom or ExportScopeMigration).</li>
+<li><code>exportNumber</code>: Long. The export number for custom exports.</li>
+<li><code>includeShowHide</code>: Boolean. When True, tags show_hide as &quot;update on import&quot;.</li>
+<li><code>keepLabels</code>: Boolean. When True, tags editable_labels as &quot;update on import&quot;.</li>
+</ul>
+<hr />
+<h3>add-show-hide</h3>
+<p><strong>Export show/hide state with column widths to the output workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AddShowHide(ByVal outwb As Workbook)
+</code></pre>
+<p>Creates a show_hide__ sheet in the output workbook with a ListObject
+containing layer, field_key, header_text, hidden_flag, and column_width
+columns. For each data sheet, creates a ShowHideManager per applicable
+layer (HList, Printed, VList) and exports the current visibility state.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>outwb</code>: Workbook. The output workbook.</li>
+</ul>
+<hr />
+<h3>import-current-show-hide</h3>
+<p><strong>Import current user overrides from the show_hide__ ListObject</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ImportCurrentShowHide(ByVal shm As IShowHideManager)
+</code></pre>
+<p>Reads the show_hide__ sheet from the source workbook and imports the
+user visibility plan into the ShowHideManager, ensuring the exported
+show/hide reflects the user actual choices.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>shm</code>: IShowHideManager. The manager to populate.</li>
+</ul>
+<hr />
+<h3>add-analysis-sheets</h3>
+<p><strong>Add analysis worksheets to the output workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AddAnalysisSheets(ByVal outwb As Workbook, ByVal afterSheetName As String)
+</code></pre>
+<p>Copies values and formats from the four analysis sheets (univariate,
+time series, spatial, spatio-temporal) in the source workbook to new
+sheets in the output workbook. Removes gridlines and writes graph
+objects via AnaTabIds.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>outwb</code>: Workbook. The output workbook.</li>
+<li><code>afterSheetName</code>: String. Name of the sheet to insert after.</li>
+</ul>
+<hr />
+<h2>Private - Data Export</h2>
+<h3>add-data-sheets</h3>
+<p><strong>Add data to each output sheet from source HList/VList worksheets</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AddDataSheets(ByVal outwb As Workbook, ByVal expDict As ILLdictionary, _
+                          ByVal useLabels As Boolean, ByVal startLine As Long, _
+                          ByVal useFilters As Boolean)
+</code></pre>
+<p>Iterates over the unique sheet names in the export dictionary, reads data
+from the corresponding source sheet, and writes it to the output sheet.
+For HList sheets, delegates to CustomTable.Export. For VList sheets,
+delegates to ExportVListData. Applies formatting to each output sheet.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>outwb</code>: Workbook. The output workbook.</li>
+<li><code>expDict</code>: ILLdictionary. The export dictionary with variable assignments.</li>
+<li><code>useLabels</code>: Boolean. When True, writes label row above data headers.</li>
+<li><code>startLine</code>: Long. Data start row (2 when labels are on row 1).</li>
+<li><code>useFilters</code>: Boolean. When True, reads from filtered companion sheets.</li>
+</ul>
+<hr />
+<h3>export-vlist-data</h3>
+<p><strong>Export VList data (variable/value pairs) to the output sheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ExportVListData(ByVal inpsh As Worksheet, ByVal outsh As Worksheet, _
+                            ByVal headersList As BetterArray, _
+                            ByVal useLabels As Boolean, ByVal startLine As Long)
+</code></pre>
+<p>Writes variable names and their values as rows. When useLabels is True,
+replaces variable names with their labels.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>inpsh</code>: Worksheet. The source VList worksheet.</li>
+<li><code>outsh</code>: Worksheet. The output worksheet.</li>
+<li><code>headersList</code>: BetterArray. Variable names to export.</li>
+<li><code>useLabels</code>: Boolean. When True, writes labels instead of variable names.</li>
+<li><code>startLine</code>: Long. Column offset for data start.</li>
+</ul>
+<hr />
+<h2>Private - Formatting Helpers</h2>
+<h3>format-output-sheet</h3>
+<p><strong>Apply standard formatting to an output data sheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub FormatOutputSheet(ByVal outsh As Worksheet)
+</code></pre>
+<p>Sets row heights, column widths, font, header styling, and auto-fits
+columns. Wrapped in error handling to prevent failures on protected
+or special sheets.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>outsh</code>: Worksheet. The worksheet to format.</li>
+</ul>
+<hr />
+<h3>remove-gridlines</h3>
+<p><strong>Remove gridlines from an analysis output sheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RemoveGridLines(ByVal sh As Worksheet)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The worksheet to update.</li>
+</ul>
+<hr />
+<h2>Private - Error Handling</h2>
+<h3>throw-error</h3>
+<p><strong>Raise a ProjectError-based exception</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal message As String)
+</code></pre>
+<p>Wrapper around Err.Raise that standardises the source to CLASS_NAME.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>errNumber</code>: ProjectError. The error code to raise.</li>
+<li><code>message</code>: String. Human-readable description of the failure.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.<varies> Always raises the specified error.</li>
+</ul>
+<hr />
+<h2>Interface Implementation</h2>
+<h3>ILLExporter_ExportCustom</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ILLExporter_ExportCustom(ByVal exportNumber As Long, _
+                                          ByVal folderPath As String, _
+                                          Optional ByVal useFilters As Boolean = False) As String
+</code></pre>
+<p>Delegated members satisfying the ILLExporter contract.
+See the corresponding members above for full documentation.</p>
+<hr />
+</details>
+<details>
+<summary>Used in (5 file(s))</summary>
+<ul>
+<li><a href="src/classes/dataio/ExportButton.cls">ExportButton.cls</a></li>
+<li><a href="src/classes/dataio/ILLExporter.cls">ILLExporter.cls</a></li>
+<li><a href="src/classes/dataio/LLExporter.cls">LLExporter.cls</a></li>
+<li><a href="src/modules/dataio/FormLogicExportMig.bas">FormLogicExportMig.bas</a></li>
+<li><a href="src/tests/modules/dataio/TestLLExporter.bas">TestLLExporter.bas</a></li>
+</ul>
+</details>
+
+  </main>
+</body>
+</html>
+

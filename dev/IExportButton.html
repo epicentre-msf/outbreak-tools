@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IExportButton - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>IExportButton</h1>
+<p>Defines the public contract for the ExportButton class, exposing
+read-only export identification and read/write filter state.
+Consumers query ExportNumber to identify which export definition
+the button drives, and UseFilter to read or toggle the associated
+filter checkbox state.</p>
+<h2>Properties</h2>
+<h3>ExportNumber</h3>
+<p><strong>Export number derived from button name</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ExportNumber() As Long
+</code></pre>
+<p>Returns the 1-based export definition number parsed from the
+button Name property (e.g. &quot;CMDExport1&quot; yields 1).</p>
+<p><strong>Returns:</strong> Long. The 1-based export number.</p>
+<hr />
+<h3>UseFilter</h3>
+<p><strong>Whether the filter checkbox is checked</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get UseFilter() As Boolean
+</code></pre>
+<p>Returns the current value of the filter checkbox. Returns False
+when no checkbox was bound.</p>
+<p><strong>Returns:</strong> Boolean. True when the filter checkbox is checked.</p>
+<hr />
+<h3>UseFilter</h3>
+<p><strong>Set the filter checkbox value</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Let UseFilter(ByVal value As Boolean)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>value</code>: Boolean. True to check, False to uncheck.</li>
+</ul>
+<hr />
+
+  </main>
+</body>
+</html>
+

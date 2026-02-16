@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IDiseaseWorksheetManager - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>IDiseaseWorksheetManager</h1>
+<h2>Queries</h2>
+<h3>WorksheetExists</h3>
+<p><strong>Determine whether the specified worksheet exists within the workbook.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function WorksheetExists(ByVal workbook As Workbook, ByVal sheetName As String) As Boolean
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>workbook</code>: Workbook hosting the worksheet collection.</li>
+<li><code>sheetName</code>: String worksheet name to locate.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean True when the worksheet exists.</p>
+<hr />
+<h2>Commands</h2>
+<h3>RemoveWorksheet</h3>
+<p><strong>Remove a worksheet using guarded Application settings.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function RemoveWorksheet(ByVal workbook As Workbook, ByVal sheetName As String) As Boolean
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>workbook</code>: Workbook hosting the worksheet.</li>
+<li><code>sheetName</code>: String worksheet name to delete.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean True when the worksheet was removed.</p>
+<hr />
+
+  </main>
+</body>
+</html>
+

@@ -1,0 +1,497 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VarWriter - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>VarWriter</h1>
+<p>Writes a single dictionary variable to one or more linelist worksheets.
+For HList layers the writer targets the main sheet, a printed companion,
+and a CRF companion; for VList layers only the main sheet is written.
+Each invocation of WriteVariable applies label text, number formatting,
+formulas, dropdown choices, data validation, and conditional formatting
+to the resolved cell range. The class caches dictionary, variables, and
+sheets accessors for performance across repeated calls.</p>
+<p><strong>Depends on:</strong> <a href="ILinelistSpecs.html">ILinelistSpecs</a>, <a href="ILLdictionary.html">ILLdictionary</a>, <a href="ILLVariables.html">ILLVariables</a>, <a href="ILLSheets.html">ILLSheets</a>, <a href="ILLFormat.html">ILLFormat</a>, <a href="ITranslationObject.html">ITranslationObject</a>, <a href="IFormulaData.html">IFormulaData</a>, <a href="IFormulas.html">IFormulas</a>, <a href="IDropdownLists.html">IDropdownLists</a>, <a href="ILLGeo.html">ILLGeo</a>, <a href="Formulas.html">Formulas</a>, <a href="LLVariables.html">LLVariables</a>, <a href="LLSheets.html">LLSheets</a>, <a href="BetterArray.html">BetterArray</a></p>
+<p><strong>Version:</strong> 1.0 (2026-02-10)</p>
+<h2>Instantiation</h2>
+<h3>create</h3>
+<p><strong>Create a new VarWriter for the given layer and dependencies</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create(ByVal layer As Byte, _
+                       ByVal specs As ILinelistSpecs, _
+                       ByVal wksh As Worksheet, _
+                       Optional ByVal printWksh As Worksheet = Nothing, _
+                       Optional ByVal crfWksh As Worksheet = Nothing, _
+                       Optional ByVal dropdownObj As IDropdownLists = Nothing, _
+                       Optional ByVal customDropdownObj As IDropdownLists = Nothing) As IVarWriter
+</code></pre>
+<p>Factory method that instantiates and configures a VarWriter. The caller
+must supply a valid ILinelistSpecs and target Worksheet at minimum.
+Optional parameters allow attaching printed and CRF companion worksheets
+(used only for HList layers) and dropdown list managers. Raises an error
+if specs or wksh is Nothing.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>layer</code>: Byte. VarWriterLayer enum value (HList=1, VList=2). Use Byte for macOS compatibility.</li>
+<li><code>specs</code>: ILinelistSpecs. The linelist specifications object providing dictionary, format, translations, etc.</li>
+<li><code>wksh</code>: Worksheet. The target main worksheet.</li>
+<li><code>printWksh</code>: Optional Worksheet. Printed companion worksheet (HList only). Defaults to Nothing.</li>
+<li><code>crfWksh</code>: Optional Worksheet. CRF companion worksheet (HList only). Defaults to Nothing.</li>
+<li><code>dropdownObj</code>: Optional IDropdownLists. Dropdown lists manager. Defaults to Nothing.</li>
+<li><code>customDropdownObj</code>: Optional IDropdownLists. Custom dropdown lists manager (for choice_custom). Defaults to Nothing.</li>
+</ul>
+<p><strong>Returns:</strong> IVarWriter. A fully initialised writer bound to the given layer and worksheets.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>VBA.vbObjectError + 516 if specs or wksh is Nothing.</li>
+</ul>
+<hr />
+<h2>Value Lookup</h2>
+<h3>value-of</h3>
+<p><strong>Read a dictionary column value for the current variable</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ValueOf(ByVal colName As String) As String
+</code></pre>
+<p>Looks up the value stored in the specified dictionary column for the
+variable that was most recently passed to WriteVariable. This is the
+primary way all other methods retrieve variable metadata such as labels,
+types, formats, and control information.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>colName</code>: String. The dictionary column name to look up.</li>
+</ul>
+<p><strong>Returns:</strong> String. The column value for the current variable.</p>
+<hr />
+<h2>Entry Point</h2>
+<h3>write-variable</h3>
+<p><strong>Write one variable to the target worksheet(s)</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub WriteVariable(ByVal varName As String)
+</code></pre>
+<p>Main public method called once per variable. It stores the variable name,
+resets the cached cell ranges, then dispatches to WriteMainSheet. For
+HList layers it additionally dispatches to WritePrintSheet and
+WriteCRFSheet for the companion worksheets.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>varName</code>: String. The variable name as it appears in the dictionary.</li>
+</ul>
+<hr />
+<details>
+<summary>Internal members (not exported)</summary>
+<h2>Instantiation</h2>
+<h3>self</h3>
+<p><strong>Return the current instance cast to the IVarWriter interface</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Self() As IVarWriter
+</code></pre>
+<p>Used by the factory pattern so that the With New block can return an
+interface-typed reference instead of the concrete class.</p>
+<p><strong>Returns:</strong> IVarWriter. The current instance.</p>
+<hr />
+<h2>Internal Setters</h2>
+<h3>internal-specs</h3>
+<p><strong>Assign the linelist specifications object</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Set InternalSpecs(ByVal specs As ILinelistSpecs)
+</code></pre>
+<h1>Properties used by the factory only during instantiation.</h1>
+<hr />
+<h3>internal-wksh</h3>
+<p><strong>Assign the target main worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Set InternalWksh(ByVal wksh As Worksheet)
+</code></pre>
+<hr />
+<h3>internal-layer</h3>
+<p><strong>Assign the writer layer (HList or VList)</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Let InternalLayer(ByVal layer As Byte)
+</code></pre>
+<hr />
+<h3>internal-print-wksh</h3>
+<p><strong>Assign the printed companion worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Set InternalPrintWksh(ByVal wksh As Worksheet)
+</code></pre>
+<hr />
+<h3>internal-crf-wksh</h3>
+<p><strong>Assign the CRF companion worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Set InternalCRFWksh(ByVal wksh As Worksheet)
+</code></pre>
+<hr />
+<h3>internal-dropdown</h3>
+<p><strong>Assign the dropdown lists manager</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Set InternalDropdown(ByVal dropdownObj As IDropdownLists)
+</code></pre>
+<hr />
+<h3>internal-custom-dropdown</h3>
+<p><strong>Assign the custom dropdown lists manager</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Set InternalCustomDropdown(ByVal dropdownObj As IDropdownLists)
+</code></pre>
+<hr />
+<h2>Cached Accessors</h2>
+<h3>dictionary</h3>
+<p><strong>Return the cached dictionary object</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get Dictionary() As ILLdictionary
+</code></pre>
+<h1>Lazy-loaded accessors for frequently used dependency objects.</h1>
+<p>Lazily loads the ILLdictionary from specs on first access and caches it
+in the TVarWriter UDT. Subsequent calls return the cached instance
+without re-querying specs, which improves performance when writing many
+variables in sequence.</p>
+<p><strong>Returns:</strong> ILLdictionary. The linelist dictionary.</p>
+<hr />
+<h3>variables</h3>
+<p><strong>Return the cached variables helper</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get Variables() As ILLVariables
+</code></pre>
+<p>Creates an LLVariables wrapper around the dictionary on first access.
+The wrapper provides convenient lookup methods such as Value and Contains
+that are used throughout the writer.</p>
+<p><strong>Returns:</strong> ILLVariables. The variables helper object.</p>
+<hr />
+<h3>sheets-object</h3>
+<p><strong>Return the cached sheets helper</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get SheetsObject() As ILLSheets
+</code></pre>
+<p>Creates an LLSheets wrapper around the dictionary on first access.
+The wrapper provides VariableAddress and SheetInfo lookups used when
+building conditional-formatting formulas and resolving table anchors.</p>
+<p><strong>Returns:</strong> ILLSheets. The sheets helper object.</p>
+<hr />
+<h3>design-format</h3>
+<p><strong>Return the design format object from specs</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get DesignFormat() As ILLFormat
+</code></pre>
+<p>Delegates directly to specs.DesignFormat on every call because the
+format object is lightweight and does not benefit from caching.</p>
+<p><strong>Returns:</strong> ILLFormat. The design format provider.</p>
+<hr />
+<h3>trans</h3>
+<p><strong>Return the translation object from specs</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get Trans() As ITranslationObject
+</code></pre>
+<p>Delegates directly to specs.TransObject on every call. Used to fetch
+translated UI messages such as MSG_Calculated and MSG_CustomChoice.</p>
+<p><strong>Returns:</strong> ITranslationObject. The translation provider.</p>
+<hr />
+<h3>formula-data-obj</h3>
+<p><strong>Return the formula data object from specs</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get FormulaDataObj() As IFormulaData
+</code></pre>
+<p>Delegates directly to specs.FormulaDataObject on every call. Provides
+the lookup tables and metadata needed by the Formulas parser.</p>
+<p><strong>Returns:</strong> IFormulaData. The formula data provider.</p>
+<hr />
+<h2>Cell Range Resolution</h2>
+<h3>var-range</h3>
+<p><strong>Resolve the main cell range for the current variable</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get VarRange() As Range
+</code></pre>
+<p>Computes the target cell from the column index dictionary value and the
+layer-specific start position. For HList the cell is in a column at
+HLIST_START_ROW + 1; for VList it is in a row at VLIST_START_COL. The
+result is cached until WriteVariable resets it for the next variable.</p>
+<p><strong>Returns:</strong> Range. The main cell range, or Nothing if the index is invalid.</p>
+<hr />
+<h3>var-print-range</h3>
+<p><strong>Resolve the printed companion cell range (HList only)</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get VarPrintRange() As Range
+</code></pre>
+<p>Returns the cell on the printed companion worksheet that corresponds to
+the current variable. Uses the same column index as VarRange but targets
+the printWksh. Returns Nothing when no printed worksheet is attached.</p>
+<p><strong>Returns:</strong> Range. The printed companion cell range, or Nothing.</p>
+<hr />
+<h3>var-crf-range</h3>
+<p><strong>Resolve the CRF companion cell range (HList only)</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get VarCRFRange() As Range
+</code></pre>
+<p>Returns the cell on the CRF companion worksheet at the row specified by
+the &quot;crf index&quot; dictionary value. Returns Nothing when no CRF worksheet
+is attached or when the crf index is zero or missing.</p>
+<p><strong>Returns:</strong> Range. The CRF companion cell range, or Nothing.</p>
+<hr />
+<h2>Sheet Dispatch</h2>
+<h3>write-main-sheet</h3>
+<p><strong>Dispatch all writing steps for the main worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub WriteMainSheet()
+</code></pre>
+<p>Orchestrates the sequence of writing operations on the main worksheet:
+label, formula, type formatting, choices, validation, and conditional
+formatting. The exact set of conditional formatting steps depends on
+the active layer (HList applies geo, standard, and unique formatting;
+VList applies standard formatting only).</p>
+<hr />
+<h3>write-print-sheet</h3>
+<p><strong>Write variable label to the printed companion sheet (HList only)</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub WritePrintSheet()
+</code></pre>
+<p>Delegates to AddLabel with usePrinted=True so that the label is written
+to the printed companion worksheet instead of the main sheet. Exits
+silently when no printed worksheet is attached.</p>
+<hr />
+<h3>write-crf-sheet</h3>
+<p><strong>Write variable data to the CRF companion sheet (HList only)</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub WriteCRFSheet()
+</code></pre>
+<p>Resolves the CRF cell range and delegates to AddCRFLabel, AddCRFType,
+and AddCRFChoices. Exits silently when no CRF worksheet is attached or
+when the variable has no CRF index.</p>
+<hr />
+<h2>Label Writing</h2>
+<h3>add-label</h3>
+<p><strong>Write variable label, sublabel, name, notes, and formatting</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AddLabel(Optional ByVal usePrinted As Boolean = False)
+</code></pre>
+<p>Writes the main label, sublabel, variable name, notes, control info, and
+design formatting to the target cell range. For HList layers this includes
+header cells, named ranges for table anchors, comments for notes, hidden
+control rows, geo-specific formatting, editable labels, and column hiding.
+For VList layers the layout is row-based with adjacent cells for control
+info and label formatting.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>usePrinted</code>: Optional Boolean. When True, writes to the printed companion range instead of the main range. Defaults to False.</li>
+</ul>
+<hr />
+<h2>Type Formatting</h2>
+<h3>add-type</h3>
+<p><strong>Apply Excel number format based on variable type and format</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AddType()
+</code></pre>
+<p>Reads the variable type (text, date, decimal, integer) and optional
+format string from the dictionary, then sets the NumberFormat property
+on the main cell range. Supports built-in formats such as round, percentage,
+euros, and dollars as well as custom format strings.</p>
+<hr />
+<h2>Formula Application</h2>
+<h3>add-formula</h3>
+<p><strong>Parse and apply a formula to the variable cell</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AddFormula()
+</code></pre>
+<p>Handles formula, case_when, and choice_formula control types. Parses the
+control details string through the Formulas class, validates the result,
+and writes the Excel formula to the cell. If the parsed formula fails a
+test application it is replaced with a failure placeholder string. Also
+applies calculated-formula design formatting to the cell and its header.</p>
+<hr />
+<h2>Choice Setup</h2>
+<h3>add-choices</h3>
+<p><strong>Set up dropdown validation for choice, list, and geo variables</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AddChoices()
+</code></pre>
+<p>Handles choice_manual, choice_multiple, choice_custom, list_auto, and geo1
+control types. For each type it populates a BetterArray of categories,
+registers them with the appropriate IDropdownLists manager, and calls
+SetValidation to apply dropdown data validation to the cell. The
+choice_custom branch additionally creates a hyperlink from the label cell
+to the dropdown worksheet and adds a return link. The geo1 branch sets up
+admin1 through admin4 dropdown cascades.</p>
+<hr />
+<h2>Data Validation</h2>
+<h3>add-validation</h3>
+<p><strong>Add min/max data validation to the variable cell</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AddValidation()
+</code></pre>
+<p>Reads min and max values from the dictionary, converts them to Excel
+validation formulas via the ExcelFormula helper, and applies whole-number,
+date, or decimal validation with the configured alert style. Both OS-local
+and standard formula variants are attempted to ensure cross-platform
+compatibility. Text variables are skipped.</p>
+<hr />
+<h2>Conditional Formatting</h2>
+<h3>add-conditional-formatting</h3>
+<p><strong>Add expression-based conditional formatting</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AddConditionalFormatting()
+</code></pre>
+<p>Reads the formatting condition variable name from the dictionary, resolves
+its address, and adds an xlExpression format condition that highlights the
+cell when the condition variable equals 1. The interior colour, font
+colour, bold, and italic properties are copied from the formatting values
+cell in the dictionary.</p>
+<hr />
+<h3>add-unique-conditional-formatting</h3>
+<p><strong>Add unique/duplicate conditional formatting (HList only)</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AddUniqueConditionalFormatting()
+</code></pre>
+<p>When the dictionary marks a variable with unique=yes, adds a duplicate-
+values format condition that highlights duplicate entries with a red
+interior. This is typically used for patient IDs or other fields that
+must be unique across records.</p>
+<hr />
+<h3>add-geo-conditional-formatting</h3>
+<p><strong>Add geo pcode conditional formatting (HList only)</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AddGeoConditionalFormatting()
+</code></pre>
+<p>For geo-type variables, adds a format condition that highlights the cell
+in orange when the corresponding pcode variable is empty but the geo
+variable itself is not. This alerts users that a geographic name was
+entered but the pcode lookup failed.</p>
+<hr />
+<h2>CRF Companion</h2>
+<h3>add-crf-label</h3>
+<p><strong>Write CRF label for the current variable</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AddCRFLabel(ByVal crfRng As Range)
+</code></pre>
+<p>Writes the main label and sublabel to the CRF row, applies main-label
+and sublabel character formatting, and hides the row for formula-based
+or hidden variables. Also sets the table anchor named range on the first
+CRF row.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>crfRng</code>: Range. The target cell on the CRF companion worksheet.</li>
+</ul>
+<hr />
+<h3>add-crf-type</h3>
+<p><strong>Apply CRF-specific type formatting</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AddCRFType(ByVal crfRng As Range)
+</code></pre>
+<p>Maps the variable type and format to a CRF design scope constant (such
+as CRFText, CRFDate, CRFDecimal) and applies the corresponding visual
+format to the CRF cell. Skips choice_manual variables because their
+formatting is handled by AddCRFChoices instead.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>crfRng</code>: Range. The target cell on the CRF companion worksheet.</li>
+</ul>
+<hr />
+<h3>add-crf-choices</h3>
+<p><strong>Write CRF choice headers and value cells</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AddCRFChoices(ByVal crfRng As Range)
+</code></pre>
+<p>For choice_manual variables, retrieves the short-label categories from
+specs, writes optional column headers above the CRF row, and applies
+CRFChoiceValues formatting to each value cell. The headers are only
+written when the &quot;crf choices&quot; dictionary value is &quot;yes&quot;.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>crfRng</code>: Range. The target cell on the CRF companion worksheet.</li>
+</ul>
+<hr />
+<h2>Formula Helpers</h2>
+<h3>failed-formula</h3>
+<p><strong>Test if a formula fails when applied to a cell</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function FailedFormula(ByVal frmName As String) As Boolean
+</code></pre>
+<p>Writes the formula to cell A1 of the main worksheet as a test. If the
+assignment raises an error the function returns True, indicating the
+formula is invalid. The cell is cleared after the test regardless of
+outcome. Application.DisplayAlerts is temporarily suppressed during
+the test.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>frmName</code>: String. The Excel formula expression to test (without leading equals sign).</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True if the formula raised an error, False otherwise.</p>
+<hr />
+<h3>excel-formula</h3>
+<p><strong>Convert a formula value to an Excel-compatible format for validation</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ExcelFormula(ByVal formVal As String, _
+                              ByVal validationTypes As Long, _
+                              Optional ByVal useOS As Boolean = False) As Variant
+</code></pre>
+<p>Parses the given formula string through the Formulas class, optionally
+converts it to an OS-local formula via OSFormula, and then converts the
+result to the appropriate VBA type (CInt, CDate, or CLng) based on the
+validation type when no formula literals are present. Returns Empty if
+the formula is invalid or fails the FailedFormula test.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>formVal</code>: String. The raw formula value from the dictionary (e.g. a min or max expression).</li>
+<li><code>validationTypes</code>: Long. The Excel validation type constant (xlValidateWholeNumber, xlValidateDate, or xlValidateDecimal).</li>
+<li><code>useOS</code>: Optional Boolean. When True, converts the formula to OS-local format via OSFormula. Defaults to False.</li>
+</ul>
+<p><strong>Returns:</strong> Variant. The converted formula value, or Empty if invalid.</p>
+<hr />
+<h3>os-formula</h3>
+<p><strong>Convert a formula to OS-specific local format</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function OSFormula(ByVal formVal As String) As String
+</code></pre>
+<p>On macOS with VList layers, returns the formula as-is because FormulaLocal
+is unreliable. On Windows or for HList layers, temporarily writes the
+formula to cell A1, reads back FormulaLocal, and restores the previous
+cell content. This ensures validation formulas use the correct locale-
+aware separator characters.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>formVal</code>: String. The Excel formula expression to convert.</li>
+</ul>
+<p><strong>Returns:</strong> String. The OS-local formula string.</p>
+<hr />
+<h2>Error Handling</h2>
+<h3>throw-error</h3>
+<p><strong>Raise a descriptive VBA error from this class</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowError(ByVal errorMessage As String)
+</code></pre>
+<p>Raises a custom VBA error with number vbObjectError + 516 and the
+class name as the source. Called by Create when required arguments are
+Nothing.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>errorMessage</code>: String. The error description to include in the raised error.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>VBA.vbObjectError + 516 always.</li>
+</ul>
+<hr />
+<h2>Interface Implementation</h2>
+<h3>IVarWriter_WriteVariable</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub IVarWriter_WriteVariable(ByVal varName As String)
+</code></pre>
+<h1>Delegated members satisfying the IVarWriter contract.</h1>
+<hr />
+</details>
+<details>
+<summary>Used in (4 file(s))</summary>
+<ul>
+<li><a href="src/classes/sections/IVarWriter.cls">IVarWriter.cls</a></li>
+<li><a href="src/classes/sections/SectionBuilder.cls">SectionBuilder.cls</a></li>
+<li><a href="src/classes/sections/VarWriter.cls">VarWriter.cls</a></li>
+<li><a href="src/tests/modules/sections/TestVarWriter.bas">TestVarWriter.bas</a></li>
+</ul>
+</details>
+
+  </main>
+</body>
+</html>
+

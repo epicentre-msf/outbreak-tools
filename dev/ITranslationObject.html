@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ITranslationObject - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>ITranslationObject</h1>
+<p>Defines the public contract for the TranslationObject class, exposing
+tag-based translation of strings, ranges, and user-form controls from
+a ListObject translation table keyed by language column.</p>
+<h2>Elements</h2>
+<h3>Name</h3>
+<p><strong>Name of the translation object</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Name() As String
+</code></pre>
+<p>Core translation accessors and lookups.</p>
+<p><strong>Returns:</strong> String. Descriptive identifier including table and language.</p>
+<hr />
+<h3>Language</h3>
+<p><strong>Current language header associated with the translation table</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Language() As String
+</code></pre>
+<p><strong>Returns:</strong> String. The active language.</p>
+<hr />
+<h3>LanguagesList</h3>
+<p><strong>List of available language headers</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get LanguagesList() As BetterArray
+</code></pre>
+<p><strong>Returns:</strong> BetterArray. Each language header, excluding the helper/tag column.</p>
+<hr />
+<h3>ValueExists</h3>
+<p><strong>Whether a tag exists in the translation table</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ValueExists(ByVal text As String) As Boolean
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>text</code>: String. Tag to search in the translation table.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the tag exists for the configured language.</p>
+<hr />
+<h3>TranslatedValue</h3>
+<p><strong>Translate a text tag or formula string</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function TranslatedValue(ByVal Text As String, Optional ByVal containsFormula As Boolean = False) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>Text</code>: String. Text to translate.</li>
+<li><code>containsFormula</code>: Boolean. When True, only quoted chunks are translated. Defaults to False.</li>
+</ul>
+<p><strong>Returns:</strong> String. The translated value, or the original text when no translation was found.</p>
+<hr />
+<h2>Outside</h2>
+<h3>TranslateForm</h3>
+<p><strong>Translate all supported controls on a user form</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub TranslateForm(ByVal UserFrm As Object)
+</code></pre>
+<p>Bulk translation of forms and ranges.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>UserFrm</code>: Object. Any user form exposing a Controls collection.</li>
+</ul>
+<hr />
+<h3>TranslateRange</h3>
+<p><strong>Translate all values in a column range</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub TranslateRange(ByVal colRng As Range, Optional ByVal containsFormula As Boolean = False)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>colRng</code>: Range. Column range whose values should be translated.</li>
+<li><code>containsFormula</code>: Boolean. When True, translates as formulas. Defaults to False.</li>
+</ul>
+<hr />
+<h2>Checkings</h2>
+<h3>HasCheckings</h3>
+<p><strong>Whether the translator logged diagnostic notes</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get HasCheckings() As Boolean: End Property
+</code></pre>
+<p>Diagnostic logging access.</p>
+<p><strong>Returns:</strong> Boolean. True when at least one entry exists.</p>
+<hr />
+<h3>CheckingValues</h3>
+<p><strong>Retrieve the diagnostic log entries</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get CheckingValues() As Object: End Property
+</code></pre>
+<p><strong>Returns:</strong> Object. The checking instance, or Nothing.</p>
+<hr />
+
+  </main>
+</body>
+</html>
+

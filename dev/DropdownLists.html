@@ -1,0 +1,634 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DropdownLists - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>DropdownLists</h1>
+<p>Manages worksheet-based dropdown lists backed by one-column ListObjects.
+Each dropdown is registered with an internal name-to-ListObject mapping
+and a workbook-level named reference. Supports adding, removing,
+updating, sorting, translating, and validating dropdown entries, plus
+hyperlink navigation between the dropdown sheet and consuming cells.</p>
+<p><strong>Depends on:</strong> <a href="HiddenNames.html">HiddenNames</a>, <a href="BetterArray.html">BetterArray</a>, <a href="Checking.html">Checking</a>, increment by default the counter on the number of dropdowns by 1. Everytime a, dropdown is added to the current worksheet. The counter is saved somewhere the, first cell fo the worksheet. It starts at 1., dropdowns in the current dropdown worksheet., Where all the dropdowns should start, sometimes there could be a need, for header for the dropdown (like in custom dropdowns, so we shift one line), checking objects</p>
+<p><strong>Version:</strong> 1.0 (2026-02-09)</p>
+<h2>Factory</h2>
+<h3>create</h3>
+<p><strong>Create a new DropdownLists instance</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create(ByVal outsh As Worksheet, Optional ByVal hprefix As String = &quot;dropdown_&quot;) As IDropdownLists
+</code></pre>
+<p>Initialises a DropdownLists object on the given worksheet. Each
+dropdown is stored as a one-column ListObject; the header prefix
+distinguishes multiple dropdown worksheets in the same workbook.
+On first use the worksheet is formatted (gridlines removed, registry
+columns created) and an initialisation flag is stored via HiddenNames.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>outsh</code>: Worksheet. The worksheet to host the dropdown ListObjects.</li>
+<li><code>hprefix</code>: Optional String. Prefix for ListObject header names. Defaults to &quot;dropdown_&quot;.</li>
+</ul>
+<p><strong>Returns:</strong> IDropdownLists. The new instance.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ElementNotFound When outsh is Nothing.</li>
+</ul>
+<hr />
+<h2>Modify</h2>
+<h3>add</h3>
+<p><strong>Add a new dropdown to the worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub Add(ByVal listValues As BetterArray, ByVal listName As String, _
+    Optional ByVal addLabel As Boolean = False, _
+    Optional ByVal counterPrefix As String = vbNullString, _
+    Optional ByVal tableStyle As String = &quot;TableStyleLight13&quot;)
+</code></pre>
+<p>Creates a one-column ListObject populated with the supplied values,
+registers the name-to-ListObject mapping, and creates a workbook-level
+named reference. Optionally writes a visible label above the ListObject
+and applies a table style. Silently exits when the dropdown already exists.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>listValues</code>: BetterArray. String values to populate the ListObject.</li>
+<li><code>listName</code>: String. Name to assign to the dropdown.</li>
+<li><code>addLabel</code>: Optional Boolean. When True, writes a label above the ListObject. Defaults to False.</li>
+<li><code>counterPrefix</code>: Optional String. Prefix for the label text. Defaults to vbNullString.</li>
+<li><code>tableStyle</code>: Optional String. Excel table style name. Defaults to &quot;TableStyleLight13&quot;.</li>
+</ul>
+<hr />
+<h3>remove</h3>
+<p><strong>Remove a dropdown from the worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub Remove(ByVal listName As String)
+</code></pre>
+<p>Deletes the ListObject, its workbook-level name reference, the
+internal registry entry, and decrements both counters. Silently
+exits when the dropdown does not exist.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>listName</code>: String. Dropdown name to remove.</li>
+</ul>
+<hr />
+<h3>clear-list</h3>
+<p><strong>Clear entries of a dropdown</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ClearList(ByVal listName As String)
+</code></pre>
+<p>Removes all data rows from the dropdown ListObject without deleting
+the dropdown itself. Silently exits when the dropdown does not exist.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>listName</code>: String. Dropdown name to clear.</li>
+</ul>
+<hr />
+<h3>update</h3>
+<p><strong>Update a dropdown with new values</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub Update(ByVal UpdateData As BetterArray, ByVal listName As String, _
+    Optional ByVal pasteAtBottom As Boolean = False, _
+    Optional ByVal removeDuplicates As Boolean = True)
+</code></pre>
+<p>Replaces or appends values in the specified dropdown. When
+pasteAtBottom is True, appends below existing data. Duplicate
+entries are removed when removeDuplicates is True. Silently exits
+when the dropdown does not exist or the data is empty.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>UpdateData</code>: BetterArray. New values to write.</li>
+<li><code>listName</code>: String. Dropdown name to update.</li>
+<li><code>pasteAtBottom</code>: Optional Boolean. When True, appends below existing rows. Defaults to False.</li>
+<li><code>removeDuplicates</code>: Optional Boolean. When True, removes duplicate entries. Defaults to True.</li>
+</ul>
+<hr />
+<h3>sort</h3>
+<p><strong>Sort a dropdown ListObject</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub Sort(ByVal listName As String, _
+    Optional ByVal sortOrder As Long = xlAscending)
+</code></pre>
+<p>Sorts the dropdown entries using the specified sort order. Silently
+exits when the dropdown does not exist.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>listName</code>: String. Dropdown name to sort.</li>
+<li><code>sortOrder</code>: Optional Long. xlSortOrder enumeration value. Defaults to xlAscending.</li>
+</ul>
+<hr />
+<h3>translate</h3>
+<p><strong>Translate all dropdowns on the worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub Translate(ByVal trads As Object, Optional ByVal force As Boolean = False, Optional ByVal exclude As String)
+</code></pre>
+<p>Iterates over every registered ListObject and applies the supplied
+TranslationObject to its data body. Skips translation when the
+current language matches and force is False. ListObjects whose name
+contains the exclude substring are skipped.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>trads</code>: Object. A TranslationObject providing translations.</li>
+<li><code>force</code>: Optional Boolean. When True, translates regardless of language match. Defaults to False.</li>
+<li><code>exclude</code>: Optional String. Substring filter to skip matching ListObjects.</li>
+</ul>
+<hr />
+<h2>Operations</h2>
+<h3>set-validation</h3>
+<p><strong>Apply dropdown validation to a Range</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub SetValidation(ByVal cellRng As Range, ByVal listName As String, _
+    Optional ByVal alertType As String = &quot;info&quot;, _
+    Optional ByVal message As String = vbNullString, _
+    Optional ByVal showError As Boolean = True)
+</code></pre>
+<p>Sets data validation on the target Range using the specified dropdown
+as the validation source. alertType controls the severity: &quot;info&quot;
+shows an information alert, &quot;warning&quot; shows a warning, and &quot;error&quot;
+prevents entry of values outside the list. Silently exits when the
+dropdown or range does not exist.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>cellRng</code>: Range. Target range to validate.</li>
+<li><code>listName</code>: String. Dropdown name to use as the validation source.</li>
+<li><code>alertType</code>: Optional String. Alert severity (&quot;info&quot;, &quot;warning&quot;, &quot;error&quot;). Defaults to &quot;info&quot;.</li>
+<li><code>message</code>: Optional String. Message shown on validation failure. Defaults to vbNullString.</li>
+<li><code>showError</code>: Optional Boolean. When True, displays validation feedback. Defaults to True.</li>
+</ul>
+<hr />
+<h3>add-return-link</h3>
+<p><strong>Add a return hyperlink on the dropdown header</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AddReturnLink(ByVal listName As String, ByVal returnRng As Range)
+</code></pre>
+<p>Adds a hyperlink on the dropdown label cell that navigates back to
+the specified range.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>listName</code>: String. Dropdown whose label receives the link.</li>
+<li><code>returnRng</code>: Range. Target destination of the hyperlink.</li>
+</ul>
+<hr />
+<h3>add-hyperlink</h3>
+<p><strong>Add a hyperlink on a cell targeting a dropdown</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AddHyperLink(ByVal listName As String, ByVal linkRng As Range)
+</code></pre>
+<p>Adds a hyperlink on the specified range that navigates to the label
+cell of the dropdown.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>listName</code>: String. Dropdown to navigate to.</li>
+<li><code>linkRng</code>: Range. Cell that receives the hyperlink.</li>
+</ul>
+<hr />
+<details>
+<summary>Internal members (not exported)</summary>
+<h2>Elements</h2>
+<h3>self</h3>
+<p><strong>Self-reference returning the interface pointer</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Self() As IDropdownLists
+</code></pre>
+<p><strong>Returns:</strong> IDropdownLists. This instance.</p>
+<hr />
+<h3>wksh</h3>
+<p><strong>Worksheet hosting the dropdown lists</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Wksh() As Worksheet
+</code></pre>
+<p><strong>Returns:</strong> Worksheet. The host worksheet.</p>
+<hr />
+<h3>wksh-set</h3>
+<p><strong>Assign the worksheet and initialise the dropdown registry</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Set Wksh(ByVal outsh As Worksheet)
+</code></pre>
+<p>On first assignment, formats the worksheet (removes gridlines, creates
+internal registry columns) and stores an initialisation flag. Resets
+cached HiddenNames stores on every assignment.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>outsh</code>: Worksheet. The worksheet to host dropdown ListObjects.</li>
+</ul>
+<hr />
+<h3>all-dropdowns</h3>
+<p><strong>All registered dropdown names</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get AllDropdowns() As BetterArray
+</code></pre>
+<p>Scans the internal registry column and collects every dropdown name
+into a BetterArray.</p>
+<p><strong>Returns:</strong> BetterArray. The dropdown name list.</p>
+<hr />
+<h3>header-prefix</h3>
+<p><strong>Header prefix used for ListObject names</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get headerPrefix() As String
+</code></pre>
+<p><strong>Returns:</strong> String. The current prefix.</p>
+<hr />
+<h3>header-prefix-set</h3>
+<p><strong>Assign the header prefix</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Let headerPrefix(ByVal hprefix As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>hprefix</code>: String. The new prefix value.</li>
+</ul>
+<hr />
+<h3>name</h3>
+<p><strong>Name of the dropdown object</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get Name() As String
+</code></pre>
+<p>Returns the name of the worksheet that hosts the dropdown lists.</p>
+<p><strong>Returns:</strong> String. The worksheet name.</p>
+<hr />
+<h2>Workbook Counter</h2>
+<h3>internal-store</h3>
+<p><strong>Lazy-loaded HiddenNames store for workbook or sheet scope</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get InternalStore(Optional ByVal sheetLevel As Boolean = False) As IHiddenNames
+</code></pre>
+<p>Returns the cached IHiddenNames instance for either the workbook
+(default) or the worksheet. Creates the store on first access.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetLevel</code>: Optional Boolean. When True, returns the worksheet-level store. Defaults to False.</li>
+</ul>
+<p><strong>Returns:</strong> IHiddenNames. The requested store.</p>
+<hr />
+<h3>ensure-workbook-counter</h3>
+<p><strong>Ensure the workbook-level dropdown counter exists</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureWorkbookCounter()
+</code></pre>
+<hr />
+<h3>workbook-counter-value</h3>
+<p><strong>Read the current workbook dropdown counter</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function WorkbookCounterValue() As Long
+</code></pre>
+<p><strong>Returns:</strong> Long. The counter value.</p>
+<hr />
+<h3>set-workbook-counter</h3>
+<p><strong>Write a new workbook dropdown counter value</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub SetWorkbookCounter(ByVal newValue As Long)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>newValue</code>: Long. The value to store.</li>
+</ul>
+<hr />
+<h3>increment-workbook-counter</h3>
+<p><strong>Increment the workbook dropdown counter by one</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub IncrementWorkbookCounter()
+</code></pre>
+<hr />
+<h3>decrement-workbook-counter</h3>
+<p><strong>Decrement the workbook dropdown counter by one</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub DecrementWorkbookCounter()
+</code></pre>
+<hr />
+<h2>Worksheet Counter</h2>
+<h3>ensure-worksheet-counter</h3>
+<p><strong>Ensure the worksheet-level dropdown counter exists</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureWorksheetCounter()
+</code></pre>
+<hr />
+<h3>sheet-counter-value</h3>
+<p><strong>Read the current worksheet dropdown counter</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SheetCounterValue() As Long
+</code></pre>
+<p><strong>Returns:</strong> Long. The counter value.</p>
+<hr />
+<h3>set-sheet-counter</h3>
+<p><strong>Write a new worksheet dropdown counter value</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub SetSheetCounter(ByVal newValue As Long)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>newValue</code>: Long. The value to store (clamped to 0).</li>
+</ul>
+<hr />
+<h3>increment-sheet-counter</h3>
+<p><strong>Increment the worksheet dropdown counter by one</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub IncrementSheetCounter()
+</code></pre>
+<hr />
+<h3>decrement-sheet-counter</h3>
+<p><strong>Decrement the worksheet dropdown counter by one</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub DecrementSheetCounter()
+</code></pre>
+<hr />
+<h3>increment-counters</h3>
+<p><strong>Increment both workbook and worksheet counters</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub IncrementCounters()
+</code></pre>
+<hr />
+<h3>decrement-counters</h3>
+<p><strong>Decrement both workbook and worksheet counters</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub DecrementCounters()
+</code></pre>
+<hr />
+<h2>Helpers</h2>
+<h3>remove-gridlines</h3>
+<p><strong>Remove gridlines from a worksheet view</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RemoveGridLines(ByVal sh As Worksheet, Optional DisplayZeros As Boolean = False)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. Target worksheet.</li>
+<li><code>DisplayZeros</code>: Optional Boolean. When True, displays zeros. Defaults to False.</li>
+</ul>
+<hr />
+<h3>last-column</h3>
+<p><strong>Find the next available column for a new dropdown</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function LastColumn() As Long
+</code></pre>
+<p>Returns the column index two positions to the right of the rightmost
+occupied header cell. This leaves a blank separator column between
+adjacent ListObjects.</p>
+<p><strong>Returns:</strong> Long. The 1-based column index.</p>
+<hr />
+<h3>sanitized-list-name</h3>
+<p><strong>Sanitise a dropdown name for use in ListObject naming</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SanitizedListName(ByVal listName As String) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>listName</code>: String. The dropdown name.</li>
+</ul>
+<p><strong>Returns:</strong> String. The trimmed and space-replaced name.</p>
+<hr />
+<h3>list-object-header-name</h3>
+<p><strong>Build the ListObject header name for a dropdown</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ListObjectHeaderName(ByVal listName As String) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>listName</code>: String. The dropdown name.</li>
+</ul>
+<p><strong>Returns:</strong> String. The prefixed header name.</p>
+<hr />
+<h3>corresponding-workbook-name</h3>
+<p><strong>Workbook-level name used for the dropdown reference</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get CorrespondingWorkbookName(ByVal listName As String) As String
+</code></pre>
+<p>Combines the header prefix with the ListObject header name. When no
+prefix is set, falls back to the DEFAULTNAMEPREFIX constant.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>listName</code>: String. The dropdown name.</li>
+</ul>
+<p><strong>Returns:</strong> String. The workbook-level reference name.</p>
+<hr />
+<h3>list-object-name</h3>
+<p><strong>ListObject name for a dropdown</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get ListObjectName(ByVal listName As String) As String
+</code></pre>
+<p>Returns the cached ListObject name for an existing dropdown, or
+generates and registers a new one for a dropdown being created.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>listName</code>: String. Dropdown name.</li>
+</ul>
+<p><strong>Returns:</strong> String. The ListObject name.</p>
+<hr />
+<h3>add-lo-name</h3>
+<p><strong>Register a dropdown-to-ListObject name mapping</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AddLoName(ByVal listName As String, ByVal loName As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>listName</code>: String. The dropdown name.</li>
+<li><code>loName</code>: String. The corresponding ListObject name.</li>
+</ul>
+<hr />
+<h3>retrieve-lo-name</h3>
+<p><strong>Retrieve the ListObject name for a dropdown</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get RetrieveLoName(ByVal lst As String) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>lst</code>: String. The dropdown name.</li>
+</ul>
+<p><strong>Returns:</strong> String. The ListObject name, or vbNullString when not found.</p>
+<hr />
+<h3>remove-lo-name</h3>
+<p><strong>Remove a dropdown-to-ListObject name mapping</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RemoveLoName(ByVal lst As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>lst</code>: String. The dropdown name to unregister.</li>
+</ul>
+<hr />
+<h3>length</h3>
+<p><strong>Total number of dropdowns on the worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get Length() As Long
+</code></pre>
+<p><strong>Returns:</strong> Long. The dropdown count.</p>
+<hr />
+<h3>current-dropdown-label</h3>
+<p><strong>Build the display label for the next dropdown</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function CurrentDropdownLabel(ByVal labelPrefix As String) As String
+</code></pre>
+<p>Combines the prefix with the current counter to produce a
+human-readable label (e.g. &quot;Custom Dropdown 3&quot;).</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>labelPrefix</code>: String. Text prefix for the label.</li>
+</ul>
+<p><strong>Returns:</strong> String. The assembled label.</p>
+<hr />
+<h3>exists</h3>
+<p><strong>Check whether a dropdown exists on the worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function Exists(ByVal listName As String) As Boolean
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>listName</code>: String. Dropdown name to search for.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the dropdown is found.</p>
+<hr />
+<h3>label-range</h3>
+<p><strong>Label cell above a dropdown ListObject</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get LabelRange(ByVal listName As String) As Range
+</code></pre>
+<p>Returns the cell directly above the header row of the specified
+dropdown ListObject. Returns Nothing when the dropdown does not exist.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>listName</code>: String. Dropdown name to look up.</li>
+</ul>
+<p><strong>Returns:</strong> Range. The label cell, or Nothing.</p>
+<hr />
+<h3>values</h3>
+<p><strong>Retrieve the values of a dropdown</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get Values(ByVal listName As String, Optional ByVal includeHeaders As Boolean = False) As BetterArray
+</code></pre>
+<p>Returns a BetterArray of the entries stored in the specified dropdown.
+Logs a diagnostic note and exits when the dropdown does not exist.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>listName</code>: String. Dropdown name to read from.</li>
+<li><code>includeHeaders</code>: Optional Boolean. When True, includes the header row. Defaults to False.</li>
+</ul>
+<p><strong>Returns:</strong> BetterArray. The dropdown entries.</p>
+<hr />
+<h2>Operations</h2>
+<h3>add-link</h3>
+<p><strong>Add a hyperlink between a dropdown and a cell</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AddLink(ByVal listName As String, ByVal targetRng As Range, _
+    Optional ByVal returnLink As Boolean = False)
+</code></pre>
+<p>Creates a hyperlink that navigates between the dropdown label cell
+and the specified target range. When returnLink is True, the link
+is placed on the dropdown label pointing at targetRng; when False,
+the link is placed on targetRng pointing at the dropdown label.
+Preserves the original cell formatting after link insertion.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>listName</code>: String. Dropdown name whose label is involved.</li>
+<li><code>targetRng</code>: Range. The other end of the hyperlink.</li>
+<li><code>returnLink</code>: Optional Boolean. When True, link is on the dropdown side. Defaults to False.</li>
+</ul>
+<hr />
+<h2>Checkings</h2>
+<h3>log-info</h3>
+<p><strong>Record a diagnostic entry</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub LogInfo(ByVal label As String, _
+    Optional ByVal scope As Byte = checkingNote)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>label</code>: String. The message to log.</li>
+<li><code>scope</code>: Optional Byte. Severity level. Defaults to checkingNote.</li>
+</ul>
+<hr />
+<h3>has-checkings</h3>
+<p><strong>Whether the dropdown object has logged diagnostic messages</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get HasCheckings() As Boolean
+</code></pre>
+<p><strong>Returns:</strong> Boolean. True when diagnostic entries exist.</p>
+<hr />
+<h3>checking-values</h3>
+<p><strong>Retrieve the diagnostic log entries</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get CheckingValues() As Object
+</code></pre>
+<p><strong>Returns:</strong> Object. An IChecking instance, or Nothing.</p>
+<hr />
+<h3>show-debug</h3>
+<p><strong>Print a debug trace to the Immediate window</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ShowDebug()
+</code></pre>
+<hr />
+<h3>throw-error</h3>
+<p><strong>Raise a ProjectError-based exception</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>errNumb</code>: Long. ProjectError code.</li>
+<li><code>errorMessage</code>: String. Descriptive message.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.<varies> Always raises the specified error.</li>
+</ul>
+<hr />
+</details>
+<details>
+<summary>Used in (49 file(s))</summary>
+<ul>
+<li><a href="src/classes/analyses/AnalysisOutput.cls">AnalysisOutput.cls</a></li>
+<li><a href="src/classes/dataio/LLImporter.cls">LLImporter.cls</a></li>
+<li><a href="src/classes/designer/DesignerPreparation.cls">DesignerPreparation.cls</a></li>
+<li><a href="src/classes/designer/IDesignerPreparation.cls">IDesignerPreparation.cls</a></li>
+<li><a href="src/classes/general/CustomTable.cls">CustomTable.cls</a></li>
+<li><a href="src/classes/general/DropdownLists.cls">DropdownLists.cls</a></li>
+<li><a href="src/classes/general/ICustomTable.cls">ICustomTable.cls</a></li>
+<li><a href="src/classes/general/IDropdownLists.cls">IDropdownLists.cls</a></li>
+<li><a href="src/classes/geo/LLGeo.cls">LLGeo.cls</a></li>
+<li><a href="src/classes/linelist/ILinelist.cls">ILinelist.cls</a></li>
+<li><a href="src/classes/linelist/Linelist.cls">Linelist.cls</a></li>
+<li><a href="src/classes/linelist/ListBuilder.cls">ListBuilder.cls</a></li>
+<li><a href="src/classes/mastersetup/DiseaseSheet.cls">DiseaseSheet.cls</a></li>
+<li><a href="src/classes/mastersetup/EventMasterSetup.cls">EventMasterSetup.cls</a></li>
+<li><a href="src/classes/mastersetup/IDiseaseSheet.cls">IDiseaseSheet.cls</a></li>
+<li><a href="src/classes/mastersetup/IEventMasterSetup.cls">IEventMasterSetup.cls</a></li>
+<li><a href="src/classes/mastersetup/IMasterSetupPreparation.cls">IMasterSetupPreparation.cls</a></li>
+<li><a href="src/classes/mastersetup/IMasterSetupVariables.cls">IMasterSetupVariables.cls</a></li>
+<li><a href="src/classes/mastersetup/MasterSetupPreparation.cls">MasterSetupPreparation.cls</a></li>
+<li><a href="src/classes/mastersetup/MasterSetupVariables.cls">MasterSetupVariables.cls</a></li>
+<li><a href="src/classes/sections/SectionBuilder.cls">SectionBuilder.cls</a></li>
+<li><a href="src/classes/sections/VarWriter.cls">VarWriter.cls</a></li>
+<li><a href="src/classes/setup/EventSetup.cls">EventSetup.cls</a></li>
+<li><a href="src/classes/setup/IEventSetup.cls">IEventSetup.cls</a></li>
+<li><a href="src/classes/setup/ISetupPreparation.cls">ISetupPreparation.cls</a></li>
+<li><a href="src/classes/setup/SetupErrors.cls">SetupErrors.cls</a></li>
+<li><a href="src/classes/setup/SetupPreparation.cls">SetupPreparation.cls</a></li>
+<li><a href="src/classes/stale/designer-codes/modules/implements/DevModule.bas">DevModule.bas</a></li>
+<li><a href="src/classes/stale/designer-codes/modules/implements/LinelistEvents.bas">LinelistEvents.bas</a></li>
+<li><a href="src/classes/stale/designer-codes/modules/implements/LinelistGeo.bas">LinelistGeo.bas</a></li>
+<li><a href="src/modules/designer/EventsDesignerAdvanced.bas">EventsDesignerAdvanced.bas</a></li>
+<li><a href="src/modules/geo/GeoModule.bas">GeoModule.bas</a></li>
+<li><a href="src/modules/mastersetup/EventsMasterSetupRibbon.bas">EventsMasterSetupRibbon.bas</a></li>
+<li><a href="src/modules/mastersetup/MasterSetupHelpers.bas">MasterSetupHelpers.bas</a></li>
+<li><a href="src/msetup-codes/modules/EventsRibbon.bas">EventsRibbon.bas</a></li>
+<li><a href="src/msetup-codes/modules/Exports.bas">Exports.bas</a></li>
+<li><a href="src/msetup-codes/modules/ManageDiseases.bas">ManageDiseases.bas</a></li>
+<li><a href="src/msetup-codes/modules/Misc.bas">Misc.bas</a></li>
+<li><a href="src/tests/modules/designer/TestDesignerRibbon.bas">TestDesignerRibbon.bas</a></li>
+<li><a href="src/tests/modules/general/TestDropdownLists.bas">TestDropdownLists.bas</a></li>
+<li><a href="src/tests/modules/mastersetup/TestDiseaseIntegration.bas">TestDiseaseIntegration.bas</a></li>
+<li><a href="src/tests/modules/mastersetup/TestDiseaseSheet.bas">TestDiseaseSheet.bas</a></li>
+<li><a href="src/tests/modules/mastersetup/TestDropdownStub.cls">TestDropdownStub.cls</a></li>
+<li><a href="src/tests/modules/mastersetup/TestEventMasterSetup.bas">TestEventMasterSetup.bas</a></li>
+<li><a href="src/tests/modules/mastersetup/TestMasterSetupVariables.bas">TestMasterSetupVariables.bas</a></li>
+<li><a href="src/tests/modules/setup/TestEventSetup.bas">TestEventSetup.bas</a></li>
+<li><a href="src/tests/modules/setup/TestSetupPreparation.bas">TestSetupPreparation.bas</a></li>
+<li><a href="src/tests/stubs/DropdownListsStub.cls">DropdownListsStub.cls</a></li>
+<li><a href="src/tests/stubs/LinelistStub.cls">LinelistStub.cls</a></li>
+</ul>
+</details>
+
+  </main>
+</body>
+</html>
+

@@ -1,0 +1,564 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CheckingOutput - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>CheckingOutput</h1>
+<p>Renders IChecking diagnostic entries to a worksheet with formatted rows,
+severity-based colour coding, and interactive drop-down filters for
+status and title. The class manages hidden helper columns, a title
+store for filter validation lists, and optional worksheet event
+injection so that filter selections trigger row visibility changes
+automatically.</p>
+<p><strong>Version:</strong> 1.0 (2026-02-09)</p>
+<h2>Factory</h2>
+<h3>create</h3>
+<p><strong>Create an output writer bound to a worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create(ByVal sh As Worksheet, Optional ByVal title As String = vbNullString) As ICheckingOutput
+</code></pre>
+<p>Entry point for creating CheckingOutput instances.
+Instantiates a new writer and associates it with the supplied
+worksheet. Optionally assigns a title used for the end-of-checkings
+marker.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. Target worksheet that will receive the checking output.</li>
+<li><code>title</code>: Optional String. Label for the output session. Defaults to vbNullString.</li>
+</ul>
+<p><strong>Returns:</strong> ICheckingOutput. Fully initialised instance.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ElementNotFound When sh is Nothing.</li>
+</ul>
+<hr />
+<h2>Filtering</h2>
+<h3>filter-worksheet</h3>
+<p><strong>Apply filtering logic using the backing worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub FilterWorksheet(Optional ByVal statusSelection As String = vbNullString, _
+                          Optional ByVal titleSelection As String = vbNullString)
+</code></pre>
+<p>Public entry point that allows consumers to reapply the worksheet
+filtering logic without relying on events. Delegates to
+ApplyWorksheetFilter.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>statusSelection</code>: Optional String. Manual filter selection overriding the drop-down value.</li>
+<li><code>titleSelection</code>: Optional String. Title filter overriding the worksheet selection.</li>
+</ul>
+<hr />
+<h2>WorksheetEvents</h2>
+<h3>ensure-worksheet-change-handler</h3>
+<p><strong>Inject the Worksheet_Change handler into the target module</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureWorksheetChangeHandler()
+</code></pre>
+<p>Injection and generation of the Worksheet_Change handler for interactive filtering.
+Injects the filtering VBA code into the worksheet's code module so
+filter drop-down changes trigger row visibility updates automatically.
+Skips injection when the event marker hidden name is already present.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.SomethingWentWrong When code injection fails.</li>
+</ul>
+<hr />
+<h2>Interface</h2>
+<h3>print-output</h3>
+<p><strong>Write checking values to a worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ICheckingOutput_PrintOutput(ByVal checkTable As BetterArray)
+</code></pre>
+<p>Coordinates the end-to-end rendering: validates the input array,
+initialises the worksheet, writes each checking bundle, appends the
+end marker, and records the final row position.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>checkTable</code>: BetterArray. Collection of IChecking instances to print.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ElementNotFound When checkTable is Nothing.</li>
+</ul>
+<hr />
+<details>
+<summary>Internal members (not exported)</summary>
+<h2>PublicAccessors</h2>
+<h3>wksh</h3>
+<p><strong>Retrieve the worksheet backing this output writer</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Wksh() As Worksheet
+</code></pre>
+<p>Properties that expose internal state and the interface pointer.
+Returns the worksheet previously supplied during Create or the setter.</p>
+<p><strong>Returns:</strong> Worksheet. Reference to the target worksheet.</p>
+<hr />
+<h3>wksh-set</h3>
+<p><strong>Define the worksheet that will receive the output</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Set Wksh(ByVal sh As Worksheet)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. Target worksheet to use.</li>
+</ul>
+<hr />
+<h3>self</h3>
+<p><strong>Current object instance</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Self() As ICheckingOutput
+</code></pre>
+<p>Returns the current instance cast to its interface. Used internally
+by the factory method to return an ICheckingOutput reference.</p>
+<p><strong>Returns:</strong> ICheckingOutput. Reference to the current object.</p>
+<hr />
+<h3>name</h3>
+<p><strong>Name of the output session</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Name() As String
+</code></pre>
+<p>Returns the label assigned during creation or via the setter.</p>
+<p><strong>Returns:</strong> String. Output session label.</p>
+<hr />
+<h3>name-set</h3>
+<p><strong>Assign the output session name</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Let Name(ByVal nm As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>nm</code>: String. Label to assign.</li>
+</ul>
+<hr />
+<h2>FormattingHelpers</h2>
+<h3>resolve-formatting</h3>
+<p><strong>Resolve formatting attributes for a given level and colour name</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ResolveFormatting(Optional ByVal tag As String) As TFormatting
+</code></pre>
+<p>Colour resolution, text decoration, and border styling.
+Maps a tag string (colour name or heading level) to font, fill, and
+border properties returned in a TFormatting structure.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>tag</code>: Optional String. Colour or level type token (e.g. &quot;red&quot;, &quot;level 1&quot;).</li>
+</ul>
+<p><strong>Returns:</strong> TFormatting. Structure with font, fill, and border properties.</p>
+<hr />
+<h3>apply-text-decorations</h3>
+<p><strong>Apply typography styling based on formatting</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ApplyTextDecorations(formatting As TFormatting, ByVal target As Range)
+</code></pre>
+<p>Decorates the target range with font size, colour, fill, and bold
+emphasis from the supplied formatting structure.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>formatting</code>: TFormatting. Structure containing font and fill attributes.</li>
+<li><code>target</code>: Range. Range receiving the formatting.</li>
+</ul>
+<hr />
+<h3>apply-borders</h3>
+<p><strong>Apply border styling to a range</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ApplyBorders(ByVal targetRange As Range, ByVal borderColour As Long)
+</code></pre>
+<p>Applies a dashed bottom border to the target range block.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>targetRange</code>: Range. Range receiving the border formatting.</li>
+<li><code>borderColour</code>: Long. Colour code for the border.</li>
+</ul>
+<hr />
+<h3>write-row</h3>
+<p><strong>Format and write a single row of checking output</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub WriteRow(ByVal rowIndex As Long, ByVal textValue As String, _
+                     Optional ByVal formatTag As String, _
+                     Optional ByVal sep As String = DEFAULT_SEPARATOR, _
+                     Optional ByVal parentTitle As String = vbNullString)
+</code></pre>
+<p>Splits the text value by the separator and writes the fragments
+across the output columns. Applies formatting based on the format
+tag and records the parent title in the hidden column for filtering.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>rowIndex</code>: Long. Row where to write.</li>
+<li><code>textValue</code>: String. Content to write, split by sep.</li>
+<li><code>formatTag</code>: Optional String. Tag for formatting resolution.</li>
+<li><code>sep</code>: Optional String. Split separator. Defaults to &quot;--&quot;.</li>
+<li><code>parentTitle</code>: Optional String. Title written to the hidden column.</li>
+</ul>
+<hr />
+<h3>value-or-empty</h3>
+<p><strong>Safely retrieve an element from a split array</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ValueOrEmpty(items() As String, ByVal index As Long) As String
+</code></pre>
+<p>Returns the element at the specified index when it exists, or
+vbNullString when the index exceeds the array bounds.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>items</code>: String(). Split array.</li>
+<li><code>index</code>: Long. Zero-based index to retrieve.</li>
+</ul>
+<p><strong>Returns:</strong> String. Element value or vbNullString.</p>
+<hr />
+<h2>CheckingWriters</h2>
+<h3>write-checking</h3>
+<p><strong>Write a single IChecking bundle to the worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub WriteChecking(ByVal checking As IChecking, _
+                          ByRef currentRow As Long, _
+                          ByRef writtenTitles As Collection, _
+                          Optional ByVal sep As String = DEFAULT_SEPARATOR)
+</code></pre>
+<p>Outputs headings and detail entries for individual checking bundles.
+Outputs the title heading (once per unique title), optional subtitle,
+and all keyed entries with their severity colour coding. Advances the
+current row counter and tracks written titles to avoid duplicates.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>checking</code>: IChecking. Bundle to render.</li>
+<li><code>currentRow</code>: Long. ByRef row counter advanced during writing.</li>
+<li><code>writtenTitles</code>: Collection. ByRef collection tracking emitted titles.</li>
+<li><code>sep</code>: Optional String. Separator for text fragments. Defaults to &quot;--&quot;.</li>
+</ul>
+<hr />
+<h3>title-already-written</h3>
+<p><strong>Test whether a title has already been emitted</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function TitleAlreadyWritten(ByVal title As String, ByRef writtenTitles As Collection) As Boolean
+</code></pre>
+<p>Checks the writtenTitles collection for the specified title.
+Uses On Error Resume Next to handle missing keys.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>title</code>: String. Title to look for.</li>
+<li><code>writtenTitles</code>: Collection. Collection of previously emitted titles.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the title was already written.</p>
+<hr />
+<h2>TitleStoreManagement</h2>
+<h3>ensure-title-store</h3>
+<p><strong>Initialise or refresh the hidden title store</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureTitleStore(Optional ByVal resetStore As Boolean = False)
+</code></pre>
+<p>Manages the hidden title store used for the title filter validation list.
+When resetStore is True, clears all stored titles and re-creates
+the anchor cell. Otherwise ensures the anchor exists and the named
+range is defined.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>resetStore</code>: Optional Boolean. When True, clears the store. Defaults to False.</li>
+</ul>
+<hr />
+<h3>reset-title-store</h3>
+<p><strong>Clear all stored titles and re-create the anchor</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ResetTitleStore(ByVal sh As Worksheet)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. Target worksheet.</li>
+</ul>
+<hr />
+<h3>ensure-title-store-anchor</h3>
+<p><strong>Ensure the title store anchor cell is initialised</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureTitleStoreAnchor(ByVal sh As Worksheet)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. Target worksheet.</li>
+</ul>
+<hr />
+<h3>append-title-to-store</h3>
+<p><strong>Add a title to the hidden store if not already present</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AppendTitleToStore(ByVal titleValue As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>titleValue</code>: String. Title text to store.</li>
+</ul>
+<hr />
+<h3>title-store-contains</h3>
+<p><strong>Check whether the title store already includes a value</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function TitleStoreContains(ByVal sh As Worksheet, ByVal titleValue As String) As Boolean
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. Target worksheet.</li>
+<li><code>titleValue</code>: String. Title text to search for.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the title is already stored.</p>
+<hr />
+<h3>refresh-title-named-range</h3>
+<p><strong>Update the named range covering all stored titles</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RefreshTitleNamedRange(ByVal sh As Worksheet)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. Target worksheet.</li>
+</ul>
+<hr />
+<h3>next-title-store-row</h3>
+<p><strong>Determine the next available row in the title store</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function NextTitleStoreRow(ByVal sh As Worksheet, ByVal anchor As Range) As Long
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. Target worksheet.</li>
+<li><code>anchor</code>: Range. Anchor cell of the title store.</li>
+</ul>
+<p><strong>Returns:</strong> Long. Next available row index.</p>
+<hr />
+<h3>worksheet-has-named-range</h3>
+<p><strong>Check whether a named range exists on a worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function WorksheetHasNamedRange(ByVal targetSheet As Worksheet, ByVal rangeName As String) As Boolean
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>targetSheet</code>: Worksheet. Worksheet to inspect.</li>
+<li><code>rangeName</code>: String. Name to look for.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the named range exists.</p>
+<hr />
+<h3>worksheet-name-for-formula</h3>
+<p><strong>Escape the worksheet name for use in formulas</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function WorksheetNameForFormula(ByVal targetSheet As Worksheet) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>targetSheet</code>: Worksheet. Worksheet whose name to escape.</li>
+</ul>
+<p><strong>Returns:</strong> String. Escaped worksheet name.</p>
+<hr />
+<h3>apply-hidden-columns-formatting</h3>
+<p><strong>Mask hidden helper columns so metadata remains invisible</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ApplyHiddenColumnsFormatting(ByVal sh As Worksheet)
+</code></pre>
+<p>Ensures the parent-title column and backing title store column
+keep a white font and hidden presentation.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. Target worksheet to format.</li>
+</ul>
+<hr />
+<h2>WorksheetPreparation</h2>
+<h3>initialise-worksheet</h3>
+<p><strong>Reset the worksheet before re-rendering checking output</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function InitialiseWorksheet() As Long
+</code></pre>
+<p>Resets and initialises the worksheet before rendering.
+On first render, clears all cells, sets the Consolas font, creates
+the title store, installs filter dropdowns, removes gridlines, and
+records the starting row marker. On subsequent renders, resumes from
+the last written row.</p>
+<p><strong>Returns:</strong> Long. Starting row for the next output block.</p>
+<hr />
+<h2>Filtering</h2>
+<h3>ensure-filter-dropdown</h3>
+<p><strong>Install and style the filter drop-downs on the worksheet header</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureFilterDropdown()
+</code></pre>
+<p>Drop-down filter management and row-visibility algorithms.
+Creates validation drop-downs for both status (severity) and title
+filtering. Ensures the title store named range is available for the
+title validation list.</p>
+<hr />
+<h3>apply-worksheet-filter</h3>
+<p><strong>Internal helper that performs row-visibility filtering</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ApplyWorksheetFilter(ByVal targetSheet As Worksheet, _
+                                 Optional ByVal statusSelection As String = vbNullString, _
+                                 Optional ByVal titleSelection As String = vbNullString)
+</code></pre>
+<p>Centralises the filtering algorithm so both the public API and
+worksheet events reuse the same logic. Hides rows that do not match
+the selected severity and/or title criteria.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>targetSheet</code>: Worksheet. Worksheet hosting the checking output data.</li>
+<li><code>statusSelection</code>: Optional String. Desired severity filter; blank uses the worksheet cell.</li>
+<li><code>titleSelection</code>: Optional String. Title token overriding the drop-down when provided.</li>
+</ul>
+<hr />
+<h2>WorksheetEvents</h2>
+<h3>build-worksheet-change-handler-code</h3>
+<p><strong>Compose the VBA code for the worksheet filtering logic</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function BuildWorksheetChangeHandlerCode() As String
+</code></pre>
+<p>Generates the complete VBA source code that is injected into the
+worksheet module. Includes StripIcons, ResolveMatchType,
+ShouldFilterByTitle, RestoreState, Worksheet_Change, and
+FilterCheckingOutputRows procedures.</p>
+<p><strong>Returns:</strong> String. VBA source code for the handler.</p>
+<hr />
+<h2>WorksheetEventHelpers</h2>
+<h3>remove-managed-worksheet-procedures</h3>
+<p><strong>Strip previously injected worksheet routines</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RemoveManagedWorksheetProcedures(ByVal codeModule As Object)
+</code></pre>
+<p>Utilities for managing injected worksheet procedures.
+Removes any instance of the managed procedures so a single fresh
+handler can be written without duplication.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>codeModule</code>: Object. Worksheet code module reference.</li>
+</ul>
+<hr />
+<h3>delete-procedure-if-exists</h3>
+<p><strong>Safely remove a procedure from a worksheet module</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub DeleteProcedureIfExists(ByVal codeModule As Object, ByVal procedureName As String)
+</code></pre>
+<p>Deletes the target procedure when present. Silently exits when the
+procedure is not found.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>codeModule</code>: Object. Worksheet code module reference.</li>
+<li><code>procedureName</code>: String. Name of the procedure to delete.</li>
+</ul>
+<hr />
+<h2>Helpers</h2>
+<h3>validate-check-table</h3>
+<p><strong>Verify that the BetterArray contains only IChecking entries</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ValidateCheckTable(ByVal checkTable As BetterArray)
+</code></pre>
+<p>Private utility methods for validation, normalisation, and storage.
+Iterates the array and raises an error for any item that does not
+implement IChecking.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>checkTable</code>: BetterArray. Table of checking entries to validate.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.InvalidArgument When an item does not implement IChecking.</li>
+</ul>
+<hr />
+<h3>normalise-type-label</h3>
+<p><strong>Strip icon characters from a checking type label</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function NormaliseTypeLabel(ByVal typeLabel As String) As String
+</code></pre>
+<p>Removes Unicode icon characters used for visual decoration to obtain
+the plain-text type label for filtering comparisons.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>typeLabel</code>: String. Label to clean.</li>
+</ul>
+<p><strong>Returns:</strong> String. Cleaned label.</p>
+<hr />
+<h3>custom-property-exists</h3>
+<p><strong>Check whether a custom property exists in the hidden store</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function CustomPropertyExists(ByVal propName As String) As Boolean
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>propName</code>: String. Property name to check.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the property exists.</p>
+<hr />
+<h3>store-custom-property</h3>
+<p><strong>Store a custom property in the hidden name store</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub StoreCustomProperty(propName As String, propValue As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>propName</code>: String. Property name to store.</li>
+<li><code>propValue</code>: String. Value to persist.</li>
+</ul>
+<hr />
+<h3>hidden-store</h3>
+<p><strong>Lazily create and return the IHiddenNames store</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function HiddenStore() As IHiddenNames
+</code></pre>
+<p>Creates the HiddenNames wrapper bound to the target worksheet on
+first access. Raises an error when no worksheet is assigned.</p>
+<p><strong>Returns:</strong> IHiddenNames. Hidden name store.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When the worksheet is Nothing.</li>
+</ul>
+<hr />
+<h3>module-contains-procedure</h3>
+<p><strong>Determine whether the module text declares a target procedure</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ModuleContainsProcedure(ByVal moduleText As String, _
+                                         ByVal procedureName As String) As Boolean
+</code></pre>
+<p>Searches for Sub or Function signatures matching the procedure name.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>moduleText</code>: String. VBA module contents.</li>
+<li><code>procedureName</code>: String. Name of the procedure to search for.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the procedure exists.</p>
+<hr />
+<h2>ErrorHandling</h2>
+<h3>throw-error</h3>
+<p><strong>Raise a ProjectError-coded runtime error</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
+</code></pre>
+<p>Centralised error-raising pattern.
+Wrapper around Err.Raise that standardises the source to
+&quot;CheckingOutput&quot; for consistent stack traces.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>errNumb</code>: Long. ProjectError enumeration value.</li>
+<li><code>errorMessage</code>: String. Human-readable description.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.<varies> Always raises the specified error.</li>
+</ul>
+<hr />
+<h2>Interface</h2>
+<h3>ICheckingOutput_Wksh</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get ICheckingOutput_Wksh() As Worksheet
+</code></pre>
+<p>Delegated members satisfying the ICheckingOutput contract.</p>
+<hr />
+</details>
+<details>
+<summary>Used in (6 file(s))</summary>
+<ul>
+<li><a href="src/classes/general/CheckingOutput.cls">CheckingOutput.cls</a></li>
+<li><a href="src/classes/general/ICheckingOutput.cls">ICheckingOutput.cls</a></li>
+<li><a href="src/classes/rubberduck/CustomTest.cls">CustomTest.cls</a></li>
+<li><a href="src/classes/setup/ISetupErrors.cls">ISetupErrors.cls</a></li>
+<li><a href="src/classes/setup/SetupErrors.cls">SetupErrors.cls</a></li>
+<li><a href="src/tests/modules/general/TestCheckingOutput.bas">TestCheckingOutput.bas</a></li>
+</ul>
+</details>
+
+  </main>
+</body>
+</html>
+

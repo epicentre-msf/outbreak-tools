@@ -1,0 +1,510 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HiddenNames - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>HiddenNames</h1>
+<p>Manages hidden worksheet/workbook-level name-value storage with typed
+serialization and metadata caching. Each name carries a type annotation
+(String/Boolean/Long/Variant) and a last-updated timestamp stored in
+the Name.Comment field. Supports cross-scope import/export between
+worksheets and workbooks.</p>
+<p><strong>Depends on:</strong> ProjectError, <a href="BetterArray.html">BetterArray</a></p>
+<p><strong>Version:</strong> 1.0 (2026-02-09)</p>
+<h2>Factory</h2>
+<h3>create</h3>
+<p><strong>Create a new HiddenNames instance</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create(ByVal targetObj As Object) As IHiddenNames
+</code></pre>
+<p>Validates the input and creates a fully initialised manager bound to
+the supplied worksheet or workbook.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>targetObj</code>: Object. A Worksheet or Workbook hosting the hidden names.</li>
+</ul>
+<p><strong>Returns:</strong> IHiddenNames. The configured instance.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When targetObj is Nothing.</li>
+<li>ProjectError.InvalidArgument When targetObj is not a Worksheet or Workbook.</li>
+</ul>
+<hr />
+<h2>Interface Helpers</h2>
+<h3>sheet</h3>
+<p><strong>Worksheet backing this manager</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get SheetInternal() As Worksheet
+</code></pre>
+<hr />
+<h2>Public API</h2>
+<h3>has-name</h3>
+<p><strong>Check whether a hidden name exists</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function HasName(ByVal nameId As String) As Boolean
+</code></pre>
+<hr />
+<h3>ensure-name</h3>
+<p><strong>Ensure a hidden name exists with the provided default</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function Ensure(ByVal nameId As String, _
+                        ByVal initialValue As Variant, _
+                        Optional ByVal valueType As Byte = HiddenNameTypeVariant) As Name
+</code></pre>
+<hr />
+<h3>value</h3>
+<p><strong>Retrieve a hidden value without coercion</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ValueOf(ByVal nameId As String, _
+                         Optional ByVal defaultValue As Variant) As Variant
+</code></pre>
+<hr />
+<h3>set-value</h3>
+<p><strong>Update the stored value of an existing hidden name</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub Update(ByVal nameId As String, ByVal value As Variant)
+</code></pre>
+<hr />
+<h3>value-as-string</h3>
+<p><strong>Retrieve the hidden value coerced to String</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ValueAsString(ByVal nameId As String, _
+                               Optional ByVal defaultValue As String = vbNullString) As String
+</code></pre>
+<hr />
+<h3>value-as-boolean</h3>
+<p><strong>Retrieve the hidden value coerced to Boolean</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ValueAsBoolean(ByVal nameId As String, _
+                                Optional ByVal defaultValue As Boolean = False) As Boolean
+</code></pre>
+<hr />
+<h3>value-as-long</h3>
+<p><strong>Retrieve the hidden value coerced to Long</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ValueAsLong(ByVal nameId As String, _
+                             Optional ByVal defaultValue As Long = 0) As Long
+</code></pre>
+<hr />
+<h3>remove-name</h3>
+<p><strong>Remove a hidden name definition</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub Remove(ByVal nameId As String)
+</code></pre>
+<hr />
+<h3>list-names</h3>
+<p><strong>Enumerate recorded hidden names filtered by optional prefix</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function Enumerate(Optional ByVal prefix As String = vbNullString) As BetterArray
+</code></pre>
+<hr />
+<h3>export-names</h3>
+<p><strong>Export all tracked hidden names to another worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ExportAll(ByVal targetSh As Worksheet, _
+                      Optional ByVal prefix As String = vbNullString)
+</code></pre>
+<hr />
+<h3>export-names-to-workbook</h3>
+<p><strong>Export tracked names to another workbook scope</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ExportAllToWorkbook(ByVal targetWb As Workbook, _
+                                Optional ByVal prefix As String = vbNullString)
+</code></pre>
+<hr />
+<h3>import-names</h3>
+<p><strong>Import hidden names from another worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ImportAll(ByVal sourceSh As Worksheet, _
+                      Optional ByVal prefix As String = vbNullString, _
+                      Optional ByVal overwriteExisting As Boolean = True)
+</code></pre>
+<hr />
+<h3>import-names-from-workbook</h3>
+<p><strong>Import hidden names from another workbook scope</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ImportAllFromWorkbook(ByVal sourceWb As Workbook, _
+                                  Optional ByVal prefix As String = vbNullString, _
+                                  Optional ByVal overwriteExisting As Boolean = True)
+</code></pre>
+<hr />
+<h3>set-list-object-header</h3>
+<p><strong>Create a workbook-level hidden name referencing a ListObject header</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub SetListObjectHeader(ByVal nameId As String, _
+                               ByVal Lo As ListObject, _
+                               ByVal headerName As String)
+</code></pre>
+<hr />
+<details>
+<summary>Internal members (not exported)</summary>
+<h2>Metadata Helpers</h2>
+<h3>metadata-store</h3>
+<p><strong>Lazy-initialised BetterArray holding all metadata records</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function MetadataStore() As BetterArray
+</code></pre>
+<p><strong>Returns:</strong> BetterArray. The metadata cache.</p>
+<hr />
+<h3>build-metadata-record</h3>
+<p><strong>Construct a metadata record array</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function BuildMetadataRecord(ByVal nameId As String, _
+                                     ByVal valueType As Byte, _
+                                     ByVal lastUpdated As Date, _
+                                     ByVal definition As Name) As Variant
+</code></pre>
+<hr />
+<h3>metadata-name</h3>
+<p><strong>Read the name field from a metadata record</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function MetadataName(ByRef record As Variant) As String
+</code></pre>
+<hr />
+<h3>metadata-type</h3>
+<p><strong>Read the type field from a metadata record</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function MetadataType(ByRef record As Variant) As Byte
+</code></pre>
+<hr />
+<h3>metadata-updated</h3>
+<p><strong>Read the last-updated field from a metadata record</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function MetadataUpdated(ByRef record As Variant) As Date
+</code></pre>
+<hr />
+<h3>metadata-definition</h3>
+<p><strong>Read the Name definition from a metadata record</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function MetadataDefinition(ByRef record As Variant) As Name
+</code></pre>
+<hr />
+<h3>metadata-set-definition</h3>
+<p><strong>Write the Name definition into a metadata record</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub MetadataSetDefinition(ByRef record As Variant, ByVal definition As Name)
+</code></pre>
+<hr />
+<h3>metadata-set-updated</h3>
+<p><strong>Write the last-updated timestamp into a metadata record</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub MetadataSetUpdated(ByRef record As Variant, ByVal lastUpdated As Date)
+</code></pre>
+<hr />
+<h3>metadata-set-type</h3>
+<p><strong>Write the value type into a metadata record</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub MetadataSetType(ByRef record As Variant, ByVal valueType As Byte)
+</code></pre>
+<hr />
+<h3>metadata-index</h3>
+<p><strong>Find the index of a metadata record by name</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function MetadataIndex(ByVal nameId As String) As Long
+</code></pre>
+<p><strong>Returns:</strong> Long. The index, or -1 when not found.</p>
+<hr />
+<h3>store-metadata-record</h3>
+<p><strong>Insert or replace a metadata record in the cache</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub StoreMetadataRecord(ByVal nameId As String, ByRef record As Variant)
+</code></pre>
+<hr />
+<h2>Factory</h2>
+<h3>self</h3>
+<p><strong>Self-reference returning the interface pointer</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Self() As IHiddenNames
+</code></pre>
+<p><strong>Returns:</strong> IHiddenNames. This instance.</p>
+<hr />
+<h2>Initialisation</h2>
+<h3>initialise</h3>
+<p><strong>Bind the manager to a worksheet or workbook and load cache</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Initialise(ByVal targetObj As Object)
+</code></pre>
+<hr />
+<h3>load-metadata-cache</h3>
+<p><strong>Scan existing hidden names and populate the metadata cache</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub LoadMetadataCache()
+</code></pre>
+<hr />
+<h2>Interface Helpers</h2>
+<h3>validate-input</h3>
+<p><strong>Validate the factory input argument</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ValidateInput(ByVal targetObj As Object)
+</code></pre>
+<hr />
+<h3>name-owner</h3>
+<p><strong>Resolve the host object owning the names collection</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function NameOwner() As Object
+</code></pre>
+<hr />
+<h3>scope-label</h3>
+<p><strong>Human-readable label for the current scope</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ScopeLabel() As String
+</code></pre>
+<hr />
+<h3>metadata-key</h3>
+<p><strong>Normalise a name identifier for case-insensitive lookup</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function MetadataKey(ByVal nameId As String) As String
+</code></pre>
+<hr />
+<h3>ensure-metadata-record</h3>
+<p><strong>Ensure a metadata record exists for the given name</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function EnsureMetadataRecord(ByVal nameId As String) As Long
+</code></pre>
+<p><strong>Returns:</strong> Long. The record index, or -1 when the name is not defined.</p>
+<hr />
+<h3>metadata-record</h3>
+<p><strong>Retrieve a metadata record by name</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function MetadataRecord(ByVal nameId As String) As Variant
+</code></pre>
+<hr />
+<h3>remove-metadata-record</h3>
+<p><strong>Remove a metadata record from the cache</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RemoveMetadataRecord(ByVal nameId As String)
+</code></pre>
+<hr />
+<h2>Lookup Helpers</h2>
+<h3>should-track</h3>
+<p><strong>Determine whether a Name definition belongs to this scope</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ShouldTrack(ByVal definition As Name) As Boolean
+</code></pre>
+<hr />
+<h3>find-definition</h3>
+<p><strong>Locate a Name definition by identifier</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function FindDefinition(ByVal nameId As String) As Name
+</code></pre>
+<hr />
+<h3>compare-name</h3>
+<p><strong>Case-insensitive comparison of a Name definition to an expected identifier</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function CompareName(ByVal definition As Name, ByVal expected As String) As Boolean
+</code></pre>
+<hr />
+<h3>extract-simple-name</h3>
+<p><strong>Strip sheet qualification from a Name string</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ExtractSimpleName(ByVal qualifiedName As String) As String
+</code></pre>
+<hr />
+<h2>Serialization</h2>
+<h3>serialize-value</h3>
+<p><strong>Convert a typed value to its RefersTo formula string</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SerializeValue(ByVal value As Variant, _
+                                ByVal valueType As Byte) As String
+</code></pre>
+<hr />
+<h3>serialize-variant</h3>
+<p><strong>Serialize a Variant value by inspecting its runtime type</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SerializeVariant(ByVal value As Variant) As String
+</code></pre>
+<hr />
+<h3>escape-string</h3>
+<p><strong>Escape double-quotes for formula embedding</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function EscapeString(ByVal value As String) As String
+</code></pre>
+<hr />
+<h3>apply-comment</h3>
+<p><strong>Write the type and timestamp comment onto a Name definition</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ApplyComment(ByVal definition As Name, _
+                         ByVal valueType As Byte, _
+                         ByVal updatedOn As Date)
+</code></pre>
+<hr />
+<h3>build-comment</h3>
+<p><strong>Assemble the structured comment string</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function BuildComment(ByVal valueType As Byte, ByVal updatedOn As Date) As String
+</code></pre>
+<hr />
+<h3>name-type-from-comment</h3>
+<p><strong>Parse the value type from a Name comment</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function NameTypeFromComment(ByVal comment As String) As Byte
+</code></pre>
+<hr />
+<h3>updated-from-comment</h3>
+<p><strong>Parse the last-updated timestamp from a Name comment</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function UpdatedFromComment(ByVal comment As String) As Date
+</code></pre>
+<hr />
+<h3>extract-comment-value</h3>
+<p><strong>Extract a key-value token from a structured comment</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ExtractCommentValue(ByVal comment As String, ByVal prefix As String) As String
+</code></pre>
+<hr />
+<h3>value-type-name</h3>
+<p><strong>Convert a HiddenNameValueType to its string representation</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ValueTypeName(ByVal valueType As Byte) As String
+</code></pre>
+<hr />
+<h3>string-to-value-type</h3>
+<p><strong>Convert a string representation back to HiddenNameValueType</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function StringToValueType(ByVal value As String) As Byte
+</code></pre>
+<hr />
+<h2>Value Coercion</h2>
+<h3>coerce-value</h3>
+<p><strong>Cast a raw value to the specified HiddenNameValueType</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function CoerceValue(ByVal value As Variant, _
+                             ByVal valueType As Byte) As Variant
+</code></pre>
+<hr />
+<h2>Core Operations</h2>
+<h3>ensure-definition</h3>
+<p><strong>Create a hidden Name definition if it does not exist</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function EnsureDefinition(ByVal nameId As String, _
+                                  ByVal initialValue As Variant, _
+                                  ByVal valueType As Byte) As Name
+</code></pre>
+<hr />
+<h3>update-definition-value</h3>
+<p><strong>Write a new value into an existing Name definition</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub UpdateDefinitionValue(ByVal definition As Name, _
+                                  ByVal value As Variant, _
+                                  ByVal valueType As Byte, _
+                                  Optional ByVal updatedOn As Date = 0)
+</code></pre>
+<hr />
+<h3>definition-stored-value</h3>
+<p><strong>Extract the raw stored value from a Name definition</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function DefinitionStoredValue(ByVal definition As Name, _
+                                       ByVal valueType As Byte) As Variant
+</code></pre>
+<hr />
+<h3>remove-definition</h3>
+<p><strong>Delete a Name definition from the host scope</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RemoveDefinition(ByVal nameId As String)
+</code></pre>
+<hr />
+<h3>ensure-ready</h3>
+<p><strong>Guard that the manager is properly initialised</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureReady()
+</code></pre>
+<hr />
+<h2>Internal Export Helpers</h2>
+<h3>persist-on-worksheet</h3>
+<p><strong>Write a hidden name onto a target worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub PersistOnWorksheet(ByVal targetSh As Worksheet, _
+                               ByVal nameId As String, _
+                               ByVal value As Variant, _
+                               ByVal valueType As Byte)
+</code></pre>
+<hr />
+<h3>remove-worksheet-name</h3>
+<p><strong>Delete a Name definition from a specific worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RemoveWorksheetName(ByVal targetSh As Worksheet, ByVal nameId As String)
+</code></pre>
+<hr />
+<h3>remove-workbook-name</h3>
+<p><strong>Delete a Name definition from a workbook scope</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RemoveWorkbookName(ByVal targetWb As Workbook, ByVal nameId As String)
+</code></pre>
+<hr />
+<h3>update-stored-value</h3>
+<p><strong>Write a value and update the metadata cache</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub UpdateStoredValue(ByVal nameId As String, _
+                              ByVal value As Variant, _
+                              ByVal valueType As Byte, _
+                              Optional ByVal updatedOn As Date = 0)
+</code></pre>
+<hr />
+<h2>Error Handling</h2>
+<h3>throw-error</h3>
+<p><strong>Raise a ProjectError-based exception</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal message As String)
+</code></pre>
+<hr />
+</details>
+<details>
+<summary>Used in (44 file(s))</summary>
+<ul>
+<li><a href="src/classes/analyses/CrossTable.cls">CrossTable.cls</a></li>
+<li><a href="src/classes/dataio/LLExporter.cls">LLExporter.cls</a></li>
+<li><a href="src/classes/dataio/LLImporter.cls">LLImporter.cls</a></li>
+<li><a href="src/classes/designer/DesignerImportService.cls">DesignerImportService.cls</a></li>
+<li><a href="src/classes/designer/DesignerPreparation.cls">DesignerPreparation.cls</a></li>
+<li><a href="src/classes/designer/DesignerTranslation.cls">DesignerTranslation.cls</a></li>
+<li><a href="src/classes/designer/IDesignerPreparation.cls">IDesignerPreparation.cls</a></li>
+<li><a href="src/classes/dictionary/LLdictionary.cls">LLdictionary.cls</a></li>
+<li><a href="src/classes/dictionary/LLExport.cls">LLExport.cls</a></li>
+<li><a href="src/classes/general/CheckingOutput.cls">CheckingOutput.cls</a></li>
+<li><a href="src/classes/general/CustomTable.cls">CustomTable.cls</a></li>
+<li><a href="src/classes/general/DataSheet.cls">DataSheet.cls</a></li>
+<li><a href="src/classes/general/DropdownLists.cls">DropdownLists.cls</a></li>
+<li><a href="src/classes/general/HiddenNames.cls">HiddenNames.cls</a></li>
+<li><a href="src/classes/general/IHiddenNames.cls">IHiddenNames.cls</a></li>
+<li><a href="src/classes/linelist/Linelist.cls">Linelist.cls</a></li>
+<li><a href="src/classes/linelist/ListBuilder.cls">ListBuilder.cls</a></li>
+<li><a href="src/classes/linelist/LLTranslation.cls">LLTranslation.cls</a></li>
+<li><a href="src/classes/mastersetup/DiseaseSheet.cls">DiseaseSheet.cls</a></li>
+<li><a href="src/classes/mastersetup/MasterSetupPreparation.cls">MasterSetupPreparation.cls</a></li>
+<li><a href="src/classes/mastersetup/MasterSetupVariables.cls">MasterSetupVariables.cls</a></li>
+<li><a href="src/classes/setup/EventSetup.cls">EventSetup.cls</a></li>
+<li><a href="src/classes/setup/SetupImportService.cls">SetupImportService.cls</a></li>
+<li><a href="src/classes/setup/SetupTranslationsTable.cls">SetupTranslationsTable.cls</a></li>
+<li><a href="src/classes/tables/CustomPivotTable.cls">CustomPivotTable.cls</a></li>
+<li><a href="src/modules/designer/EventsDesignerAdvanced.bas">EventsDesignerAdvanced.bas</a></li>
+<li><a href="src/modules/designer/EventsDesignerCore.bas">EventsDesignerCore.bas</a></li>
+<li><a href="src/modules/geo/GeoModule.bas">GeoModule.bas</a></li>
+<li><a href="src/modules/mastersetup/MasterSetupHelpers.bas">MasterSetupHelpers.bas</a></li>
+<li><a href="src/modules/setup/SetupEventsManager.bas">SetupEventsManager.bas</a></li>
+<li><a href="src/tests/modules/designer/TestDesignerRibbon.bas">TestDesignerRibbon.bas</a></li>
+<li><a href="src/tests/modules/dictionary/TestLLExport.bas">TestLLExport.bas</a></li>
+<li><a href="src/tests/modules/general/TestCheckingOutput.bas">TestCheckingOutput.bas</a></li>
+<li><a href="src/tests/modules/general/TestDataSheet.bas">TestDataSheet.bas</a></li>
+<li><a href="src/tests/modules/general/TestDropdownLists.bas">TestDropdownLists.bas</a></li>
+<li><a href="src/tests/modules/general/TestHiddenNames.bas">TestHiddenNames.bas</a></li>
+<li><a href="src/tests/modules/general/TestPasswords.bas">TestPasswords.bas</a></li>
+<li><a href="src/tests/modules/linelist/TestLLTranslation.bas">TestLLTranslation.bas</a></li>
+<li><a href="src/tests/modules/mastersetup/TestDiseaseSheet.bas">TestDiseaseSheet.bas</a></li>
+<li><a href="src/tests/modules/mastersetup/TestMasterSetupVariables.bas">TestMasterSetupVariables.bas</a></li>
+<li><a href="src/tests/modules/setup/TestEventSetup.bas">TestEventSetup.bas</a></li>
+<li><a href="src/tests/modules/setup/TestSetupImportService.bas">TestSetupImportService.bas</a></li>
+<li><a href="src/tests/modules/setup/TestSetupTranslationsTable.bas">TestSetupTranslationsTable.bas</a></li>
+<li><a href="src/tests/modules/tables/TestCustomPivotTable.bas">TestCustomPivotTable.bas</a></li>
+</ul>
+</details>
+
+  </main>
+</body>
+</html>
+

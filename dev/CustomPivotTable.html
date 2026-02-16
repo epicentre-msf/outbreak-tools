@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CustomPivotTable - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>CustomPivotTable</h1>
+<p>Manages pivot table creation on a dedicated worksheet during linelist
+building. Each call to Add creates a new PivotTable block (title + pivot)
+stacked vertically. Position tracking and title references are stored as
+worksheet-level HiddenNames instead of hidden cell values.</p>
+<p><strong>Depends on:</strong> <a href="ICustomPivotTable.html">ICustomPivotTable</a>, <a href="ILLFormat.html">ILLFormat</a>, <a href="IHiddenNames.html">IHiddenNames</a>, <a href="HiddenNames.html">HiddenNames</a>, ProjectError</p>
+<h2>Factory</h2>
+<h3>create</h3>
+<p><strong>Create a new CustomPivotTable instance</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create(ByVal sh As Worksheet) As ICustomPivotTable
+</code></pre>
+<p>Validates the worksheet argument and initialises worksheet-level HiddenNames
+for position tracking (pivot_output_row, pivot_counter) if they do not
+already exist. This allows multiple Create calls on the same sheet to
+resume from the current position.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The dedicated pivot table worksheet in the output workbook.</li>
+</ul>
+<p><strong>Returns:</strong> ICustomPivotTable. The initialised instance.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>InvalidArgument. When sh is Nothing.</li>
+</ul>
+<hr />
+<details>
+<summary>Internal members (not exported)</summary>
+<h2>Factory</h2>
+<h3>self</h3>
+<p><strong>Return the current instance as ICustomPivotTable</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Self() As ICustomPivotTable
+</code></pre>
+<p><strong>Returns:</strong> ICustomPivotTable. Self-reference for factory pattern.</p>
+<hr />
+<h3>wksh-get</h3>
+<p><strong>The dedicated pivot table worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Wksh() As Worksheet
+</code></pre>
+<p><strong>Returns:</strong> Worksheet. The host worksheet.</p>
+<hr />
+<h3>wksh-set</h3>
+<p><strong>Assign the host worksheet (factory use only)</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Set Wksh(ByVal sh As Worksheet)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The worksheet to assign.</li>
+</ul>
+<hr />
+<h2>Public API</h2>
+<h3>add</h3>
+<p><strong>Create a pivot table from a ListObject source and add a titled block</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Add(ByVal title As String, _
+               ByVal tableName As String, _
+               Optional ByVal pivotName As String = &quot;Pivot Table&quot;)
+</code></pre>
+<p>Reads the current position from worksheet-level HiddenNames, creates a
+PivotTable via PivotTableWizard, writes a styled title, stores the title
+cell address as a HiddenName, and advances the position for the next block.
+If the PivotTableWizard call fails (e.g. invalid source), the error is
+logged to Debug.Print and the method exits without creating a title.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>title</code>: String. Display label for the pivot block (typically the sheet name).</li>
+<li><code>tableName</code>: String. Name of the source ListObject providing pivot data.</li>
+<li><code>pivotName</code>: String. Localised prefix for the title. Defaults to &quot;Pivot Table&quot;.</li>
+</ul>
+<hr />
+<h3>format</h3>
+<p><strong>Apply design formatting to the pivot table worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Format(ByVal design As ILLFormat)
+</code></pre>
+<p>Delegates to ILLFormat.ApplyFormat with the HListCustomPivotTables scope.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>design</code>: ILLFormat. The format object providing style rules.</li>
+</ul>
+<hr />
+<h2>Internal Helpers</h2>
+<h3>initialise-metadata</h3>
+<p><strong>Initialise worksheet-level HiddenNames for position tracking</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub InitialiseMetadata()
+</code></pre>
+<p>Creates pivot_output_row and pivot_counter HiddenNames if they do not
+already exist. Called by the factory to allow resuming from the current
+position when the same sheet is re-wrapped.</p>
+<hr />
+<h2>Error Handling</h2>
+<h3>throw-error</h3>
+<p><strong>Raise a project error with class context</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As Long, ByVal errMessage As String)
+</code></pre>
+<p>Wraps Err.Raise with CLASS_NAME as the source, providing consistent
+error attribution across all methods in this class.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>errNumber</code>: Long. The ProjectError constant to raise.</li>
+<li><code>errMessage</code>: String. Descriptive error message.</li>
+</ul>
+<hr />
+</details>
+<details>
+<summary>Used in (7 file(s))</summary>
+<ul>
+<li><a href="src/classes/linelist/ILinelist.cls">ILinelist.cls</a></li>
+<li><a href="src/classes/linelist/Linelist.cls">Linelist.cls</a></li>
+<li><a href="src/classes/linelist/ListBuilder.cls">ListBuilder.cls</a></li>
+<li><a href="src/classes/tables/CustomPivotTable.cls">CustomPivotTable.cls</a></li>
+<li><a href="src/classes/tables/ICustomPivotTable.cls">ICustomPivotTable.cls</a></li>
+<li><a href="src/tests/modules/tables/TestCustomPivotTable.bas">TestCustomPivotTable.bas</a></li>
+<li><a href="src/tests/stubs/LinelistStub.cls">LinelistStub.cls</a></li>
+</ul>
+</details>
+
+  </main>
+</body>
+</html>
+

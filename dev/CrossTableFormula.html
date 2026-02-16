@@ -1,0 +1,490 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CrossTableFormula - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>CrossTableFormula</h1>
+<p>Translates cross-table specifications into concrete Excel formulas and writes
+them into the cells of analysis worksheets. Each instance is bound to one
+ICrossTable and its companion IFormulaData, and the central AddFormulas method
+dispatches to type-specific branches (GlobalSummary, Univariate, Bivariate,
+TimeSeries, SpatioTemporal, Spatial) to produce COUNTIFS / SUMPRODUCT-style
+array formulas, percentage columns, number formatting, time-period scaffolding,
+spatial lookups, and data-validation dropdowns. Consumers obtain an instance
+through the predeclared Create factory and interact via the ICrossTableFormula
+interface.</p>
+<p><strong>Depends on:</strong> <a href="ICrossTable.html">ICrossTable</a>, <a href="IFormulaData.html">IFormulaData</a>, <a href="IFormulas.html">IFormulas</a>, <a href="Formulas.html">Formulas</a>, <a href="IFormulaCondition.html">IFormulaCondition</a>, <a href="FormulaCondition.html">FormulaCondition</a>, <a href="ITableSpecs.html">ITableSpecs</a>, <a href="ISpatialTables.html">ISpatialTables</a>, <a href="SpatialTables.html">SpatialTables</a>, <a href="BetterArray.html">BetterArray</a></p>
+<p><strong>Version:</strong> 1.0 (2026-02-10)</p>
+<h2>Instantiation</h2>
+<h3>create</h3>
+<p><strong>Create a CrossTableFormula instance bound to a cross-table and formula data source.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create(ByVal tabl As ICrossTable, _
+                       ByVal fData As IFormulaData) As ICrossTableFormula
+</code></pre>
+<p>Factory method that returns a new CrossTableFormula through the predeclared-id
+pattern. Both parameters are validated for Nothing before the instance is
+constructed. The returned object exposes the ICrossTableFormula interface so
+callers program against the contract rather than the concrete class.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>tabl</code>: ICrossTable. The already-constructed cross-table layout providing named ranges, headers, and worksheet reference.</li>
+<li><code>fData</code>: IFormulaData. The dictionary-based lookup object supplying variable names, ranges, and formula templates.</li>
+</ul>
+<p><strong>Returns:</strong> ICrossTableFormula. A fully initialised instance ready to write formulas.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>InvalidArgument When tabl is Nothing.</li>
+<li>InvalidArgument When fData is Nothing.</li>
+</ul>
+<hr />
+<h2>Shortcut Properties</h2>
+<h3>valid</h3>
+<p><strong>Whether the formula object is valid for the analysis context.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get Valid() As Boolean
+</code></pre>
+<p>Checks whether the formula engine considers this table formula valid for
+analysis use. Validity is determined by the IFormulas.Valid method with the
+&quot;analysis&quot; formula type. A formula may be invalid if the summary function is
+unsupported, required variables are missing from the dictionary, or the formula
+template cannot be parsed. When Valid returns False, the AddFormulas method
+exits immediately without writing any formulas to the worksheet.</p>
+<p><strong>Returns:</strong> Boolean. True if the formula can be used for analysis-scope generation.</p>
+<hr />
+<h2>Core Operations</h2>
+<h3>add-formulas</h3>
+<p><strong>Write all formulas to the cross-table on the worksheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AddFormulas()
+</code></pre>
+<p>The main formula-writing method that dispatches by table scope.
+The main entry point that writes all Excel formulas into the cross-table
+worksheet cells. It reads the table scope from Specifications and dispatches to
+one of five branches, each handling a fundamentally different table layout:
+ScopeGlobalSummary writes two unfiltered linelist formulas into a single row;
+ScopeUnivariate writes a one-variable frequency table with missing/total/percentage
+support; ScopeBivariate writes a two-variable cross-tabulation grid with column
+loops and corner cells; ScopeTimeSeries and ScopeSpatioTemporal set up time-period
+scaffolding (date labels, validation, dropdowns) then write time-bounded conditions
+wrapped in blank-when-empty guards; ScopeSpatial sets up geographic or health-facility
+lookups, validation dropdowns, ordering, and registers the table with SpatialTables
+for refresh operations. The method exits immediately if Valid returns False.</p>
+<hr />
+<details>
+<summary>Internal members (not exported)</summary>
+<h2>Internal Properties</h2>
+<h3>self</h3>
+<p><strong>Current object instance cast to the interface.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Self() As ICrossTableFormula
+</code></pre>
+<p>Properties used during factory construction and internal wiring.
+Convenience accessor so the Create factory can return the newly constructed
+object through the ICrossTableFormula interface.</p>
+<p><strong>Returns:</strong> ICrossTableFormula. The current instance.</p>
+<hr />
+<h3>table-get</h3>
+<p><strong>ICrossTable backing store.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Table() As ICrossTable
+</code></pre>
+<p>Returns the cross-table object that this formula writer targets. The
+cross-table provides the worksheet reference, named ranges, and layout
+metadata needed to place formulas.</p>
+<p><strong>Returns:</strong> ICrossTable. The bound cross-table instance.</p>
+<hr />
+<h3>table-set</h3>
+<p><strong>Assign the ICrossTable backing store.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Set Table(ByVal tabl As ICrossTable)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>tabl</code>: ICrossTable. The cross-table to bind to this formula writer.</li>
+</ul>
+<hr />
+<h3>form-data-get</h3>
+<p><strong>IFormulaData backing store.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get formData() As IFormulaData
+</code></pre>
+<p>Returns the formula-data object that supplies dictionary-based lookups for
+variable names, linelist ranges, and formula templates during generation.</p>
+<p><strong>Returns:</strong> IFormulaData. The bound formula-data instance.</p>
+<hr />
+<h3>form-data-set</h3>
+<p><strong>Assign the IFormulaData backing store.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Set formData(ByVal fData As IFormulaData)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>fData</code>: IFormulaData. The formula-data source to bind.</li>
+</ul>
+<hr />
+<h2>Shortcut Properties</h2>
+<h3>specifications</h3>
+<p><strong>ITableSpecs shortcut for the cross-table specifications.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get Specifications() As ITableSpecs
+</code></pre>
+<p>Convenience accessors that delegate to the cross-table or its
+specifications, reducing repetitive chaining throughout the class.
+Provides a shortcut to the ITableSpecs object associated with this cross-table.
+ITableSpecs encapsulates all configuration metadata for a table: its row/column
+variable names, summary function, table scope, missing/total/percentage flags,
+and the section it belongs to. This property avoids repeatedly chaining
+Table.Specifications throughout the class methods.</p>
+<p><strong>Returns:</strong> ITableSpecs. The specification dictionary for the underlying cross-table.</p>
+<hr />
+<h3>summary-function</h3>
+<p><strong>Summary function name from the table specifications.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get SummaryFunction() As String
+</code></pre>
+<p>Returns the summary function name string from the table specifications.
+The summary function determines the type of aggregation Excel will perform
+in the generated formulas. Common values include &quot;N&quot; (count non-empty),
+&quot;N()&quot; (count all), &quot;SUM&quot;, &quot;MEAN&quot;, &quot;MEDIAN&quot;, and &quot;MIN&quot;/&quot;MAX&quot;. This value
+drives formula generation logic throughout the class, especially in
+AddNonEmptyTableConditions where &quot;N&quot;/&quot;N()&quot; use a different operator pattern.</p>
+<p><strong>Returns:</strong> String. A value such as &quot;N&quot;, &quot;N()&quot;, &quot;SUM&quot;, &quot;MEAN&quot;, etc.</p>
+<hr />
+<h3>id</h3>
+<p><strong>Unique identifier string for this cross-table.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get ID() As String
+</code></pre>
+<p>Returns the unique identifier string for this cross-table. The table ID is
+used extensively as a suffix for named ranges on the analysis worksheet
+(e.g., &quot;ROW_CATEGORIES_<id>&quot;, &quot;VALUES_COL_1_<id>&quot;, &quot;TOTAL_ROW_VALUES_<id>&quot;).
+Every named range that belongs to this table is suffixed with this ID, making
+it the primary key for locating table regions on the worksheet.</p>
+<p><strong>Returns:</strong> String. The table identifier unique within the analysis workbook.</p>
+<hr />
+<h3>section-id</h3>
+<p><strong>Section identifier for the group this table belongs to.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get SectionId() As String
+</code></pre>
+<p>Returns the section identifier for the group of tables this cross-table belongs
+to. A section is a logical grouping of related tables on the analysis worksheet
+(e.g., all time-series tables sharing the same date controls). The section ID is
+the table ID of the first (anchor) table in the section. It is used to reference
+shared named ranges like &quot;FIRST_VALUE_START_TIME_<sectionId>&quot; and
+&quot;TOTAL_ROW_<sectionId>&quot; that are defined once per section rather than per table.</p>
+<p><strong>Returns:</strong> String. The anchor table ID for this table section.</p>
+<hr />
+<h3>table-type</h3>
+<p><strong>AnalysisTableScope byte value indicating the cross-table kind.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get TableScope() As Byte
+</code></pre>
+<p>Returns the AnalysisTableScope byte enum value indicating what kind of
+cross-table this is. The table scope determines which branch of the AddFormulas
+Select Case is executed: ScopeGlobalSummary, ScopeUnivariate, ScopeBivariate,
+ScopeTimeSeries, ScopeSpatioTemporal, or ScopeSpatial. Each type has fundamentally
+different formula structures, named range layouts, and condition-building logic.</p>
+<p><strong>Returns:</strong> Byte. One of the AnalysisTableScope enum constants.</p>
+<p><strong>Remarks:</strong></p>
+<ul>
+<li>Returns Byte rather than the enum type for macOS VBA compatibility.</li>
+</ul>
+<hr />
+<h3>table-formula</h3>
+<p><strong>Lazy-loaded IFormulas parsing engine for this table.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get TableFormula() As IFormulas
+</code></pre>
+<p>Returns the IFormulas object for this table, creating it on first access via
+lazy initialisation. The IFormulas object (created by Formulas.Create) is the
+core formula-parsing engine: it knows how to translate the table summary function
+and variable dictionary into concrete Excel formula strings for both linelist-scope
+and analysis-scope contexts. Once created, the instance is cached in this.forml
+so subsequent calls reuse the same object without re-parsing.</p>
+<p><strong>Returns:</strong> IFormulas. The formula parsing engine providing ParsedLinelistFormula and ParsedAnalysisFormula methods.</p>
+<p><strong>Remarks:</strong></p>
+<ul>
+<li>The IFormulas object is initialised with the table specification dictionary,
+the IFormulaData reference, and the summary function string. This is intentionally
+lazy because not all code paths need the formula engine (e.g., if Valid is False).</li>
+</ul>
+<hr />
+<h2>Range and Formula Helpers</h2>
+<h3>range-exists</h3>
+<p><strong>Check whether a named range exists on the cross-table worksheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function RangeExists(ByVal rngName As String) As Boolean
+</code></pre>
+<p>Utility functions for range existence checks, formula validation,
+string literals, percentage formulas, and conditional wrapping.
+Attempts to resolve a named range on the cross-table worksheet using On Error
+Resume Next to silently handle missing ranges. This is used before writing
+formulas to optional table regions (e.g., &quot;MISSING_TOTAL_<id>&quot;,
+&quot;MISSING_MISSING_<id>&quot;, &quot;TOTAL_TOTAL_<id>&quot;) that may or may not be present
+depending on the table missing/total configuration.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>rngName</code>: String. The named range to look up (e.g., &quot;MISSING_TOTAL_T001&quot;).</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True if the named range resolves to a valid Range object.</p>
+<hr />
+<h3>failed-formula</h3>
+<p><strong>Test whether a generated Excel formula string is syntactically valid.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function FailedFormula(ByVal frmName As String) As Boolean
+</code></pre>
+<p>Attempts to write the formula as an array formula into cell(1,1) of the
+cross-table worksheet, then immediately clears that cell. If the assignment
+succeeds without error, the formula is considered valid and FailedFormula
+returns False. If an error occurs (e.g., invalid function name, bad range
+reference, or formula syntax error), execution jumps to the Fail label and
+returns True. This acts as a safety net to prevent writing broken formulas
+into the actual table cells.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>frmName</code>: String. The Excel formula string to test (without the leading &quot;= &quot; prefix).</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True if the formula raised an error (is broken), False if it succeeded.</p>
+<p><strong>Remarks:</strong></p>
+<ul>
+<li>Application.DisplayAlerts is temporarily disabled and restored afterward
+to suppress any Excel warning dialogs during the test. Cell(1,1) is always cleared
+regardless of success or failure to avoid leaving test artifacts on the worksheet.</li>
+</ul>
+<hr />
+<h3>emp-str</h3>
+<p><strong>Return the Excel formula literal for an empty string.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function EmpStr() As String
+</code></pre>
+<p>Returns a two-character string consisting of two double-quote characters
+(Chr(34) &amp; Chr(34)), representing the Excel formula literal for an empty
+string (&quot;&quot;). This is used extensively when building condition expressions
+that test whether a cell is empty. Using Chr(34) avoids VBA double-quote
+escaping issues and keeps the formula-building code readable.</p>
+<p><strong>Returns:</strong> String. The literal text consisting of two Chr(34) characters.</p>
+<hr />
+<h3>non-emp-str</h3>
+<p><strong>Return the Excel formula literal for &quot;not empty&quot; criteria.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function NonEmpStr() As String
+</code></pre>
+<p>Returns a four-character string representing the Excel formula literal &quot;&lt;&gt;&quot;
+wrapped in double-quote characters (Chr(34) &amp; &quot;&lt;&gt;&quot; &amp; Chr(34)). This is the
+COUNTIFS criteria for &quot;not empty&quot; when used with the &quot;N&quot; or &quot;N()&quot; summary
+functions, which need a comparison operator inside the criteria string.</p>
+<p><strong>Returns:</strong> String. The literal &quot;&lt;&gt;&quot; wrapped in double-quote characters for Excel formula use.</p>
+<hr />
+<h3>percentage</h3>
+<p><strong>Build an IF(ISERR(...)) guarded percentage formula string.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function Percentage(ByVal denomRng As Range, ByVal numRng As Range, _
+                            Optional ByVal rowabs As Boolean = True) As String
+</code></pre>
+<p>Builds an Excel formula string that computes a percentage (numerator /
+denominator) with an ISERR guard to handle division-by-zero or other errors
+gracefully. The generated formula follows the pattern:
+IF(ISERR(num/denom), &quot;&quot;, num/denom). This ensures that when the denominator
+is zero or the ranges are empty, the cell displays blank instead of a
+#DIV/0! error. Address references use mixed absolute/relative addressing so
+the formula can be auto-filled down rows while keeping the denominator column
+fixed.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>denomRng</code>: Range. The range whose address is used as the denominator in the division.</li>
+<li><code>numRng</code>: Range. The range whose address is used as the numerator.</li>
+<li><code>rowabs</code>: Optional Boolean. When True, the denominator row reference is absolute. Defaults to True.</li>
+</ul>
+<p><strong>Returns:</strong> String. The complete IF(ISERR(...)) Excel formula text without &quot;= &quot; prefix.</p>
+<hr />
+<h3>condition</h3>
+<p><strong>Wrap a formula in an IF guard that blanks when a condition cell is empty.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function Condition(ByVal rngCondition As Range, ByVal formulaValue As String, _
+                           Optional ByVal rowabs As Boolean = False) As String
+</code></pre>
+<p>Wraps a formula value inside an IF guard that returns an empty string when a
+specified condition cell is blank. The generated pattern is:
+IF(conditionCell = &quot;&quot;, &quot;&quot;, formulaValue). This is primarily used in time-series
+and spatio-temporal tables where formula cells should display blank when the
+corresponding time period label cell is empty (i.e., the row falls outside the
+user selected date range). Without this guard, formulas would show misleading
+zero/error values for unused time period rows.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>rngCondition</code>: Range. The cell tested for blankness.</li>
+<li><code>formulaValue</code>: String. The Excel formula string to evaluate when rngCondition is not blank.</li>
+<li><code>rowabs</code>: Optional Boolean. Controls whether rngCondition uses an absolute row reference. Defaults to False.</li>
+</ul>
+<p><strong>Returns:</strong> String. The complete IF(...=&quot;&quot;,&quot;&quot;,formulaValue) Excel formula text.</p>
+<hr />
+<h2>Condition Management</h2>
+<h3>add-table-conditions</h3>
+<p><strong>Append a variable-name / condition-test pair to the accumulators.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AddTableConditions(ByVal varName As String, ByVal conditionName As String)
+</code></pre>
+<p>Methods that maintain the parallel condVars/condTests accumulator
+arrays used to build multi-criteria COUNTIFS/SUMPRODUCT formulas.
+Appends a variable name and its corresponding condition test string to the
+parallel accumulator arrays (condVars and condTests). These arrays are consumed
+by CurrentExcelFormula to build multi-criteria COUNTIFS/SUMPRODUCT formulas.
+Each call adds one criteria pair. The BetterArray objects are lazily initialised
+on first use with a 1-based lower bound. If varName is vbNullString, nothing
+is pushed (silent no-op).</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>varName</code>: String. The linelist variable name identifying the column the condition applies to.</li>
+<li><code>conditionName</code>: String. The criteria string for the formula (e.g., &quot;= $A3&quot;, &quot;= &quot;&quot;&quot;, &quot;&lt;&gt;&quot;&quot;&quot;).</li>
+</ul>
+<p><strong>Remarks:</strong></p>
+<ul>
+<li>condVars and condTests always have the same length and are consumed in parallel.
+Call ClearTableConditions to reset them before building a new formula.</li>
+</ul>
+<hr />
+<h3>clear-table-conditions</h3>
+<p><strong>Clear or trim conditions from the accumulator arrays.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ClearTableConditions(Optional ByVal removeNumber As Long = 0)
+</code></pre>
+<p>Clears conditions from the condVars/condTests accumulator arrays. When called
+with removeNumber = 0 (the default), all accumulated conditions are cleared,
+resetting the formula builder to a blank state. When called with a positive
+removeNumber, only the last N condition pairs are popped off the arrays, leaving
+earlier conditions intact. This selective removal is useful when a base set of
+conditions is shared across multiple formulas and only the last few criteria
+need to change between iterations.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>removeNumber</code>: Optional Long. Number of condition pairs to remove from the end. Defaults to 0 (clear all).</li>
+</ul>
+<p><strong>Remarks:</strong></p>
+<ul>
+<li>If the BetterArray objects have not been initialised yet (Nothing), they
+are created fresh and removeNumber is forced to 0 to avoid popping from an empty array.</li>
+</ul>
+<hr />
+<h3>add-non-empty-table-conditions</h3>
+<p><strong>Add a &quot;non-empty&quot; filter condition adapted to the summary function.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AddNonEmptyTableConditions(ByVal varName As String)
+</code></pre>
+<p>Adds a &quot;non-empty&quot; filter condition for a variable, automatically adapting the
+condition operator to the current summary function. For count-based functions
+(&quot;N&quot; and &quot;N()&quot;), the condition uses the equality operator with the NonEmpStr
+literal (&quot;= &lt;&gt;&quot;), because COUNTIFS interprets &quot;&lt;&gt;&quot; as &quot;not blank&quot; inside a
+criteria string. For all other summary functions (SUM, MEAN, etc.), the condition
+uses the inequality operator with EmpStr (&quot;&lt;&gt;&quot;&quot;&quot;), which is the standard
+SUMPRODUCT-style not-equal-to-empty test.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>varName</code>: String. The linelist variable name to add the non-empty filter for.</li>
+</ul>
+<hr />
+<h2>Excel Formula Builder</h2>
+<h3>current-excel-formula</h3>
+<p><strong>Assembled Excel formula from the current condition accumulators.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get CurrentExcelFormula(Optional ByVal scope As Byte = 2, _
+                                         Optional ByVal prefix As String = &quot;f&quot;) As String
+</code></pre>
+<p>Central entry point that assembles the final Excel formula string
+from the accumulated condition pairs.
+Builds and returns the complete Excel formula string from the currently
+accumulated condition pairs (condVars/condTests). This is the central
+formula-generation entry point that all table-type branches call after setting
+up their conditions. It operates in two modes: (1) Linelist scope calls
+ParsedLinelistFormula for unfiltered formulas; (2) Analysis scope wraps the
+accumulated condVars and condTests into a FormulaCondition object and calls
+ParsedAnalysisFormula for COUNTIFS/SUMPRODUCT formulas with all criteria. After
+generation, the formula is validated via FailedFormula, returning a fallback
+error placeholder if parsing failed.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>scope</code>: Optional Byte. FormulaScopeLinelist (1) for unfiltered formulas or FormulaScopeAnalysis (2) for conditional formulas. Defaults to 2.</li>
+<li><code>prefix</code>: Optional String. Table name prefix for the linelist reference. Defaults to &quot;f&quot;.</li>
+</ul>
+<p><strong>Returns:</strong> String. The Excel formula text without &quot;= &quot; prefix, or an error placeholder if parsing failed.</p>
+<p><strong>Remarks:</strong></p>
+<ul>
+<li>If condVars or condTests is Nothing when scope is analysis, execution
+jumps to Fail immediately. Always call AddTableConditions before requesting
+an analysis-scope formula.</li>
+</ul>
+<hr />
+<h2>Number Format Helper</h2>
+<h3>add-rng-format</h3>
+<p><strong>Apply an Excel NumberFormat to a range based on a format keyword.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AddRngFormat(ByVal formatValue As String, ByVal rng As Range)
+</code></pre>
+<p>Translates human-readable format keywords into Excel NumberFormat strings.
+Translates configuration-friendly format keywords into proper Excel custom
+number format strings and applies them to the target range. Supported keywords
+include &quot;integer&quot;, &quot;round0&quot;, &quot;roundN&quot;, &quot;percentage0&quot;, &quot;percentageN&quot;, &quot;euros&quot;,
+&quot;dollars&quot;, and &quot;text&quot;. Any unrecognised string is treated as a custom Excel
+NumberFormat and applied directly inside On Error Resume Next. If formatValue
+is vbNullString, the sub exits without modifying the range.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>formatValue</code>: String. The format keyword or custom Excel NumberFormat string.</li>
+<li><code>rng</code>: Range. The range to apply the number format to.</li>
+</ul>
+<p><strong>Remarks:</strong></p>
+<ul>
+<li>For &quot;roundN&quot; and &quot;percentageN&quot; keywords, the numeric suffix is extracted
+via Replace and CLng conversion. If the suffix is not a valid number, nbDecimals
+defaults to 1.</li>
+</ul>
+<hr />
+<h2>Error Handling</h2>
+<h3>throw-error</h3>
+<p><strong>Raise a project error with a standardised source name.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As Long, ByVal message As String)
+</code></pre>
+<p>Standardised error-raising helper for all methods in this class.
+Wrapper around Err.Raise that standardises the source to CLASS_NAME,
+providing a consistent stack trace across all methods in this class.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>errNumber</code>: Long. The error code to raise (typically a ProjectError constant).</li>
+<li><code>message</code>: String. Human-readable description of the failure.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.<varies> Always raises the specified error.</li>
+</ul>
+<hr />
+<h2>Interface Implementation</h2>
+<h3>ICrossTableFormula_Valid</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get ICrossTableFormula_Valid() As Boolean
+</code></pre>
+<p>Delegated members satisfying the ICrossTableFormula contract.
+See the corresponding Public/Private members above for full documentation.</p>
+<hr />
+</details>
+<details>
+<summary>Used in (4 file(s))</summary>
+<ul>
+<li><a href="src/classes/analyses/AnalysisOutput.cls">AnalysisOutput.cls</a></li>
+<li><a href="src/classes/analyses/CrossTableFormula.cls">CrossTableFormula.cls</a></li>
+<li><a href="src/classes/analyses/ICrossTableFormula.cls">ICrossTableFormula.cls</a></li>
+<li><a href="src/tests/modules/analyses/TestCrossTableFormula.bas">TestCrossTableFormula.bas</a></li>
+</ul>
+</details>
+
+  </main>
+</body>
+</html>
+

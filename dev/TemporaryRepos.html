@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TemporaryRepos - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>TemporaryRepos</h1>
+<p>Manages a temporary folder on disk for linelist preparation artefacts.
+Creates, sanitises, and cleans up files within a dedicated repository
+directory. Automatically deletes all content on termination.</p>
+<p><strong>Depends on:</strong> ProjectError</p>
+<p><strong>Version:</strong> 1.0 (2026-02-09)</p>
+<h2>Factory helpers</h2>
+<h3>create</h3>
+<p><strong>Build and initialise a temporary repository service</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create(Optional ByVal baseDirectory As String) As ITemporaryRepos
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>baseDirectory</code>: String. Optional custom root location.</li>
+</ul>
+<p><strong>Returns:</strong> ITemporaryRepos. Ready for use.</p>
+<hr />
+<h2>Lifecycle</h2>
+<h3>ensure-ready</h3>
+<p><strong>Prepare the repository root if it has not already been created</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub EnsureReady()
+</code></pre>
+<hr />
+<h3>reset</h3>
+<p><strong>Remove all temporary artefacts and mark repository as uninitialised</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Reset()
+</code></pre>
+<hr />
+<h2>Paths</h2>
+<h3>root-path</h3>
+<p><strong>Fully-qualified repository root</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get RootPath() As String
+</code></pre>
+<p><strong>Returns:</strong> String. Absolute path ending with a path separator.</p>
+<hr />
+<h3>create-file-path</h3>
+<p><strong>Generate a safe path for a new temporary file within the repository</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function CreateFilePath(ByVal fileName As String) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>fileName</code>: String. Requested file name (sanitised when required).</li>
+</ul>
+<p><strong>Returns:</strong> String. Absolute path ready for file creation.</p>
+<hr />
+<h2>File operations</h2>
+<h3>delete-file</h3>
+<p><strong>Delete a single file; silently ignore missing paths</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub DeleteFile(ByVal path As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code>: String. Absolute file path.</li>
+</ul>
+<hr />
+<h3>delete-all</h3>
+<p><strong>Remove every file within the repository, then recreate the root folder</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub DeleteAll()
+</code></pre>
+<hr />
+<details>
+<summary>Internal members (not exported)</summary>
+<h2>Factory helpers</h2>
+<h3>initialise</h3>
+<p><strong>Set the root path and mark the repository as not ready</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Friend Sub Initialise(Optional ByVal baseDirectory As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>baseDirectory</code>: String. Optional custom root location.</li>
+</ul>
+<hr />
+<h2>Internal helpers</h2>
+<h3>resolve-root-path</h3>
+<p><strong>Determine the root directory used for temporary storage</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ResolveRootPath(ByVal baseDirectory As String) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>baseDirectory</code>: String. Optional path supplied by the caller.</li>
+</ul>
+<p><strong>Returns:</strong> String. Fully-qualified path ending with the repository folder.</p>
+<hr />
+<h3>ensure-directory-exists</h3>
+<p><strong>Create the supplied folder when missing and validate existing paths</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureDirectoryExists(ByVal folderPath As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>folderPath</code>: String. Path that should represent a directory.</li>
+</ul>
+<hr />
+<h3>create-directory-tree</h3>
+<p><strong>Create a directory and all missing parents</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub CreateDirectoryTree(ByVal folderPath As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>folderPath</code>: String. Fully-qualified target folder.</li>
+</ul>
+<hr />
+<h3>is-directory</h3>
+<p><strong>Determine whether the supplied path points to a folder</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function IsDirectory(ByVal path As String) As Boolean
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code>: String. Path to test.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the path is an existing directory.</p>
+<hr />
+<h3>normalize-path</h3>
+<p><strong>Remove trailing separators and normalise the supplied path string</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function NormalizePath(ByVal path As String, ByVal sep As String) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>path</code>: String. Raw path.</li>
+<li><code>sep</code>: String. Platform path separator.</li>
+</ul>
+<p><strong>Returns:</strong> String. Cleaned path.</p>
+<hr />
+<h3>sanitize-file-name</h3>
+<p><strong>Replace characters that are invalid on common file systems</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SanitizeFileName(ByVal fileName As String) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>fileName</code>: String. Candidate file name.</li>
+</ul>
+<p><strong>Returns:</strong> String. Safe to append to the repository root.</p>
+<hr />
+<h3>delete-all-internal</h3>
+<p><strong>Wipe every file inside the repository without recreating the folder</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub DeleteAllInternal()
+</code></pre>
+<hr />
+<h3>class-terminate</h3>
+<p><strong>Clean up temporary files when the instance is destroyed</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub Class_Terminate()
+</code></pre>
+<hr />
+<h3>throw-error</h3>
+<p><strong>Raise a typed project error</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal message As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>errNumber</code>: ProjectError. The error code.</li>
+<li><code>message</code>: String. Descriptive error message.</li>
+</ul>
+<hr />
+</details>
+<details>
+<summary>Used in (6 file(s))</summary>
+<ul>
+<li><a href="src/classes/general/ITemporaryRepos.cls">ITemporaryRepos.cls</a></li>
+<li><a href="src/classes/general/TemporaryRepos.cls">TemporaryRepos.cls</a></li>
+<li><a href="src/classes/linelist/CodeTransfer.cls">CodeTransfer.cls</a></li>
+<li><a href="src/classes/linelist/Linelist.cls">Linelist.cls</a></li>
+<li><a href="src/tests/modules/general/TestTemporaryRepos.bas">TestTemporaryRepos.bas</a></li>
+<li><a href="src/tests/modules/linelist/TestCodeTransfer.bas">TestCodeTransfer.bas</a></li>
+</ul>
+</details>
+
+  </main>
+</body>
+</html>
+

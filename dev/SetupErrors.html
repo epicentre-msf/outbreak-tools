@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SetupErrors - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>SetupErrors</h1>
+<p>Analyses setup sheets and publishes consistency reports. Validates the
+dictionary for duplicate variables, missing labels, unknown controls,
+and formula correctness; inspects choices for unused entries and missing
+labels; audits exports for missing metadata and dictionary alignment;
+and reviews translations for missing or duplicate labels. Results are
+collected as IChecking objects and published to the __checkRep reporting
+worksheet via CheckingOutput.</p>
+<h2>Factory</h2>
+<h3>create</h3>
+<p><strong>Create and initialise a setup checker instance</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create(ByVal hostBook As Workbook, _
+                       Optional ByVal passwordService As IPasswords, _
+                       Optional ByVal dictionary As ILLdictionary, _
+                       Optional ByVal choices As ILLChoices, _
+                       Optional ByVal formulaStore As IFormulaData, _
+                       Optional ByVal transManager As ISetupTranslationsTable, _
+                       Optional ByVal stateScope As IApplicationState) As ISetupErrors
+</code></pre>
+<p>Factory method on the predeclared instance. Creates a new SetupErrors,
+calls Initialise with the supplied workbook and optional collaborators,
+then returns the instance through the ISetupErrors interface.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>hostBook</code>: Workbook. The workbook containing setup data.</li>
+<li><code>passwordService</code>: Optional IPasswords. Sheet protection handler.</li>
+<li><code>dictionary</code>: Optional ILLdictionary. Dictionary data accessor.</li>
+<li><code>choices</code>: Optional ILLChoices. Choices data accessor.</li>
+<li><code>formulaStore</code>: Optional IFormulaData. Formula validation handler.</li>
+<li><code>transManager</code>: Optional ISetupTranslationsTable. Translations table accessor.</li>
+<li><code>stateScope</code>: Optional IApplicationState. Application state guard.</li>
+</ul>
+<p><strong>Returns:</strong> ISetupErrors. A fully initialised instance ready to run checks.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When hostBook is Nothing.</li>
+</ul>
+<hr />
+<h2>Initialisation</h2>
+<h3>initialise</h3>
+<p><strong>Bind the checker to a workbook and optional collaborators</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Initialise(ByVal hostBook As Workbook, _
+                      Optional ByVal passwordService As IPasswords, _
+                      Optional ByVal dictionary As ILLdictionary, _
+                      Optional ByVal choices As ILLChoices, _
+                      Optional ByVal formulaStore As IFormulaData, _
+                      Optional ByVal transManager As ISetupTranslationsTable, _
+                      Optional ByVal stateScope As IApplicationState)
+</code></pre>
+<p>Validates the workbook reference, stores it along with optional
+collaborators, then calls ConfigureDependencies to create any missing
+default instances and EnsureCheckContainer to prepare the results array.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>hostBook</code>: Workbook. The workbook containing setup tables.</li>
+<li><code>passwordService</code>: Optional IPasswords. Sheet protection handler.</li>
+<li><code>dictionary</code>: Optional ILLdictionary. Dictionary data accessor.</li>
+<li><code>choices</code>: Optional ILLChoices. Choices data accessor.</li>
+<li><code>formulaStore</code>: Optional IFormulaData. Formula validation handler.</li>
+<li><code>transManager</code>: Optional ISetupTranslationsTable. Translations table accessor.</li>
+<li><code>stateScope</code>: Optional IApplicationState. Application state guard.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When hostBook is Nothing.</li>
+</ul>
+<hr />
+<h2>Execution</h2>
+<h3>run</h3>
+<p><strong>Execute all setup checks and publish results</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Run()
+</code></pre>
+<p>Suspends Excel UI via EnterBusyState, resets the check container, then
+runs each checker in sequence: CheckDictionary, CheckChoice, CheckExports,
+CheckTranslations. On completion, publishes all collected IChecking objects
+to the reporting worksheet via PrintReport. Restores Excel state even when
+an error occurs during the checking run.</p>
+<hr />
+<h2>Results</h2>
+<h3>checkings</h3>
+<p><strong>Collection of generated checking objects</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Checkings() As BetterArray
+</code></pre>
+<p>Returns a BetterArray containing the IChecking instances produced by the
+most recent Run call. Raises when the checker has not been initialised.</p>
+<p><strong>Returns:</strong> BetterArray. The generated IChecking instances.</p>
+<hr />
+<details>
+<summary>Internal members (not exported)</summary>
+<h2>Helper workflow</h2>
+<h3>self</h3>
+<p><strong>Current object instance</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Self() As ISetupErrors
+</code></pre>
+<p><strong>Returns:</strong> ISetupErrors. The current instance cast to the interface.</p>
+<hr />
+<h3>ensure-initialised</h3>
+<p><strong>Ensure the checker has been initialised</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureInitialised()
+</code></pre>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When the workbook reference is Nothing.</li>
+</ul>
+<hr />
+<h3>configure-dependencies</h3>
+<p><strong>Prepare collaborators when not provided</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ConfigureDependencies()
+</code></pre>
+<p>Creates default instances for any optional collaborator that was not
+supplied during Initialise: resolves the formula sheet, creates
+Passwords, LLdictionary, LLChoices, FormulaData, and
+SetupTranslationsTable instances from the host workbook.</p>
+<hr />
+<h3>ensure-check-container</h3>
+<p><strong>Ensure the internal container for checkings exists</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureCheckContainer()
+</code></pre>
+<hr />
+<h3>reset-check-container</h3>
+<p><strong>Reset the container prior to running checks</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ResetCheckContainer()
+</code></pre>
+<hr />
+<h3>application-scope</h3>
+<p><strong>Retrieve or create the application state scope</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ApplicationScope() As IApplicationState
+</code></pre>
+<p><strong>Returns:</strong> IApplicationState. The cached or newly created scope.</p>
+<hr />
+<h3>enter-busy-state</h3>
+<p><strong>Suspend Excel UI features while running checks</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnterBusyState()
+</code></pre>
+<hr />
+<h3>leave-busy-state</h3>
+<p><strong>Restore Excel UI configuration</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub LeaveBusyState(Optional ByVal silent As Boolean = False)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>silent</code>: Optional Boolean. When True, suppresses errors during restore. Defaults to False.</li>
+</ul>
+<hr />
+<h3>resolve-worksheet</h3>
+<p><strong>Resolve a workbook worksheet by name</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ResolveWorksheet(ByVal sheetName As String) As Worksheet
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetName</code>: String. The worksheet name to look up.</li>
+</ul>
+<p><strong>Returns:</strong> Worksheet. The resolved worksheet.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ElementNotFound When the worksheet does not exist.</li>
+</ul>
+<hr />
+<h3>validate-workbook</h3>
+<p><strong>Validate the incoming workbook reference</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ValidateWorkbook(ByVal hostBook As Workbook)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>hostBook</code>: Workbook. The workbook to validate.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When hostBook is Nothing.</li>
+</ul>
+<hr />
+<h2>Core checking routines</h2>
+<h3>check-dictionary</h3>
+<p><strong>Validate dictionary sheet for structure, duplicates, and formulas</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub CheckDictionary()
+</code></pre>
+<p>Unprotects the dictionary, exports, and choices sheets, then iterates
+bottom-up through the dictionary rows checking for: duplicate variable
+names, short variable names, missing main labels, missing sheet names,
+unknown controls, choice formula mismatches, formula validity, min/max
+validation types, format/type consistency, and export column alignment.
+Collects all findings into a single IChecking object and re-protects
+sheets on exit.</p>
+<hr />
+<h3>check-choice</h3>
+<p><strong>Inspect choices sheet for unused or inconsistent entries</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub CheckChoice()
+</code></pre>
+<p>Unprotects the choices sheet, builds a list of choice names actually
+referenced in dictionary controls, then flags unused choices, missing
+list names, missing ordering values, and missing labels. Collects all
+findings into a single IChecking object and re-protects on exit.</p>
+<hr />
+<h3>check-exports</h3>
+<p><strong>Audit exports sheet for missing metadata and dictionary alignment</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub CheckExports()
+</code></pre>
+<p>Iterates over each export row, checking active exports for missing label,
+password, metadata, format, filename, and header values. Also validates
+that the corresponding dictionary column exists and is not empty, checks
+password/identifier consistency, and validates filename variable references.</p>
+<hr />
+<h3>check-translations</h3>
+<p><strong>Review translations table for missing and duplicate labels</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub CheckTranslations()
+</code></pre>
+<p>Unprotects the translations sheet, updates the translations manager from
+the registry, then queries for missing and duplicate labels. Collects
+findings into a single IChecking object and re-protects on exit.</p>
+<hr />
+<h3>check-analysis</h3>
+<p><strong>Run analysis table checks across all sections</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub CheckAnalysis()
+</code></pre>
+<p>Resolves the analysis worksheet, removes empty rows via Analysis.RemoveRows,
+then delegates to CheckTable for each of the seven analysis sections.
+Caches the worksheet and WorksheetFunction references and passes them to
+CheckTable to avoid repeated lookups.</p>
+<hr />
+<h3>CheckTable</h3>
+<p><strong>Evaluate a specific analysis section for structural errors.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub CheckTable(ByVal partName As String, _
+                       ByVal analysisSheet As Worksheet, _
+                       ByVal workFun As WorksheetFunction)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>partName</code>: String. The section display name (e.g. &quot;Global summary&quot;).</li>
+<li><code>analysisSheet</code>: Worksheet. The cached analysis worksheet.</li>
+<li><code>workFun</code>: WorksheetFunction. The cached worksheet function object.</li>
+</ul>
+<hr />
+<h3>print-report</h3>
+<p><strong>Publish all collected checkings to the reporting worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub PrintReport()
+</code></pre>
+<p>Resolves the __checkRep worksheet, clears its content, creates a
+CheckingOutput helper, and prints all collected IChecking objects.
+Installs the worksheet change handler for filtering support and
+activates the report sheet.</p>
+<hr />
+<h2>Message helpers</h2>
+<h3>format-message</h3>
+<p><strong>Format an error message by replacing numbered placeholders</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function FormatMessage(ByVal messageTag As String, _
+                               Optional ByVal valueOne As String = vbNullString, _
+                               Optional ByVal valueTwo As String = vbNullString, _
+                               Optional ByVal valueThree As String = vbNullString, _
+                               Optional ByVal valueFour As String = vbNullString) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>messageTag</code>: String. The message template with %1..%4 placeholders.</li>
+<li><code>valueOne</code>: Optional String. Replacement for %1.</li>
+<li><code>valueTwo</code>: Optional String. Replacement for %2.</li>
+<li><code>valueThree</code>: Optional String. Replacement for %3.</li>
+<li><code>valueFour</code>: Optional String. Replacement for %4.</li>
+</ul>
+<p><strong>Returns:</strong> String. The formatted message.</p>
+<hr />
+<h3>formula-message</h3>
+<p><strong>Validate a formula string and return a formatted error when invalid</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function FormulaMessage(ByVal formValue As String, _
+                                ByVal messageTag As String, _
+                                Optional ByVal valueOne As String = vbNullString, _
+                                Optional ByVal valueTwo As String = vbNullString, _
+                                Optional ByVal formulaType As String = &quot;linelist&quot;) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>formValue</code>: String. The formula expression to validate.</li>
+<li><code>messageTag</code>: String. The message template to use on failure.</li>
+<li><code>valueOne</code>: Optional String. Replacement for %1.</li>
+<li><code>valueTwo</code>: Optional String. Replacement for %2.</li>
+<li><code>formulaType</code>: Optional String. Formula type (&quot;linelist&quot; or &quot;analysis&quot;). Defaults to &quot;linelist&quot;.</li>
+</ul>
+<p><strong>Returns:</strong> String. The formatted error message, or empty when the formula is valid.</p>
+<hr />
+<h3>replace-placeholder</h3>
+<p><strong>Replace a single placeholder token in a template string</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ReplacePlaceholder(ByVal template As String, _
+                                    ByVal placeholder As String, _
+                                    ByVal replacement As String) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>template</code>: String. The template containing the placeholder.</li>
+<li><code>placeholder</code>: String. The token to replace (e.g. &quot;%1&quot;).</li>
+<li><code>replacement</code>: String. The value to substitute.</li>
+</ul>
+<p><strong>Returns:</strong> String. The template with the placeholder replaced.</p>
+<hr />
+<h2>Interface implementation</h2>
+<h3>ISetupErrors_Initialise</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ISetupErrors_Initialise(ByVal hostBook As Workbook, _
+                                    Optional ByVal passwordService As IPasswords, _
+                                    Optional ByVal dictionary As ILLdictionary, _
+                                    Optional ByVal choices As ILLChoices, _
+                                    Optional ByVal formulaStore As IFormulaData, _
+                                    Optional ByVal transManager As ISetupTranslationsTable, _
+                                    Optional ByVal stateScope As IApplicationState)
+</code></pre>
+<p>Delegated members satisfying the ISetupErrors contract.
+See the corresponding Public members above for full documentation.</p>
+<hr />
+<h3>throw-error</h3>
+<p><strong>Raise a ProjectError-based exception</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal errorMessage As String)
+</code></pre>
+<p>Wrapper around Err.Raise that standardises the source to CLASS_NAME,
+providing a consistent stack trace across all methods in this class.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>errNumber</code>: ProjectError. The error code to raise.</li>
+<li><code>errorMessage</code>: String. Human-readable description of the failure.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError Always raises the specified error.</li>
+</ul>
+<hr />
+</details>
+<details>
+<summary>Used in (4 file(s))</summary>
+<ul>
+<li><a href="src/classes/setup/ISetupErrors.cls">ISetupErrors.cls</a></li>
+<li><a href="src/classes/setup/SetupErrors.cls">SetupErrors.cls</a></li>
+<li><a href="src/modules/setup/SetupHelpers.bas">SetupHelpers.bas</a></li>
+<li><a href="src/tests/modules/setup/TestSetupErrors.bas">TestSetupErrors.bas</a></li>
+</ul>
+</details>
+
+  </main>
+</body>
+</html>
+

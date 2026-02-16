@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MasterSetupPreparation - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>MasterSetupPreparation</h1>
+<details>
+<summary>Internal members (not exported)</summary>
+<h2>Factory helpers</h2>
+<h3>Create</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create(ByVal hostBook As Workbook) As IMasterSetupPreparation
+</code></pre>
+<p>(&quot;Create a configured MasterSetupPreparation instance for the supplied workbook.&quot;)</p>
+<hr />
+<h3>Self</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Self() As IMasterSetupPreparation
+</code></pre>
+<p>(&quot;Return the current instance as an interface reference.&quot;)</p>
+<hr />
+<h2>Public API</h2>
+<h3>Configure</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Configure(ByVal hostBook As Workbook)
+</code></pre>
+<p>(&quot;Bind the preparation helper to the workbook hosting master setup assets.&quot;)</p>
+<hr />
+<h3>Prepare</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Prepare(Optional ByVal excelApplication As Application)
+</code></pre>
+<p>(&quot;Run the preparation workflow: register dropdowns then initialise the variables table.&quot;)</p>
+<hr />
+<h3>EnsureDropdowns</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub EnsureDropdowns()
+</code></pre>
+<p>(&quot;Ensure the dropdown worksheet hosts all required dropdown lists.&quot;)</p>
+<hr />
+<h3>EnsureVariables</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub EnsureVariables()
+</code></pre>
+<p>(&quot;Ensure the variables worksheet exposes an initialised manager with validations applied.&quot;)</p>
+<hr />
+<h3>Dropdowns</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Dropdowns() As IDropdownLists
+</code></pre>
+<p>(&quot;Expose the dropdown manager for callers needing direct access.&quot;)</p>
+<hr />
+<h3>Variables</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Variables() As IMasterSetupVariables
+</code></pre>
+<p>(&quot;Expose the variables manager associated with the master setup table.&quot;)</p>
+<hr />
+<h3>HostWorkbook</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get HostWorkbook() As Workbook
+</code></pre>
+<p>(&quot;Expose the configured host workbook.&quot;)</p>
+<hr />
+<h2>Preparation helpers</h2>
+<h3>ResetCaches</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ResetCaches()
+</code></pre>
+<p>(&quot;Reset cached dependencies after reconfiguration.&quot;)</p>
+<hr />
+<h3>EnsureDropdownManager</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function EnsureDropdownManager() As IDropdownLists
+</code></pre>
+<p>(&quot;Ensure the dropdown manager is initialised and cached.&quot;)</p>
+<hr />
+<h3>EnsureVariablesManager</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function EnsureVariablesManager() As IMasterSetupVariables
+</code></pre>
+<p>(&quot;Ensure the variables manager is initialised over an existing listobject.&quot;)</p>
+<hr />
+<h3>EnsureDropdownSheet</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function EnsureDropdownSheet() As Worksheet
+</code></pre>
+<p>(&quot;Ensure the dropdown worksheet exists and cache the reference.&quot;)</p>
+<hr />
+<h3>EnsureVariablesSheet</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function EnsureVariablesSheet() As Worksheet
+</code></pre>
+<p>(&quot;Ensure the variables worksheet exists and cache the reference.&quot;)</p>
+<hr />
+<h3>EnsureVariablesTable</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function EnsureVariablesTable() As ListObject
+</code></pre>
+<p>(&quot;Ensure a variables table exists on the variables worksheet.&quot;)</p>
+<hr />
+<h3>ResolveVariablesTable</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ResolveVariablesTable(ByVal wsVars As Worksheet) As ListObject
+</code></pre>
+<p>(&quot;Resolve the primary variables table if it already exists.&quot;)</p>
+<hr />
+<h3>CreateVariablesTable</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function CreateVariablesTable(ByVal wsVars As Worksheet) As ListObject
+</code></pre>
+<p>(&quot;Create a variables table with default headers when none exists.&quot;)</p>
+<hr />
+<h3>EnsureTableHasRow</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureTableHasRow(ByVal table As ListObject)
+</code></pre>
+<p>(&quot;Ensure the supplied table exposes at least one data row.&quot;)</p>
+<hr />
+<h3>ApplyTableStyle</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ApplyTableStyle(ByVal table As ListObject, ByVal tableStyle As String)
+</code></pre>
+<p>(&quot;Apply a table style while ignoring styling errors on unsupported versions.&quot;)</p>
+<hr />
+<h3>DefaultVariableHeaders</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function DefaultVariableHeaders() As Variant
+</code></pre>
+<p>(&quot;Return the default header labels for a freshly created variables table.&quot;)</p>
+<hr />
+<h3>DefaultDropdownDefinitions</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function DefaultDropdownDefinitions() As Variant
+</code></pre>
+<p>(&quot;Supply the default dropdown definitions required by master setup.&quot;)</p>
+<hr />
+<h3>DefaultDiseaseExclusions</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function DefaultDiseaseExclusions() As Variant
+</code></pre>
+<p>(&quot;Return the default list of worksheets excluded from disease dropdowns.&quot;)</p>
+<hr />
+<h3>DefaultConfigSheets</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function DefaultConfigSheets() As Variant
+</code></pre>
+<p>(&quot;Return the default configuration worksheets list.&quot;)</p>
+<hr />
+<h3>EnsureDropdownDefinition</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureDropdownDefinition(ByVal drop As IDropdownLists, _
+                                     ByVal listName As String, _
+                                     ByVal items As Variant)
+</code></pre>
+<p>(&quot;Ensure a dropdown definition exists with the supplied values.&quot;)</p>
+<hr />
+<h3>RefreshLanguageDropdowns</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RefreshLanguageDropdowns(ByVal drop As IDropdownLists)
+</code></pre>
+<p>(&quot;Populate the languages dropdowns using the translations sheet headers.&quot;)</p>
+<hr />
+<h3>BuildArray</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function BuildArray(ByVal items As Variant) As BetterArray
+</code></pre>
+<p>(&quot;Convert supplied items into a BetterArray helper.&quot;)</p>
+<hr />
+<h3>EnsureDropdownHasValues</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureDropdownHasValues(ByVal drop As IDropdownLists, _
+                                    ByVal listName As String, _
+                                    ByVal values As BetterArray)
+</code></pre>
+<p>(&quot;Ensure a dropdown either exists or is updated with the supplied values.&quot;)</p>
+<hr />
+<h3>EnsureVariableNameColumnName</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureVariableNameColumnName(ByVal manager As IMasterSetupVariables)
+</code></pre>
+<p>(&quot;Publish the Variable Name column range as a hidden workbook name for downstream formulas.&quot;)</p>
+<hr />
+<h3>ResolveWorksheet</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ResolveWorksheet(ByVal sheetName As String) As Worksheet
+</code></pre>
+<p>(&quot;Resolve a worksheet by name without creating it.&quot;)</p>
+<hr />
+<h3>ResolveOrCreateWorksheet</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ResolveOrCreateWorksheet(ByVal sheetName As String, _
+                                          Optional ByVal visibility As XlSheetVisibility = xlSheetVisible, _
+                                          Optional ByVal applyVisibility As Boolean = True) As Worksheet
+</code></pre>
+<p>(&quot;Resolve a worksheet or create it when absent.&quot;)</p>
+<hr />
+<h3>EnsureWorkbook</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function EnsureWorkbook() As Workbook
+</code></pre>
+<p>(&quot;Ensure the host workbook reference is available.&quot;)</p>
+<hr />
+</details>
+<details>
+<summary>Used in (5 file(s))</summary>
+<ul>
+<li><a href="src/classes/mastersetup/EventMasterSetup.cls">EventMasterSetup.cls</a></li>
+<li><a href="src/classes/mastersetup/IMasterSetupPreparation.cls">IMasterSetupPreparation.cls</a></li>
+<li><a href="src/classes/mastersetup/MasterSetupPreparation.cls">MasterSetupPreparation.cls</a></li>
+<li><a href="src/modules/mastersetup/EventsMasterSetupRibbon.bas">EventsMasterSetupRibbon.bas</a></li>
+<li><a href="src/tests/modules/mastersetup/TestMasterSetupPreparation.bas">TestMasterSetupPreparation.bas</a></li>
+</ul>
+</details>
+
+  </main>
+</body>
+</html>
+

@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IButtons - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>IButtons</h1>
+<p>Defines the public contract for the Buttons class, exposing
+worksheet shape creation, placement, and formatting for linelist
+buttons. Supports large, small, and geo button scopes.</p>
+<h2>Properties</h2>
+<h3>OutputRange</h3>
+<p><strong>Anchor range used for placement</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get OutputRange() As Range: End Property
+</code></pre>
+<p>State accessors.</p>
+<p><strong>Returns:</strong> Range. Top-left anchor cell.</p>
+<hr />
+<h3>OutputRange</h3>
+<p><strong>Update the anchor range used for placement</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Set OutputRange(ByVal rng As Range): End Property
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>rng</code>: Range. Providing the top-left anchor cell.</li>
+</ul>
+<hr />
+<h3>Name</h3>
+<p><strong>Name of the shape in the worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Name() As String: End Property
+</code></pre>
+<p><strong>Returns:</strong> String. Shape identifier.</p>
+<hr />
+<h3>ShapeScope</h3>
+<p><strong>Formatting scope applied to the button</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ShapeScope() As Byte: End Property
+</code></pre>
+<p><strong>Returns:</strong> Byte. ButtonScope value.</p>
+<hr />
+<h2>Operations</h2>
+<h3>Add</h3>
+<p><strong>Create a button shape at the configured location</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Add(Optional ByVal actionCommand As String = vbNullString, _
+               Optional ByVal shapeLabel As String = vbNullString): End Sub
+</code></pre>
+<p>Button creation and formatting.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>actionCommand</code>: String. Macro to execute on click. Defaults to vbNullString.</li>
+<li><code>shapeLabel</code>: String. Label displayed on the button. Defaults to vbNullString.</li>
+</ul>
+<hr />
+<h3>Format</h3>
+<p><strong>Apply a design provider to an existing button shape</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Format(design As ILLFormat): End Sub
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>design</code>: ILLFormat. Formatter responsible for styling the shape.</li>
+</ul>
+<hr />
+<h2>Checkings</h2>
+<h3>HasCheckings</h3>
+<p><strong>Whether diagnostic entries have been recorded</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get HasCheckings() As Boolean: End Property
+</code></pre>
+<p>Diagnostic logging access.</p>
+<p><strong>Returns:</strong> Boolean. True when at least one entry exists.</p>
+<hr />
+<h3>CheckingValues</h3>
+<p><strong>Retrieve the diagnostic log entries</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get CheckingValues() As Object: End Property
+</code></pre>
+<p><strong>Returns:</strong> Object. The checking instance, or Nothing.</p>
+<hr />
+
+  </main>
+</body>
+</html>
+

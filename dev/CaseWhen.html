@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CaseWhen - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>CaseWhen</h1>
+<p>Parses CASE_WHEN custom formulas written in setup expressions and rewrites
+them as nested Excel IF statements. The class splits the formula body into
+alternating condition/result pairs while respecting quoted segments and
+nested parentheses, then builds the equivalent nested IF expression. It
+also extracts textual category labels for downstream analysis consumers.</p>
+<p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a></p>
+<p><strong>Version:</strong> 1.0 (2026-02-09)</p>
+<h2>Factory</h2>
+<h3>create</h3>
+<p><strong>Instantiate a CaseWhen parser bound to a formula</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create(ByVal formula As String) As ICaseWhen
+</code></pre>
+<p>Trims the incoming formula, stores it in a new instance, and returns
+the ICaseWhen interface reference for fluent downstream consumption.
+No eager parsing occurs; the formula is parsed lazily on first access
+to Valid, ParsedFormula, or Categories.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>formula</code>: String. The CASE_WHEN expression to parse.</li>
+</ul>
+<p><strong>Returns:</strong> ICaseWhen. A ready-to-query parser instance.</p>
+<hr />
+<h2>Validation</h2>
+<h3>valid</h3>
+<p><strong>Determine whether the stored formula is a CASE_WHEN</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get Valid() As Boolean
+</code></pre>
+<p>Checks whether the stored formula matches the CASE_WHEN pattern.
+Accepts formulas that begin with the CASE_WHEN( token
+(case-insensitive) and contain content beyond the header. Returns
+False for empty strings or formulas that do not match the token.</p>
+<p><strong>Returns:</strong> Boolean. True when the formula is parseable.</p>
+<hr />
+<h2>Parsing</h2>
+<h3>parsed-formula</h3>
+<p><strong>Convert CASE_WHEN into nested IF statements</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function parsedFormula() As String
+</code></pre>
+<p>Core conversion and category extraction logic.
+Iterates through the argument table in pairs (condition, result) and
+builds Excel-compatible nested IF fragments. When the argument count
+is odd the final entry becomes the default branch; when even an empty
+string literal is appended as the fallback. Excel supports up to 64
+nested IF calls.</p>
+<p><strong>Returns:</strong> String. Nested IF expression ready for worksheet consumption.</p>
+<hr />
+<h3>categories</h3>
+<p><strong>Extract textual result labels from the CASE_WHEN arguments</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function Categories() As BetterArray
+</code></pre>
+<p>Evaluates each result expression (even-indexed entries in the argument
+table) and returns the literal values that will appear to end-users.
+Quoted entries are stripped of their quotes; non-quoted entries are
+wrapped in quotes for consistent downstream handling.</p>
+<p><strong>Returns:</strong> BetterArray. Collection containing quoted category labels.</p>
+<hr />
+<details>
+<summary>Internal members (not exported)</summary>
+<h2>PublicAccessors</h2>
+<h3>self</h3>
+<p><strong>Current object instance</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Self() As ICaseWhen
+</code></pre>
+<p>Properties that expose the internal state and interface pointer.
+Returns the current instance cast to its interface. Used internally
+by the factory method to return an ICaseWhen reference.</p>
+<p><strong>Returns:</strong> ICaseWhen. Reference to the current object.</p>
+<hr />
+<h3>formula</h3>
+<p><strong>Retrieve the raw CASE_WHEN formula</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get casewhenFormula() As String
+</code></pre>
+<p>Returns the original formula text as stored after trimming during
+assignment. This is the full CASE_WHEN(...) expression.</p>
+<p><strong>Returns:</strong> String. Original formula text.</p>
+<hr />
+<h3>formula-set</h3>
+<p><strong>Store the CASE_WHEN formula and reset cached data</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Let casewhenFormula(ByVal formula As String)
+</code></pre>
+<p>Trims the incoming formula and stores it, then invalidates the
+cached parsing table so subsequent reads trigger a fresh parse.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>formula</code>: String. Expression to analyse.</li>
+</ul>
+<hr />
+<h2>ParsingInfrastructure</h2>
+<h3>case-when-table</h3>
+<p><strong>Retrieve the cached list of CASE_WHEN arguments</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get CaseWhenTable() As BetterArray
+</code></pre>
+<p>Lazily computed and cached argument table.
+Splits the formula into alternating condition/result entries while
+respecting quoted segments and nested parentheses. The result is
+cached so subsequent accesses avoid reparsing the string. Returns
+a clone to prevent callers from mutating the cache.</p>
+<p><strong>Returns:</strong> BetterArray. The ordered CASE_WHEN arguments.</p>
+<hr />
+<h2>PrivateHelpers</h2>
+<h3>reset-cache</h3>
+<p><strong>Reset cached artefacts when the source formula changes</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ResetCache()
+</code></pre>
+<p>Internal utilities for cache management and formula segmentation.
+Sets the cached parsing table to Nothing so the next access to
+CaseWhenTable triggers a fresh parse from the stored formula.</p>
+<hr />
+<h3>sanitised-formula</h3>
+<p><strong>Remove the CASE_WHEN header and closing parenthesis</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SanitisedFormula() As String
+</code></pre>
+<p>Strips the leading CASE_WHEN( token and the trailing closing
+parenthesis to expose the raw comma-delimited argument body.</p>
+<p><strong>Returns:</strong> String. Inner content of the CASE_WHEN call.</p>
+<hr />
+<h3>split-formula-segments</h3>
+<p><strong>Split the CASE_WHEN body into trimmed argument segments</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SplitFormulaSegments(ByVal formulaBody As String) As BetterArray
+</code></pre>
+<p>Walks the formula body character by character, tracking quotation
+state and parenthesis depth. Splits on top-level commas only,
+preserving nested expressions and quoted strings intact.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>formulaBody</code>: String. The text between CASE_WHEN( and the final ).</li>
+</ul>
+<p><strong>Returns:</strong> BetterArray. Alternating condition and result expressions.</p>
+<hr />
+<h2>Interface</h2>
+<h3>ICaseWhen_Valid</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get ICaseWhen_Valid() As Boolean
+</code></pre>
+<p>Delegated members satisfying the ICaseWhen contract.</p>
+<hr />
+</details>
+<details>
+<summary>Used in (5 file(s))</summary>
+<ul>
+<li><a href="src/classes/formulas/CaseWhen.cls">CaseWhen.cls</a></li>
+<li><a href="src/classes/formulas/ChoiceFormula.cls">ChoiceFormula.cls</a></li>
+<li><a href="src/classes/formulas/Formulas.cls">Formulas.cls</a></li>
+<li><a href="src/classes/formulas/ICaseWhen.cls">ICaseWhen.cls</a></li>
+<li><a href="src/tests/modules/formulas/TestCaseWhen.bas">TestCaseWhen.bas</a></li>
+</ul>
+</details>
+
+  </main>
+</body>
+</html>
+

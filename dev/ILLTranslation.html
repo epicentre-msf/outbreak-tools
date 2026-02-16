@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ILLTranslation - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>ILLTranslation</h1>
+<p>Defines the public contract for the LLTranslation class, exposing
+scoped translation objects, import/export of translation ListObjects,
+dictionary exchange, and workbook-level hidden name initialisation
+for translated configuration values.</p>
+<h2>Properties</h2>
+<h3>TransObject</h3>
+<p><strong>Scoped translation object</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get TransObject(Optional ByVal trans As Byte = TranslationOfMessages) As ITranslationObject
+</code></pre>
+<p>Accessors for translation objects and the host worksheet.
+Returns an ITranslationObject configured for the requested translation
+scope. The language code is resolved from the host workbook HiddenNames.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>trans</code>: Optional Byte. TranslationScope value selecting the content
+scope. Defaults to TranslationOfMessages.</li>
+</ul>
+<p><strong>Returns:</strong> ITranslationObject. The translation object for the requested scope.</p>
+<hr />
+<h3>Wksh</h3>
+<p><strong>Host translation worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Wksh() As Worksheet
+</code></pre>
+<p>Returns the worksheet bound to this LLTranslation instance, hosting
+all translation ListObjects.</p>
+<p><strong>Returns:</strong> Worksheet. The host translation worksheet.</p>
+<hr />
+<h2>DataExchange</h2>
+<h3>Export</h3>
+<p><strong>Export all translation tables to an output workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Export(ByVal outputWkb As Workbook, _
+                  Optional ByVal Hide As Long = xlSheetVeryHidden)
+</code></pre>
+<p>Import, export, and dictionary exchange operations.
+Creates or clears a worksheet in the output workbook matching the host
+sheet name, then exports every ListObject from the host sheet using
+CustomTable.Export with stacking.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>outputWkb</code>: Workbook. The destination workbook.</li>
+<li><code>Hide</code>: Optional Long. Sheet visibility after export. Defaults to xlSheetVeryHidden.</li>
+</ul>
+<hr />
+<h3>Import</h3>
+<p><strong>Import translation tables from another workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Import(ByVal fromWkb As Workbook)
+</code></pre>
+<p>Finds a worksheet in the source workbook matching the host sheet name.
+Cleans the dictionary ListObject before import. For each ListObject on
+the host sheet, imports data from the matching ListObject on the source
+sheet. Missing source tables are silently skipped.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>fromWkb</code>: Workbook. The source workbook containing translation data.</li>
+</ul>
+<hr />
+<h3>ImportDictionary</h3>
+<p><strong>Import dictionary translations from a raw ListObject</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ImportDictionary(ByVal dictionaryTable As ListObject)
+</code></pre>
+<p>Overwrites the host dictionary table with data from the supplied
+ListObject, preserving the source column headers.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>dictionaryTable</code>: ListObject. The source dictionary ListObject.</li>
+</ul>
+<hr />
+<h3>ExportDictionary</h3>
+<p><strong>Export the dictionary table to a named worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ExportDictionary(ByVal outputWkb As Workbook, _
+                            Optional ByVal sheetName As String = &quot;Translations&quot;, _
+                            Optional ByVal Hide As Long = xlSheetVisible)
+</code></pre>
+<p>Creates or clears a worksheet in the output workbook with the given
+name, then exports the dictionary ListObject using CustomTable.Export.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>outputWkb</code>: Workbook. The destination workbook.</li>
+<li><code>sheetName</code>: Optional String. Worksheet name for the export. Defaults to &quot;Translations&quot;.</li>
+<li><code>Hide</code>: Optional Long. Sheet visibility after export. Defaults to xlSheetVisible.</li>
+</ul>
+<hr />
+<h2>HiddenNames</h2>
+<h3>InitialiseHiddenNames</h3>
+<p><em><em>Create RNG_</em> hidden names on a target workbook</em>*</p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub InitialiseHiddenNames(ByVal targetWkb As Workbook)
+</code></pre>
+<p>Workbook-level hidden name initialisation from translations.
+Translates message and sheet-name tags using the TranslationOfMessages
+scope, then writes each translated value as a workbook-level hidden name
+on the target workbook. These names replace the legacy named ranges that
+were previously stored on the translation worksheet.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>targetWkb</code>: Workbook. The workbook receiving the hidden names.</li>
+</ul>
+<hr />
+
+  </main>
+</body>
+</html>
+

@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IChoiceFormula - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>IChoiceFormula</h1>
+<p>Defines the public contract for the ChoiceFormula class, exposing
+validation, CASE_WHEN conversion, category extraction, and choice
+list identification for CHOICE_FORMULA custom expressions.</p>
+<h2>Operations</h2>
+<h3>Valid</h3>
+<p><strong>Determine whether the stored expression is a valid CHOICE_FORMULA</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Valid() As Boolean: End Property
+</code></pre>
+<p>Validation, conversion, and metadata extraction.
+Implementations verify the CHOICE_FORMULA token, balanced parentheses,
+and that at least three arguments are present (name plus one
+condition/result pair). Returns False for blank arguments.</p>
+<p><strong>Returns:</strong> Boolean. True when the specification can be parsed.</p>
+<hr />
+<h3>parsedFormula</h3>
+<p><strong>Retrieve the CHOICE_FORMULA expression rewritten as nested IF statements</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get parsedFormula() As String: End Property
+</code></pre>
+<p>Delegates to the CaseWhen converter to produce the nested IF output.
+Returns an empty string when the formula is invalid.</p>
+<p><strong>Returns:</strong> String. Nested IF expression.</p>
+<hr />
+<h3>Categories</h3>
+<p><strong>Enumerate the textual labels referenced by the CHOICE_FORMULA</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Categories() As BetterArray: End Property
+</code></pre>
+<p>Each element represents a display label shown to users for a given
+branch of the formula. Delegates category extraction to CaseWhen.</p>
+<p><strong>Returns:</strong> BetterArray. Collection containing quoted labels.</p>
+<hr />
+<h3>choiceName</h3>
+<p><strong>Retrieve the name of the referenced choice list</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get choiceName() As String: End Property
+</code></pre>
+<p>Returns the first argument of the CHOICE_FORMULA expression, which
+identifies the choice list providing valid options.</p>
+<p><strong>Returns:</strong> String. Identifier for the choice list.</p>
+<hr />
+
+  </main>
+</body>
+</html>
+

@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ListBuilder - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>ListBuilder</h1>
+<p>Builds horizontal (HList) or vertical (VList) data entry sheets for the
+linelist workbook. Each mode creates formatted sheets with freeze panes,
+sections via SectionBuilder, a GoTo-section dropdown, and worksheet
+protection. HList mode additionally creates a ListObject table, printed
+and filtered companion sheets, action buttons, and a pivot table. VList
+mode creates a PLAGEVALUES range reference for vertical data entry.
+Consumers call Create with a layer mode, sheet name, and linelist
+reference, then invoke Build to construct the sheet.</p>
+<p><strong>Depends on:</strong> <a href="ILinelist.html">ILinelist</a>, <a href="ILLSheets.html">ILLSheets</a>, <a href="ILinelistSpecs.html">ILinelistSpecs</a>, <a href="ILLFormat.html">ILLFormat</a>, <a href="IDropdownLists.html">IDropdownLists</a>, <a href="IPasswords.html">IPasswords</a>, <a href="ITranslationObject.html">ITranslationObject</a>, <a href="IButtons.html">IButtons</a>, <a href="IHiddenNames.html">IHiddenNames</a>, <a href="ISectionBuilder.html">ISectionBuilder</a>, ICustomPivotTables, <a href="IMain.html">IMain</a>, <a href="BetterArray.html">BetterArray</a>, Button shape codes</p>
+<p><strong>Version:</strong> 1.0 (2026-02-09)</p>
+<h2>Instantiation</h2>
+<h3>create</h3>
+<p><strong>Create a ListBuilder instance</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create(ByVal layer As Byte, _
+                       ByVal sheetName As String, _
+                       ByVal ll As ILinelist) As IListBuilder
+</code></pre>
+<p>Factory method and Friend bindings for construction.
+Creates a new ListBuilder wired to build a data entry sheet of the given
+layer type (HList or VList) for the named sheet within the linelist. The
+linelist object, sheet name, and presence in the dictionary are all
+validated before construction.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>layer</code>: Byte. The ListBuilderLayer mode (HList = 1, VList = 2).</li>
+<li><code>sheetName</code>: String. The dictionary sheet name to build.</li>
+<li><code>ll</code>: ILinelist. The linelist workbook facade providing worksheets,
+dropdowns, pivots, and specs.</li>
+</ul>
+<p><strong>Returns:</strong> IListBuilder. A fully initialised instance ready for Build.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When ll is Nothing.</li>
+<li>ProjectError.InvalidArgument When sheetName is empty or not
+present in the dictionary.</li>
+</ul>
+<hr />
+<h2>Core</h2>
+<h3>build</h3>
+<p><strong>Build the data entry sheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Build()
+</code></pre>
+<p>Public entry point for building the data entry sheet.
+Dispatches to the appropriate private builder based on the layer mode set
+during factory construction. HList mode delegates to BuildHList; VList
+mode delegates to BuildVList. Raises an error for unknown layer values.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.InvalidArgument When the layer value is not
+ListBuilderLayerHList or ListBuilderLayerVList.</li>
+</ul>
+<hr />
+<details>
+<summary>Internal members (not exported)</summary>
+<h2>Bindings</h2>
+<h3>bin-layer</h3>
+<p><strong>Assign the builder layer mode</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Friend Property Let BinLayer(ByVal value As Byte)
+</code></pre>
+<p>Friend setters used only during factory construction.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>value</code>: Byte. The ListBuilderLayer constant (HList or VList).</li>
+</ul>
+<hr />
+<h3>bin-sheet-name</h3>
+<p><strong>Assign the target sheet name</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Friend Property Let BinSheetName(ByVal value As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>value</code>: String. The dictionary sheet name to build.</li>
+</ul>
+<hr />
+<h3>bin-linelist</h3>
+<p><strong>Assign the linelist facade</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Friend Property Set BinLinelist(ByVal value As ILinelist)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>value</code>: ILinelist. The linelist workbook facade.</li>
+</ul>
+<hr />
+<h2>HListBuild</h2>
+<h3>build-hlist</h3>
+<p><strong>Build a horizontal data entry sheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub BuildHList()
+</code></pre>
+<p>Private implementation for horizontal data entry sheet construction.
+Constructs a full HList sheet: applies design formatting, freezes panes,
+adds action buttons (Show/Hide, Add Rows, Clear Filters, Open Print, and
+optionally Geo), builds sections via SectionBuilder, creates the GoTo
+section dropdown, stores sheet metadata as hidden names, creates the main
+ListObject table plus printed and filtered companion sheets, adds a pivot
+table, and protects the sheet. When a template workbook is in use, buttons
+are skipped and rows 3-4 are hidden instead.</p>
+<hr />
+<h2>VListBuild</h2>
+<h3>build-vlist</h3>
+<p><strong>Build a vertical data entry sheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub BuildVList()
+</code></pre>
+<p>Private implementation for vertical data entry sheet construction.
+Constructs a VList sheet: applies design formatting, freezes pane row 1,
+builds sections via SectionBuilder, creates the GoTo section dropdown,
+stores sheet metadata as hidden names, computes the PLAGEVALUES range
+reference (the contiguous vertical data range starting at the table start
+marker), and protects the active sheet.</p>
+<hr />
+<h2>Helpers</h2>
+<h3>build-sections</h3>
+<p><strong>Build sections using SectionBuilder</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub BuildSections(ByVal sh As Worksheet, ByVal printSh As Worksheet)
+</code></pre>
+<p>Private utilities shared by both build modes.
+Creates a SectionBuilder in the appropriate mode (HList or VList) and
+invokes its Build method. For HList mode, also retrieves the CRF companion
+worksheet (if it exists). Both standard and custom dropdown objects are
+passed to the builder for variable validation setup.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The main data entry sheet to build sections on.</li>
+<li><code>printSh</code>: Worksheet. The printed companion sheet (Nothing for VList).</li>
+</ul>
+<hr />
+<h3>collect-section-names</h3>
+<p><strong>Collect section names for the GoTo dropdown</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function CollectSectionNames(ByVal dict As ILLdictionary, _
+                                     ByVal llshs As ILLSheets, _
+                                     ByVal goToLabel As String) As BetterArray
+</code></pre>
+<p>Iterates through the dictionary rows for the current sheet, extracting
+unique section names in order. Each name is prefixed with the GoTo label
+(e.g., &quot;Go to section: SectionName&quot;). Duplicate consecutive sections are
+skipped to avoid redundant dropdown entries.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>dict</code>: ILLdictionary. The linelist dictionary providing data ranges.</li>
+<li><code>llshs</code>: ILLSheets. Sheet metadata for row indices and variable counts.</li>
+<li><code>goToLabel</code>: String. The translated &quot;Go to section&quot; prefix label.</li>
+</ul>
+<p><strong>Returns:</strong> BetterArray. A 1-based array of prefixed section name strings.</p>
+<hr />
+<h3>busy-app</h3>
+<p><strong>Suppress UI updates for batch operations</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub BusyApp()
+</code></pre>
+<p>Disables screen updating, display alerts, automatic calculation, and
+animations to improve performance during sheet construction. Called
+after activating a sheet to set up freeze panes.</p>
+<hr />
+<h3>throw-error</h3>
+<p><strong>Raise a ProjectError-based exception</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As Long, ByVal errorMessage As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>errNumber</code>: Long. The error code to raise.</li>
+<li><code>errorMessage</code>: String. Human-readable description of the failure.</li>
+</ul>
+<hr />
+<h2>InterfaceImplementation</h2>
+<h3>IListBuilder_Build</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub IListBuilder_Build()
+</code></pre>
+<p>Delegated members satisfying the IListBuilder contract.
+See the corresponding Public members above for full documentation.</p>
+<hr />
+</details>
+<details>
+<summary>Used in (3 file(s))</summary>
+<ul>
+<li><a href="src/classes/linelist/IListBuilder.cls">IListBuilder.cls</a></li>
+<li><a href="src/classes/linelist/ListBuilder.cls">ListBuilder.cls</a></li>
+<li><a href="src/tests/modules/linelist/TestListBuilder.bas">TestListBuilder.bas</a></li>
+</ul>
+</details>
+
+  </main>
+</body>
+</html>
+

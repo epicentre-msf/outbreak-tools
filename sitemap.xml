@@ -2,150 +2,150 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://epicentre-msf.github.io/outbreak-tools/tutorial.html</loc>
-    <lastmod>2025-06-17T09:44:35.411Z</lastmod>
-  </url>
-  <url>
-    <loc>https://epicentre-msf.github.io/outbreak-tools/index.html</loc>
-    <lastmod>2025-06-17T09:44:35.378Z</lastmod>
-  </url>
-  <url>
-    <loc>https://epicentre-msf.github.io/outbreak-tools/reference/choices_sheet.html</loc>
-    <lastmod>2025-06-17T09:44:35.379Z</lastmod>
-  </url>
-  <url>
-    <loc>https://epicentre-msf.github.io/outbreak-tools/reference/custom_formulas.html</loc>
-    <lastmod>2025-06-17T09:44:35.379Z</lastmod>
-  </url>
-  <url>
-    <loc>https://epicentre-msf.github.io/outbreak-tools/reference/home_reference.html</loc>
-    <lastmod>2025-06-17T09:44:35.379Z</lastmod>
-  </url>
-  <url>
-    <loc>https://epicentre-msf.github.io/outbreak-tools/reference/ribbons_linelist.html</loc>
-    <lastmod>2025-06-17T09:44:35.411Z</lastmod>
-  </url>
-  <url>
-    <loc>https://epicentre-msf.github.io/outbreak-tools/reference/analyses_sheet.html</loc>
-    <lastmod>2025-06-17T09:44:35.379Z</lastmod>
-  </url>
-  <url>
-    <loc>https://epicentre-msf.github.io/outbreak-tools/getting_started/use_linelist.html</loc>
-    <lastmod>2025-06-17T09:44:35.331Z</lastmod>
-  </url>
-  <url>
-    <loc>https://epicentre-msf.github.io/outbreak-tools/getting_started/home_linelist.html</loc>
-    <lastmod>2025-06-17T09:44:35.308Z</lastmod>
-  </url>
-  <url>
-    <loc>https://epicentre-msf.github.io/outbreak-tools/getting_started/compile.html</loc>
-    <lastmod>2025-06-17T09:44:35.308Z</lastmod>
-  </url>
-  <url>
-    <loc>https://epicentre-msf.github.io/outbreak-tools/getting_started/use_analyses_sheets.html</loc>
-    <lastmod>2025-06-17T09:44:35.331Z</lastmod>
-  </url>
-  <url>
-    <loc>https://epicentre-msf.github.io/outbreak-tools/how_to/link_tables.html</loc>
-    <lastmod>2025-06-17T09:44:35.348Z</lastmod>
-  </url>
-  <url>
-    <loc>https://epicentre-msf.github.io/outbreak-tools/how_to/migrate_linelist.html</loc>
-    <lastmod>2025-06-17T09:44:35.348Z</lastmod>
-  </url>
-  <url>
-    <loc>https://epicentre-msf.github.io/outbreak-tools/how_to/show_hide_variables.html</loc>
-    <lastmod>2025-06-17T09:44:35.349Z</lastmod>
-  </url>
-  <url>
-    <loc>https://epicentre-msf.github.io/outbreak-tools/how_to/connect_dashboard.html</loc>
-    <lastmod>2025-06-17T09:44:35.331Z</lastmod>
-  </url>
-  <url>
-    <loc>https://epicentre-msf.github.io/outbreak-tools/how_to/home_how_to.html</loc>
-    <lastmod>2025-06-17T09:44:35.331Z</lastmod>
-  </url>
-  <url>
-    <loc>https://epicentre-msf.github.io/outbreak-tools/how_to/export_subset_geo.html</loc>
-    <lastmod>2025-06-17T09:44:35.331Z</lastmod>
-  </url>
-  <url>
-    <loc>https://epicentre-msf.github.io/outbreak-tools/cheatsheets/home_cheatsheets.html</loc>
-    <lastmod>2025-06-17T09:44:35.307Z</lastmod>
-  </url>
-  <url>
-    <loc>https://epicentre-msf.github.io/outbreak-tools/cheatsheets/analyses.html</loc>
-    <lastmod>2025-06-17T09:44:35.307Z</lastmod>
-  </url>
-  <url>
-    <loc>https://epicentre-msf.github.io/outbreak-tools/cheatsheets/variable_control.html</loc>
-    <lastmod>2025-06-17T09:44:35.308Z</lastmod>
-  </url>
-  <url>
-    <loc>https://epicentre-msf.github.io/outbreak-tools/how_to/connect_to_dashboard.html</loc>
-    <lastmod>2025-06-17T09:44:35.331Z</lastmod>
-  </url>
-  <url>
-    <loc>https://epicentre-msf.github.io/outbreak-tools/how_to/add_language.html</loc>
-    <lastmod>2025-06-17T09:44:35.331Z</lastmod>
+    <lastmod>2026-02-16T08:20:07.205Z</lastmod>
   </url>
   <url>
     <loc>https://epicentre-msf.github.io/outbreak-tools/how_to/import_geobase.html</loc>
-    <lastmod>2025-06-17T09:44:35.348Z</lastmod>
+    <lastmod>2026-02-16T08:20:07.142Z</lastmod>
   </url>
   <url>
-    <loc>https://epicentre-msf.github.io/outbreak-tools/how_to/troubleshoot_linelist.html</loc>
-    <lastmod>2025-06-17T09:44:35.349Z</lastmod>
+    <loc>https://epicentre-msf.github.io/outbreak-tools/how_to/link_tables.html</loc>
+    <lastmod>2026-02-16T08:20:07.142Z</lastmod>
   </url>
   <url>
-    <loc>https://epicentre-msf.github.io/outbreak-tools/how_to/send_data_to_dashboard.html</loc>
-    <lastmod>2025-06-17T09:44:35.349Z</lastmod>
+    <loc>https://epicentre-msf.github.io/outbreak-tools/how_to/export_subset_geo.html</loc>
+    <lastmod>2026-02-16T08:20:07.125Z</lastmod>
   </url>
   <url>
     <loc>https://epicentre-msf.github.io/outbreak-tools/how_to/migrate_setup.html</loc>
-    <lastmod>2025-06-17T09:44:35.348Z</lastmod>
+    <lastmod>2026-02-16T08:20:07.142Z</lastmod>
   </url>
   <url>
-    <loc>https://epicentre-msf.github.io/outbreak-tools/getting_started/get_linelist.html</loc>
-    <lastmod>2025-06-17T09:44:35.308Z</lastmod>
+    <loc>https://epicentre-msf.github.io/outbreak-tools/how_to/connect_dashboard.html</loc>
+    <lastmod>2026-02-16T08:20:07.125Z</lastmod>
+  </url>
+  <url>
+    <loc>https://epicentre-msf.github.io/outbreak-tools/how_to/send_data_to_dashboard.html</loc>
+    <lastmod>2026-02-16T08:20:07.142Z</lastmod>
   </url>
   <url>
     <loc>https://epicentre-msf.github.io/outbreak-tools/getting_started/create_dic.html</loc>
-    <lastmod>2025-06-17T09:44:35.308Z</lastmod>
+    <lastmod>2026-02-16T08:20:07.102Z</lastmod>
+  </url>
+  <url>
+    <loc>https://epicentre-msf.github.io/outbreak-tools/getting_started/home_linelist.html</loc>
+    <lastmod>2026-02-16T08:20:07.102Z</lastmod>
   </url>
   <url>
     <loc>https://epicentre-msf.github.io/outbreak-tools/getting_started/workflow.html</loc>
-    <lastmod>2025-06-17T09:44:35.331Z</lastmod>
+    <lastmod>2026-02-16T08:20:07.124Z</lastmod>
   </url>
   <url>
     <loc>https://epicentre-msf.github.io/outbreak-tools/getting_started/download.html</loc>
-    <lastmod>2025-06-17T09:44:35.308Z</lastmod>
+    <lastmod>2026-02-16T08:20:07.102Z</lastmod>
   </url>
   <url>
-    <loc>https://epicentre-msf.github.io/outbreak-tools/getting_started/home_obt.html</loc>
-    <lastmod>2025-06-17T09:44:35.308Z</lastmod>
-  </url>
-  <url>
-    <loc>https://epicentre-msf.github.io/outbreak-tools/reference/dictionary_sheet.html</loc>
-    <lastmod>2025-06-17T09:44:35.379Z</lastmod>
+    <loc>https://epicentre-msf.github.io/outbreak-tools/reference/custom_formulas.html</loc>
+    <lastmod>2026-02-16T08:20:07.173Z</lastmod>
   </url>
   <url>
     <loc>https://epicentre-msf.github.io/outbreak-tools/reference/exports_sheet.html</loc>
-    <lastmod>2025-06-17T09:44:35.379Z</lastmod>
+    <lastmod>2026-02-16T08:20:07.173Z</lastmod>
+  </url>
+  <url>
+    <loc>https://epicentre-msf.github.io/outbreak-tools/reference/analyses_sheet.html</loc>
+    <lastmod>2026-02-16T08:20:07.172Z</lastmod>
+  </url>
+  <url>
+    <loc>https://epicentre-msf.github.io/outbreak-tools/reference/home_reference.html</loc>
+    <lastmod>2026-02-16T08:20:07.173Z</lastmod>
   </url>
   <url>
     <loc>https://epicentre-msf.github.io/outbreak-tools/reference/ribbons_designer.html</loc>
-    <lastmod>2025-06-17T09:44:35.411Z</lastmod>
-  </url>
-  <url>
-    <loc>https://epicentre-msf.github.io/outbreak-tools/reference/translations_sheet.html</loc>
-    <lastmod>2025-06-17T09:44:35.411Z</lastmod>
-  </url>
-  <url>
-    <loc>https://epicentre-msf.github.io/outbreak-tools/reference/ribbons_setup.html</loc>
-    <lastmod>2025-06-17T09:44:35.411Z</lastmod>
+    <lastmod>2026-02-16T08:20:07.204Z</lastmod>
   </url>
   <url>
     <loc>https://epicentre-msf.github.io/outbreak-tools/Options.html</loc>
-    <lastmod>2025-06-17T09:44:35.291Z</lastmod>
+    <lastmod>2026-02-16T08:20:07.084Z</lastmod>
+  </url>
+  <url>
+    <loc>https://epicentre-msf.github.io/outbreak-tools/cheatsheets/home_cheatsheets.html</loc>
+    <lastmod>2026-02-16T08:20:07.101Z</lastmod>
+  </url>
+  <url>
+    <loc>https://epicentre-msf.github.io/outbreak-tools/index.html</loc>
+    <lastmod>2026-02-16T08:20:07.172Z</lastmod>
+  </url>
+  <url>
+    <loc>https://epicentre-msf.github.io/outbreak-tools/cheatsheets/variable_control.html</loc>
+    <lastmod>2026-02-16T08:20:07.101Z</lastmod>
+  </url>
+  <url>
+    <loc>https://epicentre-msf.github.io/outbreak-tools/cheatsheets/analyses.html</loc>
+    <lastmod>2026-02-16T08:20:07.100Z</lastmod>
+  </url>
+  <url>
+    <loc>https://epicentre-msf.github.io/outbreak-tools/reference/choices_sheet.html</loc>
+    <lastmod>2026-02-16T08:20:07.173Z</lastmod>
+  </url>
+  <url>
+    <loc>https://epicentre-msf.github.io/outbreak-tools/reference/dictionary_sheet.html</loc>
+    <lastmod>2026-02-16T08:20:07.173Z</lastmod>
+  </url>
+  <url>
+    <loc>https://epicentre-msf.github.io/outbreak-tools/reference/translations_sheet.html</loc>
+    <lastmod>2026-02-16T08:20:07.205Z</lastmod>
+  </url>
+  <url>
+    <loc>https://epicentre-msf.github.io/outbreak-tools/reference/ribbons_linelist.html</loc>
+    <lastmod>2026-02-16T08:20:07.205Z</lastmod>
+  </url>
+  <url>
+    <loc>https://epicentre-msf.github.io/outbreak-tools/reference/ribbons_setup.html</loc>
+    <lastmod>2026-02-16T08:20:07.205Z</lastmod>
+  </url>
+  <url>
+    <loc>https://epicentre-msf.github.io/outbreak-tools/getting_started/use_linelist.html</loc>
+    <lastmod>2026-02-16T08:20:07.124Z</lastmod>
+  </url>
+  <url>
+    <loc>https://epicentre-msf.github.io/outbreak-tools/getting_started/use_analyses_sheets.html</loc>
+    <lastmod>2026-02-16T08:20:07.124Z</lastmod>
+  </url>
+  <url>
+    <loc>https://epicentre-msf.github.io/outbreak-tools/getting_started/get_linelist.html</loc>
+    <lastmod>2026-02-16T08:20:07.102Z</lastmod>
+  </url>
+  <url>
+    <loc>https://epicentre-msf.github.io/outbreak-tools/getting_started/home_obt.html</loc>
+    <lastmod>2026-02-16T08:20:07.102Z</lastmod>
+  </url>
+  <url>
+    <loc>https://epicentre-msf.github.io/outbreak-tools/getting_started/compile.html</loc>
+    <lastmod>2026-02-16T08:20:07.101Z</lastmod>
+  </url>
+  <url>
+    <loc>https://epicentre-msf.github.io/outbreak-tools/how_to/connect_to_dashboard.html</loc>
+    <lastmod>2026-02-16T08:20:07.125Z</lastmod>
+  </url>
+  <url>
+    <loc>https://epicentre-msf.github.io/outbreak-tools/how_to/home_how_to.html</loc>
+    <lastmod>2026-02-16T08:20:07.125Z</lastmod>
+  </url>
+  <url>
+    <loc>https://epicentre-msf.github.io/outbreak-tools/how_to/troubleshoot_linelist.html</loc>
+    <lastmod>2026-02-16T08:20:07.142Z</lastmod>
+  </url>
+  <url>
+    <loc>https://epicentre-msf.github.io/outbreak-tools/how_to/migrate_linelist.html</loc>
+    <lastmod>2026-02-16T08:20:07.142Z</lastmod>
+  </url>
+  <url>
+    <loc>https://epicentre-msf.github.io/outbreak-tools/how_to/add_language.html</loc>
+    <lastmod>2026-02-16T08:20:07.124Z</lastmod>
+  </url>
+  <url>
+    <loc>https://epicentre-msf.github.io/outbreak-tools/how_to/show_hide_variables.html</loc>
+    <lastmod>2026-02-16T08:20:07.142Z</lastmod>
   </url>
 </urlset>

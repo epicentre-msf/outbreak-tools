@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DiseaseWorksheetManager - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>DiseaseWorksheetManager</h1>
+<details>
+<summary>Internal members (not exported)</summary>
+<h2>Commands</h2>
+<h3>RemoveWorksheet</h3>
+<p><strong>Remove the specified worksheet using guarded Application settings.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function RemoveWorksheet(ByVal workbook As Workbook, ByVal sheetName As String) As Boolean
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>workbook</code>: Workbook hosting the worksheet collection.</li>
+<li><code>sheetName</code>: String worksheet name to delete.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean True when the worksheet existed and has been removed.</p>
+<hr />
+<h2>Queries</h2>
+<h3>WorksheetExists</h3>
+<p><strong>Test whether a worksheet exists within the workbook.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function WorksheetExists(ByVal workbook As Workbook, ByVal sheetName As String) As Boolean
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>workbook</code>: Workbook hosting the worksheet collection.</li>
+<li><code>sheetName</code>: String worksheet name to locate.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean True when the worksheet exists.</p>
+<hr />
+<h2>Internal Helpers</h2>
+<h3>ValidateWorkbook</h3>
+<p><strong>Ensure the workbook reference is valid.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ValidateWorkbook(ByVal workbook As Workbook)
+</code></pre>
+<hr />
+<h3>ValidateSheetName</h3>
+<p><strong>Ensure the worksheet name is not empty.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ValidateSheetName(ByVal sheetName As String)
+</code></pre>
+<hr />
+<h3>FindWorksheet</h3>
+<p><strong>Locate the worksheet by name using case-insensitive comparison.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function FindWorksheet(ByVal workbook As Workbook, ByVal sheetName As String) As Worksheet
+</code></pre>
+<hr />
+<h3>CreateGuard</h3>
+<p><strong>Instantiate and activate an Application guard.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function CreateGuard(ByVal excelApp As Application) As IDiseaseApplicationState
+</code></pre>
+<hr />
+<h2>ErrorHandling</h2>
+<h3>ThrowError</h3>
+<p><strong>Centralised error raising aligned with ProjectError codes.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal errMessage As String)
+</code></pre>
+<hr />
+</details>
+<details>
+<summary>Used in (4 file(s))</summary>
+<ul>
+<li><a href="src/classes/msetup/DiseaseWorksheetManager.cls">DiseaseWorksheetManager.cls</a></li>
+<li><a href="src/classes/msetup/IDiseaseWorksheetManager.cls">IDiseaseWorksheetManager.cls</a></li>
+<li><a href="src/tests/modules/mastersetup/TestDiseaseIntegration.bas">TestDiseaseIntegration.bas</a></li>
+<li><a href="src/tests/modules/mastersetup/TestDiseaseWorksheetManager.bas">TestDiseaseWorksheetManager.bas</a></li>
+</ul>
+</details>
+
+  </main>
+</body>
+</html>
+

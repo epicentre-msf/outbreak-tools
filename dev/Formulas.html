@@ -1,0 +1,690 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Formulas - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>Formulas</h1>
+<p>Parses setup expressions, validates token sequences, and exposes
+Excel-compatible formulas for linelist and analysis contexts. The class
+tokenises incoming pseudo-formulas, resolves variable references through
+an LLdictionary, and delegates to CaseWhen, ChoiceFormula, and
+ValueOfFormula for custom function conversion. Grouped formulas are
+detected and rewritten as aggregated Excel expressions.</p>
+<p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="Checking.html">Checking</a>, <a href="LLdictionary.html">LLdictionary</a>, <a href="LLVariables.html">LLVariables</a>, <a href="LLSheets.html">LLSheets</a>, <a href="CaseWhen.html">CaseWhen</a>, <a href="ChoiceFormula.html">ChoiceFormula</a>, <a href="ValueOfFormula.html">ValueOfFormula</a></p>
+<p><strong>Version:</strong> 1.0 (2026-02-09)</p>
+<h2>Factory</h2>
+<h3>create</h3>
+<p><strong>Instantiate a Formulas helper ready to parse the provided setup expression</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create(ByVal dict As ILLdictionary, _
+                       ByVal formData As IFormulaData, _
+                       ByVal setupForm As String) As IFormulas
+</code></pre>
+<p>Provides the single entry point to instantiate the parser and initialise core state.
+Validates that the required dictionary and formula data objects are
+present, then stores them in a new instance alongside the setup
+expression. No eager parsing occurs; the formula is parsed lazily on
+first access to Valid, Varlists, or any parsed formula property.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>dict</code>: ILLdictionary. Variable metadata provider.</li>
+<li><code>formData</code>: IFormulaData. Catalogue of approved Excel functions and separators.</li>
+<li><code>setupForm</code>: String. Pseudo-formula to parse and validate.</li>
+</ul>
+<p><strong>Returns:</strong> IFormulas. Initialised instance.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When dict is Nothing.</li>
+<li>ProjectError.ObjectNotInitialized When formData is Nothing.</li>
+</ul>
+<hr />
+<h2>PublicAccessors</h2>
+<h3>has-setup-variables</h3>
+<p><strong>Determine if the parsed formula contains literal values</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get HasSetupVariables() As Boolean
+</code></pre>
+<p>Returns True when numeric or text literals were encountered during
+tokenisation. The flag is set during EvaluateFormula.</p>
+<p><strong>Returns:</strong> Boolean. True when literals are present.</p>
+<hr />
+<h3>is-grouped</h3>
+<p><strong>Indicate whether the parsed formula targets grouped evaluation</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get IsGrouped() As String
+</code></pre>
+<p>Forces evaluation in the &quot;simple&quot; context, then inspects the captured
+group metadata. Returns &quot;Yes&quot; when grouped logic applies, &quot;No&quot; otherwise.</p>
+<p><strong>Returns:</strong> String. &quot;Yes&quot; for grouped formulas, &quot;No&quot; otherwise.</p>
+<hr />
+<h3>reason</h3>
+<p><strong>Retrieve the last validation message associated with the given context</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Reason(Optional ByVal formulaType As String = &quot;analysis&quot;) As String
+</code></pre>
+<p>Returns a human-readable explanation of the current validity state.
+When the formula is valid the default success message is returned;
+otherwise the recorded invalidation reason is returned.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>formulaType</code>: Optional String. Context (analysis/simple).</li>
+</ul>
+<p><strong>Returns:</strong> String. Explanation of the current validity state.</p>
+<hr />
+<h3>valid</h3>
+<p><strong>Check whether the formula is valid for the supplied context</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Valid(Optional ByVal formulaType As String = &quot;analysis&quot;) As Boolean
+</code></pre>
+<p>Triggers a lazy evaluation for the requested context, then returns
+the cached validity flag.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>formulaType</code>: Optional String. Context (analysis/simple).</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when parsing succeeded.</p>
+<hr />
+<h3>varlists</h3>
+<p><strong>Provide a clone of the variables detected in the expression</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Varlists(Optional ByVal formulaType As String = &quot;analysis&quot;) As BetterArray
+</code></pre>
+<p>Returns a BetterArray containing the variable names encountered
+during tokenisation. The result is always a clone so callers cannot
+mutate the internal cache.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>formulaType</code>: Optional String. Context (analysis/simple).</li>
+</ul>
+<p><strong>Returns:</strong> BetterArray. Variable names.</p>
+<hr />
+<h3>parsed-linelist-formula</h3>
+<p><strong>Build the Excel expression for linelist worksheets</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ParsedLinelistFormula(Optional ByVal useTableName As Boolean = False, _
+                                          Optional ByVal tablePrefix As String = vbNullString) As String
+</code></pre>
+<p>Iterates through the cached token list and replaces variable tokens
+with worksheet addresses or structured references depending on the
+useTableName flag. Grouped formulas are delegated to
+BuildGroupedFormula. Custom tokens MEAN and N are mapped to their
+Excel equivalents (AVERAGE, COUNT).</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>useTableName</code>: Optional Boolean. Toggles structured references.</li>
+<li><code>tablePrefix</code>: Optional String. Prefixed to structured references.</li>
+</ul>
+<p><strong>Returns:</strong> String. Excel formula referencing linelist variables.</p>
+<hr />
+<h3>parsed-analysis-formula</h3>
+<p><strong>Build the Excel expression for aggregated analysis results</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ParsedAnalysisFormula(ByVal formCond As IFormulaCondition, _
+                                          Optional ByVal tablePrefix As String = vbNullString, _
+                                          Optional ByVal Connector As String = &quot;*&quot;) As String
+</code></pre>
+<p>Iterates through the cached token list and replaces variable tokens
+with conditional aggregation fragments supplied by formCond. Custom
+formula tokens are delegated to ParsedCustomFormula. Grouped formulas
+are delegated to BuildGroupedFormula.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>formCond</code>: IFormulaCondition. Provides conditional aggregation logic.</li>
+<li><code>tablePrefix</code>: Optional String. Prefix for table references.</li>
+<li><code>Connector</code>: Optional String. Connector between conditional fragments.</li>
+</ul>
+<p><strong>Returns:</strong> String. Excel expression ready for analysis worksheets.</p>
+<hr />
+<h2>Checkings</h2>
+<h3>has-checkings</h3>
+<p><strong>Indicate whether any diagnostic entries were recorded</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get HasCheckings() As Boolean
+</code></pre>
+<p>Returns the module-level flag set by LogCheck.</p>
+<p><strong>Returns:</strong> Boolean. True when checkings exist.</p>
+<hr />
+<h3>checking-values</h3>
+<p><strong>Expose the collected checking entries if available</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get CheckingValues() As IChecking
+</code></pre>
+<p>Returns the internal IChecking store when at least one entry has
+been recorded. Returns Nothing otherwise.</p>
+<p><strong>Returns:</strong> IChecking. Logged diagnostics.</p>
+<hr />
+<details>
+<summary>Internal members (not exported)</summary>
+<h2>PublicAccessors</h2>
+<h3>self</h3>
+<p><strong>Return the interface pointer for the current instance</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Self() As IFormulas
+</code></pre>
+<p>Exposes configured dependencies, cached evaluation results, and parsed Excel expressions.
+Returns the current instance cast to its interface. Used internally
+by the factory method to return an IFormulas reference.</p>
+<p><strong>Returns:</strong> IFormulas. Reference to the current object.</p>
+<hr />
+<h3>dictionary</h3>
+<p><strong>Retrieve the underlying dictionary used during parsing</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Dictionary() As ILLdictionary
+</code></pre>
+<p>Returns the ILLdictionary previously supplied during Create or
+Initialise. Used by downstream helpers to resolve variable metadata.</p>
+<p><strong>Returns:</strong> ILLdictionary. Dictionary backing metadata lookups.</p>
+<hr />
+<h3>dictionary-set</h3>
+<p><strong>Assign a new dictionary and reset dependent caches</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Set Dictionary(ByVal dict As ILLdictionary)
+</code></pre>
+<p>Replaces the current dictionary and invalidates all lazily resolved
+dependencies so subsequent property accesses trigger a fresh parse.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>dict</code>: ILLdictionary. Variable metadata provider.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When dict is Nothing.</li>
+</ul>
+<hr />
+<h3>data</h3>
+<p><strong>Retrieve the formula configuration catalogue</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Data() As IFormulaData
+</code></pre>
+<p>Returns the IFormulaData describing available Excel tokens,
+operators, and special characters used during tokenisation.</p>
+<p><strong>Returns:</strong> IFormulaData. Configuration catalogue.</p>
+<hr />
+<h3>data-set</h3>
+<p><strong>Update the formula configuration catalogue and invalidate caches</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Set Data(ByVal formData As IFormulaData)
+</code></pre>
+<p>Replaces the current formula data and invalidates all cached parsing
+results so subsequent accesses trigger a fresh evaluation.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>formData</code>: IFormulaData. Catalogue of allowed operators and functions.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When formData is Nothing.</li>
+</ul>
+<hr />
+<h3>setup-formula</h3>
+<p><strong>Retrieve the original setup pseudo-formula</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get SetupFormula() As String
+</code></pre>
+<p>Returns the raw expression as captured from the setup sheet during
+Create or the last assignment.</p>
+<p><strong>Returns:</strong> String. Raw expression.</p>
+<hr />
+<h3>setup-formula-set</h3>
+<p><strong>Store the setup pseudo-formula and reset computed caches</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Let SetupFormula(ByVal setupForm As String)
+</code></pre>
+<p>Replaces the stored expression and invalidates all cached parsing
+results so subsequent accesses trigger a fresh evaluation.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>setupForm</code>: String. Pseudo-formula captured from setup.</li>
+</ul>
+<hr />
+<h2>PrivateHelpers</h2>
+<h3>initialise</h3>
+<p><strong>Store incoming dependencies and prepare caches</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Initialise(ByVal dict As ILLdictionary, _
+                       ByVal formData As IFormulaData, _
+                       ByVal setupForm As String)
+</code></pre>
+<p>Internal utilities for dependency management, cache invalidation, and token resolution.
+Assigns the dictionary, formula data, and setup expression, then
+invalidates all caches and registers the default custom formulas
+recognised during analysis parsing.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>dict</code>: ILLdictionary. Variable metadata provider.</li>
+<li><code>formData</code>: IFormulaData. Catalogue of allowed tokens and operators.</li>
+<li><code>setupForm</code>: String. Pseudo-formula to parse.</li>
+</ul>
+<hr />
+<h3>reset-dependencies</h3>
+<p><strong>Clear lazily instantiated dependencies and invalidate token caches</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ResetDependencies()
+</code></pre>
+<p>Sets variables and sheets providers to Nothing and re-initialises
+the custom formulas list when absent. Triggers InvalidateCaches to
+ensure downstream properties reparse.</p>
+<hr />
+<h3>register-default-custom-formulas</h3>
+<p><strong>Seed built-in custom formulas recognised by analysis parsing</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RegisterDefaultCustomFormulas()
+</code></pre>
+<p>Replaces the custom formulas list and registers MEAN, N, and N()
+as known tokens that receive special handling during analysis
+formula construction.</p>
+<hr />
+<h3>register-custom-formula</h3>
+<p><strong>Add a custom formula identifier if not already registered</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RegisterCustomFormula(ByVal customFormula As String)
+</code></pre>
+<p>Initialises the custom formulas list when absent, then pushes the
+token if it is not already present.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>customFormula</code>: String. Token representing a custom formula.</li>
+</ul>
+<hr />
+<h3>invalidate-caches</h3>
+<p><strong>Reset cached parsing results and computed flags</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub InvalidateCaches()
+</code></pre>
+<p>Clears the token list, variable list, validity flags, and group
+context so the next access triggers a full reparse from the stored
+setup expression.</p>
+<hr />
+<h3>reset-group-context</h3>
+<p><strong>Clear any grouped-formula metadata captured during previous evaluations</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ResetGroupContext()
+</code></pre>
+<p>Resets all fields of the TGroupContext UDT to their default values.</p>
+<hr />
+<h3>variables</h3>
+<p><strong>Lazily instantiate the LLVariables helper from the dictionary</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function Variables() As ILLVariables
+</code></pre>
+<p>Creates the LLVariables wrapper on first access and caches it for
+subsequent calls.</p>
+<p><strong>Returns:</strong> ILLVariables. Bound to the current dictionary.</p>
+<hr />
+<h3>sheet-provider</h3>
+<p><strong>Lazily instantiate the LLSheets helper for address resolution</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SheetProvider() As ILLSheets
+</code></pre>
+<p>Creates the LLSheets wrapper on first access and caches it for
+subsequent calls.</p>
+<p><strong>Returns:</strong> ILLSheets. Bound to the current dictionary.</p>
+<hr />
+<h3>ensure-evaluation</h3>
+<p><strong>Guarantee that a parsing/validation run exists for the requested context</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function EnsureEvaluation(ByVal formulaType As String) As Boolean
+</code></pre>
+<p>Checks whether the cached evaluation matches the requested context.
+When a mismatch is detected or no evaluation has been performed, a
+full EvaluateFormula pass is triggered.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>formulaType</code>: String. Context (analysis/simple).</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the cached evaluation is valid.</p>
+<hr />
+<h3>evaluate-formula</h3>
+<p><strong>Parse the setup expression, populate tokens, and capture validation results</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EvaluateFormula(ByVal formulaType As String)
+</code></pre>
+<p>Converts the stored setup formula through custom function handlers,
+then tokenises the result while validating parentheses and literals.
+Short-circuits for single-variable or single-custom-function
+expressions. Delegates grouped formula detection to
+GroupContexExtractionSucceed.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>formulaType</code>: String. Context (analysis/simple).</li>
+</ul>
+<hr />
+<h2>GroupFormula</h2>
+<h3>group-context-extraction</h3>
+<p><strong>Analyse the tokenised expression and record grouped metadata when relevant</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function GroupContexExtractionSucceed(ByVal tokens As BetterArray, _
+                                       ByVal variableTokens As BetterArray, _
+                                       ByVal vars As ILLVariables, _
+                                       ByVal dataSource As IFormulaData) As Boolean
+</code></pre>
+<p>Detects grouped formulas, validates arguments, and prepares metadata for downstream builders.
+Inspects the root function name to determine whether the formula
+targets grouped evaluation. When grouped, validates that exactly
+three variable arguments are present and that the first and third
+variables belong to the same table. Records the captured metadata
+in the TGroupContext UDT for BuildGroupedFormula.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>tokens</code>: BetterArray. Tokenised formula.</li>
+<li><code>variableTokens</code>: BetterArray. Variable names in encounter order.</li>
+<li><code>vars</code>: ILLVariables. Helper exposing dictionary metadata.</li>
+<li><code>dataSource</code>: IFormulaData. Configuration describing grouped functions.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when grouped context is captured or not required.</p>
+<hr />
+<h3>root-function-name</h3>
+<p><strong>Retrieve the entry token corresponding to the root function</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function RootFunctionName(ByVal tokens As BetterArray) As String
+</code></pre>
+<p>Returns the first token from the tokenised expression, which is
+expected to be the function name when the formula is function-based.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>tokens</code>: BetterArray. Tokenised expression.</li>
+</ul>
+<p><strong>Returns:</strong> String. Root token or empty string when unavailable.</p>
+<hr />
+<h3>is-generic-group-function</h3>
+<p><strong>Determine whether a function uses the GROUP prefix for grouped evaluation</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function IsGenericGroupFunction(ByVal functionName As String) As Boolean
+</code></pre>
+<p>Returns True when the token starts with &quot;GROUP&quot; (case-insensitive).</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>functionName</code>: String. Token under inspection.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the token starts with &quot;GROUP&quot;.</p>
+<hr />
+<h3>extract-generic-aggregator</h3>
+<p><strong>Parse the aggregator portion from a GROUP-prefixed function</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ExtractGenericAggregator(ByVal functionName As String) As String
+</code></pre>
+<p>Splits the function name at the underscore separator and returns the
+trailing portion as the aggregator token. When no underscore is
+present, strips the &quot;GROUP&quot; prefix directly.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>functionName</code>: String. Grouped token (e.g. GROUP_SUM or GROUPS_SUM).</li>
+</ul>
+<p><strong>Returns:</strong> String. Aggregator token to apply when building the Excel formula.</p>
+<hr />
+<h3>build-grouped-formula</h3>
+<p><strong>Construct the grouped Excel expression using captured metadata</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function BuildGroupedFormula(ByVal useTableName As Boolean, _
+                                     ByVal tablePrefix As String) As String
+</code></pre>
+<p>Uses the TGroupContext UDT to resolve variable ranges and emit the
+appropriate aggregation expression. Native *IFS functions produce
+direct SUMIFS/COUNTIFS calls; non-native functions wrap the result
+in an IF-based array formula.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>useTableName</code>: Boolean. True to emit structured references.</li>
+<li><code>tablePrefix</code>: String. Prefix applied to structured references.</li>
+</ul>
+<p><strong>Returns:</strong> String. Grouped Excel formula ready for consumption.</p>
+<hr />
+<h3>grouped-data-range</h3>
+<p><strong>Resolve the appropriate range reference for a grouped variable</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function GroupedDataRange(ByVal variableName As String, _
+                                  ByVal useTableName As Boolean, _
+                                  ByVal tablePrefix As String, _
+                                  ByVal sheets As ILLSheets) As String
+</code></pre>
+<p>Emits either a structured table reference or a sheet-level address
+depending on the useTableName flag.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>variableName</code>: String. Variable identifier.</li>
+<li><code>useTableName</code>: Boolean. True to emit structured references.</li>
+<li><code>tablePrefix</code>: String. Prefix applied to structured references.</li>
+<li><code>sheets</code>: ILLSheets. Provider for address resolution.</li>
+</ul>
+<p><strong>Returns:</strong> String. Excel reference targeting the grouped variable.</p>
+<hr />
+<h2>Tokenisation</h2>
+<h3>tokenise-formula</h3>
+<p><strong>Break the converted formula into tokens while validating parentheses and literals</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function TokeniseFormula(ByVal formula As String, _
+                                 ByVal formulaType As String, _
+                                 ByVal tokens As BetterArray, _
+                                 ByVal variableTokens As BetterArray, _
+                                 ByRef HasSetupVariables As Boolean, _
+                                 ByRef failureReason As String) As Boolean
+</code></pre>
+<p>Breaks expressions into tokens, validates each chunk, and handles custom formula expansion.
+Walks the formula character by character, splitting on special
+characters defined by the IFormulaData configuration. Tracks
+parenthesis depth and quotation state. Each extracted chunk is
+validated through AppendToken.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>formula</code>: String. Cleaned setup expression.</li>
+<li><code>formulaType</code>: String. Context (analysis/simple).</li>
+<li><code>tokens</code>: BetterArray. Recipient for all tokens.</li>
+<li><code>variableTokens</code>: BetterArray. Recipient for variable-only tokens.</li>
+<li><code>HasSetupVariables</code>: Boolean. Flag capturing literal presence.</li>
+<li><code>failureReason</code>: String. Explanation when tokenisation fails.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when parsing succeeds.</p>
+<hr />
+<h3>append-token</h3>
+<p><strong>Validate and append the provided chunk to the tokens collection</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function AppendToken(ByVal chunk As String, _
+                             ByRef formulaType As String, _
+                             ByRef tokens As BetterArray, _
+                             ByRef variableTokens As BetterArray, _
+                             ByRef vars As ILLVariables, _
+                             ByRef dataSource As IFormulaData, _
+                             ByRef HasSetupVariables As Boolean, _
+                             ByRef failureReason As String) As Boolean
+</code></pre>
+<p>Classifies the chunk as a grouped function, known variable, boolean
+literal, registered Excel formula, custom formula, numeric literal,
+or quoted string. Unknown chunks cause a validation failure.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>chunk</code>: String. Candidate token.</li>
+<li><code>formulaType</code>: String. Context (analysis/simple).</li>
+<li><code>tokens</code>: BetterArray. Recipient for all tokens.</li>
+<li><code>variableTokens</code>: BetterArray. Recipient for variable-only tokens.</li>
+<li><code>vars</code>: ILLVariables. Metadata provider.</li>
+<li><code>dataSource</code>: IFormulaData. Formula metadata provider.</li>
+<li><code>HasSetupVariables</code>: Boolean. Flag capturing literal presence.</li>
+<li><code>failureReason</code>: String. Explanation when parsing fails.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the chunk is accepted.</p>
+<hr />
+<h3>is-quoted-string</h3>
+<p><strong>Determine whether the supplied value is wrapped in quotes</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function IsQuotedString(ByVal value As String) As Boolean
+</code></pre>
+<p>Returns True when the string starts and ends with a double-quote
+character and has a length of at least two.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>value</code>: String. Candidate literal.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the string is quoted.</p>
+<hr />
+<h3>clean-string</h3>
+<p><strong>Normalise the incoming token by removing control characters and duplicate spaces</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function CleanString(ByVal value As String) As String
+</code></pre>
+<p>Replaces non-breaking spaces, strips control characters via
+Application.WorksheetFunction.Clean, and trims whitespace.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>value</code>: String. Token to clean.</li>
+</ul>
+<p><strong>Returns:</strong> String. Trimmed and cleaned representation.</p>
+<hr />
+<h3>parsed-custom-formula</h3>
+<p><strong>Delegate parsing to custom functions when present in analysis context</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ParsedCustomFormula(ByVal customFunction As String, _
+                                     ByVal formCond As IFormulaCondition, _
+                                     Optional ByVal TableName As String = vbNullString, _
+                                     Optional ByVal tablePrefix As String = vbNullString) As String
+</code></pre>
+<p>Handles MEAN (mapped to AVERAGE), N/N() (mapped to COUNTIFS), and
+passes through unknown custom identifiers unchanged. The COUNTIFS
+expansion builds criteria pairs from the IFormulaCondition.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>customFunction</code>: String. Identifier of the custom formula.</li>
+<li><code>formCond</code>: IFormulaCondition. Provides condition logic.</li>
+<li><code>TableName</code>: Optional String. Table name resolved for variables.</li>
+<li><code>tablePrefix</code>: Optional String. Prefix for structured references.</li>
+</ul>
+<p><strong>Returns:</strong> String. Excel fragment produced by the custom handler.</p>
+<hr />
+<h3>remove-empty-invocation-tokens</h3>
+<p><strong>Strip trailing empty parentheses after replacing custom formulas</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RemoveEmptyInvocationTokens(ByRef tokens As BetterArray, _
+                                        ByVal functionIndex As Long)
+</code></pre>
+<p>When a custom formula token is replaced inline, the following &quot;(&quot;
+and &quot;)&quot; tokens may become redundant. This helper removes them when
+they immediately follow the replaced token.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>tokens</code>: BetterArray. Tokens list to mutate.</li>
+<li><code>functionIndex</code>: Long. Index of the custom function token.</li>
+</ul>
+<hr />
+<h3>clear-count-if</h3>
+<p><strong>Remove equality fragments from COUNTIF-style conditions</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ClearCountIf(ByVal value As String) As String
+</code></pre>
+<p>Sanitises predicate fragments by stripping equality operators and
+normalising less-than and greater-than comparisons for COUNTIFS
+compatibility.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>value</code>: String. Predicate fragment.</li>
+</ul>
+<p><strong>Returns:</strong> String. Sanitised predicate suitable for COUNTIFS.</p>
+<hr />
+<h3>quoted</h3>
+<p><strong>Wrap a value in Excel double quotes</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function Quoted(ByVal value As String) As String
+</code></pre>
+<p>Prepends and appends a double-quote character to the supplied value.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>value</code>: String. Text to wrap.</li>
+</ul>
+<p><strong>Returns:</strong> String. Quoted representation.</p>
+<hr />
+<h3>converted-setup-formula</h3>
+<p><strong>Convert higher-level setup directives into plain Excel expressions</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ConvertedSetupFormula() As String
+</code></pre>
+<p>Detects CASE_WHEN, CHOICE_FORMULA, and VALUE_OF prefixes in the
+stored setup expression and delegates to the corresponding parser
+class. Returns the original expression when no prefix matches.</p>
+<p><strong>Returns:</strong> String. Converted formula ready for tokenising.</p>
+<hr />
+<h3>set-invalid</h3>
+<p><strong>Record an invalidation reason and log the associated checking entry</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub SetInvalid(ByVal message As String, Optional ByVal scope As Byte = checkingError)
+</code></pre>
+<p>Stores the failure message, marks the formula as invalid, and logs
+the message through the internal Checking store.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>message</code>: String. Explanation of the validation failure.</li>
+<li><code>scope</code>: Optional Byte. Severity level persisted in Checking.</li>
+</ul>
+<hr />
+<h2>Checkings</h2>
+<h3>log-check</h3>
+<p><strong>Record a diagnostic entry within the internal checking store</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub LogCheck(ByVal label As String, _
+                     Optional ByVal scope As Byte = checkingNote)
+</code></pre>
+<p>Aggregates informational and error traces emitted during parsing.
+Lazily creates the Checking instance on first use, then appends
+the labelled entry with the given severity scope.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>label</code>: String. Message to log.</li>
+<li><code>scope</code>: Optional Byte. Severity indicator.</li>
+</ul>
+<hr />
+<h2>ErrorHandling</h2>
+<h3>throw-error</h3>
+<p><strong>Raise a VBA error with the class signature</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
+</code></pre>
+<p>Centralises the error raising pattern for consistent ProjectError usage.
+Wrapper around Err.Raise that standardises the source to the class
+constant CLASSNAME for consistent stack traces.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>errNumb</code>: Long. ProjectError code.</li>
+<li><code>errorMessage</code>: String. Descriptive message.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.<varies> Always raises the specified error.</li>
+</ul>
+<hr />
+<h2>Interface</h2>
+<h3>IFormulas_Varlists</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get IFormulas_Varlists(Optional ByVal formulaType As String = &quot;analysis&quot;) As BetterArray
+</code></pre>
+<p>Delegated members satisfying the IFormulas contract.</p>
+<hr />
+<h3>formula-table-list</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get IFormulas_FormulaTableList() As BetterArray
+</code></pre>
+<hr />
+</details>
+<details>
+<summary>Used in (11 file(s))</summary>
+<ul>
+<li><a href="src/classes/analyses/AnaTabIds.cls">AnaTabIds.cls</a></li>
+<li><a href="src/classes/analyses/CrossTableFormula.cls">CrossTableFormula.cls</a></li>
+<li><a href="src/classes/analyses/ISpatialTables.cls">ISpatialTables.cls</a></li>
+<li><a href="src/classes/analyses/SpatialTables.cls">SpatialTables.cls</a></li>
+<li><a href="src/classes/formulas/Formulas.cls">Formulas.cls</a></li>
+<li><a href="src/classes/formulas/IFormulas.cls">IFormulas.cls</a></li>
+<li><a href="src/classes/linelist/LinelistSpecs.cls">LinelistSpecs.cls</a></li>
+<li><a href="src/classes/sections/VarWriter.cls">VarWriter.cls</a></li>
+<li><a href="src/classes/setup/SetupErrors.cls">SetupErrors.cls</a></li>
+<li><a href="src/tests/modules/formulas/TestFormulas.bas">TestFormulas.bas</a></li>
+<li><a href="src/tests/modules/geo/TestSpatialTables.bas">TestSpatialTables.bas</a></li>
+</ul>
+</details>
+
+  </main>
+</body>
+</html>
+

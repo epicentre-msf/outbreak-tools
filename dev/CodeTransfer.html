@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CodeTransfer - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>CodeTransfer</h1>
+<p>Transfers VBA code components (classes, modules, forms, workbook code) from a
+source workbook to a target workbook using temporary file export/import cycles.
+Each component is exported to a temp file via the ITemporaryRepos, imported
+into the target, and the temp file is cleaned up. Consumers create an instance
+via Create and then call the transfer methods for each component type.</p>
+<p><strong>Depends on:</strong> <a href="ITemporaryRepos.html">ITemporaryRepos</a></p>
+<p><strong>Version:</strong> 1.0 (2026-02-09)</p>
+<h2>Instantiation</h2>
+<h3>create</h3>
+<p><strong>Create a CodeTransfer instance</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create(ByVal sourceWkb As Workbook, _
+                       ByVal targetWkb As Workbook, _
+                       ByVal tempRepos As ITemporaryRepos) As ICodeTransfer
+</code></pre>
+<p>Factory method and Friend bindings for construction.
+Creates a new CodeTransfer wired to transfer components from sourceWkb to
+targetWkb using tempRepos for intermediate file storage. All three parameters
+are validated as non-Nothing.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sourceWkb</code>: Workbook. The workbook containing the VBA components to export.</li>
+<li><code>targetWkb</code>: Workbook. The workbook that will receive the imported components.</li>
+<li><code>tempRepos</code>: ITemporaryRepos. The temporary file repository for export/import.</li>
+</ul>
+<p><strong>Returns:</strong> ICodeTransfer. A fully initialised instance ready for transfers.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When any parameter is Nothing.</li>
+</ul>
+<hr />
+<h2>Operations</h2>
+<h3>transfer-class</h3>
+<p><strong>Transfer a class module from source to target workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub TransferClass(ByVal className As String)
+</code></pre>
+<p>Public methods for transferring VBA components.
+Exports the named class module (.cls) from the source workbook to a temporary
+file named &quot;CopieCls.cls&quot;, then imports it into the target workbook. The
+temporary file is cleaned up after import.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>className</code>: String. The VBA component name of the class to transfer.</li>
+</ul>
+<hr />
+<h3>transfer-module</h3>
+<p><strong>Transfer a standard module from source to target workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub TransferModule(ByVal moduleName As String)
+</code></pre>
+<p>Exports the named standard module (.bas) from the source workbook to a
+temporary file named &quot;CopieMod.bas&quot;, then imports it into the target workbook.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>moduleName</code>: String. The VBA component name of the module to transfer.</li>
+</ul>
+<hr />
+<h3>transfer-form</h3>
+<p><strong>Transfer a UserForm from source to target workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub TransferForm(ByVal formName As String)
+</code></pre>
+<p>Exports the named UserForm (.frm/.frx) from the source workbook to temporary
+files, imports it into the target workbook, then deletes both the .frm and
+.frx temporary files.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>formName</code>: String. The VBA component name of the form to transfer.</li>
+</ul>
+<hr />
+<h3>transfer-workbook-code</h3>
+<p><strong>Copy code from a source module into the target's ThisWorkbook component</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub TransferWorkbookCode(ByVal moduleName As String)
+</code></pre>
+<p>Reads all code lines from the named module in the source workbook and writes
+them into the target workbook's ThisWorkbook code module, replacing any
+existing content. Does not create a new component; instead overwrites the
+built-in ThisWorkbook code module.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>moduleName</code>: String. The source module whose code will be copied.</li>
+</ul>
+<hr />
+<h3>copy-module-text</h3>
+<p><strong>Copy code text from a source module to an existing target module</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub CopyModuleText(ByVal moduleName As String)
+</code></pre>
+<p>Reads all code from the named module in the source workbook and writes it
+into the same-named module in the target workbook, replacing existing content.
+Used for template workbooks where the target module already exists.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>moduleName</code>: String. The module name (must exist in both workbooks).</li>
+</ul>
+<hr />
+<h3>copy-module-code</h3>
+<p><strong>Copy code between components within the target workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub CopyModuleCode(ByVal sourceName As String, ByVal targetName As String)
+</code></pre>
+<p>Within the target workbook, reads code from the source component, writes it
+into the target component (replacing any existing content), then removes the
+source component from the VBProject. Useful after importing a module that
+should be injected into a different component (e.g., a worksheet module).</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sourceName</code>: String. The component to read code from and then remove.</li>
+<li><code>targetName</code>: String. The component to write code into.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When source or target component is
+not found in the target workbook.</li>
+</ul>
+<hr />
+<details>
+<summary>Internal members (not exported)</summary>
+<h2>Bindings</h2>
+<h3>bin-source-wkb</h3>
+<p><strong>Assign the source workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Friend Property Set BinSourceWkb(ByVal value As Workbook)
+</code></pre>
+<p>Friend setters used only during factory construction.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>value</code>: Workbook. The source workbook to store.</li>
+</ul>
+<hr />
+<h3>bin-target-wkb</h3>
+<p><strong>Assign the target workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Friend Property Set BinTargetWkb(ByVal value As Workbook)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>value</code>: Workbook. The target workbook to store.</li>
+</ul>
+<hr />
+<h3>bin-temp-repos</h3>
+<p><strong>Assign the temporary repository</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Friend Property Set BinTempRepos(ByVal value As ITemporaryRepos)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>value</code>: ITemporaryRepos. The temporary repository to store.</li>
+</ul>
+<hr />
+<h2>Helpers</h2>
+<h3>export-import-component</h3>
+<p><strong>Export a VBA component from source and import into target</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ExportImportComponent(ByVal componentName As String, ByVal tempFileName As String)
+</code></pre>
+<p>Private utilities for export/import and error handling.
+Exports the named component to a temporary file, imports it into the target
+workbook, then cleans up the temporary file. Used by TransferClass and
+TransferModule.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>componentName</code>: String. The VBA component name to transfer.</li>
+<li><code>tempFileName</code>: String. The temporary file name (e.g., &quot;CopieCls.cls&quot;).</li>
+</ul>
+<hr />
+<h3>throw-error</h3>
+<p><strong>Raise a ProjectError-based exception</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As Long, ByVal errorMessage As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>errNumber</code>: Long. The error code to raise.</li>
+<li><code>errorMessage</code>: String. Human-readable description of the failure.</li>
+</ul>
+<hr />
+<h2>InterfaceImplementation</h2>
+<h3>ICodeTransfer_TransferClass</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ICodeTransfer_TransferClass(ByVal className As String)
+</code></pre>
+<p>Delegated members satisfying the ICodeTransfer contract.
+See the corresponding Public members above for full documentation.</p>
+<hr />
+</details>
+<details>
+<summary>Used in (4 file(s))</summary>
+<ul>
+<li><a href="src/classes/linelist/CodeTransfer.cls">CodeTransfer.cls</a></li>
+<li><a href="src/classes/linelist/ICodeTransfer.cls">ICodeTransfer.cls</a></li>
+<li><a href="src/classes/linelist/Linelist.cls">Linelist.cls</a></li>
+<li><a href="src/tests/modules/linelist/TestCodeTransfer.bas">TestCodeTransfer.bas</a></li>
+</ul>
+</details>
+
+  </main>
+</body>
+</html>
+

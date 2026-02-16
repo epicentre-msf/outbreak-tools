@@ -1,0 +1,445 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AnaTabIds - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>AnaTabIds</h1>
+<p>Records analysis table named ranges and graph series metadata into
+ListObjects on a hidden tracking worksheet. The tracking data is consumed
+during export to recreate the full analysis structure (tables and charts)
+on output worksheets. Manages three ListObject families (tab_ids_<em>,
+graph_ids_</em>, graph_formats_*) across four analysis scopes (normal, time
+series, spatial, spatio-temporal).</p>
+<p><strong>Depends on:</strong> <a href="CustomTable.html">CustomTable</a>, <a href="Graphs.html">Graphs</a>, <a href="IGraphs.html">IGraphs</a>, <a href="BetterArray.html">BetterArray</a>, <a href="IFormulas.html">IFormulas</a>, Named ranges for sheet names</p>
+<p><strong>Version:</strong> 2025-01-15</p>
+<h2>Instantiation</h2>
+<h3>create</h3>
+<p><strong>Create a new AnaTabIds instance bound to a tracking worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create(ByVal idsh As Worksheet, _
+                       Optional ByVal check As Boolean = True) As IAnaTabIds
+</code></pre>
+<p>Factory method on the predeclared instance. Validates the worksheet reference
+and optionally checks that all 12 tracking ListObjects (3 prefixes x 4 scopes)
+and 4 sheet-name named ranges exist. Pass check as False to skip validation
+when the tracking sheet is being built incrementally.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>idsh</code>: Worksheet. The worksheet containing the tracking ListObjects and
+sheet-name named ranges.</li>
+<li><code>check</code>: Optional Boolean. When True, calls CheckRequirements to validate
+all expected infrastructure. Defaults to True.</li>
+</ul>
+<p><strong>Returns:</strong> IAnaTabIds. A fully initialised tracking instance.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.InvalidArgument When idsh is Nothing.</li>
+<li>ProjectError.InvalidArgument When check is True and any required
+ListObject or named range is missing.</li>
+</ul>
+<p><strong>Depends on:</strong></p>
+<ul>
+<li>CustomTable</li>
+<li>BetterArray</li>
+</ul>
+<hr />
+<h2>Table Tracking</h2>
+<h3>add-table-infos</h3>
+<p><strong>Register table named ranges in the tracking ListObject</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AddTableInfos(ByVal scope As Byte, _
+                           ByVal tabId As String, _
+                           ByVal tabRangesNames As BetterArray, _
+                           Optional ByVal exportTable As String = &quot;yes&quot;)
+</code></pre>
+<p>Methods for registering table named ranges for export.
+Writes entries into the scope-specific tab_ids_ ListObject. Each entry
+consists of the table identifier in column 1, the named range name in
+column 2, and the export flag in column 3. The range names are bulk-
+written via BetterArray.ToExcelRange. The ListObject is resized after
+appending. Exits immediately when tabRangesNames is empty.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>scope</code>: Byte. AnalysisIdsScope value selecting the tracking ListObject.</li>
+<li><code>tabId</code>: String. Identifier of the analysis table.</li>
+<li><code>tabRangesNames</code>: BetterArray. Named range names to register.</li>
+<li><code>exportTable</code>: Optional String. Export flag (&quot;yes&quot; or &quot;no&quot;).
+Defaults to &quot;yes&quot;.</li>
+</ul>
+<hr />
+<h2>Graph Tracking</h2>
+<h3>add-graph-info</h3>
+<p><strong>Register a graph series row in the tracking ListObject</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AddGraphInfo(ByVal scope As Byte, _
+                          ByVal tabId As String, _
+                          ByVal graphId As String, _
+                          ByVal seriesName As String, _
+                          ByVal seriesType As String, _
+                          ByVal seriesPos As String, _
+                          ByVal seriesLabel As String, _
+                          ByVal seriesColumnLabel As String, _
+                          ByVal hardCodeLabels As Boolean, _
+                          ByVal outRangeAddress As String, _
+                          Optional ByVal prefix As String = vbNullString, _
+                          Optional ByVal prefixOnly As Boolean = False)
+</code></pre>
+<p>Methods for registering graph series and formatting metadata.
+Writes one series entry into the scope-specific graph_ids_ ListObject.
+The 11 columns store: tabId, graphId, seriesName, seriesType, seriesPos,
+seriesLabel, seriesColumnLabel, hardCodeLabels (as CLng 0/1),
+outRangeAddress, prefix, and prefixOnly (as CLng 0/1). The method
+appends after the last populated row and resizes the ListObject.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>scope</code>: Byte. AnalysisIdsScope value selecting the tracking ListObject.</li>
+<li><code>tabId</code>: String. Identifier of the parent analysis table.</li>
+<li><code>graphId</code>: String. Identifier of the graph receiving this series.</li>
+<li><code>seriesName</code>: String. Named range name for the series data.</li>
+<li><code>seriesType</code>: String. Chart series type (e.g. &quot;xlLine&quot;).</li>
+<li><code>seriesPos</code>: String. Axis position indicator for the series.</li>
+<li><code>seriesLabel</code>: String. Named range name for category labels.</li>
+<li><code>seriesColumnLabel</code>: String. Named range name for column header labels.</li>
+<li><code>hardCodeLabels</code>: Boolean. When True, labels are written as literals.</li>
+<li><code>outRangeAddress</code>: String. Cell address for graph placement on output.</li>
+<li><code>prefix</code>: Optional String. Admin-level prefix for spatial graphs.
+Defaults to vbNullString.</li>
+<li><code>prefixOnly</code>: Optional Boolean. When True, only the prefix is used as
+the label. Defaults to False.</li>
+</ul>
+<p><strong>Remarks:</strong></p>
+<ul>
+<li>Boolean parameters are stored as Long (0/1) via CLng for reliable
+cross-session persistence in Excel ListObject cells.</li>
+</ul>
+<hr />
+<h3>add-graph-format</h3>
+<p><strong>Register graph formatting metadata in the tracking ListObject</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AddGraphFormat(ByVal scope As Byte, _
+                            ByVal tabId As String, _
+                            ByVal graphId As String, _
+                            ByVal catTitle As String, _
+                            ByVal valuesTitle As String, _
+                            ByVal hardCodeLabels As Boolean, _
+                            Optional ByVal heightFactor As Long = 1, _
+                            Optional ByVal plotTitle As String = vbNullString)
+</code></pre>
+<p>Writes one format entry into the scope-specific graph_formats_ ListObject.
+The 7 columns store: tabId, graphId, catTitle, valuesTitle, hardCodeLabels
+(as CLng 0/1), heightFactor, and plotTitle. The method appends after the
+last populated row and resizes the ListObject. The graphId links this
+format entry to its corresponding series entries in graph_ids_.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>scope</code>: Byte. AnalysisIdsScope value selecting the tracking ListObject.</li>
+<li><code>tabId</code>: String. Identifier of the parent analysis table.</li>
+<li><code>graphId</code>: String. Identifier of the graph to format.</li>
+<li><code>catTitle</code>: String. Category (X) axis title.</li>
+<li><code>valuesTitle</code>: String. Value (Y) axis title.</li>
+<li><code>hardCodeLabels</code>: Boolean. When True, axis labels are written as literals.</li>
+<li><code>heightFactor</code>: Optional Long. Multiplier for graph height. Defaults to 1.</li>
+<li><code>plotTitle</code>: Optional String. Chart title. Defaults to vbNullString.</li>
+</ul>
+<hr />
+<h2>Range Transfer and Graph Writing</h2>
+<h3>write-graphs</h3>
+<p><strong>Write all tracked graphs to the output worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub WriteGraphs(ByVal outsh As Worksheet, ByVal scope As Byte)
+</code></pre>
+<p>First calls WriteTableNames to transfer all named ranges, then iterates
+the graph_ids_ ListObject to build charts. A new IGraphs object is
+created at each graph boundary (detected when graphId changes). Each
+series row is processed by AddSeries. When the loop ends, the final
+graph is formatted via AddFormat. Format metadata is read from the
+graph_formats_ ListObject wrapped in an ICustomTable keyed by &quot;graphId&quot;.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>outsh</code>: Worksheet. The output worksheet receiving the chart objects.</li>
+<li><code>scope</code>: Byte. AnalysisIdsScope value selecting the tracking tables.</li>
+</ul>
+<p><strong>Remarks:</strong></p>
+<ul>
+<li>The loop walks column 2 (graphId) of graph_ids_. The
+outRangeAddress is read from column 9 (offset 7 from column 2).
+Application.GoTo scrolls to the chart position, which is required for
+correct chart placement in some Excel versions.</li>
+</ul>
+<hr />
+<details>
+<summary>Internal members (not exported)</summary>
+<h2>Internal Properties</h2>
+<h3>self</h3>
+<p><strong>Current object instance</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Self() As IAnaTabIds
+</code></pre>
+<p>Factory-support properties for construction and worksheet access.
+Convenience accessor so consuming code can fluently retrieve the interface
+reference from the predeclared Create method.</p>
+<p><strong>Returns:</strong> IAnaTabIds. The current instance cast to the interface.</p>
+<hr />
+<h3>wksh-set</h3>
+<p><strong>Assign the tracking worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Set Wksh(ByVal sh As Worksheet)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The worksheet to bind.</li>
+</ul>
+<hr />
+<h3>wksh</h3>
+<p><strong>Tracking worksheet reference</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Wksh() As Worksheet
+</code></pre>
+<p>Returns the worksheet that hosts the tracking ListObjects and sheet-name
+named ranges.</p>
+<p><strong>Returns:</strong> Worksheet. The bound tracking worksheet.</p>
+<hr />
+<h2>ListObject Access</h2>
+<h3>actual-lo</h3>
+<p><strong>Resolve the tracking ListObject for a scope and prefix</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get ActualLo(ByVal scope As Byte, _
+                              Optional ByVal prefix As String = &quot;tab_ids_&quot;) As ListObject
+</code></pre>
+<p>Routing helpers that resolve scope-specific ListObjects and worksheets.
+Maps the AnalysisIdsScope enum value to a suffix string (ts, sp, uba,
+sptemp) and concatenates it with the prefix to form the ListObject name.
+This is the central routing mechanism all tracking methods use.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>scope</code>: Byte. AnalysisIdsScope value selecting the analysis type.</li>
+<li><code>prefix</code>: Optional String. ListObject name prefix. Defaults to
+&quot;tab_ids_&quot;. Pass &quot;graph_ids_&quot; or &quot;graph_formats_&quot; for other families.</li>
+</ul>
+<p><strong>Returns:</strong> ListObject. The resolved tracking ListObject.</p>
+<p><strong>Remarks:</strong></p>
+<ul>
+<li>If the scope does not match any known case, actName remains
+empty and the ListObject lookup will raise a runtime error.</li>
+</ul>
+<hr />
+<h3>actual-analysis-sheet</h3>
+<p><strong>Resolve the analysis output worksheet for a scope</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get ActualAnalysisSheet(ByVal scope As Byte) As Worksheet
+</code></pre>
+<p>Reads the sheet-name named range corresponding to the scope from the
+tracking worksheet (RNG_SheetUAName, RNG_SheetTSName, RNG_SheetSPName,
+or RNG_SheetSPTempName) and returns the matching worksheet from the
+parent workbook.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>scope</code>: Byte. AnalysisIdsScope value selecting the output sheet.</li>
+</ul>
+<p><strong>Returns:</strong> Worksheet. The analysis output worksheet for the given scope.</p>
+<p><strong>Remarks:</strong></p>
+<ul>
+<li>If the named range value does not correspond to an existing
+worksheet, the Worksheets collection access raises a runtime error.</li>
+</ul>
+<hr />
+<h2>Range Transfer and Graph Writing</h2>
+<h3>range-exists</h3>
+<p><strong>Check whether a named range exists on a worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function RangeExists(ByVal sh As Worksheet, ByVal rngName As String) As Boolean
+</code></pre>
+<p>Helpers for transferring named ranges and rendering charts.
+Attempts to resolve the name via sh.Range(rngName) with error trapping.
+Returns True when the name resolves to a valid Range. Also picks up
+workbook-level names resolved through the worksheet.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The worksheet to check.</li>
+<li><code>rngName</code>: String. The named range to look for.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the named range exists.</p>
+<hr />
+<h3>transfer-range</h3>
+<p><strong>Copy a named range definition from source to output worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub TransferRange(ByVal inpsh As Worksheet, ByVal outsh As Worksheet, _
+                           ByVal rngName As String)
+</code></pre>
+<p>Recreates a named range on the output worksheet using the same cell address
+as the source. This is the core mechanism for export: graphs and formulas
+that reference these names work correctly on the new sheet. Silently exits
+when the source range does not exist.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>inpsh</code>: Worksheet. The source worksheet owning the named range.</li>
+<li><code>outsh</code>: Worksheet. The destination worksheet for the new name.</li>
+<li><code>rngName</code>: String. The named range to transfer.</li>
+</ul>
+<hr />
+<h3>write-table-names</h3>
+<p><strong>Transfer all tracked named ranges to the output worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub WriteTableNames(ByVal outsh As Worksheet, ByVal scope As Byte)
+</code></pre>
+<p>Iterates the tab_ids_ ListObject for the scope and calls TransferRange
+for each named range name found in column 2. The source analysis sheet
+is resolved via ActualAnalysisSheet. The loop continues until an empty
+cell is hit in column 1.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>outsh</code>: Worksheet. The destination worksheet for the named ranges.</li>
+<li><code>scope</code>: Byte. AnalysisIdsScope value selecting the tracking table.</li>
+</ul>
+<hr />
+<h3>add-series</h3>
+<p><strong>Read one series entry and add it to a graph object</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AddSeries(ByVal gr As IGraphs, ByVal cellRng As Range)
+</code></pre>
+<p>Reads series metadata from a row in the graph_ids_ ListObject and calls
+gr.AddSeries and gr.AddLabels. The cellRng points to the graphId cell
+(column 2); all other values are read as offsets. Boolean values are
+read with error trapping because they are stored as numeric 0/1.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>gr</code>: IGraphs. The chart object receiving the series.</li>
+<li><code>cellRng</code>: Range. The graphId cell in the current tracking row.</li>
+</ul>
+<p><strong>Remarks:</strong></p>
+<ul>
+<li>Offset numbering skips column 9 (outRangeAddress, offset 7)
+and jumps to offset 8 (prefix) and offset 9 (prefixOnly), matching
+the 11-column layout stored by AddGraphInfo.</li>
+</ul>
+<hr />
+<h3>add-format</h3>
+<p><strong>Apply formatting settings to a built graph</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AddFormat(ByVal gr As IGraphs, ByVal grTab As ICustomTable, _
+                       ByVal scope As Byte, ByVal graphId As String)
+</code></pre>
+<p>Reads format metadata from the graph_formats_ ICustomTable by graphId
+and calls gr.Format. Maps AnalysisIdsScope to GraphScope: TimeSeries
+and SpatioTemporal map to GraphScopeTimeSeries, Spatial maps to
+GraphScopeSpatial, and all others default to GraphScopeNormal.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>gr</code>: IGraphs. The chart object to format.</li>
+<li><code>grTab</code>: ICustomTable. Wrapper around graph_formats_ ListObject,
+keyed by &quot;graphId&quot;.</li>
+<li><code>scope</code>: Byte. AnalysisIdsScope value for scope-to-GraphScope mapping.</li>
+<li><code>graphId</code>: String. The graph identifier for the format lookup.</li>
+</ul>
+<p><strong>Remarks:</strong></p>
+<ul>
+<li>heightFactor defaults to 1 and hardCodeLabels defaults to False
+when the stored values cannot be converted.</li>
+</ul>
+<hr />
+<h2>Validation</h2>
+<h3>lo-exists</h3>
+<p><strong>Check whether a ListObject exists on a worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function LoExists(ByVal sh As Worksheet, ByVal loName As String) As Boolean
+</code></pre>
+<p>Existence checks and factory validation.
+Uses the standard VBA error-trapping pattern to test for ListObject
+existence. Used by CheckRequirements to validate the tracking sheet.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The worksheet to search.</li>
+<li><code>loName</code>: String. The ListObject name to look for.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the ListObject exists.</p>
+<hr />
+<h3>sheet-exists</h3>
+<p><strong>Check whether a worksheet exists in a workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SheetExists(ByVal wb As Workbook, ByVal sheetName As String) As Boolean
+</code></pre>
+<p>Uses the standard VBA error-trapping pattern to test for worksheet
+existence. Used by CheckRequirements to verify that the sheets
+referenced by the named ranges actually exist.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>wb</code>: Workbook. The workbook to search.</li>
+<li><code>sheetName</code>: String. The worksheet name to look for.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the worksheet exists.</p>
+<hr />
+<h3>check-requirements</h3>
+<p><strong>Validate the tracking worksheet infrastructure</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub CheckRequirements(ByVal sh As Worksheet)
+</code></pre>
+<p>Checks for all 12 tracking ListObjects (tab_ids_uba/sp/ts/sptemp,
+graph_ids_uba/sp/ts/sptemp, graph_formats_uba/sp/ts/sptemp) and the
+4 sheet-name named ranges (RNG_SheetUAName, RNG_SheetTSName,
+RNG_SheetSPName, RNG_SheetSPTempName). Also verifies that each named
+range value corresponds to an actual worksheet in the workbook.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The tracking worksheet to validate.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.InvalidArgument When any ListObject, named range,
+or referenced worksheet is missing.</li>
+</ul>
+<hr />
+<h2>Error Handling</h2>
+<h3>throw-error</h3>
+<p><strong>Raise a ProjectError-based exception</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As Long, ByVal message As String)
+</code></pre>
+<p>Wrapper around Err.Raise that standardises the source to CLASS_NAME.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>errNumber</code>: Long. The ProjectError code to raise.</li>
+<li><code>message</code>: String. Human-readable description of the failure.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError. Always raises the specified error.</li>
+</ul>
+<hr />
+<h2>Interface Implementation</h2>
+<h3>IAnaTabIds_AddGraphInfo</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub IAnaTabIds_AddGraphInfo(ByVal scope As Byte, _
+    ByVal tabId As String, ByVal graphId As String, _
+    ByVal seriesName As String, ByVal seriesType As String, _
+    ByVal seriesPos As String, ByVal seriesLabel As String, _
+    ByVal seriesColumnLabel As String, ByVal outRangeAddress As String, _
+    Optional ByVal hardCodeLabels As Boolean = False, _
+    Optional ByVal prefix As String = vbNullString, _
+    Optional ByVal prefixOnly As Boolean = False)
+</code></pre>
+<p>Delegated members satisfying the IAnaTabIds contract.
+See the corresponding Private members above for full documentation.</p>
+<hr />
+</details>
+<details>
+<summary>Used in (6 file(s))</summary>
+<ul>
+<li><a href="src/classes/analyses/AnalysisOutput.cls">AnalysisOutput.cls</a></li>
+<li><a href="src/classes/analyses/AnaTabIds.cls">AnaTabIds.cls</a></li>
+<li><a href="src/classes/analyses/IAnaTabIds.cls">IAnaTabIds.cls</a></li>
+<li><a href="src/classes/dataio/LLExporter.cls">LLExporter.cls</a></li>
+<li><a href="src/classes/linelist/Linelist.cls">Linelist.cls</a></li>
+<li><a href="src/tests/modules/analyses/TestAnaTabIds.bas">TestAnaTabIds.bas</a></li>
+</ul>
+</details>
+
+  </main>
+</body>
+</html>
+

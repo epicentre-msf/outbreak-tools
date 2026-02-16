@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IApplicationState - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>IApplicationState</h1>
+<p>Defines the public contract for the ApplicationState class, exposing
+busy-state toggling and snapshot capture of Excel Application settings.
+Callers apply a locked-down busy mode (no screen updates, manual calc,
+alerts off) and later restore the original state from the snapshot.</p>
+<h2>Busy State</h2>
+<h3>ApplyBusyState</h3>
+<p><strong>Transition to busy state</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ApplyBusyState(Optional ByVal suppressEvents As Boolean = False, _
+                          Optional ByVal calculateOnSave As Boolean = True, _
+                          Optional ByVal busyCursor As Long = 0, _
+                          Optional ByVal blockSecurity As Boolean = False)
+</code></pre>
+<p>Transition to and from the busy state.
+Applies busy settings (ScreenUpdating False, DisplayAlerts False,
+Calculation Manual, EnableAnimations False when available) over the
+captured application snapshot.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>suppressEvents</code>: Boolean. When True, disables Application.EnableEvents. Defaults to False.</li>
+<li><code>calculateOnSave</code>: Boolean. Value for CalculateBeforeSave. Defaults to True.</li>
+<li><code>busyCursor</code>: Long. Cursor shown while busy. When 0 (default), leaves cursor unchanged.</li>
+<li><code>blockSecurity</code>: Boolean. When True, forces AutomationSecurity to msoAutomationSecurityForceDisable. Defaults to False.</li>
+</ul>
+<hr />
+<h3>Restore</h3>
+<p><strong>Restore the application to its pre-busy state</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Restore()
+</code></pre>
+<p>Restores all captured application settings, even when ApplyBusyState
+was never called. Clears the busy flag.</p>
+<hr />
+<h3>RefreshSnapshot</h3>
+<p><strong>Refresh the stored snapshot with current application values</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub RefreshSnapshot()
+</code></pre>
+<p>Re-captures the application state so subsequent Restore invocations
+return to the freshly captured values. Cannot be called while busy.</p>
+<hr />
+<h2>Introspection</h2>
+<h3>ApplicationObject</h3>
+<p><strong>Application reference currently guarded</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ApplicationObject() As Application
+</code></pre>
+<p>Read-only state accessors.</p>
+<p><strong>Returns:</strong> Application. The Excel Application instance.</p>
+<hr />
+<h3>IsBusy</h3>
+<p><strong>Whether the busy state is currently active</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get IsBusy() As Boolean
+</code></pre>
+<p><strong>Returns:</strong> Boolean. True when ApplyBusyState has been invoked without a matching Restore.</p>
+<hr />
+<h3>HasSnapshot</h3>
+<p><strong>Whether a snapshot exists and restoration is possible</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get HasSnapshot() As Boolean
+</code></pre>
+<p><strong>Returns:</strong> Boolean. True when a snapshot has been captured.</p>
+<hr />
+
+  </main>
+</body>
+</html>
+

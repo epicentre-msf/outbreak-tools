@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LLChoices - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>LLChoices</h1>
+<p>Manages worksheet-based choice lists used for dropdowns and cascading
+selectors. Each choice is identified by a list name and carries long
+labels, short labels, and an ordering column. Built on top of a
+DataSheet for column-oriented data access.</p>
+<p><strong>Depends on:</strong> <a href="DataSheet.html">DataSheet</a>, <a href="CustomTable.html">CustomTable</a>, <a href="Checking.html">Checking</a>, <a href="BetterArray.html">BetterArray</a>, <a href="ITranslationObject.html">ITranslationObject</a></p>
+<p><strong>Version:</strong> 1.0 (2026-02-09)</p>
+<h2>Factory</h2>
+<h3>create</h3>
+<p><strong>Create a new LLChoices instance</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create(ByVal choiceWorksheet As Worksheet, _ 
+                       ByVal choiceStartRow As Long, _
+                       ByVal choiceStartColumn As Long, _ 
+                       Optional ByVal choiceName As String = vbNullString) As _ 
+</code></pre>
+<p>Wraps the given worksheet in a DataSheet and returns a configured
+ILLChoices instance. The default headers are &quot;list name&quot;, &quot;label&quot;,
+&quot;short label&quot;, and &quot;ordering list&quot;.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>choiceWorksheet</code>: Worksheet. The worksheet hosting the choices.</li>
+<li><code>choiceStartRow</code>: Long. First row of choice data.</li>
+<li><code>choiceStartColumn</code>: Long. First column of choice data.</li>
+<li><code>choiceName</code>: Optional String. Name for the choice object. Defaults to vbNullString.</li>
+</ul>
+<p><strong>Returns:</strong> ILLChoices. The new instance.</p>
+<hr />
+<h2>Elements</h2>
+<h3>choice-data</h3>
+<p><strong>Associated DataSheet object</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ChoiceData() As IDataSheet
+</code></pre>
+<p><strong>Returns:</strong> IDataSheet. The backing DataSheet.</p>
+<hr />
+<h3>wksh</h3>
+<p><strong>Worksheet hosting the choice lists</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Wksh() As Worksheet
+</code></pre>
+<p><strong>Returns:</strong> Worksheet. The host worksheet.</p>
+<hr />
+<h2>Choices</h2>
+<h3>name</h3>
+<p><strong>Name of the choice object</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Name() As String
+</code></pre>
+<p><strong>Returns:</strong> String. The choice object name.</p>
+<hr />
+<h3>choice-exists</h3>
+<p><strong>Check whether a choice exists</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get ChoiceExists(ByVal choiceName As String) As Boolean
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>choiceName</code>: String. Choice name to search for.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the choice is found.</p>
+<hr />
+<h3>sort</h3>
+<p><strong>Sort choices in the worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub Sort()
+</code></pre>
+<hr />
+<h3>add-choice</h3>
+<p><strong>Add a new choice with its categories</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AddChoice(ByVal choiceName As String, _
+                      ByVal longLabelData As BetterArray, _ 
+                      Optional ByVal shortLabelData As Object = Nothing)
+</code></pre>
+<p>Appends a new choice entry with long labels and optional short labels.
+Silently exits when the choice already exists or the data is empty.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>choiceName</code>: String. Name of the choice to add.</li>
+<li><code>longLabelData</code>: BetterArray. Long label values for the categories.</li>
+<li><code>shortLabelData</code>: Optional Object. BetterArray of short label values. Defaults to Nothing.</li>
+</ul>
+<hr />
+<h3>remove-choice</h3>
+<p><strong>Remove one or multiple choices</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RemoveChoice(Byval choiceNames As String, Optional ByVal sep As String = &quot;;&quot;)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>choiceNames</code>: String. Choice names separated by sep.</li>
+<li><code>sep</code>: Optional String. Delimiter. Defaults to &quot;;&quot;.</li>
+</ul>
+<hr />
+<h3>translate</h3>
+<p><strong>Translate the choice worksheet labels</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub Translate(ByVal trads As ITranslationObject)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>trads</code>: ITranslationObject. Translation provider.</li>
+</ul>
+<hr />
+<h3>manage-rows</h3>
+<p><strong>Add or remove rows via a single toggle</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ManageRows(Optional ByVal del As Boolean = False)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>del</code>: Optional Boolean. When True, removes rows. Defaults to False.</li>
+</ul>
+<hr />
+<h3>add-rows</h3>
+<p><strong>Add rows to the choice table</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AddRows()
+</code></pre>
+<hr />
+<h3>insert-rows</h3>
+<p><strong>Insert rows at the selected position</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub InsertRows(ByVal targetCell As Range, _
+                       Optional ByVal insertShift As Boolean = False)
+</code></pre>
+<p>Mirrors the selection height inside the choices ListObject. When the
+selection is invalid the attempt is logged and ignored.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>targetCell</code>: Range. Selection anchoring the insertion point.</li>
+<li><code>insertShift</code>: Optional Boolean. When True, inserts worksheet rows. Defaults to False.</li>
+</ul>
+<hr />
+<h3>delete-rows</h3>
+<p><strong>Delete rows intersecting the selection</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub DeleteRows(ByVal targetCell As Range, _
+                       Optional ByVal includeIds As Boolean = True, _
+                       Optional ByVal forceShift As Boolean = False)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>targetCell</code>: Range. Selection identifying rows to delete.</li>
+<li><code>includeIds</code>: Optional Boolean. When True, renumbers the ID column. Defaults to True.</li>
+<li><code>forceShift</code>: Optional Boolean. When True, forces worksheet row deletion. Defaults to False.</li>
+</ul>
+<hr />
+<h3>remove-rows</h3>
+<p><strong>Remove empty rows from the choice table</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RemoveRows()
+</code></pre>
+<hr />
+<h3>all-choices</h3>
+<p><strong>All distinct choice names</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get AllChoices() As BetterArray
+</code></pre>
+<p><strong>Returns:</strong> BetterArray. The distinct choice names.</p>
+<hr />
+<h2>Categories</h2>
+<h3>categories</h3>
+<p><strong>Categories of a choice</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Categories(ByVal choiceName As String, _
+                               Optional ByVal useShortlabels As Boolean = False) _ 
+</code></pre>
+<p>Returns the long label categories for the specified choice. When
+useShortlabels is True, short labels replace long labels where
+available. Falls back to long labels for missing short entries.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>choiceName</code>: String. The choice to retrieve categories from.</li>
+<li><code>useShortlabels</code>: Optional Boolean. When True, uses short labels. Defaults to False.</li>
+</ul>
+<p><strong>Returns:</strong> BetterArray. The category values.</p>
+<hr />
+<h3>concatenate-categories</h3>
+<p><strong>Concatenate all categories of a choice</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get ConcatenateCategories( _
+        ByVal choiceName As String, _ 
+        Optional ByVal sep As String = &quot; | &quot;, _
+        Optional ByVal trads As Object = Nothing) As String
+</code></pre>
+<p>Joins the categories with a separator. Optionally translates each
+category via the supplied TranslationObject.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>choiceName</code>: String. The choice whose categories to concatenate.</li>
+<li><code>sep</code>: Optional String. Separator. Defaults to &quot; | &quot;.</li>
+<li><code>trads</code>: Optional Object. A TranslationObject. Defaults to Nothing.</li>
+</ul>
+<p><strong>Returns:</strong> String. The concatenated categories.</p>
+<hr />
+<h2>DataExchange</h2>
+<h3>add-headers</h3>
+<p><strong>Write the default headers to the choice worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AddHeaders()
+</code></pre>
+<p>Writes the four standard column headers (list name, ordering,
+long label, short label) starting at the configured origin cell.</p>
+<hr />
+<h3>export</h3>
+<p><strong>Export the current choice object to a workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub Export(ByVal Wkb As Workbook, Optional ByVal Hide As Long = xlSheetHidden)
+</code></pre>
+<p>Delegates to DataSheet.Export, including hidden names.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>Wkb</code>: Workbook. Destination workbook.</li>
+<li><code>Hide</code>: Long. Worksheet visibility constant. Defaults to xlSheetHidden.</li>
+</ul>
+<hr />
+<h3>import</h3>
+<p><strong>Import choices from a worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub Import(ByVal fromWksh As Worksheet, _
+                   ByVal fromStartRow As Long, _
+                   ByVal fromStartcol As Long, _ 
+                   Optional ByVal clearSheet As Boolean = False)
+</code></pre>
+<p>Optionally clears the sheet and rewrites headers before importing.
+Creates a temporary DataSheet from the source range and delegates to
+DataSheet.Import.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>fromWksh</code>: Worksheet. Source worksheet containing choices.</li>
+<li><code>fromStartRow</code>: Long. First data row in the source.</li>
+<li><code>fromStartcol</code>: Long. First data column in the source.</li>
+<li><code>clearSheet</code>: Boolean. When True, clears the sheet before import. Defaults to False.</li>
+</ul>
+<hr />
+<h3>import-choice</h3>
+<p><strong>Import choices from another ILLChoices object</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ImportChoice(ByVal choiObj As ILLChoices)
+</code></pre>
+<p>Iterates all choices in the source object, retrieves both long and
+short label categories, and adds each choice via AddChoice.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>choiObj</code>: ILLChoices. Source choice object to import from.</li>
+</ul>
+<hr />
+<h2>Checkings</h2>
+<h3>has-checkings</h3>
+<p><strong>Whether the choice object has logged diagnostic messages</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get HasCheckings() As Boolean
+</code></pre>
+<p><strong>Returns:</strong> Boolean. True when diagnostic entries exist.</p>
+<hr />
+<h3>checking-values</h3>
+<p><strong>Retrieve the diagnostic log entries</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get CheckingValues() As Object
+</code></pre>
+<p>Returns the internal IChecking object containing all logged messages.
+Returns Nothing when no entries have been recorded.</p>
+<p><strong>Returns:</strong> Object. An IChecking instance, or Nothing.</p>
+<hr />
+<details>
+<summary>Internal members (not exported)</summary>
+<h2>Factory</h2>
+<h3>choice-label</h3>
+<p><strong>Resolve the label column name</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get ChoiceLabel(Optional ByVal keepDefault As Boolean = True) As String
+</code></pre>
+<p>Returns the translated label column when available, otherwise falls
+back to the default label column.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>keepDefault</code>: Optional Boolean. When True, returns the default. Defaults to True.</li>
+</ul>
+<p><strong>Returns:</strong> String. The resolved column name.</p>
+<hr />
+<h2>Elements</h2>
+<h3>choice-data-set</h3>
+<p><strong>Assign the backing DataSheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Set ChoiceData(ByVal customDataSheet As IDataSheet)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>customDataSheet</code>: IDataSheet. The DataSheet to assign.</li>
+</ul>
+<hr />
+<h3>start-row</h3>
+<p><strong>First row of choice data</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get StartRow() As Long
+</code></pre>
+<p><strong>Returns:</strong> Long. The start row.</p>
+<hr />
+<h3>start-column</h3>
+<p><strong>First column of choice data</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get StartColumn() As Long
+</code></pre>
+<p><strong>Returns:</strong> Long. The start column.</p>
+<hr />
+<h3>data-range</h3>
+<p><strong>Data range from the backing DataSheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get DataRange( _ 
+    Optional ByVal colName As String = &quot;__all__&quot;, _
+    Optional ByVal includeHeaders As Boolean = True) As Range
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>colName</code>: Optional String. Column name. Defaults to &quot;<strong>all</strong>&quot;.</li>
+<li><code>includeHeaders</code>: Optional Boolean. When True, includes headers. Defaults to True.</li>
+</ul>
+<hr />
+<h2>Validation</h2>
+<h3>has-valid-headers</h3>
+<p><strong>Check whether all required headers exist</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get HasValidHeaders() As Boolean
+</code></pre>
+<p><strong>Returns:</strong> Boolean. True when all four required columns are found.</p>
+<hr />
+<h2>Choices</h2>
+<h3>name-set</h3>
+<p><strong>Assign the choice object name</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Let Name(ByVal choiceName As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>choiceName</code>: String. The name to assign.</li>
+</ul>
+<hr />
+<h3>remove-one-choice</h3>
+<p><strong>Remove a single choice by name</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RemoveOneChoice(ByVal choiceName As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>choiceName</code>: String. The choice to remove.</li>
+</ul>
+<hr />
+<h3>resolve-row-target</h3>
+<p><strong>Validate a selection and resolve its ListObject</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ResolveRowTarget(ByVal targetCell As Range, ByVal actionLabel As String) As ListObject
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>targetCell</code>: Range. The user-selected cell to validate.</li>
+<li><code>actionLabel</code>: String. Human-readable action name used in warning messages.</li>
+</ul>
+<p><strong>Returns:</strong> ListObject. The ListObject, or Nothing when invalid.</p>
+<hr />
+<h2>Checkings</h2>
+<h3>log-info</h3>
+<p><strong>Append a diagnostic entry to the internal checking object</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub LogInfo(ByVal label As String, _ 
+                    Optional ByVal scope As Byte = checkingNote)
+</code></pre>
+<p>Lazily creates the Checking instance on first call. Increments the
+internal counter used as the entry key.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>label</code>: String. The message to record.</li>
+<li><code>scope</code>: Byte. Severity level. Defaults to checkingNote.</li>
+</ul>
+<hr />
+<h3>show-debug</h3>
+<p><strong>Print diagnostic summary to the Immediate window</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ShowDebug()
+</code></pre>
+<hr />
+</details>
+<details>
+<summary>Used in (26 file(s))</summary>
+<ul>
+<li><a href="src/classes/dataio/LLExporter.cls">LLExporter.cls</a></li>
+<li><a href="src/classes/dataio/LLImporter.cls">LLImporter.cls</a></li>
+<li><a href="src/classes/designer/DesignerImportService.cls">DesignerImportService.cls</a></li>
+<li><a href="src/classes/designer/IDesignerImportService.cls">IDesignerImportService.cls</a></li>
+<li><a href="src/classes/general/ILLChoices.cls">ILLChoices.cls</a></li>
+<li><a href="src/classes/general/LLChoices.cls">LLChoices.cls</a></li>
+<li><a href="src/classes/linelist/ILinelistSpecs.cls">ILinelistSpecs.cls</a></li>
+<li><a href="src/classes/linelist/Linelist.cls">Linelist.cls</a></li>
+<li><a href="src/classes/linelist/LinelistSpecs.cls">LinelistSpecs.cls</a></li>
+<li><a href="src/classes/mastersetup/EventMasterSetup.cls">EventMasterSetup.cls</a></li>
+<li><a href="src/classes/mastersetup/IEventMasterSetup.cls">IEventMasterSetup.cls</a></li>
+<li><a href="src/classes/mastersetup/IMasterSetupVariables.cls">IMasterSetupVariables.cls</a></li>
+<li><a href="src/classes/mastersetup/MasterSetupVariables.cls">MasterSetupVariables.cls</a></li>
+<li><a href="src/classes/setup/EventSetup.cls">EventSetup.cls</a></li>
+<li><a href="src/classes/setup/IEventSetup.cls">IEventSetup.cls</a></li>
+<li><a href="src/classes/setup/ISetupErrors.cls">ISetupErrors.cls</a></li>
+<li><a href="src/classes/setup/SetupErrors.cls">SetupErrors.cls</a></li>
+<li><a href="src/classes/setup/SetupImportService.cls">SetupImportService.cls</a></li>
+<li><a href="src/modules/mastersetup/MasterSetupHelpers.bas">MasterSetupHelpers.bas</a></li>
+<li><a href="src/modules/setup/SetupHelpers.bas">SetupHelpers.bas</a></li>
+<li><a href="src/tests/modules/general/TestLLChoices.bas">TestLLChoices.bas</a></li>
+<li><a href="src/tests/modules/mastersetup/TestEventMasterSetup.bas">TestEventMasterSetup.bas</a></li>
+<li><a href="src/tests/modules/mastersetup/TestMasterSetupVariables.bas">TestMasterSetupVariables.bas</a></li>
+<li><a href="src/tests/stubs/LinelistSpecsWorkbookStub.cls">LinelistSpecsWorkbookStub.cls</a></li>
+<li><a href="src/tests/stubs/LLVarContextSpecsStub.cls">LLVarContextSpecsStub.cls</a></li>
+<li><a href="src/tests/TableSpecsLinelistStub.cls">TableSpecsLinelistStub.cls</a></li>
+</ul>
+</details>
+
+  </main>
+</body>
+</html>
+

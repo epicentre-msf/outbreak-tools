@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IVarWriter - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>IVarWriter</h1>
+<p>Defines the public contract for the VarWriter class, exposing methods
+for writing a single dictionary variable to one or more linelist
+worksheets and for reading dictionary column values. Consumers call
+WriteVariable once per variable; the implementation handles main,
+printed-companion, and CRF-companion sheets according to the active
+layer (HList or VList).
+Layers control which worksheets are written. HList writes to the main
+sheet plus optional printed and CRF companions. VList writes to the
+main sheet only.</p>
+<h2>Methods</h2>
+<h3>WriteVariable</h3>
+<p><strong>Write one variable to the target worksheet(s)</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub WriteVariable(ByVal varName As String)
+</code></pre>
+<p>Writes label, formula, type formatting, choices, validation, and
+conditional formatting for the named variable. On HList layers the
+method also writes to the printed and CRF companion sheets when they
+are available. Internally resets cached cell ranges before each
+invocation so the writer can be reused across multiple variables.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>varName</code>: String. The variable name as it appears in the dictionary.</li>
+</ul>
+<hr />
+<h3>ValueOf</h3>
+<p><strong>Read a dictionary column value for the current variable</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ValueOf(ByVal colName As String) As String
+</code></pre>
+<p>Returns the value stored in the specified dictionary column for the
+variable that was most recently passed to WriteVariable. Delegates to
+LLVariables.Value internally.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>colName</code>: String. The dictionary column name to look up.</li>
+</ul>
+<p><strong>Returns:</strong> String. The column value for the current variable.</p>
+<hr />
+
+  </main>
+</body>
+</html>
+
