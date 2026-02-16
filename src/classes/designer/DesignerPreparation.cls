@@ -75,7 +75,6 @@ Private Const GEO_LANG_CODE As String = "RNG_GeoLangCode"
 Private Const GEO_NAME As String = "RNG_GeoName"
 Private Const GEO_META_LANG As String = "RNG_MetaLang"
 Private Const GEO_UPDATED As String = "RNG_GeoUpdated"
-Private Const GEO_PASTING_COL As String = "RNG_PastingGeoCol"
 Private Const GEO_FORM_LOADED As String = "RNG_FormLoaded"
 
 'Dropdown names
