@@ -64,7 +64,7 @@ End Sub
 
 '@Description("Clear all geobase data from the Geo worksheet.")
 '@EntryPoint
-Public Sub clickDelGeo(ByRef control As IRibbonControl)
+Public Sub clickDelGeo()
     Dim geoSheet As Worksheet
     Dim geo As ILLGeo
     Dim appScope As IApplicationState
@@ -92,7 +92,7 @@ End Sub
 
 '@Description("Clear all entry input ranges on the Main sheet.")
 '@EntryPoint
-Public Sub clickClearEnt(ByRef control As IRibbonControl)
+Public Sub clickClearEnt()
     Dim entry As IDesignerEntry
     Dim appScope As IApplicationState
 
@@ -122,7 +122,7 @@ End Sub
 
 '@Description("Load a setup file (dictionary): store path, extract languages, update dropdown.")
 '@EntryPoint
-Public Sub clickLoadFileDic(ByRef control As IRibbonControl)
+Public Sub clickLoadFileDic()
     Dim io As IOSFiles
     Dim entry As IDesignerEntry
     Dim appScope As IApplicationState
@@ -186,7 +186,7 @@ End Sub
 
 '@Description("Load a geobase file path into the Main sheet.")
 '@EntryPoint
-Public Sub clickLoadGeoFile(ByRef control As IRibbonControl)
+Public Sub clickLoadGeoFile()
     Dim io As IOSFiles
     Dim entry As IDesignerEntry
     Dim appScope As IApplicationState
@@ -219,7 +219,7 @@ End Sub
 
 '@Description("Select a folder for linelist output directory.")
 '@EntryPoint
-Public Sub clickLinelistDir(ByRef control As IRibbonControl)
+Public Sub clickLinelistDir()
     Dim io As IOSFiles
     Dim entry As IDesignerEntry
     Dim appScope As IApplicationState
@@ -252,7 +252,7 @@ End Sub
 
 '@Description("Load a template file for linelist creation.")
 '@EntryPoint
-Public Sub clickLoadTemplate(ByRef control As IRibbonControl)
+Public Sub clickLoadTemplate()
     Dim io As IOSFiles
     Dim entry As IDesignerEntry
     Dim appScope As IApplicationState
@@ -290,7 +290,7 @@ End Sub
 
 '@Description("Validate designer readiness and export setup components into the designer.")
 '@EntryPoint
-Public Sub clickGenerate(ByRef control As IRibbonControl)
+Public Sub clickGenerate()
     Dim entry As IDesignerEntry
     Dim appScope As IApplicationState
     Dim importService As ISetupImportService

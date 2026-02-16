@@ -70,25 +70,88 @@ End Sub
 '@section DesignerEntry Tests
 '===============================================================================
 '@TestMethod("DesignerEntry")
-Public Sub TestClearUsesEntryManager()
-    CustomTestSetTitles Assert, "DesignerEntry", "TestClearUsesEntryManager"
+Public Sub TestClearResetsInputRanges()
+    CustomTestSetTitles Assert, "DesignerEntry", "TestClearResetsInputRanges"
     On Error GoTo Fail
 
+    'Arrange: create named ranges and set values + coloured backgrounds
+    FixtureWorkbook.Names.Add Name:="RNG_PathGeo", RefersTo:=EntrySheet.Range("A1")
+    FixtureWorkbook.Names.Add Name:="RNG_PathDico", RefersTo:=EntrySheet.Range("A2")
+    FixtureWorkbook.Names.Add Name:="RNG_LLName", RefersTo:=EntrySheet.Range("A3")
+    FixtureWorkbook.Names.Add Name:="RNG_LLDir", RefersTo:=EntrySheet.Range("A4")
+    FixtureWorkbook.Names.Add Name:="RNG_Edition", RefersTo:=EntrySheet.Range("A5")
+    FixtureWorkbook.Names.Add Name:="RNG_LLTemp", RefersTo:=EntrySheet.Range("A6")
+    FixtureWorkbook.Names.Add Name:="RNG_LangSetup", RefersTo:=EntrySheet.Range("A7")
+    FixtureWorkbook.Names.Add Name:="RNG_LLForm", RefersTo:=EntrySheet.Range("A8")
+
+    EntrySheet.Range("A1").value = "/path/geo"
+    EntrySheet.Range("A2").value = "/path/dico"
+    EntrySheet.Range("A3").value = "my_linelist"
+    EntrySheet.Range("A4").value = "/output"
+    EntrySheet.Range("A5").value = "v2.1"
+    EntrySheet.Range("A6").value = "/temp/path"
+    EntrySheet.Range("A7").value = "ENG"
+    EntrySheet.Range("A8").value = "form_value"
+
+    Dim rng As Range
+    For Each rng In EntrySheet.Range("A1:A8")
+        rng.Interior.Color = vbYellow
+    Next rng
+
     Dim subject As IDesignerEntry
-    Dim stub As DesignerMainStub
-
-    Set stub = New DesignerMainStub
     Set subject = DesignerEntry.Create(EntrySheet)
-    subject.UseEntryManager stub
 
+    'Act
     subject.Clear
 
-    Assert.IsTrue stub.ClearRequested, "ClearInputRanges should be invoked."
-    Assert.IsTrue stub.ClearedWithValues, "Entry manager should clear values."
+    'Assert: all values should be cleared and backgrounds set to white
+    Dim idx As Long
+    For idx = 1 To 8
+        Assert.AreEqual vbNullString, CStr(EntrySheet.Cells(idx, 1).value), _
+                        "Range A" & idx & " should be cleared."
+        Assert.AreEqual CLng(vbWhite), CLng(EntrySheet.Cells(idx, 1).Interior.Color), _
+                        "Range A" & idx & " background should be white."
+    Next idx
     Exit Sub
 
 Fail:
-    ReportTestFailure "TestClearUsesEntryManager"
+    ReportTestFailure "TestClearResetsInputRanges"
+End Sub
+
+'@TestMethod("DesignerEntry")
+Public Sub TestClearResetsWarnings()
+    CustomTestSetTitles Assert, "DesignerEntry", "TestClearResetsWarnings"
+    On Error GoTo Fail
+
+    'Arrange: create RNG_Warning and fill 3 contiguous warning cells
+    FixtureWorkbook.Names.Add Name:="RNG_Warning", RefersTo:=EntrySheet.Range("B1")
+    EntrySheet.Range("B1").value = "Warning 1"
+    EntrySheet.Range("B2").value = "Warning 2"
+    EntrySheet.Range("B3").value = "Warning 3"
+
+    Dim rng As Range
+    For Each rng In EntrySheet.Range("B1:B3")
+        rng.Interior.Color = vbRed
+    Next rng
+
+    Dim subject As IDesignerEntry
+    Set subject = DesignerEntry.Create(EntrySheet)
+
+    'Act
+    subject.Clear
+
+    'Assert: all 3 warning cells should be cleared
+    Dim idx As Long
+    For idx = 1 To 3
+        Assert.AreEqual vbNullString, CStr(EntrySheet.Cells(idx, 2).value), _
+                        "Warning cell B" & idx & " should be cleared."
+        Assert.AreEqual CLng(vbWhite), CLng(EntrySheet.Cells(idx, 2).Interior.Color), _
+                        "Warning cell B" & idx & " background should be white."
+    Next idx
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestClearResetsWarnings"
 End Sub
 
 '@TestMethod("DesignerEntry")

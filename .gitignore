@@ -48,3 +48,4 @@ docs/
 /.obt
 obt-skill/
 obt-doc-skill/
+src/.docignore
