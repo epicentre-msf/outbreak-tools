@@ -24,6 +24,8 @@ Private Const COL_LANG_DICTIONARY As String = "language of the dictionary"
 'Setup language extraction
 Private Const SHEET_TRANSLATIONS As String = "Translations"
 Private Const SETUP_LANGUAGES_TAG As String = "__SetupTranslationsLanguages__"
+Private Const ID_HEADER As String = "ID"
+Private Const ID_PREFIX As String = "Operation-"
 
 
 '@section Multi group callbacks
@@ -171,8 +173,8 @@ Public Sub clickAddRowsMulti(ByRef control As IRibbonControl)
     Set appScope = ApplicationState.Create(Application)
     appScope.ApplyBusyState suppressEvents:=True, busyCursor:=xlWait
 
-    Set table = CustomTable.Create(lo)
-    table.AddRows nbRows:=10, insertShift:=False, includeIds:=False
+    Set table = CustomTable.Create(lo, ID_HEADER, ID_PREFIX)
+    table.AddRows nbRows:=10, insertShift:=False, includeIds:=True, 
 
 Cleanup:
     Dim errNumber As Long
@@ -206,7 +208,7 @@ Public Sub clickResizeMulti(ByRef control As IRibbonControl)
     Set appScope = ApplicationState.Create(Application)
     appScope.ApplyBusyState suppressEvents:=True, busyCursor:=xlWait
 
-    Set table = CustomTable.Create(lo)
+    Set table = CustomTable.Create(lo, ID_HEADER, ID_PREFIX)
     table.RemoveRows totalCount:=0, includeIds:=False, forceShift:=False
 
 Cleanup:
@@ -276,8 +278,8 @@ Public Sub clickImpMulti(ByRef control As IRibbonControl)
         GoTo Cleanup
     End If
 
-    Set sourceTable = CustomTable.Create(sourceLo)
-    Set targetTable = CustomTable.Create(targetLo)
+    Set sourceTable = CustomTable.Create(sourceLo, ID_HEADER, ID_PREFIX)
+    Set targetTable = CustomTable.Create(targetLo, ID_HEADER, ID_PREFIX)
     targetTable.Import sourceTable
 
 Cleanup:
@@ -325,7 +327,7 @@ Public Sub clickExportMulti(ByRef control As IRibbonControl)
     Set lo = ResolveMultiTable()
     If lo Is Nothing Then GoTo Cleanup
 
-    Set table = CustomTable.Create(lo)
+    Set table = CustomTable.Create(lo, ID_HEADER, ID_PREFIX)
 
     'Create a new workbook and export the table
     Set exportBook = Workbooks.Add
