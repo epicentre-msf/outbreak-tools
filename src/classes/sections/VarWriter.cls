@@ -367,7 +367,11 @@ Private Sub WriteMainSheet()
 
     ' HList-specific conditional formatting
     If this.layer = VarWriterLayerHList Then
+        
+        On Error Resume Next
         AddGeoConditionalFormatting
+        On Error GoTo 0
+
         AddConditionalFormatting
         AddUniqueConditionalFormatting
     End If
@@ -997,7 +1001,7 @@ Private Sub AddConditionalFormatting()
     Set formatRng = varObject.CellRange(colName:="formatting values", _
                                          varName:=this.varName)
     Set shObj = SheetsObject()
-    condAdd = shObj.VariableAddress(varValid)
+    condAdd = shObj.VariableAddress(varValid, this.wksh.Name)
 
     cellRng.FormatConditions.Add Type:=xlExpression, Formula1:="=(" & condAdd & "= 1)"
     With cellRng.FormatConditions(cellRng.FormatConditions.Count)
@@ -1048,6 +1052,7 @@ Private Sub AddGeoConditionalFormatting()
     Dim varControl As String
     Dim actAdd As String
     Dim condForm As String
+    Dim OScondForm As String
 
     varControl = ValueOf("control")
     'Conditional formatting is set only on geo1, geo2, geo3 and geo4 columns. Others
@@ -1060,12 +1065,17 @@ Private Sub AddGeoConditionalFormatting()
 
     Set cellRng = VarRange()
     Set shObj = SheetsObject()
-    condAdd = shObj.VariableAddress(varValid)
-    actAdd = shObj.VariableAddress(this.varName)
-    condForm = "= AND(" & condAdd & "= " & Chr(34) & Chr(34) & "," & actAdd & "<>" & Chr(34) & Chr(34) & ")"
+    condAdd = shObj.VariableAddress(varValid, this.wksh.Name)
+    actAdd = shObj.VariableAddress(this.varName, this.wksh.Name)
+    
+    condForm = "AND(" & condAdd & "= " & Chr(34) & Chr(34) & "," & actAdd & "<>" & Chr(34) & Chr(34) & ")"
+    OScondForm = OSFormula(condForm)
 
-    cellRng.FormatConditions.Add Type:=xlExpression, _
-        Formula1:=condForm
+    On Error Resume Next
+        cellRng.FormatConditions.Add Type:=xlExpression, Formula1:=OScondForm
+        cellRng.FormatConditions.Add Type:=xlExpression, Formula1:= "=" & condForm
+    On Error GoTo 0
+
     With cellRng.FormatConditions(cellRng.FormatConditions.Count)
         .Interior.Color = RGB(242, 147, 12)
         .SetFirstPriority
