@@ -310,7 +310,8 @@ Public Sub Export(ByVal sh As Worksheet,  _
                   Optional ByVal headersTable As Object = Nothing, _
                   Optional ByVal startLine As Long = 1, _
                   Optional ByVal startColumn As Long = 1, _
-                  Optional ByVal addListObject As Boolean = False)
+                  Optional ByVal addListObject As Boolean = False, _ 
+                  Optional ByVal clearSheet As Boolean = True)
 End Sub
 
 
