@@ -1151,6 +1151,7 @@ Private Sub AppendGeoLines(ByVal geoObject As Object)
             hostSheet.Cells(fillRow, controlIdx).Value = "formula"
             hostSheet.Cells(fillRow, mainLabelIdx).Value = "geo_pcode_adm" & counter
             hostSheet.Cells(fillRow, varIdx).Value = "pcode_adm" & counter & "_" & varName
+            hostSheet.Cells(fillRow, positionIdx).Value = varPosition + ADMIN_LEVELS + counter - 1
             formulaValue = "INDEX(T_ADM" & counter & ", MATCH(concat_adm" & counter & "_" & varName & _
                            ", adm" & counter & "_concat, 0), " & (counter + 2) & ")"
             hostSheet.Cells(fillRow, controlDetailsIdx).Value = _
@@ -1165,6 +1166,7 @@ Private Sub AppendGeoLines(ByVal geoObject As Object)
             hostSheet.Cells(fillRow, controlIdx).Value = "formula"
             hostSheet.Cells(fillRow, mainLabelIdx).Value = "geo_concat_adm" & counter
             hostSheet.Cells(fillRow, varIdx).Value = "concat_adm" & counter & "_" & varName
+            hostSheet.Cells(fillRow, positionIdx).Value = varPosition + (2 * ADMIN_LEVELS) + counter - 1
             hostSheet.Cells(fillRow, controlDetailsIdx).Value = _
                 "GEOCONCAT(adm1_" & varName & ", " & counter & ")"
         Next
