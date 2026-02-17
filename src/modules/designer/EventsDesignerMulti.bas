@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Designer")
 '@ModuleDescription("Ribbon callbacks for the Multi group on the designer workbook.")
-'@depends CustomTable, ICustomTable, ApplicationState, IApplicationState, OSFiles, IOSFiles, HiddenNames, IHiddenNames, BetterArray
+'@depends CustomTable, ICustomTable, ApplicationState, IApplicationState, OSFiles, IOSFiles, HiddenNames, IHiddenNames, DropdownLists, IDropdownLists, BetterArray
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 'Ribbon callbacks for the Multi group manage the T_Multi ListObject on
@@ -26,6 +26,11 @@ Private Const SHEET_TRANSLATIONS As String = "Translations"
 Private Const SETUP_LANGUAGES_TAG As String = "__SetupTranslationsLanguages__"
 Private Const ID_HEADER As String = "ID"
 Private Const ID_PREFIX As String = "Operation-"
+
+'Dropdown-based language validation
+Private Const SHEET_DROPDOWNS As String = "__dropdowns"
+Private Const DROPDOWN_PREFIX As String = "dropdown_"
+Private Const LANG_SUFFIX As String = "_lang"
 
 
 '@section Multi group callbacks
@@ -174,7 +179,7 @@ Public Sub clickAddRowsMulti(ByRef control As IRibbonControl)
     appScope.ApplyBusyState suppressEvents:=True, busyCursor:=xlWait
 
     Set table = CustomTable.Create(lo, ID_HEADER, ID_PREFIX)
-    table.AddRows nbRows:=10, insertShift:=False, includeIds:=True, 
+    table.AddRows nbRows:=10, insertShift:=False, includeIds:=True
 
 Cleanup:
     Dim errNumber As Long
@@ -406,8 +411,22 @@ Private Function ActiveCellColumnName(ByVal lo As ListObject) As String
     ActiveCellColumnName = lo.ListColumns(colOffset).Name
 End Function
 
+'@Description("Resolve the DropdownLists manager on the __dropdowns worksheet.")
+'@return IDropdownLists. The dropdown manager, or Nothing when the sheet is missing.
+Private Function ResolveDropdownManager() As IDropdownLists
+    Dim dropSheet As Worksheet
 
-'@section Folder multi helpers — file loading by column type
+    On Error Resume Next
+    Set dropSheet = ThisWorkbook.Worksheets(SHEET_DROPDOWNS)
+    On Error GoTo 0
+
+    If dropSheet Is Nothing Then Exit Function
+
+    Set ResolveDropdownManager = DropdownLists.Create(dropSheet, DROPDOWN_PREFIX)
+End Function
+
+
+'@section Folder multi helpers -- file loading by column type
 '===============================================================================
 
 '@Description("Load selected setup files into the setups column and apply per-row language validation.")
@@ -417,11 +436,17 @@ Private Sub LoadSetupFiles(ByVal lo As ListObject, ByVal io As IOSFiles)
     Dim filePaths As BetterArray
     Dim setupBook As Workbook
     Dim tradSheet As Worksheet
-    Dim langString As String
+    Dim langValues As BetterArray
     Dim langCol As ListColumn
+    Dim idCol As ListColumn
     Dim startRow As Long
     Dim currentRow As Long
     Dim filePath As String
+    Dim drop As IDropdownLists
+    Dim dropName As String
+    Dim rowId As String
+    Dim langCell As Range
+    Dim idx As Long
 
     'Collect file paths into a BetterArray
     Set filePaths = New BetterArray
@@ -438,16 +463,21 @@ Private Sub LoadSetupFiles(ByVal lo As ListObject, ByVal io As IOSFiles)
     'Write all file paths into the setups column, extending the table as needed
     WriteFilesToColumn lo, COL_SETUPS, startRow, filePaths
 
-    'Resolve the language of the dictionary column
+    'Resolve the language column and ID column
     On Error Resume Next
     Set langCol = lo.ListColumns(COL_LANG_DICTIONARY)
+    Set idCol = lo.ListColumns(ID_HEADER)
     On Error GoTo 0
 
     If langCol Is Nothing Then Exit Sub
+    If idCol Is Nothing Then Exit Sub
 
-    'For each setup file, extract languages and apply per-row validation
+    'Create the dropdown manager on the __dropdowns sheet
+    Set drop = ResolveDropdownManager()
+    If drop Is Nothing Then Exit Sub
+
+    'For each setup file, extract languages and create a per-row dropdown
     currentRow = startRow
-    Dim idx As Long
     For idx = filePaths.LowerBound To filePaths.UpperBound
         filePath = CStr(filePaths.Item(idx))
 
@@ -469,11 +499,24 @@ Private Sub LoadSetupFiles(ByVal lo As ListObject, ByVal io As IOSFiles)
         On Error GoTo 0
 
         If Not tradSheet Is Nothing Then
-            langString = ExtractLanguagesForRow(tradSheet)
-            If LenB(langString) > 0 Then
-                Dim langCell As Range
-                Set langCell = lo.Parent.Cells(currentRow, langCol.Range.Column)
-                ApplyDirectValidation langCell, langString
+            Set langValues = ExtractLanguagesForRow(tradSheet)
+            If langValues.Length > 0 Then
+                'Read the row ID to build a unique dropdown name
+                rowId = CStr(lo.Parent.Cells(currentRow, idCol.Range.Column).Value)
+                If LenB(rowId) > 0 Then
+                    dropName = rowId & LANG_SUFFIX
+
+                    'Add or update the dropdown with extracted languages
+                    If drop.Exists(dropName) Then
+                        drop.Update langValues, dropName
+                    Else
+                        drop.Add langValues, dropName
+                    End If
+
+                    'Apply validation on the language cell using the dropdown
+                    Set langCell = lo.Parent.Cells(currentRow, langCol.Range.Column)
+                    drop.SetValidation langCell, dropName
+                End If
             End If
         End If
 
@@ -523,21 +566,21 @@ Private Sub LoadOutputFolder(ByVal lo As ListObject, ByVal io As IOSFiles)
 End Sub
 
 
-'@section Language extraction and validation helpers
+'@section Language extraction helpers
 '===============================================================================
 
-'@Description("Extract language names from a setup Translations sheet as a comma-separated string.")
+'@Description("Extract language names from a setup Translations sheet as a BetterArray.")
 '@param tradSheet Worksheet. The Translations worksheet of a setup workbook.
-'@return String. Comma-separated language names, or vbNullString when none found.
-Private Function ExtractLanguagesForRow(ByVal tradSheet As Worksheet) As String
+'@return BetterArray. Language names (1-based), or empty when none found.
+Private Function ExtractLanguagesForRow(ByVal tradSheet As Worksheet) As BetterArray
     Dim store As IHiddenNames
     Dim langString As String
     Dim languages() As String
-    Dim result As String
+    Dim result As BetterArray
     Dim idx As Long
-    Dim sep As String
 
-    sep = Application.International(xlListSeparator)
+    Set result = New BetterArray
+    result.LowerBound = 1
 
     'Try HiddenNames first (same pattern as EventsDesignerAdvanced.ExtractAndUpdateLanguages)
     Set store = HiddenNames.Create(tradSheet)
@@ -548,27 +591,35 @@ Private Function ExtractLanguagesForRow(ByVal tradSheet As Worksheet) As String
             languages = Split(langString, ";")
             For idx = LBound(languages) To UBound(languages)
                 If LenB(Trim$(languages(idx))) > 0 Then
-                    If LenB(result) > 0 Then result = result & sep
-                    result = result & Trim$(languages(idx))
+                    result.Push Trim$(languages(idx))
                 End If
             Next idx
-            ExtractLanguagesForRow = result
+            Set ExtractLanguagesForRow = result
             Exit Function
         End If
     End If
 
     'Fallback: read column headers from the first ListObject
-    If tradSheet.ListObjects.Count = 0 Then Exit Function
+    If tradSheet.ListObjects.Count = 0 Then
+        Set ExtractLanguagesForRow = result
+        Exit Function
+    End If
 
     Dim lo As ListObject
     Set lo = tradSheet.ListObjects(1)
-    If lo.HeaderRowRange Is Nothing Then Exit Function
+    If lo.HeaderRowRange Is Nothing Then
+        Set ExtractLanguagesForRow = result
+        Exit Function
+    End If
 
     Dim headerValues As Variant
     headerValues = lo.HeaderRowRange.Value
 
     If Not IsArray(headerValues) Then
-        ExtractLanguagesForRow = CStr(headerValues)
+        Dim singleVal As String
+        singleVal = Trim$(CStr(headerValues))
+        If LenB(singleVal) > 0 Then result.Push singleVal
+        Set ExtractLanguagesForRow = result
         Exit Function
     End If
 
@@ -577,33 +628,12 @@ Private Function ExtractLanguagesForRow(ByVal tradSheet As Worksheet) As String
         Dim headerVal As String
         headerVal = Trim$(CStr(headerValues(1, colIdx)))
         If LenB(headerVal) > 0 Then
-            If LenB(result) > 0 Then result = result & sep
-            result = result & headerVal
+            result.Push headerVal
         End If
     Next colIdx
 
-    ExtractLanguagesForRow = result
+    Set ExtractLanguagesForRow = result
 End Function
-
-'@Description("Apply a direct list validation to a single cell using a comma-separated formula string.")
-'@param cell Range. The cell to validate.
-'@param listString String. Comma-separated list of valid values.
-Private Sub ApplyDirectValidation(ByVal cell As Range, ByVal listString As String)
-    If cell Is Nothing Then Exit Sub
-    If LenB(listString) = 0 Then Exit Sub
-
-    With cell.Validation
-        .Delete
-        .Add Type:=xlValidateList, _
-             AlertStyle:=xlValidAlertInformation, _
-             Operator:=xlBetween, _
-             Formula1:=listString
-        .IgnoreBlank = True
-        .InCellDropdown = True
-        .ShowInput = True
-        .ShowError = True
-    End With
-End Sub
 
 '@Description("Write file paths into a column, adding rows to the table as needed.")
 '@param lo ListObject. The T_Multi ListObject.
