@@ -1307,6 +1307,7 @@ Public Sub Prepare(ByVal importService As IDesignerImportService)
     Dim outWkb As Workbook
     Dim templatePath As String
     Dim tempPath As String
+    Dim pass As IPasswords
 
     If importService Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, _
@@ -1351,6 +1352,7 @@ Public Sub Prepare(ByVal importService As IDesignerImportService)
     Set exportsObj = this.exports
     Set analysisObj = this.analysis
     Set geoObj = this.geo
+    Set pass = this.passwords
 
     Set dictTrads = TransObject(TranslationOfDictionary)
     Set msgTrads = TransObject()
@@ -1371,6 +1373,8 @@ Public Sub Prepare(ByVal importService As IDesignerImportService)
     exportsObj.Translate dictTrads
     analysisObj.Translate dictTrads
 
+    'Update the debugging Password
+    pass.NewDebugingPassword Value("debugpassword")
     this.prepared = True
 
 CleanExit:
