@@ -82,8 +82,8 @@ Public Function Create(ByVal layer As Byte, _
                        Optional ByVal dropdownObj As IDropdownLists = Nothing, _
                        Optional ByVal customDropdownObj As IDropdownLists = Nothing) As ISectionBuilder
 
-    If specs Is Nothing Then ThrowError "Specifications object is required"
-    If wksh Is Nothing Then ThrowError "Target worksheet is required"
+    If specs Is Nothing Then ThrowError ProjectError.ObjectNotInitialized, "Specifications object is required"
+    If wksh Is Nothing Then ThrowError ProjectError.ObjectNotInitialized, "Target worksheet is required"
 
     With New SectionBuilder
         .InternalLayer = layer
@@ -705,8 +705,8 @@ End Sub
 '@sub-title Raise an error with the class name as source
 '@param errorMessage String. Human-readable description of the failure.
 '@throws VbObjectError+516 Always raises the specified error.
-Private Sub ThrowError(ByVal errorMessage As String)
-    Err.Raise VBA.vbObjectError + 516, CLASS_NAME, "Error : " & errorMessage
+Private Sub ThrowError(ByVal errNumber As Long, ByVal errorMessage As String)
+    Err.Raise errNumber, CLASS_NAME, "Error : " & errorMessage
 End Sub
 
 
