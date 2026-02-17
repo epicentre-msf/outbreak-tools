@@ -82,8 +82,8 @@ Public Function Create(ByVal layer As Byte, _
                        Optional ByVal dropdownObj As IDropdownLists = Nothing, _
                        Optional ByVal customDropdownObj As IDropdownLists = Nothing) As IVarWriter
 
-    If specs Is Nothing Then ThrowError "Specifications object is required"
-    If wksh Is Nothing Then ThrowError "Target worksheet is required"
+    If specs Is Nothing Then ThrowError ProjectError.ObjectNotInitialized, "Specifications object is required"
+    If wksh Is Nothing Then ThrowError ProjectError.ObjectNotInitialized, "Target worksheet is required"
 
     With New VarWriter
         Set .InternalSpecs = specs
@@ -743,7 +743,7 @@ Private Sub AddChoices()
     Dim targetAddress As String
     Dim mainLabLength As Long
     Dim design As ILLFormat
-    Dim labelOffset As Long
+
 
     varControl = ValueOf("control")
 
@@ -768,9 +768,6 @@ Private Sub AddChoices()
     varAlert = ValueOf("alert")
     varMessage = ValueOf("message")
     Set cat = New BetterArray
-
-    ' Label offset depends on layer: HList = Offset(-2), VList = Offset(,-1)
-    labelOffset = 0
 
     Select Case varControl
 
@@ -1052,7 +1049,7 @@ Private Sub AddGeoConditionalFormatting()
     Dim actAdd As String
 
     varControl = ValueOf("control")
-    If Not (InStr(1, varControl, "geo") > 1) Then Exit Sub
+    If Not (InStr(1, varControl, "geo") > 0) Then Exit Sub
 
     varValid = "pcode" & "_" & this.varName
     Set varObject = Variables()
@@ -1364,8 +1361,8 @@ End Function
 'Nothing.
 '@param errorMessage String. The error description to include in the raised error.
 '@throws VBA.vbObjectError + 516 always.
-Private Sub ThrowError(ByVal errorMessage As String)
-    Err.Raise VBA.vbObjectError + 516, CLASS_NAME, "Error : " & errorMessage
+Private Sub ThrowError(ByVal errNumber As Long, ByVal errorMessage As String)
+    Err.Raise errNumber, CLASS_NAME, "Error : " & errorMessage
 End Sub
 
 '@section Interface Implementation

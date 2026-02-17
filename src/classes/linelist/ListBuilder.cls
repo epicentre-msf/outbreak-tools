@@ -197,7 +197,7 @@ Private Sub BuildHList()
     Dim shColStart As Long
     Dim shColEnd As Long
     Dim hasGeo As Boolean
-    Dim hiddenNames As IHiddenNames
+    Dim shHn As IHiddenNames
     Dim filtSheetName As String
     Dim countaValue As Long
 
@@ -221,7 +221,7 @@ Private Sub BuildHList()
     'Freeze panes
     On Error Resume Next
     sh.Activate
-    BusyApp
+    Application.ScreenUpdating = False
     With ActiveWindow
         .SplitRow = llshs.DataBounds(this.sheetName, 1)
         .SplitColumn = 2
@@ -288,8 +288,8 @@ Private Sub BuildHList()
     gotoSectionListName = tableName & "_" & GOTO_SECTION_CODE
 
     Set rng = sh.Cells(1, 1)
-    Set hiddenNames = HiddenNames.Create(sh)
-    hiddenNames.EnsureName gotoSectionListName, goToSection, HiddenNameTypeString
+    Set shHn = HiddenNames.Create(sh)
+    shHn.EnsureName gotoSectionListName, goToSection, HiddenNameTypeString
     rng.Value = goToSection
 
     drop.Add sectionsList, gotoSectionListName
@@ -298,8 +298,8 @@ Private Sub BuildHList()
     rng.Locked = False
 
     'Store sheet metadata via hidden names
-    hiddenNames.EnsureName "sheet_type", "HList", HiddenNameTypeString
-    hiddenNames.EnsureName "table_name", tableName, HiddenNameTypeString
+    shHn.EnsureName "sheet_type", "HList", HiddenNameTypeString
+    shHn.EnsureName "table_name", tableName, HiddenNameTypeString
 
     'Print sheet hidden names
     Dim printHiddenNames As IHiddenNames
@@ -332,7 +332,7 @@ Private Sub BuildHList()
     'Store row count via hidden names
     With Lo.ListRows(1)
         countaValue = Application.WorksheetFunction.CountA(.Range)
-        hiddenNames.EnsureName "row_count", CStr(countaValue), HiddenNameTypeLong
+        shHn.EnsureName "row_count", CStr(countaValue), HiddenNameTypeLong
         printHiddenNames.EnsureName "row_count", CStr(countaValue), HiddenNameTypeLong
     End With
 
@@ -368,7 +368,7 @@ Private Sub BuildHList()
         .ListObjects.Add(xlSrcRange, rng, , xlYes).Name = FILTERED_PREFIX & tableName
     End With
 
-    hiddenNames.EnsureName "filtered_sheet", filtSh.Name, HiddenNameTypeString
+    shHn.EnsureName "filtered_sheet", filtSh.Name, HiddenNameTypeString
 
     pass.Protect sh
 End Sub
@@ -401,7 +401,7 @@ Private Sub BuildVList()
     Dim tableName As String
     Dim gotoSectionListName As String
     Dim goToSection As String
-    Dim hiddenNames As IHiddenNames
+    Dim shHn As IHiddenNames
 
     Set sh = this.ll.Wksh(this.sheetName)
     Set dict = this.ll.Dictionary
@@ -417,7 +417,7 @@ Private Sub BuildVList()
     'Freeze panes (row 1 only)
     On Error Resume Next
     sh.Activate
-    BusyApp
+    Application.ScreenUpdating = False
     With ActiveWindow
         .SplitRow = 1
         .FreezePanes = True
@@ -436,8 +436,8 @@ Private Sub BuildVList()
     gotoSectionListName = tableName & "_" & GOTO_SECTION_CODE
 
     Set rng = sh.Cells(1, 1)
-    Set hiddenNames = HiddenNames.Create(sh)
-    hiddenNames.EnsureName gotoSectionListName, goToSection, HiddenNameTypeString
+    Set shHn = HiddenNames.Create(sh)
+    shHn.EnsureName gotoSectionListName, goToSection, HiddenNameTypeString
     rng.Value = goToSection
 
     drop.Add sectionsList, gotoSectionListName
@@ -446,8 +446,8 @@ Private Sub BuildVList()
     rng.Locked = False
 
     'Store sheet metadata via hidden names
-    hiddenNames.EnsureName "sheet_type", "VList", HiddenNameTypeString
-    hiddenNames.EnsureName "table_name", tableName, HiddenNameTypeString
+    shHn.EnsureName "sheet_type", "VList", HiddenNameTypeString
+    shHn.EnsureName "table_name", tableName, HiddenNameTypeString
 
     'PLAGEVALUES range reference
     Set cellRng = sh.Range(tableName & "_START")
@@ -461,9 +461,9 @@ Private Sub BuildVList()
         Set rng = .Range(.Cells(cellRng.Row, cellRng.Column), .Cells(rng.Row, cellRng.Column))
     End With
 
-    hiddenNames.EnsureName tableName & "_PLAGEVALUES", rng.Address, HiddenNameTypeString
+    shHn.EnsureName tableName & "_PLAGEVALUES", rng.Address, HiddenNameTypeString
 
-    pass.Protect "_active"
+    pass.Protect sh
 End Sub
 
 
@@ -537,7 +537,7 @@ Private Function CollectSectionNames(ByVal dict As ILLdictionary, _
     Set result = New BetterArray
     result.LowerBound = 1
 
-    Set sectionRng = dict.DataRange("section")
+    Set sectionRng = dict.DataRange("main section")
     Set sheetRng = dict.DataRange("sheet name")
     startRow = llshs.RowIndex(this.sheetName)
     numVars = llshs.NumberOfVars(this.sheetName)
@@ -557,18 +557,6 @@ Private Function CollectSectionNames(ByVal dict As ILLdictionary, _
     Set CollectSectionNames = result
 End Function
 
-'@label:busy-app
-'@sub-title Suppress UI updates for batch operations
-'@details
-'Disables screen updating, display alerts, automatic calculation, and
-'animations to improve performance during sheet construction. Called
-'after activating a sheet to set up freeze panes.
-Private Sub BusyApp()
-    Application.ScreenUpdating = False
-    Application.DisplayAlerts = False
-    Application.Calculation = xlCalculationManual
-    Application.EnableAnimations = False
-End Sub
 
 '@label:throw-error
 '@sub-title Raise a ProjectError-based exception

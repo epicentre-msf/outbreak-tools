@@ -391,7 +391,6 @@ Public Sub Prepare()
         Dim instrSheet As Worksheet
 
         instrName = trans.TranslatedValue("INSTSHEETNAME")
-        Debug.Print "instruction name:", instrName
 
         On Error Resume Next
         Set instrSheet = outWkb.Worksheets(instrName)
@@ -513,7 +512,6 @@ Private Property Get OutputWkb() As Workbook
     If this.outWkb Is Nothing Then
         Set this.outWkb = this.specs.LLWorkbook
         this.firstSheet = this.outWkb.Worksheets(1).Name
-        Debug.Print "First sheet:", this.firstSheet
     End If
 
     Set OutputWkb = this.outWkb
@@ -838,6 +836,7 @@ Private Sub TransferAllCode(ByVal codeTransfer As ICodeTransfer)
                    "ILLExport", "LLChoices", "ILLChoices", _
                    "LLdictionary", "ILLdictionary", "LLGeo", _
                    "ILLGeo", "Passwords", "IPasswords", _
+                   "IChecking", "Checking", _
                    "LLSheets", "ILLSheets", "LLTranslation", _
                    "ILLTranslation", "OSFiles", "IOSFiles", _
                    "TranslationObject", "ITranslationObject", "LLVariables", _
