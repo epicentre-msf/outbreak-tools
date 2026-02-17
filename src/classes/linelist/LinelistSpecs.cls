@@ -893,7 +893,7 @@ Private Function ResolveCategoryList(ByVal varName As String, _
     End Select
 
     categoryName = Trim$(categoryName)
-    If LenB(categoryName) = 0 Then
+    If (LenB(categoryName) = 0)  And (controlValue = "choice_manual" Or controlValue = "choice_multiple") Then
         ThrowError ProjectError.ElementNotFound, _
                   "Variable '" & normalizedName & "' references an empty category definition"
     End If
