@@ -329,6 +329,8 @@ Public Sub clickGenerate()
     Dim specs As ILinelistSpecs
     Dim ll As ILinelist
     Dim setupPath As String
+    Dim sheetLists As BetterArray
+    Dim counter As Long
 
     On Error GoTo Cleanup
     Set appScope = ApplicationState.Create(Application)
@@ -363,7 +365,13 @@ Public Sub clickGenerate()
     ll.Prepare
 
     'Build the first data entry worksheet (sections, variables, formatting)
-    BuildFirstSheet specs, ll
+    Set sheetLists = ll.Dictionary.UniqueValues("sheet name")
+
+    If sheetLists.Length > 0 Then 
+        For counter = sheetLists.LowerBound To sheetLists.UpperBound
+            BuildOneSheet specs, ll, sheetLists.Item(counter)
+        Next
+    End If
 
     'Save the linelist as .xlsb with password protection
     ll.SaveLL
@@ -404,10 +412,9 @@ End Sub
 '===============================================================================
 
 '@Description("Build the first data entry worksheet from the dictionary.")
-Private Sub BuildFirstSheet(ByVal specs As ILinelistSpecs, ByVal ll As ILinelist)
+Private Sub BuildOneSheet(ByVal specs As ILinelistSpecs, ByVal ll As ILinelist, ByVal sheetName As String)
     Dim dict As ILLdictionary
     Dim llshs As ILLSheets
-    Dim firstSheetName As String
     Dim sheetType As String
     Dim layer As Byte
     Dim listBld As IListBuilder
@@ -415,9 +422,7 @@ Private Sub BuildFirstSheet(ByVal specs As ILinelistSpecs, ByVal ll As ILinelist
     Set dict = specs.Dictionary
     Set llshs = LLSheets.Create(dict)
 
-    'The first data entry sheet is determined by the first row of the dictionary
-    firstSheetName = dict.DataRange("sheet name").Cells(1, 1).Value
-    sheetType = llshs.SheetInfo(firstSheetName)
+    sheetType = llshs.SheetInfo(sheetName)
 
     If sheetType = "vlist1D" Then
         layer = ListBuilderLayerVList
@@ -427,7 +432,7 @@ Private Sub BuildFirstSheet(ByVal specs As ILinelistSpecs, ByVal ll As ILinelist
         Exit Sub
     End If
 
-    Set listBld = ListBuilder.Create(layer, firstSheetName, ll)
+    Set listBld = ListBuilder.Create(layer, sheetName, ll)
     listBld.Build
 End Sub
 
