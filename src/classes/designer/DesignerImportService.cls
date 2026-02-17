@@ -74,6 +74,14 @@ Private Const SHEET_PASS As String = "__pass"
 Private Const RNG_LL_NAME As String = "RNG_LLName"
 Private Const RNG_PATH_DICO As String = "RNG_PathDico"
 
+'Named ranges on the Main sheet (language selection)
+Private Const RNG_LANG_SETUP As String = "RNG_LangSetup"
+Private Const RNG_LL_FORM As String = "RNG_LLForm"
+
+'Workbook-level HiddenName tags for language codes
+Private Const TAG_DICT_LANG As String = "RNG_DictionaryLanguage"
+Private Const TAG_LL_LANG_CODE As String = "RNG_LLLanguageCode"
+
 'Anchor positions for setup workbook tables
 Private Const SETUP_DICT_START_ROW As Long = 5
 Private Const SETUP_DICT_START_COLUMN As Long = 1
@@ -229,6 +237,11 @@ Public Sub ExportToLinelist(ByVal targetBook As Workbook)
     ClearExportedInstances
 
     On Error GoTo ExportFailed
+
+    'Sync language selections from Main sheet into designer HiddenNames,
+    'then copy all designer HiddenNames to the target linelist workbook
+    SyncDesignerLanguageNames hostBook
+    ExportDesignerHiddenNames hostBook, targetBook
 
     ExportDictionary hostBook, targetBook
     ExportChoices hostBook, targetBook
@@ -485,10 +498,29 @@ Private Sub ExportGeo(ByVal hostBook As Workbook, ByVal targetBook As Workbook, 
                       ByVal llName As String, ByVal setupPath As String)
     Dim hostSheet As Worksheet
     Dim geoManager As ILLGeo
+    Dim geoStore As IHiddenNames
+    Dim dictLang As String
+    Dim langCode As String
 
     Set hostSheet = ResolveWorksheet(hostBook, SHEET_GEO)
     If hostSheet Is Nothing Then Exit Sub
 
+    'Set RNG_GeoLangCode on the designer's geo sheet before export
+    'so that UpdateLevelNames can resolve translations during ExportToWkb
+    dictLang = ReadMainRange(hostBook, RNG_LANG_SETUP)
+    langCode = Split(ReadMainRange(hostBook, RNG_LL_FORM), "-")(0)
+
+    If LenB(dictLang) > 0 Then
+        Set geoStore = HiddenNames.Create(hostSheet)
+        geoStore.EnsureName "RNG_MetaLang", dictLang, HiddenNameTypeString
+        geoStore.SetValue "RNG_MetaLang", dictLang
+    End If
+
+    If LenB(langCode) > 0 Then
+        geoStore.EnsureName "RNG_GeoLangCode", langCode, HiddenNameTypeString
+        geoStore.SetValue "RNG_GeoLangCode", langCode
+    End If
+    
     Set geoManager = LLGeo.Create(hostSheet)
     geoManager.ExportToWkb targetBook, llName, setupPath
 End Sub
@@ -623,6 +655,57 @@ End Sub
 
 '@section Internal Helpers
 '===============================================================================
+
+'@label:sync-designer-language-names
+'@sub-title Update language HiddenNames on the designer workbook from Main sheet values
+'@details
+'Reads the dictionary language from RNG_LangSetup and the interface
+'language from RNG_LLForm on the Main worksheet. Writes these values
+'as workbook-level HiddenNames (RNG_DictionaryLanguage and
+'RNG_LLLanguageCode) on the host workbook so they are current before
+'export. The interface language is split on "-" to extract the code
+'prefix (e.g., "FRA-Fran" & ChrW$(231) & "ais" -> "FRA").
+'@param hostBook Workbook. The designer workbook to update.
+Private Sub SyncDesignerLanguageNames(ByVal hostBook As Workbook)
+    Dim store As IHiddenNames
+    Dim dictLang As String
+    Dim llFormValue As String
+    Dim llLang As String
+
+    Set store = HiddenNames.Create(hostBook)
+
+    dictLang = ReadMainRange(hostBook, RNG_LANG_SETUP)
+    llFormValue = ReadMainRange(hostBook, RNG_LL_FORM)
+
+    'Extract language code prefix (e.g. "FRA-Français" -> "FRA")
+    If InStr(1, llFormValue, "-", vbBinaryCompare) > 0 Then
+        llLang = Split(llFormValue, "-")(0)
+    Else
+        llLang = llFormValue
+    End If
+
+    store.EnsureName TAG_DICT_LANG, dictLang, HiddenNameTypeString
+    store.SetValue TAG_DICT_LANG, dictLang
+    store.EnsureName TAG_LL_LANG_CODE, llLang, HiddenNameTypeString
+    store.SetValue TAG_LL_LANG_CODE, llLang
+End Sub
+
+'@label:export-designer-hidden-names
+'@sub-title Export designer workbook HiddenNames to the target linelist workbook
+'@details
+'Copies all workbook-level HiddenNames from the designer (host) workbook
+'to the target linelist workbook, including language codes, ribbon flags,
+'and other configuration values. This ensures the linelist workbook has
+'RNG_DictionaryLanguage and RNG_LLLanguageCode available before any
+'LLTranslation.TransObject call.
+'@param hostBook Workbook. The designer workbook (source).
+'@param targetBook Workbook. The linelist workbook (destination).
+Private Sub ExportDesignerHiddenNames(ByVal hostBook As Workbook, ByVal targetBook As Workbook)
+    Dim store As IHiddenNames
+
+    Set store = HiddenNames.Create(hostBook)
+    store.ExportNamesToWorkbook targetBook
+End Sub
 
 '@label:resolve-worksheet
 '@sub-title Resolve a worksheet by name from a workbook

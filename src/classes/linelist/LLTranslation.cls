@@ -326,24 +326,80 @@ Public Sub InitialiseHiddenNames(ByVal targetWkb As Workbook)
     Set wkbNames = HiddenNames.Create(targetWkb)
     Set msgTrans = TransObject(TranslationOfMessages)
 
-    wkbNames.EnsureName "RNG_GoToSection", msgTrans.TranslatedValue("MSG_GoToSection"), HiddenNameTypeString
-    wkbNames.EnsureName "RNG_AnaPeriod", msgTrans.TranslatedValue("MSG_AnaPeriod"), HiddenNameTypeString
-    wkbNames.EnsureName "RNG_GoToHeader", msgTrans.TranslatedValue("MSG_GoToHead"), HiddenNameTypeString
-    wkbNames.EnsureName "RNG_NoDevide", msgTrans.TranslatedValue("MSG_NoDevide"), HiddenNameTypeString
-    wkbNames.EnsureName "RNG_Devide", msgTrans.TranslatedValue("MSG_Devide"), HiddenNameTypeString
-    wkbNames.EnsureName "RNG_GoToGraph", msgTrans.TranslatedValue("MSG_GoToGraph"), HiddenNameTypeString
-    wkbNames.EnsureName "RNG_OnFiltered", msgTrans.TranslatedValue("MSG_ComputeOnFiltered"), HiddenNameTypeString
-    wkbNames.EnsureName "RNG_CustomDrop", msgTrans.TranslatedValue("LLSHEET_CustomChoice"), HiddenNameTypeString
-    wkbNames.EnsureName "RNG_UASheet", msgTrans.TranslatedValue("LLSHEET_Analysis"), HiddenNameTypeString
-    wkbNames.EnsureName "RNG_TSSheet", msgTrans.TranslatedValue("LLSHEET_TemporalAnalysis"), HiddenNameTypeString
-    wkbNames.EnsureName "RNG_SPSheet", msgTrans.TranslatedValue("LLSHEET_SpatialAnalysis"), HiddenNameTypeString
-    wkbNames.EnsureName "RNG_SPTSheet", msgTrans.TranslatedValue("LLSHEET_SpatioTemporalAnalysis"), HiddenNameTypeString
-    wkbNames.EnsureName "RNG_CustomPivot", msgTrans.TranslatedValue("LLSHEET_CustomPivotTable"), HiddenNameTypeString
-    wkbNames.EnsureName "RNG_Week", msgTrans.TranslatedValue("MSG_W"), HiddenNameTypeString
-    wkbNames.EnsureName "RNG_Quarter", msgTrans.TranslatedValue("MSG_Q"), HiddenNameTypeString
-    wkbNames.EnsureName "RNG_InfoStart", msgTrans.TranslatedValue("MSG_InfoStart"), HiddenNameTypeString
-    wkbNames.EnsureName "RNG_InfoEnd", msgTrans.TranslatedValue("MSG_InfoEnd"), HiddenNameTypeString
+    EnsureAndSet wkbNames, "RNG_GoToSection", msgTrans.TranslatedValue("MSG_GoToSection")
+    EnsureAndSet wkbNames, "RNG_AnaPeriod", msgTrans.TranslatedValue("MSG_AnaPeriod")
+    EnsureAndSet wkbNames, "RNG_GoToHeader", msgTrans.TranslatedValue("MSG_GoToHead")
+    EnsureAndSet wkbNames, "RNG_NoDevide", msgTrans.TranslatedValue("MSG_NoDevide")
+    EnsureAndSet wkbNames, "RNG_Devide", msgTrans.TranslatedValue("MSG_Devide")
+    EnsureAndSet wkbNames, "RNG_GoToGraph", msgTrans.TranslatedValue("MSG_GoToGraph")
+    EnsureAndSet wkbNames, "RNG_OnFiltered", msgTrans.TranslatedValue("MSG_ComputeOnFiltered")
+    EnsureAndSet wkbNames, "RNG_CustomDrop", msgTrans.TranslatedValue("LLSHEET_CustomChoice")
+    EnsureAndSet wkbNames, "RNG_UASheet", msgTrans.TranslatedValue("LLSHEET_Analysis")
+    EnsureAndSet wkbNames, "RNG_TSSheet", msgTrans.TranslatedValue("LLSHEET_TemporalAnalysis")
+    EnsureAndSet wkbNames, "RNG_SPSheet", msgTrans.TranslatedValue("LLSHEET_SpatialAnalysis")
+    EnsureAndSet wkbNames, "RNG_SPTSheet", msgTrans.TranslatedValue("LLSHEET_SpatioTemporalAnalysis")
+    EnsureAndSet wkbNames, "RNG_CustomPivot", msgTrans.TranslatedValue("LLSHEET_CustomPivotTable")
+    EnsureAndSet wkbNames, "RNG_Week", msgTrans.TranslatedValue("MSG_W")
+    EnsureAndSet wkbNames, "RNG_Quarter", msgTrans.TranslatedValue("MSG_Q")
+    EnsureAndSet wkbNames, "RNG_InfoStart", msgTrans.TranslatedValue("MSG_InfoStart")
+    EnsureAndSet wkbNames, "RNG_InfoEnd", msgTrans.TranslatedValue("MSG_InfoEnd")
 End Sub
+
+
+'@section SheetNames
+'===============================================================================
+'@description Worksheet-level HiddenNames for language codes.
+
+'@label:initialise-sheet-names
+'@sub-title Create language HiddenNames on the translation worksheet
+'@details
+'Creates worksheet-level HiddenNames for dictionary and interface language
+'codes on the translation worksheet itself. These are later read by
+'InitialiseWorkbookNames in Linelist.cls to propagate language settings
+'to the output workbook.
+'@param dictLang String. The dictionary language code (e.g., "en").
+'@param llLang String. The interface language code (e.g., "fr").
+'@export
+Public Sub InitialiseSheetNames(ByVal dictLang As String, ByVal llLang As String)
+    Dim shNames As IHiddenNames
+
+    Set shNames = HiddenNames.Create(this.translationSheet)
+    EnsureAndSet shNames, "RNG_DictionaryLanguage", dictLang
+    EnsureAndSet shNames, "RNG_LLLanguageCode", llLang
+End Sub
+
+
+'@section ValueAccess
+'===============================================================================
+'@description Mapped value retrieval from worksheet-level HiddenNames.
+
+'@label:value
+'@prop-title Retrieve a named configuration value from the translation worksheet
+'@details
+'Returns a worksheet-level HiddenName value identified by a logical key.
+'Supported keys:
+'  "dictlang" -> RNG_DictionaryLanguage
+'  "lllang"   -> RNG_LLLanguageCode
+'Other keys return vbNullString.
+'@param nameId String. The logical key to look up.
+'@return String. The stored value, or vbNullString if the key is unknown.
+'@export
+Public Property Get Value(ByVal nameId As String) As String
+    Dim shNames As IHiddenNames
+    Dim rngName As String
+
+    Select Case LCase$(Trim$(nameId))
+        Case "dictlang"
+            rngName = "RNG_DictionaryLanguage"
+        Case "lllang"
+            rngName = "RNG_LLLanguageCode"
+        Case Else
+            Exit Property
+    End Select
+
+    Set shNames = HiddenNames.Create(this.translationSheet)
+    Value = shNames.ValueAsString(rngName)
+End Property
 
 
 '@section Internal Helpers
@@ -484,6 +540,17 @@ End Sub
 '===============================================================================
 '@description Centralised error raising.
 
+'@label:ensure-and-set
+'@sub-title Create a HiddenName if missing, then always update its value
+'@param store IHiddenNames. The hidden names manager.
+'@param nameId String. The hidden name identifier.
+'@param value String. The value to set.
+Private Sub EnsureAndSet(ByVal store As IHiddenNames, ByVal nameId As String, _
+                         ByVal value As String)
+    store.EnsureName nameId, value, HiddenNameTypeString
+    store.SetValue nameId, value
+End Sub
+
 '@label:throw-error
 '@sub-title Raise a ProjectError-based exception
 '@param errNumber ProjectError. The error constant.
@@ -527,3 +594,11 @@ End Sub
 Private Sub ILLTranslation_InitialiseHiddenNames(ByVal targetWkb As Workbook)
     InitialiseHiddenNames targetWkb
 End Sub
+
+Private Sub ILLTranslation_InitialiseSheetNames(ByVal dictLang As String, ByVal llLang As String)
+    InitialiseSheetNames dictLang, llLang
+End Sub
+
+Private Property Get ILLTranslation_Value(ByVal nameId As String) As String
+    ILLTranslation_Value = Value(nameId)
+End Property

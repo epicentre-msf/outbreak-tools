@@ -57,13 +57,13 @@ End Enum
 Public Sub ResetCaches()
 End Sub
 
-'@jump:workbook
-'@prop-title Workbook hosting the specifications
+'@jump:des-workbook
+'@prop-title Designer workbook hosting the specifications
 '@details
-'Returns the workbook reference that backs all specification queries. Raises
-'an error if the workbook has not been assigned.
-'@return Workbook. The specifications workbook.
-Public Property Get Workbook() As Workbook
+'Returns the designer workbook reference that backs all specification queries.
+'Raises an error if the workbook has not been assigned.
+'@return Workbook. The designer/specifications workbook.
+Public Property Get DesWorkbook() As Workbook
 End Property
 
 
@@ -240,13 +240,16 @@ End Function
 Public Sub Prepare(ByVal importService As IDesignerImportService)
 End Sub
 
-'@jump:output-workbook
+
+Public Property Get Prepared() As Boolean: End Property
+
+'@jump:ll-workbook
 '@prop-title The output linelist workbook created during Prepare
 '@details
-'Returns the workbook created by Prepare that received exported data from
-'the import service. Returns Nothing before Prepare is called.
-'@return Workbook. The output workbook, or Nothing.
-Public Property Get OutputWorkbook() As Workbook
+'Returns the linelist workbook created by Prepare that received exported data
+'from the import service. Returns Nothing before Prepare is called.
+'@return Workbook. The linelist workbook, or Nothing.
+Public Property Get LLWorkbook() As Workbook
 End Property
 
 '@jump:output-temporary-repos

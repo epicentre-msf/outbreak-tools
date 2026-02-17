@@ -11,23 +11,19 @@ Option Private Module
 Private Const SPATIALSHEET As String = "spatial_tables__"
 Private Const PASSSHEET As String = "__pass"
 Private Const LLSHEET As String = "LinelistTranslation"
-Private Const TRADSHEET As String = "Translations"
 
 Private pass As IPasswords
-Private lltrads As ILLTranslations
+Private lltrads As ILLTranslation
+Private wkbNames As IHiddenNames
 
 'Initialize trads and passwords
 Private Sub Initialize()
+    Dim wb As Workbook
 
-    Dim dicttranssh As Worksheet
-    Dim psh As Worksheet
-    Dim lltranssh As Worksheet
-
-    Set lltranssh = ThisWorkbook.Worksheets(LLSHEET)
-    Set dicttranssh = ThisWorkbook.Worksheets(TRADSHEET)
-    Set psh = ThisWorkbook.Worksheets(PASSSHEET)
-    Set lltrads = LLTranslations.Create(lltranssh, dicttranssh)
-    Set pass = Passwords.Create(psh)
+    Set wb = ThisWorkbook
+    Set lltrads = LLTranslation.Create(wb.Worksheets(LLSHEET))
+    Set pass = Passwords.Create(wb.Worksheets(PASSSHEET))
+    Set wkbNames = HiddenNames.Create(wb)
 End Sub
 
 'Subs to speed up the application
@@ -35,7 +31,9 @@ End Sub
 Private Sub BusyApp(Optional ByVal cursor As Long = xlDefault)
     Application.ScreenUpdating = False
     Application.EnableAnimations = False
+    On Error Resume Next
     Application.Calculation = xlCalculationManual
+    On Error GoTo 0
     Application.cursor = cursor
 End Sub
 
@@ -252,8 +250,7 @@ Public Sub FormatDevidePop(ByVal rngName As String)
     pass.UnProtect "_active"
     tabId = Replace(rngName, "DEVIDEPOP_", vbNullString)
 
-    'lltrads is the linelist translation object in the Initialize sub
-    If sh.Range(rngName).Value = lltrads.Value("nodevide") Then
+    If sh.Range(rngName).Value = wkbNames.ValueAsString("RNG_NoDevide") Then
 
         'Do not devide
         sh.Range("POPFACT_" & tabId).Font.color = vbWhite
@@ -264,7 +261,7 @@ Public Sub FormatDevidePop(ByVal rngName As String)
 
         DevideByPopulation rngName:="POPFACT_" & tabId, revertBack:=True
 
-    ElseIf sh.Range(rngName).Value = lltrads.Value("devide") Then
+    ElseIf sh.Range(rngName).Value = wkbNames.ValueAsString("RNG_Devide") Then
 
         'Devide by the population
         sh.Range("POPFACT_" & tabId).Font.color = vbBlack

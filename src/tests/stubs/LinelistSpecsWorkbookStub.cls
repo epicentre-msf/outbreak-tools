@@ -34,8 +34,8 @@ End Sub
 Private Sub ILinelistSpecs_ResetCaches()
 End Sub
 
-Private Property Get ILinelistSpecs_Workbook() As Workbook
-    Set ILinelistSpecs_Workbook = this.workbook
+Private Property Get ILinelistSpecs_DesWorkbook() As Workbook
+    Set ILinelistSpecs_DesWorkbook = this.workbook
 End Property
 
 Private Property Get ILinelistSpecs_Dictionary() As ILLdictionary
@@ -109,8 +109,8 @@ End Function
 Private Sub ILinelistSpecs_Prepare(ByVal importService As IDesignerImportService)
 End Sub
 
-Private Property Get ILinelistSpecs_OutputWorkbook() As Workbook
-    Set ILinelistSpecs_OutputWorkbook = Nothing
+Private Property Get ILinelistSpecs_LLWorkbook() As Workbook
+    Set ILinelistSpecs_LLWorkbook = Nothing
 End Property
 
 Private Property Get ILinelistSpecs_OutputTemporaryRepos() As ITemporaryRepos

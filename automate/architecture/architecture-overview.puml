@@ -1,0 +1,157 @@
+@startuml architecture-overview
+
+' =============================================================================
+' OutbreakTools — Package Overview Diagram
+' =============================================================================
+' Generated: 2026-02-10
+' Shows inter-package dependencies only (no class details).
+' See architecture-foundation/domain/build/application.puml for class details.
+' =============================================================================
+
+title OutbreakTools — Package Architecture Overview\n4 layers · 15 packages · ~60 class pairs
+
+skinparam packageStyle rectangle
+skinparam packageFontSize 14
+skinparam packageFontStyle bold
+skinparam defaultTextAlignment center
+skinparam arrowThickness 1.5
+
+top to bottom direction
+
+' =============================================================================
+' LAYER 0 — FOUNDATION
+' =============================================================================
+
+rectangle "Foundation Layer" as LAYER_FOUND [[architecture-foundation.svg]] #LightSteelBlue/White {
+
+    package "general\n(16 classes)" as P_GEN #LightSteelBlue {
+    }
+
+    package "rubberduck\n(1 class)" as P_RUB #LightGray {
+    }
+}
+
+' =============================================================================
+' LAYER 1 — DOMAIN
+' =============================================================================
+
+rectangle "Domain Layer" as LAYER_DOM [[architecture-domain.svg]] #DarkSeaGreen/White {
+
+    package "dictionary\n(4 classes)" as P_DICT #DarkSeaGreen {
+    }
+
+    package "formulas\n(6 classes)" as P_FORM #PaleGreen {
+    }
+
+    package "geo\n(2 classes)" as P_GEO #Wheat {
+    }
+
+    package "showhide\n(1 class)" as P_SH #Wheat {
+    }
+}
+
+' =============================================================================
+' LAYER 2 — BUILD / OUTPUT
+' =============================================================================
+
+rectangle "Build Layer" as LAYER_BUILD [[architecture-build.svg]] #NavajoWhite/White {
+
+    package "sections\n(2 classes)" as P_SEC #NavajoWhite {
+    }
+
+    package "tables\n(1 class)" as P_TAB #NavajoWhite {
+    }
+
+    package "graphs\n(2 classes)" as P_GRA #NavajoWhite {
+    }
+
+    package "analyses\n(7 classes)" as P_ANA #Moccasin {
+    }
+
+    package "linelist\n(5 classes)" as P_LL #LightSalmon {
+    }
+}
+
+' =============================================================================
+' LAYER 3 — APPLICATION
+' =============================================================================
+
+rectangle "Application Layer" as LAYER_APP [[architecture-application.svg]] #Thistle/White {
+
+    package "dataio\n(3 classes)" as P_DIO #Thistle {
+    }
+
+    package "setup\n(6 classes)" as P_SET #Plum {
+    }
+
+    package "designer\n(3 classes)" as P_DES #Plum {
+    }
+
+    package "dev\n(1 class)" as P_DEV #Plum {
+    }
+}
+
+' =============================================================================
+' INTER-PACKAGE DEPENDENCIES
+' =============================================================================
+' Arrow semantics:
+'   ──>  (solid)  = creates / owns instances
+'   ..>  (dashed) = uses / calls methods on
+
+' --- Foundation internal ---
+P_RUB ..> P_GEN
+
+' --- Domain → Foundation ---
+P_DICT ..> P_GEN
+P_FORM ..> P_DICT
+P_GEO ..> P_GEN
+P_GEO ..> P_DICT
+P_SH ..> P_DICT
+
+' --- Build → Domain + Foundation ---
+P_SEC ..> P_DICT
+P_SEC ..> P_GEN
+P_SEC ..> P_LL
+P_TAB ..> P_GEN
+P_GRA ..> P_ANA
+P_ANA ..> P_FORM
+P_ANA ..> P_DICT
+P_ANA ..> P_GEN
+P_ANA ..> P_GRA
+P_LL ..> P_GEN
+P_LL ..> P_DICT
+P_LL --> P_SEC
+P_LL --> P_TAB
+P_LL ..> P_FORM
+
+' --- Application → Build + Domain + Foundation ---
+P_DIO ..> P_DICT
+P_DIO ..> P_GEN
+P_DIO ..> P_SH
+P_DIO ..> P_ANA
+P_DIO ..> P_GEO
+P_SET ..> P_GEN
+P_SET ..> P_DICT
+P_SET ..> P_ANA
+P_SET ..> P_FORM
+P_SET ..> P_DEV
+P_DES ..> P_GEN
+P_DES ..> P_DEV
+P_DEV ..> P_GEN
+
+' =============================================================================
+' LEGEND
+' =============================================================================
+
+legend bottom left
+  |= Layer |= Colour |= Role |
+  | Foundation | <color:LightSteelBlue>Blue</color> | Shared utilities: collections, metadata, diagnostics, protection |
+  | Domain | <color:DarkSeaGreen>Green</color> | Data model: dictionary, formulas, geo, visibility |
+  | Build | <color:NavajoWhite>Orange</color> | Linelist construction: sections, analyses, tables, graphs |
+  | Application | <color:Thistle>Purple</color> | User-facing: import/export, setup, designer, dev tools |
+
+  **Implicit (not shown):** BetterArray and ProjectError are used by nearly every class.
+  **Detail diagrams:** Click on any layer rectangle to drill down.
+end legend
+
+@enduml

@@ -8,7 +8,6 @@ Option Private Module
 
 
 Private Const LLSHEET As String = "LinelistTranslation"
-Private Const TRADSHEET As String = "Translations"
 Private Const DICTSHEET As String = "Dictionary"
 Private Const PASSSHEET As String = "__pass"
 Private Const EXPORTSHEET As String = "Exports"
@@ -16,28 +15,23 @@ Private Const PRINTPREFIX As String = "print_"
 Private Const CRFPREFIX As String = "crf_"
 Private Const TEMPSHEET As String = "temp__"
 Private Const SHOWHIDESHEET As String = "show_hide__"
-Private Const UPDATESHEET As String = "updates__"
 
 Private showHideObject As ILLShowHide
 Private tradsform As ITranslationObject   'Translation of forms
 Private tradsmess As ITranslationObject   'Translation of messages
 Private pass As IPasswords
 Private wb As Workbook
-Private lltrads As ILLTranslations
+Private lltrads As ILLTranslation
+Private wkbNames As IHiddenNames
 
 'Initialize translation of forms object
 Private Sub InitializeTrads()
-    Dim lltranssh As Worksheet
-    Dim dicttranssh As Worksheet
-
-
     Set wb = ThisWorkbook
-    Set lltranssh = ThisWorkbook.Worksheets(LLSHEET)
-    Set dicttranssh = ThisWorkbook.Worksheets(TRADSHEET)
-    Set lltrads = LLTranslations.Create(lltranssh, dicttranssh)
+    Set lltrads = LLTranslation.Create(wb.Worksheets(LLSHEET))
     Set tradsmess = lltrads.TransObject()
     Set tradsform = lltrads.TransObject(TranslationOfForms)
     Set pass = Passwords.Create(wb.Worksheets(PASSSHEET))
+    Set wkbNames = HiddenNames.Create(wb)
 End Sub
 
 Private Sub WarningOnSheet(ByVal msgCode As String)
@@ -50,7 +44,9 @@ End Sub
 Private Sub BusyApp(Optional ByVal cursor As Long = xlDefault)
     Application.ScreenUpdating = False
     Application.EnableAnimations = False
+    On Error Resume Next
     Application.Calculation = xlCalculationManual
+    On Error GoTo 0
     Application.cursor = cursor
 End Sub
 
@@ -70,13 +66,12 @@ Public Sub ClickShowHide()
     Dim dict As ILLdictionary
     Dim sheetTag As String
     Dim showOptional As Boolean
-    Dim upObj As IUpVal
 
     Set sh = ActiveSheet
     'Test the sheet type to be sure it is a HList or a HList Print,
     'and exit if not
     sheetTag = sh.Cells(1, 3).Value
-    If (sheetTag <> "HList" And sheetTag <> "HList Print" And sheetTag <> "VList" _ 
+    If (sheetTag <> "HList" And sheetTag <> "HList Print" And sheetTag <> "VList" _
        And sheetTag <> "HList CRF") Then
         WarningOnSheet "MSG_PrintOrDataSheet"
         Exit Sub
@@ -84,13 +79,12 @@ Public Sub ClickShowHide()
 
     'initialize the translations of forms and messages
     InitializeTrads
-    
-    Set upObj = UpVal.Create(ThisWorkbook.Worksheets(UPDATESHEET))
+
     Set dict = LLdictionary.Create(ThisWorkbook.Worksheets(DICTSHEET), 1, 1)
 
     'This is the private show hide object, used in future subs.
     Set showHideObject = LLShowHide.Create(tradsmess, dict, sh)
-    showOptional = (upObj.Value("RNG_ShowAllOptionals") = "yes")
+    showOptional = (wkbNames.ValueAsString("RNG_ShowAllOptionals") = "yes")
 
     'Load elements to the current form
     showHideObject.Load tradsform:=tradsform, showOptional:=showOptional, showForm:=True
@@ -141,13 +135,13 @@ Public Sub ClickOpenPrint()
 
     Set printsh = wb.Worksheets(PRINTPREFIX & sh.Name)
     'UnProtect current workbook
-    pass.UnProtectWkb wb
+    pass.UnProtect wb
     'Unhide the linelist Print
     printsh.Visible = xlSheetVisible
     printsh.Activate
 
 ErrOpen:
-    pass.ProtectWkb wb
+    pass.Protect wb
 End Sub
 
 
@@ -175,13 +169,13 @@ Public Sub ClickOpenCRF()
     Set crfsh = wb.Worksheets(CRFPREFIX & sh.Name)
 
     'UnProtect current workbook
-    pass.UnProtectWkb wb
+    pass.UnProtect wb
     'Unhide the linelist Print
     crfsh.Visible = xlSheetVisible
     crfsh.Activate
 
 ErrOpen:
-    pass.ProtectWkb wb
+    pass.Protect wb
 End Sub
 
 '@Description("Callback for click on close print sheet")
@@ -207,7 +201,7 @@ Public Sub ClickClosePrint()
     End If
 
     'Unprotect workbook
-    pass.UnProtectWkb wb
+    pass.UnProtect wb
     
     If sheetTag = "HList" Then
         Set printsh = wb.Worksheets(PRINTPREFIX & sh.Name)
@@ -224,7 +218,7 @@ Public Sub ClickClosePrint()
 
 
 ErrClose:
-    pass.ProtectWkb wb
+    pass.Protect wb
 End Sub
 
 '@Description("Rotate all headers in the Print sheet")
@@ -661,12 +655,15 @@ Public Sub ClickCalculate()
     'Calculate
     BusyApp
     UpdateSpTables
-    
+
     Set anaSheetsList = New BetterArray
-    anaSheetsList.Push "uasheet", "tssheet", "spsheet", "sptsheet"
+    anaSheetsList.Push wkbNames.ValueAsString("RNG_UASheet"), _
+                       wkbNames.ValueAsString("RNG_TSSheet"), _
+                       wkbNames.ValueAsString("RNG_SPSheet"), _
+                       wkbNames.ValueAsString("RNG_SPTSheet")
 
     For counter = anaSheetsList.LowerBound To anaSheetsList.UpperBound
-        sheetName = lltrads.Value(anaSheetsList.Item(counter))
+        sheetName = anaSheetsList.Item(counter)
         Set sh = wb.Worksheets(sheetName)
         sh.UsedRange.calculate
         sh.Columns("A:E").calculate
@@ -789,7 +786,7 @@ Public Sub ClickOpenVarLab()
     On Error GoTo ErrHand
 
     'Prepare the temporary Sheet
-    Set actsh = wb.Worksheets(lltrads.Value("customtable"))
+    Set actsh = wb.Worksheets(wkbNames.ValueAsString("RNG_CustomPivot"))
     BusyApp
 
     Set tempsh = ThisWorkbook.Worksheets(TEMPSHEET)
@@ -1146,7 +1143,6 @@ Public Sub ClickShowHideMinimal()
     Dim sh As Worksheet
     Dim dict As ILLdictionary
     Dim vars As ILLVariables
-    Dim upObj As IUpVal
     Dim sheetTag As String
 
     On Error GoTo ErrHand
@@ -1155,8 +1151,7 @@ Public Sub ClickShowHideMinimal()
     Set wb = ThisWorkbook
     InitializeTrads
 
-    Set upObj = UpVal.Create(wb.Worksheets(UPDATESHEET))
-    showOptional = (upObj.Value(RNGSHOWALLOPTIONALS) = "yes")
+    showOptional = (wkbNames.ValueAsString(RNGSHOWALLOPTIONALS) = "yes")
     
     If showOptional Then
         hiddenShowTag = tradsmess.TranslatedValue("MSG_Shown")
@@ -1203,14 +1198,11 @@ Public Sub ClickShowHideMinimal()
         End If
     Next
 
-    'Update the upObj. If the user wants to show all Optional variables
-    'set the show all optionals to no (because previous value was yes)
-    'If the user wants to hide all Optional variables, est show optional to "yes"
-    '(because previous value was no)
+    'Toggle the show all optionals flag
     If showOptional Then
-        upobj.SetValue RNGSHOWALLOPTIONALS, "no"
+        wkbNames.SetValue RNGSHOWALLOPTIONALS, "no"
     Else
-        upobj.SetValue RNGSHOWALLOPTIONALS, "yes"
+        wkbNames.SetValue RNGSHOWALLOPTIONALS, "yes"
     End If
 
     showHideObject.Load tradsform:=tradsform, showForm:=False, _ 

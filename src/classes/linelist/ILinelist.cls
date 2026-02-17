@@ -72,15 +72,18 @@ End Function
 '@details
 'Creates a new worksheet in the output workbook with the given name, applying
 'an optional scope prefix ("print_" or "crf_") and visibility setting. The
-'sheet name is truncated to 30 characters. Raises an error if a sheet with
-'the resolved name already exists.
+'sheet name is truncated to 30 characters. When beforeSheet is supplied
+'and that sheet exists, the new sheet is inserted immediately before it.
 '@param sheetName String. The base name for the new worksheet.
 '@param Hide Optional Long. Excel visibility constant. Defaults to xlSheetVeryHidden.
 '@param sheetScope Optional Byte. 1 = no prefix, 2 = print_ prefix, 3 = crf_ prefix.
 'Defaults to 1.
+'@param beforeSheet Optional String. Name of an existing worksheet to insert before.
+'Defaults to vbNullString.
 Public Sub AddOutputSheet(ByVal sheetName As String, _
                           Optional ByVal Hide As Long = xlSheetVeryHidden, _
-                          Optional ByVal sheetScope As Byte = 1)
+                          Optional ByVal sheetScope As Byte = 1, _
+                          Optional ByVal beforeSheet As String = vbNullString)
 End Sub
 
 
