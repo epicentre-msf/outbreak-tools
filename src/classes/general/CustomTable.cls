@@ -1940,7 +1940,8 @@ Private Sub Export(ByVal sh As Worksheet, _
            Optional ByVal headersTable As Object = Nothing, _ 
            Optional ByVal startLine As Long = 1, _ 
            Optional ByVal startColumn As Long = 1, _ 
-           Optional ByVal addListObject As Boolean = False)
+           Optional ByVal addListObject As Boolean = False, _ 
+           Optional ByVal clearSheet As Boolean = True)
 
   Dim counter As Long
   Dim inpRng As Range
@@ -1964,7 +1965,7 @@ Private Sub Export(ByVal sh As Worksheet, _
     headersList.FromExcelRange HeaderRange(), DetectLastRow:=False, DetectLastColumn:=False
   End If
 
-  sh.Cells.Clear
+  If clearSheet Then sh.Cells.Clear
 
   'column where to start writing values
   headerCounter = startColumn
@@ -2216,8 +2217,9 @@ Private Sub ICustomTable_Export(ByVal sh As Worksheet, _
                                Optional ByVal headersTable As Object = Nothing, _
                                Optional ByVal startLine As Long = 1, _ 
                                Optional ByVal startColumn As Long = 1, _ 
-                               Optional ByVal addListObject As Boolean = False)
-  Export sh, headersTable, startLine, startColumn, addListObject
+                               Optional ByVal addListObject As Boolean = False, _ 
+                               Optional ByVal clearSheet As Boolean = True)
+  Export sh, headersTable, startLine, startColumn, addListObject, clearSheet
 End Sub
 
 
