@@ -990,6 +990,8 @@ Private Sub AddConditionalFormatting()
     Dim varObject As ILLVariables
     Dim shObj As ILLSheets
     Dim condAdd As String
+    Dim condForm As String
+    Dim OScondForm As String
 
     varValid = ValueOf("formatting condition")
     Set varObject = Variables()
@@ -1003,7 +1005,14 @@ Private Sub AddConditionalFormatting()
     Set shObj = SheetsObject()
     condAdd = shObj.VariableAddress(varValid, this.wksh.Name)
 
-    cellRng.FormatConditions.Add Type:=xlExpression, Formula1:="=(" & condAdd & "= 1)"
+    condForm = "(" & condAdd & "= 1)"
+    OScondForm = OSFormula(condForm)
+
+    On Error Resume Next
+        cellRng.FormatConditions.Add Type:=xlExpression, Formula1:=OScondForm
+        cellRng.FormatConditions.Add Type:=xlExpression, Formula1:="=" & condForm
+    On Error GoTo 0
+
     With cellRng.FormatConditions(cellRng.FormatConditions.Count)
         .Interior.Color = formatRng.Interior.Color
         .Font.Color = formatRng.Font.Color

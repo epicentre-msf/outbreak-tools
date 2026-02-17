@@ -458,8 +458,9 @@ Public Sub SaveLL()
     outWkb.Worksheets(msgTrads.TranslatedValue("INSTSHEETNAME")).Activate
     On Error GoTo 0
 
-    'Protect the workbook structure
+    'Protect the workbook structure, add debugging mechanism
     passObj.Protect outWkb
+    passObj.EnsureDebugExitHandler outWkb
 
     outWkb.SaveAs fileName:=outPath, fileFormat:=xlExcel12, Password:=passwd, _
                    ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
