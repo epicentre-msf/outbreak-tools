@@ -348,12 +348,21 @@ Public Sub clickGenerate()
     importService.ImportFromSetup setupPath
 
     'Prepare specifications: create output workbook, export, translate
+    'The specs is created on this workbook. But after import/export
+    'the internal values will shift from thisworkbook to the linelistworkbook.
+    
     Set specs = LinelistSpecs.Create(ThisWorkbook)
     specs.Prepare importService
+
+    'After the preparation step of the specifications, internal specifications
+    'object shift focus from the designer to the linelist workbook as they 
+    'are now exported.
 
     'Build the output linelist workbook (sheets, temp sheets, admin, code transfer)
     Set ll = Linelist.Create(specs)
     ll.Prepare
+
+
 
     'Save the linelist as .xlsb with password protection
     ll.SaveLL
@@ -431,6 +440,12 @@ Private Sub ExtractAndUpdateLanguages(ByVal tradSheet As Worksheet)
     'Update the setup languages dropdown directly
     Set drop = DropdownLists.Create(ThisWorkbook.Worksheets(SHEET_DROPDOWNS))
     drop.Update langValues, DROP_SETUP_LANGUAGES
+
+    'Auto-set the first language into RNG_LangSetup on the Main sheet
+    On Error Resume Next
+    ThisWorkbook.Worksheets(SHEET_MAIN).Range("RNG_LangSetup").Value = _
+        langValues.Item(langValues.LowerBound)
+    On Error GoTo 0
 
 End Sub
 
@@ -511,5 +526,11 @@ Private Sub ExtractLanguagesFromHeaders(ByVal tradSheet As Worksheet)
     'Update the setup languages dropdown directly
     Set drop = DropdownLists.Create(ThisWorkbook.Worksheets(SHEET_DROPDOWNS))
     drop.Update langValues, DROP_SETUP_LANGUAGES
+
+    'Auto-set the first language into RNG_LangSetup on the Main sheet
+    On Error Resume Next
+    ThisWorkbook.Worksheets(SHEET_MAIN).Range("RNG_LangSetup").Value = _
+        langValues.Item(langValues.LowerBound)
+    On Error GoTo 0
 
 End Sub

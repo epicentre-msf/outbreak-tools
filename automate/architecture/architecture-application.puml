@@ -1,0 +1,276 @@
+@startuml architecture-application
+
+' =============================================================================
+' OutbreakTools — Application Layer Detail
+' =============================================================================
+' Packages: dataio/ (3), setup/ (6), designer/ (3), dev/ (1)
+' Shows intra-layer + key cross-layer dependencies.
+' Arrow semantics:
+'   ──>  (solid)  = creates / delegates to / owns
+'   ..>  (dashed) = uses / reads / calls methods on
+' =============================================================================
+
+title OutbreakTools — Application Layer\ndataio/ + setup/ + designer/ + dev/
+
+skinparam packageStyle rectangle
+skinparam classFontSize 11
+skinparam packageFontSize 13
+skinparam packageFontStyle bold
+skinparam defaultTextAlignment center
+
+top to bottom direction
+
+' =============================================================================
+' EXTERNAL REFERENCES (simplified)
+' =============================================================================
+
+rectangle "Foundation (general/)" as EXT_GEN [[architecture-foundation.svg]] #LightSteelBlue {
+    together {
+        class ApplicationState <<IApplicationState>> #LightSteelBlue
+        class Passwords <<IPasswords>> #LightSteelBlue
+        class OSFiles <<IOSFiles>> #LightSteelBlue
+    }
+    together {
+        class CustomTable <<ICustomTable>> #LightSteelBlue
+        class DataSheet <<IDataSheet>> #LightSteelBlue
+        class DropdownLists <<IDropdownLists>> #LightSteelBlue
+    }
+    together {
+        class HiddenNames <<IHiddenNames>> #LightSteelBlue
+        class LLChoices <<ILLChoices>> #LightSteelBlue
+        class TranslationObject <<ITranslationObject>> #LightSteelBlue
+    }
+    together {
+        class CheckingOutput <<ICheckingOutput>> #LightSteelBlue
+        class LLFormat <<ILLFormat>> #LightSteelBlue
+    }
+}
+
+rectangle "Domain" as EXT_DOM [[architecture-domain.svg]] #DarkSeaGreen {
+    together {
+        class LLdictionary <<ILLdictionary>> #DarkSeaGreen
+        class LLVariables <<ILLVariables>> #DarkSeaGreen
+        class LLExport <<ILLExport>> #DarkSeaGreen
+    }
+    together {
+        class ShowHideManager <<IShowHideManager>> #Wheat
+        class LLGeo <<ILLGeo>> #Wheat
+    }
+    together {
+        class ChoiceFormula <<IChoiceFormula>> #PaleGreen
+        class Formulas <<IFormulas>> #PaleGreen
+        class FormulaData <<IFormulaData>> #PaleGreen
+    }
+}
+
+rectangle "Build" as EXT_BUILD [[architecture-build.svg]] #NavajoWhite {
+    class Analysis <<IAnalysis>> #Moccasin
+    class AnaTabIds <<IAnaTabIds>> #Moccasin
+}
+
+' =============================================================================
+' DATAIO PACKAGE
+' =============================================================================
+
+package "dataio" as PKG_DIO #Thistle {
+
+    class LLExporter <<ILLExporter>> {
+        Exports linelist data to
+        standalone workbooks
+    }
+
+    class LLImporter <<ILLImporter>> {
+        Imports external data into
+        the source linelist
+    }
+
+    class ExportButton {
+        WithEvents button wrapper
+        triggering custom export
+    }
+}
+
+' DataIO internal
+ExportButton --> LLExporter : delegates
+
+' DataIO -> Domain
+LLExporter ..> LLdictionary
+LLExporter ..> LLExport
+LLExporter ..> ShowHideManager
+LLExporter ..> AnaTabIds
+LLExporter ..> LLGeo
+LLExporter ..> LLChoices
+LLImporter ..> LLdictionary
+LLImporter ..> ShowHideManager
+LLImporter ..> LLGeo
+LLImporter ..> LLChoices
+LLImporter ..> LLVariables
+LLImporter ..> DropdownLists
+
+' DataIO -> Foundation
+LLExporter ..> Passwords
+LLExporter ..> CustomTable
+LLExporter ..> DataSheet
+LLImporter ..> Passwords
+LLImporter ..> CustomTable
+LLImporter ..> DataSheet
+ExportButton ..> ApplicationState
+ExportButton ..> OSFiles
+
+' =============================================================================
+' SETUP PACKAGE
+' =============================================================================
+
+package "setup" as PKG_SET #Plum {
+
+    class UpdatedValues <<IUpdatedValues>> {
+        Tracks watched setup
+        columns for change detection
+    }
+
+    class SetupPreparation <<ISetupPreparation>> {
+        Orchestrates setup workbook
+        preparation workflow
+    }
+
+    class SetupTranslationsTable <<ISetupTranslationsTable>> {
+        Translations ListObject
+        with tag + label cache
+    }
+
+    class SetupImportService <<ISetupImportService>> {
+        Setup workbook sync:
+        validate, import, export
+    }
+
+    class SetupErrors <<ISetupErrors>> {
+        Setup consistency reports
+        validating dictionary + choices
+    }
+
+    class EventSetup <<IEventSetup>> {
+        Workbook-level setup event
+        coordinator (open, change)
+    }
+}
+
+' Setup internal
+SetupPreparation --> UpdatedValues
+EventSetup ..> UpdatedValues
+EventSetup --> SetupTranslationsTable
+SetupImportService ..> SetupTranslationsTable
+
+' Setup -> Build
+SetupImportService ..> Analysis
+SetupErrors ..> Analysis
+EventSetup --> Analysis
+
+' Setup -> Domain
+EventSetup ..> LLdictionary
+EventSetup ..> LLVariables
+EventSetup ..> LLExport
+EventSetup ..> LLChoices
+EventSetup ..> ChoiceFormula
+SetupImportService ..> LLdictionary
+SetupImportService ..> LLExport
+SetupImportService ..> LLFormat
+SetupErrors ..> LLdictionary
+SetupErrors ..> LLVariables
+SetupErrors ..> LLChoices
+SetupErrors ..> Formulas
+SetupErrors ..> FormulaData
+
+' Setup -> Foundation
+UpdatedValues ..> CustomTable
+SetupPreparation ..> DropdownLists
+SetupPreparation ..> CustomTable
+SetupTranslationsTable ..> ApplicationState
+SetupTranslationsTable ..> HiddenNames
+SetupTranslationsTable ..> CustomTable
+SetupImportService ..> ApplicationState
+SetupImportService ..> CustomTable
+SetupImportService ..> Passwords
+SetupErrors --> CheckingOutput
+SetupErrors ..> CustomTable
+SetupErrors ..> DropdownLists
+SetupErrors ..> Passwords
+EventSetup ..> HiddenNames
+EventSetup ..> Passwords
+EventSetup ..> DropdownLists
+EventSetup ..> CustomTable
+EventSetup ..> ApplicationState
+
+' =============================================================================
+' DESIGNER PACKAGE
+' =============================================================================
+
+package "designer" as PKG_DES #Plum {
+
+    class DesTranslation <<IDesTranslation>> {
+        Designer workbook
+        translation manager
+    }
+
+    class DesignerPreparation <<IDesignerPreparation>> {
+        Prepares designer workbook
+        for ribbon interactions
+    }
+
+    class DesignerEntry <<IDesignerEntry>> {
+        Clearing + translation
+        for designer entry sheet
+    }
+}
+
+' Designer internal
+DesignerEntry --> DesTranslation
+
+' Designer -> Foundation
+DesTranslation ..> TranslationObject
+DesignerPreparation ..> HiddenNames
+
+' =============================================================================
+' DEV PACKAGE
+' =============================================================================
+
+package "dev" as PKG_DEV #Plum {
+    class Development <<IDevelopment>> {
+        Code tables, code transfers,
+        deployment orchestrator
+    }
+}
+
+' Dev -> Foundation
+Development ..> Passwords
+
+' Cross-app references
+DesignerPreparation ..> Development : deploys
+SetupPreparation ..> Development : deploys
+
+' =============================================================================
+' LAYOUT HINTS
+' =============================================================================
+' Spread app packages across two rows for better vertical distribution
+
+PKG_DIO -[hidden]down-> PKG_DES
+PKG_SET -[hidden]down-> PKG_DEV
+
+' =============================================================================
+' NOTES
+' =============================================================================
+
+note as N_EVENTSETUP
+  **EventSetup** is the most connected class
+  in this layer (~15 dependencies). It coordinates
+  workbook events by lazily caching domain managers.
+end note
+
+note as N_ARROWS
+  **Arrow semantics:**
+  ──> (solid) = creates / delegates to / owns
+  ..> (dashed) = uses / reads / calls methods on
+end note
+
+center footer [[architecture-overview.svg Back to Overview]]
+
+@enduml

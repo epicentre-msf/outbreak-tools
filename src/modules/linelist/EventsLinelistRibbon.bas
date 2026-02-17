@@ -8,21 +8,15 @@ Option Private Module
 '@ModuleDescription("Events associated with the Ribbon Menu in the linelist")
 
 Private Const LLSHEET As String = "LinelistTranslation"
-Private Const TRADSHEET As String = "Translations"
 
-Private tradrib As ITranslationObject   'Translation of forms
+Private tradrib As ITranslationObject   'Translation of ribbon labels
 
-'Initialize translation of forms object
+'Initialize translation of ribbon labels
 Private Sub InitializeTrads()
-    Dim lltrads As ILLTranslations
-    Dim lltranssh As Worksheet
-    Dim dicttranssh As Worksheet
+    Dim lltrads As ILLTranslation
 
-    Set lltranssh = ThisWorkbook.Worksheets(LLSHEET)
-    Set dicttranssh = ThisWorkbook.Worksheets(TRADSHEET)
-    Set lltrads = LLTranslations.Create(lltranssh, dicttranssh)
+    Set lltrads = LLTranslation.Create(ThisWorkbook.Worksheets(LLSHEET))
     Set tradrib = lltrads.TransObject(TranslationOfRibbon)
-
 End Sub
 
 '@Description("Callback for adminTab getLabel")

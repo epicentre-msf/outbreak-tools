@@ -102,6 +102,8 @@ Public Property Get GeoNames(ByVal admname As String) As String: End Property
 '@export
 Public Property Get HasNoData() As Boolean: End Property
 
+Public Property Get Wksh() As Worksheet : End Property
+
 
 '@section Translation
 '===============================================================================
@@ -142,8 +144,9 @@ End Sub
 '@details
 'Exports geobase tables to the target workbook with one sheet per table
 'and a Metadata sheet. Headers are reverted to raw names before export
-'and restored to translated form afterwards. When onlyHistory is True,
-'only the HISTOGEO and HISTOHF tables are exported.
+'and restored to translated form afterwards. HiddenNames entries are
+'exported to the Metadata sheet for round-trip import support. When
+'onlyHistory is True, only the HISTOGEO and HISTOHF tables are exported.
 '@param outputWkb Workbook. Target workbook to receive exported sheets.
 '@param onlyHistory Optional Boolean. True to export only historic tables. Defaults to False.
 '@export

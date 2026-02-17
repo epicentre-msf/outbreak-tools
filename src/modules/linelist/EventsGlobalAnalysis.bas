@@ -8,10 +8,10 @@ Option Explicit
 Option Private Module
 
 Private Const LLSHEET As String = "LinelistTranslation"
-Private Const TRADSHEET As String = "Translations"
 
 Private tradsmess As ITranslationObject   'Translation of messages
-Private lltrads As ILLTranslations
+Private lltrads As ILLTranslation
+Private wkbNames As IHiddenNames
 Private wb As Workbook
 
 
@@ -20,7 +20,9 @@ Private wb As Workbook
 Private Sub BusyApp(Optional ByVal cursor As Long = xlDefault)
     Application.ScreenUpdating = False
     Application.EnableAnimations = False
+    On Error Resume Next
     Application.Calculation = xlCalculationManual
+    On Error GoTo 0
     Application.cursor = cursor
 End Sub
 
@@ -33,15 +35,10 @@ End Sub
 
 'Initialize translation of forms object
 Private Sub InitializeTrads()
-    Dim lltranssh As Worksheet
-    Dim dicttranssh As Worksheet
-
     Set wb = ThisWorkbook
-    Set lltranssh = wb.Worksheets(LLSHEET)
-
-    'Those are private elms defined on to the top
-    Set lltrads = LLTranslation.Create(lltranssh)
+    Set lltrads = LLTranslation.Create(wb.Worksheets(LLSHEET))
     Set tradsmess = lltrads.TransObject()
+    Set wkbNames = HiddenNames.Create(wb)
 End Sub
 
 '@Description("Update the table which contains filters data in the linelist")
@@ -187,9 +184,9 @@ Public Sub EventValueChangeAnalysis(Target As Range)
 
     If (Not (Intersect(Target, rng) Is Nothing)) And (Not rng Is Nothing) Then
         
-        goToSection = lltrads.Value("gotosection")
-        goToHeader = lltrads.Value("gotoheader")
-        goToGraph = lltrads.Value("gotograph")
+        goToSection = wkbNames.ValueAsString("RNG_GoToSection")
+        goToHeader = wkbNames.ValueAsString("RNG_GoToHeader")
+        goToGraph = wkbNames.ValueAsString("RNG_GoToGraph")
 
         sLabel = Replace(Target.Value, goToSection & ": ", vbNullString)
         sLabel = Replace(sLabel, goToHeader & ": ", vbNullString)

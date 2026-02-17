@@ -1,0 +1,206 @@
+@startuml architecture-domain
+
+' =============================================================================
+' OutbreakTools — Domain Layer Detail
+' =============================================================================
+' Packages: dictionary/ (4), formulas/ (6), geo/ (2), showhide/ (1)
+' Shows intra-layer + key Foundation dependencies.
+' Arrow semantics:
+'   ──>  (solid)  = creates / delegates to
+'   ..>  (dashed) = uses / reads / calls methods on
+' =============================================================================
+
+title OutbreakTools — Domain Layer\ndictionary/ + formulas/ + geo/ + showhide/
+
+skinparam packageStyle rectangle
+skinparam classFontSize 11
+skinparam packageFontSize 13
+skinparam packageFontStyle bold
+skinparam defaultTextAlignment center
+
+top to bottom direction
+
+' =============================================================================
+' FOUNDATION REFERENCES (simplified, shown as external)
+' =============================================================================
+
+rectangle "Foundation (general/)" as EXT_GEN [[architecture-foundation.svg]] #LightSteelBlue {
+    together {
+        class DataSheet <<IDataSheet>> #LightSteelBlue
+        class Checking <<IChecking>> #LightSteelBlue
+        class HiddenNames <<IHiddenNames>> #LightSteelBlue
+    }
+    together {
+        class CustomTable <<ICustomTable>> #LightSteelBlue
+        class DropdownLists <<IDropdownLists>> #LightSteelBlue
+        class Passwords <<IPasswords>> #LightSteelBlue
+        class TranslationObject <<ITranslationObject>> #LightSteelBlue
+    }
+}
+
+' =============================================================================
+' DICTIONARY PACKAGE
+' =============================================================================
+
+package "dictionary" as PKG_DICT #DarkSeaGreen {
+
+    class LLdictionary <<ILLdictionary>> {
+        Central access to the
+        Dictionary worksheet
+    }
+
+    class LLVariables <<ILLVariables>> {
+        Read-only variable metadata
+        from the dictionary
+    }
+
+    class LLSheets <<ILLSheets>> {
+        Read-only linelist sheet
+        metadata from dictionary
+    }
+
+    class LLExport <<ILLExport>> {
+        Manages linelist and
+        setup export metadata
+    }
+}
+
+' Dictionary internal
+LLSheets ..> LLdictionary
+LLSheets ..> LLVariables
+
+' Dictionary -> Foundation
+LLdictionary ..> DataSheet
+LLdictionary ..> Checking
+LLVariables ..> Checking
+LLExport ..> DataSheet
+LLExport ..> LLVariables
+LLExport ..> HiddenNames
+LLExport ..> Checking
+
+' =============================================================================
+' FORMULAS PACKAGE
+' =============================================================================
+
+package "formulas" as PKG_FORM #PaleGreen {
+
+    class FormulaData <<IFormulaData>> {
+        Cached lookups for Excel
+        functions + special chars
+    }
+
+    class FormulaCondition <<IFormulaCondition>> {
+        Variable-condition pairs
+        producing Excel predicates
+    }
+
+    class CaseWhen <<ICaseWhen>> {
+        CASE_WHEN parser rewriting
+        to nested Excel IFs
+    }
+
+    class ChoiceFormula <<IChoiceFormula>> {
+        CHOICE_FORMULA to CASE_WHEN
+        converter with metadata
+    }
+
+    class ValueOfFormula <<IValueOfFormula>> {
+        VALUE_OF formula converter
+        to workbook expressions
+    }
+
+    class Formulas <<IFormulas>> {
+        Setup expression parser
+        and Excel formula generator
+    }
+}
+
+' Formulas internal — pipeline: Formulas -> ChoiceFormula -> CaseWhen
+ChoiceFormula --> CaseWhen
+Formulas --> CaseWhen
+Formulas --> ChoiceFormula
+Formulas --> ValueOfFormula
+
+' Formulas -> Dictionary
+FormulaCondition ..> LLVariables
+FormulaCondition ..> LLdictionary
+ValueOfFormula ..> LLdictionary
+ValueOfFormula ..> LLVariables
+ValueOfFormula ..> LLSheets
+Formulas ..> LLdictionary
+Formulas ..> LLVariables
+Formulas ..> LLSheets
+
+' Formulas -> Foundation
+FormulaCondition ..> Checking
+
+' =============================================================================
+' GEO PACKAGE
+' =============================================================================
+
+package "geo" as PKG_GEO #Wheat {
+
+    class LLGeo <<ILLGeo>> {
+        Geobase worksheet: admin
+        hierarchy + health facilities
+    }
+
+    class LLSpatial <<ILLSpatial>> {
+        Spatial analysis tables
+        by admin level + HF
+    }
+}
+
+' Geo -> Dictionary
+LLGeo ..> LLdictionary
+LLGeo ..> LLVariables
+
+' Geo -> Foundation
+LLGeo ..> CustomTable
+LLGeo ..> DropdownLists
+LLGeo ..> Passwords
+
+' =============================================================================
+' SHOWHIDE PACKAGE
+' =============================================================================
+
+package "showhide" as PKG_SH #Wheat {
+    class ShowHideManager <<IShowHideManager>> {
+        Consolidated worksheet
+        visibility manager
+    }
+}
+
+' ShowHide -> Dictionary
+ShowHideManager ..> LLdictionary
+ShowHideManager ..> LLVariables
+
+' ShowHide -> Foundation
+ShowHideManager ..> Checking
+
+' =============================================================================
+' LAYOUT HINTS
+' =============================================================================
+
+PKG_DICT -[hidden]right-> PKG_FORM
+PKG_GEO -[hidden]right-> PKG_SH
+
+' =============================================================================
+' NOTES
+' =============================================================================
+
+note as N_IMPLICIT
+  **Implicit dependencies (not shown):**
+  BetterArray — used by most classes
+  ProjectError — used for error handling
+end note
+
+note as N_ARROWS
+  **Arrow semantics:**
+  ──> (solid) = creates / delegates to
+  ..> (dashed) = uses / reads / calls methods on
+end note
+
+center footer [[architecture-overview.svg Back to Overview]]
+
+@enduml

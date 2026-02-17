@@ -131,3 +131,31 @@ End Sub
 '@param targetWkb Workbook. The workbook receiving the hidden names.
 Public Sub InitialiseHiddenNames(ByVal targetWkb As Workbook)
 End Sub
+
+'@jump:initialise-sheet-names
+'@sub-title Create language HiddenNames on the translation worksheet
+'@details
+'Creates worksheet-level HiddenNames for the dictionary language and
+'interface language on the translation worksheet. These values are read
+'by TransObject when resolving the language code for translation lookups.
+'@param dictLang String. The dictionary language code (e.g., "en").
+'@param llLang String. The interface language code (e.g., "fr").
+Public Sub InitialiseSheetNames(ByVal dictLang As String, ByVal llLang As String)
+End Sub
+
+
+'@section ValueAccess
+'===============================================================================
+'@description Mapped value retrieval from worksheet-level HiddenNames.
+
+'@jump:value
+'@prop-title Retrieve a named configuration value from the translation worksheet
+'@details
+'Returns the value of a worksheet-level HiddenName identified by a
+'logical key. Supported keys:
+'  "dictlang" -> RNG_DictionaryLanguage
+'  "lllang"   -> RNG_LLLanguageCode
+'@param nameId String. The logical key to look up.
+'@return String. The stored value, or vbNullString if unknown.
+Public Property Get Value(ByVal nameId As String) As String
+End Property

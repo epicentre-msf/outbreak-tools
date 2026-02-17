@@ -148,6 +148,17 @@ End Sub
 Public Sub TransferForm(ByVal formName As String)
     Dim formPath As String
     Dim frxPath As String
+    Dim vbComp As Object
+
+    'Verify form exists before attempting export
+    On Error Resume Next
+    Set vbComp = this.sourceWkb.VBProject.VBComponents(formName)
+    On Error GoTo 0
+
+    If vbComp Is Nothing Then
+        ThrowError ProjectError.ElementNotFound, _
+                   "Form '" & formName & "' not found in source workbook"
+    End If
 
     formPath = this.tempRepos.CreateFilePath("CopieUsf.frm")
     frxPath = this.tempRepos.CreateFilePath("CopieUsf.frx")
@@ -155,7 +166,7 @@ Public Sub TransferForm(ByVal formName As String)
     this.tempRepos.DeleteFile formPath
     this.tempRepos.DeleteFile frxPath
 
-    this.sourceWkb.VBProject.VBComponents(formName).Export formPath
+    vbComp.Export formPath
     this.targetWkb.VBProject.VBComponents.Import formPath
 
     this.tempRepos.DeleteFile formPath
@@ -176,8 +187,19 @@ Public Sub TransferWorkbookCode(ByVal moduleName As String)
     Dim vbProj As Object
     Dim vbComp As Object
     Dim codeMod As Object
+    Dim sourceComp As Object
 
-    With this.sourceWkb.VBProject.VBComponents(moduleName).CodeModule
+    'Verify source module exists
+    On Error Resume Next
+    Set sourceComp = this.sourceWkb.VBProject.VBComponents(moduleName)
+    On Error GoTo 0
+
+    If sourceComp Is Nothing Then
+        ThrowError ProjectError.ElementNotFound, _
+                   "Module '" & moduleName & "' not found in source workbook"
+    End If
+
+    With sourceComp.CodeModule
         codeContent = .Lines(1, .CountOfLines)
     End With
 
@@ -204,12 +226,30 @@ End Sub
 Public Sub CopyModuleText(ByVal moduleName As String)
     Dim codeContent As String
     Dim codeMod As Object
+    Dim sourceComp As Object
+    Dim targetComp As Object
 
-    With this.sourceWkb.VBProject.VBComponents(moduleName).CodeModule
+    'Verify module exists in both workbooks
+    On Error Resume Next
+    Set sourceComp = this.sourceWkb.VBProject.VBComponents(moduleName)
+    Set targetComp = this.targetWkb.VBProject.VBComponents(moduleName)
+    On Error GoTo 0
+
+    If sourceComp Is Nothing Then
+        ThrowError ProjectError.ElementNotFound, _
+                   "Module '" & moduleName & "' not found in source workbook"
+    End If
+
+    If targetComp Is Nothing Then
+        ThrowError ProjectError.ElementNotFound, _
+                   "Module '" & moduleName & "' not found in target workbook"
+    End If
+
+    With sourceComp.CodeModule
         codeContent = .Lines(1, .CountOfLines)
     End With
 
-    Set codeMod = this.targetWkb.VBProject.VBComponents(moduleName).CodeModule
+    Set codeMod = targetComp.CodeModule
 
     With codeMod
         .DeleteLines 1, .CountOfLines
@@ -287,11 +327,22 @@ End Sub
 '@param tempFileName String. The temporary file name (e.g., "CopieCls.cls").
 Private Sub ExportImportComponent(ByVal componentName As String, ByVal tempFileName As String)
     Dim tempPath As String
+    Dim vbComp As Object
+
+    'Verify component exists before attempting export
+    On Error Resume Next
+    Set vbComp = this.sourceWkb.VBProject.VBComponents(componentName)
+    On Error GoTo 0
+
+    If vbComp Is Nothing Then
+        ThrowError ProjectError.ElementNotFound, _
+                   "Component '" & componentName & "' not found in source workbook"
+    End If
 
     tempPath = this.tempRepos.CreateFilePath(tempFileName)
     this.tempRepos.DeleteFile tempPath
 
-    this.sourceWkb.VBProject.VBComponents(componentName).Export tempPath
+    vbComp.Export tempPath
     this.targetWkb.VBProject.VBComponents.Import tempPath
 
     this.tempRepos.DeleteFile tempPath

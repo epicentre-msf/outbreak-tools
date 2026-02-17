@@ -47,6 +47,7 @@ Private Const PRINT_PREFIX As String = "print_"
 Private Const CRF_PREFIX As String = "crf_"
 Private Const SHEET_NAME_MAX_LENGTH As Long = 30
 Private Const WORKBOOK_MODULE_NAME As String = "LinelistWorkbook"
+Private Const SHEET_GEO As String = "Geo"
 
 Private Type TLinelist
     outWkb As Workbook
@@ -241,21 +242,24 @@ End Function
 'Creates a new worksheet in the output workbook with the given name,
 'applying an optional scope prefix ("print_" or "crf_") and visibility
 'setting. The sheet name is truncated to 30 characters (Excel limit for
-'sheet names). Raises an error if a sheet with the resolved name already
-'exists.
+'sheet names). When beforeSheet is supplied and that sheet exists in
+'the output workbook, the new sheet is inserted immediately before it;
+'otherwise the sheet is appended at the default position.
 '@param sheetName String. The base name for the new worksheet.
 '@param Hide Optional Long. Excel visibility constant. Defaults to
 'xlSheetVeryHidden.
 '@param sheetScope Optional Byte. 1 = no prefix, 2 = print_ prefix,
 '3 = crf_ prefix. Defaults to 1.
-'@throws ProjectError.InvalidArgument When a sheet with the resolved
-'name already exists.
+'@param beforeSheet Optional String. Name of an existing worksheet to
+'insert before. Defaults to vbNullString (append at default position).
 '@export
 Public Sub AddOutputSheet(ByVal sheetName As String, _
                           Optional ByVal Hide As Long = xlSheetVeryHidden, _
-                          Optional ByVal sheetScope As Byte = 1)
+                          Optional ByVal sheetScope As Byte = 1, _
+                          Optional ByVal beforeSheet As String = vbNullString)
     Dim actSheetName As String
     Dim outWkb As Workbook
+    Dim anchorSh As Worksheet
 
     Select Case sheetScope
         Case 1
@@ -273,8 +277,19 @@ Public Sub AddOutputSheet(ByVal sheetName As String, _
 
     Set outWkb = OutputWkb
 
+    'Resolve the anchor sheet if provided
+    If LenB(beforeSheet) > 0 Then
+        On Error Resume Next
+        Set anchorSh = outWkb.Worksheets(beforeSheet)
+        On Error GoTo 0
+    End If
+
     With outWkb
-        .Worksheets.Add.Name = actSheetName
+        If Not anchorSh Is Nothing Then
+            .Worksheets.Add(Before:=anchorSh).Name = actSheetName
+        Else
+            .Worksheets.Add.Name = actSheetName
+        End If
         .Worksheets(actSheetName).Visible = Hide
     End With
 End Sub
@@ -309,21 +324,50 @@ Public Sub Prepare()
     Dim sheetName As String
     Dim outWkb As Workbook
     Dim prevAlert As Boolean
-    Dim codeTransfer As ICodeTransfer
+    Dim codeTrans As ICodeTransfer
+
+    If Not (this.specs.Prepared) Then
+        ThrowError ProjectError.ErrorUnexpectedState, _ 
+         "Linelist specifications need to be prepared before Linelist creation"
+    End If
 
     Set this.tempRepos = this.specs.OutputTemporaryRepos
 
     Set outWkb = OutputWkb
-    Set trans = this.specs.TransObject
     Set dict = this.specs.Dictionary
     Set sheetsList = New BetterArray
 
-    'Handle instruction worksheet for template workbooks
-    If this.specs.HasTemplate() And (this.specs.Value("instruct") = "add") Then
-        outWkb.Worksheets(trans.TranslatedValue("INSTSHEETNAME")).Visible = xlSheetVisible
-    End If
+    InitialiseWorkbookNames
+    InitialiseTranslationNames
 
-    'Add temporary sheets (6 sheets — TemporarySheetUpdates removed, flags are now workbook-level hidden names)
+    Set trans = this.specs.TransObject
+    'Add data entry sheets from dictionary before Geo
+    sheetsList.Clear
+    Set sheetsList = dict.UniqueValues("sheet name")
+
+    For counter = sheetsList.LowerBound To sheetsList.UpperBound
+        sheetName = sheetsList.Item(counter)
+        AddOutputSheet sheetName, xlSheetVisible, beforeSheet:=SHEET_GEO
+    Next
+
+    'Add analysis/custom sheets before Geo (reversed order to maintain dictionary order)
+    sheetsList.Clear
+    sheetsList.Push trans.TranslatedValue("LLSHEET_Analysis"), _ 
+                    trans.TranslatedValue("LLSHEET_TemporalAnalysis"), _
+                    trans.TranslatedValue("LLSHEET_SpatialAnalysis"), _ 
+                    trans.TranslatedValue("LLSHEET_SpatioTemporalAnalysis"), _
+                    trans.TranslatedValue("LLSHEET_CustomChoice"), _ 
+                    trans.TranslatedValue("LLSHEET_CustomPivotTable")
+
+    For counter = sheetsList.LowerBound To sheetsList.UpperBound
+        sheetName = sheetsList.Item(counter)
+        AddOutputSheet sheetName, xlSheetVisible, beforeSheet:=SHEET_GEO
+    Next
+
+
+    'Add temporary sheets before the Geo worksheet
+    sheetsList.Clear
+    '(6 sheets — TemporarySheetUpdates removed, flags are now workbook-level hidden names)
     sheetsList.Push this.specs.TemporarySheetName(TempSheetSingle), _
                     this.specs.TemporarySheetName(TempSheetList), _
                     this.specs.TemporarySheetName(TempSheetAnalysis), _
@@ -333,49 +377,45 @@ Public Sub Prepare()
 
     For counter = sheetsList.LowerBound To sheetsList.UpperBound
         sheetName = sheetsList.Item(counter)
-        AddOutputSheet sheetName, xlSheetVeryHidden
+        AddOutputSheet sheetName, xlSheetVeryHidden, beforeSheet:=SHEET_GEO
     Next
 
     'Prepare temporary sheets with hidden names and ListObjects
     PrepareTemporarySheets
 
-    'Add analysis/custom sheets (reversed order to maintain dictionary order)
-    sheetsList.Clear
-    sheetsList.Push "LLSHEET_Analysis", "LLSHEET_TemporalAnalysis", _
-                    "LLSHEET_SpatialAnalysis", "LLSHEET_SpatioTemporalAnalysis", _
-                    "LLSHEET_CustomChoice", "LLSHEET_CustomPivotTable"
-    sheetsList.Reverse
+    'Initialise language and translated HiddenNames on the output workbook
 
-    For counter = sheetsList.LowerBound To sheetsList.UpperBound
-        sheetName = trans.TranslatedValue(sheetsList.Item(counter))
-        AddOutputSheet sheetName, xlSheetVisible
-    Next
-
-    'Add data entry sheets from dictionary
-    sheetsList.Clear
-    Set sheetsList = dict.UniqueValues("sheet name")
-    sheetsList.Reverse
-
-    For counter = sheetsList.LowerBound To sheetsList.UpperBound
-        sheetName = sheetsList.Item(counter)
-        AddOutputSheet sheetName, xlSheetVisible
-    Next
-
-    'Move instruction sheet before the last data entry sheet (template only)
+    'Handle instruction sheet (template only)
     If this.specs.HasTemplate() Then
-        With outWkb
-            .Worksheets(trans.TranslatedValue("INSTSHEETNAME")).Move _
-                Before:=.Worksheets(sheetsList.Item(counter - 1))
-        End With
+        Dim instrName As String
+        Dim instrSheet As Worksheet
+
+        instrName = trans.TranslatedValue("INSTSHEETNAME")
+
+        On Error Resume Next
+        Set instrSheet = outWkb.Worksheets(instrName)
+        On Error GoTo 0
+
+        If Not instrSheet Is Nothing Then
+            'Unhide before Move (hidden sheets cannot be moved)
+            instrSheet.Visible = xlSheetVisible
+            'Move instruction sheet to first position
+            instrSheet.Move Before:=outWkb.Worksheets(1)
+            'Re-hide if instruct flag is not "add"
+            If this.specs.Value("instruct") <> "add" Then
+                instrSheet.Visible = xlSheetVeryHidden
+            End If
+        End If
     End If
 
-    'Add admin sheet if not using template
+    ' 'Add admin sheet if not using template
     If Not this.specs.HasTemplate() Then
-        AddOutputSheet trans.TranslatedValue("LLSHEET_Admin"), xlSheetVisible
+        AddOutputSheet trans.TranslatedValue("LLSHEET_Admin"), xlSheetVisible, _
+                       beforeSheet:=SHEET_GEO
         PrepareAdmin
     End If
 
-    'Delete the initial default sheet (non-template only)
+    ' 'Delete the initial default sheet (non-template only)
     If Not this.specs.HasTemplate() Then
         prevAlert = Application.DisplayAlerts
         Application.DisplayAlerts = False
@@ -384,8 +424,8 @@ Public Sub Prepare()
     End If
 
     'Transfer code via CodeTransfer
-    Set codeTransfer = CodeTransfer.Create(this.specs.Workbook, outWkb, this.tempRepos)
-    TransferAllCode codeTransfer
+    Set codeTrans = CodeTransfer.Create(this.specs.DesWorkbook, outWkb, this.tempRepos)
+    TransferAllCode codeTrans
 End Sub
 
 '@label:save-ll
@@ -469,7 +509,7 @@ End Sub
 '@return Workbook. The output workbook.
 Private Property Get OutputWkb() As Workbook
     If this.outWkb Is Nothing Then
-        Set this.outWkb = this.specs.OutputWorkbook
+        Set this.outWkb = this.specs.LLWorkbook
         this.firstSheet = this.outWkb.Worksheets(1).Name
     End If
 
@@ -545,12 +585,19 @@ Private Sub PrepareTemporarySheets()
     'Workbook-level hidden names for global flags (replaces TemporarySheetUpdates)
     Set wkbNames = HiddenNames.Create(outWkb)
     wkbNames.EnsureName "RNG_UpdateListAuto", vbNullString, HiddenNameTypeString
+    wkbNames.SetValue "RNG_UpdateListAuto", vbNullString
     wkbNames.EnsureName "RNG_ImportDone", vbNullString, HiddenNameTypeString
+    wkbNames.SetValue "RNG_ImportDone", vbNullString
     wkbNames.EnsureName "RNG_GeoUpdateManual", vbNullString, HiddenNameTypeString
+    wkbNames.SetValue "RNG_GeoUpdateManual", vbNullString
     wkbNames.EnsureName "RNG_ShowAllOptionals", vbNullString, HiddenNameTypeString
+    wkbNames.SetValue "RNG_ShowAllOptionals", vbNullString
     wkbNames.EnsureName "RNG_ExportInit", vbNullString, HiddenNameTypeString
+    wkbNames.SetValue "RNG_ExportInit", vbNullString
     wkbNames.EnsureName "RNG_NumberExports", this.specs.Value("numberofexports"), HiddenNameTypeString
+    wkbNames.SetValue "RNG_NumberExports", this.specs.Value("numberofexports")
     wkbNames.EnsureName "RNG_EpiWeekStart", this.specs.Value("epiweekstart"), HiddenNameTypeString
+    wkbNames.SetValue "RNG_EpiWeekStart", this.specs.Value("epiweekstart")
 
     'Import report sheet — create ListObjects
     sheetName = this.specs.TemporarySheetName(TempSheetImport)
@@ -633,13 +680,76 @@ Private Sub PrepareTemporarySheets()
     Set shNames = HiddenNames.Create(sh)
     shNames.EnsureName "RNG_SheetUAName", _
                        trads.TranslatedValue("LLSHEET_Analysis"), HiddenNameTypeString
+    shNames.SetValue "RNG_SheetUAName", trads.TranslatedValue("LLSHEET_Analysis")
     shNames.EnsureName "RNG_SheetTSName", _
                        trads.TranslatedValue("LLSHEET_TemporalAnalysis"), HiddenNameTypeString
+    shNames.SetValue "RNG_SheetTSName", trads.TranslatedValue("LLSHEET_TemporalAnalysis")
     shNames.EnsureName "RNG_SheetSPName", _
                        trads.TranslatedValue("LLSHEET_SpatialAnalysis"), HiddenNameTypeString
+    shNames.SetValue "RNG_SheetSPName", trads.TranslatedValue("LLSHEET_SpatialAnalysis")
     shNames.EnsureName "RNG_SheetSPTempName", _
                        trads.TranslatedValue("LLSHEET_SpatioTemporalAnalysis"), HiddenNameTypeString
+    shNames.SetValue "RNG_SheetSPTempName", trads.TranslatedValue("LLSHEET_SpatioTemporalAnalysis")
 End Sub
+
+'@label:initialise-workbook-names
+'@sub-title Set language HiddenNames on the output workbook
+'@details
+'Creates workbook-level HiddenNames for the dictionary language
+'(RNG_DictionaryLanguage) and interface language (RNG_LLLanguageCode)
+'on the output workbook. These are required by LLTranslation.TransObject
+'to resolve the correct language code for translation lookups.
+Private Sub InitialiseWorkbookNames()
+    Dim outWkb As Workbook
+    Dim wkbNames As IHiddenNames
+    Dim dictLang As String
+    Dim llLang As String
+
+    Set outWkb = OutputWkb
+    Set wkbNames = HiddenNames.Create(outWkb)
+
+    dictLang = this.specs.Value("setuplang")
+    llLang = Split(this.specs.Value("lllang"), "-")(0)
+
+    'Fail early when language selections are empty
+    If LenB(dictLang) = 0 Then
+        ThrowError ProjectError.ObjectNotInitialized, _
+                   "Dictionary language (RNG_LangSetup) is empty on the Main sheet. " & _
+                   "Please select a setup language before generating."
+    End If
+
+    If LenB(llLang) = 0 Then
+        ThrowError ProjectError.ObjectNotInitialized, _
+                   "Interface language (RNG_LLForm) is empty on the Main sheet. " & _
+                   "Please select an interface language before generating."
+    End If
+
+    wkbNames.EnsureName "RNG_DictionaryLanguage", dictLang, HiddenNameTypeString
+    wkbNames.SetValue "RNG_DictionaryLanguage", dictLang
+    wkbNames.EnsureName "RNG_LLLanguageCode", llLang, HiddenNameTypeString
+    wkbNames.SetValue "RNG_LLLanguageCode", llLang
+End Sub
+
+'@label:initialise-translation-names
+'@sub-title Propagate language HiddenNames to the translation worksheet and create translated names
+'@details
+'Calls InitialiseSheetNames on the LLTranslation instance to store
+'dictionary and interface language codes as worksheet-level HiddenNames
+'on the translation sheet. Then calls InitialiseHiddenNames to create
+'all RNG_* translated message/sheet names on the output workbook.
+Private Sub InitialiseTranslationNames()
+    Dim transObj As ILLTranslation
+    Dim dictLang As String
+    Dim llLang As String
+
+    dictLang = this.specs.Value("setuplang")
+    llLang = Split(this.specs.Value("lllang"), "-")(0)
+
+    Set transObj = this.specs.Translations
+    transObj.InitialiseSheetNames dictLang, llLang
+    transObj.InitialiseHiddenNames OutputWkb
+End Sub
+
 
 '@label:prepare-admin
 '@sub-title Format the admin sheet and add Advanced/Export buttons
@@ -696,23 +806,22 @@ End Sub
 '@sub-title Transfer all VBA code components to the output workbook
 '@details
 'Uses the supplied ICodeTransfer to copy VBA components from the setup
-'workbook to the output workbook in four phases:
-'1. Transfers 42 class modules (interface+implementation pairs for
+'workbook to the output workbook in five phases:
+'1. Transfers 45 class modules (interface+implementation pairs for
 '   DataSheet, LLExport, LLChoices, LLdictionary, LLGeo, Passwords,
-'   LLSheets, LLTranslations, OSFiles, TranslationObject, LLVariables,
-'   LLSpatial, DropdownLists, LLShowHide, CustomTable, OutputSpecs,
-'   ImpRep, ImpSpecs, UpVal, Graphs, AnaTabIds, ExportButtons, plus
-'   BetterArray).
+'   LLSheets, LLTranslation, OSFiles, TranslationObject, LLVariables,
+'   LLSpatial, DropdownLists, LLShowHide, CustomTable, LLExporter,
+'   ImpRep, LLImporter, Graphs, AnaTabIds, ExportButtons, HiddenNames,
+'   plus BetterArray).
 '2. Transfers 6 standard modules (LinelistCustomFunctions, GeoModule,
 '   LinelistEvents, EventsLinelistButtons, EventsGlobalAnalysis,
-'   LLChange).
-'3. Copies the ribbon module text (EventsLinelistRibbon) for template
-'   workbooks.
-'4. Transfers 9 user forms (F_Advanced, F_Export, F_ExportMig, F_Geo,
+'   EventsSpatialAnalysis). For template workbooks, copies the ribbon
+'   module text (EventsLinelistRibbon); otherwise transfers it as a
+'   new module.
+'3. Transfers 9 user forms (F_Advanced, F_Export, F_ExportMig, F_Geo,
 '   F_ImportRep, F_ShowHideLL, F_ShowHidePrint, F_ShowVarLabels,
 '   F_EpiWeek).
-'5. Transfers the workbook code module (LinelistWorkbook).
-'6. Cleans up temporary files via ITemporaryRepos.Reset.
+'4. Transfers the workbook code module (LinelistWorkbook).
 '@param codeTransfer ICodeTransfer. The code transfer engine.
 Private Sub TransferAllCode(ByVal codeTransfer As ICodeTransfer)
     Dim codesList As BetterArray
@@ -721,7 +830,7 @@ Private Sub TransferAllCode(ByVal codeTransfer As ICodeTransfer)
 
     Set codesList = New BetterArray
 
-    'Transfer classes (42 classes)
+    'Transfer classes (45 classes)
     codesList.Push "BetterArray", "DataSheet", "IDataSheet", "LLExport", _
                    "ILLExport", "LLChoices", "ILLChoices", _
                    "LLdictionary", "ILLdictionary", "LLGeo", _
@@ -730,31 +839,39 @@ Private Sub TransferAllCode(ByVal codeTransfer As ICodeTransfer)
                    "ILLTranslation", "OSFiles", "IOSFiles", _
                    "TranslationObject", "ITranslationObject", "LLVariables", _
                    "ILLVariables", "ILLSpatial", "LLSpatial", _
-                   "DropdownLists", "IDropdownLists", "LLShowHide", _
-                   "ILLShowHide", "CustomTable", "ICustomTable", _
+                   "DropdownLists", "IDropdownLists", "ShowHideManager", _
+                   "IShowHideManager", "CustomTable", "ICustomTable", _
                    "LLExporter", "ILLExporter", _
-                   "ImpRep", "IImpRep", "LLImporter", "ILLImporter", _
+                    "LLImporter", "ILLImporter", _
                    "IGraphs", "Graphs", "AnaTabIds", _
-                   "IAnaTabIds", "ExportButtons", "IExportButtons"
+                   "IAnaTabIds", "ExportButton", "IExportButton", _
+                   "HiddenNames", "IHiddenNames"
 
     For counter = codesList.LowerBound To codesList.UpperBound
         codeName = codesList.Item(counter)
         codeTransfer.TransferClass codeName
     Next
 
-    'Transfer modules (6 modules)
+    'Transfer modules (6 modules + conditional ribbon)
     codesList.Clear
     codesList.Push "LinelistCustomFunctions", _
-                   "GeoModule", "LinelistEvents", "EventsLinelistRibbon", _
-                   "EventsLinelistButtons", "EventsGlobalAnalysis"
+                   "GeoModule", "LinelistEvents", _
+                   "EventsLinelistButtons", "EventsGlobalAnalysis", _
+                   "EventsSpatialAnalysis"
 
     For counter = codesList.LowerBound To codesList.UpperBound
         codeName = codesList.Item(counter)
         codeTransfer.TransferModule codeName
     Next
 
-    'Copy ribbon module text (for template workbooks)
-    codeTransfer.CopyModuleText "EventsLinelistRibbon"
+    'Transfer or copy ribbon module depending on template status
+    If this.specs.HasTemplate() Then
+        'Template already contains EventsLinelistRibbon; overwrite its code
+        codeTransfer.CopyModuleText "EventsLinelistRibbon"
+    Else
+        'Non-template: import EventsLinelistRibbon as a new module
+        codeTransfer.TransferModule "EventsLinelistRibbon"
+    End If
 
     'Transfer forms (9 forms)
     codesList.Clear
@@ -830,8 +947,9 @@ End Function
 
 Private Sub ILinelist_AddOutputSheet(ByVal sheetName As String, _
                                      Optional ByVal Hide As Long = xlSheetVeryHidden, _
-                                     Optional ByVal sheetScope As Byte = 1)
-    AddOutputSheet sheetName, Hide, sheetScope
+                                     Optional ByVal sheetScope As Byte = 1, _
+                                     Optional ByVal beforeSheet As String = vbNullString)
+    AddOutputSheet sheetName, Hide, sheetScope, beforeSheet
 End Sub
 
 Private Sub ILinelist_SaveLL()

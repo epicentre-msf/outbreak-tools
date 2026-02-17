@@ -137,8 +137,8 @@ Private Function BuildGeoFixture() As Worksheet
             sh.Cells(1, startCol + 3).Value = "adm2_name"
             sh.Cells(1, startCol + 4).Value = "adm1_name"
         Case "T_NAMES"
-            sh.Cells(1, startCol).Value = "variable"
-            sh.Cells(1, startCol + 1).Value = "value"
+            sh.Cells(1, startCol).Value = "level"
+            sh.Cells(1, startCol + 1).Value = "EN"
         Case "T_HISTOGEO"
             sh.Cells(1, startCol).Value = "HistoGeo"
         Case "T_HISTOHF"
@@ -365,6 +365,116 @@ Public Sub TestGeoNamesFallsBackToRawName()
     Exit Sub
 TestFail:
     CustomTestLogFailure Assert, "TestGeoNamesFallsBackToRawName", Err.Number, Err.Description
+End Sub
+
+'@section UpdateLevelNames tests
+'===============================================================================
+
+'@sub-title Verify that UpdateLevelNames populates RNG_ADM*NAME from T_NAMES.
+'@details
+'Arranges a geobase fixture with T_NAMES containing 5 data rows mapping
+'level identifiers (adm1_name through hf_name) to English translations, and
+'RNG_GeoLangCode set to "EN". Acts by creating an LLGeo instance and calling
+'Translate (which invokes UpdateLevelNames internally). Asserts that
+'RNG_ADM1NAME is populated with the expected translated value "Province",
+'confirming that the programmatic lookup from T_NAMES replaces the previous
+'formula-based approach.
+'@TestMethod("LLGeo")
+Public Sub TestUpdateLevelNamesPopulatesFromTNAMES()
+    CustomTestSetTitles Assert, "LLGeo", "TestUpdateLevelNamesPopulatesFromTNAMES"
+    On Error GoTo TestFail
+
+    'Arrange
+    Dim sh As Worksheet
+    Set sh = BuildGeoFixture()
+
+    'Populate T_NAMES with level-to-translation data
+    Dim loNames As ListObject
+    Set loNames = sh.ListObjects("T_NAMES")
+    Dim baseCol As Long
+    baseCol = loNames.Range.Column
+
+    sh.Cells(2, baseCol).Value = "adm1_name"
+    sh.Cells(2, baseCol + 1).Value = "Province"
+    sh.Cells(3, baseCol).Value = "adm2_name"
+    sh.Cells(3, baseCol + 1).Value = "District"
+    sh.Cells(4, baseCol).Value = "adm3_name"
+    sh.Cells(4, baseCol + 1).Value = "Commune"
+    sh.Cells(5, baseCol).Value = "adm4_name"
+    sh.Cells(5, baseCol + 1).Value = "Village"
+    sh.Cells(6, baseCol).Value = "hf_name"
+    sh.Cells(6, baseCol + 1).Value = "Health Facility"
+
+    'Resize T_NAMES to include all 5 data rows
+    loNames.Resize sh.Range(sh.Cells(loNames.Range.Row, baseCol), _
+                            sh.Cells(6, baseCol + 1))
+
+    'Set the language code so UpdateLevelNames knows which column to read
+    Dim geoStore As IHiddenNames
+    Set geoStore = HiddenNames.Create(sh)
+    geoStore.SetValue "RNG_GeoLangCode", "EN"
+    geoStore.SetValue "RNG_GeoUpdated", "updated"
+
+    'Act: Create LLGeo and call Translate which triggers UpdateLevelNames
+    Dim geo As ILLGeo
+    Set geo = LLGeo.Create(sh)
+    geo.Translate rawNames:=False
+
+    'Assert
+    Assert.AreEqual "Province", sh.Range("RNG_ADM1NAME").Value, _
+                    "RNG_ADM1NAME should be populated from T_NAMES EN column"
+    Assert.AreEqual "District", sh.Range("RNG_ADM2NAME").Value, _
+                    "RNG_ADM2NAME should be populated from T_NAMES EN column"
+    Assert.AreEqual "Health Facility", sh.Range("RNG_HFNAME").Value, _
+                    "RNG_HFNAME should be populated from T_NAMES EN column"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestUpdateLevelNamesPopulatesFromTNAMES", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verify that UpdateLevelNames handles empty language code gracefully.
+'@details
+'Arranges a geobase fixture with T_NAMES data but RNG_GeoLangCode set to empty
+'string (default). Acts by creating an LLGeo instance and calling Translate.
+'Asserts that RNG_ADM1NAME remains empty, confirming that UpdateLevelNames
+'silently skips when no language code is configured.
+'@TestMethod("LLGeo")
+Public Sub TestUpdateLevelNamesSkipsWithNoLangCode()
+    CustomTestSetTitles Assert, "LLGeo", "TestUpdateLevelNamesSkipsWithNoLangCode"
+    On Error GoTo TestFail
+
+    'Arrange
+    Dim sh As Worksheet
+    Set sh = BuildGeoFixture()
+
+    'Populate T_NAMES with data but leave RNG_GeoLangCode empty (default)
+    Dim loNames As ListObject
+    Set loNames = sh.ListObjects("T_NAMES")
+    Dim baseCol As Long
+    baseCol = loNames.Range.Column
+
+    sh.Cells(2, baseCol).Value = "adm1_name"
+    sh.Cells(2, baseCol + 1).Value = "Province"
+    loNames.Resize sh.Range(sh.Cells(loNames.Range.Row, baseCol), _
+                            sh.Cells(2, baseCol + 1))
+
+    Dim geoStore As IHiddenNames
+    Set geoStore = HiddenNames.Create(sh)
+    geoStore.SetValue "RNG_GeoUpdated", "updated"
+
+    'Act
+    Dim geo As ILLGeo
+    Set geo = LLGeo.Create(sh)
+    geo.Translate rawNames:=False
+
+    'Assert: RNG_ADM1NAME should remain empty since no langCode is set
+    Assert.AreEqual vbNullString, CStr(sh.Range("RNG_ADM1NAME").Value & ""), _
+                    "RNG_ADM1NAME should remain empty when RNG_GeoLangCode is not set"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestUpdateLevelNamesSkipsWithNoLangCode", Err.Number, Err.Description
 End Sub
 
 '@section GeoLevel tests

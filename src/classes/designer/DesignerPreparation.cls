@@ -383,6 +383,7 @@ Private Sub EnsureWorkbookFlags()
     this.store.EnsureName TAG_LL_LANG_CODE, vbNullString, HiddenNameTypeString
     this.store.EnsureName TAG_DICT_LANG, vbNullString, HiddenNameTypeString
     this.store.EnsureName TAG_LAST_OPENED, Format$(Now, "yyyy-mm-dd"), HiddenNameTypeString
+    this.store.SetValue TAG_LAST_OPENED, Format$(Now, "yyyy-mm-dd")
 End Sub
 
 '@label:ensure-geo-flags
@@ -473,11 +474,11 @@ End Function
 Private Sub RegisterAllDropdowns()
     RegisterDropdown DROP_SETUP_LANGUAGES, Array(vbNullString, vbNullString)
     RegisterDropdown DROP_INTERFACE_LANGUAGES, _
-        Array(ChrW$(1593) & ChrW$(1585) & ChrW$(1576) & ChrW$(1609), _
-              "English", _
-              "Fran" & ChrW$(231) & "ais", _
-              "Portugu" & ChrW$(233) & "s", _
-              "Espa" & ChrW$(241) & "ol")
+        Array("ARA-" & ChrW$(1593) & ChrW$(1585) & ChrW$(1576) & ChrW$(1609), _
+              "ENG-English", _
+              "FRA-Fran" & ChrW$(231) & "ais", _
+              "POR-Portugu" & ChrW$(233) & "s", _
+              "ESP-Espa" & ChrW$(241) & "ol")
     RegisterDropdown DROP_EPIWEEK_START, Array("1", "2", "3", "4", "5", "6", "7")
     RegisterDropdown DROP_DESIGN_VALUES, Array("design 1", "design 2", "user defined")
 End Sub
