@@ -391,6 +391,7 @@ Public Sub Prepare()
         Dim instrSheet As Worksheet
 
         instrName = trans.TranslatedValue("INSTSHEETNAME")
+        Debug.Print "instruction name:", instrName
 
         On Error Resume Next
         Set instrSheet = outWkb.Worksheets(instrName)
@@ -401,9 +402,10 @@ Public Sub Prepare()
             instrSheet.Visible = xlSheetVisible
             'Move instruction sheet to first position
             instrSheet.Move Before:=outWkb.Worksheets(1)
+            
             'Re-hide if instruct flag is not "add"
-            If this.specs.Value("instruct") <> "add" Then
-                instrSheet.Visible = xlSheetVeryHidden
+            If this.specs.Value("instruct") = "No" Then
+               instrSheet.Visible = xlSheetVeryHidden
             End If
         End If
     End If
@@ -511,6 +513,7 @@ Private Property Get OutputWkb() As Workbook
     If this.outWkb Is Nothing Then
         Set this.outWkb = this.specs.LLWorkbook
         this.firstSheet = this.outWkb.Worksheets(1).Name
+        Debug.Print "First sheet:", this.firstSheet
     End If
 
     Set OutputWkb = this.outWkb

@@ -1204,6 +1204,8 @@ Public Property Get Value(ByVal tagName As String) As String
     Dim rngName As String
     Dim mainSheet As Worksheet
     Dim retVal As String
+    Dim useHidden As Boolean
+    Dim hn As IHiddenNames
 
     normalizedTag = LCase$(Trim$(tagName))
     If LenB(normalizedTag) = 0 Then Exit Property
@@ -1214,6 +1216,8 @@ Public Property Get Value(ByVal tagName As String) As String
             Exit Property
         Case "llpassword"
             rngName = "RNG_LLPwdOpen"
+        Case "debugpassword"
+            rngName = "RNG_RNG_LLPassword"
         Case "geopath"
             rngName = "RNG_PathGeo"
         Case "setuppath"
@@ -1226,10 +1230,14 @@ Public Property Get Value(ByVal tagName As String) As String
             rngName = "RNG_LangSetup"
         Case "lllang"
             rngName = "RNG_LLForm"
-        Case "askopen"
-            rngName = "RNG_AskOpen"
+        Case "alert"
+            'HiddenName at workbook level on alerts (chkAlert)
+            rngName = "chkAlert"
+            useHidden = True
         Case "instruct"
-            rngName = "RNG_MainInstruct"
+            rngName = "chkInstruct"
+            useHidden = True
+            'HiddenName at workbook leven on instructions (chkInstruct)
         Case "epiweekstart"
             Set mainSheet = ResolveSheet(SHEET_MAIN)
             On Error Resume Next
@@ -1252,10 +1260,15 @@ Public Property Get Value(ByVal tagName As String) As String
             Exit Property
     End Select
 
-    Set mainSheet = ResolveSheet(SHEET_MAIN)
-    On Error Resume Next
-    Value = mainSheet.Range(rngName).Value
-    On Error GoTo 0
+    If useHidden Then
+        Set hn = HiddenNames.Create(this.specsWkb)
+        Value = hn.ValueAsString(rngName)
+    Else
+        Set mainSheet = ResolveSheet(SHEET_MAIN)
+        On Error Resume Next
+        Value = mainSheet.Range(rngName).Value
+        On Error GoTo 0
+    End If
 End Property
 
 
