@@ -183,7 +183,7 @@ Public Sub Export(ByVal outputWkb As Workbook, _
 
     For Each Lo In sh.ListObjects
         Set tableAdapter = CustomTable.Create(Lo)
-        tableAdapter.Export exportSheet, startLine:=startLine, addListObject:=True
+        tableAdapter.Export exportSheet, startLine:=startLine, addListObject:=True, clearSheet:=False
         startLine = startLine + Lo.Range.Rows.Count + 2
     Next
 
