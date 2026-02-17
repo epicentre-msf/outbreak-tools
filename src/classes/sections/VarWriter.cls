@@ -1047,9 +1047,12 @@ Private Sub AddGeoConditionalFormatting()
     Dim condAdd As String
     Dim varControl As String
     Dim actAdd As String
+    Dim condForm As String
 
     varControl = ValueOf("control")
-    If Not (InStr(1, varControl, "geo") > 0) Then Exit Sub
+    'Conditional formatting is set only on geo1, geo2, geo3 and geo4 columns. Others
+    'should be skept
+    If Not (InStr(1, varControl, "geo") = 1)  Then Exit Sub
 
     varValid = "pcode" & "_" & this.varName
     Set varObject = Variables()
@@ -1059,9 +1062,10 @@ Private Sub AddGeoConditionalFormatting()
     Set shObj = SheetsObject()
     condAdd = shObj.VariableAddress(varValid)
     actAdd = shObj.VariableAddress(this.varName)
+    condForm = "= AND(" & condAdd & "= " & Chr(34) & Chr(34) & "," & actAdd & "<>" & Chr(34) & Chr(34) & ")"
 
     cellRng.FormatConditions.Add Type:=xlExpression, _
-        Formula1:="= AND(" & condAdd & "= " & Chr(34) & Chr(34) & "," & actAdd & "<>" & Chr(34) & Chr(34) & ")"
+        Formula1:=condForm
     With cellRng.FormatConditions(cellRng.FormatConditions.Count)
         .Interior.Color = RGB(242, 147, 12)
         .SetFirstPriority
