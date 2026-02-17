@@ -1296,7 +1296,7 @@ Private Function ExcelFormula(ByVal formVal As String, _
         excelForm = "= " & excelForm
     End If
 
-    If Not varFormObject.HasLiterals Then
+    If Not varFormObject.HasSetupVariables Then
         excelForm = Application.WorksheetFunction.Trim(Replace(excelForm, "=", ""))
 
         Select Case validationTypes
