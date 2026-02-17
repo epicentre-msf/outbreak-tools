@@ -501,6 +501,7 @@ Private Sub BuildSections(ByVal sh As Worksheet, ByVal printSh As Worksheet)
         Set crfSh = this.ll.CRFWksh(this.sheetName)
         On Error GoTo 0
 
+
         Set secBuilder = SectionBuilder.Create( _
             SectionBuilderModeHList, specs, sh, printSh, crfSh, dropdownObj, customDropdownObj)
     Else
