@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Designer")
 '@ModuleDescription("Non-core ribbon callbacks for the designer workbook.")
-'@depends DesignerPreparation, IDesignerPreparation, DesignerEntry, IDesignerEntry, RibbonDev, LLGeo, ILLGeo, ApplicationState, IApplicationState, OSFiles, IOSFiles, HiddenNames, IHiddenNames, BetterArray, DropdownLists, IDropdownLists, DesignerImportService, IDesignerImportService, LinelistSpecs, ILinelistSpecs, Linelist, ILinelist
+'@depends DesignerPreparation, IDesignerPreparation, DesignerEntry, IDesignerEntry, RibbonDev, LLGeo, ILLGeo, ApplicationState, IApplicationState, OSFiles, IOSFiles, HiddenNames, IHiddenNames, BetterArray, DropdownLists, IDropdownLists, DesignerImportService, IDesignerImportService, LinelistSpecs, ILinelistSpecs, Linelist, ILinelist, ListBuilder, IListBuilder, LLSheets, ILLSheets
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 'Non-core ribbon logics are callbacks whose absence will not fire a
@@ -362,7 +362,8 @@ Public Sub clickGenerate()
     Set ll = Linelist.Create(specs)
     ll.Prepare
 
-
+    'Build the first data entry worksheet (sections, variables, formatting)
+    BuildFirstSheet specs, ll
 
     'Save the linelist as .xlsb with password protection
     ll.SaveLL
@@ -401,6 +402,34 @@ End Sub
 
 '@section Internal helpers
 '===============================================================================
+
+'@Description("Build the first data entry worksheet from the dictionary.")
+Private Sub BuildFirstSheet(ByVal specs As ILinelistSpecs, ByVal ll As ILinelist)
+    Dim dict As ILLdictionary
+    Dim llshs As ILLSheets
+    Dim firstSheetName As String
+    Dim sheetType As String
+    Dim layer As Byte
+    Dim listBld As IListBuilder
+
+    Set dict = specs.Dictionary
+    Set llshs = LLSheets.Create(dict)
+
+    'The first data entry sheet is determined by the first row of the dictionary
+    firstSheetName = dict.DataRange("sheet name").Cells(1, 1).Value
+    sheetType = llshs.SheetInfo(firstSheetName)
+
+    If sheetType = "vlist1D" Then
+        layer = ListBuilderLayerVList
+    ElseIf sheetType = "hlist2D" Then
+        layer = ListBuilderLayerHList
+    Else
+        Exit Sub
+    End If
+
+    Set listBld = ListBuilder.Create(layer, firstSheetName, ll)
+    listBld.Build
+End Sub
 
 '@Description("Extract languages from setup Translations sheet and update the setup languages dropdown.")
 Private Sub ExtractAndUpdateLanguages(ByVal tradSheet As Worksheet)
