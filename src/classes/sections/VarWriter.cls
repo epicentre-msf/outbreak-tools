@@ -35,6 +35,7 @@ Private Type TVarWriter
     layer As Byte
     specs As ILinelistSpecs
     wksh As Worksheet
+    hn As IHiddenNames
     printWksh As Worksheet
     crfWksh As Worksheet
     dropdown As IDropdownLists
@@ -121,6 +122,7 @@ End Property
 '@prop-title Assign the target main worksheet
 Public Property Set InternalWksh(ByVal wksh As Worksheet)
     Set this.wksh = wksh
+    Set this.hn = HiddenNames.Create(this.wksh)
 End Property
 
 '@label:internal-layer
@@ -218,6 +220,10 @@ End Property
 '@return ITranslationObject. The translation provider.
 Private Property Get Trans() As ITranslationObject
     Set Trans = this.specs.TransObject()
+End Property
+
+Private Property Get HNames() As IHiddenNames
+    Set HNames = this.hn
 End Property
 
 '@label:formula-data-obj
@@ -520,11 +526,10 @@ Private Sub AddLabel(Optional ByVal usePrinted As Boolean = False)
             cellRng.Offset(-2).Comment.Visible = False
         End If
 
-        ' Control info in hidden rows
-        cellRng.Offset(-5).Value = varControl
-        design.ApplyFormat cellRng.Offset(-5), scope:=LinelistHiddenCell
-        cellRng.Offset(-6).Value = varListAutoOrigin
-        design.ApplyFormat cellRng.Offset(-6), scope:=LinelistHiddenCell
+        ' Control info in hidden rows - Use HiddenNames instead
+        HNames.EnsureName varName & " -- " & "control", varControl, HiddenNameTypeString
+        HNames.EnsureName varName & " -- " & "listauto", varListAutoOrigin, HiddenNameTypeString
+        HNames.EnsureName varName & " -- " & "address", cellRng.Address, HiddenNameTypeString
 
         ' Geo labels
         If (InStr(1, varControl, "geo") > 0) Or (varControl = "hf") Or _
@@ -534,7 +539,11 @@ Private Sub AddLabel(Optional ByVal usePrinted As Boolean = False)
         End If
 
         ' Editable labels
-        If ((varEditLab = "yes") Or (varControl = "custom")) Then cellRng.Offset(-2).Locked = False
+        'Add a tag for editable
+        If ((varEditLab = "yes") Or (varControl = "custom")) Then 
+            HNames.EnsureName varName & " -- " & "editable", "Yes", HiddenNameTypeString
+            cellRng.Offset(-2).Locked = False
+        End If
 
         ' Hidden columns
         varToPrint = ValueOf("register book")
@@ -568,6 +577,7 @@ Private Sub AddLabel(Optional ByVal usePrinted As Boolean = False)
         End If
 
         ' Variable name
+        HNames.EnsureName varName & " -- " & "address", cellRng.Address, HiddenNameTypeString
         cellRng.Name = varName
 
         ' Variable note
@@ -587,9 +597,6 @@ Private Sub AddLabel(Optional ByVal usePrinted As Boolean = False)
         cellRng.Offset(, -2).Locked = True
         cellRng.Offset(, -3).Locked = True
 
-        ' Control info in adjacent cell
-        cellRng.Offset(, 1).Value = varControl
-        design.ApplyFormat cellRng.Offset(, 1), scope:=LinelistHiddenCell
     End If
 End Sub
 
