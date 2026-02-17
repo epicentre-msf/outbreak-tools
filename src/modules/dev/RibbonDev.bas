@@ -22,7 +22,6 @@ Public Sub OnRibbonLoad(ByVal ribbon As IRibbonUI)
     If ribbonRegistered Then Exit Sub
     Set gRibbon = ribbon
     ribbonRegistered = True
-    Debug.Print "Ribbon registered:", ribbonRegistered
 End Sub
 
 Public Function ActualRibbon() As IRibbonUI
