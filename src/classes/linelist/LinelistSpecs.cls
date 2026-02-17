@@ -67,6 +67,7 @@ Private Type TLinelistSpecs
     catValues As BetterArray
     outputWkb As Workbook
     tempRepos As ITemporaryRepos
+    prepared As Boolean
 End Type
 
 Private this As TLinelistSpecs
@@ -127,22 +128,17 @@ Public Property Get Self() As ILinelistSpecs
     Set Self = Me
 End Property
 
-'@label:workbook
-'@prop-title Primary workbook backing all specification queries
+'@label:des-workbook
+'@prop-title Designer workbook backing all specification queries
 '@details
-'Returns the specifications workbook reference. Raises an error if
-'the workbook has not been assigned via the factory method.
-'@return Workbook. The specifications workbook.
+'Returns the designer/specifications workbook reference. Raises an error
+'if the workbook has not been assigned via the factory method.
+'@return Workbook. The designer workbook.
 '@throws ProjectError.ObjectNotInitialized When the workbook is not set.
-'@remarks
-'The public property is named LLWorkbook to avoid colliding with the
-'VBA Workbook keyword; the ILinelistSpecs interface exposes this as
-'Workbook. The delegation stub ILinelistSpecs_Workbook calls Me.Workbook,
-'which resolves through the interface dispatch mechanism.
 '@export
-Public Property Get LLWorkbook() As Workbook
+Public Property Get DesWorkbook() As Workbook
     EnsureWorkbook
-    Set LLWorkbook = this.specsWkb
+    Set DesWorkbook = this.specsWkb
 End Property
 
 '@label:internal-workbook
@@ -295,6 +291,34 @@ Private Sub EnterBusyState(ByRef busyScope As IApplicationState)
             calculateOnSave:=Application.CalculateBeforeSave, _
             busyCursor:=Application.Cursor
     End If
+End Sub
+
+'@label:import-geobase
+'@sub-title Import geobase data from the user-specified path
+'@details
+'Reads the geobase file path from the Main worksheet. If the path is not
+'empty, opens the geobase workbook, sets the dictionary language on the
+'exported geo worksheet via RNG_MetaLang, calls geoObj.Import to populate
+'the output geo sheet, then closes the geobase workbook. Silently skips
+'if the path is empty or the file cannot be opened.
+'@param geoObj ILLGeo. The geo instance on the output workbook.
+'@param dictLang String. The dictionary language code for RNG_MetaLang.
+Private Sub ImportGeobase(ByVal geoObj As ILLGeo)
+    Dim geoPath As String
+    Dim geoWkb As Workbook
+    Dim geoNames As IHiddenNames
+
+    geoPath = Trim$(Value("geopath"))
+    If LenB(geoPath) = 0 Then Exit Sub
+
+    On Error Resume Next
+    Set geoWkb = Workbooks.Open(geoPath)
+    On Error GoTo 0
+
+    If geoWkb Is Nothing Then Exit Sub
+
+    geoObj.Import geoWkb
+    geoWkb.Close saveChanges:=False
 End Sub
 
 '@label:exit-busy-state
@@ -1318,6 +1342,9 @@ Public Sub Prepare(ByVal importService As IDesignerImportService)
     Set dictTrads = TransObject(TranslationOfDictionary)
     Set msgTrads = TransObject()
 
+    'Import geobase from user-specified path (optional — skip if no path)
+    ImportGeobase geoObj
+
     Set preservedNames = BuildPreservedSheetNames(msgTrads)
     dict.Prepare preservedNames, geoObj, "table"
 
@@ -1331,11 +1358,11 @@ Public Sub Prepare(ByVal importService As IDesignerImportService)
     exportsObj.Translate dictTrads
     analysisObj.Translate dictTrads
 
-    prepared = True
+    this.prepared = True
 
 CleanExit:
     ExitBusyState busyScope
-    If prepared Then ResetPostImportCaches
+    If this.prepared Then ResetPostImportCaches
     Exit Sub
 
 CleanFail:
@@ -1356,15 +1383,15 @@ CleanFail:
     End If
 End Sub
 
-'@label:output-workbook
+'@label:ll-workbook
 '@prop-title The output linelist workbook created during Prepare
 '@details
-'Returns the workbook created by Prepare that received exported data from
-'the import service. Returns Nothing before Prepare is called.
-'@return Workbook. The output workbook, or Nothing.
+'Returns the linelist workbook created by Prepare that received exported
+'data from the import service. Returns Nothing before Prepare is called.
+'@return Workbook. The linelist workbook, or Nothing.
 '@export
-Public Property Get OutputWorkbook() As Workbook
-    Set OutputWorkbook = this.outputWkb
+Public Property Get LLWorkbook() As Workbook
+    Set LLWorkbook = this.outputWkb
 End Property
 
 '@label:temporary-repos
@@ -1439,8 +1466,8 @@ Private Sub ILinelistSpecs_ResetCaches()
     ResetCaches
 End Sub
 
-Private Property Get ILinelistSpecs_Workbook() As Workbook
-    Set ILinelistSpecs_Workbook = Me.Workbook
+Private Property Get ILinelistSpecs_DesWorkbook() As Workbook
+    Set ILinelistSpecs_DesWorkbook = Me.DesWorkbook
 End Property
 
 Private Property Get ILinelistSpecs_Dictionary() As ILLdictionary
@@ -1507,8 +1534,8 @@ Private Sub ILinelistSpecs_Prepare(ByVal importService As IDesignerImportService
     Prepare importService
 End Sub
 
-Private Property Get ILinelistSpecs_OutputWorkbook() As Workbook
-    Set ILinelistSpecs_OutputWorkbook = Me.OutputWorkbook
+Private Property Get ILinelistSpecs_LLWorkbook() As Workbook
+    Set ILinelistSpecs_LLWorkbook = Me.LLWorkbook
 End Property
 
 Private Property Get ILinelistSpecs_OutputTemporaryRepos() As ITemporaryRepos
@@ -1518,3 +1545,7 @@ End Property
 Private Sub ILinelistSpecs_ErrorManage(Optional ByVal textMessage As String = vbNullString)
     ErrorManage textMessage
 End Sub
+
+Private Property Get ILinelistSpecs_Prepared() As Boolean
+    ILinelistSpecs_Prepared = this.prepared
+End Property

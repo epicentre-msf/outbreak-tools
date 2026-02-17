@@ -8,19 +8,20 @@ Private Const DROPDOWNSHEET As String = "dropdown_lists__"
 Private Const GEOSHEET As String = "Geo"
 Private Const DICTSHEET As String = "Dictionary"
 Private Const LLSHEET As String = "LinelistTranslation"
-Private Const TRADSHEET As String = "Translations"
-Private Const UPSHEET As String = "updates__"  'worksheet for updated values
 Private Const PASSSHEET As String = "__pass"
 
 Private tradmess As ITranslationObject              'Translation of messages object
-Private lltrads As ILLTranslations
+Private lltrads As ILLTranslation
+Private wkbNames As IHiddenNames
 Private wb As Workbook
 
 'Speed up before a work
 Private Sub BusyApp()
     Application.ScreenUpdating = False
     Application.DisplayAlerts = False
+    On Error Resume Next
     Application.Calculation = xlCalculationManual
+    On Error GoTo 0
     Application.EnableAnimations = False
 End Sub
 
@@ -35,11 +36,9 @@ End Sub
 'Initialize translation
 Private Sub InitializeTrads()
     Set wb = ThisWorkbook
-    Set lltrads = LLTranslations.Create( _
-                                        wb.Worksheets(LLSHEET), _
-                                        wb.Worksheets(TRADSHEET) _
-                                        )
+    Set lltrads = LLTranslation.Create(wb.Worksheets(LLSHEET))
     Set tradmess = lltrads.TransObject()
+    Set wkbNames = HiddenNames.Create(wb)
 End Sub
 
 'Unique Values of a BetterArray
@@ -99,7 +98,6 @@ Public Sub EventValueChangeLinelist(Target As Range)
     
     Dim drop As IDropdownLists                 'Dropdown Object for updating geolevels
     Dim geo As ILLGeo
-    Dim upobj As IUpVal
     Dim dict As ILLdictionary
     Dim vars As ILLVariables
 
@@ -236,9 +234,8 @@ Public Sub EventValueChangeLinelist(Target As Range)
     'Update the list auto
     If (Target.Row >= startLine) And _
        (sh.Cells(startLine - 6, targetColumn).Value = "list_auto_origin") Then
-        
-        Set upobj = UpVal.Create(wb.Worksheets(UPSHEET))
-        upobj.SetValue "RNG_UpdateListAuto", "yes"
+
+        wkbNames.SetValue "RNG_UpdateListAuto", "yes"
 
         Exit Sub
     End If
@@ -249,7 +246,7 @@ Public Sub EventValueChangeLinelist(Target As Range)
     If Not (Intersect(Target, rng) Is Nothing) Then
 
         sectionName = Replace(Target.Value, _
-                         lltrads.Value("gotosection") & ": ", _
+                         wkbNames.ValueAsString("RNG_GoToSection") & ": ", _
                          vbNullString)
 
         Set hRng = hRng.Offset(-3)
@@ -297,22 +294,19 @@ End Sub
 Public Sub EventDesactivateLinelist(ByVal prevSheetName As String)
 
     Dim prevsh As Worksheet
-    Dim upobj As IUpVal
 
     On Error GoTo ErrHand
 
     InitializeTrads
 
-    Set upobj = UpVal.Create(wb.Worksheets(UPSHEET))
-
     'Update the listAuto only and only if update list auto is yes
-    If upobj.Value("RNG_UpdateListAuto") <> "yes" Then Exit Sub
-    
+    If wkbNames.ValueAsString("RNG_UpdateListAuto") <> "yes" Then Exit Sub
+
     Set prevsh = wb.Worksheets(prevSheetName)
 
     BusyApp
     UpdateListAuto prevsh
-    upobj.SetValue "RNG_UpdateListAuto", "no"
+    wkbNames.SetValue "RNG_UpdateListAuto", "no"
     NotBusyApp
     Exit Sub
 
@@ -451,7 +445,7 @@ Public Sub EventValueChangeVList(ByVal Target As Range)
     Set rng = sh.Range(tablename & "_" & GOTOSECCODE)
     If Not Intersect(Target, rng) Is Nothing Then
         varLabel = Replace(Target.Value, _
-                           lltrads.Value("gotosection") & ": ", _
+                           wkbNames.ValueAsString("RNG_GoToSection") & ": ", _
                            vbNullString)
         Set rngLook = sh.Cells.Find(What:=varLabel, lookAt:=xlWhole, MatchCase:=True)
         If Not rngLook Is Nothing Then rngLook.Activate

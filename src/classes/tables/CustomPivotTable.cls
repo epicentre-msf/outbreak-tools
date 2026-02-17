@@ -154,7 +154,9 @@ Public Sub Add(ByVal title As String, _
 
     'Advance position for next block
     shNames.EnsureName HNME_OUTPUT_ROW, CStr(startRow + BLOCK_SIZE), HiddenNameTypeLong
+    shNames.SetValue HNME_OUTPUT_ROW, CStr(startRow + BLOCK_SIZE)
     shNames.EnsureName HNME_COUNTER, CStr(counter + 1), HiddenNameTypeLong
+    shNames.SetValue HNME_COUNTER, CStr(counter + 1)
 
     Exit Sub
 

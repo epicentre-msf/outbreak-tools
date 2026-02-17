@@ -923,6 +923,7 @@ NextLo:
 
     'update language value
     store.EnsureName WORKSHEETLANGUAGENAME, trads.Language, HiddenNameTypeString
+    store.SetValue WORKSHEETLANGUAGENAME, trads.Language
 End Sub
 
 '@section Operations

@@ -1,0 +1,188 @@
+@startuml architecture-foundation
+
+' =============================================================================
+' OutbreakTools — Foundation Layer Detail
+' =============================================================================
+' Packages: general/ (16 classes), rubberduck/ (1 class)
+' Shows intra-layer dependencies only.
+' Arrow semantics:
+'   ──>  (solid)  = creates / delegates to / renders
+'   ..>  (dashed) = uses / reads / calls methods on
+' =============================================================================
+
+title OutbreakTools — Foundation Layer\ngeneral/ + rubberduck/
+
+skinparam packageStyle rectangle
+skinparam classFontSize 11
+skinparam packageFontSize 13
+skinparam packageFontStyle bold
+skinparam defaultTextAlignment center
+top to bottom direction
+
+' =============================================================================
+' GENERAL PACKAGE
+' =============================================================================
+
+package "general" as PKG_GENERAL #LightSteelBlue {
+
+    ' --- Tier 0: No internal dependencies ---
+    together {
+        class BetterArray {
+            Array utility for VBA
+            (used by nearly all classes)
+        }
+
+        class Checking <<IChecking>> {
+            Diagnostic message store
+            tagged by key + severity
+        }
+
+        class HiddenNames <<IHiddenNames>> {
+            Worksheet/workbook-level
+            name-value metadata
+        }
+
+        class ApplicationState <<IApplicationState>> {
+            Snapshots and restores
+            Excel Application settings
+        }
+
+        class TemporaryRepos <<ITemporaryRepos>> {
+            Manages temp folder on disk
+        }
+
+        class OSFiles <<IOSFiles>> {
+            Cross-platform file/folder
+            picker (Win + macOS)
+        }
+
+        class ProgressBar <<IProgressBar>> {
+            Cell-based visual progress
+            indicator on worksheet
+        }
+    }
+
+    ' --- Tier 1: Depends on Tier 0 ---
+    together {
+        class Passwords <<IPasswords>> {
+            Workbook/worksheet protection
+            key generation, debug toggle
+        }
+
+        class DataSheet <<IDataSheet>> {
+            Low-level worksheet data
+            manipulation (table-like)
+        }
+
+        class TranslationObject <<ITranslationObject>> {
+            Tag-based translator
+            backed by ListObject table
+        }
+
+        class CheckingOutput <<ICheckingOutput>> {
+            Renders IChecking entries
+            to formatted worksheet
+        }
+    }
+
+    ' --- Tier 2: Depends on Tier 1 ---
+    together {
+        class CustomTable <<ICustomTable>> {
+            ListObject wrapper: column
+            lookup, import/export, sort
+        }
+
+        class DropdownLists <<IDropdownLists>> {
+            Worksheet-based dropdown
+            lists on ListObjects
+        }
+    }
+
+    ' --- Tier 3: Depends on Tier 2 ---
+    together {
+        class LLFormat <<ILLFormat>> {
+            Format table reader
+            with cached style lookups
+        }
+
+        class LLChoices <<ILLChoices>> {
+            Choice lists for dropdowns
+            and cascading selectors
+        }
+
+        class Buttons <<IButtons>> {
+            Worksheet shape wrapper
+            for linelist buttons
+        }
+    }
+}
+
+' =============================================================================
+' RUBBERDUCK PACKAGE
+' =============================================================================
+
+package "rubberduck" as PKG_RUB #LightGray {
+    class CustomTest <<ICustomTest>> {
+        Test harness: assertions
+        + worksheet output
+    }
+}
+
+' =============================================================================
+' INTRA-LAYER DEPENDENCIES
+' =============================================================================
+' Arrow semantics:
+'   ──>  (solid)  = creates / delegates to / renders
+'   ..>  (dashed) = uses / reads / calls methods on
+
+' Tier 1 deps on Tier 0
+Passwords ..> Checking
+Passwords ..> TranslationObject
+DataSheet ..> Checking
+DataSheet ..> HiddenNames
+TranslationObject ..> Checking
+CheckingOutput --> Checking
+CheckingOutput ..> HiddenNames
+
+' Tier 2 deps on Tier 0-1
+CustomTable ..> Checking
+CustomTable ..> HiddenNames
+CustomTable ..> DropdownLists
+DropdownLists ..> HiddenNames
+DropdownLists ..> Checking
+
+' Tier 3 deps on Tier 2
+LLFormat ..> CustomTable
+LLFormat ..> Checking
+LLChoices ..> CustomTable
+LLChoices ..> DataSheet
+LLChoices ..> Checking
+LLChoices ..> TranslationObject
+Buttons ..> Checking
+Buttons ..> LLFormat
+
+' Rubberduck
+CustomTest --> CheckingOutput
+
+' =============================================================================
+' NOTES
+' =============================================================================
+
+note as N_IMPLICIT
+  **Implicit dependencies (not shown):**
+  BetterArray — used by Checking, HiddenNames,
+  CustomTable, DataSheet, LLChoices, LLFormat,
+  Passwords, TranslationObject, CheckingOutput, etc.
+  ProjectError — used by ApplicationState,
+  TemporaryRepos, ProgressBar, Passwords, HiddenNames, etc.
+end note
+
+note as N_ARROWS
+  **Arrow semantics:**
+  ──> (solid) = creates / delegates to / renders
+  ..> (dashed) = uses / reads / calls methods on
+end note
+
+center footer [[architecture-overview.svg Back to Overview]]
+
+@enduml
