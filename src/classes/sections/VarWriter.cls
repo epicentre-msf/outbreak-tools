@@ -531,6 +531,11 @@ Private Sub AddLabel(Optional ByVal usePrinted As Boolean = False)
         HNames.EnsureName varName & " -- " & "listauto", varListAutoOrigin, HiddenNameTypeString
         HNames.EnsureName varName & " -- " & "address", cellRng.Address, HiddenNameTypeString
 
+        ' Sheet-level flag for listauto presence (used by EventLinelist)
+        If varListAutoOrigin <> vbNullString Then
+            HNames.EnsureName "has_listauto", "yes", HiddenNameTypeString
+        End If
+
         ' Geo labels
         If (InStr(1, varControl, "geo") > 0) Or (varControl = "hf") Or _
             (InStr(1, varName, "pcode_adm") > 0) Then
@@ -541,7 +546,7 @@ Private Sub AddLabel(Optional ByVal usePrinted As Boolean = False)
         ' Editable labels
         'Add a tag for editable
         If ((varEditLab = "yes") Or (varControl = "custom")) Then 
-            HNames.EnsureName varName & " -- " & "editable", "Yes", HiddenNameTypeString
+            HNames.EnsureName varName & " -- " & "editable", "yes", HiddenNameTypeString
             cellRng.Offset(-2).Locked = False
         End If
 
@@ -592,8 +597,13 @@ Private Sub AddLabel(Optional ByVal usePrinted As Boolean = False)
             cellRng.EntireRow.Hidden = True
         End If
 
+        ' Editable labels
+        If ((varEditLab = "yes") Or (varControl = "custom")) Then
+            HNames.EnsureName varName & " -- " & "editable", "yes", HiddenNameTypeString
+            cellRng.Offset(, -1).Locked = False
+        End If
+
         cellRng.Locked = False
-        If (varEditLab = "yes") Then cellRng.Offset(, -1).Locked = False
         cellRng.Offset(, -2).Locked = True
         cellRng.Offset(, -3).Locked = True
 
