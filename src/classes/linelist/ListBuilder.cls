@@ -461,7 +461,7 @@ Private Sub BuildVList()
         Set rng = .Range(.Cells(cellRng.Row, cellRng.Column), .Cells(rng.Row, cellRng.Column))
     End With
 
-    shHn.EnsureName tableName & "_PLAGEVALUES", rng.Address, HiddenNameTypeString
+    rng.Name = tableName & "_PLAGEVALUES"
 
     pass.Protect sh
 End Sub

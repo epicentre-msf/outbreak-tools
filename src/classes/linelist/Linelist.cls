@@ -46,7 +46,7 @@ Private Const CLASS_NAME As String = "Linelist"
 Private Const PRINT_PREFIX As String = "print_"
 Private Const CRF_PREFIX As String = "crf_"
 Private Const SHEET_NAME_MAX_LENGTH As Long = 30
-Private Const WORKBOOK_MODULE_NAME As String = "LinelistWorkbook"
+Private Const WORKBOOK_MODULE_NAME As String = "EventLinelistWorkbook"
 Private Const SHEET_GEO As String = "Geo"
 
 Private Type TLinelist
@@ -809,21 +809,21 @@ End Sub
 '@details
 'Uses the supplied ICodeTransfer to copy VBA components from the setup
 'workbook to the output workbook in five phases:
-'1. Transfers 45 class modules (interface+implementation pairs for
+'1. Transfers 49 class modules (interface+implementation pairs for
 '   DataSheet, LLExport, LLChoices, LLdictionary, LLGeo, Passwords,
 '   LLSheets, LLTranslation, OSFiles, TranslationObject, LLVariables,
-'   LLSpatial, DropdownLists, LLShowHide, CustomTable, LLExporter,
-'   ImpRep, LLImporter, Graphs, AnaTabIds, ExportButtons, HiddenNames,
-'   plus BetterArray).
-'2. Transfers 6 standard modules (LinelistCustomFunctions, GeoModule,
-'   LinelistEvents, EventsLinelistButtons, EventsGlobalAnalysis,
-'   EventsSpatialAnalysis). For template workbooks, copies the ribbon
-'   module text (EventsLinelistRibbon); otherwise transfers it as a
-'   new module.
+'   LLSpatial, DropdownLists, ShowHideManager, CustomTable, LLExporter,
+'   LLImporter, Graphs, AnaTabIds, ExportButton, HiddenNames,
+'   EventLinelist, ApplicationState, plus BetterArray and Checking).
+'2. Transfers 7 standard modules (LinelistCustomFunctions, GeoModule,
+'   LinelistEventsManager, EventsLinelistButtons, FormLogicAdvanced,
+'   FormLogicExportMig, FormLogicExport). For template workbooks,
+'   copies the ribbon module text (EventsLinelistRibbon); otherwise
+'   transfers it as a new module.
 '3. Transfers 9 user forms (F_Advanced, F_Export, F_ExportMig, F_Geo,
 '   F_ImportRep, F_ShowHideLL, F_ShowHidePrint, F_ShowVarLabels,
 '   F_EpiWeek).
-'4. Transfers the workbook code module (LinelistWorkbook).
+'4. Transfers the workbook code module (EventLinelistWorkbook).
 '@param codeTransfer ICodeTransfer. The code transfer engine.
 Private Sub TransferAllCode(ByVal codeTransfer As ICodeTransfer)
     Dim codesList As BetterArray
@@ -832,7 +832,7 @@ Private Sub TransferAllCode(ByVal codeTransfer As ICodeTransfer)
 
     Set codesList = New BetterArray
 
-    'Transfer classes (45 classes)
+    'Transfer classes (49 classes)
     codesList.Push "BetterArray", "DataSheet", "IDataSheet", "LLExport", _
                    "ILLExport", "LLChoices", "ILLChoices", _
                    "LLdictionary", "ILLdictionary", "LLGeo", _
@@ -848,19 +848,22 @@ Private Sub TransferAllCode(ByVal codeTransfer As ICodeTransfer)
                     "LLImporter", "ILLImporter", _
                    "IGraphs", "Graphs", "AnaTabIds", _
                    "IAnaTabIds", "ExportButton", "IExportButton", _
-                   "HiddenNames", "IHiddenNames"
+                   "HiddenNames", "IHiddenNames", _
+                   "EventLinelist", "IEventLinelist", _
+                   "ApplicationState", "IApplicationState"
 
     For counter = codesList.LowerBound To codesList.UpperBound
         codeName = codesList.Item(counter)
         codeTransfer.TransferClass codeName
     Next
 
-    'Transfer modules (6 modules + conditional ribbon)
+    'Transfer modules (7 modules + conditional ribbon)
     codesList.Clear
     codesList.Push "LinelistCustomFunctions", _
-                   "GeoModule", "LinelistEvents", _
-                   "EventsLinelistButtons", "EventsGlobalAnalysis", _
-                   "EventsSpatialAnalysis"
+                   "GeoModule", "LinelistEventsManager", _
+                   "EventsLinelistButtons", _
+                   "FormLogicAdvanced", "FormLogicExportMig", _
+                   "FormLogicExport"
 
     For counter = codesList.LowerBound To codesList.UpperBound
         codeName = codesList.Item(counter)
