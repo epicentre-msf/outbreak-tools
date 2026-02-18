@@ -165,6 +165,10 @@ Public Sub DisposeEventLinelist()
     Set linelistService = Nothing
 End Sub
 
+Public Function EventLinelistService() As IEventLinelist
+    Set EventLinelistService = Service()
+End Function
+
 
 '@section Workbook Entry Points
 '===============================================================================
