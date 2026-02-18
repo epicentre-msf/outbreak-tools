@@ -26,9 +26,9 @@ Implements IEventLinelist
 'labels, list auto, go-to-section, multiple choices; VList editable labels and
 'multiple choices; analysis go-to-section and spatial dispatch), sheet deactivate
 '(list auto update), selection change (geo dropdown refresh),
-'double-click (spatio-temporal geo form), filter table updates, and list-auto
-'dropdown maintenance.
-'@depends BetterArray, HiddenNames, DropdownLists, LLGeo, LLdictionary, LLVariables, LLTranslation, TranslationObject, ProjectError
+'double-click (spatio-temporal geo form), filter table updates, list-auto
+'dropdown maintenance, and geo/spatial UDF delegation.
+'@depends BetterArray, HiddenNames, DropdownLists, LLGeo, LLSpatial, LLdictionary, LLVariables, LLTranslation, TranslationObject, ProjectError
 
 
 '@section State
@@ -40,6 +40,7 @@ Private Type TEventLinelist
     wkbNames        As IHiddenNames       'Cached workbook-level hidden names
     drop            As IDropdownLists     'Cached dropdown manager
     geo             As ILLGeo             'Cached geo helper
+    sp              As ILLSpatial         'Cached spatial helper
     dict            As ILLdictionary      'Cached dictionary helper
     vars            As ILLVariables       'Cached variable lookup helper
 End Type
@@ -53,6 +54,7 @@ Private Const CLASSNAME         As String = "EventLinelist"
 Private Const GOTOSECCODE       As String = "go_to_section"
 Private Const DROPDOWNSHEET     As String = "dropdown_lists__"
 Private Const GEOSHEET          As String = "Geo"
+Private Const SPATIALSHEET      As String = "spatial_tables__"
 Private Const DICTSHEET         As String = "Dictionary"
 Private Const LLSHEET           As String = "LinelistTranslation"
 Private Const PRINTPREFIX       As String = "print_"
@@ -338,6 +340,165 @@ End Sub
 Private Sub IEventLinelist_ResetCaches()
     ResetInternalCaches
 End Sub
+
+
+'@section Geo / Spatial UDF delegation
+'===============================================================================
+
+'@sub-title Concatenate geo cells up to a given admin level.
+'@param cellRng Range. The first geo cell.
+'@param geoLevel Byte. Number of admin levels to concatenate (1-4).
+'@return String. Pipe-delimited concatenation of non-empty admin values.
+'@export
+Public Function GeoConcat(ByVal cellRng As Range, ByVal geoLevel As Byte) As String
+    Dim concatValue As String
+    Dim nonEmptyValue As Boolean
+
+    Select Case geoLevel
+
+    Case 1
+        concatValue = cellRng.Value
+
+    Case 2
+        nonEmptyValue = (Not IsEmpty(cellRng)) And _
+                        (Not IsEmpty(cellRng.Offset(, 1)))
+        concatValue = IIf(nonEmptyValue, _
+                          cellRng.Value & " | " & cellRng.Offset(, 1).Value, _
+                          vbNullString)
+
+    Case 3
+        nonEmptyValue = (Not IsEmpty(cellRng)) And _
+                        (Not IsEmpty(cellRng.Offset(, 1))) And _
+                        (Not IsEmpty(cellRng.Offset(, 2)))
+        concatValue = IIf(nonEmptyValue, _
+                          cellRng.Value & " | " & cellRng.Offset(, 1).Value & _
+                          " | " & cellRng.Offset(, 2).Value, _
+                          vbNullString)
+
+    Case 4
+        nonEmptyValue = (Not IsEmpty(cellRng)) And _
+                        (Not IsEmpty(cellRng.Offset(, 1))) And _
+                        (Not IsEmpty(cellRng.Offset(, 2))) And _
+                        (Not IsEmpty(cellRng.Offset(, 3)))
+        concatValue = IIf(nonEmptyValue, _
+                          cellRng.Value & " | " & cellRng.Offset(, 1).Value & _
+                          " | " & cellRng.Offset(, 2).Value & _
+                          " | " & cellRng.Offset(, 3).Value, _
+                          vbNullString)
+
+    Case Else
+        concatValue = cellRng.Value
+
+    End Select
+
+    GeoConcat = concatValue
+End Function
+
+Private Function IEventLinelist_GeoConcat(ByVal cellRng As Range, _
+                                          ByVal geoLevel As Byte) As String
+    IEventLinelist_GeoConcat = GeoConcat(cellRng, geoLevel)
+End Function
+
+
+'@sub-title Return the top admin name for a spatial variable.
+'@param adminLevel String. Admin level label (e.g. "adm1").
+'@param adminOrder Integer. Rank order (1 = top, 2 = second, etc.).
+'@param varName String. Variable name (with prefix, e.g. "adm1_concat_adm1_myvar").
+'@param tabId Optional String. Spatial table identifier.
+'@return String. Admin name at the given rank.
+'@export
+Public Function TopAdmin(ByVal adminLevel As String, _
+                         ByVal adminOrder As Integer, _
+                         ByVal varName As String, _
+                         Optional ByVal tabId As String = vbNullString) As String
+    Dim adminName As String
+    Dim actualVarName As String
+
+    EnsureGeo
+    EnsureSpatial
+
+    If this.geo Is Nothing Then Exit Function
+    If this.sp Is Nothing Then Exit Function
+
+    actualVarName = Split(varName, "_")(2)
+    adminName = this.geo.AdminCode(adminLevel)
+    TopAdmin = this.sp.TopGeoValue(adminName, adminOrder, actualVarName, tabId)
+End Function
+
+Private Function IEventLinelist_TopAdmin(ByVal adminLevel As String, _
+                                         ByVal adminOrder As Integer, _
+                                         ByVal varName As String, _
+                                         Optional ByVal tabId As String = vbNullString) As String
+    IEventLinelist_TopAdmin = TopAdmin(adminLevel, adminOrder, varName, tabId)
+End Function
+
+
+'@sub-title Return the population for the top admin of a spatial variable.
+'@param adminLevel String. Admin level label (e.g. "adm1").
+'@param adminOrder Integer. Rank order (1 = top, 2 = second, etc.).
+'@param varName String. Variable name (with prefix "concat_adm1_").
+'@param tabId Optional String. Spatial table identifier.
+'@return Long. Population count at the given rank.
+'@export
+Public Function TopPop(ByVal adminLevel As String, _
+                       ByVal adminOrder As Integer, _
+                       ByVal varName As String, _
+                       Optional ByVal tabId As String = vbNullString) As Long
+    Dim adminName As String
+    Dim actualVarName As String
+    Dim pop As Long
+
+    EnsureGeo
+    EnsureSpatial
+
+    If this.geo Is Nothing Then Exit Function
+    If this.sp Is Nothing Then Exit Function
+
+    ' 12 is the length of the "concat_adm1_" prefix
+    actualVarName = Right(varName, (Len(varName) - 12))
+    adminName = this.geo.AdminCode(adminLevel)
+
+    pop = 0
+    On Error Resume Next
+    pop = CLng(this.sp.TopGeoValue(adminName, adminOrder, actualVarName, tabId, 2))
+    On Error GoTo 0
+
+    TopPop = pop
+End Function
+
+Private Function IEventLinelist_TopPop(ByVal adminLevel As String, _
+                                       ByVal adminOrder As Integer, _
+                                       ByVal varName As String, _
+                                       Optional ByVal tabId As String = vbNullString) As Long
+    IEventLinelist_TopPop = TopPop(adminLevel, adminOrder, varName, tabId)
+End Function
+
+
+'@sub-title Return the top health facility name for a spatial variable.
+'@param adminOrder Integer. Rank order (1 = top, 2 = second, etc.).
+'@param varName String. Variable name (with "hf_" prefix).
+'@param tabId Optional String. Spatial table identifier.
+'@return String. Health facility name at the given rank.
+'@export
+Public Function TopHF(ByVal adminOrder As Integer, _
+                      ByVal varName As String, _
+                      Optional ByVal tabId As String = vbNullString) As String
+    Dim actualVarName As String
+
+    EnsureSpatial
+
+    If this.sp Is Nothing Then Exit Function
+
+    ' 3 is the length of the "hf_" prefix
+    actualVarName = Right(varName, (Len(varName) - 3))
+    TopHF = this.sp.TopHFValue(adminOrder, actualVarName, tabId)
+End Function
+
+Private Function IEventLinelist_TopHF(ByVal adminOrder As Integer, _
+                                      ByVal varName As String, _
+                                      Optional ByVal tabId As String = vbNullString) As String
+    IEventLinelist_TopHF = TopHF(adminOrder, varName, tabId)
+End Function
 
 
 '@section Private — HList change handler
@@ -960,6 +1121,20 @@ Private Sub EnsureGeo()
     On Error GoTo 0
 End Sub
 
+'@sub-title Lazily initialise the spatial helper.
+Private Sub EnsureSpatial()
+    If Not (this.sp Is Nothing) Then Exit Sub
+    If this.hostBook Is Nothing Then Exit Sub
+
+    Dim sh As Worksheet
+    Set sh = SheetOrNothing(SPATIALSHEET)
+    If sh Is Nothing Then Exit Sub
+
+    On Error Resume Next
+    Set this.sp = LLSpatial.Create(sh)
+    On Error GoTo 0
+End Sub
+
 '@sub-title Lazily initialise the dictionary and variables helpers.
 Private Sub EnsureDictionary()
     If Not (this.dict Is Nothing) Then Exit Sub
@@ -1012,6 +1187,7 @@ Private Sub ResetInternalCaches()
     Set this.wkbNames = Nothing
     Set this.drop = Nothing
     Set this.geo = Nothing
+    Set this.sp = Nothing
     Set this.dict = Nothing
     Set this.vars = Nothing
 End Sub

@@ -815,7 +815,7 @@ End Sub
 '   LLSpatial, DropdownLists, ShowHideManager, CustomTable, LLExporter,
 '   LLImporter, Graphs, AnaTabIds, ExportButton, HiddenNames,
 '   EventLinelist, ApplicationState, plus BetterArray and Checking).
-'2. Transfers 7 standard modules (LinelistCustomFunctions, GeoModule,
+'2. Transfers 7 standard modules (CustomLinelistFunctions, GeoModule,
 '   LinelistEventsManager, EventsLinelistButtons, FormLogicAdvanced,
 '   FormLogicExportMig, FormLogicExport). For template workbooks,
 '   copies the ribbon module text (EventsLinelistRibbon); otherwise
@@ -859,7 +859,7 @@ Private Sub TransferAllCode(ByVal codeTransfer As ICodeTransfer)
 
     'Transfer modules (7 modules + conditional ribbon)
     codesList.Clear
-    codesList.Push "LinelistCustomFunctions", _
+    codesList.Push "CustomLinelistFunctions", _
                    "GeoModule", "LinelistEventsManager", _
                    "EventsLinelistButtons", _
                    "FormLogicAdvanced", "FormLogicExportMig", _
