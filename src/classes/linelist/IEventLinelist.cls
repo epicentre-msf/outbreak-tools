@@ -21,8 +21,8 @@ Option Explicit
 'Defines the public contract for the EventLinelist class, exposing methods
 'to handle workbook-level events in the output linelist workbook: sheet
 'change, deactivate, selection change, double-click, filter table updates,
-'and list-auto dropdown maintenance.
-'@depends ILLTranslation, ITranslationObject, IHiddenNames, IDropdownLists, ILLGeo, ILLdictionary, ILLVariables, IPasswords, ICustomTable
+'list-auto dropdown maintenance, and geo/spatial UDF delegation.
+'@depends ILLTranslation, ITranslationObject, IHiddenNames, IDropdownLists, ILLGeo, ILLdictionary, ILLVariables, ILLSpatial, IPasswords, ICustomTable
 
 
 '@section Lifecycle
@@ -122,3 +122,52 @@ End Sub
 '@export
 Public Sub ResetCaches()
 End Sub
+
+
+'@section Geo / Spatial UDF delegation
+'===============================================================================
+
+'@sub-title Concatenate geo cells up to a given admin level.
+'@param cellRng Range. The first geo cell.
+'@param geoLevel Byte. Number of admin levels to concatenate (1-4).
+'@return String. Pipe-delimited concatenation of non-empty admin values.
+'@export
+Public Function GeoConcat(ByVal cellRng As Range, ByVal geoLevel As Byte) As String
+End Function
+
+'@sub-title Return the top admin name for a spatial variable.
+'@param adminLevel String. Admin level label (e.g. "adm1").
+'@param adminOrder Integer. Rank order (1 = top, 2 = second, etc.).
+'@param varName String. Variable name (with prefix to be stripped).
+'@param tabId Optional String. Spatial table identifier.
+'@return String. Admin name at the given rank.
+'@export
+Public Function TopAdmin(ByVal adminLevel As String, _
+                         ByVal adminOrder As Integer, _
+                         ByVal varName As String, _
+                         Optional ByVal tabId As String = vbNullString) As String
+End Function
+
+'@sub-title Return the population for the top admin of a spatial variable.
+'@param adminLevel String. Admin level label (e.g. "adm1").
+'@param adminOrder Integer. Rank order (1 = top, 2 = second, etc.).
+'@param varName String. Variable name (with prefix to be stripped).
+'@param tabId Optional String. Spatial table identifier.
+'@return Long. Population count at the given rank.
+'@export
+Public Function TopPop(ByVal adminLevel As String, _
+                       ByVal adminOrder As Integer, _
+                       ByVal varName As String, _
+                       Optional ByVal tabId As String = vbNullString) As Long
+End Function
+
+'@sub-title Return the top health facility name for a spatial variable.
+'@param adminOrder Integer. Rank order (1 = top, 2 = second, etc.).
+'@param varName String. Variable name (with prefix to be stripped).
+'@param tabId Optional String. Spatial table identifier.
+'@return String. Health facility name at the given rank.
+'@export
+Public Function TopHF(ByVal adminOrder As Integer, _
+                      ByVal varName As String, _
+                      Optional ByVal tabId As String = vbNullString) As String
+End Function
