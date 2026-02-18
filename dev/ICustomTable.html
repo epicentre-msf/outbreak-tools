@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ICustomTable - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -14,8 +15,10 @@
 read/write helpers around an Excel ListObject including column and
 cell access, row manipulation, sorting, validation, import/export,
 and diagnostic logging.</p>
-<h2>Elements</h2>
-<h3>HeaderRange</h3>
+<details open class="doc-section" id="elements">
+<summary>Elements</summary>
+<div class="section-body">
+<h3 id="headerrange">HeaderRange <a class="anchor-link" href="#headerrange">#</a></h3>
 <p><strong>Header row Range of the CustomTable</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get HeaderRange() As Range: End Property
@@ -24,7 +27,7 @@ and diagnostic logging.</p>
 Returns the Range covering the header row of the underlying ListObject.</p>
 <p><strong>Returns:</strong> Range. The header row range.</p>
 <hr />
-<h3>IdValue</h3>
+<h3 id="idvalue">IdValue <a class="anchor-link" href="#idvalue">#</a></h3>
 <p><strong>ID column name</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get IdValue() As String: End Property
@@ -32,7 +35,7 @@ Returns the Range covering the header row of the underlying ListObject.</p>
 <p>Returns the name of the column designated as the unique row identifier.</p>
 <p><strong>Returns:</strong> String. The ID column name, or vbNullString when none is set.</p>
 <hr />
-<h3>DataRange</h3>
+<h3 id="datarange">DataRange <a class="anchor-link" href="#datarange">#</a></h3>
 <p><strong>Range of a column or the entire data body</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get DataRange(Optional ByVal colName As String = &quot;__all__&quot;, _
@@ -52,7 +55,7 @@ or is not found.</p>
 </ul>
 <p><strong>Returns:</strong> Range. The requested data range, or Nothing when unavailable.</p>
 <hr />
-<h3>Name</h3>
+<h3 id="name">Name <a class="anchor-link" href="#name">#</a></h3>
 <p><strong>Name of the attached ListObject</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Name() As String: End Property
@@ -60,7 +63,7 @@ or is not found.</p>
 <p>Returns the cached name of the ListObject assigned during creation.</p>
 <p><strong>Returns:</strong> String. The table name.</p>
 <hr />
-<h3>CellRange</h3>
+<h3 id="cellrange">CellRange <a class="anchor-link" href="#cellrange">#</a></h3>
 <p><strong>A specific cell in the CustomTable</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get CellRange(ByVal colName As String, ByVal lineNum As Long) As Range: End Property
@@ -75,7 +78,7 @@ is out of bounds.</p>
 </ul>
 <p><strong>Returns:</strong> Range. The target cell, or Nothing when not found.</p>
 <hr />
-<h3>Value</h3>
+<h3 id="value">Value <a class="anchor-link" href="#value">#</a></h3>
 <p><strong>Retrieve a cell value by column and key</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Value(ByVal colName As String, ByVal keyName As String) As String: End Property
@@ -90,7 +93,7 @@ string when the key or column is not found.</p>
 </ul>
 <p><strong>Returns:</strong> String. The cell value converted to string, or vbNullString.</p>
 <hr />
-<h3>ValueRange</h3>
+<h3 id="valuerange">ValueRange <a class="anchor-link" href="#valuerange">#</a></h3>
 <p><strong>Range of a cell identified by column and key</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get ValueRange(ByVal colName As String, ByVal keyName As String) As Range
@@ -105,8 +108,12 @@ column is not found.</p>
 </ul>
 <p><strong>Returns:</strong> Range. The target cell range, or Nothing when not found.</p>
 <hr />
-<h2>Modify</h2>
-<h3>AddIds</h3>
+</div>
+</details>
+<details open class="doc-section" id="modify">
+<summary>Modify</summary>
+<div class="section-body">
+<h3 id="addids">AddIds <a class="anchor-link" href="#addids">#</a></h3>
 <p><strong>Add sequential IDs to the ID column</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub AddIds(): End Sub
@@ -115,7 +122,7 @@ column is not found.</p>
 Fills the ID column with sequential values, optionally prefixed.
 Silently exits when no ID column is configured.</p>
 <hr />
-<h3>AddRows</h3>
+<h3 id="addrows">AddRows <a class="anchor-link" href="#addrows">#</a></h3>
 <p><strong>Add rows to the CustomTable</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub AddRows(Optional ByVal nbRows As Long = 5, _
@@ -132,7 +139,7 @@ Optionally renumbers the ID column afterwards.</p>
 <li><code>includeIds</code>: Optional Boolean. When True, renumbers the ID column. Defaults to True.</li>
 </ul>
 <hr />
-<h3>RemoveRows</h3>
+<h3 id="removerows">RemoveRows <a class="anchor-link" href="#removerows">#</a></h3>
 <p><strong>Remove empty rows from the CustomTable</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub RemoveRows(Optional ByVal totalCount As Long = 0, _
@@ -148,7 +155,7 @@ Optionally renumbers the ID column afterwards.</p>
 <li><code>forceShift</code>: Optional Boolean. When True, forces worksheet row deletion. Defaults to False.</li>
 </ul>
 <hr />
-<h3>SetValidation</h3>
+<h3 id="setvalidation">SetValidation <a class="anchor-link" href="#setvalidation">#</a></h3>
 <p><strong>Set dropdown validation on a column</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub SetValidation(ByVal colName As String, _
@@ -168,7 +175,7 @@ in the specified column. Silently exits when the column does not exist.</p>
 <li><code>message</code>: Optional String. Message shown when validation fails. Defaults to vbNullString.</li>
 </ul>
 <hr />
-<h3>SetValue</h3>
+<h3 id="setvalue">SetValue <a class="anchor-link" href="#setvalue">#</a></h3>
 <p><strong>Change the value of one specific cell</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub SetValue(ByVal colName As String, ByVal keyName As String, ByVal newValue As String)
@@ -182,7 +189,7 @@ Silently exits when the key or column is not found.</p>
 <li><code>newValue</code>: String. The new value to assign.</li>
 </ul>
 <hr />
-<h3>RenameColumn</h3>
+<h3 id="renamecolumn">RenameColumn <a class="anchor-link" href="#renamecolumn">#</a></h3>
 <p><strong>Rename a column header within the table</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub RenameColumn(ByVal colName As String, _
@@ -200,7 +207,7 @@ resets the lookup cache.</p>
 <li><code>matchCase</code>: Optional Boolean. When True, matching is case-sensitive. Defaults to False.</li>
 </ul>
 <hr />
-<h3>Sort</h3>
+<h3 id="sort">Sort <a class="anchor-link" href="#sort">#</a></h3>
 <p><strong>Sort the table on one or more columns</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Sort(Optional ByVal colName As String = vbNullString, _
@@ -219,7 +226,7 @@ False, groups rows by first occurrence of each distinct value.</p>
 <li><code>strictSearch</code>: Optional Boolean. When True, uses exact column matching. Defaults to True.</li>
 </ul>
 <hr />
-<h3>Clean</h3>
+<h3 id="clean">Clean <a class="anchor-link" href="#clean">#</a></h3>
 <p><strong>Clear all non-formula, non-key columns</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Clean(): End Sub
@@ -227,7 +234,7 @@ False, groups rows by first occurrence of each distinct value.</p>
 <p>Clears the contents of every data column except those containing
 formulas or serving as the key column.</p>
 <hr />
-<h3>InsertRowsAt</h3>
+<h3 id="insertrowsat">InsertRowsAt <a class="anchor-link" href="#insertrowsat">#</a></h3>
 <p><strong>Insert rows at the selected position</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub InsertRowsAt(ByVal targetCell As Range, _
@@ -243,7 +250,7 @@ insertion when insertShift is True to protect stacked tables.</p>
 <li><code>includeIds</code>: Optional Boolean. When True, renumbers the ID column. Defaults to True.</li>
 </ul>
 <hr />
-<h3>DeleteRowsAt</h3>
+<h3 id="deleterowsat">DeleteRowsAt <a class="anchor-link" href="#deleterowsat">#</a></h3>
 <p><strong>Delete rows intersecting the selection</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub DeleteRowsAt(ByVal targetCell As Range, _
@@ -259,8 +266,12 @@ deletion when forceShift or the stored shift tracker is active.</p>
 <li><code>forceShift</code>: Optional Boolean. When True, forces worksheet row deletion. Defaults to False.</li>
 </ul>
 <hr />
-<h2>DataExchange</h2>
-<h3>Import</h3>
+</div>
+</details>
+<details open class="doc-section" id="dataexchange">
+<summary>DataExchange</summary>
+<div class="section-body">
+<h3 id="import">Import <a class="anchor-link" href="#import">#</a></h3>
 <p><strong>Import data from a DataSheet or CustomTable</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Import(ByVal impTab As Object, _
@@ -284,7 +295,7 @@ Creates a snapshot before import and rolls back on error.</p>
 <li><code>keepSourceHeaders</code>: Optional Boolean. When True, replaces destination headers. Defaults to False.</li>
 </ul>
 <hr />
-<h3>ImportAll</h3>
+<h3 id="importall">ImportAll <a class="anchor-link" href="#importall">#</a></h3>
 <p><strong>Replace the entire table with imported data</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ImportAll(ByVal impTab As Object): End Sub
@@ -296,7 +307,7 @@ discarding the current structure entirely.</p>
 <li><code>impTab</code>: Object. A DataSheet or CustomTable to import from.</li>
 </ul>
 <hr />
-<h3>RestoreTableSnapshot</h3>
+<h3 id="restoretablesnapshot">RestoreTableSnapshot <a class="anchor-link" href="#restoretablesnapshot">#</a></h3>
 <p><strong>Restore the table from a saved snapshot</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub RestoreTableSnapshot(): End Sub
@@ -304,7 +315,7 @@ discarding the current structure entirely.</p>
 <p>Reverts the table headers and data to the state captured by
 SaveTableSnapshot. Used for rollback after a failed import.</p>
 <hr />
-<h3>SaveTableSnapshot</h3>
+<h3 id="savetablesnapshot">SaveTableSnapshot <a class="anchor-link" href="#savetablesnapshot">#</a></h3>
 <p><strong>Save a snapshot of the current table state</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub SaveTableSnapshot(): End Sub
@@ -312,7 +323,7 @@ SaveTableSnapshot. Used for rollback after a failed import.</p>
 <p>Captures the current headers and data rows so they can be restored
 later if an import fails.</p>
 <hr />
-<h3>ImportColumnsNotFound</h3>
+<h3 id="importcolumnsnotfound">ImportColumnsNotFound <a class="anchor-link" href="#importcolumnsnotfound">#</a></h3>
 <p><strong>Columns not matched during the last import</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get ImportColumnsNotFound() As BetterArray
@@ -321,7 +332,7 @@ later if an import fails.</p>
 match in this table. Only available after a successful import.</p>
 <p><strong>Returns:</strong> BetterArray. Unmatched column headers, or Nothing.</p>
 <hr />
-<h3>HasColumnsNotImported</h3>
+<h3 id="hascolumnsnotimported">HasColumnsNotImported <a class="anchor-link" href="#hascolumnsnotimported">#</a></h3>
 <p><strong>Whether the last import had unmatched columns</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get HasColumnsNotImported() As Boolean
@@ -330,14 +341,15 @@ match in this table. Only available after a successful import.</p>
 unmatched against this table.</p>
 <p><strong>Returns:</strong> Boolean. True when unmatched columns exist.</p>
 <hr />
-<h3>Export</h3>
+<h3 id="export">Export <a class="anchor-link" href="#export">#</a></h3>
 <p><strong>Export the table to a worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Export(ByVal sh As Worksheet,  _
                   Optional ByVal headersTable As Object = Nothing, _
                   Optional ByVal startLine As Long = 1, _
                   Optional ByVal startColumn As Long = 1, _
-                  Optional ByVal addListObject As Boolean = False)
+                  Optional ByVal addListObject As Boolean = False, _ 
+                  Optional ByVal clearSheet As Boolean = True)
 </code></pre>
 <p>Writes the requested columns to the target worksheet, optionally
 creating a ListObject on the output range.</p>
@@ -350,8 +362,12 @@ creating a ListObject on the output range.</p>
 <li><code>addListObject</code>: Optional Boolean. When True, creates a ListObject on the output. Defaults to False.</li>
 </ul>
 <hr />
-<h2>Checkings</h2>
-<h3>HasCheckings</h3>
+</div>
+</details>
+<details open class="doc-section" id="checkings">
+<summary>Checkings</summary>
+<div class="section-body">
+<h3 id="hascheckings">HasCheckings <a class="anchor-link" href="#hascheckings">#</a></h3>
 <p><strong>Whether the table has logged diagnostic messages</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get HasCheckings() As Boolean: End Property
@@ -360,7 +376,7 @@ creating a ListObject on the output range.</p>
 Returns True when at least one diagnostic entry has been recorded.</p>
 <p><strong>Returns:</strong> Boolean. True when diagnostic entries exist.</p>
 <hr />
-<h3>CheckingValues</h3>
+<h3 id="checkingvalues">CheckingValues <a class="anchor-link" href="#checkingvalues">#</a></h3>
 <p><strong>Retrieve the diagnostic log entries</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get CheckingValues() As Object: End Property
@@ -369,8 +385,12 @@ Returns True when at least one diagnostic entry has been recorded.</p>
 Returns Nothing when no entries have been recorded.</p>
 <p><strong>Returns:</strong> Object. An IChecking instance, or Nothing.</p>
 <hr />
-
+</div>
+</details>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

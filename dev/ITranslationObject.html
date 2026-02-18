@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ITranslationObject - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -13,8 +14,10 @@
 <p>Defines the public contract for the TranslationObject class, exposing
 tag-based translation of strings, ranges, and user-form controls from
 a ListObject translation table keyed by language column.</p>
-<h2>Elements</h2>
-<h3>Name</h3>
+<details open class="doc-section" id="elements">
+<summary>Elements</summary>
+<div class="section-body">
+<h3 id="name">Name <a class="anchor-link" href="#name">#</a></h3>
 <p><strong>Name of the translation object</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Name() As String
@@ -22,21 +25,21 @@ a ListObject translation table keyed by language column.</p>
 <p>Core translation accessors and lookups.</p>
 <p><strong>Returns:</strong> String. Descriptive identifier including table and language.</p>
 <hr />
-<h3>Language</h3>
+<h3 id="language">Language <a class="anchor-link" href="#language">#</a></h3>
 <p><strong>Current language header associated with the translation table</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Language() As String
 </code></pre>
 <p><strong>Returns:</strong> String. The active language.</p>
 <hr />
-<h3>LanguagesList</h3>
+<h3 id="languageslist">LanguagesList <a class="anchor-link" href="#languageslist">#</a></h3>
 <p><strong>List of available language headers</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get LanguagesList() As BetterArray
 </code></pre>
 <p><strong>Returns:</strong> BetterArray. Each language header, excluding the helper/tag column.</p>
 <hr />
-<h3>ValueExists</h3>
+<h3 id="valueexists">ValueExists <a class="anchor-link" href="#valueexists">#</a></h3>
 <p><strong>Whether a tag exists in the translation table</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get ValueExists(ByVal text As String) As Boolean
@@ -47,7 +50,7 @@ a ListObject translation table keyed by language column.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when the tag exists for the configured language.</p>
 <hr />
-<h3>TranslatedValue</h3>
+<h3 id="translatedvalue">TranslatedValue <a class="anchor-link" href="#translatedvalue">#</a></h3>
 <p><strong>Translate a text tag or formula string</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function TranslatedValue(ByVal Text As String, Optional ByVal containsFormula As Boolean = False) As String
@@ -59,8 +62,12 @@ a ListObject translation table keyed by language column.</p>
 </ul>
 <p><strong>Returns:</strong> String. The translated value, or the original text when no translation was found.</p>
 <hr />
-<h2>Outside</h2>
-<h3>TranslateForm</h3>
+</div>
+</details>
+<details open class="doc-section" id="outside">
+<summary>Outside</summary>
+<div class="section-body">
+<h3 id="translateform">TranslateForm <a class="anchor-link" href="#translateform">#</a></h3>
 <p><strong>Translate all supported controls on a user form</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub TranslateForm(ByVal UserFrm As Object)
@@ -71,7 +78,7 @@ a ListObject translation table keyed by language column.</p>
 <li><code>UserFrm</code>: Object. Any user form exposing a Controls collection.</li>
 </ul>
 <hr />
-<h3>TranslateRange</h3>
+<h3 id="translaterange">TranslateRange <a class="anchor-link" href="#translaterange">#</a></h3>
 <p><strong>Translate all values in a column range</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub TranslateRange(ByVal colRng As Range, Optional ByVal containsFormula As Boolean = False)
@@ -82,8 +89,12 @@ a ListObject translation table keyed by language column.</p>
 <li><code>containsFormula</code>: Boolean. When True, translates as formulas. Defaults to False.</li>
 </ul>
 <hr />
-<h2>Checkings</h2>
-<h3>HasCheckings</h3>
+</div>
+</details>
+<details open class="doc-section" id="checkings">
+<summary>Checkings</summary>
+<div class="section-body">
+<h3 id="hascheckings">HasCheckings <a class="anchor-link" href="#hascheckings">#</a></h3>
 <p><strong>Whether the translator logged diagnostic notes</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get HasCheckings() As Boolean: End Property
@@ -91,15 +102,19 @@ a ListObject translation table keyed by language column.</p>
 <p>Diagnostic logging access.</p>
 <p><strong>Returns:</strong> Boolean. True when at least one entry exists.</p>
 <hr />
-<h3>CheckingValues</h3>
+<h3 id="checkingvalues">CheckingValues <a class="anchor-link" href="#checkingvalues">#</a></h3>
 <p><strong>Retrieve the diagnostic log entries</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get CheckingValues() As Object: End Property
 </code></pre>
 <p><strong>Returns:</strong> Object. The checking instance, or Nothing.</p>
 <hr />
-
+</div>
+</details>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

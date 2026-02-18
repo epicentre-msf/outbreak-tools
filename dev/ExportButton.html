@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ExportButton - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -18,8 +19,10 @@ filter usage, then delegates to LLExporter.ExportCustom. The factory
 returns the concrete class (not IExportButton) because callers hold a
 reference to keep the WithEvents binding alive.</p>
 <p><strong>Depends on:</strong> <a href="IExportButton.html">IExportButton</a>, <a href="ILLExporter.html">ILLExporter</a>, <a href="LLExporter.html">LLExporter</a>, <a href="IApplicationState.html">IApplicationState</a>, <a href="ApplicationState.html">ApplicationState</a>, <a href="IOSFiles.html">IOSFiles</a>, <a href="OSFiles.html">OSFiles</a></p>
-<h2>Factory</h2>
-<h3>create</h3>
+<details open class="doc-section" id="factory">
+<summary>Factory</summary>
+<div class="section-body">
+<h3 id="create">create <a class="anchor-link" href="#create">#</a></h3>
 <p><strong>Create an export button wrapper</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal sourceWkb As Workbook, _
@@ -45,8 +48,12 @@ WithEvents binding alive.</p>
 <li>ProjectError.ObjectNotInitialized When sourceWkb, trads, or expBtn is Nothing.</li>
 </ul>
 <hr />
-<h2>Public Accessors</h2>
-<h3>export-number</h3>
+</div>
+</details>
+<details open class="doc-section" id="public-accessors">
+<summary>Public Accessors</summary>
+<div class="section-body">
+<h3 id="export-number">export-number <a class="anchor-link" href="#export-number">#</a></h3>
 <p><strong>Export number derived from button name</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get ExportNumber() As Long
@@ -56,7 +63,7 @@ WithEvents binding alive.</p>
 &quot;CMDExport1&quot; yields 1, &quot;CMDExport3&quot; yields 3.</p>
 <p><strong>Returns:</strong> Long. The 1-based export number.</p>
 <hr />
-<h3>use-filter</h3>
+<h3 id="use-filter">use-filter <a class="anchor-link" href="#use-filter">#</a></h3>
 <p><strong>Whether the filter checkbox is checked</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get UseFilter() As Boolean
@@ -65,17 +72,19 @@ WithEvents binding alive.</p>
 no checkbox was bound.</p>
 <p><strong>Returns:</strong> Boolean. True when the filter checkbox is checked.</p>
 <hr />
+</div>
+</details>
 <details>
 <summary>Internal members (not exported)</summary>
-<h2>Public Accessors</h2>
-<h3>self</h3>
+<h2 id="int-public-accessors">Public Accessors</h2>
+<h3 id="int-self">self <a class="anchor-link" href="#int-self">#</a></h3>
 <p><strong>Current object instance</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Self() As ExportButton
 </code></pre>
 <p><strong>Returns:</strong> ExportButton. The current instance.</p>
 <hr />
-<h3>source-workbook-set</h3>
+<h3 id="int-source-workbook-set">source-workbook-set <a class="anchor-link" href="#int-source-workbook-set">#</a></h3>
 <p><strong>Assign the source linelist workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set SourceWorkbook(ByVal wb As Workbook)
@@ -85,7 +94,7 @@ no checkbox was bound.</p>
 <li><code>wb</code>: Workbook. The workbook to store.</li>
 </ul>
 <hr />
-<h3>translations-set</h3>
+<h3 id="int-translations-set">translations-set <a class="anchor-link" href="#int-translations-set">#</a></h3>
 <p><strong>Assign the translations object</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set Translations(ByVal trads As ITranslationObject)
@@ -95,7 +104,7 @@ no checkbox was bound.</p>
 <li><code>trads</code>: ITranslationObject. The translations to store.</li>
 </ul>
 <hr />
-<h3>push-button-set</h3>
+<h3 id="int-push-button-set">push-button-set <a class="anchor-link" href="#int-push-button-set">#</a></h3>
 <p><strong>Wire the WithEvents button binding</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set PushButton(ByVal expBtn As MSForms.CommandButton)
@@ -105,7 +114,7 @@ no checkbox was bound.</p>
 <li><code>expBtn</code>: MSForms.CommandButton. The button to listen to.</li>
 </ul>
 <hr />
-<h3>filter-checkbox-set</h3>
+<h3 id="int-filter-checkbox-set">filter-checkbox-set <a class="anchor-link" href="#int-filter-checkbox-set">#</a></h3>
 <p><strong>Assign the optional filter checkbox</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set FilterCheckBox(ByVal expChk As MSForms.CheckBox)
@@ -115,7 +124,7 @@ no checkbox was bound.</p>
 <li><code>expChk</code>: MSForms.CheckBox. The checkbox to bind.</li>
 </ul>
 <hr />
-<h3>use-filter-set</h3>
+<h3 id="int-use-filter-set">use-filter-set <a class="anchor-link" href="#int-use-filter-set">#</a></h3>
 <p><strong>Set the filter checkbox value</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Let UseFilter(ByVal value As Boolean)
@@ -125,14 +134,14 @@ no checkbox was bound.</p>
 <li><code>value</code>: Boolean. True to check, False to uncheck.</li>
 </ul>
 <hr />
-<h2>Event Handler</h2>
-<h3>btn-click</h3>
+<h2 id="int-event-handler">Event Handler</h2>
+<h3 id="int-btn-click">btn-click <a class="anchor-link" href="#int-btn-click">#</a></h3>
 <p><strong>Handle button click event</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub Btn_Click()
 </code></pre>
 <hr />
-<h3>run-export</h3>
+<h3 id="int-run-export">run-export <a class="anchor-link" href="#int-run-export">#</a></h3>
 <p><strong>Perform a custom export</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RunExport()
@@ -142,8 +151,8 @@ optionally confirms filter usage via MsgBox, then delegates to
 LLExporter.ExportCustom. On error, displays a translated error message
 and closes any orphaned output workbook.</p>
 <hr />
-<h2>Private Helpers</h2>
-<h3>translated-value</h3>
+<h2 id="int-private-helpers">Private Helpers</h2>
+<h3 id="int-translated-value">translated-value <a class="anchor-link" href="#int-translated-value">#</a></h3>
 <p><strong>Get a translated message value</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function TranslatedValue(ByVal msgCode As String) As String
@@ -154,7 +163,7 @@ and closes any orphaned output workbook.</p>
 </ul>
 <p><strong>Returns:</strong> String. The translated message text.</p>
 <hr />
-<h3>update-filtered-data</h3>
+<h3 id="int-update-filtered-data">update-filtered-data <a class="anchor-link" href="#int-update-filtered-data">#</a></h3>
 <p><strong>Sync filtered data sheets before a filtered export</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub UpdateFilteredData()
@@ -163,7 +172,7 @@ and closes any orphaned output workbook.</p>
 empty rows, ensuring the filtered export reflects the user current
 filter state.</p>
 <hr />
-<h3>throw-error</h3>
+<h3 id="int-throw-error">throw-error <a class="anchor-link" href="#int-throw-error">#</a></h3>
 <p><strong>Raise a ProjectError-based exception</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As Long, ByVal message As String)
@@ -178,8 +187,8 @@ filter state.</p>
 <li>ProjectError.<varies> Always raises the specified error.</li>
 </ul>
 <hr />
-<h2>Interface Implementation</h2>
-<h3>IExportButton_ExportNumber</h3>
+<h2 id="int-interface-implementation">Interface Implementation</h2>
+<h3 id="int-iexportbutton-exportnumber">IExportButton_ExportNumber <a class="anchor-link" href="#int-iexportbutton-exportnumber">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get IExportButton_ExportNumber() As Long
 </code></pre>
@@ -187,17 +196,18 @@ filter state.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (5 file(s))</summary>
+<summary>Used in (4 file(s))</summary>
 <ul>
 <li><a href="src/classes/dataio/ExportButton.cls">ExportButton.cls</a></li>
 <li><a href="src/classes/dataio/IExportButton.cls">IExportButton.cls</a></li>
 <li><a href="src/classes/linelist/Linelist.cls">Linelist.cls</a></li>
-<li><a href="src/classes/stale/designer-codes/modules/implements/EventsLinelistButtons.bas">EventsLinelistButtons.bas</a></li>
 <li><a href="src/tests/modules/dataio/TestExportButton.bas">TestExportButton.bas</a></li>
 </ul>
 </details>
-
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

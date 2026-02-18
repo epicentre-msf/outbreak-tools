@@ -5,13 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>IDiseaseExportWorkbook - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>IDiseaseExportWorkbook</h1>
-<h2>Lifecycle</h2>
-<h3>EnsureWorkbook</h3>
+<details open class="doc-section" id="lifecycle">
+<summary>Lifecycle</summary>
+<div class="section-body">
+<h3 id="ensureworkbook">EnsureWorkbook <a class="anchor-link" href="#ensureworkbook">#</a></h3>
 <p><strong>Ensure a workbook instance is available for exports.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function EnsureWorkbook(ByVal excelApp As Application) As Workbook
@@ -22,7 +25,7 @@
 </ul>
 <p><strong>Returns:</strong> Workbook ready for export operations.</p>
 <hr />
-<h3>SaveAs</h3>
+<h3 id="saveas">SaveAs <a class="anchor-link" href="#saveas">#</a></h3>
 <p><strong>Persist the workbook to disk.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub SaveAs(ByVal filePath As String, _
@@ -36,7 +39,7 @@
 <li><code>createBackup</code>: Optional Boolean. Defaults to False.</li>
 </ul>
 <hr />
-<h3>Close</h3>
+<h3 id="close">Close <a class="anchor-link" href="#close">#</a></h3>
 <p><strong>Close the workbook and clear references.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Close(Optional ByVal saveChanges As Boolean = False)
@@ -46,27 +49,35 @@
 <li><code>saveChanges</code>: Optional Boolean controlling SaveChanges flag.</li>
 </ul>
 <hr />
-<h3>Release</h3>
+<h3 id="release">Release <a class="anchor-link" href="#release">#</a></h3>
 <p><strong>Release the workbook without saving, ensuring references are cleared.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Release()
 </code></pre>
 <hr />
-<h2>State</h2>
-<h3>HasWorkbook</h3>
+</div>
+</details>
+<details open class="doc-section" id="state">
+<summary>State</summary>
+<div class="section-body">
+<h3 id="hasworkbook">HasWorkbook <a class="anchor-link" href="#hasworkbook">#</a></h3>
 <p><strong>Indicates whether a workbook is currently managed.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get HasWorkbook() As Boolean
 </code></pre>
 <hr />
-<h3>Workbook</h3>
+<h3 id="workbook">Workbook <a class="anchor-link" href="#workbook">#</a></h3>
 <p><strong>Retrieve the managed workbook reference.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Workbook() As Workbook
 </code></pre>
 <hr />
-
+</div>
+</details>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

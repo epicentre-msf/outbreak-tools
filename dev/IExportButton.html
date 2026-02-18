@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>IExportButton - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -15,8 +16,10 @@ read-only export identification and read/write filter state.
 Consumers query ExportNumber to identify which export definition
 the button drives, and UseFilter to read or toggle the associated
 filter checkbox state.</p>
-<h2>Properties</h2>
-<h3>ExportNumber</h3>
+<details open class="doc-section" id="properties">
+<summary>Properties</summary>
+<div class="section-body">
+<h3 id="exportnumber">ExportNumber <a class="anchor-link" href="#exportnumber">#</a></h3>
 <p><strong>Export number derived from button name</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get ExportNumber() As Long
@@ -25,7 +28,7 @@ filter checkbox state.</p>
 button Name property (e.g. &quot;CMDExport1&quot; yields 1).</p>
 <p><strong>Returns:</strong> Long. The 1-based export number.</p>
 <hr />
-<h3>UseFilter</h3>
+<h3 id="usefilter">UseFilter <a class="anchor-link" href="#usefilter">#</a></h3>
 <p><strong>Whether the filter checkbox is checked</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get UseFilter() As Boolean
@@ -34,7 +37,7 @@ button Name property (e.g. &quot;CMDExport1&quot; yields 1).</p>
 when no checkbox was bound.</p>
 <p><strong>Returns:</strong> Boolean. True when the filter checkbox is checked.</p>
 <hr />
-<h3>UseFilter</h3>
+<h3 id="usefilter">UseFilter <a class="anchor-link" href="#usefilter">#</a></h3>
 <p><strong>Set the filter checkbox value</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Let UseFilter(ByVal value As Boolean)
@@ -44,8 +47,12 @@ when no checkbox was bound.</p>
 <li><code>value</code>: Boolean. True to check, False to uncheck.</li>
 </ul>
 <hr />
-
+</div>
+</details>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>DesignerPreparation - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -21,8 +22,10 @@ T_Multi table on the GenerateMultiple worksheet, and registers hidden
 sheets with the development manager. Also provides methods to read and
 write ribbon checkbox flags persisted through workbook-level hidden names.</p>
 <p><strong>Depends on:</strong> <a href="HiddenNames.html">HiddenNames</a>, <a href="IHiddenNames.html">IHiddenNames</a>, <a href="IDevelopment.html">IDevelopment</a>, <a href="OSFiles.html">OSFiles</a>, <a href="IOSFiles.html">IOSFiles</a>, <a href="CustomTable.html">CustomTable</a>, <a href="ICustomTable.html">ICustomTable</a>, <a href="BetterArray.html">BetterArray</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="IDropdownLists.html">IDropdownLists</a></p>
-<h2>Factory</h2>
-<h3>create</h3>
+<details open class="doc-section" id="factory">
+<summary>Factory</summary>
+<div class="section-body">
+<h3 id="create">create <a class="anchor-link" href="#create">#</a></h3>
 <p><strong>Create and configure a designer preparation helper</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal hostBook As Workbook) As IDesignerPreparation
@@ -37,8 +40,12 @@ predeclared instance.</p>
 </ul>
 <p><strong>Returns:</strong> IDesignerPreparation. A fully initialised instance ready for use.</p>
 <hr />
-<h2>Public API</h2>
-<h3>configure</h3>
+</div>
+</details>
+<details open class="doc-section" id="public-api">
+<summary>Public API</summary>
+<div class="section-body">
+<h3 id="configure">configure <a class="anchor-link" href="#configure">#</a></h3>
 <p><strong>Bind the helper to the designer workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Configure(ByVal hostBook As Workbook)
@@ -55,7 +62,7 @@ on next access. Raises an error when the workbook is Nothing.</p>
 <li>ProjectError.ObjectNotInitialized When the workbook is Nothing.</li>
 </ul>
 <hr />
-<h3>prepare</h3>
+<h3 id="prepare">prepare <a class="anchor-link" href="#prepare">#</a></h3>
 <p><strong>Execute all preparation tasks on the designer workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Prepare(ByRef devManager As IDevelopment)
@@ -82,7 +89,7 @@ the manager for deployment.</li>
 <li><code>devManager</code>: IDevelopment. ByRef development manager instance, or Nothing.</li>
 </ul>
 <hr />
-<h3>set-flag</h3>
+<h3 id="set-flag">set-flag <a class="anchor-link" href="#set-flag">#</a></h3>
 <p><strong>Persist a ribbon checkbox flag as Yes/No in hidden names</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub SetFlag(ByVal nameId As String, ByVal enabled As Boolean)
@@ -95,7 +102,7 @@ the manager for deployment.</li>
 <li><code>enabled</code>: Boolean. True to store &quot;Yes&quot;, False to store &quot;No&quot;.</li>
 </ul>
 <hr />
-<h3>get-flag</h3>
+<h3 id="get-flag">get-flag <a class="anchor-link" href="#get-flag">#</a></h3>
 <p><strong>Read a ribbon checkbox flag as a boolean from hidden names</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function GetFlag(ByVal nameId As String, Optional ByVal defaultValue As Boolean = False) As Boolean
@@ -110,7 +117,7 @@ to the defaultValue when the name is missing.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when the stored value is &quot;Yes&quot;.</p>
 <hr />
-<h3>host-workbook</h3>
+<h3 id="host-workbook">host-workbook <a class="anchor-link" href="#host-workbook">#</a></h3>
 <p><strong>The configured host workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get HostWorkbook() As Workbook
@@ -123,7 +130,7 @@ error when accessed before configuration.</p>
 <li>ProjectError.ObjectNotInitialized When the workbook was not configured.</li>
 </ul>
 <hr />
-<h3>hidden-store</h3>
+<h3 id="hidden-store">hidden-store <a class="anchor-link" href="#hidden-store">#</a></h3>
 <p><strong>The workbook-level hidden names manager</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get HiddenStore() As IHiddenNames
@@ -132,7 +139,7 @@ error when accessed before configuration.</p>
 Used internally to persist and retrieve ribbon flag values.</p>
 <p><strong>Returns:</strong> IHiddenNames. The hidden names manager.</p>
 <hr />
-<h3>dropdowns</h3>
+<h3 id="dropdowns">dropdowns <a class="anchor-link" href="#dropdowns">#</a></h3>
 <p><strong>The dropdown manager created during preparation</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Dropdowns() As IDropdownLists
@@ -142,10 +149,12 @@ worksheet. Lazily initialises the manager on first access if it was
 not already created by EnsureDropdowns or Prepare.</p>
 <p><strong>Returns:</strong> IDropdownLists. The dropdown manager instance.</p>
 <hr />
+</div>
+</details>
 <details>
 <summary>Internal members (not exported)</summary>
-<h2>Factory</h2>
-<h3>self</h3>
+<h2 id="int-factory">Factory</h2>
+<h3 id="int-self">self <a class="anchor-link" href="#int-self">#</a></h3>
 <p><strong>Current object instance</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Self() As IDesignerPreparation
@@ -154,8 +163,8 @@ not already created by EnsureDropdowns or Prepare.</p>
 interface reference from the predeclared Create method.</p>
 <p><strong>Returns:</strong> IDesignerPreparation. The current instance cast to the interface.</p>
 <hr />
-<h2>Preparation Helpers</h2>
-<h3>import-translations</h3>
+<h2 id="int-preparation-helpers">Preparation Helpers</h2>
+<h3 id="int-import-translations">import-translations <a class="anchor-link" href="#int-import-translations">#</a></h3>
 <p><strong>Import translation tables from a user-selected workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ImportTranslations()
@@ -166,7 +175,7 @@ imports matching ListObjects via CustomTable.Import. This is the same
 logic as the clickImpTrans ribbon callback, encapsulated here so it
 runs as part of the preparation sequence.</p>
 <hr />
-<h3>ensure-dropdowns</h3>
+<h3 id="int-ensure-dropdowns">ensure-dropdowns <a class="anchor-link" href="#int-ensure-dropdowns">#</a></h3>
 <p><strong>Create the dropdown worksheet and register all standard dropdown lists</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureDropdowns()
@@ -175,7 +184,7 @@ runs as part of the preparation sequence.</p>
 (empty placeholder), interface languages, epiweek start (1-7), and
 design values dropdown lists.</p>
 <hr />
-<h3>hide-worksheets</h3>
+<h3 id="int-hide-worksheets">hide-worksheets <a class="anchor-link" href="#int-hide-worksheets">#</a></h3>
 <p><strong>Hide internal worksheets and register them with the dev manager</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub HideWorksheets(ByRef devManager As IDevelopment)
@@ -190,7 +199,7 @@ deployment. Silently skips any worksheet that does not exist.</p>
 <li><code>devManager</code>: IDevelopment. Development manager for deployment registration, or Nothing.</li>
 </ul>
 <hr />
-<h3>ensure-workbook-flags</h3>
+<h3 id="int-ensure-workbook-flags">ensure-workbook-flags <a class="anchor-link" href="#int-ensure-workbook-flags">#</a></h3>
 <p><strong>Ensure all workbook-level HiddenNames flags exist</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureWorkbookFlags()
@@ -200,18 +209,20 @@ codes, and the last opened date. Checkbox flags default to &quot;Yes&quot; (on).
 Language codes default to empty strings. Last opened date is set to the
 current date.</p>
 <hr />
-<h3>ensure-geo-flags</h3>
+<h3 id="int-ensure-geo-flags">ensure-geo-flags <a class="anchor-link" href="#int-ensure-geo-flags">#</a></h3>
 <p><strong>Ensure Geo worksheet-level HiddenNames flags exist</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureGeoFlags()
 </code></pre>
 <p>Creates worksheet-level HiddenNames on the Geo worksheet for language
-code, geobase name, metadata language, update status, pasting column,
-and form loaded state. Silently exits when the Geo worksheet does not
-exist in the host workbook.</p>
+code, geobase name, metadata language, update status, and form loaded
+state. Also creates RNG_PastingGeoCol as a real cell-based named range
+(not a HiddenName) because it is used as a paste anchor at runtime.
+Silently exits when the Geo worksheet does not exist in the host
+workbook.</p>
 <hr />
-<h2>Dropdown Helpers</h2>
-<h3>ensure-dropdown-manager</h3>
+<h2 id="int-dropdown-helpers">Dropdown Helpers</h2>
+<h3 id="int-ensure-dropdown-manager">ensure-dropdown-manager <a class="anchor-link" href="#int-ensure-dropdown-manager">#</a></h3>
 <p><strong>Ensure the dropdown manager is initialised for the target workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureDropdownManager()
@@ -220,7 +231,7 @@ exist in the host workbook.</p>
 resolves or creates the dropdown worksheet, then creates a DropdownLists
 instance bound to it with the standard dropdown prefix.</p>
 <hr />
-<h3>ensure-dropdown-sheet</h3>
+<h3 id="int-ensure-dropdown-sheet">ensure-dropdown-sheet <a class="anchor-link" href="#int-ensure-dropdown-sheet">#</a></h3>
 <p><strong>Ensure the dropdown worksheet exists and cache the reference</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function EnsureDropdownSheet() As Worksheet
@@ -230,7 +241,7 @@ creates a new worksheet at the end and names it. Caches the reference
 for subsequent calls.</p>
 <p><strong>Returns:</strong> Worksheet. The dropdown worksheet.</p>
 <hr />
-<h3>register-all-dropdowns</h3>
+<h3 id="int-register-all-dropdowns">register-all-dropdowns <a class="anchor-link" href="#int-register-all-dropdowns">#</a></h3>
 <p><strong>Register every standard dropdown list for designer worksheets</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RegisterAllDropdowns()
@@ -241,7 +252,7 @@ for subsequent calls.</p>
 (numbers 1 through 7), and design values (matching LLFormat design
 constants).</p>
 <hr />
-<h3>register-dropdown</h3>
+<h3 id="int-register-dropdown">register-dropdown <a class="anchor-link" href="#int-register-dropdown">#</a></h3>
 <p><strong>Register a single dropdown by converting the values into a BetterArray</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RegisterDropdown(ByVal dropdownName As String, ByVal values As Variant)
@@ -255,8 +266,8 @@ under the given name.</p>
 <li><code>values</code>: Variant. An array of values to populate the dropdown.</li>
 </ul>
 <hr />
-<h2>Multi Validations</h2>
-<h3>apply-multi-validations</h3>
+<h2 id="int-multi-validations">Multi Validations</h2>
+<h3 id="int-apply-multi-validations">apply-multi-validations <a class="anchor-link" href="#int-apply-multi-validations">#</a></h3>
 <p><strong>Apply data validation to the T_Multi table on GenerateMultiple</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ApplyMultiValidations()
@@ -267,8 +278,37 @@ then wires the &quot;language of the interface&quot;, &quot;epiweek start&quot;,
 CustomTable.SetValidation. Silently exits when the worksheet or
 table does not exist in the host workbook.</p>
 <hr />
-<h2>Internal Helpers</h2>
-<h3>ensure-hidden-store</h3>
+<h2 id="int-main-validations">Main Validations</h2>
+<h3 id="int-apply-main-validations">apply-main-validations <a class="anchor-link" href="#int-apply-main-validations">#</a></h3>
+<p><strong>Apply dropdown validation to named ranges on the Main worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ApplyMainValidations()
+</code></pre>
+<p>Resolves the Main worksheet and applies data validation from the
+registered dropdown lists to three named ranges: RNG_LangSetup
+(setup language), RNG_DesignLL (design selection), and RNG_LLForm
+(language of linelist interface). Silently exits when the Main
+worksheet does not exist or individual named ranges are missing.</p>
+<hr />
+<h3 id="int-apply-range-validation">apply-range-validation <a class="anchor-link" href="#int-apply-range-validation">#</a></h3>
+<p><strong>Apply dropdown validation to a single named range</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ApplyRangeValidation(ByVal sh As Worksheet, ByVal rngName As String, _
+                                 ByVal drop As IDropdownLists, ByVal dropName As String)
+</code></pre>
+<p>Resolves the named range from the worksheet and applies list
+validation using the specified dropdown. Silently exits when the
+named range does not exist on the worksheet.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The worksheet containing the named range.</li>
+<li><code>rngName</code>: String. The named range identifier.</li>
+<li><code>drop</code>: IDropdownLists. The dropdown manager with registered lists.</li>
+<li><code>dropName</code>: String. The dropdown list name to use as validation source.</li>
+</ul>
+<hr />
+<h2 id="int-internal-helpers">Internal Helpers</h2>
+<h3 id="int-ensure-hidden-store">ensure-hidden-store <a class="anchor-link" href="#int-ensure-hidden-store">#</a></h3>
 <p><strong>Lazily initialise the hidden names store from the host workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureHiddenStore()
@@ -276,7 +316,7 @@ table does not exist in the host workbook.</p>
 <p>Creates the IHiddenNames instance on first access by calling
 HiddenNames.Create with the host workbook. Subsequent calls are no-ops.</p>
 <hr />
-<h3>ensure-default-flags</h3>
+<h3 id="int-ensure-default-flags">ensure-default-flags <a class="anchor-link" href="#int-ensure-default-flags">#</a></h3>
 <p><strong>Ensure both default ribbon flags exist in the hidden store</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureDefaultFlags()
@@ -285,7 +325,7 @@ HiddenNames.Create with the host workbook. Subsequent calls are no-ops.</p>
 creating the hidden names if they do not already exist. All checks
 default to enabled per specification.</p>
 <hr />
-<h3>resolve-worksheet</h3>
+<h3 id="int-resolve-worksheet">resolve-worksheet <a class="anchor-link" href="#int-resolve-worksheet">#</a></h3>
 <p><strong>Resolve a worksheet by name from the host workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ResolveWorksheet(ByVal sheetName As String) As Worksheet
@@ -298,7 +338,7 @@ Nothing when the sheet does not exist.</p>
 </ul>
 <p><strong>Returns:</strong> Worksheet. The resolved worksheet, or Nothing.</p>
 <hr />
-<h3>set-sheet-visibility</h3>
+<h3 id="int-set-sheet-visibility">set-sheet-visibility <a class="anchor-link" href="#int-set-sheet-visibility">#</a></h3>
 <p><strong>Set the visibility of a worksheet by name</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub SetSheetVisibility(ByVal sheetName As String, ByVal visibility As Long)
@@ -311,7 +351,7 @@ property. Silently skips when the worksheet does not exist.</p>
 <li><code>visibility</code>: Long. The xlSheetVisibility constant to apply.</li>
 </ul>
 <hr />
-<h3>register-hidden-sheet</h3>
+<h3 id="int-register-hidden-sheet">register-hidden-sheet <a class="anchor-link" href="#int-register-hidden-sheet">#</a></h3>
 <p><strong>Register a sheet with the development manager for deployment hiding</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RegisterHiddenSheet(ByRef manager As IDevelopment, ByVal sheetName As String)
@@ -324,7 +364,21 @@ not abort the preparation sequence.</p>
 <li><code>sheetName</code>: String. The worksheet name to register.</li>
 </ul>
 <hr />
-<h3>raise-error</h3>
+<h3 id="int-ensure-geo-range">ensure-geo-range <a class="anchor-link" href="#int-ensure-geo-range">#</a></h3>
+<p><strong>Ensure a cell-based named range exists on the Geo worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureGeoRange(ByVal sh As Worksheet, ByVal rngName As String)
+</code></pre>
+<p>Checks whether the named range already exists on the worksheet. If not,
+creates the range in a free cell below the used area so it does not
+overlap with existing ListObjects or other content.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The Geo worksheet.</li>
+<li><code>rngName</code>: String. The named range identifier to create.</li>
+</ul>
+<hr />
+<h3 id="int-raise-error">raise-error <a class="anchor-link" href="#int-raise-error">#</a></h3>
 <p><strong>Raise a ProjectError-based exception</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RaiseError(ByVal errorCode As ProjectError, ByVal messageText As String)
@@ -340,8 +394,8 @@ not abort the preparation sequence.</p>
 <li>ProjectError.<varies> Always raises the specified error.</li>
 </ul>
 <hr />
-<h2>Interface Implementation</h2>
-<h3>IDesignerPreparation_Configure</h3>
+<h2 id="int-interface-implementation">Interface Implementation</h2>
+<h3 id="int-idesignerpreparation-configure">IDesignerPreparation_Configure <a class="anchor-link" href="#int-idesignerpreparation-configure">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub IDesignerPreparation_Configure(ByVal hostBook As Workbook)
 </code></pre>
@@ -359,8 +413,10 @@ See the corresponding members above for full documentation.</p>
 <li><a href="src/tests/modules/designer/TestDesignerRibbon.bas">TestDesignerRibbon.bas</a></li>
 </ul>
 </details>
-
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

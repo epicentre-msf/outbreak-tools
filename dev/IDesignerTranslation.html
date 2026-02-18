@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>IDesignerTranslation - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -16,8 +17,10 @@ methods to retrieve translation objects for different content types
 worksheet with a language string, and look up individual translated
 message values. The language code is persisted as a worksheet-level
 HiddenName for cross-session persistence.</p>
-<h2>Properties</h2>
-<h3>TransObject</h3>
+<details open class="doc-section" id="properties">
+<summary>Properties</summary>
+<div class="section-body">
+<h3 id="transobject">TransObject <a class="anchor-link" href="#transobject">#</a></h3>
 <p><strong>Translation object for a given content type</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get TransObject(Optional ByVal trans As Byte = DesignerTranslationOfMessages) As ITranslationObject: End Property
@@ -32,8 +35,12 @@ the current designer language.</p>
 </ul>
 <p><strong>Returns:</strong> ITranslationObject. The translation object for the requested scope.</p>
 <hr />
-<h2>Methods</h2>
-<h3>TranslateDesigner</h3>
+</div>
+</details>
+<details open class="doc-section" id="methods">
+<summary>Methods</summary>
+<div class="section-body">
+<h3 id="translatedesigner">TranslateDesigner <a class="anchor-link" href="#translatedesigner">#</a></h3>
 <p><strong>Translate an entire designer worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub TranslateDesigner(ByVal mainsh As Worksheet, ByVal language As String): End Sub
@@ -50,7 +57,7 @@ when no language code is available.</p>
 <li><code>language</code>: String. Language string in &quot;CODE - Label&quot; format (e.g. &quot;FRA - Francais&quot;). Pass vbNullString to use the stored language.</li>
 </ul>
 <hr />
-<h3>TranslatedValue</h3>
+<h3 id="translatedvalue">TranslatedValue <a class="anchor-link" href="#translatedvalue">#</a></h3>
 <p><strong>Get the translated value of a message code</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function TranslatedValue(ByVal msgCode As String) As String: End Function
@@ -63,8 +70,12 @@ the translated string for the current designer language.</p>
 </ul>
 <p><strong>Returns:</strong> String. The translated message text.</p>
 <hr />
-
+</div>
+</details>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

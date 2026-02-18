@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Formulas - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -18,8 +19,10 @@ ValueOfFormula for custom function conversion. Grouped formulas are
 detected and rewritten as aggregated Excel expressions.</p>
 <p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="Checking.html">Checking</a>, <a href="LLdictionary.html">LLdictionary</a>, <a href="LLVariables.html">LLVariables</a>, <a href="LLSheets.html">LLSheets</a>, <a href="CaseWhen.html">CaseWhen</a>, <a href="ChoiceFormula.html">ChoiceFormula</a>, <a href="ValueOfFormula.html">ValueOfFormula</a></p>
 <p><strong>Version:</strong> 1.0 (2026-02-09)</p>
-<h2>Factory</h2>
-<h3>create</h3>
+<details open class="doc-section" id="factory">
+<summary>Factory</summary>
+<div class="section-body">
+<h3 id="create">create <a class="anchor-link" href="#create">#</a></h3>
 <p><strong>Instantiate a Formulas helper ready to parse the provided setup expression</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal dict As ILLdictionary, _
@@ -44,8 +47,12 @@ first access to Valid, Varlists, or any parsed formula property.</p>
 <li>ProjectError.ObjectNotInitialized When formData is Nothing.</li>
 </ul>
 <hr />
-<h2>PublicAccessors</h2>
-<h3>has-setup-variables</h3>
+</div>
+</details>
+<details open class="doc-section" id="publicaccessors">
+<summary>PublicAccessors</summary>
+<div class="section-body">
+<h3 id="has-setup-variables">has-setup-variables <a class="anchor-link" href="#has-setup-variables">#</a></h3>
 <p><strong>Determine if the parsed formula contains literal values</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get HasSetupVariables() As Boolean
@@ -54,7 +61,7 @@ first access to Valid, Varlists, or any parsed formula property.</p>
 tokenisation. The flag is set during EvaluateFormula.</p>
 <p><strong>Returns:</strong> Boolean. True when literals are present.</p>
 <hr />
-<h3>is-grouped</h3>
+<h3 id="is-grouped">is-grouped <a class="anchor-link" href="#is-grouped">#</a></h3>
 <p><strong>Indicate whether the parsed formula targets grouped evaluation</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get IsGrouped() As String
@@ -63,7 +70,7 @@ tokenisation. The flag is set during EvaluateFormula.</p>
 group metadata. Returns &quot;Yes&quot; when grouped logic applies, &quot;No&quot; otherwise.</p>
 <p><strong>Returns:</strong> String. &quot;Yes&quot; for grouped formulas, &quot;No&quot; otherwise.</p>
 <hr />
-<h3>reason</h3>
+<h3 id="reason">reason <a class="anchor-link" href="#reason">#</a></h3>
 <p><strong>Retrieve the last validation message associated with the given context</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Reason(Optional ByVal formulaType As String = &quot;analysis&quot;) As String
@@ -77,7 +84,7 @@ otherwise the recorded invalidation reason is returned.</p>
 </ul>
 <p><strong>Returns:</strong> String. Explanation of the current validity state.</p>
 <hr />
-<h3>valid</h3>
+<h3 id="valid">valid <a class="anchor-link" href="#valid">#</a></h3>
 <p><strong>Check whether the formula is valid for the supplied context</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Valid(Optional ByVal formulaType As String = &quot;analysis&quot;) As Boolean
@@ -90,7 +97,7 @@ the cached validity flag.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when parsing succeeded.</p>
 <hr />
-<h3>varlists</h3>
+<h3 id="varlists">varlists <a class="anchor-link" href="#varlists">#</a></h3>
 <p><strong>Provide a clone of the variables detected in the expression</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Varlists(Optional ByVal formulaType As String = &quot;analysis&quot;) As BetterArray
@@ -104,7 +111,7 @@ mutate the internal cache.</p>
 </ul>
 <p><strong>Returns:</strong> BetterArray. Variable names.</p>
 <hr />
-<h3>parsed-linelist-formula</h3>
+<h3 id="parsed-linelist-formula">parsed-linelist-formula <a class="anchor-link" href="#parsed-linelist-formula">#</a></h3>
 <p><strong>Build the Excel expression for linelist worksheets</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get ParsedLinelistFormula(Optional ByVal useTableName As Boolean = False, _
@@ -122,7 +129,7 @@ Excel equivalents (AVERAGE, COUNT).</p>
 </ul>
 <p><strong>Returns:</strong> String. Excel formula referencing linelist variables.</p>
 <hr />
-<h3>parsed-analysis-formula</h3>
+<h3 id="parsed-analysis-formula">parsed-analysis-formula <a class="anchor-link" href="#parsed-analysis-formula">#</a></h3>
 <p><strong>Build the Excel expression for aggregated analysis results</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get ParsedAnalysisFormula(ByVal formCond As IFormulaCondition, _
@@ -141,8 +148,12 @@ are delegated to BuildGroupedFormula.</p>
 </ul>
 <p><strong>Returns:</strong> String. Excel expression ready for analysis worksheets.</p>
 <hr />
-<h2>Checkings</h2>
-<h3>has-checkings</h3>
+</div>
+</details>
+<details open class="doc-section" id="checkings">
+<summary>Checkings</summary>
+<div class="section-body">
+<h3 id="has-checkings">has-checkings <a class="anchor-link" href="#has-checkings">#</a></h3>
 <p><strong>Indicate whether any diagnostic entries were recorded</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get HasCheckings() As Boolean
@@ -150,7 +161,7 @@ are delegated to BuildGroupedFormula.</p>
 <p>Returns the module-level flag set by LogCheck.</p>
 <p><strong>Returns:</strong> Boolean. True when checkings exist.</p>
 <hr />
-<h3>checking-values</h3>
+<h3 id="checking-values">checking-values <a class="anchor-link" href="#checking-values">#</a></h3>
 <p><strong>Expose the collected checking entries if available</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get CheckingValues() As IChecking
@@ -159,10 +170,12 @@ are delegated to BuildGroupedFormula.</p>
 been recorded. Returns Nothing otherwise.</p>
 <p><strong>Returns:</strong> IChecking. Logged diagnostics.</p>
 <hr />
+</div>
+</details>
 <details>
 <summary>Internal members (not exported)</summary>
-<h2>PublicAccessors</h2>
-<h3>self</h3>
+<h2 id="int-publicaccessors">PublicAccessors</h2>
+<h3 id="int-self">self <a class="anchor-link" href="#int-self">#</a></h3>
 <p><strong>Return the interface pointer for the current instance</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Self() As IFormulas
@@ -172,7 +185,7 @@ Returns the current instance cast to its interface. Used internally
 by the factory method to return an IFormulas reference.</p>
 <p><strong>Returns:</strong> IFormulas. Reference to the current object.</p>
 <hr />
-<h3>dictionary</h3>
+<h3 id="int-dictionary">dictionary <a class="anchor-link" href="#int-dictionary">#</a></h3>
 <p><strong>Retrieve the underlying dictionary used during parsing</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Dictionary() As ILLdictionary
@@ -181,7 +194,7 @@ by the factory method to return an IFormulas reference.</p>
 Initialise. Used by downstream helpers to resolve variable metadata.</p>
 <p><strong>Returns:</strong> ILLdictionary. Dictionary backing metadata lookups.</p>
 <hr />
-<h3>dictionary-set</h3>
+<h3 id="int-dictionary-set">dictionary-set <a class="anchor-link" href="#int-dictionary-set">#</a></h3>
 <p><strong>Assign a new dictionary and reset dependent caches</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set Dictionary(ByVal dict As ILLdictionary)
@@ -197,7 +210,7 @@ dependencies so subsequent property accesses trigger a fresh parse.</p>
 <li>ProjectError.ObjectNotInitialized When dict is Nothing.</li>
 </ul>
 <hr />
-<h3>data</h3>
+<h3 id="int-data">data <a class="anchor-link" href="#int-data">#</a></h3>
 <p><strong>Retrieve the formula configuration catalogue</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Data() As IFormulaData
@@ -206,7 +219,7 @@ dependencies so subsequent property accesses trigger a fresh parse.</p>
 operators, and special characters used during tokenisation.</p>
 <p><strong>Returns:</strong> IFormulaData. Configuration catalogue.</p>
 <hr />
-<h3>data-set</h3>
+<h3 id="int-data-set">data-set <a class="anchor-link" href="#int-data-set">#</a></h3>
 <p><strong>Update the formula configuration catalogue and invalidate caches</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set Data(ByVal formData As IFormulaData)
@@ -222,7 +235,7 @@ results so subsequent accesses trigger a fresh evaluation.</p>
 <li>ProjectError.ObjectNotInitialized When formData is Nothing.</li>
 </ul>
 <hr />
-<h3>setup-formula</h3>
+<h3 id="int-setup-formula">setup-formula <a class="anchor-link" href="#int-setup-formula">#</a></h3>
 <p><strong>Retrieve the original setup pseudo-formula</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get SetupFormula() As String
@@ -231,7 +244,7 @@ results so subsequent accesses trigger a fresh evaluation.</p>
 Create or the last assignment.</p>
 <p><strong>Returns:</strong> String. Raw expression.</p>
 <hr />
-<h3>setup-formula-set</h3>
+<h3 id="int-setup-formula-set">setup-formula-set <a class="anchor-link" href="#int-setup-formula-set">#</a></h3>
 <p><strong>Store the setup pseudo-formula and reset computed caches</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Let SetupFormula(ByVal setupForm As String)
@@ -243,8 +256,8 @@ results so subsequent accesses trigger a fresh evaluation.</p>
 <li><code>setupForm</code>: String. Pseudo-formula captured from setup.</li>
 </ul>
 <hr />
-<h2>PrivateHelpers</h2>
-<h3>initialise</h3>
+<h2 id="int-privatehelpers">PrivateHelpers</h2>
+<h3 id="int-initialise">initialise <a class="anchor-link" href="#int-initialise">#</a></h3>
 <p><strong>Store incoming dependencies and prepare caches</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Initialise(ByVal dict As ILLdictionary, _
@@ -262,7 +275,7 @@ recognised during analysis parsing.</p>
 <li><code>setupForm</code>: String. Pseudo-formula to parse.</li>
 </ul>
 <hr />
-<h3>reset-dependencies</h3>
+<h3 id="int-reset-dependencies">reset-dependencies <a class="anchor-link" href="#int-reset-dependencies">#</a></h3>
 <p><strong>Clear lazily instantiated dependencies and invalidate token caches</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ResetDependencies()
@@ -271,7 +284,7 @@ recognised during analysis parsing.</p>
 the custom formulas list when absent. Triggers InvalidateCaches to
 ensure downstream properties reparse.</p>
 <hr />
-<h3>register-default-custom-formulas</h3>
+<h3 id="int-register-default-custom-formulas">register-default-custom-formulas <a class="anchor-link" href="#int-register-default-custom-formulas">#</a></h3>
 <p><strong>Seed built-in custom formulas recognised by analysis parsing</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RegisterDefaultCustomFormulas()
@@ -280,7 +293,7 @@ ensure downstream properties reparse.</p>
 as known tokens that receive special handling during analysis
 formula construction.</p>
 <hr />
-<h3>register-custom-formula</h3>
+<h3 id="int-register-custom-formula">register-custom-formula <a class="anchor-link" href="#int-register-custom-formula">#</a></h3>
 <p><strong>Add a custom formula identifier if not already registered</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RegisterCustomFormula(ByVal customFormula As String)
@@ -292,7 +305,7 @@ token if it is not already present.</p>
 <li><code>customFormula</code>: String. Token representing a custom formula.</li>
 </ul>
 <hr />
-<h3>invalidate-caches</h3>
+<h3 id="int-invalidate-caches">invalidate-caches <a class="anchor-link" href="#int-invalidate-caches">#</a></h3>
 <p><strong>Reset cached parsing results and computed flags</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub InvalidateCaches()
@@ -301,14 +314,14 @@ token if it is not already present.</p>
 context so the next access triggers a full reparse from the stored
 setup expression.</p>
 <hr />
-<h3>reset-group-context</h3>
+<h3 id="int-reset-group-context">reset-group-context <a class="anchor-link" href="#int-reset-group-context">#</a></h3>
 <p><strong>Clear any grouped-formula metadata captured during previous evaluations</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ResetGroupContext()
 </code></pre>
 <p>Resets all fields of the TGroupContext UDT to their default values.</p>
 <hr />
-<h3>variables</h3>
+<h3 id="int-variables">variables <a class="anchor-link" href="#int-variables">#</a></h3>
 <p><strong>Lazily instantiate the LLVariables helper from the dictionary</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function Variables() As ILLVariables
@@ -317,7 +330,7 @@ setup expression.</p>
 subsequent calls.</p>
 <p><strong>Returns:</strong> ILLVariables. Bound to the current dictionary.</p>
 <hr />
-<h3>sheet-provider</h3>
+<h3 id="int-sheet-provider">sheet-provider <a class="anchor-link" href="#int-sheet-provider">#</a></h3>
 <p><strong>Lazily instantiate the LLSheets helper for address resolution</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function SheetProvider() As ILLSheets
@@ -326,7 +339,7 @@ subsequent calls.</p>
 subsequent calls.</p>
 <p><strong>Returns:</strong> ILLSheets. Bound to the current dictionary.</p>
 <hr />
-<h3>ensure-evaluation</h3>
+<h3 id="int-ensure-evaluation">ensure-evaluation <a class="anchor-link" href="#int-ensure-evaluation">#</a></h3>
 <p><strong>Guarantee that a parsing/validation run exists for the requested context</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function EnsureEvaluation(ByVal formulaType As String) As Boolean
@@ -340,7 +353,7 @@ full EvaluateFormula pass is triggered.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when the cached evaluation is valid.</p>
 <hr />
-<h3>evaluate-formula</h3>
+<h3 id="int-evaluate-formula">evaluate-formula <a class="anchor-link" href="#int-evaluate-formula">#</a></h3>
 <p><strong>Parse the setup expression, populate tokens, and capture validation results</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EvaluateFormula(ByVal formulaType As String)
@@ -355,8 +368,8 @@ GroupContexExtractionSucceed.</p>
 <li><code>formulaType</code>: String. Context (analysis/simple).</li>
 </ul>
 <hr />
-<h2>GroupFormula</h2>
-<h3>group-context-extraction</h3>
+<h2 id="int-groupformula">GroupFormula</h2>
+<h3 id="int-group-context-extraction">group-context-extraction <a class="anchor-link" href="#int-group-context-extraction">#</a></h3>
 <p><strong>Analyse the tokenised expression and record grouped metadata when relevant</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function GroupContexExtractionSucceed(ByVal tokens As BetterArray, _
@@ -379,7 +392,7 @@ in the TGroupContext UDT for BuildGroupedFormula.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when grouped context is captured or not required.</p>
 <hr />
-<h3>root-function-name</h3>
+<h3 id="int-root-function-name">root-function-name <a class="anchor-link" href="#int-root-function-name">#</a></h3>
 <p><strong>Retrieve the entry token corresponding to the root function</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function RootFunctionName(ByVal tokens As BetterArray) As String
@@ -392,7 +405,7 @@ expected to be the function name when the formula is function-based.</p>
 </ul>
 <p><strong>Returns:</strong> String. Root token or empty string when unavailable.</p>
 <hr />
-<h3>is-generic-group-function</h3>
+<h3 id="int-is-generic-group-function">is-generic-group-function <a class="anchor-link" href="#int-is-generic-group-function">#</a></h3>
 <p><strong>Determine whether a function uses the GROUP prefix for grouped evaluation</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function IsGenericGroupFunction(ByVal functionName As String) As Boolean
@@ -404,7 +417,7 @@ expected to be the function name when the formula is function-based.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when the token starts with &quot;GROUP&quot;.</p>
 <hr />
-<h3>extract-generic-aggregator</h3>
+<h3 id="int-extract-generic-aggregator">extract-generic-aggregator <a class="anchor-link" href="#int-extract-generic-aggregator">#</a></h3>
 <p><strong>Parse the aggregator portion from a GROUP-prefixed function</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ExtractGenericAggregator(ByVal functionName As String) As String
@@ -418,7 +431,7 @@ present, strips the &quot;GROUP&quot; prefix directly.</p>
 </ul>
 <p><strong>Returns:</strong> String. Aggregator token to apply when building the Excel formula.</p>
 <hr />
-<h3>build-grouped-formula</h3>
+<h3 id="int-build-grouped-formula">build-grouped-formula <a class="anchor-link" href="#int-build-grouped-formula">#</a></h3>
 <p><strong>Construct the grouped Excel expression using captured metadata</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function BuildGroupedFormula(ByVal useTableName As Boolean, _
@@ -435,7 +448,7 @@ in an IF-based array formula.</p>
 </ul>
 <p><strong>Returns:</strong> String. Grouped Excel formula ready for consumption.</p>
 <hr />
-<h3>grouped-data-range</h3>
+<h3 id="int-grouped-data-range">grouped-data-range <a class="anchor-link" href="#int-grouped-data-range">#</a></h3>
 <p><strong>Resolve the appropriate range reference for a grouped variable</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function GroupedDataRange(ByVal variableName As String, _
@@ -454,8 +467,8 @@ depending on the useTableName flag.</p>
 </ul>
 <p><strong>Returns:</strong> String. Excel reference targeting the grouped variable.</p>
 <hr />
-<h2>Tokenisation</h2>
-<h3>tokenise-formula</h3>
+<h2 id="int-tokenisation">Tokenisation</h2>
+<h3 id="int-tokenise-formula">tokenise-formula <a class="anchor-link" href="#int-tokenise-formula">#</a></h3>
 <p><strong>Break the converted formula into tokens while validating parentheses and literals</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function TokeniseFormula(ByVal formula As String, _
@@ -481,7 +494,7 @@ validated through AppendToken.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when parsing succeeds.</p>
 <hr />
-<h3>append-token</h3>
+<h3 id="int-append-token">append-token <a class="anchor-link" href="#int-append-token">#</a></h3>
 <p><strong>Validate and append the provided chunk to the tokens collection</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function AppendToken(ByVal chunk As String, _
@@ -509,7 +522,7 @@ or quoted string. Unknown chunks cause a validation failure.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when the chunk is accepted.</p>
 <hr />
-<h3>is-quoted-string</h3>
+<h3 id="int-is-quoted-string">is-quoted-string <a class="anchor-link" href="#int-is-quoted-string">#</a></h3>
 <p><strong>Determine whether the supplied value is wrapped in quotes</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function IsQuotedString(ByVal value As String) As Boolean
@@ -522,7 +535,7 @@ character and has a length of at least two.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when the string is quoted.</p>
 <hr />
-<h3>clean-string</h3>
+<h3 id="int-clean-string">clean-string <a class="anchor-link" href="#int-clean-string">#</a></h3>
 <p><strong>Normalise the incoming token by removing control characters and duplicate spaces</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function CleanString(ByVal value As String) As String
@@ -535,7 +548,7 @@ Application.WorksheetFunction.Clean, and trims whitespace.</p>
 </ul>
 <p><strong>Returns:</strong> String. Trimmed and cleaned representation.</p>
 <hr />
-<h3>parsed-custom-formula</h3>
+<h3 id="int-parsed-custom-formula">parsed-custom-formula <a class="anchor-link" href="#int-parsed-custom-formula">#</a></h3>
 <p><strong>Delegate parsing to custom functions when present in analysis context</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ParsedCustomFormula(ByVal customFunction As String, _
@@ -555,7 +568,7 @@ expansion builds criteria pairs from the IFormulaCondition.</p>
 </ul>
 <p><strong>Returns:</strong> String. Excel fragment produced by the custom handler.</p>
 <hr />
-<h3>remove-empty-invocation-tokens</h3>
+<h3 id="int-remove-empty-invocation-tokens">remove-empty-invocation-tokens <a class="anchor-link" href="#int-remove-empty-invocation-tokens">#</a></h3>
 <p><strong>Strip trailing empty parentheses after replacing custom formulas</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RemoveEmptyInvocationTokens(ByRef tokens As BetterArray, _
@@ -570,7 +583,7 @@ they immediately follow the replaced token.</p>
 <li><code>functionIndex</code>: Long. Index of the custom function token.</li>
 </ul>
 <hr />
-<h3>clear-count-if</h3>
+<h3 id="int-clear-count-if">clear-count-if <a class="anchor-link" href="#int-clear-count-if">#</a></h3>
 <p><strong>Remove equality fragments from COUNTIF-style conditions</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ClearCountIf(ByVal value As String) As String
@@ -584,7 +597,7 @@ compatibility.</p>
 </ul>
 <p><strong>Returns:</strong> String. Sanitised predicate suitable for COUNTIFS.</p>
 <hr />
-<h3>quoted</h3>
+<h3 id="int-quoted">quoted <a class="anchor-link" href="#int-quoted">#</a></h3>
 <p><strong>Wrap a value in Excel double quotes</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function Quoted(ByVal value As String) As String
@@ -596,7 +609,7 @@ compatibility.</p>
 </ul>
 <p><strong>Returns:</strong> String. Quoted representation.</p>
 <hr />
-<h3>converted-setup-formula</h3>
+<h3 id="int-converted-setup-formula">converted-setup-formula <a class="anchor-link" href="#int-converted-setup-formula">#</a></h3>
 <p><strong>Convert higher-level setup directives into plain Excel expressions</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ConvertedSetupFormula() As String
@@ -606,7 +619,7 @@ stored setup expression and delegates to the corresponding parser
 class. Returns the original expression when no prefix matches.</p>
 <p><strong>Returns:</strong> String. Converted formula ready for tokenising.</p>
 <hr />
-<h3>set-invalid</h3>
+<h3 id="int-set-invalid">set-invalid <a class="anchor-link" href="#int-set-invalid">#</a></h3>
 <p><strong>Record an invalidation reason and log the associated checking entry</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub SetInvalid(ByVal message As String, Optional ByVal scope As Byte = checkingError)
@@ -619,8 +632,8 @@ the message through the internal Checking store.</p>
 <li><code>scope</code>: Optional Byte. Severity level persisted in Checking.</li>
 </ul>
 <hr />
-<h2>Checkings</h2>
-<h3>log-check</h3>
+<h2 id="int-checkings">Checkings</h2>
+<h3 id="int-log-check">log-check <a class="anchor-link" href="#int-log-check">#</a></h3>
 <p><strong>Record a diagnostic entry within the internal checking store</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub LogCheck(ByVal label As String, _
@@ -635,8 +648,8 @@ the labelled entry with the given severity scope.</p>
 <li><code>scope</code>: Optional Byte. Severity indicator.</li>
 </ul>
 <hr />
-<h2>ErrorHandling</h2>
-<h3>throw-error</h3>
+<h2 id="int-errorhandling">ErrorHandling</h2>
+<h3 id="int-throw-error">throw-error <a class="anchor-link" href="#int-throw-error">#</a></h3>
 <p><strong>Raise a VBA error with the class signature</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
@@ -654,14 +667,14 @@ constant CLASSNAME for consistent stack traces.</p>
 <li>ProjectError.<varies> Always raises the specified error.</li>
 </ul>
 <hr />
-<h2>Interface</h2>
-<h3>IFormulas_Varlists</h3>
+<h2 id="int-interface">Interface</h2>
+<h3 id="int-iformulas-varlists">IFormulas_Varlists <a class="anchor-link" href="#int-iformulas-varlists">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get IFormulas_Varlists(Optional ByVal formulaType As String = &quot;analysis&quot;) As BetterArray
 </code></pre>
 <p>Delegated members satisfying the IFormulas contract.</p>
 <hr />
-<h3>formula-table-list</h3>
+<h3 id="int-formula-table-list">formula-table-list <a class="anchor-link" href="#int-formula-table-list">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get IFormulas_FormulaTableList() As BetterArray
 </code></pre>
@@ -683,8 +696,10 @@ constant CLASSNAME for consistent stack traces.</p>
 <li><a href="src/tests/modules/geo/TestSpatialTables.bas">TestSpatialTables.bas</a></li>
 </ul>
 </details>
-
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

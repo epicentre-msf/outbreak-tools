@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CustomPivotTable - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -15,8 +16,10 @@ building. Each call to Add creates a new PivotTable block (title + pivot)
 stacked vertically. Position tracking and title references are stored as
 worksheet-level HiddenNames instead of hidden cell values.</p>
 <p><strong>Depends on:</strong> <a href="ICustomPivotTable.html">ICustomPivotTable</a>, <a href="ILLFormat.html">ILLFormat</a>, <a href="IHiddenNames.html">IHiddenNames</a>, <a href="HiddenNames.html">HiddenNames</a>, ProjectError</p>
-<h2>Factory</h2>
-<h3>create</h3>
+<details open class="doc-section" id="factory">
+<summary>Factory</summary>
+<div class="section-body">
+<h3 id="create">create <a class="anchor-link" href="#create">#</a></h3>
 <p><strong>Create a new CustomPivotTable instance</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal sh As Worksheet) As ICustomPivotTable
@@ -35,24 +38,26 @@ resume from the current position.</p>
 <li>InvalidArgument. When sh is Nothing.</li>
 </ul>
 <hr />
+</div>
+</details>
 <details>
 <summary>Internal members (not exported)</summary>
-<h2>Factory</h2>
-<h3>self</h3>
+<h2 id="int-factory">Factory</h2>
+<h3 id="int-self">self <a class="anchor-link" href="#int-self">#</a></h3>
 <p><strong>Return the current instance as ICustomPivotTable</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Self() As ICustomPivotTable
 </code></pre>
 <p><strong>Returns:</strong> ICustomPivotTable. Self-reference for factory pattern.</p>
 <hr />
-<h3>wksh-get</h3>
+<h3 id="int-wksh-get">wksh-get <a class="anchor-link" href="#int-wksh-get">#</a></h3>
 <p><strong>The dedicated pivot table worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Wksh() As Worksheet
 </code></pre>
 <p><strong>Returns:</strong> Worksheet. The host worksheet.</p>
 <hr />
-<h3>wksh-set</h3>
+<h3 id="int-wksh-set">wksh-set <a class="anchor-link" href="#int-wksh-set">#</a></h3>
 <p><strong>Assign the host worksheet (factory use only)</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set Wksh(ByVal sh As Worksheet)
@@ -62,8 +67,8 @@ resume from the current position.</p>
 <li><code>sh</code>: Worksheet. The worksheet to assign.</li>
 </ul>
 <hr />
-<h2>Public API</h2>
-<h3>add</h3>
+<h2 id="int-public-api">Public API</h2>
+<h3 id="int-add">add <a class="anchor-link" href="#int-add">#</a></h3>
 <p><strong>Create a pivot table from a ListObject source and add a titled block</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Add(ByVal title As String, _
@@ -82,7 +87,7 @@ logged to Debug.Print and the method exits without creating a title.</p>
 <li><code>pivotName</code>: String. Localised prefix for the title. Defaults to &quot;Pivot Table&quot;.</li>
 </ul>
 <hr />
-<h3>format</h3>
+<h3 id="int-format">format <a class="anchor-link" href="#int-format">#</a></h3>
 <p><strong>Apply design formatting to the pivot table worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Format(ByVal design As ILLFormat)
@@ -93,8 +98,8 @@ logged to Debug.Print and the method exits without creating a title.</p>
 <li><code>design</code>: ILLFormat. The format object providing style rules.</li>
 </ul>
 <hr />
-<h2>Internal Helpers</h2>
-<h3>initialise-metadata</h3>
+<h2 id="int-internal-helpers">Internal Helpers</h2>
+<h3 id="int-initialise-metadata">initialise-metadata <a class="anchor-link" href="#int-initialise-metadata">#</a></h3>
 <p><strong>Initialise worksheet-level HiddenNames for position tracking</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub InitialiseMetadata()
@@ -103,8 +108,8 @@ logged to Debug.Print and the method exits without creating a title.</p>
 already exist. Called by the factory to allow resuming from the current
 position when the same sheet is re-wrapped.</p>
 <hr />
-<h2>Error Handling</h2>
-<h3>throw-error</h3>
+<h2 id="int-error-handling">Error Handling</h2>
+<h3 id="int-throw-error">throw-error <a class="anchor-link" href="#int-throw-error">#</a></h3>
 <p><strong>Raise a project error with class context</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As Long, ByVal errMessage As String)
@@ -130,8 +135,10 @@ error attribution across all methods in this class.</p>
 <li><a href="src/tests/stubs/LinelistStub.cls">LinelistStub.cls</a></li>
 </ul>
 </details>
-
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

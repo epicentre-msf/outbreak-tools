@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>LLExporter - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -17,8 +18,10 @@ geobase exports (ExportGeo). Each mode builds a temporary output workbook,
 populates it with the relevant data, metadata, and formatting, then saves
 and closes it. Consumers interact through the ILLExporter interface.</p>
 <p><strong>Depends on:</strong> <a href="ILLdictionary.html">ILLdictionary</a>, <a href="ILLExport.html">ILLExport</a>, <a href="IPasswords.html">IPasswords</a>, <a href="ICustomTable.html">ICustomTable</a>, <a href="IDataSheet.html">IDataSheet</a>, <a href="IShowHideManager.html">IShowHideManager</a>, <a href="IAnaTabIds.html">IAnaTabIds</a>, <a href="ILLGeo.html">ILLGeo</a>, <a href="ILLChoices.html">ILLChoices</a>, <a href="IHiddenNames.html">IHiddenNames</a></p>
-<h2>Factory</h2>
-<h3>create</h3>
+<details open class="doc-section" id="factory">
+<summary>Factory</summary>
+<div class="section-body">
+<h3 id="create">create <a class="anchor-link" href="#create">#</a></h3>
 <p><strong>Create an exporter from the source linelist workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal sourceWkb As Workbook) As ILLExporter
@@ -36,8 +39,12 @@ Called on the predeclared instance.</p>
 <li>ProjectError.ObjectNotInitialized When the workbook is Nothing.</li>
 </ul>
 <hr />
-<h2>Public Accessors</h2>
-<h3>last-export-password</h3>
+</div>
+</details>
+<details open class="doc-section" id="public-accessors">
+<summary>Public Accessors</summary>
+<div class="section-body">
+<h3 id="last-export-password">last-export-password <a class="anchor-link" href="#last-export-password">#</a></h3>
 <p><strong>Password used in the last export operation</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get LastExportPassword() As String
@@ -47,8 +54,12 @@ empty string when no password was used. Modules display this value to
 the user after a successful export so they can share it securely.</p>
 <p><strong>Returns:</strong> String. The password, or vbNullString.</p>
 <hr />
-<h2>Export Methods</h2>
-<h3>export-custom</h3>
+</div>
+</details>
+<details open class="doc-section" id="export-methods">
+<summary>Export Methods</summary>
+<div class="section-body">
+<h3 id="export-custom">export-custom <a class="anchor-link" href="#export-custom">#</a></h3>
 <p><strong>Export a numbered custom export definition</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function ExportCustom(ByVal exportNumber As Long, _
@@ -69,7 +80,7 @@ Saves the workbook with an optional password and returns the file path.</p>
 </ul>
 <p><strong>Returns:</strong> String. Saved file path, or vbNullString on failure.</p>
 <hr />
-<h3>export-migration</h3>
+<h3 id="export-migration">export-migration <a class="anchor-link" href="#export-migration">#</a></h3>
 <p><strong>Export all data for migration to another linelist</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function ExportMigration(ByVal folderPath As String, _
@@ -88,7 +99,7 @@ applied. Returns the saved file path.</p>
 </ul>
 <p><strong>Returns:</strong> String. Saved file path, or vbNullString on failure.</p>
 <hr />
-<h3>export-analysis</h3>
+<h3 id="export-analysis">export-analysis <a class="anchor-link" href="#export-analysis">#</a></h3>
 <p><strong>Export analysis worksheets only</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function ExportAnalysis(ByVal folderPath As String) As String
@@ -103,7 +114,7 @@ as xlsx without password.</p>
 </ul>
 <p><strong>Returns:</strong> String. Saved file path, or vbNullString on failure.</p>
 <hr />
-<h3>export-geo</h3>
+<h3 id="export-geo">export-geo <a class="anchor-link" href="#export-geo">#</a></h3>
 <p><strong>Export geobase data to a separate workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function ExportGeo(ByVal folderPath As String, _
@@ -120,7 +131,7 @@ suffix.</p>
 </ul>
 <p><strong>Returns:</strong> String. Saved file path, or vbNullString on failure.</p>
 <hr />
-<h3>close-all</h3>
+<h3 id="close-all">close-all <a class="anchor-link" href="#close-all">#</a></h3>
 <p><strong>Close all output workbooks that may still be open</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub CloseAll()
@@ -128,24 +139,26 @@ suffix.</p>
 <p>Closes any output workbook left open after an export error, preventing
 orphaned minimized windows. Safe to call even when no workbook is open.</p>
 <hr />
+</div>
+</details>
 <details>
 <summary>Internal members (not exported)</summary>
-<h2>Public Accessors</h2>
-<h3>self</h3>
+<h2 id="int-public-accessors">Public Accessors</h2>
+<h3 id="int-self">self <a class="anchor-link" href="#int-self">#</a></h3>
 <p><strong>Current object instance</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Self() As ILLExporter
 </code></pre>
 <p><strong>Returns:</strong> ILLExporter. The current instance cast to the interface.</p>
 <hr />
-<h3>source-workbook</h3>
+<h3 id="int-source-workbook">source-workbook <a class="anchor-link" href="#int-source-workbook">#</a></h3>
 <p><strong>Source linelist workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get SourceWorkbook() As Workbook
 </code></pre>
 <p><strong>Returns:</strong> Workbook. The linelist workbook bound to this exporter.</p>
 <hr />
-<h3>source-workbook-set</h3>
+<h3 id="int-source-workbook-set">source-workbook-set <a class="anchor-link" href="#int-source-workbook-set">#</a></h3>
 <p><strong>Assign the source linelist workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set SourceWorkbook(ByVal wb As Workbook)
@@ -155,8 +168,8 @@ orphaned minimized windows. Safe to call even when no workbook is open.</p>
 <li><code>wb</code>: Workbook. The workbook to store.</li>
 </ul>
 <hr />
-<h2>Private - Source Object Accessors</h2>
-<h3>source-dictionary</h3>
+<h2 id="int-private-source-object-accessors">Private - Source Object Accessors</h2>
+<h3 id="int-source-dictionary">source-dictionary <a class="anchor-link" href="#int-source-dictionary">#</a></h3>
 <p><strong>Get a dictionary from the source workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function SourceDictionary(ByVal nbExp As Long) As ILLdictionary
@@ -167,36 +180,36 @@ orphaned minimized windows. Safe to call even when no workbook is open.</p>
 </ul>
 <p><strong>Returns:</strong> ILLdictionary. Dictionary instance from the Dictionary sheet.</p>
 <hr />
-<h3>export-object</h3>
+<h3 id="int-export-object">export-object <a class="anchor-link" href="#int-export-object">#</a></h3>
 <p><strong>Get the export configuration from the source workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ExportObject() As ILLExport
 </code></pre>
 <p><strong>Returns:</strong> ILLExport. Export configuration from the Exports sheet.</p>
 <hr />
-<h3>passwords-object</h3>
+<h3 id="int-passwords-object">passwords-object <a class="anchor-link" href="#int-passwords-object">#</a></h3>
 <p><strong>Get passwords from the source workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function PasswordsObject() As IPasswords
 </code></pre>
 <p><strong>Returns:</strong> IPasswords. Passwords instance from the __pass sheet.</p>
 <hr />
-<h3>geo-object</h3>
+<h3 id="int-geo-object">geo-object <a class="anchor-link" href="#int-geo-object">#</a></h3>
 <p><strong>Get the geo object from the source workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function GeoObject() As ILLGeo
 </code></pre>
 <p><strong>Returns:</strong> ILLGeo. Geo instance from the Geo sheet.</p>
 <hr />
-<h2>Private - Output Workbook Management</h2>
-<h3>create-output-workbook</h3>
+<h2 id="int-private-output-workbook-management">Private - Output Workbook Management</h2>
+<h3 id="int-create-output-workbook">create-output-workbook <a class="anchor-link" href="#int-create-output-workbook">#</a></h3>
 <p><strong>Create a new minimized output workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function CreateOutputWorkbook() As Workbook
 </code></pre>
 <p><strong>Returns:</strong> Workbook. The newly created workbook.</p>
 <hr />
-<h3>save-workbook</h3>
+<h3 id="int-save-workbook">save-workbook <a class="anchor-link" href="#int-save-workbook">#</a></h3>
 <p><strong>Save and close the output workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub SaveWorkbook(ByVal outwb As Workbook, ByVal filePath As String, _
@@ -212,7 +225,7 @@ optional password, then closes it without saving again.</p>
 <li><code>password</code>: String. Password to apply, or vbNullString for none.</li>
 </ul>
 <hr />
-<h3>build-file-path</h3>
+<h3 id="int-build-file-path">build-file-path <a class="anchor-link" href="#int-build-file-path">#</a></h3>
 <p><strong>Build a full file path from folder, name, and extension</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function BuildFilePath(ByVal folderPath As String, ByVal fileName As String, _
@@ -226,8 +239,8 @@ optional password, then closes it without saving again.</p>
 </ul>
 <p><strong>Returns:</strong> String. The assembled file path.</p>
 <hr />
-<h2>Private - Dictionary Preparation</h2>
-<h3>remove-pcodes</h3>
+<h2 id="int-private-dictionary-preparation">Private - Dictionary Preparation</h2>
+<h3 id="int-remove-pcodes">remove-pcodes <a class="anchor-link" href="#int-remove-pcodes">#</a></h3>
 <p><strong>Remove p-codes variables from a custom export if configured</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RemovePCodes(ByVal dict As ILLdictionary, ByVal expObj As ILLExport, _
@@ -244,7 +257,7 @@ matches a geo p-code or geo concat tag.</p>
 <li><code>expName</code>: String. The export column name (e.g. &quot;export 1&quot;).</li>
 </ul>
 <hr />
-<h3>remove-personal-identifiers</h3>
+<h3 id="int-remove-personal-identifiers">remove-personal-identifiers <a class="anchor-link" href="#int-remove-personal-identifiers">#</a></h3>
 <p><strong>Remove personal identifiers from a custom export if configured</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RemovePersonalIdentifiers(ByVal dict As ILLdictionary, ByVal expObj As ILLExport, _
@@ -261,7 +274,7 @@ flagged as personal identifiers.</p>
 <li><code>expName</code>: String. The export column name.</li>
 </ul>
 <hr />
-<h3>prepare-temp-dictionary</h3>
+<h3 id="int-prepare-temp-dictionary">prepare-temp-dictionary <a class="anchor-link" href="#int-prepare-temp-dictionary">#</a></h3>
 <p><strong>Write dictionary data to the temp sheet for export processing</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub PrepareTempDictionary(ByVal dict As ILLdictionary, _
@@ -279,7 +292,7 @@ to mark the dictionary as prepared.</p>
 <li><code>fullExport</code>: Boolean. When True, copies the entire dictionary unfiltered.</li>
 </ul>
 <hr />
-<h3>export-dictionary-from-temp</h3>
+<h3 id="int-export-dictionary-from-temp">export-dictionary-from-temp <a class="anchor-link" href="#int-export-dictionary-from-temp">#</a></h3>
 <p><strong>Create an export dictionary from the temp sheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ExportDictionaryFromTemp(ByVal nbExp As Long) As ILLdictionary
@@ -290,7 +303,7 @@ to mark the dictionary as prepared.</p>
 </ul>
 <p><strong>Returns:</strong> ILLdictionary. Dictionary built from the temp__ sheet.</p>
 <hr />
-<h3>sort-export-dictionary</h3>
+<h3 id="int-sort-export-dictionary">sort-export-dictionary <a class="anchor-link" href="#int-sort-export-dictionary">#</a></h3>
 <p><strong>Sort the export dictionary by table name and export column</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub SortExportDictionary(ByVal expDict As ILLdictionary, ByVal expName As String)
@@ -301,8 +314,8 @@ to mark the dictionary as prepared.</p>
 <li><code>expName</code>: String. The export column name to use as secondary sort key.</li>
 </ul>
 <hr />
-<h2>Private - Metadata and Sheets</h2>
-<h3>add-metadata-sheets</h3>
+<h2 id="int-private-metadata-and-sheets">Private - Metadata and Sheets</h2>
+<h3 id="int-add-metadata-sheets">add-metadata-sheets <a class="anchor-link" href="#int-add-metadata-sheets">#</a></h3>
 <p><strong>Add Metadata, Choices, and Translations sheets to the output workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddMetadataSheets(ByVal outwb As Workbook, ByVal dict As ILLdictionary, _
@@ -315,7 +328,7 @@ to mark the dictionary as prepared.</p>
 <li><code>nbExp</code>: Long. Number of export columns.</li>
 </ul>
 <hr />
-<h3>add-dictionary</h3>
+<h3 id="int-add-dictionary">add-dictionary <a class="anchor-link" href="#int-add-dictionary">#</a></h3>
 <p><strong>Add the dictionary to the output workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddDictionary(ByVal outwb As Workbook, ByVal dict As ILLdictionary, _
@@ -331,7 +344,7 @@ dictionary as prepared with a blue font tag.</p>
 <li><code>exportColumn</code>: String. The export column to filter on, or &quot;<strong>all</strong>&quot;.</li>
 </ul>
 <hr />
-<h3>add-custom-dropdowns</h3>
+<h3 id="int-add-custom-dropdowns">add-custom-dropdowns <a class="anchor-link" href="#int-add-custom-dropdowns">#</a></h3>
 <p><strong>Add custom dropdowns to the Choices sheet in the output workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddCustomDropdowns(ByVal outwb As Workbook)
@@ -344,7 +357,7 @@ exits when no custom dropdown sheet exists.</p>
 <li><code>outwb</code>: Workbook. The output workbook.</li>
 </ul>
 <hr />
-<h3>add-metadata-tags</h3>
+<h3 id="int-add-metadata-tags">add-metadata-tags <a class="anchor-link" href="#int-add-metadata-tags">#</a></h3>
 <p><strong>Add metadata tags to the Metadata sheet in the output workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddMetadataTags(ByVal outwb As Workbook, ByVal scope As Byte, _
@@ -364,7 +377,7 @@ control import behaviour when the exported file is re-imported.</p>
 <li><code>keepLabels</code>: Boolean. When True, tags editable_labels as &quot;update on import&quot;.</li>
 </ul>
 <hr />
-<h3>add-show-hide</h3>
+<h3 id="int-add-show-hide">add-show-hide <a class="anchor-link" href="#int-add-show-hide">#</a></h3>
 <p><strong>Export show/hide state with column widths to the output workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddShowHide(ByVal outwb As Workbook)
@@ -378,7 +391,7 @@ layer (HList, Printed, VList) and exports the current visibility state.</p>
 <li><code>outwb</code>: Workbook. The output workbook.</li>
 </ul>
 <hr />
-<h3>import-current-show-hide</h3>
+<h3 id="int-import-current-show-hide">import-current-show-hide <a class="anchor-link" href="#int-import-current-show-hide">#</a></h3>
 <p><strong>Import current user overrides from the show_hide__ ListObject</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ImportCurrentShowHide(ByVal shm As IShowHideManager)
@@ -391,7 +404,7 @@ show/hide reflects the user actual choices.</p>
 <li><code>shm</code>: IShowHideManager. The manager to populate.</li>
 </ul>
 <hr />
-<h3>add-analysis-sheets</h3>
+<h3 id="int-add-analysis-sheets">add-analysis-sheets <a class="anchor-link" href="#int-add-analysis-sheets">#</a></h3>
 <p><strong>Add analysis worksheets to the output workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddAnalysisSheets(ByVal outwb As Workbook, ByVal afterSheetName As String)
@@ -406,8 +419,8 @@ objects via AnaTabIds.</p>
 <li><code>afterSheetName</code>: String. Name of the sheet to insert after.</li>
 </ul>
 <hr />
-<h2>Private - Data Export</h2>
-<h3>add-data-sheets</h3>
+<h2 id="int-private-data-export">Private - Data Export</h2>
+<h3 id="int-add-data-sheets">add-data-sheets <a class="anchor-link" href="#int-add-data-sheets">#</a></h3>
 <p><strong>Add data to each output sheet from source HList/VList worksheets</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddDataSheets(ByVal outwb As Workbook, ByVal expDict As ILLdictionary, _
@@ -427,7 +440,7 @@ delegates to ExportVListData. Applies formatting to each output sheet.</p>
 <li><code>useFilters</code>: Boolean. When True, reads from filtered companion sheets.</li>
 </ul>
 <hr />
-<h3>export-vlist-data</h3>
+<h3 id="int-export-vlist-data">export-vlist-data <a class="anchor-link" href="#int-export-vlist-data">#</a></h3>
 <p><strong>Export VList data (variable/value pairs) to the output sheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ExportVListData(ByVal inpsh As Worksheet, ByVal outsh As Worksheet, _
@@ -445,8 +458,8 @@ replaces variable names with their labels.</p>
 <li><code>startLine</code>: Long. Column offset for data start.</li>
 </ul>
 <hr />
-<h2>Private - Formatting Helpers</h2>
-<h3>format-output-sheet</h3>
+<h2 id="int-private-formatting-helpers">Private - Formatting Helpers</h2>
+<h3 id="int-format-output-sheet">format-output-sheet <a class="anchor-link" href="#int-format-output-sheet">#</a></h3>
 <p><strong>Apply standard formatting to an output data sheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub FormatOutputSheet(ByVal outsh As Worksheet)
@@ -459,7 +472,7 @@ or special sheets.</p>
 <li><code>outsh</code>: Worksheet. The worksheet to format.</li>
 </ul>
 <hr />
-<h3>remove-gridlines</h3>
+<h3 id="int-remove-gridlines">remove-gridlines <a class="anchor-link" href="#int-remove-gridlines">#</a></h3>
 <p><strong>Remove gridlines from an analysis output sheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RemoveGridLines(ByVal sh As Worksheet)
@@ -469,8 +482,8 @@ or special sheets.</p>
 <li><code>sh</code>: Worksheet. The worksheet to update.</li>
 </ul>
 <hr />
-<h2>Private - Error Handling</h2>
-<h3>throw-error</h3>
+<h2 id="int-private-error-handling">Private - Error Handling</h2>
+<h3 id="int-throw-error">throw-error <a class="anchor-link" href="#int-throw-error">#</a></h3>
 <p><strong>Raise a ProjectError-based exception</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal message As String)
@@ -486,8 +499,8 @@ or special sheets.</p>
 <li>ProjectError.<varies> Always raises the specified error.</li>
 </ul>
 <hr />
-<h2>Interface Implementation</h2>
-<h3>ILLExporter_ExportCustom</h3>
+<h2 id="int-interface-implementation">Interface Implementation</h2>
+<h3 id="int-illexporter-exportcustom">ILLExporter_ExportCustom <a class="anchor-link" href="#int-illexporter-exportcustom">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ILLExporter_ExportCustom(ByVal exportNumber As Long, _
                                           ByVal folderPath As String, _
@@ -498,17 +511,20 @@ See the corresponding members above for full documentation.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (5 file(s))</summary>
+<summary>Used in (6 file(s))</summary>
 <ul>
 <li><a href="src/classes/dataio/ExportButton.cls">ExportButton.cls</a></li>
 <li><a href="src/classes/dataio/ILLExporter.cls">ILLExporter.cls</a></li>
 <li><a href="src/classes/dataio/LLExporter.cls">LLExporter.cls</a></li>
-<li><a href="src/modules/dataio/FormLogicExportMig.bas">FormLogicExportMig.bas</a></li>
+<li><a href="src/classes/linelist/Linelist.cls">Linelist.cls</a></li>
+<li><a href="src/modules/linelistform/FormLogicExportMig.bas">FormLogicExportMig.bas</a></li>
 <li><a href="src/tests/modules/dataio/TestLLExporter.bas">TestLLExporter.bas</a></li>
 </ul>
 </details>
-
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

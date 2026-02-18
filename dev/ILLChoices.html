@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ILLChoices - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -14,8 +15,10 @@
 management of choice lists used for dropdowns and cascading selectors.
 Supports adding, removing, sorting, translating, importing, and
 exporting choices along with their long and short label categories.</p>
-<h2>Elements</h2>
-<h3>ChoiceData</h3>
+<details open class="doc-section" id="elements">
+<summary>Elements</summary>
+<div class="section-body">
+<h3 id="choicedata">ChoiceData <a class="anchor-link" href="#choicedata">#</a></h3>
 <p><strong>Associated DataSheet object</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get ChoiceData() As IDataSheet: End Property
@@ -24,7 +27,7 @@ exporting choices along with their long and short label categories.</p>
 Returns the IDataSheet wrapping the choice worksheet data.</p>
 <p><strong>Returns:</strong> IDataSheet. The backing DataSheet.</p>
 <hr />
-<h3>Wksh</h3>
+<h3 id="wksh">Wksh <a class="anchor-link" href="#wksh">#</a></h3>
 <p><strong>Worksheet hosting the choice lists</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Wksh() As Worksheet: End Property
@@ -32,8 +35,12 @@ Returns the IDataSheet wrapping the choice worksheet data.</p>
 <p>Returns the worksheet that stores the choice data.</p>
 <p><strong>Returns:</strong> Worksheet. The host worksheet.</p>
 <hr />
-<h2>Choices</h2>
-<h3>Name</h3>
+</div>
+</details>
+<details open class="doc-section" id="choices">
+<summary>Choices</summary>
+<div class="section-body">
+<h3 id="name">Name <a class="anchor-link" href="#name">#</a></h3>
 <p><strong>Name of the choice object</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Name() As String: End Property
@@ -42,7 +49,7 @@ Returns the IDataSheet wrapping the choice worksheet data.</p>
 Returns the assigned name, or the worksheet name when none was provided.</p>
 <p><strong>Returns:</strong> String. The choice object name.</p>
 <hr />
-<h3>ChoiceExists</h3>
+<h3 id="choiceexists">ChoiceExists <a class="anchor-link" href="#choiceexists">#</a></h3>
 <p><strong>Check whether a choice exists</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get ChoiceExists(ByVal choiceName As String) As Boolean: End Property
@@ -54,14 +61,14 @@ Returns the assigned name, or the worksheet name when none was provided.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when the choice is found.</p>
 <hr />
-<h3>Sort</h3>
+<h3 id="sort">Sort <a class="anchor-link" href="#sort">#</a></h3>
 <p><strong>Sort choices in the worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Sort(): End Sub
 </code></pre>
 <p>Sorts by list name ascending, then by ordering column ascending.</p>
 <hr />
-<h3>AddChoice</h3>
+<h3 id="addchoice">AddChoice <a class="anchor-link" href="#addchoice">#</a></h3>
 <p><strong>Add a new choice with its categories</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub AddChoice(ByVal choiceName As String, _
@@ -77,7 +84,7 @@ Silently exits when the choice already exists or the data is empty.</p>
 <li><code>shortLabelData</code>: Optional Object. BetterArray of short label values. Defaults to Nothing.</li>
 </ul>
 <hr />
-<h3>RemoveChoice</h3>
+<h3 id="removechoice">RemoveChoice <a class="anchor-link" href="#removechoice">#</a></h3>
 <p><strong>Remove one or multiple choices</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub RemoveChoice(ByVal choiceNames As String, Optional ByVal sep As String = &quot;;&quot;)
@@ -90,7 +97,7 @@ string. Silently skips choices that do not exist.</p>
 <li><code>sep</code>: Optional String. Delimiter between names. Defaults to &quot;;&quot;.</li>
 </ul>
 <hr />
-<h3>Translate</h3>
+<h3 id="translate">Translate <a class="anchor-link" href="#translate">#</a></h3>
 <p><strong>Translate the choice worksheet labels</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Translate(ByVal trads As ITranslationObject): End Sub
@@ -102,13 +109,13 @@ columns. Silently exits when headers are invalid.</p>
 <li><code>trads</code>: ITranslationObject. Translation provider.</li>
 </ul>
 <hr />
-<h3>AddRows</h3>
+<h3 id="addrows">AddRows <a class="anchor-link" href="#addrows">#</a></h3>
 <p><strong>Add rows to the choice table</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub AddRows(): End Sub
 </code></pre>
 <hr />
-<h3>InsertRows</h3>
+<h3 id="insertrows">InsertRows <a class="anchor-link" href="#insertrows">#</a></h3>
 <p><strong>Insert rows at the selected position</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub InsertRows(ByVal targetCell As Range, _
@@ -121,7 +128,7 @@ columns. Silently exits when headers are invalid.</p>
 <li><code>insertShift</code>: Optional Boolean. When True, inserts worksheet rows. Defaults to False.</li>
 </ul>
 <hr />
-<h3>DeleteRows</h3>
+<h3 id="deleterows">DeleteRows <a class="anchor-link" href="#deleterows">#</a></h3>
 <p><strong>Delete rows intersecting the selection</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub DeleteRows(ByVal targetCell As Range, _
@@ -135,13 +142,13 @@ columns. Silently exits when headers are invalid.</p>
 <li><code>forceShift</code>: Optional Boolean. When True, forces worksheet row deletion. Defaults to False.</li>
 </ul>
 <hr />
-<h3>RemoveRows</h3>
+<h3 id="removerows">RemoveRows <a class="anchor-link" href="#removerows">#</a></h3>
 <p><strong>Remove empty rows from the choice table</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub RemoveRows(): End Sub
 </code></pre>
 <hr />
-<h3>ManageRows</h3>
+<h3 id="managerows">ManageRows <a class="anchor-link" href="#managerows">#</a></h3>
 <p><strong>Add or remove rows via a single toggle</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ManageRows(Optional ByVal del As Boolean = False): End Sub
@@ -151,7 +158,7 @@ columns. Silently exits when headers are invalid.</p>
 <li><code>del</code>: Optional Boolean. When True, removes rows; when False, adds rows. Defaults to False.</li>
 </ul>
 <hr />
-<h3>AllChoices</h3>
+<h3 id="allchoices">AllChoices <a class="anchor-link" href="#allchoices">#</a></h3>
 <p><strong>All distinct choice names</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get AllChoices() As BetterArray: End Property
@@ -159,8 +166,12 @@ columns. Silently exits when headers are invalid.</p>
 <p>Scans the list name column and returns every unique choice name.</p>
 <p><strong>Returns:</strong> BetterArray. The distinct choice names.</p>
 <hr />
-<h2>Categories</h2>
-<h3>Categories</h3>
+</div>
+</details>
+<details open class="doc-section" id="categories">
+<summary>Categories</summary>
+<div class="section-body">
+<h3 id="categories">Categories <a class="anchor-link" href="#categories">#</a></h3>
 <p><strong>Categories of a choice</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Categories( _
@@ -178,7 +189,7 @@ available.</p>
 </ul>
 <p><strong>Returns:</strong> BetterArray. The category values.</p>
 <hr />
-<h3>ConcatenateCategories</h3>
+<h3 id="concatenatecategories">ConcatenateCategories <a class="anchor-link" href="#concatenatecategories">#</a></h3>
 <p><strong>Concatenate all categories of a choice into a string</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get ConcatenateCategories( _
@@ -196,15 +207,19 @@ category via the supplied TranslationObject.</p>
 </ul>
 <p><strong>Returns:</strong> String. The concatenated categories.</p>
 <hr />
-<h2>DataExchange</h2>
-<h3>AddHeaders</h3>
+</div>
+</details>
+<details open class="doc-section" id="dataexchange">
+<summary>DataExchange</summary>
+<div class="section-body">
+<h3 id="addheaders">AddHeaders <a class="anchor-link" href="#addheaders">#</a></h3>
 <p><strong>Write the default headers to the choice worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub AddHeaders(): End Sub
 </code></pre>
 <p>Import, export, and header initialisation operations.</p>
 <hr />
-<h3>Export</h3>
+<h3 id="export">Export <a class="anchor-link" href="#export">#</a></h3>
 <p><strong>Export the choice object to a workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Export(ByVal toWkb As Workbook, Optional ByVal Hide As Long = xlSheetHidden)
@@ -215,7 +230,7 @@ category via the supplied TranslationObject.</p>
 <li><code>Hide</code>: Optional Long. Worksheet visibility. Defaults to xlSheetHidden.</li>
 </ul>
 <hr />
-<h3>Import</h3>
+<h3 id="import">Import <a class="anchor-link" href="#import">#</a></h3>
 <p><strong>Import choices from a worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Import(ByVal fromWksh As Worksheet, _
@@ -231,7 +246,7 @@ category via the supplied TranslationObject.</p>
 <li><code>clearSheet</code>: Optional Boolean. When True, clears the sheet before import. Defaults to False.</li>
 </ul>
 <hr />
-<h3>ImportChoice</h3>
+<h3 id="importchoice">ImportChoice <a class="anchor-link" href="#importchoice">#</a></h3>
 <p><strong>Import choices from another ILLChoices object</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ImportChoice(ByVal choiObj As ILLChoices): End Sub
@@ -241,8 +256,12 @@ category via the supplied TranslationObject.</p>
 <li><code>choiObj</code>: ILLChoices. Source choice object.</li>
 </ul>
 <hr />
-<h2>Checkings</h2>
-<h3>HasCheckings</h3>
+</div>
+</details>
+<details open class="doc-section" id="checkings">
+<summary>Checkings</summary>
+<div class="section-body">
+<h3 id="hascheckings">HasCheckings <a class="anchor-link" href="#hascheckings">#</a></h3>
 <p><strong>Whether the choice object has logged diagnostic messages</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get HasCheckings() As Boolean: End Property
@@ -251,7 +270,7 @@ category via the supplied TranslationObject.</p>
 Returns True when at least one diagnostic entry has been recorded.</p>
 <p><strong>Returns:</strong> Boolean. True when diagnostic entries exist.</p>
 <hr />
-<h3>CheckingValues</h3>
+<h3 id="checkingvalues">CheckingValues <a class="anchor-link" href="#checkingvalues">#</a></h3>
 <p><strong>Retrieve the diagnostic log entries</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get CheckingValues() As Object: End Property
@@ -260,8 +279,12 @@ Returns True when at least one diagnostic entry has been recorded.</p>
 Returns Nothing when no entries have been recorded.</p>
 <p><strong>Returns:</strong> Object. An IChecking instance, or Nothing.</p>
 <hr />
-
+</div>
+</details>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

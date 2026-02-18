@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>IProgressBar - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -14,8 +15,10 @@
 cell-based visual progress indicator on a worksheet. Supports
 configurable colours, number formatting, status messages, and
 step-based or absolute value updates.</p>
-<h2>Configuration</h2>
-<h3>Attach</h3>
+<details open class="doc-section" id="configuration">
+<summary>Configuration</summary>
+<div class="section-body">
+<h3 id="attach">Attach <a class="anchor-link" href="#attach">#</a></h3>
 <p><strong>Bind the progress bar to a worksheet range</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Attach(ByVal barRange As Range, Optional ByVal maximum As Long = 100)
@@ -29,7 +32,7 @@ to reflect progress.</p>
 <li><code>maximum</code>: Long. Maximum expected value. Defaults to 100.</li>
 </ul>
 <hr />
-<h3>ConfigureColors</h3>
+<h3 id="configurecolors">ConfigureColors <a class="anchor-link" href="#configurecolors">#</a></h3>
 <p><strong>Configure the colours for completed and remaining segments</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ConfigureColors(ByVal completedColor As Long, ByVal pendingColor As Long)
@@ -40,7 +43,7 @@ to reflect progress.</p>
 <li><code>pendingColor</code>: Long. Colour applied to remaining cells.</li>
 </ul>
 <hr />
-<h3>ConfigureValueFormat</h3>
+<h3 id="configurevalueformat">ConfigureValueFormat <a class="anchor-link" href="#configurevalueformat">#</a></h3>
 <p><strong>Configure the number format for progress text</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ConfigureValueFormat(ByVal formatPattern As String)
@@ -50,7 +53,7 @@ to reflect progress.</p>
 <li><code>formatPattern</code>: String. VBA format pattern.</li>
 </ul>
 <hr />
-<h3>AttachStatusCell</h3>
+<h3 id="attachstatuscell">AttachStatusCell <a class="anchor-link" href="#attachstatuscell">#</a></h3>
 <p><strong>Bind a cell for textual status messages</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub AttachStatusCell(ByVal statusRange As Range)
@@ -60,8 +63,12 @@ to reflect progress.</p>
 <li><code>statusRange</code>: Range. Single-cell range receiving status messages.</li>
 </ul>
 <hr />
-<h2>Progress</h2>
-<h3>Update</h3>
+</div>
+</details>
+<details open class="doc-section" id="progress">
+<summary>Progress</summary>
+<div class="section-body">
+<h3 id="update">Update <a class="anchor-link" href="#update">#</a></h3>
 <p><strong>Update the current value and re-render the bar</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Update(ByVal currentValue As Long, Optional ByVal statusMessage As String = vbNullString)
@@ -73,7 +80,7 @@ to reflect progress.</p>
 <li><code>statusMessage</code>: String. Message pushed to the status cell. Defaults to vbNullString.</li>
 </ul>
 <hr />
-<h3>StepBy</h3>
+<h3 id="stepby">StepBy <a class="anchor-link" href="#stepby">#</a></h3>
 <p><strong>Increment the current value by a step</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub StepBy(Optional ByVal stepValue As Long = 1, Optional ByVal statusMessage As String = vbNullString)
@@ -84,7 +91,7 @@ to reflect progress.</p>
 <li><code>statusMessage</code>: String. Message pushed to the status cell. Defaults to vbNullString.</li>
 </ul>
 <hr />
-<h3>Complete</h3>
+<h3 id="complete">Complete <a class="anchor-link" href="#complete">#</a></h3>
 <p><strong>Mark the progress as complete</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Complete(Optional ByVal statusMessage As String = vbNullString)
@@ -94,7 +101,7 @@ to reflect progress.</p>
 <li><code>statusMessage</code>: String. Message pushed to the status cell. Defaults to vbNullString.</li>
 </ul>
 <hr />
-<h3>Reset</h3>
+<h3 id="reset">Reset <a class="anchor-link" href="#reset">#</a></h3>
 <p><strong>Reset the current value to zero and clear the bar</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Reset(Optional ByVal statusMessage As String = vbNullString)
@@ -104,8 +111,12 @@ to reflect progress.</p>
 <li><code>statusMessage</code>: String. Message pushed to the status cell. Defaults to vbNullString.</li>
 </ul>
 <hr />
-<h2>Properties</h2>
-<h3>BarRange</h3>
+</div>
+</details>
+<details open class="doc-section" id="properties">
+<summary>Properties</summary>
+<div class="section-body">
+<h3 id="barrange">BarRange <a class="anchor-link" href="#barrange">#</a></h3>
 <p><strong>Range hosting the progress bar</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get BarRange() As Range
@@ -113,21 +124,21 @@ to reflect progress.</p>
 <p>Read-only and read-write state accessors.</p>
 <p><strong>Returns:</strong> Range. The bar range.</p>
 <hr />
-<h3>StatusCell</h3>
+<h3 id="statuscell">StatusCell <a class="anchor-link" href="#statuscell">#</a></h3>
 <p><strong>Status cell receiving text messages</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get StatusCell() As Range
 </code></pre>
 <p><strong>Returns:</strong> Range. The status cell, or Nothing.</p>
 <hr />
-<h3>Maximum</h3>
+<h3 id="maximum">Maximum <a class="anchor-link" href="#maximum">#</a></h3>
 <p><strong>Maximum expected value</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Maximum() As Long
 </code></pre>
 <p><strong>Returns:</strong> Long. The maximum value.</p>
 <hr />
-<h3>Maximum</h3>
+<h3 id="maximum">Maximum <a class="anchor-link" href="#maximum">#</a></h3>
 <p><strong>Update the maximum expected value</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Let Maximum(ByVal value As Long)
@@ -137,22 +148,26 @@ to reflect progress.</p>
 <li><code>value</code>: Long. New maximum (must be greater than zero).</li>
 </ul>
 <hr />
-<h3>Value</h3>
+<h3 id="value">Value <a class="anchor-link" href="#value">#</a></h3>
 <p><strong>Current progress value</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Value() As Long
 </code></pre>
 <p><strong>Returns:</strong> Long. The current value.</p>
 <hr />
-<h3>PercentComplete</h3>
+<h3 id="percentcomplete">PercentComplete <a class="anchor-link" href="#percentcomplete">#</a></h3>
 <p><strong>Compute the current completion percentage</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get PercentComplete() As Double
 </code></pre>
 <p><strong>Returns:</strong> Double. Ratio between 0 and 1.</p>
 <hr />
-
+</div>
+</details>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

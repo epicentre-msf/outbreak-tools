@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ICustomPivotTable - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -14,8 +15,10 @@
 Manages pivot table creation on a dedicated worksheet during linelist
 building. Each call to Add creates a new PivotTable block (title + pivot)
 stacked vertically on the sheet.</p>
-<h2>Methods</h2>
-<h3>Add</h3>
+<details open class="doc-section" id="methods">
+<summary>Methods</summary>
+<div class="section-body">
+<h3 id="add">Add <a class="anchor-link" href="#add">#</a></h3>
 <p><strong>Create a pivot table from a ListObject source and add a titled block</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Add(ByVal title As String, _
@@ -34,7 +37,7 @@ Successive calls stack blocks vertically on the sheet.</p>
 <li><code>pivotName</code>: String. Localised prefix for the title (e.g. &quot;Pivot Table&quot;). Defaults to &quot;Pivot Table&quot;.</li>
 </ul>
 <hr />
-<h3>Format</h3>
+<h3 id="format">Format <a class="anchor-link" href="#format">#</a></h3>
 <p><strong>Apply design formatting to the pivot table worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Format(ByVal design As ILLFormat)
@@ -46,8 +49,12 @@ to style the entire pivot worksheet according to the linelist design.</p>
 <li><code>design</code>: ILLFormat. The format object providing style rules.</li>
 </ul>
 <hr />
-
+</div>
+</details>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

@@ -5,13 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CustomTest - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>CustomTest</h1>
-<h2>Factory</h2>
-<h3>Create</h3>
+<details open class="doc-section" id="factory">
+<summary>Factory</summary>
+<div class="section-body">
+<h3 id="create">Create <a class="anchor-link" href="#create">#</a></h3>
 <p><strong>Build and configure a harness instance</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal targetWorkbook As workbook, _
@@ -24,15 +27,19 @@
 </ul>
 <p><strong>Returns:</strong> ICustomTest harness ready for use</p>
 <hr />
-<h3>Self</h3>
+<h3 id="self">Self <a class="anchor-link" href="#self">#</a></h3>
 <p><strong>Access the current harness reference</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Self() As ICustomTest
 </code></pre>
 <p><strong>Returns:</strong> ICustomTest reference for fluent usage</p>
 <hr />
-<h2>Public members</h2>
-<h3>Configure</h3>
+</div>
+</details>
+<details open class="doc-section" id="public-members">
+<summary>Public members</summary>
+<div class="section-body">
+<h3 id="configure">Configure <a class="anchor-link" href="#configure">#</a></h3>
 <p><strong>Configure the harness with the workbook and target sheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Configure(ByVal targetWorkbook As workbook, _
@@ -48,13 +55,13 @@
 <li>ProjectError.InvalidArgument When workbook reference is invalid</li>
 </ul>
 <hr />
-<h3>ReleaseResources</h3>
+<h3 id="releaseresources">ReleaseResources <a class="anchor-link" href="#releaseresources">#</a></h3>
 <p><strong>Clear references and reset harness state</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ReleaseResources()
 </code></pre>
 <hr />
-<h3>SetModuleName</h3>
+<h3 id="setmodulename">SetModuleName <a class="anchor-link" href="#setmodulename">#</a></h3>
 <p><strong>Set the VBA module name used in rendered output</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub SetModuleName(ByVal moduleName As String)
@@ -64,7 +71,7 @@
 <li><code>moduleName</code>: Name displayed in result tables</li>
 </ul>
 <hr />
-<h3>SetTestName</h3>
+<h3 id="settestname">SetTestName <a class="anchor-link" href="#settestname">#</a></h3>
 <p><strong>Set the pending test name for subsequent assertions</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub SetTestName(ByVal testName As String)
@@ -74,7 +81,7 @@
 <li><code>testName</code>: Descriptive identifier of the current test</li>
 </ul>
 <hr />
-<h3>SetTestSubtitle</h3>
+<h3 id="settestsubtitle">SetTestSubtitle <a class="anchor-link" href="#settestsubtitle">#</a></h3>
 <p><strong>Set an optional subtitle for the pending test</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub SetTestSubtitle(ByVal testSubtitle As String)
@@ -84,19 +91,19 @@
 <li><code>testSubtitle</code>: Additional context for the test case</li>
 </ul>
 <hr />
-<h3>BeginTest</h3>
+<h3 id="begintest">BeginTest <a class="anchor-link" href="#begintest">#</a></h3>
 <p><strong>Persist previous checking and start logging a new test</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub BeginTest(Optional ByVal resetNames As Boolean = False)
 </code></pre>
 <hr />
-<h3>Reset</h3>
+<h3 id="reset">Reset <a class="anchor-link" href="#reset">#</a></h3>
 <p><strong>Clear current checking and accumulated results</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ResetInstance()
 </code></pre>
 <hr />
-<h3>FlushCurrentTest</h3>
+<h3 id="flushcurrenttest">FlushCurrentTest <a class="anchor-link" href="#flushcurrenttest">#</a></h3>
 <p><strong>Persist active checking and return accumulated results</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function FlushCurrentTest(Optional ByVal resetNames As Boolean = True) As BetterArray
@@ -107,7 +114,7 @@
 </ul>
 <p><strong>Returns:</strong> BetterArray containing all persisted checkings</p>
 <hr />
-<h3>Flush</h3>
+<h3 id="flush">Flush <a class="anchor-link" href="#flush">#</a></h3>
 <p><strong>Persist active checking without returning the accumulated results</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Flush(Optional ByVal resetNames As Boolean = True)
@@ -117,14 +124,14 @@
 <li><code>resetNames</code>: Optional Boolean specifying whether to reset names after clearing</li>
 </ul>
 <hr />
-<h3>Results</h3>
+<h3 id="results">Results <a class="anchor-link" href="#results">#</a></h3>
 <p><strong>Clone accumulated checking results</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Results() As BetterArray
 </code></pre>
 <p><strong>Returns:</strong> BetterArray clone of collected checkings</p>
 <hr />
-<h3>PrintResults</h3>
+<h3 id="printresults">PrintResults <a class="anchor-link" href="#printresults">#</a></h3>
 <p><strong>Write the results to a worksheet using CheckingOutput</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub PrintResults(Optional ByVal outputSheetName As String = vbNullString)
@@ -138,7 +145,7 @@
 <li>CheckingOutput</li>
 </ul>
 <hr />
-<h3>AreEqual</h3>
+<h3 id="areequal">AreEqual <a class="anchor-link" href="#areequal">#</a></h3>
 <p><strong>Log an assertion comparing expected and actual values</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub AreEqual(expected As Variant, _
@@ -152,7 +159,7 @@
 <li><code>message</code>: Message describing the assertion context</li>
 </ul>
 <hr />
-<h3>AreNotEqual</h3>
+<h3 id="arenotequal">AreNotEqual <a class="anchor-link" href="#arenotequal">#</a></h3>
 <p><strong>Log an assertion confirming expected and actual values differ</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub AreNotEqual(expected As Variant, _
@@ -166,7 +173,7 @@
 <li><code>message</code>: Message describing the assertion context</li>
 </ul>
 <hr />
-<h3>IsTrue</h3>
+<h3 id="istrue">IsTrue <a class="anchor-link" href="#istrue">#</a></h3>
 <p><strong>Log that a boolean condition holds true</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub IsTrue(ByVal condition As Boolean, _
@@ -178,7 +185,7 @@
 <li><code>message</code>: Message describing the assertion context</li>
 </ul>
 <hr />
-<h3>IsFalse</h3>
+<h3 id="isfalse">IsFalse <a class="anchor-link" href="#isfalse">#</a></h3>
 <p><strong>Log that a boolean condition evaluates to False</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub IsFalse(ByVal condition As Boolean, _
@@ -190,7 +197,7 @@
 <li><code>message</code>: Message describing the assertion context</li>
 </ul>
 <hr />
-<h3>ObjectExists</h3>
+<h3 id="objectexists">ObjectExists <a class="anchor-link" href="#objectexists">#</a></h3>
 <p><strong>Confirm an object reference exists and matches the expected type name</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ObjectExists(ByVal instance As Object, _
@@ -204,7 +211,7 @@
 <li><code>message</code>: Message describing the assertion context</li>
 </ul>
 <hr />
-<h3>LogFailure</h3>
+<h3 id="logfailure">LogFailure <a class="anchor-link" href="#logfailure">#</a></h3>
 <p><strong>Log a failure message directly to the current checking</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub LogFailure(ByVal message As String)
@@ -214,7 +221,7 @@
 <li><code>message</code>: Message describing the failure</li>
 </ul>
 <hr />
-<h3>LogSuccesses</h3>
+<h3 id="logsuccesses">LogSuccesses <a class="anchor-link" href="#logsuccesses">#</a></h3>
 <p><strong>Log a success message directly to the current checking</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub LogSuccesses(ByVal message As String)
@@ -224,10 +231,12 @@
 <li><code>message</code>: Message describing the success</li>
 </ul>
 <hr />
+</div>
+</details>
 <details>
 <summary>Internal members (not exported)</summary>
-<h2>ICustomTest implementation</h2>
-<h3>ICustomTest_Configure</h3>
+<h2 id="int-icustomtest-implementation">ICustomTest implementation</h2>
+<h3 id="int-icustomtest-configure">ICustomTest_Configure <a class="anchor-link" href="#int-icustomtest-configure">#</a></h3>
 <p><strong>Forward interface calls to public Configure</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ICustomTest_Configure(ByVal targetWorkbook As workbook, _
@@ -239,67 +248,67 @@
 <li><code>outputSheetName</code>: Optional target worksheet name</li>
 </ul>
 <hr />
-<h3>ICustomTest_ReleaseResources</h3>
+<h3 id="int-icustomtest-releaseresources">ICustomTest_ReleaseResources <a class="anchor-link" href="#int-icustomtest-releaseresources">#</a></h3>
 <p><strong>Bridge interface ReleaseResources to public member</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ICustomTest_ReleaseResources()
 </code></pre>
 <hr />
-<h3>ICustomTest_SetModuleName</h3>
+<h3 id="int-icustomtest-setmodulename">ICustomTest_SetModuleName <a class="anchor-link" href="#int-icustomtest-setmodulename">#</a></h3>
 <p><strong>Bridge interface SetModuleName to public member</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ICustomTest_SetModuleName(ByVal moduleName As String)
 </code></pre>
 <hr />
-<h3>ICustomTest_SetTestName</h3>
+<h3 id="int-icustomtest-settestname">ICustomTest_SetTestName <a class="anchor-link" href="#int-icustomtest-settestname">#</a></h3>
 <p><strong>Bridge interface SetTestName to public member</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ICustomTest_SetTestName(ByVal testName As String)
 </code></pre>
 <hr />
-<h3>ICustomTest_SetTestSubtitle</h3>
+<h3 id="int-icustomtest-settestsubtitle">ICustomTest_SetTestSubtitle <a class="anchor-link" href="#int-icustomtest-settestsubtitle">#</a></h3>
 <p><strong>Bridge interface SetTestSubtitle to public member</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ICustomTest_SetTestSubtitle(ByVal testSubtitle As String)
 </code></pre>
 <hr />
-<h3>ICustomTest_BeginTest</h3>
+<h3 id="int-icustomtest-begintest">ICustomTest_BeginTest <a class="anchor-link" href="#int-icustomtest-begintest">#</a></h3>
 <p><strong>Bridge interface BeginTest to public member</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ICustomTest_BeginTest(Optional ByVal resetNames As Boolean = False)
 </code></pre>
 <hr />
-<h3>ICustomTest_Reset</h3>
+<h3 id="int-icustomtest-reset">ICustomTest_Reset <a class="anchor-link" href="#int-icustomtest-reset">#</a></h3>
 <p><strong>Bridge interface Reset to public member</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ICustomTest_ResetInstance()
 </code></pre>
 <hr />
-<h3>ICustomTest_FlushCurrentTest</h3>
+<h3 id="int-icustomtest-flushcurrenttest">ICustomTest_FlushCurrentTest <a class="anchor-link" href="#int-icustomtest-flushcurrenttest">#</a></h3>
 <p><strong>Return results snapshot for interface callers</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ICustomTest_FlushCurrentTest(Optional ByVal resetNames As Boolean = True) As BetterArray
 </code></pre>
 <hr />
-<h3>ICustomTest_Flush</h3>
+<h3 id="int-icustomtest-flush">ICustomTest_Flush <a class="anchor-link" href="#int-icustomtest-flush">#</a></h3>
 <p><strong>Bridge interface Flush to public member</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ICustomTest_Flush(Optional ByVal resetNames As Boolean = True)
 </code></pre>
 <hr />
-<h3>ICustomTest_Results</h3>
+<h3 id="int-icustomtest-results">ICustomTest_Results <a class="anchor-link" href="#int-icustomtest-results">#</a></h3>
 <p><strong>Provide a clone of accumulated results through the interface</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ICustomTest_Results() As BetterArray
 </code></pre>
 <hr />
-<h3>ICustomTest_PrintResults</h3>
+<h3 id="int-icustomtest-printresults">ICustomTest_PrintResults <a class="anchor-link" href="#int-icustomtest-printresults">#</a></h3>
 <p><strong>Bridge interface PrintResults to public member</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ICustomTest_PrintResults(Optional ByVal outputSheetName As String = vbNullString)
 </code></pre>
 <hr />
-<h3>ICustomTest_AreEqual</h3>
+<h3 id="int-icustomtest-areequal">ICustomTest_AreEqual <a class="anchor-link" href="#int-icustomtest-areequal">#</a></h3>
 <p><strong>Bridge interface AreEqual to public member</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ICustomTest_AreEqual(expected As Variant, _
@@ -307,7 +316,7 @@
                                     ByVal message As String)
 </code></pre>
 <hr />
-<h3>ICustomTest_AreNotEqual</h3>
+<h3 id="int-icustomtest-arenotequal">ICustomTest_AreNotEqual <a class="anchor-link" href="#int-icustomtest-arenotequal">#</a></h3>
 <p><strong>Bridge interface AreNotEqual to public member</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ICustomTest_AreNotEqual(expected As Variant, _
@@ -315,21 +324,21 @@
                                        ByVal message As String)
 </code></pre>
 <hr />
-<h3>ICustomTest_IsTrue</h3>
+<h3 id="int-icustomtest-istrue">ICustomTest_IsTrue <a class="anchor-link" href="#int-icustomtest-istrue">#</a></h3>
 <p><strong>Bridge interface IsTrue to public member</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ICustomTest_IsTrue(ByVal condition As Boolean, _
                                    ByVal message As String)
 </code></pre>
 <hr />
-<h3>ICustomTest_IsFalse</h3>
+<h3 id="int-icustomtest-isfalse">ICustomTest_IsFalse <a class="anchor-link" href="#int-icustomtest-isfalse">#</a></h3>
 <p><strong>Bridge interface IsFalse to public member</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ICustomTest_IsFalse(ByVal condition As Boolean, _
                                     ByVal message As String)
 </code></pre>
 <hr />
-<h3>ICustomTest_ObjectExists</h3>
+<h3 id="int-icustomtest-objectexists">ICustomTest_ObjectExists <a class="anchor-link" href="#int-icustomtest-objectexists">#</a></h3>
 <p><strong>Bridge interface ObjectExists to public member</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ICustomTest_ObjectExists(ByVal instance As Object, _
@@ -337,38 +346,38 @@
                                      ByVal message As String)
 </code></pre>
 <hr />
-<h3>ICustomTest_IsNothing</h3>
+<h3 id="int-icustomtest-isnothing">ICustomTest_IsNothing <a class="anchor-link" href="#int-icustomtest-isnothing">#</a></h3>
 <p><strong>Bridge interface IsNothing to helper member</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ICustomTest_IsNothing(ByVal instance As Object, ByVal message As String)
 </code></pre>
 <hr />
-<h3>ICustomTest_IsNotNothing</h3>
+<h3 id="int-icustomtest-isnotnothing">ICustomTest_IsNotNothing <a class="anchor-link" href="#int-icustomtest-isnotnothing">#</a></h3>
 <p><strong>Bridge interface IsNotNothing to public member</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ICustomTest_IsNotNothing(ByVal instance As Object, ByVal message As String)
 </code></pre>
 <hr />
-<h3>ICustomTest_LogFailure</h3>
+<h3 id="int-icustomtest-logfailure">ICustomTest_LogFailure <a class="anchor-link" href="#int-icustomtest-logfailure">#</a></h3>
 <p><strong>Bridge interface LogFailure to public member</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ICustomTest_LogFailure(ByVal message As String)
 </code></pre>
 <hr />
-<h3>ICustomTest_Fail</h3>
+<h3 id="int-icustomtest-fail">ICustomTest_Fail <a class="anchor-link" href="#int-icustomtest-fail">#</a></h3>
 <p><strong>Bridge interface for Fail, same as Logfailure, for compatibility purposes</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ICustomTest_Fail(ByVal message As String)
 </code></pre>
 <hr />
-<h3>ICustomTest_LogSuccesses</h3>
+<h3 id="int-icustomtest-logsuccesses">ICustomTest_LogSuccesses <a class="anchor-link" href="#int-icustomtest-logsuccesses">#</a></h3>
 <p><strong>Bridge interface LogSuccesses to public member</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ICustomTest_LogSuccesses(ByVal message As String)
 </code></pre>
 <hr />
-<h2>Public members</h2>
-<h3>IsNothing</h3>
+<h2 id="int-public-members">Public members</h2>
+<h3 id="int-isnothing">IsNothing <a class="anchor-link" href="#int-isnothing">#</a></h3>
 <p><strong>Validate that an object reference is Nothing</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub IsNothing(ByVal instance As Object, ByVal message As String)
@@ -379,7 +388,7 @@
 <li><code>message</code>: Message describing the assertion context</li>
 </ul>
 <hr />
-<h3>IsNotNothing</h3>
+<h3 id="int-isnotnothing">IsNotNothing <a class="anchor-link" href="#int-isnotnothing">#</a></h3>
 <p><strong>Validate that an object is not Nothing</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub IsNotNothing(ByVal instance As Object, ByVal message As String)
@@ -390,20 +399,20 @@
 <li><code>message</code>: Message describing the assertion context</li>
 </ul>
 <hr />
-<h2>Internal helpers</h2>
-<h3>InitialiseCurrentChecking</h3>
+<h2 id="int-internal-helpers">Internal helpers</h2>
+<h3 id="int-initialisecurrentchecking">InitialiseCurrentChecking <a class="anchor-link" href="#int-initialisecurrentchecking">#</a></h3>
 <p><strong>Instantiate a fresh checking object for the active test</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub InitialiseCurrentChecking()
 </code></pre>
 <hr />
-<h3>EnsureCurrentChecking</h3>
+<h3 id="int-ensurecurrentchecking">EnsureCurrentChecking <a class="anchor-link" href="#int-ensurecurrentchecking">#</a></h3>
 <p><strong>Lazily initialise the current checking container</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureCurrentChecking()
 </code></pre>
 <hr />
-<h3>ClearCurrentChecking</h3>
+<h3 id="int-clearcurrentchecking">ClearCurrentChecking <a class="anchor-link" href="#int-clearcurrentchecking">#</a></h3>
 <p><strong>Drop the current checking reference and optionally reset names</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ClearCurrentChecking(Optional ByVal resetNames As Boolean = True)
@@ -413,20 +422,20 @@
 <li><code>resetNames</code>: When True also reset pending titles to defaults</li>
 </ul>
 <hr />
-<h3>PersistActiveChecking</h3>
+<h3 id="int-persistactivechecking">PersistActiveChecking <a class="anchor-link" href="#int-persistactivechecking">#</a></h3>
 <p><strong>Store the active checking into the results buffer when it has entries</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub PersistActiveChecking(Optional ByVal resetNames As Boolean = False)
 </code></pre>
 <hr />
-<h3>EnsureResults</h3>
+<h3 id="int-ensureresults">EnsureResults <a class="anchor-link" href="#int-ensureresults">#</a></h3>
 <p><strong>Create the BetterArray container when missing and return it</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function EnsureResults() As BetterArray
 </code></pre>
 <p><strong>Returns:</strong> BetterArray used to hold persisted checkings</p>
 <hr />
-<h3>LogEntry</h3>
+<h3 id="int-logentry">LogEntry <a class="anchor-link" href="#int-logentry">#</a></h3>
 <p><strong>Append a formatted assertion outcome to the current checking</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub LogEntry(ByVal message As String, ByVal scope As Byte)
@@ -437,7 +446,7 @@
 <li><code>scope</code>: Checking scope (success, error, ...)</li>
 </ul>
 <hr />
-<h3>FormatSuccessMessage</h3>
+<h3 id="int-formatsuccessmessage">FormatSuccessMessage <a class="anchor-link" href="#int-formatsuccessmessage">#</a></h3>
 <p><strong>Build the message stored when an assertion succeeds</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function FormatSuccessMessage(ByVal mess As String) As String
@@ -448,7 +457,7 @@
 </ul>
 <p><strong>Returns:</strong> Formatted message prefixed with Success</p>
 <hr />
-<h3>BuildFailureMessage</h3>
+<h3 id="int-buildfailuremessage">BuildFailureMessage <a class="anchor-link" href="#int-buildfailuremessage">#</a></h3>
 <p><strong>Build the failure message including expected and actual values</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function BuildFailureMessage(ByVal message As String, _
@@ -463,7 +472,7 @@
 </ul>
 <p><strong>Returns:</strong> Failure message containing expected/actual details</p>
 <hr />
-<h3>ResolveTitle</h3>
+<h3 id="int-resolvetitle">ResolveTitle <a class="anchor-link" href="#int-resolvetitle">#</a></h3>
 <p><strong>Normalise names used for modules and tests</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ResolveTitle(ByVal val As String) As String
@@ -474,7 +483,7 @@
 </ul>
 <p><strong>Returns:</strong> Sanitised name or default label</p>
 <hr />
-<h3>ResolveFailurePrefix</h3>
+<h3 id="int-resolvefailureprefix">ResolveFailurePrefix <a class="anchor-link" href="#int-resolvefailureprefix">#</a></h3>
 <p><strong>Normalize assertion failure prefix text</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ResolveFailurePrefix(ByVal mess As String) As String
@@ -485,7 +494,7 @@
 </ul>
 <p><strong>Returns:</strong> Prefix used for failure messages</p>
 <hr />
-<h3>ResolveSheetName</h3>
+<h3 id="int-resolvesheetname">ResolveSheetName <a class="anchor-link" href="#int-resolvesheetname">#</a></h3>
 <p><strong>Normalise worksheet names used for output</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ResolveSheetName(ByVal shName As String) As String
@@ -496,7 +505,7 @@
 </ul>
 <p><strong>Returns:</strong> Validated sheet name or default output sheet</p>
 <hr />
-<h3>PrintOutputWorksheet</h3>
+<h3 id="int-printoutputworksheet">PrintOutputWorksheet <a class="anchor-link" href="#int-printoutputworksheet">#</a></h3>
 <p><strong>Retrieve or create the worksheet that receives test output</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function PrintOutputWorksheet(ByVal targetWorkbook As workbook, _
@@ -509,7 +518,7 @@
 </ul>
 <p><strong>Returns:</strong> Worksheet ready for output</p>
 <hr />
-<h3>VariantsAreEqual</h3>
+<h3 id="int-variantsareequal">VariantsAreEqual <a class="anchor-link" href="#int-variantsareequal">#</a></h3>
 <p><strong>Compare two Variant values using tolerant rules</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function VariantsAreEqual(leftValue As Variant, _
@@ -522,7 +531,7 @@
 </ul>
 <p><strong>Returns:</strong> True when the values are equal</p>
 <hr />
-<h3>VariantToString</h3>
+<h3 id="int-varianttostring">VariantToString <a class="anchor-link" href="#int-varianttostring">#</a></h3>
 <p><strong>Convert a Variant into a readable String representation</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function VariantToString(value As Variant) As String
@@ -533,7 +542,7 @@
 </ul>
 <p><strong>Returns:</strong> String representation of the value</p>
 <hr />
-<h3>RaiseError</h3>
+<h3 id="int-raiseerror">RaiseError <a class="anchor-link" href="#int-raiseerror">#</a></h3>
 <p><strong>Wrap Err.Raise to keep consistent error source</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RaiseError(ByVal errorCode As ProjectError, ByVal description As String)
@@ -546,7 +555,7 @@
 <hr />
 </details>
 <details>
-<summary>Used in (73 file(s))</summary>
+<summary>Used in (74 file(s))</summary>
 <ul>
 <li><a href="src/classes/rubberduck/CustomTest.cls">CustomTest.cls</a></li>
 <li><a href="src/classes/rubberduck/ICustomTest.cls">ICustomTest.cls</a></li>
@@ -560,6 +569,7 @@
 <li><a href="src/tests/modules/dataio/TestLLExporter.bas">TestLLExporter.bas</a></li>
 <li><a href="src/tests/modules/dataio/TestLLImporter.bas">TestLLImporter.bas</a></li>
 <li><a href="src/tests/modules/designer/TestDesignerImportService.bas">TestDesignerImportService.bas</a></li>
+<li><a href="src/tests/modules/designer/TestDesignerMulti.bas">TestDesignerMulti.bas</a></li>
 <li><a href="src/tests/modules/designer/TestDesignerRibbon.bas">TestDesignerRibbon.bas</a></li>
 <li><a href="src/tests/modules/dev/TestDevelopment.bas">TestDevelopment.bas</a></li>
 <li><a href="src/tests/modules/dictionary/TestLLdictionary.bas">TestLLdictionary.bas</a></li>
@@ -623,8 +633,10 @@
 <li><a href="src/tests/modules/tables/TestCustomPivotTable.bas">TestCustomPivotTable.bas</a></li>
 </ul>
 </details>
-
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

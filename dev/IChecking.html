@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>IChecking - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -15,8 +16,10 @@ management (add, clone, append), key lookup, and property retrieval
 for diagnostic messages tagged with severity scopes. Also hosts
 project-wide enumerations for CheckingScope, CheckingValue, and
 ProjectError.</p>
-<h2>Elements</h2>
-<h3>Name</h3>
+<details open class="doc-section" id="elements">
+<summary>Elements</summary>
+<div class="section-body">
+<h3 id="name">Name <a class="anchor-link" href="#name">#</a></h3>
 <p><strong>Name of the checking object</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Name() As String
@@ -25,7 +28,7 @@ ProjectError.</p>
 Returns the checking title as the object name.</p>
 <p><strong>Returns:</strong> String. The checking title.</p>
 <hr />
-<h3>Heading</h3>
+<h3 id="heading">Heading <a class="anchor-link" href="#heading">#</a></h3>
 <p><strong>Title or subtitle of the checking object</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Heading(Optional ByVal subtitle As Boolean = False) As String
@@ -37,7 +40,7 @@ Returns the checking title as the object name.</p>
 </ul>
 <p><strong>Returns:</strong> String. The title or subtitle.</p>
 <hr />
-<h3>Length</h3>
+<h3 id="length">Length <a class="anchor-link" href="#length">#</a></h3>
 <p><strong>Total number of entries in the checking</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Length() As Long
@@ -45,8 +48,12 @@ Returns the checking title as the object name.</p>
 <p>Returns the count of diagnostic messages stored.</p>
 <p><strong>Returns:</strong> Long. Number of entries.</p>
 <hr />
-<h2>Keys</h2>
-<h3>ListOfKeys</h3>
+</div>
+</details>
+<details open class="doc-section" id="keys">
+<summary>Keys</summary>
+<div class="section-body">
+<h3 id="listofkeys">ListOfKeys <a class="anchor-link" href="#listofkeys">#</a></h3>
 <p><strong>Get the list of keys in the checking</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get ListOfKeys() As BetterArray
@@ -56,7 +63,7 @@ Returns a clone of the internal keys array. Returns an empty
 BetterArray when no entries have been added.</p>
 <p><strong>Returns:</strong> BetterArray. Clone of stored keys.</p>
 <hr />
-<h3>KeyExists</h3>
+<h3 id="keyexists">KeyExists <a class="anchor-link" href="#keyexists">#</a></h3>
 <p><strong>Test whether a key is present in the checking</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get KeyExists(ByVal keyName As String) As Boolean
@@ -68,8 +75,12 @@ BetterArray when no entries have been added.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when the key is found.</p>
 <hr />
-<h2>InputOutput</h2>
-<h3>Add</h3>
+</div>
+</details>
+<details open class="doc-section" id="inputoutput">
+<summary>InputOutput</summary>
+<div class="section-body">
+<h3 id="add">Add <a class="anchor-link" href="#add">#</a></h3>
 <p><strong>Add a new entry to the checking</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Add(ByVal keyName As String, ByVal label As String, _
@@ -84,7 +95,7 @@ Adds a key, label, and scope to the checking. Keys must be unique.</p>
 <li><code>scope</code>: Optional Byte. Severity scope. Defaults to checkingNote.</li>
 </ul>
 <hr />
-<h3>ValueOf</h3>
+<h3 id="valueof">ValueOf <a class="anchor-link" href="#valueof">#</a></h3>
 <p><strong>Retrieve a property of one specific key</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get ValueOf(ByVal keyName As String, Optional ByVal retrievedValue As Byte = 1) As String
@@ -98,7 +109,7 @@ the retrievedValue selector.</p>
 </ul>
 <p><strong>Returns:</strong> String. The requested property value.</p>
 <hr />
-<h3>Clone</h3>
+<h3 id="clone">Clone <a class="anchor-link" href="#clone">#</a></h3>
 <p><strong>Return an independent copy of the current checking object</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Clone() As IChecking
@@ -106,7 +117,7 @@ the retrievedValue selector.</p>
 <p>Creates a deep copy with the same title, subtitle, and all entries.</p>
 <p><strong>Returns:</strong> IChecking. Independent clone.</p>
 <hr />
-<h3>Append</h3>
+<h3 id="append">Append <a class="anchor-link" href="#append">#</a></h3>
 <p><strong>Add entries from another checking to the current one</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Append(ByVal checks As IChecking)
@@ -117,8 +128,12 @@ the retrievedValue selector.</p>
 <li><code>checks</code>: IChecking. Source checking to merge from.</li>
 </ul>
 <hr />
-
+</div>
+</details>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

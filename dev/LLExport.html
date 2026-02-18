@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>LLExport - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -12,8 +13,8 @@
 <h1>LLExport</h1>
 <details>
 <summary>Internal members (not exported)</summary>
-<h2>Factory</h2>
-<h3>Create</h3>
+<h2 id="int-factory">Factory</h2>
+<h3 id="int-create">Create <a class="anchor-link" href="#int-create">#</a></h3>
 <p><strong>Create a unified export handler</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal exportSheet As Worksheet, _
@@ -36,7 +37,7 @@ without repeatedly scanning the workbook.</p>
 <li>ProjectError.ObjectNotInitialized when the worksheet is missing.</li>
 </ul>
 <hr />
-<h3>SetInternalData</h3>
+<h3 id="int-setinternaldata">SetInternalData <a class="anchor-link" href="#int-setinternaldata">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set InternalData(ByVal exportData As IDataSheet)
 </code></pre>
@@ -45,7 +46,7 @@ without repeatedly scanning the workbook.</p>
 <li><code>exportData</code>: Datasheet wrapper over the specification table.</li>
 </ul>
 <hr />
-<h3>SetInternalWorksheet</h3>
+<h3 id="int-setinternalworksheet">SetInternalWorksheet <a class="anchor-link" href="#int-setinternalworksheet">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set InternalWorksheet(ByVal exportSheet As Worksheet)
 </code></pre>
@@ -54,29 +55,29 @@ without repeatedly scanning the workbook.</p>
 <li><code>exportSheet</code>: Worksheet that stores the export specification table.</li>
 </ul>
 <hr />
-<h3>Self</h3>
+<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
 <p><strong>Return the current instance as interface</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Self() As ILLExport
 </code></pre>
 <p><strong>Returns:</strong> The object cast as <code>ILLExport</code>.</p>
 <hr />
-<h2>Properties</h2>
-<h3>Data</h3>
+<h2 id="int-properties">Properties</h2>
+<h3 id="int-data">Data <a class="anchor-link" href="#int-data">#</a></h3>
 <p><strong>Underlying export datasheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Data() As IDataSheet
 </code></pre>
 <p><strong>Returns:</strong> Datasheet abstraction wrapping the export specification table.</p>
 <hr />
-<h3>Worksheet</h3>
+<h3 id="int-worksheet">Worksheet <a class="anchor-link" href="#int-worksheet">#</a></h3>
 <p><strong>Worksheet hosting the export specification table</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Worksheet() As Worksheet
 </code></pre>
 <p><strong>Returns:</strong> Worksheet reference used by the handler.</p>
 <hr />
-<h3>NumberOfExports</h3>
+<h3 id="int-numberofexports">NumberOfExports <a class="anchor-link" href="#int-numberofexports">#</a></h3>
 <p><strong>Count the configured export rows</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get NumberOfExports() As Long
@@ -84,21 +85,21 @@ without repeatedly scanning the workbook.</p>
 <p>Counts rows within the specification table excluding headers.</p>
 <p><strong>Returns:</strong> Total number of export definitions currently present.</p>
 <hr />
-<h3>HasCheckings</h3>
+<h3 id="int-hascheckings">HasCheckings <a class="anchor-link" href="#int-hascheckings">#</a></h3>
 <p><strong>Whether informational checkings were captured</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get HasCheckings() As Boolean
 </code></pre>
 <hr />
-<h3>CheckingValues</h3>
+<h3 id="int-checkingvalues">CheckingValues <a class="anchor-link" href="#int-checkingvalues">#</a></h3>
 <p><strong>Collected informational diagnostics</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get CheckingValues() As IChecking
 </code></pre>
 <p><strong>Returns:</strong> Checking object containing log entries, if any.</p>
 <hr />
-<h2>Row Management</h2>
-<h3>ManageRows</h3>
+<h2 id="int-row-management">Row Management</h2>
+<h3 id="int-managerows">ManageRows <a class="anchor-link" href="#int-managerows">#</a></h3>
 <p><strong>Align export rows and dictionary columns</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ManageRows(Optional ByVal del As Boolean = False, _ 
@@ -116,7 +117,7 @@ do not remove unrelated export columns.</p>
 <li><code>rowCount</code>: Optional threshold for row removal; rows with non-empty cells at or below the threshold are trimmed (defaults to 0, removing empty rows).</li>
 </ul>
 <hr />
-<h3>InsertRows</h3>
+<h3 id="int-insertrows">InsertRows <a class="anchor-link" href="#int-insertrows">#</a></h3>
 <p><strong>Insert export rows and keep dictionary columns aligned</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub InsertRows(ByVal targetCell As Range, _
@@ -130,7 +131,7 @@ do not remove unrelated export columns.</p>
 <li><code>insertShift</code>: Optional Boolean to insert worksheet rows when necessary. Defaults to False.</li>
 </ul>
 <hr />
-<h3>DeleteRows</h3>
+<h3 id="int-deleterows">DeleteRows <a class="anchor-link" href="#int-deleterows">#</a></h3>
 <p><strong>Delete export rows intersecting the supplied selection</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub DeleteRows(ByVal targetCell As Range, _
@@ -138,7 +139,7 @@ do not remove unrelated export columns.</p>
                       Optional ByVal forceShift As Boolean = False)
 </code></pre>
 <hr />
-<h3>AddRows</h3>
+<h3 id="int-addrows">AddRows <a class="anchor-link" href="#int-addrows">#</a></h3>
 <p><strong>Append export definition rows</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub AddRows(Optional ByVal dict As ILLdictionary)
@@ -148,7 +149,7 @@ do not remove unrelated export columns.</p>
 <li><code>dict</code>: Optional dictionary to align export columns with.</li>
 </ul>
 <hr />
-<h3>RemoveRows</h3>
+<h3 id="int-removerows">RemoveRows <a class="anchor-link" href="#int-removerows">#</a></h3>
 <p><strong>Remove empty export rows</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub RemoveRows(Optional ByVal dict As ILLdictionary, _ 
@@ -159,20 +160,20 @@ do not remove unrelated export columns.</p>
 <li><code>rowCount</code>: Optional threshold; rows with non-empty cell counts at or below this value are removed (defaults to 0).</li>
 </ul>
 <hr />
-<h3>SyncDictionaryExports</h3>
+<h3 id="int-syncdictionaryexports">SyncDictionaryExports <a class="anchor-link" href="#int-syncdictionaryexports">#</a></h3>
 <p><strong>Synchronise dictionary export columns</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub SyncDictionaryExports(Optional ByVal dict As ILLdictionary)
 </code></pre>
 <hr />
-<h3>Sort</h3>
+<h3 id="int-sort">Sort <a class="anchor-link" href="#int-sort">#</a></h3>
 <p><strong>Sort export definitions and normalize identifiers</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Sort(Optional ByVal dict As ILLdictionary)
 </code></pre>
 <hr />
-<h2>SpecManagement</h2>
-<h3>ImportSpecs</h3>
+<h2 id="int-specmanagement">SpecManagement</h2>
+<h3 id="int-importspecs">ImportSpecs <a class="anchor-link" href="#int-importspecs">#</a></h3>
 <p><strong>Import export specifications from another worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ImportSpecs(ByVal fromWksh As Worksheet, _
@@ -190,7 +191,7 @@ do not remove unrelated export columns.</p>
 <li>ProjectError.ObjectNotInitialized when the source worksheet is missing.</li>
 </ul>
 <hr />
-<h3>ExportSpecs</h3>
+<h3 id="int-exportspecs">ExportSpecs <a class="anchor-link" href="#int-exportspecs">#</a></h3>
 <p><strong>Export specifications into another workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ExportSpecs(ByVal toWkb As Workbook, _
@@ -206,8 +207,8 @@ do not remove unrelated export columns.</p>
 <li>ProjectError.ObjectNotInitialized when the target workbook is missing.</li>
 </ul>
 <hr />
-<h2>FileName</h2>
-<h3>ExportFileName</h3>
+<h2 id="int-filename">FileName</h2>
+<h3 id="int-exportfilename">ExportFileName <a class="anchor-link" href="#int-exportfilename">#</a></h3>
 <p><strong>Build the filename for a specific export definition</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function ExportFileName(ByVal exportNumber As Long, _
@@ -229,15 +230,15 @@ do not remove unrelated export columns.</p>
 <li>ProjectError.ObjectNotInitialized when required collaborators are missing.</li>
 </ul>
 <hr />
-<h2>Export Count Tracking</h2>
-<h3>HiddenNameStore</h3>
+<h2 id="int-export-count-tracking">Export Count Tracking</h2>
+<h3 id="int-hiddennamestore">HiddenNameStore <a class="anchor-link" href="#int-hiddennamestore">#</a></h3>
 <p><strong>Resolve worksheet name manager</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function HiddenNameStore() As IHiddenNames
 </code></pre>
 <hr />
-<h2>Utilities</h2>
-<h3>IsActive</h3>
+<h2 id="int-utilities">Utilities</h2>
+<h3 id="int-isactive">IsActive <a class="anchor-link" href="#int-isactive">#</a></h3>
 <p><strong>Determine whether an export is marked active</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function IsActive(ByVal exportNumber As Long) As Boolean
@@ -248,7 +249,7 @@ do not remove unrelated export columns.</p>
 </ul>
 <p><strong>Returns:</strong> True when the status column contains &quot;active&quot; (case-insensitive).</p>
 <hr />
-<h3>ColumnValue</h3>
+<h3 id="int-columnvalue">ColumnValue <a class="anchor-link" href="#int-columnvalue">#</a></h3>
 <p><strong>Retrieve a column value for a given export row</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function ColumnValue(ByVal exportNumber As Long, ByVal columnName As String) As String
@@ -260,73 +261,73 @@ do not remove unrelated export columns.</p>
 </ul>
 <p><strong>Returns:</strong> Column value as string (empty string when not found).</p>
 <hr />
-<h3>ActiveExportNumbers</h3>
+<h3 id="int-activeexportnumbers">ActiveExportNumbers <a class="anchor-link" href="#int-activeexportnumbers">#</a></h3>
 <p><strong>Enumerate export numbers marked as active</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function ActiveExportNumbers() As BetterArray
 </code></pre>
 <p><strong>Returns:</strong> BetterArray containing active export numbers using 1-based numbering.</p>
 <hr />
-<h3>Translate</h3>
+<h3 id="int-translate">Translate <a class="anchor-link" href="#int-translate">#</a></h3>
 <p><strong>Translate the current LLExport</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub Translate(ByVal trads As ITranslationObject)
 </code></pre>
 <hr />
-<h2>Private Helpers</h2>
-<h3>EnsureDataReady</h3>
+<h2 id="int-private-helpers">Private Helpers</h2>
+<h3 id="int-ensuredataready">EnsureDataReady <a class="anchor-link" href="#int-ensuredataready">#</a></h3>
 <p><strong>Ensure the datasheet state is initialised</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureDataReady()
 </code></pre>
 <hr />
-<h3>EnsureWorksheetReady</h3>
+<h3 id="int-ensureworksheetready">EnsureWorksheetReady <a class="anchor-link" href="#int-ensureworksheetready">#</a></h3>
 <p><strong>Ensure the worksheet reference is initialised</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureWorksheetReady()
 </code></pre>
 <hr />
-<h3>EnsureDictionaryReady</h3>
+<h3 id="int-ensuredictionaryready">EnsureDictionaryReady <a class="anchor-link" href="#int-ensuredictionaryready">#</a></h3>
 <p><strong>Validate dictionary dependency</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureDictionaryReady(Optional ByVal dict As ILLdictionary, Optional ByVal resetInt As Boolean = False, Optional ByVal required As Boolean = True)
 </code></pre>
 <hr />
-<h3>EnsureVariablesReady</h3>
+<h3 id="int-ensurevariablesready">EnsureVariablesReady <a class="anchor-link" href="#int-ensurevariablesready">#</a></h3>
 <p><strong>Lazily instantiate dictionary-backed variable helper</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureVariablesReady(Optional ByVal dict As ILLdictionary)
 </code></pre>
 <hr />
-<h3>InternalDictionary</h3>
+<h3 id="int-internaldictionary">InternalDictionary <a class="anchor-link" href="#int-internaldictionary">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get InternalDictionary() As ILLdictionary
 </code></pre>
 <hr />
-<h3>InternalDictionary</h3>
+<h3 id="int-internaldictionary">InternalDictionary <a class="anchor-link" href="#int-internaldictionary">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Set InternalDictionary(ByVal dict As ILLdictionary)
 </code></pre>
 <hr />
-<h3>ValidateExportNumber</h3>
+<h3 id="int-validateexportnumber">ValidateExportNumber <a class="anchor-link" href="#int-validateexportnumber">#</a></h3>
 <p><strong>Validate export number bounds</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ValidateExportNumber(ByVal exportNumber As Long)
 </code></pre>
 <hr />
-<h3>ValidatePasswords</h3>
+<h3 id="int-validatepasswords">ValidatePasswords <a class="anchor-link" href="#int-validatepasswords">#</a></h3>
 <p><strong>Validate password provider dependency</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ValidatePasswords(ByVal pass As IPasswords)
 </code></pre>
 <hr />
-<h3>ExportTable</h3>
+<h3 id="int-exporttable">ExportTable <a class="anchor-link" href="#int-exporttable">#</a></h3>
 <p><strong>Retrieve export table wrapper</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ExportTable() As ICustomTable
 </code></pre>
 <hr />
-<h3>ReadValue</h3>
+<h3 id="int-readvalue">ReadValue <a class="anchor-link" href="#int-readvalue">#</a></h3>
 <p><strong>Read a column value from the cached datasheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ReadValue(ByVal columnName As String, _
@@ -334,58 +335,58 @@ do not remove unrelated export columns.</p>
                            Optional ByVal required As Boolean = False) As String
 </code></pre>
 <hr />
-<h3>ResolveColumnRange</h3>
+<h3 id="int-resolvecolumnrange">ResolveColumnRange <a class="anchor-link" href="#int-resolvecolumnrange">#</a></h3>
 <p><strong>Resolve and cache a specification column</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ResolveColumnRange(ByVal columnName As String, _
                                     ByVal required As Boolean) As Range
 </code></pre>
 <hr />
-<h3>ResetCaches</h3>
+<h3 id="int-resetcaches">ResetCaches <a class="anchor-link" href="#int-resetcaches">#</a></h3>
 <p><strong>Reset cached references and diagnostics</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ResetCaches()
 </code></pre>
 <hr />
-<h3>ComposeTemplatePath</h3>
+<h3 id="int-composetemplatepath">ComposeTemplatePath <a class="anchor-link" href="#int-composetemplatepath">#</a></h3>
 <p><strong>Build the filename path from template chunks</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ComposeTemplatePath(ByVal template As String) As String
 </code></pre>
 <hr />
-<h3>ResolveTemplateChunk</h3>
+<h3 id="int-resolvetemplatechunk">ResolveTemplateChunk <a class="anchor-link" href="#int-resolvetemplatechunk">#</a></h3>
 <p><strong>Resolve a single template chunk into a safe string</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ResolveTemplateChunk(ByVal rawChunk As String, _
                                       ByVal workbook As Workbook) As String
 </code></pre>
 <hr />
-<h3>IsLiteralTemplateChunk</h3>
+<h3 id="int-isliteraltemplatechunk">IsLiteralTemplateChunk <a class="anchor-link" href="#int-isliteraltemplatechunk">#</a></h3>
 <p><strong>Determine whether a chunk represents a literal string</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function IsLiteralTemplateChunk(ByVal chunk As String) As Boolean
 </code></pre>
 <hr />
-<h3>StripLiteralChunk</h3>
+<h3 id="int-stripliteralchunk">StripLiteralChunk <a class="anchor-link" href="#int-stripliteralchunk">#</a></h3>
 <p><strong>Remove wrapping quotes from literal chunk values</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function StripLiteralChunk(ByVal chunk As String) As String
 </code></pre>
 <hr />
-<h3>ResolveVariableChunk</h3>
+<h3 id="int-resolvevariablechunk">ResolveVariableChunk <a class="anchor-link" href="#int-resolvevariablechunk">#</a></h3>
 <p><strong>Resolve dictionary-driven chunk value</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ResolveVariableChunk(ByVal chunk As String, _
                                        ByVal workbook As Workbook) As String
 </code></pre>
 <hr />
-<h3>TryGetWorksheet</h3>
+<h3 id="int-trygetworksheet">TryGetWorksheet <a class="anchor-link" href="#int-trygetworksheet">#</a></h3>
 <p><strong>Safely retrieve a worksheet by name</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function TryGetWorksheet(ByVal workbook As Workbook, ByVal sheetName As String) As Worksheet
 </code></pre>
 <hr />
-<h3>TryGetNamedRange</h3>
+<h3 id="int-trygetnamedrange">TryGetNamedRange <a class="anchor-link" href="#int-trygetnamedrange">#</a></h3>
 <p><strong>Safely retrieve a named range for a chunk</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function TryGetNamedRange(ByVal workbook As Workbook, _
@@ -393,56 +394,56 @@ do not remove unrelated export columns.</p>
                                   ByVal targetSheet As Worksheet) As Range
 </code></pre>
 <hr />
-<h3>SanitizeChunk</h3>
+<h3 id="int-sanitizechunk">SanitizeChunk <a class="anchor-link" href="#int-sanitizechunk">#</a></h3>
 <p><strong>Sanitise individual chunk values for filenames</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function SanitizeChunk(ByVal chunk As String) As String
 </code></pre>
 <hr />
-<h3>ReplaceInvalidCharacters</h3>
+<h3 id="int-replaceinvalidcharacters">ReplaceInvalidCharacters <a class="anchor-link" href="#int-replaceinvalidcharacters">#</a></h3>
 <p><strong>Replace characters unsupported in filenames</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ReplaceInvalidCharacters(ByVal value As String) As String
 </code></pre>
 <hr />
-<h3>EnsureSanitizeList</h3>
+<h3 id="int-ensuresanitizelist">EnsureSanitizeList <a class="anchor-link" href="#int-ensuresanitizelist">#</a></h3>
 <p><strong>Initialise invalid filename character list</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureSanitizeList()
 </code></pre>
 <hr />
-<h3>BuildVersionSuffix</h3>
+<h3 id="int-buildversionsuffix">BuildVersionSuffix <a class="anchor-link" href="#int-buildversionsuffix">#</a></h3>
 <p><strong>Compose version/public key suffix for filenames</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function BuildVersionSuffix(ByVal pass As IPasswords) As String
 </code></pre>
 <hr />
-<h3>BuildTimestamp</h3>
+<h3 id="int-buildtimestamp">BuildTimestamp <a class="anchor-link" href="#int-buildtimestamp">#</a></h3>
 <p><strong>Compose timestamp fragment for filenames</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function BuildTimestamp() As String
 </code></pre>
 <hr />
-<h3>DefaultTemplate</h3>
+<h3 id="int-defaulttemplate">DefaultTemplate <a class="anchor-link" href="#int-defaulttemplate">#</a></h3>
 <p><strong>Provide fallback filename template</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function DefaultTemplate(ByVal exportNumber As Long) As String
 </code></pre>
 <hr />
-<h3>WorkbookBaseName</h3>
+<h3 id="int-workbookbasename">WorkbookBaseName <a class="anchor-link" href="#int-workbookbasename">#</a></h3>
 <p><strong>Remove Excel extensions from workbook name</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function WorkbookBaseName(ByVal workbook As Workbook) As String
 </code></pre>
 <hr />
-<h3>LogInfo</h3>
+<h3 id="int-loginfo">LogInfo <a class="anchor-link" href="#int-loginfo">#</a></h3>
 <p><strong>Append informational diagnostics to the Checking log</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub LogInfo(ByVal label As String, Optional ByVal scope As Byte = checkingInfo)
 </code></pre>
 <hr />
-<h2>Error Handling</h2>
-<h3>ThrowError</h3>
+<h2 id="int-error-handling">Error Handling</h2>
+<h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
 <p><strong>Raise a ProjectError coded runtime error</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
@@ -465,9 +466,9 @@ do not remove unrelated export columns.</p>
 <li><a href="src/classes/setup/EventSetup.cls">EventSetup.cls</a></li>
 <li><a href="src/classes/setup/IEventSetup.cls">IEventSetup.cls</a></li>
 <li><a href="src/classes/setup/SetupImportService.cls">SetupImportService.cls</a></li>
-<li><a href="src/classes/stale/designer-codes/modules/implements/EventsLinelistButtons.bas">EventsLinelistButtons.bas</a></li>
-<li><a href="src/modules/dataio/FormLogicExport.bas">FormLogicExport.bas</a></li>
-<li><a href="src/modules/dataio/FormLogicExportMig.bas">FormLogicExportMig.bas</a></li>
+<li><a href="src/modules/linelist/EventsLinelistButtons.bas">EventsLinelistButtons.bas</a></li>
+<li><a href="src/modules/linelistform/FormLogicExport.bas">FormLogicExport.bas</a></li>
+<li><a href="src/modules/linelistform/FormLogicExportMig.bas">FormLogicExportMig.bas</a></li>
 <li><a href="src/modules/setup/SetupHelpers.bas">SetupHelpers.bas</a></li>
 <li><a href="src/tests/modules/dataio/TestLLExporter.bas">TestLLExporter.bas</a></li>
 <li><a href="src/tests/modules/dictionary/TestLLExport.bas">TestLLExport.bas</a></li>
@@ -476,8 +477,10 @@ do not remove unrelated export columns.</p>
 <li><a href="src/tests/TableSpecsLinelistStub.cls">TableSpecsLinelistStub.cls</a></li>
 </ul>
 </details>
-
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

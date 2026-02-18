@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>DiseaseWorksheetManager - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -12,8 +13,8 @@
 <h1>DiseaseWorksheetManager</h1>
 <details>
 <summary>Internal members (not exported)</summary>
-<h2>Commands</h2>
-<h3>RemoveWorksheet</h3>
+<h2 id="int-commands">Commands</h2>
+<h3 id="int-removeworksheet">RemoveWorksheet <a class="anchor-link" href="#int-removeworksheet">#</a></h3>
 <p><strong>Remove the specified worksheet using guarded Application settings.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function RemoveWorksheet(ByVal workbook As Workbook, ByVal sheetName As String) As Boolean
@@ -25,8 +26,8 @@
 </ul>
 <p><strong>Returns:</strong> Boolean True when the worksheet existed and has been removed.</p>
 <hr />
-<h2>Queries</h2>
-<h3>WorksheetExists</h3>
+<h2 id="int-queries">Queries</h2>
+<h3 id="int-worksheetexists">WorksheetExists <a class="anchor-link" href="#int-worksheetexists">#</a></h3>
 <p><strong>Test whether a worksheet exists within the workbook.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function WorksheetExists(ByVal workbook As Workbook, ByVal sheetName As String) As Boolean
@@ -38,33 +39,33 @@
 </ul>
 <p><strong>Returns:</strong> Boolean True when the worksheet exists.</p>
 <hr />
-<h2>Internal Helpers</h2>
-<h3>ValidateWorkbook</h3>
+<h2 id="int-internal-helpers">Internal Helpers</h2>
+<h3 id="int-validateworkbook">ValidateWorkbook <a class="anchor-link" href="#int-validateworkbook">#</a></h3>
 <p><strong>Ensure the workbook reference is valid.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ValidateWorkbook(ByVal workbook As Workbook)
 </code></pre>
 <hr />
-<h3>ValidateSheetName</h3>
+<h3 id="int-validatesheetname">ValidateSheetName <a class="anchor-link" href="#int-validatesheetname">#</a></h3>
 <p><strong>Ensure the worksheet name is not empty.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ValidateSheetName(ByVal sheetName As String)
 </code></pre>
 <hr />
-<h3>FindWorksheet</h3>
+<h3 id="int-findworksheet">FindWorksheet <a class="anchor-link" href="#int-findworksheet">#</a></h3>
 <p><strong>Locate the worksheet by name using case-insensitive comparison.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function FindWorksheet(ByVal workbook As Workbook, ByVal sheetName As String) As Worksheet
 </code></pre>
 <hr />
-<h3>CreateGuard</h3>
+<h3 id="int-createguard">CreateGuard <a class="anchor-link" href="#int-createguard">#</a></h3>
 <p><strong>Instantiate and activate an Application guard.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function CreateGuard(ByVal excelApp As Application) As IDiseaseApplicationState
 </code></pre>
 <hr />
-<h2>ErrorHandling</h2>
-<h3>ThrowError</h3>
+<h2 id="int-errorhandling">ErrorHandling</h2>
+<h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
 <p><strong>Centralised error raising aligned with ProjectError codes.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal errMessage As String)
@@ -80,8 +81,10 @@
 <li><a href="src/tests/modules/mastersetup/TestDiseaseWorksheetManager.bas">TestDiseaseWorksheetManager.bas</a></li>
 </ul>
 </details>
-
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

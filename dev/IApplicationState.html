@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>IApplicationState - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -14,8 +15,10 @@
 busy-state toggling and snapshot capture of Excel Application settings.
 Callers apply a locked-down busy mode (no screen updates, manual calc,
 alerts off) and later restore the original state from the snapshot.</p>
-<h2>Busy State</h2>
-<h3>ApplyBusyState</h3>
+<details open class="doc-section" id="busy-state">
+<summary>Busy State</summary>
+<div class="section-body">
+<h3 id="applybusystate">ApplyBusyState <a class="anchor-link" href="#applybusystate">#</a></h3>
 <p><strong>Transition to busy state</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ApplyBusyState(Optional ByVal suppressEvents As Boolean = False, _
@@ -35,7 +38,7 @@ captured application snapshot.</p>
 <li><code>blockSecurity</code>: Boolean. When True, forces AutomationSecurity to msoAutomationSecurityForceDisable. Defaults to False.</li>
 </ul>
 <hr />
-<h3>Restore</h3>
+<h3 id="restore">Restore <a class="anchor-link" href="#restore">#</a></h3>
 <p><strong>Restore the application to its pre-busy state</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Restore()
@@ -43,7 +46,7 @@ captured application snapshot.</p>
 <p>Restores all captured application settings, even when ApplyBusyState
 was never called. Clears the busy flag.</p>
 <hr />
-<h3>RefreshSnapshot</h3>
+<h3 id="refreshsnapshot">RefreshSnapshot <a class="anchor-link" href="#refreshsnapshot">#</a></h3>
 <p><strong>Refresh the stored snapshot with current application values</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub RefreshSnapshot()
@@ -51,8 +54,12 @@ was never called. Clears the busy flag.</p>
 <p>Re-captures the application state so subsequent Restore invocations
 return to the freshly captured values. Cannot be called while busy.</p>
 <hr />
-<h2>Introspection</h2>
-<h3>ApplicationObject</h3>
+</div>
+</details>
+<details open class="doc-section" id="introspection">
+<summary>Introspection</summary>
+<div class="section-body">
+<h3 id="applicationobject">ApplicationObject <a class="anchor-link" href="#applicationobject">#</a></h3>
 <p><strong>Application reference currently guarded</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get ApplicationObject() As Application
@@ -60,22 +67,26 @@ return to the freshly captured values. Cannot be called while busy.</p>
 <p>Read-only state accessors.</p>
 <p><strong>Returns:</strong> Application. The Excel Application instance.</p>
 <hr />
-<h3>IsBusy</h3>
+<h3 id="isbusy">IsBusy <a class="anchor-link" href="#isbusy">#</a></h3>
 <p><strong>Whether the busy state is currently active</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get IsBusy() As Boolean
 </code></pre>
 <p><strong>Returns:</strong> Boolean. True when ApplyBusyState has been invoked without a matching Restore.</p>
 <hr />
-<h3>HasSnapshot</h3>
+<h3 id="hassnapshot">HasSnapshot <a class="anchor-link" href="#hassnapshot">#</a></h3>
 <p><strong>Whether a snapshot exists and restoration is possible</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get HasSnapshot() As Boolean
 </code></pre>
 <p><strong>Returns:</strong> Boolean. True when a snapshot has been captured.</p>
 <hr />
-
+</div>
+</details>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

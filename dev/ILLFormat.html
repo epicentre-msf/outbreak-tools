@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ILLFormat - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -15,8 +16,10 @@ design-driven formatting of worksheets, ranges, shapes, and other
 Excel objects. Reads style metadata from a format table and applies
 it according to FormatScope constants. Supports import/export of
 format definitions across workbooks.</p>
-<h2>Formatting</h2>
-<h3>ApplyFormat</h3>
+<details open class="doc-section" id="formatting">
+<summary>Formatting</summary>
+<div class="section-body">
+<h3 id="applyformat">ApplyFormat <a class="anchor-link" href="#applyformat">#</a></h3>
 <p><strong>Apply a design-driven format to an Excel object</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ApplyFormat(formattingObject As Variant, ByVal scope As Byte, _
@@ -33,8 +36,12 @@ according to the given FormatScope constant.</p>
 <li><code>nbDecimals</code>: Integer. Decimal count for numeric formatting. Defaults to 0.</li>
 </ul>
 <hr />
-<h2>Design Lookups</h2>
-<h3>DesignValue</h3>
+</div>
+</details>
+<details open class="doc-section" id="design-lookups">
+<summary>Design Lookups</summary>
+<div class="section-body">
+<h3 id="designvalue">DesignValue <a class="anchor-link" href="#designvalue">#</a></h3>
 <p><strong>Look up a design value or colour from the format table</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function DesignValue(ByVal labelName As String, _
@@ -50,8 +57,12 @@ value for the specified label row under the active design column.</p>
 </ul>
 <p><strong>Returns:</strong> Variant. The colour (Long) or cell value.</p>
 <hr />
-<h2>DataExchange</h2>
-<h3>Import</h3>
+</div>
+</details>
+<details open class="doc-section" id="dataexchange">
+<summary>DataExchange</summary>
+<div class="section-body">
+<h3 id="import">Import <a class="anchor-link" href="#import">#</a></h3>
 <p><strong>Import formatting definitions from another worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Import(ByVal inpsh As Worksheet)
@@ -65,7 +76,7 @@ source DESIGNTYPE named range.</p>
 <li><code>inpsh</code>: Worksheet. Source worksheet containing the format table.</li>
 </ul>
 <hr />
-<h3>Export</h3>
+<h3 id="export">Export <a class="anchor-link" href="#export">#</a></h3>
 <p><strong>Export the format table to another workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Export(ByVal toWkb As Workbook)
@@ -78,8 +89,12 @@ imports from it instead.</p>
 <li><code>toWkb</code>: Workbook. Destination workbook.</li>
 </ul>
 <hr />
-<h2>Checkings</h2>
-<h3>HasCheckings</h3>
+</div>
+</details>
+<details open class="doc-section" id="checkings">
+<summary>Checkings</summary>
+<div class="section-body">
+<h3 id="hascheckings">HasCheckings <a class="anchor-link" href="#hascheckings">#</a></h3>
 <p><strong>Whether the format object has logged diagnostic messages</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get HasCheckings() As Boolean
@@ -89,7 +104,7 @@ Returns True when at least one diagnostic entry has been recorded,
 typically for missing labels in the format table.</p>
 <p><strong>Returns:</strong> Boolean. True when diagnostic entries exist.</p>
 <hr />
-<h3>CheckingValues</h3>
+<h3 id="checkingvalues">CheckingValues <a class="anchor-link" href="#checkingvalues">#</a></h3>
 <p><strong>Retrieve the diagnostic log entries</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get CheckingValues() As IChecking
@@ -98,8 +113,12 @@ typically for missing labels in the format table.</p>
 Returns Nothing when no entries have been recorded.</p>
 <p><strong>Returns:</strong> IChecking. The checking instance, or Nothing.</p>
 <hr />
-
+</div>
+</details>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

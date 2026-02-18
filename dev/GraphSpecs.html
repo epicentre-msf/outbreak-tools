@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>GraphSpecs - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -21,8 +22,10 @@ CreateSeries (or let Valid trigger it lazily), then read series data via the
 IGraphSpecs interface.</p>
 <p><strong>Depends on:</strong> <a href="ICrossTable.html">ICrossTable</a>, <a href="ITableSpecs.html">ITableSpecs</a>, <a href="TableSpecs.html">TableSpecs</a>, <a href="ILinelistSpecs.html">ILinelistSpecs</a>, <a href="BetterArray.html">BetterArray</a>, Table title constants used to validate listobject order, Simple mode: one cross-table, Complex mode: 3 listobjects + output sheet + linelist specs, Series data (simple mode), Graph collection (complex mode), Validity cache</p>
 <p><strong>Version:</strong> 1.0 (2026-02-09)</p>
-<h2>Instantiation</h2>
-<h3>create</h3>
+<details open class="doc-section" id="instantiation">
+<summary>Instantiation</summary>
+<div class="section-body">
+<h3 id="create">create <a class="anchor-link" href="#create">#</a></h3>
 <p><strong>Create a GraphSpecs instance in simple mode from a cross-table</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal tabl As ICrossTable) As IGraphSpecs
@@ -52,7 +55,7 @@ have its named ranges written to the worksheet before series data can be consume
 <li>InvalidArgument When tabl is Nothing, ScopeTimeSeries, or ScopeGlobalSummary.</li>
 </ul>
 <hr />
-<h3>create-range-specs</h3>
+<h3 id="create-range-specs">create-range-specs <a class="anchor-link" href="#create-range-specs">#</a></h3>
 <p><strong>Create a GraphSpecs instance in complex mode for time series graphs</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function CreateRangeSpecs(ByVal loTable As BetterArray, _
@@ -91,8 +94,12 @@ outputSh is Nothing.</li>
 <li>ErrorUnexpectedState When ListObjects are in the wrong order.</li>
 </ul>
 <hr />
-<h2>CoreOperations</h2>
-<h3>create-series</h3>
+</div>
+</details>
+<details open class="doc-section" id="coreoperations">
+<summary>CoreOperations</summary>
+<div class="section-body">
+<h3 id="create-series">create-series <a class="anchor-link" href="#create-series">#</a></h3>
 <p><strong>Build all series from the stored specifications</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub CreateSeries()
@@ -112,10 +119,12 @@ not yet been populated. Calling it multiple times is safe but will rebuild all
 series data from scratch each time.</li>
 </ul>
 <hr />
+</div>
+</details>
 <details>
 <summary>Internal members (not exported)</summary>
-<h2>Instantiation</h2>
-<h3>self</h3>
+<h2 id="int-instantiation">Instantiation</h2>
+<h3 id="int-self">self <a class="anchor-link" href="#int-self">#</a></h3>
 <p><strong>Current object instance</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Self() As IGraphSpecs
@@ -124,8 +133,8 @@ series data from scratch each time.</li>
 reference from the predeclared Create or CreateRangeSpecs method.</p>
 <p><strong>Returns:</strong> IGraphSpecs. The current instance cast to the interface.</p>
 <hr />
-<h2>InternalSetters</h2>
-<h3>table</h3>
+<h2 id="int-internalsetters">InternalSetters</h2>
+<h3 id="int-table">table <a class="anchor-link" href="#int-table">#</a></h3>
 <p><strong>Cross-table reference for simple mode</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Table() As ICrossTable
@@ -135,7 +144,7 @@ These are Public to support the With New pattern but are not part of the
 caller contract.</p>
 <p><strong>Returns:</strong> ICrossTable. The stored cross-table instance.</p>
 <hr />
-<h3>table-set</h3>
+<h3 id="int-table-set">table-set <a class="anchor-link" href="#int-table-set">#</a></h3>
 <p><strong>Assign the cross-table reference</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set Table(ByVal tabl As ICrossTable)
@@ -145,14 +154,14 @@ caller contract.</p>
 <li><code>tabl</code>: ICrossTable. The cross-table to store.</li>
 </ul>
 <hr />
-<h3>graph-type</h3>
+<h3 id="int-graph-type">graph-type <a class="anchor-link" href="#int-graph-type">#</a></h3>
 <p><strong>Current graph specifications mode</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get GraphType() As GraphSpecsType
 </code></pre>
 <p><strong>Returns:</strong> GraphSpecsType. GraphTypeSimple or GraphTypeComplex.</p>
 <hr />
-<h3>graph-type-set</h3>
+<h3 id="int-graph-type-set">graph-type-set <a class="anchor-link" href="#int-graph-type-set">#</a></h3>
 <p><strong>Assign the graph specifications mode</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Let GraphType(ByVal specType As GraphSpecsType)
@@ -162,14 +171,14 @@ caller contract.</p>
 <li><code>specType</code>: GraphSpecsType. The mode to set.</li>
 </ul>
 <hr />
-<h3>lo-list</h3>
+<h3 id="int-lo-list">lo-list <a class="anchor-link" href="#int-lo-list">#</a></h3>
 <p><strong>ListObject collection for complex mode</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get LoList() As BetterArray
 </code></pre>
 <p><strong>Returns:</strong> BetterArray. The stored ListObject array.</p>
 <hr />
-<h3>lo-list-set</h3>
+<h3 id="int-lo-list-set">lo-list-set <a class="anchor-link" href="#int-lo-list-set">#</a></h3>
 <p><strong>Assign the ListObject collection</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set LoList(ByVal loTable As BetterArray)
@@ -179,14 +188,14 @@ caller contract.</p>
 <li><code>loTable</code>: BetterArray. The 3-element ListObject array to clone and store.</li>
 </ul>
 <hr />
-<h3>output-sheet</h3>
+<h3 id="int-output-sheet">output-sheet <a class="anchor-link" href="#int-output-sheet">#</a></h3>
 <p><strong>Output worksheet for complex mode</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get OutputSheet() As Worksheet
 </code></pre>
 <p><strong>Returns:</strong> Worksheet. The stored output worksheet reference.</p>
 <hr />
-<h3>output-sheet-set</h3>
+<h3 id="int-output-sheet-set">output-sheet-set <a class="anchor-link" href="#int-output-sheet-set">#</a></h3>
 <p><strong>Assign the output worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set OutputSheet(ByVal sh As Worksheet)
@@ -196,14 +205,14 @@ caller contract.</p>
 <li><code>sh</code>: Worksheet. The worksheet to store.</li>
 </ul>
 <hr />
-<h3>linelist-specifications</h3>
+<h3 id="int-linelist-specifications">linelist-specifications <a class="anchor-link" href="#int-linelist-specifications">#</a></h3>
 <p><strong>Linelist specifications for complex mode</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get LinelistSpecifications() As ILinelistSpecs
 </code></pre>
 <p><strong>Returns:</strong> ILinelistSpecs. The stored linelist specifications instance.</p>
 <hr />
-<h3>linelist-specifications-set</h3>
+<h3 id="int-linelist-specifications-set">linelist-specifications-set <a class="anchor-link" href="#int-linelist-specifications-set">#</a></h3>
 <p><strong>Assign the linelist specifications</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set LinelistSpecifications(ByVal lData As ILinelistSpecs)
@@ -213,8 +222,8 @@ caller contract.</p>
 <li><code>lData</code>: ILinelistSpecs. The linelist specifications to store.</li>
 </ul>
 <hr />
-<h2>SimpleMode</h2>
-<h3>build-simple-series</h3>
+<h2 id="int-simplemode">SimpleMode</h2>
+<h3 id="int-build-simple-series">build-simple-series <a class="anchor-link" href="#int-build-simple-series">#</a></h3>
 <p><strong>Build chart series for a non-time-series cross-table</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub BuildSimpleSeries()
@@ -235,7 +244,7 @@ for ScopeBivariate, ScopeSpatial, and ScopeSpatioTemporal tables.</p>
 missing or non-numeric values, falling back to 5 columns.</li>
 </ul>
 <hr />
-<h3>build-univariate-series</h3>
+<h3 id="int-build-univariate-series">build-univariate-series <a class="anchor-link" href="#int-build-univariate-series">#</a></h3>
 <p><strong>Build chart series for a single-variable cross-table</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub BuildUnivariateSeries(ByVal tabId As String, _
@@ -264,7 +273,7 @@ True and plotType is &quot;bar&quot;, an additional percentage point series is p
 because Excel point series render poorly on horizontally-oriented charts.</li>
 </ul>
 <hr />
-<h3>build-multi-column-series</h3>
+<h3 id="int-build-multi-column-series">build-multi-column-series <a class="anchor-link" href="#int-build-multi-column-series">#</a></h3>
 <p><strong>Build chart series for multi-column cross-tables</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub BuildMultiColumnSeries(ByVal specs As ITableSpecs, _
@@ -303,8 +312,8 @@ specs.HasPercentage is True. The &quot;percentages&quot; mode silently produces 
 if HasPercentage is False.</li>
 </ul>
 <hr />
-<h2>ComplexMode</h2>
-<h3>build-complex-series</h3>
+<h2 id="int-complexmode">ComplexMode</h2>
+<h3 id="int-build-complex-series">build-complex-series <a class="anchor-link" href="#int-build-complex-series">#</a></h3>
 <p><strong>Build the complete set of graph specifications for complex mode</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub BuildComplexSeries()
@@ -322,7 +331,7 @@ ClearSeries (called inside DefineGraphSpecs), so the series arrays are
 temporary buffers that get packaged and reset for each graph.</li>
 </ul>
 <hr />
-<h3>define-graph-specs</h3>
+<h3 id="int-define-graph-specs">define-graph-specs <a class="anchor-link" href="#int-define-graph-specs">#</a></h3>
 <p><strong>Define chart series for a single graph ID in complex mode</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub DefineGraphSpecs(ByVal graphId As String)
@@ -353,7 +362,7 @@ that resolve to the header row) are silently skipped via GoTo ContinueLoop.</li>
 <li>TableSpecs</li>
 </ul>
 <hr />
-<h3>resolve-series-range-name</h3>
+<h3 id="int-resolve-series-range-name">resolve-series-range-name <a class="anchor-link" href="#int-resolve-series-range-name">#</a></h3>
 <p><strong>Resolve a choice value and label name into the data range name</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ResolveSeriesRangeName(ByVal choiValue As String, _
@@ -376,7 +385,7 @@ TimeSeriesColumnName.</li>
 </ul>
 <p><strong>Returns:</strong> String. The fully-qualified named range name for the data values.</p>
 <hr />
-<h3>time-series-column-name</h3>
+<h3 id="int-time-series-column-name">time-series-column-name <a class="anchor-link" href="#int-time-series-column-name">#</a></h3>
 <p><strong>Find the named range for a choice value within a time series table</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function TimeSeriesColumnName(ByVal choiValue As String, _
@@ -402,8 +411,8 @@ vbNullString if no match is found.</p>
 cells in the COLUMN_CATEGORIES_ range may not have a named range assigned.</li>
 </ul>
 <hr />
-<h2>SeriesDataManagement</h2>
-<h3>init-series-arrays</h3>
+<h2 id="int-seriesdatamanagement">SeriesDataManagement</h2>
+<h3 id="int-init-series-arrays">init-series-arrays <a class="anchor-link" href="#int-init-series-arrays">#</a></h3>
 <p><strong>Create fresh BetterArray instances for all six series arrays</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub InitSeriesArrays()
@@ -422,7 +431,7 @@ PushLabels when the arrays are Nothing (after ClearSeries in complex mode).
 Unconditionally replaces any existing arrays.</li>
 </ul>
 <hr />
-<h3>push-series</h3>
+<h3 id="int-push-series">push-series <a class="anchor-link" href="#int-push-series">#</a></h3>
 <p><strong>Append one series entry to the series-related parallel arrays</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub PushSeries(ByVal chrtName As String, _
@@ -446,7 +455,7 @@ lazy-initializes all six arrays via InitSeriesArrays before pushing.</p>
 parallel arrays synchronized.</li>
 </ul>
 <hr />
-<h3>push-labels</h3>
+<h3 id="int-push-labels">push-labels <a class="anchor-link" href="#int-push-labels">#</a></h3>
 <p><strong>Append one label entry to the label-related parallel arrays</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub PushLabels(ByVal chrtRowCategory As String, _
@@ -467,7 +476,7 @@ is Nothing, lazy-initializes all six arrays via InitSeriesArrays.</p>
 Defaults to vbNullString.</li>
 </ul>
 <hr />
-<h3>clear-series</h3>
+<h3 id="int-clear-series">clear-series <a class="anchor-link" href="#int-clear-series">#</a></h3>
 <p><strong>Clear all six parallel series and label arrays</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ClearSeries()
@@ -482,7 +491,7 @@ because during the first call the arrays may still be Nothing.</p>
 possible error is calling .Clear on a Nothing reference.</li>
 </ul>
 <hr />
-<h3>push-graph</h3>
+<h3 id="int-push-graph">push-graph <a class="anchor-link" href="#int-push-graph">#</a></h3>
 <p><strong>Package buffered series data into a graph specification entry</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub PushGraph(ByVal graphId As String)
@@ -505,8 +514,8 @@ one extra element. A safety check compares the cloned length to the original and
 calls .Pop on all six clones if they are one element too long.</li>
 </ul>
 <hr />
-<h2>ListObjectHelpers</h2>
-<h3>graph-list-object</h3>
+<h2 id="int-listobjecthelpers">ListObjectHelpers</h2>
+<h3 id="int-graph-list-object">graph-list-object <a class="anchor-link" href="#int-graph-list-object">#</a></h3>
 <p><strong>Graph setup ListObject from the LoList collection</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get GraphListObject() As ListObject
@@ -518,7 +527,7 @@ their chart types, axis positions, choice values, percentage overrides, and
 display labels.</p>
 <p><strong>Returns:</strong> ListObject. The graph setup table (&quot;graph on time series&quot;).</p>
 <hr />
-<h3>time-series-list-object</h3>
+<h3 id="int-time-series-list-object">time-series-list-object <a class="anchor-link" href="#int-time-series-list-object">#</a></h3>
 <p><strong>Time series setup ListObject from the LoList collection</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get TimeSeriesListObject() As ListObject
@@ -529,7 +538,7 @@ row (variable name, section, time unit, etc.), enabling DefineGraphSpecs to
 construct a TableSpecs instance for each series.</p>
 <p><strong>Returns:</strong> ListObject. The time series definition table (&quot;time series analysis&quot;).</p>
 <hr />
-<h3>titles-list-object</h3>
+<h3 id="int-titles-list-object">titles-list-object <a class="anchor-link" href="#int-titles-list-object">#</a></h3>
 <p><strong>Title labels ListObject from the LoList collection</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get TitlesListObject() As ListObject
@@ -539,7 +548,7 @@ titles for each graph. Keyed by graph ID in column 3, with the title text in
 column 1. Used by GraphTitle to look up human-readable plot titles.</p>
 <p><strong>Returns:</strong> ListObject. The title labels table (&quot;labels for time series graphs&quot;).</p>
 <hr />
-<h3>graph-title</h3>
+<h3 id="int-graph-title">graph-title <a class="anchor-link" href="#int-graph-title">#</a></h3>
 <p><strong>Look up the display title for a graph ID</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function GraphTitle(ByVal graphId As String) As String
@@ -553,7 +562,7 @@ row's first column (offset -2). If not found, returns an empty string.</p>
 </ul>
 <p><strong>Returns:</strong> String. The display title, or vbNullString if not found.</p>
 <hr />
-<h3>build-graph-ids-list</h3>
+<h3 id="int-build-graph-ids-list">build-graph-ids-list <a class="anchor-link" href="#int-build-graph-ids-list">#</a></h3>
 <p><strong>Extract unique graph IDs from the graph setup ListObject</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function BuildGraphIdsList() As BetterArray
@@ -570,7 +579,7 @@ scan (O(n*m)), acceptable because the graph setup table typically has fewer than
 100 rows.</li>
 </ul>
 <hr />
-<h3>graph-values</h3>
+<h3 id="int-graph-values">graph-values <a class="anchor-link" href="#int-graph-values">#</a></h3>
 <p><strong>Extract filtered column values from the graph setup ListObject</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function GraphValues(ByVal colName As String, _
@@ -601,7 +610,7 @@ Range.Find wraps around by default, which would cause infinite loops.</li>
 the ListObject header.</li>
 </ul>
 <hr />
-<h3>lo-column-index</h3>
+<h3 id="int-lo-column-index">lo-column-index <a class="anchor-link" href="#int-lo-column-index">#</a></h3>
 <p><strong>Look up a column index in a ListObject header by partial match</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function LoColumnIndex(ByVal lo As ListObject, _
@@ -626,8 +635,8 @@ Partial matching could return unexpected results if multiple headers share a
 common substring.</li>
 </ul>
 <hr />
-<h2>Validation</h2>
-<h3>validate-list-objects</h3>
+<h2 id="int-validation">Validation</h2>
+<h3 id="int-validate-list-objects">validate-list-objects <a class="anchor-link" href="#int-validate-list-objects">#</a></h3>
 <p><strong>Validate the BetterArray of ListObjects required by CreateRangeSpecs</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ValidateListObjects(ByVal loTable As BetterArray)
@@ -658,8 +667,8 @@ non-ListObject entries, or has empty ListObjects.</li>
 <li>ErrorUnexpectedState When ListObjects are in the wrong order.</li>
 </ul>
 <hr />
-<h2>Properties</h2>
-<h3>wksh</h3>
+<h2 id="int-properties">Properties</h2>
+<h3 id="int-wksh">wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
 <p><strong>Output worksheet where charts will be drawn</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Wksh() As Worksheet
@@ -672,7 +681,7 @@ during factory construction. This abstraction allows consumers to call Wksh
 without knowing the mode.</p>
 <p><strong>Returns:</strong> Worksheet. The target worksheet for chart creation.</p>
 <hr />
-<h3>number-of-series</h3>
+<h3 id="int-number-of-series">number-of-series <a class="anchor-link" href="#int-number-of-series">#</a></h3>
 <p><strong>Number of chart series in simple mode</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get NumberOfSeries() As Long
@@ -683,7 +692,7 @@ stores series data within the nested graphsChartSpecs collection. Also returns
 0 if seriesNames is Nothing (CreateSeries not yet called).</p>
 <p><strong>Returns:</strong> Long. Count of series entries in simple mode, or 0.</p>
 <hr />
-<h3>number-of-graphs</h3>
+<h3 id="int-number-of-graphs">number-of-graphs <a class="anchor-link" href="#int-number-of-graphs">#</a></h3>
 <p><strong>Number of distinct graphs in complex mode</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get NumberOfGraphs() As Long
@@ -694,7 +703,7 @@ mode (GraphTypeSimple) or if graphsChartSpecs is Nothing (CreateSeries not yet
 called or produced no valid graphs).</p>
 <p><strong>Returns:</strong> Long. Count of graph entries in complex mode, or 0.</p>
 <hr />
-<h3>series-name</h3>
+<h3 id="int-series-name">series-name <a class="anchor-link" href="#int-series-name">#</a></h3>
 <p><strong>Named range reference for series data at a given index</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get SeriesName(ByVal index As Long) As String
@@ -712,7 +721,7 @@ CreateSeries has been called.</p>
 <li>InvalidArgument When index is out of bounds.</li>
 </ul>
 <hr />
-<h3>series-type</h3>
+<h3 id="int-series-type">series-type <a class="anchor-link" href="#int-series-type">#</a></h3>
 <p><strong>Chart rendering type for a series at a given index</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get SeriesType(ByVal index As Long) As String
@@ -730,7 +739,7 @@ values include &quot;bar&quot; (vertical bars), &quot;hbar&quot; (horizontal bar
 <li>InvalidArgument When index is out of bounds.</li>
 </ul>
 <hr />
-<h3>series-pos</h3>
+<h3 id="int-series-pos">series-pos <a class="anchor-link" href="#int-series-pos">#</a></h3>
 <p><strong>Axis position for a series at a given index</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get SeriesPos(ByVal index As Long) As String
@@ -747,7 +756,7 @@ typically used for percentage overlays. Only valid in simple mode.</p>
 <li>InvalidArgument When index is out of bounds.</li>
 </ul>
 <hr />
-<h3>series-label</h3>
+<h3 id="int-series-label">series-label <a class="anchor-link" href="#int-series-label">#</a></h3>
 <p><strong>Row category named range for a series at a given index</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get SeriesLabel(ByVal index As Long) As String
@@ -765,7 +774,7 @@ mode after CreateSeries has been called.</p>
 <li>InvalidArgument When index is out of bounds.</li>
 </ul>
 <hr />
-<h3>series-column-label</h3>
+<h3 id="int-series-column-label">series-column-label <a class="anchor-link" href="#int-series-column-label">#</a></h3>
 <p><strong>Column label named range for a series at a given index</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get SeriesColumnLabel(ByVal index As Long) As String
@@ -783,7 +792,7 @@ valid in simple mode after CreateSeries has been called.</p>
 <li>InvalidArgument When index is out of bounds.</li>
 </ul>
 <hr />
-<h3>series-label-prefix</h3>
+<h3 id="int-series-label-prefix">series-label-prefix <a class="anchor-link" href="#int-series-label-prefix">#</a></h3>
 <p><strong>Label prefix for a series at a given index</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get SeriesLabelPrefix(ByVal index As Long) As String
@@ -802,7 +811,7 @@ ListObject. Only valid in simple mode after CreateSeries has been called.</p>
 <li>InvalidArgument When index is out of bounds.</li>
 </ul>
 <hr />
-<h3>valid</h3>
+<h3 id="int-valid">valid <a class="anchor-link" href="#int-valid">#</a></h3>
 <p><strong>Whether the graph specifications were successfully built</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Valid() As Boolean
@@ -822,7 +831,7 @@ means errors during CreateSeries will permanently mark the instance as invalid
 (or valid) until discarded.</li>
 </ul>
 <hr />
-<h3>specs-lists</h3>
+<h3 id="int-specs-lists">specs-lists <a class="anchor-link" href="#int-specs-lists">#</a></h3>
 <p><strong>Nested collection of all graph specifications</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get SpecsLists() As BetterArray
@@ -840,7 +849,7 @@ never populated. Use indexed SeriesName/SeriesType/etc. accessors for simple
 mode data.</li>
 </ul>
 <hr />
-<h3>graph-ids</h3>
+<h3 id="int-graph-ids">graph-ids <a class="anchor-link" href="#int-graph-ids">#</a></h3>
 <p><strong>Unique graph identifiers for complex mode</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get GraphIDs() As BetterArray
@@ -858,8 +867,8 @@ graph IDs independently of SpecsLists. In simple mode, the graph setup
 ListObject is not available, so calling this property will raise an error.</li>
 </ul>
 <hr />
-<h2>ErrorHandling</h2>
-<h3>validate-series-index</h3>
+<h2 id="int-errorhandling">ErrorHandling</h2>
+<h3 id="int-validate-series-index">validate-series-index <a class="anchor-link" href="#int-validate-series-index">#</a></h3>
 <p><strong>Validate that a series index is within bounds</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ValidateSeriesIndex(ByVal index As Long)
@@ -874,7 +883,7 @@ ListObject is not available, so calling this property will raise an error.</li>
 <li>InvalidArgument When index is less than 1 or greater than NumberOfSeries.</li>
 </ul>
 <hr />
-<h3>throw-error</h3>
+<h3 id="int-throw-error">throw-error <a class="anchor-link" href="#int-throw-error">#</a></h3>
 <p><strong>Raise a ProjectError-based exception</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As Long, ByVal message As String)
@@ -891,8 +900,8 @@ a consistent stack trace across all methods in this class.</p>
 <li>ProjectError.<varies> Always raises the specified error.</li>
 </ul>
 <hr />
-<h2>InterfaceImplementation</h2>
-<h3>IGraphSpecs_NumberOfSeries</h3>
+<h2 id="int-interfaceimplementation">InterfaceImplementation</h2>
+<h3 id="int-igraphspecs-numberofseries">IGraphSpecs_NumberOfSeries <a class="anchor-link" href="#int-igraphspecs-numberofseries">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get IGraphSpecs_NumberOfSeries() As Long
 </code></pre>
@@ -909,8 +918,10 @@ See the corresponding Public members above for full documentation.</p>
 <li><a href="src/tests/modules/graphs/TestGraphSpecs.bas">TestGraphSpecs.bas</a></li>
 </ul>
 </details>
-
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

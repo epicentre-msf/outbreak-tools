@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Buttons - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -15,8 +16,10 @@ and formatting linelist buttons. Supports large, small, and geo
 button scopes with automatic placement offset calculations.</p>
 <p><strong>Depends on:</strong> <a href="Checking.html">Checking</a>, <a href="ILLFormat.html">ILLFormat</a>, ProjectError</p>
 <p><strong>Version:</strong> 1.0 (2026-02-09)</p>
-<h2>Factory</h2>
-<h3>create</h3>
+<details open class="doc-section" id="factory">
+<summary>Factory</summary>
+<div class="section-body">
+<h3 id="create">create <a class="anchor-link" href="#create">#</a></h3>
 <p><strong>Factory returning an initialised interface</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal outrng As Range, ByVal codeName As String, _
@@ -30,15 +33,19 @@ button scopes with automatic placement offset calculations.</p>
 </ul>
 <p><strong>Returns:</strong> IButtons. Ready to use.</p>
 <hr />
-<h2>Properties</h2>
-<h3>output-range</h3>
+</div>
+</details>
+<details open class="doc-section" id="properties">
+<summary>Properties</summary>
+<div class="section-body">
+<h3 id="output-range">output-range <a class="anchor-link" href="#output-range">#</a></h3>
 <p><strong>Anchor range used for placement</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get OutputRange() As Range
 </code></pre>
 <p><strong>Returns:</strong> Range. Top-left anchor cell.</p>
 <hr />
-<h3>output-range-set</h3>
+<h3 id="output-range-set">output-range-set <a class="anchor-link" href="#output-range-set">#</a></h3>
 <p><strong>Update the anchor range used for placement</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set OutputRange(ByVal rng As Range)
@@ -48,22 +55,26 @@ button scopes with automatic placement offset calculations.</p>
 <li><code>rng</code>: Range. Providing the top-left anchor cell.</li>
 </ul>
 <hr />
-<h3>name</h3>
+<h3 id="name">name <a class="anchor-link" href="#name">#</a></h3>
 <p><strong>Shape name assigned in the worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Name() As String
 </code></pre>
 <p><strong>Returns:</strong> String. Shape identifier.</p>
 <hr />
-<h3>shape-scope</h3>
+<h3 id="shape-scope">shape-scope <a class="anchor-link" href="#shape-scope">#</a></h3>
 <p><strong>Formatting scope applied to the button</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get ShapeScope() As Byte
 </code></pre>
 <p><strong>Returns:</strong> Byte. ButtonScope value.</p>
 <hr />
-<h2>Operations</h2>
-<h3>add</h3>
+</div>
+</details>
+<details open class="doc-section" id="operations">
+<summary>Operations</summary>
+<div class="section-body">
+<h3 id="add">add <a class="anchor-link" href="#add">#</a></h3>
 <p><strong>Create the worksheet shape at the configured location</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Add(Optional ByVal actionCommand As String = vbNullString, _
@@ -75,7 +86,7 @@ button scopes with automatic placement offset calculations.</p>
 <li><code>shapeLabel</code>: String. Label displayed on the button. Defaults to vbNullString.</li>
 </ul>
 <hr />
-<h3>format</h3>
+<h3 id="format">format <a class="anchor-link" href="#format">#</a></h3>
 <p><strong>Apply the appropriate visual design to the button</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Format(ByVal design As ILLFormat)
@@ -85,32 +96,38 @@ button scopes with automatic placement offset calculations.</p>
 <li><code>design</code>: ILLFormat. Formatter responsible for styling the shape.</li>
 </ul>
 <hr />
-<h2>Checkings</h2>
-<h3>has-checkings</h3>
+</div>
+</details>
+<details open class="doc-section" id="checkings">
+<summary>Checkings</summary>
+<div class="section-body">
+<h3 id="has-checkings">has-checkings <a class="anchor-link" href="#has-checkings">#</a></h3>
 <p><strong>Whether diagnostic entries have been recorded</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get HasCheckings() As Boolean
 </code></pre>
 <p><strong>Returns:</strong> Boolean. True when at least one entry exists.</p>
 <hr />
-<h3>checking-values</h3>
+<h3 id="checking-values">checking-values <a class="anchor-link" href="#checking-values">#</a></h3>
 <p><strong>Retrieve the diagnostic log entries</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get CheckingValues() As Object
 </code></pre>
 <p><strong>Returns:</strong> Object. The checking instance, or Nothing.</p>
 <hr />
+</div>
+</details>
 <details>
 <summary>Internal members (not exported)</summary>
-<h2>Properties</h2>
-<h3>self</h3>
+<h2 id="int-properties">Properties</h2>
+<h3 id="int-self">self <a class="anchor-link" href="#int-self">#</a></h3>
 <p><strong>Self-reference as IButtons</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Self() As IButtons
 </code></pre>
 <p><strong>Returns:</strong> IButtons. Self-reference.</p>
 <hr />
-<h3>name-set</h3>
+<h3 id="int-name-set">name-set <a class="anchor-link" href="#int-name-set">#</a></h3>
 <p><strong>Store the shape name assigned in the worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Let Name(ByVal nm As String)
@@ -120,7 +137,7 @@ button scopes with automatic placement offset calculations.</p>
 <li><code>nm</code>: String. Identifier for the shape.</li>
 </ul>
 <hr />
-<h3>shape-scope-set</h3>
+<h3 id="int-shape-scope-set">shape-scope-set <a class="anchor-link" href="#int-shape-scope-set">#</a></h3>
 <p><strong>Store the formatting scope applied to the button</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Let ShapeScope(ByVal scope As Byte)
@@ -130,23 +147,23 @@ button scopes with automatic placement offset calculations.</p>
 <li><code>scope</code>: Byte. ButtonScope value.</li>
 </ul>
 <hr />
-<h2>Shape Queries</h2>
-<h3>shape-exists</h3>
+<h2 id="int-shape-queries">Shape Queries</h2>
+<h3 id="int-shape-exists">shape-exists <a class="anchor-link" href="#int-shape-exists">#</a></h3>
 <p><strong>Whether the button shape already exists on the worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get ShapeExists() As Boolean
 </code></pre>
 <p><strong>Returns:</strong> Boolean. True when the named shape is present.</p>
 <hr />
-<h3>shape-object</h3>
+<h3 id="int-shape-object">shape-object <a class="anchor-link" href="#int-shape-object">#</a></h3>
 <p><strong>Retrieve the underlying shape or raise when absent</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get ShapeObject() As Shape
 </code></pre>
 <p><strong>Returns:</strong> Shape. Object representing the button.</p>
 <hr />
-<h2>Checkings</h2>
-<h3>log-check</h3>
+<h2 id="int-checkings">Checkings</h2>
+<h3 id="int-log-check">log-check <a class="anchor-link" href="#int-log-check">#</a></h3>
 <p><strong>Append a diagnostic entry to the internal checking log</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub LogCheck(ByVal label As String, _
@@ -158,8 +175,8 @@ button scopes with automatic placement offset calculations.</p>
 <li><code>scope</code>: Byte. Severity scope for the log entry.</li>
 </ul>
 <hr />
-<h2>Error Handling</h2>
-<h3>throw-error</h3>
+<h2 id="int-error-handling">Error Handling</h2>
+<h3 id="int-throw-error">throw-error <a class="anchor-link" href="#int-throw-error">#</a></h3>
 <p><strong>Raise a typed project error</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
@@ -170,22 +187,22 @@ button scopes with automatic placement offset calculations.</p>
 <li><code>errorMessage</code>: String. Descriptive error message.</li>
 </ul>
 <hr />
-<h2>Helpers</h2>
-<h3>target-range</h3>
+<h2 id="int-helpers">Helpers</h2>
+<h3 id="int-target-range">target-range <a class="anchor-link" href="#int-target-range">#</a></h3>
 <p><strong>Ensure the internal anchor range is available</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function TargetRange() As Range
 </code></pre>
 <p><strong>Returns:</strong> Range. Anchor used for calculations.</p>
 <hr />
-<h3>target-worksheet</h3>
+<h3 id="int-target-worksheet">target-worksheet <a class="anchor-link" href="#int-target-worksheet">#</a></h3>
 <p><strong>Retrieve the worksheet hosting the button</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function TargetWorksheet() As Worksheet
 </code></pre>
 <p><strong>Returns:</strong> Worksheet. Containing the anchor range.</p>
 <hr />
-<h3>resolve-dimensions</h3>
+<h3 id="int-resolve-dimensions">resolve-dimensions <a class="anchor-link" href="#int-resolve-dimensions">#</a></h3>
 <p><strong>Resolve button dimensions from the scope definition</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ResolveDimensions(ByVal scope As Byte) As TDimensions
@@ -196,7 +213,7 @@ button scopes with automatic placement offset calculations.</p>
 </ul>
 <p><strong>Returns:</strong> TDimensions. Width and height in points.</p>
 <hr />
-<h3>resolve-position</h3>
+<h3 id="int-resolve-position">resolve-position <a class="anchor-link" href="#int-resolve-position">#</a></h3>
 <p><strong>Compute the top-left coordinates for the button</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ResolvePosition(ByVal anchor As Range) As TPosition
@@ -207,7 +224,7 @@ button scopes with automatic placement offset calculations.</p>
 </ul>
 <p><strong>Returns:</strong> TPosition. Left and top offsets.</p>
 <hr />
-<h3>effective-label</h3>
+<h3 id="int-effective-label">effective-label <a class="anchor-link" href="#int-effective-label">#</a></h3>
 <p><strong>Determine the label displayed on the button</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function EffectiveLabel(ByVal providedLabel As String, ByVal fallbackName As String) As String
@@ -231,8 +248,10 @@ button scopes with automatic placement offset calculations.</p>
 <li><a href="src/tests/modules/general/TestButtons.bas">TestButtons.bas</a></li>
 </ul>
 </details>
-
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

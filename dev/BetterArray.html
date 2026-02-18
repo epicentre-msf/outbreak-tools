@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>BetterArray - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -12,133 +13,133 @@
 <h1>BetterArray</h1>
 <details>
 <summary>Internal members (not exported)</summary>
-<h3>Class_Initialize</h3>
+<h3 id="int-class-initialize">Class_Initialize <a class="anchor-link" href="#int-class-initialize">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub Class_Initialize()
 </code></pre>
 <p>(&quot;Constructor&quot;)</p>
 <hr />
-<h3>Capacity</h3>
+<h3 id="int-capacity">Capacity <a class="anchor-link" href="#int-capacity">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Capacity() As Long
 </code></pre>
 <p>(&quot;Returns the capacity of the internal array.&quot;)</p>
 <hr />
-<h3>Capacity</h3>
+<h3 id="int-capacity">Capacity <a class="anchor-link" href="#int-capacity">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Let Capacity(ByVal Value As Long)
 </code></pre>
 <p>(&quot;Sets the capacity of the internal array.&quot;)</p>
 <hr />
-<h3>Length</h3>
+<h3 id="int-length">Length <a class="anchor-link" href="#int-length">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Length() As Long
 </code></pre>
 <p>(&quot;Returns the number of entries stored in the array.&quot;)</p>
 <hr />
-<h3>UpperBound</h3>
+<h3 id="int-upperbound">UpperBound <a class="anchor-link" href="#int-upperbound">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get UpperBound() As Long
 </code></pre>
 <p>(&quot;Returns largest used index in the array.&quot;)</p>
 <hr />
-<h3>LowerBound</h3>
+<h3 id="int-lowerbound">LowerBound <a class="anchor-link" href="#int-lowerbound">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get LowerBound() As Long
 </code></pre>
 <p>(&quot;Returns smallest used index in the array.&quot;)</p>
 <hr />
-<h3>LowerBound</h3>
+<h3 id="int-lowerbound">LowerBound <a class="anchor-link" href="#int-lowerbound">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Let LowerBound(ByVal Value As Long)
 </code></pre>
 <p>(&quot;Sets the starting index of the array. If an array is already stored then it will be re-indexed to match the new value&quot;)</p>
 <hr />
-<h3>Item</h3>
+<h3 id="int-item">Item <a class="anchor-link" href="#int-item">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Item(ByVal Index As Long) As Variant
 </code></pre>
 <p>(&quot;Returns the element in the array stored at the specified index.&quot;)</p>
 <hr />
-<h3>Item</h3>
+<h3 id="int-item">Item <a class="anchor-link" href="#int-item">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Let Item(ByVal Index As Long, ByVal Element As Variant)
 </code></pre>
 <p>(&quot;Assigns the passed element to the array at the specified index.&quot;)</p>
 <hr />
-<h3>Items</h3>
+<h3 id="int-items">Items <a class="anchor-link" href="#int-items">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Items() As Variant
 </code></pre>
 <p>(&quot;Returns the stored array.&quot;)</p>
 <hr />
-<h3>Items</h3>
+<h3 id="int-items">Items <a class="anchor-link" href="#int-items">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Let Items(ByVal Values As Variant)
 </code></pre>
 <p>(&quot;Stores the passed array.&quot;)</p>
 <hr />
-<h3>ArrayType</h3>
+<h3 id="int-arraytype">ArrayType <a class="anchor-link" href="#int-arraytype">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get ArrayType() As ArrayTypes
 </code></pre>
 <p>(&quot;Retrieves the stored array type.&quot;)</p>
 <hr />
-<h3>ArrayType</h3>
+<h3 id="int-arraytype">ArrayType <a class="anchor-link" href="#int-arraytype">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Let ArrayType(ByVal NewType As ArrayTypes)
 </code></pre>
 <p>(&quot;Sets the stored array type.&quot;)</p>
 <hr />
-<h3>SortMethod</h3>
+<h3 id="int-sortmethod">SortMethod <a class="anchor-link" href="#int-sortmethod">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get SortMethod() As SortMethods
 </code></pre>
 <p>(&quot;Retrieves the sorting algorithm used by the Sort() method.&quot;)</p>
 <hr />
-<h3>SortMethod</h3>
+<h3 id="int-sortmethod">SortMethod <a class="anchor-link" href="#int-sortmethod">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Let SortMethod(ByVal Method As SortMethods)
 </code></pre>
 <p>(&quot;Specifies the sorting algorithm used by the Sort() method.&quot;)</p>
 <hr />
-<h3>InternalItems</h3>
+<h3 id="int-internalitems">InternalItems <a class="anchor-link" href="#int-internalitems">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get InternalItems() As Variant()
 </code></pre>
 <p>(&quot;Retrieves the stored items trimmed to the correct length. Does not change structure (i.e jagged to multi).&quot;)</p>
 <hr />
-<h3>InternalItems</h3>
+<h3 id="int-internalitems">InternalItems <a class="anchor-link" href="#int-internalitems">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Let InternalItems(ByRef Value() As Variant)
 </code></pre>
 <p>(&quot;Assigns the passed array to this.items&quot;)</p>
 <hr />
-<h3>Push</h3>
+<h3 id="int-push">Push <a class="anchor-link" href="#int-push">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Push(ParamArray Args() As Variant) As Variant
 </code></pre>
 <p>(&quot;Adds the provided argments to the array at the next available index.&quot;)</p>
 <hr />
-<h3>Pop</h3>
+<h3 id="int-pop">Pop <a class="anchor-link" href="#int-pop">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Pop() As Variant
 </code></pre>
 <p>(&quot;Removes the last element from the array and returns that element.&quot;)</p>
 <hr />
-<h3>Shift</h3>
+<h3 id="int-shift">Shift <a class="anchor-link" href="#int-shift">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Shift() As Variant
 </code></pre>
 <p>(&quot;Removes the first element from the array and returns that element.&quot;)</p>
 <hr />
-<h3>Unshift</h3>
+<h3 id="int-unshift">Unshift <a class="anchor-link" href="#int-unshift">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Unshift(ParamArray Args() As Variant) As Long
 </code></pre>
 <p>(&quot;Adds one or more elements to the beginning of an array. Returns the new length of the array.&quot;)</p>
 <hr />
-<h3>ToString</h3>
+<h3 id="int-tostring">ToString <a class="anchor-link" href="#int-tostring">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function ToString( _
         Optional ByVal PrettyPrint As Boolean, _
@@ -150,7 +151,7 @@
 </code></pre>
 <p>(&quot;Returns a string representing the array structure and its elements.&quot;)</p>
 <hr />
-<h3>Includes</h3>
+<h3 id="int-includes">Includes <a class="anchor-link" href="#int-includes">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Includes( _
         ByVal SearchElement As Variant, _
@@ -160,7 +161,7 @@
 </code></pre>
 <p>(&quot;Determines whether the array includes a certain value among its entries.&quot;)</p>
 <hr />
-<h3>IncludesType</h3>
+<h3 id="int-includestype">IncludesType <a class="anchor-link" href="#int-includestype">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function IncludesType( _
         ByVal SearchTypeName As String, _
@@ -170,7 +171,7 @@
 </code></pre>
 <p>(&quot;Determines whether the type of any of the elements in the array matches the typename.&quot;)</p>
 <hr />
-<h3>Every</h3>
+<h3 id="int-every">Every <a class="anchor-link" href="#int-every">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Every( _
         ByVal SearchElement As Variant, _
@@ -179,7 +180,7 @@
 </code></pre>
 <p>(&quot;Determines whether all elements in the array match a value.&quot;)</p>
 <hr />
-<h3>EveryType</h3>
+<h3 id="int-everytype">EveryType <a class="anchor-link" href="#int-everytype">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function EveryType( _
         ByVal SearchTypeName As String, _
@@ -188,25 +189,25 @@
 </code></pre>
 <p>(&quot;Determines whether the type of all elements match the provided typename.&quot;)</p>
 <hr />
-<h3>Keys</h3>
+<h3 id="int-keys">Keys <a class="anchor-link" href="#int-keys">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Keys() As Variant()
 </code></pre>
 <p>(&quot;Returns a new array that contains the keys for each index in the array.&quot;)</p>
 <hr />
-<h3>Max</h3>
+<h3 id="int-max">Max <a class="anchor-link" href="#int-max">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Max(ParamArray Args() As Variant) As Variant
 </code></pre>
 <p>(&quot;Returns the largest value in a list of values. If arguments are provided it will return the largest argument. If no arguments are provided it will return the largest element in the stored array&quot;)</p>
 <hr />
-<h3>Min</h3>
+<h3 id="int-min">Min <a class="anchor-link" href="#int-min">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Min(ParamArray Args() As Variant) As Variant
 </code></pre>
 <p>(&quot;Returns the smallest value in a list of values. If arguments are provided it will return the smallest argument. If no arguments are provided it will return the smallest element in the stored array&quot;)</p>
 <hr />
-<h3>Slice</h3>
+<h3 id="int-slice">Slice <a class="anchor-link" href="#int-slice">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Slice( _
         ByVal StartIndex As Long, _
@@ -215,7 +216,7 @@
 </code></pre>
 <p>(&quot;Returns a new array containing the portion of the stored array between the StartIndex and EndIndex&quot;)</p>
 <hr />
-<h3>FromExcelRange</h3>
+<h3 id="int-fromexcelrange">FromExcelRange <a class="anchor-link" href="#int-fromexcelrange">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function FromExcelRange( _
         ByRef FromRange As Object, _
@@ -225,7 +226,7 @@
 </code></pre>
 <p>(&quot;Stores the values contained in an Excel range in the internal array&quot;)</p>
 <hr />
-<h3>ExtractSegment</h3>
+<h3 id="int-extractsegment">ExtractSegment <a class="anchor-link" href="#int-extractsegment">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function ExtractSegment( _
         Optional ByVal RowIndex As Long = MISSING_LONG, _
@@ -234,7 +235,7 @@
 </code></pre>
 <p>(&quot;Extracts the segment of the array located at the specified indices.&quot;)</p>
 <hr />
-<h3>ToExcelRange</h3>
+<h3 id="int-toexcelrange">ToExcelRange <a class="anchor-link" href="#int-toexcelrange">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function ToExcelRange( _
         ByRef Destination As Object, _
@@ -243,13 +244,13 @@
 </code></pre>
 <p>(&quot;Writes the values stored in the array to an excel worksheet starting at the specified range.&quot;)</p>
 <hr />
-<h3>IsSorted</h3>
+<h3 id="int-issorted">IsSorted <a class="anchor-link" href="#int-issorted">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function IsSorted(Optional ByVal ColumnIndex As Long = MISSING_LONG) As Boolean
 </code></pre>
 <p>(&quot;Tests if the stored array is sorted in ascending order.&quot;)</p>
 <hr />
-<h3>IndexOf</h3>
+<h3 id="int-indexof">IndexOf <a class="anchor-link" href="#int-indexof">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function IndexOf( _
         ByVal SearchElement As Variant, _
@@ -259,7 +260,7 @@
 </code></pre>
 <p>(&quot;returns the first index at which a given element can be found in the array&quot;)</p>
 <hr />
-<h3>LastIndexOf</h3>
+<h3 id="int-lastindexof">LastIndexOf <a class="anchor-link" href="#int-lastindexof">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function LastIndexOf( _
         ByVal SearchElement As Variant, _
@@ -269,13 +270,13 @@
 </code></pre>
 <p>(&quot;returns the first index at which a given element can be found in the array&quot;)</p>
 <hr />
-<h3>Remove</h3>
+<h3 id="int-remove">Remove <a class="anchor-link" href="#int-remove">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Remove(ByVal Index As Long) As Long
 </code></pre>
 <p>(&quot;Removes the item at the specified index. Returns the new length of the array&quot;)</p>
 <hr />
-<h3>Splice</h3>
+<h3 id="int-splice">Splice <a class="anchor-link" href="#int-splice">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Splice( _
         ByVal StartIndex As Long, _
@@ -283,7 +284,7 @@
 </code></pre>
 <p>(&quot;changes the contents of the array by removing or replacing existing elements and/or adding new elements in place.&quot;)</p>
 <hr />
-<h3>Fill</h3>
+<h3 id="int-fill">Fill <a class="anchor-link" href="#int-fill">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Fill( _
         ByVal Value As Variant, _
@@ -293,7 +294,7 @@
 </code></pre>
 <p>(&quot;Recursvely fills (modifies) all the elements of an array from a start index (default zero) to an end index (default array length) with a passed value.&quot;)</p>
 <hr />
-<h3>ParseFromString</h3>
+<h3 id="int-parsefromstring">ParseFromString <a class="anchor-link" href="#int-parsefromstring">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function ParseFromString( _
         ByVal SourceString As String, _
@@ -304,49 +305,49 @@
 </code></pre>
 <p>(&quot;Parses a string representing an array and stores the outcome.&quot;)</p>
 <hr />
-<h3>Transpose</h3>
+<h3 id="int-transpose">Transpose <a class="anchor-link" href="#int-transpose">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Transpose() As BetterArray
 </code></pre>
 <p>(&quot;Swaps rows for columns &amp; vice versa.&quot;)</p>
 <hr />
-<h3>Clone</h3>
+<h3 id="int-clone">Clone <a class="anchor-link" href="#int-clone">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Clone() As BetterArray
 </code></pre>
 <p>(&quot;Returns a new BetterArray instance containing the same values as the current instance.&quot;)</p>
 <hr />
-<h3>ResetToDefault</h3>
+<h3 id="int-resettodefault">ResetToDefault <a class="anchor-link" href="#int-resettodefault">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function ResetToDefault() As BetterArray
 </code></pre>
 <p>(&quot;Clears the current array and resets capacity to default value&quot;)</p>
 <hr />
-<h3>Clear</h3>
+<h3 id="int-clear">Clear <a class="anchor-link" href="#int-clear">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Clear() As BetterArray
 </code></pre>
 <p>(&quot;Clears all entries in the current array but retains existing capacity.&quot;)</p>
 <hr />
-<h3>Concat</h3>
+<h3 id="int-concat">Concat <a class="anchor-link" href="#int-concat">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Concat(ParamArray Args() As Variant) As BetterArray
 </code></pre>
 <p>(&quot;Joins one or more arrays onto the end of the current array.&quot;)</p>
 <hr />
-<h3>CopyFromCollection</h3>
+<h3 id="int-copyfromcollection">CopyFromCollection <a class="anchor-link" href="#int-copyfromcollection">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function CopyFromCollection(ByVal SourceCollection As Collection) As BetterArray
 </code></pre>
 <p>(&quot;Writes all of the elements in a Collection objet to the internal array.&quot;)</p>
 <hr />
-<h3>Sort</h3>
+<h3 id="int-sort">Sort <a class="anchor-link" href="#int-sort">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Sort(Optional ByVal SortColumn As Long = MISSING_LONG) As BetterArray
 </code></pre>
 <p>(&quot;Sorts the stored array in ascending order.&quot;)</p>
 <hr />
-<h3>CopyWithin</h3>
+<h3 id="int-copywithin">CopyWithin <a class="anchor-link" href="#int-copywithin">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function CopyWithin( _
         ByVal Target As Long, _
@@ -356,7 +357,7 @@
 </code></pre>
 <p>(&quot;Copies a section of the stored array to another location in the same array.&quot;)</p>
 <hr />
-<h3>Filter</h3>
+<h3 id="int-filter">Filter <a class="anchor-link" href="#int-filter">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Filter( _
         ByVal Match As Variant, _
@@ -367,7 +368,7 @@
 </code></pre>
 <p>(&quot;Filters the stored array to include only values that meet the specified criteria.&quot;)</p>
 <hr />
-<h3>FilterType</h3>
+<h3 id="int-filtertype">FilterType <a class="anchor-link" href="#int-filtertype">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function FilterType( _
         ByVal SearchTypeName As String, _
@@ -378,31 +379,31 @@
 </code></pre>
 <p>(&quot;Filters the stored array to include only values of the specified type.&quot;)</p>
 <hr />
-<h3>Reverse</h3>
+<h3 id="int-reverse">Reverse <a class="anchor-link" href="#int-reverse">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Reverse(Optional ByVal Recurse As Boolean) As BetterArray
 </code></pre>
 <p>(&quot;Reverses the order of elements in the array. The first array element becomes the last, and the last array element becomes the first.&quot;)</p>
 <hr />
-<h3>Flatten</h3>
+<h3 id="int-flatten">Flatten <a class="anchor-link" href="#int-flatten">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Flatten() As BetterArray
 </code></pre>
 <p>(&quot;Flattens a Multi-Dimensional or Jagged array into One Dimension arrays.&quot;)</p>
 <hr />
-<h3>Shuffle</h3>
+<h3 id="int-shuffle">Shuffle <a class="anchor-link" href="#int-shuffle">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Shuffle(Optional ByVal Recurse As Boolean) As BetterArray
 </code></pre>
 <p>(&quot;shuffles the order of the stored array.&quot;)</p>
 <hr />
-<h3>Unique</h3>
+<h3 id="int-unique">Unique <a class="anchor-link" href="#int-unique">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Unique(Optional ByVal ColumnIndex As Long = MISSING_LONG) As BetterArray
 </code></pre>
 <p>(&quot;filters the array to contain only unique elements&quot;)</p>
 <hr />
-<h3>FromCSVFile</h3>
+<h3 id="int-fromcsvfile">FromCSVFile <a class="anchor-link" href="#int-fromcsvfile">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function FromCSVFile( _
     ByVal Path As String, _
@@ -415,7 +416,7 @@
 </code></pre>
 <p>(&quot;Accepts a path argument pointing to a comma-separated values (CSV) file and stores the delimited values contained within to the internal array.&quot;)</p>
 <hr />
-<h3>FromCSVString</h3>
+<h3 id="int-fromcsvstring">FromCSVString <a class="anchor-link" href="#int-fromcsvstring">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function FromCSVString( _
     ByVal CSVString As String, _
@@ -428,7 +429,7 @@
 </code></pre>
 <p>(&quot;Accepts a string argument representing the contents of a comma-separated values (CSV) file and stores the delimited values contained within to the internal array.&quot;)</p>
 <hr />
-<h3>ToCSVString</h3>
+<h3 id="int-tocsvstring">ToCSVString <a class="anchor-link" href="#int-tocsvstring">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function ToCSVString( _
     Optional ByRef Headers As Variant, _
@@ -442,7 +443,7 @@
 </code></pre>
 <p>(&quot;Returns a string representation of the stored array to use as output for a CSV file&quot;)</p>
 <hr />
-<h3>ToCSVFile</h3>
+<h3 id="int-tocsvfile">ToCSVFile <a class="anchor-link" href="#int-tocsvfile">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function ToCSVFile( _
     ByVal Path As String, _
@@ -457,45 +458,45 @@
 </code></pre>
 <p>(&quot;Writes stored array to CSV file&quot;)</p>
 <hr />
-<h3>DetectLineEndings</h3>
+<h3 id="int-detectlineendings">DetectLineEndings <a class="anchor-link" href="#int-detectlineendings">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function DetectLineEndings(ByVal Source As String) As String
 </code></pre>
 <p>(&quot;Tries to guess line endings used in a string&quot;)</p>
 <hr />
-<h3>ReadStringFromFile</h3>
+<h3 id="int-readstringfromfile">ReadStringFromFile <a class="anchor-link" href="#int-readstringfromfile">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ReadStringFromFile(ByVal Path As String) As String
 </code></pre>
 <p>(&quot;Reads a text file to a string from a specified path&quot;)</p>
 <hr />
-<h3>PrintStringToFile</h3>
+<h3 id="int-printstringtofile">PrintStringToFile <a class="anchor-link" href="#int-printstringtofile">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub PrintStringToFile(ByVal Path As String, ByVal Content As String)
 </code></pre>
 <p>(&quot;Prints as string to a text file at the specified path&quot;)</p>
 <hr />
-<h3>WrapQuote</h3>
+<h3 id="int-wrapquote">WrapQuote <a class="anchor-link" href="#int-wrapquote">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function WrapQuote(Optional ByVal Source As String = vbNullString) As String
 </code></pre>
 <p>(&quot;Surrounds the provided string with quote characters&quot;)</p>
 <hr />
-<h3>BuildCSVString</h3>
+<h3 id="int-buildcsvstring">BuildCSVString <a class="anchor-link" href="#int-buildcsvstring">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function BuildCSVString( _
     ByRef Records() As String, _
 </code></pre>
 <p>(&quot;Concatenates all records into a single string to be output as a csv&quot;)</p>
 <hr />
-<h3>EncodeCSVRecords</h3>
+<h3 id="int-encodecsvrecords">EncodeCSVRecords <a class="anchor-link" href="#int-encodecsvrecords">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function EncodeCSVRecords( _
     ByRef Records() As Variant, _
 </code></pre>
 <p>(&quot;Applies RFC 4180 business rules to all fields&quot;)</p>
 <hr />
-<h3>EncodeCSVField</h3>
+<h3 id="int-encodecsvfield">EncodeCSVField <a class="anchor-link" href="#int-encodecsvfield">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function EncodeCSVField( _
     ByVal Field As Variant, _
@@ -508,7 +509,7 @@
 </code></pre>
 <p>(&quot;Applies RFC 4180 business rules to the encoding of a CSV field&quot;)</p>
 <hr />
-<h3>EscapeCharInString</h3>
+<h3 id="int-escapecharinstring">EscapeCharInString <a class="anchor-link" href="#int-escapecharinstring">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function EscapeCharInString( _
     ByVal Destination As String, _
@@ -519,7 +520,7 @@
 </code></pre>
 <p>(&quot;Escapes a substring in a string using a provided Escape substring&quot;)</p>
 <hr />
-<h3>InsertIntoStringAtIndex</h3>
+<h3 id="int-insertintostringatindex">InsertIntoStringAtIndex <a class="anchor-link" href="#int-insertintostringatindex">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function InsertIntoStringAtIndex( _
     ByVal Destination As String, _
@@ -529,61 +530,61 @@
 </code></pre>
 <p>(&quot;Inserts a substring into a destination string starting at the provided index&quot;)</p>
 <hr />
-<h3>InternalConcat</h3>
+<h3 id="int-internalconcat">InternalConcat <a class="anchor-link" href="#int-internalconcat">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function InternalConcat(ParamArray Args() As Variant) As Variant()
 </code></pre>
 <p>(&quot;Utility function which delegates to ConcatDelegate&quot;)</p>
 <hr />
-<h3>ConcatDelegate</h3>
+<h3 id="int-concatdelegate">ConcatDelegate <a class="anchor-link" href="#int-concatdelegate">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ConcatDelegate(ByRef First() As Variant, ParamArray Args() As Variant) As Variant()
 </code></pre>
 <p>(&quot;Concatenates Passed Arrays. Do not use as utility function&quot;)</p>
 <hr />
-<h3>InsertArrayAtIndex</h3>
+<h3 id="int-insertarrayatindex">InsertArrayAtIndex <a class="anchor-link" href="#int-insertarrayatindex">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub InsertArrayAtIndex(ByRef Destination() As Variant, ByRef Source() As Variant, ByRef Index As Long)
 </code></pre>
 <p>(&quot;Places the Values in Source within Destination starting at Index&quot;)</p>
 <hr />
-<h3>GetTotalLengthOfNestedArrays</h3>
+<h3 id="int-gettotallengthofnestedarrays">GetTotalLengthOfNestedArrays <a class="anchor-link" href="#int-gettotallengthofnestedarrays">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function GetTotalLengthOfNestedArrays(ByRef Source() As Variant) As Long
 </code></pre>
 <p>(&quot;Returns the combined length of all nested arrays&quot;)</p>
 <hr />
-<h3>TrimColumnsMultidimensionArray</h3>
+<h3 id="int-trimcolumnsmultidimensionarray">TrimColumnsMultidimensionArray <a class="anchor-link" href="#int-trimcolumnsmultidimensionarray">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function TrimColumnsMultidimensionArray(ByRef Original() As Variant, ByVal AvailableColumns As Long) As Variant()
 </code></pre>
 <p>(&quot;Truncates the number of rows in an array to the given amount&quot;)</p>
 <hr />
-<h3>TrimRowsMultidimensionArray</h3>
+<h3 id="int-trimrowsmultidimensionarray">TrimRowsMultidimensionArray <a class="anchor-link" href="#int-trimrowsmultidimensionarray">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function TrimRowsMultidimensionArray(ByRef Original() As Variant, ByVal AvailableRows As Long) As Variant()
 </code></pre>
 <p>(&quot;Truncates the number of rows in an array to the given amount&quot;)</p>
 <hr />
-<h3>inc</h3>
+<h3 id="int-inc">inc <a class="anchor-link" href="#int-inc">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function inc(ByRef Index As Long, Optional ByVal Value As Long = 1) As Long
 </code></pre>
 <p>(&quot;Increments an index&quot;)</p>
 <hr />
-<h3>dec</h3>
+<h3 id="int-dec">dec <a class="anchor-link" href="#int-dec">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function dec(ByRef Index As Long, Optional ByVal Value As Long = 1) As Long
 </code></pre>
 <p>(&quot;Decrements an index&quot;)</p>
 <hr />
-<h3>StringFactory</h3>
+<h3 id="int-stringfactory">StringFactory <a class="anchor-link" href="#int-stringfactory">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function StringFactory(ByRef Expression As String) As TString
 </code></pre>
 <p>(&quot;Populates TString Types&quot;)</p>
 <hr />
-<h3>NextDelimBytePos</h3>
+<h3 id="int-nextdelimbytepos">NextDelimBytePos <a class="anchor-link" href="#int-nextdelimbytepos">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function NextDelimBytePos( _
     ByRef Expression As TString, _
@@ -593,7 +594,7 @@
 </code></pre>
 <p>(&quot;Returns the next byte position in the string of the specified delimiter&quot;)</p>
 <hr />
-<h3>GetCSVRows</h3>
+<h3 id="int-getcsvrows">GetCSVRows <a class="anchor-link" href="#int-getcsvrows">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function GetCSVRows( _
     ByRef Expr As TString, _
@@ -603,13 +604,13 @@
 </code></pre>
 <p>(&quot;Splits the provided string into rows based on the provided row delimiter&quot;)</p>
 <hr />
-<h3>CountCSVColumns</h3>
+<h3 id="int-countcsvcolumns">CountCSVColumns <a class="anchor-link" href="#int-countcsvcolumns">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function CountCSVColumns(ByRef FirstRow As String, ByRef LiteralDelim As TString, ByVal ColumnDelimiter As String) As Long
 </code></pre>
 <p>(&quot;Counts the number of delimited columns in a provided string&quot;)</p>
 <hr />
-<h3>ParseCSV</h3>
+<h3 id="int-parsecsv">ParseCSV <a class="anchor-link" href="#int-parsecsv">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ParseCSV( _
     ByRef Expression As String, _
@@ -624,14 +625,14 @@
 </code></pre>
 <p>(&quot;Parses CSV string into a 2d or jagged array&quot;)</p>
 <hr />
-<h3>RecursiveFill</h3>
+<h3 id="int-recursivefill">RecursiveFill <a class="anchor-link" href="#int-recursivefill">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function RecursiveFill( _
         ByRef SourceArray() As Variant, _
 </code></pre>
 <p>(&quot;Recursvely fills the array (and nested arrays) with the passed value.&quot;)</p>
 <hr />
-<h3>RecursiveEvery</h3>
+<h3 id="int-recursiveevery">RecursiveEvery <a class="anchor-link" href="#int-recursiveevery">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function RecursiveEvery( _
         ByVal SearchElement As Variant, _
@@ -639,46 +640,46 @@
 </code></pre>
 <p>(&quot;Recursively checks if the passed array only includes the search element.&quot;)</p>
 <hr />
-<h3>RecursiveShuffle</h3>
+<h3 id="int-recursiveshuffle">RecursiveShuffle <a class="anchor-link" href="#int-recursiveshuffle">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function RecursiveShuffle( _
         ByRef SourceArray() As Variant, _
 </code></pre>
 <p>(&quot;shuffles the order of the passed array.&quot;)</p>
 <hr />
-<h3>RecursiveReverse</h3>
+<h3 id="int-recursivereverse">RecursiveReverse <a class="anchor-link" href="#int-recursivereverse">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function RecursiveReverse( _
         ByRef SourceArray() As Variant, _
 </code></pre>
 <p>(&quot;reverses the order of the passed array.&quot;)</p>
 <hr />
-<h3>GetArrayLength</h3>
+<h3 id="int-getarraylength">GetArrayLength <a class="anchor-link" href="#int-getarraylength">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function GetArrayLength(ByRef SourceArray() As Variant) As Long
 </code></pre>
 <p>(&quot;returns the length of the passed array.&quot;)</p>
 <hr />
-<h3>RecursiveFlatten</h3>
+<h3 id="int-recursiveflatten">RecursiveFlatten <a class="anchor-link" href="#int-recursiveflatten">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RecursiveFlatten( _
         ByRef SourceArray() As Variant, _
 </code></pre>
 <p>(&quot;converts all the values in a jagged array to a 1d array.&quot;)</p>
 <hr />
-<h3>RecursiveMax</h3>
+<h3 id="int-recursivemax">RecursiveMax <a class="anchor-link" href="#int-recursivemax">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function RecursiveMax(ByRef SourceArray() As Variant) As Variant
 </code></pre>
 <p>(&quot;Recursively finds the largest value in an array.&quot;)</p>
 <hr />
-<h3>RecursiveMin</h3>
+<h3 id="int-recursivemin">RecursiveMin <a class="anchor-link" href="#int-recursivemin">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function RecursiveMin(ByRef SourceArray() As Variant) As Variant
 </code></pre>
 <p>(&quot;Recursively finds the smallest value in an array.&quot;)</p>
 <hr />
-<h3>RecursiveIncludes</h3>
+<h3 id="int-recursiveincludes">RecursiveIncludes <a class="anchor-link" href="#int-recursiveincludes">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function RecursiveIncludes( _
         ByVal SearchElement As Variant, _
@@ -686,28 +687,28 @@
 </code></pre>
 <p>(&quot;Recursively checks if the passed array includes the search element.&quot;)</p>
 <hr />
-<h3>FilterOneDimension</h3>
+<h3 id="int-filteronedimension">FilterOneDimension <a class="anchor-link" href="#int-filteronedimension">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function FilterOneDimension( _
         ByRef SourceArray() As Variant, _
 </code></pre>
 <p>(&quot;Filters a one dimension array.&quot;)</p>
 <hr />
-<h3>FilterByColumn</h3>
+<h3 id="int-filterbycolumn">FilterByColumn <a class="anchor-link" href="#int-filterbycolumn">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function FilterByColumn( _
         ByRef SourceArray() As Variant, _
 </code></pre>
 <p>(&quot;Filters a jaggged array by column.&quot;)</p>
 <hr />
-<h3>RecursiveFilter</h3>
+<h3 id="int-recursivefilter">RecursiveFilter <a class="anchor-link" href="#int-recursivefilter">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function RecursiveFilter( _
         ByRef SourceArray() As Variant, _
 </code></pre>
 <p>(&quot;Recursively filters a passed array.&quot;)</p>
 <hr />
-<h3>ElementsAreEqual</h3>
+<h3 id="int-elementsareequal">ElementsAreEqual <a class="anchor-link" href="#int-elementsareequal">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ElementsAreEqual( _
         ByVal Expected As Variant, _
@@ -716,7 +717,7 @@
 </code></pre>
 <p>(&quot;Compares two values for equality. Doesn't support multidimensional arrays.&quot;)</p>
 <hr />
-<h3>ParseDelimitedArrayString</h3>
+<h3 id="int-parsedelimitedarraystring">ParseDelimitedArrayString <a class="anchor-link" href="#int-parsedelimitedarraystring">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ParseDelimitedArrayString( _
         ByVal SourceString As String, _
@@ -728,7 +729,7 @@
 </code></pre>
 <p>(&quot;Recursively parses nested arrays from a string.&quot;)</p>
 <hr />
-<h3>ParseArraySegmentFromString</h3>
+<h3 id="int-parsearraysegmentfromstring">ParseArraySegmentFromString <a class="anchor-link" href="#int-parsearraysegmentfromstring">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ParseArraySegmentFromString( _
         ByVal SourceString As String, _
@@ -739,31 +740,31 @@
 </code></pre>
 <p>(&quot;Returns an array from a delimited string&quot;)</p>
 <hr />
-<h3>UnquoteString</h3>
+<h3 id="int-unquotestring">UnquoteString <a class="anchor-link" href="#int-unquotestring">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function UnquoteString(ByRef Element As String) As String
 </code></pre>
 <p>(&quot;Trims enclosing quote chars from string if present&quot;)</p>
 <hr />
-<h3>DuckTypeElement</h3>
+<h3 id="int-ducktypeelement">DuckTypeElement <a class="anchor-link" href="#int-ducktypeelement">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function DuckTypeElement(ByRef Element As String) As Variant
 </code></pre>
 <p>(&quot;Takes a string. Returns a Variant with the element converted to an appropriate type&quot;)</p>
 <hr />
-<h3>DuckTypeStringArray</h3>
+<h3 id="int-ducktypestringarray">DuckTypeStringArray <a class="anchor-link" href="#int-ducktypestringarray">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function DuckTypeStringArray(ByRef SourceArray() As String) As Variant()
 </code></pre>
 <p>(&quot;Takes a string array. Returns a Variant array with the elements converted to an appropriate type&quot;)</p>
 <hr />
-<h3>PopulateErrorDefinitions</h3>
+<h3 id="int-populateerrordefinitions">PopulateErrorDefinitions <a class="anchor-link" href="#int-populateerrordefinitions">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub PopulateErrorDefinitions()
 </code></pre>
 <p>(&quot;Populates the ErrorDefinitions array.&quot;)</p>
 <hr />
-<h3>ErrorDefinitionFactory</h3>
+<h3 id="int-errordefinitionfactory">ErrorDefinitionFactory <a class="anchor-link" href="#int-errordefinitionfactory">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ErrorDefinitionFactory( _
         ByVal Number As Long, _
@@ -773,7 +774,7 @@
 </code></pre>
 <p>(&quot;Returns an ErrorDefinition Type populated with the provided arguments.&quot;)</p>
 <hr />
-<h3>RaiseError</h3>
+<h3 id="int-raiseerror">RaiseError <a class="anchor-link" href="#int-raiseerror">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RaiseError( _
         ByVal ErrorCode As ErrorCodes, _
@@ -783,111 +784,111 @@
 </code></pre>
 <p>(&quot;Raises an application error based on the passed ErrorCode and the definitions defined in ErrorDefinitions.&quot;)</p>
 <hr />
-<h3>EnsureScalar1DArray</h3>
+<h3 id="int-ensurescalar1darray">EnsureScalar1DArray <a class="anchor-link" href="#int-ensurescalar1darray">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function EnsureScalar1DArray(ByRef SourceArray() As Variant) As Variant()
 </code></pre>
 <p>(&quot;Ensures each element of passed array can be represented as a scalar value.&quot;)</p>
 <hr />
-<h3>ConvertOneDimensionArrayToJagged</h3>
+<h3 id="int-convertonedimensionarraytojagged">ConvertOneDimensionArrayToJagged <a class="anchor-link" href="#int-convertonedimensionarraytojagged">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ConvertOneDimensionArrayToJagged(ByRef SourceArray() As Variant) As Variant()
 </code></pre>
 <p>(&quot;Converts a 1d array to a 1 column wide jagged array.&quot;)</p>
 <hr />
-<h3>Transpose1DArray</h3>
+<h3 id="int-transpose1darray">Transpose1DArray <a class="anchor-link" href="#int-transpose1darray">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function Transpose1DArray(ByRef SourceArray() As Variant) As Variant()
 </code></pre>
 <p>(&quot;Converts a 1d array to a 1 column wide 2d array.&quot;)</p>
 <hr />
-<h3>Transpose2DArray</h3>
+<h3 id="int-transpose2darray">Transpose2DArray <a class="anchor-link" href="#int-transpose2darray">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function Transpose2DArray(ByRef SourceArray() As Variant) As Variant()
 </code></pre>
 <p>(&quot;Transposes the values in a 2d array. Rows become columns, columns become rows.&quot;)</p>
 <hr />
-<h3>TransposeArrayOfArrays</h3>
+<h3 id="int-transposearrayofarrays">TransposeArrayOfArrays <a class="anchor-link" href="#int-transposearrayofarrays">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function TransposeArrayOfArrays(ByRef SourceArray() As Variant) As Variant()
 </code></pre>
 <p>(&quot;Transposes the values in a jagged array with a depth of 2. Rows become columns, columns become rows.&quot;)</p>
 <hr />
-<h3>GetEmptyArray</h3>
+<h3 id="int-getemptyarray">GetEmptyArray <a class="anchor-link" href="#int-getemptyarray">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function GetEmptyArray() As Variant()
 </code></pre>
 <p>(&quot;Returns an empty 1d array with 1 slot.&quot;)</p>
 <hr />
-<h3>ApplySortMethod</h3>
+<h3 id="int-applysortmethod">ApplySortMethod <a class="anchor-link" href="#int-applysortmethod">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ApplySortMethod( _
         ByRef SourceArray() As Variant, _
 </code></pre>
 <p>(&quot;Used to apply the correct specified sort algorithm.&quot;)</p>
 <hr />
-<h3>GetComparisonItem</h3>
+<h3 id="int-getcomparisonitem">GetComparisonItem <a class="anchor-link" href="#int-getcomparisonitem">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function GetComparisonItem( _
     ByRef Source() As Variant, _
 </code></pre>
 <p>(&quot;Returns an field of a one dimension or two dimension jagged array&quot;)</p>
 <hr />
-<h3>InsertionSort</h3>
+<h3 id="int-insertionsort">InsertionSort <a class="anchor-link" href="#int-insertionsort">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub InsertionSort( _
     ByRef Source() As Variant, _
 </code></pre>
 <p>(&quot;Sorts the passed array in place using InsertionSort.&quot;)</p>
 <hr />
-<h3>MergeSort</h3>
+<h3 id="int-mergesort">MergeSort <a class="anchor-link" href="#int-mergesort">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub MergeSort( _
     ByRef Source() As Variant, _
 </code></pre>
 <p>(&quot;Sorts the passed array in place using MergeSort.&quot;)</p>
 <hr />
-<h3>TimSort</h3>
+<h3 id="int-timsort">TimSort <a class="anchor-link" href="#int-timsort">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub TimSort( _
     ByRef Source() As Variant, _
 </code></pre>
 <p>(&quot;Iterative Timsort&quot;)</p>
 <hr />
-<h3>QuickSortRecursive</h3>
+<h3 id="int-quicksortrecursive">QuickSortRecursive <a class="anchor-link" href="#int-quicksortrecursive">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub QuickSortRecursive( _
         ByRef SourceArray() As Variant, _
 </code></pre>
 <p>(&quot;Sorts in place a passed array using a Recursive implementation of the QuickSort algorithm.&quot;)</p>
 <hr />
-<h3>QuickSortIterative</h3>
+<h3 id="int-quicksortiterative">QuickSortIterative <a class="anchor-link" href="#int-quicksortiterative">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub QuickSortIterative( _
         ByRef SourceArray() As Variant, _
 </code></pre>
 <p>(&quot;Sorts in place a passed array using an Iterative implementation of the QuickSort algorithm&quot;)</p>
 <hr />
-<h3>QsPartition</h3>
+<h3 id="int-qspartition">QsPartition <a class="anchor-link" href="#int-qspartition">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function QsPartition( _
         ByRef SourceArray() As Variant, _
 </code></pre>
 <p>(&quot;Child function of quickSort. Returns the next partition index.&quot;)</p>
 <hr />
-<h3>Swap</h3>
+<h3 id="int-swap">Swap <a class="anchor-link" href="#int-swap">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub Swap(ByRef SourceArray() As Variant, ByVal i As Long, ByVal j As Long)
 </code></pre>
 <p>(&quot;Swaps the location of two elements in an array.&quot;)</p>
 <hr />
-<h3>LetOrSetElement</h3>
+<h3 id="int-letorsetelement">LetOrSetElement <a class="anchor-link" href="#int-letorsetelement">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub LetOrSetElement(ByRef Destination As Variant, ByRef Source As Variant)
 </code></pre>
 <p>(&quot;Sets or lets the value of a variable by reference depending on the type of the element to be assigned&quot;)</p>
 <hr />
-<h3>StringBuilder</h3>
+<h3 id="int-stringbuilder">StringBuilder <a class="anchor-link" href="#int-stringbuilder">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function StringBuilder( _
     Optional ByVal Fragment As String = vbNullString, _
@@ -897,14 +898,14 @@
 </code></pre>
 <p>(&quot;Efficiently concatenates string fragments to a byte array buffer&quot;)</p>
 <hr />
-<h3>RecursiveToString</h3>
+<h3 id="int-recursivetostring">RecursiveToString <a class="anchor-link" href="#int-recursivetostring">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RecursiveToString( _
         ByRef SourceArray() As Variant, _
 </code></pre>
 <p>(&quot;Recursively parses an array to a string representation.&quot;)</p>
 <hr />
-<h3>GetScalarRepresentation</h3>
+<h3 id="int-getscalarrepresentation">GetScalarRepresentation <a class="anchor-link" href="#int-getscalarrepresentation">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function GetScalarRepresentation( _
         ByRef Element As Variant, _
@@ -913,56 +914,56 @@
 </code></pre>
 <p>(&quot;Returns scalar values as is or appropriate representation if not scalar.&quot;)</p>
 <hr />
-<h3>GetArrayType</h3>
+<h3 id="int-getarraytype">GetArrayType <a class="anchor-link" href="#int-getarraytype">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function GetArrayType(ByVal SourceArray As Variant) As ArrayTypes
 </code></pre>
 <p>(&quot;Returns the type of a passed array.&quot;)</p>
 <hr />
-<h3>IsArrayEmpty</h3>
+<h3 id="int-isarrayempty">IsArrayEmpty <a class="anchor-link" href="#int-isarrayempty">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function IsArrayEmpty(ByVal SourceArray As Variant) As Boolean
 </code></pre>
 <p>(&quot;Tests if an array has a single empty slot.&quot;)</p>
 <hr />
-<h3>IsArrayAllocated</h3>
+<h3 id="int-isarrayallocated">IsArrayAllocated <a class="anchor-link" href="#int-isarrayallocated">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function IsArrayAllocated(ByVal SourceArray As Variant) As Boolean
 </code></pre>
 <p>(&quot;Tests if an array has been allocated.&quot;)</p>
 <hr />
-<h3>IsJaggedArray</h3>
+<h3 id="int-isjaggedarray">IsJaggedArray <a class="anchor-link" href="#int-isjaggedarray">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function IsJaggedArray(ByVal SourceArray As Variant) As Boolean
 </code></pre>
 <p>(&quot;Tests if an array is jagged.&quot;)</p>
 <hr />
-<h3>IsMultidimensionalArray</h3>
+<h3 id="int-ismultidimensionalarray">IsMultidimensionalArray <a class="anchor-link" href="#int-ismultidimensionalarray">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function IsMultidimensionalArray(ByVal SourceArray As Variant) As Boolean
 </code></pre>
 <p>(&quot;Tests if an array is multidimensioned.&quot;)</p>
 <hr />
-<h3>Rebase</h3>
+<h3 id="int-rebase">Rebase <a class="anchor-link" href="#int-rebase">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function Rebase(Optional ByRef SourceArray As Variant, Optional ByVal CurrentArrayType As ArrayTypes) As Variant()
 </code></pre>
 <p>(&quot;re-indexes array to conform to new bounds. Does not change length.&quot;)</p>
 <hr />
-<h3>RecursiveRebase</h3>
+<h3 id="int-recursiverebase">RecursiveRebase <a class="anchor-link" href="#int-recursiverebase">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function RecursiveRebase( _
         ByRef SourceArray() As Variant, _
 </code></pre>
 <p>(&quot;re-indexes nested arrays to conform to new bounds. Child function of Rebase)</p>
 <hr />
-<h3>EnsureCapacity</h3>
+<h3 id="int-ensurecapacity">EnsureCapacity <a class="anchor-link" href="#int-ensurecapacity">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureCapacity(ByVal MinimumCapacity As Long)
 </code></pre>
 <p>(&quot;Increases capacity of internal array if required.&quot;)</p>
 <hr />
-<h3>ConvertArrayForStorage</h3>
+<h3 id="int-convertarrayforstorage">ConvertArrayForStorage <a class="anchor-link" href="#int-convertarrayforstorage">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ConvertArrayForStorage( _
     ByRef Values As Variant, _
@@ -973,7 +974,7 @@
 </code></pre>
 <p>(&quot;Converts a typed array to a variant() array&quot;)</p>
 <hr />
-<h3>TypedJaggedToVariantJagged</h3>
+<h3 id="int-typedjaggedtovariantjagged">TypedJaggedToVariantJagged <a class="anchor-link" href="#int-typedjaggedtovariantjagged">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function TypedJaggedToVariantJagged( _
     ByRef SourceArray As Variant, _
@@ -983,7 +984,7 @@
 </code></pre>
 <p>(&quot;Converts a typed jagged array to a variant() jagged array&quot;)</p>
 <hr />
-<h3>TypedMultiToVariantMulti</h3>
+<h3 id="int-typedmultitovariantmulti">TypedMultiToVariantMulti <a class="anchor-link" href="#int-typedmultitovariantmulti">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function TypedMultiToVariantMulti( _
     ByRef SourceArray As Variant _
@@ -991,7 +992,7 @@
 </code></pre>
 <p>(&quot;Converts a typed md array to a variant() md array&quot;)</p>
 <hr />
-<h3>MapMultidimensionArray</h3>
+<h3 id="int-mapmultidimensionarray">MapMultidimensionArray <a class="anchor-link" href="#int-mapmultidimensionarray">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function MapMultidimensionArray( _
         ByRef SourceArray As Variant, _
@@ -1000,7 +1001,7 @@
 </code></pre>
 <p>(&quot;Returns an array representing the structure of a Multidimension array&quot;)</p>
 <hr />
-<h3>RecursiveTypedMultiToVariantMulti</h3>
+<h3 id="int-recursivetypedmultitovariantmulti">RecursiveTypedMultiToVariantMulti <a class="anchor-link" href="#int-recursivetypedmultitovariantmulti">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function RecursiveTypedMultiToVariantMulti( _
         ByRef SourceArray As Variant, _
@@ -1013,14 +1014,14 @@
 </code></pre>
 <p>(&quot;Recursively Converts typred multidimension arrays to variant md arrays arrays. For md arrays with more than 2d.&quot;)</p>
 <hr />
-<h3>JaggedToMulti</h3>
+<h3 id="int-jaggedtomulti">JaggedToMulti <a class="anchor-link" href="#int-jaggedtomulti">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function JaggedToMulti( _
         ByRef SourceArray() As Variant, _
 </code></pre>
 <p>(&quot;Converts jagged arrays to multidimension arrays&quot;)</p>
 <hr />
-<h3>RecursiveMultiToJagged</h3>
+<h3 id="int-recursivemultitojagged">RecursiveMultiToJagged <a class="anchor-link" href="#int-recursivemultitojagged">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function RecursiveMultiToJagged( _
         ByRef SourceArray As Variant, _
@@ -1031,46 +1032,46 @@
 </code></pre>
 <p>(&quot;Recursively Converts multidimension arrays to jagged arrays. For md arrays with more than 2d.&quot;)</p>
 <hr />
-<h3>RecursiveJaggedToMulti</h3>
+<h3 id="int-recursivejaggedtomulti">RecursiveJaggedToMulti <a class="anchor-link" href="#int-recursivejaggedtomulti">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function RecursiveJaggedToMulti( _
         ByRef SourceArray() As Variant, _
 </code></pre>
 <p>(&quot;Recursively Converts jagged arrays to multidimension arrays. For jagged arrays with more than 2d.&quot;)</p>
 <hr />
-<h3>GetJaggedArrayDepth</h3>
+<h3 id="int-getjaggedarraydepth">GetJaggedArrayDepth <a class="anchor-link" href="#int-getjaggedarraydepth">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function GetJaggedArrayDepth(ByRef SourceArray() As Variant) As Long
 </code></pre>
 <p>(&quot;Returns a number representing how many levels of nested arrays are contained in array.&quot;)</p>
 <hr />
-<h3>GetMaxBoundsAtDimension</h3>
+<h3 id="int-getmaxboundsatdimension">GetMaxBoundsAtDimension <a class="anchor-link" href="#int-getmaxboundsatdimension">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function GetMaxBoundsAtDimension( _
         ByRef SourceArray() As Variant, _
 </code></pre>
 <p>(&quot;Gets the maximium bound values for a specified dimension of a jagged array.&quot;)</p>
 <hr />
-<h3>MapJaggedArray</h3>
+<h3 id="int-mapjaggedarray">MapJaggedArray <a class="anchor-link" href="#int-mapjaggedarray">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function MapJaggedArray( _
         ByRef SourceArray() As Variant, _
 </code></pre>
 <p>(&quot;Returns an array representing the structure of a jagged array&quot;)</p>
 <hr />
-<h3>GetArrayBounds</h3>
+<h3 id="int-getarraybounds">GetArrayBounds <a class="anchor-link" href="#int-getarraybounds">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function GetArrayBounds(ByVal SourceArray As Variant) As Long()
 </code></pre>
 <p>(&quot;Returns a 0-based array with two slots. First slot is the lowerbound of the passed array. second slot (index 0) is the upper bound.&quot;)</p>
 <hr />
-<h3>GetMultidimensionalArrayDepth</h3>
+<h3 id="int-getmultidimensionalarraydepth">GetMultidimensionalArrayDepth <a class="anchor-link" href="#int-getmultidimensionalarraydepth">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function GetMultidimensionalArrayDepth(ByVal SourceArray As Variant) As Long
 </code></pre>
 <p>(&quot;Returns a number representing the total number of dimensions of a multidimension array.&quot;)</p>
 <hr />
-<h3>GetElementByBreadcrumb</h3>
+<h3 id="int-getelementbybreadcrumb">GetElementByBreadcrumb <a class="anchor-link" href="#int-getelementbybreadcrumb">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function GetElementByBreadcrumb( _
         ByVal SourceArray As Variant, _
@@ -1078,22 +1079,24 @@
 </code></pre>
 <p>(&quot;Returns the element stored in an array based on a crumb argument. A crumb is an array representing the location of the multidimension array slot.&quot;)</p>
 <hr />
-<h3>LetElementByBreadcrumb</h3>
+<h3 id="int-letelementbybreadcrumb">LetElementByBreadcrumb <a class="anchor-link" href="#int-letelementbybreadcrumb">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function LetElementByBreadcrumb( _
         ByRef SourceArray() As Variant, _
 </code></pre>
 <p>(&quot;Assigns an element to a location in a multidimensonal array based on a crumb argument. A crumb is an array representing the location of the multidimension array slot.&quot;)</p>
 <hr />
-<h3>CreateMultidimensionalArray</h3>
+<h3 id="int-createmultidimensionalarray">CreateMultidimensionalArray <a class="anchor-link" href="#int-createmultidimensionalarray">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function CreateMultidimensionalArray(ByRef Crumb() As Variant) As Variant()
 </code></pre>
 <p>(&quot;Returns an empty multidimensional array with the dimensions specified in the crumb argument. A crumb is an array representing the structure of the multidimension array.&quot;)</p>
 <hr />
 </details>
-
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

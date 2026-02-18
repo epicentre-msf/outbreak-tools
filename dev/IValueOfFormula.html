@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>IValueOfFormula - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -15,8 +16,10 @@ validation, converted formula output, failure diagnostics, and lookup
 metadata for VALUE_OF custom expressions. Implementations validate
 VALUE_OF expressions from the dictionary and resolve sheet names and
 column indices for downstream consumers.</p>
-<h2>Conversion</h2>
-<h3>ConvertedFormula</h3>
+<details open class="doc-section" id="conversion">
+<summary>Conversion</summary>
+<div class="section-body">
+<h3 id="convertedformula">ConvertedFormula <a class="anchor-link" href="#convertedformula">#</a></h3>
 <p><strong>Retrieve the converted VALUE_OF expression ready for workbook usage</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get ConvertedFormula() As String: End Property
@@ -26,7 +29,7 @@ Returns the string representation with sheet name and column indices
 resolved. Returns vbNullString when the formula is invalid.</p>
 <p><strong>Returns:</strong> String. Converted VALUE_OF expression.</p>
 <hr />
-<h3>Valid</h3>
+<h3 id="valid">Valid <a class="anchor-link" href="#valid">#</a></h3>
 <p><strong>Report whether the VALUE_OF formula parsed successfully</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Valid() As Boolean: End Property
@@ -35,7 +38,7 @@ resolved. Returns vbNullString when the formula is invalid.</p>
 returning True. Returns False when any validation step fails.</p>
 <p><strong>Returns:</strong> Boolean. True when all checks passed.</p>
 <hr />
-<h3>FailureReason</h3>
+<h3 id="failurereason">FailureReason <a class="anchor-link" href="#failurereason">#</a></h3>
 <p><strong>Provide the human-readable reason describing the failure</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get FailureReason() As String: End Property
@@ -44,8 +47,12 @@ returning True. Returns False when any validation step fails.</p>
 failed. Returns vbNullString when the formula is valid.</p>
 <p><strong>Returns:</strong> String. Explanation of the failure.</p>
 <hr />
-<h2>LookupMetadata</h2>
-<h3>LookupSheetName</h3>
+</div>
+</details>
+<details open class="doc-section" id="lookupmetadata">
+<summary>LookupMetadata</summary>
+<div class="section-body">
+<h3 id="lookupsheetname">LookupSheetName <a class="anchor-link" href="#lookupsheetname">#</a></h3>
 <p><strong>Expose the resolved worksheet hosting the lookup table</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get LookupSheetName() As String: End Property
@@ -55,7 +62,7 @@ Returns the name of the worksheet containing the variable referenced
 by the VALUE_OF expression. Returns vbNullString when unavailable.</p>
 <p><strong>Returns:</strong> String. Sheet name.</p>
 <hr />
-<h3>LookupColumnIndex</h3>
+<h3 id="lookupcolumnindex">LookupColumnIndex <a class="anchor-link" href="#lookupcolumnindex">#</a></h3>
 <p><strong>Return the column index used for the lookup key</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get LookupColumnIndex() As Long: End Property
@@ -64,7 +71,7 @@ by the VALUE_OF expression. Returns vbNullString when unavailable.</p>
 key values. Returns zero when not resolved.</p>
 <p><strong>Returns:</strong> Long. Column index.</p>
 <hr />
-<h3>ValueColumnIndex</h3>
+<h3 id="valuecolumnindex">ValueColumnIndex <a class="anchor-link" href="#valuecolumnindex">#</a></h3>
 <p><strong>Return the column index providing the matched value</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get ValueColumnIndex() As Long: End Property
@@ -73,8 +80,12 @@ key values. Returns zero when not resolved.</p>
 result values. Returns zero when not resolved.</p>
 <p><strong>Returns:</strong> Long. Column index.</p>
 <hr />
-
+</div>
+</details>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

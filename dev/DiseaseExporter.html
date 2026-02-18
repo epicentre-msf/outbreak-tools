@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>DiseaseExporter - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -12,8 +13,8 @@
 <h1>DiseaseExporter</h1>
 <details>
 <summary>Internal members (not exported)</summary>
-<h2>Factory</h2>
-<h3>Create</h3>
+<h2 id="int-factory">Factory</h2>
+<h3 id="int-create">Create <a class="anchor-link" href="#int-create">#</a></h3>
 <p><strong>Instantiate a DiseaseExporter with its dependencies configured.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal workbookManager As IDiseaseExportWorkbook) As IDiseaseExporter
@@ -25,22 +26,22 @@
 </ul>
 <p><strong>Returns:</strong> IDiseaseExporter ready to generate exports.</p>
 <hr />
-<h3>Self</h3>
+<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
 <p><strong>Return the current instance as its interface.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Self() As IDiseaseExporter
 </code></pre>
 <hr />
-<h2>Configuration</h2>
-<h3>Initialise</h3>
+<h2 id="int-configuration">Configuration</h2>
+<h3 id="int-initialise">Initialise <a class="anchor-link" href="#int-initialise">#</a></h3>
 <p><strong>Attach the workbook manager and application guard.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Initialise(ByVal workbookManager As IDiseaseExportWorkbook, _
                       ByVal appGuard As IDiseaseApplicationState)
 </code></pre>
 <hr />
-<h2>Disease Export</h2>
-<h3>BuildDiseaseWorkbook</h3>
+<h2 id="int-disease-export">Disease Export</h2>
+<h3 id="int-builddiseaseworkbook">BuildDiseaseWorkbook <a class="anchor-link" href="#int-builddiseaseworkbook">#</a></h3>
 <p><strong>Populate a workbook with dictionary, choices, translations, and metadata.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function BuildDiseaseWorkbook(ByVal diseaseSheet As Worksheet, _
@@ -51,7 +52,7 @@
                                      Optional ByVal diseaseCode As String = vbNullString) As Workbook
 </code></pre>
 <hr />
-<h3>ExportDisease</h3>
+<h3 id="int-exportdisease">ExportDisease <a class="anchor-link" href="#int-exportdisease">#</a></h3>
 <p><strong>Export the disease workbook to disk and return the saved file path.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function ExportDisease(ByVal exportFolder As String, _
@@ -63,15 +64,15 @@
                               Optional ByVal diseaseCode As String = vbNullString) As String
 </code></pre>
 <hr />
-<h2>Migration Export</h2>
-<h3>BuildMigrationWorkbook</h3>
+<h2 id="int-migration-export">Migration Export</h2>
+<h3 id="int-buildmigrationworkbook">BuildMigrationWorkbook <a class="anchor-link" href="#int-buildmigrationworkbook">#</a></h3>
 <p><strong>Build a workbook aggregating all diseases for migration.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function BuildMigrationWorkbook(ByVal sourceWorkbook As Workbook, _
                                        ByVal diseaseNames As BetterArray) As Workbook
 </code></pre>
 <hr />
-<h3>ExportForMigration</h3>
+<h3 id="int-exportformigration">ExportForMigration <a class="anchor-link" href="#int-exportformigration">#</a></h3>
 <p><strong>Persist the migration workbook to disk and return the saved file path.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function ExportForMigration(ByVal exportFolder As String, _
@@ -79,26 +80,26 @@
                                    ByVal diseaseNames As BetterArray) As String
 </code></pre>
 <hr />
-<h2>Internal Helpers</h2>
-<h3>EnsureFreshWorkbook</h3>
+<h2 id="int-internal-helpers">Internal Helpers</h2>
+<h3 id="int-ensurefreshworkbook">EnsureFreshWorkbook <a class="anchor-link" href="#int-ensurefreshworkbook">#</a></h3>
 <p><strong>Ensure the workbook manager has a pristine workbook.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureFreshWorkbook()
 </code></pre>
 <hr />
-<h3>BeginGuard</h3>
+<h3 id="int-beginguard">BeginGuard <a class="anchor-link" href="#int-beginguard">#</a></h3>
 <p><strong>Begin the guarded Application state only once per call.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub BeginGuard(ByRef guardStarted As Boolean)
 </code></pre>
 <hr />
-<h3>RestoreGuard</h3>
+<h3 id="int-restoreguard">RestoreGuard <a class="anchor-link" href="#int-restoreguard">#</a></h3>
 <p><strong>Restore guarded Application state when required.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RestoreGuard(ByVal guardStarted As Boolean)
 </code></pre>
 <hr />
-<h3>ValidateDiseaseInputs</h3>
+<h3 id="int-validatediseaseinputs">ValidateDiseaseInputs <a class="anchor-link" href="#int-validatediseaseinputs">#</a></h3>
 <p><strong>Validate disease export inputs.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ValidateDiseaseInputs(ByVal diseaseSheet As Worksheet, _
@@ -106,20 +107,20 @@
                                   ByVal languageTag As String)
 </code></pre>
 <hr />
-<h3>ValidateMigrationInputs</h3>
+<h3 id="int-validatemigrationinputs">ValidateMigrationInputs <a class="anchor-link" href="#int-validatemigrationinputs">#</a></h3>
 <p><strong>Validate migration export inputs.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ValidateMigrationInputs(ByVal sourceWorkbook As Workbook, _
                                     ByVal diseaseNames As BetterArray)
 </code></pre>
 <hr />
-<h3>ValidateFolder</h3>
+<h3 id="int-validatefolder">ValidateFolder <a class="anchor-link" href="#int-validatefolder">#</a></h3>
 <p><strong>Validate that a folder path was supplied.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ValidateFolder(ByVal exportFolder As String)
 </code></pre>
 <hr />
-<h3>PrepareSheets</h3>
+<h3 id="int-preparesheets">PrepareSheets <a class="anchor-link" href="#int-preparesheets">#</a></h3>
 <p><strong>Prepare disease export worksheets.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub PrepareSheets(ByVal workbook As Workbook, _
@@ -129,31 +130,31 @@
                           ByRef translationsSheet As Worksheet)
 </code></pre>
 <hr />
-<h3>PrepareMigrationSheets</h3>
+<h3 id="int-preparemigrationsheets">PrepareMigrationSheets <a class="anchor-link" href="#int-preparemigrationsheets">#</a></h3>
 <p><strong>Prepare migration workbook worksheets.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub PrepareMigrationSheets(ByVal workbook As Workbook)
 </code></pre>
 <hr />
-<h3>ResolveDiseaseTable</h3>
+<h3 id="int-resolvediseasetable">ResolveDiseaseTable <a class="anchor-link" href="#int-resolvediseasetable">#</a></h3>
 <p><strong>Retrieve the disease table from the worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ResolveDiseaseTable(ByVal diseaseSheet As Worksheet) As ListObject
 </code></pre>
 <hr />
-<h3>ResolveListObject</h3>
+<h3 id="int-resolvelistobject">ResolveListObject <a class="anchor-link" href="#int-resolvelistobject">#</a></h3>
 <p><strong>Retrieve a ListObject from a named worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ResolveListObject(ByVal workbook As Workbook, ByVal sheetName As String) As ListObject
 </code></pre>
 <hr />
-<h3>ResolveSheets</h3>
+<h3 id="int-resolvesheets">ResolveSheets <a class="anchor-link" href="#int-resolvesheets">#</a></h3>
 <p><strong>Enumerate worksheets from provided disease names.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ResolveSheets(ByVal workbook As Workbook, ByVal diseaseNames As BetterArray) As Collection
 </code></pre>
 <hr />
-<h3>PopulateMetadata</h3>
+<h3 id="int-populatemetadata">PopulateMetadata <a class="anchor-link" href="#int-populatemetadata">#</a></h3>
 <p><strong>Populate metadata worksheet with export details.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub PopulateMetadata(ByVal metadataSheet As Worksheet, _
@@ -162,19 +163,19 @@
                              ByVal diseaseCode As String)
 </code></pre>
 <hr />
-<h3>PopulateDictionary</h3>
+<h3 id="int-populatedictionary">PopulateDictionary <a class="anchor-link" href="#int-populatedictionary">#</a></h3>
 <p><strong>Populate dictionary sheet using array-based assignment.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub PopulateDictionary(ByVal dictionarySheet As Worksheet, ByVal diseaseTable As ListObject)
 </code></pre>
 <hr />
-<h3>BuildDictionaryMatrix</h3>
+<h3 id="int-builddictionarymatrix">BuildDictionaryMatrix <a class="anchor-link" href="#int-builddictionarymatrix">#</a></h3>
 <p><strong>Build a dictionary matrix selecting required columns.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function BuildDictionaryMatrix(ByRef sourceData As Variant, ByVal rowCount As Long) As Variant
 </code></pre>
 <hr />
-<h3>PopulateChoices</h3>
+<h3 id="int-populatechoices">PopulateChoices <a class="anchor-link" href="#int-populatechoices">#</a></h3>
 <p><strong>Populate choices sheet translating headers when available.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub PopulateChoices(ByVal choicesSheet As Worksheet, _
@@ -182,43 +183,43 @@
                             ByVal headerCache As IDiseaseTranslationCache)
 </code></pre>
 <hr />
-<h3>BuildChoiceRows</h3>
+<h3 id="int-buildchoicerows">BuildChoiceRows <a class="anchor-link" href="#int-buildchoicerows">#</a></h3>
 <p><strong>Build a collection containing distinct choice rows.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function BuildChoiceRows(ByRef sourceData As Variant) As Collection
 </code></pre>
 <hr />
-<h3>ContainsKey</h3>
+<h3 id="int-containskey">ContainsKey <a class="anchor-link" href="#int-containskey">#</a></h3>
 <p><strong>Determine whether a key has already been processed.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ContainsKey(ByVal keys As BetterArray, ByVal key As String) As Boolean
 </code></pre>
 <hr />
-<h3>FindWorksheet</h3>
+<h3 id="int-findworksheet">FindWorksheet <a class="anchor-link" href="#int-findworksheet">#</a></h3>
 <p><strong>Locate a worksheet by name without relying on implicit errors.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function FindWorksheet(ByVal workbook As Workbook, ByVal sheetName As String) As Worksheet
 </code></pre>
 <hr />
-<h3>SplitChoices</h3>
+<h3 id="int-splitchoices">SplitChoices <a class="anchor-link" href="#int-splitchoices">#</a></h3>
 <p><strong>Split choice strings safely.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function SplitChoices(ByVal rawValue As Variant) As Variant
 </code></pre>
 <hr />
-<h3>PopulateTranslations</h3>
+<h3 id="int-populatetranslations">PopulateTranslations <a class="anchor-link" href="#int-populatetranslations">#</a></h3>
 <p><strong>Populate a worksheet with a ListObject using a single array assignment.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub PopulateTranslations(ByVal targetSheet As Worksheet, ByVal sourceTable As ListObject)
 </code></pre>
 <hr />
-<h3>PopulateMigrationDisease</h3>
+<h3 id="int-populatemigrationdisease">PopulateMigrationDisease <a class="anchor-link" href="#int-populatemigrationdisease">#</a></h3>
 <p><strong>Populate a migration worksheet with disease data.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub PopulateMigrationDisease(ByVal targetSheet As Worksheet, ByVal diseaseSheet As Worksheet)
 </code></pre>
 <hr />
-<h3>ApplySheetCosmetics</h3>
+<h3 id="int-applysheetcosmetics">ApplySheetCosmetics <a class="anchor-link" href="#int-applysheetcosmetics">#</a></h3>
 <p><strong>Apply light formatting to export worksheets.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ApplySheetCosmetics(ByVal metadataSheet As Worksheet, _
@@ -227,19 +228,19 @@
                                 ByVal translationsSheet As Worksheet)
 </code></pre>
 <hr />
-<h3>ApplyMigrationFormatting</h3>
+<h3 id="int-applymigrationformatting">ApplyMigrationFormatting <a class="anchor-link" href="#int-applymigrationformatting">#</a></h3>
 <p><strong>Apply formatting to migration workbook sheets.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ApplyMigrationFormatting(ByVal workbook As Workbook)
 </code></pre>
 <hr />
-<h3>AutoFitSheet</h3>
+<h3 id="int-autofitsheet">AutoFitSheet <a class="anchor-link" href="#int-autofitsheet">#</a></h3>
 <p><strong>Auto fit worksheet columns and style header row.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AutoFitSheet(ByVal sheet As Worksheet)
 </code></pre>
 <hr />
-<h3>EnsureWorksheet</h3>
+<h3 id="int-ensureworksheet">EnsureWorksheet <a class="anchor-link" href="#int-ensureworksheet">#</a></h3>
 <p><strong>Ensure a worksheet exists and optionally rename the provided template.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function EnsureWorksheet(ByVal workbook As Workbook, _
@@ -247,25 +248,25 @@
                                  Optional ByVal template As Worksheet = Nothing) As Worksheet
 </code></pre>
 <hr />
-<h3>ClearSheet</h3>
+<h3 id="int-clearsheet">ClearSheet <a class="anchor-link" href="#int-clearsheet">#</a></h3>
 <p><strong>Clear worksheet contents while preserving structure.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ClearSheet(ByVal sheet As Worksheet)
 </code></pre>
 <hr />
-<h3>ArrayToRow</h3>
+<h3 id="int-arraytorow">ArrayToRow <a class="anchor-link" href="#int-arraytorow">#</a></h3>
 <p><strong>Convert one-dimensional array into a 1xN matrix for assignment.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ArrayToRow(ByVal values As Variant) As Variant
 </code></pre>
 <hr />
-<h3>CollectionToMatrix</h3>
+<h3 id="int-collectiontomatrix">CollectionToMatrix <a class="anchor-link" href="#int-collectiontomatrix">#</a></h3>
 <p><strong>Convert a collection of row arrays into a matrix.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function CollectionToMatrix(ByVal rows As Collection, ByVal columnCount As Long) As Variant
 </code></pre>
 <hr />
-<h3>TranslateHeader</h3>
+<h3 id="int-translateheader">TranslateHeader <a class="anchor-link" href="#int-translateheader">#</a></h3>
 <p><strong>Translate headers when the translation object is provided.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function TranslateHeader(ByVal cache As IDiseaseTranslationCache, _
@@ -273,38 +274,38 @@
                                  ByVal fallback As String) As String
 </code></pre>
 <hr />
-<h3>KeyOf</h3>
+<h3 id="int-keyof">KeyOf <a class="anchor-link" href="#int-keyof">#</a></h3>
 <p><strong>Build a unique key for deduplication.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function KeyOf(ByVal controlName As String, ByVal choiceValue As String) As String
 </code></pre>
 <hr />
-<h3>LastUsedColumn</h3>
+<h3 id="int-lastusedcolumn">LastUsedColumn <a class="anchor-link" href="#int-lastusedcolumn">#</a></h3>
 <p><strong>Determine the last used column within the target sheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function LastUsedColumn(ByVal sheet As Worksheet) As Long
 </code></pre>
 <hr />
-<h3>BuildDiseaseFilePath</h3>
+<h3 id="int-builddiseasefilepath">BuildDiseaseFilePath <a class="anchor-link" href="#int-builddiseasefilepath">#</a></h3>
 <p><strong>Build path for disease export.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function BuildDiseaseFilePath(ByVal exportFolder As String, ByVal diseaseName As String) As String
 </code></pre>
 <hr />
-<h3>BuildMigrationFilePath</h3>
+<h3 id="int-buildmigrationfilepath">BuildMigrationFilePath <a class="anchor-link" href="#int-buildmigrationfilepath">#</a></h3>
 <p><strong>Build path for migration export.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function BuildMigrationFilePath(ByVal exportFolder As String) As String
 </code></pre>
 <hr />
-<h3>SanitizeFileName</h3>
+<h3 id="int-sanitizefilename">SanitizeFileName <a class="anchor-link" href="#int-sanitizefilename">#</a></h3>
 <p><strong>Remove characters invalid in file names.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function SanitizeFileName(ByVal fileName As String) As String
 </code></pre>
 <hr />
-<h2>ErrorHandling</h2>
-<h3>ThrowError</h3>
+<h2 id="int-errorhandling">ErrorHandling</h2>
+<h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
 <p><strong>Centralised ProjectError-based exception helper.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal errMessage As String)
@@ -320,8 +321,10 @@
 <li><a href="src/tests/modules/mastersetup/TestDiseaseIntegration.bas">TestDiseaseIntegration.bas</a></li>
 </ul>
 </details>
-
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

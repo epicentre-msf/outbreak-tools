@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>DesignerTranslation - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -22,8 +23,10 @@ HiddenName for cross-session persistence. All translation objects
 and name lists are cached for fast repeated access.
 Consumers interact through the IDesignerTranslation interface.</p>
 <p><strong>Depends on:</strong> <a href="TranslationObject.html">TranslationObject</a>, <a href="ITranslationObject.html">ITranslationObject</a>, <a href="BetterArray.html">BetterArray</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="IHiddenNames.html">IHiddenNames</a></p>
-<h2>Factory</h2>
-<h3>create</h3>
+<details open class="doc-section" id="factory">
+<summary>Factory</summary>
+<div class="section-body">
+<h3 id="create">create <a class="anchor-link" href="#create">#</a></h3>
 <p><strong>Create a new DesignerTranslation instance from a translation worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal sh As Worksheet) As IDesignerTranslation
@@ -37,8 +40,12 @@ IDesignerTranslation interface. Called on the predeclared instance.</p>
 </ul>
 <p><strong>Returns:</strong> IDesignerTranslation. A fully initialised instance ready for use.</p>
 <hr />
-<h2>Translation Objects</h2>
-<h3>trans-object</h3>
+</div>
+</details>
+<details open class="doc-section" id="translation-objects">
+<summary>Translation Objects</summary>
+<div class="section-body">
+<h3 id="trans-object">trans-object <a class="anchor-link" href="#trans-object">#</a></h3>
 <p><strong>Translation object for a given content type</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get TransObject(Optional ByVal trans As Byte = DesignerTranslationOfMessages) As ITranslationObject
@@ -52,8 +59,12 @@ Returns Nothing when no language code is configured.</p>
 </ul>
 <p><strong>Returns:</strong> ITranslationObject. The translation object for the requested scope.</p>
 <hr />
-<h2>Translation Application</h2>
-<h3>translate-designer</h3>
+</div>
+</details>
+<details open class="doc-section" id="translation-application">
+<summary>Translation Application</summary>
+<div class="section-body">
+<h3 id="translate-designer">translate-designer <a class="anchor-link" href="#translate-designer">#</a></h3>
 <p><strong>Translate an entire designer worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub TranslateDesigner(ByVal mainsh As Worksheet, ByVal language As String)
@@ -70,8 +81,12 @@ language code is available.</p>
 <li><code>language</code>: String. Language string in &quot;CODE - Label&quot; format. Pass vbNullString to use the stored language.</li>
 </ul>
 <hr />
-<h2>Message Lookup</h2>
-<h3>translation-msg</h3>
+</div>
+</details>
+<details open class="doc-section" id="message-lookup">
+<summary>Message Lookup</summary>
+<div class="section-body">
+<h3 id="translation-msg">translation-msg <a class="anchor-link" href="#translation-msg">#</a></h3>
 <p><strong>Get the translated value of a message code</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function TranslatedValue(ByVal msgCode As String) As String
@@ -85,17 +100,19 @@ lookup. Returns vbNullString when no language code is configured.</p>
 </ul>
 <p><strong>Returns:</strong> String. The translated message text.</p>
 <hr />
+</div>
+</details>
 <details>
 <summary>Internal members (not exported)</summary>
-<h2>Factory</h2>
-<h3>wksh</h3>
+<h2 id="int-factory">Factory</h2>
+<h3 id="int-wksh">wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
 <p><strong>Translation worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Wksh() As Worksheet
 </code></pre>
 <p><strong>Returns:</strong> Worksheet. The backing translation worksheet.</p>
 <hr />
-<h3>wksh-set</h3>
+<h3 id="int-wksh-set">wksh-set <a class="anchor-link" href="#int-wksh-set">#</a></h3>
 <p><strong>Assign the translation worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set Wksh(ByVal sh As Worksheet)
@@ -105,8 +122,8 @@ lookup. Returns vbNullString when no language code is configured.</p>
 <li><code>sh</code>: Worksheet. The worksheet to store.</li>
 </ul>
 <hr />
-<h2>Translation Objects</h2>
-<h3>designer-language</h3>
+<h2 id="int-translation-objects">Translation Objects</h2>
+<h3 id="int-designer-language">designer-language <a class="anchor-link" href="#int-designer-language">#</a></h3>
 <p><strong>Current designer language code</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get DesignerLanguage() As String
@@ -116,8 +133,8 @@ worksheet-level HiddenName. Returns an empty string when no language
 code is stored.</p>
 <p><strong>Returns:</strong> String. The current language code, or vbNullString when not set.</p>
 <hr />
-<h2>Translation Application</h2>
-<h3>translate-shapes</h3>
+<h2 id="int-translation-application">Translation Application</h2>
+<h3 id="int-translate-shapes">translate-shapes <a class="anchor-link" href="#int-translate-shapes">#</a></h3>
 <p><strong>Apply shape translations on the target worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub TranslateShapes(ByVal mainsh As Worksheet)
@@ -130,7 +147,7 @@ the original font name on each shape.</p>
 <li><code>mainsh</code>: Worksheet. The worksheet containing shapes to translate.</li>
 </ul>
 <hr />
-<h3>translate-ranges</h3>
+<h3 id="int-translate-ranges">translate-ranges <a class="anchor-link" href="#int-translate-ranges">#</a></h3>
 <p><strong>Apply named range translations on the target worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub TranslateRanges(ByVal mainsh As Worksheet)
@@ -142,7 +159,7 @@ range on the worksheet with its translated value.</p>
 <li><code>mainsh</code>: Worksheet. The worksheet containing named ranges to translate.</li>
 </ul>
 <hr />
-<h3>translate-dropdowns</h3>
+<h3 id="int-translate-dropdowns">translate-dropdowns <a class="anchor-link" href="#int-translate-dropdowns">#</a></h3>
 <p><strong>Apply dropdown validation translations on the target worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub TranslateDropdowns(ByVal mainsh As Worksheet)
@@ -156,8 +173,8 @@ the validation.</p>
 <li><code>mainsh</code>: Worksheet. The worksheet containing dropdowns to translate.</li>
 </ul>
 <hr />
-<h2>Language Code Management</h2>
-<h3>extract-lang-code</h3>
+<h2 id="int-language-code-management">Language Code Management</h2>
+<h3 id="int-extract-lang-code">extract-lang-code <a class="anchor-link" href="#int-extract-lang-code">#</a></h3>
 <p><strong>Extract the language code from a language string</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ExtractLangCode(ByVal language As String) As String
@@ -171,7 +188,7 @@ trimmed input as-is.</p>
 </ul>
 <p><strong>Returns:</strong> String. The extracted language code.</p>
 <hr />
-<h3>update-language-code</h3>
+<h3 id="int-update-language-code">update-language-code <a class="anchor-link" href="#int-update-language-code">#</a></h3>
 <p><strong>Persist the language code to the worksheet-level HiddenName</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub UpdateLanguageCode(ByVal langCode As String)
@@ -185,7 +202,7 @@ so the cache-invalidation check remains correct.</p>
 <li><code>langCode</code>: String. The language code to persist.</li>
 </ul>
 <hr />
-<h3>wksh-names</h3>
+<h3 id="int-wksh-names">wksh-names <a class="anchor-link" href="#int-wksh-names">#</a></h3>
 <p><strong>Cached HiddenNames accessor for the translation worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get WkshNames() As IHiddenNames
@@ -194,8 +211,8 @@ so the cache-invalidation check remains correct.</p>
 translation worksheet.</p>
 <p><strong>Returns:</strong> IHiddenNames. The HiddenNames manager for the translation worksheet.</p>
 <hr />
-<h2>Cache Management</h2>
-<h3>ensure-caches</h3>
+<h2 id="int-cache-management">Cache Management</h2>
+<h3 id="int-ensure-caches">ensure-caches <a class="anchor-link" href="#int-ensure-caches">#</a></h3>
 <p><strong>Build or refresh translation caches for the given language code</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureCaches(ByVal langCode As String)
@@ -209,8 +226,8 @@ are already populated for the same language code.</p>
 <li><code>langCode</code>: String. The language code to cache translations for.</li>
 </ul>
 <hr />
-<h2>Validation</h2>
-<h3>check-requirements</h3>
+<h2 id="int-validation">Validation</h2>
+<h3 id="int-check-requirements">check-requirements <a class="anchor-link" href="#int-check-requirements">#</a></h3>
 <p><strong>Validate that the worksheet has all required ListObjects</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub CheckRequirements(ByVal sh As Worksheet)
@@ -224,8 +241,8 @@ missing.</p>
 <li><code>sh</code>: Worksheet. The worksheet to validate.</li>
 </ul>
 <hr />
-<h2>Error Handling</h2>
-<h3>throw-error</h3>
+<h2 id="int-error-handling">Error Handling</h2>
+<h3 id="int-throw-error">throw-error <a class="anchor-link" href="#int-throw-error">#</a></h3>
 <p><strong>Raise a ProjectError-based exception</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As Long, ByVal message As String)
@@ -237,7 +254,7 @@ missing.</p>
 <li><code>message</code>: String. Human-readable description of the failure.</li>
 </ul>
 <hr />
-<h3>lo-exists</h3>
+<h3 id="int-lo-exists">lo-exists <a class="anchor-link" href="#int-lo-exists">#</a></h3>
 <p><strong>Verify that all listed ListObjects exist on a worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub LoExists(sh As Worksheet, ByVal loNames As BetterArray)
@@ -251,8 +268,8 @@ for the first missing table encountered.</p>
 <li><code>loNames</code>: BetterArray. List of ListObject names to verify.</li>
 </ul>
 <hr />
-<h2>Interface Implementation</h2>
-<h3>IDesignerTranslation_TransObject</h3>
+<h2 id="int-interface-implementation">Interface Implementation</h2>
+<h3 id="int-idesignertranslation-transobject">IDesignerTranslation_TransObject <a class="anchor-link" href="#int-idesignertranslation-transobject">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get IDesignerTranslation_TransObject(Optional ByVal trans As Byte = DesignerTranslationOfMessages) As ITranslationObject
 </code></pre>
@@ -261,7 +278,7 @@ See the corresponding members above for full documentation.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (13 file(s))</summary>
+<summary>Used in (12 file(s))</summary>
 <ul>
 <li><a href="src/classes/designer/DesignerEntry.cls">DesignerEntry.cls</a></li>
 <li><a href="src/classes/designer/DesignerTranslation.cls">DesignerTranslation.cls</a></li>
@@ -272,14 +289,15 @@ See the corresponding members above for full documentation.</p>
 <li><a href="src/modules/designer/EventsDesignerCore.bas">EventsDesignerCore.bas</a></li>
 <li><a href="src/tests/stubs/DesignerTranslationStub.cls">DesignerTranslationStub.cls</a></li>
 <li><a href="src/tests/stubs/LinelistSpecsDesignerTranslationStub.cls">LinelistSpecsDesignerTranslationStub.cls</a></li>
-<li><a href="src/tests/stubs/LinelistSpecsMainStub.cls">LinelistSpecsMainStub.cls</a></li>
 <li><a href="src/tests/stubs/LinelistSpecsWorkbookStub.cls">LinelistSpecsWorkbookStub.cls</a></li>
 <li><a href="src/tests/stubs/LLVarContextSpecsStub.cls">LLVarContextSpecsStub.cls</a></li>
 <li><a href="src/tests/TableSpecsLinelistStub.cls">TableSpecsLinelistStub.cls</a></li>
 </ul>
 </details>
-
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

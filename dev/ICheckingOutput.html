@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ICheckingOutput - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -13,8 +14,10 @@
 <p>Defines the public contract for the CheckingOutput class, exposing
 worksheet binding, diagnostic entry rendering, and interactive
 filtering for severity and title criteria.</p>
-<h2>Elements</h2>
-<h3>Wksh</h3>
+<details open class="doc-section" id="elements">
+<summary>Elements</summary>
+<div class="section-body">
+<h3 id="wksh">Wksh <a class="anchor-link" href="#wksh">#</a></h3>
 <p><strong>Retrieve the worksheet backing this output writer</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Wksh() As Worksheet: End Property
@@ -23,7 +26,7 @@ filtering for severity and title criteria.</p>
 Returns the worksheet that receives the checking output.</p>
 <p><strong>Returns:</strong> Worksheet. Target worksheet reference.</p>
 <hr />
-<h3>Name</h3>
+<h3 id="name">Name <a class="anchor-link" href="#name">#</a></h3>
 <p><strong>Name of the output session</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Name() As String: End Property
@@ -31,8 +34,12 @@ Returns the worksheet that receives the checking output.</p>
 <p>Returns the label assigned during creation.</p>
 <p><strong>Returns:</strong> String. Output session label.</p>
 <hr />
-<h2>Operations</h2>
-<h3>PrintOutput</h3>
+</div>
+</details>
+<details open class="doc-section" id="operations">
+<summary>Operations</summary>
+<div class="section-body">
+<h3 id="printoutput">PrintOutput <a class="anchor-link" href="#printoutput">#</a></h3>
 <p><strong>Write checking values to a worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub PrintOutput(ByVal checkTable As BetterArray): End Sub
@@ -45,7 +52,7 @@ worksheet, initialising formatting and filters as needed.</p>
 <li><code>checkTable</code>: BetterArray. Collection of IChecking instances to print.</li>
 </ul>
 <hr />
-<h3>FilterWorksheet</h3>
+<h3 id="filterworksheet">FilterWorksheet <a class="anchor-link" href="#filterworksheet">#</a></h3>
 <p><strong>Apply the active filter on the output worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub FilterWorksheet(Optional ByVal selectionValue As String = vbNullString, _
@@ -59,7 +66,7 @@ the requested severity and/or title.</p>
 <li><code>titleSelection</code>: Optional String. Title limiting rows to a specific checking topic.</li>
 </ul>
 <hr />
-<h3>EnsureWorksheetChangeHandler</h3>
+<h3 id="ensureworksheetchangehandler">EnsureWorksheetChangeHandler <a class="anchor-link" href="#ensureworksheetchangehandler">#</a></h3>
 <p><strong>Inject the worksheet change handler for interactive filtering</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub EnsureWorksheetChangeHandler(): End Sub
@@ -67,8 +74,12 @@ the requested severity and/or title.</p>
 <p>Installs VBA code in the worksheet module so filter drop-down
 changes trigger row visibility updates automatically.</p>
 <hr />
-
+</div>
+</details>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

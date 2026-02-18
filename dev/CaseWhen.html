@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CaseWhen - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -17,8 +18,10 @@ nested parentheses, then builds the equivalent nested IF expression. It
 also extracts textual category labels for downstream analysis consumers.</p>
 <p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a></p>
 <p><strong>Version:</strong> 1.0 (2026-02-09)</p>
-<h2>Factory</h2>
-<h3>create</h3>
+<details open class="doc-section" id="factory">
+<summary>Factory</summary>
+<div class="section-body">
+<h3 id="create">create <a class="anchor-link" href="#create">#</a></h3>
 <p><strong>Instantiate a CaseWhen parser bound to a formula</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal formula As String) As ICaseWhen
@@ -33,8 +36,12 @@ to Valid, ParsedFormula, or Categories.</p>
 </ul>
 <p><strong>Returns:</strong> ICaseWhen. A ready-to-query parser instance.</p>
 <hr />
-<h2>Validation</h2>
-<h3>valid</h3>
+</div>
+</details>
+<details open class="doc-section" id="validation">
+<summary>Validation</summary>
+<div class="section-body">
+<h3 id="valid">valid <a class="anchor-link" href="#valid">#</a></h3>
 <p><strong>Determine whether the stored formula is a CASE_WHEN</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get Valid() As Boolean
@@ -45,8 +52,12 @@ Accepts formulas that begin with the CASE_WHEN( token
 False for empty strings or formulas that do not match the token.</p>
 <p><strong>Returns:</strong> Boolean. True when the formula is parseable.</p>
 <hr />
-<h2>Parsing</h2>
-<h3>parsed-formula</h3>
+</div>
+</details>
+<details open class="doc-section" id="parsing">
+<summary>Parsing</summary>
+<div class="section-body">
+<h3 id="parsed-formula">parsed-formula <a class="anchor-link" href="#parsed-formula">#</a></h3>
 <p><strong>Convert CASE_WHEN into nested IF statements</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function parsedFormula() As String
@@ -59,7 +70,7 @@ string literal is appended as the fallback. Excel supports up to 64
 nested IF calls.</p>
 <p><strong>Returns:</strong> String. Nested IF expression ready for worksheet consumption.</p>
 <hr />
-<h3>categories</h3>
+<h3 id="categories">categories <a class="anchor-link" href="#categories">#</a></h3>
 <p><strong>Extract textual result labels from the CASE_WHEN arguments</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function Categories() As BetterArray
@@ -70,10 +81,12 @@ Quoted entries are stripped of their quotes; non-quoted entries are
 wrapped in quotes for consistent downstream handling.</p>
 <p><strong>Returns:</strong> BetterArray. Collection containing quoted category labels.</p>
 <hr />
+</div>
+</details>
 <details>
 <summary>Internal members (not exported)</summary>
-<h2>PublicAccessors</h2>
-<h3>self</h3>
+<h2 id="int-publicaccessors">PublicAccessors</h2>
+<h3 id="int-self">self <a class="anchor-link" href="#int-self">#</a></h3>
 <p><strong>Current object instance</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Self() As ICaseWhen
@@ -83,7 +96,7 @@ Returns the current instance cast to its interface. Used internally
 by the factory method to return an ICaseWhen reference.</p>
 <p><strong>Returns:</strong> ICaseWhen. Reference to the current object.</p>
 <hr />
-<h3>formula</h3>
+<h3 id="int-formula">formula <a class="anchor-link" href="#int-formula">#</a></h3>
 <p><strong>Retrieve the raw CASE_WHEN formula</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get casewhenFormula() As String
@@ -92,7 +105,7 @@ by the factory method to return an ICaseWhen reference.</p>
 assignment. This is the full CASE_WHEN(...) expression.</p>
 <p><strong>Returns:</strong> String. Original formula text.</p>
 <hr />
-<h3>formula-set</h3>
+<h3 id="int-formula-set">formula-set <a class="anchor-link" href="#int-formula-set">#</a></h3>
 <p><strong>Store the CASE_WHEN formula and reset cached data</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Let casewhenFormula(ByVal formula As String)
@@ -104,8 +117,8 @@ cached parsing table so subsequent reads trigger a fresh parse.</p>
 <li><code>formula</code>: String. Expression to analyse.</li>
 </ul>
 <hr />
-<h2>ParsingInfrastructure</h2>
-<h3>case-when-table</h3>
+<h2 id="int-parsinginfrastructure">ParsingInfrastructure</h2>
+<h3 id="int-case-when-table">case-when-table <a class="anchor-link" href="#int-case-when-table">#</a></h3>
 <p><strong>Retrieve the cached list of CASE_WHEN arguments</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get CaseWhenTable() As BetterArray
@@ -117,8 +130,8 @@ cached so subsequent accesses avoid reparsing the string. Returns
 a clone to prevent callers from mutating the cache.</p>
 <p><strong>Returns:</strong> BetterArray. The ordered CASE_WHEN arguments.</p>
 <hr />
-<h2>PrivateHelpers</h2>
-<h3>reset-cache</h3>
+<h2 id="int-privatehelpers">PrivateHelpers</h2>
+<h3 id="int-reset-cache">reset-cache <a class="anchor-link" href="#int-reset-cache">#</a></h3>
 <p><strong>Reset cached artefacts when the source formula changes</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ResetCache()
@@ -127,7 +140,7 @@ a clone to prevent callers from mutating the cache.</p>
 Sets the cached parsing table to Nothing so the next access to
 CaseWhenTable triggers a fresh parse from the stored formula.</p>
 <hr />
-<h3>sanitised-formula</h3>
+<h3 id="int-sanitised-formula">sanitised-formula <a class="anchor-link" href="#int-sanitised-formula">#</a></h3>
 <p><strong>Remove the CASE_WHEN header and closing parenthesis</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function SanitisedFormula() As String
@@ -136,7 +149,7 @@ CaseWhenTable triggers a fresh parse from the stored formula.</p>
 parenthesis to expose the raw comma-delimited argument body.</p>
 <p><strong>Returns:</strong> String. Inner content of the CASE_WHEN call.</p>
 <hr />
-<h3>split-formula-segments</h3>
+<h3 id="int-split-formula-segments">split-formula-segments <a class="anchor-link" href="#int-split-formula-segments">#</a></h3>
 <p><strong>Split the CASE_WHEN body into trimmed argument segments</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function SplitFormulaSegments(ByVal formulaBody As String) As BetterArray
@@ -150,8 +163,8 @@ preserving nested expressions and quoted strings intact.</p>
 </ul>
 <p><strong>Returns:</strong> BetterArray. Alternating condition and result expressions.</p>
 <hr />
-<h2>Interface</h2>
-<h3>ICaseWhen_Valid</h3>
+<h2 id="int-interface">Interface</h2>
+<h3 id="int-icasewhen-valid">ICaseWhen_Valid <a class="anchor-link" href="#int-icasewhen-valid">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get ICaseWhen_Valid() As Boolean
 </code></pre>
@@ -168,8 +181,10 @@ preserving nested expressions and quoted strings intact.</p>
 <li><a href="src/tests/modules/formulas/TestCaseWhen.bas">TestCaseWhen.bas</a></li>
 </ul>
 </details>
-
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

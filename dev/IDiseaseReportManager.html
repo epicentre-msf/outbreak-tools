@@ -5,13 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>IDiseaseReportManager - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>IDiseaseReportManager</h1>
-<h2>Queries</h2>
-<h3>HasPendingReport</h3>
+<details open class="doc-section" id="queries">
+<summary>Queries</summary>
+<div class="section-body">
+<h3 id="haspendingreport">HasPendingReport <a class="anchor-link" href="#haspendingreport">#</a></h3>
 <p><strong>Check whether a disease requires a follow-up report.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function HasPendingReport(ByVal reportTable As ListObject, ByVal diseaseName As String, Optional ByVal expectedValue As String = &quot;yes&quot;) As Boolean
@@ -24,8 +27,12 @@
 </ul>
 <p><strong>Returns:</strong> Boolean True when the disease row exists and matches the expected flag.</p>
 <hr />
-<h2>Commands</h2>
-<h3>ClearReportStatus</h3>
+</div>
+</details>
+<details open class="doc-section" id="commands">
+<summary>Commands</summary>
+<div class="section-body">
+<h3 id="clearreportstatus">ClearReportStatus <a class="anchor-link" href="#clearreportstatus">#</a></h3>
 <p><strong>Remove all report rows related to the disease from every table on the worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ClearReportStatus(ByVal reportSheet As Worksheet, ByVal diseaseName As String)
@@ -36,8 +43,12 @@
 <li><code>diseaseName</code>: String disease identifier to purge.</li>
 </ul>
 <hr />
-
+</div>
+</details>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EventLinelist - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>EventLinelist</h1>
+<p>Encapsulates workbook-level linelist events and lazily-cached domain managers.
+This class is the single entry point for all event handling in the output
+linelist workbook. It reacts to sheet change (HList geo cascades, editable
+labels, list auto, go-to-section, multiple choices; VList editable labels and
+multiple choices; analysis go-to-section and spatial dispatch), sheet deactivate
+(list auto update), selection change (geo dropdown refresh),
+double-click (spatio-temporal geo form), filter table updates, and list-auto
+dropdown maintenance.</p>
+<p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="LLGeo.html">LLGeo</a>, <a href="LLdictionary.html">LLdictionary</a>, <a href="LLVariables.html">LLVariables</a>, <a href="LLTranslation.html">LLTranslation</a>, <a href="TranslationObject.html">TranslationObject</a>, ProjectError</p>
+<details open class="doc-section" id="factory">
+<summary>Factory</summary>
+<div class="section-body">
+<h3 id="create">Create <a class="anchor-link" href="#create">#</a></h3>
+<p><strong>Build a configured EventLinelist instance bound to a host workbook.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create(ByVal hostBook As Workbook) As IEventLinelist
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>hostBook</code>: Workbook. The linelist workbook.</li>
+</ul>
+<p><strong>Returns:</strong> IEventLinelist. Configured service instance.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When hostBook is Nothing.</li>
+</ul>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="ieventlinelist-implementation">
+<summary>IEventLinelist implementation</summary>
+<div class="section-body">
+<h3 id="configure">Configure <a class="anchor-link" href="#configure">#</a></h3>
+<p><strong>Configure the service with its host workbook context.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Configure(ByVal hostBook As Workbook)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>hostBook</code>: Workbook. The linelist workbook.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When hostBook is Nothing.</li>
+</ul>
+<hr />
+<h3 id="onworkbookopen">OnWorkbookOpen <a class="anchor-link" href="#onworkbookopen">#</a></h3>
+<p><strong>React to workbook open notifications.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub OnWorkbookOpen()
+</code></pre>
+<hr />
+<h3 id="onsheetchange">OnSheetChange <a class="anchor-link" href="#onsheetchange">#</a></h3>
+<p><strong>Handle worksheet change events.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub OnSheetChange(ByVal sh As Worksheet, ByVal target As Range)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The worksheet raising the change event.</li>
+<li><code>target</code>: Range. The edited cells.</li>
+</ul>
+<hr />
+<h3 id="onsheetdeactivate">OnSheetDeactivate <a class="anchor-link" href="#onsheetdeactivate">#</a></h3>
+<p><strong>Handle worksheet deactivation events.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub OnSheetDeactivate(ByVal prevSheetName As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>prevSheetName</code>: String. Name of the sheet that was deactivated.</li>
+</ul>
+<hr />
+<h3 id="onselectionchange">OnSelectionChange <a class="anchor-link" href="#onselectionchange">#</a></h3>
+<p><strong>Handle selection change events on HList sheets.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub OnSelectionChange(ByVal sh As Worksheet, ByVal target As Range)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The worksheet where the selection changed.</li>
+<li><code>target</code>: Range. The newly selected cell(s).</li>
+</ul>
+<hr />
+<h3 id="ondoubleclick">OnDoubleClick <a class="anchor-link" href="#ondoubleclick">#</a></h3>
+<p><strong>Handle double-click events on analysis sheets.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub OnDoubleClick(ByVal sh As Worksheet, ByVal target As Range)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The worksheet where the double-click occurred.</li>
+<li><code>target</code>: Range. The double-clicked cell.</li>
+</ul>
+<hr />
+<h3 id="updatefiltertables">UpdateFilterTables <a class="anchor-link" href="#updatefiltertables">#</a></h3>
+<p><strong>Update filter tables used by analysis sheets.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub UpdateFilterTables(Optional ByVal calculate As Boolean = True)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>calculate</code>: Optional Boolean. When True (default), recalculates the active sheet.</li>
+</ul>
+<hr />
+<h3 id="updatealllistauto">UpdateAllListAuto <a class="anchor-link" href="#updatealllistauto">#</a></h3>
+<p><strong>Update all list-auto dropdowns across all HList sheets.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub UpdateAllListAuto()
+</code></pre>
+<hr />
+<h3 id="resetcaches">ResetCaches <a class="anchor-link" href="#resetcaches">#</a></h3>
+<p><strong>Clear cached resources.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ResetCaches()
+</code></pre>
+<hr />
+</div>
+</details>
+<details>
+<summary>Internal members (not exported)</summary>
+<h2 id="int-factory">Factory</h2>
+<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
+<p><strong>Current object instance cast to the interface.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Self() As IEventLinelist
+</code></pre>
+<p><strong>Returns:</strong> IEventLinelist. The current instance.</p>
+<hr />
+<h2 id="int-private-hlist-change-handler">Private — HList change handler</h2>
+<h3 id="int-handlehlistchange">HandleHListChange <a class="anchor-link" href="#int-handlehlistchange">#</a></h3>
+<p><strong>Handle value changes on HList sheets.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub HandleHListChange(ByRef sh As Worksheet, ByRef target As Range, _
+                              ByRef shHn As IHiddenNames)
+</code></pre>
+<p>Dispatches based on the target cell's position relative to the table:
+geo cascades (geo1-geo4 controls), editable labels (label row),
+list_auto flagging, go-to-section navigation, header protection
+(header row), and multiple choice updates.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The HList worksheet.</li>
+<li><code>target</code>: Range. The edited cell(s).</li>
+<li><code>shHn</code>: IHiddenNames. The worksheet-level hidden names (shared from caller).</li>
+</ul>
+<hr />
+<h2 id="int-private-vlist-change-handler">Private — VList change handler</h2>
+<h3 id="int-handlevlistchange">HandleVListChange <a class="anchor-link" href="#int-handlevlistchange">#</a></h3>
+<p><strong>Handle value changes on VList sheets.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub HandleVListChange(ByRef sh As Worksheet, ByRef target As Range, _
+                              ByRef shHn As IHiddenNames)
+</code></pre>
+<p>Handles editable label updates, multiple choice updates, and go-to-section
+navigation on vertical list sheets.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The VList worksheet.</li>
+<li><code>target</code>: Range. The edited cell(s).</li>
+<li><code>shHn</code>: IHiddenNames. The worksheet-level hidden names (shared from caller).</li>
+</ul>
+<hr />
+<h2 id="int-private-analysis-change-handler">Private — Analysis change handler</h2>
+<h3 id="int-handleanalysischange">HandleAnalysisChange <a class="anchor-link" href="#int-handleanalysischange">#</a></h3>
+<p><strong>Handle value changes on analysis sheets.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub HandleAnalysisChange(ByRef sh As Worksheet, _
+                                  ByRef target As Range, _
+                                  ByRef analysisType As String)
+</code></pre>
+<p>Processes go-to-section navigation for all analysis types. For spatial
+analysis sheets, dispatches to GeoModule subs (UpdateSingleSpTable,
+DevideByPopulation, FormatDevidePop) based on named range patterns.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The analysis worksheet.</li>
+<li><code>target</code>: Range. The edited cell(s).</li>
+<li><code>analysisType</code>: String. The sheet type tag (Uni-Bi-Analysis, TS-Analysis, etc.).</li>
+</ul>
+<hr />
+<h2 id="int-private-selection-change-handler">Private — Selection change handler</h2>
+<h3 id="int-handleselectionhlist">HandleSelectionHList <a class="anchor-link" href="#int-handleselectionhlist">#</a></h3>
+<p><strong>Handle selection changes on HList sheets.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub HandleSelectionHList(ByRef sh As Worksheet, ByRef target As Range, _
+                                ByRef shHn As IHiddenNames)
+</code></pre>
+<p>Updates geo dropdown validation lists when the user navigates to a geo2, geo3,
+or geo4 cell.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The HList worksheet.</li>
+<li><code>target</code>: Range. The newly selected cell(s).</li>
+<li><code>shHn</code>: IHiddenNames. The worksheet-level hidden names (shared from caller).</li>
+</ul>
+<hr />
+<h2 id="int-private-list-auto-helpers">Private — List auto helpers</h2>
+<h3 id="int-updatelistautosheet">UpdateListAutoSheet <a class="anchor-link" href="#int-updatelistautosheet">#</a></h3>
+<p><strong>Update the list-auto dropdowns for a single sheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub UpdateListAutoSheet(ByRef sh As Worksheet)
+</code></pre>
+<p>Checks the has_listauto flag to skip sheets without list-auto variables.
+Iterates header columns and updates dropdown lists from unique data values.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The HList sheet to update.</li>
+</ul>
+<hr />
+<h2 id="int-private-multiple-choice-helper">Private — Multiple choice helper</h2>
+<h3 id="int-updatemultiplechoice">UpdateMultipleChoice <a class="anchor-link" href="#int-updatemultiplechoice">#</a></h3>
+<p><strong>Handle multiple choice dropdown value toggling.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub UpdateMultipleChoice(ByRef target As Range, ByRef choiSep As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>target</code>: Range. The edited cell.</li>
+<li><code>choiSep</code>: String. Separator between choices (e.g. &quot;, &quot;).</li>
+</ul>
+<hr />
+<h2 id="int-private-unique-values-helper">Private — Unique values helper</h2>
+<h3 id="int-getuniqueba">GetUniqueBA <a class="anchor-link" href="#int-getuniqueba">#</a></h3>
+<p><strong>Return unique values from a BetterArray.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function GetUniqueBA(ByRef inputTable As BetterArray, _
+                             Optional ByVal Sort As Boolean = False) As BetterArray
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>inputTable</code>: BetterArray. Source array.</li>
+<li><code>Sort</code>: Optional Boolean. Whether to sort the result.</li>
+</ul>
+<p><strong>Returns:</strong> BetterArray. Array of unique values.</p>
+<hr />
+<h2 id="int-private-sheet-metadata-helpers">Private — Sheet metadata helpers</h2>
+<h3 id="int-sheettag">SheetTag <a class="anchor-link" href="#int-sheettag">#</a></h3>
+<p><strong>Get the sheet type tag (HiddenNames first, cell fallback for analysis sheets).</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SheetTag(ByRef sh As Worksheet) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The worksheet to query.</li>
+</ul>
+<p><strong>Returns:</strong> String. The sheet type tag (HList, VList, Uni-Bi-Analysis, etc.).</p>
+<hr />
+<h2 id="int-private-lazy-initialisation">Private — Lazy initialisation</h2>
+<h3 id="int-ensuretranslation">EnsureTranslation <a class="anchor-link" href="#int-ensuretranslation">#</a></h3>
+<p><strong>Lazily initialise translation, message translator, and hidden names.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureTranslation()
+</code></pre>
+<hr />
+<h3 id="int-ensuredropdown">EnsureDropdown <a class="anchor-link" href="#int-ensuredropdown">#</a></h3>
+<p><strong>Lazily initialise the dropdown manager.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureDropdown()
+</code></pre>
+<hr />
+<h3 id="int-ensuregeo">EnsureGeo <a class="anchor-link" href="#int-ensuregeo">#</a></h3>
+<p><strong>Lazily initialise the geo helper.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureGeo()
+</code></pre>
+<hr />
+<h3 id="int-ensuredictionary">EnsureDictionary <a class="anchor-link" href="#int-ensuredictionary">#</a></h3>
+<p><strong>Lazily initialise the dictionary and variables helpers.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureDictionary()
+</code></pre>
+<hr />
+<h3 id="int-ensurevariables">EnsureVariables <a class="anchor-link" href="#int-ensurevariables">#</a></h3>
+<p><strong>Lazily initialise the variables helper from the cached dictionary.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureVariables()
+</code></pre>
+<hr />
+<h3 id="int-sheetornothing">SheetOrNothing <a class="anchor-link" href="#int-sheetornothing">#</a></h3>
+<p><strong>Retrieve a worksheet from the host workbook or Nothing.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SheetOrNothing(ByRef sheetName As String) As Worksheet
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetName</code>: String. Name of the worksheet to retrieve.</li>
+</ul>
+<p><strong>Returns:</strong> Worksheet. The worksheet, or Nothing when not found.</p>
+<hr />
+<h2 id="int-private-cache-management">Private — Cache management</h2>
+<h3 id="int-resetinternalcaches">ResetInternalCaches <a class="anchor-link" href="#int-resetinternalcaches">#</a></h3>
+<p><strong>Clear all lazily-cached domain managers.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ResetInternalCaches()
+</code></pre>
+<hr />
+<h2 id="int-private-error-handling">Private — Error handling</h2>
+<h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
+<p><strong>Raise a ProjectError-based exception.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As Long, ByRef message As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>errNumber</code>: Long. The error code to raise.</li>
+<li><code>message</code>: String. Human-readable description of the failure.</li>
+</ul>
+<hr />
+</details>
+<details>
+<summary>Used in (4 file(s))</summary>
+<ul>
+<li><a href="src/classes/linelist/EventLinelist.cls">EventLinelist.cls</a></li>
+<li><a href="src/classes/linelist/IEventLinelist.cls">IEventLinelist.cls</a></li>
+<li><a href="src/classes/linelist/Linelist.cls">Linelist.cls</a></li>
+<li><a href="src/modules/linelist/LinelistEventsManager.bas">LinelistEventsManager.bas</a></li>
+</ul>
+</details>
+  </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
+</body>
+</html>
+

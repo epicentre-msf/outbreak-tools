@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Checking - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -19,8 +20,10 @@ Presentation to a worksheet is handled by the separate CheckingOutput
 class.</p>
 <p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a></p>
 <p><strong>Version:</strong> 1.0 (2026-02-09)</p>
-<h2>Factory</h2>
-<h3>create</h3>
+<details open class="doc-section" id="factory">
+<summary>Factory</summary>
+<div class="section-body">
+<h3 id="create">create <a class="anchor-link" href="#create">#</a></h3>
 <p><strong>Create a Checking instance for logging diagnostic messages</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal titleName As String, _
@@ -44,8 +47,12 @@ when printing the messages to a worksheet via CheckingOutput.</p>
 <li>BetterArray</li>
 </ul>
 <hr />
-<h2>Elements</h2>
-<h3>name</h3>
+</div>
+</details>
+<details open class="doc-section" id="elements">
+<summary>Elements</summary>
+<div class="section-body">
+<h3 id="name">name <a class="anchor-link" href="#name">#</a></h3>
 <p><strong>Name of the checking object</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get Name() As String
@@ -55,7 +62,7 @@ Returns the checking title as the object name. Used for identification
 in output and presentation contexts.</p>
 <p><strong>Returns:</strong> String. The checking title.</p>
 <hr />
-<h3>heading</h3>
+<h3 id="heading">heading <a class="anchor-link" href="#heading">#</a></h3>
 <p><strong>Title or subtitle of the checking object</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get Heading(Optional ByVal subtitle As Boolean = False) As String
@@ -68,7 +75,7 @@ the title. Used by CheckingOutput for heading display.</p>
 </ul>
 <p><strong>Returns:</strong> String. The title or subtitle.</p>
 <hr />
-<h3>length</h3>
+<h3 id="length">length <a class="anchor-link" href="#length">#</a></h3>
 <p><strong>Total number of entries in the checking</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get Length() As Long
@@ -76,8 +83,12 @@ the title. Used by CheckingOutput for heading display.</p>
 <p>Returns the count of diagnostic messages stored in the parallel arrays.</p>
 <p><strong>Returns:</strong> Long. Number of entries.</p>
 <hr />
-<h2>Keys</h2>
-<h3>list-of-keys</h3>
+</div>
+</details>
+<details open class="doc-section" id="keys">
+<summary>Keys</summary>
+<div class="section-body">
+<h3 id="list-of-keys">list-of-keys <a class="anchor-link" href="#list-of-keys">#</a></h3>
 <p><strong>Get the list of keys in the checking</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get ListOfKeys() As BetterArray
@@ -87,7 +98,7 @@ Returns a clone of the internal keys BetterArray. When the keys table
 is uninitialised, creates an empty BetterArray with LowerBound 1.</p>
 <p><strong>Returns:</strong> BetterArray. Clone of stored keys.</p>
 <hr />
-<h3>key-exists</h3>
+<h3 id="key-exists">key-exists <a class="anchor-link" href="#key-exists">#</a></h3>
 <p><strong>Test whether a key is present in the checking</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function KeyExists(ByVal keyName As String) As Boolean
@@ -100,8 +111,12 @@ False immediately for empty strings.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when the key is found.</p>
 <hr />
-<h2>InputOutput</h2>
-<h3>add</h3>
+</div>
+</details>
+<details open class="doc-section" id="inputoutput">
+<summary>InputOutput</summary>
+<div class="section-body">
+<h3 id="add">add <a class="anchor-link" href="#add">#</a></h3>
 <p><strong>Add a new entry to the checking</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Add(ByVal keyName As String, ByVal label As String, _
@@ -122,7 +137,7 @@ initialises the three parallel BetterArray tables.</p>
 <li>ProjectError.ElementShouldNotExists When the key already exists.</li>
 </ul>
 <hr />
-<h3>value-of</h3>
+<h3 id="value-of">value-of <a class="anchor-link" href="#value-of">#</a></h3>
 <p><strong>Retrieve a property of one specific key</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb"> Private Property Get ValueOf(ByVal keyName As String, Optional ByVal retrievedValue As Byte = 1) As String
@@ -141,7 +156,7 @@ Raises an error when the key does not exist.</p>
 <li>ProjectError.ElementShouldExists When the key is not found.</li>
 </ul>
 <hr />
-<h3>clone</h3>
+<h3 id="clone">clone <a class="anchor-link" href="#clone">#</a></h3>
 <p><strong>Produce a deep copy of the current checking entries</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function Clone() As IChecking
@@ -151,7 +166,7 @@ logged entries. Required so that flushing a checking into another
 container does not keep a live reference to the current object.</p>
 <p><strong>Returns:</strong> IChecking. Independent clone.</p>
 <hr />
-<h3>append</h3>
+<h3 id="append">append <a class="anchor-link" href="#append">#</a></h3>
 <p><strong>Append entries from another checking to the current one</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub Append(ByVal checks As IChecking)
@@ -164,10 +179,12 @@ is Nothing or empty.</p>
 <li><code>checks</code>: IChecking. Source checking to merge from.</li>
 </ul>
 <hr />
+</div>
+</details>
 <details>
 <summary>Internal members (not exported)</summary>
-<h2>PublicAccessors</h2>
-<h3>self</h3>
+<h2 id="int-publicaccessors">PublicAccessors</h2>
+<h3 id="int-self">self <a class="anchor-link" href="#int-self">#</a></h3>
 <p><strong>Current object instance</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Self() As IChecking
@@ -177,7 +194,7 @@ Returns the current instance cast to its interface. Used internally
 by the factory method to return an IChecking reference.</p>
 <p><strong>Returns:</strong> IChecking. Reference to the current object.</p>
 <hr />
-<h3>checking-title</h3>
+<h3 id="int-checking-title">checking-title <a class="anchor-link" href="#int-checking-title">#</a></h3>
 <p><strong>Title of the checking topic</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get CheckingTitle() As String
@@ -185,7 +202,7 @@ by the factory method to return an IChecking reference.</p>
 <p>Returns the title string assigned during creation or via the setter.</p>
 <p><strong>Returns:</strong> String. Title of the checkings.</p>
 <hr />
-<h3>checking-subtitle</h3>
+<h3 id="int-checking-subtitle">checking-subtitle <a class="anchor-link" href="#int-checking-subtitle">#</a></h3>
 <p><strong>Subtitle of the checking topic</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get CheckingSubTitle() As String
@@ -193,7 +210,7 @@ by the factory method to return an IChecking reference.</p>
 <p>Returns the subtitle string assigned during creation or via the setter.</p>
 <p><strong>Returns:</strong> String. Subtitle of the checkings.</p>
 <hr />
-<h3>checking-title-set</h3>
+<h3 id="int-checking-title-set">checking-title-set <a class="anchor-link" href="#int-checking-title-set">#</a></h3>
 <p><strong>Assign the checking title</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Let CheckingTitle(ByVal titleName As String)
@@ -203,7 +220,7 @@ by the factory method to return an IChecking reference.</p>
 <li><code>titleName</code>: String. Title to assign.</li>
 </ul>
 <hr />
-<h3>checking-subtitle-set</h3>
+<h3 id="int-checking-subtitle-set">checking-subtitle-set <a class="anchor-link" href="#int-checking-subtitle-set">#</a></h3>
 <p><strong>Assign the checking subtitle</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Let CheckingSubTitle(ByVal subtitleName As String)
@@ -213,8 +230,8 @@ by the factory method to return an IChecking reference.</p>
 <li><code>subtitleName</code>: String. Subtitle to assign.</li>
 </ul>
 <hr />
-<h2>Helpers</h2>
-<h3>scope-from-type-label</h3>
+<h2 id="int-helpers">Helpers</h2>
+<h3 id="int-scope-from-type-label">scope-from-type-label <a class="anchor-link" href="#int-scope-from-type-label">#</a></h3>
 <p><strong>Convert a type label string back to its CheckingScope byte value</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ScopeFromTypeLabel(ByVal typeLabel As String) As Byte
@@ -229,8 +246,8 @@ checkingNote when no match is found.</p>
 </ul>
 <p><strong>Returns:</strong> Byte. CheckingScope value.</p>
 <hr />
-<h2>ErrorHandling</h2>
-<h3>throw-error</h3>
+<h2 id="int-errorhandling">ErrorHandling</h2>
+<h3 id="int-throw-error">throw-error <a class="anchor-link" href="#int-throw-error">#</a></h3>
 <p><strong>Raise a VBA error with the class signature</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
@@ -248,8 +265,8 @@ for consistent stack traces.</p>
 <li>ProjectError.<varies> Always raises the specified error.</li>
 </ul>
 <hr />
-<h2>Interface</h2>
-<h3>IChecking_Name</h3>
+<h2 id="int-interface">Interface</h2>
+<h3 id="int-ichecking-name">IChecking_Name <a class="anchor-link" href="#int-ichecking-name">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get IChecking_Name() As String
 </code></pre>
@@ -257,7 +274,7 @@ for consistent stack traces.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (46 file(s))</summary>
+<summary>Used in (47 file(s))</summary>
 <ul>
 <li><a href="src/classes/analyses/Analysis.cls">Analysis.cls</a></li>
 <li><a href="src/classes/analyses/IAnalysis.cls">IAnalysis.cls</a></li>
@@ -289,6 +306,7 @@ for consistent stack traces.</p>
 <li><a href="src/classes/general/Passwords.cls">Passwords.cls</a></li>
 <li><a href="src/classes/general/TranslationObject.cls">TranslationObject.cls</a></li>
 <li><a href="src/classes/graphs/Graphs.cls">Graphs.cls</a></li>
+<li><a href="src/classes/linelist/Linelist.cls">Linelist.cls</a></li>
 <li><a href="src/classes/rubberduck/CustomTest.cls">CustomTest.cls</a></li>
 <li><a href="src/classes/setup/ISetupErrors.cls">ISetupErrors.cls</a></li>
 <li><a href="src/classes/setup/SetupErrors.cls">SetupErrors.cls</a></li>
@@ -307,8 +325,10 @@ for consistent stack traces.</p>
 <li><a href="src/tests/stubs/LLVarContextVariablesStub.cls">LLVarContextVariablesStub.cls</a></li>
 </ul>
 </details>
-
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

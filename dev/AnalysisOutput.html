@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>AnalysisOutput - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -16,10 +17,12 @@ output linelist facade, this class iterates through each analysis scope
 (normal, time series, spatial, spatio-temporal), builds cross-tables from
 table specifications, writes formulas, registers metadata in AnaTabIds, and
 renders charts. Consumers interact through the IAnalysisOutput interface.</p>
-<p><strong>Depends on:</strong> <a href="ILinelist.html">ILinelist</a>, <a href="ILinelistSpecs.html">ILinelistSpecs</a>, <a href="ILLFormat.html">ILLFormat</a>, <a href="ITranslationObject.html">ITranslationObject</a>, <a href="ITableSpecs.html">ITableSpecs</a>, <a href="ICrossTable.html">ICrossTable</a>, <a href="ICrossTableFormula.html">ICrossTableFormula</a>, <a href="IGraphSpecs.html">IGraphSpecs</a>, <a href="IGraphs.html">IGraphs</a>, <a href="IAnaTabIds.html">IAnaTabIds</a>, <a href="IButtons.html">IButtons</a>, <a href="IPasswords.html">IPasswords</a>, <a href="IDropdownLists.html">IDropdownLists</a>, <a href="ILLdictionary.html">ILLdictionary</a>, <a href="ILLVariables.html">ILLVariables</a>, <a href="IFormulaData.html">IFormulaData</a>, <a href="IMain.html">IMain</a>, <a href="BetterArray.html">BetterArray</a>, ListObject names in the setup worksheet, Bug #2 fix: GoTo arrays are now local to each scope, not shared instance state., They are passed as parameters to WriteTable and managed per-scope in WriteAnalysis.</p>
+<p><strong>Depends on:</strong> <a href="ILinelist.html">ILinelist</a>, <a href="ILinelistSpecs.html">ILinelistSpecs</a>, <a href="ILLFormat.html">ILLFormat</a>, <a href="ITranslationObject.html">ITranslationObject</a>, <a href="ITableSpecs.html">ITableSpecs</a>, <a href="ICrossTable.html">ICrossTable</a>, <a href="ICrossTableFormula.html">ICrossTableFormula</a>, <a href="IGraphSpecs.html">IGraphSpecs</a>, <a href="IGraphs.html">IGraphs</a>, <a href="IAnaTabIds.html">IAnaTabIds</a>, <a href="IButtons.html">IButtons</a>, <a href="IPasswords.html">IPasswords</a>, <a href="IDropdownLists.html">IDropdownLists</a>, <a href="ILLdictionary.html">ILLdictionary</a>, <a href="ILLVariables.html">ILLVariables</a>, <a href="IFormulaData.html">IFormulaData</a>, <a href="BetterArray.html">BetterArray</a>, ListObject names in the setup worksheet, Bug #2 fix: GoTo arrays are now local to each scope, not shared instance state., They are passed as parameters to WriteTable and managed per-scope in WriteAnalysis.</p>
 <p><strong>Version:</strong> 1.0 (2026-02-10)</p>
-<h2>Instantiation</h2>
-<h3>create</h3>
+<details open class="doc-section" id="instantiation">
+<summary>Instantiation</summary>
+<div class="section-body">
+<h3 id="create">create <a class="anchor-link" href="#create">#</a></h3>
 <p><strong>Create an AnalysisOutput orchestrator bound to a setup worksheet and output linelist.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal specSh As Worksheet, _
@@ -46,8 +49,12 @@ will be created.</li>
 <li>InvalidArgument When the linelist is Nothing.</li>
 </ul>
 <hr />
-<h2>Orchestration</h2>
-<h3>write-analysis</h3>
+</div>
+</details>
+<details open class="doc-section" id="orchestration">
+<summary>Orchestration</summary>
+<div class="section-body">
+<h3 id="write-analysis">write-analysis <a class="anchor-link" href="#write-analysis">#</a></h3>
 <p><strong>Write all analysis tables, formulas, and graphs to the output.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub WriteAnalysis()
@@ -72,10 +79,12 @@ scopes also create graphs and a graph-level GoTo dropdown. The caller
 settings after this method returns.</li>
 </ul>
 <hr />
+</div>
+</details>
 <details>
 <summary>Internal members (not exported)</summary>
-<h2>Internal Properties</h2>
-<h3>self</h3>
+<h2 id="int-internal-properties">Internal Properties</h2>
+<h3 id="int-self">self <a class="anchor-link" href="#int-self">#</a></h3>
 <p><strong>Current object instance.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Self() As IAnalysisOutput
@@ -85,7 +94,7 @@ Convenience accessor that returns the current instance cast to the
 IAnalysisOutput interface, enabling the predeclared factory pattern.</p>
 <p><strong>Returns:</strong> IAnalysisOutput. The current instance cast to the interface.</p>
 <hr />
-<h3>output-ll-get</h3>
+<h3 id="int-output-ll-get">output-ll-get <a class="anchor-link" href="#int-output-ll-get">#</a></h3>
 <p><strong>Output linelist facade.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get OutputLL() As ILinelist
@@ -94,7 +103,7 @@ IAnalysisOutput interface, enabling the predeclared factory pattern.</p>
 analysis worksheets are created and populated.</p>
 <p><strong>Returns:</strong> ILinelist. The output linelist workbook facade.</p>
 <hr />
-<h3>output-ll-set</h3>
+<h3 id="int-output-ll-set">output-ll-set <a class="anchor-link" href="#int-output-ll-set">#</a></h3>
 <p><strong>Assign the output linelist facade.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set OutputLL(ByVal ll As ILinelist)
@@ -104,7 +113,7 @@ analysis worksheets are created and populated.</p>
 <li><code>ll</code>: ILinelist. The output linelist workbook facade to store.</li>
 </ul>
 <hr />
-<h3>wksh-get</h3>
+<h3 id="int-wksh-get">wksh-get <a class="anchor-link" href="#int-wksh-get">#</a></h3>
 <p><strong>Setup worksheet reference.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Wksh() As Worksheet
@@ -112,7 +121,7 @@ analysis worksheets are created and populated.</p>
 <p>Returns the setup worksheet containing analysis definition ListObjects.</p>
 <p><strong>Returns:</strong> Worksheet. The setup worksheet containing analysis ListObjects.</p>
 <hr />
-<h3>wksh-set</h3>
+<h3 id="int-wksh-set">wksh-set <a class="anchor-link" href="#int-wksh-set">#</a></h3>
 <p><strong>Assign the setup worksheet reference.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set Wksh(ByVal specSh As Worksheet)
@@ -122,8 +131,8 @@ analysis worksheets are created and populated.</p>
 <li><code>specSh</code>: Worksheet. The setup worksheet to store.</li>
 </ul>
 <hr />
-<h2>Dependency Properties</h2>
-<h3>linelist-data</h3>
+<h2 id="int-dependency-properties">Dependency Properties</h2>
+<h3 id="int-linelist-data">linelist-data <a class="anchor-link" href="#int-linelist-data">#</a></h3>
 <p><strong>Linelist metadata facade.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get LinelistData() As ILinelistSpecs
@@ -137,7 +146,7 @@ design format, passwords, and sheet configuration. This property avoids
 repeating OutputLL().LinelistData() throughout the class.</p>
 <p><strong>Returns:</strong> ILinelistSpecs. Metadata facade for the output linelist.</p>
 <hr />
-<h3>design-format</h3>
+<h3 id="int-design-format">design-format <a class="anchor-link" href="#int-design-format">#</a></h3>
 <p><strong>Design format object.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get DesignFormat() As ILLFormat
@@ -149,7 +158,7 @@ retrieve the shared format singleton so all analysis output uses consistent
 styling from the setup workbook.</p>
 <p><strong>Returns:</strong> ILLFormat. Design format object for the output linelist.</p>
 <hr />
-<h3>trans-object</h3>
+<h3 id="int-trans-object">trans-object <a class="anchor-link" href="#int-trans-object">#</a></h3>
 <p><strong>Translation object for a given scope.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get TransObject(Optional ByVal scope As Byte = TranslationOfMessages) As ITranslationObject
@@ -166,7 +175,7 @@ Defaults to TranslationOfMessages. Use TranslationOfShapes for button/shape labe
 </ul>
 <p><strong>Returns:</strong> ITranslationObject. Bound to the requested translation scope.</p>
 <hr />
-<h3>output-sh</h3>
+<h3 id="int-output-sh">output-sh <a class="anchor-link" href="#int-output-sh">#</a></h3>
 <p><strong>Output worksheet for a given analysis scope.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get OutputSh(Optional ByVal scope As Byte = AnalysisScopeNormal) As Worksheet
@@ -183,7 +192,7 @@ which analysis worksheet to return. Defaults to AnalysisScopeNormal.</li>
 </ul>
 <p><strong>Returns:</strong> Worksheet. The output analysis sheet in the linelist workbook.</p>
 <hr />
-<h3>names-object</h3>
+<h3 id="int-names-object">names-object <a class="anchor-link" href="#int-names-object">#</a></h3>
 <p><strong>Lazily-initialised analysis tracking object.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get NamesObject() As IAnaTabIds
@@ -201,8 +210,8 @@ from the linelist, and all subsequent calls return the cached instance.</p>
 which must exist in the output linelist before this property is first accessed.</li>
 </ul>
 <hr />
-<h2>Application Helpers</h2>
-<h3>busy-app</h3>
+<h2 id="int-application-helpers">Application Helpers</h2>
+<h3 id="int-busy-app">busy-app <a class="anchor-link" href="#int-busy-app">#</a></h3>
 <p><strong>Suppress Excel visual feedback and recalculation for performance.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub BusyApp()
@@ -218,7 +227,7 @@ because activating a worksheet can re-enable ScreenUpdating in some Excel
 versions.</li>
 </ul>
 <hr />
-<h3>split-output-sheet</h3>
+<h3 id="int-split-output-sheet">split-output-sheet <a class="anchor-link" href="#int-split-output-sheet">#</a></h3>
 <p><strong>Apply freeze-pane split to an analysis output worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub SplitOutputSheet(Optional ByVal scope As Byte = AnalysisScopeNormal)
@@ -243,8 +252,8 @@ hidden-window conditions, and calls BusyApp twice because Activate can
 re-enable ScreenUpdating.</li>
 </ul>
 <hr />
-<h2>Sheet Preparation</h2>
-<h3>add-commands</h3>
+<h2 id="int-sheet-preparation">Sheet Preparation</h2>
+<h3 id="int-add-commands">add-commands <a class="anchor-link" href="#int-add-commands">#</a></h3>
 <p><strong>Add a filter/update command button to the analysis output worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddCommands(Optional ByVal scope As Byte = AnalysisScopeNormal)
@@ -263,7 +272,7 @@ to AnalysisScopeNormal. When AnalysisScopeSpatial, the spatial-specific
 update command is assigned.</li>
 </ul>
 <hr />
-<h3>prepare-sheet</h3>
+<h3 id="int-prepare-sheet">prepare-sheet <a class="anchor-link" href="#int-prepare-sheet">#</a></h3>
 <p><strong>Perform five-step initialisation of an analysis output worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub PrepareSheet(Optional ByVal scope As Byte = AnalysisScopeNormal)
@@ -283,8 +292,8 @@ to AnalysisScopeNormal. Determines the flag range name, sheet-info string,
 and freeze-pane row count.</li>
 </ul>
 <hr />
-<h2>GoTo Dropdown Helpers</h2>
-<h3>add-goto</h3>
+<h2 id="int-goto-dropdown-helpers">GoTo Dropdown Helpers</h2>
+<h3 id="int-add-goto">add-goto <a class="anchor-link" href="#int-add-goto">#</a></h3>
 <p><strong>Create a data-validation dropdown for section/graph navigation.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddGoTo(ByVal cellRng As Range, _
@@ -313,8 +322,8 @@ range, used to distinguish section-level vs graph-level dropdowns.
 Defaults to vbNullString.</li>
 </ul>
 <hr />
-<h2>Temporal Section Helpers</h2>
-<h3>min-max-formula</h3>
+<h2 id="int-temporal-section-helpers">Temporal Section Helpers</h2>
+<h3 id="int-min-max-formula">min-max-formula <a class="anchor-link" href="#int-min-max-formula">#</a></h3>
 <p><strong>Finalise temporal section date-period boundary formulas and GoTo header dropdown.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub MinMaxFormula(ByVal outsh As Worksheet, ByVal secId As String, _
@@ -348,8 +357,8 @@ final = MAX(...) formula.</li>
 default value.</li>
 </ul>
 <hr />
-<h2>Table Creation</h2>
-<h3>write-table</h3>
+<h2 id="int-table-creation">Table Creation</h2>
+<h3 id="int-write-table">write-table <a class="anchor-link" href="#int-write-table">#</a></h3>
 <p><strong>Iterate setup ListObject rows and build cross-tables on the output sheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub WriteTable(ByVal loName As String, _
@@ -388,8 +397,8 @@ to AnalysisScopeNormal. Controls which output sheet receives the tables.</li>
 ListObject has no DataBodyRange, the method exits early.</li>
 </ul>
 <hr />
-<h2>Graph Creation</h2>
-<h3>write-time-series-graphs</h3>
+<h2 id="int-graph-creation">Graph Creation</h2>
+<h3 id="int-write-time-series-graphs">write-time-series-graphs <a class="anchor-link" href="#int-write-time-series-graphs">#</a></h3>
 <p><strong>Build all time-series charts from the graph definition ListObjects.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub WriteTimeSeriesGraphs(ByVal graphLoName As String, _
@@ -424,7 +433,7 @@ the navigation dropdown.</li>
 written) or if either the graph or title ListObject has no data rows.</li>
 </ul>
 <hr />
-<h3>write-spatio-temporal-graph</h3>
+<h3 id="int-write-spatio-temporal-graph">write-spatio-temporal-graph <a class="anchor-link" href="#int-write-spatio-temporal-graph">#</a></h3>
 <p><strong>Build spatio-temporal charts from the table definition ListObject.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub WriteSpatioTemporalGraph(ByVal loName As String, _
@@ -452,8 +461,8 @@ the navigation dropdown.</li>
 early if the ListObject has no DataBodyRange.</li>
 </ul>
 <hr />
-<h2>Error Handling</h2>
-<h3>throw-error</h3>
+<h2 id="int-error-handling">Error Handling</h2>
+<h3 id="int-throw-error">throw-error <a class="anchor-link" href="#int-throw-error">#</a></h3>
 <p><strong>Raise a project error with standardised source.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As Long, ByVal message As String)
@@ -470,8 +479,8 @@ providing a consistent stack trace across all methods in this class.</p>
 <li>ProjectError.<varies> Always raises the specified error.</li>
 </ul>
 <hr />
-<h2>Interface Implementation</h2>
-<h3>IAnalysisOutput_WriteAnalysis</h3>
+<h2 id="int-interface-implementation">Interface Implementation</h2>
+<h3 id="int-ianalysisoutput-writeanalysis">IAnalysisOutput_WriteAnalysis <a class="anchor-link" href="#int-ianalysisoutput-writeanalysis">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub IAnalysisOutput_WriteAnalysis()
 </code></pre>
@@ -487,8 +496,10 @@ See the corresponding Public/Private members above for full documentation.</p>
 <li><a href="src/tests/modules/analyses/TestAnalysisOutput.bas">TestAnalysisOutput.bas</a></li>
 </ul>
 </details>
-
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

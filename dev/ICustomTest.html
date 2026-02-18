@@ -5,13 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ICustomTest - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>ICustomTest</h1>
-<h2>Lifecycle configuration</h2>
-<h3>Configure</h3>
+<details open class="doc-section" id="lifecycle-configuration">
+<summary>Lifecycle configuration</summary>
+<div class="section-body">
+<h3 id="configure">Configure <a class="anchor-link" href="#configure">#</a></h3>
 <p><strong>Configure the harness to target a workbook and output sheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Configure(ByVal targetWorkbook As workbook, _
@@ -23,13 +26,13 @@
 <li><code>outputSheetName</code>: Optional worksheet name override</li>
 </ul>
 <hr />
-<h3>Release</h3>
+<h3 id="release">Release <a class="anchor-link" href="#release">#</a></h3>
 <p><strong>Release workbook references and reset state</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ReleaseResources()
 </code></pre>
 <hr />
-<h3>SetModuleName</h3>
+<h3 id="setmodulename">SetModuleName <a class="anchor-link" href="#setmodulename">#</a></h3>
 <p><strong>Store the VBA module name shown in output</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub SetModuleName(ByVal moduleName As String)
@@ -39,7 +42,7 @@
 <li><code>moduleName</code>: Friendly module name</li>
 </ul>
 <hr />
-<h3>SetTestName</h3>
+<h3 id="settestname">SetTestName <a class="anchor-link" href="#settestname">#</a></h3>
 <p><strong>Set the label used for the next test entry</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub SetTestName(ByVal testName As String)
@@ -49,7 +52,7 @@
 <li><code>testName</code>: Descriptive test label</li>
 </ul>
 <hr />
-<h3>SetTestSubtitle</h3>
+<h3 id="settestsubtitle">SetTestSubtitle <a class="anchor-link" href="#settestsubtitle">#</a></h3>
 <p><strong>Add a subtitle for the next test entry</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub SetTestSubtitle(ByVal testSubtitle As String)
@@ -59,20 +62,24 @@
 <li><code>testSubtitle</code>: Additional context for the test</li>
 </ul>
 <hr />
-<h3>BeginTest</h3>
+<h3 id="begintest">BeginTest <a class="anchor-link" href="#begintest">#</a></h3>
 <p><strong>Persist previous results and prepare a new checking instance</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub BeginTest(Optional ByVal resetNames As Boolean = False)
 </code></pre>
 <hr />
-<h3>Reset</h3>
+<h3 id="reset">Reset <a class="anchor-link" href="#reset">#</a></h3>
 <p><strong>Reset pending checking and accumulated results</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ResetInstance()
 </code></pre>
 <hr />
-<h2>Results</h2>
-<h3>FlushCurrentTest</h3>
+</div>
+</details>
+<details open class="doc-section" id="results">
+<summary>Results</summary>
+<div class="section-body">
+<h3 id="flushcurrenttest">FlushCurrentTest <a class="anchor-link" href="#flushcurrenttest">#</a></h3>
 <p><strong>Persist the current checking and retrieve all results</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function FlushCurrentTest(Optional ByVal resetNames As Boolean = True) As BetterArray: End Function
@@ -83,7 +90,7 @@
 </ul>
 <p><strong>Returns:</strong> BetterArray containing each Checking snapshot</p>
 <hr />
-<h3>Flush</h3>
+<h3 id="flush">Flush <a class="anchor-link" href="#flush">#</a></h3>
 <p><strong>Persist the current checking without returning the result buffer</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Flush(Optional ByVal resetNames As Boolean = True)
@@ -93,14 +100,14 @@
 <li><code>resetNames</code>: Optional Boolean specifying whether to reset names after clearing</li>
 </ul>
 <hr />
-<h3>Results</h3>
+<h3 id="results">Results <a class="anchor-link" href="#results">#</a></h3>
 <p><strong>Clone accumulated results without modifying state</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Results() As BetterArray: End Function
 </code></pre>
 <p><strong>Returns:</strong> BetterArray clone of the stored results</p>
 <hr />
-<h3>PrintResults</h3>
+<h3 id="printresults">PrintResults <a class="anchor-link" href="#printresults">#</a></h3>
 <p><strong>Write accumulated results to the workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub PrintResults(Optional ByVal outputSheetName As String = vbNullString)
@@ -110,8 +117,12 @@
 <li><code>outputSheetName</code>: Optional worksheet name override</li>
 </ul>
 <hr />
-<h2>Assertions</h2>
-<h3>AreEqual</h3>
+</div>
+</details>
+<details open class="doc-section" id="assertions">
+<summary>Assertions</summary>
+<div class="section-body">
+<h3 id="areequal">AreEqual <a class="anchor-link" href="#areequal">#</a></h3>
 <p><strong>Compare expected and actual values and log the outcome</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub AreEqual(expected As Variant, _
@@ -125,7 +136,7 @@
 <li><code>message</code>: Message describing the assertion context</li>
 </ul>
 <hr />
-<h3>AreNotEqual</h3>
+<h3 id="arenotequal">AreNotEqual <a class="anchor-link" href="#arenotequal">#</a></h3>
 <p><strong>Confirm expected and actual values differ and log the outcome</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub AreNotEqual(expected As Variant, _
@@ -139,7 +150,7 @@
 <li><code>message</code>: Message describing the assertion context</li>
 </ul>
 <hr />
-<h3>IsTrue</h3>
+<h3 id="istrue">IsTrue <a class="anchor-link" href="#istrue">#</a></h3>
 <p><strong>Validate a boolean condition and log the outcome</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub IsTrue(ByVal condition As Boolean, ByVal message As String)
@@ -150,7 +161,7 @@
 <li><code>message</code>: Message describing the assertion context</li>
 </ul>
 <hr />
-<h3>IsFalse</h3>
+<h3 id="isfalse">IsFalse <a class="anchor-link" href="#isfalse">#</a></h3>
 <p><strong>Validate that a boolean condition evaluates to False</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub IsFalse(ByVal condition As Boolean, ByVal message As String)
@@ -161,7 +172,7 @@
 <li><code>message</code>: Message describing the assertion context</li>
 </ul>
 <hr />
-<h3>ObjectExists</h3>
+<h3 id="objectexists">ObjectExists <a class="anchor-link" href="#objectexists">#</a></h3>
 <p><strong>Validate that an object is set and matches the expected type name</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ObjectExists(ByVal instance As Object, _
@@ -175,7 +186,7 @@
 <li><code>message</code>: Message describing the assertion context</li>
 </ul>
 <hr />
-<h3>IsNothing</h3>
+<h3 id="isnothing">IsNothing <a class="anchor-link" href="#isnothing">#</a></h3>
 <p><strong>Validate that an object reference is Nothing</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub IsNothing(ByVal instance As Object, ByVal message As String)
@@ -186,7 +197,7 @@
 <li><code>message</code>: Message describing the assertion context</li>
 </ul>
 <hr />
-<h3>IsNotNothing</h3>
+<h3 id="isnotnothing">IsNotNothing <a class="anchor-link" href="#isnotnothing">#</a></h3>
 <p><strong>Validate that an object is not Nothing</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub IsNotNothing(ByVal instance As Object, ByVal message As String)
@@ -197,7 +208,7 @@
 <li><code>message</code>: Message describing the assertion context</li>
 </ul>
 <hr />
-<h3>LogFailure</h3>
+<h3 id="logfailure">LogFailure <a class="anchor-link" href="#logfailure">#</a></h3>
 <p><strong>Log a failure message to the current checking</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub LogFailure(ByVal message As String)
@@ -207,13 +218,13 @@
 <li><code>message</code>: Message describing the failure</li>
 </ul>
 <hr />
-<h3>Fail</h3>
+<h3 id="fail">Fail <a class="anchor-link" href="#fail">#</a></h3>
 <p><strong>Log a failure message to the current checking; for compatibility purposes</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Fail(ByVal message As String)
 </code></pre>
 <hr />
-<h3>LogSuccesses</h3>
+<h3 id="logsuccesses">LogSuccesses <a class="anchor-link" href="#logsuccesses">#</a></h3>
 <p><strong>Log a success message to the current checking</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub LogSuccesses(ByVal message As String)
@@ -223,8 +234,12 @@
 <li><code>message</code>: Message describing the success</li>
 </ul>
 <hr />
-
+</div>
+</details>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

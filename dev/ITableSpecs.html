@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ITableSpecs - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -14,8 +15,10 @@
 properties that describe a single analysis table row from the setup
 ListObject: type, identifiers, validation flags, navigation to sibling
 specs, and dictionary-based category lookups.</p>
-<h2>CoreProperties</h2>
-<h3>TableScope</h3>
+<details open class="doc-section" id="coreproperties">
+<summary>CoreProperties</summary>
+<div class="section-body">
+<h3 id="tablescope">TableScope <a class="anchor-link" href="#tablescope">#</a></h3>
 <p><strong>Analysis table scope for this specification row</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get TableScope() As AnalysisTableScope: End Property
@@ -26,7 +29,7 @@ spatio-temporal. The type determines which cross-table layout and
 formula logic apply at build time.</p>
 <p><strong>Returns:</strong> AnalysisTableScope. The table scope category.</p>
 <hr />
-<h3>Dictionary</h3>
+<h3 id="dictionary">Dictionary <a class="anchor-link" href="#dictionary">#</a></h3>
 <p><strong>Linelist dictionary bound to this specification</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Dictionary() As ILLdictionary: End Property
@@ -36,7 +39,7 @@ category lists used by the analysis table. The dictionary is shared
 across all specs in the same linelist build.</p>
 <p><strong>Returns:</strong> ILLdictionary. The linelist dictionary.</p>
 <hr />
-<h3>TableId</h3>
+<h3 id="tableid">TableId <a class="anchor-link" href="#tableid">#</a></h3>
 <p><strong>Unique identifier for this analysis table</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get TableId() As String: End Property
@@ -46,7 +49,7 @@ within the setup ListObject. Used as a key for tracking, named range
 creation, and graph association.</p>
 <p><strong>Returns:</strong> String. The unique table identifier.</p>
 <hr />
-<h3>TableSectionId</h3>
+<h3 id="tablesectionid">TableSectionId <a class="anchor-link" href="#tablesectionid">#</a></h3>
 <p><strong>Identifier of the first table in this section</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get TableSectionId() As String: End Property
@@ -56,7 +59,7 @@ Used to associate sibling tables for section-level operations like
 header placement and row alignment.</p>
 <p><strong>Returns:</strong> String. The section leader table identifier.</p>
 <hr />
-<h3>IsNewSection</h3>
+<h3 id="isnewsection">IsNewSection <a class="anchor-link" href="#isnewsection">#</a></h3>
 <p><strong>Whether this table begins a new section group</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get IsNewSection() As Boolean: End Property
@@ -66,7 +69,7 @@ analysis section. The Analysis class uses this flag to decide when to
 insert section headers on the output worksheet.</p>
 <p><strong>Returns:</strong> Boolean. True when this table starts a new section.</p>
 <hr />
-<h3>ValidTable</h3>
+<h3 id="validtable">ValidTable <a class="anchor-link" href="#validtable">#</a></h3>
 <p><strong>Whether this table has a valid configuration</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get ValidTable() As Boolean: End Property
@@ -76,8 +79,12 @@ its AnalysisTableScope. Invalid specs are skipped during the build
 process so they do not produce broken output tables.</p>
 <p><strong>Returns:</strong> Boolean. True when the table configuration is complete.</p>
 <hr />
-<h2>ValidationProperties</h2>
-<h3>HasTotal</h3>
+</div>
+</details>
+<details open class="doc-section" id="validationproperties">
+<summary>ValidationProperties</summary>
+<div class="section-body">
+<h3 id="hastotal">HasTotal <a class="anchor-link" href="#hastotal">#</a></h3>
 <p><strong>Whether totals are needed for computation</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get HasTotal() As Boolean: End Property
@@ -89,7 +96,7 @@ mode (&quot;row&quot; or &quot;column&quot;) on a time series table implies tota
 flag drives cross-table formula generation.</p>
 <p><strong>Returns:</strong> Boolean. True when total computation is needed.</p>
 <hr />
-<h3>TotalRequested</h3>
+<h3 id="totalrequested">TotalRequested <a class="anchor-link" href="#totalrequested">#</a></h3>
 <p><strong>Whether total was explicitly requested by the user</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get TotalRequested() As Boolean: End Property
@@ -99,7 +106,7 @@ HasTotal, this flag ignores implied totals from percentage mode. Used
 to decide whether the total column is visible in time series output.</p>
 <p><strong>Returns:</strong> Boolean. True when total was explicitly requested.</p>
 <hr />
-<h3>HasMissing</h3>
+<h3 id="hasmissing">HasMissing <a class="anchor-link" href="#hasmissing">#</a></h3>
 <p><strong>Whether missing-data rows or columns are included</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get HasMissing() As Boolean: End Property
@@ -108,7 +115,7 @@ to decide whether the total column is visible in time series output.</p>
 values. Determined by the &quot;missing&quot; field in the setup row.</p>
 <p><strong>Returns:</strong> Boolean. True when missing data is included.</p>
 <hr />
-<h3>HasGraph</h3>
+<h3 id="hasgraph">HasGraph <a class="anchor-link" href="#hasgraph">#</a></h3>
 <p><strong>Whether a graph should be created for this table</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get HasGraph() As Boolean: End Property
@@ -118,7 +125,7 @@ the analysis table. The AnaTabIds class uses this flag to register
 graph series and formatting.</p>
 <p><strong>Returns:</strong> Boolean. True when a graph is requested.</p>
 <hr />
-<h3>HasPercentage</h3>
+<h3 id="haspercentage">HasPercentage <a class="anchor-link" href="#haspercentage">#</a></h3>
 <p><strong>Whether percentage display is enabled</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get HasPercentage() As Boolean: End Property
@@ -128,7 +135,7 @@ graph series and formatting.</p>
 cross-table formulas are built.</p>
 <p><strong>Returns:</strong> Boolean. True when percentage is enabled.</p>
 <hr />
-<h3>SpatialTableScopes</h3>
+<h3 id="spatialtablescopes">SpatialTableScopes <a class="anchor-link" href="#spatialtablescopes">#</a></h3>
 <p><strong>Spatial analysis sub-type</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get SpatialTableScopes() As String: End Property
@@ -139,8 +146,12 @@ from the variable name prefix. Returns an empty string for non-spatial
 table scopes.</p>
 <p><strong>Returns:</strong> String. The spatial sub-type (&quot;hf&quot; or &quot;geo&quot;).</p>
 <hr />
-<h2>NavigationProperties</h2>
-<h3>Previous</h3>
+</div>
+</details>
+<details open class="doc-section" id="navigationproperties">
+<summary>NavigationProperties</summary>
+<div class="section-body">
+<h3 id="previous">Previous <a class="anchor-link" href="#previous">#</a></h3>
 <p><strong>Previous valid specification in the same section</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Previous() As ITableSpecs: End Property
@@ -152,7 +163,7 @@ Used by CrossTable to compute start-row offsets and by AnalysisOutput
 to chain table builds.</p>
 <p><strong>Returns:</strong> ITableSpecs. The preceding specification, or Nothing.</p>
 <hr />
-<h3>NextSpecs</h3>
+<h3 id="nextspecs">NextSpecs <a class="anchor-link" href="#nextspecs">#</a></h3>
 <p><strong>Next valid specification following an anchor range</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get NextSpecs(ByVal anchorRng As Range) As ITableSpecs: End Property
@@ -167,8 +178,12 @@ ListObject; scanning starts after this point.</li>
 </ul>
 <p><strong>Returns:</strong> ITableSpecs. The next valid specification, or Nothing.</p>
 <hr />
-<h2>DataAccess</h2>
-<h3>Value</h3>
+</div>
+</details>
+<details open class="doc-section" id="dataaccess">
+<summary>DataAccess</summary>
+<div class="section-body">
+<h3 id="value">Value <a class="anchor-link" href="#value">#</a></h3>
 <p><strong>Retrieve a value from the specification row by column name</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Value(ByVal colName As String) As String: End Function
@@ -183,7 +198,7 @@ column. Returns an empty string when the column is not found.</p>
 </ul>
 <p><strong>Returns:</strong> String. The cell value as a string.</p>
 <hr />
-<h3>RowCategories</h3>
+<h3 id="rowcategories">RowCategories <a class="anchor-link" href="#rowcategories">#</a></h3>
 <p><strong>Row variable categories from the dictionary</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get RowCategories(ByRef lData As Object) As BetterArray: End Property
@@ -199,7 +214,7 @@ or any other Object (categories will be empty).</li>
 </ul>
 <p><strong>Returns:</strong> BetterArray. The row category list.</p>
 <hr />
-<h3>ColumnCategories</h3>
+<h3 id="columncategories">ColumnCategories <a class="anchor-link" href="#columncategories">#</a></h3>
 <p><strong>Column variable categories from the dictionary</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get ColumnCategories(ByRef lData As Object) As BetterArray: End Property
@@ -216,8 +231,12 @@ or any other Object (categories will be empty).</li>
 </ul>
 <p><strong>Returns:</strong> BetterArray. The column category list.</p>
 <hr />
-
+</div>
+</details>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

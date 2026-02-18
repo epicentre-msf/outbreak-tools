@@ -5,19 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>IMasterSetupPreparation - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>IMasterSetupPreparation</h1>
-<h2>Lifecycle</h2>
-<h3>Configure</h3>
+<details open class="doc-section" id="lifecycle">
+<summary>Lifecycle</summary>
+<div class="section-body">
+<h3 id="configure">Configure <a class="anchor-link" href="#configure">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Configure(ByVal hostBook As Workbook)
 </code></pre>
 <p>(&quot;Bind the preparation orchestrator to the workbook hosting master setup assets.&quot;)</p>
 <hr />
-<h3>Prepare</h3>
+<h3 id="prepare">Prepare <a class="anchor-link" href="#prepare">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Prepare(Optional ByVal excelApplication As Application)
 </code></pre>
@@ -27,40 +30,52 @@
 <li><code>excelApplication</code>: Optional Excel Application reference used to guard busy state transitions.</li>
 </ul>
 <hr />
-<h2>Operations</h2>
-<h3>EnsureDropdowns</h3>
+</div>
+</details>
+<details open class="doc-section" id="operations">
+<summary>Operations</summary>
+<div class="section-body">
+<h3 id="ensuredropdowns">EnsureDropdowns <a class="anchor-link" href="#ensuredropdowns">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub EnsureDropdowns()
 </code></pre>
 <p>(&quot;Ensure core dropdown lists exist on the master setup dropdown worksheet.&quot;)</p>
 <hr />
-<h3>EnsureVariables</h3>
+<h3 id="ensurevariables">EnsureVariables <a class="anchor-link" href="#ensurevariables">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub EnsureVariables()
 </code></pre>
 <p>(&quot;Ensure the master setup variables table exists and is initialised.&quot;)</p>
 <hr />
-<h2>Accessors</h2>
-<h3>Dropdowns</h3>
+</div>
+</details>
+<details open class="doc-section" id="accessors">
+<summary>Accessors</summary>
+<div class="section-body">
+<h3 id="dropdowns">Dropdowns <a class="anchor-link" href="#dropdowns">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Dropdowns() As IDropdownLists
 </code></pre>
 <p>(&quot;Expose the dropdown manager configured during preparation.&quot;)</p>
 <hr />
-<h3>Variables</h3>
+<h3 id="variables">Variables <a class="anchor-link" href="#variables">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Variables() As IMasterSetupVariables
 </code></pre>
 <p>(&quot;Expose the variables manager bound to the master setup table.&quot;)</p>
 <hr />
-<h3>HostWorkbook</h3>
+<h3 id="hostworkbook">HostWorkbook <a class="anchor-link" href="#hostworkbook">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get HostWorkbook() As Workbook
 </code></pre>
 <p>(&quot;Expose the workbook currently configured for preparation.&quot;)</p>
 <hr />
-
+</div>
+</details>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

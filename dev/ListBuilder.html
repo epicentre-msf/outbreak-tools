@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ListBuilder - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -18,10 +19,12 @@ and filtered companion sheets, action buttons, and a pivot table. VList
 mode creates a PLAGEVALUES range reference for vertical data entry.
 Consumers call Create with a layer mode, sheet name, and linelist
 reference, then invoke Build to construct the sheet.</p>
-<p><strong>Depends on:</strong> <a href="ILinelist.html">ILinelist</a>, <a href="ILLSheets.html">ILLSheets</a>, <a href="ILinelistSpecs.html">ILinelistSpecs</a>, <a href="ILLFormat.html">ILLFormat</a>, <a href="IDropdownLists.html">IDropdownLists</a>, <a href="IPasswords.html">IPasswords</a>, <a href="ITranslationObject.html">ITranslationObject</a>, <a href="IButtons.html">IButtons</a>, <a href="IHiddenNames.html">IHiddenNames</a>, <a href="ISectionBuilder.html">ISectionBuilder</a>, ICustomPivotTables, <a href="IMain.html">IMain</a>, <a href="BetterArray.html">BetterArray</a>, Button shape codes</p>
+<p><strong>Depends on:</strong> <a href="ILinelist.html">ILinelist</a>, <a href="ILLSheets.html">ILLSheets</a>, <a href="ILinelistSpecs.html">ILinelistSpecs</a>, <a href="ILLFormat.html">ILLFormat</a>, <a href="IDropdownLists.html">IDropdownLists</a>, <a href="IPasswords.html">IPasswords</a>, <a href="ITranslationObject.html">ITranslationObject</a>, <a href="IButtons.html">IButtons</a>, <a href="IHiddenNames.html">IHiddenNames</a>, <a href="ISectionBuilder.html">ISectionBuilder</a>, ICustomPivotTables, <a href="BetterArray.html">BetterArray</a>, Button shape codes</p>
 <p><strong>Version:</strong> 1.0 (2026-02-09)</p>
-<h2>Instantiation</h2>
-<h3>create</h3>
+<details open class="doc-section" id="instantiation">
+<summary>Instantiation</summary>
+<div class="section-body">
+<h3 id="create">create <a class="anchor-link" href="#create">#</a></h3>
 <p><strong>Create a ListBuilder instance</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal layer As Byte, _
@@ -48,8 +51,12 @@ dropdowns, pivots, and specs.</li>
 present in the dictionary.</li>
 </ul>
 <hr />
-<h2>Core</h2>
-<h3>build</h3>
+</div>
+</details>
+<details open class="doc-section" id="core">
+<summary>Core</summary>
+<div class="section-body">
+<h3 id="build">build <a class="anchor-link" href="#build">#</a></h3>
 <p><strong>Build the data entry sheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Build()
@@ -64,10 +71,12 @@ mode delegates to BuildVList. Raises an error for unknown layer values.</p>
 ListBuilderLayerHList or ListBuilderLayerVList.</li>
 </ul>
 <hr />
+</div>
+</details>
 <details>
 <summary>Internal members (not exported)</summary>
-<h2>Bindings</h2>
-<h3>bin-layer</h3>
+<h2 id="int-bindings">Bindings</h2>
+<h3 id="int-bin-layer">bin-layer <a class="anchor-link" href="#int-bin-layer">#</a></h3>
 <p><strong>Assign the builder layer mode</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Friend Property Let BinLayer(ByVal value As Byte)
@@ -78,7 +87,7 @@ ListBuilderLayerHList or ListBuilderLayerVList.</li>
 <li><code>value</code>: Byte. The ListBuilderLayer constant (HList or VList).</li>
 </ul>
 <hr />
-<h3>bin-sheet-name</h3>
+<h3 id="int-bin-sheet-name">bin-sheet-name <a class="anchor-link" href="#int-bin-sheet-name">#</a></h3>
 <p><strong>Assign the target sheet name</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Friend Property Let BinSheetName(ByVal value As String)
@@ -88,7 +97,7 @@ ListBuilderLayerHList or ListBuilderLayerVList.</li>
 <li><code>value</code>: String. The dictionary sheet name to build.</li>
 </ul>
 <hr />
-<h3>bin-linelist</h3>
+<h3 id="int-bin-linelist">bin-linelist <a class="anchor-link" href="#int-bin-linelist">#</a></h3>
 <p><strong>Assign the linelist facade</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Friend Property Set BinLinelist(ByVal value As ILinelist)
@@ -98,8 +107,8 @@ ListBuilderLayerHList or ListBuilderLayerVList.</li>
 <li><code>value</code>: ILinelist. The linelist workbook facade.</li>
 </ul>
 <hr />
-<h2>HListBuild</h2>
-<h3>build-hlist</h3>
+<h2 id="int-hlistbuild">HListBuild</h2>
+<h3 id="int-build-hlist">build-hlist <a class="anchor-link" href="#int-build-hlist">#</a></h3>
 <p><strong>Build a horizontal data entry sheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub BuildHList()
@@ -113,8 +122,8 @@ ListObject table plus printed and filtered companion sheets, adds a pivot
 table, and protects the sheet. When a template workbook is in use, buttons
 are skipped and rows 3-4 are hidden instead.</p>
 <hr />
-<h2>VListBuild</h2>
-<h3>build-vlist</h3>
+<h2 id="int-vlistbuild">VListBuild</h2>
+<h3 id="int-build-vlist">build-vlist <a class="anchor-link" href="#int-build-vlist">#</a></h3>
 <p><strong>Build a vertical data entry sheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub BuildVList()
@@ -126,8 +135,8 @@ stores sheet metadata as hidden names, computes the PLAGEVALUES range
 reference (the contiguous vertical data range starting at the table start
 marker), and protects the active sheet.</p>
 <hr />
-<h2>Helpers</h2>
-<h3>build-sections</h3>
+<h2 id="int-helpers">Helpers</h2>
+<h3 id="int-build-sections">build-sections <a class="anchor-link" href="#int-build-sections">#</a></h3>
 <p><strong>Build sections using SectionBuilder</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub BuildSections(ByVal sh As Worksheet, ByVal printSh As Worksheet)
@@ -143,7 +152,7 @@ passed to the builder for variable validation setup.</p>
 <li><code>printSh</code>: Worksheet. The printed companion sheet (Nothing for VList).</li>
 </ul>
 <hr />
-<h3>collect-section-names</h3>
+<h3 id="int-collect-section-names">collect-section-names <a class="anchor-link" href="#int-collect-section-names">#</a></h3>
 <p><strong>Collect section names for the GoTo dropdown</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function CollectSectionNames(ByVal dict As ILLdictionary, _
@@ -162,16 +171,7 @@ skipped to avoid redundant dropdown entries.</p>
 </ul>
 <p><strong>Returns:</strong> BetterArray. A 1-based array of prefixed section name strings.</p>
 <hr />
-<h3>busy-app</h3>
-<p><strong>Suppress UI updates for batch operations</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub BusyApp()
-</code></pre>
-<p>Disables screen updating, display alerts, automatic calculation, and
-animations to improve performance during sheet construction. Called
-after activating a sheet to set up freeze panes.</p>
-<hr />
-<h3>throw-error</h3>
+<h3 id="int-throw-error">throw-error <a class="anchor-link" href="#int-throw-error">#</a></h3>
 <p><strong>Raise a ProjectError-based exception</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As Long, ByVal errorMessage As String)
@@ -182,8 +182,8 @@ after activating a sheet to set up freeze panes.</p>
 <li><code>errorMessage</code>: String. Human-readable description of the failure.</li>
 </ul>
 <hr />
-<h2>InterfaceImplementation</h2>
-<h3>IListBuilder_Build</h3>
+<h2 id="int-interfaceimplementation">InterfaceImplementation</h2>
+<h3 id="int-ilistbuilder-build">IListBuilder_Build <a class="anchor-link" href="#int-ilistbuilder-build">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub IListBuilder_Build()
 </code></pre>
@@ -192,15 +192,18 @@ See the corresponding Public members above for full documentation.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (3 file(s))</summary>
+<summary>Used in (4 file(s))</summary>
 <ul>
 <li><a href="src/classes/linelist/IListBuilder.cls">IListBuilder.cls</a></li>
 <li><a href="src/classes/linelist/ListBuilder.cls">ListBuilder.cls</a></li>
+<li><a href="src/modules/designer/EventsDesignerAdvanced.bas">EventsDesignerAdvanced.bas</a></li>
 <li><a href="src/tests/modules/linelist/TestListBuilder.bas">TestListBuilder.bas</a></li>
 </ul>
 </details>
-
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

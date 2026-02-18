@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>DiseaseImportSummary - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -12,76 +13,76 @@
 <h1>DiseaseImportSummary</h1>
 <details>
 <summary>Internal members (not exported)</summary>
-<h2>Factory</h2>
-<h3>Create</h3>
+<h2 id="int-factory">Factory</h2>
+<h3 id="int-create">Create <a class="anchor-link" href="#int-create">#</a></h3>
 <p><strong>Return a new summary instance as its interface.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create() As IDiseaseImportSummary
 </code></pre>
 <hr />
-<h2>Public API</h2>
-<h3>Self</h3>
+<h2 id="int-public-api">Public API</h2>
+<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
 <p><strong>Provide the interface reference to the current instance.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Self() As IDiseaseImportSummary
 </code></pre>
 <hr />
-<h3>Initialise</h3>
+<h3 id="int-initialise">Initialise <a class="anchor-link" href="#int-initialise">#</a></h3>
 <p><strong>Ensure arrays are initialised before use.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Initialise()
 </code></pre>
 <hr />
-<h3>RegisterMissing</h3>
+<h3 id="int-registermissing">RegisterMissing <a class="anchor-link" href="#int-registermissing">#</a></h3>
 <p><strong>Register a missing variable and flag reporting.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub RegisterMissing(ByVal varName As String)
 </code></pre>
 <hr />
-<h3>RegisterUpdated</h3>
+<h3 id="int-registerupdated">RegisterUpdated <a class="anchor-link" href="#int-registerupdated">#</a></h3>
 <p><strong>Register an updated variable.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub RegisterUpdated(ByVal varName As String)
 </code></pre>
 <hr />
-<h3>RegisterAppended</h3>
+<h3 id="int-registerappended">RegisterAppended <a class="anchor-link" href="#int-registerappended">#</a></h3>
 <p><strong>Register an appended variable and flag reporting.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub RegisterAppended(ByVal varName As String)
 </code></pre>
 <hr />
-<h3>MissingVariables</h3>
+<h3 id="int-missingvariables">MissingVariables <a class="anchor-link" href="#int-missingvariables">#</a></h3>
 <p><strong>Retrieve missing variables as a clone to protect internal state.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get MissingVariables() As BetterArray
 </code></pre>
 <hr />
-<h3>UpdatedVariables</h3>
+<h3 id="int-updatedvariables">UpdatedVariables <a class="anchor-link" href="#int-updatedvariables">#</a></h3>
 <p><strong>Retrieve updated variables as a clone.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get UpdatedVariables() As BetterArray
 </code></pre>
 <hr />
-<h3>AppendedVariables</h3>
+<h3 id="int-appendedvariables">AppendedVariables <a class="anchor-link" href="#int-appendedvariables">#</a></h3>
 <p><strong>Retrieve appended variables as a clone.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get AppendedVariables() As BetterArray
 </code></pre>
 <hr />
-<h3>RequiresReport</h3>
+<h3 id="int-requiresreport">RequiresReport <a class="anchor-link" href="#int-requiresreport">#</a></h3>
 <p><strong>Expose whether the merge requires a report.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get RequiresReport() As Boolean
 </code></pre>
 <hr />
-<h2>Internal Helpers</h2>
-<h3>AddUnique</h3>
+<h2 id="int-internal-helpers">Internal Helpers</h2>
+<h3 id="int-addunique">AddUnique <a class="anchor-link" href="#int-addunique">#</a></h3>
 <p><strong>Add a value to the BetterArray only if not already present.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddUnique(ByRef target As BetterArray, ByVal value As String)
 </code></pre>
 <hr />
-<h3>CloneArray</h3>
+<h3 id="int-clonearray">CloneArray <a class="anchor-link" href="#int-clonearray">#</a></h3>
 <p><strong>Return a defensive copy of the supplied BetterArray.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function CloneArray(ByVal source As BetterArray) As BetterArray
@@ -99,8 +100,10 @@
 <li><a href="src/tests/modules/mastersetup/TestDiseaseIntegration.bas">TestDiseaseIntegration.bas</a></li>
 </ul>
 </details>
-
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

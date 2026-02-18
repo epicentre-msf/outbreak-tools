@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ILLGeo - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -26,8 +27,10 @@ including health facilities. Used by GeoLevel when geoType is
 GeoScopeAdmin.
 Extended scope that includes both admin levels and health facility. Used
 for operations that need to address all five geographic tiers.</p>
-<h2>Properties</h2>
-<h3>GeoLevel</h3>
+<details open class="doc-section" id="properties">
+<summary>Properties</summary>
+<div class="section-body">
+<h3 id="geolevel">GeoLevel <a class="anchor-link" href="#geolevel">#</a></h3>
 <p><strong>List of values at a given admin level</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get GeoLevel(ByVal adminLevel As Byte, _
@@ -48,7 +51,7 @@ facility table.</p>
 </ul>
 <p><strong>Returns:</strong> BetterArray. Unique values at the requested level, or an empty array when the geobase is empty.</p>
 <hr />
-<h3>GeoNames</h3>
+<h3 id="geonames">GeoNames <a class="anchor-link" href="#geonames">#</a></h3>
 <p><strong>Translated display name for a raw admin column name</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get GeoNames(ByVal admname As String) As String: End Property
@@ -63,7 +66,7 @@ exists.</p>
 </ul>
 <p><strong>Returns:</strong> String. Translated display name, or the raw name if no translation exists.</p>
 <hr />
-<h3>HasNoData</h3>
+<h3 id="hasnodata">HasNoData <a class="anchor-link" href="#hasnodata">#</a></h3>
 <p><strong>Whether the geobase has no imported data</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get HasNoData() As Boolean: End Property
@@ -72,8 +75,12 @@ exists.</p>
 no geo data has been imported yet or that all data has been cleared.</p>
 <p><strong>Returns:</strong> Boolean. True when the geobase is empty.</p>
 <hr />
-<h2>Translation</h2>
-<h3>Translate</h3>
+</div>
+</details>
+<details open class="doc-section" id="translation">
+<summary>Translation</summary>
+<div class="section-body">
+<h3 id="translate">Translate <a class="anchor-link" href="#translate">#</a></h3>
 <p><strong>Translate or revert geobase table headers</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Translate(Optional ByVal rawNames As Boolean = False): End Sub
@@ -88,8 +95,12 @@ requested translation state.</p>
 <li><code>rawNames</code>: Optional Boolean. True to revert to raw names, False to apply translated names. Defaults to False.</li>
 </ul>
 <hr />
-<h2>Import / Export</h2>
-<h3>Import</h3>
+</div>
+</details>
+<details open class="doc-section" id="import-export">
+<summary>Import / Export</summary>
+<div class="section-body">
+<h3 id="import">Import <a class="anchor-link" href="#import">#</a></h3>
 <p><strong>Import geobase data from an external workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Import(ByVal fromWkb As Workbook, _
@@ -106,7 +117,7 @@ and the main admin/HF data is left intact.</p>
 <li><code>histoOnly</code>: Optional Boolean. True to import only historic data. Defaults to False.</li>
 </ul>
 <hr />
-<h3>ExportToFile</h3>
+<h3 id="exporttofile">ExportToFile <a class="anchor-link" href="#exporttofile">#</a></h3>
 <p><strong>Export geobase tables to a workbook as flat data</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ExportToFile(ByVal outputWkb As Workbook, _
@@ -114,15 +125,16 @@ and the main admin/HF data is left intact.</p>
 </code></pre>
 <p>Exports geobase tables to the target workbook with one sheet per table
 and a Metadata sheet. Headers are reverted to raw names before export
-and restored to translated form afterwards. When onlyHistory is True,
-only the HISTOGEO and HISTOHF tables are exported.</p>
+and restored to translated form afterwards. HiddenNames entries are
+exported to the Metadata sheet for round-trip import support. When
+onlyHistory is True, only the HISTOGEO and HISTOHF tables are exported.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>outputWkb</code>: Workbook. Target workbook to receive exported sheets.</li>
 <li><code>onlyHistory</code>: Optional Boolean. True to export only historic tables. Defaults to False.</li>
 </ul>
 <hr />
-<h3>ExportToWkb</h3>
+<h3 id="exporttowkb">ExportToWkb <a class="anchor-link" href="#exporttowkb">#</a></h3>
 <p><strong>Export the geobase worksheet structure to a workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ExportToWkb(ByVal Wkb As Workbook, _
@@ -140,8 +152,12 @@ Raises an error when sheets with conflicting names already exist.</p>
 <li><code>setupPath</code>: Optional String. Setup file path for metadata. Defaults to vbNullString.</li>
 </ul>
 <hr />
-<h2>Clear</h2>
-<h3>Clear</h3>
+</div>
+</details>
+<details open class="doc-section" id="clear">
+<summary>Clear</summary>
+<div class="section-body">
+<h3 id="clear">Clear <a class="anchor-link" href="#clear">#</a></h3>
 <p><strong>Clear all geobase data</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Clear(): End Sub
@@ -150,7 +166,7 @@ Raises an error when sheets with conflicting names already exist.</p>
 T_LevelNames and T_CONCAT, and sets the update flag to &quot;empty&quot;. Resets
 the translation name cache.</p>
 <hr />
-<h3>ClearHistoric</h3>
+<h3 id="clearhistoric">ClearHistoric <a class="anchor-link" href="#clearhistoric">#</a></h3>
 <p><strong>Clear historic entries</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ClearHistoric(Optional ByVal scope As Byte = 3): End Sub
@@ -163,7 +179,7 @@ controls which tables are cleared: 0 for geo only, 1 for HF only,
 <li><code>scope</code>: Optional Byte. 0 = geo only, 1 = HF only, 3 = both. Defaults to 3.</li>
 </ul>
 <hr />
-<h3>UpdateHistoric</h3>
+<h3 id="updatehistoric">UpdateHistoric <a class="anchor-link" href="#updatehistoric">#</a></h3>
 <p><strong>Add a new entry to the historic data</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub UpdateHistoric(ByVal newValue As String, _
@@ -178,8 +194,12 @@ and sorts alphabetically.</p>
 <li><code>scope</code>: Optional Byte. 0 = geo historic, 1 = HF historic. Defaults to 0.</li>
 </ul>
 <hr />
-<h2>Update</h2>
-<h3>Update</h3>
+</div>
+</details>
+<details open class="doc-section" id="update">
+<summary>Update</summary>
+<div class="section-body">
+<h3 id="update">Update <a class="anchor-link" href="#update">#</a></h3>
 <p><strong>Update linelist geo column headers and dropdowns</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Update(ByVal pass As IPasswords): End Sub
@@ -192,7 +212,7 @@ Also refreshes the admin1 dropdown list on the dropdown_lists__ sheet.</p>
 <li><code>pass</code>: IPasswords. Password manager for sheet protection and unprotection.</li>
 </ul>
 <hr />
-<h3>UpdateDict</h3>
+<h3 id="updatedict">UpdateDict <a class="anchor-link" href="#updatedict">#</a></h3>
 <p><strong>Update dictionary labels for geo-related variables</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub UpdateDict(ByVal dict As ILLdictionary): End Sub
@@ -205,7 +225,7 @@ display names.</p>
 <li><code>dict</code>: ILLdictionary. The linelist dictionary.</li>
 </ul>
 <hr />
-<h3>UpdateShowHide</h3>
+<h3 id="updateshowhide">UpdateShowHide <a class="anchor-link" href="#updateshowhide">#</a></h3>
 <p><strong>Update show/hide tables with translated geo labels</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub UpdateShowHide(ByVal sh As Worksheet, ByVal dict As ILLdictionary): End Sub
@@ -220,8 +240,12 @@ name.</p>
 <li><code>dict</code>: ILLdictionary. The linelist dictionary.</li>
 </ul>
 <hr />
-<h2>Admin Code Resolution</h2>
-<h3>AdminCode</h3>
+</div>
+</details>
+<details open class="doc-section" id="admin-code-resolution">
+<summary>Admin Code Resolution</summary>
+<div class="section-body">
+<h3 id="admincode">AdminCode <a class="anchor-link" href="#admincode">#</a></h3>
 <p><strong>Resolve the admin code from a translated display name</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function AdminCode(ByVal selectedAdmin As String) As String: End Function
@@ -235,8 +259,12 @@ Falls back to &quot;adm1&quot; when no match is found.</p>
 </ul>
 <p><strong>Returns:</strong> String. Admin code (&quot;adm1&quot;, &quot;adm2&quot;, &quot;adm3&quot;, or &quot;adm4&quot;).</p>
 <hr />
-
+</div>
+</details>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

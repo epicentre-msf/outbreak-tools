@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IEventLinelist - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>IEventLinelist</h1>
+<p>Defines the public contract for the EventLinelist class, exposing methods
+to handle workbook-level events in the output linelist workbook: sheet
+change, deactivate, selection change, double-click, filter table updates,
+and list-auto dropdown maintenance.</p>
+<p><strong>Depends on:</strong> <a href="ILLTranslation.html">ILLTranslation</a>, <a href="ITranslationObject.html">ITranslationObject</a>, <a href="IHiddenNames.html">IHiddenNames</a>, <a href="IDropdownLists.html">IDropdownLists</a>, <a href="ILLGeo.html">ILLGeo</a>, <a href="ILLdictionary.html">ILLdictionary</a>, <a href="ILLVariables.html">ILLVariables</a>, <a href="IPasswords.html">IPasswords</a>, <a href="ICustomTable.html">ICustomTable</a></p>
+<details open class="doc-section" id="lifecycle">
+<summary>Lifecycle</summary>
+<div class="section-body">
+<h3 id="configure">Configure <a class="anchor-link" href="#configure">#</a></h3>
+<p><strong>Configure the service with its host workbook context.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Configure(ByVal hostBook As Workbook)
+</code></pre>
+<p>Binds the service to a host workbook and resets all cached helpers. Must be
+called once before any event handler.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>hostBook</code>: Workbook. The linelist workbook providing data and infrastructure.</li>
+</ul>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="workbook-events">
+<summary>Workbook events</summary>
+<div class="section-body">
+<h3 id="onworkbookopen">OnWorkbookOpen <a class="anchor-link" href="#onworkbookopen">#</a></h3>
+<p><strong>React to workbook open notifications.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub OnWorkbookOpen()
+</code></pre>
+<p>Sets keyboard shortcuts, disables stale value formatting, and applies
+the initial workbook configuration (calculation mode, etc.).</p>
+<hr />
+<h3 id="onsheetchange">OnSheetChange <a class="anchor-link" href="#onsheetchange">#</a></h3>
+<p><strong>Handle worksheet change events fired by Excel.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub OnSheetChange(ByVal sh As Worksheet, ByVal target As Range)
+</code></pre>
+<p>Inspects the sheet type tag (cell C1) and dispatches to the appropriate
+handler: HList value change (geo cascades, editable labels, list-auto,
+go-to-section, header protection, multiple choices), VList value change,
+or analysis value change (go-to-section, spatial table dispatch).</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The worksheet raising the change event.</li>
+<li><code>target</code>: Range. The edited cells.</li>
+</ul>
+<hr />
+<h3 id="onsheetdeactivate">OnSheetDeactivate <a class="anchor-link" href="#onsheetdeactivate">#</a></h3>
+<p><strong>Handle worksheet deactivation events.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub OnSheetDeactivate(ByVal prevSheetName As String)
+</code></pre>
+<p>When the deactivated sheet had list-auto updates pending (flagged via
+RNG_UpdateListAuto hidden name), triggers the list-auto refresh and
+clears the flag.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>prevSheetName</code>: String. Name of the sheet that was deactivated.</li>
+</ul>
+<hr />
+<h3 id="onselectionchange">OnSelectionChange <a class="anchor-link" href="#onselectionchange">#</a></h3>
+<p><strong>Handle selection change events on HList sheets.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub OnSelectionChange(ByVal sh As Worksheet, ByVal target As Range)
+</code></pre>
+<p>Updates geo dropdown validation lists based on the selected cell's geo
+control tag. When the selection is on the last row of the ListObject,
+automatically adds rows.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The worksheet where the selection changed.</li>
+<li><code>target</code>: Range. The newly selected cell(s).</li>
+</ul>
+<hr />
+<h3 id="ondoubleclick">OnDoubleClick <a class="anchor-link" href="#ondoubleclick">#</a></h3>
+<p><strong>Handle double-click events on analysis sheets.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub OnDoubleClick(ByVal sh As Worksheet, ByVal target As Range)
+</code></pre>
+<p>When the double-clicked cell is on a spatio-temporal analysis sheet and
+falls within an INPUTSPTGEO or INPUTSPTHF named range, opens the geo
+form for the corresponding type.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The worksheet where the double-click occurred.</li>
+<li><code>target</code>: Range. The double-clicked cell.</li>
+</ul>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="auxiliary-operations">
+<summary>Auxiliary operations</summary>
+<div class="section-body">
+<h3 id="updatefiltertables">UpdateFilterTables <a class="anchor-link" href="#updatefiltertables">#</a></h3>
+<p><strong>Update filter tables used by analysis sheets.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub UpdateFilterTables(Optional ByVal calculate As Boolean = True)
+</code></pre>
+<p>Copies visible HList data to corresponding filtered sheets. Optionally
+recalculates the active analysis sheet afterwards.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>calculate</code>: Optional Boolean. When True (default), recalculates the active sheet after updating.</li>
+</ul>
+<hr />
+<h3 id="updatealllistauto">UpdateAllListAuto <a class="anchor-link" href="#updatealllistauto">#</a></h3>
+<p><strong>Update all list-auto dropdowns across all HList sheets.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub UpdateAllListAuto()
+</code></pre>
+<p>Iterates all worksheets in the workbook, and for each HList sheet,
+scans columns tagged as list_auto_origin and refreshes their dropdown
+validation lists with unique values from the data column.</p>
+<hr />
+<h3 id="resetcaches">ResetCaches <a class="anchor-link" href="#resetcaches">#</a></h3>
+<p><strong>Clear cached resources so they are lazily rebuilt on demand.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ResetCaches()
+</code></pre>
+<p>Clears all lazily-cached domain managers so they are rebuilt from
+scratch on the next access.</p>
+<hr />
+</div>
+</details>
+  </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
+</body>
+</html>
+

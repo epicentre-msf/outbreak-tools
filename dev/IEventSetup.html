@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>IEventSetup - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -15,8 +16,10 @@ to handle workbook-level setup events (open, activate, change), manage
 setup worksheet rows, sort tables, recalculate analysis helpers, and
 retrieve values from analysis-related ListObjects.</p>
 <p><strong>Depends on:</strong> <a href="IPasswords.html">IPasswords</a>, <a href="BetterArray.html">BetterArray</a>, <a href="IUpdatedValues.html">IUpdatedValues</a>, <a href="IDropdownLists.html">IDropdownLists</a>, <a href="ILLdictionary.html">ILLdictionary</a>, <a href="ILLChoices.html">ILLChoices</a>, <a href="ILLExport.html">ILLExport</a>, <a href="IAnalysis.html">IAnalysis</a>, <a href="ISetupTranslationsTable.html">ISetupTranslationsTable</a></p>
-<h2>Lifecycle</h2>
-<h3>Configure</h3>
+<details open class="doc-section" id="lifecycle">
+<summary>Lifecycle</summary>
+<div class="section-body">
+<h3 id="configure">Configure <a class="anchor-link" href="#configure">#</a></h3>
 <p><strong>Configure the service with its host workbook context.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Configure(ByVal hostBook As Workbook)
@@ -28,7 +31,7 @@ called once before any event handler or row operation.</p>
 <li><code>hostBook</code>: Workbook. The workbook providing setup worksheets and infrastructure.</li>
 </ul>
 <hr />
-<h3>OnWorkbookOpen</h3>
+<h3 id="onworkbookopen">OnWorkbookOpen <a class="anchor-link" href="#onworkbookopen">#</a></h3>
 <p><strong>React to workbook open notifications.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub OnWorkbookOpen()
@@ -36,8 +39,12 @@ called once before any event handler or row operation.</p>
 <p>Switches update watcher tags to &quot;yes&quot;, resets the translation counter,
 disables stale value formatting, and applies the protection matrix.</p>
 <hr />
-<h2>Workbook events</h2>
-<h3>OnSheetActivate</h3>
+</div>
+</details>
+<details open class="doc-section" id="workbook-events">
+<summary>Workbook events</summary>
+<div class="section-body">
+<h3 id="onsheetactivate">OnSheetActivate <a class="anchor-link" href="#onsheetactivate">#</a></h3>
 <p><strong>Handle worksheet activation events.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub OnSheetActivate(ByVal sh As Worksheet)
@@ -49,7 +56,7 @@ when the Analysis sheet becomes active.</p>
 <li><code>sh</code>: Worksheet. The worksheet that became active.</li>
 </ul>
 <hr />
-<h3>OnSheetChange</h3>
+<h3 id="onsheetchange">OnSheetChange <a class="anchor-link" href="#onsheetchange">#</a></h3>
 <p><strong>Handle worksheet change events fired by Excel.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub OnSheetChange(ByVal sh As Worksheet, ByVal target As Range)
@@ -63,8 +70,12 @@ dropdowns and calculations when the Analysis sheet changes.</p>
 <li><code>target</code>: Range. The edited cells.</li>
 </ul>
 <hr />
-<h2>Auxiliary operations</h2>
-<h3>RecalculateAnalysis</h3>
+</div>
+</details>
+<details open class="doc-section" id="auxiliary-operations">
+<summary>Auxiliary operations</summary>
+<div class="section-body">
+<h3 id="recalculateanalysis">RecalculateAnalysis <a class="anchor-link" href="#recalculateanalysis">#</a></h3>
 <p><strong>Recalculate analysis tables in response to structural edits.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub RecalculateAnalysis()
@@ -73,7 +84,7 @@ dropdowns and calculations when the Analysis sheet changes.</p>
 spatio-temporal, spatio-temporal specifications). Call after structural
 changes to analysis ListObjects.</p>
 <hr />
-<h3>UpdateAnalysisDropdowns</h3>
+<h3 id="updateanalysisdropdowns">UpdateAnalysisDropdowns <a class="anchor-link" href="#updateanalysisdropdowns">#</a></h3>
 <p><strong>Refresh cached dropdowns and related analysis helpers.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub UpdateAnalysisDropdowns(Optional ByVal forceUpdate As Boolean = False)
@@ -85,7 +96,7 @@ flags. When forceUpdate is True, rebuilds all dropdowns regardless of flags.</p>
 <li><code>forceUpdate</code>: Optional Boolean. When True, forces a full refresh regardless of update tags. Defaults to False.</li>
 </ul>
 <hr />
-<h3>ResetTranslationCounter</h3>
+<h3 id="resettranslationcounter">ResetTranslationCounter <a class="anchor-link" href="#resettranslationcounter">#</a></h3>
 <p><strong>Reset the translation update counter stored in hidden names.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ResetTranslationCounter()
@@ -93,8 +104,12 @@ flags. When forceUpdate is True, rebuilds all dropdowns regardless of flags.</p>
 <p>Resets the hidden name counter that tracks translation updates back to zero.
 Called on workbook open and after translation table management.</p>
 <hr />
-<h2>Row operations</h2>
-<h3>ManageRows</h3>
+</div>
+</details>
+<details open class="doc-section" id="row-operations">
+<summary>Row operations</summary>
+<div class="section-body">
+<h3 id="managerows">ManageRows <a class="anchor-link" href="#managerows">#</a></h3>
 <p><strong>Manage setup worksheet rows using cached helpers.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ManageRows(ByVal sheetName As String, Optional ByVal del As Boolean = False)
@@ -107,7 +122,7 @@ exports) to add or remove rows, handling sheet protection around each operation.
 <li><code>del</code>: Optional Boolean. When True, removes rows instead of adding them. Defaults to False.</li>
 </ul>
 <hr />
-<h3>InsertRows</h3>
+<h3 id="insertrows">InsertRows <a class="anchor-link" href="#insertrows">#</a></h3>
 <p><strong>Insert rows relative to a selection for supported setup sheets.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub InsertRows(ByVal sheetName As String, _
@@ -124,7 +139,7 @@ the Analysis sheet, insertShift is always forced to True.</p>
 <li><code>insertShift</code>: Optional Boolean. Controls whether worksheet rows should be inserted to preserve stacked tables. Defaults to False.</li>
 </ul>
 <hr />
-<h3>DeleteRows</h3>
+<h3 id="deleterows">DeleteRows <a class="anchor-link" href="#deleterows">#</a></h3>
 <p><strong>Delete rows relative to a selection for supported setup sheets.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub DeleteRows(ByVal sheetName As String, _
@@ -141,7 +156,7 @@ the Analysis sheet, forceShift is always forced to True.</p>
 <li><code>forceShift</code>: Optional Boolean. Controls whether worksheet rows should be deleted. Defaults to False.</li>
 </ul>
 <hr />
-<h3>SortTables</h3>
+<h3 id="sorttables">SortTables <a class="anchor-link" href="#sorttables">#</a></h3>
 <p><strong>Sort setup worksheets leveraging cached managers.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub SortTables(ByVal sheetName As String)
@@ -154,7 +169,7 @@ the dictionary sheet because sort results may propagate.</p>
 <li><code>sheetName</code>: String. Worksheet name to sort.</li>
 </ul>
 <hr />
-<h3>BuildTimeSeriesHeader</h3>
+<h3 id="buildtimeseriesheader">BuildTimeSeriesHeader <a class="anchor-link" href="#buildtimeseriesheader">#</a></h3>
 <p><strong>Compose the time-series header displayed in analysis tables.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function BuildTimeSeriesHeader(ByVal timeVar As String, _
@@ -171,7 +186,7 @@ label, and group variable label separated by a horizontal-rule character.</p>
 </ul>
 <p><strong>Returns:</strong> String. The composed header text.</p>
 <hr />
-<h3>AnalysisGraphValue</h3>
+<h3 id="analysisgraphvalue">AnalysisGraphValue <a class="anchor-link" href="#analysisgraphvalue">#</a></h3>
 <p><strong>Retrieve a value from the analysis graph label table.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function AnalysisGraphValue(ByVal graphTitle As String, _
@@ -186,7 +201,7 @@ graphTitle as the row key and graphCol as the column header.</p>
 </ul>
 <p><strong>Returns:</strong> String. The retrieved value, or empty.</p>
 <hr />
-<h3>AnalysisTimeSeriesValue</h3>
+<h3 id="analysistimeseriesvalue">AnalysisTimeSeriesValue <a class="anchor-link" href="#analysistimeseriesvalue">#</a></h3>
 <p><strong>Retrieve a value from the analysis time-series table.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function AnalysisTimeSeriesValue(ByVal seriesTitle As String, _
@@ -201,7 +216,7 @@ the row key and tsColumn as the column header.</p>
 </ul>
 <p><strong>Returns:</strong> String. The retrieved value, or empty.</p>
 <hr />
-<h3>SpatioTemporalSpecValue</h3>
+<h3 id="spatiotemporalspecvalue">SpatioTemporalSpecValue <a class="anchor-link" href="#spatiotemporalspecvalue">#</a></h3>
 <p><strong>Retrieve a value from the spatio-temporal specifications table.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function SpatioTemporalSpecValue(ByVal sectionName As String, _
@@ -216,7 +231,7 @@ sectionName as the row key and specColumn as the column header.</p>
 </ul>
 <p><strong>Returns:</strong> String. The retrieved value, or empty.</p>
 <hr />
-<h3>ResetCaches</h3>
+<h3 id="resetcaches">ResetCaches <a class="anchor-link" href="#resetcaches">#</a></h3>
 <p><strong>Clear cached resources so they are lazily rebuilt on demand.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ResetCaches()
@@ -224,8 +239,12 @@ sectionName as the row key and specColumn as the column header.</p>
 <p>Clears all lazily-cached domain managers and table wrappers so they are
 rebuilt from scratch on the next access.</p>
 <hr />
-
+</div>
+</details>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

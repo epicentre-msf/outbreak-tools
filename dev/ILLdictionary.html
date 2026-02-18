@@ -5,20 +5,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ILLdictionary - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>ILLdictionary</h1>
-<h2>Data Access</h2>
-<h3>Data</h3>
+<details open class="doc-section" id="data-access">
+<summary>Data Access</summary>
+<div class="section-body">
+<h3 id="data">Data <a class="anchor-link" href="#data">#</a></h3>
 <p><strong>DataSheet backing store</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Data() As IDataSheet: End Property
 </code></pre>
 <p><strong>Returns:</strong> An IDataSheet reference with the dictionary data</p>
 <hr />
-<h3>DataRange</h3>
+<h3 id="datarange">DataRange <a class="anchor-link" href="#datarange">#</a></h3>
 <p><strong>Data range accessor</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get DataRange(Optional ByVal colName As String = &quot;__all__&quot;, _
@@ -31,21 +34,21 @@
 </ul>
 <p><strong>Returns:</strong> A Range scoped to the requested dictionary data</p>
 <hr />
-<h3>Prepared</h3>
+<h3 id="prepared">Prepared <a class="anchor-link" href="#prepared">#</a></h3>
 <p><strong>Dictionary preparation status</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Prepared() As Boolean: End Property
 </code></pre>
 <p><strong>Returns:</strong> True when the dictionary is ready for designer workflows</p>
 <hr />
-<h3>TotalNumberOfExports</h3>
+<h3 id="totalnumberofexports">TotalNumberOfExports <a class="anchor-link" href="#totalnumberofexports">#</a></h3>
 <p><strong>Total number of export columns</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get TotalNumberOfExports() As Long: End Property
 </code></pre>
 <p><strong>Returns:</strong> A Long representing the configured number of export slots</p>
 <hr />
-<h3>TotalNumberOfExports</h3>
+<h3 id="totalnumberofexports">TotalNumberOfExports <a class="anchor-link" href="#totalnumberofexports">#</a></h3>
 <p><strong>Update total number of export columns</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Let TotalNumberOfExports(ByVal numberOfExports As Long): End Property
@@ -55,8 +58,12 @@
 <li><code>numberOfExports</code>: Long. Requested number of export slots to persist.</li>
 </ul>
 <hr />
-<h2>Column Operations</h2>
-<h3>ColumnExists</h3>
+</div>
+</details>
+<details open class="doc-section" id="column-operations">
+<summary>Column Operations</summary>
+<div class="section-body">
+<h3 id="columnexists">ColumnExists <a class="anchor-link" href="#columnexists">#</a></h3>
 <p><strong>Test for column existence</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function ColumnExists(ByVal colName As String, _
@@ -69,7 +76,7 @@
 </ul>
 <p><strong>Returns:</strong> True when the column is present</p>
 <hr />
-<h3>UniqueValues</h3>
+<h3 id="uniquevalues">UniqueValues <a class="anchor-link" href="#uniquevalues">#</a></h3>
 <p><strong>Unique column values</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function UniqueValues(ByVal colName As String) As BetterArray: End Function
@@ -80,7 +87,7 @@
 </ul>
 <p><strong>Returns:</strong> A BetterArray containing distinct values</p>
 <hr />
-<h3>VariableExists</h3>
+<h3 id="variableexists">VariableExists <a class="anchor-link" href="#variableexists">#</a></h3>
 <p><strong>Variable presence test</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function VariableExists(ByVal varName As String) As Boolean: End Function
@@ -91,7 +98,7 @@
 </ul>
 <p><strong>Returns:</strong> True when the variable exists in the dictionary</p>
 <hr />
-<h3>AddColumn</h3>
+<h3 id="addcolumn">AddColumn <a class="anchor-link" href="#addcolumn">#</a></h3>
 <p><strong>Append a column to the dictionary</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub AddColumn(ByVal colName As String): End Sub
@@ -101,7 +108,7 @@
 <li><code>colName</code>: String. Name of the column to append.</li>
 </ul>
 <hr />
-<h3>InsertColumn</h3>
+<h3 id="insertcolumn">InsertColumn <a class="anchor-link" href="#insertcolumn">#</a></h3>
 <p><strong>Insert a column relative to another</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub InsertColumn(ByVal colName As String, ByVal After As String): End Sub
@@ -112,7 +119,7 @@
 <li><code>After</code>: String. Existing column after which the new column is inserted.</li>
 </ul>
 <hr />
-<h3>RemoveColumn</h3>
+<h3 id="removecolumn">RemoveColumn <a class="anchor-link" href="#removecolumn">#</a></h3>
 <p><strong>Remove a column from the dictionary</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub RemoveColumn(ByVal colName As String): End Sub
@@ -122,7 +129,7 @@
 <li><code>colName</code>: String. Column header to delete.</li>
 </ul>
 <hr />
-<h3>RenameColumn</h3>
+<h3 id="renamecolumn">RenameColumn <a class="anchor-link" href="#renamecolumn">#</a></h3>
 <p><strong>Rename a column in the dictionary</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub RenameColumn(ByVal currentName As String, _
@@ -131,14 +138,18 @@
                         Optional ByVal matchCase As Boolean = False)
 </code></pre>
 <hr />
-<h2>Row Operations</h2>
-<h3>AddRows</h3>
+</div>
+</details>
+<details open class="doc-section" id="row-operations">
+<summary>Row Operations</summary>
+<div class="section-body">
+<h3 id="addrows">AddRows <a class="anchor-link" href="#addrows">#</a></h3>
 <p><strong>Add rows to the dictionary listobject when available</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub AddRows(): End Sub
 </code></pre>
 <hr />
-<h3>InsertRows</h3>
+<h3 id="insertrows">InsertRows <a class="anchor-link" href="#insertrows">#</a></h3>
 <p><strong>Insert rows relative to a target selection</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub InsertRows(ByVal targetCell As Range, _
@@ -150,41 +161,45 @@
 <li><code>insertShift</code>: Optional Boolean. When True worksheet rows are inserted to preserve stacked tables.</li>
 </ul>
 <hr />
-<h3>RemoveRows</h3>
+<h3 id="removerows">RemoveRows <a class="anchor-link" href="#removerows">#</a></h3>
 <p><strong>Remove rows from the dictionary listobject when available</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub RemoveRows(): End Sub
 </code></pre>
 <hr />
-<h3>ManageRows</h3>
+<h3 id="managerows">ManageRows <a class="anchor-link" href="#managerows">#</a></h3>
 <p><strong>Manage rows from the dictionary listobject when availabe</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ManageRows(Optional ByVal del As Boolean = False): End Sub
 </code></pre>
 <hr />
-<h2>Specialised Views</h2>
-<h3>ChoicesVars</h3>
+</div>
+</details>
+<details open class="doc-section" id="specialised-views">
+<summary>Specialised Views</summary>
+<div class="section-body">
+<h3 id="choicesvars">ChoicesVars <a class="anchor-link" href="#choicesvars">#</a></h3>
 <p><strong>Choice variables list</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get ChoicesVars() As BetterArray: End Property
 </code></pre>
 <p><strong>Returns:</strong> A BetterArray listing variables controlled by choices</p>
 <hr />
-<h3>GeoVars</h3>
+<h3 id="geovars">GeoVars <a class="anchor-link" href="#geovars">#</a></h3>
 <p><strong>Geographic variables list</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get GeoVars() As BetterArray: End Property
 </code></pre>
 <p><strong>Returns:</strong> A BetterArray with geography-driven variables</p>
 <hr />
-<h3>TimeVars</h3>
+<h3 id="timevars">TimeVars <a class="anchor-link" href="#timevars">#</a></h3>
 <p><strong>Time variables list</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get TimeVars() As BetterArray: End Property
 </code></pre>
 <p><strong>Returns:</strong> A BetterArray with time-related variables</p>
 <hr />
-<h3>SpecialVars</h3>
+<h3 id="specialvars">SpecialVars <a class="anchor-link" href="#specialvars">#</a></h3>
 <p><strong>Filtered variable list by criteria</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get SpecialVars(ByVal first_condition As String, _
@@ -199,8 +214,12 @@
 </ul>
 <p><strong>Returns:</strong> A BetterArray of matching variables</p>
 <hr />
-<h2>Preparation</h2>
-<h3>Prepare</h3>
+</div>
+</details>
+<details open class="doc-section" id="preparation">
+<summary>Preparation</summary>
+<div class="section-body">
+<h3 id="prepare">Prepare <a class="anchor-link" href="#prepare">#</a></h3>
 <p><strong>Prepare dictionary for designer workflows</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Prepare(Optional ByVal PreservedSheetNames As BetterArray, _
@@ -215,20 +234,24 @@
 <li><code>tablePrefix</code>: Optional String prefix for generated table names. Defaults to &quot;table&quot;.</li>
 </ul>
 <hr />
-<h3>Clean</h3>
+<h3 id="clean">Clean <a class="anchor-link" href="#clean">#</a></h3>
 <p><strong>Clean up dictionary columns</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Clean(Optional ByVal removeAddedColumns As Boolean = False): End Sub
 </code></pre>
 <hr />
-<h3>Sort</h3>
+<h3 id="sort">Sort <a class="anchor-link" href="#sort">#</a></h3>
 <p><strong>Sort the dictionary on sheetname and main section</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Sort(): End Sub
 </code></pre>
 <hr />
-<h2>Data Exchange</h2>
-<h3>Import</h3>
+</div>
+</details>
+<details open class="doc-section" id="data-exchange">
+<summary>Data Exchange</summary>
+<div class="section-body">
+<h3 id="import">Import <a class="anchor-link" href="#import">#</a></h3>
 <p><strong>Import dictionary data</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Import(ByVal fromWksh As Worksheet, _ 
@@ -243,7 +266,7 @@
 <li><code>fromStartcol</code>: Long. Starting column of the source data.</li>
 </ul>
 <hr />
-<h3>Export</h3>
+<h3 id="export">Export <a class="anchor-link" href="#export">#</a></h3>
 <p><strong>Export dictionary data</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Export(ByVal toWkb As Workbook, _
@@ -259,7 +282,7 @@
 <li><code>Hide</code>: Optional Long sheet visibility after export. Defaults to xlSheetHidden.</li>
 </ul>
 <hr />
-<h3>Translate</h3>
+<h3 id="translate">Translate <a class="anchor-link" href="#translate">#</a></h3>
 <p><strong>Translate dictionary labels</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Translate(ByVal TransObject As ITranslationObject)
@@ -269,8 +292,12 @@
 <li><code>TransObject</code>: ITranslationObject used to translate ranges.</li>
 </ul>
 <hr />
-
+</div>
+</details>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

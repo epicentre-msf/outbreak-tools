@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ILLTranslation - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -14,8 +15,10 @@
 scoped translation objects, import/export of translation ListObjects,
 dictionary exchange, and workbook-level hidden name initialisation
 for translated configuration values.</p>
-<h2>Properties</h2>
-<h3>TransObject</h3>
+<details open class="doc-section" id="properties">
+<summary>Properties</summary>
+<div class="section-body">
+<h3 id="transobject">TransObject <a class="anchor-link" href="#transobject">#</a></h3>
 <p><strong>Scoped translation object</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get TransObject(Optional ByVal trans As Byte = TranslationOfMessages) As ITranslationObject
@@ -30,7 +33,7 @@ scope. Defaults to TranslationOfMessages.</li>
 </ul>
 <p><strong>Returns:</strong> ITranslationObject. The translation object for the requested scope.</p>
 <hr />
-<h3>Wksh</h3>
+<h3 id="wksh">Wksh <a class="anchor-link" href="#wksh">#</a></h3>
 <p><strong>Host translation worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Wksh() As Worksheet
@@ -39,8 +42,12 @@ scope. Defaults to TranslationOfMessages.</li>
 all translation ListObjects.</p>
 <p><strong>Returns:</strong> Worksheet. The host translation worksheet.</p>
 <hr />
-<h2>DataExchange</h2>
-<h3>Export</h3>
+</div>
+</details>
+<details open class="doc-section" id="dataexchange">
+<summary>DataExchange</summary>
+<div class="section-body">
+<h3 id="export">Export <a class="anchor-link" href="#export">#</a></h3>
 <p><strong>Export all translation tables to an output workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Export(ByVal outputWkb As Workbook, _
@@ -56,7 +63,7 @@ CustomTable.Export with stacking.</p>
 <li><code>Hide</code>: Optional Long. Sheet visibility after export. Defaults to xlSheetVeryHidden.</li>
 </ul>
 <hr />
-<h3>Import</h3>
+<h3 id="import">Import <a class="anchor-link" href="#import">#</a></h3>
 <p><strong>Import translation tables from another workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Import(ByVal fromWkb As Workbook)
@@ -70,7 +77,7 @@ sheet. Missing source tables are silently skipped.</p>
 <li><code>fromWkb</code>: Workbook. The source workbook containing translation data.</li>
 </ul>
 <hr />
-<h3>ImportDictionary</h3>
+<h3 id="importdictionary">ImportDictionary <a class="anchor-link" href="#importdictionary">#</a></h3>
 <p><strong>Import dictionary translations from a raw ListObject</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ImportDictionary(ByVal dictionaryTable As ListObject)
@@ -82,7 +89,7 @@ ListObject, preserving the source column headers.</p>
 <li><code>dictionaryTable</code>: ListObject. The source dictionary ListObject.</li>
 </ul>
 <hr />
-<h3>ExportDictionary</h3>
+<h3 id="exportdictionary">ExportDictionary <a class="anchor-link" href="#exportdictionary">#</a></h3>
 <p><strong>Export the dictionary table to a named worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ExportDictionary(ByVal outputWkb As Workbook, _
@@ -98,8 +105,12 @@ name, then exports the dictionary ListObject using CustomTable.Export.</p>
 <li><code>Hide</code>: Optional Long. Sheet visibility after export. Defaults to xlSheetVisible.</li>
 </ul>
 <hr />
-<h2>HiddenNames</h2>
-<h3>InitialiseHiddenNames</h3>
+</div>
+</details>
+<details open class="doc-section" id="hiddennames">
+<summary>HiddenNames</summary>
+<div class="section-body">
+<h3 id="initialisehiddennames">InitialiseHiddenNames <a class="anchor-link" href="#initialisehiddennames">#</a></h3>
 <p><em><em>Create RNG_</em> hidden names on a target workbook</em>*</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub InitialiseHiddenNames(ByVal targetWkb As Workbook)
@@ -114,8 +125,47 @@ were previously stored on the translation worksheet.</p>
 <li><code>targetWkb</code>: Workbook. The workbook receiving the hidden names.</li>
 </ul>
 <hr />
-
+<h3 id="initialisesheetnames">InitialiseSheetNames <a class="anchor-link" href="#initialisesheetnames">#</a></h3>
+<p><strong>Create language HiddenNames on the translation worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub InitialiseSheetNames(ByVal dictLang As String, ByVal llLang As String)
+</code></pre>
+<p>Creates worksheet-level HiddenNames for the dictionary language and
+interface language on the translation worksheet. These values are read
+by TransObject when resolving the language code for translation lookups.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>dictLang</code>: String. The dictionary language code (e.g., &quot;en&quot;).</li>
+<li><code>llLang</code>: String. The interface language code (e.g., &quot;fr&quot;).</li>
+</ul>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="valueaccess">
+<summary>ValueAccess</summary>
+<div class="section-body">
+<h3 id="value">Value <a class="anchor-link" href="#value">#</a></h3>
+<p><strong>Retrieve a named configuration value from the translation worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Value(ByVal nameId As String) As String
+</code></pre>
+<p>Mapped value retrieval from worksheet-level HiddenNames.
+Returns the value of a worksheet-level HiddenName identified by a
+logical key. Supported keys:
+&quot;dictlang&quot; -&gt; RNG_DictionaryLanguage
+&quot;lllang&quot;   -&gt; RNG_LLLanguageCode</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>nameId</code>: String. The logical key to look up.</li>
+</ul>
+<p><strong>Returns:</strong> String. The stored value, or vbNullString if unknown.</p>
+<hr />
+</div>
+</details>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

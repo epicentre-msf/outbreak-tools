@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>AnaTabIds - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -18,8 +19,10 @@ graph_ids_</em>, graph_formats_*) across four analysis scopes (normal, time
 series, spatial, spatio-temporal).</p>
 <p><strong>Depends on:</strong> <a href="CustomTable.html">CustomTable</a>, <a href="Graphs.html">Graphs</a>, <a href="IGraphs.html">IGraphs</a>, <a href="BetterArray.html">BetterArray</a>, <a href="IFormulas.html">IFormulas</a>, Named ranges for sheet names</p>
 <p><strong>Version:</strong> 2025-01-15</p>
-<h2>Instantiation</h2>
-<h3>create</h3>
+<details open class="doc-section" id="instantiation">
+<summary>Instantiation</summary>
+<div class="section-body">
+<h3 id="create">create <a class="anchor-link" href="#create">#</a></h3>
 <p><strong>Create a new AnaTabIds instance bound to a tracking worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal idsh As Worksheet, _
@@ -49,8 +52,12 @@ ListObject or named range is missing.</li>
 <li>BetterArray</li>
 </ul>
 <hr />
-<h2>Table Tracking</h2>
-<h3>add-table-infos</h3>
+</div>
+</details>
+<details open class="doc-section" id="table-tracking">
+<summary>Table Tracking</summary>
+<div class="section-body">
+<h3 id="add-table-infos">add-table-infos <a class="anchor-link" href="#add-table-infos">#</a></h3>
 <p><strong>Register table named ranges in the tracking ListObject</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddTableInfos(ByVal scope As Byte, _
@@ -73,8 +80,12 @@ appending. Exits immediately when tabRangesNames is empty.</p>
 Defaults to &quot;yes&quot;.</li>
 </ul>
 <hr />
-<h2>Graph Tracking</h2>
-<h3>add-graph-info</h3>
+</div>
+</details>
+<details open class="doc-section" id="graph-tracking">
+<summary>Graph Tracking</summary>
+<div class="section-body">
+<h3 id="add-graph-info">add-graph-info <a class="anchor-link" href="#add-graph-info">#</a></h3>
 <p><strong>Register a graph series row in the tracking ListObject</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddGraphInfo(ByVal scope As Byte, _
@@ -119,7 +130,7 @@ the label. Defaults to False.</li>
 cross-session persistence in Excel ListObject cells.</li>
 </ul>
 <hr />
-<h3>add-graph-format</h3>
+<h3 id="add-graph-format">add-graph-format <a class="anchor-link" href="#add-graph-format">#</a></h3>
 <p><strong>Register graph formatting metadata in the tracking ListObject</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddGraphFormat(ByVal scope As Byte, _
@@ -148,8 +159,12 @@ format entry to its corresponding series entries in graph_ids_.</p>
 <li><code>plotTitle</code>: Optional String. Chart title. Defaults to vbNullString.</li>
 </ul>
 <hr />
-<h2>Range Transfer and Graph Writing</h2>
-<h3>write-graphs</h3>
+</div>
+</details>
+<details open class="doc-section" id="range-transfer-and-graph-writing">
+<summary>Range Transfer and Graph Writing</summary>
+<div class="section-body">
+<h3 id="write-graphs">write-graphs <a class="anchor-link" href="#write-graphs">#</a></h3>
 <p><strong>Write all tracked graphs to the output worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub WriteGraphs(ByVal outsh As Worksheet, ByVal scope As Byte)
@@ -173,10 +188,12 @@ Application.GoTo scrolls to the chart position, which is required for
 correct chart placement in some Excel versions.</li>
 </ul>
 <hr />
+</div>
+</details>
 <details>
 <summary>Internal members (not exported)</summary>
-<h2>Internal Properties</h2>
-<h3>self</h3>
+<h2 id="int-internal-properties">Internal Properties</h2>
+<h3 id="int-self">self <a class="anchor-link" href="#int-self">#</a></h3>
 <p><strong>Current object instance</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Self() As IAnaTabIds
@@ -186,7 +203,7 @@ Convenience accessor so consuming code can fluently retrieve the interface
 reference from the predeclared Create method.</p>
 <p><strong>Returns:</strong> IAnaTabIds. The current instance cast to the interface.</p>
 <hr />
-<h3>wksh-set</h3>
+<h3 id="int-wksh-set">wksh-set <a class="anchor-link" href="#int-wksh-set">#</a></h3>
 <p><strong>Assign the tracking worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set Wksh(ByVal sh As Worksheet)
@@ -196,7 +213,7 @@ reference from the predeclared Create method.</p>
 <li><code>sh</code>: Worksheet. The worksheet to bind.</li>
 </ul>
 <hr />
-<h3>wksh</h3>
+<h3 id="int-wksh">wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
 <p><strong>Tracking worksheet reference</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Wksh() As Worksheet
@@ -205,8 +222,8 @@ reference from the predeclared Create method.</p>
 named ranges.</p>
 <p><strong>Returns:</strong> Worksheet. The bound tracking worksheet.</p>
 <hr />
-<h2>ListObject Access</h2>
-<h3>actual-lo</h3>
+<h2 id="int-listobject-access">ListObject Access</h2>
+<h3 id="int-actual-lo">actual-lo <a class="anchor-link" href="#int-actual-lo">#</a></h3>
 <p><strong>Resolve the tracking ListObject for a scope and prefix</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get ActualLo(ByVal scope As Byte, _
@@ -229,7 +246,7 @@ This is the central routing mechanism all tracking methods use.</p>
 empty and the ListObject lookup will raise a runtime error.</li>
 </ul>
 <hr />
-<h3>actual-analysis-sheet</h3>
+<h3 id="int-actual-analysis-sheet">actual-analysis-sheet <a class="anchor-link" href="#int-actual-analysis-sheet">#</a></h3>
 <p><strong>Resolve the analysis output worksheet for a scope</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get ActualAnalysisSheet(ByVal scope As Byte) As Worksheet
@@ -249,8 +266,8 @@ parent workbook.</p>
 worksheet, the Worksheets collection access raises a runtime error.</li>
 </ul>
 <hr />
-<h2>Range Transfer and Graph Writing</h2>
-<h3>range-exists</h3>
+<h2 id="int-range-transfer-and-graph-writing">Range Transfer and Graph Writing</h2>
+<h3 id="int-range-exists">range-exists <a class="anchor-link" href="#int-range-exists">#</a></h3>
 <p><strong>Check whether a named range exists on a worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function RangeExists(ByVal sh As Worksheet, ByVal rngName As String) As Boolean
@@ -266,7 +283,7 @@ workbook-level names resolved through the worksheet.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when the named range exists.</p>
 <hr />
-<h3>transfer-range</h3>
+<h3 id="int-transfer-range">transfer-range <a class="anchor-link" href="#int-transfer-range">#</a></h3>
 <p><strong>Copy a named range definition from source to output worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub TransferRange(ByVal inpsh As Worksheet, ByVal outsh As Worksheet, _
@@ -283,7 +300,7 @@ when the source range does not exist.</p>
 <li><code>rngName</code>: String. The named range to transfer.</li>
 </ul>
 <hr />
-<h3>write-table-names</h3>
+<h3 id="int-write-table-names">write-table-names <a class="anchor-link" href="#int-write-table-names">#</a></h3>
 <p><strong>Transfer all tracked named ranges to the output worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub WriteTableNames(ByVal outsh As Worksheet, ByVal scope As Byte)
@@ -298,7 +315,7 @@ cell is hit in column 1.</p>
 <li><code>scope</code>: Byte. AnalysisIdsScope value selecting the tracking table.</li>
 </ul>
 <hr />
-<h3>add-series</h3>
+<h3 id="int-add-series">add-series <a class="anchor-link" href="#int-add-series">#</a></h3>
 <p><strong>Read one series entry and add it to a graph object</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddSeries(ByVal gr As IGraphs, ByVal cellRng As Range)
@@ -319,7 +336,7 @@ and jumps to offset 8 (prefix) and offset 9 (prefixOnly), matching
 the 11-column layout stored by AddGraphInfo.</li>
 </ul>
 <hr />
-<h3>add-format</h3>
+<h3 id="int-add-format">add-format <a class="anchor-link" href="#int-add-format">#</a></h3>
 <p><strong>Apply formatting settings to a built graph</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddFormat(ByVal gr As IGraphs, ByVal grTab As ICustomTable, _
@@ -343,8 +360,8 @@ keyed by &quot;graphId&quot;.</li>
 when the stored values cannot be converted.</li>
 </ul>
 <hr />
-<h2>Validation</h2>
-<h3>lo-exists</h3>
+<h2 id="int-validation">Validation</h2>
+<h3 id="int-lo-exists">lo-exists <a class="anchor-link" href="#int-lo-exists">#</a></h3>
 <p><strong>Check whether a ListObject exists on a worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function LoExists(ByVal sh As Worksheet, ByVal loName As String) As Boolean
@@ -359,7 +376,7 @@ existence. Used by CheckRequirements to validate the tracking sheet.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when the ListObject exists.</p>
 <hr />
-<h3>sheet-exists</h3>
+<h3 id="int-sheet-exists">sheet-exists <a class="anchor-link" href="#int-sheet-exists">#</a></h3>
 <p><strong>Check whether a worksheet exists in a workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function SheetExists(ByVal wb As Workbook, ByVal sheetName As String) As Boolean
@@ -374,7 +391,7 @@ referenced by the named ranges actually exist.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when the worksheet exists.</p>
 <hr />
-<h3>check-requirements</h3>
+<h3 id="int-check-requirements">check-requirements <a class="anchor-link" href="#int-check-requirements">#</a></h3>
 <p><strong>Validate the tracking worksheet infrastructure</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub CheckRequirements(ByVal sh As Worksheet)
@@ -394,8 +411,8 @@ range value corresponds to an actual worksheet in the workbook.</p>
 or referenced worksheet is missing.</li>
 </ul>
 <hr />
-<h2>Error Handling</h2>
-<h3>throw-error</h3>
+<h2 id="int-error-handling">Error Handling</h2>
+<h3 id="int-throw-error">throw-error <a class="anchor-link" href="#int-throw-error">#</a></h3>
 <p><strong>Raise a ProjectError-based exception</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As Long, ByVal message As String)
@@ -411,8 +428,8 @@ or referenced worksheet is missing.</li>
 <li>ProjectError. Always raises the specified error.</li>
 </ul>
 <hr />
-<h2>Interface Implementation</h2>
-<h3>IAnaTabIds_AddGraphInfo</h3>
+<h2 id="int-interface-implementation">Interface Implementation</h2>
+<h3 id="int-ianatabids-addgraphinfo">IAnaTabIds_AddGraphInfo <a class="anchor-link" href="#int-ianatabids-addgraphinfo">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub IAnaTabIds_AddGraphInfo(ByVal scope As Byte, _
     ByVal tabId As String, ByVal graphId As String, _
@@ -438,8 +455,10 @@ See the corresponding Private members above for full documentation.</p>
 <li><a href="src/tests/modules/analyses/TestAnaTabIds.bas">TestAnaTabIds.bas</a></li>
 </ul>
 </details>
-
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

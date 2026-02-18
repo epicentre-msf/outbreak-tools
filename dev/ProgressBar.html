@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ProgressBar - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -15,8 +16,10 @@ to reflect completion ratio and optionally writes status text to
 a companion cell.</p>
 <p><strong>Depends on:</strong> ProjectError</p>
 <p><strong>Version:</strong> 1.0 (2026-02-09)</p>
-<h2>Lifecycle</h2>
-<h3>create</h3>
+<details open class="doc-section" id="lifecycle">
+<summary>Lifecycle</summary>
+<div class="section-body">
+<h3 id="create">create <a class="anchor-link" href="#create">#</a></h3>
 <p><strong>Factory returning an initialised interface</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal barRange As Range, Optional ByVal maximum As Long = DEFAULT_MAXIMUM) As IProgressBar
@@ -28,8 +31,12 @@ a companion cell.</p>
 </ul>
 <p><strong>Returns:</strong> IProgressBar. Ready to use.</p>
 <hr />
-<h2>Public API</h2>
-<h3>attach</h3>
+</div>
+</details>
+<details open class="doc-section" id="public-api">
+<summary>Public API</summary>
+<div class="section-body">
+<h3 id="attach">attach <a class="anchor-link" href="#attach">#</a></h3>
 <p><strong>Bind the progress bar to a worksheet range</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Attach(ByVal barRange As Range, Optional ByVal maximum As Long = DEFAULT_MAXIMUM)
@@ -40,7 +47,7 @@ a companion cell.</p>
 <li><code>maximum</code>: Long. Maximum value. Defaults to DEFAULT_MAXIMUM.</li>
 </ul>
 <hr />
-<h3>configure-colors</h3>
+<h3 id="configure-colors">configure-colors <a class="anchor-link" href="#configure-colors">#</a></h3>
 <p><strong>Configure the tint for completed and pending cells</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ConfigureColors(ByVal completedColor As Long, ByVal pendingColor As Long)
@@ -51,7 +58,7 @@ a companion cell.</p>
 <li><code>pendingColor</code>: Long. Colour applied to remaining cells.</li>
 </ul>
 <hr />
-<h3>configure-value-format</h3>
+<h3 id="configure-value-format">configure-value-format <a class="anchor-link" href="#configure-value-format">#</a></h3>
 <p><strong>Configure the number format for progress text</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ConfigureValueFormat(ByVal formatPattern As String)
@@ -61,7 +68,7 @@ a companion cell.</p>
 <li><code>formatPattern</code>: String. VBA format pattern.</li>
 </ul>
 <hr />
-<h3>attach-status-cell</h3>
+<h3 id="attach-status-cell">attach-status-cell <a class="anchor-link" href="#attach-status-cell">#</a></h3>
 <p><strong>Bind a cell for textual status messages</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub AttachStatusCell(ByVal statusRange As Range)
@@ -71,7 +78,7 @@ a companion cell.</p>
 <li><code>statusRange</code>: Range. Single-cell range that will receive status text.</li>
 </ul>
 <hr />
-<h3>update</h3>
+<h3 id="update">update <a class="anchor-link" href="#update">#</a></h3>
 <p><strong>Update progress to a specific value</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Update(ByVal currentValue As Long, Optional ByVal statusMessage As String = vbNullString)
@@ -82,7 +89,7 @@ a companion cell.</p>
 <li><code>statusMessage</code>: String. Message pushed to the status cell. Defaults to vbNullString.</li>
 </ul>
 <hr />
-<h3>step-by</h3>
+<h3 id="step-by">step-by <a class="anchor-link" href="#step-by">#</a></h3>
 <p><strong>Increment progress by the provided step</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub StepBy(Optional ByVal stepValue As Long = 1, Optional ByVal statusMessage As String = vbNullString)
@@ -93,7 +100,7 @@ a companion cell.</p>
 <li><code>statusMessage</code>: String. Message pushed to the status cell. Defaults to vbNullString.</li>
 </ul>
 <hr />
-<h3>complete</h3>
+<h3 id="complete">complete <a class="anchor-link" href="#complete">#</a></h3>
 <p><strong>Set progress to its maximum state</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Complete(Optional ByVal statusMessage As String = vbNullString)
@@ -103,7 +110,7 @@ a companion cell.</p>
 <li><code>statusMessage</code>: String. Message pushed to the status cell. Defaults to vbNullString.</li>
 </ul>
 <hr />
-<h3>reset</h3>
+<h3 id="reset">reset <a class="anchor-link" href="#reset">#</a></h3>
 <p><strong>Reset progress to zero</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Reset(Optional ByVal statusMessage As String = vbNullString)
@@ -113,29 +120,33 @@ a companion cell.</p>
 <li><code>statusMessage</code>: String. Message pushed to the status cell. Defaults to vbNullString.</li>
 </ul>
 <hr />
-<h2>Properties</h2>
-<h3>bar-range</h3>
+</div>
+</details>
+<details open class="doc-section" id="properties">
+<summary>Properties</summary>
+<div class="section-body">
+<h3 id="bar-range">bar-range <a class="anchor-link" href="#bar-range">#</a></h3>
 <p><strong>Range hosting the progress bar</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get BarRange() As Range
 </code></pre>
 <p><strong>Returns:</strong> Range. The bar range.</p>
 <hr />
-<h3>status-cell</h3>
+<h3 id="status-cell">status-cell <a class="anchor-link" href="#status-cell">#</a></h3>
 <p><strong>Status cell receiving text messages</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get StatusCell() As Range
 </code></pre>
 <p><strong>Returns:</strong> Range. The status cell, or Nothing.</p>
 <hr />
-<h3>maximum</h3>
+<h3 id="maximum">maximum <a class="anchor-link" href="#maximum">#</a></h3>
 <p><strong>Maximum expected value</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Maximum() As Long
 </code></pre>
 <p><strong>Returns:</strong> Long. The maximum value.</p>
 <hr />
-<h3>maximum-set</h3>
+<h3 id="maximum-set">maximum-set <a class="anchor-link" href="#maximum-set">#</a></h3>
 <p><strong>Update the maximum expected value</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Let Maximum(ByVal value As Long)
@@ -145,114 +156,116 @@ a companion cell.</p>
 <li><code>value</code>: Long. New maximum (must be greater than zero).</li>
 </ul>
 <hr />
-<h3>value</h3>
+<h3 id="value">value <a class="anchor-link" href="#value">#</a></h3>
 <p><strong>Current progress value</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Value() As Long
 </code></pre>
 <p><strong>Returns:</strong> Long. The current value.</p>
 <hr />
-<h3>percent-complete</h3>
+<h3 id="percent-complete">percent-complete <a class="anchor-link" href="#percent-complete">#</a></h3>
 <p><strong>Compute the current completion percentage</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get PercentComplete() As Double
 </code></pre>
 <p><strong>Returns:</strong> Double. Ratio between 0 and 1.</p>
 <hr />
+</div>
+</details>
 <details>
 <summary>Internal members (not exported)</summary>
-<h2>Lifecycle</h2>
-<h3>class-initialize</h3>
+<h2 id="int-lifecycle">Lifecycle</h2>
+<h3 id="int-class-initialize">class-initialize <a class="anchor-link" href="#int-class-initialize">#</a></h3>
 <p><strong>Set default values for colours, format, and maximum</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub Class_Initialize()
 </code></pre>
 <hr />
-<h3>self</h3>
+<h3 id="int-self">self <a class="anchor-link" href="#int-self">#</a></h3>
 <p><strong>Self-reference as IProgressBar</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Self() As IProgressBar
 </code></pre>
 <p><strong>Returns:</strong> IProgressBar. Self-reference.</p>
 <hr />
-<h2>Internal Helpers</h2>
-<h3>ensure-initialised</h3>
+<h2 id="int-internal-helpers">Internal Helpers</h2>
+<h3 id="int-ensure-initialised">ensure-initialised <a class="anchor-link" href="#int-ensure-initialised">#</a></h3>
 <p><strong>Guard against use before Attach is called</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureInitialised()
 </code></pre>
 <hr />
-<h3>validate-bar-range</h3>
+<h3 id="int-validate-bar-range">validate-bar-range <a class="anchor-link" href="#int-validate-bar-range">#</a></h3>
 <p><strong>Validate the bar range argument</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ValidateBarRange(ByVal barRange As Range)
 </code></pre>
 <hr />
-<h3>validate-status-range</h3>
+<h3 id="int-validate-status-range">validate-status-range <a class="anchor-link" href="#int-validate-status-range">#</a></h3>
 <p><strong>Validate the status range argument</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ValidateStatusRange(ByVal statusRange As Range)
 </code></pre>
 <hr />
-<h3>clamp-value</h3>
+<h3 id="int-clamp-value">clamp-value <a class="anchor-link" href="#int-clamp-value">#</a></h3>
 <p><strong>Clamp a value to the 0..maximum range</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ClampValue(ByVal candidateValue As Long) As Long
 </code></pre>
 <p><strong>Returns:</strong> Long. The clamped value.</p>
 <hr />
-<h3>compute-ratio</h3>
+<h3 id="int-compute-ratio">compute-ratio <a class="anchor-link" href="#int-compute-ratio">#</a></h3>
 <p><strong>Compute the completion ratio for a value</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ComputeRatio(ByVal candidateValue As Long) As Double
 </code></pre>
 <p><strong>Returns:</strong> Double. Ratio between 0 and 1.</p>
 <hr />
-<h3>clamp-ratio</h3>
+<h3 id="int-clamp-ratio">clamp-ratio <a class="anchor-link" href="#int-clamp-ratio">#</a></h3>
 <p><strong>Clamp a ratio to 0..1</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ClampRatio(ByVal ratio As Double) As Double
 </code></pre>
 <p><strong>Returns:</strong> Double. The clamped ratio.</p>
 <hr />
-<h3>render-progress</h3>
+<h3 id="int-render-progress">render-progress <a class="anchor-link" href="#int-render-progress">#</a></h3>
 <p><strong>Re-render the bar and value text</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RenderProgress()
 </code></pre>
 <hr />
-<h3>render-status</h3>
+<h3 id="int-render-status">render-status <a class="anchor-link" href="#int-render-status">#</a></h3>
 <p><strong>Write the latest status text to the status cell</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RenderStatus(ByVal statusMessage As String)
 </code></pre>
 <hr />
-<h3>prepare-bar-range</h3>
+<h3 id="int-prepare-bar-range">prepare-bar-range <a class="anchor-link" href="#int-prepare-bar-range">#</a></h3>
 <p><strong>Clear all cells and set them to the pending colour</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub PrepareBarRange()
 </code></pre>
 <hr />
-<h3>paint-bar</h3>
+<h3 id="int-paint-bar">paint-bar <a class="anchor-link" href="#int-paint-bar">#</a></h3>
 <p><strong>Tint cells according to the completion ratio</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub PaintBar(ByVal ratio As Double)
 </code></pre>
 <hr />
-<h3>write-value</h3>
+<h3 id="int-write-value">write-value <a class="anchor-link" href="#int-write-value">#</a></h3>
 <p><strong>Write the formatted progress text to the first cell</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub WriteValue()
 </code></pre>
 <hr />
-<h3>resolve-maximum</h3>
+<h3 id="int-resolve-maximum">resolve-maximum <a class="anchor-link" href="#int-resolve-maximum">#</a></h3>
 <p><strong>Validate and return a positive maximum</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ResolveMaximum(ByVal candidateMaximum As Long) As Long
 </code></pre>
 <p><strong>Returns:</strong> Long. The validated maximum.</p>
 <hr />
-<h3>throw-error</h3>
+<h3 id="int-throw-error">throw-error <a class="anchor-link" href="#int-throw-error">#</a></h3>
 <p><strong>Raise a typed project error</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal message As String)
@@ -267,8 +280,10 @@ a companion cell.</p>
 <li><a href="src/tests/modules/general/TestProgressBar.bas">TestProgressBar.bas</a></li>
 </ul>
 </details>
-
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

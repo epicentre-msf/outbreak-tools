@@ -5,44 +5,51 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ILLExport - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>ILLExport</h1>
-<h2>Properties</h2>
-<h3>Data</h3>
+<details open class="doc-section" id="properties">
+<summary>Properties</summary>
+<div class="section-body">
+<h3 id="data">Data <a class="anchor-link" href="#data">#</a></h3>
 <p><strong>Datasheet abstraction of the export table.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Data() As IDataSheet
 </code></pre>
 <hr />
-<h3>Worksheet</h3>
+<h3 id="worksheet">Worksheet <a class="anchor-link" href="#worksheet">#</a></h3>
 <p><strong>Worksheet hosting the export table.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Worksheet() As Worksheet
 </code></pre>
 <hr />
-<h3>NumberOfExports</h3>
+<h3 id="numberofexports">NumberOfExports <a class="anchor-link" href="#numberofexports">#</a></h3>
 <p><strong>Count of configured export rows.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get NumberOfExports() As Long
 </code></pre>
 <hr />
-<h3>HasCheckings</h3>
+<h3 id="hascheckings">HasCheckings <a class="anchor-link" href="#hascheckings">#</a></h3>
 <p><strong>Whether informational checkings are available.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get HasCheckings() As Boolean
 </code></pre>
 <hr />
-<h3>CheckingValues</h3>
+<h3 id="checkingvalues">CheckingValues <a class="anchor-link" href="#checkingvalues">#</a></h3>
 <p><strong>Collected informational diagnostics about export generation.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get CheckingValues() As IChecking
 </code></pre>
 <hr />
-<h2>Rows management</h2>
-<h3>AddRows</h3>
+</div>
+</details>
+<details open class="doc-section" id="rows-management">
+<summary>Rows management</summary>
+<div class="section-body">
+<h3 id="addrows">AddRows <a class="anchor-link" href="#addrows">#</a></h3>
 <p><strong>Append export definition rows.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub AddRows(Optional ByVal dict As ILLdictionary)
@@ -52,7 +59,7 @@
 <li><code>dict</code>: Optional dictionary to keep export columns aligned.</li>
 </ul>
 <hr />
-<h3>InsertRows</h3>
+<h3 id="insertrows">InsertRows <a class="anchor-link" href="#insertrows">#</a></h3>
 <p><strong>Insert export rows based on a target selection.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub InsertRows(ByVal targetCell As Range, _
@@ -66,7 +73,7 @@
 <li><code>insertShift</code>: Optional Boolean to insert worksheet rows when needed.</li>
 </ul>
 <hr />
-<h3>RemoveRows</h3>
+<h3 id="removerows">RemoveRows <a class="anchor-link" href="#removerows">#</a></h3>
 <p><strong>Remove trailing export rows.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub RemoveRows(Optional ByVal dict As ILLdictionary, Optional ByVal rowCount As Long = 2)
@@ -76,7 +83,7 @@
 <li><code>rowCount</code>: Optional Long. Rows with non-empty cell counts at or below this value are removed.</li>
 </ul>
 <hr />
-<h3>SyncDictionaryExports</h3>
+<h3 id="syncdictionaryexports">SyncDictionaryExports <a class="anchor-link" href="#syncdictionaryexports">#</a></h3>
 <p><strong>Synchronise dictionary export columns with current export definitions.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub SyncDictionaryExports(Optional ByVal dict As ILLdictionary)
@@ -86,8 +93,12 @@
 <li><code>dict</code>: Optional dictionary reference to align. When omitted, the last cached dictionary is reused.</li>
 </ul>
 <hr />
-<h2>SpecManagement</h2>
-<h3>ImportSpecs</h3>
+</div>
+</details>
+<details open class="doc-section" id="specmanagement">
+<summary>SpecManagement</summary>
+<div class="section-body">
+<h3 id="importspecs">ImportSpecs <a class="anchor-link" href="#importspecs">#</a></h3>
 <p><strong>Import export specifications from another worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ImportSpecs(ByVal fromWksh As Worksheet, _
@@ -95,21 +106,25 @@
                        ByVal fromStartColumn As Long)
 </code></pre>
 <hr />
-<h3>ExportSpecs</h3>
+<h3 id="exportspecs">ExportSpecs <a class="anchor-link" href="#exportspecs">#</a></h3>
 <p><strong>Export specifications into another workbook.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ExportSpecs(ByVal toWkb As Workbook, _
                        Optional ByVal Hide As Long = xlSheetHidden)
 </code></pre>
 <hr />
-<h3>InvalidateCaches</h3>
+<h3 id="invalidatecaches">InvalidateCaches <a class="anchor-link" href="#invalidatecaches">#</a></h3>
 <p><strong>Reset cached column lookups and diagnostics.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub InvalidateCaches()
 </code></pre>
 <hr />
-<h2>FileName</h2>
-<h3>ExportFileName</h3>
+</div>
+</details>
+<details open class="doc-section" id="filename">
+<summary>FileName</summary>
+<div class="section-body">
+<h3 id="exportfilename">ExportFileName <a class="anchor-link" href="#exportfilename">#</a></h3>
 <p><strong>Build a filename for one export definition.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function ExportFileName(ByVal exportNumber As Long, _
@@ -125,27 +140,35 @@
 <li><code>exportAll</code>: Optional flag to force the export-all naming scheme.</li>
 </ul>
 <hr />
-<h2>Utilities</h2>
-<h3>IsActive</h3>
+</div>
+</details>
+<details open class="doc-section" id="utilities">
+<summary>Utilities</summary>
+<div class="section-body">
+<h3 id="isactive">IsActive <a class="anchor-link" href="#isactive">#</a></h3>
 <p><strong>Determine if an export definition is marked active.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function IsActive(ByVal exportNumber As Long) As Boolean
 </code></pre>
 <hr />
-<h3>ColumnValue</h3>
+<h3 id="columnvalue">ColumnValue <a class="anchor-link" href="#columnvalue">#</a></h3>
 <p><strong>Retrieve a column value for a given export row.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function ColumnValue(ByVal exportNumber As Long, ByVal columnName As String) As String
 </code></pre>
 <hr />
-<h3>ActiveExportNumbers</h3>
+<h3 id="activeexportnumbers">ActiveExportNumbers <a class="anchor-link" href="#activeexportnumbers">#</a></h3>
 <p><strong>Enumerate export numbers that are currently active.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function ActiveExportNumbers() As BetterArray
 </code></pre>
 <hr />
-
+</div>
+</details>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

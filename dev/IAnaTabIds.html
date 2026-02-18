@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>IAnaTabIds - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -14,8 +15,10 @@
 register graph series information, graph formatting metadata, table named
 ranges, and to write all tracked graphs to the output worksheet.
 Scope for analysis ID operations</p>
-<h2>GraphTracking</h2>
-<h3>AddGraphInfo</h3>
+<details open class="doc-section" id="graphtracking">
+<summary>GraphTracking</summary>
+<div class="section-body">
+<h3 id="addgraphinfo">AddGraphInfo <a class="anchor-link" href="#addgraphinfo">#</a></h3>
 <p><strong>Register a graph series in the tracking table</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub AddGraphInfo( _
@@ -56,7 +59,7 @@ Defaults to vbNullString.</li>
 written. Defaults to False.</li>
 </ul>
 <hr />
-<h3>AddGraphFormat</h3>
+<h3 id="addgraphformat">AddGraphFormat <a class="anchor-link" href="#addgraphformat">#</a></h3>
 <p><strong>Register graph formatting metadata in the tracking table</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub AddGraphFormat( _
@@ -86,8 +89,12 @@ as literal values. Defaults to False.</li>
 Defaults to vbNullString.</li>
 </ul>
 <hr />
-<h2>TableTracking</h2>
-<h3>AddTableInfos</h3>
+</div>
+</details>
+<details open class="doc-section" id="tabletracking">
+<summary>TableTracking</summary>
+<div class="section-body">
+<h3 id="addtableinfos">AddTableInfos <a class="anchor-link" href="#addtableinfos">#</a></h3>
 <p><strong>Register table named ranges in the tracking table</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub AddTableInfos( _
@@ -108,8 +115,12 @@ identify which ranges belong to each analysis table.</p>
 <li><code>exportTable</code>: Optional String. Export flag (&quot;yes&quot; or &quot;no&quot;). Defaults to &quot;yes&quot;.</li>
 </ul>
 <hr />
-<h2>GraphWriting</h2>
-<h3>WriteGraphs</h3>
+</div>
+</details>
+<details open class="doc-section" id="graphwriting">
+<summary>GraphWriting</summary>
+<div class="section-body">
+<h3 id="writegraphs">WriteGraphs <a class="anchor-link" href="#writegraphs">#</a></h3>
 <p><strong>Write all tracked graphs to the output worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub WriteGraphs(ByVal outsh As Worksheet, ByVal scope As Byte): End Sub
@@ -125,8 +136,12 @@ formatting metadata.</p>
 <li><code>scope</code>: Byte. AnalysisIdsScope value selecting which tracking table to read.</li>
 </ul>
 <hr />
-
+</div>
+</details>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>SectionBuilder - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -18,8 +19,10 @@ merged-cell section and subsection header formatting. Supports both
 HList (horizontal) and VList (vertical) layouts via the layer byte.</p>
 <p><strong>Depends on:</strong> <a href="ILinelistSpecs.html">ILinelistSpecs</a>, <a href="ILLdictionary.html">ILLdictionary</a>, <a href="ILLVariables.html">ILLVariables</a>, <a href="ILLFormat.html">ILLFormat</a>, <a href="IDropdownLists.html">IDropdownLists</a>, <a href="VarWriter.html">VarWriter</a>, <a href="LLVariables.html">LLVariables</a>, Row/column constants for section and subsection headers</p>
 <p><strong>Version:</strong> 1.0 (2026-02-10)</p>
-<h2>Instantiation</h2>
-<h3>create</h3>
+<details open class="doc-section" id="instantiation">
+<summary>Instantiation</summary>
+<div class="section-body">
+<h3 id="create">create <a class="anchor-link" href="#create">#</a></h3>
 <p><strong>Create a new SectionBuilder instance</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal layer As Byte, _
@@ -51,8 +54,12 @@ interface.</p>
 <li>VbObjectError+516 When specs or wksh is Nothing.</li>
 </ul>
 <hr />
-<h2>Entry Point</h2>
-<h3>build</h3>
+</div>
+</details>
+<details open class="doc-section" id="entry-point">
+<summary>Entry Point</summary>
+<div class="section-body">
+<h3 id="build">build <a class="anchor-link" href="#build">#</a></h3>
 <p><strong>Build all sections, subsections, and variables for a sheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Build(ByVal sheetName As String, ByVal startRow As Long)
@@ -69,10 +76,12 @@ sheet name changes or the dictionary ends.</p>
 <li><code>startRow</code>: Long. The first data row index in the dictionary for this sheet (1-based).</li>
 </ul>
 <hr />
+</div>
+</details>
 <details>
 <summary>Internal members (not exported)</summary>
-<h2>Instantiation</h2>
-<h3>self</h3>
+<h2 id="int-instantiation">Instantiation</h2>
+<h3 id="int-self">self <a class="anchor-link" href="#int-self">#</a></h3>
 <p><strong>Current object instance</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Self() As ISectionBuilder
@@ -81,8 +90,8 @@ sheet name changes or the dictionary ends.</p>
 used by the Create factory to return the newly built object.</p>
 <p><strong>Returns:</strong> ISectionBuilder. The current instance.</p>
 <hr />
-<h2>Internal Setters</h2>
-<h3>internal-layer</h3>
+<h2 id="int-internal-setters">Internal Setters</h2>
+<h3 id="int-internal-layer">internal-layer <a class="anchor-link" href="#int-internal-layer">#</a></h3>
 <p><strong>Assign the layer mode</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Let InternalLayer(ByVal layer As Byte)
@@ -93,7 +102,7 @@ used by the Create factory to return the newly built object.</p>
 <li><code>layer</code>: Byte. SectionBuilderMode enum value.</li>
 </ul>
 <hr />
-<h3>internal-specs</h3>
+<h3 id="int-internal-specs">internal-specs <a class="anchor-link" href="#int-internal-specs">#</a></h3>
 <p><strong>Assign the linelist specifications</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set InternalSpecs(ByVal specs As ILinelistSpecs)
@@ -103,7 +112,7 @@ used by the Create factory to return the newly built object.</p>
 <li><code>specs</code>: ILinelistSpecs. The specifications object.</li>
 </ul>
 <hr />
-<h3>internal-wksh</h3>
+<h3 id="int-internal-wksh">internal-wksh <a class="anchor-link" href="#int-internal-wksh">#</a></h3>
 <p><strong>Assign the target main worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set InternalWksh(ByVal wksh As Worksheet)
@@ -113,7 +122,7 @@ used by the Create factory to return the newly built object.</p>
 <li><code>wksh</code>: Worksheet. The main worksheet to build on.</li>
 </ul>
 <hr />
-<h3>internal-print-wksh</h3>
+<h3 id="int-internal-print-wksh">internal-print-wksh <a class="anchor-link" href="#int-internal-print-wksh">#</a></h3>
 <p><strong>Assign the printed companion worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set InternalPrintWksh(ByVal wksh As Worksheet)
@@ -123,7 +132,7 @@ used by the Create factory to return the newly built object.</p>
 <li><code>wksh</code>: Worksheet. The printed companion worksheet.</li>
 </ul>
 <hr />
-<h3>internal-crf-wksh</h3>
+<h3 id="int-internal-crf-wksh">internal-crf-wksh <a class="anchor-link" href="#int-internal-crf-wksh">#</a></h3>
 <p><strong>Assign the CRF companion worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set InternalCRFWksh(ByVal wksh As Worksheet)
@@ -133,7 +142,7 @@ used by the Create factory to return the newly built object.</p>
 <li><code>wksh</code>: Worksheet. The CRF companion worksheet.</li>
 </ul>
 <hr />
-<h3>internal-dropdown</h3>
+<h3 id="int-internal-dropdown">internal-dropdown <a class="anchor-link" href="#int-internal-dropdown">#</a></h3>
 <p><strong>Assign the dropdown lists manager</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set InternalDropdown(ByVal dropdownObj As IDropdownLists)
@@ -143,7 +152,7 @@ used by the Create factory to return the newly built object.</p>
 <li><code>dropdownObj</code>: IDropdownLists. The dropdown manager.</li>
 </ul>
 <hr />
-<h3>internal-custom-dropdown</h3>
+<h3 id="int-internal-custom-dropdown">internal-custom-dropdown <a class="anchor-link" href="#int-internal-custom-dropdown">#</a></h3>
 <p><strong>Assign the custom dropdown lists manager</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set InternalCustomDropdown(ByVal dropdownObj As IDropdownLists)
@@ -153,8 +162,8 @@ used by the Create factory to return the newly built object.</p>
 <li><code>dropdownObj</code>: IDropdownLists. The custom dropdown manager.</li>
 </ul>
 <hr />
-<h2>Cached Accessors</h2>
-<h3>dictionary</h3>
+<h2 id="int-cached-accessors">Cached Accessors</h2>
+<h3 id="int-dictionary">dictionary <a class="anchor-link" href="#int-dictionary">#</a></h3>
 <p><strong>Lazy-loaded dictionary accessor</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get Dictionary() As ILLdictionary
@@ -164,7 +173,7 @@ Returns the cached ILLdictionary instance. On first access, retrieves
 it from the specifications object and caches it for subsequent calls.</p>
 <p><strong>Returns:</strong> ILLdictionary. The linelist dictionary.</p>
 <hr />
-<h3>variables</h3>
+<h3 id="int-variables">variables <a class="anchor-link" href="#int-variables">#</a></h3>
 <p><strong>Lazy-loaded variables accessor</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get Variables() As ILLVariables
@@ -173,15 +182,15 @@ it from the specifications object and caches it for subsequent calls.</p>
 from the dictionary via LLVariables.Create and caches it.</p>
 <p><strong>Returns:</strong> ILLVariables. The variables helper for dictionary lookups.</p>
 <hr />
-<h3>design-format</h3>
+<h3 id="int-design-format">design-format <a class="anchor-link" href="#int-design-format">#</a></h3>
 <p><strong>Design format accessor</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get DesignFormat() As ILLFormat
 </code></pre>
 <p><strong>Returns:</strong> ILLFormat. The formatting object from the specifications.</p>
 <hr />
-<h2>Section Boundary Detection</h2>
-<h3>find-section-end</h3>
+<h2 id="int-section-boundary-detection">Section Boundary Detection</h2>
+<h3 id="int-find-section-end">find-section-end <a class="anchor-link" href="#int-find-section-end">#</a></h3>
 <p><strong>Find the last row of a section</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function FindSectionEnd(ByVal startRow As Long, _
@@ -206,8 +215,8 @@ data row.</p>
 </ul>
 <p><strong>Returns:</strong> Long. The 1-based row index of the last row in the section.</p>
 <hr />
-<h2>Subsection Processing</h2>
-<h3>build-sub-sections</h3>
+<h2 id="int-subsection-processing">Subsection Processing</h2>
+<h3 id="int-build-sub-sections">build-sub-sections <a class="anchor-link" href="#int-build-sub-sections">#</a></h3>
 <p><strong>Build all subsections within a section range</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub BuildSubSections(ByVal sectionStart As Long, _
@@ -225,7 +234,7 @@ applies subsection header formatting via FormatSubSection.</p>
 <li><code>sheetName</code>: String. The current sheet name.</li>
 </ul>
 <hr />
-<h3>find-sub-section-end</h3>
+<h3 id="int-find-sub-section-end">find-sub-section-end <a class="anchor-link" href="#int-find-sub-section-end">#</a></h3>
 <p><strong>Find the last row of a subsection</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function FindSubSectionEnd(ByVal startRow As Long, _
@@ -253,8 +262,8 @@ the change. Constrained by maxRow (the section boundary).</p>
 </ul>
 <p><strong>Returns:</strong> Long. The 1-based row index of the last row in the subsection.</p>
 <hr />
-<h2>Variable Building</h2>
-<h3>build-variables</h3>
+<h2 id="int-variable-building">Variable Building</h2>
+<h3 id="int-build-variables">build-variables <a class="anchor-link" href="#int-build-variables">#</a></h3>
 <p><strong>Build all variables within a subsection range</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub BuildVariables(ByVal subSecStart As Long, ByVal subSecEnd As Long)
@@ -274,8 +283,8 @@ avoids repeated factory overhead.</p>
 <li>VarWriter</li>
 </ul>
 <hr />
-<h2>Section Formatting</h2>
-<h3>format-section</h3>
+<h2 id="int-section-formatting">Section Formatting</h2>
+<h3 id="int-format-section">format-section <a class="anchor-link" href="#int-format-section">#</a></h3>
 <p><strong>Format a section header</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub FormatSection(ByVal sectionName As String, _
@@ -294,7 +303,7 @@ section range to calculate column or row indices for the merged header.</p>
 <li><code>sheetName</code>: String. The current sheet name.</li>
 </ul>
 <hr />
-<h3>format-hlist-section</h3>
+<h3 id="int-format-hlist-section">format-hlist-section <a class="anchor-link" href="#int-format-hlist-section">#</a></h3>
 <p><strong>Format an HList section header</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub FormatHListSection(ByVal sectionName As String, _
@@ -315,7 +324,7 @@ first variable's &quot;crf index&quot; to calculate the CRF row offset.</p>
 <li><code>sheetName</code>: String. The current sheet name.</li>
 </ul>
 <hr />
-<h3>format-vlist-section</h3>
+<h3 id="int-format-vlist-section">format-vlist-section <a class="anchor-link" href="#int-format-vlist-section">#</a></h3>
 <p><strong>Format a VList section header</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub FormatVListSection(ByVal sectionName As String, _
@@ -334,8 +343,8 @@ formatting. No companion sheets are involved for VList layers.</p>
 <li><code>sheetName</code>: String. The current sheet name.</li>
 </ul>
 <hr />
-<h2>Subsection Formatting</h2>
-<h3>format-sub-section</h3>
+<h2 id="int-subsection-formatting">Subsection Formatting</h2>
+<h3 id="int-format-sub-section">format-sub-section <a class="anchor-link" href="#int-format-sub-section">#</a></h3>
 <p><strong>Format a subsection header</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub FormatSubSection(ByVal subSectionName As String, _
@@ -353,7 +362,7 @@ the current layer.</p>
 <li><code>sheetName</code>: String. The current sheet name.</li>
 </ul>
 <hr />
-<h3>format-hlist-sub-section</h3>
+<h3 id="int-format-hlist-sub-section">format-hlist-sub-section <a class="anchor-link" href="#int-format-hlist-sub-section">#</a></h3>
 <p><strong>Format an HList subsection header</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub FormatHListSubSection(ByVal subSectionName As String, _
@@ -374,7 +383,7 @@ is present.</p>
 <li><code>sheetName</code>: String. The current sheet name.</li>
 </ul>
 <hr />
-<h3>format-vlist-sub-section</h3>
+<h3 id="int-format-vlist-sub-section">format-vlist-sub-section <a class="anchor-link" href="#int-format-vlist-sub-section">#</a></h3>
 <p><strong>Format a VList subsection header</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub FormatVListSubSection(ByVal subSectionName As String, _
@@ -393,11 +402,11 @@ VListSubSection formatting.</p>
 <li><code>sheetName</code>: String. The current sheet name.</li>
 </ul>
 <hr />
-<h2>Error Handling</h2>
-<h3>throw-error</h3>
+<h2 id="int-error-handling">Error Handling</h2>
+<h3 id="int-throw-error">throw-error <a class="anchor-link" href="#int-throw-error">#</a></h3>
 <p><strong>Raise an error with the class name as source</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ThrowError(ByVal errorMessage As String)
+<pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As Long, ByVal errorMessage As String)
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -408,8 +417,8 @@ VListSubSection formatting.</p>
 <li>VbObjectError+516 Always raises the specified error.</li>
 </ul>
 <hr />
-<h2>Interface Implementation</h2>
-<h3>ISectionBuilder_Build</h3>
+<h2 id="int-interface-implementation">Interface Implementation</h2>
+<h3 id="int-isectionbuilder-build">ISectionBuilder_Build <a class="anchor-link" href="#int-isectionbuilder-build">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ISectionBuilder_Build(ByVal sheetName As String, ByVal startRow As Long)
 </code></pre>
@@ -425,8 +434,10 @@ VListSubSection formatting.</p>
 <li><a href="src/tests/modules/sections/TestSectionBuilder.bas">TestSectionBuilder.bas</a></li>
 </ul>
 </details>
-
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

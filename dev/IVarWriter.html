@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>IVarWriter - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -19,8 +20,10 @@ layer (HList or VList).
 Layers control which worksheets are written. HList writes to the main
 sheet plus optional printed and CRF companions. VList writes to the
 main sheet only.</p>
-<h2>Methods</h2>
-<h3>WriteVariable</h3>
+<details open class="doc-section" id="methods">
+<summary>Methods</summary>
+<div class="section-body">
+<h3 id="writevariable">WriteVariable <a class="anchor-link" href="#writevariable">#</a></h3>
 <p><strong>Write one variable to the target worksheet(s)</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub WriteVariable(ByVal varName As String)
@@ -35,7 +38,7 @@ invocation so the writer can be reused across multiple variables.</p>
 <li><code>varName</code>: String. The variable name as it appears in the dictionary.</li>
 </ul>
 <hr />
-<h3>ValueOf</h3>
+<h3 id="valueof">ValueOf <a class="anchor-link" href="#valueof">#</a></h3>
 <p><strong>Read a dictionary column value for the current variable</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get ValueOf(ByVal colName As String) As String
@@ -49,8 +52,12 @@ LLVariables.Value internally.</p>
 </ul>
 <p><strong>Returns:</strong> String. The column value for the current variable.</p>
 <hr />
-
+</div>
+</details>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

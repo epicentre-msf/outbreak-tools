@@ -5,13 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>LLSheets - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>LLSheets</h1>
-<h2>Factory</h2>
-<h3>Create</h3>
+<details open class="doc-section" id="factory">
+<summary>Factory</summary>
+<div class="section-body">
+<h3 id="create">Create <a class="anchor-link" href="#create">#</a></h3>
 <p><strong>Instantiate a sheet helper bound to the supplied dictionary</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal dict As ILLdictionary) As ILLSheets
@@ -22,24 +25,26 @@
 </ul>
 <p><strong>Returns:</strong> ILLSheets fully initialised helper.</p>
 <hr />
+</div>
+</details>
 <details>
 <summary>Internal members (not exported)</summary>
-<h2>Public Accessors</h2>
-<h3>Self</h3>
+<h2 id="int-public-accessors">Public Accessors</h2>
+<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
 <p><strong>Expose the interface reference of this predeclared instance</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Self() As ILLSheets
 </code></pre>
 <p><strong>Returns:</strong> ILLSheets reference to the current object.</p>
 <hr />
-<h3>Dictionary</h3>
+<h3 id="int-dictionary">Dictionary <a class="anchor-link" href="#int-dictionary">#</a></h3>
 <p><strong>Retrieve the backing dictionary</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Dictionary() As ILLdictionary
 </code></pre>
 <p><strong>Returns:</strong> ILLdictionary reference captured during initialisation.</p>
 <hr />
-<h3>Dictionary</h3>
+<h3 id="int-dictionary">Dictionary <a class="anchor-link" href="#int-dictionary">#</a></h3>
 <p><strong>Store the backing dictionary and prime cached lookups</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set Dictionary(ByVal dict As ILLdictionary)
@@ -49,15 +54,15 @@
 <li><code>dict</code>: ILLdictionary holding linelist metadata.</li>
 </ul>
 <hr />
-<h3>SheetRange</h3>
+<h3 id="int-sheetrange">SheetRange <a class="anchor-link" href="#int-sheetrange">#</a></h3>
 <p><strong>Return the cached range referencing sheet names</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get SheetRange(Optional ByVal requirePrepared As Boolean = False) As Range
 </code></pre>
 <p><strong>Returns:</strong> Range spanning the sheet-name column including the header.</p>
 <hr />
-<h2>Sheet Queries</h2>
-<h3>Contains</h3>
+<h2 id="int-sheet-queries">Sheet Queries</h2>
+<h3 id="int-contains">Contains <a class="anchor-link" href="#int-contains">#</a></h3>
 <p><strong>Determine whether the dictionary includes the supplied sheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function Contains(ByVal sheetName As String) As Boolean
@@ -68,7 +73,7 @@
 </ul>
 <p><strong>Returns:</strong> True when the sheet exists.</p>
 <hr />
-<h3>RowIndex</h3>
+<h3 id="int-rowindex">RowIndex <a class="anchor-link" href="#int-rowindex">#</a></h3>
 <p><strong>Lookup the worksheet row hosting the sheet metadata</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function RowIndex(ByVal sheetName As String) As Long
@@ -79,7 +84,7 @@
 </ul>
 <p><strong>Returns:</strong> Worksheet row index for the sheet entry, or 0 when not found.</p>
 <hr />
-<h3>SheetInfo</h3>
+<h3 id="int-sheetinfo">SheetInfo <a class="anchor-link" href="#int-sheetinfo">#</a></h3>
 <p><strong>Fetch additional metadata about a sheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function SheetInfo(ByVal sheetName As String, Optional ByVal info As Byte = SheetInfoType.SheetInfoSheetType) As String
@@ -91,7 +96,7 @@
 </ul>
 <p><strong>Returns:</strong> Requested metadata value; raises when selector is unknown.</p>
 <hr />
-<h3>VarList</h3>
+<h3 id="int-varlist">VarList <a class="anchor-link" href="#int-varlist">#</a></h3>
 <p><strong>Retrieve the ordered list of variables belonging to a sheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function Varlist(ByVal sheetName As String) As BetterArray
@@ -102,7 +107,7 @@
 </ul>
 <p><strong>Returns:</strong> BetterArray containing variable names for the sheet.</p>
 <hr />
-<h3>NumberVars</h3>
+<h3 id="int-numbervars">NumberVars <a class="anchor-link" href="#int-numbervars">#</a></h3>
 <p><strong>Count the variables associated with a sheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function NumberVars(ByVal sheetName As String) As Long
@@ -113,7 +118,7 @@
 </ul>
 <p><strong>Returns:</strong> Long number of variables present on the sheet.</p>
 <hr />
-<h3>DataBounds</h3>
+<h3 id="int-databounds">DataBounds <a class="anchor-link" href="#int-databounds">#</a></h3>
 <p><strong>Compute the data boundaries for a sheet layout</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function DataBounds(ByVal sheetName As String, _
@@ -126,7 +131,7 @@
 </ul>
 <p><strong>Returns:</strong> Long representing the requested bound.</p>
 <hr />
-<h3>ContainsControl</h3>
+<h3 id="int-containscontrol">ContainsControl <a class="anchor-link" href="#int-containscontrol">#</a></h3>
 <p><strong>Test whether a sheet exposes a control of the requested type</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ContainsControl(ByVal sheetName As String, _
@@ -141,7 +146,7 @@
 </ul>
 <p><strong>Returns:</strong> True when the control type exists on the sheet.</p>
 <hr />
-<h3>VariableAddress</h3>
+<h3 id="int-variableaddress">VariableAddress <a class="anchor-link" href="#int-variableaddress">#</a></h3>
 <p><strong>Build an Excel address pointing to the variable slot on its sheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function VariableAddress(ByVal varName As String, Optional ByVal onSheet As String = vbNullString) As String
@@ -153,8 +158,8 @@
 </ul>
 <p><strong>Returns:</strong> String Excel address for the variable.</p>
 <hr />
-<h2>State Validation</h2>
-<h3>EnsureDictionaryReady</h3>
+<h2 id="int-state-validation">State Validation</h2>
+<h3 id="int-ensuredictionaryready">EnsureDictionaryReady <a class="anchor-link" href="#int-ensuredictionaryready">#</a></h3>
 <p><strong>Confirm the backing dictionary and cached range are initialised</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureDictionaryReady(Optional ByVal requirePrepared As Boolean = False)
@@ -164,7 +169,7 @@
 <li><code>requirePrepared</code>: Optional Boolean. When True, the dictionary must be prepared.</li>
 </ul>
 <hr />
-<h3>EnsureSheetExists</h3>
+<h3 id="int-ensuresheetexists">EnsureSheetExists <a class="anchor-link" href="#int-ensuresheetexists">#</a></h3>
 <p><strong>Raise a descriptive error when the sheet does not exist</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureSheetExists(ByVal sheetName As String)
@@ -174,7 +179,7 @@
 <li><code>sheetName</code>: String. Sheet identifier to validate.</li>
 </ul>
 <hr />
-<h3>EnsureSheetRow</h3>
+<h3 id="int-ensuresheetrow">EnsureSheetRow <a class="anchor-link" href="#int-ensuresheetrow">#</a></h3>
 <p><strong>Retrieve the worksheet row for the sheet or raise when absent</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function EnsureSheetRow(ByVal sheetName As String) As Long
@@ -185,7 +190,7 @@
 </ul>
 <p><strong>Returns:</strong> Long worksheet row index.</p>
 <hr />
-<h3>EnsureControlColumnExists</h3>
+<h3 id="int-ensurecontrolcolumnexists">EnsureControlColumnExists <a class="anchor-link" href="#int-ensurecontrolcolumnexists">#</a></h3>
 <p><strong>Guarantee the control column exists before filtering</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureControlColumnExists(ByVal colName As String)
@@ -195,7 +200,7 @@
 <li><code>colName</code>: String. Column header to validate.</li>
 </ul>
 <hr />
-<h3>EnsureValidSheetName</h3>
+<h3 id="int-ensurevalidsheetname">EnsureValidSheetName <a class="anchor-link" href="#int-ensurevalidsheetname">#</a></h3>
 <p><strong>Validate that the supplied sheet name is usable</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureValidSheetName(ByVal sheetName As String)
@@ -205,8 +210,8 @@
 <li><code>sheetName</code>: String. Sheet identifier to validate.</li>
 </ul>
 <hr />
-<h2>Lookup Helpers</h2>
-<h3>SheetInfoValue</h3>
+<h2 id="int-lookup-helpers">Lookup Helpers</h2>
+<h3 id="int-sheetinfovalue">SheetInfoValue <a class="anchor-link" href="#int-sheetinfovalue">#</a></h3>
 <p><strong>Resolve sheet metadata based on the selector</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function SheetInfoValue(ByVal sheetName As String, ByVal infoSelector As Byte) As String
@@ -218,28 +223,28 @@
 </ul>
 <p><strong>Returns:</strong> String metadata value.</p>
 <hr />
-<h3>SheetTypeColumnIndex</h3>
+<h3 id="int-sheettypecolumnindex">SheetTypeColumnIndex <a class="anchor-link" href="#int-sheettypecolumnindex">#</a></h3>
 <p><strong>Cache the column index for sheet type lookups</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function SheetTypeColumnIndex() As Long
 </code></pre>
 <p><strong>Returns:</strong> Long worksheet column index.</p>
 <hr />
-<h3>TableNameColumnIndex</h3>
+<h3 id="int-tablenamecolumnindex">TableNameColumnIndex <a class="anchor-link" href="#int-tablenamecolumnindex">#</a></h3>
 <p><strong>Cache the column index for table name lookups and raise if missing</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function TableNameColumnIndex() As Long
 </code></pre>
 <p><strong>Returns:</strong> Long worksheet column index.</p>
 <hr />
-<h3>VariablesProvider</h3>
+<h3 id="int-variablesprovider">VariablesProvider <a class="anchor-link" href="#int-variablesprovider">#</a></h3>
 <p><strong>Lazily initialise the LLVariables helper for address resolution</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function VariablesProvider() As ILLVariables
 </code></pre>
 <p><strong>Returns:</strong> ILLVariables cached instance.</p>
 <hr />
-<h3>ColumnIndex</h3>
+<h3 id="int-columnindex">ColumnIndex <a class="anchor-link" href="#int-columnindex">#</a></h3>
 <p><strong>Wrapper around IDataSheet.ColumnIndex with optional caching</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ColumnIndex(ByVal colName As String, ByVal allowMissing As Boolean) As Long
@@ -251,7 +256,7 @@
 </ul>
 <p><strong>Returns:</strong> Long worksheet column index.</p>
 <hr />
-<h3>FindSheetCell</h3>
+<h3 id="int-findsheetcell">FindSheetCell <a class="anchor-link" href="#int-findsheetcell">#</a></h3>
 <p><strong>Locate the range corresponding to a sheet name</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function FindSheetCell(ByVal sheetName As String) As Range
@@ -262,7 +267,7 @@
 </ul>
 <p><strong>Returns:</strong> Range when found; Nothing otherwise.</p>
 <hr />
-<h3>SanitizeSearchTerm</h3>
+<h3 id="int-sanitizesearchterm">SanitizeSearchTerm <a class="anchor-link" href="#int-sanitizesearchterm">#</a></h3>
 <p><strong>Escape Excel wildcard characters before using Range.Find</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function SanitizeSearchTerm(ByVal value As String) As String
@@ -273,7 +278,7 @@
 </ul>
 <p><strong>Returns:</strong> String sanitized search term.</p>
 <hr />
-<h3>BuildSheetPrefix</h3>
+<h3 id="int-buildsheetprefix">BuildSheetPrefix <a class="anchor-link" href="#int-buildsheetprefix">#</a></h3>
 <p><strong>Produce a quoted sheet prefix for addresses</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function BuildSheetPrefix(ByVal sheetName As String) As String
@@ -284,18 +289,18 @@
 </ul>
 <p><strong>Returns:</strong> String sheet prefix including trailing exclamation mark.</p>
 <hr />
-<h3>ResetCaches</h3>
+<h3 id="int-resetcaches">ResetCaches <a class="anchor-link" href="#int-resetcaches">#</a></h3>
 <p><strong>Reset cached lookups following dictionary changes</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ResetCaches()
 </code></pre>
 <hr />
-<h3>InvalidateCaches</h3>
+<h3 id="int-invalidatecaches">InvalidateCaches <a class="anchor-link" href="#int-invalidatecaches">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub InvalidateCaches()
 </code></pre>
 <hr />
-<h3>ValidateDictionary</h3>
+<h3 id="int-validatedictionary">ValidateDictionary <a class="anchor-link" href="#int-validatedictionary">#</a></h3>
 <p><strong>Ensure the supplied dictionary exposes the required columns</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ValidateDictionary(ByVal dict As ILLdictionary)
@@ -305,7 +310,7 @@
 <li><code>dict</code>: ILLdictionary to validate.</li>
 </ul>
 <hr />
-<h3>EnsureColumnExists</h3>
+<h3 id="int-ensurecolumnexists">EnsureColumnExists <a class="anchor-link" href="#int-ensurecolumnexists">#</a></h3>
 <p><strong>Validate that a dictionary column is present</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureColumnExists(ByVal dict As ILLdictionary, ByVal colName As String)
@@ -316,8 +321,8 @@
 <li><code>colName</code>: String. Column header to verify.</li>
 </ul>
 <hr />
-<h2>Error Handling</h2>
-<h3>ThrowError</h3>
+<h2 id="int-error-handling">Error Handling</h2>
+<h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
 <p><strong>Raise a ProjectError-coded runtime error</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
@@ -330,7 +335,7 @@
 <hr />
 </details>
 <details>
-<summary>Used in (11 file(s))</summary>
+<summary>Used in (12 file(s))</summary>
 <ul>
 <li><a href="src/classes/dictionary/ILLSheets.cls">ILLSheets.cls</a></li>
 <li><a href="src/classes/dictionary/LLSheets.cls">LLSheets.cls</a></li>
@@ -340,13 +345,16 @@
 <li><a href="src/classes/linelist/ListBuilder.cls">ListBuilder.cls</a></li>
 <li><a href="src/classes/sections/VarWriter.cls">VarWriter.cls</a></li>
 <li><a href="src/classes/stale/designer-codes/modules/implements/DesignerMain.bas">DesignerMain.bas</a></li>
+<li><a href="src/modules/designer/EventsDesignerAdvanced.bas">EventsDesignerAdvanced.bas</a></li>
 <li><a href="src/tests/modules/dictionary/TestLLSheets.bas">TestLLSheets.bas</a></li>
 <li><a href="src/tests/modules/dictionary/TestLLSheetsExtra.bas">TestLLSheetsExtra.bas</a></li>
 <li><a href="src/tests/modules/formulas/TestFormulas.bas">TestFormulas.bas</a></li>
 </ul>
 </details>
-
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

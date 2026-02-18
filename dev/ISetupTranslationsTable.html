@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ISetupTranslationsTable - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -15,8 +16,10 @@ methods to initialise, configure, and synchronise a managed translations
 ListObject against a watcher registry, handle language columns, report
 missing or duplicate labels, and export translations to external workbooks.</p>
 <p><strong>Depends on:</strong> <a href="IApplicationState.html">IApplicationState</a></p>
-<h2>Initialisation</h2>
-<h3>Initialise</h3>
+<details open class="doc-section" id="initialisation">
+<summary>Initialisation</summary>
+<div class="section-body">
+<h3 id="initialise">Initialise <a class="anchor-link" href="#initialise">#</a></h3>
 <p><strong>Provide the translations table ListObject and optional application scope.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Initialise(ByVal translationTable As ListObject, Optional ByVal stateScope As IApplicationState)
@@ -27,23 +30,31 @@ missing or duplicate labels, and export translations to external workbooks.</p>
 <li><code>stateScope</code>: Optional IApplicationState. Guard for Excel settings during updates.</li>
 </ul>
 <hr />
-<h2>Configuration</h2>
-<h3>HostWorksheet</h3>
+</div>
+</details>
+<details open class="doc-section" id="configuration">
+<summary>Configuration</summary>
+<div class="section-body">
+<h3 id="hostworksheet">HostWorksheet <a class="anchor-link" href="#hostworksheet">#</a></h3>
 <p><strong>Retrieve the worksheet hosting the translations table.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get HostWorksheet() As Worksheet
 </code></pre>
 <p><strong>Returns:</strong> Worksheet. The parent worksheet of the managed ListObject.</p>
 <hr />
-<h3>TableName</h3>
+<h3 id="tablename">TableName <a class="anchor-link" href="#tablename">#</a></h3>
 <p><strong>Retrieve the managed ListObject name.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get TableName() As String
 </code></pre>
 <p><strong>Returns:</strong> String. The name of the translations table.</p>
 <hr />
-<h2>Update pipeline</h2>
-<h3>EnsureLanguages</h3>
+</div>
+</details>
+<details open class="doc-section" id="update-pipeline">
+<summary>Update pipeline</summary>
+<div class="section-body">
+<h3 id="ensurelanguages">EnsureLanguages <a class="anchor-link" href="#ensurelanguages">#</a></h3>
 <p><strong>Ensure that language columns exist within the table.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub EnsureLanguages(Optional ByVal languages As String = vbNullString)
@@ -53,7 +64,7 @@ missing or duplicate labels, and export translations to external workbooks.</p>
 <li><code>languages</code>: Optional String. Semicolon-separated list of language headers to append.</li>
 </ul>
 <hr />
-<h3>SwitchDefaultLanguage</h3>
+<h3 id="switchdefaultlanguage">SwitchDefaultLanguage <a class="anchor-link" href="#switchdefaultlanguage">#</a></h3>
 <p><strong>Promote an existing language column to become the default language.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub SwitchDefaultLanguage(ByVal languageName As String)
@@ -63,14 +74,14 @@ missing or duplicate labels, and export translations to external workbooks.</p>
 <li><code>languageName</code>: String. Name of the language column to promote.</li>
 </ul>
 <hr />
-<h3>SwitchableLanguages</h3>
+<h3 id="switchablelanguages">SwitchableLanguages <a class="anchor-link" href="#switchablelanguages">#</a></h3>
 <p><strong>Retrieve languages that can be promoted to default.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function SwitchableLanguages() As BetterArray
 </code></pre>
 <p><strong>Returns:</strong> BetterArray. Array of non-default language names.</p>
 <hr />
-<h3>Languages</h3>
+<h3 id="languages">Languages <a class="anchor-link" href="#languages">#</a></h3>
 <p><strong>Retrieve translation languages excluding the default column unless requested.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Languages(Optional ByVal includeDefault As Boolean = False) As BetterArray
@@ -81,7 +92,7 @@ missing or duplicate labels, and export translations to external workbooks.</p>
 </ul>
 <p><strong>Returns:</strong> BetterArray. Array of language names.</p>
 <hr />
-<h3>UpdateFromRegistry</h3>
+<h3 id="updatefromregistry">UpdateFromRegistry <a class="anchor-link" href="#updatefromregistry">#</a></h3>
 <p><strong>Synchronise translations against the supplied registry sheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub UpdateFromRegistry(ByVal registrySheet As Worksheet, Optional ByVal languages As String = vbNullString)
@@ -92,7 +103,7 @@ missing or duplicate labels, and export translations to external workbooks.</p>
 <li><code>languages</code>: Optional String. Semicolon-separated set of languages to ensure before syncing.</li>
 </ul>
 <hr />
-<h3>ResetSequence</h3>
+<h3 id="resetsequence">ResetSequence <a class="anchor-link" href="#resetsequence">#</a></h3>
 <p><strong>Reset the hidden update sequence counter.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ResetSequence(ByVal registrySheet As Worksheet)
@@ -102,14 +113,14 @@ missing or duplicate labels, and export translations to external workbooks.</p>
 <li><code>registrySheet</code>: Worksheet. The worksheet whose counter should be reset.</li>
 </ul>
 <hr />
-<h3>NumberOfMissing</h3>
+<h3 id="numberofmissing">NumberOfMissing <a class="anchor-link" href="#numberofmissing">#</a></h3>
 <p><strong>Summarise and optionally display missing translation counts.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function NumberOfMissing() As String
 </code></pre>
 <p><strong>Returns:</strong> String. Summary message listing missing counts per language.</p>
 <hr />
-<h3>DuplicateLabels</h3>
+<h3 id="duplicatelabels">DuplicateLabels <a class="anchor-link" href="#duplicatelabels">#</a></h3>
 <p><strong>Summarise duplicate labels for the specified language or across all languages.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function DuplicateLabels(ByRef duplicateMessage As String, Optional ByVal languageName As String = vbNullString) As Boolean
@@ -121,21 +132,21 @@ missing or duplicate labels, and export translations to external workbooks.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when duplicates were detected.</p>
 <hr />
-<h3>InternalMissingSummary</h3>
+<h3 id="internalmissingsummary">InternalMissingSummary <a class="anchor-link" href="#internalmissingsummary">#</a></h3>
 <p><strong>Retrieve the cached missing summary across languages.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get InternalMissingSummary() As BetterArray
 </code></pre>
 <p><strong>Returns:</strong> BetterArray. Cloned copy of the internal missing-labels summary.</p>
 <hr />
-<h3>InternalDuplicatesSummary</h3>
+<h3 id="internalduplicatessummary">InternalDuplicatesSummary <a class="anchor-link" href="#internalduplicatessummary">#</a></h3>
 <p><strong>Retrieve the cached duplicate summary across languages.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get InternalDuplicatesSummary() As BetterArray
 </code></pre>
 <p><strong>Returns:</strong> BetterArray. Cloned copy of the internal duplicates summary.</p>
 <hr />
-<h3>SetDisplayPrompts</h3>
+<h3 id="setdisplayprompts">SetDisplayPrompts <a class="anchor-link" href="#setdisplayprompts">#</a></h3>
 <p><strong>Enable or disable prompts when reporting missing translations.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub SetDisplayPrompts(ByVal state As Boolean)
@@ -145,7 +156,7 @@ missing or duplicate labels, and export translations to external workbooks.</p>
 <li><code>state</code>: Boolean. True enables prompts; False suppresses them.</li>
 </ul>
 <hr />
-<h3>MissingLabels</h3>
+<h3 id="missinglabels">MissingLabels <a class="anchor-link" href="#missinglabels">#</a></h3>
 <p><strong>Count missing translation labels for a specific language.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function MissingLabels(ByVal lang As String) As Long
@@ -156,8 +167,12 @@ missing or duplicate labels, and export translations to external workbooks.</p>
 </ul>
 <p><strong>Returns:</strong> Long. Number of blank cells in the language column.</p>
 <hr />
-<h2>Data exchange</h2>
-<h3>Export</h3>
+</div>
+</details>
+<details open class="doc-section" id="data-exchange">
+<summary>Data exchange</summary>
+<div class="section-body">
+<h3 id="export">Export <a class="anchor-link" href="#export">#</a></h3>
 <p><strong>Export translations into a destination workbook.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Export(ByVal exportWorkbook As Workbook, Optional ByVal Hide As Long = xlSheetVisible)
@@ -168,16 +183,24 @@ missing or duplicate labels, and export translations to external workbooks.</p>
 <li><code>Hide</code>: Optional Long. Visibility flag applied to the exported sheet. Defaults to xlSheetVisible.</li>
 </ul>
 <hr />
-<h2>Identity</h2>
-<h3>Self</h3>
+</div>
+</details>
+<details open class="doc-section" id="identity">
+<summary>Identity</summary>
+<div class="section-body">
+<h3 id="self">Self <a class="anchor-link" href="#self">#</a></h3>
 <p><strong>Retrieve the interface bound to the current instance.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Self() As ISetupTranslationsTable
 </code></pre>
 <p><strong>Returns:</strong> ISetupTranslationsTable. The typed self-reference.</p>
 <hr />
-
+</div>
+</details>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

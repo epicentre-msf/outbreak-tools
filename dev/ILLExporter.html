@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ILLExporter - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -16,8 +17,10 @@ filtered exports, full migration exports, analysis-only exports, and
 geobase exports. Consumers use ExportCustom, ExportMigration,
 ExportAnalysis, or ExportGeo, then read LastExportPassword if a
 password was applied.</p>
-<h2>Export Methods</h2>
-<h3>ExportCustom</h3>
+<details open class="doc-section" id="export-methods">
+<summary>Export Methods</summary>
+<div class="section-body">
+<h3 id="exportcustom">ExportCustom <a class="anchor-link" href="#exportcustom">#</a></h3>
 <p><strong>Export a numbered custom export definition</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function ExportCustom(ByVal exportNumber As Long, _
@@ -37,7 +40,7 @@ from companion filter sheets rather than the raw ListObject data.</p>
 </ul>
 <p><strong>Returns:</strong> String. Saved file path, or empty string on failure.</p>
 <hr />
-<h3>ExportMigration</h3>
+<h3 id="exportmigration">ExportMigration <a class="anchor-link" href="#exportmigration">#</a></h3>
 <p><strong>Export all data for migration to another linelist</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function ExportMigration(ByVal folderPath As String, _
@@ -56,7 +59,7 @@ editable labels for update on import. No password is applied.</p>
 </ul>
 <p><strong>Returns:</strong> String. Saved file path, or empty string on failure.</p>
 <hr />
-<h3>ExportAnalysis</h3>
+<h3 id="exportanalysis">ExportAnalysis <a class="anchor-link" href="#exportanalysis">#</a></h3>
 <p><strong>Export analysis worksheets only</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function ExportAnalysis(ByVal folderPath As String) As String
@@ -70,7 +73,7 @@ formatting, and graphs. No data or metadata sheets are included.</p>
 </ul>
 <p><strong>Returns:</strong> String. Saved file path, or empty string on failure.</p>
 <hr />
-<h3>ExportGeo</h3>
+<h3 id="exportgeo">ExportGeo <a class="anchor-link" href="#exportgeo">#</a></h3>
 <p><strong>Export geobase data to a separate workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function ExportGeo(ByVal folderPath As String, _
@@ -86,8 +89,12 @@ geobase subset. The file name includes a date stamp.</p>
 </ul>
 <p><strong>Returns:</strong> String. Saved file path, or empty string on failure.</p>
 <hr />
-<h2>State</h2>
-<h3>LastExportPassword</h3>
+</div>
+</details>
+<details open class="doc-section" id="state">
+<summary>State</summary>
+<div class="section-body">
+<h3 id="lastexportpassword">LastExportPassword <a class="anchor-link" href="#lastexportpassword">#</a></h3>
 <p><strong>Password used in the last export operation</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get LastExportPassword() As String
@@ -97,8 +104,12 @@ or an empty string when no password was used. Modules display this value
 to the user after a successful export so they can share it securely.</p>
 <p><strong>Returns:</strong> String. The password applied to the last export, or vbNullString.</p>
 <hr />
-<h2>Cleanup</h2>
-<h3>CloseAll</h3>
+</div>
+</details>
+<details open class="doc-section" id="cleanup">
+<summary>Cleanup</summary>
+<div class="section-body">
+<h3 id="closeall">CloseAll <a class="anchor-link" href="#closeall">#</a></h3>
 <p><strong>Close all output workbooks that may still be open</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub CloseAll()
@@ -106,8 +117,12 @@ to the user after a successful export so they can share it securely.</p>
 <p>Closes any output workbook left open after an export error, preventing
 orphaned minimized windows. Safe to call even when no workbook is open.</p>
 <hr />
-
+</div>
+</details>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

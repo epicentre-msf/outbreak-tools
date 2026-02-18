@@ -5,13 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>IDiseaseSheet - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>IDiseaseSheet</h1>
-<h2>Configuration</h2>
-<h3>Initialise</h3>
+<details open class="doc-section" id="configuration">
+<summary>Configuration</summary>
+<div class="section-body">
+<h3 id="initialise">Initialise <a class="anchor-link" href="#initialise">#</a></h3>
 <p><strong>Configure builder dependencies.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Initialise(ByVal hostWorkbook As Workbook, _
@@ -26,8 +29,12 @@
 <li><code>translations</code>: ITranslationObject supplying translated labels.</li>
 </ul>
 <hr />
-<h2>Worksheet Construction</h2>
-<h3>Build</h3>
+</div>
+</details>
+<details open class="doc-section" id="worksheet-construction">
+<summary>Worksheet Construction</summary>
+<div class="section-body">
+<h3 id="build">Build <a class="anchor-link" href="#build">#</a></h3>
 <p><strong>Create a disease worksheet populated with metadata, headers, and validations.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Build(ByVal diseaseName As String, _
@@ -42,15 +49,23 @@
 </ul>
 <p><strong>Returns:</strong> Worksheet freshly created and formatted.</p>
 <hr />
-<h2>Maintenance</h2>
-<h3>Reset</h3>
+</div>
+</details>
+<details open class="doc-section" id="maintenance">
+<summary>Maintenance</summary>
+<div class="section-body">
+<h3 id="reset">Reset <a class="anchor-link" href="#reset">#</a></h3>
 <p><strong>Reset cached state so the builder can be reused safely.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Reset()
 </code></pre>
 <hr />
-
+</div>
+</details>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

@@ -5,60 +5,71 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>IDiseaseImportSummary - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>IDiseaseImportSummary</h1>
-<h2>State</h2>
-<h3>MissingVariables</h3>
+<details open class="doc-section" id="state">
+<summary>State</summary>
+<div class="section-body">
+<h3 id="missingvariables">MissingVariables <a class="anchor-link" href="#missingvariables">#</a></h3>
 <p><strong>List of variables that were missing from the import data.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get MissingVariables() As BetterArray
 </code></pre>
 <p><strong>Returns:</strong> BetterArray clone containing variable names.</p>
 <hr />
-<h3>UpdatedVariables</h3>
+<h3 id="updatedvariables">UpdatedVariables <a class="anchor-link" href="#updatedvariables">#</a></h3>
 <p><strong>List of variables updated from the import data.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get UpdatedVariables() As BetterArray
 </code></pre>
 <p><strong>Returns:</strong> BetterArray clone containing variable names.</p>
 <hr />
-<h3>AppendedVariables</h3>
+<h3 id="appendedvariables">AppendedVariables <a class="anchor-link" href="#appendedvariables">#</a></h3>
 <p><strong>List of variables appended to the target table.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get AppendedVariables() As BetterArray
 </code></pre>
 <p><strong>Returns:</strong> BetterArray clone containing variable names.</p>
 <hr />
-<h3>RequiresReport</h3>
+<h3 id="requiresreport">RequiresReport <a class="anchor-link" href="#requiresreport">#</a></h3>
 <p><strong>Indicates whether the merge requires a follow-up report.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get RequiresReport() As Boolean
 </code></pre>
 <hr />
-<h2>Mutators</h2>
-<h3>RegisterMissing</h3>
+</div>
+</details>
+<details open class="doc-section" id="mutators">
+<summary>Mutators</summary>
+<div class="section-body">
+<h3 id="registermissing">RegisterMissing <a class="anchor-link" href="#registermissing">#</a></h3>
 <p><strong>Register a variable that was missing from the import.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub RegisterMissing(ByVal varName As String)
 </code></pre>
 <hr />
-<h3>RegisterUpdated</h3>
+<h3 id="registerupdated">RegisterUpdated <a class="anchor-link" href="#registerupdated">#</a></h3>
 <p><strong>Register a variable whose details were updated.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub RegisterUpdated(ByVal varName As String)
 </code></pre>
 <hr />
-<h3>RegisterAppended</h3>
+<h3 id="registerappended">RegisterAppended <a class="anchor-link" href="#registerappended">#</a></h3>
 <p><strong>Register a variable appended from the import.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub RegisterAppended(ByVal varName As String)
 </code></pre>
 <hr />
-
+</div>
+</details>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

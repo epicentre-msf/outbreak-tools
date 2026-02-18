@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ICrossTable - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -13,8 +14,10 @@
 <p>Defines the public contract for the CrossTable class. Exposes properties
 for table geometry (rows, columns, ranges) and methods for building,
 formatting, and naming the cross-table on an analysis output worksheet.</p>
-<h2>Methods</h2>
-<h3>AddRows</h3>
+<details open class="doc-section" id="methods">
+<summary>Methods</summary>
+<div class="section-body">
+<h3 id="addrows">AddRows <a class="anchor-link" href="#addrows">#</a></h3>
 <p><strong>Add row headers and row category labels to the worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub AddRows(): End Sub
@@ -24,7 +27,7 @@ Writes the row variable label and all row category values into the
 first column of the cross-table region. Includes optional total and
 missing rows based on the table specification flags.</p>
 <hr />
-<h3>AddColumns</h3>
+<h3 id="addcolumns">AddColumns <a class="anchor-link" href="#addcolumns">#</a></h3>
 <p><strong>Add column headers and column category labels to the worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub AddColumns(): End Sub
@@ -33,7 +36,7 @@ missing rows based on the table specification flags.</p>
 header row of the cross-table region. Includes optional total and
 missing columns based on the table specification flags.</p>
 <hr />
-<h3>AddHeader</h3>
+<h3 id="addheader">AddHeader <a class="anchor-link" href="#addheader">#</a></h3>
 <p><strong>Add the table title and header to the worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub AddHeader(): End Sub
@@ -42,7 +45,7 @@ missing columns based on the table specification flags.</p>
 header when IsNewSection is True. Positions the header based on the
 start row computed from the previous table.</p>
 <hr />
-<h3>NameRanges</h3>
+<h3 id="nameranges">NameRanges <a class="anchor-link" href="#nameranges">#</a></h3>
 <p><strong>Create all named ranges for the table data regions</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub NameRanges(): End Sub
@@ -52,7 +55,7 @@ headers, data body, total row, total column, and other structural
 regions. The names follow a convention based on the table identifier
 and are registered in NamedRangesList for export tracking.</p>
 <hr />
-<h3>Build</h3>
+<h3 id="build">Build <a class="anchor-link" href="#build">#</a></h3>
 <p><strong>Build the complete cross-table on the worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Build(): End Sub
@@ -61,7 +64,7 @@ and are registered in NamedRangesList for export tracking.</p>
 AddColumns, and NameRanges in sequence. This is the primary entry point
 for AnalysisOutput when building analysis tables.</p>
 <hr />
-<h3>Format</h3>
+<h3 id="format">Format <a class="anchor-link" href="#format">#</a></h3>
 <p><strong>Apply formatting to the table using design specifications</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Format(ByVal designFormat As ILLFormat): End Sub
@@ -75,8 +78,12 @@ according to the table scope.</p>
 <li><code>designFormat</code>: ILLFormat. The formatting specification to apply.</li>
 </ul>
 <hr />
-<h2>Properties</h2>
-<h3>HeaderRange</h3>
+</div>
+</details>
+<details open class="doc-section" id="properties">
+<summary>Properties</summary>
+<div class="section-body">
+<h3 id="headerrange">HeaderRange <a class="anchor-link" href="#headerrange">#</a></h3>
 <p><strong>Header range of the table on the output worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get HeaderRange() As Range: End Property
@@ -86,7 +93,7 @@ Returns the Range spanning the column headers of the built cross-table.
 Used by formatting and formula-writing routines to locate header cells.</p>
 <p><strong>Returns:</strong> Range. The header row range.</p>
 <hr />
-<h3>RowsCategoriesRange</h3>
+<h3 id="rowscategoriesrange">RowsCategoriesRange <a class="anchor-link" href="#rowscategoriesrange">#</a></h3>
 <p><strong>Row categories range with optional filtering</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get RowsCategoriesRange( _
@@ -105,7 +112,7 @@ label column. Defaults to False.</li>
 </ul>
 <p><strong>Returns:</strong> Range. The row categories range.</p>
 <hr />
-<h3>ColumnRange</h3>
+<h3 id="columnrange">ColumnRange <a class="anchor-link" href="#columnrange">#</a></h3>
 <p><strong>Column data range for a specific column value</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get ColumnRange(ByVal colVal As String, _
@@ -125,7 +132,7 @@ cell. Defaults to False.</li>
 </ul>
 <p><strong>Returns:</strong> Range. The data range for the specified column.</p>
 <hr />
-<h3>RowRange</h3>
+<h3 id="rowrange">RowRange <a class="anchor-link" href="#rowrange">#</a></h3>
 <p><strong>Row data range for a specific row value</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get RowRange(ByVal rowVal As String, _
@@ -142,7 +149,7 @@ label cell. Defaults to True.</li>
 </ul>
 <p><strong>Returns:</strong> Range. The data range for the specified row.</p>
 <hr />
-<h3>StartRow</h3>
+<h3 id="startrow">StartRow <a class="anchor-link" href="#startrow">#</a></h3>
 <p><strong>Starting row of the table on the output worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get StartRow() As Long: End Property
@@ -152,7 +159,7 @@ from the previous table end row or the section start row when this is
 the first table.</p>
 <p><strong>Returns:</strong> Long. The starting row index.</p>
 <hr />
-<h3>Previous</h3>
+<h3 id="previous">Previous <a class="anchor-link" href="#previous">#</a></h3>
 <p><strong>Previous cross-table in the same section</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Previous() As ICrossTable: End Property
@@ -162,7 +169,7 @@ chain. Returns Nothing when this is the first table in its section.
 Used to compute start-row offsets for stacked tables.</p>
 <p><strong>Returns:</strong> ICrossTable. The preceding cross-table, or Nothing.</p>
 <hr />
-<h3>Specifications</h3>
+<h3 id="specifications">Specifications <a class="anchor-link" href="#specifications">#</a></h3>
 <p><strong>Table specifications used to build this cross-table</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Specifications() As ITableSpecs: End Property
@@ -172,7 +179,7 @@ this cross-table. Provides access to table scope, variable names,
 category lists, and validation flags.</p>
 <p><strong>Returns:</strong> ITableSpecs. The backing table specification.</p>
 <hr />
-<h3>Wksh</h3>
+<h3 id="wksh">Wksh <a class="anchor-link" href="#wksh">#</a></h3>
 <p><strong>Output worksheet where the table is built</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Wksh() As Worksheet: End Property
@@ -181,7 +188,7 @@ category lists, and validation flags.</p>
 headers, row labels, column labels, and data cells.</p>
 <p><strong>Returns:</strong> Worksheet. The output worksheet.</p>
 <hr />
-<h3>NumberOfColumns</h3>
+<h3 id="numberofcolumns">NumberOfColumns <a class="anchor-link" href="#numberofcolumns">#</a></h3>
 <p><strong>Number of data columns in the table</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get NumberOfColumns() As Long: End Property
@@ -191,7 +198,7 @@ For bivariate and time series tables this equals the number of column
 categories plus optional total and missing columns.</p>
 <p><strong>Returns:</strong> Long. The data column count.</p>
 <hr />
-<h3>EndColumn</h3>
+<h3 id="endcolumn">EndColumn <a class="anchor-link" href="#endcolumn">#</a></h3>
 <p><strong>Last column used by the table on the worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get EndColumn() As Long: End Property
@@ -201,7 +208,7 @@ this cross-table. Used by sibling tables and formatting routines to
 avoid overlapping output.</p>
 <p><strong>Returns:</strong> Long. The ending column index.</p>
 <hr />
-<h3>EndRow</h3>
+<h3 id="endrow">EndRow <a class="anchor-link" href="#endrow">#</a></h3>
 <p><strong>Last row used by the table on the worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get EndRow() As Long: End Property
@@ -210,7 +217,7 @@ avoid overlapping output.</p>
 cross-table. Used to compute the start row for the next stacked table.</p>
 <p><strong>Returns:</strong> Long. The ending row index.</p>
 <hr />
-<h3>TimeSeriesHeader</h3>
+<h3 id="timeseriesheader">TimeSeriesHeader <a class="anchor-link" href="#timeseriesheader">#</a></h3>
 <p><strong>Header label for time series tables</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get TimeSeriesHeader() As String: End Property
@@ -220,7 +227,7 @@ time series cross-tables. Returns an empty string for non-time-series
 table scopes.</p>
 <p><strong>Returns:</strong> String. The time series column header label.</p>
 <hr />
-<h3>NamedRangesList</h3>
+<h3 id="namedrangeslist">NamedRangesList <a class="anchor-link" href="#namedrangeslist">#</a></h3>
 <p><strong>List of named range names created by this table</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get NamedRangesList() As BetterArray: End Property
@@ -230,8 +237,12 @@ NameRanges created for this cross-table. Used by AnaTabIds to register
 the ranges for export tracking.</p>
 <p><strong>Returns:</strong> BetterArray. The collection of named range names.</p>
 <hr />
-
+</div>
+</details>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

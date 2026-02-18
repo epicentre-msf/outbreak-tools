@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ApplicationState - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -16,8 +17,10 @@ Handles ScreenUpdating, DisplayAlerts, Calculation, EnableAnimations,
 EnableEvents, AutomationSecurity, cursor, and CalculateBeforeSave.</p>
 <p><strong>Depends on:</strong> ProjectError</p>
 <p><strong>Version:</strong> 1.0 (2026-02-09)</p>
-<h2>Factory</h2>
-<h3>create</h3>
+<details open class="doc-section" id="factory">
+<summary>Factory</summary>
+<div class="section-body">
+<h3 id="create">create <a class="anchor-link" href="#create">#</a></h3>
 <p><strong>Factory returning an initialised interface</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(Optional ByVal excelApplication As Application) As IApplicationState
@@ -30,8 +33,12 @@ switch to busy mode without an additional call.</p>
 </ul>
 <p><strong>Returns:</strong> IApplicationState. Ready to use.</p>
 <hr />
-<h2>Core Logic</h2>
-<h3>apply-busy-state</h3>
+</div>
+</details>
+<details open class="doc-section" id="core-logic">
+<summary>Core Logic</summary>
+<div class="section-body">
+<h3 id="apply-busy-state">apply-busy-state <a class="anchor-link" href="#apply-busy-state">#</a></h3>
 <p><strong>Apply the busy state to the target application</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ApplyBusyStateCore(Optional ByVal suppressEvents As Boolean = False, _
@@ -56,13 +63,13 @@ ProjectError is raised so the caller can attempt recovery.</p>
 <li>ProjectError.ErrorUnexpectedState When the application settings cannot be applied.</li>
 </ul>
 <hr />
-<h3>refresh-snapshot</h3>
+<h3 id="refresh-snapshot">refresh-snapshot <a class="anchor-link" href="#refresh-snapshot">#</a></h3>
 <p><strong>Re-capture the snapshot from the current application state</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RefreshSnapshotCore()
 </code></pre>
 <hr />
-<h3>restore</h3>
+<h3 id="restore">restore <a class="anchor-link" href="#restore">#</a></h3>
 <p><strong>Restore all captured settings to the application</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RestoreInternal(ByVal silent As Boolean)
@@ -72,40 +79,42 @@ ProjectError is raised so the caller can attempt recovery.</p>
 <li><code>silent</code>: Boolean. When True, swallows errors instead of raising them.</li>
 </ul>
 <hr />
+</div>
+</details>
 <details>
 <summary>Internal members (not exported)</summary>
-<h2>Factory</h2>
-<h3>self</h3>
+<h2 id="int-factory">Factory</h2>
+<h3 id="int-self">self <a class="anchor-link" href="#int-self">#</a></h3>
 <p><strong>Self-reference as IApplicationState</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Self() As IApplicationState
 </code></pre>
 <p><strong>Returns:</strong> IApplicationState. Self-reference.</p>
 <hr />
-<h2>Introspection</h2>
-<h3>application-object</h3>
+<h2 id="int-introspection">Introspection</h2>
+<h3 id="int-application-object">application-object <a class="anchor-link" href="#int-application-object">#</a></h3>
 <p><strong>Application reference currently guarded</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get ApplicationObject() As Application
 </code></pre>
 <p><strong>Returns:</strong> Application. The Excel Application instance.</p>
 <hr />
-<h3>is-busy</h3>
+<h3 id="int-is-busy">is-busy <a class="anchor-link" href="#int-is-busy">#</a></h3>
 <p><strong>Whether the busy state is currently active</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get IsBusy() As Boolean
 </code></pre>
 <p><strong>Returns:</strong> Boolean. True when ApplyBusyState has been invoked without a matching Restore.</p>
 <hr />
-<h3>has-snapshot</h3>
+<h3 id="int-has-snapshot">has-snapshot <a class="anchor-link" href="#int-has-snapshot">#</a></h3>
 <p><strong>Whether a snapshot exists and restoration is possible</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get HasSnapshot() As Boolean
 </code></pre>
 <p><strong>Returns:</strong> Boolean. True when a snapshot has been captured.</p>
 <hr />
-<h2>Internal Workflow</h2>
-<h3>bind-application</h3>
+<h2 id="int-internal-workflow">Internal Workflow</h2>
+<h3 id="int-bind-application">bind-application <a class="anchor-link" href="#int-bind-application">#</a></h3>
 <p><strong>Bind a target application</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Friend Sub BindApplication(ByVal excelApplication As Application)
@@ -115,27 +124,27 @@ ProjectError is raised so the caller can attempt recovery.</p>
 <li><code>excelApplication</code>: Application. The Excel Application to guard.</li>
 </ul>
 <hr />
-<h3>capture-snapshot</h3>
+<h3 id="int-capture-snapshot">capture-snapshot <a class="anchor-link" href="#int-capture-snapshot">#</a></h3>
 <p><strong>Capture current application settings</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Friend Sub CaptureSnapshot()
 </code></pre>
 <hr />
-<h2>Core Logic</h2>
-<h3>capture-snapshot-core</h3>
+<h2 id="int-core-logic">Core Logic</h2>
+<h3 id="int-capture-snapshot-core">capture-snapshot-core <a class="anchor-link" href="#int-capture-snapshot-core">#</a></h3>
 <p><strong>Capture all application settings into the snapshot</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub CaptureSnapshotCore()
 </code></pre>
 <hr />
-<h3>target-application</h3>
+<h3 id="int-target-application">target-application <a class="anchor-link" href="#int-target-application">#</a></h3>
 <p><strong>Resolve the Excel Application reference</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function TargetApplication() As Application
 </code></pre>
 <p><strong>Returns:</strong> Application. The guarded Application instance.</p>
 <hr />
-<h3>ensure-snapshot</h3>
+<h3 id="int-ensure-snapshot">ensure-snapshot <a class="anchor-link" href="#int-ensure-snapshot">#</a></h3>
 <p><strong>Guard that a snapshot exists before proceeding</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureSnapshot(ByVal operationName As String)
@@ -145,7 +154,7 @@ ProjectError is raised so the caller can attempt recovery.</p>
 <li><code>operationName</code>: String. Name of the calling operation for error messages.</li>
 </ul>
 <hr />
-<h3>ensure-not-busy</h3>
+<h3 id="int-ensure-not-busy">ensure-not-busy <a class="anchor-link" href="#int-ensure-not-busy">#</a></h3>
 <p><strong>Guard that the scope is not busy before proceeding</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureNotBusy(ByVal operationName As String)
@@ -155,7 +164,7 @@ ProjectError is raised so the caller can attempt recovery.</p>
 <li><code>operationName</code>: String. Name of the calling operation for error messages.</li>
 </ul>
 <hr />
-<h3>safe-set-enable-animations</h3>
+<h3 id="int-safe-set-enable-animations">safe-set-enable-animations <a class="anchor-link" href="#int-safe-set-enable-animations">#</a></h3>
 <p><strong>Set EnableAnimations with graceful fallback on unsupported platforms</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub SafeSetEnableAnimations(ByVal target As Application, ByVal value As Boolean)
@@ -166,7 +175,7 @@ ProjectError is raised so the caller can attempt recovery.</p>
 <li><code>value</code>: Boolean. The desired EnableAnimations state.</li>
 </ul>
 <hr />
-<h3>try-read-enable-animations</h3>
+<h3 id="int-try-read-enable-animations">try-read-enable-animations <a class="anchor-link" href="#int-try-read-enable-animations">#</a></h3>
 <p><strong>Attempt to read EnableAnimations from the target application</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function TryReadEnableAnimations(ByVal target As Application, _
@@ -179,7 +188,7 @@ ProjectError is raised so the caller can attempt recovery.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when the property was read successfully.</p>
 <hr />
-<h3>throw-error</h3>
+<h3 id="int-throw-error">throw-error <a class="anchor-link" href="#int-throw-error">#</a></h3>
 <p><strong>Raise a typed project error</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal message As String)
@@ -192,11 +201,12 @@ ProjectError is raised so the caller can attempt recovery.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (20 file(s))</summary>
+<summary>Used in (23 file(s))</summary>
 <ul>
 <li><a href="src/classes/dataio/ExportButton.cls">ExportButton.cls</a></li>
 <li><a href="src/classes/general/ApplicationState.cls">ApplicationState.cls</a></li>
 <li><a href="src/classes/general/IApplicationState.cls">IApplicationState.cls</a></li>
+<li><a href="src/classes/linelist/Linelist.cls">Linelist.cls</a></li>
 <li><a href="src/classes/linelist/LinelistSpecs.cls">LinelistSpecs.cls</a></li>
 <li><a href="src/classes/mastersetup/MasterSetupPreparation.cls">MasterSetupPreparation.cls</a></li>
 <li><a href="src/classes/setup/ISetupErrors.cls">ISetupErrors.cls</a></li>
@@ -204,10 +214,12 @@ ProjectError is raised so the caller can attempt recovery.</p>
 <li><a href="src/classes/setup/SetupErrors.cls">SetupErrors.cls</a></li>
 <li><a href="src/classes/setup/SetupImportService.cls">SetupImportService.cls</a></li>
 <li><a href="src/classes/setup/SetupTranslationsTable.cls">SetupTranslationsTable.cls</a></li>
-<li><a href="src/modules/dataio/FormLogicAdvanced.bas">FormLogicAdvanced.bas</a></li>
-<li><a href="src/modules/dataio/FormLogicExportMig.bas">FormLogicExportMig.bas</a></li>
 <li><a href="src/modules/designer/EventsDesignerAdvanced.bas">EventsDesignerAdvanced.bas</a></li>
 <li><a href="src/modules/designer/EventsDesignerCore.bas">EventsDesignerCore.bas</a></li>
+<li><a href="src/modules/designer/EventsDesignerMulti.bas">EventsDesignerMulti.bas</a></li>
+<li><a href="src/modules/linelist/LinelistEventsManager.bas">LinelistEventsManager.bas</a></li>
+<li><a href="src/modules/linelistform/FormLogicAdvanced.bas">FormLogicAdvanced.bas</a></li>
+<li><a href="src/modules/linelistform/FormLogicExportMig.bas">FormLogicExportMig.bas</a></li>
 <li><a href="src/modules/mastersetup/EventsMasterSetupRibbon.bas">EventsMasterSetupRibbon.bas</a></li>
 <li><a href="src/modules/mastersetup/MasterSetupHelpers.bas">MasterSetupHelpers.bas</a></li>
 <li><a href="src/modules/setup/ImportForm.bas">ImportForm.bas</a></li>
@@ -216,8 +228,10 @@ ProjectError is raised so the caller can attempt recovery.</p>
 <li><a href="src/tests/modules/general/TestPasswords.bas">TestPasswords.bas</a></li>
 </ul>
 </details>
-
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

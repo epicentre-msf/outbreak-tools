@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>IDataSheet - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -14,8 +15,10 @@
 worksheet data access, column lookup, filtering, import/export, and
 diagnostic logging for table-like structures that do not rely on
 ListObjects.</p>
-<h2>Elements</h2>
-<h3>Wksh</h3>
+<details open class="doc-section" id="elements">
+<summary>Elements</summary>
+<div class="section-body">
+<h3 id="wksh">Wksh <a class="anchor-link" href="#wksh">#</a></h3>
 <p><strong>Worksheet backing the DataSheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Wksh() As Worksheet: End Property
@@ -24,7 +27,7 @@ ListObjects.</p>
 Returns the worksheet that hosts the table-like data.</p>
 <p><strong>Returns:</strong> Worksheet. The host worksheet.</p>
 <hr />
-<h3>DataStartRow</h3>
+<h3 id="datastartrow">DataStartRow <a class="anchor-link" href="#datastartrow">#</a></h3>
 <p><strong>First row of data (header row)</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get DataStartRow() As Long: End Property
@@ -32,7 +35,7 @@ Returns the worksheet that hosts the table-like data.</p>
 <p>Returns the 1-based row index where the data starts.</p>
 <p><strong>Returns:</strong> Long. The header row index.</p>
 <hr />
-<h3>DataStartColumn</h3>
+<h3 id="datastartcolumn">DataStartColumn <a class="anchor-link" href="#datastartcolumn">#</a></h3>
 <p><strong>First column of data</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get DataStartColumn() As Long: End Property
@@ -40,7 +43,7 @@ Returns the worksheet that hosts the table-like data.</p>
 <p>Returns the 1-based column index where the data starts.</p>
 <p><strong>Returns:</strong> Long. The starting column index.</p>
 <hr />
-<h3>Name</h3>
+<h3 id="name">Name <a class="anchor-link" href="#name">#</a></h3>
 <p><strong>Name of the DataSheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Name() As String: End Property
@@ -49,7 +52,7 @@ Returns the worksheet that hosts the table-like data.</p>
 was provided during creation.</p>
 <p><strong>Returns:</strong> String. The DataSheet name.</p>
 <hr />
-<h3>DataEndRow</h3>
+<h3 id="dataendrow">DataEndRow <a class="anchor-link" href="#dataendrow">#</a></h3>
 <p><strong>Last row containing data</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get DataEndRow() As Long: End Property
@@ -58,7 +61,7 @@ was provided during creation.</p>
 scans all non-formula columns for the furthest row.</p>
 <p><strong>Returns:</strong> Long. The 1-based last data row index.</p>
 <hr />
-<h3>DataEndColumn</h3>
+<h3 id="dataendcolumn">DataEndColumn <a class="anchor-link" href="#dataendcolumn">#</a></h3>
 <p><strong>Last column containing data</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get DataEndColumn() As Long: End Property
@@ -66,7 +69,7 @@ scans all non-formula columns for the furthest row.</p>
 <p>Dynamically computes the rightmost occupied column in the header row.</p>
 <p><strong>Returns:</strong> Long. The 1-based last column index.</p>
 <hr />
-<h3>HeaderRange</h3>
+<h3 id="headerrange">HeaderRange <a class="anchor-link" href="#headerrange">#</a></h3>
 <p><strong>Header row Range</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get HeaderRange() As Range
@@ -75,7 +78,7 @@ scans all non-formula columns for the furthest row.</p>
 on the header row.</p>
 <p><strong>Returns:</strong> Range. The header row range.</p>
 <hr />
-<h3>ColumnExists</h3>
+<h3 id="columnexists">ColumnExists <a class="anchor-link" href="#columnexists">#</a></h3>
 <p><strong>Check whether a column exists in the DataSheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function ColumnExists(ByVal colName As String, _
@@ -91,7 +94,7 @@ on the header row.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when the column is found.</p>
 <hr />
-<h3>ColumnIndex</h3>
+<h3 id="columnindex">ColumnIndex <a class="anchor-link" href="#columnindex">#</a></h3>
 <p><strong>Resolve the column index for a header name</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function ColumnIndex(ByVal colName As String, _
@@ -113,7 +116,7 @@ shouldExist is False; raises an error when shouldExist is True.</p>
 </ul>
 <p><strong>Returns:</strong> Long. The column index, or -1 when not found.</p>
 <hr />
-<h3>DataRange</h3>
+<h3 id="datarange">DataRange <a class="anchor-link" href="#datarange">#</a></h3>
 <p><strong>Range of a column or the entire data body</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get DataRange(Optional ByVal colName As String = &quot;__all__&quot;, _
@@ -133,7 +136,7 @@ is included.</p>
 </ul>
 <p><strong>Returns:</strong> Range. The requested data range.</p>
 <hr />
-<h3>RenameColumn</h3>
+<h3 id="renamecolumn">RenameColumn <a class="anchor-link" href="#renamecolumn">#</a></h3>
 <p><strong>Rename a header in the DataSheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub RenameColumn(ByVal currentName As String, _
@@ -150,8 +153,12 @@ is included.</p>
 <li><code>matchCase</code>: Optional Boolean. When True, matching is case-sensitive. Defaults to False.</li>
 </ul>
 <hr />
-<h2>Operations</h2>
-<h3>Clean</h3>
+</div>
+</details>
+<details open class="doc-section" id="operations">
+<summary>Operations</summary>
+<div class="section-body">
+<h3 id="clean">Clean <a class="anchor-link" href="#clean">#</a></h3>
 <p><strong>Clear all non-formula columns</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Clean() : End Sub
@@ -159,7 +166,7 @@ is included.</p>
 <p>Filtering, cleaning, import, and export operations.
 Clears the contents of every data column that does not contain formulas.</p>
 <hr />
-<h3>AddFormatsColumns</h3>
+<h3 id="addformatscolumns">AddFormatsColumns <a class="anchor-link" href="#addformatscolumns">#</a></h3>
 <p><strong>Register columns for formatting import/export</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub AddFormatsColumns(ByVal matchColumnsCase As Boolean, ByVal resetColumns As Boolean, ParamArray lsCols() As Variant)
@@ -173,7 +180,7 @@ Import and Export preserve their visual formatting.</p>
 <li><code>lsCols</code>: ParamArray Variant. Column names to register for formatting.</li>
 </ul>
 <hr />
-<h3>FilterData</h3>
+<h3 id="filterdata">FilterData <a class="anchor-link" href="#filterdata">#</a></h3>
 <p><strong>Filter data on a single column and return the result</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function FilterData(ByVal varName As String, ByVal criteriaName As String, _
@@ -194,7 +201,7 @@ BetterArray. The filter is removed after the operation.</p>
 </ul>
 <p><strong>Returns:</strong> BetterArray. The filtered values.</p>
 <hr />
-<h3>FiltersData</h3>
+<h3 id="filtersdata">FiltersData <a class="anchor-link" href="#filtersdata">#</a></h3>
 <p><strong>Filter data on multiple columns and return the result</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function FiltersData(ByVal varData As BetterArray, _
@@ -212,7 +219,7 @@ as a two-dimensional BetterArray.</p>
 </ul>
 <p><strong>Returns:</strong> BetterArray. A two-dimensional array of filtered values.</p>
 <hr />
-<h3>Import</h3>
+<h3 id="import">Import <a class="anchor-link" href="#import">#</a></h3>
 <p><strong>Import data from another DataSheet or CustomTable</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Import(ByVal importedData As Object, Optional ByVal strictColumnSearch As Boolean = True): End Sub
@@ -226,7 +233,7 @@ formatting columns.</p>
 <li><code>strictColumnSearch</code>: Optional Boolean. When True, uses case-sensitive column matching. Defaults to True.</li>
 </ul>
 <hr />
-<h3>ImportFormat</h3>
+<h3 id="importformat">ImportFormat <a class="anchor-link" href="#importformat">#</a></h3>
 <p><strong>Import column formatting from a source object</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ImportFormat(ByVal importData As Object, Optional ByVal matchColumnsCase As Boolean = True)
@@ -239,7 +246,7 @@ source for all columns registered via AddFormatsColumns.</p>
 <li><code>matchColumnsCase</code>: Optional Boolean. When True, uses case-sensitive column matching. Defaults to True.</li>
 </ul>
 <hr />
-<h3>Export</h3>
+<h3 id="export">Export <a class="anchor-link" href="#export">#</a></h3>
 <p><strong>Export the DataSheet to a workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Export(ByVal toWkb As Workbook, _
@@ -260,8 +267,12 @@ before export. The exported sheet is hidden by default.</p>
 <li><code>includeNames</code>: Optional Boolean. When True, exports hidden names alongside data. Defaults to False.</li>
 </ul>
 <hr />
-<h2>Checkings</h2>
-<h3>HasCheckings</h3>
+</div>
+</details>
+<details open class="doc-section" id="checkings">
+<summary>Checkings</summary>
+<div class="section-body">
+<h3 id="hascheckings">HasCheckings <a class="anchor-link" href="#hascheckings">#</a></h3>
 <p><strong>Whether the DataSheet has logged diagnostic messages</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get HasCheckings() As Boolean: End Property
@@ -270,7 +281,7 @@ before export. The exported sheet is hidden by default.</p>
 Returns True when at least one diagnostic entry has been recorded.</p>
 <p><strong>Returns:</strong> Boolean. True when diagnostic entries exist.</p>
 <hr />
-<h3>CheckingValues</h3>
+<h3 id="checkingvalues">CheckingValues <a class="anchor-link" href="#checkingvalues">#</a></h3>
 <p><strong>Retrieve the diagnostic log entries</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get CheckingValues() As Object: End Property
@@ -279,8 +290,12 @@ Returns True when at least one diagnostic entry has been recorded.</p>
 Returns Nothing when no entries have been recorded.</p>
 <p><strong>Returns:</strong> Object. An IChecking instance, or Nothing.</p>
 <hr />
-
+</div>
+</details>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

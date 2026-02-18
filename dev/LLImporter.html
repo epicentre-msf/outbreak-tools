@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>LLImporter - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -17,8 +18,10 @@ sheets and variables were imported, and builds a report of items not
 imported or not touched. Consumers interact through the ILLImporter
 interface.</p>
 <p><strong>Depends on:</strong> <a href="ILLdictionary.html">ILLdictionary</a>, <a href="IPasswords.html">IPasswords</a>, <a href="ICustomTable.html">ICustomTable</a>, <a href="IDataSheet.html">IDataSheet</a>, <a href="IShowHideManager.html">IShowHideManager</a>, <a href="ILLGeo.html">ILLGeo</a>, <a href="ILLChoices.html">ILLChoices</a>, <a href="ILLVariables.html">ILLVariables</a>, <a href="IDropdownLists.html">IDropdownLists</a>, <a href="IHiddenNames.html">IHiddenNames</a></p>
-<h2>Factory</h2>
-<h3>create</h3>
+<details open class="doc-section" id="factory">
+<summary>Factory</summary>
+<div class="section-body">
+<h3 id="create">create <a class="anchor-link" href="#create">#</a></h3>
 <p><strong>Create an importer from the source linelist workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal sourceWkb As Workbook) As ILLImporter
@@ -36,8 +39,12 @@ Called on the predeclared instance.</p>
 <li>vbObjectError When the workbook is Nothing.</li>
 </ul>
 <hr />
-<h2>Data Checks</h2>
-<h3>has-data</h3>
+</div>
+</details>
+<details open class="doc-section" id="data-checks">
+<summary>Data Checks</summary>
+<div class="section-body">
+<h3 id="has-data">has-data <a class="anchor-link" href="#has-data">#</a></h3>
 <p><strong>Whether the workbook contains user-entered data</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get HasData() As Boolean
@@ -47,7 +54,7 @@ threshold stored in cell(1,6). Returns True as soon as a single row
 has user data. Used to warn the user before clearing or overwriting.</p>
 <p><strong>Returns:</strong> Boolean. True when at least one HList row has user data.</p>
 <hr />
-<h3>has-same-language</h3>
+<h3 id="has-same-language">has-same-language <a class="anchor-link" href="#has-same-language">#</a></h3>
 <p><strong>Check whether the import workbook language matches</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function HasSameLanguage(ByVal impwb As Workbook) As Boolean
@@ -63,8 +70,12 @@ languages differ. Returns False when the Metadata sheet is missing.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when languages match.</p>
 <hr />
-<h2>Data Operations</h2>
-<h3>clear-data</h3>
+</div>
+</details>
+<details open class="doc-section" id="data-operations">
+<summary>Data Operations</summary>
+<div class="section-body">
+<h3 id="clear-data">clear-data <a class="anchor-link" href="#clear-data">#</a></h3>
 <p><strong>Clear all user-entered data from HList and VList sheets</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ClearData()
@@ -74,7 +85,7 @@ clears non-formula column values from the ListObject data body. For
 VList sheets, clears non-formula named range values. Unprotects and
 re-protects each sheet via IPasswords.</p>
 <hr />
-<h3>import-data</h3>
+<h3 id="import-data">import-data <a class="anchor-link" href="#import-data">#</a></h3>
 <p><strong>Import data from HList and VList worksheets</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ImportData(ByVal impwb As Workbook, ByVal pasteAtBottom As Boolean)
@@ -90,7 +101,7 @@ entries for sheets and variables not found in the current workbook.</p>
 <li><code>pasteAtBottom</code>: Boolean. When True, appends data below existing rows.</li>
 </ul>
 <hr />
-<h3>import-custom-dropdown</h3>
+<h3 id="import-custom-dropdown">import-custom-dropdown <a class="anchor-link" href="#import-custom-dropdown">#</a></h3>
 <p><strong>Import custom dropdown choices from the import workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ImportCustomDropdown(ByVal impwb As Workbook, ByVal pasteAtBottom As Boolean)
@@ -106,8 +117,12 @@ dropdown sheet does not exist.</p>
 <li><code>pasteAtBottom</code>: Boolean. When True, appends choices below existing entries.</li>
 </ul>
 <hr />
-<h2>Migration Metadata</h2>
-<h3>import-show-hide</h3>
+</div>
+</details>
+<details open class="doc-section" id="migration-metadata">
+<summary>Migration Metadata</summary>
+<div class="section-body">
+<h3 id="import-show-hide">import-show-hide <a class="anchor-link" href="#import-show-hide">#</a></h3>
 <p><strong>Import show/hide visibility state from a migration workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ImportShowHide(ByVal impwb As Workbook)
@@ -123,7 +138,7 @@ import&quot;.</p>
 <li><code>impwb</code>: Workbook. The opened migration workbook.</li>
 </ul>
 <hr />
-<h3>import-editable-labels</h3>
+<h3 id="import-editable-labels">import-editable-labels <a class="anchor-link" href="#import-editable-labels">#</a></h3>
 <p><strong>Import editable label values from a migration workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ImportEditableLabels(ByVal impwb As Workbook)
@@ -138,7 +153,7 @@ import&quot;.</p>
 <li><code>impwb</code>: Workbook. The opened migration workbook.</li>
 </ul>
 <hr />
-<h3>import-single-values</h3>
+<h3 id="import-single-values">import-single-values <a class="anchor-link" href="#import-single-values">#</a></h3>
 <p><strong>Import single metadata values from a migration workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ImportSingleValues(ByVal impwb As Workbook)
@@ -152,7 +167,7 @@ sheet is missing.</p>
 <li><code>impwb</code>: Workbook. The opened migration workbook.</li>
 </ul>
 <hr />
-<h3>import-geobase</h3>
+<h3 id="import-geobase">import-geobase <a class="anchor-link" href="#import-geobase">#</a></h3>
 <p><strong>Import geobase data from a workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ImportGeobase(ByVal impwb As Workbook, Optional ByVal histoOnly As Boolean = False)
@@ -167,8 +182,12 @@ variables via geo.UpdateShowHide.</p>
 <li><code>histoOnly</code>: Optional Boolean. When True, imports only historic geobase data. Defaults to False.</li>
 </ul>
 <hr />
-<h2>Import Report</h2>
-<h3>need-report</h3>
+</div>
+</details>
+<details open class="doc-section" id="import-report">
+<summary>Import Report</summary>
+<div class="section-body">
+<h3 id="need-report">need-report <a class="anchor-link" href="#need-report">#</a></h3>
 <p><strong>Whether the last import had issues</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get NeedReport() As Boolean
@@ -177,7 +196,7 @@ variables via geo.UpdateShowHide.</p>
 or variables were not imported or not touched during the last import.</p>
 <p><strong>Returns:</strong> Boolean. True when the import report has entries.</p>
 <hr />
-<h3>finalize-report</h3>
+<h3 id="finalize-report">finalize-report <a class="anchor-link" href="#finalize-report">#</a></h3>
 <p><strong>Build the &quot;not touched&quot; part of the import report</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub FinalizeReport()
@@ -187,7 +206,7 @@ tracked during ImportData. Identifies sheets not touched and variables
 not touched, skipping formula-type variables (case_when, formula,
 choice_formula). Call after ImportData to complete the report.</p>
 <hr />
-<h3>report-sheets</h3>
+<h3 id="report-sheets">report-sheets <a class="anchor-link" href="#report-sheets">#</a></h3>
 <p><strong>Report sheet names for the given scope</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function ReportSheets(ByVal scope As Byte) As BetterArray
@@ -201,7 +220,7 @@ Returns an empty BetterArray when no entries exist for the scope.</p>
 </ul>
 <p><strong>Returns:</strong> BetterArray. Sheet names matching the scope, or empty.</p>
 <hr />
-<h3>report-variables</h3>
+<h3 id="report-variables">report-variables <a class="anchor-link" href="#report-variables">#</a></h3>
 <p><strong>Report variable entries for the given scope</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function ReportVariables(ByVal scope As Byte) As BetterArray
@@ -215,7 +234,7 @@ entries exist for the scope.</p>
 </ul>
 <p><strong>Returns:</strong> BetterArray. Variant arrays of (variableName, sheetName), or empty.</p>
 <hr />
-<h3>clear-report</h3>
+<h3 id="clear-report">clear-report <a class="anchor-link" href="#clear-report">#</a></h3>
 <p><strong>Reset report state</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ClearReport()
@@ -223,24 +242,26 @@ entries exist for the scope.</p>
 <p>Clears all report tracking arrays and resets the needReport flag. Call
 before starting a new import session to ensure a clean report.</p>
 <hr />
+</div>
+</details>
 <details>
 <summary>Internal members (not exported)</summary>
-<h2>Public Accessors</h2>
-<h3>self</h3>
+<h2 id="int-public-accessors">Public Accessors</h2>
+<h3 id="int-self">self <a class="anchor-link" href="#int-self">#</a></h3>
 <p><strong>Current object instance</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Self() As ILLImporter
 </code></pre>
 <p><strong>Returns:</strong> ILLImporter. The current instance cast to the interface.</p>
 <hr />
-<h3>source-workbook</h3>
+<h3 id="int-source-workbook">source-workbook <a class="anchor-link" href="#int-source-workbook">#</a></h3>
 <p><strong>Source linelist workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get SourceWorkbook() As Workbook
 </code></pre>
 <p><strong>Returns:</strong> Workbook. The linelist workbook bound to this importer.</p>
 <hr />
-<h3>source-workbook-set</h3>
+<h3 id="int-source-workbook-set">source-workbook-set <a class="anchor-link" href="#int-source-workbook-set">#</a></h3>
 <p><strong>Assign the source linelist workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set SourceWorkbook(ByVal wb As Workbook)
@@ -250,36 +271,36 @@ before starting a new import session to ensure a clean report.</p>
 <li><code>wb</code>: Workbook. The workbook to store.</li>
 </ul>
 <hr />
-<h2>Private - Source Object Accessors</h2>
-<h3>source-dictionary</h3>
+<h2 id="int-private-source-object-accessors">Private - Source Object Accessors</h2>
+<h3 id="int-source-dictionary">source-dictionary <a class="anchor-link" href="#int-source-dictionary">#</a></h3>
 <p><strong>Get the dictionary from the source workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function SourceDictionary() As ILLdictionary
 </code></pre>
 <p><strong>Returns:</strong> ILLdictionary. Dictionary instance from the Dictionary sheet.</p>
 <hr />
-<h3>passwords-object</h3>
+<h3 id="int-passwords-object">passwords-object <a class="anchor-link" href="#int-passwords-object">#</a></h3>
 <p><strong>Get passwords from the source workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function PasswordsObject() As IPasswords
 </code></pre>
 <p><strong>Returns:</strong> IPasswords. Passwords instance from the __pass sheet.</p>
 <hr />
-<h3>geo-object</h3>
+<h3 id="int-geo-object">geo-object <a class="anchor-link" href="#int-geo-object">#</a></h3>
 <p><strong>Get the geo object from the source workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function GeoObject() As ILLGeo
 </code></pre>
 <p><strong>Returns:</strong> ILLGeo. Geo instance from the Geo sheet.</p>
 <hr />
-<h2>Private - Import Helpers</h2>
-<h3>initialize-tracking</h3>
+<h2 id="int-private-import-helpers">Private - Import Helpers</h2>
+<h3 id="int-initialize-tracking">initialize-tracking <a class="anchor-link" href="#int-initialize-tracking">#</a></h3>
 <p><strong>Initialize tracking state for a new import session</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub InitializeTracking()
 </code></pre>
 <hr />
-<h3>is-reserved-sheet</h3>
+<h3 id="int-is-reserved-sheet">is-reserved-sheet <a class="anchor-link" href="#int-is-reserved-sheet">#</a></h3>
 <p><strong>Check if a sheet name is reserved (metadata/infrastructure)</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function IsReservedSheet(ByVal sheetName As String) As Boolean
@@ -290,7 +311,7 @@ before starting a new import session to ensure a clean report.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when the name matches a reserved sheet.</p>
 <hr />
-<h3>import-vlist-sheet</h3>
+<h3 id="int-import-vlist-sheet">import-vlist-sheet <a class="anchor-link" href="#int-import-vlist-sheet">#</a></h3>
 <p><strong>Import VList data from a single import sheet to the current sheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ImportVListSheet(ByVal currsh As Worksheet, ByVal impsh As Worksheet)
@@ -305,7 +326,7 @@ report entries.</p>
 <li><code>impsh</code>: Worksheet. The import VList worksheet.</li>
 </ul>
 <hr />
-<h3>import-hlist-sheet</h3>
+<h3 id="int-import-hlist-sheet">import-hlist-sheet <a class="anchor-link" href="#int-import-hlist-sheet">#</a></h3>
 <p><strong>Import HList data from a single import sheet to the current sheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ImportHListSheet(ByVal currsh As Worksheet, ByVal impsh As Worksheet, _
@@ -321,8 +342,8 @@ columns not found in the current table as &quot;not imported&quot; report entrie
 <li><code>pasteAtBottom</code>: Boolean. When True, appends data below existing rows.</li>
 </ul>
 <hr />
-<h2>Private - Helpers</h2>
-<h3>sheet-exists</h3>
+<h2 id="int-private-helpers">Private - Helpers</h2>
+<h3 id="int-sheet-exists">sheet-exists <a class="anchor-link" href="#int-sheet-exists">#</a></h3>
 <p><strong>Check if a worksheet exists in a workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function SheetExists(ByVal wb As Workbook, ByVal sheetName As String) As Boolean
@@ -334,8 +355,8 @@ columns not found in the current table as &quot;not imported&quot; report entrie
 </ul>
 <p><strong>Returns:</strong> Boolean. True when the sheet exists.</p>
 <hr />
-<h2>Private - Error Handling</h2>
-<h3>throw-error</h3>
+<h2 id="int-private-error-handling">Private - Error Handling</h2>
+<h3 id="int-throw-error">throw-error <a class="anchor-link" href="#int-throw-error">#</a></h3>
 <p><strong>Raise a class-level exception</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal message As String)
@@ -351,8 +372,8 @@ to CLASS_NAME.</p>
 <li>vbObjectError Always raises the error.</li>
 </ul>
 <hr />
-<h2>Interface Implementation</h2>
-<h3>ILLImporter_HasData</h3>
+<h2 id="int-interface-implementation">Interface Implementation</h2>
+<h3 id="int-illimporter-hasdata">ILLImporter_HasData <a class="anchor-link" href="#int-illimporter-hasdata">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get ILLImporter_HasData() As Boolean
 </code></pre>
@@ -361,16 +382,19 @@ See the corresponding members above for full documentation.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (4 file(s))</summary>
+<summary>Used in (5 file(s))</summary>
 <ul>
 <li><a href="src/classes/dataio/ILLImporter.cls">ILLImporter.cls</a></li>
 <li><a href="src/classes/dataio/LLImporter.cls">LLImporter.cls</a></li>
-<li><a href="src/modules/dataio/FormLogicAdvanced.bas">FormLogicAdvanced.bas</a></li>
+<li><a href="src/classes/linelist/Linelist.cls">Linelist.cls</a></li>
+<li><a href="src/modules/linelistform/FormLogicAdvanced.bas">FormLogicAdvanced.bas</a></li>
 <li><a href="src/tests/modules/dataio/TestLLImporter.bas">TestLLImporter.bas</a></li>
 </ul>
 </details>
-
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

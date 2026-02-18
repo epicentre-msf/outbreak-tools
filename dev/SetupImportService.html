@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>SetupImportService - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -16,8 +17,10 @@ Translations). Supports both table-level import via CustomTable and
 domain-class-driven import via dedicated managers (LLdictionary, LLChoices,
 LLExport, Analysis, SetupTranslationsTable). Guards Excel state through
 ApplicationState and protects/unprotects worksheets via IPasswords.</p>
-<h2>Factory helpers</h2>
-<h3>create</h3>
+<details open class="doc-section" id="factory-helpers">
+<summary>Factory helpers</summary>
+<div class="section-body">
+<h3 id="create">create <a class="anchor-link" href="#create">#</a></h3>
 <p><strong>Create a ready-to-use service instance</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal importPath As String, Optional ByVal progressDisplay As Object) As ISetupImportService
@@ -32,29 +35,33 @@ the configured interface reference.</p>
 </ul>
 <p><strong>Returns:</strong> ISetupImportService. Configured service instance.</p>
 <hr />
-<h2>Public configuration</h2>
-<h3>path</h3>
+</div>
+</details>
+<details open class="doc-section" id="public-configuration">
+<summary>Public configuration</summary>
+<div class="section-body">
+<h3 id="path">path <a class="anchor-link" href="#path">#</a></h3>
 <p><strong>Retrieve configured import path.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Path() As String
 </code></pre>
 <p><strong>Returns:</strong> String. The configured import path.</p>
 <hr />
-<h3>progress-object</h3>
+<h3 id="progress-object">progress-object <a class="anchor-link" href="#progress-object">#</a></h3>
 <p><strong>Retrieve the progress display object.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get ProgressObject() As Object
 </code></pre>
 <p><strong>Returns:</strong> Object. The progress display object.</p>
 <hr />
-<h3>display-prompts</h3>
+<h3 id="display-prompts">display-prompts <a class="anchor-link" href="#display-prompts">#</a></h3>
 <p><strong>Retrieve the display prompts toggle.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get DisplayPrompts() As Boolean
 </code></pre>
 <p><strong>Returns:</strong> Boolean. True when prompts are enabled.</p>
 <hr />
-<h3>set-export-folder</h3>
+<h3 id="set-export-folder">set-export-folder <a class="anchor-link" href="#set-export-folder">#</a></h3>
 <p><strong>Provide an explicit folder for exports, bypassing the folder picker.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub SetExportFolder(ByVal folderPath As String)
@@ -64,7 +71,7 @@ the configured interface reference.</p>
 <li><code>folderPath</code>: String. The folder path to use for exports.</li>
 </ul>
 <hr />
-<h3>last-export-file</h3>
+<h3 id="last-export-file">last-export-file <a class="anchor-link" href="#last-export-file">#</a></h3>
 <p><strong>Path of the last export produced by the service.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get LastExportFile() As String
@@ -73,8 +80,12 @@ the configured interface reference.</p>
 service. Returns an empty string when no export has occurred.</p>
 <p><strong>Returns:</strong> String. The last export file path, or empty.</p>
 <hr />
-<h2>Core workflow</h2>
-<h3>check</h3>
+</div>
+</details>
+<details open class="doc-section" id="core-workflow">
+<summary>Core workflow</summary>
+<div class="section-body">
+<h3 id="check">check <a class="anchor-link" href="#check">#</a></h3>
 <p><strong>Validate the requested import operation before execution.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Check(ByVal importDictionary As Boolean, _
@@ -102,7 +113,7 @@ immediately close the source workbook to confirm it is readable.</p>
 <li>ProjectError.SomethingWentWrong When the source workbook cannot be opened.</li>
 </ul>
 <hr />
-<h3>clean</h3>
+<h3 id="clean">clean <a class="anchor-link" href="#clean">#</a></h3>
 <p><strong>Clean target worksheets ahead of a fresh import.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Clean(ByVal pass As IPasswords, ByVal sheetsList As BetterArray)
@@ -115,7 +126,7 @@ ListObject data and worksheet comments, then re-protects.</p>
 <li><code>sheetsList</code>: BetterArray. Worksheets participating in the clean-up.</li>
 </ul>
 <hr />
-<h3>import</h3>
+<h3 id="import">import <a class="anchor-link" href="#import">#</a></h3>
 <p><strong>Perform the setup import from the configured workbook into the host workbook.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Import(ByVal pass As IPasswords, ByVal sheetsList As BetterArray)
@@ -130,8 +141,12 @@ column alignment via PrepareImport.</p>
 <li><code>sheetsList</code>: BetterArray. Worksheets participating in the import.</li>
 </ul>
 <hr />
-<h2>Workbook-driven import</h2>
-<h3>import-from-workbook</h3>
+</div>
+</details>
+<details open class="doc-section" id="workbook-driven-import">
+<summary>Workbook-driven import</summary>
+<div class="section-body">
+<h3 id="import-from-workbook">import-from-workbook <a class="anchor-link" href="#import-from-workbook">#</a></h3>
 <p><strong>Perform the setup import leveraging dedicated worksheet classes.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ImportFromWorkbook(ByVal pass As IPasswords, Optional ByVal sheetsList As BetterArray = Nothing)
@@ -145,8 +160,12 @@ Falls back to the default sheets list when none is provided.</p>
 <li><code>sheetsList</code>: Optional BetterArray. Worksheets to import. Defaults to all five setup sheets.</li>
 </ul>
 <hr />
-<h2>Workbook driven Export</h2>
-<h3>export-to-workbook</h3>
+</div>
+</details>
+<details open class="doc-section" id="workbook-driven-export">
+<summary>Workbook driven Export</summary>
+<div class="section-body">
+<h3 id="export-to-workbook">export-to-workbook <a class="anchor-link" href="#export-to-workbook">#</a></h3>
 <p><strong>Export all setup worksheets to a new workbook.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub Export(Optional Byval outwb As Workbook)
@@ -159,17 +178,19 @@ managers, along with hidden names and formatting data.</p>
 <li><code>outwb</code>: Optional Workbook. Pre-existing target workbook. When Nothing, creates a new one.</li>
 </ul>
 <hr />
+</div>
+</details>
 <details>
 <summary>Internal members (not exported)</summary>
-<h2>State and constants</h2>
-<h3>initialize</h3>
+<h2 id="int-state-and-constants">State and constants</h2>
+<h3 id="int-initialize">initialize <a class="anchor-link" href="#int-initialize">#</a></h3>
 <p><strong>Set default state on construction.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub Class_Initialize()
 </code></pre>
 <hr />
-<h2>Public configuration</h2>
-<h3>path-set</h3>
+<h2 id="int-public-configuration">Public configuration</h2>
+<h3 id="int-path-set">path-set <a class="anchor-link" href="#int-path-set">#</a></h3>
 <p><strong>Store the path to the setup workbook.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Let Path(ByVal value As String)
@@ -179,7 +200,7 @@ managers, along with hidden names and formatting data.</p>
 <li><code>value</code>: String. The path to assign.</li>
 </ul>
 <hr />
-<h3>progress-object-set</h3>
+<h3 id="int-progress-object-set">progress-object-set <a class="anchor-link" href="#int-progress-object-set">#</a></h3>
 <p><strong>Store the progress display object reference.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set ProgressObject(ByVal value As Object)
@@ -189,14 +210,14 @@ managers, along with hidden names and formatting data.</p>
 <li><code>value</code>: Object. The progress display to store.</li>
 </ul>
 <hr />
-<h3>self</h3>
+<h3 id="int-self">self <a class="anchor-link" href="#int-self">#</a></h3>
 <p><strong>Current object instance cast to the interface.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Self() As ISetupImportService
 </code></pre>
 <p><strong>Returns:</strong> ISetupImportService. The current instance.</p>
 <hr />
-<h3>display-prompts-set</h3>
+<h3 id="int-display-prompts-set">display-prompts-set <a class="anchor-link" href="#int-display-prompts-set">#</a></h3>
 <p><strong>Toggle UI prompts displayed during operations.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Let DisplayPrompts(ByVal state As Boolean)
@@ -208,27 +229,27 @@ Primarily used by automated tests.</p>
 <li><code>state</code>: Boolean. True to enable prompts.</li>
 </ul>
 <hr />
-<h2>Application state coordination</h2>
-<h3>application-scope</h3>
+<h2 id="int-application-state-coordination">Application state coordination</h2>
+<h3 id="int-application-scope">application-scope <a class="anchor-link" href="#int-application-scope">#</a></h3>
 <p><strong>Guard Excel with the reusable ApplicationState scope.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ApplicationScope() As IApplicationState
 </code></pre>
 <hr />
-<h3>enter-busy-state</h3>
+<h3 id="int-enter-busy-state">enter-busy-state <a class="anchor-link" href="#int-enter-busy-state">#</a></h3>
 <p><strong>Apply the busy state when heavy work starts.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnterBusyState()
 </code></pre>
 <hr />
-<h3>leave-busy-state</h3>
+<h3 id="int-leave-busy-state">leave-busy-state <a class="anchor-link" href="#int-leave-busy-state">#</a></h3>
 <p><strong>Restore Excel configuration when work completes.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub LeaveBusyState(Optional ByVal silent As Boolean = False)
 </code></pre>
 <hr />
-<h2>Workbook-driven import</h2>
-<h3>import-dictionary</h3>
+<h2 id="int-workbook-driven-import">Workbook-driven import</h2>
+<h3 id="int-import-dictionary">import-dictionary <a class="anchor-link" href="#int-import-dictionary">#</a></h3>
 <p><strong>Import dictionary worksheet using LLdictionary.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ImportDictionaryUsingClass(ByVal pass As IPasswords, _
@@ -236,13 +257,13 @@ Primarily used by automated tests.</p>
                                        ByVal importWorkbook As Workbook)
 </code></pre>
 <hr />
-<h3>import-choices</h3>
+<h3 id="int-import-choices">import-choices <a class="anchor-link" href="#int-import-choices">#</a></h3>
 <p><strong>Import choices worksheet using LLChoices.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ImportChoicesUsingClass(ByVal pass As IPasswords, ByVal hostworkbook As Workbook, ByVal importworkbook As Workbook)
 </code></pre>
 <hr />
-<h3>import-exports</h3>
+<h3 id="int-import-exports">import-exports <a class="anchor-link" href="#int-import-exports">#</a></h3>
 <p><strong>Import export specifications via LLExport.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ImportExportUsingClass(ByVal pass As IPasswords, _
@@ -250,7 +271,7 @@ Primarily used by automated tests.</p>
                                    ByVal importWorkbook As Workbook)
 </code></pre>
 <hr />
-<h3>import-analysis</h3>
+<h3 id="int-import-analysis">import-analysis <a class="anchor-link" href="#int-import-analysis">#</a></h3>
 <p><strong>Import analysis worksheet content via Analysis class.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ImportAnalysisUsingClass(ByVal pass As IPasswords, _
@@ -258,7 +279,7 @@ Primarily used by automated tests.</p>
                                      ByVal importWorkbook As Workbook)
 </code></pre>
 <hr />
-<h3>import-translations</h3>
+<h3 id="int-import-translations">import-translations <a class="anchor-link" href="#int-import-translations">#</a></h3>
 <p><strong>Import translations worksheet using CustomTable and SetupTranslationsTable.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ImportTranslationsUsingClass(ByVal pass As IPasswords, _
@@ -266,15 +287,15 @@ Primarily used by automated tests.</p>
                                          ByVal importWorkbook As Workbook)
 </code></pre>
 <hr />
-<h3>resolve-translations-list</h3>
+<h3 id="int-resolve-translations-list">resolve-translations-list <a class="anchor-link" href="#int-resolve-translations-list">#</a></h3>
 <p><strong>Resolve the translations ListObject from a worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ResolveTranslationsList(ByVal sheetRef As Worksheet, _ 
                                          Optional ByVal preferred As ListObject = Nothing) As ListObject
 </code></pre>
 <hr />
-<h2>Preparation helpers</h2>
-<h3>prepare-import</h3>
+<h2 id="int-preparation-helpers">Preparation helpers</h2>
+<h3 id="int-prepare-import">prepare-import <a class="anchor-link" href="#int-prepare-import">#</a></h3>
 <p><strong>Ensure the exports and dictionary sheets are aligned prior to import.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub PrepareImport(ByVal pass As IPasswords, _
@@ -285,33 +306,33 @@ Primarily used by automated tests.</p>
                           Optional ByVal renameChoices As Boolean = False)
 </code></pre>
 <hr />
-<h3>post-import</h3>
+<h3 id="int-post-import">post-import <a class="anchor-link" href="#int-post-import">#</a></h3>
 <p><strong>Restore choices column names after import completes.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub PostImport(ByVal pass As IPasswords, _
                         Optional ByVal sheetsList As BetterArray)
 </code></pre>
 <hr />
-<h2>Validation helpers</h2>
-<h3>resolve-import-sheets</h3>
+<h2 id="int-validation-helpers">Validation helpers</h2>
+<h3 id="int-resolve-import-sheets">resolve-import-sheets <a class="anchor-link" href="#int-resolve-import-sheets">#</a></h3>
 <p><strong>Resolve the requested sheets set, defaulting to core setup worksheets.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ResolveImportSheets(ByVal sheetsList As BetterArray) As BetterArray
 </code></pre>
 <hr />
-<h3>default-import-sheets</h3>
+<h3 id="int-default-import-sheets">default-import-sheets <a class="anchor-link" href="#int-default-import-sheets">#</a></h3>
 <p><strong>Default sheet list covering the core setup worksheets.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function DefaultImportSheets() As BetterArray
 </code></pre>
 <hr />
-<h3>should-import-sheet</h3>
+<h3 id="int-should-import-sheet">should-import-sheet <a class="anchor-link" href="#int-should-import-sheet">#</a></h3>
 <p><strong>Determine whether a sheet should participate in the import.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ShouldImportSheet(ByVal sheetsList As BetterArray, ByVal sheetName As String) As Boolean
 </code></pre>
 <hr />
-<h3>ensure-import-selection</h3>
+<h3 id="int-ensure-import-selection">ensure-import-selection <a class="anchor-link" href="#int-ensure-import-selection">#</a></h3>
 <p><strong>Ensure at least one import option is selected.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureImportSelection(ByVal importDictionary As Boolean, _
@@ -322,174 +343,174 @@ Primarily used by automated tests.</p>
                                   ByVal cleanSetup As Boolean)
 </code></pre>
 <hr />
-<h3>ensure-import-path-configured</h3>
+<h3 id="int-ensure-import-path-configured">ensure-import-path-configured <a class="anchor-link" href="#int-ensure-import-path-configured">#</a></h3>
 <p><strong>Ensure the import path has been configured.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureImportPathConfigured(ByVal value As String)
 </code></pre>
 <hr />
-<h3>validate-passwords</h3>
+<h3 id="int-validate-passwords">validate-passwords <a class="anchor-link" href="#int-validate-passwords">#</a></h3>
 <p><strong>Validate availability of requested passwords object.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ValidatePasswords(ByVal pass As IPasswords)
 </code></pre>
 <hr />
-<h3>ensure-sheets-list</h3>
+<h3 id="int-ensure-sheets-list">ensure-sheets-list <a class="anchor-link" href="#int-ensure-sheets-list">#</a></h3>
 <p><strong>Ensure the sheets list is initialised.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function EnsureSheetsList(ByVal sheetsList As BetterArray) As BetterArray
 </code></pre>
 <hr />
-<h3>validate-import-path</h3>
+<h3 id="int-validate-import-path">validate-import-path <a class="anchor-link" href="#int-validate-import-path">#</a></h3>
 <p><strong>Confirm the import path string is valid.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ValidateImportPath(ByVal pathValue As String)
 </code></pre>
 <hr />
-<h3>validate-progress-display</h3>
+<h3 id="int-validate-progress-display">validate-progress-display <a class="anchor-link" href="#int-validate-progress-display">#</a></h3>
 <p><strong>Ensure the progress display object exposes a Caption or Value property.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ValidateProgressDisplay(ByVal progressDisplay As Object)
 </code></pre>
 <hr />
-<h3>test-property</h3>
+<h3 id="int-test-property">test-property <a class="anchor-link" href="#int-test-property">#</a></h3>
 <p><strong>Test whether an object supports a named property.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function TestProperty(ByVal Obj As Object, ByRef hasProp As Boolean, Optional ByVal propName As String = &quot;Caption&quot;) As Boolean
 </code></pre>
 <hr />
-<h3>ensure-import-file-exists</h3>
+<h3 id="int-ensure-import-file-exists">ensure-import-file-exists <a class="anchor-link" href="#int-ensure-import-file-exists">#</a></h3>
 <p><strong>Ensure the import workbook file exists before opening.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureImportFileExists(ByVal filePath As String)
 </code></pre>
 <hr />
-<h2>Workbook helpers</h2>
-<h3>ensure-import-workbook</h3>
+<h2 id="int-workbook-helpers">Workbook helpers</h2>
+<h3 id="int-ensure-import-workbook">ensure-import-workbook <a class="anchor-link" href="#int-ensure-import-workbook">#</a></h3>
 <p><strong>Obtain the imported workbook, opening it when needed.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function EnsureImportWorkbook() As Workbook
 </code></pre>
 <hr />
-<h3>ensure-export-workbook</h3>
+<h3 id="int-ensure-export-workbook">ensure-export-workbook <a class="anchor-link" href="#int-ensure-export-workbook">#</a></h3>
 <p><strong>Obtain or create the export workbook, prompting for a folder when needed.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function EnsureExportWorkbook() As Workbook
 </code></pre>
 <hr />
-<h3>ensure-saved-export</h3>
+<h3 id="int-ensure-saved-export">ensure-saved-export <a class="anchor-link" href="#int-ensure-saved-export">#</a></h3>
 <p><strong>Save the export workbook to the configured path.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureSavedExport()
 </code></pre>
 <hr />
-<h3>resolve-dictionary-format</h3>
+<h3 id="int-resolve-dictionary-format">resolve-dictionary-format <a class="anchor-link" href="#int-resolve-dictionary-format">#</a></h3>
 <p><strong>Return format header names when the sheet is the dictionary.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ResolveDictionaryFormat(ByVal sheetName As String) As BetterArray
 </code></pre>
 <hr />
-<h3>build-export-file-path</h3>
+<h3 id="int-build-export-file-path">build-export-file-path <a class="anchor-link" href="#int-build-export-file-path">#</a></h3>
 <p><strong>Build the timestamped export file path from the configured folder.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function BuildExportFilePath() As String
 </code></pre>
 <hr />
-<h3>close-import-workbook</h3>
+<h3 id="int-close-import-workbook">close-import-workbook <a class="anchor-link" href="#int-close-import-workbook">#</a></h3>
 <p><strong>Close and release the imported workbook.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub CloseImportWorkbook()
 </code></pre>
 <hr />
-<h3>close-export-workbook</h3>
+<h3 id="int-close-export-workbook">close-export-workbook <a class="anchor-link" href="#int-close-export-workbook">#</a></h3>
 <p><strong>Close and release the export workbook.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub CloseExportWorkbook()
 </code></pre>
 <hr />
-<h3>close-workbook</h3>
+<h3 id="int-close-workbook">close-workbook <a class="anchor-link" href="#int-close-workbook">#</a></h3>
 <p><strong>Close workbook safely without raising errors.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub CloseWorkbook(ByVal workbookRef As Workbook)
 </code></pre>
 <hr />
-<h3>worksheet-exists</h3>
+<h3 id="int-worksheet-exists">worksheet-exists <a class="anchor-link" href="#int-worksheet-exists">#</a></h3>
 <p><strong>Detect whether a worksheet exists within a workbook.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function WorksheetExists(ByVal workbookRef As Workbook, ByVal sheetName As String) As Boolean
 </code></pre>
 <hr />
-<h3>resolve-registry-sheet</h3>
+<h3 id="int-resolve-registry-sheet">resolve-registry-sheet <a class="anchor-link" href="#int-resolve-registry-sheet">#</a></h3>
 <p><strong>Resolve the registry worksheet if present.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ResolveRegistrySheet(ByVal workbookRef As Workbook) As Worksheet
 </code></pre>
 <hr />
-<h3>list-object-exists</h3>
+<h3 id="int-list-object-exists">list-object-exists <a class="anchor-link" href="#int-list-object-exists">#</a></h3>
 <p><strong>Detect whether a ListObject exists within a worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ListObjectExists(ByVal sheetRef As Worksheet, ByVal listName As String) As Boolean
 </code></pre>
 <hr />
-<h2>Worksheet helpers</h2>
-<h3>clean-worksheet-tables</h3>
+<h2 id="int-worksheet-helpers">Worksheet helpers</h2>
+<h3 id="int-clean-worksheet-tables">clean-worksheet-tables <a class="anchor-link" href="#int-clean-worksheet-tables">#</a></h3>
 <p><strong>Clean all ListObjects within a worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub CleanWorksheetTables(ByVal targetSheet As Worksheet)
 </code></pre>
 <hr />
-<h3>clear-worksheet-comments</h3>
+<h3 id="int-clear-worksheet-comments">clear-worksheet-comments <a class="anchor-link" href="#int-clear-worksheet-comments">#</a></h3>
 <p><strong>Remove both classic and threaded comments from a worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ClearWorksheetComments(ByVal targetSheet As Worksheet)
 </code></pre>
 <hr />
-<h3>protect-worksheet</h3>
+<h3 id="int-protect-worksheet">protect-worksheet <a class="anchor-link" href="#int-protect-worksheet">#</a></h3>
 <p><strong>Protect worksheet with default rules.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ProtectWorksheet(ByVal pass As IPasswords, ByVal sheetName As String)
 </code></pre>
 <hr />
-<h2>Messaging helpers</h2>
-<h3>write-info</h3>
+<h2 id="int-messaging-helpers">Messaging helpers</h2>
+<h3 id="int-write-info">write-info <a class="anchor-link" href="#int-write-info">#</a></h3>
 <p><strong>Display informational text through the progress object.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub WriteInfo(ByVal message As String)
 </code></pre>
 <hr />
-<h3>write-progress</h3>
+<h3 id="int-write-progress">write-progress <a class="anchor-link" href="#int-write-progress">#</a></h3>
 <p><strong>Update a textual progress bar representation.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub WriteProgress(ByVal percentage As Integer)
 </code></pre>
 <hr />
-<h3>build-open-failure-message</h3>
+<h3 id="int-build-open-failure-message">build-open-failure-message <a class="anchor-link" href="#int-build-open-failure-message">#</a></h3>
 <p><strong>Combine failure details when opening a workbook fails.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function BuildOpenFailureMessage(ByVal sourcePath As String, ByVal failureDetails As String) As String
 </code></pre>
 <hr />
-<h2>Error handling</h2>
-<h3>report-and-throw</h3>
+<h2 id="int-error-handling">Error handling</h2>
+<h3 id="int-report-and-throw">report-and-throw <a class="anchor-link" href="#int-report-and-throw">#</a></h3>
 <p><strong>Report message then raise a project error.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ReportAndThrow(ByVal errNumber As ProjectError, ByVal message As String)
 </code></pre>
 <hr />
-<h3>throw-error</h3>
+<h3 id="int-throw-error">throw-error <a class="anchor-link" href="#int-throw-error">#</a></h3>
 <p><strong>Raise a ProjectError-based exception.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal message As String)
 </code></pre>
 <hr />
-<h3>terminate</h3>
+<h3 id="int-terminate">terminate <a class="anchor-link" href="#int-terminate">#</a></h3>
 <p><strong>Cleanup resources on destruction.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub Class_Terminate()
 </code></pre>
 <hr />
-<h2>Interface implementation</h2>
-<h3>ISetupImportService_Check</h3>
+<h2 id="int-interface-implementation">Interface implementation</h2>
+<h3 id="int-isetupimportservice-check">ISetupImportService_Check <a class="anchor-link" href="#int-isetupimportservice-check">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ISetupImportService_Check(ByVal importDictionary As Boolean, _
                                       ByVal importChoices As Boolean, _
@@ -503,18 +524,19 @@ to the corresponding public implementation above.</h1>
 <hr />
 </details>
 <details>
-<summary>Used in (6 file(s))</summary>
+<summary>Used in (5 file(s))</summary>
 <ul>
 <li><a href="src/classes/setup/ISetupImportService.cls">ISetupImportService.cls</a></li>
 <li><a href="src/classes/setup/SetupImportService.cls">SetupImportService.cls</a></li>
-<li><a href="src/modules/designer/EventsDesignerAdvanced.bas">EventsDesignerAdvanced.bas</a></li>
 <li><a href="src/modules/setup/EventsSetupRibbon.bas">EventsSetupRibbon.bas</a></li>
 <li><a href="src/modules/setup/SetupHelpers.bas">SetupHelpers.bas</a></li>
 <li><a href="src/tests/modules/setup/TestSetupImportService.bas">TestSetupImportService.bas</a></li>
 </ul>
 </details>
-
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

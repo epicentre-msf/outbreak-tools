@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ISetupImportService - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -15,8 +16,10 @@ methods to validate, import, export, and clean setup worksheets between
 workbooks. Supports both table-level import (via CustomTable) and
 domain-class-driven import (via LLdictionary, LLChoices, LLExport,
 Analysis, SetupTranslationsTable).</p>
-<h2>Core operations</h2>
-<h3>Check</h3>
+<details open class="doc-section" id="core-operations">
+<summary>Core operations</summary>
+<div class="section-body">
+<h3 id="check">Check <a class="anchor-link" href="#check">#</a></h3>
 <p><strong>Validate the requested import operation before execution</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Check(ByVal importDictionary As Boolean, _
@@ -39,7 +42,7 @@ immediately close the source workbook to confirm it is readable.</p>
 <li><code>cleanSetup</code>: Optional Boolean. When True, performs a clean-only run. Defaults to False.</li>
 </ul>
 <hr />
-<h3>Import</h3>
+<h3 id="import">Import <a class="anchor-link" href="#import">#</a></h3>
 <p><strong>Perform the setup import from the configured workbook into the host workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Import(ByVal passwords As IPasswords, ByVal sheetsList As BetterArray)
@@ -54,7 +57,7 @@ column alignment via PrepareImport.</p>
 <li><code>sheetsList</code>: BetterArray. Worksheets participating in the import.</li>
 </ul>
 <hr />
-<h3>ImportFromWorkbook</h3>
+<h3 id="importfromworkbook">ImportFromWorkbook <a class="anchor-link" href="#importfromworkbook">#</a></h3>
 <p><strong>Perform the setup import leveraging dedicated worksheet classes</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ImportFromWorkbook(ByVal passwords As IPasswords, Optional ByVal sheetsList As BetterArray = Nothing)
@@ -68,7 +71,7 @@ Falls back to the default sheets list when none is provided.</p>
 <li><code>sheetsList</code>: Optional BetterArray. Worksheets to import. Defaults to Dictionary, Choices, Exports, Analysis, and Translations.</li>
 </ul>
 <hr />
-<h3>Export</h3>
+<h3 id="export">Export <a class="anchor-link" href="#export">#</a></h3>
 <p><strong>Export all setup worksheets to a new workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Export():End Sub
@@ -77,7 +80,7 @@ Falls back to the default sheets list when none is provided.</p>
 (Dictionary, Choices, Exports, Analysis, Translations) using domain-specific
 managers, along with hidden names and formatting data.</p>
 <hr />
-<h3>Clean</h3>
+<h3 id="clean">Clean <a class="anchor-link" href="#clean">#</a></h3>
 <p><strong>Clean target worksheets ahead of a fresh import</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Clean(ByVal passwords As IPasswords, ByVal sheetsList As BetterArray)
@@ -90,22 +93,26 @@ ListObject data and worksheet comments, then re-protects.</p>
 <li><code>sheetsList</code>: BetterArray. Worksheets participating in the clean-up.</li>
 </ul>
 <hr />
-<h2>Configuration</h2>
-<h3>Path</h3>
+</div>
+</details>
+<details open class="doc-section" id="configuration">
+<summary>Configuration</summary>
+<div class="section-body">
+<h3 id="path">Path <a class="anchor-link" href="#path">#</a></h3>
 <p><strong>Path to the source setup workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Path() As String
 </code></pre>
 <p><strong>Returns:</strong> String. The configured import path.</p>
 <hr />
-<h3>ProgressObject</h3>
+<h3 id="progressobject">ProgressObject <a class="anchor-link" href="#progressobject">#</a></h3>
 <p><strong>UI object receiving informational messages while the import runs</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get ProgressObject() As Object
 </code></pre>
 <p><strong>Returns:</strong> Object. The progress display object.</p>
 <hr />
-<h3>DisplayPrompts</h3>
+<h3 id="displayprompts">DisplayPrompts <a class="anchor-link" href="#displayprompts">#</a></h3>
 <p><strong>Toggle UI prompts displayed during operations</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get DisplayPrompts() As Boolean
@@ -114,7 +121,7 @@ ListObject data and worksheet comments, then re-protects.</p>
 Primarily used by automated tests.</p>
 <p><strong>Returns:</strong> Boolean. True when prompts are enabled.</p>
 <hr />
-<h3>SetExportFolder</h3>
+<h3 id="setexportfolder">SetExportFolder <a class="anchor-link" href="#setexportfolder">#</a></h3>
 <p><strong>Provide an explicit folder for exports, bypassing the folder picker</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub SetExportFolder(ByVal folderPath As String)
@@ -124,8 +131,12 @@ Primarily used by automated tests.</p>
 <li><code>folderPath</code>: String. The folder path to use for exports.</li>
 </ul>
 <hr />
-<h2>Miscellaneous</h2>
-<h3>LastExportFile</h3>
+</div>
+</details>
+<details open class="doc-section" id="miscellaneous">
+<summary>Miscellaneous</summary>
+<div class="section-body">
+<h3 id="lastexportfile">LastExportFile <a class="anchor-link" href="#lastexportfile">#</a></h3>
 <p><strong>Path of the last export produced by the service</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get LastExportFile() As String
@@ -134,8 +145,12 @@ Primarily used by automated tests.</p>
 service. Returns an empty string when no export has occurred.</p>
 <p><strong>Returns:</strong> String. The last export file path, or empty.</p>
 <hr />
-<h2>Configuration</h2>
-<h3>Path</h3>
+</div>
+</details>
+<details open class="doc-section" id="configuration">
+<summary>Configuration</summary>
+<div class="section-body">
+<h3 id="path">Path <a class="anchor-link" href="#path">#</a></h3>
 <p><strong>Store the path to the setup workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Let Path(ByVal value As String)
@@ -145,7 +160,7 @@ service. Returns an empty string when no export has occurred.</p>
 <li><code>value</code>: String. The path to assign.</li>
 </ul>
 <hr />
-<h3>ProgressObject</h3>
+<h3 id="progressobject">ProgressObject <a class="anchor-link" href="#progressobject">#</a></h3>
 <p><strong>Assign the progress display object</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set ProgressObject(ByVal value As Object)
@@ -155,7 +170,7 @@ service. Returns an empty string when no export has occurred.</p>
 <li><code>value</code>: Object. The progress display to store.</li>
 </ul>
 <hr />
-<h3>DisplayPrompts</h3>
+<h3 id="displayprompts">DisplayPrompts <a class="anchor-link" href="#displayprompts">#</a></h3>
 <p><strong>Assign the display prompts toggle</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Let DisplayPrompts(ByVal value As Boolean)
@@ -165,16 +180,24 @@ service. Returns an empty string when no export has occurred.</p>
 <li><code>value</code>: Boolean. True to enable prompts.</li>
 </ul>
 <hr />
-<h2>Miscellaneous</h2>
-<h3>Self</h3>
+</div>
+</details>
+<details open class="doc-section" id="miscellaneous">
+<summary>Miscellaneous</summary>
+<div class="section-body">
+<h3 id="self">Self <a class="anchor-link" href="#self">#</a></h3>
 <p><strong>Current object instance</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Self() As ISetupImportService
 </code></pre>
 <p><strong>Returns:</strong> ISetupImportService. The current instance cast to the interface.</p>
 <hr />
-
+</div>
+</details>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

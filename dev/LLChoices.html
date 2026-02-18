@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>LLChoices - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -16,8 +17,10 @@ labels, short labels, and an ordering column. Built on top of a
 DataSheet for column-oriented data access.</p>
 <p><strong>Depends on:</strong> <a href="DataSheet.html">DataSheet</a>, <a href="CustomTable.html">CustomTable</a>, <a href="Checking.html">Checking</a>, <a href="BetterArray.html">BetterArray</a>, <a href="ITranslationObject.html">ITranslationObject</a></p>
 <p><strong>Version:</strong> 1.0 (2026-02-09)</p>
-<h2>Factory</h2>
-<h3>create</h3>
+<details open class="doc-section" id="factory">
+<summary>Factory</summary>
+<div class="section-body">
+<h3 id="create">create <a class="anchor-link" href="#create">#</a></h3>
 <p><strong>Create a new LLChoices instance</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal choiceWorksheet As Worksheet, _ 
@@ -37,30 +40,38 @@ ILLChoices instance. The default headers are &quot;list name&quot;, &quot;label&
 </ul>
 <p><strong>Returns:</strong> ILLChoices. The new instance.</p>
 <hr />
-<h2>Elements</h2>
-<h3>choice-data</h3>
+</div>
+</details>
+<details open class="doc-section" id="elements">
+<summary>Elements</summary>
+<div class="section-body">
+<h3 id="choice-data">choice-data <a class="anchor-link" href="#choice-data">#</a></h3>
 <p><strong>Associated DataSheet object</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get ChoiceData() As IDataSheet
 </code></pre>
 <p><strong>Returns:</strong> IDataSheet. The backing DataSheet.</p>
 <hr />
-<h3>wksh</h3>
+<h3 id="wksh">wksh <a class="anchor-link" href="#wksh">#</a></h3>
 <p><strong>Worksheet hosting the choice lists</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Wksh() As Worksheet
 </code></pre>
 <p><strong>Returns:</strong> Worksheet. The host worksheet.</p>
 <hr />
-<h2>Choices</h2>
-<h3>name</h3>
+</div>
+</details>
+<details open class="doc-section" id="choices">
+<summary>Choices</summary>
+<div class="section-body">
+<h3 id="name">name <a class="anchor-link" href="#name">#</a></h3>
 <p><strong>Name of the choice object</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Name() As String
 </code></pre>
 <p><strong>Returns:</strong> String. The choice object name.</p>
 <hr />
-<h3>choice-exists</h3>
+<h3 id="choice-exists">choice-exists <a class="anchor-link" href="#choice-exists">#</a></h3>
 <p><strong>Check whether a choice exists</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get ChoiceExists(ByVal choiceName As String) As Boolean
@@ -71,13 +82,13 @@ ILLChoices instance. The default headers are &quot;list name&quot;, &quot;label&
 </ul>
 <p><strong>Returns:</strong> Boolean. True when the choice is found.</p>
 <hr />
-<h3>sort</h3>
+<h3 id="sort">sort <a class="anchor-link" href="#sort">#</a></h3>
 <p><strong>Sort choices in the worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub Sort()
 </code></pre>
 <hr />
-<h3>add-choice</h3>
+<h3 id="add-choice">add-choice <a class="anchor-link" href="#add-choice">#</a></h3>
 <p><strong>Add a new choice with its categories</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddChoice(ByVal choiceName As String, _
@@ -93,7 +104,7 @@ Silently exits when the choice already exists or the data is empty.</p>
 <li><code>shortLabelData</code>: Optional Object. BetterArray of short label values. Defaults to Nothing.</li>
 </ul>
 <hr />
-<h3>remove-choice</h3>
+<h3 id="remove-choice">remove-choice <a class="anchor-link" href="#remove-choice">#</a></h3>
 <p><strong>Remove one or multiple choices</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RemoveChoice(Byval choiceNames As String, Optional ByVal sep As String = &quot;;&quot;)
@@ -104,7 +115,7 @@ Silently exits when the choice already exists or the data is empty.</p>
 <li><code>sep</code>: Optional String. Delimiter. Defaults to &quot;;&quot;.</li>
 </ul>
 <hr />
-<h3>translate</h3>
+<h3 id="translate">translate <a class="anchor-link" href="#translate">#</a></h3>
 <p><strong>Translate the choice worksheet labels</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub Translate(ByVal trads As ITranslationObject)
@@ -114,7 +125,7 @@ Silently exits when the choice already exists or the data is empty.</p>
 <li><code>trads</code>: ITranslationObject. Translation provider.</li>
 </ul>
 <hr />
-<h3>manage-rows</h3>
+<h3 id="manage-rows">manage-rows <a class="anchor-link" href="#manage-rows">#</a></h3>
 <p><strong>Add or remove rows via a single toggle</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ManageRows(Optional ByVal del As Boolean = False)
@@ -124,13 +135,13 @@ Silently exits when the choice already exists or the data is empty.</p>
 <li><code>del</code>: Optional Boolean. When True, removes rows. Defaults to False.</li>
 </ul>
 <hr />
-<h3>add-rows</h3>
+<h3 id="add-rows">add-rows <a class="anchor-link" href="#add-rows">#</a></h3>
 <p><strong>Add rows to the choice table</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddRows()
 </code></pre>
 <hr />
-<h3>insert-rows</h3>
+<h3 id="insert-rows">insert-rows <a class="anchor-link" href="#insert-rows">#</a></h3>
 <p><strong>Insert rows at the selected position</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub InsertRows(ByVal targetCell As Range, _
@@ -144,7 +155,7 @@ selection is invalid the attempt is logged and ignored.</p>
 <li><code>insertShift</code>: Optional Boolean. When True, inserts worksheet rows. Defaults to False.</li>
 </ul>
 <hr />
-<h3>delete-rows</h3>
+<h3 id="delete-rows">delete-rows <a class="anchor-link" href="#delete-rows">#</a></h3>
 <p><strong>Delete rows intersecting the selection</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub DeleteRows(ByVal targetCell As Range, _
@@ -158,21 +169,25 @@ selection is invalid the attempt is logged and ignored.</p>
 <li><code>forceShift</code>: Optional Boolean. When True, forces worksheet row deletion. Defaults to False.</li>
 </ul>
 <hr />
-<h3>remove-rows</h3>
+<h3 id="remove-rows">remove-rows <a class="anchor-link" href="#remove-rows">#</a></h3>
 <p><strong>Remove empty rows from the choice table</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RemoveRows()
 </code></pre>
 <hr />
-<h3>all-choices</h3>
+<h3 id="all-choices">all-choices <a class="anchor-link" href="#all-choices">#</a></h3>
 <p><strong>All distinct choice names</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get AllChoices() As BetterArray
 </code></pre>
 <p><strong>Returns:</strong> BetterArray. The distinct choice names.</p>
 <hr />
-<h2>Categories</h2>
-<h3>categories</h3>
+</div>
+</details>
+<details open class="doc-section" id="categories">
+<summary>Categories</summary>
+<div class="section-body">
+<h3 id="categories">categories <a class="anchor-link" href="#categories">#</a></h3>
 <p><strong>Categories of a choice</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Categories(ByVal choiceName As String, _
@@ -188,7 +203,7 @@ available. Falls back to long labels for missing short entries.</p>
 </ul>
 <p><strong>Returns:</strong> BetterArray. The category values.</p>
 <hr />
-<h3>concatenate-categories</h3>
+<h3 id="concatenate-categories">concatenate-categories <a class="anchor-link" href="#concatenate-categories">#</a></h3>
 <p><strong>Concatenate all categories of a choice</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get ConcatenateCategories( _
@@ -206,8 +221,12 @@ category via the supplied TranslationObject.</p>
 </ul>
 <p><strong>Returns:</strong> String. The concatenated categories.</p>
 <hr />
-<h2>DataExchange</h2>
-<h3>add-headers</h3>
+</div>
+</details>
+<details open class="doc-section" id="dataexchange">
+<summary>DataExchange</summary>
+<div class="section-body">
+<h3 id="add-headers">add-headers <a class="anchor-link" href="#add-headers">#</a></h3>
 <p><strong>Write the default headers to the choice worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddHeaders()
@@ -215,7 +234,7 @@ category via the supplied TranslationObject.</p>
 <p>Writes the four standard column headers (list name, ordering,
 long label, short label) starting at the configured origin cell.</p>
 <hr />
-<h3>export</h3>
+<h3 id="export">export <a class="anchor-link" href="#export">#</a></h3>
 <p><strong>Export the current choice object to a workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub Export(ByVal Wkb As Workbook, Optional ByVal Hide As Long = xlSheetHidden)
@@ -227,7 +246,7 @@ long label, short label) starting at the configured origin cell.</p>
 <li><code>Hide</code>: Long. Worksheet visibility constant. Defaults to xlSheetHidden.</li>
 </ul>
 <hr />
-<h3>import</h3>
+<h3 id="import">import <a class="anchor-link" href="#import">#</a></h3>
 <p><strong>Import choices from a worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub Import(ByVal fromWksh As Worksheet, _
@@ -246,7 +265,7 @@ DataSheet.Import.</p>
 <li><code>clearSheet</code>: Boolean. When True, clears the sheet before import. Defaults to False.</li>
 </ul>
 <hr />
-<h3>import-choice</h3>
+<h3 id="import-choice">import-choice <a class="anchor-link" href="#import-choice">#</a></h3>
 <p><strong>Import choices from another ILLChoices object</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ImportChoice(ByVal choiObj As ILLChoices)
@@ -258,15 +277,19 @@ short label categories, and adds each choice via AddChoice.</p>
 <li><code>choiObj</code>: ILLChoices. Source choice object to import from.</li>
 </ul>
 <hr />
-<h2>Checkings</h2>
-<h3>has-checkings</h3>
+</div>
+</details>
+<details open class="doc-section" id="checkings">
+<summary>Checkings</summary>
+<div class="section-body">
+<h3 id="has-checkings">has-checkings <a class="anchor-link" href="#has-checkings">#</a></h3>
 <p><strong>Whether the choice object has logged diagnostic messages</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get HasCheckings() As Boolean
 </code></pre>
 <p><strong>Returns:</strong> Boolean. True when diagnostic entries exist.</p>
 <hr />
-<h3>checking-values</h3>
+<h3 id="checking-values">checking-values <a class="anchor-link" href="#checking-values">#</a></h3>
 <p><strong>Retrieve the diagnostic log entries</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get CheckingValues() As Object
@@ -275,10 +298,12 @@ short label categories, and adds each choice via AddChoice.</p>
 Returns Nothing when no entries have been recorded.</p>
 <p><strong>Returns:</strong> Object. An IChecking instance, or Nothing.</p>
 <hr />
+</div>
+</details>
 <details>
 <summary>Internal members (not exported)</summary>
-<h2>Factory</h2>
-<h3>choice-label</h3>
+<h2 id="int-factory">Factory</h2>
+<h3 id="int-choice-label">choice-label <a class="anchor-link" href="#int-choice-label">#</a></h3>
 <p><strong>Resolve the label column name</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get ChoiceLabel(Optional ByVal keepDefault As Boolean = True) As String
@@ -291,8 +316,8 @@ back to the default label column.</p>
 </ul>
 <p><strong>Returns:</strong> String. The resolved column name.</p>
 <hr />
-<h2>Elements</h2>
-<h3>choice-data-set</h3>
+<h2 id="int-elements">Elements</h2>
+<h3 id="int-choice-data-set">choice-data-set <a class="anchor-link" href="#int-choice-data-set">#</a></h3>
 <p><strong>Assign the backing DataSheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set ChoiceData(ByVal customDataSheet As IDataSheet)
@@ -302,21 +327,21 @@ back to the default label column.</p>
 <li><code>customDataSheet</code>: IDataSheet. The DataSheet to assign.</li>
 </ul>
 <hr />
-<h3>start-row</h3>
+<h3 id="int-start-row">start-row <a class="anchor-link" href="#int-start-row">#</a></h3>
 <p><strong>First row of choice data</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get StartRow() As Long
 </code></pre>
 <p><strong>Returns:</strong> Long. The start row.</p>
 <hr />
-<h3>start-column</h3>
+<h3 id="int-start-column">start-column <a class="anchor-link" href="#int-start-column">#</a></h3>
 <p><strong>First column of choice data</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get StartColumn() As Long
 </code></pre>
 <p><strong>Returns:</strong> Long. The start column.</p>
 <hr />
-<h3>data-range</h3>
+<h3 id="int-data-range">data-range <a class="anchor-link" href="#int-data-range">#</a></h3>
 <p><strong>Data range from the backing DataSheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get DataRange( _ 
@@ -329,16 +354,16 @@ back to the default label column.</p>
 <li><code>includeHeaders</code>: Optional Boolean. When True, includes headers. Defaults to True.</li>
 </ul>
 <hr />
-<h2>Validation</h2>
-<h3>has-valid-headers</h3>
+<h2 id="int-validation">Validation</h2>
+<h3 id="int-has-valid-headers">has-valid-headers <a class="anchor-link" href="#int-has-valid-headers">#</a></h3>
 <p><strong>Check whether all required headers exist</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get HasValidHeaders() As Boolean
 </code></pre>
 <p><strong>Returns:</strong> Boolean. True when all four required columns are found.</p>
 <hr />
-<h2>Choices</h2>
-<h3>name-set</h3>
+<h2 id="int-choices">Choices</h2>
+<h3 id="int-name-set">name-set <a class="anchor-link" href="#int-name-set">#</a></h3>
 <p><strong>Assign the choice object name</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Let Name(ByVal choiceName As String)
@@ -348,7 +373,7 @@ back to the default label column.</p>
 <li><code>choiceName</code>: String. The name to assign.</li>
 </ul>
 <hr />
-<h3>remove-one-choice</h3>
+<h3 id="int-remove-one-choice">remove-one-choice <a class="anchor-link" href="#int-remove-one-choice">#</a></h3>
 <p><strong>Remove a single choice by name</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RemoveOneChoice(ByVal choiceName As String)
@@ -358,7 +383,7 @@ back to the default label column.</p>
 <li><code>choiceName</code>: String. The choice to remove.</li>
 </ul>
 <hr />
-<h3>resolve-row-target</h3>
+<h3 id="int-resolve-row-target">resolve-row-target <a class="anchor-link" href="#int-resolve-row-target">#</a></h3>
 <p><strong>Validate a selection and resolve its ListObject</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ResolveRowTarget(ByVal targetCell As Range, ByVal actionLabel As String) As ListObject
@@ -370,8 +395,8 @@ back to the default label column.</p>
 </ul>
 <p><strong>Returns:</strong> ListObject. The ListObject, or Nothing when invalid.</p>
 <hr />
-<h2>Checkings</h2>
-<h3>log-info</h3>
+<h2 id="int-checkings">Checkings</h2>
+<h3 id="int-log-info">log-info <a class="anchor-link" href="#int-log-info">#</a></h3>
 <p><strong>Append a diagnostic entry to the internal checking object</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub LogInfo(ByVal label As String, _ 
@@ -385,7 +410,7 @@ internal counter used as the entry key.</p>
 <li><code>scope</code>: Byte. Severity level. Defaults to checkingNote.</li>
 </ul>
 <hr />
-<h3>show-debug</h3>
+<h3 id="int-show-debug">show-debug <a class="anchor-link" href="#int-show-debug">#</a></h3>
 <p><strong>Print diagnostic summary to the Immediate window</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ShowDebug()
@@ -423,8 +448,10 @@ internal counter used as the entry key.</p>
 <li><a href="src/tests/TableSpecsLinelistStub.cls">TableSpecsLinelistStub.cls</a></li>
 </ul>
 </details>
-
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

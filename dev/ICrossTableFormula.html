@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ICrossTableFormula - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -14,8 +15,10 @@
 validity check and a method to write all computed formulas into the
 cross-table cells on the analysis output worksheet.
 Formula scope for linelist vs analysis formulas</p>
-<h2>Methods</h2>
-<h3>AddFormulas</h3>
+<details open class="doc-section" id="methods">
+<summary>Methods</summary>
+<div class="section-body">
+<h3 id="addformulas">AddFormulas <a class="anchor-link" href="#addformulas">#</a></h3>
 <p><strong>Write all formulas to the cross-table on the worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub AddFormulas(): End Sub
@@ -25,8 +28,12 @@ formula into each data cell. Handles column formulas, row formulas,
 percentage formulas, and total formulas based on the table scope and
 specification flags. Skips writing when Valid returns False.</p>
 <hr />
-<h2>Properties</h2>
-<h3>Valid</h3>
+</div>
+</details>
+<details open class="doc-section" id="properties">
+<summary>Properties</summary>
+<div class="section-body">
+<h3 id="valid">Valid <a class="anchor-link" href="#valid">#</a></h3>
 <p><strong>Whether the formula object is valid for the analysis context</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Valid() As Boolean: End Property
@@ -36,8 +43,12 @@ reference are both properly initialised. Callers should check this
 before calling AddFormulas to avoid writing incomplete output.</p>
 <p><strong>Returns:</strong> Boolean. True when the formula object is ready to write.</p>
 <hr />
-
+</div>
+</details>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

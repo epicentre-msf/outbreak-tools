@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ISectionBuilder - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -19,8 +20,10 @@ sheet handling.
 Building modes control layout direction. HList builds horizontally on
 the main sheet plus printed and CRF companions. VList builds vertically
 on the main sheet only.</p>
-<h2>Methods</h2>
-<h3>Build</h3>
+<details open class="doc-section" id="methods">
+<summary>Methods</summary>
+<div class="section-body">
+<h3 id="build">Build <a class="anchor-link" href="#build">#</a></h3>
 <p><strong>Build all sections, subsections, and variables for a sheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Build(ByVal sheetName As String, ByVal startRow As Long)
@@ -37,8 +40,12 @@ main sheet only.</p>
 <li><code>startRow</code>: Long. The first data row index in the dictionary for this sheet (1-based).</li>
 </ul>
 <hr />
-
+</div>
+</details>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

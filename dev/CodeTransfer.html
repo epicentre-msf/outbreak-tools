@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CodeTransfer - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -17,8 +18,10 @@ into the target, and the temp file is cleaned up. Consumers create an instance
 via Create and then call the transfer methods for each component type.</p>
 <p><strong>Depends on:</strong> <a href="ITemporaryRepos.html">ITemporaryRepos</a></p>
 <p><strong>Version:</strong> 1.0 (2026-02-09)</p>
-<h2>Instantiation</h2>
-<h3>create</h3>
+<details open class="doc-section" id="instantiation">
+<summary>Instantiation</summary>
+<div class="section-body">
+<h3 id="create">create <a class="anchor-link" href="#create">#</a></h3>
 <p><strong>Create a CodeTransfer instance</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal sourceWkb As Workbook, _
@@ -41,8 +44,12 @@ are validated as non-Nothing.</p>
 <li>ProjectError.ObjectNotInitialized When any parameter is Nothing.</li>
 </ul>
 <hr />
-<h2>Operations</h2>
-<h3>transfer-class</h3>
+</div>
+</details>
+<details open class="doc-section" id="operations">
+<summary>Operations</summary>
+<div class="section-body">
+<h3 id="transfer-class">transfer-class <a class="anchor-link" href="#transfer-class">#</a></h3>
 <p><strong>Transfer a class module from source to target workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub TransferClass(ByVal className As String)
@@ -56,7 +63,7 @@ temporary file is cleaned up after import.</p>
 <li><code>className</code>: String. The VBA component name of the class to transfer.</li>
 </ul>
 <hr />
-<h3>transfer-module</h3>
+<h3 id="transfer-module">transfer-module <a class="anchor-link" href="#transfer-module">#</a></h3>
 <p><strong>Transfer a standard module from source to target workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub TransferModule(ByVal moduleName As String)
@@ -68,7 +75,7 @@ temporary file named &quot;CopieMod.bas&quot;, then imports it into the target w
 <li><code>moduleName</code>: String. The VBA component name of the module to transfer.</li>
 </ul>
 <hr />
-<h3>transfer-form</h3>
+<h3 id="transfer-form">transfer-form <a class="anchor-link" href="#transfer-form">#</a></h3>
 <p><strong>Transfer a UserForm from source to target workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub TransferForm(ByVal formName As String)
@@ -81,7 +88,7 @@ files, imports it into the target workbook, then deletes both the .frm and
 <li><code>formName</code>: String. The VBA component name of the form to transfer.</li>
 </ul>
 <hr />
-<h3>transfer-workbook-code</h3>
+<h3 id="transfer-workbook-code">transfer-workbook-code <a class="anchor-link" href="#transfer-workbook-code">#</a></h3>
 <p><strong>Copy code from a source module into the target's ThisWorkbook component</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub TransferWorkbookCode(ByVal moduleName As String)
@@ -95,7 +102,7 @@ built-in ThisWorkbook code module.</p>
 <li><code>moduleName</code>: String. The source module whose code will be copied.</li>
 </ul>
 <hr />
-<h3>copy-module-text</h3>
+<h3 id="copy-module-text">copy-module-text <a class="anchor-link" href="#copy-module-text">#</a></h3>
 <p><strong>Copy code text from a source module to an existing target module</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub CopyModuleText(ByVal moduleName As String)
@@ -108,7 +115,7 @@ Used for template workbooks where the target module already exists.</p>
 <li><code>moduleName</code>: String. The module name (must exist in both workbooks).</li>
 </ul>
 <hr />
-<h3>copy-module-code</h3>
+<h3 id="copy-module-code">copy-module-code <a class="anchor-link" href="#copy-module-code">#</a></h3>
 <p><strong>Copy code between components within the target workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub CopyModuleCode(ByVal sourceName As String, ByVal targetName As String)
@@ -128,10 +135,12 @@ should be injected into a different component (e.g., a worksheet module).</p>
 not found in the target workbook.</li>
 </ul>
 <hr />
+</div>
+</details>
 <details>
 <summary>Internal members (not exported)</summary>
-<h2>Bindings</h2>
-<h3>bin-source-wkb</h3>
+<h2 id="int-bindings">Bindings</h2>
+<h3 id="int-bin-source-wkb">bin-source-wkb <a class="anchor-link" href="#int-bin-source-wkb">#</a></h3>
 <p><strong>Assign the source workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Friend Property Set BinSourceWkb(ByVal value As Workbook)
@@ -142,7 +151,7 @@ not found in the target workbook.</li>
 <li><code>value</code>: Workbook. The source workbook to store.</li>
 </ul>
 <hr />
-<h3>bin-target-wkb</h3>
+<h3 id="int-bin-target-wkb">bin-target-wkb <a class="anchor-link" href="#int-bin-target-wkb">#</a></h3>
 <p><strong>Assign the target workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Friend Property Set BinTargetWkb(ByVal value As Workbook)
@@ -152,7 +161,7 @@ not found in the target workbook.</li>
 <li><code>value</code>: Workbook. The target workbook to store.</li>
 </ul>
 <hr />
-<h3>bin-temp-repos</h3>
+<h3 id="int-bin-temp-repos">bin-temp-repos <a class="anchor-link" href="#int-bin-temp-repos">#</a></h3>
 <p><strong>Assign the temporary repository</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Friend Property Set BinTempRepos(ByVal value As ITemporaryRepos)
@@ -162,8 +171,8 @@ not found in the target workbook.</li>
 <li><code>value</code>: ITemporaryRepos. The temporary repository to store.</li>
 </ul>
 <hr />
-<h2>Helpers</h2>
-<h3>export-import-component</h3>
+<h2 id="int-helpers">Helpers</h2>
+<h3 id="int-export-import-component">export-import-component <a class="anchor-link" href="#int-export-import-component">#</a></h3>
 <p><strong>Export a VBA component from source and import into target</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ExportImportComponent(ByVal componentName As String, ByVal tempFileName As String)
@@ -178,7 +187,7 @@ TransferModule.</p>
 <li><code>tempFileName</code>: String. The temporary file name (e.g., &quot;CopieCls.cls&quot;).</li>
 </ul>
 <hr />
-<h3>throw-error</h3>
+<h3 id="int-throw-error">throw-error <a class="anchor-link" href="#int-throw-error">#</a></h3>
 <p><strong>Raise a ProjectError-based exception</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As Long, ByVal errorMessage As String)
@@ -189,8 +198,8 @@ TransferModule.</p>
 <li><code>errorMessage</code>: String. Human-readable description of the failure.</li>
 </ul>
 <hr />
-<h2>InterfaceImplementation</h2>
-<h3>ICodeTransfer_TransferClass</h3>
+<h2 id="int-interfaceimplementation">InterfaceImplementation</h2>
+<h3 id="int-icodetransfer-transferclass">ICodeTransfer_TransferClass <a class="anchor-link" href="#int-icodetransfer-transferclass">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ICodeTransfer_TransferClass(ByVal className As String)
 </code></pre>
@@ -207,8 +216,10 @@ See the corresponding Public members above for full documentation.</p>
 <li><a href="src/tests/modules/linelist/TestCodeTransfer.bas">TestCodeTransfer.bas</a></li>
 </ul>
 </details>
-
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

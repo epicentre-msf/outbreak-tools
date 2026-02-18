@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ILinelistSpecs - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -12,11 +13,13 @@
 <h1>ILinelistSpecs</h1>
 <p>Defines the public contract for the LinelistSpecs class, exposing lazy-loaded
 accessors for all specification collaborators (dictionary, choices, translations,
-geo, analysis, passwords, format, exports, formulas, main), metadata helpers
+geo, analysis, passwords, format, exports, formulas), metadata helpers
 for temporary sheet names and category lookups, and lifecycle methods for
 preparing, exporting, and error-managing the specifications workbook.</p>
-<h2>Lifecycle</h2>
-<h3>ResetCaches</h3>
+<details open class="doc-section" id="lifecycle">
+<summary>Lifecycle</summary>
+<div class="section-body">
+<h3 id="resetcaches">ResetCaches <a class="anchor-link" href="#resetcaches">#</a></h3>
 <p><strong>Refresh all cached collaborators</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ResetCaches()
@@ -26,17 +29,21 @@ Resets every cached collaborator object, sheet reference, translation cache,
 and category cache so subsequent reads query the workbook again. Call after
 importing new data to ensure stale caches are cleared.</p>
 <hr />
-<h3>Workbook</h3>
-<p><strong>Workbook hosting the specifications</strong></p>
+<h3 id="desworkbook">DesWorkbook <a class="anchor-link" href="#desworkbook">#</a></h3>
+<p><strong>Designer workbook hosting the specifications</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Workbook() As Workbook
+<pre><code class="language-vb">Public Property Get DesWorkbook() As Workbook
 </code></pre>
-<p>Returns the workbook reference that backs all specification queries. Raises
-an error if the workbook has not been assigned.</p>
-<p><strong>Returns:</strong> Workbook. The specifications workbook.</p>
+<p>Returns the designer workbook reference that backs all specification queries.
+Raises an error if the workbook has not been assigned.</p>
+<p><strong>Returns:</strong> Workbook. The designer/specifications workbook.</p>
 <hr />
-<h2>CoreSpecifications</h2>
-<h3>Dictionary</h3>
+</div>
+</details>
+<details open class="doc-section" id="corespecifications">
+<summary>CoreSpecifications</summary>
+<div class="section-body">
+<h3 id="dictionary">Dictionary <a class="anchor-link" href="#dictionary">#</a></h3>
 <p><strong>Linelist dictionary</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Dictionary() As ILLdictionary
@@ -46,7 +53,7 @@ Returns the ILLdictionary instance providing column and row access to the
 Dictionary worksheet. Lazy-loaded on first access.</p>
 <p><strong>Returns:</strong> ILLdictionary. The dictionary collaborator.</p>
 <hr />
-<h3>Choices</h3>
+<h3 id="choices">Choices <a class="anchor-link" href="#choices">#</a></h3>
 <p><strong>Choices catalogue</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Choices() As ILLChoices
@@ -55,25 +62,25 @@ Dictionary worksheet. Lazy-loaded on first access.</p>
 worksheet. Lazy-loaded on first access.</p>
 <p><strong>Returns:</strong> ILLChoices. The choices collaborator.</p>
 <hr />
-<h3>DesignFormat</h3>
+<h3 id="designformat">DesignFormat <a class="anchor-link" href="#designformat">#</a></h3>
 <p><strong>Visual formatting specifications</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get DesignFormat() As ILLFormat
 </code></pre>
 <p>Returns the ILLFormat instance providing sheet and cell formatting methods
-based on the LinelistStyle worksheet. Lazy-loaded on first access.</p>
+based on the __formatter worksheet. Lazy-loaded on first access.</p>
 <p><strong>Returns:</strong> ILLFormat. The format collaborator.</p>
 <hr />
-<h3>Analysis</h3>
+<h3 id="analysis">Analysis <a class="anchor-link" href="#analysis">#</a></h3>
 <p><strong>Analysis setup specifications</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Analysis() As ILLAnalysis
+<pre><code class="language-vb">Public Property Get Analysis() As IAnalysis
 </code></pre>
-<p>Returns the ILLAnalysis instance providing access to the Analysis worksheet
+<p>Returns the IAnalysis instance providing access to the Analysis worksheet
 configuration. Lazy-loaded on first access.</p>
-<p><strong>Returns:</strong> ILLAnalysis. The analysis collaborator.</p>
+<p><strong>Returns:</strong> IAnalysis. The analysis collaborator.</p>
 <hr />
-<h3>ExportObject</h3>
+<h3 id="exportobject">ExportObject <a class="anchor-link" href="#exportobject">#</a></h3>
 <p><strong>Export column specifications</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get ExportObject() As ILLExport
@@ -82,7 +89,7 @@ configuration. Lazy-loaded on first access.</p>
 from the Exports worksheet. Lazy-loaded on first access.</p>
 <p><strong>Returns:</strong> ILLExport. The export collaborator.</p>
 <hr />
-<h3>Password</h3>
+<h3 id="password">Password <a class="anchor-link" href="#password">#</a></h3>
 <p><strong>Password manager</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Password() As IPasswords
@@ -91,7 +98,7 @@ from the Exports worksheet. Lazy-loaded on first access.</p>
 utilities from the __pass worksheet. Lazy-loaded on first access.</p>
 <p><strong>Returns:</strong> IPasswords. The password collaborator.</p>
 <hr />
-<h3>GeoObject</h3>
+<h3 id="geoobject">GeoObject <a class="anchor-link" href="#geoobject">#</a></h3>
 <p><strong>Geographic data manager</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get GeoObject() As ILLGeo
@@ -100,7 +107,7 @@ utilities from the __pass worksheet. Lazy-loaded on first access.</p>
 Geo worksheet. Lazy-loaded on first access.</p>
 <p><strong>Returns:</strong> ILLGeo. The geo collaborator.</p>
 <hr />
-<h3>FormulaDataObject</h3>
+<h3 id="formuladataobject">FormulaDataObject <a class="anchor-link" href="#formuladataobject">#</a></h3>
 <p><strong>Formula data provider</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get FormulaDataObject() As IFormulaData
@@ -109,16 +116,16 @@ Geo worksheet. Lazy-loaded on first access.</p>
 __formula worksheet. Lazy-loaded on first access.</p>
 <p><strong>Returns:</strong> IFormulaData. The formula data collaborator.</p>
 <hr />
-<h3>MainObject</h3>
-<p><strong>Main configuration sheet accessor</strong></p>
+<h3 id="hastemplate">HasTemplate <a class="anchor-link" href="#hastemplate">#</a></h3>
+<p><strong>Whether the workbook uses a ribbon template</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get MainObject() As IMain
+<pre><code class="language-vb">Public Property Get HasTemplate() As Boolean
 </code></pre>
-<p>Returns the IMain instance providing key-value configuration from the Main
-worksheet. Lazy-loaded on first access.</p>
-<p><strong>Returns:</strong> IMain. The main configuration collaborator.</p>
+<p>Reads the RNG_MainTemp named range on the Main worksheet and returns True
+when the value equals &quot;has template&quot;.</p>
+<p><strong>Returns:</strong> Boolean. True when a template is configured.</p>
 <hr />
-<h3>Translations</h3>
+<h3 id="translations">Translations <a class="anchor-link" href="#translations">#</a></h3>
 <p><strong>Translation tables manager</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Translations() As ILLTranslation
@@ -128,7 +135,7 @@ ListObjects on the consolidated translation worksheet. Lazy-loaded on
 first access.</p>
 <p><strong>Returns:</strong> ILLTranslation. The translations collaborator.</p>
 <hr />
-<h3>DesignerTranslations</h3>
+<h3 id="designertranslations">DesignerTranslations <a class="anchor-link" href="#designertranslations">#</a></h3>
 <p><strong>Designer translation accessor</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get DesignerTranslations() As IDesignerTranslation
@@ -137,7 +144,7 @@ first access.</p>
 the DesignerTranslation worksheet. Lazy-loaded on first access.</p>
 <p><strong>Returns:</strong> IDesignerTranslation. The designer translation collaborator.</p>
 <hr />
-<h3>TransObject</h3>
+<h3 id="transobject">TransObject <a class="anchor-link" href="#transobject">#</a></h3>
 <p><strong>Scoped translation object</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get TransObject(Optional ByVal translationScope As Byte = TranslationOfMessages) As ITranslationObject
@@ -152,36 +159,40 @@ Defaults to TranslationOfMessages.</li>
 </ul>
 <p><strong>Returns:</strong> ITranslationObject. The scoped translation object.</p>
 <hr />
-<h2>MetadataHelpers</h2>
-<h3>TemporarySheetName</h3>
+</div>
+</details>
+<details open class="doc-section" id="metadatahelpers">
+<summary>MetadataHelpers</summary>
+<div class="section-body">
+<h3 id="temporarysheetname">TemporarySheetName <a class="anchor-link" href="#temporarysheetname">#</a></h3>
 <p><strong>Temporary sheet name for a given scope</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get TemporarySheetName(ByVal scope As Byte) As String
 </code></pre>
 <p>Derived accessors for temporary sheet names, tag values, and categories.
 Returns the fixed worksheet name used for temporary internal sheets, based
-on the scope constant (TEMP_SHEET_ANALYSIS, TEMP_SHEET_LIST, etc.).</p>
+on the TempSheetScope enum (TempSheetAnalysis, TempSheetList, etc.).</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>scope</code>: Byte. The temporary sheet scope constant.</li>
+<li><code>scope</code>: Byte. A TempSheetScope enum value.</li>
 </ul>
 <p><strong>Returns:</strong> String. The worksheet name string.</p>
 <hr />
-<h3>Value</h3>
+<h3 id="value">Value <a class="anchor-link" href="#value">#</a></h3>
 <p><strong>Configuration value by tag name</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Value(ByVal tagName As String) As String
 </code></pre>
 <p>Returns a configuration value from the Main worksheet for the given tag name.
 The special tag &quot;numberofexports&quot; returns the export count from the Exports
-worksheet; all other tags delegate to MainObject.ValueOf.</p>
+worksheet; all other tags resolve the named range directly on the Main sheet.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>tagName</code>: String. The configuration key to look up.</li>
 </ul>
 <p><strong>Returns:</strong> String. The configuration value.</p>
 <hr />
-<h3>Categories</h3>
+<h3 id="categories">Categories <a class="anchor-link" href="#categories">#</a></h3>
 <p><strong>Resolve category values for a variable</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Categories(ByVal varName As String, Optional ByVal useShortlabels As Boolean = False) As BetterArray
@@ -197,32 +208,47 @@ instead of full labels. Defaults to False.</li>
 </ul>
 <p><strong>Returns:</strong> BetterArray. Cloned list of category values.</p>
 <hr />
-<h2>WorkbookManagement</h2>
-<h3>Prepare</h3>
-<p><strong>Import and prepare all specifications from external workbooks</strong></p>
+</div>
+</details>
+<details open class="doc-section" id="workbookmanagement">
+<summary>WorkbookManagement</summary>
+<div class="section-body">
+<h3 id="prepare">Prepare <a class="anchor-link" href="#prepare">#</a></h3>
+<p><strong>Prepare all specifications using an import service</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub Prepare()
+<pre><code class="language-vb">Public Sub Prepare(ByVal importService As IDesignerImportService)
 </code></pre>
 <p>Preparation, export, and error management operations.
-Orchestrates the full specification preparation workflow: validates the Main
-sheet readiness, opens the setup workbook, imports dictionary, choices,
-translations, analysis, and optionally geo data, then prepares the dictionary
-with preserved names, adds list auto columns, translates and sorts all
-collaborators. Handles errors with cleanup of open workbooks.</p>
-<hr />
-<h3>Export</h3>
-<p><strong>Export all specifications to an output workbook</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub Export(ByVal toWkb As Workbook)
-</code></pre>
-<p>Exports dictionary, choices, translations, export specs, geo data, and
-passwords to the given workbook, creating hidden worksheets for each.</p>
+Orchestrates the full specification preparation workflow: creates a new
+output workbook, exports designer components via the import service,
+retrieves exported domain instances, then prepares the dictionary with
+preserved names, adds list auto columns, translates and sorts all
+collaborators. Handles errors with cleanup.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>toWkb</code>: Workbook. The destination workbook to export specifications into.</li>
+<li><code>importService</code>: IDesignerImportService. The configured import service
+holding imported setup data.</li>
 </ul>
 <hr />
-<h3>ErrorManage</h3>
+<h3 id="llworkbook">LLWorkbook <a class="anchor-link" href="#llworkbook">#</a></h3>
+<p><strong>The output linelist workbook created during Prepare</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get LLWorkbook() As Workbook
+</code></pre>
+<p>Returns the linelist workbook created by Prepare that received exported data
+from the import service. Returns Nothing before Prepare is called.</p>
+<p><strong>Returns:</strong> Workbook. The linelist workbook, or Nothing.</p>
+<hr />
+<h3 id="outputtemporaryrepos">OutputTemporaryRepos <a class="anchor-link" href="#outputtemporaryrepos">#</a></h3>
+<p><strong>The temporary repository created during Prepare</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get OutputTemporaryRepos() As ITemporaryRepos
+</code></pre>
+<p>Returns the ITemporaryRepos instance created by Prepare for working files.
+Returns Nothing before Prepare is called.</p>
+<p><strong>Returns:</strong> ITemporaryRepos. The temporary repository, or Nothing.</p>
+<hr />
+<h3 id="errormanage">ErrorManage <a class="anchor-link" href="#errormanage">#</a></h3>
 <p><strong>Display an error dialog for specification failures</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ErrorManage(Optional ByVal textMessage As String = vbNullString)
@@ -234,8 +260,12 @@ process.</p>
 <li><code>textMessage</code>: Optional String. Error description. Defaults to vbNullString.</li>
 </ul>
 <hr />
-
+</div>
+</details>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

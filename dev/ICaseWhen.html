@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ICaseWhen - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -13,8 +14,10 @@
 <p>Defines the public contract for the CaseWhen class, exposing validity
 checks, nested IF output, and category extraction for CASE_WHEN
 custom formula expressions.</p>
-<h2>Operations</h2>
-<h3>Valid</h3>
+<details open class="doc-section" id="operations">
+<summary>Operations</summary>
+<div class="section-body">
+<h3 id="valid">Valid <a class="anchor-link" href="#valid">#</a></h3>
 <p><strong>Determine whether the supplied formula can be parsed</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Valid() As Boolean: End Property
@@ -25,7 +28,7 @@ start of the formula before attempting to parse. Returns False for
 empty or non-matching strings.</p>
 <p><strong>Returns:</strong> Boolean. True when the formula is parseable.</p>
 <hr />
-<h3>parsedFormula</h3>
+<h3 id="parsedformula">parsedFormula <a class="anchor-link" href="#parsedformula">#</a></h3>
 <p><strong>Retrieve the CASE_WHEN formula rewritten as nested IF statements</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get parsedFormula() As String: End Property
@@ -34,7 +37,7 @@ empty or non-matching strings.</p>
 formulas. Returns an empty string when the formula is invalid.</p>
 <p><strong>Returns:</strong> String. Nested IF expression.</p>
 <hr />
-<h3>Categories</h3>
+<h3 id="categories">Categories <a class="anchor-link" href="#categories">#</a></h3>
 <p><strong>Enumerate the textual results referenced by the CASE_WHEN expression</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Categories() As BetterArray: End Property
@@ -44,8 +47,12 @@ branch. Quoted result entries are stripped; non-quoted entries are
 wrapped in quotes for consistent handling.</p>
 <p><strong>Returns:</strong> BetterArray. Collection containing quoted labels.</p>
 <hr />
-
+</div>
+</details>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

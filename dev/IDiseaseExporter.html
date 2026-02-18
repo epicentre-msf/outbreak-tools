@@ -5,13 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>IDiseaseExporter - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>IDiseaseExporter</h1>
-<h2>Configuration</h2>
-<h3>Initialise</h3>
+<details open class="doc-section" id="configuration">
+<summary>Configuration</summary>
+<div class="section-body">
+<h3 id="initialise">Initialise <a class="anchor-link" href="#initialise">#</a></h3>
 <p><strong>Configure dependencies required for the exporter.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Initialise(ByVal workbookManager As IDiseaseExportWorkbook, ByVal appGuard As IDiseaseApplicationState)
@@ -22,8 +25,12 @@
 <li><code>appGuard</code>: IDiseaseApplicationState guarding Application state toggles.</li>
 </ul>
 <hr />
-<h2>Disease Export</h2>
-<h3>BuildDiseaseWorkbook</h3>
+</div>
+</details>
+<details open class="doc-section" id="disease-export">
+<summary>Disease Export</summary>
+<div class="section-body">
+<h3 id="builddiseaseworkbook">BuildDiseaseWorkbook <a class="anchor-link" href="#builddiseaseworkbook">#</a></h3>
 <p><strong>Build an export workbook in-memory for the supplied disease worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function BuildDiseaseWorkbook(ByVal diseaseSheet As Worksheet, _
@@ -44,7 +51,7 @@
 </ul>
 <p><strong>Returns:</strong> Workbook populated with export worksheets. Caller owns lifecycle.</p>
 <hr />
-<h3>ExportDisease</h3>
+<h3 id="exportdisease">ExportDisease <a class="anchor-link" href="#exportdisease">#</a></h3>
 <p><strong>Export a disease workbook to disk.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function ExportDisease(ByVal exportFolder As String, _
@@ -67,8 +74,12 @@
 </ul>
 <p><strong>Returns:</strong> String file path of the saved workbook.</p>
 <hr />
-<h2>Migration Export</h2>
-<h3>BuildMigrationWorkbook</h3>
+</div>
+</details>
+<details open class="doc-section" id="migration-export">
+<summary>Migration Export</summary>
+<div class="section-body">
+<h3 id="buildmigrationworkbook">BuildMigrationWorkbook <a class="anchor-link" href="#buildmigrationworkbook">#</a></h3>
 <p><strong>Build a migration workbook aggregating multiple diseases.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function BuildMigrationWorkbook(ByVal sourceWorkbook As Workbook, _
@@ -81,7 +92,7 @@
 </ul>
 <p><strong>Returns:</strong> Workbook populated with migration data. Caller owns lifecycle.</p>
 <hr />
-<h3>ExportForMigration</h3>
+<h3 id="exportformigration">ExportForMigration <a class="anchor-link" href="#exportformigration">#</a></h3>
 <p><strong>Export the migration workbook to disk.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function ExportForMigration(ByVal exportFolder As String, _
@@ -96,8 +107,12 @@
 </ul>
 <p><strong>Returns:</strong> String file path of the saved workbook.</p>
 <hr />
-
+</div>
+</details>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

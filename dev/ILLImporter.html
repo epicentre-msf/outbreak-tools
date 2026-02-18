@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ILLImporter - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -15,8 +16,10 @@ to import linelist data from external workbooks. Supports importing
 HList/VList data, custom dropdowns, show/hide state, editable labels,
 single values, and geobase data. Also provides an import report that
 tracks which sheets and variables were not imported or not touched.</p>
-<h2>Data Checks</h2>
-<h3>HasData</h3>
+<details open class="doc-section" id="data-checks">
+<summary>Data Checks</summary>
+<div class="section-body">
+<h3 id="hasdata">HasData <a class="anchor-link" href="#hasdata">#</a></h3>
 <p><strong>Whether the workbook contains user-entered data</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get HasData() As Boolean
@@ -26,7 +29,7 @@ threshold stored in cell(1,6). Returns True as soon as a single HList
 row has user data. Used to warn the user before clearing or overwriting.</p>
 <p><strong>Returns:</strong> Boolean. True when at least one HList row has user data.</p>
 <hr />
-<h3>HasSameLanguage</h3>
+<h3 id="hassamelanguage">HasSameLanguage <a class="anchor-link" href="#hassamelanguage">#</a></h3>
 <p><strong>Check whether the import workbook language matches</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function HasSameLanguage(ByVal impwb As Workbook) As Boolean
@@ -41,8 +44,12 @@ ImportSingleValues silently skip when languages differ.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when languages match.</p>
 <hr />
-<h2>Data Operations</h2>
-<h3>ClearData</h3>
+</div>
+</details>
+<details open class="doc-section" id="data-operations">
+<summary>Data Operations</summary>
+<div class="section-body">
+<h3 id="cleardata">ClearData <a class="anchor-link" href="#cleardata">#</a></h3>
 <p><strong>Clear all user-entered data from HList and VList sheets</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ClearData()
@@ -51,7 +58,7 @@ ImportSingleValues silently skip when languages differ.</p>
 cell values from HList ListObjects and VList named ranges. Unprotects
 and re-protects each sheet via IPasswords.</p>
 <hr />
-<h3>ImportData</h3>
+<h3 id="importdata">ImportData <a class="anchor-link" href="#importdata">#</a></h3>
 <p><strong>Import data from HList and VList worksheets</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ImportData(ByVal impwb As Workbook, ByVal pasteAtBottom As Boolean)
@@ -66,7 +73,7 @@ variables, and builds &quot;not imported&quot; report entries for unmatched item
 <li><code>pasteAtBottom</code>: Boolean. When True, appends data below existing rows.</li>
 </ul>
 <hr />
-<h3>ImportCustomDropdown</h3>
+<h3 id="importcustomdropdown">ImportCustomDropdown <a class="anchor-link" href="#importcustomdropdown">#</a></h3>
 <p><strong>Import custom dropdown choices from the import workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ImportCustomDropdown(ByVal impwb As Workbook, ByVal pasteAtBottom As Boolean)
@@ -81,8 +88,12 @@ import workbook has no Choices sheet or no custom dropdown sheet exists.</p>
 <li><code>pasteAtBottom</code>: Boolean. When True, appends choices below existing entries.</li>
 </ul>
 <hr />
-<h2>Migration Metadata</h2>
-<h3>ImportShowHide</h3>
+</div>
+</details>
+<details open class="doc-section" id="migration-metadata">
+<summary>Migration Metadata</summary>
+<div class="section-body">
+<h3 id="importshowhide">ImportShowHide <a class="anchor-link" href="#importshowhide">#</a></h3>
 <p><strong>Import show/hide visibility state from a migration workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ImportShowHide(ByVal impwb As Workbook)
@@ -97,7 +108,7 @@ or when the metadata tag is not set to &quot;update on import&quot;.</p>
 <li><code>impwb</code>: Workbook. The opened migration workbook.</li>
 </ul>
 <hr />
-<h3>ImportEditableLabels</h3>
+<h3 id="importeditablelabels">ImportEditableLabels <a class="anchor-link" href="#importeditablelabels">#</a></h3>
 <p><strong>Import editable label values from a migration workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ImportEditableLabels(ByVal impwb As Workbook)
@@ -111,7 +122,7 @@ is not prepared, or the metadata tag is not set to &quot;update on import&quot;.
 <li><code>impwb</code>: Workbook. The opened migration workbook.</li>
 </ul>
 <hr />
-<h3>ImportSingleValues</h3>
+<h3 id="importsinglevalues">ImportSingleValues <a class="anchor-link" href="#importsinglevalues">#</a></h3>
 <p><strong>Import single metadata values from a migration workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ImportSingleValues(ByVal impwb As Workbook)
@@ -124,7 +135,7 @@ workbook. Silently skips when HasSameLanguage returned False.</p>
 <li><code>impwb</code>: Workbook. The opened migration workbook.</li>
 </ul>
 <hr />
-<h3>ImportGeobase</h3>
+<h3 id="importgeobase">ImportGeobase <a class="anchor-link" href="#importgeobase">#</a></h3>
 <p><strong>Import geobase data from a workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ImportGeobase(ByVal impwb As Workbook, Optional ByVal histoOnly As Boolean = False)
@@ -138,8 +149,12 @@ and show/hide tables for geo variables.</p>
 <li><code>histoOnly</code>: Optional Boolean. When True, imports only historic geobase data. Defaults to False.</li>
 </ul>
 <hr />
-<h2>Import Report</h2>
-<h3>NeedReport</h3>
+</div>
+</details>
+<details open class="doc-section" id="import-report">
+<summary>Import Report</summary>
+<div class="section-body">
+<h3 id="needreport">NeedReport <a class="anchor-link" href="#needreport">#</a></h3>
 <p><strong>Whether the last import had issues</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get NeedReport() As Boolean
@@ -148,7 +163,7 @@ and show/hide tables for geo variables.</p>
 or variables were not imported or not touched during the last import.</p>
 <p><strong>Returns:</strong> Boolean. True when the import report has entries.</p>
 <hr />
-<h3>FinalizeReport</h3>
+<h3 id="finalizereport">FinalizeReport <a class="anchor-link" href="#finalizereport">#</a></h3>
 <p><strong>Build the &quot;not touched&quot; part of the import report</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub FinalizeReport()
@@ -157,7 +172,7 @@ or variables were not imported or not touched during the last import.</p>
 find which ones were not touched by the import. Skips formula-type
 variables (case_when, formula, choice_formula). Call after ImportData.</p>
 <hr />
-<h3>ReportSheets</h3>
+<h3 id="reportsheets">ReportSheets <a class="anchor-link" href="#reportsheets">#</a></h3>
 <p><strong>Report sheet names for the given scope</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function ReportSheets(ByVal scope As Byte) As BetterArray
@@ -171,7 +186,7 @@ Returns an empty BetterArray when no entries exist for the scope.</p>
 </ul>
 <p><strong>Returns:</strong> BetterArray. Sheet names matching the scope, or empty.</p>
 <hr />
-<h3>ReportVariables</h3>
+<h3 id="reportvariables">ReportVariables <a class="anchor-link" href="#reportvariables">#</a></h3>
 <p><strong>Report variable entries for the given scope</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function ReportVariables(ByVal scope As Byte) As BetterArray
@@ -185,7 +200,7 @@ entries exist for the scope.</p>
 </ul>
 <p><strong>Returns:</strong> BetterArray. Variant arrays of (variableName, sheetName), or empty.</p>
 <hr />
-<h3>ClearReport</h3>
+<h3 id="clearreport">ClearReport <a class="anchor-link" href="#clearreport">#</a></h3>
 <p><strong>Reset report state</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ClearReport()
@@ -193,8 +208,12 @@ entries exist for the scope.</p>
 <p>Clears all report tracking arrays and resets the needReport flag. Call
 before starting a new import session to ensure a clean report.</p>
 <hr />
-
+</div>
+</details>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

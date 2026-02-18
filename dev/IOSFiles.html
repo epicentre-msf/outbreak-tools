@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>IOSFiles - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -14,8 +15,10 @@
 cross-platform file and folder selection dialogs (Windows FileDialog
 and macOS AppleScript), iteration over multi-selections, and
 validation helpers.</p>
-<h2>Elements</h2>
-<h3>File</h3>
+<details open class="doc-section" id="elements">
+<summary>Elements</summary>
+<div class="section-body">
+<h3 id="file">File <a class="anchor-link" href="#file">#</a></h3>
 <p><strong>Current loaded file path</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get File() As String: End Property
@@ -23,29 +26,33 @@ validation helpers.</p>
 <p>File and folder path accessors.</p>
 <p><strong>Returns:</strong> String. The first selected file path.</p>
 <hr />
-<h3>Files</h3>
+<h3 id="files">Files <a class="anchor-link" href="#files">#</a></h3>
 <p><strong>All loaded file paths from a multi-selection</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Files() As Variant: End Property
 </code></pre>
 <p><strong>Returns:</strong> Variant. Zero-based string array of file paths.</p>
 <hr />
-<h3>Folder</h3>
+<h3 id="folder">Folder <a class="anchor-link" href="#folder">#</a></h3>
 <p><strong>Current loaded folder path</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Folder() As String: End Property
 </code></pre>
 <p><strong>Returns:</strong> String. The first selected folder path.</p>
 <hr />
-<h3>Folders</h3>
+<h3 id="folders">Folders <a class="anchor-link" href="#folders">#</a></h3>
 <p><strong>All loaded folder paths from a multi-selection</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Folders() As Variant: End Property
 </code></pre>
 <p><strong>Returns:</strong> Variant. Zero-based string array of folder paths.</p>
 <hr />
-<h2>Selecting</h2>
-<h3>LoadFile</h3>
+</div>
+</details>
+<details open class="doc-section" id="selecting">
+<summary>Selecting</summary>
+<div class="section-body">
+<h3 id="loadfile">LoadFile <a class="anchor-link" href="#loadfile">#</a></h3>
 <p><strong>Show a single-file picker dialog</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub LoadFile(ByVal filters As String, _
@@ -58,7 +65,7 @@ validation helpers.</p>
 <li><code>customMacFilter</code>: String. Optional UTI override for macOS. Defaults to vbNullString.</li>
 </ul>
 <hr />
-<h3>LoadFiles</h3>
+<h3 id="loadfiles">LoadFiles <a class="anchor-link" href="#loadfiles">#</a></h3>
 <p><strong>Show a multi-file picker dialog</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub LoadFiles(ByVal filters As String, _
@@ -70,60 +77,64 @@ validation helpers.</p>
 <li><code>customMacFilter</code>: String. Optional UTI override for macOS. Defaults to vbNullString.</li>
 </ul>
 <hr />
-<h3>LoadFolder</h3>
+<h3 id="loadfolder">LoadFolder <a class="anchor-link" href="#loadfolder">#</a></h3>
 <p><strong>Show a single-folder picker dialog</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub LoadFolder(): End Sub
 </code></pre>
 <hr />
-<h3>LoadFolders</h3>
+<h3 id="loadfolders">LoadFolders <a class="anchor-link" href="#loadfolders">#</a></h3>
 <p><strong>Show a multi-folder picker dialog</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub LoadFolders(): End Sub
 </code></pre>
 <hr />
-<h3>ResetFilesIterator</h3>
+<h3 id="resetfilesiterator">ResetFilesIterator <a class="anchor-link" href="#resetfilesiterator">#</a></h3>
 <p><strong>Reset the iteration cursor over selected files</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ResetFilesIterator(): End Sub
 </code></pre>
 <hr />
-<h3>HasNextFile</h3>
+<h3 id="hasnextfile">HasNextFile <a class="anchor-link" href="#hasnextfile">#</a></h3>
 <p><strong>Check if another file is available in the iterator</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function HasNextFile() As Boolean: End Function
 </code></pre>
 <p><strong>Returns:</strong> Boolean. True when the cursor has not reached the end.</p>
 <hr />
-<h3>NextFile</h3>
+<h3 id="nextfile">NextFile <a class="anchor-link" href="#nextfile">#</a></h3>
 <p><strong>Retrieve the next file path and advance the cursor</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function NextFile() As String: End Function
 </code></pre>
 <p><strong>Returns:</strong> String. The next file path.</p>
 <hr />
-<h3>ResetFoldersIterator</h3>
+<h3 id="resetfoldersiterator">ResetFoldersIterator <a class="anchor-link" href="#resetfoldersiterator">#</a></h3>
 <p><strong>Reset the iteration cursor over selected folders</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ResetFoldersIterator(): End Sub
 </code></pre>
 <hr />
-<h3>HasNextFolder</h3>
+<h3 id="hasnextfolder">HasNextFolder <a class="anchor-link" href="#hasnextfolder">#</a></h3>
 <p><strong>Check if another folder is available in the iterator</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function HasNextFolder() As Boolean: End Function
 </code></pre>
 <p><strong>Returns:</strong> Boolean. True when the cursor has not reached the end.</p>
 <hr />
-<h3>NextFolder</h3>
+<h3 id="nextfolder">NextFolder <a class="anchor-link" href="#nextfolder">#</a></h3>
 <p><strong>Retrieve the next folder path and advance the cursor</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function NextFolder() As String: End Function
 </code></pre>
 <p><strong>Returns:</strong> String. The next folder path.</p>
 <hr />
-<h2>Validation</h2>
-<h3>HasValidFile</h3>
+</div>
+</details>
+<details open class="doc-section" id="validation">
+<summary>Validation</summary>
+<div class="section-body">
+<h3 id="hasvalidfile">HasValidFile <a class="anchor-link" href="#hasvalidfile">#</a></h3>
 <p><strong>Whether the loaded file path is valid</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function HasValidFile() As Boolean: End Function
@@ -131,29 +142,33 @@ validation helpers.</p>
 <p>Selection validity checks.</p>
 <p><strong>Returns:</strong> Boolean. True when a non-empty file path exists.</p>
 <hr />
-<h3>HasValidFiles</h3>
+<h3 id="hasvalidfiles">HasValidFiles <a class="anchor-link" href="#hasvalidfiles">#</a></h3>
 <p><strong>Whether the loaded files array contains entries</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function HasValidFiles() As Boolean: End Function
 </code></pre>
 <p><strong>Returns:</strong> Boolean. True when at least one file was selected.</p>
 <hr />
-<h3>HasValidFolder</h3>
+<h3 id="hasvalidfolder">HasValidFolder <a class="anchor-link" href="#hasvalidfolder">#</a></h3>
 <p><strong>Whether the loaded folder path is valid</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function HasValidFolder() As Boolean: End Function
 </code></pre>
 <p><strong>Returns:</strong> Boolean. True when a non-empty folder path exists.</p>
 <hr />
-<h3>HasValidFolders</h3>
+<h3 id="hasvalidfolders">HasValidFolders <a class="anchor-link" href="#hasvalidfolders">#</a></h3>
 <p><strong>Whether the loaded folders array contains entries</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function HasValidFolders() As Boolean: End Function
 </code></pre>
 <p><strong>Returns:</strong> Boolean. True when at least one folder was selected.</p>
 <hr />
-
+</div>
+</details>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

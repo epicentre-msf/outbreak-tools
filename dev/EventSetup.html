@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>EventSetup - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -18,8 +19,10 @@ manages setup rows (add, insert, delete, sort) through cached helpers
 value lookups. All domain managers are created lazily on first use and cached
 for the lifetime of the instance.</p>
 <p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="Passwords.html">Passwords</a>, <a href="UpdatedValues.html">UpdatedValues</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="LLdictionary.html">LLdictionary</a>, <a href="LLVariables.html">LLVariables</a>, <a href="LLChoices.html">LLChoices</a>, <a href="LLExport.html">LLExport</a>, <a href="Analysis.html">Analysis</a>, <a href="SetupTranslationsTable.html">SetupTranslationsTable</a>, <a href="CustomTable.html">CustomTable</a>, <a href="ChoiceFormula.html">ChoiceFormula</a>, RibbonDev, ProjectError</p>
-<h2>Factory helpers</h2>
-<h3>create</h3>
+<details open class="doc-section" id="factory-helpers">
+<summary>Factory helpers</summary>
+<div class="section-body">
+<h3 id="create">create <a class="anchor-link" href="#create">#</a></h3>
 <p><strong>Build a configured EventSetup instance bound to a host workbook.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal hostBook As Workbook) As IEventSetup
@@ -39,8 +42,12 @@ performs the validation.</p>
 <li>ProjectError.ObjectNotInitialized When hostBook is Nothing (raised by Configure).</li>
 </ul>
 <hr />
-<h2>IEventSetup implementation</h2>
-<h3>configure</h3>
+</div>
+</details>
+<details open class="doc-section" id="ieventsetup-implementation">
+<summary>IEventSetup implementation</summary>
+<div class="section-body">
+<h3 id="configure">configure <a class="anchor-link" href="#configure">#</a></h3>
 <p><strong>Configure the service with its host workbook context.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Configure(ByVal hostBook As Workbook)
@@ -60,7 +67,7 @@ supplied workbook is Nothing.</p>
 <li>ProjectError.ObjectNotInitialized When hostBook is Nothing.</li>
 </ul>
 <hr />
-<h3>on-workbook-open</h3>
+<h3 id="on-workbook-open">on-workbook-open <a class="anchor-link" href="#on-workbook-open">#</a></h3>
 <p><strong>React to workbook open notifications.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub IEventSetup_OnWorkbookOpen()
@@ -71,7 +78,7 @@ disables Application.FormatStaleValues to suppress recalculation prompts,
 and applies the full password protection matrix across all setup sheets.
 Silently skips each step when the required helper cannot be created.</p>
 <hr />
-<h3>on-sheet-activate</h3>
+<h3 id="on-sheet-activate">on-sheet-activate <a class="anchor-link" href="#on-sheet-activate">#</a></h3>
 <p><strong>Handle worksheet activation events.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub IEventSetup_OnSheetActivate(ByVal sh As Worksheet)
@@ -85,7 +92,7 @@ are current.</p>
 <li><code>sh</code>: Worksheet. The worksheet that became active.</li>
 </ul>
 <hr />
-<h3>on-sheet-change</h3>
+<h3 id="on-sheet-change">on-sheet-change <a class="anchor-link" href="#on-sheet-change">#</a></h3>
 <p><strong>Handle worksheet change events fired by Excel.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub IEventSetup_OnSheetChange(ByVal sh As Worksheet, ByVal target As Range)
@@ -102,7 +109,7 @@ relevant ListObject.</p>
 <li><code>target</code>: Range. The edited cells.</li>
 </ul>
 <hr />
-<h3>update-analysis-dropdowns</h3>
+<h3 id="update-analysis-dropdowns">update-analysis-dropdowns <a class="anchor-link" href="#update-analysis-dropdowns">#</a></h3>
 <p><strong>Refresh cached dropdowns and related analysis helpers.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub UpdateAnalysisDropdowns(Optional ByVal forceUpdate As Boolean = False)
@@ -118,26 +125,30 @@ subsequent lookups reflect the latest dictionary state.</p>
 <li><code>forceUpdate</code>: Optional Boolean. When True, forces a full refresh regardless of update tags. Defaults to False.</li>
 </ul>
 <hr />
-<h3>reset-caches</h3>
+<h3 id="reset-caches">reset-caches <a class="anchor-link" href="#reset-caches">#</a></h3>
 <p><strong>Clear cached resources so they are lazily rebuilt on demand.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub IEventSetup_ResetCaches()
 </code></pre>
 <hr />
-<h3>recalculate-analysis</h3>
+<h3 id="recalculate-analysis">recalculate-analysis <a class="anchor-link" href="#recalculate-analysis">#</a></h3>
 <p><strong>Recalculate analysis tables in response to structural edits.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub IEventSetup_RecalculateAnalysis()
 </code></pre>
 <hr />
-<h3>reset-translation-counter</h3>
+<h3 id="reset-translation-counter">reset-translation-counter <a class="anchor-link" href="#reset-translation-counter">#</a></h3>
 <p><strong>Reset the translation update counter stored in hidden names.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub IEventSetup_ResetTranslationCounter()
 </code></pre>
 <hr />
-<h2>Row management and sorting</h2>
-<h3>manage-rows</h3>
+</div>
+</details>
+<details open class="doc-section" id="row-management-and-sorting">
+<summary>Row management and sorting</summary>
+<div class="section-body">
+<h3 id="manage-rows">manage-rows <a class="anchor-link" href="#manage-rows">#</a></h3>
 <p><strong>Manage setup worksheet rows using cached helpers.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ManageRows(ByVal sheetName As String, Optional ByVal del As Boolean = False)
@@ -158,7 +169,7 @@ when the sheet name does not match a known key.</p>
 <li>ProjectError.SomethingWentWrong When the underlying domain manager operation fails.</li>
 </ul>
 <hr />
-<h3>insert-rows</h3>
+<h3 id="insert-rows">insert-rows <a class="anchor-link" href="#insert-rows">#</a></h3>
 <p><strong>Insert rows relative to a selection for supported setup sheets.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub InsertRows(ByVal sheetName As String, _
@@ -181,7 +192,7 @@ may propagate to dictionary columns. Silently exits for unrecognised sheets.</p>
 <li>ProjectError.SomethingWentWrong When the underlying insert operation fails.</li>
 </ul>
 <hr />
-<h3>delete-rows</h3>
+<h3 id="delete-rows">delete-rows <a class="anchor-link" href="#delete-rows">#</a></h3>
 <p><strong>Delete rows relative to a selection for supported setup sheets.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub DeleteRows(ByVal sheetName As String, _
@@ -204,7 +215,7 @@ dictionary columns. Silently exits for unrecognised sheets.</p>
 <li>ProjectError.SomethingWentWrong When the underlying delete operation fails.</li>
 </ul>
 <hr />
-<h3>sort-tables</h3>
+<h3 id="sort-tables">sort-tables <a class="anchor-link" href="#sort-tables">#</a></h3>
 <p><strong>Sort setup worksheets leveraging cached managers.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub SortTables(ByVal sheetName As String)
@@ -222,44 +233,46 @@ columns. Silently exits for unrecognised sheets.</p>
 <li>ProjectError.SomethingWentWrong When the sort operation fails.</li>
 </ul>
 <hr />
+</div>
+</details>
 <details>
 <summary>Internal members (not exported)</summary>
-<h2>Factory helpers</h2>
-<h3>self</h3>
+<h2 id="int-factory-helpers">Factory helpers</h2>
+<h3 id="int-self">self <a class="anchor-link" href="#int-self">#</a></h3>
 <p><strong>Current object instance cast to the interface.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Self() As IEventSetup
 </code></pre>
 <p><strong>Returns:</strong> IEventSetup. The current instance.</p>
 <hr />
-<h2>IEventSetup implementation</h2>
-<h3>build-time-series-header</h3>
+<h2 id="int-ieventsetup-implementation">IEventSetup implementation</h2>
+<h3 id="int-build-time-series-header">build-time-series-header <a class="anchor-link" href="#int-build-time-series-header">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function IEventSetup_BuildTimeSeriesHeader(ByVal timeVar As String, _
                                                    ByVal groupVar As String, _
                                                    ByVal sumLabel As String) As String
 </code></pre>
 <hr />
-<h3>analysis-graph-value</h3>
+<h3 id="int-analysis-graph-value">analysis-graph-value <a class="anchor-link" href="#int-analysis-graph-value">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function IEventSetup_AnalysisGraphValue(ByVal graphTitle As String, _
                                                 Optional ByVal graphCol As String = &quot;Graph ID&quot;) As String
 </code></pre>
 <hr />
-<h3>analysis-time-series-value</h3>
+<h3 id="int-analysis-time-series-value">analysis-time-series-value <a class="anchor-link" href="#int-analysis-time-series-value">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function IEventSetup_AnalysisTimeSeriesValue(ByVal seriesTitle As String, _
                                                      Optional ByVal tsColumn As String = &quot;Series ID&quot;) As String
 </code></pre>
 <hr />
-<h3>spatio-temporal-spec-value</h3>
+<h3 id="int-spatio-temporal-spec-value">spatio-temporal-spec-value <a class="anchor-link" href="#int-spatio-temporal-spec-value">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function IEventSetup_SpatioTemporalSpecValue(ByVal sectionName As String, _
                                                      Optional ByVal specColumn As String = &quot;N geo max&quot;) As String
 </code></pre>
 <hr />
-<h2>Internal helpers</h2>
-<h3>reset-internal-caches</h3>
+<h2 id="int-internal-helpers">Internal helpers</h2>
+<h3 id="int-reset-internal-caches">reset-internal-caches <a class="anchor-link" href="#int-reset-internal-caches">#</a></h3>
 <p><strong>Clear all lazily-cached domain managers and table helpers.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ResetInternalCaches()
@@ -267,7 +280,7 @@ columns. Silently exits for unrecognised sheets.</p>
 <p>Sets every cached reference to Nothing so the next access triggers lazy
 creation. Called by Configure and by the ResetCaches interface method.</p>
 <hr />
-<h3>add-or-update-drop</h3>
+<h3 id="int-add-or-update-drop">add-or-update-drop <a class="anchor-link" href="#int-add-or-update-drop">#</a></h3>
 <p><strong>Add or update a dropdown list entry through the cached manager.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddOrUpdateDrop(ByVal lst As BetterArray, ByVal dropName As String)
@@ -281,7 +294,7 @@ before attempting the operation.</p>
 <li><code>dropName</code>: String. Name of the dropdown list entry.</li>
 </ul>
 <hr />
-<h3>ensure-updated-values</h3>
+<h3 id="int-ensure-updated-values">ensure-updated-values <a class="anchor-link" href="#int-ensure-updated-values">#</a></h3>
 <p><strong>Lazily initialise the update watcher from the registry worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureUpdatedValues()
@@ -290,7 +303,7 @@ before attempting the operation.</p>
 Exits silently when the worksheet does not exist or creation fails, so
 callers must always check this.updater before use.</p>
 <hr />
-<h3>ensure-dropdown-values</h3>
+<h3 id="int-ensure-dropdown-values">ensure-dropdown-values <a class="anchor-link" href="#int-ensure-dropdown-values">#</a></h3>
 <p><strong>Lazily initialise the dropdown manager from the variables worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureDropdownValues()
@@ -299,13 +312,13 @@ callers must always check this.updater before use.</p>
 the standard dropdown prefix. Exits silently when the worksheet does not
 exist or creation fails.</p>
 <hr />
-<h3>ensure-ribbon</h3>
+<h3 id="int-ensure-ribbon">ensure-ribbon <a class="anchor-link" href="#int-ensure-ribbon">#</a></h3>
 <p><strong>Lazily cache the ribbon instance.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureRibbon()
 </code></pre>
 <hr />
-<h3>ensure-dictionary</h3>
+<h3 id="int-ensure-dictionary">ensure-dictionary <a class="anchor-link" href="#int-ensure-dictionary">#</a></h3>
 <p><strong>Lazily create the dictionary manager.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function EnsureDictionary() As Boolean
@@ -315,7 +328,7 @@ already cached. Returns True when the dictionary is available so callers
 can guard subsequent operations.</p>
 <p><strong>Returns:</strong> Boolean. True when the dictionary is available.</p>
 <hr />
-<h3>ensure-vars</h3>
+<h3 id="int-ensure-vars">ensure-vars <a class="anchor-link" href="#int-ensure-vars">#</a></h3>
 <p><strong>Lazily initialise the variables helper from the cached dictionary.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureVars()
@@ -324,7 +337,7 @@ can guard subsequent operations.</p>
 Requires EnsureDictionary to succeed first; exits silently when the
 dictionary is unavailable.</p>
 <hr />
-<h3>ensure-choices</h3>
+<h3 id="int-ensure-choices">ensure-choices <a class="anchor-link" href="#int-ensure-choices">#</a></h3>
 <p><strong>Lazily create the choices manager.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function EnsureChoices() As Boolean
@@ -333,7 +346,7 @@ dictionary is unavailable.</p>
 cached. Returns True when the choices helper is available.</p>
 <p><strong>Returns:</strong> Boolean. True when the choices helper is available.</p>
 <hr />
-<h3>ensure-analysis-manager</h3>
+<h3 id="int-ensure-analysis-manager">ensure-analysis-manager <a class="anchor-link" href="#int-ensure-analysis-manager">#</a></h3>
 <p><strong>Lazily create the analysis manager.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function EnsureAnalysisManager() As Boolean
@@ -342,7 +355,7 @@ cached. Returns True when the choices helper is available.</p>
 cached. Returns True when the analysis helper is available.</p>
 <p><strong>Returns:</strong> Boolean. True when the analysis helper is available.</p>
 <hr />
-<h3>ensure-exports</h3>
+<h3 id="int-ensure-exports">ensure-exports <a class="anchor-link" href="#int-ensure-exports">#</a></h3>
 <p><strong>Lazily create the exports manager.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function EnsureExports() As Boolean
@@ -351,7 +364,7 @@ cached. Returns True when the analysis helper is available.</p>
 cached. Returns True when the exports helper is available.</p>
 <p><strong>Returns:</strong> Boolean. True when the exports helper is available.</p>
 <hr />
-<h3>ensure-translations-manager</h3>
+<h3 id="int-ensure-translations-manager">ensure-translations-manager <a class="anchor-link" href="#int-ensure-translations-manager">#</a></h3>
 <p><strong>Lazily create the translations table manager.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function EnsureTranslationsManager() As Boolean
@@ -361,7 +374,7 @@ Disables display prompts on the newly created manager so operations proceed
 silently. Returns True when available.</p>
 <p><strong>Returns:</strong> Boolean. True when the translations manager is available.</p>
 <hr />
-<h3>ensure-analysis-table</h3>
+<h3 id="int-ensure-analysis-table">ensure-analysis-table <a class="anchor-link" href="#int-ensure-analysis-table">#</a></h3>
 <p><strong>Ensure the cached analysis tables are created lazily and reused.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function EnsureAnalysisTable(ByRef tableRef As ICustomTable, _
@@ -379,7 +392,7 @@ subsequent calls. Returns True when the table is available.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when the table is available.</p>
 <hr />
-<h3>ensure-table-calculated</h3>
+<h3 id="int-ensure-table-calculated">ensure-table-calculated <a class="anchor-link" href="#int-ensure-table-calculated">#</a></h3>
 <p><strong>Calculate the associated ListObject once the cache is primed.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureTableCalculated(ByRef tableRef As ICustomTable, _
@@ -395,7 +408,7 @@ recalculates its data range. Silently exits when the table cannot be created.</p
 <li><code>keyColumn</code>: String. Column to use as the table key.</li>
 </ul>
 <hr />
-<h3>analysis-list-object</h3>
+<h3 id="int-analysis-list-object">analysis-list-object <a class="anchor-link" href="#int-analysis-list-object">#</a></h3>
 <p><strong>Retrieve a ListObject from the Analysis worksheet by name.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function AnalysisListObject(ByVal loName As String) As ListObject
@@ -406,14 +419,14 @@ recalculates its data range. Silently exits when the table cannot be created.</p
 </ul>
 <p><strong>Returns:</strong> ListObject. The ListObject, or Nothing when not found.</p>
 <hr />
-<h3>translations-list-object</h3>
+<h3 id="int-translations-list-object">translations-list-object <a class="anchor-link" href="#int-translations-list-object">#</a></h3>
 <p><strong>Retrieve the translations ListObject from the Translations worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function TranslationsListObject() As ListObject
 </code></pre>
 <p><strong>Returns:</strong> ListObject. The translations ListObject, or Nothing when not found.</p>
 <hr />
-<h3>sheet-or-nothing</h3>
+<h3 id="int-sheet-or-nothing">sheet-or-nothing <a class="anchor-link" href="#int-sheet-or-nothing">#</a></h3>
 <p><strong>Retrieve a worksheet from the host workbook or Nothing.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function SheetOrNothing(ByVal sheetName As String) As Worksheet
@@ -424,7 +437,7 @@ recalculates its data range. Silently exits when the table cannot be created.</p
 </ul>
 <p><strong>Returns:</strong> Worksheet. The worksheet, or Nothing when the workbook is unset or the sheet does not exist.</p>
 <hr />
-<h3>normalised-sheet-name</h3>
+<h3 id="int-normalised-sheet-name">normalised-sheet-name <a class="anchor-link" href="#int-normalised-sheet-name">#</a></h3>
 <p><strong>Normalise a sheet name to lowercase for comparison.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function NormalisedSheetName(ByVal sheetName As String) As String
@@ -435,7 +448,7 @@ recalculates its data range. Silently exits when the table cannot be created.</p
 </ul>
 <p><strong>Returns:</strong> String. Lowercase trimmed sheet name.</p>
 <hr />
-<h3>password-manager</h3>
+<h3 id="int-password-manager">password-manager <a class="anchor-link" href="#int-password-manager">#</a></h3>
 <p><strong>Build a password helper from the passwords worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function PasswordManager() As IPasswords
@@ -444,7 +457,7 @@ recalculates its data range. Silently exits when the table cannot be created.</p
 when the sheet does not exist or creation fails.</p>
 <p><strong>Returns:</strong> IPasswords. The password helper, or Nothing when unavailable.</p>
 <hr />
-<h3>cached-password-manager</h3>
+<h3 id="int-cached-password-manager">cached-password-manager <a class="anchor-link" href="#int-cached-password-manager">#</a></h3>
 <p><strong>Return the cached password helper, creating it on first call.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function CachedPasswordManager() As IPasswords
@@ -454,7 +467,7 @@ of this EventSetup instance. Eliminates repeated Passwords.Create calls
 during BeginSheetUpdate / EndSheetUpdate cycles.</p>
 <p><strong>Returns:</strong> IPasswords. The cached password helper, or Nothing when unavailable.</p>
 <hr />
-<h3>begin-sheet-update</h3>
+<h3 id="int-begin-sheet-update">begin-sheet-update <a class="anchor-link" href="#int-begin-sheet-update">#</a></h3>
 <p><strong>Temporarily unlock the provided sheet and return the password helper.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function BeginSheetUpdate(ByVal sheetName As String) As IPasswords
@@ -468,7 +481,7 @@ EndSheetUpdate.</p>
 </ul>
 <p><strong>Returns:</strong> IPasswords. The password helper for later re-locking.</p>
 <hr />
-<h3>end-sheet-update</h3>
+<h3 id="int-end-sheet-update">end-sheet-update <a class="anchor-link" href="#int-end-sheet-update">#</a></h3>
 <p><strong>Restore sheet protection previously removed via BeginSheetUpdate.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EndSheetUpdate(ByVal pass As IPasswords, ByVal sheetName As String)
@@ -479,7 +492,7 @@ EndSheetUpdate.</p>
 <li><code>sheetName</code>: String. Name of the sheet to re-protect.</li>
 </ul>
 <hr />
-<h3>calculate-analysis</h3>
+<h3 id="int-calculate-analysis">calculate-analysis <a class="anchor-link" href="#int-calculate-analysis">#</a></h3>
 <p><strong>Recalculate analysis tables, optionally targeting a single table.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub CalculateAnalysis(Optional ByVal target As Range = Nothing)
@@ -493,7 +506,7 @@ recalculates all four tables.</p>
 <li><code>target</code>: Optional Range. The edited cell(s); Nothing means recalculate all.</li>
 </ul>
 <hr />
-<h3>handle-choices-change</h3>
+<h3 id="int-handle-choices-change">handle-choices-change <a class="anchor-link" href="#int-handle-choices-change">#</a></h3>
 <p><strong>Recalculate label formulas when the Choices sheet changes.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub HandleChoicesChange(ByVal target As Range)
@@ -507,7 +520,7 @@ the relevant range.</p>
 <li><code>target</code>: Range. The edited cells on the Choices sheet.</li>
 </ul>
 <hr />
-<h3>reset-translation-counter-impl</h3>
+<h3 id="int-reset-translation-counter-impl">reset-translation-counter-impl <a class="anchor-link" href="#int-reset-translation-counter-impl">#</a></h3>
 <p><strong>Reset the translation update counter stored in hidden names.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ResetTranslationCounter()
@@ -516,7 +529,7 @@ the relevant range.</p>
 worksheet. Uses HiddenNames to ensure the name exists before setting its
 value, so the operation is safe on fresh workbooks.</p>
 <hr />
-<h3>build-time-series-header-impl</h3>
+<h3 id="int-build-time-series-header-impl">build-time-series-header-impl <a class="anchor-link" href="#int-build-time-series-header-impl">#</a></h3>
 <p><strong>Compose the time-series header from variable labels and a separator.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function BuildTimeSeriesHeaderInternal(ByVal timeVar As String, _
@@ -535,7 +548,7 @@ is empty.</p>
 </ul>
 <p><strong>Returns:</strong> String. The composed header text.</p>
 <hr />
-<h3>analysis-graph-value-impl</h3>
+<h3 id="int-analysis-graph-value-impl">analysis-graph-value-impl <a class="anchor-link" href="#int-analysis-graph-value-impl">#</a></h3>
 <p><strong>Retrieve a value from the graph time-series table.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function AnalysisGraphValueInternal(ByVal graphTitle As String, _
@@ -548,7 +561,7 @@ is empty.</p>
 </ul>
 <p><strong>Returns:</strong> String. The retrieved value, or empty.</p>
 <hr />
-<h3>analysis-time-series-value-impl</h3>
+<h3 id="int-analysis-time-series-value-impl">analysis-time-series-value-impl <a class="anchor-link" href="#int-analysis-time-series-value-impl">#</a></h3>
 <p><strong>Retrieve a value from the time-series data table.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function AnalysisTimeSeriesValueInternal(ByVal seriesTitle As String, _
@@ -561,7 +574,7 @@ is empty.</p>
 </ul>
 <p><strong>Returns:</strong> String. The retrieved value, or empty.</p>
 <hr />
-<h3>spatio-temporal-spec-value-impl</h3>
+<h3 id="int-spatio-temporal-spec-value-impl">spatio-temporal-spec-value-impl <a class="anchor-link" href="#int-spatio-temporal-spec-value-impl">#</a></h3>
 <p><strong>Retrieve a value from the spatio-temporal specifications table.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function SpatioTemporalSpecValueInternal(ByVal sectionName As String, _
@@ -574,7 +587,7 @@ is empty.</p>
 </ul>
 <p><strong>Returns:</strong> String. The retrieved value, or empty.</p>
 <hr />
-<h3>variable-label</h3>
+<h3 id="int-variable-label">variable-label <a class="anchor-link" href="#int-variable-label">#</a></h3>
 <p><strong>Resolve the main label for a variable name via the cached dictionary.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function VariableLabel(ByVal varName As String) As String
@@ -587,7 +600,7 @@ raw variable name when the helper is unavailable or the lookup returns empty.</p
 </ul>
 <p><strong>Returns:</strong> String. The main label, or the raw variable name as fallback.</p>
 <hr />
-<h3>safe-table-value</h3>
+<h3 id="int-safe-table-value">safe-table-value <a class="anchor-link" href="#int-safe-table-value">#</a></h3>
 <p><strong>Safely retrieve a value from a CustomTable, returning empty on error.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function SafeTableValue(ByVal tableRef As ICustomTable, _
@@ -602,7 +615,7 @@ raw variable name when the helper is unavailable or the lookup returns empty.</p
 </ul>
 <p><strong>Returns:</strong> String. The retrieved value, or empty on error.</p>
 <hr />
-<h3>analysis-table-value</h3>
+<h3 id="int-analysis-table-value">analysis-table-value <a class="anchor-link" href="#int-analysis-table-value">#</a></h3>
 <p><strong>Shared lookup helper for analysis ListObjects.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function AnalysisTableValue(ByRef tableRef As ICustomTable, _
@@ -623,7 +636,7 @@ then delegates to SafeTableValue for the actual retrieval.</p>
 </ul>
 <p><strong>Returns:</strong> String. The retrieved value, or empty.</p>
 <hr />
-<h3>add-geo-dropdown</h3>
+<h3 id="int-add-geo-dropdown">add-geo-dropdown <a class="anchor-link" href="#int-add-geo-dropdown">#</a></h3>
 <p><strong>Apply geo-type dropdown validation to spatio-temporal analysis rows.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddGeoDropdown(ByVal target As Range)
@@ -637,7 +650,7 @@ unlocks the Analysis sheet for the modification.</p>
 <li><code>target</code>: Range. The edited cell on the Analysis sheet.</li>
 </ul>
 <hr />
-<h3>sync-geo-from-specs</h3>
+<h3 id="int-sync-geo-from-specs">sync-geo-from-specs <a class="anchor-link" href="#int-sync-geo-from-specs">#</a></h3>
 <p><strong>Propagate spatial type changes from specs to analysis table.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub SyncGeoFromSpecs(ByVal target As Range)
@@ -652,7 +665,7 @@ sheet for the modification.</p>
 <li><code>target</code>: Range. The edited cell on the Analysis sheet.</li>
 </ul>
 <hr />
-<h3>add-choices-dropdown</h3>
+<h3 id="int-add-choices-dropdown">add-choices-dropdown <a class="anchor-link" href="#int-add-choices-dropdown">#</a></h3>
 <p><strong>Apply choices dropdown validation to graph series rows.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddChoicesDropdown(ByVal target As Range)
@@ -666,7 +679,7 @@ cells. Temporarily unlocks the Analysis sheet for the modification.</p>
 <li><code>target</code>: Range. The edited cell on the Analysis sheet.</li>
 </ul>
 <hr />
-<h3>get-categories</h3>
+<h3 id="int-get-categories">get-categories <a class="anchor-link" href="#int-get-categories">#</a></h3>
 <p><strong>Resolve choice categories for a graph column variable.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function GetCategories(ByVal columnVariable As String, _
@@ -685,7 +698,7 @@ time-series table indicates addTotal is &quot;yes&quot; for the series.</p>
 </ul>
 <p><strong>Returns:</strong> BetterArray. The list of categories.</p>
 <hr />
-<h3>choice-categories</h3>
+<h3 id="int-choice-categories">choice-categories <a class="anchor-link" href="#int-choice-categories">#</a></h3>
 <p><strong>Return the BetterArray of categories for a named choice list.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ChoiceCategories(ByVal listName As String) As BetterArray
@@ -698,7 +711,7 @@ BetterArray when the helper is unavailable or the list does not exist.</p>
 </ul>
 <p><strong>Returns:</strong> BetterArray. The categories, or an empty BetterArray.</p>
 <hr />
-<h3>format-lock-cell</h3>
+<h3 id="int-format-lock-cell">format-lock-cell <a class="anchor-link" href="#int-format-lock-cell">#</a></h3>
 <p><strong>Toggle font styling and lock state on a single cell.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub FormatLockCell(ByVal cellRng As Range, Optional ByVal locked As Boolean = True)
@@ -711,7 +724,7 @@ when unlocked. Used to visually indicate whether a cell is user-editable.</p>
 <li><code>locked</code>: Optional Boolean. Lock state to apply. Defaults to True.</li>
 </ul>
 <hr />
-<h3>throw-error</h3>
+<h3 id="int-throw-error">throw-error <a class="anchor-link" href="#int-throw-error">#</a></h3>
 <p><strong>Raise a ProjectError-aligned error from the current class.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal errorMessage As String)
@@ -740,8 +753,10 @@ providing a consistent stack trace across all methods in this class.</p>
 <li><a href="src/tests/modules/setup/TestEventSetup.bas">TestEventSetup.bas</a></li>
 </ul>
 </details>
-
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

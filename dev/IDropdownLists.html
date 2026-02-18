@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>IDropdownLists - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -15,8 +16,10 @@ worksheet-based dropdown management built on one-column ListObjects.
 Supports adding, removing, updating, sorting, translating, and
 validating dropdown entries, plus hyperlink navigation and diagnostic
 logging.</p>
-<h2>Elements</h2>
-<h3>Wksh</h3>
+<details open class="doc-section" id="elements">
+<summary>Elements</summary>
+<div class="section-body">
+<h3 id="wksh">Wksh <a class="anchor-link" href="#wksh">#</a></h3>
 <p><strong>Worksheet hosting the dropdown lists</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Wksh() As Worksheet: End Property
@@ -25,7 +28,7 @@ logging.</p>
 Returns the worksheet that contains the one-column ListObjects.</p>
 <p><strong>Returns:</strong> Worksheet. The host worksheet.</p>
 <hr />
-<h3>Exists</h3>
+<h3 id="exists">Exists <a class="anchor-link" href="#exists">#</a></h3>
 <p><strong>Check whether a dropdown exists</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Exists(ByVal listName As String) As Boolean: End Property
@@ -37,7 +40,7 @@ Returns the worksheet that contains the one-column ListObjects.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when the dropdown is found.</p>
 <hr />
-<h3>Name</h3>
+<h3 id="name">Name <a class="anchor-link" href="#name">#</a></h3>
 <p><strong>Name of the dropdown object</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Name() As String: End Property
@@ -45,7 +48,7 @@ Returns the worksheet that contains the one-column ListObjects.</p>
 <p>Returns the name of the worksheet that hosts the dropdown lists.</p>
 <p><strong>Returns:</strong> String. The worksheet name.</p>
 <hr />
-<h3>LabelRange</h3>
+<h3 id="labelrange">LabelRange <a class="anchor-link" href="#labelrange">#</a></h3>
 <p><strong>Label cell above a dropdown ListObject</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get LabelRange(ByVal listName As String) As Range: End Property
@@ -59,7 +62,7 @@ not exist.</p>
 </ul>
 <p><strong>Returns:</strong> Range. The label cell, or Nothing.</p>
 <hr />
-<h3>Values</h3>
+<h3 id="values">Values <a class="anchor-link" href="#values">#</a></h3>
 <p><strong>Retrieve the values of a dropdown</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Values(ByVal listName As String, _
@@ -74,7 +77,7 @@ Optionally includes the header row.</p>
 </ul>
 <p><strong>Returns:</strong> BetterArray. The dropdown entries.</p>
 <hr />
-<h3>Length</h3>
+<h3 id="length">Length <a class="anchor-link" href="#length">#</a></h3>
 <p><strong>Total number of dropdowns on the worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Length() As Long: End Property
@@ -82,7 +85,7 @@ Optionally includes the header row.</p>
 <p>Returns the count of registered dropdown lists.</p>
 <p><strong>Returns:</strong> Long. The dropdown count.</p>
 <hr />
-<h3>AllDropdowns</h3>
+<h3 id="alldropdowns">AllDropdowns <a class="anchor-link" href="#alldropdowns">#</a></h3>
 <p><strong>All registered dropdown names</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get AllDropdowns() As BetterArray: End Property
@@ -91,8 +94,12 @@ Optionally includes the header row.</p>
 the worksheet.</p>
 <p><strong>Returns:</strong> BetterArray. The dropdown name list.</p>
 <hr />
-<h2>Modify</h2>
-<h3>Add</h3>
+</div>
+</details>
+<details open class="doc-section" id="modify">
+<summary>Modify</summary>
+<div class="section-body">
+<h3 id="add">Add <a class="anchor-link" href="#add">#</a></h3>
 <p><strong>Add a new dropdown to the worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Add(ByVal listValues As BetterArray, ByVal listName As String, _
@@ -113,7 +120,7 @@ table style. Silently exits when the dropdown already exists.</p>
 <li><code>tableStyle</code>: Optional String. Excel table style name. Defaults to &quot;TableStyleLight13&quot;.</li>
 </ul>
 <hr />
-<h3>Remove</h3>
+<h3 id="remove">Remove <a class="anchor-link" href="#remove">#</a></h3>
 <p><strong>Remove a dropdown from the worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Remove(ByVal listName As String): End Sub
@@ -125,7 +132,7 @@ internal registry entry. Silently exits when the dropdown does not exist.</p>
 <li><code>listName</code>: String. Dropdown name to remove.</li>
 </ul>
 <hr />
-<h3>ClearList</h3>
+<h3 id="clearlist">ClearList <a class="anchor-link" href="#clearlist">#</a></h3>
 <p><strong>Clear entries of a dropdown</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ClearList(ByVal listName As String)
@@ -137,7 +144,7 @@ the dropdown itself. Silently exits when the dropdown does not exist.</p>
 <li><code>listName</code>: String. Dropdown name to clear.</li>
 </ul>
 <hr />
-<h3>Update</h3>
+<h3 id="update">Update <a class="anchor-link" href="#update">#</a></h3>
 <p><strong>Update a dropdown with new values</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Update(ByVal UpdateData As BetterArray, ByVal listName As String, _
@@ -155,7 +162,7 @@ removes duplicates.</p>
 <li><code>removeDuplicates</code>: Optional Boolean. When True, removes duplicate entries. Defaults to True.</li>
 </ul>
 <hr />
-<h3>Sort</h3>
+<h3 id="sort">Sort <a class="anchor-link" href="#sort">#</a></h3>
 <p><strong>Sort a dropdown in the worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Sort(ByVal listName As String, Optional ByVal sortOrder As Long = xlAscending)
@@ -168,7 +175,7 @@ Silently exits when the dropdown does not exist.</p>
 <li><code>sortOrder</code>: Optional Long. xlSortOrder enumeration value. Defaults to xlAscending.</li>
 </ul>
 <hr />
-<h3>Translate</h3>
+<h3 id="translate">Translate <a class="anchor-link" href="#translate">#</a></h3>
 <p><strong>Translate all dropdowns on the worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Translate(ByVal trads As Object, Optional ByVal force As Boolean = False, Optional ByVal exclude As String)
@@ -183,8 +190,12 @@ matches and force is False.</p>
 <li><code>exclude</code>: Optional String. Substring filter to skip matching dropdowns.</li>
 </ul>
 <hr />
-<h2>Operations</h2>
-<h3>SetValidation</h3>
+</div>
+</details>
+<details open class="doc-section" id="operations">
+<summary>Operations</summary>
+<div class="section-body">
+<h3 id="setvalidation">SetValidation <a class="anchor-link" href="#setvalidation">#</a></h3>
 <p><strong>Apply dropdown validation to a Range</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub SetValidation(ByVal cellRng As Range, ByVal listName As String, _
@@ -205,7 +216,7 @@ when the entered value is not in the list.</p>
 <li><code>showError</code>: Optional Boolean. When True, displays validation feedback. Defaults to True.</li>
 </ul>
 <hr />
-<h3>AddReturnLink</h3>
+<h3 id="addreturnlink">AddReturnLink <a class="anchor-link" href="#addreturnlink">#</a></h3>
 <p><strong>Add a return hyperlink on the dropdown header</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub AddReturnLink(ByVal listName As String, ByVal returnRng As Range)
@@ -218,7 +229,7 @@ the specified range.</p>
 <li><code>returnRng</code>: Range. Target destination of the hyperlink.</li>
 </ul>
 <hr />
-<h3>AddHyperLink</h3>
+<h3 id="addhyperlink">AddHyperLink <a class="anchor-link" href="#addhyperlink">#</a></h3>
 <p><strong>Add a hyperlink on a cell targeting a dropdown</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub AddHyperLink(ByVal listName As String, ByVal linkRng As Range)
@@ -231,8 +242,12 @@ cell of the dropdown.</p>
 <li><code>linkRng</code>: Range. Cell that receives the hyperlink.</li>
 </ul>
 <hr />
-<h2>Checkings</h2>
-<h3>HasCheckings</h3>
+</div>
+</details>
+<details open class="doc-section" id="checkings">
+<summary>Checkings</summary>
+<div class="section-body">
+<h3 id="hascheckings">HasCheckings <a class="anchor-link" href="#hascheckings">#</a></h3>
 <p><strong>Whether the dropdown object has logged diagnostic messages</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get HasCheckings() As Boolean: End Property
@@ -241,7 +256,7 @@ cell of the dropdown.</p>
 Returns True when at least one diagnostic entry has been recorded.</p>
 <p><strong>Returns:</strong> Boolean. True when diagnostic entries exist.</p>
 <hr />
-<h3>CheckingValues</h3>
+<h3 id="checkingvalues">CheckingValues <a class="anchor-link" href="#checkingvalues">#</a></h3>
 <p><strong>Retrieve the diagnostic log entries</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get CheckingValues() As Object: End Property
@@ -250,8 +265,12 @@ Returns True when at least one diagnostic entry has been recorded.</p>
 Returns Nothing when no entries have been recorded.</p>
 <p><strong>Returns:</strong> Object. An IChecking instance, or Nothing.</p>
 <hr />
-
+</div>
+</details>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

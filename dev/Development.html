@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Development - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -19,8 +20,10 @@ interact through the IDevelopment interface using the predeclared factory
 pattern (Development.Create).</p>
 <p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="IPasswords.html">IPasswords</a></p>
 <p><strong>Version:</strong> 1.0 (2026-02-09)</p>
-<h2>Factory</h2>
-<h3>create</h3>
+<details open class="doc-section" id="factory">
+<summary>Factory</summary>
+<div class="section-body">
+<h3 id="create">create <a class="anchor-link" href="#create">#</a></h3>
 <p><strong>Create a Development instance.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal devSheet As Worksheet, Optional ByVal codeSheet As Worksheet) As IDevelopment
@@ -50,10 +53,12 @@ on the Dev worksheet.</li>
 <li>BetterArray</li>
 </ul>
 <hr />
+</div>
+</details>
 <details>
 <summary>Internal members (not exported)</summary>
-<h2>Initialisation</h2>
-<h3>initialise</h3>
+<h2 id="int-initialisation">Initialisation</h2>
+<h3 id="int-initialise">initialise <a class="anchor-link" href="#int-initialise">#</a></h3>
 <p><strong>Bind this instance to a Dev worksheet and optional code sheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Initialise(ByVal devSheet As Worksheet, Optional ByVal codeSheet As Worksheet)
@@ -78,8 +83,8 @@ table host. When omitted, any previously persisted code worksheet is used.</li>
 <li>ProjectError.ElementNotFound When required named ranges are missing.</li>
 </ul>
 <hr />
-<h2>Sheet Preparation API</h2>
-<h3>add-code-sheets</h3>
+<h2 id="int-sheet-preparation-api">Sheet Preparation API</h2>
+<h3 id="int-add-code-sheets">add-code-sheets <a class="anchor-link" href="#int-add-code-sheets">#</a></h3>
 <p><strong>Register an existing worksheet to host future development tables.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function AddCodeSheets(ByVal sheetName As String) As Worksheet
@@ -106,7 +111,7 @@ user declines the confirmation prompt.</p>
 the host workbook.</li>
 </ul>
 <hr />
-<h3>add-class-table</h3>
+<h3 id="int-add-class-table">add-class-table <a class="anchor-link" href="#int-add-class-table">#</a></h3>
 <p><strong>Create a classes table on the code worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function AddClassTable(Optional ByVal includeTests As Boolean = False) As ListObject
@@ -130,7 +135,7 @@ declines the confirmation prompt.</p>
 <li>ProjectError.ObjectNotInitialized When Initialise has not been called.</li>
 </ul>
 <hr />
-<h3>add-module-table</h3>
+<h3 id="int-add-module-table">add-module-table <a class="anchor-link" href="#int-add-module-table">#</a></h3>
 <p><strong>Create a modules table on the code worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function AddModuleTable(Optional ByVal includeTests As Boolean = False) As ListObject
@@ -152,7 +157,7 @@ declines the confirmation prompt.</p>
 <li>ProjectError.ObjectNotInitialized When Initialise has not been called.</li>
 </ul>
 <hr />
-<h3>add-forms-table</h3>
+<h3 id="int-add-forms-table">add-forms-table <a class="anchor-link" href="#int-add-forms-table">#</a></h3>
 <p><strong>Create a forms mapping table on the code worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function AddFormsTable() As ListObject
@@ -169,7 +174,7 @@ declines the confirmation prompt.</p>
 <li>ProjectError.ObjectNotInitialized When Initialise has not been called.</li>
 </ul>
 <hr />
-<h3>add-test-table</h3>
+<h3 id="int-add-test-table">add-test-table <a class="anchor-link" href="#int-add-test-table">#</a></h3>
 <p><strong>Create a test modules table on the code worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function AddTestTable() As ListObject
@@ -186,8 +191,8 @@ declines the confirmation prompt.</p>
 <li>ProjectError.ObjectNotInitialized When Initialise has not been called.</li>
 </ul>
 <hr />
-<h2>Deployment Configuration</h2>
-<h3>add-hidden-sheet</h3>
+<h2 id="int-deployment-configuration">Deployment Configuration</h2>
+<h3 id="int-add-hidden-sheet">add-hidden-sheet <a class="anchor-link" href="#int-add-hidden-sheet">#</a></h3>
 <p><strong>Track a worksheet that must be hidden during deployment.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub AddHiddenSheet(ByVal sheetName As String)
@@ -209,7 +214,7 @@ xlSheetVeryHidden. The worksheet must exist in the host workbook.
 <li>ProjectError.ElementNotFound When the worksheet does not exist.</li>
 </ul>
 <hr />
-<h3>add-protected-sheet</h3>
+<h3 id="int-add-protected-sheet">add-protected-sheet <a class="anchor-link" href="#int-add-protected-sheet">#</a></h3>
 <p><strong>Track a worksheet that needs protection during deployment.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub AddProtectedSheet(ByVal sheetName As String,  _
@@ -237,8 +242,8 @@ allowed on the protected sheet. Defaults to True.</li>
 <li>ProjectError.ElementNotFound When the worksheet does not exist.</li>
 </ul>
 <hr />
-<h2>Code Transfer</h2>
-<h3>import-all</h3>
+<h2 id="int-code-transfer">Code Transfer</h2>
+<h3 id="int-import-all">import-all <a class="anchor-link" href="#int-import-all">#</a></h3>
 <p><strong>Import every module and class listed in Dev tables into the host workbook.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ImportAll()
@@ -259,7 +264,7 @@ upon completion. Requires that host sheets are unlocked.
 <li>ProjectError.ErrorUnexpectedState When a host sheet is protected.</li>
 </ul>
 <hr />
-<h3>export-all</h3>
+<h3 id="int-export-all">export-all <a class="anchor-link" href="#int-export-all">#</a></h3>
 <p><strong>Export every module and class listed in Dev tables to disk.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ExportAll()
@@ -277,7 +282,7 @@ sheets are unlocked.
 <li>ProjectError.ErrorUnexpectedState When a host sheet is protected.</li>
 </ul>
 <hr />
-<h3>add-forms-codes</h3>
+<h3 id="int-add-forms-codes">add-forms-codes <a class="anchor-link" href="#int-add-forms-codes">#</a></h3>
 <p><strong>Copy module code into mapped UserForm components.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub AddFormsCodes()
@@ -294,8 +299,8 @@ Requires that host sheets are unlocked.
 <li>ProjectError.ErrorUnexpectedState When a host sheet is protected.</li>
 </ul>
 <hr />
-<h2>Deployment</h2>
-<h3>deploy</h3>
+<h2 id="int-deployment">Deployment</h2>
+<h3 id="int-deploy">deploy <a class="anchor-link" href="#int-deploy">#</a></h3>
 <p><strong>Protect worksheets, hide Dev assets, copy forms code, and set the deployment marker.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Deploy(ByVal pass As IPasswords, Optional ByVal lockWorkbook As Boolean = False)
@@ -325,7 +330,7 @@ called or when pass is Nothing.</li>
 <li>ProjectError.ErrorUnexpectedState When a host sheet is protected.</li>
 </ul>
 <hr />
-<h3>in-deployment</h3>
+<h3 id="int-in-deployment">in-deployment <a class="anchor-link" href="#int-in-deployment">#</a></h3>
 <p><strong>Check whether the workbook has already been deployed.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function InDeployment() As Boolean
@@ -341,8 +346,8 @@ False when the name does not exist or contains any other value.
 <li>ProjectError.ObjectNotInitialized When Initialise has not been called.</li>
 </ul>
 <hr />
-<h2>Properties</h2>
-<h3>dev-worksheet</h3>
+<h2 id="int-properties">Properties</h2>
+<h3 id="int-dev-worksheet">dev-worksheet <a class="anchor-link" href="#int-dev-worksheet">#</a></h3>
 <p><strong>Development worksheet reference.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get DevWorksheet() As Worksheet
@@ -354,7 +359,7 @@ afterwards.
 (&quot;Development worksheet storing configuration named ranges.&quot;)</p>
 <p><strong>Returns:</strong> Worksheet. The development worksheet bound to this instance.</p>
 <hr />
-<h3>code-worksheet</h3>
+<h3 id="int-code-worksheet">code-worksheet <a class="anchor-link" href="#int-code-worksheet">#</a></h3>
 <p><strong>Worksheet registered to host development tables.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get CodeWorksheet() As Worksheet
@@ -365,7 +370,7 @@ new tables are created on the Dev sheet itself.
 (&quot;Worksheet currently registered to host development tables (may be Dev sheet).&quot;)</p>
 <p><strong>Returns:</strong> Worksheet. The code worksheet, or Nothing when none is registered.</p>
 <hr />
-<h3>display-prompts</h3>
+<h3 id="int-display-prompts">display-prompts <a class="anchor-link" href="#int-display-prompts">#</a></h3>
 <p><strong>Whether confirmation prompts are displayed.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get DisplayPrompts() As Boolean
@@ -377,7 +382,7 @@ workflows.
 (&quot;Whether user confirmation prompts are displayed before mutating operations.&quot;)</p>
 <p><strong>Returns:</strong> Boolean. True when prompts are enabled.</p>
 <hr />
-<h3>display-prompts-set</h3>
+<h3 id="int-display-prompts-set">display-prompts-set <a class="anchor-link" href="#int-display-prompts-set">#</a></h3>
 <p><strong>Set the confirmation prompt toggle.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Let DisplayPrompts(ByVal value As Boolean)
@@ -387,8 +392,8 @@ workflows.
 <li><code>value</code>: Boolean. True to enable prompts, False to suppress them.</li>
 </ul>
 <hr />
-<h2>Worksheet Helpers</h2>
-<h3>ensure-collections</h3>
+<h2 id="int-worksheet-helpers">Worksheet Helpers</h2>
+<h3 id="int-ensure-collections">ensure-collections <a class="anchor-link" href="#int-ensure-collections">#</a></h3>
 <p><strong>Initialise sheet tracking collections when not yet allocated.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureCollections()
@@ -397,7 +402,7 @@ workflows.
 and collection initialisation.
 (&quot;Initialise sheet tracking collections for hidden/protected lists.&quot;)</p>
 <hr />
-<h3>ensure-named-ranges</h3>
+<h3 id="int-ensure-named-ranges">ensure-named-ranges <a class="anchor-link" href="#int-ensure-named-ranges">#</a></h3>
 <p><strong>Validate that required Dev sheet named ranges exist.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureNamedRanges()
@@ -411,7 +416,7 @@ its name definition already exists at the workbook level.
 <li>ProjectError.ElementNotFound When a required named range is missing.</li>
 </ul>
 <hr />
-<h3>restore-code-worksheet</h3>
+<h3 id="int-restore-code-worksheet">restore-code-worksheet <a class="anchor-link" href="#int-restore-code-worksheet">#</a></h3>
 <p><strong>Restore a previously registered code worksheet from persisted state.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RestoreCodeWorksheet()
@@ -421,7 +426,7 @@ sheet name is found and the worksheet exists, it is set as the active
 code worksheet. Silently exits when no persisted name exists.
 (&quot;Restore previously registered code worksheet if stored.&quot;)</p>
 <hr />
-<h3>ensure-worksheet</h3>
+<h3 id="int-ensure-worksheet">ensure-worksheet <a class="anchor-link" href="#int-ensure-worksheet">#</a></h3>
 <p><strong>Resolve a worksheet by name, raising on empty name or missing sheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function EnsureWorksheet(ByVal sheetName As String, ByVal purpose As String) As Worksheet
@@ -442,7 +447,7 @@ messages to help callers identify the context.</p>
 <li>ProjectError.ElementNotFound When the worksheet does not exist.</li>
 </ul>
 <hr />
-<h3>try-resolve-worksheet</h3>
+<h3 id="int-try-resolve-worksheet">try-resolve-worksheet <a class="anchor-link" href="#int-try-resolve-worksheet">#</a></h3>
 <p><strong>Attempt to resolve a worksheet by name without raising.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function TryResolveWorksheet(ByVal sheetName As String) As Worksheet
@@ -453,7 +458,7 @@ messages to help callers identify the context.</p>
 </ul>
 <p><strong>Returns:</strong> Worksheet. The resolved worksheet, or Nothing when not found.</p>
 <hr />
-<h3>ensure-range-exists</h3>
+<h3 id="int-ensure-range-exists">ensure-range-exists <a class="anchor-link" href="#int-ensure-range-exists">#</a></h3>
 <p><strong>Validate that a named range exists on a worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureRangeExists(ByVal sheet As Worksheet, _
@@ -474,7 +479,7 @@ is missing. Defaults to True.</li>
 is not found.</li>
 </ul>
 <hr />
-<h3>register-code-worksheet</h3>
+<h3 id="int-register-code-worksheet">register-code-worksheet <a class="anchor-link" href="#int-register-code-worksheet">#</a></h3>
 <p><strong>Persist a worksheet as the active code table host.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RegisterCodeWorksheet(ByVal sheetName As String)
@@ -485,7 +490,7 @@ is not found.</li>
 <li><code>sheetName</code>: String. Name of the worksheet to register.</li>
 </ul>
 <hr />
-<h3>resolve-table-host</h3>
+<h3 id="int-resolve-table-host">resolve-table-host <a class="anchor-link" href="#int-resolve-table-host">#</a></h3>
 <p><strong>Return the worksheet where new tables should be created.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ResolveTableHost() As Worksheet
@@ -493,7 +498,7 @@ is not found.</li>
 <p>(&quot;Return the worksheet where new development tables should be created.&quot;)</p>
 <p><strong>Returns:</strong> Worksheet. The code worksheet when registered, otherwise the Dev sheet.</p>
 <hr />
-<h3>table-host-sheets</h3>
+<h3 id="int-table-host-sheets">table-host-sheets <a class="anchor-link" href="#int-table-host-sheets">#</a></h3>
 <p><strong>Collect worksheets that may contain development tables.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function TableHostSheets() As Collection
@@ -504,7 +509,7 @@ synchronisation routines to iterate all possible table hosts.
 (&quot;Return worksheets that may contain development tables for processing.&quot;)</p>
 <p><strong>Returns:</strong> Collection. One or two Worksheet references.</p>
 <hr />
-<h3>ensure-host-sheets-unlocked</h3>
+<h3 id="int-ensure-host-sheets-unlocked">ensure-host-sheets-unlocked <a class="anchor-link" href="#int-ensure-host-sheets-unlocked">#</a></h3>
 <p><strong>Verify that candidate worksheets are not protected.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureHostSheetsUnlocked()
@@ -519,7 +524,7 @@ sheet protection.
 <li>ProjectError.ErrorUnexpectedState When a host sheet is protected.</li>
 </ul>
 <hr />
-<h3>ensure-initialised</h3>
+<h3 id="int-ensure-initialised">ensure-initialised <a class="anchor-link" href="#int-ensure-initialised">#</a></h3>
 <p><strong>Guard public API calls when Development has not been initialised.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureInitialised()
@@ -530,8 +535,8 @@ sheet protection.
 <li>ProjectError.ObjectNotInitialized When Initialise has not been called.</li>
 </ul>
 <hr />
-<h2>Code Transfer Helpers</h2>
-<h3>process-all-tables</h3>
+<h2 id="int-code-transfer-helpers">Code Transfer Helpers</h2>
+<h3 id="int-process-all-tables">process-all-tables <a class="anchor-link" href="#int-process-all-tables">#</a></h3>
 <p><strong>Iterate every development table and dispatch import or export.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ProcessAllTables(ByVal mode As DevelopmentTransferMode)
@@ -548,7 +553,7 @@ target folder, and whether interfaces should be included.
 <li><code>mode</code>: DevelopmentTransferMode. Whether to import or export.</li>
 </ul>
 <hr />
-<h3>resolve-folder-settings</h3>
+<h3 id="int-resolve-folder-settings">resolve-folder-settings <a class="anchor-link" href="#int-resolve-folder-settings">#</a></h3>
 <p><strong>Read module, class, and test folder paths from the Dev sheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ResolveFolderSettings() As TFolderSettings
@@ -556,7 +561,7 @@ target folder, and whether interfaces should be included.
 <p>(&quot;Read module/class/test folder settings from the Dev sheet.&quot;)</p>
 <p><strong>Returns:</strong> TFolderSettings. The resolved folder paths.</p>
 <hr />
-<h3>read-sheet-value</h3>
+<h3 id="int-read-sheet-value">read-sheet-value <a class="anchor-link" href="#int-read-sheet-value">#</a></h3>
 <p><strong>Return the trimmed string value of a named range on the Dev sheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ReadSheetValue(ByVal rangeName As String, Optional ByVal required As Boolean = True) As String
@@ -579,7 +584,7 @@ is missing. Defaults to True.</li>
 is missing.</li>
 </ul>
 <hr />
-<h3>process-list-object</h3>
+<h3 id="int-process-list-object">process-list-object <a class="anchor-link" href="#int-process-list-object">#</a></h3>
 <p><strong>Process a single ListObject for import or export.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ProcessListObject(ByVal lo As ListObject, _
@@ -602,7 +607,7 @@ when at least one component was transferred.
 </ul>
 <p><strong>Returns:</strong> Boolean. True when at least one entry was processed.</p>
 <hr />
-<h3>list-tag</h3>
+<h3 id="int-list-tag">list-tag <a class="anchor-link" href="#int-list-tag">#</a></h3>
 <p><strong>Retrieve the scope tag stored in the cell above the table.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ListTag(ByVal lo As ListObject) As String
@@ -614,7 +619,7 @@ when at least one component was transferred.
 </ul>
 <p><strong>Returns:</strong> String. The trimmed tag value, or empty string when absent.</p>
 <hr />
-<h3>compare-tag</h3>
+<h3 id="int-compare-tag">compare-tag <a class="anchor-link" href="#int-compare-tag">#</a></h3>
 <p><strong>Case-insensitive comparison between a table tag and an expected value.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function CompareTag(ByVal lo As ListObject, ByVal expected As String) As Boolean
@@ -627,7 +632,7 @@ when at least one component was transferred.
 </ul>
 <p><strong>Returns:</strong> Boolean. True when the tags match.</p>
 <hr />
-<h3>list-folder</h3>
+<h3 id="int-list-folder">list-folder <a class="anchor-link" href="#int-list-folder">#</a></h3>
 <p><strong>Retrieve the subfolder path stored two rows above the table.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ListFolder(ByVal lo As ListObject) As String
@@ -639,7 +644,7 @@ when at least one component was transferred.
 </ul>
 <p><strong>Returns:</strong> String. The trimmed subfolder path, or empty string when absent.</p>
 <hr />
-<h3>append-path</h3>
+<h3 id="int-append-path">append-path <a class="anchor-link" href="#int-append-path">#</a></h3>
 <p><strong>Combine a base path and subpath using the platform separator.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function AppendPath(ByVal basePath As String, ByVal subPath As String) As String
@@ -652,7 +657,7 @@ when at least one component was transferred.
 </ul>
 <p><strong>Returns:</strong> String. The combined path.</p>
 <hr />
-<h3>directory-exists</h3>
+<h3 id="int-directory-exists">directory-exists <a class="anchor-link" href="#int-directory-exists">#</a></h3>
 <p><strong>Return True when the supplied directory exists on disk.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function DirectoryExists(ByVal pathValue As String) As Boolean
@@ -664,7 +669,7 @@ when at least one component was transferred.
 </ul>
 <p><strong>Returns:</strong> Boolean. True when the directory exists.</p>
 <hr />
-<h3>transfer-list-entries</h3>
+<h3 id="int-transfer-list-entries">transfer-list-entries <a class="anchor-link" href="#int-transfer-list-entries">#</a></h3>
 <p><strong>Iterate table rows and import or export each listed component.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function TransferListEntries(ByVal lo As ListObject, _
@@ -689,7 +694,7 @@ transferred. Returns True when at least one component was processed.
 </ul>
 <p><strong>Returns:</strong> Boolean. True when at least one entry was transferred.</p>
 <hr />
-<h3>resolve-interface-flag</h3>
+<h3 id="int-resolve-interface-flag">resolve-interface-flag <a class="anchor-link" href="#int-resolve-interface-flag">#</a></h3>
 <p><strong>Read the Yes/No interface flag for a given table row.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ResolveInterfaceFlag(ByVal interfaceColumn As Range, ByVal rowIndex As Long) As String
@@ -702,7 +707,7 @@ transferred. Returns True when at least one component was processed.
 </ul>
 <p><strong>Returns:</strong> String. Lowercase &quot;yes&quot; or &quot;no&quot;, or empty string when unavailable.</p>
 <hr />
-<h3>transfer-component</h3>
+<h3 id="int-transfer-component">transfer-component <a class="anchor-link" href="#int-transfer-component">#</a></h3>
 <p><strong>Build the file path and delegate to import or export.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub TransferComponent(ByVal componentName As String, _
@@ -719,7 +724,7 @@ transferred. Returns True when at least one component was processed.
 <li><code>mode</code>: DevelopmentTransferMode. Whether to import or export.</li>
 </ul>
 <hr />
-<h3>import-component</h3>
+<h3 id="int-import-component">import-component <a class="anchor-link" href="#int-import-component">#</a></h3>
 <p><strong>Import a VBA component from disk, replacing any existing one.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ImportComponent(ByVal componentName As String, ByVal filePath As String)
@@ -734,7 +739,7 @@ on import. Delegates to VBComponents.Import to perform the actual import.
 <li><code>filePath</code>: String. The full disk path of the .bas or .cls file.</li>
 </ul>
 <hr />
-<h3>export-component</h3>
+<h3 id="int-export-component">export-component <a class="anchor-link" href="#int-export-component">#</a></h3>
 <p><strong>Export a VBA component to disk, overwriting any previous file.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ExportComponent(ByVal componentName As String, ByVal filePath As String)
@@ -749,7 +754,7 @@ the component does not exist in the project.
 <li><code>filePath</code>: String. The full disk path for the exported file.</li>
 </ul>
 <hr />
-<h3>append-information-log</h3>
+<h3 id="int-append-information-log">append-information-log <a class="anchor-link" href="#int-append-information-log">#</a></h3>
 <p><strong>Append a timestamped entry describing the transfer action performed.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AppendInformationLog(ByVal targetPath As String, _
@@ -764,7 +769,7 @@ the component does not exist in the project.
 <li><code>mode</code>: DevelopmentTransferMode. Whether an import or export was performed.</li>
 </ul>
 <hr />
-<h3>write-information</h3>
+<h3 id="int-write-information">write-information <a class="anchor-link" href="#int-write-information">#</a></h3>
 <p><strong>Write a status message to the Dev sheet Informations cell.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub WriteInformation(ByVal messageText As String)
@@ -775,7 +780,7 @@ the component does not exist in the project.
 <li><code>messageText</code>: String. The message to display.</li>
 </ul>
 <hr />
-<h3>ensure-information-cell</h3>
+<h3 id="int-ensure-information-cell">ensure-information-cell <a class="anchor-link" href="#int-ensure-information-cell">#</a></h3>
 <p><strong>Locate the Dev sheet status cell from the Informations named range.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function EnsureInformationCell() As Range
@@ -783,8 +788,8 @@ the component does not exist in the project.
 <p>(&quot;Locate the Dev sheet status cell (Informations named range).&quot;)</p>
 <p><strong>Returns:</strong> Range. The target cell, or Nothing when the range is not defined.</p>
 <hr />
-<h2>Form Synchronisation</h2>
-<h3>synchronise-forms-tables</h3>
+<h2 id="int-form-synchronisation">Form Synchronisation</h2>
+<h3 id="int-synchronise-forms-tables">synchronise-forms-tables <a class="anchor-link" href="#int-synchronise-forms-tables">#</a></h3>
 <p><strong>Enumerate forms tables and copy code into mapped UserForm components.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub SynchroniseFormsTables(ByVal requireConfirmation As Boolean)
@@ -801,7 +806,7 @@ requireConfirmation is True, a dialog is shown before proceeding.
 <li><code>requireConfirmation</code>: Boolean. When True, prompts the user first.</li>
 </ul>
 <hr />
-<h3>apply-default-password</h3>
+<h3 id="int-apply-default-password">apply-default-password <a class="anchor-link" href="#int-apply-default-password">#</a></h3>
 <p><strong>Read and apply the default password from the Dev sheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ApplyDefaultPassword(ByVal passwords As IPasswords)
@@ -814,7 +819,7 @@ NewDebugingPassword. Silently exits when no default password is configured.</p>
 <li><code>passwords</code>: IPasswords. The password handler to configure.</li>
 </ul>
 <hr />
-<h3>process-forms-table</h3>
+<h3 id="int-process-forms-table">process-forms-table <a class="anchor-link" href="#int-process-forms-table">#</a></h3>
 <p><strong>Copy code for each module/form pair defined in a forms ListObject.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ProcessFormsTable(ByVal lo As ListObject)
@@ -828,7 +833,7 @@ code from the module into the form component and removes the source.
 <li><code>lo</code>: ListObject. The forms mapping table to process.</li>
 </ul>
 <hr />
-<h3>copy-module-code</h3>
+<h3 id="int-copy-module-code">copy-module-code <a class="anchor-link" href="#int-copy-module-code">#</a></h3>
 <p><strong>Copy the VBIDE code from one component into another.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub CopyModuleCode(ByVal sourceName As String, ByVal targetName As String)
@@ -849,8 +854,8 @@ either the source or target component does not exist.
 is not found in the VBProject.</li>
 </ul>
 <hr />
-<h2>ListObject Builders</h2>
-<h3>create-list-object</h3>
+<h2 id="int-listobject-builders">ListObject Builders</h2>
+<h3 id="int-create-list-object">create-list-object <a class="anchor-link" href="#int-create-list-object">#</a></h3>
 <p><strong>Create a table with standardised headers, tag, and naming.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function CreateListObject(ByVal headers As Variant, _
@@ -878,7 +883,7 @@ dropdown to the second column. Defaults to False.</li>
 </ul>
 <p><strong>Returns:</strong> ListObject. The newly created and formatted table.</p>
 <hr />
-<h3>apply-lo-format</h3>
+<h3 id="int-apply-lo-format">apply-lo-format <a class="anchor-link" href="#int-apply-lo-format">#</a></h3>
 <p><strong>Apply project formatting to a development ListObject.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ApplyLoFormat(ByVal Lo As Listobject)
@@ -888,7 +893,7 @@ dropdown to the second column. Defaults to False.</li>
 <li><code>Lo</code>: ListObject. The table to format.</li>
 </ul>
 <hr />
-<h3>write-headers</h3>
+<h3 id="int-write-headers">write-headers <a class="anchor-link" href="#int-write-headers">#</a></h3>
 <p><strong>Populate a table header row with the provided field names.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub WriteHeaders(ByVal lo As ListObject, ByVal headers As Variant)
@@ -900,7 +905,7 @@ dropdown to the second column. Defaults to False.</li>
 <li><code>headers</code>: Variant. Array of header strings.</li>
 </ul>
 <hr />
-<h3>apply-yes-no-validation</h3>
+<h3 id="int-apply-yes-no-validation">apply-yes-no-validation <a class="anchor-link" href="#int-apply-yes-no-validation">#</a></h3>
 <p><strong>Apply a Yes/No dropdown validation to the second column.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ApplyYesNoValidation(ByVal lo As ListObject)
@@ -911,7 +916,7 @@ dropdown to the second column. Defaults to False.</li>
 <li><code>lo</code>: ListObject. The table to configure.</li>
 </ul>
 <hr />
-<h3>next-anchor-range</h3>
+<h3 id="int-next-anchor-range">next-anchor-range <a class="anchor-link" href="#int-next-anchor-range">#</a></h3>
 <p><strong>Find the next available anchor position for a table.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function NextAnchorRange(ByVal sheet As Worksheet, ByVal columnCount As Long) As Range
@@ -932,7 +937,7 @@ requested table width, an error is raised.
 <li>ProjectError.ErrorUnexpectedState When there is not enough space.</li>
 </ul>
 <hr />
-<h3>next-list-object-name</h3>
+<h3 id="int-next-list-object-name">next-list-object-name <a class="anchor-link" href="#int-next-list-object-name">#</a></h3>
 <p><strong>Generate a unique ListObject name using the persisted counter.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function NextListObjectName(ByVal sheet As Worksheet, _
@@ -948,7 +953,7 @@ requested table width, an error is raised.
 </ul>
 <p><strong>Returns:</strong> String. A unique name such as &quot;ClassesLo3&quot;.</p>
 <hr />
-<h3>has-list-object</h3>
+<h3 id="int-has-list-object">has-list-object <a class="anchor-link" href="#int-has-list-object">#</a></h3>
 <p><strong>Check whether a worksheet already defines a ListObject with the given name.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function HasListObject(ByVal sheet As Worksheet, ByVal listName As String) As Boolean
@@ -961,8 +966,8 @@ requested table width, an error is raised.
 </ul>
 <p><strong>Returns:</strong> Boolean. True when a matching ListObject exists.</p>
 <hr />
-<h2>Counter Helpers</h2>
-<h3>read-counter</h3>
+<h2 id="int-counter-helpers">Counter Helpers</h2>
+<h3 id="int-read-counter">read-counter <a class="anchor-link" href="#int-read-counter">#</a></h3>
 <p><strong>Read the persisted numeric counter stored as a worksheet name.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ReadCounter(ByVal nameId As String) As Long
@@ -976,7 +981,7 @@ counters stored as worksheet-level names.
 </ul>
 <p><strong>Returns:</strong> Long. The current counter value, or 0 when not found.</p>
 <hr />
-<h3>update-counter</h3>
+<h3 id="int-update-counter">update-counter <a class="anchor-link" href="#int-update-counter">#</a></h3>
 <p><strong>Persist the next counter value back to the Dev sheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub UpdateCounter(ByVal nameId As String, ByVal value As Long)
@@ -988,7 +993,7 @@ counters stored as worksheet-level names.
 <li><code>value</code>: Long. The counter value to store.</li>
 </ul>
 <hr />
-<h3>sheet-name-definition</h3>
+<h3 id="int-sheet-name-definition">sheet-name-definition <a class="anchor-link" href="#int-sheet-name-definition">#</a></h3>
 <p><strong>Locate a worksheet-level name definition matching the supplied id.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function SheetNameDefinition(ByVal nameId As String) As Name
@@ -1000,7 +1005,7 @@ counters stored as worksheet-level names.
 </ul>
 <p><strong>Returns:</strong> Name. The matching definition, or Nothing when not found.</p>
 <hr />
-<h3>try-name-definition</h3>
+<h3 id="int-try-name-definition">try-name-definition <a class="anchor-link" href="#int-try-name-definition">#</a></h3>
 <p><strong>Locate a name definition at worksheet or workbook level.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function TryNameDefinition(ByVal nameId As String) As Name
@@ -1013,7 +1018,7 @@ back to the workbook-level Names collection.</p>
 </ul>
 <p><strong>Returns:</strong> Name. The matching definition, or Nothing when not found.</p>
 <hr />
-<h3>assign-sheet-name</h3>
+<h3 id="int-assign-sheet-name">assign-sheet-name <a class="anchor-link" href="#int-assign-sheet-name">#</a></h3>
 <p><strong>Assign or replace a worksheet-level name with the supplied formula.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AssignSheetName(ByVal nameId As String, ByVal refersTo As String)
@@ -1025,7 +1030,7 @@ back to the workbook-level Names collection.</p>
 <li><code>refersTo</code>: String. The formula or value to store.</li>
 </ul>
 <hr />
-<h3>remove-sheet-name</h3>
+<h3 id="int-remove-sheet-name">remove-sheet-name <a class="anchor-link" href="#int-remove-sheet-name">#</a></h3>
 <p><strong>Remove a worksheet-level name if it already exists.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RemoveSheetName(ByVal nameId As String)
@@ -1036,7 +1041,7 @@ back to the workbook-level Names collection.</p>
 <li><code>nameId</code>: String. The name definition to delete.</li>
 </ul>
 <hr />
-<h3>assign-workbook-name</h3>
+<h3 id="int-assign-workbook-name">assign-workbook-name <a class="anchor-link" href="#int-assign-workbook-name">#</a></h3>
 <p><strong>Create or replace a workbook-level name with the supplied formula.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AssignWorkbookName(ByVal nameId As String, ByVal refersTo As String)
@@ -1048,7 +1053,7 @@ back to the workbook-level Names collection.</p>
 <li><code>refersTo</code>: String. The formula or value to store.</li>
 </ul>
 <hr />
-<h3>remove-workbook-name</h3>
+<h3 id="int-remove-workbook-name">remove-workbook-name <a class="anchor-link" href="#int-remove-workbook-name">#</a></h3>
 <p><strong>Delete a workbook-level name when present.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RemoveWorkbookName(ByVal nameId As String)
@@ -1059,7 +1064,7 @@ back to the workbook-level Names collection.</p>
 <li><code>nameId</code>: String. The name definition to delete.</li>
 </ul>
 <hr />
-<h3>compare-workbook-name</h3>
+<h3 id="int-compare-workbook-name">compare-workbook-name <a class="anchor-link" href="#int-compare-workbook-name">#</a></h3>
 <p><strong>Case-insensitive comparison for workbook-level names.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function CompareWorkbookName(ByVal definition As Name, ByVal targetName As String) As Boolean
@@ -1072,7 +1077,7 @@ back to the workbook-level Names collection.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when names match.</p>
 <hr />
-<h3>compare-name</h3>
+<h3 id="int-compare-name">compare-name <a class="anchor-link" href="#int-compare-name">#</a></h3>
 <p><strong>Case-insensitive comparison for worksheet-level names, ignoring sheet prefix.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function CompareName(ByVal definition As Name, ByVal targetName As String) As Boolean
@@ -1087,8 +1092,8 @@ method strips the sheet prefix before comparing.
 </ul>
 <p><strong>Returns:</strong> Boolean. True when names match.</p>
 <hr />
-<h2>Name Utilities</h2>
-<h3>name-numeric-value</h3>
+<h2 id="int-name-utilities">Name Utilities</h2>
+<h3 id="int-name-numeric-value">name-numeric-value <a class="anchor-link" href="#int-name-numeric-value">#</a></h3>
 <p><strong>Convert a name definition to a numeric value.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function NameNumericValue(ByVal definition As Name) As Long
@@ -1105,7 +1110,7 @@ Returns 0 when neither approach yields a number.
 </ul>
 <p><strong>Returns:</strong> Long. The numeric value, or 0 when not parseable.</p>
 <hr />
-<h3>name-string-value</h3>
+<h3 id="int-name-string-value">name-string-value <a class="anchor-link" href="#int-name-string-value">#</a></h3>
 <p><strong>Return the decoded string value stored in a name definition.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function NameStringValue(ByVal definition As Name) As String
@@ -1117,7 +1122,7 @@ Returns 0 when neither approach yields a number.
 </ul>
 <p><strong>Returns:</strong> String. The decoded plain text value.</p>
 <hr />
-<h3>encode-name-value</h3>
+<h3 id="int-encode-name-value">encode-name-value <a class="anchor-link" href="#int-encode-name-value">#</a></h3>
 <p><strong>Encode plain text as a quoted formula suitable for Name.RefersTo.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function EncodeNameValue(ByVal value As String) As String
@@ -1129,7 +1134,7 @@ Returns 0 when neither approach yields a number.
 </ul>
 <p><strong>Returns:</strong> String. The encoded formula string (e.g. =&quot;Hello&quot;).</p>
 <hr />
-<h3>decode-name-value</h3>
+<h3 id="int-decode-name-value">decode-name-value <a class="anchor-link" href="#int-decode-name-value">#</a></h3>
 <p><strong>Decode a Name.RefersTo formula to raw string content.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function DecodeNameValue(ByVal refersTo As String) As String
@@ -1143,8 +1148,8 @@ embedded doubled quotes back to single quotes.
 </ul>
 <p><strong>Returns:</strong> String. The decoded plain text.</p>
 <hr />
-<h2>Registration Helpers</h2>
-<h3>register-sheet</h3>
+<h2 id="int-registration-helpers">Registration Helpers</h2>
+<h3 id="int-register-sheet">register-sheet <a class="anchor-link" href="#int-register-sheet">#</a></h3>
 <p><strong>Register a worksheet name with permission flags in a BetterArray.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RegisterSheet(ByVal registry As BetterArray, ByVal sheetName As String, _
@@ -1166,8 +1171,8 @@ iterates during deployment.
 <li><code>allowDeletingRows</code>: Optional Boolean. Whether row deletion is permitted. Defaults to True.</li>
 </ul>
 <hr />
-<h2>Prompts</h2>
-<h3>request-confirmation</h3>
+<h2 id="int-prompts">Prompts</h2>
+<h3 id="int-request-confirmation">request-confirmation <a class="anchor-link" href="#int-request-confirmation">#</a></h3>
 <p><strong>Display a confirmation dialog when prompts are enabled.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function RequestConfirmation(ByVal action As String) As Boolean
@@ -1183,8 +1188,8 @@ the user selects Yes.
 </ul>
 <p><strong>Returns:</strong> Boolean. True when the user confirms or prompts are disabled.</p>
 <hr />
-<h2>Error Handling</h2>
-<h3>throw-error</h3>
+<h2 id="int-error-handling">Error Handling</h2>
+<h3 id="int-throw-error">throw-error <a class="anchor-link" href="#int-throw-error">#</a></h3>
 <p><strong>Raise a ProjectError-based exception with a prefixed message.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal message As String)
@@ -1201,8 +1206,8 @@ the user selects Yes.
 <li>ProjectError.<varies> Always raises the specified error.</li>
 </ul>
 <hr />
-<h2>Interface Implementation</h2>
-<h3>IDevelopment_Initialise</h3>
+<h2 id="int-interface-implementation">Interface Implementation</h2>
+<h3 id="int-idevelopment-initialise">IDevelopment_Initialise <a class="anchor-link" href="#int-idevelopment-initialise">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub IDevelopment_Initialise(ByVal devSheet As Worksheet, Optional ByVal codeSheet As Worksheet)
 </code></pre>
@@ -1225,8 +1230,10 @@ See the corresponding Public members above for full documentation.</p>
 <li><a href="src/tests/modules/setup/TestSetupPreparation.bas">TestSetupPreparation.bas</a></li>
 </ul>
 </details>
-
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

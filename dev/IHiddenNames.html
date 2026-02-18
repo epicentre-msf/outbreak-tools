@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>IHiddenNames - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -14,8 +15,10 @@
 hidden worksheet/workbook-level name-value storage with typed
 serialization, metadata caching, discovery, and cross-scope
 import/export operations.</p>
-<h2>Introspection</h2>
-<h3>Sheet</h3>
+<details open class="doc-section" id="introspection">
+<summary>Introspection</summary>
+<div class="section-body">
+<h3 id="sheet">Sheet <a class="anchor-link" href="#sheet">#</a></h3>
 <p><strong>Target worksheet reference</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Sheet() As Worksheet
@@ -24,7 +27,7 @@ import/export operations.</p>
 Returns the worksheet bound to this HiddenNames instance.</p>
 <p><strong>Returns:</strong> Worksheet. The host worksheet.</p>
 <hr />
-<h3>HasName</h3>
+<h3 id="hasname">HasName <a class="anchor-link" href="#hasname">#</a></h3>
 <p><strong>Check whether a hidden name exists</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function HasName(ByVal nameId As String) As Boolean
@@ -36,8 +39,12 @@ Returns the worksheet bound to this HiddenNames instance.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when the name exists.</p>
 <hr />
-<h2>Hidden Name Management</h2>
-<h3>EnsureName</h3>
+</div>
+</details>
+<details open class="doc-section" id="hidden-name-management">
+<summary>Hidden Name Management</summary>
+<div class="section-body">
+<h3 id="ensurename">EnsureName <a class="anchor-link" href="#ensurename">#</a></h3>
 <p><strong>Ensure a hidden name exists with the provided default</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function EnsureName(ByVal nameId As String, _
@@ -55,7 +62,7 @@ Returns the cached Name definition so callers can retain a reference.</p>
 </ul>
 <p><strong>Returns:</strong> Name. The Name definition after ensuring existence.</p>
 <hr />
-<h3>Value</h3>
+<h3 id="value">Value <a class="anchor-link" href="#value">#</a></h3>
 <p><strong>Retrieve a hidden value without coercion</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Value(ByVal nameId As String, _
@@ -71,7 +78,7 @@ raises an error.</p>
 </ul>
 <p><strong>Returns:</strong> Variant. The stored value, or the default.</p>
 <hr />
-<h3>SetValue</h3>
+<h3 id="setvalue">SetValue <a class="anchor-link" href="#setvalue">#</a></h3>
 <p><strong>Update the stored value using the cached metadata</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub SetValue(ByVal nameId As String, ByVal value As Variant)
@@ -84,7 +91,7 @@ the name does not exist.</p>
 <li><code>value</code>: Variant. The new value to persist.</li>
 </ul>
 <hr />
-<h3>ValueAsString</h3>
+<h3 id="valueasstring">ValueAsString <a class="anchor-link" href="#valueasstring">#</a></h3>
 <p><strong>Retrieve the hidden value coerced to String</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function ValueAsString(ByVal nameId As String, _
@@ -97,7 +104,7 @@ the name does not exist.</p>
 </ul>
 <p><strong>Returns:</strong> String. The coerced value.</p>
 <hr />
-<h3>ValueAsBoolean</h3>
+<h3 id="valueasboolean">ValueAsBoolean <a class="anchor-link" href="#valueasboolean">#</a></h3>
 <p><strong>Retrieve the hidden value coerced to Boolean</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function ValueAsBoolean(ByVal nameId As String, _
@@ -110,7 +117,7 @@ the name does not exist.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. The coerced value.</p>
 <hr />
-<h3>ValueAsLong</h3>
+<h3 id="valueaslong">ValueAsLong <a class="anchor-link" href="#valueaslong">#</a></h3>
 <p><strong>Retrieve the hidden value coerced to Long</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function ValueAsLong(ByVal nameId As String, _
@@ -123,7 +130,7 @@ the name does not exist.</p>
 </ul>
 <p><strong>Returns:</strong> Long. The coerced value.</p>
 <hr />
-<h3>RemoveName</h3>
+<h3 id="removename">RemoveName <a class="anchor-link" href="#removename">#</a></h3>
 <p><strong>Remove a hidden name definition</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub RemoveName(ByVal nameId As String)
@@ -135,8 +142,12 @@ cache entry.</p>
 <li><code>nameId</code>: String. Identifier of the hidden name to remove.</li>
 </ul>
 <hr />
-<h2>Discovery</h2>
-<h3>ListNames</h3>
+</div>
+</details>
+<details open class="doc-section" id="discovery">
+<summary>Discovery</summary>
+<div class="section-body">
+<h3 id="listnames">ListNames <a class="anchor-link" href="#listnames">#</a></h3>
 <p><strong>Enumerate recorded hidden names</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function ListNames(Optional ByVal prefix As String = vbNullString) As BetterArray
@@ -150,8 +161,12 @@ by a case-insensitive prefix.</p>
 </ul>
 <p><strong>Returns:</strong> BetterArray. Array of metadata records: Array(nameId, HiddenNameValueType, lastUpdated).</p>
 <hr />
-<h2>Synchronisation</h2>
-<h3>ExportNames</h3>
+</div>
+</details>
+<details open class="doc-section" id="synchronisation">
+<summary>Synchronisation</summary>
+<div class="section-body">
+<h3 id="exportnames">ExportNames <a class="anchor-link" href="#exportnames">#</a></h3>
 <p><strong>Export all tracked hidden names to another worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ExportNames(ByVal targetSh As Worksheet, _
@@ -164,7 +179,7 @@ by a case-insensitive prefix.</p>
 <li><code>prefix</code>: Optional String. Prefix filter. Defaults to vbNullString.</li>
 </ul>
 <hr />
-<h3>ImportNames</h3>
+<h3 id="importnames">ImportNames <a class="anchor-link" href="#importnames">#</a></h3>
 <p><strong>Import hidden names from another worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ImportNames(ByVal sourceSh As Worksheet, _
@@ -178,7 +193,7 @@ by a case-insensitive prefix.</p>
 <li><code>overwriteExisting</code>: Optional Boolean. When False, existing values are preserved. Defaults to True.</li>
 </ul>
 <hr />
-<h3>ExportNamesToWorkbook</h3>
+<h3 id="exportnamestoworkbook">ExportNamesToWorkbook <a class="anchor-link" href="#exportnamestoworkbook">#</a></h3>
 <p><strong>Export tracked names to another workbook scope</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ExportNamesToWorkbook(ByVal targetWb As Workbook, _
@@ -190,7 +205,7 @@ by a case-insensitive prefix.</p>
 <li><code>prefix</code>: Optional String. Prefix filter. Defaults to vbNullString.</li>
 </ul>
 <hr />
-<h3>ImportNamesFromWorkbook</h3>
+<h3 id="importnamesfromworkbook">ImportNamesFromWorkbook <a class="anchor-link" href="#importnamesfromworkbook">#</a></h3>
 <p><strong>Import hidden names from another workbook scope</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ImportNamesFromWorkbook(ByVal sourceWb As Workbook, _
@@ -204,7 +219,7 @@ by a case-insensitive prefix.</p>
 <li><code>overwriteExisting</code>: Optional Boolean. When False, existing values are preserved. Defaults to True.</li>
 </ul>
 <hr />
-<h3>SetListObjectHeader</h3>
+<h3 id="setlistobjectheader">SetListObjectHeader <a class="anchor-link" href="#setlistobjectheader">#</a></h3>
 <p><strong>Create a workbook-level hidden name referencing a ListObject header</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub SetListObjectHeader(ByVal nameId As String, _
@@ -220,8 +235,12 @@ points at the specified ListObject column.</p>
 <li><code>headerName</code>: String. Caption of the header column to reference.</li>
 </ul>
 <hr />
-
+</div>
+</details>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ICodeTransfer - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -13,8 +14,10 @@
 <p>Defines the public contract for the CodeTransfer class, exposing methods to
 transfer VBA code components (classes, modules, forms, workbook code) between
 workbooks using temporary file export/import cycles.</p>
-<h2>CodeTransfer</h2>
-<h3>TransferClass</h3>
+<details open class="doc-section" id="codetransfer">
+<summary>CodeTransfer</summary>
+<div class="section-body">
+<h3 id="transferclass">TransferClass <a class="anchor-link" href="#transferclass">#</a></h3>
 <p><strong>Transfer a class module from source to target workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub TransferClass(ByVal className As String)
@@ -27,7 +30,7 @@ file, then imports it into the target workbook.</p>
 <li><code>className</code>: String. The VBA component name of the class to transfer.</li>
 </ul>
 <hr />
-<h3>TransferModule</h3>
+<h3 id="transfermodule">TransferModule <a class="anchor-link" href="#transfermodule">#</a></h3>
 <p><strong>Transfer a standard module from source to target workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub TransferModule(ByVal moduleName As String)
@@ -39,7 +42,7 @@ temporary file, then imports it into the target workbook.</p>
 <li><code>moduleName</code>: String. The VBA component name of the module to transfer.</li>
 </ul>
 <hr />
-<h3>TransferForm</h3>
+<h3 id="transferform">TransferForm <a class="anchor-link" href="#transferform">#</a></h3>
 <p><strong>Transfer a UserForm from source to target workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub TransferForm(ByVal formName As String)
@@ -52,7 +55,7 @@ are cleaned up after import.</p>
 <li><code>formName</code>: String. The VBA component name of the form to transfer.</li>
 </ul>
 <hr />
-<h3>TransferWorkbookCode</h3>
+<h3 id="transferworkbookcode">TransferWorkbookCode <a class="anchor-link" href="#transferworkbookcode">#</a></h3>
 <p><strong>Copy code from a source module into the target's ThisWorkbook component</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub TransferWorkbookCode(ByVal moduleName As String)
@@ -65,7 +68,7 @@ existing content.</p>
 <li><code>moduleName</code>: String. The source module whose code will be copied.</li>
 </ul>
 <hr />
-<h3>CopyModuleText</h3>
+<h3 id="copymoduletext">CopyModuleText <a class="anchor-link" href="#copymoduletext">#</a></h3>
 <p><strong>Copy code text from a source module to an existing target module</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub CopyModuleText(ByVal moduleName As String)
@@ -78,7 +81,7 @@ Used for template workbooks where the target module already exists.</p>
 <li><code>moduleName</code>: String. The module name (must exist in both workbooks).</li>
 </ul>
 <hr />
-<h3>CopyModuleCode</h3>
+<h3 id="copymodulecode">CopyModuleCode <a class="anchor-link" href="#copymodulecode">#</a></h3>
 <p><strong>Copy code between components within the target workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub CopyModuleCode(ByVal sourceName As String, ByVal targetName As String)
@@ -93,8 +96,12 @@ into a different component (e.g., a worksheet module or ThisWorkbook).</p>
 <li><code>targetName</code>: String. The component to write code into.</li>
 </ul>
 <hr />
-
+</div>
+</details>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

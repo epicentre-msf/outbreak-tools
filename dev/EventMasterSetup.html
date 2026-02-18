@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>EventMasterSetup - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -12,82 +13,82 @@
 <h1>EventMasterSetup</h1>
 <details>
 <summary>Internal members (not exported)</summary>
-<h2>Factory helpers</h2>
-<h3>Create</h3>
+<h2 id="int-factory-helpers">Factory helpers</h2>
+<h3 id="int-create">Create <a class="anchor-link" href="#int-create">#</a></h3>
 <p><strong>Create a configured master setup event manager.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal hostBook As Workbook) As IEventMasterSetup
 </code></pre>
 <hr />
-<h3>Self</h3>
+<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
 <p><strong>Self reference used by factories returning the interface.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Self() As IEventMasterSetup
 </code></pre>
 <hr />
-<h2>Lifecycle</h2>
-<h3>Configure</h3>
+<h2 id="int-lifecycle">Lifecycle</h2>
+<h3 id="int-configure">Configure <a class="anchor-link" href="#int-configure">#</a></h3>
 <p><strong>Bind the orchestrator to the workbook hosting master setup assets.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Configure(ByVal hostBook As Workbook)
 </code></pre>
 <hr />
-<h3>OnWorkbookOpen</h3>
+<h3 id="int-onworkbookopen">OnWorkbookOpen <a class="anchor-link" href="#int-onworkbookopen">#</a></h3>
 <p><strong>Handle workbook open events by running preparation once.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub OnWorkbookOpen(Optional ByVal excelApplication As Application)
 </code></pre>
 <hr />
-<h3>OnRibbonLoad</h3>
+<h3 id="int-onribbonload">OnRibbonLoad <a class="anchor-link" href="#int-onribbonload">#</a></h3>
 <p><strong>Store the ribbon reference for future invalidation support.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub OnRibbonLoad(ByVal ribbon As IRibbonUI)
 </code></pre>
 <hr />
-<h3>RefreshTranslations</h3>
+<h3 id="int-refreshtranslations">RefreshTranslations <a class="anchor-link" href="#int-refreshtranslations">#</a></h3>
 <p><strong>Refresh translation-backed caches after a language change.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub RefreshTranslations()
 </code></pre>
 <hr />
-<h2>Accessors</h2>
-<h3>HostWorkbook</h3>
+<h2 id="int-accessors">Accessors</h2>
+<h3 id="int-hostworkbook">HostWorkbook <a class="anchor-link" href="#int-hostworkbook">#</a></h3>
 <p><strong>Expose the currently configured workbook.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get HostWorkbook() As Workbook
 </code></pre>
 <hr />
-<h3>Dropdowns</h3>
+<h3 id="int-dropdowns">Dropdowns <a class="anchor-link" href="#int-dropdowns">#</a></h3>
 <p><strong>Provide the dropdown manager, ensuring the preparation ran.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Dropdowns() As IDropdownLists
 </code></pre>
 <hr />
-<h3>Variables</h3>
+<h3 id="int-variables">Variables <a class="anchor-link" href="#int-variables">#</a></h3>
 <p><strong>Provide the master setup variables manager.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Variables() As IMasterSetupVariables
 </code></pre>
 <hr />
-<h3>Choices</h3>
+<h3 id="int-choices">Choices <a class="anchor-link" href="#int-choices">#</a></h3>
 <p><strong>Provide the master setup choices helper.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Choices() As ILLChoices
 </code></pre>
 <hr />
-<h3>Translations</h3>
+<h3 id="int-translations">Translations <a class="anchor-link" href="#int-translations">#</a></h3>
 <p><strong>Provide the workbook-wide translations object.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Translations() As ITranslationObject
 </code></pre>
 <hr />
-<h3>RibbonTranslations</h3>
+<h3 id="int-ribbontranslations">RibbonTranslations <a class="anchor-link" href="#int-ribbontranslations">#</a></h3>
 <p><strong>Provide the ribbon translations object.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get RibbonTranslations() As ITranslationObject
 </code></pre>
 <hr />
-<h3>Ribbon</h3>
+<h3 id="int-ribbon">Ribbon <a class="anchor-link" href="#int-ribbon">#</a></h3>
 <p><strong>Expose the cached ribbon interface.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Ribbon() As IRibbonUI
@@ -102,8 +103,10 @@
 <li><a href="src/tests/modules/mastersetup/TestEventMasterSetup.bas">TestEventMasterSetup.bas</a></li>
 </ul>
 </details>
-
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

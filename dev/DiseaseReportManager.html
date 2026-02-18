@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>DiseaseReportManager - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -12,8 +13,8 @@
 <h1>DiseaseReportManager</h1>
 <details>
 <summary>Internal members (not exported)</summary>
-<h2>Queries</h2>
-<h3>HasPendingReport</h3>
+<h2 id="int-queries">Queries</h2>
+<h3 id="int-haspendingreport">HasPendingReport <a class="anchor-link" href="#int-haspendingreport">#</a></h3>
 <p><strong>Check whether a disease row exists with the expected pending value.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function HasPendingReport(ByVal reportTable As ListObject, ByVal diseaseName As String, Optional ByVal expectedValue As String = &quot;yes&quot;) As Boolean
@@ -26,8 +27,8 @@
 </ul>
 <p><strong>Returns:</strong> Boolean True when the disease requires a report.</p>
 <hr />
-<h2>Commands</h2>
-<h3>ClearReportStatus</h3>
+<h2 id="int-commands">Commands</h2>
+<h3 id="int-clearreportstatus">ClearReportStatus <a class="anchor-link" href="#int-clearreportstatus">#</a></h3>
 <p><strong>Remove disease rows from all report tables on the worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ClearReportStatus(ByVal reportSheet As Worksheet, ByVal diseaseName As String)
@@ -38,63 +39,63 @@
 <li><code>diseaseName</code>: String disease identifier to purge.</li>
 </ul>
 <hr />
-<h2>Internal Helpers</h2>
-<h3>ValidateReportTable</h3>
+<h2 id="int-internal-helpers">Internal Helpers</h2>
+<h3 id="int-validatereporttable">ValidateReportTable <a class="anchor-link" href="#int-validatereporttable">#</a></h3>
 <p><strong>Ensure the report table reference is valid.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ValidateReportTable(ByVal reportTable As ListObject)
 </code></pre>
 <hr />
-<h3>ValidateReportSheet</h3>
+<h3 id="int-validatereportsheet">ValidateReportSheet <a class="anchor-link" href="#int-validatereportsheet">#</a></h3>
 <p><strong>Ensure the report sheet reference is valid.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ValidateReportSheet(ByVal reportSheet As Worksheet)
 </code></pre>
 <hr />
-<h3>ValidateDiseaseName</h3>
+<h3 id="int-validatediseasename">ValidateDiseaseName <a class="anchor-link" href="#int-validatediseasename">#</a></h3>
 <p><strong>Ensure the disease name is provided.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ValidateDiseaseName(ByVal diseaseName As String)
 </code></pre>
 <hr />
-<h3>ResolveColumn</h3>
+<h3 id="int-resolvecolumn">ResolveColumn <a class="anchor-link" href="#int-resolvecolumn">#</a></h3>
 <p><strong>Retrieve the Nth column from the table's data body.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ResolveColumn(ByVal reportTable As ListObject, ByVal columnIndex As Long) As Range
 </code></pre>
 <hr />
-<h3>ColumnContains</h3>
+<h3 id="int-columncontains">ColumnContains <a class="anchor-link" href="#int-columncontains">#</a></h3>
 <p><strong>Determine whether a disease row matches the expected status.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ColumnContains(ByVal namesColumn As Range, ByVal statusColumn As Range, ByVal diseaseName As String, ByVal expectedValue As String) As Boolean
 </code></pre>
 <hr />
-<h3>LocateRows</h3>
+<h3 id="int-locaterows">LocateRows <a class="anchor-link" href="#int-locaterows">#</a></h3>
 <p><strong>Locate all row indexes belonging to the disease.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function LocateRows(ByVal reportTable As ListObject, ByVal diseaseName As String) As BetterArray
 </code></pre>
 <hr />
-<h3>DeleteRows</h3>
+<h3 id="int-deleterows">DeleteRows <a class="anchor-link" href="#int-deleterows">#</a></h3>
 <p><strong>Delete the supplied rows from the table, starting from the bottom.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub DeleteRows(ByVal reportTable As ListObject, ByVal rowIndexes As BetterArray)
 </code></pre>
 <hr />
-<h3>Normalize</h3>
+<h3 id="int-normalize">Normalize <a class="anchor-link" href="#int-normalize">#</a></h3>
 <p><strong>Normalize text for case-insensitive comparisons.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function Normalize(ByVal value As String) As String
 </code></pre>
 <hr />
-<h3>ReadColumn</h3>
+<h3 id="int-readcolumn">ReadColumn <a class="anchor-link" href="#int-readcolumn">#</a></h3>
 <p><strong>Read a single-column range into a 2D Variant matrix.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ReadColumn(ByVal columnRange As Range) As Variant
 </code></pre>
 <hr />
-<h2>ErrorHandling</h2>
-<h3>ThrowError</h3>
+<h2 id="int-errorhandling">ErrorHandling</h2>
+<h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
 <p><strong>Centralised error raising aligned with ProjectError codes.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal errMessage As String)
@@ -109,8 +110,10 @@
 <li><a href="src/tests/modules/mastersetup/TestDiseaseReportManager.bas">TestDiseaseReportManager.bas</a></li>
 </ul>
 </details>
-
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

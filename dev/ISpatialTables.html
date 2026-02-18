@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ISpatialTables - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -13,8 +14,10 @@
 <p>Defines the public contract for the SpatialTables class. Exposes a check
 for existing spatial ListObjects and a method to create new spatial table
 sets on the &quot;spatial_tables__&quot; worksheet at linelist build time.</p>
-<h2>Methods</h2>
-<h3>Add</h3>
+<details open class="doc-section" id="methods">
+<summary>Methods</summary>
+<div class="section-body">
+<h3 id="add">Add <a class="anchor-link" href="#add">#</a></h3>
 <p><strong>Create spatial ListObjects for the current cross-table</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Add(ByVal formObject As IFormulas): End Sub
@@ -30,7 +33,7 @@ is created. Skips creation when the tables already exist.</p>
 is written into each spatial table formula column.</li>
 </ul>
 <hr />
-<h3>Exists</h3>
+<h3 id="exists">Exists <a class="anchor-link" href="#exists">#</a></h3>
 <p><strong>Whether spatial ListObjects already exist for a variable</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Exists(ByVal varName As String) As Boolean: End Property
@@ -46,8 +49,12 @@ during the build loop.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when the spatial ListObjects already exist.</p>
 <hr />
-
+</div>
+</details>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>IFormulas - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -14,8 +15,10 @@
 read-only access to parsing results, validity checks, and derived
 Excel expressions for both linelist and analysis contexts.</p>
 <p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="Checking.html">Checking</a>, <a href="IFormulaCondition.html">IFormulaCondition</a></p>
-<h2>Elements</h2>
-<h3>Varlists</h3>
+<details open class="doc-section" id="elements">
+<summary>Elements</summary>
+<div class="section-body">
+<h3 id="varlists">Varlists <a class="anchor-link" href="#varlists">#</a></h3>
 <p><strong>Retrieve the variables referenced by the setup formula</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Varlists(Optional ByVal formulaType As String = &quot;analysis&quot;) As BetterArray
@@ -30,7 +33,7 @@ in an analysis or simple context.</p>
 </ul>
 <p><strong>Returns:</strong> BetterArray. Copy of variable names.</p>
 <hr />
-<h3>FormulaTableList</h3>
+<h3 id="formulatablelist">FormulaTableList <a class="anchor-link" href="#formulatablelist">#</a></h3>
 <p><strong>Retrieve the tokenised representation of the formula</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get FormulaTableList() As BetterArray
@@ -38,7 +41,7 @@ in an analysis or simple context.</p>
 <p>Returns a clone of the ordered token list produced during parsing.</p>
 <p><strong>Returns:</strong> BetterArray. Ordered tokens.</p>
 <hr />
-<h3>HasSetupVariables</h3>
+<h3 id="hassetupvariables">HasSetupVariables <a class="anchor-link" href="#hassetupvariables">#</a></h3>
 <p><strong>Determine whether the formula contains literal values</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get HasSetupVariables() As Boolean
@@ -47,7 +50,7 @@ in an analysis or simple context.</p>
 tokenisation.</p>
 <p><strong>Returns:</strong> Boolean. True when literals are present.</p>
 <hr />
-<h3>IsGrouped</h3>
+<h3 id="isgrouped">IsGrouped <a class="anchor-link" href="#isgrouped">#</a></h3>
 <p><strong>Indicate whether the parsed formula targets grouped evaluation</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get IsGrouped() As String
@@ -56,7 +59,7 @@ tokenisation.</p>
 GROUP_SUM), &quot;No&quot; otherwise.</p>
 <p><strong>Returns:</strong> String. &quot;Yes&quot; for grouped formulas, &quot;No&quot; otherwise.</p>
 <hr />
-<h3>HasChecking</h3>
+<h3 id="haschecking">HasChecking <a class="anchor-link" href="#haschecking">#</a></h3>
 <p><strong>Determine whether parsing recorded diagnostic messages</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get HasChecking() As Boolean
@@ -65,7 +68,7 @@ GROUP_SUM), &quot;No&quot; otherwise.</p>
 evaluation.</p>
 <p><strong>Returns:</strong> Boolean. True when internal checkings exist.</p>
 <hr />
-<h3>CheckingValues</h3>
+<h3 id="checkingvalues">CheckingValues <a class="anchor-link" href="#checkingvalues">#</a></h3>
 <p><strong>Retrieve the internal checking log</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get CheckingValues() As IChecking
@@ -74,7 +77,7 @@ evaluation.</p>
 logged during evaluation.</p>
 <p><strong>Returns:</strong> IChecking. Accumulated diagnostics.</p>
 <hr />
-<h3>Reason</h3>
+<h3 id="reason">Reason <a class="anchor-link" href="#reason">#</a></h3>
 <p><strong>Provide the last computed validity explanation</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Reason(Optional ByVal formulaType As String = &quot;analysis&quot;) As String
@@ -88,8 +91,12 @@ the formula is valid.</p>
 </ul>
 <p><strong>Returns:</strong> String. Message describing the validity outcome.</p>
 <hr />
-<h2>Operations</h2>
-<h3>Valid</h3>
+</div>
+</details>
+<details open class="doc-section" id="operations">
+<summary>Operations</summary>
+<div class="section-body">
+<h3 id="valid">Valid <a class="anchor-link" href="#valid">#</a></h3>
 <p><strong>Determine whether the formula is valid for the supplied context</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Valid(Optional ByVal formulaType As String = &quot;analysis&quot;) As Boolean
@@ -103,7 +110,7 @@ the cached validity flag.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. Validity flag.</p>
 <hr />
-<h3>ParsedLinelistFormula</h3>
+<h3 id="parsedlinelistformula">ParsedLinelistFormula <a class="anchor-link" href="#parsedlinelistformula">#</a></h3>
 <p><strong>Build the Excel expression for a linelist worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get ParsedLinelistFormula(Optional ByVal useTableName As Boolean = False, _
@@ -118,7 +125,7 @@ references depending on the useTableName flag.</p>
 </ul>
 <p><strong>Returns:</strong> String. Excel formula text.</p>
 <hr />
-<h3>ParsedAnalysisFormula</h3>
+<h3 id="parsedanalysisformula">ParsedAnalysisFormula <a class="anchor-link" href="#parsedanalysisformula">#</a></h3>
 <p><strong>Build the Excel expression for an analysis worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get ParsedAnalysisFormula(ByVal formCond As IFormulaCondition, _
@@ -135,8 +142,12 @@ supplied by the IFormulaCondition provider.</p>
 </ul>
 <p><strong>Returns:</strong> String. Excel formula text.</p>
 <hr />
-
+</div>
+</details>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

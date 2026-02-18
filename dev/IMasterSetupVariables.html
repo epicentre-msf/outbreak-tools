@@ -5,28 +5,39 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>IMasterSetupVariables - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>IMasterSetupVariables</h1>
-<h2>Accessors</h2>
-<h3>DataRange</h3>
+<details open class="doc-section" id="accessors">
+<summary>Accessors</summary>
+<div class="section-body">
+<h3 id="datarange">DataRange <a class="anchor-link" href="#datarange">#</a></h3>
 <p><strong>Return the underlying range for a specific column header.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function DataRange(ByVal headerName As String, _
                           Optional ByVal includeHeaders As Boolean = False) As Range
 </code></pre>
 <hr />
-<h2>Validation</h2>
-<h3>SetVariableValidation</h3>
+</div>
+</details>
+<details open class="doc-section" id="validation">
+<summary>Validation</summary>
+<div class="section-body">
+<h3 id="setvariablevalidation">SetVariableValidation <a class="anchor-link" href="#setvariablevalidation">#</a></h3>
 <p><strong>Apply workbook-scoped variable dropdown validation to a target range.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub SetVariableValidation(ByVal targetRange As Range)
 </code></pre>
 <hr />
-
+</div>
+</details>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

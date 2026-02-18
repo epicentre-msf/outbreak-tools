@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>IGraphSpecs - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -17,8 +18,10 @@ Consumers call CreateSeries to populate the series data, then read
 individual series properties or the SpecsLists collection depending
 on the graph mode.
 Graph specs creation mode</p>
-<h2>SeriesAccess</h2>
-<h3>NumberOfSeries</h3>
+<details open class="doc-section" id="seriesaccess">
+<summary>SeriesAccess</summary>
+<div class="section-body">
+<h3 id="numberofseries">NumberOfSeries <a class="anchor-link" href="#numberofseries">#</a></h3>
 <p><strong>Number of chart series in simple mode</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get NumberOfSeries() As Long: End Property
@@ -28,7 +31,7 @@ Returns the count of series pushed during simple mode building.
 Always returns 0 in complex mode or before CreateSeries is called.</p>
 <p><strong>Returns:</strong> Long. Count of series entries (1-based).</p>
 <hr />
-<h3>SeriesName</h3>
+<h3 id="seriesname">SeriesName <a class="anchor-link" href="#seriesname">#</a></h3>
 <p><strong>Named range reference for series data at a given index</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get SeriesName(ByVal index As Long) As String: End Property
@@ -41,7 +44,7 @@ that a chart builder uses as the data source for this series.</p>
 </ul>
 <p><strong>Returns:</strong> String. Named range reference for the series data.</p>
 <hr />
-<h3>SeriesType</h3>
+<h3 id="seriestype">SeriesType <a class="anchor-link" href="#seriestype">#</a></h3>
 <p><strong>Chart rendering type for a series at a given index</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get SeriesType(ByVal index As Long) As String: End Property
@@ -54,7 +57,7 @@ Common values are &quot;bar&quot;, &quot;hbar&quot;, &quot;point&quot;, and &quo
 </ul>
 <p><strong>Returns:</strong> String. Chart rendering type.</p>
 <hr />
-<h3>SeriesPos</h3>
+<h3 id="seriespos">SeriesPos <a class="anchor-link" href="#seriespos">#</a></h3>
 <p><strong>Axis position for a series at a given index</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get SeriesPos(ByVal index As Long) As String: End Property
@@ -67,7 +70,7 @@ secondary axis, typically used for percentage overlays.</p>
 </ul>
 <p><strong>Returns:</strong> String. Axis placement (&quot;left&quot; or &quot;right&quot;).</p>
 <hr />
-<h3>SeriesLabel</h3>
+<h3 id="serieslabel">SeriesLabel <a class="anchor-link" href="#serieslabel">#</a></h3>
 <p><strong>Row category named range for a series at a given index</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get SeriesLabel(ByVal index As Long) As String: End Property
@@ -80,7 +83,7 @@ secondary axis, typically used for percentage overlays.</p>
 </ul>
 <p><strong>Returns:</strong> String. Named range for row category labels.</p>
 <hr />
-<h3>SeriesColumnLabel</h3>
+<h3 id="seriescolumnlabel">SeriesColumnLabel <a class="anchor-link" href="#seriescolumnlabel">#</a></h3>
 <p><strong>Column label named range for a series at a given index</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get SeriesColumnLabel(ByVal index As Long) As String: End Property
@@ -93,7 +96,7 @@ secondary axis, typically used for percentage overlays.</p>
 </ul>
 <p><strong>Returns:</strong> String. Named range for the legend entry.</p>
 <hr />
-<h3>SeriesLabelPrefix</h3>
+<h3 id="serieslabelprefix">SeriesLabelPrefix <a class="anchor-link" href="#serieslabelprefix">#</a></h3>
 <p><strong>Label prefix for a series at a given index</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get SeriesLabelPrefix(ByVal index As Long) As String: End Property
@@ -107,8 +110,12 @@ from the user-defined &quot;label&quot; column of the graph setup table.</p>
 </ul>
 <p><strong>Returns:</strong> String. Prefix string or vbNullString when none is set.</p>
 <hr />
-<h2>ComplexAccess</h2>
-<h3>NumberOfGraphs</h3>
+</div>
+</details>
+<details open class="doc-section" id="complexaccess">
+<summary>ComplexAccess</summary>
+<div class="section-body">
+<h3 id="numberofgraphs">NumberOfGraphs <a class="anchor-link" href="#numberofgraphs">#</a></h3>
 <p><strong>Number of distinct graphs in complex mode</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get NumberOfGraphs() As Long: End Property
@@ -118,7 +125,7 @@ Returns the count of unique graph IDs whose series were successfully
 built. Returns 0 in simple mode or before CreateSeries is called.</p>
 <p><strong>Returns:</strong> Long. Count of graph entries in the SpecsLists collection.</p>
 <hr />
-<h3>SpecsLists</h3>
+<h3 id="specslists">SpecsLists <a class="anchor-link" href="#specslists">#</a></h3>
 <p><strong>Nested collection of all graph specifications</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get SpecsLists() As BetterArray: End Property
@@ -129,7 +136,7 @@ seriesColumnLabels, seriesLabelPrefixes, titleString]. Returns
 an empty BetterArray in simple mode.</p>
 <p><strong>Returns:</strong> BetterArray. Cloned collection of graph spec entries.</p>
 <hr />
-<h3>GraphIDs</h3>
+<h3 id="graphids">GraphIDs <a class="anchor-link" href="#graphids">#</a></h3>
 <p><strong>Unique graph identifiers for complex mode</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get GraphIDs() As BetterArray: End Property
@@ -139,8 +146,12 @@ first appearance in the graph setup ListObject. Useful for iterating
 over graphs independently of SpecsLists.</p>
 <p><strong>Returns:</strong> BetterArray. Cloned list of unique graph ID strings.</p>
 <hr />
-<h2>State</h2>
-<h3>Valid</h3>
+</div>
+</details>
+<details open class="doc-section" id="state">
+<summary>State</summary>
+<div class="section-body">
+<h3 id="valid">Valid <a class="anchor-link" href="#valid">#</a></h3>
 <p><strong>Whether the graph specifications were successfully built</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Valid() As Boolean: End Property
@@ -151,7 +162,7 @@ always returns True; in complex mode returns True only when at
 least one graph produced valid series definitions.</p>
 <p><strong>Returns:</strong> Boolean. True when series data is available for consumption.</p>
 <hr />
-<h3>Wksh</h3>
+<h3 id="wksh">Wksh <a class="anchor-link" href="#wksh">#</a></h3>
 <p><strong>Output worksheet where the chart will be drawn</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Wksh() As Worksheet: End Property
@@ -160,8 +171,12 @@ least one graph produced valid series definitions.</p>
 returns the dedicated output worksheet supplied during construction.</p>
 <p><strong>Returns:</strong> Worksheet. Target worksheet for chart creation.</p>
 <hr />
-<h2>Operations</h2>
-<h3>CreateSeries</h3>
+</div>
+</details>
+<details open class="doc-section" id="operations">
+<summary>Operations</summary>
+<div class="section-body">
+<h3 id="createseries">CreateSeries <a class="anchor-link" href="#createseries">#</a></h3>
 <p><strong>Build all series from the stored specifications</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub CreateSeries(): End Sub
@@ -171,8 +186,12 @@ Dispatches to the appropriate builder based on the graph mode.
 Must be called before accessing series properties or SpecsLists.
 Also called lazily by the Valid property on first access.</p>
 <hr />
-
+</div>
+</details>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

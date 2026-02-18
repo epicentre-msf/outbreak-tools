@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>IAnalysisOutput - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -15,8 +16,10 @@ method that orchestrates the full analysis output pipeline: building
 cross-tables, writing formulas, registering graphs, and rendering charts
 across all analysis scopes.
 Scope for analysis worksheet selection</p>
-<h2>Methods</h2>
-<h3>WriteAnalysis</h3>
+<details open class="doc-section" id="methods">
+<summary>Methods</summary>
+<div class="section-body">
+<h3 id="writeanalysis">WriteAnalysis <a class="anchor-link" href="#writeanalysis">#</a></h3>
 <p><strong>Write all analysis tables, formulas, and graphs to the output</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub WriteAnalysis(): End Sub
@@ -27,8 +30,12 @@ builds cross-tables from the table specifications, writes formulas via
 CrossTableFormula, registers table and graph metadata in AnaTabIds,
 and renders all tracked graphs on the output worksheets.</p>
 <hr />
-
+</div>
+</details>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

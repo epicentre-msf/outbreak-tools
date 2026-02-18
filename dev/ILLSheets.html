@@ -5,21 +5,28 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ILLSheets - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>ILLSheets</h1>
-<h2>Properties</h2>
-<h3>Dictionary</h3>
+<details open class="doc-section" id="properties">
+<summary>Properties</summary>
+<div class="section-body">
+<h3 id="dictionary">Dictionary <a class="anchor-link" href="#dictionary">#</a></h3>
 <p><strong>Dictionary accessor</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Dictionary() As ILLdictionary: End Property
 </code></pre>
 <p><strong>Returns:</strong> ILLdictionary backing store for the sheets helper.</p>
 <hr />
-<h2>Queries</h2>
-<h3>SheetInfo</h3>
+</div>
+</details>
+<details open class="doc-section" id="queries">
+<summary>Queries</summary>
+<div class="section-body">
+<h3 id="sheetinfo">SheetInfo <a class="anchor-link" href="#sheetinfo">#</a></h3>
 <p><strong>Retrieve a specific metadata entry for the supplied sheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function SheetInfo(ByVal sheetName As String, Optional ByVal info As Byte = SheetInfoType.SheetInfoSheetType) As String: End Function
@@ -31,7 +38,7 @@
 </ul>
 <p><strong>Returns:</strong> String metadata value.</p>
 <hr />
-<h3>Contains</h3>
+<h3 id="contains">Contains <a class="anchor-link" href="#contains">#</a></h3>
 <p><strong>Determine whether the dictionary contains the supplied sheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Contains(ByVal sheetName As String) As Boolean: End Function
@@ -42,7 +49,7 @@
 </ul>
 <p><strong>Returns:</strong> True when the sheet exists.</p>
 <hr />
-<h3>DataBounds</h3>
+<h3 id="databounds">DataBounds <a class="anchor-link" href="#databounds">#</a></h3>
 <p><strong>Return positional bounds for the sheet layout</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function DataBounds(ByVal sheetName As String, Optional ByVal Bound As Byte = SheetBound.RowSart) As Long: End Function
@@ -54,7 +61,7 @@
 </ul>
 <p><strong>Returns:</strong> Long bound value.</p>
 <hr />
-<h3>ContainsControl</h3>
+<h3 id="containscontrol">ContainsControl <a class="anchor-link" href="#containscontrol">#</a></h3>
 <p><strong>Test whether a sheet exposes the requested control type</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function ContainsControl(ByVal sheetName As String, _
@@ -69,7 +76,7 @@
 </ul>
 <p><strong>Returns:</strong> True when at least one variable matches the control.</p>
 <hr />
-<h3>VariableAddress</h3>
+<h3 id="variableaddress">VariableAddress <a class="anchor-link" href="#variableaddress">#</a></h3>
 <p><strong>Build a cell address pointing to the variable location</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function VariableAddress(ByVal varName As String, Optional ByVal onSheet As String = vbNullString) As String: End Function
@@ -81,7 +88,7 @@
 </ul>
 <p><strong>Returns:</strong> String Excel address for the variable.</p>
 <hr />
-<h3>RowIndex</h3>
+<h3 id="rowindex">RowIndex <a class="anchor-link" href="#rowindex">#</a></h3>
 <p><strong>Retrieve the worksheet row containing the sheet metadata row</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function RowIndex(ByVal sheetName As String) As Long: End Function
@@ -92,7 +99,7 @@
 </ul>
 <p><strong>Returns:</strong> Long worksheet row index (0 when not found).</p>
 <hr />
-<h3>NumberOfVars</h3>
+<h3 id="numberofvars">NumberOfVars <a class="anchor-link" href="#numberofvars">#</a></h3>
 <p><strong>Count the variables assigned to the sheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function NumberOfVars(ByVal sheetName As String) As Long: End Function
@@ -103,8 +110,12 @@
 </ul>
 <p><strong>Returns:</strong> Long number of variables.</p>
 <hr />
-
+</div>
+</details>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

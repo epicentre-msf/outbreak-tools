@@ -5,13 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>IDiseaseLogger - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>IDiseaseLogger</h1>
-<h2>Logging</h2>
-<h3>Record</h3>
+<details open class="doc-section" id="logging">
+<summary>Logging</summary>
+<div class="section-body">
+<h3 id="record">Record <a class="anchor-link" href="#record">#</a></h3>
 <p><strong>Record a new log entry.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Record(ByVal operation As String, _
@@ -27,29 +30,41 @@
 <li><code>details</code>: Optional BetterArray containing additional context strings.</li>
 </ul>
 <hr />
-<h2>Query</h2>
-<h3>Entries</h3>
+</div>
+</details>
+<details open class="doc-section" id="query">
+<summary>Query</summary>
+<div class="section-body">
+<h3 id="entries">Entries <a class="anchor-link" href="#entries">#</a></h3>
 <p><strong>Retrieve recorded entries.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Entries() As BetterArray
 </code></pre>
 <p><strong>Returns:</strong> BetterArray clone containing log entry snapshots.</p>
 <hr />
-<h3>HasEntries</h3>
+<h3 id="hasentries">HasEntries <a class="anchor-link" href="#hasentries">#</a></h3>
 <p><strong>Indicates whether any entries have been recorded.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get HasEntries() As Boolean
 </code></pre>
 <hr />
-<h2>Maintenance</h2>
-<h3>Clear</h3>
+</div>
+</details>
+<details open class="doc-section" id="maintenance">
+<summary>Maintenance</summary>
+<div class="section-body">
+<h3 id="clear">Clear <a class="anchor-link" href="#clear">#</a></h3>
 <p><strong>Clear all recorded entries.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Clear()
 </code></pre>
 <hr />
-
+</div>
+</details>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>IDesignerPreparation - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -15,8 +16,10 @@ methods to bind to a designer workbook, run full preparation tasks
 (import translations, create dropdown lists, hide worksheets, seed
 HiddenNames flags, apply T_Multi validations), and persist or read
 ribbon checkbox flags through workbook-level hidden names.</p>
-<h2>Lifecycle</h2>
-<h3>Configure</h3>
+<details open class="doc-section" id="lifecycle">
+<summary>Lifecycle</summary>
+<div class="section-body">
+<h3 id="configure">Configure <a class="anchor-link" href="#configure">#</a></h3>
 <p><strong>Bind the preparation helper to a designer workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Configure(ByVal hostBook As Workbook)
@@ -28,7 +31,7 @@ cached hidden names store. Must be called before any other operation.</p>
 <li><code>hostBook</code>: Workbook. The designer workbook to prepare.</li>
 </ul>
 <hr />
-<h3>Prepare</h3>
+<h3 id="prepare">Prepare <a class="anchor-link" href="#prepare">#</a></h3>
 <p><strong>Execute all preparation tasks on the designer workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Prepare(ByRef devManager As IDevelopment)
@@ -48,8 +51,12 @@ development manager.</p>
 <li><code>devManager</code>: IDevelopment. ByRef development manager instance, or Nothing.</li>
 </ul>
 <hr />
-<h2>Settings</h2>
-<h3>SetFlag</h3>
+</div>
+</details>
+<details open class="doc-section" id="settings">
+<summary>Settings</summary>
+<div class="section-body">
+<h3 id="setflag">SetFlag <a class="anchor-link" href="#setflag">#</a></h3>
 <p><strong>Persist a ribbon checkbox flag as a hidden name</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub SetFlag(ByVal nameId As String, ByVal enabled As Boolean)
@@ -63,7 +70,7 @@ default flags exist before writing.</p>
 <li><code>enabled</code>: Boolean. True to store &quot;Yes&quot;, False to store &quot;No&quot;.</li>
 </ul>
 <hr />
-<h3>GetFlag</h3>
+<h3 id="getflag">GetFlag <a class="anchor-link" href="#getflag">#</a></h3>
 <p><strong>Read a ribbon checkbox flag from hidden names</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function GetFlag(ByVal nameId As String, Optional ByVal defaultValue As Boolean = False) As Boolean
@@ -78,8 +85,12 @@ the defaultValue when the name does not exist.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when the stored value is &quot;Yes&quot;.</p>
 <hr />
-<h2>State</h2>
-<h3>HostWorkbook</h3>
+</div>
+</details>
+<details open class="doc-section" id="state">
+<summary>State</summary>
+<div class="section-body">
+<h3 id="hostworkbook">HostWorkbook <a class="anchor-link" href="#hostworkbook">#</a></h3>
 <p><strong>The configured host workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get HostWorkbook() As Workbook
@@ -88,7 +99,7 @@ the defaultValue when the name does not exist.</p>
 error when accessed before configuration.</p>
 <p><strong>Returns:</strong> Workbook. The host workbook.</p>
 <hr />
-<h3>HiddenStore</h3>
+<h3 id="hiddenstore">HiddenStore <a class="anchor-link" href="#hiddenstore">#</a></h3>
 <p><strong>The hidden names store used for designer settings</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get HiddenStore() As IHiddenNames
@@ -98,7 +109,7 @@ flags. The store is lazily initialised on first access from the host
 workbook.</p>
 <p><strong>Returns:</strong> IHiddenNames. The hidden names manager.</p>
 <hr />
-<h3>Dropdowns</h3>
+<h3 id="dropdowns">Dropdowns <a class="anchor-link" href="#dropdowns">#</a></h3>
 <p><strong>The dropdown manager created during preparation</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Dropdowns() As IDropdownLists
@@ -108,8 +119,12 @@ worksheet. Lazily initialises the manager on first access if it was
 not already created by Prepare.</p>
 <p><strong>Returns:</strong> IDropdownLists. The dropdown manager instance.</p>
 <hr />
-
+</div>
+</details>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>IFormulaData - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -13,8 +14,10 @@
 <p>Defines the public contract for the FormulaData class, exposing
 membership lookups for allowed Excel functions, permitted separator
 characters, and grouped-formula metadata used by the Formulas parser.</p>
-<h2>Lookups</h2>
-<h3>SpecialCharacterIncludes</h3>
+<details open class="doc-section" id="lookups">
+<summary>Lookups</summary>
+<div class="section-body">
+<h3 id="specialcharacterincludes">SpecialCharacterIncludes <a class="anchor-link" href="#specialcharacterincludes">#</a></h3>
 <p><strong>Test whether a character is part of the allowed separators list</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function SpecialCharacterIncludes(ByVal specialChar As String) As Boolean
@@ -29,7 +32,7 @@ the cache.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when the character exists in the lookup.</p>
 <hr />
-<h3>ExcelFormulasIncludes</h3>
+<h3 id="excelformulasincludes">ExcelFormulasIncludes <a class="anchor-link" href="#excelformulasincludes">#</a></h3>
 <p><strong>Test whether an Excel function is whitelisted</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function ExcelFormulasIncludes(ByVal ExcelFormula As String) As Boolean
@@ -43,7 +46,7 @@ Returns False for empty input.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when the function exists in the lookup.</p>
 <hr />
-<h3>IsGroupFunction</h3>
+<h3 id="isgroupfunction">IsGroupFunction <a class="anchor-link" href="#isgroupfunction">#</a></h3>
 <p><strong>Determine whether a setup function is registered as grouped</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function IsGroupFunction(ByVal functionName As String) As Boolean
@@ -57,7 +60,7 @@ evaluation and produce aggregated Excel expressions.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when the function is recognised for grouped parsing.</p>
 <hr />
-<h3>GroupAggregator</h3>
+<h3 id="groupaggregator">GroupAggregator <a class="anchor-link" href="#groupaggregator">#</a></h3>
 <p><strong>Retrieve the Excel aggregator mapped to the grouped token</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function GroupAggregator(ByVal functionName As String) As String
@@ -71,7 +74,7 @@ vbNullString when the token is not registered.</p>
 </ul>
 <p><strong>Returns:</strong> String. Aggregator name or vbNullString when the token is unknown.</p>
 <hr />
-<h3>GroupUsesNativeFunction</h3>
+<h3 id="groupusesnativefunction">GroupUsesNativeFunction <a class="anchor-link" href="#groupusesnativefunction">#</a></h3>
 <p>*<em>Indicate whether the grouped token should emit a native Excel <em>IFS function</em></em></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function GroupUsesNativeFunction(ByVal functionName As String) As Boolean
@@ -84,8 +87,12 @@ vbNullString when the token is not registered.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when the grouped function maps directly to a native Excel *IFS function.</p>
 <hr />
-
+</div>
+</details>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

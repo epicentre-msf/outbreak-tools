@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>IDevelopment - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -17,8 +18,10 @@ deployment settings (hidden and protected sheets), and executing the full
 deployment workflow. Consumers obtain an IDevelopment reference from
 Development.Create and interact exclusively through this interface.</p>
 <p><strong>Depends on:</strong> <a href="IPasswords.html">IPasswords</a></p>
-<h2>Lifecycle</h2>
-<h3>Initialise</h3>
+<details open class="doc-section" id="lifecycle">
+<summary>Lifecycle</summary>
+<div class="section-body">
+<h3 id="initialise">Initialise <a class="anchor-link" href="#initialise">#</a></h3>
 <p><strong>Bind the development helper to a Dev worksheet and optional code sheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Initialise(ByVal devSheet As Worksheet, Optional ByVal codeSheet As Worksheet)
@@ -35,8 +38,12 @@ worksheet. When a codeSheet is provided, it replaces the restored worksheet.</p>
 table host.</li>
 </ul>
 <hr />
-<h2>Configuration</h2>
-<h3>DevWorksheet</h3>
+</div>
+</details>
+<details open class="doc-section" id="configuration">
+<summary>Configuration</summary>
+<div class="section-body">
+<h3 id="devworksheet">DevWorksheet <a class="anchor-link" href="#devworksheet">#</a></h3>
 <p><strong>Development worksheet reference.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get DevWorksheet() As Worksheet
@@ -47,7 +54,7 @@ Returns the Dev worksheet that stores configuration named ranges such as
 folder paths and counter values. Set during Initialise.</p>
 <p><strong>Returns:</strong> Worksheet. The development worksheet bound to this instance.</p>
 <hr />
-<h3>CodeWorksheet</h3>
+<h3 id="codeworksheet">CodeWorksheet <a class="anchor-link" href="#codeworksheet">#</a></h3>
 <p><strong>Worksheet registered to host development tables.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get CodeWorksheet() As Worksheet
@@ -57,7 +64,7 @@ May be Nothing when no code worksheet has been registered, in which case
 new tables are created on the Dev sheet itself.</p>
 <p><strong>Returns:</strong> Worksheet. The code worksheet, or Nothing when none is registered.</p>
 <hr />
-<h3>DisplayPrompts</h3>
+<h3 id="displayprompts">DisplayPrompts <a class="anchor-link" href="#displayprompts">#</a></h3>
 <p><strong>Whether confirmation prompts are displayed.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get DisplayPrompts() As Boolean
@@ -67,7 +74,7 @@ such as importing, exporting, or adding tables. Defaults to True after
 Initialise. Set to False to suppress prompts during automated workflows.</p>
 <p><strong>Returns:</strong> Boolean. True when prompts are enabled.</p>
 <hr />
-<h3>DisplayPrompts</h3>
+<h3 id="displayprompts">DisplayPrompts <a class="anchor-link" href="#displayprompts">#</a></h3>
 <p><strong>Set the confirmation prompt toggle.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Let DisplayPrompts(ByVal value As Boolean)
@@ -77,8 +84,12 @@ Initialise. Set to False to suppress prompts during automated workflows.</p>
 <li><code>value</code>: Boolean. True to enable prompts, False to suppress them.</li>
 </ul>
 <hr />
-<h2>Worksheet Preparation</h2>
-<h3>AddCodeSheets</h3>
+</div>
+</details>
+<details open class="doc-section" id="worksheet-preparation">
+<summary>Worksheet Preparation</summary>
+<div class="section-body">
+<h3 id="addcodesheets">AddCodeSheets <a class="anchor-link" href="#addcodesheets">#</a></h3>
 <p><strong>Register an existing worksheet to host future development tables.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function AddCodeSheets(ByVal sheetName As String) As Worksheet
@@ -96,7 +107,7 @@ table host.</li>
 <p><strong>Returns:</strong> Worksheet. The registered worksheet reference, or Nothing when the
 user declines the confirmation prompt.</p>
 <hr />
-<h3>AddClassTable</h3>
+<h3 id="addclasstable">AddClassTable <a class="anchor-link" href="#addclasstable">#</a></h3>
 <p><strong>Create a classes table on the code worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function AddClassTable(Optional ByVal includeTests As Boolean = False) As ListObject
@@ -113,7 +124,7 @@ classes table. Defaults to False.</li>
 <p><strong>Returns:</strong> ListObject. The newly created table, or Nothing when the user
 declines the confirmation prompt.</p>
 <hr />
-<h3>AddModuleTable</h3>
+<h3 id="addmoduletable">AddModuleTable <a class="anchor-link" href="#addmoduletable">#</a></h3>
 <p><strong>Create a modules table on the code worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function AddModuleTable(Optional ByVal includeTests As Boolean = False) As ListObject
@@ -129,7 +140,7 @@ modules table. Defaults to False.</li>
 <p><strong>Returns:</strong> ListObject. The newly created table, or Nothing when the user
 declines the confirmation prompt.</p>
 <hr />
-<h3>AddFormsTable</h3>
+<h3 id="addformstable">AddFormsTable <a class="anchor-link" href="#addformstable">#</a></h3>
 <p><strong>Create a forms mapping table on the code worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function AddFormsTable() As ListObject
@@ -140,7 +151,7 @@ code from a standard module into the code-behind of a UserForm component.</p>
 <p><strong>Returns:</strong> ListObject. The newly created table, or Nothing when the user
 declines the confirmation prompt.</p>
 <hr />
-<h3>AddTestTable</h3>
+<h3 id="addtesttable">AddTestTable <a class="anchor-link" href="#addtesttable">#</a></h3>
 <p><strong>Create a test modules table on the code worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function AddTestTable() As ListObject
@@ -151,8 +162,12 @@ tests folder.</p>
 <p><strong>Returns:</strong> ListObject. The newly created table, or Nothing when the user
 declines the confirmation prompt.</p>
 <hr />
-<h2>Deployment</h2>
-<h3>AddHiddenSheet</h3>
+</div>
+</details>
+<details open class="doc-section" id="deployment">
+<summary>Deployment</summary>
+<div class="section-body">
+<h3 id="addhiddensheet">AddHiddenSheet <a class="anchor-link" href="#addhiddensheet">#</a></h3>
 <p><strong>Register a worksheet that should be hidden during deployment.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub AddHiddenSheet(ByVal sheetName As String)
@@ -166,7 +181,7 @@ is set to xlSheetVeryHidden.</p>
 <li><code>sheetName</code>: String. Name of the worksheet to hide during deployment.</li>
 </ul>
 <hr />
-<h3>AddProtectedSheet</h3>
+<h3 id="addprotectedsheet">AddProtectedSheet <a class="anchor-link" href="#addprotectedsheet">#</a></h3>
 <p><strong>Register a worksheet that should be protected during deployment.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub AddProtectedSheet(ByVal sheetName As String, _
@@ -185,7 +200,7 @@ the protected sheet. Defaults to True.</li>
 allowed on the protected sheet. Defaults to True.</li>
 </ul>
 <hr />
-<h3>ImportAll</h3>
+<h3 id="importall">ImportAll <a class="anchor-link" href="#importall">#</a></h3>
 <p><strong>Import all code artefacts from configured folders into the host workbook.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ImportAll()
@@ -194,7 +209,7 @@ allowed on the protected sheet. Defaults to True.</li>
 entry, the corresponding .bas or .cls file is imported from disk into the
 VBProject, replacing any existing component of the same name.</p>
 <hr />
-<h3>ExportAll</h3>
+<h3 id="exportall">ExportAll <a class="anchor-link" href="#exportall">#</a></h3>
 <p><strong>Export all code artefacts from the host workbook to configured folders.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ExportAll()
@@ -203,7 +218,7 @@ VBProject, replacing any existing component of the same name.</p>
 entry, the VBA component is exported from the VBProject to disk,
 overwriting any existing file.</p>
 <hr />
-<h3>AddFormsCodes</h3>
+<h3 id="addformscodes">AddFormsCodes <a class="anchor-link" href="#addformscodes">#</a></h3>
 <p><strong>Copy code modules into associated UserForm components.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub AddFormsCodes()
@@ -212,7 +227,7 @@ overwriting any existing file.</p>
 listed in forms tables into the corresponding UserForm component. After
 copying, the source module is removed from the VBProject.</p>
 <hr />
-<h3>Deploy</h3>
+<h3 id="deploy">Deploy <a class="anchor-link" href="#deploy">#</a></h3>
 <p><strong>Protect and hide registered worksheets, copy forms code, and set the deployment marker.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Deploy(ByVal passwords As IPasswords, Optional ByVal lockWorkbook As Boolean = False)
@@ -229,8 +244,12 @@ handler, and sets the workbook-level deployment flag to &quot;Yes&quot;.</p>
 structure after protecting sheets. Defaults to False.</li>
 </ul>
 <hr />
-<h2>Status</h2>
-<h3>InDeployment</h3>
+</div>
+</details>
+<details open class="doc-section" id="status">
+<summary>Status</summary>
+<div class="section-body">
+<h3 id="indeployment">InDeployment <a class="anchor-link" href="#indeployment">#</a></h3>
 <p><strong>Check whether the workbook has already been deployed.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function InDeployment() As Boolean
@@ -241,8 +260,12 @@ the stored value equals &quot;Yes&quot; (case-insensitive). Returns False when t
 name does not exist or contains any other value.</p>
 <p><strong>Returns:</strong> Boolean. True when the deployment flag equals &quot;Yes&quot;.</p>
 <hr />
-
+</div>
+</details>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

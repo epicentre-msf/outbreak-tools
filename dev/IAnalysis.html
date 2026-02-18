@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>IAnalysis - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -13,8 +14,10 @@
 <p>Defines the public contract for the Analysis class: worksheet access, row
 management (add, insert, delete, remove), data exchange (import, export,
 translate, sort, clean), table validation, and checking/trace access.</p>
-<h2>Elements</h2>
-<h3>Wksh</h3>
+<details open class="doc-section" id="elements">
+<summary>Elements</summary>
+<div class="section-body">
+<h3 id="wksh">Wksh <a class="anchor-link" href="#wksh">#</a></h3>
 <p><strong>Worksheet hosting the analysis tables</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Wksh() As Worksheet: End Property
@@ -22,8 +25,12 @@ translate, sort, clean), table validation, and checking/trace access.</p>
 <p>Returns the worksheet bound to this analysis controller during construction.</p>
 <p><strong>Returns:</strong> Worksheet. The backing analysis worksheet.</p>
 <hr />
-<h2>RowManagement</h2>
-<h3>AddRows</h3>
+</div>
+</details>
+<details open class="doc-section" id="rowmanagement">
+<summary>RowManagement</summary>
+<div class="section-body">
+<h3 id="addrows">AddRows <a class="anchor-link" href="#addrows">#</a></h3>
 <p><strong>Add rows to analysis tables based on the selection header</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub AddRows(): End Sub
@@ -32,7 +39,7 @@ translate, sort, clean), table validation, and checking/trace access.</p>
 Reads the header instruction in cell A1 of the analysis worksheet and appends
 rows to the matching analysis table(s). Delegates to ManageRows internally.</p>
 <hr />
-<h3>InsertRows</h3>
+<h3 id="insertrows">InsertRows <a class="anchor-link" href="#insertrows">#</a></h3>
 <p><strong>Insert rows based on a worksheet selection</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub InsertRows(ByVal targetCell As Range, _
@@ -48,7 +55,7 @@ protect stacked ListObjects.</p>
 to keep stacked tables aligned. Defaults to True.</li>
 </ul>
 <hr />
-<h3>DeleteRows</h3>
+<h3 id="deleterows">DeleteRows <a class="anchor-link" href="#deleterows">#</a></h3>
 <p><strong>Delete rows intersecting the selection</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub DeleteRows(ByVal targetCell As Range, _
@@ -66,7 +73,7 @@ with data. Defaults to True.</li>
 after deletion. Defaults to True.</li>
 </ul>
 <hr />
-<h3>RemoveRows</h3>
+<h3 id="removerows">RemoveRows <a class="anchor-link" href="#removerows">#</a></h3>
 <p><strong>Remove rows from analysis tables while preserving required rows</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub RemoveRows(): End Sub
@@ -74,7 +81,7 @@ after deletion. Defaults to True.</li>
 <p>Calls the row manager in deletion mode to trim each table down to its required
 minimum row count.</p>
 <hr />
-<h3>ManageRows</h3>
+<h3 id="managerows">ManageRows <a class="anchor-link" href="#managerows">#</a></h3>
 <p><strong>Central row-management dispatcher</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ManageRows(Optional ByVal del As Boolean = False): End Sub
@@ -87,8 +94,12 @@ by adding or deleting rows depending on the del flag.</p>
 added. Defaults to False.</li>
 </ul>
 <hr />
-<h2>DataExchange</h2>
-<h3>Import</h3>
+</div>
+</details>
+<details open class="doc-section" id="dataexchange">
+<summary>DataExchange</summary>
+<div class="section-body">
+<h3 id="import">Import <a class="anchor-link" href="#import">#</a></h3>
 <p><strong>Import analysis ListObjects from another worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Import(ByVal sourchesheet As Worksheet): End Sub
@@ -102,7 +113,7 @@ result afterward.</p>
 <li><code>sourcesheet</code>: Worksheet. The worksheet providing the source analysis tables.</li>
 </ul>
 <hr />
-<h3>Export</h3>
+<h3 id="export">Export <a class="anchor-link" href="#export">#</a></h3>
 <p><strong>Export the analysis worksheet to a workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Export(ByVal sourcewb As Workbook, Optional ByVal Hide As Long = xlSheetHidden): End Sub
@@ -115,7 +126,7 @@ processes can consume the analysis tables.</p>
 <li><code>Hide</code>: Optional Long. Excel visibility constant. Defaults to xlSheetHidden.</li>
 </ul>
 <hr />
-<h3>Translate</h3>
+<h3 id="translate">Translate <a class="anchor-link" href="#translate">#</a></h3>
 <p><strong>Translate analysis labels using a translation object</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Translate(ByVal translator As ITranslationObject): End Sub
@@ -127,7 +138,7 @@ worksheet reflects the currently selected language.</p>
 <li><code>translator</code>: ITranslationObject. The translation engine to use.</li>
 </ul>
 <hr />
-<h3>Sort</h3>
+<h3 id="sort">Sort <a class="anchor-link" href="#sort">#</a></h3>
 <p><strong>Sort analysis ListObjects and enforce minimum rows</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Sort(): End Sub
@@ -135,7 +146,7 @@ worksheet reflects the currently selected language.</p>
 <p>Iterates through the known analysis tables, sorts them with the correct
 priorities and trims trailing rows so every table meets its structural rules.</p>
 <hr />
-<h3>Clean</h3>
+<h3 id="clean">Clean <a class="anchor-link" href="#clean">#</a></h3>
 <p><strong>Clean the analysis worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Clean(): End Sub
@@ -143,7 +154,7 @@ priorities and trims trailing rows so every table meets its structural rules.</p
 <p>Iterates through all ListObjects on the worksheet and cleans each one via
 CustomTable.Clean.</p>
 <hr />
-<h3>EnsureAnalysisTables</h3>
+<h3 id="ensureanalysistables">EnsureAnalysisTables <a class="anchor-link" href="#ensureanalysistables">#</a></h3>
 <p><strong>Ensure all expected analysis tables are present</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub EnsureAnalysisTables(): End Sub
@@ -151,8 +162,12 @@ CustomTable.Clean.</p>
 <p>Validates that every expected ListObject exists on the analysis worksheet.
 Raises an error or logs a warning for any that are missing.</p>
 <hr />
-<h2>Checkings</h2>
-<h3>HasCheckings</h3>
+</div>
+</details>
+<details open class="doc-section" id="checkings">
+<summary>Checkings</summary>
+<div class="section-body">
+<h3 id="hascheckings">HasCheckings <a class="anchor-link" href="#hascheckings">#</a></h3>
 <p><strong>Whether trace entries were recorded</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get HasCheckings() As Boolean: End Property
@@ -161,7 +176,7 @@ Raises an error or logs a warning for any that are missing.</p>
 Provides a quick way for callers to know if diagnostics are available.</p>
 <p><strong>Returns:</strong> Boolean. True when at least one trace entry has been logged.</p>
 <hr />
-<h3>CheckingValues</h3>
+<h3 id="checkingvalues">CheckingValues <a class="anchor-link" href="#checkingvalues">#</a></h3>
 <p><strong>Retrieve the collected trace entries</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get CheckingValues() As Object: End Property
@@ -169,8 +184,12 @@ Provides a quick way for callers to know if diagnostics are available.</p>
 <p>Returns the underlying checking object when traces are available.</p>
 <p><strong>Returns:</strong> Object. The IChecking instance, or Nothing when no traces exist.</p>
 <hr />
-
+</div>
+</details>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CrossTableFormula - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -21,8 +22,10 @@ through the predeclared Create factory and interact via the ICrossTableFormula
 interface.</p>
 <p><strong>Depends on:</strong> <a href="ICrossTable.html">ICrossTable</a>, <a href="IFormulaData.html">IFormulaData</a>, <a href="IFormulas.html">IFormulas</a>, <a href="Formulas.html">Formulas</a>, <a href="IFormulaCondition.html">IFormulaCondition</a>, <a href="FormulaCondition.html">FormulaCondition</a>, <a href="ITableSpecs.html">ITableSpecs</a>, <a href="ISpatialTables.html">ISpatialTables</a>, <a href="SpatialTables.html">SpatialTables</a>, <a href="BetterArray.html">BetterArray</a></p>
 <p><strong>Version:</strong> 1.0 (2026-02-10)</p>
-<h2>Instantiation</h2>
-<h3>create</h3>
+<details open class="doc-section" id="instantiation">
+<summary>Instantiation</summary>
+<div class="section-body">
+<h3 id="create">create <a class="anchor-link" href="#create">#</a></h3>
 <p><strong>Create a CrossTableFormula instance bound to a cross-table and formula data source.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal tabl As ICrossTable, _
@@ -44,8 +47,12 @@ callers program against the contract rather than the concrete class.</p>
 <li>InvalidArgument When fData is Nothing.</li>
 </ul>
 <hr />
-<h2>Shortcut Properties</h2>
-<h3>valid</h3>
+</div>
+</details>
+<details open class="doc-section" id="shortcut-properties">
+<summary>Shortcut Properties</summary>
+<div class="section-body">
+<h3 id="valid">valid <a class="anchor-link" href="#valid">#</a></h3>
 <p><strong>Whether the formula object is valid for the analysis context.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get Valid() As Boolean
@@ -58,8 +65,12 @@ template cannot be parsed. When Valid returns False, the AddFormulas method
 exits immediately without writing any formulas to the worksheet.</p>
 <p><strong>Returns:</strong> Boolean. True if the formula can be used for analysis-scope generation.</p>
 <hr />
-<h2>Core Operations</h2>
-<h3>add-formulas</h3>
+</div>
+</details>
+<details open class="doc-section" id="core-operations">
+<summary>Core Operations</summary>
+<div class="section-body">
+<h3 id="add-formulas">add-formulas <a class="anchor-link" href="#add-formulas">#</a></h3>
 <p><strong>Write all formulas to the cross-table on the worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddFormulas()
@@ -77,10 +88,12 @@ wrapped in blank-when-empty guards; ScopeSpatial sets up geographic or health-fa
 lookups, validation dropdowns, ordering, and registers the table with SpatialTables
 for refresh operations. The method exits immediately if Valid returns False.</p>
 <hr />
+</div>
+</details>
 <details>
 <summary>Internal members (not exported)</summary>
-<h2>Internal Properties</h2>
-<h3>self</h3>
+<h2 id="int-internal-properties">Internal Properties</h2>
+<h3 id="int-self">self <a class="anchor-link" href="#int-self">#</a></h3>
 <p><strong>Current object instance cast to the interface.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Self() As ICrossTableFormula
@@ -90,7 +103,7 @@ Convenience accessor so the Create factory can return the newly constructed
 object through the ICrossTableFormula interface.</p>
 <p><strong>Returns:</strong> ICrossTableFormula. The current instance.</p>
 <hr />
-<h3>table-get</h3>
+<h3 id="int-table-get">table-get <a class="anchor-link" href="#int-table-get">#</a></h3>
 <p><strong>ICrossTable backing store.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Table() As ICrossTable
@@ -100,7 +113,7 @@ cross-table provides the worksheet reference, named ranges, and layout
 metadata needed to place formulas.</p>
 <p><strong>Returns:</strong> ICrossTable. The bound cross-table instance.</p>
 <hr />
-<h3>table-set</h3>
+<h3 id="int-table-set">table-set <a class="anchor-link" href="#int-table-set">#</a></h3>
 <p><strong>Assign the ICrossTable backing store.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set Table(ByVal tabl As ICrossTable)
@@ -110,7 +123,7 @@ metadata needed to place formulas.</p>
 <li><code>tabl</code>: ICrossTable. The cross-table to bind to this formula writer.</li>
 </ul>
 <hr />
-<h3>form-data-get</h3>
+<h3 id="int-form-data-get">form-data-get <a class="anchor-link" href="#int-form-data-get">#</a></h3>
 <p><strong>IFormulaData backing store.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get formData() As IFormulaData
@@ -119,7 +132,7 @@ metadata needed to place formulas.</p>
 variable names, linelist ranges, and formula templates during generation.</p>
 <p><strong>Returns:</strong> IFormulaData. The bound formula-data instance.</p>
 <hr />
-<h3>form-data-set</h3>
+<h3 id="int-form-data-set">form-data-set <a class="anchor-link" href="#int-form-data-set">#</a></h3>
 <p><strong>Assign the IFormulaData backing store.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set formData(ByVal fData As IFormulaData)
@@ -129,8 +142,8 @@ variable names, linelist ranges, and formula templates during generation.</p>
 <li><code>fData</code>: IFormulaData. The formula-data source to bind.</li>
 </ul>
 <hr />
-<h2>Shortcut Properties</h2>
-<h3>specifications</h3>
+<h2 id="int-shortcut-properties">Shortcut Properties</h2>
+<h3 id="int-specifications">specifications <a class="anchor-link" href="#int-specifications">#</a></h3>
 <p><strong>ITableSpecs shortcut for the cross-table specifications.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get Specifications() As ITableSpecs
@@ -144,7 +157,7 @@ and the section it belongs to. This property avoids repeatedly chaining
 Table.Specifications throughout the class methods.</p>
 <p><strong>Returns:</strong> ITableSpecs. The specification dictionary for the underlying cross-table.</p>
 <hr />
-<h3>summary-function</h3>
+<h3 id="int-summary-function">summary-function <a class="anchor-link" href="#int-summary-function">#</a></h3>
 <p><strong>Summary function name from the table specifications.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get SummaryFunction() As String
@@ -157,7 +170,7 @@ drives formula generation logic throughout the class, especially in
 AddNonEmptyTableConditions where &quot;N&quot;/&quot;N()&quot; use a different operator pattern.</p>
 <p><strong>Returns:</strong> String. A value such as &quot;N&quot;, &quot;N()&quot;, &quot;SUM&quot;, &quot;MEAN&quot;, etc.</p>
 <hr />
-<h3>id</h3>
+<h3 id="int-id">id <a class="anchor-link" href="#int-id">#</a></h3>
 <p><strong>Unique identifier string for this cross-table.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get ID() As String
@@ -169,7 +182,7 @@ Every named range that belongs to this table is suffixed with this ID, making
 it the primary key for locating table regions on the worksheet.</p>
 <p><strong>Returns:</strong> String. The table identifier unique within the analysis workbook.</p>
 <hr />
-<h3>section-id</h3>
+<h3 id="int-section-id">section-id <a class="anchor-link" href="#int-section-id">#</a></h3>
 <p><strong>Section identifier for the group this table belongs to.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get SectionId() As String
@@ -182,7 +195,7 @@ shared named ranges like &quot;FIRST_VALUE_START_TIME_<sectionId>&quot; and
 &quot;TOTAL_ROW_<sectionId>&quot; that are defined once per section rather than per table.</p>
 <p><strong>Returns:</strong> String. The anchor table ID for this table section.</p>
 <hr />
-<h3>table-type</h3>
+<h3 id="int-table-type">table-type <a class="anchor-link" href="#int-table-type">#</a></h3>
 <p><strong>AnalysisTableScope byte value indicating the cross-table kind.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get TableScope() As Byte
@@ -198,7 +211,7 @@ different formula structures, named range layouts, and condition-building logic.
 <li>Returns Byte rather than the enum type for macOS VBA compatibility.</li>
 </ul>
 <hr />
-<h3>table-formula</h3>
+<h3 id="int-table-formula">table-formula <a class="anchor-link" href="#int-table-formula">#</a></h3>
 <p><strong>Lazy-loaded IFormulas parsing engine for this table.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get TableFormula() As IFormulas
@@ -217,8 +230,8 @@ the IFormulaData reference, and the summary function string. This is intentional
 lazy because not all code paths need the formula engine (e.g., if Valid is False).</li>
 </ul>
 <hr />
-<h2>Range and Formula Helpers</h2>
-<h3>range-exists</h3>
+<h2 id="int-range-and-formula-helpers">Range and Formula Helpers</h2>
+<h3 id="int-range-exists">range-exists <a class="anchor-link" href="#int-range-exists">#</a></h3>
 <p><strong>Check whether a named range exists on the cross-table worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function RangeExists(ByVal rngName As String) As Boolean
@@ -236,7 +249,7 @@ depending on the table missing/total configuration.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True if the named range resolves to a valid Range object.</p>
 <hr />
-<h3>failed-formula</h3>
+<h3 id="int-failed-formula">failed-formula <a class="anchor-link" href="#int-failed-formula">#</a></h3>
 <p><strong>Test whether a generated Excel formula string is syntactically valid.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function FailedFormula(ByVal frmName As String) As Boolean
@@ -260,7 +273,7 @@ to suppress any Excel warning dialogs during the test. Cell(1,1) is always clear
 regardless of success or failure to avoid leaving test artifacts on the worksheet.</li>
 </ul>
 <hr />
-<h3>emp-str</h3>
+<h3 id="int-emp-str">emp-str <a class="anchor-link" href="#int-emp-str">#</a></h3>
 <p><strong>Return the Excel formula literal for an empty string.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function EmpStr() As String
@@ -272,7 +285,7 @@ that test whether a cell is empty. Using Chr(34) avoids VBA double-quote
 escaping issues and keeps the formula-building code readable.</p>
 <p><strong>Returns:</strong> String. The literal text consisting of two Chr(34) characters.</p>
 <hr />
-<h3>non-emp-str</h3>
+<h3 id="int-non-emp-str">non-emp-str <a class="anchor-link" href="#int-non-emp-str">#</a></h3>
 <p><strong>Return the Excel formula literal for &quot;not empty&quot; criteria.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function NonEmpStr() As String
@@ -283,7 +296,7 @@ COUNTIFS criteria for &quot;not empty&quot; when used with the &quot;N&quot; or 
 functions, which need a comparison operator inside the criteria string.</p>
 <p><strong>Returns:</strong> String. The literal &quot;&lt;&gt;&quot; wrapped in double-quote characters for Excel formula use.</p>
 <hr />
-<h3>percentage</h3>
+<h3 id="int-percentage">percentage <a class="anchor-link" href="#int-percentage">#</a></h3>
 <p><strong>Build an IF(ISERR(...)) guarded percentage formula string.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function Percentage(ByVal denomRng As Range, ByVal numRng As Range, _
@@ -305,7 +318,7 @@ fixed.</p>
 </ul>
 <p><strong>Returns:</strong> String. The complete IF(ISERR(...)) Excel formula text without &quot;= &quot; prefix.</p>
 <hr />
-<h3>condition</h3>
+<h3 id="int-condition">condition <a class="anchor-link" href="#int-condition">#</a></h3>
 <p><strong>Wrap a formula in an IF guard that blanks when a condition cell is empty.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function Condition(ByVal rngCondition As Range, ByVal formulaValue As String, _
@@ -326,8 +339,8 @@ zero/error values for unused time period rows.</p>
 </ul>
 <p><strong>Returns:</strong> String. The complete IF(...=&quot;&quot;,&quot;&quot;,formulaValue) Excel formula text.</p>
 <hr />
-<h2>Condition Management</h2>
-<h3>add-table-conditions</h3>
+<h2 id="int-condition-management">Condition Management</h2>
+<h3 id="int-add-table-conditions">add-table-conditions <a class="anchor-link" href="#int-add-table-conditions">#</a></h3>
 <p><strong>Append a variable-name / condition-test pair to the accumulators.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddTableConditions(ByVal varName As String, ByVal conditionName As String)
@@ -351,7 +364,7 @@ is pushed (silent no-op).</p>
 Call ClearTableConditions to reset them before building a new formula.</li>
 </ul>
 <hr />
-<h3>clear-table-conditions</h3>
+<h3 id="int-clear-table-conditions">clear-table-conditions <a class="anchor-link" href="#int-clear-table-conditions">#</a></h3>
 <p><strong>Clear or trim conditions from the accumulator arrays.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ClearTableConditions(Optional ByVal removeNumber As Long = 0)
@@ -373,7 +386,7 @@ need to change between iterations.</p>
 are created fresh and removeNumber is forced to 0 to avoid popping from an empty array.</li>
 </ul>
 <hr />
-<h3>add-non-empty-table-conditions</h3>
+<h3 id="int-add-non-empty-table-conditions">add-non-empty-table-conditions <a class="anchor-link" href="#int-add-non-empty-table-conditions">#</a></h3>
 <p><strong>Add a &quot;non-empty&quot; filter condition adapted to the summary function.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddNonEmptyTableConditions(ByVal varName As String)
@@ -390,8 +403,8 @@ SUMPRODUCT-style not-equal-to-empty test.</p>
 <li><code>varName</code>: String. The linelist variable name to add the non-empty filter for.</li>
 </ul>
 <hr />
-<h2>Excel Formula Builder</h2>
-<h3>current-excel-formula</h3>
+<h2 id="int-excel-formula-builder">Excel Formula Builder</h2>
+<h3 id="int-current-excel-formula">current-excel-formula <a class="anchor-link" href="#int-current-excel-formula">#</a></h3>
 <p><strong>Assembled Excel formula from the current condition accumulators.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get CurrentExcelFormula(Optional ByVal scope As Byte = 2, _
@@ -421,8 +434,8 @@ jumps to Fail immediately. Always call AddTableConditions before requesting
 an analysis-scope formula.</li>
 </ul>
 <hr />
-<h2>Number Format Helper</h2>
-<h3>add-rng-format</h3>
+<h2 id="int-number-format-helper">Number Format Helper</h2>
+<h3 id="int-add-rng-format">add-rng-format <a class="anchor-link" href="#int-add-rng-format">#</a></h3>
 <p><strong>Apply an Excel NumberFormat to a range based on a format keyword.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddRngFormat(ByVal formatValue As String, ByVal rng As Range)
@@ -446,8 +459,8 @@ via Replace and CLng conversion. If the suffix is not a valid number, nbDecimals
 defaults to 1.</li>
 </ul>
 <hr />
-<h2>Error Handling</h2>
-<h3>throw-error</h3>
+<h2 id="int-error-handling">Error Handling</h2>
+<h3 id="int-throw-error">throw-error <a class="anchor-link" href="#int-throw-error">#</a></h3>
 <p><strong>Raise a project error with a standardised source name.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As Long, ByVal message As String)
@@ -465,8 +478,8 @@ providing a consistent stack trace across all methods in this class.</p>
 <li>ProjectError.<varies> Always raises the specified error.</li>
 </ul>
 <hr />
-<h2>Interface Implementation</h2>
-<h3>ICrossTableFormula_Valid</h3>
+<h2 id="int-interface-implementation">Interface Implementation</h2>
+<h3 id="int-icrosstableformula-valid">ICrossTableFormula_Valid <a class="anchor-link" href="#int-icrosstableformula-valid">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get ICrossTableFormula_Valid() As Boolean
 </code></pre>
@@ -483,8 +496,10 @@ See the corresponding Public/Private members above for full documentation.</p>
 <li><a href="src/tests/modules/analyses/TestCrossTableFormula.bas">TestCrossTableFormula.bas</a></li>
 </ul>
 </details>
-
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

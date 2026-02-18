@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Analysis - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -18,8 +19,10 @@ operations to CustomTable. Trace diagnostics are recorded via IChecking and
 can be retrieved through HasCheckings and CheckingValues.</p>
 <p><strong>Depends on:</strong> <a href="CustomTable.html">CustomTable</a>, <a href="Checking.html">Checking</a>, <a href="ITranslationObject.html">ITranslationObject</a>, <a href="BetterArray.html">BetterArray</a>, Checking support, ListObject names used in analysis worksheets</p>
 <p><strong>Version:</strong> 2025-01-15</p>
-<h2>Instantiation</h2>
-<h3>create</h3>
+<details open class="doc-section" id="instantiation">
+<summary>Instantiation</summary>
+<div class="section-body">
+<h3 id="create">create <a class="anchor-link" href="#create">#</a></h3>
 <p><strong>Create an Analysis instance bound to a worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal hostsheet As Worksheet) As IAnalysis
@@ -43,8 +46,12 @@ returned IAnalysis interface.</p>
 <li>Checking</li>
 </ul>
 <hr />
-<h2>RowManagement</h2>
-<h3>addrows</h3>
+</div>
+</details>
+<details open class="doc-section" id="rowmanagement">
+<summary>RowManagement</summary>
+<div class="section-body">
+<h3 id="addrows">addrows <a class="anchor-link" href="#addrows">#</a></h3>
 <p><strong>Add rows based on worksheet header selection</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddRows()
@@ -53,7 +60,7 @@ returned IAnalysis interface.</p>
 Delegates to ManageRows in append mode to add rows to each target
 analysis table based on the instruction in cell A1 of the worksheet.</p>
 <hr />
-<h3>insertrows</h3>
+<h3 id="insertrows">insertrows <a class="anchor-link" href="#insertrows">#</a></h3>
 <p><strong>Insert rows based on the supplied selection</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub InsertRows(ByVal targetCell As Range, _
@@ -71,7 +78,7 @@ by default to protect stacked ListObjects.</p>
 inserted ahead of the resize. Defaults to True.</li>
 </ul>
 <hr />
-<h3>deleterows</h3>
+<h3 id="deleterows">deleterows <a class="anchor-link" href="#deleterows">#</a></h3>
 <p><strong>Delete rows intersecting the selection</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub DeleteRows(ByVal targetCell As Range, _
@@ -91,7 +98,7 @@ along with data. Defaults to True.</li>
 up after deletion. Defaults to True.</li>
 </ul>
 <hr />
-<h3>removerows</h3>
+<h3 id="removerows">removerows <a class="anchor-link" href="#removerows">#</a></h3>
 <p><strong>Remove rows while preserving minimum entries</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RemoveRows()
@@ -99,8 +106,12 @@ up after deletion. Defaults to True.</li>
 <p>Calls ManageRows in deletion mode to trim each analysis table down to
 its required minimum row count.</p>
 <hr />
-<h2>DataExchange</h2>
-<h3>clean</h3>
+</div>
+</details>
+<details open class="doc-section" id="dataexchange">
+<summary>DataExchange</summary>
+<div class="section-body">
+<h3 id="clean">clean <a class="anchor-link" href="#clean">#</a></h3>
 <p><strong>Clean all analysis tables on the worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub Clean()
@@ -110,7 +121,7 @@ Iterates through all ListObjects on the analysis worksheet and delegates
 to CustomTable.Clean for each one. Ensures the required-tables cache is
 populated before processing.</p>
 <hr />
-<h3>import</h3>
+<h3 id="import">import <a class="anchor-link" href="#import">#</a></h3>
 <p><strong>Import analysis tables from an external worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub Import(ByVal sourcesheet As Worksheet)
@@ -125,7 +136,7 @@ method validates all required tables and sorts them.</p>
 <li><code>sourcesheet</code>: Worksheet. The worksheet providing the source analysis tables.</li>
 </ul>
 <hr />
-<h3>sort</h3>
+<h3 id="sort">sort <a class="anchor-link" href="#sort">#</a></h3>
 <p><strong>Sort analysis ListObjects and enforce minimum rows</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub Sort()
@@ -135,7 +146,7 @@ primary key column (Section or Graph ID), applies secondary sorts where
 needed (Table order, Graph order), and trims trailing rows via
 CustomTable.RemoveRows to enforce structural rules.</p>
 <hr />
-<h3>export</h3>
+<h3 id="export">export <a class="anchor-link" href="#export">#</a></h3>
 <p><strong>Export the analysis worksheet to a workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub Export(ByVal sourceWb As Workbook, Optional ByVal Hide As Long = xlSheetHidden)
@@ -151,7 +162,7 @@ rows (up to 3 rows above) are transferred with font formatting.</p>
 exported sheet. Defaults to xlSheetHidden.</li>
 </ul>
 <hr />
-<h3>translate</h3>
+<h3 id="translate">translate <a class="anchor-link" href="#translate">#</a></h3>
 <p><strong>Translate analysis labels using the provided engine</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub Translate(ByVal TransObject As ITranslationObject)
@@ -166,10 +177,12 @@ Logs a note on completion and a warning when the translator is Nothing.</p>
 <li><code>TransObject</code>: ITranslationObject. The translation engine to use.</li>
 </ul>
 <hr />
+</div>
+</details>
 <details>
 <summary>Internal members (not exported)</summary>
-<h2>Instantiation</h2>
-<h3>self</h3>
+<h2 id="int-instantiation">Instantiation</h2>
+<h3 id="int-self">self <a class="anchor-link" href="#int-self">#</a></h3>
 <p><strong>Current object instance</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Self() As IAnalysis
@@ -178,7 +191,7 @@ Logs a note on completion and a warning when the translator is Nothing.</p>
 reference from the predeclared Create method.</p>
 <p><strong>Returns:</strong> IAnalysis. The current instance cast to the interface.</p>
 <hr />
-<h3>wksh</h3>
+<h3 id="int-wksh">wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
 <p><strong>Backing analysis worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get Wksh() As Worksheet
@@ -187,7 +200,7 @@ reference from the predeclared Create method.</p>
 this class. Set during construction via the Create factory.</p>
 <p><strong>Returns:</strong> Worksheet. The bound analysis worksheet.</p>
 <hr />
-<h3>wksh-set</h3>
+<h3 id="int-wksh-set">wksh-set <a class="anchor-link" href="#int-wksh-set">#</a></h3>
 <p><strong>Assign the backing worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set Wksh(ByVal hostsheet As Worksheet)
@@ -199,8 +212,8 @@ Called internally by the Create factory.</p>
 <li><code>hostsheet</code>: Worksheet. The worksheet to bind.</li>
 </ul>
 <hr />
-<h2>RowManagement</h2>
-<h3>managerows</h3>
+<h2 id="int-rowmanagement">RowManagement</h2>
+<h3 id="int-managerows">managerows <a class="anchor-link" href="#int-managerows">#</a></h3>
 <p><strong>Central row-management dispatcher</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ManageRows(Optional ByVal del As Boolean = False)
@@ -217,7 +230,7 @@ header text does not match a specific table name.</p>
 are added. Defaults to False.</li>
 </ul>
 <hr />
-<h3>resolve-selection-table</h3>
+<h3 id="int-resolve-selection-table">resolve-selection-table <a class="anchor-link" href="#int-resolve-selection-table">#</a></h3>
 <p><strong>Resolve the ListObject that hosts a worksheet selection</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ResolveSelectionTable(ByVal targetCell As Range, ByVal actionLabel As String) As ListObject
@@ -234,7 +247,7 @@ the target table before delegating to CustomTable.</p>
 </ul>
 <p><strong>Returns:</strong> ListObject. The hosting ListObject, or Nothing when not found.</p>
 <hr />
-<h3>table-settings</h3>
+<h3 id="int-table-settings">table-settings <a class="anchor-link" href="#int-table-settings">#</a></h3>
 <p><strong>Derive prefix, identifier column, and minimum row counts</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub GetTableSettings(ByVal loName As String, _
@@ -253,8 +266,8 @@ have non-default settings; all other tables use empty strings and zero.</p>
 <li><code>minimumCount</code>: ByRef Long. Populated with the minimum row count.</li>
 </ul>
 <hr />
-<h2>Checking</h2>
-<h3>log-info</h3>
+<h2 id="int-checking">Checking</h2>
+<h3 id="int-log-info">log-info <a class="anchor-link" href="#int-log-info">#</a></h3>
 <p><strong>Log an informational or warning message</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub LogInfo(ByVal label As String, Optional ByVal scope As Byte = checkingNote)
@@ -270,7 +283,7 @@ increments the check counter and sets the hasChecks flag.</p>
 to checkingNote.</li>
 </ul>
 <hr />
-<h3>hascheckings</h3>
+<h3 id="int-hascheckings">hascheckings <a class="anchor-link" href="#int-hascheckings">#</a></h3>
 <p><strong>Whether trace entries were recorded</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get HasCheckings() As Boolean
@@ -279,7 +292,7 @@ to checkingNote.</li>
 Returns True when at least one trace entry has been logged via LogInfo.</p>
 <p><strong>Returns:</strong> Boolean. True when trace entries exist.</p>
 <hr />
-<h3>checkingvalues</h3>
+<h3 id="int-checkingvalues">checkingvalues <a class="anchor-link" href="#int-checkingvalues">#</a></h3>
 <p><strong>Retrieve collected trace entries</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get CheckingValues() As Object
@@ -288,7 +301,7 @@ Returns True when at least one trace entry has been logged via LogInfo.</p>
 Returns Nothing when no traces have been logged.</p>
 <p><strong>Returns:</strong> Object. The IChecking instance, or Nothing.</p>
 <hr />
-<h3>throw-error</h3>
+<h3 id="int-throw-error">throw-error <a class="anchor-link" href="#int-throw-error">#</a></h3>
 <p><strong>Raise a ProjectError-based exception</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As Long, ByVal errorMessage As String)
@@ -305,16 +318,16 @@ providing a consistent stack trace across all methods in this class.</p>
 <li>ProjectError. Always raises the specified error.</li>
 </ul>
 <hr />
-<h2>Interface Implementation</h2>
-<h3>IAnalysis_Wksh</h3>
+<h2 id="int-interface-implementation">Interface Implementation</h2>
+<h3 id="int-ianalysis-wksh">IAnalysis_Wksh <a class="anchor-link" href="#int-ianalysis-wksh">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get IAnalysis_Wksh() As Worksheet
 </code></pre>
 <p>Delegated members satisfying the IAnalysis contract.
 See the corresponding Private/Public members above for full documentation.</p>
 <hr />
-<h2>Helpers</h2>
-<h3>ensure-required-tables</h3>
+<h2 id="int-helpers">Helpers</h2>
+<h3 id="int-ensure-required-tables">ensure-required-tables <a class="anchor-link" href="#int-ensure-required-tables">#</a></h3>
 <p><strong>Populate the required-tables cache</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureRequiredTables()
@@ -324,7 +337,7 @@ Lazily initialises the requiredTablesCaches BetterArray with the names
 of all nine ListObjects expected on an analysis worksheet. Subsequent
 calls are no-ops once the cache is populated.</p>
 <hr />
-<h3>is-valid-list-object</h3>
+<h3 id="int-is-valid-list-object">is-valid-list-object <a class="anchor-link" href="#int-is-valid-list-object">#</a></h3>
 <p><strong>Check if a ListObject is valid for this analysis</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function IsValidListObject(ByVal Lo As ListObject) As Boolean
@@ -338,7 +351,7 @@ Used by Import to skip unrecognised tables from the source worksheet.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when the ListObject is valid for this analysis.</p>
 <hr />
-<h3>checktables</h3>
+<h3 id="int-checktables">checktables <a class="anchor-link" href="#int-checktables">#</a></h3>
 <p><strong>Ensure all expected analysis tables are present</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureAnalysisTables(Optional ByVal raiseError As Boolean = False)
@@ -360,7 +373,7 @@ required ListObject is missing.</li>
 <hr />
 </details>
 <details>
-<summary>Used in (13 file(s))</summary>
+<summary>Used in (18 file(s))</summary>
 <ul>
 <li><a href="src/classes/analyses/Analysis.cls">Analysis.cls</a></li>
 <li><a href="src/classes/analyses/AnalysisOutput.cls">AnalysisOutput.cls</a></li>
@@ -368,6 +381,8 @@ required ListObject is missing.</li>
 <li><a href="src/classes/analyses/IAnalysisOutput.cls">IAnalysisOutput.cls</a></li>
 <li><a href="src/classes/designer/DesignerImportService.cls">DesignerImportService.cls</a></li>
 <li><a href="src/classes/designer/IDesignerImportService.cls">IDesignerImportService.cls</a></li>
+<li><a href="src/classes/linelist/ILinelistSpecs.cls">ILinelistSpecs.cls</a></li>
+<li><a href="src/classes/linelist/LinelistSpecs.cls">LinelistSpecs.cls</a></li>
 <li><a href="src/classes/setup/EventSetup.cls">EventSetup.cls</a></li>
 <li><a href="src/classes/setup/IEventSetup.cls">IEventSetup.cls</a></li>
 <li><a href="src/classes/setup/SetupErrors.cls">SetupErrors.cls</a></li>
@@ -375,10 +390,15 @@ required ListObject is missing.</li>
 <li><a href="src/modules/setup/SetupHelpers.bas">SetupHelpers.bas</a></li>
 <li><a href="src/tests/modules/analyses/TestAnalysis.bas">TestAnalysis.bas</a></li>
 <li><a href="src/tests/modules/analyses/TestAnalysisOutput.bas">TestAnalysisOutput.bas</a></li>
+<li><a href="src/tests/stubs/LinelistSpecsWorkbookStub.cls">LinelistSpecsWorkbookStub.cls</a></li>
+<li><a href="src/tests/stubs/LLVarContextSpecsStub.cls">LLVarContextSpecsStub.cls</a></li>
+<li><a href="src/tests/TableSpecsLinelistStub.cls">TableSpecsLinelistStub.cls</a></li>
 </ul>
 </details>
-
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

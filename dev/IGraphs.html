@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>IGraphs - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -18,8 +19,10 @@ and standard analysis charts.
 Differents scopes for graphs. Depending on the scope, the size and other
 adjustments are made. For example, on Time Series, the graph will appear
 bigger, compare to basic normal graph.</p>
-<h2>Operations</h2>
-<h3>Add</h3>
+<details open class="doc-section" id="operations">
+<summary>Operations</summary>
+<div class="section-body">
+<h3 id="add">Add <a class="anchor-link" href="#add">#</a></h3>
 <p><strong>Create an empty chart object on the worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Add(): End Sub
@@ -30,7 +33,7 @@ construction. The chart is ready to receive series via AddSeries.
 Must be called before AddSeries if no chart exists yet; AddSeries
 also calls Add lazily when needed.</p>
 <hr />
-<h3>AddSeries</h3>
+<h3 id="addseries">AddSeries <a class="anchor-link" href="#addseries">#</a></h3>
 <p><strong>Attach a data series from a named range</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub AddSeries(ByVal rngName As String, ByVal chrtType As String, _
@@ -48,7 +51,7 @@ label arrays synchronised.</p>
 <li><code>axisPos</code>: Optional String. Axis placement: &quot;left&quot; (primary) or &quot;right&quot; (secondary). Defaults to vbNullString.</li>
 </ul>
 <hr />
-<h3>AddLabels</h3>
+<h3 id="addlabels">AddLabels <a class="anchor-link" href="#addlabels">#</a></h3>
 <p><strong>Assign category and legend labels to the current series</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub AddLabels(ByVal catName As String, ByVal lblName As String, _
@@ -69,7 +72,7 @@ the column header.</p>
 <li><code>hardCodeLabels</code>: Optional Boolean. When True, legend text is literal; when False, references the named range. Defaults to True.</li>
 </ul>
 <hr />
-<h3>Format</h3>
+<h3 id="format">Format <a class="anchor-link" href="#format">#</a></h3>
 <p><strong>Apply layout and formatting to the chart</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Format(Optional ByVal valuesTitle As String = vbNullString, _
@@ -93,8 +96,12 @@ order and moves the legend to the bottom.</p>
 <li><code>hardCodeLabels</code>: Optional Boolean. When True, axis titles are literal text. Defaults to True.</li>
 </ul>
 <hr />
-
+</div>
+</details>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

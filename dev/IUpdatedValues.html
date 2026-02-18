@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>IUpdatedValues - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -13,8 +14,10 @@
 <p>Defines the public contract for the UpdatedValues class, exposing methods
 to register, query, and maintain a column-level update watcher backed by
 a registry of ListObjects on a dedicated worksheet.</p>
-<h2>Column registration</h2>
-<h3>AddColumns</h3>
+<details open class="doc-section" id="column-registration">
+<summary>Column registration</summary>
+<div class="section-body">
+<h3 id="addcolumns">AddColumns <a class="anchor-link" href="#addcolumns">#</a></h3>
 <p><strong>Register or refresh watched columns for the supplied ListObject.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub AddColumns(ByVal Lo As ListObject): End Sub
@@ -26,7 +29,7 @@ the registry table so named ranges remain aligned with the current layout.</p>
 <li><code>Lo</code>: ListObject. Table providing the column metadata.</li>
 </ul>
 <hr />
-<h3>AddSheet</h3>
+<h3 id="addsheet">AddSheet <a class="anchor-link" href="#addsheet">#</a></h3>
 <p><strong>Register tagged columns for every ListObject on the supplied worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub AddSheet(ByVal targetSheet As Worksheet): End Sub
@@ -36,7 +39,7 @@ the registry table so named ranges remain aligned with the current layout.</p>
 <li><code>targetSheet</code>: Worksheet. Worksheet providing ListObjects to register.</li>
 </ul>
 <hr />
-<h3>RemoveLo</h3>
+<h3 id="removelo">RemoveLo <a class="anchor-link" href="#removelo">#</a></h3>
 <p><strong>Remove registry entries associated with the provided ListObject.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub RemoveLo(ByVal target As ListObject): End Sub
@@ -46,8 +49,12 @@ the registry table so named ranges remain aligned with the current layout.</p>
 <li><code>target</code>: ListObject. Table whose entries should be removed.</li>
 </ul>
 <hr />
-<h2>Status tracking</h2>
-<h3>IsUpdated</h3>
+</div>
+</details>
+<details open class="doc-section" id="status-tracking">
+<summary>Status tracking</summary>
+<div class="section-body">
+<h3 id="isupdated">IsUpdated <a class="anchor-link" href="#isupdated">#</a></h3>
 <p><strong>Determine whether the tracked column has been marked as updated.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get IsUpdated(ByVal colName As String) As Boolean: End Property
@@ -60,7 +67,7 @@ reset. Searches across all registry ListObjects for a matching entry.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when the column is flagged as updated.</p>
 <hr />
-<h3>CheckUpdate</h3>
+<h3 id="checkupdate">CheckUpdate <a class="anchor-link" href="#checkupdate">#</a></h3>
 <p><strong>Evaluate a range change against the registered watchers and flag updates.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub CheckUpdate(ByVal tagReference As Variant, ByVal Target As Range): End Sub
@@ -74,33 +81,41 @@ may be a String, ListObject, or Worksheet used to scope the search.</p>
 <li><code>Target</code>: Range. The changed cells to evaluate.</li>
 </ul>
 <hr />
-<h2>Clean-up</h2>
-<h3>ClearUp</h3>
+</div>
+</details>
+<details open class="doc-section" id="clean-up">
+<summary>Clean-up</summary>
+<div class="section-body">
+<h3 id="clearup">ClearUp <a class="anchor-link" href="#clearup">#</a></h3>
 <p><strong>Reset all tracked columns to the default (not updated) status.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ClearUp(): End Sub
 </code></pre>
 <hr />
-<h3>DeleteUp</h3>
+<h3 id="deleteup">DeleteUp <a class="anchor-link" href="#deleteup">#</a></h3>
 <p><strong>Remove the watcher registry and associated workbook named ranges.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub DeleteUp(): End Sub
 </code></pre>
 <hr />
-<h3>SwitchTagsToNo</h3>
+<h3 id="switchtagstono">SwitchTagsToNo <a class="anchor-link" href="#switchtagstono">#</a></h3>
 <p><strong>Force every registry status flag to the default value.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub SwitchTagsToNo(): End Sub
 </code></pre>
 <hr />
-<h3>SwitchTagsToYes</h3>
+<h3 id="switchtagstoyes">SwitchTagsToYes <a class="anchor-link" href="#switchtagstoyes">#</a></h3>
 <p><strong>Force every registry status flag to the updated value.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub SwitchTagsToYes(): End Sub
 </code></pre>
 <hr />
-
+</div>
+</details>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

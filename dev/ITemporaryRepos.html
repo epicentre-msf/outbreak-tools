@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ITemporaryRepos - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -13,22 +14,28 @@
 <p>Defines the public contract for the TemporaryRepos class, exposing
 temporary folder lifecycle, path generation, and file cleanup
 operations used during linelist preparation.</p>
-<h2>Lifecycle</h2>
-<h3>EnsureReady</h3>
+<details open class="doc-section" id="lifecycle">
+<summary>Lifecycle</summary>
+<div class="section-body">
+<h3 id="ensureready">EnsureReady <a class="anchor-link" href="#ensureready">#</a></h3>
 <p><strong>Prepare the repository so that file operations can be performed</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub EnsureReady()
 </code></pre>
 <p>Readiness and cleanup.</p>
 <hr />
-<h3>Reset</h3>
+<h3 id="reset">Reset <a class="anchor-link" href="#reset">#</a></h3>
 <p><strong>Clear the repository contents and mark it as uninitialised</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Reset()
 </code></pre>
 <hr />
-<h2>Paths</h2>
-<h3>RootPath</h3>
+</div>
+</details>
+<details open class="doc-section" id="paths">
+<summary>Paths</summary>
+<div class="section-body">
+<h3 id="rootpath">RootPath <a class="anchor-link" href="#rootpath">#</a></h3>
 <p><strong>Active repository root folder</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get RootPath() As String
@@ -36,7 +43,7 @@ operations used during linelist preparation.</p>
 <p>Path accessors and generation.</p>
 <p><strong>Returns:</strong> String. Fully-qualified absolute path.</p>
 <hr />
-<h3>CreateFilePath</h3>
+<h3 id="createfilepath">CreateFilePath <a class="anchor-link" href="#createfilepath">#</a></h3>
 <p><strong>Generate a sanitised file path within the repository</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function CreateFilePath(ByVal fileName As String) As String
@@ -47,8 +54,12 @@ operations used during linelist preparation.</p>
 </ul>
 <p><strong>Returns:</strong> String. Fully-qualified path.</p>
 <hr />
-<h2>File Operations</h2>
-<h3>DeleteFile</h3>
+</div>
+</details>
+<details open class="doc-section" id="file-operations">
+<summary>File Operations</summary>
+<div class="section-body">
+<h3 id="deletefile">DeleteFile <a class="anchor-link" href="#deletefile">#</a></h3>
 <p><strong>Remove a single file from the repository if it exists</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub DeleteFile(ByVal path As String)
@@ -59,14 +70,18 @@ operations used during linelist preparation.</p>
 <li><code>path</code>: String. Absolute file path.</li>
 </ul>
 <hr />
-<h3>DeleteAll</h3>
+<h3 id="deleteall">DeleteAll <a class="anchor-link" href="#deleteall">#</a></h3>
 <p><strong>Remove every file created within the repository</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub DeleteAll()
 </code></pre>
 <hr />
-
+</div>
+</details>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

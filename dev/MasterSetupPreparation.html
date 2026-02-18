@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>MasterSetupPreparation - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -12,148 +13,148 @@
 <h1>MasterSetupPreparation</h1>
 <details>
 <summary>Internal members (not exported)</summary>
-<h2>Factory helpers</h2>
-<h3>Create</h3>
+<h2 id="int-factory-helpers">Factory helpers</h2>
+<h3 id="int-create">Create <a class="anchor-link" href="#int-create">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal hostBook As Workbook) As IMasterSetupPreparation
 </code></pre>
 <p>(&quot;Create a configured MasterSetupPreparation instance for the supplied workbook.&quot;)</p>
 <hr />
-<h3>Self</h3>
+<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Self() As IMasterSetupPreparation
 </code></pre>
 <p>(&quot;Return the current instance as an interface reference.&quot;)</p>
 <hr />
-<h2>Public API</h2>
-<h3>Configure</h3>
+<h2 id="int-public-api">Public API</h2>
+<h3 id="int-configure">Configure <a class="anchor-link" href="#int-configure">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Configure(ByVal hostBook As Workbook)
 </code></pre>
 <p>(&quot;Bind the preparation helper to the workbook hosting master setup assets.&quot;)</p>
 <hr />
-<h3>Prepare</h3>
+<h3 id="int-prepare">Prepare <a class="anchor-link" href="#int-prepare">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Prepare(Optional ByVal excelApplication As Application)
 </code></pre>
 <p>(&quot;Run the preparation workflow: register dropdowns then initialise the variables table.&quot;)</p>
 <hr />
-<h3>EnsureDropdowns</h3>
+<h3 id="int-ensuredropdowns">EnsureDropdowns <a class="anchor-link" href="#int-ensuredropdowns">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub EnsureDropdowns()
 </code></pre>
 <p>(&quot;Ensure the dropdown worksheet hosts all required dropdown lists.&quot;)</p>
 <hr />
-<h3>EnsureVariables</h3>
+<h3 id="int-ensurevariables">EnsureVariables <a class="anchor-link" href="#int-ensurevariables">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub EnsureVariables()
 </code></pre>
 <p>(&quot;Ensure the variables worksheet exposes an initialised manager with validations applied.&quot;)</p>
 <hr />
-<h3>Dropdowns</h3>
+<h3 id="int-dropdowns">Dropdowns <a class="anchor-link" href="#int-dropdowns">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Dropdowns() As IDropdownLists
 </code></pre>
 <p>(&quot;Expose the dropdown manager for callers needing direct access.&quot;)</p>
 <hr />
-<h3>Variables</h3>
+<h3 id="int-variables">Variables <a class="anchor-link" href="#int-variables">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Variables() As IMasterSetupVariables
 </code></pre>
 <p>(&quot;Expose the variables manager associated with the master setup table.&quot;)</p>
 <hr />
-<h3>HostWorkbook</h3>
+<h3 id="int-hostworkbook">HostWorkbook <a class="anchor-link" href="#int-hostworkbook">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get HostWorkbook() As Workbook
 </code></pre>
 <p>(&quot;Expose the configured host workbook.&quot;)</p>
 <hr />
-<h2>Preparation helpers</h2>
-<h3>ResetCaches</h3>
+<h2 id="int-preparation-helpers">Preparation helpers</h2>
+<h3 id="int-resetcaches">ResetCaches <a class="anchor-link" href="#int-resetcaches">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ResetCaches()
 </code></pre>
 <p>(&quot;Reset cached dependencies after reconfiguration.&quot;)</p>
 <hr />
-<h3>EnsureDropdownManager</h3>
+<h3 id="int-ensuredropdownmanager">EnsureDropdownManager <a class="anchor-link" href="#int-ensuredropdownmanager">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function EnsureDropdownManager() As IDropdownLists
 </code></pre>
 <p>(&quot;Ensure the dropdown manager is initialised and cached.&quot;)</p>
 <hr />
-<h3>EnsureVariablesManager</h3>
+<h3 id="int-ensurevariablesmanager">EnsureVariablesManager <a class="anchor-link" href="#int-ensurevariablesmanager">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function EnsureVariablesManager() As IMasterSetupVariables
 </code></pre>
 <p>(&quot;Ensure the variables manager is initialised over an existing listobject.&quot;)</p>
 <hr />
-<h3>EnsureDropdownSheet</h3>
+<h3 id="int-ensuredropdownsheet">EnsureDropdownSheet <a class="anchor-link" href="#int-ensuredropdownsheet">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function EnsureDropdownSheet() As Worksheet
 </code></pre>
 <p>(&quot;Ensure the dropdown worksheet exists and cache the reference.&quot;)</p>
 <hr />
-<h3>EnsureVariablesSheet</h3>
+<h3 id="int-ensurevariablessheet">EnsureVariablesSheet <a class="anchor-link" href="#int-ensurevariablessheet">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function EnsureVariablesSheet() As Worksheet
 </code></pre>
 <p>(&quot;Ensure the variables worksheet exists and cache the reference.&quot;)</p>
 <hr />
-<h3>EnsureVariablesTable</h3>
+<h3 id="int-ensurevariablestable">EnsureVariablesTable <a class="anchor-link" href="#int-ensurevariablestable">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function EnsureVariablesTable() As ListObject
 </code></pre>
 <p>(&quot;Ensure a variables table exists on the variables worksheet.&quot;)</p>
 <hr />
-<h3>ResolveVariablesTable</h3>
+<h3 id="int-resolvevariablestable">ResolveVariablesTable <a class="anchor-link" href="#int-resolvevariablestable">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ResolveVariablesTable(ByVal wsVars As Worksheet) As ListObject
 </code></pre>
 <p>(&quot;Resolve the primary variables table if it already exists.&quot;)</p>
 <hr />
-<h3>CreateVariablesTable</h3>
+<h3 id="int-createvariablestable">CreateVariablesTable <a class="anchor-link" href="#int-createvariablestable">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function CreateVariablesTable(ByVal wsVars As Worksheet) As ListObject
 </code></pre>
 <p>(&quot;Create a variables table with default headers when none exists.&quot;)</p>
 <hr />
-<h3>EnsureTableHasRow</h3>
+<h3 id="int-ensuretablehasrow">EnsureTableHasRow <a class="anchor-link" href="#int-ensuretablehasrow">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureTableHasRow(ByVal table As ListObject)
 </code></pre>
 <p>(&quot;Ensure the supplied table exposes at least one data row.&quot;)</p>
 <hr />
-<h3>ApplyTableStyle</h3>
+<h3 id="int-applytablestyle">ApplyTableStyle <a class="anchor-link" href="#int-applytablestyle">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ApplyTableStyle(ByVal table As ListObject, ByVal tableStyle As String)
 </code></pre>
 <p>(&quot;Apply a table style while ignoring styling errors on unsupported versions.&quot;)</p>
 <hr />
-<h3>DefaultVariableHeaders</h3>
+<h3 id="int-defaultvariableheaders">DefaultVariableHeaders <a class="anchor-link" href="#int-defaultvariableheaders">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function DefaultVariableHeaders() As Variant
 </code></pre>
 <p>(&quot;Return the default header labels for a freshly created variables table.&quot;)</p>
 <hr />
-<h3>DefaultDropdownDefinitions</h3>
+<h3 id="int-defaultdropdowndefinitions">DefaultDropdownDefinitions <a class="anchor-link" href="#int-defaultdropdowndefinitions">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function DefaultDropdownDefinitions() As Variant
 </code></pre>
 <p>(&quot;Supply the default dropdown definitions required by master setup.&quot;)</p>
 <hr />
-<h3>DefaultDiseaseExclusions</h3>
+<h3 id="int-defaultdiseaseexclusions">DefaultDiseaseExclusions <a class="anchor-link" href="#int-defaultdiseaseexclusions">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function DefaultDiseaseExclusions() As Variant
 </code></pre>
 <p>(&quot;Return the default list of worksheets excluded from disease dropdowns.&quot;)</p>
 <hr />
-<h3>DefaultConfigSheets</h3>
+<h3 id="int-defaultconfigsheets">DefaultConfigSheets <a class="anchor-link" href="#int-defaultconfigsheets">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function DefaultConfigSheets() As Variant
 </code></pre>
 <p>(&quot;Return the default configuration worksheets list.&quot;)</p>
 <hr />
-<h3>EnsureDropdownDefinition</h3>
+<h3 id="int-ensuredropdowndefinition">EnsureDropdownDefinition <a class="anchor-link" href="#int-ensuredropdowndefinition">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureDropdownDefinition(ByVal drop As IDropdownLists, _
                                      ByVal listName As String, _
@@ -161,19 +162,19 @@
 </code></pre>
 <p>(&quot;Ensure a dropdown definition exists with the supplied values.&quot;)</p>
 <hr />
-<h3>RefreshLanguageDropdowns</h3>
+<h3 id="int-refreshlanguagedropdowns">RefreshLanguageDropdowns <a class="anchor-link" href="#int-refreshlanguagedropdowns">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RefreshLanguageDropdowns(ByVal drop As IDropdownLists)
 </code></pre>
 <p>(&quot;Populate the languages dropdowns using the translations sheet headers.&quot;)</p>
 <hr />
-<h3>BuildArray</h3>
+<h3 id="int-buildarray">BuildArray <a class="anchor-link" href="#int-buildarray">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function BuildArray(ByVal items As Variant) As BetterArray
 </code></pre>
 <p>(&quot;Convert supplied items into a BetterArray helper.&quot;)</p>
 <hr />
-<h3>EnsureDropdownHasValues</h3>
+<h3 id="int-ensuredropdownhasvalues">EnsureDropdownHasValues <a class="anchor-link" href="#int-ensuredropdownhasvalues">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureDropdownHasValues(ByVal drop As IDropdownLists, _
                                     ByVal listName As String, _
@@ -181,19 +182,19 @@
 </code></pre>
 <p>(&quot;Ensure a dropdown either exists or is updated with the supplied values.&quot;)</p>
 <hr />
-<h3>EnsureVariableNameColumnName</h3>
+<h3 id="int-ensurevariablenamecolumnname">EnsureVariableNameColumnName <a class="anchor-link" href="#int-ensurevariablenamecolumnname">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureVariableNameColumnName(ByVal manager As IMasterSetupVariables)
 </code></pre>
 <p>(&quot;Publish the Variable Name column range as a hidden workbook name for downstream formulas.&quot;)</p>
 <hr />
-<h3>ResolveWorksheet</h3>
+<h3 id="int-resolveworksheet">ResolveWorksheet <a class="anchor-link" href="#int-resolveworksheet">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ResolveWorksheet(ByVal sheetName As String) As Worksheet
 </code></pre>
 <p>(&quot;Resolve a worksheet by name without creating it.&quot;)</p>
 <hr />
-<h3>ResolveOrCreateWorksheet</h3>
+<h3 id="int-resolveorcreateworksheet">ResolveOrCreateWorksheet <a class="anchor-link" href="#int-resolveorcreateworksheet">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ResolveOrCreateWorksheet(ByVal sheetName As String, _
                                           Optional ByVal visibility As XlSheetVisibility = xlSheetVisible, _
@@ -201,7 +202,7 @@
 </code></pre>
 <p>(&quot;Resolve a worksheet or create it when absent.&quot;)</p>
 <hr />
-<h3>EnsureWorkbook</h3>
+<h3 id="int-ensureworkbook">EnsureWorkbook <a class="anchor-link" href="#int-ensureworkbook">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function EnsureWorkbook() As Workbook
 </code></pre>
@@ -218,8 +219,10 @@
 <li><a href="src/tests/modules/mastersetup/TestMasterSetupPreparation.bas">TestMasterSetupPreparation.bas</a></li>
 </ul>
 </details>
-
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

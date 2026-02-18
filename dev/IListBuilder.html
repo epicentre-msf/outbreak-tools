@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>IListBuilder - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -15,8 +16,10 @@ Build method that constructs an HList (horizontal) or VList (vertical) data
 entry sheet with formatting, freeze panes, sections, buttons, ListObjects,
 and worksheet protection.
 ListBuilderLayer modes: HList is horizontal, VList is vertical.</p>
-<h2>Operations</h2>
-<h3>Build</h3>
+<details open class="doc-section" id="operations">
+<summary>Operations</summary>
+<div class="section-body">
+<h3 id="build">Build <a class="anchor-link" href="#build">#</a></h3>
 <p><strong>Build the data entry sheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Build()
@@ -29,8 +32,12 @@ and pivot table. VList mode creates a vertical data entry sheet with sections,
 a GoTo dropdown, and PLAGEVALUES range reference. Both modes apply formatting,
 freeze panes, build sections via SectionBuilder, and protect the sheet.</p>
 <hr />
-
+</div>
+</details>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

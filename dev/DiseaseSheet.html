@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>DiseaseSheet - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -12,8 +13,8 @@
 <h1>DiseaseSheet</h1>
 <details>
 <summary>Internal members (not exported)</summary>
-<h2>Factory</h2>
-<h3>Create</h3>
+<h2 id="int-factory">Factory</h2>
+<h3 id="int-create">Create <a class="anchor-link" href="#int-create">#</a></h3>
 <p><strong>Instantiate a sheet builder with provided dependencies.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal hostWorkbook As Workbook, _
@@ -22,7 +23,7 @@
                        ByVal varObj As IMasterSetupVariables) As IDiseaseSheet
 </code></pre>
 <hr />
-<h3>Self</h3>
+<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
 <p><strong>Return the current instance as its interface.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Self() As IDiseaseSheet
@@ -39,8 +40,10 @@
 <li><a href="src/tests/modules/mastersetup/TestDiseaseSheet.bas">TestDiseaseSheet.bas</a></li>
 </ul>
 </details>
-
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

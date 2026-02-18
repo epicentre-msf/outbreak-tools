@@ -5,13 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>IDiseaseWorksheetManager - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>IDiseaseWorksheetManager</h1>
-<h2>Queries</h2>
-<h3>WorksheetExists</h3>
+<details open class="doc-section" id="queries">
+<summary>Queries</summary>
+<div class="section-body">
+<h3 id="worksheetexists">WorksheetExists <a class="anchor-link" href="#worksheetexists">#</a></h3>
 <p><strong>Determine whether the specified worksheet exists within the workbook.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function WorksheetExists(ByVal workbook As Workbook, ByVal sheetName As String) As Boolean
@@ -23,8 +26,12 @@
 </ul>
 <p><strong>Returns:</strong> Boolean True when the worksheet exists.</p>
 <hr />
-<h2>Commands</h2>
-<h3>RemoveWorksheet</h3>
+</div>
+</details>
+<details open class="doc-section" id="commands">
+<summary>Commands</summary>
+<div class="section-body">
+<h3 id="removeworksheet">RemoveWorksheet <a class="anchor-link" href="#removeworksheet">#</a></h3>
 <p><strong>Remove a worksheet using guarded Application settings.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function RemoveWorksheet(ByVal workbook As Workbook, ByVal sheetName As String) As Boolean
@@ -36,8 +43,12 @@
 </ul>
 <p><strong>Returns:</strong> Boolean True when the worksheet was removed.</p>
 <hr />
-
+</div>
+</details>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

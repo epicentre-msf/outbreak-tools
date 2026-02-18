@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>IFormulaCondition - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -13,8 +14,10 @@
 <p>Defines the public contract for the FormulaCondition class, exposing
 variable/condition accessors, dictionary-based validation, and methods
 for rendering Excel predicates used in analysis formulas.</p>
-<h2>DataAccess</h2>
-<h3>Variables</h3>
+<details open class="doc-section" id="dataaccess">
+<summary>DataAccess</summary>
+<div class="section-body">
+<h3 id="variables">Variables <a class="anchor-link" href="#variables">#</a></h3>
 <p><strong>Retrieve a clone of the stored variable names</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Variables() As BetterArray: End Property
@@ -24,7 +27,7 @@ Returns a BetterArray copy of the variable identifiers in the order
 they were supplied at creation.</p>
 <p><strong>Returns:</strong> BetterArray. The variable names preserving the original order.</p>
 <hr />
-<h3>Conditions</h3>
+<h3 id="conditions">Conditions <a class="anchor-link" href="#conditions">#</a></h3>
 <p><strong>Retrieve a clone of the stored condition fragments</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Conditions() As BetterArray: End Property
@@ -33,7 +36,7 @@ they were supplied at creation.</p>
 they were supplied at creation.</p>
 <p><strong>Returns:</strong> BetterArray. The condition fragments preserving the original order.</p>
 <hr />
-<h3>VariablesTable</h3>
+<h3 id="variablestable">VariablesTable <a class="anchor-link" href="#variablestable">#</a></h3>
 <p><strong>Resolve the table name shared by all tracked variables</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get VariablesTable(ByVal dict As ILLdictionary) As String: End Property
@@ -47,8 +50,12 @@ when no cached value exists.</p>
 </ul>
 <p><strong>Returns:</strong> String. Table identifier or empty string when unavailable.</p>
 <hr />
-<h2>Validation</h2>
-<h3>Valid</h3>
+</div>
+</details>
+<details open class="doc-section" id="validation">
+<summary>Validation</summary>
+<div class="section-body">
+<h3 id="valid">Valid <a class="anchor-link" href="#valid">#</a></h3>
 <p><strong>Validate variable/condition lists against the dictionary</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Valid(ByVal dict As ILLdictionary, Optional ByVal tablename As String = vbNullString) As Boolean: End Function
@@ -64,7 +71,7 @@ the table resolved from the first variable.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when validation succeeds.</p>
 <hr />
-<h3>ConditionString</h3>
+<h3 id="conditionstring">ConditionString <a class="anchor-link" href="#conditionstring">#</a></h3>
 <p><strong>Wrap the predicate in an IF expression referencing the supplied variable</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function ConditionString(ByVal tablename As String, ByVal varName As String, _
@@ -81,7 +88,7 @@ predicate evaluates to True.</p>
 </ul>
 <p><strong>Returns:</strong> String. An IF expression or empty string when the predicate is empty.</p>
 <hr />
-<h3>ConditionPredicate</h3>
+<h3 id="conditionpredicate">ConditionPredicate <a class="anchor-link" href="#conditionpredicate">#</a></h3>
 <p><strong>Join the variable predicates using the supplied connector</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function ConditionPredicate(ByVal tablename As String, Optional ByVal Connector As String = &quot;*&quot;) As String
@@ -95,8 +102,12 @@ callers need the raw predicate for embedding in other constructs.</p>
 </ul>
 <p><strong>Returns:</strong> String. Concatenated predicate or empty string when inputs are missing.</p>
 <hr />
-<h2>Diagnostics</h2>
-<h3>HasCheckings</h3>
+</div>
+</details>
+<details open class="doc-section" id="diagnostics">
+<summary>Diagnostics</summary>
+<div class="section-body">
+<h3 id="hascheckings">HasCheckings <a class="anchor-link" href="#hascheckings">#</a></h3>
 <p><strong>Determine whether validation recorded diagnostic messages</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function HasCheckings() As Boolean
@@ -106,7 +117,7 @@ Returns True when at least one diagnostic entry was captured during
 the last validation run.</p>
 <p><strong>Returns:</strong> Boolean. True when internal checks exist.</p>
 <hr />
-<h3>CheckingValues</h3>
+<h3 id="checkingvalues">CheckingValues <a class="anchor-link" href="#checkingvalues">#</a></h3>
 <p><strong>Retrieve the internal checking log</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get CheckingValues() As IChecking
@@ -116,8 +127,12 @@ messages from the last validation run, or Nothing when no diagnostics
 were recorded.</p>
 <p><strong>Returns:</strong> IChecking. The diagnostic log.</p>
 <hr />
-
+</div>
+</details>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

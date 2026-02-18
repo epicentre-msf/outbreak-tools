@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>VarWriter - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -19,8 +20,10 @@ to the resolved cell range. The class caches dictionary, variables, and
 sheets accessors for performance across repeated calls.</p>
 <p><strong>Depends on:</strong> <a href="ILinelistSpecs.html">ILinelistSpecs</a>, <a href="ILLdictionary.html">ILLdictionary</a>, <a href="ILLVariables.html">ILLVariables</a>, <a href="ILLSheets.html">ILLSheets</a>, <a href="ILLFormat.html">ILLFormat</a>, <a href="ITranslationObject.html">ITranslationObject</a>, <a href="IFormulaData.html">IFormulaData</a>, <a href="IFormulas.html">IFormulas</a>, <a href="IDropdownLists.html">IDropdownLists</a>, <a href="ILLGeo.html">ILLGeo</a>, <a href="Formulas.html">Formulas</a>, <a href="LLVariables.html">LLVariables</a>, <a href="LLSheets.html">LLSheets</a>, <a href="BetterArray.html">BetterArray</a></p>
 <p><strong>Version:</strong> 1.0 (2026-02-10)</p>
-<h2>Instantiation</h2>
-<h3>create</h3>
+<details open class="doc-section" id="instantiation">
+<summary>Instantiation</summary>
+<div class="section-body">
+<h3 id="create">create <a class="anchor-link" href="#create">#</a></h3>
 <p><strong>Create a new VarWriter for the given layer and dependencies</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal layer As Byte, _
@@ -52,8 +55,12 @@ if specs or wksh is Nothing.</p>
 <li>VBA.vbObjectError + 516 if specs or wksh is Nothing.</li>
 </ul>
 <hr />
-<h2>Value Lookup</h2>
-<h3>value-of</h3>
+</div>
+</details>
+<details open class="doc-section" id="value-lookup">
+<summary>Value Lookup</summary>
+<div class="section-body">
+<h3 id="value-of">value-of <a class="anchor-link" href="#value-of">#</a></h3>
 <p><strong>Read a dictionary column value for the current variable</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get ValueOf(ByVal colName As String) As String
@@ -68,8 +75,12 @@ types, formats, and control information.</p>
 </ul>
 <p><strong>Returns:</strong> String. The column value for the current variable.</p>
 <hr />
-<h2>Entry Point</h2>
-<h3>write-variable</h3>
+</div>
+</details>
+<details open class="doc-section" id="entry-point">
+<summary>Entry Point</summary>
+<div class="section-body">
+<h3 id="write-variable">write-variable <a class="anchor-link" href="#write-variable">#</a></h3>
 <p><strong>Write one variable to the target worksheet(s)</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub WriteVariable(ByVal varName As String)
@@ -83,10 +94,12 @@ WriteCRFSheet for the companion worksheets.</p>
 <li><code>varName</code>: String. The variable name as it appears in the dictionary.</li>
 </ul>
 <hr />
+</div>
+</details>
 <details>
 <summary>Internal members (not exported)</summary>
-<h2>Instantiation</h2>
-<h3>self</h3>
+<h2 id="int-instantiation">Instantiation</h2>
+<h3 id="int-self">self <a class="anchor-link" href="#int-self">#</a></h3>
 <p><strong>Return the current instance cast to the IVarWriter interface</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Self() As IVarWriter
@@ -95,52 +108,52 @@ WriteCRFSheet for the companion worksheets.</p>
 interface-typed reference instead of the concrete class.</p>
 <p><strong>Returns:</strong> IVarWriter. The current instance.</p>
 <hr />
-<h2>Internal Setters</h2>
-<h3>internal-specs</h3>
+<h2 id="int-internal-setters">Internal Setters</h2>
+<h3 id="int-internal-specs">internal-specs <a class="anchor-link" href="#int-internal-specs">#</a></h3>
 <p><strong>Assign the linelist specifications object</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set InternalSpecs(ByVal specs As ILinelistSpecs)
 </code></pre>
 <h1>Properties used by the factory only during instantiation.</h1>
 <hr />
-<h3>internal-wksh</h3>
+<h3 id="int-internal-wksh">internal-wksh <a class="anchor-link" href="#int-internal-wksh">#</a></h3>
 <p><strong>Assign the target main worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set InternalWksh(ByVal wksh As Worksheet)
 </code></pre>
 <hr />
-<h3>internal-layer</h3>
+<h3 id="int-internal-layer">internal-layer <a class="anchor-link" href="#int-internal-layer">#</a></h3>
 <p><strong>Assign the writer layer (HList or VList)</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Let InternalLayer(ByVal layer As Byte)
 </code></pre>
 <hr />
-<h3>internal-print-wksh</h3>
+<h3 id="int-internal-print-wksh">internal-print-wksh <a class="anchor-link" href="#int-internal-print-wksh">#</a></h3>
 <p><strong>Assign the printed companion worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set InternalPrintWksh(ByVal wksh As Worksheet)
 </code></pre>
 <hr />
-<h3>internal-crf-wksh</h3>
+<h3 id="int-internal-crf-wksh">internal-crf-wksh <a class="anchor-link" href="#int-internal-crf-wksh">#</a></h3>
 <p><strong>Assign the CRF companion worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set InternalCRFWksh(ByVal wksh As Worksheet)
 </code></pre>
 <hr />
-<h3>internal-dropdown</h3>
+<h3 id="int-internal-dropdown">internal-dropdown <a class="anchor-link" href="#int-internal-dropdown">#</a></h3>
 <p><strong>Assign the dropdown lists manager</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set InternalDropdown(ByVal dropdownObj As IDropdownLists)
 </code></pre>
 <hr />
-<h3>internal-custom-dropdown</h3>
+<h3 id="int-internal-custom-dropdown">internal-custom-dropdown <a class="anchor-link" href="#int-internal-custom-dropdown">#</a></h3>
 <p><strong>Assign the custom dropdown lists manager</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set InternalCustomDropdown(ByVal dropdownObj As IDropdownLists)
 </code></pre>
 <hr />
-<h2>Cached Accessors</h2>
-<h3>dictionary</h3>
+<h2 id="int-cached-accessors">Cached Accessors</h2>
+<h3 id="int-dictionary">dictionary <a class="anchor-link" href="#int-dictionary">#</a></h3>
 <p><strong>Return the cached dictionary object</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get Dictionary() As ILLdictionary
@@ -152,7 +165,7 @@ without re-querying specs, which improves performance when writing many
 variables in sequence.</p>
 <p><strong>Returns:</strong> ILLdictionary. The linelist dictionary.</p>
 <hr />
-<h3>variables</h3>
+<h3 id="int-variables">variables <a class="anchor-link" href="#int-variables">#</a></h3>
 <p><strong>Return the cached variables helper</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get Variables() As ILLVariables
@@ -162,7 +175,7 @@ The wrapper provides convenient lookup methods such as Value and Contains
 that are used throughout the writer.</p>
 <p><strong>Returns:</strong> ILLVariables. The variables helper object.</p>
 <hr />
-<h3>sheets-object</h3>
+<h3 id="int-sheets-object">sheets-object <a class="anchor-link" href="#int-sheets-object">#</a></h3>
 <p><strong>Return the cached sheets helper</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get SheetsObject() As ILLSheets
@@ -172,7 +185,7 @@ The wrapper provides VariableAddress and SheetInfo lookups used when
 building conditional-formatting formulas and resolving table anchors.</p>
 <p><strong>Returns:</strong> ILLSheets. The sheets helper object.</p>
 <hr />
-<h3>design-format</h3>
+<h3 id="int-design-format">design-format <a class="anchor-link" href="#int-design-format">#</a></h3>
 <p><strong>Return the design format object from specs</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get DesignFormat() As ILLFormat
@@ -181,7 +194,7 @@ building conditional-formatting formulas and resolving table anchors.</p>
 format object is lightweight and does not benefit from caching.</p>
 <p><strong>Returns:</strong> ILLFormat. The design format provider.</p>
 <hr />
-<h3>trans</h3>
+<h3 id="int-trans">trans <a class="anchor-link" href="#int-trans">#</a></h3>
 <p><strong>Return the translation object from specs</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get Trans() As ITranslationObject
@@ -190,7 +203,7 @@ format object is lightweight and does not benefit from caching.</p>
 translated UI messages such as MSG_Calculated and MSG_CustomChoice.</p>
 <p><strong>Returns:</strong> ITranslationObject. The translation provider.</p>
 <hr />
-<h3>formula-data-obj</h3>
+<h3 id="int-formula-data-obj">formula-data-obj <a class="anchor-link" href="#int-formula-data-obj">#</a></h3>
 <p><strong>Return the formula data object from specs</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get FormulaDataObj() As IFormulaData
@@ -199,8 +212,8 @@ translated UI messages such as MSG_Calculated and MSG_CustomChoice.</p>
 the lookup tables and metadata needed by the Formulas parser.</p>
 <p><strong>Returns:</strong> IFormulaData. The formula data provider.</p>
 <hr />
-<h2>Cell Range Resolution</h2>
-<h3>var-range</h3>
+<h2 id="int-cell-range-resolution">Cell Range Resolution</h2>
+<h3 id="int-var-range">var-range <a class="anchor-link" href="#int-var-range">#</a></h3>
 <p><strong>Resolve the main cell range for the current variable</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get VarRange() As Range
@@ -211,7 +224,7 @@ HLIST_START_ROW + 1; for VList it is in a row at VLIST_START_COL. The
 result is cached until WriteVariable resets it for the next variable.</p>
 <p><strong>Returns:</strong> Range. The main cell range, or Nothing if the index is invalid.</p>
 <hr />
-<h3>var-print-range</h3>
+<h3 id="int-var-print-range">var-print-range <a class="anchor-link" href="#int-var-print-range">#</a></h3>
 <p><strong>Resolve the printed companion cell range (HList only)</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get VarPrintRange() As Range
@@ -221,7 +234,7 @@ the current variable. Uses the same column index as VarRange but targets
 the printWksh. Returns Nothing when no printed worksheet is attached.</p>
 <p><strong>Returns:</strong> Range. The printed companion cell range, or Nothing.</p>
 <hr />
-<h3>var-crf-range</h3>
+<h3 id="int-var-crf-range">var-crf-range <a class="anchor-link" href="#int-var-crf-range">#</a></h3>
 <p><strong>Resolve the CRF companion cell range (HList only)</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get VarCRFRange() As Range
@@ -231,8 +244,8 @@ the &quot;crf index&quot; dictionary value. Returns Nothing when no CRF workshee
 is attached or when the crf index is zero or missing.</p>
 <p><strong>Returns:</strong> Range. The CRF companion cell range, or Nothing.</p>
 <hr />
-<h2>Sheet Dispatch</h2>
-<h3>write-main-sheet</h3>
+<h2 id="int-sheet-dispatch">Sheet Dispatch</h2>
+<h3 id="int-write-main-sheet">write-main-sheet <a class="anchor-link" href="#int-write-main-sheet">#</a></h3>
 <p><strong>Dispatch all writing steps for the main worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub WriteMainSheet()
@@ -243,7 +256,7 @@ formatting. The exact set of conditional formatting steps depends on
 the active layer (HList applies geo, standard, and unique formatting;
 VList applies standard formatting only).</p>
 <hr />
-<h3>write-print-sheet</h3>
+<h3 id="int-write-print-sheet">write-print-sheet <a class="anchor-link" href="#int-write-print-sheet">#</a></h3>
 <p><strong>Write variable label to the printed companion sheet (HList only)</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub WritePrintSheet()
@@ -252,7 +265,7 @@ VList applies standard formatting only).</p>
 to the printed companion worksheet instead of the main sheet. Exits
 silently when no printed worksheet is attached.</p>
 <hr />
-<h3>write-crf-sheet</h3>
+<h3 id="int-write-crf-sheet">write-crf-sheet <a class="anchor-link" href="#int-write-crf-sheet">#</a></h3>
 <p><strong>Write variable data to the CRF companion sheet (HList only)</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub WriteCRFSheet()
@@ -261,8 +274,8 @@ silently when no printed worksheet is attached.</p>
 and AddCRFChoices. Exits silently when no CRF worksheet is attached or
 when the variable has no CRF index.</p>
 <hr />
-<h2>Label Writing</h2>
-<h3>add-label</h3>
+<h2 id="int-label-writing">Label Writing</h2>
+<h3 id="int-add-label">add-label <a class="anchor-link" href="#int-add-label">#</a></h3>
 <p><strong>Write variable label, sublabel, name, notes, and formatting</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddLabel(Optional ByVal usePrinted As Boolean = False)
@@ -278,8 +291,8 @@ info and label formatting.</p>
 <li><code>usePrinted</code>: Optional Boolean. When True, writes to the printed companion range instead of the main range. Defaults to False.</li>
 </ul>
 <hr />
-<h2>Type Formatting</h2>
-<h3>add-type</h3>
+<h2 id="int-type-formatting">Type Formatting</h2>
+<h3 id="int-add-type">add-type <a class="anchor-link" href="#int-add-type">#</a></h3>
 <p><strong>Apply Excel number format based on variable type and format</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddType()
@@ -289,8 +302,8 @@ format string from the dictionary, then sets the NumberFormat property
 on the main cell range. Supports built-in formats such as round, percentage,
 euros, and dollars as well as custom format strings.</p>
 <hr />
-<h2>Formula Application</h2>
-<h3>add-formula</h3>
+<h2 id="int-formula-application">Formula Application</h2>
+<h3 id="int-add-formula">add-formula <a class="anchor-link" href="#int-add-formula">#</a></h3>
 <p><strong>Parse and apply a formula to the variable cell</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddFormula()
@@ -301,8 +314,8 @@ and writes the Excel formula to the cell. If the parsed formula fails a
 test application it is replaced with a failure placeholder string. Also
 applies calculated-formula design formatting to the cell and its header.</p>
 <hr />
-<h2>Choice Setup</h2>
-<h3>add-choices</h3>
+<h2 id="int-choice-setup">Choice Setup</h2>
+<h3 id="int-add-choices">add-choices <a class="anchor-link" href="#int-add-choices">#</a></h3>
 <p><strong>Set up dropdown validation for choice, list, and geo variables</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddChoices()
@@ -315,8 +328,8 @@ choice_custom branch additionally creates a hyperlink from the label cell
 to the dropdown worksheet and adds a return link. The geo1 branch sets up
 admin1 through admin4 dropdown cascades.</p>
 <hr />
-<h2>Data Validation</h2>
-<h3>add-validation</h3>
+<h2 id="int-data-validation">Data Validation</h2>
+<h3 id="int-add-validation">add-validation <a class="anchor-link" href="#int-add-validation">#</a></h3>
 <p><strong>Add min/max data validation to the variable cell</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddValidation()
@@ -327,8 +340,8 @@ date, or decimal validation with the configured alert style. Both OS-local
 and standard formula variants are attempted to ensure cross-platform
 compatibility. Text variables are skipped.</p>
 <hr />
-<h2>Conditional Formatting</h2>
-<h3>add-conditional-formatting</h3>
+<h2 id="int-conditional-formatting">Conditional Formatting</h2>
+<h3 id="int-add-conditional-formatting">add-conditional-formatting <a class="anchor-link" href="#int-add-conditional-formatting">#</a></h3>
 <p><strong>Add expression-based conditional formatting</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddConditionalFormatting()
@@ -339,7 +352,7 @@ cell when the condition variable equals 1. The interior colour, font
 colour, bold, and italic properties are copied from the formatting values
 cell in the dictionary.</p>
 <hr />
-<h3>add-unique-conditional-formatting</h3>
+<h3 id="int-add-unique-conditional-formatting">add-unique-conditional-formatting <a class="anchor-link" href="#int-add-unique-conditional-formatting">#</a></h3>
 <p><strong>Add unique/duplicate conditional formatting (HList only)</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddUniqueConditionalFormatting()
@@ -349,7 +362,7 @@ values format condition that highlights duplicate entries with a red
 interior. This is typically used for patient IDs or other fields that
 must be unique across records.</p>
 <hr />
-<h3>add-geo-conditional-formatting</h3>
+<h3 id="int-add-geo-conditional-formatting">add-geo-conditional-formatting <a class="anchor-link" href="#int-add-geo-conditional-formatting">#</a></h3>
 <p><strong>Add geo pcode conditional formatting (HList only)</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddGeoConditionalFormatting()
@@ -359,8 +372,8 @@ in orange when the corresponding pcode variable is empty but the geo
 variable itself is not. This alerts users that a geographic name was
 entered but the pcode lookup failed.</p>
 <hr />
-<h2>CRF Companion</h2>
-<h3>add-crf-label</h3>
+<h2 id="int-crf-companion">CRF Companion</h2>
+<h3 id="int-add-crf-label">add-crf-label <a class="anchor-link" href="#int-add-crf-label">#</a></h3>
 <p><strong>Write CRF label for the current variable</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddCRFLabel(ByVal crfRng As Range)
@@ -374,7 +387,7 @@ CRF row.</p>
 <li><code>crfRng</code>: Range. The target cell on the CRF companion worksheet.</li>
 </ul>
 <hr />
-<h3>add-crf-type</h3>
+<h3 id="int-add-crf-type">add-crf-type <a class="anchor-link" href="#int-add-crf-type">#</a></h3>
 <p><strong>Apply CRF-specific type formatting</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddCRFType(ByVal crfRng As Range)
@@ -388,7 +401,7 @@ formatting is handled by AddCRFChoices instead.</p>
 <li><code>crfRng</code>: Range. The target cell on the CRF companion worksheet.</li>
 </ul>
 <hr />
-<h3>add-crf-choices</h3>
+<h3 id="int-add-crf-choices">add-crf-choices <a class="anchor-link" href="#int-add-crf-choices">#</a></h3>
 <p><strong>Write CRF choice headers and value cells</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddCRFChoices(ByVal crfRng As Range)
@@ -402,8 +415,8 @@ written when the &quot;crf choices&quot; dictionary value is &quot;yes&quot;.</p
 <li><code>crfRng</code>: Range. The target cell on the CRF companion worksheet.</li>
 </ul>
 <hr />
-<h2>Formula Helpers</h2>
-<h3>failed-formula</h3>
+<h2 id="int-formula-helpers">Formula Helpers</h2>
+<h3 id="int-failed-formula">failed-formula <a class="anchor-link" href="#int-failed-formula">#</a></h3>
 <p><strong>Test if a formula fails when applied to a cell</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function FailedFormula(ByVal frmName As String) As Boolean
@@ -419,7 +432,7 @@ the test.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True if the formula raised an error, False otherwise.</p>
 <hr />
-<h3>excel-formula</h3>
+<h3 id="int-excel-formula">excel-formula <a class="anchor-link" href="#int-excel-formula">#</a></h3>
 <p><strong>Convert a formula value to an Excel-compatible format for validation</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ExcelFormula(ByVal formVal As String, _
@@ -439,7 +452,7 @@ the formula is invalid or fails the FailedFormula test.</p>
 </ul>
 <p><strong>Returns:</strong> Variant. The converted formula value, or Empty if invalid.</p>
 <hr />
-<h3>os-formula</h3>
+<h3 id="int-os-formula">os-formula <a class="anchor-link" href="#int-os-formula">#</a></h3>
 <p><strong>Convert a formula to OS-specific local format</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function OSFormula(ByVal formVal As String) As String
@@ -455,11 +468,11 @@ aware separator characters.</p>
 </ul>
 <p><strong>Returns:</strong> String. The OS-local formula string.</p>
 <hr />
-<h2>Error Handling</h2>
-<h3>throw-error</h3>
+<h2 id="int-error-handling">Error Handling</h2>
+<h3 id="int-throw-error">throw-error <a class="anchor-link" href="#int-throw-error">#</a></h3>
 <p><strong>Raise a descriptive VBA error from this class</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ThrowError(ByVal errorMessage As String)
+<pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As Long, ByVal errorMessage As String)
 </code></pre>
 <p>Raises a custom VBA error with number vbObjectError + 516 and the
 class name as the source. Called by Create when required arguments are
@@ -473,8 +486,8 @@ Nothing.</p>
 <li>VBA.vbObjectError + 516 always.</li>
 </ul>
 <hr />
-<h2>Interface Implementation</h2>
-<h3>IVarWriter_WriteVariable</h3>
+<h2 id="int-interface-implementation">Interface Implementation</h2>
+<h3 id="int-ivarwriter-writevariable">IVarWriter_WriteVariable <a class="anchor-link" href="#int-ivarwriter-writevariable">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub IVarWriter_WriteVariable(ByVal varName As String)
 </code></pre>
@@ -490,8 +503,10 @@ Nothing.</p>
 <li><a href="src/tests/modules/sections/TestVarWriter.bas">TestVarWriter.bas</a></li>
 </ul>
 </details>
-
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

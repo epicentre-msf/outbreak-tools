@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>DiseaseImporter - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -12,8 +13,8 @@
 <h1>DiseaseImporter</h1>
 <details>
 <summary>Internal members (not exported)</summary>
-<h2>Operations</h2>
-<h3>MergeDisease</h3>
+<h2 id="int-operations">Operations</h2>
+<h3 id="int-mergedisease">MergeDisease <a class="anchor-link" href="#int-mergedisease">#</a></h3>
 <p><strong>Import disease data, merging when requested.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function MergeDisease(ByVal targetTable As ListObject, ByVal sourceTable As ListObject, _
@@ -22,27 +23,27 @@
                              Optional ByVal logger As IDiseaseLogger = Nothing) As IDiseaseImportSummary
 </code></pre>
 <hr />
-<h2>Replacement</h2>
-<h3>ReplaceTable</h3>
+<h2 id="int-replacement">Replacement</h2>
+<h3 id="int-replacetable">ReplaceTable <a class="anchor-link" href="#int-replacetable">#</a></h3>
 <p><strong>Replace the target table with the source content.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ReplaceTable(ByVal targetTable As ListObject, ByVal sourceTable As ListObject, ByVal summary As DiseaseImportSummary, ByVal logger As IDiseaseLogger)
 </code></pre>
 <hr />
-<h2>Merge</h2>
-<h3>MergeTables</h3>
+<h2 id="int-merge">Merge</h2>
+<h3 id="int-mergetables">MergeTables <a class="anchor-link" href="#int-mergetables">#</a></h3>
 <p><strong>Merge the source data into the target according to the priority.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub MergeTables(ByVal targetTable As ListObject, ByVal sourceTable As ListObject, ByVal priority As DiseaseImportPriority, ByVal summary As DiseaseImportSummary, ByVal logger As IDiseaseLogger)
 </code></pre>
 <hr />
-<h3>BuildTargetIndex</h3>
+<h3 id="int-buildtargetindex">BuildTargetIndex <a class="anchor-link" href="#int-buildtargetindex">#</a></h3>
 <p><strong>Build lookup structures for target variables.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function BuildTargetIndex(ByVal targetData As Variant, ByVal targetRows As Long, ByRef targetIndex As Collection) As String()
 </code></pre>
 <hr />
-<h3>ApplyMerge</h3>
+<h3 id="int-applymerge">ApplyMerge <a class="anchor-link" href="#int-applymerge">#</a></h3>
 <p><strong>Perform the merge between target and source matrices.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ApplyMerge(ByRef targetData As Variant, ByRef sourceData As Variant, ByVal targetRows As Long, ByVal sourceRows As Long, _
@@ -50,90 +51,90 @@
                        ByVal seenSource As Collection, ByVal appendedRows As BetterArray, ByVal summary As DiseaseImportSummary, ByVal logger As IDiseaseLogger)
 </code></pre>
 <hr />
-<h3>AppendImportedRows</h3>
+<h3 id="int-appendimportedrows">AppendImportedRows <a class="anchor-link" href="#int-appendimportedrows">#</a></h3>
 <p><strong>Append merged rows to the target ListObject.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AppendImportedRows(ByVal targetTable As ListObject, ByVal appendedRows As BetterArray, ByVal logger As IDiseaseLogger)
 </code></pre>
 <hr />
-<h3>RegisterMissingVariables</h3>
+<h3 id="int-registermissingvariables">RegisterMissingVariables <a class="anchor-link" href="#int-registermissingvariables">#</a></h3>
 <p><strong>Determine which existing variables were missing from the import.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RegisterMissingVariables(ByVal targetData As Variant, ByVal targetRows As Long, ByVal targetNames() As String, ByVal seenSource As Collection, ByVal summary As DiseaseImportSummary, ByVal logger As IDiseaseLogger)
 </code></pre>
 <hr />
-<h2>Table Utilities</h2>
-<h3>ClearTable</h3>
+<h2 id="int-table-utilities">Table Utilities</h2>
+<h3 id="int-cleartable">ClearTable <a class="anchor-link" href="#int-cleartable">#</a></h3>
 <p><strong>Remove all rows from the ListObject.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ClearTable(ByVal targetTable As ListObject)
 </code></pre>
 <hr />
-<h3>AppendBlankRows</h3>
+<h3 id="int-appendblankrows">AppendBlankRows <a class="anchor-link" href="#int-appendblankrows">#</a></h3>
 <p><strong>Append blank rows to the target table.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AppendBlankRows(ByVal targetTable As ListObject, ByVal rowCount As Long)
 </code></pre>
 <hr />
-<h3>BuildRow</h3>
+<h3 id="int-buildrow">BuildRow <a class="anchor-link" href="#int-buildrow">#</a></h3>
 <p><strong>Create a row array from the source matrix.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function BuildRow(ByRef sourceData As Variant, ByVal rowIndex As Long, ByVal columnCount As Long) As Variant
 </code></pre>
 <hr />
-<h3>ConvertRowsToMatrix</h3>
+<h3 id="int-convertrowstomatrix">ConvertRowsToMatrix <a class="anchor-link" href="#int-convertrowstomatrix">#</a></h3>
 <p><strong>Convert a BetterArray of rows into a contiguous matrix.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ConvertRowsToMatrix(ByVal rows As BetterArray, ByVal appendCount As Long, ByVal columnCount As Long) As Variant
 </code></pre>
 <hr />
-<h3>Ensure2D</h3>
+<h3 id="int-ensure2d">Ensure2D <a class="anchor-link" href="#int-ensure2d">#</a></h3>
 <p><strong>Convert single values into 2D matrices when necessary.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function Ensure2D(ByVal values As Variant, ByVal columnCount As Long) As Variant
 </code></pre>
 <hr />
-<h2>Collections</h2>
-<h3>AddIfMissing</h3>
+<h2 id="int-collections">Collections</h2>
+<h3 id="int-addifmissing">AddIfMissing <a class="anchor-link" href="#int-addifmissing">#</a></h3>
 <p><strong>Add row index to collection if the key is missing.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddIfMissing(ByVal index As Collection, ByVal key As String, ByVal rowIndex As Long)
 </code></pre>
 <hr />
-<h3>AddIfMissingValue</h3>
+<h3 id="int-addifmissingvalue">AddIfMissingValue <a class="anchor-link" href="#int-addifmissingvalue">#</a></h3>
 <p><strong>Register presence of a source variable.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddIfMissingValue(ByVal seenSource As Collection, ByVal key As String)
 </code></pre>
 <hr />
-<h3>LookupRow</h3>
+<h3 id="int-lookuprow">LookupRow <a class="anchor-link" href="#int-lookuprow">#</a></h3>
 <p><strong>Read a row index from the collection.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function LookupRow(ByVal index As Collection, ByVal key As String) As Long
 </code></pre>
 <hr />
-<h3>CollectionContains</h3>
+<h3 id="int-collectioncontains">CollectionContains <a class="anchor-link" href="#int-collectioncontains">#</a></h3>
 <p><strong>Test whether the collection contains the supplied key.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function CollectionContains(ByVal values As Collection, ByVal key As String) As Boolean
 </code></pre>
 <hr />
-<h2>Validation</h2>
-<h3>ValidateTable</h3>
+<h2 id="int-validation">Validation</h2>
+<h3 id="int-validatetable">ValidateTable <a class="anchor-link" href="#int-validatetable">#</a></h3>
 <p><strong>Guard against invalid ListObject references.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ValidateTable(ByVal table As ListObject, ByVal argumentName As String)
 </code></pre>
 <hr />
-<h2>Text Helpers</h2>
-<h3>Normalize</h3>
+<h2 id="int-text-helpers">Text Helpers</h2>
+<h3 id="int-normalize">Normalize <a class="anchor-link" href="#int-normalize">#</a></h3>
 <p><strong>Normalise identifiers for comparison.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function Normalize(ByVal value As String) As String
 </code></pre>
 <hr />
-<h2>ErrorHandling</h2>
-<h3>ThrowError</h3>
+<h2 id="int-errorhandling">ErrorHandling</h2>
+<h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
 <p><strong>Centralised error raising aligned with ProjectError codes.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal errMessage As String)
@@ -149,8 +150,10 @@
 <li><a href="src/tests/modules/mastersetup/TestDiseaseIntegration.bas">TestDiseaseIntegration.bas</a></li>
 </ul>
 </details>
-
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 

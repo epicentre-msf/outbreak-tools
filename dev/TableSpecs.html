@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>TableSpecs - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
@@ -28,8 +29,10 @@ usable in the setup error-checking context without geo or translation
 dependencies. Consumers interact through the ITableSpecs interface.</p>
 <p><strong>Depends on:</strong> <a href="ILLdictionary.html">ILLdictionary</a>, <a href="ILLVariables.html">ILLVariables</a>, <a href="LLVariables.html">LLVariables</a>, <a href="BetterArray.html">BetterArray</a>, --- Column and cell value caches (Tier 1 + Tier 3) ---, --- Scalar caches (Tier 2 + Tier 4 + Tier 5) ---</p>
 <p><strong>Version:</strong> 2.0 (2026-02-11)</p>
-<h2>Instantiation</h2>
-<h3>create</h3>
+<details open class="doc-section" id="instantiation">
+<summary>Instantiation</summary>
+<div class="section-body">
+<h3 id="create">create <a class="anchor-link" href="#create">#</a></h3>
 <p><strong>Create a TableSpecs instance from a setup row</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal headerRng As Range, _
@@ -69,8 +72,12 @@ validation and spatial type detection.</li>
 <li>InvalidArgument When headerRng.Row is less than 1.</li>
 </ul>
 <hr />
-<h2>Cache Initialization</h2>
-<h3>init-cache</h3>
+</div>
+</details>
+<details open class="doc-section" id="cache-initialization">
+<summary>Cache Initialization</summary>
+<div class="section-body">
+<h3 id="init-cache">init-cache <a class="anchor-link" href="#init-cache">#</a></h3>
 <p><strong>Populate all eager caches from header and data ranges</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub InitCache()
@@ -83,8 +90,12 @@ after HeaderRange, TableRange, and DictionaryObject have been assigned.
 Lazy caches (ValidTable, IsNewSection) are NOT populated here; they are
 computed on first access.</p>
 <hr />
-<h2>Core Properties</h2>
-<h3>table-scope</h3>
+</div>
+</details>
+<details open class="doc-section" id="core-properties">
+<summary>Core Properties</summary>
+<div class="section-body">
+<h3 id="table-scope">table-scope <a class="anchor-link" href="#table-scope">#</a></h3>
 <p><strong>Analysis table scope for this specification row</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get TableScope() As AnalysisTableScope
@@ -96,7 +107,7 @@ header range. On subsequent calls the cached Long value is returned
 directly without any worksheet access.</p>
 <p><strong>Returns:</strong> AnalysisTableScope. The table scope category.</p>
 <hr />
-<h3>table-id</h3>
+<h3 id="table-id">table-id <a class="anchor-link" href="#table-id">#</a></h3>
 <p><strong>Unique identifier for this analysis table</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get TableId() As String
@@ -111,7 +122,7 @@ row within its analysis block. The resulting format is &quot;prefix_tabN&quot;,
 for example &quot;UA_tab3&quot;.</p>
 <p><strong>Returns:</strong> String. The unique table identifier such as &quot;GS_tab1&quot; or &quot;BA_tab5&quot;.</p>
 <hr />
-<h3>table-section-id</h3>
+<h3 id="table-section-id">table-section-id <a class="anchor-link" href="#table-section-id">#</a></h3>
 <p><strong>Identifier of the first table in this section</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get TableSectionId() As String
@@ -131,7 +142,7 @@ rows, it will traverse one row at a time via Previous. GlobalSummary
 tables short-circuit immediately because they are standalone.</li>
 </ul>
 <hr />
-<h3>dictionary</h3>
+<h3 id="dictionary">dictionary <a class="anchor-link" href="#dictionary">#</a></h3>
 <p><strong>Linelist dictionary bound to this specification</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Dictionary() As ILLdictionary
@@ -142,7 +153,7 @@ and spatial prefix detection used throughout validation and category
 resolution.</p>
 <p><strong>Returns:</strong> ILLdictionary. The linelist dictionary instance.</p>
 <hr />
-<h3>spatial-table-types</h3>
+<h3 id="spatial-table-types">spatial-table-types <a class="anchor-link" href="#spatial-table-types">#</a></h3>
 <p><strong>Spatial analysis sub-type</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get SpatialTableScopes() As String
@@ -164,8 +175,12 @@ likely return vbNullString since those variables typically lack geo/hf
 prefixes.</li>
 </ul>
 <hr />
-<h2>Validation Properties</h2>
-<h3>valid-table</h3>
+</div>
+</details>
+<details open class="doc-section" id="validation-properties">
+<summary>Validation Properties</summary>
+<div class="section-body">
+<h3 id="valid-table">valid-table <a class="anchor-link" href="#valid-table">#</a></h3>
 <p><strong>Whether this table has a valid configuration</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get ValidTable() As Boolean
@@ -187,7 +202,7 @@ Invalid table specs are skipped during navigation (Previous, NextSpecs).</p>
 <li>LLVariables</li>
 </ul>
 <hr />
-<h3>is-new-section</h3>
+<h3 id="is-new-section">is-new-section <a class="anchor-link" href="#is-new-section">#</a></h3>
 <p><strong>Whether this table begins a new section group</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get IsNewSection() As Boolean
@@ -210,8 +225,12 @@ to the row immediately above the current row. Section values are compared
 with exact string equality (case-sensitive).</li>
 </ul>
 <hr />
-<h2>Flag Properties</h2>
-<h3>has-total</h3>
+</div>
+</details>
+<details open class="doc-section" id="flag-properties">
+<summary>Flag Properties</summary>
+<div class="section-body">
+<h3 id="has-total">has-total <a class="anchor-link" href="#has-total">#</a></h3>
 <p><strong>Whether totals are needed for computation</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get HasTotal() As Boolean
@@ -228,7 +247,7 @@ This is distinct from TotalRequested: HasTotal can be True even when the
 user did not ask for totals, solely because percentage needs them.</p>
 <p><strong>Returns:</strong> Boolean. True if a total row/column should be created.</p>
 <hr />
-<h3>total-requested</h3>
+<h3 id="total-requested">total-requested <a class="anchor-link" href="#total-requested">#</a></h3>
 <p><strong>Whether total was explicitly requested by the user</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get TotalRequested() As Boolean
@@ -247,7 +266,7 @@ consulted because HasTotal is unconditionally True and totals are always
 shown. This property is primarily relevant for TimeSeries and Spatial types.</li>
 </ul>
 <hr />
-<h3>has-missing</h3>
+<h3 id="has-missing">has-missing <a class="anchor-link" href="#has-missing">#</a></h3>
 <p><strong>Whether missing-data rows or columns are included</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get HasMissing() As Boolean
@@ -261,7 +280,7 @@ variable is present (without a column variable, there is no categorical
 axis to show missing values on).</p>
 <p><strong>Returns:</strong> Boolean. True if missing data should be shown in the output table.</p>
 <hr />
-<h3>has-percentage</h3>
+<h3 id="has-percentage">has-percentage <a class="anchor-link" href="#has-percentage">#</a></h3>
 <p><strong>Whether percentage display is enabled</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get HasPercentage() As Boolean
@@ -276,7 +295,7 @@ HasPercentage and HasTotal for TimeSeries is intentional: requesting
 percentage implicitly forces HasTotal=True since percentage needs the total.</p>
 <p><strong>Returns:</strong> Boolean. True if percentage values should be included.</p>
 <hr />
-<h3>has-graph</h3>
+<h3 id="has-graph">has-graph <a class="anchor-link" href="#has-graph">#</a></h3>
 <p><strong>Whether a graph should be created for this table</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get HasGraph() As Boolean
@@ -290,8 +309,12 @@ percentages, or both. The actual graph rendering is handled downstream by
 the chart builder; this property only signals whether one should be created.</p>
 <p><strong>Returns:</strong> Boolean. True if a graph should be created for this table.</p>
 <hr />
-<h2>Navigation Properties</h2>
-<h3>previous</h3>
+</div>
+</details>
+<details open class="doc-section" id="navigation-properties">
+<summary>Navigation Properties</summary>
+<div class="section-body">
+<h3 id="previous">previous <a class="anchor-link" href="#previous">#</a></h3>
 <p><strong>Previous valid specification in the same section</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Previous() As ITableSpecs
@@ -317,7 +340,7 @@ degrades with many consecutive invalid rows.</li>
 previous table in the same section for a section-starting table.</li>
 </ul>
 <hr />
-<h3>next-specs</h3>
+<h3 id="next-specs">next-specs <a class="anchor-link" href="#next-specs">#</a></h3>
 <p><strong>Next valid specification following an anchor range</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get NextSpecs(ByVal anchorRng As Range) As ITableSpecs
@@ -343,8 +366,12 @@ tables in an analysis block. Callers typically start with the first table and
 call NextSpecs repeatedly until Nothing is returned.</li>
 </ul>
 <hr />
-<h2>Data Access</h2>
-<h3>value</h3>
+</div>
+</details>
+<details open class="doc-section" id="data-access">
+<summary>Data Access</summary>
+<div class="section-body">
+<h3 id="value">value <a class="anchor-link" href="#value">#</a></h3>
 <p><strong>Retrieve a value from the specification row by column name</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Value(ByVal colName As String) As String
@@ -364,7 +391,7 @@ method returns vbNullString.</p>
 </ul>
 <p><strong>Returns:</strong> String. The cell value, or vbNullString if the column is not found.</p>
 <hr />
-<h3>row-categories</h3>
+<h3 id="row-categories">row-categories <a class="anchor-link" href="#row-categories">#</a></h3>
 <p><strong>Row variable categories from the dictionary</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get RowCategories(ByRef lData As Object) As BetterArray
@@ -382,7 +409,7 @@ or any other Object (categories will be empty).</li>
 <p><strong>Returns:</strong> BetterArray. The category strings for the row variable, or an empty
 BetterArray if the row variable is not found or lData is not LinelistSpecs.</p>
 <hr />
-<h3>column-categories</h3>
+<h3 id="column-categories">column-categories <a class="anchor-link" href="#column-categories">#</a></h3>
 <p><strong>Column variable categories from the dictionary</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get ColumnCategories(ByRef lData As Object) As BetterArray
@@ -404,10 +431,12 @@ or any other Object (categories will be empty).</li>
 SpatioTemporal, contains N empty strings. Returns an empty BetterArray if the
 column variable is not found or not specified.</p>
 <hr />
+</div>
+</details>
 <details>
 <summary>Internal members (not exported)</summary>
-<h2>Internal Properties</h2>
-<h3>header-range</h3>
+<h2 id="int-internal-properties">Internal Properties</h2>
+<h3 id="int-header-range">header-range <a class="anchor-link" href="#int-header-range">#</a></h3>
 <p><strong>Header range of the setup ListObject</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get HeaderRange() As Range
@@ -418,7 +447,7 @@ Returns the header row Range that contains column names such as &quot;row&quot;,
 for all field lookups.</p>
 <p><strong>Returns:</strong> Range. The header row range.</p>
 <hr />
-<h3>header-range-set</h3>
+<h3 id="int-header-range-set">header-range-set <a class="anchor-link" href="#int-header-range-set">#</a></h3>
 <p><strong>Assign the header range</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set HeaderRange(ByVal hRng As Range)
@@ -428,7 +457,7 @@ for all field lookups.</p>
 <li><code>hRng</code>: Range. The header row range to store.</li>
 </ul>
 <hr />
-<h3>table-range</h3>
+<h3 id="int-table-range">table-range <a class="anchor-link" href="#int-table-range">#</a></h3>
 <p><strong>Table specification row range</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get TableRange() As Range
@@ -437,7 +466,7 @@ for all field lookups.</p>
 defines this table specification.</p>
 <p><strong>Returns:</strong> Range. The table specification row range.</p>
 <hr />
-<h3>table-range-set</h3>
+<h3 id="int-table-range-set">table-range-set <a class="anchor-link" href="#int-table-range-set">#</a></h3>
 <p><strong>Assign the table specification row range</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set TableRange(ByVal tRng As Range)
@@ -447,7 +476,7 @@ defines this table specification.</p>
 <li><code>tRng</code>: Range. The data-row range to store.</li>
 </ul>
 <hr />
-<h3>dictionary-object</h3>
+<h3 id="int-dictionary-object">dictionary-object <a class="anchor-link" href="#int-dictionary-object">#</a></h3>
 <p><strong>Dictionary object used for validation and variable lookups</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get DictionaryObject() As ILLdictionary
@@ -457,7 +486,7 @@ checks, control type lookups, and spatial prefix detection. Set during
 factory construction.</p>
 <p><strong>Returns:</strong> ILLdictionary. The dictionary object.</p>
 <hr />
-<h3>dictionary-object-set</h3>
+<h3 id="int-dictionary-object-set">dictionary-object-set <a class="anchor-link" href="#int-dictionary-object-set">#</a></h3>
 <p><strong>Assign the dictionary object</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set DictionaryObject(ByVal dict As ILLdictionary)
@@ -467,8 +496,8 @@ factory construction.</p>
 <li><code>dict</code>: ILLdictionary. The dictionary to store.</li>
 </ul>
 <hr />
-<h2>Helpers</h2>
-<h3>column-exists</h3>
+<h2 id="int-helpers">Helpers</h2>
+<h3 id="int-column-exists">column-exists <a class="anchor-link" href="#int-column-exists">#</a></h3>
 <p><strong>Check whether a column name exists in the header cache</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ColumnExists(ByVal colName As String) As Boolean
@@ -482,7 +511,7 @@ the original Range.Find call with a scan of the cached column names array.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True if at least one cached column name contains the search term.</p>
 <hr />
-<h3>column-index</h3>
+<h3 id="int-column-index">column-index <a class="anchor-link" href="#int-column-index">#</a></h3>
 <p><strong>Return the 1-based column index of a named header column</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ColumnIndex(ByVal colName As String) As Long
@@ -496,7 +525,7 @@ Returns the 1-based position within the header range, or -1 if not found.</p>
 </ul>
 <p><strong>Returns:</strong> Long. The 1-based position within the header range, or -1 if not found.</p>
 <hr />
-<h3>categories-data</h3>
+<h3 id="int-categories-data">categories-data <a class="anchor-link" href="#int-categories-data">#</a></h3>
 <p><strong>Build a BetterArray of categories for a row or column variable</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function CategoriesData(ByVal rowOrCol As String, _
@@ -525,7 +554,7 @@ or any other Object (categories will be empty).</li>
 <li>LLVariables</li>
 </ul>
 <hr />
-<h3>compute-table-scope</h3>
+<h3 id="int-compute-table-scope">compute-table-scope <a class="anchor-link" href="#int-compute-table-scope">#</a></h3>
 <p><strong>Compute the AnalysisTableScope from the setup worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ComputeTableScope() As AnalysisTableScope
@@ -539,7 +568,7 @@ constant. Called once during InitCache to populate the scope cache.</p>
 <li>ErrorUnexpectedState When the type label does not match any known analysis type.</li>
 </ul>
 <hr />
-<h3>compute-valid-table</h3>
+<h3 id="int-compute-valid-table">compute-valid-table <a class="anchor-link" href="#int-compute-valid-table">#</a></h3>
 <p><strong>Compute whether this table has a valid configuration</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ComputeValidTable() As Boolean
@@ -553,7 +582,7 @@ access of ValidTable to populate the Boolean cache.</p>
 <li>LLVariables</li>
 </ul>
 <hr />
-<h3>compute-is-new-section</h3>
+<h3 id="int-compute-is-new-section">compute-is-new-section <a class="anchor-link" href="#int-compute-is-new-section">#</a></h3>
 <p><strong>Compute whether this table begins a new section group</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ComputeIsNewSection() As Boolean
@@ -565,8 +594,8 @@ value is the only remaining worksheet read (the current row value comes
 from the cellValues cache).</p>
 <p><strong>Returns:</strong> Boolean. True if this table starts a new section.</p>
 <hr />
-<h2>Error Handling</h2>
-<h3>throw-error</h3>
+<h2 id="int-error-handling">Error Handling</h2>
+<h3 id="int-throw-error">throw-error <a class="anchor-link" href="#int-throw-error">#</a></h3>
 <p><strong>Raise a ProjectError-based exception</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As Long, ByVal message As String)
@@ -584,7 +613,7 @@ providing a consistent stack trace across all methods in this class.</p>
 <li>ProjectError.<varies> Always raises the specified error.</li>
 </ul>
 <hr />
-<h3>check-requirements</h3>
+<h3 id="int-check-requirements">check-requirements <a class="anchor-link" href="#int-check-requirements">#</a></h3>
 <p><strong>Validate preconditions for the Create factory</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub CheckRequirements(ByVal headerRng As Range, _
@@ -607,8 +636,8 @@ If any check fails, a descriptive error is raised via ThrowError.</p>
 <li>InvalidArgument When any precondition fails.</li>
 </ul>
 <hr />
-<h2>Interface Implementation</h2>
-<h3>ITableSpecs_TableScope</h3>
+<h2 id="int-interface-implementation">Interface Implementation</h2>
+<h3 id="int-itablespecs-tablescope">ITableSpecs_TableScope <a class="anchor-link" href="#int-itablespecs-tablescope">#</a></h3>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get ITableSpecs_TableScope() As AnalysisTableScope
 </code></pre>
@@ -633,8 +662,10 @@ See the corresponding Public members above for full documentation.</p>
 <li><a href="src/tests/modules/analyses/TestTableSpecs.bas">TestTableSpecs.bas</a></li>
 </ul>
 </details>
-
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
 
