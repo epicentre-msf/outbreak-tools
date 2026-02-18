@@ -1,7 +1,7 @@
 Attribute VB_Name = "FormLogicGeo"
 Attribute VB_Description = "Form callbacks for F_Geo — delegates to GeoModule"
 
-'@Folder("Geo")
+'@Folder("Linelist Forms")
 '@ModuleDescription("Form callbacks for F_Geo -- delegates to GeoModule")
 '@IgnoreModule UnrecognizedAnnotation, UnassignedVariableUsage, UndeclaredVariable, ImplicitActiveSheetReference, UseMeaningfulName, HungarianNotation
 
