@@ -6,9 +6,9 @@ body {
   line-height: 1.6;
   background-color: #fafafa;
   background-image:
-    linear-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
-  background-size: 20px 20px;
+    linear-gradient(rgba(0, 0, 0, 0.012) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.012) 1px, transparent 1px);
+  background-size: 24px 24px;
 }
 nav {
   margin-bottom: 2rem;
@@ -37,7 +37,7 @@ pre {
   word-wrap: break-word;
 }
 pre code { background: none; padding: 0; }
-pre code.hljs { background: none; padding: 0; }
+pre code.hljs { background: none; padding: 0; white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word; }
 details { margin: 1.5rem 0; }
 summary { cursor: pointer; font-weight: bold; }
 hr { border: none; border-top: 1px solid #ddd; margin: 2rem 0; }
