@@ -313,7 +313,7 @@ End Property
 'temporal tables, this property is typically called once during StartRow
 'resolution and should not be called in tight loops.
 Private Property Get Previous() As ICrossTable
-    Set Previous = Create(Specifications.Previous, Wksh(), Translations())
+    Set Previous = Create(Specifications.Previous, Wksh(), LinelistData())
 End Property
 
 '@label:start-column
