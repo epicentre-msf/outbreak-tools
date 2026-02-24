@@ -65,7 +65,7 @@ Private Const RNGSPTEMPSHEET As String = "RNG_SheetSPTempName"
 Public Function Create(ByVal idsh As Worksheet, _
                        Optional ByVal check As Boolean = True) As IAnaTabIds
 
-    If idsh Is Nothing Then ThrowError InvalidArgument, "Worksheet not defined"
+    If idsh Is Nothing Then ThrowError ProjectError.InvalidArgument, "Worksheet not defined"
     If check Then CheckRequirements idsh
 
     With New AnaTabIds
@@ -616,6 +616,7 @@ Private Sub CheckRequirements(ByVal sh As Worksheet)
     Dim wb As Workbook
     Dim actName As String
     Dim rngArray As BetterArray
+    Dim shNames As IHiddenNames
 
     Set loArray = New BetterArray
     loArray.Push "tab_ids_uba", "tab_ids_sp", "tab_ids_ts", "tab_ids_sptemp", _
@@ -625,19 +626,20 @@ Private Sub CheckRequirements(ByVal sh As Worksheet)
     For counter = loArray.LowerBound To loArray.UpperBound
         actName = loArray.Item(counter)
         If Not LoExists(sh, actName) Then _
-            ThrowError InvalidArgument, "Table " & actName & " is missing"
+            ThrowError ProjectError.InvalidArgument, "Table " & actName & " is missing"
     Next
 
     Set rngArray = New BetterArray
     rngArray.Push RNGUASHEET, RNGTSSHEET, RNGSPSHEET, RNGSPTEMPSHEET
     Set wb = sh.Parent
+    Set shNames = HiddenNames.Create(sh)
 
     For counter = rngArray.LowerBound To rngArray.UpperBound
         actName = rngArray.Item(counter)
-        If Not RangeExists(sh, actName) Then _
-            ThrowError InvalidArgument, "Range " & actName & " is missing"
-        If Not SheetExists(wb, sh.Range(actName).Value) Then _
-            ThrowError InvalidArgument, "Sheet for " & actName & " is missing"
+        If Not shNames.HasName(actName) Then _
+            ThrowError ProjectError.InvalidArgument, "Range " & actName & " is missing"
+        If Not SheetExists(wb, shNames.ValueAsString(actName)) Then _
+            ThrowError ProjectError.InvalidArgument, "Sheet for " & actName & " is missing"
     Next
 End Sub
 

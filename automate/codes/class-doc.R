@@ -336,13 +336,18 @@ VBADocParser <- R6Class(
         }
 
         entry$signature <- paste(signature_lines, collapse = "\n")
+
+        # Always infer the function/sub/property name from the signature
+        inferred <- private$infer_label_from_signature(signature_lines[[1]])
+        if (private$has_text(inferred)) {
+          entry$name <- inferred
+        } else {
+          entry$name <- str_trim(signature_lines[[1]])
+        }
+
+        # If no label was set, fall back to the inferred name
         if (!private$has_text(entry$label)) {
-          inferred <- private$infer_label_from_signature(signature_lines[[1]])
-          if (private$has_text(inferred)) {
-            entry$label <- inferred
-          } else {
-            entry$label <- str_trim(signature_lines[[1]])
-          }
+          entry$label <- entry$name
         }
 
         if (!private$has_text(entry$section)) {
@@ -741,10 +746,20 @@ VBADocParser <- R6Class(
           output <- c(output, glue("## {section_title}"), "")
         }
 
-        label <- if (private$has_text(doc$label)) {
+        # Use the function/sub/property name as the h3 title
+        member_name <- if (private$has_text(doc$name)) {
+          as.character(doc$name)[1]
+        } else if (private$has_text(doc$label)) {
           as.character(doc$label)[1]
         } else {
           "UnnamedMember"
+        }
+
+        # Label shown as subtitle when it differs from the name
+        label <- if (private$has_text(doc$label)) {
+          as.character(doc$label)[1]
+        } else {
+          NULL
         }
 
         summary <- NULL
@@ -754,9 +769,14 @@ VBADocParser <- R6Class(
           summary <- doc[["sub-title"]]
         }
 
-        header <- glue("### {label}")
+        header <- glue("### {member_name}")
 
         block <- c("", header)
+
+        # Show label as subtitle if it differs from the function name
+        if (!is.null(label) && label != member_name) {
+          block <- c(block, "", glue("*{label}*"))
+        }
 
         if (private$has_text(summary)) {
           block <- c(block, "", glue("**{summary}**"))
