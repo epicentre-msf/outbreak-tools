@@ -197,7 +197,7 @@ Private Sub Add()
     Set rng = StartRange()
     Set sh = rng.Parent
 
-    Set co = sh.ChartObjects.Add(rng.Left, rng.Top, RH, CW)
+    Set co = sh.ChartObjects.Add(rng.Left, rng.Top, CW, RH)
 
     co.Left = rng.Left
     co.Top = rng.Top
