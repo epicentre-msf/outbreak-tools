@@ -601,7 +601,7 @@ End Sub
 '@param errorMessage String. Descriptive error message.
 '@throws ProjectError.<varies> Always raises the specified error.
 Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
-    Err.Raise errNumb, "DataSheet", "Error : " & Chr(34) & errorMessage
+    Err.Raise errNumb, "Graphs", "Error : " & Chr(34) & errorMessage
 End Sub
 
 
