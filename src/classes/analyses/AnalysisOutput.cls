@@ -746,7 +746,6 @@ Private Sub WriteTable(ByVal loName As String, _
         GoTo ContinueLoop
 
 TableError:
-        ' Bug #3 fix: per-table error handling — log error and continue to next table
         Debug.Print "Error on table " & tabId & ": " & Err.Number & " " & Err.Description
         On Error GoTo 0
         Resume ContinueLoop

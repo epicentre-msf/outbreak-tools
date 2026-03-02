@@ -259,39 +259,21 @@ End Function
 '@label:failed-formula
 '@sub-title Test whether a generated Excel formula string is syntactically valid.
 '@details
-'Attempts to write the formula as an array formula into cell(1,1) of the
-'cross-table worksheet, then immediately clears that cell. If the assignment
-'succeeds without error, the formula is considered valid and FailedFormula
-'returns False. If an error occurs (e.g., invalid function name, bad range
-'reference, or formula syntax error), execution jumps to the Fail label and
-'returns True. This acts as a safety net to prevent writing broken formulas
-'into the actual table cells.
+'Evaluates the formula string in memory using Application.Evaluate without
+'writing to any worksheet cell. If Evaluate raises an error or returns an
+'error variant (e.g., invalid function name, bad range reference, or formula
+'syntax error), the formula is considered broken and FailedFormula returns
+'True. This acts as a safety net to prevent writing broken formulas into
+'the actual table cells.
 '@param frmName String. The Excel formula string to test (without the leading "= " prefix).
 '@return Boolean. True if the formula raised an error (is broken), False if it succeeded.
-'@remarks Application.DisplayAlerts is temporarily disabled and restored afterward
-'to suppress any Excel warning dialogs during the test. Cell(1,1) is always cleared
-'regardless of success or failure to avoid leaving test artifacts on the worksheet.
 Private Function FailedFormula(ByVal frmName As String) As Boolean
-    Dim prevAlert As Long
-    Dim sh As Worksheet
+    Dim result As Variant
 
-    prevAlert = Application.DisplayAlerts
-    Set sh = Table.Wksh
-
-    With sh
-        Application.DisplayAlerts = False
-        On Error GoTo Fail
-        .Cells(1, 1).Clear
-        .Cells(1, 1).FormulaArray = "= " & frmName
-        .Cells(1, 1).Clear
-        FailedFormula = False
-        Application.DisplayAlerts = prevAlert
-        Exit Function
-    End With
-
-Fail:
-    FailedFormula = True
-    Application.DisplayAlerts = prevAlert
+    On Error Resume Next
+    result = Application.Evaluate(frmName)
+    FailedFormula = (Err.Number <> 0) Or IsError(result)
+    On Error GoTo 0
 End Function
 
 '@label:emp-str
