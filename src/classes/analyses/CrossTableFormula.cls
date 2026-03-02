@@ -652,7 +652,7 @@ Private Sub AddFormulas()
             Set rng = .Range("ROW_CATEGORIES_" & tabId)
             rowVar = specs.Value("row")
             ClearTableConditions
-            AddTableConditions rowVar, "=" & rng.Cells(1, 1).Address(RowAbsolute:=False)
+            AddTableConditions rowVar, "= " & rng.Cells(1, 1).Address(RowAbsolute:=False)
             finalFormula = CurrentExcelFormula()
 
             Set rng = .Range("VALUES_COL_1_" & tabId)
@@ -664,10 +664,10 @@ Private Sub AddFormulas()
             ' Missing and total
             If hasMissing Then
                 ClearTableConditions
-                AddTableConditions rowVar, "=" & EmpStr()
+                AddTableConditions rowVar, "= " & EmpStr()
                 finalFormula = CurrentExcelFormula()
                 Set rng = .Range("MISSING_ROW_VALUES_" & tabId)
-                rng.Cells(1, 1).FormulaArray = "=" & finalFormula
+                rng.Cells(1, 1).FormulaArray = "= " & finalFormula
 
                 Set rng = .Range("TOTAL_ROW_VALUES_" & tabId)
                 If SummaryFunction = "N" Or SummaryFunction = "N()" Then
@@ -712,7 +712,7 @@ Private Sub AddFormulas()
 
                 ClearTableConditions
                 AddTableConditions rowVar, "= " & rowCatAddress
-                AddTableConditions colVar, "=" & rngLab.Address
+                AddTableConditions colVar, "= " & rngLab.Address
                 finalFormula = CurrentExcelFormula()
 
                 rng.Cells(1, 1).FormulaArray = "= " & finalFormula
@@ -737,7 +737,7 @@ Private Sub AddFormulas()
                 Else
                     ClearTableConditions
                     AddNonEmptyTableConditions rowVar
-                    AddTableConditions colVar, "=" & rngLab.Address
+                    AddTableConditions colVar, "= " & rngLab.Address
                     finalFormula = CurrentExcelFormula()
                     Set cellRng = .Cells(totRng.Row, rng.Column)
                     cellRng.FormulaArray = "= " & finalFormula
@@ -835,18 +835,18 @@ Private Sub AddFormulas()
                         ClearTableConditions
                         AddNonEmptyTableConditions colVar
                         finalFormula = CurrentExcelFormula()
-                        .Range("TOTAL_TOTAL_" & tabId).FormulaArray = "=" & finalFormula
+                        .Range("TOTAL_TOTAL_" & tabId).FormulaArray = "= " & finalFormula
                     Case "column"
                         ClearTableConditions
                         AddNonEmptyTableConditions rowVar
                         finalFormula = CurrentExcelFormula()
-                        .Range("TOTAL_TOTAL_" & tabId).FormulaArray = "=" & finalFormula
+                        .Range("TOTAL_TOTAL_" & tabId).FormulaArray = "= " & finalFormula
                     Case "no"
                         ClearTableConditions
                         AddNonEmptyTableConditions colVar
                         AddNonEmptyTableConditions rowVar
                         finalFormula = CurrentExcelFormula()
-                        .Range("TOTAL_TOTAL_" & tabId).FormulaArray = "=" & finalFormula
+                        .Range("TOTAL_TOTAL_" & tabId).FormulaArray = "= " & finalFormula
                     End Select
                 End If
                 AddRngFormat tabFormat, .Range("TOTAL_TOTAL_" & tabId)
@@ -1054,7 +1054,7 @@ Private Sub AddFormulas()
             ' Missing row, total column
             If RangeExists("MISSING_TOTAL_" & tabId) Then
                 ClearTableConditions
-                AddTableConditions rowVar, "=" & EmpStr()
+                AddTableConditions rowVar, "= " & EmpStr()
                 finalFormula = CurrentExcelFormula()
                 .Range("MISSING_TOTAL_" & tabId).FormulaArray = "= " & finalFormula
                 AddRngFormat tabFormat, .Range("MISSING_TOTAL_" & tabId)
@@ -1083,11 +1083,11 @@ Private Sub AddFormulas()
 
                     If hasMissing Then
                         finalFormula = CurrentExcelFormula()
-                        .Range("TOTAL_TOTAL_" & tabId).FormulaArray = "=" & finalFormula
+                        .Range("TOTAL_TOTAL_" & tabId).FormulaArray = "= " & finalFormula
                     Else
                         AddNonEmptyTableConditions colVar
                         finalFormula = CurrentExcelFormula()
-                        .Range("TOTAL_TOTAL_" & tabId).FormulaArray = "=" & finalFormula
+                        .Range("TOTAL_TOTAL_" & tabId).FormulaArray = "= " & finalFormula
                     End If
                 End If
                 AddRngFormat tabFormat, .Range("TOTAL_TOTAL_" & tabId)
@@ -1236,7 +1236,7 @@ Private Sub AddFormulas()
             ' Missing row, total column
             If RangeExists("MISSING_TOTAL_" & tabId) Then
                 ClearTableConditions
-                AddTableConditions rowVar, "=" & EmpStr()
+                AddTableConditions rowVar, "= " & EmpStr()
                 finalFormula = CurrentExcelFormula()
                 .Range("MISSING_TOTAL_" & tabId).FormulaArray = "= " & finalFormula
                 AddRngFormat tabFormat, .Range("MISSING_TOTAL_" & tabId)
@@ -1250,6 +1250,46 @@ Private Sub AddFormulas()
                 finalFormula = CurrentExcelFormula()
                 .Range("MISSING_MISSING_" & tabId).FormulaArray = "= " & finalFormula
                 AddRngFormat tabFormat, .Range("MISSING_MISSING_" & tabId)
+            End If
+
+            ' Total row, missing column
+            If RangeExists("TOTAL_MISSING_" & tabId) Then
+                ClearTableConditions
+                AddTableConditions colVar, "= " & EmpStr()
+                finalFormula = CurrentExcelFormula()
+                .Range("TOTAL_MISSING_" & tabId).FormulaArray = "= " & finalFormula
+                AddRngFormat tabFormat, .Range("TOTAL_MISSING_" & tabId)
+            End If
+
+            ' Total row, total column
+            If RangeExists("TOTAL_TOTAL_" & tabId) Then
+                If SummaryFunction = "N" Or SummaryFunction = "N()" Then
+                    .Range("TOTAL_TOTAL_" & tabId).Formula = _
+                        "= SUM(" & .Range("TOTAL_COL_VALUES_" & tabId).Address & ")"
+                Else
+                    Select Case specs.Value("missing")
+                    Case "all"
+                        finalFormula = CurrentExcelFormula(scope:=FormulaScopeLinelist)
+                        .Range("TOTAL_TOTAL_" & tabId).FormulaArray = "= " & finalFormula
+                    Case "row"
+                        ClearTableConditions
+                        AddNonEmptyTableConditions colVar
+                        finalFormula = CurrentExcelFormula()
+                        .Range("TOTAL_TOTAL_" & tabId).FormulaArray = "= " & finalFormula
+                    Case "column"
+                        ClearTableConditions
+                        AddNonEmptyTableConditions rowVar
+                        finalFormula = CurrentExcelFormula()
+                        .Range("TOTAL_TOTAL_" & tabId).FormulaArray = "= " & finalFormula
+                    Case "no"
+                        ClearTableConditions
+                        AddNonEmptyTableConditions colVar
+                        AddNonEmptyTableConditions rowVar
+                        finalFormula = CurrentExcelFormula()
+                        .Range("TOTAL_TOTAL_" & tabId).FormulaArray = "= " & finalFormula
+                    End Select
+                End If
+                AddRngFormat tabFormat, .Range("TOTAL_TOTAL_" & tabId)
             End If
 
             ' Create spatial table management
