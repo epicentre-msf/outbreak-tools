@@ -440,6 +440,16 @@ Public Sub CloseAll()
 End Sub
 
 
+'@sub-title Get the sheet type tag from worksheet-level HiddenNames.
+'@param sh Worksheet. The worksheet to query.
+'@return String. The sheet type tag (HList, VList, etc.).
+Private Function SheetTagOf(ByVal sh As Worksheet) As String
+    Dim shHn As IHiddenNames
+    Set shHn = HiddenNames.Create(sh)
+    SheetTagOf = shHn.ValueAsString("sheet_type")
+    If SheetTagOf = vbNullString Then SheetTagOf = CStr(sh.Cells(1, 3).Value)
+End Function
+
 '@section Private - Source Object Accessors
 '===============================================================================
 
@@ -871,7 +881,7 @@ Private Sub AddShowHide(ByVal outwb As Workbook)
         Set sh = this.sourceWkb.Worksheets(sheetName)
         On Error GoTo 0
         If sh Is Nothing Then GoTo NextSheet
-        sheetType = CStr(sh.Cells(1, 3).Value)
+        sheetType = SheetTagOf(sh)
 
         If sheetType = "HList" Then
             ' HList layer
@@ -1031,7 +1041,7 @@ Private Sub AddDataSheets(ByVal outwb As Workbook, ByVal expDict As ILLdictionar
         Set headersList = expDict.Data.FilterData("sheet name", sheetName, "variable name")
         Set outsh = outwb.Worksheets(sheetName)
 
-        Select Case CStr(inpsh.Cells(1, 3).Value)
+        Select Case SheetTagOf(inpsh)
 
         Case "HList"
             ' Choose between filtered or raw data

@@ -78,7 +78,7 @@ End Function
 Private Function BaseSheetName(ByVal sh As Worksheet) As String
     Dim sheetTag As String
 
-    sheetTag = sh.Cells(1, 3).Value
+    sheetTag = SheetTag(sh)
 
     Select Case sheetTag
     Case "HList Print"
@@ -88,6 +88,14 @@ Private Function BaseSheetName(ByVal sh As Worksheet) As String
     Case Else
         BaseSheetName = sh.Name
     End Select
+End Function
+
+'Get the sheet type tag (HiddenNames first, cell fallback for legacy sheets).
+Private Function SheetTag(ByVal sh As Worksheet) As String
+    Dim shHn As IHiddenNames
+    Set shHn = HiddenNames.Create(sh)
+    SheetTag = shHn.ValueAsString("sheet_type")
+    If SheetTag = vbNullString Then SheetTag = CStr(sh.Cells(1, 3).Value)
 End Function
 
 'Apply visibility from a ShowHideManager to a worksheet
@@ -196,7 +204,7 @@ Public Sub ClickShowHide()
     Dim frm As Object
 
     Set sh = ActiveSheet
-    sheetTag = sh.Cells(1, 3).Value
+    sheetTag = SheetTag(sh)
 
     If (sheetTag <> "HList" And sheetTag <> "HList Print" And sheetTag <> "VList" _
        And sheetTag <> "HList CRF") Then
@@ -289,7 +297,7 @@ Public Sub ClickOptionsShowHide(ByVal Index As Long)
     showHideObject.SetHidden entryIdx, shouldHide
 
     Set sh = ActiveSheet
-    sheetTag = sh.Cells(1, 3).Value
+    sheetTag = SheetTag(sh)
     posIdx = showHideObject.PositionIndex(entryIdx)
 
     If posIdx > 0 Then
@@ -359,7 +367,7 @@ Public Sub ClickOpenPrint()
     On Error GoTo ErrOpen
 
     Set sh = ActiveSheet
-    sheetTag = sh.Cells(1, 3).Value
+    sheetTag = SheetTag(sh)
 
     InitializeTrads
 
@@ -392,7 +400,7 @@ Public Sub ClickOpenCRF()
     On Error GoTo ErrOpen
 
     Set sh = ActiveSheet
-    sheetTag = sh.Cells(1, 3).Value
+    sheetTag = SheetTag(sh)
 
     InitializeTrads
 
@@ -428,7 +436,7 @@ Public Sub ClickClosePrint()
 
     InitializeTrads
 
-    sheetTag = sh.Cells(1, 3).Value
+    sheetTag = SheetTag(sh)
 
     If sheetTag <> "HList" And sheetTag <> "HList Print" And sheetTag <> "HList CRF" Then
         WarningOnSheet "MSG_PrintCRFOrDataSheet"
@@ -470,7 +478,7 @@ Public Sub ClickRotateAll()
 
     Set sh = ActiveSheet
 
-    sheetTag = sh.Cells(1, 3).Value
+    sheetTag = SheetTag(sh)
 
     InitializeTrads
 
@@ -516,7 +524,7 @@ Public Sub ClickRowHeight()
 
     Set sh = ActiveSheet
 
-    sheetTag = sh.Cells(1, 3).Value
+    sheetTag = SheetTag(sh)
 
     If sheetTag <> "HList" And sheetTag <> "HList Print" Then
         WarningOnSheet "MSG_PrintOrDataSheet"
@@ -568,7 +576,7 @@ Public Sub ClickRemoveFilters()
     Dim sheetTag As String
 
     Set sh = ActiveSheet
-    sheetTag = sh.Cells(1, 3).Value
+    sheetTag = SheetTag(sh)
 
     If sheetTag <> "HList" And sheetTag <> "HList Print" Then
         WarningOnSheet "MSG_PrintOrDataSheet"
@@ -610,7 +618,7 @@ Public Sub ClickAddRows()
 
     'Unprotect and sending everything
     Set sh = ActiveSheet
-    sheetTag = sh.Cells(1, 3).Value
+    sheetTag = SheetTag(sh)
 
     'Warning if not on print or hlist worksheet
     If sheetTag <> "HList" And sheetTag <> "HList Print" Then
@@ -661,7 +669,7 @@ Public Sub ClickResize()
 
     'Unprotect and sending everything
     Set sh = ActiveSheet
-    sheetTag = sh.Cells(1, 3).Value
+    sheetTag = SheetTag(sh)
 
     'Warning if not on print or hlist worksheet
     If sheetTag <> "HList" And sheetTag <> "HList Print" Then
@@ -817,7 +825,7 @@ Public Sub ClickGeoApp()
     Dim rngName As String
 
     Set sh = ActiveSheet
-    sheetTag = sh.Cells(1, 3).Value
+    sheetTag = SheetTag(sh)
 
     If (sheetTag <> "HList") And (sheetTag <> "SPT-Analysis") Then
         WarningOnSheet "MSG_DataOrSpatioSheet"
@@ -921,7 +929,7 @@ Public Sub ClickPrintLL()
     Set sh = ActiveSheet
 
     'Test to be sure we are on print or linelist worksheet
-    sheetTag = sh.Cells(1, 3).Value
+    sheetTag = SheetTag(sh)
 
     'Warning if not on print or hlist worksheet
     If sheetTag <> "HList Print" And sheetTag <> "HList" Then
@@ -1093,7 +1101,7 @@ Public Sub ClickSortTable()
     On Error GoTo ErrHand
 
     Set sh = ActiveSheet
-    sheetTag = sh.Cells(1, 3).Value
+    sheetTag = SheetTag(sh)
 
     If sheetTag <> "HList" Then
         WarningOnSheet "MSG_DataSheet"
@@ -1169,7 +1177,7 @@ Public Sub ClickImportData()
     'Resize all HList tables before import (remove blank rows)
     Application.EnableEvents = False
     For Each sh In wb.Worksheets
-        If sh.Cells(1, 3).Value = "HList" Then
+        If SheetTag(sh) = "HList" Then
             nbBlank = sh.Cells(1, 6).Value
             Set Lo = sh.ListObjects(1)
             Set csTab = CustomTable.Create(Lo)
@@ -1356,7 +1364,7 @@ Public Sub ClickShowHideMinimal()
     If Not checkConfirm Then GoTo ErrHand
 
     Set sh = ActiveSheet
-    sheetTag = sh.Cells(1, 3).Value
+    sheetTag = SheetTag(sh)
     layer = ResolveShowHideLayer(sheetTag)
     If layer = 0 Then GoTo ErrHand
 
@@ -1487,7 +1495,7 @@ Public Sub clickAutoFit()
     On Error GoTo ErrHand
 
     Set sh = ActiveSheet
-    sheetTag = sh.Cells(1, 3).Value
+    sheetTag = SheetTag(sh)
 
     If sheetTag <> "HList" Then
         WarningOnSheet "MSG_DataSheet"
