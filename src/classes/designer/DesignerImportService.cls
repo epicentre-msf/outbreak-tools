@@ -509,9 +509,9 @@ Private Sub ExportGeo(ByVal hostBook As Workbook, ByVal targetBook As Workbook, 
     'so that UpdateLevelNames can resolve translations during ExportToWkb
     dictLang = ReadMainRange(hostBook, RNG_LANG_SETUP)
     langCode = Split(ReadMainRange(hostBook, RNG_LL_FORM), "-")(0)
+    Set geoStore = HiddenNames.Create(hostSheet)
 
-    If LenB(dictLang) > 0 Then
-        Set geoStore = HiddenNames.Create(hostSheet)
+    If LenB(dictLang) > 0 Then     
         geoStore.EnsureName "RNG_MetaLang", dictLang, HiddenNameTypeString
         geoStore.SetValue "RNG_MetaLang", dictLang
     End If

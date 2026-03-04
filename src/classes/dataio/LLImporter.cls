@@ -892,7 +892,6 @@ Private Sub ImportVListSheet(ByVal currsh As Worksheet, ByVal impsh As Worksheet
     Dim usedRng As Range
     Dim vlistRng As Range
     Dim varName As String
-    Dim hasFormula As Boolean
     Dim counter As Long
 
     Set usedRng = impsh.UsedRange
@@ -901,11 +900,8 @@ Private Sub ImportVListSheet(ByVal currsh As Worksheet, ByVal impsh As Worksheet
         varName = CStr(usedRng.Cells(counter, 1).Value)
 
         Set vlistRng = Nothing
-        hasFormula = True
-
         On Error Resume Next
         Set vlistRng = currsh.Range(varName)
-        hasFormula = (CStr(vlistRng.Formula) <> CStr(vlistRng.Value))
         On Error GoTo 0
 
         If vlistRng Is Nothing Then
@@ -913,7 +909,7 @@ Private Sub ImportVListSheet(ByVal currsh As Worksheet, ByVal impsh As Worksheet
             this.varsNotImported.Push Array(varName, impsh.Name)
             this.needReport = True
         Else
-            If Not hasFormula Then
+            If Not vlistRng.HasFormula Then
                 vlistRng.Value = usedRng.Cells(counter, 2).Value
             End If
         End If

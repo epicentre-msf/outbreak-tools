@@ -316,7 +316,7 @@ Cleanup:
     Exit Sub
 
 Handler:
-    Debug.Print "Clear filters - "; targetSheet.Name; " addRows: "; addRows; " error "; Err.Number; " "; Err.Description
+    Debug.Print "Clear filters - "; targetSheet.Name; " error "; Err.Number; " "; Err.Description
     Resume Cleanup
 End Sub
 

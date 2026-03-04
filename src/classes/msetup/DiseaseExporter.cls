@@ -67,7 +67,8 @@ Private this As TDiseaseExporter
 '@param workbookManager IDiseaseExportWorkbook providing workbook lifecycle handling.
 '@param appGuard IDiseaseApplicationState maintaining Application toggles.
 '@return IDiseaseExporter ready to generate exports.
-Public Function Create(ByVal workbookManager As IDiseaseExportWorkbook) As IDiseaseExporter
+Public Function Create(ByVal workbookManager As IDiseaseExportWorkbook, _
+                       ByVal appGuard As IDiseaseApplicationState) As IDiseaseExporter
 
     With New DiseaseExporter
         .Initialise workbookManager, appGuard

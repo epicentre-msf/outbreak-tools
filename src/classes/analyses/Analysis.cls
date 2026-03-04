@@ -476,7 +476,7 @@ Private Sub Sort()
 
 
     For counter = requiredTablesCaches.LowerBound To requiredTablesCaches.UpperBound
-        loName = requiredTablesCaches.Items(counter)
+        loName = requiredTablesCaches.Item(counter)
 
         On Error Resume Next
         Set Lo = sh.ListObjects(loName)
@@ -514,11 +514,11 @@ End Sub
 'with the same name already exists it is cleared and reused; otherwise a
 'new sheet is created. Each ListObject is copied by value and its header
 'rows (up to 3 rows above) are transferred with font formatting.
-'@param sourceWb Workbook. The workbook receiving the exported worksheet.
+'@param sourcewb Workbook. The workbook receiving the exported worksheet.
 '@param Hide Optional Long. Excel visibility constant applied to the
 'exported sheet. Defaults to xlSheetHidden.
 '@export
-Private Sub Export(ByVal sourceWb As Workbook, Optional ByVal Hide As Long = xlSheetHidden)
+Private Sub Export(ByVal sourcewb As Workbook, Optional ByVal Hide As Long = xlSheetHidden)
 
     Dim hostsheet As Worksheet
     Dim hostLo As ListObject
@@ -539,7 +539,7 @@ Private Sub Export(ByVal sourceWb As Workbook, Optional ByVal Hide As Long = xlS
     Set hostsheet = Wksh()
 
     On Error Resume Next
-    Set sourcesheet = sourceWb.Worksheets(hostsheet.Name)
+    Set sourcesheet = sourcewb.Worksheets(hostsheet.Name)
     On Error GoTo 0
 
     If sourcesheet Is Nothing Then
