@@ -135,7 +135,6 @@ Public Sub OnSheetChange(ByVal sh As Worksheet, ByVal target As Range)
 
     Dim sheetTag As String
     sheetTag = shHn.ValueAsString("sheet_type")
-    If sheetTag = vbNullString Then sheetTag = CStr(sh.Cells(1, 3).Value)
 
     Select Case sheetTag
         Case "HList"
@@ -193,7 +192,6 @@ Public Sub OnSelectionChange(ByVal sh As Worksheet, ByVal target As Range)
 
     Dim sheetTag As String
     sheetTag = shHn.ValueAsString("sheet_type")
-    If sheetTag = vbNullString Then sheetTag = CStr(sh.Cells(1, 3).Value)
     If sheetTag <> "HList" Then Exit Sub
 
     HandleSelectionHList sh, target, shHn
@@ -1269,14 +1267,13 @@ End Function
 '@section Private — Sheet metadata helpers
 '===============================================================================
 
-'@sub-title Get the sheet type tag (HiddenNames first, cell fallback for analysis sheets).
+'@sub-title Get the sheet type tag from worksheet-level HiddenNames.
 '@param sh Worksheet. The worksheet to query.
 '@return String. The sheet type tag (HList, VList, Uni-Bi-Analysis, etc.).
 Private Function SheetTag(ByRef sh As Worksheet) As String
     Dim shHn As IHiddenNames
     Set shHn = HiddenNames.Create(sh)
     SheetTag = shHn.ValueAsString("sheet_type")
-    If SheetTag = vbNullString Then SheetTag = CStr(sh.Cells(1, 3).Value)
 End Function
 
 

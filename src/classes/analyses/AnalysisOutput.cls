@@ -355,6 +355,7 @@ Private Sub PrepareSheet(Optional ByVal scope As Byte = AnalysisScopeNormal)
     Dim sheetInfo As String
     Dim rngName As String
     Dim design As ILLFormat
+    Dim shHn As IHiddenNames
 
     Select Case scope
     Case AnalysisScopeTimeSeries
@@ -380,9 +381,9 @@ Private Sub PrepareSheet(Optional ByVal scope As Byte = AnalysisScopeNormal)
 
     design.ApplyFormat outsh, scope:=AllAnalysisSheet
 
-    Set cellRng = outsh.Cells(1, 3)
-    cellRng.Value = sheetInfo
-    design.ApplyFormat cellRng, scope:=LinelistHiddenCell
+    'Store the sheet type as a worksheet-level HiddenName
+    Set shHn = HiddenNames.Create(outsh)
+    shHn.EnsureName "sheet_type", sheetInfo, HiddenNameTypeString
 
     Set cellRng = outsh.Cells(2, 5)
     cellRng.Formula = "= ComputedOnFiltered()"
@@ -576,7 +577,9 @@ Private Sub WriteTable(ByVal loName As String, _
     Set design = DesignFormat()
     Set namObj = NamesObject()
 
-    sheetInfo = outsh.Cells(1, 3).Value
+    Dim outshHn As IHiddenNames
+    Set outshHn = HiddenNames.Create(outsh)
+    sheetInfo = outshHn.ValueAsString("sheet_type")
     upRngName = "RNG_HasTable_" & UCase(Split(sheetInfo, "-")(0))
     goToSectionLabel = trads.TranslatedValue("MSG_GoToSec")
     goToHeaderLabel = trads.TranslatedValue("MSG_GoToHead")

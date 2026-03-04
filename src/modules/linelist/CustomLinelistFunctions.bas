@@ -45,6 +45,31 @@ Private Function HiddenNameValue(ByVal nameId As String, _
 End Function
 
 
+'@description Read the sheet type tag from worksheet-level HiddenNames.
+'Lightweight helper similar to HiddenNameValue but reads from worksheet scope.
+'Falls back to Cell(1,3) for legacy sheets that do not yet have the HiddenName.
+'@param sh Worksheet. The worksheet to query.
+'@return String. The sheet type tag (HList, TS-Analysis, etc.).
+Private Function SheetTag(ByVal sh As Worksheet) As String
+    Dim raw As String
+
+    SheetTag = vbNullString
+    On Error Resume Next
+    raw = sh.Names("sheet_type").RefersTo
+    On Error GoTo 0
+
+    If LenB(raw) > 0 Then
+        If Left$(raw, 2) = "=" & Chr(34) Then
+            SheetTag = Mid$(raw, 3, Len(raw) - 3)
+        ElseIf Left$(raw, 1) = "=" Then
+            SheetTag = Mid$(raw, 2)
+        End If
+    End If
+
+    If LenB(SheetTag) = 0 Then SheetTag = CStr(sh.Cells(1, 3).Value)
+End Function
+
+
 '@section General UDFs
 '===============================================================================
 
@@ -339,7 +364,7 @@ Public Function ComputedOnFiltered() As String
     Set wb = ThisWorkbook
 
     For Each sh In wb.Worksheets
-        If sh.Cells(1, 3).Value = "HList" Then
+        If SheetTag(sh) = "HList" Then
             On Error Resume Next
                 Set Lo = sh.ListObjects(1)
                 'Loop through all the filters in the listObject
@@ -462,7 +487,7 @@ Private Function GetAgg(sAggregate As String) As String
     Dim aggVal As String
     Dim tagName As String
 
-    tagName = ActiveSheet.Cells(1, 3).Value
+    tagName = SheetTag(ActiveSheet)
     If (tagName <> "TS-Analysis") And (tagName <> "SPT-Analysis") Then
         GetAgg = "week"
         Exit Function
@@ -564,7 +589,7 @@ Public Function FormatDateFromLastDay(sAggregate As String, _
     Dim quarterTag As String
     Dim tagName As String
 
-    tagName = ActiveSheet.Cells(1, 3).Value
+    tagName = SheetTag(ActiveSheet)
     If startDate > MaxDate Or ((tagName <> "TS-Analysis") And (tagName <> "SPT-Analysis"))  Then
         FormatDateFromLastDay = vbNullString
         Exit Function

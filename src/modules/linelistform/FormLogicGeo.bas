@@ -18,6 +18,14 @@ Private tradmess As ITranslationObject
 Private geo As ILLGeo
 Private hfOrGeo As Byte
 
+'Get the sheet type tag (HiddenNames first, cell fallback for legacy sheets).
+Private Function SheetTag(ByVal sh As Worksheet) As String
+    Dim shHn As IHiddenNames
+    Set shHn = HiddenNames.Create(sh)
+    SheetTag = shHn.ValueAsString("sheet_type")
+    If SheetTag = vbNullString Then SheetTag = CStr(sh.Cells(1, 3).Value)
+End Function
+
 '@section Initialization
 '===============================================================================
 
@@ -126,7 +134,7 @@ Private Sub CMD_Copier_Click()
     On Error GoTo ErrGeo
 
     Set sh = ActiveSheet
-    sheetTag = sh.Cells(1, 3).Value
+    sheetTag = SheetTag(sh)
 
     Select Case sheetTag
 

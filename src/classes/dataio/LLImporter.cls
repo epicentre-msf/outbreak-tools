@@ -136,7 +136,7 @@ Public Property Get HasData() As Boolean
     Dim counter As Long
 
     For Each sh In this.sourceWkb.Worksheets
-        If CStr(sh.Cells(1, 3).Value) = "HList" Then
+        If SheetTagOf(sh) = "HList" Then
             nbBlanks = CLng(sh.Cells(1, 6).Value)
             Set lo = sh.ListObjects(1)
 
@@ -231,7 +231,7 @@ Public Sub ClearData()
 
     For Each sh In this.sourceWkb.Worksheets
 
-        Select Case CStr(sh.Cells(1, 3).Value)
+        Select Case SheetTagOf(sh)
 
         Case "HList"
             pass.UnProtect sh.Name
@@ -304,7 +304,7 @@ Public Sub ImportData(ByVal impwb As Workbook, ByVal pasteAtBottom As Boolean)
         If sheetsList.Includes(impsh.Name) Then
             Set currsh = this.sourceWkb.Worksheets(impsh.Name)
 
-            Select Case CStr(currsh.Cells(1, 3).Value)
+            Select Case SheetTagOf(currsh)
 
             Case "VList"
                 pass.UnProtect currsh.Name
@@ -453,7 +453,7 @@ Public Sub ImportShowHide(ByVal impwb As Workbook)
         On Error GoTo 0
         If sh Is Nothing Then GoTo NextShowHideSheet
 
-        sheetType = CStr(sh.Cells(1, 3).Value)
+        sheetType = SheetTagOf(sh)
 
         If sheetType = "HList" Then
             ' HList layer
@@ -956,6 +956,16 @@ Private Sub ImportHListSheet(ByVal currsh As Worksheet, ByVal impsh As Worksheet
     this.importedVars.Concat impHeaders.Items
 End Sub
 
+
+'@sub-title Get the sheet type tag from worksheet-level HiddenNames.
+'@param sh Worksheet. The worksheet to query.
+'@return String. The sheet type tag (HList, VList, etc.).
+Private Function SheetTagOf(ByVal sh As Worksheet) As String
+    Dim shHn As IHiddenNames
+    Set shHn = HiddenNames.Create(sh)
+    SheetTagOf = shHn.ValueAsString("sheet_type")
+    If SheetTagOf = vbNullString Then SheetTagOf = SheetTagOf(sh)
+End Function
 
 '@section Private - Helpers
 '===============================================================================
