@@ -218,10 +218,10 @@ Private Function ColumnIndexStillValid(ByVal columnIndexValue As Long, ByVal exp
 End Function
 
 '@label:SanitizeSearchTerm
-Private Function SanitizeSearchTerm(ByVal value As String) As String
+Private Function SanitizeSearchTerm(ByVal searchText As String) As String
     Dim sanitized As String
 
-    sanitized = Replace(value, "~", "~~")
+    sanitized = Replace(searchText, "~", "~~")
     sanitized = Replace(sanitized, "*", "~*")
     sanitized = Replace(sanitized, "?", "~?")
     sanitized = Replace(sanitized, "[", "~[")

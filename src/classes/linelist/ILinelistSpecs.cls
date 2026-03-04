@@ -104,7 +104,7 @@ End Property
 'Returns the IAnalysis instance providing access to the Analysis worksheet
 'configuration. Lazy-loaded on first access.
 '@return IAnalysis. The analysis collaborator.
-Public Property Get Analysis() As IAnalysis
+Public Property Get AnalysisObject() As IAnalysis
 End Property
 
 '@jump:export-object

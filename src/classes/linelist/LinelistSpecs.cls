@@ -51,7 +51,7 @@ Private Type TLinelistSpecs
     designerTranslations As IDesignerTranslation
     geo As ILLGeo
     exports As ILLExport
-    analysis As IAnalysis
+    ana As IAnalysis
     passwords As IPasswords
     format As ILLFormat
     formulaData As IFormulaData
@@ -176,7 +176,7 @@ Private Sub ResetObjectCaches()
     Set this.designerTranslations = Nothing
     Set this.geo = Nothing
     Set this.exports = Nothing
-    Set this.analysis = Nothing
+    Set this.ana = Nothing
     Set this.passwords = Nothing
     Set this.format = Nothing
     Set this.formulaData = Nothing
@@ -615,10 +615,10 @@ End Sub
 '@label:ensure-analysis
 '@sub-title Lazy-load the analysis collaborator
 Private Sub EnsureAnalysis()
-    If this.analysis Is Nothing Then
+    If this.ana Is Nothing Then
         Dim analysisSheet As Worksheet
         Set analysisSheet = ResolveSheet(SHEET_ANALYSIS)
-        Set this.analysis = Analysis.Create(analysisSheet)
+        Set this.ana = Analysis.Create(analysisSheet)
     End If
 End Sub
 
@@ -992,9 +992,9 @@ End Property
 'worksheet configuration. Lazy-loaded on first access.
 '@return IAnalysis. The analysis collaborator.
 '@export
-Public Property Get Analysis() As IAnalysis
+Public Property Get AnalysisObject() As IAnalysis
     EnsureAnalysis
-    Set Analysis = this.analysis
+    Set AnalysisObject = this.ana
 End Property
 
 '@label:export-object
@@ -1340,7 +1340,7 @@ Public Sub Prepare(ByVal importService As IDesignerImportService)
     Set this.dictionary = importService.ExportedDictionary
     Set this.choices = importService.ExportedChoices
     Set this.exports = importService.ExportedExport
-    Set this.analysis = importService.ExportedAnalysis
+    Set this.ana = importService.ExportedAnalysis
     Set this.geo = importService.ExportedGeo
     Set this.passwords = importService.ExportedPasswords
     Set this.translations = importService.ExportedTranslations
@@ -1350,7 +1350,7 @@ Public Sub Prepare(ByVal importService As IDesignerImportService)
     Set dict = this.dictionary
     Set choicesObj = this.choices
     Set exportsObj = this.exports
-    Set analysisObj = this.analysis
+    Set analysisObj = this.ana
     Set geoObj = this.geo
     Set pass = this.passwords
 
@@ -1499,8 +1499,8 @@ Private Property Get ILinelistSpecs_DesignFormat() As ILLFormat
     Set ILinelistSpecs_DesignFormat = Me.DesignFormat
 End Property
 
-Private Property Get ILinelistSpecs_Analysis() As IAnalysis
-    Set ILinelistSpecs_Analysis = Me.Analysis
+Private Property Get ILinelistSpecs_AnalysisObject() As IAnalysis
+    Set ILinelistSpecs_AnalysisObject = Me.AnalysisObject
 End Property
 
 Private Property Get ILinelistSpecs_ExportObject() As ILLExport

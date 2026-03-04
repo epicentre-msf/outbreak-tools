@@ -113,7 +113,7 @@ Private Sub CMD_Copier_Click()
     Dim hRng As Range
     Dim nbOffset As Long
     Dim calcRng As Range
-    Dim sheetTag As String
+    Dim shType As String
     Dim cellName As String
     Dim selectedRng As Range
     Dim nbLines As Long
@@ -133,9 +133,9 @@ Private Sub CMD_Copier_Click()
     On Error GoTo ErrGeo
 
     Set sh = ActiveSheet
-    sheetTag = SheetTag(sh)
+    shType = SheetTag(sh)
 
-    Select Case sheetTag
+    Select Case shType
 
     Case "HList"
         Set hRng = sh.ListObjects(1).HeaderRowRange
