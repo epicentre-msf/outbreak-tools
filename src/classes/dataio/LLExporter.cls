@@ -443,11 +443,11 @@ End Sub
 '@sub-title Get the sheet type tag from worksheet-level HiddenNames.
 '@param sh Worksheet. The worksheet to query.
 '@return String. The sheet type tag (HList, VList, etc.).
-Private Function SheetTagOf(ByVal sh As Worksheet) As String
+Private Function SheetTagOf(ByVal sh As Worksheet, _
+                            Optional ByVal nameKey As String = "sheet_type") As String
     Dim shHn As IHiddenNames
     Set shHn = HiddenNames.Create(sh)
-    SheetTagOf = shHn.ValueAsString("sheet_type")
-    If SheetTagOf = vbNullString Then SheetTagOf = CStr(sh.Cells(1, 3).Value)
+    SheetTagOf = shHn.ValueAsString(nameKey)
 End Function
 
 '@section Private - Source Object Accessors
@@ -1047,7 +1047,7 @@ Private Sub AddDataSheets(ByVal outwb As Workbook, ByVal expDict As ILLdictionar
             ' Choose between filtered or raw data
             If useFilters Then
                 Set lo = this.sourceWkb.Worksheets( _
-                    CStr(inpsh.Cells(1, 5).Value)).ListObjects(1)
+                    SheetTagOf(inpsh, "filtered_sheet")).ListObjects(1)
             Else
                 Set lo = inpsh.ListObjects(1)
             End If
