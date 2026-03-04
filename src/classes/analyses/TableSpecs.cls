@@ -833,7 +833,7 @@ Private Function ComputeTableScope() As AnalysisTableScope
     Dim anaType As String
 
     Set hRng = HeaderRange()
-    anaType = LCase(Application.WorksheetFunction.Trim(hRng.Cells(-1, 1).Value))
+    anaType = LCase(Application.WorksheetFunction.Trim(hRng.Cells(-4, 1).Value))
 
     Select Case anaType
     Case "global summary"

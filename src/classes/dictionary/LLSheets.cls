@@ -422,23 +422,23 @@ End Sub
 '@param infoSelector Byte. Selector from LLSheetInfoField.
 '@return String metadata value.
 Private Function SheetInfoValue(ByVal sheetName As String, ByVal infoSelector As Byte) As String
-    Dim columnIndex As Long
-    Dim rowIndex As Long
+    Dim colIdx As Long
+    Dim rowIdx As Long
     Dim value As Variant
 
-    rowIndex = EnsureSheetRow(sheetName)
+    rowIdx = EnsureSheetRow(sheetName)
 
     Select Case infoSelector
         Case LLSheetInfoFieldSheetType
-            columnIndex = SheetTypeColumnIndex()
+            colIdx = SheetTypeColumnIndex()
         Case LLSheetInfoFieldTableName
-            columnIndex = TableNameColumnIndex()
+            colIdx = TableNameColumnIndex()
         Case Else
             ThrowError ProjectError.InvalidArgument, _
                        "Unknown sheet info selector: " & CStr(infoSelector)
     End Select
 
-    value = this.dict.Data.Wksh.Cells(rowIndex, columnIndex).Value
+    value = this.dict.Data.Wksh.Cells(rowIdx, colIdx).Value
     SheetInfoValue = CStr(value)
 End Function
 

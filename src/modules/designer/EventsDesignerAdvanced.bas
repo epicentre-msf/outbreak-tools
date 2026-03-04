@@ -331,6 +331,7 @@ Public Sub clickGenerate()
     Dim setupPath As String
     Dim sheetLists As BetterArray
     Dim counter As Long
+    Dim anaOut As IAnalysisOutput
 
     On Error GoTo Cleanup
     Set appScope = ApplicationState.Create(Application)
@@ -374,6 +375,8 @@ Public Sub clickGenerate()
     End If
 
     'Build the analyses in clickGenerate
+    Set anaOut = AnalysisOutput.Create(specs.AnalysisObject.Wksh(), ll)
+    anaOut.WriteAnalysis AnalysisScopeNormal
 
     'Save the linelist as .xlsb with password protection
     ll.SaveLL

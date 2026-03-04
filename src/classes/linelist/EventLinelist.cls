@@ -133,16 +133,16 @@ Public Sub OnSheetChange(ByVal sh As Worksheet, ByVal target As Range)
     Dim shHn As IHiddenNames
     Set shHn = HiddenNames.Create(sh)
 
-    Dim sheetTag As String
-    sheetTag = shHn.ValueAsString("sheet_type")
+    Dim shType As String
+    shType = shHn.ValueAsString("sheet_type")
 
-    Select Case sheetTag
+    Select Case shType
         Case "HList"
             HandleHListChange sh, target, shHn
         Case "VList"
             HandleVListChange sh, target, shHn
         Case "Uni-Bi-Analysis", "TS-Analysis", "SPT-Analysis", "SP-Analysis"
-            HandleAnalysisChange sh, target, sheetTag
+            HandleAnalysisChange sh, target, shType
     End Select
 End Sub
 
@@ -190,9 +190,9 @@ Public Sub OnSelectionChange(ByVal sh As Worksheet, ByVal target As Range)
     Dim shHn As IHiddenNames
     Set shHn = HiddenNames.Create(sh)
 
-    Dim sheetTag As String
-    sheetTag = shHn.ValueAsString("sheet_type")
-    If sheetTag <> "HList" Then Exit Sub
+    Dim shType As String
+    shType = shHn.ValueAsString("sheet_type")
+    If shType <> "HList" Then Exit Sub
 
     HandleSelectionHList sh, target, shHn
 End Sub
@@ -208,7 +208,7 @@ End Sub
 '@export
 Public Sub OnDoubleClick(ByVal sh As Worksheet, ByVal target As Range)
     Dim rngName As String
-    Dim sheetTag As String
+    Dim shType As String
 
     If (sh Is Nothing) Or (target Is Nothing) Then Exit Sub
 
@@ -216,8 +216,8 @@ Public Sub OnDoubleClick(ByVal sh As Worksheet, ByVal target As Range)
     rngName = target.Name.Name
     On Error GoTo 0
 
-    sheetTag = SheetTag(sh)
-    If sheetTag <> "SPT-Analysis" Then Exit Sub
+    shType = SheetTag(sh)
+    If shType <> "SPT-Analysis" Then Exit Sub
 
     If (InStr(1, rngName, "INPUTSPTGEO_") > 0) Then
         LoadGeo 0
