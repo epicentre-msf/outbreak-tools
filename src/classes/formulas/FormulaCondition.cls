@@ -41,6 +41,9 @@ Private Type TFormulaCondition
     hasChecks As Boolean
     internalChecks As IChecking
     checkCounter As Long
+    cachedValidDone As Boolean                   'Whether Valid has produced a cached result
+    cachedValidResult As Boolean                 'Cached True/False from last Valid call
+    cachedValidTable As String                   'The tablename parameter used for cached result
 End Type
 
 
@@ -145,7 +148,7 @@ End Property
 '@description Maintain cached validation artefacts and diagnostics.
 
 '@label:reset-caches
-'@sub-title Clear cached table names and diagnostics information
+'@sub-title Clear cached table names, validation results, and diagnostics
 '@details
 'Resets all memoised validation state so the next call to Valid or
 'VariablesTable triggers a fresh evaluation. Also clears any
@@ -155,6 +158,9 @@ Public Sub ResetCaches()
     this.hasChecks = False
     this.checkCounter = 0
     Set this.internalChecks = Nothing
+    this.cachedValidDone = False
+    this.cachedValidResult = False
+    this.cachedValidTable = vbNullString
 End Sub
 
 '@label:log-info
@@ -223,8 +229,10 @@ End Property
 'Checks that both lists are non-empty and equal in length, then
 'verifies each variable exists in the dictionary and belongs to the
 'expected table. When a tablename argument is supplied it overrides
-'the table resolved from the first variable. Logs diagnostic entries
-'on every failure path for downstream inspection.
+'the table resolved from the first variable. Results are cached so
+'repeated calls with the same tablename parameter return immediately
+'without re-validating. The cache is invalidated when underlying data
+'changes (via Set LstVars or Set LstConditions).
 '@param dict ILLdictionary. The metadata provider used for variable lookups.
 '@param tablename Optional String. When supplied, forces the expected table name. Defaults to vbNullString.
 '@return Boolean. True when validation succeeds.
@@ -239,7 +247,26 @@ Public Function Valid(ByVal dict As ILLdictionary, Optional ByVal tablename As S
     Dim targetTable As String
     Dim currentTable As String
 
-    ResetCaches
+    ' Return cached result when validation was already done with matching parameters.
+    ' The cache is cleared by ResetCaches (called from Set LstVars / Set LstConditions)
+    ' whenever the underlying data changes.
+    If this.cachedValidDone Then
+        If StrComp(tablename, this.cachedValidTable, vbBinaryCompare) = 0 Then
+            Valid = this.cachedValidResult
+            Exit Function
+        End If
+    End If
+
+    ' Fresh validation needed — clear prior diagnostics
+    this.cachedTableName = vbNullString
+    this.hasChecks = False
+    this.checkCounter = 0
+    Set this.internalChecks = Nothing
+
+    ' Mark cache as populated (default result is False)
+    this.cachedValidDone = True
+    this.cachedValidTable = tablename
+    this.cachedValidResult = False
     Valid = False
 
     Set varList = LstVars()
@@ -294,6 +321,7 @@ Public Function Valid(ByVal dict As ILLdictionary, Optional ByVal tablename As S
     Next idx
 
     this.cachedTableName = targetTable
+    this.cachedValidResult = True
     Valid = True
     Exit Function
 
