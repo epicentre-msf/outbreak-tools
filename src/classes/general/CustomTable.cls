@@ -727,25 +727,25 @@ End Function
 '@sub-title Resize the table by adding or removing rows
 '@details
 'Dispatches to AddTableRows or RemoveEmptyDataRows depending on the
-'addRows flag, then optionally renumbers the ID column.
-'@param addRows Optional Boolean. When True, adds rows; when False, removes empty rows. Defaults to False.
+'shouldAdd flag, then optionally renumbers the ID column.
+'@param shouldAdd Optional Boolean. When True, adds rows; when False, removes empty rows. Defaults to False.
 '@param insertShift Optional Boolean. When True, inserts worksheet rows. Defaults to True.
 '@param totalRowCount Optional Long. Non-empty cell threshold for row removal. Defaults to 0.
 '@param nbRows Optional Long. Number of rows to add. Defaults to 5.
 '@param includeIds Optional Boolean. When True, renumbers the ID column. Defaults to True.
 '@param forceShift Optional Boolean. When True, forces worksheet row deletion. Defaults to False.
-Private Sub Resize(Optional ByVal addRows As Boolean = False, _
+Private Sub Resize(Optional ByVal shouldAdd As Boolean = False, _
                    Optional ByVal insertShift As Boolean = True, _
                    Optional ByVal totalRowCount As Long = 0, _
                    Optional ByVal nbRows As Long = 5, _
-                   Optional ByVal includeIds As Boolean = True, _ 
+                   Optional ByVal includeIds As Boolean = True, _
                    Optional ByVal forceShift As Boolean = False)
   Dim lo As ListObject
 
   EnsureTableInitialized
   Set lo = Table()
 
-  If addRows Then
+  If shouldAdd Then
     AddTableRows lo, nbRows, insertShift
   Else
     RemoveEmptyDataRows lo, totalRowCount, forceShift
@@ -1289,7 +1289,7 @@ Private Sub AddRows(Optional ByVal nbRows As Long = 5, _
                     Optional Byval insertShift As Boolean = False, _ 
                     Optional ByVal includeIds As Boolean = True)
   
-  Resize AddRows:=True, nbRows:=nbRows, insertShift:=insertShift, _ 
+  Resize shouldAdd:=True, nbRows:=nbRows, insertShift:=insertShift, _
          includeIds:=includeIds
 End Sub
 
@@ -1309,7 +1309,7 @@ Private Sub RemoveRows(Optional ByVal totalCount As Long = 0, _
                        Optional ByVal includeIds As Boolean = True, _
                        Optional ByVal forceShift As Boolean = False)
 
-  Resize AddRows:=False, totalRowCount:=totalCount, includeIds:=includeIds, forceShift:=forceShift
+  Resize shouldAdd:=False, totalRowCount:=totalCount, includeIds:=includeIds, forceShift:=forceShift
 End Sub
 
 '@label:set-validation

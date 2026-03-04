@@ -232,7 +232,7 @@ Private Property Get NamesObject() As IAnaTabIds
 
         Set ll = OutputLL()
         Set lData = ll.LinelistData()
-        Set sh = ll.Wksh(lData.TemporarySheetName(TemporarySheetAnalysis))
+        Set sh = ll.Wksh(lData.TemporarySheetName(TempSheetAnalysis))
         Set this.namObj = AnaTabIds.Create(sh, False)
     End If
     Set NamesObject = this.namObj

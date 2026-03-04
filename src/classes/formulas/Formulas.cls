@@ -904,7 +904,7 @@ Private Function TokeniseFormula(ByVal formula As String, _
     Dim currentChar As String
     Dim chunk As String
     Dim parenthesisLevel As Long
-    Dim quoted As Boolean
+    Dim inQuotes As Boolean
     Dim dataSource As IFormulaData
     Dim vars As ILLVariables
 
@@ -916,8 +916,8 @@ Private Function TokeniseFormula(ByVal formula As String, _
         currentChar = Mid$(formula, idx, 1)
 
         If currentChar = Chr$(34) Then
-            quoted = Not quoted
-        ElseIf Not quoted Then
+            inQuotes = Not inQuotes
+        ElseIf Not inQuotes Then
             Select Case currentChar
                 Case "("
                     parenthesisLevel = parenthesisLevel + 1
@@ -930,7 +930,7 @@ Private Function TokeniseFormula(ByVal formula As String, _
             End Select
         End If
 
-        If Not quoted And dataSource.SpecialCharacterIncludes(currentChar) Then
+        If Not inQuotes And dataSource.SpecialCharacterIncludes(currentChar) Then
             chunk = CleanString(Mid$(formula, previousBreak, idx - previousBreak))
             If Not AppendToken(chunk, formulaType, tokens, variableTokens, vars, dataSource, HasSetupVariables, failureReason) Then Exit Function
             tokens.Push currentChar

@@ -1559,7 +1559,7 @@ Private Sub EnsureDesignTypeRange(ByVal sourceSheet As Worksheet, _
 
     Dim sourceDesignRange As Range
     Dim targetDesignRange As Range
-    Dim designValue As String
+    Dim designLabel As String
     Dim headerRow As Long
     Dim headerColumn As Long
     Dim targetColumn As Long
@@ -1578,12 +1578,12 @@ Private Sub EnsureDesignTypeRange(ByVal sourceSheet As Worksheet, _
 
     If HasNamedRange(sourceSheet, "DESIGNTYPE") Then
         Set sourceDesignRange = sourceSheet.Range("DESIGNTYPE")
-        designValue = CStr(sourceDesignRange.Value)
-        If LenB(designValue) = 0 Then designValue = DEFAULT_DESIGN
+        designLabel = CStr(sourceDesignRange.Value)
+        If LenB(designLabel) = 0 Then designLabel = DEFAULT_DESIGN
         Set targetDesignRange = targetSheet.Cells(sourceDesignRange.Row, sourceDesignRange.Column)
     Else
-        designValue = DesignName()
-        If LenB(designValue) = 0 Then designValue = DEFAULT_DESIGN
+        designLabel = DesignName()
+        If LenB(designLabel) = 0 Then designLabel = DEFAULT_DESIGN
 
         headerRow = targetTable.HeaderRowRange.Row
         headerColumn = targetTable.Range.Column
@@ -1592,7 +1592,7 @@ Private Sub EnsureDesignTypeRange(ByVal sourceSheet As Worksheet, _
         Set targetDesignRange = targetSheet.Cells(headerRow, targetColumn)
     End If
 
-    targetDesignRange.Value = designValue
+    targetDesignRange.Value = designLabel
 
     On Error Resume Next
         targetSheet.Names("DESIGNTYPE").Delete

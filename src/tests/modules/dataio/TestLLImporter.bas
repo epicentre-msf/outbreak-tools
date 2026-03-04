@@ -69,9 +69,9 @@ Public Sub FactoryCreatesWithWorkbook()
     CustomTestSetTitles Assert, "LLImporter", "FactoryCreatesWithWorkbook"
     On Error GoTo TestFail
 
-    Dim imp As ILLImporter
-    Set imp = LLImporter.Create(ThisWorkbook)
-    Assert.IsNotNothing imp, "Factory should return a valid object"
+    Dim impObj As ILLImporter
+    Set impObj = LLImporter.Create(ThisWorkbook)
+    Assert.IsNotNothing impObj, "Factory should return a valid object"
 
     Exit Sub
 TestFail:
@@ -89,9 +89,9 @@ Public Sub FactoryRejectsNothingWorkbook()
     CustomTestSetTitles Assert, "LLImporter", "FactoryRejectsNothingWorkbook"
     On Error GoTo TestFail
 
-    Dim imp As ILLImporter
+    Dim impObj As ILLImporter
     On Error Resume Next
-    Set imp = LLImporter.Create(Nothing)
+    Set impObj = LLImporter.Create(Nothing)
     Assert.IsTrue Err.Number <> 0, "Factory should raise error for Nothing workbook"
     On Error GoTo 0
 
@@ -115,9 +115,9 @@ Public Sub NeedReportFalseByDefault()
     CustomTestSetTitles Assert, "LLImporter", "NeedReportFalseByDefault"
     On Error GoTo TestFail
 
-    Dim imp As ILLImporter
-    Set imp = LLImporter.Create(ThisWorkbook)
-    Assert.IsFalse imp.NeedReport, "NeedReport should be False before any import"
+    Dim impObj As ILLImporter
+    Set impObj = LLImporter.Create(ThisWorkbook)
+    Assert.IsFalse impObj.NeedReport, "NeedReport should be False before any import"
 
     Exit Sub
 TestFail:
@@ -135,10 +135,10 @@ Public Sub ClearReportResetsState()
     CustomTestSetTitles Assert, "LLImporter", "ClearReportResetsState"
     On Error GoTo TestFail
 
-    Dim imp As ILLImporter
-    Set imp = LLImporter.Create(ThisWorkbook)
-    imp.ClearReport
-    Assert.IsFalse imp.NeedReport, "NeedReport should be False after ClearReport"
+    Dim impObj As ILLImporter
+    Set impObj = LLImporter.Create(ThisWorkbook)
+    impObj.ClearReport
+    Assert.IsFalse impObj.NeedReport, "NeedReport should be False after ClearReport"
 
     Exit Sub
 TestFail:
@@ -156,12 +156,12 @@ Public Sub ReportSheetsEmptyByDefault()
     CustomTestSetTitles Assert, "LLImporter", "ReportSheetsEmptyByDefault"
     On Error GoTo TestFail
 
-    Dim imp As ILLImporter
+    Dim impObj As ILLImporter
     Dim sheets As BetterArray
 
-    Set imp = LLImporter.Create(ThisWorkbook)
-    imp.ClearReport
-    Set sheets = imp.ReportSheets(ImportReportNotImported)
+    Set impObj = LLImporter.Create(ThisWorkbook)
+    impObj.ClearReport
+    Set sheets = impObj.ReportSheets(ImportReportNotImported)
     Assert.AreEqual CLng(0), sheets.Length, _
                     "ReportSheets should be empty before import"
 
@@ -181,12 +181,12 @@ Public Sub ReportVariablesEmptyByDefault()
     CustomTestSetTitles Assert, "LLImporter", "ReportVariablesEmptyByDefault"
     On Error GoTo TestFail
 
-    Dim imp As ILLImporter
+    Dim impObj As ILLImporter
     Dim vars As BetterArray
 
-    Set imp = LLImporter.Create(ThisWorkbook)
-    imp.ClearReport
-    Set vars = imp.ReportVariables(ImportReportNotTouched)
+    Set impObj = LLImporter.Create(ThisWorkbook)
+    impObj.ClearReport
+    Set vars = impObj.ReportVariables(ImportReportNotTouched)
     Assert.AreEqual CLng(0), vars.Length, _
                     "ReportVariables should be empty before import"
 
@@ -207,12 +207,12 @@ Public Sub ReportSheetsInvalidScopeReturnsEmpty()
     CustomTestSetTitles Assert, "LLImporter", "ReportSheetsInvalidScopeReturnsEmpty"
     On Error GoTo TestFail
 
-    Dim imp As ILLImporter
+    Dim impObj As ILLImporter
     Dim sheets As BetterArray
 
-    Set imp = LLImporter.Create(ThisWorkbook)
-    imp.ClearReport
-    Set sheets = imp.ReportSheets(99)
+    Set impObj = LLImporter.Create(ThisWorkbook)
+    impObj.ClearReport
+    Set sheets = impObj.ReportSheets(99)
     Assert.AreEqual CLng(0), sheets.Length, _
                     "Invalid scope should return empty BetterArray"
 

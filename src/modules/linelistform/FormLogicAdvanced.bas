@@ -16,7 +16,7 @@ Public Sub HandleImportData(ByVal sourceWkb As Workbook, _
                             ByVal trads As ITranslationObject, _
                             ByVal pasteAtBottom As Boolean)
 
-    Dim imp As ILLImporter
+    Dim impObj As ILLImporter
     Dim appState As IApplicationState
     Dim io As IOSFiles
     Dim filePath As String
@@ -47,9 +47,9 @@ Public Sub HandleImportData(ByVal sourceWkb As Workbook, _
     ActiveWindow.WindowState = xlMinimized
 
     ' Create importer and check language
-    Set imp = LLImporter.Create(sourceWkb)
+    Set impObj = LLImporter.Create(sourceWkb)
 
-    If Not imp.HasSameLanguage(impwb) Then
+    If Not impObj.HasSameLanguage(impwb) Then
         If MsgBox(trads.TranslatedValue("MSG_NoLanguage"), _
                   vbExclamation + vbYesNo, _
                   trads.TranslatedValue("MSG_Imports")) = vbNo Then
@@ -58,14 +58,14 @@ Public Sub HandleImportData(ByVal sourceWkb As Workbook, _
     End If
 
     ' Import all data
-    imp.ImportData impwb, pasteAtBottom
-    imp.ImportCustomDropdown impwb, pasteAtBottom
-    imp.FinalizeReport
+    impObj.ImportData impwb, pasteAtBottom
+    impObj.ImportCustomDropdown impwb, pasteAtBottom
+    impObj.FinalizeReport
 
     ' Import migration metadata
-    imp.ImportShowHide impwb
-    imp.ImportEditableLabels impwb
-    imp.ImportSingleValues impwb
+    impObj.ImportShowHide impwb
+    impObj.ImportEditableLabels impwb
+    impObj.ImportSingleValues impwb
 
     ' Close import workbook
     impwb.Close savechanges:=False
@@ -75,7 +75,7 @@ Public Sub HandleImportData(ByVal sourceWkb As Workbook, _
     appState.Restore
 
     ' Show result
-    If imp.NeedReport Then
+    If impObj.NeedReport Then
         MsgBox trads.TranslatedValue("MSG_FinishImportRep"), _
                vbQuestion + vbOKOnly, trads.TranslatedValue("MSG_Imports")
     Else
@@ -113,7 +113,7 @@ Public Sub HandleImportGeobase(ByVal sourceWkb As Workbook, _
                                ByVal trads As ITranslationObject, _
                                Optional ByVal histoOnly As Boolean = False)
 
-    Dim imp As ILLImporter
+    Dim impObj As ILLImporter
     Dim appState As IApplicationState
     Dim io As IOSFiles
     Dim filePath As String
@@ -136,8 +136,8 @@ Public Sub HandleImportGeobase(ByVal sourceWkb As Workbook, _
     ActiveWindow.WindowState = xlMinimized
 
     ' Import geobase
-    Set imp = LLImporter.Create(sourceWkb)
-    imp.ImportGeobase impwb, histoOnly
+    Set impObj = LLImporter.Create(sourceWkb)
+    impObj.ImportGeobase impwb, histoOnly
 
     impwb.Close savechanges:=False
     Set impwb = Nothing
@@ -164,7 +164,7 @@ End Sub
 Public Sub HandleClearData(ByVal sourceWkb As Workbook, _
                            ByVal trads As ITranslationObject)
 
-    Dim imp As ILLImporter
+    Dim impObj As ILLImporter
     Dim appState As IApplicationState
     Dim proceed As Long
     Dim inputName As String
@@ -211,8 +211,8 @@ Public Sub HandleClearData(ByVal sourceWkb As Workbook, _
     Set appState = ApplicationState.Create()
     appState.ApplyBusyState True, False, xlWait, False
 
-    Set imp = LLImporter.Create(sourceWkb)
-    imp.ClearData
+    Set impObj = LLImporter.Create(sourceWkb)
+    impObj.ClearData
 
     appState.Restore
     Exit Sub

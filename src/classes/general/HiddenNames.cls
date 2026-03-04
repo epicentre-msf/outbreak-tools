@@ -310,40 +310,36 @@ End Function
 '@param nameId String. The raw name identifier.
 '@return String. An Excel-safe name identifier.
 Private Function SanitizeNameId(ByVal nameId As String) As String
-    Dim raw As String
-    Dim i As Long
-    Dim ch As String
-    Dim code As Long
     Dim result As String
+    Dim i As Long
+    Dim code As Long
+    Dim nameLen As Long
 
-    raw = Trim$(nameId)
-    If LenB(raw) = 0 Then
+    result = Trim$(nameId)
+    nameLen = Len(result)
+    If nameLen = 0 Then
         SanitizeNameId = vbNullString
         Exit Function
     End If
 
-    result = vbNullString
-    For i = 1 To Len(raw)
-        code = AscW(Mid$(raw, i, 1))
+    ' In-place replacement via Mid$ statement — O(n), no intermediate strings
+    For i = 1 To nameLen
+        code = AscW(Mid$(result, i, 1))
         ' Allow A-Z (65-90), a-z (97-122), 0-9 (48-57), underscore (95), period (46)
-        If (code >= 65 And code <= 90) Or _
-           (code >= 97 And code <= 122) Or _
-           (code >= 48 And code <= 57) Or _
-           code = 95 Or code = 46 Then
-            result = result & Mid$(raw, i, 1)
-        Else
-            result = result & "_"
+        If Not ((code >= 65 And code <= 90) Or _
+                (code >= 97 And code <= 122) Or _
+                (code >= 48 And code <= 57) Or _
+                code = 95 Or code = 46) Then
+            Mid$(result, i, 1) = "_"
         End If
     Next i
 
     ' First character must be a letter or underscore (not digit or period)
-    If Len(result) > 0 Then
-        code = AscW(Left$(result, 1))
-        If Not ((code >= 65 And code <= 90) Or _
-                (code >= 97 And code <= 122) Or _
-                code = 95) Then
-            result = "_" & result
-        End If
+    code = AscW(Left$(result, 1))
+    If Not ((code >= 65 And code <= 90) Or _
+            (code >= 97 And code <= 122) Or _
+            code = 95) Then
+        result = "_" & result
     End If
 
     SanitizeNameId = result
@@ -485,6 +481,20 @@ Private Function FindDefinition(ByVal nameId As String) As Name
 
     If LenB(nameId) = 0 Then Exit Function
 
+    ' Direct O(1) lookup — avoids iterating all Names in the container
+    On Error Resume Next
+    Set definition = container.Names(nameId)
+    On Error GoTo 0
+
+    If Not definition Is Nothing Then
+        If ShouldTrack(definition) Then
+            Set FindDefinition = definition
+            Exit Function
+        End If
+        Set definition = Nothing
+    End If
+
+    ' Fallback: linear scan for edge cases (e.g., sheet-qualified names)
     For Each definition In container.Names
         If ShouldTrack(definition) Then
             If CompareName(definition, nameId) Then
@@ -680,6 +690,27 @@ Private Function CoerceValue(ByVal value As Variant, _
         Case Else
             CoerceValue = value
     End Select
+End Function
+
+'@label:record-value
+'@sub-title Extract the stored value directly from a metadata record
+'@details
+'Reads the value from the record definition without going through the
+'public ValueOf method, avoiding redundant SanitizeNameId calls and
+'metadata index lookups when the record is already resolved.
+'@param record Variant. A metadata record array.
+'@return Variant. The coerced value, or Empty when the definition is Nothing.
+Private Function RecordValue(ByVal record As Variant) As Variant
+    Dim definition As Name
+    Dim raw As Variant
+    Dim valueType As Byte
+
+    Set definition = MetadataDefinition(record)
+    If definition Is Nothing Then Exit Function
+
+    valueType = MetadataType(record)
+    raw = DefinitionStoredValue(definition, valueType)
+    RecordValue = CoerceValue(raw, valueType)
 End Function
 
 
@@ -1014,7 +1045,7 @@ Private Sub ExportAll(ByVal targetSh As Worksheet, _
 
         If includeEntry Then
             valueType = MetadataType(record)
-            value = ValueOf(nameId)
+            value = RecordValue(record)
             PersistOnWorksheet targetSh, nameId, value, valueType
         End If
     Next idx
@@ -1056,7 +1087,7 @@ Private Sub ExportAllToWorkbook(ByVal targetWb As Workbook, _
 
         If includeEntry Then
             valueType = MetadataType(record)
-            value = ValueOf(nameId)
+            value = RecordValue(record)
             destination.EnsureName nameId, value, valueType
             destination.SetValue nameId, value
         End If
@@ -1096,11 +1127,18 @@ Private Sub ImportAll(ByVal sourceSh As Worksheet, _
         If UBound(record) >= 2 Then lastUpdated = record(2)
         value = sourceManager.Value(nameId)
 
-        Call Ensure(nameId, value, entryType)
+        'nameId is already sanitized (came from ListNames), so use
+        'EnsureDefinition directly to skip redundant SanitizeNameId.
+        Dim definition As Name
+        Set definition = EnsureDefinition(nameId, value, entryType)
 
-        If overwriteExisting Or Not HasName(nameId) Then
-            UpdateStoredValue nameId, value, entryType, lastUpdated
+        If overwriteExisting And (Not definition Is Nothing) Then
+            UpdateDefinitionValue definition, value, entryType, lastUpdated
         End If
+
+        Dim metaRecord As Variant
+        metaRecord = BuildMetadataRecord(nameId, entryType, lastUpdated, definition)
+        StoreMetadataRecord nameId, metaRecord
     Next idx
 End Sub
 
@@ -1137,11 +1175,16 @@ Private Sub ImportAllFromWorkbook(ByVal sourceWb As Workbook, _
         If UBound(record) >= 2 Then lastUpdated = record(2)
         value = sourceManager.Value(nameId)
 
-        Call Ensure(nameId, value, entryType)
+        Dim definition As Name
+        Set definition = EnsureDefinition(nameId, value, entryType)
 
-        If overwriteExisting Or Not HasName(nameId) Then
-            UpdateStoredValue nameId, value, entryType, lastUpdated
+        If overwriteExisting And (Not definition Is Nothing) Then
+            UpdateDefinitionValue definition, value, entryType, lastUpdated
         End If
+
+        Dim metaRecord As Variant
+        metaRecord = BuildMetadataRecord(nameId, entryType, lastUpdated, definition)
+        StoreMetadataRecord nameId, metaRecord
     Next idx
 End Sub
 
@@ -1245,47 +1288,6 @@ Private Sub RemoveWorkbookName(ByVal targetWb As Workbook, ByVal nameId As Strin
     On Error Resume Next
         targetWb.Names(nameId).Delete
     On Error GoTo 0
-End Sub
-
-
-'@label:update-stored-value
-'@sub-title Write a value and update the metadata cache
-Private Sub UpdateStoredValue(ByVal nameId As String, _
-                              ByVal value As Variant, _
-                              ByVal valueType As Byte, _
-                              Optional ByVal updatedOn As Date = 0)
-    Dim idx As Long
-    Dim store As BetterArray
-    Dim record As Variant
-    Dim definition As Name
-    Dim effectiveUpdated As Date
-
-    idx = EnsureMetadataRecord(nameId)
-    If idx = -1 Then
-        Call Ensure(nameId, value, valueType)
-        idx = EnsureMetadataRecord(nameId)
-        If idx = -1 Then Exit Sub
-    End If
-
-    Set store = MetadataStore()
-    record = store.Item(idx)
-    Set definition = MetadataDefinition(record)
-    If definition Is Nothing Then
-        Set definition = EnsureDefinition(MetadataName(record), value, valueType)
-    End If
-
-    UpdateDefinitionValue definition, value, valueType, updatedOn
-
-    If updatedOn = 0 Then
-        effectiveUpdated = Now
-    Else
-        effectiveUpdated = updatedOn
-    End If
-
-    MetadataSetDefinition record, definition
-    MetadataSetUpdated record, effectiveUpdated
-    MetadataSetType record, valueType
-    store.Item(idx) = record
 End Sub
 
 
