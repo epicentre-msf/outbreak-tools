@@ -28,7 +28,7 @@ Implements IEventLinelist
 '(list auto update), selection change (geo dropdown refresh),
 'double-click (spatio-temporal geo form), filter table updates, list-auto
 'dropdown maintenance, and geo/spatial UDF delegation.
-'@depends BetterArray, HiddenNames, DropdownLists, LLGeo, LLSpatial, LLdictionary, LLVariables, LLTranslation, TranslationObject, ProjectError
+'@depends BetterArray, HiddenNames, DropdownLists, LLGeo, LLSpatial, LLdictionary, LLVariables, LLTranslation, TranslationObject, Passwords, ProjectError
 
 
 '@section State
@@ -43,6 +43,7 @@ Private Type TEventLinelist
     sp              As ILLSpatial         'Cached spatial helper
     dict            As ILLdictionary      'Cached dictionary helper
     vars            As ILLVariables       'Cached variable lookup helper
+    pass            As IPasswords         'Cached password manager
 End Type
 
 Private this As TEventLinelist
@@ -57,6 +58,7 @@ Private Const GEOSHEET          As String = "Geo"
 Private Const SPATIALSHEET      As String = "spatial_tables__"
 Private Const DICTSHEET         As String = "Dictionary"
 Private Const LLSHEET           As String = "LinelistTranslation"
+Private Const PASSSHEET         As String = "__pass"
 Private Const PRINTPREFIX       As String = "print_"
 Private Const CRFPREFIX         As String = "crf_"
 
@@ -780,8 +782,9 @@ End Sub
 '@sub-title Handle value changes on analysis sheets.
 '@details
 'Processes go-to-section navigation for all analysis types. For spatial
-'analysis sheets, dispatches to GeoModule subs (UpdateSingleSpTable,
-'DevideByPopulation, FormatDevidePop) based on named range patterns.
+'analysis sheets, dispatches to local spatial table update methods
+'(UpdateSingleSpTable, DevideByPopulation, FormatDevidePop)
+'based on named range patterns.
 '@param sh Worksheet. The analysis worksheet.
 '@param target Range. The edited cell(s).
 '@param analysisType String. The sheet type tag (Uni-Bi-Analysis, TS-Analysis, etc.).
@@ -819,7 +822,7 @@ Private Sub HandleAnalysisChange(ByRef sh As Worksheet, _
 
     Case "SP-Analysis"
         Set rng = sh.Range("sp_go_to_section")
-        'Dispatch spatial events to GeoModule subs
+        'Dispatch spatial events to local private methods
         If InStr(1, rngName, "ADM_DROPDOWN_") > 0 Then UpdateSingleSpTable rngName
         If InStr(1, rngName, "POPFACT_") > 0 Then DevideByPopulation rngName
         If InStr(1, rngName, "DEVIDEPOP_") > 0 Then FormatDevidePop rngName
@@ -846,6 +849,211 @@ Private Sub HandleAnalysisChange(ByRef sh As Worksheet, _
 
     Exit Sub
 ErrHandler:
+End Sub
+
+
+'@section Private — Spatial table update handlers
+'===============================================================================
+
+'@sub-title Update formulas in a single spatial table when user changes admin level.
+'@details
+'Replaces the admin reference in all formulas within the table's outer values
+'range. Uses cached geo/passwords instances instead of creating new ones.
+'Busy state is managed by the calling LinelistEventsManager.
+'@param rngName String. Named range of the admin dropdown (e.g. "ADM_DROPDOWN_sp1").
+Private Sub UpdateSingleSpTable(ByVal rngName As String)
+    Dim tabId As String
+    Dim adminName As String
+    Dim selectedAdmin As String
+    Dim formulaValue As String
+    Dim prevAdmValue As String
+    Dim cellRng As Range
+    Dim rng As Range
+    Dim sh As Worksheet
+    Dim hasFormula As Boolean
+
+    EnsurePasswords
+    EnsureGeo
+
+    If this.pass Is Nothing Then Exit Sub
+    If this.geo Is Nothing Then Exit Sub
+
+    this.pass.UnProtect "_active"
+
+    Set sh = ActiveSheet
+    selectedAdmin = sh.Range(rngName).Value
+    adminName = this.geo.AdminCode(selectedAdmin)
+
+    tabId = Replace(rngName, "ADM_DROPDOWN_", vbNullString)
+    prevAdmValue = sh.Range("PREVIOUS_ADM_" & tabId).Value
+
+    Set rng = sh.Range("OUTER_VALUES_" & tabId)
+
+    For Each cellRng In rng
+        hasFormula = False
+        formulaValue = cellRng.FormulaArray
+
+        If formulaValue = vbNullString Then
+            formulaValue = cellRng.Formula
+            hasFormula = True
+        End If
+
+        If InStr(1, formulaValue, "concat_" & prevAdmValue) > 0 Then
+            formulaValue = Replace(formulaValue, "concat_" & prevAdmValue, _
+                                   "concat_" & adminName)
+
+            If hasFormula Then
+                cellRng.Formula = formulaValue
+            Else
+                cellRng.FormulaArray = formulaValue
+            End If
+        End If
+    Next
+
+    sh.Range("PREVIOUS_ADM_" & tabId).Value = adminName
+    sh.Columns("C").EntireColumn.AutoFit
+    rng.Calculate
+
+    this.pass.Protect "_active", True
+End Sub
+
+
+'@sub-title Divide or revert all computed values by the population.
+'@details
+'Iterates through the outer values range of a spatial table and modifies
+'formulas to include or remove population division. Uses cached
+'geo/spatial/passwords instances.
+'@param rngName String. Named range of the population factor (e.g. "POPFACT_sp1").
+'@param revertBack Optional Boolean. True to remove the division and restore original formulas.
+Private Sub DevideByPopulation(ByVal rngName As String, _
+                               Optional ByVal revertBack As Boolean = False)
+
+    Dim sh As Worksheet
+    Dim hasFormula As Boolean
+    Dim factorMult As Long
+    Dim prevFact As Long
+    Dim rng As Range
+    Dim cellRng As Range
+    Dim formulaValue As String
+    Dim adminName As String
+    Dim rowRng As Range
+    Dim selectedAdmin As String
+    Dim popValue As String
+    Dim tabId As String
+
+    EnsurePasswords
+    EnsureGeo
+    EnsureSpatial
+
+    If this.pass Is Nothing Then Exit Sub
+    If this.geo Is Nothing Then Exit Sub
+    If this.sp Is Nothing Then Exit Sub
+
+    Set sh = ActiveSheet
+    this.pass.UnProtect "_active"
+
+    tabId = Replace(rngName, "POPFACT_", vbNullString)
+    prevFact = sh.Range("POPPREVFACT_" & tabId).Value
+
+    factorMult = 100
+    On Error Resume Next
+    factorMult = CLng(Application.WorksheetFunction.Trim(sh.Range(rngName).Value))
+    On Error GoTo ErrDivide
+
+    selectedAdmin = sh.Range("ADM_DROPDOWN_" & tabId).Value
+    adminName = this.geo.AdminCode(selectedAdmin)
+
+    Set rng = sh.Range("OUTER_VALUES_" & tabId)
+    Set rowRng = sh.Range("ROW_CATEGORIES_" & tabId)
+
+    this.sp.Sort tabId:=tabId, onAR:=(Not revertBack)
+
+    For Each cellRng In rng
+        hasFormula = False
+        formulaValue = cellRng.FormulaArray
+
+        If formulaValue = vbNullString Then
+            formulaValue = cellRng.Formula
+            hasFormula = True
+        End If
+
+        If (InStr(1, formulaValue, "concat_" & adminName) > 0) And _
+           (cellRng.Column > rowRng.Column) Then
+
+            popValue = sh.Cells(cellRng.Row, rowRng.Column - 1).Address
+
+            If (Not revertBack) And (prevFact = 0) Then
+                formulaValue = Replace(formulaValue, "=", vbNullString)
+                formulaValue = "= " & factorMult & "*" & formulaValue & "/" & popValue
+            ElseIf (Not revertBack) And (prevFact <> 0) Then
+                formulaValue = Replace(formulaValue, CStr(prevFact), CStr(factorMult))
+            ElseIf prevFact <> 0 Then
+                formulaValue = Replace(formulaValue, CStr(prevFact) & "*", vbNullString)
+                formulaValue = Replace(formulaValue, "/" & popValue, vbNullString)
+            End If
+
+            If hasFormula Then
+                cellRng.Formula = formulaValue
+            Else
+                cellRng.FormulaArray = formulaValue
+            End If
+        End If
+    Next
+
+    If revertBack Then
+        sh.Range("POPPREVFACT_" & tabId).Value = 0
+    Else
+        sh.Range("POPPREVFACT_" & tabId).Value = factorMult
+    End If
+
+    rng.Calculate
+    this.pass.Protect "_active"
+
+ErrDivide:
+End Sub
+
+
+'@sub-title Toggle population division formatting.
+'@details
+'Shows or hides the population factor cell and label based on the
+'divide/no-divide dropdown selection, then delegates to DevideByPopulation
+'to apply or remove the formula modifications.
+'@param rngName String. Named range of the divide/no-divide dropdown.
+Private Sub FormatDevidePop(ByVal rngName As String)
+    Dim sh As Worksheet
+    Dim tabId As String
+
+    EnsurePasswords
+    EnsureTranslation
+
+    If this.pass Is Nothing Then Exit Sub
+    If this.wkbNames Is Nothing Then Exit Sub
+
+    Set sh = ActiveSheet
+    this.pass.UnProtect "_active"
+
+    tabId = Replace(rngName, "DEVIDEPOP_", vbNullString)
+
+    If sh.Range(rngName).Value = this.wkbNames.ValueAsString("RNG_NoDevide") Then
+        sh.Range("POPFACT_" & tabId).Font.Color = vbWhite
+        sh.Range("POPFACT_" & tabId).Locked = True
+        sh.Range("POPFACT_" & tabId).FormulaHidden = True
+        sh.Range("POPFACTLABEL_" & tabId).Font.Color = vbWhite
+        sh.Range("POPFACTLABEL_" & tabId).Locked = True
+
+        DevideByPopulation rngName:="POPFACT_" & tabId, revertBack:=True
+
+    ElseIf sh.Range(rngName).Value = this.wkbNames.ValueAsString("RNG_Devide") Then
+        sh.Range("POPFACT_" & tabId).Font.Color = vbBlack
+        sh.Range("POPFACT_" & tabId).Locked = False
+        sh.Range("POPFACT_" & tabId).FormulaHidden = False
+        sh.Range("POPFACTLABEL_" & tabId).Font.Color = vbBlack
+        sh.Range("POPFACTLABEL_" & tabId).Locked = False
+
+        DevideByPopulation "POPFACT_" & tabId
+    End If
+
+    this.pass.Protect "_active", True
 End Sub
 
 
@@ -1135,6 +1343,20 @@ Private Sub EnsureSpatial()
     On Error GoTo 0
 End Sub
 
+'@sub-title Lazily initialise the password manager.
+Private Sub EnsurePasswords()
+    If Not (this.pass Is Nothing) Then Exit Sub
+    If this.hostBook Is Nothing Then Exit Sub
+
+    Dim sh As Worksheet
+    Set sh = SheetOrNothing(PASSSHEET)
+    If sh Is Nothing Then Exit Sub
+
+    On Error Resume Next
+    Set this.pass = Passwords.Create(sh)
+    On Error GoTo 0
+End Sub
+
 '@sub-title Lazily initialise the dictionary and variables helpers.
 Private Sub EnsureDictionary()
     If Not (this.dict Is Nothing) Then Exit Sub
@@ -1190,6 +1412,7 @@ Private Sub ResetInternalCaches()
     Set this.sp = Nothing
     Set this.dict = Nothing
     Set this.vars = Nothing
+    Set this.pass = Nothing
 End Sub
 
 
