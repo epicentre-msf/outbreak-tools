@@ -1105,7 +1105,7 @@ Private Sub AddHeader()
             End If
 
         Case ScopeSpatial
-            If Not RangeExists("ADMIN_UNIT_LIST") Then
+            If Not RangeExists("ADM_UNIT_LIST") Then
                 Set cellRng = .Cells(1, 26)
                 cellRng.Cells(1, 1).Formula = "= RNG_ADM1NAME"
                 cellRng.Cells(2, 1).Formula = "= RNG_ADM2NAME"
