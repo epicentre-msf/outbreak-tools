@@ -30,6 +30,7 @@ Public Enum AnalysisScope
     AnalysisScopeSpatial = 2
     AnalysisScopeNormal = 3
     AnalysisScopeSpatioTemporal = 4
+    AnalysisScopeTimeSeriesTablesOnly = 5
 End Enum
 
 
@@ -45,4 +46,4 @@ End Enum
 'CrossTableFormula, registers table and graph metadata in AnaTabIds,
 'and renders all tracked graphs on the output worksheets.
 '@export
-Public Sub WriteAnalysis(): End Sub
+Public Sub WriteAnalysis(Optional ByVal part As Byte = 0): End Sub

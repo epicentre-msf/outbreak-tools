@@ -298,30 +298,81 @@ Private Function ScopeLabel() As String
     End If
 End Function
 
+'@label:sanitize-name-id
+'@sub-title Convert a raw identifier to a valid Excel Name
+'@details
+'Excel defined names only allow letters, digits, underscores, and periods.
+'The first character must be a letter or underscore.
+'This function replaces any disallowed character (spaces, hyphens, etc.)
+'with an underscore and prepends one when the name starts with a digit
+'or period.  Called once at each public API entry point so that all
+'internal methods receive pre-sanitized identifiers.
+'@param nameId String. The raw name identifier.
+'@return String. An Excel-safe name identifier.
+Private Function SanitizeNameId(ByVal nameId As String) As String
+    Dim raw As String
+    Dim i As Long
+    Dim ch As String
+    Dim code As Long
+    Dim result As String
+
+    raw = Trim$(nameId)
+    If LenB(raw) = 0 Then
+        SanitizeNameId = vbNullString
+        Exit Function
+    End If
+
+    result = vbNullString
+    For i = 1 To Len(raw)
+        code = AscW(Mid$(raw, i, 1))
+        ' Allow A-Z (65-90), a-z (97-122), 0-9 (48-57), underscore (95), period (46)
+        If (code >= 65 And code <= 90) Or _
+           (code >= 97 And code <= 122) Or _
+           (code >= 48 And code <= 57) Or _
+           code = 95 Or code = 46 Then
+            result = result & Mid$(raw, i, 1)
+        Else
+            result = result & "_"
+        End If
+    Next i
+
+    ' First character must be a letter or underscore (not digit or period)
+    If Len(result) > 0 Then
+        code = AscW(Left$(result, 1))
+        If Not ((code >= 65 And code <= 90) Or _
+                (code >= 97 And code <= 122) Or _
+                code = 95) Then
+            result = "_" & result
+        End If
+    End If
+
+    SanitizeNameId = result
+End Function
+
 '@label:metadata-key
 '@sub-title Normalise a name identifier for case-insensitive lookup
+'@details Expects a pre-sanitized nameId (callers must call SanitizeNameId first).
 Private Function MetadataKey(ByVal nameId As String) As String
-    MetadataKey = LCase$(Trim$(nameId))
+    MetadataKey = LCase$(nameId)
 End Function
 
 '@label:ensure-metadata-record
 '@sub-title Ensure a metadata record exists for the given name
+'@details Expects a pre-sanitized nameId (callers must call SanitizeNameId first).
 '@return Long. The record index, or -1 when the name is not defined.
 Private Function EnsureMetadataRecord(ByVal nameId As String) As Long
     Dim idx As Long
     Dim store As BetterArray
     Dim record As Variant
     Dim definition As Name
-    Dim sanitized As String
     Dim valueType As Byte
     Dim lastUpdated As Date
 
-    sanitized = Trim$(nameId)
-    idx = MetadataIndex(sanitized)
+    idx = MetadataIndex(nameId)
     Set store = MetadataStore()
 
     If idx = -1 Then
-        Set definition = FindDefinition(sanitized)
+        Set definition = FindDefinition(nameId)
         If definition Is Nothing Then
             EnsureMetadataRecord = -1
             Exit Function
@@ -329,7 +380,7 @@ Private Function EnsureMetadataRecord(ByVal nameId As String) As Long
 
         valueType = NameTypeFromComment(definition.Comment)
         lastUpdated = UpdatedFromComment(definition.Comment)
-        record = BuildMetadataRecord(sanitized, valueType, lastUpdated, definition)
+        record = BuildMetadataRecord(nameId, valueType, lastUpdated, definition)
         store.Push record
         EnsureMetadataRecord = store.UpperBound
         Exit Function
@@ -337,7 +388,7 @@ Private Function EnsureMetadataRecord(ByVal nameId As String) As Long
 
     record = store.Item(idx)
     If MetadataDefinition(record) Is Nothing Then
-        Set definition = FindDefinition(sanitized)
+        Set definition = FindDefinition(nameId)
         If Not definition Is Nothing Then
             MetadataSetDefinition record, definition
             store.Item(idx) = record
@@ -424,14 +475,15 @@ End Function
 
 '@label:find-definition
 '@sub-title Locate a Name definition by identifier
+'@details Expects a pre-sanitized nameId (callers must call SanitizeNameId first).
 Private Function FindDefinition(ByVal nameId As String) As Name
     Dim definition As Name
-
     Dim container As Object
 
     Set container = NameOwner()
     If container Is Nothing Then Exit Function
-    If LenB(Trim$(nameId)) = 0 Then Exit Function
+
+    If LenB(nameId) = 0 Then Exit Function
 
     For Each definition In container.Names
         If ShouldTrack(definition) Then
@@ -636,15 +688,14 @@ End Function
 
 '@label:ensure-definition
 '@sub-title Create a hidden Name definition if it does not exist
+'@details Expects a pre-sanitized nameId (callers must call SanitizeNameId first).
 Private Function EnsureDefinition(ByVal nameId As String, _
                                   ByVal initialValue As Variant, _
                                   ByVal valueType As Byte) As Name
     Dim definition As Name
-    Dim sanitized As String
     Dim nowStamp As Date
 
-    sanitized = Trim$(nameId)
-    If LenB(sanitized) = 0 Then
+    If LenB(nameId) = 0 Then
         ThrowError ProjectError.InvalidArgument, "Hidden name identifier cannot be empty"
     End If
 
@@ -655,10 +706,10 @@ Private Function EnsureDefinition(ByVal nameId As String, _
         ThrowError ProjectError.ObjectNotInitialized, "HiddenNames requires a target worksheet or workbook."
     End If
 
-    Set definition = FindDefinition(sanitized)
+    Set definition = FindDefinition(nameId)
     If definition Is Nothing Then
         nowStamp = Now
-        Set definition = container.Names.Add(Name:=sanitized, _
+        Set definition = container.Names.Add(Name:=nameId, _
                                              RefersTo:="=" & SerializeValue(initialValue, valueType), _
                                              Visible:=False)
         ApplyComment definition, valueType, nowStamp
@@ -750,7 +801,7 @@ End Sub
 '@sub-title Check whether a hidden name exists
 '@export
 Private Function HasName(ByVal nameId As String) As Boolean
-    HasName = (EnsureMetadataRecord(nameId) <> -1)
+    HasName = (EnsureMetadataRecord(SanitizeNameId(nameId)) <> -1)
 End Function
 
 '@label:ensure-name
@@ -765,7 +816,7 @@ Private Function Ensure(ByVal nameId As String, _
     Dim lastUpdated As Date
 
     EnsureReady
-    sanitized = Trim$(nameId)
+    sanitized = SanitizeNameId(nameId)
     Set definition = EnsureDefinition(sanitized, initialValue, valueType)
     lastUpdated = Now
     record = BuildMetadataRecord(sanitized, valueType, lastUpdated, definition)
@@ -779,6 +830,7 @@ End Function
 '@export
 Private Function ValueOf(ByVal nameId As String, _
                          Optional ByVal defaultValue As Variant) As Variant
+    Dim sanitized As String
     Dim idx As Long
     Dim store As BetterArray
     Dim record As Variant
@@ -786,7 +838,8 @@ Private Function ValueOf(ByVal nameId As String, _
     Dim raw As Variant
 
     EnsureReady
-    idx = EnsureMetadataRecord(nameId)
+    sanitized = SanitizeNameId(nameId)
+    idx = EnsureMetadataRecord(sanitized)
 
     If idx = -1 Then
         If IsMissing(defaultValue) Then
@@ -809,6 +862,7 @@ End Function
 '@sub-title Update the stored value of an existing hidden name
 '@export
 Private Sub Update(ByVal nameId As String, ByVal value As Variant)
+    Dim sanitized As String
     Dim idx As Long
     Dim store As BetterArray
     Dim record As Variant
@@ -816,7 +870,8 @@ Private Sub Update(ByVal nameId As String, ByVal value As Variant)
     Dim nowStamp As Date
 
     EnsureReady
-    idx = EnsureMetadataRecord(nameId)
+    sanitized = SanitizeNameId(nameId)
+    idx = EnsureMetadataRecord(sanitized)
     If idx = -1 Then
         ThrowError ProjectError.ElementNotFound, _
                   "Cannot update hidden name '" & nameId & "' because it does not exist."
@@ -873,9 +928,12 @@ End Function
 '@sub-title Remove a hidden name definition
 '@export
 Private Sub Remove(ByVal nameId As String)
+    Dim sanitized As String
+
     EnsureReady
-    RemoveDefinition nameId
-    RemoveMetadataRecord Trim$(nameId)
+    sanitized = SanitizeNameId(nameId)
+    RemoveDefinition sanitized
+    RemoveMetadataRecord sanitized
 End Sub
 
 '@label:list-names
@@ -895,7 +953,7 @@ Private Function Enumerate(Optional ByVal prefix As String = vbNullString) As Be
     EnsureReady
     Set result = New BetterArray
     result.LowerBound = 0
-    prefixKey = MetadataKey(prefix)
+    prefixKey = LCase$(SanitizeNameId(prefix))
 
     If this.metadata Is Nothing Then
         Set Enumerate = result
@@ -945,7 +1003,7 @@ Private Sub ExportAll(ByVal targetSh As Worksheet, _
 
     If this.metadata Is Nothing Then Exit Sub
 
-    prefixKey = MetadataKey(prefix)
+    prefixKey = LCase$(SanitizeNameId(prefix))
     Set store = MetadataStore()
 
     For idx = store.LowerBound To store.UpperBound
@@ -984,7 +1042,7 @@ Private Sub ExportAllToWorkbook(ByVal targetWb As Workbook, _
 
     If this.metadata Is Nothing Then Exit Sub
 
-    prefixKey = MetadataKey(prefix)
+    prefixKey = LCase$(SanitizeNameId(prefix))
     Set store = MetadataStore()
     If store.Length = 0 Then Exit Sub
 
@@ -1099,7 +1157,7 @@ Public Sub SetListObjectHeader(ByVal nameId As String, _
     Dim headerColumn As ListColumn
     Dim formulaText As String
 
-    sanitizedName = Trim$(nameId)
+    sanitizedName = SanitizeNameId(nameId)
     sanitizedHeader = Trim$(headerName)
 
     If LenB(sanitizedName) = 0 Then
@@ -1146,6 +1204,7 @@ End Sub
 
 '@label:persist-on-worksheet
 '@sub-title Write a hidden name onto a target worksheet
+'@details Expects a pre-sanitized nameId (callers must call SanitizeNameId first).
 Private Sub PersistOnWorksheet(ByVal targetSh As Worksheet, _
                                ByVal nameId As String, _
                                ByVal value As Variant, _
@@ -1179,6 +1238,7 @@ End Sub
 
 '@label:remove-workbook-name
 '@sub-title Delete a Name definition from a workbook scope
+'@details Expects a pre-sanitized nameId (callers must call SanitizeNameId first).
 Private Sub RemoveWorkbookName(ByVal targetWb As Workbook, ByVal nameId As String)
     If targetWb Is Nothing Then Exit Sub
 

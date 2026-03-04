@@ -373,6 +373,8 @@ Public Sub clickGenerate()
         Next
     End If
 
+    'Build the analyses in clickGenerate
+
     'Save the linelist as .xlsb with password protection
     ll.SaveLL
 

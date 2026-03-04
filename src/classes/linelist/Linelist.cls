@@ -861,9 +861,7 @@ Private Sub TransferAllCode(ByVal codeTransfer As ICodeTransfer)
     codesList.Clear
     codesList.Push "CustomLinelistFunctions", _
                    "GeoModule", "LinelistEventsManager", _
-                   "EventsLinelistButtons", _
-                   "FormLogicAdvanced", "FormLogicExportMig", _
-                   "FormLogicExport"
+                   "EventsLinelistButtons"
 
     For counter = codesList.LowerBound To codesList.UpperBound
         codeName = codesList.Item(counter)
