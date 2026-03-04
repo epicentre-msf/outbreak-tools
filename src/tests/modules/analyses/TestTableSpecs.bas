@@ -45,9 +45,9 @@ Private dict As ILLdictionary
 '@sub-title Build a fixture sheet with type label, header, and data rows.
 '@details
 'Creates or clears the hidden FIXTURE_SHEET worksheet and populates it with
-'the analysis type label in row 1, a standard 10-column header in row 3,
-'and caller-supplied data rows starting at row 4. The layout matches the
-'structure TableSpecs expects: type label at hRng.Cells(-1, 1), header
+'the analysis type label in row 1, a standard 10-column header in row 5,
+'and caller-supplied data rows starting at row 6. The layout matches the
+'structure TableSpecs expects: type label at hRng.Cells(-3, 1), header
 'range spanning NUM_COLUMNS columns, and contiguous data rows below.
 Private Sub BuildFixture(ByVal tableScopeName As String, dataRows As Variant)
     Dim sh As Worksheet
@@ -57,20 +57,20 @@ Private Sub BuildFixture(ByVal tableScopeName As String, dataRows As Variant)
 
     Set sh = EnsureWorksheet(FIXTURE_SHEET, clearSheet:=True, visibility:=xlSheetHidden)
 
-    ' Row 1: type label (read by TableScope via hRng.Cells(-1, 1))
+    ' Row 1: type label (read by TableScope via hRng.Cells(-3, 1))
     sh.Cells(1, 1).Value = tableScopeName
 
-    ' Row 3: header row
+    ' Row 5: header row
     headerArray = Array( _
         Array("section", "row", "column", "total", "percentage", _
               "missing", "graph", "label", "function", "n geo"))
     headerMatrix = RowsToMatrix(headerArray)
-    WriteMatrix sh.Cells(3, 1), headerMatrix
+    WriteMatrix sh.Cells(5, 1), headerMatrix
 
-    ' Row 4+: data rows
+    ' Row 6+: data rows
     If Not IsEmpty(dataRows) Then
         dataMatrix = RowsToMatrix(dataRows)
-        WriteMatrix sh.Cells(4, 1), dataMatrix
+        WriteMatrix sh.Cells(6, 1), dataMatrix
     End If
 End Sub
 
@@ -78,19 +78,19 @@ End Sub
 Private Function FixtureHeaderRange() As Range
     Dim sh As Worksheet
     Set sh = ThisWorkbook.Worksheets(FIXTURE_SHEET)
-    Set FixtureHeaderRange = sh.Range(sh.Cells(3, 1), sh.Cells(3, NUM_COLUMNS))
+    Set FixtureHeaderRange = sh.Range(sh.Cells(5, 1), sh.Cells(5, NUM_COLUMNS))
 End Function
 
 '@sub-title Return a data row range by 1-based index.
 '@details
-'Computes the absolute row number as 3 + dataRowIndex (header at row 3,
-'first data row at row 4) and returns a range spanning NUM_COLUMNS columns.
+'Computes the absolute row number as 5 + dataRowIndex (header at row 5,
+'first data row at row 6) and returns a range spanning NUM_COLUMNS columns.
 Private Function FixtureDataRange(ByVal dataRowIndex As Long) As Range
     Dim sh As Worksheet
     Dim rowNum As Long
 
     Set sh = ThisWorkbook.Worksheets(FIXTURE_SHEET)
-    rowNum = 3 + dataRowIndex
+    rowNum = 5 + dataRowIndex
     Set FixtureDataRange = sh.Range(sh.Cells(rowNum, 1), sh.Cells(rowNum, NUM_COLUMNS))
 End Function
 
