@@ -66,7 +66,6 @@ Private Function SheetTag(ByVal sh As Worksheet) As String
         End If
     End If
 
-    If LenB(SheetTag) = 0 Then SheetTag = CStr(sh.Cells(1, 3).Value)
 End Function
 
 
