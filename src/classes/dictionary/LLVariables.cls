@@ -156,8 +156,8 @@ Private Function TryGetCachedColumnIndex(ByVal cacheKey As String, ByRef cachedI
     For idx = this.columnCache.LowerBound To this.columnCache.UpperBound
         entry = this.columnCache.Item(idx)
         If IsArray(entry) Then
-            If StrComp(CStr(entry(1)), cacheKey, vbBinaryCompare) = 0 Then
-                cachedIndex = CLng(entry(2))
+            If StrComp(CStr(entry(0)), cacheKey, vbBinaryCompare) = 0 Then
+                cachedIndex = CLng(entry(1))
                 TryGetCachedColumnIndex = True
                 Exit Function
             End If
@@ -185,7 +185,7 @@ Private Sub RemoveCachedColumnIndex(ByVal cacheKey As String)
 
     For idx = this.columnCache.UpperBound To this.columnCache.LowerBound Step -1
         If IsArray(this.columnCache.Item(idx)) Then
-            If StrComp(CStr(this.columnCache.Item(idx)(1)), cacheKey, vbBinaryCompare) = 0 Then
+            If StrComp(CStr(this.columnCache.Item(idx)(0)), cacheKey, vbBinaryCompare) = 0 Then
                 this.columnCache.Remove idx
             End If
         End If
