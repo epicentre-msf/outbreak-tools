@@ -98,5 +98,6 @@ Public Sub Format(Optional ByVal valuesTitle As String = vbNullString, _
                   Optional ByVal plotTitle As String = vbNullString, _
                   Optional ByVal scope As Byte = GraphScopeNormal, _
                   Optional ByVal heightFactor As Long = 1, _
-                  Optional ByVal hardCodeLabels As Boolean = True)
+                  Optional ByVal hardCodeLabels As Boolean = True, _ 
+                  Optional ByVal secondAxisTitle As String = vbNullString)
 End Sub

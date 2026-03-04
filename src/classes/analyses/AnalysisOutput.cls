@@ -666,12 +666,17 @@ Private Sub WriteTable(ByVal loName As String, _
         ' Time series / spatio-temporal min/max and GoTo logic
         If Not containsTimeSeries Then GoTo ContinueLoop
 
-        On Error Resume Next
-        Set prevSpecs = specs.Previous()
+        ' Navigate to previous/next specs for section tracking.
+        ' Previous() throws when IsNewSection is True, so guard explicitly
+        ' instead of swallowing all errors with On Error Resume Next.
+        If isNewSection Then
+            Set prevSpecs = Nothing
+        Else
+            Set prevSpecs = specs.Previous()
+        End If
         Set nextSpecs = specs.NextSpecs(anchorRng)
-        prevSecId = prevSpecs.TableSectionId()
+        If Not prevSpecs Is Nothing Then prevSecId = prevSpecs.TableSectionId()
         secId = specs.TableSectionId()
-        On Error GoTo 0
 
         rowVar = specs.Value("row")
         tableName = vars.Value(colName:="table name", varName:=rowVar)
