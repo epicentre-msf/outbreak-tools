@@ -1706,7 +1706,7 @@ Private Sub Format(ByVal desFormat As ILLFormat)
             rngTable.Clear
             rngTable.Push "MISSING_MISSING_", "TOTAL_TOTAL_", "MISSING_TOTAL_"
             For counter = rngTable.LowerBound To rngTable.UpperBound
-                rngName = rngTable.Items(counter) & tabId
+                rngName = rngTable.Item(counter) & tabId
                 If RangeExists(rngName) Then
                     Set rng = .Range(rngName).Offset(, 1)
                     designFormat.ApplyFormat rng, scope:=AnalysisOneCellCenter

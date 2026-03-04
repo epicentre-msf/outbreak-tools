@@ -102,7 +102,7 @@ Public Sub ManageRows(Optional ByVal del As Boolean = False): End Sub
 'into the managed worksheet, preserving cell formatting and validating the
 'result afterward.
 '@param sourcesheet Worksheet. The worksheet providing the source analysis tables.
-Public Sub Import(ByVal sourchesheet As Worksheet): End Sub
+Public Sub Import(ByVal sourcesheet As Worksheet): End Sub
 
 '@jump:export
 '@sub-title Export the analysis worksheet to a workbook

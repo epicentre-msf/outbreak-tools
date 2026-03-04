@@ -121,9 +121,10 @@ Private Function BuildTargetIndex(ByVal targetData As Variant, ByVal targetRows 
     Dim rowIndex As Long
     Dim key As String
 
+    Set targetIndex = New Collection
+
     If targetRows > 0 Then
         ReDim names(1 To targetRows)
-        Set targetIndex = New Collection
 
         For rowIndex = 1 To targetRows
             key = Normalize(CStr(targetData(rowIndex, 1)))
@@ -379,6 +380,6 @@ End Sub
 '@section Interface
 '===============================================================================
 
-Private Function IDiseaseImporter_MergeDisease(ByVal targetTable As ListObject, ByVal sourceTable As ListObject, Optional ByVal mergeValues As Boolean = True, Optional ByVal priority As DiseaseImportPriority = DiseaseImportPriority_Foreign) As IDiseaseImportSummary
-    Set IDiseaseImporter_MergeDisease = MergeDisease(targetTable, sourceTable, mergeValues, priority)
+Private Function IDiseaseImporter_MergeDisease(ByVal targetTable As ListObject, ByVal sourceTable As ListObject, Optional ByVal mergeValues As Boolean = True, Optional ByVal priority As DiseaseImportPriority = DiseaseImportPriority_Foreign, Optional ByVal logger As IDiseaseLogger = Nothing) As IDiseaseImportSummary
+    Set IDiseaseImporter_MergeDisease = MergeDisease(targetTable, sourceTable, mergeValues, priority, logger)
 End Function
