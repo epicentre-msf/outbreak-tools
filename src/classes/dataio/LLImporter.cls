@@ -134,10 +134,12 @@ Public Property Get HasData() As Boolean
     Dim lo As ListObject
     Dim nbBlanks As Long
     Dim counter As Long
+    Dim shHnData As IHiddenNames
 
     For Each sh In this.sourceWkb.Worksheets
         If SheetTagOf(sh) = "HList" Then
-            nbBlanks = CLng(sh.Cells(1, 6).Value)
+            Set shHnData = HiddenNames.Create(sh)
+            nbBlanks = shHnData.ValueAsLong("row_count")
             Set lo = sh.ListObjects(1)
 
             If Not lo.DataBodyRange Is Nothing Then
@@ -508,6 +510,7 @@ Public Sub ImportEditableLabels(ByVal impwb As Workbook)
     Dim sheetInfo As String
     Dim sh As Worksheet
     Dim colIndex As Long
+    Dim shHn As IHiddenNames
 
     ' Prerequisites
     If Not this.hasSameLanguage Then Exit Sub
@@ -565,9 +568,10 @@ Public Sub ImportEditableLabels(ByVal impwb As Workbook)
         If sh Is Nothing Then GoTo NextLabel
 
         ' Update label in worksheet
+        Set shHn = HiddenNames.Create(sh)
         Set cellRng = Nothing
         On Error Resume Next
-        Set cellRng = sh.Range(CStr(sh.Cells(1, 4).Value) & "_START")
+        Set cellRng = sh.Range(shHn.ValueAsString("table_name") & "_START")
         On Error GoTo 0
         If cellRng Is Nothing Then GoTo NextLabel
 
@@ -964,7 +968,6 @@ Private Function SheetTagOf(ByVal sh As Worksheet) As String
     Dim shHn As IHiddenNames
     Set shHn = HiddenNames.Create(sh)
     SheetTagOf = shHn.ValueAsString("sheet_type")
-    If SheetTagOf = vbNullString Then SheetTagOf = SheetTagOf(sh)
 End Function
 
 '@section Private - Helpers

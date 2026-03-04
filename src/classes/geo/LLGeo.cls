@@ -453,7 +453,6 @@ Private Function SheetTagOf(ByVal sh As Worksheet) As String
     Dim shHn As IHiddenNames
     Set shHn = HiddenNames.Create(sh)
     SheetTagOf = shHn.ValueAsString("sheet_type")
-    If SheetTagOf = vbNullString Then SheetTagOf = CStr(sh.Cells(1, 3).Value)
 End Function
 
 '@label:hf-range
@@ -1142,15 +1141,17 @@ Private Sub Update(ByVal pass As IPasswords)
     Dim drop As IDropdownLists
     Dim cellPrintRng As Range
     Dim printsh As Worksheet
+    Dim shHn As IHiddenNames
 
     Set wb = Wksh.Parent
 
     For Each sh In wb.Worksheets
         If SheetTagOf(sh) = "HList" Then
             pass.UnProtect sh.Name
+            Set shHn = HiddenNames.Create(sh)
 
             With sh
-                Set cellRng = .Range(.Cells(1, 4).Value & "_START")
+                Set cellRng = .Range(shHn.ValueAsString("table_name") & "_START")
                 Set printsh = wb.Worksheets("print_" & sh.Name)
                 Set cellPrintRng = printsh.Range(cellRng.Address)
 

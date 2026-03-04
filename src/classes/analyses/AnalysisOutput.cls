@@ -353,31 +353,22 @@ Private Sub PrepareSheet(Optional ByVal scope As Byte = AnalysisScopeNormal)
     Dim outsh As Worksheet
     Dim cellRng As Range
     Dim sheetInfo As String
-    Dim rngName As String
     Dim design As ILLFormat
     Dim shHn As IHiddenNames
 
     Select Case scope
     Case AnalysisScopeTimeSeries
         sheetInfo = "TS-Analysis"
-        rngName = "RNG_HasTable_TS"
     Case AnalysisScopeSpatial
         sheetInfo = "SP-Analysis"
-        rngName = "RNG_HasTable_SP"
     Case AnalysisScopeNormal
         sheetInfo = "Uni-Bi-Analysis"
-        rngName = "RNG_HasTable_UNI"
     Case AnalysisScopeSpatioTemporal
         sheetInfo = "SPT-Analysis"
-        rngName = "RNG_HasTable_SPT"
     End Select
 
     Set outsh = OutputSh(scope)
     Set design = DesignFormat()
-
-    Set cellRng = outsh.Cells(1, 10)
-    cellRng.Name = rngName
-    design.ApplyFormat cellRng, scope:=LinelistHiddenCell
 
     design.ApplyFormat outsh, scope:=AllAnalysisSheet
 
@@ -541,7 +532,6 @@ Private Sub WriteTable(ByVal loName As String, _
     Dim anchorRng As Range
     Dim containsTimeSeries As Boolean
     Dim spatRng As Range
-    Dim sheetInfo As String
     Dim namObj As IAnaTabIds
     Dim tabRangesNames As BetterArray
     Dim goToSectionLabel As String
@@ -563,7 +553,6 @@ Private Sub WriteTable(ByVal loName As String, _
     Dim addPrevSecMinMaxFormula As Boolean
     Dim addActSecMinMaxFormula As Boolean
     Dim addSpatioTemporalName As Boolean
-    Dim upRngName As String
     Dim goToPrefix As String
 
     Set sh = Wksh()
@@ -579,8 +568,6 @@ Private Sub WriteTable(ByVal loName As String, _
 
     Dim outshHn As IHiddenNames
     Set outshHn = HiddenNames.Create(outsh)
-    sheetInfo = outshHn.ValueAsString("sheet_type")
-    upRngName = "RNG_HasTable_" & UCase(Split(sheetInfo, "-")(0))
     goToSectionLabel = trads.TranslatedValue("MSG_GoToSec")
     goToHeaderLabel = trads.TranslatedValue("MSG_GoToHead")
 
@@ -621,7 +608,10 @@ Private Sub WriteTable(ByVal loName As String, _
         Set tabRangesNames = tabl.NamedRangesList()
         namObj.AddTableInfos scope, tabId, tabRangesNames
 
-        If IsEmpty(outsh.Range(upRngName)) Then outsh.Range(upRngName).Value = "yes"
+        'Mark the sheet as having at least one table
+        If LenB(outshHn.ValueAsString("has_table")) = 0 Then
+            outshHn.EnsureName "has_table", "yes", HiddenNameTypeString
+        End If
 
         ' Non-temporal graphs
         If specs.HasGraph() And (Not containsTimeSeries) Then
@@ -821,10 +811,13 @@ Private Sub WriteTimeSeriesGraphs(ByVal graphLoName As String, _
     Dim tabPrefLabel As BetterArray
     Dim plotTitle As String
 
+    Dim outshHn As IHiddenNames
+
     Set sh = Wksh()
     Set outsh = OutputSh(AnalysisScopeTimeSeries)
 
-    If IsEmpty(outsh.Range("RNG_HasTable_TS")) Then Exit Sub
+    Set outshHn = HiddenNames.Create(outsh)
+    If LenB(outshHn.ValueAsString("has_table")) = 0 Then Exit Sub
 
     Set grBAinput = New BetterArray
     Set namObj = NamesObject()
@@ -1046,6 +1039,7 @@ Private Sub WriteAnalysis()
     Dim lData As ILinelistSpecs
     Dim trads As ITranslationObject
     Dim goToSectionLabel As String
+    Dim outshHn As IHiddenNames
 
     ' Bug #2 fix: GoTo arrays are LOCAL to each scope
     Dim sectionsList As BetterArray
@@ -1081,7 +1075,8 @@ Private Sub WriteAnalysis()
     AddCommands scope:=scope
 
     pass.Protect outsh, True
-    If IsEmpty(outsh.Range("RNG_HasTable_UNI")) Then outsh.Visible = xlSheetHidden
+    Set outshHn = HiddenNames.Create(outsh)
+    If LenB(outshHn.ValueAsString("has_table")) = 0 Then outsh.Visible = xlSheetHidden
 
     ' Time Series Analysis =====================================================
     scope = AnalysisScopeTimeSeries
@@ -1104,7 +1099,8 @@ Private Sub WriteAnalysis()
     AddCommands scope:=scope
 
     pass.Protect outsh, True
-    If IsEmpty(outsh.Range("RNG_HasTable_TS")) Then outsh.Visible = xlSheetHidden
+    Set outshHn = HiddenNames.Create(outsh)
+    If LenB(outshHn.ValueAsString("has_table")) = 0 Then outsh.Visible = xlSheetHidden
 
     ' Spatial Analysis =========================================================
     scope = AnalysisScopeSpatial
@@ -1122,7 +1118,8 @@ Private Sub WriteAnalysis()
     AddCommands scope:=scope
 
     pass.Protect outsh, True
-    If IsEmpty(outsh.Range("RNG_HasTable_SP")) Then outsh.Visible = xlSheetHidden
+    Set outshHn = HiddenNames.Create(outsh)
+    If LenB(outshHn.ValueAsString("has_table")) = 0 Then outsh.Visible = xlSheetHidden
 
     ' Spatio-Temporal Analysis =================================================
     scope = AnalysisScopeSpatioTemporal
@@ -1143,7 +1140,8 @@ Private Sub WriteAnalysis()
     AddCommands scope:=scope
 
     pass.Protect outsh, True
-    If IsEmpty(outsh.Range("RNG_HasTable_SPT")) Then outsh.Visible = xlSheetHidden
+    Set outshHn = HiddenNames.Create(outsh)
+    If LenB(outshHn.ValueAsString("has_table")) = 0 Then outsh.Visible = xlSheetHidden
 End Sub
 
 '@section Error Handling

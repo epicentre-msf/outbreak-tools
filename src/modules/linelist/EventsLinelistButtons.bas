@@ -95,7 +95,20 @@ Private Function SheetTag(ByVal sh As Worksheet) As String
     Dim shHn As IHiddenNames
     Set shHn = HiddenNames.Create(sh)
     SheetTag = shHn.ValueAsString("sheet_type")
-    If SheetTag = vbNullString Then SheetTag = CStr(sh.Cells(1, 3).Value)
+End Function
+
+'Get the table name from worksheet-level HiddenNames.
+Private Function TableNameOf(ByVal sh As Worksheet) As String
+    Dim shHn As IHiddenNames
+    Set shHn = HiddenNames.Create(sh)
+    TableNameOf = shHn.ValueAsString("table_name")
+End Function
+
+'Get the blank row count from worksheet-level HiddenNames.
+Private Function RowCountOf(ByVal sh As Worksheet) As Long
+    Dim shHn As IHiddenNames
+    Set shHn = HiddenNames.Create(sh)
+    RowCountOf = shHn.ValueAsLong("row_count")
 End Function
 
 'Apply visibility from a ShowHideManager to a worksheet
@@ -679,7 +692,7 @@ Public Sub ClickResize()
 
     Application.EnableEvents = False
 
-    nbBlank = sh.Cells(1, 6).Value
+    nbBlank = RowCountOf(sh)
     Set Lo = sh.ListObjects(1)
     Set csTab = CustomTable.Create(Lo)
 
@@ -838,7 +851,7 @@ Public Sub ClickGeoApp()
 
     Case "HList"
 
-        tabName = sh.Cells(1, 4).Value
+        tabName = TableNameOf(sh)
         startRow = sh.Range(tabName & "_START").Row + 1
         targetColumn = ActiveCell.Column
 
@@ -1109,11 +1122,11 @@ Public Sub ClickSortTable()
     End If
 
     InitializeTrads
-    
-    tabName = sh.Cells(1, 4).Value
+
+    tabName = TableNameOf(sh)
     startRow = sh.Range(tabName & "_START").Row + 1
     targetColumn = ActiveCell.Column
-    
+
     If ActiveCell.Row >= StartRow Then
 
         headerName = sh.Cells(StartRow - 1, targetColumn).Value
@@ -1178,7 +1191,7 @@ Public Sub ClickImportData()
     Application.EnableEvents = False
     For Each sh In wb.Worksheets
         If SheetTag(sh) = "HList" Then
-            nbBlank = sh.Cells(1, 6).Value
+            nbBlank = RowCountOf(sh)
             Set Lo = sh.ListObjects(1)
             Set csTab = CustomTable.Create(Lo)
             pass.UnProtect sh.Name
@@ -1286,7 +1299,7 @@ Private Sub RestaureHiddenStatus(ByVal cellRng As Range, Optional ByVal scope As
 
         'Rotate on print sheet
         If (varStatus = "showverti") Then
-            tabName = sh.Cells(1, 4).Value
+            tabName = TableNameOf(sh)
             On Error Resume Next
                 Set labCellRng = sh.Range(Replace(tabName, "pr", vbNullString) & "_" & "PRINTSTART")
                 Set labCellRng = sh.Cells(labCellRng.Offset(-2).Row, varColumnIndex) 
@@ -1434,7 +1447,7 @@ Public Sub ClickMatchLinelistShowHide()
     Set printsh = ActiveSheet
     sheetName = Mid$(printsh.Name, Len(PRINTPREFIX) + 1)
     Set sh = wb.Worksheets(sheetName)
-    tabName = sh.Cells(1, 4).Value
+    tabName = TableNameOf(sh)
 
     Set dict = LLdictionary.Create(wb.Worksheets(DICTSHEET), 1, 1)
     Set baseMgr = ShowHideManager.Create(dict, ShowHideLayerHList, sheetName)

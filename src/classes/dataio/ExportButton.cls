@@ -233,11 +233,11 @@ End Sub
 '@sub-title Get the sheet type tag from worksheet-level HiddenNames.
 '@param sh Worksheet. The worksheet to query.
 '@return String. The sheet type tag (HList, VList, etc.).
-Private Function SheetTagOf(ByVal sh As Worksheet) As String
+Private Function SheetTagOf(ByVal sh As Worksheet, _
+                            Optional ByVal nameKey As String = "sheet_type") As String
     Dim shHn As IHiddenNames
     Set shHn = HiddenNames.Create(sh)
-    SheetTagOf = shHn.ValueAsString("sheet_type")
-    If SheetTagOf = vbNullString Then SheetTagOf = CStr(sh.Cells(1, 3).Value)
+    SheetTagOf = shHn.ValueAsString(nameKey)
 End Function
 
 '@section Private Helpers
@@ -279,7 +279,7 @@ Private Sub UpdateFilteredData()
 
             If Not lo.DataBodyRange Is Nothing Then
                 Set loRng = lo.DataBodyRange
-                Set filtsh = this.sourceWkb.Worksheets(CStr(sh.Cells(1, 5).Value))
+                Set filtsh = this.sourceWkb.Worksheets(SheetTagOf(sh, "filtered_sheet"))
                 rowCounter = loRng.Rows.Count
 
                 With filtsh

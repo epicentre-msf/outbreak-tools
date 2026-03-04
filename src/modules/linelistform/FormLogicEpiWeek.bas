@@ -20,7 +20,6 @@ Private Function SheetTag(ByVal sh As Worksheet) As String
     Dim shHn As IHiddenNames
     Set shHn = HiddenNames.Create(sh)
     SheetTag = shHn.ValueAsString("sheet_type")
-    If SheetTag = vbNullString Then SheetTag = CStr(sh.Cells(1, 3).Value)
 End Function
 
 

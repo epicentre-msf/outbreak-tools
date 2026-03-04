@@ -130,7 +130,6 @@ Private Function SheetTagOf(ByVal sh As Worksheet) As String
     Dim shHn As IHiddenNames
     Set shHn = HiddenNames.Create(sh)
     SheetTagOf = shHn.ValueAsString("sheet_type")
-    If SheetTagOf = vbNullString Then SheetTagOf = CStr(sh.Cells(1, 3).Value)
 End Function
 
 '@label:exists
@@ -194,6 +193,7 @@ Private Sub Update()
     Dim cellRng As Range
     Dim controlValue As String
     Dim Lo As ListObject
+    Dim shHn As IHiddenNames
 
     Set actsh = Wksh()
     Set wb = actsh.Parent
@@ -202,8 +202,10 @@ Private Sub Update()
 
         If SheetTagOf(sh) <> "HList" Then GoTo ContinueSheet
 
+        Set shHn = HiddenNames.Create(sh)
+
         On Error Resume Next
-        Set filtsh = wb.Worksheets(sh.Cells(1, 5).Value)
+        Set filtsh = wb.Worksheets(shHn.ValueAsString("filtered_sheet"))
         On Error GoTo 0
 
         If filtsh Is Nothing Then GoTo ContinueSheet
@@ -216,7 +218,7 @@ Private Sub Update()
         If Lo Is Nothing Then GoTo ContinueSheet
         If Lo.DataBodyRange Is Nothing Then GoTo ContinueSheet
 
-        tableName = sh.Cells(1, 4).Value
+        tableName = shHn.ValueAsString("table_name")
         Set cellRng = sh.Range(tableName & "_START")
 
         Do While Not IsEmpty(cellRng)
