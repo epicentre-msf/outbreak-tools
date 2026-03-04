@@ -491,9 +491,9 @@ Public Property Get RowsCategoriesRange(Optional ByVal includeHeaders As Boolean
     If Not includeHeaders Then startRw = startRw + 1
 
     endRw = Switch( _
-        (tablType = ScopeTimeSeries Or tablType = ScopeSpatioTemporal) And onlyCategories, Me.EndRow - 2, _
-        (specs.HasTotal Or tablType = ScopeSpatial) And onlyCategories, Me.EndRow - 1, _
-        True, Me.EndRow)
+        (tablType = ScopeTimeSeries Or tablType = ScopeSpatioTemporal) And onlyCategories, EndRow - 2, _
+        (specs.HasTotal Or tablType = ScopeSpatial) And onlyCategories, EndRow - 1, _
+        True, EndRow)
 
     With sh
         Set RowsCategoriesRange = .Range(.Cells(startRw, STANDARD_START_COL), _
@@ -597,9 +597,9 @@ Public Property Get ColumnRange(ByVal colVal As String, _
                      True, StartRow + 1)
 
     endRw = Switch( _
-        (tablType = ScopeTimeSeries Or tablType = ScopeSpatioTemporal) And onlyCategories, Me.EndRow - 2, _
-        (specs.HasTotal Or tablType = ScopeSpatial) And onlyCategories, Me.EndRow - 1, _
-        True, Me.EndRow)
+        (tablType = ScopeTimeSeries Or tablType = ScopeSpatioTemporal) And onlyCategories, EndRow - 2, _
+        (specs.HasTotal Or tablType = ScopeSpatial) And onlyCategories, EndRow - 1, _
+        True, EndRow)
 
     If includeHeaders Then startRw = startRw - 1
 
@@ -1508,7 +1508,7 @@ Private Sub Format(ByVal desFormat As ILLFormat)
         ElseIf RangeExists("ROWGS_SET") And (Not hn.HasName("ROWGS_FORMATSET")) Then
             Set rng = .Range("ROWGS_SET")
             designFormat.ApplyFormat rng, scope:=AnalysisSection
-            hn.EnsureName "ROWGS_FORMATSET", True, "Boolean"
+            hn.EnsureName "ROWGS_FORMATSET", True, HiddenNameTypeBoolean
         End If
 
         ' Title (GlobalSummary and TimeSeries don't have titles)
@@ -1542,7 +1542,7 @@ Private Sub Format(ByVal desFormat As ILLFormat)
                 Set rng = .Range("COLGS_SET")
                 Set rng = .Range(rng.Cells(1, 1), rng.Cells(1, 2))
                 designFormat.ApplyFormat rng, scope:=AnalysisUnivariateHeader
-                hn.EnsureName "COLGS_FORMATSET", True, "Boolean"
+                hn.EnsureName "COLGS_FORMATSET", True, HiddenNameTypeBoolean
             End If
         Case ScopeUnivariate
             Set rng = .Range("COLUMN_CATEGORIES_" & tabId)
@@ -1608,7 +1608,7 @@ Private Sub Format(ByVal desFormat As ILLFormat)
                         Set rng = rng.Offset(, 1)
                     End If
                 Loop
-                hn.EnsureName "MERGED_" & tabId, True, "Boolean"
+                hn.EnsureName "MERGED_" & tabId, True, HiddenNameTypeBoolean
             End If
 
             Set rng = .Range("COLUMN_CATEGORIES_" & tabId)
