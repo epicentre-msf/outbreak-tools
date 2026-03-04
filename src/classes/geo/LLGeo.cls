@@ -1142,6 +1142,7 @@ Private Sub Update(ByVal pass As IPasswords)
     Dim cellPrintRng As Range
     Dim printsh As Worksheet
     Dim shHn As IHiddenNames
+    Dim varName As String
 
     Set wb = Wksh.Parent
 
@@ -1156,7 +1157,8 @@ Private Sub Update(ByVal pass As IPasswords)
                 Set cellPrintRng = printsh.Range(cellRng.Address)
 
                 Do While Not IsEmpty(cellRng)
-                    controlValue = cellRng.Offset(-4).Value
+                    varName = cellRng.Offset(-1).Value
+                    controlValue = shHn.ValueAsString(varName & "--control")
 
                     Select Case controlValue
                     Case "geo1"
