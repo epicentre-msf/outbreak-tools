@@ -289,7 +289,7 @@ Public Sub ShowAdmin4List(ByVal selectedAdmin3 As String, _
 
     Application.cursor = xlNorthwestArrow
 
-    Set adminTable = geo.GeoLevel(LevelAdmin4, GeoScopeAdmin, adminNames)
+    Set adminTable = geo.GeoLevel(LevelAdmin4, scope, adminNames)
     F_Geo.TXT_Msg.Value = concatenateAdmins
 
     If adminTable.Length = 0 Then Exit Sub
