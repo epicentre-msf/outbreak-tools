@@ -84,7 +84,7 @@ End Property
 '@label:ResetCaches
 Private Sub ResetCaches()
     Set this.columnCache = New BetterArray
-    this.columnCache.LowerBound = 1
+    this.columnCache.LowerBound = 0
     Set this.variablesCache = Nothing
     this.checkCounter = 0
     Set this.internalChecks = Nothing

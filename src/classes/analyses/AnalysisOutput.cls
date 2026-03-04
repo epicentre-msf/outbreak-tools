@@ -1031,7 +1031,7 @@ End Sub
 'scopes also create graphs and a graph-level GoTo dropdown. The caller
 '(IAnalysisOutput_WriteAnalysis) is responsible for restoring Application
 'settings after this method returns.
-Private Sub WriteAnalysis()
+Private Sub WriteAnalysis(Optional ByVal part As Byte = 0)
     Dim outsh As Worksheet
     Dim cellRng As Range
     Dim scope As Byte
@@ -1058,7 +1058,6 @@ Private Sub WriteAnalysis()
     Set outsh = OutputSh(scope)
     PrepareSheet scope:=scope
 
-    ' Bug #2 fix: fresh arrays per scope
     Set sectionsList = New BetterArray
     Set headersList = New BetterArray
 
@@ -1078,6 +1077,8 @@ Private Sub WriteAnalysis()
     Set outshHn = HiddenNames.Create(outsh)
     If LenB(outshHn.ValueAsString("has_table")) = 0 Then outsh.Visible = xlSheetHidden
 
+    If part = AnalysisScopeNormal Then Exit Sub
+
     ' Time Series Analysis =====================================================
     scope = AnalysisScopeTimeSeries
     Set outsh = OutputSh(scope)
@@ -1090,6 +1091,8 @@ Private Sub WriteAnalysis()
     WriteTable loName:=TIMESERIES, sectionsList:=sectionsList, _
                headersList:=headersList, scope:=scope
 
+    If part = AnalysisScopeTimeSeriesTablesOnly Then Exit Sub
+
     WriteTimeSeriesGraphs graphLoName:=GRAPHTIMESERIES, _
                           graphTitleLoName:=TITLEGRAPHTIMESERIES, _
                           tabLoName:=TIMESERIES, graphsList:=graphsList
@@ -1101,6 +1104,8 @@ Private Sub WriteAnalysis()
     pass.Protect outsh, True
     Set outshHn = HiddenNames.Create(outsh)
     If LenB(outshHn.ValueAsString("has_table")) = 0 Then outsh.Visible = xlSheetHidden
+
+    If part = AnalysisScopeTimeSeries Then Exit Sub
 
     ' Spatial Analysis =========================================================
     scope = AnalysisScopeSpatial
@@ -1120,6 +1125,8 @@ Private Sub WriteAnalysis()
     pass.Protect outsh, True
     Set outshHn = HiddenNames.Create(outsh)
     If LenB(outshHn.ValueAsString("has_table")) = 0 Then outsh.Visible = xlSheetHidden
+
+    If part = AnalysisScopeSpatial Then Exit Sub
 
     ' Spatio-Temporal Analysis =================================================
     scope = AnalysisScopeSpatioTemporal
@@ -1142,6 +1149,7 @@ Private Sub WriteAnalysis()
     pass.Protect outsh, True
     Set outshHn = HiddenNames.Create(outsh)
     If LenB(outshHn.ValueAsString("has_table")) = 0 Then outsh.Visible = xlSheetHidden
+
 End Sub
 
 '@section Error Handling
@@ -1164,6 +1172,6 @@ End Sub
 '@description Delegated members satisfying the IAnalysisOutput contract.
 'See the corresponding Public/Private members above for full documentation.
 
-Private Sub IAnalysisOutput_WriteAnalysis()
-    WriteAnalysis
+Private Sub IAnalysisOutput_WriteAnalysis(Optional ByVal part As Byte = 0)
+    WriteAnalysis part
 End Sub
