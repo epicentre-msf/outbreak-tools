@@ -15,6 +15,14 @@ Private tradform As ITranslationObject
 Private tradmess As ITranslationObject
 Private TriggerMode As Boolean
 
+'Get the sheet type tag (HiddenNames first, cell fallback for legacy sheets).
+Private Function SheetTag(ByVal sh As Worksheet) As String
+    Dim shHn As IHiddenNames
+    Set shHn = HiddenNames.Create(sh)
+    SheetTag = shHn.ValueAsString("sheet_type")
+    If SheetTag = vbNullString Then SheetTag = CStr(sh.Cells(1, 3).Value)
+End Function
+
 
 Private Sub InitializeTrads()
     Dim lltrads As ILLTranslation
@@ -54,7 +62,7 @@ Private Sub RecomputeAndUpdate(ByVal startVal As Integer, ByVal captionValue As 
                    "Uni-Bi-Analysis", "SPT-Analysis"
 
     For Each sh In wb.Worksheets
-        If tagValues.Includes(sh.Cells(1, 3).Value) Then
+        If tagValues.Includes(SheetTag(sh)) Then
             On Error Resume Next
             sh.UsedRange.Calculate
             On Error GoTo 0

@@ -446,6 +446,16 @@ Private Function UniqueRangeValue(ByVal rng As Range) As BetterArray
     Set UniqueRangeValue = retVal.Clone()
 End Function
 
+'@sub-title Get the sheet type tag from worksheet-level HiddenNames.
+'@param sh Worksheet. The worksheet to query.
+'@return String. The sheet type tag (HList, VList, etc.).
+Private Function SheetTagOf(ByVal sh As Worksheet) As String
+    Dim shHn As IHiddenNames
+    Set shHn = HiddenNames.Create(sh)
+    SheetTagOf = shHn.ValueAsString("sheet_type")
+    If SheetTagOf = vbNullString Then SheetTagOf = CStr(sh.Cells(1, 3).Value)
+End Function
+
 '@label:hf-range
 '@sub-title Get the data body range for a named column in the HF table.
 '@details
@@ -1136,7 +1146,7 @@ Private Sub Update(ByVal pass As IPasswords)
     Set wb = Wksh.Parent
 
     For Each sh In wb.Worksheets
-        If sh.Cells(1, 3).Value = "HList" Then
+        If SheetTagOf(sh) = "HList" Then
             pass.UnProtect sh.Name
 
             With sh
