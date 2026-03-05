@@ -215,6 +215,62 @@ Public Sub TransferWorkbookCode(ByVal moduleName As String)
     End With
 End Sub
 
+'@label:transfer-worksheet-code
+'@sub-title Copy code from a source module into a worksheet's code module
+'@details
+'Reads all code lines from the named module in the source workbook and writes
+'them into the code module of the worksheet identified by targetSheetName in
+'the target workbook. Replaces any existing content in the worksheet's code
+'module. The target worksheet is looked up by its user-visible Name property;
+'its CodeName is then used to locate the correct VBComponent. Used to inject
+'event handlers (e.g., Worksheet_SelectionChange) into specific worksheets
+'during linelist generation.
+'@param moduleName String. The source module whose code will be copied.
+'@param targetSheetName String. The user-visible name of the worksheet in the
+'target workbook whose code module will receive the code.
+'@throws ProjectError.ElementNotFound When the source module does not exist.
+'@throws ProjectError.ElementNotFound When the target worksheet does not exist.
+'@export
+Public Sub TransferWorksheetCode(ByVal moduleName As String, ByVal targetSheetName As String)
+    Dim codeContent As String
+    Dim sourceComp As Object
+    Dim targetSh As Worksheet
+    Dim codeMod As Object
+
+    'Verify source module exists
+    On Error Resume Next
+    Set sourceComp = this.sourceWkb.VBProject.VBComponents(moduleName)
+    On Error GoTo 0
+
+    If sourceComp Is Nothing Then
+        ThrowError ProjectError.ElementNotFound, _
+                   "Module '" & moduleName & "' not found in source workbook"
+    End If
+
+    'Read all code from the source module
+    With sourceComp.CodeModule
+        codeContent = .Lines(1, .CountOfLines)
+    End With
+
+    'Find the target worksheet by its user-visible name
+    On Error Resume Next
+    Set targetSh = this.targetWkb.Worksheets(targetSheetName)
+    On Error GoTo 0
+
+    If targetSh Is Nothing Then
+        ThrowError ProjectError.ElementNotFound, _
+                   "Worksheet '" & targetSheetName & "' not found in target workbook"
+    End If
+
+    'Write code into the worksheet's code module via its CodeName
+    Set codeMod = this.targetWkb.VBProject.VBComponents(targetSh.codeName).CodeModule
+
+    With codeMod
+        If .CountOfLines > 0 Then .DeleteLines 1, .CountOfLines
+        .AddFromString codeContent
+    End With
+End Sub
+
 '@label:copy-module-text
 '@sub-title Copy code text from a source module to an existing target module
 '@details
@@ -376,6 +432,10 @@ End Sub
 
 Private Sub ICodeTransfer_TransferWorkbookCode(ByVal moduleName As String)
     TransferWorkbookCode moduleName
+End Sub
+
+Private Sub ICodeTransfer_TransferWorksheetCode(ByVal moduleName As String, ByVal targetSheetName As String)
+    TransferWorksheetCode moduleName, targetSheetName
 End Sub
 
 Private Sub ICodeTransfer_CopyModuleText(ByVal moduleName As String)

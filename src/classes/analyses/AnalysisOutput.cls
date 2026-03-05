@@ -595,7 +595,7 @@ Private Sub WriteTable(ByVal loName As String, _
         If isNewSection Then sectionsList.Push goToSectionLabel & ": " & specs.Value("section")
 
         ' Bug #3 fix: per-table error handling — wrap table creation in error handler
-        'On Error GoTo TableError
+        On Error GoTo TableError
 
         Set tabl = CrossTable.Create(specs, outsh, lData)
         tabl.Build

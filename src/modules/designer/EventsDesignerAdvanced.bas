@@ -333,9 +333,9 @@ Public Sub clickGenerate()
     Dim counter As Long
     Dim anaOut As IAnalysisOutput
 
-    'On Error GoTo Cleanup
+    On Error GoTo Cleanup
     Set appScope = ApplicationState.Create(Application)
-    appScope.ApplyBusyState suppressEvents:=True, busyCursor:=xlWait
+    appScope.ApplyBusyState suppressEvents:=True, busyCursor:=xlNorthWestArrow
 
     Set entry = DesignerEntry.Create(ThisWorkbook.Worksheets(SHEET_MAIN))
 

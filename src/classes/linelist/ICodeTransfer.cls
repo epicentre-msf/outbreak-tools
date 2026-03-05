@@ -75,6 +75,20 @@ End Sub
 Public Sub CopyModuleText(ByVal moduleName As String)
 End Sub
 
+'@jump:transfer-worksheet-code
+'@sub-title Copy code from a source module into a worksheet's code module
+'@details
+'Reads all code lines from the named module in the source workbook and writes
+'them into the code module of the worksheet identified by targetSheetName in
+'the target workbook. Replaces any existing content in the worksheet's code
+'module. Used to inject event handlers (e.g., Worksheet_SelectionChange) into
+'specific worksheets during linelist generation.
+'@param moduleName String. The source module whose code will be copied.
+'@param targetSheetName String. The user-visible name of the worksheet in the
+'target workbook whose code module will receive the code.
+Public Sub TransferWorksheetCode(ByVal moduleName As String, ByVal targetSheetName As String)
+End Sub
+
 '@jump:copy-module-code
 '@sub-title Copy code between components within the target workbook
 '@details
