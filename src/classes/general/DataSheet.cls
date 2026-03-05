@@ -553,7 +553,7 @@ Private Function FilterData(ByVal varName As String, _
 
         If Not returnedRng Is Nothing Then
             Set outRng = .Cells(DataStartRow(), endCol + 2)
-            Set outRng = .Range(outRng, outRng.Offset(returnedRng.Rows.Count - 1, returnedRng.Columns.Count))
+            Set outRng = .Range(outRng, outRng.Offset(returnedRng.Rows.Count - 1, returnedRng.Columns.Count -1))
             returnedRng.Copy
             outRng.PasteSpecial xlPasteValues
 
