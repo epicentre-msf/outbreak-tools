@@ -376,7 +376,7 @@ Public Sub clickGenerate()
 
     'Build the analyses in clickGenerate
     Set anaOut = AnalysisOutput.Create(specs.AnalysisObject.Wksh(), ll)
-    anaOut.WriteAnalysis AnalysisScopeNormal
+    anaOut.WriteAnalysis AnalysisScopeTimeSeriesTablesOnly
 
     'Save the linelist as .xlsb with password protection
     ll.SaveLL
