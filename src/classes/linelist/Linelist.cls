@@ -47,6 +47,7 @@ Private Const PRINT_PREFIX As String = "print_"
 Private Const CRF_PREFIX As String = "crf_"
 Private Const SHEET_NAME_MAX_LENGTH As Long = 30
 Private Const WORKBOOK_MODULE_NAME As String = "EventLinelistWorkbook"
+Private Const SELECTION_MODULE_NAME As String = "EventLinelistSelection"
 Private Const SHEET_GEO As String = "Geo"
 
 Private Type TLinelist
@@ -891,6 +892,23 @@ Private Sub TransferAllCode(ByVal codeTransfer As ICodeTransfer)
 
     'Transfer workbook code
     codeTransfer.TransferWorkbookCode WORKBOOK_MODULE_NAME
+
+    'Inject Worksheet_SelectionChange into each HList worksheet's code module.
+    'The dictionary identifies HList sheets by type "hlist2D". The source template
+    'module (EventLinelistSelection) is read from the designer workbook and its
+    'code is written into each HList worksheet's CodeModule in the output workbook.
+    Dim llshs As ILLSheets
+    Dim hlistSheets As BetterArray
+
+    Set llshs = LLSheets.Create(this.specs.Dictionary)
+    Set hlistSheets = this.specs.Dictionary.UniqueValues("sheet name")
+
+    For counter = hlistSheets.LowerBound To hlistSheets.UpperBound
+        codeName = hlistSheets.Item(counter)
+        If llshs.SheetInfo(codeName) = "hlist2D" Then
+            codeTransfer.TransferWorksheetCode SELECTION_MODULE_NAME, codeName
+        End If
+    Next
 End Sub
 
 '@section Private — Error handling

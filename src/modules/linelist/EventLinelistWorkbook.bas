@@ -58,19 +58,6 @@ Clean:
     mBooting = False
 End Sub
 
-Private Sub Workbook_SheetSelectionChange(ByVal sh As Object, ByVal target As Range)
-    If mBooting Then Exit Sub
-    If TypeName(sh) <> "Worksheet" Then Exit Sub
-
-    mBooting = True
-
-    On Error GoTo Clean
-    LinelistEventsManager.SelectionChanged sh, target
-
-Clean:
-    mBooting = False
-End Sub
-
 Private Sub Workbook_SheetBeforeDoubleClick(ByVal sh As Object, ByVal target As Range, Cancel As Boolean)
     If mBooting Then Exit Sub
     If TypeName(sh) <> "Worksheet" Then Exit Sub

@@ -250,7 +250,7 @@ Private Function LabelRowIndex(ByVal labelName As String) As Long
 
     Set dataColumn = FormatTable().ListColumns(COLUMN_LABEL).DataBodyRange
     On Error Resume Next
-        Set matchCell = dataColumn.Find(What:=labelName, LookAt:=xlWhole, MatchCase:=False)
+        Set matchCell = dataColumn.Find(What:=labelName, LookAt:=xlPart, MatchCase:=False)
     On Error GoTo 0
 
     If Not matchCell Is Nothing Then
