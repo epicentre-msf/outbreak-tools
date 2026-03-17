@@ -106,7 +106,7 @@ Private Function ILinelistSpecs_Categories(ByVal varName As String, Optional ByV
     Set ILinelistSpecs_Categories = Nothing
 End Function
 
-Private Sub ILinelistSpecs_Prepare(ByVal importService As IDesignerImportService)
+Private Sub ILinelistSpecs_Prepare(ByVal buildService As ILinelistBuildService, ByVal setupPath As String)
 End Sub
 
 Private Property Get ILinelistSpecs_LLWorkbook() As Workbook

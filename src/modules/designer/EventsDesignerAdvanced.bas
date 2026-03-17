@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Designer")
 '@ModuleDescription("Non-core ribbon callbacks for the designer workbook.")
-'@depends DesignerPreparation, IDesignerPreparation, DesignerEntry, IDesignerEntry, RibbonDev, LLGeo, ILLGeo, ApplicationState, IApplicationState, OSFiles, IOSFiles, HiddenNames, IHiddenNames, BetterArray, DropdownLists, IDropdownLists, DesignerImportService, IDesignerImportService, LinelistSpecs, ILinelistSpecs, Linelist, ILinelist, ListBuilder, IListBuilder, LLSheets, ILLSheets
+'@depends DesignerPreparation, IDesignerPreparation, DesignerEntry, IDesignerEntry, RibbonDev, LLGeo, ILLGeo, ApplicationState, IApplicationState, OSFiles, IOSFiles, HiddenNames, IHiddenNames, BetterArray, DropdownLists, IDropdownLists, LinelistBuildService, ILinelistBuildService, LinelistSpecs, ILinelistSpecs, Linelist, ILinelist, ListBuilder, IListBuilder, LLSheets, ILLSheets
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 'Non-core ribbon logics are callbacks whose absence will not fire a
@@ -325,7 +325,7 @@ End Sub
 Public Sub clickGenerate()
     Dim entry As IDesignerEntry
     Dim appScope As IApplicationState
-    Dim importService As IDesignerImportService
+    Dim buildService As ILinelistBuildService
     Dim specs As ILinelistSpecs
     Dim ll As ILinelist
     Dim setupPath As String
@@ -344,21 +344,17 @@ Public Sub clickGenerate()
 
     setupPath = entry.ValueOf("setuppath")
 
-    'Import all setup components from the setup file into the designer
+    'Build the linelist: export setup data directly to linelist, then
+    'export designer-sourced components (geo, passwords, translations, etc.)
     entry.AddInfo entry.TranslateMessage("MSG_ReadSetup"), "edition"
 
-    Set importService = DesignerImportService.Create(ThisWorkbook)
-    importService.ImportFromSetup setupPath
+    Set buildService = LinelistBuildService.Create(ThisWorkbook)
 
-    'Prepare specifications: create output workbook, export, translate
-    'The specs is created on this workbook. But after import/export
-    'the internal values will shift from thisworkbook to the linelistworkbook.
-    
     Set specs = LinelistSpecs.Create(ThisWorkbook)
-    specs.Prepare importService
+    specs.Prepare buildService, setupPath
 
     'After the preparation step of the specifications, internal specifications
-    'object shift focus from the designer to the linelist workbook as they 
+    'object shift focus from the designer to the linelist workbook as they
     'are now exported.
 
     'Build the output linelist workbook (sheets, temp sheets, admin, code transfer)

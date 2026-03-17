@@ -228,16 +228,17 @@ End Function
 '@description Preparation, export, and error management operations.
 
 '@jump:prepare
-'@sub-title Prepare all specifications using an import service
+'@sub-title Prepare all specifications using a build service
 '@details
 'Orchestrates the full specification preparation workflow: creates a new
-'output workbook, exports designer components via the import service,
-'retrieves exported domain instances, then prepares the dictionary with
-'preserved names, adds list auto columns, translates and sorts all
-'collaborators. Handles errors with cleanup.
-'@param importService IDesignerImportService. The configured import service
-'holding imported setup data.
-Public Sub Prepare(ByVal importService As IDesignerImportService)
+'output workbook, exports setup data directly to the linelist via the
+'build service, exports designer-sourced components, retrieves exported
+'domain instances, then prepares the dictionary with preserved names,
+'adds list auto columns, translates and sorts all collaborators.
+'Handles errors with cleanup.
+'@param buildService ILinelistBuildService. The configured build service.
+'@param setupPath String. Full path to the setup workbook.
+Public Sub Prepare(ByVal buildService As ILinelistBuildService, ByVal setupPath As String)
 End Sub
 
 
