@@ -412,7 +412,6 @@ Private Sub ImportFormat(ByVal impRng As Range)
     Dim FUNS As WorksheetFunction
     Dim actRng As Range
     Dim actCellRng As Range 'Cell range of the actual range
-    Dim endrw As Long
 
     Set FUNS = Application.WorksheetFunction
     
@@ -427,8 +426,7 @@ Private Sub ImportFormat(ByVal impRng As Range)
     actRng.ClearFormats
     Set actCellRng = actRng.Cells(1, 1)
     'Check the ranges length
-    endrw = DataEndRow()
-    Do While (cellRng.Row <= endrw)
+    Do While (cellRng.Row <= impRng.Cells(impRng.Rows.Count, 1).Row)
         actCellRng.Value = cellRng.Value
         If (cellRng.Interior.color <> vbWhite) Then actCellRng.Interior.color = cellRng.Interior.color
         If (cellRng.Font.color <> vbBlack) Then actCellRng.Font.color = cellRng.Font.color
