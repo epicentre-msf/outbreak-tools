@@ -110,7 +110,11 @@ Public Sub UpdateFilterTables(Optional ByVal calculate As Boolean = True)
                     rowCounter = rowCounter - 1
                 Loop
                 'Delete the range if necessary
-                 If Not (delRng Is Nothing) Then delRng.Delete
+                If Not (delRng Is Nothing) Then 
+                    On Error Resume Next
+                    delRng.EntireRow.Delete
+                    On Error GoTo 0
+                End If
             End If
         End If
     Next
