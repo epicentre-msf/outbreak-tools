@@ -12,7 +12,10 @@ Private Sub Workbook_Open()
     '   Application.Iteration = True
     '  Application.MaxIterations = 1
     'On Error GoTo 0
-    
+
+    On Error Resume Next
+        Application.FormatStaleValues = False
+    On Error GoTo 0     
 End Sub
 
 Private Sub Workbook_BeforeClose(Cancel As Boolean)
