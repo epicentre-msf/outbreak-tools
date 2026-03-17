@@ -51,9 +51,14 @@ Private Type TAnaOutput
     namObj As IAnaTabIds                             'Cached analysis tracking object
     ' Bug #2 fix: GoTo arrays are now local to each scope, not shared instance state.
     ' They are passed as parameters to WriteTable and managed per-scope in WriteAnalysis.
+    hasChecks As Boolean
 End Type
 
 Private this As TAnaOutput
+
+'Checking support
+Private checkCounter As Long
+Private internalChecks As IChecking
 
 '@section Instantiation
 '===============================================================================
@@ -605,6 +610,11 @@ Private Sub WriteTable(ByVal loName As String, _
 
         On Error GoTo 0
 
+        ' Harvest cross-table checkings
+        If tabl.HasCheckings Then HarvestCollaboratorCheckings tabl.CheckingValues
+
+        LogInfo "Table " & tabId & " built (" & loName & ")"
+
         Set tabRangesNames = tabl.NamedRangesList()
         namObj.AddTableInfos scope, tabId, tabRangesNames
 
@@ -654,6 +664,9 @@ Private Sub WriteTable(ByVal loName As String, _
                                   catTitle:="LABEL_ROW_CATEGORIES_" & tabId, _
                                   valuesTitle:=specs.Value("label"), hardCodeLabels:=False, _
                                   heightFactor:=grHeight
+
+            ' Harvest graph checkings
+            If gr.HasCheckings Then HarvestCollaboratorCheckings gr.CheckingValues
         End If
 
         ' Time series / spatio-temporal min/max and GoTo logic
@@ -745,6 +758,7 @@ Private Sub WriteTable(ByVal loName As String, _
 
 TableError:
         Debug.Print "Error on table " & tabId & ": " & Err.Number & " " & Err.Description
+        LogInfo "Table " & tabId & " failed: " & Err.Description, checkingError
         On Error GoTo 0
         Resume ContinueLoop
 
@@ -882,6 +896,9 @@ Private Sub WriteTimeSeriesGraphs(ByVal graphLoName As String, _
                                   valuesTitle:=trads.TranslatedValue("MSG_Values"), _
                                   plotTitle:=plotTitle
 
+            ' Harvest graph checkings
+            If gr.HasCheckings Then HarvestCollaboratorCheckings gr.CheckingValues
+
             design.ApplyFormat cellRng, scope:=LinelistHiddenCell
             graphsList.Push goToGraphLabel & ": " & plotTitle
             Set cellRng = cellRng.Offset(50)
@@ -995,6 +1012,9 @@ Private Sub WriteSpatioTemporalGraph(ByVal loName As String, _
                               valuesTitle:=specs.Value("label"), hardCodeLabels:=False, _
                               heightFactor:=1, plotTitle:=plotTitle
 
+        ' Harvest graph checkings
+        If gr.HasCheckings Then HarvestCollaboratorCheckings gr.CheckingValues
+
         cellRng.Value = plotTitle
         design.ApplyFormat cellRng, scope:=LinelistHiddenCell
         graphsList.Push goToGraphLabel & ": " & plotTitle
@@ -1077,6 +1097,8 @@ Private Sub WriteAnalysis(Optional ByVal part As Byte = 0)
     Set outshHn = HiddenNames.Create(outsh)
     If LenB(outshHn.ValueAsString("has_table")) = 0 Then outsh.Visible = xlSheetHidden
 
+    LogInfo "Univariate and bivariate analysis completed"
+
     If part = AnalysisScopeNormal Then Exit Sub
 
     ' Time Series Analysis =====================================================
@@ -1091,6 +1113,8 @@ Private Sub WriteAnalysis(Optional ByVal part As Byte = 0)
     WriteTable loName:=TIMESERIES, sectionsList:=sectionsList, _
                headersList:=headersList, scope:=scope
 
+    LogInfo "Time series tables completed"
+
     If part = AnalysisScopeTimeSeriesTablesOnly Then Exit Sub
 
     WriteTimeSeriesGraphs graphLoName:=GRAPHTIMESERIES, _
@@ -1104,6 +1128,8 @@ Private Sub WriteAnalysis(Optional ByVal part As Byte = 0)
     pass.Protect outsh, True
     Set outshHn = HiddenNames.Create(outsh)
     If LenB(outshHn.ValueAsString("has_table")) = 0 Then outsh.Visible = xlSheetHidden
+
+    LogInfo "Time series analysis completed (tables and graphs)"
 
     If part = AnalysisScopeTimeSeries Then Exit Sub
 
@@ -1125,6 +1151,8 @@ Private Sub WriteAnalysis(Optional ByVal part As Byte = 0)
     pass.Protect outsh, True
     Set outshHn = HiddenNames.Create(outsh)
     If LenB(outshHn.ValueAsString("has_table")) = 0 Then outsh.Visible = xlSheetHidden
+
+    LogInfo "Spatial analysis completed"
 
     If part = AnalysisScopeSpatial Then Exit Sub
 
@@ -1150,7 +1178,40 @@ Private Sub WriteAnalysis(Optional ByVal part As Byte = 0)
     Set outshHn = HiddenNames.Create(outsh)
     If LenB(outshHn.ValueAsString("has_table")) = 0 Then outsh.Visible = xlSheetHidden
 
+    LogInfo "Spatio-temporal analysis completed"
+
 End Sub
+
+'@section Checkings
+'===============================================================================
+
+Private Sub LogInfo(ByVal label As String, Optional ByVal scope As Byte = checkingSuccess)
+    If internalChecks Is Nothing Then
+        Set internalChecks = Checking.Create("Analysis output")
+    End If
+    internalChecks.Add CStr(checkCounter), label, scope
+    checkCounter = checkCounter + 1
+    this.hasChecks = True
+End Sub
+
+Private Sub HarvestCollaboratorCheckings(ByVal collaboratorChecks As IChecking)
+    If collaboratorChecks Is Nothing Then Exit Sub
+    If internalChecks Is Nothing Then
+        Set internalChecks = Checking.Create("Analysis output")
+    End If
+    internalChecks.Append collaboratorChecks
+    this.hasChecks = True
+End Sub
+
+Public Property Get HasCheckings() As Boolean
+    HasCheckings = this.hasChecks
+End Property
+
+Public Property Get CheckingValues() As IChecking
+    If Not HasCheckings Then Exit Property
+    Set CheckingValues = internalChecks
+End Property
+
 
 '@section Error Handling
 '===============================================================================
@@ -1175,3 +1236,11 @@ End Sub
 Private Sub IAnalysisOutput_WriteAnalysis(Optional ByVal part As Byte = 0)
     WriteAnalysis part
 End Sub
+
+Private Property Get IAnalysisOutput_HasCheckings() As Boolean
+    IAnalysisOutput_HasCheckings = HasCheckings
+End Property
+
+Private Property Get IAnalysisOutput_CheckingValues() As IChecking
+    Set IAnalysisOutput_CheckingValues = CheckingValues
+End Property

@@ -51,9 +51,14 @@ Private Type TListBuilder
     layer As Byte
     sheetName As String
     ll As ILinelist
+    hasChecks As Boolean
 End Type
 
 Private this As TListBuilder
+
+'Checking support
+Private checkCounter As Long
+Private internalChecks As IChecking
 
 
 '@section Instantiation
@@ -238,24 +243,28 @@ Private Sub BuildHList()
         Set but = Buttons.Create(outrng:=rng, codeName:=SHP_SHOW_HIDE, scope:=ButtonScopeSmall)
         but.Add actionCommand:="ClickShowHide", shapeLabel:=trads.TranslatedValue(SHP_SHOW_HIDE)
         but.Format design
+        If but.HasCheckings Then HarvestCollaboratorCheckings but.CheckingValues
 
         'Add Rows button
         Set rng = sh.Cells(2, 2)
         Set but = Buttons.Create(outrng:=rng, codeName:=SHP_ADD_ROWS, scope:=ButtonScopeSmall)
         but.Add actionCommand:="ClickAddRows", shapeLabel:=trads.TranslatedValue(SHP_ADD_ROWS)
         but.Format design
+        If but.HasCheckings Then HarvestCollaboratorCheckings but.CheckingValues
 
         'Clear Filters button
         Set rng = sh.Cells(2, 1)
         Set but = Buttons.Create(outrng:=rng, codeName:=SHP_REMOVE_FILT, scope:=ButtonScopeSmall)
         but.Add actionCommand:="ClickRemoveFilters", shapeLabel:=trads.TranslatedValue(SHP_REMOVE_FILT)
         but.Format design
+        If but.HasCheckings Then HarvestCollaboratorCheckings but.CheckingValues
 
         'Open Print button
         Set rng = sh.Cells(3, 1)
         Set but = Buttons.Create(outrng:=rng, codeName:=SHP_OPEN_PRINT, scope:=ButtonScopeSmall)
         but.Add actionCommand:="ClickOpenPrint", shapeLabel:=trads.TranslatedValue(SHP_OPEN_PRINT)
         but.Format design
+        If but.HasCheckings Then HarvestCollaboratorCheckings but.CheckingValues
 
         'Geo button (if sheet has geo variables)
         hasGeo = llshs.ContainsControl(this.sheetName, "geo1")
@@ -264,6 +273,7 @@ Private Sub BuildHList()
             Set but = Buttons.Create(outrng:=rng, codeName:=SHP_GEO, scope:=ButtonScopeGeo)
             but.Add actionCommand:="ClickGeoApp", shapeLabel:=trads.TranslatedValue(SHP_GEO)
             but.Format design
+            If but.HasCheckings Then HarvestCollaboratorCheckings but.CheckingValues
         End If
 
         'Show/Hide button on print sheet too
@@ -271,6 +281,7 @@ Private Sub BuildHList()
         Set but = Buttons.Create(outrng:=rng, codeName:=SHP_SHOW_HIDE, scope:=ButtonScopeSmall)
         but.Add actionCommand:="ClickShowHide", shapeLabel:=trads.TranslatedValue(SHP_SHOW_HIDE)
         but.Format design
+        If but.HasCheckings Then HarvestCollaboratorCheckings but.CheckingValues
     Else
         'Hide rows 3-4 when using ribbon template
         sh.Rows("3:4").EntireRow.Hidden = True
@@ -371,6 +382,8 @@ Private Sub BuildHList()
     shHn.EnsureName "filtered_sheet", filtSh.Name, HiddenNameTypeString
 
     pass.Protect sh
+
+    LogInfo "HList sheet " & this.sheetName & " built (table: " & tableName & ")"
 End Sub
 
 
@@ -464,6 +477,8 @@ Private Sub BuildVList()
     rng.Name = tableName & "_PLAGEVALUES"
 
     pass.Protect sh
+
+    LogInfo "VList sheet " & this.sheetName & " built (table: " & tableName & ")"
 End Sub
 
 
@@ -510,6 +525,15 @@ Private Sub BuildSections(ByVal sh As Worksheet, ByVal printSh As Worksheet)
     End If
 
     secBuilder.Build this.sheetName, startRow
+
+    ' Harvest per-variable checkings from the section builder
+    If secBuilder.HasCheckings Then
+        If internalChecks Is Nothing Then
+            Set internalChecks = Checking.Create("Sheet build: " & this.sheetName)
+            this.hasChecks = True
+        End If
+        internalChecks.Append secBuilder.CheckingValues
+    End If
 End Sub
 
 '@label:collect-section-names
@@ -559,6 +583,40 @@ Private Function CollectSectionNames(ByVal dict As ILLdictionary, _
 End Function
 
 
+'@section Checkings
+'===============================================================================
+
+Private Sub LogInfo(ByVal label As String, Optional ByVal scope As Byte = checkingSuccess)
+    If internalChecks Is Nothing Then
+        Set internalChecks = Checking.Create("Sheet build: " & this.sheetName)
+    End If
+    internalChecks.Add CStr(checkCounter), label, scope
+    checkCounter = checkCounter + 1
+    this.hasChecks = True
+End Sub
+
+Private Sub HarvestCollaboratorCheckings(ByVal collaboratorChecks As IChecking)
+    If collaboratorChecks Is Nothing Then Exit Sub
+    If internalChecks Is Nothing Then
+        Set internalChecks = Checking.Create("Sheet build: " & this.sheetName)
+    End If
+    internalChecks.Append collaboratorChecks
+    this.hasChecks = True
+End Sub
+
+Public Property Get HasCheckings() As Boolean
+    HasCheckings = this.hasChecks
+End Property
+
+Public Property Get CheckingValues() As IChecking
+    If Not HasCheckings Then Exit Property
+    Set CheckingValues = internalChecks
+End Property
+
+
+'@section Errors
+'===============================================================================
+
 '@label:throw-error
 '@sub-title Raise a ProjectError-based exception
 '@param errNumber Long. The error code to raise.
@@ -576,3 +634,11 @@ End Sub
 Private Sub IListBuilder_Build()
     Build
 End Sub
+
+Private Property Get IListBuilder_HasCheckings() As Boolean
+    IListBuilder_HasCheckings = HasCheckings
+End Property
+
+Private Property Get IListBuilder_CheckingValues() As IChecking
+    Set IListBuilder_CheckingValues = CheckingValues
+End Property

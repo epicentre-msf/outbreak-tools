@@ -26,7 +26,7 @@ Implements ICrossTable
 'ranges, and visual formatting. Consumers interact through the ICrossTable
 'interface, and AnalysisOutput orchestrates the build sequence by calling
 'Build followed by Format for each table specification.
-'@depends ITableSpecs, ILinelistSpecs, ITranslationObject, ILLVariables, LLVariables, ILLFormat, IHiddenNames, HiddenNames, BetterArray
+'@depends ITableSpecs, ILinelistSpecs, ITranslationObject, ILLVariables, LLVariables, ILLFormat, IHiddenNames, HiddenNames, BetterArray, Checking, IChecking
 '@version 1.1 (2026-02-11)
 
 
@@ -40,6 +40,7 @@ Private Type TCrossTable
     tsHeader As String                           'Header for time series (used in go-to section)
     deFactoNewSect As Boolean                    'Cached IsDeFactoNewSection result
     deFactoNewSectCached As Boolean              'Whether the cache has been computed
+    hasChecks As Boolean
 End Type
 
 Private this As TCrossTable
@@ -47,6 +48,7 @@ Private Const STANDARD_START_COL As Long = 3
 Private Const CLASS_NAME As String = "CrossTable"
 Private Const NB_ROWS_TIME_SERIES As Long = 56
 Private allRangeNames As BetterArray
+Private internalChecks As IChecking
 
 '@section Factory
 '===============================================================================
@@ -1778,7 +1780,35 @@ Private Sub Build()
     AddRows
     AddColumns
     NameRanges
+    LogInfo "Table " & Specifications.TableId & " built"
 End Sub
+
+'@section Checkings
+'===============================================================================
+'@description Diagnostic logging for cross-table building.
+
+'Adds a trace entry to the internal IChecking instance, initialising it
+'lazily on first use.
+'@param message String. The diagnostic message text.
+'@param scope Optional Byte. The checking scope (default checkingSuccess).
+Private Sub LogInfo(ByVal message As String, _
+                    Optional ByVal scope As Byte = checkingSuccess)
+    If internalChecks Is Nothing Then
+        Set internalChecks = Checking.Create("CrossTable")
+    End If
+    internalChecks.Add message, scope
+    this.hasChecks = True
+End Sub
+
+Private Property Get HasCheckings() As Boolean
+    HasCheckings = this.hasChecks
+End Property
+
+Private Property Get CheckingValues() As IChecking
+    If Not HasCheckings Then Exit Property
+    Set CheckingValues = internalChecks
+End Property
+
 
 '@section Error Handling
 '===============================================================================
@@ -1878,4 +1908,12 @@ End Property
 
 Private Property Get ICrossTable_NamedRangesList() As BetterArray
     Set ICrossTable_NamedRangesList = NamedRangesList()
+End Property
+
+Private Property Get ICrossTable_HasCheckings() As Boolean
+    ICrossTable_HasCheckings = HasCheckings
+End Property
+
+Private Property Get ICrossTable_CheckingValues() As IChecking
+    Set ICrossTable_CheckingValues = CheckingValues
 End Property

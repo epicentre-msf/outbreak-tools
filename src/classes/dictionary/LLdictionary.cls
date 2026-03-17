@@ -1546,11 +1546,11 @@ Private Sub LogInfo(ByVal label As String, Optional ByVal scope As Byte = checki
     this.hasChecks = True
 End Sub
 
-Private Property Get HasCheckings() As Boolean
+Public Property Get HasCheckings() As Boolean
     HasCheckings = this.hasChecks
 End Property
 
-Private Property Get CheckingValues() As Object
+Public Property Get CheckingValues() As IChecking
     If Not HasCheckings() Then Exit Property
     Set CheckingValues = internalChecks
 End Property
@@ -1716,3 +1716,13 @@ End Sub
 Private Sub ILLdictionary_Sort()
     Sort
 End Sub
+
+'@jump:has-checkings
+Private Property Get ILLdictionary_HasCheckings() As Boolean
+    ILLdictionary_HasCheckings = HasCheckings
+End Property
+
+'@jump:checking-values
+Private Property Get ILLdictionary_CheckingValues() As IChecking
+    Set ILLdictionary_CheckingValues = CheckingValues
+End Property

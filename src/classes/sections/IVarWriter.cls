@@ -61,3 +61,20 @@ End Sub
 '@export
 Public Property Get ValueOf(ByVal colName As String) As String
 End Property
+
+
+'@section Checkings
+'===============================================================================
+'@description Diagnostic logging access for variable writing results.
+
+'@jump:has-checkings
+'@prop-title Whether the writer has logged diagnostic messages
+'@return Boolean. True when diagnostic entries exist.
+Public Property Get HasCheckings() As Boolean
+End Property
+
+'@jump:checking-values
+'@prop-title Retrieve the diagnostic log entries
+'@return IChecking. The checking instance, or Nothing.
+Public Property Get CheckingValues() As IChecking
+End Property
