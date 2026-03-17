@@ -129,3 +129,11 @@ End Sub
 
 Private Sub ILLdictionary_Close()
 End Sub
+
+Private Property Get ILLdictionary_HasCheckings() As Boolean
+    ILLdictionary_HasCheckings = False
+End Property
+
+Private Property Get ILLdictionary_CheckingValues() As IChecking
+    Set ILLdictionary_CheckingValues = Nothing
+End Property

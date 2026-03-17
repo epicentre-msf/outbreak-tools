@@ -222,3 +222,20 @@ Public Sub Build(): End Sub
 '@param designFormat ILLFormat. The formatting specification to apply.
 '@export
 Public Sub Format(ByVal designFormat As ILLFormat): End Sub
+
+
+'@section Checkings
+'===============================================================================
+'@description Diagnostic logging access for cross-table building results.
+
+'@jump:has-checkings
+'@prop-title Whether the cross-table builder has logged diagnostic messages
+'@return Boolean. True when diagnostic entries exist.
+Public Property Get HasCheckings() As Boolean
+End Property
+
+'@jump:checking-values
+'@prop-title Retrieve the diagnostic log entries
+'@return IChecking. The checking instance, or Nothing.
+Public Property Get CheckingValues() As IChecking
+End Property

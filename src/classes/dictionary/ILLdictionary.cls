@@ -212,3 +212,26 @@ End Sub
 '@param TransObject ITranslationObject used to translate ranges.
 Public Sub Translate(ByVal TransObject As ITranslationObject)
 End Sub
+
+
+'@section Checkings
+'===============================================================================
+'@description Diagnostic logging access.
+
+'@jump:has-checkings
+'@prop-title Whether the dictionary has logged diagnostic messages
+'@details
+'Returns True when at least one diagnostic entry has been recorded
+'during dictionary operations (missing columns, normalisation, etc.).
+'@return Boolean. True when diagnostic entries exist.
+Public Property Get HasCheckings() As Boolean
+End Property
+
+'@jump:checking-values
+'@prop-title Retrieve the diagnostic log entries
+'@details
+'Returns the internal IChecking object containing all logged messages.
+'Returns Nothing when no entries have been recorded.
+'@return IChecking. The checking instance, or Nothing.
+Public Property Get CheckingValues() As IChecking
+End Property

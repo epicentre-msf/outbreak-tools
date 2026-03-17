@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Designer")
 '@ModuleDescription("Non-core ribbon callbacks for the designer workbook.")
-'@depends DesignerPreparation, IDesignerPreparation, DesignerEntry, IDesignerEntry, RibbonDev, LLGeo, ILLGeo, ApplicationState, IApplicationState, OSFiles, IOSFiles, HiddenNames, IHiddenNames, BetterArray, DropdownLists, IDropdownLists, LinelistBuildService, ILinelistBuildService, LinelistSpecs, ILinelistSpecs, Linelist, ILinelist, ListBuilder, IListBuilder, LLSheets, ILLSheets
+'@depends DesignerPreparation, IDesignerPreparation, DesignerEntry, IDesignerEntry, RibbonDev, LLGeo, ILLGeo, ApplicationState, IApplicationState, OSFiles, IOSFiles, HiddenNames, IHiddenNames, BetterArray, DropdownLists, IDropdownLists, LinelistBuildService, ILinelistBuildService, LinelistSpecs, ILinelistSpecs, Linelist, ILinelist, ListBuilder, IListBuilder, LLSheets, ILLSheets, GenerationReport
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 'Non-core ribbon logics are callbacks whose absence will not fire a
@@ -348,10 +348,16 @@ Public Sub clickGenerate()
     'export designer-sourced components (geo, passwords, translations, etc.)
     entry.AddInfo entry.TranslateMessage("MSG_ReadSetup"), "edition"
 
+    'Initialise the generation report on the designer __checking sheet
+    GenerationReport.InitReport ThisWorkbook
+
     Set buildService = LinelistBuildService.Create(ThisWorkbook)
 
     Set specs = LinelistSpecs.Create(ThisWorkbook)
     specs.Prepare buildService, setupPath
+
+    'Flush Phase 1: specification checkings (dictionary, choices, exports, etc.)
+    GenerationReport.FlushCheckings GenerationReport.HarvestSpecsCheckings(specs)
 
     'After the preparation step of the specifications, internal specifications
     'object shift focus from the designer to the linelist workbook as they
@@ -361,21 +367,61 @@ Public Sub clickGenerate()
     Set ll = Linelist.Create(specs)
     ll.Prepare
 
-    'Build the first data entry worksheet (sections, variables, formatting)
+    'Build data entry worksheets (sections, variables, formatting)
     Set sheetLists = ll.Dictionary.UniqueValues("sheet name")
 
-    If sheetLists.Length > 0 Then 
+    If sheetLists.Length > 0 Then
+        Dim listBld As IListBuilder
+        Dim sheetChecks As BetterArray
+        Set sheetChecks = New BetterArray
+        sheetChecks.LowerBound = 1
+
         For counter = sheetLists.LowerBound To sheetLists.UpperBound
-            BuildOneSheet specs, ll, sheetLists.Item(counter)
+            Set listBld = BuildOneSheet(specs, ll, sheetLists.Item(counter))
+            If Not listBld Is Nothing Then
+                If listBld.HasCheckings Then
+                    sheetChecks.Push listBld.CheckingValues
+                End If
+            End If
         Next
+
+        'Flush Phase 2: per-sheet build checkings
+        GenerationReport.FlushCheckings sheetChecks
     End If
+
+    'Flush Phase 2b: shared dropdown checkings (linelist-level, not per-sheet)
+    Dim dropChecks As BetterArray
+    Set dropChecks = New BetterArray
+    dropChecks.LowerBound = 1
+
+    Dim dropStd As IDropdownLists
+    Set dropStd = ll.Dropdown(1)
+    If dropStd.HasCheckings Then dropChecks.Push dropStd.CheckingValues
+
+    Dim dropCust As IDropdownLists
+    Set dropCust = ll.Dropdown(2)
+    If dropCust.HasCheckings Then dropChecks.Push dropCust.CheckingValues
+
+    GenerationReport.FlushCheckings dropChecks
 
     'Build the analyses in clickGenerate
     Set anaOut = AnalysisOutput.Create(specs.AnalysisObject.Wksh(), ll)
     anaOut.WriteAnalysis AnalysisScopeTimeSeriesTablesOnly
 
+    'Flush Phase 3: analysis checkings
+    If anaOut.HasCheckings Then
+        Dim anaChecks As BetterArray
+        Set anaChecks = New BetterArray
+        anaChecks.LowerBound = 1
+        anaChecks.Push anaOut.CheckingValues
+        GenerationReport.FlushCheckings anaChecks
+    End If
+
     'Save the linelist as .xlsb with password protection
     ll.SaveLL
+
+    'Finalise the generation report (install filter handler)
+    GenerationReport.FinaliseReport
 
     entry.AddInfo entry.TranslateMessage("MSG_LLCreated"), "edition"
 
@@ -390,6 +436,8 @@ Cleanup:
     errDesc = Err.Description
 
     On Error Resume Next
+    'Try to finalise whatever report was written before the error
+    GenerationReport.FinaliseReport
     If Not appScope Is Nothing Then appScope.Restore
     Application.Cursor = xlDefault
     On Error GoTo 0
@@ -412,8 +460,8 @@ End Sub
 '@section Internal helpers
 '===============================================================================
 
-'@Description("Build the first data entry worksheet from the dictionary.")
-Private Sub BuildOneSheet(ByVal specs As ILinelistSpecs, ByVal ll As ILinelist, ByVal sheetName As String)
+'@Description("Build a data entry worksheet from the dictionary and return the builder.")
+Private Function BuildOneSheet(ByVal specs As ILinelistSpecs, ByVal ll As ILinelist, ByVal sheetName As String) As IListBuilder
     Dim dict As ILLdictionary
     Dim llshs As ILLSheets
     Dim sheetType As String
@@ -430,12 +478,14 @@ Private Sub BuildOneSheet(ByVal specs As ILinelistSpecs, ByVal ll As ILinelist, 
     ElseIf sheetType = "hlist2D" Then
         layer = ListBuilderLayerHList
     Else
-        Exit Sub
+        Exit Function
     End If
 
     Set listBld = ListBuilder.Create(layer, sheetName, ll)
     listBld.Build
-End Sub
+
+    Set BuildOneSheet = listBld
+End Function
 
 '@Description("Extract languages from setup Translations sheet and update the setup languages dropdown.")
 Private Sub ExtractAndUpdateLanguages(ByVal tradSheet As Worksheet)

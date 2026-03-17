@@ -101,3 +101,20 @@ Public Sub Format(Optional ByVal valuesTitle As String = vbNullString, _
                   Optional ByVal hardCodeLabels As Boolean = True, _ 
                   Optional ByVal secondAxisTitle As String = vbNullString)
 End Sub
+
+
+'@section Checkings
+'===============================================================================
+'@description Diagnostic logging access for graph building results.
+
+'@jump:has-checkings
+'@prop-title Whether the graph builder has logged diagnostic messages
+'@return Boolean. True when diagnostic entries exist.
+Public Property Get HasCheckings() As Boolean
+End Property
+
+'@jump:checking-values
+'@prop-title Retrieve the diagnostic log entries
+'@return IChecking. The checking instance, or Nothing.
+Public Property Get CheckingValues() As IChecking
+End Property

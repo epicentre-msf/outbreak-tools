@@ -571,7 +571,7 @@ End Property
 'been recorded. Returns Nothing otherwise.
 '@return Object. The IChecking instance with logged diagnostics.
 '@export
-Private Property Get CheckingValues() As Object
+Private Property Get CheckingValues() As IChecking
 
     'If there are no checks, exit the property
     If Not HasCheckings() Then  Exit Property
@@ -627,9 +627,17 @@ Private Sub IGraphs_Format(Optional ByVal valuesTitle As String = vbNullString, 
                           Optional ByVal plotTitle As String = vbNullString, _
                           Optional ByVal scope As Byte = GraphScopeNormal, _
                           Optional ByVal heightFactor As Long = 1, _
-                          Optional ByVal hardCodeLabels As Boolean = True, _ 
+                          Optional ByVal hardCodeLabels As Boolean = True, _
                           Optional ByVal secondAxisTitle As String = vbNullString)
     Format valuesTitle:=valuesTitle, catTitle:=catTitle, plotTitle:=plotTitle, scope:=scope, _
-           heightFactor:=heightFactor, hardCodeLabels:=hardCodeLabels, _ 
+           heightFactor:=heightFactor, hardCodeLabels:=hardCodeLabels, _
            secondAxisTitle:=secondAxisTitle
 End Sub
+
+Private Property Get IGraphs_HasCheckings() As Boolean
+    IGraphs_HasCheckings = HasCheckings
+End Property
+
+Private Property Get IGraphs_CheckingValues() As IChecking
+    Set IGraphs_CheckingValues = CheckingValues
+End Property

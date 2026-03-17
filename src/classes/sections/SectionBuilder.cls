@@ -40,10 +40,14 @@ Private Type TSectionBuilder
     customDropdown As IDropdownLists
     cachedDict As ILLdictionary
     cachedVars As ILLVariables
+    hasChecks As Boolean
 End Type
 
 Private this As TSectionBuilder
 Private Const CLASS_NAME As String = "SectionBuilder"
+
+'Checking support
+Private internalChecks As IChecking
 
 ' Row/column constants for section and subsection headers
 Private Const HLIST_SEC_ROW As Long = 5
@@ -426,6 +430,16 @@ Private Sub BuildVariables(ByVal subSecStart As Long, ByVal subSecEnd As Long)
         varName = varRng.Cells(counter, 1).Value
         writer.WriteVariable varName
     Next
+
+    ' Harvest per-variable checkings from the writer
+    If writer.HasCheckings Then
+        If internalChecks Is Nothing Then
+            Set internalChecks = writer.CheckingValues.Clone()
+        Else
+            internalChecks.Append writer.CheckingValues
+        End If
+        this.hasChecks = True
+    End If
 End Sub
 
 
@@ -710,6 +724,19 @@ Private Sub ThrowError(ByVal errNumber As Long, ByVal errorMessage As String)
 End Sub
 
 
+'@section Checkings
+'===============================================================================
+
+Public Property Get HasCheckings() As Boolean
+    HasCheckings = this.hasChecks
+End Property
+
+Public Property Get CheckingValues() As IChecking
+    If Not HasCheckings Then Exit Property
+    Set CheckingValues = internalChecks
+End Property
+
+
 '@section Interface Implementation
 '===============================================================================
 '@description Delegated members satisfying the ISectionBuilder contract.
@@ -717,3 +744,11 @@ End Sub
 Private Sub ISectionBuilder_Build(ByVal sheetName As String, ByVal startRow As Long)
     Build sheetName, startRow
 End Sub
+
+Private Property Get ISectionBuilder_HasCheckings() As Boolean
+    ISectionBuilder_HasCheckings = HasCheckings
+End Property
+
+Private Property Get ISectionBuilder_CheckingValues() As IChecking
+    Set ISectionBuilder_CheckingValues = CheckingValues
+End Property

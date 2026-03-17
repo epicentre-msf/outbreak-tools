@@ -47,12 +47,17 @@ Private Type TVarWriter
     cachedDict As ILLdictionary
     cachedVars As ILLVariables
     cachedSheets As ILLSheets
+    hasChecks As Boolean
 End Type
 
 Private this As TVarWriter
 Private Const CLASS_NAME As String = "VarWriter"
 Private Const HLIST_START_ROW As Long = 8
 Private Const VLIST_START_COL As Long = 5
+
+'Checking support
+Private checkCounter As Long
+Private internalChecks As IChecking
 
 '@section Instantiation
 '===============================================================================
@@ -348,6 +353,8 @@ Public Sub WriteVariable(ByVal varName As String)
         WritePrintSheet
         WriteCRFSheet
     End If
+
+    LogInfo "Variable " & varName & " written"
 End Sub
 
 '@section Sheet Dispatch
@@ -730,6 +737,11 @@ Private Sub AddFormula()
     design.ApplyFormat cellRng, scope:=HListCalculatedFormulaCell
     If this.layer = VarWriterLayerHList Then
         design.ApplyFormat cellRng.Offset(-2), scope:=HListCalculatedFormulaHeader
+    End If
+
+    ' Harvest formula parsing checkings
+    If varFormObject.HasChecking Then
+        HarvestCollaboratorCheckings varFormObject.CheckingValues
     End If
 End Sub
 
@@ -1326,9 +1338,15 @@ Private Function ExcelFormula(ByVal formVal As String, _
     Set varFormData = FormulaDataObj()
     Set varFormObject = Formulas.Create(dict, varFormData, formVal)
 
-    If Not varFormObject.Valid(formulaType:="linelist") Then Exit Function
+    If Not varFormObject.Valid(formulaType:="linelist") Then
+        If varFormObject.HasChecking Then HarvestCollaboratorCheckings varFormObject.CheckingValues
+        Exit Function
+    End If
     excelForm = varFormObject.ParsedLinelistFormula()
-    If FailedFormula(excelForm) Then Exit Function
+    If FailedFormula(excelForm) Then
+        If varFormObject.HasChecking Then HarvestCollaboratorCheckings varFormObject.CheckingValues
+        Exit Function
+    End If
 
     If useOS Then
         excelForm = OSFormula(excelForm)
@@ -1351,6 +1369,9 @@ Private Function ExcelFormula(ByVal formVal As String, _
     Else
         ExcelFormula = excelForm
     End If
+
+    ' Harvest formula parsing checkings
+    If varFormObject.HasChecking Then HarvestCollaboratorCheckings varFormObject.CheckingValues
 End Function
 
 '@label:os-formula
@@ -1405,6 +1426,38 @@ Private Sub ThrowError(ByVal errNumber As Long, ByVal errorMessage As String)
     Err.Raise errNumber, CLASS_NAME, "Error : " & errorMessage
 End Sub
 
+
+'@section Checkings
+'===============================================================================
+
+Private Sub LogInfo(ByVal label As String, Optional ByVal scope As Byte = checkingSuccess)
+    If internalChecks Is Nothing Then
+        Set internalChecks = Checking.Create("Variables")
+    End If
+    internalChecks.Add CStr(checkCounter), label, scope
+    checkCounter = checkCounter + 1
+    this.hasChecks = True
+End Sub
+
+Private Sub HarvestCollaboratorCheckings(ByVal collaboratorChecks As IChecking)
+    If collaboratorChecks Is Nothing Then Exit Sub
+    If internalChecks Is Nothing Then
+        Set internalChecks = Checking.Create("Variables")
+    End If
+    internalChecks.Append collaboratorChecks
+    this.hasChecks = True
+End Sub
+
+Public Property Get HasCheckings() As Boolean
+    HasCheckings = this.hasChecks
+End Property
+
+Public Property Get CheckingValues() As IChecking
+    If Not HasCheckings Then Exit Property
+    Set CheckingValues = internalChecks
+End Property
+
+
 '@section Interface Implementation
 '@description Delegated members satisfying the IVarWriter contract.
 '===============================================================================
@@ -1415,4 +1468,12 @@ End Sub
 
 Private Property Get IVarWriter_ValueOf(ByVal colName As String) As String
     IVarWriter_ValueOf = ValueOf(colName)
+End Property
+
+Private Property Get IVarWriter_HasCheckings() As Boolean
+    IVarWriter_HasCheckings = HasCheckings
+End Property
+
+Private Property Get IVarWriter_CheckingValues() As IChecking
+    Set IVarWriter_CheckingValues = CheckingValues
 End Property
