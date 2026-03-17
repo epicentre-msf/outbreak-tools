@@ -47,3 +47,20 @@ End Enum
 'and renders all tracked graphs on the output worksheets.
 '@export
 Public Sub WriteAnalysis(Optional ByVal part As Byte = 0): End Sub
+
+
+'@section Checkings
+'===============================================================================
+'@description Diagnostic logging access for analysis output results.
+
+'@jump:has-checkings
+'@prop-title Whether the analysis output has logged diagnostic messages
+'@return Boolean. True when diagnostic entries exist.
+Public Property Get HasCheckings() As Boolean
+End Property
+
+'@jump:checking-values
+'@prop-title Retrieve the diagnostic log entries
+'@return IChecking. The checking instance, or Nothing.
+Public Property Get CheckingValues() As IChecking
+End Property
