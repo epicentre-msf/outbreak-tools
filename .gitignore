@@ -1,6 +1,5 @@
 /node_modules
 logs
-.gitignore
 
 # eventual R-files
 *.Rmd
@@ -29,5 +28,25 @@ local
 debug
 
 
+
 .DS_Store
 \\.vscode/
+
+.quarto/
+*.Rproj
+docs/
+.Rprofile
+.Renviron
+
+
+/.quarto/
+.Rproj.user
+.Rprofile
+.Renviron
+**/~$*.xlsb
+**/.todo
+/.obt
+obt-skill/
+obt-doc-skill/
+src/.docignore
+site/dev
