@@ -29,7 +29,7 @@ Implements ILinelistSpecs
 'ILinelistSpecs interface reference.
 '@depends ILLdictionary, ILLChoices, ILLTranslation, IDesignerTranslation
 '@depends ILLGeo, ILLExport, IAnalysis, IPasswords, ILLFormat
-'@depends IDesignerImportService, ITemporaryRepos, TemporaryRepos
+'@depends ILinelistBuildService, ITemporaryRepos, TemporaryRepos
 '@depends IFormulaData, ILLVariables, IFormulas
 '@depends ITranslationObject, IApplicationState, ApplicationState
 '@depends BetterArray, LLdictionary, LLChoices, LLTranslation
@@ -462,18 +462,19 @@ Private Sub ValidateWorkbookStructure(ByVal specsWorkbook As Workbook)
 End Sub
 
 '@label:required-sheet-names
-'@sub-title Return the array of required specification worksheet names
+'@sub-title Return the array of required designer worksheet names
+'@details
+'Only includes sheets that LinelistSpecs reads directly from the designer
+'workbook. Pass-through sheets (Dictionary, Choices, Analysis, Export) are
+'excluded because the build service imports them from the setup file
+'directly into the linelist.
 '@return Variant. Array of sheet name strings.
 Private Function RequiredSheetNames() As Variant
     RequiredSheetNames = Array( _
-        SHEET_DICTIONARY, _
-        SHEET_CHOICES, _
         SHEET_GEO, _
         SHEET_PASSWORDS, _
         SHEET_FORMULAS, _
         SHEET_TRANSLATIONS_LL, _
-        SHEET_ANALYSIS, _
-        SHEET_EXPORT, _
         SHEET_FORMAT, _
         SHEET_MAIN, _
         SHEET_DESIGNER_TRANSLATION)
@@ -1278,22 +1279,26 @@ End Property
 'error-managing the specifications workbook.
 
 '@label:prepare
-'@sub-title Prepare all specifications using an import service
+'@sub-title Prepare all specifications using a build service
 '@details
 'Orchestrates the full specification preparation workflow:
 '1. Creates a temporary repository for working files.
 '2. Creates a new output workbook (from template if configured).
-'3. Exports designer components via the import service.
-'4. Retrieves exported domain instances from the service.
-'5. Prepares the dictionary with preserved sheet names and geo references.
-'6. Adds the "list auto" column if not already present.
-'7. Translates and sorts all collaborators using dictionary translations.
+'3. Exports pass-through components directly from setup to linelist.
+'4. Exports designer-sourced components (geo, passwords, translations,
+'   formatter, language HiddenNames) to the linelist.
+'5. Builds domain manager instances on the linelist workbook.
+'6. Retrieves exported domain instances from the service.
+'7. Prepares the dictionary with preserved sheet names and geo references.
+'8. Adds the "list auto" column if not already present.
+'9. Translates and sorts all collaborators using dictionary translations.
 'Handles errors with cleanup and busy-state restoration.
-'@param importService IDesignerImportService. The configured import service.
-'@throws ProjectError.ObjectNotInitialized When importService is Nothing.
+'@param buildService ILinelistBuildService. The configured build service.
+'@param setupPath String. Full path to the setup workbook.
+'@throws ProjectError.ObjectNotInitialized When buildService is Nothing.
 '@throws ProjectError.ErrorUnexpectedState When an unexpected error occurs.
 '@export
-Public Sub Prepare(ByVal importService As IDesignerImportService)
+Public Sub Prepare(ByVal buildService As ILinelistBuildService, ByVal setupPath As String)
     Dim dict As ILLdictionary
     Dim choicesObj As ILLChoices
     Dim exportsObj As ILLExport
@@ -1309,9 +1314,9 @@ Public Sub Prepare(ByVal importService As IDesignerImportService)
     Dim tempPath As String
     Dim pass As IPasswords
 
-    If importService Is Nothing Then
+    If buildService Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, _
-                  "An import service is required to prepare specifications"
+                  "A build service is required to prepare specifications"
     End If
 
     On Error GoTo CleanFail
@@ -1333,17 +1338,23 @@ Public Sub Prepare(ByVal importService As IDesignerImportService)
         Set outWkb = Workbooks.Add
     End If
 
-    'Export all designer components into the output workbook
-    importService.ExportToLinelist outWkb
+    'Export pass-through data directly from setup to linelist (skip designer)
+    buildService.ImportSetupToLinelist setupPath, outWkb
+
+    'Export designer-sourced components (geo, passwords, translations, etc.)
+    buildService.ExportDesignerComponents outWkb
+
+    'Build domain manager instances on the linelist workbook
+    buildService.BuildExportedInstances outWkb
 
     'Retrieve exported domain instances from the service
-    Set this.dictionary = importService.ExportedDictionary
-    Set this.choices = importService.ExportedChoices
-    Set this.exports = importService.ExportedExport
-    Set this.ana = importService.ExportedAnalysis
-    Set this.geo = importService.ExportedGeo
-    Set this.passwords = importService.ExportedPasswords
-    Set this.translations = importService.ExportedTranslations
+    Set this.dictionary = buildService.ExportedDictionary
+    Set this.choices = buildService.ExportedChoices
+    Set this.exports = buildService.ExportedExport
+    Set this.ana = buildService.ExportedAnalysis
+    Set this.geo = buildService.ExportedGeo
+    Set this.passwords = buildService.ExportedPasswords
+    Set this.translations = buildService.ExportedTranslations
 
     Set this.outputWkb = outWkb
 
@@ -1547,8 +1558,8 @@ Private Function ILinelistSpecs_Categories(ByVal varName As String, Optional ByV
     Set ILinelistSpecs_Categories = Me.Categories(varName, useShortlabels)
 End Function
 
-Private Sub ILinelistSpecs_Prepare(ByVal importService As IDesignerImportService)
-    Prepare importService
+Private Sub ILinelistSpecs_Prepare(ByVal buildService As ILinelistBuildService, ByVal setupPath As String)
+    Prepare buildService, setupPath
 End Sub
 
 Private Property Get ILinelistSpecs_LLWorkbook() As Workbook

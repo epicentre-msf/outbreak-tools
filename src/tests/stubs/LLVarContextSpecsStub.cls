@@ -165,7 +165,7 @@ Private Function BuildCategoryKey(ByVal varName As String, ByVal useShortlabels 
     BuildCategoryKey = LCase$(Trim$(varName)) & "|" & CStr(useShortlabels)
 End Function
 
-Private Sub ILinelistSpecs_Prepare(ByVal importService As IDesignerImportService)
+Private Sub ILinelistSpecs_Prepare(ByVal buildService As ILinelistBuildService, ByVal setupPath As String)
     'No-op
 End Sub
 
