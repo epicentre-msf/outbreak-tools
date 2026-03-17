@@ -378,12 +378,12 @@ Private Sub AddFormulas()
         Case TypeGlobalSummary                   'Global summary formula
             finalFormula = CurrentExcelFormula(scope:=1, prefix:=vbNullString) 'Parse the formula object using table names on analysis
             Set rng = .Range("STARTROW_" & tabId)
-            rng.Cells(1, 2).FormulaArray = "= " & finalFormula
+            rng.Cells(1, 2).FormulaArray = "=" & finalFormula
             AddRngFormat tabFormat, rng.Cells(1, 2)
 
             'Now on filtered data (should normaly work if the previous didn't failed)
             finalFormula = CurrentExcelFormula(scope:=1, prefix:="f")
-            rng.Cells(1, 3).FormulaArray = "= " & finalFormula
+            rng.Cells(1, 3).FormulaArray = "=" & finalFormula
             AddRngFormat tabFormat, rng.Cells(1, 3)
 
         Case TypeUnivariate
@@ -396,7 +396,7 @@ Private Sub AddFormulas()
 
             Set rng = .Range("VALUES_COL_1_" & tabId)
             Set cellRng = rng.Cells(1, 1)
-            cellRng.FormulaArray = "= " & finalFormula
+            cellRng.FormulaArray = "=" & finalFormula
             cellRng.AutoFill Destination:=rng, Type:=xlFillValues
             AddRngFormat tabFormat, rng
 
@@ -414,15 +414,15 @@ Private Sub AddFormulas()
 
                 If SummaryFunction = "N" Or SummaryFunction = "N()" Then
                     ClearTableConditions
-                    AddTableConditions rowVar, "= " & NonEmpStr() 'Non empty string for nonempstr()
+                    AddTableConditions rowVar, "=" & NonEmpStr() 'Non empty string for nonempstr()
                     'Formula on total (no choice but to put two conditions non empty and empty)
                     finalFormula = finalFormula & " + " & CurrentExcelFormula()
-                    rng.Cells(1, 1).FormulaArray = "= " & finalFormula
+                    rng.Cells(1, 1).FormulaArray = "=" & finalFormula
                 Else
 
                     ClearTableConditions
                     finalFormula = CurrentExcelFormula(scope:=FormulaScopeLinelist)
-                    rng.Cells(1, 1).FormulaArray = "= " & finalFormula
+                    rng.Cells(1, 1).FormulaArray = "=" & finalFormula
                 End If
 
             Else
@@ -433,7 +433,7 @@ Private Sub AddFormulas()
                 'removing missing is not the same when using COUNTIFS
                 AddNonEmptyTableConditions rowVar
                 finalFormula = CurrentExcelFormula()
-                rng.Cells(1, 1).FormulaArray = "= " & finalFormula
+                rng.Cells(1, 1).FormulaArray = "=" & finalFormula
             End If
 
             'Now percentage
@@ -441,11 +441,11 @@ Private Sub AddFormulas()
                 Set rng = .Range("VALUES_COL_1_" & tabId)
                 Set cellRng = .Range("TOTAL_ROW_VALUES_" & tabId).Cells(1, 1)
 
-                rng.Offset(, 1).Cells(1, 1).formula = "= " & Percentage(cellRng, rng.Cells(1, 1), True)
+                rng.Offset(, 1).Cells(1, 1).formula = "=" & Percentage(cellRng, rng.Cells(1, 1), True)
                 rng.Offset(, 1).Cells(1, 1).AutoFill Destination:=rng.Offset(, 1), Type:=xlFillValues
 
                 'Last range on percentage
-                cellRng.Cells(1, 2).formula = "= " & Percentage(cellRng.Cells(1, 1), cellRng.Cells(1, 1))
+                cellRng.Cells(1, 2).formula = "=" & Percentage(cellRng.Cells(1, 1), cellRng.Cells(1, 1))
             End If
 
         Case TypeBivariate
@@ -464,13 +464,13 @@ Private Sub AddFormulas()
             Do While (rng.Column < tabEndColumn)
 
                 ClearTableConditions
-                AddTableConditions rowVar, "= " & rowCatAddress
+                AddTableConditions rowVar, "=" & rowCatAddress
                 AddTableConditions colVar, "=" & rngLab.Address
 
                 finalFormula = CurrentExcelFormula()
 
                 'Test here the finalFormula
-                rng.Cells(1, 1).FormulaArray = "= " & finalFormula
+                rng.Cells(1, 1).FormulaArray = "=" & finalFormula
                 rng.Cells(1, 1).AutoFill Destination:=rng, Type:=xlFillValues
                 'Add the format
                 AddRngFormat tabFormat, rng
@@ -479,21 +479,21 @@ Private Sub AddFormulas()
                 If specs.Value("missing") = "row" Or specs.Value("missing") = "all" Then
                     Set misRng = .Range("MISSING_ROW_VALUES_" & tabId)
                     ClearTableConditions
-                    AddTableConditions rowVar, "= " & EmpStr() 'Empty string
-                    AddTableConditions colVar, "= " & rngLab.Address
+                    AddTableConditions rowVar, "=" & EmpStr() 'Empty string
+                    AddTableConditions colVar, "=" & rngLab.Address
 
                     finalFormula = CurrentExcelFormula()
 
                     Set cellRng = .Cells(misRng.Row, rng.Column)
-                    cellRng.FormulaArray = "= " & finalFormula
+                    cellRng.FormulaArray = "=" & finalFormula
 
                     'Formula on total:
                     'Define new formula condition on only the column
                     ClearTableConditions
-                    AddTableConditions colVar, "= " & rngLab.Address
+                    AddTableConditions colVar, "=" & rngLab.Address
                     finalFormula = CurrentExcelFormula()
                     Set cellRng = .Cells(totRng.Row, rng.Column)
-                    cellRng.FormulaArray = "= " & finalFormula
+                    cellRng.FormulaArray = "=" & finalFormula
                 Else
                     'Formula on total should remove missing from row variable
                     ClearTableConditions
@@ -501,7 +501,7 @@ Private Sub AddFormulas()
                     AddTableConditions colVar, "=" & rngLab.Address
                     finalFormula = CurrentExcelFormula()
                     Set cellRng = .Cells(totRng.Row, rng.Column)
-                    cellRng.FormulaArray = "= " & finalFormula
+                    cellRng.FormulaArray = "=" & finalFormula
                 End If
 
                 'Percentages
