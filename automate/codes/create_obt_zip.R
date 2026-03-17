@@ -156,7 +156,7 @@ create_obt_release <- function(actual_branch = branch, latest = FALSE) {
     # copy the new release to the old folder
     file_copy(
       here("releases", "old", glue("OBT-{actual_branch}-{rel_date}.zip")),
-      here("latest", glue("OBT-{actual_branch}-latest.zip")),
+      here(glue("{latest_folder}"), glue("OBT-{actual_branch}-latest.zip")),
       overwrite = TRUE
     )
   }
@@ -197,5 +197,5 @@ create_master_setup_release <- function(
   }
 }
 
-# create_obt_release(latest = TRUE)
+create_obt_release(latest = TRUE)
 # create_master_setup_release(latest = TRUE)
