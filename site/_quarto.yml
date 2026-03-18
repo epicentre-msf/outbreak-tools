@@ -58,6 +58,11 @@ website:
 
       - text: Resources
         menu:
+          - text: Releases
+            href: releases.qmd
+
+          - text: "---"
+
           - text: Cheatsheets
             href: cheatsheets/home_cheatsheets.qmd
 

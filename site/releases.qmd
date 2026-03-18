@@ -1,0 +1,62 @@
+---
+title: "Releases"
+description: "Download current and previous versions of OutbreakTools"
+toc: true
+toc-depth: 2
+---
+
+```{r}
+#| echo: false
+#| output: asis
+
+library(fs)
+library(glue)
+
+repo_base <- "https://github.com/epicentre-msf/outbreak-tools/raw/main/releases"
+
+# --- Latest release (main branch only) ---
+
+latest_zip <- here::here("releases", "latest", "OBT-main-latest.zip")
+
+cat("## Latest release\n\n")
+cat("Download the most recent stable version of OutbreakTools.\n\n")
+
+if (file_exists(latest_zip)) {
+  url <- glue("{repo_base}/latest/OBT-main-latest.zip")
+  cat(glue(
+    '::: {{.callout-tip appearance="simple"}}\n',
+    '**Main (stable)** --- [OBT-main-latest.zip]({url}){{target="_blank"}}\n',
+    ':::\n\n'
+  ))
+}
+
+# --- Previous releases (dev branch only) ---
+
+old_dir <- here::here("releases", "old")
+
+dev_zips <- dir_ls(old_dir, glob = "*.zip") |>
+  path_file() |>
+  grep("^OBT-dev-", x = _, value = TRUE) |>
+  sort(decreasing = TRUE)
+
+format_release_row <- function(z) {
+  rel_date <- regmatches(z, regexpr("\\d{4}-\\d{2}-\\d{2}", z))
+  url <- glue("{repo_base}/old/{z}")
+  glue("| {rel_date} | [{z}]({url}){{target=\"_blank\"}} |")
+}
+
+cat("## Previous releases (dev branch)\n\n")
+
+if (length(dev_zips) > 0) {
+  cat("| Date | Download |\n")
+  cat("|------|----------|\n")
+  for (z in dev_zips) {
+    cat(format_release_row(z), "\n")
+  }
+  cat("\n")
+}
+```
+
+::: {.callout-note}
+Each archive contains a **designer**, a **setup**, and a **ribbon template** file (`.xlsb`). See [Obtain OutbreakTools files](getting_started/download.qmd) for installation instructions.
+:::
