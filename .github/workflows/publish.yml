@@ -31,6 +31,8 @@ jobs:
             any::here
             any::cli
             any::commonmark
+            any::knitr
+            any::rmarkdown
 
       - name: Build developer docs
         run: bash automate/codes/build-docs.sh
