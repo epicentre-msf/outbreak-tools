@@ -1124,20 +1124,20 @@
     "href": "releases.html",
     "title": "Releases",
     "section": "",
-    "text": "Download the most recent stable version of OutbreakTools.\n\n\n\n\n\n\nMain (stable) — OBT-main-latest.zip"
+    "text": "Each archive contains a designer, a setup, and a ribbon template (.xlsb)."
   },
   {
-    "objectID": "releases.html#latest-release",
-    "href": "releases.html#latest-release",
+    "objectID": "releases.html#latest",
+    "href": "releases.html#latest",
     "title": "Releases",
-    "section": "",
-    "text": "Download the most recent stable version of OutbreakTools.\n\n\n\n\n\n\nMain (stable) — OBT-main-latest.zip"
+    "section": "Latest",
+    "text": "Latest\n\n\n\nBranch\nDownload\n\n\n\n\nMain (stable)\nOBT-main-latest.zip"
   },
   {
-    "objectID": "releases.html#previous-releases-dev-branch",
-    "href": "releases.html#previous-releases-dev-branch",
+    "objectID": "releases.html#previous-releases",
+    "href": "releases.html#previous-releases",
     "title": "Releases",
-    "section": "Previous releases (dev branch)",
-    "text": "Previous releases (dev branch)\n\n\n\nDate\nDownload\n\n\n\n\n2025-04-28\nOBT-dev-2025-04-28.zip\n\n\n2024-10-19\nOBT-dev-2024-10-19.zip\n\n\n2024-08-12\nOBT-dev-2024-08-12.zip\n\n\n2024-08-07\nOBT-dev-2024-08-07.zip\n\n\n2024-07-04\nOBT-dev-2024-07-04.zip\n\n\n2024-06-13\nOBT-dev-2024-06-13.zip\n\n\n2024-04-22\nOBT-dev-2024-04-22.zip\n\n\n2024-04-09\nOBT-dev-2024-04-09.zip\n\n\n\n\n\n\n\n\n\nNote\n\n\n\nEach archive contains a designer, a setup, and a ribbon template file (.xlsb). See Obtain OutbreakTools files for installation instructions."
+    "section": "Previous releases",
+    "text": "Previous releases\n\nMain\n\n\n\nDate\nDownload\n\n\n\n\n2026-03-17\nOBT-main-2026-03-17.zip\n\n\n2024-10-19\nOBT-main-2024-10-19.zip\n\n\n2024-09-26\nOBT-main-2024-09-26.zip\n\n\n2024-08-12\nOBT-main-2024-08-12.zip\n\n\n2024-08-07\nOBT-main-2024-08-07.zip\n\n\n2024-07-04\nOBT-main-2024-07-04.zip\n\n\n2024-06-13\nOBT-main-2024-06-13.zip\n\n\n2024-04-22\nOBT-main-2024-04-22.zip\n\n\n2024-04-09\nOBT-main-2024-04-09.zip\n\n\n2024-03-29\nOBT-main-2024-03-29.zip\n\n\n\n\n\nDev\n\n\n\nDate\nDownload\n\n\n\n\n2025-04-28\nOBT-dev-2025-04-28.zip\n\n\n2024-10-19\nOBT-dev-2024-10-19.zip\n\n\n2024-08-12\nOBT-dev-2024-08-12.zip\n\n\n2024-08-07\nOBT-dev-2024-08-07.zip\n\n\n2024-07-04\nOBT-dev-2024-07-04.zip\n\n\n2024-06-13\nOBT-dev-2024-06-13.zip\n\n\n2024-04-22\nOBT-dev-2024-04-22.zip\n\n\n2024-04-09\nOBT-dev-2024-04-09.zip"
   }
 ]
