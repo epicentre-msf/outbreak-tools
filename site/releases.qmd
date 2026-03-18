@@ -1,73 +1,42 @@
 ---
 title: "Releases"
-description: "Download current and previous versions of OutbreakTools"
-toc: true
-toc-depth: 2
+toc: false
 ---
 
-```{r}
-#| echo: false
-#| output: asis
+Each archive contains a **designer**, a **setup**, and a **ribbon template** (`.xlsb`).
 
-library(fs)
-library(glue)
+## Latest
 
-repo_base <- "https://github.com/epicentre-msf/outbreak-tools/raw/dev/releases"
+| Branch | Download |
+|--------|----------|
+| Main (stable) | [OBT-main-latest.zip](https://github.com/epicentre-msf/outbreak-tools/raw/dev/releases/latest/OBT-main-latest.zip){target="_blank"} |
 
-# releases/ is at the repo root, one level up from site/
-repo_root <- path(getwd(), "..")
-if (!dir_exists(path(repo_root, "releases"))) {
-  # fallback: try here::here() in case working dir differs
-  repo_root <- here::here()
-}
+## Previous releases
 
-# --- Latest release (main branch only) ---
+### Main
 
-latest_zip <- path(repo_root, "releases", "latest", "OBT-main-latest.zip")
+| Date | Download |
+|------|----------|
+| 2026-03-17 | [OBT-main-2026-03-17.zip](https://github.com/epicentre-msf/outbreak-tools/raw/dev/releases/old/OBT-main-2026-03-17.zip){target="_blank"} |
+| 2024-10-19 | [OBT-main-2024-10-19.zip](https://github.com/epicentre-msf/outbreak-tools/raw/dev/releases/old/OBT-main-2024-10-19.zip){target="_blank"} |
+| 2024-09-26 | [OBT-main-2024-09-26.zip](https://github.com/epicentre-msf/outbreak-tools/raw/dev/releases/old/OBT-main-2024-09-26.zip){target="_blank"} |
+| 2024-08-12 | [OBT-main-2024-08-12.zip](https://github.com/epicentre-msf/outbreak-tools/raw/dev/releases/old/OBT-main-2024-08-12.zip){target="_blank"} |
+| 2024-08-07 | [OBT-main-2024-08-07.zip](https://github.com/epicentre-msf/outbreak-tools/raw/dev/releases/old/OBT-main-2024-08-07.zip){target="_blank"} |
+| 2024-07-04 | [OBT-main-2024-07-04.zip](https://github.com/epicentre-msf/outbreak-tools/raw/dev/releases/old/OBT-main-2024-07-04.zip){target="_blank"} |
+| 2024-06-13 | [OBT-main-2024-06-13.zip](https://github.com/epicentre-msf/outbreak-tools/raw/dev/releases/old/OBT-main-2024-06-13.zip){target="_blank"} |
+| 2024-04-22 | [OBT-main-2024-04-22.zip](https://github.com/epicentre-msf/outbreak-tools/raw/dev/releases/old/OBT-main-2024-04-22.zip){target="_blank"} |
+| 2024-04-09 | [OBT-main-2024-04-09.zip](https://github.com/epicentre-msf/outbreak-tools/raw/dev/releases/old/OBT-main-2024-04-09.zip){target="_blank"} |
+| 2024-03-29 | [OBT-main-2024-03-29.zip](https://github.com/epicentre-msf/outbreak-tools/raw/dev/releases/old/OBT-main-2024-03-29.zip){target="_blank"} |
 
-cat("## Latest release\n\n")
-cat("Download the most recent stable version of OutbreakTools.\n\n")
+### Dev
 
-if (file_exists(latest_zip)) {
-  url <- glue("{repo_base}/latest/OBT-main-latest.zip")
-  cat(glue(
-    '::: {{.callout-tip appearance="simple"}}\n',
-    '**Main (stable)** --- [OBT-main-latest.zip]({url}){{target="_blank"}}\n',
-    ':::\n\n'
-  ))
-}
-
-# --- Previous releases (dev branch only) ---
-
-old_dir <- path(repo_root, "releases", "old")
-
-dev_zips <- if (dir_exists(old_dir)) {
-  dir_ls(old_dir, glob = "*.zip") |>
-    path_file() |>
-    grep("^OBT-dev-", x = _, value = TRUE) |>
-    sort(decreasing = TRUE)
-} else {
-  character(0)
-}
-
-format_release_row <- function(z) {
-  rel_date <- regmatches(z, regexpr("\\d{4}-\\d{2}-\\d{2}", z))
-  url <- glue("{repo_base}/old/{z}")
-  glue("| {rel_date} | [{z}]({url}){{target=\"_blank\"}} |")
-}
-
-cat("## Previous releases (dev branch)\n\n")
-
-if (length(dev_zips) > 0) {
-  cat("| Date | Download |\n")
-  cat("|------|----------|\n")
-  for (z in dev_zips) {
-    cat(format_release_row(z), "\n")
-  }
-  cat("\n")
-}
-```
-
-::: {.callout-note}
-Each archive contains a **designer**, a **setup**, and a **ribbon template** file (`.xlsb`). See [Obtain OutbreakTools files](getting_started/download.qmd) for installation instructions.
-:::
+| Date | Download |
+|------|----------|
+| 2025-04-28 | [OBT-dev-2025-04-28.zip](https://github.com/epicentre-msf/outbreak-tools/raw/dev/releases/old/OBT-dev-2025-04-28.zip){target="_blank"} |
+| 2024-10-19 | [OBT-dev-2024-10-19.zip](https://github.com/epicentre-msf/outbreak-tools/raw/dev/releases/old/OBT-dev-2024-10-19.zip){target="_blank"} |
+| 2024-08-12 | [OBT-dev-2024-08-12.zip](https://github.com/epicentre-msf/outbreak-tools/raw/dev/releases/old/OBT-dev-2024-08-12.zip){target="_blank"} |
+| 2024-08-07 | [OBT-dev-2024-08-07.zip](https://github.com/epicentre-msf/outbreak-tools/raw/dev/releases/old/OBT-dev-2024-08-07.zip){target="_blank"} |
+| 2024-07-04 | [OBT-dev-2024-07-04.zip](https://github.com/epicentre-msf/outbreak-tools/raw/dev/releases/old/OBT-dev-2024-07-04.zip){target="_blank"} |
+| 2024-06-13 | [OBT-dev-2024-06-13.zip](https://github.com/epicentre-msf/outbreak-tools/raw/dev/releases/old/OBT-dev-2024-06-13.zip){target="_blank"} |
+| 2024-04-22 | [OBT-dev-2024-04-22.zip](https://github.com/epicentre-msf/outbreak-tools/raw/dev/releases/old/OBT-dev-2024-04-22.zip){target="_blank"} |
+| 2024-04-09 | [OBT-dev-2024-04-09.zip](https://github.com/epicentre-msf/outbreak-tools/raw/dev/releases/old/OBT-dev-2024-04-09.zip){target="_blank"} |
