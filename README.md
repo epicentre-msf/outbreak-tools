@@ -6,6 +6,7 @@
 [![Download All](https://github.com/epicentre-msf/outbreak-tools/raw/main/src/imgs/download_all.svg)](https://github.com/epicentre-msf/outbreak-tools/raw/main/releases/latest/OBT-main-latest.zip)
 [![Download All Dev](https://github.com/epicentre-msf/outbreak-tools/raw/main/src/imgs/download_all_dev.svg)](https://github.com/epicentre-msf/outbreak-tools/raw/dev/releases/latest/OBT-dev-latest.zip)
 [![Download the master setup](https://github.com/epicentre-msf/outbreak-tools/raw/main/src/imgs/setup_file.svg)](https://github.com/epicentre-msf/outbreak-tools-setup/raw/main/releases/latest/disease_setup-latest.xlsb)
+[![All Releases](https://hits.sh/epicentre-msf.github.io/outbreak-tools/releases.svg?label=Previous%20Releases&color=8250df)](https://epicentre-msf.github.io/outbreak-tools/releases.html)
 </p>
 </div>
 
