@@ -80,7 +80,8 @@ the column header.</p>
                   Optional ByVal plotTitle As String = vbNullString, _
                   Optional ByVal scope As Byte = GraphScopeNormal, _
                   Optional ByVal heightFactor As Long = 1, _
-                  Optional ByVal hardCodeLabels As Boolean = True)
+                  Optional ByVal hardCodeLabels As Boolean = True, _ 
+                  Optional ByVal secondAxisTitle As String = vbNullString)
 </code></pre>
 <p>Adjusts chart dimensions, axis titles, gridlines, legend position,
 and plot area sizing based on the supplied scope. Time series scope
@@ -95,6 +96,26 @@ order and moves the legend to the bottom.</p>
 <li><code>heightFactor</code>: Optional Long. Multiplicative factor for chart height. Defaults to 1.</li>
 <li><code>hardCodeLabels</code>: Optional Boolean. When True, axis titles are literal text. Defaults to True.</li>
 </ul>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="checkings">
+<summary>Checkings</summary>
+<div class="section-body">
+<h3 id="hascheckings">HasCheckings <a class="anchor-link" href="#hascheckings">#</a></h3>
+<p><strong>Whether the graph builder has logged diagnostic messages</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get HasCheckings() As Boolean
+</code></pre>
+<p>Diagnostic logging access for graph building results.</p>
+<p><strong>Returns:</strong> Boolean. True when diagnostic entries exist.</p>
+<hr />
+<h3 id="checkingvalues">CheckingValues <a class="anchor-link" href="#checkingvalues">#</a></h3>
+<p><strong>Retrieve the diagnostic log entries</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get CheckingValues() As IChecking
+</code></pre>
+<p><strong>Returns:</strong> IChecking. The checking instance, or Nothing.</p>
 <hr />
 </div>
 </details>

@@ -25,7 +25,8 @@ interface.</p>
 <details open class="doc-section" id="instantiation">
 <summary>Instantiation</summary>
 <div class="section-body">
-<h3 id="create">create <a class="anchor-link" href="#create">#</a></h3>
+<h3 id="create">Create <a class="anchor-link" href="#create">#</a></h3>
+<p><em>create</em></p>
 <p><strong>Create a CrossTableFormula instance bound to a cross-table and formula data source.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal tabl As ICrossTable, _
@@ -52,7 +53,8 @@ callers program against the contract rather than the concrete class.</p>
 <details open class="doc-section" id="shortcut-properties">
 <summary>Shortcut Properties</summary>
 <div class="section-body">
-<h3 id="valid">valid <a class="anchor-link" href="#valid">#</a></h3>
+<h3 id="valid">Valid <a class="anchor-link" href="#valid">#</a></h3>
+<p><em>valid</em></p>
 <p><strong>Whether the formula object is valid for the analysis context.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get Valid() As Boolean
@@ -70,7 +72,8 @@ exits immediately without writing any formulas to the worksheet.</p>
 <details open class="doc-section" id="core-operations">
 <summary>Core Operations</summary>
 <div class="section-body">
-<h3 id="add-formulas">add-formulas <a class="anchor-link" href="#add-formulas">#</a></h3>
+<h3 id="addformulas">AddFormulas <a class="anchor-link" href="#addformulas">#</a></h3>
+<p><em>add-formulas</em></p>
 <p><strong>Write all formulas to the cross-table on the worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddFormulas()
@@ -93,7 +96,8 @@ for refresh operations. The method exits immediately if Valid returns False.</p>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-internal-properties">Internal Properties</h2>
-<h3 id="int-self">self <a class="anchor-link" href="#int-self">#</a></h3>
+<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
+<p><em>self</em></p>
 <p><strong>Current object instance cast to the interface.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Self() As ICrossTableFormula
@@ -103,7 +107,8 @@ Convenience accessor so the Create factory can return the newly constructed
 object through the ICrossTableFormula interface.</p>
 <p><strong>Returns:</strong> ICrossTableFormula. The current instance.</p>
 <hr />
-<h3 id="int-table-get">table-get <a class="anchor-link" href="#int-table-get">#</a></h3>
+<h3 id="int-table">Table <a class="anchor-link" href="#int-table">#</a></h3>
+<p><em>table-get</em></p>
 <p><strong>ICrossTable backing store.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Table() As ICrossTable
@@ -113,7 +118,8 @@ cross-table provides the worksheet reference, named ranges, and layout
 metadata needed to place formulas.</p>
 <p><strong>Returns:</strong> ICrossTable. The bound cross-table instance.</p>
 <hr />
-<h3 id="int-table-set">table-set <a class="anchor-link" href="#int-table-set">#</a></h3>
+<h3 id="int-table">Table <a class="anchor-link" href="#int-table">#</a></h3>
+<p><em>table-set</em></p>
 <p><strong>Assign the ICrossTable backing store.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set Table(ByVal tabl As ICrossTable)
@@ -123,7 +129,8 @@ metadata needed to place formulas.</p>
 <li><code>tabl</code>: ICrossTable. The cross-table to bind to this formula writer.</li>
 </ul>
 <hr />
-<h3 id="int-form-data-get">form-data-get <a class="anchor-link" href="#int-form-data-get">#</a></h3>
+<h3 id="int-formdata">formData <a class="anchor-link" href="#int-formdata">#</a></h3>
+<p><em>form-data-get</em></p>
 <p><strong>IFormulaData backing store.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get formData() As IFormulaData
@@ -132,7 +139,8 @@ metadata needed to place formulas.</p>
 variable names, linelist ranges, and formula templates during generation.</p>
 <p><strong>Returns:</strong> IFormulaData. The bound formula-data instance.</p>
 <hr />
-<h3 id="int-form-data-set">form-data-set <a class="anchor-link" href="#int-form-data-set">#</a></h3>
+<h3 id="int-formdata">formData <a class="anchor-link" href="#int-formdata">#</a></h3>
+<p><em>form-data-set</em></p>
 <p><strong>Assign the IFormulaData backing store.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set formData(ByVal fData As IFormulaData)
@@ -143,7 +151,8 @@ variable names, linelist ranges, and formula templates during generation.</p>
 </ul>
 <hr />
 <h2 id="int-shortcut-properties">Shortcut Properties</h2>
-<h3 id="int-specifications">specifications <a class="anchor-link" href="#int-specifications">#</a></h3>
+<h3 id="int-specifications">Specifications <a class="anchor-link" href="#int-specifications">#</a></h3>
+<p><em>specifications</em></p>
 <p><strong>ITableSpecs shortcut for the cross-table specifications.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get Specifications() As ITableSpecs
@@ -157,7 +166,8 @@ and the section it belongs to. This property avoids repeatedly chaining
 Table.Specifications throughout the class methods.</p>
 <p><strong>Returns:</strong> ITableSpecs. The specification dictionary for the underlying cross-table.</p>
 <hr />
-<h3 id="int-summary-function">summary-function <a class="anchor-link" href="#int-summary-function">#</a></h3>
+<h3 id="int-summaryfunction">SummaryFunction <a class="anchor-link" href="#int-summaryfunction">#</a></h3>
+<p><em>summary-function</em></p>
 <p><strong>Summary function name from the table specifications.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get SummaryFunction() As String
@@ -170,7 +180,8 @@ drives formula generation logic throughout the class, especially in
 AddNonEmptyTableConditions where &quot;N&quot;/&quot;N()&quot; use a different operator pattern.</p>
 <p><strong>Returns:</strong> String. A value such as &quot;N&quot;, &quot;N()&quot;, &quot;SUM&quot;, &quot;MEAN&quot;, etc.</p>
 <hr />
-<h3 id="int-id">id <a class="anchor-link" href="#int-id">#</a></h3>
+<h3 id="int-id">ID <a class="anchor-link" href="#int-id">#</a></h3>
+<p><em>id</em></p>
 <p><strong>Unique identifier string for this cross-table.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get ID() As String
@@ -182,7 +193,8 @@ Every named range that belongs to this table is suffixed with this ID, making
 it the primary key for locating table regions on the worksheet.</p>
 <p><strong>Returns:</strong> String. The table identifier unique within the analysis workbook.</p>
 <hr />
-<h3 id="int-section-id">section-id <a class="anchor-link" href="#int-section-id">#</a></h3>
+<h3 id="int-sectionid">SectionId <a class="anchor-link" href="#int-sectionid">#</a></h3>
+<p><em>section-id</em></p>
 <p><strong>Section identifier for the group this table belongs to.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get SectionId() As String
@@ -195,7 +207,8 @@ shared named ranges like &quot;FIRST_VALUE_START_TIME_<sectionId>&quot; and
 &quot;TOTAL_ROW_<sectionId>&quot; that are defined once per section rather than per table.</p>
 <p><strong>Returns:</strong> String. The anchor table ID for this table section.</p>
 <hr />
-<h3 id="int-table-type">table-type <a class="anchor-link" href="#int-table-type">#</a></h3>
+<h3 id="int-tablescope">TableScope <a class="anchor-link" href="#int-tablescope">#</a></h3>
+<p><em>table-type</em></p>
 <p><strong>AnalysisTableScope byte value indicating the cross-table kind.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get TableScope() As Byte
@@ -211,7 +224,8 @@ different formula structures, named range layouts, and condition-building logic.
 <li>Returns Byte rather than the enum type for macOS VBA compatibility.</li>
 </ul>
 <hr />
-<h3 id="int-table-formula">table-formula <a class="anchor-link" href="#int-table-formula">#</a></h3>
+<h3 id="int-tableformula">TableFormula <a class="anchor-link" href="#int-tableformula">#</a></h3>
+<p><em>table-formula</em></p>
 <p><strong>Lazy-loaded IFormulas parsing engine for this table.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get TableFormula() As IFormulas
@@ -231,7 +245,8 @@ lazy because not all code paths need the formula engine (e.g., if Valid is False
 </ul>
 <hr />
 <h2 id="int-range-and-formula-helpers">Range and Formula Helpers</h2>
-<h3 id="int-range-exists">range-exists <a class="anchor-link" href="#int-range-exists">#</a></h3>
+<h3 id="int-rangeexists">RangeExists <a class="anchor-link" href="#int-rangeexists">#</a></h3>
+<p><em>range-exists</em></p>
 <p><strong>Check whether a named range exists on the cross-table worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function RangeExists(ByVal rngName As String) As Boolean
@@ -249,31 +264,26 @@ depending on the table missing/total configuration.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True if the named range resolves to a valid Range object.</p>
 <hr />
-<h3 id="int-failed-formula">failed-formula <a class="anchor-link" href="#int-failed-formula">#</a></h3>
+<h3 id="int-failedformula">FailedFormula <a class="anchor-link" href="#int-failedformula">#</a></h3>
+<p><em>failed-formula</em></p>
 <p><strong>Test whether a generated Excel formula string is syntactically valid.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function FailedFormula(ByVal frmName As String) As Boolean
 </code></pre>
-<p>Attempts to write the formula as an array formula into cell(1,1) of the
-cross-table worksheet, then immediately clears that cell. If the assignment
-succeeds without error, the formula is considered valid and FailedFormula
-returns False. If an error occurs (e.g., invalid function name, bad range
-reference, or formula syntax error), execution jumps to the Fail label and
-returns True. This acts as a safety net to prevent writing broken formulas
-into the actual table cells.</p>
+<p>Evaluates the formula string in memory using Application.Evaluate without
+writing to any worksheet cell. If Evaluate raises an error or returns an
+error variant (e.g., invalid function name, bad range reference, or formula
+syntax error), the formula is considered broken and FailedFormula returns
+True. This acts as a safety net to prevent writing broken formulas into
+the actual table cells.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>frmName</code>: String. The Excel formula string to test (without the leading &quot;= &quot; prefix).</li>
+<li><code>frmName</code>: String. The Excel formula string to test (without the leading &quot;=&quot; prefix).</li>
 </ul>
 <p><strong>Returns:</strong> Boolean. True if the formula raised an error (is broken), False if it succeeded.</p>
-<p><strong>Remarks:</strong></p>
-<ul>
-<li>Application.DisplayAlerts is temporarily disabled and restored afterward
-to suppress any Excel warning dialogs during the test. Cell(1,1) is always cleared
-regardless of success or failure to avoid leaving test artifacts on the worksheet.</li>
-</ul>
 <hr />
-<h3 id="int-emp-str">emp-str <a class="anchor-link" href="#int-emp-str">#</a></h3>
+<h3 id="int-empstr">EmpStr <a class="anchor-link" href="#int-empstr">#</a></h3>
+<p><em>emp-str</em></p>
 <p><strong>Return the Excel formula literal for an empty string.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function EmpStr() As String
@@ -285,7 +295,8 @@ that test whether a cell is empty. Using Chr(34) avoids VBA double-quote
 escaping issues and keeps the formula-building code readable.</p>
 <p><strong>Returns:</strong> String. The literal text consisting of two Chr(34) characters.</p>
 <hr />
-<h3 id="int-non-emp-str">non-emp-str <a class="anchor-link" href="#int-non-emp-str">#</a></h3>
+<h3 id="int-nonempstr">NonEmpStr <a class="anchor-link" href="#int-nonempstr">#</a></h3>
+<p><em>non-emp-str</em></p>
 <p><strong>Return the Excel formula literal for &quot;not empty&quot; criteria.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function NonEmpStr() As String
@@ -296,7 +307,8 @@ COUNTIFS criteria for &quot;not empty&quot; when used with the &quot;N&quot; or 
 functions, which need a comparison operator inside the criteria string.</p>
 <p><strong>Returns:</strong> String. The literal &quot;&lt;&gt;&quot; wrapped in double-quote characters for Excel formula use.</p>
 <hr />
-<h3 id="int-percentage">percentage <a class="anchor-link" href="#int-percentage">#</a></h3>
+<h3 id="int-percentage">Percentage <a class="anchor-link" href="#int-percentage">#</a></h3>
+<p><em>percentage</em></p>
 <p><strong>Build an IF(ISERR(...)) guarded percentage formula string.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function Percentage(ByVal denomRng As Range, ByVal numRng As Range, _
@@ -316,9 +328,10 @@ fixed.</p>
 <li><code>numRng</code>: Range. The range whose address is used as the numerator.</li>
 <li><code>rowabs</code>: Optional Boolean. When True, the denominator row reference is absolute. Defaults to True.</li>
 </ul>
-<p><strong>Returns:</strong> String. The complete IF(ISERR(...)) Excel formula text without &quot;= &quot; prefix.</p>
+<p><strong>Returns:</strong> String. The complete IF(ISERR(...)) Excel formula text without &quot;=&quot; prefix.</p>
 <hr />
-<h3 id="int-condition">condition <a class="anchor-link" href="#int-condition">#</a></h3>
+<h3 id="int-condition">Condition <a class="anchor-link" href="#int-condition">#</a></h3>
+<p><em>condition</em></p>
 <p><strong>Wrap a formula in an IF guard that blanks when a condition cell is empty.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function Condition(ByVal rngCondition As Range, ByVal formulaValue As String, _
@@ -340,7 +353,8 @@ zero/error values for unused time period rows.</p>
 <p><strong>Returns:</strong> String. The complete IF(...=&quot;&quot;,&quot;&quot;,formulaValue) Excel formula text.</p>
 <hr />
 <h2 id="int-condition-management">Condition Management</h2>
-<h3 id="int-add-table-conditions">add-table-conditions <a class="anchor-link" href="#int-add-table-conditions">#</a></h3>
+<h3 id="int-addtableconditions">AddTableConditions <a class="anchor-link" href="#int-addtableconditions">#</a></h3>
+<p><em>add-table-conditions</em></p>
 <p><strong>Append a variable-name / condition-test pair to the accumulators.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddTableConditions(ByVal varName As String, ByVal conditionName As String)
@@ -356,7 +370,7 @@ is pushed (silent no-op).</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>varName</code>: String. The linelist variable name identifying the column the condition applies to.</li>
-<li><code>conditionName</code>: String. The criteria string for the formula (e.g., &quot;= $A3&quot;, &quot;= &quot;&quot;&quot;, &quot;&lt;&gt;&quot;&quot;&quot;).</li>
+<li><code>conditionName</code>: String. The criteria string for the formula (e.g., &quot;= $A3&quot;, &quot;=&quot;&quot;&quot;, &quot;&lt;&gt;&quot;&quot;&quot;).</li>
 </ul>
 <p><strong>Remarks:</strong></p>
 <ul>
@@ -364,7 +378,8 @@ is pushed (silent no-op).</p>
 Call ClearTableConditions to reset them before building a new formula.</li>
 </ul>
 <hr />
-<h3 id="int-clear-table-conditions">clear-table-conditions <a class="anchor-link" href="#int-clear-table-conditions">#</a></h3>
+<h3 id="int-cleartableconditions">ClearTableConditions <a class="anchor-link" href="#int-cleartableconditions">#</a></h3>
+<p><em>clear-table-conditions</em></p>
 <p><strong>Clear or trim conditions from the accumulator arrays.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ClearTableConditions(Optional ByVal removeNumber As Long = 0)
@@ -386,7 +401,8 @@ need to change between iterations.</p>
 are created fresh and removeNumber is forced to 0 to avoid popping from an empty array.</li>
 </ul>
 <hr />
-<h3 id="int-add-non-empty-table-conditions">add-non-empty-table-conditions <a class="anchor-link" href="#int-add-non-empty-table-conditions">#</a></h3>
+<h3 id="int-addnonemptytableconditions">AddNonEmptyTableConditions <a class="anchor-link" href="#int-addnonemptytableconditions">#</a></h3>
+<p><em>add-non-empty-table-conditions</em></p>
 <p><strong>Add a &quot;non-empty&quot; filter condition adapted to the summary function.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddNonEmptyTableConditions(ByVal varName As String)
@@ -404,7 +420,8 @@ SUMPRODUCT-style not-equal-to-empty test.</p>
 </ul>
 <hr />
 <h2 id="int-excel-formula-builder">Excel Formula Builder</h2>
-<h3 id="int-current-excel-formula">current-excel-formula <a class="anchor-link" href="#int-current-excel-formula">#</a></h3>
+<h3 id="int-currentexcelformula">CurrentExcelFormula <a class="anchor-link" href="#int-currentexcelformula">#</a></h3>
+<p><em>current-excel-formula</em></p>
 <p><strong>Assembled Excel formula from the current condition accumulators.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get CurrentExcelFormula(Optional ByVal scope As Byte = 2, _
@@ -426,7 +443,7 @@ error placeholder if parsing failed.</p>
 <li><code>scope</code>: Optional Byte. FormulaScopeLinelist (1) for unfiltered formulas or FormulaScopeAnalysis (2) for conditional formulas. Defaults to 2.</li>
 <li><code>prefix</code>: Optional String. Table name prefix for the linelist reference. Defaults to &quot;f&quot;.</li>
 </ul>
-<p><strong>Returns:</strong> String. The Excel formula text without &quot;= &quot; prefix, or an error placeholder if parsing failed.</p>
+<p><strong>Returns:</strong> String. The Excel formula text without &quot;=&quot; prefix, or an error placeholder if parsing failed.</p>
 <p><strong>Remarks:</strong></p>
 <ul>
 <li>If condVars or condTests is Nothing when scope is analysis, execution
@@ -435,7 +452,8 @@ an analysis-scope formula.</li>
 </ul>
 <hr />
 <h2 id="int-number-format-helper">Number Format Helper</h2>
-<h3 id="int-add-rng-format">add-rng-format <a class="anchor-link" href="#int-add-rng-format">#</a></h3>
+<h3 id="int-addrngformat">AddRngFormat <a class="anchor-link" href="#int-addrngformat">#</a></h3>
+<p><em>add-rng-format</em></p>
 <p><strong>Apply an Excel NumberFormat to a range based on a format keyword.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddRngFormat(ByVal formatValue As String, ByVal rng As Range)
@@ -460,7 +478,8 @@ defaults to 1.</li>
 </ul>
 <hr />
 <h2 id="int-error-handling">Error Handling</h2>
-<h3 id="int-throw-error">throw-error <a class="anchor-link" href="#int-throw-error">#</a></h3>
+<h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
+<p><em>throw-error</em></p>
 <p><strong>Raise a project error with a standardised source name.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As Long, ByVal message As String)

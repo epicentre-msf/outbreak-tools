@@ -21,7 +21,8 @@ Ranges, Shapes, ListObjects, or Characters.</p>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
 <div class="section-body">
-<h3 id="create">create <a class="anchor-link" href="#create">#</a></h3>
+<h3 id="create">Create <a class="anchor-link" href="#create">#</a></h3>
+<p><em>create</em></p>
 <p><strong>Instantiate an LL format engine for a worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal formatSh As Worksheet, _
@@ -41,7 +42,8 @@ returns a fully initialised LLFormat instance.</p>
 <details open class="doc-section" id="design-lookups">
 <summary>Design Lookups</summary>
 <div class="section-body">
-<h3 id="design-value">design-value <a class="anchor-link" href="#design-value">#</a></h3>
+<h3 id="designvalue">DesignValue <a class="anchor-link" href="#designvalue">#</a></h3>
+<p><em>design-value</em></p>
 <p><strong>Look up a design value or colour from the format table</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function DesignValue(ByVal labelName As String, _
@@ -62,7 +64,8 @@ Returns a fallback when the label is not found and logs a diagnostic.</p>
 <details open class="doc-section" id="formatting">
 <summary>Formatting</summary>
 <div class="section-body">
-<h3 id="apply-format">apply-format <a class="anchor-link" href="#apply-format">#</a></h3>
+<h3 id="applyformat">ApplyFormat <a class="anchor-link" href="#applyformat">#</a></h3>
+<p><em>apply-format</em></p>
 <p><strong>Apply a design-driven format to an Excel object</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ApplyFormat(ByVal formattingObject As Variant, _
@@ -83,7 +86,8 @@ supplied object according to the given FormatScope constant.</p>
 <details open class="doc-section" id="import">
 <summary>Import</summary>
 <div class="section-body">
-<h3 id="import">import <a class="anchor-link" href="#import">#</a></h3>
+<h3 id="import">Import <a class="anchor-link" href="#import">#</a></h3>
+<p><em>import</em></p>
 <p><strong>Import formatting definitions from another worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub Import(ByVal inpsh As Worksheet)
@@ -101,7 +105,8 @@ design name from the source DESIGNTYPE named range.</p>
 <details open class="doc-section" id="export">
 <summary>Export</summary>
 <div class="section-body">
-<h3 id="export">export <a class="anchor-link" href="#export">#</a></h3>
+<h3 id="export">Export <a class="anchor-link" href="#export">#</a></h3>
+<p><em>export</em></p>
 <p><strong>Export the format table to another workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub Export(ByVal toWkb As Workbook)
@@ -119,19 +124,22 @@ exists, imports from it instead of exporting.</p>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-cache-management">Cache Management</h2>
-<h3 id="int-reset-caches">reset-caches <a class="anchor-link" href="#int-reset-caches">#</a></h3>
+<h3 id="int-resetcaches">ResetCaches <a class="anchor-link" href="#int-resetcaches">#</a></h3>
+<p><em>reset-caches</em></p>
 <p><strong>Invalidate all cached references</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ResetCaches()
 </code></pre>
 <hr />
-<h3 id="int-ensure-format-ready">ensure-format-ready <a class="anchor-link" href="#int-ensure-format-ready">#</a></h3>
+<h3 id="int-ensureformatready">EnsureFormatReady <a class="anchor-link" href="#int-ensureformatready">#</a></h3>
+<p><em>ensure-format-ready</em></p>
 <p><strong>Ensure caches are initialised and the worksheet is set</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureFormatReady()
 </code></pre>
 <hr />
-<h3 id="int-ensure-format-sheet-ready">ensure-format-sheet-ready <a class="anchor-link" href="#int-ensure-format-sheet-ready">#</a></h3>
+<h3 id="int-ensureformatsheetready">EnsureFormatSheetReady <a class="anchor-link" href="#int-ensureformatsheetready">#</a></h3>
+<p><em>ensure-format-sheet-ready</em></p>
 <p><strong>Validate a worksheet as a valid format source</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureFormatSheetReady(ByVal sh As Worksheet, ByRef resolvedDesign As String)
@@ -142,7 +150,8 @@ exists, imports from it instead of exporting.</p>
 <li><code>resolvedDesign</code>: String (ByRef). Falls back to DEFAULT_DESIGN when the requested design column is absent.</li>
 </ul>
 <hr />
-<h3 id="int-log-info">log-info <a class="anchor-link" href="#int-log-info">#</a></h3>
+<h3 id="int-loginfo">LogInfo <a class="anchor-link" href="#int-loginfo">#</a></h3>
+<p><em>log-info</em></p>
 <p><strong>Append a diagnostic entry to the internal checking object</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub LogInfo(ByVal label As String)
@@ -152,27 +161,31 @@ exists, imports from it instead of exporting.</p>
 <li><code>label</code>: String. The message to record.</li>
 </ul>
 <hr />
-<h3 id="int-format-table">format-table <a class="anchor-link" href="#int-format-table">#</a></h3>
+<h3 id="int-formattable">FormatTable <a class="anchor-link" href="#int-formattable">#</a></h3>
+<p><em>format-table</em></p>
 <p><strong>Retrieve the first ListObject on the format worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function FormatTable() As ListObject
 </code></pre>
 <p><strong>Returns:</strong> ListObject. The format table.</p>
 <hr />
-<h3 id="int-header-range">header-range <a class="anchor-link" href="#int-header-range">#</a></h3>
+<h3 id="int-headerrange">HeaderRange <a class="anchor-link" href="#int-headerrange">#</a></h3>
+<p><em>header-range</em></p>
 <p><strong>Retrieve the header row range of the format table</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function HeaderRange() As Range
 </code></pre>
 <p><strong>Returns:</strong> Range. The header row.</p>
 <hr />
-<h3 id="int-ensure-label-column">ensure-label-column <a class="anchor-link" href="#int-ensure-label-column">#</a></h3>
+<h3 id="int-ensurelabelcolumn">EnsureLabelColumn <a class="anchor-link" href="#int-ensurelabelcolumn">#</a></h3>
+<p><em>ensure-label-column</em></p>
 <p><strong>Cache the column index of the Label column</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureLabelColumn()
 </code></pre>
 <hr />
-<h3 id="int-resolve-column-index">resolve-column-index <a class="anchor-link" href="#int-resolve-column-index">#</a></h3>
+<h3 id="int-resolvecolumnindex">ResolveColumnIndex <a class="anchor-link" href="#int-resolvecolumnindex">#</a></h3>
+<p><em>resolve-column-index</em></p>
 <p><strong>Find the column index of a named header</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ResolveColumnIndex(ByVal header As Range, ByVal columnName As String) As Long
@@ -184,7 +197,8 @@ exists, imports from it instead of exporting.</p>
 </ul>
 <p><strong>Returns:</strong> Long. The 1-based column index.</p>
 <hr />
-<h3 id="int-design-column-index">design-column-index <a class="anchor-link" href="#int-design-column-index">#</a></h3>
+<h3 id="int-designcolumnindex">DesignColumnIndex <a class="anchor-link" href="#int-designcolumnindex">#</a></h3>
+<p><em>design-column-index</em></p>
 <p><strong>Resolve and cache the column index for a design name</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function DesignColumnIndex(ByVal designName As String) As Long
@@ -195,7 +209,8 @@ exists, imports from it instead of exporting.</p>
 </ul>
 <p><strong>Returns:</strong> Long. The 1-based column index.</p>
 <hr />
-<h3 id="int-label-row-index">label-row-index <a class="anchor-link" href="#int-label-row-index">#</a></h3>
+<h3 id="int-labelrowindex">LabelRowIndex <a class="anchor-link" href="#int-labelrowindex">#</a></h3>
+<p><em>label-row-index</em></p>
 <p><strong>Resolve and cache the row index for a format label</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function LabelRowIndex(ByVal labelName As String) As Long
@@ -207,7 +222,8 @@ exists, imports from it instead of exporting.</p>
 <p><strong>Returns:</strong> Long. The 1-based row index, or 0 when not found.</p>
 <hr />
 <h2 id="int-factory">Factory</h2>
-<h3 id="int-column-exists">column-exists <a class="anchor-link" href="#int-column-exists">#</a></h3>
+<h3 id="int-columnexists">ColumnExists <a class="anchor-link" href="#int-columnexists">#</a></h3>
+<p><em>column-exists</em></p>
 <p><strong>Test whether a named column exists in a header range</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ColumnExists(ByVal header As Range, ByVal columnName As String) As Boolean
@@ -220,21 +236,24 @@ exists, imports from it instead of exporting.</p>
 <p><strong>Returns:</strong> Boolean. True when the column is found.</p>
 <hr />
 <h2 id="int-public-interface">Public Interface</h2>
-<h3 id="int-self">self <a class="anchor-link" href="#int-self">#</a></h3>
+<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
+<p><em>self</em></p>
 <p><strong>Retrieve this formatter as an interface</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Self() As ILLFormat
 </code></pre>
 <p><strong>Returns:</strong> ILLFormat. Self-reference.</p>
 <hr />
-<h3 id="int-wksh">wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
+<h3 id="int-wksh">Wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
+<p><em>wksh</em></p>
 <p><strong>Retrieve the worksheet hosting the format table</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Wksh() As Worksheet
 </code></pre>
 <p><strong>Returns:</strong> Worksheet. The host worksheet.</p>
 <hr />
-<h3 id="int-wksh-set">wksh-set <a class="anchor-link" href="#int-wksh-set">#</a></h3>
+<h3 id="int-wksh">Wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
+<p><em>wksh-set</em></p>
 <p><strong>Assign the worksheet backing this formatter</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set Wksh(ByVal sh As Worksheet)
@@ -245,14 +264,16 @@ exists, imports from it instead of exporting.</p>
 <li><code>sh</code>: Worksheet. The new host worksheet.</li>
 </ul>
 <hr />
-<h3 id="int-design-name">design-name <a class="anchor-link" href="#int-design-name">#</a></h3>
+<h3 id="int-designname">DesignName <a class="anchor-link" href="#int-designname">#</a></h3>
+<p><em>design-name</em></p>
 <p><strong>Name of the active design column</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get DesignName() As String
 </code></pre>
 <p><strong>Returns:</strong> String. The active design name.</p>
 <hr />
-<h3 id="int-design-name-set">design-name-set <a class="anchor-link" href="#int-design-name-set">#</a></h3>
+<h3 id="int-designname">DesignName <a class="anchor-link" href="#int-designname">#</a></h3>
+<p><em>design-name-set</em></p>
 <p><strong>Change the active design column</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Let DesignName(ByVal design As String)
@@ -263,14 +284,16 @@ exists, imports from it instead of exporting.</p>
 <li><code>design</code>: String. The new design column name.</li>
 </ul>
 <hr />
-<h3 id="int-has-checkings">has-checkings <a class="anchor-link" href="#int-has-checkings">#</a></h3>
+<h3 id="int-hascheckings">HasCheckings <a class="anchor-link" href="#int-hascheckings">#</a></h3>
+<p><em>has-checkings</em></p>
 <p><strong>Whether the format object has logged diagnostic messages</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get HasCheckings() As Boolean
 </code></pre>
 <p><strong>Returns:</strong> Boolean. True when diagnostic entries exist.</p>
 <hr />
-<h3 id="int-checking-values">checking-values <a class="anchor-link" href="#int-checking-values">#</a></h3>
+<h3 id="int-checkingvalues">CheckingValues <a class="anchor-link" href="#int-checkingvalues">#</a></h3>
+<p><em>checking-values</em></p>
 <p><strong>Retrieve the diagnostic log entries</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get CheckingValues() As IChecking
@@ -278,7 +301,8 @@ exists, imports from it instead of exporting.</p>
 <p><strong>Returns:</strong> IChecking. The checking instance, or Nothing.</p>
 <hr />
 <h2 id="int-design-lookups">Design Lookups</h2>
-<h3 id="int-draw-lines">draw-lines <a class="anchor-link" href="#int-draw-lines">#</a></h3>
+<h3 id="int-drawlines">DrawLines <a class="anchor-link" href="#int-drawlines">#</a></h3>
+<p><em>draw-lines</em></p>
 <p><strong>Draw border lines around a range</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub DrawLines(ByVal rng As Range, _
@@ -296,7 +320,8 @@ exists, imports from it instead of exporting.</p>
 <li><code>color</code>: Variant. Border colour. Defaults to vbBlack.</li>
 </ul>
 <hr />
-<h3 id="int-draw-border">draw-border <a class="anchor-link" href="#int-draw-border">#</a></h3>
+<h3 id="int-drawborder">DrawBorder <a class="anchor-link" href="#int-drawborder">#</a></h3>
+<p><em>draw-border</em></p>
 <p><strong>Draw a rectangular border around a range</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub DrawBorder(ByVal rng As Range, Optional weight As Integer = xlThin, _
@@ -311,7 +336,8 @@ exists, imports from it instead of exporting.</p>
 <li><code>line</code>: Optional Long. Line style constant. Defaults to xlContinuous.</li>
 </ul>
 <hr />
-<h3 id="int-format-range">format-range <a class="anchor-link" href="#int-format-range">#</a></h3>
+<h3 id="int-formatrange">FormatRange <a class="anchor-link" href="#int-formatrange">#</a></h3>
+<p><em>format-range</em></p>
 <p><strong>Apply fill, font, alignment, and number format to a range</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub FormatRange(ByVal rng As Range, _
@@ -339,7 +365,8 @@ exists, imports from it instead of exporting.</p>
 <li><code>wrap</code>: Optional String. When &quot;wrap&quot;, enables text wrapping. Defaults to vbNullString.</li>
 </ul>
 <hr />
-<h3 id="int-format-characters">format-characters <a class="anchor-link" href="#int-format-characters">#</a></h3>
+<h3 id="int-formatcharacters">FormatCharacters <a class="anchor-link" href="#int-formatcharacters">#</a></h3>
+<p><em>format-characters</em></p>
 <p><strong>Apply font styling to a Characters object</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub FormatCharacters(ByVal Char As Characters, _
@@ -355,7 +382,8 @@ exists, imports from it instead of exporting.</p>
 <li><code>FontSize</code>: Optional Double. Font size in points. Defaults to 0 (unchanged).</li>
 </ul>
 <hr />
-<h3 id="int-format-shape">format-shape <a class="anchor-link" href="#int-format-shape">#</a></h3>
+<h3 id="int-formatshape">FormatShape <a class="anchor-link" href="#int-formatshape">#</a></h3>
+<p><em>format-shape</em></p>
 <p><strong>Apply fill and font styling to a Shape object</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub FormatShape(ByVal shp As Shape, _
@@ -373,7 +401,8 @@ exists, imports from it instead of exporting.</p>
 <li><code>FontSize</code>: Optional Double. Font size in points. Defaults to 0 (unchanged).</li>
 </ul>
 <hr />
-<h3 id="int-remove-gridlines">remove-gridlines <a class="anchor-link" href="#int-remove-gridlines">#</a></h3>
+<h3 id="int-removegridlines">RemoveGridLines <a class="anchor-link" href="#int-removegridlines">#</a></h3>
+<p><em>remove-gridlines</em></p>
 <p><strong>Hide gridlines on a worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RemoveGridLines(ByVal sh As Worksheet, Optional DisplayZeros As Boolean = False)
@@ -384,7 +413,8 @@ exists, imports from it instead of exporting.</p>
 <li><code>DisplayZeros</code>: Optional Boolean. When True, shows zero values. Defaults to False.</li>
 </ul>
 <hr />
-<h3 id="int-prepare-print-sheet">prepare-print-sheet <a class="anchor-link" href="#int-prepare-print-sheet">#</a></h3>
+<h3 id="int-prepareprintsheet">PreparePrintSheet <a class="anchor-link" href="#int-prepareprintsheet">#</a></h3>
+<p><em>prepare-print-sheet</em></p>
 <p><strong>Configure page setup for printing a worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub PreparePrintSheet(ByVal sh As Worksheet)
@@ -395,27 +425,31 @@ exists, imports from it instead of exporting.</p>
 </ul>
 <hr />
 <h2 id="int-export">Export</h2>
-<h3 id="int-resolve-worksheet">resolve-worksheet <a class="anchor-link" href="#int-resolve-worksheet">#</a></h3>
+<h3 id="int-resolveworksheet">ResolveWorksheet <a class="anchor-link" href="#int-resolveworksheet">#</a></h3>
+<p><em>resolve-worksheet</em></p>
 <p><strong>Look up a worksheet by name without raising errors</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ResolveWorksheet(ByVal targetWorkbook As Workbook, ByVal sheetName As String) As Worksheet
 </code></pre>
 <p><strong>Returns:</strong> Worksheet. The found worksheet, or Nothing.</p>
 <hr />
-<h3 id="int-resolve-format-table">resolve-format-table <a class="anchor-link" href="#int-resolve-format-table">#</a></h3>
+<h3 id="int-resolveformattable">ResolveFormatTable <a class="anchor-link" href="#int-resolveformattable">#</a></h3>
+<p><em>resolve-format-table</em></p>
 <p><strong>Locate a ListObject on the target sheet by name or index</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ResolveFormatTable(ByVal targetSheet As Worksheet, ByVal preferredName As String) As ListObject
 </code></pre>
 <p><strong>Returns:</strong> ListObject. The found table, or Nothing.</p>
 <hr />
-<h3 id="int-copy-format-table-styles">copy-format-table-styles <a class="anchor-link" href="#int-copy-format-table-styles">#</a></h3>
+<h3 id="int-copyformattablestyles">CopyFormatTableStyles <a class="anchor-link" href="#int-copyformattablestyles">#</a></h3>
+<p><em>copy-format-table-styles</em></p>
 <p><strong>Copy cell-level styles between two format tables</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub CopyFormatTableStyles(ByVal sourceTable As ListObject, ByVal targetTable As ListObject)
 </code></pre>
 <hr />
-<h3 id="int-ensure-design-type-range">ensure-design-type-range <a class="anchor-link" href="#int-ensure-design-type-range">#</a></h3>
+<h3 id="int-ensuredesigntyperange">EnsureDesignTypeRange <a class="anchor-link" href="#int-ensuredesigntyperange">#</a></h3>
+<p><em>ensure-design-type-range</em></p>
 <p><strong>Create the DESIGNTYPE named range on the target sheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureDesignTypeRange(ByVal sourceSheet As Worksheet, _
@@ -423,14 +457,16 @@ exists, imports from it instead of exporting.</p>
                                   ByVal targetTable As ListObject)
 </code></pre>
 <hr />
-<h3 id="int-has-named-range">has-named-range <a class="anchor-link" href="#int-has-named-range">#</a></h3>
+<h3 id="int-hasnamedrange">HasNamedRange <a class="anchor-link" href="#int-hasnamedrange">#</a></h3>
+<p><em>has-named-range</em></p>
 <p><strong>Test whether a worksheet-scoped named range exists</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function HasNamedRange(ByVal sh As Worksheet, ByVal rngName As String) As Boolean
 </code></pre>
 <p><strong>Returns:</strong> Boolean. True when the named range is found.</p>
 <hr />
-<h3 id="int-throw-error">throw-error <a class="anchor-link" href="#int-throw-error">#</a></h3>
+<h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
+<p><em>throw-error</em></p>
 <p><strong>Raise a typed project error</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal errorMessage As String)
@@ -438,12 +474,14 @@ exists, imports from it instead of exporting.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (25 file(s))</summary>
+<summary>Used in (28 file(s))</summary>
 <ul>
 <li><a href="src/classes/analyses/AnalysisOutput.cls">AnalysisOutput.cls</a></li>
 <li><a href="src/classes/analyses/CrossTable.cls">CrossTable.cls</a></li>
+<li><a href="src/classes/analyses/CustomPivotTable.cls">CustomPivotTable.cls</a></li>
 <li><a href="src/classes/analyses/ICrossTable.cls">ICrossTable.cls</a></li>
-<li><a href="src/classes/designer/DesignerImportService.cls">DesignerImportService.cls</a></li>
+<li><a href="src/classes/analyses/ICustomPivotTable.cls">ICustomPivotTable.cls</a></li>
+<li><a href="src/classes/designer/LinelistBuildService.cls">LinelistBuildService.cls</a></li>
 <li><a href="src/classes/general/Buttons.cls">Buttons.cls</a></li>
 <li><a href="src/classes/general/IButtons.cls">IButtons.cls</a></li>
 <li><a href="src/classes/general/ILLFormat.cls">ILLFormat.cls</a></li>
@@ -455,9 +493,10 @@ exists, imports from it instead of exporting.</p>
 <li><a href="src/classes/sections/SectionBuilder.cls">SectionBuilder.cls</a></li>
 <li><a href="src/classes/sections/VarWriter.cls">VarWriter.cls</a></li>
 <li><a href="src/classes/setup/SetupImportService.cls">SetupImportService.cls</a></li>
-<li><a href="src/classes/tables/CustomPivotTable.cls">CustomPivotTable.cls</a></li>
-<li><a href="src/classes/tables/ICustomPivotTable.cls">ICustomPivotTable.cls</a></li>
+<li><a href="src/classes/stale/CrossTable.cls">CrossTable.cls</a></li>
+<li><a href="src/classes/stale/DesignerImportService.cls">DesignerImportService.cls</a></li>
 <li><a href="src/modules/designer/EventsDesignerCore.bas">EventsDesignerCore.bas</a></li>
+<li><a href="src/modules/designer/GenerationReport.bas">GenerationReport.bas</a></li>
 <li><a href="src/tests/modules/general/TestButtons.bas">TestButtons.bas</a></li>
 <li><a href="src/tests/modules/general/TestLLFormat.bas">TestLLFormat.bas</a></li>
 <li><a href="src/tests/modules/tables/TestCustomPivotTable.bas">TestCustomPivotTable.bas</a></li>

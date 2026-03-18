@@ -23,7 +23,8 @@ dictionary, and show/hide tables.</p>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
 <div class="section-body">
-<h3 id="create">create <a class="anchor-link" href="#create">#</a></h3>
+<h3 id="create">Create <a class="anchor-link" href="#create">#</a></h3>
+<p><em>create</em></p>
 <p><strong>Create a new LLGeo instance from a geobase worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal sh As Worksheet) As ILLGeo
@@ -44,7 +45,8 @@ specific ListObjects, named ranges, and HiddenNames being present.</p>
 <details open class="doc-section" id="translation-cache">
 <summary>Translation Cache</summary>
 <div class="section-body">
-<h3 id="geo-names">geo-names <a class="anchor-link" href="#geo-names">#</a></h3>
+<h3 id="geonames">GeoNames <a class="anchor-link" href="#geonames">#</a></h3>
+<p><em>geo-names</em></p>
 <p><strong>Translated display name for a raw admin column name.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get GeoNames(ByVal admname As String) As String
@@ -64,7 +66,8 @@ is built on first access from cell-based named ranges on the geo worksheet.</p>
 <details open class="doc-section" id="geolevel">
 <summary>GeoLevel</summary>
 <div class="section-body">
-<h3 id="geo-level">geo-level <a class="anchor-link" href="#geo-level">#</a></h3>
+<h3 id="geolevel">GeoLevel <a class="anchor-link" href="#geolevel">#</a></h3>
+<p><em>geo-level</em></p>
 <p><strong>List of values at a given admin level.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get GeoLevel(ByVal adminLevel As Byte, _
@@ -95,7 +98,8 @@ Calculation is temporarily disabled for performance during filtering.</p>
 <details open class="doc-section" id="translate">
 <summary>Translate</summary>
 <div class="section-body">
-<h3 id="translate">translate <a class="anchor-link" href="#translate">#</a></h3>
+<h3 id="translate">Translate <a class="anchor-link" href="#translate">#</a></h3>
+<p><em>translate</em></p>
 <p><strong>Translate or revert geobase table headers.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub Translate(Optional ByVal rawNames As Boolean = False)
@@ -116,7 +120,8 @@ translation cache both before and after the change.</p>
 <details open class="doc-section" id="clear">
 <summary>Clear</summary>
 <div class="section-body">
-<h3 id="clear">clear <a class="anchor-link" href="#clear">#</a></h3>
+<h3 id="clear">Clear <a class="anchor-link" href="#clear">#</a></h3>
+<p><em>clear</em></p>
 <p><strong>Clear all geobase data.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub Clear()
@@ -126,7 +131,8 @@ T_LevelNames and T_CONCAT, and sets the update flag to &quot;empty&quot;. Resets
 translation name cache so subsequent GeoNames lookups will rebuild from
 fresh data.</p>
 <hr />
-<h3 id="clear-historic">clear-historic <a class="anchor-link" href="#clear-historic">#</a></h3>
+<h3 id="clearhistoric">ClearHistoric <a class="anchor-link" href="#clearhistoric">#</a></h3>
+<p><em>clear-historic</em></p>
 <p><strong>Clear historic entries.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ClearHistoric(Optional ByVal scope As Byte = 3)
@@ -145,7 +151,8 @@ succeeds even when a table has no data body.</p>
 <details open class="doc-section" id="import">
 <summary>Import</summary>
 <div class="section-body">
-<h3 id="import">import <a class="anchor-link" href="#import">#</a></h3>
+<h3 id="import">Import <a class="anchor-link" href="#import">#</a></h3>
+<p><em>import</em></p>
 <p><strong>Import geobase data from an external workbook.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub Import(ByVal fromWkb As Workbook, _
@@ -169,7 +176,8 @@ updated and headers are translated.</p>
 <details open class="doc-section" id="export">
 <summary>Export</summary>
 <div class="section-body">
-<h3 id="export-to-file">export-to-file <a class="anchor-link" href="#export-to-file">#</a></h3>
+<h3 id="exporttofile">ExportToFile <a class="anchor-link" href="#exporttofile">#</a></h3>
+<p><em>export-to-file</em></p>
 <p><strong>Export geobase tables to a workbook as flat data.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ExportToFile(ByVal outputWkb As Workbook, _
@@ -186,7 +194,8 @@ When onlyHistory is True only the HISTOGEO and HISTOHF tables are exported.</p>
 <li><code>onlyHistory</code>: Optional Boolean. True to export only historic tables. Defaults to False.</li>
 </ul>
 <hr />
-<h3 id="export-to-wkb">export-to-wkb <a class="anchor-link" href="#export-to-wkb">#</a></h3>
+<h3 id="exporttowkb">ExportToWkb <a class="anchor-link" href="#exporttowkb">#</a></h3>
+<p><em>export-to-wkb</em></p>
 <p><strong>Export the geobase worksheet structure to a workbook.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ExportToWkb(ByVal outputWkb As Workbook, _
@@ -217,7 +226,8 @@ conflicting names already exist in the target workbook.</p>
 <details open class="doc-section" id="update">
 <summary>Update</summary>
 <div class="section-body">
-<h3 id="update">update <a class="anchor-link" href="#update">#</a></h3>
+<h3 id="update">Update <a class="anchor-link" href="#update">#</a></h3>
+<p><em>update</em></p>
 <p><strong>Update linelist geo column headers and dropdowns.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub Update(ByVal pass As IPasswords)
@@ -232,7 +242,8 @@ reflects the current geobase content.</p>
 <li><code>pass</code>: IPasswords. Password manager for sheet protection and unprotection.</li>
 </ul>
 <hr />
-<h3 id="update-dict">update-dict <a class="anchor-link" href="#update-dict">#</a></h3>
+<h3 id="updatedict">UpdateDict <a class="anchor-link" href="#updatedict">#</a></h3>
+<p><em>update-dict</em></p>
 <p><strong>Update dictionary labels for geo-related variables.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub UpdateDict(ByVal dict As ILLdictionary)
@@ -246,7 +257,8 @@ import or translation change.</p>
 <li><code>dict</code>: ILLdictionary. The linelist dictionary whose labels should be updated.</li>
 </ul>
 <hr />
-<h3 id="update-show-hide">update-show-hide <a class="anchor-link" href="#update-show-hide">#</a></h3>
+<h3 id="updateshowhide">UpdateShowHide <a class="anchor-link" href="#updateshowhide">#</a></h3>
+<p><em>update-show-hide</em></p>
 <p><strong>Update show/hide tables with translated geo labels.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub UpdateShowHide(ByVal sh As Worksheet, ByVal dict As ILLdictionary)
@@ -267,7 +279,8 @@ current geobase translation.</p>
 <details open class="doc-section" id="historic">
 <summary>Historic</summary>
 <div class="section-body">
-<h3 id="update-historic">update-historic <a class="anchor-link" href="#update-historic">#</a></h3>
+<h3 id="updatehistoric">UpdateHistoric <a class="anchor-link" href="#updatehistoric">#</a></h3>
+<p><em>update-historic</em></p>
 <p><strong>Add a new entry to the historic data.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub UpdateHistoric(ByVal newValue As String, _
@@ -288,7 +301,8 @@ data body or is empty by inserting at the first data row.</p>
 <details open class="doc-section" id="admincode">
 <summary>AdminCode</summary>
 <div class="section-body">
-<h3 id="admin-code">admin-code <a class="anchor-link" href="#admin-code">#</a></h3>
+<h3 id="admincode">AdminCode <a class="anchor-link" href="#admincode">#</a></h3>
+<p><em>admin-code</em></p>
 <p><strong>Resolve the admin code from a translated display name.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function AdminCode(ByVal selectedAdmin As String) As String
@@ -303,7 +317,8 @@ downstream callers.</p>
 </ul>
 <p><strong>Returns:</strong> String. Admin code (&quot;adm1&quot;, &quot;adm2&quot;, &quot;adm3&quot;, or &quot;adm4&quot;).</p>
 <hr />
-<h3 id="has-no-data">has-no-data <a class="anchor-link" href="#has-no-data">#</a></h3>
+<h3 id="hasnodata">HasNoData <a class="anchor-link" href="#hasnodata">#</a></h3>
+<p><em>has-no-data</em></p>
 <p><strong>Whether the geobase has no imported data.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get HasNoData() As Boolean
@@ -319,7 +334,8 @@ available.</p>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-factory">Factory</h2>
-<h3 id="int-wksh">wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
+<h3 id="int-wksh">Wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
+<p><em>wksh</em></p>
 <p><strong>Get the geobase worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Wksh() As Worksheet
@@ -329,7 +345,8 @@ This worksheet is set during factory creation and should not change during
 the lifetime of the object.</p>
 <p><strong>Returns:</strong> Worksheet. The geobase worksheet.</p>
 <hr />
-<h3 id="int-wksh-set">wksh-set <a class="anchor-link" href="#int-wksh-set">#</a></h3>
+<h3 id="int-wksh">Wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
+<p><em>wksh-set</em></p>
 <p><strong>Set the geobase worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set Wksh(ByVal sh As Worksheet)
@@ -342,7 +359,8 @@ method after validation. Not intended for external use.</p>
 </ul>
 <hr />
 <h2 id="int-hidden-names-store">Hidden Names Store</h2>
-<h3 id="int-geo-hidden-store">geo-hidden-store <a class="anchor-link" href="#int-geo-hidden-store">#</a></h3>
+<h3 id="int-geohiddenstore">GeoHiddenStore <a class="anchor-link" href="#int-geohiddenstore">#</a></h3>
+<p><em>geo-hidden-store</em></p>
 <p><strong>Lazy-loaded HiddenNames manager for the geo worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function GeoHiddenStore() As IHiddenNames
@@ -354,7 +372,8 @@ RNG_GeoLangCode, RNG_FormLoaded).</p>
 <p><strong>Returns:</strong> IHiddenNames. The worksheet-level hidden names manager.</p>
 <hr />
 <h2 id="int-table-names">Table Names</h2>
-<h3 id="int-table-names">table-names <a class="anchor-link" href="#int-table-names">#</a></h3>
+<h3 id="int-tablenames">TableNames <a class="anchor-link" href="#int-tablenames">#</a></h3>
+<p><em>table-names</em></p>
 <p><strong>Ordered list of all geobase table names.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get TableNames() As BetterArray
@@ -366,7 +385,8 @@ followed by support tables.</p>
 <p><strong>Returns:</strong> BetterArray. Ordered list of table name strings.</p>
 <hr />
 <h2 id="int-translation-cache">Translation Cache</h2>
-<h3 id="int-ensure-names-cache">ensure-names-cache <a class="anchor-link" href="#int-ensure-names-cache">#</a></h3>
+<h3 id="int-ensurenamescache">EnsureNamesCache <a class="anchor-link" href="#int-ensurenamescache">#</a></h3>
+<p><em>ensure-names-cache</em></p>
 <p><strong>Ensure the translation name cache is loaded.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureNamesCache()
@@ -378,7 +398,8 @@ If the cache is already loaded this method returns immediately. The named
 range values are populated by UpdateLevelNames (called from Import and
 Translate) so no worksheet recalculation is needed here.</p>
 <hr />
-<h3 id="int-cache-one-name">cache-one-name <a class="anchor-link" href="#int-cache-one-name">#</a></h3>
+<h3 id="int-cacheonename">CacheOneName <a class="anchor-link" href="#int-cacheonename">#</a></h3>
+<p><em>cache-one-name</em></p>
 <p><strong>Cache one translation mapping from a cell-based named range.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub CacheOneName(ByVal sh As Worksheet, ByVal rawName As String, _
@@ -395,7 +416,8 @@ raw name is stored as both key and value so lookups fall back gracefully.</p>
 <li><code>rngName</code>: String. The cell-based named range whose value provides the translation.</li>
 </ul>
 <hr />
-<h3 id="int-reset-names-cache">reset-names-cache <a class="anchor-link" href="#int-reset-names-cache">#</a></h3>
+<h3 id="int-resetnamescache">ResetNamesCache <a class="anchor-link" href="#int-resetnamescache">#</a></h3>
+<p><em>reset-names-cache</em></p>
 <p><strong>Reset the translation cache.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ResetNamesCache()
@@ -404,7 +426,8 @@ raw name is stored as both key and value so lookups fall back gracefully.</p>
 Must be called after any operation that changes translation state (Import or
 Translate) so the next GeoNames access rebuilds the cache from fresh data.</p>
 <hr />
-<h3 id="int-update-level-names">update-level-names <a class="anchor-link" href="#int-update-level-names">#</a></h3>
+<h3 id="int-updatelevelnames">UpdateLevelNames <a class="anchor-link" href="#int-updatelevelnames">#</a></h3>
+<p><em>update-level-names</em></p>
 <p><strong>Programmatically update RNG_ADM*NAME and RNG_HFNAME from T_NAMES.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub UpdateLevelNames()
@@ -417,7 +440,8 @@ required sh.Calculate and could fail when RNG_GeoLangCode was stored as a
 hidden name rather than a cell-based range. Silently exits when no language
 code is set or when T_NAMES does not have the expected columns.</p>
 <hr />
-<h3 id="int-lookup-level-name">lookup-level-name <a class="anchor-link" href="#int-lookup-level-name">#</a></h3>
+<h3 id="int-lookuplevelname">LookupLevelName <a class="anchor-link" href="#int-lookuplevelname">#</a></h3>
+<p><em>lookup-level-name</em></p>
 <p><strong>Find the translated name for a level in T_NAMES.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function LookupLevelName(ByVal loNames As ListObject, ByVal levelCol As Long, _
@@ -436,7 +460,8 @@ column in that row. Returns vbNullString when no match is found.</p>
 <p><strong>Returns:</strong> String. The translated display name, or vbNullString if not found.</p>
 <hr />
 <h2 id="int-column-helpers">Column Helpers</h2>
-<h3 id="int-column-index">column-index <a class="anchor-link" href="#int-column-index">#</a></h3>
+<h3 id="int-columnindex">ColumnIndex <a class="anchor-link" href="#int-columnindex">#</a></h3>
+<p><em>column-index</em></p>
 <p><strong>Find the 1-based column index of a name within a header range.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ColumnIndex(ByVal colName As String, ByVal headerRng As Range, _
@@ -454,7 +479,8 @@ Returns -1 when no match is found.</p>
 </ul>
 <p><strong>Returns:</strong> Long. Column index (1-based), or -1 if not found.</p>
 <hr />
-<h3 id="int-geo-column-index">geo-column-index <a class="anchor-link" href="#int-geo-column-index">#</a></h3>
+<h3 id="int-geocolumnindex">GeoColumnIndex <a class="anchor-link" href="#int-geocolumnindex">#</a></h3>
+<p><em>geo-column-index</em></p>
 <p><strong>Resolve the column index for a geo admin table.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function GeoColumnIndex(ByVal colName As String, ByVal adminLevel As Byte) As Long
@@ -474,7 +500,8 @@ cannot be found in the table header.</p>
 <li>ProjectError.ElementNotFound When the column is not found in the admin table.</li>
 </ul>
 <hr />
-<h3 id="int-hf-column-index">hf-column-index <a class="anchor-link" href="#int-hf-column-index">#</a></h3>
+<h3 id="int-hfcolumnindex">HFColumnIndex <a class="anchor-link" href="#int-hfcolumnindex">#</a></h3>
+<p><em>hf-column-index</em></p>
 <p><strong>Resolve the column index for the HF table.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function HFColumnIndex(ByVal colName As String) As Long
@@ -492,7 +519,8 @@ display name via GeoNames. Raises an error when the column cannot be found.</p>
 <li>ProjectError.ElementNotFound When the column is not found in the HF table.</li>
 </ul>
 <hr />
-<h3 id="int-unique-range-value">unique-range-value <a class="anchor-link" href="#int-unique-range-value">#</a></h3>
+<h3 id="int-uniquerangevalue">UniqueRangeValue <a class="anchor-link" href="#int-uniquerangevalue">#</a></h3>
+<p><em>unique-range-value</em></p>
 <p><strong>Extract unique values from a range into a BetterArray.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function UniqueRangeValue(ByVal rng As Range) As BetterArray
@@ -506,7 +534,19 @@ internally to build dropdown-ready lists from filtered or unfiltered columns.</p
 </ul>
 <p><strong>Returns:</strong> BetterArray. Deduplicated values in encounter order.</p>
 <hr />
-<h3 id="int-hf-range">hf-range <a class="anchor-link" href="#int-hf-range">#</a></h3>
+<h3 id="int-sheettagof">SheetTagOf <a class="anchor-link" href="#int-sheettagof">#</a></h3>
+<p><strong>Get the sheet type tag from worksheet-level HiddenNames.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SheetTagOf(ByVal sh As Worksheet) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The worksheet to query.</li>
+</ul>
+<p><strong>Returns:</strong> String. The sheet type tag (HList, VList, etc.).</p>
+<hr />
+<h3 id="int-hfrange">HFRange <a class="anchor-link" href="#int-hfrange">#</a></h3>
+<p><em>hf-range</em></p>
 <p><strong>Get the data body range for a named column in the HF table.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function HFRange(ByVal colName As String) As Range
@@ -521,7 +561,8 @@ facility data at admin level 1.</p>
 <p><strong>Returns:</strong> Range. The DataBodyRange of the matching column in T_HF.</p>
 <hr />
 <h2 id="int-internal-helpers">Internal Helpers</h2>
-<h3 id="int-update-metadata">update-metadata <a class="anchor-link" href="#int-update-metadata">#</a></h3>
+<h3 id="int-updatemetadata">UpdateMetadata <a class="anchor-link" href="#int-updatemetadata">#</a></h3>
+<p><em>update-metadata</em></p>
 <p><strong>Update the metadata sheet from the geo metadata table.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub UpdateMetadata()
@@ -532,7 +573,8 @@ before writing the new data. Silently exits if the Metadata sheet or anchor
 range does not exist.</p>
 <hr />
 <h2 id="int-validation">Validation</h2>
-<h3 id="int-check-requirements">check-requirements <a class="anchor-link" href="#int-check-requirements">#</a></h3>
+<h3 id="int-checkrequirements">CheckRequirements <a class="anchor-link" href="#int-checkrequirements">#</a></h3>
+<p><em>check-requirements</em></p>
 <p><strong>Validate that the worksheet has all required tables, named ranges, and hidden names.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub CheckRequirements(ByVal sh As Worksheet)
@@ -554,7 +596,8 @@ requirement is missing.</p>
 <li>ProjectError.ElementNotFound When required tables, named ranges, or hidden names are missing.</li>
 </ul>
 <hr />
-<h3 id="int-hidden-name-required">hidden-name-required <a class="anchor-link" href="#int-hidden-name-required">#</a></h3>
+<h3 id="int-hiddennamerequired">HiddenNameRequired <a class="anchor-link" href="#int-hiddennamerequired">#</a></h3>
+<p><em>hidden-name-required</em></p>
 <p><strong>Verify that a hidden name exists in the store.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub HiddenNameRequired(ByVal store As IHiddenNames, ByVal nameId As String)
@@ -571,7 +614,8 @@ If not found, raises an ElementNotFound error with a descriptive message.</p>
 <li>ProjectError.ElementNotFound When the hidden name does not exist.</li>
 </ul>
 <hr />
-<h3 id="int-range-exists">range-exists <a class="anchor-link" href="#int-range-exists">#</a></h3>
+<h3 id="int-rangeexists">RangeExists <a class="anchor-link" href="#int-rangeexists">#</a></h3>
+<p><em>range-exists</em></p>
 <p><strong>Verify that a named range exists on a worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RangeExists(ByVal sh As Worksheet, ByVal rngName As String)
@@ -588,7 +632,8 @@ be found, raises an ElementNotFound error with a descriptive message.</p>
 <li>ProjectError.ElementNotFound When the named range does not exist on the worksheet.</li>
 </ul>
 <hr />
-<h3 id="int-lo-exists">lo-exists <a class="anchor-link" href="#int-lo-exists">#</a></h3>
+<h3 id="int-loexists">LoExists <a class="anchor-link" href="#int-loexists">#</a></h3>
+<p><em>lo-exists</em></p>
 <p><strong>Verify that all listed ListObjects exist on a worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub LoExists(ByVal loNames As BetterArray, ByVal sh As Worksheet)
@@ -607,7 +652,8 @@ error for the first missing table encountered.</p>
 </ul>
 <hr />
 <h2 id="int-error-handling">Error Handling</h2>
-<h3 id="int-throw-error">throw-error <a class="anchor-link" href="#int-throw-error">#</a></h3>
+<h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
+<p><em>throw-error</em></p>
 <p><strong>Raise a ProjectError-based exception.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As Long, ByVal message As String)
@@ -623,12 +669,12 @@ ProjectError values exceed the Byte range (they start at 1001+).</p>
 <hr />
 </details>
 <details>
-<summary>Used in (31 file(s))</summary>
+<summary>Used in (30 file(s))</summary>
 <ul>
 <li><a href="src/classes/dataio/LLExporter.cls">LLExporter.cls</a></li>
 <li><a href="src/classes/dataio/LLImporter.cls">LLImporter.cls</a></li>
-<li><a href="src/classes/designer/DesignerImportService.cls">DesignerImportService.cls</a></li>
-<li><a href="src/classes/designer/IDesignerImportService.cls">IDesignerImportService.cls</a></li>
+<li><a href="src/classes/designer/ILinelistBuildService.cls">ILinelistBuildService.cls</a></li>
+<li><a href="src/classes/designer/LinelistBuildService.cls">LinelistBuildService.cls</a></li>
 <li><a href="src/classes/dictionary/ILLdictionary.cls">ILLdictionary.cls</a></li>
 <li><a href="src/classes/geo/ILLGeo.cls">ILLGeo.cls</a></li>
 <li><a href="src/classes/geo/LLGeo.cls">LLGeo.cls</a></li>
@@ -645,12 +691,11 @@ ProjectError values exceed the Byte range (they start at 1001+).</p>
 <li><a href="src/classes/stale/designer-codes/modules/implements/FormLogicGeo.bas">FormLogicGeo.bas</a></li>
 <li><a href="src/classes/stale/designer-codes/modules/implements/LinelistEvents.bas">LinelistEvents.bas</a></li>
 <li><a href="src/classes/stale/designer-codes/modules/implements/LinelistGeo.bas">LinelistGeo.bas</a></li>
+<li><a href="src/classes/stale/DesignerImportService.cls">DesignerImportService.cls</a></li>
+<li><a href="src/classes/stale/IDesignerImportService.cls">IDesignerImportService.cls</a></li>
 <li><a href="src/modules/designer/EventsDesignerAdvanced.bas">EventsDesignerAdvanced.bas</a></li>
-<li><a href="src/modules/geo/GeoModule.bas">GeoModule.bas</a></li>
-<li><a href="src/modules/linelist/LinelistCustomFunctions.bas">LinelistCustomFunctions.bas</a></li>
+<li><a href="src/modules/linelist/GeoModule.bas">GeoModule.bas</a></li>
 <li><a href="src/modules/linelistform/FormLogicGeo.bas">FormLogicGeo.bas</a></li>
-<li><a href="src/modules/stale/EventsSpatialAnalysis.bas">EventsSpatialAnalysis.bas</a></li>
-<li><a href="src/modules/stale/LinelistEvents.bas">LinelistEvents.bas</a></li>
 <li><a href="src/tests/modules/geo/TestLLGeo.bas">TestLLGeo.bas</a></li>
 <li><a href="src/tests/stubs/LinelistSpecsWorkbookStub.cls">LinelistSpecsWorkbookStub.cls</a></li>
 <li><a href="src/tests/stubs/LLGeoDropdownStub.cls">LLGeoDropdownStub.cls</a></li>

@@ -23,7 +23,8 @@ ranked values for use in analyses and graphs.</p>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
 <div class="section-body">
-<h3 id="create">create <a class="anchor-link" href="#create">#</a></h3>
+<h3 id="create">Create <a class="anchor-link" href="#create">#</a></h3>
+<p><em>create</em></p>
 <p><strong>Create a new LLSpatial instance from the spatial tables worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal sh As Worksheet) As ILLSpatial
@@ -48,7 +49,8 @@ interface. Called on the predeclared instance.</p>
 <details open class="doc-section" id="exists">
 <summary>Exists</summary>
 <div class="section-body">
-<h3 id="exists">exists <a class="anchor-link" href="#exists">#</a></h3>
+<h3 id="exists">Exists <a class="anchor-link" href="#exists">#</a></h3>
+<p><em>exists</em></p>
 <p><strong>Check if a variable name exists in the spatial variables list</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function Exists(ByVal varName As String) As Boolean
@@ -68,7 +70,8 @@ spatial analysis tables exist for this variable.</p>
 <details open class="doc-section" id="update">
 <summary>Update</summary>
 <div class="section-body">
-<h3 id="update">update <a class="anchor-link" href="#update">#</a></h3>
+<h3 id="update">Update <a class="anchor-link" href="#update">#</a></h3>
+<p><em>update</em></p>
 <p><strong>Update all spatial tables from HList filtered data</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub Update()
@@ -87,7 +90,8 @@ the spatial sheet so formula columns update.</p>
 <details open class="doc-section" id="sort">
 <summary>Sort</summary>
 <div class="section-body">
-<h3 id="sort">sort <a class="anchor-link" href="#sort">#</a></h3>
+<h3 id="sort">Sort <a class="anchor-link" href="#sort">#</a></h3>
+<p><em>sort</em></p>
 <p><strong>Sort spatial tables by formula value or attack rate for a given table id</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub Sort(ByVal tabId As String, Optional ByVal onAR As Boolean = False)
@@ -108,7 +112,8 @@ no data body, or whose first column is empty.</p>
 <details open class="doc-section" id="topgeovalue-tophfvalue">
 <summary>TopGeoValue / TopHFValue</summary>
 <div class="section-body">
-<h3 id="top-geo-value">top-geo-value <a class="anchor-link" href="#top-geo-value">#</a></h3>
+<h3 id="topgeovalue">TopGeoValue <a class="anchor-link" href="#topgeovalue">#</a></h3>
+<p><em>top-geo-value</em></p>
 <p><strong>Value at a given rank from a sorted spatial geo table</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get TopGeoValue(ByVal adminName As String, _
@@ -133,7 +138,8 @@ not exist, has no data, or the rank exceeds available rows.</p>
 </ul>
 <p><strong>Returns:</strong> String. The value at the requested rank, or empty string if not found.</p>
 <hr />
-<h3 id="top-hf-value">top-hf-value <a class="anchor-link" href="#top-hf-value">#</a></h3>
+<h3 id="tophfvalue">TopHFValue <a class="anchor-link" href="#tophfvalue">#</a></h3>
+<p><em>top-hf-value</em></p>
 <p><strong>Value at a given rank from a sorted spatial HF table</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get TopHFValue(ByVal orderValue As Long, _
@@ -157,7 +163,8 @@ has no data, or the rank exceeds available rows.</p>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-factory">Factory</h2>
-<h3 id="int-self">self <a class="anchor-link" href="#int-self">#</a></h3>
+<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
+<p><em>self</em></p>
 <p><strong>Current object instance</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Self() As ILLSpatial
@@ -166,14 +173,16 @@ has no data, or the rank exceeds available rows.</p>
 interface reference from the predeclared Create method.</p>
 <p><strong>Returns:</strong> ILLSpatial. The current instance cast to the interface.</p>
 <hr />
-<h3 id="int-wksh">wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
+<h3 id="int-wksh">Wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
+<p><em>wksh</em></p>
 <p><strong>Spatial tables worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Wksh() As Worksheet
 </code></pre>
 <p><strong>Returns:</strong> Worksheet. The backing spatial tables worksheet.</p>
 <hr />
-<h3 id="int-wksh-set">wksh-set <a class="anchor-link" href="#int-wksh-set">#</a></h3>
+<h3 id="int-wksh">Wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
+<p><em>wksh-set</em></p>
 <p><strong>Assign the spatial tables worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set Wksh(ByVal sh As Worksheet)
@@ -184,7 +193,8 @@ interface reference from the predeclared Create method.</p>
 </ul>
 <hr />
 <h2 id="int-naming-conventions">Naming Conventions</h2>
-<h3 id="int-current-header-name">current-header-name <a class="anchor-link" href="#int-current-header-name">#</a></h3>
+<h3 id="int-currentheadername">CurrentHeaderName <a class="anchor-link" href="#int-currentheadername">#</a></h3>
+<p><em>current-header-name</em></p>
 <p><strong>Named range name for a spatial table header</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get CurrentHeaderName(ByVal varName As String, _
@@ -199,7 +209,8 @@ of a spatial table. The pattern is &quot;tabl_{adminName}_{varName}&quot;.</p>
 </ul>
 <p><strong>Returns:</strong> String. The constructed named range name.</p>
 <hr />
-<h3 id="int-current-lo-name">current-lo-name <a class="anchor-link" href="#int-current-lo-name">#</a></h3>
+<h3 id="int-currentloname">CurrentLoName <a class="anchor-link" href="#int-currentloname">#</a></h3>
+<p><em>current-lo-name</em></p>
 <p><strong>ListObject name for a spatial table</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get CurrentLoName(ByVal varName As String, _
@@ -215,7 +226,19 @@ is &quot;spatial_{adminName}_{varName}&quot;.</p>
 <p><strong>Returns:</strong> String. The constructed ListObject name.</p>
 <hr />
 <h2 id="int-exists">Exists</h2>
-<h3 id="int-lo-exists">lo-exists <a class="anchor-link" href="#int-lo-exists">#</a></h3>
+<h3 id="int-sheettagof">SheetTagOf <a class="anchor-link" href="#int-sheettagof">#</a></h3>
+<p><strong>Get the sheet type tag from worksheet-level HiddenNames.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SheetTagOf(ByVal sh As Worksheet) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The worksheet to query.</li>
+</ul>
+<p><strong>Returns:</strong> String. The sheet type tag (HList, VList, etc.).</p>
+<hr />
+<h3 id="int-loexists">LoExists <a class="anchor-link" href="#int-loexists">#</a></h3>
+<p><em>lo-exists</em></p>
 <p><strong>Check if a ListObject exists on the spatial sheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function LoExists(ByVal loName As String) As Boolean
@@ -230,7 +253,8 @@ trapping to handle the case where the name does not exist.</p>
 <p><strong>Returns:</strong> Boolean. True when the ListObject exists.</p>
 <hr />
 <h2 id="int-list-of-variable-names">List of Variable Names</h2>
-<h3 id="int-list-of-existing-var-names">list-of-existing-var-names <a class="anchor-link" href="#int-list-of-existing-var-names">#</a></h3>
+<h3 id="int-listofexistingvarnames">ListOfExistingVarNames <a class="anchor-link" href="#int-listofexistingvarnames">#</a></h3>
+<p><em>list-of-existing-var-names</em></p>
 <p><strong>Build a list of all spatial variable names matching a base name</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ListOfExistingVarNames(ByVal varName As String) As BetterArray
@@ -246,7 +270,8 @@ narrowing it after each match to avoid finding the same cell again.</p>
 <p><strong>Returns:</strong> BetterArray. All matching spatial variable names.</p>
 <hr />
 <h2 id="int-update-spatial-values">Update Spatial Values</h2>
-<h3 id="int-update-spatial-value">update-spatial-value <a class="anchor-link" href="#int-update-spatial-value">#</a></h3>
+<h3 id="int-updatespatialvalue">UpdateSpatialValue <a class="anchor-link" href="#int-updatespatialvalue">#</a></h3>
+<p><em>update-spatial-value</em></p>
 <p><strong>Populate spatial ListObjects from a filtered input range</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub UpdateSpatialValue(ByVal inputRng As Range, _
@@ -269,7 +294,8 @@ to cascade through the concat columns.</p>
 </ul>
 <hr />
 <h2 id="int-validation">Validation</h2>
-<h3 id="int-check-requirements">check-requirements <a class="anchor-link" href="#int-check-requirements">#</a></h3>
+<h3 id="int-checkrequirements">CheckRequirements <a class="anchor-link" href="#int-checkrequirements">#</a></h3>
+<p><em>check-requirements</em></p>
 <p><strong>Validate that the worksheet is the spatial tables sheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub CheckRequirements(ByVal sh As Worksheet)
@@ -288,7 +314,8 @@ Raises an error when either condition fails.</p>
 </ul>
 <hr />
 <h2 id="int-error-handling">Error Handling</h2>
-<h3 id="int-throw-error">throw-error <a class="anchor-link" href="#int-throw-error">#</a></h3>
+<h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
+<p><em>throw-error</em></p>
 <p><strong>Raise a ProjectError-based exception</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As Long, ByVal message As String)
@@ -319,10 +346,10 @@ See the corresponding members above for full documentation.</p>
 <ul>
 <li><a href="src/classes/geo/ILLSpatial.cls">ILLSpatial.cls</a></li>
 <li><a href="src/classes/geo/LLSpatial.cls">LLSpatial.cls</a></li>
+<li><a href="src/classes/linelist/EventLinelist.cls">EventLinelist.cls</a></li>
+<li><a href="src/classes/linelist/IEventLinelist.cls">IEventLinelist.cls</a></li>
 <li><a href="src/classes/linelist/Linelist.cls">Linelist.cls</a></li>
-<li><a href="src/modules/geo/GeoModule.bas">GeoModule.bas</a></li>
-<li><a href="src/modules/linelist/LinelistCustomFunctions.bas">LinelistCustomFunctions.bas</a></li>
-<li><a href="src/modules/stale/EventsSpatialAnalysis.bas">EventsSpatialAnalysis.bas</a></li>
+<li><a href="src/modules/linelist/GeoModule.bas">GeoModule.bas</a></li>
 <li><a href="src/tests/modules/geo/TestLLSpatial.bas">TestLLSpatial.bas</a></li>
 </ul>
 </details>

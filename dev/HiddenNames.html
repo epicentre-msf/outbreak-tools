@@ -21,7 +21,8 @@ worksheets and workbooks.</p>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
 <div class="section-body">
-<h3 id="create">create <a class="anchor-link" href="#create">#</a></h3>
+<h3 id="create">Create <a class="anchor-link" href="#create">#</a></h3>
+<p><em>create</em></p>
 <p><strong>Create a new HiddenNames instance</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal targetObj As Object) As IHiddenNames
@@ -44,7 +45,8 @@ the supplied worksheet or workbook.</p>
 <details open class="doc-section" id="interface-helpers">
 <summary>Interface Helpers</summary>
 <div class="section-body">
-<h3 id="sheet">sheet <a class="anchor-link" href="#sheet">#</a></h3>
+<h3 id="sheetinternal">SheetInternal <a class="anchor-link" href="#sheetinternal">#</a></h3>
+<p><em>sheet</em></p>
 <p><strong>Worksheet backing this manager</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get SheetInternal() As Worksheet
@@ -55,13 +57,15 @@ the supplied worksheet or workbook.</p>
 <details open class="doc-section" id="public-api">
 <summary>Public API</summary>
 <div class="section-body">
-<h3 id="has-name">has-name <a class="anchor-link" href="#has-name">#</a></h3>
+<h3 id="hasname">HasName <a class="anchor-link" href="#hasname">#</a></h3>
+<p><em>has-name</em></p>
 <p><strong>Check whether a hidden name exists</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function HasName(ByVal nameId As String) As Boolean
 </code></pre>
 <hr />
-<h3 id="ensure-name">ensure-name <a class="anchor-link" href="#ensure-name">#</a></h3>
+<h3 id="ensure">Ensure <a class="anchor-link" href="#ensure">#</a></h3>
+<p><em>ensure-name</em></p>
 <p><strong>Ensure a hidden name exists with the provided default</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function Ensure(ByVal nameId As String, _
@@ -69,67 +73,77 @@ the supplied worksheet or workbook.</p>
                         Optional ByVal valueType As Byte = HiddenNameTypeVariant) As Name
 </code></pre>
 <hr />
-<h3 id="value">value <a class="anchor-link" href="#value">#</a></h3>
+<h3 id="valueof">ValueOf <a class="anchor-link" href="#valueof">#</a></h3>
+<p><em>value</em></p>
 <p><strong>Retrieve a hidden value without coercion</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ValueOf(ByVal nameId As String, _
                          Optional ByVal defaultValue As Variant) As Variant
 </code></pre>
 <hr />
-<h3 id="set-value">set-value <a class="anchor-link" href="#set-value">#</a></h3>
+<h3 id="update">Update <a class="anchor-link" href="#update">#</a></h3>
+<p><em>set-value</em></p>
 <p><strong>Update the stored value of an existing hidden name</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub Update(ByVal nameId As String, ByVal value As Variant)
 </code></pre>
 <hr />
-<h3 id="value-as-string">value-as-string <a class="anchor-link" href="#value-as-string">#</a></h3>
+<h3 id="valueasstring">ValueAsString <a class="anchor-link" href="#valueasstring">#</a></h3>
+<p><em>value-as-string</em></p>
 <p><strong>Retrieve the hidden value coerced to String</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ValueAsString(ByVal nameId As String, _
                                Optional ByVal defaultValue As String = vbNullString) As String
 </code></pre>
 <hr />
-<h3 id="value-as-boolean">value-as-boolean <a class="anchor-link" href="#value-as-boolean">#</a></h3>
+<h3 id="valueasboolean">ValueAsBoolean <a class="anchor-link" href="#valueasboolean">#</a></h3>
+<p><em>value-as-boolean</em></p>
 <p><strong>Retrieve the hidden value coerced to Boolean</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ValueAsBoolean(ByVal nameId As String, _
                                 Optional ByVal defaultValue As Boolean = False) As Boolean
 </code></pre>
 <hr />
-<h3 id="value-as-long">value-as-long <a class="anchor-link" href="#value-as-long">#</a></h3>
+<h3 id="valueaslong">ValueAsLong <a class="anchor-link" href="#valueaslong">#</a></h3>
+<p><em>value-as-long</em></p>
 <p><strong>Retrieve the hidden value coerced to Long</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ValueAsLong(ByVal nameId As String, _
                              Optional ByVal defaultValue As Long = 0) As Long
 </code></pre>
 <hr />
-<h3 id="remove-name">remove-name <a class="anchor-link" href="#remove-name">#</a></h3>
+<h3 id="remove">Remove <a class="anchor-link" href="#remove">#</a></h3>
+<p><em>remove-name</em></p>
 <p><strong>Remove a hidden name definition</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub Remove(ByVal nameId As String)
 </code></pre>
 <hr />
-<h3 id="list-names">list-names <a class="anchor-link" href="#list-names">#</a></h3>
+<h3 id="enumerate">Enumerate <a class="anchor-link" href="#enumerate">#</a></h3>
+<p><em>list-names</em></p>
 <p><strong>Enumerate recorded hidden names filtered by optional prefix</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function Enumerate(Optional ByVal prefix As String = vbNullString) As BetterArray
 </code></pre>
 <hr />
-<h3 id="export-names">export-names <a class="anchor-link" href="#export-names">#</a></h3>
+<h3 id="exportall">ExportAll <a class="anchor-link" href="#exportall">#</a></h3>
+<p><em>export-names</em></p>
 <p><strong>Export all tracked hidden names to another worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ExportAll(ByVal targetSh As Worksheet, _
                       Optional ByVal prefix As String = vbNullString)
 </code></pre>
 <hr />
-<h3 id="export-names-to-workbook">export-names-to-workbook <a class="anchor-link" href="#export-names-to-workbook">#</a></h3>
+<h3 id="exportalltoworkbook">ExportAllToWorkbook <a class="anchor-link" href="#exportalltoworkbook">#</a></h3>
+<p><em>export-names-to-workbook</em></p>
 <p><strong>Export tracked names to another workbook scope</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ExportAllToWorkbook(ByVal targetWb As Workbook, _
                                 Optional ByVal prefix As String = vbNullString)
 </code></pre>
 <hr />
-<h3 id="import-names">import-names <a class="anchor-link" href="#import-names">#</a></h3>
+<h3 id="importall">ImportAll <a class="anchor-link" href="#importall">#</a></h3>
+<p><em>import-names</em></p>
 <p><strong>Import hidden names from another worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ImportAll(ByVal sourceSh As Worksheet, _
@@ -137,7 +151,8 @@ the supplied worksheet or workbook.</p>
                       Optional ByVal overwriteExisting As Boolean = True)
 </code></pre>
 <hr />
-<h3 id="import-names-from-workbook">import-names-from-workbook <a class="anchor-link" href="#import-names-from-workbook">#</a></h3>
+<h3 id="importallfromworkbook">ImportAllFromWorkbook <a class="anchor-link" href="#importallfromworkbook">#</a></h3>
+<p><em>import-names-from-workbook</em></p>
 <p><strong>Import hidden names from another workbook scope</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ImportAllFromWorkbook(ByVal sourceWb As Workbook, _
@@ -145,7 +160,8 @@ the supplied worksheet or workbook.</p>
                                   Optional ByVal overwriteExisting As Boolean = True)
 </code></pre>
 <hr />
-<h3 id="set-list-object-header">set-list-object-header <a class="anchor-link" href="#set-list-object-header">#</a></h3>
+<h3 id="setlistobjectheader">SetListObjectHeader <a class="anchor-link" href="#setlistobjectheader">#</a></h3>
+<p><em>set-list-object-header</em></p>
 <p><strong>Create a workbook-level hidden name referencing a ListObject header</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub SetListObjectHeader(ByVal nameId As String, _
@@ -158,14 +174,16 @@ the supplied worksheet or workbook.</p>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-metadata-helpers">Metadata Helpers</h2>
-<h3 id="int-metadata-store">metadata-store <a class="anchor-link" href="#int-metadata-store">#</a></h3>
+<h3 id="int-metadatastore">MetadataStore <a class="anchor-link" href="#int-metadatastore">#</a></h3>
+<p><em>metadata-store</em></p>
 <p><strong>Lazy-initialised BetterArray holding all metadata records</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function MetadataStore() As BetterArray
 </code></pre>
 <p><strong>Returns:</strong> BetterArray. The metadata cache.</p>
 <hr />
-<h3 id="int-build-metadata-record">build-metadata-record <a class="anchor-link" href="#int-build-metadata-record">#</a></h3>
+<h3 id="int-buildmetadatarecord">BuildMetadataRecord <a class="anchor-link" href="#int-buildmetadatarecord">#</a></h3>
+<p><em>build-metadata-record</em></p>
 <p><strong>Construct a metadata record array</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function BuildMetadataRecord(ByVal nameId As String, _
@@ -174,63 +192,73 @@ the supplied worksheet or workbook.</p>
                                      ByVal definition As Name) As Variant
 </code></pre>
 <hr />
-<h3 id="int-metadata-name">metadata-name <a class="anchor-link" href="#int-metadata-name">#</a></h3>
+<h3 id="int-metadataname">MetadataName <a class="anchor-link" href="#int-metadataname">#</a></h3>
+<p><em>metadata-name</em></p>
 <p><strong>Read the name field from a metadata record</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function MetadataName(ByRef record As Variant) As String
 </code></pre>
 <hr />
-<h3 id="int-metadata-type">metadata-type <a class="anchor-link" href="#int-metadata-type">#</a></h3>
+<h3 id="int-metadatatype">MetadataType <a class="anchor-link" href="#int-metadatatype">#</a></h3>
+<p><em>metadata-type</em></p>
 <p><strong>Read the type field from a metadata record</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function MetadataType(ByRef record As Variant) As Byte
 </code></pre>
 <hr />
-<h3 id="int-metadata-updated">metadata-updated <a class="anchor-link" href="#int-metadata-updated">#</a></h3>
+<h3 id="int-metadataupdated">MetadataUpdated <a class="anchor-link" href="#int-metadataupdated">#</a></h3>
+<p><em>metadata-updated</em></p>
 <p><strong>Read the last-updated field from a metadata record</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function MetadataUpdated(ByRef record As Variant) As Date
 </code></pre>
 <hr />
-<h3 id="int-metadata-definition">metadata-definition <a class="anchor-link" href="#int-metadata-definition">#</a></h3>
+<h3 id="int-metadatadefinition">MetadataDefinition <a class="anchor-link" href="#int-metadatadefinition">#</a></h3>
+<p><em>metadata-definition</em></p>
 <p><strong>Read the Name definition from a metadata record</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function MetadataDefinition(ByRef record As Variant) As Name
 </code></pre>
 <hr />
-<h3 id="int-metadata-set-definition">metadata-set-definition <a class="anchor-link" href="#int-metadata-set-definition">#</a></h3>
+<h3 id="int-metadatasetdefinition">MetadataSetDefinition <a class="anchor-link" href="#int-metadatasetdefinition">#</a></h3>
+<p><em>metadata-set-definition</em></p>
 <p><strong>Write the Name definition into a metadata record</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub MetadataSetDefinition(ByRef record As Variant, ByVal definition As Name)
 </code></pre>
 <hr />
-<h3 id="int-metadata-set-updated">metadata-set-updated <a class="anchor-link" href="#int-metadata-set-updated">#</a></h3>
+<h3 id="int-metadatasetupdated">MetadataSetUpdated <a class="anchor-link" href="#int-metadatasetupdated">#</a></h3>
+<p><em>metadata-set-updated</em></p>
 <p><strong>Write the last-updated timestamp into a metadata record</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub MetadataSetUpdated(ByRef record As Variant, ByVal lastUpdated As Date)
 </code></pre>
 <hr />
-<h3 id="int-metadata-set-type">metadata-set-type <a class="anchor-link" href="#int-metadata-set-type">#</a></h3>
+<h3 id="int-metadatasettype">MetadataSetType <a class="anchor-link" href="#int-metadatasettype">#</a></h3>
+<p><em>metadata-set-type</em></p>
 <p><strong>Write the value type into a metadata record</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub MetadataSetType(ByRef record As Variant, ByVal valueType As Byte)
 </code></pre>
 <hr />
-<h3 id="int-metadata-index">metadata-index <a class="anchor-link" href="#int-metadata-index">#</a></h3>
+<h3 id="int-metadataindex">MetadataIndex <a class="anchor-link" href="#int-metadataindex">#</a></h3>
+<p><em>metadata-index</em></p>
 <p><strong>Find the index of a metadata record by name</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function MetadataIndex(ByVal nameId As String) As Long
 </code></pre>
 <p><strong>Returns:</strong> Long. The index, or -1 when not found.</p>
 <hr />
-<h3 id="int-store-metadata-record">store-metadata-record <a class="anchor-link" href="#int-store-metadata-record">#</a></h3>
+<h3 id="int-storemetadatarecord">StoreMetadataRecord <a class="anchor-link" href="#int-storemetadatarecord">#</a></h3>
+<p><em>store-metadata-record</em></p>
 <p><strong>Insert or replace a metadata record in the cache</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub StoreMetadataRecord(ByVal nameId As String, ByRef record As Variant)
 </code></pre>
 <hr />
 <h2 id="int-factory">Factory</h2>
-<h3 id="int-self">self <a class="anchor-link" href="#int-self">#</a></h3>
+<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
+<p><em>self</em></p>
 <p><strong>Self-reference returning the interface pointer</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Self() As IHiddenNames
@@ -238,108 +266,146 @@ the supplied worksheet or workbook.</p>
 <p><strong>Returns:</strong> IHiddenNames. This instance.</p>
 <hr />
 <h2 id="int-initialisation">Initialisation</h2>
-<h3 id="int-initialise">initialise <a class="anchor-link" href="#int-initialise">#</a></h3>
+<h3 id="int-initialise">Initialise <a class="anchor-link" href="#int-initialise">#</a></h3>
+<p><em>initialise</em></p>
 <p><strong>Bind the manager to a worksheet or workbook and load cache</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Initialise(ByVal targetObj As Object)
 </code></pre>
 <hr />
-<h3 id="int-load-metadata-cache">load-metadata-cache <a class="anchor-link" href="#int-load-metadata-cache">#</a></h3>
+<h3 id="int-loadmetadatacache">LoadMetadataCache <a class="anchor-link" href="#int-loadmetadatacache">#</a></h3>
+<p><em>load-metadata-cache</em></p>
 <p><strong>Scan existing hidden names and populate the metadata cache</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub LoadMetadataCache()
 </code></pre>
 <hr />
 <h2 id="int-interface-helpers">Interface Helpers</h2>
-<h3 id="int-validate-input">validate-input <a class="anchor-link" href="#int-validate-input">#</a></h3>
+<h3 id="int-validateinput">ValidateInput <a class="anchor-link" href="#int-validateinput">#</a></h3>
+<p><em>validate-input</em></p>
 <p><strong>Validate the factory input argument</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ValidateInput(ByVal targetObj As Object)
 </code></pre>
 <hr />
-<h3 id="int-name-owner">name-owner <a class="anchor-link" href="#int-name-owner">#</a></h3>
+<h3 id="int-nameowner">NameOwner <a class="anchor-link" href="#int-nameowner">#</a></h3>
+<p><em>name-owner</em></p>
 <p><strong>Resolve the host object owning the names collection</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function NameOwner() As Object
 </code></pre>
 <hr />
-<h3 id="int-scope-label">scope-label <a class="anchor-link" href="#int-scope-label">#</a></h3>
+<h3 id="int-scopelabel">ScopeLabel <a class="anchor-link" href="#int-scopelabel">#</a></h3>
+<p><em>scope-label</em></p>
 <p><strong>Human-readable label for the current scope</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ScopeLabel() As String
 </code></pre>
 <hr />
-<h3 id="int-metadata-key">metadata-key <a class="anchor-link" href="#int-metadata-key">#</a></h3>
+<h3 id="int-sanitizenameid">SanitizeNameId <a class="anchor-link" href="#int-sanitizenameid">#</a></h3>
+<p><em>sanitize-name-id</em></p>
+<p><strong>Convert a raw identifier to a valid Excel Name</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SanitizeNameId(ByVal nameId As String) As String
+</code></pre>
+<p>Excel defined names only allow letters, digits, underscores, and periods.
+The first character must be a letter or underscore.
+This function replaces any disallowed character (spaces, hyphens, etc.)
+with an underscore and prepends one when the name starts with a digit
+or period.  Called once at each public API entry point so that all
+internal methods receive pre-sanitized identifiers.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>nameId</code>: String. The raw name identifier.</li>
+</ul>
+<p><strong>Returns:</strong> String. An Excel-safe name identifier.</p>
+<hr />
+<h3 id="int-metadatakey">MetadataKey <a class="anchor-link" href="#int-metadatakey">#</a></h3>
+<p><em>metadata-key</em></p>
 <p><strong>Normalise a name identifier for case-insensitive lookup</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function MetadataKey(ByVal nameId As String) As String
 </code></pre>
+<p>Expects a pre-sanitized nameId (callers must call SanitizeNameId first).</p>
 <hr />
-<h3 id="int-ensure-metadata-record">ensure-metadata-record <a class="anchor-link" href="#int-ensure-metadata-record">#</a></h3>
+<h3 id="int-ensuremetadatarecord">EnsureMetadataRecord <a class="anchor-link" href="#int-ensuremetadatarecord">#</a></h3>
+<p><em>ensure-metadata-record</em></p>
 <p><strong>Ensure a metadata record exists for the given name</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function EnsureMetadataRecord(ByVal nameId As String) As Long
 </code></pre>
+<p>Expects a pre-sanitized nameId (callers must call SanitizeNameId first).</p>
 <p><strong>Returns:</strong> Long. The record index, or -1 when the name is not defined.</p>
 <hr />
-<h3 id="int-metadata-record">metadata-record <a class="anchor-link" href="#int-metadata-record">#</a></h3>
+<h3 id="int-metadatarecord">MetadataRecord <a class="anchor-link" href="#int-metadatarecord">#</a></h3>
+<p><em>metadata-record</em></p>
 <p><strong>Retrieve a metadata record by name</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function MetadataRecord(ByVal nameId As String) As Variant
 </code></pre>
 <hr />
-<h3 id="int-remove-metadata-record">remove-metadata-record <a class="anchor-link" href="#int-remove-metadata-record">#</a></h3>
+<h3 id="int-removemetadatarecord">RemoveMetadataRecord <a class="anchor-link" href="#int-removemetadatarecord">#</a></h3>
+<p><em>remove-metadata-record</em></p>
 <p><strong>Remove a metadata record from the cache</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RemoveMetadataRecord(ByVal nameId As String)
 </code></pre>
 <hr />
 <h2 id="int-lookup-helpers">Lookup Helpers</h2>
-<h3 id="int-should-track">should-track <a class="anchor-link" href="#int-should-track">#</a></h3>
+<h3 id="int-shouldtrack">ShouldTrack <a class="anchor-link" href="#int-shouldtrack">#</a></h3>
+<p><em>should-track</em></p>
 <p><strong>Determine whether a Name definition belongs to this scope</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ShouldTrack(ByVal definition As Name) As Boolean
 </code></pre>
 <hr />
-<h3 id="int-find-definition">find-definition <a class="anchor-link" href="#int-find-definition">#</a></h3>
+<h3 id="int-finddefinition">FindDefinition <a class="anchor-link" href="#int-finddefinition">#</a></h3>
+<p><em>find-definition</em></p>
 <p><strong>Locate a Name definition by identifier</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function FindDefinition(ByVal nameId As String) As Name
 </code></pre>
+<p>Expects a pre-sanitized nameId (callers must call SanitizeNameId first).</p>
 <hr />
-<h3 id="int-compare-name">compare-name <a class="anchor-link" href="#int-compare-name">#</a></h3>
+<h3 id="int-comparename">CompareName <a class="anchor-link" href="#int-comparename">#</a></h3>
+<p><em>compare-name</em></p>
 <p><strong>Case-insensitive comparison of a Name definition to an expected identifier</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function CompareName(ByVal definition As Name, ByVal expected As String) As Boolean
 </code></pre>
 <hr />
-<h3 id="int-extract-simple-name">extract-simple-name <a class="anchor-link" href="#int-extract-simple-name">#</a></h3>
+<h3 id="int-extractsimplename">ExtractSimpleName <a class="anchor-link" href="#int-extractsimplename">#</a></h3>
+<p><em>extract-simple-name</em></p>
 <p><strong>Strip sheet qualification from a Name string</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ExtractSimpleName(ByVal qualifiedName As String) As String
 </code></pre>
 <hr />
 <h2 id="int-serialization">Serialization</h2>
-<h3 id="int-serialize-value">serialize-value <a class="anchor-link" href="#int-serialize-value">#</a></h3>
+<h3 id="int-serializevalue">SerializeValue <a class="anchor-link" href="#int-serializevalue">#</a></h3>
+<p><em>serialize-value</em></p>
 <p><strong>Convert a typed value to its RefersTo formula string</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function SerializeValue(ByVal value As Variant, _
                                 ByVal valueType As Byte) As String
 </code></pre>
 <hr />
-<h3 id="int-serialize-variant">serialize-variant <a class="anchor-link" href="#int-serialize-variant">#</a></h3>
+<h3 id="int-serializevariant">SerializeVariant <a class="anchor-link" href="#int-serializevariant">#</a></h3>
+<p><em>serialize-variant</em></p>
 <p><strong>Serialize a Variant value by inspecting its runtime type</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function SerializeVariant(ByVal value As Variant) As String
 </code></pre>
 <hr />
-<h3 id="int-escape-string">escape-string <a class="anchor-link" href="#int-escape-string">#</a></h3>
+<h3 id="int-escapestring">EscapeString <a class="anchor-link" href="#int-escapestring">#</a></h3>
+<p><em>escape-string</em></p>
 <p><strong>Escape double-quotes for formula embedding</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function EscapeString(ByVal value As String) As String
 </code></pre>
 <hr />
-<h3 id="int-apply-comment">apply-comment <a class="anchor-link" href="#int-apply-comment">#</a></h3>
+<h3 id="int-applycomment">ApplyComment <a class="anchor-link" href="#int-applycomment">#</a></h3>
+<p><em>apply-comment</em></p>
 <p><strong>Write the type and timestamp comment onto a Name definition</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ApplyComment(ByVal definition As Name, _
@@ -347,60 +413,85 @@ the supplied worksheet or workbook.</p>
                          ByVal updatedOn As Date)
 </code></pre>
 <hr />
-<h3 id="int-build-comment">build-comment <a class="anchor-link" href="#int-build-comment">#</a></h3>
+<h3 id="int-buildcomment">BuildComment <a class="anchor-link" href="#int-buildcomment">#</a></h3>
+<p><em>build-comment</em></p>
 <p><strong>Assemble the structured comment string</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function BuildComment(ByVal valueType As Byte, ByVal updatedOn As Date) As String
 </code></pre>
 <hr />
-<h3 id="int-name-type-from-comment">name-type-from-comment <a class="anchor-link" href="#int-name-type-from-comment">#</a></h3>
+<h3 id="int-nametypefromcomment">NameTypeFromComment <a class="anchor-link" href="#int-nametypefromcomment">#</a></h3>
+<p><em>name-type-from-comment</em></p>
 <p><strong>Parse the value type from a Name comment</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function NameTypeFromComment(ByVal comment As String) As Byte
 </code></pre>
 <hr />
-<h3 id="int-updated-from-comment">updated-from-comment <a class="anchor-link" href="#int-updated-from-comment">#</a></h3>
+<h3 id="int-updatedfromcomment">UpdatedFromComment <a class="anchor-link" href="#int-updatedfromcomment">#</a></h3>
+<p><em>updated-from-comment</em></p>
 <p><strong>Parse the last-updated timestamp from a Name comment</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function UpdatedFromComment(ByVal comment As String) As Date
 </code></pre>
 <hr />
-<h3 id="int-extract-comment-value">extract-comment-value <a class="anchor-link" href="#int-extract-comment-value">#</a></h3>
+<h3 id="int-extractcommentvalue">ExtractCommentValue <a class="anchor-link" href="#int-extractcommentvalue">#</a></h3>
+<p><em>extract-comment-value</em></p>
 <p><strong>Extract a key-value token from a structured comment</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ExtractCommentValue(ByVal comment As String, ByVal prefix As String) As String
 </code></pre>
 <hr />
-<h3 id="int-value-type-name">value-type-name <a class="anchor-link" href="#int-value-type-name">#</a></h3>
+<h3 id="int-valuetypename">ValueTypeName <a class="anchor-link" href="#int-valuetypename">#</a></h3>
+<p><em>value-type-name</em></p>
 <p><strong>Convert a HiddenNameValueType to its string representation</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ValueTypeName(ByVal valueType As Byte) As String
 </code></pre>
 <hr />
-<h3 id="int-string-to-value-type">string-to-value-type <a class="anchor-link" href="#int-string-to-value-type">#</a></h3>
+<h3 id="int-stringtovaluetype">StringToValueType <a class="anchor-link" href="#int-stringtovaluetype">#</a></h3>
+<p><em>string-to-value-type</em></p>
 <p><strong>Convert a string representation back to HiddenNameValueType</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function StringToValueType(ByVal value As String) As Byte
 </code></pre>
 <hr />
 <h2 id="int-value-coercion">Value Coercion</h2>
-<h3 id="int-coerce-value">coerce-value <a class="anchor-link" href="#int-coerce-value">#</a></h3>
+<h3 id="int-coercevalue">CoerceValue <a class="anchor-link" href="#int-coercevalue">#</a></h3>
+<p><em>coerce-value</em></p>
 <p><strong>Cast a raw value to the specified HiddenNameValueType</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function CoerceValue(ByVal value As Variant, _
                              ByVal valueType As Byte) As Variant
 </code></pre>
 <hr />
+<h3 id="int-recordvalue">RecordValue <a class="anchor-link" href="#int-recordvalue">#</a></h3>
+<p><em>record-value</em></p>
+<p><strong>Extract the stored value directly from a metadata record</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function RecordValue(ByVal record As Variant) As Variant
+</code></pre>
+<p>Reads the value from the record definition without going through the
+public ValueOf method, avoiding redundant SanitizeNameId calls and
+metadata index lookups when the record is already resolved.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>record</code>: Variant. A metadata record array.</li>
+</ul>
+<p><strong>Returns:</strong> Variant. The coerced value, or Empty when the definition is Nothing.</p>
+<hr />
 <h2 id="int-core-operations">Core Operations</h2>
-<h3 id="int-ensure-definition">ensure-definition <a class="anchor-link" href="#int-ensure-definition">#</a></h3>
+<h3 id="int-ensuredefinition">EnsureDefinition <a class="anchor-link" href="#int-ensuredefinition">#</a></h3>
+<p><em>ensure-definition</em></p>
 <p><strong>Create a hidden Name definition if it does not exist</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function EnsureDefinition(ByVal nameId As String, _
                                   ByVal initialValue As Variant, _
                                   ByVal valueType As Byte) As Name
 </code></pre>
+<p>Expects a pre-sanitized nameId (callers must call SanitizeNameId first).</p>
 <hr />
-<h3 id="int-update-definition-value">update-definition-value <a class="anchor-link" href="#int-update-definition-value">#</a></h3>
+<h3 id="int-updatedefinitionvalue">UpdateDefinitionValue <a class="anchor-link" href="#int-updatedefinitionvalue">#</a></h3>
+<p><em>update-definition-value</em></p>
 <p><strong>Write a new value into an existing Name definition</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub UpdateDefinitionValue(ByVal definition As Name, _
@@ -409,27 +500,31 @@ the supplied worksheet or workbook.</p>
                                   Optional ByVal updatedOn As Date = 0)
 </code></pre>
 <hr />
-<h3 id="int-definition-stored-value">definition-stored-value <a class="anchor-link" href="#int-definition-stored-value">#</a></h3>
+<h3 id="int-definitionstoredvalue">DefinitionStoredValue <a class="anchor-link" href="#int-definitionstoredvalue">#</a></h3>
+<p><em>definition-stored-value</em></p>
 <p><strong>Extract the raw stored value from a Name definition</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function DefinitionStoredValue(ByVal definition As Name, _
                                        ByVal valueType As Byte) As Variant
 </code></pre>
 <hr />
-<h3 id="int-remove-definition">remove-definition <a class="anchor-link" href="#int-remove-definition">#</a></h3>
+<h3 id="int-removedefinition">RemoveDefinition <a class="anchor-link" href="#int-removedefinition">#</a></h3>
+<p><em>remove-definition</em></p>
 <p><strong>Delete a Name definition from the host scope</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RemoveDefinition(ByVal nameId As String)
 </code></pre>
 <hr />
-<h3 id="int-ensure-ready">ensure-ready <a class="anchor-link" href="#int-ensure-ready">#</a></h3>
+<h3 id="int-ensureready">EnsureReady <a class="anchor-link" href="#int-ensureready">#</a></h3>
+<p><em>ensure-ready</em></p>
 <p><strong>Guard that the manager is properly initialised</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureReady()
 </code></pre>
 <hr />
 <h2 id="int-internal-export-helpers">Internal Export Helpers</h2>
-<h3 id="int-persist-on-worksheet">persist-on-worksheet <a class="anchor-link" href="#int-persist-on-worksheet">#</a></h3>
+<h3 id="int-persistonworksheet">PersistOnWorksheet <a class="anchor-link" href="#int-persistonworksheet">#</a></h3>
+<p><em>persist-on-worksheet</em></p>
 <p><strong>Write a hidden name onto a target worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub PersistOnWorksheet(ByVal targetSh As Worksheet, _
@@ -437,30 +532,26 @@ the supplied worksheet or workbook.</p>
                                ByVal value As Variant, _
                                ByVal valueType As Byte)
 </code></pre>
+<p>Expects a pre-sanitized nameId (callers must call SanitizeNameId first).</p>
 <hr />
-<h3 id="int-remove-worksheet-name">remove-worksheet-name <a class="anchor-link" href="#int-remove-worksheet-name">#</a></h3>
+<h3 id="int-removeworksheetname">RemoveWorksheetName <a class="anchor-link" href="#int-removeworksheetname">#</a></h3>
+<p><em>remove-worksheet-name</em></p>
 <p><strong>Delete a Name definition from a specific worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RemoveWorksheetName(ByVal targetSh As Worksheet, ByVal nameId As String)
 </code></pre>
 <hr />
-<h3 id="int-remove-workbook-name">remove-workbook-name <a class="anchor-link" href="#int-remove-workbook-name">#</a></h3>
+<h3 id="int-removeworkbookname">RemoveWorkbookName <a class="anchor-link" href="#int-removeworkbookname">#</a></h3>
+<p><em>remove-workbook-name</em></p>
 <p><strong>Delete a Name definition from a workbook scope</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RemoveWorkbookName(ByVal targetWb As Workbook, ByVal nameId As String)
 </code></pre>
-<hr />
-<h3 id="int-update-stored-value">update-stored-value <a class="anchor-link" href="#int-update-stored-value">#</a></h3>
-<p><strong>Write a value and update the metadata cache</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub UpdateStoredValue(ByVal nameId As String, _
-                              ByVal value As Variant, _
-                              ByVal valueType As Byte, _
-                              Optional ByVal updatedOn As Date = 0)
-</code></pre>
+<p>Expects a pre-sanitized nameId (callers must call SanitizeNameId first).</p>
 <hr />
 <h2 id="int-error-handling">Error Handling</h2>
-<h3 id="int-throw-error">throw-error <a class="anchor-link" href="#int-throw-error">#</a></h3>
+<h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
+<p><em>throw-error</em></p>
 <p><strong>Raise a ProjectError-based exception</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal message As String)
@@ -468,15 +559,19 @@ the supplied worksheet or workbook.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (57 file(s))</summary>
+<summary>Used in (60 file(s))</summary>
 <ul>
+<li><a href="src/classes/analyses/AnalysisOutput.cls">AnalysisOutput.cls</a></li>
+<li><a href="src/classes/analyses/AnaTabIds.cls">AnaTabIds.cls</a></li>
 <li><a href="src/classes/analyses/CrossTable.cls">CrossTable.cls</a></li>
+<li><a href="src/classes/analyses/CustomPivotTable.cls">CustomPivotTable.cls</a></li>
+<li><a href="src/classes/dataio/ExportButton.cls">ExportButton.cls</a></li>
 <li><a href="src/classes/dataio/LLExporter.cls">LLExporter.cls</a></li>
 <li><a href="src/classes/dataio/LLImporter.cls">LLImporter.cls</a></li>
-<li><a href="src/classes/designer/DesignerImportService.cls">DesignerImportService.cls</a></li>
 <li><a href="src/classes/designer/DesignerPreparation.cls">DesignerPreparation.cls</a></li>
 <li><a href="src/classes/designer/DesignerTranslation.cls">DesignerTranslation.cls</a></li>
 <li><a href="src/classes/designer/IDesignerPreparation.cls">IDesignerPreparation.cls</a></li>
+<li><a href="src/classes/designer/LinelistBuildService.cls">LinelistBuildService.cls</a></li>
 <li><a href="src/classes/dictionary/LLdictionary.cls">LLdictionary.cls</a></li>
 <li><a href="src/classes/dictionary/LLExport.cls">LLExport.cls</a></li>
 <li><a href="src/classes/general/CheckingOutput.cls">CheckingOutput.cls</a></li>
@@ -486,6 +581,7 @@ the supplied worksheet or workbook.</p>
 <li><a href="src/classes/general/HiddenNames.cls">HiddenNames.cls</a></li>
 <li><a href="src/classes/general/IHiddenNames.cls">IHiddenNames.cls</a></li>
 <li><a href="src/classes/geo/LLGeo.cls">LLGeo.cls</a></li>
+<li><a href="src/classes/geo/LLSpatial.cls">LLSpatial.cls</a></li>
 <li><a href="src/classes/linelist/EventLinelist.cls">EventLinelist.cls</a></li>
 <li><a href="src/classes/linelist/IEventLinelist.cls">IEventLinelist.cls</a></li>
 <li><a href="src/classes/linelist/Linelist.cls">Linelist.cls</a></li>
@@ -499,19 +595,17 @@ the supplied worksheet or workbook.</p>
 <li><a href="src/classes/setup/EventSetup.cls">EventSetup.cls</a></li>
 <li><a href="src/classes/setup/SetupImportService.cls">SetupImportService.cls</a></li>
 <li><a href="src/classes/setup/SetupTranslationsTable.cls">SetupTranslationsTable.cls</a></li>
-<li><a href="src/classes/tables/CustomPivotTable.cls">CustomPivotTable.cls</a></li>
+<li><a href="src/classes/stale/DesignerImportService.cls">DesignerImportService.cls</a></li>
 <li><a href="src/modules/designer/EventsDesignerAdvanced.bas">EventsDesignerAdvanced.bas</a></li>
 <li><a href="src/modules/designer/EventsDesignerCore.bas">EventsDesignerCore.bas</a></li>
 <li><a href="src/modules/designer/EventsDesignerMulti.bas">EventsDesignerMulti.bas</a></li>
-<li><a href="src/modules/geo/GeoModule.bas">GeoModule.bas</a></li>
+<li><a href="src/modules/designer/GenerationReport.bas">GenerationReport.bas</a></li>
 <li><a href="src/modules/linelist/EventsLinelistButtons.bas">EventsLinelistButtons.bas</a></li>
 <li><a href="src/modules/linelist/LinelistEventsManager.bas">LinelistEventsManager.bas</a></li>
 <li><a href="src/modules/linelistform/FormLogicEpiWeek.bas">FormLogicEpiWeek.bas</a></li>
+<li><a href="src/modules/linelistform/FormLogicGeo.bas">FormLogicGeo.bas</a></li>
 <li><a href="src/modules/mastersetup/MasterSetupHelpers.bas">MasterSetupHelpers.bas</a></li>
 <li><a href="src/modules/setup/SetupEventsManager.bas">SetupEventsManager.bas</a></li>
-<li><a href="src/modules/stale/EventsGlobalAnalysis.bas">EventsGlobalAnalysis.bas</a></li>
-<li><a href="src/modules/stale/EventsSpatialAnalysis.bas">EventsSpatialAnalysis.bas</a></li>
-<li><a href="src/modules/stale/LinelistEvents.bas">LinelistEvents.bas</a></li>
 <li><a href="src/tests/modules/designer/TestDesignerRibbon.bas">TestDesignerRibbon.bas</a></li>
 <li><a href="src/tests/modules/dictionary/TestLLExport.bas">TestLLExport.bas</a></li>
 <li><a href="src/tests/modules/general/TestCheckingOutput.bas">TestCheckingOutput.bas</a></li>

@@ -25,7 +25,8 @@ write ribbon checkbox flags persisted through workbook-level hidden names.</p>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
 <div class="section-body">
-<h3 id="create">create <a class="anchor-link" href="#create">#</a></h3>
+<h3 id="create">Create <a class="anchor-link" href="#create">#</a></h3>
+<p><em>create</em></p>
 <p><strong>Create and configure a designer preparation helper</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal hostBook As Workbook) As IDesignerPreparation
@@ -45,7 +46,8 @@ predeclared instance.</p>
 <details open class="doc-section" id="public-api">
 <summary>Public API</summary>
 <div class="section-body">
-<h3 id="configure">configure <a class="anchor-link" href="#configure">#</a></h3>
+<h3 id="configure">Configure <a class="anchor-link" href="#configure">#</a></h3>
+<p><em>configure</em></p>
 <p><strong>Bind the helper to the designer workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Configure(ByVal hostBook As Workbook)
@@ -62,7 +64,8 @@ on next access. Raises an error when the workbook is Nothing.</p>
 <li>ProjectError.ObjectNotInitialized When the workbook is Nothing.</li>
 </ul>
 <hr />
-<h3 id="prepare">prepare <a class="anchor-link" href="#prepare">#</a></h3>
+<h3 id="prepare">Prepare <a class="anchor-link" href="#prepare">#</a></h3>
+<p><em>prepare</em></p>
 <p><strong>Execute all preparation tasks on the designer workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Prepare(ByRef devManager As IDevelopment)
@@ -89,7 +92,8 @@ the manager for deployment.</li>
 <li><code>devManager</code>: IDevelopment. ByRef development manager instance, or Nothing.</li>
 </ul>
 <hr />
-<h3 id="set-flag">set-flag <a class="anchor-link" href="#set-flag">#</a></h3>
+<h3 id="setflag">SetFlag <a class="anchor-link" href="#setflag">#</a></h3>
+<p><em>set-flag</em></p>
 <p><strong>Persist a ribbon checkbox flag as Yes/No in hidden names</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub SetFlag(ByVal nameId As String, ByVal enabled As Boolean)
@@ -102,7 +106,8 @@ the manager for deployment.</li>
 <li><code>enabled</code>: Boolean. True to store &quot;Yes&quot;, False to store &quot;No&quot;.</li>
 </ul>
 <hr />
-<h3 id="get-flag">get-flag <a class="anchor-link" href="#get-flag">#</a></h3>
+<h3 id="getflag">GetFlag <a class="anchor-link" href="#getflag">#</a></h3>
+<p><em>get-flag</em></p>
 <p><strong>Read a ribbon checkbox flag as a boolean from hidden names</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function GetFlag(ByVal nameId As String, Optional ByVal defaultValue As Boolean = False) As Boolean
@@ -117,7 +122,8 @@ to the defaultValue when the name is missing.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when the stored value is &quot;Yes&quot;.</p>
 <hr />
-<h3 id="host-workbook">host-workbook <a class="anchor-link" href="#host-workbook">#</a></h3>
+<h3 id="hostworkbook">HostWorkbook <a class="anchor-link" href="#hostworkbook">#</a></h3>
+<p><em>host-workbook</em></p>
 <p><strong>The configured host workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get HostWorkbook() As Workbook
@@ -130,7 +136,8 @@ error when accessed before configuration.</p>
 <li>ProjectError.ObjectNotInitialized When the workbook was not configured.</li>
 </ul>
 <hr />
-<h3 id="hidden-store">hidden-store <a class="anchor-link" href="#hidden-store">#</a></h3>
+<h3 id="hiddenstore">HiddenStore <a class="anchor-link" href="#hiddenstore">#</a></h3>
+<p><em>hidden-store</em></p>
 <p><strong>The workbook-level hidden names manager</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get HiddenStore() As IHiddenNames
@@ -139,7 +146,8 @@ error when accessed before configuration.</p>
 Used internally to persist and retrieve ribbon flag values.</p>
 <p><strong>Returns:</strong> IHiddenNames. The hidden names manager.</p>
 <hr />
-<h3 id="dropdowns">dropdowns <a class="anchor-link" href="#dropdowns">#</a></h3>
+<h3 id="dropdowns">Dropdowns <a class="anchor-link" href="#dropdowns">#</a></h3>
+<p><em>dropdowns</em></p>
 <p><strong>The dropdown manager created during preparation</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Dropdowns() As IDropdownLists
@@ -154,7 +162,8 @@ not already created by EnsureDropdowns or Prepare.</p>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-factory">Factory</h2>
-<h3 id="int-self">self <a class="anchor-link" href="#int-self">#</a></h3>
+<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
+<p><em>self</em></p>
 <p><strong>Current object instance</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Self() As IDesignerPreparation
@@ -164,7 +173,8 @@ interface reference from the predeclared Create method.</p>
 <p><strong>Returns:</strong> IDesignerPreparation. The current instance cast to the interface.</p>
 <hr />
 <h2 id="int-preparation-helpers">Preparation Helpers</h2>
-<h3 id="int-import-translations">import-translations <a class="anchor-link" href="#int-import-translations">#</a></h3>
+<h3 id="int-importtranslations">ImportTranslations <a class="anchor-link" href="#int-importtranslations">#</a></h3>
+<p><em>import-translations</em></p>
 <p><strong>Import translation tables from a user-selected workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ImportTranslations()
@@ -175,7 +185,8 @@ imports matching ListObjects via CustomTable.Import. This is the same
 logic as the clickImpTrans ribbon callback, encapsulated here so it
 runs as part of the preparation sequence.</p>
 <hr />
-<h3 id="int-ensure-dropdowns">ensure-dropdowns <a class="anchor-link" href="#int-ensure-dropdowns">#</a></h3>
+<h3 id="int-ensuredropdowns">EnsureDropdowns <a class="anchor-link" href="#int-ensuredropdowns">#</a></h3>
+<p><em>ensure-dropdowns</em></p>
 <p><strong>Create the dropdown worksheet and register all standard dropdown lists</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureDropdowns()
@@ -184,7 +195,8 @@ runs as part of the preparation sequence.</p>
 (empty placeholder), interface languages, epiweek start (1-7), and
 design values dropdown lists.</p>
 <hr />
-<h3 id="int-hide-worksheets">hide-worksheets <a class="anchor-link" href="#int-hide-worksheets">#</a></h3>
+<h3 id="int-hideworksheets">HideWorksheets <a class="anchor-link" href="#int-hideworksheets">#</a></h3>
+<p><em>hide-worksheets</em></p>
 <p><strong>Hide internal worksheets and register them with the dev manager</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub HideWorksheets(ByRef devManager As IDevelopment)
@@ -199,7 +211,8 @@ deployment. Silently skips any worksheet that does not exist.</p>
 <li><code>devManager</code>: IDevelopment. Development manager for deployment registration, or Nothing.</li>
 </ul>
 <hr />
-<h3 id="int-ensure-workbook-flags">ensure-workbook-flags <a class="anchor-link" href="#int-ensure-workbook-flags">#</a></h3>
+<h3 id="int-ensureworkbookflags">EnsureWorkbookFlags <a class="anchor-link" href="#int-ensureworkbookflags">#</a></h3>
+<p><em>ensure-workbook-flags</em></p>
 <p><strong>Ensure all workbook-level HiddenNames flags exist</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureWorkbookFlags()
@@ -209,7 +222,8 @@ codes, and the last opened date. Checkbox flags default to &quot;Yes&quot; (on).
 Language codes default to empty strings. Last opened date is set to the
 current date.</p>
 <hr />
-<h3 id="int-ensure-geo-flags">ensure-geo-flags <a class="anchor-link" href="#int-ensure-geo-flags">#</a></h3>
+<h3 id="int-ensuregeoflags">EnsureGeoFlags <a class="anchor-link" href="#int-ensuregeoflags">#</a></h3>
+<p><em>ensure-geo-flags</em></p>
 <p><strong>Ensure Geo worksheet-level HiddenNames flags exist</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureGeoFlags()
@@ -222,7 +236,8 @@ Silently exits when the Geo worksheet does not exist in the host
 workbook.</p>
 <hr />
 <h2 id="int-dropdown-helpers">Dropdown Helpers</h2>
-<h3 id="int-ensure-dropdown-manager">ensure-dropdown-manager <a class="anchor-link" href="#int-ensure-dropdown-manager">#</a></h3>
+<h3 id="int-ensuredropdownmanager">EnsureDropdownManager <a class="anchor-link" href="#int-ensuredropdownmanager">#</a></h3>
+<p><em>ensure-dropdown-manager</em></p>
 <p><strong>Ensure the dropdown manager is initialised for the target workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureDropdownManager()
@@ -231,7 +246,8 @@ workbook.</p>
 resolves or creates the dropdown worksheet, then creates a DropdownLists
 instance bound to it with the standard dropdown prefix.</p>
 <hr />
-<h3 id="int-ensure-dropdown-sheet">ensure-dropdown-sheet <a class="anchor-link" href="#int-ensure-dropdown-sheet">#</a></h3>
+<h3 id="int-ensuredropdownsheet">EnsureDropdownSheet <a class="anchor-link" href="#int-ensuredropdownsheet">#</a></h3>
+<p><em>ensure-dropdown-sheet</em></p>
 <p><strong>Ensure the dropdown worksheet exists and cache the reference</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function EnsureDropdownSheet() As Worksheet
@@ -241,7 +257,8 @@ creates a new worksheet at the end and names it. Caches the reference
 for subsequent calls.</p>
 <p><strong>Returns:</strong> Worksheet. The dropdown worksheet.</p>
 <hr />
-<h3 id="int-register-all-dropdowns">register-all-dropdowns <a class="anchor-link" href="#int-register-all-dropdowns">#</a></h3>
+<h3 id="int-registeralldropdowns">RegisterAllDropdowns <a class="anchor-link" href="#int-registeralldropdowns">#</a></h3>
+<p><em>register-all-dropdowns</em></p>
 <p><strong>Register every standard dropdown list for designer worksheets</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RegisterAllDropdowns()
@@ -252,7 +269,8 @@ for subsequent calls.</p>
 (numbers 1 through 7), and design values (matching LLFormat design
 constants).</p>
 <hr />
-<h3 id="int-register-dropdown">register-dropdown <a class="anchor-link" href="#int-register-dropdown">#</a></h3>
+<h3 id="int-registerdropdown">RegisterDropdown <a class="anchor-link" href="#int-registerdropdown">#</a></h3>
+<p><em>register-dropdown</em></p>
 <p><strong>Register a single dropdown by converting the values into a BetterArray</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RegisterDropdown(ByVal dropdownName As String, ByVal values As Variant)
@@ -267,7 +285,8 @@ under the given name.</p>
 </ul>
 <hr />
 <h2 id="int-multi-validations">Multi Validations</h2>
-<h3 id="int-apply-multi-validations">apply-multi-validations <a class="anchor-link" href="#int-apply-multi-validations">#</a></h3>
+<h3 id="int-applymultivalidations">ApplyMultiValidations <a class="anchor-link" href="#int-applymultivalidations">#</a></h3>
+<p><em>apply-multi-validations</em></p>
 <p><strong>Apply data validation to the T_Multi table on GenerateMultiple</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ApplyMultiValidations()
@@ -279,7 +298,8 @@ CustomTable.SetValidation. Silently exits when the worksheet or
 table does not exist in the host workbook.</p>
 <hr />
 <h2 id="int-main-validations">Main Validations</h2>
-<h3 id="int-apply-main-validations">apply-main-validations <a class="anchor-link" href="#int-apply-main-validations">#</a></h3>
+<h3 id="int-applymainvalidations">ApplyMainValidations <a class="anchor-link" href="#int-applymainvalidations">#</a></h3>
+<p><em>apply-main-validations</em></p>
 <p><strong>Apply dropdown validation to named ranges on the Main worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ApplyMainValidations()
@@ -290,7 +310,8 @@ registered dropdown lists to three named ranges: RNG_LangSetup
 (language of linelist interface). Silently exits when the Main
 worksheet does not exist or individual named ranges are missing.</p>
 <hr />
-<h3 id="int-apply-range-validation">apply-range-validation <a class="anchor-link" href="#int-apply-range-validation">#</a></h3>
+<h3 id="int-applyrangevalidation">ApplyRangeValidation <a class="anchor-link" href="#int-applyrangevalidation">#</a></h3>
+<p><em>apply-range-validation</em></p>
 <p><strong>Apply dropdown validation to a single named range</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ApplyRangeValidation(ByVal sh As Worksheet, ByVal rngName As String, _
@@ -308,7 +329,8 @@ named range does not exist on the worksheet.</p>
 </ul>
 <hr />
 <h2 id="int-internal-helpers">Internal Helpers</h2>
-<h3 id="int-ensure-hidden-store">ensure-hidden-store <a class="anchor-link" href="#int-ensure-hidden-store">#</a></h3>
+<h3 id="int-ensurehiddenstore">EnsureHiddenStore <a class="anchor-link" href="#int-ensurehiddenstore">#</a></h3>
+<p><em>ensure-hidden-store</em></p>
 <p><strong>Lazily initialise the hidden names store from the host workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureHiddenStore()
@@ -316,7 +338,8 @@ named range does not exist on the worksheet.</p>
 <p>Creates the IHiddenNames instance on first access by calling
 HiddenNames.Create with the host workbook. Subsequent calls are no-ops.</p>
 <hr />
-<h3 id="int-ensure-default-flags">ensure-default-flags <a class="anchor-link" href="#int-ensure-default-flags">#</a></h3>
+<h3 id="int-ensuredefaultflags">EnsureDefaultFlags <a class="anchor-link" href="#int-ensuredefaultflags">#</a></h3>
+<p><em>ensure-default-flags</em></p>
 <p><strong>Ensure both default ribbon flags exist in the hidden store</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureDefaultFlags()
@@ -325,7 +348,8 @@ HiddenNames.Create with the host workbook. Subsequent calls are no-ops.</p>
 creating the hidden names if they do not already exist. All checks
 default to enabled per specification.</p>
 <hr />
-<h3 id="int-resolve-worksheet">resolve-worksheet <a class="anchor-link" href="#int-resolve-worksheet">#</a></h3>
+<h3 id="int-resolveworksheet">ResolveWorksheet <a class="anchor-link" href="#int-resolveworksheet">#</a></h3>
+<p><em>resolve-worksheet</em></p>
 <p><strong>Resolve a worksheet by name from the host workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ResolveWorksheet(ByVal sheetName As String) As Worksheet
@@ -338,7 +362,8 @@ Nothing when the sheet does not exist.</p>
 </ul>
 <p><strong>Returns:</strong> Worksheet. The resolved worksheet, or Nothing.</p>
 <hr />
-<h3 id="int-set-sheet-visibility">set-sheet-visibility <a class="anchor-link" href="#int-set-sheet-visibility">#</a></h3>
+<h3 id="int-setsheetvisibility">SetSheetVisibility <a class="anchor-link" href="#int-setsheetvisibility">#</a></h3>
+<p><em>set-sheet-visibility</em></p>
 <p><strong>Set the visibility of a worksheet by name</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub SetSheetVisibility(ByVal sheetName As String, ByVal visibility As Long)
@@ -351,7 +376,8 @@ property. Silently skips when the worksheet does not exist.</p>
 <li><code>visibility</code>: Long. The xlSheetVisibility constant to apply.</li>
 </ul>
 <hr />
-<h3 id="int-register-hidden-sheet">register-hidden-sheet <a class="anchor-link" href="#int-register-hidden-sheet">#</a></h3>
+<h3 id="int-registerhiddensheet">RegisterHiddenSheet <a class="anchor-link" href="#int-registerhiddensheet">#</a></h3>
+<p><em>register-hidden-sheet</em></p>
 <p><strong>Register a sheet with the development manager for deployment hiding</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RegisterHiddenSheet(ByRef manager As IDevelopment, ByVal sheetName As String)
@@ -364,7 +390,8 @@ not abort the preparation sequence.</p>
 <li><code>sheetName</code>: String. The worksheet name to register.</li>
 </ul>
 <hr />
-<h3 id="int-ensure-geo-range">ensure-geo-range <a class="anchor-link" href="#int-ensure-geo-range">#</a></h3>
+<h3 id="int-ensuregeorange">EnsureGeoRange <a class="anchor-link" href="#int-ensuregeorange">#</a></h3>
+<p><em>ensure-geo-range</em></p>
 <p><strong>Ensure a cell-based named range exists on the Geo worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureGeoRange(ByVal sh As Worksheet, ByVal rngName As String)
@@ -378,7 +405,8 @@ overlap with existing ListObjects or other content.</p>
 <li><code>rngName</code>: String. The named range identifier to create.</li>
 </ul>
 <hr />
-<h3 id="int-raise-error">raise-error <a class="anchor-link" href="#int-raise-error">#</a></h3>
+<h3 id="int-raiseerror">RaiseError <a class="anchor-link" href="#int-raiseerror">#</a></h3>
+<p><em>raise-error</em></p>
 <p><strong>Raise a ProjectError-based exception</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RaiseError(ByVal errorCode As ProjectError, ByVal messageText As String)

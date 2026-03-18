@@ -21,7 +21,8 @@ interface.</p>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
 <div class="section-body">
-<h3 id="create">create <a class="anchor-link" href="#create">#</a></h3>
+<h3 id="create">Create <a class="anchor-link" href="#create">#</a></h3>
+<p><em>create</em></p>
 <p><strong>Create an initialised SetupPreparation instance</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal hostBook As Workbook) As ISetupPreparation
@@ -44,7 +45,8 @@ ISetupPreparation interface.</p>
 <details open class="doc-section" id="public-api">
 <summary>Public API</summary>
 <div class="section-body">
-<h3 id="configure">configure <a class="anchor-link" href="#configure">#</a></h3>
+<h3 id="configure">Configure <a class="anchor-link" href="#configure">#</a></h3>
+<p><em>configure</em></p>
 <p><strong>Bind the preparation helper to a workbook hosting setup worksheets</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Configure(ByVal hostBook As Workbook)
@@ -60,7 +62,8 @@ objects to Nothing, forcing lazy re-initialisation on next access.</p>
 <li>ProjectError.ObjectNotInitialized When hostBook is Nothing.</li>
 </ul>
 <hr />
-<h3 id="prepare">prepare <a class="anchor-link" href="#prepare">#</a></h3>
+<h3 id="prepare">Prepare <a class="anchor-link" href="#prepare">#</a></h3>
+<p><em>prepare</em></p>
 <p><strong>Execute the full preparation workflow</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Prepare(ByRef manager As IDevelopment)
@@ -74,7 +77,8 @@ protected sheets via the supplied development manager.</p>
 <li><code>manager</code>: IDevelopment. Development manager providing hidden/protected sheet registration.</li>
 </ul>
 <hr />
-<h3 id="ensure-dropdowns">ensure-dropdowns <a class="anchor-link" href="#ensure-dropdowns">#</a></h3>
+<h3 id="ensuredropdowns">EnsureDropdowns <a class="anchor-link" href="#ensuredropdowns">#</a></h3>
+<p><em>ensure-dropdowns</em></p>
 <p><strong>Ensure the dropdown manager has registered all default dropdown lists</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub EnsureDropdowns()
@@ -84,7 +88,8 @@ populate every standard dropdown list on the dropdown worksheet. Safe to
 call multiple times; the manager creation is a no-op when already
 initialised.</p>
 <hr />
-<h3 id="ensure-updated-registry">ensure-updated-registry <a class="anchor-link" href="#ensure-updated-registry">#</a></h3>
+<h3 id="ensureupdatedregistry">EnsureUpdatedRegistry <a class="anchor-link" href="#ensureupdatedregistry">#</a></h3>
+<p><em>ensure-updated-registry</em></p>
 <p><strong>Initialise the updated values registry and register watched tables</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub EnsureUpdatedRegistry()
@@ -93,7 +98,8 @@ initialised.</p>
 registers the watched setup sheets (Dictionary, Choices, Analysis, Exports),
 and resets all status tags to &quot;yes&quot; (the default ready state).</p>
 <hr />
-<h3 id="dropdowns">dropdowns <a class="anchor-link" href="#dropdowns">#</a></h3>
+<h3 id="dropdowns">Dropdowns <a class="anchor-link" href="#dropdowns">#</a></h3>
+<p><em>dropdowns</em></p>
 <p><strong>Dropdown manager for external callers</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Dropdowns() As IDropdownLists
@@ -103,7 +109,8 @@ Lazily initialises the manager on first access if it was not already
 created by EnsureDropdowns or Prepare.</p>
 <p><strong>Returns:</strong> IDropdownLists. The dropdown manager instance.</p>
 <hr />
-<h3 id="updated-watcher">updated-watcher <a class="anchor-link" href="#updated-watcher">#</a></h3>
+<h3 id="updatedwatcher">UpdatedWatcher <a class="anchor-link" href="#updatedwatcher">#</a></h3>
+<p><em>updated-watcher</em></p>
 <p><strong>Updated values watcher for external callers</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get UpdatedWatcher() As IUpdatedValues
@@ -113,7 +120,8 @@ Lazily initialises the watcher on first access if it was not already
 created by EnsureUpdatedRegistry or Prepare.</p>
 <p><strong>Returns:</strong> IUpdatedValues. The update watcher instance.</p>
 <hr />
-<h3 id="host-workbook">host-workbook <a class="anchor-link" href="#host-workbook">#</a></h3>
+<h3 id="hostworkbook">HostWorkbook <a class="anchor-link" href="#hostworkbook">#</a></h3>
+<p><em>host-workbook</em></p>
 <p><strong>Workbook hosting setup assets</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get HostWorkbook() As Workbook
@@ -132,7 +140,8 @@ has not been configured.</p>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-factory">Factory</h2>
-<h3 id="int-self">self <a class="anchor-link" href="#int-self">#</a></h3>
+<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
+<p><em>self</em></p>
 <p><strong>Current object instance</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Self() As ISetupPreparation
@@ -148,13 +157,15 @@ has not been configured.</p>
 See the corresponding Public members above for full documentation.</p>
 <hr />
 <h2 id="int-preparation-helpers">Preparation helpers</h2>
-<h3 id="int-reset-caches">reset-caches <a class="anchor-link" href="#int-reset-caches">#</a></h3>
+<h3 id="int-resetcaches">ResetCaches <a class="anchor-link" href="#int-resetcaches">#</a></h3>
+<p><em>reset-caches</em></p>
 <p><strong>Reset cached references after reconfiguring the helper</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ResetCaches()
 </code></pre>
 <hr />
-<h3 id="int-ensure-dropdown-manager">ensure-dropdown-manager <a class="anchor-link" href="#int-ensure-dropdown-manager">#</a></h3>
+<h3 id="int-ensuredropdownmanager">EnsureDropdownManager <a class="anchor-link" href="#int-ensuredropdownmanager">#</a></h3>
+<p><em>ensure-dropdown-manager</em></p>
 <p><strong>Ensure the dropdown manager is initialised for the target workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureDropdownManager()
@@ -163,7 +174,8 @@ See the corresponding Public members above for full documentation.</p>
 resolves or creates the dropdown worksheet, then creates a DropdownLists
 instance bound to it with the standard dropdown prefix.</p>
 <hr />
-<h3 id="int-ensure-updated-values-watcher">ensure-updated-values-watcher <a class="anchor-link" href="#int-ensure-updated-values-watcher">#</a></h3>
+<h3 id="int-ensureupdatedvalueswatcher">EnsureUpdatedValuesWatcher <a class="anchor-link" href="#int-ensureupdatedvalueswatcher">#</a></h3>
+<p><em>ensure-updated-values-watcher</em></p>
 <p><strong>Ensure the updated values watcher is initialised for the registry worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureUpdatedValuesWatcher()
@@ -172,13 +184,15 @@ instance bound to it with the standard dropdown prefix.</p>
 resolves or creates the registry worksheet, then creates an UpdatedValues
 instance bound to it.</p>
 <hr />
-<h3 id="int-reset-updated-registry">reset-updated-registry <a class="anchor-link" href="#int-reset-updated-registry">#</a></h3>
+<h3 id="int-resetupdatedregistry">ResetUpdatedRegistry <a class="anchor-link" href="#int-resetupdatedregistry">#</a></h3>
+<p><em>reset-updated-registry</em></p>
 <p><strong>Reset the updated values registry prior to registering watched tables</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ResetUpdatedRegistry()
 </code></pre>
 <hr />
-<h3 id="int-apply-validations-and-updates">apply-validations-and-updates <a class="anchor-link" href="#int-apply-validations-and-updates">#</a></h3>
+<h3 id="int-applyvalidationsandupdates">ApplyValidationsAndUpdates <a class="anchor-link" href="#int-applyvalidationsandupdates">#</a></h3>
+<p><em>apply-validations-and-updates</em></p>
 <p><strong>Apply data validation rules to all setup tables</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ApplyValidationsAndUpdates()
@@ -187,7 +201,8 @@ instance bound to it.</p>
 ApplyDictionaryValidations, ApplyExportsValidations, and
 ApplyAnalysisValidations to wire each table column to its dropdown list.</p>
 <hr />
-<h3 id="int-ensure-hidden-sheets">ensure-hidden-sheets <a class="anchor-link" href="#int-ensure-hidden-sheets">#</a></h3>
+<h3 id="int-ensurehiddensheets">EnsureHiddenSheets <a class="anchor-link" href="#int-ensurehiddensheets">#</a></h3>
+<p><em>ensure-hidden-sheets</em></p>
 <p><strong>Register internal worksheets as hidden via the development manager</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureHiddenSheets(ByRef manager As IDevelopment)
@@ -203,7 +218,8 @@ ApplyAnalysisValidations to wire each table column to its dropdown list.</p>
 <li>ProjectError.ObjectNotInitialized When manager is Nothing.</li>
 </ul>
 <hr />
-<h3 id="int-ensure-protected-sheets">ensure-protected-sheets <a class="anchor-link" href="#int-ensure-protected-sheets">#</a></h3>
+<h3 id="int-ensureprotectedsheets">EnsureProtectedSheets <a class="anchor-link" href="#int-ensureprotectedsheets">#</a></h3>
+<p><em>ensure-protected-sheets</em></p>
 <p><strong>Register user-facing worksheets as protected via the development manager</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureProtectedSheets(ByRef manager As IDevelopment)
@@ -219,7 +235,8 @@ whether filtering and sorting are allowed on the protected sheet.</p>
 <li>ProjectError.ObjectNotInitialized When manager is Nothing.</li>
 </ul>
 <hr />
-<h3 id="int-register-all-dropdowns">register-all-dropdowns <a class="anchor-link" href="#int-register-all-dropdowns">#</a></h3>
+<h3 id="int-registeralldropdowns">RegisterAllDropdowns <a class="anchor-link" href="#int-registeralldropdowns">#</a></h3>
+<p><em>register-all-dropdowns</em></p>
 <p><strong>Register every standard dropdown list for setup worksheets</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RegisterAllDropdowns()
@@ -229,7 +246,8 @@ variable status/type/control, sheet type, export options, analysis
 parameters, geo variables, chart types, etc.). The dropdown names use
 the double-underscore prefix convention.</p>
 <hr />
-<h3 id="int-register-dropdown">register-dropdown <a class="anchor-link" href="#int-register-dropdown">#</a></h3>
+<h3 id="int-registerdropdown">RegisterDropdown <a class="anchor-link" href="#int-registerdropdown">#</a></h3>
+<p><em>register-dropdown</em></p>
 <p><strong>Register a single dropdown by converting the values into a BetterArray</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RegisterDropdown(ByVal dropdownName As String, ByVal values As Variant)
@@ -243,7 +261,8 @@ under the given name.</p>
 <li><code>values</code>: Variant. An array of values or a single value to populate the dropdown.</li>
 </ul>
 <hr />
-<h3 id="int-register-watched-sheets">register-watched-sheets <a class="anchor-link" href="#int-register-watched-sheets">#</a></h3>
+<h3 id="int-registerwatchedsheets">RegisterWatchedSheets <a class="anchor-link" href="#int-registerwatchedsheets">#</a></h3>
+<p><em>register-watched-sheets</em></p>
 <p><strong>Register watched columns for every relevant setup sheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RegisterWatchedSheets()
@@ -256,35 +275,40 @@ via AddSheet. Raises an error when a required sheet is missing.</p>
 <li>ProjectError.ElementNotFound When a watched sheet does not exist.</li>
 </ul>
 <hr />
-<h3 id="int-watched-sheet-names">watched-sheet-names <a class="anchor-link" href="#int-watched-sheet-names">#</a></h3>
+<h3 id="int-watchedsheetnames">WatchedSheetNames <a class="anchor-link" href="#int-watchedsheetnames">#</a></h3>
+<p><em>watched-sheet-names</em></p>
 <p><strong>Return the list of setup sheets whose tables should be watched for updates</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function WatchedSheetNames() As BetterArray
 </code></pre>
 <p><strong>Returns:</strong> BetterArray. Sheet names (Dictionary, Choices, Analysis, Exports).</p>
 <hr />
-<h3 id="int-reset-registry-statuses">reset-registry-statuses <a class="anchor-link" href="#int-reset-registry-statuses">#</a></h3>
+<h3 id="int-resetregistrystatuses">ResetRegistryStatuses <a class="anchor-link" href="#int-resetregistrystatuses">#</a></h3>
+<p><em>reset-registry-statuses</em></p>
 <p><strong>Reset registry statuses to the default value after registration</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ResetRegistryStatuses()
 </code></pre>
 <hr />
 <h2 id="int-worksheet-helpers">Worksheet helpers</h2>
-<h3 id="int-ensure-dropdown-sheet">ensure-dropdown-sheet <a class="anchor-link" href="#int-ensure-dropdown-sheet">#</a></h3>
+<h3 id="int-ensuredropdownsheet">EnsureDropdownSheet <a class="anchor-link" href="#int-ensuredropdownsheet">#</a></h3>
+<p><em>ensure-dropdown-sheet</em></p>
 <p><strong>Ensure the dropdown worksheet exists and cache the reference</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function EnsureDropdownSheet() As Worksheet
 </code></pre>
 <p><strong>Returns:</strong> Worksheet. The dropdown worksheet.</p>
 <hr />
-<h3 id="int-ensure-registry-sheet">ensure-registry-sheet <a class="anchor-link" href="#int-ensure-registry-sheet">#</a></h3>
+<h3 id="int-ensureregistrysheet">EnsureRegistrySheet <a class="anchor-link" href="#int-ensureregistrysheet">#</a></h3>
+<p><em>ensure-registry-sheet</em></p>
 <p><strong>Ensure the registry worksheet exists and cache the reference</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function EnsureRegistrySheet() As Worksheet
 </code></pre>
 <p><strong>Returns:</strong> Worksheet. The registry worksheet.</p>
 <hr />
-<h3 id="int-ensure-workbook">ensure-workbook <a class="anchor-link" href="#int-ensure-workbook">#</a></h3>
+<h3 id="int-ensureworkbook">EnsureWorkbook <a class="anchor-link" href="#int-ensureworkbook">#</a></h3>
+<p><em>ensure-workbook</em></p>
 <p><strong>Return the cached workbook reference, raising when missing</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function EnsureWorkbook() As Workbook
@@ -295,7 +319,8 @@ via AddSheet. Raises an error when a required sheet is missing.</p>
 <li>ProjectError.ObjectNotInitialized When the instance has not been configured.</li>
 </ul>
 <hr />
-<h3 id="int-resolve-worksheet">resolve-worksheet <a class="anchor-link" href="#int-resolve-worksheet">#</a></h3>
+<h3 id="int-resolveworksheet">ResolveWorksheet <a class="anchor-link" href="#int-resolveworksheet">#</a></h3>
+<p><em>resolve-worksheet</em></p>
 <p><strong>Resolve an existing worksheet by name without creating it</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ResolveWorksheet(ByVal sheetName As String) As Worksheet
@@ -306,7 +331,8 @@ via AddSheet. Raises an error when a required sheet is missing.</p>
 </ul>
 <p><strong>Returns:</strong> Worksheet. The resolved worksheet, or Nothing when not found.</p>
 <hr />
-<h3 id="int-resolve-or-create-worksheet">resolve-or-create-worksheet <a class="anchor-link" href="#int-resolve-or-create-worksheet">#</a></h3>
+<h3 id="int-resolveorcreateworksheet">ResolveOrCreateWorksheet <a class="anchor-link" href="#int-resolveorcreateworksheet">#</a></h3>
+<p><em>resolve-or-create-worksheet</em></p>
 <p><strong>Resolve a worksheet if it exists, otherwise create one</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ResolveOrCreateWorksheet(ByVal sheetName As String, _
@@ -324,7 +350,8 @@ applies the supplied visibility state.</p>
 </ul>
 <p><strong>Returns:</strong> Worksheet. The resolved or newly created worksheet.</p>
 <hr />
-<h3 id="int-apply-dictionary-validations">apply-dictionary-validations <a class="anchor-link" href="#int-apply-dictionary-validations">#</a></h3>
+<h3 id="int-applydictionaryvalidations">ApplyDictionaryValidations <a class="anchor-link" href="#int-applydictionaryvalidations">#</a></h3>
+<p><em>apply-dictionary-validations</em></p>
 <p><strong>Apply data validation rules to the dictionary worksheet tables</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ApplyDictionaryValidations(ByVal drop As IDropdownLists)
@@ -337,7 +364,8 @@ control, etc.) to its corresponding dropdown list via SetValidation.</p>
 <li><code>drop</code>: IDropdownLists. The dropdown manager providing validation ranges.</li>
 </ul>
 <hr />
-<h3 id="int-apply-exports-validations">apply-exports-validations <a class="anchor-link" href="#int-apply-exports-validations">#</a></h3>
+<h3 id="int-applyexportsvalidations">ApplyExportsValidations <a class="anchor-link" href="#int-applyexportsvalidations">#</a></h3>
+<p><em>apply-exports-validations</em></p>
 <p><strong>Apply export worksheet validations</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ApplyExportsValidations(ByVal drop As IDropdownLists)
@@ -349,7 +377,8 @@ each column (status, file format, password, etc.) to its dropdown list.</p>
 <li><code>drop</code>: IDropdownLists. The dropdown manager providing validation ranges.</li>
 </ul>
 <hr />
-<h3 id="int-apply-analysis-validations">apply-analysis-validations <a class="anchor-link" href="#int-apply-analysis-validations">#</a></h3>
+<h3 id="int-applyanalysisvalidations">ApplyAnalysisValidations <a class="anchor-link" href="#int-applyanalysisvalidations">#</a></h3>
+<p><em>apply-analysis-validations</em></p>
 <p><strong>Apply validations to all analysis tables and named ranges</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ApplyAnalysisValidations(ByVal drop As IDropdownLists)
@@ -364,7 +393,8 @@ lists.</p>
 <li><code>drop</code>: IDropdownLists. The dropdown manager providing validation ranges.</li>
 </ul>
 <hr />
-<h3 id="int-require-worksheet">require-worksheet <a class="anchor-link" href="#int-require-worksheet">#</a></h3>
+<h3 id="int-requireworksheet">RequireWorksheet <a class="anchor-link" href="#int-requireworksheet">#</a></h3>
+<p><em>require-worksheet</em></p>
 <p><strong>Retrieve a worksheet or raise if unavailable</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function RequireWorksheet(ByVal sheetName As String) As Worksheet
@@ -379,7 +409,8 @@ lists.</p>
 <li>ProjectError.ElementNotFound When the worksheet does not exist.</li>
 </ul>
 <hr />
-<h3 id="int-require-list-object">require-list-object <a class="anchor-link" href="#int-require-list-object">#</a></h3>
+<h3 id="int-requirelistobject">RequireListObject <a class="anchor-link" href="#int-requirelistobject">#</a></h3>
+<p><em>require-list-object</em></p>
 <p><strong>Retrieve a ListObject from a worksheet or raise when missing</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function RequireListObject(ByVal sh As Worksheet, ByVal listName As String) As ListObject
@@ -395,7 +426,8 @@ lists.</p>
 <li>ProjectError.ElementNotFound When the ListObject does not exist.</li>
 </ul>
 <hr />
-<h3 id="int-require-custom-table">require-custom-table <a class="anchor-link" href="#int-require-custom-table">#</a></h3>
+<h3 id="int-requirecustomtable">RequireCustomTable <a class="anchor-link" href="#int-requirecustomtable">#</a></h3>
+<p><em>require-custom-table</em></p>
 <p><strong>Return a CustomTable helper for the requested ListObject</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function RequireCustomTable(ByVal sh As Worksheet, ByVal listName As String) As ICustomTable
@@ -407,7 +439,8 @@ lists.</p>
 </ul>
 <p><strong>Returns:</strong> ICustomTable. A CustomTable wrapper for the ListObject.</p>
 <hr />
-<h3 id="int-resolve-named-range">resolve-named-range <a class="anchor-link" href="#int-resolve-named-range">#</a></h3>
+<h3 id="int-resolvenamedrange">ResolveNamedRange <a class="anchor-link" href="#int-resolvenamedrange">#</a></h3>
+<p><em>resolve-named-range</em></p>
 <p><strong>Resolve a named range within a worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ResolveNamedRange(ByVal sh As Worksheet, ByVal rangeName As String) As Range
@@ -419,7 +452,8 @@ lists.</p>
 </ul>
 <p><strong>Returns:</strong> Range. The resolved range, or Nothing when not available.</p>
 <hr />
-<h3 id="int-normalize-text">normalize-text <a class="anchor-link" href="#int-normalize-text">#</a></h3>
+<h3 id="int-normalizetext">NormalizeText <a class="anchor-link" href="#int-normalizetext">#</a></h3>
+<p><em>normalize-text</em></p>
 <p><strong>Normalise a string for case-insensitive comparisons</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function NormalizeText(ByVal valueText As String) As String
@@ -431,7 +465,8 @@ lists.</p>
 <p><strong>Returns:</strong> String. The trimmed, lowercased text.</p>
 <hr />
 <h2 id="int-error-handling">Error handling</h2>
-<h3 id="int-throw-error">throw-error <a class="anchor-link" href="#int-throw-error">#</a></h3>
+<h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
+<p><em>throw-error</em></p>
 <p><strong>Raise a project-scoped error with the supplied message</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal message As String)

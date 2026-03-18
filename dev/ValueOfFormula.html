@@ -22,7 +22,8 @@ through the IValueOfFormula interface.</p>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
 <div class="section-body">
-<h3 id="create">create <a class="anchor-link" href="#create">#</a></h3>
+<h3 id="create">Create <a class="anchor-link" href="#create">#</a></h3>
+<p><em>create</em></p>
 <p><strong>Instantiate a VALUE_OF parser bound to the supplied dictionary</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal formula As String, _
@@ -53,7 +54,8 @@ redundant instantiation when the caller already holds them.</p>
 <details open class="doc-section" id="validation">
 <summary>Validation</summary>
 <div class="section-body">
-<h3 id="valid">valid <a class="anchor-link" href="#valid">#</a></h3>
+<h3 id="valid">Valid <a class="anchor-link" href="#valid">#</a></h3>
+<p><em>valid</em></p>
 <p><strong>Determine whether the VALUE_OF expression parsed successfully</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Valid() As Boolean
@@ -64,7 +66,8 @@ flag. True indicates that all three arguments were resolved against
 the dictionary and the lookup/value variables share the same sheet.</p>
 <p><strong>Returns:</strong> Boolean. True when parsing and dictionary lookups succeeded.</p>
 <hr />
-<h3 id="converted-formula">converted-formula <a class="anchor-link" href="#converted-formula">#</a></h3>
+<h3 id="convertedformula">ConvertedFormula <a class="anchor-link" href="#convertedformula">#</a></h3>
+<p><em>converted-formula</em></p>
 <p><strong>Retrieve the workbook-ready VALUE_OF expression</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get ConvertedFormula() As String
@@ -73,7 +76,8 @@ the dictionary and the lookup/value variables share the same sheet.</p>
 indices resolved. Returns vbNullString when the formula is invalid.</p>
 <p><strong>Returns:</strong> String. Converted expression; vbNullString when invalid.</p>
 <hr />
-<h3 id="failure-reason">failure-reason <a class="anchor-link" href="#failure-reason">#</a></h3>
+<h3 id="failurereason">FailureReason <a class="anchor-link" href="#failurereason">#</a></h3>
+<p><em>failure-reason</em></p>
 <p><strong>Provide a descriptive message when parsing fails</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get FailureReason() As String
@@ -82,7 +86,8 @@ indices resolved. Returns vbNullString when the formula is invalid.</p>
 Returns vbNullString when the formula is valid.</p>
 <p><strong>Returns:</strong> String. Description; vbNullString for valid formulas.</p>
 <hr />
-<h3 id="lookup-sheet-name">lookup-sheet-name <a class="anchor-link" href="#lookup-sheet-name">#</a></h3>
+<h3 id="lookupsheetname">LookupSheetName <a class="anchor-link" href="#lookupsheetname">#</a></h3>
+<p><em>lookup-sheet-name</em></p>
 <p><strong>Expose the resolved lookup worksheet name</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get LookupSheetName() As String
@@ -91,7 +96,8 @@ Returns vbNullString when the formula is valid.</p>
 reside. Available only after successful parsing.</p>
 <p><strong>Returns:</strong> String. Sheet name or vbNullString when unavailable.</p>
 <hr />
-<h3 id="lookup-column-index">lookup-column-index <a class="anchor-link" href="#lookup-column-index">#</a></h3>
+<h3 id="lookupcolumnindex">LookupColumnIndex <a class="anchor-link" href="#lookupcolumnindex">#</a></h3>
+<p><em>lookup-column-index</em></p>
 <p><strong>Expose the column index used to locate the matching value</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get LookupColumnIndex() As Long
@@ -100,7 +106,8 @@ reside. Available only after successful parsing.</p>
 dictionary. Zero when the formula is invalid.</p>
 <p><strong>Returns:</strong> Long. Lookup column index; zero when the formula is invalid.</p>
 <hr />
-<h3 id="value-column-index">value-column-index <a class="anchor-link" href="#value-column-index">#</a></h3>
+<h3 id="valuecolumnindex">ValueColumnIndex <a class="anchor-link" href="#valuecolumnindex">#</a></h3>
+<p><em>value-column-index</em></p>
 <p><strong>Expose the column index providing the returned value</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get ValueColumnIndex() As Long
@@ -114,7 +121,8 @@ dictionary. Zero when the formula is invalid.</p>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-publicaccessors">PublicAccessors</h2>
-<h3 id="int-self">self <a class="anchor-link" href="#int-self">#</a></h3>
+<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
+<p><em>self</em></p>
 <p><strong>Current object instance</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Self() As IValueOfFormula
@@ -124,7 +132,8 @@ Returns the current instance cast to its interface. Used internally
 by the factory method to return an IValueOfFormula reference.</p>
 <p><strong>Returns:</strong> IValueOfFormula. Reference to the current object.</p>
 <hr />
-<h3 id="int-dictionary">dictionary <a class="anchor-link" href="#int-dictionary">#</a></h3>
+<h3 id="int-dictionary">Dictionary <a class="anchor-link" href="#int-dictionary">#</a></h3>
+<p><em>dictionary</em></p>
 <p><strong>Retrieve the dictionary backing this instance</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Dictionary() As ILLdictionary
@@ -133,7 +142,8 @@ by the factory method to return an IValueOfFormula reference.</p>
 and is used during lazy parsing.</p>
 <p><strong>Returns:</strong> ILLdictionary. The dictionary used during parsing.</p>
 <hr />
-<h3 id="int-dictionary-set">dictionary-set <a class="anchor-link" href="#int-dictionary-set">#</a></h3>
+<h3 id="int-dictionary">Dictionary <a class="anchor-link" href="#int-dictionary">#</a></h3>
+<p><em>dictionary-set</em></p>
 <p><strong>Assign the dictionary and reset cached state</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set Dictionary(ByVal dict As ILLdictionary)
@@ -150,7 +160,8 @@ triggers a fresh evaluation.</p>
 <li>ProjectError.ObjectNotInitialized When dict is Nothing.</li>
 </ul>
 <hr />
-<h3 id="int-value-of-expression">value-of-expression <a class="anchor-link" href="#int-value-of-expression">#</a></h3>
+<h3 id="int-valueofexpression">ValueOfExpression <a class="anchor-link" href="#int-valueofexpression">#</a></h3>
+<p><em>value-of-expression</em></p>
 <p><strong>Retrieve the stored VALUE_OF expression</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get ValueOfExpression() As String
@@ -158,7 +169,8 @@ triggers a fresh evaluation.</p>
 <p>Returns the formula text as stored after trimming during assignment.</p>
 <p><strong>Returns:</strong> String. Expression as provided to the parser.</p>
 <hr />
-<h3 id="int-value-of-expression-set">value-of-expression-set <a class="anchor-link" href="#int-value-of-expression-set">#</a></h3>
+<h3 id="int-valueofexpression">ValueOfExpression <a class="anchor-link" href="#int-valueofexpression">#</a></h3>
+<p><em>value-of-expression-set</em></p>
 <p><strong>Store the VALUE_OF expression and reset cached results</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Let ValueOfExpression(ByVal formula As String)
@@ -171,7 +183,8 @@ parsing outcomes so the next access triggers a fresh parse.</p>
 </ul>
 <hr />
 <h2 id="int-parsing">Parsing</h2>
-<h3 id="int-ensure-parsed">ensure-parsed <a class="anchor-link" href="#int-ensure-parsed">#</a></h3>
+<h3 id="int-ensureparsed">EnsureParsed <a class="anchor-link" href="#int-ensureparsed">#</a></h3>
+<p><em>ensure-parsed</em></p>
 <p><strong>Lazily parse the VALUE_OF expression and cache outcomes</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureParsed()
@@ -182,7 +195,8 @@ arguments, validates each against the dictionary, confirms sheet
 alignment, resolves column indices, and builds the converted formula.
 All outcomes are cached so subsequent calls are no-ops.</p>
 <hr />
-<h3 id="int-extract-arguments">extract-arguments <a class="anchor-link" href="#int-extract-arguments">#</a></h3>
+<h3 id="int-extractarguments">ExtractArguments <a class="anchor-link" href="#int-extractarguments">#</a></h3>
+<p><em>extract-arguments</em></p>
 <p><strong>Split the VALUE_OF body into trimmed argument segments</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ExtractArguments() As BetterArray
@@ -192,7 +206,8 @@ state and parenthesis depth. Splits on top-level commas and returns
 exactly three arguments for a well-formed VALUE_OF expression.</p>
 <p><strong>Returns:</strong> BetterArray. Up to three arguments; Nothing when malformed.</p>
 <hr />
-<h3 id="int-sanitised-formula">sanitised-formula <a class="anchor-link" href="#int-sanitised-formula">#</a></h3>
+<h3 id="int-sanitisedformula">SanitisedFormula <a class="anchor-link" href="#int-sanitisedformula">#</a></h3>
+<p><em>sanitised-formula</em></p>
 <p><strong>Remove the VALUE_OF token and surrounding parenthesis</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function SanitisedFormula() As String
@@ -201,7 +216,8 @@ exactly three arguments for a well-formed VALUE_OF expression.</p>
 parenthesis to expose the raw comma-delimited argument body.</p>
 <p><strong>Returns:</strong> String. The argument list; vbNullString when malformed.</p>
 <hr />
-<h3 id="int-build-converted-formula">build-converted-formula <a class="anchor-link" href="#int-build-converted-formula">#</a></h3>
+<h3 id="int-buildconvertedformula">BuildConvertedFormula <a class="anchor-link" href="#int-buildconvertedformula">#</a></h3>
+<p><em>build-converted-formula</em></p>
 <p><strong>Compose the converted VALUE_OF expression</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function BuildConvertedFormula(ByVal keyVar As String, _
@@ -220,7 +236,8 @@ quoted sheet name, and the two resolved column indices.</p>
 </ul>
 <p><strong>Returns:</strong> String. Workbook-ready VALUE_OF expression.</p>
 <hr />
-<h3 id="int-quoted-text">quoted-text <a class="anchor-link" href="#int-quoted-text">#</a></h3>
+<h3 id="int-quotedtext">QuotedText <a class="anchor-link" href="#int-quotedtext">#</a></h3>
+<p><em>quoted-text</em></p>
 <p><strong>Wrap a value in double quotes while escaping embedded quotes</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function QuotedText(ByVal value As String) As String
@@ -232,7 +249,8 @@ quoted sheet name, and the two resolved column indices.</p>
 <p><strong>Returns:</strong> String. Quoted representation suitable for Excel formulas.</p>
 <hr />
 <h2 id="int-helpers">Helpers</h2>
-<h3 id="int-initialise">initialise <a class="anchor-link" href="#int-initialise">#</a></h3>
+<h3 id="int-initialise">Initialise <a class="anchor-link" href="#int-initialise">#</a></h3>
+<p><em>initialise</em></p>
 <p><strong>Assign dependencies and prime the parser state</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Initialise(ByVal formula As String, _
@@ -251,7 +269,8 @@ all cached state so the parser is ready for lazy evaluation.</p>
 <li><code>sheets</code>: ILLSheets. Optional helper for sheet validation.</li>
 </ul>
 <hr />
-<h3 id="int-reset-state">reset-state <a class="anchor-link" href="#int-reset-state">#</a></h3>
+<h3 id="int-resetstate">ResetState <a class="anchor-link" href="#int-resetstate">#</a></h3>
+<p><em>reset-state</em></p>
 <p><strong>Clear cached parsing outcomes</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ResetState()
@@ -259,7 +278,8 @@ all cached state so the parser is ready for lazy evaluation.</p>
 <p>Marks the instance as unparsed and clears all result fields so the
 next property access triggers a full reparse.</p>
 <hr />
-<h3 id="int-reset-parsed-outcome">reset-parsed-outcome <a class="anchor-link" href="#int-reset-parsed-outcome">#</a></h3>
+<h3 id="int-resetparsedoutcome">ResetParsedOutcome <a class="anchor-link" href="#int-resetparsedoutcome">#</a></h3>
+<p><em>reset-parsed-outcome</em></p>
 <p><strong>Reset fields populated during parsing</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ResetParsedOutcome()
@@ -267,7 +287,8 @@ next property access triggers a full reparse.</p>
 <p>Clears validity, converted formula, failure reason, sheet name, and
 column indices to their default (empty/zero) values.</p>
 <hr />
-<h3 id="int-fail">fail <a class="anchor-link" href="#int-fail">#</a></h3>
+<h3 id="int-fail">Fail <a class="anchor-link" href="#int-fail">#</a></h3>
+<p><em>fail</em></p>
 <p><strong>Record a parsing failure</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub Fail(ByVal message As String)
@@ -279,7 +300,8 @@ invalid defaults. Called from EnsureParsed on every error path.</p>
 <li><code>message</code>: String. Describing the failure.</li>
 </ul>
 <hr />
-<h3 id="int-variables-provider">variables-provider <a class="anchor-link" href="#int-variables-provider">#</a></h3>
+<h3 id="int-variablesprovider">VariablesProvider <a class="anchor-link" href="#int-variablesprovider">#</a></h3>
+<p><em>variables-provider</em></p>
 <p><strong>Lazily create the LLVariables helper</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function VariablesProvider() As ILLVariables
@@ -292,7 +314,8 @@ first access, and caches it for subsequent calls.</p>
 <li>ProjectError.ObjectNotInitialized When the dictionary is Nothing.</li>
 </ul>
 <hr />
-<h3 id="int-sheets-provider">sheets-provider <a class="anchor-link" href="#int-sheets-provider">#</a></h3>
+<h3 id="int-sheetsprovider">SheetsProvider <a class="anchor-link" href="#int-sheetsprovider">#</a></h3>
+<p><em>sheets-provider</em></p>
 <p><strong>Lazily create the LLSheets helper</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function SheetsProvider() As ILLSheets
@@ -305,7 +328,8 @@ first access, and caches it for subsequent calls.</p>
 <li>ProjectError.ObjectNotInitialized When the dictionary is Nothing.</li>
 </ul>
 <hr />
-<h3 id="int-ensure-dictionary-ready">ensure-dictionary-ready <a class="anchor-link" href="#int-ensure-dictionary-ready">#</a></h3>
+<h3 id="int-ensuredictionaryready">EnsureDictionaryReady <a class="anchor-link" href="#int-ensuredictionaryready">#</a></h3>
+<p><em>ensure-dictionary-ready</em></p>
 <p><strong>Guard against missing dictionary references</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureDictionaryReady()
@@ -317,7 +341,8 @@ downstream NullReference issues in the variable and sheet providers.</p>
 <li>ProjectError.ObjectNotInitialized When the dictionary is Nothing.</li>
 </ul>
 <hr />
-<h3 id="int-throw-error">throw-error <a class="anchor-link" href="#int-throw-error">#</a></h3>
+<h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
+<p><em>throw-error</em></p>
 <p><strong>Raise a project-specific error</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal message As String)

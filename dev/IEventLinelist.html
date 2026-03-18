@@ -14,8 +14,8 @@
 <p>Defines the public contract for the EventLinelist class, exposing methods
 to handle workbook-level events in the output linelist workbook: sheet
 change, deactivate, selection change, double-click, filter table updates,
-and list-auto dropdown maintenance.</p>
-<p><strong>Depends on:</strong> <a href="ILLTranslation.html">ILLTranslation</a>, <a href="ITranslationObject.html">ITranslationObject</a>, <a href="IHiddenNames.html">IHiddenNames</a>, <a href="IDropdownLists.html">IDropdownLists</a>, <a href="ILLGeo.html">ILLGeo</a>, <a href="ILLdictionary.html">ILLdictionary</a>, <a href="ILLVariables.html">ILLVariables</a>, <a href="IPasswords.html">IPasswords</a>, <a href="ICustomTable.html">ICustomTable</a></p>
+list-auto dropdown maintenance, and geo/spatial UDF delegation.</p>
+<p><strong>Depends on:</strong> <a href="ILLTranslation.html">ILLTranslation</a>, <a href="ITranslationObject.html">ITranslationObject</a>, <a href="IHiddenNames.html">IHiddenNames</a>, <a href="IDropdownLists.html">IDropdownLists</a>, <a href="ILLGeo.html">ILLGeo</a>, <a href="ILLdictionary.html">ILLdictionary</a>, <a href="ILLVariables.html">ILLVariables</a>, <a href="ILLSpatial.html">ILLSpatial</a>, <a href="IPasswords.html">IPasswords</a>, <a href="ICustomTable.html">ICustomTable</a></p>
 <details open class="doc-section" id="lifecycle">
 <summary>Lifecycle</summary>
 <div class="section-body">
@@ -133,6 +133,72 @@ validation lists with unique values from the data column.</p>
 </code></pre>
 <p>Clears all lazily-cached domain managers so they are rebuilt from
 scratch on the next access.</p>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="geo-spatial-udf-delegation">
+<summary>Geo / Spatial UDF delegation</summary>
+<div class="section-body">
+<h3 id="geoconcat">GeoConcat <a class="anchor-link" href="#geoconcat">#</a></h3>
+<p><strong>Concatenate geo cells up to a given admin level.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function GeoConcat(ByVal cellRng As Range, ByVal geoLevel As Byte) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>cellRng</code>: Range. The first geo cell.</li>
+<li><code>geoLevel</code>: Byte. Number of admin levels to concatenate (1-4).</li>
+</ul>
+<p><strong>Returns:</strong> String. Pipe-delimited concatenation of non-empty admin values.</p>
+<hr />
+<h3 id="topadmin">TopAdmin <a class="anchor-link" href="#topadmin">#</a></h3>
+<p><strong>Return the top admin name for a spatial variable.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function TopAdmin(ByVal adminLevel As String, _
+                         ByVal adminOrder As Integer, _
+                         ByVal varName As String, _
+                         Optional ByVal tabId As String = vbNullString) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>adminLevel</code>: String. Admin level label (e.g. &quot;adm1&quot;).</li>
+<li><code>adminOrder</code>: Integer. Rank order (1 = top, 2 = second, etc.).</li>
+<li><code>varName</code>: String. Variable name (with prefix to be stripped).</li>
+<li><code>tabId</code>: Optional String. Spatial table identifier.</li>
+</ul>
+<p><strong>Returns:</strong> String. Admin name at the given rank.</p>
+<hr />
+<h3 id="toppop">TopPop <a class="anchor-link" href="#toppop">#</a></h3>
+<p><strong>Return the population for the top admin of a spatial variable.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function TopPop(ByVal adminLevel As String, _
+                       ByVal adminOrder As Integer, _
+                       ByVal varName As String, _
+                       Optional ByVal tabId As String = vbNullString) As Long
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>adminLevel</code>: String. Admin level label (e.g. &quot;adm1&quot;).</li>
+<li><code>adminOrder</code>: Integer. Rank order (1 = top, 2 = second, etc.).</li>
+<li><code>varName</code>: String. Variable name (with prefix to be stripped).</li>
+<li><code>tabId</code>: Optional String. Spatial table identifier.</li>
+</ul>
+<p><strong>Returns:</strong> Long. Population count at the given rank.</p>
+<hr />
+<h3 id="tophf">TopHF <a class="anchor-link" href="#tophf">#</a></h3>
+<p><strong>Return the top health facility name for a spatial variable.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function TopHF(ByVal adminOrder As Integer, _
+                      ByVal varName As String, _
+                      Optional ByVal tabId As String = vbNullString) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>adminOrder</code>: Integer. Rank order (1 = top, 2 = second, etc.).</li>
+<li><code>varName</code>: String. Variable name (with prefix to be stripped).</li>
+<li><code>tabId</code>: Optional String. Spatial table identifier.</li>
+</ul>
+<p><strong>Returns:</strong> String. Health facility name at the given rank.</p>
 <hr />
 </div>
 </details>

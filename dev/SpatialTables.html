@@ -22,7 +22,8 @@ before writing.</p>
 <details open class="doc-section" id="instantiation">
 <summary>Instantiation</summary>
 <div class="section-body">
-<h3 id="create">create <a class="anchor-link" href="#create">#</a></h3>
+<h3 id="create">Create <a class="anchor-link" href="#create">#</a></h3>
+<p><em>create</em></p>
 <p><strong>Create a SpatialTables instance from a cross-table</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal tabl As ICrossTable) As ISpatialTables
@@ -53,7 +54,8 @@ spatial tables to create.</li>
 <details open class="doc-section" id="add">
 <summary>Add</summary>
 <div class="section-body">
-<h3 id="add">add <a class="anchor-link" href="#add">#</a></h3>
+<h3 id="add">Add <a class="anchor-link" href="#add">#</a></h3>
+<p><em>add</em></p>
 <p><strong>Create spatial ListObjects for the cross-table row variable</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub Add(ByVal formObject As IFormulas)
@@ -77,7 +79,8 @@ is written into each spatial table formula column.</li>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-instantiation">Instantiation</h2>
-<h3 id="int-self">self <a class="anchor-link" href="#int-self">#</a></h3>
+<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
+<p><em>self</em></p>
 <p><strong>Current object instance</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Self() As ISpatialTables
@@ -86,7 +89,8 @@ is written into each spatial table formula column.</li>
 the predeclared Create method.</p>
 <p><strong>Returns:</strong> ISpatialTables. The current instance cast to the interface.</p>
 <hr />
-<h3 id="int-table">table <a class="anchor-link" href="#int-table">#</a></h3>
+<h3 id="int-table">Table <a class="anchor-link" href="#int-table">#</a></h3>
+<p><em>table</em></p>
 <p><strong>Cross-table bound to this builder</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Table() As ICrossTable
@@ -95,7 +99,8 @@ the predeclared Create method.</p>
 drive the spatial table creation in Add.</p>
 <p><strong>Returns:</strong> ICrossTable. The bound cross-table.</p>
 <hr />
-<h3 id="int-table-set">table-set <a class="anchor-link" href="#int-table-set">#</a></h3>
+<h3 id="int-table">Table <a class="anchor-link" href="#int-table">#</a></h3>
+<p><em>table-set</em></p>
 <p><strong>Assign the cross-table reference</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set Table(ByVal tabl As ICrossTable)
@@ -106,7 +111,8 @@ drive the spatial table creation in Add.</p>
 </ul>
 <hr />
 <h2 id="int-worksheet">Worksheet</h2>
-<h3 id="int-wksh">wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
+<h3 id="int-wksh">Wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
+<p><em>wksh</em></p>
 <p><strong>Lazy-loaded spatial worksheet reference</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get Wksh() As Worksheet
@@ -116,7 +122,8 @@ The reference is cached after the first access to avoid repeated lookups.</p>
 <p><strong>Returns:</strong> Worksheet. The spatial analysis worksheet.</p>
 <hr />
 <h2 id="int-naming-conventions">Naming Conventions</h2>
-<h3 id="int-current-header-name">current-header-name <a class="anchor-link" href="#int-current-header-name">#</a></h3>
+<h3 id="int-currentheadername">CurrentHeaderName <a class="anchor-link" href="#int-currentheadername">#</a></h3>
+<p><em>current-header-name</em></p>
 <p><strong>Build the header named range name for a spatial table</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get CurrentHeaderName(ByVal varName As String, _
@@ -132,7 +139,8 @@ unique header range name (e.g. &quot;tabl_adm1_cases_sp1&quot;).</p>
 </ul>
 <p><strong>Returns:</strong> String. The header named range name.</p>
 <hr />
-<h3 id="int-current-lo-name">current-lo-name <a class="anchor-link" href="#int-current-lo-name">#</a></h3>
+<h3 id="int-currentloname">CurrentLoName <a class="anchor-link" href="#int-currentloname">#</a></h3>
+<p><em>current-lo-name</em></p>
 <p><strong>Build the ListObject name for a spatial table</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get CurrentLoName(ByVal varName As String, _
@@ -148,7 +156,8 @@ unique ListObject name (e.g. &quot;spatial_adm1_cases_sp1&quot;).</p>
 <p><strong>Returns:</strong> String. The ListObject name.</p>
 <hr />
 <h2 id="int-existence-checks">Existence Checks</h2>
-<h3 id="int-exists">exists <a class="anchor-link" href="#int-exists">#</a></h3>
+<h3 id="int-exists">Exists <a class="anchor-link" href="#int-exists">#</a></h3>
+<p><em>exists</em></p>
 <p><strong>Check if spatial ListObjects already exist for a variable</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function Exists(ByVal varName As String) As Boolean
@@ -162,7 +171,8 @@ four exist. Used by Add to skip duplicate creation.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when all four admin-level ListObjects exist.</p>
 <hr />
-<h3 id="int-lo-exists">lo-exists <a class="anchor-link" href="#int-lo-exists">#</a></h3>
+<h3 id="int-loexists">LoExists <a class="anchor-link" href="#int-loexists">#</a></h3>
+<p><em>lo-exists</em></p>
 <p><strong>Check if a ListObject exists on the spatial sheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function LoExists(ByVal loName As String) As Boolean
@@ -176,7 +186,8 @@ existence on the spatial worksheet.</p>
 <p><strong>Returns:</strong> Boolean. True when the ListObject exists.</p>
 <hr />
 <h2 id="int-column-helpers">Column Helpers</h2>
-<h3 id="int-last-column">last-column <a class="anchor-link" href="#int-last-column">#</a></h3>
+<h3 id="int-lastcolumn">LastColumn <a class="anchor-link" href="#int-lastcolumn">#</a></h3>
+<p><em>last-column</em></p>
 <p><strong>Next available column on the spatial sheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get LastColumn() As Long
@@ -187,7 +198,8 @@ the initial 3-column setup (listofgeovars occupies column 3).</p>
 <p><strong>Returns:</strong> Long. The 1-based column index for the next spatial table.</p>
 <hr />
 <h2 id="int-formula-helpers">Formula Helpers</h2>
-<h3 id="int-geo-population-function">geo-population-function <a class="anchor-link" href="#int-geo-population-function">#</a></h3>
+<h3 id="int-geopopulationfunction">GeoPopulationFunction <a class="anchor-link" href="#int-geopopulationfunction">#</a></h3>
+<p><em>geo-population-function</em></p>
 <p><strong>Build a geo population INDEX/MATCH formula for an admin level</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function GeoPopulationFunction(ByVal adminName As String, _
@@ -205,7 +217,8 @@ fails. The population column index is derived from the admin level number.</p>
 </ul>
 <p><strong>Returns:</strong> String. The complete INDEX/MATCH formula string.</p>
 <hr />
-<h3 id="int-failed-formula">failed-formula <a class="anchor-link" href="#int-failed-formula">#</a></h3>
+<h3 id="int-failedformula">FailedFormula <a class="anchor-link" href="#int-failedformula">#</a></h3>
+<p><em>failed-formula</em></p>
 <p><strong>Test whether a formula expression is valid</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function FailedFormula(ByVal frmName As String) As Boolean
@@ -220,7 +233,8 @@ temporarily disabled to suppress Excel prompts.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when the formula is invalid.</p>
 <hr />
-<h3 id="int-emp-str">emp-str <a class="anchor-link" href="#int-emp-str">#</a></h3>
+<h3 id="int-empstr">EmpStr <a class="anchor-link" href="#int-empstr">#</a></h3>
+<p><em>emp-str</em></p>
 <p><strong>Empty string constant for formula conditions</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function EmpStr() As String
@@ -229,7 +243,8 @@ temporarily disabled to suppress Excel prompts.</p>
 <p><strong>Returns:</strong> String. Two double-quote characters (empty string literal in Excel).</p>
 <hr />
 <h2 id="int-condition-management">Condition Management</h2>
-<h3 id="int-add-table-conditions">add-table-conditions <a class="anchor-link" href="#int-add-table-conditions">#</a></h3>
+<h3 id="int-addtableconditions">AddTableConditions <a class="anchor-link" href="#int-addtableconditions">#</a></h3>
+<p><em>add-table-conditions</em></p>
 <p><strong>Add a variable/condition pair for formula generation</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddTableConditions(ByVal varName As String, ByVal conditionName As String)
@@ -244,7 +259,8 @@ LowerBound 1 on first use. Ignores empty variable names.</p>
 <li><code>conditionName</code>: String. The condition expression.</li>
 </ul>
 <hr />
-<h3 id="int-clear-table-conditions">clear-table-conditions <a class="anchor-link" href="#int-clear-table-conditions">#</a></h3>
+<h3 id="int-cleartableconditions">ClearTableConditions <a class="anchor-link" href="#int-cleartableconditions">#</a></h3>
+<p><em>clear-table-conditions</em></p>
 <p><strong>Clear condition arrays</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ClearTableConditions(Optional ByVal removeNumber As Long = 0)
@@ -258,7 +274,8 @@ Lazily initialises the arrays if they are Nothing.</p>
 Defaults to 0 (clear all).</li>
 </ul>
 <hr />
-<h3 id="int-current-excel-formula">current-excel-formula <a class="anchor-link" href="#int-current-excel-formula">#</a></h3>
+<h3 id="int-currentexcelformula">CurrentExcelFormula <a class="anchor-link" href="#int-currentexcelformula">#</a></h3>
+<p><em>current-excel-formula</em></p>
 <p><strong>Build an Excel formula string using the current conditions</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get CurrentExcelFormula(ByVal tabFormObject As IFormulas, _
@@ -281,7 +298,8 @@ Defaults to &quot;f&quot;.</li>
 <p><strong>Returns:</strong> String. The parsed formula string, or empty when invalid.</p>
 <hr />
 <h2 id="int-preparation">Preparation</h2>
-<h3 id="int-prepare">prepare <a class="anchor-link" href="#int-prepare">#</a></h3>
+<h3 id="int-prepare">Prepare <a class="anchor-link" href="#int-prepare">#</a></h3>
+<p><em>prepare</em></p>
 <p><strong>Initialise the spatial sheet with the listofgeovars ListObject</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub Prepare()
@@ -290,7 +308,8 @@ Defaults to &quot;f&quot;.</li>
 RNG_PastingCol and RNG_TestingFormula named ranges. Called by Add when
 the listofgeovars table does not yet exist.</p>
 <hr />
-<h3 id="int-add-var-name-to-list">add-var-name-to-list <a class="anchor-link" href="#int-add-var-name-to-list">#</a></h3>
+<h3 id="int-addvarnametolist">AddVarNameToList <a class="anchor-link" href="#int-addvarnametolist">#</a></h3>
+<p><em>add-var-name-to-list</em></p>
 <p><strong>Register a variable name in the listofgeovars ListObject</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddVarNameToList(ByVal varName As String)
@@ -303,7 +322,8 @@ ListObject. Uses CountA to determine the current row count.</p>
 </ul>
 <hr />
 <h2 id="int-validation">Validation</h2>
-<h3 id="int-check-requirements">check-requirements <a class="anchor-link" href="#int-check-requirements">#</a></h3>
+<h3 id="int-checkrequirements">CheckRequirements <a class="anchor-link" href="#int-checkrequirements">#</a></h3>
+<p><em>check-requirements</em></p>
 <p><strong>Validate cross-table and spatial sheet existence</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub CheckRequirements(ByVal tabl As ICrossTable)
@@ -321,7 +341,8 @@ that a worksheet named &quot;spatial_tables__&quot; exists in the same workbook.
 </ul>
 <hr />
 <h2 id="int-error-handling">Error Handling</h2>
-<h3 id="int-throw-error">throw-error <a class="anchor-link" href="#int-throw-error">#</a></h3>
+<h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
+<p><em>throw-error</em></p>
 <p><strong>Raise a ProjectError-based exception</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As Long, ByVal message As String)

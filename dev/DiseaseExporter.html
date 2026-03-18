@@ -17,7 +17,8 @@
 <h3 id="int-create">Create <a class="anchor-link" href="#int-create">#</a></h3>
 <p><strong>Instantiate a DiseaseExporter with its dependencies configured.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Create(ByVal workbookManager As IDiseaseExportWorkbook) As IDiseaseExporter
+<pre><code class="language-vb">Public Function Create(ByVal workbookManager As IDiseaseExportWorkbook, _
+                       ByVal appGuard As IDiseaseApplicationState) As IDiseaseExporter
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>

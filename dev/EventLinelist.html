@@ -17,9 +17,9 @@ linelist workbook. It reacts to sheet change (HList geo cascades, editable
 labels, list auto, go-to-section, multiple choices; VList editable labels and
 multiple choices; analysis go-to-section and spatial dispatch), sheet deactivate
 (list auto update), selection change (geo dropdown refresh),
-double-click (spatio-temporal geo form), filter table updates, and list-auto
-dropdown maintenance.</p>
-<p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="LLGeo.html">LLGeo</a>, <a href="LLdictionary.html">LLdictionary</a>, <a href="LLVariables.html">LLVariables</a>, <a href="LLTranslation.html">LLTranslation</a>, <a href="TranslationObject.html">TranslationObject</a>, ProjectError</p>
+double-click (spatio-temporal geo form), filter table updates, list-auto
+dropdown maintenance, and geo/spatial UDF delegation.</p>
+<p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="LLGeo.html">LLGeo</a>, <a href="LLSpatial.html">LLSpatial</a>, <a href="LLdictionary.html">LLdictionary</a>, <a href="LLVariables.html">LLVariables</a>, <a href="LLTranslation.html">LLTranslation</a>, <a href="TranslationObject.html">TranslationObject</a>, <a href="Passwords.html">Passwords</a>, ProjectError</p>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
 <div class="section-body">
@@ -130,6 +130,72 @@ dropdown maintenance.</p>
 <hr />
 </div>
 </details>
+<details open class="doc-section" id="geo-spatial-udf-delegation">
+<summary>Geo / Spatial UDF delegation</summary>
+<div class="section-body">
+<h3 id="geoconcat">GeoConcat <a class="anchor-link" href="#geoconcat">#</a></h3>
+<p><strong>Concatenate geo cells up to a given admin level.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function GeoConcat(ByVal cellRng As Range, ByVal geoLevel As Byte) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>cellRng</code>: Range. The first geo cell.</li>
+<li><code>geoLevel</code>: Byte. Number of admin levels to concatenate (1-4).</li>
+</ul>
+<p><strong>Returns:</strong> String. Pipe-delimited concatenation of non-empty admin values.</p>
+<hr />
+<h3 id="topadmin">TopAdmin <a class="anchor-link" href="#topadmin">#</a></h3>
+<p><strong>Return the top admin name for a spatial variable.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function TopAdmin(ByVal adminLevel As String, _
+                         ByVal adminOrder As Integer, _
+                         ByVal varName As String, _
+                         Optional ByVal tabId As String = vbNullString) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>adminLevel</code>: String. Admin level label (e.g. &quot;adm1&quot;).</li>
+<li><code>adminOrder</code>: Integer. Rank order (1 = top, 2 = second, etc.).</li>
+<li><code>varName</code>: String. Variable name (with prefix, e.g. &quot;adm1_concat_adm1_myvar&quot;).</li>
+<li><code>tabId</code>: Optional String. Spatial table identifier.</li>
+</ul>
+<p><strong>Returns:</strong> String. Admin name at the given rank.</p>
+<hr />
+<h3 id="toppop">TopPop <a class="anchor-link" href="#toppop">#</a></h3>
+<p><strong>Return the population for the top admin of a spatial variable.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function TopPop(ByVal adminLevel As String, _
+                       ByVal adminOrder As Integer, _
+                       ByVal varName As String, _
+                       Optional ByVal tabId As String = vbNullString) As Long
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>adminLevel</code>: String. Admin level label (e.g. &quot;adm1&quot;).</li>
+<li><code>adminOrder</code>: Integer. Rank order (1 = top, 2 = second, etc.).</li>
+<li><code>varName</code>: String. Variable name (with prefix &quot;concat_adm1_&quot;).</li>
+<li><code>tabId</code>: Optional String. Spatial table identifier.</li>
+</ul>
+<p><strong>Returns:</strong> Long. Population count at the given rank.</p>
+<hr />
+<h3 id="tophf">TopHF <a class="anchor-link" href="#tophf">#</a></h3>
+<p><strong>Return the top health facility name for a spatial variable.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function TopHF(ByVal adminOrder As Integer, _
+                      ByVal varName As String, _
+                      Optional ByVal tabId As String = vbNullString) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>adminOrder</code>: Integer. Rank order (1 = top, 2 = second, etc.).</li>
+<li><code>varName</code>: String. Variable name (with &quot;hf_&quot; prefix).</li>
+<li><code>tabId</code>: Optional String. Spatial table identifier.</li>
+</ul>
+<p><strong>Returns:</strong> String. Health facility name at the given rank.</p>
+<hr />
+</div>
+</details>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-factory">Factory</h2>
@@ -183,13 +249,56 @@ navigation on vertical list sheets.</p>
                                   ByRef analysisType As String)
 </code></pre>
 <p>Processes go-to-section navigation for all analysis types. For spatial
-analysis sheets, dispatches to GeoModule subs (UpdateSingleSpTable,
-DevideByPopulation, FormatDevidePop) based on named range patterns.</p>
+analysis sheets, dispatches to local spatial table update methods
+(UpdateSingleSpTable, DevideByPopulation, FormatDevidePop)
+based on named range patterns.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>sh</code>: Worksheet. The analysis worksheet.</li>
 <li><code>target</code>: Range. The edited cell(s).</li>
 <li><code>analysisType</code>: String. The sheet type tag (Uni-Bi-Analysis, TS-Analysis, etc.).</li>
+</ul>
+<hr />
+<h2 id="int-private-spatial-table-update-handlers">Private — Spatial table update handlers</h2>
+<h3 id="int-updatesinglesptable">UpdateSingleSpTable <a class="anchor-link" href="#int-updatesinglesptable">#</a></h3>
+<p><strong>Update formulas in a single spatial table when user changes admin level.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub UpdateSingleSpTable(ByVal rngName As String)
+</code></pre>
+<p>Replaces the admin reference in all formulas within the table's outer values
+range. Uses cached geo/passwords instances instead of creating new ones.
+Busy state is managed by the calling LinelistEventsManager.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>rngName</code>: String. Named range of the admin dropdown (e.g. &quot;ADM_DROPDOWN_sp1&quot;).</li>
+</ul>
+<hr />
+<h3 id="int-devidebypopulation">DevideByPopulation <a class="anchor-link" href="#int-devidebypopulation">#</a></h3>
+<p><strong>Divide or revert all computed values by the population.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub DevideByPopulation(ByVal rngName As String, _
+                               Optional ByVal revertBack As Boolean = False)
+</code></pre>
+<p>Iterates through the outer values range of a spatial table and modifies
+formulas to include or remove population division. Uses cached
+geo/spatial/passwords instances.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>rngName</code>: String. Named range of the population factor (e.g. &quot;POPFACT_sp1&quot;).</li>
+<li><code>revertBack</code>: Optional Boolean. True to remove the division and restore original formulas.</li>
+</ul>
+<hr />
+<h3 id="int-formatdevidepop">FormatDevidePop <a class="anchor-link" href="#int-formatdevidepop">#</a></h3>
+<p><strong>Toggle population division formatting.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub FormatDevidePop(ByVal rngName As String)
+</code></pre>
+<p>Shows or hides the population factor cell and label based on the
+divide/no-divide dropdown selection, then delegates to DevideByPopulation
+to apply or remove the formula modifications.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>rngName</code>: String. Named range of the divide/no-divide dropdown.</li>
 </ul>
 <hr />
 <h2 id="int-private-selection-change-handler">Private — Selection change handler</h2>
@@ -249,7 +358,7 @@ Iterates header columns and updates dropdown lists from unique data values.</p>
 <hr />
 <h2 id="int-private-sheet-metadata-helpers">Private — Sheet metadata helpers</h2>
 <h3 id="int-sheettag">SheetTag <a class="anchor-link" href="#int-sheettag">#</a></h3>
-<p><strong>Get the sheet type tag (HiddenNames first, cell fallback for analysis sheets).</strong></p>
+<p><strong>Get the sheet type tag from worksheet-level HiddenNames.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function SheetTag(ByRef sh As Worksheet) As String
 </code></pre>
@@ -276,6 +385,18 @@ Iterates header columns and updates dropdown lists from unique data values.</p>
 <p><strong>Lazily initialise the geo helper.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureGeo()
+</code></pre>
+<hr />
+<h3 id="int-ensurespatial">EnsureSpatial <a class="anchor-link" href="#int-ensurespatial">#</a></h3>
+<p><strong>Lazily initialise the spatial helper.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureSpatial()
+</code></pre>
+<hr />
+<h3 id="int-ensurepasswords">EnsurePasswords <a class="anchor-link" href="#int-ensurepasswords">#</a></h3>
+<p><strong>Lazily initialise the password manager.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsurePasswords()
 </code></pre>
 <hr />
 <h3 id="int-ensuredictionary">EnsureDictionary <a class="anchor-link" href="#int-ensuredictionary">#</a></h3>
@@ -322,11 +443,12 @@ Iterates header columns and updates dropdown lists from unique data values.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (4 file(s))</summary>
+<summary>Used in (5 file(s))</summary>
 <ul>
 <li><a href="src/classes/linelist/EventLinelist.cls">EventLinelist.cls</a></li>
 <li><a href="src/classes/linelist/IEventLinelist.cls">IEventLinelist.cls</a></li>
 <li><a href="src/classes/linelist/Linelist.cls">Linelist.cls</a></li>
+<li><a href="src/modules/linelist/CustomLinelistFunctions.bas">CustomLinelistFunctions.bas</a></li>
 <li><a href="src/modules/linelist/LinelistEventsManager.bas">LinelistEventsManager.bas</a></li>
 </ul>
 </details>

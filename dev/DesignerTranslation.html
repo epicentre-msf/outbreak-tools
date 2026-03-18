@@ -26,7 +26,8 @@ Consumers interact through the IDesignerTranslation interface.</p>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
 <div class="section-body">
-<h3 id="create">create <a class="anchor-link" href="#create">#</a></h3>
+<h3 id="create">Create <a class="anchor-link" href="#create">#</a></h3>
+<p><em>create</em></p>
 <p><strong>Create a new DesignerTranslation instance from a translation worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal sh As Worksheet) As IDesignerTranslation
@@ -45,7 +46,8 @@ IDesignerTranslation interface. Called on the predeclared instance.</p>
 <details open class="doc-section" id="translation-objects">
 <summary>Translation Objects</summary>
 <div class="section-body">
-<h3 id="trans-object">trans-object <a class="anchor-link" href="#trans-object">#</a></h3>
+<h3 id="transobject">TransObject <a class="anchor-link" href="#transobject">#</a></h3>
+<p><em>trans-object</em></p>
 <p><strong>Translation object for a given content type</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get TransObject(Optional ByVal trans As Byte = DesignerTranslationOfMessages) As ITranslationObject
@@ -64,7 +66,8 @@ Returns Nothing when no language code is configured.</p>
 <details open class="doc-section" id="translation-application">
 <summary>Translation Application</summary>
 <div class="section-body">
-<h3 id="translate-designer">translate-designer <a class="anchor-link" href="#translate-designer">#</a></h3>
+<h3 id="translatedesigner">TranslateDesigner <a class="anchor-link" href="#translatedesigner">#</a></h3>
+<p><em>translate-designer</em></p>
 <p><strong>Translate an entire designer worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub TranslateDesigner(ByVal mainsh As Worksheet, ByVal language As String)
@@ -86,7 +89,8 @@ language code is available.</p>
 <details open class="doc-section" id="message-lookup">
 <summary>Message Lookup</summary>
 <div class="section-body">
-<h3 id="translation-msg">translation-msg <a class="anchor-link" href="#translation-msg">#</a></h3>
+<h3 id="translatedvalue">TranslatedValue <a class="anchor-link" href="#translatedvalue">#</a></h3>
+<p><em>translation-msg</em></p>
 <p><strong>Get the translated value of a message code</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function TranslatedValue(ByVal msgCode As String) As String
@@ -105,14 +109,16 @@ lookup. Returns vbNullString when no language code is configured.</p>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-factory">Factory</h2>
-<h3 id="int-wksh">wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
+<h3 id="int-wksh">Wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
+<p><em>wksh</em></p>
 <p><strong>Translation worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Wksh() As Worksheet
 </code></pre>
 <p><strong>Returns:</strong> Worksheet. The backing translation worksheet.</p>
 <hr />
-<h3 id="int-wksh-set">wksh-set <a class="anchor-link" href="#int-wksh-set">#</a></h3>
+<h3 id="int-wksh">Wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
+<p><em>wksh-set</em></p>
 <p><strong>Assign the translation worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set Wksh(ByVal sh As Worksheet)
@@ -123,7 +129,8 @@ lookup. Returns vbNullString when no language code is configured.</p>
 </ul>
 <hr />
 <h2 id="int-translation-objects">Translation Objects</h2>
-<h3 id="int-designer-language">designer-language <a class="anchor-link" href="#int-designer-language">#</a></h3>
+<h3 id="int-designerlanguage">DesignerLanguage <a class="anchor-link" href="#int-designerlanguage">#</a></h3>
+<p><em>designer-language</em></p>
 <p><strong>Current designer language code</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get DesignerLanguage() As String
@@ -134,7 +141,8 @@ code is stored.</p>
 <p><strong>Returns:</strong> String. The current language code, or vbNullString when not set.</p>
 <hr />
 <h2 id="int-translation-application">Translation Application</h2>
-<h3 id="int-translate-shapes">translate-shapes <a class="anchor-link" href="#int-translate-shapes">#</a></h3>
+<h3 id="int-translateshapes">TranslateShapes <a class="anchor-link" href="#int-translateshapes">#</a></h3>
+<p><em>translate-shapes</em></p>
 <p><strong>Apply shape translations on the target worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub TranslateShapes(ByVal mainsh As Worksheet)
@@ -147,7 +155,8 @@ the original font name on each shape.</p>
 <li><code>mainsh</code>: Worksheet. The worksheet containing shapes to translate.</li>
 </ul>
 <hr />
-<h3 id="int-translate-ranges">translate-ranges <a class="anchor-link" href="#int-translate-ranges">#</a></h3>
+<h3 id="int-translateranges">TranslateRanges <a class="anchor-link" href="#int-translateranges">#</a></h3>
+<p><em>translate-ranges</em></p>
 <p><strong>Apply named range translations on the target worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub TranslateRanges(ByVal mainsh As Worksheet)
@@ -159,7 +168,8 @@ range on the worksheet with its translated value.</p>
 <li><code>mainsh</code>: Worksheet. The worksheet containing named ranges to translate.</li>
 </ul>
 <hr />
-<h3 id="int-translate-dropdowns">translate-dropdowns <a class="anchor-link" href="#int-translate-dropdowns">#</a></h3>
+<h3 id="int-translatedropdowns">TranslateDropdowns <a class="anchor-link" href="#int-translatedropdowns">#</a></h3>
+<p><em>translate-dropdowns</em></p>
 <p><strong>Apply dropdown validation translations on the target worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub TranslateDropdowns(ByVal mainsh As Worksheet)
@@ -174,7 +184,8 @@ the validation.</p>
 </ul>
 <hr />
 <h2 id="int-language-code-management">Language Code Management</h2>
-<h3 id="int-extract-lang-code">extract-lang-code <a class="anchor-link" href="#int-extract-lang-code">#</a></h3>
+<h3 id="int-extractlangcode">ExtractLangCode <a class="anchor-link" href="#int-extractlangcode">#</a></h3>
+<p><em>extract-lang-code</em></p>
 <p><strong>Extract the language code from a language string</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ExtractLangCode(ByVal language As String) As String
@@ -188,7 +199,8 @@ trimmed input as-is.</p>
 </ul>
 <p><strong>Returns:</strong> String. The extracted language code.</p>
 <hr />
-<h3 id="int-update-language-code">update-language-code <a class="anchor-link" href="#int-update-language-code">#</a></h3>
+<h3 id="int-updatelanguagecode">UpdateLanguageCode <a class="anchor-link" href="#int-updatelanguagecode">#</a></h3>
+<p><em>update-language-code</em></p>
 <p><strong>Persist the language code to the worksheet-level HiddenName</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub UpdateLanguageCode(ByVal langCode As String)
@@ -202,7 +214,8 @@ so the cache-invalidation check remains correct.</p>
 <li><code>langCode</code>: String. The language code to persist.</li>
 </ul>
 <hr />
-<h3 id="int-wksh-names">wksh-names <a class="anchor-link" href="#int-wksh-names">#</a></h3>
+<h3 id="int-wkshnames">WkshNames <a class="anchor-link" href="#int-wkshnames">#</a></h3>
+<p><em>wksh-names</em></p>
 <p><strong>Cached HiddenNames accessor for the translation worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get WkshNames() As IHiddenNames
@@ -212,7 +225,8 @@ translation worksheet.</p>
 <p><strong>Returns:</strong> IHiddenNames. The HiddenNames manager for the translation worksheet.</p>
 <hr />
 <h2 id="int-cache-management">Cache Management</h2>
-<h3 id="int-ensure-caches">ensure-caches <a class="anchor-link" href="#int-ensure-caches">#</a></h3>
+<h3 id="int-ensurecaches">EnsureCaches <a class="anchor-link" href="#int-ensurecaches">#</a></h3>
+<p><em>ensure-caches</em></p>
 <p><strong>Build or refresh translation caches for the given language code</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureCaches(ByVal langCode As String)
@@ -227,7 +241,8 @@ are already populated for the same language code.</p>
 </ul>
 <hr />
 <h2 id="int-validation">Validation</h2>
-<h3 id="int-check-requirements">check-requirements <a class="anchor-link" href="#int-check-requirements">#</a></h3>
+<h3 id="int-checkrequirements">CheckRequirements <a class="anchor-link" href="#int-checkrequirements">#</a></h3>
+<p><em>check-requirements</em></p>
 <p><strong>Validate that the worksheet has all required ListObjects</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub CheckRequirements(ByVal sh As Worksheet)
@@ -242,7 +257,8 @@ missing.</p>
 </ul>
 <hr />
 <h2 id="int-error-handling">Error Handling</h2>
-<h3 id="int-throw-error">throw-error <a class="anchor-link" href="#int-throw-error">#</a></h3>
+<h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
+<p><em>throw-error</em></p>
 <p><strong>Raise a ProjectError-based exception</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As Long, ByVal message As String)
@@ -254,7 +270,8 @@ missing.</p>
 <li><code>message</code>: String. Human-readable description of the failure.</li>
 </ul>
 <hr />
-<h3 id="int-lo-exists">lo-exists <a class="anchor-link" href="#int-lo-exists">#</a></h3>
+<h3 id="int-loexists">LoExists <a class="anchor-link" href="#int-loexists">#</a></h3>
+<p><em>lo-exists</em></p>
 <p><strong>Verify that all listed ListObjects exist on a worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub LoExists(sh As Worksheet, ByVal loNames As BetterArray)

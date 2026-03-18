@@ -22,7 +22,8 @@ the GraphScope enum. Consumers interact through the IGraphs interface.</p>
 <details open class="doc-section" id="instantiation">
 <summary>Instantiation</summary>
 <div class="section-body">
-<h3 id="create">create <a class="anchor-link" href="#create">#</a></h3>
+<h3 id="create">Create <a class="anchor-link" href="#create">#</a></h3>
+<p><em>create</em></p>
 <p><strong>Create a Graph object bound to a worksheet and position</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(sh As Worksheet, posRng As Range, Optional ByVal grName As String = vbNullString) As IGraphs
@@ -54,7 +55,8 @@ worksheet used to instantiate the class.</p>
 <details open class="doc-section" id="operations">
 <summary>Operations</summary>
 <div class="section-body">
-<h3 id="add">add <a class="anchor-link" href="#add">#</a></h3>
+<h3 id="add">Add <a class="anchor-link" href="#add">#</a></h3>
+<p><em>add</em></p>
 <p><strong>Create an empty chart on the worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub Add()
@@ -64,7 +66,8 @@ Creates an empty graph on a worksheet, ready for data to be
 attached to the graph. The graph is empty at creation. The width and height
 of the graph object may change depending on the scope in the future.</p>
 <hr />
-<h3 id="addseries">addseries <a class="anchor-link" href="#addseries">#</a></h3>
+<h3 id="addseries">AddSeries <a class="anchor-link" href="#addseries">#</a></h3>
+<p><em>addseries</em></p>
 <p><strong>Attach a data series from a named range</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddSeries(ByVal rngName As String, ByVal chrtType As String, _
@@ -86,7 +89,8 @@ yet, Add is called lazily before attaching the series.</p>
 <details open class="doc-section" id="checking">
 <summary>Checking</summary>
 <div class="section-body">
-<h3 id="has-checkings">has-checkings <a class="anchor-link" href="#has-checkings">#</a></h3>
+<h3 id="hascheckings">HasCheckings <a class="anchor-link" href="#hascheckings">#</a></h3>
+<p><em>has-checkings</em></p>
 <p><strong>Determine whether diagnostics have been captured</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get HasCheckings() As Boolean
@@ -95,10 +99,11 @@ yet, Add is called lazily before attaching the series.</p>
 indicating that diagnostic information is available.</p>
 <p><strong>Returns:</strong> Boolean. True when internal checks exist.</p>
 <hr />
-<h3 id="checking-values">checking-values <a class="anchor-link" href="#checking-values">#</a></h3>
+<h3 id="checkingvalues">CheckingValues <a class="anchor-link" href="#checkingvalues">#</a></h3>
+<p><em>checking-values</em></p>
 <p><strong>Retrieve the collected checking entries</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get CheckingValues() As Object
+<pre><code class="language-vb">Private Property Get CheckingValues() As IChecking
 </code></pre>
 <p>Returns the internal IChecking store when at least one entry has
 been recorded. Returns Nothing otherwise.</p>
@@ -109,7 +114,8 @@ been recorded. Returns Nothing otherwise.</p>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-instantiation">Instantiation</h2>
-<h3 id="int-self">self <a class="anchor-link" href="#int-self">#</a></h3>
+<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
+<p><em>self</em></p>
 <p><strong>Current object instance</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Self() As IGraphs
@@ -118,7 +124,8 @@ been recorded. Returns Nothing otherwise.</p>
 by the factory method to return an IGraphs reference.</p>
 <p><strong>Returns:</strong> IGraphs. Reference to the current object.</p>
 <hr />
-<h3 id="int-wksh">wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
+<h3 id="int-wksh">Wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
+<p><em>wksh</em></p>
 <p><strong>Host worksheet for the graph</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Wksh() As Worksheet
@@ -127,7 +134,8 @@ by the factory method to return an IGraphs reference.</p>
 ranges for series data reside on this worksheet.</p>
 <p><strong>Returns:</strong> Worksheet. The worksheet hosting the chart.</p>
 <hr />
-<h3 id="int-wksh-set">wksh-set <a class="anchor-link" href="#int-wksh-set">#</a></h3>
+<h3 id="int-wksh">Wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
+<p><em>wksh-set</em></p>
 <p><strong>Assign the host worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set Wksh(ByVal sh As Worksheet)
@@ -137,7 +145,8 @@ ranges for series data reside on this worksheet.</p>
 <li><code>sh</code>: Worksheet. The worksheet where graph data resides.</li>
 </ul>
 <hr />
-<h3 id="int-start-range">start-range <a class="anchor-link" href="#int-start-range">#</a></h3>
+<h3 id="int-startrange">StartRange <a class="anchor-link" href="#int-startrange">#</a></h3>
+<p><em>start-range</em></p>
 <p><strong>Starting cell or range for the graph position</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get StartRange() As Range
@@ -146,7 +155,8 @@ ranges for series data reside on this worksheet.</p>
 chart on the worksheet.</p>
 <p><strong>Returns:</strong> Range. The positioning range.</p>
 <hr />
-<h3 id="int-start-range-set">start-range-set <a class="anchor-link" href="#int-start-range-set">#</a></h3>
+<h3 id="int-startrange">StartRange <a class="anchor-link" href="#int-startrange">#</a></h3>
+<p><em>start-range-set</em></p>
 <p><strong>Assign the starting position range</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set StartRange(ByVal strtRng As Range)
@@ -156,7 +166,8 @@ chart on the worksheet.</p>
 <li><code>strtRng</code>: Range. The cell or range used to position the graph.</li>
 </ul>
 <hr />
-<h3 id="int-name-set">name-set <a class="anchor-link" href="#int-name-set">#</a></h3>
+<h3 id="int-name">Name <a class="anchor-link" href="#int-name">#</a></h3>
+<p><em>name-set</em></p>
 <p><strong>Assign the graph display name</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Let Name(ByVal grName As String)
@@ -166,7 +177,8 @@ chart on the worksheet.</p>
 <li><code>grName</code>: String. The graph name.</li>
 </ul>
 <hr />
-<h3 id="int-name">name <a class="anchor-link" href="#int-name">#</a></h3>
+<h3 id="int-name">Name <a class="anchor-link" href="#int-name">#</a></h3>
+<p><em>name</em></p>
 <p><strong>Retrieve the graph display name</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Name() As String
@@ -174,7 +186,8 @@ chart on the worksheet.</p>
 <p><strong>Returns:</strong> String. The graph name.</p>
 <hr />
 <h2 id="int-graphelements">GraphElements</h2>
-<h3 id="int-graph-chart">graph-chart <a class="anchor-link" href="#int-graph-chart">#</a></h3>
+<h3 id="int-graphchart">graphChart <a class="anchor-link" href="#int-graphchart">#</a></h3>
+<p><em>graph-chart</em></p>
 <p><strong>Retrieve the internal ChartObject</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get graphChart() As ChartObject
@@ -183,7 +196,8 @@ chart on the worksheet.</p>
 Returns the ChartObject created by Add. Nothing until Add is called.</p>
 <p><strong>Returns:</strong> ChartObject. The underlying Excel chart object.</p>
 <hr />
-<h3 id="int-series-index">series-index <a class="anchor-link" href="#int-series-index">#</a></h3>
+<h3 id="int-seriesindex">seriesIndex <a class="anchor-link" href="#int-seriesindex">#</a></h3>
+<p><em>series-index</em></p>
 <p><strong>Latest series index</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get seriesIndex() As Long
@@ -193,7 +207,8 @@ Incremented by AddSeries and used by AddLabels to target the
 correct series entry.</p>
 <p><strong>Returns:</strong> Long. Current series index.</p>
 <hr />
-<h3 id="int-series-index-set">series-index-set <a class="anchor-link" href="#int-series-index-set">#</a></h3>
+<h3 id="int-seriesindex">seriesIndex <a class="anchor-link" href="#int-seriesindex">#</a></h3>
+<p><em>series-index-set</em></p>
 <p><strong>Update the latest series index</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Let seriesIndex(ByVal ind As Long)
@@ -204,7 +219,8 @@ correct series entry.</p>
 </ul>
 <hr />
 <h2 id="int-operations">Operations</h2>
-<h3 id="int-addlabels">addlabels <a class="anchor-link" href="#int-addlabels">#</a></h3>
+<h3 id="int-addlabels">AddLabels <a class="anchor-link" href="#int-addlabels">#</a></h3>
+<p><em>addlabels</em></p>
 <p><strong>Assign category and legend labels to the current series</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddLabels(ByVal catName As String, _
@@ -227,7 +243,8 @@ than using a literal string.</p>
 <li><code>hardCodeLabels</code>: Optional Boolean. When True, legend text is literal; when False, references the named range. Defaults to True.</li>
 </ul>
 <hr />
-<h3 id="int-format">format <a class="anchor-link" href="#int-format">#</a></h3>
+<h3 id="int-format">Format <a class="anchor-link" href="#int-format">#</a></h3>
+<p><em>format</em></p>
 <p><strong>Apply layout and formatting to the chart</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub Format(Optional ByVal valuesTitle As String = vbNullString, _
@@ -255,7 +272,8 @@ dynamically rather than using literal strings.</p>
 </ul>
 <hr />
 <h2 id="int-helpers">Helpers</h2>
-<h3 id="int-range-exist">range-exist <a class="anchor-link" href="#int-range-exist">#</a></h3>
+<h3 id="int-rangeexist">RangeExist <a class="anchor-link" href="#int-rangeexist">#</a></h3>
+<p><em>range-exist</em></p>
 <p><strong>Test whether a named range exists on the host worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function RangeExist(ByVal rngName As String) As Boolean
@@ -269,7 +287,8 @@ Returns True when the range is valid and non-Nothing.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when the named range exists.</p>
 <hr />
-<h3 id="int-rng-address">rng-address <a class="anchor-link" href="#int-rng-address">#</a></h3>
+<h3 id="int-rngaddress">RngAddress <a class="anchor-link" href="#int-rngaddress">#</a></h3>
+<p><em>rng-address</em></p>
 <p><strong>Return the full worksheet-qualified address of a named range</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function RngAddress(ByVal rngName As String) As String
@@ -284,7 +303,8 @@ does not exist.</p>
 <p><strong>Returns:</strong> String. Worksheet-qualified address or vbNullString.</p>
 <hr />
 <h2 id="int-checking">Checking</h2>
-<h3 id="int-log-info">log-info <a class="anchor-link" href="#int-log-info">#</a></h3>
+<h3 id="int-loginfo">LogInfo <a class="anchor-link" href="#int-loginfo">#</a></h3>
+<p><em>log-info</em></p>
 <p><strong>Record a diagnostic entry in the internal checking store</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub LogInfo(ByVal label As String, _
@@ -301,7 +321,8 @@ store is exposed through HasCheckings and CheckingValues.</p>
 </ul>
 <hr />
 <h2 id="int-errorhandling">ErrorHandling</h2>
-<h3 id="int-show-debug">show-debug <a class="anchor-link" href="#int-show-debug">#</a></h3>
+<h3 id="int-showdebug">ShowDebug <a class="anchor-link" href="#int-showdebug">#</a></h3>
+<p><em>show-debug</em></p>
 <p><strong>Print debug information to the Immediate window</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ShowDebug()
@@ -309,7 +330,8 @@ store is exposed through HasCheckings and CheckingValues.</p>
 <p>Centralised error-raising and debug helpers.
 Outputs basic debug information including the graph name.</p>
 <hr />
-<h3 id="int-throw-error">throw-error <a class="anchor-link" href="#int-throw-error">#</a></h3>
+<h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
+<p><em>throw-error</em></p>
 <p><strong>Raise a ProjectError-based exception</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)

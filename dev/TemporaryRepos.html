@@ -19,7 +19,8 @@ directory. Automatically deletes all content on termination.</p>
 <details open class="doc-section" id="factory-helpers">
 <summary>Factory helpers</summary>
 <div class="section-body">
-<h3 id="create">create <a class="anchor-link" href="#create">#</a></h3>
+<h3 id="create">Create <a class="anchor-link" href="#create">#</a></h3>
+<p><em>create</em></p>
 <p><strong>Build and initialise a temporary repository service</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(Optional ByVal baseDirectory As String) As ITemporaryRepos
@@ -35,13 +36,15 @@ directory. Automatically deletes all content on termination.</p>
 <details open class="doc-section" id="lifecycle">
 <summary>Lifecycle</summary>
 <div class="section-body">
-<h3 id="ensure-ready">ensure-ready <a class="anchor-link" href="#ensure-ready">#</a></h3>
+<h3 id="ensureready">EnsureReady <a class="anchor-link" href="#ensureready">#</a></h3>
+<p><em>ensure-ready</em></p>
 <p><strong>Prepare the repository root if it has not already been created</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub EnsureReady()
 </code></pre>
 <hr />
-<h3 id="reset">reset <a class="anchor-link" href="#reset">#</a></h3>
+<h3 id="reset">Reset <a class="anchor-link" href="#reset">#</a></h3>
+<p><em>reset</em></p>
 <p><strong>Remove all temporary artefacts and mark repository as uninitialised</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Reset()
@@ -52,14 +55,16 @@ directory. Automatically deletes all content on termination.</p>
 <details open class="doc-section" id="paths">
 <summary>Paths</summary>
 <div class="section-body">
-<h3 id="root-path">root-path <a class="anchor-link" href="#root-path">#</a></h3>
+<h3 id="rootpath">RootPath <a class="anchor-link" href="#rootpath">#</a></h3>
+<p><em>root-path</em></p>
 <p><strong>Fully-qualified repository root</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get RootPath() As String
 </code></pre>
 <p><strong>Returns:</strong> String. Absolute path ending with a path separator.</p>
 <hr />
-<h3 id="create-file-path">create-file-path <a class="anchor-link" href="#create-file-path">#</a></h3>
+<h3 id="createfilepath">CreateFilePath <a class="anchor-link" href="#createfilepath">#</a></h3>
+<p><em>create-file-path</em></p>
 <p><strong>Generate a safe path for a new temporary file within the repository</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function CreateFilePath(ByVal fileName As String) As String
@@ -75,7 +80,8 @@ directory. Automatically deletes all content on termination.</p>
 <details open class="doc-section" id="file-operations">
 <summary>File operations</summary>
 <div class="section-body">
-<h3 id="delete-file">delete-file <a class="anchor-link" href="#delete-file">#</a></h3>
+<h3 id="deletefile">DeleteFile <a class="anchor-link" href="#deletefile">#</a></h3>
+<p><em>delete-file</em></p>
 <p><strong>Delete a single file; silently ignore missing paths</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub DeleteFile(ByVal path As String)
@@ -85,7 +91,8 @@ directory. Automatically deletes all content on termination.</p>
 <li><code>path</code>: String. Absolute file path.</li>
 </ul>
 <hr />
-<h3 id="delete-all">delete-all <a class="anchor-link" href="#delete-all">#</a></h3>
+<h3 id="deleteall">DeleteAll <a class="anchor-link" href="#deleteall">#</a></h3>
+<p><em>delete-all</em></p>
 <p><strong>Remove every file within the repository, then recreate the root folder</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub DeleteAll()
@@ -96,7 +103,8 @@ directory. Automatically deletes all content on termination.</p>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-factory-helpers">Factory helpers</h2>
-<h3 id="int-initialise">initialise <a class="anchor-link" href="#int-initialise">#</a></h3>
+<h3 id="int-initialise">Initialise <a class="anchor-link" href="#int-initialise">#</a></h3>
+<p><em>initialise</em></p>
 <p><strong>Set the root path and mark the repository as not ready</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Friend Sub Initialise(Optional ByVal baseDirectory As String)
@@ -107,7 +115,8 @@ directory. Automatically deletes all content on termination.</p>
 </ul>
 <hr />
 <h2 id="int-internal-helpers">Internal helpers</h2>
-<h3 id="int-resolve-root-path">resolve-root-path <a class="anchor-link" href="#int-resolve-root-path">#</a></h3>
+<h3 id="int-resolverootpath">ResolveRootPath <a class="anchor-link" href="#int-resolverootpath">#</a></h3>
+<p><em>resolve-root-path</em></p>
 <p><strong>Determine the root directory used for temporary storage</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ResolveRootPath(ByVal baseDirectory As String) As String
@@ -118,7 +127,8 @@ directory. Automatically deletes all content on termination.</p>
 </ul>
 <p><strong>Returns:</strong> String. Fully-qualified path ending with the repository folder.</p>
 <hr />
-<h3 id="int-ensure-directory-exists">ensure-directory-exists <a class="anchor-link" href="#int-ensure-directory-exists">#</a></h3>
+<h3 id="int-ensuredirectoryexists">EnsureDirectoryExists <a class="anchor-link" href="#int-ensuredirectoryexists">#</a></h3>
+<p><em>ensure-directory-exists</em></p>
 <p><strong>Create the supplied folder when missing and validate existing paths</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureDirectoryExists(ByVal folderPath As String)
@@ -128,7 +138,8 @@ directory. Automatically deletes all content on termination.</p>
 <li><code>folderPath</code>: String. Path that should represent a directory.</li>
 </ul>
 <hr />
-<h3 id="int-create-directory-tree">create-directory-tree <a class="anchor-link" href="#int-create-directory-tree">#</a></h3>
+<h3 id="int-createdirectorytree">CreateDirectoryTree <a class="anchor-link" href="#int-createdirectorytree">#</a></h3>
+<p><em>create-directory-tree</em></p>
 <p><strong>Create a directory and all missing parents</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub CreateDirectoryTree(ByVal folderPath As String)
@@ -138,7 +149,8 @@ directory. Automatically deletes all content on termination.</p>
 <li><code>folderPath</code>: String. Fully-qualified target folder.</li>
 </ul>
 <hr />
-<h3 id="int-is-directory">is-directory <a class="anchor-link" href="#int-is-directory">#</a></h3>
+<h3 id="int-isdirectory">IsDirectory <a class="anchor-link" href="#int-isdirectory">#</a></h3>
+<p><em>is-directory</em></p>
 <p><strong>Determine whether the supplied path points to a folder</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function IsDirectory(ByVal path As String) As Boolean
@@ -149,7 +161,8 @@ directory. Automatically deletes all content on termination.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when the path is an existing directory.</p>
 <hr />
-<h3 id="int-normalize-path">normalize-path <a class="anchor-link" href="#int-normalize-path">#</a></h3>
+<h3 id="int-normalizepath">NormalizePath <a class="anchor-link" href="#int-normalizepath">#</a></h3>
+<p><em>normalize-path</em></p>
 <p><strong>Remove trailing separators and normalise the supplied path string</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function NormalizePath(ByVal path As String, ByVal sep As String) As String
@@ -161,7 +174,8 @@ directory. Automatically deletes all content on termination.</p>
 </ul>
 <p><strong>Returns:</strong> String. Cleaned path.</p>
 <hr />
-<h3 id="int-sanitize-file-name">sanitize-file-name <a class="anchor-link" href="#int-sanitize-file-name">#</a></h3>
+<h3 id="int-sanitizefilename">SanitizeFileName <a class="anchor-link" href="#int-sanitizefilename">#</a></h3>
+<p><em>sanitize-file-name</em></p>
 <p><strong>Replace characters that are invalid on common file systems</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function SanitizeFileName(ByVal fileName As String) As String
@@ -172,19 +186,22 @@ directory. Automatically deletes all content on termination.</p>
 </ul>
 <p><strong>Returns:</strong> String. Safe to append to the repository root.</p>
 <hr />
-<h3 id="int-delete-all-internal">delete-all-internal <a class="anchor-link" href="#int-delete-all-internal">#</a></h3>
+<h3 id="int-deleteallinternal">DeleteAllInternal <a class="anchor-link" href="#int-deleteallinternal">#</a></h3>
+<p><em>delete-all-internal</em></p>
 <p><strong>Wipe every file inside the repository without recreating the folder</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub DeleteAllInternal()
 </code></pre>
 <hr />
-<h3 id="int-class-terminate">class-terminate <a class="anchor-link" href="#int-class-terminate">#</a></h3>
+<h3 id="int-class-terminate">Class_Terminate <a class="anchor-link" href="#int-class-terminate">#</a></h3>
+<p><em>class-terminate</em></p>
 <p><strong>Clean up temporary files when the instance is destroyed</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub Class_Terminate()
 </code></pre>
 <hr />
-<h3 id="int-throw-error">throw-error <a class="anchor-link" href="#int-throw-error">#</a></h3>
+<h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
+<p><em>throw-error</em></p>
 <p><strong>Raise a typed project error</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal message As String)

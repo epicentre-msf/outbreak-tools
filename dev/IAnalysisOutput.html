@@ -22,13 +22,33 @@ Scope for analysis worksheet selection</p>
 <h3 id="writeanalysis">WriteAnalysis <a class="anchor-link" href="#writeanalysis">#</a></h3>
 <p><strong>Write all analysis tables, formulas, and graphs to the output</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub WriteAnalysis(): End Sub
+<pre><code class="language-vb">Public Sub WriteAnalysis(Optional ByVal part As Byte = 0): End Sub
 </code></pre>
 <p>Orchestrates the complete analysis output pipeline. Iterates through
 each analysis scope (normal, time series, spatial, spatio-temporal),
 builds cross-tables from the table specifications, writes formulas via
 CrossTableFormula, registers table and graph metadata in AnaTabIds,
 and renders all tracked graphs on the output worksheets.</p>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="checkings">
+<summary>Checkings</summary>
+<div class="section-body">
+<h3 id="hascheckings">HasCheckings <a class="anchor-link" href="#hascheckings">#</a></h3>
+<p><strong>Whether the analysis output has logged diagnostic messages</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get HasCheckings() As Boolean
+</code></pre>
+<p>Diagnostic logging access for analysis output results.</p>
+<p><strong>Returns:</strong> Boolean. True when diagnostic entries exist.</p>
+<hr />
+<h3 id="checkingvalues">CheckingValues <a class="anchor-link" href="#checkingvalues">#</a></h3>
+<p><strong>Retrieve the diagnostic log entries</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get CheckingValues() As IChecking
+</code></pre>
+<p><strong>Returns:</strong> IChecking. The checking instance, or Nothing.</p>
 <hr />
 </div>
 </details>

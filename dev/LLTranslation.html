@@ -20,7 +20,8 @@ initialisation for translated configuration values.</p>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
 <div class="section-body">
-<h3 id="create">create <a class="anchor-link" href="#create">#</a></h3>
+<h3 id="create">Create <a class="anchor-link" href="#create">#</a></h3>
+<p><em>create</em></p>
 <p><strong>Create a new LLTranslation from a translation worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal translationSheet As Worksheet) As ILLTranslation
@@ -46,7 +47,8 @@ ListObjects.</li>
 <details open class="doc-section" id="properties">
 <summary>Properties</summary>
 <div class="section-body">
-<h3 id="wksh">wksh <a class="anchor-link" href="#wksh">#</a></h3>
+<h3 id="wksh">Wksh <a class="anchor-link" href="#wksh">#</a></h3>
+<p><em>wksh</em></p>
 <p><strong>Host translation worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Wksh() As Worksheet
@@ -55,7 +57,8 @@ ListObjects.</li>
 Returns the worksheet bound to this instance.</p>
 <p><strong>Returns:</strong> Worksheet. The host translation worksheet.</p>
 <hr />
-<h3 id="trans-object">trans-object <a class="anchor-link" href="#trans-object">#</a></h3>
+<h3 id="transobject">TransObject <a class="anchor-link" href="#transobject">#</a></h3>
+<p><em>trans-object</em></p>
 <p><strong>Scoped translation object</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get TransObject(Optional ByVal trans As Byte = TranslationOfMessages) As ITranslationObject
@@ -80,7 +83,8 @@ not exist on the host worksheet.</li>
 <details open class="doc-section" id="dataexchange">
 <summary>DataExchange</summary>
 <div class="section-body">
-<h3 id="export">export <a class="anchor-link" href="#export">#</a></h3>
+<h3 id="export">Export <a class="anchor-link" href="#export">#</a></h3>
+<p><em>export</em></p>
 <p><strong>Export all translation tables to an output workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Export(ByVal outputWkb As Workbook, _
@@ -102,7 +106,8 @@ xlSheetVeryHidden.</li>
 <li>ProjectError.ObjectNotInitialized When outputWkb is Nothing.</li>
 </ul>
 <hr />
-<h3 id="import">import <a class="anchor-link" href="#import">#</a></h3>
+<h3 id="import">Import <a class="anchor-link" href="#import">#</a></h3>
+<p><em>import</em></p>
 <p><strong>Import translation tables from another workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Import(ByVal fromWkb As Workbook)
@@ -116,7 +121,8 @@ sheet. Missing source tables are silently skipped.</p>
 <li><code>fromWkb</code>: Workbook. The source workbook containing translation data.</li>
 </ul>
 <hr />
-<h3 id="import-dictionary">import-dictionary <a class="anchor-link" href="#import-dictionary">#</a></h3>
+<h3 id="importdictionary">ImportDictionary <a class="anchor-link" href="#importdictionary">#</a></h3>
+<p><em>import-dictionary</em></p>
 <p><strong>Import dictionary translations from a raw ListObject</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ImportDictionary(ByVal dictionaryTable As ListObject)
@@ -134,7 +140,8 @@ ListObject, preserving the source column headers via keepSourceHeaders.</p>
 not found.</li>
 </ul>
 <hr />
-<h3 id="export-dictionary">export-dictionary <a class="anchor-link" href="#export-dictionary">#</a></h3>
+<h3 id="exportdictionary">ExportDictionary <a class="anchor-link" href="#exportdictionary">#</a></h3>
+<p><em>export-dictionary</em></p>
 <p><strong>Export the dictionary table to a named worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ExportDictionary(ByVal outputWkb As Workbook, _
@@ -164,7 +171,8 @@ not found.</li>
 <details open class="doc-section" id="hiddennames">
 <summary>HiddenNames</summary>
 <div class="section-body">
-<h3 id="initialise-hidden-names">initialise-hidden-names <a class="anchor-link" href="#initialise-hidden-names">#</a></h3>
+<h3 id="initialisehiddennames">InitialiseHiddenNames <a class="anchor-link" href="#initialisehiddennames">#</a></h3>
+<p><em>initialise-hidden-names</em></p>
 <p><em><em>Create RNG_</em> hidden names on a target workbook</em>*</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub InitialiseHiddenNames(ByVal targetWkb As Workbook)
@@ -189,7 +197,8 @@ to already exist in the designer workbook HiddenNames.</p>
 <details open class="doc-section" id="sheetnames">
 <summary>SheetNames</summary>
 <div class="section-body">
-<h3 id="initialise-sheet-names">initialise-sheet-names <a class="anchor-link" href="#initialise-sheet-names">#</a></h3>
+<h3 id="initialisesheetnames">InitialiseSheetNames <a class="anchor-link" href="#initialisesheetnames">#</a></h3>
+<p><em>initialise-sheet-names</em></p>
 <p><strong>Create language HiddenNames on the translation worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub InitialiseSheetNames(ByVal dictLang As String, ByVal llLang As String)
@@ -210,7 +219,8 @@ to the output workbook.</p>
 <details open class="doc-section" id="valueaccess">
 <summary>ValueAccess</summary>
 <div class="section-body">
-<h3 id="value">value <a class="anchor-link" href="#value">#</a></h3>
+<h3 id="value">Value <a class="anchor-link" href="#value">#</a></h3>
+<p><em>value</em></p>
 <p><strong>Retrieve a named configuration value from the translation worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Value(ByVal nameId As String) As String
@@ -232,14 +242,16 @@ Other keys return vbNullString.</p>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-factory">Factory</h2>
-<h3 id="int-self">self <a class="anchor-link" href="#int-self">#</a></h3>
+<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
+<p><em>self</em></p>
 <p><strong>Interface-cast self reference</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Self() As ILLTranslation
 </code></pre>
 <p><strong>Returns:</strong> ILLTranslation. This instance as its interface type.</p>
 <hr />
-<h3 id="int-internal-sheet">internal-sheet <a class="anchor-link" href="#int-internal-sheet">#</a></h3>
+<h3 id="int-internalsheet">InternalSheet <a class="anchor-link" href="#int-internalsheet">#</a></h3>
+<p><em>internal-sheet</em></p>
 <p><strong>Friend setter for the host worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Friend Property Set InternalSheet(ByVal value As Worksheet)
@@ -251,7 +263,8 @@ Other keys return vbNullString.</p>
 </ul>
 <hr />
 <h2 id="int-internal-helpers">Internal Helpers</h2>
-<h3 id="int-resolve-list-object">resolve-list-object <a class="anchor-link" href="#int-resolve-list-object">#</a></h3>
+<h3 id="int-resolvelistobject">ResolveListObject <a class="anchor-link" href="#int-resolvelistobject">#</a></h3>
+<p><em>resolve-list-object</em></p>
 <p><strong>Resolve a ListObject by name from the host worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ResolveListObject(ByVal tableName As String) As ListObject
@@ -269,7 +282,8 @@ worksheet. Raises an error when the table is not found.</p>
 <li>ProjectError.ElementNotFound When the table is not found.</li>
 </ul>
 <hr />
-<h3 id="int-find-or-create-sheet">find-or-create-sheet <a class="anchor-link" href="#int-find-or-create-sheet">#</a></h3>
+<h3 id="int-findorcreatesheet">FindOrCreateSheet <a class="anchor-link" href="#int-findorcreatesheet">#</a></h3>
+<p><em>find-or-create-sheet</em></p>
 <p><strong>Find or create a worksheet in the target workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function FindOrCreateSheet(ByVal targetWkb As Workbook, _
@@ -285,7 +299,8 @@ worksheet with the name appended at the end.</p>
 </ul>
 <p><strong>Returns:</strong> Worksheet. The resolved or newly created worksheet.</p>
 <hr />
-<h3 id="int-format-export-sheet">format-export-sheet <a class="anchor-link" href="#int-format-export-sheet">#</a></h3>
+<h3 id="int-formatexportsheet">FormatExportSheet <a class="anchor-link" href="#int-formatexportsheet">#</a></h3>
+<p><em>format-export-sheet</em></p>
 <p><strong>Apply standard formatting to an exported sheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub FormatExportSheet(ByVal sh As Worksheet, ByVal Hide As Long)
@@ -297,7 +312,8 @@ worksheet with the name appended at the end.</p>
 <li><code>Hide</code>: Long. Sheet visibility constant.</li>
 </ul>
 <hr />
-<h3 id="int-clean-dictionary">clean-dictionary <a class="anchor-link" href="#int-clean-dictionary">#</a></h3>
+<h3 id="int-cleandictionary">CleanDictionary <a class="anchor-link" href="#int-cleandictionary">#</a></h3>
+<p><em>clean-dictionary</em></p>
 <p><strong>Clear the dictionary ListObject data</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub CleanDictionary()
@@ -306,7 +322,8 @@ worksheet with the name appended at the end.</p>
 clear all non-formula, non-key columns. Silently exits when the
 dictionary table does not exist.</p>
 <hr />
-<h3 id="int-check-requirements">check-requirements <a class="anchor-link" href="#int-check-requirements">#</a></h3>
+<h3 id="int-checkrequirements">CheckRequirements <a class="anchor-link" href="#int-checkrequirements">#</a></h3>
+<p><em>check-requirements</em></p>
 <p><strong>Validate that the translation sheet has all required tables</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub CheckRequirements(ByVal translationSheet As Worksheet)
@@ -325,7 +342,8 @@ present. T_TradLLRibbon is optional and not validated.</p>
 </ul>
 <hr />
 <h2 id="int-error-handling">Error Handling</h2>
-<h3 id="int-ensure-and-set">ensure-and-set <a class="anchor-link" href="#int-ensure-and-set">#</a></h3>
+<h3 id="int-ensureandset">EnsureAndSet <a class="anchor-link" href="#int-ensureandset">#</a></h3>
+<p><em>ensure-and-set</em></p>
 <p><strong>Create a HiddenName if missing, then always update its value</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureAndSet(ByVal store As IHiddenNames, ByVal nameId As String, _
@@ -339,7 +357,8 @@ present. T_TradLLRibbon is optional and not validated.</p>
 <li><code>value</code>: String. The value to set.</li>
 </ul>
 <hr />
-<h3 id="int-throw-error">throw-error <a class="anchor-link" href="#int-throw-error">#</a></h3>
+<h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
+<p><em>throw-error</em></p>
 <p><strong>Raise a ProjectError-based exception</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As Long, ByVal message As String)
@@ -359,11 +378,11 @@ present. T_TradLLRibbon is optional and not validated.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (32 file(s))</summary>
+<summary>Used in (31 file(s))</summary>
 <ul>
 <li><a href="src/classes/dataio/LLExporter.cls">LLExporter.cls</a></li>
-<li><a href="src/classes/designer/DesignerImportService.cls">DesignerImportService.cls</a></li>
-<li><a href="src/classes/designer/IDesignerImportService.cls">IDesignerImportService.cls</a></li>
+<li><a href="src/classes/designer/ILinelistBuildService.cls">ILinelistBuildService.cls</a></li>
+<li><a href="src/classes/designer/LinelistBuildService.cls">LinelistBuildService.cls</a></li>
 <li><a href="src/classes/linelist/EventLinelist.cls">EventLinelist.cls</a></li>
 <li><a href="src/classes/linelist/IEventLinelist.cls">IEventLinelist.cls</a></li>
 <li><a href="src/classes/linelist/ILinelistSpecs.cls">ILinelistSpecs.cls</a></li>
@@ -379,16 +398,15 @@ present. T_TradLLRibbon is optional and not validated.</p>
 <li><a href="src/classes/stale/designer-codes/modules/implements/FormLogicShowVarLabels.bas">FormLogicShowVarLabels.bas</a></li>
 <li><a href="src/classes/stale/designer-codes/modules/implements/LinelistEvents.bas">LinelistEvents.bas</a></li>
 <li><a href="src/classes/stale/designer-codes/modules/implements/LinelistGeo.bas">LinelistGeo.bas</a></li>
-<li><a href="src/modules/geo/GeoModule.bas">GeoModule.bas</a></li>
+<li><a href="src/classes/stale/DesignerImportService.cls">DesignerImportService.cls</a></li>
+<li><a href="src/classes/stale/IDesignerImportService.cls">IDesignerImportService.cls</a></li>
 <li><a href="src/modules/linelist/EventsLinelistButtons.bas">EventsLinelistButtons.bas</a></li>
 <li><a href="src/modules/linelist/EventsLinelistRibbon.bas">EventsLinelistRibbon.bas</a></li>
+<li><a href="src/modules/linelist/GeoModule.bas">GeoModule.bas</a></li>
 <li><a href="src/modules/linelistform/FormLogicEpiWeek.bas">FormLogicEpiWeek.bas</a></li>
 <li><a href="src/modules/linelistform/FormLogicGeo.bas">FormLogicGeo.bas</a></li>
 <li><a href="src/modules/linelistform/FormLogicImportRep.bas">FormLogicImportRep.bas</a></li>
 <li><a href="src/modules/linelistform/FormLogicShowVarLabels.bas">FormLogicShowVarLabels.bas</a></li>
-<li><a href="src/modules/stale/EventsGlobalAnalysis.bas">EventsGlobalAnalysis.bas</a></li>
-<li><a href="src/modules/stale/EventsSpatialAnalysis.bas">EventsSpatialAnalysis.bas</a></li>
-<li><a href="src/modules/stale/LinelistEvents.bas">LinelistEvents.bas</a></li>
 <li><a href="src/tests/modules/linelist/TestLLTranslation.bas">TestLLTranslation.bas</a></li>
 <li><a href="src/tests/stubs/LinelistSpecsWorkbookStub.cls">LinelistSpecsWorkbookStub.cls</a></li>
 <li><a href="src/tests/stubs/LLVarContextSpecsStub.cls">LLVarContextSpecsStub.cls</a></li>

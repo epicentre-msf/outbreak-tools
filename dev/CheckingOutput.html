@@ -21,7 +21,8 @@ automatically.</p>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
 <div class="section-body">
-<h3 id="create">create <a class="anchor-link" href="#create">#</a></h3>
+<h3 id="create">Create <a class="anchor-link" href="#create">#</a></h3>
+<p><em>create</em></p>
 <p><strong>Create an output writer bound to a worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal sh As Worksheet, Optional ByVal title As String = vbNullString) As ICheckingOutput
@@ -46,7 +47,8 @@ marker.</p>
 <details open class="doc-section" id="filtering">
 <summary>Filtering</summary>
 <div class="section-body">
-<h3 id="filter-worksheet">filter-worksheet <a class="anchor-link" href="#filter-worksheet">#</a></h3>
+<h3 id="filterworksheet">FilterWorksheet <a class="anchor-link" href="#filterworksheet">#</a></h3>
+<p><em>filter-worksheet</em></p>
 <p><strong>Apply filtering logic using the backing worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub FilterWorksheet(Optional ByVal statusSelection As String = vbNullString, _
@@ -66,7 +68,8 @@ ApplyWorksheetFilter.</p>
 <details open class="doc-section" id="worksheetevents">
 <summary>WorksheetEvents</summary>
 <div class="section-body">
-<h3 id="ensure-worksheet-change-handler">ensure-worksheet-change-handler <a class="anchor-link" href="#ensure-worksheet-change-handler">#</a></h3>
+<h3 id="ensureworksheetchangehandler">EnsureWorksheetChangeHandler <a class="anchor-link" href="#ensureworksheetchangehandler">#</a></h3>
+<p><em>ensure-worksheet-change-handler</em></p>
 <p><strong>Inject the Worksheet_Change handler into the target module</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureWorksheetChangeHandler()
@@ -85,7 +88,8 @@ Skips injection when the event marker hidden name is already present.</p>
 <details open class="doc-section" id="interface">
 <summary>Interface</summary>
 <div class="section-body">
-<h3 id="print-output">print-output <a class="anchor-link" href="#print-output">#</a></h3>
+<h3 id="icheckingoutput-printoutput">ICheckingOutput_PrintOutput <a class="anchor-link" href="#icheckingoutput-printoutput">#</a></h3>
+<p><em>print-output</em></p>
 <p><strong>Write checking values to a worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ICheckingOutput_PrintOutput(ByVal checkTable As BetterArray)
@@ -107,7 +111,8 @@ end marker, and records the final row position.</p>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-publicaccessors">PublicAccessors</h2>
-<h3 id="int-wksh">wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
+<h3 id="int-wksh">Wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
+<p><em>wksh</em></p>
 <p><strong>Retrieve the worksheet backing this output writer</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Wksh() As Worksheet
@@ -116,7 +121,8 @@ end marker, and records the final row position.</p>
 Returns the worksheet previously supplied during Create or the setter.</p>
 <p><strong>Returns:</strong> Worksheet. Reference to the target worksheet.</p>
 <hr />
-<h3 id="int-wksh-set">wksh-set <a class="anchor-link" href="#int-wksh-set">#</a></h3>
+<h3 id="int-wksh">Wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
+<p><em>wksh-set</em></p>
 <p><strong>Define the worksheet that will receive the output</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set Wksh(ByVal sh As Worksheet)
@@ -126,7 +132,8 @@ Returns the worksheet previously supplied during Create or the setter.</p>
 <li><code>sh</code>: Worksheet. Target worksheet to use.</li>
 </ul>
 <hr />
-<h3 id="int-self">self <a class="anchor-link" href="#int-self">#</a></h3>
+<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
+<p><em>self</em></p>
 <p><strong>Current object instance</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Self() As ICheckingOutput
@@ -135,7 +142,8 @@ Returns the worksheet previously supplied during Create or the setter.</p>
 by the factory method to return an ICheckingOutput reference.</p>
 <p><strong>Returns:</strong> ICheckingOutput. Reference to the current object.</p>
 <hr />
-<h3 id="int-name">name <a class="anchor-link" href="#int-name">#</a></h3>
+<h3 id="int-name">Name <a class="anchor-link" href="#int-name">#</a></h3>
+<p><em>name</em></p>
 <p><strong>Name of the output session</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Name() As String
@@ -143,7 +151,8 @@ by the factory method to return an ICheckingOutput reference.</p>
 <p>Returns the label assigned during creation or via the setter.</p>
 <p><strong>Returns:</strong> String. Output session label.</p>
 <hr />
-<h3 id="int-name-set">name-set <a class="anchor-link" href="#int-name-set">#</a></h3>
+<h3 id="int-name">Name <a class="anchor-link" href="#int-name">#</a></h3>
+<p><em>name-set</em></p>
 <p><strong>Assign the output session name</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Let Name(ByVal nm As String)
@@ -154,7 +163,8 @@ by the factory method to return an ICheckingOutput reference.</p>
 </ul>
 <hr />
 <h2 id="int-formattinghelpers">FormattingHelpers</h2>
-<h3 id="int-resolve-formatting">resolve-formatting <a class="anchor-link" href="#int-resolve-formatting">#</a></h3>
+<h3 id="int-resolveformatting">ResolveFormatting <a class="anchor-link" href="#int-resolveformatting">#</a></h3>
+<p><em>resolve-formatting</em></p>
 <p><strong>Resolve formatting attributes for a given level and colour name</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ResolveFormatting(Optional ByVal tag As String) As TFormatting
@@ -168,7 +178,8 @@ border properties returned in a TFormatting structure.</p>
 </ul>
 <p><strong>Returns:</strong> TFormatting. Structure with font, fill, and border properties.</p>
 <hr />
-<h3 id="int-apply-text-decorations">apply-text-decorations <a class="anchor-link" href="#int-apply-text-decorations">#</a></h3>
+<h3 id="int-applytextdecorations">ApplyTextDecorations <a class="anchor-link" href="#int-applytextdecorations">#</a></h3>
+<p><em>apply-text-decorations</em></p>
 <p><strong>Apply typography styling based on formatting</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ApplyTextDecorations(formatting As TFormatting, ByVal target As Range)
@@ -181,7 +192,8 @@ emphasis from the supplied formatting structure.</p>
 <li><code>target</code>: Range. Range receiving the formatting.</li>
 </ul>
 <hr />
-<h3 id="int-apply-borders">apply-borders <a class="anchor-link" href="#int-apply-borders">#</a></h3>
+<h3 id="int-applyborders">ApplyBorders <a class="anchor-link" href="#int-applyborders">#</a></h3>
+<p><em>apply-borders</em></p>
 <p><strong>Apply border styling to a range</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ApplyBorders(ByVal targetRange As Range, ByVal borderColour As Long)
@@ -193,7 +205,8 @@ emphasis from the supplied formatting structure.</p>
 <li><code>borderColour</code>: Long. Colour code for the border.</li>
 </ul>
 <hr />
-<h3 id="int-write-row">write-row <a class="anchor-link" href="#int-write-row">#</a></h3>
+<h3 id="int-writerow">WriteRow <a class="anchor-link" href="#int-writerow">#</a></h3>
+<p><em>write-row</em></p>
 <p><strong>Format and write a single row of checking output</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub WriteRow(ByVal rowIndex As Long, ByVal textValue As String, _
@@ -213,7 +226,8 @@ tag and records the parent title in the hidden column for filtering.</p>
 <li><code>parentTitle</code>: Optional String. Title written to the hidden column.</li>
 </ul>
 <hr />
-<h3 id="int-value-or-empty">value-or-empty <a class="anchor-link" href="#int-value-or-empty">#</a></h3>
+<h3 id="int-valueorempty">ValueOrEmpty <a class="anchor-link" href="#int-valueorempty">#</a></h3>
+<p><em>value-or-empty</em></p>
 <p><strong>Safely retrieve an element from a split array</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ValueOrEmpty(items() As String, ByVal index As Long) As String
@@ -228,7 +242,8 @@ vbNullString when the index exceeds the array bounds.</p>
 <p><strong>Returns:</strong> String. Element value or vbNullString.</p>
 <hr />
 <h2 id="int-checkingwriters">CheckingWriters</h2>
-<h3 id="int-write-checking">write-checking <a class="anchor-link" href="#int-write-checking">#</a></h3>
+<h3 id="int-writechecking">WriteChecking <a class="anchor-link" href="#int-writechecking">#</a></h3>
+<p><em>write-checking</em></p>
 <p><strong>Write a single IChecking bundle to the worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub WriteChecking(ByVal checking As IChecking, _
@@ -248,7 +263,8 @@ current row counter and tracks written titles to avoid duplicates.</p>
 <li><code>sep</code>: Optional String. Separator for text fragments. Defaults to &quot;--&quot;.</li>
 </ul>
 <hr />
-<h3 id="int-title-already-written">title-already-written <a class="anchor-link" href="#int-title-already-written">#</a></h3>
+<h3 id="int-titlealreadywritten">TitleAlreadyWritten <a class="anchor-link" href="#int-titlealreadywritten">#</a></h3>
+<p><em>title-already-written</em></p>
 <p><strong>Test whether a title has already been emitted</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function TitleAlreadyWritten(ByVal title As String, ByRef writtenTitles As Collection) As Boolean
@@ -263,7 +279,8 @@ Uses On Error Resume Next to handle missing keys.</p>
 <p><strong>Returns:</strong> Boolean. True when the title was already written.</p>
 <hr />
 <h2 id="int-titlestoremanagement">TitleStoreManagement</h2>
-<h3 id="int-ensure-title-store">ensure-title-store <a class="anchor-link" href="#int-ensure-title-store">#</a></h3>
+<h3 id="int-ensuretitlestore">EnsureTitleStore <a class="anchor-link" href="#int-ensuretitlestore">#</a></h3>
+<p><em>ensure-title-store</em></p>
 <p><strong>Initialise or refresh the hidden title store</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureTitleStore(Optional ByVal resetStore As Boolean = False)
@@ -277,7 +294,8 @@ range is defined.</p>
 <li><code>resetStore</code>: Optional Boolean. When True, clears the store. Defaults to False.</li>
 </ul>
 <hr />
-<h3 id="int-reset-title-store">reset-title-store <a class="anchor-link" href="#int-reset-title-store">#</a></h3>
+<h3 id="int-resettitlestore">ResetTitleStore <a class="anchor-link" href="#int-resettitlestore">#</a></h3>
+<p><em>reset-title-store</em></p>
 <p><strong>Clear all stored titles and re-create the anchor</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ResetTitleStore(ByVal sh As Worksheet)
@@ -287,7 +305,8 @@ range is defined.</p>
 <li><code>sh</code>: Worksheet. Target worksheet.</li>
 </ul>
 <hr />
-<h3 id="int-ensure-title-store-anchor">ensure-title-store-anchor <a class="anchor-link" href="#int-ensure-title-store-anchor">#</a></h3>
+<h3 id="int-ensuretitlestoreanchor">EnsureTitleStoreAnchor <a class="anchor-link" href="#int-ensuretitlestoreanchor">#</a></h3>
+<p><em>ensure-title-store-anchor</em></p>
 <p><strong>Ensure the title store anchor cell is initialised</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureTitleStoreAnchor(ByVal sh As Worksheet)
@@ -297,7 +316,8 @@ range is defined.</p>
 <li><code>sh</code>: Worksheet. Target worksheet.</li>
 </ul>
 <hr />
-<h3 id="int-append-title-to-store">append-title-to-store <a class="anchor-link" href="#int-append-title-to-store">#</a></h3>
+<h3 id="int-appendtitletostore">AppendTitleToStore <a class="anchor-link" href="#int-appendtitletostore">#</a></h3>
+<p><em>append-title-to-store</em></p>
 <p><strong>Add a title to the hidden store if not already present</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AppendTitleToStore(ByVal titleValue As String)
@@ -307,7 +327,8 @@ range is defined.</p>
 <li><code>titleValue</code>: String. Title text to store.</li>
 </ul>
 <hr />
-<h3 id="int-title-store-contains">title-store-contains <a class="anchor-link" href="#int-title-store-contains">#</a></h3>
+<h3 id="int-titlestorecontains">TitleStoreContains <a class="anchor-link" href="#int-titlestorecontains">#</a></h3>
+<p><em>title-store-contains</em></p>
 <p><strong>Check whether the title store already includes a value</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function TitleStoreContains(ByVal sh As Worksheet, ByVal titleValue As String) As Boolean
@@ -319,7 +340,8 @@ range is defined.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when the title is already stored.</p>
 <hr />
-<h3 id="int-refresh-title-named-range">refresh-title-named-range <a class="anchor-link" href="#int-refresh-title-named-range">#</a></h3>
+<h3 id="int-refreshtitlenamedrange">RefreshTitleNamedRange <a class="anchor-link" href="#int-refreshtitlenamedrange">#</a></h3>
+<p><em>refresh-title-named-range</em></p>
 <p><strong>Update the named range covering all stored titles</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RefreshTitleNamedRange(ByVal sh As Worksheet)
@@ -329,7 +351,8 @@ range is defined.</p>
 <li><code>sh</code>: Worksheet. Target worksheet.</li>
 </ul>
 <hr />
-<h3 id="int-next-title-store-row">next-title-store-row <a class="anchor-link" href="#int-next-title-store-row">#</a></h3>
+<h3 id="int-nexttitlestorerow">NextTitleStoreRow <a class="anchor-link" href="#int-nexttitlestorerow">#</a></h3>
+<p><em>next-title-store-row</em></p>
 <p><strong>Determine the next available row in the title store</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function NextTitleStoreRow(ByVal sh As Worksheet, ByVal anchor As Range) As Long
@@ -341,7 +364,8 @@ range is defined.</p>
 </ul>
 <p><strong>Returns:</strong> Long. Next available row index.</p>
 <hr />
-<h3 id="int-worksheet-has-named-range">worksheet-has-named-range <a class="anchor-link" href="#int-worksheet-has-named-range">#</a></h3>
+<h3 id="int-worksheethasnamedrange">WorksheetHasNamedRange <a class="anchor-link" href="#int-worksheethasnamedrange">#</a></h3>
+<p><em>worksheet-has-named-range</em></p>
 <p><strong>Check whether a named range exists on a worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function WorksheetHasNamedRange(ByVal targetSheet As Worksheet, ByVal rangeName As String) As Boolean
@@ -353,7 +377,8 @@ range is defined.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when the named range exists.</p>
 <hr />
-<h3 id="int-worksheet-name-for-formula">worksheet-name-for-formula <a class="anchor-link" href="#int-worksheet-name-for-formula">#</a></h3>
+<h3 id="int-worksheetnameforformula">WorksheetNameForFormula <a class="anchor-link" href="#int-worksheetnameforformula">#</a></h3>
+<p><em>worksheet-name-for-formula</em></p>
 <p><strong>Escape the worksheet name for use in formulas</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function WorksheetNameForFormula(ByVal targetSheet As Worksheet) As String
@@ -364,7 +389,8 @@ range is defined.</p>
 </ul>
 <p><strong>Returns:</strong> String. Escaped worksheet name.</p>
 <hr />
-<h3 id="int-apply-hidden-columns-formatting">apply-hidden-columns-formatting <a class="anchor-link" href="#int-apply-hidden-columns-formatting">#</a></h3>
+<h3 id="int-applyhiddencolumnsformatting">ApplyHiddenColumnsFormatting <a class="anchor-link" href="#int-applyhiddencolumnsformatting">#</a></h3>
+<p><em>apply-hidden-columns-formatting</em></p>
 <p><strong>Mask hidden helper columns so metadata remains invisible</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ApplyHiddenColumnsFormatting(ByVal sh As Worksheet)
@@ -377,7 +403,8 @@ keep a white font and hidden presentation.</p>
 </ul>
 <hr />
 <h2 id="int-worksheetpreparation">WorksheetPreparation</h2>
-<h3 id="int-initialise-worksheet">initialise-worksheet <a class="anchor-link" href="#int-initialise-worksheet">#</a></h3>
+<h3 id="int-initialiseworksheet">InitialiseWorksheet <a class="anchor-link" href="#int-initialiseworksheet">#</a></h3>
+<p><em>initialise-worksheet</em></p>
 <p><strong>Reset the worksheet before re-rendering checking output</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function InitialiseWorksheet() As Long
@@ -390,7 +417,8 @@ the last written row.</p>
 <p><strong>Returns:</strong> Long. Starting row for the next output block.</p>
 <hr />
 <h2 id="int-filtering">Filtering</h2>
-<h3 id="int-ensure-filter-dropdown">ensure-filter-dropdown <a class="anchor-link" href="#int-ensure-filter-dropdown">#</a></h3>
+<h3 id="int-ensurefilterdropdown">EnsureFilterDropdown <a class="anchor-link" href="#int-ensurefilterdropdown">#</a></h3>
+<p><em>ensure-filter-dropdown</em></p>
 <p><strong>Install and style the filter drop-downs on the worksheet header</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureFilterDropdown()
@@ -400,7 +428,8 @@ Creates validation drop-downs for both status (severity) and title
 filtering. Ensures the title store named range is available for the
 title validation list.</p>
 <hr />
-<h3 id="int-apply-worksheet-filter">apply-worksheet-filter <a class="anchor-link" href="#int-apply-worksheet-filter">#</a></h3>
+<h3 id="int-applyworksheetfilter">ApplyWorksheetFilter <a class="anchor-link" href="#int-applyworksheetfilter">#</a></h3>
+<p><em>apply-worksheet-filter</em></p>
 <p><strong>Internal helper that performs row-visibility filtering</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ApplyWorksheetFilter(ByVal targetSheet As Worksheet, _
@@ -418,7 +447,8 @@ the selected severity and/or title criteria.</p>
 </ul>
 <hr />
 <h2 id="int-worksheetevents">WorksheetEvents</h2>
-<h3 id="int-build-worksheet-change-handler-code">build-worksheet-change-handler-code <a class="anchor-link" href="#int-build-worksheet-change-handler-code">#</a></h3>
+<h3 id="int-buildworksheetchangehandlercode">BuildWorksheetChangeHandlerCode <a class="anchor-link" href="#int-buildworksheetchangehandlercode">#</a></h3>
+<p><em>build-worksheet-change-handler-code</em></p>
 <p><strong>Compose the VBA code for the worksheet filtering logic</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function BuildWorksheetChangeHandlerCode() As String
@@ -430,7 +460,8 @@ FilterCheckingOutputRows procedures.</p>
 <p><strong>Returns:</strong> String. VBA source code for the handler.</p>
 <hr />
 <h2 id="int-worksheeteventhelpers">WorksheetEventHelpers</h2>
-<h3 id="int-remove-managed-worksheet-procedures">remove-managed-worksheet-procedures <a class="anchor-link" href="#int-remove-managed-worksheet-procedures">#</a></h3>
+<h3 id="int-removemanagedworksheetprocedures">RemoveManagedWorksheetProcedures <a class="anchor-link" href="#int-removemanagedworksheetprocedures">#</a></h3>
+<p><em>remove-managed-worksheet-procedures</em></p>
 <p><strong>Strip previously injected worksheet routines</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RemoveManagedWorksheetProcedures(ByVal codeModule As Object)
@@ -443,7 +474,8 @@ handler can be written without duplication.</p>
 <li><code>codeModule</code>: Object. Worksheet code module reference.</li>
 </ul>
 <hr />
-<h3 id="int-delete-procedure-if-exists">delete-procedure-if-exists <a class="anchor-link" href="#int-delete-procedure-if-exists">#</a></h3>
+<h3 id="int-deleteprocedureifexists">DeleteProcedureIfExists <a class="anchor-link" href="#int-deleteprocedureifexists">#</a></h3>
+<p><em>delete-procedure-if-exists</em></p>
 <p><strong>Safely remove a procedure from a worksheet module</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub DeleteProcedureIfExists(ByVal codeModule As Object, ByVal procedureName As String)
@@ -457,7 +489,8 @@ procedure is not found.</p>
 </ul>
 <hr />
 <h2 id="int-helpers">Helpers</h2>
-<h3 id="int-validate-check-table">validate-check-table <a class="anchor-link" href="#int-validate-check-table">#</a></h3>
+<h3 id="int-validatechecktable">ValidateCheckTable <a class="anchor-link" href="#int-validatechecktable">#</a></h3>
+<p><em>validate-check-table</em></p>
 <p><strong>Verify that the BetterArray contains only IChecking entries</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ValidateCheckTable(ByVal checkTable As BetterArray)
@@ -474,7 +507,8 @@ implement IChecking.</p>
 <li>ProjectError.InvalidArgument When an item does not implement IChecking.</li>
 </ul>
 <hr />
-<h3 id="int-normalise-type-label">normalise-type-label <a class="anchor-link" href="#int-normalise-type-label">#</a></h3>
+<h3 id="int-normalisetypelabel">NormaliseTypeLabel <a class="anchor-link" href="#int-normalisetypelabel">#</a></h3>
+<p><em>normalise-type-label</em></p>
 <p><strong>Strip icon characters from a checking type label</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function NormaliseTypeLabel(ByVal typeLabel As String) As String
@@ -487,7 +521,8 @@ the plain-text type label for filtering comparisons.</p>
 </ul>
 <p><strong>Returns:</strong> String. Cleaned label.</p>
 <hr />
-<h3 id="int-custom-property-exists">custom-property-exists <a class="anchor-link" href="#int-custom-property-exists">#</a></h3>
+<h3 id="int-custompropertyexists">CustomPropertyExists <a class="anchor-link" href="#int-custompropertyexists">#</a></h3>
+<p><em>custom-property-exists</em></p>
 <p><strong>Check whether a custom property exists in the hidden store</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function CustomPropertyExists(ByVal propName As String) As Boolean
@@ -498,7 +533,8 @@ the plain-text type label for filtering comparisons.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when the property exists.</p>
 <hr />
-<h3 id="int-store-custom-property">store-custom-property <a class="anchor-link" href="#int-store-custom-property">#</a></h3>
+<h3 id="int-storecustomproperty">StoreCustomProperty <a class="anchor-link" href="#int-storecustomproperty">#</a></h3>
+<p><em>store-custom-property</em></p>
 <p><strong>Store a custom property in the hidden name store</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub StoreCustomProperty(propName As String, propValue As String)
@@ -509,7 +545,8 @@ the plain-text type label for filtering comparisons.</p>
 <li><code>propValue</code>: String. Value to persist.</li>
 </ul>
 <hr />
-<h3 id="int-hidden-store">hidden-store <a class="anchor-link" href="#int-hidden-store">#</a></h3>
+<h3 id="int-hiddenstore">HiddenStore <a class="anchor-link" href="#int-hiddenstore">#</a></h3>
+<p><em>hidden-store</em></p>
 <p><strong>Lazily create and return the IHiddenNames store</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function HiddenStore() As IHiddenNames
@@ -522,7 +559,8 @@ first access. Raises an error when no worksheet is assigned.</p>
 <li>ProjectError.ObjectNotInitialized When the worksheet is Nothing.</li>
 </ul>
 <hr />
-<h3 id="int-module-contains-procedure">module-contains-procedure <a class="anchor-link" href="#int-module-contains-procedure">#</a></h3>
+<h3 id="int-modulecontainsprocedure">ModuleContainsProcedure <a class="anchor-link" href="#int-modulecontainsprocedure">#</a></h3>
+<p><em>module-contains-procedure</em></p>
 <p><strong>Determine whether the module text declares a target procedure</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ModuleContainsProcedure(ByVal moduleText As String, _
@@ -537,7 +575,8 @@ first access. Raises an error when no worksheet is assigned.</p>
 <p><strong>Returns:</strong> Boolean. True when the procedure exists.</p>
 <hr />
 <h2 id="int-errorhandling">ErrorHandling</h2>
-<h3 id="int-throw-error">throw-error <a class="anchor-link" href="#int-throw-error">#</a></h3>
+<h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
+<p><em>throw-error</em></p>
 <p><strong>Raise a ProjectError-coded runtime error</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
@@ -564,13 +603,14 @@ Wrapper around Err.Raise that standardises the source to
 <hr />
 </details>
 <details>
-<summary>Used in (6 file(s))</summary>
+<summary>Used in (7 file(s))</summary>
 <ul>
 <li><a href="src/classes/general/CheckingOutput.cls">CheckingOutput.cls</a></li>
 <li><a href="src/classes/general/ICheckingOutput.cls">ICheckingOutput.cls</a></li>
 <li><a href="src/classes/rubberduck/CustomTest.cls">CustomTest.cls</a></li>
 <li><a href="src/classes/setup/ISetupErrors.cls">ISetupErrors.cls</a></li>
 <li><a href="src/classes/setup/SetupErrors.cls">SetupErrors.cls</a></li>
+<li><a href="src/modules/designer/GenerationReport.bas">GenerationReport.bas</a></li>
 <li><a href="src/tests/modules/general/TestCheckingOutput.bas">TestCheckingOutput.bas</a></li>
 </ul>
 </details>

@@ -20,12 +20,13 @@ exporting specifications to a destination linelist workbook, and surfacing
 user-facing error dialogs. Uses a PredeclaredId factory pattern so callers
 construct instances via LinelistSpecs.Create(workbook) and receive an
 ILinelistSpecs interface reference.</p>
-<p><strong>Depends on:</strong> <a href="ILLdictionary.html">ILLdictionary</a>, <a href="ILLChoices.html">ILLChoices</a>, <a href="ILLTranslation.html">ILLTranslation</a>, <a href="IDesignerTranslation.html">IDesignerTranslation</a>, <a href="ILLGeo.html">ILLGeo</a>, <a href="ILLExport.html">ILLExport</a>, <a href="IAnalysis.html">IAnalysis</a>, <a href="IPasswords.html">IPasswords</a>, <a href="ILLFormat.html">ILLFormat</a>, <a href="IDesignerImportService.html">IDesignerImportService</a>, <a href="ITemporaryRepos.html">ITemporaryRepos</a>, <a href="TemporaryRepos.html">TemporaryRepos</a>, <a href="IFormulaData.html">IFormulaData</a>, <a href="ILLVariables.html">ILLVariables</a>, <a href="IFormulas.html">IFormulas</a>, <a href="ITranslationObject.html">ITranslationObject</a>, <a href="IApplicationState.html">IApplicationState</a>, <a href="ApplicationState.html">ApplicationState</a>, <a href="BetterArray.html">BetterArray</a>, <a href="LLdictionary.html">LLdictionary</a>, <a href="LLChoices.html">LLChoices</a>, <a href="LLTranslation.html">LLTranslation</a>, <a href="DesignerTranslation.html">DesignerTranslation</a>, <a href="LLGeo.html">LLGeo</a>, <a href="LLExport.html">LLExport</a>, <a href="Analysis.html">Analysis</a>, <a href="Passwords.html">Passwords</a>, <a href="LLFormat.html">LLFormat</a>, <a href="FormulaData.html">FormulaData</a>, <a href="LLVariables.html">LLVariables</a>, <a href="Formulas.html">Formulas</a></p>
+<p><strong>Depends on:</strong> <a href="ILLdictionary.html">ILLdictionary</a>, <a href="ILLChoices.html">ILLChoices</a>, <a href="ILLTranslation.html">ILLTranslation</a>, <a href="IDesignerTranslation.html">IDesignerTranslation</a>, <a href="ILLGeo.html">ILLGeo</a>, <a href="ILLExport.html">ILLExport</a>, <a href="IAnalysis.html">IAnalysis</a>, <a href="IPasswords.html">IPasswords</a>, <a href="ILLFormat.html">ILLFormat</a>, <a href="ILinelistBuildService.html">ILinelistBuildService</a>, <a href="ITemporaryRepos.html">ITemporaryRepos</a>, <a href="TemporaryRepos.html">TemporaryRepos</a>, <a href="IFormulaData.html">IFormulaData</a>, <a href="ILLVariables.html">ILLVariables</a>, <a href="IFormulas.html">IFormulas</a>, <a href="ITranslationObject.html">ITranslationObject</a>, <a href="IApplicationState.html">IApplicationState</a>, <a href="ApplicationState.html">ApplicationState</a>, <a href="BetterArray.html">BetterArray</a>, <a href="LLdictionary.html">LLdictionary</a>, <a href="LLChoices.html">LLChoices</a>, <a href="LLTranslation.html">LLTranslation</a>, <a href="DesignerTranslation.html">DesignerTranslation</a>, <a href="LLGeo.html">LLGeo</a>, <a href="LLExport.html">LLExport</a>, <a href="Analysis.html">Analysis</a>, <a href="Passwords.html">Passwords</a>, <a href="LLFormat.html">LLFormat</a>, <a href="FormulaData.html">FormulaData</a>, <a href="LLVariables.html">LLVariables</a>, <a href="Formulas.html">Formulas</a></p>
 <p><strong>Version:</strong> 1.1 (2026-02-16)</p>
 <details open class="doc-section" id="factory-helpers">
 <summary>Factory helpers</summary>
 <div class="section-body">
-<h3 id="create">create <a class="anchor-link" href="#create">#</a></h3>
+<h3 id="create">Create <a class="anchor-link" href="#create">#</a></h3>
+<p><em>create</em></p>
 <p><strong>Create a new specification facade from a workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal specsWorkbook As Workbook) As ILinelistSpecs
@@ -45,7 +46,8 @@ instance with caches initialised. Returns the ILinelistSpecs interface.</p>
 <li>ProjectError.ElementNotFound When required worksheets are missing.</li>
 </ul>
 <hr />
-<h3 id="des-workbook">des-workbook <a class="anchor-link" href="#des-workbook">#</a></h3>
+<h3 id="desworkbook">DesWorkbook <a class="anchor-link" href="#desworkbook">#</a></h3>
+<p><em>des-workbook</em></p>
 <p><strong>Designer workbook backing all specification queries</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get DesWorkbook() As Workbook
@@ -63,7 +65,8 @@ if the workbook has not been assigned via the factory method.</p>
 <details open class="doc-section" id="state-management">
 <summary>State management</summary>
 <div class="section-body">
-<h3 id="reset-caches">reset-caches <a class="anchor-link" href="#reset-caches">#</a></h3>
+<h3 id="resetcaches">ResetCaches <a class="anchor-link" href="#resetcaches">#</a></h3>
+<p><em>reset-caches</em></p>
 <p><strong>Reset every cached collaborator</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ResetCaches()
@@ -78,7 +81,8 @@ reads query the workbook again.</p>
 <details open class="doc-section" id="category-helpers">
 <summary>Category helpers</summary>
 <div class="section-body">
-<h3 id="categories">categories <a class="anchor-link" href="#categories">#</a></h3>
+<h3 id="categories">Categories <a class="anchor-link" href="#categories">#</a></h3>
+<p><em>categories</em></p>
 <p><strong>Resolve category values for a variable with caching</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Categories(ByVal varName As String, Optional ByVal useShortlabels As Boolean = False) As BetterArray
@@ -106,7 +110,8 @@ from modifying the cached copy.</p>
 <details open class="doc-section" id="core-accessors">
 <summary>Core accessors</summary>
 <div class="section-body">
-<h3 id="dictionary">dictionary <a class="anchor-link" href="#dictionary">#</a></h3>
+<h3 id="dictionary">Dictionary <a class="anchor-link" href="#dictionary">#</a></h3>
+<p><em>dictionary</em></p>
 <p><strong>Linelist dictionary</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Dictionary() As ILLdictionary
@@ -117,7 +122,8 @@ Returns the ILLdictionary instance providing column and row access to the
 Dictionary worksheet. Lazy-loaded on first access.</p>
 <p><strong>Returns:</strong> ILLdictionary. The dictionary collaborator.</p>
 <hr />
-<h3 id="choices">choices <a class="anchor-link" href="#choices">#</a></h3>
+<h3 id="choices">Choices <a class="anchor-link" href="#choices">#</a></h3>
+<p><em>choices</em></p>
 <p><strong>Choices catalogue</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Choices() As ILLChoices
@@ -126,7 +132,8 @@ Dictionary worksheet. Lazy-loaded on first access.</p>
 Choices worksheet. Lazy-loaded on first access.</p>
 <p><strong>Returns:</strong> ILLChoices. The choices collaborator.</p>
 <hr />
-<h3 id="design-format">design-format <a class="anchor-link" href="#design-format">#</a></h3>
+<h3 id="designformat">DesignFormat <a class="anchor-link" href="#designformat">#</a></h3>
+<p><em>design-format</em></p>
 <p><strong>Visual formatting specifications</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get DesignFormat() As ILLFormat
@@ -135,16 +142,18 @@ Choices worksheet. Lazy-loaded on first access.</p>
 methods based on the __formatter worksheet. Lazy-loaded on first access.</p>
 <p><strong>Returns:</strong> ILLFormat. The format collaborator.</p>
 <hr />
-<h3 id="analysis">analysis <a class="anchor-link" href="#analysis">#</a></h3>
+<h3 id="analysisobject">AnalysisObject <a class="anchor-link" href="#analysisobject">#</a></h3>
+<p><em>analysis</em></p>
 <p><strong>Analysis setup specifications</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Analysis() As IAnalysis
+<pre><code class="language-vb">Public Property Get AnalysisObject() As IAnalysis
 </code></pre>
 <p>Returns the IAnalysis instance providing access to the Analysis
 worksheet configuration. Lazy-loaded on first access.</p>
 <p><strong>Returns:</strong> IAnalysis. The analysis collaborator.</p>
 <hr />
-<h3 id="export-object">export-object <a class="anchor-link" href="#export-object">#</a></h3>
+<h3 id="exportobject">ExportObject <a class="anchor-link" href="#exportobject">#</a></h3>
+<p><em>export-object</em></p>
 <p><strong>Export column specifications</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get ExportObject() As ILLExport
@@ -153,7 +162,8 @@ worksheet configuration. Lazy-loaded on first access.</p>
 definitions from the Exports worksheet. Lazy-loaded on first access.</p>
 <p><strong>Returns:</strong> ILLExport. The export collaborator.</p>
 <hr />
-<h3 id="password">password <a class="anchor-link" href="#password">#</a></h3>
+<h3 id="password">Password <a class="anchor-link" href="#password">#</a></h3>
+<p><em>password</em></p>
 <p><strong>Password manager</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Password() As IPasswords
@@ -162,7 +172,8 @@ definitions from the Exports worksheet. Lazy-loaded on first access.</p>
 utilities from the __pass worksheet. Lazy-loaded on first access.</p>
 <p><strong>Returns:</strong> IPasswords. The password collaborator.</p>
 <hr />
-<h3 id="geo-object">geo-object <a class="anchor-link" href="#geo-object">#</a></h3>
+<h3 id="geoobject">GeoObject <a class="anchor-link" href="#geoobject">#</a></h3>
+<p><em>geo-object</em></p>
 <p><strong>Geographic data manager</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get GeoObject() As ILLGeo
@@ -171,7 +182,8 @@ utilities from the __pass worksheet. Lazy-loaded on first access.</p>
 the Geo worksheet. Lazy-loaded on first access.</p>
 <p><strong>Returns:</strong> ILLGeo. The geo collaborator.</p>
 <hr />
-<h3 id="formula-data-object">formula-data-object <a class="anchor-link" href="#formula-data-object">#</a></h3>
+<h3 id="formuladataobject">FormulaDataObject <a class="anchor-link" href="#formuladataobject">#</a></h3>
+<p><em>formula-data-object</em></p>
 <p><strong>Formula data provider</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get FormulaDataObject() As IFormulaData
@@ -180,7 +192,8 @@ the Geo worksheet. Lazy-loaded on first access.</p>
 the __formula worksheet. Lazy-loaded on first access.</p>
 <p><strong>Returns:</strong> IFormulaData. The formula data collaborator.</p>
 <hr />
-<h3 id="has-template">has-template <a class="anchor-link" href="#has-template">#</a></h3>
+<h3 id="hastemplate">HasTemplate <a class="anchor-link" href="#hastemplate">#</a></h3>
+<p><em>has-template</em></p>
 <p><strong>Whether the workbook uses a ribbon template</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get HasTemplate() As Boolean
@@ -189,7 +202,8 @@ the __formula worksheet. Lazy-loaded on first access.</p>
 when the value equals &quot;has template&quot;.</p>
 <p><strong>Returns:</strong> Boolean. True when a template is configured.</p>
 <hr />
-<h3 id="translations">translations <a class="anchor-link" href="#translations">#</a></h3>
+<h3 id="translations">Translations <a class="anchor-link" href="#translations">#</a></h3>
+<p><em>translations</em></p>
 <p><strong>Translation tables manager</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Translations() As ILLTranslation
@@ -198,7 +212,8 @@ when the value equals &quot;has template&quot;.</p>
 translation worksheet. Lazy-loaded on first access.</p>
 <p><strong>Returns:</strong> ILLTranslation. The translations collaborator.</p>
 <hr />
-<h3 id="designer-translations">designer-translations <a class="anchor-link" href="#designer-translations">#</a></h3>
+<h3 id="designertranslations">DesignerTranslations <a class="anchor-link" href="#designertranslations">#</a></h3>
+<p><em>designer-translations</em></p>
 <p><strong>Designer translation accessor</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get DesignerTranslations() As IDesignerTranslation
@@ -207,7 +222,8 @@ translation worksheet. Lazy-loaded on first access.</p>
 from the DesignerTranslation worksheet. Lazy-loaded on first access.</p>
 <p><strong>Returns:</strong> IDesignerTranslation. The designer translation collaborator.</p>
 <hr />
-<h3 id="trans-object">trans-object <a class="anchor-link" href="#trans-object">#</a></h3>
+<h3 id="transobject">TransObject <a class="anchor-link" href="#transobject">#</a></h3>
+<p><em>trans-object</em></p>
 <p><strong>Scoped translation object</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get TransObject(Optional ByVal translationScope As Byte = TranslationOfMessages) As ITranslationObject
@@ -227,7 +243,8 @@ TranslationOfMessages.</li>
 <li>ProjectError.ElementNotFound When the scope is not available.</li>
 </ul>
 <hr />
-<h3 id="temporary-sheet-name">temporary-sheet-name <a class="anchor-link" href="#temporary-sheet-name">#</a></h3>
+<h3 id="temporarysheetname">TemporarySheetName <a class="anchor-link" href="#temporarysheetname">#</a></h3>
+<p><em>temporary-sheet-name</em></p>
 <p><strong>Temporary sheet name for a given scope</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get TemporarySheetName(ByVal scope As Byte) As String
@@ -245,7 +262,8 @@ etc.) to its canonical name string.</p>
 <li>ProjectError.InvalidArgument When the scope is not recognised.</li>
 </ul>
 <hr />
-<h3 id="value">value <a class="anchor-link" href="#value">#</a></h3>
+<h3 id="value">Value <a class="anchor-link" href="#value">#</a></h3>
+<p><em>value</em></p>
 <p><strong>Configuration value by tag name</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Value(ByVal tagName As String) As String
@@ -265,10 +283,11 @@ on the Main worksheet.</p>
 <details open class="doc-section" id="workbook-orchestration">
 <summary>Workbook orchestration</summary>
 <div class="section-body">
-<h3 id="prepare">prepare <a class="anchor-link" href="#prepare">#</a></h3>
-<p><strong>Prepare all specifications using an import service</strong></p>
+<h3 id="prepare">Prepare <a class="anchor-link" href="#prepare">#</a></h3>
+<p><em>prepare</em></p>
+<p><strong>Prepare all specifications using a build service</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub Prepare(ByVal importService As IDesignerImportService)
+<pre><code class="language-vb">Public Sub Prepare(ByVal buildService As ILinelistBuildService, ByVal setupPath As String)
 </code></pre>
 <p>Lifecycle methods for importing, preparing, exporting, and
 error-managing the specifications workbook.
@@ -276,7 +295,10 @@ Orchestrates the full specification preparation workflow:</p>
 <ol>
 <li>Creates a temporary repository for working files.</li>
 <li>Creates a new output workbook (from template if configured).</li>
-<li>Exports designer components via the import service.</li>
+<li>Exports pass-through components directly from setup to linelist.</li>
+<li>Exports designer-sourced components (geo, passwords, translations,
+formatter, language HiddenNames) to the linelist.</li>
+<li>Builds domain manager instances on the linelist workbook.</li>
 <li>Retrieves exported domain instances from the service.</li>
 <li>Prepares the dictionary with preserved sheet names and geo references.</li>
 <li>Adds the &quot;list auto&quot; column if not already present.</li>
@@ -285,15 +307,17 @@ Handles errors with cleanup and busy-state restoration.</li>
 </ol>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>importService</code>: IDesignerImportService. The configured import service.</li>
+<li><code>buildService</code>: ILinelistBuildService. The configured build service.</li>
+<li><code>setupPath</code>: String. Full path to the setup workbook.</li>
 </ul>
 <p><strong>Throws:</strong></p>
 <ul>
-<li>ProjectError.ObjectNotInitialized When importService is Nothing.</li>
+<li>ProjectError.ObjectNotInitialized When buildService is Nothing.</li>
 <li>ProjectError.ErrorUnexpectedState When an unexpected error occurs.</li>
 </ul>
 <hr />
-<h3 id="ll-workbook">ll-workbook <a class="anchor-link" href="#ll-workbook">#</a></h3>
+<h3 id="llworkbook">LLWorkbook <a class="anchor-link" href="#llworkbook">#</a></h3>
+<p><em>ll-workbook</em></p>
 <p><strong>The output linelist workbook created during Prepare</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get LLWorkbook() As Workbook
@@ -302,7 +326,8 @@ Handles errors with cleanup and busy-state restoration.</li>
 data from the import service. Returns Nothing before Prepare is called.</p>
 <p><strong>Returns:</strong> Workbook. The linelist workbook, or Nothing.</p>
 <hr />
-<h3 id="temporary-repos">temporary-repos <a class="anchor-link" href="#temporary-repos">#</a></h3>
+<h3 id="outputtemporaryrepos">OutputTemporaryRepos <a class="anchor-link" href="#outputtemporaryrepos">#</a></h3>
+<p><em>temporary-repos</em></p>
 <p><strong>The temporary repository created during Prepare</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get OutputTemporaryRepos() As ITemporaryRepos
@@ -311,7 +336,8 @@ data from the import service. Returns Nothing before Prepare is called.</p>
 Returns Nothing before Prepare is called.</p>
 <p><strong>Returns:</strong> ITemporaryRepos. The temporary repository, or Nothing.</p>
 <hr />
-<h3 id="error-manage">error-manage <a class="anchor-link" href="#error-manage">#</a></h3>
+<h3 id="errormanage">ErrorManage <a class="anchor-link" href="#errormanage">#</a></h3>
+<p><em>error-manage</em></p>
 <p><strong>Display an error dialog for specification failures</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ErrorManage(Optional ByVal textMessage As String = vbNullString)
@@ -328,7 +354,8 @@ the linelist creation process is being aborted.</p>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-factory-helpers">Factory helpers</h2>
-<h3 id="int-self">self <a class="anchor-link" href="#int-self">#</a></h3>
+<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
+<p><em>self</em></p>
 <p><strong>Interface-cast self reference</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Self() As ILinelistSpecs
@@ -337,7 +364,8 @@ the linelist creation process is being aborted.</p>
 construction patterns within the factory method.</p>
 <p><strong>Returns:</strong> ILinelistSpecs. This instance as its interface type.</p>
 <hr />
-<h3 id="int-internal-workbook">internal-workbook <a class="anchor-link" href="#int-internal-workbook">#</a></h3>
+<h3 id="int-internalworkbook">InternalWorkbook <a class="anchor-link" href="#int-internalworkbook">#</a></h3>
+<p><em>internal-workbook</em></p>
 <p><strong>Setter for the backing workbook reference</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set InternalWorkbook(ByVal specsWorkbook As Workbook)
@@ -346,26 +374,30 @@ construction patterns within the factory method.</p>
 initialised. Not part of the public interface.</p>
 <hr />
 <h2 id="int-state-management">State management</h2>
-<h3 id="int-reset-object-caches">reset-object-caches <a class="anchor-link" href="#int-reset-object-caches">#</a></h3>
+<h3 id="int-resetobjectcaches">ResetObjectCaches <a class="anchor-link" href="#int-resetobjectcaches">#</a></h3>
+<p><em>reset-object-caches</em></p>
 <p><strong>Clear all collaborator object references</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ResetObjectCaches()
 </code></pre>
 <hr />
-<h3 id="int-reset-translation-cache">reset-translation-cache <a class="anchor-link" href="#int-reset-translation-cache">#</a></h3>
+<h3 id="int-resettranslationcache">ResetTranslationCache <a class="anchor-link" href="#int-resettranslationcache">#</a></h3>
+<p><em>reset-translation-cache</em></p>
 <p><strong>Clear the translation scope cache</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ResetTranslationCache()
 </code></pre>
 <hr />
-<h3 id="int-reset-category-cache">reset-category-cache <a class="anchor-link" href="#int-reset-category-cache">#</a></h3>
+<h3 id="int-resetcategorycache">ResetCategoryCache <a class="anchor-link" href="#int-resetcategorycache">#</a></h3>
+<p><em>reset-category-cache</em></p>
 <p><strong>Clear the category list cache</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ResetCategoryCache()
 </code></pre>
 <hr />
 <h2 id="int-guard-helpers">Guard helpers</h2>
-<h3 id="int-ensure-workbook">ensure-workbook <a class="anchor-link" href="#int-ensure-workbook">#</a></h3>
+<h3 id="int-ensureworkbook">EnsureWorkbook <a class="anchor-link" href="#int-ensureworkbook">#</a></h3>
+<p><em>ensure-workbook</em></p>
 <p><strong>Verify that the backing workbook is assigned</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureWorkbook()
@@ -376,14 +408,16 @@ initialised. Not part of the public interface.</p>
 <li>ProjectError.ObjectNotInitialized When the workbook is Nothing.</li>
 </ul>
 <hr />
-<h3 id="int-ensure-category-arrays">ensure-category-arrays <a class="anchor-link" href="#int-ensure-category-arrays">#</a></h3>
+<h3 id="int-ensurecategoryarrays">EnsureCategoryArrays <a class="anchor-link" href="#int-ensurecategoryarrays">#</a></h3>
+<p><em>ensure-category-arrays</em></p>
 <p><strong>Create the parallel category arrays if they do not exist</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureCategoryArrays()
 </code></pre>
 <hr />
 <h2 id="int-worksheet-resolution">Worksheet resolution</h2>
-<h3 id="int-resolve-sheet">resolve-sheet <a class="anchor-link" href="#int-resolve-sheet">#</a></h3>
+<h3 id="int-resolvesheet">ResolveSheet <a class="anchor-link" href="#int-resolvesheet">#</a></h3>
+<p><em>resolve-sheet</em></p>
 <p><strong>Resolve a worksheet by name with optional error surfacing</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ResolveSheet(ByVal sheetName As String, _
@@ -405,7 +439,8 @@ sheet is not found and allowMissing is False, raises a descriptive error.</p>
 </ul>
 <hr />
 <h2 id="int-external-workbook-helpers">External workbook helpers</h2>
-<h3 id="int-enter-busy-state">enter-busy-state <a class="anchor-link" href="#int-enter-busy-state">#</a></h3>
+<h3 id="int-enterbusystate">EnterBusyState <a class="anchor-link" href="#int-enterbusystate">#</a></h3>
+<p><em>enter-busy-state</em></p>
 <p><strong>Transition the application into a busy state</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnterBusyState(ByRef busyScope As IApplicationState)
@@ -419,7 +454,8 @@ state (suppressing screen updates and calculation) if not already busy.</p>
 <li><code>busyScope</code>: IApplicationState (ByRef). The state object to manage.</li>
 </ul>
 <hr />
-<h3 id="int-import-geobase">import-geobase <a class="anchor-link" href="#int-import-geobase">#</a></h3>
+<h3 id="int-importgeobase">ImportGeobase <a class="anchor-link" href="#int-importgeobase">#</a></h3>
+<p><em>import-geobase</em></p>
 <p><strong>Import geobase data from the user-specified path</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ImportGeobase(ByVal geoObj As ILLGeo)
@@ -435,7 +471,8 @@ if the path is empty or the file cannot be opened.</p>
 <li><code>dictLang</code>: String. The dictionary language code for RNG_MetaLang.</li>
 </ul>
 <hr />
-<h3 id="int-exit-busy-state">exit-busy-state <a class="anchor-link" href="#int-exit-busy-state">#</a></h3>
+<h3 id="int-exitbusystate">ExitBusyState <a class="anchor-link" href="#int-exitbusystate">#</a></h3>
+<p><em>exit-busy-state</em></p>
 <p><strong>Restore the application from a busy state</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ExitBusyState(ByRef busyScope As IApplicationState)
@@ -445,7 +482,8 @@ if the path is empty or the file cannot be opened.</p>
 <li><code>busyScope</code>: IApplicationState (ByRef). The state object to restore and release.</li>
 </ul>
 <hr />
-<h3 id="int-build-preserved-sheet-names">build-preserved-sheet-names <a class="anchor-link" href="#int-build-preserved-sheet-names">#</a></h3>
+<h3 id="int-buildpreservedsheetnames">BuildPreservedSheetNames <a class="anchor-link" href="#int-buildpreservedsheetnames">#</a></h3>
+<p><em>build-preserved-sheet-names</em></p>
 <p><strong>Build the list of sheet names to preserve during dictionary preparation</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function BuildPreservedSheetNames(ByVal messageTranslations As ITranslationObject) As BetterArray
@@ -460,7 +498,8 @@ for resolving linelist sheet names, or Nothing to skip translated names.</li>
 </ul>
 <p><strong>Returns:</strong> BetterArray. The list of preserved sheet names.</p>
 <hr />
-<h3 id="int-safe-translated-value">safe-translated-value <a class="anchor-link" href="#int-safe-translated-value">#</a></h3>
+<h3 id="int-safetranslatedvalue">SafeTranslatedValue <a class="anchor-link" href="#int-safetranslatedvalue">#</a></h3>
+<p><em>safe-translated-value</em></p>
 <p><strong>Look up a translation key, falling back to the key itself on failure</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function SafeTranslatedValue(ByVal translations As ITranslationObject, ByVal key As String) As String
@@ -472,7 +511,8 @@ for resolving linelist sheet names, or Nothing to skip translated names.</li>
 </ul>
 <p><strong>Returns:</strong> String. The translated value, or the key if translation fails.</p>
 <hr />
-<h3 id="int-reset-post-import-caches">reset-post-import-caches <a class="anchor-link" href="#int-reset-post-import-caches">#</a></h3>
+<h3 id="int-resetpostimportcaches">ResetPostImportCaches <a class="anchor-link" href="#int-resetpostimportcaches">#</a></h3>
+<p><em>reset-post-import-caches</em></p>
 <p><strong>Clear caches that become stale after importing new data</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ResetPostImportCaches()
@@ -481,7 +521,8 @@ for resolving linelist sheet names, or Nothing to skip translated names.</li>
 so they are rebuilt from the freshly imported data.</p>
 <hr />
 <h2 id="int-workbook-validation">Workbook validation</h2>
-<h3 id="int-validate-workbook-reference">validate-workbook-reference <a class="anchor-link" href="#int-validate-workbook-reference">#</a></h3>
+<h3 id="int-validateworkbookreference">ValidateWorkbookReference <a class="anchor-link" href="#int-validateworkbookreference">#</a></h3>
+<p><em>validate-workbook-reference</em></p>
 <p><strong>Validate a workbook reference and its structure</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ValidateWorkbookReference(ByVal specsWorkbook As Workbook)
@@ -493,7 +534,8 @@ so they are rebuilt from the freshly imported data.</p>
 <li>ProjectError.ElementNotFound When required sheets are missing.</li>
 </ul>
 <hr />
-<h3 id="int-validate-workbook-structure">validate-workbook-structure <a class="anchor-link" href="#int-validate-workbook-structure">#</a></h3>
+<h3 id="int-validateworkbookstructure">ValidateWorkbookStructure <a class="anchor-link" href="#int-validateworkbookstructure">#</a></h3>
+<p><em>validate-workbook-structure</em></p>
 <p><strong>Check that a workbook contains all required worksheets and named ranges</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ValidateWorkbookStructure(ByVal specsWorkbook As Workbook)
@@ -510,14 +552,20 @@ named range is present.</p>
 <li>ProjectError.ElementNotFound When required sheets or ranges are missing.</li>
 </ul>
 <hr />
-<h3 id="int-required-sheet-names">required-sheet-names <a class="anchor-link" href="#int-required-sheet-names">#</a></h3>
-<p><strong>Return the array of required specification worksheet names</strong></p>
+<h3 id="int-requiredsheetnames">RequiredSheetNames <a class="anchor-link" href="#int-requiredsheetnames">#</a></h3>
+<p><em>required-sheet-names</em></p>
+<p><strong>Return the array of required designer worksheet names</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function RequiredSheetNames() As Variant
 </code></pre>
+<p>Only includes sheets that LinelistSpecs reads directly from the designer
+workbook. Pass-through sheets (Dictionary, Choices, Analysis, Export) are
+excluded because the build service imports them from the setup file
+directly into the linelist.</p>
 <p><strong>Returns:</strong> Variant. Array of sheet name strings.</p>
 <hr />
-<h3 id="int-worksheet-exists-internal">worksheet-exists-internal <a class="anchor-link" href="#int-worksheet-exists-internal">#</a></h3>
+<h3 id="int-worksheetexistsinternal">WorksheetExistsInternal <a class="anchor-link" href="#int-worksheetexistsinternal">#</a></h3>
+<p><em>worksheet-exists-internal</em></p>
 <p><strong>Test whether a worksheet exists in a workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function WorksheetExistsInternal(ByVal specsWorkbook As Workbook, _
@@ -530,7 +578,8 @@ named range is present.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when the worksheet exists.</p>
 <hr />
-<h3 id="int-range-exists-internal">range-exists-internal <a class="anchor-link" href="#int-range-exists-internal">#</a></h3>
+<h3 id="int-rangeexistsinternal">RangeExistsInternal <a class="anchor-link" href="#int-rangeexistsinternal">#</a></h3>
+<p><em>range-exists-internal</em></p>
 <p><strong>Test whether a named range exists on a worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function RangeExistsInternal(ByVal hostSheet As Worksheet, _
@@ -543,7 +592,8 @@ named range is present.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when the named range exists.</p>
 <hr />
-<h3 id="int-join-names">join-names <a class="anchor-link" href="#int-join-names">#</a></h3>
+<h3 id="int-joinnames">JoinNames <a class="anchor-link" href="#int-joinnames">#</a></h3>
+<p><em>join-names</em></p>
 <p><strong>Join a BetterArray of names into a comma-separated, quoted string</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function JoinNames(ByVal values As BetterArray) As String
@@ -554,7 +604,8 @@ named range is present.</p>
 </ul>
 <p><strong>Returns:</strong> String. Formatted string like &quot;'Sheet1', 'Sheet2'&quot;.</p>
 <hr />
-<h3 id="int-safe-workbook-name">safe-workbook-name <a class="anchor-link" href="#int-safe-workbook-name">#</a></h3>
+<h3 id="int-safeworkbookname">SafeWorkbookName <a class="anchor-link" href="#int-safeworkbookname">#</a></h3>
+<p><em>safe-workbook-name</em></p>
 <p><strong>Safely retrieve a workbook's name, returning &quot;<unknown>&quot; on error</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function SafeWorkbookName(ByVal specsWorkbook As Workbook) As String
@@ -566,7 +617,8 @@ named range is present.</p>
 <p><strong>Returns:</strong> String. The workbook name or &quot;<unknown>&quot;.</p>
 <hr />
 <h2 id="int-collaborator-ensures">Collaborator ensures</h2>
-<h3 id="int-ensure-exports">ensure-exports <a class="anchor-link" href="#int-ensure-exports">#</a></h3>
+<h3 id="int-ensureexports">EnsureExports <a class="anchor-link" href="#int-ensureexports">#</a></h3>
+<p><em>ensure-exports</em></p>
 <p><strong>Lazy-load the export collaborator</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureExports()
@@ -575,7 +627,8 @@ named range is present.</p>
 EnsureXxx method creates the collaborator from its backing worksheet on first
 access, then caches it for subsequent calls.</p>
 <hr />
-<h3 id="int-ensure-dictionary">ensure-dictionary <a class="anchor-link" href="#int-ensure-dictionary">#</a></h3>
+<h3 id="int-ensuredictionary">EnsureDictionary <a class="anchor-link" href="#int-ensuredictionary">#</a></h3>
+<p><em>ensure-dictionary</em></p>
 <p><strong>Lazy-load the dictionary collaborator</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureDictionary()
@@ -584,50 +637,58 @@ access, then caches it for subsequent calls.</p>
 of exports parameter), then creates the dictionary from the Dictionary
 worksheet.</p>
 <hr />
-<h3 id="int-ensure-choices">ensure-choices <a class="anchor-link" href="#int-ensure-choices">#</a></h3>
+<h3 id="int-ensurechoices">EnsureChoices <a class="anchor-link" href="#int-ensurechoices">#</a></h3>
+<p><em>ensure-choices</em></p>
 <p><strong>Lazy-load the choices collaborator</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureChoices()
 </code></pre>
 <hr />
-<h3 id="int-ensure-translations">ensure-translations <a class="anchor-link" href="#int-ensure-translations">#</a></h3>
+<h3 id="int-ensuretranslations">EnsureTranslations <a class="anchor-link" href="#int-ensuretranslations">#</a></h3>
+<p><em>ensure-translations</em></p>
 <p><strong>Lazy-load the translations collaborator</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureTranslations()
 </code></pre>
 <p>Creates the LLTranslation instance from the linelist translation worksheet.</p>
 <hr />
-<h3 id="int-ensure-designer-translations">ensure-designer-translations <a class="anchor-link" href="#int-ensure-designer-translations">#</a></h3>
+<h3 id="int-ensuredesignertranslations">EnsureDesignerTranslations <a class="anchor-link" href="#int-ensuredesignertranslations">#</a></h3>
+<p><em>ensure-designer-translations</em></p>
 <p><strong>Lazy-load the designer translations collaborator</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureDesignerTranslations()
 </code></pre>
 <hr />
-<h3 id="int-ensure-geo">ensure-geo <a class="anchor-link" href="#int-ensure-geo">#</a></h3>
+<h3 id="int-ensuregeo">EnsureGeo <a class="anchor-link" href="#int-ensuregeo">#</a></h3>
+<p><em>ensure-geo</em></p>
 <p><strong>Lazy-load the geo collaborator</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureGeo()
 </code></pre>
 <hr />
-<h3 id="int-ensure-analysis">ensure-analysis <a class="anchor-link" href="#int-ensure-analysis">#</a></h3>
+<h3 id="int-ensureanalysis">EnsureAnalysis <a class="anchor-link" href="#int-ensureanalysis">#</a></h3>
+<p><em>ensure-analysis</em></p>
 <p><strong>Lazy-load the analysis collaborator</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureAnalysis()
 </code></pre>
 <hr />
-<h3 id="int-ensure-passwords">ensure-passwords <a class="anchor-link" href="#int-ensure-passwords">#</a></h3>
+<h3 id="int-ensurepasswords">EnsurePasswords <a class="anchor-link" href="#int-ensurepasswords">#</a></h3>
+<p><em>ensure-passwords</em></p>
 <p><strong>Lazy-load the passwords collaborator</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsurePasswords()
 </code></pre>
 <hr />
-<h3 id="int-ensure-formula-data">ensure-formula-data <a class="anchor-link" href="#int-ensure-formula-data">#</a></h3>
+<h3 id="int-ensureformuladata">EnsureFormulaData <a class="anchor-link" href="#int-ensureformuladata">#</a></h3>
+<p><em>ensure-formula-data</em></p>
 <p><strong>Lazy-load the formula data collaborator</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureFormulaData()
 </code></pre>
 <hr />
-<h3 id="int-ensure-variables">ensure-variables <a class="anchor-link" href="#int-ensure-variables">#</a></h3>
+<h3 id="int-ensurevariables">EnsureVariables <a class="anchor-link" href="#int-ensurevariables">#</a></h3>
+<p><em>ensure-variables</em></p>
 <p><strong>Lazy-load the variables collaborator</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureVariables()
@@ -635,7 +696,8 @@ worksheet.</p>
 <p>Requires the dictionary to be available first, then creates the
 LLVariables instance from it.</p>
 <hr />
-<h3 id="int-ensure-format">ensure-format <a class="anchor-link" href="#int-ensure-format">#</a></h3>
+<h3 id="int-ensureformat">EnsureFormat <a class="anchor-link" href="#int-ensureformat">#</a></h3>
+<p><em>ensure-format</em></p>
 <p><strong>Lazy-load the format collaborator</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureFormat()
@@ -643,7 +705,8 @@ LLVariables instance from it.</p>
 <p>Resolves the design name from the DESIGNTYPE named range on the format
 sheet, then creates the LLFormat instance.</p>
 <hr />
-<h3 id="int-resolve-design-name">resolve-design-name <a class="anchor-link" href="#int-resolve-design-name">#</a></h3>
+<h3 id="int-resolvedesignname">ResolveDesignName <a class="anchor-link" href="#int-resolvedesignname">#</a></h3>
+<p><em>resolve-design-name</em></p>
 <p><strong>Extract the design name from the format worksheet's DESIGNTYPE range</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ResolveDesignName(ByVal formatSheet As Worksheet) As String
@@ -658,13 +721,15 @@ sheet, then creates the LLFormat instance.</p>
 <li>ProjectError.ElementNotFound When the DESIGNTYPE range is missing.</li>
 </ul>
 <hr />
-<h3 id="int-ensure-category-lookup">ensure-category-lookup <a class="anchor-link" href="#int-ensure-category-lookup">#</a></h3>
+<h3 id="int-ensurecategorylookup">EnsureCategoryLookup <a class="anchor-link" href="#int-ensurecategorylookup">#</a></h3>
+<p><em>ensure-category-lookup</em></p>
 <p><strong>Ensure choices, variables, and category arrays are ready</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureCategoryLookup()
 </code></pre>
 <hr />
-<h3 id="int-number-of-exports">number-of-exports <a class="anchor-link" href="#int-number-of-exports">#</a></h3>
+<h3 id="int-numberofexports">NumberOfExports <a class="anchor-link" href="#int-numberofexports">#</a></h3>
+<p><em>number-of-exports</em></p>
 <p><strong>Return the number of exports defined in the export specifications</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function NumberOfExports() As Long
@@ -672,7 +737,8 @@ sheet, then creates the LLFormat instance.</p>
 <p><strong>Returns:</strong> Long. The export count.</p>
 <hr />
 <h2 id="int-list-auto-helpers">List auto helpers</h2>
-<h3 id="int-add-list-auto">add-list-auto <a class="anchor-link" href="#int-add-list-auto">#</a></h3>
+<h3 id="int-addlistauto">AddListAuto <a class="anchor-link" href="#int-addlistauto">#</a></h3>
+<p><em>add-list-auto</em></p>
 <p><strong>Populate the &quot;list auto&quot; dictionary column for list_auto variables</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddListAuto()
@@ -684,7 +750,8 @@ with control type &quot;list_auto&quot; and marks their control details with
 choice_formula), recursively traces referenced variables and marks
 them as well.</p>
 <hr />
-<h3 id="int-recursive-list-auto">recursive-list-auto <a class="anchor-link" href="#int-recursive-list-auto">#</a></h3>
+<h3 id="int-recursivelistauto">RecursiveListAuto <a class="anchor-link" href="#int-recursivelistauto">#</a></h3>
+<p><em>recursive-list-auto</em></p>
 <p><strong>Recursively mark referenced variables in formula chains as list_auto</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RecursiveListAuto(ByVal varName As String)
@@ -699,7 +766,8 @@ or case_when types.</p>
 </ul>
 <hr />
 <h2 id="int-category-helpers">Category helpers</h2>
-<h3 id="int-find-category-index">find-category-index <a class="anchor-link" href="#int-find-category-index">#</a></h3>
+<h3 id="int-findcategoryindex">FindCategoryIndex <a class="anchor-link" href="#int-findcategoryindex">#</a></h3>
+<p><em>find-category-index</em></p>
 <p><strong>Search the category keys array for a matching key</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function FindCategoryIndex(ByVal cacheKey As String) As Long
@@ -710,7 +778,8 @@ or case_when types.</p>
 </ul>
 <p><strong>Returns:</strong> Long. The 1-based index if found, or 0 if not found.</p>
 <hr />
-<h3 id="int-resolve-category-list">resolve-category-list <a class="anchor-link" href="#int-resolve-category-list">#</a></h3>
+<h3 id="int-resolvecategorylist">ResolveCategoryList <a class="anchor-link" href="#int-resolvecategorylist">#</a></h3>
+<p><em>resolve-category-list</em></p>
 <p><strong>Build a category list from the choices sheet for a given variable</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ResolveCategoryList(ByVal varName As String, _
@@ -730,7 +799,8 @@ control details, then queries the choices collaborator.</p>
 <li>ProjectError.ElementNotFound When the variable or category is not found.</li>
 </ul>
 <hr />
-<h3 id="int-normalise-control-type">normalise-control-type <a class="anchor-link" href="#int-normalise-control-type">#</a></h3>
+<h3 id="int-normalisecontroltype">NormaliseControlType <a class="anchor-link" href="#int-normalisecontroltype">#</a></h3>
+<p><em>normalise-control-type</em></p>
 <p><strong>Strip parenthesised suffixes from a control type string</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function NormaliseControlType(ByVal controlValue As String) As String
@@ -741,7 +811,8 @@ control details, then queries the choices collaborator.</p>
 </ul>
 <p><strong>Returns:</strong> String. The normalised, lower-cased control type.</p>
 <hr />
-<h3 id="int-extract-choice-formula">extract-choice-formula <a class="anchor-link" href="#int-extract-choice-formula">#</a></h3>
+<h3 id="int-extractchoiceformula">ExtractChoiceFormula <a class="anchor-link" href="#int-extractchoiceformula">#</a></h3>
+<p><em>extract-choice-formula</em></p>
 <p><strong>Extract the choice name from a CHOICE_FORMULA(...) control details string</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ExtractChoiceFormula(ByVal controlDetails As String) As String
@@ -753,7 +824,8 @@ control details, then queries the choices collaborator.</p>
 <p><strong>Returns:</strong> String. The extracted choice name.</p>
 <hr />
 <h2 id="int-core-accessors">Core accessors</h2>
-<h3 id="int-resolve-translation-scope">resolve-translation-scope <a class="anchor-link" href="#int-resolve-translation-scope">#</a></h3>
+<h3 id="int-resolvetranslationscope">ResolveTranslationScope <a class="anchor-link" href="#int-resolvetranslationscope">#</a></h3>
+<p><em>resolve-translation-scope</em></p>
 <p><strong>Query the translations collaborator for a given scope</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ResolveTranslationScope(ByVal translationScope As Byte) As ITranslationObject
@@ -769,7 +841,8 @@ control details, then queries the choices collaborator.</p>
 </ul>
 <hr />
 <h2 id="int-error-handling">Error handling</h2>
-<h3 id="int-throw-error">throw-error <a class="anchor-link" href="#int-throw-error">#</a></h3>
+<h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
+<p><em>throw-error</em></p>
 <p><strong>Raise a project error with the class name as source</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As Long, ByVal messageText As String)
@@ -782,7 +855,8 @@ control details, then queries the choices collaborator.</p>
 </ul>
 <hr />
 <h2 id="int-test-support">Test support</h2>
-<h3 id="int-test-assign-designer-translations">test-assign-designer-translations <a class="anchor-link" href="#int-test-assign-designer-translations">#</a></h3>
+<h3 id="int-testassigndesignertranslations">TestAssignDesignerTranslations <a class="anchor-link" href="#int-testassigndesignertranslations">#</a></h3>
+<p><em>test-assign-designer-translations</em></p>
 <p><strong>Inject a mock IDesignerTranslation instance for testing</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub TestAssignDesignerTranslations(ByVal designerTrads As IDesignerTranslation)
@@ -793,7 +867,8 @@ control details, then queries the choices collaborator.</p>
 <li><code>designerTrads</code>: IDesignerTranslation. The mock designer translations object.</li>
 </ul>
 <hr />
-<h3 id="int-test-assign-translations">test-assign-translations <a class="anchor-link" href="#int-test-assign-translations">#</a></h3>
+<h3 id="int-testassigntranslations">TestAssignTranslations <a class="anchor-link" href="#int-testassigntranslations">#</a></h3>
+<p><em>test-assign-translations</em></p>
 <p><strong>Inject a mock ILLTranslation instance for testing</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub TestAssignTranslations(ByVal translations As ILLTranslation)
@@ -816,7 +891,7 @@ needed on delegation stubs.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (17 file(s))</summary>
+<summary>Used in (18 file(s))</summary>
 <ul>
 <li><a href="src/classes/analyses/AnalysisOutput.cls">AnalysisOutput.cls</a></li>
 <li><a href="src/classes/analyses/CrossTable.cls">CrossTable.cls</a></li>
@@ -830,6 +905,7 @@ needed on delegation stubs.</p>
 <li><a href="src/classes/sections/VarWriter.cls">VarWriter.cls</a></li>
 <li><a href="src/classes/stale/designer-codes/modules/implements/DesignerMain.bas">DesignerMain.bas</a></li>
 <li><a href="src/modules/designer/EventsDesignerAdvanced.bas">EventsDesignerAdvanced.bas</a></li>
+<li><a href="src/modules/designer/GenerationReport.bas">GenerationReport.bas</a></li>
 <li><a href="src/tests/stubs/LinelistSpecsWorkbookStub.cls">LinelistSpecsWorkbookStub.cls</a></li>
 <li><a href="src/tests/stubs/LinelistStub.cls">LinelistStub.cls</a></li>
 <li><a href="src/tests/stubs/LLVarContextSpecsStub.cls">LLVarContextSpecsStub.cls</a></li>

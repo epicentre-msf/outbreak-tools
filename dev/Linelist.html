@@ -25,7 +25,8 @@ factory consumers create instances via <code>New Linelist</code> rather than
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
 <div class="section-body">
-<h3 id="create">create <a class="anchor-link" href="#create">#</a></h3>
+<h3 id="create">Create <a class="anchor-link" href="#create">#</a></h3>
+<p><em>create</em></p>
 <p><strong>Instantiate a Linelist facade bound to specifications</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal specs As ILinelistSpecs) As ILinelist
@@ -51,7 +52,8 @@ data required to build the output workbook.</li>
 <details open class="doc-section" id="public-properties">
 <summary>Public properties</summary>
 <div class="section-body">
-<h3 id="linelist-data">linelist-data <a class="anchor-link" href="#linelist-data">#</a></h3>
+<h3 id="linelistdata">LinelistData <a class="anchor-link" href="#linelistdata">#</a></h3>
+<p><em>linelist-data</em></p>
 <p><strong>Specifications backing this linelist</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get LinelistData() As ILinelistSpecs
@@ -63,7 +65,8 @@ construction, providing access to dictionary, choices, translations,
 and all other setup data.</p>
 <p><strong>Returns:</strong> ILinelistSpecs. The linelist specifications.</p>
 <hr />
-<h3 id="dictionary">dictionary <a class="anchor-link" href="#dictionary">#</a></h3>
+<h3 id="dictionary">Dictionary <a class="anchor-link" href="#dictionary">#</a></h3>
+<p><em>dictionary</em></p>
 <p><strong>Dictionary from the specifications</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Dictionary() As ILLdictionary
@@ -72,7 +75,8 @@ and all other setup data.</p>
 the extra indirection at call sites.</p>
 <p><strong>Returns:</strong> ILLdictionary. The linelist dictionary.</p>
 <hr />
-<h3 id="wksh">wksh <a class="anchor-link" href="#wksh">#</a></h3>
+<h3 id="wksh">Wksh <a class="anchor-link" href="#wksh">#</a></h3>
+<p><em>wksh</em></p>
 <p><strong>Worksheet from the output workbook by name</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Wksh(ByVal sheetName As String) As Worksheet
@@ -90,7 +94,8 @@ if the sheet does not exist.</p>
 <li>ProjectError.InvalidArgument When the sheet does not exist.</li>
 </ul>
 <hr />
-<h3 id="print-wksh">print-wksh <a class="anchor-link" href="#print-wksh">#</a></h3>
+<h3 id="printwksh">PrintWksh <a class="anchor-link" href="#printwksh">#</a></h3>
+<p><em>print-wksh</em></p>
 <p><strong>Printed companion worksheet by base name</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get PrintWksh(ByVal sheetName As String) As Worksheet
@@ -108,7 +113,8 @@ duplicate. Delegates to ResolveWksh with scope 2.</p>
 <li>ProjectError.InvalidArgument When the sheet does not exist.</li>
 </ul>
 <hr />
-<h3 id="crf-wksh">crf-wksh <a class="anchor-link" href="#crf-wksh">#</a></h3>
+<h3 id="crfwksh">CRFWksh <a class="anchor-link" href="#crfwksh">#</a></h3>
+<p><em>crf-wksh</em></p>
 <p><strong>CRF companion worksheet by base name</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get CRFWksh(ByVal sheetName As String) As Worksheet
@@ -126,7 +132,8 @@ ResolveWksh with scope 3.</p>
 <li>ProjectError.InvalidArgument When the sheet does not exist.</li>
 </ul>
 <hr />
-<h3 id="dropdown">dropdown <a class="anchor-link" href="#dropdown">#</a></h3>
+<h3 id="dropdown">Dropdown <a class="anchor-link" href="#dropdown">#</a></h3>
+<p><em>dropdown</em></p>
 <p><strong>Dropdown lists manager for the output workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Dropdown(Optional ByVal scope As Byte = 1) As IDropdownLists
@@ -141,7 +148,8 @@ dropdowns. Defaults to 1.</li>
 </ul>
 <p><strong>Returns:</strong> IDropdownLists. The dropdown lists manager.</p>
 <hr />
-<h3 id="pivots">pivots <a class="anchor-link" href="#pivots">#</a></h3>
+<h3 id="pivots">Pivots <a class="anchor-link" href="#pivots">#</a></h3>
+<p><em>pivots</em></p>
 <p><strong>Pivot tables manager for the output workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Pivots() As ICustomPivotTable
@@ -150,7 +158,8 @@ dropdowns. Defaults to 1.</li>
 pivot table sheet in the output workbook.</p>
 <p><strong>Returns:</strong> ICustomPivotTable. The pivot tables manager.</p>
 <hr />
-<h3 id="sheet-exists">sheet-exists <a class="anchor-link" href="#sheet-exists">#</a></h3>
+<h3 id="sheetexists">SheetExists <a class="anchor-link" href="#sheetexists">#</a></h3>
+<p><em>sheet-exists</em></p>
 <p><strong>Check whether a sheet exists in the output workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function SheetExists(ByVal sheetName As String) As Boolean
@@ -163,7 +172,8 @@ workbook without raising an error. Uses On Error Resume Next internally.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when the sheet exists, False otherwise.</p>
 <hr />
-<h3 id="add-output-sheet">add-output-sheet <a class="anchor-link" href="#add-output-sheet">#</a></h3>
+<h3 id="addoutputsheet">AddOutputSheet <a class="anchor-link" href="#addoutputsheet">#</a></h3>
+<p><em>add-output-sheet</em></p>
 <p><strong>Add a worksheet to the output workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub AddOutputSheet(ByVal sheetName As String, _
@@ -193,7 +203,8 @@ insert before. Defaults to vbNullString (append at default position).</li>
 <details open class="doc-section" id="lifecycle">
 <summary>Lifecycle</summary>
 <div class="section-body">
-<h3 id="prepare">prepare <a class="anchor-link" href="#prepare">#</a></h3>
+<h3 id="prepare">Prepare <a class="anchor-link" href="#prepare">#</a></h3>
+<p><em>prepare</em></p>
 <p><strong>Build the full linelist output workbook from specifications</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Prepare()
@@ -216,7 +227,8 @@ show/hide) and prepares them with hidden names and ListObjects.</li>
 workbook code).</li>
 </ol>
 <hr />
-<h3 id="save-ll">save-ll <a class="anchor-link" href="#save-ll">#</a></h3>
+<h3 id="savell">SaveLL <a class="anchor-link" href="#savell">#</a></h3>
+<p><em>save-ll</em></p>
 <p><strong>Save the output workbook as .xlsb with password protection</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub SaveLL()
@@ -226,7 +238,8 @@ protects the workbook structure via IPasswords.Protect, activates an
 appropriate visible sheet (admin or instruction), closes the workbook,
 and cleans up temporary files via ITemporaryRepos.Reset.</p>
 <hr />
-<h3 id="error-manage">error-manage <a class="anchor-link" href="#error-manage">#</a></h3>
+<h3 id="errormanage">ErrorManage <a class="anchor-link" href="#errormanage">#</a></h3>
+<p><em>error-manage</em></p>
 <p><strong>Display an error dialog for incomplete linelist operations</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ErrorManage(Optional ByVal textMessage As String = vbNullString)
@@ -246,7 +259,8 @@ Defaults to vbNullString.</li>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-bindings">Bindings</h2>
-<h3 id="int-bin-specs">bin-specs <a class="anchor-link" href="#int-bin-specs">#</a></h3>
+<h3 id="int-binspecs">BinSpecs <a class="anchor-link" href="#int-binspecs">#</a></h3>
+<p><em>bin-specs</em></p>
 <p><strong>Bind the linelist specifications to this instance</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Friend Property Set BinSpecs(ByVal value As ILinelistSpecs)
@@ -261,7 +275,8 @@ resetting specifications after construction.</p>
 </ul>
 <hr />
 <h2 id="int-private-workbook-management">Private — Workbook management</h2>
-<h3 id="int-output-wkb">output-wkb <a class="anchor-link" href="#int-output-wkb">#</a></h3>
+<h3 id="int-outputwkb">OutputWkb <a class="anchor-link" href="#int-outputwkb">#</a></h3>
+<p><em>output-wkb</em></p>
 <p><strong>Return the output workbook from LinelistSpecs</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get OutputWkb() As Workbook
@@ -273,7 +288,8 @@ created and caches it locally. Also records the name of the initial
 default sheet so Prepare can delete it later.</p>
 <p><strong>Returns:</strong> Workbook. The output workbook.</p>
 <hr />
-<h3 id="int-resolve-wksh">resolve-wksh <a class="anchor-link" href="#int-resolve-wksh">#</a></h3>
+<h3 id="int-resolvewksh">ResolveWksh <a class="anchor-link" href="#int-resolvewksh">#</a></h3>
+<p><em>resolve-wksh</em></p>
 <p><strong>Resolve a worksheet from the output workbook with scope prefix</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ResolveWksh(ByVal sheetName As String, ByVal sheetScope As Byte, _
@@ -294,7 +310,8 @@ exists, and returns a reference through the ByRef result parameter.</p>
 </ul>
 <hr />
 <h2 id="int-private-prepare-helpers">Private — Prepare helpers</h2>
-<h3 id="int-prepare-temporary-sheets">prepare-temporary-sheets <a class="anchor-link" href="#int-prepare-temporary-sheets">#</a></h3>
+<h3 id="int-preparetemporarysheets">PrepareTemporarySheets <a class="anchor-link" href="#int-preparetemporarysheets">#</a></h3>
+<p><em>prepare-temporary-sheets</em></p>
 <p><strong>Set up hidden names and ListObjects on temporary sheets</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub PrepareTemporarySheets()
@@ -314,7 +331,8 @@ sptemp) plus four worksheet-level hidden names storing the translated
 analysis sheet names.</li>
 </ol>
 <hr />
-<h3 id="int-initialise-workbook-names">initialise-workbook-names <a class="anchor-link" href="#int-initialise-workbook-names">#</a></h3>
+<h3 id="int-initialiseworkbooknames">InitialiseWorkbookNames <a class="anchor-link" href="#int-initialiseworkbooknames">#</a></h3>
+<p><em>initialise-workbook-names</em></p>
 <p><strong>Set language HiddenNames on the output workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub InitialiseWorkbookNames()
@@ -324,7 +342,8 @@ analysis sheet names.</li>
 on the output workbook. These are required by LLTranslation.TransObject
 to resolve the correct language code for translation lookups.</p>
 <hr />
-<h3 id="int-initialise-translation-names">initialise-translation-names <a class="anchor-link" href="#int-initialise-translation-names">#</a></h3>
+<h3 id="int-initialisetranslationnames">InitialiseTranslationNames <a class="anchor-link" href="#int-initialisetranslationnames">#</a></h3>
+<p><em>initialise-translation-names</em></p>
 <p><strong>Propagate language HiddenNames to the translation worksheet and create translated names</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub InitialiseTranslationNames()
@@ -334,7 +353,8 @@ dictionary and interface language codes as worksheet-level HiddenNames
 on the translation sheet. Then calls InitialiseHiddenNames to create
 all RNG_* translated message/sheet names on the output workbook.</p>
 <hr />
-<h3 id="int-prepare-admin">prepare-admin <a class="anchor-link" href="#int-prepare-admin">#</a></h3>
+<h3 id="int-prepareadmin">PrepareAdmin <a class="anchor-link" href="#int-prepareadmin">#</a></h3>
+<p><em>prepare-admin</em></p>
 <p><strong>Format the admin sheet and add Advanced/Export buttons</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub PrepareAdmin()
@@ -350,7 +370,8 @@ the &quot;_active&quot; scope marker.</p>
 shape-specific translated labels for the buttons.</li>
 </ul>
 <hr />
-<h3 id="int-transfer-all-code">transfer-all-code <a class="anchor-link" href="#int-transfer-all-code">#</a></h3>
+<h3 id="int-transferallcode">TransferAllCode <a class="anchor-link" href="#int-transferallcode">#</a></h3>
+<p><em>transfer-all-code</em></p>
 <p><strong>Transfer all VBA code components to the output workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub TransferAllCode(ByVal codeTransfer As ICodeTransfer)
@@ -364,7 +385,7 @@ LLSheets, LLTranslation, OSFiles, TranslationObject, LLVariables,
 LLSpatial, DropdownLists, ShowHideManager, CustomTable, LLExporter,
 LLImporter, Graphs, AnaTabIds, ExportButton, HiddenNames,
 EventLinelist, ApplicationState, plus BetterArray and Checking).</li>
-<li>Transfers 7 standard modules (LinelistCustomFunctions, GeoModule,
+<li>Transfers 7 standard modules (CustomLinelistFunctions, GeoModule,
 LinelistEventsManager, EventsLinelistButtons, FormLogicAdvanced,
 FormLogicExportMig, FormLogicExport). For template workbooks,
 copies the ribbon module text (EventsLinelistRibbon); otherwise
@@ -380,7 +401,8 @@ F_EpiWeek).</li>
 </ul>
 <hr />
 <h2 id="int-private-error-handling">Private — Error handling</h2>
-<h3 id="int-throw-error">throw-error <a class="anchor-link" href="#int-throw-error">#</a></h3>
+<h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
+<p><em>throw-error</em></p>
 <p><strong>Raise a project error with class context</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As Long, ByVal errorMessage As String)
@@ -404,10 +426,12 @@ All members forward to their Public counterparts above.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (18 file(s))</summary>
+<summary>Used in (21 file(s))</summary>
 <ul>
 <li><a href="src/classes/analyses/AnalysisOutput.cls">AnalysisOutput.cls</a></li>
 <li><a href="src/classes/analyses/CrossTable.cls">CrossTable.cls</a></li>
+<li><a href="src/classes/designer/ILinelistBuildService.cls">ILinelistBuildService.cls</a></li>
+<li><a href="src/classes/designer/LinelistBuildService.cls">LinelistBuildService.cls</a></li>
 <li><a href="src/classes/graphs/GraphSpecs.cls">GraphSpecs.cls</a></li>
 <li><a href="src/classes/linelist/ILinelist.cls">ILinelist.cls</a></li>
 <li><a href="src/classes/linelist/ILinelistSpecs.cls">ILinelistSpecs.cls</a></li>
@@ -418,6 +442,7 @@ All members forward to their Public counterparts above.</p>
 <li><a href="src/classes/sections/VarWriter.cls">VarWriter.cls</a></li>
 <li><a href="src/classes/stale/designer-codes/modules/implements/DesignerMain.bas">DesignerMain.bas</a></li>
 <li><a href="src/modules/designer/EventsDesignerAdvanced.bas">EventsDesignerAdvanced.bas</a></li>
+<li><a href="src/modules/designer/GenerationReport.bas">GenerationReport.bas</a></li>
 <li><a href="src/tests/modules/linelist/TestLinelist.bas">TestLinelist.bas</a></li>
 <li><a href="src/tests/stubs/LinelistSpecsWorkbookStub.cls">LinelistSpecsWorkbookStub.cls</a></li>
 <li><a href="src/tests/stubs/LinelistStub.cls">LinelistStub.cls</a></li>

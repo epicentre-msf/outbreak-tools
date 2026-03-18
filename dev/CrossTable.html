@@ -18,12 +18,13 @@ occupies a rectangular region with row categories, column categories, named
 ranges, and visual formatting. Consumers interact through the ICrossTable
 interface, and AnalysisOutput orchestrates the build sequence by calling
 Build followed by Format for each table specification.</p>
-<p><strong>Depends on:</strong> <a href="ITableSpecs.html">ITableSpecs</a>, <a href="ILinelistSpecs.html">ILinelistSpecs</a>, <a href="ITranslationObject.html">ITranslationObject</a>, <a href="ILLVariables.html">ILLVariables</a>, <a href="LLVariables.html">LLVariables</a>, <a href="ILLFormat.html">ILLFormat</a>, <a href="IHiddenNames.html">IHiddenNames</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="BetterArray.html">BetterArray</a></p>
+<p><strong>Depends on:</strong> <a href="ITableSpecs.html">ITableSpecs</a>, <a href="ILinelistSpecs.html">ILinelistSpecs</a>, <a href="ITranslationObject.html">ITranslationObject</a>, <a href="ILLVariables.html">ILLVariables</a>, <a href="LLVariables.html">LLVariables</a>, <a href="ILLFormat.html">ILLFormat</a>, <a href="IHiddenNames.html">IHiddenNames</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="BetterArray.html">BetterArray</a>, <a href="Checking.html">Checking</a>, <a href="IChecking.html">IChecking</a></p>
 <p><strong>Version:</strong> 1.1 (2026-02-11)</p>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
 <div class="section-body">
-<h3 id="create">create <a class="anchor-link" href="#create">#</a></h3>
+<h3 id="create">Create <a class="anchor-link" href="#create">#</a></h3>
+<p><em>create</em></p>
 <p><strong>Create a CrossTable instance from table specifications.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal specs As ITableSpecs, _
@@ -59,7 +60,8 @@ category resolution at build time.</li>
 <details open class="doc-section" id="internal-properties">
 <summary>Internal Properties</summary>
 <div class="section-body">
-<h3 id="wksh">wksh <a class="anchor-link" href="#wksh">#</a></h3>
+<h3 id="wksh">Wksh <a class="anchor-link" href="#wksh">#</a></h3>
+<p><em>wksh</em></p>
 <p><strong>Output worksheet where the table is built.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Wksh() As Worksheet
@@ -68,7 +70,8 @@ category resolution at build time.</li>
 headers, row labels, column labels, and data cells.</p>
 <p><strong>Returns:</strong> Worksheet. The output worksheet.</p>
 <hr />
-<h3 id="specifications">specifications <a class="anchor-link" href="#specifications">#</a></h3>
+<h3 id="specifications">Specifications <a class="anchor-link" href="#specifications">#</a></h3>
+<p><em>specifications</em></p>
 <p><strong>Table specifications used to build this cross-table.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Specifications() As ITableSpecs
@@ -83,7 +86,8 @@ category lists, and validation flags.</p>
 <details open class="doc-section" id="range-access">
 <summary>Range Access</summary>
 <div class="section-body">
-<h3 id="header-range">header-range <a class="anchor-link" href="#header-range">#</a></h3>
+<h3 id="headerrange">HeaderRange <a class="anchor-link" href="#headerrange">#</a></h3>
+<p><em>header-range</em></p>
 <p><strong>Header range of the table on the output worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get HeaderRange() As Range
@@ -103,7 +107,8 @@ column value.</p>
 property is called. If EndColumn is 0, the returned range will be invalid.</li>
 </ul>
 <hr />
-<h3 id="rows-categories-range">rows-categories-range <a class="anchor-link" href="#rows-categories-range">#</a></h3>
+<h3 id="rowscategoriesrange">RowsCategoriesRange <a class="anchor-link" href="#rowscategoriesrange">#</a></h3>
+<p><em>rows-categories-range</em></p>
 <p><strong>Row categories range with optional filtering.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get RowsCategoriesRange(Optional ByVal includeHeaders As Boolean = True, _
@@ -135,7 +140,8 @@ have row categories.</li>
 <li>ErrorUnexpectedState When the table scope is ScopeGlobalSummary.</li>
 </ul>
 <hr />
-<h3 id="row-range">row-range <a class="anchor-link" href="#row-range">#</a></h3>
+<h3 id="rowrange">RowRange <a class="anchor-link" href="#rowrange">#</a></h3>
+<p><em>row-range</em></p>
 <p><strong>Row data range for a specific row value.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get RowRange(ByVal rowVal As String, _
@@ -161,7 +167,8 @@ returned.</p>
 ALL row category cells including footer rows.</li>
 </ul>
 <hr />
-<h3 id="column-range">column-range <a class="anchor-link" href="#column-range">#</a></h3>
+<h3 id="columnrange">ColumnRange <a class="anchor-link" href="#columnrange">#</a></h3>
+<p><em>column-range</em></p>
 <p><strong>Column data range for a specific column value.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get ColumnRange(ByVal colVal As String, _
@@ -193,7 +200,8 @@ cell. Returns Nothing if colVal is not found.</p>
 <details open class="doc-section" id="addrows">
 <summary>AddRows</summary>
 <div class="section-body">
-<h3 id="addrows">addrows <a class="anchor-link" href="#addrows">#</a></h3>
+<h3 id="addrows">AddRows <a class="anchor-link" href="#addrows">#</a></h3>
+<p><em>addrows</em></p>
 <p><strong>Add row headers and row category labels to the worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddRows()
@@ -221,7 +229,8 @@ reuse the row structure from the first table and only add columns.</li>
 <details open class="doc-section" id="addcolumns">
 <summary>AddColumns</summary>
 <div class="section-body">
-<h3 id="addcolumns">addcolumns <a class="anchor-link" href="#addcolumns">#</a></h3>
+<h3 id="addcolumns">AddColumns <a class="anchor-link" href="#addcolumns">#</a></h3>
+<p><em>addcolumns</em></p>
 <p><strong>Add column headers and column category labels to the worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddColumns()
@@ -247,7 +256,8 @@ as a guard to prevent duplicate creation.</li>
 <details open class="doc-section" id="addheader">
 <summary>AddHeader</summary>
 <div class="section-body">
-<h3 id="addheader">addheader <a class="anchor-link" href="#addheader">#</a></h3>
+<h3 id="addheader">AddHeader <a class="anchor-link" href="#addheader">#</a></h3>
+<p><em>addheader</em></p>
 <p><strong>Add the table title and header to the worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddHeader()
@@ -276,7 +286,8 @@ dates at runtime.</li>
 <details open class="doc-section" id="nameranges">
 <summary>NameRanges</summary>
 <div class="section-body">
-<h3 id="name-ranges">name-ranges <a class="anchor-link" href="#name-ranges">#</a></h3>
+<h3 id="nameranges">NameRanges <a class="anchor-link" href="#nameranges">#</a></h3>
+<p><em>name-ranges</em></p>
 <p><strong>Create all named ranges for the table data regions.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub NameRanges()
@@ -306,7 +317,8 @@ column structure beyond the two fixed columns).</li>
 <details open class="doc-section" id="format">
 <summary>Format</summary>
 <div class="section-body">
-<h3 id="format">format <a class="anchor-link" href="#format">#</a></h3>
+<h3 id="format">Format <a class="anchor-link" href="#format">#</a></h3>
+<p><em>format</em></p>
 <p><strong>Apply formatting to the table using design specifications.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub Format(ByVal desFormat As ILLFormat)
@@ -338,7 +350,8 @@ ROWGS_FORMATSET and MERGED_.</li>
 <details open class="doc-section" id="build">
 <summary>Build</summary>
 <div class="section-body">
-<h3 id="build">build <a class="anchor-link" href="#build">#</a></h3>
+<h3 id="build">Build <a class="anchor-link" href="#build">#</a></h3>
+<p><em>build</em></p>
 <p><strong>Build the complete cross-table on the worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub Build()
@@ -363,7 +376,8 @@ and formula generation.</p>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-internal-properties">Internal Properties</h2>
-<h3 id="int-self">self <a class="anchor-link" href="#int-self">#</a></h3>
+<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
+<p><em>self</em></p>
 <p><strong>Current object instance.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Self() As ICrossTable
@@ -373,7 +387,8 @@ Convenience accessor so consuming code can fluently retrieve the interface
 reference from the predeclared Create method.</p>
 <p><strong>Returns:</strong> ICrossTable. The current instance cast to the interface.</p>
 <hr />
-<h3 id="int-wksh-set">wksh-set <a class="anchor-link" href="#int-wksh-set">#</a></h3>
+<h3 id="int-wksh">Wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
+<p><em>wksh-set</em></p>
 <p><strong>Assign the output worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set Wksh(ByVal sh As Worksheet)
@@ -383,7 +398,8 @@ reference from the predeclared Create method.</p>
 <li><code>sh</code>: Worksheet. The target worksheet to assign.</li>
 </ul>
 <hr />
-<h3 id="int-specifications-set">specifications-set <a class="anchor-link" href="#int-specifications-set">#</a></h3>
+<h3 id="int-specifications">Specifications <a class="anchor-link" href="#int-specifications">#</a></h3>
+<p><em>specifications-set</em></p>
 <p><strong>Assign the table specifications.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set Specifications(ByVal specs As ITableSpecs)
@@ -393,7 +409,8 @@ reference from the predeclared Create method.</p>
 <li><code>specs</code>: ITableSpecs. The table specification to assign.</li>
 </ul>
 <hr />
-<h3 id="int-linelist-data">linelist-data <a class="anchor-link" href="#int-linelist-data">#</a></h3>
+<h3 id="int-linelistdata">LinelistData <a class="anchor-link" href="#int-linelistdata">#</a></h3>
+<p><em>linelist-data</em></p>
 <p><strong>Linelist specifications providing translations and categories.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get LinelistData() As ILinelistSpecs
@@ -403,7 +420,8 @@ extract the translation object and to pass as the lData parameter when
 calling specs.RowCategories(lData) and specs.ColumnCategories(lData).</p>
 <p><strong>Returns:</strong> ILinelistSpecs. The linelist specifications.</p>
 <hr />
-<h3 id="int-linelist-data-set">linelist-data-set <a class="anchor-link" href="#int-linelist-data-set">#</a></h3>
+<h3 id="int-linelistdata">LinelistData <a class="anchor-link" href="#int-linelistdata">#</a></h3>
+<p><em>linelist-data-set</em></p>
 <p><strong>Assign the linelist specifications.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set LinelistData(ByVal lData As ILinelistSpecs)
@@ -413,7 +431,8 @@ calling specs.RowCategories(lData) and specs.ColumnCategories(lData).</p>
 <li><code>lData</code>: ILinelistSpecs. The linelist specifications to assign.</li>
 </ul>
 <hr />
-<h3 id="int-translations">translations <a class="anchor-link" href="#int-translations">#</a></h3>
+<h3 id="int-translations">Translations <a class="anchor-link" href="#int-translations">#</a></h3>
+<p><em>translations</em></p>
 <p><strong>Translation object for locale-aware labels.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Translations() As ITranslationObject
@@ -423,7 +442,8 @@ specifications. Resolves translated strings such as &quot;Total&quot;, &quot;Mis
 &quot;Percent&quot;, and date-unit names.</p>
 <p><strong>Returns:</strong> ITranslationObject. The translation object.</p>
 <hr />
-<h3 id="int-number-of-columns">number-of-columns <a class="anchor-link" href="#int-number-of-columns">#</a></h3>
+<h3 id="int-numberofcolumns">NumberOfColumns <a class="anchor-link" href="#int-numberofcolumns">#</a></h3>
+<p><em>number-of-columns</em></p>
 <p><strong>Number of data columns in the table.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get NumberOfColumns() As Long
@@ -433,7 +453,8 @@ For bivariate and time series tables this equals the number of column
 categories plus optional total and missing columns.</p>
 <p><strong>Returns:</strong> Long. The data column count.</p>
 <hr />
-<h3 id="int-number-of-columns-set">number-of-columns-set <a class="anchor-link" href="#int-number-of-columns-set">#</a></h3>
+<h3 id="int-numberofcolumns">NumberOfColumns <a class="anchor-link" href="#int-numberofcolumns">#</a></h3>
+<p><em>number-of-columns-set</em></p>
 <p><strong>Assign the number of data columns.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Let NumberOfColumns(ByVal col As Long)
@@ -443,7 +464,8 @@ categories plus optional total and missing columns.</p>
 <li><code>col</code>: Long. The data column count to store.</li>
 </ul>
 <hr />
-<h3 id="int-named-ranges-list">named-ranges-list <a class="anchor-link" href="#int-named-ranges-list">#</a></h3>
+<h3 id="int-namedrangeslist">NamedRangesList <a class="anchor-link" href="#int-namedrangeslist">#</a></h3>
+<p><em>named-ranges-list</em></p>
 <p><strong>List of named range names created by this table.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get NamedRangesList() As BetterArray
@@ -454,7 +476,8 @@ the ranges for export tracking.</p>
 <p><strong>Returns:</strong> BetterArray. The collection of named range names.</p>
 <hr />
 <h2 id="int-position-properties">Position Properties</h2>
-<h3 id="int-range-exists">range-exists <a class="anchor-link" href="#int-range-exists">#</a></h3>
+<h3 id="int-rangeexists">RangeExists <a class="anchor-link" href="#int-rangeexists">#</a></h3>
+<p><em>range-exists</em></p>
 <p><strong>Check whether a named range exists on the output worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function RangeExists(ByVal rngName As String) As Boolean
@@ -482,7 +505,8 @@ the lookup may still succeed. All names in this class are created via
 Cell.Name which produces workbook-scoped names.</li>
 </ul>
 <hr />
-<h3 id="int-start-row">start-row <a class="anchor-link" href="#int-start-row">#</a></h3>
+<h3 id="int-startrow">StartRow <a class="anchor-link" href="#int-startrow">#</a></h3>
+<p><em>start-row</em></p>
 <p><strong>Starting row of the table on the output worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get StartRow() As Long
@@ -508,7 +532,8 @@ first call creates the STARTROW_ named range, subsequent calls are cheap
 lookups.</li>
 </ul>
 <hr />
-<h3 id="int-previous">previous <a class="anchor-link" href="#int-previous">#</a></h3>
+<h3 id="int-previous">Previous <a class="anchor-link" href="#int-previous">#</a></h3>
+<p><em>previous</em></p>
 <p><strong>Previous cross-table in the same section.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get Previous() As ICrossTable
@@ -530,7 +555,8 @@ temporal tables, this property is typically called once during StartRow
 resolution and should not be called in tight loops.</li>
 </ul>
 <hr />
-<h3 id="int-start-column">start-column <a class="anchor-link" href="#int-start-column">#</a></h3>
+<h3 id="int-startcolumn">StartColumn <a class="anchor-link" href="#int-startcolumn">#</a></h3>
+<p><em>start-column</em></p>
 <p><strong>Starting column of the table on the output worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get StartColumn() As Long
@@ -554,7 +580,8 @@ logical start column. When reading back, the code subtracts 1 from the
 named range's column to recover the true start column.</li>
 </ul>
 <hr />
-<h3 id="int-end-row-set">end-row-set <a class="anchor-link" href="#int-end-row-set">#</a></h3>
+<h3 id="int-endrow">EndRow <a class="anchor-link" href="#int-endrow">#</a></h3>
+<p><em>end-row-set</em></p>
 <p><strong>Assign the ending row index.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Let EndRow(ByVal rw As Long)
@@ -564,7 +591,8 @@ named range's column to recover the true start column.</li>
 <li><code>rw</code>: Long. The 1-based ending row index.</li>
 </ul>
 <hr />
-<h3 id="int-end-column-set">end-column-set <a class="anchor-link" href="#int-end-column-set">#</a></h3>
+<h3 id="int-endcolumn">EndColumn <a class="anchor-link" href="#int-endcolumn">#</a></h3>
+<p><em>end-column-set</em></p>
 <p><strong>Assign the ending column index.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Let EndColumn(ByVal col As Long)
@@ -574,7 +602,8 @@ named range's column to recover the true start column.</li>
 <li><code>col</code>: Long. The 1-based ending column index.</li>
 </ul>
 <hr />
-<h3 id="int-end-row">end-row <a class="anchor-link" href="#int-end-row">#</a></h3>
+<h3 id="int-endrow">EndRow <a class="anchor-link" href="#int-endrow">#</a></h3>
+<p><em>end-row</em></p>
 <p><strong>Last row used by the table on the worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get EndRow() As Long
@@ -583,7 +612,8 @@ named range's column to recover the true start column.</li>
 cross-table. Used to compute the start row for the next stacked table.</p>
 <p><strong>Returns:</strong> Long. The ending row index.</p>
 <hr />
-<h3 id="int-end-column">end-column <a class="anchor-link" href="#int-end-column">#</a></h3>
+<h3 id="int-endcolumn">EndColumn <a class="anchor-link" href="#int-endcolumn">#</a></h3>
+<p><em>end-column</em></p>
 <p><strong>Last column used by the table on the worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get EndColumn() As Long
@@ -594,7 +624,8 @@ avoid overlapping output.</p>
 <p><strong>Returns:</strong> Long. The ending column index.</p>
 <hr />
 <h2 id="int-range-access">Range Access</h2>
-<h3 id="int-time-series-header">time-series-header <a class="anchor-link" href="#int-time-series-header">#</a></h3>
+<h3 id="int-timeseriesheader">TimeSeriesHeader <a class="anchor-link" href="#int-timeseriesheader">#</a></h3>
+<p><em>time-series-header</em></p>
 <p><strong>Header label for time series tables.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get TimeSeriesHeader() As String
@@ -613,7 +644,8 @@ GoTo navigation dropdown so the user can jump to this table's section.</p>
 Non-temporal table scopes never set this property.</li>
 </ul>
 <hr />
-<h3 id="int-time-series-header-set">time-series-header-set <a class="anchor-link" href="#int-time-series-header-set">#</a></h3>
+<h3 id="int-timeseriesheader">TimeSeriesHeader <a class="anchor-link" href="#int-timeseriesheader">#</a></h3>
+<p><em>time-series-header-set</em></p>
 <p><strong>Store the composite header text for temporal tables.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Let TimeSeriesHeader(ByVal headerText As String)
@@ -623,7 +655,8 @@ Non-temporal table scopes never set this property.</li>
 <li><code>headerText</code>: String. The full header string to cache.</li>
 </ul>
 <hr />
-<h3 id="int-value-exists">value-exists <a class="anchor-link" href="#int-value-exists">#</a></h3>
+<h3 id="int-valueexists">ValueExists <a class="anchor-link" href="#int-valueexists">#</a></h3>
+<p><em>value-exists</em></p>
 <p><strong>Check whether a value exists in a given range.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ValueExists(ByVal rng As Range, ByVal searchValue As String) As Boolean
@@ -646,7 +679,8 @@ important because translated labels may have specific capitalization.</li>
 </ul>
 <hr />
 <h2 id="int-helpers">Helpers</h2>
-<h3 id="int-percent-label">percent-label <a class="anchor-link" href="#int-percent-label">#</a></h3>
+<h3 id="int-percentlabel">PercentLabel <a class="anchor-link" href="#int-percentlabel">#</a></h3>
+<p><em>percent-label</em></p>
 <p><strong>Build a display label for percentage columns.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function PercentLabel(ByVal percentVal As String, _
@@ -666,7 +700,8 @@ value, no arrow is appended.</p>
 </ul>
 <p><strong>Returns:</strong> String. The formatted percentage label string with or without a directional arrow.</p>
 <hr />
-<h3 id="int-bivariate-columns">bivariate-columns <a class="anchor-link" href="#int-bivariate-columns">#</a></h3>
+<h3 id="int-bivariatecolumns">BivariateColumns <a class="anchor-link" href="#int-bivariatecolumns">#</a></h3>
+<p><em>bivariate-columns</em></p>
 <p><strong>Write column headers for bivariate, temporal, and spatial tables.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub BivariateColumns(ByVal startRw As Long, ByVal specs As ITableSpecs, _
@@ -694,7 +729,8 @@ or Total. However, EndColumn includes all columns written.</li>
 </ul>
 <hr />
 <h2 id="int-bug-3-helper">Bug #3 Helper</h2>
-<h3 id="int-is-de-facto-new-section">is-de-facto-new-section <a class="anchor-link" href="#int-is-de-facto-new-section">#</a></h3>
+<h3 id="int-isdefactonewsection">IsDeFactoNewSection <a class="anchor-link" href="#int-isdefactonewsection">#</a></h3>
+<p><em>is-de-facto-new-section</em></p>
 <p><strong>Determine whether this table is a de-facto new section.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function IsDeFactoNewSection() As Boolean
@@ -716,8 +752,24 @@ a single Build cycle.</p>
 False. The typical usage pattern is: &quot;If specs.IsNewSection() Or IsDeFactoNewSection() Then ...&quot;.</li>
 </ul>
 <hr />
+<h2 id="int-checkings">Checkings</h2>
+<h3 id="int-loginfo">LogInfo <a class="anchor-link" href="#int-loginfo">#</a></h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub LogInfo(ByVal message As String, _
+                    Optional ByVal scope As Byte = checkingSuccess)
+</code></pre>
+<p>Diagnostic logging for cross-table building.
+Adds a trace entry to the internal IChecking instance, initialising it
+lazily on first use.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>message</code>: String. The diagnostic message text.</li>
+<li><code>scope</code>: Optional Byte. The checking scope (default checkingSuccess).</li>
+</ul>
+<hr />
 <h2 id="int-error-handling">Error Handling</h2>
-<h3 id="int-throw-error">throw-error <a class="anchor-link" href="#int-throw-error">#</a></h3>
+<h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
+<p><em>throw-error</em></p>
 <p><strong>Raise a ProjectError-based exception.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As Long, ByVal message As String)
@@ -744,7 +796,7 @@ See the corresponding Public members above for full documentation.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (11 file(s))</summary>
+<summary>Used in (12 file(s))</summary>
 <ul>
 <li><a href="src/classes/analyses/AnalysisOutput.cls">AnalysisOutput.cls</a></li>
 <li><a href="src/classes/analyses/CrossTable.cls">CrossTable.cls</a></li>
@@ -753,6 +805,24 @@ See the corresponding Public members above for full documentation.</p>
 <li><a href="src/classes/analyses/ICrossTableFormula.cls">ICrossTableFormula.cls</a></li>
 <li><a href="src/classes/analyses/SpatialTables.cls">SpatialTables.cls</a></li>
 <li><a href="src/classes/graphs/GraphSpecs.cls">GraphSpecs.cls</a></li>
+<li><a href="src/classes/stale/CrossTable.cls">CrossTable.cls</a></li>
+<li><a href="src/tests/modules/analyses/TestCrossTable.bas">TestCrossTable.bas</a></li>
+<li><a href="src/tests/modules/analyses/TestCrossTableFormula.bas">TestCrossTableFormula.bas</a></li>
+<li><a href="src/tests/modules/geo/TestSpatialTables.bas">TestSpatialTables.bas</a></li>
+<li><a href="src/tests/modules/graphs/TestGraphSpecs.bas">TestGraphSpecs.bas</a></li>
+</ul>
+</details>
+<details>
+<summary>Used in (12 file(s))</summary>
+<ul>
+<li><a href="src/classes/analyses/AnalysisOutput.cls">AnalysisOutput.cls</a></li>
+<li><a href="src/classes/analyses/CrossTable.cls">CrossTable.cls</a></li>
+<li><a href="src/classes/analyses/CrossTableFormula.cls">CrossTableFormula.cls</a></li>
+<li><a href="src/classes/analyses/ICrossTable.cls">ICrossTable.cls</a></li>
+<li><a href="src/classes/analyses/ICrossTableFormula.cls">ICrossTableFormula.cls</a></li>
+<li><a href="src/classes/analyses/SpatialTables.cls">SpatialTables.cls</a></li>
+<li><a href="src/classes/graphs/GraphSpecs.cls">GraphSpecs.cls</a></li>
+<li><a href="src/classes/stale/CrossTable.cls">CrossTable.cls</a></li>
 <li><a href="src/tests/modules/analyses/TestCrossTable.bas">TestCrossTable.bas</a></li>
 <li><a href="src/tests/modules/analyses/TestCrossTableFormula.bas">TestCrossTableFormula.bas</a></li>
 <li><a href="src/tests/modules/geo/TestSpatialTables.bas">TestSpatialTables.bas</a></li>

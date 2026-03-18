@@ -24,7 +24,8 @@ rows.</p>
 <details open class="doc-section" id="statemanagement">
 <summary>StateManagement</summary>
 <div class="section-body">
-<h3 id="save-table-snapshot">save-table-snapshot <a class="anchor-link" href="#save-table-snapshot">#</a></h3>
+<h3 id="savetablesnapshot">SaveTableSnapshot <a class="anchor-link" href="#savetablesnapshot">#</a></h3>
+<p><em>save-table-snapshot</em></p>
 <p><strong>Save a snapshot of the current table state</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub SaveTableSnapshot(Optional ByVal returnHidden As Boolean = True)
@@ -37,7 +38,8 @@ Unhides hidden columns before reading to ensure full coverage.</p>
 <li><code>returnHidden</code>: Optional Boolean. When True, re-hides columns after capture. Defaults to True.</li>
 </ul>
 <hr />
-<h3 id="restore-table-snapshot">restore-table-snapshot <a class="anchor-link" href="#restore-table-snapshot">#</a></h3>
+<h3 id="restoretablesnapshot">RestoreTableSnapshot <a class="anchor-link" href="#restoretablesnapshot">#</a></h3>
+<p><em>restore-table-snapshot</em></p>
 <p><strong>Restore the table from a previously saved snapshot</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RestoreTableSnapshot()
@@ -51,7 +53,8 @@ and re-hides previously hidden columns.</p>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
 <div class="section-body">
-<h3 id="create">create <a class="anchor-link" href="#create">#</a></h3>
+<h3 id="create">Create <a class="anchor-link" href="#create">#</a></h3>
+<p><em>create</em></p>
 <p><strong>Create a CustomTable wrapper around a ListObject</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal Lo As ListObject, _
@@ -86,7 +89,8 @@ optionally prefixed (e.g. &quot;line 1&quot;, &quot;line 2&quot;).</p>
 <details open class="doc-section" id="elements">
 <summary>Elements</summary>
 <div class="section-body">
-<h3 id="id-value">id-value <a class="anchor-link" href="#id-value">#</a></h3>
+<h3 id="idvalue">IdValue <a class="anchor-link" href="#idvalue">#</a></h3>
+<p><em>id-value</em></p>
 <p><strong>ID column name</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get IdValue() As String
@@ -94,7 +98,8 @@ optionally prefixed (e.g. &quot;line 1&quot;, &quot;line 2&quot;).</p>
 <p>Returns the name of the column used as a unique row identifier.</p>
 <p><strong>Returns:</strong> String. The ID column name.</p>
 <hr />
-<h3 id="header-range">header-range <a class="anchor-link" href="#header-range">#</a></h3>
+<h3 id="headerrange">HeaderRange <a class="anchor-link" href="#headerrange">#</a></h3>
+<p><em>header-range</em></p>
 <p><strong>Header row Range of the CustomTable</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get HeaderRange() As Range
@@ -102,7 +107,8 @@ optionally prefixed (e.g. &quot;line 1&quot;, &quot;line 2&quot;).</p>
 <p>Returns the Range covering the header row of the underlying ListObject.</p>
 <p><strong>Returns:</strong> Range. The header row range.</p>
 <hr />
-<h3 id="data-range">data-range <a class="anchor-link" href="#data-range">#</a></h3>
+<h3 id="datarange">DataRange <a class="anchor-link" href="#datarange">#</a></h3>
+<p><em>data-range</em></p>
 <p><strong>Range of a column or the entire data body</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get DataRange(Optional ByVal colName As String = &quot;__all__&quot;, _
@@ -124,7 +130,8 @@ Nothing when the column has no data rows or is not found.</p>
 </ul>
 <p><strong>Returns:</strong> Range. The requested data range, or Nothing when unavailable.</p>
 <hr />
-<h3 id="name">name <a class="anchor-link" href="#name">#</a></h3>
+<h3 id="name">Name <a class="anchor-link" href="#name">#</a></h3>
+<p><em>name</em></p>
 <p><strong>Name of the attached ListObject</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get Name() As String
@@ -132,7 +139,8 @@ Nothing when the column has no data rows or is not found.</p>
 <p>Returns the cached name of the ListObject assigned during creation.</p>
 <p><strong>Returns:</strong> String. The table name.</p>
 <hr />
-<h3 id="cell-range">cell-range <a class="anchor-link" href="#cell-range">#</a></h3>
+<h3 id="cellrange">CellRange <a class="anchor-link" href="#cellrange">#</a></h3>
+<p><em>cell-range</em></p>
 <p><strong>A specific cell in the CustomTable</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get CellRange(ByVal colName As String, _
@@ -148,7 +156,8 @@ is out of bounds.</p>
 </ul>
 <p><strong>Returns:</strong> Range. The target cell, or Nothing when not found.</p>
 <hr />
-<h3 id="value-range">value-range <a class="anchor-link" href="#value-range">#</a></h3>
+<h3 id="valuerange">ValueRange <a class="anchor-link" href="#valuerange">#</a></h3>
+<p><em>value-range</em></p>
 <p><strong>Locate the cell Range by column and key</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ValueRange(ByVal colName As String, ByVal keyName As String) As Range
@@ -163,7 +172,8 @@ column is not found, or when no ID column is configured.</p>
 </ul>
 <p><strong>Returns:</strong> Range. The target cell range, or Nothing when not found.</p>
 <hr />
-<h3 id="value">value <a class="anchor-link" href="#value">#</a></h3>
+<h3 id="value">Value <a class="anchor-link" href="#value">#</a></h3>
+<p><em>value</em></p>
 <p><strong>Retrieve a cell value by column and key</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get Value(ByVal colName As String, _
@@ -185,7 +195,8 @@ cannot be converted to string.</p>
 <details open class="doc-section" id="modify">
 <summary>Modify</summary>
 <div class="section-body">
-<h3 id="insert-rows-at">insert-rows-at <a class="anchor-link" href="#insert-rows-at">#</a></h3>
+<h3 id="insertrowsat">InsertRowsAt <a class="anchor-link" href="#insertrowsat">#</a></h3>
+<p><em>insert-rows-at</em></p>
 <p><strong>Insert rows at the selected position</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub InsertRowsAt(ByVal targetCell As Range, _
@@ -203,7 +214,8 @@ includeIds is True.</p>
 <li><code>includeIds</code>: Optional Boolean. When True, renumbers the ID column. Defaults to True.</li>
 </ul>
 <hr />
-<h3 id="delete-rows-at">delete-rows-at <a class="anchor-link" href="#delete-rows-at">#</a></h3>
+<h3 id="deleterowsat">DeleteRowsAt <a class="anchor-link" href="#deleterowsat">#</a></h3>
+<p><em>delete-rows-at</em></p>
 <p><strong>Delete rows intersecting the selection</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub DeleteRowsAt(ByVal targetCell As Range, _
@@ -221,7 +233,8 @@ all rows are deleted. Renumbers the ID column when includeIds is True.</p>
 <li><code>forceShift</code>: Optional Boolean. When True, forces worksheet row deletion. Defaults to False.</li>
 </ul>
 <hr />
-<h3 id="add-ids">add-ids <a class="anchor-link" href="#add-ids">#</a></h3>
+<h3 id="addids">AddIds <a class="anchor-link" href="#addids">#</a></h3>
+<p><em>add-ids</em></p>
 <p><strong>Fill the ID column with sequential values</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddIds()
@@ -231,7 +244,8 @@ ID column. Silently exits when no ID column is configured or when the
 column does not exist. The ID column is typically locked and not
 modified by the user directly.</p>
 <hr />
-<h3 id="add-rows">add-rows <a class="anchor-link" href="#add-rows">#</a></h3>
+<h3 id="addrows">AddRows <a class="anchor-link" href="#addrows">#</a></h3>
+<p><em>add-rows</em></p>
 <p><strong>Add rows to the CustomTable</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddRows(Optional ByVal nbRows As Long = 5, _ 
@@ -250,7 +264,8 @@ column afterwards.</p>
 <li><code>includeIds</code>: Optional Boolean. When True, renumbers the ID column. Defaults to True.</li>
 </ul>
 <hr />
-<h3 id="remove-rows">remove-rows <a class="anchor-link" href="#remove-rows">#</a></h3>
+<h3 id="removerows">RemoveRows <a class="anchor-link" href="#removerows">#</a></h3>
+<p><em>remove-rows</em></p>
 <p><strong>Remove empty rows from the CustomTable</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RemoveRows(Optional ByVal totalCount As Long = 0, _ 
@@ -268,7 +283,8 @@ ID column afterwards.</p>
 <li><code>forceShift</code>: Optional Boolean. When True, forces worksheet row deletion. Defaults to False.</li>
 </ul>
 <hr />
-<h3 id="set-validation">set-validation <a class="anchor-link" href="#set-validation">#</a></h3>
+<h3 id="setvalidation">SetValidation <a class="anchor-link" href="#setvalidation">#</a></h3>
+<p><em>set-validation</em></p>
 <p><strong>Set dropdown validation on a column</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub SetValidation(ByVal colName As String, _
@@ -289,7 +305,8 @@ or has no data range.</p>
 <li><code>message</code>: Optional String. Message shown when validation fails. Defaults to vbNullString.</li>
 </ul>
 <hr />
-<h3 id="set-value">set-value <a class="anchor-link" href="#set-value">#</a></h3>
+<h3 id="setvalue">SetValue <a class="anchor-link" href="#setvalue">#</a></h3>
+<p><em>set-value</em></p>
 <p><strong>Change the value of one specific cell</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub SetValue(ByVal colName As String, ByVal keyName As String, ByVal newValue As String)
@@ -304,7 +321,8 @@ as it modifies data inside the ListObject.</p>
 <li><code>newValue</code>: String. The new value to assign.</li>
 </ul>
 <hr />
-<h3 id="rename-column">rename-column <a class="anchor-link" href="#rename-column">#</a></h3>
+<h3 id="renamecolumn">RenameColumn <a class="anchor-link" href="#renamecolumn">#</a></h3>
+<p><em>rename-column</em></p>
 <p><strong>Rename a column header within the table</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RenameColumn(ByVal colName As String, _
@@ -326,7 +344,8 @@ the lookup cache. Raises an error when newName is empty.</p>
 <li>ProjectError.InvalidArgument When newName is empty.</li>
 </ul>
 <hr />
-<h3 id="clean">clean <a class="anchor-link" href="#clean">#</a></h3>
+<h3 id="clean">Clean <a class="anchor-link" href="#clean">#</a></h3>
+<p><em>clean</em></p>
 <p><strong>Clear all non-formula, non-key columns</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub Clean()
@@ -335,7 +354,8 @@ the lookup cache. Raises an error when newName is empty.</p>
 that do not contain formulas. Key columns are preserved since they
 are identified by their header, not by content.</p>
 <hr />
-<h3 id="sort">sort <a class="anchor-link" href="#sort">#</a></h3>
+<h3 id="sort">Sort <a class="anchor-link" href="#sort">#</a></h3>
+<p><em>sort</em></p>
 <p><strong>Sort the table on one or more columns</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub Sort(Optional ByVal colName As String = vbNullString, _ 
@@ -359,7 +379,8 @@ False, groups rows by first occurrence of each distinct value.</p>
 <details open class="doc-section" id="dataexchange">
 <summary>DataExchange</summary>
 <div class="section-body">
-<h3 id="import">import <a class="anchor-link" href="#import">#</a></h3>
+<h3 id="import">Import <a class="anchor-link" href="#import">#</a></h3>
+<p><em>import</em></p>
 <p><strong>Import data from a DataSheet or CustomTable</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub Import(ByVal impTab As Object, _
@@ -384,7 +405,8 @@ hidden columns during the operation and restores their state afterwards.</p>
 <li><code>keepSourceHeaders</code>: Optional Boolean. When True, replaces destination headers. Defaults to False.</li>
 </ul>
 <hr />
-<h3 id="import-all">import-all <a class="anchor-link" href="#import-all">#</a></h3>
+<h3 id="importall">ImportAll <a class="anchor-link" href="#importall">#</a></h3>
+<p><em>import-all</em></p>
 <p><strong>Replace the entire table with imported data</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ImportAll(ByVal impTab As Object, Optional ByVal insertShift As Boolean = False)
@@ -399,7 +421,8 @@ data body.</p>
 <li><code>insertShift</code>: Optional Boolean. When True, inserts worksheet rows. Defaults to False.</li>
 </ul>
 <hr />
-<h3 id="import-columns-not-found">import-columns-not-found <a class="anchor-link" href="#import-columns-not-found">#</a></h3>
+<h3 id="importcolumnsnotfound">ImportColumnsNotFound <a class="anchor-link" href="#importcolumnsnotfound">#</a></h3>
+<p><em>import-columns-not-found</em></p>
 <p><strong>Columns not matched during the last import</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get ImportColumnsNotFound() As BetterArray
@@ -410,7 +433,8 @@ successful import; logs a diagnostic and exits when no import has
 occurred.</p>
 <p><strong>Returns:</strong> BetterArray. Unmatched column headers, or Nothing.</p>
 <hr />
-<h3 id="has-columns-not-imported">has-columns-not-imported <a class="anchor-link" href="#has-columns-not-imported">#</a></h3>
+<h3 id="hascolumnsnotimported">HasColumnsNotImported <a class="anchor-link" href="#hascolumnsnotimported">#</a></h3>
+<p><em>has-columns-not-imported</em></p>
 <p><strong>Whether the last import had unmatched columns</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get HasColumnsNotImported() As Boolean
@@ -419,7 +443,8 @@ occurred.</p>
 unmatched against this table.</p>
 <p><strong>Returns:</strong> Boolean. True when unmatched columns exist.</p>
 <hr />
-<h3 id="export">export <a class="anchor-link" href="#export">#</a></h3>
+<h3 id="export">Export <a class="anchor-link" href="#export">#</a></h3>
+<p><em>export</em></p>
 <p><strong>Export the table to a worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub Export(ByVal sh As Worksheet, _ 
@@ -447,7 +472,8 @@ operation and restores their state afterwards.</p>
 <details open class="doc-section" id="checkings">
 <summary>Checkings</summary>
 <div class="section-body">
-<h3 id="has-checkings">has-checkings <a class="anchor-link" href="#has-checkings">#</a></h3>
+<h3 id="hascheckings">HasCheckings <a class="anchor-link" href="#hascheckings">#</a></h3>
+<p><em>has-checkings</em></p>
 <p><strong>Whether the table has logged diagnostic messages</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get HasCheckings() As Boolean
@@ -455,7 +481,8 @@ operation and restores their state afterwards.</p>
 <p>Returns True when at least one diagnostic entry has been recorded.</p>
 <p><strong>Returns:</strong> Boolean. True when diagnostic entries exist.</p>
 <hr />
-<h3 id="checking-values">checking-values <a class="anchor-link" href="#checking-values">#</a></h3>
+<h3 id="checkingvalues">CheckingValues <a class="anchor-link" href="#checkingvalues">#</a></h3>
+<p><em>checking-values</em></p>
 <p><strong>Retrieve the diagnostic log entries</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get CheckingValues() As Object
@@ -469,7 +496,8 @@ Returns Nothing when no entries have been recorded.</p>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-statemanagement">StateManagement</h2>
-<h3 id="int-reset-caches">reset-caches <a class="anchor-link" href="#int-reset-caches">#</a></h3>
+<h3 id="int-resetcaches">ResetCaches <a class="anchor-link" href="#int-resetcaches">#</a></h3>
+<p><em>reset-caches</em></p>
 <p><strong>Reset transient caches after structural changes</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ResetCaches()
@@ -478,7 +506,8 @@ Returns Nothing when no entries have been recorded.</p>
 Rebuilds the header index cache so column lookups remain accurate
 after columns are added, removed, or renamed.</p>
 <hr />
-<h3 id="int-reset-import-state">reset-import-state <a class="anchor-link" href="#int-reset-import-state">#</a></h3>
+<h3 id="int-resetimportstate">ResetImportState <a class="anchor-link" href="#int-resetimportstate">#</a></h3>
+<p><em>reset-import-state</em></p>
 <p><strong>Reset import state so that imports start fresh</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ResetImportState()
@@ -486,7 +515,8 @@ after columns are added, removed, or renamed.</p>
 <p>Clears the import flag, hidden-column list, not-imported-columns list,
 and any saved backup so the next import begins from a clean slate.</p>
 <hr />
-<h3 id="int-clear-backup">clear-backup <a class="anchor-link" href="#int-clear-backup">#</a></h3>
+<h3 id="int-clearbackup">ClearBackup <a class="anchor-link" href="#int-clearbackup">#</a></h3>
+<p><em>clear-backup</em></p>
 <p><strong>Release backup buffers</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ClearBackup()
@@ -494,7 +524,8 @@ and any saved backup so the next import begins from a clean slate.</p>
 <p>Sets the backup header and row arrays to Nothing and clears the
 hasBackup flag once the operation completes successfully.</p>
 <hr />
-<h3 id="int-cache-key-for-header">cache-key-for-header <a class="anchor-link" href="#int-cache-key-for-header">#</a></h3>
+<h3 id="int-cachekeyforheader">CacheKeyForHeader <a class="anchor-link" href="#int-cachekeyforheader">#</a></h3>
+<p><em>cache-key-for-header</em></p>
 <p><strong>Generate a unique cache key for header lookups</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function CacheKeyForHeader(ByVal colName As String, _
@@ -511,7 +542,8 @@ search configurations stay isolated in the cache.</p>
 </ul>
 <p><strong>Returns:</strong> String. The generated cache key.</p>
 <hr />
-<h3 id="int-try-get-cached-index">try-get-cached-index <a class="anchor-link" href="#int-try-get-cached-index">#</a></h3>
+<h3 id="int-trygetcachedindex">TryGetCachedIndex <a class="anchor-link" href="#int-trygetcachedindex">#</a></h3>
+<p><em>try-get-cached-index</em></p>
 <p><strong>Attempt to retrieve a cached column index</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function TryGetCachedIndex(ByVal cacheKey As String, ByRef cachedValue As Long) As Boolean
@@ -525,7 +557,8 @@ found, populates cachedValue with the stored column index.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when found in cache, False otherwise.</p>
 <hr />
-<h3 id="int-store-header-index">store-header-index <a class="anchor-link" href="#int-store-header-index">#</a></h3>
+<h3 id="int-storeheaderindex">StoreHeaderIndex <a class="anchor-link" href="#int-storeheaderindex">#</a></h3>
+<p><em>store-header-index</em></p>
 <p><strong>Store a successful column lookup in the cache</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub StoreHeaderIndex(ByVal cacheKey As String, ByVal columnIndexValue As Long)
@@ -538,7 +571,8 @@ Ignores zero or negative column indexes.</p>
 <li><code>columnIndexValue</code>: Long. The column index to cache.</li>
 </ul>
 <hr />
-<h3 id="int-ensure-table-initialized">ensure-table-initialized <a class="anchor-link" href="#int-ensure-table-initialized">#</a></h3>
+<h3 id="int-ensuretableinitialized">EnsureTableInitialized <a class="anchor-link" href="#int-ensuretableinitialized">#</a></h3>
+<p><em>ensure-table-initialized</em></p>
 <p><strong>Guard against calls before Create has run</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureTableInitialized()
@@ -551,7 +585,8 @@ all table operations from executing on an uninitialised instance.</p>
 </ul>
 <hr />
 <h2 id="int-factory">Factory</h2>
-<h3 id="int-self">self <a class="anchor-link" href="#int-self">#</a></h3>
+<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
+<p><em>self</em></p>
 <p><strong>Current object instance</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Self() As ICustomTable
@@ -561,7 +596,8 @@ by the factory method to return an interface reference.</p>
 <p><strong>Returns:</strong> ICustomTable. Reference to the current object.</p>
 <hr />
 <h2 id="int-elements">Elements</h2>
-<h3 id="int-wksh">wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
+<h3 id="int-wksh">Wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
+<p><em>wksh</em></p>
 <p><strong>Worksheet hosting the ListObject</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get Wksh() As Worksheet
@@ -570,7 +606,8 @@ by the factory method to return an interface reference.</p>
 Returns the parent worksheet of the underlying ListObject.</p>
 <p><strong>Returns:</strong> Worksheet. The host worksheet.</p>
 <hr />
-<h3 id="int-table">table <a class="anchor-link" href="#int-table">#</a></h3>
+<h3 id="int-table">Table <a class="anchor-link" href="#int-table">#</a></h3>
+<p><em>table</em></p>
 <p><strong>Underlying ListObject reference</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Table() As ListObject
@@ -583,7 +620,8 @@ when the reference has not been set.</p>
 <li>ProjectError.ObjectNotInitialized When the ListObject is Nothing.</li>
 </ul>
 <hr />
-<h3 id="int-table-set">table-set <a class="anchor-link" href="#int-table-set">#</a></h3>
+<h3 id="int-table">Table <a class="anchor-link" href="#int-table">#</a></h3>
+<p><em>table-set</em></p>
 <p><strong>Assign the ListObject reference</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set Table(ByVal Lo As ListObject)
@@ -599,7 +637,8 @@ name. Raises an error when Lo is Nothing.</p>
 <li>ProjectError.ObjectNotInitialized When Lo is Nothing.</li>
 </ul>
 <hr />
-<h3 id="int-prefix-value">prefix-value <a class="anchor-link" href="#int-prefix-value">#</a></h3>
+<h3 id="int-prefixvalue">PrefixValue <a class="anchor-link" href="#int-prefixvalue">#</a></h3>
+<p><em>prefix-value</em></p>
 <p><strong>ID prefix string</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get PrefixValue() As String
@@ -607,7 +646,8 @@ name. Raises an error when Lo is Nothing.</p>
 <p>Returns the prefix prepended to sequential ID values.</p>
 <p><strong>Returns:</strong> String. The prefix text.</p>
 <hr />
-<h3 id="int-id-value-set">id-value-set <a class="anchor-link" href="#int-id-value-set">#</a></h3>
+<h3 id="int-idvalue">IdValue <a class="anchor-link" href="#int-idvalue">#</a></h3>
+<p><em>id-value-set</em></p>
 <p><strong>Assign the ID column name</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Let IdValue(ByVal idCol As String)
@@ -617,7 +657,8 @@ name. Raises an error when Lo is Nothing.</p>
 <li><code>idCol</code>: String. Column name to use as the row key.</li>
 </ul>
 <hr />
-<h3 id="int-prefix-value-set">prefix-value-set <a class="anchor-link" href="#int-prefix-value-set">#</a></h3>
+<h3 id="int-prefixvalue">PrefixValue <a class="anchor-link" href="#int-prefixvalue">#</a></h3>
+<p><em>prefix-value-set</em></p>
 <p><strong>Assign the ID prefix string</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Let PrefixValue(ByVal idPrefix As String)
@@ -627,7 +668,8 @@ name. Raises an error when Lo is Nothing.</p>
 <li><code>idPrefix</code>: String. Prefix to prepend to sequential ID values.</li>
 </ul>
 <hr />
-<h3 id="int-column-index">column-index <a class="anchor-link" href="#int-column-index">#</a></h3>
+<h3 id="int-columnindex">ColumnIndex <a class="anchor-link" href="#int-columnindex">#</a></h3>
+<p><em>column-index</em></p>
 <p><strong>Resolve the 1-based column index for a header name</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ColumnIndex(ByVal colName As String, _
@@ -653,7 +695,8 @@ True, raises an error instead of returning 0.</p>
 <li>ProjectError.ElementNotFound When the column is not found and required is True.</li>
 </ul>
 <hr />
-<h3 id="int-column-exists">column-exists <a class="anchor-link" href="#int-column-exists">#</a></h3>
+<h3 id="int-columnexists">ColumnExists <a class="anchor-link" href="#int-columnexists">#</a></h3>
+<p><em>column-exists</em></p>
 <p><strong>Check whether a column exists in the table</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ColumnExists(ByVal colName As String, _
@@ -669,7 +712,8 @@ True, raises an error instead of returning 0.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when the column is found.</p>
 <hr />
-<h3 id="int-resolve-list-column">resolve-list-column <a class="anchor-link" href="#int-resolve-list-column">#</a></h3>
+<h3 id="int-resolvelistcolumn">ResolveListColumn <a class="anchor-link" href="#int-resolvelistcolumn">#</a></h3>
+<p><em>resolve-list-column</em></p>
 <p><strong>Retrieve the ListColumn object for a header name</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ResolveListColumn(ByVal colName As String, _
@@ -693,7 +737,8 @@ same guards. Returns Nothing when not found unless required is True.</p>
 </ul>
 <hr />
 <h2 id="int-modify">Modify</h2>
-<h3 id="int-add-shift-tracker">add-shift-tracker <a class="anchor-link" href="#int-add-shift-tracker">#</a></h3>
+<h3 id="int-addshifttracker">AddShiftTracker <a class="anchor-link" href="#int-addshifttracker">#</a></h3>
+<p><em>add-shift-tracker</em></p>
 <p><strong>Record that worksheet row insertion was used</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddShiftTracker(Optional ByVal value As String = &quot;Yes&quot;)
@@ -706,7 +751,8 @@ delete entire worksheet rows instead of just ListRows.</p>
 <li><code>value</code>: Optional String. Tracker value (&quot;Yes&quot; or &quot;No&quot;). Defaults to &quot;Yes&quot;.</li>
 </ul>
 <hr />
-<h3 id="int-has-shift-tracker">has-shift-tracker <a class="anchor-link" href="#int-has-shift-tracker">#</a></h3>
+<h3 id="int-hasshifttracker">HasShiftTracker <a class="anchor-link" href="#int-hasshifttracker">#</a></h3>
+<p><em>has-shift-tracker</em></p>
 <p><strong>Check whether worksheet row insertion was previously used</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function HasShiftTracker() As Boolean
@@ -715,21 +761,22 @@ delete entire worksheet rows instead of just ListRows.</p>
 operations used worksheet row insertion.</p>
 <p><strong>Returns:</strong> Boolean. True when the shift tracker is active.</p>
 <hr />
-<h3 id="int-resize">resize <a class="anchor-link" href="#int-resize">#</a></h3>
+<h3 id="int-resize">Resize <a class="anchor-link" href="#int-resize">#</a></h3>
+<p><em>resize</em></p>
 <p><strong>Resize the table by adding or removing rows</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub Resize(Optional ByVal addRows As Boolean = False, _
+<pre><code class="language-vb">Private Sub Resize(Optional ByVal shouldAdd As Boolean = False, _
                    Optional ByVal insertShift As Boolean = True, _
                    Optional ByVal totalRowCount As Long = 0, _
                    Optional ByVal nbRows As Long = 5, _
-                   Optional ByVal includeIds As Boolean = True, _ 
+                   Optional ByVal includeIds As Boolean = True, _
                    Optional ByVal forceShift As Boolean = False)
 </code></pre>
 <p>Dispatches to AddTableRows or RemoveEmptyDataRows depending on the
-addRows flag, then optionally renumbers the ID column.</p>
+shouldAdd flag, then optionally renumbers the ID column.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>addRows</code>: Optional Boolean. When True, adds rows; when False, removes empty rows. Defaults to False.</li>
+<li><code>shouldAdd</code>: Optional Boolean. When True, adds rows; when False, removes empty rows. Defaults to False.</li>
 <li><code>insertShift</code>: Optional Boolean. When True, inserts worksheet rows. Defaults to True.</li>
 <li><code>totalRowCount</code>: Optional Long. Non-empty cell threshold for row removal. Defaults to 0.</li>
 <li><code>nbRows</code>: Optional Long. Number of rows to add. Defaults to 5.</li>
@@ -737,7 +784,8 @@ addRows flag, then optionally renumbers the ID column.</p>
 <li><code>forceShift</code>: Optional Boolean. When True, forces worksheet row deletion. Defaults to False.</li>
 </ul>
 <hr />
-<h3 id="int-add-table-rows">add-table-rows <a class="anchor-link" href="#int-add-table-rows">#</a></h3>
+<h3 id="int-addtablerows">AddTableRows <a class="anchor-link" href="#int-addtablerows">#</a></h3>
+<p><em>add-table-rows</em></p>
 <p><strong>Physically add rows to the ListObject</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddTableRows(ByVal lo As ListObject, ByVal nbRows As Long, ByVal insertShift As Boolean)
@@ -752,7 +800,8 @@ directly. Resets caches after the operation.</p>
 <li><code>insertShift</code>: Boolean. When True, inserts worksheet rows.</li>
 </ul>
 <hr />
-<h3 id="int-ensure-selection-on-table-sheet">ensure-selection-on-table-sheet <a class="anchor-link" href="#int-ensure-selection-on-table-sheet">#</a></h3>
+<h3 id="int-ensureselectionontablesheet">EnsureSelectionOnTableSheet <a class="anchor-link" href="#int-ensureselectionontablesheet">#</a></h3>
+<p><em>ensure-selection-on-table-sheet</em></p>
 <p><strong>Ensure the provided range belongs to the table worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureSelectionOnTableSheet(ByVal targetCell As Range)
@@ -768,7 +817,8 @@ worksheet as the wrapped ListObject.</p>
 <li>ProjectError.InvalidArgument When targetCell is Nothing, has no worksheet, or belongs to a different sheet.</li>
 </ul>
 <hr />
-<h3 id="int-selection-row-numbers">selection-row-numbers <a class="anchor-link" href="#int-selection-row-numbers">#</a></h3>
+<h3 id="int-selectionrownumbers">SelectionRowNumbers <a class="anchor-link" href="#int-selectionrownumbers">#</a></h3>
+<p><em>selection-row-numbers</em></p>
 <p><strong>Resolve worksheet row numbers intersecting the table</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function SelectionRowNumbers(ByVal targetCell As Range, _
@@ -784,7 +834,8 @@ data rows are considered; otherwise the full table range is used.</p>
 </ul>
 <p><strong>Returns:</strong> BetterArray. Row numbers, or Nothing when no intersection.</p>
 <hr />
-<h3 id="int-get-total-formula-columns">get-total-formula-columns <a class="anchor-link" href="#int-get-total-formula-columns">#</a></h3>
+<h3 id="int-gettotalformulacolumns">GetTotalFormulaColumns <a class="anchor-link" href="#int-gettotalformulacolumns">#</a></h3>
+<p><em>get-total-formula-columns</em></p>
 <p><strong>Count the number of columns containing formulas</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub GetTotalFormulaColumns(ByRef rowCount As Long)
@@ -796,7 +847,8 @@ to determine the baseline non-empty cell count for row removal.</p>
 <li><code>rowCount</code>: ByRef Long. Populated with the formula column count.</li>
 </ul>
 <hr />
-<h3 id="int-remove-empty-data-rows">remove-empty-data-rows <a class="anchor-link" href="#int-remove-empty-data-rows">#</a></h3>
+<h3 id="int-removeemptydatarows">RemoveEmptyDataRows <a class="anchor-link" href="#int-removeemptydatarows">#</a></h3>
+<p><em>remove-empty-data-rows</em></p>
 <p><strong>Delete data rows that are effectively empty</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RemoveEmptyDataRows(ByVal lo As ListObject, _ 
@@ -815,21 +867,24 @@ Always preserves the first data row to keep formulas and templates.</p>
 <li><code>forceShift</code>: Optional Boolean. When True, forces worksheet row deletion.</li>
 </ul>
 <hr />
-<h3 id="int-data-row-count">data-row-count <a class="anchor-link" href="#int-data-row-count">#</a></h3>
+<h3 id="int-datarowcount">DataRowCount <a class="anchor-link" href="#int-datarowcount">#</a></h3>
+<p><em>data-row-count</em></p>
 <p><strong>Count the number of data rows in the table</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function DataRowCount() As Long
 </code></pre>
 <p><strong>Returns:</strong> Long. The data row count (excluding headers), or 0 when empty.</p>
 <hr />
-<h3 id="int-data-column-count">data-column-count <a class="anchor-link" href="#int-data-column-count">#</a></h3>
+<h3 id="int-datacolumncount">DataColumnCount <a class="anchor-link" href="#int-datacolumncount">#</a></h3>
+<p><em>data-column-count</em></p>
 <p><strong>Count the number of columns in the table</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function DataColumnCount() As Long
 </code></pre>
 <p><strong>Returns:</strong> Long. The column count.</p>
 <hr />
-<h3 id="int-ensure-row-capacity">ensure-row-capacity <a class="anchor-link" href="#int-ensure-row-capacity">#</a></h3>
+<h3 id="int-ensurerowcapacity">EnsureRowCapacity <a class="anchor-link" href="#int-ensurerowcapacity">#</a></h3>
+<p><em>ensure-row-capacity</em></p>
 <p><strong>Guarantee the table has at least the requested data rows</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureRowCapacity(ByVal requiredRows As Long, ByVal insertShift As Boolean)
@@ -840,7 +895,8 @@ Always preserves the first data row to keep formulas and templates.</p>
 <li><code>insertShift</code>: Boolean. When True, inserts worksheet rows.</li>
 </ul>
 <hr />
-<h3 id="int-ensure-column-capacity">ensure-column-capacity <a class="anchor-link" href="#int-ensure-column-capacity">#</a></h3>
+<h3 id="int-ensurecolumncapacity">EnsureColumnCapacity <a class="anchor-link" href="#int-ensurecolumncapacity">#</a></h3>
+<p><em>ensure-column-capacity</em></p>
 <p><strong>Guarantee the table has exactly the requested column count</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureColumnCapacity(ByVal requiredColumns As Long)
@@ -852,7 +908,8 @@ excess columns using a descending loop so index shifts do not skip columns.</p>
 <li><code>requiredColumns</code>: Long. Target number of columns.</li>
 </ul>
 <hr />
-<h3 id="int-trim-table-rows">trim-table-rows <a class="anchor-link" href="#int-trim-table-rows">#</a></h3>
+<h3 id="int-trimtablerows">TrimTableRows <a class="anchor-link" href="#int-trimtablerows">#</a></h3>
+<p><em>trim-table-rows</em></p>
 <p><strong>Shrink the table to the requested number of data rows</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub TrimTableRows(ByVal targetRows As Long)
@@ -864,7 +921,8 @@ Exits when the table already has fewer rows than the target.</p>
 <li><code>targetRows</code>: Long. Desired data row count.</li>
 </ul>
 <hr />
-<h3 id="int-source-row-count">source-row-count <a class="anchor-link" href="#int-source-row-count">#</a></h3>
+<h3 id="int-sourcerowcount">SourceRowCount <a class="anchor-link" href="#int-sourcerowcount">#</a></h3>
+<p><em>source-row-count</em></p>
 <p><strong>Derive the data row count from an import source</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function SourceRowCount(ByVal impTab As Object) As Long
@@ -877,7 +935,8 @@ returns the number of data rows. Returns 0 when the source is empty.</p>
 </ul>
 <p><strong>Returns:</strong> Long. The number of source data rows.</p>
 <hr />
-<h3 id="int-format-id-value">format-id-value <a class="anchor-link" href="#int-format-id-value">#</a></h3>
+<h3 id="int-formatidvalue">FormatIdValue <a class="anchor-link" href="#int-formatidvalue">#</a></h3>
+<p><em>format-id-value</em></p>
 <p><strong>Build an ID string from a prefix and numeric part</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function FormatIdValue(ByVal prefixText As String, ByVal numericPart As Long) As String
@@ -889,7 +948,8 @@ returns the number of data rows. Returns 0 when the source is empty.</p>
 </ul>
 <p><strong>Returns:</strong> String. The formatted ID value.</p>
 <hr />
-<h3 id="int-sort-helper">sort-helper <a class="anchor-link" href="#int-sort-helper">#</a></h3>
+<h3 id="int-sorthelper">SortHelper <a class="anchor-link" href="#int-sorthelper">#</a></h3>
+<p><em>sort-helper</em></p>
 <p><strong>Dispatch to the appropriate sort strategy</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub SortHelper(ByVal colName As String, _ 
@@ -903,7 +963,8 @@ returns the number of data rows. Returns 0 when the source is empty.</p>
 <li><code>strictSearch</code>: Optional Boolean. When True, uses exact column matching. Defaults to True.</li>
 </ul>
 <hr />
-<h3 id="int-sort-on-first">sort-on-first <a class="anchor-link" href="#int-sort-on-first">#</a></h3>
+<h3 id="int-sortonfirst">SortOnFirst <a class="anchor-link" href="#int-sortonfirst">#</a></h3>
+<p><em>sort-on-first</em></p>
 <p><strong>Sort by grouping rows by first occurrence of each value</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub SortOnFirst(ByVal colName As String, Optional ByVal strictSearch As Boolean = True)
@@ -918,7 +979,8 @@ preserving the original order of first appearance.</p>
 <li><code>strictSearch</code>: Optional Boolean. When True, uses exact column matching. Defaults to True.</li>
 </ul>
 <hr />
-<h3 id="int-sort-simple">sort-simple <a class="anchor-link" href="#int-sort-simple">#</a></h3>
+<h3 id="int-sortsimple">SortSimple <a class="anchor-link" href="#int-sortsimple">#</a></h3>
+<p><em>sort-simple</em></p>
 <p><strong>Sort the table on a single column in ascending order</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub SortSimple(ByVal colName As String, Optional ByVal strictSearch As Boolean = True)
@@ -930,7 +992,8 @@ preserving the original order of first appearance.</p>
 </ul>
 <hr />
 <h2 id="int-dataexchange">DataExchange</h2>
-<h3 id="int-import-object">import-object <a class="anchor-link" href="#int-import-object">#</a></h3>
+<h3 id="int-importobject">ImportObject <a class="anchor-link" href="#int-importobject">#</a></h3>
+<p><em>import-object</em></p>
 <p><strong>Import column-matched data from a source object</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ImportObject(ByVal impTab As Object, _
@@ -952,7 +1015,8 @@ headers. Trims the table when insertShift is False.</p>
 <li><code>formatHeaders</code>: Optional Object. BetterArray of headers whose formatting to preserve. Defaults to Nothing.</li>
 </ul>
 <hr />
-<h3 id="int-import-format">import-format <a class="anchor-link" href="#int-import-format">#</a></h3>
+<h3 id="int-importformat">ImportFormat <a class="anchor-link" href="#int-importformat">#</a></h3>
+<p><em>import-format</em></p>
 <p><strong>Copy formatting from a source range to a destination range</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ImportFormat(ByVal impRng As Range, ByVal currRng As Range)
@@ -967,7 +1031,8 @@ support CommentThreaded.</p>
 <li><code>currRng</code>: Range. Destination range in this table.</li>
 </ul>
 <hr />
-<h3 id="int-unhide-hidden-columns">unhide-hidden-columns <a class="anchor-link" href="#int-unhide-hidden-columns">#</a></h3>
+<h3 id="int-unhidehiddencolumns">UnhideHiddenColumns <a class="anchor-link" href="#int-unhidehiddencolumns">#</a></h3>
+<p><em>unhide-hidden-columns</em></p>
 <p><strong>Unhide all hidden columns before import/export</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub UnhideHiddenColumns()
@@ -977,7 +1042,8 @@ made visible before import or export operations. Records the indexes
 of previously hidden columns so ReturnBackHiddenColumns can restore
 them afterwards.</p>
 <hr />
-<h3 id="int-return-back-hidden-columns">return-back-hidden-columns <a class="anchor-link" href="#int-return-back-hidden-columns">#</a></h3>
+<h3 id="int-returnbackhiddencolumns">ReturnBackHiddenColumns <a class="anchor-link" href="#int-returnbackhiddencolumns">#</a></h3>
+<p><em>return-back-hidden-columns</em></p>
 <p><strong>Restore previously hidden columns after import/export</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ReturnBackHiddenColumns()
@@ -986,7 +1052,8 @@ them afterwards.</p>
 suppression as a safeguard against stale column indexes.</p>
 <hr />
 <h2 id="int-checkings">Checkings</h2>
-<h3 id="int-log-info">log-info <a class="anchor-link" href="#int-log-info">#</a></h3>
+<h3 id="int-loginfo">LogInfo <a class="anchor-link" href="#int-loginfo">#</a></h3>
+<p><em>log-info</em></p>
 <p><strong>Log a diagnostic message</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub LogInfo(ByVal label As String, _ 
@@ -1001,13 +1068,15 @@ use. The checkCounter provides a unique key for each entry.</p>
 <li><code>scope</code>: Optional Byte. Severity level from CheckingScope. Defaults to checkingNote.</li>
 </ul>
 <hr />
-<h3 id="int-show-debug">show-debug <a class="anchor-link" href="#int-show-debug">#</a></h3>
+<h3 id="int-showdebug">ShowDebug <a class="anchor-link" href="#int-showdebug">#</a></h3>
+<p><em>show-debug</em></p>
 <p><strong>Print a debug trace to the Immediate window</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ShowDebug()
 </code></pre>
 <hr />
-<h3 id="int-throw-error">throw-error <a class="anchor-link" href="#int-throw-error">#</a></h3>
+<h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
+<p><em>throw-error</em></p>
 <p><strong>Raise a ProjectError-based exception</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
@@ -1033,7 +1102,7 @@ for consistent stack traces.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (34 file(s))</summary>
+<summary>Used in (33 file(s))</summary>
 <ul>
 <li><a href="src/classes/analyses/Analysis.cls">Analysis.cls</a></li>
 <li><a href="src/classes/analyses/AnaTabIds.cls">AnaTabIds.cls</a></li>
@@ -1064,7 +1133,6 @@ for consistent stack traces.</p>
 <li><a href="src/modules/dev/RibbonDev.bas">RibbonDev.bas</a></li>
 <li><a href="src/modules/linelist/EventsLinelistButtons.bas">EventsLinelistButtons.bas</a></li>
 <li><a href="src/modules/mastersetup/MasterSetupHelpers.bas">MasterSetupHelpers.bas</a></li>
-<li><a href="src/modules/stale/LinelistEvents.bas">LinelistEvents.bas</a></li>
 <li><a href="src/msetup-codes/modules/EventsGlobal.bas">EventsGlobal.bas</a></li>
 <li><a href="src/msetup-codes/modules/EventsRibbon.bas">EventsRibbon.bas</a></li>
 <li><a href="src/tests/modules/designer/TestDesignerMulti.bas">TestDesignerMulti.bas</a></li>

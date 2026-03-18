@@ -81,6 +81,23 @@ Used for template workbooks where the target module already exists.</p>
 <li><code>moduleName</code>: String. The module name (must exist in both workbooks).</li>
 </ul>
 <hr />
+<h3 id="transferworksheetcode">TransferWorksheetCode <a class="anchor-link" href="#transferworksheetcode">#</a></h3>
+<p><strong>Copy code from a source module into a worksheet's code module</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub TransferWorksheetCode(ByVal moduleName As String, ByVal targetSheetName As String)
+</code></pre>
+<p>Reads all code lines from the named module in the source workbook and writes
+them into the code module of the worksheet identified by targetSheetName in
+the target workbook. Replaces any existing content in the worksheet's code
+module. Used to inject event handlers (e.g., Worksheet_SelectionChange) into
+specific worksheets during linelist generation.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>moduleName</code>: String. The source module whose code will be copied.</li>
+<li><code>targetSheetName</code>: String. The user-visible name of the worksheet in the
+target workbook whose code module will receive the code.</li>
+</ul>
+<hr />
 <h3 id="copymodulecode">CopyModuleCode <a class="anchor-link" href="#copymodulecode">#</a></h3>
 <p><strong>Copy code between components within the target workbook</strong></p>
 <p><strong>Signature:</strong></p>

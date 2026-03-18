@@ -71,10 +71,10 @@ worksheet. Lazy-loaded on first access.</p>
 based on the __formatter worksheet. Lazy-loaded on first access.</p>
 <p><strong>Returns:</strong> ILLFormat. The format collaborator.</p>
 <hr />
-<h3 id="analysis">Analysis <a class="anchor-link" href="#analysis">#</a></h3>
+<h3 id="analysisobject">AnalysisObject <a class="anchor-link" href="#analysisobject">#</a></h3>
 <p><strong>Analysis setup specifications</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Analysis() As IAnalysis
+<pre><code class="language-vb">Public Property Get AnalysisObject() As IAnalysis
 </code></pre>
 <p>Returns the IAnalysis instance providing access to the Analysis worksheet
 configuration. Lazy-loaded on first access.</p>
@@ -214,20 +214,21 @@ instead of full labels. Defaults to False.</li>
 <summary>WorkbookManagement</summary>
 <div class="section-body">
 <h3 id="prepare">Prepare <a class="anchor-link" href="#prepare">#</a></h3>
-<p><strong>Prepare all specifications using an import service</strong></p>
+<p><strong>Prepare all specifications using a build service</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub Prepare(ByVal importService As IDesignerImportService)
+<pre><code class="language-vb">Public Sub Prepare(ByVal buildService As ILinelistBuildService, ByVal setupPath As String)
 </code></pre>
 <p>Preparation, export, and error management operations.
 Orchestrates the full specification preparation workflow: creates a new
-output workbook, exports designer components via the import service,
-retrieves exported domain instances, then prepares the dictionary with
-preserved names, adds list auto columns, translates and sorts all
-collaborators. Handles errors with cleanup.</p>
+output workbook, exports setup data directly to the linelist via the
+build service, exports designer-sourced components, retrieves exported
+domain instances, then prepares the dictionary with preserved names,
+adds list auto columns, translates and sorts all collaborators.
+Handles errors with cleanup.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>importService</code>: IDesignerImportService. The configured import service
-holding imported setup data.</li>
+<li><code>buildService</code>: ILinelistBuildService. The configured build service.</li>
+<li><code>setupPath</code>: String. Full path to the setup workbook.</li>
 </ul>
 <hr />
 <h3 id="llworkbook">LLWorkbook <a class="anchor-link" href="#llworkbook">#</a></h3>

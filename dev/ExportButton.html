@@ -22,7 +22,8 @@ reference to keep the WithEvents binding alive.</p>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
 <div class="section-body">
-<h3 id="create">create <a class="anchor-link" href="#create">#</a></h3>
+<h3 id="create">Create <a class="anchor-link" href="#create">#</a></h3>
+<p><em>create</em></p>
 <p><strong>Create an export button wrapper</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal sourceWkb As Workbook, _
@@ -53,7 +54,8 @@ WithEvents binding alive.</p>
 <details open class="doc-section" id="public-accessors">
 <summary>Public Accessors</summary>
 <div class="section-body">
-<h3 id="export-number">export-number <a class="anchor-link" href="#export-number">#</a></h3>
+<h3 id="exportnumber">ExportNumber <a class="anchor-link" href="#exportnumber">#</a></h3>
+<p><em>export-number</em></p>
 <p><strong>Export number derived from button name</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get ExportNumber() As Long
@@ -63,7 +65,8 @@ WithEvents binding alive.</p>
 &quot;CMDExport1&quot; yields 1, &quot;CMDExport3&quot; yields 3.</p>
 <p><strong>Returns:</strong> Long. The 1-based export number.</p>
 <hr />
-<h3 id="use-filter">use-filter <a class="anchor-link" href="#use-filter">#</a></h3>
+<h3 id="usefilter">UseFilter <a class="anchor-link" href="#usefilter">#</a></h3>
+<p><em>use-filter</em></p>
 <p><strong>Whether the filter checkbox is checked</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get UseFilter() As Boolean
@@ -77,14 +80,16 @@ no checkbox was bound.</p>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-public-accessors">Public Accessors</h2>
-<h3 id="int-self">self <a class="anchor-link" href="#int-self">#</a></h3>
+<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
+<p><em>self</em></p>
 <p><strong>Current object instance</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Self() As ExportButton
 </code></pre>
 <p><strong>Returns:</strong> ExportButton. The current instance.</p>
 <hr />
-<h3 id="int-source-workbook-set">source-workbook-set <a class="anchor-link" href="#int-source-workbook-set">#</a></h3>
+<h3 id="int-sourceworkbook">SourceWorkbook <a class="anchor-link" href="#int-sourceworkbook">#</a></h3>
+<p><em>source-workbook-set</em></p>
 <p><strong>Assign the source linelist workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set SourceWorkbook(ByVal wb As Workbook)
@@ -94,7 +99,8 @@ no checkbox was bound.</p>
 <li><code>wb</code>: Workbook. The workbook to store.</li>
 </ul>
 <hr />
-<h3 id="int-translations-set">translations-set <a class="anchor-link" href="#int-translations-set">#</a></h3>
+<h3 id="int-translations">Translations <a class="anchor-link" href="#int-translations">#</a></h3>
+<p><em>translations-set</em></p>
 <p><strong>Assign the translations object</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set Translations(ByVal trads As ITranslationObject)
@@ -104,7 +110,8 @@ no checkbox was bound.</p>
 <li><code>trads</code>: ITranslationObject. The translations to store.</li>
 </ul>
 <hr />
-<h3 id="int-push-button-set">push-button-set <a class="anchor-link" href="#int-push-button-set">#</a></h3>
+<h3 id="int-pushbutton">PushButton <a class="anchor-link" href="#int-pushbutton">#</a></h3>
+<p><em>push-button-set</em></p>
 <p><strong>Wire the WithEvents button binding</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set PushButton(ByVal expBtn As MSForms.CommandButton)
@@ -114,7 +121,8 @@ no checkbox was bound.</p>
 <li><code>expBtn</code>: MSForms.CommandButton. The button to listen to.</li>
 </ul>
 <hr />
-<h3 id="int-filter-checkbox-set">filter-checkbox-set <a class="anchor-link" href="#int-filter-checkbox-set">#</a></h3>
+<h3 id="int-filtercheckbox">FilterCheckBox <a class="anchor-link" href="#int-filtercheckbox">#</a></h3>
+<p><em>filter-checkbox-set</em></p>
 <p><strong>Assign the optional filter checkbox</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set FilterCheckBox(ByVal expChk As MSForms.CheckBox)
@@ -124,7 +132,8 @@ no checkbox was bound.</p>
 <li><code>expChk</code>: MSForms.CheckBox. The checkbox to bind.</li>
 </ul>
 <hr />
-<h3 id="int-use-filter-set">use-filter-set <a class="anchor-link" href="#int-use-filter-set">#</a></h3>
+<h3 id="int-usefilter">UseFilter <a class="anchor-link" href="#int-usefilter">#</a></h3>
+<p><em>use-filter-set</em></p>
 <p><strong>Set the filter checkbox value</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Let UseFilter(ByVal value As Boolean)
@@ -135,13 +144,15 @@ no checkbox was bound.</p>
 </ul>
 <hr />
 <h2 id="int-event-handler">Event Handler</h2>
-<h3 id="int-btn-click">btn-click <a class="anchor-link" href="#int-btn-click">#</a></h3>
+<h3 id="int-btn-click">Btn_Click <a class="anchor-link" href="#int-btn-click">#</a></h3>
+<p><em>btn-click</em></p>
 <p><strong>Handle button click event</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub Btn_Click()
 </code></pre>
 <hr />
-<h3 id="int-run-export">run-export <a class="anchor-link" href="#int-run-export">#</a></h3>
+<h3 id="int-runexport">RunExport <a class="anchor-link" href="#int-runexport">#</a></h3>
+<p><em>run-export</em></p>
 <p><strong>Perform a custom export</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RunExport()
@@ -151,8 +162,21 @@ optionally confirms filter usage via MsgBox, then delegates to
 LLExporter.ExportCustom. On error, displays a translated error message
 and closes any orphaned output workbook.</p>
 <hr />
+<h3 id="int-sheettagof">SheetTagOf <a class="anchor-link" href="#int-sheettagof">#</a></h3>
+<p><strong>Get the sheet type tag from worksheet-level HiddenNames.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SheetTagOf(ByVal sh As Worksheet, _
+                            Optional ByVal nameKey As String = &quot;sheet_type&quot;) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The worksheet to query.</li>
+</ul>
+<p><strong>Returns:</strong> String. The sheet type tag (HList, VList, etc.).</p>
+<hr />
 <h2 id="int-private-helpers">Private Helpers</h2>
-<h3 id="int-translated-value">translated-value <a class="anchor-link" href="#int-translated-value">#</a></h3>
+<h3 id="int-translatedvalue">TranslatedValue <a class="anchor-link" href="#int-translatedvalue">#</a></h3>
+<p><em>translated-value</em></p>
 <p><strong>Get a translated message value</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function TranslatedValue(ByVal msgCode As String) As String
@@ -163,7 +187,8 @@ and closes any orphaned output workbook.</p>
 </ul>
 <p><strong>Returns:</strong> String. The translated message text.</p>
 <hr />
-<h3 id="int-update-filtered-data">update-filtered-data <a class="anchor-link" href="#int-update-filtered-data">#</a></h3>
+<h3 id="int-updatefiltereddata">UpdateFilteredData <a class="anchor-link" href="#int-updatefiltereddata">#</a></h3>
+<p><em>update-filtered-data</em></p>
 <p><strong>Sync filtered data sheets before a filtered export</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub UpdateFilteredData()
@@ -172,7 +197,8 @@ and closes any orphaned output workbook.</p>
 empty rows, ensuring the filtered export reflects the user current
 filter state.</p>
 <hr />
-<h3 id="int-throw-error">throw-error <a class="anchor-link" href="#int-throw-error">#</a></h3>
+<h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
+<p><em>throw-error</em></p>
 <p><strong>Raise a ProjectError-based exception</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As Long, ByVal message As String)

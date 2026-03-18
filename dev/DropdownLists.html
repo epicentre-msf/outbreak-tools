@@ -21,7 +21,8 @@ hyperlink navigation between the dropdown sheet and consuming cells.</p>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
 <div class="section-body">
-<h3 id="create">create <a class="anchor-link" href="#create">#</a></h3>
+<h3 id="create">Create <a class="anchor-link" href="#create">#</a></h3>
+<p><em>create</em></p>
 <p><strong>Create a new DropdownLists instance</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal outsh As Worksheet, Optional ByVal hprefix As String = &quot;dropdown_&quot;) As IDropdownLists
@@ -47,7 +48,8 @@ columns created) and an initialisation flag is stored via HiddenNames.</p>
 <details open class="doc-section" id="modify">
 <summary>Modify</summary>
 <div class="section-body">
-<h3 id="add">add <a class="anchor-link" href="#add">#</a></h3>
+<h3 id="add">Add <a class="anchor-link" href="#add">#</a></h3>
+<p><em>add</em></p>
 <p><strong>Add a new dropdown to the worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub Add(ByVal listValues As BetterArray, ByVal listName As String, _
@@ -68,7 +70,8 @@ and applies a table style. Silently exits when the dropdown already exists.</p>
 <li><code>tableStyle</code>: Optional String. Excel table style name. Defaults to &quot;TableStyleLight13&quot;.</li>
 </ul>
 <hr />
-<h3 id="remove">remove <a class="anchor-link" href="#remove">#</a></h3>
+<h3 id="remove">Remove <a class="anchor-link" href="#remove">#</a></h3>
+<p><em>remove</em></p>
 <p><strong>Remove a dropdown from the worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub Remove(ByVal listName As String)
@@ -81,7 +84,8 @@ exits when the dropdown does not exist.</p>
 <li><code>listName</code>: String. Dropdown name to remove.</li>
 </ul>
 <hr />
-<h3 id="clear-list">clear-list <a class="anchor-link" href="#clear-list">#</a></h3>
+<h3 id="clearlist">ClearList <a class="anchor-link" href="#clearlist">#</a></h3>
+<p><em>clear-list</em></p>
 <p><strong>Clear entries of a dropdown</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ClearList(ByVal listName As String)
@@ -93,7 +97,8 @@ the dropdown itself. Silently exits when the dropdown does not exist.</p>
 <li><code>listName</code>: String. Dropdown name to clear.</li>
 </ul>
 <hr />
-<h3 id="update">update <a class="anchor-link" href="#update">#</a></h3>
+<h3 id="update">Update <a class="anchor-link" href="#update">#</a></h3>
+<p><em>update</em></p>
 <p><strong>Update a dropdown with new values</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub Update(ByVal UpdateData As BetterArray, ByVal listName As String, _
@@ -112,7 +117,8 @@ when the dropdown does not exist or the data is empty.</p>
 <li><code>removeDuplicates</code>: Optional Boolean. When True, removes duplicate entries. Defaults to True.</li>
 </ul>
 <hr />
-<h3 id="sort">sort <a class="anchor-link" href="#sort">#</a></h3>
+<h3 id="sort">Sort <a class="anchor-link" href="#sort">#</a></h3>
+<p><em>sort</em></p>
 <p><strong>Sort a dropdown ListObject</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub Sort(ByVal listName As String, _
@@ -126,7 +132,8 @@ exits when the dropdown does not exist.</p>
 <li><code>sortOrder</code>: Optional Long. xlSortOrder enumeration value. Defaults to xlAscending.</li>
 </ul>
 <hr />
-<h3 id="translate">translate <a class="anchor-link" href="#translate">#</a></h3>
+<h3 id="translate">Translate <a class="anchor-link" href="#translate">#</a></h3>
+<p><em>translate</em></p>
 <p><strong>Translate all dropdowns on the worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub Translate(ByVal trads As Object, Optional ByVal force As Boolean = False, Optional ByVal exclude As String)
@@ -147,7 +154,8 @@ contains the exclude substring are skipped.</p>
 <details open class="doc-section" id="operations">
 <summary>Operations</summary>
 <div class="section-body">
-<h3 id="set-validation">set-validation <a class="anchor-link" href="#set-validation">#</a></h3>
+<h3 id="setvalidation">SetValidation <a class="anchor-link" href="#setvalidation">#</a></h3>
+<p><em>set-validation</em></p>
 <p><strong>Apply dropdown validation to a Range</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub SetValidation(ByVal cellRng As Range, ByVal listName As String, _
@@ -169,7 +177,8 @@ dropdown or range does not exist.</p>
 <li><code>showError</code>: Optional Boolean. When True, displays validation feedback. Defaults to True.</li>
 </ul>
 <hr />
-<h3 id="add-return-link">add-return-link <a class="anchor-link" href="#add-return-link">#</a></h3>
+<h3 id="addreturnlink">AddReturnLink <a class="anchor-link" href="#addreturnlink">#</a></h3>
+<p><em>add-return-link</em></p>
 <p><strong>Add a return hyperlink on the dropdown header</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddReturnLink(ByVal listName As String, ByVal returnRng As Range)
@@ -182,7 +191,8 @@ the specified range.</p>
 <li><code>returnRng</code>: Range. Target destination of the hyperlink.</li>
 </ul>
 <hr />
-<h3 id="add-hyperlink">add-hyperlink <a class="anchor-link" href="#add-hyperlink">#</a></h3>
+<h3 id="addhyperlink">AddHyperLink <a class="anchor-link" href="#addhyperlink">#</a></h3>
+<p><em>add-hyperlink</em></p>
 <p><strong>Add a hyperlink on a cell targeting a dropdown</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddHyperLink(ByVal listName As String, ByVal linkRng As Range)
@@ -200,21 +210,24 @@ cell of the dropdown.</p>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-elements">Elements</h2>
-<h3 id="int-self">self <a class="anchor-link" href="#int-self">#</a></h3>
+<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
+<p><em>self</em></p>
 <p><strong>Self-reference returning the interface pointer</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Self() As IDropdownLists
 </code></pre>
 <p><strong>Returns:</strong> IDropdownLists. This instance.</p>
 <hr />
-<h3 id="int-wksh">wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
+<h3 id="int-wksh">Wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
+<p><em>wksh</em></p>
 <p><strong>Worksheet hosting the dropdown lists</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Wksh() As Worksheet
 </code></pre>
 <p><strong>Returns:</strong> Worksheet. The host worksheet.</p>
 <hr />
-<h3 id="int-wksh-set">wksh-set <a class="anchor-link" href="#int-wksh-set">#</a></h3>
+<h3 id="int-wksh">Wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
+<p><em>wksh-set</em></p>
 <p><strong>Assign the worksheet and initialise the dropdown registry</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set Wksh(ByVal outsh As Worksheet)
@@ -227,7 +240,8 @@ cached HiddenNames stores on every assignment.</p>
 <li><code>outsh</code>: Worksheet. The worksheet to host dropdown ListObjects.</li>
 </ul>
 <hr />
-<h3 id="int-all-dropdowns">all-dropdowns <a class="anchor-link" href="#int-all-dropdowns">#</a></h3>
+<h3 id="int-alldropdowns">AllDropdowns <a class="anchor-link" href="#int-alldropdowns">#</a></h3>
+<p><em>all-dropdowns</em></p>
 <p><strong>All registered dropdown names</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get AllDropdowns() As BetterArray
@@ -236,14 +250,16 @@ cached HiddenNames stores on every assignment.</p>
 into a BetterArray.</p>
 <p><strong>Returns:</strong> BetterArray. The dropdown name list.</p>
 <hr />
-<h3 id="int-header-prefix">header-prefix <a class="anchor-link" href="#int-header-prefix">#</a></h3>
+<h3 id="int-headerprefix">headerPrefix <a class="anchor-link" href="#int-headerprefix">#</a></h3>
+<p><em>header-prefix</em></p>
 <p><strong>Header prefix used for ListObject names</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get headerPrefix() As String
 </code></pre>
 <p><strong>Returns:</strong> String. The current prefix.</p>
 <hr />
-<h3 id="int-header-prefix-set">header-prefix-set <a class="anchor-link" href="#int-header-prefix-set">#</a></h3>
+<h3 id="int-headerprefix">headerPrefix <a class="anchor-link" href="#int-headerprefix">#</a></h3>
+<p><em>header-prefix-set</em></p>
 <p><strong>Assign the header prefix</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Let headerPrefix(ByVal hprefix As String)
@@ -253,7 +269,8 @@ into a BetterArray.</p>
 <li><code>hprefix</code>: String. The new prefix value.</li>
 </ul>
 <hr />
-<h3 id="int-name">name <a class="anchor-link" href="#int-name">#</a></h3>
+<h3 id="int-name">Name <a class="anchor-link" href="#int-name">#</a></h3>
+<p><em>name</em></p>
 <p><strong>Name of the dropdown object</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get Name() As String
@@ -262,7 +279,8 @@ into a BetterArray.</p>
 <p><strong>Returns:</strong> String. The worksheet name.</p>
 <hr />
 <h2 id="int-workbook-counter">Workbook Counter</h2>
-<h3 id="int-internal-store">internal-store <a class="anchor-link" href="#int-internal-store">#</a></h3>
+<h3 id="int-internalstore">InternalStore <a class="anchor-link" href="#int-internalstore">#</a></h3>
+<p><em>internal-store</em></p>
 <p><strong>Lazy-loaded HiddenNames store for workbook or sheet scope</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get InternalStore(Optional ByVal sheetLevel As Boolean = False) As IHiddenNames
@@ -275,20 +293,23 @@ into a BetterArray.</p>
 </ul>
 <p><strong>Returns:</strong> IHiddenNames. The requested store.</p>
 <hr />
-<h3 id="int-ensure-workbook-counter">ensure-workbook-counter <a class="anchor-link" href="#int-ensure-workbook-counter">#</a></h3>
+<h3 id="int-ensureworkbookcounter">EnsureWorkbookCounter <a class="anchor-link" href="#int-ensureworkbookcounter">#</a></h3>
+<p><em>ensure-workbook-counter</em></p>
 <p><strong>Ensure the workbook-level dropdown counter exists</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureWorkbookCounter()
 </code></pre>
 <hr />
-<h3 id="int-workbook-counter-value">workbook-counter-value <a class="anchor-link" href="#int-workbook-counter-value">#</a></h3>
+<h3 id="int-workbookcountervalue">WorkbookCounterValue <a class="anchor-link" href="#int-workbookcountervalue">#</a></h3>
+<p><em>workbook-counter-value</em></p>
 <p><strong>Read the current workbook dropdown counter</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function WorkbookCounterValue() As Long
 </code></pre>
 <p><strong>Returns:</strong> Long. The counter value.</p>
 <hr />
-<h3 id="int-set-workbook-counter">set-workbook-counter <a class="anchor-link" href="#int-set-workbook-counter">#</a></h3>
+<h3 id="int-setworkbookcounter">SetWorkbookCounter <a class="anchor-link" href="#int-setworkbookcounter">#</a></h3>
+<p><em>set-workbook-counter</em></p>
 <p><strong>Write a new workbook dropdown counter value</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub SetWorkbookCounter(ByVal newValue As Long)
@@ -298,33 +319,38 @@ into a BetterArray.</p>
 <li><code>newValue</code>: Long. The value to store.</li>
 </ul>
 <hr />
-<h3 id="int-increment-workbook-counter">increment-workbook-counter <a class="anchor-link" href="#int-increment-workbook-counter">#</a></h3>
+<h3 id="int-incrementworkbookcounter">IncrementWorkbookCounter <a class="anchor-link" href="#int-incrementworkbookcounter">#</a></h3>
+<p><em>increment-workbook-counter</em></p>
 <p><strong>Increment the workbook dropdown counter by one</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub IncrementWorkbookCounter()
 </code></pre>
 <hr />
-<h3 id="int-decrement-workbook-counter">decrement-workbook-counter <a class="anchor-link" href="#int-decrement-workbook-counter">#</a></h3>
+<h3 id="int-decrementworkbookcounter">DecrementWorkbookCounter <a class="anchor-link" href="#int-decrementworkbookcounter">#</a></h3>
+<p><em>decrement-workbook-counter</em></p>
 <p><strong>Decrement the workbook dropdown counter by one</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub DecrementWorkbookCounter()
 </code></pre>
 <hr />
 <h2 id="int-worksheet-counter">Worksheet Counter</h2>
-<h3 id="int-ensure-worksheet-counter">ensure-worksheet-counter <a class="anchor-link" href="#int-ensure-worksheet-counter">#</a></h3>
+<h3 id="int-ensureworksheetcounter">EnsureWorksheetCounter <a class="anchor-link" href="#int-ensureworksheetcounter">#</a></h3>
+<p><em>ensure-worksheet-counter</em></p>
 <p><strong>Ensure the worksheet-level dropdown counter exists</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureWorksheetCounter()
 </code></pre>
 <hr />
-<h3 id="int-sheet-counter-value">sheet-counter-value <a class="anchor-link" href="#int-sheet-counter-value">#</a></h3>
+<h3 id="int-sheetcountervalue">SheetCounterValue <a class="anchor-link" href="#int-sheetcountervalue">#</a></h3>
+<p><em>sheet-counter-value</em></p>
 <p><strong>Read the current worksheet dropdown counter</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function SheetCounterValue() As Long
 </code></pre>
 <p><strong>Returns:</strong> Long. The counter value.</p>
 <hr />
-<h3 id="int-set-sheet-counter">set-sheet-counter <a class="anchor-link" href="#int-set-sheet-counter">#</a></h3>
+<h3 id="int-setsheetcounter">SetSheetCounter <a class="anchor-link" href="#int-setsheetcounter">#</a></h3>
+<p><em>set-sheet-counter</em></p>
 <p><strong>Write a new worksheet dropdown counter value</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub SetSheetCounter(ByVal newValue As Long)
@@ -334,32 +360,37 @@ into a BetterArray.</p>
 <li><code>newValue</code>: Long. The value to store (clamped to 0).</li>
 </ul>
 <hr />
-<h3 id="int-increment-sheet-counter">increment-sheet-counter <a class="anchor-link" href="#int-increment-sheet-counter">#</a></h3>
+<h3 id="int-incrementsheetcounter">IncrementSheetCounter <a class="anchor-link" href="#int-incrementsheetcounter">#</a></h3>
+<p><em>increment-sheet-counter</em></p>
 <p><strong>Increment the worksheet dropdown counter by one</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub IncrementSheetCounter()
 </code></pre>
 <hr />
-<h3 id="int-decrement-sheet-counter">decrement-sheet-counter <a class="anchor-link" href="#int-decrement-sheet-counter">#</a></h3>
+<h3 id="int-decrementsheetcounter">DecrementSheetCounter <a class="anchor-link" href="#int-decrementsheetcounter">#</a></h3>
+<p><em>decrement-sheet-counter</em></p>
 <p><strong>Decrement the worksheet dropdown counter by one</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub DecrementSheetCounter()
 </code></pre>
 <hr />
-<h3 id="int-increment-counters">increment-counters <a class="anchor-link" href="#int-increment-counters">#</a></h3>
+<h3 id="int-incrementcounters">IncrementCounters <a class="anchor-link" href="#int-incrementcounters">#</a></h3>
+<p><em>increment-counters</em></p>
 <p><strong>Increment both workbook and worksheet counters</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub IncrementCounters()
 </code></pre>
 <hr />
-<h3 id="int-decrement-counters">decrement-counters <a class="anchor-link" href="#int-decrement-counters">#</a></h3>
+<h3 id="int-decrementcounters">DecrementCounters <a class="anchor-link" href="#int-decrementcounters">#</a></h3>
+<p><em>decrement-counters</em></p>
 <p><strong>Decrement both workbook and worksheet counters</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub DecrementCounters()
 </code></pre>
 <hr />
 <h2 id="int-helpers">Helpers</h2>
-<h3 id="int-remove-gridlines">remove-gridlines <a class="anchor-link" href="#int-remove-gridlines">#</a></h3>
+<h3 id="int-removegridlines">RemoveGridLines <a class="anchor-link" href="#int-removegridlines">#</a></h3>
+<p><em>remove-gridlines</em></p>
 <p><strong>Remove gridlines from a worksheet view</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RemoveGridLines(ByVal sh As Worksheet, Optional DisplayZeros As Boolean = False)
@@ -370,7 +401,8 @@ into a BetterArray.</p>
 <li><code>DisplayZeros</code>: Optional Boolean. When True, displays zeros. Defaults to False.</li>
 </ul>
 <hr />
-<h3 id="int-last-column">last-column <a class="anchor-link" href="#int-last-column">#</a></h3>
+<h3 id="int-lastcolumn">LastColumn <a class="anchor-link" href="#int-lastcolumn">#</a></h3>
+<p><em>last-column</em></p>
 <p><strong>Find the next available column for a new dropdown</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function LastColumn() As Long
@@ -380,7 +412,8 @@ occupied header cell. This leaves a blank separator column between
 adjacent ListObjects.</p>
 <p><strong>Returns:</strong> Long. The 1-based column index.</p>
 <hr />
-<h3 id="int-sanitized-list-name">sanitized-list-name <a class="anchor-link" href="#int-sanitized-list-name">#</a></h3>
+<h3 id="int-sanitizedlistname">SanitizedListName <a class="anchor-link" href="#int-sanitizedlistname">#</a></h3>
+<p><em>sanitized-list-name</em></p>
 <p><strong>Sanitise a dropdown name for use in ListObject naming</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function SanitizedListName(ByVal listName As String) As String
@@ -391,7 +424,8 @@ adjacent ListObjects.</p>
 </ul>
 <p><strong>Returns:</strong> String. The trimmed and space-replaced name.</p>
 <hr />
-<h3 id="int-list-object-header-name">list-object-header-name <a class="anchor-link" href="#int-list-object-header-name">#</a></h3>
+<h3 id="int-listobjectheadername">ListObjectHeaderName <a class="anchor-link" href="#int-listobjectheadername">#</a></h3>
+<p><em>list-object-header-name</em></p>
 <p><strong>Build the ListObject header name for a dropdown</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ListObjectHeaderName(ByVal listName As String) As String
@@ -402,7 +436,8 @@ adjacent ListObjects.</p>
 </ul>
 <p><strong>Returns:</strong> String. The prefixed header name.</p>
 <hr />
-<h3 id="int-corresponding-workbook-name">corresponding-workbook-name <a class="anchor-link" href="#int-corresponding-workbook-name">#</a></h3>
+<h3 id="int-correspondingworkbookname">CorrespondingWorkbookName <a class="anchor-link" href="#int-correspondingworkbookname">#</a></h3>
+<p><em>corresponding-workbook-name</em></p>
 <p><strong>Workbook-level name used for the dropdown reference</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get CorrespondingWorkbookName(ByVal listName As String) As String
@@ -415,7 +450,8 @@ prefix is set, falls back to the DEFAULTNAMEPREFIX constant.</p>
 </ul>
 <p><strong>Returns:</strong> String. The workbook-level reference name.</p>
 <hr />
-<h3 id="int-list-object-name">list-object-name <a class="anchor-link" href="#int-list-object-name">#</a></h3>
+<h3 id="int-listobjectname">ListObjectName <a class="anchor-link" href="#int-listobjectname">#</a></h3>
+<p><em>list-object-name</em></p>
 <p><strong>ListObject name for a dropdown</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get ListObjectName(ByVal listName As String) As String
@@ -428,7 +464,8 @@ generates and registers a new one for a dropdown being created.</p>
 </ul>
 <p><strong>Returns:</strong> String. The ListObject name.</p>
 <hr />
-<h3 id="int-add-lo-name">add-lo-name <a class="anchor-link" href="#int-add-lo-name">#</a></h3>
+<h3 id="int-addloname">AddLoName <a class="anchor-link" href="#int-addloname">#</a></h3>
+<p><em>add-lo-name</em></p>
 <p><strong>Register a dropdown-to-ListObject name mapping</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddLoName(ByVal listName As String, ByVal loName As String)
@@ -439,7 +476,8 @@ generates and registers a new one for a dropdown being created.</p>
 <li><code>loName</code>: String. The corresponding ListObject name.</li>
 </ul>
 <hr />
-<h3 id="int-retrieve-lo-name">retrieve-lo-name <a class="anchor-link" href="#int-retrieve-lo-name">#</a></h3>
+<h3 id="int-retrieveloname">RetrieveLoName <a class="anchor-link" href="#int-retrieveloname">#</a></h3>
+<p><em>retrieve-lo-name</em></p>
 <p><strong>Retrieve the ListObject name for a dropdown</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get RetrieveLoName(ByVal lst As String) As String
@@ -450,7 +488,8 @@ generates and registers a new one for a dropdown being created.</p>
 </ul>
 <p><strong>Returns:</strong> String. The ListObject name, or vbNullString when not found.</p>
 <hr />
-<h3 id="int-remove-lo-name">remove-lo-name <a class="anchor-link" href="#int-remove-lo-name">#</a></h3>
+<h3 id="int-removeloname">RemoveLoName <a class="anchor-link" href="#int-removeloname">#</a></h3>
+<p><em>remove-lo-name</em></p>
 <p><strong>Remove a dropdown-to-ListObject name mapping</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RemoveLoName(ByVal lst As String)
@@ -460,14 +499,16 @@ generates and registers a new one for a dropdown being created.</p>
 <li><code>lst</code>: String. The dropdown name to unregister.</li>
 </ul>
 <hr />
-<h3 id="int-length">length <a class="anchor-link" href="#int-length">#</a></h3>
+<h3 id="int-length">Length <a class="anchor-link" href="#int-length">#</a></h3>
+<p><em>length</em></p>
 <p><strong>Total number of dropdowns on the worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get Length() As Long
 </code></pre>
 <p><strong>Returns:</strong> Long. The dropdown count.</p>
 <hr />
-<h3 id="int-current-dropdown-label">current-dropdown-label <a class="anchor-link" href="#int-current-dropdown-label">#</a></h3>
+<h3 id="int-currentdropdownlabel">CurrentDropdownLabel <a class="anchor-link" href="#int-currentdropdownlabel">#</a></h3>
+<p><em>current-dropdown-label</em></p>
 <p><strong>Build the display label for the next dropdown</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function CurrentDropdownLabel(ByVal labelPrefix As String) As String
@@ -480,7 +521,8 @@ human-readable label (e.g. &quot;Custom Dropdown 3&quot;).</p>
 </ul>
 <p><strong>Returns:</strong> String. The assembled label.</p>
 <hr />
-<h3 id="int-exists">exists <a class="anchor-link" href="#int-exists">#</a></h3>
+<h3 id="int-exists">Exists <a class="anchor-link" href="#int-exists">#</a></h3>
+<p><em>exists</em></p>
 <p><strong>Check whether a dropdown exists on the worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function Exists(ByVal listName As String) As Boolean
@@ -491,7 +533,8 @@ human-readable label (e.g. &quot;Custom Dropdown 3&quot;).</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when the dropdown is found.</p>
 <hr />
-<h3 id="int-label-range">label-range <a class="anchor-link" href="#int-label-range">#</a></h3>
+<h3 id="int-labelrange">LabelRange <a class="anchor-link" href="#int-labelrange">#</a></h3>
+<p><em>label-range</em></p>
 <p><strong>Label cell above a dropdown ListObject</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get LabelRange(ByVal listName As String) As Range
@@ -504,7 +547,8 @@ dropdown ListObject. Returns Nothing when the dropdown does not exist.</p>
 </ul>
 <p><strong>Returns:</strong> Range. The label cell, or Nothing.</p>
 <hr />
-<h3 id="int-values">values <a class="anchor-link" href="#int-values">#</a></h3>
+<h3 id="int-values">Values <a class="anchor-link" href="#int-values">#</a></h3>
+<p><em>values</em></p>
 <p><strong>Retrieve the values of a dropdown</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get Values(ByVal listName As String, Optional ByVal includeHeaders As Boolean = False) As BetterArray
@@ -519,7 +563,8 @@ Logs a diagnostic note and exits when the dropdown does not exist.</p>
 <p><strong>Returns:</strong> BetterArray. The dropdown entries.</p>
 <hr />
 <h2 id="int-operations">Operations</h2>
-<h3 id="int-add-link">add-link <a class="anchor-link" href="#int-add-link">#</a></h3>
+<h3 id="int-addlink">AddLink <a class="anchor-link" href="#int-addlink">#</a></h3>
+<p><em>add-link</em></p>
 <p><strong>Add a hyperlink between a dropdown and a cell</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddLink(ByVal listName As String, ByVal targetRng As Range, _
@@ -538,7 +583,8 @@ Preserves the original cell formatting after link insertion.</p>
 </ul>
 <hr />
 <h2 id="int-checkings">Checkings</h2>
-<h3 id="int-log-info">log-info <a class="anchor-link" href="#int-log-info">#</a></h3>
+<h3 id="int-loginfo">LogInfo <a class="anchor-link" href="#int-loginfo">#</a></h3>
+<p><em>log-info</em></p>
 <p><strong>Record a diagnostic entry</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub LogInfo(ByVal label As String, _
@@ -550,27 +596,31 @@ Preserves the original cell formatting after link insertion.</p>
 <li><code>scope</code>: Optional Byte. Severity level. Defaults to checkingNote.</li>
 </ul>
 <hr />
-<h3 id="int-has-checkings">has-checkings <a class="anchor-link" href="#int-has-checkings">#</a></h3>
+<h3 id="int-hascheckings">HasCheckings <a class="anchor-link" href="#int-hascheckings">#</a></h3>
+<p><em>has-checkings</em></p>
 <p><strong>Whether the dropdown object has logged diagnostic messages</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get HasCheckings() As Boolean
 </code></pre>
 <p><strong>Returns:</strong> Boolean. True when diagnostic entries exist.</p>
 <hr />
-<h3 id="int-checking-values">checking-values <a class="anchor-link" href="#int-checking-values">#</a></h3>
+<h3 id="int-checkingvalues">CheckingValues <a class="anchor-link" href="#int-checkingvalues">#</a></h3>
+<p><em>checking-values</em></p>
 <p><strong>Retrieve the diagnostic log entries</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get CheckingValues() As Object
 </code></pre>
 <p><strong>Returns:</strong> Object. An IChecking instance, or Nothing.</p>
 <hr />
-<h3 id="int-show-debug">show-debug <a class="anchor-link" href="#int-show-debug">#</a></h3>
+<h3 id="int-showdebug">ShowDebug <a class="anchor-link" href="#int-showdebug">#</a></h3>
+<p><em>show-debug</em></p>
 <p><strong>Print a debug trace to the Immediate window</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ShowDebug()
 </code></pre>
 <hr />
-<h3 id="int-throw-error">throw-error <a class="anchor-link" href="#int-throw-error">#</a></h3>
+<h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
+<p><em>throw-error</em></p>
 <p><strong>Raise a ProjectError-based exception</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
@@ -587,7 +637,7 @@ Preserves the original cell formatting after link insertion.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (52 file(s))</summary>
+<summary>Used in (51 file(s))</summary>
 <ul>
 <li><a href="src/classes/analyses/AnalysisOutput.cls">AnalysisOutput.cls</a></li>
 <li><a href="src/classes/dataio/LLImporter.cls">LLImporter.cls</a></li>
@@ -622,10 +672,9 @@ Preserves the original cell formatting after link insertion.</p>
 <li><a href="src/classes/stale/designer-codes/modules/implements/LinelistGeo.bas">LinelistGeo.bas</a></li>
 <li><a href="src/modules/designer/EventsDesignerAdvanced.bas">EventsDesignerAdvanced.bas</a></li>
 <li><a href="src/modules/designer/EventsDesignerMulti.bas">EventsDesignerMulti.bas</a></li>
-<li><a href="src/modules/geo/GeoModule.bas">GeoModule.bas</a></li>
+<li><a href="src/modules/linelist/GeoModule.bas">GeoModule.bas</a></li>
 <li><a href="src/modules/mastersetup/EventsMasterSetupRibbon.bas">EventsMasterSetupRibbon.bas</a></li>
 <li><a href="src/modules/mastersetup/MasterSetupHelpers.bas">MasterSetupHelpers.bas</a></li>
-<li><a href="src/modules/stale/LinelistEvents.bas">LinelistEvents.bas</a></li>
 <li><a href="src/msetup-codes/modules/EventsRibbon.bas">EventsRibbon.bas</a></li>
 <li><a href="src/msetup-codes/modules/Exports.bas">Exports.bas</a></li>
 <li><a href="src/msetup-codes/modules/ManageDiseases.bas">ManageDiseases.bas</a></li>

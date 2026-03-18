@@ -37,7 +37,8 @@ without repeatedly scanning the workbook.</p>
 <li>ProjectError.ObjectNotInitialized when the worksheet is missing.</li>
 </ul>
 <hr />
-<h3 id="int-setinternaldata">SetInternalData <a class="anchor-link" href="#int-setinternaldata">#</a></h3>
+<h3 id="int-internaldata">InternalData <a class="anchor-link" href="#int-internaldata">#</a></h3>
+<p><em>SetInternalData</em></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set InternalData(ByVal exportData As IDataSheet)
 </code></pre>
@@ -46,7 +47,8 @@ without repeatedly scanning the workbook.</p>
 <li><code>exportData</code>: Datasheet wrapper over the specification table.</li>
 </ul>
 <hr />
-<h3 id="int-setinternalworksheet">SetInternalWorksheet <a class="anchor-link" href="#int-setinternalworksheet">#</a></h3>
+<h3 id="int-internalworksheet">InternalWorksheet <a class="anchor-link" href="#int-internalworksheet">#</a></h3>
+<p><em>SetInternalWorksheet</em></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set InternalWorksheet(ByVal exportSheet As Worksheet)
 </code></pre>
@@ -451,13 +453,13 @@ do not remove unrelated export columns.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (22 file(s))</summary>
+<summary>Used in (25 file(s))</summary>
 <ul>
 <li><a href="src/classes/dataio/ExportButton.cls">ExportButton.cls</a></li>
 <li><a href="src/classes/dataio/ILLExporter.cls">ILLExporter.cls</a></li>
 <li><a href="src/classes/dataio/LLExporter.cls">LLExporter.cls</a></li>
-<li><a href="src/classes/designer/DesignerImportService.cls">DesignerImportService.cls</a></li>
-<li><a href="src/classes/designer/IDesignerImportService.cls">IDesignerImportService.cls</a></li>
+<li><a href="src/classes/designer/ILinelistBuildService.cls">ILinelistBuildService.cls</a></li>
+<li><a href="src/classes/designer/LinelistBuildService.cls">LinelistBuildService.cls</a></li>
 <li><a href="src/classes/dictionary/ILLExport.cls">ILLExport.cls</a></li>
 <li><a href="src/classes/dictionary/LLExport.cls">LLExport.cls</a></li>
 <li><a href="src/classes/linelist/ILinelistSpecs.cls">ILinelistSpecs.cls</a></li>
@@ -466,6 +468,9 @@ do not remove unrelated export columns.</p>
 <li><a href="src/classes/setup/EventSetup.cls">EventSetup.cls</a></li>
 <li><a href="src/classes/setup/IEventSetup.cls">IEventSetup.cls</a></li>
 <li><a href="src/classes/setup/SetupImportService.cls">SetupImportService.cls</a></li>
+<li><a href="src/classes/stale/DesignerImportService.cls">DesignerImportService.cls</a></li>
+<li><a href="src/classes/stale/IDesignerImportService.cls">IDesignerImportService.cls</a></li>
+<li><a href="src/modules/designer/GenerationReport.bas">GenerationReport.bas</a></li>
 <li><a href="src/modules/linelist/EventsLinelistButtons.bas">EventsLinelistButtons.bas</a></li>
 <li><a href="src/modules/linelistform/FormLogicExport.bas">FormLogicExport.bas</a></li>
 <li><a href="src/modules/linelistform/FormLogicExportMig.bas">FormLogicExportMig.bas</a></li>

@@ -21,7 +21,8 @@ nested IF conversion and category extraction.</p>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
 <div class="section-body">
-<h3 id="create">create <a class="anchor-link" href="#create">#</a></h3>
+<h3 id="create">Create <a class="anchor-link" href="#create">#</a></h3>
+<p><em>create</em></p>
 <p><strong>Instantiate a ChoiceFormula parser bound to a formula</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal formula As String) As IChoiceFormula
@@ -40,7 +41,8 @@ eager parsing occurs; the formula is parsed lazily on first access.</p>
 <details open class="doc-section" id="validation">
 <summary>Validation</summary>
 <div class="section-body">
-<h3 id="valid">valid <a class="anchor-link" href="#valid">#</a></h3>
+<h3 id="valid">Valid <a class="anchor-link" href="#valid">#</a></h3>
+<p><em>valid</em></p>
 <p><strong>Determine whether the stored formula is a CHOICE_FORMULA with arguments</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get Valid() As Boolean
@@ -56,7 +58,8 @@ when any argument is blank.</p>
 <details open class="doc-section" id="conversion">
 <summary>Conversion</summary>
 <div class="section-body">
-<h3 id="parsed-formula">parsed-formula <a class="anchor-link" href="#parsed-formula">#</a></h3>
+<h3 id="parsedformula">parsedFormula <a class="anchor-link" href="#parsedformula">#</a></h3>
+<p><em>parsed-formula</em></p>
 <p><strong>Convert CHOICE_FORMULA into nested IF statements through CASE_WHEN</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function parsedFormula() As String
@@ -67,7 +70,8 @@ then delegates to the CaseWhen class to produce the nested IF output.
 Returns an empty string when the formula is invalid or conversion fails.</p>
 <p><strong>Returns:</strong> String. Expression ready for worksheet consumption.</p>
 <hr />
-<h3 id="categories">categories <a class="anchor-link" href="#categories">#</a></h3>
+<h3 id="categories">Categories <a class="anchor-link" href="#categories">#</a></h3>
+<p><em>categories</em></p>
 <p><strong>Extract textual labels from the CHOICE_FORMULA results</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function Categories() As BetterArray
@@ -77,7 +81,8 @@ Returns an empty BetterArray when the formula is invalid or the
 CaseWhen wrapper cannot be created.</p>
 <p><strong>Returns:</strong> BetterArray. Collection containing quoted category labels.</p>
 <hr />
-<h3 id="choice-name">choice-name <a class="anchor-link" href="#choice-name">#</a></h3>
+<h3 id="choicename">choiceName <a class="anchor-link" href="#choicename">#</a></h3>
+<p><em>choice-name</em></p>
 <p><strong>Retrieve the name of the choice list referenced by the formula</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function choiceName() As String
@@ -92,7 +97,8 @@ is memoised after the first resolution.</p>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-publicaccessors">PublicAccessors</h2>
-<h3 id="int-self">self <a class="anchor-link" href="#int-self">#</a></h3>
+<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
+<p><em>self</em></p>
 <p><strong>Current object instance</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Self() As IChoiceFormula
@@ -102,7 +108,8 @@ Returns the current instance cast to its interface. Used internally
 by the factory method to return an IChoiceFormula reference.</p>
 <p><strong>Returns:</strong> IChoiceFormula. Reference to the current object.</p>
 <hr />
-<h3 id="int-choice-specifications">choice-specifications <a class="anchor-link" href="#int-choice-specifications">#</a></h3>
+<h3 id="int-choicespecifications">ChoiceSpecifications <a class="anchor-link" href="#int-choicespecifications">#</a></h3>
+<p><em>choice-specifications</em></p>
 <p><strong>Retrieve the stored CHOICE_FORMULA expression</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get ChoiceSpecifications() As String
@@ -111,7 +118,8 @@ by the factory method to return an IChoiceFormula reference.</p>
 assignment. This is the full CHOICE_FORMULA(...) expression.</p>
 <p><strong>Returns:</strong> String. Original formula specification.</p>
 <hr />
-<h3 id="int-choice-specifications-set">choice-specifications-set <a class="anchor-link" href="#int-choice-specifications-set">#</a></h3>
+<h3 id="int-choicespecifications">ChoiceSpecifications <a class="anchor-link" href="#int-choicespecifications">#</a></h3>
+<p><em>choice-specifications-set</em></p>
 <p><strong>Store the CHOICE_FORMULA expression and reset caches</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Let ChoiceSpecifications(ByVal formula As String)
@@ -124,7 +132,8 @@ cached artefacts so subsequent reads trigger a fresh parse.</p>
 </ul>
 <hr />
 <h2 id="int-privatehelpers">PrivateHelpers</h2>
-<h3 id="int-reset-caches">reset-caches <a class="anchor-link" href="#int-reset-caches">#</a></h3>
+<h3 id="int-resetcaches">ResetCaches <a class="anchor-link" href="#int-resetcaches">#</a></h3>
+<p><em>reset-caches</em></p>
 <p><strong>Reset cached artefacts when the formula changes</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ResetCaches()
@@ -133,7 +142,8 @@ cached artefacts so subsequent reads trigger a fresh parse.</p>
 Clears the argument cache, the CaseWhen wrapper, and the memoised
 choice name so the next access triggers a full reparse.</p>
 <hr />
-<h3 id="int-sanitised-formula">sanitised-formula <a class="anchor-link" href="#int-sanitised-formula">#</a></h3>
+<h3 id="int-sanitisedformula">SanitisedFormula <a class="anchor-link" href="#int-sanitisedformula">#</a></h3>
+<p><em>sanitised-formula</em></p>
 <p><strong>Resolve the portion of the formula between parentheses</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function SanitisedFormula() As String
@@ -144,7 +154,8 @@ Returns an empty string when the formula does not match the expected
 pattern.</p>
 <p><strong>Returns:</strong> String. The comma-delimited arguments.</p>
 <hr />
-<h3 id="int-choice-arguments">choice-arguments <a class="anchor-link" href="#int-choice-arguments">#</a></h3>
+<h3 id="int-choicearguments">ChoiceArguments <a class="anchor-link" href="#int-choicearguments">#</a></h3>
+<p><em>choice-arguments</em></p>
 <p><strong>Split the sanitised formula into individual arguments</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ChoiceArguments() As BetterArray
@@ -154,7 +165,8 @@ state and parenthesis depth. Splits on top-level commas only. The
 result is cached so subsequent calls avoid reparsing.</p>
 <p><strong>Returns:</strong> BetterArray. The choice name followed by condition/result entries.</p>
 <hr />
-<h3 id="int-contains-empty-argument">contains-empty-argument <a class="anchor-link" href="#int-contains-empty-argument">#</a></h3>
+<h3 id="int-containsemptyargument">ContainsEmptyArgument <a class="anchor-link" href="#int-containsemptyargument">#</a></h3>
+<p><em>contains-empty-argument</em></p>
 <p><strong>Determine whether the arguments contain empty entries</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ContainsEmptyArgument(ByVal arguments As BetterArray) As Boolean
@@ -167,7 +179,8 @@ empty string encountered.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when an argument is blank.</p>
 <hr />
-<h3 id="int-case-when-formula">case-when-formula <a class="anchor-link" href="#int-case-when-formula">#</a></h3>
+<h3 id="int-casewhenformula">CaseWhenFormula <a class="anchor-link" href="#int-casewhenformula">#</a></h3>
+<p><em>case-when-formula</em></p>
 <p><strong>Build the equivalent CASE_WHEN formula from parsed arguments</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function CaseWhenFormula() As String
@@ -178,7 +191,8 @@ Returns an empty string when fewer than two arguments exist beyond
 the name.</p>
 <p><strong>Returns:</strong> String. CASE_WHEN expression or empty when invalid.</p>
 <hr />
-<h3 id="int-case-when-wrapper">case-when-wrapper <a class="anchor-link" href="#int-case-when-wrapper">#</a></h3>
+<h3 id="int-casewhenwrapper">CaseWhenWrapper <a class="anchor-link" href="#int-casewhenwrapper">#</a></h3>
+<p><em>case-when-wrapper</em></p>
 <p><strong>Provide a lazily created CaseWhen instance</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get CaseWhenWrapper() As ICaseWhen
@@ -192,7 +206,8 @@ subsequent accesses. Raises an error when conversion fails.</p>
 <li>ProjectError.ErrorUnexpectedState When conversion to CASE_WHEN fails.</li>
 </ul>
 <hr />
-<h3 id="int-resolved-choice-name">resolved-choice-name <a class="anchor-link" href="#int-resolved-choice-name">#</a></h3>
+<h3 id="int-resolvedchoicename">ResolvedChoiceName <a class="anchor-link" href="#int-resolvedchoicename">#</a></h3>
+<p><em>resolved-choice-name</em></p>
 <p><strong>Resolve and cache the choice list name</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ResolvedChoiceName() As String
@@ -202,7 +217,8 @@ is the choice list identifier. The value is memoised so subsequent
 calls avoid re-parsing.</p>
 <p><strong>Returns:</strong> String. Identifier extracted from the first argument.</p>
 <hr />
-<h3 id="int-throw-error">throw-error <a class="anchor-link" href="#int-throw-error">#</a></h3>
+<h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
+<p><em>throw-error</em></p>
 <p><strong>Raise a project-specific error</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal message As String)

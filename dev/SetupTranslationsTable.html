@@ -19,7 +19,8 @@ external workbooks. Uses HiddenNames for sequence counters.</p>
 <details open class="doc-section" id="factory-helpers">
 <summary>Factory helpers</summary>
 <div class="section-body">
-<h3 id="create">create <a class="anchor-link" href="#create">#</a></h3>
+<h3 id="create">Create <a class="anchor-link" href="#create">#</a></h3>
+<p><em>create</em></p>
 <p><strong>Create a configured translations table manager instance.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal translationTable As ListObject, Optional ByVal stateScope As IApplicationState = Nothing) As ISetupTranslationsTable
@@ -36,473 +37,549 @@ external workbooks. Uses HiddenNames for sequence counters.</p>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-factory-helpers">Factory helpers</h2>
-<h3 id="int-initialise-core">initialise-core <a class="anchor-link" href="#int-initialise-core">#</a></h3>
+<h3 id="int-initialisecore">InitialiseCore <a class="anchor-link" href="#int-initialisecore">#</a></h3>
+<p><em>initialise-core</em></p>
 <p><strong>Store the supplied table and optional scope inside the current instance.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub InitialiseCore(ByVal translationTable As ListObject, Optional ByVal stateScope As IApplicationState = Nothing)
 </code></pre>
 <hr />
 <h2 id="int-public-configuration">Public configuration</h2>
-<h3 id="int-host-worksheet">host-worksheet <a class="anchor-link" href="#int-host-worksheet">#</a></h3>
+<h3 id="int-hostworksheet">HostWorksheet <a class="anchor-link" href="#int-hostworksheet">#</a></h3>
+<p><em>host-worksheet</em></p>
 <p><strong>Worksheet hosting the translations table.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get HostWorksheet() As Worksheet
 </code></pre>
 <hr />
-<h3 id="int-table-name">table-name <a class="anchor-link" href="#int-table-name">#</a></h3>
+<h3 id="int-tablename">TableName <a class="anchor-link" href="#int-tablename">#</a></h3>
+<p><em>table-name</em></p>
 <p><strong>Name of the managed translations ListObject.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get TableName() As String
 </code></pre>
 <hr />
-<h3 id="int-self">self <a class="anchor-link" href="#int-self">#</a></h3>
+<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
+<p><em>self</em></p>
 <p><strong>Self reference used by factories returning interface instances.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Self() As ISetupTranslationsTable
 </code></pre>
 <hr />
-<h3 id="int-set-display-prompts">set-display-prompts <a class="anchor-link" href="#int-set-display-prompts">#</a></h3>
+<h3 id="int-setdisplayprompts">SetDisplayPrompts <a class="anchor-link" href="#int-setdisplayprompts">#</a></h3>
+<p><em>set-display-prompts</em></p>
 <p><strong>Allow callers to toggle display prompts used during updates.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub SetDisplayPrompts(ByVal state As Boolean)
 </code></pre>
 <hr />
-<h3 id="int-resolve-scope">resolve-scope <a class="anchor-link" href="#int-resolve-scope">#</a></h3>
+<h3 id="int-resolvescope">ResolveScope <a class="anchor-link" href="#int-resolvescope">#</a></h3>
+<p><em>resolve-scope</em></p>
 <p><strong>Guarded access to the application scope.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ResolveScope() As IApplicationState
 </code></pre>
 <hr />
 <h2 id="int-language-management">Language management</h2>
-<h3 id="int-ensure-languages">ensure-languages <a class="anchor-link" href="#int-ensure-languages">#</a></h3>
+<h3 id="int-ensurelanguages">EnsureLanguages <a class="anchor-link" href="#int-ensurelanguages">#</a></h3>
+<p><em>ensure-languages</em></p>
 <p><strong>Ensure all provided languages exist as table headers.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureLanguages(Optional ByVal lang As String = vbNullString)
 </code></pre>
 <hr />
-<h3 id="int-try-get-written-languages">try-get-written-languages <a class="anchor-link" href="#int-try-get-written-languages">#</a></h3>
+<h3 id="int-trygetwrittenlanguages">TryGetWrittenLanguages <a class="anchor-link" href="#int-trygetwrittenlanguages">#</a></h3>
+<p><em>try-get-written-languages</em></p>
 <p><strong>Collect language names written to the right of the table.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function TryGetWrittenLanguages(ByRef languages As String, ByVal newLang As String) As Boolean
 </code></pre>
 <hr />
-<h3 id="int-ensure-language-column">ensure-language-column <a class="anchor-link" href="#int-ensure-language-column">#</a></h3>
+<h3 id="int-ensurelanguagecolumn">EnsureLanguageColumn <a class="anchor-link" href="#int-ensurelanguagecolumn">#</a></h3>
+<p><em>ensure-language-column</em></p>
 <p><strong>Create the language column when it does not exist.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureLanguageColumn(ByVal languageName As String)
 </code></pre>
 <hr />
-<h3 id="int-persist-language-list">persist-language-list <a class="anchor-link" href="#int-persist-language-list">#</a></h3>
+<h3 id="int-persistlanguagelist">PersistLanguageList <a class="anchor-link" href="#int-persistlanguagelist">#</a></h3>
+<p><em>persist-language-list</em></p>
 <p><strong>Persist the available languages into the worksheet hidden names.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub PersistLanguageList()
 </code></pre>
 <hr />
-<h3 id="int-switch-default-language">switch-default-language <a class="anchor-link" href="#int-switch-default-language">#</a></h3>
+<h3 id="int-switchdefaultlanguage">SwitchDefaultLanguage <a class="anchor-link" href="#int-switchdefaultlanguage">#</a></h3>
+<p><em>switch-default-language</em></p>
 <p><strong>Promote the requested language column to become the primary language.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub SwitchDefaultLanguage(ByVal languageName As String)
 </code></pre>
 <hr />
-<h3 id="int-switchable-languages">switchable-languages <a class="anchor-link" href="#int-switchable-languages">#</a></h3>
+<h3 id="int-switchablelanguages">SwitchableLanguages <a class="anchor-link" href="#int-switchablelanguages">#</a></h3>
+<p><em>switchable-languages</em></p>
 <p><strong>Retrieve the available languages excluding the default column.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function SwitchableLanguages() As BetterArray
 </code></pre>
 <hr />
-<h3 id="int-languages">languages <a class="anchor-link" href="#int-languages">#</a></h3>
+<h3 id="int-languages">Languages <a class="anchor-link" href="#int-languages">#</a></h3>
+<p><em>languages</em></p>
 <p><strong>Languages available for translation excluding the default column unless requested.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Languages(Optional ByVal includeDefault As Boolean = False) As BetterArray
 </code></pre>
 <hr />
 <h2 id="int-language-utilities">Language utilities</h2>
-<h3 id="int-default-language-header">default-language-header <a class="anchor-link" href="#int-default-language-header">#</a></h3>
+<h3 id="int-defaultlanguageheader">DefaultLanguageHeader <a class="anchor-link" href="#int-defaultlanguageheader">#</a></h3>
+<p><em>default-language-header</em></p>
 <p><strong>Resolve the current default language header.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function DefaultLanguageHeader() As String
 </code></pre>
 <hr />
-<h3 id="int-language-column-index">language-column-index <a class="anchor-link" href="#int-language-column-index">#</a></h3>
+<h3 id="int-languagecolumnindex">LanguageColumnIndex <a class="anchor-link" href="#int-languagecolumnindex">#</a></h3>
+<p><em>language-column-index</em></p>
 <p><strong>Resolve the column index for a provided language header.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function LanguageColumnIndex(ByVal languageName As String) As Long
 </code></pre>
 <hr />
-<h3 id="int-resolve-language-column">resolve-language-column <a class="anchor-link" href="#int-resolve-language-column">#</a></h3>
+<h3 id="int-resolvelanguagecolumn">ResolveLanguageColumn <a class="anchor-link" href="#int-resolvelanguagecolumn">#</a></h3>
+<p><em>resolve-language-column</em></p>
 <p><strong>Resolve the data body range for a given language column.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ResolveLanguageColumn(ByVal languageName As String) As Range
 </code></pre>
 <hr />
-<h3 id="int-swap-language-columns">swap-language-columns <a class="anchor-link" href="#int-swap-language-columns">#</a></h3>
+<h3 id="int-swaplanguagecolumns">SwapLanguageColumns <a class="anchor-link" href="#int-swaplanguagecolumns">#</a></h3>
+<p><em>swap-language-columns</em></p>
 <p><strong>Swap the headers, data, and totals between two language columns.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub SwapLanguageColumns(ByVal firstIndex As Long, ByVal secondIndex As Long)
 </code></pre>
 <hr />
-<h3 id="int-unique-temporary-header">unique-temporary-header <a class="anchor-link" href="#int-unique-temporary-header">#</a></h3>
+<h3 id="int-uniquetemporaryheader">UniqueTemporaryHeader <a class="anchor-link" href="#int-uniquetemporaryheader">#</a></h3>
+<p><em>unique-temporary-header</em></p>
 <p><strong>Generate a temporary header that does not collide with existing columns.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function UniqueTemporaryHeader() As String
 </code></pre>
 <hr />
-<h3 id="int-swap-cell-contents">swap-cell-contents <a class="anchor-link" href="#int-swap-cell-contents">#</a></h3>
+<h3 id="int-swapcellcontents">SwapCellContents <a class="anchor-link" href="#int-swapcellcontents">#</a></h3>
+<p><em>swap-cell-contents</em></p>
 <p><strong>Swap the formula and number format between two cells.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub SwapCellContents(ByVal leftCell As Range, ByVal rightCell As Range)
 </code></pre>
 <hr />
 <h2 id="int-registry-processing">Registry processing</h2>
-<h3 id="int-reset-sequence">reset-sequence <a class="anchor-link" href="#int-reset-sequence">#</a></h3>
+<h3 id="int-resetsequence">ResetSequence <a class="anchor-link" href="#int-resetsequence">#</a></h3>
+<p><em>reset-sequence</em></p>
 <p><strong>Reset the hidden update sequence counter to zero.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ResetSequence(ByVal registrySheet As Worksheet)
 </code></pre>
 <hr />
-<h3 id="int-update-from-registry">update-from-registry <a class="anchor-link" href="#int-update-from-registry">#</a></h3>
+<h3 id="int-updatefromregistry">UpdateFromRegistry <a class="anchor-link" href="#int-updatefromregistry">#</a></h3>
+<p><em>update-from-registry</em></p>
 <p><strong>Update the translations table using the supplied registry sheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub UpdateFromRegistry(ByVal registrySheet As Worksheet, _
                              Optional ByVal languages As String = vbNullString)
 </code></pre>
 <hr />
-<h3 id="int-process-registry">process-registry <a class="anchor-link" href="#int-process-registry">#</a></h3>
+<h3 id="int-processregistry">ProcessRegistry <a class="anchor-link" href="#int-processregistry">#</a></h3>
+<p><em>process-registry</em></p>
 <p><strong>Iterate all registry tables and process each watcher row.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ProcessRegistry(ByVal registrySheet As Worksheet, ByVal updateSequence As Long)
 </code></pre>
 <hr />
-<h3 id="int-process-registry-table">process-registry-table <a class="anchor-link" href="#int-process-registry-table">#</a></h3>
+<h3 id="int-processregistrytable">ProcessRegistryTable <a class="anchor-link" href="#int-processregistrytable">#</a></h3>
+<p><em>process-registry-table</em></p>
 <p><strong>Process a single registry ListObject.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ProcessRegistryTable(ByVal registryTable As ListObject, ByVal updateSequence As Long)
 </code></pre>
 <hr />
-<h3 id="int-should-process-range">should-process-range <a class="anchor-link" href="#int-should-process-range">#</a></h3>
+<h3 id="int-shouldprocessrange">ShouldProcessRange <a class="anchor-link" href="#int-shouldprocessrange">#</a></h3>
+<p><em>should-process-range</em></p>
 <p><strong>Determine whether the named range should be processed this cycle.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ShouldProcessRange(ByVal status As String, ByVal updateSequence As Long) As Boolean
 </code></pre>
 <hr />
-<h3 id="int-process-source-range">process-source-range <a class="anchor-link" href="#int-process-source-range">#</a></h3>
+<h3 id="int-processsourcerange">ProcessSourceRange <a class="anchor-link" href="#int-processsourcerange">#</a></h3>
+<p><em>process-source-range</em></p>
 <p><strong>Dispatch processing based on the requested translation mode.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ProcessSourceRange(ByVal sourceRange As Range, ByVal rngTag As String, ByVal mode As String)
 </code></pre>
 <hr />
-<h3 id="int-process-text-range">process-text-range <a class="anchor-link" href="#int-process-text-range">#</a></h3>
+<h3 id="int-processtextrange">ProcessTextRange <a class="anchor-link" href="#int-processtextrange">#</a></h3>
+<p><em>process-text-range</em></p>
 <p><strong>Add literal cell values to the translations table.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ProcessTextRange(ByVal sourceRange As Range, ByVal rngTag As String)
 </code></pre>
 <hr />
-<h3 id="int-process-formula-range">process-formula-range <a class="anchor-link" href="#int-process-formula-range">#</a></h3>
+<h3 id="int-processformularange">ProcessFormulaRange <a class="anchor-link" href="#int-processformularange">#</a></h3>
+<p><em>process-formula-range</em></p>
 <p><strong>Extract quoted portions of formulas and add them as chunks.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ProcessFormulaRange(ByVal sourceRange As Range, ByVal rngTag As String)
 </code></pre>
 <hr />
-<h3 id="int-extract-formula-chunks">extract-formula-chunks <a class="anchor-link" href="#int-extract-formula-chunks">#</a></h3>
+<h3 id="int-extractformulachunks">ExtractFormulaChunks <a class="anchor-link" href="#int-extractformulachunks">#</a></h3>
+<p><em>extract-formula-chunks</em></p>
 <p><strong>Extract quoted text segments from a formula while handling escaped quotes.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ExtractFormulaChunks(ByVal formulaText As String) As BetterArray
 </code></pre>
 <hr />
 <h2 id="int-chunk-management">Chunk management</h2>
-<h3 id="int-add-chunk">add-chunk <a class="anchor-link" href="#int-add-chunk">#</a></h3>
+<h3 id="int-addchunk">AddChunk <a class="anchor-link" href="#int-addchunk">#</a></h3>
+<p><em>add-chunk</em></p>
 <p><strong>Add or update a translation chunk in the table.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddChunk(ByVal label As String, ByVal rngTag As String)
 </code></pre>
 <hr />
-<h3 id="int-append-row">append-row <a class="anchor-link" href="#int-append-row">#</a></h3>
+<h3 id="int-appendrow">AppendRow <a class="anchor-link" href="#int-appendrow">#</a></h3>
+<p><em>append-row</em></p>
 <p><strong>Append a new list row and populate the mandatory cells.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function AppendRow(ByVal label As String, ByVal rngTag As String) As Long
 </code></pre>
 <hr />
 <h2 id="int-label-buffer">Label buffer</h2>
-<h3 id="int-init-label-buffer">init-label-buffer <a class="anchor-link" href="#int-init-label-buffer">#</a></h3>
+<h3 id="int-initlabelbuffer">InitLabelBuffer <a class="anchor-link" href="#int-initlabelbuffer">#</a></h3>
+<p><em>init-label-buffer</em></p>
 <p><strong>Read the label column into a 1D in-memory buffer for lookups.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub InitLabelBuffer()
 </code></pre>
 <hr />
-<h3 id="int-find-label-row">find-label-row <a class="anchor-link" href="#int-find-label-row">#</a></h3>
+<h3 id="int-findlabelrow">FindLabelRow <a class="anchor-link" href="#int-findlabelrow">#</a></h3>
+<p><em>find-label-row</em></p>
 <p><strong>Find the row index for a label using a simple linear scan of the label buffer.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function FindLabelRow(ByVal label As String) As Long
 </code></pre>
 <hr />
 <h2 id="int-tag-buffer">Tag buffer</h2>
-<h3 id="int-init-tag-buffer">init-tag-buffer <a class="anchor-link" href="#int-init-tag-buffer">#</a></h3>
+<h3 id="int-inittagbuffer">InitTagBuffer <a class="anchor-link" href="#int-inittagbuffer">#</a></h3>
+<p><em>init-tag-buffer</em></p>
 <p><strong>Read the tag column into a 1D in-memory buffer for batch writes.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub InitTagBuffer()
 </code></pre>
 <hr />
-<h3 id="int-flush-tag-buffer">flush-tag-buffer <a class="anchor-link" href="#int-flush-tag-buffer">#</a></h3>
+<h3 id="int-flushtagbuffer">FlushTagBuffer <a class="anchor-link" href="#int-flushtagbuffer">#</a></h3>
+<p><em>flush-tag-buffer</em></p>
 <p><strong>Write the accumulated tag buffer back to the tag column in one operation.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub FlushTagBuffer()
 </code></pre>
 <hr />
 <h2 id="int-process-tracking">Process tracking</h2>
-<h3 id="int-track-processed-range">track-processed-range <a class="anchor-link" href="#int-track-processed-range">#</a></h3>
+<h3 id="int-trackprocessedrange">TrackProcessedRange <a class="anchor-link" href="#int-trackprocessedrange">#</a></h3>
+<p><em>track-processed-range</em></p>
 <p><strong>Track the ranges processed during the current registry cycle.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub TrackProcessedRange(ByVal rngName As String)
 </code></pre>
 <hr />
-<h3 id="int-was-range-processed">was-range-processed <a class="anchor-link" href="#int-was-range-processed">#</a></h3>
+<h3 id="int-wasrangeprocessed">WasRangeProcessed <a class="anchor-link" href="#int-wasrangeprocessed">#</a></h3>
+<p><em>was-range-processed</em></p>
 <p><strong>Determine whether a registry range was processed during the active cycle.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function WasRangeProcessed(ByVal rngName As String) As Boolean
 </code></pre>
 <hr />
-<h3 id="int-reset-processed-ranges">reset-processed-ranges <a class="anchor-link" href="#int-reset-processed-ranges">#</a></h3>
+<h3 id="int-resetprocessedranges">ResetProcessedRanges <a class="anchor-link" href="#int-resetprocessedranges">#</a></h3>
+<p><em>reset-processed-ranges</em></p>
 <p><strong>Reset processed ranges tracking.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ResetProcessedRanges()
 </code></pre>
 <hr />
-<h3 id="int-remove-obsolete-labels">remove-obsolete-labels <a class="anchor-link" href="#int-remove-obsolete-labels">#</a></h3>
+<h3 id="int-removeobsoletelabels">RemoveObsoleteLabels <a class="anchor-link" href="#int-removeobsoletelabels">#</a></h3>
+<p><em>remove-obsolete-labels</em></p>
 <p><strong>Remove labels whose source ranges were processed but whose tags are stale.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RemoveObsoleteLabels(ByVal updateSequence As Long)
 </code></pre>
 <hr />
-<h3 id="int-deduplicate-labels">deduplicate-labels <a class="anchor-link" href="#int-deduplicate-labels">#</a></h3>
+<h3 id="int-deduplicatelabels">DeduplicateLabels <a class="anchor-link" href="#int-deduplicatelabels">#</a></h3>
+<p><em>deduplicate-labels</em></p>
 <p><strong>Remove duplicate labels keeping the row with the oldest (lowest) tag sequence.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub DeduplicateLabels()
 </code></pre>
 <hr />
-<h3 id="int-sort-indices-descending">sort-indices-descending <a class="anchor-link" href="#int-sort-indices-descending">#</a></h3>
+<h3 id="int-sortindicesdescending">SortIndicesDescending <a class="anchor-link" href="#int-sortindicesdescending">#</a></h3>
+<p><em>sort-indices-descending</em></p>
 <p><strong>Sort a 1-based Long array in descending order (simple insertion sort).</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub SortIndicesDescending(ByRef arr() As Long, ByVal count As Long)
 </code></pre>
 <hr />
-<h3 id="int-parse-tag">parse-tag <a class="anchor-link" href="#int-parse-tag">#</a></h3>
+<h3 id="int-parsetag">ParseTag <a class="anchor-link" href="#int-parsetag">#</a></h3>
+<p><em>parse-tag</em></p>
 <p><strong>Parse helper tag text into its components.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ParseTag(ByVal tagText As String, ByRef rangeName As String, ByRef sequenceValue As Long) As Boolean
 </code></pre>
 <hr />
-<h3 id="int-create-buffer">create-buffer <a class="anchor-link" href="#int-create-buffer">#</a></h3>
+<h3 id="int-createbuffer">CreateBuffer <a class="anchor-link" href="#int-createbuffer">#</a></h3>
+<p><em>create-buffer</em></p>
 <p><strong>Create a BetterArray buffer with deterministic bounds.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function CreateBuffer() As BetterArray
 </code></pre>
 <hr />
-<h3 id="int-build-duplicate-line">build-duplicate-line <a class="anchor-link" href="#int-build-duplicate-line">#</a></h3>
+<h3 id="int-buildduplicateline">BuildDuplicateLine <a class="anchor-link" href="#int-buildduplicateline">#</a></h3>
+<p><em>build-duplicate-line</em></p>
 <p><strong>Format a single duplicate-count line for reporting.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function BuildDuplicateLine(ByVal labelValue As String, ByVal occurrenceCount As Long) As String
 </code></pre>
 <hr />
 <h2 id="int-reporting">Reporting</h2>
-<h3 id="int-missing-labels">missing-labels <a class="anchor-link" href="#int-missing-labels">#</a></h3>
+<h3 id="int-missinglabels">MissingLabels <a class="anchor-link" href="#int-missinglabels">#</a></h3>
+<p><em>missing-labels</em></p>
 <p><strong>Count missing translation labels for a specific language.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function MissingLabels(ByVal lang As String) As Long
 </code></pre>
 <hr />
-<h3 id="int-number-of-missing">number-of-missing <a class="anchor-link" href="#int-number-of-missing">#</a></h3>
+<h3 id="int-numberofmissing">NumberOfMissing <a class="anchor-link" href="#int-numberofmissing">#</a></h3>
+<p><em>number-of-missing</em></p>
 <p><strong>Summarise missing translations per language and optionally prompt the user.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function NumberOfMissing() As String
 </code></pre>
 <hr />
-<h3 id="int-update-missing-summary">update-missing-summary <a class="anchor-link" href="#int-update-missing-summary">#</a></h3>
+<h3 id="int-updatemissingsummary">UpdateMissingSummary <a class="anchor-link" href="#int-updatemissingsummary">#</a></h3>
+<p><em>update-missing-summary</em></p>
 <p><strong>Update internal missing summary.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub UpdateMissingSummary(ByVal summary As BetterArray)
 </code></pre>
 <hr />
-<h3 id="int-internal-missing-summary">internal-missing-summary <a class="anchor-link" href="#int-internal-missing-summary">#</a></h3>
+<h3 id="int-internalmissingsummary">InternalMissingSummary <a class="anchor-link" href="#int-internalmissingsummary">#</a></h3>
+<p><em>internal-missing-summary</em></p>
 <p><strong>Cached missing-labels summary across languages.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get InternalMissingSummary() As BetterArray
 </code></pre>
 <hr />
-<h3 id="int-update-duplicates-summary">update-duplicates-summary <a class="anchor-link" href="#int-update-duplicates-summary">#</a></h3>
+<h3 id="int-updateduplicatessummary">UpdateDuplicatesSummary <a class="anchor-link" href="#int-updateduplicatessummary">#</a></h3>
+<p><em>update-duplicates-summary</em></p>
 <p><strong>Build duplicate summary for every language column.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub UpdateDuplicatesSummary()
 </code></pre>
 <hr />
-<h3 id="int-internal-duplicates-summary">internal-duplicates-summary <a class="anchor-link" href="#int-internal-duplicates-summary">#</a></h3>
+<h3 id="int-internalduplicatessummary">InternalDuplicatesSummary <a class="anchor-link" href="#int-internalduplicatessummary">#</a></h3>
+<p><em>internal-duplicates-summary</em></p>
 <p><strong>Cached duplicates summary across languages.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get InternalDuplicatesSummary() As BetterArray
 </code></pre>
 <hr />
-<h3 id="int-duplicate-labels">duplicate-labels <a class="anchor-link" href="#int-duplicate-labels">#</a></h3>
+<h3 id="int-duplicatelabels">DuplicateLabels <a class="anchor-link" href="#int-duplicatelabels">#</a></h3>
+<p><em>duplicate-labels</em></p>
 <p><strong>Report duplicate translation labels when they exist.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function DuplicateLabels(ByRef duplicateMessage As String, Optional ByVal languageName As String = vbNullString) As Boolean
 </code></pre>
 <hr />
-<h3 id="int-compute-duplicate-summary">compute-duplicate-summary <a class="anchor-link" href="#int-compute-duplicate-summary">#</a></h3>
+<h3 id="int-computeduplicatesummary">ComputeDuplicateSummary <a class="anchor-link" href="#int-computeduplicatesummary">#</a></h3>
+<p><em>compute-duplicate-summary</em></p>
 <p><strong>Compute duplicates for one language or all languages using simple linear counting.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ComputeDuplicateSummary(ByVal languageName As String) As TDuplicateSummary
 </code></pre>
 <hr />
-<h3 id="int-label-column-data">label-column-data <a class="anchor-link" href="#int-label-column-data">#</a></h3>
+<h3 id="int-labelcolumndata">LabelColumnData <a class="anchor-link" href="#int-labelcolumndata">#</a></h3>
+<p><em>label-column-data</em></p>
 <p><strong>Access the label column data range.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function LabelColumnData() As Range
 </code></pre>
 <hr />
 <h2 id="int-tag-column-infrastructure">Tag column infrastructure</h2>
-<h3 id="int-tag-column-data-range">tag-column-data-range <a class="anchor-link" href="#int-tag-column-data-range">#</a></h3>
+<h3 id="int-tagcolumndatarange">TagColumnDataRange <a class="anchor-link" href="#int-tagcolumndatarange">#</a></h3>
+<p><em>tag-column-data-range</em></p>
 <p><strong>Retrieve the helper tag column data range.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function TagColumnDataRange() As Range
 </code></pre>
 <hr />
-<h3 id="int-apply-tag-column-formatting">apply-tag-column-formatting <a class="anchor-link" href="#int-apply-tag-column-formatting">#</a></h3>
+<h3 id="int-applytagcolumnformatting">ApplyTagColumnFormatting <a class="anchor-link" href="#int-applytagcolumnformatting">#</a></h3>
+<p><em>apply-tag-column-formatting</em></p>
 <p><strong>Ensure the helper column keeps its stealth formatting regardless of state.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ApplyTagColumnFormatting()
 </code></pre>
 <hr />
-<h3 id="int-apply-lang-column-formatting">apply-lang-column-formatting <a class="anchor-link" href="#int-apply-lang-column-formatting">#</a></h3>
+<h3 id="int-applylangcolumnformatting">ApplyLangColumnFormatting <a class="anchor-link" href="#int-applylangcolumnformatting">#</a></h3>
+<p><em>apply-lang-column-formatting</em></p>
 <p><strong>Apply font, sizing, and duplicate highlighting to a language column.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ApplyLangColumnFormatting(ByVal langRng As Range)
 </code></pre>
 <hr />
-<h3 id="int-configure-tag-column">configure-tag-column <a class="anchor-link" href="#int-configure-tag-column">#</a></h3>
+<h3 id="int-configuretagcolumn">ConfigureTagColumn <a class="anchor-link" href="#int-configuretagcolumn">#</a></h3>
+<p><em>configure-tag-column</em></p>
 <p><strong>Ensure the helper column header is located and configured.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ConfigureTagColumn()
 </code></pre>
 <hr />
-<h3 id="int-ensure-tag-column-ready">ensure-tag-column-ready <a class="anchor-link" href="#int-ensure-tag-column-ready">#</a></h3>
+<h3 id="int-ensuretagcolumnready">EnsureTagColumnReady <a class="anchor-link" href="#int-ensuretagcolumnready">#</a></h3>
+<p><em>ensure-tag-column-ready</em></p>
 <p><strong>Verify the helper tag column is accessible.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureTagColumnReady()
 </code></pre>
 <hr />
-<h3 id="int-require-tag-header">require-tag-header <a class="anchor-link" href="#int-require-tag-header">#</a></h3>
+<h3 id="int-requiretagheader">RequireTagHeader <a class="anchor-link" href="#int-requiretagheader">#</a></h3>
+<p><em>require-tag-header</em></p>
 <p><strong>Return the tag header cell, raising an error when unavailable.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function RequireTagHeader() As Range
 </code></pre>
 <hr />
-<h3 id="int-attach-tag-header">attach-tag-header <a class="anchor-link" href="#int-attach-tag-header">#</a></h3>
+<h3 id="int-attachtagheader">AttachTagHeader <a class="anchor-link" href="#int-attachtagheader">#</a></h3>
+<p><em>attach-tag-header</em></p>
 <p><strong>Attempt to reconfigure and attach the tag header cell.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AttachTagHeader()
 </code></pre>
 <hr />
-<h3 id="int-is-range-valid">is-range-valid <a class="anchor-link" href="#int-is-range-valid">#</a></h3>
+<h3 id="int-israngevalid">IsRangeValid <a class="anchor-link" href="#int-israngevalid">#</a></h3>
+<p><em>is-range-valid</em></p>
 <p><strong>Test whether a Range reference is still alive and readable.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function IsRangeValid(ByVal candidate As Range) As Boolean
 </code></pre>
 <hr />
 <h2 id="int-tag-integration-helpers">Tag integration helpers</h2>
-<h3 id="int-begin-tag-integration">begin-tag-integration <a class="anchor-link" href="#int-begin-tag-integration">#</a></h3>
+<h3 id="int-begintagintegration">BeginTagIntegration <a class="anchor-link" href="#int-begintagintegration">#</a></h3>
+<p><em>begin-tag-integration</em></p>
 <p><strong>Temporarily include the helper tag column inside the managed table.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub BeginTagIntegration()
 </code></pre>
 <hr />
-<h3 id="int-end-tag-integration">end-tag-integration <a class="anchor-link" href="#int-end-tag-integration">#</a></h3>
+<h3 id="int-endtagintegration">EndTagIntegration <a class="anchor-link" href="#int-endtagintegration">#</a></h3>
+<p><em>end-tag-integration</em></p>
 <p><strong>Restore the translations table to exclude the helper tag column.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EndTagIntegration()
 </code></pre>
 <hr />
-<h3 id="int-label-column-index">label-column-index <a class="anchor-link" href="#int-label-column-index">#</a></h3>
+<h3 id="int-labelcolumnindex">LabelColumnIndex <a class="anchor-link" href="#int-labelcolumnindex">#</a></h3>
+<p><em>label-column-index</em></p>
 <p><strong>Resolve the current column index storing translation labels.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function LabelColumnIndex() As Long
 </code></pre>
 <hr />
 <h2 id="int-sorting-and-formatting">Sorting and formatting</h2>
-<h3 id="int-sort-translations">sort-translations <a class="anchor-link" href="#int-sort-translations">#</a></h3>
+<h3 id="int-sorttranslations">SortTranslations <a class="anchor-link" href="#int-sorttranslations">#</a></h3>
+<p><em>sort-translations</em></p>
 <p><strong>Sort the translations by their primary language column.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub SortTranslations()
 </code></pre>
 <hr />
-<h3 id="int-apply-formatting">apply-formatting <a class="anchor-link" href="#int-apply-formatting">#</a></h3>
+<h3 id="int-applyformatting">ApplyFormatting <a class="anchor-link" href="#int-applyformatting">#</a></h3>
+<p><em>apply-formatting</em></p>
 <p><strong>Apply light formatting and duplicate highlighting once per update.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ApplyFormatting()
 </code></pre>
 <hr />
 <h2 id="int-data-exchange">Data exchange</h2>
-<h3 id="int-export">export <a class="anchor-link" href="#int-export">#</a></h3>
+<h3 id="int-export">Export <a class="anchor-link" href="#int-export">#</a></h3>
+<p><em>export</em></p>
 <p><strong>Export translations into a destination workbook.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Export(ByVal exportWorkbook As Workbook, Optional ByVal Hide As Long = xlSheetVisible)
 </code></pre>
 <hr />
 <h2 id="int-registry-bookkeeping">Registry bookkeeping</h2>
-<h3 id="int-next-update-sequence">next-update-sequence <a class="anchor-link" href="#int-next-update-sequence">#</a></h3>
+<h3 id="int-nextupdatesequence">NextUpdateSequence <a class="anchor-link" href="#int-nextupdatesequence">#</a></h3>
+<p><em>next-update-sequence</em></p>
 <p><strong>Retrieve and increment the registry update sequence.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function NextUpdateSequence(ByVal registrySheet As Worksheet) As Long
 </code></pre>
 <hr />
-<h3 id="int-persist-counter-value">persist-counter-value <a class="anchor-link" href="#int-persist-counter-value">#</a></h3>
+<h3 id="int-persistcountervalue">PersistCounterValue <a class="anchor-link" href="#int-persistcountervalue">#</a></h3>
+<p><em>persist-counter-value</em></p>
 <p><strong>Persist the counter value inside a hidden worksheet-level name.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub PersistCounterValue(ByVal registrySheet As Worksheet, ByVal counterValue As Long)
 </code></pre>
 <hr />
-<h3 id="int-counter-numeric-value">counter-numeric-value <a class="anchor-link" href="#int-counter-numeric-value">#</a></h3>
+<h3 id="int-counternumericvalue">CounterNumericValue <a class="anchor-link" href="#int-counternumericvalue">#</a></h3>
+<p><em>counter-numeric-value</em></p>
 <p><strong>Retrieve the current counter value stored in worksheet names.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function CounterNumericValue(ByVal registrySheet As Worksheet) As Long
 </code></pre>
 <hr />
-<h3 id="int-hidden-name-store">hidden-name-store <a class="anchor-link" href="#int-hidden-name-store">#</a></h3>
+<h3 id="int-hiddennamestore">HiddenNameStore <a class="anchor-link" href="#int-hiddennamestore">#</a></h3>
+<p><em>hidden-name-store</em></p>
 <p><strong>Create a HiddenNames wrapper for the supplied registry sheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function HiddenNameStore(ByVal registrySheet As Worksheet) As IHiddenNames
 </code></pre>
 <hr />
-<h3 id="int-metadata-store">metadata-store <a class="anchor-link" href="#int-metadata-store">#</a></h3>
+<h3 id="int-metadatastore">MetadataStore <a class="anchor-link" href="#int-metadatastore">#</a></h3>
+<p><em>metadata-store</em></p>
 <p><strong>Resolve the hidden name store hosting metadata.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function MetadataStore() As IHiddenNames
 </code></pre>
 <hr />
 <h2 id="int-validation-and-utilities">Validation and utilities</h2>
-<h3 id="int-validate-initialised">validate-initialised <a class="anchor-link" href="#int-validate-initialised">#</a></h3>
+<h3 id="int-validateinitialised">ValidateInitialised <a class="anchor-link" href="#int-validateinitialised">#</a></h3>
+<p><em>validate-initialised</em></p>
 <p><strong>Ensure the manager has been initialised before use.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ValidateInitialised()
 </code></pre>
 <hr />
-<h3 id="int-validate-translation-table">validate-translation-table <a class="anchor-link" href="#int-validate-translation-table">#</a></h3>
+<h3 id="int-validatetranslationtable">ValidateTranslationTable <a class="anchor-link" href="#int-validatetranslationtable">#</a></h3>
+<p><em>validate-translation-table</em></p>
 <p><strong>Validate the supplied translations table.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ValidateTranslationTable(ByVal translationTable As ListObject)
 </code></pre>
 <hr />
-<h3 id="int-validate-registry-sheet">validate-registry-sheet <a class="anchor-link" href="#int-validate-registry-sheet">#</a></h3>
+<h3 id="int-validateregistrysheet">ValidateRegistrySheet <a class="anchor-link" href="#int-validateregistrysheet">#</a></h3>
+<p><em>validate-registry-sheet</em></p>
 <p><strong>Validate the registry sheet before processing.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ValidateRegistrySheet(ByVal registrySheet As Worksheet)
 </code></pre>
 <hr />
-<h3 id="int-resolve-named-range">resolve-named-range <a class="anchor-link" href="#int-resolve-named-range">#</a></h3>
+<h3 id="int-resolvenamedrange">ResolveNamedRange <a class="anchor-link" href="#int-resolvenamedrange">#</a></h3>
+<p><em>resolve-named-range</em></p>
 <p><strong>Resolve a named range from the workbook, returning Nothing when missing.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ResolveNamedRange(ByVal hostwb As Workbook, ByVal rangeName As String) As Range
 </code></pre>
 <hr />
-<h3 id="int-throw-project-error">throw-project-error <a class="anchor-link" href="#int-throw-project-error">#</a></h3>
+<h3 id="int-throwprojecterror">ThrowProjectError <a class="anchor-link" href="#int-throwprojecterror">#</a></h3>
+<p><em>throw-project-error</em></p>
 <p><strong>Raise a project error with a contextual message.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowProjectError(ByVal errNumber As ProjectError, ByVal message As String)
@@ -516,7 +593,8 @@ external workbooks. Uses HiddenNames for sequence counters.</p>
 <p>Thin delegation stubs wiring ISetupTranslationsTable members to
 the corresponding public or private methods on this class.</p>
 <hr />
-<h3 id="int-initialise">initialise <a class="anchor-link" href="#int-initialise">#</a></h3>
+<h3 id="int-isetuptranslationstable-initialise">ISetupTranslationsTable_Initialise <a class="anchor-link" href="#int-isetuptranslationstable-initialise">#</a></h3>
+<p><em>initialise</em></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ISetupTranslationsTable_Initialise(ByVal translationTable As ListObject, Optional ByVal stateScope As IApplicationState)
 </code></pre>

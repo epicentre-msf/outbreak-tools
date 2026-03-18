@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LinelistBuildService - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>LinelistBuildService</h1>
+<p>Orchestrates building a linelist by exporting pass-through components
+(dictionary, choices, exports, analysis, hidden names) directly from a
+setup workbook to the linelist workbook, eliminating the redundant
+designer intermediary copy. Designer-sourced components (geo, passwords,
+formatter when ribbon-imported, language HiddenNames, translations) are
+exported from the designer. After export, new domain manager instances
+targeting the linelist workbook are available via accessor properties.
+Replaces DesignerImportService for the generation flow.</p>
+<details open class="doc-section" id="factory">
+<summary>Factory</summary>
+<div class="section-body">
+<h3 id="create">Create <a class="anchor-link" href="#create">#</a></h3>
+<p><em>create</em></p>
+<p><strong>Create and configure a linelist build service</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create(Optional ByVal hostBook As Workbook = Nothing) As ILinelistBuildService
+</code></pre>
+<p>Factory method that creates a new LinelistBuildService instance, binds it
+to the supplied designer workbook, and returns the result through the
+ILinelistBuildService interface. When no workbook is provided, defaults
+to ThisWorkbook.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>hostBook</code>: Optional Workbook. The designer workbook. Defaults to ThisWorkbook.</li>
+</ul>
+<p><strong>Returns:</strong> ILinelistBuildService. A configured instance ready for use.</p>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="public-api">
+<summary>Public API</summary>
+<div class="section-body">
+<h3 id="configure">Configure <a class="anchor-link" href="#configure">#</a></h3>
+<p><em>configure</em></p>
+<p><strong>Bind the service to the designer workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Configure(ByVal hostBook As Workbook)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>hostBook</code>: Workbook. The designer workbook to operate on.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When the workbook is Nothing.</li>
+</ul>
+<hr />
+<h3 id="hostworkbook">HostWorkbook <a class="anchor-link" href="#hostworkbook">#</a></h3>
+<p><em>host-workbook</em></p>
+<p><strong>The configured host workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get HostWorkbook() As Workbook
+</code></pre>
+<p><strong>Returns:</strong> Workbook. The host workbook.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When the workbook was not configured.</li>
+</ul>
+<hr />
+<h3 id="importsetuptolinelist">ImportSetupToLinelist <a class="anchor-link" href="#importsetuptolinelist">#</a></h3>
+<p><em>import-setup-to-linelist</em></p>
+<p><strong>Export pass-through components directly from setup to linelist</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ImportSetupToLinelist(ByVal setupPath As String, ByVal targetBook As Workbook)
+</code></pre>
+<p>Opens the setup workbook at the supplied path (read-only), then exports
+dictionary, choices, exports, analysis, and hidden names directly into
+the target linelist workbook. Translations dictionary data is imported
+from setup into the designer's LinelistTranslation sheet (the full
+translations sheet is exported later in ExportDesignerComponents).
+The formatter is exported from setup when TAG_FORMATTER_IMPORTED is not
+set on the designer. The setup workbook is always closed on exit.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>setupPath</code>: String. Full path to the setup workbook.</li>
+<li><code>targetBook</code>: Workbook. The linelist workbook to receive exported data.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.SomethingWentWrong When setup cannot be opened or export fails.</li>
+</ul>
+<hr />
+<h3 id="exportdesignercomponents">ExportDesignerComponents <a class="anchor-link" href="#exportdesignercomponents">#</a></h3>
+<p><em>export-designer-components</em></p>
+<p><strong>Export designer-sourced components to the linelist</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ExportDesignerComponents(ByVal targetBook As Workbook)
+</code></pre>
+<p>Syncs language codes from Main sheet into designer HiddenNames, then
+exports designer HiddenNames, geo, passwords, translations, and
+formatter (when ribbon-imported) to the target linelist workbook.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>targetBook</code>: Workbook. The linelist workbook to receive exported data.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When targetBook is Nothing.</li>
+</ul>
+<hr />
+<h3 id="buildexportedinstances">BuildExportedInstances <a class="anchor-link" href="#buildexportedinstances">#</a></h3>
+<p><em>build-exported-instances</em></p>
+<p><strong>Create domain manager instances from the exported linelist</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub BuildExportedInstances(ByVal targetBook As Workbook)
+</code></pre>
+<p>Creates new domain manager instances pointing to sheets in the target
+workbook. Each manager is created only when its corresponding sheet
+exists. Failures for individual managers are silently ignored so that
+remaining managers can still be created.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>targetBook</code>: Workbook. The linelist workbook containing exported data.</li>
+</ul>
+<hr />
+</div>
+</details>
+<details>
+<summary>Internal members (not exported)</summary>
+<h2 id="int-factory">Factory</h2>
+<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
+<p><em>self</em></p>
+<p><strong>Current object instance</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Self() As ILinelistBuildService
+</code></pre>
+<p><strong>Returns:</strong> ILinelistBuildService. The current instance cast to the interface.</p>
+<hr />
+<h2 id="int-exported-instance-properties">Exported Instance Properties</h2>
+<h3 id="int-exporteddictionary">ExportedDictionary <a class="anchor-link" href="#int-exporteddictionary">#</a></h3>
+<p><em>exported-dictionary</em></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ExportedDictionary() As ILLdictionary
+</code></pre>
+<hr />
+<h3 id="int-exportedchoices">ExportedChoices <a class="anchor-link" href="#int-exportedchoices">#</a></h3>
+<p><em>exported-choices</em></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ExportedChoices() As ILLChoices
+</code></pre>
+<hr />
+<h3 id="int-exportedanalysis">ExportedAnalysis <a class="anchor-link" href="#int-exportedanalysis">#</a></h3>
+<p><em>exported-analysis</em></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ExportedAnalysis() As IAnalysis
+</code></pre>
+<hr />
+<h3 id="int-exportedexport">ExportedExport <a class="anchor-link" href="#int-exportedexport">#</a></h3>
+<p><em>exported-export</em></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ExportedExport() As ILLExport
+</code></pre>
+<hr />
+<h3 id="int-exportedgeo">ExportedGeo <a class="anchor-link" href="#int-exportedgeo">#</a></h3>
+<p><em>exported-geo</em></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ExportedGeo() As ILLGeo
+</code></pre>
+<hr />
+<h3 id="int-exportedpasswords">ExportedPasswords <a class="anchor-link" href="#int-exportedpasswords">#</a></h3>
+<p><em>exported-passwords</em></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ExportedPasswords() As IPasswords
+</code></pre>
+<hr />
+<h3 id="int-exportedtranslations">ExportedTranslations <a class="anchor-link" href="#int-exportedtranslations">#</a></h3>
+<p><em>exported-translations</em></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ExportedTranslations() As ILLTranslation
+</code></pre>
+<hr />
+<h2 id="int-setup-to-linelist-export-helpers-direct-path">Setup-to-Linelist Export Helpers (Direct Path)</h2>
+<h3 id="int-exportdictionaryfromsetup">ExportDictionaryFromSetup <a class="anchor-link" href="#int-exportdictionaryfromsetup">#</a></h3>
+<p><em>export-dictionary-from-setup</em></p>
+<p><strong>Export dictionary directly from setup to linelist</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ExportDictionaryFromSetup(ByVal setupBook As Workbook, ByVal targetBook As Workbook)
+</code></pre>
+<p>The data start row depends on the setup file format: .xlsb files
+have metadata rows above the data (row 5), while .xlsx files start
+at row 1. Exported sheet is set to very hidden.</p>
+<hr />
+<h3 id="int-exportchoicesfromsetup">ExportChoicesFromSetup <a class="anchor-link" href="#int-exportchoicesfromsetup">#</a></h3>
+<p><em>export-choices-from-setup</em></p>
+<p><strong>Export choices directly from setup to linelist</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ExportChoicesFromSetup(ByVal setupBook As Workbook, ByVal targetBook As Workbook)
+</code></pre>
+<hr />
+<h3 id="int-exportexportsfromsetup">ExportExportsFromSetup <a class="anchor-link" href="#int-exportexportsfromsetup">#</a></h3>
+<p><em>export-exports-from-setup</em></p>
+<p><strong>Export export specs directly from setup to linelist</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ExportExportsFromSetup(ByVal setupBook As Workbook, ByVal targetBook As Workbook)
+</code></pre>
+<hr />
+<h3 id="int-exportanalysisfromsetup">ExportAnalysisFromSetup <a class="anchor-link" href="#int-exportanalysisfromsetup">#</a></h3>
+<p><em>export-analysis-from-setup</em></p>
+<p><strong>Export analysis directly from setup to linelist</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ExportAnalysisFromSetup(ByVal setupBook As Workbook, ByVal targetBook As Workbook)
+</code></pre>
+<hr />
+<h3 id="int-exporthiddennamesfromsetup">ExportHiddenNamesFromSetup <a class="anchor-link" href="#int-exporthiddennamesfromsetup">#</a></h3>
+<p><em>export-hidden-names-from-setup</em></p>
+<p><strong>Export hidden names directly from setup to linelist</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ExportHiddenNamesFromSetup(ByVal setupBook As Workbook, ByVal targetBook As Workbook)
+</code></pre>
+<hr />
+<h3 id="int-exportformatterfromsetup">ExportFormatterFromSetup <a class="anchor-link" href="#int-exportformatterfromsetup">#</a></h3>
+<p><em>export-formatter-from-setup</em></p>
+<p><strong>Export formatter from setup to linelist (when not ribbon-imported)</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ExportFormatterFromSetup(ByVal setupBook As Workbook, ByVal targetBook As Workbook)
+</code></pre>
+<hr />
+<h3 id="int-importtranslationstodesigner">ImportTranslationsToDesigner <a class="anchor-link" href="#int-importtranslationstodesigner">#</a></h3>
+<p><em>import-translations-to-designer</em></p>
+<p><strong>Import dictionary translations from setup into designer sheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ImportTranslationsToDesigner(ByVal setupBook As Workbook, ByVal hostBook As Workbook)
+</code></pre>
+<p>The LinelistTranslation sheet template lives on the designer workbook
+with all its ListObjects pre-populated. This method imports the
+dictionary translations from the setup file into the designer sheet.
+The full translations sheet is exported to the linelist later in
+ExportDesignerComponents via ExportTranslationsFromDesigner.</p>
+<hr />
+<h2 id="int-designer-to-linelist-export-helpers">Designer-to-Linelist Export Helpers</h2>
+<h3 id="int-exportgeofromdesigner">ExportGeoFromDesigner <a class="anchor-link" href="#int-exportgeofromdesigner">#</a></h3>
+<p><em>export-geo-from-designer</em></p>
+<p><strong>Export geo from designer to linelist</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ExportGeoFromDesigner(ByVal hostBook As Workbook, ByVal targetBook As Workbook)
+</code></pre>
+<p>Sets RNG_GeoLangCode and RNG_MetaLang on the designer's geo sheet
+before export so that UpdateLevelNames can resolve translations
+during ExportToWkb.</p>
+<hr />
+<h3 id="int-exportpasswordsfromdesigner">ExportPasswordsFromDesigner <a class="anchor-link" href="#int-exportpasswordsfromdesigner">#</a></h3>
+<p><em>export-passwords-from-designer</em></p>
+<p><strong>Export passwords from designer to linelist</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ExportPasswordsFromDesigner(ByVal hostBook As Workbook, ByVal targetBook As Workbook)
+</code></pre>
+<hr />
+<h3 id="int-exporttranslationsfromdesigner">ExportTranslationsFromDesigner <a class="anchor-link" href="#int-exporttranslationsfromdesigner">#</a></h3>
+<p><em>export-translations-from-designer</em></p>
+<p><strong>Export translations from designer to linelist</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ExportTranslationsFromDesigner(ByVal hostBook As Workbook, ByVal targetBook As Workbook)
+</code></pre>
+<p>Exports the full LinelistTranslation sheet (all ListObjects including
+the just-updated dictionary translations) from the designer to the
+linelist workbook.</p>
+<hr />
+<h3 id="int-exportformatterfromdesigner">ExportFormatterFromDesigner <a class="anchor-link" href="#int-exportformatterfromdesigner">#</a></h3>
+<p><em>export-formatter-from-designer</em></p>
+<p><strong>Export formatter from designer to linelist (when ribbon-imported)</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ExportFormatterFromDesigner(ByVal hostBook As Workbook, ByVal targetBook As Workbook)
+</code></pre>
+<hr />
+<h2 id="int-language-and-hiddennames-helpers">Language and HiddenNames Helpers</h2>
+<h3 id="int-syncdesignerlanguagenames">SyncDesignerLanguageNames <a class="anchor-link" href="#int-syncdesignerlanguagenames">#</a></h3>
+<p><em>sync-designer-language-names</em></p>
+<p><strong>Update language HiddenNames on the designer workbook from Main sheet values</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub SyncDesignerLanguageNames(ByVal hostBook As Workbook)
+</code></pre>
+<p>Reads the dictionary language from RNG_LangSetup and the interface
+language from RNG_LLForm on the Main worksheet. Writes these values
+as workbook-level HiddenNames (RNG_DictionaryLanguage and
+RNG_LLLanguageCode) on the host workbook so they are current before
+export. The interface language is split on &quot;-&quot; to extract the code
+prefix (e.g., &quot;FRA-Francais&quot; -&gt; &quot;FRA&quot;).</p>
+<hr />
+<h3 id="int-exportdesignerhiddennames">ExportDesignerHiddenNames <a class="anchor-link" href="#int-exportdesignerhiddennames">#</a></h3>
+<p><em>export-designer-hidden-names</em></p>
+<p><strong>Export designer workbook HiddenNames to the target linelist workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ExportDesignerHiddenNames(ByVal hostBook As Workbook, ByVal targetBook As Workbook)
+</code></pre>
+<p>Copies all workbook-level HiddenNames from the designer (host) workbook
+to the target linelist workbook, including language codes, ribbon flags,
+and other configuration values.</p>
+<hr />
+<h2 id="int-internal-helpers">Internal Helpers</h2>
+<h3 id="int-formatteralreadyimported">FormatterAlreadyImported <a class="anchor-link" href="#int-formatteralreadyimported">#</a></h3>
+<p><em>formatter-already-imported</em></p>
+<p><strong>Check whether the formatter was imported via the designer ribbon</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function FormatterAlreadyImported(ByVal hostBook As Workbook) As Boolean
+</code></pre>
+<p><strong>Returns:</strong> Boolean. True when TAG_FORMATTER_IMPORTED is &quot;Yes&quot; on the host workbook.</p>
+<hr />
+<h3 id="int-resolveworksheet">ResolveWorksheet <a class="anchor-link" href="#int-resolveworksheet">#</a></h3>
+<p><em>resolve-worksheet</em></p>
+<p><strong>Resolve a worksheet by name from a workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ResolveWorksheet(ByVal wb As Workbook, ByVal sheetName As String) As Worksheet
+</code></pre>
+<p><strong>Returns:</strong> Worksheet. The resolved worksheet, or Nothing.</p>
+<hr />
+<h3 id="int-worksheetexists">WorksheetExists <a class="anchor-link" href="#int-worksheetexists">#</a></h3>
+<p><em>worksheet-exists</em></p>
+<p><strong>Check whether a worksheet exists in a workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function WorksheetExists(ByVal wb As Workbook, ByVal sheetName As String) As Boolean
+</code></pre>
+<hr />
+<h3 id="int-setupstartrow">SetupStartRow <a class="anchor-link" href="#int-setupstartrow">#</a></h3>
+<p><em>setup-start-row</em></p>
+<p><strong>Return the data start row based on the setup file format</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SetupStartRow(ByVal wb As Workbook, ByVal xlsbRow As Long) As Long
+</code></pre>
+<p>Setup workbooks saved as .xlsb have metadata rows above the data
+tables (Dictionary at row 5, Choices/Exports at row 4). In .xlsx
+format the data always starts at row 1.</p>
+<hr />
+<h3 id="int-readmainrange">ReadMainRange <a class="anchor-link" href="#int-readmainrange">#</a></h3>
+<p><em>read-main-range</em></p>
+<p><strong>Read a named range value from the Main worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ReadMainRange(ByVal wb As Workbook, ByVal rngName As String) As String
+</code></pre>
+<p><strong>Returns:</strong> String. Cell value or vbNullString.</p>
+<hr />
+<h3 id="int-closeworkbook">CloseWorkbook <a class="anchor-link" href="#int-closeworkbook">#</a></h3>
+<p><em>close-workbook</em></p>
+<p><strong>Close a workbook safely without raising errors</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub CloseWorkbook(ByRef wb As Workbook)
+</code></pre>
+<hr />
+<h3 id="int-validatefilepath">ValidateFilePath <a class="anchor-link" href="#int-validatefilepath">#</a></h3>
+<p><em>validate-file-path</em></p>
+<p><strong>Validate that a file path is not empty and the file exists</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ValidateFilePath(ByVal filePath As String)
+</code></pre>
+<hr />
+<h3 id="int-clearexportedinstances">ClearExportedInstances <a class="anchor-link" href="#int-clearexportedinstances">#</a></h3>
+<p><em>clear-exported-instances</em></p>
+<p><strong>Reset all exported domain manager references</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ClearExportedInstances()
+</code></pre>
+<hr />
+<h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
+<p><em>throw-error</em></p>
+<p><strong>Raise a ProjectError-based exception</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowError(ByVal errorCode As ProjectError, ByVal messageText As String)
+</code></pre>
+<hr />
+<h2 id="int-interface-implementation">Interface Implementation</h2>
+<h3 id="int-ilinelistbuildservice-configure">ILinelistBuildService_Configure <a class="anchor-link" href="#int-ilinelistbuildservice-configure">#</a></h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ILinelistBuildService_Configure(ByVal hostBook As Workbook)
+</code></pre>
+<p>Delegated members satisfying the ILinelistBuildService contract.</p>
+<hr />
+</details>
+<details>
+<summary>Used in (8 file(s))</summary>
+<ul>
+<li><a href="src/classes/designer/ILinelistBuildService.cls">ILinelistBuildService.cls</a></li>
+<li><a href="src/classes/designer/LinelistBuildService.cls">LinelistBuildService.cls</a></li>
+<li><a href="src/classes/linelist/ILinelistSpecs.cls">ILinelistSpecs.cls</a></li>
+<li><a href="src/classes/linelist/LinelistSpecs.cls">LinelistSpecs.cls</a></li>
+<li><a href="src/modules/designer/EventsDesignerAdvanced.bas">EventsDesignerAdvanced.bas</a></li>
+<li><a href="src/tests/stubs/LinelistSpecsWorkbookStub.cls">LinelistSpecsWorkbookStub.cls</a></li>
+<li><a href="src/tests/stubs/LLVarContextSpecsStub.cls">LLVarContextSpecsStub.cls</a></li>
+<li><a href="src/tests/TableSpecsLinelistStub.cls">TableSpecsLinelistStub.cls</a></li>
+</ul>
+</details>
+  </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
+</body>
+</html>
+

@@ -23,7 +23,8 @@ Workbook-level Name used to persist the last used folder path.</p>
 <details open class="doc-section" id="initialization">
 <summary>Initialization</summary>
 <div class="section-body">
-<h3 id="create">create <a class="anchor-link" href="#create">#</a></h3>
+<h3 id="create">Create <a class="anchor-link" href="#create">#</a></h3>
+<p><em>create</em></p>
 <p><strong>Factory returning an initialised interface</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create() As IOSFiles
@@ -35,28 +36,32 @@ Workbook-level Name used to persist the last used folder path.</p>
 <details open class="doc-section" id="elements">
 <summary>Elements</summary>
 <div class="section-body">
-<h3 id="file">file <a class="anchor-link" href="#file">#</a></h3>
+<h3 id="file">File <a class="anchor-link" href="#file">#</a></h3>
+<p><em>file</em></p>
 <p><strong>Current loaded file path</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get File() As String
 </code></pre>
 <p><strong>Returns:</strong> String. The first selected file path.</p>
 <hr />
-<h3 id="files">files <a class="anchor-link" href="#files">#</a></h3>
+<h3 id="files">Files <a class="anchor-link" href="#files">#</a></h3>
+<p><em>files</em></p>
 <p><strong>All loaded file paths from a multi-selection</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get Files() As Variant
 </code></pre>
 <p><strong>Returns:</strong> Variant. Zero-based string array of file paths.</p>
 <hr />
-<h3 id="folder">folder <a class="anchor-link" href="#folder">#</a></h3>
+<h3 id="folder">Folder <a class="anchor-link" href="#folder">#</a></h3>
+<p><em>folder</em></p>
 <p><strong>Current loaded folder path</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get Folder() As String
 </code></pre>
 <p><strong>Returns:</strong> String. The first selected folder path.</p>
 <hr />
-<h3 id="folders">folders <a class="anchor-link" href="#folders">#</a></h3>
+<h3 id="folders">Folders <a class="anchor-link" href="#folders">#</a></h3>
+<p><em>folders</em></p>
 <p><strong>All loaded folder paths from a multi-selection</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get Folders() As Variant
@@ -68,13 +73,15 @@ Workbook-level Name used to persist the last used folder path.</p>
 <details open class="doc-section" id="selecting">
 <summary>Selecting</summary>
 <div class="section-body">
-<h3 id="load-folder">load-folder <a class="anchor-link" href="#load-folder">#</a></h3>
+<h3 id="loadfolder">LoadFolder <a class="anchor-link" href="#loadfolder">#</a></h3>
+<p><em>load-folder</em></p>
 <p><strong>Show a single-folder picker dialog</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub LoadFolder()
 </code></pre>
 <hr />
-<h3 id="load-file">load-file <a class="anchor-link" href="#load-file">#</a></h3>
+<h3 id="loadfile">LoadFile <a class="anchor-link" href="#loadfile">#</a></h3>
+<p><em>load-file</em></p>
 <p><strong>Show a single-file picker dialog</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub LoadFile(ByVal filters As String, _ 
@@ -86,7 +93,8 @@ Workbook-level Name used to persist the last used folder path.</p>
 <li><code>customMacFilter</code>: String. Optional UTI override for macOS. Defaults to vbNullString.</li>
 </ul>
 <hr />
-<h3 id="load-files">load-files <a class="anchor-link" href="#load-files">#</a></h3>
+<h3 id="loadfiles">LoadFiles <a class="anchor-link" href="#loadfiles">#</a></h3>
+<p><em>load-files</em></p>
 <p><strong>Show a multi-file picker dialog</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub LoadFiles(ByVal filters As String, _
@@ -98,7 +106,8 @@ Workbook-level Name used to persist the last used folder path.</p>
 <li><code>customMacFilter</code>: String. Optional UTI override for macOS. Defaults to vbNullString.</li>
 </ul>
 <hr />
-<h3 id="load-folders">load-folders <a class="anchor-link" href="#load-folders">#</a></h3>
+<h3 id="loadfolders">LoadFolders <a class="anchor-link" href="#loadfolders">#</a></h3>
+<p><em>load-folders</em></p>
 <p><strong>Show a multi-folder picker dialog</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub LoadFolders()
@@ -109,37 +118,43 @@ Workbook-level Name used to persist the last used folder path.</p>
 <details open class="doc-section" id="iteration">
 <summary>Iteration</summary>
 <div class="section-body">
-<h3 id="reset-files-iterator">reset-files-iterator <a class="anchor-link" href="#reset-files-iterator">#</a></h3>
+<h3 id="resetfilescursor">ResetFilesCursor <a class="anchor-link" href="#resetfilescursor">#</a></h3>
+<p><em>reset-files-iterator</em></p>
 <p><strong>Reset the file iteration cursor to the beginning</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ResetFilesCursor()
 </code></pre>
 <hr />
-<h3 id="reset-folders-iterator">reset-folders-iterator <a class="anchor-link" href="#reset-folders-iterator">#</a></h3>
+<h3 id="resetfolderscursor">ResetFoldersCursor <a class="anchor-link" href="#resetfolderscursor">#</a></h3>
+<p><em>reset-folders-iterator</em></p>
 <p><strong>Reset the folder iteration cursor to the beginning</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ResetFoldersCursor()
 </code></pre>
 <hr />
-<h3 id="has-next-file">has-next-file <a class="anchor-link" href="#has-next-file">#</a></h3>
+<h3 id="hasnextfilevalue">HasNextFileValue <a class="anchor-link" href="#hasnextfilevalue">#</a></h3>
+<p><em>has-next-file</em></p>
 <p><strong>Check if another file is available in the iterator</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function HasNextFileValue() As Boolean
 </code></pre>
 <hr />
-<h3 id="has-next-folder">has-next-folder <a class="anchor-link" href="#has-next-folder">#</a></h3>
+<h3 id="hasnextfoldervalue">HasNextFolderValue <a class="anchor-link" href="#hasnextfoldervalue">#</a></h3>
+<p><em>has-next-folder</em></p>
 <p><strong>Check if another folder is available in the iterator</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function HasNextFolderValue() As Boolean
 </code></pre>
 <hr />
-<h3 id="next-file">next-file <a class="anchor-link" href="#next-file">#</a></h3>
+<h3 id="nextfilevalue">NextFileValue <a class="anchor-link" href="#nextfilevalue">#</a></h3>
+<p><em>next-file</em></p>
 <p><strong>Return the next file path and advance the cursor</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function NextFileValue() As String
 </code></pre>
 <hr />
-<h3 id="next-folder">next-folder <a class="anchor-link" href="#next-folder">#</a></h3>
+<h3 id="nextfoldervalue">NextFolderValue <a class="anchor-link" href="#nextfoldervalue">#</a></h3>
+<p><em>next-folder</em></p>
 <p><strong>Return the next folder path and advance the cursor</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function NextFolderValue() As String
@@ -150,28 +165,32 @@ Workbook-level Name used to persist the last used folder path.</p>
 <details open class="doc-section" id="validation">
 <summary>Validation</summary>
 <div class="section-body">
-<h3 id="has-valid-file">has-valid-file <a class="anchor-link" href="#has-valid-file">#</a></h3>
+<h3 id="hasvalidfile">HasValidFile <a class="anchor-link" href="#hasvalidfile">#</a></h3>
+<p><em>has-valid-file</em></p>
 <p><strong>Whether the loaded file path is valid</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function HasValidFile() As Boolean
 </code></pre>
 <p><strong>Returns:</strong> Boolean. True when a non-empty file path exists.</p>
 <hr />
-<h3 id="has-valid-files">has-valid-files <a class="anchor-link" href="#has-valid-files">#</a></h3>
+<h3 id="hasvalidfiles">HasValidFiles <a class="anchor-link" href="#hasvalidfiles">#</a></h3>
+<p><em>has-valid-files</em></p>
 <p><strong>Whether the loaded files array contains entries</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function HasValidFiles() As Boolean
 </code></pre>
 <p><strong>Returns:</strong> Boolean. True when at least one file was selected.</p>
 <hr />
-<h3 id="has-valid-folder">has-valid-folder <a class="anchor-link" href="#has-valid-folder">#</a></h3>
+<h3 id="hasvalidfolder">HasValidFolder <a class="anchor-link" href="#hasvalidfolder">#</a></h3>
+<p><em>has-valid-folder</em></p>
 <p><strong>Whether the loaded folder path is valid</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function HasValidFolder() As Boolean
 </code></pre>
 <p><strong>Returns:</strong> Boolean. True when a non-empty folder path exists.</p>
 <hr />
-<h3 id="has-valid-folders">has-valid-folders <a class="anchor-link" href="#has-valid-folders">#</a></h3>
+<h3 id="hasvalidfolders">HasValidFolders <a class="anchor-link" href="#hasvalidfolders">#</a></h3>
+<p><em>has-valid-folders</em></p>
 <p><strong>Whether the loaded folders array contains entries</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function HasValidFolders() As Boolean
@@ -183,39 +202,45 @@ Workbook-level Name used to persist the last used folder path.</p>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-initialization">Initialization</h2>
-<h3 id="int-class-initialize">class-initialize <a class="anchor-link" href="#int-class-initialize">#</a></h3>
+<h3 id="int-class-initialize">Class_Initialize <a class="anchor-link" href="#int-class-initialize">#</a></h3>
+<p><em>class-initialize</em></p>
 <p><strong>Set default values for file and folder state</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub Class_Initialize()
 </code></pre>
 <hr />
-<h3 id="int-reset-file-state">reset-file-state <a class="anchor-link" href="#int-reset-file-state">#</a></h3>
+<h3 id="int-resetfilestate">ResetFileState <a class="anchor-link" href="#int-resetfilestate">#</a></h3>
+<p><em>reset-file-state</em></p>
 <p><strong>Clear file-related state and reset the iteration cursor</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ResetFileState()
 </code></pre>
 <hr />
-<h3 id="int-reset-folder-state">reset-folder-state <a class="anchor-link" href="#int-reset-folder-state">#</a></h3>
+<h3 id="int-resetfolderstate">ResetFolderState <a class="anchor-link" href="#int-resetfolderstate">#</a></h3>
+<p><em>reset-folder-state</em></p>
 <p><strong>Clear folder-related state and reset the iteration cursor</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ResetFolderState()
 </code></pre>
 <hr />
-<h3 id="int-empty-string-array">empty-string-array <a class="anchor-link" href="#int-empty-string-array">#</a></h3>
+<h3 id="int-emptystringarray">EmptyStringArray <a class="anchor-link" href="#int-emptystringarray">#</a></h3>
+<p><em>empty-string-array</em></p>
 <p><strong>Return an empty variant array</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function EmptyStringArray() As Variant
 </code></pre>
 <p><strong>Returns:</strong> Variant. Empty array.</p>
 <hr />
-<h3 id="int-select-folders-on-windows">select-folders-on-windows <a class="anchor-link" href="#int-select-folders-on-windows">#</a></h3>
+<h3 id="int-selectfoldersonwindows">SelectFoldersOnWindows <a class="anchor-link" href="#int-selectfoldersonwindows">#</a></h3>
+<p><em>select-folders-on-windows</em></p>
 <p><strong>Show the Windows multi-folder picker</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function SelectFoldersOnWindows() As Variant
 </code></pre>
 <p><strong>Returns:</strong> Variant. Zero-based string array of folder paths.</p>
 <hr />
-<h3 id="int-try-get-array-bounds">try-get-array-bounds <a class="anchor-link" href="#int-try-get-array-bounds">#</a></h3>
+<h3 id="int-trygetarraybounds">TryGetArrayBounds <a class="anchor-link" href="#int-trygetarraybounds">#</a></h3>
+<p><em>try-get-array-bounds</em></p>
 <p><strong>Safely probe array bounds</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function TryGetArrayBounds(ByVal candidate As Variant, _
@@ -223,171 +248,199 @@ Workbook-level Name used to persist the last used folder path.</p>
                                    ByRef upperBound As Long) As Boolean
 </code></pre>
 <hr />
-<h3 id="int-count-array-items">count-array-items <a class="anchor-link" href="#int-count-array-items">#</a></h3>
+<h3 id="int-countarrayitems">CountArrayItems <a class="anchor-link" href="#int-countarrayitems">#</a></h3>
+<p><em>count-array-items</em></p>
 <p><strong>Count the number of items in a variant array</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function CountArrayItems(ByVal candidate As Variant) As Long
 </code></pre>
 <hr />
-<h3 id="int-to-string-array">to-string-array <a class="anchor-link" href="#int-to-string-array">#</a></h3>
+<h3 id="int-tostringarray">ToStringArray <a class="anchor-link" href="#int-tostringarray">#</a></h3>
+<p><em>to-string-array</em></p>
 <p><strong>Coerce a variant into a zero-based string array</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ToStringArray(ByVal value As Variant) As Variant
 </code></pre>
 <hr />
-<h3 id="int-clone-string-array">clone-string-array <a class="anchor-link" href="#int-clone-string-array">#</a></h3>
+<h3 id="int-clonestringarray">CloneStringArray <a class="anchor-link" href="#int-clonestringarray">#</a></h3>
+<p><em>clone-string-array</em></p>
 <p><strong>Create a safe copy of a string array</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function CloneStringArray(ByVal source As Variant) As Variant
 </code></pre>
 <hr />
-<h3 id="int-has-next-array-item">has-next-array-item <a class="anchor-link" href="#int-has-next-array-item">#</a></h3>
+<h3 id="int-hasnextarrayitem">HasNextArrayItem <a class="anchor-link" href="#int-hasnextarrayitem">#</a></h3>
+<p><em>has-next-array-item</em></p>
 <p><strong>Check whether the cursor is within array bounds</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function HasNextArrayItem(ByVal items As Variant, ByVal cursor As Long) As Boolean
 </code></pre>
 <hr />
-<h3 id="int-get-next-array-item">get-next-array-item <a class="anchor-link" href="#int-get-next-array-item">#</a></h3>
+<h3 id="int-getnextarrayitem">GetNextArrayItem <a class="anchor-link" href="#int-getnextarrayitem">#</a></h3>
+<p><em>get-next-array-item</em></p>
 <p><strong>Fetch the item at the cursor and advance it</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function GetNextArrayItem(ByVal items As Variant, _
                                   ByRef cursor As Long) As String
 </code></pre>
 <hr />
-<h3 id="int-set-files-selection">set-files-selection <a class="anchor-link" href="#int-set-files-selection">#</a></h3>
+<h3 id="int-setfilesselection">SetFilesSelection <a class="anchor-link" href="#int-setfilesselection">#</a></h3>
+<p><em>set-files-selection</em></p>
 <p><strong>Persist file selections and prime the iterator</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub SetFilesSelection(ByVal selectedItems As Variant)
 </code></pre>
 <hr />
-<h3 id="int-set-folders-selection">set-folders-selection <a class="anchor-link" href="#int-set-folders-selection">#</a></h3>
+<h3 id="int-setfoldersselection">SetFoldersSelection <a class="anchor-link" href="#int-setfoldersselection">#</a></h3>
+<p><em>set-folders-selection</em></p>
 <p><strong>Persist folder selections and prime the iterator</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub SetFoldersSelection(ByVal selectedItems As Variant)
 </code></pre>
 <hr />
-<h3 id="int-first-string-or-empty">first-string-or-empty <a class="anchor-link" href="#int-first-string-or-empty">#</a></h3>
+<h3 id="int-firststringorempty">FirstStringOrEmpty <a class="anchor-link" href="#int-firststringorempty">#</a></h3>
+<p><em>first-string-or-empty</em></p>
 <p><strong>Return the first array entry or an empty string</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function FirstStringOrEmpty(ByVal source As Variant) As String
 </code></pre>
 <hr />
-<h3 id="int-normalize-folder-path">normalize-folder-path <a class="anchor-link" href="#int-normalize-folder-path">#</a></h3>
+<h3 id="int-normalizefolderpath">NormalizeFolderPath <a class="anchor-link" href="#int-normalizefolderpath">#</a></h3>
+<p><em>normalize-folder-path</em></p>
 <p><strong>Trim trailing separators and clean the folder path</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function NormalizeFolderPath(ByVal folderPath As String) As String
 </code></pre>
 <hr />
-<h3 id="int-extract-folder-from-path">extract-folder-from-path <a class="anchor-link" href="#int-extract-folder-from-path">#</a></h3>
+<h3 id="int-extractfolderfrompath">ExtractFolderFromPath <a class="anchor-link" href="#int-extractfolderfrompath">#</a></h3>
+<p><em>extract-folder-from-path</em></p>
 <p><strong>Identify the parent directory from a file path</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ExtractFolderFromPath(ByVal filePath As String) As String
 </code></pre>
 <hr />
-<h3 id="int-remember-folder">remember-folder <a class="anchor-link" href="#int-remember-folder">#</a></h3>
+<h3 id="int-rememberfolder">RememberFolder <a class="anchor-link" href="#int-rememberfolder">#</a></h3>
+<p><em>remember-folder</em></p>
 <p><strong>Cache the folder locally and in the workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RememberFolder(ByVal folderPath As String)
 </code></pre>
 <hr />
-<h3 id="int-remember-folder-from-files">remember-folder-from-files <a class="anchor-link" href="#int-remember-folder-from-files">#</a></h3>
+<h3 id="int-rememberfolderfromfiles">RememberFolderFromFiles <a class="anchor-link" href="#int-rememberfolderfromfiles">#</a></h3>
+<p><em>remember-folder-from-files</em></p>
 <p><strong>Persist the parent directory of the first selected file</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RememberFolderFromFiles(ByVal filesSelection As Variant)
 </code></pre>
 <hr />
-<h3 id="int-remember-folder-from-folders">remember-folder-from-folders <a class="anchor-link" href="#int-remember-folder-from-folders">#</a></h3>
+<h3 id="int-rememberfolderfromfolders">RememberFolderFromFolders <a class="anchor-link" href="#int-rememberfolderfromfolders">#</a></h3>
+<p><em>remember-folder-from-folders</em></p>
 <p><strong>Persist the first folder from a folder selection</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RememberFolderFromFolders(ByVal folderSelection As Variant)
 </code></pre>
 <hr />
-<h3 id="int-resolve-last-known-folder">resolve-last-known-folder <a class="anchor-link" href="#int-resolve-last-known-folder">#</a></h3>
+<h3 id="int-resolvelastknownfolder">ResolveLastKnownFolder <a class="anchor-link" href="#int-resolvelastknownfolder">#</a></h3>
+<p><em>resolve-last-known-folder</em></p>
 <p><strong>Resolve the last-used folder from cache or workbook storage</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ResolveLastKnownFolder() As String
 </code></pre>
 <hr />
-<h3 id="int-has-workbook-context">has-workbook-context <a class="anchor-link" href="#int-has-workbook-context">#</a></h3>
+<h3 id="int-hasworkbookcontext">HasWorkbookContext <a class="anchor-link" href="#int-hasworkbookcontext">#</a></h3>
+<p><em>has-workbook-context</em></p>
 <p><strong>Check whether ThisWorkbook is accessible</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function HasWorkbookContext() As Boolean
 </code></pre>
 <hr />
-<h3 id="int-read-last-folder-from-workbook">read-last-folder-from-workbook <a class="anchor-link" href="#int-read-last-folder-from-workbook">#</a></h3>
+<h3 id="int-readlastfolderfromworkbook">ReadLastFolderFromWorkbook <a class="anchor-link" href="#int-readlastfolderfromworkbook">#</a></h3>
+<p><em>read-last-folder-from-workbook</em></p>
 <p><strong>Read the last-used folder from a workbook-level Name</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ReadLastFolderFromWorkbook() As String
 </code></pre>
 <hr />
-<h3 id="int-write-last-folder-to-workbook">write-last-folder-to-workbook <a class="anchor-link" href="#int-write-last-folder-to-workbook">#</a></h3>
+<h3 id="int-writelastfoldertoworkbook">WriteLastFolderToWorkbook <a class="anchor-link" href="#int-writelastfoldertoworkbook">#</a></h3>
+<p><em>write-last-folder-to-workbook</em></p>
 <p><strong>Persist the folder path in a hidden workbook Name</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub WriteLastFolderToWorkbook(ByVal folderPath As String)
 </code></pre>
 <hr />
-<h3 id="int-encode-workbook-storage-value">encode-workbook-storage-value <a class="anchor-link" href="#int-encode-workbook-storage-value">#</a></h3>
+<h3 id="int-encodeworkbookstoragevalue">EncodeWorkbookStorageValue <a class="anchor-link" href="#int-encodeworkbookstoragevalue">#</a></h3>
+<p><em>encode-workbook-storage-value</em></p>
 <p><strong>Convert a folder path into a Name.RefersTo-safe string literal</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function EncodeWorkbookStorageValue(ByVal folderPath As String) As String
 </code></pre>
 <hr />
-<h3 id="int-decode-workbook-storage-value">decode-workbook-storage-value <a class="anchor-link" href="#int-decode-workbook-storage-value">#</a></h3>
+<h3 id="int-decodeworkbookstoragevalue">DecodeWorkbookStorageValue <a class="anchor-link" href="#int-decodeworkbookstoragevalue">#</a></h3>
+<p><em>decode-workbook-storage-value</em></p>
 <p><strong>Undo Name serialization to recover the original folder path</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function DecodeWorkbookStorageValue(ByVal storedValue As String) As String
 </code></pre>
 <hr />
-<h3 id="int-wrap-apple-script-string">wrap-apple-script-string <a class="anchor-link" href="#int-wrap-apple-script-string">#</a></h3>
+<h3 id="int-wrapapplescriptstring">WrapAppleScriptString <a class="anchor-link" href="#int-wrapapplescriptstring">#</a></h3>
+<p><em>wrap-apple-script-string</em></p>
 <p><strong>Escape a string for safe insertion into AppleScript</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function WrapAppleScriptString(ByVal value As String) As String
 </code></pre>
 <hr />
-<h3 id="int-wrap-apple-script-alias">wrap-apple-script-alias <a class="anchor-link" href="#int-wrap-apple-script-alias">#</a></h3>
+<h3 id="int-wrapapplescriptalias">WrapAppleScriptAlias <a class="anchor-link" href="#int-wrapapplescriptalias">#</a></h3>
+<p><em>wrap-apple-script-alias</em></p>
 <p><strong>Build an AppleScript alias literal from a colon path</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function WrapAppleScriptAlias(ByVal aliasPath As String) As String
 </code></pre>
 <hr />
-<h3 id="int-build-apple-script-list">build-apple-script-list <a class="anchor-link" href="#int-build-apple-script-list">#</a></h3>
+<h3 id="int-buildapplescriptlist">BuildAppleScriptList <a class="anchor-link" href="#int-buildapplescriptlist">#</a></h3>
+<p><em>build-apple-script-list</em></p>
 <p><strong>Translate a VBA array into an AppleScript list literal</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function BuildAppleScriptList(ByVal entries As Variant) As String
 </code></pre>
 <hr />
-<h3 id="int-build-mac-filter-list">build-mac-filter-list <a class="anchor-link" href="#int-build-mac-filter-list">#</a></h3>
+<h3 id="int-buildmacfilterlist">BuildMacFilterList <a class="anchor-link" href="#int-buildmacfilterlist">#</a></h3>
+<p><em>build-mac-filter-list</em></p>
 <p><strong>Construct the UTI list for the AppleScript file picker</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function BuildMacFilterList(ByVal filters As String, _
                                     ByVal customMacFilter As String) As String
 </code></pre>
 <hr />
-<h3 id="int-parse-mac-selection-result">parse-mac-selection-result <a class="anchor-link" href="#int-parse-mac-selection-result">#</a></h3>
+<h3 id="int-parsemacselectionresult">ParseMacSelectionResult <a class="anchor-link" href="#int-parsemacselectionresult">#</a></h3>
+<p><em>parse-mac-selection-result</em></p>
 <p><strong>Split newline-delimited POSIX paths from AppleScript output</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ParseMacSelectionResult(ByVal response As String) As Variant
 </code></pre>
 <hr />
-<h3 id="int-normalize-folder-selections">normalize-folder-selections <a class="anchor-link" href="#int-normalize-folder-selections">#</a></h3>
+<h3 id="int-normalizefolderselections">NormalizeFolderSelections <a class="anchor-link" href="#int-normalizefolderselections">#</a></h3>
+<p><em>normalize-folder-selections</em></p>
 <p><strong>Normalize picker results into clean folder paths</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function NormalizeFolderSelections(ByVal folderSelection As Variant) As Variant
 </code></pre>
 <hr />
-<h3 id="int-convert-posix-to-colon-path">convert-posix-to-colon-path <a class="anchor-link" href="#int-convert-posix-to-colon-path">#</a></h3>
+<h3 id="int-convertposixtocolonpath">ConvertPosixToColonPath <a class="anchor-link" href="#int-convertposixtocolonpath">#</a></h3>
+<p><em>convert-posix-to-colon-path</em></p>
 <p><strong>Translate a POSIX path to AppleScript colon-delimited format</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ConvertPosixToColonPath(ByVal posixPath As String) As String
 </code></pre>
 <hr />
-<h3 id="int-get-mac-default-folder-alias">get-mac-default-folder-alias <a class="anchor-link" href="#int-get-mac-default-folder-alias">#</a></h3>
+<h3 id="int-getmacdefaultfolderalias">GetMacDefaultFolderAlias <a class="anchor-link" href="#int-getmacdefaultfolderalias">#</a></h3>
+<p><em>get-mac-default-folder-alias</em></p>
 <p><strong>Resolve the default folder alias for macOS pickers</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function GetMacDefaultFolderAlias() As String
 </code></pre>
 <hr />
-<h3 id="int-build-mac-file-selection-script">build-mac-file-selection-script <a class="anchor-link" href="#int-build-mac-file-selection-script">#</a></h3>
+<h3 id="int-buildmacfileselectionscript">BuildMacFileSelectionScript <a class="anchor-link" href="#int-buildmacfileselectionscript">#</a></h3>
+<p><em>build-mac-file-selection-script</em></p>
 <p><strong>Compose the AppleScript for file selection on macOS</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function BuildMacFileSelectionScript(ByVal filters As String, _
@@ -396,14 +449,16 @@ Workbook-level Name used to persist the last used folder path.</p>
                                              ByVal allowMultiple As Boolean) As String
 </code></pre>
 <hr />
-<h3 id="int-build-mac-folder-selection-script">build-mac-folder-selection-script <a class="anchor-link" href="#int-build-mac-folder-selection-script">#</a></h3>
+<h3 id="int-buildmacfolderselectionscript">BuildMacFolderSelectionScript <a class="anchor-link" href="#int-buildmacfolderselectionscript">#</a></h3>
+<p><em>build-mac-folder-selection-script</em></p>
 <p><strong>Compose the AppleScript for folder selection on macOS</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function BuildMacFolderSelectionScript(ByVal defaultAlias As String, _
                                                ByVal allowMultiple As Boolean) As String
 </code></pre>
 <hr />
-<h3 id="int-run-mac-file-picker">run-mac-file-picker <a class="anchor-link" href="#int-run-mac-file-picker">#</a></h3>
+<h3 id="int-runmacfilepicker">RunMacFilePicker <a class="anchor-link" href="#int-runmacfilepicker">#</a></h3>
+<p><em>run-mac-file-picker</em></p>
 <p><strong>Execute the AppleScript file picker and return POSIX paths</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function RunMacFilePicker(ByVal filters As String, _
@@ -411,28 +466,32 @@ Workbook-level Name used to persist the last used folder path.</p>
                                   ByVal allowMultiple As Boolean) As Variant
 </code></pre>
 <hr />
-<h3 id="int-run-mac-folder-picker">run-mac-folder-picker <a class="anchor-link" href="#int-run-mac-folder-picker">#</a></h3>
+<h3 id="int-runmacfolderpicker">RunMacFolderPicker <a class="anchor-link" href="#int-runmacfolderpicker">#</a></h3>
+<p><em>run-mac-folder-picker</em></p>
 <p><strong>Execute the AppleScript folder picker and return POSIX paths</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function RunMacFolderPicker(ByVal allowMultiple As Boolean) As Variant
 </code></pre>
 <hr />
 <h2 id="int-elements">Elements</h2>
-<h3 id="int-self">self <a class="anchor-link" href="#int-self">#</a></h3>
+<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
+<p><em>self</em></p>
 <p><strong>Self-reference as IOSFiles</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Self() As IOSFiles
 </code></pre>
 <p><strong>Returns:</strong> IOSFiles. Self-reference.</p>
 <hr />
-<h3 id="int-os">os <a class="anchor-link" href="#int-os">#</a></h3>
+<h3 id="int-os">OS <a class="anchor-link" href="#int-os">#</a></h3>
+<p><em>os</em></p>
 <p><strong>Current operating system flag</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get OS() As String
 </code></pre>
 <p><strong>Returns:</strong> String. &quot;Mac&quot; or &quot;Windows&quot;.</p>
 <hr />
-<h3 id="int-os-set">os-set <a class="anchor-link" href="#int-os-set">#</a></h3>
+<h3 id="int-os">OS <a class="anchor-link" href="#int-os">#</a></h3>
+<p><em>os-set</em></p>
 <p><strong>Override the detected OS flag</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Let OS(ByVal currentOS As String)
@@ -442,7 +501,8 @@ Workbook-level Name used to persist the last used folder path.</p>
 <li><code>currentOS</code>: String. &quot;Mac&quot; or &quot;Windows&quot;.</li>
 </ul>
 <hr />
-<h3 id="int-file-set">file-set <a class="anchor-link" href="#int-file-set">#</a></h3>
+<h3 id="int-file">File <a class="anchor-link" href="#int-file">#</a></h3>
+<p><em>file-set</em></p>
 <p><strong>Assign a single file path through the selection pipeline</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Let File(ByVal ff As String)
@@ -452,7 +512,8 @@ Workbook-level Name used to persist the last used folder path.</p>
 <li><code>ff</code>: String. The file path.</li>
 </ul>
 <hr />
-<h3 id="int-folder-set">folder-set <a class="anchor-link" href="#int-folder-set">#</a></h3>
+<h3 id="int-folder">Folder <a class="anchor-link" href="#int-folder">#</a></h3>
+<p><em>folder-set</em></p>
 <p><strong>Assign a single folder path through the selection pipeline</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Let Folder(ByVal ff As String)
@@ -462,52 +523,60 @@ Workbook-level Name used to persist the last used folder path.</p>
 <li><code>ff</code>: String. The folder path.</li>
 </ul>
 <hr />
-<h3 id="int-select-folder-on-mac">select-folder-on-mac <a class="anchor-link" href="#int-select-folder-on-mac">#</a></h3>
+<h3 id="int-selectfolderonmac">SelectFolderOnMac <a class="anchor-link" href="#int-selectfolderonmac">#</a></h3>
+<p><em>select-folder-on-mac</em></p>
 <p><strong>Show the macOS single-folder picker</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function SelectFolderOnMac() As String
 </code></pre>
 <hr />
-<h3 id="int-select-folders-on-mac">select-folders-on-mac <a class="anchor-link" href="#int-select-folders-on-mac">#</a></h3>
+<h3 id="int-selectfoldersonmac">SelectFoldersOnMac <a class="anchor-link" href="#int-selectfoldersonmac">#</a></h3>
+<p><em>select-folders-on-mac</em></p>
 <p><strong>Show the macOS multi-folder picker</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function SelectFoldersOnMac() As Variant
 </code></pre>
 <hr />
-<h3 id="int-select-folder-on-windows">select-folder-on-windows <a class="anchor-link" href="#int-select-folder-on-windows">#</a></h3>
+<h3 id="int-selectfolderonwindows">SelectFolderOnWindows <a class="anchor-link" href="#int-selectfolderonwindows">#</a></h3>
+<p><em>select-folder-on-windows</em></p>
 <p><strong>Show the Windows single-folder picker</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function SelectFolderOnWindows() As String
 </code></pre>
 <hr />
-<h3 id="int-select-files-on-windows">select-files-on-windows <a class="anchor-link" href="#int-select-files-on-windows">#</a></h3>
+<h3 id="int-selectfilesonwindows">SelectFilesOnWindows <a class="anchor-link" href="#int-selectfilesonwindows">#</a></h3>
+<p><em>select-files-on-windows</em></p>
 <p><strong>Show the Windows multi-file picker</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function SelectFilesOnWindows(ByVal filters As String) As Variant
 </code></pre>
 <hr />
-<h3 id="int-select-file-on-mac">select-file-on-mac <a class="anchor-link" href="#int-select-file-on-mac">#</a></h3>
+<h3 id="int-selectfileonmac">SelectFileOnMac <a class="anchor-link" href="#int-selectfileonmac">#</a></h3>
+<p><em>select-file-on-mac</em></p>
 <p><strong>Show the macOS single-file picker</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function SelectFileOnMac(ByVal filters As String, _ 
                                  Optional ByVal customMacFilter As String = vbNullString) As String
 </code></pre>
 <hr />
-<h3 id="int-select-files-on-mac">select-files-on-mac <a class="anchor-link" href="#int-select-files-on-mac">#</a></h3>
+<h3 id="int-selectfilesonmac">SelectFilesOnMac <a class="anchor-link" href="#int-selectfilesonmac">#</a></h3>
+<p><em>select-files-on-mac</em></p>
 <p><strong>Show the macOS multi-file picker</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function SelectFilesOnMac(ByVal filters As String, _
                                   Optional ByVal customMacFilter As String = vbNullString) As Variant
 </code></pre>
 <hr />
-<h3 id="int-select-file-on-windows">select-file-on-windows <a class="anchor-link" href="#int-select-file-on-windows">#</a></h3>
+<h3 id="int-selectfileonwindows">SelectFileOnWindows <a class="anchor-link" href="#int-selectfileonwindows">#</a></h3>
+<p><em>select-file-on-windows</em></p>
 <p><strong>Show the Windows single-file picker</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function SelectFileOnWindows(ByVal filters As String) As String
 </code></pre>
 <hr />
 <h2 id="int-test-support">Test Support</h2>
-<h3 id="int-assign-files-for-testing">assign-files-for-testing <a class="anchor-link" href="#int-assign-files-for-testing">#</a></h3>
+<h3 id="int-assignfilesfortesting">AssignFilesForTesting <a class="anchor-link" href="#int-assignfilesfortesting">#</a></h3>
+<p><em>assign-files-for-testing</em></p>
 <p><strong>Inject file selections without showing a dialog</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub AssignFilesForTesting(ByVal selections As Variant)
@@ -518,7 +587,8 @@ Workbook-level Name used to persist the last used folder path.</p>
 <li><code>TestHook</code></li>
 </ul>
 <hr />
-<h3 id="int-assign-folders-for-testing">assign-folders-for-testing <a class="anchor-link" href="#int-assign-folders-for-testing">#</a></h3>
+<h3 id="int-assignfoldersfortesting">AssignFoldersForTesting <a class="anchor-link" href="#int-assignfoldersfortesting">#</a></h3>
+<p><em>assign-folders-for-testing</em></p>
 <p><strong>Inject folder selections without showing a dialog</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub AssignFoldersForTesting(ByVal selections As Variant)

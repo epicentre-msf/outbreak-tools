@@ -21,7 +21,8 @@ worksheet via CheckingOutput.</p>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
 <div class="section-body">
-<h3 id="create">create <a class="anchor-link" href="#create">#</a></h3>
+<h3 id="create">Create <a class="anchor-link" href="#create">#</a></h3>
+<p><em>create</em></p>
 <p><strong>Create and initialise a setup checker instance</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal hostBook As Workbook, _
@@ -56,7 +57,8 @@ then returns the instance through the ISetupErrors interface.</p>
 <details open class="doc-section" id="initialisation">
 <summary>Initialisation</summary>
 <div class="section-body">
-<h3 id="initialise">initialise <a class="anchor-link" href="#initialise">#</a></h3>
+<h3 id="initialise">Initialise <a class="anchor-link" href="#initialise">#</a></h3>
+<p><em>initialise</em></p>
 <p><strong>Bind the checker to a workbook and optional collaborators</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Initialise(ByVal hostBook As Workbook, _
@@ -90,7 +92,8 @@ default instances and EnsureCheckContainer to prepare the results array.</p>
 <details open class="doc-section" id="execution">
 <summary>Execution</summary>
 <div class="section-body">
-<h3 id="run">run <a class="anchor-link" href="#run">#</a></h3>
+<h3 id="run">Run <a class="anchor-link" href="#run">#</a></h3>
+<p><em>run</em></p>
 <p><strong>Execute all setup checks and publish results</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Run()
@@ -106,7 +109,8 @@ an error occurs during the checking run.</p>
 <details open class="doc-section" id="results">
 <summary>Results</summary>
 <div class="section-body">
-<h3 id="checkings">checkings <a class="anchor-link" href="#checkings">#</a></h3>
+<h3 id="checkings">Checkings <a class="anchor-link" href="#checkings">#</a></h3>
+<p><em>checkings</em></p>
 <p><strong>Collection of generated checking objects</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Checkings() As BetterArray
@@ -120,14 +124,16 @@ most recent Run call. Raises when the checker has not been initialised.</p>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-helper-workflow">Helper workflow</h2>
-<h3 id="int-self">self <a class="anchor-link" href="#int-self">#</a></h3>
+<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
+<p><em>self</em></p>
 <p><strong>Current object instance</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Self() As ISetupErrors
 </code></pre>
 <p><strong>Returns:</strong> ISetupErrors. The current instance cast to the interface.</p>
 <hr />
-<h3 id="int-ensure-initialised">ensure-initialised <a class="anchor-link" href="#int-ensure-initialised">#</a></h3>
+<h3 id="int-ensureinitialised">EnsureInitialised <a class="anchor-link" href="#int-ensureinitialised">#</a></h3>
+<p><em>ensure-initialised</em></p>
 <p><strong>Ensure the checker has been initialised</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureInitialised()
@@ -137,7 +143,8 @@ most recent Run call. Raises when the checker has not been initialised.</p>
 <li>ProjectError.ObjectNotInitialized When the workbook reference is Nothing.</li>
 </ul>
 <hr />
-<h3 id="int-configure-dependencies">configure-dependencies <a class="anchor-link" href="#int-configure-dependencies">#</a></h3>
+<h3 id="int-configuredependencies">ConfigureDependencies <a class="anchor-link" href="#int-configuredependencies">#</a></h3>
+<p><em>configure-dependencies</em></p>
 <p><strong>Prepare collaborators when not provided</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ConfigureDependencies()
@@ -147,32 +154,37 @@ supplied during Initialise: resolves the formula sheet, creates
 Passwords, LLdictionary, LLChoices, FormulaData, and
 SetupTranslationsTable instances from the host workbook.</p>
 <hr />
-<h3 id="int-ensure-check-container">ensure-check-container <a class="anchor-link" href="#int-ensure-check-container">#</a></h3>
+<h3 id="int-ensurecheckcontainer">EnsureCheckContainer <a class="anchor-link" href="#int-ensurecheckcontainer">#</a></h3>
+<p><em>ensure-check-container</em></p>
 <p><strong>Ensure the internal container for checkings exists</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureCheckContainer()
 </code></pre>
 <hr />
-<h3 id="int-reset-check-container">reset-check-container <a class="anchor-link" href="#int-reset-check-container">#</a></h3>
+<h3 id="int-resetcheckcontainer">ResetCheckContainer <a class="anchor-link" href="#int-resetcheckcontainer">#</a></h3>
+<p><em>reset-check-container</em></p>
 <p><strong>Reset the container prior to running checks</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ResetCheckContainer()
 </code></pre>
 <hr />
-<h3 id="int-application-scope">application-scope <a class="anchor-link" href="#int-application-scope">#</a></h3>
+<h3 id="int-applicationscope">ApplicationScope <a class="anchor-link" href="#int-applicationscope">#</a></h3>
+<p><em>application-scope</em></p>
 <p><strong>Retrieve or create the application state scope</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ApplicationScope() As IApplicationState
 </code></pre>
 <p><strong>Returns:</strong> IApplicationState. The cached or newly created scope.</p>
 <hr />
-<h3 id="int-enter-busy-state">enter-busy-state <a class="anchor-link" href="#int-enter-busy-state">#</a></h3>
+<h3 id="int-enterbusystate">EnterBusyState <a class="anchor-link" href="#int-enterbusystate">#</a></h3>
+<p><em>enter-busy-state</em></p>
 <p><strong>Suspend Excel UI features while running checks</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnterBusyState()
 </code></pre>
 <hr />
-<h3 id="int-leave-busy-state">leave-busy-state <a class="anchor-link" href="#int-leave-busy-state">#</a></h3>
+<h3 id="int-leavebusystate">LeaveBusyState <a class="anchor-link" href="#int-leavebusystate">#</a></h3>
+<p><em>leave-busy-state</em></p>
 <p><strong>Restore Excel UI configuration</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub LeaveBusyState(Optional ByVal silent As Boolean = False)
@@ -182,7 +194,8 @@ SetupTranslationsTable instances from the host workbook.</p>
 <li><code>silent</code>: Optional Boolean. When True, suppresses errors during restore. Defaults to False.</li>
 </ul>
 <hr />
-<h3 id="int-resolve-worksheet">resolve-worksheet <a class="anchor-link" href="#int-resolve-worksheet">#</a></h3>
+<h3 id="int-resolveworksheet">ResolveWorksheet <a class="anchor-link" href="#int-resolveworksheet">#</a></h3>
+<p><em>resolve-worksheet</em></p>
 <p><strong>Resolve a workbook worksheet by name</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ResolveWorksheet(ByVal sheetName As String) As Worksheet
@@ -197,7 +210,8 @@ SetupTranslationsTable instances from the host workbook.</p>
 <li>ProjectError.ElementNotFound When the worksheet does not exist.</li>
 </ul>
 <hr />
-<h3 id="int-validate-workbook">validate-workbook <a class="anchor-link" href="#int-validate-workbook">#</a></h3>
+<h3 id="int-validateworkbook">ValidateWorkbook <a class="anchor-link" href="#int-validateworkbook">#</a></h3>
+<p><em>validate-workbook</em></p>
 <p><strong>Validate the incoming workbook reference</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ValidateWorkbook(ByVal hostBook As Workbook)
@@ -212,7 +226,8 @@ SetupTranslationsTable instances from the host workbook.</p>
 </ul>
 <hr />
 <h2 id="int-core-checking-routines">Core checking routines</h2>
-<h3 id="int-check-dictionary">check-dictionary <a class="anchor-link" href="#int-check-dictionary">#</a></h3>
+<h3 id="int-checkdictionary">CheckDictionary <a class="anchor-link" href="#int-checkdictionary">#</a></h3>
+<p><em>check-dictionary</em></p>
 <p><strong>Validate dictionary sheet for structure, duplicates, and formulas</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub CheckDictionary()
@@ -225,7 +240,8 @@ validation types, format/type consistency, and export column alignment.
 Collects all findings into a single IChecking object and re-protects
 sheets on exit.</p>
 <hr />
-<h3 id="int-check-choice">check-choice <a class="anchor-link" href="#int-check-choice">#</a></h3>
+<h3 id="int-checkchoice">CheckChoice <a class="anchor-link" href="#int-checkchoice">#</a></h3>
+<p><em>check-choice</em></p>
 <p><strong>Inspect choices sheet for unused or inconsistent entries</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub CheckChoice()
@@ -235,7 +251,8 @@ referenced in dictionary controls, then flags unused choices, missing
 list names, missing ordering values, and missing labels. Collects all
 findings into a single IChecking object and re-protects on exit.</p>
 <hr />
-<h3 id="int-check-exports">check-exports <a class="anchor-link" href="#int-check-exports">#</a></h3>
+<h3 id="int-checkexports">CheckExports <a class="anchor-link" href="#int-checkexports">#</a></h3>
+<p><em>check-exports</em></p>
 <p><strong>Audit exports sheet for missing metadata and dictionary alignment</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub CheckExports()
@@ -245,7 +262,8 @@ password, metadata, format, filename, and header values. Also validates
 that the corresponding dictionary column exists and is not empty, checks
 password/identifier consistency, and validates filename variable references.</p>
 <hr />
-<h3 id="int-check-translations">check-translations <a class="anchor-link" href="#int-check-translations">#</a></h3>
+<h3 id="int-checktranslations">CheckTranslations <a class="anchor-link" href="#int-checktranslations">#</a></h3>
+<p><em>check-translations</em></p>
 <p><strong>Review translations table for missing and duplicate labels</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub CheckTranslations()
@@ -254,7 +272,8 @@ password/identifier consistency, and validates filename variable references.</p>
 the registry, then queries for missing and duplicate labels. Collects
 findings into a single IChecking object and re-protects on exit.</p>
 <hr />
-<h3 id="int-check-analysis">check-analysis <a class="anchor-link" href="#int-check-analysis">#</a></h3>
+<h3 id="int-checkanalysis">CheckAnalysis <a class="anchor-link" href="#int-checkanalysis">#</a></h3>
+<p><em>check-analysis</em></p>
 <p><strong>Run analysis table checks across all sections</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub CheckAnalysis()
@@ -278,7 +297,8 @@ CheckTable to avoid repeated lookups.</p>
 <li><code>workFun</code>: WorksheetFunction. The cached worksheet function object.</li>
 </ul>
 <hr />
-<h3 id="int-print-report">print-report <a class="anchor-link" href="#int-print-report">#</a></h3>
+<h3 id="int-printreport">PrintReport <a class="anchor-link" href="#int-printreport">#</a></h3>
+<p><em>print-report</em></p>
 <p><strong>Publish all collected checkings to the reporting worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub PrintReport()
@@ -289,7 +309,8 @@ Installs the worksheet change handler for filtering support and
 activates the report sheet.</p>
 <hr />
 <h2 id="int-message-helpers">Message helpers</h2>
-<h3 id="int-format-message">format-message <a class="anchor-link" href="#int-format-message">#</a></h3>
+<h3 id="int-formatmessage">FormatMessage <a class="anchor-link" href="#int-formatmessage">#</a></h3>
+<p><em>format-message</em></p>
 <p><strong>Format an error message by replacing numbered placeholders</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function FormatMessage(ByVal messageTag As String, _
@@ -308,7 +329,8 @@ activates the report sheet.</p>
 </ul>
 <p><strong>Returns:</strong> String. The formatted message.</p>
 <hr />
-<h3 id="int-formula-message">formula-message <a class="anchor-link" href="#int-formula-message">#</a></h3>
+<h3 id="int-formulamessage">FormulaMessage <a class="anchor-link" href="#int-formulamessage">#</a></h3>
+<p><em>formula-message</em></p>
 <p><strong>Validate a formula string and return a formatted error when invalid</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function FormulaMessage(ByVal formValue As String, _
@@ -327,7 +349,8 @@ activates the report sheet.</p>
 </ul>
 <p><strong>Returns:</strong> String. The formatted error message, or empty when the formula is valid.</p>
 <hr />
-<h3 id="int-replace-placeholder">replace-placeholder <a class="anchor-link" href="#int-replace-placeholder">#</a></h3>
+<h3 id="int-replaceplaceholder">ReplacePlaceholder <a class="anchor-link" href="#int-replaceplaceholder">#</a></h3>
+<p><em>replace-placeholder</em></p>
 <p><strong>Replace a single placeholder token in a template string</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ReplacePlaceholder(ByVal template As String, _
@@ -356,7 +379,8 @@ activates the report sheet.</p>
 <p>Delegated members satisfying the ISetupErrors contract.
 See the corresponding Public members above for full documentation.</p>
 <hr />
-<h3 id="int-throw-error">throw-error <a class="anchor-link" href="#int-throw-error">#</a></h3>
+<h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
+<p><em>throw-error</em></p>
 <p><strong>Raise a ProjectError-based exception</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal errorMessage As String)

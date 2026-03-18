@@ -19,7 +19,8 @@ worksheet-level HiddenNames instead of hidden cell values.</p>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
 <div class="section-body">
-<h3 id="create">create <a class="anchor-link" href="#create">#</a></h3>
+<h3 id="create">Create <a class="anchor-link" href="#create">#</a></h3>
+<p><em>create</em></p>
 <p><strong>Create a new CustomPivotTable instance</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal sh As Worksheet) As ICustomPivotTable
@@ -43,21 +44,24 @@ resume from the current position.</p>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-factory">Factory</h2>
-<h3 id="int-self">self <a class="anchor-link" href="#int-self">#</a></h3>
+<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
+<p><em>self</em></p>
 <p><strong>Return the current instance as ICustomPivotTable</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Self() As ICustomPivotTable
 </code></pre>
 <p><strong>Returns:</strong> ICustomPivotTable. Self-reference for factory pattern.</p>
 <hr />
-<h3 id="int-wksh-get">wksh-get <a class="anchor-link" href="#int-wksh-get">#</a></h3>
+<h3 id="int-wksh">Wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
+<p><em>wksh-get</em></p>
 <p><strong>The dedicated pivot table worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Wksh() As Worksheet
 </code></pre>
 <p><strong>Returns:</strong> Worksheet. The host worksheet.</p>
 <hr />
-<h3 id="int-wksh-set">wksh-set <a class="anchor-link" href="#int-wksh-set">#</a></h3>
+<h3 id="int-wksh">Wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
+<p><em>wksh-set</em></p>
 <p><strong>Assign the host worksheet (factory use only)</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set Wksh(ByVal sh As Worksheet)
@@ -68,7 +72,8 @@ resume from the current position.</p>
 </ul>
 <hr />
 <h2 id="int-public-api">Public API</h2>
-<h3 id="int-add">add <a class="anchor-link" href="#int-add">#</a></h3>
+<h3 id="int-add">Add <a class="anchor-link" href="#int-add">#</a></h3>
+<p><em>add</em></p>
 <p><strong>Create a pivot table from a ListObject source and add a titled block</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Add(ByVal title As String, _
@@ -87,7 +92,8 @@ logged to Debug.Print and the method exits without creating a title.</p>
 <li><code>pivotName</code>: String. Localised prefix for the title. Defaults to &quot;Pivot Table&quot;.</li>
 </ul>
 <hr />
-<h3 id="int-format">format <a class="anchor-link" href="#int-format">#</a></h3>
+<h3 id="int-format">Format <a class="anchor-link" href="#int-format">#</a></h3>
+<p><em>format</em></p>
 <p><strong>Apply design formatting to the pivot table worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Format(ByVal design As ILLFormat)
@@ -99,7 +105,8 @@ logged to Debug.Print and the method exits without creating a title.</p>
 </ul>
 <hr />
 <h2 id="int-internal-helpers">Internal Helpers</h2>
-<h3 id="int-initialise-metadata">initialise-metadata <a class="anchor-link" href="#int-initialise-metadata">#</a></h3>
+<h3 id="int-initialisemetadata">InitialiseMetadata <a class="anchor-link" href="#int-initialisemetadata">#</a></h3>
+<p><em>initialise-metadata</em></p>
 <p><strong>Initialise worksheet-level HiddenNames for position tracking</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub InitialiseMetadata()
@@ -109,7 +116,8 @@ already exist. Called by the factory to allow resuming from the current
 position when the same sheet is re-wrapped.</p>
 <hr />
 <h2 id="int-error-handling">Error Handling</h2>
-<h3 id="int-throw-error">throw-error <a class="anchor-link" href="#int-throw-error">#</a></h3>
+<h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
+<p><em>throw-error</em></p>
 <p><strong>Raise a project error with class context</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As Long, ByVal errMessage As String)
@@ -126,11 +134,11 @@ error attribution across all methods in this class.</p>
 <details>
 <summary>Used in (7 file(s))</summary>
 <ul>
+<li><a href="src/classes/analyses/CustomPivotTable.cls">CustomPivotTable.cls</a></li>
+<li><a href="src/classes/analyses/ICustomPivotTable.cls">ICustomPivotTable.cls</a></li>
 <li><a href="src/classes/linelist/ILinelist.cls">ILinelist.cls</a></li>
 <li><a href="src/classes/linelist/Linelist.cls">Linelist.cls</a></li>
 <li><a href="src/classes/linelist/ListBuilder.cls">ListBuilder.cls</a></li>
-<li><a href="src/classes/tables/CustomPivotTable.cls">CustomPivotTable.cls</a></li>
-<li><a href="src/classes/tables/ICustomPivotTable.cls">ICustomPivotTable.cls</a></li>
 <li><a href="src/tests/modules/tables/TestCustomPivotTable.bas">TestCustomPivotTable.bas</a></li>
 <li><a href="src/tests/stubs/LinelistStub.cls">LinelistStub.cls</a></li>
 </ul>

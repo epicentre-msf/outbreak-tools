@@ -20,7 +20,8 @@ range bulk-translation, and user-form caption translation.</p>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
 <div class="section-body">
-<h3 id="create">create <a class="anchor-link" href="#create">#</a></h3>
+<h3 id="create">Create <a class="anchor-link" href="#create">#</a></h3>
+<p><em>create</em></p>
 <p><strong>Factory returning an initialised interface</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal translationLo As ListObject, ByVal translationLang As String) As ITranslationObject
@@ -40,28 +41,32 @@ translation are returned as-is.</p>
 <details open class="doc-section" id="elements">
 <summary>Elements</summary>
 <div class="section-body">
-<h3 id="language">language <a class="anchor-link" href="#language">#</a></h3>
+<h3 id="language">Language <a class="anchor-link" href="#language">#</a></h3>
+<p><em>language</em></p>
 <p><strong>Current target language</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Language() As String
 </code></pre>
 <p><strong>Returns:</strong> String. One of the language column headers.</p>
 <hr />
-<h3 id="languages-list">languages-list <a class="anchor-link" href="#languages-list">#</a></h3>
+<h3 id="languageslist">LanguagesList <a class="anchor-link" href="#languageslist">#</a></h3>
+<p><em>languages-list</em></p>
 <p><strong>List of available language headers</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get LanguagesList() As BetterArray
 </code></pre>
 <p><strong>Returns:</strong> BetterArray. Each language header, excluding the helper/tag column.</p>
 <hr />
-<h3 id="name">name <a class="anchor-link" href="#name">#</a></h3>
+<h3 id="name">Name <a class="anchor-link" href="#name">#</a></h3>
+<p><em>name</em></p>
 <p><strong>Descriptive name including table and language</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get Name() As String
 </code></pre>
 <p><strong>Returns:</strong> String. Identifier for diagnostic output.</p>
 <hr />
-<h3 id="value-exists">value-exists <a class="anchor-link" href="#value-exists">#</a></h3>
+<h3 id="valueexists">ValueExists <a class="anchor-link" href="#valueexists">#</a></h3>
+<p><em>value-exists</em></p>
 <p><strong>Whether a tag exists in the translation table</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ValueExists(ByVal Text As String) As Boolean
@@ -72,7 +77,8 @@ translation are returned as-is.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when the tag is found.</p>
 <hr />
-<h3 id="translated-value">translated-value <a class="anchor-link" href="#translated-value">#</a></h3>
+<h3 id="translatedvalue">TranslatedValue <a class="anchor-link" href="#translatedvalue">#</a></h3>
+<p><em>translated-value</em></p>
 <p><strong>Translate a text tag or formula string</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function TranslatedValue(ByVal textToTranslate As String, _ 
@@ -92,7 +98,8 @@ are translated; unquoted characters pass through unchanged.</p>
 <details open class="doc-section" id="outside">
 <summary>Outside</summary>
 <div class="section-body">
-<h3 id="translate-range">translate-range <a class="anchor-link" href="#translate-range">#</a></h3>
+<h3 id="translaterange">TranslateRange <a class="anchor-link" href="#translaterange">#</a></h3>
+<p><em>translate-range</em></p>
 <p><strong>Translate all values in a column range</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub TranslateRange(ByVal colRng As Range, Optional ByVal containsFormula As Boolean = False)
@@ -103,7 +110,8 @@ are translated; unquoted characters pass through unchanged.</p>
 <li><code>containsFormula</code>: Boolean. When True, translates as formulas. Defaults to False.</li>
 </ul>
 <hr />
-<h3 id="translate-form">translate-form <a class="anchor-link" href="#translate-form">#</a></h3>
+<h3 id="translateform">TranslateForm <a class="anchor-link" href="#translateform">#</a></h3>
+<p><em>translate-form</em></p>
 <p><strong>Translate all supported controls on a user form</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub TranslateForm(ByVal UserFrm As Object)
@@ -118,14 +126,16 @@ are translated; unquoted characters pass through unchanged.</p>
 <details open class="doc-section" id="checkings">
 <summary>Checkings</summary>
 <div class="section-body">
-<h3 id="has-checkings">has-checkings <a class="anchor-link" href="#has-checkings">#</a></h3>
+<h3 id="hascheckings">HasCheckings <a class="anchor-link" href="#hascheckings">#</a></h3>
+<p><em>has-checkings</em></p>
 <p><strong>Whether diagnostic entries have been recorded</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get HasCheckings() As Boolean
 </code></pre>
 <p><strong>Returns:</strong> Boolean. True when at least one entry exists.</p>
 <hr />
-<h3 id="checking-values">checking-values <a class="anchor-link" href="#checking-values">#</a></h3>
+<h3 id="checkingvalues">CheckingValues <a class="anchor-link" href="#checkingvalues">#</a></h3>
+<p><em>checking-values</em></p>
 <p><strong>Retrieve the diagnostic log entries</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get CheckingValues() As Object
@@ -137,21 +147,24 @@ are translated; unquoted characters pass through unchanged.</p>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-elements">Elements</h2>
-<h3 id="int-self">self <a class="anchor-link" href="#int-self">#</a></h3>
+<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
+<p><em>self</em></p>
 <p><strong>Self-reference as ITranslationObject</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Self() As ITranslationObject
 </code></pre>
 <p><strong>Returns:</strong> ITranslationObject. Self-reference.</p>
 <hr />
-<h3 id="int-table">table <a class="anchor-link" href="#int-table">#</a></h3>
+<h3 id="int-table">Table <a class="anchor-link" href="#int-table">#</a></h3>
+<p><em>table</em></p>
 <p><strong>The backing ListObject translation table</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Table() As ListObject
 </code></pre>
 <p><strong>Returns:</strong> ListObject. The translation table.</p>
 <hr />
-<h3 id="int-table-set">table-set <a class="anchor-link" href="#int-table-set">#</a></h3>
+<h3 id="int-table">Table <a class="anchor-link" href="#int-table">#</a></h3>
+<p><em>table-set</em></p>
 <p><strong>Assign the backing ListObject and reset caches</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set Table(ByVal lo As ListObject)
@@ -161,7 +174,8 @@ are translated; unquoted characters pass through unchanged.</p>
 <li><code>lo</code>: ListObject. The translation table.</li>
 </ul>
 <hr />
-<h3 id="int-language-set">language-set <a class="anchor-link" href="#int-language-set">#</a></h3>
+<h3 id="int-language">Language <a class="anchor-link" href="#int-language">#</a></h3>
+<p><em>language-set</em></p>
 <p><strong>Set the target language and reset caches</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Let Language(ByVal transLng As String)
@@ -171,7 +185,8 @@ are translated; unquoted characters pass through unchanged.</p>
 <li><code>transLng</code>: String. The new language column header.</li>
 </ul>
 <hr />
-<h3 id="int-language-index">language-index <a class="anchor-link" href="#int-language-index">#</a></h3>
+<h3 id="int-languageindex">LanguageIndex <a class="anchor-link" href="#int-languageindex">#</a></h3>
+<p><em>language-index</em></p>
 <p><strong>Resolve the one-based column index of the active language</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function LanguageIndex() As Long
@@ -179,7 +194,8 @@ are translated; unquoted characters pass through unchanged.</p>
 <p><strong>Returns:</strong> Long. Column index, or -1 when not found.</p>
 <hr />
 <h2 id="int-checkings">Checkings</h2>
-<h3 id="int-log-info">log-info <a class="anchor-link" href="#int-log-info">#</a></h3>
+<h3 id="int-loginfo">LogInfo <a class="anchor-link" href="#int-loginfo">#</a></h3>
+<p><em>log-info</em></p>
 <p><strong>Record a diagnostic entry</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub LogInfo(ByVal label As String, _ 
@@ -191,14 +207,16 @@ are translated; unquoted characters pass through unchanged.</p>
 <li><code>scope</code>: Byte. The checking scope. Defaults to checkingNote.</li>
 </ul>
 <hr />
-<h3 id="int-show-debug">show-debug <a class="anchor-link" href="#int-show-debug">#</a></h3>
+<h3 id="int-showdebug">ShowDebug <a class="anchor-link" href="#int-showdebug">#</a></h3>
+<p><em>show-debug</em></p>
 <p><strong>Print diagnostic information to the Immediate window</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ShowDebug()
 </code></pre>
 <hr />
 <h2 id="int-helpers">Helpers</h2>
-<h3 id="int-sanitize-text">sanitize-text <a class="anchor-link" href="#int-sanitize-text">#</a></h3>
+<h3 id="int-sanitizetext">SanitizeText <a class="anchor-link" href="#int-sanitizetext">#</a></h3>
+<p><em>sanitize-text</em></p>
 <p><strong>Clean a raw value using worksheet functions</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function SanitizeText(ByVal rawValue As String) As String
@@ -209,21 +227,24 @@ are translated; unquoted characters pass through unchanged.</p>
 </ul>
 <p><strong>Returns:</strong> String. Cleaned text.</p>
 <hr />
-<h3 id="int-header-row-range">header-row-range <a class="anchor-link" href="#int-header-row-range">#</a></h3>
+<h3 id="int-headerrowrange">HeaderRowRange <a class="anchor-link" href="#int-headerrowrange">#</a></h3>
+<p><em>header-row-range</em></p>
 <p><strong>Retrieve the header row range of the translation table</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function HeaderRowRange() As Range
 </code></pre>
 <p><strong>Returns:</strong> Range. The header row, or Nothing.</p>
 <hr />
-<h3 id="int-keys-data-range">keys-data-range <a class="anchor-link" href="#int-keys-data-range">#</a></h3>
+<h3 id="int-keysdatarange">KeysDataRange <a class="anchor-link" href="#int-keysdatarange">#</a></h3>
+<p><em>keys-data-range</em></p>
 <p><strong>Retrieve the data body range of the first (tags) column</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function KeysDataRange() As Range
 </code></pre>
 <p><strong>Returns:</strong> Range. The keys column data, or Nothing.</p>
 <hr />
-<h3 id="int-resolve-translation-cell">resolve-translation-cell <a class="anchor-link" href="#int-resolve-translation-cell">#</a></h3>
+<h3 id="int-resolvetranslationcell">ResolveTranslationCell <a class="anchor-link" href="#int-resolvetranslationcell">#</a></h3>
+<p><em>resolve-translation-cell</em></p>
 <p><strong>Find the translated cell for a given tag token</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ResolveTranslationCell(ByVal token As String) As Range
@@ -234,7 +255,8 @@ are translated; unquoted characters pass through unchanged.</p>
 </ul>
 <p><strong>Returns:</strong> Range. The cell in the language column, or Nothing.</p>
 <hr />
-<h3 id="int-translate-formula-text">translate-formula-text <a class="anchor-link" href="#int-translate-formula-text">#</a></h3>
+<h3 id="int-translateformulatext">TranslateFormulaText <a class="anchor-link" href="#int-translateformulatext">#</a></h3>
+<p><em>translate-formula-text</em></p>
 <p><strong>Translate only the double-quoted chunks within a formula string</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function TranslateFormulaText(ByVal formulaText As String) As String
@@ -245,7 +267,8 @@ are translated; unquoted characters pass through unchanged.</p>
 </ul>
 <p><strong>Returns:</strong> String. The formula with quoted chunks translated.</p>
 <hr />
-<h3 id="int-supports-user-form-contract">supports-user-form-contract <a class="anchor-link" href="#int-supports-user-form-contract">#</a></h3>
+<h3 id="int-supportsuserformcontract">SupportsUserFormContract <a class="anchor-link" href="#int-supportsuserformcontract">#</a></h3>
+<p><em>supports-user-form-contract</em></p>
 <p><strong>Check whether an object exposes a Controls collection</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function SupportsUserFormContract(ByVal candidate As Object) As Boolean
@@ -256,7 +279,8 @@ are translated; unquoted characters pass through unchanged.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when a Controls property is accessible.</p>
 <hr />
-<h3 id="int-should-translate-control">should-translate-control <a class="anchor-link" href="#int-should-translate-control">#</a></h3>
+<h3 id="int-shouldtranslatecontrol">ShouldTranslateControl <a class="anchor-link" href="#int-shouldtranslatecontrol">#</a></h3>
+<p><em>should-translate-control</em></p>
 <p><strong>Determine whether a control type supports caption translation</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ShouldTranslateControl(ByVal controlType As String) As Boolean
@@ -267,7 +291,8 @@ are translated; unquoted characters pass through unchanged.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True for CommandButton, Label, OptionButton, Page, Frame, CheckBox.</p>
 <hr />
-<h3 id="int-translate-multi-page-control">translate-multi-page-control <a class="anchor-link" href="#int-translate-multi-page-control">#</a></h3>
+<h3 id="int-translatemultipagecontrol">TranslateMultiPageControl <a class="anchor-link" href="#int-translatemultipagecontrol">#</a></h3>
+<p><em>translate-multi-page-control</em></p>
 <p><strong>Translate page captions within a MultiPage control</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub TranslateMultiPageControl(ByVal multiPageControl As Object)
@@ -277,7 +302,8 @@ are translated; unquoted characters pass through unchanged.</p>
 <li><code>multiPageControl</code>: Object. The MultiPage control.</li>
 </ul>
 <hr />
-<h3 id="int-validate-list-object">validate-list-object <a class="anchor-link" href="#int-validate-list-object">#</a></h3>
+<h3 id="int-validatelistobject">ValidateListObject <a class="anchor-link" href="#int-validatelistobject">#</a></h3>
+<p><em>validate-list-object</em></p>
 <p><strong>Guard against Nothing ListObject arguments</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ValidateListObject(ByVal source As ListObject, ByVal sourceMember As String)
@@ -288,7 +314,8 @@ are translated; unquoted characters pass through unchanged.</p>
 <li><code>sourceMember</code>: String. Calling member name for error context.</li>
 </ul>
 <hr />
-<h3 id="int-reset-caches">reset-caches <a class="anchor-link" href="#int-reset-caches">#</a></h3>
+<h3 id="int-resetcaches">ResetCaches <a class="anchor-link" href="#int-resetcaches">#</a></h3>
+<p><em>reset-caches</em></p>
 <p><strong>Invalidate cached column index</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ResetCaches(Optional ByVal resetLanguageIndex As Boolean = True)
@@ -298,7 +325,8 @@ are translated; unquoted characters pass through unchanged.</p>
 <li><code>resetLanguageIndex</code>: Boolean. When True, clears the language column cache. Defaults to True.</li>
 </ul>
 <hr />
-<h3 id="int-raise-error">raise-error <a class="anchor-link" href="#int-raise-error">#</a></h3>
+<h3 id="int-raiseerror">RaiseError <a class="anchor-link" href="#int-raiseerror">#</a></h3>
+<p><em>raise-error</em></p>
 <p><strong>Raise a typed project error with optional member context</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RaiseError(ByVal errNumber As ProjectError, ByVal message As String, Optional ByVal sourceMember As String = vbNullString)
@@ -312,7 +340,7 @@ are translated; unquoted characters pass through unchanged.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (86 file(s))</summary>
+<summary>Used in (84 file(s))</summary>
 <ul>
 <li><a href="src/classes/analyses/Analysis.cls">Analysis.cls</a></li>
 <li><a href="src/classes/analyses/AnalysisOutput.cls">AnalysisOutput.cls</a></li>
@@ -356,9 +384,9 @@ are translated; unquoted characters pass through unchanged.</p>
 <li><a href="src/classes/stale/designer-codes/modules/implements/FormLogicShowVarLabels.bas">FormLogicShowVarLabels.bas</a></li>
 <li><a href="src/classes/stale/designer-codes/modules/implements/LinelistEvents.bas">LinelistEvents.bas</a></li>
 <li><a href="src/classes/stale/designer-codes/modules/implements/LinelistGeo.bas">LinelistGeo.bas</a></li>
-<li><a href="src/modules/geo/GeoModule.bas">GeoModule.bas</a></li>
 <li><a href="src/modules/linelist/EventsLinelistButtons.bas">EventsLinelistButtons.bas</a></li>
 <li><a href="src/modules/linelist/EventsLinelistRibbon.bas">EventsLinelistRibbon.bas</a></li>
+<li><a href="src/modules/linelist/GeoModule.bas">GeoModule.bas</a></li>
 <li><a href="src/modules/linelistform/FormLogicAdvanced.bas">FormLogicAdvanced.bas</a></li>
 <li><a href="src/modules/linelistform/FormLogicEpiWeek.bas">FormLogicEpiWeek.bas</a></li>
 <li><a href="src/modules/linelistform/FormLogicExport.bas">FormLogicExport.bas</a></li>
@@ -370,8 +398,6 @@ are translated; unquoted characters pass through unchanged.</p>
 <li><a href="src/modules/mastersetup/MasterSetupHelpers.bas">MasterSetupHelpers.bas</a></li>
 <li><a href="src/modules/setup/EventsSetupRibbon.bas">EventsSetupRibbon.bas</a></li>
 <li><a href="src/modules/setup/SetupHelpers.bas">SetupHelpers.bas</a></li>
-<li><a href="src/modules/stale/EventsGlobalAnalysis.bas">EventsGlobalAnalysis.bas</a></li>
-<li><a href="src/modules/stale/LinelistEvents.bas">LinelistEvents.bas</a></li>
 <li><a href="src/msetup-codes/modules/EventsGlobal.bas">EventsGlobal.bas</a></li>
 <li><a href="src/msetup-codes/modules/EventsRibbon.bas">EventsRibbon.bas</a></li>
 <li><a href="src/msetup-codes/modules/Exports.bas">Exports.bas</a></li>

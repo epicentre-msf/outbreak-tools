@@ -21,7 +21,8 @@ Consumers interact through the IDesignerEntry interface.</p>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
 <div class="section-body">
-<h3 id="create">create <a class="anchor-link" href="#create">#</a></h3>
+<h3 id="create">Create <a class="anchor-link" href="#create">#</a></h3>
+<p><em>create</em></p>
 <p><strong>Create and configure a designer entry helper</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal hostSheet As Worksheet) As IDesignerEntry
@@ -40,7 +41,8 @@ the IDesignerEntry interface. Called on the predeclared instance.</p>
 <details open class="doc-section" id="public-api">
 <summary>Public API</summary>
 <div class="section-body">
-<h3 id="configure">configure <a class="anchor-link" href="#configure">#</a></h3>
+<h3 id="configure">Configure <a class="anchor-link" href="#configure">#</a></h3>
+<p><em>configure</em></p>
 <p><strong>Bind the helper to the target worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Configure(ByVal hostSheet As Worksheet)
@@ -57,7 +59,8 @@ previously injected test double is preserved.</p>
 <li>ProjectError.ObjectNotInitialized When the worksheet is Nothing.</li>
 </ul>
 <hr />
-<h3 id="use-translator">use-translator <a class="anchor-link" href="#use-translator">#</a></h3>
+<h3 id="usetranslator">UseTranslator <a class="anchor-link" href="#usetranslator">#</a></h3>
+<p><em>use-translator</em></p>
 <p><strong>Use a provided translations manager instead of creating one</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub UseTranslator(ByVal translator As IDesignerTranslation)
@@ -69,7 +72,8 @@ supplied instance. Primarily used in tests to inject a stub or mock.</p>
 <li><code>translator</code>: IDesignerTranslation. The translations provider to use.</li>
 </ul>
 <hr />
-<h3 id="clear">clear <a class="anchor-link" href="#clear">#</a></h3>
+<h3 id="clear">Clear <a class="anchor-link" href="#clear">#</a></h3>
+<p><em>clear</em></p>
 <p><strong>Clear user inputs on the configured worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Clear()
@@ -79,7 +83,8 @@ values and setting backgrounds to white. Also clears any warning
 messages below the RNG_Warning range. Silently skips any named range
 that does not exist on the worksheet.</p>
 <hr />
-<h3 id="translate">translate <a class="anchor-link" href="#translate">#</a></h3>
+<h3 id="translate">Translate <a class="anchor-link" href="#translate">#</a></h3>
+<p><em>translate</em></p>
 <p><strong>Translate the configured worksheet using the provided language</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Translate(Optional ByVal language As String = vbNullString)
@@ -93,7 +98,8 @@ the language code and persists it to the worksheet-level HiddenName.</p>
 <li><code>language</code>: Optional String. Language string in &quot;CODE - Label&quot; format. Defaults to vbNullString.</li>
 </ul>
 <hr />
-<h3 id="add-info">add-info <a class="anchor-link" href="#add-info">#</a></h3>
+<h3 id="addinfo">AddInfo <a class="anchor-link" href="#addinfo">#</a></h3>
+<p><em>add-info</em></p>
 <p><strong>Write a value to a named info range on the host worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub AddInfo(ByVal value As String, ByVal infoName As String)
@@ -107,7 +113,8 @@ exits when the named range does not exist on the worksheet.</p>
 <li><code>infoName</code>: String. The logical name identifying the target range.</li>
 </ul>
 <hr />
-<h3 id="value-of">value-of <a class="anchor-link" href="#value-of">#</a></h3>
+<h3 id="valueof">ValueOf <a class="anchor-link" href="#valueof">#</a></h3>
+<p><em>value-of</em></p>
 <p><strong>Read a value from a named info range on the host worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get ValueOf(ByVal infoName As String) As String
@@ -121,7 +128,8 @@ the named range does not exist.</p>
 </ul>
 <p><strong>Returns:</strong> String. The current value of the named range.</p>
 <hr />
-<h3 id="translate-message">translate-message <a class="anchor-link" href="#translate-message">#</a></h3>
+<h3 id="translatemessage">TranslateMessage <a class="anchor-link" href="#translatemessage">#</a></h3>
+<p><em>translate-message</em></p>
 <p><strong>Translate a message code using the designer translations</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function TranslateMessage(ByVal msgCode As String) As String
@@ -135,7 +143,8 @@ msgCode unchanged when no translation is available.</p>
 </ul>
 <p><strong>Returns:</strong> String. The translated message text.</p>
 <hr />
-<h3 id="host-sheet">host-sheet <a class="anchor-link" href="#host-sheet">#</a></h3>
+<h3 id="hostsheet">HostSheet <a class="anchor-link" href="#hostsheet">#</a></h3>
+<p><em>host-sheet</em></p>
 <p><strong>The managed worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get HostSheet() As Worksheet
@@ -153,7 +162,8 @@ Raises an error when accessed before configuration.</p>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-factory">Factory</h2>
-<h3 id="int-self">self <a class="anchor-link" href="#int-self">#</a></h3>
+<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
+<p><em>self</em></p>
 <p><strong>Current object instance</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Self() As IDesignerEntry
@@ -163,7 +173,8 @@ interface reference from the predeclared Create method.</p>
 <p><strong>Returns:</strong> IDesignerEntry. The current instance cast to the interface.</p>
 <hr />
 <h2 id="int-internal-helpers">Internal Helpers</h2>
-<h3 id="int-clear-range">clear-range <a class="anchor-link" href="#int-clear-range">#</a></h3>
+<h3 id="int-clearrange">ClearRange <a class="anchor-link" href="#int-clearrange">#</a></h3>
+<p><em>clear-range</em></p>
 <p><strong>Clear a single named range value and reset its background</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ClearRange(ByVal rngName As String)
@@ -176,7 +187,8 @@ named range does not exist.</p>
 <li><code>rngName</code>: String. The named range identifier on the worksheet.</li>
 </ul>
 <hr />
-<h3 id="int-clear-warnings">clear-warnings <a class="anchor-link" href="#int-clear-warnings">#</a></h3>
+<h3 id="int-clearwarnings">ClearWarnings <a class="anchor-link" href="#int-clearwarnings">#</a></h3>
+<p><em>clear-warnings</em></p>
 <p><strong>Clear the warning range and all contiguous non-empty cells below it</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ClearWarnings()
@@ -185,7 +197,8 @@ named range does not exist.</p>
 background of each non-empty cell until an empty cell is encountered.
 Silently exits when RNG_Warning does not exist.</p>
 <hr />
-<h3 id="int-resolve-info-range">resolve-info-range <a class="anchor-link" href="#int-resolve-info-range">#</a></h3>
+<h3 id="int-resolveinforange">ResolveInfoRange <a class="anchor-link" href="#int-resolveinforange">#</a></h3>
+<p><em>resolve-info-range</em></p>
 <p><strong>Map a logical info name to its named range on the host worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ResolveInfoRange(ByVal infoName As String) As Range
@@ -199,7 +212,8 @@ when the infoName is unknown or the named range does not exist.</p>
 </ul>
 <p><strong>Returns:</strong> Range. The named range, or Nothing.</p>
 <hr />
-<h3 id="int-resolve-translator">resolve-translator <a class="anchor-link" href="#int-resolve-translator">#</a></h3>
+<h3 id="int-resolvetranslator">ResolveTranslator <a class="anchor-link" href="#int-resolvetranslator">#</a></h3>
+<p><em>resolve-translator</em></p>
 <p><strong>Lazily resolve or return the translations provider</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ResolveTranslator() As IDesignerTranslation
@@ -213,7 +227,8 @@ access. Raises an error when the translation sheet cannot be found.</p>
 <li>ProjectError.ElementNotFound When the translation sheet is missing.</li>
 </ul>
 <hr />
-<h3 id="int-translation-sheet">translation-sheet <a class="anchor-link" href="#int-translation-sheet">#</a></h3>
+<h3 id="int-translationsheet">TranslationSheet <a class="anchor-link" href="#int-translationsheet">#</a></h3>
+<p><em>translation-sheet</em></p>
 <p><strong>Locate the DesignerTranslation worksheet in the parent workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function TranslationSheet() As Worksheet
@@ -226,7 +241,8 @@ access. Raises an error when the translation sheet cannot be found.</p>
 <li>ProjectError.ElementNotFound When the translations worksheet is missing.</li>
 </ul>
 <hr />
-<h3 id="int-raise-error">raise-error <a class="anchor-link" href="#int-raise-error">#</a></h3>
+<h3 id="int-raiseerror">RaiseError <a class="anchor-link" href="#int-raiseerror">#</a></h3>
+<p><em>raise-error</em></p>
 <p><strong>Raise a ProjectError-based exception</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RaiseError(ByVal errorCode As ProjectError, ByVal messageText As String)

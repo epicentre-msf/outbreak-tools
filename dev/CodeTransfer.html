@@ -21,7 +21,8 @@ via Create and then call the transfer methods for each component type.</p>
 <details open class="doc-section" id="instantiation">
 <summary>Instantiation</summary>
 <div class="section-body">
-<h3 id="create">create <a class="anchor-link" href="#create">#</a></h3>
+<h3 id="create">Create <a class="anchor-link" href="#create">#</a></h3>
+<p><em>create</em></p>
 <p><strong>Create a CodeTransfer instance</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal sourceWkb As Workbook, _
@@ -49,7 +50,8 @@ are validated as non-Nothing.</p>
 <details open class="doc-section" id="operations">
 <summary>Operations</summary>
 <div class="section-body">
-<h3 id="transfer-class">transfer-class <a class="anchor-link" href="#transfer-class">#</a></h3>
+<h3 id="transferclass">TransferClass <a class="anchor-link" href="#transferclass">#</a></h3>
+<p><em>transfer-class</em></p>
 <p><strong>Transfer a class module from source to target workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub TransferClass(ByVal className As String)
@@ -63,7 +65,8 @@ temporary file is cleaned up after import.</p>
 <li><code>className</code>: String. The VBA component name of the class to transfer.</li>
 </ul>
 <hr />
-<h3 id="transfer-module">transfer-module <a class="anchor-link" href="#transfer-module">#</a></h3>
+<h3 id="transfermodule">TransferModule <a class="anchor-link" href="#transfermodule">#</a></h3>
+<p><em>transfer-module</em></p>
 <p><strong>Transfer a standard module from source to target workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub TransferModule(ByVal moduleName As String)
@@ -75,7 +78,8 @@ temporary file named &quot;CopieMod.bas&quot;, then imports it into the target w
 <li><code>moduleName</code>: String. The VBA component name of the module to transfer.</li>
 </ul>
 <hr />
-<h3 id="transfer-form">transfer-form <a class="anchor-link" href="#transfer-form">#</a></h3>
+<h3 id="transferform">TransferForm <a class="anchor-link" href="#transferform">#</a></h3>
+<p><em>transfer-form</em></p>
 <p><strong>Transfer a UserForm from source to target workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub TransferForm(ByVal formName As String)
@@ -88,7 +92,8 @@ files, imports it into the target workbook, then deletes both the .frm and
 <li><code>formName</code>: String. The VBA component name of the form to transfer.</li>
 </ul>
 <hr />
-<h3 id="transfer-workbook-code">transfer-workbook-code <a class="anchor-link" href="#transfer-workbook-code">#</a></h3>
+<h3 id="transferworkbookcode">TransferWorkbookCode <a class="anchor-link" href="#transferworkbookcode">#</a></h3>
+<p><em>transfer-workbook-code</em></p>
 <p><strong>Copy code from a source module into the target's ThisWorkbook component</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub TransferWorkbookCode(ByVal moduleName As String)
@@ -102,7 +107,33 @@ built-in ThisWorkbook code module.</p>
 <li><code>moduleName</code>: String. The source module whose code will be copied.</li>
 </ul>
 <hr />
-<h3 id="copy-module-text">copy-module-text <a class="anchor-link" href="#copy-module-text">#</a></h3>
+<h3 id="transferworksheetcode">TransferWorksheetCode <a class="anchor-link" href="#transferworksheetcode">#</a></h3>
+<p><em>transfer-worksheet-code</em></p>
+<p><strong>Copy code from a source module into a worksheet's code module</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub TransferWorksheetCode(ByVal moduleName As String, ByVal targetSheetName As String)
+</code></pre>
+<p>Reads all code lines from the named module in the source workbook and writes
+them into the code module of the worksheet identified by targetSheetName in
+the target workbook. Replaces any existing content in the worksheet's code
+module. The target worksheet is looked up by its user-visible Name property;
+its CodeName is then used to locate the correct VBComponent. Used to inject
+event handlers (e.g., Worksheet_SelectionChange) into specific worksheets
+during linelist generation.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>moduleName</code>: String. The source module whose code will be copied.</li>
+<li><code>targetSheetName</code>: String. The user-visible name of the worksheet in the
+target workbook whose code module will receive the code.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ElementNotFound When the source module does not exist.</li>
+<li>ProjectError.ElementNotFound When the target worksheet does not exist.</li>
+</ul>
+<hr />
+<h3 id="copymoduletext">CopyModuleText <a class="anchor-link" href="#copymoduletext">#</a></h3>
+<p><em>copy-module-text</em></p>
 <p><strong>Copy code text from a source module to an existing target module</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub CopyModuleText(ByVal moduleName As String)
@@ -115,7 +146,8 @@ Used for template workbooks where the target module already exists.</p>
 <li><code>moduleName</code>: String. The module name (must exist in both workbooks).</li>
 </ul>
 <hr />
-<h3 id="copy-module-code">copy-module-code <a class="anchor-link" href="#copy-module-code">#</a></h3>
+<h3 id="copymodulecode">CopyModuleCode <a class="anchor-link" href="#copymodulecode">#</a></h3>
+<p><em>copy-module-code</em></p>
 <p><strong>Copy code between components within the target workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub CopyModuleCode(ByVal sourceName As String, ByVal targetName As String)
@@ -140,7 +172,8 @@ not found in the target workbook.</li>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-bindings">Bindings</h2>
-<h3 id="int-bin-source-wkb">bin-source-wkb <a class="anchor-link" href="#int-bin-source-wkb">#</a></h3>
+<h3 id="int-binsourcewkb">BinSourceWkb <a class="anchor-link" href="#int-binsourcewkb">#</a></h3>
+<p><em>bin-source-wkb</em></p>
 <p><strong>Assign the source workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Friend Property Set BinSourceWkb(ByVal value As Workbook)
@@ -151,7 +184,8 @@ not found in the target workbook.</li>
 <li><code>value</code>: Workbook. The source workbook to store.</li>
 </ul>
 <hr />
-<h3 id="int-bin-target-wkb">bin-target-wkb <a class="anchor-link" href="#int-bin-target-wkb">#</a></h3>
+<h3 id="int-bintargetwkb">BinTargetWkb <a class="anchor-link" href="#int-bintargetwkb">#</a></h3>
+<p><em>bin-target-wkb</em></p>
 <p><strong>Assign the target workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Friend Property Set BinTargetWkb(ByVal value As Workbook)
@@ -161,7 +195,8 @@ not found in the target workbook.</li>
 <li><code>value</code>: Workbook. The target workbook to store.</li>
 </ul>
 <hr />
-<h3 id="int-bin-temp-repos">bin-temp-repos <a class="anchor-link" href="#int-bin-temp-repos">#</a></h3>
+<h3 id="int-bintemprepos">BinTempRepos <a class="anchor-link" href="#int-bintemprepos">#</a></h3>
+<p><em>bin-temp-repos</em></p>
 <p><strong>Assign the temporary repository</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Friend Property Set BinTempRepos(ByVal value As ITemporaryRepos)
@@ -172,7 +207,8 @@ not found in the target workbook.</li>
 </ul>
 <hr />
 <h2 id="int-helpers">Helpers</h2>
-<h3 id="int-export-import-component">export-import-component <a class="anchor-link" href="#int-export-import-component">#</a></h3>
+<h3 id="int-exportimportcomponent">ExportImportComponent <a class="anchor-link" href="#int-exportimportcomponent">#</a></h3>
+<p><em>export-import-component</em></p>
 <p><strong>Export a VBA component from source and import into target</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ExportImportComponent(ByVal componentName As String, ByVal tempFileName As String)
@@ -187,7 +223,8 @@ TransferModule.</p>
 <li><code>tempFileName</code>: String. The temporary file name (e.g., &quot;CopieCls.cls&quot;).</li>
 </ul>
 <hr />
-<h3 id="int-throw-error">throw-error <a class="anchor-link" href="#int-throw-error">#</a></h3>
+<h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
+<p><em>throw-error</em></p>
 <p><strong>Raise a ProjectError-based exception</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As Long, ByVal errorMessage As String)

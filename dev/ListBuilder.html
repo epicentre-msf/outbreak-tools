@@ -19,12 +19,13 @@ and filtered companion sheets, action buttons, and a pivot table. VList
 mode creates a PLAGEVALUES range reference for vertical data entry.
 Consumers call Create with a layer mode, sheet name, and linelist
 reference, then invoke Build to construct the sheet.</p>
-<p><strong>Depends on:</strong> <a href="ILinelist.html">ILinelist</a>, <a href="ILLSheets.html">ILLSheets</a>, <a href="ILinelistSpecs.html">ILinelistSpecs</a>, <a href="ILLFormat.html">ILLFormat</a>, <a href="IDropdownLists.html">IDropdownLists</a>, <a href="IPasswords.html">IPasswords</a>, <a href="ITranslationObject.html">ITranslationObject</a>, <a href="IButtons.html">IButtons</a>, <a href="IHiddenNames.html">IHiddenNames</a>, <a href="ISectionBuilder.html">ISectionBuilder</a>, ICustomPivotTables, <a href="BetterArray.html">BetterArray</a>, Button shape codes</p>
+<p><strong>Depends on:</strong> <a href="ILinelist.html">ILinelist</a>, <a href="ILLSheets.html">ILLSheets</a>, <a href="ILinelistSpecs.html">ILinelistSpecs</a>, <a href="ILLFormat.html">ILLFormat</a>, <a href="IDropdownLists.html">IDropdownLists</a>, <a href="IPasswords.html">IPasswords</a>, <a href="ITranslationObject.html">ITranslationObject</a>, <a href="IButtons.html">IButtons</a>, <a href="IHiddenNames.html">IHiddenNames</a>, <a href="ISectionBuilder.html">ISectionBuilder</a>, ICustomPivotTables, <a href="BetterArray.html">BetterArray</a>, Button shape codes, Checking support</p>
 <p><strong>Version:</strong> 1.0 (2026-02-09)</p>
 <details open class="doc-section" id="instantiation">
 <summary>Instantiation</summary>
 <div class="section-body">
-<h3 id="create">create <a class="anchor-link" href="#create">#</a></h3>
+<h3 id="create">Create <a class="anchor-link" href="#create">#</a></h3>
+<p><em>create</em></p>
 <p><strong>Create a ListBuilder instance</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal layer As Byte, _
@@ -56,7 +57,8 @@ present in the dictionary.</li>
 <details open class="doc-section" id="core">
 <summary>Core</summary>
 <div class="section-body">
-<h3 id="build">build <a class="anchor-link" href="#build">#</a></h3>
+<h3 id="build">Build <a class="anchor-link" href="#build">#</a></h3>
+<p><em>build</em></p>
 <p><strong>Build the data entry sheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Build()
@@ -76,7 +78,8 @@ ListBuilderLayerHList or ListBuilderLayerVList.</li>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-bindings">Bindings</h2>
-<h3 id="int-bin-layer">bin-layer <a class="anchor-link" href="#int-bin-layer">#</a></h3>
+<h3 id="int-binlayer">BinLayer <a class="anchor-link" href="#int-binlayer">#</a></h3>
+<p><em>bin-layer</em></p>
 <p><strong>Assign the builder layer mode</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Friend Property Let BinLayer(ByVal value As Byte)
@@ -87,7 +90,8 @@ ListBuilderLayerHList or ListBuilderLayerVList.</li>
 <li><code>value</code>: Byte. The ListBuilderLayer constant (HList or VList).</li>
 </ul>
 <hr />
-<h3 id="int-bin-sheet-name">bin-sheet-name <a class="anchor-link" href="#int-bin-sheet-name">#</a></h3>
+<h3 id="int-binsheetname">BinSheetName <a class="anchor-link" href="#int-binsheetname">#</a></h3>
+<p><em>bin-sheet-name</em></p>
 <p><strong>Assign the target sheet name</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Friend Property Let BinSheetName(ByVal value As String)
@@ -97,7 +101,8 @@ ListBuilderLayerHList or ListBuilderLayerVList.</li>
 <li><code>value</code>: String. The dictionary sheet name to build.</li>
 </ul>
 <hr />
-<h3 id="int-bin-linelist">bin-linelist <a class="anchor-link" href="#int-bin-linelist">#</a></h3>
+<h3 id="int-binlinelist">BinLinelist <a class="anchor-link" href="#int-binlinelist">#</a></h3>
+<p><em>bin-linelist</em></p>
 <p><strong>Assign the linelist facade</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Friend Property Set BinLinelist(ByVal value As ILinelist)
@@ -108,7 +113,8 @@ ListBuilderLayerHList or ListBuilderLayerVList.</li>
 </ul>
 <hr />
 <h2 id="int-hlistbuild">HListBuild</h2>
-<h3 id="int-build-hlist">build-hlist <a class="anchor-link" href="#int-build-hlist">#</a></h3>
+<h3 id="int-buildhlist">BuildHList <a class="anchor-link" href="#int-buildhlist">#</a></h3>
+<p><em>build-hlist</em></p>
 <p><strong>Build a horizontal data entry sheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub BuildHList()
@@ -123,7 +129,8 @@ table, and protects the sheet. When a template workbook is in use, buttons
 are skipped and rows 3-4 are hidden instead.</p>
 <hr />
 <h2 id="int-vlistbuild">VListBuild</h2>
-<h3 id="int-build-vlist">build-vlist <a class="anchor-link" href="#int-build-vlist">#</a></h3>
+<h3 id="int-buildvlist">BuildVList <a class="anchor-link" href="#int-buildvlist">#</a></h3>
+<p><em>build-vlist</em></p>
 <p><strong>Build a vertical data entry sheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub BuildVList()
@@ -136,7 +143,8 @@ reference (the contiguous vertical data range starting at the table start
 marker), and protects the active sheet.</p>
 <hr />
 <h2 id="int-helpers">Helpers</h2>
-<h3 id="int-build-sections">build-sections <a class="anchor-link" href="#int-build-sections">#</a></h3>
+<h3 id="int-buildsections">BuildSections <a class="anchor-link" href="#int-buildsections">#</a></h3>
+<p><em>build-sections</em></p>
 <p><strong>Build sections using SectionBuilder</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub BuildSections(ByVal sh As Worksheet, ByVal printSh As Worksheet)
@@ -152,7 +160,8 @@ passed to the builder for variable validation setup.</p>
 <li><code>printSh</code>: Worksheet. The printed companion sheet (Nothing for VList).</li>
 </ul>
 <hr />
-<h3 id="int-collect-section-names">collect-section-names <a class="anchor-link" href="#int-collect-section-names">#</a></h3>
+<h3 id="int-collectsectionnames">CollectSectionNames <a class="anchor-link" href="#int-collectsectionnames">#</a></h3>
+<p><em>collect-section-names</em></p>
 <p><strong>Collect section names for the GoTo dropdown</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function CollectSectionNames(ByVal dict As ILLdictionary, _
@@ -171,7 +180,9 @@ skipped to avoid redundant dropdown entries.</p>
 </ul>
 <p><strong>Returns:</strong> BetterArray. A 1-based array of prefixed section name strings.</p>
 <hr />
-<h3 id="int-throw-error">throw-error <a class="anchor-link" href="#int-throw-error">#</a></h3>
+<h2 id="int-errors">Errors</h2>
+<h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
+<p><em>throw-error</em></p>
 <p><strong>Raise a ProjectError-based exception</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As Long, ByVal errorMessage As String)

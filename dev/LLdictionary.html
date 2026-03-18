@@ -14,7 +14,8 @@
 <details open class="doc-section" id="instantiation">
 <summary>Instantiation</summary>
 <div class="section-body">
-<h3 id="create">create <a class="anchor-link" href="#create">#</a></h3>
+<h3 id="create">Create <a class="anchor-link" href="#create">#</a></h3>
+<p><em>create</em></p>
 <p><strong>Create a dictionary object</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal dictWksh As Worksheet, ByVal dictStartRow As Long, _
@@ -43,7 +44,8 @@ a consistent abstraction and callers interact with a predeclared instance.</p>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-instantiation">Instantiation</h2>
-<h3 id="int-init-exports">init-exports <a class="anchor-link" href="#int-init-exports">#</a></h3>
+<h3 id="int-initialisetotalexports">InitialiseTotalExports <a class="anchor-link" href="#int-initialisetotalexports">#</a></h3>
+<p><em>init-exports</em></p>
 <p><strong>Initialise total export counter</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub InitialiseTotalExports(ByVal requestedTotal As Long)
@@ -52,7 +54,8 @@ a consistent abstraction and callers interact with a predeclared instance.</p>
 When no persisted value exists, the routine falls back to the requested input
 and persists it so subsequent sessions pick up the same configuration.</p>
 <hr />
-<h3 id="int-self">self <a class="anchor-link" href="#int-self">#</a></h3>
+<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
+<p><em>self</em></p>
 <p><strong>Current object instance</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Self() As ILLdictionary
@@ -62,7 +65,8 @@ returned by <code>Create</code> without repeatedly typing <code>Set x = New LLdi
 <p><strong>Returns:</strong> ILLdictionary</p>
 <hr />
 <h2 id="int-data-elements">Data Elements</h2>
-<h3 id="int-data">data <a class="anchor-link" href="#int-data">#</a></h3>
+<h3 id="int-data">Data <a class="anchor-link" href="#int-data">#</a></h3>
+<p><em>data</em></p>
 <p><strong>DataSheet backing store</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Data() As IDataSheet
@@ -72,7 +76,8 @@ interactions. Consumers rely on this to perform advanced queries without
 directly manipulating Excel ranges.</p>
 <p><strong>Returns:</strong> IDataSheet</p>
 <hr />
-<h3 id="int-exports">exports <a class="anchor-link" href="#int-exports">#</a></h3>
+<h3 id="int-totalnumberofexports">TotalNumberOfExports <a class="anchor-link" href="#int-totalnumberofexports">#</a></h3>
+<p><em>exports</em></p>
 <p><strong>Number of export columns</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get TotalNumberOfExports() As Long
@@ -82,7 +87,8 @@ the legacy behaviour where designer workflows expect a bounded set of export
 columns ready for mapping.</p>
 <p><strong>Returns:</strong> Long</p>
 <hr />
-<h3 id="int-exports-set">exports-set <a class="anchor-link" href="#int-exports-set">#</a></h3>
+<h3 id="int-totalnumberofexports">TotalNumberOfExports <a class="anchor-link" href="#int-totalnumberofexports">#</a></h3>
+<p><em>exports-set</em></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Let TotalNumberOfExports(ByVal numberOfExports As Long)
 </code></pre>
@@ -94,7 +100,8 @@ class constant when an invalid value is provided.</p>
 </ul>
 <hr />
 <h2 id="int-exportcountermanagement">ExportCounterManagement</h2>
-<h3 id="int-apply-exports">apply-exports <a class="anchor-link" href="#int-apply-exports">#</a></h3>
+<h3 id="int-applytotalexports">ApplyTotalExports <a class="anchor-link" href="#int-applytotalexports">#</a></h3>
+<p><em>apply-exports</em></p>
 <p><strong>Normalise and persist export counters</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ApplyTotalExports(ByVal requestedTotal As Long, _
@@ -106,47 +113,56 @@ entry point (creation, import, manual setter) behaves consistently. The helper
 optionally suppresses warnings for legacy workbooks that do not yet store the
 hidden counter.</p>
 <hr />
-<h3 id="int-normalise-exports">normalise-exports <a class="anchor-link" href="#int-normalise-exports">#</a></h3>
+<h3 id="int-normalisetotalexports">NormaliseTotalExports <a class="anchor-link" href="#int-normalisetotalexports">#</a></h3>
+<p><em>normalise-exports</em></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function NormaliseTotalExports(ByVal requestedTotal As Long, ByVal suppressInvalidLog As Boolean) As Long
 </code></pre>
 <hr />
-<h3 id="int-reset-export-cache">reset-export-cache <a class="anchor-link" href="#int-reset-export-cache">#</a></h3>
+<h3 id="int-resetcolumncaches">ResetColumnCaches <a class="anchor-link" href="#int-resetcolumncaches">#</a></h3>
+<p><em>reset-export-cache</em></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ResetColumnCaches()
 </code></pre>
 <hr />
-<h3 id="int-persist-exports">persist-exports <a class="anchor-link" href="#int-persist-exports">#</a></h3>
+<h3 id="int-persisttotalexports">PersistTotalExports <a class="anchor-link" href="#int-persisttotalexports">#</a></h3>
+<p><em>persist-exports</em></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub PersistTotalExports(ByVal totalCount As Long)
 </code></pre>
 <hr />
-<h3 id="int-persist-exports-sheet">persist-exports-sheet <a class="anchor-link" href="#int-persist-exports-sheet">#</a></h3>
+<h3 id="int-persisttotalexportsonsheet">PersistTotalExportsOnSheet <a class="anchor-link" href="#int-persisttotalexportsonsheet">#</a></h3>
+<p><em>persist-exports-sheet</em></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub PersistTotalExportsOnSheet(ByVal sheet As Worksheet, ByVal totalCount As Long)
 </code></pre>
 <hr />
-<h3 id="int-stored-exports">stored-exports <a class="anchor-link" href="#int-stored-exports">#</a></h3>
+<h3 id="int-storedtotalexportsfromsheet">StoredTotalExportsFromSheet <a class="anchor-link" href="#int-storedtotalexportsfromsheet">#</a></h3>
+<p><em>stored-exports</em></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function StoredTotalExportsFromSheet(ByVal sheet As Worksheet) As Long
 </code></pre>
 <hr />
-<h3 id="int-hidden-name-store">hidden-name-store <a class="anchor-link" href="#int-hidden-name-store">#</a></h3>
+<h3 id="int-hiddennamestore">HiddenNameStore <a class="anchor-link" href="#int-hiddennamestore">#</a></h3>
+<p><em>hidden-name-store</em></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function HiddenNameStore(Optional ByVal sheet As Worksheet) As IHiddenNames
 </code></pre>
 <hr />
-<h3 id="int-try-sheet-name">try-sheet-name <a class="anchor-link" href="#int-try-sheet-name">#</a></h3>
+<h3 id="int-trysheetnamedefinition">TrySheetNameDefinition <a class="anchor-link" href="#int-trysheetnamedefinition">#</a></h3>
+<p><em>try-sheet-name</em></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function TrySheetNameDefinition(ByVal sheet As Worksheet, ByVal nameId As String) As Name
 </code></pre>
 <hr />
-<h3 id="int-extract-name">extract-name <a class="anchor-link" href="#int-extract-name">#</a></h3>
+<h3 id="int-extractsimplename">ExtractSimpleName <a class="anchor-link" href="#int-extractsimplename">#</a></h3>
+<p><em>extract-name</em></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ExtractSimpleName(ByVal qualifiedName As String) As String
 </code></pre>
 <hr />
-<h3 id="int-wksh">wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
+<h3 id="int-wksh">Wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
+<p><em>wksh</em></p>
 <p><strong>Host worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Wksh() As Worksheet
@@ -156,35 +172,40 @@ helpers that need to perform sheet-level operations such as adding columns or
 listobjects.</p>
 <p><strong>Returns:</strong> Worksheet</p>
 <hr />
-<h3 id="int-startrow">startrow <a class="anchor-link" href="#int-startrow">#</a></h3>
+<h3 id="int-startrow">StartRow <a class="anchor-link" href="#int-startrow">#</a></h3>
+<p><em>startrow</em></p>
 <p><strong>Header row index</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get StartRow() As Long
 </code></pre>
 <p><strong>Returns:</strong> Long</p>
 <hr />
-<h3 id="int-startcol">startcol <a class="anchor-link" href="#int-startcol">#</a></h3>
+<h3 id="int-startcolumn">StartColumn <a class="anchor-link" href="#int-startcolumn">#</a></h3>
+<p><em>startcol</em></p>
 <p><strong>First column index</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get StartColumn() As Long
 </code></pre>
 <p><strong>Returns:</strong> Long</p>
 <hr />
-<h3 id="int-endrow">endrow <a class="anchor-link" href="#int-endrow">#</a></h3>
+<h3 id="int-dictendrow">DictEndRow <a class="anchor-link" href="#int-dictendrow">#</a></h3>
+<p><em>endrow</em></p>
 <p><strong>Last data row</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get DictEndRow() As Long
 </code></pre>
 <p><strong>Returns:</strong> Long</p>
 <hr />
-<h3 id="int-endcol">endcol <a class="anchor-link" href="#int-endcol">#</a></h3>
+<h3 id="int-dictendcolumn">DictEndColumn <a class="anchor-link" href="#int-dictendcolumn">#</a></h3>
+<p><em>endcol</em></p>
 <p><strong>Last data column</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get DictEndColumn() As Long
 </code></pre>
 <p><strong>Returns:</strong> Long</p>
 <hr />
-<h3 id="int-datarange">datarange <a class="anchor-link" href="#int-datarange">#</a></h3>
+<h3 id="int-datarange">DataRange <a class="anchor-link" href="#int-datarange">#</a></h3>
+<p><em>datarange</em></p>
 <p><strong>Dictionary range accessor</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get DataRange(Optional ByVal colName As String = &quot;__all__&quot;, _
@@ -201,7 +222,8 @@ so filtering or header inclusion behaves consistently everywhere.</p>
 <p><strong>Returns:</strong> Range</p>
 <hr />
 <h2 id="int-column-configuration">Column Configuration</h2>
-<h3 id="int-columnexists">columnexists <a class="anchor-link" href="#int-columnexists">#</a></h3>
+<h3 id="int-columnexists">ColumnExists <a class="anchor-link" href="#int-columnexists">#</a></h3>
+<p><em>columnexists</em></p>
 <p><strong>Test if a column exists</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function ColumnExists(ByVal colName As String, Optional ByVal checkValidity As Boolean = False) As Boolean
@@ -216,7 +238,8 @@ incomplete dictionaries during setup.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean</p>
 <hr />
-<h3 id="int-columnindex">columnindex <a class="anchor-link" href="#int-columnindex">#</a></h3>
+<h3 id="int-columnindex">ColumnIndex <a class="anchor-link" href="#int-columnindex">#</a></h3>
+<p><em>columnindex</em></p>
 <p><strong>Column index lookup</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ColumnIndex(ByVal colName As String, Optional ByVal inDataRange As Boolean = False) As Long
@@ -228,7 +251,8 @@ incomplete dictionaries during setup.</p>
 </ul>
 <p><strong>Returns:</strong> Long</p>
 <hr />
-<h3 id="int-uniquevalues">uniquevalues <a class="anchor-link" href="#int-uniquevalues">#</a></h3>
+<h3 id="int-uniquevalues">UniqueValues <a class="anchor-link" href="#int-uniquevalues">#</a></h3>
+<p><em>uniquevalues</em></p>
 <p><strong>Unique values in a column</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function UniqueValues(ByVal colName As String) As BetterArray
@@ -242,7 +266,8 @@ interpreted.</p>
 </ul>
 <p><strong>Returns:</strong> BetterArray</p>
 <hr />
-<h3 id="int-variableexists">variableexists <a class="anchor-link" href="#int-variableexists">#</a></h3>
+<h3 id="int-variableexists">VariableExists <a class="anchor-link" href="#int-variableexists">#</a></h3>
+<p><em>variableexists</em></p>
 <p><strong>Variable presence test</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function VariableExists(ByVal varName As String) As Boolean
@@ -256,7 +281,8 @@ duplicate entries.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean</p>
 <hr />
-<h3 id="int-addcolumn">addcolumn <a class="anchor-link" href="#int-addcolumn">#</a></h3>
+<h3 id="int-addcolumn">AddColumn <a class="anchor-link" href="#int-addcolumn">#</a></h3>
+<p><em>addcolumn</em></p>
 <p><strong>Append a column at the end</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub AddColumn(ByVal colName As String)
@@ -268,7 +294,8 @@ allowing callers to later fill values or formulas as required.</p>
 <li><code>colName</code>: Column header to append</li>
 </ul>
 <hr />
-<h3 id="int-insertcolumn">insertcolumn <a class="anchor-link" href="#int-insertcolumn">#</a></h3>
+<h3 id="int-insertcolumn">InsertColumn <a class="anchor-link" href="#int-insertcolumn">#</a></h3>
+<p><em>insertcolumn</em></p>
 <p><strong>Insert a column relative to another</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub InsertColumn(ByVal colName As String, ByVal After As String)
@@ -282,7 +309,8 @@ their layout.</p>
 <li><code>After</code>: Existing column used as anchor</li>
 </ul>
 <hr />
-<h3 id="int-removecolumn">removecolumn <a class="anchor-link" href="#int-removecolumn">#</a></h3>
+<h3 id="int-removecolumn">RemoveColumn <a class="anchor-link" href="#int-removecolumn">#</a></h3>
+<p><em>removecolumn</em></p>
 <p><strong>Remove a column by name</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub RemoveColumn(ByVal colName As String)
@@ -304,7 +332,8 @@ column cannot be located to aid troubleshooting in designer flows.</p>
 </code></pre>
 <hr />
 <h2 id="int-row-operations">Row Operations</h2>
-<h3 id="int-addrows">addrows <a class="anchor-link" href="#int-addrows">#</a></h3>
+<h3 id="int-addrows">AddRows <a class="anchor-link" href="#int-addrows">#</a></h3>
+<p><em>addrows</em></p>
 <p><strong>Append rows via listobject</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub AddRows()
@@ -336,7 +365,8 @@ is logged and ignored to keep the structure stable.</p>
                       Optional ByVal forceShift As Boolean = False)
 </code></pre>
 <hr />
-<h3 id="int-removerows">removerows <a class="anchor-link" href="#int-removerows">#</a></h3>
+<h3 id="int-removerows">RemoveRows <a class="anchor-link" href="#int-removerows">#</a></h3>
+<p><em>removerows</em></p>
 <p><strong>Remove rows via listobject</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub RemoveRows()
@@ -345,7 +375,8 @@ is logged and ignored to keep the structure stable.</p>
 helper. Logs a note when a listobject is not present.</p>
 <hr />
 <h2 id="int-specialised-views">Specialised Views</h2>
-<h3 id="int-specialvars">specialvars <a class="anchor-link" href="#int-specialvars">#</a></h3>
+<h3 id="int-specialvars">SpecialVars <a class="anchor-link" href="#int-specialvars">#</a></h3>
+<p><em>specialvars</em></p>
 <p><strong>Filtered variable list by criteria</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get SpecialVars(ByVal firstCondition As String, _
@@ -363,7 +394,8 @@ expectations.</p>
 <li><code>param</code>: &quot;Control&quot;</li>
 </ul>
 <hr />
-<h3 id="int-choicesvars">choicesvars <a class="anchor-link" href="#int-choicesvars">#</a></h3>
+<h3 id="int-choicesvars">ChoicesVars <a class="anchor-link" href="#int-choicesvars">#</a></h3>
+<p><em>choicesvars</em></p>
 <p><strong>Choice variables list</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get ChoicesVars() As BetterArray
@@ -372,7 +404,8 @@ expectations.</p>
 lists.</p>
 <p><strong>Returns:</strong> BetterArray</p>
 <hr />
-<h3 id="int-geovars">geovars <a class="anchor-link" href="#int-geovars">#</a></h3>
+<h3 id="int-geovars">GeoVars <a class="anchor-link" href="#int-geovars">#</a></h3>
+<p><em>geovars</em></p>
 <p><strong>Geographic variables list</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get GeoVars() As BetterArray
@@ -381,7 +414,8 @@ lists.</p>
 (geo/hf).</p>
 <p><strong>Returns:</strong> BetterArray</p>
 <hr />
-<h3 id="int-timevars">timevars <a class="anchor-link" href="#int-timevars">#</a></h3>
+<h3 id="int-timevars">TimeVars <a class="anchor-link" href="#int-timevars">#</a></h3>
+<p><em>timevars</em></p>
 <p><strong>Time variables list</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get TimeVars() As BetterArray
@@ -391,7 +425,8 @@ column.</p>
 <p><strong>Returns:</strong> BetterArray</p>
 <hr />
 <h2 id="int-preparation">Preparation</h2>
-<h3 id="int-prepared">prepared <a class="anchor-link" href="#int-prepared">#</a></h3>
+<h3 id="int-prepared">Prepared <a class="anchor-link" href="#int-prepared">#</a></h3>
+<p><em>prepared</em></p>
 <p><strong>Dictionary preparation flag</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Prepared() As Boolean
@@ -401,7 +436,8 @@ workflows. The heuristic mirrors the legacy implementation by inspecting
 specific markers instead of tracking explicit state.</p>
 <p><strong>Returns:</strong> Boolean</p>
 <hr />
-<h3 id="int-prepare">prepare <a class="anchor-link" href="#int-prepare">#</a></h3>
+<h3 id="int-prepare">Prepare <a class="anchor-link" href="#int-prepare">#</a></h3>
+<p><em>prepare</em></p>
 <p><strong>Prepare dictionary for designer workflows</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Prepare(Optional ByVal PreservedSheetNames As BetterArray, _
@@ -427,7 +463,8 @@ issues discovered during enrichment.</p>
 <pre><code class="language-vb">Private Sub EnsureRequiredColumns()
 </code></pre>
 <hr />
-<h3 id="int-clean">clean <a class="anchor-link" href="#int-clean">#</a></h3>
+<h3 id="int-clean">Clean <a class="anchor-link" href="#int-clean">#</a></h3>
+<p><em>clean</em></p>
 <p><strong>Remove unexpected columns</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Clean(Optional ByVal removeAddedColumns As Boolean = False)
@@ -441,7 +478,8 @@ removed as well so the dictionary reverts to the user-provided structure.</p>
 </ul>
 <hr />
 <h2 id="int-data-exchange">Data Exchange</h2>
-<h3 id="int-import">import <a class="anchor-link" href="#int-import">#</a></h3>
+<h3 id="int-import">Import <a class="anchor-link" href="#int-import">#</a></h3>
+<p><em>import</em></p>
 <p><strong>Import dictionary data</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Import(ByVal fromWksh As Worksheet, _
@@ -459,7 +497,8 @@ existing cleaning and formatting routines can be reused.</p>
 <li><code>fromStartcol</code>: Long. Start column of the source data</li>
 </ul>
 <hr />
-<h3 id="int-export">export <a class="anchor-link" href="#int-export">#</a></h3>
+<h3 id="int-export">Export <a class="anchor-link" href="#int-export">#</a></h3>
+<p><em>export</em></p>
 <p><strong>Export dictionary data</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Export(ByVal toWkb As Workbook, _
@@ -480,7 +519,8 @@ export workflow.</p>
 <li><code>xlSheetHidden</code></li>
 </ul>
 <hr />
-<h3 id="int-translate">translate <a class="anchor-link" href="#int-translate">#</a></h3>
+<h3 id="int-translate">Translate <a class="anchor-link" href="#int-translate">#</a></h3>
+<p><em>translate</em></p>
 <p><strong>Translate dictionary labels</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Translate(ByVal TransObject As ITranslationObject)
@@ -495,15 +535,15 @@ text replacement.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (69 file(s))</summary>
+<summary>Used in (71 file(s))</summary>
 <ul>
 <li><a href="src/classes/analyses/AnalysisOutput.cls">AnalysisOutput.cls</a></li>
 <li><a href="src/classes/analyses/ITableSpecs.cls">ITableSpecs.cls</a></li>
 <li><a href="src/classes/analyses/TableSpecs.cls">TableSpecs.cls</a></li>
 <li><a href="src/classes/dataio/LLExporter.cls">LLExporter.cls</a></li>
 <li><a href="src/classes/dataio/LLImporter.cls">LLImporter.cls</a></li>
-<li><a href="src/classes/designer/DesignerImportService.cls">DesignerImportService.cls</a></li>
-<li><a href="src/classes/designer/IDesignerImportService.cls">IDesignerImportService.cls</a></li>
+<li><a href="src/classes/designer/ILinelistBuildService.cls">ILinelistBuildService.cls</a></li>
+<li><a href="src/classes/designer/LinelistBuildService.cls">LinelistBuildService.cls</a></li>
 <li><a href="src/classes/dictionary/ILLdictionary.cls">ILLdictionary.cls</a></li>
 <li><a href="src/classes/dictionary/ILLExport.cls">ILLExport.cls</a></li>
 <li><a href="src/classes/dictionary/ILLSheets.cls">ILLSheets.cls</a></li>
@@ -535,11 +575,13 @@ text replacement.</p>
 <li><a href="src/classes/showhide/ShowHideManager.cls">ShowHideManager.cls</a></li>
 <li><a href="src/classes/stale/designer-codes/modules/implements/DesignerMain.bas">DesignerMain.bas</a></li>
 <li><a href="src/classes/stale/designer-codes/modules/implements/LinelistEvents.bas">LinelistEvents.bas</a></li>
+<li><a href="src/classes/stale/DesignerImportService.cls">DesignerImportService.cls</a></li>
+<li><a href="src/classes/stale/IDesignerImportService.cls">IDesignerImportService.cls</a></li>
 <li><a href="src/modules/designer/EventsDesignerAdvanced.bas">EventsDesignerAdvanced.bas</a></li>
+<li><a href="src/modules/designer/GenerationReport.bas">GenerationReport.bas</a></li>
 <li><a href="src/modules/linelist/EventsLinelistButtons.bas">EventsLinelistButtons.bas</a></li>
 <li><a href="src/modules/mastersetup/MasterSetupHelpers.bas">MasterSetupHelpers.bas</a></li>
 <li><a href="src/modules/setup/SetupHelpers.bas">SetupHelpers.bas</a></li>
-<li><a href="src/modules/stale/LinelistEvents.bas">LinelistEvents.bas</a></li>
 <li><a href="src/tests/modules/analyses/TestCrossTable.bas">TestCrossTable.bas</a></li>
 <li><a href="src/tests/modules/analyses/TestCrossTableFormula.bas">TestCrossTableFormula.bas</a></li>
 <li><a href="src/tests/modules/analyses/TestTableSpecs.bas">TestTableSpecs.bas</a></li>

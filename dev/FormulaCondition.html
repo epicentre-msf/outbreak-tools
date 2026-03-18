@@ -22,7 +22,8 @@ Consumers interact through the IFormulaCondition interface.</p>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
 <div class="section-body">
-<h3 id="create">create <a class="anchor-link" href="#create">#</a></h3>
+<h3 id="create">Create <a class="anchor-link" href="#create">#</a></h3>
+<p><em>create</em></p>
 <p><strong>Construct a FormulaCondition instance from paired arrays</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal formVar As BetterArray, ByVal formCond As BetterArray) As IFormulaCondition
@@ -47,7 +48,8 @@ is cast to IFormulaCondition for consistent downstream consumption.</p>
 <details open class="doc-section" id="publicaccessors">
 <summary>PublicAccessors</summary>
 <div class="section-body">
-<h3 id="conditions">conditions <a class="anchor-link" href="#conditions">#</a></h3>
+<h3 id="lstconditions">LstConditions <a class="anchor-link" href="#lstconditions">#</a></h3>
+<p><em>conditions</em></p>
 <p><strong>Retrieve the stored condition fragments</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get LstConditions() As BetterArray
@@ -56,7 +58,8 @@ is cast to IFormulaCondition for consistent downstream consumption.</p>
 in the same order they were supplied at creation.</p>
 <p><strong>Returns:</strong> BetterArray. The condition fragments preserving the original order.</p>
 <hr />
-<h3 id="variables">variables <a class="anchor-link" href="#variables">#</a></h3>
+<h3 id="lstvars">LstVars <a class="anchor-link" href="#lstvars">#</a></h3>
+<p><em>variables</em></p>
 <p><strong>Retrieve the stored variables list</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get LstVars() As BetterArray
@@ -70,7 +73,8 @@ same order they were supplied at creation.</p>
 <details open class="doc-section" id="internalstate">
 <summary>InternalState</summary>
 <div class="section-body">
-<h3 id="has-internal-checks">has-internal-checks <a class="anchor-link" href="#has-internal-checks">#</a></h3>
+<h3 id="hasinternalchecks">HasInternalChecks <a class="anchor-link" href="#hasinternalchecks">#</a></h3>
+<p><em>has-internal-checks</em></p>
 <p><strong>Determine whether diagnostics have been captured</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get HasInternalChecks() As Boolean
@@ -84,7 +88,8 @@ last ResetCaches, indicating that diagnostic information is available.</p>
 <details open class="doc-section" id="metadatahelpers">
 <summary>MetadataHelpers</summary>
 <div class="section-body">
-<h3 id="variables-table">variables-table <a class="anchor-link" href="#variables-table">#</a></h3>
+<h3 id="variablestable">VariablesTable <a class="anchor-link" href="#variablestable">#</a></h3>
+<p><em>variables-table</em></p>
 <p><strong>Resolve the table name shared by all tracked variables</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get VariablesTable(ByVal dict As ILLdictionary) As String
@@ -104,7 +109,8 @@ the supplied dictionary before returning the result.</p>
 <details open class="doc-section" id="validation">
 <summary>Validation</summary>
 <div class="section-body">
-<h3 id="valid">valid <a class="anchor-link" href="#valid">#</a></h3>
+<h3 id="valid">Valid <a class="anchor-link" href="#valid">#</a></h3>
+<p><em>valid</em></p>
 <p><strong>Validate variable/condition lists against the dictionary</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Valid(ByVal dict As ILLdictionary, Optional ByVal tablename As String = vbNullString) As Boolean
@@ -113,8 +119,10 @@ the supplied dictionary before returning the result.</p>
 Checks that both lists are non-empty and equal in length, then
 verifies each variable exists in the dictionary and belongs to the
 expected table. When a tablename argument is supplied it overrides
-the table resolved from the first variable. Logs diagnostic entries
-on every failure path for downstream inspection.</p>
+the table resolved from the first variable. Results are cached so
+repeated calls with the same tablename parameter return immediately
+without re-validating. The cache is invalidated when underlying data
+changes (via Set LstVars or Set LstConditions).</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>dict</code>: ILLdictionary. The metadata provider used for variable lookups.</li>
@@ -127,7 +135,8 @@ on every failure path for downstream inspection.</p>
 <details open class="doc-section" id="formularendering">
 <summary>FormulaRendering</summary>
 <div class="section-body">
-<h3 id="condition-string">condition-string <a class="anchor-link" href="#condition-string">#</a></h3>
+<h3 id="conditionstring">ConditionString <a class="anchor-link" href="#conditionstring">#</a></h3>
+<p><em>condition-string</em></p>
 <p><strong>Wrap the predicate in an IF expression referencing the supplied variable</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function ConditionString(ByVal tablename As String, ByVal varName As String, _
@@ -146,7 +155,8 @@ the predicate is empty.</p>
 </ul>
 <p><strong>Returns:</strong> String. An IF expression or empty string when the predicate is empty.</p>
 <hr />
-<h3 id="condition-predicate">condition-predicate <a class="anchor-link" href="#condition-predicate">#</a></h3>
+<h3 id="conditionpredicate">ConditionPredicate <a class="anchor-link" href="#conditionpredicate">#</a></h3>
+<p><em>condition-predicate</em></p>
 <p><strong>Join the variable predicates using the supplied connector</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function ConditionPredicate(ByVal tablename As String, Optional ByVal Connector As String = &quot;*&quot;) As String
@@ -167,7 +177,8 @@ structured table references.</p>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-publicaccessors">PublicAccessors</h2>
-<h3 id="int-self">self <a class="anchor-link" href="#int-self">#</a></h3>
+<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
+<p><em>self</em></p>
 <p><strong>Current object instance</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Self() As IFormulaCondition
@@ -177,7 +188,8 @@ Returns the current instance cast to its interface. Used internally
 by the factory method to return an IFormulaCondition reference.</p>
 <p><strong>Returns:</strong> IFormulaCondition. The current object.</p>
 <hr />
-<h3 id="int-conditions-set">conditions-set <a class="anchor-link" href="#int-conditions-set">#</a></h3>
+<h3 id="int-lstconditions">LstConditions <a class="anchor-link" href="#int-lstconditions">#</a></h3>
+<p><em>conditions-set</em></p>
 <p><strong>Store the condition fragments and reset caches</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set LstConditions(ByVal formCond As BetterArray)
@@ -190,7 +202,8 @@ the next call to Valid triggers a fresh check.</p>
 <li><code>formCond</code>: BetterArray. The array containing predicate fragments.</li>
 </ul>
 <hr />
-<h3 id="int-variables-set">variables-set <a class="anchor-link" href="#int-variables-set">#</a></h3>
+<h3 id="int-lstvars">LstVars <a class="anchor-link" href="#int-lstvars">#</a></h3>
+<p><em>variables-set</em></p>
 <p><strong>Store the variables list, normalise bounds, and reset caches</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set LstVars(ByVal formVar As BetterArray)
@@ -203,8 +216,9 @@ lower bound of 1, then invalidates all cached data.</p>
 </ul>
 <hr />
 <h2 id="int-internalstate">InternalState</h2>
-<h3 id="int-reset-caches">reset-caches <a class="anchor-link" href="#int-reset-caches">#</a></h3>
-<p><strong>Clear cached table names and diagnostics information</strong></p>
+<h3 id="int-resetcaches">ResetCaches <a class="anchor-link" href="#int-resetcaches">#</a></h3>
+<p><em>reset-caches</em></p>
+<p><strong>Clear cached table names, validation results, and diagnostics</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ResetCaches()
 </code></pre>
@@ -213,7 +227,8 @@ Resets all memoised validation state so the next call to Valid or
 VariablesTable triggers a fresh evaluation. Also clears any
 diagnostic entries accumulated during previous validations.</p>
 <hr />
-<h3 id="int-log-info">log-info <a class="anchor-link" href="#int-log-info">#</a></h3>
+<h3 id="int-loginfo">LogInfo <a class="anchor-link" href="#int-loginfo">#</a></h3>
+<p><em>log-info</em></p>
 <p><strong>Append a diagnostic entry to the internal checking log</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub LogInfo(ByVal message As String, Optional ByVal scope As Byte = checkingInfo)
@@ -227,7 +242,8 @@ is exposed through the interface for callers needing diagnostic traces.</p>
 <li><code>scope</code>: Optional Byte. Severity level from CheckingLogType. Defaults to checkingInfo.</li>
 </ul>
 <hr />
-<h3 id="int-cached-table">cached-table <a class="anchor-link" href="#int-cached-table">#</a></h3>
+<h3 id="int-cachedtable">CachedTable <a class="anchor-link" href="#int-cachedtable">#</a></h3>
+<p><em>cached-table</em></p>
 <p><strong>Retrieve the memoised table name resolved during validation</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get CachedTable() As String
@@ -237,7 +253,8 @@ after a successful call to Valid. Empty until validation completes.</p>
 <p><strong>Returns:</strong> String. Cached table identifier.</p>
 <hr />
 <h2 id="int-errorhandling">ErrorHandling</h2>
-<h3 id="int-throw-error">throw-error <a class="anchor-link" href="#int-throw-error">#</a></h3>
+<h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
+<p><em>throw-error</em></p>
 <p><strong>Raise a VBA error tagged with the class name</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
@@ -262,7 +279,8 @@ Wrapper around Err.Raise that standardises the source to
 </code></pre>
 <p>Explicit interface implementations delegating to the public members.</p>
 <hr />
-<h3 id="int-checking-values">checking-values <a class="anchor-link" href="#int-checking-values">#</a></h3>
+<h3 id="int-iformulacondition-checkingvalues">IFormulaCondition_CheckingValues <a class="anchor-link" href="#int-iformulacondition-checkingvalues">#</a></h3>
+<p><em>checking-values</em></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get IFormulaCondition_CheckingValues() As IChecking
 </code></pre>
