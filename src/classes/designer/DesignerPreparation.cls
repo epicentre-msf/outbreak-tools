@@ -63,6 +63,12 @@ Private Const SHEET_DES_TRANSLATION As String = "DesignerTranslation"
 Private Const SHEET_GEO As String = "Geo"
 Private Const SHEET_DROPDOWNS As String = "__dropdowns"
 Private Const SHEET_GENERATE_MULTIPLE As String = "GenerateMultiple"
+Private Const SHEET_MAIN As String = "Main"
+
+'Main worksheet named ranges for dropdown validation
+Private Const RNG_LANG_SETUP As String = "RNG_LangSetup"
+Private Const RNG_LL_FORM As String = "RNG_LLForm"
+Private Const RNG_LL_DESIGN As String = "RNG_LLDesign"
 
 'Workbook-level HiddenNames
 Private Const TAG_DES_LANG As String = "TAG_DES_LANG"
@@ -85,7 +91,7 @@ Private Const DROP_DESIGN_VALUES As String = "__design_values"
 Private Const DROPDOWN_PREFIX As String = "dropdown_"
 
 'T_Multi table
-Private Const TABLE_MULTI As String = "T_Multi"
+Private Const TABLE_MULTI As String = "T_MultGen"
 
 'Main worksheet named ranges for dropdown validation
 Private Const SHEET_MAIN As String = "Main"
@@ -556,6 +562,41 @@ Private Sub ApplyMultiValidations()
                         alertType:="info"
 End Sub
 
+'@label:apply-main-validations
+'@sub-title Apply dropdown validation to named ranges on the Main worksheet
+'@details
+'Resolves the Main worksheet from the host workbook, then applies
+'dropdown validation to three named ranges: RNG_LangSetup (setup
+'languages), RNG_LLForm (interface languages), and RNG_LLDesign
+'(design values). Silently skips the worksheet or any named range
+'that does not exist.
+Private Sub ApplyMainValidations()
+    Dim sh As Worksheet
+    Dim drop As IDropdownLists
+    Dim rng As Range
+
+    Set sh = ResolveWorksheet(SHEET_MAIN)
+    If sh Is Nothing Then Exit Sub
+
+    EnsureDropdownManager
+    Set drop = this.dropdowns
+
+    Set rng = ResolveNamedRange(sh, RNG_LANG_SETUP)
+    If Not rng Is Nothing Then
+        drop.SetValidation rng, DROP_SETUP_LANGUAGES, alertType:="info"
+    End If
+
+    Set rng = ResolveNamedRange(sh, RNG_LL_FORM)
+    If Not rng Is Nothing Then
+        drop.SetValidation rng, DROP_INTERFACE_LANGUAGES, alertType:="info"
+    End If
+
+    Set rng = ResolveNamedRange(sh, RNG_LL_DESIGN)
+    If Not rng Is Nothing Then
+        drop.SetValidation rng, DROP_DESIGN_VALUES, alertType:="info"
+    End If
+End Sub
+
 
 '@section Main Validations
 '===============================================================================
@@ -642,6 +683,20 @@ End Sub
 Private Function ResolveWorksheet(ByVal sheetName As String) As Worksheet
     On Error Resume Next
     Set ResolveWorksheet = HostWorkbook.Worksheets(sheetName)
+    On Error GoTo 0
+End Function
+
+'@label:resolve-named-range
+'@sub-title Resolve a named range from a worksheet
+'@details
+'Returns the Range matching the given name on the supplied worksheet,
+'or Nothing when the named range does not exist.
+'@param sh Worksheet. The worksheet to resolve the range from.
+'@param rngName String. The named range identifier.
+'@return Range. The resolved range, or Nothing.
+Private Function ResolveNamedRange(ByVal sh As Worksheet, ByVal rngName As String) As Range
+    On Error Resume Next
+    Set ResolveNamedRange = sh.Range(rngName)
     On Error GoTo 0
 End Function
 

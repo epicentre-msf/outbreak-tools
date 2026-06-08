@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IDevelopment - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>IDevelopment</h1>
+<p>Defines the public contract for the Development class, exposing methods for
+managing code tables (classes, modules, forms, tests), bulk importing and
+exporting VBA components between disk and the host workbook, configuring
+deployment settings (hidden and protected sheets), and executing the full
+deployment workflow. Consumers obtain an IDevelopment reference from
+Development.Create and interact exclusively through this interface.</p>
+<p><strong>Depends on:</strong> <a href="IPasswords.html">IPasswords</a></p>
+<h2>Lifecycle</h2>
+<h3>Initialise</h3>
+<p><strong>Bind the development helper to a Dev worksheet and optional code sheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Initialise(ByVal devSheet As Worksheet, Optional ByVal codeSheet As Worksheet)
+</code></pre>
+<p>Bind the development helper to the Dev worksheet and optional
+code sheet.
+Validates the devSheet, stores internal references, initialises collections,
+verifies required named ranges, and restores any previously registered code
+worksheet. When a codeSheet is provided, it replaces the restored worksheet.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>devSheet</code>: Worksheet. The worksheet hosting development named ranges.</li>
+<li><code>codeSheet</code>: Optional Worksheet. A worksheet to register as the code
+table host.</li>
+</ul>
+<hr />
+<h2>Configuration</h2>
+<h3>DevWorksheet</h3>
+<p><strong>Development worksheet reference.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get DevWorksheet() As Worksheet
+</code></pre>
+<p>Properties that expose and control the internal state of the
+development helper.
+Returns the Dev worksheet that stores configuration named ranges such as
+folder paths and counter values. Set during Initialise.</p>
+<p><strong>Returns:</strong> Worksheet. The development worksheet bound to this instance.</p>
+<hr />
+<h3>CodeWorksheet</h3>
+<p><strong>Worksheet registered to host development tables.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get CodeWorksheet() As Worksheet
+</code></pre>
+<p>Returns the worksheet currently registered to host development ListObjects.
+May be Nothing when no code worksheet has been registered, in which case
+new tables are created on the Dev sheet itself.</p>
+<p><strong>Returns:</strong> Worksheet. The code worksheet, or Nothing when none is registered.</p>
+<hr />
+<h3>DisplayPrompts</h3>
+<p><strong>Whether confirmation prompts are displayed.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get DisplayPrompts() As Boolean
+</code></pre>
+<p>Controls whether confirmation dialogs are shown before mutating operations
+such as importing, exporting, or adding tables. Defaults to True after
+Initialise. Set to False to suppress prompts during automated workflows.</p>
+<p><strong>Returns:</strong> Boolean. True when prompts are enabled.</p>
+<hr />
+<h3>DisplayPrompts</h3>
+<p><strong>Set the confirmation prompt toggle.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Let DisplayPrompts(ByVal value As Boolean)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>value</code>: Boolean. True to enable prompts, False to suppress them.</li>
+</ul>
+<hr />
+<h2>Worksheet Preparation</h2>
+<h3>AddCodeSheets</h3>
+<p><strong>Register an existing worksheet to host future development tables.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function AddCodeSheets(ByVal sheetName As String) As Worksheet
+</code></pre>
+<p>Methods for registering code worksheets and creating
+development tables.
+Validates that the worksheet exists in the host workbook, shows a
+confirmation dialog when prompts are enabled, and persists the
+registration so it survives workbook close/reopen cycles.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetName</code>: String. Name of the worksheet to register as the code
+table host.</li>
+</ul>
+<p><strong>Returns:</strong> Worksheet. The registered worksheet reference, or Nothing when the
+user declines the confirmation prompt.</p>
+<hr />
+<h3>AddClassTable</h3>
+<p><strong>Create a classes table on the code worksheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function AddClassTable(Optional ByVal includeTests As Boolean = False) As ListObject
+</code></pre>
+<p>Creates a new ListObject with columns for class names and an interface
+Yes/No flag. The includeTests parameter switches the table tag between
+general classes and test classes, controlling the destination folder
+during code transfers.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>includeTests</code>: Optional Boolean. When True, creates a test-scoped
+classes table. Defaults to False.</li>
+</ul>
+<p><strong>Returns:</strong> ListObject. The newly created table, or Nothing when the user
+declines the confirmation prompt.</p>
+<hr />
+<h3>AddModuleTable</h3>
+<p><strong>Create a modules table on the code worksheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function AddModuleTable(Optional ByVal includeTests As Boolean = False) As ListObject
+</code></pre>
+<p>Creates a new ListObject with a single column for module names. The
+includeTests parameter switches the tag between general modules and test
+modules, controlling the destination folder during transfers.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>includeTests</code>: Optional Boolean. When True, creates a test-scoped
+modules table. Defaults to False.</li>
+</ul>
+<p><strong>Returns:</strong> ListObject. The newly created table, or Nothing when the user
+declines the confirmation prompt.</p>
+<hr />
+<h3>AddFormsTable</h3>
+<p><strong>Create a forms mapping table on the code worksheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function AddFormsTable() As ListObject
+</code></pre>
+<p>Creates a new ListObject with two columns: &quot;modules&quot; and &quot;corresponding
+form&quot;. Entries drive the AddFormsCodes and Deploy workflows, which copy
+code from a standard module into the code-behind of a UserForm component.</p>
+<p><strong>Returns:</strong> ListObject. The newly created table, or Nothing when the user
+declines the confirmation prompt.</p>
+<hr />
+<h3>AddTestTable</h3>
+<p><strong>Create a test modules table on the code worksheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function AddTestTable() As ListObject
+</code></pre>
+<p>Creates a new ListObject configured for test module entries with a single
+&quot;modules&quot; column. The table is tagged so that code transfers target the
+tests folder.</p>
+<p><strong>Returns:</strong> ListObject. The newly created table, or Nothing when the user
+declines the confirmation prompt.</p>
+<hr />
+<h2>Deployment</h2>
+<h3>AddHiddenSheet</h3>
+<p><strong>Register a worksheet that should be hidden during deployment.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub AddHiddenSheet(ByVal sheetName As String)
+</code></pre>
+<p>Methods for configuring deployment settings and executing
+the deployment workflow.
+Appends the worksheet name to the hidden list. During Deploy, every entry
+is set to xlSheetVeryHidden.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetName</code>: String. Name of the worksheet to hide during deployment.</li>
+</ul>
+<hr />
+<h3>AddProtectedSheet</h3>
+<p><strong>Register a worksheet that should be protected during deployment.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub AddProtectedSheet(ByVal sheetName As String, _
+                             Optional ByVal allowShapes As Boolean = True, _
+                             Optional ByVal allowDeletingRows As Boolean = True)
+</code></pre>
+<p>Adds the worksheet with its permission flags to the protected list.
+During Deploy, each entry is protected via the IPasswords handler with
+the recorded allowShapes and allowDeletingRows settings.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetName</code>: String. Name of the worksheet to protect during deployment.</li>
+<li><code>allowShapes</code>: Optional Boolean. When True, shapes remain editable on
+the protected sheet. Defaults to True.</li>
+<li><code>allowDeletingRows</code>: Optional Boolean. When True, row deletion is
+allowed on the protected sheet. Defaults to True.</li>
+</ul>
+<hr />
+<h3>ImportAll</h3>
+<p><strong>Import all code artefacts from configured folders into the host workbook.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ImportAll()
+</code></pre>
+<p>Iterates every development ListObject on host worksheets. For each table
+entry, the corresponding .bas or .cls file is imported from disk into the
+VBProject, replacing any existing component of the same name.</p>
+<hr />
+<h3>ExportAll</h3>
+<p><strong>Export all code artefacts from the host workbook to configured folders.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ExportAll()
+</code></pre>
+<p>Iterates every development ListObject on host worksheets. For each table
+entry, the VBA component is exported from the VBProject to disk,
+overwriting any existing file.</p>
+<hr />
+<h3>AddFormsCodes</h3>
+<p><strong>Copy code modules into associated UserForm components.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub AddFormsCodes()
+</code></pre>
+<p>Synchronises form modules by copying the code from each source module
+listed in forms tables into the corresponding UserForm component. After
+copying, the source module is removed from the VBProject.</p>
+<hr />
+<h3>Deploy</h3>
+<p><strong>Protect and hide registered worksheets, copy forms code, and set the deployment marker.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Deploy(ByVal passwords As IPasswords, Optional ByVal lockWorkbook As Boolean = False)
+</code></pre>
+<p>Executes the full deployment workflow: applies the default password,
+synchronises form modules, hides registered hidden sheets, protects
+registered protected sheets using the IPasswords handler, optionally
+locks the workbook, hides the code worksheet, installs the debug exit
+handler, and sets the workbook-level deployment flag to &quot;Yes&quot;.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>passwords</code>: IPasswords. The password handler used to apply protection.</li>
+<li><code>lockWorkbook</code>: Optional Boolean. When True, locks the host workbook
+structure after protecting sheets. Defaults to False.</li>
+</ul>
+<hr />
+<h2>Status</h2>
+<h3>InDeployment</h3>
+<p><strong>Check whether the workbook has already been deployed.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function InDeployment() As Boolean
+</code></pre>
+<p>Read-only status query for the deployment state.
+Reads the workbook-level named range &quot;inDeployment&quot; and returns True when
+the stored value equals &quot;Yes&quot; (case-insensitive). Returns False when the
+name does not exist or contains any other value.</p>
+<p><strong>Returns:</strong> Boolean. True when the deployment flag equals &quot;Yes&quot;.</p>
+<hr />
+
+  </main>
+</body>
+</html>
+

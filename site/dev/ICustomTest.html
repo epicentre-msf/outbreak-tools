@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ICustomTest - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>ICustomTest</h1>
+<h2>Lifecycle configuration</h2>
+<h3>Configure</h3>
+<p><strong>Configure the harness to target a workbook and output sheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Configure(ByVal targetWorkbook As workbook, _
+                     Optional ByVal outputSheetName As String = vbNullString)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>targetWorkbook</code>: Workbook under test that collects printed output</li>
+<li><code>outputSheetName</code>: Optional worksheet name override</li>
+</ul>
+<hr />
+<h3>Release</h3>
+<p><strong>Release workbook references and reset state</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ReleaseResources()
+</code></pre>
+<hr />
+<h3>SetModuleName</h3>
+<p><strong>Store the VBA module name shown in output</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub SetModuleName(ByVal moduleName As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>moduleName</code>: Friendly module name</li>
+</ul>
+<hr />
+<h3>SetTestName</h3>
+<p><strong>Set the label used for the next test entry</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub SetTestName(ByVal testName As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>testName</code>: Descriptive test label</li>
+</ul>
+<hr />
+<h3>SetTestSubtitle</h3>
+<p><strong>Add a subtitle for the next test entry</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub SetTestSubtitle(ByVal testSubtitle As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>testSubtitle</code>: Additional context for the test</li>
+</ul>
+<hr />
+<h3>BeginTest</h3>
+<p><strong>Persist previous results and prepare a new checking instance</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub BeginTest(Optional ByVal resetNames As Boolean = False)
+</code></pre>
+<hr />
+<h3>Reset</h3>
+<p><strong>Reset pending checking and accumulated results</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ResetInstance()
+</code></pre>
+<hr />
+<h2>Results</h2>
+<h3>FlushCurrentTest</h3>
+<p><strong>Persist the current checking and retrieve all results</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function FlushCurrentTest(Optional ByVal resetNames As Boolean = True) As BetterArray: End Function
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>resetNames</code>: Optional Boolean specifying whether to reset names after clearing</li>
+</ul>
+<p><strong>Returns:</strong> BetterArray containing each Checking snapshot</p>
+<hr />
+<h3>Flush</h3>
+<p><strong>Persist the current checking without returning the result buffer</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Flush(Optional ByVal resetNames As Boolean = True)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>resetNames</code>: Optional Boolean specifying whether to reset names after clearing</li>
+</ul>
+<hr />
+<h3>Results</h3>
+<p><strong>Clone accumulated results without modifying state</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Results() As BetterArray: End Function
+</code></pre>
+<p><strong>Returns:</strong> BetterArray clone of the stored results</p>
+<hr />
+<h3>PrintResults</h3>
+<p><strong>Write accumulated results to the workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub PrintResults(Optional ByVal outputSheetName As String = vbNullString)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>outputSheetName</code>: Optional worksheet name override</li>
+</ul>
+<hr />
+<h2>Assertions</h2>
+<h3>AreEqual</h3>
+<p><strong>Compare expected and actual values and log the outcome</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub AreEqual(expected As Variant, _
+                    actual As Variant, _
+                    ByVal message As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>expected</code>: Expected value</li>
+<li><code>actual</code>: Actual value</li>
+<li><code>message</code>: Message describing the assertion context</li>
+</ul>
+<hr />
+<h3>AreNotEqual</h3>
+<p><strong>Confirm expected and actual values differ and log the outcome</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub AreNotEqual(expected As Variant, _
+                       actual As Variant, _
+                       ByVal message As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>expected</code>: Expected value</li>
+<li><code>actual</code>: Actual value</li>
+<li><code>message</code>: Message describing the assertion context</li>
+</ul>
+<hr />
+<h3>IsTrue</h3>
+<p><strong>Validate a boolean condition and log the outcome</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub IsTrue(ByVal condition As Boolean, ByVal message As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>condition</code>: Condition under test</li>
+<li><code>message</code>: Message describing the assertion context</li>
+</ul>
+<hr />
+<h3>IsFalse</h3>
+<p><strong>Validate that a boolean condition evaluates to False</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub IsFalse(ByVal condition As Boolean, ByVal message As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>condition</code>: Condition under test</li>
+<li><code>message</code>: Message describing the assertion context</li>
+</ul>
+<hr />
+<h3>ObjectExists</h3>
+<p><strong>Validate that an object is set and matches the expected type name</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ObjectExists(ByVal instance As Object, _
+                        ByVal expectedTypeName As String, _
+                        ByVal message As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>instance</code>: Object reference to validate</li>
+<li><code>expectedTypeName</code>: Expected VBA type name</li>
+<li><code>message</code>: Message describing the assertion context</li>
+</ul>
+<hr />
+<h3>IsNothing</h3>
+<p><strong>Validate that an object reference is Nothing</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub IsNothing(ByVal instance As Object, ByVal message As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>instance</code>: Object reference to validate</li>
+<li><code>message</code>: Message describing the assertion context</li>
+</ul>
+<hr />
+<h3>IsNotNothing</h3>
+<p><strong>Validate that an object is not Nothing</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub IsNotNothing(ByVal instance As Object, ByVal message As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>instance</code>: Object reference to validate</li>
+<li><code>message</code>: Message describing the assertion context</li>
+</ul>
+<hr />
+<h3>LogFailure</h3>
+<p><strong>Log a failure message to the current checking</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub LogFailure(ByVal message As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>message</code>: Message describing the failure</li>
+</ul>
+<hr />
+<h3>Fail</h3>
+<p><strong>Log a failure message to the current checking; for compatibility purposes</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Fail(ByVal message As String)
+</code></pre>
+<hr />
+<h3>LogSuccesses</h3>
+<p><strong>Log a success message to the current checking</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub LogSuccesses(ByVal message As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>message</code>: Message describing the success</li>
+</ul>
+<hr />
+
+  </main>
+</body>
+</html>
+

@@ -1,15 +1,15 @@
-Attribute VB_Name = "TestDesignerRibbon"
-Attribute VB_Description = "Unit tests for DesignerEntry class"
+Attribute VB_Name = "TestDesignerPreparation"
+Attribute VB_Description = "Unit tests for DesignerPreparation class"
 
 Option Explicit
 
 '@Folder("CustomTests.Designer")
-'@ModuleDescription("Validates DesignerEntry for clearing, translation, AddInfo/ValueOf, and TranslateMessage.")
+'@ModuleDescription("Validates DesignerPreparation for persisted flags, sheet hiding, dropdown creation, T_Multi and Main validation.")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Private Assert As ICustomTest
 Private FixtureWorkbook As Workbook
-Private EntrySheet As Worksheet
+Private MainSheet As Worksheet
 Private TranslationSheet As Worksheet
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
@@ -21,7 +21,7 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Public Sub ModuleInitialize()
     TestHelpers.BusyApp
     Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
-    Assert.SetModuleName "TestDesignerRibbon"
+    Assert.SetModuleName "TestDesignerPreparation"
 End Sub
 
 '@ModuleCleanup
@@ -43,7 +43,7 @@ Public Sub TestInitialize()
     TestHelpers.BusyApp
 
     Set FixtureWorkbook = TestHelpers.NewWorkbook
-    Set EntrySheet = TestHelpers.EnsureWorksheet("Main", FixtureWorkbook)
+    Set MainSheet = TestHelpers.EnsureWorksheet("Main", FixtureWorkbook)
     Set TranslationSheet = TestHelpers.EnsureWorksheet("DesignerTranslation", FixtureWorkbook)
 
     FixtureWorkbook.Names.Add Name:="RNG_MainLangCode", RefersTo:=TranslationSheet.Range("A1")
@@ -60,407 +60,10 @@ Public Sub TestCleanup()
     On Error GoTo 0
 
     Set TranslationSheet = Nothing
-    Set EntrySheet = Nothing
+    Set MainSheet = Nothing
     Set FixtureWorkbook = Nothing
 
     TestHelpers.RestoreApp
-End Sub
-
-
-'@section DesignerEntry Tests
-'===============================================================================
-'@TestMethod("DesignerEntry")
-Public Sub TestClearResetsInputRanges()
-    CustomTestSetTitles Assert, "DesignerEntry", "TestClearResetsInputRanges"
-    On Error GoTo Fail
-
-    'Arrange: create named ranges and set values + coloured backgrounds
-    FixtureWorkbook.Names.Add Name:="RNG_PathGeo", RefersTo:=EntrySheet.Range("A1")
-    FixtureWorkbook.Names.Add Name:="RNG_PathDico", RefersTo:=EntrySheet.Range("A2")
-    FixtureWorkbook.Names.Add Name:="RNG_LLName", RefersTo:=EntrySheet.Range("A3")
-    FixtureWorkbook.Names.Add Name:="RNG_LLDir", RefersTo:=EntrySheet.Range("A4")
-    FixtureWorkbook.Names.Add Name:="RNG_Edition", RefersTo:=EntrySheet.Range("A5")
-    FixtureWorkbook.Names.Add Name:="RNG_LLTemp", RefersTo:=EntrySheet.Range("A6")
-    FixtureWorkbook.Names.Add Name:="RNG_LangSetup", RefersTo:=EntrySheet.Range("A7")
-    FixtureWorkbook.Names.Add Name:="RNG_LLForm", RefersTo:=EntrySheet.Range("A8")
-
-    EntrySheet.Range("A1").value = "/path/geo"
-    EntrySheet.Range("A2").value = "/path/dico"
-    EntrySheet.Range("A3").value = "my_linelist"
-    EntrySheet.Range("A4").value = "/output"
-    EntrySheet.Range("A5").value = "v2.1"
-    EntrySheet.Range("A6").value = "/temp/path"
-    EntrySheet.Range("A7").value = "ENG"
-    EntrySheet.Range("A8").value = "form_value"
-
-    Dim rng As Range
-    For Each rng In EntrySheet.Range("A1:A8")
-        rng.Interior.Color = vbYellow
-    Next rng
-
-    Dim subject As IDesignerEntry
-    Set subject = DesignerEntry.Create(EntrySheet)
-
-    'Act
-    subject.Clear
-
-    'Assert: all values should be cleared and backgrounds set to white
-    Dim idx As Long
-    For idx = 1 To 8
-        Assert.AreEqual vbNullString, CStr(EntrySheet.Cells(idx, 1).value), _
-                        "Range A" & idx & " should be cleared."
-        Assert.AreEqual CLng(vbWhite), CLng(EntrySheet.Cells(idx, 1).Interior.Color), _
-                        "Range A" & idx & " background should be white."
-    Next idx
-    Exit Sub
-
-Fail:
-    ReportTestFailure "TestClearResetsInputRanges"
-End Sub
-
-'@TestMethod("DesignerEntry")
-Public Sub TestClearResetsWarnings()
-    CustomTestSetTitles Assert, "DesignerEntry", "TestClearResetsWarnings"
-    On Error GoTo Fail
-
-    'Arrange: create RNG_Warning and fill 3 contiguous warning cells
-    FixtureWorkbook.Names.Add Name:="RNG_Warning", RefersTo:=EntrySheet.Range("B1")
-    EntrySheet.Range("B1").value = "Warning 1"
-    EntrySheet.Range("B2").value = "Warning 2"
-    EntrySheet.Range("B3").value = "Warning 3"
-
-    Dim rng As Range
-    For Each rng In EntrySheet.Range("B1:B3")
-        rng.Interior.Color = vbRed
-    Next rng
-
-    Dim subject As IDesignerEntry
-    Set subject = DesignerEntry.Create(EntrySheet)
-
-    'Act
-    subject.Clear
-
-    'Assert: all 3 warning cells should be cleared
-    Dim idx As Long
-    For idx = 1 To 3
-        Assert.AreEqual vbNullString, CStr(EntrySheet.Cells(idx, 2).value), _
-                        "Warning cell B" & idx & " should be cleared."
-        Assert.AreEqual CLng(vbWhite), CLng(EntrySheet.Cells(idx, 2).Interior.Color), _
-                        "Warning cell B" & idx & " background should be white."
-    Next idx
-    Exit Sub
-
-Fail:
-    ReportTestFailure "TestClearResetsWarnings"
-End Sub
-
-'@TestMethod("DesignerEntry")
-Public Sub TestTranslateUpdatesLanguageCode()
-    CustomTestSetTitles Assert, "DesignerEntry", "TestTranslateUpdatesLanguageCode"
-    On Error GoTo Fail
-
-    Dim subject As IDesignerEntry
-    Dim translator As DesignerTranslationStub
-
-    Set translator = New DesignerTranslationStub
-
-    Set subject = DesignerEntry.Create(EntrySheet)
-    subject.UseTranslator translator
-    subject.Translate "ENG"
-
-    Assert.IsTrue translator.TranslateRequested, "Translator should be invoked."
-    Assert.AreEqual EntrySheet.Name, translator.TargetSheet.Name, "Translation target should be the entry sheet."
-    Exit Sub
-
-Fail:
-    ReportTestFailure "TestTranslateUpdatesLanguageCode"
-End Sub
-
-
-'@section DesignerEntry AddInfo/ValueOf Tests
-'===============================================================================
-'@TestMethod("DesignerEntry.Info")
-Public Sub TestAddInfoWritesToNamedRange()
-    CustomTestSetTitles Assert, "DesignerEntry", "TestAddInfoWritesToNamedRange"
-    On Error GoTo Fail
-
-    'Arrange: create the setuppath named range on the entry sheet
-    FixtureWorkbook.Names.Add Name:="RNG_PathDico", RefersTo:=EntrySheet.Range("B1")
-
-    Dim subject As IDesignerEntry
-    Set subject = DesignerEntry.Create(EntrySheet)
-
-    'Act
-    subject.AddInfo "/path/to/setup.xlsb", "setuppath"
-
-    'Assert
-    Assert.AreEqual "/path/to/setup.xlsb", CStr(EntrySheet.Range("B1").value), _
-                    "AddInfo should write the value to the named range."
-    Assert.AreEqual CLng(vbWhite), CLng(EntrySheet.Range("B1").Interior.Color), _
-                    "AddInfo should set the cell background to white."
-    Exit Sub
-
-Fail:
-    ReportTestFailure "TestAddInfoWritesToNamedRange"
-End Sub
-
-'@TestMethod("DesignerEntry.Info")
-Public Sub TestAddInfoEditionRange()
-    CustomTestSetTitles Assert, "DesignerEntry", "TestAddInfoEditionRange"
-    On Error GoTo Fail
-
-    'Arrange
-    FixtureWorkbook.Names.Add Name:="RNG_Edition", RefersTo:=EntrySheet.Range("C1")
-
-    Dim subject As IDesignerEntry
-    Set subject = DesignerEntry.Create(EntrySheet)
-
-    'Act: write a status message to the edition range
-    subject.AddInfo "File loaded", "edition"
-
-    'Assert
-    Assert.AreEqual "File loaded", CStr(EntrySheet.Range("C1").value), _
-                    "Edition range should contain the message."
-    Exit Sub
-
-Fail:
-    ReportTestFailure "TestAddInfoEditionRange"
-End Sub
-
-'@TestMethod("DesignerEntry.Info")
-Public Sub TestValueOfReadsFromNamedRange()
-    CustomTestSetTitles Assert, "DesignerEntry", "TestValueOfReadsFromNamedRange"
-    On Error GoTo Fail
-
-    'Arrange: create the geopath named range and write a value
-    FixtureWorkbook.Names.Add Name:="RNG_PathGeo", RefersTo:=EntrySheet.Range("D1")
-    EntrySheet.Range("D1").value = "/path/to/geo.xlsx"
-
-    Dim subject As IDesignerEntry
-    Set subject = DesignerEntry.Create(EntrySheet)
-
-    'Act
-    Dim result As String
-    result = subject.ValueOf("geopath")
-
-    'Assert
-    Assert.AreEqual "/path/to/geo.xlsx", result, _
-                    "ValueOf should return the value from the named range."
-    Exit Sub
-
-Fail:
-    ReportTestFailure "TestValueOfReadsFromNamedRange"
-End Sub
-
-'@TestMethod("DesignerEntry.Info")
-Public Sub TestValueOfReturnsEmptyForUnknownRange()
-    CustomTestSetTitles Assert, "DesignerEntry", "TestValueOfReturnsEmptyForUnknownRange"
-    On Error GoTo Fail
-
-    Dim subject As IDesignerEntry
-    Set subject = DesignerEntry.Create(EntrySheet)
-
-    'Act: request an unknown info name
-    Dim result As String
-    result = subject.ValueOf("nonexistent")
-
-    'Assert
-    Assert.AreEqual vbNullString, result, _
-                    "ValueOf should return empty for unknown info names."
-    Exit Sub
-
-Fail:
-    ReportTestFailure "TestValueOfReturnsEmptyForUnknownRange"
-End Sub
-
-'@TestMethod("DesignerEntry.Info")
-Public Sub TestTranslateMessageReturnsTranslatedText()
-    CustomTestSetTitles Assert, "DesignerEntry", "TestTranslateMessageReturnsTranslatedText"
-    On Error GoTo Fail
-
-    'Arrange
-    Dim translator As DesignerTranslationStub
-    Set translator = New DesignerTranslationStub
-    translator.SetMessage "MSG_ChemFich", "File path loaded"
-
-    Dim subject As IDesignerEntry
-    Set subject = DesignerEntry.Create(EntrySheet)
-    subject.UseTranslator translator
-
-    'Act
-    Dim result As String
-    result = subject.TranslateMessage("MSG_ChemFich")
-
-    'Assert
-    Assert.AreEqual "File path loaded", result, _
-                    "TranslateMessage should return the translated text."
-    Exit Sub
-
-Fail:
-    ReportTestFailure "TestTranslateMessageReturnsTranslatedText"
-End Sub
-
-'@TestMethod("DesignerEntry.Info")
-Public Sub TestTranslateMessageFallsBackToRawCode()
-    CustomTestSetTitles Assert, "DesignerEntry", "TestTranslateMessageFallsBackToRawCode"
-    On Error GoTo Fail
-
-    'Arrange: translator with no messages registered
-    Dim translator As DesignerTranslationStub
-    Set translator = New DesignerTranslationStub
-
-    Dim subject As IDesignerEntry
-    Set subject = DesignerEntry.Create(EntrySheet)
-    subject.UseTranslator translator
-
-    'Act
-    Dim result As String
-    result = subject.TranslateMessage("MSG_Unknown")
-
-    'Assert: stub returns raw msgCode for unknown codes
-    Assert.AreEqual "MSG_Unknown", result, _
-                    "TranslateMessage should fall back to the raw message code."
-    Exit Sub
-
-Fail:
-    ReportTestFailure "TestTranslateMessageFallsBackToRawCode"
-End Sub
-
-'@TestMethod("DesignerEntry.Info")
-Public Sub TestAddInfoSilentlySkipsMissingRange()
-    CustomTestSetTitles Assert, "DesignerEntry", "TestAddInfoSilentlySkipsMissingRange"
-    On Error GoTo Fail
-
-    'Arrange: do NOT create the RNG_PathDico named range
-
-    Dim subject As IDesignerEntry
-    Set subject = DesignerEntry.Create(EntrySheet)
-
-    'Act: should not raise an error
-    subject.AddInfo "/some/path", "setuppath"
-
-    'Assert: no error was raised (test completes)
-    Assert.IsTrue True, "AddInfo should silently skip when the named range is missing."
-    Exit Sub
-
-Fail:
-    ReportTestFailure "TestAddInfoSilentlySkipsMissingRange"
-End Sub
-
-'@TestMethod("DesignerEntry.Info")
-Public Sub TestValueOfLLDirRange()
-    CustomTestSetTitles Assert, "DesignerEntry", "TestValueOfLLDirRange"
-    On Error GoTo Fail
-
-    'Arrange: create the lldir named range and write a value
-    FixtureWorkbook.Names.Add Name:="RNG_LLDir", RefersTo:=EntrySheet.Range("E1")
-    EntrySheet.Range("E1").value = "/output/folder"
-
-    Dim subject As IDesignerEntry
-    Set subject = DesignerEntry.Create(EntrySheet)
-
-    'Act
-    Dim result As String
-    result = subject.ValueOf("lldir")
-
-    'Assert
-    Assert.AreEqual "/output/folder", result, _
-                    "ValueOf lldir should return the linelist directory path."
-    Exit Sub
-
-Fail:
-    ReportTestFailure "TestValueOfLLDirRange"
-End Sub
-
-'@TestMethod("DesignerEntry.Info")
-Public Sub TestValueOfLLNameRange()
-    CustomTestSetTitles Assert, "DesignerEntry", "TestValueOfLLNameRange"
-    On Error GoTo Fail
-
-    'Arrange
-    FixtureWorkbook.Names.Add Name:="RNG_LLName", RefersTo:=EntrySheet.Range("F1")
-    EntrySheet.Range("F1").value = "my_linelist"
-
-    Dim subject As IDesignerEntry
-    Set subject = DesignerEntry.Create(EntrySheet)
-
-    'Act
-    Dim result As String
-    result = subject.ValueOf("llname")
-
-    'Assert
-    Assert.AreEqual "my_linelist", result, _
-                    "ValueOf llname should return the linelist name."
-    Exit Sub
-
-Fail:
-    ReportTestFailure "TestValueOfLLNameRange"
-End Sub
-
-'@TestMethod("DesignerEntry.Info")
-Public Sub TestValueOfTempPathRange()
-    CustomTestSetTitles Assert, "DesignerEntry", "TestValueOfTempPathRange"
-    On Error GoTo Fail
-
-    'Arrange
-    FixtureWorkbook.Names.Add Name:="RNG_LLTemp", RefersTo:=EntrySheet.Range("G1")
-    EntrySheet.Range("G1").value = "/path/to/template.xlsb"
-
-    Dim subject As IDesignerEntry
-    Set subject = DesignerEntry.Create(EntrySheet)
-
-    'Act
-    Dim result As String
-    result = subject.ValueOf("temppath")
-
-    'Assert
-    Assert.AreEqual "/path/to/template.xlsb", result, _
-                    "ValueOf temppath should return the template file path."
-    Exit Sub
-
-Fail:
-    ReportTestFailure "TestValueOfTempPathRange"
-End Sub
-
-<<<<<<< Updated upstream
-'@TestMethod("DesignerEntry.Dropdowns")
-Public Sub TestDropdownUpdateReplacesValues()
-    CustomTestSetTitles Assert, "DesignerEntry", "TestDropdownUpdateReplacesValues"
-    On Error GoTo Fail
-
-    'Arrange: create dropdown sheet and register initial __setup_languages
-    Dim subject As IDesignerPreparation
-    Set subject = DesignerPreparation.Create(FixtureWorkbook)
-    subject.Prepare Nothing
-
-    'Act: update the dropdown with new language values (mimics ExtractAndUpdateLanguages)
-    Dim langValues As BetterArray
-    Set langValues = New BetterArray
-    langValues.LowerBound = 1
-    langValues.Push "English", "Francais", "Espanol"
-
-    Dim dropSheet As Worksheet
-    Set dropSheet = FixtureWorkbook.Worksheets("__dropdowns")
-
-    Dim drop As IDropdownLists
-    Set drop = DropdownLists.Create(dropSheet)
-    drop.Update langValues, "__setup_languages"
-
-    'Assert: the dropdown should contain the updated values
-    Dim result As BetterArray
-    Set result = drop.Values("__setup_languages")
-
-    Assert.AreEqual 3&, result.Length, "Updated dropdown should have 3 entries."
-    Assert.AreEqual "English", CStr(result.Item(result.LowerBound)), _
-                    "First language should be English."
-    Assert.AreEqual "Francais", CStr(result.Item(result.LowerBound + 1)), _
-                    "Second language should be Francais."
-    Assert.AreEqual "Espanol", CStr(result.Item(result.LowerBound + 2)), _
-                    "Third language should be Espanol."
-    Exit Sub
-
-Fail:
-    ReportTestFailure "TestDropdownUpdateReplacesValues"
 End Sub
 
 
@@ -589,14 +192,8 @@ Public Sub TestPrepareCreatesGeoFlags()
     Assert.AreEqual vbNullString, geoStore.ValueAsString("RNG_GeoName"), "RNG_GeoName should default to empty."
     Assert.AreEqual vbNullString, geoStore.ValueAsString("RNG_MetaLang"), "RNG_MetaLang should default to empty."
     Assert.AreEqual "empty", geoStore.ValueAsString("RNG_GeoUpdated"), "RNG_GeoUpdated should default to empty."
+    Assert.AreEqual vbNullString, geoStore.ValueAsString("RNG_PastingGeoCol"), "RNG_PastingGeoCol should default to empty."
     Assert.AreEqual vbNullString, geoStore.ValueAsString("RNG_FormLoaded"), "RNG_FormLoaded should default to empty."
-
-    'Assert: RNG_PastingGeoCol should exist as a cell-based range (not a HiddenName)
-    Dim pastingRng As Range
-    On Error Resume Next
-    Set pastingRng = geoSheet.Range("RNG_PastingGeoCol")
-    On Error GoTo Fail
-    Assert.IsNotNothing pastingRng, "RNG_PastingGeoCol should exist as a cell-based range."
     Exit Sub
 
 Fail:
@@ -766,6 +363,46 @@ Fail:
     ReportTestFailure "TestDropdownsPropertyLazilyInitialises"
 End Sub
 
+'@TestMethod("DesignerPreparation.Dropdowns")
+Public Sub TestDropdownUpdateReplacesValues()
+    CustomTestSetTitles Assert, "DesignerPreparation", "TestDropdownUpdateReplacesValues"
+    On Error GoTo Fail
+
+    'Arrange: create dropdown sheet and register initial __setup_languages
+    Dim subject As IDesignerPreparation
+    Set subject = DesignerPreparation.Create(FixtureWorkbook)
+    subject.Prepare Nothing
+
+    'Act: update the dropdown with new language values (mimics ExtractAndUpdateLanguages)
+    Dim langValues As BetterArray
+    Set langValues = New BetterArray
+    langValues.LowerBound = 1
+    langValues.Push "English", "Francais", "Espanol"
+
+    Dim dropSheet As Worksheet
+    Set dropSheet = FixtureWorkbook.Worksheets("__dropdowns")
+
+    Dim drop As IDropdownLists
+    Set drop = DropdownLists.Create(dropSheet)
+    drop.Update langValues, "__setup_languages"
+
+    'Assert: the dropdown should contain the updated values
+    Dim result As BetterArray
+    Set result = drop.Values("__setup_languages")
+
+    Assert.AreEqual 3&, result.Length, "Updated dropdown should have 3 entries."
+    Assert.AreEqual "English", CStr(result.Item(result.LowerBound)), _
+                    "First language should be English."
+    Assert.AreEqual "Francais", CStr(result.Item(result.LowerBound + 1)), _
+                    "Second language should be Francais."
+    Assert.AreEqual "Espanol", CStr(result.Item(result.LowerBound + 2)), _
+                    "Third language should be Espanol."
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestDropdownUpdateReplacesValues"
+End Sub
+
 
 '@section T_Multi Validation Tests
 '===============================================================================
@@ -830,8 +467,6 @@ Fail:
     ReportTestFailure "TestPrepareSkipsMultiWhenSheetMissing"
 End Sub
 
-=======
->>>>>>> Stashed changes
 
 '@section Main Validation Tests
 '===============================================================================
@@ -840,23 +475,23 @@ Public Sub TestPrepareAppliesMainValidations()
     CustomTestSetTitles Assert, "DesignerPreparation", "TestPrepareAppliesMainValidations"
     On Error GoTo Fail
 
-    'Arrange: create the 3 named ranges on the Main (EntrySheet) worksheet
-    FixtureWorkbook.Names.Add Name:="RNG_LangSetup", RefersTo:=EntrySheet.Range("A1")
-    FixtureWorkbook.Names.Add Name:="RNG_DesignLL", RefersTo:=EntrySheet.Range("A2")
-    FixtureWorkbook.Names.Add Name:="RNG_LLForm", RefersTo:=EntrySheet.Range("A3")
+    'Arrange: create named ranges on the Main worksheet
+    FixtureWorkbook.Names.Add Name:="RNG_LangSetup", RefersTo:=MainSheet.Range("H1")
+    FixtureWorkbook.Names.Add Name:="RNG_LLForm", RefersTo:=MainSheet.Range("H2")
+    FixtureWorkbook.Names.Add Name:="RNG_LLDesign", RefersTo:=MainSheet.Range("H3")
 
     'Act
     Dim subject As IDesignerPreparation
     Set subject = DesignerPreparation.Create(FixtureWorkbook)
     subject.Prepare Nothing
 
-    'Assert: all 3 named ranges should have list validation
-    Assert.AreEqual CLng(xlValidateList), CLng(EntrySheet.Range("A1").Validation.Type), _
+    'Assert: all three ranges should have list validation
+    Assert.AreEqual CLng(xlValidateList), CLng(MainSheet.Range("H1").Validation.Type), _
                     "RNG_LangSetup should have list validation."
-    Assert.AreEqual CLng(xlValidateList), CLng(EntrySheet.Range("A2").Validation.Type), _
-                    "RNG_DesignLL should have list validation."
-    Assert.AreEqual CLng(xlValidateList), CLng(EntrySheet.Range("A3").Validation.Type), _
+    Assert.AreEqual CLng(xlValidateList), CLng(MainSheet.Range("H2").Validation.Type), _
                     "RNG_LLForm should have list validation."
+    Assert.AreEqual CLng(xlValidateList), CLng(MainSheet.Range("H3").Validation.Type), _
+                    "RNG_LLDesign should have list validation."
     Exit Sub
 
 Fail:
@@ -868,14 +503,14 @@ Public Sub TestPrepareSkipsMainValidationsWhenRangesMissing()
     CustomTestSetTitles Assert, "DesignerPreparation", "TestPrepareSkipsMainValidationsWhenRangesMissing"
     On Error GoTo Fail
 
-    'Arrange: do NOT create the named ranges on the Main sheet
+    'Arrange: do NOT create named ranges on the Main sheet
 
     'Act: should not raise an error
     Dim subject As IDesignerPreparation
     Set subject = DesignerPreparation.Create(FixtureWorkbook)
     subject.Prepare Nothing
 
-    'Assert: preparation should succeed
+    'Assert: preparation should still succeed
     Assert.IsTrue subject.Dropdowns.Exists("__setup_languages"), _
                   "Preparation should succeed without Main named ranges."
     Exit Sub
@@ -887,6 +522,38 @@ End Sub
 
 '@section Internal helpers
 '===============================================================================
+
+'@label:create-multi-table
+'@sub-title Create a T_Multi ListObject with the expected headers
+'@details
+'Writes the T_Multi header row and one empty data row on the supplied
+'worksheet, then converts the range to a ListObject named T_Multi.
+'@param sh Worksheet. The worksheet to create the table on.
+Private Sub CreateMultiTable(ByVal sh As Worksheet)
+    Dim headers As Variant
+    headers = Array("setups", "geobases", "output folders", "output files", _
+                    "output file password", "output file debugging password", _
+                    "language of the dictionary", "language of the interface", _
+                    "epiweek start", "design", "result")
+
+    Dim idx As Long
+    For idx = LBound(headers) To UBound(headers)
+        sh.Cells(1, idx - LBound(headers) + 1).Value = headers(idx)
+    Next idx
+
+    'Add one empty data row so DataBodyRange exists
+    sh.Cells(2, 1).Value = vbNullString
+
+    Dim dataRange As Range
+    Set dataRange = sh.Range(sh.Cells(1, 1), sh.Cells(2, UBound(headers) - LBound(headers) + 1))
+
+    Dim lo As ListObject
+    Set lo = sh.ListObjects.Add( _
+        SourceType:=xlSrcRange, _
+        Source:=dataRange, _
+        XlListObjectHasHeaders:=xlYes)
+    lo.Name = "T_Multi"
+End Sub
 
 Private Sub ReportTestFailure(ByVal context As String)
     Dim message As String

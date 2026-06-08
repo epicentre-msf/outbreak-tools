@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LLVariables - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>LLVariables</h1>
+<details>
+<summary>Internal members (not exported)</summary>
+<h2>CacheManagement</h2>
+<h3>ResetCaches</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ResetCaches()
+</code></pre>
+<hr />
+<h3>InvalidateCaches</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub InvalidateCaches()
+</code></pre>
+<hr />
+<h3>EnsureDictionaryReady</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureDictionaryReady()
+</code></pre>
+<hr />
+<h3>RefreshVariableRange</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RefreshVariableRange()
+</code></pre>
+<hr />
+<h3>EnsureVariableRange</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureVariableRange()
+</code></pre>
+<hr />
+<h3>CacheKeyForColumn</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function CacheKeyForColumn(ByVal colName As String) As String
+</code></pre>
+<hr />
+<h3>TryGetCachedColumnIndex</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function TryGetCachedColumnIndex(ByVal cacheKey As String, ByRef cachedIndex As Long) As Boolean
+</code></pre>
+<hr />
+<h3>StoreColumnIndex</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub StoreColumnIndex(ByVal cacheKey As String, ByVal columnIndexValue As Long)
+</code></pre>
+<hr />
+<h3>SanitizeSearchTerm</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SanitizeSearchTerm(ByVal value As String) As String
+</code></pre>
+<hr />
+<h3>FindVariableCell</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function FindVariableCell(ByVal varName As String, _ 
+                                  Optional ByVal matchCase As Boolean = True) As Range
+</code></pre>
+<hr />
+<h3>ResolveColumnIndex</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ResolveColumnIndex(ByVal colName As String, Optional ByVal required As Boolean = False) As Long
+</code></pre>
+<hr />
+<h3>VariableNamesList</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function VariableNamesList() As BetterArray
+</code></pre>
+<hr />
+<h2>Logging</h2>
+<h3>LogInfo</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub LogInfo(ByVal label As String, _
+                    Optional ByVal varName As String = vbNullString, _
+                    Optional ByVal colName As String = vbNullString, _ 
+                    Optional ByVal scope As Byte = checkingInfo)
+</code></pre>
+<hr />
+<h3>SheetName</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SheetName(ByVal varName As String, Optional ByVal matchCase As Boolean = True) As String
+</code></pre>
+<hr />
+<h3>ControlType</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ControlType(ByVal varName As String, Optional ByVal matchCase As Boolean = True) As String
+</code></pre>
+<hr />
+<h3>TableName</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function TableName(ByVal varName As String) As String
+</code></pre>
+<hr />
+<h3>CellRangeInternal</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function CellRangeInternal(ByVal colName As String, ByVal varName As String, ByVal matchCase As Boolean) As Range
+</code></pre>
+<hr />
+<h3>ColumnValue</h3>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ColumnValue(ByVal varName As String, ByVal columnName As String, ByVal matchCase As Boolean) As String
+</code></pre>
+<hr />
+</details>
+<details>
+<summary>Used in (21 file(s))</summary>
+<ul>
+<li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
+<li><a href="CrossTable.html">CrossTable.cls</a></li>
+<li><a href="TableSpecs.html">TableSpecs.cls</a></li>
+<li><a href="LLImporter.html">LLImporter.cls</a></li>
+<li><a href="ILLVariables.html">ILLVariables.cls</a></li>
+<li><a href="LLExport.html">LLExport.cls</a></li>
+<li><a href="LLSheets.html">LLSheets.cls</a></li>
+<li><a href="LLVariables.html">LLVariables.cls</a></li>
+<li><a href="FormulaCondition.html">FormulaCondition.cls</a></li>
+<li><a href="Formulas.html">Formulas.cls</a></li>
+<li><a href="ValueOfFormula.html">ValueOfFormula.cls</a></li>
+<li><a href="LLGeo.html">LLGeo.cls</a></li>
+<li><a href="Linelist.html">Linelist.cls</a></li>
+<li><a href="LinelistSpecs.html">LinelistSpecs.cls</a></li>
+<li><a href="SectionBuilder.html">SectionBuilder.cls</a></li>
+<li><a href="VarWriter.html">VarWriter.cls</a></li>
+<li><a href="EventSetup.html">EventSetup.cls</a></li>
+<li><a href="SetupErrors.html">SetupErrors.cls</a></li>
+<li><a href="ShowHideManager.html">ShowHideManager.cls</a></li>
+<li>MasterSetupHelpers.bas</li>
+<li>SetupHelpers.bas</li>
+</ul>
+</details>
+
+  </main>
+</body>
+</html>
+

@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IOSFiles - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>IOSFiles</h1>
+<p>Defines the public contract for the OSFiles class, exposing
+cross-platform file and folder selection dialogs (Windows FileDialog
+and macOS AppleScript), iteration over multi-selections, and
+validation helpers.</p>
+<h2>Elements</h2>
+<h3>File</h3>
+<p><strong>Current loaded file path</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get File() As String: End Property
+</code></pre>
+<p>File and folder path accessors.</p>
+<p><strong>Returns:</strong> String. The first selected file path.</p>
+<hr />
+<h3>Files</h3>
+<p><strong>All loaded file paths from a multi-selection</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Files() As Variant: End Property
+</code></pre>
+<p><strong>Returns:</strong> Variant. Zero-based string array of file paths.</p>
+<hr />
+<h3>Folder</h3>
+<p><strong>Current loaded folder path</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Folder() As String: End Property
+</code></pre>
+<p><strong>Returns:</strong> String. The first selected folder path.</p>
+<hr />
+<h3>Folders</h3>
+<p><strong>All loaded folder paths from a multi-selection</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Folders() As Variant: End Property
+</code></pre>
+<p><strong>Returns:</strong> Variant. Zero-based string array of folder paths.</p>
+<hr />
+<h2>Selecting</h2>
+<h3>LoadFile</h3>
+<p><strong>Show a single-file picker dialog</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub LoadFile(ByVal filters As String, _
+                    Optional ByVal customMacFilter As String = vbNullString)
+</code></pre>
+<p>File and folder picker operations.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>filters</code>: String. File type filters (e.g. &quot;<em>.xlsx&quot;, &quot;</em>.xlsb, *.xlsx&quot;).</li>
+<li><code>customMacFilter</code>: String. Optional UTI override for macOS. Defaults to vbNullString.</li>
+</ul>
+<hr />
+<h3>LoadFiles</h3>
+<p><strong>Show a multi-file picker dialog</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub LoadFiles(ByVal filters As String, _
+                     Optional ByVal customMacFilter As String = vbNullString)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>filters</code>: String. File type filters.</li>
+<li><code>customMacFilter</code>: String. Optional UTI override for macOS. Defaults to vbNullString.</li>
+</ul>
+<hr />
+<h3>LoadFolder</h3>
+<p><strong>Show a single-folder picker dialog</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub LoadFolder(): End Sub
+</code></pre>
+<hr />
+<h3>LoadFolders</h3>
+<p><strong>Show a multi-folder picker dialog</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub LoadFolders(): End Sub
+</code></pre>
+<hr />
+<h3>ResetFilesIterator</h3>
+<p><strong>Reset the iteration cursor over selected files</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ResetFilesIterator(): End Sub
+</code></pre>
+<hr />
+<h3>HasNextFile</h3>
+<p><strong>Check if another file is available in the iterator</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function HasNextFile() As Boolean: End Function
+</code></pre>
+<p><strong>Returns:</strong> Boolean. True when the cursor has not reached the end.</p>
+<hr />
+<h3>NextFile</h3>
+<p><strong>Retrieve the next file path and advance the cursor</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function NextFile() As String: End Function
+</code></pre>
+<p><strong>Returns:</strong> String. The next file path.</p>
+<hr />
+<h3>ResetFoldersIterator</h3>
+<p><strong>Reset the iteration cursor over selected folders</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ResetFoldersIterator(): End Sub
+</code></pre>
+<hr />
+<h3>HasNextFolder</h3>
+<p><strong>Check if another folder is available in the iterator</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function HasNextFolder() As Boolean: End Function
+</code></pre>
+<p><strong>Returns:</strong> Boolean. True when the cursor has not reached the end.</p>
+<hr />
+<h3>NextFolder</h3>
+<p><strong>Retrieve the next folder path and advance the cursor</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function NextFolder() As String: End Function
+</code></pre>
+<p><strong>Returns:</strong> String. The next folder path.</p>
+<hr />
+<h2>Validation</h2>
+<h3>HasValidFile</h3>
+<p><strong>Whether the loaded file path is valid</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function HasValidFile() As Boolean: End Function
+</code></pre>
+<p>Selection validity checks.</p>
+<p><strong>Returns:</strong> Boolean. True when a non-empty file path exists.</p>
+<hr />
+<h3>HasValidFiles</h3>
+<p><strong>Whether the loaded files array contains entries</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function HasValidFiles() As Boolean: End Function
+</code></pre>
+<p><strong>Returns:</strong> Boolean. True when at least one file was selected.</p>
+<hr />
+<h3>HasValidFolder</h3>
+<p><strong>Whether the loaded folder path is valid</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function HasValidFolder() As Boolean: End Function
+</code></pre>
+<p><strong>Returns:</strong> Boolean. True when a non-empty folder path exists.</p>
+<hr />
+<h3>HasValidFolders</h3>
+<p><strong>Whether the loaded folders array contains entries</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function HasValidFolders() As Boolean: End Function
+</code></pre>
+<p><strong>Returns:</strong> Boolean. True when at least one folder was selected.</p>
+<hr />
+
+  </main>
+</body>
+</html>
+

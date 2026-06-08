@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ILLExporter - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>ILLExporter</h1>
+<p>Defines the public contract for the LLExporter class, exposing methods
+to export linelist data into standalone workbooks. Supports custom
+filtered exports, full migration exports, analysis-only exports, and
+geobase exports. Consumers use ExportCustom, ExportMigration,
+ExportAnalysis, or ExportGeo, then read LastExportPassword if a
+password was applied.</p>
+<h2>Export Methods</h2>
+<h3>ExportCustom</h3>
+<p><strong>Export a numbered custom export definition</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function ExportCustom(ByVal exportNumber As Long, _
+                             ByVal folderPath As String, _
+                             Optional ByVal useFilters As Boolean = False) As String
+</code></pre>
+<p>Creates an output workbook containing filtered data, optional metadata
+sheets, and optional analysis sheets according to the export definition
+identified by exportNumber. Saves the workbook to folderPath and returns
+the full file path. When useFilters is True, exports filtered HList data
+from companion filter sheets rather than the raw ListObject data.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>exportNumber</code>: Long. Which export definition to use (1-based).</li>
+<li><code>folderPath</code>: String. Target folder for the saved file.</li>
+<li><code>useFilters</code>: Optional Boolean. When True, exports filtered HList data instead of raw data. Defaults to False.</li>
+</ul>
+<p><strong>Returns:</strong> String. Saved file path, or empty string on failure.</p>
+<hr />
+<h3>ExportMigration</h3>
+<p><strong>Export all data for migration to another linelist</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function ExportMigration(ByVal folderPath As String, _
+                                Optional ByVal includeShowHide As Boolean = False, _
+                                Optional ByVal keepLabels As Boolean = False) As String
+</code></pre>
+<p>Creates an output workbook with full unfiltered data, metadata sheets,
+dictionary, choices, translations, and metadata tags for re-import.
+Optionally includes show/hide state with column widths and marks
+editable labels for update on import. No password is applied.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>folderPath</code>: String. Target folder for the saved file.</li>
+<li><code>includeShowHide</code>: Optional Boolean. When True, includes show/hide state with column widths. Defaults to False.</li>
+<li><code>keepLabels</code>: Optional Boolean. When True, marks editable labels for update on import. Defaults to False.</li>
+</ul>
+<p><strong>Returns:</strong> String. Saved file path, or empty string on failure.</p>
+<hr />
+<h3>ExportAnalysis</h3>
+<p><strong>Export analysis worksheets only</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function ExportAnalysis(ByVal folderPath As String) As String
+</code></pre>
+<p>Creates an output workbook containing only the four analysis sheets
+(univariate, time series, spatial, spatio-temporal) with their values,
+formatting, and graphs. No data or metadata sheets are included.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>folderPath</code>: String. Target folder for the saved file.</li>
+</ul>
+<p><strong>Returns:</strong> String. Saved file path, or empty string on failure.</p>
+<hr />
+<h3>ExportGeo</h3>
+<p><strong>Export geobase data to a separate workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function ExportGeo(ByVal folderPath As String, _
+                           Optional ByVal onlyHistoric As Boolean = False) As String
+</code></pre>
+<p>Creates an output workbook and delegates to LLGeo.ExportToFile to write
+geobase data. When onlyHistoric is True, exports only the historic
+geobase subset. The file name includes a date stamp.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>folderPath</code>: String. Target folder for the saved file.</li>
+<li><code>onlyHistoric</code>: Optional Boolean. When True, exports only the historic geobase. Defaults to False.</li>
+</ul>
+<p><strong>Returns:</strong> String. Saved file path, or empty string on failure.</p>
+<hr />
+<h2>State</h2>
+<h3>LastExportPassword</h3>
+<p><strong>Password used in the last export operation</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get LastExportPassword() As String
+</code></pre>
+<p>Returns the password that was applied to the most recent custom export,
+or an empty string when no password was used. Modules display this value
+to the user after a successful export so they can share it securely.</p>
+<p><strong>Returns:</strong> String. The password applied to the last export, or vbNullString.</p>
+<hr />
+<h2>Cleanup</h2>
+<h3>CloseAll</h3>
+<p><strong>Close all output workbooks that may still be open</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub CloseAll()
+</code></pre>
+<p>Closes any output workbook left open after an export error, preventing
+orphaned minimized windows. Safe to call even when no workbook is open.</p>
+<hr />
+
+  </main>
+</body>
+</html>
+

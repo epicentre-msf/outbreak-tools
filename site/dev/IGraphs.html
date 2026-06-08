@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IGraphs - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>IGraphs</h1>
+<p>Defines the public contract for the Graphs class, exposing methods to
+create an empty chart on a worksheet, attach data series from named
+ranges, assign axis labels, and apply formatting based on graph scope.
+The GraphScope enum controls layout sizing for time series, spatial,
+and standard analysis charts.
+Differents scopes for graphs. Depending on the scope, the size and other
+adjustments are made. For example, on Time Series, the graph will appear
+bigger, compare to basic normal graph.</p>
+<h2>Operations</h2>
+<h3>Add</h3>
+<p><strong>Create an empty chart object on the worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Add(): End Sub
+</code></pre>
+<p>Chart creation, series attachment, labelling, and formatting.
+Initialises an empty chart at the position defined during factory
+construction. The chart is ready to receive series via AddSeries.
+Must be called before AddSeries if no chart exists yet; AddSeries
+also calls Add lazily when needed.</p>
+<hr />
+<h3>AddSeries</h3>
+<p><strong>Attach a data series from a named range</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub AddSeries(ByVal rngName As String, ByVal chrtType As String, _
+                     Optional axisPos As String = vbNullString): End Sub
+</code></pre>
+<p>Adds one chart series sourced from the named range on the host
+worksheet. The chart type controls the rendering style and the axis
+position determines whether the series uses the primary or secondary
+value axis. Call AddLabels immediately after to keep the parallel
+label arrays synchronised.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>rngName</code>: String. Named range containing the series values.</li>
+<li><code>chrtType</code>: String. Rendering style: &quot;bar&quot;, &quot;hbar&quot;, &quot;line&quot;, or &quot;point&quot;.</li>
+<li><code>axisPos</code>: Optional String. Axis placement: &quot;left&quot; (primary) or &quot;right&quot; (secondary). Defaults to vbNullString.</li>
+</ul>
+<hr />
+<h3>AddLabels</h3>
+<p><strong>Assign category and legend labels to the current series</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub AddLabels(ByVal catName As String, ByVal lblName As String, _
+                     Optional ByVal prefix As String = vbNullString, _
+                     Optional ByVal prefixOnly As Boolean = False, _
+                     Optional ByVal hardCodeLabels As Boolean = True): End Sub
+</code></pre>
+<p>Sets the category axis values and legend entry for the most recently
+added series. The optional prefix is prepended to the legend name,
+useful for time series graphs where a user-defined label augments
+the column header.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>catName</code>: String. Named range for category axis labels.</li>
+<li><code>lblName</code>: String. Named range for the legend entry text.</li>
+<li><code>prefix</code>: Optional String. Display prefix prepended to the legend name. Defaults to vbNullString.</li>
+<li><code>prefixOnly</code>: Optional Boolean. When True, uses only the prefix as the legend entry. Defaults to False.</li>
+<li><code>hardCodeLabels</code>: Optional Boolean. When True, legend text is literal; when False, references the named range. Defaults to True.</li>
+</ul>
+<hr />
+<h3>Format</h3>
+<p><strong>Apply layout and formatting to the chart</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Format(Optional ByVal valuesTitle As String = vbNullString, _
+                  Optional ByVal catTitle As String = vbNullString, _
+                  Optional ByVal plotTitle As String = vbNullString, _
+                  Optional ByVal scope As Byte = GraphScopeNormal, _
+                  Optional ByVal heightFactor As Long = 1, _
+                  Optional ByVal hardCodeLabels As Boolean = True)
+</code></pre>
+<p>Adjusts chart dimensions, axis titles, gridlines, legend position,
+and plot area sizing based on the supplied scope. Time series scope
+produces larger charts; spatial scope reverses the category axis plot
+order and moves the legend to the bottom.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>valuesTitle</code>: Optional String. Title for the value axis (Y-axis). Defaults to vbNullString.</li>
+<li><code>catTitle</code>: Optional String. Title for the category axis (X-axis). Defaults to vbNullString.</li>
+<li><code>plotTitle</code>: Optional String. Chart title displayed above the plot area. Defaults to vbNullString.</li>
+<li><code>scope</code>: Optional Byte. GraphScope value controlling layout sizing. Defaults to GraphScopeNormal.</li>
+<li><code>heightFactor</code>: Optional Long. Multiplicative factor for chart height. Defaults to 1.</li>
+<li><code>hardCodeLabels</code>: Optional Boolean. When True, axis titles are literal text. Defaults to True.</li>
+</ul>
+<hr />
+
+  </main>
+</body>
+</html>
+

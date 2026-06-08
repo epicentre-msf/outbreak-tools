@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IDiseaseExporter - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>IDiseaseExporter</h1>
+<h2>Configuration</h2>
+<h3>Initialise</h3>
+<p><strong>Configure dependencies required for the exporter.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Initialise(ByVal workbookManager As IDiseaseExportWorkbook, ByVal appGuard As IDiseaseApplicationState)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>workbookManager</code>: IDiseaseExportWorkbook responsible for workbook lifecycle.</li>
+<li><code>appGuard</code>: IDiseaseApplicationState guarding Application state toggles.</li>
+</ul>
+<hr />
+<h2>Disease Export</h2>
+<h3>BuildDiseaseWorkbook</h3>
+<p><strong>Build an export workbook in-memory for the supplied disease worksheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function BuildDiseaseWorkbook(ByVal diseaseSheet As Worksheet, _
+                                     ByVal translationTable As ListObject, _
+                                     ByVal ribbonTranslations As ITranslationObject, _
+                                     ByVal diseaseName As String, _
+                                     ByVal languageTag As String, _
+                                     Optional ByVal diseaseCode As String = vbNullString) As Workbook
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>diseaseSheet</code>: Worksheet containing the disease table and metadata.</li>
+<li><code>translationTable</code>: ListObject providing translation values to copy.</li>
+<li><code>ribbonTranslations</code>: ITranslationObject translating choice headers (may be Nothing).</li>
+<li><code>diseaseName</code>: String disease identifier used in metadata.</li>
+<li><code>languageTag</code>: String language captured in metadata.</li>
+<li><code>diseaseCode</code>: Optional String disease tag/code for metadata.</li>
+</ul>
+<p><strong>Returns:</strong> Workbook populated with export worksheets. Caller owns lifecycle.</p>
+<hr />
+<h3>ExportDisease</h3>
+<p><strong>Export a disease workbook to disk.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function ExportDisease(ByVal exportFolder As String, _
+                              ByVal diseaseSheet As Worksheet, _
+                              ByVal translationTable As ListObject, _
+                              ByVal ribbonTranslations As ITranslationObject, _
+                              ByVal diseaseName As String, _
+                              ByVal languageTag As String, _
+                              Optional ByVal diseaseCode As String = vbNullString) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>exportFolder</code>: String folder path where the workbook is saved.</li>
+<li><code>diseaseSheet</code>: Worksheet containing the disease table.</li>
+<li><code>translationTable</code>: ListObject providing translation values.</li>
+<li><code>ribbonTranslations</code>: ITranslationObject translating choice headers.</li>
+<li><code>diseaseName</code>: String disease identifier used in metadata and file name.</li>
+<li><code>languageTag</code>: String disease language stored in metadata.</li>
+<li><code>diseaseCode</code>: Optional String disease tag/code for metadata.</li>
+</ul>
+<p><strong>Returns:</strong> String file path of the saved workbook.</p>
+<hr />
+<h2>Migration Export</h2>
+<h3>BuildMigrationWorkbook</h3>
+<p><strong>Build a migration workbook aggregating multiple diseases.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function BuildMigrationWorkbook(ByVal sourceWorkbook As Workbook, _
+                                       ByVal diseaseNames As BetterArray) As Workbook
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sourceWorkbook</code>: Workbook hosting dictionary/choices/translation sheets.</li>
+<li><code>diseaseNames</code>: BetterArray listing disease worksheet names to export.</li>
+</ul>
+<p><strong>Returns:</strong> Workbook populated with migration data. Caller owns lifecycle.</p>
+<hr />
+<h3>ExportForMigration</h3>
+<p><strong>Export the migration workbook to disk.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function ExportForMigration(ByVal exportFolder As String, _
+                                   ByVal sourceWorkbook As Workbook, _
+                                   ByVal diseaseNames As BetterArray) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>exportFolder</code>: String folder path where the workbook is saved.</li>
+<li><code>sourceWorkbook</code>: Workbook hosting dictionary resources.</li>
+<li><code>diseaseNames</code>: BetterArray listing disease worksheet names to export.</li>
+</ul>
+<p><strong>Returns:</strong> String file path of the saved workbook.</p>
+<hr />
+
+  </main>
+</body>
+</html>
+
