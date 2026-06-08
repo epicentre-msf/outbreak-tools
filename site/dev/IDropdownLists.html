@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IDropdownLists - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>IDropdownLists</h1>
+<p>Defines the public contract for the DropdownLists class, exposing
+worksheet-based dropdown management built on one-column ListObjects.
+Supports adding, removing, updating, sorting, translating, and
+validating dropdown entries, plus hyperlink navigation and diagnostic
+logging.</p>
+<h2>Elements</h2>
+<h3>Wksh</h3>
+<p><strong>Worksheet hosting the dropdown lists</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Wksh() As Worksheet: End Property
+</code></pre>
+<p>Properties exposing the dropdown worksheet and list metadata.
+Returns the worksheet that contains the one-column ListObjects.</p>
+<p><strong>Returns:</strong> Worksheet. The host worksheet.</p>
+<hr />
+<h3>Exists</h3>
+<p><strong>Check whether a dropdown exists</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Exists(ByVal listName As String) As Boolean: End Property
+</code></pre>
+<p>Searches the internal registry for the specified dropdown name.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>listName</code>: String. Dropdown name to search for.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the dropdown is found.</p>
+<hr />
+<h3>Name</h3>
+<p><strong>Name of the dropdown object</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Name() As String: End Property
+</code></pre>
+<p>Returns the name of the worksheet that hosts the dropdown lists.</p>
+<p><strong>Returns:</strong> String. The worksheet name.</p>
+<hr />
+<h3>LabelRange</h3>
+<p><strong>Label cell above a dropdown ListObject</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get LabelRange(ByVal listName As String) As Range: End Property
+</code></pre>
+<p>Returns the Range of the cell directly above the header row of the
+specified dropdown ListObject. Returns Nothing when the dropdown does
+not exist.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>listName</code>: String. Dropdown name to look up.</li>
+</ul>
+<p><strong>Returns:</strong> Range. The label cell, or Nothing.</p>
+<hr />
+<h3>Values</h3>
+<p><strong>Retrieve the values of a dropdown</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Values(ByVal listName As String, _
+               Optional ByVal includeHeaders As Boolean = False) As BetterArray
+</code></pre>
+<p>Returns a BetterArray of the entries stored in the specified dropdown.
+Optionally includes the header row.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>listName</code>: String. Dropdown name to read from.</li>
+<li><code>includeHeaders</code>: Optional Boolean. When True, includes the header row. Defaults to False.</li>
+</ul>
+<p><strong>Returns:</strong> BetterArray. The dropdown entries.</p>
+<hr />
+<h3>Length</h3>
+<p><strong>Total number of dropdowns on the worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Length() As Long: End Property
+</code></pre>
+<p>Returns the count of registered dropdown lists.</p>
+<p><strong>Returns:</strong> Long. The dropdown count.</p>
+<hr />
+<h3>AllDropdowns</h3>
+<p><strong>All registered dropdown names</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get AllDropdowns() As BetterArray: End Property
+</code></pre>
+<p>Returns a BetterArray containing every dropdown name registered on
+the worksheet.</p>
+<p><strong>Returns:</strong> BetterArray. The dropdown name list.</p>
+<hr />
+<h2>Modify</h2>
+<h3>Add</h3>
+<p><strong>Add a new dropdown to the worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Add(ByVal listValues As BetterArray, ByVal listName As String, _
+               Optional ByVal addLabel As Boolean = False, _
+               Optional ByVal counterPrefix As String = vbNullString, _
+               Optional ByVal tableStyle As String = &quot;TableStyleLight13&quot;)
+</code></pre>
+<p>Methods that add, remove, update, sort, and translate dropdowns.
+Creates a new one-column ListObject populated with the supplied values.
+Optionally adds a visible label above the ListObject and applies a
+table style. Silently exits when the dropdown already exists.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>listValues</code>: BetterArray. String values to populate the ListObject.</li>
+<li><code>listName</code>: String. Name to assign to the dropdown.</li>
+<li><code>addLabel</code>: Optional Boolean. When True, writes a label above the ListObject. Defaults to False.</li>
+<li><code>counterPrefix</code>: Optional String. Prefix for the label text. Defaults to vbNullString.</li>
+<li><code>tableStyle</code>: Optional String. Excel table style name. Defaults to &quot;TableStyleLight13&quot;.</li>
+</ul>
+<hr />
+<h3>Remove</h3>
+<p><strong>Remove a dropdown from the worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Remove(ByVal listName As String): End Sub
+</code></pre>
+<p>Deletes the ListObject, its workbook-level name reference, and the
+internal registry entry. Silently exits when the dropdown does not exist.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>listName</code>: String. Dropdown name to remove.</li>
+</ul>
+<hr />
+<h3>ClearList</h3>
+<p><strong>Clear entries of a dropdown</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ClearList(ByVal listName As String)
+</code></pre>
+<p>Removes all data rows from the dropdown ListObject without deleting
+the dropdown itself. Silently exits when the dropdown does not exist.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>listName</code>: String. Dropdown name to clear.</li>
+</ul>
+<hr />
+<h3>Update</h3>
+<p><strong>Update a dropdown with new values</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Update(ByVal UpdateData As BetterArray, ByVal listName As String, _
+                  Optional ByVal pasteAtBottom As Boolean = False, _
+                  Optional ByVal removeDuplicates As Boolean = True)
+</code></pre>
+<p>Replaces or appends values in the specified dropdown. When
+pasteAtBottom is True, appends below existing data and optionally
+removes duplicates.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>UpdateData</code>: BetterArray. New values to write.</li>
+<li><code>listName</code>: String. Dropdown name to update.</li>
+<li><code>pasteAtBottom</code>: Optional Boolean. When True, appends below existing rows. Defaults to False.</li>
+<li><code>removeDuplicates</code>: Optional Boolean. When True, removes duplicate entries. Defaults to True.</li>
+</ul>
+<hr />
+<h3>Sort</h3>
+<p><strong>Sort a dropdown in the worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Sort(ByVal listName As String, Optional ByVal sortOrder As Long = xlAscending)
+</code></pre>
+<p>Sorts the dropdown ListObject using the specified sort order.
+Silently exits when the dropdown does not exist.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>listName</code>: String. Dropdown name to sort.</li>
+<li><code>sortOrder</code>: Optional Long. xlSortOrder enumeration value. Defaults to xlAscending.</li>
+</ul>
+<hr />
+<h3>Translate</h3>
+<p><strong>Translate all dropdowns on the worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Translate(ByVal trads As Object, Optional ByVal force As Boolean = False, Optional ByVal exclude As String)
+</code></pre>
+<p>Applies the supplied TranslationObject to the data body of every
+registered dropdown. Skips translation when the current language
+matches and force is False.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>trads</code>: Object. A TranslationObject providing translations.</li>
+<li><code>force</code>: Optional Boolean. When True, translates even if the language matches. Defaults to False.</li>
+<li><code>exclude</code>: Optional String. Substring filter to skip matching dropdowns.</li>
+</ul>
+<hr />
+<h2>Operations</h2>
+<h3>SetValidation</h3>
+<p><strong>Apply dropdown validation to a Range</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub SetValidation(ByVal cellRng As Range, ByVal listName As String, _
+                         Optional ByVal alertType As String = &quot;info&quot;, _
+                         Optional ByVal message As String = vbNullString, _
+                         Optional ByVal showError As Boolean = True)
+</code></pre>
+<p>Validation and hyperlink operations using dropdown references.
+Sets data validation on the target Range using the specified dropdown
+as the validation source. The alertType controls the severity shown
+when the entered value is not in the list.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>cellRng</code>: Range. Target range to validate.</li>
+<li><code>listName</code>: String. Dropdown name to use as the validation source.</li>
+<li><code>alertType</code>: Optional String. Alert severity (&quot;info&quot;, &quot;warning&quot;, &quot;error&quot;). Defaults to &quot;info&quot;.</li>
+<li><code>message</code>: Optional String. Message shown on validation failure. Defaults to vbNullString.</li>
+<li><code>showError</code>: Optional Boolean. When True, displays validation feedback. Defaults to True.</li>
+</ul>
+<hr />
+<h3>AddReturnLink</h3>
+<p><strong>Add a return hyperlink on the dropdown header</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub AddReturnLink(ByVal listName As String, ByVal returnRng As Range)
+</code></pre>
+<p>Adds a hyperlink on the dropdown label cell that navigates back to
+the specified range.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>listName</code>: String. Dropdown whose label receives the link.</li>
+<li><code>returnRng</code>: Range. Target destination of the hyperlink.</li>
+</ul>
+<hr />
+<h3>AddHyperLink</h3>
+<p><strong>Add a hyperlink on a cell targeting a dropdown</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub AddHyperLink(ByVal listName As String, ByVal linkRng As Range)
+</code></pre>
+<p>Adds a hyperlink on the specified range that navigates to the label
+cell of the dropdown.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>listName</code>: String. Dropdown to navigate to.</li>
+<li><code>linkRng</code>: Range. Cell that receives the hyperlink.</li>
+</ul>
+<hr />
+<h2>Checkings</h2>
+<h3>HasCheckings</h3>
+<p><strong>Whether the dropdown object has logged diagnostic messages</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get HasCheckings() As Boolean: End Property
+</code></pre>
+<p>Diagnostic logging access.
+Returns True when at least one diagnostic entry has been recorded.</p>
+<p><strong>Returns:</strong> Boolean. True when diagnostic entries exist.</p>
+<hr />
+<h3>CheckingValues</h3>
+<p><strong>Retrieve the diagnostic log entries</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get CheckingValues() As Object: End Property
+</code></pre>
+<p>Returns the internal IChecking object containing all logged messages.
+Returns Nothing when no entries have been recorded.</p>
+<p><strong>Returns:</strong> Object. An IChecking instance, or Nothing.</p>
+<hr />
+
+  </main>
+</body>
+</html>
+

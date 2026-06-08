@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ILLSheets - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>ILLSheets</h1>
+<h2>Properties</h2>
+<h3>Dictionary</h3>
+<p><strong>Dictionary accessor</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Dictionary() As ILLdictionary: End Property
+</code></pre>
+<p><strong>Returns:</strong> ILLdictionary backing store for the sheets helper.</p>
+<hr />
+<h2>Queries</h2>
+<h3>SheetInfo</h3>
+<p><strong>Retrieve a specific metadata entry for the supplied sheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function SheetInfo(ByVal sheetName As String, Optional ByVal info As Byte = SheetInfoType.SheetInfoSheetType) As String: End Function
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetName</code>: String. Sheet identifier.</li>
+<li><code>info</code>: Byte. Selector from SheetInfoType.</li>
+</ul>
+<p><strong>Returns:</strong> String metadata value.</p>
+<hr />
+<h3>Contains</h3>
+<p><strong>Determine whether the dictionary contains the supplied sheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Contains(ByVal sheetName As String) As Boolean: End Function
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetName</code>: String. Sheet identifier.</li>
+</ul>
+<p><strong>Returns:</strong> True when the sheet exists.</p>
+<hr />
+<h3>DataBounds</h3>
+<p><strong>Return positional bounds for the sheet layout</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function DataBounds(ByVal sheetName As String, Optional ByVal Bound As Byte = SheetBound.RowSart) As Long: End Function
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetName</code>: String. Sheet identifier.</li>
+<li><code>Bound</code>: Byte. Selector from SheetBound.</li>
+</ul>
+<p><strong>Returns:</strong> Long bound value.</p>
+<hr />
+<h3>ContainsControl</h3>
+<p><strong>Test whether a sheet exposes the requested control type</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function ContainsControl(ByVal sheetName As String, _
+                                Optional ByVal control As String = &quot;list_auto&quot;, _
+                                Optional ByVal colName As String = &quot;control&quot;) As Boolean: End Function
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetName</code>: String. Sheet identifier.</li>
+<li><code>control</code>: Optional String. Control type to search for. Defaults to &quot;list_auto&quot;.</li>
+<li><code>colName</code>: Optional String. Column that contains control metadata. Defaults to &quot;control&quot;.</li>
+</ul>
+<p><strong>Returns:</strong> True when at least one variable matches the control.</p>
+<hr />
+<h3>VariableAddress</h3>
+<p><strong>Build a cell address pointing to the variable location</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function VariableAddress(ByVal varName As String, Optional ByVal onSheet As String = vbNullString) As String: End Function
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>varName</code>: String. Variable identifier.</li>
+<li><code>onSheet</code>: Optional String. Target sheet to suppress sheet prefix when matching.</li>
+</ul>
+<p><strong>Returns:</strong> String Excel address for the variable.</p>
+<hr />
+<h3>RowIndex</h3>
+<p><strong>Retrieve the worksheet row containing the sheet metadata row</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function RowIndex(ByVal sheetName As String) As Long: End Function
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetName</code>: String. Sheet identifier.</li>
+</ul>
+<p><strong>Returns:</strong> Long worksheet row index (0 when not found).</p>
+<hr />
+<h3>NumberOfVars</h3>
+<p><strong>Count the variables assigned to the sheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function NumberOfVars(ByVal sheetName As String) As Long: End Function
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetName</code>: String. Sheet identifier.</li>
+</ul>
+<p><strong>Returns:</strong> Long number of variables.</p>
+<hr />
+
+  </main>
+</body>
+</html>
+

@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ICheckingOutput - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>ICheckingOutput</h1>
+<p>Defines the public contract for the CheckingOutput class, exposing
+worksheet binding, diagnostic entry rendering, and interactive
+filtering for severity and title criteria.</p>
+<h2>Elements</h2>
+<h3>Wksh</h3>
+<p><strong>Retrieve the worksheet backing this output writer</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Wksh() As Worksheet: End Property
+</code></pre>
+<p>Worksheet binding and output metadata.
+Returns the worksheet that receives the checking output.</p>
+<p><strong>Returns:</strong> Worksheet. Target worksheet reference.</p>
+<hr />
+<h3>Name</h3>
+<p><strong>Name of the output session</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Name() As String: End Property
+</code></pre>
+<p>Returns the label assigned during creation.</p>
+<p><strong>Returns:</strong> String. Output session label.</p>
+<hr />
+<h2>Operations</h2>
+<h3>PrintOutput</h3>
+<p><strong>Write checking values to a worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub PrintOutput(ByVal checkTable As BetterArray): End Sub
+</code></pre>
+<p>Rendering and filtering of diagnostic entries.
+Implementations must write the supplied check results to the bound
+worksheet, initialising formatting and filters as needed.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>checkTable</code>: BetterArray. Collection of IChecking instances to print.</li>
+</ul>
+<hr />
+<h3>FilterWorksheet</h3>
+<p><strong>Apply the active filter on the output worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub FilterWorksheet(Optional ByVal selectionValue As String = vbNullString, _
+                           Optional ByVal titleSelection As String = vbNullString): End Sub
+</code></pre>
+<p>Re-evaluates the drop-down filter to hide or reveal rows matching
+the requested severity and/or title.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>selectionValue</code>: Optional String. Severity filter token (All/Errors/Warnings/Notes/Infos).</li>
+<li><code>titleSelection</code>: Optional String. Title limiting rows to a specific checking topic.</li>
+</ul>
+<hr />
+<h3>EnsureWorksheetChangeHandler</h3>
+<p><strong>Inject the worksheet change handler for interactive filtering</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub EnsureWorksheetChangeHandler(): End Sub
+</code></pre>
+<p>Installs VBA code in the worksheet module so filter drop-down
+changes trigger row visibility updates automatically.</p>
+<hr />
+
+  </main>
+</body>
+</html>
+
