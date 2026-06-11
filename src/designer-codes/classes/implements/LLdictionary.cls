@@ -525,7 +525,7 @@ Private Sub AppendGeoLines(ByVal geoObject As ILLGeo)
             Next
 
             geoRowIndex = geoRowIndex + 5
-
+            EndRow = EndRow + 12
             Set dictRng = .Range(.Cells(geoRowIndex, controlIndex), .Cells(EndRow, controlIndex))
         Loop
 
