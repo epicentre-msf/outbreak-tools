@@ -197,5 +197,5 @@ create_master_setup_release <- function(
   }
 }
 
-# create_obt_release(latest = TRUE)
+create_obt_release(latest = TRUE)
 # create_master_setup_release(latest = TRUE)
