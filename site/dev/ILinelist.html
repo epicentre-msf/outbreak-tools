@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ILinelist - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>ILinelist</h1>
+<p>Defines the public contract for the Linelist class, exposing worksheet
+accessors, collaborator getters, and lifecycle methods for creating,
+populating, saving, and error-managing the output linelist workbook.</p>
+<h2>Worksheets</h2>
+<h3>Wksh</h3>
+<p><strong>Worksheet from the output workbook by name</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Wksh(ByVal sheetName As String) As Worksheet
+</code></pre>
+<p>Worksheet resolution by name with optional scope prefix.
+Returns the worksheet matching the given name from the output workbook.
+Raises an error if the sheet does not exist.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetName</code>: String. The worksheet name to look up.</li>
+</ul>
+<p><strong>Returns:</strong> Worksheet. The resolved worksheet.</p>
+<hr />
+<h3>PrintWksh</h3>
+<p><strong>Printed companion worksheet by base name</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get PrintWksh(ByVal sheetName As String) As Worksheet
+</code></pre>
+<p>Returns the printed companion worksheet (prefixed with &quot;print_&quot;) from the
+output workbook. Used for HList sheets that have a printable duplicate.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetName</code>: String. The base sheet name (without the print_ prefix).</li>
+</ul>
+<p><strong>Returns:</strong> Worksheet. The printed companion worksheet.</p>
+<hr />
+<h3>CRFWksh</h3>
+<p><strong>CRF companion worksheet by base name</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get CRFWksh(ByVal sheetName As String) As Worksheet
+</code></pre>
+<p>Returns the CRF companion worksheet (prefixed with &quot;crf_&quot;) from the output
+workbook. Used for case report form layouts.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetName</code>: String. The base sheet name (without the crf_ prefix).</li>
+</ul>
+<p><strong>Returns:</strong> Worksheet. The CRF companion worksheet.</p>
+<hr />
+<h3>SheetExists</h3>
+<p><strong>Check whether a sheet exists in the output workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function SheetExists(ByVal sheetName As String) As Boolean
+</code></pre>
+<p>Tests whether a worksheet with the given name exists in the output workbook
+without raising an error. Uses On Error Resume Next internally.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetName</code>: String. The worksheet name to test.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the sheet exists, False otherwise.</p>
+<hr />
+<h3>AddOutputSheet</h3>
+<p><strong>Add a worksheet to the output workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub AddOutputSheet(ByVal sheetName As String, _
+                          Optional ByVal Hide As Long = xlSheetVeryHidden, _
+                          Optional ByVal sheetScope As Byte = 1)
+</code></pre>
+<p>Creates a new worksheet in the output workbook with the given name, applying
+an optional scope prefix (&quot;print_&quot; or &quot;crf_&quot;) and visibility setting. The
+sheet name is truncated to 30 characters. Raises an error if a sheet with
+the resolved name already exists.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetName</code>: String. The base name for the new worksheet.</li>
+<li><code>Hide</code>: Optional Long. Excel visibility constant. Defaults to xlSheetVeryHidden.</li>
+<li><code>sheetScope</code>: Optional Byte. 1 = no prefix, 2 = print_ prefix, 3 = crf_ prefix.
+Defaults to 1.</li>
+</ul>
+<hr />
+<h2>Collaborators</h2>
+<h3>Dropdown</h3>
+<p><strong>Dropdown lists manager for the output workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Dropdown(Optional ByVal scope As Byte = 1) As IDropdownLists
+</code></pre>
+<p>Accessors for helper objects managed by the linelist.
+Returns an IDropdownLists instance backed by the appropriate list sheet.
+Scope 1 uses the temporary dropdown_lists__ sheet with &quot;dropdown_&quot; prefix;
+scope 2 uses the custom choice sheet with no prefix.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>scope</code>: Optional Byte. 1 = standard dropdowns, 2 = custom choice dropdowns.
+Defaults to 1.</li>
+</ul>
+<p><strong>Returns:</strong> IDropdownLists. The dropdown lists manager.</p>
+<hr />
+<h3>Pivots</h3>
+<p><strong>Pivot tables manager for the output workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Pivots() As ICustomPivotTable
+</code></pre>
+<p>Returns an ICustomPivotTable instance backed by the translated custom pivot
+table sheet in the output workbook.</p>
+<p><strong>Returns:</strong> ICustomPivotTable. The pivot tables manager.</p>
+<hr />
+<h3>LinelistData</h3>
+<p><strong>Specifications backing this linelist</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get LinelistData() As ILinelistSpecs
+</code></pre>
+<p>Returns the ILinelistSpecs instance that was supplied during factory
+construction, providing access to dictionary, choices, translations, and
+all other setup data.</p>
+<p><strong>Returns:</strong> ILinelistSpecs. The linelist specifications.</p>
+<hr />
+<h3>Dictionary</h3>
+<p><strong>Dictionary from the specifications</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Dictionary() As ILLdictionary
+</code></pre>
+<p>Convenience accessor that delegates to LinelistData.Dictionary.</p>
+<p><strong>Returns:</strong> ILLdictionary. The linelist dictionary.</p>
+<hr />
+<h2>Lifecycle</h2>
+<h3>Prepare</h3>
+<p><strong>Build the full linelist output workbook from specifications</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Prepare()
+</code></pre>
+<p>Build, save, and error-manage the output workbook.
+Orchestrates the complete linelist creation process: creates the output
+workbook (or opens a template), adds temporary sheets, prepares hidden names
+and ListObjects, exports specifications, adds analysis and data entry sheets,
+prepares the admin sheet, and transfers all VBA code components.</p>
+<hr />
+<h3>SaveLL</h3>
+<p><strong>Save the output workbook as .xlsb with password protection</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub SaveLL()
+</code></pre>
+<p>Saves the output workbook in .xlsb format with the configured password,
+protects the workbook structure, activates an appropriate visible sheet,
+closes the workbook, and cleans up temporary files.</p>
+<hr />
+<h3>ErrorManage</h3>
+<p><strong>Display an error dialog for incomplete linelist operations</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ErrorManage(Optional ByVal textMessage As String = vbNullString)
+</code></pre>
+<p>Shows a message box with the error details and asks the user whether they
+want to view the incomplete linelist workbook or close it without saving.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>textMessage</code>: Optional String. Error description to display.
+Defaults to vbNullString.</li>
+</ul>
+<hr />
+
+  </main>
+</body>
+</html>
+

@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ICustomTable - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>ICustomTable</h1>
+<p>Defines the public contract for the CustomTable class, exposing
+read/write helpers around an Excel ListObject including column and
+cell access, row manipulation, sorting, validation, import/export,
+and diagnostic logging.</p>
+<h2>Elements</h2>
+<h3>HeaderRange</h3>
+<p><strong>Header row Range of the CustomTable</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get HeaderRange() As Range: End Property
+</code></pre>
+<p>Properties that expose the table structure and cell access.
+Returns the Range covering the header row of the underlying ListObject.</p>
+<p><strong>Returns:</strong> Range. The header row range.</p>
+<hr />
+<h3>IdValue</h3>
+<p><strong>ID column name</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get IdValue() As String: End Property
+</code></pre>
+<p>Returns the name of the column designated as the unique row identifier.</p>
+<p><strong>Returns:</strong> String. The ID column name, or vbNullString when none is set.</p>
+<hr />
+<h3>DataRange</h3>
+<p><strong>Range of a column or the entire data body</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get DataRange(Optional ByVal colName As String = &quot;__all__&quot;, _
+          Optional ByVal includeHeaders As Boolean = False, _
+          Optional ByVal strictSearch As Boolean = False, _
+          Optional ByVal matchCase As Boolean = False) As Range
+</code></pre>
+<p>Returns a Range for the specified column, or the entire data body when
+colName is &quot;<strong>all</strong>&quot;. Returns Nothing when the column has no data rows
+or is not found.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>colName</code>: Optional String. Column header to retrieve. Defaults to &quot;<strong>all</strong>&quot;.</li>
+<li><code>includeHeaders</code>: Optional Boolean. When True, includes the header row. Defaults to False.</li>
+<li><code>strictSearch</code>: Optional Boolean. When True, uses exact whole-string matching. Defaults to False.</li>
+<li><code>matchCase</code>: Optional Boolean. When True, matching is case-sensitive. Defaults to False.</li>
+</ul>
+<p><strong>Returns:</strong> Range. The requested data range, or Nothing when unavailable.</p>
+<hr />
+<h3>Name</h3>
+<p><strong>Name of the attached ListObject</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Name() As String: End Property
+</code></pre>
+<p>Returns the cached name of the ListObject assigned during creation.</p>
+<p><strong>Returns:</strong> String. The table name.</p>
+<hr />
+<h3>CellRange</h3>
+<p><strong>A specific cell in the CustomTable</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get CellRange(ByVal colName As String, ByVal lineNum As Long) As Range: End Property
+</code></pre>
+<p>Returns the cell at the intersection of the given column and worksheet
+row number. Returns Nothing when the column does not exist or the row
+is out of bounds.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>colName</code>: String. Column header identifying the column.</li>
+<li><code>lineNum</code>: Long. Worksheet row number (1-based).</li>
+</ul>
+<p><strong>Returns:</strong> Range. The target cell, or Nothing when not found.</p>
+<hr />
+<h3>Value</h3>
+<p><strong>Retrieve a cell value by column and key</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Value(ByVal colName As String, ByVal keyName As String) As String: End Property
+</code></pre>
+<p>For tables with a key column, returns the cell value at the intersection
+of the specified column and the row matching keyName. Returns an empty
+string when the key or column is not found.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>colName</code>: String. Column header to read from.</li>
+<li><code>keyName</code>: String. Key value identifying the row.</li>
+</ul>
+<p><strong>Returns:</strong> String. The cell value converted to string, or vbNullString.</p>
+<hr />
+<h3>ValueRange</h3>
+<p><strong>Range of a cell identified by column and key</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ValueRange(ByVal colName As String, ByVal keyName As String) As Range
+</code></pre>
+<p>Returns the Range at the intersection of the specified column and the
+row matching keyName in the ID column. Returns Nothing when the key or
+column is not found.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>colName</code>: String. Column header identifying the column.</li>
+<li><code>keyName</code>: String. Key value identifying the row.</li>
+</ul>
+<p><strong>Returns:</strong> Range. The target cell range, or Nothing when not found.</p>
+<hr />
+<h2>Modify</h2>
+<h3>AddIds</h3>
+<p><strong>Add sequential IDs to the ID column</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub AddIds(): End Sub
+</code></pre>
+<p>Methods that add, remove, or reorganise table rows and columns.
+Fills the ID column with sequential values, optionally prefixed.
+Silently exits when no ID column is configured.</p>
+<hr />
+<h3>AddRows</h3>
+<p><strong>Add rows to the CustomTable</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub AddRows(Optional ByVal nbRows As Long = 5, _
+                   Optional ByVal insertShift As Boolean = False, _
+                   Optional ByVal includeIds As Boolean = True)
+</code></pre>
+<p>Appends the requested number of rows, either by inserting worksheet
+rows (to protect stacked tables) or by extending the ListObject range.
+Optionally renumbers the ID column afterwards.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>nbRows</code>: Optional Long. Number of rows to add. Defaults to 5.</li>
+<li><code>insertShift</code>: Optional Boolean. When True, inserts worksheet rows. Defaults to False.</li>
+<li><code>includeIds</code>: Optional Boolean. When True, renumbers the ID column. Defaults to True.</li>
+</ul>
+<hr />
+<h3>RemoveRows</h3>
+<p><strong>Remove empty rows from the CustomTable</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub RemoveRows(Optional ByVal totalCount As Long = 0, _
+                      Optional ByVal includeIds As Boolean = True, _
+                      Optional ByVal forceShift As Boolean = False)
+</code></pre>
+<p>Deletes rows whose non-empty cell count falls at or below totalCount.
+Optionally renumbers the ID column afterwards.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>totalCount</code>: Optional Long. Maximum non-empty cells for a row to be considered empty. Defaults to 0.</li>
+<li><code>includeIds</code>: Optional Boolean. When True, renumbers the ID column. Defaults to True.</li>
+<li><code>forceShift</code>: Optional Boolean. When True, forces worksheet row deletion. Defaults to False.</li>
+</ul>
+<hr />
+<h3>SetValidation</h3>
+<p><strong>Set dropdown validation on a column</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub SetValidation(ByVal colName As String, _
+                         ByVal drop As IDropdownLists, _
+                         ByVal dropName As String, _
+                         Optional ByVal alertType As String = &quot;info&quot;, _
+                         Optional ByVal message As String = vbNullString)
+</code></pre>
+<p>Applies data validation from the supplied IDropdownLists to every cell
+in the specified column. Silently exits when the column does not exist.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>colName</code>: String. Column header to validate.</li>
+<li><code>drop</code>: IDropdownLists. Dropdown source providing the validation list.</li>
+<li><code>dropName</code>: String. Name of the dropdown list within the source.</li>
+<li><code>alertType</code>: Optional String. Alert severity (&quot;info&quot;, &quot;warning&quot;, &quot;error&quot;). Defaults to &quot;info&quot;.</li>
+<li><code>message</code>: Optional String. Message shown when validation fails. Defaults to vbNullString.</li>
+</ul>
+<hr />
+<h3>SetValue</h3>
+<p><strong>Change the value of one specific cell</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub SetValue(ByVal colName As String, ByVal keyName As String, ByVal newValue As String)
+</code></pre>
+<p>Writes newValue to the cell identified by column name and key.
+Silently exits when the key or column is not found.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>colName</code>: String. Column header identifying the cell.</li>
+<li><code>keyName</code>: String. Key value identifying the row.</li>
+<li><code>newValue</code>: String. The new value to assign.</li>
+</ul>
+<hr />
+<h3>RenameColumn</h3>
+<p><strong>Rename a column header within the table</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub RenameColumn(ByVal colName As String, _
+                        ByVal newName As String, _
+                        Optional ByVal strictSearch As Boolean = True, _
+                        Optional ByVal matchCase As Boolean = False)
+</code></pre>
+<p>Replaces the header text of the matched column with newName and
+resets the lookup cache.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>colName</code>: String. Current column header to find.</li>
+<li><code>newName</code>: String. New header text to assign.</li>
+<li><code>strictSearch</code>: Optional Boolean. When True, uses exact matching. Defaults to True.</li>
+<li><code>matchCase</code>: Optional Boolean. When True, matching is case-sensitive. Defaults to False.</li>
+</ul>
+<hr />
+<h3>Sort</h3>
+<p><strong>Sort the table on one or more columns</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Sort(Optional ByVal colName As String = vbNullString, _
+                Optional ByVal colList As Object = Nothing, _
+                Optional ByVal directSort As Boolean = True, _
+                Optional ByVal strictSearch As Boolean = True)
+</code></pre>
+<p>Sorts in ascending order on the specified column, then on each column
+in colList. When directSort is True, uses a simple Range.Sort; when
+False, groups rows by first occurrence of each distinct value.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>colName</code>: Optional String. Column header to sort on. Defaults to vbNullString.</li>
+<li><code>colList</code>: Optional Object. BetterArray of additional column headers. Defaults to Nothing.</li>
+<li><code>directSort</code>: Optional Boolean. When True, sorts directly. Defaults to True.</li>
+<li><code>strictSearch</code>: Optional Boolean. When True, uses exact column matching. Defaults to True.</li>
+</ul>
+<hr />
+<h3>Clean</h3>
+<p><strong>Clear all non-formula, non-key columns</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Clean(): End Sub
+</code></pre>
+<p>Clears the contents of every data column except those containing
+formulas or serving as the key column.</p>
+<hr />
+<h3>InsertRowsAt</h3>
+<p><strong>Insert rows at the selected position</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub InsertRowsAt(ByVal targetCell As Range, _
+                        Optional ByVal insertShift As Boolean = False, _
+                        Optional ByVal includeIds As Boolean = True)
+</code></pre>
+<p>Inserts rows matching the height of targetCell. Uses worksheet row
+insertion when insertShift is True to protect stacked tables.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>targetCell</code>: Range. Selection anchoring the insertion point.</li>
+<li><code>insertShift</code>: Optional Boolean. When True, inserts worksheet rows. Defaults to False.</li>
+<li><code>includeIds</code>: Optional Boolean. When True, renumbers the ID column. Defaults to True.</li>
+</ul>
+<hr />
+<h3>DeleteRowsAt</h3>
+<p><strong>Delete rows intersecting the selection</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub DeleteRowsAt(ByVal targetCell As Range, _
+                        Optional ByVal includeIds As Boolean = True, _
+                        Optional ByVal forceShift As Boolean = False)
+</code></pre>
+<p>Removes data rows that intersect targetCell. Uses worksheet row
+deletion when forceShift or the stored shift tracker is active.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>targetCell</code>: Range. Selection identifying rows to delete.</li>
+<li><code>includeIds</code>: Optional Boolean. When True, renumbers the ID column. Defaults to True.</li>
+<li><code>forceShift</code>: Optional Boolean. When True, forces worksheet row deletion. Defaults to False.</li>
+</ul>
+<hr />
+<h2>DataExchange</h2>
+<h3>Import</h3>
+<p><strong>Import data from a DataSheet or CustomTable</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Import(ByVal impTab As Object, _
+                  Optional ByVal pasteAtBottom As Boolean = False, _
+                  Optional ByVal strictColumnSearch As Boolean = False, _
+                  Optional ByVal insertShift As Boolean = True, _
+                  Optional ByVal formatHeaders As Object = Nothing, _
+                  Optional ByVal keepSourceHeaders As Boolean = False)
+</code></pre>
+<p>Import, export, and snapshot operations.
+Copies column-matched data from the source into this table. When
+keepSourceHeaders is True, replaces all headers and data entirely.
+Creates a snapshot before import and rolls back on error.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>impTab</code>: Object. A DataSheet or CustomTable to import from.</li>
+<li><code>pasteAtBottom</code>: Optional Boolean. When True, appends below existing data. Defaults to False.</li>
+<li><code>strictColumnSearch</code>: Optional Boolean. When True, uses exact column matching. Defaults to False.</li>
+<li><code>insertShift</code>: Optional Boolean. When True, inserts worksheet rows during resize. Defaults to True.</li>
+<li><code>formatHeaders</code>: Optional Object. BetterArray of headers whose formatting to preserve. Defaults to Nothing.</li>
+<li><code>keepSourceHeaders</code>: Optional Boolean. When True, replaces destination headers. Defaults to False.</li>
+</ul>
+<hr />
+<h3>ImportAll</h3>
+<p><strong>Replace the entire table with imported data</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ImportAll(ByVal impTab As Object): End Sub
+</code></pre>
+<p>Replaces all headers and data with the content of the supplied object,
+discarding the current structure entirely.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>impTab</code>: Object. A DataSheet or CustomTable to import from.</li>
+</ul>
+<hr />
+<h3>RestoreTableSnapshot</h3>
+<p><strong>Restore the table from a saved snapshot</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub RestoreTableSnapshot(): End Sub
+</code></pre>
+<p>Reverts the table headers and data to the state captured by
+SaveTableSnapshot. Used for rollback after a failed import.</p>
+<hr />
+<h3>SaveTableSnapshot</h3>
+<p><strong>Save a snapshot of the current table state</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub SaveTableSnapshot(): End Sub
+</code></pre>
+<p>Captures the current headers and data rows so they can be restored
+later if an import fails.</p>
+<hr />
+<h3>ImportColumnsNotFound</h3>
+<p><strong>Columns not matched during the last import</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ImportColumnsNotFound() As BetterArray
+</code></pre>
+<p>Returns a BetterArray of column headers from the source that had no
+match in this table. Only available after a successful import.</p>
+<p><strong>Returns:</strong> BetterArray. Unmatched column headers, or Nothing.</p>
+<hr />
+<h3>HasColumnsNotImported</h3>
+<p><strong>Whether the last import had unmatched columns</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get HasColumnsNotImported() As Boolean
+</code></pre>
+<p>Returns True when the most recent import left some source columns
+unmatched against this table.</p>
+<p><strong>Returns:</strong> Boolean. True when unmatched columns exist.</p>
+<hr />
+<h3>Export</h3>
+<p><strong>Export the table to a worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Export(ByVal sh As Worksheet,  _
+                  Optional ByVal headersTable As Object = Nothing, _
+                  Optional ByVal startLine As Long = 1, _
+                  Optional ByVal startColumn As Long = 1, _
+                  Optional ByVal addListObject As Boolean = False)
+</code></pre>
+<p>Writes the requested columns to the target worksheet, optionally
+creating a ListObject on the output range.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. Target worksheet to write to.</li>
+<li><code>headersTable</code>: Optional Object. BetterArray of column headers to export. Defaults to Nothing (all columns).</li>
+<li><code>startLine</code>: Optional Long. Row to begin writing at. Defaults to 1.</li>
+<li><code>startColumn</code>: Optional Long. Column to begin writing at. Defaults to 1.</li>
+<li><code>addListObject</code>: Optional Boolean. When True, creates a ListObject on the output. Defaults to False.</li>
+</ul>
+<hr />
+<h2>Checkings</h2>
+<h3>HasCheckings</h3>
+<p><strong>Whether the table has logged diagnostic messages</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get HasCheckings() As Boolean: End Property
+</code></pre>
+<p>Diagnostic logging access.
+Returns True when at least one diagnostic entry has been recorded.</p>
+<p><strong>Returns:</strong> Boolean. True when diagnostic entries exist.</p>
+<hr />
+<h3>CheckingValues</h3>
+<p><strong>Retrieve the diagnostic log entries</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get CheckingValues() As Object: End Property
+</code></pre>
+<p>Returns the internal IChecking object containing all logged messages.
+Returns Nothing when no entries have been recorded.</p>
+<p><strong>Returns:</strong> Object. An IChecking instance, or Nothing.</p>
+<hr />
+
+  </main>
+</body>
+</html>
+

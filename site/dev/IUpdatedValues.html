@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IUpdatedValues - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>IUpdatedValues</h1>
+<p>Defines the public contract for the UpdatedValues class, exposing methods
+to register, query, and maintain a column-level update watcher backed by
+a registry of ListObjects on a dedicated worksheet.</p>
+<h2>Column registration</h2>
+<h3>AddColumns</h3>
+<p><strong>Register or refresh watched columns for the supplied ListObject.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub AddColumns(ByVal Lo As ListObject): End Sub
+</code></pre>
+<p>Scans the source ListObject header row for metadata tags and synchronises
+the registry table so named ranges remain aligned with the current layout.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>Lo</code>: ListObject. Table providing the column metadata.</li>
+</ul>
+<hr />
+<h3>AddSheet</h3>
+<p><strong>Register tagged columns for every ListObject on the supplied worksheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub AddSheet(ByVal targetSheet As Worksheet): End Sub
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>targetSheet</code>: Worksheet. Worksheet providing ListObjects to register.</li>
+</ul>
+<hr />
+<h3>RemoveLo</h3>
+<p><strong>Remove registry entries associated with the provided ListObject.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub RemoveLo(ByVal target As ListObject): End Sub
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>target</code>: ListObject. Table whose entries should be removed.</li>
+</ul>
+<hr />
+<h2>Status tracking</h2>
+<h3>IsUpdated</h3>
+<p><strong>Determine whether the tracked column has been marked as updated.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get IsUpdated(ByVal colName As String) As Boolean: End Property
+</code></pre>
+<p>Returns True when the column has been flagged as updated since the last
+reset. Searches across all registry ListObjects for a matching entry.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>colName</code>: String. Column name to inspect.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the column is flagged as updated.</p>
+<hr />
+<h3>CheckUpdate</h3>
+<p><strong>Evaluate a range change against the registered watchers and flag updates.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub CheckUpdate(ByVal tagReference As Variant, ByVal Target As Range): End Sub
+</code></pre>
+<p>Compares the changed range with named ranges tracked in the registry and
+marks the first matching entry as updated. The tagReference parameter
+may be a String, ListObject, or Worksheet used to scope the search.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>tagReference</code>: Variant. Identifier selecting the registry scope.</li>
+<li><code>Target</code>: Range. The changed cells to evaluate.</li>
+</ul>
+<hr />
+<h2>Clean-up</h2>
+<h3>ClearUp</h3>
+<p><strong>Reset all tracked columns to the default (not updated) status.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ClearUp(): End Sub
+</code></pre>
+<hr />
+<h3>DeleteUp</h3>
+<p><strong>Remove the watcher registry and associated workbook named ranges.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub DeleteUp(): End Sub
+</code></pre>
+<hr />
+<h3>SwitchTagsToNo</h3>
+<p><strong>Force every registry status flag to the default value.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub SwitchTagsToNo(): End Sub
+</code></pre>
+<hr />
+<h3>SwitchTagsToYes</h3>
+<p><strong>Force every registry status flag to the updated value.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub SwitchTagsToYes(): End Sub
+</code></pre>
+<hr />
+
+  </main>
+</body>
+</html>
+

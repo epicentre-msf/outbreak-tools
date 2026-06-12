@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ILLFormat - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>ILLFormat</h1>
+<p>Defines the public contract for the LLFormat class, exposing
+design-driven formatting of worksheets, ranges, shapes, and other
+Excel objects. Reads style metadata from a format table and applies
+it according to FormatScope constants. Supports import/export of
+format definitions across workbooks.</p>
+<h2>Formatting</h2>
+<h3>ApplyFormat</h3>
+<p><strong>Apply a design-driven format to an Excel object</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ApplyFormat(formattingObject As Variant, ByVal scope As Byte, _
+                       Optional ByVal nbDecimals As Integer = 0)
+</code></pre>
+<p>Core formatting operation.
+Reads style metadata from the format table and applies it to the
+supplied object (Worksheet, Range, Shape, ListObject, or Characters)
+according to the given FormatScope constant.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>formattingObject</code>: Variant. The Excel object to format.</li>
+<li><code>scope</code>: Byte. FormatScope constant selecting the visual pattern.</li>
+<li><code>nbDecimals</code>: Integer. Decimal count for numeric formatting. Defaults to 0.</li>
+</ul>
+<hr />
+<h2>Design Lookups</h2>
+<h3>DesignValue</h3>
+<p><strong>Look up a design value or colour from the format table</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function DesignValue(ByVal labelName As String, _
+                            Optional ByVal returnedColor As Boolean = True) As Variant
+</code></pre>
+<p>Retrieve raw style values from the format table.
+Retrieves either the fill colour (Interior.Color) or the raw cell
+value for the specified label row under the active design column.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>labelName</code>: String. Label text identifying the row in the format table.</li>
+<li><code>returnedColor</code>: Boolean. When True returns Interior.Color; otherwise returns the raw value. Defaults to True.</li>
+</ul>
+<p><strong>Returns:</strong> Variant. The colour (Long) or cell value.</p>
+<hr />
+<h2>DataExchange</h2>
+<h3>Import</h3>
+<p><strong>Import formatting definitions from another worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Import(ByVal inpsh As Worksheet)
+</code></pre>
+<p>Import and export format definitions.
+Reads design columns from the source worksheet and merges them into
+the current format table. Updates the active design name from the
+source DESIGNTYPE named range.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>inpsh</code>: Worksheet. Source worksheet containing the format table.</li>
+</ul>
+<hr />
+<h3>Export</h3>
+<p><strong>Export the format table to another workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Export(ByVal toWkb As Workbook)
+</code></pre>
+<p>Copies the format table and cell styles to a new worksheet in the
+destination workbook. When the target worksheet already exists,
+imports from it instead.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>toWkb</code>: Workbook. Destination workbook.</li>
+</ul>
+<hr />
+<h2>Checkings</h2>
+<h3>HasCheckings</h3>
+<p><strong>Whether the format object has logged diagnostic messages</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get HasCheckings() As Boolean
+</code></pre>
+<p>Diagnostic logging access.
+Returns True when at least one diagnostic entry has been recorded,
+typically for missing labels in the format table.</p>
+<p><strong>Returns:</strong> Boolean. True when diagnostic entries exist.</p>
+<hr />
+<h3>CheckingValues</h3>
+<p><strong>Retrieve the diagnostic log entries</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get CheckingValues() As IChecking
+</code></pre>
+<p>Returns the internal IChecking object containing all logged messages.
+Returns Nothing when no entries have been recorded.</p>
+<p><strong>Returns:</strong> IChecking. The checking instance, or Nothing.</p>
+<hr />
+
+  </main>
+</body>
+</html>
+

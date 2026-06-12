@@ -220,12 +220,24 @@ VBADocParser <- R6Class(
         }
       }
 
+      # Build set of documented class names for link resolution
+      doc_names <- private$class_names
+
       for (class_name in names(usage_map)) {
         md_path <- path(self$write_folder(), glue("{class_name}.md"))
         if (file_exists(md_path)) {
           md <- read_lines(md_path)
           if (length(usage_map[[class_name]]) > 0) {
             usage_files <- sort(usage_map[[class_name]])
+            # Link to .html page for documented classes, plain text otherwise
+            usage_items <- vapply(usage_files, function(f) {
+              fname <- path_ext_remove(basename(f))
+              if (fname %in% doc_names) {
+                as.character(glue("- [{basename(f)}]({fname}.html)"))
+              } else {
+                as.character(glue("- {basename(f)}"))
+              }
+            }, character(1), USE.NAMES = FALSE)
             section <- c(
               "",
               "<details>",
@@ -233,7 +245,7 @@ VBADocParser <- R6Class(
                 "<summary>Used in ({length(usage_files)} file(s))</summary>"
               ),
               "",
-              glue("- [{basename(f)}]({f})", f = usage_files),
+              usage_items,
               "",
               "</details>"
             )

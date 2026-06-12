@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IValueOfFormula - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>IValueOfFormula</h1>
+<p>Defines the public contract for the ValueOfFormula class, exposing
+validation, converted formula output, failure diagnostics, and lookup
+metadata for VALUE_OF custom expressions. Implementations validate
+VALUE_OF expressions from the dictionary and resolve sheet names and
+column indices for downstream consumers.</p>
+<h2>Conversion</h2>
+<h3>ConvertedFormula</h3>
+<p><strong>Retrieve the converted VALUE_OF expression ready for workbook usage</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ConvertedFormula() As String: End Property
+</code></pre>
+<p>Converted formula output and validation status.
+Returns the string representation with sheet name and column indices
+resolved. Returns vbNullString when the formula is invalid.</p>
+<p><strong>Returns:</strong> String. Converted VALUE_OF expression.</p>
+<hr />
+<h3>Valid</h3>
+<p><strong>Report whether the VALUE_OF formula parsed successfully</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Valid() As Boolean: End Property
+</code></pre>
+<p>Implementations perform syntax checks and dictionary lookups before
+returning True. Returns False when any validation step fails.</p>
+<p><strong>Returns:</strong> Boolean. True when all checks passed.</p>
+<hr />
+<h3>FailureReason</h3>
+<p><strong>Provide the human-readable reason describing the failure</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get FailureReason() As String: End Property
+</code></pre>
+<p>Returns a diagnostic message explaining why parsing or validation
+failed. Returns vbNullString when the formula is valid.</p>
+<p><strong>Returns:</strong> String. Explanation of the failure.</p>
+<hr />
+<h2>LookupMetadata</h2>
+<h3>LookupSheetName</h3>
+<p><strong>Expose the resolved worksheet hosting the lookup table</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get LookupSheetName() As String: End Property
+</code></pre>
+<p>Resolved sheet name and column indices for lookup operations.
+Returns the name of the worksheet containing the variable referenced
+by the VALUE_OF expression. Returns vbNullString when unavailable.</p>
+<p><strong>Returns:</strong> String. Sheet name.</p>
+<hr />
+<h3>LookupColumnIndex</h3>
+<p><strong>Return the column index used for the lookup key</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get LookupColumnIndex() As Long: End Property
+</code></pre>
+<p>Indicates the column position within the lookup table that holds the
+key values. Returns zero when not resolved.</p>
+<p><strong>Returns:</strong> Long. Column index.</p>
+<hr />
+<h3>ValueColumnIndex</h3>
+<p><strong>Return the column index providing the matched value</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ValueColumnIndex() As Long: End Property
+</code></pre>
+<p>Indicates the column position within the lookup table that holds the
+result values. Returns zero when not resolved.</p>
+<p><strong>Returns:</strong> Long. Column index.</p>
+<hr />
+
+  </main>
+</body>
+</html>
+

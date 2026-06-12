@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ILLdictionary - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>ILLdictionary</h1>
+<h2>Data Access</h2>
+<h3>Data</h3>
+<p><strong>DataSheet backing store</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Data() As IDataSheet: End Property
+</code></pre>
+<p><strong>Returns:</strong> An IDataSheet reference with the dictionary data</p>
+<hr />
+<h3>DataRange</h3>
+<p><strong>Data range accessor</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get DataRange(Optional ByVal colName As String = &quot;__all__&quot;, _
+                              Optional ByVal includeHeaders As Boolean = False) As Range
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>colName</code>: Optional String. Column header to retrieve. Defaults to &quot;<strong>all</strong>&quot;.</li>
+<li><code>includeHeaders</code>: Optional Boolean. Include headers in the returned range. Defaults to False.</li>
+</ul>
+<p><strong>Returns:</strong> A Range scoped to the requested dictionary data</p>
+<hr />
+<h3>Prepared</h3>
+<p><strong>Dictionary preparation status</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Prepared() As Boolean: End Property
+</code></pre>
+<p><strong>Returns:</strong> True when the dictionary is ready for designer workflows</p>
+<hr />
+<h3>TotalNumberOfExports</h3>
+<p><strong>Total number of export columns</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get TotalNumberOfExports() As Long: End Property
+</code></pre>
+<p><strong>Returns:</strong> A Long representing the configured number of export slots</p>
+<hr />
+<h3>TotalNumberOfExports</h3>
+<p><strong>Update total number of export columns</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Let TotalNumberOfExports(ByVal numberOfExports As Long): End Property
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>numberOfExports</code>: Long. Requested number of export slots to persist.</li>
+</ul>
+<hr />
+<h2>Column Operations</h2>
+<h3>ColumnExists</h3>
+<p><strong>Test for column existence</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function ColumnExists(ByVal colName As String, _
+                             Optional ByVal checkValidity As Boolean = False) As Boolean
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>colName</code>: String. Column header to search for.</li>
+<li><code>checkValidity</code>: Optional Boolean. When True, the column is validated against the allowed list.</li>
+</ul>
+<p><strong>Returns:</strong> True when the column is present</p>
+<hr />
+<h3>UniqueValues</h3>
+<p><strong>Unique column values</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function UniqueValues(ByVal colName As String) As BetterArray: End Function
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>colName</code>: String. Column header for the lookup.</li>
+</ul>
+<p><strong>Returns:</strong> A BetterArray containing distinct values</p>
+<hr />
+<h3>VariableExists</h3>
+<p><strong>Variable presence test</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function VariableExists(ByVal varName As String) As Boolean: End Function
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>varName</code>: String. Variable identifier to search for.</li>
+</ul>
+<p><strong>Returns:</strong> True when the variable exists in the dictionary</p>
+<hr />
+<h3>AddColumn</h3>
+<p><strong>Append a column to the dictionary</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub AddColumn(ByVal colName As String): End Sub
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>colName</code>: String. Name of the column to append.</li>
+</ul>
+<hr />
+<h3>InsertColumn</h3>
+<p><strong>Insert a column relative to another</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub InsertColumn(ByVal colName As String, ByVal After As String): End Sub
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>colName</code>: String. Name of the column to insert.</li>
+<li><code>After</code>: String. Existing column after which the new column is inserted.</li>
+</ul>
+<hr />
+<h3>RemoveColumn</h3>
+<p><strong>Remove a column from the dictionary</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub RemoveColumn(ByVal colName As String): End Sub
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>colName</code>: String. Column header to delete.</li>
+</ul>
+<hr />
+<h3>RenameColumn</h3>
+<p><strong>Rename a column in the dictionary</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub RenameColumn(ByVal currentName As String, _
+                        ByVal newName As String, _
+                        Optional ByVal strictSearch As Boolean = True, _
+                        Optional ByVal matchCase As Boolean = False)
+</code></pre>
+<hr />
+<h2>Row Operations</h2>
+<h3>AddRows</h3>
+<p><strong>Add rows to the dictionary listobject when available</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub AddRows(): End Sub
+</code></pre>
+<hr />
+<h3>InsertRows</h3>
+<p><strong>Insert rows relative to a target selection</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub InsertRows(ByVal targetCell As Range, _
+                      Optional ByVal insertShift As Boolean = False)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>targetCell</code>: Range anchor whose height dictates the number of rows inserted.</li>
+<li><code>insertShift</code>: Optional Boolean. When True worksheet rows are inserted to preserve stacked tables.</li>
+</ul>
+<hr />
+<h3>RemoveRows</h3>
+<p><strong>Remove rows from the dictionary listobject when available</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub RemoveRows(): End Sub
+</code></pre>
+<hr />
+<h3>ManageRows</h3>
+<p><strong>Manage rows from the dictionary listobject when availabe</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ManageRows(Optional ByVal del As Boolean = False): End Sub
+</code></pre>
+<hr />
+<h2>Specialised Views</h2>
+<h3>ChoicesVars</h3>
+<p><strong>Choice variables list</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ChoicesVars() As BetterArray: End Property
+</code></pre>
+<p><strong>Returns:</strong> A BetterArray listing variables controlled by choices</p>
+<hr />
+<h3>GeoVars</h3>
+<p><strong>Geographic variables list</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get GeoVars() As BetterArray: End Property
+</code></pre>
+<p><strong>Returns:</strong> A BetterArray with geography-driven variables</p>
+<hr />
+<h3>TimeVars</h3>
+<p><strong>Time variables list</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get TimeVars() As BetterArray: End Property
+</code></pre>
+<p><strong>Returns:</strong> A BetterArray with time-related variables</p>
+<hr />
+<h3>SpecialVars</h3>
+<p><strong>Filtered variable list by criteria</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get SpecialVars(ByVal first_condition As String, _
+                                Optional ByVal second_condition As String = vbNullString, _
+                                Optional ByVal conditionName As String = &quot;Control&quot;) As BetterArray
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>first_condition</code>: String. Primary control/tag value to match.</li>
+<li><code>second_condition</code>: Optional String. Secondary control/tag value.</li>
+<li><code>conditionName</code>: Optional String. Column header to evaluate. Defaults to &quot;Control&quot;.</li>
+</ul>
+<p><strong>Returns:</strong> A BetterArray of matching variables</p>
+<hr />
+<h2>Preparation</h2>
+<h3>Prepare</h3>
+<p><strong>Prepare dictionary for designer workflows</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Prepare(Optional ByVal PreservedSheetNames As BetterArray, _
+                   Optional ByVal geoObject As Object, _
+                   Optional ByVal tablePrefix As String = &quot;table&quot;)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>PreservedSheetNames</code>: BetterArray containing table names to preserve.</li>
+<li><code>geoObject</code>: ILLGeo implementation to enrich geographic variables.</li>
+<li><code>msgTrads</code>: ITranslationObject providing translations.</li>
+<li><code>tablePrefix</code>: Optional String prefix for generated table names. Defaults to &quot;table&quot;.</li>
+</ul>
+<hr />
+<h3>Clean</h3>
+<p><strong>Clean up dictionary columns</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Clean(Optional ByVal removeAddedColumns As Boolean = False): End Sub
+</code></pre>
+<hr />
+<h3>Sort</h3>
+<p><strong>Sort the dictionary on sheetname and main section</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Sort(): End Sub
+</code></pre>
+<hr />
+<h2>Data Exchange</h2>
+<h3>Import</h3>
+<p><strong>Import dictionary data</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Import(ByVal fromWksh As Worksheet, _ 
+                  ByVal fromStartRow As Long, _ 
+                  ByVal fromStartcol As Long, _ 
+                  Optional ByVal clearSheet As Boolean = False)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>fromWksh</code>: Worksheet source worksheet.</li>
+<li><code>fromStartRow</code>: Long. Starting row of the source data.</li>
+<li><code>fromStartcol</code>: Long. Starting column of the source data.</li>
+</ul>
+<hr />
+<h3>Export</h3>
+<p><strong>Export dictionary data</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Export(ByVal toWkb As Workbook, _
+                  Optional ByVal exportType As String = &quot;__all__&quot;, _
+                  Optional ByVal addListObject As Boolean = True, _
+                  Optional ByVal Hide As Long = xlSheetHidden)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>toWkb</code>: Workbook destination workbook.</li>
+<li><code>exportType</code>: Optional String filter for export. Defaults to &quot;<strong>all</strong>&quot;.</li>
+<li><code>addListObject</code>: Optional Boolean. Add a table to exported sheet. Defaults to True.</li>
+<li><code>Hide</code>: Optional Long sheet visibility after export. Defaults to xlSheetHidden.</li>
+</ul>
+<hr />
+<h3>Translate</h3>
+<p><strong>Translate dictionary labels</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Translate(ByVal TransObject As ITranslationObject)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>TransObject</code>: ITranslationObject used to translate ranges.</li>
+</ul>
+<hr />
+
+  </main>
+</body>
+</html>
+
