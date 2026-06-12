@@ -297,6 +297,18 @@ then wires the &quot;language of the interface&quot;, &quot;epiweek start&quot;,
 CustomTable.SetValidation. Silently exits when the worksheet or
 table does not exist in the host workbook.</p>
 <hr />
+<h3 id="int-applymainvalidations">ApplyMainValidations <a class="anchor-link" href="#int-applymainvalidations">#</a></h3>
+<p><em>apply-main-validations</em></p>
+<p><strong>Apply dropdown validation to named ranges on the Main worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ApplyMainValidations()
+</code></pre>
+<p>Resolves the Main worksheet from the host workbook, then applies
+dropdown validation to three named ranges: RNG_LangSetup (setup
+languages), RNG_LLForm (interface languages), and RNG_LLDesign
+(design values). Silently skips the worksheet or any named range
+that does not exist.</p>
+<hr />
 <h2 id="int-main-validations">Main Validations</h2>
 <h3 id="int-applymainvalidations">ApplyMainValidations <a class="anchor-link" href="#int-applymainvalidations">#</a></h3>
 <p><em>apply-main-validations</em></p>
@@ -361,6 +373,21 @@ Nothing when the sheet does not exist.</p>
 <li><code>sheetName</code>: String. The worksheet name to resolve.</li>
 </ul>
 <p><strong>Returns:</strong> Worksheet. The resolved worksheet, or Nothing.</p>
+<hr />
+<h3 id="int-resolvenamedrange">ResolveNamedRange <a class="anchor-link" href="#int-resolvenamedrange">#</a></h3>
+<p><em>resolve-named-range</em></p>
+<p><strong>Resolve a named range from a worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ResolveNamedRange(ByVal sh As Worksheet, ByVal rngName As String) As Range
+</code></pre>
+<p>Returns the Range matching the given name on the supplied worksheet,
+or Nothing when the named range does not exist.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The worksheet to resolve the range from.</li>
+<li><code>rngName</code>: String. The named range identifier.</li>
+</ul>
+<p><strong>Returns:</strong> Range. The resolved range, or Nothing.</p>
 <hr />
 <h3 id="int-setsheetvisibility">SetSheetVisibility <a class="anchor-link" href="#int-setsheetvisibility">#</a></h3>
 <p><em>set-sheet-visibility</em></p>
@@ -432,13 +459,14 @@ See the corresponding members above for full documentation.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (5 file(s))</summary>
+<summary>Used in (6 file(s))</summary>
 <ul>
-<li><a href="src/classes/designer/DesignerPreparation.cls">DesignerPreparation.cls</a></li>
-<li><a href="src/classes/designer/IDesignerPreparation.cls">IDesignerPreparation.cls</a></li>
-<li><a href="src/modules/designer/EventsDesignerAdvanced.bas">EventsDesignerAdvanced.bas</a></li>
-<li><a href="src/modules/designer/EventsDesignerCore.bas">EventsDesignerCore.bas</a></li>
-<li><a href="src/tests/modules/designer/TestDesignerRibbon.bas">TestDesignerRibbon.bas</a></li>
+<li><a href="DesignerPreparation.html">DesignerPreparation.cls</a></li>
+<li><a href="IDesignerPreparation.html">IDesignerPreparation.cls</a></li>
+<li>EventsDesignerAdvanced.bas</li>
+<li>EventsDesignerCore.bas</li>
+<li>TestDesignerPreparation.bas</li>
+<li>TestDesignerRibbon.bas</li>
 </ul>
 </details>
   </main>
