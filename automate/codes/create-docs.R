@@ -22,24 +22,24 @@ if (file_exists(docignore_path)) {
   patterns <- str_trim(patterns)
   patterns <- patterns[nzchar(patterns) & !str_starts(patterns, "#")]
 
-  # Resolve each pattern against the source tree
-  all_cls <- dir_ls(classes_folder, recurse = TRUE, regexp = "\\.cls$")
-  rel_paths <- path_rel(all_cls, classes_folder)
+  # Resolve each pattern against the full source tree (.cls and .bas)
+  all_src <- dir_ls(classes_folder, recurse = TRUE, regexp = "\\.(cls|bas)$")
+  rel_paths <- path_rel(all_src, classes_folder)
 
   for (pat in patterns) {
     # Directory pattern (ends with /): exclude anything under it
     if (str_ends(pat, "/")) {
       dir_pat <- str_remove(pat, "/$")
-      matches <- all_cls[str_detect(rel_paths, fixed(dir_pat))]
+      matches <- all_src[str_detect(rel_paths, fixed(dir_pat))]
     } else if (str_detect(pat, "[*?]")) {
       # Glob pattern
-      matches <- all_cls[str_detect(
-        path_file(all_cls),
+      matches <- all_src[str_detect(
+        path_file(all_src),
         glob2rx(pat, trim.head = TRUE, trim.tail = TRUE)
       )]
     } else {
       # Exact relative path
-      matches <- all_cls[str_detect(rel_paths, fixed(pat))]
+      matches <- all_src[str_detect(rel_paths, fixed(pat))]
     }
     exclude_files <- c(exclude_files, matches)
   }

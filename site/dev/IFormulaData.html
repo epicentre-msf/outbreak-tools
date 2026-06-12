@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IFormulaData - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>IFormulaData</h1>
+<p>Defines the public contract for the FormulaData class, exposing
+membership lookups for allowed Excel functions, permitted separator
+characters, and grouped-formula metadata used by the Formulas parser.</p>
+<h2>Lookups</h2>
+<h3>SpecialCharacterIncludes</h3>
+<p><strong>Test whether a character is part of the allowed separators list</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function SpecialCharacterIncludes(ByVal specialChar As String) As Boolean
+</code></pre>
+<p>Membership tests against cached function, character, and grouped-formula registries.
+Implementations check the in-memory character cache built from the
+T_ascii table. Returns False for empty input without accessing
+the cache.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>specialChar</code>: String. Character to inspect.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the character exists in the lookup.</p>
+<hr />
+<h3>ExcelFormulasIncludes</h3>
+<p><strong>Test whether an Excel function is whitelisted</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function ExcelFormulasIncludes(ByVal ExcelFormula As String) As Boolean
+</code></pre>
+<p>Implementations normalise the input to uppercase and check the
+in-memory function cache built from the T_XlsFonctions table.
+Returns False for empty input.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>ExcelFormula</code>: String. Function name to inspect.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the function exists in the lookup.</p>
+<hr />
+<h3>IsGroupFunction</h3>
+<p><strong>Determine whether a setup function is registered as grouped</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function IsGroupFunction(ByVal functionName As String) As Boolean
+</code></pre>
+<p>Implementations scan the grouped-formula registry for a matching
+token. Grouped functions receive special handling during formula
+evaluation and produce aggregated Excel expressions.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>functionName</code>: String. Grouped token to inspect.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the function is recognised for grouped parsing.</p>
+<hr />
+<h3>GroupAggregator</h3>
+<p><strong>Retrieve the Excel aggregator mapped to the grouped token</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function GroupAggregator(ByVal functionName As String) As String
+</code></pre>
+<p>Returns the canonical Excel aggregation function (e.g. &quot;SUMIFS&quot;,
+&quot;AVERAGE&quot;) linked to the provided grouped token. Returns
+vbNullString when the token is not registered.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>functionName</code>: String. Grouped token to translate.</li>
+</ul>
+<p><strong>Returns:</strong> String. Aggregator name or vbNullString when the token is unknown.</p>
+<hr />
+<h3>GroupUsesNativeFunction</h3>
+<p>*<em>Indicate whether the grouped token should emit a native Excel <em>IFS function</em></em></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function GroupUsesNativeFunction(ByVal functionName As String) As Boolean
+</code></pre>
+<p>When True, the Formulas class emits the native *IFS aggregator
+(e.g. SUMIFS) directly rather than wrapping it in an IF block.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>functionName</code>: String. Grouped token to inspect.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the grouped function maps directly to a native Excel *IFS function.</p>
+<hr />
+
+  </main>
+</body>
+</html>
+

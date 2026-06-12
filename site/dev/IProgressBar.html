@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IProgressBar - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>IProgressBar</h1>
+<p>Defines the public contract for the ProgressBar class, exposing a
+cell-based visual progress indicator on a worksheet. Supports
+configurable colours, number formatting, status messages, and
+step-based or absolute value updates.</p>
+<h2>Configuration</h2>
+<h3>Attach</h3>
+<p><strong>Bind the progress bar to a worksheet range</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Attach(ByVal barRange As Range, Optional ByVal maximum As Long = 100)
+</code></pre>
+<p>Bind the bar to a range and configure visual properties.
+The range must be a contiguous area whose cells will be tinted
+to reflect progress.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>barRange</code>: Range. Hosting the visual progress indicator.</li>
+<li><code>maximum</code>: Long. Maximum expected value. Defaults to 100.</li>
+</ul>
+<hr />
+<h3>ConfigureColors</h3>
+<p><strong>Configure the colours for completed and remaining segments</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ConfigureColors(ByVal completedColor As Long, ByVal pendingColor As Long)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>completedColor</code>: Long. Colour applied to completed cells.</li>
+<li><code>pendingColor</code>: Long. Colour applied to remaining cells.</li>
+</ul>
+<hr />
+<h3>ConfigureValueFormat</h3>
+<p><strong>Configure the number format for progress text</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ConfigureValueFormat(ByVal formatPattern As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>formatPattern</code>: String. VBA format pattern.</li>
+</ul>
+<hr />
+<h3>AttachStatusCell</h3>
+<p><strong>Bind a cell for textual status messages</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub AttachStatusCell(ByVal statusRange As Range)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>statusRange</code>: Range. Single-cell range receiving status messages.</li>
+</ul>
+<hr />
+<h2>Progress</h2>
+<h3>Update</h3>
+<p><strong>Update the current value and re-render the bar</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Update(ByVal currentValue As Long, Optional ByVal statusMessage As String = vbNullString)
+</code></pre>
+<p>Update, step, complete, and reset the progress value.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>currentValue</code>: Long. Absolute progress value.</li>
+<li><code>statusMessage</code>: String. Message pushed to the status cell. Defaults to vbNullString.</li>
+</ul>
+<hr />
+<h3>StepBy</h3>
+<p><strong>Increment the current value by a step</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub StepBy(Optional ByVal stepValue As Long = 1, Optional ByVal statusMessage As String = vbNullString)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>stepValue</code>: Long. Increment. Defaults to 1.</li>
+<li><code>statusMessage</code>: String. Message pushed to the status cell. Defaults to vbNullString.</li>
+</ul>
+<hr />
+<h3>Complete</h3>
+<p><strong>Mark the progress as complete</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Complete(Optional ByVal statusMessage As String = vbNullString)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>statusMessage</code>: String. Message pushed to the status cell. Defaults to vbNullString.</li>
+</ul>
+<hr />
+<h3>Reset</h3>
+<p><strong>Reset the current value to zero and clear the bar</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Reset(Optional ByVal statusMessage As String = vbNullString)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>statusMessage</code>: String. Message pushed to the status cell. Defaults to vbNullString.</li>
+</ul>
+<hr />
+<h2>Properties</h2>
+<h3>BarRange</h3>
+<p><strong>Range hosting the progress bar</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get BarRange() As Range
+</code></pre>
+<p>Read-only and read-write state accessors.</p>
+<p><strong>Returns:</strong> Range. The bar range.</p>
+<hr />
+<h3>StatusCell</h3>
+<p><strong>Status cell receiving text messages</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get StatusCell() As Range
+</code></pre>
+<p><strong>Returns:</strong> Range. The status cell, or Nothing.</p>
+<hr />
+<h3>Maximum</h3>
+<p><strong>Maximum expected value</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Maximum() As Long
+</code></pre>
+<p><strong>Returns:</strong> Long. The maximum value.</p>
+<hr />
+<h3>Maximum</h3>
+<p><strong>Update the maximum expected value</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Let Maximum(ByVal value As Long)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>value</code>: Long. New maximum (must be greater than zero).</li>
+</ul>
+<hr />
+<h3>Value</h3>
+<p><strong>Current progress value</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Value() As Long
+</code></pre>
+<p><strong>Returns:</strong> Long. The current value.</p>
+<hr />
+<h3>PercentComplete</h3>
+<p><strong>Compute the current completion percentage</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get PercentComplete() As Double
+</code></pre>
+<p><strong>Returns:</strong> Double. Ratio between 0 and 1.</p>
+<hr />
+
+  </main>
+</body>
+</html>
+
