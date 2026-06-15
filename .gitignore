@@ -1,52 +1,69 @@
+# =============================================================================
+# OutbreakTools .gitignore
+# =============================================================================
+
+# --- OS / editor cruft -------------------------------------------------------
+.DS_Store
+**/.todo
+
+# --- Binaries: stored in the GitHub Release asset store, NOT in git -----------
+#   The working binaries live on the 'working-binaries' GitHub Release.
+#   Sync with automate/release/pull-assets.{sh,ps1} / push-assets.{sh,ps1}.
+#   Versioned release zips are published by .github/workflows/release.yml.
+src/bin/
+.mock/
+releases/
+
+# --- VS Code: commit project tasks/snippets, ignore personal settings --------
+#   tasks.json + snippets are shared; settings.json is per-developer.
+#   (.gitattributes already enforces CRLF for *.cls/*.bas, so settings.json is
+#    not needed to keep VBA line endings correct.)
+.vscode/*
+!.vscode/tasks.json
+!.vscode/obt-snippet.code-snippets
+
+# --- Node --------------------------------------------------------------------
 /node_modules
 logs
 
-# eventual R-files
+# --- R -----------------------------------------------------------------------
 *.Rmd
+*.Rproj
+.Rproj.user
+.Rprofile
+.Renviron
 
-# temporary files
-*.temporary
+# --- Quarto / generated docs -------------------------------------------------
+.quarto/
+/.quarto/
+docs/
+site/dev
+src/.docignore
+
+# --- Temp / scratch / build output -------------------------------------------
 temp
 *.temp
-*temp\\.?*
-config.json
+*.temporary
 *.test
-output_test
 output
+outputs
+output_test
 migration
 migrations
-outputs
 demo
+local
+debug
+config.json
+
+# --- VBA editor artifacts ----------------------------------------------------
 *Sheet1.cls
 *Sheet2.cls
 *Sheet3.cls
 *Sheet4.cls
 *Sheet5.cls
-config.json
-demo
-local
-debug
-
-
-
-.DS_Store
-\\.vscode/
-
-.quarto/
-*.Rproj
-docs/
-.Rprofile
-.Renviron
-
-
-/.quarto/
-.Rproj.user
-.Rprofile
-.Renviron
 **/~$*.xlsb
-**/.todo
+
+# --- Assistant workspace + local skill copies --------------------------------
 /.obt
 obt-skill/
 obt-doc-skill/
-src/.docignore
-site/dev
