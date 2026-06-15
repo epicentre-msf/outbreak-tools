@@ -89,6 +89,25 @@ exists); a failed run self-heals the download aliases on the next run.
 > `main` ships `designer.xlsb`/`setup.xlsb`; `dev` (and `hot-fixes`) ship the `_dev`
 > builds.
 
+### Which file goes where (two separate uploads — don't confuse them)
+
+```
+push-assets.sh ─▶ working-binaries.tar.gz   (asset store = src/bin + .mock + ribbons)
+  you, when binaries change                       │
+                                                  │  release.yml pulls + builds from it
+                                                  ▼
+release.yml    ─▶ OBT-<branch>-<version>.zip (the release = designer + setup + ribbon)
+  CI, on a CHANGELOG heading              + OBT-main-latest.zip / OBT-dev-latest.zip (stable aliases)
+```
+
+| Upload | By | To which release | Asset(s) |
+|--------|----|------------------|----------|
+| working binaries | **you** — `push-assets.sh` | `working-binaries` (mutable store) | `working-binaries.tar.gz` |
+| a `main` version | **CI** — `release.yml` | `v<version>` (Latest) | `OBT-main-<version>.zip` **+** `OBT-main-latest.zip` |
+| a `dev` version | **CI** — `release.yml` | `v<version>-dev` + `dev-latest` | `OBT-dev-<version>.zip` ; `OBT-dev-latest.zip` |
+
+A release **reads** the asset store; it never overwrites `working-binaries.tar.gz`.
+
 ---
 
 ## 4. Branch & tag model
