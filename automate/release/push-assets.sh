@@ -31,7 +31,7 @@ if ! gh release view "$TAG" -R "$REPO" >/dev/null 2>&1; then
   echo "==> creating asset-store release '$TAG'"
   gh release create "$TAG" -R "$REPO" --prerelease \
     --title "Working binaries (mutable)" \
-    --notes "Off-git store of the current working binaries (designer/setup/ribbon/mock). Mutable; do not link directly. Synced via automate/release/{push,pull}-assets."
+    --notes "Off-git store of the current working binaries (src/bin + .mock + ribbon templates). Mutable; do not link directly. Synced via automate/release/{push,pull}-assets."
 fi
 
 echo "==> uploading $BUNDLE_NAME"
