@@ -67,3 +67,6 @@ config.json
 /.obt
 obt-skill/
 obt-doc-skill/
+
+#------- Rewrite workflow
+automate/history-rewrite
