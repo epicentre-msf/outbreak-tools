@@ -33,9 +33,12 @@ releases are cut automatically from `CHANGELOG.md` by CI.
                                           site/releases.qmd ──▶ gh-pages (releases page)
 ```
 
-Binaries are **never** committed to git (`.gitignore` covers `src/bin/`, `.mock/`,
-and there is no `releases/` folder). `git history` was rewritten to purge all
-historical binaries (`automate/history-rewrite/`).
+Binaries are **not** committed to git: `.gitignore` covers `src/bin/`, `.mock/`, the
+ribbon templates (`ribbons/_ribbontemplate_*.xlsb`), and there is no `releases/`
+folder. `git history` was rewritten to purge them (`automate/history-rewrite/`); the
+ribbon-template binaries are untracked now and folded into a later rewrite pass (they
+are listed in `02-rewrite.sh`'s `LIVE_PATHS`). The ribbon **XML** definitions and
+`ribbon_icons/` stay in git — they're source.
 
 ---
 
@@ -48,7 +51,7 @@ and the two `ribbons/_ribbontemplate_*.xlsb`.
 | Task | Command | What it does |
 |------|---------|--------------|
 | Publish your binaries off-git | `bash automate/release/push-assets.sh` | bundles the paths above → uploads (`--clobber`). Creates the release on first run. |
-| Restore binaries (new machine / CI) | `bash automate/release/pull-assets.sh` | downloads the bundle → extracts into `src/bin/`, `.mock/`, ribbons. |
+| Restore binaries (new machine / CI) | `bash automate/release/pull-assets.sh` | downloads the bundle → extracts into `src/bin/`, `.mock/`, and the ribbon templates. |
 
 Windows: use the `.ps1` twins. Both need the `gh` CLI authenticated with write
 access to the repo.
@@ -92,7 +95,7 @@ exists); a failed run self-heals the download aliases on the next run.
 ### Which file goes where (two separate uploads — don't confuse them)
 
 ```
-push-assets.sh ─▶ working-binaries.tar.gz   (asset store = src/bin + .mock + ribbons)
+push-assets.sh ─▶ working-binaries.tar.gz   (asset store = src/bin + .mock + ribbon templates)
   you, when binaries change                       │
                                                   │  release.yml pulls + builds from it
                                                   ▼

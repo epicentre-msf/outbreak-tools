@@ -13,6 +13,10 @@
 src/bin/
 .mock/
 releases/
+#   Ribbon templates too (the .xlsb binaries only — ribbon XML + icons stay in git).
+#   Still in git HISTORY for now; folded into a later history-rewrite pass.
+ribbons/_ribbontemplate_main.xlsb
+ribbons/_ribbontemplate_dev.xlsb
 
 # --- VS Code: commit project tasks/snippets, ignore personal settings --------
 #   tasks.json + snippets are shared; settings.json is per-developer.
