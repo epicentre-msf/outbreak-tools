@@ -599,14 +599,14 @@
     "href": "releases.html#all-releases",
     "title": "Releases",
     "section": "All releases",
-    "text": "All releases\n\n\n\nVersion\nDate\nStream\nDownload\n\n\n\n\nv2026.06.11-dev\n2026-06-15\ndev (pre)\ndownload"
+    "text": "All releases\n\n\n\nVersion\nDate\nStream\nDownload\n\n\n\n\nv2026.06.14-dev\n2026-06-15\ndev (pre)\ndownload\n\n\nv2026.06.11-dev\n2026-06-15\ndev (pre)\ndownload"
   },
   {
     "objectID": "releases.html#release-notes",
     "href": "releases.html#release-notes",
     "title": "Releases",
     "section": "Release notes",
-    "text": "Release notes\n\nv2026.06.11-dev (pre-release) — 2026-06-15\n\n\nFixed\n\nHot fix of geo drifting (main release)."
+    "text": "Release notes\n\nv2026.06.14-dev (pre-release) — 2026-06-15\n\n\nAdded\n\nNew release workflow, documented in RELEASING.md: releases are now cut automatically from this changelog (main → Latest, dev → pre-release). ### Changed\nBinaries (designer, setup, ribbon templates) are no longer kept in git — they now live on your machine and in a release asset store. Pull them before you start working, push them when you’re done.\nPast releases stay available on the releases page. ### Removed\nPurged all binaries from the git history, shrinking the repository and making clones much faster.\n\n\n\nv2026.06.11-dev (pre-release) — 2026-06-15\n\n\nFixed\n\nHot fix of geo drifting (main release)."
   },
   {
     "objectID": "Options.html",
