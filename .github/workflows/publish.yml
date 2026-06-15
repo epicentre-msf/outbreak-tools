@@ -2,8 +2,16 @@ on:
   workflow_dispatch:
   push:
     branches: dev
+  release:
+    types: [published, deleted]
 
 name: Quarto Publish
+
+# Serialize gh-pages deploys so concurrent runs (a dev push + a release-triggered
+# refresh, or a manual release edit) don't collide on the force-push to gh-pages.
+concurrency:
+  group: pages
+  cancel-in-progress: false
 
 jobs:
   build-deploy:
@@ -36,6 +44,8 @@ jobs:
 
       - name: Generate releases page
         run: bash automate/codes/build-releases.sh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Quarto
         uses: quarto-dev/quarto-actions/setup@v2

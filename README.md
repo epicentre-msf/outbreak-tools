@@ -3,8 +3,8 @@
 
 ##  Quickly build a linelist from an excel designer :snail:
 
-[![Download All](https://github.com/epicentre-msf/outbreak-tools/raw/main/src/imgs/download_all.svg)](https://github.com/epicentre-msf/outbreak-tools/raw/main/releases/latest/OBT-main-latest.zip)
-[![Download All Dev](https://github.com/epicentre-msf/outbreak-tools/raw/main/src/imgs/download_all_dev.svg)](https://github.com/epicentre-msf/outbreak-tools/raw/dev/releases/latest/OBT-dev-latest.zip)
+[![Download All](https://github.com/epicentre-msf/outbreak-tools/raw/main/src/imgs/download_all.svg)](https://github.com/epicentre-msf/outbreak-tools/releases/latest/download/OBT-main-latest.zip)
+[![Download All Dev](https://github.com/epicentre-msf/outbreak-tools/raw/main/src/imgs/download_all_dev.svg)](https://github.com/epicentre-msf/outbreak-tools/releases/download/dev-latest/OBT-dev-latest.zip)
 [![Download the master setup](https://github.com/epicentre-msf/outbreak-tools/raw/main/src/imgs/setup_file.svg)](https://github.com/epicentre-msf/outbreak-tools-setup/raw/main/releases/latest/disease_setup-latest.xlsb)
 [![All Releases](https://hits.sh/epicentre-msf.github.io/outbreak-tools/releases.svg?label=All%20Releases&color=8250df)](https://epicentre-msf.github.io/outbreak-tools/releases.html)
 </p>
@@ -31,10 +31,11 @@ Automation of the work can be done on R (**only works on a windows machine**) us
 
 #### Structure of the repo
 
-- `automate`: Codes for automating linelist creation and development process in R
+- `automate`: scripts for automating linelist creation, the release workflow, and development
 - `docs`: Documentation website
-- `src`: Source codes
-- `releases`: Releases of OBT versions.
+- `src`: Source codes — binaries are **not** in git; they live in the GitHub Release asset store (see [RELEASING.md](RELEASING.md))
+
+Releases are published as **GitHub Releases** (no `releases/` folder in the repo). See [RELEASING.md](RELEASING.md) for how releases work, and the [releases page](https://epicentre-msf.github.io/outbreak-tools/releases.html).
 
 #### Limitations
 
