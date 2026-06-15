@@ -217,12 +217,18 @@ ul.task-list li input[type="checkbox"] {
 </thead>
 <tbody>
 <tr class="odd">
+<td>v2026.06.14</td>
+<td>2026-06-15</td>
+<td>main</td>
+<td><a href="https://github.com/epicentre-msf/outbreak-tools/releases/download/v2026.06.14/OBT-main-2026.06.14.zip" target="_blank">download</a></td>
+</tr>
+<tr class="even">
 <td>v2026.06.14-dev</td>
 <td>2026-06-15</td>
 <td>dev (pre)</td>
 <td><a href="https://github.com/epicentre-msf/outbreak-tools/releases/download/v2026.06.14-dev/OBT-dev-2026.06.14.zip" target="_blank">download</a></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td>v2026.06.11-dev</td>
 <td>2026-06-15</td>
 <td>dev (pre)</td>
@@ -233,11 +239,23 @@ ul.task-list li input[type="checkbox"] {
 </section>
 <section id="release-notes" class="level2">
 <h2 class="anchored" data-anchor-id="release-notes">Release notes</h2>
-<section id="v2026.06.14-dev-pre-release-2026-06-15" class="level3">
-<h3 class="anchored" data-anchor-id="v2026.06.14-dev-pre-release-2026-06-15">v2026.06.14-dev (pre-release) — 2026-06-15</h3>
+<section id="v2026.06.14-stable-2026-06-15" class="level3">
+<h3 class="anchored" data-anchor-id="v2026.06.14-stable-2026-06-15">v2026.06.14 (stable) — 2026-06-15</h3>
 </section>
 <section id="added" class="level3">
 <h3 class="anchored" data-anchor-id="added">Added</h3>
+<ul>
+<li>New release workflow, documented in <code>RELEASING.md</code>: releases are now cut automatically from this changelog (<code>main</code> → Latest, <code>dev</code> → pre-release). ### Changed</li>
+<li>Binaries (designer, setup, ribbon templates) are no longer kept in git — they now live on your machine and in a release asset store. Pull them before you start working, push them when you’re done.</li>
+<li>Past releases stay available on the releases page. ### Removed</li>
+<li>Purged all binaries from the git history, shrinking the repository and making clones much faster.</li>
+</ul>
+</section>
+<section id="v2026.06.14-dev-pre-release-2026-06-15" class="level3">
+<h3 class="anchored" data-anchor-id="v2026.06.14-dev-pre-release-2026-06-15">v2026.06.14-dev (pre-release) — 2026-06-15</h3>
+</section>
+<section id="added-1" class="level3">
+<h3 class="anchored" data-anchor-id="added-1">Added</h3>
 <ul>
 <li>New release workflow, documented in <code>RELEASING.md</code>: releases are now cut automatically from this changelog (<code>main</code> → Latest, <code>dev</code> → pre-release). ### Changed</li>
 <li>Binaries (designer, setup, ribbon templates) are no longer kept in git — they now live on your machine and in a release asset store. Pull them before you start working, push them when you’re done.</li>
