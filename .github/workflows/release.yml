@@ -1,0 +1,103 @@
+name: Release on changelog
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [dev, main]
+    paths: ["CHANGELOG.md"]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Parse changelog (top dated version + its notes)
+        id: cl
+        run: |
+          ver=$(grep -m1 -oE '^## \[[0-9][0-9.]*\]' CHANGELOG.md | sed -E 's/^## \[(.*)\]/\1/' || true)
+          if [ -z "$ver" ]; then
+            echo "::error::No dated '## [YYYY.MM.DD]' heading found in CHANGELOG.md"
+            exit 1
+          fi
+          echo "version=$ver" >> "$GITHUB_OUTPUT"
+          awk -v h="## [$ver]" '$0==h{f=1;next} /^## \[/{f=0} f' CHANGELOG.md > notes.md
+          echo "Resolved version: $ver"
+
+      - name: Resolve stream (main = Latest, dev = pre-release on dev HEAD)
+        id: s
+        run: |
+          if [ "$GITHUB_REF_NAME" = "main" ]; then
+            { echo "branch=main"; echo "tag=v${{ steps.cl.outputs.version }}"; } >> "$GITHUB_OUTPUT"
+          else
+            { echo "branch=dev"; echo "tag=v${{ steps.cl.outputs.version }}-dev"; } >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Does this version's release already exist?
+        id: ex
+        run: |
+          if gh release view "${{ steps.s.outputs.tag }}" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Release ${{ steps.s.outputs.tag }} already exists — leaving it immutable."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build + publish the versioned release (immutable, pinned to this commit)
+        if: steps.ex.outputs.exists == 'false'
+        run: |
+          BR="${{ steps.s.outputs.branch }}"
+          VER="${{ steps.cl.outputs.version }}"
+          TAG="${{ steps.s.outputs.tag }}"
+          bash automate/release/pull-assets.sh
+          bash automate/release/build-release-zip.sh "$BR" "$VER"
+          # Drop any stale tag that has no release, so --target binds to THIS commit.
+          if git ls-remote --tags origin "refs/tags/$TAG" | grep -q .; then
+            gh api -X DELETE "repos/$GITHUB_REPOSITORY/git/refs/tags/$TAG" || true
+          fi
+          FLAGS="--prerelease"
+          if [ "$BR" = "main" ]; then FLAGS="--latest"; fi
+          gh release create "$TAG" "OBT-${BR}-${VER}.zip" \
+            --target "$GITHUB_SHA" \
+            --title "$TAG" \
+            --notes-file notes.md \
+            $FLAGS
+
+      - name: Refresh the stable download alias (idempotent self-heal)
+        run: |
+          BR="${{ steps.s.outputs.branch }}"
+          VER="${{ steps.cl.outputs.version }}"
+          TAG="${{ steps.s.outputs.tag }}"
+          tmp="$(mktemp -d)"
+          # Source the canonical asset from the (now-existing) versioned release.
+          gh release download "$TAG" -p "OBT-${BR}-${VER}.zip" -D "$tmp" --clobber
+          if [ "$BR" = "main" ]; then
+            cp "$tmp/OBT-main-${VER}.zip" OBT-main-latest.zip
+            gh release upload "$TAG" OBT-main-latest.zip --clobber
+          else
+            cp "$tmp/OBT-dev-${VER}.zip" OBT-dev-latest.zip
+            if gh release view dev-latest >/dev/null 2>&1; then
+              # Force-move the moving pointer to this commit; keep the release (no 404 window).
+              gh api -X PATCH "repos/$GITHUB_REPOSITORY/git/refs/tags/dev-latest" \
+                -f sha="$GITHUB_SHA" -F force=true >/dev/null
+              gh release upload dev-latest OBT-dev-latest.zip --clobber
+            else
+              gh release create dev-latest OBT-dev-latest.zip \
+                --target "$GITHUB_SHA" --prerelease \
+                --title "dev-latest" \
+                --notes "Moving pointer to the newest dev pre-release."
+            fi
+          fi
+
+      - name: Refresh the releases page after the release exists
+        if: steps.ex.outputs.exists == 'false'
+        run: gh workflow run publish.yml --ref "$GITHUB_REF_NAME"
