@@ -1,0 +1,13 @@
+#!/bin/sh
+# Strip any AI/Claude attribution trailers from commit messages.
+# Enforced by git locally so no tool can add them, regardless of intent.
+msg_file="$1"
+tmp_file="$(mktemp)"
+
+grep -viE '^[[:space:]]*Co-Authored-By:.*(Claude|Anthropic|noreply@anthropic\.com)' "$msg_file" \
+  | grep -viE 'Generated with \[?Claude Code' \
+  | grep -viE '^[[:space:]]*🤖' \
+  > "$tmp_file"
+
+mv "$tmp_file" "$msg_file"
+exit 0

@@ -1,0 +1,17 @@
+#!/bin/sh
+# Reject any commit whose author or committer identity is an AI/Claude/Anthropic
+# identity. Commits must be made under a human identity (your git config).
+author="$(git var GIT_AUTHOR_IDENT)"
+committer="$(git var GIT_COMMITTER_IDENT)"
+
+case "$author$committer" in
+  *[Cc]laude* | *[Aa]nthropic* | *noreply@anthropic.com*)
+    echo "pre-commit: refusing to commit under an AI identity:" >&2
+    echo "  author:    $author" >&2
+    echo "  committer: $committer" >&2
+    echo "Set a human git identity (git config user.name / user.email)." >&2
+    exit 1
+    ;;
+esac
+
+exit 0
