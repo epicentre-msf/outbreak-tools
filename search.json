@@ -595,6 +595,20 @@
     "text": "Latest\n\n\n\nStream\nDownload\n\n\n\n\nMain (stable)\nOBT-main-latest.zip\n\n\nDev (pre-release)\nOBT-dev-latest.zip"
   },
   {
+    "objectID": "releases.html#all-releases",
+    "href": "releases.html#all-releases",
+    "title": "Releases",
+    "section": "All releases",
+    "text": "All releases\n\n\n\nVersion\nDate\nStream\nDownload\n\n\n\n\nv2026.06.11-dev\n2026-06-15\ndev (pre)\ndownload"
+  },
+  {
+    "objectID": "releases.html#release-notes",
+    "href": "releases.html#release-notes",
+    "title": "Releases",
+    "section": "Release notes",
+    "text": "Release notes\n\nv2026.06.11-dev (pre-release) — 2026-06-15\n\n\nFixed\n\nHot fix of geo drifting (main release)."
+  },
+  {
     "objectID": "Options.html",
     "href": "Options.html",
     "title": "OutbreakTools",
