@@ -765,7 +765,7 @@ End Function
 '@section Geo / Spatial UDFs
 '===============================================================================
 
-Private Function EventService() As IEventLinelist
+Private Function EventService() As EventLinelist
     Set EventService = LinelistEventsManager.EventLinelistService
 End Function
 

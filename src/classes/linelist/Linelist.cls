@@ -850,7 +850,7 @@ Private Sub TransferAllCode(ByVal codeTransfer As CodeTransfer)
                    "IGraphs", "Graphs", "AnaTabIds", _
                    "IAnaTabIds", "ExportButton", _
                    "HiddenNames", "IHiddenNames", _
-                   "EventLinelist", "IEventLinelist", _
+                   "EventLinelist", _
                    "ApplicationState", "IApplicationState"
 
     For counter = codesList.LowerBound To codesList.UpperBound

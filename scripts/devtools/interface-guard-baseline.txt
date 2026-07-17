@@ -24,7 +24,6 @@ IDiseaseLogger
 IDiseaseReportManager
 IDiseaseSheet
 IDiseaseWorksheetManager
-IEventLinelist
 IEventSetup
 IFormulaCondition
 IFormulas

@@ -16,8 +16,6 @@ Option Explicit
 '@ModuleDescription("Encapsulates workbook-level linelist events and lazily-cached domain managers")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
-Implements IEventLinelist
-
 '@class EventLinelist
 '@description
 'Encapsulates workbook-level linelist events and lazily-cached domain managers.
@@ -68,10 +66,10 @@ Private Const CRFPREFIX         As String = "crf_"
 
 '@sub-title Build a configured EventLinelist instance bound to a host workbook.
 '@param hostBook Workbook. The linelist workbook.
-'@return IEventLinelist. Configured service instance.
+'@return EventLinelist. Configured service instance.
 '@throws ProjectError.ObjectNotInitialized When hostBook is Nothing.
 '@export
-Public Function Create(ByVal hostBook As Workbook) As IEventLinelist
+Public Function Create(ByVal hostBook As Workbook) As EventLinelist
     Dim instance As EventLinelist
 
     Set instance = New EventLinelist
@@ -79,14 +77,14 @@ Public Function Create(ByVal hostBook As Workbook) As IEventLinelist
     Set Create = instance.Self
 End Function
 
-'@sub-title Current object instance cast to the interface.
-'@return IEventLinelist. The current instance.
-Public Property Get Self() As IEventLinelist
+'@sub-title Current object instance.
+'@return EventLinelist. The current instance.
+Public Property Get Self() As EventLinelist
     Set Self = Me
 End Property
 
 
-'@section IEventLinelist implementation
+'@section Public operations
 '===============================================================================
 
 '@sub-title Configure the service with its host workbook context.
@@ -102,10 +100,6 @@ Public Sub Configure(ByVal hostBook As Workbook)
     ResetInternalCaches
 End Sub
 
-Private Sub IEventLinelist_Configure(ByVal hostBook As Workbook)
-    Configure hostBook
-End Sub
-
 
 '@sub-title React to workbook open notifications.
 '@export
@@ -116,10 +110,6 @@ Public Sub OnWorkbookOpen()
     Application.EnableEvents = True
     Application.FormatStaleValues = False
     On Error GoTo 0
-End Sub
-
-Private Sub IEventLinelist_OnWorkbookOpen()
-    OnWorkbookOpen
 End Sub
 
 
@@ -144,10 +134,6 @@ Public Sub OnSheetChange(ByVal sh As Worksheet, ByVal target As Range)
         Case "Uni-Bi-Analysis", "TS-Analysis", "SPT-Analysis", "SP-Analysis"
             HandleAnalysisChange sh, target, shType
     End Select
-End Sub
-
-Private Sub IEventLinelist_OnSheetChange(ByVal sh As Worksheet, ByVal target As Range)
-    OnSheetChange sh, target
 End Sub
 
 
@@ -175,10 +161,6 @@ Public Sub OnSheetDeactivate(ByVal prevSheetName As String)
 ErrHand:
 End Sub
 
-Private Sub IEventLinelist_OnSheetDeactivate(ByVal prevSheetName As String)
-    OnSheetDeactivate prevSheetName
-End Sub
-
 
 '@sub-title Handle selection change events on HList sheets.
 '@param sh Worksheet. The worksheet where the selection changed.
@@ -195,10 +177,6 @@ Public Sub OnSelectionChange(ByVal sh As Worksheet, ByVal target As Range)
     If shType <> "HList" Then Exit Sub
 
     HandleSelectionHList sh, target, shHn
-End Sub
-
-Private Sub IEventLinelist_OnSelectionChange(ByVal sh As Worksheet, ByVal target As Range)
-    OnSelectionChange sh, target
 End Sub
 
 
@@ -224,10 +202,6 @@ Public Sub OnDoubleClick(ByVal sh As Worksheet, ByVal target As Range)
     ElseIf (InStr(1, rngName, "INPUTSPTHF_") > 0) Then
         LoadGeo 1
     End If
-End Sub
-
-Private Sub IEventLinelist_OnDoubleClick(ByVal sh As Worksheet, ByVal target As Range)
-    OnDoubleClick sh, target
 End Sub
 
 
@@ -309,10 +283,6 @@ ErrUpdate:
     End If
 End Sub
 
-Private Sub IEventLinelist_UpdateFilterTables(Optional ByVal calculate As Boolean = True)
-    UpdateFilterTables calculate
-End Sub
-
 
 '@sub-title Update all list-auto dropdowns across all HList sheets.
 '@export
@@ -326,18 +296,10 @@ Public Sub UpdateAllListAuto()
     Next
 End Sub
 
-Private Sub IEventLinelist_UpdateAllListAuto()
-    UpdateAllListAuto
-End Sub
-
 
 '@sub-title Clear cached resources.
 '@export
 Public Sub ResetCaches()
-    ResetInternalCaches
-End Sub
-
-Private Sub IEventLinelist_ResetCaches()
     ResetInternalCaches
 End Sub
 
@@ -394,11 +356,6 @@ Public Function GeoConcat(ByVal cellRng As Range, ByVal geoLevel As Byte) As Str
     GeoConcat = concatValue
 End Function
 
-Private Function IEventLinelist_GeoConcat(ByVal cellRng As Range, _
-                                          ByVal geoLevel As Byte) As String
-    IEventLinelist_GeoConcat = GeoConcat(cellRng, geoLevel)
-End Function
-
 
 '@sub-title Return the top admin name for a spatial variable.
 '@param adminLevel String. Admin level label (e.g. "adm1").
@@ -423,13 +380,6 @@ Public Function TopAdmin(ByVal adminLevel As String, _
     actualVarName = Split(varName, "_")(2)
     adminName = this.geo.AdminCode(adminLevel)
     TopAdmin = this.sp.TopGeoValue(adminName, adminOrder, actualVarName, tabId)
-End Function
-
-Private Function IEventLinelist_TopAdmin(ByVal adminLevel As String, _
-                                         ByVal adminOrder As Integer, _
-                                         ByVal varName As String, _
-                                         Optional ByVal tabId As String = vbNullString) As String
-    IEventLinelist_TopAdmin = TopAdmin(adminLevel, adminOrder, varName, tabId)
 End Function
 
 
@@ -466,13 +416,6 @@ Public Function TopPop(ByVal adminLevel As String, _
     TopPop = pop
 End Function
 
-Private Function IEventLinelist_TopPop(ByVal adminLevel As String, _
-                                       ByVal adminOrder As Integer, _
-                                       ByVal varName As String, _
-                                       Optional ByVal tabId As String = vbNullString) As Long
-    IEventLinelist_TopPop = TopPop(adminLevel, adminOrder, varName, tabId)
-End Function
-
 
 '@sub-title Return the top health facility name for a spatial variable.
 '@param adminOrder Integer. Rank order (1 = top, 2 = second, etc.).
@@ -492,12 +435,6 @@ Public Function TopHF(ByVal adminOrder As Integer, _
     ' 3 is the length of the "hf_" prefix
     actualVarName = Right(varName, (Len(varName) - 3))
     TopHF = this.sp.TopHFValue(adminOrder, actualVarName, tabId)
-End Function
-
-Private Function IEventLinelist_TopHF(ByVal adminOrder As Integer, _
-                                      ByVal varName As String, _
-                                      Optional ByVal tabId As String = vbNullString) As String
-    IEventLinelist_TopHF = TopHF(adminOrder, varName, tabId)
 End Function
 
 

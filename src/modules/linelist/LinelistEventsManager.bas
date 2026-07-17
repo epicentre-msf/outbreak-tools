@@ -5,7 +5,7 @@ Option Explicit
 '@ModuleDescription("Centralised workbook-level event and BusyState manager delegating to EventLinelist")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
-Private linelistService As IEventLinelist
+Private linelistService As EventLinelist
 Private appScope As IApplicationState
 Private busyDepth As Long
 Private persisted As Boolean
@@ -148,7 +148,7 @@ End Sub
 '@section Service Lifecycle
 '===============================================================================
 
-Private Function Service() As IEventLinelist
+Private Function Service() As EventLinelist
     If linelistService Is Nothing Then
         Set linelistService = EventLinelist.Create(ThisWorkbook)
     End If
@@ -165,7 +165,7 @@ Public Sub DisposeEventLinelist()
     Set linelistService = Nothing
 End Sub
 
-Public Function EventLinelistService() As IEventLinelist
+Public Function EventLinelistService() As EventLinelist
     Set EventLinelistService = Service()
 End Function
 
