@@ -16,8 +16,6 @@ Attribute VB_Description = "WithEvents wrapper for export command buttons"
 
 Option Explicit
 
-Implements IExportButton
-
 '@class ExportButton
 '@description
 'WithEvents wrapper that listens to an MSForms.CommandButton on a linelist
@@ -25,9 +23,9 @@ Implements IExportButton
 'the button, an optional filter checkbox, and translation/workbook
 'references. On click, RunExport selects a folder, optionally confirms
 'filter usage, then delegates to LLExporter.ExportCustom. The factory
-'returns the concrete class (not IExportButton) because callers hold a
+'returns the concrete class because callers hold a
 'reference to keep the WithEvents binding alive.
-'@depends IExportButton, ILLExporter, LLExporter, IApplicationState, ApplicationState, IOSFiles, OSFiles
+'@depends ILLExporter, LLExporter, IApplicationState, ApplicationState, IOSFiles, OSFiles
 
 
 '@section Constants
@@ -328,20 +326,3 @@ End Sub
 Private Sub ThrowError(ByVal errNumber As Long, ByVal message As String)
     Err.Raise CLng(errNumber), CLASS_NAME, message
 End Sub
-
-
-'@section Interface Implementation
-'===============================================================================
-'@description Delegation to IExportButton interface members.
-
-Private Property Get IExportButton_ExportNumber() As Long
-    IExportButton_ExportNumber = ExportNumber
-End Property
-
-Private Property Get IExportButton_UseFilter() As Boolean
-    IExportButton_UseFilter = UseFilter
-End Property
-
-Private Property Let IExportButton_UseFilter(ByVal value As Boolean)
-    UseFilter = value
-End Property

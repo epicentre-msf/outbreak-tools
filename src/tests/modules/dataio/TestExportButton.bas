@@ -12,11 +12,10 @@ Attribute VB_Description = "Unit tests for ExportButton"
 'Tests cover factory initialisation (Create with valid arguments, rejection of
 'Nothing workbook, translations, and button), the ExportNumber property that
 'parses the numeric suffix from the button name (e.g. "CMDExport3" yields 3),
-'the UseFilter property that reads and writes the companion checkbox state,
-'and interface delegation via IExportButton. The fixture creates temporary
-'worksheets with OLEObject controls for each test and tears them down in
-'TestCleanup to ensure isolation.
-'@depends ExportButton, IExportButton, ITranslationObject, LinelistSpecsTranslationStub, MSForms, CustomTest
+'the UseFilter property that reads and writes the companion checkbox state.
+'The fixture creates temporary worksheets with OLEObject controls for each
+'test and tears them down in TestCleanup to ensure isolation.
+'@depends ExportButton, ITranslationObject, LinelistSpecsTranslationStub, MSForms, CustomTest
 
 Option Explicit
 Option Private Module
@@ -349,38 +348,4 @@ Public Sub UseFilterLetUpdatesCheckbox()
     Exit Sub
 TestFail:
     CustomTestLogFailure Assert, "UseFilterLetUpdatesCheckbox", Err.Number, Err.Description
-End Sub
-
-
-'@section Interface
-'===============================================================================
-
-'@sub-title Verify IExportButton.ExportNumber delegates to the concrete property.
-'@details
-'Arranges a button named "CMDExport2" and creates an ExportButton instance.
-'Acts by casting the instance to IExportButton and reading ExportNumber.
-'Asserts that the interface property returns 2, confirming the delegation
-'stub correctly forwards to the public ExportNumber implementation.
-'@TestMethod("ExportButton")
-Public Sub InterfaceExposesExportNumber()
-    CustomTestSetTitles Assert, "ExportButton", "InterfaceExposesExportNumber"
-    On Error GoTo TestFail
-
-    Dim sh As Worksheet
-    Set sh = CreateTestSheet()
-
-    Dim btn As MSForms.CommandButton
-    Set btn = CreateButton(sh, "CMDExport2")
-
-    Dim sut As ExportButton
-    Set sut = ExportButton.Create(ThisWorkbook, CreateTranslationStub(), btn)
-
-    Dim iface As IExportButton
-    Set iface = sut
-    Assert.AreEqual 2&, iface.ExportNumber, _
-                    "IExportButton.ExportNumber should delegate to ExportNumber"
-
-    Exit Sub
-TestFail:
-    CustomTestLogFailure Assert, "InterfaceExposesExportNumber", Err.Number, Err.Description
 End Sub

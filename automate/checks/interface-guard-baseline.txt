@@ -32,7 +32,6 @@ IDiseaseWorksheetManager
 IEventLinelist
 IEventMasterSetup
 IEventSetup
-IExportButton
 IFormulaCondition
 IFormulas
 IGraphSpecs
