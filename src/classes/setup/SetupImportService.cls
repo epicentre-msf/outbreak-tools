@@ -17,8 +17,6 @@ Attribute VB_Description = "Improved setup import service orchestrating workbook
 
 Option Explicit
 
-Implements ISetupImportService
-
 '@class SetupImportService
 '@description
 'Orchestrates setup workbook synchronisation: validating, importing, exporting,
@@ -80,12 +78,12 @@ End Sub
 '@details
 'Validates the import path and optional progress display, creates a new
 'SetupImportService instance, assigns the path and display, and returns
-'the configured interface reference.
+'the configured instance.
 '@param importPath String. Path to the source setup workbook.
 '@param progressDisplay Optional Object. UI element receiving textual updates (must expose Caption or Value).
-'@return ISetupImportService. Configured service instance.
+'@return SetupImportService. Configured service instance.
 '@export
-Public Function Create(ByVal importPath As String, Optional ByVal progressDisplay As Object) As ISetupImportService
+Public Function Create(ByVal importPath As String, Optional ByVal progressDisplay As Object) As SetupImportService
     Dim instance As SetupImportService
 
     ValidateProgressDisplay progressDisplay
@@ -134,9 +132,9 @@ Public Property Set ProgressObject(ByVal value As Object)
 End Property
 
 '@label:self
-'@prop-title Current object instance cast to the interface.
-'@return ISetupImportService. The current instance.
-Public Property Get Self() As ISetupImportService
+'@prop-title Current object instance.
+'@return SetupImportService. The current instance.
+Public Property Get Self() As SetupImportService
     Set Self = Me
 End Property
 
@@ -779,7 +777,7 @@ End Function
 'managers, along with hidden names and formatting data.
 '@param outwb Optional Workbook. Pre-existing target workbook. When Nothing, creates a new one.
 '@export
-Private Sub Export(Optional Byval outwb As Workbook)
+Public Sub Export(Optional Byval outwb As Workbook)
 
     Dim dictionaryManager As ILLdictionary
     Dim translationManager As ISetupTranslationsTable
@@ -1469,70 +1467,3 @@ Private Sub Class_Terminate()
     Set this.progressDisplay = Nothing
     Set this.appScope = Nothing
 End Sub
-
-
-'@section Interface implementation
-'@description Thin delegation stubs forwarding each ISetupImportService member
-'to the corresponding public implementation above.
-'===============================================================================
-Private Sub ISetupImportService_Check(ByVal importDictionary As Boolean, _
-                                      ByVal importChoices As Boolean, _
-                                      ByVal importExports As Boolean, _
-                                      ByVal importAnalysis As Boolean, _
-                                      ByVal importTranslations As Boolean, _
-                                      Optional ByVal cleanSetup As Boolean = False)
-
-    Check importDictionary, importChoices, importExports, importAnalysis, importTranslations, cleanSetup
-End Sub
-
-Private Sub ISetupImportService_Clean(ByVal pass As IPasswords, ByVal sheetsList As BetterArray)
-    Clean pass, sheetsList
-End Sub
-
-Private Sub ISetupImportService_Import(ByVal pass As IPasswords, ByVal sheetsList As BetterArray)
-    Import pass, sheetsList
-End Sub
-
-Private Sub ISetupImportService_ImportFromWorkbook(ByVal pass As IPasswords, Optional ByVal sheetsList As BetterArray = Nothing)
-    ImportFromWorkbook pass, sheetsList
-End Sub
-
-Private Sub ISetupImportService_Export()
-    Export
-End Sub
-
-Private Property Get ISetupImportService_DisplayPrompts() As Boolean
-    ISetupImportService_DisplayPrompts = DisplayPrompts
-End Property
-
-Private Property Let ISetupImportService_DisplayPrompts(ByVal state As Boolean)
-    DisplayPrompts = state
-End Property
-
-Private Sub ISetupImportService_SetExportFolder(ByVal folderPath As String)
-    SetExportFolder folderPath
-End Sub
-
-Private Property Get ISetupImportService_LastExportFile() As String
-    ISetupImportService_LastExportFile = LastExportFile
-End Property
-
-Private Property Get ISetupImportService_Path() As String
-    ISetupImportService_Path = Path
-End Property
-
-Private Property Let ISetupImportService_Path(ByVal value As String)
-    Path = value
-End Property
-
-Private Property Get ISetupImportService_ProgressObject() As Object
-    Set ISetupImportService_ProgressObject = ProgressObject
-End Property
-
-Private Property Set ISetupImportService_ProgressObject(ByVal value As Object)
-    Set ProgressObject = value
-End Property
-
-Private Property Get ISetupImportService_Self() As ISetupImportService
-    Set ISetupImportService_Self = Self
-End Property

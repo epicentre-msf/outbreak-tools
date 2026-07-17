@@ -38,7 +38,6 @@ ILLTranslation
 ILinelistBuildService
 IMasterSetupVariables
 IOSFiles
-ISetupImportService
 ISetupPreparation
 ISetupTranslationsTable
 IShowHideManager

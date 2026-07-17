@@ -8,7 +8,7 @@ Option Explicit
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Private Assert As ICustomTest
-Private Service As ISetupImportService
+Private Service As SetupImportService
 Private ProgressStub As ProgressDisplayStub
 Private PasswordsHandler As IPasswords
 
@@ -316,7 +316,7 @@ End Sub
 Public Sub TestExportAbortsWhenFolderSelectionCancelled()
     CustomTestSetTitles Assert, "SetupImportService", "TestExportAbortsWhenFolderSelectionCancelled"
     Dim initialWorkbookCount As Long
-    Dim svc As ISetupImportService
+    Dim svc As SetupImportService
 
     PrepareHostSetupSheets
 
@@ -338,7 +338,7 @@ Public Sub TestExportCreatesWorkbookInProvidedFolder()
     CustomTestSetTitles Assert, "SetupImportService", "TestExportCreatesWorkbookInProvidedFolder"
     Dim exportFolder As String
     Dim expectedFilePath As String
-    Dim svc As ISetupImportService
+    Dim svc As SetupImportService
     Dim initialWorkbookCount As Long
 
     PrepareHostSetupSheets
@@ -751,7 +751,7 @@ Public Sub TestExportClosesWorkbookAfterCompletion()
     CustomTestSetTitles Assert, "SetupImportService", "TestExportClosesWorkbookAfterCompletion"
     Dim exportFilePath As String
     Dim initialCount As Long
-    Dim svc As ISetupImportService
+    Dim svc As SetupImportService
 
     On Error GoTo CleanupFailure
 
@@ -1401,7 +1401,7 @@ End Sub
 '@return Workbook opened from the exported file, or Nothing if export did not produce a file.
 Private Function PerformExportAndOpen(ByRef exportFilePath As String) As Workbook
     Dim exportFolder As String
-    Dim svc As ISetupImportService
+    Dim svc As SetupImportService
 
     exportFolder = TestHelpers.BuildTempFolder(ThisWorkbook, "SetupExportTests")
     exportFilePath = BuildExportFilePath(exportFolder)

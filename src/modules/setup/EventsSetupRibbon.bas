@@ -412,7 +412,7 @@ End Function
 Public Sub clickExport(ByRef control As IRibbonControl)
     Application.ScreenUpdating = False
 
-    Dim service As ISetupImportService
+    Dim service As SetupImportService
     Dim exportPath As String
     Dim analysisSheet As String
 
@@ -470,7 +470,7 @@ Public Sub clickImportFile(ByRef control As IRibbonControl)
     Const SUCCESS_MESSAGE As String = "Workbook import completed."
 
     Dim importPath As String
-    Dim service As ISetupImportService
+    Dim service As SetupImportService
     Dim pass As IPasswords
     Dim sheets As BetterArray
     Dim success As Boolean
