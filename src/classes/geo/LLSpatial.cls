@@ -15,7 +15,6 @@ Attribute VB_Description = "Spatial analysis table management"
 '@IgnoreModule UnrecognizedAnnotation, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit
-Implements ILLSpatial
 
 '@class LLSpatial
 '@description
@@ -52,14 +51,14 @@ Private Const HF As String = "hf"
 '@details
 'Factory method that validates the supplied worksheet meets requirements
 '(must be named "spatial_tables__" and contain the "listofgeovars"
-'ListObject), then returns a new instance through the ILLSpatial
-'interface. Called on the predeclared instance.
+'ListObject), then returns a new instance. Called on the predeclared
+'instance.
 '@param sh Worksheet. The spatial tables worksheet.
-'@return ILLSpatial. A fully initialised instance ready for use.
+'@return LLSpatial. A fully initialised instance ready for use.
 '@throws ProjectError.ObjectNotInitialized When the worksheet is Nothing.
 '@throws ProjectError.InvalidArgument When the worksheet name is not "spatial_tables__".
 '@export
-Public Function Create(ByVal sh As Worksheet) As ILLSpatial
+Public Function Create(ByVal sh As Worksheet) As LLSpatial
     CheckRequirements sh
 
     With New LLSpatial
@@ -72,9 +71,9 @@ End Function
 '@prop-title Current object instance
 '@details
 'Convenience accessor so consuming code can fluently retrieve the
-'interface reference from the predeclared Create method.
-'@return ILLSpatial. The current instance cast to the interface.
-Public Property Get Self() As ILLSpatial
+'instance from the predeclared Create method.
+'@return LLSpatial. The current instance.
+Public Property Get Self() As LLSpatial
     Set Self = Me
 End Property
 
@@ -142,7 +141,7 @@ End Function
 '@param varName String. Variable name or partial name to look up.
 '@return Boolean. True when the variable is found in the list.
 '@export
-Private Function Exists(ByVal varName As String) As Boolean
+Public Function Exists(ByVal varName As String) As Boolean
     Dim listVarsRng As Range
     Set listVarsRng = Wksh().ListObjects("listofgeovars").Range
     Exists = Not (listVarsRng.Find(What:=varName, lookAt:=xlPart, _
@@ -182,7 +181,7 @@ End Function
 'same for the HF spatial table. After processing all sheets, recalculates
 'the spatial sheet so formula columns update.
 '@export
-Private Sub Update()
+Public Sub Update()
     Dim actsh As Worksheet
     Dim sh As Worksheet
     Dim filtsh As Worksheet
@@ -423,7 +422,7 @@ End Sub
 '@param tabId String. Table identifier used to locate the variable name via partial match.
 '@param onAR Optional Boolean. True to sort by attack_rate column, False for formula column. Defaults to False.
 '@export
-Private Sub Sort(ByVal tabId As String, Optional ByVal onAR As Boolean = False)
+Public Sub Sort(ByVal tabId As String, Optional ByVal onAR As Boolean = False)
     Dim sortRng As Range
     Dim Lo As ListObject
     Dim sh As Worksheet
@@ -481,7 +480,7 @@ End Sub
 '@param concatValue Optional Byte. 1 for the name column, other values for the concat column. Defaults to 1.
 '@return String. The value at the requested rank, or empty string if not found.
 '@export
-Private Property Get TopGeoValue(ByVal adminName As String, _
+Public Property Get TopGeoValue(ByVal adminName As String, _
                                  ByVal orderValue As Long, _
                                  ByVal inputVarName As String, _
                                  Optional ByVal tabId As String = vbNullString, _
@@ -522,7 +521,7 @@ End Property
 '@param tabId Optional String. Table identifier suffix appended to the variable name. Defaults to vbNullString.
 '@return String. The value at the requested rank, or empty string if not found.
 '@export
-Private Property Get TopHFValue(ByVal orderValue As Long, _
+Public Property Get TopHFValue(ByVal orderValue As Long, _
                                 ByVal inputVarName As String, _
                                 Optional ByVal tabId As String = vbNullString) As String
     Dim Lo As ListObject
@@ -581,35 +580,4 @@ End Sub
 '@throws ProjectError.<varies> Always raises the specified error.
 Private Sub ThrowError(ByVal errNumber As Long, ByVal message As String)
     Err.Raise CLng(errNumber), CLASS_NAME, message
-End Sub
-
-'@section Interface Implementation
-'===============================================================================
-'@description Delegated members satisfying the ILLSpatial contract.
-'See the corresponding members above for full documentation.
-
-Private Property Get ILLSpatial_Exists(ByVal varName As String) As Boolean
-    ILLSpatial_Exists = Exists(varName)
-End Property
-
-Private Sub ILLSpatial_Update()
-    Update
-End Sub
-
-Private Property Get ILLSpatial_TopGeoValue(ByVal adminName As String, _
-                                            ByVal orderValue As Long, _
-                                            ByVal varName As String, _
-                                            Optional ByVal tabId As String = vbNullString, _
-                                            Optional ByVal concatValue As Byte = 1) As String
-    ILLSpatial_TopGeoValue = TopGeoValue(adminName, orderValue, varName, tabId, concatValue)
-End Property
-
-Private Property Get ILLSpatial_TopHFValue(ByVal orderValue As Long, _
-                                           ByVal inputVarName As String, _
-                                           Optional ByVal tabId As String = vbNullString) As String
-    ILLSpatial_TopHFValue = TopHFValue(orderValue, inputVarName, tabId)
-End Property
-
-Private Sub ILLSpatial_Sort(ByVal tabId As String, Optional ByVal onAR As Boolean = False)
-    Sort tabId, onAR
 End Sub

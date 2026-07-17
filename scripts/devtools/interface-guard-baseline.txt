@@ -31,7 +31,6 @@ ILLChoices
 ILLExport
 ILLExporter
 ILLSheets
-ILLSpatial
 ILLTranslation
 ILinelistBuildService
 IMasterSetupVariables

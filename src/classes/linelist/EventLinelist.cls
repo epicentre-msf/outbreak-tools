@@ -38,7 +38,7 @@ Private Type TEventLinelist
     wkbNames        As IHiddenNames       'Cached workbook-level hidden names
     drop            As IDropdownLists     'Cached dropdown manager
     geo             As ILLGeo             'Cached geo helper
-    sp              As ILLSpatial         'Cached spatial helper
+    sp              As LLSpatial          'Cached spatial helper
     dict            As ILLdictionary      'Cached dictionary helper
     vars            As ILLVariables       'Cached variable lookup helper
     pass            As IPasswords         'Cached password manager
