@@ -16,7 +16,6 @@ Attribute VB_Description = "Direct setup-to-linelist build service eliminating t
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, ParameterNotUsed
 
 Option Explicit
-Implements ILinelistBuildService
 
 '@class LinelistBuildService
 '@description
@@ -98,13 +97,12 @@ Private Const EXPORTED_START_COLUMN As Long = 1
 '@sub-title Create and configure a linelist build service
 '@details
 'Factory method that creates a new LinelistBuildService instance, binds it
-'to the supplied designer workbook, and returns the result through the
-'ILinelistBuildService interface. When no workbook is provided, defaults
-'to ThisWorkbook.
+'to the supplied designer workbook, and returns the result. When no
+'workbook is provided, defaults to ThisWorkbook.
 '@param hostBook Optional Workbook. The designer workbook. Defaults to ThisWorkbook.
-'@return ILinelistBuildService. A configured instance ready for use.
+'@return LinelistBuildService. A configured instance ready for use.
 '@export
-Public Function Create(Optional ByVal hostBook As Workbook = Nothing) As ILinelistBuildService
+Public Function Create(Optional ByVal hostBook As Workbook = Nothing) As LinelistBuildService
     Dim instance As LinelistBuildService
 
     Set instance = New LinelistBuildService
@@ -120,8 +118,8 @@ End Function
 
 '@label:self
 '@prop-title Current object instance
-'@return ILinelistBuildService. The current instance cast to the interface.
-Public Property Get Self() As ILinelistBuildService
+'@return LinelistBuildService. The current instance.
+Public Property Get Self() As LinelistBuildService
     Set Self = Me
 End Property
 
@@ -735,56 +733,3 @@ End Sub
 Private Sub ThrowError(ByVal errorCode As ProjectError, ByVal messageText As String)
     Err.Raise CLng(errorCode), CLASS_NAME, messageText
 End Sub
-
-
-'@section Interface Implementation
-'===============================================================================
-'@description Delegated members satisfying the ILinelistBuildService contract.
-
-Private Sub ILinelistBuildService_Configure(ByVal hostBook As Workbook)
-    Configure hostBook
-End Sub
-
-Private Sub ILinelistBuildService_ImportSetupToLinelist(ByVal setupPath As String, ByVal targetBook As Workbook)
-    ImportSetupToLinelist setupPath, targetBook
-End Sub
-
-Private Sub ILinelistBuildService_ExportDesignerComponents(ByVal targetBook As Workbook)
-    ExportDesignerComponents targetBook
-End Sub
-
-Private Sub ILinelistBuildService_BuildExportedInstances(ByVal targetBook As Workbook)
-    BuildExportedInstances targetBook
-End Sub
-
-Private Property Get ILinelistBuildService_ExportedDictionary() As ILLdictionary
-    Set ILinelistBuildService_ExportedDictionary = ExportedDictionary
-End Property
-
-Private Property Get ILinelistBuildService_ExportedChoices() As ILLChoices
-    Set ILinelistBuildService_ExportedChoices = ExportedChoices
-End Property
-
-Private Property Get ILinelistBuildService_ExportedAnalysis() As IAnalysis
-    Set ILinelistBuildService_ExportedAnalysis = ExportedAnalysis
-End Property
-
-Private Property Get ILinelistBuildService_ExportedExport() As ILLExport
-    Set ILinelistBuildService_ExportedExport = ExportedExport
-End Property
-
-Private Property Get ILinelistBuildService_ExportedGeo() As ILLGeo
-    Set ILinelistBuildService_ExportedGeo = ExportedGeo
-End Property
-
-Private Property Get ILinelistBuildService_ExportedPasswords() As IPasswords
-    Set ILinelistBuildService_ExportedPasswords = ExportedPasswords
-End Property
-
-Private Property Get ILinelistBuildService_ExportedTranslations() As ILLTranslation
-    Set ILinelistBuildService_ExportedTranslations = ExportedTranslations
-End Property
-
-Private Property Get ILinelistBuildService_HostWorkbook() As Workbook
-    Set ILinelistBuildService_HostWorkbook = HostWorkbook
-End Property
