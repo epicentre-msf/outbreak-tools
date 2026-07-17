@@ -15,7 +15,6 @@ Attribute VB_Description = "Build and format all analysis worksheets"
 '@IgnoreModule UnrecognizedAnnotation, IIfSideEffect, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit
-Implements IAnalysisOutput
 
 '@class AnalysisOutput
 '@description
@@ -24,7 +23,7 @@ Implements IAnalysisOutput
 'output linelist facade, this class iterates through each analysis scope
 '(normal, time series, spatial, spatio-temporal), builds cross-tables from
 'table specifications, writes formulas, registers metadata in AnaTabIds, and
-'renders charts. Consumers interact through the IAnalysisOutput interface.
+'renders charts.
 '@depends ILinelist, ILinelistSpecs, ILLFormat, ITranslationObject, ITableSpecs, ICrossTable, ICrossTableFormula, IGraphSpecs, IGraphs, IAnaTabIds, IButtons, IPasswords, IDropdownLists, ILLdictionary, ILLVariables, IFormulaData, BetterArray
 '@version 1.0 (2026-02-10)
 
@@ -77,12 +76,12 @@ Private internalChecks As IChecking
 'Tab_TimeSeries_Analysis, Tab_Spatial_Analysis, Tab_SpatioTemporal_Analysis).
 '@param ll ILinelist. The output linelist workbook facade where analysis sheets
 'will be created.
-'@return IAnalysisOutput. A fully initialised orchestrator instance ready for use.
+'@return AnalysisOutput. A fully initialised orchestrator instance ready for use.
 '@throws InvalidArgument When the specifications worksheet is Nothing.
 '@throws InvalidArgument When the linelist is Nothing.
 '@export
 Public Function Create(ByVal specSh As Worksheet, _
-                       ByVal ll As ILinelist) As IAnalysisOutput
+                       ByVal ll As ILinelist) As AnalysisOutput
 
     If specSh Is Nothing Then ThrowError InvalidArgument, "Specifications worksheet not defined"
     If ll Is Nothing Then ThrowError InvalidArgument, "Linelist not defined"
@@ -101,10 +100,10 @@ End Function
 '@label:self
 '@prop-title Current object instance.
 '@details
-'Convenience accessor that returns the current instance cast to the
-'IAnalysisOutput interface, enabling the predeclared factory pattern.
-'@return IAnalysisOutput. The current instance cast to the interface.
-Public Property Get Self() As IAnalysisOutput
+'Convenience accessor that returns the current instance, enabling the
+'predeclared factory pattern.
+'@return AnalysisOutput. The current instance.
+Public Property Get Self() As AnalysisOutput
     Set Self = Me
 End Property
 
@@ -1049,9 +1048,9 @@ End Sub
 '@remarks The normal scope writes three ListObjects (GLOBALSUMMARY,
 'UNIVARIATE, BIVARIATE) in sequence. Time-series and spatio-temporal
 'scopes also create graphs and a graph-level GoTo dropdown. The caller
-'(IAnalysisOutput_WriteAnalysis) is responsible for restoring Application
-'settings after this method returns.
-Private Sub WriteAnalysis(Optional ByVal part As Byte = 0)
+'of WriteAnalysis is responsible for restoring Application settings after
+'this method returns.
+Public Sub WriteAnalysis(Optional ByVal part As Byte = 0)
     Dim outsh As Worksheet
     Dim cellRng As Range
     Dim scope As Byte
@@ -1227,20 +1226,3 @@ End Property
 Private Sub ThrowError(ByVal errNumber As Long, ByVal message As String)
     Err.Raise CLng(errNumber), CLASS_NAME, message
 End Sub
-
-'@section Interface Implementation
-'===============================================================================
-'@description Delegated members satisfying the IAnalysisOutput contract.
-'See the corresponding Public/Private members above for full documentation.
-
-Private Sub IAnalysisOutput_WriteAnalysis(Optional ByVal part As Byte = 0)
-    WriteAnalysis part
-End Sub
-
-Private Property Get IAnalysisOutput_HasCheckings() As Boolean
-    IAnalysisOutput_HasCheckings = HasCheckings
-End Property
-
-Private Property Get IAnalysisOutput_CheckingValues() As IChecking
-    Set IAnalysisOutput_CheckingValues = CheckingValues
-End Property

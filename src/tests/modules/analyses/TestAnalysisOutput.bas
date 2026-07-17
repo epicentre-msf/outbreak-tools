@@ -15,7 +15,7 @@ Option Explicit
 'tests are not feasible at the unit level because the class requires a complete
 'linelist workbook with analysis setup ListObjects, output worksheets,
 'translation tables, formula data, and a dictionary.
-'@depends AnalysisOutput, IAnalysisOutput, CustomTest, TestHelpers
+'@depends AnalysisOutput, CustomTest, TestHelpers
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 
@@ -75,7 +75,7 @@ End Sub
 '@details
 'Arranges by passing Nothing for both the specs sheet and the linelist
 'arguments under On Error Resume Next. Acts by calling AnalysisOutput.Create.
-'Asserts that the returned IAnalysisOutput reference is Nothing, confirming
+'Asserts that the returned AnalysisOutput reference is Nothing, confirming
 'the factory guard prevents instantiation when the specs worksheet is missing.
 '@TestMethod("AnalysisOutput")
 Public Sub TestCreateRejectsNothingSpecSheet()
@@ -83,7 +83,7 @@ Public Sub TestCreateRejectsNothingSpecSheet()
     On Error GoTo TestFail
 
     On Error Resume Next
-    Dim ao As IAnalysisOutput
+    Dim ao As AnalysisOutput
     Set ao = AnalysisOutput.Create(Nothing, Nothing)
     On Error GoTo 0
 
@@ -100,7 +100,7 @@ End Sub
 'Arranges by creating a temporary hidden worksheet to serve as a valid specs
 'sheet, then passing Nothing for the linelist argument under On Error Resume
 'Next. Acts by calling AnalysisOutput.Create with the valid sheet and Nothing.
-'Asserts that the returned IAnalysisOutput reference is Nothing, confirming
+'Asserts that the returned AnalysisOutput reference is Nothing, confirming
 'the factory guard catches a missing linelist even when the specs sheet is
 'provided. Cleans up the temporary worksheet after the assertion.
 '@TestMethod("AnalysisOutput")
@@ -112,7 +112,7 @@ Public Sub TestCreateRejectsNothingLinelist()
     Set sh = EnsureWorksheet("AOTestSheet", clearSheet:=True, visibility:=xlSheetHidden)
 
     On Error Resume Next
-    Dim ao As IAnalysisOutput
+    Dim ao As AnalysisOutput
     Set ao = AnalysisOutput.Create(sh, Nothing)
     On Error GoTo 0
 

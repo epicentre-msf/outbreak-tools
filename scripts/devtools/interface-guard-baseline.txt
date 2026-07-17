@@ -3,7 +3,6 @@
 # The guard fails only on FLAGGED interfaces NOT listed here (genuinely new ones).
 IAnaTabIds
 IAnalysis
-IAnalysisOutput
 IApplicationState
 IButtons
 ICaseWhen

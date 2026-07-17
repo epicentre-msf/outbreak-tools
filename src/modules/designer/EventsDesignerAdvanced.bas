@@ -331,7 +331,7 @@ Public Sub clickGenerate()
     Dim setupPath As String
     Dim sheetLists As BetterArray
     Dim counter As Long
-    Dim anaOut As IAnalysisOutput
+    Dim anaOut As AnalysisOutput
 
     On Error GoTo Cleanup
     Set appScope = ApplicationState.Create(Application)
