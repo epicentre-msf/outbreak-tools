@@ -106,10 +106,10 @@ End Property
 '@jump:pivots
 '@prop-title Pivot tables manager for the output workbook
 '@details
-'Returns an ICustomPivotTable instance backed by the translated custom pivot
+'Returns a CustomPivotTable instance backed by the translated custom pivot
 'table sheet in the output workbook.
-'@return ICustomPivotTable. The pivot tables manager.
-Public Property Get Pivots() As ICustomPivotTable
+'@return CustomPivotTable. The pivot tables manager.
+Public Property Get Pivots() As CustomPivotTable
 End Property
 
 '@jump:linelist-data
