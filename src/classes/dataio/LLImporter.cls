@@ -15,7 +15,6 @@ Attribute VB_Description = "Linelist data import operations"
 '@ModuleDescription("Linelist data import operations")
 
 Option Explicit
-Implements ILLImporter
 
 '@class LLImporter
 '@description
@@ -23,10 +22,19 @@ Implements ILLImporter
 'Supports importing HList/VList data, custom dropdowns, show/hide state,
 'editable labels, single metadata values, and geobase data. Tracks which
 'sheets and variables were imported, and builds a report of items not
-'imported or not touched. Consumers interact through the ILLImporter
-'interface.
+'imported or not touched.
 '@depends ILLdictionary, IPasswords, ICustomTable, IDataSheet
 '@depends IShowHideManager, ILLGeo, ILLChoices, ILLVariables, IDropdownLists, IHiddenNames
+
+
+'@section Enumerations
+'===============================================================================
+'@description Scopes for import report entries, used to query which items were missed.
+
+Public Enum ImportReportScope
+    ImportReportNotImported = 1
+    ImportReportNotTouched = 2
+End Enum
 
 
 '@section Constants
@@ -73,13 +81,12 @@ Private this As TLLImporter
 '@sub-title Create an importer from the source linelist workbook
 '@details
 'Factory method that validates the workbook is not Nothing, then constructs
-'and returns a new LLImporter instance through the ILLImporter interface.
-'Called on the predeclared instance.
+'and returns a new LLImporter instance. Called on the predeclared instance.
 '@param sourceWkb Workbook. The linelist workbook that will receive imported data.
-'@return ILLImporter. A fully initialised instance ready for import operations.
+'@return LLImporter. A fully initialised instance ready for import operations.
 '@throws vbObjectError When the workbook is Nothing.
 '@export
-Public Function Create(ByVal sourceWkb As Workbook) As ILLImporter
+Public Function Create(ByVal sourceWkb As Workbook) As LLImporter
 
     If sourceWkb Is Nothing Then
         ThrowError "LLImporter requires a source workbook"
@@ -97,8 +104,8 @@ End Function
 
 '@label:self
 '@prop-title Current object instance
-'@return ILLImporter. The current instance cast to the interface.
-Public Property Get Self() As ILLImporter
+'@return LLImporter. The current instance.
+Public Property Get Self() As LLImporter
     Set Self = Me
 End Property
 
@@ -995,66 +1002,4 @@ End Function
 '@throws vbObjectError Always raises the error.
 Private Sub ThrowError(ByVal message As String)
     Err.Raise VBA.vbObjectError + 516, CLASS_NAME, message
-End Sub
-
-
-'@section Interface Implementation
-'===============================================================================
-'@description Delegated members satisfying the ILLImporter contract.
-'See the corresponding members above for full documentation.
-
-Private Property Get ILLImporter_HasData() As Boolean
-    ILLImporter_HasData = HasData
-End Property
-
-Private Function ILLImporter_HasSameLanguage(ByVal impwb As Workbook) As Boolean
-    ILLImporter_HasSameLanguage = HasSameLanguage(impwb)
-End Function
-
-Private Sub ILLImporter_ClearData()
-    ClearData
-End Sub
-
-Private Sub ILLImporter_ImportData(ByVal impwb As Workbook, ByVal pasteAtBottom As Boolean)
-    ImportData impwb, pasteAtBottom
-End Sub
-
-Private Sub ILLImporter_ImportCustomDropdown(ByVal impwb As Workbook, ByVal pasteAtBottom As Boolean)
-    ImportCustomDropdown impwb, pasteAtBottom
-End Sub
-
-Private Sub ILLImporter_FinalizeReport()
-    FinalizeReport
-End Sub
-
-Private Sub ILLImporter_ImportShowHide(ByVal impwb As Workbook)
-    ImportShowHide impwb
-End Sub
-
-Private Sub ILLImporter_ImportEditableLabels(ByVal impwb As Workbook)
-    ImportEditableLabels impwb
-End Sub
-
-Private Sub ILLImporter_ImportSingleValues(ByVal impwb As Workbook)
-    ImportSingleValues impwb
-End Sub
-
-Private Sub ILLImporter_ImportGeobase(ByVal impwb As Workbook, Optional ByVal histoOnly As Boolean = False)
-    ImportGeobase impwb, histoOnly
-End Sub
-
-Private Property Get ILLImporter_NeedReport() As Boolean
-    ILLImporter_NeedReport = NeedReport
-End Property
-
-Private Function ILLImporter_ReportSheets(ByVal scope As Byte) As BetterArray
-    Set ILLImporter_ReportSheets = ReportSheets(scope)
-End Function
-
-Private Function ILLImporter_ReportVariables(ByVal scope As Byte) As BetterArray
-    Set ILLImporter_ReportVariables = ReportVariables(scope)
-End Function
-
-Private Sub ILLImporter_ClearReport()
-    ClearReport
 End Sub

@@ -2,7 +2,7 @@ Attribute VB_Name = "FormLogicAdvanced"
 
 '@Folder("Linelist Forms")
 '@ModuleDescription("Import data, import geobase, and clear data workflows")
-'@depends ILLImporter, LLImporter, IApplicationState, ApplicationState, IOSFiles, OSFiles
+'@depends LLImporter, IApplicationState, ApplicationState, IOSFiles, OSFiles
 
 Option Explicit
 
@@ -16,7 +16,7 @@ Public Sub HandleImportData(ByVal sourceWkb As Workbook, _
                             ByVal trads As ITranslationObject, _
                             ByVal pasteAtBottom As Boolean)
 
-    Dim impObj As ILLImporter
+    Dim impObj As LLImporter
     Dim appState As IApplicationState
     Dim io As IOSFiles
     Dim filePath As String
@@ -113,7 +113,7 @@ Public Sub HandleImportGeobase(ByVal sourceWkb As Workbook, _
                                ByVal trads As ITranslationObject, _
                                Optional ByVal histoOnly As Boolean = False)
 
-    Dim impObj As ILLImporter
+    Dim impObj As LLImporter
     Dim appState As IApplicationState
     Dim io As IOSFiles
     Dim filePath As String
@@ -164,7 +164,7 @@ End Sub
 Public Sub HandleClearData(ByVal sourceWkb As Workbook, _
                            ByVal trads As ITranslationObject)
 
-    Dim impObj As ILLImporter
+    Dim impObj As LLImporter
     Dim appState As IApplicationState
     Dim proceed As Long
     Dim inputName As String

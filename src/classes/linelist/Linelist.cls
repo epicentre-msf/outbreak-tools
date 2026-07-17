@@ -846,7 +846,7 @@ Private Sub TransferAllCode(ByVal codeTransfer As CodeTransfer)
                    "DropdownLists", "IDropdownLists", "ShowHideManager", _
                    "IShowHideManager", "CustomTable", "ICustomTable", _
                    "LLExporter", "ILLExporter", _
-                    "LLImporter", "ILLImporter", _
+                    "LLImporter", _
                    "IGraphs", "Graphs", "AnaTabIds", _
                    "IAnaTabIds", "ExportButton", _
                    "HiddenNames", "IHiddenNames", _
