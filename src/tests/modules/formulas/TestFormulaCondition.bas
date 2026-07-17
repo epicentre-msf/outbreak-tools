@@ -18,7 +18,7 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 'VariablesTable accessor. Each test builds lightweight BetterArray fixtures
 'via BetterArrayFromList and a shared dictionary fixture seeded from
 'DictionaryTestFixture.
-'@depends FormulaCondition, IFormulaCondition, LLdictionary, ILLdictionary,
+'@depends FormulaCondition, LLdictionary, ILLdictionary,
 '  LLVariables, ILLVariables, BetterArray, CustomTest, ICustomTest,
 '  DictionaryTestFixture, TestHelpers
 
@@ -106,7 +106,7 @@ Public Sub TestCreateRejectsMismatchedLengths()
     Set conds = BetterArrayFromList("=0", "=1")
 
     On Error GoTo ExpectError
-        Dim form As IFormulaCondition
+        Dim form As FormulaCondition
         '@Ignored AssigmentNotUsed
         Set form = FormulaCondition.Create(vars, conds)
         Assert.LogFailure "Create should raise for mismatched inputs"
@@ -128,7 +128,7 @@ Public Sub TestValidSucceedsForSameTable()
     CustomTestSetTitles Assert, "FormulaCondition", "TestValidSucceedsForSameTable"
     Dim vars As BetterArray
     Dim conds As BetterArray
-    Dim form As IFormulaCondition
+    Dim form As FormulaCondition
 
     Set vars = BetterArrayFromList("choi_v1", "choi_mult_v1")
     Set conds = BetterArrayFromList(">0", "<5")
@@ -150,7 +150,7 @@ Public Sub TestValidLogsWhenVariableMissing()
     CustomTestSetTitles Assert, "FormulaCondition", "TestValidLogsWhenVariableMissing"
     Dim vars As BetterArray
     Dim conds As BetterArray
-    Dim form As IFormulaCondition
+    Dim form As FormulaCondition
 
     Set vars = BetterArrayFromList("choi_v1", "missing_var")
     Set conds = BetterArrayFromList(">0", ">1")
@@ -173,7 +173,7 @@ Public Sub TestConditionStringBuildsExpression()
     CustomTestSetTitles Assert, "FormulaCondition", "TestConditionStringBuildsExpression"
     Dim vars As BetterArray
     Dim conds As BetterArray
-    Dim form As IFormulaCondition
+    Dim form As FormulaCondition
     Dim predicate As String
 
     Set vars = BetterArrayFromList("choi_v1", "choi_mult_v1")
@@ -200,7 +200,7 @@ Public Sub TestVariablesTableUsesCachedValue()
     CustomTestSetTitles Assert, "FormulaCondition", "TestVariablesTableUsesCachedValue"
     Dim vars As BetterArray
     Dim conds As BetterArray
-    Dim form As IFormulaCondition
+    Dim form As FormulaCondition
     Dim expectedTable As String
 
     Set vars = BetterArrayFromList("choi_v1", "choi_mult_v1")
@@ -224,7 +224,7 @@ Public Sub TestValidFailsForDifferentTables()
     CustomTestSetTitles Assert, "FormulaCondition", "TestValidFailsForDifferentTables"
     Dim vars As BetterArray
     Dim conds As BetterArray
-    Dim form As IFormulaCondition
+    Dim form As FormulaCondition
     Dim firstTable As String
     Dim secondTable As String
 
@@ -253,7 +253,7 @@ Public Sub TestValidRespectsTableOverride()
     CustomTestSetTitles Assert, "FormulaCondition", "TestValidRespectsTableOverride"
     Dim vars As BetterArray
     Dim conds As BetterArray
-    Dim form As IFormulaCondition
+    Dim form As FormulaCondition
     Dim expectedTable As String
     Dim wrongTable As String
 

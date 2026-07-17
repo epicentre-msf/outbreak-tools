@@ -15,7 +15,6 @@ Attribute VB_Description = "Conditions used to create formulas for analysis"
 '@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit
-Implements IFormulaCondition
 
 '@class FormulaCondition
 '@description
@@ -24,7 +23,6 @@ Implements IFormulaCondition
 'analysis formulas. The class pairs two BetterArray lists (variables and
 'conditions), validates that all variables belong to the same table, and
 'exposes methods to render IF-wrapped condition strings and joined predicates.
-'Consumers interact through the IFormulaCondition interface.
 '@depends BetterArray, Checking, LLVariables, LLdictionary
 '@version 1.0 (2026-02-09)
 
@@ -57,14 +55,13 @@ Private this As TFormulaCondition
 '@sub-title Construct a FormulaCondition instance from paired arrays
 '@details
 'Validates that both arrays are non-Nothing and have equal lengths, then
-'stores normalised copies with a lower bound of 1. The returned instance
-'is cast to IFormulaCondition for consistent downstream consumption.
+'stores normalised copies with a lower bound of 1.
 '@param formVar BetterArray. The array containing variable names.
 '@param formCond BetterArray. The array containing predicate fragments.
-'@return IFormulaCondition. A ready-to-use condition helper.
+'@return FormulaCondition. A ready-to-use condition helper.
 '@throws ProjectError.InvalidArgument When formVar or formCond is Nothing or lengths differ.
 '@export
-Public Function Create(ByVal formVar As BetterArray, ByVal formCond As BetterArray) As IFormulaCondition
+Public Function Create(ByVal formVar As BetterArray, ByVal formCond As BetterArray) As FormulaCondition
 
     If formVar Is Nothing Then ThrowError ProjectError.InvalidArgument, "Variables array cannot be null"
     If formCond Is Nothing Then ThrowError ProjectError.InvalidArgument, "Conditions array cannot be null"
@@ -87,10 +84,9 @@ End Function
 '@label:self
 '@prop-title Current object instance
 '@details
-'Returns the current instance cast to its interface. Used internally
-'by the factory method to return an IFormulaCondition reference.
-'@return IFormulaCondition. The current object.
-Public Property Get Self() As IFormulaCondition
+'Returns the current instance. Used internally by the factory method.
+'@return FormulaCondition. The current object.
+Public Property Get Self() As FormulaCondition
     Set Self = Me
 End Property
 
@@ -178,15 +174,15 @@ Private Sub LogInfo(ByVal message As String, Optional ByVal scope As Byte = chec
     this.hasChecks = True
 End Sub
 
-'@label:has-internal-checks
+'@label:has-checkings
 '@prop-title Determine whether diagnostics have been captured
 '@details
 'Returns True when at least one LogInfo call has been made since the
 'last ResetCaches, indicating that diagnostic information is available.
 '@return Boolean. True when internal checks exist.
 '@export
-Private Property Get HasInternalChecks() As Boolean
-    HasInternalChecks = this.hasChecks
+Public Property Get HasCheckings() As Boolean
+    HasCheckings = this.hasChecks
 End Property
 
 '@label:cached-table
@@ -399,40 +395,39 @@ Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
     Err.Raise errNumb, "FormulaCondition", errorMessage
 End Sub
 
-'@section Interface
+'@section PublicDiagnostics
 '===============================================================================
-'@description Explicit interface implementations delegating to the public members.
+'@description Defensive copies of the tracked lists and the diagnostic log.
 
-Private Property Get IFormulaCondition_Variables() As BetterArray
-    Set IFormulaCondition_Variables = LstVars.Clone()
+'@label:variables-clone
+'@prop-title Retrieve a clone of the stored variable names
+'@details
+'Returns a BetterArray copy of the variable identifiers in the order
+'they were supplied at creation.
+'@return BetterArray. The variable names preserving the original order.
+'@export
+Public Property Get Variables() As BetterArray
+    Set Variables = LstVars.Clone()
 End Property
 
-Private Property Get IFormulaCondition_Conditions() As BetterArray
-    Set IFormulaCondition_Conditions = LstConditions.Clone()
+'@label:conditions-clone
+'@prop-title Retrieve a clone of the stored condition fragments
+'@details
+'Returns a BetterArray copy of the predicate fragments in the order
+'they were supplied at creation.
+'@return BetterArray. The condition fragments preserving the original order.
+'@export
+Public Property Get Conditions() As BetterArray
+    Set Conditions = LstConditions.Clone()
 End Property
-
-Private Property Get IFormulaCondition_VariablesTable(ByVal dict As ILLdictionary) As String
-    IFormulaCondition_VariablesTable = VariablesTable(dict)
-End Property
-
-Private Function IFormulaCondition_ConditionString(ByVal tablename As String, ByVal varName As String, _
-                                                  Optional ByVal Connector As String = "*") As String
-    IFormulaCondition_ConditionString = ConditionString(tablename:=tablename, varName:=varName, Connector:=Connector)
-End Function
-
-Private Function IFormulaCondition_ConditionPredicate(ByVal tablename As String, Optional ByVal Connector As String = "*") As String
-    IFormulaCondition_ConditionPredicate = ConditionPredicate(tablename, Connector)
-End Function
-
-Private Function IFormulaCondition_Valid(ByVal dict As ILLdictionary, Optional ByVal tablename As String = vbNullString) As Boolean
-    IFormulaCondition_Valid = Valid(dict, tablename)
-End Function
-
-Private Function IFormulaCondition_HasCheckings() As Boolean
-    IFormulaCondition_HasCheckings = HasInternalChecks
-End Function
 
 '@label:checking-values
-Private Property Get IFormulaCondition_CheckingValues() As IChecking
-    If HasInternalChecks Then Set IFormulaCondition_CheckingValues = this.internalChecks
+'@prop-title Retrieve the internal checking log
+'@details
+'Returns the accumulated IChecking instance containing all diagnostic
+'messages from the last validation run, or Nothing when none recorded.
+'@return IChecking. The diagnostic log.
+'@export
+Public Property Get CheckingValues() As IChecking
+    If this.hasChecks Then Set CheckingValues = this.internalChecks
 End Property
