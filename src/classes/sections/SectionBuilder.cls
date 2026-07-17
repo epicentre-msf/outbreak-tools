@@ -409,7 +409,7 @@ Private Sub BuildVariables(ByVal subSecStart As Long, ByVal subSecEnd As Long)
     Dim varRng As Range
     Dim counter As Long
     Dim varName As String
-    Dim writer As IVarWriter
+    Dim writer As VarWriter
 
     Set dict = Dictionary()
     Set varRng = dict.DataRange("variable name")

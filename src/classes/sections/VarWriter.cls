@@ -14,7 +14,6 @@ Attribute VB_Exposed = False
 '@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation
 
 Option Explicit
-Implements IVarWriter
 
 '@class VarWriter
 '@description
@@ -77,7 +76,7 @@ Private internalChecks As IChecking
 '@param crfWksh Optional Worksheet. CRF companion worksheet (HList only). Defaults to Nothing.
 '@param dropdownObj Optional IDropdownLists. Dropdown lists manager. Defaults to Nothing.
 '@param customDropdownObj Optional IDropdownLists. Custom dropdown lists manager (for choice_custom). Defaults to Nothing.
-'@return IVarWriter. A fully initialised writer bound to the given layer and worksheets.
+'@return VarWriter. A fully initialised writer bound to the given layer and worksheets.
 '@throws VBA.vbObjectError + 516 if specs or wksh is Nothing.
 '@export
 Public Function Create(ByVal layer As Byte, _
@@ -86,7 +85,7 @@ Public Function Create(ByVal layer As Byte, _
                        Optional ByVal printWksh As Worksheet = Nothing, _
                        Optional ByVal crfWksh As Worksheet = Nothing, _
                        Optional ByVal dropdownObj As IDropdownLists = Nothing, _
-                       Optional ByVal customDropdownObj As IDropdownLists = Nothing) As IVarWriter
+                       Optional ByVal customDropdownObj As IDropdownLists = Nothing) As VarWriter
 
     If specs Is Nothing Then ThrowError ProjectError.ObjectNotInitialized, "Specifications object is required"
     If wksh Is Nothing Then ThrowError ProjectError.ObjectNotInitialized, "Target worksheet is required"
@@ -104,12 +103,12 @@ Public Function Create(ByVal layer As Byte, _
 End Function
 
 '@label:self
-'@prop-title Return the current instance cast to the IVarWriter interface
+'@prop-title Return the current instance
 '@details
-'Used by the factory pattern so that the With New block can return an
-'interface-typed reference instead of the concrete class.
-'@return IVarWriter. The current instance.
-Public Property Get Self() As IVarWriter
+'Used by the factory pattern so that the With New block can return the
+'newly built instance.
+'@return VarWriter. The current instance.
+Public Property Get Self() As VarWriter
     Set Self = Me
 End Property
 
@@ -1455,25 +1454,4 @@ End Property
 Public Property Get CheckingValues() As IChecking
     If Not HasCheckings Then Exit Property
     Set CheckingValues = internalChecks
-End Property
-
-
-'@section Interface Implementation
-'@description Delegated members satisfying the IVarWriter contract.
-'===============================================================================
-
-Private Sub IVarWriter_WriteVariable(ByVal varName As String)
-    WriteVariable varName
-End Sub
-
-Private Property Get IVarWriter_ValueOf(ByVal colName As String) As String
-    IVarWriter_ValueOf = ValueOf(colName)
-End Property
-
-Private Property Get IVarWriter_HasCheckings() As Boolean
-    IVarWriter_HasCheckings = HasCheckings
-End Property
-
-Private Property Get IVarWriter_CheckingValues() As IChecking
-    Set IVarWriter_CheckingValues = CheckingValues
 End Property

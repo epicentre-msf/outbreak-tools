@@ -104,7 +104,7 @@ Public Sub TestCreateReturnsInstance()
     CustomTestSetTitles Assert, TESTMODULE, "TestCreateReturnsInstance"
     On Error GoTo TestFail
 
-    Dim sut As IVarWriter
+    Dim sut As VarWriter
     Set sut = VarWriter.Create( _
         layer:=VarWriterLayerVList, _
         specs:=Specs, _
@@ -124,7 +124,7 @@ Public Sub TestCreateRaisesWithoutSpecs()
     CustomTestSetTitles Assert, TESTMODULE, "TestCreateRaisesWithoutSpecs"
     On Error GoTo ExpectError
 
-    Dim sut As IVarWriter
+    Dim sut As VarWriter
     Set sut = VarWriter.Create( _
         layer:=VarWriterLayerVList, _
         specs:=Nothing, _
@@ -144,7 +144,7 @@ Public Sub TestCreateRaisesWithoutWorksheet()
     CustomTestSetTitles Assert, TESTMODULE, "TestCreateRaisesWithoutWorksheet"
     On Error GoTo ExpectError
 
-    Dim sut As IVarWriter
+    Dim sut As VarWriter
     Set sut = VarWriter.Create( _
         layer:=VarWriterLayerVList, _
         specs:=Specs, _
@@ -167,7 +167,7 @@ Public Sub TestValueOfReadsMainLabel()
     CustomTestSetTitles Assert, TESTMODULE, "TestValueOfReadsMainLabel"
     On Error GoTo TestFail
 
-    Dim sut As IVarWriter
+    Dim sut As VarWriter
     Set sut = VarWriter.Create( _
         layer:=VarWriterLayerVList, _
         specs:=Specs, _
@@ -194,7 +194,7 @@ Public Sub TestVListWritesLabelToCell()
     CustomTestSetTitles Assert, TESTMODULE, "TestVListWritesLabelToCell"
     On Error GoTo TestFail
 
-    Dim sut As IVarWriter
+    Dim sut As VarWriter
     Dim vars As ILLVariables
     Dim colIdx As Long
 
@@ -228,7 +228,7 @@ Public Sub TestVListDoesNotWriteToPrint()
     CustomTestSetTitles Assert, TESTMODULE, "TestVListDoesNotWriteToPrint"
     On Error GoTo TestFail
 
-    Dim sut As IVarWriter
+    Dim sut As VarWriter
 
     Set sut = VarWriter.Create( _
         layer:=VarWriterLayerVList, _
@@ -258,7 +258,7 @@ Public Sub TestHListWritesVarNameToHeader()
     CustomTestSetTitles Assert, TESTMODULE, "TestHListWritesVarNameToHeader"
     On Error GoTo TestFail
 
-    Dim sut As IVarWriter
+    Dim sut As VarWriter
     Dim vars As ILLVariables
     Dim colIdx As Long
 
@@ -290,7 +290,7 @@ Public Sub TestHListWritesToPrintCompanion()
     CustomTestSetTitles Assert, TESTMODULE, "TestHListWritesToPrintCompanion"
     On Error GoTo TestFail
 
-    Dim sut As IVarWriter
+    Dim sut As VarWriter
     Dim vars As ILLVariables
     Dim colIdx As Long
 
@@ -327,7 +327,7 @@ Public Sub TestTextTypeFormatsAsString()
     CustomTestSetTitles Assert, TESTMODULE, "TestTextTypeFormatsAsString"
     On Error GoTo TestFail
 
-    Dim sut As IVarWriter
+    Dim sut As VarWriter
     Dim vars As ILLVariables
     Dim colIdx As Long
 

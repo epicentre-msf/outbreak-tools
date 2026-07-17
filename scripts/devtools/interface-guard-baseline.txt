@@ -49,4 +49,3 @@ IShowHideManager
 ITableSpecs
 ITemporaryRepos
 IUpdatedValues
-IVarWriter
