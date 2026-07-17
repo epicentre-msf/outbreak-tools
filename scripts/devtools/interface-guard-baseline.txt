@@ -30,7 +30,6 @@ IDiseaseReportManager
 IDiseaseSheet
 IDiseaseWorksheetManager
 IEventLinelist
-IEventMasterSetup
 IEventSetup
 IFormulaCondition
 IFormulas

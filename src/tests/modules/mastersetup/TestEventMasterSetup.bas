@@ -8,7 +8,7 @@ Option Explicit
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, ProcedureNotUsed
 
 Private Assert As ICustomTest
-Private Subject As IEventMasterSetup
+Private Subject As EventMasterSetup
 Private FixtureWorkbook As Workbook
 Private DropdownSheet As Worksheet
 Private VariablesSheet As Worksheet
@@ -93,7 +93,7 @@ Public Sub TestCreateRequiresWorkbook()
     CustomTestSetTitles Assert, "EventMasterSetup", "TestCreateRequiresWorkbook"
 
     On Error Resume Next
-        Dim target As IEventMasterSetup
+        Dim target As EventMasterSetup
         Set target = EventMasterSetup.Create(Nothing)
     Assert.AreEqual ProjectError.ObjectNotInitialized, Err.Number, "Create should require a workbook reference"
     Err.Clear

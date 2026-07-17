@@ -17,8 +17,6 @@ Attribute VB_Description = "Workbook-level orchestrator for master setup lifecyc
 
 Option Explicit
 
-Implements IEventMasterSetup
-
 
 '@section State
 '===============================================================================
@@ -60,7 +58,7 @@ Private Const RIBBON_LANGUAGE_RANGE As String = "RNG_FileLang"
 '@section Factory helpers
 '===============================================================================
 '@sub-title Create a configured master setup event manager.
-Public Function Create(ByVal hostBook As Workbook) As IEventMasterSetup
+Public Function Create(ByVal hostBook As Workbook) As EventMasterSetup
 
     With New EventMasterSetup
         .Configure hostBook
@@ -68,8 +66,8 @@ Public Function Create(ByVal hostBook As Workbook) As IEventMasterSetup
     End With
 End Function
 
-'@sub-title Self reference used by factories returning the interface.
-Public Property Get Self() As IEventMasterSetup
+'@sub-title Self reference used by factories returning the class.
+Public Property Get Self() As EventMasterSetup
     Set Self = Me
 End Property
 
@@ -310,50 +308,3 @@ End Sub
 Private Sub ThrowError(ByVal errNumber As Long, ByVal message As String)
     Err.Raise errNumber, CLASS_NAME, message
 End Sub
-
-
-'@section Interface implementation
-'===============================================================================
-Private Sub IEventMasterSetup_Configure(ByVal hostBook As Workbook)
-    Configure hostBook
-End Sub
-
-Private Sub IEventMasterSetup_OnWorkbookOpen(Optional ByVal excelApplication As Application)
-    OnWorkbookOpen excelApplication
-End Sub
-
-Private Sub IEventMasterSetup_OnRibbonLoad(ByVal ribbon As IRibbonUI)
-    OnRibbonLoad ribbon
-End Sub
-
-Private Sub IEventMasterSetup_RefreshTranslations()
-    RefreshTranslations
-End Sub
-
-Private Property Get IEventMasterSetup_HostWorkbook() As Workbook
-    Set IEventMasterSetup_HostWorkbook = HostWorkbook
-End Property
-
-Private Property Get IEventMasterSetup_Dropdowns() As IDropdownLists
-    Set IEventMasterSetup_Dropdowns = Dropdowns
-End Property
-
-Private Property Get IEventMasterSetup_Variables() As IMasterSetupVariables
-    Set IEventMasterSetup_Variables = Variables
-End Property
-
-Private Property Get IEventMasterSetup_Choices() As ILLChoices
-    Set IEventMasterSetup_Choices = Choices
-End Property
-
-Private Property Get IEventMasterSetup_Translations() As ITranslationObject
-    Set IEventMasterSetup_Translations = Translations
-End Property
-
-Private Property Get IEventMasterSetup_RibbonTranslations() As ITranslationObject
-    Set IEventMasterSetup_RibbonTranslations = RibbonTranslations
-End Property
-
-Private Property Get IEventMasterSetup_Ribbon() As IRibbonUI
-    Set IEventMasterSetup_Ribbon = Ribbon
-End Property
