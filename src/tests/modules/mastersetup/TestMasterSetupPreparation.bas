@@ -8,7 +8,7 @@ Option Explicit
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, ProcedureNotUsed
 
 Private Assert As ICustomTest
-Private Subject As IMasterSetupPreparation
+Private Subject As MasterSetupPreparation
 Private FixtureWorkbook As Workbook
 Private DropdownSheet As Worksheet
 Private VariablesSheet As Worksheet

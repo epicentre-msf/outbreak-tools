@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Master Setup")
 '@ModuleDescription("Ribbon callbacks supporting master setup operations.")
-'@depends MasterSetupPreparation, IMasterSetupPreparation, MasterSetupHelpers, IDropdownLists, Passwords, IPasswords, Translation, ITranslationObject, TranslationChunks, ITranslationChunks, ApplicationState, IApplicationState, SetupTranslationsTable, ISetupTranslationsTable, IUpdatedValues, DiseaseSheetBuilder, IDiseaseSheetBuilder
+'@depends MasterSetupPreparation, MasterSetupHelpers, IDropdownLists, Passwords, IPasswords, Translation, ITranslationObject, TranslationChunks, ITranslationChunks, ApplicationState, IApplicationState, SetupTranslationsTable, ISetupTranslationsTable, IUpdatedValues, DiseaseSheetBuilder, IDiseaseSheetBuilder
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Private Const RIBBON_TRANSLATION_SHEET As String = "__ribbonTranslation"
@@ -16,7 +16,7 @@ Private Const PASSWORD_SHEET_NAME As String = "__pass"
 Private Const DEFAULT_REMOVE_ROW_TARGET As Long = 1
 Private Const DEFAULT_ADD_ROW_BATCH As Long = 10
 
-Private prepService As IMasterSetupPreparation
+Private prepService As MasterSetupPreparation
 
 '@section Manage group callbacks
 '===============================================================================
@@ -525,7 +525,7 @@ End Sub
 
 '@section Helpers
 '===============================================================================
-Private Function Preparation() As IMasterSetupPreparation
+Private Function Preparation() As MasterSetupPreparation
     If prepService Is Nothing Then
         Set prepService = MasterSetupPreparation.Create(ThisWorkbook)
     End If

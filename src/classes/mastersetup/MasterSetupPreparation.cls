@@ -17,8 +17,6 @@ Attribute VB_Description = "Implementation for Master Setup preparation and conf
 
 Option Explicit
 
-Implements IMasterSetupPreparation
-
 '@section State
 '===============================================================================
 Private Type TMasterSetupPreparation
@@ -64,7 +62,7 @@ Private Const VARIABLE_NAME_HEADER As String = "Variable Name"
 '@section Factory helpers
 '===============================================================================
 '@Description("Create a configured MasterSetupPreparation instance for the supplied workbook.")
-Public Function Create(ByVal hostBook As Workbook) As IMasterSetupPreparation
+Public Function Create(ByVal hostBook As Workbook) As MasterSetupPreparation
     Dim instance As MasterSetupPreparation
 
     Set instance = New MasterSetupPreparation
@@ -72,8 +70,8 @@ Public Function Create(ByVal hostBook As Workbook) As IMasterSetupPreparation
     Set Create = instance.Self
 End Function
 
-'@Description("Return the current instance as an interface reference.")
-Public Property Get Self() As IMasterSetupPreparation
+'@Description("Return the current instance.")
+Public Property Get Self() As MasterSetupPreparation
     Set Self = Me
 End Property
 
@@ -524,34 +522,3 @@ Private Function EnsureWorkbook() As Workbook
 
     Set EnsureWorkbook = this.hostBook
 End Function
-
-
-'@section Interface implementation
-'===============================================================================
-Private Sub IMasterSetupPreparation_Configure(ByVal hostBook As Workbook)
-    Configure hostBook
-End Sub
-
-Private Sub IMasterSetupPreparation_Prepare(Optional ByVal excelApplication As Application)
-    Prepare excelApplication
-End Sub
-
-Private Sub IMasterSetupPreparation_EnsureDropdowns()
-    EnsureDropdowns
-End Sub
-
-Private Sub IMasterSetupPreparation_EnsureVariables()
-    EnsureVariables
-End Sub
-
-Private Property Get IMasterSetupPreparation_Dropdowns() As IDropdownLists
-    Set IMasterSetupPreparation_Dropdowns = Dropdowns
-End Property
-
-Private Property Get IMasterSetupPreparation_Variables() As IMasterSetupVariables
-    Set IMasterSetupPreparation_Variables = Variables
-End Property
-
-Private Property Get IMasterSetupPreparation_HostWorkbook() As Workbook
-    Set IMasterSetupPreparation_HostWorkbook = HostWorkbook
-End Property

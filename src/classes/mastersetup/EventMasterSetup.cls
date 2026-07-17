@@ -12,7 +12,7 @@ Attribute VB_Description = "Workbook-level orchestrator for master setup lifecyc
 '@PredeclaredId
 '@Folder("MasterSetup")
 '@ModuleDescription("Coordinates workbook events and shared services for the master setup workbook.")
-'@depends MasterSetupPreparation, IMasterSetupPreparation, MasterSetupVariables, IMasterSetupVariables, DropdownLists, IDropdownLists, LLChoices, ILLChoices, Translation, ITranslationObject
+'@depends MasterSetupPreparation, MasterSetupVariables, IMasterSetupVariables, DropdownLists, IDropdownLists, LLChoices, ILLChoices, Translation, ITranslationObject
 '@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit
@@ -22,7 +22,7 @@ Option Explicit
 '===============================================================================
 Private Type TEventMasterSetup
     hostBook As Workbook                 'Workbook hosting master setup assets
-    prep As IMasterSetupPreparation      'Preparation helper ensuring tables and dropdowns exist
+    prep As MasterSetupPreparation      'Preparation helper ensuring tables and dropdowns exist
     dropdowns As IDropdownLists          'Cached dropdown manager
     variables As IMasterSetupVariables   'Cached variables manager
     choices As ILLChoices                'Cached choices helper
@@ -83,7 +83,7 @@ End Sub
 
 '@sub-title Handle workbook open events by running preparation once.
 Public Sub OnWorkbookOpen(Optional ByVal excelApplication As Application)
-    Dim svc As IMasterSetupPreparation
+    Dim svc As MasterSetupPreparation
 
     Set svc = Preparation()
     svc.Prepare excelApplication
@@ -157,7 +157,7 @@ Private Sub ResetTranslationCaches()
     Set this.choices = Nothing    'Choices rely on translated headers
 End Sub
 
-Private Sub CacheCoreManagers(ByVal svc As IMasterSetupPreparation)
+Private Sub CacheCoreManagers(ByVal svc As MasterSetupPreparation)
     If svc Is Nothing Then Exit Sub
 
     On Error Resume Next
@@ -175,7 +175,7 @@ Private Function EnsureWorkbook() As Workbook
     Set EnsureWorkbook = this.hostBook
 End Function
 
-Private Function Preparation() As IMasterSetupPreparation
+Private Function Preparation() As MasterSetupPreparation
     If this.prep Is Nothing Then
         Set this.prep = MasterSetupPreparation.Create(EnsureWorkbook)
     End If
@@ -184,7 +184,7 @@ Private Function Preparation() As IMasterSetupPreparation
 End Function
 
 Private Sub EnsureCorePrepared()
-    Dim svc As IMasterSetupPreparation
+    Dim svc As MasterSetupPreparation
 
     Set svc = Preparation()
     svc.EnsureDropdowns
