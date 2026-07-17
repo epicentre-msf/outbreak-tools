@@ -47,6 +47,7 @@ Private Const CLASS_NAME As String = "CrossTableFormula"
 '===============================================================================
 
 '@label:create
+
 '@sub-title Create a CrossTableFormula instance bound to a cross-table and formula data source.
 '@details
 'Factory method that returns a new CrossTableFormula through the predeclared-id
