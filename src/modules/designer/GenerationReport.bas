@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Designer")
 '@ModuleDescription("Incremental generation report: harvests IChecking objects and flushes them to the designer __checking worksheet.")
-'@depends CheckingOutput, ICheckingOutput, Checking, IChecking, HiddenNames, IHiddenNames, BetterArray, ILinelistSpecs, ILLdictionary, ILLChoices, ILLExport, IAnalysis, IPasswords, ILLFormat
+'@depends CheckingOutput, Checking, IChecking, HiddenNames, IHiddenNames, BetterArray, ILinelistSpecs, ILLdictionary, ILLChoices, ILLExport, IAnalysis, IPasswords, ILLFormat
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, UseMeaningfulName
 
 '@description
@@ -15,7 +15,7 @@ Option Explicit
 Private Const SHEET_CHECKING As String = "__checking"
 
 'Module-level reference kept alive across flushes within one generation run.
-Private reportOutput As ICheckingOutput
+Private reportOutput As CheckingOutput
 
 
 '@section Public API

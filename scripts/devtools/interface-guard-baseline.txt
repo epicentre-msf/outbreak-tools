@@ -6,7 +6,6 @@ IAnalysis
 IApplicationState
 IButtons
 IChecking
-ICheckingOutput
 ICrossTable
 ICrossTableFormula
 ICustomPivotTable
