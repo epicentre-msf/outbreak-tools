@@ -503,7 +503,7 @@ Private Function ExecuteCleanOperation(ByVal service As SetupImportService, _
 End Function
 
 Public Sub PostImportMaintenance()
-    Dim prep As ISetupPreparation
+    Dim prep As SetupPreparation
     
     Set prep = SetupPreparation.Create(ThisWorkbook)
     prep.EnsureUpdatedRegistry

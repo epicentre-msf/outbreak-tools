@@ -167,7 +167,7 @@ End Sub
 Public Sub clickResetTag(ByRef control As IRibbonControl)
     Application.ScreenUpdating = False
 
-   Dim prep As ISetupPreparation
+   Dim prep As SetupPreparation
 
    On Error GoTo Handler
 
@@ -563,7 +563,7 @@ End Sub
 '@EntryPoint
 '@Description("Initialise development environment - logic provided by consuming workbook")
 Public Sub clickDevInitialize(ByRef control As IRibbonControl)
-   Dim prep As ISetupPreparation
+   Dim prep As SetupPreparation
 
    On Error GoTo Cleanup
 

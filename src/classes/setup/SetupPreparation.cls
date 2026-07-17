@@ -10,7 +10,6 @@ Attribute VB_Exposed = False
 Attribute VB_Description = "Prepare dropdown lists and updated values registry for setup workbooks"
 
 Option Explicit
-Implements ISetupPreparation
 
 '@PredeclaredId
 '@Folder("Setup")
@@ -25,8 +24,7 @@ Implements ISetupPreparation
 'data validations to setup tables (Dictionary, Exports, Analysis), and
 'configuring hidden and protected sheets. Consumed by the setup entry
 'point to prepare all worksheet assets before the workbook is ready for
-'use. Uses the predeclared factory pattern through the ISetupPreparation
-'interface.
+'use. Uses the predeclared factory pattern.
 
 
 '@section State
@@ -76,13 +74,12 @@ Private Const TABLE_ANALYSIS_SPATIOTEMP As String = "Tab_SpatioTemporal_Analysis
 '@sub-title Create an initialised SetupPreparation instance
 '@details
 'Factory method on the predeclared instance. Validates the workbook is
-'not Nothing via Configure, then returns the new instance through the
-'ISetupPreparation interface.
+'not Nothing via Configure, then returns the new instance.
 '@param hostBook Workbook. The workbook hosting setup worksheets.
-'@return ISetupPreparation. A fully initialised instance ready for use.
+'@return SetupPreparation. A fully initialised instance ready for use.
 '@throws ProjectError.ObjectNotInitialized When hostBook is Nothing.
 '@export
-Public Function Create(ByVal hostBook As Workbook) As ISetupPreparation
+Public Function Create(ByVal hostBook As Workbook) As SetupPreparation
     Dim instance As SetupPreparation
 
     Set instance = New SetupPreparation
@@ -92,43 +89,9 @@ End Function
 
 '@label:self
 '@prop-title Current object instance
-'@return ISetupPreparation. The current instance cast to the interface.
-Public Property Get Self() As ISetupPreparation
+'@return SetupPreparation. The current instance.
+Public Property Get Self() As SetupPreparation
     Set Self = Me
-End Property
-
-'@section ISetupPreparation implementation
-'===============================================================================
-'@description Delegated members satisfying the ISetupPreparation contract.
-'See the corresponding Public members above for full documentation.
-
-
-Private Sub ISetupPreparation_Configure(ByVal hostBook As Workbook)
-    Configure hostBook
-End Sub
-
-Private Sub ISetupPreparation_Prepare(ByRef manager As IDevelopment)
-    Prepare manager
-End Sub
-
-Private Sub ISetupPreparation_EnsureDropdowns()
-    EnsureDropdowns
-End Sub
-
-Private Sub ISetupPreparation_EnsureUpdatedRegistry()
-    EnsureUpdatedRegistry
-End Sub
-
-Private Property Get ISetupPreparation_Dropdowns() As IDropdownLists
-    Set ISetupPreparation_Dropdowns = Dropdowns
-End Property
-
-Private Property Get ISetupPreparation_UpdatedWatcher() As IUpdatedValues
-    Set ISetupPreparation_UpdatedWatcher = UpdatedWatcher
-End Property
-
-Private Property Get ISetupPreparation_HostWorkbook() As Workbook
-    Set ISetupPreparation_HostWorkbook = HostWorkbook
 End Property
 
 '@section Public API
