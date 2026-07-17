@@ -24,7 +24,7 @@ Option Explicit
 'sheets and variables were imported, and builds a report of items not
 'imported or not touched.
 '@depends ILLdictionary, IPasswords, ICustomTable, IDataSheet
-'@depends IShowHideManager, ILLGeo, ILLChoices, ILLVariables, IDropdownLists, IHiddenNames
+'@depends ILLGeo, ILLChoices, ILLVariables, IDropdownLists, IHiddenNames
 
 
 '@section Enumerations
@@ -422,7 +422,7 @@ Public Sub ImportShowHide(ByVal impwb As Workbook)
     Dim sh As Worksheet
     Dim printSh As Worksheet
     Dim lo As ListObject
-    Dim shm As IShowHideManager
+    Dim shm As ShowHideManager
     Dim impsh As Worksheet
     Dim counter As Long
 

@@ -70,7 +70,7 @@ Public Sub TestBuildCreatesEntriesForVList()
     CustomTestSetTitles Assert, TESTMODULE, "TestBuildCreatesEntriesForVList"
     On Error GoTo TestFail
 
-    Dim sut As IShowHideManager
+    Dim sut As ShowHideManager
     Set sut = ShowHideManager.Create(Dict, ShowHideLayerVList, "vlist1D-sheet1")
 
     Assert.IsTrue sut.EntryCount > 0, _
@@ -95,7 +95,7 @@ Public Sub TestBuildCreatesEntriesForHList()
     CustomTestSetTitles Assert, TESTMODULE, "TestBuildCreatesEntriesForHList"
     On Error GoTo TestFail
 
-    Dim sut As IShowHideManager
+    Dim sut As ShowHideManager
     Set sut = ShowHideManager.Create(Dict, ShowHideLayerHList, "hlist2D-sheet1")
 
     Assert.IsTrue sut.EntryCount > 0, _
@@ -112,7 +112,7 @@ Public Sub TestBuildReturnsEmptyForUnknownSheet()
     CustomTestSetTitles Assert, TESTMODULE, "TestBuildReturnsEmptyForUnknownSheet"
     On Error GoTo TestFail
 
-    Dim sut As IShowHideManager
+    Dim sut As ShowHideManager
     Set sut = ShowHideManager.Create(Dict, ShowHideLayerHList, "nonexistent_sheet")
 
     Assert.AreEqual CLng(0), sut.EntryCount, _
@@ -132,7 +132,7 @@ Public Sub TestMandatoryFlaggedCorrectly()
     CustomTestSetTitles Assert, TESTMODULE, "TestMandatoryFlaggedCorrectly"
     On Error GoTo TestFail
 
-    Dim sut As IShowHideManager
+    Dim sut As ShowHideManager
     Dim idx As Long
 
     Set sut = ShowHideManager.Create(Dict, ShowHideLayerVList, "vlist1D-sheet1")
@@ -155,7 +155,7 @@ Public Sub TestSetHiddenIgnoresMandatory()
     CustomTestSetTitles Assert, TESTMODULE, "TestSetHiddenIgnoresMandatory"
     On Error GoTo TestFail
 
-    Dim sut As IShowHideManager
+    Dim sut As ShowHideManager
     Dim idx As Long
 
     Set sut = ShowHideManager.Create(Dict, ShowHideLayerVList, "vlist1D-sheet1")
@@ -180,7 +180,7 @@ Public Sub TestIsHiddenReturnsEffectiveState()
     CustomTestSetTitles Assert, TESTMODULE, "TestIsHiddenReturnsEffectiveState"
     On Error GoTo TestFail
 
-    Dim sut As IShowHideManager
+    Dim sut As ShowHideManager
     Dim idx As Long
 
     Set sut = ShowHideManager.Create(Dict, ShowHideLayerVList, "vlist1D-sheet1")
@@ -201,7 +201,7 @@ Public Sub TestSetHiddenUpdatesState()
     CustomTestSetTitles Assert, TESTMODULE, "TestSetHiddenUpdatesState"
     On Error GoTo TestFail
 
-    Dim sut As IShowHideManager
+    Dim sut As ShowHideManager
     Dim idx As Long
 
     Set sut = ShowHideManager.Create(Dict, ShowHideLayerVList, "vlist1D-sheet1")
@@ -226,7 +226,7 @@ Public Sub TestSetAllOptionalHiddenHidesNonMandatory()
     CustomTestSetTitles Assert, TESTMODULE, "TestSetAllOptionalHiddenHidesNonMandatory"
     On Error GoTo TestFail
 
-    Dim sut As IShowHideManager
+    Dim sut As ShowHideManager
     Dim mandIdx As Long
     Dim optIdx As Long
 
@@ -256,7 +256,7 @@ Public Sub TestForceHiddenOnCRFLayer()
     CustomTestSetTitles Assert, TESTMODULE, "TestForceHiddenOnCRFLayer"
     On Error GoTo TestFail
 
-    Dim sut As IShowHideManager
+    Dim sut As ShowHideManager
     Dim idx As Long
 
     Set sut = ShowHideManager.Create(Dict, ShowHideLayerCRF, "hlist2D-sheet2")
@@ -280,7 +280,7 @@ Public Sub TestIndexOfFindsEntry()
     CustomTestSetTitles Assert, TESTMODULE, "TestIndexOfFindsEntry"
     On Error GoTo TestFail
 
-    Dim sut As IShowHideManager
+    Dim sut As ShowHideManager
     Dim idx As Long
 
     Set sut = ShowHideManager.Create(Dict, ShowHideLayerVList, "vlist1D-sheet1")
@@ -301,7 +301,7 @@ Public Sub TestIndexOfReturnsZeroForMissing()
     CustomTestSetTitles Assert, TESTMODULE, "TestIndexOfReturnsZeroForMissing"
     On Error GoTo TestFail
 
-    Dim sut As IShowHideManager
+    Dim sut As ShowHideManager
 
     Set sut = ShowHideManager.Create(Dict, ShowHideLayerVList, "vlist1D-sheet1")
 
@@ -324,7 +324,7 @@ Public Sub TestPlanReturnsCorrectData()
     CustomTestSetTitles Assert, TESTMODULE, "TestPlanReturnsCorrectData"
     On Error GoTo TestFail
 
-    Dim sut As IShowHideManager
+    Dim sut As ShowHideManager
     Dim planData As BetterArray
     Dim entry As Variant
 
@@ -355,7 +355,7 @@ Public Sub TestExportPlanWritesRows()
     CustomTestSetTitles Assert, TESTMODULE, "TestExportPlanWritesRows"
     On Error GoTo TestFail
 
-    Dim sut As IShowHideManager
+    Dim sut As ShowHideManager
     Dim lo As ListObject
     Dim persistSheet As Worksheet
 
@@ -381,7 +381,7 @@ Public Sub TestImportPlanUpdatesHiddenState()
     CustomTestSetTitles Assert, TESTMODULE, "TestImportPlanUpdatesHiddenState"
     On Error GoTo TestFail
 
-    Dim sut As IShowHideManager
+    Dim sut As ShowHideManager
     Dim lo As ListObject
     Dim persistSheet As Worksheet
     Dim optIdx As Long
@@ -414,7 +414,7 @@ Public Sub TestImportPlanCannotHideMandatory()
     CustomTestSetTitles Assert, TESTMODULE, "TestImportPlanCannotHideMandatory"
     On Error GoTo TestFail
 
-    Dim sut As IShowHideManager
+    Dim sut As ShowHideManager
     Dim lo As ListObject
     Dim persistSheet As Worksheet
     Dim mandIdx As Long
@@ -446,7 +446,7 @@ Public Sub TestExportClearsLayerBeforeWriting()
     CustomTestSetTitles Assert, TESTMODULE, "TestExportClearsLayerBeforeWriting"
     On Error GoTo TestFail
 
-    Dim sut As IShowHideManager
+    Dim sut As ShowHideManager
     Dim lo As ListObject
     Dim persistSheet As Worksheet
     Dim initialCount As Long

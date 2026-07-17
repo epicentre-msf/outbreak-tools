@@ -13,10 +13,22 @@ Attribute VB_Description = "Consolidated show/hide visibility manager for all wo
 '@PredeclaredId
 '@Folder("ShowHide")
 '@ModuleDescription("Consolidated show/hide visibility manager for all worksheet layers")
-'@depends IShowHideManager, ILLdictionary, ILLVariables, LLVariables, BetterArray, IChecking
+'@depends ILLdictionary, ILLVariables, LLVariables, BetterArray, IChecking
 
 Option Explicit
-Implements IShowHideManager
+
+
+'@section Enumerations
+'===============================================================================
+
+' @description Worksheet layers that can receive show/hide visibility management.
+' Values align with legacy ShowHideScope for backward compatibility.
+Public Enum ShowHideWorksheetLayer
+    ShowHideLayerHList = 1
+    ShowHideLayerPrinted = 2
+    ShowHideLayerVList = 3
+    ShowHideLayerCRF = 4
+End Enum
 
 
 '@section Constants
@@ -74,10 +86,10 @@ Private this As TShowHideManager
 ' @param dict Prepared or unprepared dictionary reference.
 ' @param layer Target worksheet layer.
 ' @param sheetName Clean sheet name (without print_/crf_ prefixes).
-' @return IShowHideManager ready for use.
+' @return ShowHideManager ready for use.
 Public Function Create(ByVal dict As ILLdictionary, _
                        ByVal layer As ShowHideWorksheetLayer, _
-                       ByVal sheetName As String) As IShowHideManager
+                       ByVal sheetName As String) As ShowHideManager
 
     If dict Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, _
@@ -101,8 +113,8 @@ End Function
 '@section Public accessors
 '===============================================================================
 
-' @description Return the current instance as an interface reference.
-Public Property Get Self() As IShowHideManager
+' @description Return the current instance.
+Public Property Get Self() As ShowHideManager
     Set Self = Me
 End Property
 
@@ -864,80 +876,4 @@ End Function
 ' @description Raise a ProjectError-based exception.
 Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal message As String)
     Err.Raise CLng(errNumber), CLASS_NAME, message
-End Sub
-
-
-'@section Interface implementation
-'===============================================================================
-
-Private Property Get IShowHideManager_EntryCount() As Long
-    IShowHideManager_EntryCount = EntryCount
-End Property
-
-Private Property Get IShowHideManager_TargetLayer() As ShowHideWorksheetLayer
-    IShowHideManager_TargetLayer = TargetLayer
-End Property
-
-Private Property Get IShowHideManager_SheetName() As String
-    IShowHideManager_SheetName = SheetName
-End Property
-
-Private Function IShowHideManager_FieldKey(ByVal index As Long) As String
-    IShowHideManager_FieldKey = FieldKey(index)
-End Function
-
-Private Function IShowHideManager_HeaderText(ByVal index As Long) As String
-    IShowHideManager_HeaderText = HeaderText(index)
-End Function
-
-Private Function IShowHideManager_IsHidden(ByVal index As Long) As Boolean
-    IShowHideManager_IsHidden = IsHidden(index)
-End Function
-
-Private Function IShowHideManager_IsMandatory(ByVal index As Long) As Boolean
-    IShowHideManager_IsMandatory = IsMandatory(index)
-End Function
-
-Private Function IShowHideManager_PositionIndex(ByVal index As Long) As Long
-    IShowHideManager_PositionIndex = PositionIndex(index)
-End Function
-
-Private Function IShowHideManager_ControlType(ByVal index As Long) As String
-    IShowHideManager_ControlType = ControlType(index)
-End Function
-
-Private Function IShowHideManager_IndexOf(ByVal fieldKey As String) As Long
-    IShowHideManager_IndexOf = IndexOf(fieldKey)
-End Function
-
-Private Function IShowHideManager_HasField(ByVal fieldKey As String) As Boolean
-    IShowHideManager_HasField = HasField(fieldKey)
-End Function
-
-Private Sub IShowHideManager_SetHidden(ByVal index As Long, ByVal hidden As Boolean)
-    SetHidden index, hidden
-End Sub
-
-Private Sub IShowHideManager_SetAllOptionalHidden(ByVal hidden As Boolean)
-    SetAllOptionalHidden hidden
-End Sub
-
-Private Function IShowHideManager_Plan() As BetterArray
-    Set IShowHideManager_Plan = Plan()
-End Function
-
-Private Sub IShowHideManager_ExportPlan(ByVal lo As ListObject)
-    ExportPlan lo
-End Sub
-
-Private Sub IShowHideManager_ImportPlan(ByVal lo As ListObject)
-    ImportPlan lo
-End Sub
-
-Private Sub IShowHideManager_ExportForMigration(ByVal lo As ListObject, ByVal sourceSh As Worksheet)
-    ExportForMigration lo, sourceSh
-End Sub
-
-Private Sub IShowHideManager_ImportForMigration(ByVal lo As ListObject, ByVal targetSh As Worksheet)
-    ImportForMigration lo, targetSh
 End Sub
