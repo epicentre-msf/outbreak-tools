@@ -40,10 +40,10 @@ jobs:
             any::cli
             any::commonmark
       - name: Build developer docs
-        run: bash automate/codes/build-docs.sh
+        run: bash scripts/codes/build-docs.sh
 
       - name: Generate releases page
-        run: bash automate/codes/build-releases.sh
+        run: bash scripts/codes/build-releases.sh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

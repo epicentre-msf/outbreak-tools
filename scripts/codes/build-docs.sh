@@ -6,10 +6,10 @@ echo "==> Cleaning previous output..."
 rm -rf src/docs
 
 echo "==> Parsing VBA annotations..."
-Rscript automate/codes/create-docs.R --all
+Rscript scripts/codes/create-docs.R --all
 
 echo "==> Building HTML site..."
-Rscript automate/codes/build-site.R
+Rscript scripts/codes/build-site.R
 
 echo "==> Copying to site/dev/ for Quarto integration..."
 rm -rf site/dev

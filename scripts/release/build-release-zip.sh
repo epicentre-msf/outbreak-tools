@@ -5,7 +5,7 @@
 # Assemble OBT-<branch>-<version>.zip (designer + setup + ribbon template) from the
 # working-tree binaries, matching the legacy create_obt_zip.R payload and naming.
 # The caller must ensure the binaries are present first (locally they already are;
-# in CI run automate/release/pull-assets.sh before this).
+# in CI run scripts/release/pull-assets.sh before this).
 #
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
@@ -45,7 +45,7 @@ case "$BRANCH" in
 esac
 
 for f in "$DESIGNER" "$SETUP" "$RIBBON"; do
-  [ -f "$f" ] || { echo "ERROR: missing $f — run automate/release/pull-assets.sh first." >&2; exit 1; }
+  [ -f "$f" ] || { echo "ERROR: missing $f — run scripts/release/pull-assets.sh first." >&2; exit 1; }
 done
 
 command -v zip >/dev/null 2>&1 || { echo "ERROR: 'zip' not found." >&2; exit 1; }

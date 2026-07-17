@@ -8,7 +8,7 @@
 
 # --- Binaries: stored in the GitHub Release asset store, NOT in git -----------
 #   The working binaries live on the 'working-binaries' GitHub Release.
-#   Sync with automate/release/pull-assets.{sh,ps1} / push-assets.{sh,ps1}.
+#   Sync with scripts/release/pull-assets.{sh,ps1} / push-assets.{sh,ps1}.
 #   Versioned release zips are published by .github/workflows/release.yml.
 src/bin/
 .mock/
@@ -74,7 +74,7 @@ obt-doc-skill/
 .claude/
 
 #------- Rewrite workflow
-automate/history-rewrite
+scripts/history-rewrite
 
 #--- Automation 
 *.pl

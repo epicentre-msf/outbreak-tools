@@ -27,11 +27,11 @@ For more informations about the setup, please [browse]((https://github.com/epice
 
 #### Automation
 
-Automation of the work can be done on R (**only works on a windows machine**) using the provided [R script](https://github.com/epicentre-msf/outbreak-tools/raw/main/automate/codes/run_designer_on_windows.R) as example. It sends the required parameters for the designer to a [vbscript](https://github.com/epicentre-msf/outbreak-tools/raw/main/automate/codes/rundesigner.vbs) which in turn opens excel and runs the routines for linelist creation.
+Automation of the work can be done on R (**only works on a windows machine**) using the provided [R script](https://github.com/epicentre-msf/outbreak-tools/raw/main/scripts/codes/run_designer_on_windows.R) as example. It sends the required parameters for the designer to a [vbscript](https://github.com/epicentre-msf/outbreak-tools/raw/main/scripts/codes/rundesigner.vbs) which in turn opens excel and runs the routines for linelist creation.
 
 #### Structure of the repo
 
-- `automate`: scripts for automating linelist creation, the release workflow, and development
+- `scripts`: scripts for automating linelist creation, the release workflow, and development
 - `docs`: Documentation website
 - `src`: Source codes — binaries are **not** in git; they live in the GitHub Release asset store (see [RELEASING.md](RELEASING.md))
 

@@ -59,8 +59,8 @@ jobs:
           BR="${{ steps.s.outputs.branch }}"
           VER="${{ steps.cl.outputs.version }}"
           TAG="${{ steps.s.outputs.tag }}"
-          bash automate/release/pull-assets.sh
-          bash automate/release/build-release-zip.sh "$BR" "$VER"
+          bash scripts/release/pull-assets.sh
+          bash scripts/release/build-release-zip.sh "$BR" "$VER"
           # Drop any stale tag that has no release, so --target binds to THIS commit.
           if git ls-remote --tags origin "refs/tags/$TAG" | grep -q .; then
             gh api -X DELETE "repos/$GITHUB_REPOSITORY/git/refs/tags/$TAG" || true

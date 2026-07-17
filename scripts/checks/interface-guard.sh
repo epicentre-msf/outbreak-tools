@@ -130,7 +130,7 @@ FLAGGED="$(printf '%s' "$FLAGGED" | grep -v '^$' || true)"
 if [ "$MODE" = "write-baseline" ]; then
     {
         echo "# interface-guard baseline — flagged interfaces known/accepted at snapshot time."
-        echo "# Regenerate with: bash automate/checks/interface-guard.sh --write-baseline"
+        echo "# Regenerate with: bash scripts/checks/interface-guard.sh --write-baseline"
         echo "# The guard fails only on FLAGGED interfaces NOT listed here (genuinely new ones)."
         printf '%s\n' "$FLAGGED"
     } > "$BASELINE_FILE"
@@ -165,7 +165,7 @@ fi
 
 if [ ! -f "$BASELINE_FILE" ]; then
     echo "No baseline found. Guard is not armed."
-    echo "  Run: bash automate/checks/interface-guard.sh --write-baseline"
+    echo "  Run: bash scripts/checks/interface-guard.sh --write-baseline"
     echo "  to record the $n_flag currently-flagged interfaces as accepted; thereafter"
     echo "  the guard fails only on NEW unjustified interfaces."
     exit 0

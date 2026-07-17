@@ -35,7 +35,7 @@ releases are cut automatically from `CHANGELOG.md` by CI.
 
 Binaries are **not** committed to git: `.gitignore` covers `src/bin/`, `.mock/`, the
 ribbon templates (`ribbons/_ribbontemplate_*.xlsb`), and there is no `releases/`
-folder. `git history` was rewritten to purge them (`automate/history-rewrite/`); the
+folder. `git history` was rewritten to purge them (`scripts/history-rewrite/`); the
 ribbon-template binaries are untracked now and folded into a later rewrite pass (they
 are listed in `02-rewrite.sh`'s `LIVE_PATHS`). The ribbon **XML** definitions and
 `ribbon_icons/` stay in git — they're source.
@@ -50,8 +50,8 @@ and the two `ribbons/_ribbontemplate_*.xlsb`.
 
 | Task | Command | What it does |
 |------|---------|--------------|
-| Publish your binaries off-git | `bash automate/release/push-assets.sh` | bundles the paths above → uploads (`--clobber`). Creates the release on first run. |
-| Restore binaries (new machine / CI) | `bash automate/release/pull-assets.sh` | downloads the bundle → extracts into `src/bin/`, `.mock/`, and the ribbon templates. |
+| Publish your binaries off-git | `bash scripts/release/push-assets.sh` | bundles the paths above → uploads (`--clobber`). Creates the release on first run. |
+| Restore binaries (new machine / CI) | `bash scripts/release/pull-assets.sh` | downloads the bundle → extracts into `src/bin/`, `.mock/`, and the ribbon templates. |
 
 Windows: use the `.ps1` twins. Both need the `gh` CLI authenticated with write
 access to the repo.
@@ -134,7 +134,7 @@ branch's** copy, so `release.yml` must be on **`main`** to cut main releases (me
 
 ## 5. The releases page
 
-`automate/codes/build-releases.sh` generates `site/releases.qmd` from the **GitHub
+`scripts/codes/build-releases.sh` generates `site/releases.qmd` from the **GitHub
 Releases API** (`gh api …/releases`): a Latest section, an "All releases" table,
 per-release changelog notes, and a Legacy-archive table. The `working-binaries` infra
 release and the `dev-latest` pointer are excluded from the listing.
@@ -142,7 +142,7 @@ release and the `dev-latest` pointer are excluded from the listing.
 `publish.yml` runs it (with `GH_TOKEN`) and publishes the Quarto site to `gh-pages`.
 It triggers on push to `dev`, on release events, and via `workflow_dispatch` (which is
 how `release.yml` refreshes the page after creating a release). Test it offline with
-`OUT=/tmp/r.qmd RELEASES_JSON_FILE=fixture.json bash automate/codes/build-releases.sh`.
+`OUT=/tmp/r.qmd RELEASES_JSON_FILE=fixture.json bash scripts/codes/build-releases.sh`.
 
 ---
 
@@ -151,21 +151,21 @@ how `release.yml` refreshes the page after creating a release). Test it offline 
 | Path | Role |
 |------|------|
 | `CHANGELOG.md` | date-based release log; its top heading drives releases |
-| `automate/release/push-assets.{sh,ps1}` | publish working binaries to the asset store |
-| `automate/release/pull-assets.{sh,ps1}` | restore working binaries from the asset store |
-| `automate/release/build-release-zip.sh` | assemble `OBT-{branch}-{version}.zip` |
-| `automate/release/backfill-legacy.sh` | one-time: upload old `releases/old/*.zip` to `legacy-archive` |
-| `automate/codes/build-releases.sh` | generate the releases page from the Releases API |
+| `scripts/release/push-assets.{sh,ps1}` | publish working binaries to the asset store |
+| `scripts/release/pull-assets.{sh,ps1}` | restore working binaries from the asset store |
+| `scripts/release/build-release-zip.sh` | assemble `OBT-{branch}-{version}.zip` |
+| `scripts/release/backfill-legacy.sh` | one-time: upload old `releases/old/*.zip` to `legacy-archive` |
+| `scripts/codes/build-releases.sh` | generate the releases page from the Releases API |
 | `.github/workflows/release.yml` | changelog-driven release (the engine) |
 | `.github/workflows/publish.yml` | build docs + releases page → gh-pages |
-| `automate/history-rewrite/` | one-time git history purge tooling (README inside) |
+| `scripts/history-rewrite/` | one-time git history purge tooling (README inside) |
 
 ---
 
 ## 7. Maintenance / one-time
 
 - **History rewrite (done):** binaries were purged from all git history via
-  `automate/history-rewrite/` (single `filter-repo` pass over all branches, then
+  `scripts/history-rewrite/` (single `filter-repo` pass over all branches, then
   force-push). See its `README.md` if it ever needs repeating.
 - **Reclaim GitHub-side space:** force-pushing shrinks local clones, but GitHub keeps
   the old objects until it runs `gc`. Open a **GitHub Support request** to repack the
@@ -184,15 +184,15 @@ how `release.yml` refreshes the page after creating a release). Test it offline 
 
 ```sh
 # get the binaries (new machine)
-bash automate/release/pull-assets.sh
+bash scripts/release/pull-assets.sh
 
 # after editing binaries in Excel + update_files tasks
-bash automate/release/push-assets.sh
+bash scripts/release/push-assets.sh
 
 # cut a release: add a "## [YYYY.MM.DD]" heading to CHANGELOG.md, then
 git add CHANGELOG.md && git commit -m "Release YYYY.MM.DD" && git push origin dev   # pre-release
 #   ... merge dev -> main and push main for the stable "Latest" release
 
 # preview the releases page locally
-OUT=/tmp/r.qmd bash automate/codes/build-releases.sh && less /tmp/r.qmd
+OUT=/tmp/r.qmd bash scripts/codes/build-releases.sh && less /tmp/r.qmd
 ```
