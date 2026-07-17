@@ -31,7 +31,7 @@ Implements ILinelist
 '`With New Linelist`.
 '@depends ILinelistSpecs, ILLdictionary, ITranslationObject,
 '  IPasswords, ILLFormat, ITemporaryRepos, IHiddenNames,
-'  IButtons, IDropdownLists, ICustomPivotTable, DropdownLists,
+'  IDropdownLists, ICustomPivotTable, DropdownLists,
 '  CustomPivotTable, TemporaryRepos, HiddenNames, Buttons, CodeTransfer,
 '  BetterArray
 '@version 1.0 (2026-02-09)
@@ -775,7 +775,7 @@ Private Sub PrepareAdmin()
     Dim trads As ITranslationObject
     Dim design As ILLFormat
     Dim pass As IPasswords
-    Dim but As IButtons
+    Dim but As Buttons
     Dim rng As Range
 
     Set design = this.specs.DesignFormat

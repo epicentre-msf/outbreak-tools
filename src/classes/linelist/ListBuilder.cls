@@ -27,7 +27,7 @@ Option Explicit
 'Consumers call Create with a layer mode, sheet name, and linelist
 'reference, then invoke Build to construct the sheet.
 '@depends ILinelist, ILLSheets, ILinelistSpecs, ILLFormat, IDropdownLists,
-'  IPasswords, ITranslationObject, IButtons, IHiddenNames, SectionBuilder,
+'  IPasswords, ITranslationObject, Buttons, IHiddenNames, SectionBuilder,
 '  ICustomPivotTables, BetterArray
 '@version 1.0 (2026-02-09)
 
@@ -189,7 +189,7 @@ Private Sub BuildHList()
     Dim pivotObj As ICustomPivotTable
     Dim trads As ITranslationObject
     Dim rng As Range
-    Dim but As IButtons
+    Dim but As Buttons
     Dim Lo As ListObject
     Dim sectionsList As BetterArray
     Dim tableName As String

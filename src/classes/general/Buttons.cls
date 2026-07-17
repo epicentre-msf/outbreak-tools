@@ -17,7 +17,6 @@ Attribute VB_Description = "Buttons of the linelist"
 '@depends Checking
 
 Option Explicit
-Implements IButtons
 
 '@class Buttons
 '@description
@@ -60,19 +59,29 @@ Private Const LARGE_MULTIPLIER As Long = 2
 Private checkCounter As Long
 Private internalChecks As IChecking
 
+'@section Enumerations
+'===============================================================================
+'@description Available button footprints.
+
+Public Enum ButtonScope
+    ButtonScopeLarge = 1
+    ButtonScopeSmall = 2
+    ButtonScopeGeo = 3
+End Enum
+
 '@section Factory
 '===============================================================================
 'Initialisation and self-reference.
 
 '@label:create
-'@sub-title Factory returning an initialised interface
+'@sub-title Factory returning an initialised Buttons instance
 '@param outrng Range. Anchor cell for the button.
 '@param codeName String. Name assigned to the shape.
 '@param scope Byte. ButtonScope controlling size and format.
-'@return IButtons. Ready to use.
+'@return Buttons. Ready to use.
 '@export
 Public Function Create(ByVal outrng As Range, ByVal codeName As String, _
-                       ByVal scope As Byte) As IButtons
+                       ByVal scope As Byte) As Buttons
 
     If outrng Is Nothing Then
         LogCheck "Missing output range while creating button", checkingError
@@ -93,9 +102,9 @@ End Function
 'State accessors.
 
 '@label:self
-'@prop-title Self-reference as IButtons
-'@return IButtons. Self-reference.
-Public Property Get Self() As IButtons
+'@prop-title Self-reference
+'@return Buttons. Self-reference.
+Public Property Get Self() As Buttons
     Set Self = Me
 End Property
 
@@ -298,7 +307,7 @@ End Sub
 '@prop-title Whether diagnostic entries have been recorded
 '@return Boolean. True when at least one entry exists.
 '@export
-Private Property Get HasCheckings() As Boolean
+Public Property Get HasCheckings() As Boolean
     HasCheckings = this.hasChecks
 End Property
 
@@ -306,7 +315,7 @@ End Property
 '@prop-title Retrieve the diagnostic log entries
 '@return Object. The checking instance, or Nothing.
 '@export
-Private Property Get CheckingValues() As Object
+Public Property Get CheckingValues() As Object
     If Not HasCheckings Then Exit Property
     Set CheckingValues = internalChecks
 End Property
@@ -393,40 +402,3 @@ Private Function EffectiveLabel(ByVal providedLabel As String, ByVal fallbackNam
         EffectiveLabel = providedLabel
     End If
 End Function
-
-'@section Interface
-'===============================================================================
-'IButtons delegation wiring.
-
-Private Sub IButtons_Add(Optional ByVal actionCommand As String = vbNullString, _
-                         Optional ByVal shapeLabel As String = vbNullString)
-    Add actionCommand:=actionCommand, shapeLabel:=shapeLabel
-End Sub
-
-Private Sub IButtons_Format(design As ILLFormat)
-    Format design
-End Sub
-
-Private Property Get IButtons_OutputRange() As Range
-    Set IButtons_OutputRange = OutputRange
-End Property
-
-Private Property Get IButtons_Name() As String
-    IButtons_Name = Name()
-End Property
-
-Private Property Set IButtons_OutputRange(ByVal rng As Range)
-    Set OutputRange = rng
-End Property
-
-Private Property Get IButtons_HasCheckings() As Boolean
-    IButtons_HasCheckings = HasCheckings
-End Property
-
-Private Property Get IButtons_CheckingValues() As Object
-    Set IButtons_CheckingValues = CheckingValues
-End Property
-
-Private Property Get IButtons_ShapeScope() As Byte
-    IButtons_ShapeScope = ShapeScope()
-End Property
