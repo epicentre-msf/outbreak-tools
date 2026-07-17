@@ -1184,7 +1184,7 @@ End Function
 '@return String. Converted formula ready for tokenising.
 Private Function ConvertedSetupFormula() As String
     Dim result As String
-    Dim caseWhenObj As ICaseWhen
+    Dim caseWhenObj As CaseWhen
     Dim choiceObj As ChoiceFormula
     Dim valueObj As ValueOfFormula
 

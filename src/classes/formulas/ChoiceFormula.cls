@@ -35,7 +35,7 @@ Option Explicit
 Private Type TChoiceFormula
     formula As String              'Original formula specification
     cachedArguments As BetterArray  'Cached list of arguments extracted from the formula
-    cachedCaseWhen As ICaseWhen     'Lazily created CaseWhen wrapper
+    cachedCaseWhen As CaseWhen     'Lazily created CaseWhen wrapper
     cachedChoiceName As String      'Memoised choice list identifier
 End Type
 
@@ -143,7 +143,7 @@ End Property
 '@return String. Expression ready for worksheet consumption.
 '@export
 Public Function parsedFormula() As String
-    Dim caseObj As ICaseWhen
+    Dim caseObj As CaseWhen
 
     If Not Valid() Then Exit Function
 
@@ -162,7 +162,7 @@ End Function
 '@return BetterArray. Collection containing quoted category labels.
 '@export
 Public Function Categories() As BetterArray
-    Dim caseObj As ICaseWhen
+    Dim caseObj As CaseWhen
     Dim categoriesTable As BetterArray
 
     Set categoriesTable = New BetterArray
@@ -374,9 +374,9 @@ End Function
 'Builds the CASE_WHEN expression from parsed arguments and delegates
 'to CaseWhen.Create to obtain the parser. The result is cached for
 'subsequent accesses. Raises an error when conversion fails.
-'@return ICaseWhen. The converted formula parser.
+'@return CaseWhen. The converted formula parser.
 '@throws ProjectError.ErrorUnexpectedState When conversion to CASE_WHEN fails.
-Private Property Get CaseWhenWrapper() As ICaseWhen
+Private Property Get CaseWhenWrapper() As CaseWhen
     Dim caseFormula As String
 
     If Not (this.cachedCaseWhen Is Nothing) Then

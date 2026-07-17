@@ -5,7 +5,6 @@ IAnaTabIds
 IAnalysis
 IApplicationState
 IButtons
-ICaseWhen
 IChecking
 ICheckingOutput
 ICrossTable

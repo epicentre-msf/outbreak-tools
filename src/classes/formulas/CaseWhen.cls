@@ -15,7 +15,6 @@ Attribute VB_Description = "Handle CaseWhen custom function"
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit
-Implements ICaseWhen
 
 '@class CaseWhen
 '@description
@@ -51,13 +50,13 @@ Private Const QUOTE_CHAR As String = """"
 '@sub-title Instantiate a CaseWhen parser bound to a formula
 '@details
 'Trims the incoming formula, stores it in a new instance, and returns
-'the ICaseWhen interface reference for fluent downstream consumption.
+'the new instance for fluent downstream consumption.
 'No eager parsing occurs; the formula is parsed lazily on first access
 'to Valid, ParsedFormula, or Categories.
 '@param formula String. The CASE_WHEN expression to parse.
-'@return ICaseWhen. A ready-to-query parser instance.
+'@return CaseWhen. A ready-to-query parser instance.
 '@export
-Public Function Create(ByVal formula As String) As ICaseWhen
+Public Function Create(ByVal formula As String) As CaseWhen
     With New CaseWhen
         .casewhenFormula = formula
         Set Create = .Self
@@ -71,10 +70,10 @@ End Function
 '@label:self
 '@prop-title Current object instance
 '@details
-'Returns the current instance cast to its interface. Used internally
-'by the factory method to return an ICaseWhen reference.
-'@return ICaseWhen. Reference to the current object.
-Public Property Get Self() As ICaseWhen
+'Returns the current instance. Used internally by the factory method
+'to return the built object.
+'@return CaseWhen. Reference to the current object.
+Public Property Get Self() As CaseWhen
     Set Self = Me
 End Property
 
@@ -111,7 +110,7 @@ End Property
 'False for empty strings or formulas that do not match the token.
 '@return Boolean. True when the formula is parseable.
 '@export
-Private Property Get Valid() As Boolean
+Public Property Get Valid() As Boolean
     Dim formula As String
     formula = Trim$(casewhenFormula)
     If LenB(formula) = 0 Then Exit Property
@@ -168,7 +167,7 @@ End Property
 'nested IF calls.
 '@return String. Nested IF expression ready for worksheet consumption.
 '@export
-Private Function parsedFormula() As String
+Public Function parsedFormula() As String
 
     Dim counter As Long
     Dim formula As String
@@ -214,7 +213,7 @@ End Function
 'wrapped in quotes for consistent downstream handling.
 '@return BetterArray. Collection containing quoted category labels.
 '@export
-Private Function Categories() As BetterArray
+Public Function Categories() As BetterArray
     Dim categoriesTable As BetterArray
     Dim counter As Long
     Dim parsingTable As BetterArray
@@ -335,19 +334,3 @@ Private Function SplitFormulaSegments(ByVal formulaBody As String) As BetterArra
 
     Set SplitFormulaSegments = segments
 End Function
-
-'@section Interface
-'===============================================================================
-'@description Delegated members satisfying the ICaseWhen contract.
-
-Private Property Get ICaseWhen_Valid() As Boolean
-    ICaseWhen_Valid = Valid()
-End Property
-
-Private Property Get ICaseWhen_ParsedFormula() As String
-    ICaseWhen_ParsedFormula = parsedFormula()
-End Property
-
-Private Property Get ICaseWhen_Categories() As BetterArray
-    Set ICaseWhen_Categories = Categories()
-End Property
