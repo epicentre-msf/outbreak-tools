@@ -26,7 +26,7 @@ Implements ILLExporter
 'populates it with the relevant data, metadata, and formatting, then saves
 'and closes it. Consumers interact through the ILLExporter interface.
 '@depends ILLdictionary, ILLExport, IPasswords, ICustomTable
-'@depends IDataSheet, IShowHideManager, IAnaTabIds, ILLGeo, ILLChoices, IHiddenNames
+'@depends IDataSheet, IShowHideManager, AnaTabIds, ILLGeo, ILLChoices, IHiddenNames
 
 
 '@section Constants
@@ -955,7 +955,7 @@ Private Sub AddAnalysisSheets(ByVal outwb As Workbook, ByVal afterSheetName As S
     Dim wkbNames As IHiddenNames
     Dim sheetNamesList As BetterArray
     Dim scopesList As BetterArray
-    Dim namObj As IAnaTabIds
+    Dim namObj As AnaTabIds
     Dim outsh As Worksheet
     Dim sheetName As String
     Dim scope As Byte

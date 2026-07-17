@@ -848,7 +848,7 @@ Private Sub TransferAllCode(ByVal codeTransfer As CodeTransfer)
                    "LLExporter", "ILLExporter", _
                     "LLImporter", "ILLImporter", _
                    "IGraphs", "Graphs", "AnaTabIds", _
-                   "IAnaTabIds", "ExportButton", _
+                   "ExportButton", _
                    "HiddenNames", "IHiddenNames", _
                    "EventLinelist", _
                    "ApplicationState", "IApplicationState"
