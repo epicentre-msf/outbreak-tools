@@ -16,9 +16,9 @@ export sheet and performs a custom export when clicked. The factory wires
 the button, an optional filter checkbox, and translation/workbook
 references. On click, RunExport selects a folder, optionally confirms
 filter usage, then delegates to LLExporter.ExportCustom. The factory
-returns the concrete class (not IExportButton) because callers hold a
+returns the concrete class because callers hold a
 reference to keep the WithEvents binding alive.</p>
-<p><strong>Depends on:</strong> <a href="IExportButton.html">IExportButton</a>, <a href="ILLExporter.html">ILLExporter</a>, <a href="LLExporter.html">LLExporter</a>, <a href="IApplicationState.html">IApplicationState</a>, <a href="ApplicationState.html">ApplicationState</a>, <a href="IOSFiles.html">IOSFiles</a>, <a href="OSFiles.html">OSFiles</a></p>
+<p><strong>Depends on:</strong> <a href="ILLExporter.html">ILLExporter</a>, <a href="LLExporter.html">LLExporter</a>, <a href="IApplicationState.html">IApplicationState</a>, <a href="ApplicationState.html">ApplicationState</a>, <a href="IOSFiles.html">IOSFiles</a>, <a href="OSFiles.html">OSFiles</a></p>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
 <div class="section-body">
@@ -213,22 +213,6 @@ filter state.</p>
 <li>ProjectError.<varies> Always raises the specified error.</li>
 </ul>
 <hr />
-<h2 id="int-interface-implementation">Interface Implementation</h2>
-<h3 id="int-iexportbutton-exportnumber">IExportButton_ExportNumber <a class="anchor-link" href="#int-iexportbutton-exportnumber">#</a></h3>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get IExportButton_ExportNumber() As Long
-</code></pre>
-<p>Delegation to IExportButton interface members.</p>
-<hr />
-</details>
-<details>
-<summary>Used in (4 file(s))</summary>
-<ul>
-<li><a href="ExportButton.html">ExportButton.cls</a></li>
-<li><a href="IExportButton.html">IExportButton.cls</a></li>
-<li><a href="Linelist.html">Linelist.cls</a></li>
-<li>TestExportButton.bas</li>
-</ul>
 </details>
   </main>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
