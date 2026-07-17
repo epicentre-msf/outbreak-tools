@@ -27,7 +27,7 @@ Option Explicit
 'Consumers call Create with a layer mode, sheet name, and linelist
 'reference, then invoke Build to construct the sheet.
 '@depends ILinelist, ILLSheets, ILinelistSpecs, ILLFormat, IDropdownLists,
-'  IPasswords, ITranslationObject, IButtons, IHiddenNames, ISectionBuilder,
+'  IPasswords, ITranslationObject, IButtons, IHiddenNames, SectionBuilder,
 '  ICustomPivotTables, BetterArray
 '@version 1.0 (2026-02-09)
 
@@ -497,7 +497,7 @@ Private Sub BuildSections(ByVal sh As Worksheet, ByVal printSh As Worksheet)
     Dim specs As ILinelistSpecs
     Dim llshs As ILLSheets
     Dim startRow As Long
-    Dim secBuilder As ISectionBuilder
+    Dim secBuilder As SectionBuilder
     Dim crfSh As Worksheet
     Dim dropdownObj As IDropdownLists
     Dim customDropdownObj As IDropdownLists

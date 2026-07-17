@@ -103,7 +103,7 @@ Public Sub TestCreateReturnsInstance()
     CustomTestSetTitles Assert, TESTMODULE, "TestCreateReturnsInstance"
     On Error GoTo TestFail
 
-    Dim sut As ISectionBuilder
+    Dim sut As SectionBuilder
     Set sut = SectionBuilder.Create( _
         layer:=SectionBuilderModeVList, _
         specs:=Specs, _
@@ -123,7 +123,7 @@ Public Sub TestCreateRaisesWithoutSpecs()
     CustomTestSetTitles Assert, TESTMODULE, "TestCreateRaisesWithoutSpecs"
     On Error GoTo ExpectError
 
-    Dim sut As ISectionBuilder
+    Dim sut As SectionBuilder
     Set sut = SectionBuilder.Create( _
         layer:=SectionBuilderModeVList, _
         specs:=Nothing, _
@@ -143,7 +143,7 @@ Public Sub TestCreateRaisesWithoutWorksheet()
     CustomTestSetTitles Assert, TESTMODULE, "TestCreateRaisesWithoutWorksheet"
     On Error GoTo ExpectError
 
-    Dim sut As ISectionBuilder
+    Dim sut As SectionBuilder
     Set sut = SectionBuilder.Create( _
         layer:=SectionBuilderModeVList, _
         specs:=Specs, _
@@ -166,7 +166,7 @@ Public Sub TestBuildVListWritesSectionName()
     CustomTestSetTitles Assert, TESTMODULE, "TestBuildVListWritesSectionName"
     On Error GoTo TestFail
 
-    Dim sut As ISectionBuilder
+    Dim sut As SectionBuilder
     Dim startRow As Long
 
     Set sut = SectionBuilder.Create( _
@@ -200,7 +200,7 @@ Public Sub TestBuildVListWritesSubSectionName()
     CustomTestSetTitles Assert, TESTMODULE, "TestBuildVListWritesSubSectionName"
     On Error GoTo TestFail
 
-    Dim sut As ISectionBuilder
+    Dim sut As SectionBuilder
     Dim startRow As Long
 
     Set sut = SectionBuilder.Create( _
@@ -232,7 +232,7 @@ Public Sub TestBuildVListWritesVariableLabels()
     CustomTestSetTitles Assert, TESTMODULE, "TestBuildVListWritesVariableLabels"
     On Error GoTo TestFail
 
-    Dim sut As ISectionBuilder
+    Dim sut As SectionBuilder
     Dim startRow As Long
     Dim labelCol As Long
 

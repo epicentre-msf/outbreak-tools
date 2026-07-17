@@ -42,7 +42,6 @@ ILinelistBuildService
 IMasterSetupPreparation
 IMasterSetupVariables
 IOSFiles
-ISectionBuilder
 ISetupErrors
 ISetupImportService
 ISetupPreparation

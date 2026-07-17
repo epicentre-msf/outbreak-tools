@@ -14,7 +14,6 @@ Attribute VB_Exposed = False
 '@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation
 
 Option Explicit
-Implements ISectionBuilder
 
 '@class SectionBuilder
 '@description
@@ -66,8 +65,7 @@ Private Const CRF_SHEET_PREFIX As String = "crf_"
 'Factory method on the predeclared instance. Validates that specs and
 'wksh are not Nothing, then initialises a new SectionBuilder with the
 'given layer, specifications, and optional companion worksheets and
-'dropdown managers. Returns the instance through the ISectionBuilder
-'interface.
+'dropdown managers. Returns the newly built instance.
 '@param layer Byte. SectionBuilderMode enum value (HList=1, VList=2).
 '@param specs ILinelistSpecs. The linelist specifications object.
 '@param wksh Worksheet. The target main worksheet.
@@ -75,7 +73,7 @@ Private Const CRF_SHEET_PREFIX As String = "crf_"
 '@param crfWksh Optional Worksheet. CRF companion worksheet (HList only).
 '@param dropdownObj Optional IDropdownLists. Dropdown lists manager.
 '@param customDropdownObj Optional IDropdownLists. Custom dropdown lists manager.
-'@return ISectionBuilder. A fully initialised instance ready for use.
+'@return SectionBuilder. A fully initialised instance ready for use.
 '@throws VbObjectError+516 When specs or wksh is Nothing.
 '@export
 Public Function Create(ByVal layer As Byte, _
@@ -84,7 +82,7 @@ Public Function Create(ByVal layer As Byte, _
                        Optional ByVal printWksh As Worksheet = Nothing, _
                        Optional ByVal crfWksh As Worksheet = Nothing, _
                        Optional ByVal dropdownObj As IDropdownLists = Nothing, _
-                       Optional ByVal customDropdownObj As IDropdownLists = Nothing) As ISectionBuilder
+                       Optional ByVal customDropdownObj As IDropdownLists = Nothing) As SectionBuilder
 
     If specs Is Nothing Then ThrowError ProjectError.ObjectNotInitialized, "Specifications object is required"
     If wksh Is Nothing Then ThrowError ProjectError.ObjectNotInitialized, "Target worksheet is required"
@@ -104,10 +102,10 @@ End Function
 '@label:self
 '@prop-title Current object instance
 '@details
-'Returns the current instance cast to the ISectionBuilder interface,
-'used by the Create factory to return the newly built object.
-'@return ISectionBuilder. The current instance.
-Public Property Get Self() As ISectionBuilder
+'Returns the current instance, used by the Create factory to return the
+'newly built object.
+'@return SectionBuilder. The current instance.
+Public Property Get Self() As SectionBuilder
     Set Self = Me
 End Property
 
@@ -734,21 +732,4 @@ End Property
 Public Property Get CheckingValues() As IChecking
     If Not HasCheckings Then Exit Property
     Set CheckingValues = internalChecks
-End Property
-
-
-'@section Interface Implementation
-'===============================================================================
-'@description Delegated members satisfying the ISectionBuilder contract.
-
-Private Sub ISectionBuilder_Build(ByVal sheetName As String, ByVal startRow As Long)
-    Build sheetName, startRow
-End Sub
-
-Private Property Get ISectionBuilder_HasCheckings() As Boolean
-    ISectionBuilder_HasCheckings = HasCheckings
-End Property
-
-Private Property Get ISectionBuilder_CheckingValues() As IChecking
-    Set ISectionBuilder_CheckingValues = CheckingValues
 End Property
