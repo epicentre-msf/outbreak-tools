@@ -15,7 +15,6 @@ Attribute VB_Description = "Parse and expose CHOICE_FORMULA expressions"
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, ProcedureNotUsed, UseMeaningfulName, HungarianNotation
 
 Option Explicit
-Implements IChoiceFormula
 
 '@class ChoiceFormula
 '@description
@@ -54,12 +53,12 @@ Private Const QUOTE_CHAR As String = """"
 '@sub-title Instantiate a ChoiceFormula parser bound to a formula
 '@details
 'Trims the incoming formula, stores it in a new instance, and returns
-'the IChoiceFormula interface for fluent downstream operations. No
-'eager parsing occurs; the formula is parsed lazily on first access.
+'the ChoiceFormula for fluent downstream operations. No eager parsing
+'occurs; the formula is parsed lazily on first access.
 '@param formula String. Representation of a CHOICE_FORMULA call.
-'@return IChoiceFormula. A ready-to-query parser instance.
+'@return ChoiceFormula. A ready-to-query parser instance.
 '@export
-Public Function Create(ByVal formula As String) As IChoiceFormula
+Public Function Create(ByVal formula As String) As ChoiceFormula
     With New ChoiceFormula
         .ChoiceSpecifications = formula
         Set Create = .Self
@@ -73,10 +72,9 @@ End Function
 '@label:self
 '@prop-title Current object instance
 '@details
-'Returns the current instance cast to its interface. Used internally
-'by the factory method to return an IChoiceFormula reference.
-'@return IChoiceFormula. Reference to the current object.
-Public Property Get Self() As IChoiceFormula
+'Returns the current instance. Used internally by the factory method.
+'@return ChoiceFormula. Reference to the current object.
+Public Property Get Self() As ChoiceFormula
     Set Self = Me
 End Property
 
@@ -113,7 +111,7 @@ End Property
 'when any argument is blank.
 '@return Boolean. True when the specification can be converted to CASE_WHEN.
 '@export
-Private Property Get Valid() As Boolean
+Public Property Get Valid() As Boolean
     Dim arguments As BetterArray
     Dim argumentCount As Long
     Dim sanitized As String
@@ -144,7 +142,7 @@ End Property
 'Returns an empty string when the formula is invalid or conversion fails.
 '@return String. Expression ready for worksheet consumption.
 '@export
-Private Function parsedFormula() As String
+Public Function parsedFormula() As String
     Dim caseObj As ICaseWhen
 
     If Not Valid() Then Exit Function
@@ -163,7 +161,7 @@ End Function
 'CaseWhen wrapper cannot be created.
 '@return BetterArray. Collection containing quoted category labels.
 '@export
-Private Function Categories() As BetterArray
+Public Function Categories() As BetterArray
     Dim caseObj As ICaseWhen
     Dim categoriesTable As BetterArray
 
@@ -194,7 +192,7 @@ End Function
 'is memoised after the first resolution.
 '@return String. Choice list identifier.
 '@export
-Private Function choiceName() As String
+Public Function choiceName() As String
     choiceName = ResolvedChoiceName()
 End Function
 
@@ -438,23 +436,3 @@ End Function
 Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal message As String)
     Err.Raise errNumber, CLASSNAME, message
 End Sub
-
-'@section Interface
-'===============================================================================
-'@description Delegated members satisfying the IChoiceFormula contract.
-
-Private Property Get IChoiceFormula_parsedFormula() As String
-    IChoiceFormula_parsedFormula = parsedFormula()
-End Property
-
-Private Property Get IChoiceFormula_Categories() As BetterArray
-    Set IChoiceFormula_Categories = Categories()
-End Property
-
-Private Property Get IChoiceFormula_Valid() As Boolean
-    IChoiceFormula_Valid = Valid()
-End Property
-
-Private Property Get IChoiceFormula_ChoiceName() As String
-    IChoiceFormula_ChoiceName = choiceName()
-End Property

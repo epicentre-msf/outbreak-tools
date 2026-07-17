@@ -16,9 +16,9 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 'formulas with and without default branches, category extraction, choice name
 'parsing from the first argument, nested comma expressions (e.g. OR), and
 'rejection of invalid input including missing condition/result pairs and wrong
-'token types. Each test creates a fresh IChoiceFormula instance through the
+'token types. Each test creates a fresh ChoiceFormula instance through the
 'CreateChoiceFormula helper using module-level formula constants as fixtures.
-'@depends ChoiceFormula, IChoiceFormula, BetterArray, CustomTest, ICustomTest
+'@depends ChoiceFormula, BetterArray, CustomTest, ICustomTest
 
 Private Const VALID_FORMULA_WITH_DEFAULT As String = _
     "CHOICE_FORMULA(list_multiple, A1=""Yes"", ""Choice is A"", B1>0, ""Choice is B"", ""Default Choice"")"
@@ -29,13 +29,13 @@ Private Const INVALID_FORMULA_WRONG_TOKEN As String = _
     "CASE_WHEN(A1=""Yes"", ""Choice is A"", B1>0, ""Choice is B"")"
 
 Private Assert As ICustomTest
-Private choiceObj As IChoiceFormula
+Private choiceObj As ChoiceFormula
 
 '@section Helpers
 '===============================================================================
 
 '@sub-title Instantiate a ChoiceFormula parser for the provided expression
-Private Function CreateChoiceFormula(ByVal formula As String) As IChoiceFormula
+Private Function CreateChoiceFormula(ByVal formula As String) As ChoiceFormula
     Set CreateChoiceFormula = ChoiceFormula.Create(formula)
 End Function
 
