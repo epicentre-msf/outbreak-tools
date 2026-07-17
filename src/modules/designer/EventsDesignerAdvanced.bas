@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Designer")
 '@ModuleDescription("Non-core ribbon callbacks for the designer workbook.")
-'@depends DesignerPreparation, IDesignerPreparation, DesignerEntry, IDesignerEntry, RibbonDev, LLGeo, ILLGeo, ApplicationState, IApplicationState, OSFiles, IOSFiles, HiddenNames, IHiddenNames, BetterArray, DropdownLists, IDropdownLists, LinelistBuildService, ILinelistBuildService, LinelistSpecs, ILinelistSpecs, Linelist, ILinelist, ListBuilder, IListBuilder, LLSheets, ILLSheets, GenerationReport
+'@depends DesignerPreparation, IDesignerPreparation, DesignerEntry, RibbonDev, LLGeo, ILLGeo, ApplicationState, IApplicationState, OSFiles, IOSFiles, HiddenNames, IHiddenNames, BetterArray, DropdownLists, IDropdownLists, LinelistBuildService, ILinelistBuildService, LinelistSpecs, ILinelistSpecs, Linelist, ILinelist, ListBuilder, IListBuilder, LLSheets, ILLSheets, GenerationReport
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 'Non-core ribbon logics are callbacks whose absence will not fire a
@@ -103,7 +103,7 @@ End Sub
 '@Description("Clear all entry input ranges on the Main sheet.")
 '@EntryPoint
 Public Sub clickClearEnt()
-    Dim entry As IDesignerEntry
+    Dim entry As DesignerEntry
     Dim appScope As IApplicationState
 
     On Error GoTo Cleanup
@@ -139,7 +139,7 @@ End Sub
 '@EntryPoint
 Public Sub clickLoadFileDic()
     Dim io As IOSFiles
-    Dim entry As IDesignerEntry
+    Dim entry As DesignerEntry
     Dim appScope As IApplicationState
     Dim setupBook As Workbook
     Dim tradSheet As Worksheet
@@ -205,7 +205,7 @@ End Sub
 '@EntryPoint
 Public Sub clickLoadGeoFile()
     Dim io As IOSFiles
-    Dim entry As IDesignerEntry
+    Dim entry As DesignerEntry
     Dim appScope As IApplicationState
 
     'Show the file dialog before entering busy state
@@ -243,7 +243,7 @@ End Sub
 '@EntryPoint
 Public Sub clickLinelistDir()
     Dim io As IOSFiles
-    Dim entry As IDesignerEntry
+    Dim entry As DesignerEntry
     Dim appScope As IApplicationState
 
     'Show the folder dialog before entering busy state
@@ -281,7 +281,7 @@ End Sub
 '@EntryPoint
 Public Sub clickLoadTemplate()
     Dim io As IOSFiles
-    Dim entry As IDesignerEntry
+    Dim entry As DesignerEntry
     Dim appScope As IApplicationState
 
     'Show the file dialog before entering busy state
@@ -323,7 +323,7 @@ End Sub
 '@Description("Import setup, prepare specifications, build output linelist workbook, and save.")
 '@EntryPoint
 Public Sub clickGenerate()
-    Dim entry As IDesignerEntry
+    Dim entry As DesignerEntry
     Dim appScope As IApplicationState
     Dim buildService As ILinelistBuildService
     Dim specs As ILinelistSpecs
@@ -536,7 +536,7 @@ End Sub
 
 '@Description("Check that all required fields for generation are filled and valid.")
 '@return Boolean. True when all required fields pass validation.
-Private Function ValidateGenerationReadiness(ByVal entry As IDesignerEntry) As Boolean
+Private Function ValidateGenerationReadiness(ByVal entry As DesignerEntry) As Boolean
     Dim setupPath As String
     Dim llDir As String
     Dim llName As String

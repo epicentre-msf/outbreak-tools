@@ -14,7 +14,6 @@ ICustomPivotTable
 ICustomTable
 ICustomTest
 IDataSheet
-IDesignerEntry
 IDesignerPreparation
 IDevelopment
 IDiseaseApplicationState

@@ -98,7 +98,7 @@ Public Sub TestClearResetsInputRanges()
         rng.Interior.Color = vbYellow
     Next rng
 
-    Dim subject As IDesignerEntry
+    Dim subject As DesignerEntry
     Set subject = DesignerEntry.Create(EntrySheet)
 
     'Act
@@ -134,7 +134,7 @@ Public Sub TestClearResetsWarnings()
         rng.Interior.Color = vbRed
     Next rng
 
-    Dim subject As IDesignerEntry
+    Dim subject As DesignerEntry
     Set subject = DesignerEntry.Create(EntrySheet)
 
     'Act
@@ -159,7 +159,7 @@ Public Sub TestTranslateUpdatesLanguageCode()
     CustomTestSetTitles Assert, "DesignerEntry", "TestTranslateUpdatesLanguageCode"
     On Error GoTo Fail
 
-    Dim subject As IDesignerEntry
+    Dim subject As DesignerEntry
     Dim translator As DesignerTranslationStub
 
     Set translator = New DesignerTranslationStub
@@ -187,7 +187,7 @@ Public Sub TestAddInfoWritesToNamedRange()
     'Arrange: create the setuppath named range on the entry sheet
     FixtureWorkbook.Names.Add Name:="RNG_PathDico", RefersTo:=EntrySheet.Range("B1")
 
-    Dim subject As IDesignerEntry
+    Dim subject As DesignerEntry
     Set subject = DesignerEntry.Create(EntrySheet)
 
     'Act
@@ -212,7 +212,7 @@ Public Sub TestAddInfoEditionRange()
     'Arrange
     FixtureWorkbook.Names.Add Name:="RNG_Edition", RefersTo:=EntrySheet.Range("C1")
 
-    Dim subject As IDesignerEntry
+    Dim subject As DesignerEntry
     Set subject = DesignerEntry.Create(EntrySheet)
 
     'Act: write a status message to the edition range
@@ -236,7 +236,7 @@ Public Sub TestValueOfReadsFromNamedRange()
     FixtureWorkbook.Names.Add Name:="RNG_PathGeo", RefersTo:=EntrySheet.Range("D1")
     EntrySheet.Range("D1").value = "/path/to/geo.xlsx"
 
-    Dim subject As IDesignerEntry
+    Dim subject As DesignerEntry
     Set subject = DesignerEntry.Create(EntrySheet)
 
     'Act
@@ -257,7 +257,7 @@ Public Sub TestValueOfReturnsEmptyForUnknownRange()
     CustomTestSetTitles Assert, "DesignerEntry", "TestValueOfReturnsEmptyForUnknownRange"
     On Error GoTo Fail
 
-    Dim subject As IDesignerEntry
+    Dim subject As DesignerEntry
     Set subject = DesignerEntry.Create(EntrySheet)
 
     'Act: request an unknown info name
@@ -283,7 +283,7 @@ Public Sub TestTranslateMessageReturnsTranslatedText()
     Set translator = New DesignerTranslationStub
     translator.SetMessage "MSG_ChemFich", "File path loaded"
 
-    Dim subject As IDesignerEntry
+    Dim subject As DesignerEntry
     Set subject = DesignerEntry.Create(EntrySheet)
     subject.UseTranslator translator
 
@@ -309,7 +309,7 @@ Public Sub TestTranslateMessageFallsBackToRawCode()
     Dim translator As DesignerTranslationStub
     Set translator = New DesignerTranslationStub
 
-    Dim subject As IDesignerEntry
+    Dim subject As DesignerEntry
     Set subject = DesignerEntry.Create(EntrySheet)
     subject.UseTranslator translator
 
@@ -333,7 +333,7 @@ Public Sub TestAddInfoSilentlySkipsMissingRange()
 
     'Arrange: do NOT create the RNG_PathDico named range
 
-    Dim subject As IDesignerEntry
+    Dim subject As DesignerEntry
     Set subject = DesignerEntry.Create(EntrySheet)
 
     'Act: should not raise an error
@@ -356,7 +356,7 @@ Public Sub TestValueOfLLDirRange()
     FixtureWorkbook.Names.Add Name:="RNG_LLDir", RefersTo:=EntrySheet.Range("E1")
     EntrySheet.Range("E1").value = "/output/folder"
 
-    Dim subject As IDesignerEntry
+    Dim subject As DesignerEntry
     Set subject = DesignerEntry.Create(EntrySheet)
 
     'Act
@@ -381,7 +381,7 @@ Public Sub TestValueOfLLNameRange()
     FixtureWorkbook.Names.Add Name:="RNG_LLName", RefersTo:=EntrySheet.Range("F1")
     EntrySheet.Range("F1").value = "my_linelist"
 
-    Dim subject As IDesignerEntry
+    Dim subject As DesignerEntry
     Set subject = DesignerEntry.Create(EntrySheet)
 
     'Act
@@ -406,7 +406,7 @@ Public Sub TestValueOfTempPathRange()
     FixtureWorkbook.Names.Add Name:="RNG_LLTemp", RefersTo:=EntrySheet.Range("G1")
     EntrySheet.Range("G1").value = "/path/to/template.xlsb"
 
-    Dim subject As IDesignerEntry
+    Dim subject As DesignerEntry
     Set subject = DesignerEntry.Create(EntrySheet)
 
     'Act

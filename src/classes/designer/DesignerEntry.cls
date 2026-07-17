@@ -16,7 +16,6 @@ Attribute VB_Description = "Coordinates clearing and translation behaviours for 
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, ParameterNotUsed
 
 Option Explicit
-Implements IDesignerEntry
 
 '@class DesignerEntry
 '@description
@@ -25,7 +24,6 @@ Implements IDesignerEntry
 'translator (for applying language translations and translating message
 'codes) from the host worksheet and its parent workbook. The translator
 'can be replaced via setter injection for testing.
-'Consumers interact through the IDesignerEntry interface.
 '@depends DesignerTranslation, IDesignerTranslation
 
 
@@ -64,12 +62,12 @@ Private Const RNG_WARNING As String = "RNG_Warning"
 '@sub-title Create and configure a designer entry helper
 '@details
 'Factory method that creates a new DesignerEntry instance, binds it to
-'the supplied worksheet via Configure, and returns the result through
-'the IDesignerEntry interface. Called on the predeclared instance.
+'the supplied worksheet via Configure, and returns the result. Called
+'on the predeclared instance.
 '@param hostSheet Worksheet. The worksheet hosting designer inputs.
-'@return IDesignerEntry. A fully initialised instance ready for use.
+'@return DesignerEntry. A fully initialised instance ready for use.
 '@export
-Public Function Create(ByVal hostSheet As Worksheet) As IDesignerEntry
+Public Function Create(ByVal hostSheet As Worksheet) As DesignerEntry
     Dim instance As DesignerEntry
 
     Set instance = New DesignerEntry
@@ -81,9 +79,9 @@ End Function
 '@prop-title Current object instance
 '@details
 'Convenience accessor so consuming code can fluently retrieve the
-'interface reference from the predeclared Create method.
-'@return IDesignerEntry. The current instance cast to the interface.
-Public Property Get Self() As IDesignerEntry
+'instance from the predeclared Create method.
+'@return DesignerEntry. The current instance.
+Public Property Get Self() As DesignerEntry
     Set Self = Me
 End Property
 
@@ -369,41 +367,3 @@ End Function
 Private Sub RaiseError(ByVal errorCode As ProjectError, ByVal messageText As String)
     Err.Raise CLng(errorCode), CLASS_NAME, messageText
 End Sub
-
-
-'@section Interface Implementation
-'===============================================================================
-'@description Delegated members satisfying the IDesignerEntry contract.
-'See the corresponding members above for full documentation.
-
-Private Sub IDesignerEntry_AddInfo(ByVal value As String, ByVal infoName As String)
-    AddInfo value, infoName
-End Sub
-
-Private Sub IDesignerEntry_Clear()
-    Clear
-End Sub
-
-Private Sub IDesignerEntry_Configure(ByVal hostSheet As Worksheet)
-    Configure hostSheet
-End Sub
-
-Private Property Get IDesignerEntry_HostSheet() As Worksheet
-    Set IDesignerEntry_HostSheet = HostSheet
-End Property
-
-Private Sub IDesignerEntry_Translate(Optional ByVal language As String = vbNullString)
-    Translate language
-End Sub
-
-Private Function IDesignerEntry_TranslateMessage(ByVal msgCode As String) As String
-    IDesignerEntry_TranslateMessage = TranslateMessage(msgCode)
-End Function
-
-Private Sub IDesignerEntry_UseTranslator(ByVal translator As IDesignerTranslation)
-    UseTranslator translator
-End Sub
-
-Private Property Get IDesignerEntry_ValueOf(ByVal infoName As String) As String
-    IDesignerEntry_ValueOf = ValueOf(infoName)
-End Property
