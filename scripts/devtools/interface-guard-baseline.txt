@@ -1,5 +1,5 @@
 # interface-guard baseline — flagged interfaces known/accepted at snapshot time.
-# Regenerate with: bash scripts/checks/interface-guard.sh --write-baseline
+# Regenerate with: bash scripts/devtools/interface-guard.sh --write-baseline
 # The guard fails only on FLAGGED interfaces NOT listed here (genuinely new ones).
 IAnaTabIds
 IAnalysis

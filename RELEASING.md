@@ -134,7 +134,7 @@ branch's** copy, so `release.yml` must be on **`main`** to cut main releases (me
 
 ## 5. The releases page
 
-`scripts/codes/build-releases.sh` generates `site/releases.qmd` from the **GitHub
+`scripts/ci/build-releases.sh` generates `site/releases.qmd` from the **GitHub
 Releases API** (`gh api …/releases`): a Latest section, an "All releases" table,
 per-release changelog notes, and a Legacy-archive table. The `working-binaries` infra
 release and the `dev-latest` pointer are excluded from the listing.
@@ -142,7 +142,7 @@ release and the `dev-latest` pointer are excluded from the listing.
 `publish.yml` runs it (with `GH_TOKEN`) and publishes the Quarto site to `gh-pages`.
 It triggers on push to `dev`, on release events, and via `workflow_dispatch` (which is
 how `release.yml` refreshes the page after creating a release). Test it offline with
-`OUT=/tmp/r.qmd RELEASES_JSON_FILE=fixture.json bash scripts/codes/build-releases.sh`.
+`OUT=/tmp/r.qmd RELEASES_JSON_FILE=fixture.json bash scripts/ci/build-releases.sh`.
 
 ---
 
@@ -155,7 +155,7 @@ how `release.yml` refreshes the page after creating a release). Test it offline 
 | `scripts/release/pull-assets.{sh,ps1}` | restore working binaries from the asset store |
 | `scripts/release/build-release-zip.sh` | assemble `OBT-{branch}-{version}.zip` |
 | `scripts/release/backfill-legacy.sh` | one-time: upload old `releases/old/*.zip` to `legacy-archive` |
-| `scripts/codes/build-releases.sh` | generate the releases page from the Releases API |
+| `scripts/ci/build-releases.sh` | generate the releases page from the Releases API |
 | `.github/workflows/release.yml` | changelog-driven release (the engine) |
 | `.github/workflows/publish.yml` | build docs + releases page → gh-pages |
 | `scripts/history-rewrite/` | one-time git history purge tooling (README inside) |
@@ -194,5 +194,5 @@ git add CHANGELOG.md && git commit -m "Release YYYY.MM.DD" && git push origin de
 #   ... merge dev -> main and push main for the stable "Latest" release
 
 # preview the releases page locally
-OUT=/tmp/r.qmd bash scripts/codes/build-releases.sh && less /tmp/r.qmd
+OUT=/tmp/r.qmd bash scripts/ci/build-releases.sh && less /tmp/r.qmd
 ```

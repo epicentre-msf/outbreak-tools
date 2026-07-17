@@ -7,7 +7,7 @@ use List::Util qw(max);
 ################################################################################
 # harness_test_replacements.pl
 # ------------------------------------------------------------------------------
-# This script mirrors the logic implemented in automate/codes/harness_test_replacements.R
+# This script mirrors the logic implemented in scripts/devtools/harness-test-replacements.R
 # but is written in Perl for maintainability.  It ingests a VBA module, scrubs out the
 # legacy Rubberduck harness boilerplate, and injects the CustomTest harness conventions
 # used by this project.  The script deliberately favors readability over terseness; the

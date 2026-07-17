@@ -177,7 +177,7 @@ names(joined_data) <- sort(targeted_tables)
 
 
 # write back to an empty workbook ==============================================
-source(glue::glue("{obt_repo}/scripts/codes/functions_tabulations.R"))
+source(glue::glue("{obt_repo}/scripts/devtools/functions-tabulations.R"))
 
 header_names <- c(
   "Tables for translations of the linelist",

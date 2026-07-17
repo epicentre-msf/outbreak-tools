@@ -10,7 +10,7 @@ library(here)
 
 docs_dir   <- here("src", "docs")
 site_dir   <- path(docs_dir, "site")
-style_src  <- here("scripts", "codes", "style.css")
+style_src  <- here("scripts", "docs", "style.css")
 
 dir_create(site_dir)
 

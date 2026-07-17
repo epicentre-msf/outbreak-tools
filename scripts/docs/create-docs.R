@@ -2,7 +2,7 @@ library(here)
 library(fs)
 library(stringr)
 
-source(here("scripts/codes/class-doc.R"))
+source(here("scripts/docs/class-doc.R"))
 
 classes_folder <- here("src")
 

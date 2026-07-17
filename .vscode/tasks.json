@@ -32,13 +32,13 @@
             "type": "process",
             "command": "perl",
             "args": [
-                "scripts/codes/harness_test_replacements.pl",
+                "scripts/devtools/harness-test-replacements.pl",
                 "${file}"
             ],
             "windows": {
                 "command": "perl",
                 "args": [
-                    "scripts/codes/harness_test_replacements.pl",
+                    "scripts/devtools/harness-test-replacements.pl",
                     "${file}"
                 ]
             },
@@ -53,13 +53,13 @@
             "type": "process",
             "command": "perl",
             "args": [
-                "scripts/codes/add_failure_logging.pl",
+                "scripts/devtools/add-failure-logging.pl",
                 "${file}"
             ],
             "windows": {
                 "command": "perl",
                 "args": [
-                    "scripts/codes/add_failure_logging.pl",
+                    "scripts/devtools/add-failure-logging.pl",
                     "${file}"
                 ]
             },
@@ -74,7 +74,7 @@
             "type": "process",
             "command": "perl",
             "args": [
-                "scripts/codes/find_private_properties_missing_end.pl",
+                "scripts/devtools/find-private-properties-missing-end.pl",
                 "--root",
                 "${workspaceFolder}",
                 "--output",
@@ -83,7 +83,7 @@
             "windows": {
                 "command": "perl",
                 "args": [
-                    "scripts\\codes\\find_private_properties_missing_end.pl",
+                    "scripts\\devtools\\find-private-properties-missing-end.pl",
                     "--root",
                     "${workspaceFolder}",
                     "--output",
@@ -102,7 +102,7 @@
             "command": "Rscript",
             "args": [
                 "-e",
-                "source('scripts/codes/update_files.R'); update_unit_test('mock')"
+                "source('scripts/devtools/update-files.R'); update_unit_test('mock')"
             ],
             "windows": {
                 "command": "${env:RPATH}\\bin\\Rscript.exe"
@@ -119,7 +119,7 @@
             "command": "Rscript",
             "args": [
                 "-e",
-                "source('scripts/codes/update_files.R'); update_designer('dev')"
+                "source('scripts/devtools/update-files.R'); update_designer('dev')"
             ],
             "windows": {
                 "command": "${env:RPATH}\\bin\\Rscript.exe"
@@ -136,7 +136,7 @@
             "command": "Rscript",
             "args": [
                 "-e",
-                "source('scripts/codes/update_files.R'); update_designer('main')"
+                "source('scripts/devtools/update-files.R'); update_designer('main')"
             ],
             "windows": {
                 "command": "${env:RPATH}\\bin\\Rscript.exe"
@@ -153,7 +153,7 @@
             "command": "Rscript",
             "args": [
                 "-e",
-                "source('scripts/codes/update_files.R'); update_setup('mock')"
+                "source('scripts/devtools/update-files.R'); update_setup('mock')"
             ],
             "windows": {
                 "command": "${env:RPATH}\\bin\\Rscript.exe"
@@ -170,7 +170,7 @@
             "command": "Rscript",
             "args": [
                 "-e",
-                "source('scripts/codes/update_files.R'); update_setup('main')"
+                "source('scripts/devtools/update-files.R'); update_setup('main')"
             ],
             "windows": {
                 "command": "${env:RPATH}\\bin\\Rscript.exe"
@@ -187,7 +187,7 @@
             "command": "Rscript",
             "args": [
                 "-e",
-                "source('scripts/codes/update_files.R'); update_master_setup('mock')"
+                "source('scripts/devtools/update-files.R'); update_master_setup('mock')"
             ],
             "windows": {
                 "command": "${env:RPATH}\\bin\\Rscript.exe"
@@ -204,7 +204,7 @@
             "command": "Rscript",
             "args": [
                 "-e",
-                "source('scripts/codes/update_files.R'); update_master_setup('main')"
+                "source('scripts/devtools/update-files.R'); update_master_setup('main')"
             ],
             "windows": {
                 "command": "${env:RPATH}\\bin\\Rscript.exe"
@@ -221,7 +221,7 @@
             "command": "Rscript",
             "args": [
                 "-e",
-                "source('scripts/codes/update_files.R'); update_unit_test('main')"
+                "source('scripts/devtools/update-files.R'); update_unit_test('main')"
             ],
             "windows": {
                 "command": "${env:RPATH}\\bin\\Rscript.exe"
@@ -238,7 +238,7 @@
             "command": "Rscript",
             "args": [
                 "-e",
-                "source('scripts/codes/create_vba_classes.R'); create_class('${input:className}')"
+                "source('scripts/devtools/create-vba-classes.R'); create_class('${input:className}')"
             ],
             "windows": {
                 "command": "${env:RPATH}\\bin\\Rscript.exe"
@@ -255,7 +255,7 @@
             "command": "Rscript",
             "args": [
                 "-e",
-                "source('scripts/codes/create_vba_modules.R'); create_modules('${input:className}')"
+                "source('scripts/devtools/create-vba-modules.R'); create_modules('${input:className}')"
             ],
             "windows": {
                 "command": "${env:RPATH}\\bin\\Rscript.exe"
@@ -271,13 +271,13 @@
             "type": "process",
             "command": "perl",
             "args": [
-                "scripts/codes/remove_const_underscores.pl",
+                "scripts/devtools/remove-const-underscores.pl",
                 "${file}"
             ],
             "windows": {
                 "command": "perl",
                 "args": [
-                    "scripts\\codes\\remove_const_underscores.pl",
+                    "scripts\\devtools\\remove-const-underscores.pl",
                     "${file}"
                 ]
             },
@@ -292,13 +292,13 @@
             "type": "process",
             "command": "perl",
             "args": [
-                "scripts/codes/remove_const_underscores.pl",
+                "scripts/devtools/remove-const-underscores.pl",
                 "${input:constTargetFolder}"
             ],
             "windows": {
                 "command": "perl",
                 "args": [
-                    "scripts\\codes\\remove_const_underscores.pl",
+                    "scripts\\devtools\\remove-const-underscores.pl",
                     "${input:constTargetFolder}"
                 ]
             },
@@ -313,7 +313,7 @@
             "type": "process",
             "command": "perl",
             "args": [
-                "scripts/codes/print_vba_to_pdf.pl",
+                "scripts/devtools/print-vba-to-pdf.pl",
                 "--output",
                 "${input:printPdfOutputPath}",
                 "--title",
@@ -323,7 +323,7 @@
             "windows": {
                 "command": "perl",
                 "args": [
-                    "scripts\\codes\\print_vba_to_pdf.pl",
+                    "scripts\\devtools\\print-vba-to-pdf.pl",
                     "--output",
                     "${input:printPdfOutputPath}",
                     "--title",
@@ -342,7 +342,7 @@
             "type": "process",
             "command": "perl",
             "args": [
-                "scripts/codes/print_vba_to_pdf.pl",
+                "scripts/devtools/print-vba-to-pdf.pl",
                 "--output",
                 "${input:printPdfFolderOutputPath}",
                 "--title",
@@ -353,7 +353,7 @@
             "windows": {
                 "command": "perl",
                 "args": [
-                    "scripts\\codes\\print_vba_to_pdf.pl",
+                    "scripts\\devtools\\print-vba-to-pdf.pl",
                     "--output",
                     "${input:printPdfFolderOutputPath}",
                     "--title",
@@ -373,7 +373,7 @@
             "type": "shell",
             "command": "bash",
             "args": [
-                "scripts/codes/build-docs.sh"
+                "scripts/docs/build-docs.sh"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"
@@ -383,7 +383,7 @@
                 "args": [
                     "-NoProfile",
                     "-Command",
-                    "Remove-Item -Recurse -Force src/docs -ErrorAction SilentlyContinue; Rscript scripts/codes/create-docs.R --all; Rscript scripts/codes/build-site.R"
+                    "Remove-Item -Recurse -Force src/docs -ErrorAction SilentlyContinue; Rscript scripts/docs/create-docs.R --all; Rscript scripts/docs/build-site.R"
                 ]
             },
             "group": "build",
@@ -398,7 +398,7 @@
             "type": "shell",
             "command": "Rscript",
             "args": [
-                "scripts/codes/create-docs.R",
+                "scripts/docs/create-docs.R",
                 "class",
                 "${input:docClassName}"
             ],
@@ -419,7 +419,7 @@
             "type": "shell",
             "command": "Rscript",
             "args": [
-                "scripts/codes/create-docs.R",
+                "scripts/docs/create-docs.R",
                 "--interface",
                 "${input:docClassName}"
             ],
@@ -440,7 +440,7 @@
             "type": "shell",
             "command": "Rscript",
             "args": [
-                "scripts/codes/number_lines.R"
+                "scripts/devtools/number-lines.R"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"
@@ -459,7 +459,7 @@
             "type": "shell",
             "command": "Rscript",
             "args": [
-                "scripts/codes/match_designertranslations.R"
+                "scripts/devtools/match-designertranslations.R"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"
@@ -478,7 +478,7 @@
             "type": "shell",
             "command": "bash",
             "args": [
-                "scripts/checks/interface-guard.sh"
+                "scripts/devtools/interface-guard.sh"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"
