@@ -18,7 +18,7 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 'and value variables reside on different worksheets. Each test rebuilds a
 'fresh dictionary fixture via PrepareDictionaryFixture so that dictionary
 'state is isolated between runs.
-'@depends ValueOfFormula, IValueOfFormula, LLdictionary, ILLdictionary,
+'@depends ValueOfFormula, LLdictionary, ILLdictionary,
 '  LLVariables, ILLVariables, BetterArray, CustomTest, ICustomTest,
 '  DictionaryTestFixture, TestHelpers
 
@@ -44,8 +44,8 @@ Private dictionary As ILLdictionary
 'method, passing the supplied expression string and the module-level
 'dictionary fixture. Used by every test to obtain a parser under test.
 '@param expression String. VALUE_OF expression to parse.
-'@return IValueOfFormula. Parser instance ready for assertion.
-Private Function BuildParser(ByVal expression As String) As IValueOfFormula
+'@return ValueOfFormula. Parser instance ready for assertion.
+Private Function BuildParser(ByVal expression As String) As ValueOfFormula
     Set BuildParser = ValueOfFormula.Create(expression, dictionary)
 End Function
 
@@ -167,7 +167,7 @@ Public Sub TestValueOfFormulaConvertsToNewSignature()
     CustomTestSetTitles Assert, "ValueOfFormula", "TestValueOfFormulaConvertsToNewSignature"
     On Error GoTo Fail
 
-    Dim parser As IValueOfFormula
+    Dim parser As ValueOfFormula
     Dim vars As ILLVariables
     Dim lookupSheet As String
     Dim lookupIndex As Long
@@ -213,7 +213,7 @@ Public Sub TestValueOfFormulaRejectsCrossSheetArguments()
     On Error GoTo Fail
 
     Dim mismatchedVar As String
-    Dim parser As IValueOfFormula
+    Dim parser As ValueOfFormula
     Dim failureMessage As String
 
     mismatchedVar = VariableOnDifferentSheet("choi_h2")

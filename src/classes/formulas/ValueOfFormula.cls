@@ -15,7 +15,6 @@ Attribute VB_Description = "Parse VALUE_OF formulas and resolve lookup metadata"
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, ProcedureNotUsed, UseMeaningfulName, HungarianNotation
 
 Option Explicit
-Implements IValueOfFormula
 
 '@class ValueOfFormula
 '@description
@@ -24,7 +23,7 @@ Implements IValueOfFormula
 'The class validates that all three arguments (key variable, lookup variable,
 'value variable) exist in the dictionary and share the same worksheet, then
 'resolves column indices for downstream consumption. Consumers interact
-'through the IValueOfFormula interface.
+'through its public accessors.
 '@depends BetterArray, LLdictionary, LLVariables, LLSheets
 '@version 1.0 (2026-02-09)
 
@@ -70,7 +69,7 @@ Private Const ERROR_EMPTY_FORMULA As String = "VALUE_OF formula cannot be blank"
 '@sub-title Instantiate a VALUE_OF parser bound to the supplied dictionary
 '@details
 'Validates that the dictionary is not Nothing, stores all dependencies,
-'and returns the IValueOfFormula interface. Parsing is deferred until
+'and returns the parser instance. Parsing is deferred until
 'the first access to Valid, ConvertedFormula, or any result property.
 'Optional variables and sheets helpers can be supplied to avoid
 'redundant instantiation when the caller already holds them.
@@ -78,13 +77,13 @@ Private Const ERROR_EMPTY_FORMULA As String = "VALUE_OF formula cannot be blank"
 '@param dict ILLdictionary. The dictionary exposing variables and sheets metadata.
 '@param variables Optional ILLVariables. Reuse an existing helper instance.
 '@param sheets Optional ILLSheets. Reuse an existing helper instance.
-'@return IValueOfFormula. A ready-to-inspect parser instance.
+'@return ValueOfFormula. A ready-to-inspect parser instance.
 '@throws ProjectError.ObjectNotInitialized When dict is Nothing.
 '@export
 Public Function Create(ByVal formula As String, _
                        ByVal dict As ILLdictionary, _
                        Optional ByVal variables As ILLVariables, _
-                       Optional ByVal sheets As ILLSheets) As IValueOfFormula
+                       Optional ByVal sheets As ILLSheets) As ValueOfFormula
 
     If dict Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, _
@@ -104,10 +103,10 @@ End Function
 '@label:self
 '@prop-title Current object instance
 '@details
-'Returns the current instance cast to its interface. Used internally
-'by the factory method to return an IValueOfFormula reference.
-'@return IValueOfFormula. Reference to the current object.
-Public Property Get Self() As IValueOfFormula
+'Returns the current instance. Used internally by the factory method to
+'return the parser reference.
+'@return ValueOfFormula. Reference to the current object.
+Public Property Get Self() As ValueOfFormula
     Set Self = Me
 End Property
 
@@ -577,31 +576,3 @@ End Sub
 Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal message As String)
     Err.Raise errNumber, CLASSNAME, message
 End Sub
-
-'@section Interface
-'===============================================================================
-'@description Delegated members satisfying the IValueOfFormula contract.
-
-Private Property Get IValueOfFormula_ConvertedFormula() As String
-    IValueOfFormula_ConvertedFormula = ConvertedFormula()
-End Property
-
-Private Property Get IValueOfFormula_Valid() As Boolean
-    IValueOfFormula_Valid = Valid()
-End Property
-
-Private Property Get IValueOfFormula_FailureReason() As String
-    IValueOfFormula_FailureReason = FailureReason()
-End Property
-
-Private Property Get IValueOfFormula_LookupSheetName() As String
-    IValueOfFormula_LookupSheetName = LookupSheetName()
-End Property
-
-Private Property Get IValueOfFormula_LookupColumnIndex() As Long
-    IValueOfFormula_LookupColumnIndex = LookupColumnIndex()
-End Property
-
-Private Property Get IValueOfFormula_ValueColumnIndex() As Long
-    IValueOfFormula_ValueColumnIndex = ValueColumnIndex()
-End Property

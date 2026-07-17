@@ -1186,7 +1186,7 @@ Private Function ConvertedSetupFormula() As String
     Dim result As String
     Dim caseWhenObj As ICaseWhen
     Dim choiceObj As ChoiceFormula
-    Dim valueObj As IValueOfFormula
+    Dim valueObj As ValueOfFormula
 
     result = SetupFormula()
 

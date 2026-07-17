@@ -49,5 +49,4 @@ IShowHideManager
 ITableSpecs
 ITemporaryRepos
 IUpdatedValues
-IValueOfFormula
 IVarWriter
