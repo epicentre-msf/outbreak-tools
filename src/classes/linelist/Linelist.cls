@@ -30,7 +30,7 @@ Implements ILinelist
 'factory consumers create instances via `New Linelist` rather than
 '`With New Linelist`.
 '@depends ILinelistSpecs, ILLdictionary, ITranslationObject,
-'  IPasswords, ILLFormat, ITemporaryRepos, ICodeTransfer, IHiddenNames,
+'  IPasswords, ILLFormat, ITemporaryRepos, IHiddenNames,
 '  IButtons, IDropdownLists, ICustomPivotTable, DropdownLists,
 '  CustomPivotTable, TemporaryRepos, HiddenNames, Buttons, CodeTransfer,
 '  BetterArray
@@ -325,7 +325,7 @@ Public Sub Prepare()
     Dim sheetName As String
     Dim outWkb As Workbook
     Dim prevAlert As Boolean
-    Dim codeTrans As ICodeTransfer
+    Dim codeTrans As CodeTransfer
 
     If Not (this.specs.Prepared) Then
         ThrowError ProjectError.ErrorUnexpectedState, _ 
@@ -808,7 +808,7 @@ End Sub
 '@label:transfer-all-code
 '@sub-title Transfer all VBA code components to the output workbook
 '@details
-'Uses the supplied ICodeTransfer to copy VBA components from the setup
+'Uses the supplied CodeTransfer to copy VBA components from the setup
 'workbook to the output workbook in five phases:
 '1. Transfers 49 class modules (interface+implementation pairs for
 '   DataSheet, LLExport, LLChoices, LLdictionary, LLGeo, Passwords,
@@ -825,8 +825,8 @@ End Sub
 '   F_ImportRep, F_ShowHideLL, F_ShowHidePrint, F_ShowVarLabels,
 '   F_EpiWeek).
 '4. Transfers the workbook code module (EventLinelistWorkbook).
-'@param codeTransfer ICodeTransfer. The code transfer engine.
-Private Sub TransferAllCode(ByVal codeTransfer As ICodeTransfer)
+'@param codeTransfer CodeTransfer. The code transfer engine.
+Private Sub TransferAllCode(ByVal codeTransfer As CodeTransfer)
     Dim codesList As BetterArray
     Dim counter As Long
     Dim codeName As String

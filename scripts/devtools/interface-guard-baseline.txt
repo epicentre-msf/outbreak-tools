@@ -8,7 +8,6 @@ IButtons
 ICaseWhen
 IChecking
 ICheckingOutput
-ICodeTransfer
 ICrossTable
 ICrossTableFormula
 ICustomPivotTable

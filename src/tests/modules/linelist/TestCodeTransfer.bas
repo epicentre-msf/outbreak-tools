@@ -71,7 +71,7 @@ Public Sub TestCreateReturnsInstance()
     CustomTestSetTitles Assert, TESTMODULE, "TestCreateReturnsInstance"
     On Error GoTo TestFail
 
-    Dim sut As ICodeTransfer
+    Dim sut As CodeTransfer
     Set sut = CodeTransfer.Create(SourceWkb, TargetWkb, TempRepos)
 
     Assert.IsTrue Not sut Is Nothing, _
@@ -87,7 +87,7 @@ Public Sub TestCreateRejectsNothingSource()
     CustomTestSetTitles Assert, TESTMODULE, "TestCreateRejectsNothingSource"
     On Error GoTo ExpectError
 
-    Dim sut As ICodeTransfer
+    Dim sut As CodeTransfer
     Set sut = CodeTransfer.Create(Nothing, TargetWkb, TempRepos)
 
     CustomTestLogFailure Assert, "TestCreateRejectsNothingSource", , _
@@ -103,7 +103,7 @@ Public Sub TestCreateRejectsNothingTarget()
     CustomTestSetTitles Assert, TESTMODULE, "TestCreateRejectsNothingTarget"
     On Error GoTo ExpectError
 
-    Dim sut As ICodeTransfer
+    Dim sut As CodeTransfer
     Set sut = CodeTransfer.Create(SourceWkb, Nothing, TempRepos)
 
     CustomTestLogFailure Assert, "TestCreateRejectsNothingTarget", , _
@@ -119,7 +119,7 @@ Public Sub TestCreateRejectsNothingTempRepos()
     CustomTestSetTitles Assert, TESTMODULE, "TestCreateRejectsNothingTempRepos"
     On Error GoTo ExpectError
 
-    Dim sut As ICodeTransfer
+    Dim sut As CodeTransfer
     Set sut = CodeTransfer.Create(SourceWkb, TargetWkb, Nothing)
 
     CustomTestLogFailure Assert, "TestCreateRejectsNothingTempRepos", , _

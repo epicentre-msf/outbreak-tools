@@ -16,8 +16,6 @@ Attribute VB_Description = "Transfers VBA code components between workbooks usin
 
 Option Explicit
 
-Implements ICodeTransfer
-
 '@class CodeTransfer
 '@description
 'Transfers VBA code components (classes, modules, forms, workbook code) from a
@@ -54,12 +52,12 @@ Private this As TCodeTransfer
 '@param sourceWkb Workbook. The workbook containing the VBA components to export.
 '@param targetWkb Workbook. The workbook that will receive the imported components.
 '@param tempRepos ITemporaryRepos. The temporary file repository for export/import.
-'@return ICodeTransfer. A fully initialised instance ready for transfers.
+'@return CodeTransfer. A fully initialised instance ready for transfers.
 '@throws ProjectError.ObjectNotInitialized When any parameter is Nothing.
 '@export
 Public Function Create(ByVal sourceWkb As Workbook, _
                        ByVal targetWkb As Workbook, _
-                       ByVal tempRepos As ITemporaryRepos) As ICodeTransfer
+                       ByVal tempRepos As ITemporaryRepos) As CodeTransfer
 
     If sourceWkb Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, "Source workbook is required"
@@ -410,38 +408,4 @@ End Sub
 '@param errorMessage String. Human-readable description of the failure.
 Private Sub ThrowError(ByVal errNumber As Long, ByVal errorMessage As String)
     Err.Raise CLng(errNumber), CLASS_NAME, errorMessage
-End Sub
-
-
-'@section InterfaceImplementation
-'===============================================================================
-'@description Delegated members satisfying the ICodeTransfer contract.
-'See the corresponding Public members above for full documentation.
-
-Private Sub ICodeTransfer_TransferClass(ByVal className As String)
-    TransferClass className
-End Sub
-
-Private Sub ICodeTransfer_TransferModule(ByVal moduleName As String)
-    TransferModule moduleName
-End Sub
-
-Private Sub ICodeTransfer_TransferForm(ByVal formName As String)
-    TransferForm formName
-End Sub
-
-Private Sub ICodeTransfer_TransferWorkbookCode(ByVal moduleName As String)
-    TransferWorkbookCode moduleName
-End Sub
-
-Private Sub ICodeTransfer_TransferWorksheetCode(ByVal moduleName As String, ByVal targetSheetName As String)
-    TransferWorksheetCode moduleName, targetSheetName
-End Sub
-
-Private Sub ICodeTransfer_CopyModuleText(ByVal moduleName As String)
-    CopyModuleText moduleName
-End Sub
-
-Private Sub ICodeTransfer_CopyModuleCode(ByVal sourceName As String, ByVal targetName As String)
-    CopyModuleCode sourceName, targetName
 End Sub
