@@ -76,5 +76,8 @@ obt-doc-skill/
 #------- Rewrite workflow
 scripts/history-rewrite
 
-#--- Automation 
+#--- Automation
 *.pl
+
+#--- Test harness machine output (build-registry.R + run-tests.R)
+src/tests/.generated/
