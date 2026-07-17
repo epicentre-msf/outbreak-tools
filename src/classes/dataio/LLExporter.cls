@@ -15,7 +15,6 @@ Attribute VB_Description = "Linelist data export operations"
 '@ModuleDescription("Linelist data export operations")
 
 Option Explicit
-Implements ILLExporter
 
 '@class LLExporter
 '@description
@@ -24,9 +23,20 @@ Implements ILLExporter
 'exports (ExportMigration), analysis-only exports (ExportAnalysis), and
 'geobase exports (ExportGeo). Each mode builds a temporary output workbook,
 'populates it with the relevant data, metadata, and formatting, then saves
-'and closes it. Consumers interact through the ILLExporter interface.
+'and closes it.
 '@depends ILLdictionary, ILLExport, IPasswords, ICustomTable
 '@depends IDataSheet, IShowHideManager, AnaTabIds, ILLGeo, ILLChoices, IHiddenNames
+
+
+'@section Enumerations
+'===============================================================================
+'@description Scopes for export operations, used to tag metadata in output workbooks.
+
+Public Enum ExportScope
+    ExportScopeCustom = 1
+    ExportScopeMigration = 2
+    ExportScopeAnalysis = 3
+End Enum
 
 
 '@section Constants
@@ -77,13 +87,12 @@ Private this As TLLExporter
 '@sub-title Create an exporter from the source linelist workbook
 '@details
 'Factory method that validates the workbook is not Nothing, then constructs
-'and returns a new LLExporter instance through the ILLExporter interface.
-'Called on the predeclared instance.
+'and returns a new LLExporter instance. Called on the predeclared instance.
 '@param sourceWkb Workbook. The linelist workbook containing the data to export.
-'@return ILLExporter. A fully initialised instance ready for export operations.
+'@return LLExporter. A fully initialised instance ready for export operations.
 '@throws ProjectError.ObjectNotInitialized When the workbook is Nothing.
 '@export
-Public Function Create(ByVal sourceWkb As Workbook) As ILLExporter
+Public Function Create(ByVal sourceWkb As Workbook) As LLExporter
 
     If sourceWkb Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, _
@@ -102,8 +111,8 @@ End Function
 
 '@label:self
 '@prop-title Current object instance
-'@return ILLExporter. The current instance cast to the interface.
-Public Property Get Self() As ILLExporter
+'@return LLExporter. The current instance.
+Public Property Get Self() As LLExporter
     Set Self = Me
 End Property
 
@@ -1177,39 +1186,4 @@ End Sub
 '@throws ProjectError.<varies> Always raises the specified error.
 Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal message As String)
     Err.Raise CLng(errNumber), CLASS_NAME, message
-End Sub
-
-
-'@section Interface Implementation
-'===============================================================================
-'@description Delegated members satisfying the ILLExporter contract.
-'See the corresponding members above for full documentation.
-
-Private Function ILLExporter_ExportCustom(ByVal exportNumber As Long, _
-                                          ByVal folderPath As String, _
-                                          Optional ByVal useFilters As Boolean = False) As String
-    ILLExporter_ExportCustom = ExportCustom(exportNumber, folderPath, useFilters)
-End Function
-
-Private Function ILLExporter_ExportMigration(ByVal folderPath As String, _
-                                             Optional ByVal includeShowHide As Boolean = False, _
-                                             Optional ByVal keepLabels As Boolean = False) As String
-    ILLExporter_ExportMigration = ExportMigration(folderPath, includeShowHide, keepLabels)
-End Function
-
-Private Function ILLExporter_ExportAnalysis(ByVal folderPath As String) As String
-    ILLExporter_ExportAnalysis = ExportAnalysis(folderPath)
-End Function
-
-Private Function ILLExporter_ExportGeo(ByVal folderPath As String, _
-                                       Optional ByVal onlyHistoric As Boolean = False) As String
-    ILLExporter_ExportGeo = ExportGeo(folderPath, onlyHistoric)
-End Function
-
-Private Property Get ILLExporter_LastExportPassword() As String
-    ILLExporter_LastExportPassword = LastExportPassword
-End Property
-
-Private Sub ILLExporter_CloseAll()
-    CloseAll
 End Sub

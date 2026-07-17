@@ -27,7 +27,6 @@ IFormulas
 IHiddenNames
 ILLChoices
 ILLExport
-ILLExporter
 ILLImporter
 ILLSheets
 ILLSpatial

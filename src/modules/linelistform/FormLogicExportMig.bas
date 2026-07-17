@@ -2,7 +2,7 @@ Attribute VB_Name = "FormLogicExportMig"
 
 '@Folder("Linelist Forms")
 '@ModuleDescription("Migration, analysis, and geo export workflows")
-'@depends ILLExporter, LLExporter, IApplicationState, ApplicationState, IOSFiles, OSFiles
+'@depends LLExporter, IApplicationState, ApplicationState, IOSFiles, OSFiles
 
 Option Explicit
 
@@ -18,7 +18,7 @@ Public Sub HandleMigrationExport(ByVal sourceWkb As Workbook, _
                                  ByVal includeShowHide As Boolean, _
                                  ByVal keepLabels As Boolean)
 
-    Dim exporter As ILLExporter
+    Dim exporter As LLExporter
     Dim appState As IApplicationState
     Dim io As IOSFiles
     Dim folderPath As String
@@ -61,7 +61,7 @@ End Sub
 Public Sub HandleAnalysisExport(ByVal sourceWkb As Workbook, _
                                 ByVal trads As ITranslationObject)
 
-    Dim exporter As ILLExporter
+    Dim exporter As LLExporter
     Dim appState As IApplicationState
     Dim io As IOSFiles
     Dim folderPath As String
@@ -103,7 +103,7 @@ Public Sub HandleGeoExport(ByVal sourceWkb As Workbook, _
                            ByVal trads As ITranslationObject, _
                            Optional ByVal onlyHistoric As Boolean = False)
 
-    Dim exporter As ILLExporter
+    Dim exporter As LLExporter
     Dim appState As IApplicationState
     Dim io As IOSFiles
     Dim folderPath As String

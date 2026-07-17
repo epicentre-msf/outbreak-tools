@@ -13,7 +13,7 @@ Attribute VB_Description = "Unit tests for LLExporter"
 'and safe invocation of CloseAll when no output workbooks are open. The fixture
 'uses ThisWorkbook as the source workbook for lightweight instantiation without
 'requiring full linelist infrastructure.
-'@depends LLExporter, ILLExporter, CustomTest
+'@depends LLExporter, CustomTest
 
 Option Explicit
 Option Private Module
@@ -58,7 +58,7 @@ End Sub
 '@section Factory
 '===============================================================================
 
-'@sub-title Verify Create returns a valid ILLExporter instance for a real workbook.
+'@sub-title Verify Create returns a valid LLExporter instance for a real workbook.
 '@details
 'Acts by calling LLExporter.Create with ThisWorkbook. Asserts that the
 'returned object is not Nothing, confirming the factory accepts a valid
@@ -68,7 +68,7 @@ Public Sub FactoryCreatesWithWorkbook()
     CustomTestSetTitles Assert, "LLExporter", "FactoryCreatesWithWorkbook"
     On Error GoTo TestFail
 
-    Dim exporter As ILLExporter
+    Dim exporter As LLExporter
     Set exporter = LLExporter.Create(ThisWorkbook)
     Assert.IsNotNothing exporter, "Factory should return a valid object"
 
@@ -88,7 +88,7 @@ Public Sub FactoryRejectsNothingWorkbook()
     CustomTestSetTitles Assert, "LLExporter", "FactoryRejectsNothingWorkbook"
     On Error GoTo TestFail
 
-    Dim exporter As ILLExporter
+    Dim exporter As LLExporter
     On Error Resume Next
     Set exporter = LLExporter.Create(Nothing)
     Assert.IsTrue Err.Number <> 0, "Factory should raise error for Nothing workbook"
@@ -110,7 +110,7 @@ Public Sub LastExportPasswordEmptyByDefault()
     CustomTestSetTitles Assert, "LLExporter", "LastExportPasswordEmptyByDefault"
     On Error GoTo TestFail
 
-    Dim exporter As ILLExporter
+    Dim exporter As LLExporter
     Set exporter = LLExporter.Create(ThisWorkbook)
     Assert.AreEqual vbNullString, exporter.LastExportPassword, _
                     "Password should be empty before any export"
@@ -131,7 +131,7 @@ Public Sub CloseAllDoesNotError()
     CustomTestSetTitles Assert, "LLExporter", "CloseAllDoesNotError"
     On Error GoTo TestFail
 
-    Dim exporter As ILLExporter
+    Dim exporter As LLExporter
     Set exporter = LLExporter.Create(ThisWorkbook)
     exporter.CloseAll
     Assert.IsTrue True, "CloseAll should not raise errors when no workbook is open"
