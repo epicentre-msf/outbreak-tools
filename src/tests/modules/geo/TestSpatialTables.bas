@@ -16,7 +16,7 @@ Option Explicit
 'factory rejects Nothing cross-table; missing spatial sheet scenario is
 'documented; Exists returns False when no spatial ListObjects have been
 'created.
-'@depends SpatialTables, ISpatialTables, CustomTest, TestHelpers
+'@depends SpatialTables, CustomTest, TestHelpers
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const SPATIAL_SHEET As String = "spatial_tables__"
@@ -89,7 +89,7 @@ Public Sub TestCreateRejectsNothing()
     On Error GoTo TestFail
 
     On Error Resume Next
-    Dim spTab As ISpatialTables
+    Dim spTab As SpatialTables
     Set spTab = SpatialTables.Create(Nothing)
     On Error GoTo 0
 

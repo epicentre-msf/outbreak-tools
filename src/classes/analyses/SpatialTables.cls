@@ -15,7 +15,6 @@ Attribute VB_Description = "Spatial table creation at build time"
 '@IgnoreModule UnrecognizedAnnotation, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit
-Implements ISpatialTables
 
 '@class SpatialTables
 '@description
@@ -59,12 +58,12 @@ Private Const CONCAT As String = "concat_"
 'can read the row variable and table specifications.
 '@param tabl ICrossTable. The cross-table whose row variable defines the
 'spatial tables to create.
-'@return ISpatialTables. A fully initialised spatial tables builder.
+'@return SpatialTables. A fully initialised spatial tables builder.
 '@throws ProjectError.ObjectNotInitialized When tabl is Nothing.
 '@throws ProjectError.ElementNotFound When the spatial worksheet is missing.
 '@depends ICrossTable, ITableSpecs
 '@export
-Public Function Create(ByVal tabl As ICrossTable) As ISpatialTables
+Public Function Create(ByVal tabl As ICrossTable) As SpatialTables
     CheckRequirements tabl
 
     With New SpatialTables
@@ -76,10 +75,10 @@ End Function
 '@label:self
 '@prop-title Current object instance
 '@details
-'Convenience accessor for fluent retrieval of the interface reference from
-'the predeclared Create method.
-'@return ISpatialTables. The current instance cast to the interface.
-Public Property Get Self() As ISpatialTables
+'Convenience accessor for fluent retrieval of the instance from the
+'predeclared Create method.
+'@return SpatialTables. The current instance.
+Public Property Get Self() As SpatialTables
     Set Self = Me
 End Property
 
@@ -442,7 +441,7 @@ End Sub
 '@param formObject IFormulas. The formula object whose parsed expression
 'is written into each spatial table formula column.
 '@export
-Private Sub Add(ByVal formObject As IFormulas)
+Public Sub Add(ByVal formObject As IFormulas)
     Dim sh As Worksheet
     Dim colIndex As Long
     Dim varName As String
@@ -581,17 +580,4 @@ End Sub
 '@throws ProjectError. Always raises the specified error.
 Private Sub ThrowError(ByVal errNumber As Long, ByVal message As String)
     Err.Raise CLng(errNumber), CLASS_NAME, message
-End Sub
-
-'@section Interface Implementation
-'===============================================================================
-'@description Delegated members satisfying the ISpatialTables contract.
-'See the corresponding Private members above for full documentation.
-
-Private Property Get ISpatialTables_Exists(ByVal varName As String) As Boolean
-    ISpatialTables_Exists = Exists(varName)
-End Property
-
-Private Sub ISpatialTables_Add(ByVal formObject As IFormulas)
-    Add formObject
 End Sub

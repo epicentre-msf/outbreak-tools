@@ -46,7 +46,6 @@ ISetupImportService
 ISetupPreparation
 ISetupTranslationsTable
 IShowHideManager
-ISpatialTables
 ITableSpecs
 ITemporaryRepos
 IUpdatedValues

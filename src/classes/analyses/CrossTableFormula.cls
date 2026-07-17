@@ -28,7 +28,7 @@ Implements ICrossTableFormula
 'spatial lookups, and data-validation dropdowns. Consumers obtain an instance
 'through the predeclared Create factory and interact via the ICrossTableFormula
 'interface.
-'@depends ICrossTable, IFormulaData, IFormulas, Formulas, IFormulaCondition, FormulaCondition, ITableSpecs, ISpatialTables, SpatialTables, BetterArray
+'@depends ICrossTable, IFormulaData, IFormulas, Formulas, IFormulaCondition, FormulaCondition, ITableSpecs, SpatialTables, BetterArray
 '@version 1.0 (2026-02-10)
 
 
@@ -596,7 +596,7 @@ Private Sub AddFormulas()
     Dim hasTotal As Boolean
     Dim hasPercentage As Boolean
     Dim tabl As ICrossTable
-    Dim spTab As ISpatialTables
+    Dim spTab As SpatialTables
     Dim tabFormObject As IFormulas
     Dim spTabType As String
     Dim counter As Long
