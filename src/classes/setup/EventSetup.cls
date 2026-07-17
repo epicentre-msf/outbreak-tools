@@ -16,8 +16,6 @@ Option Explicit
 '@ModuleDescription("Encapsulates workbook level setup events and caches for high-frequency handlers")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
-Implements IEventSetup
-
 '@class EventSetup
 '@description
 'Encapsulates workbook-level setup events and lazily-cached domain managers.
@@ -100,14 +98,13 @@ Private Const CLASSNAME              As String = "EventSetup"
 '@details
 'Factory method using the predeclared-instance pattern. Creates a new
 'EventSetup, calls Configure to bind it to the host workbook and reset all
-'internal caches, then returns the initialised object through the IEventSetup
-'interface. Raises an error when hostBook is Nothing because Configure
-'performs the validation.
+'internal caches, then returns the initialised object. Raises an error when
+'hostBook is Nothing because Configure performs the validation.
 '@param hostBook Workbook. The workbook owning the setup sheets.
-'@return IEventSetup. Configured service instance.
+'@return EventSetup. Configured service instance.
 '@throws ProjectError.ObjectNotInitialized When hostBook is Nothing (raised by Configure).
 '@export
-Public Function Create(ByVal hostBook As Workbook) As IEventSetup
+Public Function Create(ByVal hostBook As Workbook) As EventSetup
     Dim instance As EventSetup
 
     Set instance = New EventSetup
@@ -116,16 +113,15 @@ Public Function Create(ByVal hostBook As Workbook) As IEventSetup
 End Function
 
 '@label:self
-'@prop-title Current object instance cast to the interface.
-'@return IEventSetup. The current instance.
-Public Property Get Self() As IEventSetup
+'@prop-title Current object instance.
+'@return EventSetup. The current instance.
+Public Property Get Self() As EventSetup
     Set Self = Me
 End Property
 
-'@section IEventSetup implementation
+'@section Event handling and operations
 '===============================================================================
-'@description Direct implementations and thin delegation stubs for each
-'IEventSetup interface member.
+'@description Workbook event handlers and setup row operations.
 
 '@label:configure
 '@sub-title Configure the service with its host workbook context.
@@ -146,10 +142,6 @@ Public Sub Configure(ByVal hostBook As Workbook)
     ResetInternalCaches
 End Sub
 
-Private Sub IEventSetup_Configure(ByVal hostBook As Workbook)
-    Configure hostBook
-End Sub
-
 '@label:on-workbook-open
 '@sub-title React to workbook open notifications.
 '@details
@@ -159,7 +151,7 @@ End Sub
 'and applies the full password protection matrix across all setup sheets.
 'Silently skips each step when the required helper cannot be created.
 '@export
-Private Sub IEventSetup_OnWorkbookOpen()
+Public Sub OnWorkbookOpen()
     EnsureUpdatedValues
     If Not (this.updater Is Nothing) Then
         On Error Resume Next
@@ -185,7 +177,7 @@ End Sub
 'are current.
 '@param sh Worksheet. The worksheet that became active.
 '@export
-Private Sub IEventSetup_OnSheetActivate(ByVal sh As Worksheet)
+Public Sub OnSheetActivate(ByVal sh As Worksheet)
     If (sh Is Nothing) Then Exit Sub
 
     EnsureRibbon
@@ -216,7 +208,7 @@ End Sub
 '@param sh Worksheet. The worksheet raising the change event.
 '@param target Range. The edited cells.
 '@export
-Private Sub IEventSetup_OnSheetChange(ByVal sh As Worksheet, ByVal target As Range)
+Public Sub OnSheetChange(ByVal sh As Worksheet, ByVal target As Range)
     If (sh Is Nothing) Or (target Is Nothing) Then Exit Sub
 
     EnsureUpdatedValues
@@ -258,7 +250,7 @@ End Sub
 'subsequent lookups reflect the latest dictionary state.
 '@param forceUpdate Optional Boolean. When True, forces a full refresh regardless of update tags. Defaults to False.
 '@export
-Private Sub UpdateAnalysisDropdowns(Optional ByVal forceUpdate As Boolean = False)
+Public Sub UpdateAnalysisDropdowns(Optional ByVal forceUpdate As Boolean = False)
 
     EnsureUpdatedValues
     If (this.updater Is Nothing) Then Exit Sub
@@ -293,74 +285,51 @@ Private Sub UpdateAnalysisDropdowns(Optional ByVal forceUpdate As Boolean = Fals
 
 End Sub
 
-Private Sub IEventSetup_UpdateAnalysisDropdowns(Optional ByVal forceUpdate As Boolean = False)
-    UpdateAnalysisDropdowns forceUpdate
-End Sub
-
 '@label:reset-caches
 '@sub-title Clear cached resources so they are lazily rebuilt on demand.
 '@export
-Private Sub IEventSetup_ResetCaches()
+Public Sub ResetCaches()
     ResetInternalCaches
 End Sub
 
 '@label:recalculate-analysis
 '@sub-title Recalculate analysis tables in response to structural edits.
 '@export
-Private Sub IEventSetup_RecalculateAnalysis()
+Public Sub RecalculateAnalysis()
     CalculateAnalysis
 End Sub
 
-'@label:reset-translation-counter
-'@sub-title Reset the translation update counter stored in hidden names.
-'@export
-Private Sub IEventSetup_ResetTranslationCounter()
-    ResetTranslationCounter
-End Sub
-
-Private Sub IEventSetup_ManageRows(ByVal sheetName As String, Optional ByVal del As Boolean = False)
-    ManageRows sheetName, del
-End Sub
-
-Private Sub IEventSetup_InsertRows(ByVal sheetName As String, _
-                                   ByVal targetCell As Range, _
-                                   Optional ByVal insertShift As Boolean = False)
-    InsertRows sheetName, targetCell, insertShift
-End Sub
-
-Private Sub IEventSetup_DeleteRows(ByVal sheetName As String, _
-                                   ByVal targetCell As Range, _
-                                   Optional ByVal forceShift As Boolean = False)
-    DeleteRows sheetName, targetCell, forceShift
-End Sub
-
-Private Sub IEventSetup_SortTables(ByVal sheetName As String)
-    SortTables sheetName
-End Sub
-
 '@label:build-time-series-header
-Private Function IEventSetup_BuildTimeSeriesHeader(ByVal timeVar As String, _
-                                                   ByVal groupVar As String, _
-                                                   ByVal sumLabel As String) As String
-    IEventSetup_BuildTimeSeriesHeader = BuildTimeSeriesHeaderInternal(timeVar, groupVar, sumLabel)
+'@sub-title Compose the time-series header displayed in analysis tables.
+'@export
+Public Function BuildTimeSeriesHeader(ByVal timeVar As String, _
+                                      ByVal groupVar As String, _
+                                      ByVal sumLabel As String) As String
+    BuildTimeSeriesHeader = BuildTimeSeriesHeaderInternal(timeVar, groupVar, sumLabel)
 End Function
 
 '@label:analysis-graph-value
-Private Function IEventSetup_AnalysisGraphValue(ByVal graphTitle As String, _
-                                                Optional ByVal graphCol As String = "Graph ID") As String
-    IEventSetup_AnalysisGraphValue = AnalysisGraphValueInternal(graphTitle, graphCol)
+'@sub-title Retrieve a value from the analysis graph label table.
+'@export
+Public Function AnalysisGraphValue(ByVal graphTitle As String, _
+                                   Optional ByVal graphCol As String = "Graph ID") As String
+    AnalysisGraphValue = AnalysisGraphValueInternal(graphTitle, graphCol)
 End Function
 
 '@label:analysis-time-series-value
-Private Function IEventSetup_AnalysisTimeSeriesValue(ByVal seriesTitle As String, _
-                                                     Optional ByVal tsColumn As String = "Series ID") As String
-    IEventSetup_AnalysisTimeSeriesValue = AnalysisTimeSeriesValueInternal(seriesTitle, tsColumn)
+'@sub-title Retrieve a value from the analysis time-series table.
+'@export
+Public Function AnalysisTimeSeriesValue(ByVal seriesTitle As String, _
+                                        Optional ByVal tsColumn As String = "Series ID") As String
+    AnalysisTimeSeriesValue = AnalysisTimeSeriesValueInternal(seriesTitle, tsColumn)
 End Function
 
 '@label:spatio-temporal-spec-value
-Private Function IEventSetup_SpatioTemporalSpecValue(ByVal sectionName As String, _
-                                                     Optional ByVal specColumn As String = "N geo max") As String
-    IEventSetup_SpatioTemporalSpecValue = SpatioTemporalSpecValueInternal(sectionName, specColumn)
+'@sub-title Retrieve a value from the spatio-temporal specifications table.
+'@export
+Public Function SpatioTemporalSpecValue(ByVal sectionName As String, _
+                                        Optional ByVal specColumn As String = "N geo max") As String
+    SpatioTemporalSpecValue = SpatioTemporalSpecValueInternal(sectionName, specColumn)
 End Function
 
 '@section Row management and sorting
@@ -1159,7 +1128,7 @@ End Sub
 'Resets the "_SetupTranslationsCounter" hidden name to zero on the registry
 'worksheet. Uses HiddenNames to ensure the name exists before setting its
 'value, so the operation is safe on fresh workbooks.
-Private Sub ResetTranslationCounter()
+Public Sub ResetTranslationCounter()
     Dim registrySheet As Worksheet
     Dim namesManager As IHiddenNames
 

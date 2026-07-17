@@ -4,7 +4,7 @@ Option Explicit
 '@IgnoreModule UnrecognizedAnnotation, SheetAccessedUsingString
 '@Folder("User Define Functions")
 
-Private Function EventService() As IEventSetup
+Private Function EventService() As EventSetup
     Set EventService = SetupEventsManager.EventSetupService
 End Function
 
