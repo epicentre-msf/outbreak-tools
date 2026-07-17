@@ -18,11 +18,11 @@ Option Private Module
 'fixture uses a dedicated "GraphOut" worksheet that is cleared before each
 'test and torn down in ModuleCleanup. Named ranges are created as
 'worksheet-level names to provide series, category, and label data sources.
-'@depends Graphs, IGraphs, CustomTest, TestHelpers
+'@depends Graphs, CustomTest, TestHelpers
 
 Private Assert As Object
 Private Fakes As Object
-Private GeneralGraph As IGraphs
+Private GeneralGraph As Graphs
 
 Private Const GRAPHOUT As String = "GraphOut"
 Private Const SERIESNAME As String = "GraphSeriesData"
@@ -74,14 +74,14 @@ Private Sub ResetGraphSheet()
     On Error GoTo 0
 End Sub
 
-'@sub-title Build a default IGraphs instance anchored at cell E5 on the graph sheet.
+'@sub-title Build a default Graphs instance anchored at cell E5 on the graph sheet.
 '@details
 'Creates a Graphs object using the "GraphOut" worksheet and cell E5 as
 'the chart anchor position. The optional graphName parameter controls the
 'chart title label used during creation.
 '@param graphName Optional String. Display name for the chart. Defaults to "General Graph".
-'@return IGraphs. A fully initialised Graphs instance ready for Add/AddSeries.
-Private Function BuildGraph(Optional ByVal graphName As String = "General Graph") As IGraphs
+'@return Graphs. A fully initialised Graphs instance ready for Add/AddSeries.
+Private Function BuildGraph(Optional ByVal graphName As String = "General Graph") As Graphs
     Dim hostSheet As Worksheet
 
     Set hostSheet = GraphSheet()
@@ -140,7 +140,7 @@ End Sub
 '@section Tests
 '===============================================================================
 
-'@sub-title Verify Create returns a valid IGraphs instance and rejects invalid arguments.
+'@sub-title Verify Create returns a valid Graphs instance and rejects invalid arguments.
 '@details
 'Acts by calling Graphs.Create with a valid worksheet and target cell.
 'Asserts that the returned object has TypeName "Graphs". Then verifies
@@ -150,7 +150,7 @@ End Sub
 '@TestMethod("Graphs")
 Private Sub TestCreate()
 
-    Dim graphInstance As IGraphs
+    Dim graphInstance As Graphs
     Dim targetCell As Range
     Dim hostSheet As Worksheet
 
@@ -159,7 +159,7 @@ Private Sub TestCreate()
     Set hostSheet = GraphSheet()
     Set targetCell = hostSheet.Cells(5, 5)
     Set graphInstance = Graphs.Create(hostSheet, targetCell, "TestGraph")
-    Assert.IsTrue (TypeName(graphInstance) = "Graphs"), "Create should return an IGraphs instance"
+    Assert.IsTrue (TypeName(graphInstance) = "Graphs"), "Create should return a Graphs instance"
     Set GeneralGraph = BuildGraph()
 
     On Error Resume Next
@@ -187,7 +187,7 @@ End Sub
 
 '@sub-title Verify Add creates a single ChartObject on the worksheet.
 '@details
-'Arranges a fresh IGraphs instance via BuildGraph. Acts by calling Add.
+'Arranges a fresh Graphs instance via BuildGraph. Acts by calling Add.
 'Asserts that the host worksheet's ChartObjects count is exactly 1,
 'confirming that Add creates an empty chart at the anchor position.
 '@TestMethod("Graphs")

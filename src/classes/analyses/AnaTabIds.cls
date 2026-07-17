@@ -24,7 +24,7 @@ Option Explicit
 'on output worksheets. Manages three ListObject families (tab_ids_*,
 'graph_ids_*, graph_formats_*) across four analysis scopes (normal, time
 'series, spatial, spatio-temporal).
-'@depends CustomTable, Graphs, IGraphs, BetterArray, IFormulas
+'@depends CustomTable, Graphs, BetterArray, IFormulas
 '@version 2025-01-15
 
 
@@ -429,12 +429,12 @@ End Sub
 'gr.AddSeries and gr.AddLabels. The cellRng points to the graphId cell
 '(column 2); all other values are read as offsets. Boolean values are
 'read with error trapping because they are stored as numeric 0/1.
-'@param gr IGraphs. The chart object receiving the series.
+'@param gr Graphs. The chart object receiving the series.
 '@param cellRng Range. The graphId cell in the current tracking row.
 '@remarks Offset numbering skips column 9 (outRangeAddress, offset 7)
 'and jumps to offset 8 (prefix) and offset 9 (prefixOnly), matching
 'the 11-column layout stored by AddGraphInfo.
-Private Sub AddSeries(ByVal gr As IGraphs, ByVal cellRng As Range)
+Private Sub AddSeries(ByVal gr As Graphs, ByVal cellRng As Range)
     Dim seriesName As String
     Dim seriesType As String
     Dim seriesPos As String
@@ -469,14 +469,14 @@ End Sub
 'and calls gr.Format. Maps AnalysisIdsScope to GraphScope: TimeSeries
 'and SpatioTemporal map to GraphScopeTimeSeries, Spatial maps to
 'GraphScopeSpatial, and all others default to GraphScopeNormal.
-'@param gr IGraphs. The chart object to format.
+'@param gr Graphs. The chart object to format.
 '@param grTab ICustomTable. Wrapper around graph_formats_ ListObject,
 'keyed by "graphId".
 '@param scope Byte. AnalysisIdsScope value for scope-to-GraphScope mapping.
 '@param graphId String. The graph identifier for the format lookup.
 '@remarks heightFactor defaults to 1 and hardCodeLabels defaults to False
 'when the stored values cannot be converted.
-Private Sub AddFormat(ByVal gr As IGraphs, ByVal grTab As ICustomTable, _
+Private Sub AddFormat(ByVal gr As Graphs, ByVal grTab As ICustomTable, _
                        ByVal scope As Byte, ByVal graphId As String)
     Dim valuesTitle As String
     Dim catTitle As String
@@ -513,7 +513,7 @@ End Sub
 '@sub-title Write all tracked graphs to the output worksheet
 '@details
 'First calls WriteTableNames to transfer all named ranges, then iterates
-'the graph_ids_ ListObject to build charts. A new IGraphs object is
+'the graph_ids_ ListObject to build charts. A new Graphs object is
 'created at each graph boundary (detected when graphId changes). Each
 'series row is processed by AddSeries. When the loop ends, the final
 'graph is formatted via AddFormat. Format metadata is read from the
@@ -526,7 +526,7 @@ End Sub
 'correct chart placement in some Excel versions.
 '@export
 Public Sub WriteGraphs(ByVal outsh As Worksheet, ByVal scope As Byte)
-    Dim gr As IGraphs
+    Dim gr As Graphs
     Dim cellRng As Range
     Dim outCellRng As Range
     Dim grLo As ListObject

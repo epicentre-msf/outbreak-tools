@@ -24,7 +24,6 @@ IDiseaseSheet
 IDiseaseWorksheetManager
 IFormulaCondition
 IFormulas
-IGraphs
 IHiddenNames
 ILLChoices
 ILLExport
