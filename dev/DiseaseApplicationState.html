@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DiseaseApplicationState - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>DiseaseApplicationState</h1>
+<details>
+<summary>Internal members (not exported)</summary>
+<h2 id="int-commands">Commands</h2>
+<h3 id="int-beginguard">BeginGuard <a class="anchor-link" href="#int-beginguard">#</a></h3>
+<p><strong>Snapshot the Application state then disable interactive toggles.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub BeginGuard(ByVal app As Application, Optional ByVal disableStatusBar As Boolean = True)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>app</code>: Application whose state is captured and guarded.</li>
+<li><code>disableStatusBar</code>: Optional Boolean; when True the status bar is also hidden (default True).</li>
+</ul>
+<hr />
+<h3 id="int-restore">Restore <a class="anchor-link" href="#int-restore">#</a></h3>
+<p><strong>Restore the Application state captured by BeginGuard.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Restore()
+</code></pre>
+<p>Safe to call repeatedly: a Restore with nothing guarded is a no-op.</p>
+<hr />
+<h2 id="int-internal-helpers">Internal Helpers</h2>
+<h3 id="int-validateapplication">ValidateApplication <a class="anchor-link" href="#int-validateapplication">#</a></h3>
+<p><strong>Ensure the Application reference is valid.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ValidateApplication(ByVal app As Application)
+</code></pre>
+<hr />
+<h2 id="int-errorhandling">ErrorHandling</h2>
+<h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
+<p><strong>Centralised error raising aligned with ProjectError codes.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal errMessage As String)
+</code></pre>
+<hr />
+</details>
+<details>
+<summary>Used in (8 file(s))</summary>
+<ul>
+<li><a href="DiseaseApplicationState.html">DiseaseApplicationState.cls</a></li>
+<li><a href="DiseaseExporter.html">DiseaseExporter.cls</a></li>
+<li><a href="DiseaseWorksheetManager.html">DiseaseWorksheetManager.cls</a></li>
+<li><a href="IDiseaseApplicationState.html">IDiseaseApplicationState.cls</a></li>
+<li><a href="IDiseaseExporter.html">IDiseaseExporter.cls</a></li>
+<li>TestDiseaseApplicationState.bas</li>
+<li>TestDiseaseExporter.bas</li>
+<li>TestDiseaseIntegration.bas</li>
+</ul>
+</details>
+  </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
+</body>
+</html>
+
