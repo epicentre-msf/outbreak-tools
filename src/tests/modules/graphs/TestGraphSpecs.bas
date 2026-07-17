@@ -18,7 +18,7 @@ Option Explicit
 'loTable, Nothing sheet, Nothing lData, and wrong ListObject count
 '(complex mode); complex mode initial state has zero series and graphs
 'before CreateSeries; Wksh returns the output sheet in complex mode.
-'@depends GraphSpecs, IGraphSpecs, BetterArray, TableSpecsLinelistStub, AnalysisDictionaryStub, CustomTest, TestHelpers
+'@depends GraphSpecs, BetterArray, TableSpecsLinelistStub, AnalysisDictionaryStub, CustomTest, TestHelpers
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const FIXTURE_SHEET As String = "GraphSpecsFixture"
@@ -173,7 +173,7 @@ Public Sub TestCreateRejectsNothingTable()
     On Error GoTo TestFail
 
     On Error Resume Next
-    Dim specs As IGraphSpecs
+    Dim specs As GraphSpecs
     Set specs = GraphSpecs.Create(Nothing)
     On Error GoTo 0
 
@@ -206,7 +206,7 @@ Public Sub TestCreateRangeSpecsRejectsNothingLoTable()
     Set lDataStub = CreateLDataStub()
 
     On Error Resume Next
-    Dim specs As IGraphSpecs
+    Dim specs As GraphSpecs
     Set specs = GraphSpecs.CreateRangeSpecs(Nothing, sh, lDataStub)
     On Error GoTo 0
 
@@ -236,7 +236,7 @@ Public Sub TestCreateRangeSpecsRejectsNothingSheet()
     Set lDataStub = CreateLDataStub()
 
     On Error Resume Next
-    Dim specs As IGraphSpecs
+    Dim specs As GraphSpecs
     Set specs = GraphSpecs.CreateRangeSpecs(loTable, Nothing, lDataStub)
     On Error GoTo 0
 
@@ -266,7 +266,7 @@ Public Sub TestCreateRangeSpecsRejectsNothingLData()
     Set sh = ThisWorkbook.Worksheets(FIXTURE_SHEET)
 
     On Error Resume Next
-    Dim specs As IGraphSpecs
+    Dim specs As GraphSpecs
     Set specs = GraphSpecs.CreateRangeSpecs(loTable, sh, Nothing)
     On Error GoTo 0
 
@@ -311,7 +311,7 @@ Public Sub TestCreateRangeSpecsRejectsWrongCount()
     Set lDataStub = CreateLDataStub()
 
     On Error Resume Next
-    Dim specs As IGraphSpecs
+    Dim specs As GraphSpecs
     Set specs = GraphSpecs.CreateRangeSpecs(loTable, sh, lDataStub)
     On Error GoTo 0
 
@@ -347,7 +347,7 @@ Public Sub TestComplexModeInitialState()
     Dim lDataStub As TableSpecsLinelistStub
     Set lDataStub = CreateLDataStub()
 
-    Dim specs As IGraphSpecs
+    Dim specs As GraphSpecs
     Set specs = GraphSpecs.CreateRangeSpecs(loTable, sh, lDataStub)
 
     Assert.IsTrue (Not specs Is Nothing), _
@@ -384,7 +384,7 @@ Public Sub TestComplexModeWkshReturnsOutputSheet()
     Dim lDataStub As TableSpecsLinelistStub
     Set lDataStub = CreateLDataStub()
 
-    Dim specs As IGraphSpecs
+    Dim specs As GraphSpecs
     Set specs = GraphSpecs.CreateRangeSpecs(loTable, sh, lDataStub)
 
     Assert.AreEqual sh.Name, specs.Wksh.Name, _

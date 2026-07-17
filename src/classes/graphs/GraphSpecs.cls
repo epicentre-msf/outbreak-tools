@@ -15,7 +15,6 @@ Attribute VB_Description = "Graph series specifications for analysis charts"
 '@IgnoreModule IIfSideEffect, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit
-Implements IGraphSpecs
 
 '@class GraphSpecs
 '@description
@@ -27,7 +26,7 @@ Implements IGraphSpecs
 'each containing its own set of parallel series arrays plus a display title. Consumers
 'create an instance via Create (simple) or CreateRangeSpecs (complex), call
 'CreateSeries (or let Valid trigger it lazily), then read series data via the
-'IGraphSpecs interface.
+'public accessors.
 '@depends ICrossTable, ITableSpecs, TableSpecs, ILinelistSpecs, BetterArray
 '@version 1.0 (2026-02-09)
 
@@ -76,18 +75,18 @@ Private Const CLASS_NAME As String = "GraphSpecs"
 'cross-tables. Simple mode is used for univariate, bivariate, spatial, and
 'spatio-temporal analysis tables. This method explicitly rejects TimeSeries tables
 '(which require CreateRangeSpecs) and GlobalSummary tables (which do not support
-'graphing). The returned IGraphSpecs instance stores a reference to the cross-table
+'graphing). The returned GraphSpecs instance stores a reference to the cross-table
 'and can later produce chart series definitions via CreateSeries.
 '@param tabl ICrossTable. The fully-built cross-table whose named ranges contain
 'the data to graph. Must not be Nothing, ScopeTimeSeries, or ScopeGlobalSummary.
-'@return IGraphSpecs. An instance configured in simple mode (GraphTypeSimple)
+'@return GraphSpecs. An instance configured in simple mode (GraphTypeSimple)
 'ready for series creation via CreateSeries.
 '@throws InvalidArgument When tabl is Nothing, ScopeTimeSeries, or ScopeGlobalSummary.
 '@remarks After calling Create, you must call CreateSeries before accessing any
 'series properties (SeriesName, SeriesType, etc.). The cross-table must already
 'have its named ranges written to the worksheet before series data can be consumed.
 '@export
-Public Function Create(ByVal tabl As ICrossTable) As IGraphSpecs
+Public Function Create(ByVal tabl As ICrossTable) As GraphSpecs
     If tabl Is Nothing Then
         ThrowError InvalidArgument, "Cross-table is not defined"
     End If
@@ -125,7 +124,7 @@ End Function
 '@param outputSh Worksheet. The worksheet where time series graphs will be drawn.
 '@param lData ILinelistSpecs. Linelist-level metadata (section names, sheet info)
 'needed to resolve table specifications during series building.
-'@return IGraphSpecs. An instance configured in complex mode (GraphTypeComplex)
+'@return GraphSpecs. An instance configured in complex mode (GraphTypeComplex)
 'ready for series creation via CreateSeries.
 '@throws InvalidArgument When loTable fails validation, lData is Nothing, or
 'outputSh is Nothing.
@@ -136,7 +135,7 @@ End Function
 '@export
 Public Function CreateRangeSpecs(ByVal loTable As BetterArray, _
                                  ByVal outputSh As Worksheet, _
-                                 ByVal lData As ILinelistSpecs) As IGraphSpecs
+                                 ByVal lData As ILinelistSpecs) As GraphSpecs
 
     ValidateListObjects loTable
     If lData Is Nothing Then ThrowError InvalidArgument, "Linelist specifications not defined"
@@ -156,8 +155,8 @@ End Function
 '@details
 'Convenience accessor so consuming code can fluently retrieve the interface
 'reference from the predeclared Create or CreateRangeSpecs method.
-'@return IGraphSpecs. The current instance cast to the interface.
-Public Property Get Self() As IGraphSpecs
+'@return GraphSpecs. The current instance.
+Public Property Get Self() As GraphSpecs
     Set Self = Me
 End Property
 
@@ -1303,61 +1302,3 @@ End Sub
 Private Sub ThrowError(ByVal errNumber As Long, ByVal message As String)
     Err.Raise CLng(errNumber), CLASS_NAME, message
 End Sub
-
-
-'@section InterfaceImplementation
-'===============================================================================
-'@description Delegated members satisfying the IGraphSpecs contract.
-'See the corresponding Public members above for full documentation.
-
-Private Property Get IGraphSpecs_NumberOfSeries() As Long
-    IGraphSpecs_NumberOfSeries = NumberOfSeries()
-End Property
-
-Private Property Get IGraphSpecs_NumberOfGraphs() As Long
-    IGraphSpecs_NumberOfGraphs = NumberOfGraphs()
-End Property
-
-Private Property Get IGraphSpecs_SeriesName(ByVal index As Long) As String
-    IGraphSpecs_SeriesName = SeriesName(index)
-End Property
-
-Private Property Get IGraphSpecs_SeriesType(ByVal index As Long) As String
-    IGraphSpecs_SeriesType = SeriesType(index)
-End Property
-
-Private Property Get IGraphSpecs_SeriesPos(ByVal index As Long) As String
-    IGraphSpecs_SeriesPos = SeriesPos(index)
-End Property
-
-Private Property Get IGraphSpecs_SeriesLabel(ByVal index As Long) As String
-    IGraphSpecs_SeriesLabel = SeriesLabel(index)
-End Property
-
-Private Property Get IGraphSpecs_SeriesColumnLabel(ByVal index As Long) As String
-    IGraphSpecs_SeriesColumnLabel = SeriesColumnLabel(index)
-End Property
-
-Private Property Get IGraphSpecs_SeriesLabelPrefix(ByVal index As Long) As String
-    IGraphSpecs_SeriesLabelPrefix = SeriesLabelPrefix(index)
-End Property
-
-Private Sub IGraphSpecs_CreateSeries()
-    CreateSeries
-End Sub
-
-Private Property Get IGraphSpecs_SpecsLists() As BetterArray
-    Set IGraphSpecs_SpecsLists = SpecsLists()
-End Property
-
-Private Property Get IGraphSpecs_Valid() As Boolean
-    IGraphSpecs_Valid = Valid()
-End Property
-
-Private Property Get IGraphSpecs_Wksh() As Worksheet
-    Set IGraphSpecs_Wksh = Wksh()
-End Property
-
-Private Property Get IGraphSpecs_GraphIDs() As BetterArray
-    Set IGraphSpecs_GraphIDs = GraphIDs()
-End Property
