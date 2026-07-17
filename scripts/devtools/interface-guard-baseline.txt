@@ -49,7 +49,6 @@ IListBuilder
 IMasterSetupPreparation
 IMasterSetupVariables
 IOSFiles
-IProgressBar
 ISectionBuilder
 ISetupErrors
 ISetupImportService

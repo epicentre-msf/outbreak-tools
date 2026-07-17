@@ -13,11 +13,9 @@ Attribute VB_Description = "Worksheet progress bar helper"
 '@Folder("General")
 '@ModuleDescription("Worksheet progress bar helper used while generating linelist artefacts")
 '@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, UseMeaningfulName, ExcelMemberMayReturnNothing, HungarianNotation
-'@depends IProgressBar, ProjectError
+'@depends ProjectError
 
 Option Explicit
-
-Implements IProgressBar
 
 '@class ProgressBar
 '@description
@@ -65,9 +63,9 @@ End Sub
 '@sub-title Factory returning an initialised interface
 '@param barRange Range. Range that will host the indicator.
 '@param maximum Long. Maximum value. Defaults to DEFAULT_MAXIMUM.
-'@return IProgressBar. Ready to use.
+'@return ProgressBar. Ready to use.
 '@export
-Public Function Create(ByVal barRange As Range, Optional ByVal maximum As Long = DEFAULT_MAXIMUM) As IProgressBar
+Public Function Create(ByVal barRange As Range, Optional ByVal maximum As Long = DEFAULT_MAXIMUM) As ProgressBar
     With New ProgressBar
         .Attach barRange, maximum
         Set Create = .Self
@@ -75,9 +73,9 @@ Public Function Create(ByVal barRange As Range, Optional ByVal maximum As Long =
 End Function
 
 '@label:self
-'@prop-title Self-reference as IProgressBar
-'@return IProgressBar. Self-reference.
-Public Property Get Self() As IProgressBar
+'@prop-title Self-reference as ProgressBar
+'@return ProgressBar. Self-reference.
+Public Property Get Self() As ProgressBar
     Set Self = Me
 End Property
 
@@ -248,66 +246,6 @@ End Property
 '@export
 Public Property Get PercentComplete() As Double
     PercentComplete = ComputeRatio(this.value)
-End Property
-
-'@section Interface
-'===============================================================================
-'IProgressBar delegation wiring.
-
-Private Sub IProgressBar_Attach(ByVal barRange As Range, Optional ByVal maximum As Long = DEFAULT_MAXIMUM)
-    Attach barRange, maximum
-End Sub
-
-Private Sub IProgressBar_AttachStatusCell(ByVal statusRange As Range)
-    AttachStatusCell statusRange
-End Sub
-
-Private Property Get IProgressBar_BarRange() As Range
-    Set IProgressBar_BarRange = BarRange
-End Property
-
-Private Sub IProgressBar_Complete(Optional ByVal statusMessage As String = vbNullString)
-    Complete statusMessage
-End Sub
-
-Private Sub IProgressBar_ConfigureColors(ByVal completedColor As Long, ByVal pendingColor As Long)
-    ConfigureColors completedColor, pendingColor
-End Sub
-
-Private Sub IProgressBar_ConfigureValueFormat(ByVal formatPattern As String)
-    ConfigureValueFormat formatPattern
-End Sub
-
-Private Sub IProgressBar_Reset(Optional ByVal statusMessage As String = vbNullString)
-    Reset statusMessage
-End Sub
-
-Private Sub IProgressBar_StepBy(Optional ByVal stepValue As Long = 1, Optional ByVal statusMessage As String = vbNullString)
-    StepBy stepValue, statusMessage
-End Sub
-
-Private Property Get IProgressBar_StatusCell() As Range
-    Set IProgressBar_StatusCell = StatusCell
-End Property
-
-Private Sub IProgressBar_Update(ByVal currentValue As Long, Optional ByVal statusMessage As String = vbNullString)
-    Update currentValue, statusMessage
-End Sub
-
-Private Property Get IProgressBar_Maximum() As Long
-    IProgressBar_Maximum = Maximum
-End Property
-
-Private Property Let IProgressBar_Maximum(ByVal value As Long)
-    Maximum = value
-End Property
-
-Private Property Get IProgressBar_Value() As Long
-    IProgressBar_Value = Value
-End Property
-
-Private Property Get IProgressBar_PercentComplete() As Double
-    IProgressBar_PercentComplete = PercentComplete
 End Property
 
 '@section Internal Helpers

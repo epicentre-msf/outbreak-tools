@@ -38,7 +38,7 @@ Option Explicit
 '                                a formatted "current / max" string to the
 '                                first cell of the bar range.
 '
-' @depends ProgressBar, IProgressBar, CustomTest, TestHelpers
+' @depends ProgressBar, CustomTest, TestHelpers
 ' =============================================================================
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
@@ -125,7 +125,7 @@ Public Sub TestCreateReturnsInitialisedBar()
     Dim barRange As Range
     Set barRange = FixtureSheet.Range("A1:E1")
 
-    Dim sut As IProgressBar
+    Dim sut As ProgressBar
     Set sut = ProgressBar.Create(barRange, 50)
 
     Assert.AreEqual "ProgressBar", TypeName(sut), _
@@ -156,7 +156,7 @@ Public Sub TestCreateDefaultMaximum()
     Dim barRange As Range
     Set barRange = FixtureSheet.Range("A1:J1")
 
-    Dim sut As IProgressBar
+    Dim sut As ProgressBar
     Set sut = ProgressBar.Create(barRange)
 
     Assert.AreEqual CLng(100), sut.Maximum, _
@@ -179,7 +179,7 @@ Public Sub TestCreateRejectsNothingRange()
     CustomTestSetTitles Assert, "ProgressBar", "TestCreateRejectsNothingRange"
     On Error GoTo ExpectError
 
-    Dim sut As IProgressBar
+    Dim sut As ProgressBar
     Set sut = ProgressBar.Create(Nothing)
 
     Assert.LogFailure "Create should raise when barRange is Nothing"
@@ -204,7 +204,7 @@ Public Sub TestCreateRejectsZeroMaximum()
     Dim barRange As Range
     Set barRange = FixtureSheet.Range("A1:E1")
 
-    Dim sut As IProgressBar
+    Dim sut As ProgressBar
     Set sut = ProgressBar.Create(barRange, 0)
 
     Assert.LogFailure "Create should raise when maximum is zero"
@@ -229,7 +229,7 @@ Public Sub TestAttachSetsBarRange()
     Dim barRange As Range
     Set barRange = FixtureSheet.Range("A1:E1")
 
-    Dim sut As IProgressBar
+    Dim sut As ProgressBar
     Set sut = ProgressBar.Create(barRange, 10)
 
     Assert.AreEqual barRange.Address, sut.BarRange.Address, _
@@ -254,7 +254,7 @@ Public Sub TestUpdateSetsValueAndPercent()
     CustomTestSetTitles Assert, "ProgressBar", "TestUpdateSetsValueAndPercent"
     On Error GoTo TestFail
 
-    Dim sut As IProgressBar
+    Dim sut As ProgressBar
     Set sut = ProgressBar.Create(FixtureSheet.Range("A1:J1"), 50)
 
     sut.Update 25
@@ -280,7 +280,7 @@ Public Sub TestUpdateClampsToMaximum()
     CustomTestSetTitles Assert, "ProgressBar", "TestUpdateClampsToMaximum"
     On Error GoTo TestFail
 
-    Dim sut As IProgressBar
+    Dim sut As ProgressBar
     Set sut = ProgressBar.Create(FixtureSheet.Range("A1:E1"), 10)
 
     sut.Update 999
@@ -305,7 +305,7 @@ Public Sub TestUpdateClampsNegativeToZero()
     CustomTestSetTitles Assert, "ProgressBar", "TestUpdateClampsNegativeToZero"
     On Error GoTo TestFail
 
-    Dim sut As IProgressBar
+    Dim sut As ProgressBar
     Set sut = ProgressBar.Create(FixtureSheet.Range("A1:E1"), 10)
 
     sut.Update -5
@@ -331,7 +331,7 @@ Public Sub TestStepByIncrementsValue()
     CustomTestSetTitles Assert, "ProgressBar", "TestStepByIncrementsValue"
     On Error GoTo TestFail
 
-    Dim sut As IProgressBar
+    Dim sut As ProgressBar
     Set sut = ProgressBar.Create(FixtureSheet.Range("A1:J1"), 100)
 
     sut.StepBy 10
@@ -363,7 +363,7 @@ Public Sub TestCompleteReachesMaximum()
     CustomTestSetTitles Assert, "ProgressBar", "TestCompleteReachesMaximum"
     On Error GoTo TestFail
 
-    Dim sut As IProgressBar
+    Dim sut As ProgressBar
     Set sut = ProgressBar.Create(FixtureSheet.Range("A1:E1"), 80)
 
     sut.Update 30
@@ -390,7 +390,7 @@ Public Sub TestResetClearsValue()
     CustomTestSetTitles Assert, "ProgressBar", "TestResetClearsValue"
     On Error GoTo TestFail
 
-    Dim sut As IProgressBar
+    Dim sut As ProgressBar
     Set sut = ProgressBar.Create(FixtureSheet.Range("A1:E1"), 50)
 
     sut.Update 25
@@ -425,7 +425,7 @@ Public Sub TestAttachStatusCellWritesMessages()
     Dim statusCell As Range
     Set statusCell = FixtureSheet.Range("G1")
 
-    Dim sut As IProgressBar
+    Dim sut As ProgressBar
     Set sut = ProgressBar.Create(FixtureSheet.Range("A1:E1"), 10)
     sut.AttachStatusCell statusCell
 
@@ -454,7 +454,7 @@ Public Sub TestStatusCellIsNothingByDefault()
     CustomTestSetTitles Assert, "ProgressBar", "TestStatusCellIsNothingByDefault"
     On Error GoTo TestFail
 
-    Dim sut As IProgressBar
+    Dim sut As ProgressBar
     Set sut = ProgressBar.Create(FixtureSheet.Range("A1:E1"), 10)
 
     Assert.IsTrue sut.StatusCell Is Nothing, _
@@ -477,7 +477,7 @@ Public Sub TestAttachStatusCellRejectsMultiCellRange()
     CustomTestSetTitles Assert, "ProgressBar", "TestAttachStatusCellRejectsMultiCellRange"
     On Error GoTo ExpectError
 
-    Dim sut As IProgressBar
+    Dim sut As ProgressBar
     Set sut = ProgressBar.Create(FixtureSheet.Range("A1:E1"), 10)
 
     sut.AttachStatusCell FixtureSheet.Range("G1:H1")
@@ -505,7 +505,7 @@ Public Sub TestMaximumSetterReclampsValue()
     CustomTestSetTitles Assert, "ProgressBar", "TestMaximumSetterReclampsValue"
     On Error GoTo TestFail
 
-    Dim sut As IProgressBar
+    Dim sut As ProgressBar
     Set sut = ProgressBar.Create(FixtureSheet.Range("A1:E1"), 100)
 
     sut.Update 80
@@ -538,7 +538,7 @@ Public Sub TestConfigureValueFormatRejectsBlank()
     CustomTestSetTitles Assert, "ProgressBar", "TestConfigureValueFormatRejectsBlank"
     On Error GoTo ExpectError
 
-    Dim sut As IProgressBar
+    Dim sut As ProgressBar
     Set sut = ProgressBar.Create(FixtureSheet.Range("A1:E1"), 10)
 
     sut.ConfigureValueFormat vbNullString
@@ -570,7 +570,7 @@ Public Sub TestRenderPaintsCompletedCells()
     Dim barRange As Range
     Set barRange = FixtureSheet.Range("A1:E1")
 
-    Dim sut As IProgressBar
+    Dim sut As ProgressBar
     Set sut = ProgressBar.Create(barRange, 5)
 
     sut.Update 3
@@ -612,7 +612,7 @@ Public Sub TestRenderWritesFormattedValueToFirstCell()
     Dim barRange As Range
     Set barRange = FixtureSheet.Range("A1:E1")
 
-    Dim sut As IProgressBar
+    Dim sut As ProgressBar
     Set sut = ProgressBar.Create(barRange, 200)
 
     sut.Update 50
