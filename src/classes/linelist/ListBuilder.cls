@@ -16,8 +16,6 @@ Attribute VB_Description = "Builds HList or VList data entry sheets with section
 
 Option Explicit
 
-Implements IListBuilder
-
 '@class ListBuilder
 '@description
 'Builds horizontal (HList) or vertical (VList) data entry sheets for the
@@ -76,14 +74,14 @@ Private internalChecks As IChecking
 '@param sheetName String. The dictionary sheet name to build.
 '@param ll ILinelist. The linelist workbook facade providing worksheets,
 '  dropdowns, pivots, and specs.
-'@return IListBuilder. A fully initialised instance ready for Build.
+'@return ListBuilder. A fully initialised instance ready for Build.
 '@throws ProjectError.ObjectNotInitialized When ll is Nothing.
 '@throws ProjectError.InvalidArgument When sheetName is empty or not
 '  present in the dictionary.
 '@export
 Public Function Create(ByVal layer As Byte, _
                        ByVal sheetName As String, _
-                       ByVal ll As ILinelist) As IListBuilder
+                       ByVal ll As ILinelist) As ListBuilder
 
     If ll Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, "Linelist object is required"
@@ -624,21 +622,3 @@ End Property
 Private Sub ThrowError(ByVal errNumber As Long, ByVal errorMessage As String)
     Err.Raise errNumber, CLASS_NAME, errorMessage
 End Sub
-
-
-'@section InterfaceImplementation
-'===============================================================================
-'@description Delegated members satisfying the IListBuilder contract.
-'See the corresponding Public members above for full documentation.
-
-Private Sub IListBuilder_Build()
-    Build
-End Sub
-
-Private Property Get IListBuilder_HasCheckings() As Boolean
-    IListBuilder_HasCheckings = HasCheckings
-End Property
-
-Private Property Get IListBuilder_CheckingValues() As IChecking
-    Set IListBuilder_CheckingValues = CheckingValues
-End Property

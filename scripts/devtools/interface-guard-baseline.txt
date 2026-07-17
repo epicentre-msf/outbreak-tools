@@ -39,7 +39,6 @@ ILLSheets
 ILLSpatial
 ILLTranslation
 ILinelistBuildService
-IListBuilder
 IMasterSetupPreparation
 IMasterSetupVariables
 IOSFiles

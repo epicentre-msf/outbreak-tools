@@ -89,7 +89,7 @@ Public Sub TestCreateHListReturnsInstance()
     End If
 
     sheetName = sheetsList.Item(sheetsList.LowerBound)
-    Dim sut As IListBuilder
+    Dim sut As ListBuilder
     Set sut = ListBuilder.Create(ListBuilderLayerHList, sheetName, FakeLL)
 
     Assert.IsTrue Not sut Is Nothing, _
@@ -115,7 +115,7 @@ Public Sub TestCreateVListReturnsInstance()
     End If
 
     sheetName = sheetsList.Item(sheetsList.LowerBound)
-    Dim sut As IListBuilder
+    Dim sut As ListBuilder
     Set sut = ListBuilder.Create(ListBuilderLayerVList, sheetName, FakeLL)
 
     Assert.IsTrue Not sut Is Nothing, _
@@ -131,7 +131,7 @@ Public Sub TestCreateRejectsNothingLinelist()
     CustomTestSetTitles Assert, TESTMODULE, "TestCreateRejectsNothingLinelist"
     On Error GoTo ExpectError
 
-    Dim sut As IListBuilder
+    Dim sut As ListBuilder
     Set sut = ListBuilder.Create(ListBuilderLayerHList, "SomeSheet", Nothing)
 
     CustomTestLogFailure Assert, "TestCreateRejectsNothingLinelist", , _
@@ -147,7 +147,7 @@ Public Sub TestCreateRejectsEmptySheetName()
     CustomTestSetTitles Assert, TESTMODULE, "TestCreateRejectsEmptySheetName"
     On Error GoTo ExpectError
 
-    Dim sut As IListBuilder
+    Dim sut As ListBuilder
     Set sut = ListBuilder.Create(ListBuilderLayerHList, vbNullString, FakeLL)
 
     CustomTestLogFailure Assert, "TestCreateRejectsEmptySheetName", , _
@@ -163,7 +163,7 @@ Public Sub TestCreateRejectsUnknownSheet()
     CustomTestSetTitles Assert, TESTMODULE, "TestCreateRejectsUnknownSheet"
     On Error GoTo ExpectError
 
-    Dim sut As IListBuilder
+    Dim sut As ListBuilder
     Set sut = ListBuilder.Create(ListBuilderLayerHList, "NonExistentSheet__xyz", FakeLL)
 
     CustomTestLogFailure Assert, "TestCreateRejectsUnknownSheet", , _

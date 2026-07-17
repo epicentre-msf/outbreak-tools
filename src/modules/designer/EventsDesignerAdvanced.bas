@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Designer")
 '@ModuleDescription("Non-core ribbon callbacks for the designer workbook.")
-'@depends DesignerPreparation, IDesignerPreparation, DesignerEntry, RibbonDev, LLGeo, ILLGeo, ApplicationState, IApplicationState, OSFiles, IOSFiles, HiddenNames, IHiddenNames, BetterArray, DropdownLists, IDropdownLists, LinelistBuildService, ILinelistBuildService, LinelistSpecs, ILinelistSpecs, Linelist, ILinelist, ListBuilder, IListBuilder, LLSheets, ILLSheets, GenerationReport
+'@depends DesignerPreparation, IDesignerPreparation, DesignerEntry, RibbonDev, LLGeo, ILLGeo, ApplicationState, IApplicationState, OSFiles, IOSFiles, HiddenNames, IHiddenNames, BetterArray, DropdownLists, IDropdownLists, LinelistBuildService, ILinelistBuildService, LinelistSpecs, ILinelistSpecs, Linelist, ILinelist, ListBuilder, LLSheets, ILLSheets, GenerationReport
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 'Non-core ribbon logics are callbacks whose absence will not fire a
@@ -371,7 +371,7 @@ Public Sub clickGenerate()
     Set sheetLists = ll.Dictionary.UniqueValues("sheet name")
 
     If sheetLists.Length > 0 Then
-        Dim listBld As IListBuilder
+        Dim listBld As ListBuilder
         Dim sheetChecks As BetterArray
         Set sheetChecks = New BetterArray
         sheetChecks.LowerBound = 1
@@ -461,12 +461,12 @@ End Sub
 '===============================================================================
 
 '@Description("Build a data entry worksheet from the dictionary and return the builder.")
-Private Function BuildOneSheet(ByVal specs As ILinelistSpecs, ByVal ll As ILinelist, ByVal sheetName As String) As IListBuilder
+Private Function BuildOneSheet(ByVal specs As ILinelistSpecs, ByVal ll As ILinelist, ByVal sheetName As String) As ListBuilder
     Dim dict As ILLdictionary
     Dim llshs As ILLSheets
     Dim sheetType As String
     Dim layer As Byte
-    Dim listBld As IListBuilder
+    Dim listBld As ListBuilder
 
     Set dict = specs.Dictionary
     Set llshs = LLSheets.Create(dict)
