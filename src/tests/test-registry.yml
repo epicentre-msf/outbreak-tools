@@ -1,0 +1,67 @@
+# OutbreakTools — Test Registry
+# =============================================================================
+# Single source of truth for the test suite AND the Codes-worksheet ListObjects.
+#
+# A generator (see .obt/plans/automated-testing.md) reads this file and:
+#   1. (re)creates and populates the Codes-sheet ListObjects — "tests modules",
+#      "general classes", "tests classes", etc. — through IDevelopment.
+#   2. rebuilds the worksheet-scoped Name `ModulesForTesting`, which the test
+#      runner (CustomTestImplementation.clickRibbonTests) iterates to decide
+#      which modules to execute.
+#
+# A test module therefore runs only once it appears here AND the generator has
+# repopulated the workbook. Add suites progressively — that is by design.
+#
+# ----------------------------------------------------------------------------
+# `folder` is the subfolder shared by every base path. For a suite folder F,
+# components resolve to:
+#     classes         -> src/classes/F/<name>.cls        (+ I<name>.cls if interface)
+#     modules          -> src/modules/F/<name>.bas
+#     tests[].module   -> src/tests/modules/F/<module>.bas
+#     fixtures         -> src/tests/classes/F/<name>.cls  (imported as "tests classes")
+#
+# The tag written above each generated table (read by Development.cls) is:
+#     classes  -> "general classes"      modules  -> "general modules"
+#     tests    -> "tests modules"        fixtures -> "tests classes"
+# `interface: true` on a class also imports the matching I<name>.cls.
+# =============================================================================
+
+version: 1
+
+suites:
+  # --- sections -------------------------------------------------------------
+  # Fully verified against the current tree. Use as the template for new suites.
+  - folder: sections
+    classes:
+      - name: VarWriter
+        interface: true
+      - name: SectionBuilder
+        interface: true
+    modules: []          # general modules under src/modules/sections (none)
+    fixtures: []         # test-only helper classes under src/tests/classes/sections
+    tests:
+      - module: TestVarWriter
+        covers: [VarWriter]
+      - module: TestSectionBuilder
+        covers: [SectionBuilder]
+
+# ---------------------------------------------------------------------------
+# TEMPLATE — copy per folder as coverage is added. Delete fields left empty.
+# Expansion backlog (folders present under src/tests/modules that are not yet
+# registered): analyses, dataio, designer, dictionary, formulas, general, geo,
+# graphs, linelist, mastersetup, setup, showhide, tables.
+#
+#   - folder: <subfolder>
+#     classes:
+#       - name: <ClassName>
+#         interface: true|false
+#     modules:
+#       - <StandardModuleName>
+#     fixtures:
+#       - name: <StubOrFixtureClass>
+#         interface: false
+#     tests:
+#       - module: Test<Something>
+#         covers: [<ClassName>, ...]
+#         fixtures: [<StubOrFixtureClass>, ...]   # optional, per-module
+# ---------------------------------------------------------------------------
