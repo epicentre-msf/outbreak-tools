@@ -13,11 +13,9 @@ Attribute VB_Description = "Analyses setup sheets and publishes consistency repo
 '@Folder("Setup")
 '@ModuleDescription("Analyses setup sheets and publishes consistency reports")
 '@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
-'@depends Analysis, ApplicationState, BetterArray, Checking, CheckingOutput, CustomTable, DropdownLists, FormulaData, Formulas, IAnalysis, ISetupErrors, IDropdownLists, LLChoices, LLVariables, LLdictionary, Passwords, ProjectError, TableSpecs
+'@depends Analysis, ApplicationState, BetterArray, Checking, CheckingOutput, CustomTable, DropdownLists, FormulaData, Formulas, IAnalysis, IDropdownLists, LLChoices, LLVariables, LLdictionary, Passwords, ProjectError, TableSpecs
 
 Option Explicit
-
-Implements ISetupErrors
 
 '@class SetupErrors
 '@description
@@ -110,7 +108,7 @@ Private Const EXP_UNFOUND_DICTCOLUMN As String      = "Exports, line %1--The Exp
 '@details
 'Factory method on the predeclared instance. Creates a new SetupErrors,
 'calls Initialise with the supplied workbook and optional collaborators,
-'then returns the instance through the ISetupErrors interface.
+'then returns the newly built instance.
 '@param hostBook Workbook. The workbook containing setup data.
 '@param passwordService Optional IPasswords. Sheet protection handler.
 '@param dictionary Optional ILLdictionary. Dictionary data accessor.
@@ -118,7 +116,7 @@ Private Const EXP_UNFOUND_DICTCOLUMN As String      = "Exports, line %1--The Exp
 '@param formulaStore Optional IFormulaData. Formula validation handler.
 '@param transManager Optional ISetupTranslationsTable. Translations table accessor.
 '@param stateScope Optional IApplicationState. Application state guard.
-'@return ISetupErrors. A fully initialised instance ready to run checks.
+'@return SetupErrors. A fully initialised instance ready to run checks.
 '@throws ProjectError.ObjectNotInitialized When hostBook is Nothing.
 '@export
 Public Function Create(ByVal hostBook As Workbook, _
@@ -127,7 +125,7 @@ Public Function Create(ByVal hostBook As Workbook, _
                        Optional ByVal choices As ILLChoices, _
                        Optional ByVal formulaStore As IFormulaData, _
                        Optional ByVal transManager As ISetupTranslationsTable, _
-                       Optional ByVal stateScope As IApplicationState) As ISetupErrors
+                       Optional ByVal stateScope As IApplicationState) As SetupErrors
     Dim instance As SetupErrors
 
     Set instance = New SetupErrors
@@ -237,8 +235,8 @@ End Property
 
 '@label:self
 '@prop-title Current object instance
-'@return ISetupErrors. The current instance cast to the interface.
-Public Property Get Self() As ISetupErrors
+'@return SetupErrors. The current instance.
+Public Property Get Self() As SetupErrors
     Set Self = Me
 End Property
 
@@ -1271,29 +1269,6 @@ Private Function ReplacePlaceholder(ByVal template As String, _
         ReplacePlaceholder = Replace(template, placeholder, replacement)
     End If
 End Function
-
-'@section Interface implementation
-'===============================================================================
-'@description Delegated members satisfying the ISetupErrors contract.
-'See the corresponding Public members above for full documentation.
-
-Private Sub ISetupErrors_Initialise(ByVal hostBook As Workbook, _
-                                    Optional ByVal passwordService As IPasswords, _
-                                    Optional ByVal dictionary As ILLdictionary, _
-                                    Optional ByVal choices As ILLChoices, _
-                                    Optional ByVal formulaStore As IFormulaData, _
-                                    Optional ByVal transManager As ISetupTranslationsTable, _
-                                    Optional ByVal stateScope As IApplicationState)
-    Initialise hostBook, passwordService, dictionary, choices, formulaStore, transManager, stateScope
-End Sub
-
-Private Sub ISetupErrors_Run()
-    Run
-End Sub
-
-Private Property Get ISetupErrors_Checkings() As BetterArray
-    Set ISetupErrors_Checkings = Checkings
-End Property
 
 '@label:throw-error
 '@sub-title Raise a ProjectError-based exception

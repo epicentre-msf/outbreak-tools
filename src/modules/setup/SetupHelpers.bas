@@ -538,7 +538,7 @@ End Function
 '@param hostBook Optional workbook. When omitted, ThisWorkbook is used.
 Public Sub CheckTheSetup(Optional ByVal hostBook As Workbook)
     
-    Dim checker As ISetupErrors
+    Dim checker As SetupErrors
     Dim errNumber As Long
     Dim errSource As String
     Dim errDescription As String

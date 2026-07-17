@@ -60,12 +60,12 @@ Public Sub TestCreateReturnsInterface()
     On Error GoTo Fail
 
     Dim hostBook As Workbook
-    Dim checker As ISetupErrors
+    Dim checker As SetupErrors
 
     Set hostBook = PrepareSetupWorkbook()
     Set checker = SetupErrors.Create(hostBook)
 
-    Assert.IsNotNothing checker, "Factory should return an ISetupErrors instance"
+    Assert.IsNotNothing checker, "Factory should return a SetupErrors instance"
 
 Cleanup:
     Set checker = Nothing
@@ -85,7 +85,7 @@ Public Sub TestCheckingsInitialisedEmpty()
 
     Dim results As BetterArray
     Dim hostBook As Workbook
-    Dim checker As ISetupErrors
+    Dim checker As SetupErrors
 
     Set hostBook = PrepareSetupWorkbook()
     Set checker = SetupErrors.Create(hostBook)
@@ -159,7 +159,7 @@ Public Sub TestRunRestoresApplicationStateOnFailure()
     On Error GoTo Fail
 
     Dim hostBook As Workbook
-    Dim subject As ISetupErrors
+    Dim subject As SetupErrors
     Dim previousCalcBeforeSave As Boolean
     Dim previousAlerts As Boolean
 
@@ -208,7 +208,7 @@ Public Sub TestRunDetectsDictionaryAndChoicesIssues()
     On Error GoTo Fail
 
     Dim hostBook As Workbook
-    Dim checker As ISetupErrors
+    Dim checker As SetupErrors
     Dim results As BetterArray
     Dim duplicateDetected As Boolean
     Dim missingLabelDetected As Boolean
@@ -243,7 +243,7 @@ Public Sub TestDictionaryChecksReportAllMessages()
     On Error GoTo Fail
 
     Dim hostBook As Workbook
-    Dim checker As ISetupErrors
+    Dim checker As SetupErrors
     Dim results As BetterArray
     Dim expected As Variant
     Dim idx As Long
@@ -290,7 +290,7 @@ Public Sub TestChoicesChecksReportAllMessages()
     On Error GoTo Fail
 
     Dim hostBook As Workbook
-    Dim checker As ISetupErrors
+    Dim checker As SetupErrors
     Dim results As BetterArray
     Dim expected As Variant
     Dim idx As Long
@@ -327,7 +327,7 @@ Public Sub TestExportsChecksReportAllMessages()
     On Error GoTo Fail
 
     Dim hostBook As Workbook
-    Dim checker As ISetupErrors
+    Dim checker As SetupErrors
     Dim results As BetterArray
     Dim expected As Variant
     Dim idx As Long
@@ -370,7 +370,7 @@ Public Sub TestAnalysisChecksDetectInvalidTables()
     On Error GoTo Fail
 
     Dim hostBook As Workbook
-    Dim checker As ISetupErrors
+    Dim checker As SetupErrors
     Dim results As BetterArray
 
     Set hostBook = PrepareSetupWorkbook(includeIssues:=True)
@@ -397,7 +397,7 @@ Public Sub TestAnalysisChecksDetectEmptyRows()
     On Error GoTo Fail
 
     Dim hostBook As Workbook
-    Dim checker As ISetupErrors
+    Dim checker As SetupErrors
     Dim results As BetterArray
 
     Set hostBook = PrepareSetupWorkbook(includeIssues:=True)
@@ -427,7 +427,7 @@ Public Sub TestAnalysisChecksProduceCheckingObject()
     On Error GoTo Fail
 
     Dim hostBook As Workbook
-    Dim checker As ISetupErrors
+    Dim checker As SetupErrors
     Dim results As BetterArray
 
     Set hostBook = PrepareSetupWorkbook(includeIssues:=True)
