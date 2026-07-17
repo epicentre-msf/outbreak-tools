@@ -14,7 +14,7 @@ Option Explicit
 'range entries to the tracking ListObject. The BuildFixtureSheet helper creates
 'a fully populated fixture with all 12 ListObjects and 4 named ranges so that
 'AnaTabIds.Create with check:=True can pass validation without a real linelist.
-'@depends AnaTabIds, IAnaTabIds, BetterArray, CustomTest, TestHelpers
+'@depends AnaTabIds, BetterArray, CustomTest, TestHelpers
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const FIXTURE_SHEET As String = "AnaTabIdsFixture"
@@ -141,7 +141,7 @@ Public Sub TestCreateRejectsNothingWorksheet()
     On Error GoTo TestFail
 
     On Error Resume Next
-    Dim ids As IAnaTabIds
+    Dim ids As AnaTabIds
     Set ids = AnaTabIds.Create(Nothing)
     On Error GoTo 0
 
@@ -158,7 +158,7 @@ End Sub
 'Arranges by calling BuildFixtureSheet to produce a worksheet with all 12
 'ListObjects and 4 named ranges. Acts by calling AnaTabIds.Create with
 'check:=True so CheckRequirements validation runs. Asserts the returned
-'IAnaTabIds reference is not Nothing, confirming the fixture satisfies all
+'AnaTabIds reference is not Nothing, confirming the fixture satisfies all
 'structural requirements.
 '@TestMethod("AnaTabIds")
 Public Sub TestCreateWithCheckPasses()
@@ -168,7 +168,7 @@ Public Sub TestCreateWithCheckPasses()
     Dim sh As Worksheet
     Set sh = BuildFixtureSheet()
 
-    Dim ids As IAnaTabIds
+    Dim ids As AnaTabIds
     Set ids = AnaTabIds.Create(sh, check:=True)
 
     Assert.IsTrue (Not ids Is Nothing), _
@@ -183,7 +183,7 @@ End Sub
 '@details
 'Arranges by creating a bare worksheet with no ListObjects or named ranges.
 'Acts by calling AnaTabIds.Create with check:=False to skip structural
-'validation. Asserts the returned IAnaTabIds reference is not Nothing,
+'validation. Asserts the returned AnaTabIds reference is not Nothing,
 'confirming that factory creation works on any worksheet when validation
 'is bypassed.
 '@TestMethod("AnaTabIds")
@@ -195,7 +195,7 @@ Public Sub TestCreateWithoutCheck()
     Dim sh As Worksheet
     Set sh = EnsureWorksheet(FIXTURE_SHEET, clearSheet:=True, visibility:=xlSheetHidden)
 
-    Dim ids As IAnaTabIds
+    Dim ids As AnaTabIds
     Set ids = AnaTabIds.Create(sh, check:=False)
 
     Assert.IsTrue (Not ids Is Nothing), _
@@ -225,7 +225,7 @@ Public Sub TestAddTableInfosResizesListObject()
     Dim sh As Worksheet
     Set sh = BuildFixtureSheet()
 
-    Dim ids As IAnaTabIds
+    Dim ids As AnaTabIds
     Set ids = AnaTabIds.Create(sh, check:=True)
 
     Dim rangeNames As BetterArray

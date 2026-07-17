@@ -15,7 +15,6 @@ Attribute VB_Description = "Manage Excel graphs"
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit
-Implements IGraphs
 
 '@class Graphs
 '@description
@@ -24,7 +23,7 @@ Implements IGraphs
 'attach data series from named ranges, assign category and legend labels,
 'and apply scope-dependent formatting (time series, spatial, or standard).
 'Charts are positioned at a caller-supplied Range and sized according to
-'the GraphScope enum. Consumers interact through the IGraphs interface.
+'the GraphScope enum.
 '@depends Checking
 '@version 1.0 (2026-02-09)
 
@@ -50,6 +49,17 @@ Private checkCounter As Long
 Private internalChecks As IChecking
 
 
+'@section Enumerations
+'===============================================================================
+'@description Layout scope controlling graph sizing.
+
+Public Enum GraphScope
+  GraphScopeTimeSeries = 1 'A time series graph (long graph)
+  GraphScopeSpatial = 2 'A spatial analysis graph
+  GraphScopeNormal = 3 'A standard univariate / bivariate graph
+End Enum
+
+
 '@section Instantiation
 '===============================================================================
 
@@ -64,12 +74,12 @@ Private internalChecks As IChecking
 '@param sh Worksheet. The worksheet containing the values to be plotted.
 '@param posRng Range. The cell or range determining where to position the graph.
 '@param grName Optional String. Display name for the graph. Defaults to vbNullString.
-'@return IGraphs. A ready-to-use graph instance.
+'@return Graphs. A ready-to-use graph instance.
 '@throws ProjectError.ObjectNotInitialized When sh is Nothing.
 '@throws ProjectError.ObjectNotInitialized When posRng is Nothing.
 '@depends Checking
 '@export
-Public Function Create(sh As Worksheet, posRng As Range, Optional ByVal grName As String = vbNullString) As IGraphs
+Public Function Create(sh As Worksheet, posRng As Range, Optional ByVal grName As String = vbNullString) As Graphs
 
     If (sh Is Nothing) Then ThrowError ProjectError.ObjectNotInitialized, "Worksheet not initialized, unable to create graph"
     If (posRng Is Nothing) Then ThrowError ProjectError.ObjectNotInitialized, "Range not initialized, unable to create graph"
@@ -85,10 +95,10 @@ End Function
 '@label:self
 '@prop-title Current object instance
 '@details
-'Returns the current instance cast to its interface. Used internally
-'by the factory method to return an IGraphs reference.
-'@return IGraphs. Reference to the current object.
-Public Property Get Self() As IGraphs
+'Returns the current instance. Used internally by the factory method
+'to return the built object.
+'@return Graphs. Reference to the current object.
+Public Property Get Self() As Graphs
     Set Self = Me
 End Property
 
@@ -184,7 +194,7 @@ End Property
 'attached to the graph. The graph is empty at creation. The width and height
 'of the graph object may change depending on the scope in the future.
 '@export
-Private Sub Add()
+Public Sub Add()
     'Upon creation, the width and height of graphs are constant
 
     Const CW As Long = 488 'graph width
@@ -221,7 +231,7 @@ End Sub
 '@param chrtType String. Chart type: "line", "point", "bar", or "hbar". Defaults to "bar" for unknown values.
 '@param axisPos Optional String. Axis position: "right" adds a secondary axis; any other value uses the primary axis. Defaults to vbNullString.
 '@export
-Private Sub AddSeries(ByVal rngName As String, ByVal chrtType As String, _
+Public Sub AddSeries(ByVal rngName As String, ByVal chrtType As String, _
                     Optional axisPos As String = vbNullString)
 
     Dim co As ChartObject
@@ -290,7 +300,7 @@ End Sub
 '@param prefix Optional String. Display prefix prepended to the legend name. Defaults to vbNullString.
 '@param prefixOnly Optional Boolean. When True, uses only the prefix as the legend entry. Defaults to False.
 '@param hardCodeLabels Optional Boolean. When True, legend text is literal; when False, references the named range. Defaults to True.
-Private Sub AddLabels(ByVal catName As String, _
+Public Sub AddLabels(ByVal catName As String, _
                      ByVal lblName As String, _
                      Optional ByVal prefix As String = vbNullString, _
                      Optional ByVal prefixOnly As Boolean = False, _
@@ -359,7 +369,7 @@ End Sub
 '@param scope Optional Byte. GraphScope value controlling layout sizing. Defaults to GraphScopeNormal.
 '@param heightFactor Optional Long. Multiplicative factor applied to chart height. Defaults to 1.
 '@param hardCodeLabels Optional Boolean. When True, axis titles are literal text. Defaults to True.
-Private Sub Format(Optional ByVal valuesTitle As String = vbNullString, _
+Public Sub Format(Optional ByVal valuesTitle As String = vbNullString, _
                   Optional ByVal catTitle As String = vbNullString, _
                   Optional ByVal plotTitle As String = vbNullString, _
                   Optional ByVal secondAxisTitle As String = vbNullString, _
@@ -560,7 +570,7 @@ End Sub
 'indicating that diagnostic information is available.
 '@return Boolean. True when internal checks exist.
 '@export
-Private Property Get HasCheckings() As Boolean
+Public Property Get HasCheckings() As Boolean
     HasCheckings = this.hasChecks
 End Property
 
@@ -571,7 +581,7 @@ End Property
 'been recorded. Returns Nothing otherwise.
 '@return Object. The IChecking instance with logged diagnostics.
 '@export
-Private Property Get CheckingValues() As IChecking
+Public Property Get CheckingValues() As IChecking
 
     'If there are no checks, exit the property
     If Not HasCheckings() Then  Exit Property
@@ -603,41 +613,3 @@ End Sub
 Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
     Err.Raise errNumb, "Graphs", "Error : " & Chr(34) & errorMessage
 End Sub
-
-
-'@section Interface
-'===============================================================================
-'@description Delegated members satisfying the IGraphs contract.
-
-Private Sub IGraphs_Add()
-    Add
-End Sub
-
-Private Sub IGraphs_AddSeries(ByVal rngName As String, ByVal chrtType As String, Optional axisPos As String = vbNullString)
-    AddSeries rngName, chrtType, axisPos
-End Sub
-
-Private Sub IGraphs_AddLabels(ByVal catName As String, ByVal lblName As String, Optional ByVal prefix As String = vbNullString, _
-                            Optional ByVal prefixOnly As Boolean = False, Optional ByVal hardCodeLabels As Boolean = True)
-    AddLabels catName, lblName, prefix, prefixOnly, hardCodeLabels
-End Sub
-
-Private Sub IGraphs_Format(Optional ByVal valuesTitle As String = vbNullString, _
-                          Optional ByVal catTitle As String = vbNullString, _
-                          Optional ByVal plotTitle As String = vbNullString, _
-                          Optional ByVal scope As Byte = GraphScopeNormal, _
-                          Optional ByVal heightFactor As Long = 1, _
-                          Optional ByVal hardCodeLabels As Boolean = True, _
-                          Optional ByVal secondAxisTitle As String = vbNullString)
-    Format valuesTitle:=valuesTitle, catTitle:=catTitle, plotTitle:=plotTitle, scope:=scope, _
-           heightFactor:=heightFactor, hardCodeLabels:=hardCodeLabels, _
-           secondAxisTitle:=secondAxisTitle
-End Sub
-
-Private Property Get IGraphs_HasCheckings() As Boolean
-    IGraphs_HasCheckings = HasCheckings
-End Property
-
-Private Property Get IGraphs_CheckingValues() As IChecking
-    Set IGraphs_CheckingValues = CheckingValues
-End Property

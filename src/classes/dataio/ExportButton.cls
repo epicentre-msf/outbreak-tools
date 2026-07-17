@@ -25,7 +25,7 @@ Option Explicit
 'filter usage, then delegates to LLExporter.ExportCustom. The factory
 'returns the concrete class because callers hold a
 'reference to keep the WithEvents binding alive.
-'@depends ILLExporter, LLExporter, IApplicationState, ApplicationState, IOSFiles, OSFiles
+'@depends LLExporter, IApplicationState, ApplicationState, IOSFiles, OSFiles
 
 
 '@section Constants
@@ -180,7 +180,7 @@ End Sub
 'and closes any orphaned output workbook.
 Private Sub RunExport()
 
-    Dim exporter As ILLExporter
+    Dim exporter As LLExporter
     Dim appState As IApplicationState
     Dim io As IOSFiles
     Dim folderPath As String

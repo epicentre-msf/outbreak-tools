@@ -15,7 +15,6 @@ Attribute VB_Description = "Export tracking for analysis tables and graphs"
 '@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation
 
 Option Explicit
-Implements IAnaTabIds
 
 '@class AnaTabIds
 '@description
@@ -25,7 +24,7 @@ Implements IAnaTabIds
 'on output worksheets. Manages three ListObject families (tab_ids_*,
 'graph_ids_*, graph_formats_*) across four analysis scopes (normal, time
 'series, spatial, spatio-temporal).
-'@depends CustomTable, Graphs, IGraphs, BetterArray, IFormulas
+'@depends CustomTable, Graphs, BetterArray, IFormulas
 '@version 2025-01-15
 
 
@@ -42,6 +41,14 @@ Private Const RNGTSSHEET As String = "RNG_SheetTSName"
 Private Const RNGSPSHEET As String = "RNG_SheetSPName"
 Private Const RNGSPTEMPSHEET As String = "RNG_SheetSPTempName"
 
+' Scope for analysis ID operations
+Public Enum AnalysisIdsScope
+    AnalysisIdsScopeTimeSeries = 1
+    AnalysisIdsScopeSpatial = 2
+    AnalysisIdsScopeNormal = 3
+    AnalysisIdsScopeSpatioTemporal = 4
+End Enum
+
 '@section Instantiation
 '===============================================================================
 
@@ -56,14 +63,14 @@ Private Const RNGSPTEMPSHEET As String = "RNG_SheetSPTempName"
 'sheet-name named ranges.
 '@param check Optional Boolean. When True, calls CheckRequirements to validate
 'all expected infrastructure. Defaults to True.
-'@return IAnaTabIds. A fully initialised tracking instance.
+'@return AnaTabIds. A fully initialised tracking instance.
 '@throws ProjectError.InvalidArgument When idsh is Nothing.
 '@throws ProjectError.InvalidArgument When check is True and any required
 'ListObject or named range is missing.
 '@depends CustomTable, BetterArray
 '@export
 Public Function Create(ByVal idsh As Worksheet, _
-                       Optional ByVal check As Boolean = True) As IAnaTabIds
+                       Optional ByVal check As Boolean = True) As AnaTabIds
 
     If idsh Is Nothing Then ThrowError ProjectError.InvalidArgument, "Worksheet not defined"
     If check Then CheckRequirements idsh
@@ -84,8 +91,8 @@ End Function
 '@details
 'Convenience accessor so consuming code can fluently retrieve the interface
 'reference from the predeclared Create method.
-'@return IAnaTabIds. The current instance cast to the interface.
-Public Property Get Self() As IAnaTabIds
+'@return AnaTabIds. The current instance.
+Public Property Get Self() As AnaTabIds
     Set Self = Me
 End Property
 
@@ -189,7 +196,7 @@ End Property
 '@param exportTable Optional String. Export flag ("yes" or "no").
 'Defaults to "yes".
 '@export
-Private Sub AddTableInfos(ByVal scope As Byte, _
+Public Sub AddTableInfos(ByVal scope As Byte, _
                            ByVal tabId As String, _
                            ByVal tabRangesNames As BetterArray, _
                            Optional ByVal exportTable As String = "yes")
@@ -251,7 +258,7 @@ End Sub
 '@remarks Boolean parameters are stored as Long (0/1) via CLng for reliable
 'cross-session persistence in Excel ListObject cells.
 '@export
-Private Sub AddGraphInfo(ByVal scope As Byte, _
+Public Sub AddGraphInfo(ByVal scope As Byte, _
                           ByVal tabId As String, _
                           ByVal graphId As String, _
                           ByVal seriesName As String, _
@@ -311,7 +318,7 @@ End Sub
 '@param heightFactor Optional Long. Multiplier for graph height. Defaults to 1.
 '@param plotTitle Optional String. Chart title. Defaults to vbNullString.
 '@export
-Private Sub AddGraphFormat(ByVal scope As Byte, _
+Public Sub AddGraphFormat(ByVal scope As Byte, _
                             ByVal tabId As String, _
                             ByVal graphId As String, _
                             ByVal catTitle As String, _
@@ -422,12 +429,12 @@ End Sub
 'gr.AddSeries and gr.AddLabels. The cellRng points to the graphId cell
 '(column 2); all other values are read as offsets. Boolean values are
 'read with error trapping because they are stored as numeric 0/1.
-'@param gr IGraphs. The chart object receiving the series.
+'@param gr Graphs. The chart object receiving the series.
 '@param cellRng Range. The graphId cell in the current tracking row.
 '@remarks Offset numbering skips column 9 (outRangeAddress, offset 7)
 'and jumps to offset 8 (prefix) and offset 9 (prefixOnly), matching
 'the 11-column layout stored by AddGraphInfo.
-Private Sub AddSeries(ByVal gr As IGraphs, ByVal cellRng As Range)
+Private Sub AddSeries(ByVal gr As Graphs, ByVal cellRng As Range)
     Dim seriesName As String
     Dim seriesType As String
     Dim seriesPos As String
@@ -462,14 +469,14 @@ End Sub
 'and calls gr.Format. Maps AnalysisIdsScope to GraphScope: TimeSeries
 'and SpatioTemporal map to GraphScopeTimeSeries, Spatial maps to
 'GraphScopeSpatial, and all others default to GraphScopeNormal.
-'@param gr IGraphs. The chart object to format.
+'@param gr Graphs. The chart object to format.
 '@param grTab ICustomTable. Wrapper around graph_formats_ ListObject,
 'keyed by "graphId".
 '@param scope Byte. AnalysisIdsScope value for scope-to-GraphScope mapping.
 '@param graphId String. The graph identifier for the format lookup.
 '@remarks heightFactor defaults to 1 and hardCodeLabels defaults to False
 'when the stored values cannot be converted.
-Private Sub AddFormat(ByVal gr As IGraphs, ByVal grTab As ICustomTable, _
+Private Sub AddFormat(ByVal gr As Graphs, ByVal grTab As ICustomTable, _
                        ByVal scope As Byte, ByVal graphId As String)
     Dim valuesTitle As String
     Dim catTitle As String
@@ -506,7 +513,7 @@ End Sub
 '@sub-title Write all tracked graphs to the output worksheet
 '@details
 'First calls WriteTableNames to transfer all named ranges, then iterates
-'the graph_ids_ ListObject to build charts. A new IGraphs object is
+'the graph_ids_ ListObject to build charts. A new Graphs object is
 'created at each graph boundary (detected when graphId changes). Each
 'series row is processed by AddSeries. When the loop ends, the final
 'graph is formatted via AddFormat. Format metadata is read from the
@@ -518,8 +525,8 @@ End Sub
 'Application.GoTo scrolls to the chart position, which is required for
 'correct chart placement in some Excel versions.
 '@export
-Private Sub WriteGraphs(ByVal outsh As Worksheet, ByVal scope As Byte)
-    Dim gr As IGraphs
+Public Sub WriteGraphs(ByVal outsh As Worksheet, ByVal scope As Byte)
+    Dim gr As Graphs
     Dim cellRng As Range
     Dim outCellRng As Range
     Dim grLo As ListObject
@@ -655,45 +662,4 @@ End Sub
 '@throws ProjectError. Always raises the specified error.
 Private Sub ThrowError(ByVal errNumber As Long, ByVal message As String)
     Err.Raise CLng(errNumber), CLASS_NAME, message
-End Sub
-
-'@section Interface Implementation
-'===============================================================================
-'@description Delegated members satisfying the IAnaTabIds contract.
-'See the corresponding Private members above for full documentation.
-
-Private Sub IAnaTabIds_AddGraphInfo(ByVal scope As Byte, _
-    ByVal tabId As String, ByVal graphId As String, _
-    ByVal seriesName As String, ByVal seriesType As String, _
-    ByVal seriesPos As String, ByVal seriesLabel As String, _
-    ByVal seriesColumnLabel As String, ByVal outRangeAddress As String, _
-    Optional ByVal hardCodeLabels As Boolean = False, _
-    Optional ByVal prefix As String = vbNullString, _
-    Optional ByVal prefixOnly As Boolean = False)
-
-    AddGraphInfo scope, tabId, graphId, seriesName, seriesType, _
-                 seriesPos, seriesLabel, seriesColumnLabel, _
-                 hardCodeLabels, outRangeAddress, prefix, prefixOnly
-End Sub
-
-Private Sub IAnaTabIds_AddGraphFormat(ByVal scope As Byte, _
-    ByVal tabId As String, ByVal graphId As String, _
-    ByVal catTitle As String, ByVal valuesTitle As String, _
-    Optional ByVal hardCodeLabels As Boolean = False, _
-    Optional ByVal heightFactor As Long = 1, _
-    Optional ByVal plotTitle As String = vbNullString)
-
-    AddGraphFormat scope, tabId, graphId, catTitle, valuesTitle, _
-                   hardCodeLabels, heightFactor, plotTitle
-End Sub
-
-Private Sub IAnaTabIds_AddTableInfos(ByVal scope As Byte, _
-    ByVal tabId As String, ByVal tabRangesNames As BetterArray, _
-    Optional ByVal exportTable As String = "yes")
-
-    AddTableInfos scope, tabId, tabRangesNames, exportTable
-End Sub
-
-Private Sub IAnaTabIds_WriteGraphs(ByVal outsh As Worksheet, ByVal scope As Byte)
-    WriteGraphs outsh, scope
 End Sub

@@ -24,7 +24,7 @@ Option Explicit
 '(normal, time series, spatial, spatio-temporal), builds cross-tables from
 'table specifications, writes formulas, registers metadata in AnaTabIds, and
 'renders charts.
-'@depends ILinelist, ILinelistSpecs, ILLFormat, ITranslationObject, ITableSpecs, ICrossTable, ICrossTableFormula, IGraphs, IAnaTabIds, IButtons, IPasswords, IDropdownLists, ILLdictionary, ILLVariables, IFormulaData, BetterArray
+'@depends ILinelist, ILinelistSpecs, ILLFormat, ITranslationObject, ITableSpecs, ICrossTable, ICrossTableFormula, Graphs, AnaTabIds, Buttons, IPasswords, IDropdownLists, ILLdictionary, ILLVariables, IFormulaData, BetterArray
 '@version 1.0 (2026-02-10)
 
 
@@ -47,7 +47,7 @@ Private Const SPATIOTEMPORAL As String = "Tab_SpatioTemporal_Analysis"
 Private Type TAnaOutput
     anaLL As ILinelist
     sh As Worksheet
-    namObj As IAnaTabIds                             'Cached analysis tracking object
+    namObj As AnaTabIds                             'Cached analysis tracking object
     ' Bug #2 fix: GoTo arrays are now local to each scope, not shared instance state.
     ' They are passed as parameters to WriteTable and managed per-scope in WriteAnalysis.
     hasChecks As Boolean
@@ -219,16 +219,16 @@ End Property
 '@label:names-object
 '@prop-title Lazily-initialised analysis tracking object.
 '@details
-'Lazily-initialised accessor for the IAnaTabIds tracking object. AnaTabIds
+'Lazily-initialised accessor for the AnaTabIds tracking object. AnaTabIds
 'maintains a registry of all cross-table named ranges and graph metadata
 'created during the analysis build. This registry is later used by the
 'update/filter commands to locate tables and graphs at runtime. The object
 'is created once on first access using the temporary analysis worksheet
 'from the linelist, and all subsequent calls return the cached instance.
-'@return IAnaTabIds. Tracking object that records table and graph metadata.
+'@return AnaTabIds. Tracking object that records table and graph metadata.
 '@remarks The backing worksheet comes from lData.TemporarySheetName(TemporarySheetAnalysis),
 'which must exist in the output linelist before this property is first accessed.
-Private Property Get NamesObject() As IAnaTabIds
+Private Property Get NamesObject() As AnaTabIds
     If this.namObj Is Nothing Then
         Dim lData As ILinelistSpecs
         Dim ll As ILinelist
@@ -319,7 +319,7 @@ Private Sub AddCommands(Optional ByVal scope As Byte = AnalysisScopeNormal)
     Dim commandName As String
     Dim shapeLabel As String
     Dim design As ILLFormat
-    Dim but As IButtons
+    Dim but As Buttons
     Dim outsh As Worksheet
     Dim trads As ITranslationObject
     Dim lData As ILinelistSpecs
@@ -522,7 +522,7 @@ Private Sub WriteTable(ByVal loName As String, _
     Dim graphCounter As Long
     Dim tabl As ICrossTable
     Dim tabform As ICrossTableFormula
-    Dim gr As IGraphs
+    Dim gr As Graphs
     Dim lo As ListObject
     Dim specs As ITableSpecs
     Dim lData As ILinelistSpecs
@@ -536,7 +536,7 @@ Private Sub WriteTable(ByVal loName As String, _
     Dim anchorRng As Range
     Dim containsTimeSeries As Boolean
     Dim spatRng As Range
-    Dim namObj As IAnaTabIds
+    Dim namObj As AnaTabIds
     Dim tabRangesNames As BetterArray
     Dim goToSectionLabel As String
     Dim goToHeaderLabel As String
@@ -807,10 +807,10 @@ Private Sub WriteTimeSeriesGraphs(ByVal graphLoName As String, _
     Dim tabLo As ListObject
     Dim grTitleLo As ListObject
     Dim grSpecs As GraphSpecs
-    Dim gr As IGraphs
+    Dim gr As Graphs
     Dim trads As ITranslationObject
     Dim design As ILLFormat
-    Dim namObj As IAnaTabIds
+    Dim namObj As AnaTabIds
     Dim goToGraphLabel As String
 
     Dim grBAinput As BetterArray
@@ -938,7 +938,7 @@ Private Sub WriteSpatioTemporalGraph(ByVal loName As String, _
     Dim hRng As Range
     Dim tabRng As Range
     Dim anchorRng As Range
-    Dim gr As IGraphs
+    Dim gr As Graphs
     Dim grSpecs As GraphSpecs
     Dim plotTitle As String
     Dim tabId As String
@@ -946,7 +946,7 @@ Private Sub WriteSpatioTemporalGraph(ByVal loName As String, _
     Dim trads As ITranslationObject
     Dim lo As ListObject
     Dim tabl As ICrossTable
-    Dim namObj As IAnaTabIds
+    Dim namObj As AnaTabIds
     Dim goToGraphLabel As String
 
     Set sh = Wksh()

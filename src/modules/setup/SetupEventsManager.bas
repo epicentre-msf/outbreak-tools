@@ -5,7 +5,7 @@ Option Explicit
 '@ModuleDescription("Centralised workbook-level event and BusyState manager delegating to EventSetup")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
-Private setupService As IEventSetup
+Private setupService As EventSetup
 Private appScope As IApplicationState
 Private busyDepth As Long
 Private persisted As Boolean
@@ -159,7 +159,7 @@ End Sub
 '@section Service Lifecycle
 '===============================================================================
 
-Private Function Service() As IEventSetup
+Private Function Service() As EventSetup
     If setupService Is Nothing Then
         Set setupService = EventSetup.Create(ThisWorkbook)
     End If
@@ -228,6 +228,6 @@ Public Sub ResetTranslationCounter()
     Service.ResetTranslationCounter
 End Sub
 
-Public Function EventSetupService() As IEventSetup
+Public Function EventSetupService() As EventSetup
     Set EventSetupService = Service()
 End Function

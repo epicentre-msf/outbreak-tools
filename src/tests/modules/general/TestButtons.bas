@@ -17,7 +17,7 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 'against an LLFormat design template. The fixture creates a temporary
 'worksheet for each test and cleans up all shapes and format sheets on
 'teardown to guarantee isolation.
-'@depends Buttons, IButtons, LLFormat, ILLFormat, Checking, IChecking, CustomTest, TestHelpers, LLFormatTestFixture
+'@depends Buttons, LLFormat, ILLFormat, Checking, IChecking, CustomTest, TestHelpers, LLFormatTestFixture
 
 Private Const BUTTONS_SHEET As String = "ButtonsFixture"
 Private Const DEFAULT_BUTTON_NAME As String = "FixtureButton"
@@ -51,7 +51,7 @@ End Function
 'default AnchorCell is used.
 Private Function BuildButton(Optional ByVal scope As ButtonScope = ButtonScopeSmall, _
                              Optional ByVal buttonName As String = DEFAULT_BUTTON_NAME, _
-                             Optional ByVal anchor As Range) As IButtons
+                             Optional ByVal anchor As Range) As Buttons
     If anchor Is Nothing Then
         Set anchor = AnchorCell()
     End If
@@ -111,7 +111,7 @@ End Sub
 '@TestMethod("Buttons")
 Public Sub TestCreateInitialisesState()
     CustomTestSetTitles Assert, "Buttons", "TestCreateInitialisesState"
-    Dim buttonHelper As IButtons
+    Dim buttonHelper As Buttons
     Dim anchor As Range
 
     On Error GoTo Fail
@@ -149,7 +149,7 @@ End Sub
 '@TestMethod("Buttons")
 Public Sub TestAddCreatesShape()
     CustomTestSetTitles Assert, "Buttons", "TestAddCreatesShape"
-    Dim buttonHelper As IButtons
+    Dim buttonHelper As Buttons
     Dim createdShape As Shape
 
     On Error GoTo Fail
@@ -180,7 +180,7 @@ End Sub
 '@TestMethod("Buttons")
 Public Sub TestAddExistingRecordsCheckings()
     CustomTestSetTitles Assert, "Buttons", "TestAddExistingRecordsCheckings"
-    Dim buttonHelper As IButtons
+    Dim buttonHelper As Buttons
     Dim logs As IChecking
 
     On Error GoTo Fail
@@ -214,7 +214,7 @@ End Sub
 '@TestMethod("Buttons")
 Public Sub TestFormatAppliesScopeUsingWorkbookDesign()
     CustomTestSetTitles Assert, "Buttons", "TestFormatAppliesScopeUsingWorkbookDesign"
-    Dim buttonHelper As IButtons
+    Dim buttonHelper As Buttons
     Dim design As ILLFormat
     Dim createdShape As Shape
     Dim formatSheet As Worksheet

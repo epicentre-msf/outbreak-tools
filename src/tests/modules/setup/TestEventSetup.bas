@@ -9,7 +9,7 @@ Option Explicit
 
 Private Assert As ICustomTest
 Private FixtureWorkbook As Workbook
-Private Subject As IEventSetup
+Private Subject As EventSetup
 
 Private Const OUTPUT_SHEET As String = "testsOutputs"
 Private Const SHEET_DICTIONARY As String = "Dictionary"

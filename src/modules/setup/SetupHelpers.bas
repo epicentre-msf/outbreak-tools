@@ -42,7 +42,7 @@ Private cachedPasswords As IPasswords
 Public Sub ManageRows(ByVal sheetName As String, _
                       Optional ByVal del As Boolean = False, _
                       Optional ByVal allAnalysis As Boolean = False)
-    Dim svc As IEventSetup
+    Dim svc As EventSetup
     Dim resolved As String
     Dim targetSheet As Worksheet
 
@@ -65,7 +65,7 @@ End Sub
 '@sub-title Insert a list row at the active cell position
 Public Sub InsertListRowAt(ByVal sheetName As String, ByVal targetCell As Range)
 
-    Dim svc As IEventSetup
+    Dim svc As EventSetup
     Dim resolved As String
 
     resolved = ResolveSetupSheetName(sheetName)
@@ -78,7 +78,7 @@ End Sub
 
 '@sub-title Delete the list row intersecting the active cell
 Public Sub DeleteListRowAt(ByVal sheetName As String, ByVal targetCell As Range)
-    Dim svc As IEventSetup
+    Dim svc As EventSetup
     Dim resolved As String
 
     
@@ -133,7 +133,7 @@ End Sub
 
 '@sub-title Sort setup tables based on the active worksheet
 Public Sub SortSetupTables(ByVal sheetName As String)
-    Dim svc As IEventSetup
+    Dim svc As EventSetup
     Dim resolved As String
 
     resolved = ResolveSetupSheetName(sheetName)
