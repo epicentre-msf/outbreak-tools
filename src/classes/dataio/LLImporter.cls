@@ -119,7 +119,7 @@ End Property
 '@label:source-workbook-set
 '@prop-title Assign the source linelist workbook
 '@param wb Workbook. The workbook to store.
-Public Property Set SourceWorkbook(ByVal wb As Workbook)
+Private Property Set SourceWorkbook(ByVal wb As Workbook)
     Set this.sourceWkb = wb
 End Property
 

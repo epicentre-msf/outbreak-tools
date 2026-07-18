@@ -106,28 +106,28 @@ End Property
 '@label:source-workbook-set
 '@prop-title Assign the source linelist workbook
 '@param wb Workbook. The workbook to store.
-Public Property Set SourceWorkbook(ByVal wb As Workbook)
+Private Property Set SourceWorkbook(ByVal wb As Workbook)
     Set this.sourceWkb = wb
 End Property
 
 '@label:translations-set
 '@prop-title Assign the translations object
 '@param trads TranslationObject. The translations to store.
-Public Property Set Translations(ByVal trads As TranslationObject)
+Private Property Set Translations(ByVal trads As TranslationObject)
     Set this.trads = trads
 End Property
 
 '@label:push-button-set
 '@prop-title Wire the WithEvents button binding
 '@param expBtn MSForms.CommandButton. The button to listen to.
-Public Property Set PushButton(ByVal expBtn As MSForms.CommandButton)
+Private Property Set PushButton(ByVal expBtn As MSForms.CommandButton)
     Set Btn = expBtn
 End Property
 
 '@label:filter-checkbox-set
 '@prop-title Assign the optional filter checkbox
 '@param expChk MSForms.CheckBox. The checkbox to bind.
-Public Property Set FilterCheckBox(ByVal expChk As MSForms.CheckBox)
+Private Property Set FilterCheckBox(ByVal expChk As MSForms.CheckBox)
     Set chkFilt = expChk
 End Property
 
