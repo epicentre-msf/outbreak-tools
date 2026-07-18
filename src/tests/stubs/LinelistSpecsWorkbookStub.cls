@@ -17,7 +17,7 @@ Option Explicit
 Implements ILinelistSpecs
 
 Private Type TSpecs
-    dictionary As ILLdictionary
+    dictionary As LLdictionary
     workbook As Workbook
     password As Passwords
     translations As TranslationObject
@@ -25,7 +25,7 @@ End Type
 
 Private this As TSpecs
 
-Public Sub Initialise(ByVal dictionary As ILLdictionary, _
+Public Sub Initialise(ByVal dictionary As LLdictionary, _
                       ByVal workbook As Workbook)
     Set this.dictionary = dictionary
     Set this.workbook = workbook
@@ -38,7 +38,7 @@ Private Property Get ILinelistSpecs_DesWorkbook() As Workbook
     Set ILinelistSpecs_DesWorkbook = this.workbook
 End Property
 
-Private Property Get ILinelistSpecs_Dictionary() As ILLdictionary
+Private Property Get ILinelistSpecs_Dictionary() As LLdictionary
     Set ILinelistSpecs_Dictionary = this.dictionary
 End Property
 

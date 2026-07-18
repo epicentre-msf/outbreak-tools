@@ -205,10 +205,10 @@ End Property
 'Returns the cached table name when validation has already occurred.
 'When the cache is empty, triggers a full validation pass against
 'the supplied dictionary before returning the result.
-'@param dict ILLdictionary. The dictionary used when validation has not occurred yet.
+'@param dict LLdictionary. The dictionary used when validation has not occurred yet.
 '@return String. Table identifier or empty string when unavailable.
 '@export
-Public Property Get VariablesTable(ByVal dict As ILLdictionary) As String
+Public Property Get VariablesTable(ByVal dict As LLdictionary) As String
     If LenB(CachedTable) = 0 Then
         If Not Valid(dict) Then Exit Property
     End If
@@ -229,11 +229,11 @@ End Property
 'repeated calls with the same tablename parameter return immediately
 'without re-validating. The cache is invalidated when underlying data
 'changes (via Set LstVars or Set LstConditions).
-'@param dict ILLdictionary. The metadata provider used for variable lookups.
+'@param dict LLdictionary. The metadata provider used for variable lookups.
 '@param tablename Optional String. When supplied, forces the expected table name. Defaults to vbNullString.
 '@return Boolean. True when validation succeeds.
 '@export
-Public Function Valid(ByVal dict As ILLdictionary, Optional ByVal tablename As String = vbNullString) As Boolean
+Public Function Valid(ByVal dict As LLdictionary, Optional ByVal tablename As String = vbNullString) As Boolean
 
     Dim vars As LLVariables
     Dim varList As BetterArray

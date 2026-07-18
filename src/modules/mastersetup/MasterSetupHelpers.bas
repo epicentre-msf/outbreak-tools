@@ -112,7 +112,7 @@ End Function
 
 '@section Class factories
 '===============================================================================
-Public Function ResolveMasterDictionary(Optional ByVal hostSheet As Worksheet) As ILLdictionary
+Public Function ResolveMasterDictionary(Optional ByVal hostSheet As Worksheet) As LLdictionary
     Dim targetSheet As Worksheet
 
     If hostSheet Is Nothing Then
@@ -140,9 +140,9 @@ Public Function ResolveMasterChoices(Optional ByVal hostSheet As Worksheet) As L
     Set ResolveMasterChoices = LLChoices.Create(targetSheet, START_ROW_CHOICES, START_COLUMN_CHOICES)
 End Function
 
-Public Function ResolveMasterVariables(Optional ByVal dictionary As ILLdictionary, _
+Public Function ResolveMasterVariables(Optional ByVal dictionary As LLdictionary, _
                                        Optional ByVal hostSheet As Worksheet) As LLVariables
-    Dim resolvedDictionary As ILLdictionary
+    Dim resolvedDictionary As LLdictionary
 
     If dictionary Is Nothing Then
         If hostSheet Is Nothing Then

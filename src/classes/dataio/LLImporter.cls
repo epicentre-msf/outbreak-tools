@@ -23,7 +23,7 @@ Option Explicit
 'editable labels, single metadata values, and geobase data. Tracks which
 'sheets and variables were imported, and builds a report of items not
 'imported or not touched.
-'@depends ILLdictionary, Passwords, CustomTable, DataSheet
+'@depends LLdictionary, Passwords, CustomTable, DataSheet
 '@depends LLGeo, LLChoices, ILLVariables, DropdownLists, HiddenNames
 
 
@@ -290,7 +290,7 @@ End Sub
 '@export
 Public Sub ImportData(ByVal impwb As Workbook, ByVal pasteAtBottom As Boolean)
 
-    Dim dict As ILLdictionary
+    Dim dict As LLdictionary
     Dim sheetsList As BetterArray
     Dim pass As Passwords
     Dim impsh As Worksheet
@@ -415,7 +415,7 @@ Public Sub ImportShowHide(ByVal impwb As Workbook)
     Dim varRng As Range
     Dim cellRng As Range
     Dim updateShowHide As Boolean
-    Dim dict As ILLdictionary
+    Dim dict As LLdictionary
     Dim sheetNames As BetterArray
     Dim sheetName As String
     Dim sheetType As String
@@ -506,8 +506,8 @@ Public Sub ImportEditableLabels(ByVal impwb As Workbook)
     Dim varRng As Range
     Dim cellRng As Range
     Dim updateLabels As Boolean
-    Dim dict As ILLdictionary
-    Dim inpDict As ILLdictionary
+    Dim dict As LLdictionary
+    Dim inpDict As LLdictionary
     Dim currVars As LLVariables
     Dim inpVars As LLVariables
     Dim counter As Long
@@ -644,7 +644,7 @@ End Sub
 Public Sub ImportGeobase(ByVal impwb As Workbook, Optional ByVal histoOnly As Boolean = False)
 
     Dim geo As LLGeo
-    Dim dict As ILLdictionary
+    Dim dict As LLdictionary
     Dim pass As Passwords
     Dim showHideSh As Worksheet
 
@@ -697,7 +697,7 @@ End Property
 '@export
 Public Sub FinalizeReport()
 
-    Dim dict As ILLdictionary
+    Dim dict As LLdictionary
     Dim vars As LLVariables
     Dim sheetsList As BetterArray
     Dim currVarsList As BetterArray
@@ -838,8 +838,8 @@ End Sub
 
 '@label:source-dictionary
 '@sub-title Get the dictionary from the source workbook
-'@return ILLdictionary. Dictionary instance from the Dictionary sheet.
-Private Function SourceDictionary() As ILLdictionary
+'@return LLdictionary. Dictionary instance from the Dictionary sheet.
+Private Function SourceDictionary() As LLdictionary
     Set SourceDictionary = LLdictionary.Create( _
         this.sourceWkb.Worksheets(DICTIONARYSHEET), 1, 1)
 End Function

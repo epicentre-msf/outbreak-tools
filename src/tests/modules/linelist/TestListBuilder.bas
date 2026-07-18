@@ -9,7 +9,7 @@ Option Explicit
 
 Private Assert As CustomTest
 Private FixtureWorkbook As Workbook
-Private Dict As ILLdictionary
+Private Dict As LLdictionary
 Private Specs As LinelistSpecsWorkbookStub
 Private FakeLL As LinelistStub
 

@@ -78,8 +78,8 @@ End Sub
 
 '@TestMethod("LinelistSpecs")
 Private Sub TestDictionaryIsCached()
-    Dim dictOnce As ILLdictionary
-    Dim dictTwice As ILLdictionary
+    Dim dictOnce As LLdictionary
+    Dim dictTwice As LLdictionary
 
     On Error GoTo Fail
     Set dictOnce = Specs.Dictionary
@@ -95,8 +95,8 @@ End Sub
 
 '@TestMethod("LinelistSpecs")
 Private Sub TestResetCachesInvalidatesDictionary()
-    Dim firstDict As ILLdictionary
-    Dim newDict As ILLdictionary
+    Dim firstDict As LLdictionary
+    Dim newDict As LLdictionary
 
     On Error GoTo Fail
     Set firstDict = Specs.Dictionary

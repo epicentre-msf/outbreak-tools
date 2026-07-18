@@ -180,7 +180,7 @@ Private Sub BuildHList()
     Dim sh As Worksheet
     Dim printSh As Worksheet
     Dim filtSh As Worksheet
-    Dim dict As ILLdictionary
+    Dim dict As LLdictionary
     Dim llshs As LLSheets
     Dim specs As ILinelistSpecs
     Dim design As LLFormat
@@ -399,7 +399,7 @@ End Sub
 'marker), and protects the active sheet.
 Private Sub BuildVList()
     Dim sh As Worksheet
-    Dim dict As ILLdictionary
+    Dim dict As LLdictionary
     Dim llshs As LLSheets
     Dim specs As ILinelistSpecs
     Dim design As LLFormat
@@ -541,11 +541,11 @@ End Sub
 'unique section names in order. Each name is prefixed with the GoTo label
 '(e.g., "Go to section: SectionName"). Duplicate consecutive sections are
 'skipped to avoid redundant dropdown entries.
-'@param dict ILLdictionary. The linelist dictionary providing data ranges.
+'@param dict LLdictionary. The linelist dictionary providing data ranges.
 '@param llshs LLSheets. Sheet metadata for row indices and variable counts.
 '@param goToLabel String. The translated "Go to section" prefix label.
 '@return BetterArray. A 1-based array of prefixed section name strings.
-Private Function CollectSectionNames(ByVal dict As ILLdictionary, _
+Private Function CollectSectionNames(ByVal dict As LLdictionary, _
                                      ByVal llshs As LLSheets, _
                                      ByVal goToLabel As String) As BetterArray
     Dim sectionRng As Range

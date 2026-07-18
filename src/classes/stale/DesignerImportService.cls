@@ -12,7 +12,7 @@ Attribute VB_Description = "Designer import/export service for setup and linelis
 '@PredeclaredId
 '@Folder("Designer")
 '@ModuleDescription("Imports setup components into a designer workbook and exports them to a linelist workbook.")
-'@depends ProjectError, LLdictionary, ILLdictionary, LLChoices, LLExport, Analysis, IAnalysis, LLGeo, Passwords, Passwords, LLFormat, LLTranslation, HiddenNames
+'@depends ProjectError, LLdictionary, LLdictionary, LLChoices, LLExport, Analysis, IAnalysis, LLGeo, Passwords, Passwords, LLFormat, LLTranslation, HiddenNames
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, ParameterNotUsed
 
 Option Explicit
@@ -35,7 +35,7 @@ Implements IDesignerImportService
 
 Private Type TDesignerImportService
     hostBook As Workbook            'Designer workbook
-    exportedDict As ILLdictionary   'Dictionary manager on exported workbook
+    exportedDict As LLdictionary   'Dictionary manager on exported workbook
     exportedChoices As LLChoices   'Choices manager on exported workbook
     exportedAnalysis As IAnalysis   'Analysis manager on exported workbook
     exportedExport As LLExport    'Export manager on exported workbook
@@ -270,7 +270,7 @@ End Sub
 '===============================================================================
 
 '@label:exported-dictionary
-Public Property Get ExportedDictionary() As ILLdictionary
+Public Property Get ExportedDictionary() As LLdictionary
     Set ExportedDictionary = this.exportedDict
 End Property
 
@@ -316,7 +316,7 @@ End Property
 'at row 1.
 Private Sub ImportDictionary(ByVal setupBook As Workbook, ByVal hostBook As Workbook)
     Dim setupSheet As Worksheet
-    Dim dictManager As ILLdictionary
+    Dim dictManager As LLdictionary
 
     Set setupSheet = ResolveWorksheet(setupBook, SHEET_DICTIONARY)
     If setupSheet Is Nothing Then Exit Sub
@@ -440,7 +440,7 @@ End Sub
 'original setup file format.
 Private Sub ExportDictionary(ByVal hostBook As Workbook, ByVal targetBook As Workbook)
     Dim hostSheet As Worksheet
-    Dim dictManager As ILLdictionary
+    Dim dictManager As LLdictionary
 
     Set hostSheet = ResolveWorksheet(hostBook, SHEET_DICTIONARY)
     If hostSheet Is Nothing Then Exit Sub
@@ -821,7 +821,7 @@ Private Sub IDesignerImportService_ExportToLinelist(ByVal targetBook As Workbook
     ExportToLinelist targetBook
 End Sub
 
-Private Property Get IDesignerImportService_ExportedDictionary() As ILLdictionary
+Private Property Get IDesignerImportService_ExportedDictionary() As LLdictionary
     Set IDesignerImportService_ExportedDictionary = ExportedDictionary
 End Property
 

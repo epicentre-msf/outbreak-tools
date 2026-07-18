@@ -126,8 +126,8 @@ End Property
 '@prop-title Dictionary from the specifications
 '@details
 'Convenience accessor that delegates to LinelistData.Dictionary.
-'@return ILLdictionary. The linelist dictionary.
-Public Property Get Dictionary() As ILLdictionary
+'@return LLdictionary. The linelist dictionary.
+Public Property Get Dictionary() As LLdictionary
 End Property
 
 

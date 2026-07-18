@@ -74,10 +74,10 @@ End Property
 '@jump:dictionary
 '@prop-title Linelist dictionary
 '@details
-'Returns the ILLdictionary instance providing column and row access to the
+'Returns the LLdictionary instance providing column and row access to the
 'Dictionary worksheet. Lazy-loaded on first access.
-'@return ILLdictionary. The dictionary collaborator.
-Public Property Get Dictionary() As ILLdictionary
+'@return LLdictionary. The dictionary collaborator.
+Public Property Get Dictionary() As LLdictionary
 End Property
 
 '@jump:choices

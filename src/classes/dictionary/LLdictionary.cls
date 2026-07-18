@@ -17,8 +17,6 @@ Option Explicit
 '@ModuleDescription("Linelist dictionary utilities")
 
 
-Implements ILLdictionary
-
 'The linelist dictionary class centralises all logic that manipulates the Excel
 '"Dictionary" worksheet used across setup and designer workflows. It merges
 'behaviour from the legacy implementations so consumers interact with a single
@@ -60,12 +58,12 @@ Private internalChecks As Checking
 '- dictStartRow Long. Header row of the dictionary
 '- dictStartColumn Long. First column of the dictionary
 '- numberOfExports Optional Long. Expected number of export columns
-'@return An ILLdictionary instance
+'@return An LLdictionary instance
 '@depends DataSheet, Checking
 '@export
 Public Function Create(ByVal dictWksh As Worksheet, ByVal dictStartRow As Long, _
                        ByVal dictStartColumn As Long, _
-                       Optional ByVal numberOfExports As Long = DEFAULTNUMBEROFEXPORTS) As ILLdictionary
+                       Optional ByVal numberOfExports As Long = DEFAULTNUMBEROFEXPORTS) As LLdictionary
 
     Dim customDataSheet As DataSheet
 
@@ -107,8 +105,8 @@ End Sub
 '@details
 'Convenience accessor so consuming code can fluently retrieve the instance
 'returned by `Create` without repeatedly typing `Set x = New LLdictionary`.
-'@return ILLdictionary
-Public Property Get Self() As ILLdictionary
+'@return LLdictionary
+Public Property Get Self() As LLdictionary
     Set Self = Me
 End Property
 
@@ -574,7 +572,7 @@ End Sub
 '@section Row Operations
 '===============================================================================
 
-Private Sub ManageRows(Optional ByVal del As Boolean = False)
+Public Sub ManageRows(Optional ByVal del As Boolean = False)
     'Wrapper around the worksheet listobject to add or remove rows while
     'preserving formatting. Not every dictionary is table-backed; if no
     'ListObject is found we simply log the attempt for traceability.
@@ -1257,7 +1255,7 @@ Private Sub AddMainSectionSort()
 End Sub
 
 
-Private Sub Sort()
+Public Sub Sort()
     'Start by adding the Main section sort column
     AddMainSectionSort
 
@@ -1566,163 +1564,3 @@ Private Sub ThrowError(ByVal errNumber As Long, ByVal errorMessage As String)
     LogInfo errNumber & " - " & errorMessage, checkingError
 End Sub
 
-
-'@section Interface
-'===============================================================================
-
-'@jump:data
-Private Property Get ILLdictionary_Data() As DataSheet
-    Set ILLdictionary_Data = Data
-End Property
-
-'@jump:datarange
-Private Property Get ILLdictionary_DataRange(Optional ByVal colName As String = "__all__", _
-                                             Optional ByVal includeHeaders As Boolean = False) As Range
-    Set ILLdictionary_DataRange = DataRange(colName, includeHeaders)
-End Property
-
-'@jump:prepared
-Private Property Get ILLdictionary_Prepared() As Boolean
-    ILLdictionary_Prepared = Prepared
-End Property
-
-'@jump:exports
-Private Property Get ILLdictionary_TotalNumberOfExports() As Long
-    ILLdictionary_TotalNumberOfExports = TotalNumberOfExports
-End Property
-
-Private Property Let ILLdictionary_TotalNumberOfExports(ByVal numberOfExports As Long)
-    TotalNumberOfExports = numberOfExports
-End Property
-
-'@jump:columnexists
-Private Function ILLdictionary_ColumnExists(ByVal colName As String, _ 
-                                            Optional ByVal checkValidity As Boolean = False) As Boolean
-    ILLdictionary_ColumnExists = ColumnExists(colName, checkValidity)
-End Function
-
-'@jump:uniquevalues
-Private Function ILLdictionary_UniqueValues(ByVal colName As String) As BetterArray
-    Set ILLdictionary_UniqueValues = UniqueValues(colName)
-End Function
-
-'@jump:variableexists
-Private Function ILLdictionary_VariableExists(ByVal varName As String) As Boolean
-    ILLdictionary_VariableExists = VariableExists(varName)
-End Function
-
-'@jump:addcolumn
-Private Sub ILLdictionary_AddColumn(ByVal colName As String)
-    AddColumn colName
-End Sub
-
-'@jump:insertcolumn
-Private Sub ILLdictionary_InsertColumn(ByVal colName As String, ByVal After As String)
-    InsertColumn colName, After
-End Sub
-
-'@jump:removecolumn
-Private Sub ILLdictionary_RemoveColumn(ByVal colName As String)
-    RemoveColumn colName
-End Sub
-
-Private Sub ILLdictionary_RenameColumn(ByVal currentName As String, _
-                                       ByVal newName As String, _
-                                       Optional ByVal strictSearch As Boolean = True, _
-                                       Optional ByVal matchCase As Boolean = False)
-    RenameColumn currentName, newName, strictSearch, matchCase
-End Sub
-
-'@jump:addrows
-Private Sub ILLdictionary_AddRows()
-    AddRows
-End Sub
-
-Private Sub ILLdictionary_InsertRows(ByVal targetCell As Range, _
-                                     Optional ByVal insertShift As Boolean = False)
-    InsertRows targetCell, insertShift
-End Sub
-
-Private Sub ILLdictionary_DeleteRows(ByVal targetCell As Range, _
-                                     Optional ByVal includeIds As Boolean = True, _
-                                     Optional ByVal forceShift As Boolean = False)
-    DeleteRows targetCell, includeIds, forceShift
-End Sub
-
-'@jump:removerows
-Private Sub ILLdictionary_RemoveRows()
-    RemoveRows
-End Sub
-
-Private Sub ILLdictionary_ManageRows(Optional ByVal del As Boolean = False)
-    ManageRows del
-End Sub
-
-'@jump:choicesvars
-Private Property Get ILLdictionary_ChoicesVars() As BetterArray
-    Set ILLdictionary_ChoicesVars = ChoicesVars
-End Property
-
-'@jump:geovars
-Private Property Get ILLdictionary_GeoVars() As BetterArray
-    Set ILLdictionary_GeoVars = GeoVars
-End Property
-
-'@jump:timevars
-Private Property Get ILLdictionary_TimeVars() As BetterArray
-    Set ILLdictionary_TimeVars = TimeVars
-End Property
-
-'@jump:specialvars
-Private Property Get ILLdictionary_SpecialVars(ByVal firstCondition As String, _
-                                               Optional ByVal secondCondition As String = vbNullString, _
-                                               Optional ByVal conditionName As String = "Control") As BetterArray
-    Set ILLdictionary_SpecialVars = SpecialVars(firstCondition, secondCondition, conditionName)
-End Property
-
-'@jump:prepare
-Private Sub ILLdictionary_Prepare(Optional ByVal PreservedSheetNames As BetterArray, _
-                                  Optional ByVal geoObject As Object, _
-                                  Optional ByVal tablePrefix As String = "table")
-    Prepare PreservedSheetNames, geoObject, tablePrefix
-End Sub
-
-'@jump:clean
-Private Sub ILLdictionary_Clean(Optional ByVal removeAddedColumns As Boolean = False)
-    Clean removeAddedColumns
-End Sub
-
-'@jump:import
-Private Sub ILLdictionary_Import(ByVal fromWksh As Worksheet, _ 
-                                 ByVal fromStartRow As Long, _
-                                 ByVal fromStartcol As Long, _ 
-                                 Optional ByVal clearSheet As Boolean = False)
-    Import fromWksh, fromStartRow, fromStartcol, clearSheet
-End Sub
-
-'@jump:export
-Private Sub ILLdictionary_Export(ByVal toWkb As Workbook, _
-                                 Optional ByVal exportType As String = "__all__", _
-                                 Optional ByVal addListObject As Boolean = True, _
-                                 Optional ByVal Hide As Long = xlSheetHidden)
-    Export toWkb, exportType, addListObject, Hide
-End Sub
-
-'@jump:translate
-Private Sub ILLdictionary_Translate(ByVal TransObject As TranslationObject)
-    Translate TransObject
-End Sub
-
-Private Sub ILLdictionary_Sort()
-    Sort
-End Sub
-
-'@jump:has-checkings
-Private Property Get ILLdictionary_HasCheckings() As Boolean
-    ILLdictionary_HasCheckings = HasCheckings
-End Property
-
-'@jump:checking-values
-Private Property Get ILLdictionary_CheckingValues() As Checking
-    Set ILLdictionary_CheckingValues = CheckingValues
-End Property

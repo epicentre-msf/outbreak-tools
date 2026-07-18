@@ -23,7 +23,7 @@ Option Explicit
 'subsection, delegates variable writing to VarWriter, and applies
 'merged-cell section and subsection header formatting. Supports both
 'HList (horizontal) and VList (vertical) layouts via the layer byte.
-'@depends ILinelistSpecs, ILLdictionary, ILLVariables, LLFormat,
+'@depends ILinelistSpecs, LLdictionary, ILLVariables, LLFormat,
 'DropdownLists, VarWriter, LLVariables
 '@version 1.0 (2026-02-10)
 
@@ -37,7 +37,7 @@ Private Type TSectionBuilder
     crfWksh As Worksheet
     dropdown As DropdownLists
     customDropdown As DropdownLists
-    cachedDict As ILLdictionary
+    cachedDict As LLdictionary
     cachedVars As LLVariables
     hasChecks As Boolean
 End Type
@@ -171,10 +171,10 @@ End Property
 '@label:dictionary
 '@prop-title Lazy-loaded dictionary accessor
 '@details
-'Returns the cached ILLdictionary instance. On first access, retrieves
+'Returns the cached LLdictionary instance. On first access, retrieves
 'it from the specifications object and caches it for subsequent calls.
-'@return ILLdictionary. The linelist dictionary.
-Private Property Get Dictionary() As ILLdictionary
+'@return LLdictionary. The linelist dictionary.
+Private Property Get Dictionary() As LLdictionary
     If this.cachedDict Is Nothing Then
         Set this.cachedDict = this.specs.Dictionary()
     End If
@@ -218,7 +218,7 @@ End Property
 '@param startRow Long. The first data row index in the dictionary for this sheet (1-based).
 '@export
 Public Sub Build(ByVal sheetName As String, ByVal startRow As Long)
-    Dim dict As ILLdictionary
+    Dim dict As LLdictionary
     Dim sectionRng As Range
     Dim sheetRng As Range
     Dim dataEndRow As Long
@@ -314,7 +314,7 @@ End Function
 Private Sub BuildSubSections(ByVal sectionStart As Long, _
                               ByVal sectionEnd As Long, _
                               ByVal sheetName As String)
-    Dim dict As ILLdictionary
+    Dim dict As LLdictionary
     Dim subSectionRng As Range
     Dim sectionRng As Range
     Dim sheetRng As Range
@@ -405,7 +405,7 @@ End Function
 '@param subSecEnd Long. The last dictionary row of the subsection.
 '@depends VarWriter
 Private Sub BuildVariables(ByVal subSecStart As Long, ByVal subSecEnd As Long)
-    Dim dict As ILLdictionary
+    Dim dict As LLdictionary
     Dim varRng As Range
     Dim counter As Long
     Dim varName As String
@@ -460,7 +460,7 @@ Private Sub FormatSection(ByVal sectionName As String, _
                            ByVal sheetName As String)
     Dim vars As LLVariables
     Dim varRng As Range
-    Dim dict As ILLdictionary
+    Dim dict As LLdictionary
     Dim design As LLFormat
     Dim firstVarName As String
     Dim lastVarName As String
@@ -615,7 +615,7 @@ Private Sub FormatHListSubSection(ByVal subSectionName As String, _
                                    ByVal startRow As Long, _
                                    ByVal endRow As Long, _
                                    ByVal sheetName As String)
-    Dim dict As ILLdictionary
+    Dim dict As LLdictionary
     Dim vars As LLVariables
     Dim design As LLFormat
     Dim varRng As Range
@@ -681,7 +681,7 @@ Private Sub FormatVListSubSection(ByVal subSectionName As String, _
                                    ByVal startRow As Long, _
                                    ByVal endRow As Long, _
                                    ByVal sheetName As String)
-    Dim dict As ILLdictionary
+    Dim dict As LLdictionary
     Dim vars As LLVariables
     Dim design As LLFormat
     Dim varRng As Range

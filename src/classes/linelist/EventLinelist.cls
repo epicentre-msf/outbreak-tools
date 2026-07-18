@@ -39,7 +39,7 @@ Private Type TEventLinelist
     drop            As DropdownLists     'Cached dropdown manager
     geo             As LLGeo             'Cached geo helper
     sp              As LLSpatial          'Cached spatial helper
-    dict            As ILLdictionary      'Cached dictionary helper
+    dict            As LLdictionary      'Cached dictionary helper
     vars            As LLVariables       'Cached variable lookup helper
     pass            As Passwords         'Cached password manager
 End Type

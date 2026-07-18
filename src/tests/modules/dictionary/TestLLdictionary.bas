@@ -21,7 +21,7 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 'column insert/remove/rename, row insert/delete, preparation helpers,
 'data exchange (import/export), and export-counter persistence through
 'hidden worksheet-level names.
-'@depends LLdictionary, ILLdictionary, DictionaryTestFixture, CustomTest,
+'@depends LLdictionary, LLdictionary, DictionaryTestFixture, CustomTest,
 '  CustomTest, BetterArray, DataSheet
 
 
@@ -29,7 +29,7 @@ Private Const DICT_SHEET As String = "LLDictTest"
 Private Const EXPORT_TOTAL_NAME As String = "__ll_exports_total__"
 
 Private Assert As CustomTest
-Private Dictionary As ILLdictionary
+Private Dictionary As LLdictionary
 
 '@section Fixture Lifecycle
 '===============================================================================
@@ -121,17 +121,17 @@ End Sub
 '@description Tests that verify the LLdictionary.Create factory method
 'produces a correctly initialised instance.
 
-'@sub-title Verify that Create returns a valid ILLdictionary with correct data coordinates
+'@sub-title Verify that Create returns a valid LLdictionary with correct data coordinates
 '@details
 'Arranges by relying on the dictionary created during TestInitialize. Acts by
 'inspecting the returned object type and its backing DataSheet properties.
-'Asserts that the result implements ILLdictionary and that the start row,
+'Asserts that the result implements LLdictionary and that the start row,
 'start column, and target sheet name match the values passed to Create.
 '@TestMethod("LLdictionary")
 Public Sub TestCreateInitialisesData()
     CustomTestSetTitles Assert, "LLdictionary", "TestCreateInitialisesData"
     On Error GoTo Fail
-    Assert.IsTrue (TypeOf Dictionary Is ILLdictionary), "Expected Create to yield an interface implementation"
+    Assert.IsTrue (TypeOf Dictionary Is LLdictionary), "Expected Create to yield an interface implementation"
     Assert.IsTrue (Dictionary.Data.DataStartRow = 1), "Start row should remain at 1"
     Assert.IsTrue (Dictionary.Data.DataStartColumn = 1), "Start column should remain at 1"
     Assert.IsTrue (Dictionary.Data.Wksh.Name = DICT_SHEET), "Dictionary should target the configured sheet"
@@ -557,7 +557,7 @@ Public Sub TestCreateOverridesStoredExportCounterWhenRequested()
 
     Dim sheet As Worksheet
     Dim definition As Name
-    Dim created As ILLdictionary
+    Dim created As LLdictionary
 
     On Error GoTo Fail
 

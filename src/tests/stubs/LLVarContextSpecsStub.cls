@@ -18,7 +18,7 @@ Implements ILinelistSpecs
 
 Private categoriesMap As Collection
 Private designFormat As LLFormat
-Private dictionary As ILLdictionary
+Private dictionary As LLdictionary
 Private formulaData As FormulaData
 Private translationObject As TranslationObject
 Private geoObject As LLGeo
@@ -58,7 +58,7 @@ Public Sub SetDesignFormat(ByVal fmt As LLFormat)
     Set designFormat = fmt
 End Sub
 
-Public Sub SetDictionary(ByVal dict As ILLdictionary)
+Public Sub SetDictionary(ByVal dict As LLdictionary)
     Set dictionary = dict
 End Sub
 
@@ -85,7 +85,7 @@ Private Property Get ILinelistSpecs_DesWorkbook() As Workbook
     Set ILinelistSpecs_DesWorkbook = Nothing
 End Property
 
-Private Property Get ILinelistSpecs_Dictionary() As ILLdictionary
+Private Property Get ILinelistSpecs_Dictionary() As LLdictionary
     Set ILinelistSpecs_Dictionary = dictionary
 End Property
 

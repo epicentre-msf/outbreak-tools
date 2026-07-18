@@ -13,7 +13,7 @@ Option Explicit
 'export-spec replication into destination workbooks, filename template
 'resolution with literal and variable chunks, active/inactive status filtering,
 'and threshold-based row removal.
-'@depends LLExport, LLdictionary, ILLdictionary, HiddenNames, Passwords, Passwords, CustomTest, BetterArray, TestHelpers, PasswordsTestFixture
+'@depends LLExport, LLdictionary, LLdictionary, HiddenNames, Passwords, Passwords, CustomTest, BetterArray, TestHelpers, PasswordsTestFixture
 
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
@@ -165,7 +165,7 @@ End Sub
 Public Sub TestAddRowsSynchronisesDictionaryColumns()
     CustomTestSetTitles Assert, "LLExport", "TestAddRowsSynchronisesDictionaryColumns"
 
-    Dim dict As ILLdictionary
+    Dim dict As LLdictionary
     Dim idx As Long
     Dim startTotal As Long
 
@@ -217,7 +217,7 @@ Public Sub TestInsertRowsAppliesDefaultsAndSyncsDictionary()
     CustomTestSetTitles Assert, "LLExport", "TestInsertRowsAppliesDefaultsAndSyncsDictionary"
     On Error GoTo Fail
 
-    Dim dict As ILLdictionary
+    Dim dict As LLdictionary
     Dim selectionRange As Range
     Dim dictSheet As Worksheet
     Dim dictLo As ListObject
@@ -298,7 +298,7 @@ Public Sub TestDeleteRowsShrinksExportsAndDictionary()
     CustomTestSetTitles Assert, "LLExport", "TestDeleteRowsShrinksExportsAndDictionary"
     On Error GoTo Fail
 
-    Dim dict As ILLdictionary
+    Dim dict As LLdictionary
     Dim selectionRange As Range
 
     Set dict = LLdictionary.Create(DictionarySheet, 1, 1)
@@ -330,7 +330,7 @@ Public Sub TestSortRenamesExportsSequentially()
     CustomTestSetTitles Assert, "LLExport", "TestSortRenamesExportsSequentially"
     On Error GoTo Fail
 
-    Dim dict As ILLdictionary
+    Dim dict As LLdictionary
     Dim dictLo As ListObject
     Dim exportNumberIndex As Long
     Dim lo As ListObject
@@ -385,7 +385,7 @@ End Sub
 Public Sub TestSyncDictionaryIgnoresNonExportPrefixedColumns()
     CustomTestSetTitles Assert, "LLExport", "TestSyncDictionaryIgnoresNonExportPrefixedColumns"
 
-    Dim dict As ILLdictionary
+    Dim dict As LLdictionary
 
     Set dict = LLdictionary.Create(DictionarySheet, 1, 1)
 
@@ -409,7 +409,7 @@ End Sub
 Public Sub TestPublicSyncDictionaryExportsWithAndWithoutParameter()
     CustomTestSetTitles Assert, "LLExport", "TestPublicSyncDictionaryExportsWithAndWithoutParameter"
 
-    Dim dict As ILLdictionary
+    Dim dict As LLdictionary
 
     Set dict = LLdictionary.Create(DictionarySheet, 1, 1)
 
@@ -453,7 +453,7 @@ End Sub
 Public Sub TestRemoveRowsPrunesDictionaryColumns()
     CustomTestSetTitles Assert, "LLExport", "TestRemoveRowsPrunesDictionaryColumns"
 
-    Dim dict As ILLdictionary
+    Dim dict As LLdictionary
     Dim idx As Long
 
     Set dict = LLdictionary.Create(DictionarySheet, 1, 1)
@@ -485,7 +485,7 @@ End Sub
 Public Sub TestRemoveRowsKeepsColumnsForRemainingIdentifiers()
     CustomTestSetTitles Assert, "LLExport", "TestRemoveRowsKeepsColumnsForRemainingIdentifiers"
 
-    Dim dict As ILLdictionary
+    Dim dict As LLdictionary
     Dim exportIdx As Long
     Set dict = LLdictionary.Create(DictionarySheet, 1, 1)
 

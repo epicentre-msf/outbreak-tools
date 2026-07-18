@@ -21,7 +21,7 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const DICT_SHEET As String = "LLVarDict"
 
 Private Assert As CustomTest
-Private Dictionary As ILLdictionary
+Private Dictionary As LLdictionary
 Private Variables As LLVariables
 
 '@section Module Lifecycle

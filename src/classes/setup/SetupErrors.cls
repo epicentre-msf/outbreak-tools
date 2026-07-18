@@ -33,7 +33,7 @@ Private Type TSetupErrorsState
     hostBook As Workbook              'Target workbook containing setup data
     formulaSheet As Worksheet         'Worksheet storing helper tables and formulas
     passwordService As Passwords     'Password handler protecting/unprotecting sheets
-    dictionary As ILLdictionary       'Dictionary accessor for setup data
+    dictionary As LLdictionary       'Dictionary accessor for setup data
     choices As LLChoices             'Choices accessor for list validation
     formulaStore As FormulaData      'Formula data repository used for validation
     checkTables As BetterArray        'Collection of generated checkings
@@ -111,7 +111,7 @@ Private Const EXP_UNFOUND_DICTCOLUMN As String      = "Exports, line %1--The Exp
 'then returns the newly built instance.
 '@param hostBook Workbook. The workbook containing setup data.
 '@param passwordService Optional Passwords. Sheet protection handler.
-'@param dictionary Optional ILLdictionary. Dictionary data accessor.
+'@param dictionary Optional LLdictionary. Dictionary data accessor.
 '@param choices Optional LLChoices. Choices data accessor.
 '@param formulaStore Optional FormulaData. Formula validation handler.
 '@param transManager Optional SetupTranslationsTable. Translations table accessor.
@@ -121,7 +121,7 @@ Private Const EXP_UNFOUND_DICTCOLUMN As String      = "Exports, line %1--The Exp
 '@export
 Public Function Create(ByVal hostBook As Workbook, _
                        Optional ByVal passwordService As Passwords, _
-                       Optional ByVal dictionary As ILLdictionary, _
+                       Optional ByVal dictionary As LLdictionary, _
                        Optional ByVal choices As LLChoices, _
                        Optional ByVal formulaStore As FormulaData, _
                        Optional ByVal transManager As SetupTranslationsTable, _
@@ -145,7 +145,7 @@ End Function
 'default instances and EnsureCheckContainer to prepare the results array.
 '@param hostBook Workbook. The workbook containing setup tables.
 '@param passwordService Optional Passwords. Sheet protection handler.
-'@param dictionary Optional ILLdictionary. Dictionary data accessor.
+'@param dictionary Optional LLdictionary. Dictionary data accessor.
 '@param choices Optional LLChoices. Choices data accessor.
 '@param formulaStore Optional FormulaData. Formula validation handler.
 '@param transManager Optional SetupTranslationsTable. Translations table accessor.
@@ -154,7 +154,7 @@ End Function
 '@export
 Public Sub Initialise(ByVal hostBook As Workbook, _
                       Optional ByVal passwordService As Passwords, _
-                      Optional ByVal dictionary As ILLdictionary, _
+                      Optional ByVal dictionary As LLdictionary, _
                       Optional ByVal choices As LLChoices, _
                       Optional ByVal formulaStore As FormulaData, _
                       Optional ByVal transManager As SetupTranslationsTable, _

@@ -13,7 +13,7 @@ Attribute VB_Description = "Consolidated show/hide visibility manager for all wo
 '@PredeclaredId
 '@Folder("ShowHide")
 '@ModuleDescription("Consolidated show/hide visibility manager for all worksheet layers")
-'@depends ILLdictionary, ILLVariables, LLVariables, BetterArray, Checking
+'@depends LLdictionary, ILLVariables, LLVariables, BetterArray, Checking
 
 Option Explicit
 
@@ -87,7 +87,7 @@ Private this As TShowHideManager
 ' @param layer Target worksheet layer.
 ' @param sheetName Clean sheet name (without print_/crf_ prefixes).
 ' @return ShowHideManager ready for use.
-Public Function Create(ByVal dict As ILLdictionary, _
+Public Function Create(ByVal dict As LLdictionary, _
                        ByVal layer As ShowHideWorksheetLayer, _
                        ByVal sheetName As String) As ShowHideManager
 
@@ -493,7 +493,7 @@ End Sub
 
 ' @description Prime internal state from dictionary data.
 ' Called by the Create factory after validation.
-Public Sub Initialise(ByVal dict As ILLdictionary, _
+Public Sub Initialise(ByVal dict As LLdictionary, _
                       ByVal layer As ShowHideWorksheetLayer, _
                       ByVal sheetName As String)
 

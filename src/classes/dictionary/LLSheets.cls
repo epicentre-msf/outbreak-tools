@@ -46,7 +46,7 @@ End Enum
 '===============================================================================
 
 Private Type TLLSheets
-    dict As ILLdictionary
+    dict As LLdictionary
     sheetRng As Range
     sheetTypeColumnIndex As Long
     tableNameColumnIndex As Long
@@ -84,10 +84,10 @@ Private Const LLSheetBoundRight As Byte = SheetBound.ColEnd
 
 '@label:Create
 '@sub-title Instantiate a sheet helper bound to the supplied dictionary
-'@param dict ILLdictionary providing sheet metadata.
+'@param dict LLdictionary providing sheet metadata.
 '@return LLSheets fully initialised helper.
 '@export
-Public Function Create(ByVal dict As ILLdictionary) As LLSheets
+Public Function Create(ByVal dict As LLdictionary) As LLSheets
 
     If dict Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, _
@@ -112,14 +112,14 @@ End Property
 
 '@label:Dictionary
 '@sub-title Retrieve the backing dictionary
-'@return ILLdictionary reference captured during initialisation.
-Public Property Get Dictionary() As ILLdictionary
+'@return LLdictionary reference captured during initialisation.
+Public Property Get Dictionary() As LLdictionary
     Set Dictionary = this.dict
 End Property
 
 '@sub-title Store the backing dictionary and prime cached lookups
-'@param dict ILLdictionary holding linelist metadata.
-Public Property Set Dictionary(ByVal dict As ILLdictionary)
+'@param dict LLdictionary holding linelist metadata.
+Public Property Set Dictionary(ByVal dict As LLdictionary)
     ValidateDictionary dict
     Set this.dict = dict
     ResetCaches
@@ -571,8 +571,8 @@ End Sub
 
 '@label:ValidateDictionary
 '@sub-title Ensure the supplied dictionary exposes the required columns
-'@param dict ILLdictionary to validate.
-Private Sub ValidateDictionary(ByVal dict As ILLdictionary)
+'@param dict LLdictionary to validate.
+Private Sub ValidateDictionary(ByVal dict As LLdictionary)
     If dict Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, _
                    "Cannot assign a null dictionary to LLSheets"
@@ -590,9 +590,9 @@ End Sub
 
 '@label:EnsureColumnExists
 '@sub-title Validate that a dictionary column is present
-'@param dict ILLdictionary to inspect.
+'@param dict LLdictionary to inspect.
 '@param colName String. Column header to verify.
-Private Sub EnsureColumnExists(ByVal dict As ILLdictionary, ByVal colName As String)
+Private Sub EnsureColumnExists(ByVal dict As LLdictionary, ByVal colName As String)
     If Not dict.ColumnExists(colName) Then
         ThrowError ProjectError.ElementNotFound, _
                    "Dictionary column '" & colName & "' is required for LLSheets"

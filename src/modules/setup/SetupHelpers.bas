@@ -174,7 +174,7 @@ Public Sub ApplySetupTranslation(ByVal translator As TranslationObject)
     Dim choicesSheet As Worksheet
     Dim analysisSheet As Worksheet
     Dim exportsSheet As Worksheet
-    Dim dictionary As ILLdictionary
+    Dim dictionary As LLdictionary
     Dim choices As LLChoices
     Dim analysis As Analysis
     Dim exports As LLExport
@@ -606,7 +606,7 @@ Public Function ResolveUpdatedValues() As UpdatedValues
     Set ResolveUpdatedValues = UpdatedValues.Create(ResolveRegistrySheet())
 End Function
 
-Public Function ResolveDictionary(Optional ByVal hostSheet As Worksheet) As ILLdictionary
+Public Function ResolveDictionary(Optional ByVal hostSheet As Worksheet) As LLdictionary
     Dim targetSheet As Worksheet
 
     If hostSheet Is Nothing Then
@@ -649,9 +649,9 @@ Public Function ResolveAnalysis(Optional ByVal hostSheet As Worksheet) As Analys
     Set ResolveAnalysis = Analysis.Create(targetSheet)
 End Function
 
-Public Function ResolveVariables(Optional ByVal dictionary As ILLdictionary, _
+Public Function ResolveVariables(Optional ByVal dictionary As LLdictionary, _
                                  Optional ByVal hostSheet As Worksheet) As LLVariables
-    Dim dict As ILLdictionary
+    Dim dict As LLdictionary
 
     If dictionary Is Nothing Then
         Set dict = ResolveDictionary(hostSheet)

@@ -18,27 +18,40 @@ Option Explicit
 'loTable, Nothing sheet, Nothing lData, and wrong ListObject count
 '(complex mode); complex mode initial state has zero series and graphs
 'before CreateSeries; Wksh returns the output sheet in complex mode.
-'@depends GraphSpecs, BetterArray, TableSpecsLinelistStub, AnalysisDictionaryStub, CustomTest, TestHelpers
+'@depends GraphSpecs, BetterArray, TableSpecsLinelistStub, LLdictionary, DictionaryTestFixture, CustomTest, TestHelpers
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const FIXTURE_SHEET As String = "GraphSpecsFixture"
 
 Private Assert As CustomTest
+Private DictBook As Workbook
 
 '@section Helpers
 '===============================================================================
+
+'@sub-title Build a minimal real LLdictionary (lazily) for stub wiring.
+'@details GraphSpecs only needs a non-Nothing dictionary whose VariableExists
+'returns False; a real LLdictionary over a minimal fixture sheet satisfies that
+'without the former AnalysisDictionaryStub.
+Private Function MinimalDictionary() As LLdictionary
+    If DictBook Is Nothing Then
+        Set DictBook = TestHelpers.NewWorkbook
+        DictionaryTestFixture.PrepareDictionaryFixture "GraphSpecsDict", DictBook
+    End If
+    Set MinimalDictionary = LLdictionary.Create(DictBook.Worksheets("GraphSpecsDict"), 1, 1)
+End Function
 
 '@sub-title Create a minimal lData stub with a dictionary configured.
 '@details
 'GraphSpecs.CreateRangeSpecs stores lData and later passes
 'lData.Dictionary() to TableSpecs.Create, so the dictionary must not be
 'Nothing. Instantiates a TableSpecsLinelistStub and assigns a fresh
-'AnalysisDictionaryStub to satisfy this requirement.
+'real LLdictionary to satisfy this requirement.
 '@return TableSpecsLinelistStub. A stub with a valid dictionary reference.
 Private Function CreateLDataStub() As TableSpecsLinelistStub
     Dim stub As TableSpecsLinelistStub
     Set stub = New TableSpecsLinelistStub
-    stub.SetDictionary New AnalysisDictionaryStub
+    stub.SetDictionary MinimalDictionary()
     Set CreateLDataStub = stub
 End Function
 
@@ -135,6 +148,10 @@ Private Sub ModuleCleanup()
         Assert.PrintResults TEST_OUTPUT_SHEET
     End If
     DeleteWorksheet FIXTURE_SHEET
+    If Not DictBook Is Nothing Then
+        TestHelpers.DeleteWorkbook DictBook
+        Set DictBook = Nothing
+    End If
     RestoreApp
     Set Assert = Nothing
 End Sub

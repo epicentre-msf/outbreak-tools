@@ -24,7 +24,7 @@ Option Explicit
 'geobase exports (ExportGeo). Each mode builds a temporary output workbook,
 'populates it with the relevant data, metadata, and formatting, then saves
 'and closes it.
-'@depends ILLdictionary, LLExport, Passwords, CustomTable
+'@depends LLdictionary, LLExport, Passwords, CustomTable
 '@depends DataSheet, AnaTabIds, LLGeo, LLChoices, HiddenNames
 
 
@@ -166,9 +166,9 @@ Public Function ExportCustom(ByVal exportNumber As Long, _
 
     Dim outwb As Workbook
     Dim expObj As LLExport
-    Dim dict As ILLdictionary
+    Dim dict As LLdictionary
     Dim pass As Passwords
-    Dim expDict As ILLdictionary
+    Dim expDict As LLdictionary
     Dim sheetNames As BetterArray
     Dim expName As String
     Dim withAnalysis As Boolean
@@ -280,9 +280,9 @@ Public Function ExportMigration(ByVal folderPath As String, _
 
     Dim outwb As Workbook
     Dim expObj As LLExport
-    Dim dict As ILLdictionary
+    Dim dict As LLdictionary
     Dim pass As Passwords
-    Dim expDict As ILLdictionary
+    Dim expDict As LLdictionary
     Dim sheetNames As BetterArray
     Dim fileName As String
     Dim filePath As String
@@ -357,7 +357,7 @@ Public Function ExportAnalysis(ByVal folderPath As String) As String
 
     Dim outwb As Workbook
     Dim expObj As LLExport
-    Dim dict As ILLdictionary
+    Dim dict As LLdictionary
     Dim pass As Passwords
     Dim fileName As String
     Dim filePath As String
@@ -465,8 +465,8 @@ End Function
 '@label:source-dictionary
 '@sub-title Get a dictionary from the source workbook
 '@param nbExp Long. Number of export columns to configure.
-'@return ILLdictionary. Dictionary instance from the Dictionary sheet.
-Private Function SourceDictionary(ByVal nbExp As Long) As ILLdictionary
+'@return LLdictionary. Dictionary instance from the Dictionary sheet.
+Private Function SourceDictionary(ByVal nbExp As Long) As LLdictionary
     Set SourceDictionary = LLdictionary.Create( _
         this.sourceWkb.Worksheets(DICTIONARYSHEET), 1, 1, nbExp)
 End Function
@@ -563,11 +563,11 @@ End Function
 'Checks the export configuration for "include p-codes". When set to "no",
 'clears the export column cells for all dictionary rows whose main label
 'matches a geo p-code or geo concat tag.
-'@param dict ILLdictionary. The source dictionary.
+'@param dict LLdictionary. The source dictionary.
 '@param expObj LLExport. The export configuration.
 '@param exportNumber Long. Which export definition to check.
 '@param expName String. The export column name (e.g. "export 1").
-Private Sub RemovePCodes(ByVal dict As ILLdictionary, ByVal expObj As LLExport, _
+Private Sub RemovePCodes(ByVal dict As LLdictionary, ByVal expObj As LLExport, _
                          ByVal exportNumber As Long, ByVal expName As String)
 
     Dim exportPcodes As Boolean
@@ -601,11 +601,11 @@ End Sub
 'Checks the export configuration for "include personal identifiers". When
 'set to "no", clears the export column cells for all dictionary rows
 'flagged as personal identifiers.
-'@param dict ILLdictionary. The source dictionary.
+'@param dict LLdictionary. The source dictionary.
 '@param expObj LLExport. The export configuration.
 '@param exportNumber Long. Which export definition to check.
 '@param expName String. The export column name.
-Private Sub RemovePersonalIdentifiers(ByVal dict As ILLdictionary, ByVal expObj As LLExport, _
+Private Sub RemovePersonalIdentifiers(ByVal dict As LLdictionary, ByVal expObj As LLExport, _
                                       ByVal exportNumber As Long, ByVal expName As String)
 
     Dim exportPI As Boolean
@@ -633,10 +633,10 @@ End Sub
 'filters on the export column name to include only rows assigned to that
 'export. Writes the result to the temp__ sheet and adds a blue font tag
 'to mark the dictionary as prepared.
-'@param dict ILLdictionary. The source dictionary.
+'@param dict LLdictionary. The source dictionary.
 '@param expName String. The export column name to filter on, or vbNullString for full.
 '@param fullExport Boolean. When True, copies the entire dictionary unfiltered.
-Private Sub PrepareTempDictionary(ByVal dict As ILLdictionary, _
+Private Sub PrepareTempDictionary(ByVal dict As LLdictionary, _
                                   ByVal expName As String, _
                                   ByVal fullExport As Boolean)
 
@@ -667,17 +667,17 @@ End Sub
 '@label:export-dictionary-from-temp
 '@sub-title Create an export dictionary from the temp sheet
 '@param nbExp Long. Number of export columns.
-'@return ILLdictionary. Dictionary built from the temp__ sheet.
-Private Function ExportDictionaryFromTemp(ByVal nbExp As Long) As ILLdictionary
+'@return LLdictionary. Dictionary built from the temp__ sheet.
+Private Function ExportDictionaryFromTemp(ByVal nbExp As Long) As LLdictionary
     Set ExportDictionaryFromTemp = LLdictionary.Create( _
         this.sourceWkb.Worksheets(TEMPSHEET), 1, 1, nbExp)
 End Function
 
 '@label:sort-export-dictionary
 '@sub-title Sort the export dictionary by table name and export column
-'@param expDict ILLdictionary. The dictionary to sort.
+'@param expDict LLdictionary. The dictionary to sort.
 '@param expName String. The export column name to use as secondary sort key.
-Private Sub SortExportDictionary(ByVal expDict As ILLdictionary, ByVal expName As String)
+Private Sub SortExportDictionary(ByVal expDict As LLdictionary, ByVal expName As String)
     Dim rng As Range
     Set rng = expDict.DataRange(includeHeaders:=True)
     rng.Sort _
@@ -693,9 +693,9 @@ End Sub
 '@label:add-metadata-sheets
 '@sub-title Add Metadata, Choices, and Translations sheets to the output workbook
 '@param outwb Workbook. The output workbook.
-'@param dict ILLdictionary. The source dictionary.
+'@param dict LLdictionary. The source dictionary.
 '@param nbExp Long. Number of export columns.
-Private Sub AddMetadataSheets(ByVal outwb As Workbook, ByVal dict As ILLdictionary, _
+Private Sub AddMetadataSheets(ByVal outwb As Workbook, ByVal dict As LLdictionary, _
                               ByVal nbExp As Long)
 
     Dim sheetNames As BetterArray
@@ -727,13 +727,13 @@ End Sub
 'Exports the dictionary filtered by exportColumn, then marks the output
 'dictionary as prepared with a blue font tag.
 '@param outwb Workbook. The output workbook.
-'@param dict ILLdictionary. The source dictionary.
+'@param dict LLdictionary. The source dictionary.
 '@param nbExp Long. Number of export columns.
 '@param exportColumn String. The export column to filter on, or "__all__".
-Private Sub AddDictionary(ByVal outwb As Workbook, ByVal dict As ILLdictionary, _
+Private Sub AddDictionary(ByVal outwb As Workbook, ByVal dict As LLdictionary, _
                           ByVal nbExp As Long, ByVal exportColumn As String)
 
-    Dim outDict As ILLdictionary
+    Dim outDict As LLdictionary
     Dim outDictRng As Range
 
     dict.Export toWkb:=outwb, exportType:=exportColumn, _
@@ -846,7 +846,7 @@ End Sub
 Private Sub AddShowHide(ByVal outwb As Workbook)
 
     Dim outsh As Worksheet
-    Dim dict As ILLdictionary
+    Dim dict As LLdictionary
     Dim sheetNames As BetterArray
     Dim sheetName As String
     Dim sheetType As String
@@ -1022,11 +1022,11 @@ End Sub
 'For HList sheets, delegates to CustomTable.Export. For VList sheets,
 'delegates to ExportVListData. Applies formatting to each output sheet.
 '@param outwb Workbook. The output workbook.
-'@param expDict ILLdictionary. The export dictionary with variable assignments.
+'@param expDict LLdictionary. The export dictionary with variable assignments.
 '@param useLabels Boolean. When True, writes label row above data headers.
 '@param startLine Long. Data start row (2 when labels are on row 1).
 '@param useFilters Boolean. When True, reads from filtered companion sheets.
-Private Sub AddDataSheets(ByVal outwb As Workbook, ByVal expDict As ILLdictionary, _
+Private Sub AddDataSheets(ByVal outwb As Workbook, ByVal expDict As LLdictionary, _
                           ByVal useLabels As Boolean, ByVal startLine As Long, _
                           ByVal useFilters As Boolean)
 

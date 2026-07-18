@@ -57,7 +57,7 @@ End Enum
 'AutoFilter cascades, import/export in both flat-data and full-structure
 'modes, and synchronisation of translated labels across linelist sheets,
 'dictionary, and show/hide tables.
-'@depends BetterArray, Passwords, ILLdictionary, CustomTable, ILLVariables, DropdownLists, DropdownLists, LLVariables, CustomTable, HiddenNames
+'@depends BetterArray, Passwords, LLdictionary, CustomTable, ILLVariables, DropdownLists, DropdownLists, LLVariables, CustomTable, HiddenNames
 
 '@section State
 '===============================================================================
@@ -1236,9 +1236,9 @@ End Sub
 'overwrites the corresponding main label cells with translated geo display
 'names from the geobase. This keeps the dictionary in sync after a geobase
 'import or translation change.
-'@param dict ILLdictionary. The linelist dictionary whose labels should be updated.
+'@param dict LLdictionary. The linelist dictionary whose labels should be updated.
 '@export
-Public Sub UpdateDict(ByVal dict As ILLdictionary)
+Public Sub UpdateDict(ByVal dict As LLdictionary)
     Dim controlRng As Range
     Dim mainlabRng As Range
     Dim counter As Long
@@ -1271,9 +1271,9 @@ End Sub
 'geo display name. This keeps the show/hide interface labels in sync with the
 'current geobase translation.
 '@param sh Worksheet. The show/hide worksheet containing ListObjects to update.
-'@param dict ILLdictionary. The linelist dictionary for resolving control and subsection values.
+'@param dict LLdictionary. The linelist dictionary for resolving control and subsection values.
 '@export
-Public Sub UpdateShowHide(ByVal sh As Worksheet, ByVal dict As ILLdictionary)
+Public Sub UpdateShowHide(ByVal sh As Worksheet, ByVal dict As LLdictionary)
     Dim csTab As CustomTable
     Dim vars As LLVariables
     Dim Lo As ListObject

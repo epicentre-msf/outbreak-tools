@@ -18,7 +18,7 @@ Attribute VB_Description = "Variables of the dictionary"
 Option Explicit
 
 Private Type TVariable
-    dict As ILLdictionary
+    dict As LLdictionary
     varRng As Range
     columnCache As BetterArray
     variablesCache As BetterArray
@@ -34,7 +34,7 @@ Private Const COL_SHEET_NAME As String = "sheet name"
 Private Const COL_CONTROL As String = "control"
 Private Const COL_TABLE_NAME As String = "table name"
 
-Public Function Create(ByVal dict As ILLdictionary) As LLVariables
+Public Function Create(ByVal dict As LLdictionary) As LLVariables
 
     If dict Is Nothing Then
         Err.Raise CLng(ProjectError.InvalidArgument), CLASSNAME, _
@@ -62,11 +62,11 @@ Public Property Get Self() As LLVariables
     Set Self = Me
 End Property
 
-Public Property Get Dictionary() As ILLdictionary
+Public Property Get Dictionary() As LLdictionary
     Set Dictionary = this.dict
 End Property
 
-Public Property Set Dictionary(ByVal dict As ILLdictionary)
+Public Property Set Dictionary(ByVal dict As LLdictionary)
     Set this.dict = dict
     ResetCaches
     RefreshVariableRange
@@ -407,7 +407,7 @@ Private Function CellRangeInternal(ByVal colName As String, ByVal varName As Str
 
     Dim rowNum As Long
     Dim colNum As Long
-    Dim dict As ILLdictionary
+    Dim dict As LLdictionary
     Dim Wksh As Worksheet
     EnsureDictionaryReady
     EnsureVariableRange
@@ -437,7 +437,7 @@ Public Sub SetValue(ByVal varName As String, ByVal colName As String, ByVal newV
     Dim colNum As Long
     Dim Update As Boolean
 
-    Dim dict As ILLdictionary
+    Dim dict As LLdictionary
     Dim Wksh As Worksheet
 
     EnsureDictionaryReady

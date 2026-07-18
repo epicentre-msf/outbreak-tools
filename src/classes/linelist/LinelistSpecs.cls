@@ -27,7 +27,7 @@ Implements ILinelistSpecs
 'user-facing error dialogs. Uses a PredeclaredId factory pattern so callers
 'construct instances via LinelistSpecs.Create(workbook) and receive an
 'ILinelistSpecs interface reference.
-'@depends ILLdictionary, LLChoices, LLTranslation, DesignerTranslation
+'@depends LLdictionary, LLChoices, LLTranslation, DesignerTranslation
 '@depends LLGeo, LLExport, Passwords, LLFormat
 '@depends LinelistBuildService, TemporaryRepos
 '@depends FormulaData, ILLVariables, Formulas
@@ -45,7 +45,7 @@ Implements ILinelistSpecs
 
 Private Type TLinelistSpecs
     specsWkb As Workbook
-    dictionary As ILLdictionary
+    dictionary As LLdictionary
     choices As LLChoices
     translations As LLTranslation
     designerTranslations As DesignerTranslation
@@ -721,7 +721,7 @@ End Function
 'choice_formula), recursively traces referenced variables and marks
 'them as well.
 Private Sub AddListAuto()
-    Dim dict As ILLdictionary
+    Dim dict As LLdictionary
     Dim vars As LLVariables
     Dim listVars As BetterArray
     Dim idx As Long
@@ -759,7 +759,7 @@ End Sub
 'or case_when types.
 '@param varName String. The formula variable whose references to trace.
 Private Sub RecursiveListAuto(ByVal varName As String)
-    Dim dict As ILLdictionary
+    Dim dict As LLdictionary
     Dim vars As LLVariables
     Dim controlType As String
     Dim controlDetails As String
@@ -953,11 +953,11 @@ End Function
 '@label:dictionary
 '@prop-title Linelist dictionary
 '@details
-'Returns the ILLdictionary instance providing column and row access to the
+'Returns the LLdictionary instance providing column and row access to the
 'Dictionary worksheet. Lazy-loaded on first access.
-'@return ILLdictionary. The dictionary collaborator.
+'@return LLdictionary. The dictionary collaborator.
 '@export
-Public Property Get Dictionary() As ILLdictionary
+Public Property Get Dictionary() As LLdictionary
     EnsureDictionary
     Set Dictionary = this.dictionary
 End Property
@@ -1299,7 +1299,7 @@ End Property
 '@throws ProjectError.ErrorUnexpectedState When an unexpected error occurs.
 '@export
 Public Sub Prepare(ByVal buildService As LinelistBuildService, ByVal setupPath As String)
-    Dim dict As ILLdictionary
+    Dim dict As LLdictionary
     Dim choicesObj As LLChoices
     Dim exportsObj As LLExport
     Dim analysisObj As Analysis
@@ -1498,7 +1498,7 @@ Private Property Get ILinelistSpecs_DesWorkbook() As Workbook
     Set ILinelistSpecs_DesWorkbook = Me.DesWorkbook
 End Property
 
-Private Property Get ILinelistSpecs_Dictionary() As ILLdictionary
+Private Property Get ILinelistSpecs_Dictionary() As LLdictionary
     Set ILinelistSpecs_Dictionary = Me.Dictionary
 End Property
 

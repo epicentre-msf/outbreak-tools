@@ -17,7 +17,7 @@ Option Explicit
 Implements ILinelistSpecs
 
 Private Type TLinelistStub
-    dictionary As ILLdictionary
+    dictionary As LLdictionary
     translationObject As TranslationObject
 End Type
 
@@ -26,7 +26,7 @@ Private this As TLinelistStub
 '@section Configuration
 '===============================================================================
 'Configure the dictionary returned through the interface.
-Public Sub SetDictionary(ByVal dictionary As ILLdictionary)
+Public Sub SetDictionary(ByVal dictionary As LLdictionary)
     Set this.dictionary = dictionary
 End Sub
 
@@ -44,7 +44,7 @@ Private Property Get ILinelistSpecs_DesWorkbook() As Workbook
     Set ILinelistSpecs_DesWorkbook = Nothing
 End Property
 
-Private Property Get ILinelistSpecs_Dictionary() As ILLdictionary
+Private Property Get ILinelistSpecs_Dictionary() As LLdictionary
     Set ILinelistSpecs_Dictionary = this.dictionary
 End Property
 

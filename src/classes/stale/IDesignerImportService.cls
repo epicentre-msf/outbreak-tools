@@ -76,12 +76,12 @@ End Sub
 '@jump:exported-dictionary
 '@prop-title Dictionary manager targeting the exported workbook
 '@details
-'Returns an ILLdictionary instance bound to the Dictionary sheet in the
+'Returns an LLdictionary instance bound to the Dictionary sheet in the
 'target workbook after ExportToLinelist completes. Returns Nothing before
 'export or when the sheet was not exported.
-'@return ILLdictionary. The exported dictionary manager, or Nothing.
+'@return LLdictionary. The exported dictionary manager, or Nothing.
 '@export
-Public Property Get ExportedDictionary() As ILLdictionary
+Public Property Get ExportedDictionary() As LLdictionary
 End Property
 
 '@jump:exported-choices

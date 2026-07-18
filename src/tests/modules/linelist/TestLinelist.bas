@@ -10,7 +10,7 @@ Option Explicit
 Private Assert As CustomTest
 Private SpecsWkb As Workbook
 Private Specs As LinelistSpecsWorkbookStub
-Private Dict As ILLdictionary
+Private Dict As LLdictionary
 
 Private Const TESTOUTPUTSHEET As String = "testsOutputs"
 Private Const TESTMODULE As String = "Linelist"

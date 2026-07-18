@@ -18,7 +18,7 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 'and value variables reside on different worksheets. Each test rebuilds a
 'fresh dictionary fixture via PrepareDictionaryFixture so that dictionary
 'state is isolated between runs.
-'@depends ValueOfFormula, LLdictionary, ILLdictionary,
+'@depends ValueOfFormula, LLdictionary, LLdictionary,
 '  LLVariables, ILLVariables, BetterArray, CustomTest,
 '  DictionaryTestFixture, TestHelpers
 
@@ -33,7 +33,7 @@ Private Const DICTIONARY_SHEET As String = "ValueOfDictionary"
 
 Private Assert As CustomTest
 Private dictionarySheet As Worksheet
-Private dictionary As ILLdictionary
+Private dictionary As LLdictionary
 
 '@section Helpers
 '===============================================================================

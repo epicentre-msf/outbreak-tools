@@ -23,7 +23,7 @@ Option Explicit
 Private Type TLLExport
     expData As DataSheet
     exportSheet As Worksheet
-    dictInt As ILLdictionary
+    dictInt As LLdictionary
     variables As LLVariables
     checks As Checking
     hasChecks As Boolean
@@ -160,7 +160,7 @@ End Property
 '@param del Optional flag switching to row removal mode.
 '@param rowCount Optional threshold for row removal; rows with non-empty cells at or below the threshold are trimmed (defaults to 0, removing empty rows).
 Public Sub ManageRows(Optional ByVal del As Boolean = False, _ 
-                       Optional ByVal dict As ILLdictionary, _
+                       Optional ByVal dict As LLdictionary, _
                        Optional ByVal rowCount As Long = 2)
 
     Dim tableObj As CustomTable
@@ -168,7 +168,7 @@ Public Sub ManageRows(Optional ByVal del As Boolean = False, _
     Dim newCount As Long
     Dim exportNumbers As BetterArray
     Dim dictionaryReady As Boolean
-    Dim dictRef As ILLdictionary
+    Dim dictRef As LLdictionary
 
     
     EnsureDataReady
@@ -205,13 +205,13 @@ End Sub
 '@param dict Optional dictionary to shift export columns.
 '@param insertShift Optional Boolean to insert worksheet rows when necessary. Defaults to False.
 Public Sub InsertRows(ByVal targetCell As Range, _
-                      Optional ByVal dict As ILLdictionary, _
+                      Optional ByVal dict As LLdictionary, _
                       Optional ByVal insertShift As Boolean = False)
 
     Dim tableObj As CustomTable
     Dim exportNumbers As BetterArray
     Dim dictionaryReady As Boolean
-    Dim dictRef As ILLdictionary
+    Dim dictRef As LLdictionary
     Dim insertIndex As Long
     Dim insertCount As Long
     Dim actualInserted As Long
@@ -258,13 +258,13 @@ End Sub
 '@label:DeleteRows
 '@prop-title Delete export rows intersecting the supplied selection
 Public Sub DeleteRows(ByVal targetCell As Range, _
-                      Optional ByVal dict As ILLdictionary, _
+                      Optional ByVal dict As LLdictionary, _
                       Optional ByVal forceShift As Boolean = False)
 
     Dim tableObj As CustomTable
     Dim exportNumbers As BetterArray
     Dim dictionaryReady As Boolean
-    Dim dictRef As ILLdictionary
+    Dim dictRef As LLdictionary
     Dim previousCount As Long
     Dim newCount As Long
 
@@ -300,24 +300,24 @@ End Sub
 '@label:AddRows
 '@prop-title Append export definition rows
 '@param dict Optional dictionary to align export columns with.
-Public Sub AddRows(Optional ByVal dict As ILLdictionary)
+Public Sub AddRows(Optional ByVal dict As LLdictionary)
     ManageRows dict:=dict
 End Sub
 
 '@label:RemoveRows
 '@prop-title Remove empty export rows
 '@param rowCount Optional threshold; rows with non-empty cell counts at or below this value are removed (defaults to 0).
-Public Sub RemoveRows(Optional ByVal dict As ILLdictionary, _ 
+Public Sub RemoveRows(Optional ByVal dict As LLdictionary, _ 
                       Optional ByVal rowCount As Long = 2)
     ManageRows del:=True, dict:=dict, rowCount:=rowCount
 End Sub
 
 '@label:SyncDictionaryExports
 '@prop-title Synchronise dictionary export columns
-Public Sub SyncDictionaryExports(Optional ByVal dict As ILLdictionary)
+Public Sub SyncDictionaryExports(Optional ByVal dict As LLdictionary)
     Dim tableObj As CustomTable
     Dim exportNumbers As BetterArray
-    Dim targetDict As ILLdictionary
+    Dim targetDict As LLdictionary
 
     EnsureDataReady
     EnsureWorksheetReady
@@ -338,9 +338,9 @@ End Sub
 
 '@label:Sort
 '@sub-title Sort export definitions and normalize identifiers
-Public Sub Sort(Optional ByVal dict As ILLdictionary)
+Public Sub Sort(Optional ByVal dict As LLdictionary)
     Dim tableObj As CustomTable
-    Dim dictRef As ILLdictionary
+    Dim dictRef As LLdictionary
 
     EnsureDataReady
     EnsureWorksheetReady
@@ -427,7 +427,7 @@ Private Sub AssignExportNumbers(ByVal tableObj As CustomTable, _
 End Sub
 
 Private Sub SequentiallyRenameExports(ByVal tableObj As CustomTable, _
-                                      Optional ByVal dict As ILLdictionary)
+                                      Optional ByVal dict As LLdictionary)
 
     Dim exportRange As Range
     Dim total As Long
@@ -453,7 +453,7 @@ Private Sub SequentiallyRenameExports(ByVal tableObj As CustomTable, _
     End If
 End Sub
 
-Private Sub RenameDictionaryExports(ByVal dict As ILLdictionary, _
+Private Sub RenameDictionaryExports(ByVal dict As LLdictionary, _
                                     ByRef previousNames() As String, _
                                     ByVal total As Long)
 
@@ -612,7 +612,7 @@ Private Function CollectExportNumbers(ByVal tableObj As CustomTable) As BetterAr
     End If
 End Function
 
-Private Function EnumerateDictionaryExportNumbers(ByVal dict As ILLdictionary) As BetterArray
+Private Function EnumerateDictionaryExportNumbers(ByVal dict As LLdictionary) As BetterArray
     Dim headers As Range
     Dim result As BetterArray
     Dim idx As Long
@@ -666,7 +666,7 @@ Private Function ParseExportIdentifier(ByVal rawValue As Variant) As Long
     On Error GoTo 0
 End Function
 
-Private Sub SyncDictionaryExportsCore(ByVal exportNumbers As BetterArray, ByVal dict As ILLdictionary)
+Private Sub SyncDictionaryExportsCore(ByVal exportNumbers As BetterArray, ByVal dict As LLdictionary)
     Dim existing As BetterArray
     Dim idx As Long
     Dim number As Long
@@ -699,7 +699,7 @@ Private Sub SyncDictionaryExportsCore(ByVal exportNumbers As BetterArray, ByVal 
     dict.TotalNumberOfExports = highest
 End Sub
 
-Private Sub EnsureDictionaryExportColumn(ByVal dict As ILLdictionary, ByVal exportIndex As Long)
+Private Sub EnsureDictionaryExportColumn(ByVal dict As LLdictionary, ByVal exportIndex As Long)
     Dim columnName As String
     Dim anchorName As String
     Dim previousIdx As Long
@@ -794,7 +794,7 @@ End Sub
 '@throws ProjectError.InvalidArgument when the export number is invalid.
 '@throws ProjectError.ObjectNotInitialized when required collaborators are missing.
 Public Function ExportFileName(ByVal exportNumber As Long, _
-                               ByVal dict As ILLdictionary, _
+                               ByVal dict As LLdictionary, _
                                ByVal pass As Passwords, _
                                Optional ByVal exportAll As Boolean = False) As String
 
@@ -972,7 +972,7 @@ End Sub
 
 '@label:EnsureDictionaryReady
 '@prop-title Validate dictionary dependency
-Private Sub EnsureDictionaryReady(Optional ByVal dict As ILLdictionary, Optional ByVal resetInt As Boolean = False, Optional ByVal required As Boolean = True)
+Private Sub EnsureDictionaryReady(Optional ByVal dict As LLdictionary, Optional ByVal resetInt As Boolean = False, Optional ByVal required As Boolean = True)
     If resetInt Then Set this.dictInt = Nothing
 
     If Not dict Is Nothing Then
@@ -986,18 +986,18 @@ End Sub
 
 '@label:EnsureVariablesReady
 '@prop-title Lazily instantiate dictionary-backed variable helper
-Private Sub EnsureVariablesReady(Optional ByVal dict As ILLdictionary)
+Private Sub EnsureVariablesReady(Optional ByVal dict As LLdictionary)
     EnsureDictionaryReady dict
 
     If Not DictionaryIsAvailable() Then Exit Sub
 
-    Dim currentDict As ILLdictionary
+    Dim currentDict As LLdictionary
     Set currentDict = InternalDictionary()
 
     If this.variables Is Nothing Then
         Set this.variables = LLVariables.Create(currentDict)
     Else
-        Dim existingDict As ILLdictionary
+        Dim existingDict As LLdictionary
         Set existingDict = this.variables.Dictionary
         If (existingDict Is Nothing) Or (Not (existingDict Is currentDict)) Then
             Set this.variables = LLVariables.Create(currentDict)
@@ -1006,13 +1006,13 @@ Private Sub EnsureVariablesReady(Optional ByVal dict As ILLdictionary)
 End Sub
 
 '@label:InternalDictionary
-Private Property Get InternalDictionary() As ILLdictionary
+Private Property Get InternalDictionary() As LLdictionary
     EnsureDictionaryReady
     Set InternalDictionary = this.dictInt
 End Property
 
 '@label:InternalDictionary
-Private Property Set InternalDictionary(ByVal dict As ILLdictionary)
+Private Property Set InternalDictionary(ByVal dict As LLdictionary)
     EnsureDictionaryReady dict
 End Property
 

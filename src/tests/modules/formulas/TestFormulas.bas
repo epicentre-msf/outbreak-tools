@@ -21,7 +21,7 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 'Each test builds a fresh dictionary and FormulaData fixture via worksheet
 'helpers so tests run in isolation.
 '@depends Formulas, FormulaData, FormulaCondition,
-'LLdictionary, ILLdictionary, LLVariables, ILLVariables,
+'LLdictionary, LLdictionary, LLVariables, ILLVariables,
 'LLSheets, BetterArray, CustomTest,
 'DictionaryTestFixture, FormulaTestFixture
 
@@ -59,7 +59,7 @@ Private Fakes As Object
 Private FixtureSheet As Worksheet
 Private DictionarySheet As Worksheet
 Private FormulaDataSource As FormulaData
-Private LinelistDictionary As ILLdictionary
+Private LinelistDictionary As LLdictionary
 
 '@section Helpers
 '===============================================================================

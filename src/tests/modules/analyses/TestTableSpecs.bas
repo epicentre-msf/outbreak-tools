@@ -17,7 +17,7 @@ Option Explicit
 'the TotalRequested vs HasTotal distinction (Bug #1 fix), and forward/backward
 'row navigation. The fixture builds a hidden worksheet with a typed header row
 'and data rows, backed by a dictionary fixture for variable validation.
-'@depends TableSpecs, LLdictionary, ILLdictionary, CustomTest, TestHelpers
+'@depends TableSpecs, LLdictionary, LLdictionary, CustomTest, TestHelpers
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const FIXTURE_SHEET As String = "TableSpecsFixture"
@@ -37,7 +37,7 @@ Private Const COL_NGEO As Long = 10
 Private Const NUM_COLUMNS As Long = 10
 
 Private Assert As CustomTest
-Private dict As ILLdictionary
+Private dict As LLdictionary
 
 '@section Helpers
 '===============================================================================

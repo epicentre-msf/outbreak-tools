@@ -18,14 +18,14 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 'VariablesTable accessor. Each test builds lightweight BetterArray fixtures
 'via BetterArrayFromList and a shared dictionary fixture seeded from
 'DictionaryTestFixture.
-'@depends FormulaCondition, LLdictionary, ILLdictionary,
+'@depends FormulaCondition, LLdictionary, LLdictionary,
 '  LLVariables, ILLVariables, BetterArray, CustomTest,
 '  DictionaryTestFixture, TestHelpers
 
 Private Const DICT_SHEET As String = "FormulaConditionDict"
 
 Private Assert As CustomTest
-Private Dictionary As ILLdictionary
+Private Dictionary As LLdictionary
 
 '@section Helpers
 '===============================================================================

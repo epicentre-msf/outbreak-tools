@@ -17,12 +17,12 @@ Option Explicit
 Implements ILinelist
 
 Private specs As ILinelistSpecs
-Private dict As ILLdictionary
+Private dict As LLdictionary
 
 '@section Configuration
 '===============================================================================
 
-Public Sub Initialise(ByVal specsObj As ILinelistSpecs, ByVal dictObj As ILLdictionary)
+Public Sub Initialise(ByVal specsObj As ILinelistSpecs, ByVal dictObj As LLdictionary)
     Set specs = specsObj
     Set dict = dictObj
 End Sub
@@ -63,7 +63,7 @@ Private Property Get ILinelist_LinelistData() As ILinelistSpecs
     Set ILinelist_LinelistData = specs
 End Property
 
-Private Property Get ILinelist_Dictionary() As ILLdictionary
+Private Property Get ILinelist_Dictionary() As LLdictionary
     Set ILinelist_Dictionary = dict
 End Property
 

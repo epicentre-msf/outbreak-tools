@@ -29,7 +29,7 @@ Implements ILinelist
 'with password protection. The class uses VB_Creatable = True so that
 'factory consumers create instances via `New Linelist` rather than
 '`With New Linelist`.
-'@depends ILinelistSpecs, ILLdictionary, TranslationObject,
+'@depends ILinelistSpecs, LLdictionary, TranslationObject,
 '  Passwords, LLFormat, HiddenNames,
 '  DropdownLists, DropdownLists,
 '  CustomPivotTable, TemporaryRepos, HiddenNames, Buttons, CodeTransfer,
@@ -124,9 +124,9 @@ End Property
 '@details
 'Convenience accessor that delegates to specs.Dictionary, avoiding
 'the extra indirection at call sites.
-'@return ILLdictionary. The linelist dictionary.
+'@return LLdictionary. The linelist dictionary.
 '@export
-Public Property Get Dictionary() As ILLdictionary
+Public Property Get Dictionary() As LLdictionary
     Set Dictionary = this.specs.Dictionary
 End Property
 
@@ -318,7 +318,7 @@ End Sub
 '    workbook code).
 '@export
 Public Sub Prepare()
-    Dim dict As ILLdictionary
+    Dim dict As LLdictionary
     Dim trans As TranslationObject
     Dim sheetsList As BetterArray
     Dim counter As Long
@@ -836,7 +836,7 @@ Private Sub TransferAllCode(ByVal codeTransfer As CodeTransfer)
     'Transfer classes (30 classes)
     codesList.Push "BetterArray", "DataSheet", "LLExport", _
                    "LLChoices", _
-                   "LLdictionary", "ILLdictionary", "LLGeo", _
+                   "LLdictionary", "LLGeo", _
                    "Passwords", _
                    "Checking", _
                    "LLSheets", "LLTranslation", _
@@ -955,7 +955,7 @@ Private Property Get ILinelist_LinelistData() As ILinelistSpecs
     Set ILinelist_LinelistData = LinelistData
 End Property
 
-Private Property Get ILinelist_Dictionary() As ILLdictionary
+Private Property Get ILinelist_Dictionary() As LLdictionary
     Set ILinelist_Dictionary = Dictionary
 End Property
 

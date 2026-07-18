@@ -17,7 +17,7 @@ Option Explicit
 'TableSpecs layout on a hidden worksheet and uses stubs for the dictionary,
 'linelist data, and translation dependencies.
 '@depends CrossTable, TableSpecs, TableSpecsLinelistStub,
-'  AnalysisDictionaryStub, TranslationObject, ILLdictionary,
+'  LLdictionary, TranslationObject, LLdictionary,
 '  BetterArray, CustomTest, TestHelpers
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
@@ -38,7 +38,8 @@ Private Const COL_NGEO As Long = 10
 Private Const NUM_COLUMNS As Long = 10
 
 Private Assert As CustomTest
-Private dictStub As ILLdictionary
+Private dictStub As LLdictionary
+Private dictBook As Workbook
 Private lDataStub As TableSpecsLinelistStub
 Private transStub As TranslationObject
 
@@ -116,7 +117,7 @@ End Function
 '@sub-title Set up the test harness, stubs, and translation entries.
 '@details
 'Suppresses screen updates, creates the CustomTest assertion object, and
-'initialises the three stubs: AnalysisDictionaryStub for dictionary
+'initialises the three stubs: LLdictionary for dictionary
 'lookups, TranslationObject with standard message keys
 '(MSG_NA, MSG_Total, MSG_Percent, etc.), and TableSpecsLinelistStub
 'wired to both. These stubs remain alive for all tests in the module.
@@ -126,7 +127,9 @@ Private Sub ModuleInitialize()
     EnsureWorksheet TEST_OUTPUT_SHEET, clearSheet:=False
     Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
     Assert.SetModuleName "TestCrossTable"
-    Set dictStub = New AnalysisDictionaryStub
+    Set dictBook = TestHelpers.NewWorkbook
+    DictionaryTestFixture.PrepareDictionaryFixture "CrossTableDict", dictBook
+    Set dictStub = LLdictionary.Create(dictBook.Worksheets("CrossTableDict"), 1, 1)
     Set lDataStub = New TableSpecsLinelistStub
     Set transStub = TestHelpers.BuildTranslationObject(ThisWorkbook, "ENG", Array( _
         Array("MSG_NA", "Missing"), Array("MSG_Total", "Total"), Array("MSG_Percent", "%"), _
@@ -150,6 +153,10 @@ Private Sub ModuleCleanup()
     DeleteWorksheet OUTPUT_SHEET
     RestoreApp
     Set dictStub = Nothing
+    If Not dictBook Is Nothing Then
+        TestHelpers.DeleteWorkbook dictBook
+        Set dictBook = Nothing
+    End If
     Set lDataStub = Nothing
     Set transStub = Nothing
     Set Assert = Nothing

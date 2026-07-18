@@ -42,7 +42,7 @@ Private Type TEventSetup
     spatioSpecsTable    As CustomTable     'Spatio-temporal specification table wrapper
     exportsTable        As CustomTable      'Exports listobject wrapper
     variables           As LLVariables      'Dictionary variable helper
-    dictionary          As ILLdictionary     'Cached dictionary reference
+    dictionary          As LLdictionary     'Cached dictionary reference
     choices             As LLChoices        'Cached choices helper
     ana                 As Analysis         'Cached analysis helper
     exports             As LLExport         'Cached exports manager
@@ -546,7 +546,7 @@ Public Sub DeleteRows(ByVal sheetName As String, _
             If Not EnsureExports() Then GoTo CleanExit
             Set sheetPass = BeginSheetUpdate(SHEET_EXPORTS)
             unlockedSheet = SHEET_EXPORTS
-            Dim dictRef As ILLdictionary
+            Dim dictRef As LLdictionary
             If EnsureDictionary() And Not this.dictionary Is Nothing Then
                 Set dictPass = BeginSheetUpdate(SHEET_DICTIONARY)
                 unlockedDict = SHEET_DICTIONARY
@@ -623,7 +623,7 @@ Public Sub SortTables(ByVal sheetName As String)
             If Not EnsureExports() Then GoTo CleanExit
             Set sheetPass = BeginSheetUpdate(SHEET_EXPORTS)
             unlockedSheet = SHEET_EXPORTS
-            Dim dictRef As ILLdictionary
+            Dim dictRef As LLdictionary
             If EnsureDictionary() And Not this.dictionary Is Nothing Then
                 Set dictPass = BeginSheetUpdate(SHEET_DICTIONARY)
                 unlockedDict = SHEET_DICTIONARY

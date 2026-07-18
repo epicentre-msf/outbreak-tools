@@ -35,7 +35,7 @@ Option Explicit
 
 Private Type TValueOfFormula
     expression As String            'Original VALUE_OF specification
-    dict As ILLdictionary           'Dictionary reference providing metadata
+    dict As LLdictionary           'Dictionary reference providing metadata
     variables As LLVariables       'Helper for variable lookups
     sheets As LLSheets             'Helper for sheet validation
     parsed As Boolean               'Tracks whether parsing already occurred
@@ -74,14 +74,14 @@ Private Const ERROR_EMPTY_FORMULA As String = "VALUE_OF formula cannot be blank"
 'Optional variables and sheets helpers can be supplied to avoid
 'redundant instantiation when the caller already holds them.
 '@param formula String. Representation of the VALUE_OF call.
-'@param dict ILLdictionary. The dictionary exposing variables and sheets metadata.
+'@param dict LLdictionary. The dictionary exposing variables and sheets metadata.
 '@param variables Optional ILLVariables. Reuse an existing helper instance.
 '@param sheets Optional LLSheets. Reuse an existing helper instance.
 '@return ValueOfFormula. A ready-to-inspect parser instance.
 '@throws ProjectError.ObjectNotInitialized When dict is Nothing.
 '@export
 Public Function Create(ByVal formula As String, _
-                       ByVal dict As ILLdictionary, _
+                       ByVal dict As LLdictionary, _
                        Optional ByVal variables As LLVariables, _
                        Optional ByVal sheets As LLSheets) As ValueOfFormula
 
@@ -113,10 +113,10 @@ End Property
 '@label:dictionary
 '@prop-title Retrieve the dictionary backing this instance
 '@details
-'Returns the ILLdictionary reference that was supplied at creation
+'Returns the LLdictionary reference that was supplied at creation
 'and is used during lazy parsing.
-'@return ILLdictionary. The dictionary used during parsing.
-Public Property Get Dictionary() As ILLdictionary
+'@return LLdictionary. The dictionary used during parsing.
+Public Property Get Dictionary() As LLdictionary
     Set Dictionary = this.dict
 End Property
 
@@ -126,9 +126,9 @@ End Property
 'Replaces the dictionary reference, clears the lazily created variable
 'and sheet helpers, and resets all parsed outcomes so the next access
 'triggers a fresh evaluation.
-'@param dict ILLdictionary. The dictionary providing metadata.
+'@param dict LLdictionary. The dictionary providing metadata.
 '@throws ProjectError.ObjectNotInitialized When dict is Nothing.
-Public Property Set Dictionary(ByVal dict As ILLdictionary)
+Public Property Set Dictionary(ByVal dict As LLdictionary)
     If dict Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, _
                    "ValueOfFormula requires a valid dictionary reference"
@@ -468,11 +468,11 @@ End Function
 'Stores the dictionary, optional helpers, and formula, then resets
 'all cached state so the parser is ready for lazy evaluation.
 '@param formula String. The VALUE_OF expression.
-'@param dict ILLdictionary. The dictionary providing metadata.
+'@param dict LLdictionary. The dictionary providing metadata.
 '@param variables ILLVariables. Optional helper for variable lookups.
 '@param sheets LLSheets. Optional helper for sheet validation.
 Public Sub Initialise(ByVal formula As String, _
-                       ByVal dict As ILLdictionary, _
+                       ByVal dict As LLdictionary, _
                        ByVal variables As LLVariables, _
                        ByVal sheets As LLSheets)
     Set this.dict = dict

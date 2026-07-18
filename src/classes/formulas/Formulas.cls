@@ -45,7 +45,7 @@ Private Type TGroupContext
 End Type
 
 Private Type TFormulas
-    dict As ILLdictionary                       'Dictionary describing available variables and metadata
+    dict As LLdictionary                       'Dictionary describing available variables and metadata
     data As FormulaData                        'Configuration of accepted Excel formulas and tokens
     setupForm As String                         'Original pseudo-formula provided by setup
     tokens As BetterArray                       'Tokenised representation of the parsed formula
@@ -94,14 +94,14 @@ Private hasChecks As Boolean
 'present, then stores them in a new instance alongside the setup
 'expression. No eager parsing occurs; the formula is parsed lazily on
 'first access to Valid, Varlists, or any parsed formula property.
-'@param dict ILLdictionary. Variable metadata provider.
+'@param dict LLdictionary. Variable metadata provider.
 '@param formData FormulaData. Catalogue of approved Excel functions and separators.
 '@param setupForm String. Pseudo-formula to parse and validate.
 '@return Formulas. Initialised instance.
 '@throws ProjectError.ObjectNotInitialized When dict is Nothing.
 '@throws ProjectError.ObjectNotInitialized When formData is Nothing.
 '@export
-Public Function Create(ByVal dict As ILLdictionary, _
+Public Function Create(ByVal dict As LLdictionary, _
                        ByVal formData As FormulaData, _
                        ByVal setupForm As String) As Formulas
 
@@ -131,10 +131,10 @@ End Property
 '@label:dictionary
 '@sub-title Retrieve the underlying dictionary used during parsing
 '@details
-'Returns the ILLdictionary previously supplied during Create or
+'Returns the LLdictionary previously supplied during Create or
 'Initialise. Used by downstream helpers to resolve variable metadata.
-'@return ILLdictionary. Dictionary backing metadata lookups.
-Public Property Get Dictionary() As ILLdictionary
+'@return LLdictionary. Dictionary backing metadata lookups.
+Public Property Get Dictionary() As LLdictionary
     Set Dictionary = this.dict
 End Property
 
@@ -143,9 +143,9 @@ End Property
 '@details
 'Replaces the current dictionary and invalidates all lazily resolved
 'dependencies so subsequent property accesses trigger a fresh parse.
-'@param dict ILLdictionary. Variable metadata provider.
+'@param dict LLdictionary. Variable metadata provider.
 '@throws ProjectError.ObjectNotInitialized When dict is Nothing.
-Public Property Set Dictionary(ByVal dict As ILLdictionary)
+Public Property Set Dictionary(ByVal dict As LLdictionary)
     If dict Is Nothing Then ThrowError ProjectError.ObjectNotInitialized, "Dictionary is not found"
     Set this.dict = dict
     ResetDependencies
@@ -349,7 +349,7 @@ Public Property Get ParsedAnalysisFormula(ByVal formCond As FormulaCondition, _
                                           Optional ByVal tablePrefix As String = vbNullString, _
                                           Optional ByVal Connector As String = "*") As String
     Dim vars As LLVariables
-    Dim dict As ILLdictionary
+    Dim dict As LLdictionary
     Dim tokensCopy As BetterArray
     Dim idx As Long
     Dim chunk As String
@@ -413,10 +413,10 @@ End Property
 'Assigns the dictionary, formula data, and setup expression, then
 'invalidates all caches and registers the default custom formulas
 'recognised during analysis parsing.
-'@param dict ILLdictionary. Variable metadata provider.
+'@param dict LLdictionary. Variable metadata provider.
 '@param formData FormulaData. Catalogue of allowed tokens and operators.
 '@param setupForm String. Pseudo-formula to parse.
-Public Sub Initialise(ByVal dict As ILLdictionary, _
+Public Sub Initialise(ByVal dict As LLdictionary, _
                        ByVal formData As FormulaData, _
                        ByVal setupForm As String)
     Set this.dict = dict
@@ -1084,7 +1084,7 @@ Private Function ParsedCustomFormula(ByVal customFunction As String, _
     Dim condVars As BetterArray
     Dim parsedFormula As String
     Dim customTableName As String
-    Dim dictObj As ILLdictionary
+    Dim dictObj As LLdictionary
     Dim idx As Long
 
     Set dictObj = Dictionary()

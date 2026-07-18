@@ -12,7 +12,7 @@ Attribute VB_Description = "Direct setup-to-linelist build service eliminating t
 '@PredeclaredId
 '@Folder("Designer")
 '@ModuleDescription("Exports pass-through setup data directly to the linelist, bypassing the designer intermediary.")
-'@depends ProjectError, LLdictionary, ILLdictionary, LLChoices, LLExport, Analysis, LLGeo, Passwords, Passwords, LLFormat, LLTranslation, HiddenNames
+'@depends ProjectError, LLdictionary, LLdictionary, LLChoices, LLExport, Analysis, LLGeo, Passwords, Passwords, LLFormat, LLTranslation, HiddenNames
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, ParameterNotUsed
 
 Option Explicit
@@ -34,7 +34,7 @@ Option Explicit
 
 Private Type TLinelistBuildService
     hostBook As Workbook            'Designer workbook
-    exportedDict As ILLdictionary   'Dictionary manager on linelist workbook
+    exportedDict As LLdictionary   'Dictionary manager on linelist workbook
     exportedChoices As LLChoices   'Choices manager on linelist workbook
     exportedAnalysis As Analysis   'Analysis manager on linelist workbook
     exportedExport As LLExport     'Export manager on linelist workbook
@@ -332,7 +332,7 @@ End Sub
 '===============================================================================
 
 '@label:exported-dictionary
-Public Property Get ExportedDictionary() As ILLdictionary
+Public Property Get ExportedDictionary() As LLdictionary
     Set ExportedDictionary = this.exportedDict
 End Property
 
@@ -378,7 +378,7 @@ End Property
 'at row 1. Exported sheet is set to very hidden.
 Private Sub ExportDictionaryFromSetup(ByVal setupBook As Workbook, ByVal targetBook As Workbook)
     Dim setupSheet As Worksheet
-    Dim dictManager As ILLdictionary
+    Dim dictManager As LLdictionary
 
     Set setupSheet = ResolveWorksheet(setupBook, SHEET_DICTIONARY)
     If setupSheet Is Nothing Then Exit Sub

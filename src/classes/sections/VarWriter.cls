@@ -24,7 +24,7 @@ Option Explicit
 'formulas, dropdown choices, data validation, and conditional formatting
 'to the resolved cell range. The class caches dictionary, variables, and
 'sheets accessors for performance across repeated calls.
-'@depends ILinelistSpecs, ILLdictionary, ILLVariables, LLSheets, LLFormat,
+'@depends ILinelistSpecs, LLdictionary, ILLVariables, LLSheets, LLFormat,
 'TranslationObject, FormulaData, Formulas, DropdownLists, LLGeo,
 'Formulas, LLVariables, LLSheets, BetterArray
 '@version 1.0 (2026-02-10)
@@ -43,7 +43,7 @@ Private Type TVarWriter
     cachedRange As Range
     cachedPrintRange As Range
     cachedCRFRange As Range
-    cachedDict As ILLdictionary
+    cachedDict As LLdictionary
     cachedVars As LLVariables
     cachedSheets As LLSheets
     hasChecks As Boolean
@@ -166,12 +166,12 @@ End Property
 '@label:dictionary
 '@prop-title Return the cached dictionary object
 '@details
-'Lazily loads the ILLdictionary from specs on first access and caches it
+'Lazily loads the LLdictionary from specs on first access and caches it
 'in the TVarWriter UDT. Subsequent calls return the cached instance
 'without re-querying specs, which improves performance when writing many
 'variables in sequence.
-'@return ILLdictionary. The linelist dictionary.
-Private Property Get Dictionary() As ILLdictionary
+'@return LLdictionary. The linelist dictionary.
+Private Property Get Dictionary() As LLdictionary
     If this.cachedDict Is Nothing Then
         Set this.cachedDict = this.specs.Dictionary()
     End If
@@ -706,7 +706,7 @@ Private Sub AddFormula()
     Dim excelForm As String
     Dim cellRng As Range
     Dim varFormData As FormulaData
-    Dim dict As ILLdictionary
+    Dim dict As LLdictionary
     Dim varFormObject As Formulas
     Dim design As LLFormat
     Dim varControl As String
@@ -1327,7 +1327,7 @@ End Function
 Private Function ExcelFormula(ByVal formVal As String, _
                               ByVal validationTypes As Long, _
                               Optional ByVal useOS As Boolean = False) As Variant
-    Dim dict As ILLdictionary
+    Dim dict As LLdictionary
     Dim varFormData As FormulaData
     Dim varFormObject As Formulas
     Dim excelForm As String

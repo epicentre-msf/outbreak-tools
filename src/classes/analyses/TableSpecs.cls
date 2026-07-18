@@ -34,7 +34,7 @@ Option Explicit
 'design decouples TableSpecs from LinelistSpecs at instantiation, making it
 'usable in the setup error-checking context without geo or translation
 'dependencies. Consumers interact through the TableSpecs interface.
-'@depends ILLdictionary, ILLVariables, LLVariables, BetterArray
+'@depends LLdictionary, ILLVariables, LLVariables, BetterArray
 '@version 2.0 (2026-02-11)
 
 
@@ -47,7 +47,7 @@ Private Type TTableSpecs
     ' --- Scalar caches (Tier 2 + Tier 4 + Tier 5) ---
     cachedScope As Long                          'Cached AnalysisTableScope enum value
     scopeCached As Boolean                       'Whether cachedScope is populated
-    dict As ILLdictionary                        'Dictionary reference
+    dict As LLdictionary                        'Dictionary reference
     cachedValid As Boolean                       'Cached ValidTable result
     validCached As Boolean                       'Whether cachedValid is populated
     cachedNewSection As Boolean                  'Cached IsNewSection result
@@ -79,7 +79,7 @@ Private Const CLASS_NAME As String = "TableSpecs"
 'fields such as "row", "column", "total", "section", etc.
 '@param tableSpecsRng Range. A single data-row Range from the same ListObject.
 'Must be below headerRng and have the same number of columns.
-'@param dict ILLdictionary. The linelist dictionary that provides variable
+'@param dict LLdictionary. The linelist dictionary that provides variable
 'definitions, existence checks, and control type lookups needed for
 'validation and spatial type detection.
 '@return TableSpecs. A fully initialised TableSpecs instance ready for use.
@@ -92,7 +92,7 @@ Private Const CLASS_NAME As String = "TableSpecs"
 '@export
 Public Function Create(ByVal headerRng As Range, _
                        ByVal tableSpecsRng As Range, _
-                       ByVal dict As ILLdictionary) As TableSpecs
+                       ByVal dict As LLdictionary) As TableSpecs
 
     Dim instance As TableSpecs
     CheckRequirements headerRng, tableSpecsRng, dict
@@ -147,18 +147,18 @@ End Property
 '@label:dictionary-object
 '@prop-title Dictionary object used for validation and variable lookups
 '@details
-'Returns the ILLdictionary instance that provides variable existence
+'Returns the LLdictionary instance that provides variable existence
 'checks, control type lookups, and spatial prefix detection. Set during
 'factory construction.
-'@return ILLdictionary. The dictionary object.
-Public Property Get DictionaryObject() As ILLdictionary
+'@return LLdictionary. The dictionary object.
+Public Property Get DictionaryObject() As LLdictionary
     Set DictionaryObject = this.dict
 End Property
 
 '@label:dictionary-object-set
 '@prop-title Assign the dictionary object
-'@param dict ILLdictionary. The dictionary to store.
-Public Property Set DictionaryObject(ByVal dict As ILLdictionary)
+'@param dict LLdictionary. The dictionary to store.
+Public Property Set DictionaryObject(ByVal dict As LLdictionary)
     Set this.dict = dict
 End Property
 
@@ -284,13 +284,13 @@ End Property
 '@label:dictionary
 '@prop-title Linelist dictionary bound to this specification
 '@details
-'Returns the ILLdictionary reference stored at construction time. The
+'Returns the LLdictionary reference stored at construction time. The
 'dictionary provides variable existence checks, control type lookups,
 'and spatial prefix detection used throughout validation and category
 'resolution.
-'@return ILLdictionary. The linelist dictionary instance.
+'@return LLdictionary. The linelist dictionary instance.
 '@export
-Public Property Get Dictionary() As ILLdictionary
+Public Property Get Dictionary() As LLdictionary
     Set Dictionary = this.dict
 End Property
 
@@ -313,7 +313,7 @@ End Property
 '@export
 Public Property Get SpatialTableScopes() As String
     Dim rowVar As String
-    Dim cachedDict As ILLdictionary
+    Dim cachedDict As LLdictionary
     Dim spatType As String
 
     Set cachedDict = Dictionary()
@@ -864,7 +864,7 @@ End Function
 '@return Boolean. True if the table specification meets all requirements.
 '@depends LLVariables
 Private Function ComputeValidTable() As Boolean
-    Dim cachedDict As ILLdictionary
+    Dim cachedDict As LLdictionary
     Dim vars As LLVariables
     Dim rowVar As String
     Dim colVar As String
@@ -994,11 +994,11 @@ End Sub
 'If any check fails, a descriptive error is raised via ThrowError.
 '@param headerRng Range. The header range to validate.
 '@param tableSpecsRng Range. The table specification row range to validate.
-'@param dict ILLdictionary. The dictionary object to validate.
+'@param dict LLdictionary. The dictionary object to validate.
 '@throws InvalidArgument When any precondition fails.
 Private Sub CheckRequirements(ByVal headerRng As Range, _
                               ByVal tableSpecsRng As Range, _
-                              ByVal dict As ILLdictionary)
+                              ByVal dict As LLdictionary)
 
     If headerRng Is Nothing Then
         ThrowError InvalidArgument, "Header range not defined"

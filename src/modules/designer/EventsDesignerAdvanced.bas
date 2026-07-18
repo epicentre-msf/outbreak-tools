@@ -462,7 +462,7 @@ End Sub
 
 '@Description("Build a data entry worksheet from the dictionary and return the builder.")
 Private Function BuildOneSheet(ByVal specs As ILinelistSpecs, ByVal ll As ILinelist, ByVal sheetName As String) As ListBuilder
-    Dim dict As ILLdictionary
+    Dim dict As LLdictionary
     Dim llshs As LLSheets
     Dim sheetType As String
     Dim layer As Byte

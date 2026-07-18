@@ -211,7 +211,7 @@ Public Sub ClickShowHide()
     Attribute ClickShowHide.VB_Description = "Callback for click on show/hide in a linelist worksheet on a button"
 
     Dim sh As Worksheet
-    Dim dict As ILLdictionary
+    Dim dict As LLdictionary
     Dim shType As String
     Dim layer As Byte
     Dim frm As Object
@@ -1030,7 +1030,7 @@ Public Sub ClickOpenVarLab()
     Dim counter As Long 'Counter for the number of tables
     Dim actsh As Worksheet
     Dim tempsh As Worksheet
-    Dim dict As ILLdictionary
+    Dim dict As LLdictionary
     Dim varRng As Range
     Dim vars As LLVariables
     Dim cellRng As Range
@@ -1228,7 +1228,7 @@ Private Sub RestaureHiddenStatus(ByVal cellRng As Range, Optional ByVal scope As
     '2- show/hide, on a linelist
     '3- show/hide, on a linelist Print
 
-    Dim dict As ILLdictionary
+    Dim dict As LLdictionary
     Dim vars As LLVariables
     Dim sh As Worksheet
     Dim varName As String
@@ -1358,7 +1358,7 @@ Public Sub ClickShowHideMinimal()
     Dim checkConfirm As Boolean
     Dim mgr As ShowHideManager
     Dim sh As Worksheet
-    Dim dict As ILLdictionary
+    Dim dict As LLdictionary
     Dim shType As String
     Dim layer As Byte
 
@@ -1423,7 +1423,7 @@ Public Sub ClickMatchLinelistShowHide()
     Dim printMgr As ShowHideManager
     Dim printsh As Worksheet
     Dim sh As Worksheet
-    Dim dict As ILLdictionary
+    Dim dict As LLdictionary
     Dim sheetName As String
     Dim tabName As String
     Dim counter As Long
