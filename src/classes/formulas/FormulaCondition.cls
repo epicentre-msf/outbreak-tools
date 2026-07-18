@@ -108,7 +108,7 @@ End Property
 'lower bound of 1, then resets all cached validation artefacts so
 'the next call to Valid triggers a fresh check.
 '@param formCond BetterArray. The array containing predicate fragments.
-Public Property Set LstConditions(ByVal formCond As BetterArray)
+Private Property Set LstConditions(ByVal formCond As BetterArray)
     Set this.condList = New BetterArray
     this.condList.LowerBound = 1
     this.condList.Items = formCond.Items
@@ -132,7 +132,7 @@ End Property
 'Copies the incoming array into a new BetterArray normalised to a
 'lower bound of 1, then invalidates all cached data.
 '@param formVar BetterArray. The array containing variable identifiers.
-Public Property Set LstVars(ByVal formVar As BetterArray)
+Private Property Set LstVars(ByVal formVar As BetterArray)
     Set this.varList = New BetterArray
     this.varList.LowerBound = 1
     this.varList.Items = formVar.Items

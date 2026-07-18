@@ -93,7 +93,7 @@ End Property
 'Trims the incoming formula and stores it, then invalidates the
 'cached parsing table so subsequent reads trigger a fresh parse.
 '@param formula String. Expression to analyse.
-Public Property Let casewhenFormula(ByVal formula As String)
+Private Property Let casewhenFormula(ByVal formula As String)
     this.formula = Trim$(formula)
     ResetCache
 End Property

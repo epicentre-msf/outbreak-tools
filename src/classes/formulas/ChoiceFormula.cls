@@ -94,7 +94,7 @@ End Property
 'Trims the incoming formula and stores it, then invalidates all
 'cached artefacts so subsequent reads trigger a fresh parse.
 '@param formula String. Expression to parse.
-Public Property Let ChoiceSpecifications(ByVal formula As String)
+Private Property Let ChoiceSpecifications(ByVal formula As String)
     this.formula = Trim$(formula)
     ResetCaches
 End Property
