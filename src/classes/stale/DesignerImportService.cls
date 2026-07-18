@@ -12,7 +12,7 @@ Attribute VB_Description = "Designer import/export service for setup and linelis
 '@PredeclaredId
 '@Folder("Designer")
 '@ModuleDescription("Imports setup components into a designer workbook and exports them to a linelist workbook.")
-'@depends ProjectError, LLdictionary, ILLdictionary, LLChoices, ILLChoices, LLExport, ILLExport, Analysis, IAnalysis, LLGeo, ILLGeo, IPasswords, Passwords, LLFormat, ILLFormat, LLTranslation, ILLTranslation, HiddenNames, IHiddenNames
+'@depends ProjectError, LLdictionary, ILLdictionary, LLChoices, LLExport, ILLExport, Analysis, IAnalysis, LLGeo, ILLGeo, IPasswords, Passwords, LLFormat, ILLFormat, LLTranslation, ILLTranslation, HiddenNames, IHiddenNames
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, ParameterNotUsed
 
 Option Explicit
@@ -36,7 +36,7 @@ Implements IDesignerImportService
 Private Type TDesignerImportService
     hostBook As Workbook            'Designer workbook
     exportedDict As ILLdictionary   'Dictionary manager on exported workbook
-    exportedChoices As ILLChoices   'Choices manager on exported workbook
+    exportedChoices As LLChoices   'Choices manager on exported workbook
     exportedAnalysis As IAnalysis   'Analysis manager on exported workbook
     exportedExport As ILLExport    'Export manager on exported workbook
     exportedGeo As ILLGeo          'Geo manager on exported workbook
@@ -275,7 +275,7 @@ Public Property Get ExportedDictionary() As ILLdictionary
 End Property
 
 '@label:exported-choices
-Public Property Get ExportedChoices() As ILLChoices
+Public Property Get ExportedChoices() As LLChoices
     Set ExportedChoices = this.exportedChoices
 End Property
 
@@ -330,7 +330,7 @@ End Sub
 '@sub-title Export choices from setup into the host workbook
 Private Sub ImportChoices(ByVal setupBook As Workbook, ByVal hostBook As Workbook)
     Dim setupSheet As Worksheet
-    Dim choicesManager As ILLChoices
+    Dim choicesManager As LLChoices
 
     Set setupSheet = ResolveWorksheet(setupBook, SHEET_CHOICES)
     If setupSheet Is Nothing Then Exit Sub
@@ -453,7 +453,7 @@ End Sub
 '@sub-title Export choices from host to target workbook
 Private Sub ExportChoices(ByVal hostBook As Workbook, ByVal targetBook As Workbook)
     Dim hostSheet As Worksheet
-    Dim choicesManager As ILLChoices
+    Dim choicesManager As LLChoices
 
     Set hostSheet = ResolveWorksheet(hostBook, SHEET_CHOICES)
     If hostSheet Is Nothing Then Exit Sub
@@ -825,7 +825,7 @@ Private Property Get IDesignerImportService_ExportedDictionary() As ILLdictionar
     Set IDesignerImportService_ExportedDictionary = ExportedDictionary
 End Property
 
-Private Property Get IDesignerImportService_ExportedChoices() As ILLChoices
+Private Property Get IDesignerImportService_ExportedChoices() As LLChoices
     Set IDesignerImportService_ExportedChoices = ExportedChoices
 End Property
 

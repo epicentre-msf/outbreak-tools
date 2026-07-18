@@ -559,7 +559,7 @@ Private Sub ImportChoicesUsingClass(ByVal pass As IPasswords, ByVal hostworkbook
 
     Dim hostsheet As worksheet
     Dim sourcesheet As Worksheet
-    Dim choicemanager As ILLChoices
+    Dim choicemanager As LLChoices
     Dim sheetUnlocked As Boolean
     Dim errNumber As Long
     Dim errSource As String
@@ -784,7 +784,7 @@ Public Sub Export(Optional Byval outwb As Workbook)
     Dim translationsTable As ListObject
     Dim analysisManager As Analysis
     Dim exportsManager As ILLExport
-    Dim choicesManager As ILLChoices
+    Dim choicesManager As LLChoices
     Dim formatManager As ILLFormat
     Dim exportworkbook As Workbook
     Dim hostWorkbook As Workbook

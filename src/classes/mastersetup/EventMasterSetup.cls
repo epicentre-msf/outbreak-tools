@@ -12,7 +12,7 @@ Attribute VB_Description = "Workbook-level orchestrator for master setup lifecyc
 '@PredeclaredId
 '@Folder("MasterSetup")
 '@ModuleDescription("Coordinates workbook events and shared services for the master setup workbook.")
-'@depends MasterSetupPreparation, MasterSetupVariables, DropdownLists, IDropdownLists, LLChoices, ILLChoices, Translation, ITranslationObject
+'@depends MasterSetupPreparation, MasterSetupVariables, DropdownLists, IDropdownLists, LLChoices, Translation, ITranslationObject
 '@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit
@@ -25,7 +25,7 @@ Private Type TEventMasterSetup
     prep As MasterSetupPreparation      'Preparation helper ensuring tables and dropdowns exist
     dropdowns As IDropdownLists          'Cached dropdown manager
     variables As MasterSetupVariables   'Cached variables manager
-    choices As ILLChoices                'Cached choices helper
+    choices As LLChoices                'Cached choices helper
     translations As ITranslationObject   'Cached workbook translations
     ribbonTranslations As ITranslationObject 'Cached ribbon translations
     ribbon As IRibbonUI                  'Cached ribbon interface for future invalidations
@@ -121,7 +121,7 @@ Public Property Get Variables() As MasterSetupVariables
 End Property
 
 '@sub-title Provide the master setup choices helper.
-Public Property Get Choices() As ILLChoices
+Public Property Get Choices() As LLChoices
     Set Choices = EnsureChoicesHelper
 End Property
 
@@ -211,7 +211,7 @@ Private Function EnsureVariablesManager() As MasterSetupVariables
     Set EnsureVariablesManager = this.variables
 End Function
 
-Private Function EnsureChoicesHelper() As ILLChoices
+Private Function EnsureChoicesHelper() As LLChoices
     Dim targetSheet As Worksheet
 
     If this.choices Is Nothing Then

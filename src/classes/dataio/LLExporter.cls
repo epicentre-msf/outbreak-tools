@@ -25,7 +25,7 @@ Option Explicit
 'populates it with the relevant data, metadata, and formatting, then saves
 'and closes it.
 '@depends ILLdictionary, ILLExport, IPasswords, CustomTable
-'@depends DataSheet, AnaTabIds, ILLGeo, ILLChoices, IHiddenNames
+'@depends DataSheet, AnaTabIds, ILLGeo, LLChoices, IHiddenNames
 
 
 '@section Enumerations
@@ -754,7 +754,7 @@ End Sub
 '@param outwb Workbook. The output workbook.
 Private Sub AddCustomDropdowns(ByVal outwb As Workbook)
     Dim wkbNames As IHiddenNames
-    Dim choi As ILLChoices
+    Dim choi As LLChoices
     Dim lo As ListObject
     Dim loValues As BetterArray
     Dim sh As Worksheet

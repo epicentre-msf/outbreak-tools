@@ -24,7 +24,7 @@ Option Explicit
 'sheets and variables were imported, and builds a report of items not
 'imported or not touched.
 '@depends ILLdictionary, IPasswords, CustomTable, DataSheet
-'@depends ILLGeo, ILLChoices, ILLVariables, IDropdownLists, IHiddenNames
+'@depends ILLGeo, LLChoices, ILLVariables, IDropdownLists, IHiddenNames
 
 
 '@section Enumerations
@@ -355,7 +355,7 @@ End Sub
 Public Sub ImportCustomDropdown(ByVal impwb As Workbook, ByVal pasteAtBottom As Boolean)
 
     Dim wkbNames As IHiddenNames
-    Dim choi As ILLChoices
+    Dim choi As LLChoices
     Dim lo As ListObject
     Dim drop As IDropdownLists
     Dim dropsh As Worksheet

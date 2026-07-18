@@ -83,10 +83,10 @@ End Property
 '@jump:choices
 '@prop-title Choices catalogue
 '@details
-'Returns the ILLChoices instance providing category lookups from the Choices
+'Returns the LLChoices instance providing category lookups from the Choices
 'worksheet. Lazy-loaded on first access.
-'@return ILLChoices. The choices collaborator.
-Public Property Get Choices() As ILLChoices
+'@return LLChoices. The choices collaborator.
+Public Property Get Choices() As LLChoices
 End Property
 
 '@jump:design-format

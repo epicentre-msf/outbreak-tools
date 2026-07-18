@@ -48,7 +48,7 @@ Private Property Get ILinelistSpecs_Dictionary() As ILLdictionary
     Set ILinelistSpecs_Dictionary = this.dictionary
 End Property
 
-Private Property Get ILinelistSpecs_Choices() As ILLChoices
+Private Property Get ILinelistSpecs_Choices() As LLChoices
     Set ILinelistSpecs_Choices = Nothing
 End Property
 

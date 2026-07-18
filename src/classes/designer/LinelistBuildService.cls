@@ -12,7 +12,7 @@ Attribute VB_Description = "Direct setup-to-linelist build service eliminating t
 '@PredeclaredId
 '@Folder("Designer")
 '@ModuleDescription("Exports pass-through setup data directly to the linelist, bypassing the designer intermediary.")
-'@depends ProjectError, LLdictionary, ILLdictionary, LLChoices, ILLChoices, LLExport, ILLExport, Analysis, LLGeo, ILLGeo, IPasswords, Passwords, LLFormat, ILLFormat, LLTranslation, ILLTranslation, HiddenNames, IHiddenNames
+'@depends ProjectError, LLdictionary, ILLdictionary, LLChoices, LLExport, ILLExport, Analysis, LLGeo, ILLGeo, IPasswords, Passwords, LLFormat, ILLFormat, LLTranslation, ILLTranslation, HiddenNames, IHiddenNames
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, ParameterNotUsed
 
 Option Explicit
@@ -35,7 +35,7 @@ Option Explicit
 Private Type TLinelistBuildService
     hostBook As Workbook            'Designer workbook
     exportedDict As ILLdictionary   'Dictionary manager on linelist workbook
-    exportedChoices As ILLChoices   'Choices manager on linelist workbook
+    exportedChoices As LLChoices   'Choices manager on linelist workbook
     exportedAnalysis As Analysis   'Analysis manager on linelist workbook
     exportedExport As ILLExport     'Export manager on linelist workbook
     exportedGeo As ILLGeo           'Geo manager on linelist workbook
@@ -337,7 +337,7 @@ Public Property Get ExportedDictionary() As ILLdictionary
 End Property
 
 '@label:exported-choices
-Public Property Get ExportedChoices() As ILLChoices
+Public Property Get ExportedChoices() As LLChoices
     Set ExportedChoices = this.exportedChoices
 End Property
 
@@ -392,7 +392,7 @@ End Sub
 '@sub-title Export choices directly from setup to linelist
 Private Sub ExportChoicesFromSetup(ByVal setupBook As Workbook, ByVal targetBook As Workbook)
     Dim setupSheet As Worksheet
-    Dim choicesManager As ILLChoices
+    Dim choicesManager As LLChoices
 
     Set setupSheet = ResolveWorksheet(setupBook, SHEET_CHOICES)
     If setupSheet Is Nothing Then Exit Sub

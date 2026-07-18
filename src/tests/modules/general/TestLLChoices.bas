@@ -8,7 +8,7 @@ Option Explicit
 '   list is identified by a name and contains ordered rows of labels and short
 '   labels that drive data-validation dropdowns in the linelist.
 '
-' @description This module exercises the full public surface of the ILLChoices
+' @description This module exercises the full public surface of the LLChoices
 '   interface: factory construction via LLChoices.Create, enumeration of distinct
 '   list names (AllChoices), retrieval of categories with optional short-label
 '   substitution, sort-by-ordering-column, concatenation with configurable
@@ -19,7 +19,7 @@ Option Explicit
 '   also validates the edge case of requesting categories for a nonexistent
 '   choice list.
 '
-' @depends LLChoices, ILLChoices, TranslationObject, ITranslationObject,
+' @depends LLChoices, TranslationObject, ITranslationObject,
 '   BetterArray, CustomTest, TestHelpers, ChoicesTestFixture
 '
 ' Test fixture data is supplied by ChoicesTestFixture.bas, which provides three
@@ -41,7 +41,7 @@ Private Const CHOICESTRANSLATIONLANGUAGE As String = "Translated"
 Private Const CHOICESIMPORTSHEET As String = "LLChoicesImportSource"
 
 Private Assert As ICustomTest
-Private Choices As ILLChoices
+Private Choices As LLChoices
 
 '@section Helpers
 '===============================================================================
@@ -271,7 +271,7 @@ End Sub
 '   behavioural tests run.
 Public Sub TestCreateInitialisesChoice()
     CustomTestSetTitles Assert, "LLChoices", "TestCreateInitialisesChoice"
-    Assert.IsTrue (TypeName(Choices) = "LLChoices"), "Expected Create to return ILLChoices implementation"
+    Assert.IsTrue (TypeName(Choices) = "LLChoices"), "Expected Create to return LLChoices implementation"
     Assert.AreEqual CHOICESSHEET, Choices.Wksh.Name, "Choice object should target the configured sheet"
 End Sub
 

@@ -109,7 +109,7 @@ Public Sub TestOnWorkbookOpenInitialisesDependencies()
 
     Dim drops As IDropdownLists
     Dim vars As MasterSetupVariables
-    Dim choices As ILLChoices
+    Dim choices As LLChoices
     Dim trads As ITranslationObject
     Dim ribTrads As ITranslationObject
 
@@ -143,7 +143,7 @@ Public Sub TestRefreshTranslationsResetsCaches()
 
     Dim firstWorkbookTrads As ITranslationObject
     Dim firstRibbonTrads As ITranslationObject
-    Dim firstChoices As ILLChoices
+    Dim firstChoices As LLChoices
 
     Set firstWorkbookTrads = Subject.Translations
     Set firstRibbonTrads = Subject.RibbonTranslations

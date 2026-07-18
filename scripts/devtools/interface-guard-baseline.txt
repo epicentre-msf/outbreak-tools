@@ -15,6 +15,5 @@ IDiseaseReportManager
 IDiseaseSheet
 IDiseaseWorksheetManager
 IHiddenNames
-ILLChoices
 ILLExport
 ILLTranslation

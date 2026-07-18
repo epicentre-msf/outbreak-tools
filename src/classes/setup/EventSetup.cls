@@ -43,7 +43,7 @@ Private Type TEventSetup
     exportsTable        As CustomTable      'Exports listobject wrapper
     variables           As ILLVariables      'Dictionary variable helper
     dictionary          As ILLdictionary     'Cached dictionary reference
-    choices             As ILLChoices        'Cached choices helper
+    choices             As LLChoices        'Cached choices helper
     ana                 As Analysis         'Cached analysis helper
     exports             As ILLExport         'Cached exports manager
     translations        As SetupTranslationsTable 'Cached translations manager

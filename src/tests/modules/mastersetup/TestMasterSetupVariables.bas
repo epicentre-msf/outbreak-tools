@@ -104,7 +104,7 @@ End Sub
 
 '@TestMethod("MasterSetupVariables")
 Public Sub TestRefreshChoicesPopulatesConcatenatedValues()
-    Dim choices As ILLChoices
+    Dim choices As LLChoices
     Dim result As String
     Dim choicesColumn As Range
 
@@ -324,7 +324,7 @@ End Sub
 
 '@section Helpers
 '===============================================================================
-Private Function BuildChoicesStub() As ILLChoices
+Private Function BuildChoicesStub() As LLChoices
     Dim sh As Worksheet
 
     Set sh = TestHelpers.EnsureWorksheet(CHOICES_SHEET)

@@ -86,9 +86,9 @@ End Property
 
 '@jump:exported-choices
 '@prop-title Choices manager targeting the exported workbook
-'@return ILLChoices. The exported choices manager, or Nothing.
+'@return LLChoices. The exported choices manager, or Nothing.
 '@export
-Public Property Get ExportedChoices() As ILLChoices
+Public Property Get ExportedChoices() As LLChoices
 End Property
 
 '@jump:exported-analysis

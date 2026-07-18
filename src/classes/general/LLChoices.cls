@@ -16,7 +16,6 @@ Attribute VB_Description = "Linelist choice Class"
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, MissingAnnotationArgument, UseMeaningfulName, HungarianNotation
 
 Option Explicit
-Implements ILLChoices
 
 '@class LLChoices
 '@description
@@ -59,19 +58,19 @@ Private internalChecks As Checking
 '@sub-title Create a new LLChoices instance
 '@details
 'Wraps the given worksheet in a DataSheet and returns a configured
-'ILLChoices instance. The default headers are "list name", "label",
+'LLChoices instance. The default headers are "list name", "label",
 '"short label", and "ordering list".
 '@param choiceWorksheet Worksheet. The worksheet hosting the choices.
 '@param choiceStartRow Long. First row of choice data.
 '@param choiceStartColumn Long. First column of choice data.
 '@param choiceName Optional String. Name for the choice object. Defaults to vbNullString.
-'@return ILLChoices. The new instance.
+'@return LLChoices. The new instance.
 '@export
 Public Function Create(ByVal choiceWorksheet As Worksheet, _ 
                        ByVal choiceStartRow As Long, _
                        ByVal choiceStartColumn As Long, _ 
                        Optional ByVal choiceName As String = vbNullString) As _ 
-                       ILLChoices
+                       LLChoices
 
     Dim customDataSheet As DataSheet
     Dim instance As LLChoices
@@ -221,7 +220,7 @@ End Property
 '@param choiceName String. Choice name to search for.
 '@return Boolean. True when the choice is found.
 '@export
-Private Property Get ChoiceExists(ByVal choiceName As String) As Boolean
+Public Property Get ChoiceExists(ByVal choiceName As String) As Boolean
     Dim listRng As Range
     Dim Exist As Boolean
     Dim dataObject As DataSheet
@@ -252,7 +251,7 @@ End Property
 '@label:sort
 '@sub-title Sort choices in the worksheet
 '@export
-Private Sub Sort()
+Public Sub Sort()
 
     Dim orderRng As Range
     Dim listRng As Range
@@ -277,7 +276,7 @@ End Sub
 '@param longLabelData BetterArray. Long label values for the categories.
 '@param shortLabelData Optional Object. BetterArray of short label values. Defaults to Nothing.
 '@export
-Private Sub AddChoice(ByVal choiceName As String, _
+Public Sub AddChoice(ByVal choiceName As String, _
                       ByVal longLabelData As BetterArray, _ 
                       Optional ByVal shortLabelData As Object = Nothing)
 
@@ -400,7 +399,7 @@ End Sub
 '@param choiceNames String. Choice names separated by sep.
 '@param sep Optional String. Delimiter. Defaults to ";".
 '@export
-Private Sub RemoveChoice(Byval choiceNames As String, Optional ByVal sep As String = ";")
+Public Sub RemoveChoice(Byval choiceNames As String, Optional ByVal sep As String = ";")
     Dim namesData As BetterArray
     Dim counter As Long
     Dim choiceValue As String
@@ -418,7 +417,7 @@ End Sub
 '@sub-title Translate the choice worksheet labels
 '@param trads ITranslationObject. Translation provider.
 '@export
-Private Sub Translate(ByVal trads As ITranslationObject)
+Public Sub Translate(ByVal trads As ITranslationObject)
 
     Dim lblRng As Range
 
@@ -440,7 +439,7 @@ End Sub
 '@sub-title Add or remove rows via a single toggle
 '@param del Optional Boolean. When True, removes rows. Defaults to False.
 '@export
-Private Sub ManageRows(Optional ByVal del As Boolean = False)
+Public Sub ManageRows(Optional ByVal del As Boolean = False)
     Dim sh As Worksheet
     Dim Lo As ListObject
     Dim tabl As CustomTable
@@ -463,7 +462,7 @@ End Sub
 '@label:add-rows
 '@sub-title Add rows to the choice table
 '@export
-Private Sub AddRows()
+Public Sub AddRows()
     ManageRows del:=False
 End Sub
 
@@ -475,7 +474,7 @@ End Sub
 '@param targetCell Range. Selection anchoring the insertion point.
 '@param insertShift Optional Boolean. When True, inserts worksheet rows. Defaults to False.
 '@export
-Private Sub InsertRows(ByVal targetCell As Range, _
+Public Sub InsertRows(ByVal targetCell As Range, _
                        Optional ByVal insertShift As Boolean = False)
     Dim lo As ListObject
     Dim tabl As CustomTable
@@ -493,7 +492,7 @@ End Sub
 '@param includeIds Optional Boolean. When True, renumbers the ID column. Defaults to True.
 '@param forceShift Optional Boolean. When True, forces worksheet row deletion. Defaults to False.
 '@export
-Private Sub DeleteRows(ByVal targetCell As Range, _
+Public Sub DeleteRows(ByVal targetCell As Range, _
                        Optional ByVal includeIds As Boolean = True, _
                        Optional ByVal forceShift As Boolean = False)
     Dim lo As ListObject
@@ -511,7 +510,7 @@ End Sub
 '@label:remove-rows
 '@sub-title Remove empty rows from the choice table
 '@export
-Private Sub RemoveRows()
+Public Sub RemoveRows()
     ManageRows del:=True
 End Sub
 
@@ -561,7 +560,7 @@ End Function
 '@prop-title All distinct choice names
 '@return BetterArray. The distinct choice names.
 '@export
-Private Property Get AllChoices() As BetterArray
+Public Property Get AllChoices() As BetterArray
     Dim lstChoi As BetterArray
     Dim lstRng As Range
     Dim counter As Long
@@ -669,7 +668,7 @@ End Property
 '@param trads Optional Object. A TranslationObject. Defaults to Nothing.
 '@return String. The concatenated categories.
 '@export
-Private Property Get ConcatenateCategories( _
+Public Property Get ConcatenateCategories( _
         ByVal choiceName As String, _ 
         Optional ByVal sep As String = " | ", _
         Optional ByVal trads As Object = Nothing) As String
@@ -706,7 +705,7 @@ End Property
 'Writes the four standard column headers (list name, ordering,
 'long label, short label) starting at the configured origin cell.
 '@export
-Private Sub AddHeaders()
+Public Sub AddHeaders()
 
     Dim sh As Worksheet
     Dim cellRng As Range
@@ -727,7 +726,7 @@ End Sub
 '@param Wkb Workbook. Destination workbook.
 '@param Hide Long. Worksheet visibility constant. Defaults to xlSheetHidden.
 '@export
-Private Sub Export(ByVal Wkb As Workbook, Optional ByVal Hide As Long = xlSheetHidden)
+Public Sub Export(ByVal Wkb As Workbook, Optional ByVal Hide As Long = xlSheetHidden)
     ChoiceData.Export Wkb, Hide:=Hide, includeNames:=True
 End Sub
 
@@ -742,7 +741,7 @@ End Sub
 '@param fromStartcol Long. First data column in the source.
 '@param clearSheet Boolean. When True, clears the sheet before import. Defaults to False.
 '@export
-Private Sub Import(ByVal fromWksh As Worksheet, _
+Public Sub Import(ByVal fromWksh As Worksheet, _
                    ByVal fromStartRow As Long, _
                    ByVal fromStartcol As Long, _ 
                    Optional ByVal clearSheet As Boolean = False)
@@ -770,13 +769,13 @@ End Sub
 
 
 '@label:import-choice
-'@sub-title Import choices from another ILLChoices object
+'@sub-title Import choices from another LLChoices object
 '@details
 'Iterates all choices in the source object, retrieves both long and
 'short label categories, and adds each choice via AddChoice.
-'@param choiObj ILLChoices. Source choice object to import from.
+'@param choiObj LLChoices. Source choice object to import from.
 '@export
-Private Sub ImportChoice(ByVal choiObj As ILLChoices)
+Public Sub ImportChoice(ByVal choiObj As LLChoices)
 
     Dim lstCats As BetterArray
     Dim lstShortCats As BetterArray
@@ -840,7 +839,7 @@ End Sub
 '@prop-title Whether the choice object has logged diagnostic messages
 '@return Boolean. True when diagnostic entries exist.
 '@export
-Private Property Get HasCheckings() As Boolean
+Public Property Get HasCheckings() As Boolean
     HasCheckings = this.hasChecks
 End Property
 
@@ -851,7 +850,7 @@ End Property
 'Returns Nothing when no entries have been recorded.
 '@return Object. An Checking instance, or Nothing.
 '@export
-Private Property Get CheckingValues() As Object
+Public Property Get CheckingValues() As Object
 
     'If there is no checking, exit the property
     If Not HasCheckings() Then  Exit Property
@@ -859,113 +858,3 @@ Private Property Get CheckingValues() As Object
     Set CheckingValues = internalChecks
 End Property
 
-'@section Interface
-'===============================================================================
-'ILLChoices delegation wiring.
-
-Private Property Get ILLChoices_ChoiceData() As DataSheet
-    Set ILLChoices_ChoiceData = ChoiceData
-End Property
-
-Private Property Get ILLChoices_Wksh() As Worksheet
-    Set ILLChoices_Wksh = Wksh()
-End Property
-
-Private Property Get ILLChoices_Name() As String
-    ILLChoices_Name = Name()
-End Property
-
-Private Property Get ILLChoices_ChoiceExists(ByVal choiceName As String) As Boolean
-    ILLChoices_ChoiceExists = ChoiceExists(choiceName)
-End Property
-
-Private Sub ILLChoices_Sort()
-    Sort
-End Sub
-
-Private Sub ILLChoices_AddChoice(ByVal choiceName As String, _
-                                 ByVal longLabelData As BetterArray, _
-                                 Optional ByVal shortLabelData As Object = Nothing)
-
-    AddChoice choiceName:=choiceName, _
-             longLabelData:=longLabelData, _
-             shortLabelData:=shortLabelData
-End Sub
-
-Private Sub ILLChoices_RemoveChoice(ByVal choiceNames As String, _
-                                    Optional ByVal sep As String = ";")
-    RemoveChoice choiceNames:=choiceNames, sep:=sep
-End Sub
-
-Private Sub ILLChoices_Translate(ByVal trads As ITranslationObject)
-    Translate trads
-End Sub
-
-Private Sub ILLChoices_AddRows()
-    AddRows
-End Sub
-
-Private Sub ILLChoices_InsertRows(ByVal targetCell As Range, _
-                                  Optional ByVal insertShift As Boolean = False)
-    InsertRows targetCell, insertShift
-End Sub
-
-Private Sub ILLChoices_DeleteRows(ByVal targetCell As Range, _
-                                  Optional ByVal includeIds As Boolean = True, _
-                                  Optional ByVal forceShift As Boolean = False)
-    DeleteRows targetCell, includeIds, forceShift
-End Sub
-
-Private Sub ILLChoices_RemoveRows()
-   RemoveRows
-End Sub
-
-Private Sub ILLChoices_ManageRows(Optional ByVal del As Boolean = False)
-    ManageRows del
-End Sub
-
-Private Property Get ILLChoices_AllChoices() As BetterArray
-    Set ILLChoices_AllChoices = AllChoices()
-End Property
-
-Private Property Get ILLChoices_Categories(ByVal choiceName As String, _
-                                        Optional ByVal useShortlabels As Boolean = False) _
-                                        As BetterArray
-    Set ILLChoices_Categories = Categories(choiceName, useShortlabels)
-End Property
-
-Private Property Get ILLChoices_ConcatenateCategories( _
-        ByVal choiceName As String, Optional ByVal sep As String = " | ", _
-        Optional ByVal trads As Object = Nothing) As String
-
-    ILLChoices_ConcatenateCategories = ConcatenateCategories(choiceName, sep, trads)
-
-End Property
-
-Private Sub ILLChoices_AddHeaders()
-    AddHeaders
-End Sub
-
-Private Sub ILLChoices_Export(ByVal toWkb As Workbook, _
-                              Optional ByVal Hide As Long = xlSheetHidden)
-    Export toWkb, Hide:=Hide
-End Sub
-
-Private Sub ILLChoices_Import(ByVal fromWksh As Worksheet, _
-                              ByVal fromStartRow As Long, _
-                              ByVal fromStartcol As Long, _
-                              Optional ByVal clearSheet As Boolean = False)
-    Import fromWksh, fromStartRow, fromStartcol, clearSheet
-End Sub
-
-Private Sub ILLChoices_ImportChoice(ByVal choiObj As ILLChoices)
-    ImportChoice choiObj
-End Sub
-
-Private Property Get ILLChoices_HasCheckings() As Boolean
-    ILLChoices_HasCheckings = HasCheckings()
-End Property
-
-Private Property Get ILLChoices_CheckingValues() As Object
-     Set ILLChoices_CheckingValues = CheckingValues()
-End Property

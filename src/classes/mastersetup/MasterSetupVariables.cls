@@ -105,8 +105,8 @@ End Sub
 
 '@sub-title Refresh the concatenated choices values for the supplied variable.
 '@param variableName String identifier of the variable row to update.
-'@param choices ILLChoices providing category listings.
-Public Sub RefreshChoices(ByVal variableName As String, ByVal choices As ILLChoices)
+'@param choices LLChoices providing category listings.
+Public Sub RefreshChoices(ByVal variableName As String, ByVal choices As LLChoices)
     Dim rowIndex As Long
     Dim concatenated As String
     Dim choiceValue As String
@@ -116,7 +116,7 @@ Public Sub RefreshChoices(ByVal variableName As String, ByVal choices As ILLChoi
     If LenB(variableName) = 0 Then Exit Sub
 
     If choices Is Nothing Then
-        ThrowError ProjectError.InvalidArgument, "RefreshChoices requires an ILLChoices instance."
+        ThrowError ProjectError.InvalidArgument, "RefreshChoices requires an LLChoices instance."
     End If
 
     rowIndex = LocateVariableRow(variableName)

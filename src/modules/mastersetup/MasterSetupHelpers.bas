@@ -126,7 +126,7 @@ Public Function ResolveMasterDictionary(Optional ByVal hostSheet As Worksheet) A
     Set ResolveMasterDictionary = LLdictionary.Create(targetSheet, START_ROW_VARIABLES, START_COLUMN_VARIABLES)
 End Function
 
-Public Function ResolveMasterChoices(Optional ByVal hostSheet As Worksheet) As ILLChoices
+Public Function ResolveMasterChoices(Optional ByVal hostSheet As Worksheet) As LLChoices
     Dim targetSheet As Worksheet
 
     If hostSheet Is Nothing Then

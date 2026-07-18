@@ -27,7 +27,7 @@ Implements ILinelistSpecs
 'user-facing error dialogs. Uses a PredeclaredId factory pattern so callers
 'construct instances via LinelistSpecs.Create(workbook) and receive an
 'ILinelistSpecs interface reference.
-'@depends ILLdictionary, ILLChoices, ILLTranslation, IDesignerTranslation
+'@depends ILLdictionary, LLChoices, ILLTranslation, IDesignerTranslation
 '@depends ILLGeo, ILLExport, IPasswords, ILLFormat
 '@depends LinelistBuildService, TemporaryRepos
 '@depends IFormulaData, ILLVariables, Formulas
@@ -46,7 +46,7 @@ Implements ILinelistSpecs
 Private Type TLinelistSpecs
     specsWkb As Workbook
     dictionary As ILLdictionary
-    choices As ILLChoices
+    choices As LLChoices
     translations As ILLTranslation
     designerTranslations As IDesignerTranslation
     geo As ILLGeo
@@ -965,11 +965,11 @@ End Property
 '@label:choices
 '@prop-title Choices catalogue
 '@details
-'Returns the ILLChoices instance providing category lookups from the
+'Returns the LLChoices instance providing category lookups from the
 'Choices worksheet. Lazy-loaded on first access.
-'@return ILLChoices. The choices collaborator.
+'@return LLChoices. The choices collaborator.
 '@export
-Public Property Get Choices() As ILLChoices
+Public Property Get Choices() As LLChoices
     EnsureChoices
     Set Choices = this.choices
 End Property
@@ -1300,7 +1300,7 @@ End Property
 '@export
 Public Sub Prepare(ByVal buildService As LinelistBuildService, ByVal setupPath As String)
     Dim dict As ILLdictionary
-    Dim choicesObj As ILLChoices
+    Dim choicesObj As LLChoices
     Dim exportsObj As ILLExport
     Dim analysisObj As Analysis
     Dim geoObj As ILLGeo
@@ -1502,7 +1502,7 @@ Private Property Get ILinelistSpecs_Dictionary() As ILLdictionary
     Set ILinelistSpecs_Dictionary = Me.Dictionary
 End Property
 
-Private Property Get ILinelistSpecs_Choices() As ILLChoices
+Private Property Get ILinelistSpecs_Choices() As LLChoices
     Set ILinelistSpecs_Choices = Me.Choices
 End Property
 

@@ -34,7 +34,7 @@ Private Type TSetupErrorsState
     formulaSheet As Worksheet         'Worksheet storing helper tables and formulas
     passwordService As IPasswords     'Password handler protecting/unprotecting sheets
     dictionary As ILLdictionary       'Dictionary accessor for setup data
-    choices As ILLChoices             'Choices accessor for list validation
+    choices As LLChoices             'Choices accessor for list validation
     formulaStore As IFormulaData      'Formula data repository used for validation
     checkTables As BetterArray        'Collection of generated checkings
     appScope As IApplicationState     'Application state guard ensuring UI stays responsive
@@ -112,7 +112,7 @@ Private Const EXP_UNFOUND_DICTCOLUMN As String      = "Exports, line %1--The Exp
 '@param hostBook Workbook. The workbook containing setup data.
 '@param passwordService Optional IPasswords. Sheet protection handler.
 '@param dictionary Optional ILLdictionary. Dictionary data accessor.
-'@param choices Optional ILLChoices. Choices data accessor.
+'@param choices Optional LLChoices. Choices data accessor.
 '@param formulaStore Optional IFormulaData. Formula validation handler.
 '@param transManager Optional SetupTranslationsTable. Translations table accessor.
 '@param stateScope Optional IApplicationState. Application state guard.
@@ -122,7 +122,7 @@ Private Const EXP_UNFOUND_DICTCOLUMN As String      = "Exports, line %1--The Exp
 Public Function Create(ByVal hostBook As Workbook, _
                        Optional ByVal passwordService As IPasswords, _
                        Optional ByVal dictionary As ILLdictionary, _
-                       Optional ByVal choices As ILLChoices, _
+                       Optional ByVal choices As LLChoices, _
                        Optional ByVal formulaStore As IFormulaData, _
                        Optional ByVal transManager As SetupTranslationsTable, _
                        Optional ByVal stateScope As IApplicationState) As SetupErrors
@@ -146,7 +146,7 @@ End Function
 '@param hostBook Workbook. The workbook containing setup tables.
 '@param passwordService Optional IPasswords. Sheet protection handler.
 '@param dictionary Optional ILLdictionary. Dictionary data accessor.
-'@param choices Optional ILLChoices. Choices data accessor.
+'@param choices Optional LLChoices. Choices data accessor.
 '@param formulaStore Optional IFormulaData. Formula validation handler.
 '@param transManager Optional SetupTranslationsTable. Translations table accessor.
 '@param stateScope Optional IApplicationState. Application state guard.
@@ -155,7 +155,7 @@ End Function
 Public Sub Initialise(ByVal hostBook As Workbook, _
                       Optional ByVal passwordService As IPasswords, _
                       Optional ByVal dictionary As ILLdictionary, _
-                      Optional ByVal choices As ILLChoices, _
+                      Optional ByVal choices As LLChoices, _
                       Optional ByVal formulaStore As IFormulaData, _
                       Optional ByVal transManager As SetupTranslationsTable, _
                       Optional ByVal stateScope As IApplicationState)
