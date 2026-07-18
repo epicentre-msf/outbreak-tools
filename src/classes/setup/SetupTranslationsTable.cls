@@ -13,7 +13,7 @@ Attribute VB_Description = "Translations table manager with helper tag column"
 '@Folder("Setup")
 '@ModuleDescription("Translations table manager with helper tag column")
 '@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
-'@depends ProjectError, ApplicationState, IApplicationState, HiddenNames, IHiddenNames, CustomTable
+'@depends ProjectError, ApplicationState, IApplicationState, HiddenNames, CustomTable
 
 Option Explicit
 
@@ -208,7 +208,7 @@ End Sub
 '@label:persist-language-list
 '@sub-title Persist the available languages into the worksheet hidden names.
 Private Sub PersistLanguageList()
-    Dim store As IHiddenNames
+    Dim store As HiddenNames
     Dim buffer As BetterArray
     Dim switchable As BetterArray
     Dim idx As Long
@@ -1705,7 +1705,7 @@ Public Sub Export(ByVal exportWorkbook As Workbook, Optional ByVal Hide As Long 
     Dim exportSheet As Worksheet
     Dim tableAdapter As CustomTable
     Dim hostSheet As Worksheet
-    Dim store As IHiddenNames
+    Dim store As HiddenNames
 
     ValidateInitialised
     If exportWorkbook Is Nothing Then
@@ -1764,7 +1764,7 @@ End Function
 '@label:persist-counter-value
 '@sub-title Persist the counter value inside a hidden worksheet-level name.
 Private Sub PersistCounterValue(ByVal registrySheet As Worksheet, ByVal counterValue As Long)
-    Dim store As IHiddenNames
+    Dim store As HiddenNames
 
     If counterValue < 0 Then counterValue = 0
 
@@ -1778,7 +1778,7 @@ End Sub
 '@label:counter-numeric-value
 '@sub-title Retrieve the current counter value stored in worksheet names.
 Private Function CounterNumericValue(ByVal registrySheet As Worksheet) As Long
-    Dim store As IHiddenNames
+    Dim store As HiddenNames
 
     Set store = HiddenNameStore(registrySheet)
     If store Is Nothing Then Exit Function
@@ -1793,7 +1793,7 @@ End Function
 
 '@label:hidden-name-store
 '@sub-title Create a HiddenNames wrapper for the supplied registry sheet.
-Private Function HiddenNameStore(ByVal registrySheet As Worksheet) As IHiddenNames
+Private Function HiddenNameStore(ByVal registrySheet As Worksheet) As HiddenNames
     If registrySheet Is Nothing Then Exit Function
     On Error Resume Next
         Set HiddenNameStore = HiddenNames.Create(registrySheet)
@@ -1802,7 +1802,7 @@ End Function
 
 '@label:metadata-store
 '@sub-title Resolve the hidden name store hosting metadata.
-Private Function MetadataStore() As IHiddenNames
+Private Function MetadataStore() As HiddenNames
     Dim hostSh As Worksheet
 
     If this.table Is Nothing Then Exit Function

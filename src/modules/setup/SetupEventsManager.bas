@@ -84,7 +84,7 @@ End Property
 'Application properties from the pipe-delimited string and removes the key.
 'All operations are wrapped in On Error Resume Next for resilience.
 Private Sub RecoverIfNeeded()
-    Dim hn As IHiddenNames
+    Dim hn As HiddenNames
     Dim raw As String
     Dim parts() As String
 
@@ -124,7 +124,7 @@ End Sub
 'single workbook-level HiddenName.  On failure the operation is silently skipped.
 'Format: ScreenUpdating|DisplayAlerts|Calculation|EnableEvents|Cursor|CalcBeforeSave
 Private Sub PersistCurrentState()
-    Dim hn As IHiddenNames
+    Dim hn As HiddenNames
     Dim raw As String
 
     On Error Resume Next
@@ -145,7 +145,7 @@ End Sub
 
 '@sub-title Remove the persisted snapshot HiddenName after a successful restore
 Private Sub ClearPersistedSnapshot()
-    Dim hn As IHiddenNames
+    Dim hn As HiddenNames
 
     On Error Resume Next
     Set hn = HiddenNames.Create(ThisWorkbook)

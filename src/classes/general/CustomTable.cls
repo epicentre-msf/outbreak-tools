@@ -686,7 +686,7 @@ End Property
 Private Sub AddShiftTracker(Optional ByVal value As String = "Yes")
 
   Dim sh As Worksheet
-  Dim store As IHiddenNames
+  Dim store As HiddenNames
 
   Set sh = Wksh()
   Set store = HiddenNames.Create(sh)
@@ -709,7 +709,7 @@ End Sub
 '@return Boolean. True when the shift tracker is active.
 Private Function HasShiftTracker() As Boolean
 
-  Dim store As IHiddenNames
+  Dim store As HiddenNames
   
   Set store = HiddenNames.Create(Wksh())
 

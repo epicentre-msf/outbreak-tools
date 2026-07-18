@@ -25,7 +25,7 @@ Option Explicit
 'ranges, and visual formatting. Consumers interact through the CrossTable
 'interface, and AnalysisOutput orchestrates the build sequence by calling
 'Build followed by Format for each table specification.
-'@depends TableSpecs, ILinelistSpecs, ITranslationObject, ILLVariables, LLVariables, ILLFormat, IHiddenNames, HiddenNames, BetterArray, Checking
+'@depends TableSpecs, ILinelistSpecs, ITranslationObject, ILLVariables, LLVariables, ILLFormat, HiddenNames, BetterArray, Checking
 '@version 1.1 (2026-02-11)
 
 
@@ -1499,7 +1499,7 @@ Public Sub Format(ByVal desFormat As ILLFormat)
     newSection = specs.IsNewSection() Or IsDeFactoNewSection()
 
     With sh
-        Dim hn As IHiddenNames
+        Dim hn As HiddenNames
         Set hn = HiddenNames.Create(sh)
 
         ' Sections ==============================================================

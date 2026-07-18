@@ -23,7 +23,7 @@ Private tradsmess As ITranslationObject   'Translation of messages
 Private pass As IPasswords
 Private wb As Workbook
 Private lltrads As ILLTranslation
-Private wkbNames As IHiddenNames
+Private wkbNames As HiddenNames
 
 'Initialize translation of forms object
 Private Sub InitializeTrads()
@@ -92,21 +92,21 @@ End Function
 
 'Get the sheet type tag (HiddenNames first, cell fallback for legacy sheets).
 Private Function SheetTag(ByVal sh As Worksheet) As String
-    Dim shHn As IHiddenNames
+    Dim shHn As HiddenNames
     Set shHn = HiddenNames.Create(sh)
     SheetTag = shHn.ValueAsString("sheet_type")
 End Function
 
 'Get the table name from worksheet-level HiddenNames.
 Private Function TableNameOf(ByVal sh As Worksheet) As String
-    Dim shHn As IHiddenNames
+    Dim shHn As HiddenNames
     Set shHn = HiddenNames.Create(sh)
     TableNameOf = shHn.ValueAsString("table_name")
 End Function
 
 'Get the blank row count from worksheet-level HiddenNames.
 Private Function RowCountOf(ByVal sh As Worksheet) As Long
-    Dim shHn As IHiddenNames
+    Dim shHn As HiddenNames
     Set shHn = HiddenNames.Create(sh)
     RowCountOf = shHn.ValueAsLong("row_count")
 End Function

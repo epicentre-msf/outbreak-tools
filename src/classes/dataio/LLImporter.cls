@@ -24,7 +24,7 @@ Option Explicit
 'sheets and variables were imported, and builds a report of items not
 'imported or not touched.
 '@depends ILLdictionary, IPasswords, CustomTable, DataSheet
-'@depends ILLGeo, LLChoices, ILLVariables, IDropdownLists, IHiddenNames
+'@depends ILLGeo, LLChoices, ILLVariables, IDropdownLists, HiddenNames
 
 
 '@section Enumerations
@@ -141,7 +141,7 @@ Public Property Get HasData() As Boolean
     Dim lo As ListObject
     Dim nbBlanks As Long
     Dim counter As Long
-    Dim shHnData As IHiddenNames
+    Dim shHnData As HiddenNames
 
     For Each sh In this.sourceWkb.Worksheets
         If SheetTagOf(sh) = "HList" Then
@@ -180,7 +180,7 @@ Public Function HasSameLanguage(ByVal impwb As Workbook) As Boolean
     Dim cellRng As Range
     Dim impLang As String
     Dim currLang As String
-    Dim wkbNames As IHiddenNames
+    Dim wkbNames As HiddenNames
 
     this.hasSameLanguage = False
 
@@ -354,7 +354,7 @@ End Sub
 '@export
 Public Sub ImportCustomDropdown(ByVal impwb As Workbook, ByVal pasteAtBottom As Boolean)
 
-    Dim wkbNames As IHiddenNames
+    Dim wkbNames As HiddenNames
     Dim choi As LLChoices
     Dim lo As ListObject
     Dim drop As IDropdownLists
@@ -517,7 +517,7 @@ Public Sub ImportEditableLabels(ByVal impwb As Workbook)
     Dim sheetInfo As String
     Dim sh As Worksheet
     Dim colIndex As Long
-    Dim shHn As IHiddenNames
+    Dim shHn As HiddenNames
 
     ' Prerequisites
     If Not this.hasSameLanguage Then Exit Sub
@@ -968,7 +968,7 @@ End Sub
 '@param sh Worksheet. The worksheet to query.
 '@return String. The sheet type tag (HList, VList, etc.).
 Private Function SheetTagOf(ByVal sh As Worksheet) As String
-    Dim shHn As IHiddenNames
+    Dim shHn As HiddenNames
     Set shHn = HiddenNames.Create(sh)
     SheetTagOf = shHn.ValueAsString("sheet_type")
 End Function

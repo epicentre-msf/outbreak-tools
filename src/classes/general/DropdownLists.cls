@@ -33,8 +33,8 @@ Private Type TDropdownLists
     hprefix As String
     hasChecks As Boolean
     initialised As Boolean
-    wbStored As IHiddenNames
-    shStored As IHiddenNames
+    wbStored As HiddenNames
+    shStored As HiddenNames
 End Type
 
 Private this As TDropdownLists
@@ -117,7 +117,7 @@ End Property
 '@param outsh Worksheet. The worksheet to host dropdown ListObjects.
 Public Property Set Wksh(ByVal outsh As Worksheet)
     
-    Dim store As IHiddenNames
+    Dim store As HiddenNames
     Set store = HiddenNames.Create(outsh)
     this.initialised = (store.ValueAsString(DROPDOWNINITIALSEDNAME) = "Yes")
 
@@ -213,11 +213,11 @@ End Property
 '@label:internal-store
 '@prop-title Lazy-loaded HiddenNames store for workbook or sheet scope
 '@details
-'Returns the cached IHiddenNames instance for either the workbook
+'Returns the cached HiddenNames instance for either the workbook
 '(default) or the worksheet. Creates the store on first access.
 '@param sheetLevel Optional Boolean. When True, returns the worksheet-level store. Defaults to False.
-'@return IHiddenNames. The requested store.
-Private Property Get InternalStore(Optional ByVal sheetLevel As Boolean = False) As IHiddenNames
+'@return HiddenNames. The requested store.
+Private Property Get InternalStore(Optional ByVal sheetLevel As Boolean = False) As HiddenNames
     Dim targetSheet As Worksheet
     Dim targetWb As Workbook
 
@@ -247,7 +247,7 @@ End Property
 '@label:ensure-workbook-counter
 '@sub-title Ensure the workbook-level dropdown counter exists
 Private Sub EnsureWorkbookCounter()
-    Dim store As IHiddenNames
+    Dim store As HiddenNames
 
     Set store = InternalStore(False)
     If Not store.HasName(WORKBOOKCOUNTERNAME) Then
@@ -259,7 +259,7 @@ End Sub
 '@sub-title Read the current workbook dropdown counter
 '@return Long. The counter value.
 Private Function WorkbookCounterValue() As Long
-    Dim store As IHiddenNames
+    Dim store As HiddenNames
 
     EnsureWorkbookCounter
     Set store = InternalStore(False)
@@ -270,7 +270,7 @@ End Function
 '@sub-title Write a new workbook dropdown counter value
 '@param newValue Long. The value to store.
 Private Sub SetWorkbookCounter(ByVal newValue As Long)
-    Dim store As IHiddenNames
+    Dim store As HiddenNames
 
     EnsureWorkbookCounter
     Set store = InternalStore(False)
@@ -298,7 +298,7 @@ End Sub
 '@label:ensure-worksheet-counter
 '@sub-title Ensure the worksheet-level dropdown counter exists
 Private Sub EnsureWorksheetCounter()
-    Dim store As IHiddenNames
+    Dim store As HiddenNames
 
     Set store = InternalStore(True)
     If Not store.HasName(WORKSHEETCOUNTERNAME) Then
@@ -311,7 +311,7 @@ End Sub
 '@sub-title Read the current worksheet dropdown counter
 '@return Long. The counter value.
 Private Function SheetCounterValue() As Long
-    Dim store As IHiddenNames
+    Dim store As HiddenNames
 
     EnsureWorksheetCounter
     Set store = InternalStore(True)
@@ -322,7 +322,7 @@ End Function
 '@sub-title Write a new worksheet dropdown counter value
 '@param newValue Long. The value to store (clamped to 0).
 Private Sub SetSheetCounter(ByVal newValue As Long)
-    Dim store As IHiddenNames
+    Dim store As HiddenNames
 
     EnsureWorksheetCounter
     If newValue < 0 Then newValue = 0
@@ -644,7 +644,7 @@ Private Sub Add(ByVal listValues As BetterArray, ByVal listName As String, _
     Dim headerName As String              'header Name
     Dim loName As String                  'List object name
     Dim rng As Range
-    Dim store As IHiddenNames
+    Dim store As HiddenNames
     Dim dropdownLo As ListObject
 
     'Do not add a new dropdown if there is already another one
@@ -716,7 +716,7 @@ Private Sub Remove(ByVal listName As String)
     Dim sh As Worksheet
     Dim rng As Range
     Dim loName As String
-    Dim store As IHiddenNames
+    Dim store As HiddenNames
 
     If Not Exists(listName) Then
         LogInfo "Can not delete a dropdown that does not exits: " & listName & "Not found"
@@ -882,7 +882,7 @@ Private Sub Translate(ByVal trads As Object, Optional ByVal force As Boolean = F
     Dim cursor As Range
     Dim loName As String
     Dim lo As ListObject
-    Dim store As IHiddenNames
+    Dim store As HiddenNames
 
     If trads Is Nothing Then Exit Sub
     If TypeName(trads) <> "TranslationObject" Then Exit Sub

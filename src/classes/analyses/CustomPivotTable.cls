@@ -23,7 +23,7 @@ Option Explicit
 'stacked vertically. Position tracking and title references are stored as
 'worksheet-level HiddenNames instead of hidden cell values.
 '
-'@depends ILLFormat, IHiddenNames, HiddenNames, ProjectError
+'@depends ILLFormat, HiddenNames, ProjectError
 
 
 '@section State
@@ -117,7 +117,7 @@ Public Sub Add(ByVal title As String, _
                Optional ByVal pivotName As String = "Pivot Table")
 
     Dim sh As Worksheet
-    Dim shNames As IHiddenNames
+    Dim shNames As HiddenNames
     Dim startRow As Long
     Dim counter As Long
     Dim titleCell As Range
@@ -183,7 +183,7 @@ End Sub
 'already exist. Called by the factory to allow resuming from the current
 'position when the same sheet is re-wrapped.
 Public Sub InitialiseMetadata()
-    Dim shNames As IHiddenNames
+    Dim shNames As HiddenNames
     Set shNames = HiddenNames.Create(this.sh)
 
     If Not shNames.HasName(HNME_OUTPUT_ROW) Then

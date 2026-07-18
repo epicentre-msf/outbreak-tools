@@ -623,7 +623,7 @@ Private Sub CheckRequirements(ByVal sh As Worksheet)
     Dim wb As Workbook
     Dim actName As String
     Dim rngArray As BetterArray
-    Dim shNames As IHiddenNames
+    Dim shNames As HiddenNames
 
     Set loArray = New BetterArray
     loArray.Push "tab_ids_uba", "tab_ids_sp", "tab_ids_ts", "tab_ids_sptemp", _

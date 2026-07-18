@@ -126,7 +126,7 @@ End Property
 '@param sh Worksheet. The worksheet to query.
 '@return String. The sheet type tag (HList, VList, etc.).
 Private Function SheetTagOf(ByVal sh As Worksheet) As String
-    Dim shHn As IHiddenNames
+    Dim shHn As HiddenNames
     Set shHn = HiddenNames.Create(sh)
     SheetTagOf = shHn.ValueAsString("sheet_type")
 End Function
@@ -192,7 +192,7 @@ Public Sub Update()
     Dim cellRng As Range
     Dim controlValue As String
     Dim Lo As ListObject
-    Dim shHn As IHiddenNames
+    Dim shHn As HiddenNames
 
     Set actsh = Wksh()
     Set wb = actsh.Parent

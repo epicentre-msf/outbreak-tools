@@ -12,7 +12,7 @@ Attribute VB_Description = "Designer import/export service for setup and linelis
 '@PredeclaredId
 '@Folder("Designer")
 '@ModuleDescription("Imports setup components into a designer workbook and exports them to a linelist workbook.")
-'@depends ProjectError, LLdictionary, ILLdictionary, LLChoices, LLExport, Analysis, IAnalysis, LLGeo, ILLGeo, IPasswords, Passwords, LLFormat, ILLFormat, LLTranslation, ILLTranslation, HiddenNames, IHiddenNames
+'@depends ProjectError, LLdictionary, ILLdictionary, LLChoices, LLExport, Analysis, IAnalysis, LLGeo, ILLGeo, IPasswords, Passwords, LLFormat, ILLFormat, LLTranslation, ILLTranslation, HiddenNames
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, ParameterNotUsed
 
 Option Explicit
@@ -375,7 +375,7 @@ End Sub
 Private Sub ImportFormatter(ByVal setupBook As Workbook, ByVal hostBook As Workbook)
     Dim setupSheet As Worksheet
     Dim formatManager As ILLFormat
-    Dim store As IHiddenNames
+    Dim store As HiddenNames
 
     'Skip if the formatter was already imported via the ribbon
     Set store = HiddenNames.Create(hostBook)
@@ -422,7 +422,7 @@ End Sub
 '@label:import-hidden-names
 '@sub-title Export hidden names from setup into the host workbook
 Private Sub ImportHiddenNames(ByVal setupBook As Workbook, ByVal hostBook As Workbook)
-    Dim store As IHiddenNames
+    Dim store As HiddenNames
 
     Set store = HiddenNames.Create(setupBook)
     store.ExportNamesToWorkbook hostBook
@@ -498,7 +498,7 @@ Private Sub ExportGeo(ByVal hostBook As Workbook, ByVal targetBook As Workbook, 
                       ByVal llName As String, ByVal setupPath As String)
     Dim hostSheet As Worksheet
     Dim geoManager As ILLGeo
-    Dim geoStore As IHiddenNames
+    Dim geoStore As HiddenNames
     Dim dictLang As String
     Dim langCode As String
 
@@ -667,7 +667,7 @@ End Sub
 'prefix (e.g., "FRA-Fran" & ChrW$(231) & "ais" -> "FRA").
 '@param hostBook Workbook. The designer workbook to update.
 Private Sub SyncDesignerLanguageNames(ByVal hostBook As Workbook)
-    Dim store As IHiddenNames
+    Dim store As HiddenNames
     Dim dictLang As String
     Dim llFormValue As String
     Dim llLang As String
@@ -701,7 +701,7 @@ End Sub
 '@param hostBook Workbook. The designer workbook (source).
 '@param targetBook Workbook. The linelist workbook (destination).
 Private Sub ExportDesignerHiddenNames(ByVal hostBook As Workbook, ByVal targetBook As Workbook)
-    Dim store As IHiddenNames
+    Dim store As HiddenNames
 
     Set store = HiddenNames.Create(hostBook)
     store.ExportNamesToWorkbook targetBook

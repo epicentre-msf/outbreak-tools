@@ -36,7 +36,7 @@ Option Explicit
 Private Type TState
     targetSheet As Worksheet
     nm As String
-    store As IHiddenNames
+    store As HiddenNames
 End Type
 
 Private Type TFormatting
@@ -608,7 +608,7 @@ Private Function InitialiseWorksheet() As Long
     Dim sh As Worksheet
     Dim startingRow As Long
     Dim view As WorksheetView
-    Dim store As IHiddenNames
+    Dim store As HiddenNames
 
     Set sh = Wksh()
     sh.Rows.Hidden = False
@@ -851,7 +851,7 @@ Public Sub EnsureWorksheetChangeHandler()
     Dim codeModule As Object
     Dim injectionCode As String
     Dim moduleLines As Long
-    Dim store As IHiddenNames
+    Dim store As HiddenNames
 
     On Error GoTo Handler
 
@@ -1124,7 +1124,7 @@ End Function
 '@param propName String. Property name to check.
 '@return Boolean. True when the property exists.
 Private Function CustomPropertyExists(ByVal propName As String) As Boolean
-    Dim store As IHiddenNames
+    Dim store As HiddenNames
     Set store = HiddenStore()
     CustomPropertyExists = store.HasName(propName)
 End Function
@@ -1134,20 +1134,20 @@ End Function
 '@param propName String. Property name to store.
 '@param propValue String. Value to persist.
 Private Sub StoreCustomProperty(propName As String, propValue As String)
-    Dim store As IHiddenNames
+    Dim store As HiddenNames
     Set store = HiddenStore()
     store.EnsureName propName, propValue, HiddenNameTypeString
     store.SetValue propName, propValue
 End Sub
 
 '@label:hidden-store
-'@sub-title Lazily create and return the IHiddenNames store
+'@sub-title Lazily create and return the HiddenNames store
 '@details
 'Creates the HiddenNames wrapper bound to the target worksheet on
 'first access. Raises an error when no worksheet is assigned.
-'@return IHiddenNames. Hidden name store.
+'@return HiddenNames. Hidden name store.
 '@throws ProjectError.ObjectNotInitialized When the worksheet is Nothing.
-Private Function HiddenStore() As IHiddenNames
+Private Function HiddenStore() As HiddenNames
     If this.store Is Nothing Then
         If Wksh() Is Nothing Then
             ThrowError ProjectError.ObjectNotInitialized, _
@@ -1216,7 +1216,7 @@ Public Sub PrintOutput(ByVal checkTable As BetterArray)
     Dim writtenTitles As Collection
     Dim index As Long
     Dim previousEventState As Boolean
-    Dim store As IHiddenNames
+    Dim store As HiddenNames
 
     If checkTable Is Nothing Then
         ThrowError ProjectError.ElementNotFound, "PrintOutput requires a BetterArray of Checking instances"

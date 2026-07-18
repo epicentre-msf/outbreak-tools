@@ -86,7 +86,7 @@ End Function
 
 '@sub-title Read a worksheet-level hidden name as a string
 Private Function GetHiddenNameValue(ByVal sh As Worksheet, ByVal nameId As String) As String
-    Dim store As IHiddenNames
+    Dim store As HiddenNames
     Set store = HiddenNames.Create(sh)
     GetHiddenNameValue = store.ValueAsString(nameId)
 End Function
@@ -142,7 +142,7 @@ End Function
 Private Sub ResetWorksheetModule(ByVal sh As Worksheet)
     Dim idx As Long
     Dim codeModule As Object
-    Dim store As IHiddenNames
+    Dim store As HiddenNames
 
     On Error Resume Next
         For idx = sh.CustomProperties.Count To 1 Step -1

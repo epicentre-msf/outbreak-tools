@@ -13,7 +13,7 @@ Option Explicit
 'export-spec replication into destination workbooks, filename template
 'resolution with literal and variable chunks, active/inactive status filtering,
 'and threshold-based row removal.
-'@depends LLExport, LLdictionary, ILLdictionary, HiddenNames, IHiddenNames, Passwords, IPasswords, CustomTest, ICustomTest, BetterArray, TestHelpers, PasswordsTestFixture
+'@depends LLExport, LLdictionary, ILLdictionary, HiddenNames, Passwords, IPasswords, CustomTest, ICustomTest, BetterArray, TestHelpers, PasswordsTestFixture
 
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
@@ -107,7 +107,7 @@ End Sub
 Public Sub TestExportSpecsCopiesHiddenNames()
     CustomTestSetTitles Assert, "LLExport", "TestExportSpecsCopiesHiddenNames"
     Dim exportBook As Workbook
-    Dim exportedStore As IHiddenNames
+    Dim exportedStore As HiddenNames
     Dim expectedTotal As Long
 
     On Error GoTo Fail

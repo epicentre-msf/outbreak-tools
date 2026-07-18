@@ -79,7 +79,7 @@ End Property
 
 '@sub-title Detect and recover from a VBA state reset that occurred mid-operation
 Private Sub RecoverIfNeeded()
-    Dim hn As IHiddenNames
+    Dim hn As HiddenNames
     Dim raw As String
     Dim parts() As String
 
@@ -113,7 +113,7 @@ End Sub
 
 '@sub-title Persist current Application properties to a HiddenName before entering busy mode
 Private Sub PersistCurrentState()
-    Dim hn As IHiddenNames
+    Dim hn As HiddenNames
     Dim raw As String
 
     On Error Resume Next
@@ -134,7 +134,7 @@ End Sub
 
 '@sub-title Remove the persisted snapshot HiddenName after a successful restore
 Private Sub ClearPersistedSnapshot()
-    Dim hn As IHiddenNames
+    Dim hn As HiddenNames
 
     On Error Resume Next
     Set hn = HiddenNames.Create(ThisWorkbook)

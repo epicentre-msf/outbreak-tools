@@ -306,7 +306,7 @@ End Sub
 Private Sub ImportGeobase(ByVal geoObj As ILLGeo)
     Dim geoPath As String
     Dim geoWkb As Workbook
-    Dim geoNames As IHiddenNames
+    Dim geoNames As HiddenNames
 
     geoPath = Trim$(Value("geopath"))
     If LenB(geoPath) = 0 Then Exit Sub
@@ -1206,7 +1206,7 @@ Public Property Get Value(ByVal tagName As String) As String
     Dim mainSheet As Worksheet
     Dim retVal As String
     Dim useHidden As Boolean
-    Dim hn As IHiddenNames
+    Dim hn As HiddenNames
 
     normalizedTag = LCase$(Trim$(tagName))
     If LenB(normalizedTag) = 0 Then Exit Property

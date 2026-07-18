@@ -27,14 +27,14 @@ Implements ILLGeo
 'AutoFilter cascades, import/export in both flat-data and full-structure
 'modes, and synchronisation of translated labels across linelist sheets,
 'dictionary, and show/hide tables.
-'@depends BetterArray, IPasswords, ILLdictionary, CustomTable, ILLVariables, IDropdownLists, DropdownLists, LLVariables, CustomTable, HiddenNames, IHiddenNames
+'@depends BetterArray, IPasswords, ILLdictionary, CustomTable, ILLVariables, IDropdownLists, DropdownLists, LLVariables, CustomTable, HiddenNames
 
 '@section State
 '===============================================================================
 
 Private Type TGeo
     geosh As Worksheet
-    geoHidden As IHiddenNames
+    geoHidden As HiddenNames
     namesCacheKeys As BetterArray
     namesCacheValues As BetterArray
     namesCacheLoaded As Boolean
@@ -113,12 +113,12 @@ End Property
 '@label:geo-hidden-store
 '@sub-title Lazy-loaded HiddenNames manager for the geo worksheet.
 '@details
-'Creates and caches an IHiddenNames instance bound to the geobase
+'Creates and caches an HiddenNames instance bound to the geobase
 'worksheet on first access. Used by all methods that read or write
 'the 5 hidden name values (RNG_GeoUpdated, RNG_GeoName, RNG_MetaLang,
 'RNG_GeoLangCode, RNG_FormLoaded).
-'@return IHiddenNames. The worksheet-level hidden names manager.
-Private Function GeoHiddenStore() As IHiddenNames
+'@return HiddenNames. The worksheet-level hidden names manager.
+Private Function GeoHiddenStore() As HiddenNames
     If this.geoHidden Is Nothing Then
         Set this.geoHidden = HiddenNames.Create(Wksh())
     End If
@@ -450,7 +450,7 @@ End Function
 '@param sh Worksheet. The worksheet to query.
 '@return String. The sheet type tag (HList, VList, etc.).
 Private Function SheetTagOf(ByVal sh As Worksheet) As String
-    Dim shHn As IHiddenNames
+    Dim shHn As HiddenNames
     Set shHn = HiddenNames.Create(sh)
     SheetTagOf = shHn.ValueAsString("sheet_type")
 End Function
@@ -1141,7 +1141,7 @@ Private Sub Update(ByVal pass As IPasswords)
     Dim drop As IDropdownLists
     Dim cellPrintRng As Range
     Dim printsh As Worksheet
-    Dim shHn As IHiddenNames
+    Dim shHn As HiddenNames
     Dim varName As String
 
     Set wb = Wksh.Parent
@@ -1431,7 +1431,7 @@ End Sub
 '@throws ProjectError.ElementNotFound When required tables, named ranges, or hidden names are missing.
 Private Sub CheckRequirements(ByVal sh As Worksheet)
     Dim admTableNames As BetterArray
-    Dim geoStore As IHiddenNames
+    Dim geoStore As HiddenNames
 
     If sh Is Nothing Then
         ThrowError ObjectNotInitialized, "Geo sheet not defined"
@@ -1465,10 +1465,10 @@ End Sub
 '@details
 'Checks whether the specified name exists in the given HiddenNames store.
 'If not found, raises an ElementNotFound error with a descriptive message.
-'@param store IHiddenNames. The hidden names manager to check.
+'@param store HiddenNames. The hidden names manager to check.
 '@param nameId String. The hidden name identifier to look for.
 '@throws ProjectError.ElementNotFound When the hidden name does not exist.
-Private Sub HiddenNameRequired(ByVal store As IHiddenNames, ByVal nameId As String)
+Private Sub HiddenNameRequired(ByVal store As HiddenNames, ByVal nameId As String)
     If Not store.HasName(nameId) Then
         ThrowError ElementNotFound, _
             "Hidden name " & nameId & " does not exist on the geobase worksheet"

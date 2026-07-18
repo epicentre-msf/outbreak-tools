@@ -66,7 +66,7 @@ End Sub
 Private Sub SeedTranslationSheet(ByVal targetWkb As Workbook)
     Dim sh As Worksheet
     Dim rng As Range
-    Dim wkbNames As IHiddenNames
+    Dim wkbNames As HiddenNames
 
     Set sh = targetWkb.Worksheets.Add
     sh.Name = TRANS_SHEET_NAME
@@ -346,7 +346,7 @@ Public Sub TestInitialiseHiddenNamesCreatesNames()
 
     sut.InitialiseHiddenNames targetWkb
 
-    Dim targetNames As IHiddenNames
+    Dim targetNames As HiddenNames
     Set targetNames = HiddenNames.Create(targetWkb)
 
     Assert.IsTrue targetNames.HasName("RNG_GoToSection"), _

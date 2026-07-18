@@ -137,7 +137,7 @@ Public Sub TestEnsureLanguagesPersistsHiddenName()
 
     Subject.EnsureLanguages "French;German"
 
-    Dim store As IHiddenNames
+    Dim store As HiddenNames
     Dim storedValue As String
     Set store = HiddenNames.Create(TranslationsSheet)
     storedValue = store.ValueAsString(LANGUAGES_NAME_ID)
@@ -174,7 +174,7 @@ Public Sub TestExportStartsAtSecondColumnAndCopiesHiddenNames()
     CustomTestSetTitles Assert, "SetupTranslationsTable", "TestExportStartsAtSecondColumnAndCopiesHiddenNames"
     Dim exportBook As Workbook
     Dim exportedSheet As Worksheet
-    Dim exportedStore As IHiddenNames
+    Dim exportedStore As HiddenNames
     Dim expectedLanguages As String
 
     On Error GoTo Fail
@@ -663,7 +663,7 @@ Private Function ExpectedTag(ByVal rangeName As String, ByVal sequenceNumber As 
 End Function
 
 Private Function CounterValue() As Long
-    Dim store As IHiddenNames
+    Dim store As HiddenNames
 
     Set store = HiddenCounterStore()
     If store Is Nothing Then Exit Function
@@ -672,7 +672,7 @@ Private Function CounterValue() As Long
 End Function
 
 Private Function HiddenCounterExists() As Boolean
-    Dim store As IHiddenNames
+    Dim store As HiddenNames
 
     Set store = HiddenCounterStore()
     If store Is Nothing Then Exit Function
@@ -680,7 +680,7 @@ Private Function HiddenCounterExists() As Boolean
     HiddenCounterExists = store.HasName(COUNTER_NAME)
 End Function
 
-Private Function HiddenCounterStore() As IHiddenNames
+Private Function HiddenCounterStore() As HiddenNames
     On Error Resume Next
         Set HiddenCounterStore = HiddenNames.Create(RegistrySheet)
     On Error GoTo 0

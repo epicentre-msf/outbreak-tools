@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Designer")
 '@ModuleDescription("Ribbon callbacks for the Multi group on the designer workbook.")
-'@depends CustomTable, ApplicationState, IApplicationState, OSFiles, HiddenNames, IHiddenNames, DropdownLists, IDropdownLists, BetterArray
+'@depends CustomTable, ApplicationState, IApplicationState, OSFiles, HiddenNames, DropdownLists, IDropdownLists, BetterArray
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 'Ribbon callbacks for the Multi group manage the T_Multi ListObject on
@@ -573,7 +573,7 @@ End Sub
 '@param tradSheet Worksheet. The Translations worksheet of a setup workbook.
 '@return BetterArray. Language names (1-based), or empty when none found.
 Private Function ExtractLanguagesForRow(ByVal tradSheet As Worksheet) As BetterArray
-    Dim store As IHiddenNames
+    Dim store As HiddenNames
     Dim langString As String
     Dim languages() As String
     Dim result As BetterArray

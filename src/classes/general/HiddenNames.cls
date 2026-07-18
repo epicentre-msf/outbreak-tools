@@ -16,7 +16,22 @@ Attribute VB_Description = "Manages hidden worksheet name/value storage with met
 
 Option Explicit
 
-Implements IHiddenNames
+
+'@section Enumerations
+'===============================================================================
+
+'@label:value-type
+'@sub-title Supported data types when persisting hidden name values
+'@details
+'The enumeration informs serialization when writing names and coercion
+'when retrieving values.
+Public Enum HiddenNameValueType
+    HiddenNameTypeVariant = 0
+    HiddenNameTypeString = 1
+    HiddenNameTypeBoolean = 2
+    HiddenNameTypeLong = 3
+End Enum
+
 
 '@class HiddenNames
 '@description
@@ -181,11 +196,11 @@ End Sub
 'Validates the input and creates a fully initialised manager bound to
 'the supplied worksheet or workbook.
 '@param targetObj Object. A Worksheet or Workbook hosting the hidden names.
-'@return IHiddenNames. The configured instance.
+'@return HiddenNames. The configured instance.
 '@throws ProjectError.ObjectNotInitialized When targetObj is Nothing.
 '@throws ProjectError.InvalidArgument When targetObj is not a Worksheet or Workbook.
 '@export
-Public Function Create(ByVal targetObj As Object) As IHiddenNames
+Public Function Create(ByVal targetObj As Object) As HiddenNames
     Dim manager As HiddenNames
 
     ValidateInput targetObj
@@ -196,9 +211,9 @@ Public Function Create(ByVal targetObj As Object) As IHiddenNames
 End Function
 
 '@label:self
-'@prop-title Self-reference returning the interface pointer
-'@return IHiddenNames. This instance.
-Public Property Get Self() As IHiddenNames
+'@prop-title Self-reference returning this instance
+'@return HiddenNames. This instance.
+Public Property Get Self() As HiddenNames
     Set Self = Me
 End Property
 
@@ -272,8 +287,8 @@ End Sub
 '@label:sheet
 '@prop-title Worksheet backing this manager
 '@export
-Private Property Get SheetInternal() As Worksheet
-    Set SheetInternal = this.hostSh
+Public Property Get Sheet() As Worksheet
+    Set Sheet = this.hostSh
 End Property
 
 '@label:name-owner
@@ -696,7 +711,7 @@ End Function
 '@sub-title Extract the stored value directly from a metadata record
 '@details
 'Reads the value from the record definition without going through the
-'public ValueOf method, avoiding redundant SanitizeNameId calls and
+'public Value method, avoiding redundant SanitizeNameId calls and
 'metadata index lookups when the record is already resolved.
 '@param record Variant. A metadata record array.
 '@return Variant. The coerced value, or Empty when the definition is Nothing.
@@ -831,14 +846,14 @@ End Sub
 '@label:has-name
 '@sub-title Check whether a hidden name exists
 '@export
-Private Function HasName(ByVal nameId As String) As Boolean
+Public Function HasName(ByVal nameId As String) As Boolean
     HasName = (EnsureMetadataRecord(SanitizeNameId(nameId)) <> -1)
 End Function
 
 '@label:ensure-name
 '@sub-title Ensure a hidden name exists with the provided default
 '@export
-Private Function Ensure(ByVal nameId As String, _
+Public Function EnsureName(ByVal nameId As String, _
                         ByVal initialValue As Variant, _
                         Optional ByVal valueType As Byte = HiddenNameTypeVariant) As Name
     Dim sanitized As String
@@ -853,13 +868,13 @@ Private Function Ensure(ByVal nameId As String, _
     record = BuildMetadataRecord(sanitized, valueType, lastUpdated, definition)
     StoreMetadataRecord sanitized, record
 
-    Set Ensure = definition
+    Set EnsureName = definition
 End Function
 
 '@label:value
 '@sub-title Retrieve a hidden value without coercion
 '@export
-Private Function ValueOf(ByVal nameId As String, _
+Public Function Value(ByVal nameId As String, _
                          Optional ByVal defaultValue As Variant) As Variant
     Dim sanitized As String
     Dim idx As Long
@@ -877,7 +892,7 @@ Private Function ValueOf(ByVal nameId As String, _
             ThrowError ProjectError.ElementNotFound, _
                       "Hidden name '" & nameId & "' is not defined on " & ScopeLabel()
         Else
-            ValueOf = defaultValue
+            Value = defaultValue
         End If
         Exit Function
     End If
@@ -886,13 +901,13 @@ Private Function ValueOf(ByVal nameId As String, _
     record = store.Item(idx)
     Set definition = MetadataDefinition(record)
     raw = DefinitionStoredValue(definition, MetadataType(record))
-    ValueOf = CoerceValue(raw, MetadataType(record))
+    Value = CoerceValue(raw, MetadataType(record))
 End Function
 
 '@label:set-value
 '@sub-title Update the stored value of an existing hidden name
 '@export
-Private Sub Update(ByVal nameId As String, ByVal value As Variant)
+Public Sub SetValue(ByVal nameId As String, ByVal value As Variant)
     Dim sanitized As String
     Dim idx As Long
     Dim store As BetterArray
@@ -925,40 +940,40 @@ End Sub
 '@label:value-as-string
 '@sub-title Retrieve the hidden value coerced to String
 '@export
-Private Function ValueAsString(ByVal nameId As String, _
+Public Function ValueAsString(ByVal nameId As String, _
                                Optional ByVal defaultValue As String = vbNullString) As String
-    Dim value As Variant
+    Dim stored As Variant
 
-    value = ValueOf(nameId, defaultValue)
-    ValueAsString = CStr(value)
+    stored = Value(nameId, defaultValue)
+    ValueAsString = CStr(stored)
 End Function
 
 '@label:value-as-boolean
 '@sub-title Retrieve the hidden value coerced to Boolean
 '@export
-Private Function ValueAsBoolean(ByVal nameId As String, _
+Public Function ValueAsBoolean(ByVal nameId As String, _
                                 Optional ByVal defaultValue As Boolean = False) As Boolean
-    Dim value As Variant
+    Dim stored As Variant
 
-    value = ValueOf(nameId, defaultValue)
-    ValueAsBoolean = CBool(value)
+    stored = Value(nameId, defaultValue)
+    ValueAsBoolean = CBool(stored)
 End Function
 
 '@label:value-as-long
 '@sub-title Retrieve the hidden value coerced to Long
 '@export
-Private Function ValueAsLong(ByVal nameId As String, _
+Public Function ValueAsLong(ByVal nameId As String, _
                              Optional ByVal defaultValue As Long = 0) As Long
-    Dim value As Variant
+    Dim stored As Variant
 
-    value = ValueOf(nameId, defaultValue)
-    ValueAsLong = CLng(value)
+    stored = Value(nameId, defaultValue)
+    ValueAsLong = CLng(stored)
 End Function
 
 '@label:remove-name
 '@sub-title Remove a hidden name definition
 '@export
-Private Sub Remove(ByVal nameId As String)
+Public Sub RemoveName(ByVal nameId As String)
     Dim sanitized As String
 
     EnsureReady
@@ -970,7 +985,7 @@ End Sub
 '@label:list-names
 '@sub-title Enumerate recorded hidden names filtered by optional prefix
 '@export
-Private Function Enumerate(Optional ByVal prefix As String = vbNullString) As BetterArray
+Public Function ListNames(Optional ByVal prefix As String = vbNullString) As BetterArray
     Dim result As BetterArray
     Dim store As BetterArray
     Dim idx As Long
@@ -987,13 +1002,13 @@ Private Function Enumerate(Optional ByVal prefix As String = vbNullString) As Be
     prefixKey = LCase$(SanitizeNameId(prefix))
 
     If this.metadata Is Nothing Then
-        Set Enumerate = result
+        Set ListNames = result
         Exit Function
     End If
 
     Set store = MetadataStore()
     If store.Length = 0 Then
-        Set Enumerate = result
+        Set ListNames = result
         Exit Function
     End If
 
@@ -1010,13 +1025,13 @@ Private Function Enumerate(Optional ByVal prefix As String = vbNullString) As Be
         End If
     Next idx
 
-    Set Enumerate = result
+    Set ListNames = result
 End Function
 
 '@label:export-names
 '@sub-title Export all tracked hidden names to another worksheet
 '@export
-Private Sub ExportAll(ByVal targetSh As Worksheet, _
+Public Sub ExportNames(ByVal targetSh As Worksheet, _
                       Optional ByVal prefix As String = vbNullString)
     Dim store As BetterArray
     Dim idx As Long
@@ -1054,7 +1069,7 @@ End Sub
 '@label:export-names-to-workbook
 '@sub-title Export tracked names to another workbook scope
 '@export
-Private Sub ExportAllToWorkbook(ByVal targetWb As Workbook, _
+Public Sub ExportNamesToWorkbook(ByVal targetWb As Workbook, _
                                 Optional ByVal prefix As String = vbNullString)
     Dim store As BetterArray
     Dim idx As Long
@@ -1064,7 +1079,7 @@ Private Sub ExportAllToWorkbook(ByVal targetWb As Workbook, _
     Dim nameId As String
     Dim valueType As Byte
     Dim value As Variant
-    Dim destination As IHiddenNames
+    Dim destination As HiddenNames
 
     EnsureReady
     If targetWb Is Nothing Then
@@ -1097,10 +1112,10 @@ End Sub
 '@label:import-names
 '@sub-title Import hidden names from another worksheet
 '@export
-Private Sub ImportAll(ByVal sourceSh As Worksheet, _
+Public Sub ImportNames(ByVal sourceSh As Worksheet, _
                       Optional ByVal prefix As String = vbNullString, _
                       Optional ByVal overwriteExisting As Boolean = True)
-    Dim sourceManager As IHiddenNames
+    Dim sourceManager As HiddenNames
     Dim names As BetterArray
     Dim idx As Long
     Dim record As Variant
@@ -1145,10 +1160,10 @@ End Sub
 '@label:import-names-from-workbook
 '@sub-title Import hidden names from another workbook scope
 '@export
-Private Sub ImportAllFromWorkbook(ByVal sourceWb As Workbook, _
+Public Sub ImportNamesFromWorkbook(ByVal sourceWb As Workbook, _
                                   Optional ByVal prefix As String = vbNullString, _
                                   Optional ByVal overwriteExisting As Boolean = True)
-    Dim sourceManager As IHiddenNames
+    Dim sourceManager As HiddenNames
     Dim names As BetterArray
     Dim idx As Long
     Dim record As Variant
@@ -1298,81 +1313,4 @@ End Sub
 '@sub-title Raise a ProjectError-based exception
 Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal message As String)
     Err.Raise errNumber, CLASSNAME, message
-End Sub
-
-
-'@section Interface
-'===============================================================================
-Private Property Get IHiddenNames_Sheet() As Worksheet
-    Set IHiddenNames_Sheet = SheetInternal
-End Property
-
-Private Function IHiddenNames_HasName(ByVal nameId As String) As Boolean
-    IHiddenNames_HasName = HasName(nameId)
-End Function
-
-Private Function IHiddenNames_EnsureName(ByVal nameId As String, _
-                                         ByVal initialValue As Variant, _
-                                         Optional ByVal valueType As Byte = HiddenNameTypeVariant) As Name
-    Set IHiddenNames_EnsureName = Ensure(nameId, initialValue, valueType)
-End Function
-
-Private Function IHiddenNames_Value(ByVal nameId As String, _
-                                    Optional ByVal defaultValue As Variant) As Variant
-    IHiddenNames_Value = ValueOf(nameId, defaultValue)
-End Function
-
-Private Sub IHiddenNames_SetValue(ByVal nameId As String, ByVal value As Variant)
-    Update nameId, value
-End Sub
-
-Private Function IHiddenNames_ValueAsString(ByVal nameId As String, _
-                                            Optional ByVal defaultValue As String = vbNullString) As String
-    IHiddenNames_ValueAsString = ValueAsString(nameId, defaultValue)
-End Function
-
-Private Function IHiddenNames_ValueAsBoolean(ByVal nameId As String, _
-                                             Optional ByVal defaultValue As Boolean = False) As Boolean
-    IHiddenNames_ValueAsBoolean = ValueAsBoolean(nameId, defaultValue)
-End Function
-
-Private Function IHiddenNames_ValueAsLong(ByVal nameId As String, _
-                                          Optional ByVal defaultValue As Long = 0) As Long
-    IHiddenNames_ValueAsLong = ValueAsLong(nameId, defaultValue)
-End Function
-
-Private Sub IHiddenNames_RemoveName(ByVal nameId As String)
-    Remove nameId
-End Sub
-
-Private Function IHiddenNames_ListNames(Optional ByVal prefix As String = vbNullString) As BetterArray
-    Set IHiddenNames_ListNames = Enumerate(prefix)
-End Function
-
-Private Sub IHiddenNames_ExportNames(ByVal targetSh As Worksheet, _
-                                     Optional ByVal prefix As String = vbNullString)
-    ExportAll targetSh, prefix
-End Sub
-
-Private Sub IHiddenNames_ExportNamesToWorkbook(ByVal targetWb As Workbook, _
-                                               Optional ByVal prefix As String = vbNullString)
-    ExportAllToWorkbook targetWb, prefix
-End Sub
-
-Private Sub IHiddenNames_ImportNames(ByVal sourceSh As Worksheet, _
-                                     Optional ByVal prefix As String = vbNullString, _
-                                     Optional ByVal overwriteExisting As Boolean = True)
-    ImportAll sourceSh, prefix, overwriteExisting
-End Sub
-
-Private Sub IHiddenNames_ImportNamesFromWorkbook(ByVal sourceWb As Workbook, _
-                                                 Optional ByVal prefix As String = vbNullString, _
-                                                 Optional ByVal overwriteExisting As Boolean = True)
-    ImportAllFromWorkbook sourceWb, prefix, overwriteExisting
-End Sub
-
-Private Sub IHiddenNames_SetListObjectHeader(ByVal nameId As String, _
-                                             ByVal listObject As ListObject, _
-                                             ByVal headerName As String)
-    SetListObjectHeader nameId, listObject, headerName
 End Sub

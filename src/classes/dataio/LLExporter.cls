@@ -25,7 +25,7 @@ Option Explicit
 'populates it with the relevant data, metadata, and formatting, then saves
 'and closes it.
 '@depends ILLdictionary, LLExport, IPasswords, CustomTable
-'@depends DataSheet, AnaTabIds, ILLGeo, LLChoices, IHiddenNames
+'@depends DataSheet, AnaTabIds, ILLGeo, LLChoices, HiddenNames
 
 
 '@section Enumerations
@@ -454,7 +454,7 @@ End Sub
 '@return String. The sheet type tag (HList, VList, etc.).
 Private Function SheetTagOf(ByVal sh As Worksheet, _
                             Optional ByVal nameKey As String = "sheet_type") As String
-    Dim shHn As IHiddenNames
+    Dim shHn As HiddenNames
     Set shHn = HiddenNames.Create(sh)
     SheetTagOf = shHn.ValueAsString(nameKey)
 End Function
@@ -753,7 +753,7 @@ End Sub
 'exits when no custom dropdown sheet exists.
 '@param outwb Workbook. The output workbook.
 Private Sub AddCustomDropdowns(ByVal outwb As Workbook)
-    Dim wkbNames As IHiddenNames
+    Dim wkbNames As HiddenNames
     Dim choi As LLChoices
     Dim lo As ListObject
     Dim loValues As BetterArray
@@ -961,7 +961,7 @@ End Sub
 '@param afterSheetName String. Name of the sheet to insert after.
 Private Sub AddAnalysisSheets(ByVal outwb As Workbook, ByVal afterSheetName As String)
 
-    Dim wkbNames As IHiddenNames
+    Dim wkbNames As HiddenNames
     Dim sheetNamesList As BetterArray
     Dim scopesList As BetterArray
     Dim namObj As AnaTabIds

@@ -27,7 +27,7 @@ Option Explicit
 'alert styles plus forward and return hyperlinks between output and dropdown
 'sheets.
 'Uses the CustomTest harness (ICustomTest), not Rubberduck.
-'@depends DropdownLists, IDropdownLists, Checking, HiddenNames, IHiddenNames, TranslationObject, ITranslationObject, BetterArray, CustomTest, TestHelpers
+'@depends DropdownLists, IDropdownLists, Checking, HiddenNames, TranslationObject, ITranslationObject, BetterArray, CustomTest, TestHelpers
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const DROPTESTONE As String = "DropTestList1"
@@ -258,8 +258,8 @@ Public Sub TestCountersPersistThroughHiddenNames()
     CustomTestSetTitles Assert, "DropdownLists", "TestCountersPersistThroughHiddenNames"
 
     Dim valuesList As BetterArray
-    Dim wbStore As IHiddenNames
-    Dim shStore As IHiddenNames
+    Dim wbStore As HiddenNames
+    Dim shStore As HiddenNames
     Dim originalWb As Long
     Dim originalSh As Long
 

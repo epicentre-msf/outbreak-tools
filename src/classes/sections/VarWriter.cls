@@ -34,7 +34,7 @@ Private Type TVarWriter
     layer As Byte
     specs As ILinelistSpecs
     wksh As Worksheet
-    hn As IHiddenNames
+    hn As HiddenNames
     printWksh As Worksheet
     crfWksh As Worksheet
     dropdown As IDropdownLists
@@ -226,7 +226,7 @@ Private Property Get Trans() As ITranslationObject
     Set Trans = this.specs.TransObject()
 End Property
 
-Private Property Get HNames() As IHiddenNames
+Private Property Get HNames() As HiddenNames
     Set HNames = this.hn
 End Property
 

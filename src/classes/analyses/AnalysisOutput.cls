@@ -358,7 +358,7 @@ Private Sub PrepareSheet(Optional ByVal scope As Byte = AnalysisScopeNormal)
     Dim cellRng As Range
     Dim sheetInfo As String
     Dim design As ILLFormat
-    Dim shHn As IHiddenNames
+    Dim shHn As HiddenNames
 
     Select Case scope
     Case AnalysisScopeTimeSeries
@@ -570,7 +570,7 @@ Private Sub WriteTable(ByVal loName As String, _
     Set design = DesignFormat()
     Set namObj = NamesObject()
 
-    Dim outshHn As IHiddenNames
+    Dim outshHn As HiddenNames
     Set outshHn = HiddenNames.Create(outsh)
     goToSectionLabel = trads.TranslatedValue("MSG_GoToSec")
     goToHeaderLabel = trads.TranslatedValue("MSG_GoToHead")
@@ -824,7 +824,7 @@ Private Sub WriteTimeSeriesGraphs(ByVal graphLoName As String, _
     Dim tabPrefLabel As BetterArray
     Dim plotTitle As String
 
-    Dim outshHn As IHiddenNames
+    Dim outshHn As HiddenNames
 
     Set sh = Wksh()
     Set outsh = OutputSh(AnalysisScopeTimeSeries)
@@ -1058,7 +1058,7 @@ Public Sub WriteAnalysis(Optional ByVal part As Byte = 0)
     Dim lData As ILinelistSpecs
     Dim trads As ITranslationObject
     Dim goToSectionLabel As String
-    Dim outshHn As IHiddenNames
+    Dim outshHn As HiddenNames
 
     ' Bug #2 fix: GoTo arrays are LOCAL to each scope
     Dim sectionsList As BetterArray

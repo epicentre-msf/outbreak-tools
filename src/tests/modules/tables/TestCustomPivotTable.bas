@@ -137,7 +137,7 @@ Public Sub TestCreateInitialisesHiddenNames()
     Dim sut As CustomPivotTable
     Set sut = CustomPivotTable.Create(PivotSheet)
 
-    Dim shNames As IHiddenNames
+    Dim shNames As HiddenNames
     Set shNames = HiddenNames.Create(PivotSheet)
 
     Assert.IsTrue shNames.HasName("pivot_output_row"), _
@@ -199,7 +199,7 @@ Public Sub TestAddStoresTitleHiddenName()
 
     sut.Add "patients", DATA_TABLE_NAME, "Pivot Table"
 
-    Dim shNames As IHiddenNames
+    Dim shNames As HiddenNames
     Set shNames = HiddenNames.Create(PivotSheet)
 
     Assert.IsTrue shNames.HasName("RNG_PivotTitle_" & DATA_TABLE_NAME), _

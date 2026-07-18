@@ -10,14 +10,14 @@ Option Explicit
 Private Const LLSHEET As String = "LinelistTranslation"
 Private Const RNGEPIWEEKSTART As String = "RNG_EpiWeekStart"
 
-Private wkbNames As IHiddenNames
+Private wkbNames As HiddenNames
 Private tradform As ITranslationObject
 Private tradmess As ITranslationObject
 Private TriggerMode As Boolean
 
 'Get the sheet type tag (HiddenNames first, cell fallback for legacy sheets).
 Private Function SheetTag(ByVal sh As Worksheet) As String
-    Dim shHn As IHiddenNames
+    Dim shHn As HiddenNames
     Set shHn = HiddenNames.Create(sh)
     SheetTag = shHn.ValueAsString("sheet_type")
 End Function

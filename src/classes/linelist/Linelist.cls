@@ -30,7 +30,7 @@ Implements ILinelist
 'factory consumers create instances via `New Linelist` rather than
 '`With New Linelist`.
 '@depends ILinelistSpecs, ILLdictionary, ITranslationObject,
-'  IPasswords, ILLFormat, IHiddenNames,
+'  IPasswords, ILLFormat, HiddenNames,
 '  IDropdownLists, DropdownLists,
 '  CustomPivotTable, TemporaryRepos, HiddenNames, Buttons, CodeTransfer,
 '  BetterArray
@@ -578,8 +578,8 @@ Private Sub PrepareTemporarySheets()
     Dim counter As Long
     Dim namesArray As BetterArray
     Dim actName As String
-    Dim wkbNames As IHiddenNames
-    Dim shNames As IHiddenNames
+    Dim wkbNames As HiddenNames
+    Dim shNames As HiddenNames
 
     Set outWkb = OutputWkb
     Set trads = this.specs.TransObject
@@ -704,7 +704,7 @@ End Sub
 'to resolve the correct language code for translation lookups.
 Private Sub InitialiseWorkbookNames()
     Dim outWkb As Workbook
-    Dim wkbNames As IHiddenNames
+    Dim wkbNames As HiddenNames
     Dim dictLang As String
     Dim llLang As String
 
@@ -833,7 +833,7 @@ Private Sub TransferAllCode(ByVal codeTransfer As CodeTransfer)
 
     Set codesList = New BetterArray
 
-    'Transfer classes (34 classes)
+    'Transfer classes (33 classes)
     codesList.Push "BetterArray", "DataSheet", "LLExport", _
                    "LLChoices", _
                    "LLdictionary", "ILLdictionary", "LLGeo", _
@@ -849,7 +849,7 @@ Private Sub TransferAllCode(ByVal codeTransfer As CodeTransfer)
                     "LLImporter", _
                    "Graphs", "AnaTabIds", _
                    "ExportButton", _
-                   "HiddenNames", "IHiddenNames", _
+                   "HiddenNames", _
                    "EventLinelist", _
                    "ApplicationState", "IApplicationState"
 

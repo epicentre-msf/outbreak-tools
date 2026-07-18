@@ -32,7 +32,7 @@ Implements IDesignerTranslation
 'HiddenName for cross-session persistence. All translation objects
 'and name lists are cached for fast repeated access.
 'Consumers interact through the IDesignerTranslation interface.
-'@depends TranslationObject, ITranslationObject, BetterArray, HiddenNames, IHiddenNames
+'@depends TranslationObject, ITranslationObject, BetterArray, HiddenNames
 
 
 
@@ -49,7 +49,7 @@ Private Type TDesignerTranslation
     shapeNames As BetterArray
     rangeNames As BetterArray
     dropNames As BetterArray
-    wkshNames As IHiddenNames
+    wkshNames As HiddenNames
     isCached As Boolean
 End Type
 
@@ -115,7 +115,7 @@ Private Property Get DesignerLanguage() As String
         Exit Property
     End If
 
-    Dim names As IHiddenNames
+    Dim names As HiddenNames
     Set names = WkshNames()
 
     If names.HasName(LANG_HIDDEN_NAME) Then
@@ -333,7 +333,7 @@ End Function
 'so the cache-invalidation check remains correct.
 '@param langCode String. The language code to persist.
 Private Sub UpdateLanguageCode(ByVal langCode As String)
-    Dim names As IHiddenNames
+    Dim names As HiddenNames
     Set names = WkshNames()
     names.EnsureName LANG_HIDDEN_NAME, langCode, HiddenNameTypeString
     names.SetValue LANG_HIDDEN_NAME, langCode
@@ -342,10 +342,10 @@ End Sub
 '@label:wksh-names
 '@prop-title Cached HiddenNames accessor for the translation worksheet
 '@details
-'Lazily creates and returns an IHiddenNames instance scoped to the
+'Lazily creates and returns an HiddenNames instance scoped to the
 'translation worksheet.
-'@return IHiddenNames. The HiddenNames manager for the translation worksheet.
-Private Property Get WkshNames() As IHiddenNames
+'@return HiddenNames. The HiddenNames manager for the translation worksheet.
+Private Property Get WkshNames() As HiddenNames
     If this.wkshNames Is Nothing Then
         Set this.wkshNames = HiddenNames.Create(this.sh)
     End If

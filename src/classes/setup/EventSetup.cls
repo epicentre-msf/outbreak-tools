@@ -1130,7 +1130,7 @@ End Sub
 'value, so the operation is safe on fresh workbooks.
 Public Sub ResetTranslationCounter()
     Dim registrySheet As Worksheet
-    Dim namesManager As IHiddenNames
+    Dim namesManager As HiddenNames
 
     Set registrySheet = SheetOrNothing(SHEET_UPDATED)
     If registrySheet Is Nothing Then Exit Sub

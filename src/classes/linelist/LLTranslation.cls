@@ -25,7 +25,7 @@ Implements ILLTranslation
 'tables, dictionary-specific exchange, and workbook-level hidden name
 'initialisation for translated configuration values.
 '@depends ITranslationObject, TranslationObject, CustomTable
-'@depends IHiddenNames, HiddenNames, BetterArray
+'@depends HiddenNames, BetterArray
 '@version 1.0 (2026-02-10)
 
 
@@ -120,7 +120,7 @@ Public Property Get TransObject(Optional ByVal trans As Byte = TranslationOfMess
     Dim Lo As ListObject
     Dim lang As String
     Dim sh As Worksheet
-    Dim wkbNames As IHiddenNames
+    Dim wkbNames As HiddenNames
 
     Set sh = this.translationSheet
     Set wkbNames = HiddenNames.Create(sh.Parent)
@@ -315,7 +315,7 @@ End Sub
 '@throws ProjectError.ObjectNotInitialized When targetWkb is Nothing.
 '@export
 Public Sub InitialiseHiddenNames(ByVal targetWkb As Workbook)
-    Dim wkbNames As IHiddenNames
+    Dim wkbNames As HiddenNames
     Dim msgTrans As ITranslationObject
 
     If targetWkb Is Nothing Then
@@ -361,7 +361,7 @@ End Sub
 '@param llLang String. The interface language code (e.g., "fr").
 '@export
 Public Sub InitialiseSheetNames(ByVal dictLang As String, ByVal llLang As String)
-    Dim shNames As IHiddenNames
+    Dim shNames As HiddenNames
 
     Set shNames = HiddenNames.Create(this.translationSheet)
     EnsureAndSet shNames, "RNG_DictionaryLanguage", dictLang
@@ -385,7 +385,7 @@ End Sub
 '@return String. The stored value, or vbNullString if the key is unknown.
 '@export
 Public Property Get Value(ByVal nameId As String) As String
-    Dim shNames As IHiddenNames
+    Dim shNames As HiddenNames
     Dim rngName As String
 
     Select Case LCase$(Trim$(nameId))
@@ -542,10 +542,10 @@ End Sub
 
 '@label:ensure-and-set
 '@sub-title Create a HiddenName if missing, then always update its value
-'@param store IHiddenNames. The hidden names manager.
+'@param store HiddenNames. The hidden names manager.
 '@param nameId String. The hidden name identifier.
 '@param value String. The value to set.
-Private Sub EnsureAndSet(ByVal store As IHiddenNames, ByVal nameId As String, _
+Private Sub EnsureAndSet(ByVal store As HiddenNames, ByVal nameId As String, _
                          ByVal value As String)
     store.EnsureName nameId, value, HiddenNameTypeString
     store.SetValue nameId, value

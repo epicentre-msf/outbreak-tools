@@ -29,7 +29,7 @@ Private Type TLLExport
     hasChecks As Boolean
     checkCounter As Long
     sanitizeList As Variant
-    store As IHiddenNames
+    store As HiddenNames
 End Type
 
 Private Const COL_STATUS As String = "status"
@@ -838,7 +838,7 @@ End Function
 '===============================================================================
 
 '@sub-title Resolve worksheet name manager
-Private Function HiddenNameStore() As IHiddenNames
+Private Function HiddenNameStore() As HiddenNames
     If this.exportSheet Is Nothing Then Exit Function
 
     If this.store Is Nothing Then
@@ -860,7 +860,7 @@ Private Function CountExportRows() As Long
 End Function
 
 Private Function StoredTotalExports() As Long
-    Dim store As IHiddenNames
+    Dim store As HiddenNames
 
     Set store = HiddenNameStore()
     If store Is Nothing Then Exit Function
@@ -869,7 +869,7 @@ Private Function StoredTotalExports() As Long
 End Function
 
 Private Sub PersistTotalExports(ByVal totalCount As Long)
-    Dim store As IHiddenNames
+    Dim store As HiddenNames
 
     If totalCount < 0 Then totalCount = 0
 
@@ -881,7 +881,7 @@ Private Sub PersistTotalExports(ByVal totalCount As Long)
 End Sub
 
 Private Sub EnsureStoredTotalExports()
-    Dim store As IHiddenNames
+    Dim store As HiddenNames
     Dim total As Long
 
     If this.exportSheet Is Nothing Then Exit Sub

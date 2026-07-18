@@ -27,7 +27,7 @@ Option Explicit
 'Consumers call Create with a layer mode, sheet name, and linelist
 'reference, then invoke Build to construct the sheet.
 '@depends ILinelist, LLSheets, ILinelistSpecs, ILLFormat, IDropdownLists,
-'  IPasswords, ITranslationObject, Buttons, IHiddenNames, SectionBuilder,
+'  IPasswords, ITranslationObject, Buttons, HiddenNames, SectionBuilder,
 '  BetterArray
 '@version 1.0 (2026-02-09)
 
@@ -200,7 +200,7 @@ Private Sub BuildHList()
     Dim shColStart As Long
     Dim shColEnd As Long
     Dim hasGeo As Boolean
-    Dim shHn As IHiddenNames
+    Dim shHn As HiddenNames
     Dim filtSheetName As String
     Dim countaValue As Long
 
@@ -311,7 +311,7 @@ Private Sub BuildHList()
     shHn.EnsureName "table_name", tableName, HiddenNameTypeString
 
     'Print sheet hidden names
-    Dim printHiddenNames As IHiddenNames
+    Dim printHiddenNames As HiddenNames
     Set printHiddenNames = HiddenNames.Create(printSh)
     printHiddenNames.EnsureName "sheet_type", "HList Print", HiddenNameTypeString
     printHiddenNames.EnsureName "table_name", PRINT_PREFIX & tableName, HiddenNameTypeString
@@ -412,7 +412,7 @@ Private Sub BuildVList()
     Dim tableName As String
     Dim gotoSectionListName As String
     Dim goToSection As String
-    Dim shHn As IHiddenNames
+    Dim shHn As HiddenNames
 
     Set sh = this.ll.Wksh(this.sheetName)
     Set dict = this.ll.Dictionary

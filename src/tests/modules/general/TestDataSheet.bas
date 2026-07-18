@@ -15,7 +15,7 @@ Option Explicit
 '                    matching plus format import). Uses the CustomTest harness with the standard
 '                    CustomTestSetTitles / CustomTestLogFailure pattern.
 '
-'@depends            DataSheet, HiddenNames, IHiddenNames, BetterArray, CustomTest,
+'@depends            DataSheet, HiddenNames, BetterArray, CustomTest,
 '                    TestHelpers, DictionaryTestFixture
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
@@ -338,8 +338,8 @@ Public Sub TestExportIncludesHiddenNamesWhenRequested()
     On Error GoTo Fail
 
     Dim exportBook As Workbook
-    Dim sourceStore As IHiddenNames
-    Dim exportedStore As IHiddenNames
+    Dim sourceStore As HiddenNames
+    Dim exportedStore As HiddenNames
     Const NAME_ID As String = "__DataSheetHidden__"
 
     Set sourceStore = HiddenNames.Create(dataObject.Wksh)

@@ -80,7 +80,7 @@ Public Sub TestWorkbookOpenInitialisesHiddenCounter()
     Subject.OnWorkbookOpen
  
 
-    Dim namesManager As IHiddenNames
+    Dim namesManager As HiddenNames
     Set namesManager = HiddenNames.Create(FixtureWorkbook.Worksheets(SHEET_UPDATED))
 
     Assert.AreEqual CLng(0), CLng(namesManager.Value(COUNTER_NAME)), "Workbook open should reset the translations counter"
@@ -248,7 +248,7 @@ Public Sub TestResetTranslationCounterMethod()
     CustomTestSetTitles Assert, "EventSetup", "Resets translation counter on demand"
     On Error GoTo Fail
 
-    Dim namesManager As IHiddenNames
+    Dim namesManager As HiddenNames
     Set namesManager = HiddenNames.Create(FixtureWorkbook.Worksheets(SHEET_UPDATED))
     namesManager.EnsureName COUNTER_NAME, CLng(0), HiddenNameTypeLong
     namesManager.SetValue COUNTER_NAME, CLng(42)

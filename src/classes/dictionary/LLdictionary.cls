@@ -28,7 +28,7 @@ Private Type TDictionary
     dictDataSheet As DataSheet
     numberOfExports As Long
     hasChecks As Boolean
-    hiddenValues As IHiddenNames
+    hiddenValues As HiddenNames
 End Type
 
 Private this As TDictionary
@@ -203,7 +203,7 @@ End Sub
 
 '@label:persist-exports
 Private Sub PersistTotalExports(ByVal totalCount As Long)
-    Dim store As IHiddenNames
+    Dim store As HiddenNames
 
     Set store = HiddenNameStore()
     If store Is Nothing Then Exit Sub
@@ -216,7 +216,7 @@ End Sub
 
 '@label:persist-exports-sheet
 Private Sub PersistTotalExportsOnSheet(ByVal sheet As Worksheet, ByVal totalCount As Long)
-    Dim store As IHiddenNames
+    Dim store As HiddenNames
 
     If sheet Is Nothing Then Exit Sub
     If totalCount < 0 Then totalCount = 0
@@ -230,7 +230,7 @@ End Sub
 
 '@label:stored-exports
 Private Function StoredTotalExportsFromSheet(ByVal sheet As Worksheet) As Long
-    Dim store As IHiddenNames
+    Dim store As HiddenNames
 
     If sheet Is Nothing Then Exit Function
 
@@ -241,7 +241,7 @@ Private Function StoredTotalExportsFromSheet(ByVal sheet As Worksheet) As Long
 End Function
 
 '@label:hidden-name-store
-Private Function HiddenNameStore(Optional ByVal sheet As Worksheet) As IHiddenNames
+Private Function HiddenNameStore(Optional ByVal sheet As Worksheet) As HiddenNames
     Dim target As Worksheet
 
     If sheet Is Nothing Then

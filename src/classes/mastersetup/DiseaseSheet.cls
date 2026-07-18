@@ -398,8 +398,8 @@ End Sub
 
 Private Sub WriteMetadata()
 
-    Dim storeSheet As IHiddenNames
-    Dim storeBook As IHiddenNames
+    Dim storeSheet As HiddenNames
+    Dim storeBook As HiddenNames
 
     If this.hostSheet Is Nothing Then Exit Sub
 
@@ -546,7 +546,7 @@ Private Function ResolveNextDiseaseIndex() As Long
 End Function
 
 Private Function WorksheetIsDisease(ByVal targetSheet As Worksheet) As Boolean
-    Dim store As IHiddenNames
+    Dim store As HiddenNames
     Dim tagValue As String
 
     If targetSheet Is Nothing Then Exit Function
@@ -565,7 +565,7 @@ Private Function WorksheetIsDisease(ByVal targetSheet As Worksheet) As Boolean
 End Function
 
 Private Function DiseaseSheetIndex(ByVal targetSheet As Worksheet) As Long
-    Dim store As IHiddenNames
+    Dim store As HiddenNames
 
     If targetSheet Is Nothing Then Exit Function
 

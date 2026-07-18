@@ -233,7 +233,7 @@ End Sub
 '@return String. The sheet type tag (HList, VList, etc.).
 Private Function SheetTagOf(ByVal sh As Worksheet, _
                             Optional ByVal nameKey As String = "sheet_type") As String
-    Dim shHn As IHiddenNames
+    Dim shHn As HiddenNames
     Set shHn = HiddenNames.Create(sh)
     SheetTagOf = shHn.ValueAsString(nameKey)
 End Function

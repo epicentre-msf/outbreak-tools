@@ -549,7 +549,7 @@ Public Sub TestPrepareCreatesWorkbookFlags()
     subject.Prepare Nothing
 
     'Assert: workbook-level HiddenNames should exist
-    Dim wkbNames As IHiddenNames
+    Dim wkbNames As HiddenNames
     Set wkbNames = subject.HiddenStore
 
     Assert.AreEqual "Yes", wkbNames.ValueAsString("chkAlert"), "chkAlert should be Yes."
@@ -581,7 +581,7 @@ Public Sub TestPrepareCreatesGeoFlags()
     subject.Prepare Nothing
 
     'Assert: Geo worksheet-level HiddenNames should exist
-    Dim geoStore As IHiddenNames
+    Dim geoStore As HiddenNames
     Set geoStore = HiddenNames.Create(geoSheet)
 
     Assert.AreEqual vbNullString, geoStore.ValueAsString("RNG_GeoLangCode"), "RNG_GeoLangCode should default to empty."

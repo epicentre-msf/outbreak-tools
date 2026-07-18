@@ -35,7 +35,7 @@ Private Type TEventLinelist
     hostBook        As Workbook           'Linelist workbook
     tradmess        As ITranslationObject 'Cached message translations
     lltrads         As ILLTranslation     'Cached translation helper
-    wkbNames        As IHiddenNames       'Cached workbook-level hidden names
+    wkbNames        As HiddenNames       'Cached workbook-level hidden names
     drop            As IDropdownLists     'Cached dropdown manager
     geo             As ILLGeo             'Cached geo helper
     sp              As LLSpatial          'Cached spatial helper
@@ -120,7 +120,7 @@ End Sub
 Public Sub OnSheetChange(ByVal sh As Worksheet, ByVal target As Range)
     If (sh Is Nothing) Or (target Is Nothing) Then Exit Sub
 
-    Dim shHn As IHiddenNames
+    Dim shHn As HiddenNames
     Set shHn = HiddenNames.Create(sh)
 
     Dim shType As String
@@ -169,7 +169,7 @@ End Sub
 Public Sub OnSelectionChange(ByVal sh As Worksheet, ByVal target As Range)
     If (sh Is Nothing) Or (target Is Nothing) Then Exit Sub
 
-    Dim shHn As IHiddenNames
+    Dim shHn As HiddenNames
     Set shHn = HiddenNames.Create(sh)
 
     Dim shType As String
@@ -218,7 +218,7 @@ Public Sub UpdateFilterTables(Optional ByVal calculate As Boolean = True)
     Dim rowCounter As Long
     Dim filtLoHrng As Range
     Dim wsFunc As WorksheetFunction
-    Dim shHn As IHiddenNames
+    Dim shHn As HiddenNames
 
     On Error GoTo ErrUpdate
 
@@ -449,9 +449,9 @@ End Function
 '(header row), and multiple choice updates.
 '@param sh Worksheet. The HList worksheet.
 '@param target Range. The edited cell(s).
-'@param shHn IHiddenNames. The worksheet-level hidden names (shared from caller).
+'@param shHn HiddenNames. The worksheet-level hidden names (shared from caller).
 Private Sub HandleHListChange(ByRef sh As Worksheet, ByRef target As Range, _
-                              ByRef shHn As IHiddenNames)
+                              ByRef shHn As HiddenNames)
     Dim adminTable As BetterArray
     Dim adminNames As BetterArray
     Dim hRng As Range
@@ -632,9 +632,9 @@ End Sub
 'navigation on vertical list sheets.
 '@param sh Worksheet. The VList worksheet.
 '@param target Range. The edited cell(s).
-'@param shHn IHiddenNames. The worksheet-level hidden names (shared from caller).
+'@param shHn HiddenNames. The worksheet-level hidden names (shared from caller).
 Private Sub HandleVListChange(ByRef sh As Worksheet, ByRef target As Range, _
-                              ByRef shHn As IHiddenNames)
+                              ByRef shHn As HiddenNames)
     Dim rng As Range
     Dim rngLook As Range
     Dim varLabel As String
@@ -1001,9 +1001,9 @@ End Sub
 'or geo4 cell.
 '@param sh Worksheet. The HList worksheet.
 '@param target Range. The newly selected cell(s).
-'@param shHn IHiddenNames. The worksheet-level hidden names (shared from caller).
+'@param shHn HiddenNames. The worksheet-level hidden names (shared from caller).
 Private Sub HandleSelectionHList(ByRef sh As Worksheet, ByRef target As Range, _
-                                ByRef shHn As IHiddenNames)
+                                ByRef shHn As HiddenNames)
     Dim targetColumn As Long
     Dim nbOffset As Long
     Dim hRng As Range
@@ -1084,7 +1084,7 @@ Private Sub UpdateListAutoSheet(ByRef sh As Worksheet)
     Dim varName As String
     Dim arrTable As BetterArray
     Dim hRng As Range
-    Dim shHn As IHiddenNames
+    Dim shHn As HiddenNames
     Dim colIdx As Long
 
     Set shHn = HiddenNames.Create(sh)
@@ -1208,7 +1208,7 @@ End Function
 '@param sh Worksheet. The worksheet to query.
 '@return String. The sheet type tag (HList, VList, Uni-Bi-Analysis, etc.).
 Private Function SheetTag(ByRef sh As Worksheet) As String
-    Dim shHn As IHiddenNames
+    Dim shHn As HiddenNames
     Set shHn = HiddenNames.Create(sh)
     SheetTag = shHn.ValueAsString("sheet_type")
 End Function

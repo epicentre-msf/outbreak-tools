@@ -843,7 +843,7 @@ Public Sub Export(ByVal toWkb As Workbook, Optional ByVal filteredVarName As Str
     Dim impRng As Range
     Dim counter As Long
     Dim colIndex As Long
-    Dim store As IHiddenNames
+    Dim store As HiddenNames
 
     'Trace on errors on export
     If toWkb Is Nothing Then

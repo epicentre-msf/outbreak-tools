@@ -20,7 +20,7 @@ Private hfOrGeo As Byte
 
 'Get the sheet type tag (HiddenNames first, cell fallback for legacy sheets).
 Private Function SheetTag(ByVal sh As Worksheet) As String
-    Dim shHn As IHiddenNames
+    Dim shHn As HiddenNames
     Set shHn = HiddenNames.Create(sh)
     SheetTag = shHn.ValueAsString("sheet_type")
 End Function

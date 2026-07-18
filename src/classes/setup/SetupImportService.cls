@@ -792,7 +792,7 @@ Public Sub Export(Optional Byval outwb As Workbook)
     Dim errNumber As Long
     Dim errSource As String
     Dim errDescription As String
-    Dim store As IHiddenNames
+    Dim store As HiddenNames
 
 
     this.lastExportFile = vbNullString

@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Designer")
 '@ModuleDescription("Non-core ribbon callbacks for the designer workbook.")
-'@depends DesignerPreparation, DesignerEntry, RibbonDev, LLGeo, ILLGeo, ApplicationState, IApplicationState, OSFiles, HiddenNames, IHiddenNames, BetterArray, DropdownLists, IDropdownLists, LinelistBuildService, LinelistSpecs, ILinelistSpecs, Linelist, ILinelist, ListBuilder, LLSheets, GenerationReport
+'@depends DesignerPreparation, DesignerEntry, RibbonDev, LLGeo, ILLGeo, ApplicationState, IApplicationState, OSFiles, HiddenNames, BetterArray, DropdownLists, IDropdownLists, LinelistBuildService, LinelistSpecs, ILinelistSpecs, Linelist, ILinelist, ListBuilder, LLSheets, GenerationReport
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 'Non-core ribbon logics are callbacks whose absence will not fire a
@@ -489,7 +489,7 @@ End Function
 
 '@Description("Extract languages from setup Translations sheet and update the setup languages dropdown.")
 Private Sub ExtractAndUpdateLanguages(ByVal tradSheet As Worksheet)
-    Dim setupStore As IHiddenNames
+    Dim setupStore As HiddenNames
     Dim langString As String
     Dim languages() As String
     Dim langValues As BetterArray

@@ -23,7 +23,7 @@ Option Explicit
 Private Type TMasterSetupVariables
     table As ListObject              'Underlying variables table
     wrapper As CustomTable          'Cached CustomTable wrapper for row management
-    hiddenNames As IHiddenNames      'Worksheet-level hidden name manager
+    hiddenNames As HiddenNames      'Worksheet-level hidden name manager
     colOrder As Long                 'Cached column index for "Variable Order"
     colSection As Long               'Cached column index for "Variable Section"
     colName As Long                  'Cached column index for "Variable Name"
@@ -208,7 +208,7 @@ End Sub
 
 '@sub-title Apply workbook-scoped validation for variable names onto the supplied range.
 Public Sub SetVariableValidation(ByVal targetRange As Range)
-    Dim workbookStore As IHiddenNames
+    Dim workbookStore As HiddenNames
 
     ValidateReady
     If targetRange Is Nothing Then Exit Sub
@@ -329,7 +329,7 @@ End Sub
 '@sub-title Export the hidden metadata required to resolve translated columns.
 '@param targetSheet Worksheet receiving the hidden name definitions.
 Public Sub ExportMetadata(ByVal targetSheet As Worksheet)
-    Dim store As IHiddenNames
+    Dim store As HiddenNames
 
     ValidateReady
     If targetSheet Is Nothing Then Exit Sub
@@ -371,7 +371,7 @@ Public Sub AssignListObject(ByVal listObject As ListObject)
 End Sub
 
 Private Sub LoadColumnMetadata()
-    Dim store As IHiddenNames
+    Dim store As HiddenNames
 
     Set store = HiddenNameStore()
     If store Is Nothing Then Exit Sub
@@ -388,7 +388,7 @@ Private Sub LoadColumnMetadata()
 End Sub
 
 Private Sub PersistColumnMetadata()
-    Dim store As IHiddenNames
+    Dim store As HiddenNames
 
     Set store = HiddenNameStore()
     If store Is Nothing Then Exit Sub
@@ -407,7 +407,7 @@ Private Sub PersistColumnMetadata()
     this.initialised = True
 End Sub
 
-Private Sub PersistColumnIndex(ByVal store As IHiddenNames, _
+Private Sub PersistColumnIndex(ByVal store As HiddenNames, _
                                ByVal nameId As String, _
                                ByVal headerName As String)
     Dim colIndex As Long
@@ -540,7 +540,7 @@ End Sub
 
 Private Function ColumnIndex(ByVal headerName As String) As Long
     Dim cached As Long
-    Dim store As IHiddenNames
+    Dim store As HiddenNames
     Dim nameId As String
     Dim column As ListColumn
 
@@ -657,7 +657,7 @@ Private Function ColumnHiddenName(ByVal headerName As String) As String
     End Select
 End Function
 
-Private Function HiddenNameStore() As IHiddenNames
+Private Function HiddenNameStore() As HiddenNames
     If this.table Is Nothing Then Exit Function
 
     If this.hiddenNames Is Nothing Then
@@ -667,7 +667,7 @@ Private Function HiddenNameStore() As IHiddenNames
     Set HiddenNameStore = this.hiddenNames
 End Function
 
-Private Function WorkbookHiddenNameStore() As IHiddenNames
+Private Function WorkbookHiddenNameStore() As HiddenNames
     Dim wb As Workbook
 
     Set wb = HostWorkbook
@@ -765,7 +765,7 @@ End Sub
 Private Sub EnsureRequiredColumns(ByVal listObject As ListObject)
     Dim required As Variant
     Dim header As Variant
-    Dim store As IHiddenNames
+    Dim store As HiddenNames
 
     required = RequiredHeaders()
 
@@ -855,7 +855,7 @@ End Function
 
 Private Sub EnsureColumnAtStoredIndex(ByVal listObject As ListObject, _
                                       ByVal headerName As String, _
-                                      ByVal store As IHiddenNames)
+                                      ByVal store As HiddenNames)
     Dim targetIndex As Long
     Dim hiddenName As String
     Dim current As ListColumn
@@ -890,7 +890,7 @@ Private Sub EnsureColumnAtStoredIndex(ByVal listObject As ListObject, _
 End Sub
 
 Private Sub PersistInitialisedFlag(ByVal state As Boolean)
-    Dim store As IHiddenNames
+    Dim store As HiddenNames
 
     Set store = HiddenNameStore()
     If store Is Nothing Then Exit Sub

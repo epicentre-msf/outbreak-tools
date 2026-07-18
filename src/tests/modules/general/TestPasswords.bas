@@ -31,7 +31,7 @@ Attribute VB_Name = "TestPasswords"
 '   those tests are skipped with an explicit log message.
 '
 ' @depends Passwords, IPasswords, TranslationObject, ITranslationObject,
-'   ApplicationState, IApplicationState, HiddenNames, IHiddenNames, Checking,
+'   ApplicationState, IApplicationState, HiddenNames, Checking,
 '   BetterArray, CustomTest, TestHelpers, PasswordsTestFixture
 
 Option Explicit

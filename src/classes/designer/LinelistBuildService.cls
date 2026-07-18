@@ -12,7 +12,7 @@ Attribute VB_Description = "Direct setup-to-linelist build service eliminating t
 '@PredeclaredId
 '@Folder("Designer")
 '@ModuleDescription("Exports pass-through setup data directly to the linelist, bypassing the designer intermediary.")
-'@depends ProjectError, LLdictionary, ILLdictionary, LLChoices, LLExport, Analysis, LLGeo, ILLGeo, IPasswords, Passwords, LLFormat, ILLFormat, LLTranslation, ILLTranslation, HiddenNames, IHiddenNames
+'@depends ProjectError, LLdictionary, ILLdictionary, LLChoices, LLExport, Analysis, LLGeo, ILLGeo, IPasswords, Passwords, LLFormat, ILLFormat, LLTranslation, ILLTranslation, HiddenNames
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, ParameterNotUsed
 
 Option Explicit
@@ -432,7 +432,7 @@ End Sub
 '@label:export-hidden-names-from-setup
 '@sub-title Export hidden names directly from setup to linelist
 Private Sub ExportHiddenNamesFromSetup(ByVal setupBook As Workbook, ByVal targetBook As Workbook)
-    Dim store As IHiddenNames
+    Dim store As HiddenNames
 
     Set store = HiddenNames.Create(setupBook)
     store.ExportNamesToWorkbook targetBook
@@ -495,7 +495,7 @@ End Sub
 Private Sub ExportGeoFromDesigner(ByVal hostBook As Workbook, ByVal targetBook As Workbook)
     Dim hostSheet As Worksheet
     Dim geoManager As ILLGeo
-    Dim geoStore As IHiddenNames
+    Dim geoStore As HiddenNames
     Dim dictLang As String
     Dim langCode As String
 
@@ -584,7 +584,7 @@ End Sub
 'export. The interface language is split on "-" to extract the code
 'prefix (e.g., "FRA-Francais" -> "FRA").
 Private Sub SyncDesignerLanguageNames(ByVal hostBook As Workbook)
-    Dim store As IHiddenNames
+    Dim store As HiddenNames
     Dim dictLang As String
     Dim llFormValue As String
     Dim llLang As String
@@ -614,7 +614,7 @@ End Sub
 'to the target linelist workbook, including language codes, ribbon flags,
 'and other configuration values.
 Private Sub ExportDesignerHiddenNames(ByVal hostBook As Workbook, ByVal targetBook As Workbook)
-    Dim store As IHiddenNames
+    Dim store As HiddenNames
 
     Set store = HiddenNames.Create(hostBook)
     store.ExportNamesToWorkbook targetBook
@@ -628,7 +628,7 @@ End Sub
 '@sub-title Check whether the formatter was imported via the designer ribbon
 '@return Boolean. True when TAG_FORMATTER_IMPORTED is "Yes" on the host workbook.
 Private Function FormatterAlreadyImported(ByVal hostBook As Workbook) As Boolean
-    Dim store As IHiddenNames
+    Dim store As HiddenNames
 
     Set store = HiddenNames.Create(hostBook)
     FormatterAlreadyImported = (store.ValueAsString(TAG_FORMATTER_IMPORTED) = "Yes")

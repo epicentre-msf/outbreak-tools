@@ -1240,7 +1240,7 @@ Private Sub PrepareRegistryFixture()
     Dim matrix As Variant
     Dim registryRange As Range
     Dim registryTable As ListObject
-    Dim store As IHiddenNames
+    Dim store As HiddenNames
 
     Set dataSheet = TestHelpers.EnsureWorksheet(REGISTRY_SOURCE_SHEET)
     dataSheet.Cells.Clear
@@ -1481,7 +1481,7 @@ End Function
 
 Private Function RegistryCounterValue() As Long
     Dim registrySheet As Worksheet
-    Dim store As IHiddenNames
+    Dim store As HiddenNames
 
     On Error Resume Next
         Set registrySheet = ThisWorkbook.Worksheets(REGISTRY_SHEET_NAME)

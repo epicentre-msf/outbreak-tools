@@ -19,7 +19,7 @@ Option Explicit
 'with a full fixture; HasNoData reflects RNG_GeoUpdated state; GeoNames
 'resolves from named range cache; GeoNames falls back to raw name for unknown
 'keys; GeoLevel returns empty when geobase has no data.
-'@depends LLGeo, ILLGeo, BetterArray, CustomTest, TestHelpers, HiddenNames, IHiddenNames
+'@depends LLGeo, ILLGeo, BetterArray, CustomTest, TestHelpers, HiddenNames
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const GEO_FIXTURE As String = "GeoFixture"
@@ -162,7 +162,7 @@ Private Function BuildGeoFixture() As Worksheet
     Next counter
 
     'Create the 5 HiddenNames (constant values, not cell references)
-    Dim geoStore As IHiddenNames
+    Dim geoStore As HiddenNames
     Set geoStore = HiddenNames.Create(sh)
     geoStore.EnsureName "RNG_GeoUpdated", "empty", HiddenNameTypeString
     geoStore.EnsureName "RNG_GeoName", "test_geo", HiddenNameTypeString
@@ -293,7 +293,7 @@ Public Sub TestHasNoDataFalseWhenUpdated()
 
     Dim sh As Worksheet
     Set sh = BuildGeoFixture()
-    Dim geoStore As IHiddenNames
+    Dim geoStore As HiddenNames
     Set geoStore = HiddenNames.Create(sh)
     geoStore.SetValue "RNG_GeoUpdated", "updated, not translated"
 
@@ -327,7 +327,7 @@ Public Sub TestGeoNamesResolvesFromCache()
     Dim sh As Worksheet
     Set sh = BuildGeoFixture()
     sh.Range("RNG_ADM1NAME").Value = "Province"
-    Dim geoStore As IHiddenNames
+    Dim geoStore As HiddenNames
     Set geoStore = HiddenNames.Create(sh)
     geoStore.SetValue "RNG_GeoUpdated", "updated, not translated"
 
@@ -410,7 +410,7 @@ Public Sub TestUpdateLevelNamesPopulatesFromTNAMES()
                             sh.Cells(6, baseCol + 1))
 
     'Set the language code so UpdateLevelNames knows which column to read
-    Dim geoStore As IHiddenNames
+    Dim geoStore As HiddenNames
     Set geoStore = HiddenNames.Create(sh)
     geoStore.SetValue "RNG_GeoLangCode", "EN"
     geoStore.SetValue "RNG_GeoUpdated", "updated"
@@ -459,7 +459,7 @@ Public Sub TestUpdateLevelNamesSkipsWithNoLangCode()
     loNames.Resize sh.Range(sh.Cells(loNames.Range.Row, baseCol), _
                             sh.Cells(2, baseCol + 1))
 
-    Dim geoStore As IHiddenNames
+    Dim geoStore As HiddenNames
     Set geoStore = HiddenNames.Create(sh)
     geoStore.SetValue "RNG_GeoUpdated", "updated"
 

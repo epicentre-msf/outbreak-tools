@@ -124,7 +124,7 @@ End Sub
 Public Sub TestInitialisePersistsMetadataAndValidation()
     Dim dropdowns As IDropdownLists
     Dim statusRange As Range
-    Dim hidden As IHiddenNames
+    Dim hidden As HiddenNames
 
     CustomTestSetTitles Assert, "MasterSetupVariables", "TestInitialisePersistsMetadataAndValidation"
 
@@ -213,7 +213,7 @@ Public Sub TestCloneToWorkbookCopiesStructureAndMetadata()
     Dim targetBook As Workbook
     Dim clone As MasterSetupVariables
     Dim targetSheet As Worksheet
-    Dim targetHidden As IHiddenNames
+    Dim targetHidden As HiddenNames
 
     CustomTestSetTitles Assert, "MasterSetupVariables", "TestCloneToWorkbookCopiesStructureAndMetadata"
 
@@ -365,7 +365,7 @@ Private Sub AssertColumnOrder(ByVal lo As ListObject)
 End Sub
 
 Private Sub RegisterWorkbookVariableName()
-    Dim store As IHiddenNames
+    Dim store As HiddenNames
     Dim lo As ListObject
     Dim wb As Workbook
 

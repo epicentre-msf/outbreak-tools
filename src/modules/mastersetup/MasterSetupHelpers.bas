@@ -234,7 +234,7 @@ Public Sub ManageRows(ByVal targetSheet As Worksheet, ByVal addRows As Boolean)
 
     Dim lo As ListObject
     Dim wrapper As CustomTable
-    Dim store As IHiddenNames
+    Dim store As HiddenNames
     Dim sheetTag As String
     Dim rowCount As Long
     Dim scope As IApplicationState

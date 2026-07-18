@@ -27,12 +27,12 @@ Private Const WORKBOOK_HEADER_NAME As String = "__hn_table_header__"
 'The fixture allocates two temporary worksheets (hn_main, hn_other) and a
 'lazy-loaded manager instance that are reset before every test to guarantee
 'full isolation.
-'@depends HiddenNames, IHiddenNames, BetterArray, CustomTest, TestHelpers
+'@depends HiddenNames, BetterArray, CustomTest, TestHelpers
 
 Private Assert As ICustomTest
 Private testSh As Worksheet
 Private otherSh As Worksheet
-Private manager As IHiddenNames
+Private manager As HiddenNames
 
 
 '@section Module lifecycle
@@ -122,8 +122,8 @@ Private Sub DeleteWorkbookName(ByVal nameId As String)
     On Error GoTo 0
 End Sub
 
-'@sub-title Lazy-create and return the shared IHiddenNames manager scoped to testSh
-Private Function EnsureManager() As IHiddenNames
+'@sub-title Lazy-create and return the shared HiddenNames manager scoped to testSh
+Private Function EnsureManager() As HiddenNames
     If manager Is Nothing Then
         Set manager = HiddenNames.Create(testSh)
     End If
@@ -201,7 +201,7 @@ End Sub
 Public Sub TestWorkbookScopeStoresGlobalName()
     CustomTestSetTitles Assert, "HiddenNames", "WorkbookScopeStoresGlobalName"
 
-    Dim names As IHiddenNames
+    Dim names As HiddenNames
     Dim wb As Workbook
     Dim definition As Name
 
@@ -244,9 +244,9 @@ End Sub
 Public Sub TestExportNamesToWorkbookCopiesValues()
     CustomTestSetTitles Assert, "HiddenNames", "TestExportNamesToWorkbookCopiesValues"
 
-    Dim names As IHiddenNames
+    Dim names As HiddenNames
     Dim targetWb As Workbook
-    Dim destination As IHiddenNames
+    Dim destination As HiddenNames
 
     On Error GoTo UnexpectedError
 
@@ -283,9 +283,9 @@ End Sub
 Public Sub TestImportNamesFromWorkbookRespectsOverwrite()
     CustomTestSetTitles Assert, "HiddenNames", "TestImportNamesFromWorkbookRespectsOverwrite"
 
-    Dim target As IHiddenNames
+    Dim target As HiddenNames
     Dim sourceWb As Workbook
-    Dim sourceStore As IHiddenNames
+    Dim sourceStore As HiddenNames
 
     On Error GoTo UnexpectedError
 
@@ -327,7 +327,7 @@ End Sub
 Public Sub TestSetListObjectHeaderCreatesWorkbookName()
     CustomTestSetTitles Assert, "HiddenNames", "TestSetListObjectHeaderCreatesWorkbookName"
 
-    Dim names As IHiddenNames
+    Dim names As HiddenNames
     Dim lo As ListObject
     Dim workbook As Workbook
     Dim createdName As Name
@@ -371,7 +371,7 @@ End Sub
 Public Sub TestEnsureNameCreatesDefinition()
     CustomTestSetTitles Assert, "HiddenNames", "EnsureNameCreatesDefinition"
 
-    Dim names As IHiddenNames
+    Dim names As HiddenNames
     Dim definition As Name
 
     On Error GoTo UnexpectedError
@@ -402,7 +402,7 @@ End Sub
 Public Sub TestSetValueUpdatesExistingDefinition()
     CustomTestSetTitles Assert, "HiddenNames", "SetValueUpdatesExistingDefinition"
 
-    Dim names As IHiddenNames
+    Dim names As HiddenNames
 
     On Error GoTo UnexpectedError
 
@@ -431,7 +431,7 @@ End Sub
 Public Sub TestValueWithDefaultDoesNotCreateName()
     CustomTestSetTitles Assert, "HiddenNames", "ValueWithDefaultDoesNotCreateName"
 
-    Dim names As IHiddenNames
+    Dim names As HiddenNames
     Dim defaultValue As Variant
 
     On Error GoTo UnexpectedError
@@ -462,8 +462,8 @@ End Sub
 Public Sub TestExportNamesCopiesDefinitions()
     CustomTestSetTitles Assert, "HiddenNames", "ExportNamesCopiesDefinitions"
 
-    Dim source As IHiddenNames
-    Dim destination As IHiddenNames
+    Dim source As HiddenNames
+    Dim destination As HiddenNames
     Dim definition As Name
 
     On Error GoTo UnexpectedError
@@ -500,8 +500,8 @@ End Sub
 Public Sub TestImportNamesRespectsOverwriteFlag()
     CustomTestSetTitles Assert, "HiddenNames", "ImportNamesRespectsOverwriteFlag"
 
-    Dim target As IHiddenNames
-    Dim source As IHiddenNames
+    Dim target As HiddenNames
+    Dim source As HiddenNames
 
     On Error GoTo UnexpectedError
 
@@ -541,7 +541,7 @@ End Sub
 Public Sub TestListNamesReturnsMetadata()
     CustomTestSetTitles Assert, "HiddenNames", "ListNamesReturnsMetadata"
 
-    Dim names As IHiddenNames
+    Dim names As HiddenNames
     Dim records As BetterArray
     Dim record As Variant
 
@@ -578,7 +578,7 @@ End Sub
 Public Sub TestStringValuesDecodeQuotes()
     CustomTestSetTitles Assert, "HiddenNames", "TestStringValuesDecodeQuotes"
 
-    Dim names As IHiddenNames
+    Dim names As HiddenNames
     Dim expected As String
 
     On Error GoTo UnexpectedError
@@ -609,7 +609,7 @@ End Sub
 Public Sub TestBooleanRoundTrip()
     CustomTestSetTitles Assert, "HiddenNames", "TestBooleanRoundTrip"
 
-    Dim names As IHiddenNames
+    Dim names As HiddenNames
     Dim stored As Boolean
 
     On Error GoTo UnexpectedError
@@ -638,7 +638,7 @@ End Sub
 Public Sub TestLongRoundTrip()
     CustomTestSetTitles Assert, "HiddenNames", "TestLongRoundTrip"
 
-    Dim names As IHiddenNames
+    Dim names As HiddenNames
     Dim stored As Long
 
     On Error GoTo UnexpectedError
@@ -667,7 +667,7 @@ End Sub
 Public Sub TestRemoveDeletesDefinition()
     CustomTestSetTitles Assert, "HiddenNames", "TestRemoveDeletesDefinition"
 
-    Dim names As IHiddenNames
+    Dim names As HiddenNames
     Dim definition As Name
 
     On Error GoTo UnexpectedError
@@ -698,7 +698,7 @@ End Sub
 Public Sub TestListNamesFiltersByPrefix()
     CustomTestSetTitles Assert, "HiddenNames", "TestListNamesFiltersByPrefix"
 
-    Dim names As IHiddenNames
+    Dim names As HiddenNames
     Dim records As BetterArray
 
     On Error GoTo UnexpectedError

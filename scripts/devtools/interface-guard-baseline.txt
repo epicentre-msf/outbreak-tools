@@ -12,5 +12,4 @@ IDiseaseLogger
 IDiseaseReportManager
 IDiseaseSheet
 IDiseaseWorksheetManager
-IHiddenNames
 ILLTranslation

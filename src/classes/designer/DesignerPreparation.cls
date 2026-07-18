@@ -12,7 +12,7 @@ Attribute VB_Description = "Prepares designer workbooks and ribbon settings"
 '@PredeclaredId
 '@Folder("Designer")
 '@ModuleDescription("Prepares designer workbooks and persists ribbon settings through hidden names.")
-'@depends ProjectError, HiddenNames, IHiddenNames, Development, OSFiles, CustomTable, BetterArray, DropdownLists, IDropdownLists
+'@depends ProjectError, HiddenNames, Development, OSFiles, CustomTable, BetterArray, DropdownLists, IDropdownLists
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, ParameterNotUsed
 
 Option Explicit
@@ -29,7 +29,7 @@ Option Explicit
 'T_Multi table on the GenerateMultiple worksheet, and registers hidden
 'sheets with the development manager. Also provides methods to read and
 'write ribbon checkbox flags persisted through workbook-level hidden names.
-'@depends HiddenNames, IHiddenNames, Development, OSFiles, CustomTable, BetterArray, DropdownLists, IDropdownLists
+'@depends HiddenNames, Development, OSFiles, CustomTable, BetterArray, DropdownLists, IDropdownLists
 
 
 '@section State
@@ -37,7 +37,7 @@ Option Explicit
 
 Private Type TDesignerPreparation
     hostBook As Workbook       'Designer workbook being prepared
-    store As IHiddenNames      'Workbook-level hidden names manager
+    store As HiddenNames      'Workbook-level hidden names manager
     dropdowns As IDropdownLists 'Dropdown manager bound to dropdown sheet
     dropSheet As Worksheet     'Worksheet hosting dropdown listobjects
 End Type
@@ -235,11 +235,11 @@ End Property
 '@label:hidden-store
 '@prop-title The workbook-level hidden names manager
 '@details
-'Returns the IHiddenNames instance lazily created from the host workbook.
+'Returns the HiddenNames instance lazily created from the host workbook.
 'Used internally to persist and retrieve ribbon flag values.
-'@return IHiddenNames. The hidden names manager.
+'@return HiddenNames. The hidden names manager.
 '@export
-Public Property Get HiddenStore() As IHiddenNames
+Public Property Get HiddenStore() As HiddenNames
     EnsureHiddenStore
     Set HiddenStore = this.store
 End Property
@@ -401,7 +401,7 @@ End Sub
 'workbook.
 Private Sub EnsureGeoFlags()
     Dim geoSheet As Worksheet
-    Dim geoStore As IHiddenNames
+    Dim geoStore As HiddenNames
 
     Set geoSheet = ResolveWorksheet(SHEET_GEO)
     If geoSheet Is Nothing Then Exit Sub
@@ -652,7 +652,7 @@ End Sub
 '@label:ensure-hidden-store
 '@sub-title Lazily initialise the hidden names store from the host workbook
 '@details
-'Creates the IHiddenNames instance on first access by calling
+'Creates the HiddenNames instance on first access by calling
 'HiddenNames.Create with the host workbook. Subsequent calls are no-ops.
 Private Sub EnsureHiddenStore()
     If this.store Is Nothing Then

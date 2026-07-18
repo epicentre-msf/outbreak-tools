@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Designer")
 '@ModuleDescription("Ribbon callbacks for the designer workbook.")
-'@depends DesignerPreparation, RibbonDev, OSFiles, BetterArray, CustomTable, Passwords, IPasswords, LLFormat, ILLFormat, ApplicationState, IApplicationState, DesignerTranslation, IDesignerTranslation, HiddenNames, IHiddenNames
+'@depends DesignerPreparation, RibbonDev, OSFiles, BetterArray, CustomTable, Passwords, IPasswords, LLFormat, ILLFormat, ApplicationState, IApplicationState, DesignerTranslation, IDesignerTranslation, HiddenNames
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Private Const SHEET_FORMAT As String = "__formatter"
@@ -203,7 +203,7 @@ Public Sub clickImpStyle(ByRef control As IRibbonControl)
     Set formatManager = LLFormat.Create(ThisWorkbook.Worksheets(SHEET_FORMAT))
     formatManager.Import importBook.Worksheets(1)
 
-    Dim store As IHiddenNames
+    Dim store As HiddenNames
     Set store = HiddenNames.Create(ThisWorkbook)
     store.Add TAG_FORMATTER_IMPORTED, "Yes"
 

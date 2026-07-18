@@ -12,7 +12,7 @@ Attribute VB_Description = "Implementation for Master Setup preparation and conf
 '@PredeclaredId
 '@Folder("MasterSetup")
 '@ModuleDescription("Implementation for Master Setup preparation and configuration")
-'@depends ApplicationState, IApplicationState, DropdownLists, IDropdownLists, BetterArray, MasterSetupVariables, ProjectError, HiddenNames, IHiddenNames
+'@depends ApplicationState, IApplicationState, DropdownLists, IDropdownLists, BetterArray, MasterSetupVariables, ProjectError, HiddenNames
 '@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit
@@ -448,7 +448,7 @@ Private Sub EnsureDropdownHasValues(ByVal drop As IDropdownLists, _
 End Sub
 
 Private Sub EnsureSheetTag(ByVal targetSheet As Worksheet, ByVal tagValue As String)
-    Dim store As IHiddenNames
+    Dim store As HiddenNames
 
     If targetSheet Is Nothing Then Exit Sub
     tagValue = Trim$(tagValue)
@@ -463,7 +463,7 @@ End Sub
 Private Sub EnsureVariableNameColumnName(ByVal manager As MasterSetupVariables)
     Dim nameRange As Range
     Dim lo As ListObject
-    Dim workbookStore As IHiddenNames
+    Dim workbookStore As HiddenNames
 
     If manager Is Nothing Then Exit Sub
 

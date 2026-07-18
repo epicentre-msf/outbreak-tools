@@ -81,8 +81,8 @@ Public Sub TestBuildCreatesWorksheet()
 
     Dim diseaseSheet As Worksheet
     Dim table As ListObject
-    Dim sheetStore As IHiddenNames
-    Dim workbookStore As IHiddenNames
+    Dim sheetStore As HiddenNames
+    Dim workbookStore As HiddenNames
     Dim diseases As BetterArray
     Dim validationFormula As String
     Dim labelHeader As String
@@ -161,7 +161,7 @@ Public Sub TestBuildRespectsProvidedLanguage()
 
     Dim diseaseSheet As Worksheet
     Dim firstSheet As Worksheet
-    Dim workbookStore As IHiddenNames
+    Dim workbookStore As HiddenNames
     Dim diseases As BetterArray
 
     On Error GoTo Fail
@@ -329,7 +329,7 @@ Private Sub ClearWorksheetSafe(ByVal sheetName As String)
 End Sub
 
 Private Sub RegisterVariableName(ByVal lo As ListObject)
-    Dim store As IHiddenNames
+    Dim store As HiddenNames
 
     Set store = HiddenNames.Create(ThisWorkbook)
     store.SetListObjectHeader VARIABLE_NAME_RANGE, lo, "Variable Name"
