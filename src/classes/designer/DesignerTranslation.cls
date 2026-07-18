@@ -22,7 +22,7 @@ Option Explicit
 'Manages translation of the designer workbook by reading translation
 'tables (shapes, ranges, messages, dropdowns) from a dedicated
 'translation worksheet. Provides factory creation with requirement
-'validation, returns cached ITranslationObject instances scoped to
+'validation, returns cached TranslationObject instances scoped to
 'each content type, and applies translations to an entire designer
 'worksheet by updating shape text, named range values, and dropdown
 'validations. The current language code is extracted from a language
@@ -30,7 +30,7 @@ Option Explicit
 'HiddenName for cross-session persistence. All translation objects
 'and name lists are cached for fast repeated access.
 'Consumers interact through the DesignerTranslation interface.
-'@depends TranslationObject, ITranslationObject, BetterArray, HiddenNames
+'@depends TranslationObject, TranslationObject, BetterArray, HiddenNames
 
 
 
@@ -40,10 +40,10 @@ Option Explicit
 Private Type TDesignerTranslation
     sh As Worksheet
     langCode As String
-    msgTrans As ITranslationObject
-    shapeTrans As ITranslationObject
-    rangeTrans As ITranslationObject
-    dropTrans As ITranslationObject
+    msgTrans As TranslationObject
+    shapeTrans As TranslationObject
+    rangeTrans As TranslationObject
+    dropTrans As TranslationObject
     shapeNames As BetterArray
     rangeNames As BetterArray
     dropNames As BetterArray
@@ -135,13 +135,13 @@ End Property
 '@label:trans-object
 '@prop-title Translation object for a given content type
 '@details
-'Returns a cached ITranslationObject for the requested translation
+'Returns a cached TranslationObject for the requested translation
 'scope. Ensures caches are built using the current language code.
 'Returns Nothing when no language code is configured.
 '@param trans Optional Byte. TranslationType value selecting the content scope. Defaults to TranslationOfMessages.
-'@return ITranslationObject. The translation object for the requested scope.
+'@return TranslationObject. The translation object for the requested scope.
 '@export
-Public Property Get TransObject(Optional ByVal trans As Byte = DesignerTranslationOfMessages) As ITranslationObject
+Public Property Get TransObject(Optional ByVal trans As Byte = DesignerTranslationOfMessages) As TranslationObject
     Dim langCode As String
     langCode = DesignerLanguage()
 

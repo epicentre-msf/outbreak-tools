@@ -20,7 +20,7 @@ Private categoriesMap As Collection
 Private designFormat As LLFormat
 Private dictionary As ILLdictionary
 Private formulaData As FormulaData
-Private translationObject As ITranslationObject
+Private translationObject As TranslationObject
 Private geoObject As LLGeo
 
 Private Sub Class_Initialize()
@@ -66,7 +66,7 @@ Public Sub SetFormulaData(ByVal data As FormulaData)
     Set formulaData = data
 End Sub
 
-Public Sub SetTranslation(ByVal translation As ITranslationObject)
+Public Sub SetTranslation(ByVal translation As TranslationObject)
     Set translationObject = translation
 End Sub
 
@@ -129,7 +129,7 @@ Private Property Get ILinelistSpecs_DesignerTranslations() As DesignerTranslatio
     Set ILinelistSpecs_DesignerTranslations = Nothing
 End Property
 
-Private Property Get ILinelistSpecs_TransObject(Optional ByVal translationScope As Byte = TranslationOfMessages) As ITranslationObject
+Private Property Get ILinelistSpecs_TransObject(Optional ByVal translationScope As Byte = TranslationOfMessages) As TranslationObject
     Set ILinelistSpecs_TransObject = translationObject
 End Property
 

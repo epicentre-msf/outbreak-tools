@@ -174,13 +174,13 @@ End Property
 '@jump:trans-object
 '@prop-title Scoped translation object
 '@details
-'Returns an ITranslationObject for the requested translation scope. Results
+'Returns an TranslationObject for the requested translation scope. Results
 'are cached per scope value for efficient repeated access.
 '@param translationScope Optional Byte. The translation scope constant
 '(e.g., TranslationOfMessages, TranslationOfDictionary, TranslationOfShapes).
 'Defaults to TranslationOfMessages.
-'@return ITranslationObject. The scoped translation object.
-Public Property Get TransObject(Optional ByVal translationScope As Byte = TranslationOfMessages) As ITranslationObject
+'@return TranslationObject. The scoped translation object.
+Public Property Get TransObject(Optional ByVal translationScope As Byte = TranslationOfMessages) As TranslationObject
 End Property
 
 

@@ -10,11 +10,11 @@ Option Explicit
 ' @description Export all data for migration to another linelist.
 ' Shows a folder picker, creates the migration export, and handles errors.
 ' @param sourceWkb Workbook. The linelist workbook.
-' @param trads ITranslationObject. Translations for messages.
+' @param trads TranslationObject. Translations for messages.
 ' @param includeShowHide Boolean. Include show/hide state with column widths.
 ' @param keepLabels Boolean. Mark editable labels for update on import.
 Public Sub HandleMigrationExport(ByVal sourceWkb As Workbook, _
-                                 ByVal trads As ITranslationObject, _
+                                 ByVal trads As TranslationObject, _
                                  ByVal includeShowHide As Boolean, _
                                  ByVal keepLabels As Boolean)
 
@@ -57,9 +57,9 @@ End Sub
 ' @description Export analysis worksheets only.
 ' Shows a folder picker, creates the analysis export, and handles errors.
 ' @param sourceWkb Workbook. The linelist workbook.
-' @param trads ITranslationObject. Translations for messages.
+' @param trads TranslationObject. Translations for messages.
 Public Sub HandleAnalysisExport(ByVal sourceWkb As Workbook, _
-                                ByVal trads As ITranslationObject)
+                                ByVal trads As TranslationObject)
 
     Dim exporter As LLExporter
     Dim appState As ApplicationState
@@ -97,10 +97,10 @@ End Sub
 ' @description Export geobase data to a separate workbook.
 ' Shows a folder picker, creates the geo export, and handles errors.
 ' @param sourceWkb Workbook. The linelist workbook.
-' @param trads ITranslationObject. Translations for messages.
+' @param trads TranslationObject. Translations for messages.
 ' @param onlyHistoric Boolean. When True, exports only historic geobase data.
 Public Sub HandleGeoExport(ByVal sourceWkb As Workbook, _
-                           ByVal trads As ITranslationObject, _
+                           ByVal trads As TranslationObject, _
                            Optional ByVal onlyHistoric As Boolean = False)
 
     Dim exporter As LLExporter

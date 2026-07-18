@@ -177,7 +177,7 @@ Public Sub RemoveRows(Optional ByVal rowCount As Long = 1)
 End Sub
 
 '@sub-title Translate the header row with the supplied translations object.
-Public Sub TranslateHeaders(ByVal trads As ITranslationObject)
+Public Sub TranslateHeaders(ByVal trads As TranslationObject)
     Dim headerRange As Range
 
     ValidateReady
@@ -190,7 +190,7 @@ Public Sub TranslateHeaders(ByVal trads As ITranslationObject)
 End Sub
 
 '@sub-title Translate the key content columns without affecting headers.
-Public Sub TranslateContent(ByVal trads As ITranslationObject)
+Public Sub TranslateContent(ByVal trads As TranslationObject)
     ValidateReady
     If trads Is Nothing Then Exit Sub
     TranslateColumn trads, HEADER_SECTION
@@ -199,7 +199,7 @@ Public Sub TranslateContent(ByVal trads As ITranslationObject)
 End Sub
 
 '@sub-title Translate both headers and content using the supplied translation object.
-Public Sub TranslateAll(ByVal contentsTrads As ITranslationObject, Optional ByVal ribbonTrads As ITranslationObject)
+Public Sub TranslateAll(ByVal contentsTrads As TranslationObject, Optional ByVal ribbonTrads As TranslationObject)
     TranslateContent contentsTrads
     If (Not ribbonTrad Is Nothing) Then
         TranslateHeaders trads
@@ -753,7 +753,7 @@ Private Sub WriteValue(ByVal rowIndex As Long, ByVal headerName As String, ByVal
     targetRange.Cells(rowIndex, 1).Value = newValue
 End Sub
 
-Private Sub TranslateColumn(ByVal trads As ITranslationObject, ByVal headerName As String)
+Private Sub TranslateColumn(ByVal trads As TranslationObject, ByVal headerName As String)
     Dim targetRange As Range
 
     Set targetRange = ColumnRange(headerName)

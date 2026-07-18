@@ -17,11 +17,11 @@ Option Explicit
 'AnalysisTestFixture helpers to build throwaway worksheets with pre-populated
 'analysis tables, and tears down all temporary sheets on cleanup to ensure
 'test isolation.
-'@depends Analysis, ITranslationObject, TranslationObject, Checking, BetterArray, CustomTest, AnalysisTestFixture, TestHelpers
+'@depends Analysis, TranslationObject, TranslationObject, Checking, BetterArray, CustomTest, AnalysisTestFixture, TestHelpers
 
 Private Assert As CustomTest
 Private CoreAnalysis As Analysis
-Private Translator As ITranslationObject
+Private Translator As TranslationObject
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 
 

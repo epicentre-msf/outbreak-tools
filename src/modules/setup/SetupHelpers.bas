@@ -169,7 +169,7 @@ End Sub
 '@section Translations
 '===============================================================================
 
-Public Sub ApplySetupTranslation(ByVal translator As ITranslationObject)
+Public Sub ApplySetupTranslation(ByVal translator As TranslationObject)
     Dim dictSheet As Worksheet
     Dim choicesSheet As Worksheet
     Dim analysisSheet As Worksheet

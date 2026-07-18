@@ -31,14 +31,14 @@ End Sub
 '@sub-title Build an export workbook in-memory for the supplied disease worksheet.
 '@param diseaseSheet Worksheet containing the disease table and metadata.
 '@param translationTable ListObject providing translation values to copy.
-'@param ribbonTranslations ITranslationObject translating choice headers (may be Nothing).
+'@param ribbonTranslations TranslationObject translating choice headers (may be Nothing).
 '@param diseaseName String disease identifier used in metadata.
 '@param languageTag String language captured in metadata.
 '@param diseaseCode Optional String disease tag/code for metadata.
 '@return Workbook populated with export worksheets. Caller owns lifecycle.
 Public Function BuildDiseaseWorkbook(ByVal diseaseSheet As Worksheet, _
                                      ByVal translationTable As ListObject, _
-                                     ByVal ribbonTranslations As ITranslationObject, _
+                                     ByVal ribbonTranslations As TranslationObject, _
                                      ByVal diseaseName As String, _
                                      ByVal languageTag As String, _
                                      Optional ByVal diseaseCode As String = vbNullString) As Workbook
@@ -48,7 +48,7 @@ End Function
 '@param exportFolder String folder path where the workbook is saved.
 '@param diseaseSheet Worksheet containing the disease table.
 '@param translationTable ListObject providing translation values.
-'@param ribbonTranslations ITranslationObject translating choice headers.
+'@param ribbonTranslations TranslationObject translating choice headers.
 '@param diseaseName String disease identifier used in metadata and file name.
 '@param languageTag String disease language stored in metadata.
 '@param diseaseCode Optional String disease tag/code for metadata.
@@ -56,7 +56,7 @@ End Function
 Public Function ExportDisease(ByVal exportFolder As String, _
                               ByVal diseaseSheet As Worksheet, _
                               ByVal translationTable As ListObject, _
-                              ByVal ribbonTranslations As ITranslationObject, _
+                              ByVal ribbonTranslations As TranslationObject, _
                               ByVal diseaseName As String, _
                               ByVal languageTag As String, _
                               Optional ByVal diseaseCode As String = vbNullString) As String

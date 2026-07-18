@@ -13,7 +13,7 @@ Private Const TRANSLATION_SHEET As String = "CacheTranslationFixture"
 
 Private Assert As CustomTest
 Private Cache As IDiseaseTranslationCache
-Private Translations As ITranslationObject
+Private Translations As TranslationObject
 
 '@section Module lifecycle
 '===============================================================================

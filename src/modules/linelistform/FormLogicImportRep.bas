@@ -9,7 +9,7 @@ Option Explicit
 
 Private Const LLSHEET As String = "LinelistTranslation"
 
-Private tradform As ITranslationObject
+Private tradform As TranslationObject
 
 
 Private Sub InitializeTrads()

@@ -306,7 +306,7 @@ Public Sub clickTransSetup(ByRef control As IRibbonControl)
     Dim manager As SetupTranslationsTable
     Dim languages As BetterArray
     Dim selectedLanguage As String
-    Dim translator As ITranslationObject
+    Dim translator As TranslationObject
     Dim translationsUnlocked As Boolean
     Dim success As Boolean
     Dim nbMissing As Long

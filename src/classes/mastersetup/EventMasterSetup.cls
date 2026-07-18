@@ -12,7 +12,7 @@ Attribute VB_Description = "Workbook-level orchestrator for master setup lifecyc
 '@PredeclaredId
 '@Folder("MasterSetup")
 '@ModuleDescription("Coordinates workbook events and shared services for the master setup workbook.")
-'@depends MasterSetupPreparation, MasterSetupVariables, DropdownLists, DropdownLists, LLChoices, Translation, ITranslationObject
+'@depends MasterSetupPreparation, MasterSetupVariables, DropdownLists, DropdownLists, LLChoices, Translation, TranslationObject
 '@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit
@@ -26,8 +26,8 @@ Private Type TEventMasterSetup
     dropdowns As DropdownLists          'Cached dropdown manager
     variables As MasterSetupVariables   'Cached variables manager
     choices As LLChoices                'Cached choices helper
-    translations As ITranslationObject   'Cached workbook translations
-    ribbonTranslations As ITranslationObject 'Cached ribbon translations
+    translations As TranslationObject   'Cached workbook translations
+    ribbonTranslations As TranslationObject 'Cached ribbon translations
     ribbon As IRibbonUI                  'Cached ribbon interface for future invalidations
 End Type
 
@@ -126,12 +126,12 @@ Public Property Get Choices() As LLChoices
 End Property
 
 '@sub-title Provide the workbook-wide translations object.
-Public Property Get Translations() As ITranslationObject
+Public Property Get Translations() As TranslationObject
     Set Translations = EnsureWorkbookTranslations
 End Property
 
 '@sub-title Provide the ribbon translations object.
-Public Property Get RibbonTranslations() As ITranslationObject
+Public Property Get RibbonTranslations() As TranslationObject
     Set RibbonTranslations = EnsureRibbonTranslations
 End Property
 
@@ -224,7 +224,7 @@ Private Function EnsureChoicesHelper() As LLChoices
     Set EnsureChoicesHelper = this.choices
 End Function
 
-Private Function EnsureWorkbookTranslations() As ITranslationObject
+Private Function EnsureWorkbookTranslations() As TranslationObject
     Dim table As ListObject
     Dim languageTag As String
 
@@ -239,7 +239,7 @@ Private Function EnsureWorkbookTranslations() As ITranslationObject
     Set EnsureWorkbookTranslations = this.translations
 End Function
 
-Private Function EnsureRibbonTranslations() As ITranslationObject
+Private Function EnsureRibbonTranslations() As TranslationObject
     Dim table As ListObject
     Dim languageTag As String
 

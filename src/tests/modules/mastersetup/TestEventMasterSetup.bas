@@ -110,8 +110,8 @@ Public Sub TestOnWorkbookOpenInitialisesDependencies()
     Dim drops As DropdownLists
     Dim vars As MasterSetupVariables
     Dim choices As LLChoices
-    Dim trads As ITranslationObject
-    Dim ribTrads As ITranslationObject
+    Dim trads As TranslationObject
+    Dim ribTrads As TranslationObject
 
     Set drops = Subject.Dropdowns
     Assert.IsFalse drops Is Nothing, "Dropdown manager should be resolved"
@@ -141,8 +141,8 @@ Public Sub TestRefreshTranslationsResetsCaches()
 
     Subject.OnWorkbookOpen Application
 
-    Dim firstWorkbookTrads As ITranslationObject
-    Dim firstRibbonTrads As ITranslationObject
+    Dim firstWorkbookTrads As TranslationObject
+    Dim firstRibbonTrads As TranslationObject
     Dim firstChoices As LLChoices
 
     Set firstWorkbookTrads = Subject.Translations

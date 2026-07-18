@@ -24,7 +24,7 @@ Option Explicit
 'ListObjects. Each instance is bound to a single worksheet and delegates table
 'operations to CustomTable. Trace diagnostics are recorded via Checking and
 'can be retrieved through HasCheckings and CheckingValues.
-'@depends CustomTable, Checking, ITranslationObject, BetterArray
+'@depends CustomTable, Checking, TranslationObject, BetterArray
 '@version 2025-01-15
 
 
@@ -578,9 +578,9 @@ End Sub
 'Choices, Label, Section (select)) through the translation object. The
 'Summary function column is translated with formula awareness enabled.
 'Logs a note on completion and a warning when the translator is Nothing.
-'@param TransObject ITranslationObject. The translation engine to use.
+'@param TransObject TranslationObject. The translation engine to use.
 '@export
-Public Sub Translate(ByVal TransObject As ITranslationObject)
+Public Sub Translate(ByVal TransObject As TranslationObject)
     Dim sh As Worksheet
     Dim lo As ListObject
     Dim csTab As CustomTable

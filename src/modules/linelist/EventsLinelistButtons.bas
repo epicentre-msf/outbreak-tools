@@ -18,8 +18,8 @@ Private Const SHOWHIDESHEET As String = "show_hide__"
 
 Private showHideObject As ShowHideManager
 Private activeShowHideForm As Object
-Private tradsform As ITranslationObject   'Translation of forms
-Private tradsmess As ITranslationObject   'Translation of messages
+Private tradsform As TranslationObject   'Translation of forms
+Private tradsmess As TranslationObject   'Translation of messages
 Private pass As Passwords
 Private wb As Workbook
 Private lltrads As LLTranslation

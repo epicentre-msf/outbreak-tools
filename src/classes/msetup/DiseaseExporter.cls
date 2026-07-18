@@ -106,7 +106,7 @@ End Sub
 '@sub-title Populate a workbook with dictionary, choices, translations, and metadata.
 Public Function BuildDiseaseWorkbook(ByVal diseaseSheet As Worksheet, _
                                      ByVal translationTable As ListObject, _
-                                     ByVal ribbonTranslations As ITranslationObject, _
+                                     ByVal ribbonTranslations As TranslationObject, _
                                      ByVal diseaseName As String, _
                                      ByVal languageTag As String, _
                                      Optional ByVal diseaseCode As String = vbNullString) As Workbook
@@ -149,7 +149,7 @@ End Function
 Public Function ExportDisease(ByVal exportFolder As String, _
                               ByVal diseaseSheet As Worksheet, _
                               ByVal translationTable As ListObject, _
-                              ByVal ribbonTranslations As ITranslationObject, _
+                              ByVal ribbonTranslations As TranslationObject, _
                               ByVal diseaseName As String, _
                               ByVal languageTag As String, _
                               Optional ByVal diseaseCode As String = vbNullString) As String
@@ -738,11 +738,11 @@ Private Sub IDiseaseExporter_Initialise(ByVal workbookManager As IDiseaseExportW
     Initialise workbookManager, appGuard
 End Sub
 
-Private Function IDiseaseExporter_BuildDiseaseWorkbook(ByVal diseaseSheet As Worksheet, ByVal translationTable As ListObject, ByVal ribbonTranslations As ITranslationObject, ByVal diseaseName As String, ByVal languageTag As String, Optional ByVal diseaseCode As String = vbNullString) As Workbook
+Private Function IDiseaseExporter_BuildDiseaseWorkbook(ByVal diseaseSheet As Worksheet, ByVal translationTable As ListObject, ByVal ribbonTranslations As TranslationObject, ByVal diseaseName As String, ByVal languageTag As String, Optional ByVal diseaseCode As String = vbNullString) As Workbook
     Set IDiseaseExporter_BuildDiseaseWorkbook = BuildDiseaseWorkbook(diseaseSheet, translationTable, ribbonTranslations, diseaseName, languageTag, diseaseCode)
 End Function
 
-Private Function IDiseaseExporter_ExportDisease(ByVal exportFolder As String, ByVal diseaseSheet As Worksheet, ByVal translationTable As ListObject, ByVal ribbonTranslations As ITranslationObject, ByVal diseaseName As String, ByVal languageTag As String, Optional ByVal diseaseCode As String = vbNullString) As String
+Private Function IDiseaseExporter_ExportDisease(ByVal exportFolder As String, ByVal diseaseSheet As Worksheet, ByVal translationTable As ListObject, ByVal ribbonTranslations As TranslationObject, ByVal diseaseName As String, ByVal languageTag As String, Optional ByVal diseaseCode As String = vbNullString) As String
     IDiseaseExporter_ExportDisease = ExportDisease(exportFolder, diseaseSheet, translationTable, ribbonTranslations, diseaseName, languageTag, diseaseCode)
 End Function
 

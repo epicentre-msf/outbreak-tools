@@ -21,7 +21,7 @@ Private Exporter As IDiseaseExporter
 Private ExportManager As IDiseaseExportWorkbook
 Private AppGuard As IDiseaseApplicationState
 Private Dropdowns As DropdownLists
-Private RibbonTranslations As ITranslationObject
+Private RibbonTranslations As TranslationObject
 Private TranslationTable As ListObject
 
 '@section Module lifecycle

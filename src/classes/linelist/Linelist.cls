@@ -29,7 +29,7 @@ Implements ILinelist
 'with password protection. The class uses VB_Creatable = True so that
 'factory consumers create instances via `New Linelist` rather than
 '`With New Linelist`.
-'@depends ILinelistSpecs, ILLdictionary, ITranslationObject,
+'@depends ILinelistSpecs, ILLdictionary, TranslationObject,
 '  Passwords, LLFormat, HiddenNames,
 '  DropdownLists, DropdownLists,
 '  CustomPivotTable, TemporaryRepos, HiddenNames, Buttons, CodeTransfer,
@@ -185,7 +185,7 @@ End Property
 Public Property Get Dropdown(Optional ByVal scope As Byte = 1) As DropdownLists
     Dim sh As Worksheet
     Dim listSheetName As String
-    Dim trans As ITranslationObject
+    Dim trans As TranslationObject
     Dim headerPrefix As String
 
     Set trans = this.specs.TransObject
@@ -212,7 +212,7 @@ End Property
 '@export
 Public Property Get Pivots() As CustomPivotTable
     Dim sh As Worksheet
-    Dim trans As ITranslationObject
+    Dim trans As TranslationObject
 
     Set trans = this.specs.TransObject
     Set sh = Wksh(trans.TranslatedValue("LLSHEET_CustomPivotTable"))
@@ -319,7 +319,7 @@ End Sub
 '@export
 Public Sub Prepare()
     Dim dict As ILLdictionary
-    Dim trans As ITranslationObject
+    Dim trans As TranslationObject
     Dim sheetsList As BetterArray
     Dim counter As Long
     Dim sheetName As String
@@ -443,7 +443,7 @@ Public Sub SaveLL()
     Dim passwd As String
     Dim outPath As String
     Dim passObj As Passwords
-    Dim msgTrads As ITranslationObject
+    Dim msgTrads As TranslationObject
 
     Set outWkb = OutputWkb
     Set passObj = this.specs.Password
@@ -573,7 +573,7 @@ Private Sub PrepareTemporarySheets()
     Dim sh As Worksheet
     Dim rng As Range
     Dim cellRng As Range
-    Dim trads As ITranslationObject
+    Dim trads As TranslationObject
     Dim sheetName As String
     Dim counter As Long
     Dim namesArray As BetterArray
@@ -772,7 +772,7 @@ Private Sub PrepareAdmin()
     Const SHP_EXPORT As String = "SHP_Export"
 
     Dim sh As Worksheet
-    Dim trads As ITranslationObject
+    Dim trads As TranslationObject
     Dim design As LLFormat
     Dim pass As Passwords
     Dim but As Buttons
@@ -841,7 +841,7 @@ Private Sub TransferAllCode(ByVal codeTransfer As CodeTransfer)
                    "Checking", _
                    "LLSheets", "LLTranslation", _
                    "OSFiles", _
-                   "TranslationObject", "ITranslationObject", "LLVariables", _
+                   "TranslationObject", "LLVariables", _
                    "LLSpatial", _
                    "DropdownLists", "ShowHideManager", _
                    "CustomTable", _

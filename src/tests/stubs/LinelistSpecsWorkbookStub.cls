@@ -20,7 +20,7 @@ Private Type TSpecs
     dictionary As ILLdictionary
     workbook As Workbook
     password As Passwords
-    translations As ITranslationObject
+    translations As TranslationObject
 End Type
 
 Private this As TSpecs
@@ -82,7 +82,7 @@ Private Property Get ILinelistSpecs_DesignerTranslations() As DesignerTranslatio
     Set ILinelistSpecs_DesignerTranslations = Nothing
 End Property
 
-Private Property Get ILinelistSpecs_TransObject(Optional ByVal translationScope As Byte = TranslationOfMessages) As ITranslationObject
+Private Property Get ILinelistSpecs_TransObject(Optional ByVal translationScope As Byte = TranslationOfMessages) As TranslationObject
     Set ILinelistSpecs_TransObject = this.translations
 End Property
 
@@ -90,7 +90,7 @@ Public Sub SetPassword(ByVal value As Passwords)
     Set this.password = value
 End Sub
 
-Public Sub SetTranslations(ByVal value As ITranslationObject)
+Public Sub SetTranslations(ByVal value As TranslationObject)
     Set this.translations = value
 End Sub
 

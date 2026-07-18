@@ -31,7 +31,7 @@ Implements ILinelistSpecs
 '@depends LLGeo, LLExport, Passwords, LLFormat
 '@depends LinelistBuildService, TemporaryRepos
 '@depends FormulaData, ILLVariables, Formulas
-'@depends ITranslationObject, ApplicationState
+'@depends TranslationObject, ApplicationState
 '@depends BetterArray, LLdictionary, LLChoices, LLTranslation
 '@depends DesignerTranslation, LLGeo, LLExport, Analysis, Passwords
 '@depends LLFormat, FormulaData, LLVariables, Formulas
@@ -57,11 +57,11 @@ Private Type TLinelistSpecs
     formulaData As FormulaData
     variables As LLVariables
     'Translation scope cache: direct fields for each TranslationScope value (0-4)
-    transMessages As ITranslationObject
-    transDictionary As ITranslationObject
-    transShapes As ITranslationObject
-    transForms As ITranslationObject
-    transRibbon As ITranslationObject
+    transMessages As TranslationObject
+    transDictionary As TranslationObject
+    transShapes As TranslationObject
+    transForms As TranslationObject
+    transRibbon As TranslationObject
     'Category cache: parallel arrays (same index = same entry)
     catKeys As BetterArray
     catValues As BetterArray
@@ -339,10 +339,10 @@ End Sub
 'Collects all specification sheet names and temporary sheet names into
 'a BetterArray, then appends translated linelist sheet names (Admin,
 'Analysis, Spatial, etc.) when message translations are available.
-'@param messageTranslations ITranslationObject. The message translations
+'@param messageTranslations TranslationObject. The message translations
 'for resolving linelist sheet names, or Nothing to skip translated names.
 '@return BetterArray. The list of preserved sheet names.
-Private Function BuildPreservedSheetNames(ByVal messageTranslations As ITranslationObject) As BetterArray
+Private Function BuildPreservedSheetNames(ByVal messageTranslations As TranslationObject) As BetterArray
     Dim preserved As BetterArray
 
     Set preserved = New BetterArray
@@ -380,10 +380,10 @@ End Function
 
 '@label:safe-translated-value
 '@sub-title Look up a translation key, falling back to the key itself on failure
-'@param translations ITranslationObject. The translation object to query.
+'@param translations TranslationObject. The translation object to query.
 '@param key String. The translation key.
 '@return String. The translated value, or the key if translation fails.
-Private Function SafeTranslatedValue(ByVal translations As ITranslationObject, ByVal key As String) As String
+Private Function SafeTranslatedValue(ByVal translations As TranslationObject, ByVal key As String) As String
     On Error Resume Next
         SafeTranslatedValue = translations.TranslatedValue(key)
     On Error GoTo 0
@@ -1088,17 +1088,17 @@ End Property
 '@label:trans-object
 '@prop-title Scoped translation object
 '@details
-'Returns an ITranslationObject for the requested translation scope.
+'Returns an TranslationObject for the requested translation scope.
 'Results are cached per scope using direct fields for each TranslationScope
 'value (0-4), avoiding generic container overhead.
 '@param translationScope Byte. The translation scope constant
 '(e.g., TranslationOfMessages, TranslationOfDictionary). Defaults to
 'TranslationOfMessages.
-'@return ITranslationObject. The scoped translation object.
+'@return TranslationObject. The scoped translation object.
 '@throws ProjectError.ElementNotFound When the scope is not available.
 '@export
-Public Property Get TransObject(Optional ByVal translationScope As Byte = TranslationOfMessages) As ITranslationObject
-    Dim resolved As ITranslationObject
+Public Property Get TransObject(Optional ByVal translationScope As Byte = TranslationOfMessages) As TranslationObject
+    Dim resolved As TranslationObject
 
     EnsureTranslations
 
@@ -1142,10 +1142,10 @@ End Property
 '@label:resolve-translation-scope
 '@sub-title Query the translations collaborator for a given scope
 '@param translationScope Byte. The translation scope to resolve.
-'@return ITranslationObject. The resolved translation object.
+'@return TranslationObject. The resolved translation object.
 '@throws ProjectError.ElementNotFound When the scope returns Nothing.
-Private Function ResolveTranslationScope(ByVal translationScope As Byte) As ITranslationObject
-    Dim resolved As ITranslationObject
+Private Function ResolveTranslationScope(ByVal translationScope As Byte) As TranslationObject
+    Dim resolved As TranslationObject
 
     Set resolved = this.translations.TransObject(translationScope)
     If resolved Is Nothing Then
@@ -1304,8 +1304,8 @@ Public Sub Prepare(ByVal buildService As LinelistBuildService, ByVal setupPath A
     Dim exportsObj As LLExport
     Dim analysisObj As Analysis
     Dim geoObj As LLGeo
-    Dim dictTrads As ITranslationObject
-    Dim msgTrads As ITranslationObject
+    Dim dictTrads As TranslationObject
+    Dim msgTrads As TranslationObject
     Dim preservedNames As BetterArray
     Dim busyScope As ApplicationState
     Dim prepared As Boolean
@@ -1542,7 +1542,7 @@ Private Property Get ILinelistSpecs_DesignerTranslations() As DesignerTranslatio
     Set ILinelistSpecs_DesignerTranslations = Me.DesignerTranslations
 End Property
 
-Private Property Get ILinelistSpecs_TransObject(Optional ByVal translationScope As Byte = TranslationOfMessages) As ITranslationObject
+Private Property Get ILinelistSpecs_TransObject(Optional ByVal translationScope As Byte = TranslationOfMessages) As TranslationObject
     Set ILinelistSpecs_TransObject = Me.TransObject(translationScope)
 End Property
 

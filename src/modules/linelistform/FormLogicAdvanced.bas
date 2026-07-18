@@ -10,10 +10,10 @@ Option Explicit
 ' @description Import data from a migration workbook.
 ' Shows file picker, checks language, imports data and metadata, shows report.
 ' @param sourceWkb Workbook. The linelist workbook.
-' @param trads ITranslationObject. Translations for messages.
+' @param trads TranslationObject. Translations for messages.
 ' @param pasteAtBottom Boolean. When True, appends data below existing rows.
 Public Sub HandleImportData(ByVal sourceWkb As Workbook, _
-                            ByVal trads As ITranslationObject, _
+                            ByVal trads As TranslationObject, _
                             ByVal pasteAtBottom As Boolean)
 
     Dim impObj As LLImporter
@@ -107,10 +107,10 @@ End Sub
 ' @description Import a geobase from an external workbook.
 ' Shows file picker, imports geobase data, optionally updates headers and dictionary.
 ' @param sourceWkb Workbook. The linelist workbook.
-' @param trads ITranslationObject. Translations for messages.
+' @param trads TranslationObject. Translations for messages.
 ' @param histoOnly Boolean. When True, imports only historic geobase data.
 Public Sub HandleImportGeobase(ByVal sourceWkb As Workbook, _
-                               ByVal trads As ITranslationObject, _
+                               ByVal trads As TranslationObject, _
                                Optional ByVal histoOnly As Boolean = False)
 
     Dim impObj As LLImporter
@@ -160,9 +160,9 @@ End Sub
 ' @description Clear all entered data from the linelist.
 ' Prompts the user for workbook name confirmation before deleting.
 ' @param sourceWkb Workbook. The linelist workbook.
-' @param trads ITranslationObject. Translations for messages.
+' @param trads TranslationObject. Translations for messages.
 Public Sub HandleClearData(ByVal sourceWkb As Workbook, _
-                           ByVal trads As ITranslationObject)
+                           ByVal trads As TranslationObject)
 
     Dim impObj As LLImporter
     Dim appState As ApplicationState

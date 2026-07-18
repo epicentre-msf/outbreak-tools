@@ -11,8 +11,8 @@ Private Const LLSHEET As String = "LinelistTranslation"
 Private Const RNGEPIWEEKSTART As String = "RNG_EpiWeekStart"
 
 Private wkbNames As HiddenNames
-Private tradform As ITranslationObject
-Private tradmess As ITranslationObject
+Private tradform As TranslationObject
+Private tradmess As TranslationObject
 Private TriggerMode As Boolean
 
 'Get the sheet type tag (HiddenNames first, cell fallback for legacy sheets).

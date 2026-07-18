@@ -33,7 +33,7 @@ Option Explicit
 '===============================================================================
 Private Type TEventLinelist
     hostBook        As Workbook           'Linelist workbook
-    tradmess        As ITranslationObject 'Cached message translations
+    tradmess        As TranslationObject 'Cached message translations
     lltrads         As LLTranslation     'Cached translation helper
     wkbNames        As HiddenNames       'Cached workbook-level hidden names
     drop            As DropdownLists     'Cached dropdown manager

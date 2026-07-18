@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Master Setup")
 '@ModuleDescription("Ribbon callbacks supporting master setup operations.")
-'@depends MasterSetupPreparation, MasterSetupHelpers, DropdownLists, Passwords, Passwords, Translation, ITranslationObject, TranslationChunks, ITranslationChunks, ApplicationState, SetupTranslationsTable, UpdatedValues, DiseaseSheetBuilder, IDiseaseSheetBuilder
+'@depends MasterSetupPreparation, MasterSetupHelpers, DropdownLists, Passwords, Passwords, Translation, TranslationObject, TranslationChunks, ITranslationChunks, ApplicationState, SetupTranslationsTable, UpdatedValues, DiseaseSheetBuilder, IDiseaseSheetBuilder
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Private Const RIBBON_TRANSLATION_SHEET As String = "__ribbonTranslation"
@@ -81,7 +81,7 @@ Public Sub clickAddSheet(ByRef control As IRibbonControl)
     Dim scope As ApplicationState
     Dim passwords As Passwords
     Dim dropdowns As DropdownLists
-    Dim translations As ITranslationObject
+    Dim translations As TranslationObject
     Dim builder As IDiseaseSheetBuilder
     Dim diseaseSheet As Worksheet
     Dim diseaseName As String
@@ -152,7 +152,7 @@ End Sub
 Public Sub clickRemSheet(ByRef control As IRibbonControl)
     Dim scope As ApplicationState
     Dim passwords As Passwords
-    Dim translations As ITranslationObject
+    Dim translations As TranslationObject
     Dim targetSheet As Worksheet
     Dim confirmPrompt As String
     Dim confirmTitle As String
@@ -215,7 +215,7 @@ End Sub
 '@EntryPoint
 Public Sub clickClearSheet(ByRef control As IRibbonControl)
     Dim scope As ApplicationState
-    Dim translations As ITranslationObject
+    Dim translations As TranslationObject
     Dim passwords As Passwords
     Dim targetSheet As Worksheet
     Dim confirmPrompt As String
@@ -346,7 +346,7 @@ Public Sub clickAddLang(ByRef control As IRibbonControl, ByRef text As String)
     Dim dropdowns As DropdownLists
     Dim chunks As ITranslationChunks
     Dim passwords As Passwords
-    Dim translations As ITranslationObject
+    Dim translations As TranslationObject
     Dim languagePrompt As String
     Dim confirmTitle As String
     Dim confirmPrompt As String
@@ -438,7 +438,7 @@ End Sub
 '@Description("Return the translated label for ribbon controls.")
 '@EntryPoint
 Public Sub LangLabel(ByRef control As IRibbonControl, ByRef returnedVal)
-    Dim translations As ITranslationObject
+    Dim translations As TranslationObject
     Dim fallback As String
 
     On Error GoTo Handler

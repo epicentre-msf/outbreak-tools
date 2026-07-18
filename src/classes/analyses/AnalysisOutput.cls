@@ -24,7 +24,7 @@ Option Explicit
 '(normal, time series, spatial, spatio-temporal), builds cross-tables from
 'table specifications, writes formulas, registers metadata in AnaTabIds, and
 'renders charts.
-'@depends ILinelist, ILinelistSpecs, LLFormat, ITranslationObject, TableSpecs, CrossTable, CrossTableFormula, Graphs, AnaTabIds, Buttons, Passwords, DropdownLists, ILLdictionary, ILLVariables, FormulaData, BetterArray
+'@depends ILinelist, ILinelistSpecs, LLFormat, TranslationObject, TableSpecs, CrossTable, CrossTableFormula, Graphs, AnaTabIds, Buttons, Passwords, DropdownLists, ILLdictionary, ILLVariables, FormulaData, BetterArray
 '@version 1.0 (2026-02-10)
 
 
@@ -174,15 +174,15 @@ End Property
 '@label:trans-object
 '@prop-title Translation object for a given scope.
 '@details
-'Retrieves an ITranslationObject for the requested translation scope.
+'Retrieves an TranslationObject for the requested translation scope.
 'Translation objects resolve human-readable labels, button captions, sheet
 'names, and other locale-dependent strings from the setup workbook. The
 'scope parameter controls which translation table is used: messages (default),
 'shape names, or other categories defined by the TranslationScope enum.
 '@param scope Optional Byte. A constant from the TranslationScope enum.
 'Defaults to TranslationOfMessages. Use TranslationOfShapes for button/shape labels.
-'@return ITranslationObject. Bound to the requested translation scope.
-Public Property Get TransObject(Optional ByVal scope As Byte = TranslationOfMessages) As ITranslationObject
+'@return TranslationObject. Bound to the requested translation scope.
+Public Property Get TransObject(Optional ByVal scope As Byte = TranslationOfMessages) As TranslationObject
     Set TransObject = LinelistData().TransObject(scope)
 End Property
 
@@ -198,7 +198,7 @@ End Property
 'which analysis worksheet to return. Defaults to AnalysisScopeNormal.
 '@return Worksheet. The output analysis sheet in the linelist workbook.
 Private Property Get OutputSh(Optional ByVal scope As Byte = AnalysisScopeNormal) As Worksheet
-    Dim trads As ITranslationObject
+    Dim trads As TranslationObject
     Dim ll As ILinelist
 
     Set ll = OutputLL()
@@ -321,7 +321,7 @@ Private Sub AddCommands(Optional ByVal scope As Byte = AnalysisScopeNormal)
     Dim design As LLFormat
     Dim but As Buttons
     Dim outsh As Worksheet
-    Dim trads As ITranslationObject
+    Dim trads As TranslationObject
     Dim lData As ILinelistSpecs
 
     Set lData = LinelistData()
@@ -526,7 +526,7 @@ Private Sub WriteTable(ByVal loName As String, _
     Dim lo As ListObject
     Dim specs As TableSpecs
     Dim lData As ILinelistSpecs
-    Dim trads As ITranslationObject
+    Dim trads As TranslationObject
     Dim formData As FormulaData
     Dim cellRng As Range
     Dim grSpecs As GraphSpecs
@@ -808,7 +808,7 @@ Private Sub WriteTimeSeriesGraphs(ByVal graphLoName As String, _
     Dim grTitleLo As ListObject
     Dim grSpecs As GraphSpecs
     Dim gr As Graphs
-    Dim trads As ITranslationObject
+    Dim trads As TranslationObject
     Dim design As LLFormat
     Dim namObj As AnaTabIds
     Dim goToGraphLabel As String
@@ -943,7 +943,7 @@ Private Sub WriteSpatioTemporalGraph(ByVal loName As String, _
     Dim plotTitle As String
     Dim tabId As String
     Dim graphCounter As Long
-    Dim trads As ITranslationObject
+    Dim trads As TranslationObject
     Dim lo As ListObject
     Dim tabl As CrossTable
     Dim namObj As AnaTabIds
@@ -1056,7 +1056,7 @@ Public Sub WriteAnalysis(Optional ByVal part As Byte = 0)
     Dim scope As Byte
     Dim pass As Passwords
     Dim lData As ILinelistSpecs
-    Dim trads As ITranslationObject
+    Dim trads As TranslationObject
     Dim goToSectionLabel As String
     Dim outshHn As HiddenNames
 

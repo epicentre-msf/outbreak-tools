@@ -78,7 +78,7 @@ Public Sub TestBuildDiseaseWorkbookCopiesDictionaryAndChoices()
 
     Dim diseaseSheet As Worksheet
     Dim translationTable As ListObject
-    Dim ribbonTranslations As ITranslationObject
+    Dim ribbonTranslations As TranslationObject
     Dim workbook As Workbook
     Dim dictionaryValues As Variant
     Dim choicesValues As Variant
@@ -217,7 +217,7 @@ Private Function PrepareTranslationTable() As ListObject
     Set PrepareTranslationTable = sheet.ListObjects(1)
 End Function
 
-Private Function PrepareRibbonTranslations() As ITranslationObject
+Private Function PrepareRibbonTranslations() As TranslationObject
     Dim sheet As Worksheet
     Dim header As Variant
     Dim dataRows As Variant

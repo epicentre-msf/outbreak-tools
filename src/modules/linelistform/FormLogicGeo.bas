@@ -13,8 +13,8 @@ Private Const SEP As String = " | "
 Private Const NACHAR As String = " | N/A"
 Private Const NACHARREV As String = "N/A | "
 
-Private tradform As ITranslationObject
-Private tradmess As ITranslationObject
+Private tradform As TranslationObject
+Private tradmess As TranslationObject
 Private geo As LLGeo
 Private hfOrGeo As Byte
 

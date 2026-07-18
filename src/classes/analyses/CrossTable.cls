@@ -25,7 +25,7 @@ Option Explicit
 'ranges, and visual formatting. Consumers interact through the CrossTable
 'interface, and AnalysisOutput orchestrates the build sequence by calling
 'Build followed by Format for each table specification.
-'@depends TableSpecs, ILinelistSpecs, ITranslationObject, ILLVariables, LLVariables, LLFormat, HiddenNames, BetterArray, Checking
+'@depends TableSpecs, ILinelistSpecs, TranslationObject, ILLVariables, LLVariables, LLFormat, HiddenNames, BetterArray, Checking
 '@version 1.1 (2026-02-11)
 
 
@@ -161,11 +161,11 @@ End Property
 '@label:translations
 '@prop-title Translation object for locale-aware labels.
 '@details
-'Returns the ITranslationObject extracted from the stored linelist
+'Returns the TranslationObject extracted from the stored linelist
 'specifications. Resolves translated strings such as "Total", "Missing",
 '"Percent", and date-unit names.
-'@return ITranslationObject. The translation object.
-Public Property Get Translations() As ITranslationObject
+'@return TranslationObject. The translation object.
+Public Property Get Translations() As TranslationObject
     Set Translations = this.lData.TransObject()
 End Property
 
@@ -640,7 +640,7 @@ Public Sub AddRows()
     Dim vars As LLVariables
     Dim rowVar As String
     Dim rowsData As BetterArray
-    Dim trans As ITranslationObject
+    Dim trans As TranslationObject
     Dim transMissing As String
     Dim transTotal As String
     Dim counter As Long
@@ -758,12 +758,12 @@ End Function
 'EndColumn.
 '@param startRw Long. The starting row for column headers.
 '@param specs TableSpecs. The TableSpecs providing column categories and flags.
-'@param trans ITranslationObject. The ITranslationObject providing translated strings.
+'@param trans TranslationObject. The TranslationObject providing translated strings.
 '@param sh Worksheet. The output Worksheet where the column headers are written.
 '@remarks NumberOfColumns counts only the "pure" data columns, not including Missing
 'or Total. However, EndColumn includes all columns written.
 Private Sub BivariateColumns(ByVal startRw As Long, ByVal specs As TableSpecs, _
-                              ByVal trans As ITranslationObject, ByVal sh As Worksheet)
+                              ByVal trans As TranslationObject, ByVal sh As Worksheet)
     Dim colLab As String
     Dim colData As BetterArray
     Dim newColData As BetterArray
@@ -851,7 +851,7 @@ Public Sub AddColumns()
     Dim specs As TableSpecs
     Dim sh As Worksheet
     Dim vars As LLVariables
-    Dim trans As ITranslationObject
+    Dim trans As TranslationObject
     Dim colData As BetterArray
     Dim colVarLab As String
     Dim sumLab As String
@@ -958,7 +958,7 @@ Public Sub AddHeader()
     Dim sh As Worksheet
     Dim specs As TableSpecs
     Dim counter As Long
-    Dim trans As ITranslationObject
+    Dim trans As TranslationObject
     Dim tabId As String
     Dim rng As Range
     Dim cellRng As Range
@@ -1204,7 +1204,7 @@ Public Sub NameRanges()
     Dim rng As Range
     Dim nbColCounter As Long
     Dim counter As Long
-    Dim trans As ITranslationObject
+    Dim trans As TranslationObject
     Dim labCol As Long
     Dim cData As BetterArray
     Dim tData As BetterArray

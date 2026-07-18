@@ -23,7 +23,7 @@ Option Explicit
 'selectors. Each choice is identified by a list name and carries long
 'labels, short labels, and an ordering column. Built on top of a
 'DataSheet for column-oriented data access.
-'@depends DataSheet, CustomTable, Checking, BetterArray, ITranslationObject
+'@depends DataSheet, CustomTable, Checking, BetterArray, TranslationObject
 '@version 1.0 (2026-02-09)
 
 
@@ -415,9 +415,9 @@ End Sub
 
 '@label:translate
 '@sub-title Translate the choice worksheet labels
-'@param trads ITranslationObject. Translation provider.
+'@param trads TranslationObject. Translation provider.
 '@export
-Public Sub Translate(ByVal trads As ITranslationObject)
+Public Sub Translate(ByVal trads As TranslationObject)
 
     Dim lblRng As Range
 

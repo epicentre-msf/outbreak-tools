@@ -941,7 +941,7 @@ End Function
 
 '@label:Translate
 '@sub-title Translate the current LLExport
-Public Sub Translate(ByVal trads As ITranslationObject)
+Public Sub Translate(ByVal trads As TranslationObject)
     
     If trads Is Nothing Then 
         ThrowError ProjectError.ObjectNotInitialized, "Translations are not initialised"

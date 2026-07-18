@@ -178,7 +178,7 @@ Public Function PrepareFullAnalysisWorksheet(Optional ByVal headerInstruction As
     Set PreparefullAnalysisWorksheet = hostSheet
 End Function
 
-Public Function CreateAnalysisTranslator(Optional ByVal language As String = "French") As ITranslationObject
+Public Function CreateAnalysisTranslator(Optional ByVal language As String = "French") As TranslationObject
     Dim translationSheet As Worksheet
     Dim headerMatrix As Variant
     Dim dataMatrix As Variant

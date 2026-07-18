@@ -17,7 +17,7 @@ Option Explicit
 'TableSpecs layout on a hidden worksheet and uses stubs for the dictionary,
 'linelist data, and translation dependencies.
 '@depends CrossTable, TableSpecs, TableSpecsLinelistStub,
-'  AnalysisDictionaryStub, LinelistSpecsTranslationStub, ILLdictionary,
+'  AnalysisDictionaryStub, TranslationObject, ILLdictionary,
 '  BetterArray, CustomTest, TestHelpers
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
@@ -40,7 +40,7 @@ Private Const NUM_COLUMNS As Long = 10
 Private Assert As CustomTest
 Private dictStub As ILLdictionary
 Private lDataStub As TableSpecsLinelistStub
-Private transStub As LinelistSpecsTranslationStub
+Private transStub As TranslationObject
 
 '@section Helpers
 '===============================================================================
@@ -117,7 +117,7 @@ End Function
 '@details
 'Suppresses screen updates, creates the CustomTest assertion object, and
 'initialises the three stubs: AnalysisDictionaryStub for dictionary
-'lookups, LinelistSpecsTranslationStub with standard message keys
+'lookups, TranslationObject with standard message keys
 '(MSG_NA, MSG_Total, MSG_Percent, etc.), and TableSpecsLinelistStub
 'wired to both. These stubs remain alive for all tests in the module.
 '@ModuleInitialize
@@ -128,15 +128,10 @@ Private Sub ModuleInitialize()
     Assert.SetModuleName "TestCrossTable"
     Set dictStub = New AnalysisDictionaryStub
     Set lDataStub = New TableSpecsLinelistStub
-    Set transStub = New LinelistSpecsTranslationStub
-    transStub.Initialise "TestTrans"
-    transStub.SetTranslation "MSG_NA", "Missing"
-    transStub.SetTranslation "MSG_Total", "Total"
-    transStub.SetTranslation "MSG_Percent", "%"
-    transStub.SetTranslation "MSG_AllData", "All Data"
-    transStub.SetTranslation "MSG_FilteredData", "Filtered Data"
-    transStub.SetTranslation "MSG_GlobalSummary", "Global Summary"
-    transStub.SetTranslation "MSG_Period", "Period"
+    Set transStub = TestHelpers.BuildTranslationObject(ThisWorkbook, "ENG", Array( _
+        Array("MSG_NA", "Missing"), Array("MSG_Total", "Total"), Array("MSG_Percent", "%"), _
+        Array("MSG_AllData", "All Data"), Array("MSG_FilteredData", "Filtered Data"), _
+        Array("MSG_GlobalSummary", "Global Summary"), Array("MSG_Period", "Period")))
     lDataStub.SetDictionary dictStub
     lDataStub.SetTranslation transStub
 End Sub

@@ -15,11 +15,11 @@ Option Explicit
 '   separators, export to an external workbook as a hidden sheet, CRUD
 '   operations (AddChoice, RemoveChoice, ChoiceExists), ListObject row
 '   manipulation (InsertRows, DeleteRows), bulk import from an external
-'   worksheet, and label translation through an ITranslationObject. The module
+'   worksheet, and label translation through an TranslationObject. The module
 '   also validates the edge case of requesting categories for a nonexistent
 '   choice list.
 '
-' @depends LLChoices, TranslationObject, ITranslationObject,
+' @depends LLChoices, TranslationObject, TranslationObject,
 '   BetterArray, CustomTest, TestHelpers, ChoicesTestFixture
 '
 ' Test fixture data is supplied by ChoicesTestFixture.bas, which provides three
@@ -141,13 +141,13 @@ Private Function ImportDataRows() As Variant
         Array("imported_second", 1, "Other Label", "Other Short"))
 End Function
 
-' @sub-title Build a translation table and return an ITranslationObject for it.
+' @sub-title Build a translation table and return an TranslationObject for it.
 ' @details Creates (or resets) a hidden worksheet named CHOICESTRANSLATIONSHEET,
 '   writes header and data rows from TranslatorDataRows, wraps the region in a
 '   ListObject named CHOICESTRANSLATIONTABLE, and returns a TranslationObject
 '   targeting the CHOICESTRANSLATIONLANGUAGE column. The sheet is cleaned up by
 '   CleanupChoicesTranslation in TestCleanup.
-Private Function CreateChoicesTranslator() As ITranslationObject
+Private Function CreateChoicesTranslator() As TranslationObject
     Dim translationSheet As Worksheet
     Dim headerMatrix As Variant
     Dim dataMatrix As Variant
@@ -622,7 +622,7 @@ End Sub
 
 '@TestMethod("LLChoices")
 ' @sub-title Verify that Translate updates both labels and short labels using
-'   an ITranslationObject.
+'   an TranslationObject.
 ' @details Arranges a translation table mapping "A" to "Alpha" and "A short" to
 '   "A court" (among others) via CreateChoicesTranslator. Calls
 '   Choices.Translate and reads the underlying sheet cells directly. Asserts
@@ -633,7 +633,7 @@ Public Sub TestTranslateUpdatesLabels()
     CustomTestSetTitles Assert, "LLChoices", "TestTranslateUpdatesLabels"
     On Error GoTo Fail
 
-    Dim translator As ITranslationObject
+    Dim translator As TranslationObject
     Dim hostSheet As Worksheet
 
     Set translator = CreateChoicesTranslator()

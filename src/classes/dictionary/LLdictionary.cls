@@ -838,7 +838,7 @@ End Property
 '- PreservedSheetNames BetterArray of sheet names that should keep their
 '  original values
 '- geoObject LLGeo instance required for geo expansions
-'- msgTrads ITranslationObject used during column creation
+'- msgTrads TranslationObject used during column creation
 '- tablePrefix Optional String prefix applied to generated table names
 Public Sub Prepare(Optional ByVal PreservedSheetNames As BetterArray, _
                    Optional ByVal geoObject As Object, _
@@ -1500,8 +1500,8 @@ End Sub
 'the provided translation object while protecting formula columns from direct
 'text replacement.
 '@params
-'- TransObject ITranslationObject responsible for translations
-Public Sub Translate(ByVal TransObject As ITranslationObject)
+'- TransObject TranslationObject responsible for translations
+Public Sub Translate(ByVal TransObject As TranslationObject)
     
     'Delegate translation of human-readable columns to the provided translation
     'object. Control details may contain formulas, so we pass the
@@ -1709,7 +1709,7 @@ Private Sub ILLdictionary_Export(ByVal toWkb As Workbook, _
 End Sub
 
 '@jump:translate
-Private Sub ILLdictionary_Translate(ByVal TransObject As ITranslationObject)
+Private Sub ILLdictionary_Translate(ByVal TransObject As TranslationObject)
     Translate TransObject
 End Sub
 

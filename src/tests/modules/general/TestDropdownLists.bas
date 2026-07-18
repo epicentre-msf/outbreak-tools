@@ -19,7 +19,7 @@ Option Explicit
 'adding lists with labels and counter prefixes, duplicate detection surfaced
 'through Checking, removal, HiddenNames-backed counter persistence at workbook
 'and worksheet scope, existence checks across instances, AllDropdowns enumeration
-'that excludes removed entries, translation of all lists via ITranslationObject,
+'that excludes removed entries, translation of all lists via TranslationObject,
 'LabelRange text with auto-incrementing counter prefixes, value retrieval with
 'and without headers plus unknown-list fallback, Length tracking after successive
 'adds, ascending and descending Sort, ClearList followed by Update with
@@ -27,7 +27,7 @@ Option Explicit
 'alert styles plus forward and return hyperlinks between output and dropdown
 'sheets.
 'Uses the CustomTest harness (CustomTest), not Rubberduck.
-'@depends DropdownLists, DropdownLists, Checking, HiddenNames, TranslationObject, ITranslationObject, BetterArray, CustomTest, TestHelpers
+'@depends DropdownLists, DropdownLists, Checking, HiddenNames, TranslationObject, TranslationObject, BetterArray, CustomTest, TestHelpers
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const DROPTESTONE As String = "DropTestList1"
@@ -378,7 +378,7 @@ Public Sub TestTranslateAppliesTranslatorToAllLists()
     CustomTestSetTitles Assert, "DropdownLists", "TestTranslateAppliesTranslatorToAllLists"
 
     Dim valuesList As BetterArray
-    Dim translator As ITranslationObject
+    Dim translator As TranslationObject
     Dim transTable As ListObject
     Dim firstValues As BetterArray
     Dim secondValues As BetterArray

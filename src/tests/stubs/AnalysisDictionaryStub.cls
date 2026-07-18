@@ -112,7 +112,7 @@ Private Property Get ILLdictionary_SpecialVars(ByVal first_condition As String, 
     Set ILLdictionary_SpecialVars = New BetterArray
 End Property
 
-Private Sub ILLdictionary_Prepare(ByVal PreservedSheetNames As BetterArray, ByVal geoObject As Object, ByVal msgTrads As ITranslationObject, Optional ByVal tablePrefix As String = "table")
+Private Sub ILLdictionary_Prepare(ByVal PreservedSheetNames As BetterArray, ByVal geoObject As Object, ByVal msgTrads As TranslationObject, Optional ByVal tablePrefix As String = "table")
 End Sub
 
 Private Sub ILLdictionary_Clean(Optional ByVal removeAddedColumns As Boolean = False)

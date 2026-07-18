@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Master Setup")
 '@ModuleDescription("Utility helpers shared across master setup modules.")
-'@depends DropdownLists, DropdownLists, CustomTable, Passwords, Passwords, Translation, ITranslationObject, BetterArray
+'@depends DropdownLists, DropdownLists, CustomTable, Passwords, Passwords, Translation, TranslationObject, BetterArray
 
 Private Const VARIABLES_SHEETNAME As String = "Variables"
 Private Const TRANSLATIONS_SHEETNAME As String = "Translations"
@@ -407,7 +407,7 @@ Public Function IsMasterDiseaseSheet(ByVal targetSheet As Worksheet) As Boolean
                                     DISEASE_MARKER_VALUE, vbTextCompare) = 0)
 End Function
 
-Public Function ResolveRibbonTranslations(Optional ByVal workbook As Workbook) As ITranslationObject
+Public Function ResolveRibbonTranslations(Optional ByVal workbook As Workbook) As TranslationObject
     Dim tagSheet As Worksheet
     Dim table As ListObject
     Dim languageTag As String
@@ -443,7 +443,7 @@ Public Function ResolveRibbonLanguageTag(Optional ByVal workbook As Workbook) As
     End If
 End Function
 
-Public Function TranslateValue(ByVal translations As ITranslationObject, _
+Public Function TranslateValue(ByVal translations As TranslationObject, _
                                ByVal key As String, _
                                ByVal fallback As String) As String
     If translations Is Nothing Then

@@ -17,7 +17,6 @@ Attribute VB_Description = "Translate various objects from one language to anoth
 
 
 Option Explicit
-Implements ITranslationObject
 
 '@class TranslationObject
 '@description
@@ -56,9 +55,9 @@ Private internalChecks As Checking
 'translation are returned as-is.
 '@param translationLo ListObject. The translation table.
 '@param translationLang String. The target language column header.
-'@return ITranslationObject. Ready to use.
+'@return TranslationObject. Ready to use.
 '@export
-Public Function Create(ByVal translationLo As ListObject, ByVal translationLang As String) As ITranslationObject
+Public Function Create(ByVal translationLo As ListObject, ByVal translationLang As String) As TranslationObject
 
     ValidateListObject translationLo, "Create"
 
@@ -74,9 +73,9 @@ End Function
 'Core translation accessors and lookups.
 
 '@label:self
-'@prop-title Self-reference as ITranslationObject
-'@return ITranslationObject. Self-reference.
-Public Property Get Self() As ITranslationObject
+'@prop-title Self-reference as TranslationObject
+'@return TranslationObject. Self-reference.
+Public Property Get Self() As TranslationObject
     Set Self = Me
 End Property
 
@@ -148,7 +147,7 @@ End Property
 '@prop-title Descriptive name including table and language
 '@return String. Identifier for diagnostic output.
 '@export
-Private Property Get Name() As String
+Public Property Get Name() As String
     If this.transLo Is Nothing Then
         Name = CLASSNAME & " (uninitialised)"
     Else
@@ -198,7 +197,7 @@ End Function
 '@param Text String. Tag to search.
 '@return Boolean. True when the tag is found.
 '@export
-Private Function ValueExists(ByVal Text As String) As Boolean
+Public Function ValueExists(ByVal Text As String) As Boolean
     Dim translationCell As Range
     Dim sanitized As String
 
@@ -223,7 +222,7 @@ End Function
 '@param containsFormula Boolean. Translate as formula. Defaults to False.
 '@return String. The translated value, or the original text when not found.
 '@export
-Private Function TranslatedValue(ByVal textToTranslate As String, _ 
+Public Function TranslatedValue(ByVal textToTranslate As String, _ 
                                  Optional ByVal containsFormula As Boolean = False) As String
 
     Dim cleanedText As String
@@ -257,7 +256,7 @@ End Function
 '@param colRng Range. Column range whose values should be translated.
 '@param containsFormula Boolean. When True, translates as formulas. Defaults to False.
 '@export
-Private Sub TranslateRange(ByVal colRng As Range, Optional ByVal containsFormula As Boolean = False)
+Public Sub TranslateRange(ByVal colRng As Range, Optional ByVal containsFormula As Boolean = False)
     Dim targetCell As Range
 
     If colRng Is Nothing Then Exit Sub
@@ -271,7 +270,7 @@ End Sub
 '@sub-title Translate all supported controls on a user form
 '@param UserFrm Object. Any user form exposing a Controls collection.
 '@export
-Private Sub TranslateForm(ByVal UserFrm As Object)
+Public Sub TranslateForm(ByVal UserFrm As Object)
     Dim formControl As Control
     Dim controlType As String
 
@@ -323,7 +322,7 @@ End Sub
 '@prop-title Whether diagnostic entries have been recorded
 '@return Boolean. True when at least one entry exists.
 '@export
-Private Property Get HasCheckings() As Boolean
+Public Property Get HasCheckings() As Boolean
     HasCheckings = this.hasChecks
 End Property
 
@@ -331,7 +330,7 @@ End Property
 '@prop-title Retrieve the diagnostic log entries
 '@return Object. The checking instance, or Nothing.
 '@export
-Private Property Get CheckingValues() As Object
+Public Property Get CheckingValues() As Object
 
     'If there is no checking, exit the property
     If Not HasCheckings() Then  Exit Property
@@ -541,47 +540,3 @@ Private Sub RaiseError(ByVal errNumber As ProjectError, ByVal message As String,
 
     Err.Raise CLng(errNumber), sourceName, message
 End Sub
-
-'@section Interface
-'===============================================================================
-'ITranslationObject delegation wiring.
-
-Private Property Get ITranslationObject_Name() As String
-    ITranslationObject_Name = Name()
-End Property
-
-Private Property Get ITranslationObject_Language() As String
-    ITranslationObject_Language = Language
-End Property
-
-Private Property Get ITranslationObject_LanguagesList() As BetterArray
-    Set ITranslationObject_LanguagesList = LanguagesList
-End Property
-
-Private Property Get ITranslationObject_ValueExists(ByVal text As String) As Boolean
-    ITranslationObject_ValueExists = ValueExists(text)
-End Property
-
-Private Function ITranslationObject_TranslatedValue( _
-    ByVal Text As String, _
-    Optional ByVal containsFormula As Boolean = False) As String
-    ITranslationObject_TranslatedValue = TranslatedValue(Text, containsFormula)
-End Function
-
-Private Sub ITranslationObject_TranslateRange( _
-    ByVal colRng As Range, _
-    Optional ByVal containsFormula As Boolean = False)
-    TranslateRange colRng:=colRng, containsFormula:=containsFormula
-End Sub
-
-Private Sub ITranslationObject_TranslateForm(ByVal UserFrm As Object)
-    TranslateForm UserFrm
-End Sub
-
-Private Property Get ITranslationObject_HasCheckings() As Boolean
-    ITranslationObject_HasCheckings = HasCheckings()
-End Property
-
-Private Property Get ITranslationObject_CheckingValues() As Object
-    Set ITranslationObject_CheckingValues = CheckingValues()
-End Property

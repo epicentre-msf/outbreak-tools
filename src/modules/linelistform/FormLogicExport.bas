@@ -2,7 +2,7 @@ Attribute VB_Name = "FormLogicExport"
 
 '@Folder("Linelist Forms")
 '@ModuleDescription("Setup and teardown for the general export form")
-'@depends ExportButton, LLExport, ITranslationObject
+'@depends ExportButton, LLExport, TranslationObject
 
 Option Explicit
 
@@ -14,10 +14,10 @@ Private buttons As Collection
 ' Creates one ExportButton per configured export on the form.
 ' @param frm Object. The export form (F_Export).
 ' @param sourceWkb Workbook. The linelist workbook.
-' @param trads ITranslationObject. Translations for messages.
+' @param trads TranslationObject. Translations for messages.
 ' @param numberOfExports Long. Total configured exports.
 Public Sub SetupExportForm(ByVal frm As Object, ByVal sourceWkb As Workbook, _
-                           ByVal trads As ITranslationObject, _
+                           ByVal trads As TranslationObject, _
                            ByVal numberOfExports As Long)
 
     Dim btn As ExportButton

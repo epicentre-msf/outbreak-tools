@@ -44,7 +44,7 @@ Private chkFilt As MSForms.CheckBox
 
 Private Type TExportButton
     sourceWkb As Workbook
-    trads As ITranslationObject
+    trads As TranslationObject
 End Type
 
 Private this As TExportButton
@@ -62,14 +62,14 @@ Private this As TExportButton
 '(not an interface) because callers hold a reference to keep the
 'WithEvents binding alive.
 '@param sourceWkb Workbook. The linelist workbook.
-'@param trads ITranslationObject. Translations for user-facing messages.
+'@param trads TranslationObject. Translations for user-facing messages.
 '@param expBtn MSForms.CommandButton. The button to listen to.
 '@param expChk Optional MSForms.CheckBox. Filter checkbox, or Nothing. Defaults to Nothing.
 '@return ExportButton. A wired instance ready to handle click events.
 '@throws ProjectError.ObjectNotInitialized When sourceWkb, trads, or expBtn is Nothing.
 '@export
 Public Function Create(ByVal sourceWkb As Workbook, _
-                       ByVal trads As ITranslationObject, _
+                       ByVal trads As TranslationObject, _
                        ByVal expBtn As MSForms.CommandButton, _
                        Optional ByVal expChk As MSForms.CheckBox = Nothing) As ExportButton
 
@@ -112,8 +112,8 @@ End Property
 
 '@label:translations-set
 '@prop-title Assign the translations object
-'@param trads ITranslationObject. The translations to store.
-Public Property Set Translations(ByVal trads As ITranslationObject)
+'@param trads TranslationObject. The translations to store.
+Public Property Set Translations(ByVal trads As TranslationObject)
     Set this.trads = trads
 End Property
 

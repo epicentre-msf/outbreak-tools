@@ -345,6 +345,53 @@ Public Sub WriteMatrix(ByVal target As Range, matrix As Variant)
                   UBound(matrix, 2) - LBound(matrix, 2) + 1).value = matrix
 End Sub
 
+'@label BuildTranslationObject
+'@fun-title Build a real TranslationObject from an inline (code, value) mapping.
+'@details Seeds a two-column translation ListObject ("tag" + the language) on a
+'hidden fixture sheet in targetBook and returns TranslationObject.Create against
+'it. Pass an empty array for a pure pass-through translator (unmatched codes
+'return the input text). Replaces the former TranslationObject test stubs.
+'@param targetBook Workbook hosting the fixture sheet.
+'@param language String. Language column header (e.g. "ENG").
+'@param pairs Variant. Array of Array(code, value) rows, or an empty array.
+'@return TranslationObject built from the seeded table.
+Public Function BuildTranslationObject(ByVal targetBook As workbook, _
+                                       ByVal language As String, _
+                                       ByVal pairs As Variant) As TranslationObject
+    Dim sh As Worksheet
+    Dim lo As ListObject
+    Dim rowCount As Long
+    Dim idx As Long
+
+    Set sh = EnsureWorksheet("__TransFixture__", targetBook, clearSheet:=True, visibility:=xlSheetHidden)
+
+    Do While sh.ListObjects.Count > 0
+        sh.ListObjects(1).Delete
+    Loop
+
+    sh.Range("A1").value = "tag"
+    sh.Range("B1").value = language
+
+    If IsArray(pairs) Then
+        If UBound(pairs) >= LBound(pairs) Then rowCount = UBound(pairs) - LBound(pairs) + 1
+    End If
+
+    If rowCount = 0 Then
+        sh.Range("A2").value = "__k"
+        sh.Range("B2").value = "__v"
+        rowCount = 1
+    Else
+        For idx = 0 To rowCount - 1
+            sh.Cells(2 + idx, 1).value = pairs(LBound(pairs) + idx)(0)
+            sh.Cells(2 + idx, 2).value = pairs(LBound(pairs) + idx)(1)
+        Next idx
+    End If
+
+    Set lo = sh.ListObjects.Add(xlSrcRange, sh.Range("A1").Resize(rowCount + 1, 2), , xlYes)
+    lo.Name = "T_transFixture"
+    Set BuildTranslationObject = TranslationObject.Create(lo, language)
+End Function
+
 '@section Data Builders
 '===============================================================================
 

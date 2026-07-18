@@ -30,7 +30,7 @@ Attribute VB_Name = "TestPasswords"
 '   access to be enabled in the host application's Trust Center; when access is denied,
 '   those tests are skipped with an explicit log message.
 '
-' @depends Passwords, Passwords, TranslationObject, ITranslationObject,
+' @depends Passwords, Passwords, TranslationObject, TranslationObject,
 '   ApplicationState, HiddenNames, Checking,
 '   BetterArray, CustomTest, TestHelpers, PasswordsTestFixture
 
@@ -70,7 +70,7 @@ Private Const ERR_VBPROJECT_NOT_SET As Long = 91
 '===============================================================================
 
 ' @sub-title Build an in-memory TranslationObject for password prompt tests
-Private Function CreatePasswordTranslator() As ITranslationObject
+Private Function CreatePasswordTranslator() As TranslationObject
     Dim translationSheet As Worksheet
     Dim headerMatrix As Variant
     Dim dataMatrix As Variant
@@ -544,7 +544,7 @@ End Sub
 Public Sub TestDisplayPrivateKeySilentModeCapturesPrompt()
     CustomTestSetTitles Assert, "Passwords", "TestDisplayPrivateKeySilentModeCapturesPrompt"
 
-    Dim translator As ITranslationObject
+    Dim translator As TranslationObject
     Dim expectedPrompt As String
     Dim expectedTitle As String
     Dim logs As Checking
@@ -587,7 +587,7 @@ End Sub
 '@TestMethod("Passwords")
 Public Sub TestGenerateKeyUpdatesRanges()
     CustomTestSetTitles Assert, "Passwords", "TestGenerateKeyUpdatesRanges"
-    Dim translator As ITranslationObject
+    Dim translator As TranslationObject
     Dim publicValue As String
     Dim privateValue As String
     Dim keysTable As ListObject
@@ -902,7 +902,7 @@ Private Sub ImportPasswordsComponents(ByVal targetWorkbook As Workbook, _
     Dim idx As Long
     Dim exportPath As String
 
-    components = Array("BetterArray", "Checking", "Passwords", "TranslationObject", "ITranslationObject")
+    components = Array("BetterArray", "Checking", "Passwords", "TranslationObject")
 
     For idx = LBound(components) To UBound(components)
         exportPath = TestHelpers.ExportComponentToFolder(ThisWorkbook, CStr(components(idx)), exportFolder)

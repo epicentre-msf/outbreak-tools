@@ -18,7 +18,7 @@ Implements ILinelistSpecs
 
 Private Type TLinelistStub
     dictionary As ILLdictionary
-    translationObject As ITranslationObject
+    translationObject As TranslationObject
 End Type
 
 Private this As TLinelistStub
@@ -31,7 +31,7 @@ Public Sub SetDictionary(ByVal dictionary As ILLdictionary)
 End Sub
 
 'Configure the translation object returned through the interface.
-Public Sub SetTranslation(ByVal translation As ITranslationObject)
+Public Sub SetTranslation(ByVal translation As TranslationObject)
     Set this.translationObject = translation
 End Sub
 
@@ -88,7 +88,7 @@ Private Property Get ILinelistSpecs_DesignerTranslations() As DesignerTranslatio
     Set ILinelistSpecs_DesignerTranslations = Nothing
 End Property
 
-Private Property Get ILinelistSpecs_TransObject(Optional ByVal translationScope As Byte = TranslationOfMessages) As ITranslationObject
+Private Property Get ILinelistSpecs_TransObject(Optional ByVal translationScope As Byte = TranslationOfMessages) As TranslationObject
     Set ILinelistSpecs_TransObject = this.translationObject
 End Property
 

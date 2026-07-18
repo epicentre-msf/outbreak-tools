@@ -222,11 +222,11 @@ Public Sub TestTransObjectReturnsTranslationObject()
     Dim sut As LLTranslation
     Set sut = LLTranslation.Create(TransSheet)
 
-    Dim transObj As ITranslationObject
+    Dim transObj As TranslationObject
     Set transObj = sut.TransObject(TranslationOfMessages)
 
     Assert.IsTrue Not transObj Is Nothing, _
-                  "TransObject should return a non-Nothing ITranslationObject"
+                  "TransObject should return a non-Nothing TranslationObject"
 
     Exit Sub
 TestFail:

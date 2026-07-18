@@ -20,12 +20,12 @@ Option Explicit
 'FRA) is rebuilt in TestInitialize so every test starts from a clean baseline.
 'Uses the CustomTest harness (CustomTest) with CustomTestSetTitles and
 'CustomTestLogFailure.
-'@depends TranslationObject, ITranslationObject, BetterArray, CustomTest, TestHelpers
+'@depends TranslationObject, TranslationObject, BetterArray, CustomTest, TestHelpers
 
 Private Assert As CustomTest
 Private TranslationSheet As Worksheet
 Private TranslationTable As ListObject
-Private Translator As ITranslationObject
+Private Translator As TranslationObject
 
 Private Const TRANSLATION_SHEET As String = "TST_Translations"
 Private Const TRANSLATION_TABLE As String = "TST_TranslationsTable"
@@ -223,7 +223,7 @@ End Sub
 '"greeting" unchanged. This confirms the graceful fallback behaviour when
 'a requested language column is missing from the translation table.
 Public Sub TestValueExistsReturnsFalseWhenLanguageMissing()
-    Dim missingLanguage As ITranslationObject
+    Dim missingLanguage As TranslationObject
     Dim result As String
 
     CustomTestSetTitles Assert, "TranslationObject", "TestValueExistsReturnsFalseWhenLanguageMissing"

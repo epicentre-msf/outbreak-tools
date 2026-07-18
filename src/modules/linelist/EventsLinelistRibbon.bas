@@ -9,7 +9,7 @@ Option Private Module
 
 Private Const LLSHEET As String = "LinelistTranslation"
 
-Private tradrib As ITranslationObject   'Translation of ribbon labels
+Private tradrib As TranslationObject   'Translation of ribbon labels
 
 'Initialize translation of ribbon labels
 Private Sub InitializeTrads()

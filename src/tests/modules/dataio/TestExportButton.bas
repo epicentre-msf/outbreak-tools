@@ -15,7 +15,7 @@ Attribute VB_Description = "Unit tests for ExportButton"
 'the UseFilter property that reads and writes the companion checkbox state.
 'The fixture creates temporary worksheets with OLEObject controls for each
 'test and tears them down in TestCleanup to ensure isolation.
-'@depends ExportButton, ITranslationObject, LinelistSpecsTranslationStub, MSForms, CustomTest
+'@depends ExportButton, TranslationObject, TestHelpers, MSForms, CustomTest
 
 Option Explicit
 Option Private Module
@@ -118,16 +118,14 @@ Private Function CreateCheckBox(ByVal sh As Worksheet) As MSForms.CheckBox
     Set CreateCheckBox = ole.Object
 End Function
 
-'@sub-title Create a stub ITranslationObject for factory calls.
+'@sub-title Create a stub TranslationObject for factory calls.
 '@details
-'Instantiates a LinelistSpecsTranslationStub and initialises it with
+'Instantiates a TranslationObject and initialises it with
 'an arbitrary name. The stub satisfies the Create factory's non-Nothing
 'translation requirement without needing a full linelist dictionary.
-'@return ITranslationObject. A lightweight translation stub.
-Private Function CreateTranslationStub() As ITranslationObject
-    Dim stub As New LinelistSpecsTranslationStub
-    stub.Initialise "ExportTestStub"
-    Set CreateTranslationStub = stub
+'@return TranslationObject. A lightweight translation stub.
+Private Function CreateTranslationStub() As TranslationObject
+    Set CreateTranslationStub = TestHelpers.BuildTranslationObject(ThisWorkbook, "ENG", Array())
 End Function
 
 

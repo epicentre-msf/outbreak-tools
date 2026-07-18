@@ -25,7 +25,7 @@ Option Explicit
 '@details
 'Each value maps to a specific ListObject on the translation worksheet.
 'Used as a Byte parameter to select which translation table backs the
-'returned ITranslationObject.
+'returned TranslationObject.
 Public Enum TranslationScope
     TranslationOfMessages = 0
     TranslationOfDictionary = 1
@@ -38,10 +38,10 @@ End Enum
 '@class LLTranslation
 '@description
 'Manages translation ListObjects hosted on a single worksheet and provides
-'scoped ITranslationObject accessors, import/export of full translation
+'scoped TranslationObject accessors, import/export of full translation
 'tables, dictionary-specific exchange, and workbook-level hidden name
 'initialisation for translated configuration values.
-'@depends ITranslationObject, TranslationObject, CustomTable
+'@depends TranslationObject, TranslationObject, CustomTable
 '@depends HiddenNames, BetterArray
 '@version 1.0 (2026-02-10)
 
@@ -124,16 +124,16 @@ End Property
 '@label:trans-object
 '@prop-title Scoped translation object
 '@details
-'Returns an ITranslationObject configured for the requested translation
+'Returns an TranslationObject configured for the requested translation
 'scope. The language code is resolved from the host workbook HiddenNames
 '(RNG_LLLanguageCode or RNG_DictionaryLanguage depending on scope).
 '@param trans Optional Byte. TranslationScope value selecting the content
 'scope. Defaults to TranslationOfMessages.
-'@return ITranslationObject. The translation object for the requested scope.
+'@return TranslationObject. The translation object for the requested scope.
 '@throws ProjectError.ElementNotFound When the requested ListObject does
 'not exist on the host worksheet.
 '@export
-Public Property Get TransObject(Optional ByVal trans As Byte = TranslationOfMessages) As ITranslationObject
+Public Property Get TransObject(Optional ByVal trans As Byte = TranslationOfMessages) As TranslationObject
     Dim Lo As ListObject
     Dim lang As String
     Dim sh As Worksheet
@@ -333,7 +333,7 @@ End Sub
 '@export
 Public Sub InitialiseHiddenNames(ByVal targetWkb As Workbook)
     Dim wkbNames As HiddenNames
-    Dim msgTrans As ITranslationObject
+    Dim msgTrans As TranslationObject
 
     If targetWkb Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, _

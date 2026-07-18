@@ -23,7 +23,7 @@ Option Explicit
 'toggling, and import/export of password metadata. Uses TypeName
 'dispatch to handle Workbook, Worksheet, and String target arguments
 'through a single Protect/UnProtect entry point.
-'@depends Checking, BetterArray, ProjectError, ITranslationObject
+'@depends Checking, BetterArray, ProjectError, TranslationObject
 '@version 1.0 (2026-02-09)
 
 
@@ -546,9 +546,9 @@ End Sub
 
 '@label:generate-key
 '@sub-title Randomly select a public/private key pair
-'@param trads ITranslationObject. Translation helper for prompts.
+'@param trads TranslationObject. Translation helper for prompts.
 '@export
-Public Sub GenerateKey(ByVal trads As ITranslationObject)
+Public Sub GenerateKey(ByVal trads As TranslationObject)
 
     Dim Lo As ListObject
     Dim dataRange As Range
@@ -584,9 +584,9 @@ End Sub
 
 '@label:display-private-key
 '@sub-title Display the current private key via a translated prompt
-'@param trads ITranslationObject. Translation helper for the message.
+'@param trads TranslationObject. Translation helper for the message.
 '@export
-Public Sub DisplayPrivateKey(ByVal trads As ITranslationObject)
+Public Sub DisplayPrivateKey(ByVal trads As TranslationObject)
 
     Dim promptText As String
     Dim titleText As String

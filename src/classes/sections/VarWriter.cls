@@ -25,7 +25,7 @@ Option Explicit
 'to the resolved cell range. The class caches dictionary, variables, and
 'sheets accessors for performance across repeated calls.
 '@depends ILinelistSpecs, ILLdictionary, ILLVariables, LLSheets, LLFormat,
-'ITranslationObject, FormulaData, Formulas, DropdownLists, LLGeo,
+'TranslationObject, FormulaData, Formulas, DropdownLists, LLGeo,
 'Formulas, LLVariables, LLSheets, BetterArray
 '@version 1.0 (2026-02-10)
 
@@ -221,8 +221,8 @@ End Property
 '@details
 'Delegates directly to specs.TransObject on every call. Used to fetch
 'translated UI messages such as MSG_Calculated and MSG_CustomChoice.
-'@return ITranslationObject. The translation provider.
-Private Property Get Trans() As ITranslationObject
+'@return TranslationObject. The translation provider.
+Private Property Get Trans() As TranslationObject
     Set Trans = this.specs.TransObject()
 End Property
 
@@ -452,7 +452,7 @@ Private Sub AddLabel(Optional ByVal usePrinted As Boolean = False)
     Dim varToPrint As String
     Dim choicust As String
     Dim varEditLab As String
-    Dim transObj As ITranslationObject
+    Dim transObj As TranslationObject
 
     Set design = DesignFormat()
     Set transObj = Trans()
@@ -767,7 +767,7 @@ Private Sub AddChoices()
     Dim cellRng As Range
     Dim geo As LLGeo
     Dim choicust As String
-    Dim transObj As ITranslationObject
+    Dim transObj As TranslationObject
     Dim varMainLab As String
     Dim varSubLab As String
     Dim sh As Worksheet

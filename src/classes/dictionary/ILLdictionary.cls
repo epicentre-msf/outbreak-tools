@@ -165,7 +165,7 @@ End Property
 '@sub-title Prepare dictionary for designer workflows
 '@param PreservedSheetNames BetterArray containing table names to preserve.
 '@param geoObject LLGeo implementation to enrich geographic variables.
-'@param msgTrads ITranslationObject providing translations.
+'@param msgTrads TranslationObject providing translations.
 '@param tablePrefix Optional String prefix for generated table names. Defaults to "table".
 Public Sub Prepare(Optional ByVal PreservedSheetNames As BetterArray, _
                    Optional ByVal geoObject As Object, _
@@ -209,8 +209,8 @@ End Sub
 
 '@jump:translate
 '@sub-title Translate dictionary labels
-'@param TransObject ITranslationObject used to translate ranges.
-Public Sub Translate(ByVal TransObject As ITranslationObject)
+'@param TransObject TranslationObject used to translate ranges.
+Public Sub Translate(ByVal TransObject As TranslationObject)
 End Sub
 
 
