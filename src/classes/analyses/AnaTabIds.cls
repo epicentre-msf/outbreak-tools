@@ -24,7 +24,7 @@ Option Explicit
 'on output worksheets. Manages three ListObject families (tab_ids_*,
 'graph_ids_*, graph_formats_*) across four analysis scopes (normal, time
 'series, spatial, spatio-temporal).
-'@depends CustomTable, Graphs, BetterArray, IFormulas
+'@depends CustomTable, Graphs, BetterArray, Formulas
 '@version 2025-01-15
 
 

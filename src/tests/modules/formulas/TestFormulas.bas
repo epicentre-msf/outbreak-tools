@@ -20,7 +20,7 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 'and edge cases such as empty input, escaped quotes, and large expressions.
 'Each test builds a fresh dictionary and FormulaData fixture via worksheet
 'helpers so tests run in isolation.
-'@depends Formulas, IFormulas, FormulaData, IFormulaData, FormulaCondition,
+'@depends Formulas, FormulaData, IFormulaData, FormulaCondition,
 'LLdictionary, ILLdictionary, LLVariables, ILLVariables,
 'LLSheets, ILLSheets, BetterArray, CustomTest, ICustomTest,
 'DictionaryTestFixture, FormulaTestFixture
@@ -85,8 +85,8 @@ End Sub
 'FormulaData source. The expression is parsed eagerly during Create, so
 'the returned instance is immediately ready for Valid/Reason/Parsed calls.
 '@param expression String. Pseudo-code expression to parse.
-'@return IFormulas. A configured Formulas instance backed by the shared dictionary and formula data.
-Private Function BuildFormula(ByVal expression As String) As IFormulas
+'@return Formulas. A configured Formulas instance backed by the shared dictionary and formula data.
+Private Function BuildFormula(ByVal expression As String) As Formulas
     Set BuildFormula = Formulas.Create(LinelistDictionary, FormulaDataSource, expression)
 End Function
 
@@ -426,7 +426,7 @@ End Sub
 Public Sub TestSimpleVariableValidForLinelist()
     CustomTestSetTitles Assert, "Formulas", "TestSimpleVariableValidForLinelist"
     Dim variableName As String
-    Dim formulaInstance As IFormulas
+    Dim formulaInstance As Formulas
 
     On Error GoTo Fail
 
@@ -454,7 +454,7 @@ End Sub
 Public Sub TestAnalysisSingleVariableRejected()
     CustomTestSetTitles Assert, "Formulas", "TestAnalysisSingleVariableRejected"
     Dim variableName As String
-    Dim formulaInstance As IFormulas
+    Dim formulaInstance As Formulas
 
     On Error GoTo Fail
 
@@ -478,7 +478,7 @@ End Sub
 '@TestMethod("Formulas")
 Public Sub TestEmptyFormulaRejected()
     CustomTestSetTitles Assert, "Formulas", "TestEmptyFormulaRejected"
-    Dim formulaInstance As IFormulas
+    Dim formulaInstance As Formulas
 
     On Error GoTo Fail
 
@@ -502,7 +502,7 @@ End Sub
 '@TestMethod("Formulas")
 Public Sub TestUnknownTokenRecordsFailure()
     CustomTestSetTitles Assert, "Formulas", "TestUnknownTokenRecordsFailure"
-    Dim formulaInstance As IFormulas
+    Dim formulaInstance As Formulas
     Dim expectedReason As String
 
     On Error GoTo Fail
@@ -528,7 +528,7 @@ End Sub
 '@TestMethod("Formulas")
 Public Sub TestCustomAggregatorTranslatesToAverage()
     CustomTestSetTitles Assert, "Formulas", "TestCustomAggregatorTranslatesToAverage"
-    Dim formulaInstance As IFormulas
+    Dim formulaInstance As Formulas
     Dim condition As FormulaCondition
     Dim conditionVars As BetterArray
     Dim conditionConds As BetterArray
@@ -561,7 +561,7 @@ End Sub
 Public Sub TestParsedLinelistStructuredReference()
     CustomTestSetTitles Assert, "Formulas", "TestParsedLinelistStructuredReference"
     Dim variableName As String
-    Dim formulaInstance As IFormulas
+    Dim formulaInstance As Formulas
     Dim parsed As String
 
     On Error GoTo Fail
@@ -587,7 +587,7 @@ End Sub
 Public Sub TestParsedLinelistUsesCellReferencesWhenOptedOut()
     CustomTestSetTitles Assert, "Formulas", "TestParsedLinelistUsesCellReferencesWhenOptedOut"
     Dim variableName As String
-    Dim formulaInstance As IFormulas
+    Dim formulaInstance As Formulas
     Dim parsed As String
     Dim sheets As ILLSheets
     Dim expectedAddress As String
@@ -631,7 +631,7 @@ Public Sub TestAllDictionaryFormulasParse()
     Dim controlValue As String
     Dim formulaText As String
     Dim variableName As String
-    Dim formulaInstance As IFormulas
+    Dim formulaInstance As Formulas
     Dim evaluatedCount As Long
 
     On Error GoTo Fail
@@ -677,7 +677,7 @@ Public Sub TestNestedParenthesesAndWhitespace()
     CustomTestSetTitles Assert, "Formulas", "TestNestedParenthesesAndWhitespace"
     Dim variableName As String
     Dim expression As String
-    Dim formulaInstance As IFormulas
+    Dim formulaInstance As Formulas
 
     On Error GoTo Fail
 
@@ -704,7 +704,7 @@ End Sub
 Public Sub TestHandlesEscapedQuotesWithinLiterals()
     CustomTestSetTitles Assert, "Formulas", "TestHandlesEscapedQuotesWithinLiterals"
     Dim expression As String
-    Dim formulaInstance As IFormulas
+    Dim formulaInstance As Formulas
 
     On Error GoTo Fail
 
@@ -729,7 +729,7 @@ End Sub
 '@TestMethod("Formulas")
 Public Sub TestBooleanLiteralsAccepted()
     CustomTestSetTitles Assert, "Formulas", "TestBooleanLiteralsAccepted"
-    Dim formulaInstance As IFormulas
+    Dim formulaInstance As Formulas
 
     On Error GoTo Fail
 
@@ -753,7 +753,7 @@ End Sub
 '@TestMethod("Formulas")
 Public Sub TestInvalidFunctionRaisesChecking()
     CustomTestSetTitles Assert, "Formulas", "TestInvalidFunctionRaisesChecking"
-    Dim formulaInstance As IFormulas
+    Dim formulaInstance As Formulas
     Dim expectedReason As String
     Dim variableName As String
 
@@ -785,7 +785,7 @@ Public Sub TestCustomNRemovesEmptyInvocation()
     Const TABLE_PREFIX As String = "f_"
     Dim variableName As String
     Dim tableName As String
-    Dim formulaInstance As IFormulas
+    Dim formulaInstance As Formulas
     Dim conditionVars As BetterArray
     Dim conditionConds As BetterArray
     Dim formCondition As FormulaCondition
@@ -828,7 +828,7 @@ End Sub
 Public Sub TestUnmatchedParenthesesDetected()
     CustomTestSetTitles Assert, "Formulas", "TestUnmatchedParenthesesDetected"
     Dim variableName As String
-    Dim formulaInstance As IFormulas
+    Dim formulaInstance As Formulas
 
     On Error GoTo Fail
 
@@ -853,7 +853,7 @@ End Sub
 '@TestMethod("Formulas")
 Public Sub TestClosingParenthesisBeforeOpeningDetected()
     CustomTestSetTitles Assert, "Formulas", "TestClosingParenthesisBeforeOpeningDetected"
-    Dim formulaInstance As IFormulas
+    Dim formulaInstance As Formulas
 
     On Error GoTo Fail
 
@@ -878,7 +878,7 @@ End Sub
 '@TestMethod("Formulas")
 Public Sub TestDisallowedCharacterRejected()
     CustomTestSetTitles Assert, "Formulas", "TestDisallowedCharacterRejected"
-    Dim formulaInstance As IFormulas
+    Dim formulaInstance As Formulas
     Dim expectedReason As String
 
     On Error GoTo Fail
@@ -913,7 +913,7 @@ Public Sub TestGroupedSumIfsUsesNativeFunction()
     Dim resultVar As String
     Dim tableName As String
     Dim expression As String
-    Dim formulaInstance As IFormulas
+    Dim formulaInstance As Formulas
     Dim expected As String
 
     On Error GoTo Fail
@@ -953,7 +953,7 @@ Public Sub TestGroupedCountIfsAddsNotBlankCriteria()
     Dim resultVar As String
     Dim tableName As String
     Dim expression As String
-    Dim formulaInstance As IFormulas
+    Dim formulaInstance As Formulas
     Dim expected As String
 
     On Error GoTo Fail
@@ -994,7 +994,7 @@ Public Sub TestGroupedMeanIfsBuildsArrayFormula()
     Dim resultVar As String
     Dim tableName As String
     Dim expression As String
-    Dim formulaInstance As IFormulas
+    Dim formulaInstance As Formulas
     Dim expectedLinelist As String
     Dim expectedAnalysis As String
 
@@ -1038,7 +1038,7 @@ Public Sub TestGenericGroupSumBuildsArrayFormula()
     Dim resultVar As String
     Dim tableName As String
     Dim expression As String
-    Dim formulaInstance As IFormulas
+    Dim formulaInstance As Formulas
     Dim expectedLinelist As String
     Dim expectedAnalysis As String
 
@@ -1083,7 +1083,7 @@ Public Sub TestGroupedTableMismatchRejected()
     Dim tableName As String
     Dim mismatchedVar As String
     Dim expression As String
-    Dim formulaInstance As IFormulas
+    Dim formulaInstance As Formulas
 
     On Error GoTo Fail
 
@@ -1125,7 +1125,7 @@ Public Sub TestGenericGroupMissingAggregatorRejected()
     Dim resultVar As String
     Dim tableName As String
     Dim expression As String
-    Dim formulaInstance As IFormulas
+    Dim formulaInstance As Formulas
     Dim expectedReason As String
 
     On Error GoTo Fail
@@ -1167,7 +1167,7 @@ Public Sub TestGenericGroupUnknownAggregatorRejected()
     Dim resultVar As String
     Dim tableName As String
     Dim expression As String
-    Dim formulaInstance As IFormulas
+    Dim formulaInstance As Formulas
     Dim expectedReason As String
 
     On Error GoTo Fail
@@ -1206,7 +1206,7 @@ Public Sub TestParsedAnalysisFormulaAppliesConnector()
     CustomTestSetTitles Assert, "Formulas", "TestParsedAnalysisFormulaAppliesConnector"
     Dim variableName As String
     Dim expression As String
-    Dim formulaInstance As IFormulas
+    Dim formulaInstance As Formulas
     Dim condition As FormulaCondition
     Dim conditionVars As BetterArray
     Dim conditionConds As BetterArray
@@ -1251,7 +1251,7 @@ Public Sub TestLargeFormulaParsesSuccessfully()
     Dim variableName As String
     Dim idx As Long
     Dim builder As String
-    Dim formulaInstance As IFormulas
+    Dim formulaInstance As Formulas
 
     On Error GoTo Fail
 

@@ -30,7 +30,7 @@ Implements ILinelistSpecs
 '@depends ILLdictionary, ILLChoices, ILLTranslation, IDesignerTranslation
 '@depends ILLGeo, ILLExport, IAnalysis, IPasswords, ILLFormat
 '@depends LinelistBuildService, ITemporaryRepos, TemporaryRepos
-'@depends IFormulaData, ILLVariables, IFormulas
+'@depends IFormulaData, ILLVariables, Formulas
 '@depends ITranslationObject, IApplicationState, ApplicationState
 '@depends BetterArray, LLdictionary, LLChoices, LLTranslation
 '@depends DesignerTranslation, LLGeo, LLExport, Analysis, Passwords
@@ -763,7 +763,7 @@ Private Sub RecursiveListAuto(ByVal varName As String)
     Dim vars As ILLVariables
     Dim controlType As String
     Dim controlDetails As String
-    Dim formulaEngine As IFormulas
+    Dim formulaEngine As Formulas
     Dim referencedVars As BetterArray
     Dim idx As Long
     Dim referencedName As String

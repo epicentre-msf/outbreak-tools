@@ -25,7 +25,7 @@ Option Explicit
 'to the resolved cell range. The class caches dictionary, variables, and
 'sheets accessors for performance across repeated calls.
 '@depends ILinelistSpecs, ILLdictionary, ILLVariables, ILLSheets, ILLFormat,
-'ITranslationObject, IFormulaData, IFormulas, IDropdownLists, ILLGeo,
+'ITranslationObject, IFormulaData, Formulas, IDropdownLists, ILLGeo,
 'Formulas, LLVariables, LLSheets, BetterArray
 '@version 1.0 (2026-02-10)
 
@@ -707,7 +707,7 @@ Private Sub AddFormula()
     Dim cellRng As Range
     Dim varFormData As IFormulaData
     Dim dict As ILLdictionary
-    Dim varFormObject As IFormulas
+    Dim varFormObject As Formulas
     Dim design As ILLFormat
     Dim varControl As String
 
@@ -1329,7 +1329,7 @@ Private Function ExcelFormula(ByVal formVal As String, _
                               Optional ByVal useOS As Boolean = False) As Variant
     Dim dict As ILLdictionary
     Dim varFormData As IFormulaData
-    Dim varFormObject As IFormulas
+    Dim varFormObject As Formulas
     Dim excelForm As String
     Dim convForm As Variant
 

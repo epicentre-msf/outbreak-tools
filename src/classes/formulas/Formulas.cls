@@ -15,7 +15,6 @@ Attribute VB_Description = "Convert formulas from setup to Excel"
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, MissingAnnotationArgument, ReadOnlyPropertyAssignment, UseMeaningfulName, HungarianNotation
 
 Option Explicit
-Implements IFormulas
 
 '@class Formulas
 '@description
@@ -98,13 +97,13 @@ Private hasChecks As Boolean
 '@param dict ILLdictionary. Variable metadata provider.
 '@param formData IFormulaData. Catalogue of approved Excel functions and separators.
 '@param setupForm String. Pseudo-formula to parse and validate.
-'@return IFormulas. Initialised instance.
+'@return Formulas. Initialised instance.
 '@throws ProjectError.ObjectNotInitialized When dict is Nothing.
 '@throws ProjectError.ObjectNotInitialized When formData is Nothing.
 '@export
 Public Function Create(ByVal dict As ILLdictionary, _
                        ByVal formData As IFormulaData, _
-                       ByVal setupForm As String) As IFormulas
+                       ByVal setupForm As String) As Formulas
 
     If dict Is Nothing Then ThrowError ProjectError.ObjectNotInitialized, "Dictionary is not found"
     If formData Is Nothing Then ThrowError ProjectError.ObjectNotInitialized, "Formula Data not found"
@@ -123,9 +122,9 @@ End Function
 '@sub-title Return the interface pointer for the current instance
 '@details
 'Returns the current instance cast to its interface. Used internally
-'by the factory method to return an IFormulas reference.
-'@return IFormulas. Reference to the current object.
-Public Property Get Self() As IFormulas
+'by the factory method to return a Formulas reference.
+'@return Formulas. Reference to the current object.
+Public Property Get Self() As Formulas
     Set Self = Me
 End Property
 
@@ -1247,8 +1246,8 @@ End Sub
 'Returns the module-level flag set by LogCheck.
 '@return Boolean. True when checkings exist.
 '@export
-Private Property Get HasCheckings() As Boolean
-    HasCheckings = hasChecks
+Public Property Get HasChecking() As Boolean
+    HasChecking = hasChecks
 End Property
 
 '@label:checking-values
@@ -1258,8 +1257,8 @@ End Property
 'been recorded. Returns Nothing otherwise.
 '@return IChecking. Logged diagnostics.
 '@export
-Private Property Get CheckingValues() As IChecking
-    If Not HasCheckings Then Exit Property
+Public Property Get CheckingValues() As IChecking
+    If Not HasChecking Then Exit Property
     Set CheckingValues = internalChecks
 End Property
 
@@ -1278,55 +1277,3 @@ End Property
 Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
     Err.Raise errNumb, CLASSNAME, "Error: " & errorMessage
 End Sub
-
-'@section Interface
-'===============================================================================
-'@description Delegated members satisfying the IFormulas contract.
-
-Private Property Get IFormulas_Varlists(Optional ByVal formulaType As String = "analysis") As BetterArray
-    Set IFormulas_Varlists = Varlists(formulaType)
-End Property
-
-Private Property Get IFormulas_Valid(Optional ByVal formulaType As String = "analysis") As Boolean
-    IFormulas_Valid = Valid(formulaType)
-End Property
-
-'@label:formula-table-list
-Private Property Get IFormulas_FormulaTableList() As BetterArray
-    If EnsureEvaluation("analysis") Then
-        Set IFormulas_FormulaTableList = this.tokens.Clone()
-    Else
-        Set IFormulas_FormulaTableList = New BetterArray
-    End If
-End Property
-
-Private Property Get IFormulas_ParsedLinelistFormula(Optional ByVal useTableName As Boolean = False, _
-                                                    Optional ByVal tablePrefix As String = vbNullString) As String
-    IFormulas_ParsedLinelistFormula = ParsedLinelistFormula(useTableName, tablePrefix)
-End Property
-
-Private Property Get IFormulas_ParsedAnalysisFormula(ByVal formCond As FormulaCondition, _
-                                                    Optional ByVal tablePrefix As String = vbNullString, _
-                                                    Optional ByVal Connector As String = "*") As String
-    IFormulas_ParsedAnalysisFormula = ParsedAnalysisFormula(formCond, tablePrefix, Connector)
-End Property
-
-Private Property Get IFormulas_HasSetupVariables() As Boolean
-    IFormulas_HasSetupVariables = HasSetupVariables()
-End Property
-
-Private Property Get IFormulas_IsGrouped() As String
-    IFormulas_IsGrouped = IsGrouped()
-End Property
-
-Private Property Get IFormulas_Reason(Optional ByVal formulaType As String = "analysis") As String
-    IFormulas_Reason = Reason(formulaType)
-End Property
-
-Private Property Get IFormulas_CheckingValues() As IChecking
-    Set IFormulas_CheckingValues = CheckingValues
-End Property
-
-Private Property Get IFormulas_HasChecking() As Boolean
-    IFormulas_HasChecking = HasCheckings
-End Property

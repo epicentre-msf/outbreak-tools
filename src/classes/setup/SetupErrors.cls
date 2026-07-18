@@ -1234,7 +1234,7 @@ Private Function FormulaMessage(ByVal formValue As String, _
                                 Optional ByVal valueOne As String = vbNullString, _
                                 Optional ByVal valueTwo As String = vbNullString, _
                                 Optional ByVal formulaType As String = "linelist") As String
-    Dim setupFormulas As IFormulas
+    Dim setupFormulas As Formulas
 
     If LenB(Trim$(formValue)) = 0 Then Exit Function
 

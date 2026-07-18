@@ -28,14 +28,14 @@ Implements ICrossTableFormula
 'spatial lookups, and data-validation dropdowns. Consumers obtain an instance
 'through the predeclared Create factory and interact via the ICrossTableFormula
 'interface.
-'@depends ICrossTable, IFormulaData, IFormulas, Formulas, FormulaCondition, ITableSpecs, SpatialTables, BetterArray
+'@depends ICrossTable, IFormulaData, Formulas, FormulaCondition, ITableSpecs, SpatialTables, BetterArray
 '@version 1.0 (2026-02-10)
 
 
 Private Type TCrossTableFormula
     tabl As ICrossTable
     fData As IFormulaData
-    forml As IFormulas
+    forml As Formulas
     condVars As BetterArray
     condTests As BetterArray
 End Type
@@ -196,19 +196,19 @@ Private Property Get TableScope() As Byte
 End Property
 
 '@label:table-formula
-'@prop-title Lazy-loaded IFormulas parsing engine for this table.
+'@prop-title Lazy-loaded Formulas parsing engine for this table.
 '@details
-'Returns the IFormulas object for this table, creating it on first access via
-'lazy initialisation. The IFormulas object (created by Formulas.Create) is the
+'Returns the Formulas object for this table, creating it on first access via
+'lazy initialisation. The Formulas object (created by Formulas.Create) is the
 'core formula-parsing engine: it knows how to translate the table summary function
 'and variable dictionary into concrete Excel formula strings for both linelist-scope
 'and analysis-scope contexts. Once created, the instance is cached in this.forml
 'so subsequent calls reuse the same object without re-parsing.
-'@return IFormulas. The formula parsing engine providing ParsedLinelistFormula and ParsedAnalysisFormula methods.
-'@remarks The IFormulas object is initialised with the table specification dictionary,
+'@return Formulas. The formula parsing engine providing ParsedLinelistFormula and ParsedAnalysisFormula methods.
+'@remarks The Formulas object is initialised with the table specification dictionary,
 'the IFormulaData reference, and the summary function string. This is intentionally
 'lazy because not all code paths need the formula engine (e.g., if Valid is False).
-Private Property Get TableFormula() As IFormulas
+Private Property Get TableFormula() As Formulas
     If this.forml Is Nothing Then
         Dim specs As ITableSpecs
         Set specs = Specifications
@@ -221,7 +221,7 @@ End Property
 '@prop-title Whether the formula object is valid for the analysis context.
 '@details
 'Checks whether the formula engine considers this table formula valid for
-'analysis use. Validity is determined by the IFormulas.Valid method with the
+'analysis use. Validity is determined by the Formulas.Valid method with the
 '"analysis" formula type. A formula may be invalid if the summary function is
 'unsupported, required variables are missing from the dictionary, or the formula
 'template cannot be parsed. When Valid returns False, the AddFormulas method
@@ -467,7 +467,7 @@ End Sub
 Private Property Get CurrentExcelFormula(Optional ByVal scope As Byte = 2, _
                                          Optional ByVal prefix As String = "f") As String
     Dim cond As FormulaCondition
-    Dim tabFormObject As IFormulas
+    Dim tabFormObject As Formulas
     Dim eform As String
 
     Set tabFormObject = TableFormula
@@ -597,7 +597,7 @@ Private Sub AddFormulas()
     Dim hasPercentage As Boolean
     Dim tabl As ICrossTable
     Dim spTab As SpatialTables
-    Dim tabFormObject As IFormulas
+    Dim tabFormObject As Formulas
     Dim spTabType As String
     Dim counter As Long
     Dim specs As ITableSpecs

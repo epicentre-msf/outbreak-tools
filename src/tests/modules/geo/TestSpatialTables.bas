@@ -10,7 +10,7 @@ Option Explicit
 'Validates the SpatialTables class, which creates spatial ListObjects on
 'the "spatial_tables__" worksheet at linelist build time. Tests focus on
 'factory validation since full integration tests require a complete
-'linelist workbook with ICrossTable and IFormulas dependencies. The fixture
+'linelist workbook with ICrossTable and Formulas dependencies. The fixture
 'creates minimal worksheets for factory rejection scenarios and verifies
 'that spatial ListObjects do not exist before Add is called. Tests verify:
 'factory rejects Nothing cross-table; missing spatial sheet scenario is

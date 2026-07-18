@@ -18,7 +18,6 @@ IDiseaseLogger
 IDiseaseReportManager
 IDiseaseSheet
 IDiseaseWorksheetManager
-IFormulas
 IHiddenNames
 ILLChoices
 ILLExport

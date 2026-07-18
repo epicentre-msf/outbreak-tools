@@ -24,7 +24,7 @@ Option Explicit
 '(for hf type), each with formula, population, and attack rate columns.
 'Manages formula conditions and validates that the spatial sheet exists
 'before writing.
-'@depends ICrossTable, ITableSpecs, IFormulas, FormulaCondition, BetterArray
+'@depends ICrossTable, ITableSpecs, Formulas, FormulaCondition, BetterArray
 '@version 2025-01-15
 
 
@@ -349,18 +349,18 @@ End Sub
 '@label:current-excel-formula
 '@prop-title Build an Excel formula string using the current conditions
 '@details
-'Constructs a parsed formula from the IFormulas object, applying either
+'Constructs a parsed formula from the Formulas object, applying either
 'linelist scope (with table name prefix) or analysis scope (with condition
 'pairs from condVars/condTests). Validates the result via FailedFormula
 'and returns an empty string when the formula is invalid or the object
 'is not valid.
-'@param tabFormObject IFormulas. The formula definition to parse.
+'@param tabFormObject Formulas. The formula definition to parse.
 '@param scope Optional Byte. FormulaScopeLinelist or FormulaScopeAnalysis.
 'Defaults to FormulaScopeAnalysis.
 '@param prefix Optional String. Table name prefix for linelist scope.
 'Defaults to "f".
 '@return String. The parsed formula string, or empty when invalid.
-Private Property Get CurrentExcelFormula(ByVal tabFormObject As IFormulas, _
+Private Property Get CurrentExcelFormula(ByVal tabFormObject As Formulas, _
                                          Optional ByVal scope As Byte = FormulaScopeAnalysis, _
                                          Optional ByVal prefix As String = "f") As String
     Dim cond As FormulaCondition
@@ -438,10 +438,10 @@ End Sub
 'available column on the spatial sheet. The formula column is populated
 'from the parsed analysis formula via CurrentExcelFormula. Skips creation
 'when the tables already exist for this variable.
-'@param formObject IFormulas. The formula object whose parsed expression
+'@param formObject Formulas. The formula object whose parsed expression
 'is written into each spatial table formula column.
 '@export
-Public Sub Add(ByVal formObject As IFormulas)
+Public Sub Add(ByVal formObject As Formulas)
     Dim sh As Worksheet
     Dim colIndex As Long
     Dim varName As String
