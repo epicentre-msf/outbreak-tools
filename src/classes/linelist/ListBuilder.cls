@@ -28,7 +28,7 @@ Option Explicit
 'reference, then invoke Build to construct the sheet.
 '@depends ILinelist, ILLSheets, ILinelistSpecs, ILLFormat, IDropdownLists,
 '  IPasswords, ITranslationObject, Buttons, IHiddenNames, SectionBuilder,
-'  ICustomPivotTables, BetterArray
+'  BetterArray
 '@version 1.0 (2026-02-09)
 
 
@@ -186,7 +186,7 @@ Private Sub BuildHList()
     Dim design As ILLFormat
     Dim drop As IDropdownLists
     Dim pass As IPasswords
-    Dim pivotObj As ICustomPivotTable
+    Dim pivotObj As CustomPivotTable
     Dim trads As ITranslationObject
     Dim rng As Range
     Dim but As Buttons

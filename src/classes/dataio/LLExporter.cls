@@ -25,7 +25,7 @@ Option Explicit
 'populates it with the relevant data, metadata, and formatting, then saves
 'and closes it.
 '@depends ILLdictionary, ILLExport, IPasswords, ICustomTable
-'@depends IDataSheet, IShowHideManager, AnaTabIds, ILLGeo, ILLChoices, IHiddenNames
+'@depends IDataSheet, AnaTabIds, ILLGeo, ILLChoices, IHiddenNames
 
 
 '@section Enumerations
@@ -852,7 +852,7 @@ Private Sub AddShowHide(ByVal outwb As Workbook)
     Dim sheetType As String
     Dim sh As Worksheet
     Dim lo As ListObject
-    Dim shm As IShowHideManager
+    Dim shm As ShowHideManager
     Dim counter As Long
     Dim nbExp As Long
     Dim loRng As Range
@@ -933,8 +933,8 @@ End Sub
 'Reads the show_hide__ sheet from the source workbook and imports the
 'user visibility plan into the ShowHideManager, ensuring the exported
 'show/hide reflects the user actual choices.
-'@param shm IShowHideManager. The manager to populate.
-Private Sub ImportCurrentShowHide(ByVal shm As IShowHideManager)
+'@param shm ShowHideManager. The manager to populate.
+Private Sub ImportCurrentShowHide(ByVal shm As ShowHideManager)
     Dim showHideSh As Worksheet
     Dim lo As ListObject
 

@@ -28,7 +28,7 @@ Implements ICrossTableFormula
 'spatial lookups, and data-validation dropdowns. Consumers obtain an instance
 'through the predeclared Create factory and interact via the ICrossTableFormula
 'interface.
-'@depends ICrossTable, IFormulaData, IFormulas, Formulas, IFormulaCondition, FormulaCondition, ITableSpecs, SpatialTables, BetterArray
+'@depends ICrossTable, IFormulaData, IFormulas, Formulas, FormulaCondition, ITableSpecs, SpatialTables, BetterArray
 '@version 1.0 (2026-02-10)
 
 
@@ -466,7 +466,7 @@ End Sub
 'an analysis-scope formula.
 Private Property Get CurrentExcelFormula(Optional ByVal scope As Byte = 2, _
                                          Optional ByVal prefix As String = "f") As String
-    Dim cond As IFormulaCondition
+    Dim cond As FormulaCondition
     Dim tabFormObject As IFormulas
     Dim eform As String
 

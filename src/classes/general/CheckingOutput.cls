@@ -16,7 +16,6 @@ Attribute VB_Description = "Writes checking results to a worksheet"
 '@depends BetterArray, Checking, HiddenNames
 
 Option Explicit
-Implements ICheckingOutput
 
 '@class CheckingOutput
 '@description
@@ -80,10 +79,10 @@ Private Const VBIDE_PROC_KIND As Long = 0 'Matches vbext_pk_Proc to avoid VBIDE 
 'marker.
 '@param sh Worksheet. Target worksheet that will receive the checking output.
 '@param title Optional String. Label for the output session. Defaults to vbNullString.
-'@return ICheckingOutput. Fully initialised instance.
+'@return CheckingOutput. Fully initialised instance.
 '@throws ProjectError.ElementNotFound When sh is Nothing.
 '@export
-Public Function Create(ByVal sh As Worksheet, Optional ByVal title As String = vbNullString) As ICheckingOutput
+Public Function Create(ByVal sh As Worksheet, Optional ByVal title As String = vbNullString) As CheckingOutput
     If sh Is Nothing Then
         ThrowError ProjectError.ElementNotFound, _
          "Unable to create an instance of the class, please provide a valid worksheet"
@@ -119,10 +118,9 @@ End Property
 '@label:self
 '@prop-title Current object instance
 '@details
-'Returns the current instance cast to its interface. Used internally
-'by the factory method to return an ICheckingOutput reference.
-'@return ICheckingOutput. Reference to the current object.
-Public Property Get Self() As ICheckingOutput
+'Returns the current instance. Used internally by the factory method.
+'@return CheckingOutput. Reference to the current object.
+Public Property Get Self() As CheckingOutput
     Set Self = Me
 End Property
 
@@ -849,7 +847,7 @@ End Sub
 'Skips injection when the event marker hidden name is already present.
 '@throws ProjectError.SomethingWentWrong When code injection fails.
 '@export
-Private Sub EnsureWorksheetChangeHandler()
+Public Sub EnsureWorksheetChangeHandler()
     Dim codeModule As Object
     Dim injectionCode As String
     Dim moduleLines As Long
@@ -1200,17 +1198,9 @@ Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
     Err.Raise errNumb, "CheckingOutput", errorMessage
 End Sub
 
-'@section Interface
+'@section Output
 '===============================================================================
-'@description Delegated members satisfying the ICheckingOutput contract.
-
-Private Property Get ICheckingOutput_Wksh() As Worksheet
-    Set ICheckingOutput_Wksh = Wksh()
-End Property
-
-Private Property Get ICheckingOutput_Name() As String
-    ICheckingOutput_Name = Name()
-End Property
+'@description End-to-end rendering of checking entries to the worksheet.
 
 '@label:print-output
 '@sub-title Write checking values to a worksheet
@@ -1221,7 +1211,7 @@ End Property
 '@param checkTable BetterArray. Collection of IChecking instances to print.
 '@throws ProjectError.ElementNotFound When checkTable is Nothing.
 '@export
-Private Sub ICheckingOutput_PrintOutput(ByVal checkTable As BetterArray)
+Public Sub PrintOutput(ByVal checkTable As BetterArray)
     Dim currentRow As Long
     Dim writtenTitles As Collection
     Dim index As Long
@@ -1254,13 +1244,4 @@ Private Sub ICheckingOutput_PrintOutput(ByVal checkTable As BetterArray)
 CleanExit:
     Application.EnableEvents = previousEventState
     If Err.Number <> 0 Then ThrowError Err.Number, Err.description
-End Sub
-
-Private Sub ICheckingOutput_FilterWorksheet(Optional ByVal selectionValue As String = vbNullString, _
-                                            Optional ByVal titleSelection As String = vbNullString)
-    FilterWorksheet selectionValue, titleSelection
-End Sub
-
-Private Sub ICheckingOutput_EnsureWorksheetChangeHandler()
-    EnsureWorksheetChangeHandler
 End Sub

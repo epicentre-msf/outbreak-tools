@@ -322,7 +322,7 @@ End Function
 Public Sub PrintResults(Optional ByVal outputSheetName As String = vbNullString)
     Dim sheetName As String
     Dim targetSheet As Worksheet
-    Dim writer As ICheckingOutput
+    Dim writer As CheckingOutput
 
     If this.targetWorkbook Is Nothing Then Exit Sub
     If this.Results Is Nothing Then Exit Sub

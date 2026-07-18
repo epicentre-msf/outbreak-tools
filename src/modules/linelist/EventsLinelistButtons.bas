@@ -16,7 +16,7 @@ Private Const CRFPREFIX As String = "crf_"
 Private Const TEMPSHEET As String = "temp__"
 Private Const SHOWHIDESHEET As String = "show_hide__"
 
-Private showHideObject As IShowHideManager
+Private showHideObject As ShowHideManager
 Private activeShowHideForm As Object
 Private tradsform As ITranslationObject   'Translation of forms
 Private tradsmess As ITranslationObject   'Translation of messages
@@ -112,7 +112,7 @@ Private Function RowCountOf(ByVal sh As Worksheet) As Long
 End Function
 
 'Apply visibility from a ShowHideManager to a worksheet
-Private Sub ApplyShowHideVisibility(ByVal mgr As IShowHideManager, _
+Private Sub ApplyShowHideVisibility(ByVal mgr As ShowHideManager, _
                                      ByVal sh As Worksheet, _
                                      ByVal shType As String)
     Dim counter As Long
@@ -166,7 +166,7 @@ Private Sub PersistShowHideState()
 End Sub
 
 'Persist a specific ShowHideManager instance to show_hide__ sheet
-Private Sub PersistShowHideManager(ByVal mgr As IShowHideManager)
+Private Sub PersistShowHideManager(ByVal mgr As ShowHideManager)
     Dim shSH As Worksheet
 
     If mgr Is Nothing Then Exit Sub
@@ -1356,7 +1356,7 @@ Public Sub ClickShowHideMinimal()
 
     Dim showOptional As Boolean
     Dim checkConfirm As Boolean
-    Dim mgr As IShowHideManager
+    Dim mgr As ShowHideManager
     Dim sh As Worksheet
     Dim dict As ILLdictionary
     Dim shType As String
@@ -1419,8 +1419,8 @@ Public Sub ClickMatchLinelistShowHide()
     Attribute ClickMatchLinelist.VB_Description = "Match the show/hide state in the linelist from the print sheet"
 
     Dim checkConfirm As Boolean
-    Dim baseMgr As IShowHideManager
-    Dim printMgr As IShowHideManager
+    Dim baseMgr As ShowHideManager
+    Dim printMgr As ShowHideManager
     Dim printsh As Worksheet
     Dim sh As Worksheet
     Dim dict As ILLdictionary

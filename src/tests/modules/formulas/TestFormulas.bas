@@ -21,7 +21,7 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 'Each test builds a fresh dictionary and FormulaData fixture via worksheet
 'helpers so tests run in isolation.
 '@depends Formulas, IFormulas, FormulaData, IFormulaData, FormulaCondition,
-'IFormulaCondition, LLdictionary, ILLdictionary, LLVariables, ILLVariables,
+'LLdictionary, ILLdictionary, LLVariables, ILLVariables,
 'LLSheets, ILLSheets, BetterArray, CustomTest, ICustomTest,
 'DictionaryTestFixture, FormulaTestFixture
 
@@ -529,7 +529,7 @@ End Sub
 Public Sub TestCustomAggregatorTranslatesToAverage()
     CustomTestSetTitles Assert, "Formulas", "TestCustomAggregatorTranslatesToAverage"
     Dim formulaInstance As IFormulas
-    Dim condition As IFormulaCondition
+    Dim condition As FormulaCondition
     Dim conditionVars As BetterArray
     Dim conditionConds As BetterArray
     Dim tableName As String
@@ -788,7 +788,7 @@ Public Sub TestCustomNRemovesEmptyInvocation()
     Dim formulaInstance As IFormulas
     Dim conditionVars As BetterArray
     Dim conditionConds As BetterArray
-    Dim formCondition As IFormulaCondition
+    Dim formCondition As FormulaCondition
     Dim parsed As String
 
     On Error GoTo Fail
@@ -1194,7 +1194,7 @@ Fail:
     CustomTestLogFailure Assert, "TestGenericGroupUnknownAggregatorRejected", Err.Number, Err.Description
 End Sub
 
-'@sub-title Confirm ParsedAnalysisFormula respects connectors from IFormulaCondition
+'@sub-title Confirm ParsedAnalysisFormula respects connectors from FormulaCondition
 '@details
 'Arranges a "SUM(variable)" formula with a FormulaCondition containing
 'two conditions on the same variable. Calls ParsedAnalysisFormula with
@@ -1207,7 +1207,7 @@ Public Sub TestParsedAnalysisFormulaAppliesConnector()
     Dim variableName As String
     Dim expression As String
     Dim formulaInstance As IFormulas
-    Dim condition As IFormulaCondition
+    Dim condition As FormulaCondition
     Dim conditionVars As BetterArray
     Dim conditionConds As BetterArray
     Dim tableName As String

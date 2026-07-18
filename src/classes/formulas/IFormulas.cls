@@ -21,7 +21,7 @@ Option Explicit
 'Defines the public contract for the Formulas class, exposing
 'read-only access to parsing results, validity checks, and derived
 'Excel expressions for both linelist and analysis contexts.
-'@depends BetterArray, Checking, IFormulaCondition
+'@depends BetterArray, Checking, FormulaCondition
 
 
 '@section Elements
@@ -125,12 +125,12 @@ End Property
 '@prop-title Build the Excel expression for an analysis worksheet
 '@details
 'Replaces variable tokens with conditional aggregation fragments
-'supplied by the IFormulaCondition provider.
-'@param formCond IFormulaCondition. Provides aggregator behaviour.
+'supplied by the FormulaCondition provider.
+'@param formCond FormulaCondition. Provides aggregator behaviour.
 '@param tablePrefix Optional String. Prefix for structured references.
 '@param Connector Optional String. Connector between conditions.
 '@return String. Excel formula text.
-Public Property Get ParsedAnalysisFormula(ByVal formCond As IFormulaCondition, _
+Public Property Get ParsedAnalysisFormula(ByVal formCond As FormulaCondition, _
                                           Optional ByVal tablePrefix As String = vbNullString, _
                                           Optional ByVal Connector As String = "*") As String
 End Property

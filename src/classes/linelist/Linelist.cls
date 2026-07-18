@@ -31,7 +31,7 @@ Implements ILinelist
 '`With New Linelist`.
 '@depends ILinelistSpecs, ILLdictionary, ITranslationObject,
 '  IPasswords, ILLFormat, ITemporaryRepos, IHiddenNames,
-'  IDropdownLists, ICustomPivotTable, DropdownLists,
+'  IDropdownLists, DropdownLists,
 '  CustomPivotTable, TemporaryRepos, HiddenNames, Buttons, CodeTransfer,
 '  BetterArray
 '@version 1.0 (2026-02-09)
@@ -206,11 +206,11 @@ End Property
 '@label:pivots
 '@prop-title Pivot tables manager for the output workbook
 '@details
-'Returns an ICustomPivotTable instance backed by the translated custom
+'Returns a CustomPivotTable instance backed by the translated custom
 'pivot table sheet in the output workbook.
-'@return ICustomPivotTable. The pivot tables manager.
+'@return CustomPivotTable. The pivot tables manager.
 '@export
-Public Property Get Pivots() As ICustomPivotTable
+Public Property Get Pivots() As CustomPivotTable
     Dim sh As Worksheet
     Dim trans As ITranslationObject
 
@@ -833,7 +833,7 @@ Private Sub TransferAllCode(ByVal codeTransfer As CodeTransfer)
 
     Set codesList = New BetterArray
 
-    'Transfer classes (48 classes)
+    'Transfer classes (41 classes)
     codesList.Push "BetterArray", "DataSheet", "IDataSheet", "LLExport", _
                    "ILLExport", "LLChoices", "ILLChoices", _
                    "LLdictionary", "ILLdictionary", "LLGeo", _
@@ -842,9 +842,9 @@ Private Sub TransferAllCode(ByVal codeTransfer As CodeTransfer)
                    "LLSheets", "ILLSheets", "LLTranslation", _
                    "ILLTranslation", "OSFiles", "IOSFiles", _
                    "TranslationObject", "ITranslationObject", "LLVariables", _
-                   "ILLVariables", "ILLSpatial", "LLSpatial", _
+                   "ILLVariables", "LLSpatial", _
                    "DropdownLists", "IDropdownLists", "ShowHideManager", _
-                   "IShowHideManager", "CustomTable", "ICustomTable", _
+                   "CustomTable", "ICustomTable", _
                    "LLExporter", _
                     "LLImporter", _
                    "Graphs", "AnaTabIds", _
@@ -947,7 +947,7 @@ Private Property Get ILinelist_Dropdown(Optional ByVal scope As Byte = 1) As IDr
     Set ILinelist_Dropdown = Dropdown(scope)
 End Property
 
-Private Property Get ILinelist_Pivots() As ICustomPivotTable
+Private Property Get ILinelist_Pivots() As CustomPivotTable
     Set ILinelist_Pivots = Pivots
 End Property
 

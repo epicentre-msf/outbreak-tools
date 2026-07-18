@@ -29,7 +29,7 @@ Implements ILinelistSpecs
 'ILinelistSpecs interface reference.
 '@depends ILLdictionary, ILLChoices, ILLTranslation, IDesignerTranslation
 '@depends ILLGeo, ILLExport, IAnalysis, IPasswords, ILLFormat
-'@depends ILinelistBuildService, ITemporaryRepos, TemporaryRepos
+'@depends LinelistBuildService, ITemporaryRepos, TemporaryRepos
 '@depends IFormulaData, ILLVariables, IFormulas
 '@depends ITranslationObject, IApplicationState, ApplicationState
 '@depends BetterArray, LLdictionary, LLChoices, LLTranslation
@@ -1293,12 +1293,12 @@ End Property
 '8. Adds the "list auto" column if not already present.
 '9. Translates and sorts all collaborators using dictionary translations.
 'Handles errors with cleanup and busy-state restoration.
-'@param buildService ILinelistBuildService. The configured build service.
+'@param buildService LinelistBuildService. The configured build service.
 '@param setupPath String. Full path to the setup workbook.
 '@throws ProjectError.ObjectNotInitialized When buildService is Nothing.
 '@throws ProjectError.ErrorUnexpectedState When an unexpected error occurs.
 '@export
-Public Sub Prepare(ByVal buildService As ILinelistBuildService, ByVal setupPath As String)
+Public Sub Prepare(ByVal buildService As LinelistBuildService, ByVal setupPath As String)
     Dim dict As ILLdictionary
     Dim choicesObj As ILLChoices
     Dim exportsObj As ILLExport
@@ -1558,7 +1558,7 @@ Private Function ILinelistSpecs_Categories(ByVal varName As String, Optional ByV
     Set ILinelistSpecs_Categories = Me.Categories(varName, useShortlabels)
 End Function
 
-Private Sub ILinelistSpecs_Prepare(ByVal buildService As ILinelistBuildService, ByVal setupPath As String)
+Private Sub ILinelistSpecs_Prepare(ByVal buildService As LinelistBuildService, ByVal setupPath As String)
     Prepare buildService, setupPath
 End Sub
 

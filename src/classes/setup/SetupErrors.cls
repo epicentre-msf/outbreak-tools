@@ -1175,7 +1175,7 @@ End Sub
 'Installs the worksheet change handler for filtering support and
 'activates the report sheet.
 Private Sub PrintReport()
-    Dim checkOutput As ICheckingOutput
+    Dim checkOutput As CheckingOutput
     Dim reportSheet As Worksheet
     Dim dropdowns As IDropdownLists
     Dim formatRange As Range

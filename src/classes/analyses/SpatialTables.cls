@@ -24,7 +24,7 @@ Option Explicit
 '(for hf type), each with formula, population, and attack rate columns.
 'Manages formula conditions and validates that the spatial sheet exists
 'before writing.
-'@depends ICrossTable, ITableSpecs, IFormulas, IFormulaCondition, BetterArray
+'@depends ICrossTable, ITableSpecs, IFormulas, FormulaCondition, BetterArray
 '@version 2025-01-15
 
 
@@ -363,7 +363,7 @@ End Sub
 Private Property Get CurrentExcelFormula(ByVal tabFormObject As IFormulas, _
                                          Optional ByVal scope As Byte = FormulaScopeAnalysis, _
                                          Optional ByVal prefix As String = "f") As String
-    Dim cond As IFormulaCondition
+    Dim cond As FormulaCondition
     Dim eform As String
 
     If Not tabFormObject.Valid() Then Exit Property

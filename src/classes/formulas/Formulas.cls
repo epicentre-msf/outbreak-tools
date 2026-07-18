@@ -341,12 +341,12 @@ End Property
 'with conditional aggregation fragments supplied by formCond. Custom
 'formula tokens are delegated to ParsedCustomFormula. Grouped formulas
 'are delegated to BuildGroupedFormula.
-'@param formCond IFormulaCondition. Provides conditional aggregation logic.
+'@param formCond FormulaCondition. Provides conditional aggregation logic.
 '@param tablePrefix Optional String. Prefix for table references.
 '@param Connector Optional String. Connector between conditional fragments.
 '@return String. Excel expression ready for analysis worksheets.
 '@export
-Public Property Get ParsedAnalysisFormula(ByVal formCond As IFormulaCondition, _
+Public Property Get ParsedAnalysisFormula(ByVal formCond As FormulaCondition, _
                                           Optional ByVal tablePrefix As String = vbNullString, _
                                           Optional ByVal Connector As String = "*") As String
     Dim vars As ILLVariables
@@ -1071,14 +1071,14 @@ End Function
 '@details
 'Handles MEAN (mapped to AVERAGE), N/N() (mapped to COUNTIFS), and
 'passes through unknown custom identifiers unchanged. The COUNTIFS
-'expansion builds criteria pairs from the IFormulaCondition.
+'expansion builds criteria pairs from the FormulaCondition.
 '@param customFunction String. Identifier of the custom formula.
-'@param formCond IFormulaCondition. Provides condition logic.
+'@param formCond FormulaCondition. Provides condition logic.
 '@param TableName Optional String. Table name resolved for variables.
 '@param tablePrefix Optional String. Prefix for structured references.
 '@return String. Excel fragment produced by the custom handler.
 Private Function ParsedCustomFormula(ByVal customFunction As String, _
-                                     ByVal formCond As IFormulaCondition, _
+                                     ByVal formCond As FormulaCondition, _
                                      Optional ByVal TableName As String = vbNullString, _
                                      Optional ByVal tablePrefix As String = vbNullString) As String
     Dim cond As BetterArray
@@ -1305,7 +1305,7 @@ Private Property Get IFormulas_ParsedLinelistFormula(Optional ByVal useTableName
     IFormulas_ParsedLinelistFormula = ParsedLinelistFormula(useTableName, tablePrefix)
 End Property
 
-Private Property Get IFormulas_ParsedAnalysisFormula(ByVal formCond As IFormulaCondition, _
+Private Property Get IFormulas_ParsedAnalysisFormula(ByVal formCond As FormulaCondition, _
                                                     Optional ByVal tablePrefix As String = vbNullString, _
                                                     Optional ByVal Connector As String = "*") As String
     IFormulas_ParsedAnalysisFormula = ParsedAnalysisFormula(formCond, tablePrefix, Connector)

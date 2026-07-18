@@ -236,9 +236,9 @@ End Function
 'domain instances, then prepares the dictionary with preserved names,
 'adds list auto columns, translates and sorts all collaborators.
 'Handles errors with cleanup.
-'@param buildService ILinelistBuildService. The configured build service.
+'@param buildService LinelistBuildService. The configured build service.
 '@param setupPath String. Full path to the setup workbook.
-Public Sub Prepare(ByVal buildService As ILinelistBuildService, ByVal setupPath As String)
+Public Sub Prepare(ByVal buildService As LinelistBuildService, ByVal setupPath As String)
 End Sub
 
 

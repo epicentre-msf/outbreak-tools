@@ -16,8 +16,6 @@ Attribute VB_Description = "Custom pivot table creation on a dedicated worksheet
 
 Option Explicit
 
-Implements ICustomPivotTable
-
 '@class CustomPivotTable
 '@description
 'Manages pivot table creation on a dedicated worksheet during linelist
@@ -25,7 +23,7 @@ Implements ICustomPivotTable
 'stacked vertically. Position tracking and title references are stored as
 'worksheet-level HiddenNames instead of hidden cell values.
 '
-'@depends ICustomPivotTable, ILLFormat, IHiddenNames, HiddenNames, ProjectError
+'@depends ILLFormat, IHiddenNames, HiddenNames, ProjectError
 
 
 '@section State
@@ -63,10 +61,10 @@ Private Const BLOCK_SIZE       As Long = 60
 'already exist. This allows multiple Create calls on the same sheet to
 'resume from the current position.
 '@param sh Worksheet. The dedicated pivot table worksheet in the output workbook.
-'@return ICustomPivotTable. The initialised instance.
+'@return CustomPivotTable. The initialised instance.
 '@throws InvalidArgument. When sh is Nothing.
 '@export
-Public Function Create(ByVal sh As Worksheet) As ICustomPivotTable
+Public Function Create(ByVal sh As Worksheet) As CustomPivotTable
 
     If sh Is Nothing Then ThrowError InvalidArgument, _
         "Unable to create custom pivot table, sheet is Nothing"
@@ -79,9 +77,9 @@ Public Function Create(ByVal sh As Worksheet) As ICustomPivotTable
 End Function
 
 '@label:self
-'@prop-title Return the current instance as ICustomPivotTable
-'@return ICustomPivotTable. Self-reference for factory pattern.
-Public Property Get Self() As ICustomPivotTable
+'@prop-title Return the current instance
+'@return CustomPivotTable. Self-reference for factory pattern.
+Public Property Get Self() As CustomPivotTable
     Set Self = Me
 End Property
 
@@ -210,18 +208,4 @@ End Sub
 '@param errMessage String. Descriptive error message.
 Private Sub ThrowError(ByVal errNumber As Long, ByVal errMessage As String)
     Err.Raise VBA.vbObjectError + errNumber, CLASS_NAME, "Error: " & errMessage
-End Sub
-
-
-'@section Interface Implementation
-'===============================================================================
-
-Private Sub ICustomPivotTable_Add(ByVal title As String, _
-                                   ByVal tableName As String, _
-                                   Optional ByVal pivotName As String = "Pivot Table")
-    Add title, tableName, pivotName
-End Sub
-
-Private Sub ICustomPivotTable_Format(ByVal design As ILLFormat)
-    Format design
 End Sub

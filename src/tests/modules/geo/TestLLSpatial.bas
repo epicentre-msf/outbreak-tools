@@ -18,7 +18,7 @@ Option Explicit
 'named sheet containing listofgeovars; Exists returns True for known
 'variables and False for unknown ones; TopGeoValue and TopHFValue return
 'empty strings when the spatial ListObjects do not exist.
-'@depends LLSpatial, ILLSpatial, CustomTest, TestHelpers
+'@depends LLSpatial, CustomTest, TestHelpers
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const SPATIAL_SHEET As String = "spatial_tables__"
@@ -129,7 +129,7 @@ Public Sub TestCreateRejectsNothing()
     On Error GoTo TestFail
 
     On Error Resume Next
-    Dim sp As ILLSpatial
+    Dim sp As LLSpatial
     Set sp = LLSpatial.Create(Nothing)
     On Error GoTo 0
 
@@ -157,7 +157,7 @@ Public Sub TestCreateRejectsWrongSheetName()
     Set sh = EnsureWorksheet(SPATIAL_WRONG, clearSheet:=True, visibility:=xlSheetHidden)
 
     On Error Resume Next
-    Dim sp As ILLSpatial
+    Dim sp As LLSpatial
     Set sp = LLSpatial.Create(sh)
     On Error GoTo 0
 
@@ -183,7 +183,7 @@ Public Sub TestCreateSucceedsWithCorrectSheet()
     Dim sh As Worksheet
     Set sh = BuildSpatialFixture()
 
-    Dim sp As ILLSpatial
+    Dim sp As LLSpatial
     Set sp = LLSpatial.Create(sh)
 
     Assert.IsNotNothing sp, _
@@ -211,7 +211,7 @@ Public Sub TestExistsReturnsTrueForKnownVar()
     Dim sh As Worksheet
     Set sh = BuildSpatialFixture(addVars:=True)
 
-    Dim sp As ILLSpatial
+    Dim sp As LLSpatial
     Set sp = LLSpatial.Create(sh)
 
     Assert.IsTrue sp.Exists("cases"), _
@@ -236,7 +236,7 @@ Public Sub TestExistsReturnsFalseForUnknownVar()
     Dim sh As Worksheet
     Set sh = BuildSpatialFixture(addVars:=True)
 
-    Dim sp As ILLSpatial
+    Dim sp As LLSpatial
     Set sp = LLSpatial.Create(sh)
 
     Assert.IsFalse sp.Exists("nonexistent_var"), _
@@ -265,7 +265,7 @@ Public Sub TestTopGeoValueReturnsEmptyForMissingTable()
     Dim sh As Worksheet
     Set sh = BuildSpatialFixture()
 
-    Dim sp As ILLSpatial
+    Dim sp As LLSpatial
     Set sp = LLSpatial.Create(sh)
 
     Dim result As String
@@ -294,7 +294,7 @@ Public Sub TestTopHFValueReturnsEmptyForMissingTable()
     Dim sh As Worksheet
     Set sh = BuildSpatialFixture()
 
-    Dim sp As ILLSpatial
+    Dim sp As LLSpatial
     Set sp = LLSpatial.Create(sh)
 
     Dim result As String

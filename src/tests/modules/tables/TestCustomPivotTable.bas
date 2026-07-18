@@ -102,7 +102,7 @@ Public Sub TestCreateReturnsInstance()
     CustomTestSetTitles Assert, TESTMODULE, "TestCreateReturnsInstance"
     On Error GoTo TestFail
 
-    Dim sut As ICustomPivotTable
+    Dim sut As CustomPivotTable
     Set sut = CustomPivotTable.Create(PivotSheet)
 
     Assert.IsTrue Not sut Is Nothing, _
@@ -118,7 +118,7 @@ Public Sub TestCreateRejectsNothingSheet()
     CustomTestSetTitles Assert, TESTMODULE, "TestCreateRejectsNothingSheet"
     On Error GoTo ExpectError
 
-    Dim sut As ICustomPivotTable
+    Dim sut As CustomPivotTable
     Set sut = CustomPivotTable.Create(Nothing)
 
     CustomTestLogFailure Assert, "TestCreateRejectsNothingSheet", , _
@@ -134,7 +134,7 @@ Public Sub TestCreateInitialisesHiddenNames()
     CustomTestSetTitles Assert, TESTMODULE, "TestCreateInitialisesHiddenNames"
     On Error GoTo TestFail
 
-    Dim sut As ICustomPivotTable
+    Dim sut As CustomPivotTable
     Set sut = CustomPivotTable.Create(PivotSheet)
 
     Dim shNames As IHiddenNames
@@ -166,7 +166,7 @@ Public Sub TestAddCreatesPivotTable()
     CustomTestSetTitles Assert, TESTMODULE, "TestAddCreatesPivotTable"
     On Error GoTo TestFail
 
-    Dim sut As ICustomPivotTable
+    Dim sut As CustomPivotTable
     Set sut = CustomPivotTable.Create(PivotSheet)
 
     sut.Add "patients", DATA_TABLE_NAME, "Pivot Table"
@@ -194,7 +194,7 @@ Public Sub TestAddStoresTitleHiddenName()
     CustomTestSetTitles Assert, TESTMODULE, "TestAddStoresTitleHiddenName"
     On Error GoTo TestFail
 
-    Dim sut As ICustomPivotTable
+    Dim sut As CustomPivotTable
     Set sut = CustomPivotTable.Create(PivotSheet)
 
     sut.Add "patients", DATA_TABLE_NAME, "Pivot Table"
@@ -223,7 +223,7 @@ Public Sub TestFormatDoesNotError()
     CustomTestSetTitles Assert, TESTMODULE, "TestFormatDoesNotError"
     On Error GoTo TestFail
 
-    Dim sut As ICustomPivotTable
+    Dim sut As CustomPivotTable
     Set sut = CustomPivotTable.Create(PivotSheet)
 
     'Format requires an ILLFormat, but we test only that no error occurs.

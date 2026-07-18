@@ -309,7 +309,7 @@ End Sub
 ' @description Update all spatial tables from HList filtered data.
 '@EntryPoint
 Public Sub UpdateSpTables()
-    Dim sp As ILLSpatial
+    Dim sp As LLSpatial
     Set sp = LLSpatial.Create(ThisWorkbook.Worksheets(SPATIALSHEET))
 
     UpdateFilterTables calculate:=False
