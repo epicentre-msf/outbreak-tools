@@ -203,7 +203,7 @@ Public Function ResolveMasterUpdatedValues(Optional ByVal registrySheet As Works
 End Function
 
 Public Function ResolveMasterDevelopment(Optional ByVal devSheet As Worksheet, _
-                                         Optional ByVal codeSheet As Worksheet) As IDevelopment
+                                         Optional ByVal codeSheet As Worksheet) As Development
     Dim targetDevSheet As Worksheet
     Dim targetCodeSheet As Worksheet
 

@@ -13,7 +13,7 @@ Option Explicit
 '   creates a fresh fixture workbook with the required sheets and ListObjects,
 '   calls Subject.Prepare, then asserts the expected side effects.
 '
-' @depends SetupPreparation, Development, IDevelopment,
+' @depends SetupPreparation, Development,
 '   BetterArray, CustomTest, ICustomTest, TestHelpers, DropdownLists,
 '   IDropdownLists, UpdatedValues, IUpdatedValues, CustomTable
 '
@@ -39,7 +39,7 @@ Private ExportsSheet As Worksheet
 Private AnalysisSheet As Worksheet
 Private CheckingSheet As Worksheet
 Private Subject As SetupPreparation
-Private Manager As IDevelopment
+Private Manager As Development
 Private DevSheet As Worksheet
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"

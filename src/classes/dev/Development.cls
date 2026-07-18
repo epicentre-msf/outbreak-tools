@@ -15,7 +15,6 @@ Attribute VB_Description = "Workbook development helper orchestrating code table
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Option Explicit
-Implements IDevelopment
 
 '@class Development
 '@description
@@ -24,7 +23,7 @@ Implements IDevelopment
 'VBA classes, modules, forms, and tests), drives bulk import and export of
 'code artefacts between disk and the host workbook VBProject, and executes
 'deployment by protecting and hiding registered worksheets. Consumers
-'interact through the IDevelopment interface using the predeclared factory
+'interact with the Development class using the predeclared factory
 'pattern (Development.Create).
 '@depends BetterArray, IPasswords
 '@version 1.0 (2026-02-09)
@@ -98,19 +97,19 @@ End Type
 'Factory method on the predeclared instance that allocates a new Development
 'object and binds it to the supplied Dev worksheet via Initialise. When a
 'codeSheet is provided, it is registered as the target for new development
-'tables. The returned object is cast to the IDevelopment interface so
-'consumers program against the contract rather than the concrete class.
+'tables. The returned object is a fully built Development instance ready
+'for consumers to use.
 '@param devSheet Worksheet. The worksheet hosting development named ranges
 'such as module and class folder paths.
 '@param codeSheet Optional Worksheet. A separate worksheet to host code
 'ListObjects. When omitted, tables are placed on devSheet.
-'@return IDevelopment. A fully initialised instance ready for use.
+'@return Development. A fully initialised instance ready for use.
 '@throws ProjectError.ObjectNotInitialized When devSheet is Nothing.
 '@throws ProjectError.ElementNotFound When required named ranges are missing
 'on the Dev worksheet.
 '@depends BetterArray
 '@export
-Public Function Create(ByVal devSheet As Worksheet, Optional ByVal codeSheet As Worksheet) As IDevelopment
+Public Function Create(ByVal devSheet As Worksheet, Optional ByVal codeSheet As Worksheet) As Development
     Dim instance As Development
 
     Set instance = New Development
@@ -1963,81 +1962,3 @@ End Function
 Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal message As String)
     Err.Raise errNumber, CLASSNAME, "Error: " & message
 End Sub
-
-
-'@section Interface Implementation
-'===============================================================================
-'@description Delegated members that satisfy the IDevelopment contract.
-'See the corresponding Public members above for full documentation.
-
-Private Sub IDevelopment_Initialise(ByVal devSheet As Worksheet, Optional ByVal codeSheet As Worksheet)
-    Initialise devSheet, codeSheet
-End Sub
-
-Private Property Get IDevelopment_DevWorksheet() As Worksheet
-    Set IDevelopment_DevWorksheet = DevWorksheet
-End Property
-
-Private Property Get IDevelopment_CodeWorksheet() As Worksheet
-    Set IDevelopment_CodeWorksheet = CodeWorksheet
-End Property
-
-Private Property Get IDevelopment_DisplayPrompts() As Boolean
-    IDevelopment_DisplayPrompts = DisplayPrompts
-End Property
-
-Private Property Let IDevelopment_DisplayPrompts(ByVal value As Boolean)
-    DisplayPrompts = value
-End Property
-
-Private Function IDevelopment_AddCodeSheets(ByVal sheetName As String) As Worksheet
-    Set IDevelopment_AddCodeSheets = AddCodeSheets(sheetName)
-End Function
-
-Private Function IDevelopment_AddClassTable(Optional ByVal includeTests As Boolean = False) As ListObject
-    Set IDevelopment_AddClassTable = AddClassTable(includeTests)
-End Function
-
-Private Function IDevelopment_AddModuleTable(Optional ByVal includeTests As Boolean = False) As ListObject
-    Set IDevelopment_AddModuleTable = AddModuleTable(includeTests)
-End Function
-
-Private Function IDevelopment_AddFormsTable() As ListObject
-    Set IDevelopment_AddFormsTable = AddFormsTable()
-End Function
-
-Private Function IDevelopment_AddTestTable() As ListObject
-    Set IDevelopment_AddTestTable = AddTestTable()
-End Function
-
-Private Sub IDevelopment_AddHiddenSheet(ByVal sheetName As String)
-    AddHiddenSheet sheetName
-End Sub
-
-Private Sub IDevelopment_AddProtectedSheet(ByVal sheetName As String, _
-                                           Optional ByVal allowShapes As Boolean = True, _
-                                           Optional ByVal allowDeletingRows As Boolean = True)
-
-    AddProtectedSheet sheetName, allowShapes, allowDeletingRows
-
-End Sub
-
-Private Sub IDevelopment_ImportAll()
-    ImportAll
-End Sub
-
-Private Sub IDevelopment_ExportAll()
-    ExportAll
-End Sub
-
-Private Sub IDevelopment_AddFormsCodes()
-    AddFormsCodes
-End Sub
-
-Private Sub IDevelopment_Deploy(ByVal passwords As IPasswords, Optional ByVal lockWorkbook As Boolean = False)
-    Deploy passwords, lockWorkbook
-End Sub
-
-Private Function IDevelopment_InDeployment() As Boolean
-    IDevelopment_InDeployment = InDeployment
-End Function

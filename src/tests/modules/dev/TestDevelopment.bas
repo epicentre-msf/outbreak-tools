@@ -14,7 +14,7 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Private Assert As ICustomTest
-Private Manager As IDevelopment
+Private Manager As Development
 Private TestBook As Workbook
 Private DevSheet As Worksheet
 Private CodeSheet As Worksheet

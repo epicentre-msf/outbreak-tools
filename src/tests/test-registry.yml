@@ -4,7 +4,7 @@
 #
 # A generator (see .obt/plans/automated-testing.md) reads this file and:
 #   1. (re)creates and populates the Codes-sheet ListObjects — "tests modules",
-#      "general classes", "tests classes", etc. — through IDevelopment.
+#      "general classes", "tests classes", etc. — through Development.
 #   2. rebuilds the worksheet-scoped Name `ModulesForTesting`, which the test
 #      runner (CustomTestImplementation.clickRibbonTests) iterates to decide
 #      which modules to execute.

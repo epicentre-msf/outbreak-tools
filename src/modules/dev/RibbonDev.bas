@@ -6,7 +6,7 @@ Option Explicit
 '@depends Development, CustomTable, ICustomTable, Passwords, OSFiles, IOSFiles
 '@IgnoreModule UnrecognizedAnnotation, ExcelMemberMayReturnNothing, UseMeaningfulName
 
-Private devManager As IDevelopment
+Private devManager As Development
 Private Const DEV_SHEET_NAME As String = "Dev"
 Private Const CODE_SHEET_NAME As String = "Codes"
 Private Const PASS_SHEET_NAME As String = "__pass"
@@ -66,7 +66,7 @@ End Sub
 '@EntryPoint
 '@Description("Import modules and classes declared on the Dev tables")
 Public Sub clickDevImport(ByRef control As IRibbonControl)
-    Dim manager As IDevelopment
+    Dim manager As Development
 
     Set manager = EnsureDevelopment()
     If manager Is Nothing Then Exit Sub
@@ -86,7 +86,7 @@ End Sub
 '@EntryPoint
 '@Description("Export modules and classes declared on the Dev tables")
 Public Sub clickDevExport(ByRef control As IRibbonControl)
-    Dim manager As IDevelopment
+    Dim manager As Development
 
     Set manager = EnsureDevelopment()
     If manager Is Nothing Then Exit Sub
@@ -112,7 +112,7 @@ End Sub
 '@EntryPoint
 '@Description("Deploy workbook protections and hide Dev artefacts")
 Public Sub clickDevDeploy(ByRef control As IRibbonControl)
-    Dim manager As IDevelopment
+    Dim manager As Development
     
     Set manager = EnsureDevelopment()
     If manager Is Nothing Then Exit Sub
@@ -152,7 +152,7 @@ End Sub
 '@EntryPoint
 '@Description("Copy module code into mapped forms")
 Public Sub clicDevAddFormTable(ByRef control As IRibbonControl)
-    Dim manager As IDevelopment
+    Dim manager As Development
     Set manager = EnsureDevelopment()
     If manager Is Nothing Then Exit Sub
 
@@ -170,7 +170,7 @@ End Sub
 '@EntryPoint
 '@Description("Create a new forms mapping table")
 Public Sub clickDevAddFormTable(ByRef control As IRibbonControl)
-    Dim manager As IDevelopment
+    Dim manager As Development
     Set manager = EnsureDevelopment()
     If manager Is Nothing Then Exit Sub
 
@@ -190,7 +190,7 @@ End Sub
 '@EntryPoint
 '@Description("Create a new classes table (general or tests)")
 Public Sub clickDevAddClassTable(ByRef control As IRibbonControl)
-    Dim manager As IDevelopment
+    Dim manager As Development
     Set manager = EnsureDevelopment()
     If manager Is Nothing Then Exit Sub
 
@@ -213,7 +213,7 @@ End Sub
 '@EntryPoint
 '@Description("Create a new modules table (general or tests)")
 Public Sub clickDevAddModulesTable(ByRef control As IRibbonControl)
-    Dim manager As IDevelopment
+    Dim manager As Development
     Set manager = EnsureDevelopment()
     If manager Is Nothing Then Exit Sub
 
@@ -235,7 +235,7 @@ End Sub
 
 Public Sub DevGroupVisible(control As IRibbonControl, ByRef returnedVal)
     If (control.Id = "customGroupDev") Then
-        Dim manager As IDevelopment        
+        Dim manager As Development        
         Set manager = EnsureDevelopment()
         If manager Is Nothing Then Exit Sub
         returnedVal = CBool(Not manager.InDeployment())
@@ -247,7 +247,7 @@ End Sub
 
 '@section Helpers
 '===============================================================================
-Public Function EnsureDevelopment() As IDevelopment
+Public Function EnsureDevelopment() As Development
     On Error GoTo Handler
 
     If devManager Is Nothing Then
@@ -293,7 +293,7 @@ Private Function TryWorksheet(ByVal sheetName As String) As Worksheet
     On Error GoTo 0
 End Function
 
-Private Function EnsureCodeSheet(ByVal manager As IDevelopment) As Worksheet
+Private Function EnsureCodeSheet(ByVal manager As Development) As Worksheet
     Dim sh As Worksheet
     Set sh = manager.CodeWorksheet
 
@@ -329,7 +329,7 @@ Private Function ResolvePasswords() As IPasswords
 End Function
 
 Private Sub UpdateTables(ByVal addRows As Boolean)
-    Dim manager As IDevelopment
+    Dim manager As Development
     Set manager = EnsureDevelopment()
     If manager Is Nothing Then Exit Sub
 

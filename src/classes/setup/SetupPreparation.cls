@@ -15,7 +15,7 @@ Option Explicit
 '@Folder("Setup")
 '@ModuleDescription("Orchestrates dropdown registration and updated values initialisation for setup workbooks")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
-'@depends BetterArray, DropdownLists, UpdatedValues, CustomTable, ProjectError, IDevelopment
+'@depends BetterArray, DropdownLists, UpdatedValues, CustomTable, ProjectError, Development
 
 '@class SetupPreparation
 '@description
@@ -121,9 +121,9 @@ End Sub
 'initialises the updated values registry, applies data validations to the
 'Dictionary, Exports, and Analysis tables, then registers hidden and
 'protected sheets via the supplied development manager.
-'@param manager IDevelopment. Development manager providing hidden/protected sheet registration.
+'@param manager Development. Development manager providing hidden/protected sheet registration.
 '@export
-Public Sub Prepare(ByRef manager As IDevelopment)
+Public Sub Prepare(ByRef manager As Development)
     EnsureDropdowns
     EnsureUpdatedRegistry
     ApplyValidationsAndUpdates
@@ -268,9 +268,9 @@ End Sub
 '@details
 'Calls manager.AddHiddenSheet for each internal worksheet constant
 '(updated, variables, formatter, pass, formula, dev).
-'@param manager IDevelopment. Development manager to register with.
+'@param manager Development. Development manager to register with.
 '@throws ProjectError.ObjectNotInitialized When manager is Nothing.
-Private Sub EnsureHiddenSheets(ByRef manager As IDevelopment)
+Private Sub EnsureHiddenSheets(ByRef manager As Development)
     If manager Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, "Development manager reference is required"
     End If
@@ -288,9 +288,9 @@ End Sub
 '@details
 'Calls manager.AddProtectedSheet for each user-facing worksheet, specifying
 'whether filtering and sorting are allowed on the protected sheet.
-'@param manager IDevelopment. Development manager to register with.
+'@param manager Development. Development manager to register with.
 '@throws ProjectError.ObjectNotInitialized When manager is Nothing.
-Private Sub EnsureProtectedSheets(ByRef manager As IDevelopment)
+Private Sub EnsureProtectedSheets(ByRef manager As Development)
 
     If manager Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, "Development manager reference is required"

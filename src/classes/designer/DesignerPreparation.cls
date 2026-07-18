@@ -12,7 +12,7 @@ Attribute VB_Description = "Prepares designer workbooks and ribbon settings"
 '@PredeclaredId
 '@Folder("Designer")
 '@ModuleDescription("Prepares designer workbooks and persists ribbon settings through hidden names.")
-'@depends ProjectError, HiddenNames, IHiddenNames, IDevelopment, OSFiles, IOSFiles, CustomTable, ICustomTable, BetterArray, DropdownLists, IDropdownLists
+'@depends ProjectError, HiddenNames, IHiddenNames, Development, OSFiles, IOSFiles, CustomTable, ICustomTable, BetterArray, DropdownLists, IDropdownLists
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, ParameterNotUsed
 
 Option Explicit
@@ -29,7 +29,7 @@ Option Explicit
 'T_Multi table on the GenerateMultiple worksheet, and registers hidden
 'sheets with the development manager. Also provides methods to read and
 'write ribbon checkbox flags persisted through workbook-level hidden names.
-'@depends HiddenNames, IHiddenNames, IDevelopment, OSFiles, IOSFiles, CustomTable, ICustomTable, BetterArray, DropdownLists, IDropdownLists
+'@depends HiddenNames, IHiddenNames, Development, OSFiles, IOSFiles, CustomTable, ICustomTable, BetterArray, DropdownLists, IDropdownLists
 
 
 '@section State
@@ -171,9 +171,9 @@ End Sub
 '6. Applies data validation to the T_Multi table on GenerateMultiple.
 'When devManager is provided, hidden sheets are also registered with
 'the manager for deployment.
-'@param devManager IDevelopment. ByRef development manager instance, or Nothing.
+'@param devManager Development. ByRef development manager instance, or Nothing.
 '@export
-Public Sub Prepare(ByRef devManager As IDevelopment)
+Public Sub Prepare(ByRef devManager As Development)
     ImportTranslations
     EnsureDropdowns
     HideWorksheets devManager
@@ -355,8 +355,8 @@ End Sub
 '(visible in the VBA editor for developers). When a development manager
 'is provided, all sheets are also registered via AddHiddenSheet for
 'deployment. Silently skips any worksheet that does not exist.
-'@param devManager IDevelopment. Development manager for deployment registration, or Nothing.
-Private Sub HideWorksheets(ByRef devManager As IDevelopment)
+'@param devManager Development. Development manager for deployment registration, or Nothing.
+Private Sub HideWorksheets(ByRef devManager As Development)
     SetSheetVisibility SHEET_PASS, xlSheetVeryHidden
     SetSheetVisibility SHEET_FORMATTER, xlSheetVeryHidden
     SetSheetVisibility SHEET_FORMULA, xlSheetVeryHidden
@@ -716,9 +716,9 @@ End Sub
 '@details
 'Wraps manager.AddHiddenSheet in error handling so a missing sheet does
 'not abort the preparation sequence.
-'@param manager IDevelopment. The development manager to register with.
+'@param manager Development. The development manager to register with.
 '@param sheetName String. The worksheet name to register.
-Private Sub RegisterHiddenSheet(ByRef manager As IDevelopment, ByVal sheetName As String)
+Private Sub RegisterHiddenSheet(ByRef manager As Development, ByVal sheetName As String)
     On Error Resume Next
     manager.AddHiddenSheet sheetName
     On Error GoTo 0
