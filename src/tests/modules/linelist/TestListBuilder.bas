@@ -11,7 +11,7 @@ Private Assert As CustomTest
 Private FixtureWorkbook As Workbook
 Private Dict As LLdictionary
 Private Specs As LinelistSpecsWorkbookStub
-Private FakeLL As LinelistStub
+Private FakeLL As Linelist
 
 Private Const TESTOUTPUTSHEET As String = "testsOutputs"
 Private Const TESTMODULE As String = "ListBuilder"
@@ -48,8 +48,9 @@ Private Sub TestInitialize()
     Set Specs = New LinelistSpecsWorkbookStub
     Specs.Initialise Dict, FixtureWorkbook
 
-    Set FakeLL = New LinelistStub
-    FakeLL.Initialise Specs, Dict
+    'Real Linelist facade: ListBuilder.Create only reads ll.Dictionary (which
+    'delegates to Specs.Dictionary), so no output workbook is materialised.
+    Set FakeLL = Linelist.Create(Specs)
 
     Assert.BeginTest
 End Sub

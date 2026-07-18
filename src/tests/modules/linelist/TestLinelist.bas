@@ -74,7 +74,7 @@ Public Sub TestCreateReturnsInstance()
     CustomTestSetTitles Assert, TESTMODULE, "TestCreateReturnsInstance"
     On Error GoTo TestFail
 
-    Dim sut As ILinelist
+    Dim sut As Linelist
     Set sut = Linelist.Create(Specs)
 
     Assert.IsTrue Not sut Is Nothing, _
@@ -90,7 +90,7 @@ Public Sub TestCreateRejectsNothingSpecs()
     CustomTestSetTitles Assert, TESTMODULE, "TestCreateRejectsNothingSpecs"
     On Error GoTo ExpectError
 
-    Dim sut As ILinelist
+    Dim sut As Linelist
     Set sut = Linelist.Create(Nothing)
 
     CustomTestLogFailure Assert, "TestCreateRejectsNothingSpecs", , _
@@ -110,7 +110,7 @@ Public Sub TestLinelistDataReturnsSpecs()
     CustomTestSetTitles Assert, TESTMODULE, "TestLinelistDataReturnsSpecs"
     On Error GoTo TestFail
 
-    Dim sut As ILinelist
+    Dim sut As Linelist
     Set sut = Linelist.Create(Specs)
 
     Assert.IsTrue Not sut.LinelistData Is Nothing, _
@@ -126,7 +126,7 @@ Public Sub TestDictionaryReturnsDictionary()
     CustomTestSetTitles Assert, TESTMODULE, "TestDictionaryReturnsDictionary"
     On Error GoTo TestFail
 
-    Dim sut As ILinelist
+    Dim sut As Linelist
     Set sut = Linelist.Create(Specs)
 
     Assert.IsTrue Not sut.Dictionary Is Nothing, _
@@ -142,7 +142,7 @@ Public Sub TestSheetExistsReturnsFalse()
     CustomTestSetTitles Assert, TESTMODULE, "TestSheetExistsReturnsFalse"
     On Error GoTo TestFail
 
-    Dim sut As ILinelist
+    Dim sut As Linelist
     Set sut = Linelist.Create(Specs)
 
     Assert.IsTrue Not sut.SheetExists("NonExistentSheet__xyz"), _

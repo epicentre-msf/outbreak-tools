@@ -24,7 +24,7 @@ Option Explicit
 '(normal, time series, spatial, spatio-temporal), builds cross-tables from
 'table specifications, writes formulas, registers metadata in AnaTabIds, and
 'renders charts.
-'@depends ILinelist, ILinelistSpecs, LLFormat, TranslationObject, TableSpecs, CrossTable, CrossTableFormula, Graphs, AnaTabIds, Buttons, Passwords, DropdownLists, LLdictionary, ILLVariables, FormulaData, BetterArray
+'@depends Linelist, ILinelistSpecs, LLFormat, TranslationObject, TableSpecs, CrossTable, CrossTableFormula, Graphs, AnaTabIds, Buttons, Passwords, DropdownLists, LLdictionary, ILLVariables, FormulaData, BetterArray
 '@version 1.0 (2026-02-10)
 
 
@@ -45,7 +45,7 @@ Private Const SPATIAL As String = "Tab_Spatial_Analysis"
 Private Const SPATIOTEMPORAL As String = "Tab_SpatioTemporal_Analysis"
 
 Private Type TAnaOutput
-    anaLL As ILinelist
+    anaLL As Linelist
     sh As Worksheet
     namObj As AnaTabIds                             'Cached analysis tracking object
     ' Bug #2 fix: GoTo arrays are now local to each scope, not shared instance state.
@@ -74,14 +74,14 @@ Private internalChecks As Checking
 '@param specSh Worksheet. The setup worksheet containing analysis ListObjects
 '(Tab_global_summary, Tab_Univariate_Analysis, Tab_Bivariate_Analysis,
 'Tab_TimeSeries_Analysis, Tab_Spatial_Analysis, Tab_SpatioTemporal_Analysis).
-'@param ll ILinelist. The output linelist workbook facade where analysis sheets
+'@param ll Linelist. The output linelist workbook facade where analysis sheets
 'will be created.
 '@return AnalysisOutput. A fully initialised orchestrator instance ready for use.
 '@throws InvalidArgument When the specifications worksheet is Nothing.
 '@throws InvalidArgument When the linelist is Nothing.
 '@export
 Public Function Create(ByVal specSh As Worksheet, _
-                       ByVal ll As ILinelist) As AnalysisOutput
+                       ByVal ll As Linelist) As AnalysisOutput
 
     If specSh Is Nothing Then ThrowError InvalidArgument, "Specifications worksheet not defined"
     If ll Is Nothing Then ThrowError InvalidArgument, "Linelist not defined"
@@ -110,17 +110,17 @@ End Property
 '@label:output-ll-get
 '@prop-title Output linelist facade.
 '@details
-'Returns the ILinelist reference representing the output workbook where
+'Returns the Linelist reference representing the output workbook where
 'analysis worksheets are created and populated.
-'@return ILinelist. The output linelist workbook facade.
-Public Property Get OutputLL() As ILinelist
+'@return Linelist. The output linelist workbook facade.
+Public Property Get OutputLL() As Linelist
     Set OutputLL = this.anaLL
 End Property
 
 '@label:output-ll-set
 '@prop-title Assign the output linelist facade.
-'@param ll ILinelist. The output linelist workbook facade to store.
-Public Property Set OutputLL(ByVal ll As ILinelist)
+'@param ll Linelist. The output linelist workbook facade to store.
+Public Property Set OutputLL(ByVal ll As Linelist)
     Set this.anaLL = ll
 End Property
 
@@ -199,7 +199,7 @@ End Property
 '@return Worksheet. The output analysis sheet in the linelist workbook.
 Private Property Get OutputSh(Optional ByVal scope As Byte = AnalysisScopeNormal) As Worksheet
     Dim trads As TranslationObject
-    Dim ll As ILinelist
+    Dim ll As Linelist
 
     Set ll = OutputLL()
     Set trads = TransObject(TranslationOfMessages)
@@ -231,7 +231,7 @@ End Property
 Private Property Get NamesObject() As AnaTabIds
     If this.namObj Is Nothing Then
         Dim lData As ILinelistSpecs
-        Dim ll As ILinelist
+        Dim ll As Linelist
         Dim sh As Worksheet
 
         Set ll = OutputLL()
@@ -417,7 +417,7 @@ Private Sub AddGoTo(ByVal cellRng As Range, _
                     Optional ByVal goToSuffix As String = vbNullString)
 
     Dim drop As DropdownLists
-    Dim ll As ILinelist
+    Dim ll As Linelist
     Dim dropName As String
     Dim design As LLFormat
 

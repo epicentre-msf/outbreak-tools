@@ -26,7 +26,7 @@ Option Explicit
 'mode creates a PLAGEVALUES range reference for vertical data entry.
 'Consumers call Create with a layer mode, sheet name, and linelist
 'reference, then invoke Build to construct the sheet.
-'@depends ILinelist, LLSheets, ILinelistSpecs, LLFormat, DropdownLists,
+'@depends Linelist, LLSheets, ILinelistSpecs, LLFormat, DropdownLists,
 '  Passwords, TranslationObject, Buttons, HiddenNames, SectionBuilder,
 '  BetterArray
 '@version 1.0 (2026-02-09)
@@ -48,7 +48,7 @@ Private Const SHP_OPEN_PRINT As String = "SHP_OpenPrint"
 Private Type TListBuilder
     layer As Byte
     sheetName As String
-    ll As ILinelist
+    ll As Linelist
     hasChecks As Boolean
 End Type
 
@@ -72,7 +72,7 @@ Private internalChecks As Checking
 'validated before construction.
 '@param layer Byte. The ListBuilderLayer mode (HList = 1, VList = 2).
 '@param sheetName String. The dictionary sheet name to build.
-'@param ll ILinelist. The linelist workbook facade providing worksheets,
+'@param ll Linelist. The linelist workbook facade providing worksheets,
 '  dropdowns, pivots, and specs.
 '@return ListBuilder. A fully initialised instance ready for Build.
 '@throws ProjectError.ObjectNotInitialized When ll is Nothing.
@@ -81,7 +81,7 @@ Private internalChecks As Checking
 '@export
 Public Function Create(ByVal layer As Byte, _
                        ByVal sheetName As String, _
-                       ByVal ll As ILinelist) As ListBuilder
+                       ByVal ll As Linelist) As ListBuilder
 
     If ll Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, "Linelist object is required"
@@ -130,8 +130,8 @@ End Property
 
 '@label:bin-linelist
 '@prop-title Assign the linelist facade
-'@param value ILinelist. The linelist workbook facade.
-Friend Property Set BinLinelist(ByVal value As ILinelist)
+'@param value Linelist. The linelist workbook facade.
+Friend Property Set BinLinelist(ByVal value As Linelist)
     Set this.ll = value
 End Property
 

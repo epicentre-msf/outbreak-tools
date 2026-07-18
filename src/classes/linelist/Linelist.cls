@@ -16,8 +16,6 @@ Attribute VB_Description = "Linelist workbook facade: creates, populates and sav
 
 Option Explicit
 
-Implements ILinelist
-
 '@class Linelist
 '@description
 'Facade for the output linelist workbook. This class orchestrates the full
@@ -68,14 +66,14 @@ Private this As TLinelist
 '@details
 'Validates that the supplied specifications object is not Nothing, creates
 'a new Linelist instance via `New Linelist`, binds the specifications
-'through the Friend property, and returns an ILinelist interface reference.
+'through the Friend property, and returns an Linelist interface reference.
 '@param specs ILinelistSpecs. The linelist specifications providing
 'dictionary, translations, design format, passwords, and all other setup
 'data required to build the output workbook.
-'@return ILinelist. A ready-to-use linelist facade.
+'@return Linelist. A ready-to-use linelist facade.
 '@throws ProjectError.ObjectNotInitialized When specs is Nothing.
 '@export
-Public Function Create(ByVal specs As ILinelistSpecs) As ILinelist
+Public Function Create(ByVal specs As ILinelistSpecs) As Linelist
     If specs Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, "Linelist specifications are required"
     End If
@@ -105,7 +103,7 @@ End Property
 '@section Public properties
 '===============================================================================
 '@description Worksheet resolution and collaborator accessors exposed through
-'the ILinelist contract.
+'the Linelist contract.
 
 '@label:linelist-data
 '@prop-title Specifications backing this linelist
@@ -924,60 +922,4 @@ End Sub
 '@param errorMessage String. Descriptive message for the error.
 Private Sub ThrowError(ByVal errNumber As Long, ByVal errorMessage As String)
     Err.Raise errNumber, CLASS_NAME, errorMessage
-End Sub
-
-'@section ILinelist implementation
-'===============================================================================
-'@description Delegated members satisfying the ILinelist contract.
-'All members forward to their Public counterparts above.
-
-Private Property Get ILinelist_Wksh(ByVal sheetName As String) As Worksheet
-    Set ILinelist_Wksh = Wksh(sheetName)
-End Property
-
-Private Property Get ILinelist_PrintWksh(ByVal sheetName As String) As Worksheet
-    Set ILinelist_PrintWksh = PrintWksh(sheetName)
-End Property
-
-Private Property Get ILinelist_CRFWksh(ByVal sheetName As String) As Worksheet
-    Set ILinelist_CRFWksh = CRFWksh(sheetName)
-End Property
-
-Private Property Get ILinelist_Dropdown(Optional ByVal scope As Byte = 1) As DropdownLists
-    Set ILinelist_Dropdown = Dropdown(scope)
-End Property
-
-Private Property Get ILinelist_Pivots() As CustomPivotTable
-    Set ILinelist_Pivots = Pivots
-End Property
-
-Private Property Get ILinelist_LinelistData() As ILinelistSpecs
-    Set ILinelist_LinelistData = LinelistData
-End Property
-
-Private Property Get ILinelist_Dictionary() As LLdictionary
-    Set ILinelist_Dictionary = Dictionary
-End Property
-
-Private Sub ILinelist_Prepare()
-    Prepare
-End Sub
-
-Private Function ILinelist_SheetExists(ByVal sheetName As String) As Boolean
-    ILinelist_SheetExists = SheetExists(sheetName)
-End Function
-
-Private Sub ILinelist_AddOutputSheet(ByVal sheetName As String, _
-                                     Optional ByVal Hide As Long = xlSheetVeryHidden, _
-                                     Optional ByVal sheetScope As Byte = 1, _
-                                     Optional ByVal beforeSheet As String = vbNullString)
-    AddOutputSheet sheetName, Hide, sheetScope, beforeSheet
-End Sub
-
-Private Sub ILinelist_SaveLL()
-    SaveLL
-End Sub
-
-Private Sub ILinelist_ErrorManage(Optional ByVal textMessage As String = vbNullString)
-    ErrorManage textMessage
 End Sub
