@@ -60,7 +60,7 @@ Private Property Get ILinelistSpecs_Analysis() As Analysis
     Set ILinelistSpecs_Analysis = Nothing
 End Property
 
-Private Property Get ILinelistSpecs_ExportObject() As ILLExport
+Private Property Get ILinelistSpecs_ExportObject() As LLExport
     Set ILinelistSpecs_ExportObject = Nothing
 End Property
 

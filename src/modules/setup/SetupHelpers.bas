@@ -177,7 +177,7 @@ Public Sub ApplySetupTranslation(ByVal translator As ITranslationObject)
     Dim dictionary As ILLdictionary
     Dim choices As LLChoices
     Dim analysis As Analysis
-    Dim exports As ILLExport
+    Dim exports As LLExport
     Dim unlockDict As Boolean
     Dim unlockChoices As Boolean
     Dim unlockAnalysis As Boolean

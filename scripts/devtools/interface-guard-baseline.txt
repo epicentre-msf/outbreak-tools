@@ -15,5 +15,4 @@ IDiseaseReportManager
 IDiseaseSheet
 IDiseaseWorksheetManager
 IHiddenNames
-ILLExport
 ILLTranslation

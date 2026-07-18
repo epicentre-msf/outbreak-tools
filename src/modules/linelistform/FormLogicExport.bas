@@ -2,7 +2,7 @@ Attribute VB_Name = "FormLogicExport"
 
 '@Folder("Linelist Forms")
 '@ModuleDescription("Setup and teardown for the general export form")
-'@depends ExportButton, ILLExport, LLExport, ITranslationObject
+'@depends ExportButton, LLExport, ITranslationObject
 
 Option Explicit
 

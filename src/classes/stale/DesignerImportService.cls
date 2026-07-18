@@ -12,7 +12,7 @@ Attribute VB_Description = "Designer import/export service for setup and linelis
 '@PredeclaredId
 '@Folder("Designer")
 '@ModuleDescription("Imports setup components into a designer workbook and exports them to a linelist workbook.")
-'@depends ProjectError, LLdictionary, ILLdictionary, LLChoices, LLExport, ILLExport, Analysis, IAnalysis, LLGeo, ILLGeo, IPasswords, Passwords, LLFormat, ILLFormat, LLTranslation, ILLTranslation, HiddenNames, IHiddenNames
+'@depends ProjectError, LLdictionary, ILLdictionary, LLChoices, LLExport, Analysis, IAnalysis, LLGeo, ILLGeo, IPasswords, Passwords, LLFormat, ILLFormat, LLTranslation, ILLTranslation, HiddenNames, IHiddenNames
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, ParameterNotUsed
 
 Option Explicit
@@ -38,7 +38,7 @@ Private Type TDesignerImportService
     exportedDict As ILLdictionary   'Dictionary manager on exported workbook
     exportedChoices As LLChoices   'Choices manager on exported workbook
     exportedAnalysis As IAnalysis   'Analysis manager on exported workbook
-    exportedExport As ILLExport    'Export manager on exported workbook
+    exportedExport As LLExport    'Export manager on exported workbook
     exportedGeo As ILLGeo          'Geo manager on exported workbook
     exportedPass As IPasswords     'Passwords manager on exported workbook
     exportedTrans As ILLTranslation 'Translations manager on exported workbook
@@ -285,7 +285,7 @@ Public Property Get ExportedAnalysis() As IAnalysis
 End Property
 
 '@label:exported-export
-Public Property Get ExportedExport() As ILLExport
+Public Property Get ExportedExport() As LLExport
     Set ExportedExport = this.exportedExport
 End Property
 
@@ -344,7 +344,7 @@ End Sub
 '@sub-title Export export specs from setup into the host workbook
 Private Sub ImportExports(ByVal setupBook As Workbook, ByVal hostBook As Workbook)
     Dim setupSheet As Worksheet
-    Dim exportsManager As ILLExport
+    Dim exportsManager As LLExport
 
     Set setupSheet = ResolveWorksheet(setupBook, SHEET_EXPORTS)
     If setupSheet Is Nothing Then Exit Sub
@@ -466,7 +466,7 @@ End Sub
 '@sub-title Export export specs from host to target workbook
 Private Sub ExportExports(ByVal hostBook As Workbook, ByVal targetBook As Workbook)
     Dim hostSheet As Worksheet
-    Dim exportsManager As ILLExport
+    Dim exportsManager As LLExport
 
     Set hostSheet = ResolveWorksheet(hostBook, SHEET_EXPORTS)
     If hostSheet Is Nothing Then Exit Sub
@@ -833,7 +833,7 @@ Private Property Get IDesignerImportService_ExportedAnalysis() As IAnalysis
     Set IDesignerImportService_ExportedAnalysis = ExportedAnalysis
 End Property
 
-Private Property Get IDesignerImportService_ExportedExport() As ILLExport
+Private Property Get IDesignerImportService_ExportedExport() As LLExport
     Set IDesignerImportService_ExportedExport = ExportedExport
 End Property
 

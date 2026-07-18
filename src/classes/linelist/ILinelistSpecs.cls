@@ -110,10 +110,10 @@ End Property
 '@jump:export-object
 '@prop-title Export column specifications
 '@details
-'Returns the ILLExport instance providing access to export column definitions
+'Returns the LLExport instance providing access to export column definitions
 'from the Exports worksheet. Lazy-loaded on first access.
-'@return ILLExport. The export collaborator.
-Public Property Get ExportObject() As ILLExport
+'@return LLExport. The export collaborator.
+Public Property Get ExportObject() As LLExport
 End Property
 
 '@jump:password

@@ -734,7 +734,7 @@ Public Sub ClickExport()
 
     Dim exportNumber As Integer
     Dim topPosition As Integer
-    Dim expObj As ILLExport
+    Dim expObj As LLExport
     Dim expsh As Worksheet
     Dim totalNumberOfExports As Long
     Dim controlCommand As String

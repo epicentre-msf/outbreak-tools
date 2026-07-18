@@ -13,7 +13,7 @@ Attribute VB_Description = "Improved setup import service orchestrating workbook
 '@Folder("Setup")
 '@ModuleDescription("Improved setup import service orchestrating workbook synchronisation")
 '@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
-'@depends ProjectError, ApplicationState, IApplicationState, BetterArray, CustomTable, LLExport, ILLExport, LLdictionary, ILLdictionary, LLFormat, ILLFormat, IPasswords, Analysis, SetupTranslationsTable
+'@depends ProjectError, ApplicationState, IApplicationState, BetterArray, CustomTable, LLExport, LLdictionary, ILLdictionary, LLFormat, ILLFormat, IPasswords, Analysis, SetupTranslationsTable
 
 Option Explicit
 
@@ -602,7 +602,7 @@ Private Sub ImportExportUsingClass(ByVal pass As IPasswords, _
 
     Dim hostSheet As Worksheet
     Dim sourceSheet As Worksheet
-    Dim exportsManager As ILLExport
+    Dim exportsManager As LLExport
     Dim sheetUnlocked As Boolean
     Dim errNumber As Long
     Dim errSource As String
@@ -783,7 +783,7 @@ Public Sub Export(Optional Byval outwb As Workbook)
     Dim translationManager As SetupTranslationsTable
     Dim translationsTable As ListObject
     Dim analysisManager As Analysis
-    Dim exportsManager As ILLExport
+    Dim exportsManager As LLExport
     Dim choicesManager As LLChoices
     Dim formatManager As ILLFormat
     Dim exportworkbook As Workbook
@@ -903,8 +903,8 @@ Private Sub PrepareImport(ByVal pass As IPasswords, _
     Dim hostWorkbook As Workbook
     Dim currentExportsSheet As Worksheet
     Dim importExportsSheet As Worksheet
-    Dim currentExportObj As ILLExport
-    Dim importExportObj As ILLExport
+    Dim currentExportObj As LLExport
+    Dim importExportObj As LLExport
     Dim currentDictionary As ILLdictionary
     Dim previousExports As Long
     Dim updatedExports As Long

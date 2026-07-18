@@ -19,7 +19,6 @@ Attribute VB_Description = "Manage linelist and setup exports"
 '@depends Checking, DataSheet, LLVariables, HiddenNames
 Option Explicit
 
-Implements ILLExport
 
 Private Type TLLExport
     expData As DataSheet
@@ -58,11 +57,11 @@ Private this As TLLExport
 '@param exportSheet Worksheet hosting the export specification table.
 '@param startRow Optional; first row of the export table (defaults to 1).
 '@param startColumn Optional; first column of the export table (defaults to 1).
-'@return A fully initialised `ILLExport` instance.
+'@return A fully initialised `LLExport` instance.
 '@throws ProjectError.ObjectNotInitialized when the worksheet is missing.
 Public Function Create(ByVal exportSheet As Worksheet, _
                        Optional ByVal startRow As Long = 1, _
-                       Optional ByVal startColumn As Long = 1) As ILLExport
+                       Optional ByVal startColumn As Long = 1) As LLExport
 
     Dim exportData As DataSheet
 
@@ -95,8 +94,8 @@ End Property
 
 '@label:Self
 '@prop-title Return the current instance as interface
-'@return The object cast as `ILLExport`.
-Public Property Get Self() As ILLExport
+'@return The object cast as `LLExport`.
+Public Property Get Self() As LLExport
     Set Self = Me
 End Property
 
@@ -160,7 +159,7 @@ End Property
 '@param dict Optional dictionary used to add/remove export columns.
 '@param del Optional flag switching to row removal mode.
 '@param rowCount Optional threshold for row removal; rows with non-empty cells at or below the threshold are trimmed (defaults to 0, removing empty rows).
-Private Sub ManageRows(Optional ByVal del As Boolean = False, _ 
+Public Sub ManageRows(Optional ByVal del As Boolean = False, _ 
                        Optional ByVal dict As ILLdictionary, _
                        Optional ByVal rowCount As Long = 2)
 
@@ -942,7 +941,7 @@ End Function
 
 '@label:Translate
 '@sub-title Translate the current LLExport
-Private Sub Translate(ByVal trads As ITranslationObject)
+Public Sub Translate(ByVal trads As ITranslationObject)
     
     If trads Is Nothing Then 
         ThrowError ProjectError.ObjectNotInitialized, "Translations are not initialised"
@@ -1377,102 +1376,4 @@ Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
     Err.Raise errNumb, CLASSNAME, errorMessage
 End Sub
 
-'@section Interface Implementation
-'===============================================================================
-Private Property Get ILLExport_Data() As DataSheet
-    Set ILLExport_Data = Data
-End Property
-
-Private Property Get ILLExport_Worksheet() As Worksheet
-    Set ILLExport_Worksheet = Worksheet
-End Property
-
-Private Property Get ILLExport_NumberOfExports() As Long
-    ILLExport_NumberOfExports = NumberOfExports
-End Property
-
-Private Property Get ILLExport_HasCheckings() As Boolean
-    ILLExport_HasCheckings = HasCheckings
-End Property
-
-Private Property Get ILLExport_CheckingValues() As Checking
-    Set ILLExport_CheckingValues = CheckingValues
-End Property
-
-Private Sub ILLExport_AddRows(Optional ByVal dict As ILLdictionary)
-    AddRows dict
-End Sub
-
-Private Sub ILLExport_InsertRows(ByVal targetCell As Range, _
-                                 Optional ByVal dict As ILLdictionary, _
-                                 Optional ByVal insertShift As Boolean = False)
-    InsertRows targetCell, dict, insertShift
-End Sub
-
-Private Sub ILLExport_DeleteRows(ByVal targetCell As Range, _
-                                 Optional ByVal dict As ILLdictionary, _
-                                 Optional ByVal forceShift As Boolean = False)
-    DeleteRows targetCell, dict, forceShift
-End Sub
-
-Private Sub ILLExport_RemoveRows(Optional ByVal dict As ILLdictionary, Optional ByVal rowCount As Long = 2)
-    RemoveRows dict, rowCount
-End Sub
-
-Private Sub ILLExport_ManageRows(Optional ByVal del As Boolean = False, _ 
-                                 Optional ByVal dict As ILLdictionary, _ 
-                                 Optional ByVal rowCount As Long = 2)
-    ManageRows del:=del, dict:=dict, rowCount:=rowCount
-End Sub
-
-Private Sub ILLExport_SyncDictionaryExports(Optional ByVal dict As ILLdictionary)
-    SyncDictionaryExports dict
-End Sub
-
-Private Sub ILLExport_Sort(Optional ByVal dict As ILLdictionary)
-    Sort dict
-End Sub
-
-Private Sub ILLExport_ImportSpecs(ByVal fromWksh As Worksheet, _
-                                  ByVal fromStartRow As Long, _
-                                  ByVal fromStartColumn As Long)
-    ImportSpecs fromWksh, fromStartRow, fromStartColumn
-End Sub
-
-Private Sub ILLExport_ExportSpecs(ByVal toWkb As Workbook, _
-                                  Optional ByVal Hide As Long = xlSheetHidden)
-    ExportSpecs toWkb, Hide
-End Sub
-
-Private Sub ILLExport_InvalidateCaches()
-    ResetCaches
-End Sub
-
-Private Function ILLExport_ExportFileName(ByVal exportNumber As Long, _
-                                          ByVal dict As ILLdictionary, _
-                                          ByVal pass As IPasswords, _
-                                          Optional ByVal exportAll As Boolean = False) As String
-    ILLExport_ExportFileName = ExportFileName(exportNumber, dict, pass, exportAll)
-End Function
-
-Private Function ILLExport_IsActive(ByVal exportNumber As Long) As Boolean
-    ILLExport_IsActive = IsActive(exportNumber)
-End Function
-
-Private Function ILLExport_ColumnValue(ByVal exportNumber As Long, ByVal columnName As String) As String
-    ILLExport_ColumnValue = ColumnValue(exportNumber, columnName)
-End Function
-
-Private Function ILLExport_ActiveExportNumbers() As BetterArray
-    Set ILLExport_ActiveExportNumbers = ActiveExportNumbers
-End Function
-
-
-Private Sub ILLExport_Translate(ByVal trads As ITranslationObject)
-    Translate trads
-End Sub
-
-
-Private Sub ILLExport_ResetCaches()
-    ResetCaches
 End Sub

@@ -100,9 +100,9 @@ End Property
 
 '@jump:exported-export
 '@prop-title Export manager targeting the exported workbook
-'@return ILLExport. The exported export manager, or Nothing.
+'@return LLExport. The exported export manager, or Nothing.
 '@export
-Public Property Get ExportedExport() As ILLExport
+Public Property Get ExportedExport() As LLExport
 End Property
 
 '@jump:exported-geo

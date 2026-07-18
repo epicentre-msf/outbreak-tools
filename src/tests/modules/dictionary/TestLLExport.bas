@@ -13,7 +13,7 @@ Option Explicit
 'export-spec replication into destination workbooks, filename template
 'resolution with literal and variable chunks, active/inactive status filtering,
 'and threshold-based row removal.
-'@depends LLExport, ILLExport, LLdictionary, ILLdictionary, HiddenNames, IHiddenNames, Passwords, IPasswords, CustomTest, ICustomTest, BetterArray, TestHelpers, PasswordsTestFixture
+'@depends LLExport, LLdictionary, ILLdictionary, HiddenNames, IHiddenNames, Passwords, IPasswords, CustomTest, ICustomTest, BetterArray, TestHelpers, PasswordsTestFixture
 
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
@@ -28,7 +28,7 @@ Private Assert As ICustomTest
 Private DictionarySheet As Worksheet
 Private ExportSheet As Worksheet
 Private VListSheet As Worksheet
-Private Manager As ILLExport
+Private Manager As LLExport
 Private PasswordSheet As Worksheet
 Private PasswordsSubject As IPasswords
 

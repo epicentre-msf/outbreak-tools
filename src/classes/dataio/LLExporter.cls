@@ -24,7 +24,7 @@ Option Explicit
 'geobase exports (ExportGeo). Each mode builds a temporary output workbook,
 'populates it with the relevant data, metadata, and formatting, then saves
 'and closes it.
-'@depends ILLdictionary, ILLExport, IPasswords, CustomTable
+'@depends ILLdictionary, LLExport, IPasswords, CustomTable
 '@depends DataSheet, AnaTabIds, ILLGeo, LLChoices, IHiddenNames
 
 
@@ -165,7 +165,7 @@ Public Function ExportCustom(ByVal exportNumber As Long, _
                              Optional ByVal useFilters As Boolean = False) As String
 
     Dim outwb As Workbook
-    Dim expObj As ILLExport
+    Dim expObj As LLExport
     Dim dict As ILLdictionary
     Dim pass As IPasswords
     Dim expDict As ILLdictionary
@@ -279,7 +279,7 @@ Public Function ExportMigration(ByVal folderPath As String, _
                                 Optional ByVal keepLabels As Boolean = False) As String
 
     Dim outwb As Workbook
-    Dim expObj As ILLExport
+    Dim expObj As LLExport
     Dim dict As ILLdictionary
     Dim pass As IPasswords
     Dim expDict As ILLdictionary
@@ -356,7 +356,7 @@ End Function
 Public Function ExportAnalysis(ByVal folderPath As String) As String
 
     Dim outwb As Workbook
-    Dim expObj As ILLExport
+    Dim expObj As LLExport
     Dim dict As ILLdictionary
     Dim pass As IPasswords
     Dim fileName As String
@@ -473,8 +473,8 @@ End Function
 
 '@label:export-object
 '@sub-title Get the export configuration from the source workbook
-'@return ILLExport. Export configuration from the Exports sheet.
-Private Function ExportObject() As ILLExport
+'@return LLExport. Export configuration from the Exports sheet.
+Private Function ExportObject() As LLExport
     Set ExportObject = LLExport.Create(this.sourceWkb.Worksheets(EXPORTSHEET))
 End Function
 
@@ -564,10 +564,10 @@ End Function
 'clears the export column cells for all dictionary rows whose main label
 'matches a geo p-code or geo concat tag.
 '@param dict ILLdictionary. The source dictionary.
-'@param expObj ILLExport. The export configuration.
+'@param expObj LLExport. The export configuration.
 '@param exportNumber Long. Which export definition to check.
 '@param expName String. The export column name (e.g. "export 1").
-Private Sub RemovePCodes(ByVal dict As ILLdictionary, ByVal expObj As ILLExport, _
+Private Sub RemovePCodes(ByVal dict As ILLdictionary, ByVal expObj As LLExport, _
                          ByVal exportNumber As Long, ByVal expName As String)
 
     Dim exportPcodes As Boolean
@@ -602,10 +602,10 @@ End Sub
 'set to "no", clears the export column cells for all dictionary rows
 'flagged as personal identifiers.
 '@param dict ILLdictionary. The source dictionary.
-'@param expObj ILLExport. The export configuration.
+'@param expObj LLExport. The export configuration.
 '@param exportNumber Long. Which export definition to check.
 '@param expName String. The export column name.
-Private Sub RemovePersonalIdentifiers(ByVal dict As ILLdictionary, ByVal expObj As ILLExport, _
+Private Sub RemovePersonalIdentifiers(ByVal dict As ILLdictionary, ByVal expObj As LLExport, _
                                       ByVal exportNumber As Long, ByVal expName As String)
 
     Dim exportPI As Boolean

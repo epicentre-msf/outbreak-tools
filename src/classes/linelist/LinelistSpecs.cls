@@ -28,7 +28,7 @@ Implements ILinelistSpecs
 'construct instances via LinelistSpecs.Create(workbook) and receive an
 'ILinelistSpecs interface reference.
 '@depends ILLdictionary, LLChoices, ILLTranslation, IDesignerTranslation
-'@depends ILLGeo, ILLExport, IPasswords, ILLFormat
+'@depends ILLGeo, LLExport, IPasswords, ILLFormat
 '@depends LinelistBuildService, TemporaryRepos
 '@depends IFormulaData, ILLVariables, Formulas
 '@depends ITranslationObject, IApplicationState, ApplicationState
@@ -50,7 +50,7 @@ Private Type TLinelistSpecs
     translations As ILLTranslation
     designerTranslations As IDesignerTranslation
     geo As ILLGeo
-    exports As ILLExport
+    exports As LLExport
     ana As Analysis
     passwords As IPasswords
     format As ILLFormat
@@ -1001,11 +1001,11 @@ End Property
 '@label:export-object
 '@prop-title Export column specifications
 '@details
-'Returns the ILLExport instance providing access to export column
+'Returns the LLExport instance providing access to export column
 'definitions from the Exports worksheet. Lazy-loaded on first access.
-'@return ILLExport. The export collaborator.
+'@return LLExport. The export collaborator.
 '@export
-Public Property Get ExportObject() As ILLExport
+Public Property Get ExportObject() As LLExport
     EnsureExports
     Set ExportObject = this.exports
 End Property
@@ -1301,7 +1301,7 @@ End Property
 Public Sub Prepare(ByVal buildService As LinelistBuildService, ByVal setupPath As String)
     Dim dict As ILLdictionary
     Dim choicesObj As LLChoices
-    Dim exportsObj As ILLExport
+    Dim exportsObj As LLExport
     Dim analysisObj As Analysis
     Dim geoObj As ILLGeo
     Dim dictTrads As ITranslationObject
@@ -1514,7 +1514,7 @@ Private Property Get ILinelistSpecs_AnalysisObject() As Analysis
     Set ILinelistSpecs_AnalysisObject = Me.AnalysisObject
 End Property
 
-Private Property Get ILinelistSpecs_ExportObject() As ILLExport
+Private Property Get ILinelistSpecs_ExportObject() As LLExport
     Set ILinelistSpecs_ExportObject = Me.ExportObject
 End Property
 
