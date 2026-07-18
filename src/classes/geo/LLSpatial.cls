@@ -87,7 +87,7 @@ End Property
 '@label:wksh-set
 '@prop-title Assign the spatial tables worksheet
 '@param sh Worksheet. The worksheet to store.
-Public Property Set Wksh(ByVal sh As Worksheet)
+Private Property Set Wksh(ByVal sh As Worksheet)
     Set this.sh = sh
 End Property
 

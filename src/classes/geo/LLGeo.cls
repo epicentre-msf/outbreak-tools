@@ -133,7 +133,7 @@ End Property
 'Assigns the internal worksheet reference. Called only from the factory Create
 'method after validation. Not intended for external use.
 '@param sh Worksheet. The geobase worksheet to bind to this instance.
-Public Property Set Wksh(ByVal sh As Worksheet)
+Private Property Set Wksh(ByVal sh As Worksheet)
     Set this.geosh = sh
 End Property
 
