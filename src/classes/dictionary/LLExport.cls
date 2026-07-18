@@ -22,7 +22,7 @@ Option Explicit
 Implements ILLExport
 
 Private Type TLLExport
-    expData As IDataSheet
+    expData As DataSheet
     exportSheet As Worksheet
     dictInt As ILLdictionary
     variables As ILLVariables
@@ -64,7 +64,7 @@ Public Function Create(ByVal exportSheet As Worksheet, _
                        Optional ByVal startRow As Long = 1, _
                        Optional ByVal startColumn As Long = 1) As ILLExport
 
-    Dim exportData As IDataSheet
+    Dim exportData As DataSheet
 
     If exportSheet Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, "Worksheet is required to create " & CLASSNAME
@@ -82,7 +82,7 @@ End Function
 
 '@label:SetInternalData
 '@param exportData Datasheet wrapper over the specification table.
-Public Property Set InternalData(ByVal exportData As IDataSheet)
+Public Property Set InternalData(ByVal exportData As DataSheet)
     Set this.expData = exportData
 End Property
 
@@ -105,7 +105,7 @@ End Property
 '@label:Data
 '@prop-title Underlying export datasheet
 '@return Datasheet abstraction wrapping the export specification table.
-Public Property Get Data() As IDataSheet
+Public Property Get Data() As DataSheet
     EnsureDataReady
     Set Data = this.expData
 End Property
@@ -758,7 +758,7 @@ Public Sub ImportSpecs(ByVal fromWksh As Worksheet, _
                        ByVal fromStartRow As Long, _
                        ByVal fromStartColumn As Long)
     
-    Dim sourceData As IDataSheet
+    Dim sourceData As DataSheet
     
     EnsureDataReady
     If fromWksh Is Nothing Then ThrowError ProjectError.ObjectNotInitialized, "Source worksheet is missing"
@@ -1379,7 +1379,7 @@ End Sub
 
 '@section Interface Implementation
 '===============================================================================
-Private Property Get ILLExport_Data() As IDataSheet
+Private Property Get ILLExport_Data() As DataSheet
     Set ILLExport_Data = Data
 End Property
 

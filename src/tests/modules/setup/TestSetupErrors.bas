@@ -482,7 +482,7 @@ End Sub
 
 Private Sub ConfigureDictionarySheet(ByVal hostBook As Workbook, ByVal includeIssues As Boolean)
     Dim dictSheet As Worksheet
-    Dim dictTable As IDataSheet
+    Dim dictTable As DataSheet
     Dim controlCol As Long
     Dim detailsCol As Long
     Dim sheetCol As Long
@@ -630,7 +630,7 @@ End Sub
 
 Private Sub ConfigureChoicesSheet(ByVal hostBook As Workbook, ByVal includeIssues As Boolean)
     Dim choicesSheet As Worksheet
-    Dim choicesTable As IDataSheet
+    Dim choicesTable As DataSheet
     Dim listNameCol As Long
     Dim orderCol As Long
     Dim labelCol As Long

@@ -25,7 +25,7 @@ Implements ILLdictionary
 'surface area and tests target a unified object model.
 
 Private Type TDictionary
-    dictDataSheet As IDataSheet
+    dictDataSheet As DataSheet
     numberOfExports As Long
     hasChecks As Boolean
     hiddenValues As IHiddenNames
@@ -67,7 +67,7 @@ Public Function Create(ByVal dictWksh As Worksheet, ByVal dictStartRow As Long, 
                        ByVal dictStartColumn As Long, _
                        Optional ByVal numberOfExports As Long = DEFAULTNUMBEROFEXPORTS) As ILLdictionary
 
-    Dim customDataSheet As IDataSheet
+    Dim customDataSheet As DataSheet
 
     Set customDataSheet = DataSheet.Create(dictWksh, dictStartRow, dictStartColumn)
 
@@ -122,12 +122,12 @@ End Property
 'Expose the lazily initialised `DataSheet` wrapper used for all worksheet
 'interactions. Consumers rely on this to perform advanced queries without
 'directly manipulating Excel ranges.
-'@return IDataSheet
-Public Property Get Data() As IDataSheet
+'@return DataSheet
+Public Property Get Data() As DataSheet
     Set Data = this.dictDataSheet
 End Property
 
-Public Property Set Data(ByVal customDataSheet As IDataSheet)
+Public Property Set Data(ByVal customDataSheet As DataSheet)
     Set this.dictDataSheet = customDataSheet
     Set this.hiddenValues = Nothing
 End Property
@@ -1409,8 +1409,8 @@ Public Sub Import(ByVal fromWksh As Worksheet, _
     'Replace the current dictionary content with data imported from another
     'worksheet. Helper columns are initialised before the import so the
     'datasheet can drop unexpected headers and reapply formatting.
-    Dim targetData As IDataSheet
-    Dim sourceData As IDataSheet
+    Dim targetData As DataSheet
+    Dim sourceData As DataSheet
     Dim hostSheet As Worksheet
     Dim importedTotal As Long
 
@@ -1459,7 +1459,7 @@ Public Sub Export(ByVal toWkb As Workbook, _
     'type and adding a listobject for backwards compatibility with legacy
     'macros. Visual tweaks (fonts, colours) match the manual export workflow.
 
-    Dim targetData As IDataSheet
+    Dim targetData As DataSheet
     Dim exportRange As Range
     Dim targetSheet As Worksheet
     Dim sheetName As String
@@ -1571,7 +1571,7 @@ End Sub
 '===============================================================================
 
 '@jump:data
-Private Property Get ILLdictionary_Data() As IDataSheet
+Private Property Get ILLdictionary_Data() As DataSheet
     Set ILLdictionary_Data = Data
 End Property
 

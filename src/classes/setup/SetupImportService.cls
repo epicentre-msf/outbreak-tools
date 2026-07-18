@@ -694,7 +694,7 @@ Private Sub ImportTranslationsUsingClass(ByVal pass As IPasswords, _
     Dim sourceSheet As Worksheet
     Dim hostTable As ListObject
     Dim hostTableAdapter As ICustomTable
-    Dim sourceTableAdapter As IDataSheet
+    Dim sourceTableAdapter As DataSheet
     Dim sheetUnlocked As Boolean
     Dim errNumber As Long
     Dim errSource As String

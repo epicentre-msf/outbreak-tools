@@ -16,8 +16,6 @@ Attribute VB_Description = "Data manipulation in a worksheet"
 
 Option Explicit
 
-Implements IDataSheet
-
 '@class DataSheet
 '@description
 'Provides low-level data manipulation on a worksheet with a table-like
@@ -25,8 +23,7 @@ Implements IDataSheet
 'DataSheet does not require a ListObject — it works directly with cell
 'ranges. Supports column lookup, filtering (single and multi-column),
 'import/export to other DataSheets or CustomTables, and formatting
-'transfer for designated columns. Consumers interact through the
-'IDataSheet interface.
+'transfer for designated columns.
 '@depends Checking, BetterArray, HiddenNames
 '@version 1.0 (2026-02-09)
 
@@ -66,7 +63,7 @@ Private internalChecks As IChecking
 '@param startCl Long. The 1-based starting column index.
 '@param forceEndRow Optional Boolean. When True, scans all columns to find the last row. Defaults to False.
 '@param objName Optional String. Object name. Defaults to the worksheet name.
-'@return IDataSheet. A fully initialised DataSheet instance.
+'@return DataSheet. A fully initialised DataSheet instance.
 '@throws ProjectError.ObjectNotInitialized When sh is Nothing.
 '@throws ProjectError.InvalidArgument When startLn or startCl is less than 1.
 '@depends Checking, BetterArray
@@ -74,7 +71,7 @@ Private internalChecks As IChecking
 Public Function Create(ByVal sh As Worksheet, ByVal startLn As Long, _
                        ByVal startCl As Long, _
                        Optional ByVal forceEndRow As Boolean = False, _
-                       Optional ByVal objName As String = vbNullString) As IDataSheet
+                       Optional ByVal objName As String = vbNullString) As DataSheet
 
     'Throw illegal errors before the creation of the dictionary
 
@@ -94,8 +91,8 @@ End Function
 
 '@label:self
 '@prop-title Current object instance
-'@return IDataSheet. Reference to the current object.
-Public Property Get Self() As IDataSheet
+'@return DataSheet. Reference to the current object.
+Public Property Get Self() As DataSheet
     Set Self = Me
 End Property
 
@@ -179,7 +176,7 @@ End Property
 'creation, defaults to the worksheet name.
 '@return String. The DataSheet name.
 '@export
-Private Property Get Name() As String
+Public Property Get Name() As String
     
     If this.objName = vbNullString Then 
         this.objName = Wksh.Name
@@ -196,7 +193,7 @@ End Property
 'least one data row below the header.
 '@return Long. The 1-based last data row index.
 '@export
-Private Property Get DataEndRow() As Long
+Public Property Get DataEndRow() As Long
 
     Dim endrw As Long
     Dim hRng As Range
@@ -237,7 +234,7 @@ End Property
 '@prop-title Last column containing data
 '@return Long. The 1-based last column index.
 '@export
-Private Property Get DataEndColumn() As Long
+Public Property Get DataEndColumn() As Long
     With Wksh
         DataEndColumn = .Cells(DataStartRow(), .Columns.Count).End(xlToLeft).Column
     End With
@@ -268,7 +265,7 @@ End Property
 '@param matchCase Optional Boolean. When True, matching is case-sensitive. Defaults to True.
 '@return Boolean. True when the column is found.
 '@export
-Private Function ColumnExists(ByVal colName As String, _ 
+Public Function ColumnExists(ByVal colName As String, _
                               Optional ByVal strictSearch As Boolean = True, _
                               Optional ByVal matchCase As Boolean = True) As Boolean
     Dim hRng As Range
@@ -299,7 +296,7 @@ End Function
 '@return Long. The column index, or -1 when not found.
 '@throws ProjectError.ElementNotFound When the column is not found and shouldExist is True.
 '@export
-Private Function ColumnIndex(ByVal colName As String, _
+Public Function ColumnIndex(ByVal colName As String, _
                              Optional ByVal inDataRange As Boolean = False, _
                              Optional ByVal shouldExist As Boolean = False, _ 
                              Optional ByVal strictSearch As Boolean = True, _
@@ -504,7 +501,7 @@ End Sub
 '@param matchCase Optional Boolean. When True, column lookup is case-sensitive. Defaults to True.
 '@return BetterArray. The filtered values.
 '@export
-Private Function FilterData(ByVal varName As String, _
+Public Function FilterData(ByVal varName As String, _
                             ByVal criteriaName As String, _
                             ByVal returnedColumnName As String, _
                             Optional ByVal includeHeaders As Boolean = False, _
@@ -581,7 +578,7 @@ End Function
 '@param returnedColumnsData BetterArray. Columns whose values to return.
 '@return BetterArray. A two-dimensional array of filtered values.
 '@export
-Private Function FiltersData(ByVal varData As BetterArray, _
+Public Function FiltersData(ByVal varData As BetterArray, _
                              ByVal criteriaData As BetterArray, _
                              ByVal returnedColumnsData As BetterArray) As BetterArray
 
@@ -670,7 +667,7 @@ End Function
 '@param importData Object. A DataSheet or CustomTable to import from.
 '@param strictColumnSearch Optional Boolean. When True, uses case-sensitive column matching. Defaults to True.
 '@export
-Private Sub Import(ByVal importData As Object, Optional ByVal strictColumnSearch As Boolean = True)
+Public Sub Import(ByVal importData As Object, Optional ByVal strictColumnSearch As Boolean = True)
 
     Dim imphRng As Range 'Import Header Range
     Dim headerValue As String
@@ -733,7 +730,7 @@ End Sub
 '@param importData Object. A DataSheet or CustomTable to copy formatting from.
 '@param matchColumnsCase Optional Boolean. When True, uses case-sensitive column matching. Defaults to True.
 '@export
-Private Sub ImportFormat(ByVal importData As Object, Optional ByVal matchColumnsCase As Boolean = True)
+Public Sub ImportFormat(ByVal importData As Object, Optional ByVal matchColumnsCase As Boolean = True)
   
     Dim actRng As Range
     Dim counter As Long
@@ -826,13 +823,13 @@ End Sub
 'on a single column before export. The exported sheet is hidden by
 'default. Applies formatting for registered columns and optionally
 'exports hidden names.
-'@param Wkb Workbook. Destination workbook.
+'@param toWkb Workbook. Destination workbook.
 '@param filteredVarName Optional String. Column used for filtering. Defaults to "__all__" (no filter).
 '@param filteredCondition Optional String. Filter criteria. Defaults to "<>".
 '@param Hide Optional Long. Worksheet visibility after export. Defaults to xlSheetHidden.
 '@param includeNames Optional Boolean. When True, exports hidden names alongside data. Defaults to False.
 '@export
-Private Sub Export(ByVal Wkb As Workbook, Optional ByVal filteredVarName As String = "__all__", _
+Public Sub Export(ByVal toWkb As Workbook, Optional ByVal filteredVarName As String = "__all__", _
                    Optional ByVal filteredCondition As String = "<>", _ 
                    Optional ByVal Hide As Long = xlSheetHidden, _ 
                    Optional ByVal includeNames As Boolean = False)
@@ -849,7 +846,7 @@ Private Sub Export(ByVal Wkb As Workbook, Optional ByVal filteredVarName As Stri
     Dim store As IHiddenNames
 
     'Trace on errors on export
-    If Wkb Is Nothing Then
+    If toWkb Is Nothing Then
         LogInfo "Export can not be done, workbook not found", checkingError
         ShowDebug
         Exit Sub
@@ -858,7 +855,7 @@ Private Sub Export(ByVal Wkb As Workbook, Optional ByVal filteredVarName As Stri
     Set sh = Wksh()
 
     On Error Resume Next
-    Set dataExportWksh = Wkb.Worksheets(sh.Name)
+    Set dataExportWksh = toWkb.Worksheets(sh.Name)
     sheetDataExist = (Not dataExportWksh Is Nothing)
     On Error GoTo 0
 
@@ -867,8 +864,8 @@ Private Sub Export(ByVal Wkb As Workbook, Optional ByVal filteredVarName As Stri
         LogInfo "There is already a worksheet of the same name in the workbook, the worksheet will be cleared completely", checkingWarning
         dataExportWksh.Cells.Clear
     Else
-        Wkb.Worksheets.Add(after:=Wkb.Worksheets(Wkb.Worksheets.Count)).Name = sh.Name
-        Set dataExportWksh = Wkb.Worksheets(sh.Name)
+        toWkb.Worksheets.Add(after:=toWkb.Worksheets(toWkb.Worksheets.Count)).Name = sh.Name
+        Set dataExportWksh = toWkb.Worksheets(sh.Name)
     End If
 
     Set dataExportData = New BetterArray
@@ -1016,65 +1013,6 @@ Private Sub ThrowErrorUnFoundColumn(ByVal colName As String)
                "Column " & colName & " does not exists" & " in DataSheet " & Name()
 End Sub
 
-'@section Interface
-'===============================================================================
-'@description Delegated members satisfying the IDataSheet contract.
-
-Private Property Get IDataSheet_Wksh() As Worksheet
-    Set IDataSheet_Wksh = Wksh()
-End Property
-
-Private Property Get IDataSheet_DataStartRow() As Long
-    IDataSheet_DataStartRow = DataStartRow()
-End Property
-
-Private Property Get IDataSheet_DataStartColumn() As Long
-    IDataSheet_DataStartColumn = DataStartColumn()
-End Property
-
-Private Property Get IDataSheet_Name() As String
-    IDataSheet_Name = Name()
-End Property
-
-Private Property Get IDataSheet_DataEndRow() As Long
-    IDataSheet_DataEndRow = DataEndRow()
-End Property
-
-Private Property Get IDataSheet_DataEndColumn() As Long
-    IDataSheet_DataEndColumn = DataEndColumn()
-End Property
-
-Private Property Get IDataSheet_HeaderRange() As Range
-    Set IDataSheet_HeaderRange = HeaderRange()
-End Property
-
-Private Function IDataSheet_ColumnIndex(ByVal colName As String, _
-                                       Optional ByVal inDataRange As Boolean = False, _
-                                       Optional shouldExist As Boolean = False, _ 
-                                       Optional ByVal strictSearch As Boolean = True, _ 
-                                       Optional ByVal matchCase As Boolean = True) As Long
-    IDataSheet_ColumnIndex = ColumnIndex(colName, inDataRange, shouldExist, strictSearch, matchCase)
-End Function
-
-Private Function IDataSheet_ColumnExists(ByVal colName As String, _ 
-                                         Optional ByVal strictSearch As Boolean = True, _ 
-                                         Optional ByVal matchCase As Boolean = True) As Boolean
-
-    IDataSheet_ColumnExists = ColumnExists(colName, strictSearch, matchCase)
-End Function
-
-
-Private Property Get IDataSheet_DataRange(Optional ByVal colName As String = "__all__", _
-                                         Optional ByVal includeHeaders As Boolean = False, _ 
-                                         Optional ByVal strictSearch As Boolean = True, _ 
-                                         Optional ByVal matchCase As Boolean = True) As Range
-    Set IDataSheet_DataRange = DataRange(colName, includeHeaders, strictSearch, matchCase)
-End Property
-
-Private Sub IDataSheet_Clean()
-    Clean
-End Sub
-
 '@label:add-formats-columns
 '@sub-title Register columns for formatting import/export
 '@details
@@ -1084,7 +1022,8 @@ End Sub
 '@param matchColumnsCase Boolean. When True, uses case-sensitive column matching.
 '@param resetColumns Boolean. When True, clears the existing list before adding.
 '@param lsCols ParamArray Variant. Column names to register for formatting.
-Private Sub IDataSheet_AddFormatsColumns(ByVal matchColumnsCase As Boolean, ByVal resetColumns As Boolean, ParamArray lsCols() As Variant)
+'@export
+Public Sub AddFormatsColumns(ByVal matchColumnsCase As Boolean, ByVal resetColumns As Boolean, ParamArray lsCols() As Variant)
     Dim nbEls As Long
     Dim colName As String
     Dim newColName As String
@@ -1107,52 +1046,3 @@ Private Sub IDataSheet_AddFormatsColumns(ByVal matchColumnsCase As Boolean, ByVa
         End If
     Next
 End Sub
-
-
-Private Function IDataSheet_FilterData(ByVal varName As String, _
-                                      ByVal criteriaName As String, _
-                                      ByVal returnedColumnName As String, _
-                                      Optional ByVal includeHeaders As Boolean = False, _
-                                      Optional ByVal matchCase As Boolean = True) As BetterArray
-    Set IDataSheet_FilterData = FilterData(varName:=varName, _
-                                           criteriaName:=criteriaName, _
-                                           returnedColumnName:=returnedColumnName, _
-                                           includeHeaders:=includeHeaders, _ 
-                                           matchCase:=matchCase)
-End Function
-
-Private Function IDataSheet_FiltersData(ByVal varData As BetterArray, ByVal criteriaData As BetterArray, _ 
-                                        ByVal returnedColumnsData As BetterArray) As BetterArray
-    Set IDataSheet_FiltersData = FiltersData(varData, criteriaData, returnedColumnsData)
-End Function
-
-Private Sub IDataSheet_Import(ByVal importedData As Object, Optional ByVal strictColumnSearch As Boolean = True)
-    Import importedData, strictColumnSearch
-End Sub
-
-Private Sub IDataSheet_ImportFormat(ByVal importData As Object, Optional ByVal matchColumnsCase As Boolean = True)
-    ImportFormat importData, matchColumnsCase
-End Sub
-
-Private Sub IDataSheet_RenameColumn(ByVal currentName As String, _
-                                    ByVal newName As String, _
-                                    Optional ByVal strictSearch As Boolean = True, _
-                                    Optional ByVal matchCase As Boolean = False)
-    RenameColumn currentName, newName, strictSearch, matchCase
-End Sub
-
-Private Sub IDataSheet_Export(ByVal toWkb As Workbook, _
-                             Optional ByVal filteredVarName As String = "__all__", _
-                             Optional ByVal filteredCondition As String = "<>", _
-                             Optional ByVal Hide As Long = xlSheetHidden, _
-                             Optional ByVal includeNames As Boolean = False)
-    Export toWkb, filteredVarName, filteredCondition, Hide, includeNames
-End Sub
-
-Private Property Get IDataSheet_HasCheckings() As Boolean
-    IDataSheet_HasCheckings = HasCheckings()
-End Property
-
-Private Property Get IDataSheet_CheckingValues() As Object
-     Set IDataSheet_CheckingValues = CheckingValues()
-End Property

@@ -22,7 +22,7 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 'data exchange (import/export), and export-counter persistence through
 'hidden worksheet-level names.
 '@depends LLdictionary, ILLdictionary, DictionaryTestFixture, CustomTest,
-'  ICustomTest, BetterArray, DataSheet, IDataSheet
+'  ICustomTest, BetterArray, DataSheet
 
 
 Private Const DICT_SHEET As String = "LLDictTest"

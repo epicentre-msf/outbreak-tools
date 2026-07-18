@@ -493,7 +493,7 @@ Private Function VariablesProvider() As ILLVariables
 End Function
 
 '@label:ColumnIndex
-'@sub-title Wrapper around IDataSheet.ColumnIndex with optional caching
+'@sub-title Wrapper around DataSheet.ColumnIndex with optional caching
 '@param colName String. Column header to locate.
 '@param allowMissing Boolean. When False, raises when the column is absent.
 '@return Long worksheet column index.

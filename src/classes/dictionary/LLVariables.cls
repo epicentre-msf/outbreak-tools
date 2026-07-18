@@ -45,7 +45,7 @@ Public Function Create(ByVal dict As ILLdictionary) As ILLVariables
 
     If dict.Data Is Nothing Then
         Err.Raise CLng(ProjectError.ObjectNotInitialized), CLASSNAME, _
-                  "Dictionary instance does not expose an IDataSheet implementation"
+                  "Dictionary instance does not expose a DataSheet implementation"
     End If
 
     If Not dict.ColumnExists(VARIABLENAMECOLUMN) Then
@@ -195,7 +195,7 @@ End Sub
 Private Function ColumnIndexStillValid(ByVal columnIndexValue As Long, ByVal expectedColumnName As String) As Boolean
     Dim headerCell As Range
     Dim headerText As String
-    Dim dataSheet As IDataSheet
+    Dim dataSheet As DataSheet
     Dim relativeIndex As Long
 
     ColumnIndexStillValid = False

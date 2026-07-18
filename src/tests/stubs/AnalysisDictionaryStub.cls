@@ -41,7 +41,7 @@ End Sub
 
 '@section Interface implementation
 '===============================================================================
-Private Property Get ILLdictionary_Data() As IDataSheet
+Private Property Get ILLdictionary_Data() As DataSheet
     Set ILLdictionary_Data = Nothing
 End Property
 

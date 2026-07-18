@@ -33,7 +33,7 @@ Implements ILLChoices
 'Backing fields and constants for the choice object.
 
 Private Type Tchoice
-    choiceDataSheet As IDataSheet
+    choiceDataSheet As DataSheet
     hasChecks As Boolean
     choiceName As String
 End Type
@@ -73,7 +73,7 @@ Public Function Create(ByVal choiceWorksheet As Worksheet, _
                        Optional ByVal choiceName As String = vbNullString) As _ 
                        ILLChoices
 
-    Dim customDataSheet As IDataSheet
+    Dim customDataSheet As DataSheet
     Dim instance As LLChoices
 
     Set customDataSheet = DataSheet.Create(choiceWorksheet, choiceStartRow, choiceStartColumn)
@@ -95,7 +95,7 @@ End Function
 Private Property Get ChoiceLabel(Optional ByVal keepDefault As Boolean = True) As String
 
     If (Not keepDefault) Then
-        Dim dataObject As IDataSheet
+        Dim dataObject As DataSheet
         
         Set dataObject = ChoiceData()
         If dataObject.ColumnExists(TRANSLABELCODE, matchCase:=False) Then
@@ -112,16 +112,16 @@ End Property
 
 '@label:choice-data
 '@prop-title Associated DataSheet object
-'@return IDataSheet. The backing DataSheet.
+'@return DataSheet. The backing DataSheet.
 '@export
-Public Property Get ChoiceData() As IDataSheet
+Public Property Get ChoiceData() As DataSheet
     Set ChoiceData = this.choiceDataSheet
 End Property
 
 '@label:choice-data-set
 '@prop-title Assign the backing DataSheet
-'@param customDataSheet IDataSheet. The DataSheet to assign.
-Public Property Set ChoiceData(ByVal customDataSheet As IDataSheet)
+'@param customDataSheet DataSheet. The DataSheet to assign.
+Public Property Set ChoiceData(ByVal customDataSheet As DataSheet)
     Set this.choiceDataSheet = customDataSheet
 End Property
 
@@ -130,7 +130,7 @@ End Property
 '@return Worksheet. The host worksheet.
 '@export
 Public Property Get Wksh() As Worksheet
-    Dim dataObject As IDataSheet
+    Dim dataObject As DataSheet
     Set dataObject = ChoiceData
     Set Wksh = dataObject.Wksh()
 End Property
@@ -139,7 +139,7 @@ End Property
 '@prop-title First row of choice data
 '@return Long. The start row.
 Public Property Get StartRow() As Long
-    Dim dataObject As IDataSheet
+    Dim dataObject As DataSheet
     Set dataObject = ChoiceData()
     StartRow = dataObject.DataStartRow()
 End Property
@@ -148,7 +148,7 @@ End Property
 '@prop-title First column of choice data
 '@return Long. The start column.
 Public Property Get StartColumn() As Long
-    Dim dataObject As IDataSheet
+    Dim dataObject As DataSheet
     Set dataObject = ChoiceData()
     StartColumn = dataObject.DataStartColumn()
 End Property
@@ -162,7 +162,7 @@ Private Property Get DataRange( _
     Optional ByVal colName As String = "__all__", _
     Optional ByVal includeHeaders As Boolean = True) As Range
 
-    Dim dataObject As IDataSheet
+    Dim dataObject As DataSheet
     Set dataObject = ChoiceData()
 
     'The range is obtained without case matching, because it can
@@ -180,7 +180,7 @@ End Property
 '@return Boolean. True when all four required columns are found.
 Private Property Get HasValidHeaders() As Boolean
 
-    Dim dataObject As IDataSheet
+    Dim dataObject As DataSheet
     
     Set dataObject = ChoiceData()
     HasValidHeaders = dataObject.ColumnExists(LISTNAMECODE, matchCase:=False) And _ 
@@ -224,7 +224,7 @@ End Property
 Private Property Get ChoiceExists(ByVal choiceName As String) As Boolean
     Dim listRng As Range
     Dim Exist As Boolean
-    Dim dataObject As IDataSheet
+    Dim dataObject As DataSheet
 
 
     Set dataObject = ChoiceData()
@@ -604,7 +604,7 @@ Public Property Get Categories(ByVal choiceName As String, _
                                As BetterArray
     
     'Variables
-    Dim dataObject As IDataSheet 
+    Dim dataObject As DataSheet 
     Dim lngcat As BetterArray 'Long and short betterarrays returned
     Dim shrtcat As BetterArray
     Dim counter As Long
@@ -747,8 +747,8 @@ Private Sub Import(ByVal fromWksh As Worksheet, _
                    ByVal fromStartcol As Long, _ 
                    Optional ByVal clearSheet As Boolean = False)
     
-    Dim choiData As IDataSheet
-    Dim impChoiData As IDataSheet
+    Dim choiData As DataSheet
+    Dim impChoiData As DataSheet
     Dim sh As Worksheet
 
 
@@ -863,7 +863,7 @@ End Property
 '===============================================================================
 'ILLChoices delegation wiring.
 
-Private Property Get ILLChoices_ChoiceData() As IDataSheet
+Private Property Get ILLChoices_ChoiceData() As DataSheet
     Set ILLChoices_ChoiceData = ChoiceData
 End Property
 

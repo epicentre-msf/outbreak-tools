@@ -281,7 +281,7 @@ Public Sub ImportFromWorksheet(ByVal sourceSheet As Worksheet)
     Dim usedRange As Range
     Dim headerRow As Long
     Dim headerColumn As Long
-    Dim sourceData As IDataSheet
+    Dim sourceData As DataSheet
 
     ValidateReady
     If sourceSheet Is Nothing Then

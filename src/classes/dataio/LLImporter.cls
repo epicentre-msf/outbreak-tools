@@ -23,7 +23,7 @@ Option Explicit
 'editable labels, single metadata values, and geobase data. Tracks which
 'sheets and variables were imported, and builds a report of items not
 'imported or not touched.
-'@depends ILLdictionary, IPasswords, ICustomTable, IDataSheet
+'@depends ILLdictionary, IPasswords, ICustomTable, DataSheet
 '@depends ILLGeo, ILLChoices, ILLVariables, IDropdownLists, IHiddenNames
 
 
@@ -175,7 +175,7 @@ End Property
 '@export
 Public Function HasSameLanguage(ByVal impwb As Workbook) As Boolean
 
-    Dim metaTab As IDataSheet
+    Dim metaTab As DataSheet
     Dim varRng As Range
     Dim cellRng As Range
     Dim impLang As String
@@ -411,7 +411,7 @@ End Sub
 '@export
 Public Sub ImportShowHide(ByVal impwb As Workbook)
 
-    Dim metaTab As IDataSheet
+    Dim metaTab As DataSheet
     Dim varRng As Range
     Dim cellRng As Range
     Dim updateShowHide As Boolean
@@ -502,7 +502,7 @@ End Sub
 '@export
 Public Sub ImportEditableLabels(ByVal impwb As Workbook)
 
-    Dim metaTab As IDataSheet
+    Dim metaTab As DataSheet
     Dim varRng As Range
     Dim cellRng As Range
     Dim updateLabels As Boolean
@@ -606,7 +606,7 @@ End Sub
 '@export
 Public Sub ImportSingleValues(ByVal impwb As Workbook)
 
-    Dim metaTab As IDataSheet
+    Dim metaTab As DataSheet
     Dim varRng As Range
     Dim cellRng As Range
     Dim varValue As String
@@ -938,7 +938,7 @@ Private Sub ImportHListSheet(ByVal currsh As Worksheet, ByVal impsh As Worksheet
                              ByVal pasteAtBottom As Boolean)
 
     Dim currTab As ICustomTable
-    Dim impTab As IDataSheet
+    Dim impTab As DataSheet
     Dim varsNotImpList As BetterArray
     Dim impHeaders As BetterArray
     Dim counter As Long

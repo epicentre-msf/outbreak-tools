@@ -7,7 +7,6 @@ ICrossTable
 ICrossTableFormula
 ICustomTable
 ICustomTest
-IDataSheet
 IDiseaseApplicationState
 IDiseaseExportWorkbook
 IDiseaseExporter

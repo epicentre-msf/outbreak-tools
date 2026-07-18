@@ -1,13 +1,13 @@
 Attribute VB_Name = "TestDataSheet"
 Option Explicit
 
-'@ModuleDescription("Unit tests for the DataSheet class (IDataSheet interface). Validates range-based " & _
+'@ModuleDescription("Unit tests for the DataSheet class. Validates range-based " & _
 '                    "data access, column lookups, single and multi-condition filtering, export to " & _
 '                    "workbook (with and without hidden names), and import with case-insensitive " & _
 '                    "column matching. All tests run against a dictionary fixture sheet that " & _
 '                    "simulates a linelist dictionary layout.")
 '
-'@description        Test module for DataSheet / IDataSheet. Covers factory creation and property
+'@description        Test module for DataSheet. Covers factory creation and property
 '                    initialization, DataRange retrieval for single columns and all columns,
 '                    ColumnExists with exact / case-insensitive / partial matching, AddFormatsColumns,
 '                    FilterData (single condition), FiltersData (multiple conditions with edge cases),
@@ -15,7 +15,7 @@ Option Explicit
 '                    matching plus format import). Uses the CustomTest harness with the standard
 '                    CustomTestSetTitles / CustomTestLogFailure pattern.
 '
-'@depends            DataSheet, IDataSheet, HiddenNames, IHiddenNames, BetterArray, CustomTest,
+'@depends            DataSheet, HiddenNames, IHiddenNames, BetterArray, CustomTest,
 '                    TestHelpers, DictionaryTestFixture
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
@@ -31,7 +31,7 @@ Private fixtureRowCount As Long
 Private fixtureColumnCount As Long
 
 Private Assert As ICustomTest
-Private dataObject As IDataSheet
+Private dataObject As DataSheet
 Private dataWorksheet As Worksheet
 
 '@section Helpers
@@ -376,7 +376,7 @@ Public Sub TestImport()
 
     Dim outputSheet As Worksheet
     Dim headerArray As BetterArray
-    Dim importData As IDataSheet
+    Dim importData As DataSheet
     Dim columnIndex As Long
 
     Set outputSheet = EnsureWorksheet(DICTOUTPUTSHEET)

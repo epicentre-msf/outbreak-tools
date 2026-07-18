@@ -833,8 +833,8 @@ Private Sub TransferAllCode(ByVal codeTransfer As CodeTransfer)
 
     Set codesList = New BetterArray
 
-    'Transfer classes (39 classes)
-    codesList.Push "BetterArray", "DataSheet", "IDataSheet", "LLExport", _
+    'Transfer classes (38 classes)
+    codesList.Push "BetterArray", "DataSheet", "LLExport", _
                    "ILLExport", "LLChoices", "ILLChoices", _
                    "LLdictionary", "ILLdictionary", "LLGeo", _
                    "ILLGeo", "Passwords", "IPasswords", _

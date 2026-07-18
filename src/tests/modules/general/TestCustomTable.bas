@@ -21,7 +21,7 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 '   shift behavior for InsertRowsAt/DeleteRowsAt, Export with header filtering
 '   and ListObject creation, DataRange returning Nothing when empty, and
 '   snapshot restoration on import failure.
-'@depends CustomTable, ICustomTable, DataSheet, IDataSheet, BetterArray, CustomTest, TestHelpers
+'@depends CustomTable, ICustomTable, DataSheet, BetterArray, CustomTest, TestHelpers
 
 Private Const TABLESHEETNAME As String = "CustomTableFixture"
 Private Const TABLENAME As String = "tblCustom"
@@ -89,7 +89,7 @@ Private Sub PrepareCustomTableWithFormula(ByVal sheetName As String, ByVal table
 End Sub
 
 '@sub-title Creates a DataSheet from arbitrary headers and rows on a fresh worksheet
-Private Function CreateDataSheet(ByVal sheetName As String, headers As Variant, rows As Variant) As IDataSheet
+Private Function CreateDataSheet(ByVal sheetName As String, headers As Variant, rows As Variant) As DataSheet
 
     Dim hostSheet As Worksheet
     Dim rowIndex As Long
@@ -512,7 +512,7 @@ Public Sub TestImportFromDataSheetPreservesFormulas()
     Dim Lo As ListObject
     Dim headers As Variant
     Dim rows As Variant
-    Dim dataSheetObj As IDataSheet
+    Dim dataSheetObj As DataSheet
 
     PrepareCustomTableWithFormula TABLESHEETNAME, TABLENAME
     Set Lo =  ThisWorkbook.Worksheets(TABLESHEETNAME).ListObjects(TABLENAME)
@@ -762,7 +762,7 @@ Public Sub TestImportRecordsMissingColumns()
     On Error GoTo Fail
 
     Dim tableObject As ICustomTable
-    Dim dataSheetObj As IDataSheet
+    Dim dataSheetObj As DataSheet
     Dim headers As Variant
     Dim rows As Variant
     Dim missing As BetterArray
@@ -846,7 +846,7 @@ Public Sub TestImportPreservesHiddenColumns()
     Dim Lo As ListObject
     Dim headers As Variant
     Dim rows As Variant
-    Dim dataSheetObj As IDataSheet
+    Dim dataSheetObj As DataSheet
 
     Set tableObject = BuildCustomTable
     Set Lo =  ThisWorkbook.Worksheets(TABLESHEETNAME).ListObjects(TABLENAME)
@@ -899,7 +899,7 @@ Public Sub TestImportStrictColumnSearchRequiresExactMatch()
     Dim Lo As ListObject
     Dim headers As Variant
     Dim rows As Variant
-    Dim dataSheetObj As IDataSheet
+    Dim dataSheetObj As DataSheet
     Dim missing As BetterArray
     Dim nameValue As Variant
 
@@ -942,7 +942,7 @@ Public Sub TestImportFailureRestoresSnapshot()
     Dim tableObject As ICustomTable
     Dim headers As Variant
     Dim rows As Variant
-    Dim dataSheetObj As IDataSheet
+    Dim dataSheetObj As DataSheet
     Dim Lo As ListObject
 
     Set tableObject = BuildCustomTable
@@ -1026,7 +1026,7 @@ Public Sub TestImportAllDataSheetShiftsFollowingTables()
     Dim topLo As ListObject
     Dim bottomLo As ListObject
     Dim topTable As ICustomTable
-    Dim dataSheetObj As IDataSheet
+    Dim dataSheetObj As DataSheet
     Dim headers As Variant
     Dim rows As Variant
     Dim originalBottomHeaderRow As Long

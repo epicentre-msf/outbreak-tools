@@ -22,7 +22,7 @@ Option Explicit
 '===============================================================================
 '@jump:Data
 '@prop-title Datasheet abstraction of the export table.
-Public Property Get Data() As IDataSheet
+Public Property Get Data() As DataSheet
 End Property
 
 '@jump:Worksheet

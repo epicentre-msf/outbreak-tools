@@ -21,8 +21,8 @@ Option Explicit
 
 '@jump:data
 '@prop-title DataSheet backing store
-'@return An IDataSheet reference with the dictionary data
-Public Property Get Data() As IDataSheet: End Property
+'@return A DataSheet reference with the dictionary data
+Public Property Get Data() As DataSheet: End Property
 
 '@jump:datarange
 '@prop-title Data range accessor

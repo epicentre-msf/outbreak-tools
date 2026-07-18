@@ -31,9 +31,9 @@ Option Explicit
 '@jump:choice-data
 '@prop-title Associated DataSheet object
 '@details
-'Returns the IDataSheet wrapping the choice worksheet data.
-'@return IDataSheet. The backing DataSheet.
-Public Property Get ChoiceData() As IDataSheet: End Property
+'Returns the DataSheet wrapping the choice worksheet data.
+'@return DataSheet. The backing DataSheet.
+Public Property Get ChoiceData() As DataSheet: End Property
 
 '@jump:wksh
 '@prop-title Worksheet hosting the choice lists

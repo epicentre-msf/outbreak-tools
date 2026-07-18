@@ -25,7 +25,7 @@ Option Explicit
 'populates it with the relevant data, metadata, and formatting, then saves
 'and closes it.
 '@depends ILLdictionary, ILLExport, IPasswords, ICustomTable
-'@depends IDataSheet, AnaTabIds, ILLGeo, ILLChoices, IHiddenNames
+'@depends DataSheet, AnaTabIds, ILLGeo, ILLChoices, IHiddenNames
 
 
 '@section Enumerations
@@ -699,7 +699,7 @@ Private Sub AddMetadataSheets(ByVal outwb As Workbook, ByVal dict As ILLdictiona
                               ByVal nbExp As Long)
 
     Dim sheetNames As BetterArray
-    Dim csData As IDataSheet
+    Dim csData As DataSheet
     Dim sh As Worksheet
     Dim counter As Long
     Dim sheetName As String
@@ -794,7 +794,7 @@ Private Sub AddMetadataTags(ByVal outwb As Workbook, ByVal scope As Byte, _
                             ByVal includeShowHide As Boolean, _
                             ByVal keepLabels As Boolean)
 
-    Dim csData As IDataSheet
+    Dim csData As DataSheet
     Dim varRng As Range
     Dim expName As String
     Dim rowOffset As Long
