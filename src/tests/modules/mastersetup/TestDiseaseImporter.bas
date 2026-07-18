@@ -14,7 +14,7 @@ Private Const SOURCE_SHEET_NAME As String = "DiseaseImportSource"
 Private Const TARGET_TABLE_NAME As String = "T_TargetDisease"
 Private Const SOURCE_TABLE_NAME As String = "T_SourceDisease"
 
-Private Assert As ICustomTest
+Private Assert As CustomTest
 Private Importer As IDiseaseImporter
 Private TargetSheet As Worksheet
 Private SourceSheet As Worksheet

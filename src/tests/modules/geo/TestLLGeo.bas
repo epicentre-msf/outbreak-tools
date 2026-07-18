@@ -24,7 +24,7 @@ Option Explicit
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const GEO_FIXTURE As String = "GeoFixture"
 
-Private Assert As ICustomTest
+Private Assert As CustomTest
 
 '@section Module lifecycle
 '===============================================================================

@@ -7,7 +7,7 @@ Option Explicit
 '@ModuleDescription("Exercises the EventSetup class to ensure workbook events remain performant and reliable")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, ProcedureNotUsed
 
-Private Assert As ICustomTest
+Private Assert As CustomTest
 Private FixtureWorkbook As Workbook
 Private Subject As EventSetup
 

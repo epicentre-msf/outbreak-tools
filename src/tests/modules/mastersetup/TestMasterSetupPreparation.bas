@@ -7,7 +7,7 @@ Option Explicit
 '@ModuleDescription("Validates dropdown registration and variables initialisation for MasterSetupPreparation")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, ProcedureNotUsed
 
-Private Assert As ICustomTest
+Private Assert As CustomTest
 Private Subject As MasterSetupPreparation
 Private FixtureWorkbook As Workbook
 Private DropdownSheet As Worksheet

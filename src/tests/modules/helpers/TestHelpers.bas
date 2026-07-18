@@ -432,10 +432,10 @@ End Sub
 '@label CustomTestSetTitles
 '@sub-title Configure the pending test title and subtitle for a CustomTest harness.
 '@details Safely sets the next test name and subtitle when the harness reference is valid.
-'@param harness ICustomTest harness instance.
+'@param harness CustomTest harness instance.
 '@param testName String title to assign.
 '@param testSubtitle Optional String subtitle to assign.
-Public Sub CustomTestSetTitles(ByVal harness As ICustomTest, _
+Public Sub CustomTestSetTitles(ByVal harness As CustomTest, _
                               ByVal testName As String, _
                               Optional ByVal testSubtitle As String = vbNullString)
     If harness Is Nothing Then Exit Sub
@@ -446,11 +446,11 @@ End Sub
 '@label CustomTestLogFailure
 '@sub-title Log a formatted failure message on a CustomTest harness.
 '@details Builds a descriptive failure message containing the routine name and optional error info, then logs it.
-'@param harness ICustomTest harness instance.
+'@param harness CustomTest harness instance.
 '@param routineName String name of the failing routine.
 '@param errNumber Optional Long error number to include.
 '@param errDescription Optional String error description to include.
-Public Sub CustomTestLogFailure(ByVal harness As ICustomTest, _
+Public Sub CustomTestLogFailure(ByVal harness As CustomTest, _
                                 ByVal routineName As String, _
                                 Optional ByVal errNumber As Long = 0, _
                                 Optional ByVal errDescription As String = vbNullString)

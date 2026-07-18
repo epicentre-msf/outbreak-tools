@@ -40,7 +40,7 @@ Private Const CHOICESTRANSLATIONTABLE As String = "tblLLChoicesTranslation"
 Private Const CHOICESTRANSLATIONLANGUAGE As String = "Translated"
 Private Const CHOICESIMPORTSHEET As String = "LLChoicesImportSource"
 
-Private Assert As ICustomTest
+Private Assert As CustomTest
 Private Choices As LLChoices
 
 '@section Helpers

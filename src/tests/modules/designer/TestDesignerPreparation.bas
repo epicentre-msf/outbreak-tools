@@ -7,7 +7,7 @@ Option Explicit
 '@ModuleDescription("Validates DesignerPreparation for persisted flags, sheet hiding, dropdown creation, T_Multi and Main validation.")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
-Private Assert As ICustomTest
+Private Assert As CustomTest
 Private FixtureWorkbook As Workbook
 Private MainSheet As Worksheet
 Private TranslationSheet As Worksheet

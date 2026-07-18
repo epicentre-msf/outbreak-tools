@@ -19,7 +19,7 @@ Attribute VB_Description = "Unit tests for LLImporter"
 Option Explicit
 Option Private Module
 
-Private Assert As ICustomTest
+Private Assert As CustomTest
 
 
 '@section Module Lifecycle

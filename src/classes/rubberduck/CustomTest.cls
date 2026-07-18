@@ -16,7 +16,6 @@ Attribute VB_Description = "Harness providing assertion helpers and worksheet ou
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Option Explicit
-Implements ICustomTest
 
 Private Type THarnessState
     targetWorkbook As workbook
@@ -43,10 +42,10 @@ Private Const KEY_PREFIX As String = "ASSERT_"
 '@prop-title Build and configure a harness instance
 '@param targetWorkbook Workbook under test that receives logging output
 '@param outputSheetName Optional name of the worksheet used for results
-'@return ICustomTest harness ready for use
+'@return CustomTest harness ready for use
 '@export
 Public Function Create(ByVal targetWorkbook As workbook, _
-                       Optional ByVal outputSheetName As String = vbNullString) As ICustomTest
+                       Optional ByVal outputSheetName As String = vbNullString) As CustomTest
     With New CustomTest
         .Configure targetWorkbook, outputSheetName
         Set Create = .Self
@@ -55,151 +54,11 @@ End Function
 
 '@label:Self
 '@prop-title Access the current harness reference
-'@return ICustomTest reference for fluent usage
+'@return CustomTest reference for fluent usage
 '@export
-Public Property Get Self() As ICustomTest
+Public Property Get Self() As CustomTest
     Set Self = Me
 End Property
-
-'@section ICustomTest implementation
-'===============================================================================
-
-'@label:ICustomTest_Configure
-'@prop-title Forward interface calls to public Configure
-'@param targetWorkbook Workbook that stores test output
-'@param outputSheetName Optional target worksheet name
-Private Sub ICustomTest_Configure(ByVal targetWorkbook As workbook, _
-                                  Optional ByVal outputSheetName As String = vbNullString)
-    Configure targetWorkbook, outputSheetName
-End Sub
-
-'@label:ICustomTest_ReleaseResources
-'@prop-title Bridge interface ReleaseResources to public member
-Private Sub ICustomTest_ReleaseResources()
-    ReleaseResources
-End Sub
-
-'@label:ICustomTest_SetModuleName
-'@prop-title Bridge interface SetModuleName to public member
-Private Sub ICustomTest_SetModuleName(ByVal moduleName As String)
-    SetModuleName moduleName
-End Sub
-
-'@label:ICustomTest_SetTestName
-'@prop-title Bridge interface SetTestName to public member
-Private Sub ICustomTest_SetTestName(ByVal testName As String)
-    SetTestName testName
-End Sub
-
-'@label:ICustomTest_SetTestSubtitle
-'@prop-title Bridge interface SetTestSubtitle to public member
-Private Sub ICustomTest_SetTestSubtitle(ByVal testSubtitle As String)
-    SetTestSubtitle testSubtitle
-End Sub
-
-'@label:ICustomTest_BeginTest
-'@prop-title Bridge interface BeginTest to public member
-Private Sub ICustomTest_BeginTest(Optional ByVal resetNames As Boolean = False)
-    BeginTest resetNames
-End Sub
-
-'@label:ICustomTest_Reset
-'@prop-title Bridge interface Reset to public member
-Private Sub ICustomTest_ResetInstance()
-    ResetInstance
-End Sub
-
-'@label:ICustomTest_FlushCurrentTest
-'@prop-title Return results snapshot for interface callers
-Private Function ICustomTest_FlushCurrentTest(Optional ByVal resetNames As Boolean = True) As BetterArray
-    Set ICustomTest_FlushCurrentTest = FlushCurrentTest(resetNames)
-End Function
-
-'@label:ICustomTest_Flush
-'@prop-title Bridge interface Flush to public member
-Private Sub ICustomTest_Flush(Optional ByVal resetNames As Boolean = True)
-    Flush resetNames
-End Sub
-
-'@label:ICustomTest_Results
-'@prop-title Provide a clone of accumulated results through the interface
-Private Function ICustomTest_Results() As BetterArray
-    Set ICustomTest_Results = Results()
-End Function
-
-'@label:ICustomTest_PrintResults
-'@prop-title Bridge interface PrintResults to public member
-Private Sub ICustomTest_PrintResults(Optional ByVal outputSheetName As String = vbNullString)
-    PrintResults outputSheetName
-End Sub
-
-'@label:ICustomTest_AreEqual
-'@prop-title Bridge interface AreEqual to public member
-Private Sub ICustomTest_AreEqual(expected As Variant, _
-                                 actual As Variant, _
-                                    ByVal message As String)
-    AreEqual expected, actual, message
-End Sub
-
-'@label:ICustomTest_AreNotEqual
-'@prop-title Bridge interface AreNotEqual to public member
-Private Sub ICustomTest_AreNotEqual(expected As Variant, _
-                                    actual As Variant, _
-                                       ByVal message As String)
-    AreNotEqual expected, actual, message
-End Sub
-
-'@label:ICustomTest_IsTrue
-'@prop-title Bridge interface IsTrue to public member
-Private Sub ICustomTest_IsTrue(ByVal condition As Boolean, _
-                                   ByVal message As String)
-    IsTrue condition, message
-End Sub
-
-'@label:ICustomTest_IsFalse
-'@prop-title Bridge interface IsFalse to public member
-Private Sub ICustomTest_IsFalse(ByVal condition As Boolean, _
-                                    ByVal message As String)
-    IsFalse condition, message
-End Sub
-
-'@label:ICustomTest_ObjectExists
-'@prop-title Bridge interface ObjectExists to public member
-Private Sub ICustomTest_ObjectExists(ByVal instance As Object, _
-                                     ByVal expectedTypeName As String, _
-                                     ByVal message As String)
-    ObjectExists instance, expectedTypeName, message
-End Sub
-
-'@label:ICustomTest_IsNothing
-'@prop-title Bridge interface IsNothing to helper member
-Private Sub ICustomTest_IsNothing(ByVal instance As Object, ByVal message As String)
-    IsNothing instance, message
-End Sub
-
-'@label:ICustomTest_IsNotNothing
-'@prop-title Bridge interface IsNotNothing to public member
-Private Sub ICustomTest_IsNotNothing(ByVal instance As Object, ByVal message As String)
-    IsNotNothing instance, message
-End Sub
-
-'@label:ICustomTest_LogFailure
-'@prop-title Bridge interface LogFailure to public member
-Private Sub ICustomTest_LogFailure(ByVal message As String)
-    LogFailure message
-End Sub
-
-'@label:ICustomTest_Fail
-'@prop-title Bridge interface for Fail, same as Logfailure, for compatibility purposes
-Private Sub ICustomTest_Fail(ByVal message As String)
-    LogFailure message
-End Sub
-
-'@label:ICustomTest_LogSuccesses
-'@prop-title Bridge interface LogSuccesses to public member
-Private Sub ICustomTest_LogSuccesses(ByVal message As String)
-    LogSuccesses message
-End Sub
 
 '@section Public members
 '===============================================================================
@@ -230,7 +89,7 @@ End Sub
 '@label:ReleaseResources
 '@prop-title Clear references and reset harness state
 '@export
-Private Sub ReleaseResources()
+Public Sub ReleaseResources()
     Set this.currentChecking = Nothing
     Set this.Results = Nothing
     Set this.targetWorkbook = Nothing
@@ -459,7 +318,8 @@ End Sub
 '@prop-title Validate that an object reference is Nothing
 '@param instance Object reference to validate
 '@param message Message describing the assertion context
-Private Sub IsNothing(ByVal instance As Object, ByVal message As String)
+'@export
+Public Sub IsNothing(ByVal instance As Object, ByVal message As String)
     If instance Is Nothing Then
         LogEntry FormatSuccessMessage(message), checkingSuccess
     Else
@@ -472,7 +332,8 @@ End Sub
 '@prop-title Validate that an object is not Nothing
 '@param instance Object reference to validate
 '@param message Message describing the assertion context
-Private Sub IsNotNothing(ByVal instance As Object, ByVal message As String)
+'@export
+Public Sub IsNotNothing(ByVal instance As Object, ByVal message As String)
     If instance Is Nothing Then
         LogEntry BuildFailureMessage(message, "Expected: Not Nothing", "Actual: Nothing"), checkingError
     Else
@@ -487,6 +348,14 @@ End Sub
 Public Sub LogFailure(ByVal message As String)
     EnsureCurrentChecking
     LogEntry ResolveFailurePrefix(message), checkingError
+End Sub
+
+'@label:Fail
+'@prop-title Log a failure message; alias of LogFailure for compatibility
+'@param message Message describing the failure
+'@export
+Public Sub Fail(ByVal message As String)
+    LogFailure message
 End Sub
 
 '@label:LogSuccesses

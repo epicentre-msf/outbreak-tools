@@ -7,7 +7,7 @@ Option Explicit
 '@ModuleDescription("Unit tests covering the improved setup import service")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
-Private Assert As ICustomTest
+Private Assert As CustomTest
 Private Service As SetupImportService
 Private ProgressStub As ProgressDisplayStub
 Private PasswordsHandler As IPasswords

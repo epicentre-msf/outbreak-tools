@@ -13,7 +13,7 @@ Private Const DISEASE_SHEET_PREFIX As String = "DiseaseTest_"
 Private Const TRANSLATION_SHEET As String = "TranslationFixture"
 Private Const RIBBON_SHEET As String = "RibbonFixture"
 
-Private Assert As ICustomTest
+Private Assert As CustomTest
 Private Exporter As IDiseaseExporter
 Private Manager As IDiseaseExportWorkbook
 Private Guard As IDiseaseApplicationState

@@ -7,7 +7,7 @@ Option Explicit
 '@ModuleDescription("Exercises the UpdatedValues class responsible for tracking watched setup columns")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, ProcedureNotUsed
 
-Private Assert As ICustomTest
+Private Assert As CustomTest
 Private FixtureWorkbook As Workbook
 Private UpdatedSheet As Worksheet
 Private SourceSheet As Worksheet

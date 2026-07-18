@@ -19,7 +19,7 @@ Option Explicit
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 
-Private Assert As ICustomTest
+Private Assert As CustomTest
 
 '@section Module lifecycle
 '===============================================================================

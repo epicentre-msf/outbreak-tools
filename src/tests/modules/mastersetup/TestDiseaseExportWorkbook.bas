@@ -11,7 +11,7 @@ Option Private Module
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const EXPORT_TEST_FILE As String = "disease_export_test.xlsx"
 
-Private Assert As ICustomTest
+Private Assert As CustomTest
 Private Manager As IDiseaseExportWorkbook
 
 '@section Module lifecycle

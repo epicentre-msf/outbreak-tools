@@ -14,7 +14,7 @@ Private Const DROPDOWN_SHEET As String = "IntegrationDropdown"
 Private Const TRANSLATION_SHEET As String = "IntegrationTranslations"
 Private Const IMPORT_SHEET As String = "IntegrationImport"
 
-Private Assert As ICustomTest
+Private Assert As CustomTest
 Private Builder As IDiseaseSheetBuilder
 Private Importer As IDiseaseImporter
 Private Exporter As IDiseaseExporter

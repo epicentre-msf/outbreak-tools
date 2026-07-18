@@ -14,7 +14,7 @@ Option Explicit
 '   calls Subject.Prepare, then asserts the expected side effects.
 '
 ' @depends SetupPreparation, Development,
-'   BetterArray, CustomTest, ICustomTest, TestHelpers, DropdownLists,
+'   BetterArray, CustomTest, TestHelpers, DropdownLists,
 '   IDropdownLists, UpdatedValues, CustomTable
 '
 ' The fixture workbook is rebuilt before every test via TestInitialize so each
@@ -29,7 +29,7 @@ Option Explicit
 '@ModuleDescription("Validates that SetupPreparation registers dropdowns, initialises updated values, and applies setup validations")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, ProcedureNotUsed
 
-Private Assert As ICustomTest
+Private Assert As CustomTest
 Private FixtureWorkbook As Workbook
 Private DropdownSheet As Worksheet
 Private RegistrySheet As Worksheet

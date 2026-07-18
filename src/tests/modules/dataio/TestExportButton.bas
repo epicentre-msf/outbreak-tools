@@ -20,7 +20,7 @@ Attribute VB_Description = "Unit tests for ExportButton"
 Option Explicit
 Option Private Module
 
-Private Assert As ICustomTest
+Private Assert As CustomTest
 Private testSheet As Worksheet
 
 

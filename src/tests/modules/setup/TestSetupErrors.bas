@@ -21,7 +21,7 @@ Private Const REGISTRY_SHEET As String = "__updated"
 '@ModuleDescription("Verifies SetupErrors orchestrator initialisation")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
-Private Assert As ICustomTest
+Private Assert As CustomTest
 
 '@section Lifecycle
 '===============================================================================

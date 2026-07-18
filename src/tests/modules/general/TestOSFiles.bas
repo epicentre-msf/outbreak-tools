@@ -20,11 +20,11 @@ Option Private Module
 'end), and correct restart after calling ResetFilesIterator or
 'ResetFoldersIterator.
 'Uses the CustomTest runner with results printed to the testsOutputs sheet.
-'@depends OSFiles, CustomTest, ICustomTest, TestHelpers
+'@depends OSFiles, CustomTest, TestHelpers
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 
-Private Assert As ICustomTest
+Private Assert As CustomTest
 
 '@section Module lifecycle
 '===============================================================================

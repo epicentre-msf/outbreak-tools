@@ -24,7 +24,7 @@ Private Const TESTOUTPUTSHEET As String = "testsOutputs"
 'cross-test interference.
 '@depends ApplicationState, CustomTest, TestHelpers
 
-Private Assert As ICustomTest
+Private Assert As CustomTest
 Private initialScreenUpdating As Boolean
 Private initialDisplayAlerts As Boolean
 Private initialEnableEvents As Boolean

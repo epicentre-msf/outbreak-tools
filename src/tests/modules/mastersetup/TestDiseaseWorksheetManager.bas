@@ -11,7 +11,7 @@ Option Private Module
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const TEMP_SHEET_NAME As String = "DiseaseRemovalFixture"
 
-Private Assert As ICustomTest
+Private Assert As CustomTest
 Private Manager As IDiseaseWorksheetManager
 
 '@section Module lifecycle

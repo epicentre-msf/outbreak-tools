@@ -7,7 +7,7 @@ Option Explicit
 '@ModuleDescription("Validates Multi group table operations: add rows, remove rows, duplicate, import, and export on T_Multi.")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
-Private Assert As ICustomTest
+Private Assert As CustomTest
 Private FixtureWorkbook As Workbook
 Private MultiSheet As Worksheet
 

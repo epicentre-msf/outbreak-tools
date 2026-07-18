@@ -6,7 +6,7 @@ Option Explicit
 '@ModuleDescription("Unit tests covering the MasterSetupVariables class")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
-Private Assert As ICustomTest
+Private Assert As CustomTest
 Private Manager As MasterSetupVariables
 Private FixtureSheet As Worksheet
 

@@ -29,7 +29,7 @@ Private Const WORKBOOK_HEADER_NAME As String = "__hn_table_header__"
 'full isolation.
 '@depends HiddenNames, BetterArray, CustomTest, TestHelpers
 
-Private Assert As ICustomTest
+Private Assert As CustomTest
 Private testSh As Worksheet
 Private otherSh As Worksheet
 Private manager As HiddenNames

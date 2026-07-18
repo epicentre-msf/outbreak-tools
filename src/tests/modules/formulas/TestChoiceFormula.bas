@@ -18,7 +18,7 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 'rejection of invalid input including missing condition/result pairs and wrong
 'token types. Each test creates a fresh ChoiceFormula instance through the
 'CreateChoiceFormula helper using module-level formula constants as fixtures.
-'@depends ChoiceFormula, BetterArray, CustomTest, ICustomTest
+'@depends ChoiceFormula, BetterArray, CustomTest
 
 Private Const VALID_FORMULA_WITH_DEFAULT As String = _
     "CHOICE_FORMULA(list_multiple, A1=""Yes"", ""Choice is A"", B1>0, ""Choice is B"", ""Default Choice"")"
@@ -28,7 +28,7 @@ Private Const INVALID_FORMULA_NO_PAIR As String = "CHOICE_FORMULA(list_multiple)
 Private Const INVALID_FORMULA_WRONG_TOKEN As String = _
     "CASE_WHEN(A1=""Yes"", ""Choice is A"", B1>0, ""Choice is B"")"
 
-Private Assert As ICustomTest
+Private Assert As CustomTest
 Private choiceObj As ChoiceFormula
 
 '@section Helpers

@@ -13,7 +13,7 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 '@Folder("CustomTests")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
-Private Assert As ICustomTest
+Private Assert As CustomTest
 Private Manager As Development
 Private TestBook As Workbook
 Private DevSheet As Worksheet

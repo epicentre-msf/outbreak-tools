@@ -27,7 +27,7 @@ Private Const FIXTURE_DEFAULT_DESIGN As String = "design 1"
 Private Const LABEL_BUTTON_INTERIOR As String = "button default interior color"
 Private Const LABEL_BUTTON_FONT As String = "button default font color"
 
-Private Assert As ICustomTest
+Private Assert As CustomTest
 Private Fakes As Object
 Private FixtureSheet As Worksheet
 

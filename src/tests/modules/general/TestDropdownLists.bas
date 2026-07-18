@@ -26,7 +26,7 @@ Option Explicit
 'deduplication and bottom-append, and finally SetValidation with error/warning
 'alert styles plus forward and return hyperlinks between output and dropdown
 'sheets.
-'Uses the CustomTest harness (ICustomTest), not Rubberduck.
+'Uses the CustomTest harness (CustomTest), not Rubberduck.
 '@depends DropdownLists, IDropdownLists, Checking, HiddenNames, TranslationObject, ITranslationObject, BetterArray, CustomTest, TestHelpers
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
@@ -37,7 +37,7 @@ Private Const WORKBOOK_COUNTER_NAME As String = "__Var__WBDROPCOUNTER"
 Private Const WORKSHEET_COUNTER_NAME As String = "__Var__SHDROPCOUNTER"
 Private Const TEST_TRANSLATIONS_SHEET As String = "__dropTranslations"
 
-Private Assert As ICustomTest
+Private Assert As CustomTest
 Private Fakes As Object
 Private dropOne As IDropdownLists
 Private dropTwo As IDropdownLists

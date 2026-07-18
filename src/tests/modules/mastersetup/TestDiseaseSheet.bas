@@ -24,7 +24,7 @@ Private Const NAME_DISNAME As String = "__Var_DISNAME"
 Private Const NAME_DISLANG As String = "__Var_DISLANG"
 Private Const NAME_INDEX As String = "__Var_DISINDEX"
 
-Private Assert As ICustomTest
+Private Assert As CustomTest
 Private Builder As IDiseaseSheet
 Private Dropdowns As IDropdownLists
 Private Translations As ITranslationObject

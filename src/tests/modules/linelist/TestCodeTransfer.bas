@@ -7,7 +7,7 @@ Attribute VB_Description = "Tests for CodeTransfer class"
 
 Option Explicit
 
-Private Assert As ICustomTest
+Private Assert As CustomTest
 Private SourceWkb As Workbook
 Private TargetWkb As Workbook
 Private TempRepos As TemporaryRepos

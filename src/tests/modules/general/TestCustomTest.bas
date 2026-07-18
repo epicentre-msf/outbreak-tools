@@ -15,14 +15,14 @@ Option Private Module
 '  resetNames flag, that direct LogFailure and LogSuccesses calls produce the
 '  expected entries, and that PrintResults writes structured output to a worksheet
 '  with filter integration and subtitle overrides.
-'@depends CustomTest, ICustomTest, Checking, CheckingOutput, BetterArray, TestHelpers
+'@depends CustomTest, Checking, CheckingOutput, BetterArray, TestHelpers
 
 Private Const OUTPUT_SHEET_NAME As String = "HarnessOutput"
 Private Const VISIBLE_COLUMN_COUNT As Long = 3
 Private Const FIRST_VISIBLE_COLUMN_INDEX As Long = 3
 
 Private Assert As Object
-Private Harness As ICustomTest
+Private Harness As CustomTest
 Private HarnessWorkbook As Workbook
 Private OutputSheet As Worksheet
 Private Results As BetterArray

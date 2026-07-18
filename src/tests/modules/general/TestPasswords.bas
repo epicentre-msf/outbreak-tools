@@ -41,7 +41,7 @@ Option Explicit
 '@Folder("CustomTests")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
-Private Assert As ICustomTest
+Private Assert As CustomTest
 Private PasswordSubject As IPasswords
 Private FixtureSheet As Worksheet
 Private ProtectedSheet As Worksheet

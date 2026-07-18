@@ -7,7 +7,7 @@ Option Explicit
 '@ModuleDescription("Validates DesignerImportService factory, configuration, input validation, and exported property defaults.")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
-Private Assert As ICustomTest
+Private Assert As CustomTest
 Private FixtureWorkbook As Workbook
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"

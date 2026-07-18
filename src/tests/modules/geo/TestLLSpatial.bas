@@ -24,7 +24,7 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const SPATIAL_SHEET As String = "spatial_tables__"
 Private Const SPATIAL_WRONG As String = "WrongSheetName"
 
-Private Assert As ICustomTest
+Private Assert As CustomTest
 
 '@section Module lifecycle
 '===============================================================================

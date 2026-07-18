@@ -13,7 +13,7 @@ Private Const REPORT_SHEET_NAME As String = "DiseaseReportFixture"
 Private Const MAIN_REPORT_TABLE As String = "T_ReportMain"
 Private Const SECONDARY_REPORT_TABLE As String = "T_ReportSecondary"
 
-Private Assert As ICustomTest
+Private Assert As CustomTest
 Private ReportManager As IDiseaseReportManager
 Private ReportSheet As Worksheet
 Private MainTable As ListObject

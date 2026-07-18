@@ -7,7 +7,7 @@ Attribute VB_Description = "Tests for ShowHideManager class"
 
 Option Explicit
 
-Private Assert As ICustomTest
+Private Assert As CustomTest
 Private FixtureWorkbook As Workbook
 Private Dict As ILLdictionary
 

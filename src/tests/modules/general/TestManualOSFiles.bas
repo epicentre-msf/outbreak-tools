@@ -19,11 +19,11 @@ Option Private Module
 'iterator traversal. A shared SafeArrayLength helper is used to count
 'picker results safely without risking an error on uninitialised arrays.
 'Uses the CustomTest runner with results printed to the testsOutputs sheet.
-'@depends OSFiles, CustomTest, ICustomTest, TestHelpers
+'@depends OSFiles, CustomTest, TestHelpers
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 
-Private Assert As ICustomTest
+Private Assert As CustomTest
 
 '@section Module lifecycle
 '===============================================================================

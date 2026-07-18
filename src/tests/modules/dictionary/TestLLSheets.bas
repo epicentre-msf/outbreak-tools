@@ -19,14 +19,14 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 'detection, variable-count guards, and variable-address preparation
 'requirements. Each test builds an LLSheets instance from a dictionary
 'fixture and exercises one public method or error condition.
-'@depends LLSheets, LLdictionary, ILLdictionary, CustomTest, ICustomTest
+'@depends LLSheets, LLdictionary, ILLdictionary, CustomTest
 
 Private Const DICT_SHEET As String = "LLSheetsDict"
 Private Const SHEET_VERTICAL As String = "vlist1D-sheet1"
 Private Const SHEET_HORIZONTAL As String = "hlist2D-sheet1"
 Private Const KNOWN_VARIABLE As String = "choi_v1"
 
-Private Assert As ICustomTest
+Private Assert As CustomTest
 Private Dictionary As ILLdictionary
 Private Sheets As LLSheets
 

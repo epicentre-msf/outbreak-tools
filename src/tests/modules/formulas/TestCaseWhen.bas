@@ -16,7 +16,7 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 'branches, category label extraction, and rejection of malformed input. Each
 'test creates a fresh CaseWhen instance via the CreateCaseWhen helper using
 'module-level formula constants as fixtures.
-'@depends CaseWhen, BetterArray, CustomTest, ICustomTest
+'@depends CaseWhen, BetterArray, CustomTest
 
 Private Const VALID_FORMULA_DEFAULT As String = _
     "CASE_WHEN(A1=""Yes"", ""Choice is A"", B1>0, ""Choice is B"", ""Default Choice"")"
@@ -24,7 +24,7 @@ Private Const VALID_FORMULA_NO_DEFAULT As String = _
     "CASE_WHEN(A1=""Yes"", ""Choice is A"", OR(B1>0, C1<5), ""Choice is B"")"
 Private Const INVALID_FORMULA As String = "IF(CASE_WHEN(yes, true)"
 
-Private Assert As ICustomTest
+Private Assert As CustomTest
 Private casewhenObject As CaseWhen
 
 '@section Helpers

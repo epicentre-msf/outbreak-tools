@@ -7,7 +7,7 @@ Option Explicit
 '@ModuleDescription("Validates master setup event scaffolding covering dropdowns, variables, choices, and translations.")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, ProcedureNotUsed
 
-Private Assert As ICustomTest
+Private Assert As CustomTest
 Private Subject As EventMasterSetup
 Private FixtureWorkbook As Workbook
 Private DropdownSheet As Worksheet

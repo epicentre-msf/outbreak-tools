@@ -30,7 +30,7 @@ Private Const DICTOUTPUTSHEET As String = "DataOut"
 Private fixtureRowCount As Long
 Private fixtureColumnCount As Long
 
-Private Assert As ICustomTest
+Private Assert As CustomTest
 Private dataObject As DataSheet
 Private dataWorksheet As Worksheet
 

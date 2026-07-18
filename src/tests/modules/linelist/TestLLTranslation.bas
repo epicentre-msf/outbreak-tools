@@ -7,7 +7,7 @@ Attribute VB_Description = "Tests for LLTranslation class"
 
 Option Explicit
 
-Private Assert As ICustomTest
+Private Assert As CustomTest
 Private FixtureWkb As Workbook
 Private TransSheet As Worksheet
 

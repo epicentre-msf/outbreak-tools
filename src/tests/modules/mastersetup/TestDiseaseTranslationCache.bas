@@ -11,7 +11,7 @@ Option Private Module
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const TRANSLATION_SHEET As String = "CacheTranslationFixture"
 
-Private Assert As ICustomTest
+Private Assert As CustomTest
 Private Cache As IDiseaseTranslationCache
 Private Translations As ITranslationObject
 

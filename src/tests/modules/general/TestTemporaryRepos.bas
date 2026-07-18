@@ -17,7 +17,7 @@ Private Const TESTOUTPUTSHEET As String = "testsOutputs"
 '@Folder("CustomTests")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
-Private Assert As ICustomTest
+Private Assert As CustomTest
 Private Service As TemporaryRepos
 Private BaseFolder As String
 

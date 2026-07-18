@@ -20,7 +20,7 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 
 Private Const DICT_SHEET As String = "LLVarExtraDict"
 
-Private Assert As ICustomTest
+Private Assert As CustomTest
 Private Dictionary As ILLdictionary
 Private Variables As ILLVariables
 

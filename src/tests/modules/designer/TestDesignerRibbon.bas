@@ -7,7 +7,7 @@ Option Explicit
 '@ModuleDescription("Validates DesignerEntry for clearing, translation, AddInfo/ValueOf, and TranslateMessage.")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
-Private Assert As ICustomTest
+Private Assert As CustomTest
 Private FixtureWorkbook As Workbook
 Private EntrySheet As Worksheet
 Private TranslationSheet As Worksheet

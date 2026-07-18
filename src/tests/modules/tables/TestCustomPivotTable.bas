@@ -7,7 +7,7 @@ Attribute VB_Description = "Tests for CustomPivotTable class"
 
 Option Explicit
 
-Private Assert As ICustomTest
+Private Assert As CustomTest
 Private FixtureWkb As Workbook
 Private PivotSheet As Worksheet
 Private DataSheet As Worksheet

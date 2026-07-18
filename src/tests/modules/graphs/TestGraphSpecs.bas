@@ -23,7 +23,7 @@ Option Explicit
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const FIXTURE_SHEET As String = "GraphSpecsFixture"
 
-Private Assert As ICustomTest
+Private Assert As CustomTest
 
 '@section Helpers
 '===============================================================================

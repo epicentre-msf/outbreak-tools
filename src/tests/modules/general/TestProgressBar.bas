@@ -44,7 +44,7 @@ Option Explicit
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const PROGRESSBAR_SHEET As String = "ProgressBarFixture"
 
-Private Assert As ICustomTest
+Private Assert As CustomTest
 Private FixtureSheet As Worksheet
 
 '@section Module lifecycle

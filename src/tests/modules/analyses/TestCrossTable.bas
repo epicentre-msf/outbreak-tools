@@ -37,7 +37,7 @@ Private Const COL_FUNCTION As Long = 9
 Private Const COL_NGEO As Long = 10
 Private Const NUM_COLUMNS As Long = 10
 
-Private Assert As ICustomTest
+Private Assert As CustomTest
 Private dictStub As ILLdictionary
 Private lDataStub As TableSpecsLinelistStub
 Private transStub As LinelistSpecsTranslationStub

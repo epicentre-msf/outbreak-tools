@@ -22,7 +22,7 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const SPATIAL_SHEET As String = "spatial_tables__"
 Private Const OUTPUT_SHEET As String = "SpTabOutput"
 
-Private Assert As ICustomTest
+Private Assert As CustomTest
 
 '@section Module lifecycle
 '===============================================================================

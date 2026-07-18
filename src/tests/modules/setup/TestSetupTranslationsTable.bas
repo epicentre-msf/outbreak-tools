@@ -7,7 +7,7 @@ Option Explicit
 '@ModuleDescription("Exercises the SetupTranslationsTable class covering caching, registry updates and language management")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, ProcedureNotUsed
 
-Private Assert As ICustomTest
+Private Assert As CustomTest
 Private FixtureWorkbook As Workbook
 Private TranslationsSheet As Worksheet
 Private RegistrySheet As Worksheet

@@ -39,7 +39,7 @@ Option Explicit
 '@details Exercises LLFormat creation, value lookups, formatting scopes, import and export behaviour.
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
-Private Assert As ICustomTest
+Private Assert As CustomTest
 Private FormatWorkbook As Workbook
 Private FormatSheet As Worksheet
 Private FormatUnderTest As ILLFormat

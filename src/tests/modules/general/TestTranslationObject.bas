@@ -18,11 +18,11 @@ Option Explicit
 'and LanguagesList header enumeration with and without language columns.
 'A fresh three-row translation table (greeting/farewell/status_ok in ENG and
 'FRA) is rebuilt in TestInitialize so every test starts from a clean baseline.
-'Uses the CustomTest harness (ICustomTest) with CustomTestSetTitles and
+'Uses the CustomTest harness (CustomTest) with CustomTestSetTitles and
 'CustomTestLogFailure.
 '@depends TranslationObject, ITranslationObject, BetterArray, CustomTest, TestHelpers
 
-Private Assert As ICustomTest
+Private Assert As CustomTest
 Private TranslationSheet As Worksheet
 Private TranslationTable As ListObject
 Private Translator As ITranslationObject

@@ -34,7 +34,7 @@ Private Const EXPAND_TABLE_NAME As String = "tblExpandTarget"
 Private Const TRIM_SHEETNAME As String = "CustomTableTrim"
 Private Const TRIM_TABLE_NAME As String = "tblTrimTarget"
 
-Private Assert As ICustomTest
+Private Assert As CustomTest
 Private Fakes As Object
 
 '@section Helpers

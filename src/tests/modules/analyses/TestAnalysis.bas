@@ -19,7 +19,7 @@ Option Explicit
 'test isolation.
 '@depends Analysis, ITranslationObject, TranslationObject, Checking, BetterArray, CustomTest, AnalysisTestFixture, TestHelpers
 
-Private Assert As ICustomTest
+Private Assert As CustomTest
 Private CoreAnalysis As Analysis
 Private Translator As ITranslationObject
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"

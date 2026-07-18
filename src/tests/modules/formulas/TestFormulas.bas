@@ -22,7 +22,7 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 'helpers so tests run in isolation.
 '@depends Formulas, FormulaData, IFormulaData, FormulaCondition,
 'LLdictionary, ILLdictionary, LLVariables, ILLVariables,
-'LLSheets, BetterArray, CustomTest, ICustomTest,
+'LLSheets, BetterArray, CustomTest,
 'DictionaryTestFixture, FormulaTestFixture
 
 
@@ -54,7 +54,7 @@ Private Const DEFAULTRESULTVAR As String = "num_valid_h2"
 'formula fixture worksheet, the dictionary worksheet, and the shared
 'FormulaData and LLdictionary instances rebuilt before every test.
 
-Private Assert As ICustomTest
+Private Assert As CustomTest
 Private Fakes As Object
 Private FixtureSheet As Worksheet
 Private DictionarySheet As Worksheet

@@ -7,7 +7,7 @@ Attribute VB_Description = "Tests for Linelist class"
 
 Option Explicit
 
-Private Assert As ICustomTest
+Private Assert As CustomTest
 Private SpecsWkb As Workbook
 Private Specs As LinelistSpecsWorkbookStub
 Private Dict As ILLdictionary
