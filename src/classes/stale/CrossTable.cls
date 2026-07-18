@@ -314,7 +314,7 @@ Private Sub AddRows()
     Dim Start As Long
     Dim specs As ITablesSpecs
     Dim sh As Worksheet
-    Dim vars As ILLVariables
+    Dim vars As LLVariables
     Dim rowVar As String
     Dim rowsData As BetterArray
     Dim trans As ITranslation
@@ -488,7 +488,7 @@ Private Sub AddColumns()
     Dim Start As Long
     Dim specs As ITablesSpecs
     Dim sh As Worksheet
-    Dim vars As ILLVariables
+    Dim vars As LLVariables
     Dim trans As ITranslation
     Dim percentageValue As String
     Dim transPercent As String

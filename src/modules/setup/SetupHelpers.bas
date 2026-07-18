@@ -650,7 +650,7 @@ Public Function ResolveAnalysis(Optional ByVal hostSheet As Worksheet) As Analys
 End Function
 
 Public Function ResolveVariables(Optional ByVal dictionary As ILLdictionary, _
-                                 Optional ByVal hostSheet As Worksheet) As ILLVariables
+                                 Optional ByVal hostSheet As Worksheet) As LLVariables
     Dim dict As ILLdictionary
 
     If dictionary Is Nothing Then

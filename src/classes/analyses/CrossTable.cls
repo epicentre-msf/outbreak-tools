@@ -637,7 +637,7 @@ Public Sub AddRows()
     Dim startRw As Long
     Dim specs As TableSpecs
     Dim sh As Worksheet
-    Dim vars As ILLVariables
+    Dim vars As LLVariables
     Dim rowVar As String
     Dim rowsData As BetterArray
     Dim trans As ITranslationObject
@@ -850,7 +850,7 @@ Public Sub AddColumns()
     Dim startRw As Long
     Dim specs As TableSpecs
     Dim sh As Worksheet
-    Dim vars As ILLVariables
+    Dim vars As LLVariables
     Dim trans As ITranslationObject
     Dim colData As BetterArray
     Dim colVarLab As String

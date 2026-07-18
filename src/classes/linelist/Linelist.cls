@@ -842,7 +842,7 @@ Private Sub TransferAllCode(ByVal codeTransfer As CodeTransfer)
                    "LLSheets", "LLTranslation", _
                    "OSFiles", _
                    "TranslationObject", "ITranslationObject", "LLVariables", _
-                   "ILLVariables", "LLSpatial", _
+                   "LLSpatial", _
                    "DropdownLists", "IDropdownLists", "ShowHideManager", _
                    "CustomTable", _
                    "LLExporter", _

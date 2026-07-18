@@ -55,7 +55,7 @@ Private Type TLinelistSpecs
     passwords As IPasswords
     format As LLFormat
     formulaData As FormulaData
-    variables As ILLVariables
+    variables As LLVariables
     'Translation scope cache: direct fields for each TranslationScope value (0-4)
     transMessages As ITranslationObject
     transDictionary As ITranslationObject
@@ -722,7 +722,7 @@ End Function
 'them as well.
 Private Sub AddListAuto()
     Dim dict As ILLdictionary
-    Dim vars As ILLVariables
+    Dim vars As LLVariables
     Dim listVars As BetterArray
     Dim idx As Long
     Dim varName As String
@@ -760,7 +760,7 @@ End Sub
 '@param varName String. The formula variable whose references to trace.
 Private Sub RecursiveListAuto(ByVal varName As String)
     Dim dict As ILLdictionary
-    Dim vars As ILLVariables
+    Dim vars As LLVariables
     Dim controlType As String
     Dim controlDetails As String
     Dim formulaEngine As Formulas

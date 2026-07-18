@@ -141,7 +141,7 @@ Public Function ResolveMasterChoices(Optional ByVal hostSheet As Worksheet) As L
 End Function
 
 Public Function ResolveMasterVariables(Optional ByVal dictionary As ILLdictionary, _
-                                       Optional ByVal hostSheet As Worksheet) As ILLVariables
+                                       Optional ByVal hostSheet As Worksheet) As LLVariables
     Dim resolvedDictionary As ILLdictionary
 
     If dictionary Is Nothing Then

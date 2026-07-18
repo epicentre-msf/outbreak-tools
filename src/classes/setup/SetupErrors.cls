@@ -814,7 +814,7 @@ Private Sub CheckExports()
     Dim actualFileName As String
     Dim fileCounter As Long
     Dim fileNameChunk As String
-    Dim vars As ILLVariables
+    Dim vars As LLVariables
     Dim numberOfExports As Long
     Dim pwd As String
     Dim exportKeepsId As String

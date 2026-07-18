@@ -17,8 +17,6 @@ Attribute VB_Description = "Variables of the dictionary"
 
 Option Explicit
 
-Implements ILLVariables
-
 Private Type TVariable
     dict As ILLdictionary
     varRng As Range
@@ -36,7 +34,7 @@ Private Const COL_SHEET_NAME As String = "sheet name"
 Private Const COL_CONTROL As String = "control"
 Private Const COL_TABLE_NAME As String = "table name"
 
-Public Function Create(ByVal dict As ILLdictionary) As ILLVariables
+Public Function Create(ByVal dict As ILLdictionary) As LLVariables
 
     If dict Is Nothing Then
         Err.Raise CLng(ProjectError.InvalidArgument), CLASSNAME, _
@@ -60,7 +58,7 @@ Public Function Create(ByVal dict As ILLdictionary) As ILLVariables
 
 End Function
 
-Public Property Get Self() As ILLVariables
+Public Property Get Self() As LLVariables
     Set Self = Me
 End Property
 
@@ -91,7 +89,7 @@ Private Sub ResetCaches()
 End Sub
 
 '@label:InvalidateCaches
-Private Sub InvalidateCaches()
+Public Sub InvalidateCaches()
     ResetCaches
     Set this.varRng = Nothing
 End Sub
@@ -300,8 +298,8 @@ Private Function ResolveColumnIndex(ByVal colName As String, Optional ByVal requ
     ResolveColumnIndex = resolvedIndex
 End Function
 
-'@label:VariableNamesList
-Private Function VariableNamesList() As BetterArray
+'@label:VariableNames
+Public Function VariableNames() As BetterArray
     Dim cell As Range
 
     EnsureVariableRange
@@ -318,10 +316,10 @@ Private Function VariableNamesList() As BetterArray
     End If
 
     If this.variablesCache Is Nothing Then
-        Set VariableNamesList = New BetterArray
-        VariableNamesList.LowerBound = 1
+        Set VariableNames = New BetterArray
+        VariableNames.LowerBound = 1
     Else
-        Set VariableNamesList = this.variablesCache.Clone()
+        Set VariableNames = this.variablesCache.Clone()
     End If
 End Function
 
@@ -346,14 +344,18 @@ Private Sub LogInfo(ByVal label As String, _
     this.checkCounter = this.checkCounter + 1
 End Sub
 
-Private Property Get HasInternalChecks() As Boolean
-    HasInternalChecks = Not (this.internalChecks Is Nothing)
+Public Property Get HasCheckings() As Boolean
+    HasCheckings = Not (this.internalChecks Is Nothing)
+End Property
+
+Public Property Get CheckingValues() As Checking
+    If HasCheckings Then Set CheckingValues = this.internalChecks
 End Property
 
 'Functions --------------------------------------------------------------------------
 
 'Test if a variable is present
-Private Function Contains(ByVal varName As String, Optional ByVal matchCase As Boolean = True) As Boolean
+Public Function Contains(ByVal varName As String, Optional ByVal matchCase As Boolean = True) As Boolean
     Contains = Not (FindVariableCell(varName, matchCase) Is Nothing)
 End Function
 
@@ -366,7 +368,7 @@ Private Function RowIndex(ByVal varName As String, Optional ByVal matchCase As B
 End Function
 
 'Value of one column for one variable
-Private Function Value(ByVal colName As String, ByVal varName As String) As String
+Public Function Value(ByVal colName As String, ByVal varName As String) As String
     'Row and columns to return
     Dim retValue As String
     Dim retRng As Range
@@ -380,21 +382,21 @@ End Function
 'Metadata helpers -------------------------------------------------------------
 
 '@label:SheetName
-Private Function SheetName(ByVal varName As String, Optional ByVal matchCase As Boolean = True) As String
+Public Function SheetName(ByVal varName As String, Optional ByVal matchCase As Boolean = True) As String
     SheetName = ColumnValue(varName, COL_SHEET_NAME, matchCase)
 End Function
 
 '@label:ControlType
-Private Function ControlType(ByVal varName As String, Optional ByVal matchCase As Boolean = True) As String
+Public Function ControlType(ByVal varName As String, Optional ByVal matchCase As Boolean = True) As String
     ControlType = ColumnValue(varName, COL_CONTROL, matchCase)
 End Function
 
 '@label:TableName
-Private Function TableName(ByVal varName As String) As String
+Public Function TableName(ByVal varName As String) As String
     TableName = ColumnValue(varName, COL_TABLE_NAME, True)
 End Function
 
-Private Property Get CellRange(ByVal colName As String, ByVal varName As String) As Range
+Public Property Get CellRange(ByVal colName As String, ByVal varName As String) As Range
 
 'Row and columns to return
     Set CellRange = CellRangeInternal(colName, varName, True)
@@ -428,7 +430,7 @@ Private Function ColumnValue(ByVal varName As String, ByVal columnName As String
     If Not targetCell Is Nothing Then ColumnValue = CStr(targetCell.Value)
 End Function
 
-Private Sub SetValue(ByVal varName As String, ByVal colName As String, ByVal newValue As String, Optional ByVal onEmpty As Boolean = False)
+Public Sub SetValue(ByVal varName As String, ByVal colName As String, ByVal newValue As String, Optional ByVal onEmpty As Boolean = False)
 
     'Row and columns to return
     Dim rowNum As Long
@@ -461,7 +463,7 @@ Private Sub SetValue(ByVal varName As String, ByVal colName As String, ByVal new
 End Sub
 
 'Index of a column or a Row of a variable in a worksheet
-Private Function Index(ByVal varName As String) As Long
+Public Function Index(ByVal varName As String) As Long
     Dim sheetIndex As String
     sheetIndex = Value(colName:=INDEXHEADER, varName:=varName)
     If sheetIndex = vbNullString Then
@@ -475,60 +477,3 @@ End Function
 Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
     Err.Raise errNumb, "LLVariables", errorMessage
 End Sub
-
-'Interface ---------------------------------------------------------------------------------------------------------------------------------
-
-'Properties
-Private Property Get ILLVariables_Dictionary() As ILLdictionary
-    Set ILLVariables_Dictionary = Dictionary()
-End Property
-
-'Exposed methods
-Private Function ILLVariables_Value(ByVal colName As String, ByVal varName As String) As String
-    ILLVariables_Value = Value(colName, varName)
-End Function
-
-'column or row index in the sheet of one variable
-Private Function ILLVariables_Index(ByVal varName As String) As Long
-    ILLVariables_Index = Index(varName)
-End Function
-
-Private Function ILLVariables_Contains(ByVal varName As String, Optional ByVal matchCase As Boolean = True) As Boolean
-    ILLVariables_Contains = Contains(varName, matchCase)
-End Function
-
-Private Sub ILLVariables_SetValue(ByVal varName As String, ByVal colName As String, ByVal newValue As String, Optional ByVal onEmpty As Boolean = False)
-    SetValue varName, colName, newValue, onEmpty
-End Sub
-
-Private Property Get ILLVariables_CellRange(ByVal colName As String, ByVal varName As String) As Range
-    Set ILLVariables_CellRange = CellRange(colName, varName)
-End Property
-
-Private Function ILLVariables_VariableNames() As BetterArray
-    Set ILLVariables_VariableNames = VariableNamesList()
-End Function
-
-Private Function ILLVariables_SheetName(ByVal varName As String, Optional ByVal matchCase As Boolean = True) As String
-    ILLVariables_SheetName = SheetName(varName, matchCase)
-End Function
-
-Private Function ILLVariables_ControlType(ByVal varName As String, Optional ByVal matchCase As Boolean = True) As String
-    ILLVariables_ControlType = ControlType(varName, matchCase)
-End Function
-
-Private Function ILLVariables_TableName(ByVal varName As String) As String
-    ILLVariables_TableName = TableName(varName)
-End Function
-
-Private Sub ILLVariables_InvalidateCaches()
-    InvalidateCaches
-End Sub
-
-Private Function ILLVariables_HasCheckings() As Boolean
-    ILLVariables_HasCheckings = HasInternalChecks
-End Function
-
-Private Property Get ILLVariables_CheckingValues() As Checking
-    If HasInternalChecks Then Set ILLVariables_CheckingValues = this.internalChecks
-End Property

@@ -41,7 +41,7 @@ Private Type TEventSetup
     spatioTable         As CustomTable      'Analysis spatio-temporal table wrapper
     spatioSpecsTable    As CustomTable     'Spatio-temporal specification table wrapper
     exportsTable        As CustomTable      'Exports listobject wrapper
-    variables           As ILLVariables      'Dictionary variable helper
+    variables           As LLVariables      'Dictionary variable helper
     dictionary          As ILLdictionary     'Cached dictionary reference
     choices             As LLChoices        'Cached choices helper
     ana                 As Analysis         'Cached analysis helper

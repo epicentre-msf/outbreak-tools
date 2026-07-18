@@ -70,7 +70,7 @@ End Function
 '@param lookupVar String. Name of the variable whose sheet acts as the exclusion target.
 '@return String. Name of a variable on a different sheet, or vbNullString if none found.
 Private Function VariableOnDifferentSheet(ByVal lookupVar As String) As String
-    Dim vars As ILLVariables
+    Dim vars As LLVariables
     Dim names As BetterArray
     Dim idx As Long
     Dim candidate As String
@@ -168,7 +168,7 @@ Public Sub TestValueOfFormulaConvertsToNewSignature()
     On Error GoTo Fail
 
     Dim parser As ValueOfFormula
-    Dim vars As ILLVariables
+    Dim vars As LLVariables
     Dim lookupSheet As String
     Dim lookupIndex As Long
     Dim valueIndex As Long

@@ -22,7 +22,7 @@ Private Const DICT_SHEET As String = "LLVarDict"
 
 Private Assert As CustomTest
 Private Dictionary As ILLdictionary
-Private Variables As ILLVariables
+Private Variables As LLVariables
 
 '@section Module Lifecycle
 '===============================================================================

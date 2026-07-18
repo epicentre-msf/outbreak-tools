@@ -36,7 +36,7 @@ Option Explicit
 Private Type TValueOfFormula
     expression As String            'Original VALUE_OF specification
     dict As ILLdictionary           'Dictionary reference providing metadata
-    variables As ILLVariables       'Helper for variable lookups
+    variables As LLVariables       'Helper for variable lookups
     sheets As LLSheets             'Helper for sheet validation
     parsed As Boolean               'Tracks whether parsing already occurred
     valid As Boolean                'Final validity flag
@@ -82,7 +82,7 @@ Private Const ERROR_EMPTY_FORMULA As String = "VALUE_OF formula cannot be blank"
 '@export
 Public Function Create(ByVal formula As String, _
                        ByVal dict As ILLdictionary, _
-                       Optional ByVal variables As ILLVariables, _
+                       Optional ByVal variables As LLVariables, _
                        Optional ByVal sheets As LLSheets) As ValueOfFormula
 
     If dict Is Nothing Then
@@ -253,7 +253,7 @@ Private Sub EnsureParsed()
     Dim keyVar As String
     Dim lookupVar As String
     Dim valueVar As String
-    Dim vars As ILLVariables
+    Dim vars As LLVariables
     Dim sheetName As String
     Dim sheets As LLSheets
 
@@ -473,7 +473,7 @@ End Function
 '@param sheets LLSheets. Optional helper for sheet validation.
 Public Sub Initialise(ByVal formula As String, _
                        ByVal dict As ILLdictionary, _
-                       ByVal variables As ILLVariables, _
+                       ByVal variables As LLVariables, _
                        ByVal sheets As LLSheets)
     Set this.dict = dict
     If Not (variables Is Nothing) Then Set this.variables = variables
@@ -529,7 +529,7 @@ End Sub
 'first access, and caches it for subsequent calls.
 '@return ILLVariables. Helper for the current dictionary.
 '@throws ProjectError.ObjectNotInitialized When the dictionary is Nothing.
-Private Function VariablesProvider() As ILLVariables
+Private Function VariablesProvider() As LLVariables
     EnsureDictionaryReady
     If this.variables Is Nothing Then
         Set this.variables = LLVariables.Create(this.dict)

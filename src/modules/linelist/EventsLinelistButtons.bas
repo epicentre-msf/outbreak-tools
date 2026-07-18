@@ -1032,7 +1032,7 @@ Public Sub ClickOpenVarLab()
     Dim tempsh As Worksheet
     Dim dict As ILLdictionary
     Dim varRng As Range
-    Dim vars As ILLVariables
+    Dim vars As LLVariables
     Dim cellRng As Range
     Dim tablename As String
     Dim varLabTab As BetterArray
@@ -1229,7 +1229,7 @@ Private Sub RestaureHiddenStatus(ByVal cellRng As Range, Optional ByVal scope As
     '3- show/hide, on a linelist Print
 
     Dim dict As ILLdictionary
-    Dim vars As ILLVariables
+    Dim vars As LLVariables
     Dim sh As Worksheet
     Dim varName As String
     Dim tabName As String

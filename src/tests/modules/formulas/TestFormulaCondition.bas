@@ -32,7 +32,7 @@ Private Dictionary As ILLdictionary
 
 '@sub-title Resolve the table name for a given variable through the dictionary
 Private Function TableNameFor(ByVal variableName As String) As String
-    Dim vars As ILLVariables
+    Dim vars As LLVariables
     Set vars = LLVariables.Create(Dictionary)
     TableNameFor = vars.TableName(variableName)
 End Function

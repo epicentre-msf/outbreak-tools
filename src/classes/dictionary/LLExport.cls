@@ -24,7 +24,7 @@ Private Type TLLExport
     expData As DataSheet
     exportSheet As Worksheet
     dictInt As ILLdictionary
-    variables As ILLVariables
+    variables As LLVariables
     checks As Checking
     hasChecks As Boolean
     checkCounter As Long
@@ -1223,7 +1223,7 @@ End Function
 Private Function ResolveVariableChunk(ByVal chunk As String, _
                                        ByVal workbook As Workbook) As String
 
-    Dim vars As ILLVariables
+    Dim vars As LLVariables
     Dim sheetName As String
     Dim sheetType As String
     Dim targetSheet As Worksheet

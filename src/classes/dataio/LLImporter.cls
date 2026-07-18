@@ -508,8 +508,8 @@ Public Sub ImportEditableLabels(ByVal impwb As Workbook)
     Dim updateLabels As Boolean
     Dim dict As ILLdictionary
     Dim inpDict As ILLdictionary
-    Dim currVars As ILLVariables
-    Dim inpVars As ILLVariables
+    Dim currVars As LLVariables
+    Dim inpVars As LLVariables
     Dim counter As Long
     Dim varName As String
     Dim newLabel As String
@@ -698,7 +698,7 @@ End Property
 Public Sub FinalizeReport()
 
     Dim dict As ILLdictionary
-    Dim vars As ILLVariables
+    Dim vars As LLVariables
     Dim sheetsList As BetterArray
     Dim currVarsList As BetterArray
     Dim sheetName As String

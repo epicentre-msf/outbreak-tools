@@ -235,7 +235,7 @@ End Property
 '@export
 Public Function Valid(ByVal dict As ILLdictionary, Optional ByVal tablename As String = vbNullString) As Boolean
 
-    Dim vars As ILLVariables
+    Dim vars As LLVariables
     Dim varList As BetterArray
     Dim condList As BetterArray
     Dim idx As Long

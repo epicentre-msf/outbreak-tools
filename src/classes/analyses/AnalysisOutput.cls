@@ -551,7 +551,7 @@ Private Sub WriteTable(ByVal loName As String, _
     Dim prevSecId As String
     Dim secId As String
     Dim dict As ILLdictionary
-    Dim vars As ILLVariables
+    Dim vars As LLVariables
     Dim grHeight As Long
     Dim isNewSection As Boolean
     Dim addPrevSecMinMaxFormula As Boolean

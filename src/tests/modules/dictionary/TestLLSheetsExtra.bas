@@ -214,7 +214,7 @@ Public Sub TestVariableAddressHorizontalAndVertical()
     Dictionary.Prepare
 
     'Seed column index values for two representative variables
-    Dim vars As ILLVariables
+    Dim vars As LLVariables
     Set vars = LLVariables.Create(Dictionary)
 
     vars.SetValue "num_valid_h2", "column index", 3 'Horizontal sheet

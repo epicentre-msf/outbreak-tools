@@ -199,7 +199,7 @@ Public Sub TestVListWritesLabelToCell()
     On Error GoTo TestFail
 
     Dim sut As VarWriter
-    Dim vars As ILLVariables
+    Dim vars As LLVariables
     Dim colIdx As Long
 
     Set sut = VarWriter.Create( _
@@ -263,7 +263,7 @@ Public Sub TestHListWritesVarNameToHeader()
     On Error GoTo TestFail
 
     Dim sut As VarWriter
-    Dim vars As ILLVariables
+    Dim vars As LLVariables
     Dim colIdx As Long
 
     Set sut = VarWriter.Create( _
@@ -295,7 +295,7 @@ Public Sub TestHListWritesToPrintCompanion()
     On Error GoTo TestFail
 
     Dim sut As VarWriter
-    Dim vars As ILLVariables
+    Dim vars As LLVariables
     Dim colIdx As Long
 
     Set sut = VarWriter.Create( _
@@ -332,7 +332,7 @@ Public Sub TestTextTypeFormatsAsString()
     On Error GoTo TestFail
 
     Dim sut As VarWriter
-    Dim vars As ILLVariables
+    Dim vars As LLVariables
     Dim colIdx As Long
 
     Set sut = VarWriter.Create( _

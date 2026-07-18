@@ -189,7 +189,7 @@ Private Function SampleGroupedVariables(ByRef criteriaVar As String, _
                                         ByRef resultVar As String, _
                                         ByRef tabName As String) As Boolean
 
-    Dim vars As ILLVariables
+    Dim vars As LLVariables
 
 
     criteriaVar = DEFAULTCRITERIAVAR
@@ -214,7 +214,7 @@ End Function
 '@return Boolean. True when a variable from a different table was found.
 Private Function VariableFromDifferentTable(ByVal excludedTable As String, _
                                             ByRef variableName As String) As Boolean
-    Dim vars As ILLVariables
+    Dim vars As LLVariables
     Set vars = LLVariables.Create(LinelistDictionary)
 
     variableName = DEFAULTCONDITIONVAR
@@ -1222,7 +1222,7 @@ Public Sub TestParsedAnalysisFormulaAppliesConnector()
     Set conditionVars = BetterArrayFromList(variableName, variableName)
     Set conditionConds = BetterArrayFromList("=1", "<>""""")
 
-    Dim vars As ILLVariables
+    Dim vars As LLVariables
     Set vars = LLVariables.Create(LinelistDictionary)
     tableName = vars.Value(colName:="table name", varName:=variableName)
 

@@ -38,7 +38,7 @@ Private Type TSectionBuilder
     dropdown As IDropdownLists
     customDropdown As IDropdownLists
     cachedDict As ILLdictionary
-    cachedVars As ILLVariables
+    cachedVars As LLVariables
     hasChecks As Boolean
 End Type
 
@@ -187,7 +187,7 @@ End Property
 'Returns the cached ILLVariables instance. On first access, creates it
 'from the dictionary via LLVariables.Create and caches it.
 '@return ILLVariables. The variables helper for dictionary lookups.
-Private Property Get Variables() As ILLVariables
+Private Property Get Variables() As LLVariables
     If this.cachedVars Is Nothing Then
         Set this.cachedVars = LLVariables.Create(Dictionary())
     End If
@@ -458,7 +458,7 @@ Private Sub FormatSection(ByVal sectionName As String, _
                            ByVal startRow As Long, _
                            ByVal endRow As Long, _
                            ByVal sheetName As String)
-    Dim vars As ILLVariables
+    Dim vars As LLVariables
     Dim varRng As Range
     Dim dict As ILLdictionary
     Dim design As LLFormat
@@ -497,7 +497,7 @@ Private Sub FormatHListSection(ByVal sectionName As String, _
                                 ByVal firstVarName As String, _
                                 ByVal lastVarName As String, _
                                 ByVal sheetName As String)
-    Dim vars As ILLVariables
+    Dim vars As LLVariables
     Dim design As LLFormat
     Dim startCol As Long
     Dim endCol As Long
@@ -555,7 +555,7 @@ Private Sub FormatVListSection(ByVal sectionName As String, _
                                 ByVal firstVarName As String, _
                                 ByVal lastVarName As String, _
                                 ByVal sheetName As String)
-    Dim vars As ILLVariables
+    Dim vars As LLVariables
     Dim design As LLFormat
     Dim startIdx As Long
     Dim endIdx As Long
@@ -616,7 +616,7 @@ Private Sub FormatHListSubSection(ByVal subSectionName As String, _
                                    ByVal endRow As Long, _
                                    ByVal sheetName As String)
     Dim dict As ILLdictionary
-    Dim vars As ILLVariables
+    Dim vars As LLVariables
     Dim design As LLFormat
     Dim varRng As Range
     Dim firstVarName As String
@@ -682,7 +682,7 @@ Private Sub FormatVListSubSection(ByVal subSectionName As String, _
                                    ByVal endRow As Long, _
                                    ByVal sheetName As String)
     Dim dict As ILLdictionary
-    Dim vars As ILLVariables
+    Dim vars As LLVariables
     Dim design As LLFormat
     Dim varRng As Range
     Dim firstVarName As String

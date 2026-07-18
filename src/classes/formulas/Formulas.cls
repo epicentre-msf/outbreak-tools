@@ -59,7 +59,7 @@ Private Type TFormulas
 End Type
 
 Private Type TDependencies
-    variables As ILLVariables                   'Lazy wrapper resolving variable metadata
+    variables As LLVariables                   'Lazy wrapper resolving variable metadata
     sheets As LLSheets                         'Lazy wrapper resolving worksheet addresses
     customFormulas As BetterArray               'Registered custom formula identifiers
 End Type
@@ -298,7 +298,7 @@ Public Property Get ParsedLinelistFormula(Optional ByVal useTableName As Boolean
     Dim workingTokens As BetterArray
     Dim idx As Long
     Dim current As String
-    Dim vars As ILLVariables
+    Dim vars As LLVariables
     Dim sheets As LLSheets
 
     If Not EnsureEvaluation("simple") Then Exit Property
@@ -348,7 +348,7 @@ End Property
 Public Property Get ParsedAnalysisFormula(ByVal formCond As FormulaCondition, _
                                           Optional ByVal tablePrefix As String = vbNullString, _
                                           Optional ByVal Connector As String = "*") As String
-    Dim vars As ILLVariables
+    Dim vars As LLVariables
     Dim dict As ILLdictionary
     Dim tokensCopy As BetterArray
     Dim idx As Long
@@ -512,7 +512,7 @@ End Sub
 'Creates the LLVariables wrapper on first access and caches it for
 'subsequent calls.
 '@return ILLVariables. Bound to the current dictionary.
-Private Function Variables() As ILLVariables
+Private Function Variables() As LLVariables
     If deps.variables Is Nothing Then
         Set deps.variables = LLVariables.Create(Dictionary())
     End If
@@ -558,7 +558,7 @@ End Function
 '@param formulaType String. Context (analysis/simple).
 Private Sub EvaluateFormula(ByVal formulaType As String)
     Dim converted As String
-    Dim vars As ILLVariables
+    Dim vars As LLVariables
     Dim dataSource As FormulaData
     Dim tokens As BetterArray
     Dim variableTokens As BetterArray
@@ -659,7 +659,7 @@ End Sub
 '@return Boolean. True when grouped context is captured or not required.
 Private Function GroupContexExtractionSucceed(ByVal tokens As BetterArray, _
                                        ByVal variableTokens As BetterArray, _
-                                       ByVal vars As ILLVariables, _
+                                       ByVal vars As LLVariables, _
                                        ByVal dataSource As FormulaData) As Boolean
     Dim functionName As String
     Dim aggregatorName As String
@@ -905,7 +905,7 @@ Private Function TokeniseFormula(ByVal formula As String, _
     Dim parenthesisLevel As Long
     Dim inQuotes As Boolean
     Dim dataSource As FormulaData
-    Dim vars As ILLVariables
+    Dim vars As LLVariables
 
     previousBreak = 1
     Set dataSource = Data()
@@ -967,7 +967,7 @@ Private Function AppendToken(ByVal chunk As String, _
                              ByRef formulaType As String, _
                              ByRef tokens As BetterArray, _
                              ByRef variableTokens As BetterArray, _
-                             ByRef vars As ILLVariables, _
+                             ByRef vars As LLVariables, _
                              ByRef dataSource As FormulaData, _
                              ByRef HasSetupVariables As Boolean, _
                              ByRef failureReason As String) As Boolean

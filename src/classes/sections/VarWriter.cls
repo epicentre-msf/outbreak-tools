@@ -44,7 +44,7 @@ Private Type TVarWriter
     cachedPrintRange As Range
     cachedCRFRange As Range
     cachedDict As ILLdictionary
-    cachedVars As ILLVariables
+    cachedVars As LLVariables
     cachedSheets As LLSheets
     hasChecks As Boolean
 End Type
@@ -185,7 +185,7 @@ End Property
 'The wrapper provides convenient lookup methods such as Value and Contains
 'that are used throughout the writer.
 '@return ILLVariables. The variables helper object.
-Private Property Get Variables() As ILLVariables
+Private Property Get Variables() As LLVariables
     If this.cachedVars Is Nothing Then
         Set this.cachedVars = LLVariables.Create(Dictionary())
     End If
@@ -1015,7 +1015,7 @@ Private Sub AddConditionalFormatting()
     Dim varValid As String
     Dim cellRng As Range
     Dim formatRng As Range
-    Dim varObject As ILLVariables
+    Dim varObject As LLVariables
     Dim shObj As LLSheets
     Dim condAdd As String
     Dim condForm As String
@@ -1083,7 +1083,7 @@ End Sub
 Private Sub AddGeoConditionalFormatting()
     Dim varValid As String
     Dim cellRng As Range
-    Dim varObject As ILLVariables
+    Dim varObject As LLVariables
     Dim shObj As LLSheets
     Dim condAdd As String
     Dim varControl As String

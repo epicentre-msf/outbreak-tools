@@ -51,7 +51,7 @@ Private Type TLLSheets
     sheetTypeColumnIndex As Long
     tableNameColumnIndex As Long
     controlColumnIndex As Long
-    variables As ILLVariables
+    variables As LLVariables
 End Type
 
 Private this As TLLSheets
@@ -288,7 +288,7 @@ End Function
 '@param onSheet Optional String. Sheet where the reference will be consumed; suppresses sheet prefix when matching.
 '@return String Excel address for the variable.
 Public Function VariableAddress(ByVal varName As String, Optional ByVal onSheet As String = vbNullString) As String
-    Dim vars As ILLVariables
+    Dim vars As LLVariables
     Dim targetSheet As String
     Dim sheetType As String
     Dim sheetRow As Long
@@ -485,7 +485,7 @@ End Function
 '@label:VariablesProvider
 '@sub-title Lazily initialise the LLVariables helper for address resolution
 '@return ILLVariables cached instance.
-Private Function VariablesProvider() As ILLVariables
+Private Function VariablesProvider() As LLVariables
     If this.variables Is Nothing Then
         Set this.variables = LLVariables.Create(this.dict)
     End If

@@ -781,7 +781,7 @@ Private Function CategoriesData(ByVal rowOrCol As String, _
                                 ByRef lData As Object) As BetterArray
     Dim varsCat As BetterArray
     Dim nameVar As String
-    Dim vars As ILLVariables
+    Dim vars As LLVariables
     Dim nbGeo As Long
     Dim counter As Long
 
@@ -865,7 +865,7 @@ End Function
 '@depends LLVariables
 Private Function ComputeValidTable() As Boolean
     Dim cachedDict As ILLdictionary
-    Dim vars As ILLVariables
+    Dim vars As LLVariables
     Dim rowVar As String
     Dim colVar As String
     Dim colControl As String

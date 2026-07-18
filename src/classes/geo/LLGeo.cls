@@ -1275,7 +1275,7 @@ End Sub
 '@export
 Public Sub UpdateShowHide(ByVal sh As Worksheet, ByVal dict As ILLdictionary)
     Dim csTab As CustomTable
-    Dim vars As ILLVariables
+    Dim vars As LLVariables
     Dim Lo As ListObject
     Dim counter As Long
     Dim mainlabRng As Range

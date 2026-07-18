@@ -497,7 +497,7 @@ Public Sub Initialise(ByVal dict As ILLdictionary, _
                       ByVal layer As ShowHideWorksheetLayer, _
                       ByVal sheetName As String)
 
-    Dim vars As ILLVariables
+    Dim vars As LLVariables
     Dim varNames As BetterArray
     Dim idx As Long
     Dim varName As String
@@ -680,7 +680,7 @@ Private Function EffectiveHidden(ByVal index As Long) As Boolean
 End Function
 
 ' @description Check if variable's sheet name matches the target sheet.
-Private Function MatchesSheet(ByVal vars As ILLVariables, ByVal varName As String) As Boolean
+Private Function MatchesSheet(ByVal vars As LLVariables, ByVal varName As String) As Boolean
     Dim varSheetName As String
 
     varSheetName = Normalise(SafeValue(vars, COL_SHEET_NAME, varName))
@@ -702,7 +702,7 @@ Private Function MatchesLayer(ByVal sheetType As String) As Boolean
 End Function
 
 ' @description Resolve which dictionary column to use for visibility status.
-Private Function ResolveVisibilityStatus(ByVal vars As ILLVariables, _
+Private Function ResolveVisibilityStatus(ByVal vars As LLVariables, _
                                           ByVal varName As String, _
                                           ByVal hasVisibility As Boolean, _
                                           ByVal hasStatus As Boolean, _
@@ -748,7 +748,7 @@ Private Function DetermineInitialHidden(ByVal loweredStatus As String, _
 End Function
 
 ' @description Safely read a variable value from dictionary, returning empty string on error.
-Private Function SafeValue(ByVal vars As ILLVariables, _
+Private Function SafeValue(ByVal vars As LLVariables, _
                             ByVal colName As String, _
                             ByVal varName As String) As String
     Dim result As String
