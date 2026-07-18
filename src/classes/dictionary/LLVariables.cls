@@ -66,7 +66,7 @@ Public Property Get Dictionary() As LLdictionary
     Set Dictionary = this.dict
 End Property
 
-Public Property Set Dictionary(ByVal dict As LLdictionary)
+Private Property Set Dictionary(ByVal dict As LLdictionary)
     Set this.dict = dict
     ResetCaches
     RefreshVariableRange

@@ -81,13 +81,13 @@ End Function
 
 '@label:SetInternalData
 '@param exportData Datasheet wrapper over the specification table.
-Public Property Set InternalData(ByVal exportData As DataSheet)
+Private Property Set InternalData(ByVal exportData As DataSheet)
     Set this.expData = exportData
 End Property
 
 '@label:SetInternalWorksheet
 '@param exportSheet Worksheet that stores the export specification table.
-Public Property Set InternalWorksheet(ByVal exportSheet As Worksheet)
+Private Property Set InternalWorksheet(ByVal exportSheet As Worksheet)
     Set this.exportSheet = exportSheet
     Set this.store = Nothing
 End Property

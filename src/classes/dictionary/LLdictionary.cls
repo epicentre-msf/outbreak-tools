@@ -125,7 +125,7 @@ Public Property Get Data() As DataSheet
     Set Data = this.dictDataSheet
 End Property
 
-Public Property Set Data(ByVal customDataSheet As DataSheet)
+Private Property Set Data(ByVal customDataSheet As DataSheet)
     Set this.dictDataSheet = customDataSheet
     Set this.hiddenValues = Nothing
 End Property

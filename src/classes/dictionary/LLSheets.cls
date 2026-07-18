@@ -119,7 +119,7 @@ End Property
 
 '@sub-title Store the backing dictionary and prime cached lookups
 '@param dict LLdictionary holding linelist metadata.
-Public Property Set Dictionary(ByVal dict As LLdictionary)
+Private Property Set Dictionary(ByVal dict As LLdictionary)
     ValidateDictionary dict
     Set this.dict = dict
     ResetCaches
