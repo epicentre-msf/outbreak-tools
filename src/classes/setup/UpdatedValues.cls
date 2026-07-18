@@ -112,7 +112,7 @@ End Property
 '@label:worksheet-set
 '@prop-title Bind the watcher to a registry worksheet.
 '@param sh Worksheet. The worksheet to assign.
-Public Property Set Wksh(ByVal sh As Worksheet)
+Private Property Set Wksh(ByVal sh As Worksheet)
   If sh Is Nothing Then
     ThrowError ProjectError.ObjectNotInitialized, "Worksheet reference cannot be Nothing"
   End If
