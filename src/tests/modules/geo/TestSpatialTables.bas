@@ -10,7 +10,7 @@ Option Explicit
 'Validates the SpatialTables class, which creates spatial ListObjects on
 'the "spatial_tables__" worksheet at linelist build time. Tests focus on
 'factory validation since full integration tests require a complete
-'linelist workbook with ICrossTable and Formulas dependencies. The fixture
+'linelist workbook with CrossTable and Formulas dependencies. The fixture
 'creates minimal worksheets for factory rejection scenarios and verifies
 'that spatial ListObjects do not exist before Add is called. Tests verify:
 'factory rejects Nothing cross-table; missing spatial sheet scenario is
@@ -106,7 +106,7 @@ End Sub
 'Arranges an output worksheet without the required "spatial_tables__"
 'sheet, explicitly deleting it if present. This test documents that
 'SpatialTables.Create should raise an error when the workbook lacks the
-'spatial sheet. A real ICrossTable cannot be easily constructed without
+'spatial sheet. A real CrossTable cannot be easily constructed without
 'full table specs, so this test serves as a placeholder that confirms
 'the expected behaviour is captured in the test suite.
 '@TestMethod("SpatialTables")
@@ -126,7 +126,7 @@ Public Sub TestCreateRejectsMissingSpatialSheet()
     'SpatialTables.Create raises an error when the spatial sheet is missing
     'by using a mock-like approach: create the CrossTable output sheet only
 
-    'We can't easily create a real ICrossTable without full table specs,
+    'We can't easily create a real CrossTable without full table specs,
     'so we verify that Nothing is rejected (above test).
     'This test documents the expected behavior: missing spatial sheet = error.
 

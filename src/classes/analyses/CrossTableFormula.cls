@@ -15,25 +15,24 @@ Attribute VB_Description = "Formulas for all the cross tables in the analysis"
 '@IgnoreModule UnrecognizedAnnotation, IIfSideEffect, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit
-Implements ICrossTableFormula
 
 '@class CrossTableFormula
 '@description
 'Translates cross-table specifications into concrete Excel formulas and writes
 'them into the cells of analysis worksheets. Each instance is bound to one
-'ICrossTable and its companion IFormulaData, and the central AddFormulas method
+'CrossTable and its companion IFormulaData, and the central AddFormulas method
 'dispatches to type-specific branches (GlobalSummary, Univariate, Bivariate,
 'TimeSeries, SpatioTemporal, Spatial) to produce COUNTIFS / SUMPRODUCT-style
 'array formulas, percentage columns, number formatting, time-period scaffolding,
 'spatial lookups, and data-validation dropdowns. Consumers obtain an instance
-'through the predeclared Create factory and interact via the ICrossTableFormula
+'through the predeclared Create factory and interact via the CrossTableFormula
 'interface.
-'@depends ICrossTable, IFormulaData, Formulas, FormulaCondition, TableSpecs, SpatialTables, BetterArray
+'@depends CrossTable, IFormulaData, Formulas, FormulaCondition, TableSpecs, SpatialTables, BetterArray
 '@version 1.0 (2026-02-10)
 
 
 Private Type TCrossTableFormula
-    tabl As ICrossTable
+    tabl As CrossTable
     fData As IFormulaData
     forml As Formulas
     condVars As BetterArray
@@ -52,16 +51,16 @@ Private Const CLASS_NAME As String = "CrossTableFormula"
 '@details
 'Factory method that returns a new CrossTableFormula through the predeclared-id
 'pattern. Both parameters are validated for Nothing before the instance is
-'constructed. The returned object exposes the ICrossTableFormula interface so
+'constructed. The returned object exposes the CrossTableFormula interface so
 'callers program against the contract rather than the concrete class.
-'@param tabl ICrossTable. The already-constructed cross-table layout providing named ranges, headers, and worksheet reference.
+'@param tabl CrossTable. The already-constructed cross-table layout providing named ranges, headers, and worksheet reference.
 '@param fData IFormulaData. The dictionary-based lookup object supplying variable names, ranges, and formula templates.
-'@return ICrossTableFormula. A fully initialised instance ready to write formulas.
+'@return CrossTableFormula. A fully initialised instance ready to write formulas.
 '@throws InvalidArgument When tabl is Nothing.
 '@throws InvalidArgument When fData is Nothing.
 '@export
-Public Function Create(ByVal tabl As ICrossTable, _
-                       ByVal fData As IFormulaData) As ICrossTableFormula
+Public Function Create(ByVal tabl As CrossTable, _
+                       ByVal fData As IFormulaData) As CrossTableFormula
 
     If tabl Is Nothing Then ThrowError InvalidArgument, "Cross-table not defined"
     If fData Is Nothing Then ThrowError InvalidArgument, "Formula data not defined"
@@ -81,27 +80,27 @@ End Function
 '@prop-title Current object instance cast to the interface.
 '@details
 'Convenience accessor so the Create factory can return the newly constructed
-'object through the ICrossTableFormula interface.
-'@return ICrossTableFormula. The current instance.
-Public Property Get Self() As ICrossTableFormula
+'object through the CrossTableFormula interface.
+'@return CrossTableFormula. The current instance.
+Public Property Get Self() As CrossTableFormula
     Set Self = Me
 End Property
 
 '@label:table-get
-'@prop-title ICrossTable backing store.
+'@prop-title CrossTable backing store.
 '@details
 'Returns the cross-table object that this formula writer targets. The
 'cross-table provides the worksheet reference, named ranges, and layout
 'metadata needed to place formulas.
-'@return ICrossTable. The bound cross-table instance.
-Public Property Get Table() As ICrossTable
+'@return CrossTable. The bound cross-table instance.
+Public Property Get Table() As CrossTable
     Set Table = this.tabl
 End Property
 
 '@label:table-set
-'@prop-title Assign the ICrossTable backing store.
-'@param tabl ICrossTable. The cross-table to bind to this formula writer.
-Public Property Set Table(ByVal tabl As ICrossTable)
+'@prop-title Assign the CrossTable backing store.
+'@param tabl CrossTable. The cross-table to bind to this formula writer.
+Public Property Set Table(ByVal tabl As CrossTable)
     Set this.tabl = tabl
 End Property
 
@@ -228,7 +227,7 @@ End Property
 'exits immediately without writing any formulas to the worksheet.
 '@return Boolean. True if the formula can be used for analysis-scope generation.
 '@export
-Private Property Get Valid() As Boolean
+Public Property Get Valid() As Boolean
     Valid = TableFormula.Valid(formulaType:="analysis")
 End Property
 
@@ -573,7 +572,7 @@ End Sub
 'lookups, validation dropdowns, ordering, and registers the table with SpatialTables
 'for refresh operations. The method exits immediately if Valid returns False.
 '@export
-Private Sub AddFormulas()
+Public Sub AddFormulas()
     Dim tabId As String
     Dim tabType As Byte
     Dim sh As Worksheet
@@ -595,7 +594,7 @@ Private Sub AddFormulas()
     Dim hasMissing As Boolean
     Dim hasTotal As Boolean
     Dim hasPercentage As Boolean
-    Dim tabl As ICrossTable
+    Dim tabl As CrossTable
     Dim spTab As SpatialTables
     Dim tabFormObject As Formulas
     Dim spTabType As String
@@ -1309,15 +1308,3 @@ Private Sub ThrowError(ByVal errNumber As Long, ByVal message As String)
     Err.Raise CLng(errNumber), CLASS_NAME, message
 End Sub
 
-'@section Interface Implementation
-'===============================================================================
-'@description Delegated members satisfying the ICrossTableFormula contract.
-'See the corresponding Public/Private members above for full documentation.
-
-Private Property Get ICrossTableFormula_Valid() As Boolean
-    ICrossTableFormula_Valid = Valid
-End Property
-
-Private Sub ICrossTableFormula_AddFormulas()
-    AddFormulas
-End Sub

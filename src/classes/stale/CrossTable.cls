@@ -17,7 +17,7 @@ Attribute VB_Description = "Create and format crosstables for analysis"
 Option Explicit
 
 'Exposed methods
-Implements ICrossTable
+Implements CrossTable
 
 Private Type TCrossTable
     specs As ITablesSpecs
@@ -36,7 +36,7 @@ Private Const NBROWSTIMESERIES As Long = 56
 Private ALLRANGESNAMES As BetterArray
 
 Public Function Create(ByVal specs As ITablesSpecs, ByVal outputWksh As Worksheet, _
-                       ByVal trans As ITranslation) As ICrossTable
+                       ByVal trans As ITranslation) As CrossTable
     'Check if values are not defined
     If specs Is Nothing Then ThrowErrorUnableInstanciate " Table specifications not defined"
     If outputWksh Is Nothing Then ThrowErrorUnableInstanciate " Output worksheet not defined"
@@ -51,7 +51,7 @@ Public Function Create(ByVal specs As ITablesSpecs, ByVal outputWksh As Workshee
 
 End Function
 
-Public Property Get Self() As ICrossTable
+Public Property Get Self() As CrossTable
     Set Self = Me
 End Property
 
@@ -134,7 +134,7 @@ Private Property Get StartRow() As Long
     End With
 End Property
 
-Private Property Get Previous() As ICrossTable
+Private Property Get Previous() As CrossTable
     'Previous crosstable
     Dim prevSpecs As ITablesSpecs
     Dim specs As ITablesSpecs
@@ -1463,7 +1463,7 @@ Private Property Get ICrossTable_StartRow() As Long
     ICrossTable_StartRow = StartRow
 End Property
 
-Private Property Get ICrossTable_Previous() As ICrossTable
+Private Property Get ICrossTable_Previous() As CrossTable
     Set ICrossTable_Previous = Previous
 End Property
 

@@ -15,7 +15,6 @@ Attribute VB_Description = "Create and format cross-tables for analysis"
 '@IgnoreModule UnrecognizedAnnotation, IIfSideEffect, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit
-Implements ICrossTable
 
 '@class CrossTable
 '@description
@@ -23,7 +22,7 @@ Implements ICrossTable
 'on an Excel worksheet. It supports six table scopes: univariate, bivariate,
 'time series, spatial, spatio-temporal, and global summary. Each cross-table
 'occupies a rectangular region with row categories, column categories, named
-'ranges, and visual formatting. Consumers interact through the ICrossTable
+'ranges, and visual formatting. Consumers interact through the CrossTable
 'interface, and AnalysisOutput orchestrates the build sequence by calling
 'Build followed by Format for each table specification.
 '@depends TableSpecs, ILinelistSpecs, ITranslationObject, ILLVariables, LLVariables, ILLFormat, IHiddenNames, HiddenNames, BetterArray, Checking
@@ -56,7 +55,7 @@ Private internalChecks As Checking
 '@label:create
 '@sub-title Create a CrossTable instance from table specifications.
 '@details
-'Factory method that creates and returns a new ICrossTable instance from
+'Factory method that creates and returns a new CrossTable instance from
 'the given table specifications. A cross-table is a structured analysis
 'output (univariate, bivariate, time series, spatial, spatio-temporal, or
 'global summary) that is built on an output worksheet and contains row
@@ -69,14 +68,14 @@ Private internalChecks As Checking
 '@param lData ILinelistSpecs. The linelist specifications object that provides the translation object
 'for locale-aware labels and is passed to TableSpecs.RowCategories / ColumnCategories for
 'category resolution at build time.
-'@return ICrossTable. A fully initialized ICrossTable ready for Build or individual step calls.
+'@return CrossTable. A fully initialized CrossTable ready for Build or individual step calls.
 '@throws InvalidArgument When specs is Nothing.
 '@throws InvalidArgument When outputWksh is Nothing.
 '@throws InvalidArgument When lData is Nothing.
 '@export
 Public Function Create(ByVal specs As TableSpecs, _
                        ByVal outputWksh As Worksheet, _
-                       ByRef lData As ILinelistSpecs) As ICrossTable
+                       ByRef lData As ILinelistSpecs) As CrossTable
 
     If specs Is Nothing Then ThrowError InvalidArgument, "Table specifications not defined"
     If outputWksh Is Nothing Then ThrowError InvalidArgument, "Output worksheet not defined"
@@ -99,8 +98,8 @@ End Function
 '@details
 'Convenience accessor so consuming code can fluently retrieve the interface
 'reference from the predeclared Create method.
-'@return ICrossTable. The current instance cast to the interface.
-Public Property Get Self() As ICrossTable
+'@return CrossTable. The current instance cast to the interface.
+Public Property Get Self() As CrossTable
     Set Self = Me
 End Property
 
@@ -177,7 +176,7 @@ End Property
 'For bivariate and time series tables this equals the number of column
 'categories plus optional total and missing columns.
 '@return Long. The data column count.
-Private Property Get NumberOfColumns() As Long
+Public Property Get NumberOfColumns() As Long
     NumberOfColumns = this.nbCols
 End Property
 
@@ -195,7 +194,7 @@ End Property
 'were accumulated during the build process. Used by AnaTabIds to register
 'the ranges for export tracking.
 '@return BetterArray. The collection of named range names.
-Private Property Get NamedRangesList() As BetterArray
+Public Property Get NamedRangesList() As BetterArray
     Set NamedRangesList = allRangeNames.Clone()
 End Property
 
@@ -249,7 +248,7 @@ End Function
 'StartColumn, AddRows, AddColumns, AddHeader, NameRanges, Format). After the
 'first call creates the STARTROW_ named range, subsequent calls are cheap
 'lookups.
-Private Property Get StartRow() As Long
+Public Property Get StartRow() As Long
     Dim sh As Worksheet
     Dim specs As TableSpecs
     Dim strtRow As Long
@@ -301,7 +300,7 @@ End Property
 '@label:previous
 '@prop-title Previous cross-table in the same section.
 '@details
-'Creates and returns an ICrossTable instance representing the table
+'Creates and returns an CrossTable instance representing the table
 'that immediately precedes this one within the same analysis section.
 'This is used by temporal table scopes (time series and spatio-temporal)
 'where multiple tables share the same row structure and are laid out
@@ -310,11 +309,11 @@ End Property
 'to the Create factory, passing the Previous spec from the current
 'table's TableSpecs, along with the same output worksheet and
 'translation object.
-'@return ICrossTable. The preceding cross-table, or Nothing when this is the first table.
+'@return CrossTable. The preceding cross-table, or Nothing when this is the first table.
 '@remarks Each call creates a new CrossTable instance; the result is not cached. For
 'temporal tables, this property is typically called once during StartRow
 'resolution and should not be called in tight loops.
-Private Property Get Previous() As ICrossTable
+Public Property Get Previous() As CrossTable
     Set Previous = Create(Specifications.Previous, Wksh(), LinelistData())
 End Property
 
@@ -384,7 +383,7 @@ End Property
 'Returns the 1-based row index of the bottommost cell occupied by this
 'cross-table. Used to compute the start row for the next stacked table.
 '@return Long. The ending row index.
-Private Property Get EndRow() As Long
+Public Property Get EndRow() As Long
     EndRow = this.endRw
 End Property
 
@@ -395,7 +394,7 @@ End Property
 'this cross-table. Used by sibling tables and formatting routines to
 'avoid overlapping output.
 '@return Long. The ending column index.
-Private Property Get EndColumn() As Long
+Public Property Get EndColumn() As Long
     EndColumn = this.endCol
 End Property
 
@@ -438,7 +437,7 @@ End Property
 '@return String. The cached header text string, or an empty string if not yet set.
 '@remarks This value is populated during AddColumns for temporal tables only.
 'Non-temporal table scopes never set this property.
-Private Property Get TimeSeriesHeader() As String
+Public Property Get TimeSeriesHeader() As String
     TimeSeriesHeader = this.tsHeader
 End Property
 
@@ -634,7 +633,7 @@ End Property
 'or the de-facto first table). Subsequent tables in the same temporal section
 'reuse the row structure from the first table and only add columns.
 '@export
-Private Sub AddRows()
+Public Sub AddRows()
     Dim startRw As Long
     Dim specs As TableSpecs
     Dim sh As Worksheet
@@ -847,7 +846,7 @@ End Sub
 'shared by all subsequent global summary rows. The COLGS_SET named range acts
 'as a guard to prevent duplicate creation.
 '@export
-Private Sub AddColumns()
+Public Sub AddColumns()
     Dim startRw As Long
     Dim specs As TableSpecs
     Dim sh As Worksheet
@@ -954,7 +953,7 @@ End Sub
 'controls are unlocked (Locked = False) so the user can interactively change
 'dates at runtime.
 '@export
-Private Sub AddHeader()
+Public Sub AddHeader()
     Dim startRw As Long
     Dim sh As Worksheet
     Dim specs As TableSpecs
@@ -1197,7 +1196,7 @@ End Sub
 '@remarks Exits immediately for ScopeGlobalSummary (which has no row categories or
 'column structure beyond the two fixed columns).
 '@export
-Private Sub NameRanges()
+Public Sub NameRanges()
     Dim specs As TableSpecs
     Dim sh As Worksheet
     Dim nbCols As Long
@@ -1475,7 +1474,7 @@ End Function
 'present. Some operations are idempotent, guarded by HiddenNames like
 'ROWGS_FORMATSET and MERGED_.
 '@export
-Private Sub Format(ByVal desFormat As ILLFormat)
+Public Sub Format(ByVal desFormat As ILLFormat)
     Dim sh As Worksheet
     Dim specs As TableSpecs
     Dim rng As Range
@@ -1775,7 +1774,7 @@ End Sub
 '@remarks Build does NOT call Format. Formatting is applied separately by the caller
 '(typically the analysis builder) after all tables in a section have been built.
 '@export
-Private Sub Build()
+Public Sub Build()
     AddHeader
     AddRows
     AddColumns
@@ -1800,11 +1799,11 @@ Private Sub LogInfo(ByVal message As String, _
     this.hasChecks = True
 End Sub
 
-Private Property Get HasCheckings() As Boolean
+Public Property Get HasCheckings() As Boolean
     HasCheckings = this.hasChecks
 End Property
 
-Private Property Get CheckingValues() As Checking
+Public Property Get CheckingValues() As Checking
     If Not HasCheckings Then Exit Property
     Set CheckingValues = internalChecks
 End Property
@@ -1825,95 +1824,3 @@ Private Sub ThrowError(ByVal errNumber As Long, ByVal message As String)
     Err.Raise CLng(errNumber), CLASS_NAME, message
 End Sub
 
-'@section Interface Implementation
-'===============================================================================
-'@description Delegated members satisfying the ICrossTable contract.
-'See the corresponding Public members above for full documentation.
-
-Private Sub ICrossTable_AddRows()
-    AddRows
-End Sub
-
-Private Sub ICrossTable_AddColumns()
-    AddColumns
-End Sub
-
-Private Sub ICrossTable_AddHeader()
-    AddHeader
-End Sub
-
-Private Sub ICrossTable_NameRanges()
-    NameRanges
-End Sub
-
-Private Sub ICrossTable_Format(ByVal designFormat As ILLFormat)
-    Format designFormat
-End Sub
-
-Private Sub ICrossTable_Build()
-    Build
-End Sub
-
-Private Property Get ICrossTable_HeaderRange() As Range
-    Set ICrossTable_HeaderRange = HeaderRange
-End Property
-
-Private Property Get ICrossTable_TimeSeriesHeader() As String
-    ICrossTable_TimeSeriesHeader = TimeSeriesHeader()
-End Property
-
-Private Property Get ICrossTable_RowsCategoriesRange(Optional ByVal includeHeaders As Boolean = True, _
-                                                      Optional ByVal onlyCategories As Boolean = False) As Range
-    Set ICrossTable_RowsCategoriesRange = RowsCategoriesRange(includeHeaders, onlyCategories)
-End Property
-
-Private Property Get ICrossTable_ColumnRange(ByVal colVal As String, _
-                                              Optional ByVal onlyCategories As Boolean = False, _
-                                              Optional ByVal includeHeaders As Boolean = False) As Range
-    Set ICrossTable_ColumnRange = ColumnRange(colVal, onlyCategories, includeHeaders)
-End Property
-
-Private Property Get ICrossTable_RowRange(ByVal rowVal As String, _
-                                           Optional ByVal includeHeaders As Boolean = True) As Range
-    Set ICrossTable_RowRange = RowRange(rowVal, includeHeaders)
-End Property
-
-Private Property Get ICrossTable_StartRow() As Long
-    ICrossTable_StartRow = StartRow
-End Property
-
-Private Property Get ICrossTable_Previous() As ICrossTable
-    Set ICrossTable_Previous = Previous
-End Property
-
-Private Property Get ICrossTable_Specifications() As TableSpecs
-    Set ICrossTable_Specifications = Specifications
-End Property
-
-Private Property Get ICrossTable_Wksh() As Worksheet
-    Set ICrossTable_Wksh = Wksh()
-End Property
-
-Private Property Get ICrossTable_NumberOfColumns() As Long
-    ICrossTable_NumberOfColumns = NumberOfColumns()
-End Property
-
-Private Property Get ICrossTable_EndColumn() As Long
-    ICrossTable_EndColumn = EndColumn()
-End Property
-
-Private Property Get ICrossTable_EndRow() As Long
-    ICrossTable_EndRow = EndRow()
-End Property
-
-Private Property Get ICrossTable_NamedRangesList() As BetterArray
-    Set ICrossTable_NamedRangesList = NamedRangesList()
-End Property
-
-Private Property Get ICrossTable_HasCheckings() As Boolean
-    ICrossTable_HasCheckings = HasCheckings
-End Property
-
-Private Property Get ICrossTable_CheckingValues() As Checking
-    Set ICrossTable_CheckingValues = CheckingValues
-End Property

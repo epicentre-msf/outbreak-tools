@@ -8,10 +8,10 @@ Option Explicit
 
 '@description
 'Validates the GraphSpecs class, which builds chart series specifications
-'in two modes: simple (non-time-series from an ICrossTable) and complex
+'in two modes: simple (non-time-series from an CrossTable) and complex
 '(time series from analysis ListObjects with graph, time series, and title
 'tables). Tests focus on factory validation and initial state since full
-'series-building tests require ICrossTable (simple mode) or real analysis
+'series-building tests require CrossTable (simple mode) or real analysis
 'ListObjects with named ranges (complex mode), and are exercised through
 'integration tests in TestAnalysisOutput. Tests verify: Create rejects
 'Nothing cross-table (simple mode); CreateRangeSpecs rejects Nothing

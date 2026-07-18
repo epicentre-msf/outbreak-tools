@@ -16,7 +16,7 @@ Option Explicit
 'and are exercised through integration tests in TestAnalysisOutput. The
 'fixture builds a minimal CrossTable via stubs for the dictionary, linelist
 'data, and translation dependencies.
-'@depends CrossTableFormula, ICrossTableFormula, CrossTable, ICrossTable,
+'@depends CrossTableFormula, CrossTable,
 '  FormulaData, IFormulaData, TableSpecs, TableSpecsLinelistStub,
 '  AnalysisDictionaryStub, LinelistSpecsTranslationStub, ILLdictionary,
 '  CustomTest, TestHelpers
@@ -105,12 +105,12 @@ End Function
 '@details
 'Creates an output worksheet, constructs a CrossTable from the supplied
 'specs and linelist data stub, calls Build to write the table layout,
-'and returns the fully built ICrossTable. Used by tests that need a
+'and returns the fully built CrossTable. Used by tests that need a
 'valid cross-table before exercising CrossTableFormula.
-Private Function BuildCrossTable(ByVal specs As TableSpecs) As ICrossTable
+Private Function BuildCrossTable(ByVal specs As TableSpecs) As CrossTable
     Dim sh As Worksheet
     Set sh = OutputSheet()
-    Dim ct As ICrossTable
+    Dim ct As CrossTable
     Set ct = CrossTable.Create(specs, sh, lDataStub)
     ct.Build
     Set BuildCrossTable = ct
@@ -202,7 +202,7 @@ Public Sub TestCreateRejectsNothingTable()
     Set fData = FormulaData.Create(sh)
 
     On Error Resume Next
-    Dim ctf As ICrossTableFormula
+    Dim ctf As CrossTableFormula
     Set ctf = CrossTableFormula.Create(Nothing, fData)
     On Error GoTo 0
 
@@ -230,11 +230,11 @@ Public Sub TestCreateRejectsNothingFormulaData()
     Dim specs As TableSpecs
     Set specs = CreateSpecs(1)
 
-    Dim ct As ICrossTable
+    Dim ct As CrossTable
     Set ct = BuildCrossTable(specs)
 
     On Error Resume Next
-    Dim ctf As ICrossTableFormula
+    Dim ctf As CrossTableFormula
     Set ctf = CrossTableFormula.Create(ct, Nothing)
     On Error GoTo 0
 
@@ -261,7 +261,7 @@ Public Sub TestCreateReturnsValidObject()
     Dim specs As TableSpecs
     Set specs = CreateSpecs(1)
 
-    Dim ct As ICrossTable
+    Dim ct As CrossTable
     Set ct = BuildCrossTable(specs)
 
     Dim sh As Worksheet
@@ -269,7 +269,7 @@ Public Sub TestCreateReturnsValidObject()
     Dim fData As IFormulaData
     Set fData = FormulaData.Create(sh)
 
-    Dim ctf As ICrossTableFormula
+    Dim ctf As CrossTableFormula
     Set ctf = CrossTableFormula.Create(ct, fData)
 
     Assert.IsTrue (Not ctf Is Nothing), _
@@ -301,7 +301,7 @@ Public Sub TestValidReturnsFalseForInvalidFormula()
     Dim specs As TableSpecs
     Set specs = CreateSpecs(1)
 
-    Dim ct As ICrossTable
+    Dim ct As CrossTable
     Set ct = BuildCrossTable(specs)
 
     Dim sh As Worksheet
@@ -309,7 +309,7 @@ Public Sub TestValidReturnsFalseForInvalidFormula()
     Dim fData As IFormulaData
     Set fData = FormulaData.Create(sh)
 
-    Dim ctf As ICrossTableFormula
+    Dim ctf As CrossTableFormula
     Set ctf = CrossTableFormula.Create(ct, fData)
 
     Assert.IsFalse ctf.Valid, _

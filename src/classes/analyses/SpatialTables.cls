@@ -24,7 +24,7 @@ Option Explicit
 '(for hf type), each with formula, population, and attack rate columns.
 'Manages formula conditions and validates that the spatial sheet exists
 'before writing.
-'@depends ICrossTable, TableSpecs, Formulas, FormulaCondition, BetterArray
+'@depends CrossTable, TableSpecs, Formulas, FormulaCondition, BetterArray
 '@version 2025-01-15
 
 
@@ -34,7 +34,7 @@ Option Explicit
 
 Private Type TSpatialTables
     sh As Worksheet
-    tab As ICrossTable
+    tab As CrossTable
     condVars As BetterArray
     condTests As BetterArray
 End Type
@@ -56,14 +56,14 @@ Private Const CONCAT As String = "concat_"
 'is not Nothing and that the "spatial_tables__" worksheet exists in the same
 'workbook. Binds the cross-table to the new instance so subsequent Add calls
 'can read the row variable and table specifications.
-'@param tabl ICrossTable. The cross-table whose row variable defines the
+'@param tabl CrossTable. The cross-table whose row variable defines the
 'spatial tables to create.
 '@return SpatialTables. A fully initialised spatial tables builder.
 '@throws ProjectError.ObjectNotInitialized When tabl is Nothing.
 '@throws ProjectError.ElementNotFound When the spatial worksheet is missing.
-'@depends ICrossTable, TableSpecs
+'@depends CrossTable, TableSpecs
 '@export
-Public Function Create(ByVal tabl As ICrossTable) As SpatialTables
+Public Function Create(ByVal tabl As CrossTable) As SpatialTables
     CheckRequirements tabl
 
     With New SpatialTables
@@ -85,17 +85,17 @@ End Property
 '@label:table
 '@prop-title Cross-table bound to this builder
 '@details
-'Returns the ICrossTable instance whose row variable and specifications
+'Returns the CrossTable instance whose row variable and specifications
 'drive the spatial table creation in Add.
-'@return ICrossTable. The bound cross-table.
-Public Property Get Table() As ICrossTable
+'@return CrossTable. The bound cross-table.
+Public Property Get Table() As CrossTable
     Set Table = this.tab
 End Property
 
 '@label:table-set
 '@prop-title Assign the cross-table reference
-'@param tabl ICrossTable. The cross-table to bind.
-Public Property Set Table(ByVal tabl As ICrossTable)
+'@param tabl CrossTable. The cross-table to bind.
+Public Property Set Table(ByVal tabl As CrossTable)
     Set this.tab = tabl
 End Property
 
@@ -450,7 +450,7 @@ Public Sub Add(ByVal formObject As Formulas)
     Dim rng As Range
     Dim counter As Long
     Dim specs As TableSpecs
-    Dim tabl As ICrossTable
+    Dim tabl As CrossTable
     Dim cellRng As Range
     Dim finalFormula As String
     Dim adminName As String
@@ -543,10 +543,10 @@ End Sub
 '@details
 'Guards the Create factory by ensuring the cross-table is not Nothing and
 'that a worksheet named "spatial_tables__" exists in the same workbook.
-'@param tabl ICrossTable. The cross-table to validate.
+'@param tabl CrossTable. The cross-table to validate.
 '@throws ProjectError.ObjectNotInitialized When tabl is Nothing.
 '@throws ProjectError.ElementNotFound When the spatial worksheet is missing.
-Private Sub CheckRequirements(ByVal tabl As ICrossTable)
+Private Sub CheckRequirements(ByVal tabl As CrossTable)
     Dim wb As Workbook
     Dim sh As Worksheet
 

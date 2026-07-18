@@ -16,7 +16,7 @@ Option Explicit
 'headers), and NamedRangesList population. The fixture writes a minimal
 'TableSpecs layout on a hidden worksheet and uses stubs for the dictionary,
 'linelist data, and translation dependencies.
-'@depends CrossTable, ICrossTable, TableSpecs, TableSpecsLinelistStub,
+'@depends CrossTable, TableSpecs, TableSpecsLinelistStub,
 '  AnalysisDictionaryStub, LinelistSpecsTranslationStub, ILLdictionary,
 '  BetterArray, CustomTest, TestHelpers
 
@@ -191,7 +191,7 @@ Public Sub TestCreateRejectsNothingSpecs()
     Set sh = OutputSheet()
 
     On Error Resume Next
-    Dim ct As ICrossTable
+    Dim ct As CrossTable
     Set ct = CrossTable.Create(Nothing, sh, lDataStub)
     On Error GoTo 0
 
@@ -221,7 +221,7 @@ Public Sub TestCreateRejectsNothingWorksheet()
     Set specs = CreateSpecs(1)
 
     On Error Resume Next
-    Dim ct As ICrossTable
+    Dim ct As CrossTable
     Set ct = CrossTable.Create(specs, Nothing, lDataStub)
     On Error GoTo 0
 
@@ -253,7 +253,7 @@ Public Sub TestCreateRejectsNothingLData()
     Set sh = OutputSheet()
 
     On Error Resume Next
-    Dim ct As ICrossTable
+    Dim ct As CrossTable
     Set ct = CrossTable.Create(specs, sh, Nothing)
     On Error GoTo 0
 
@@ -283,7 +283,7 @@ Public Sub TestCreateReturnsValidObject()
     Dim sh As Worksheet
     Set sh = OutputSheet()
 
-    Dim ct As ICrossTable
+    Dim ct As CrossTable
     Set ct = CrossTable.Create(specs, sh, lDataStub)
 
     Assert.IsTrue (Not ct Is Nothing), _
@@ -316,7 +316,7 @@ Public Sub TestSpecificationsProperty()
     Dim sh As Worksheet
     Set sh = OutputSheet()
 
-    Dim ct As ICrossTable
+    Dim ct As CrossTable
     Set ct = CrossTable.Create(specs, sh, lDataStub)
 
     Assert.AreEqual specs.TableId, ct.Specifications.TableId, _
@@ -345,7 +345,7 @@ Public Sub TestWkshProperty()
     Dim sh As Worksheet
     Set sh = OutputSheet()
 
-    Dim ct As ICrossTable
+    Dim ct As CrossTable
     Set ct = CrossTable.Create(specs, sh, lDataStub)
 
     Assert.AreEqual sh.Name, ct.Wksh.Name, _
@@ -378,7 +378,7 @@ Public Sub TestBuildGlobalSummaryCreatesRowGsSet()
     Dim sh As Worksheet
     Set sh = OutputSheet()
 
-    Dim ct As ICrossTable
+    Dim ct As CrossTable
     Set ct = CrossTable.Create(specs, sh, lDataStub)
     ct.Build
 
@@ -408,7 +408,7 @@ Public Sub TestBuildGlobalSummaryCreatesColGsSet()
     Dim sh As Worksheet
     Set sh = OutputSheet()
 
-    Dim ct As ICrossTable
+    Dim ct As CrossTable
     Set ct = CrossTable.Create(specs, sh, lDataStub)
     ct.Build
 
@@ -443,7 +443,7 @@ Public Sub TestBuildUnivariateCreatesNamedRanges()
     Dim sh As Worksheet
     Set sh = OutputSheet()
 
-    Dim ct As ICrossTable
+    Dim ct As CrossTable
     Set ct = CrossTable.Create(specs, sh, lDataStub)
     ct.Build
 
@@ -484,7 +484,7 @@ Public Sub TestBuildUnivariateEndRowSet()
     Dim sh As Worksheet
     Set sh = OutputSheet()
 
-    Dim ct As ICrossTable
+    Dim ct As CrossTable
     Set ct = CrossTable.Create(specs, sh, lDataStub)
     ct.Build
 
@@ -516,7 +516,7 @@ Public Sub TestBuildUnivariateNumberOfColumns()
     Dim sh As Worksheet
     Set sh = OutputSheet()
 
-    Dim ct As ICrossTable
+    Dim ct As CrossTable
     Set ct = CrossTable.Create(specs, sh, lDataStub)
     ct.Build
 
@@ -550,7 +550,7 @@ Public Sub TestBuildUnivariateNewSectionCreatesSection()
     Dim sh As Worksheet
     Set sh = OutputSheet()
 
-    Dim ct As ICrossTable
+    Dim ct As CrossTable
     Set ct = CrossTable.Create(specs, sh, lDataStub)
     ct.Build
 
@@ -587,7 +587,7 @@ Public Sub TestNamedRangesListPopulatedAfterBuild()
     Dim sh As Worksheet
     Set sh = OutputSheet()
 
-    Dim ct As ICrossTable
+    Dim ct As CrossTable
     Set ct = CrossTable.Create(specs, sh, lDataStub)
     ct.Build
 

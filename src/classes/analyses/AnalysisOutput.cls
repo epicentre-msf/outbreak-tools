@@ -24,7 +24,7 @@ Option Explicit
 '(normal, time series, spatial, spatio-temporal), builds cross-tables from
 'table specifications, writes formulas, registers metadata in AnaTabIds, and
 'renders charts.
-'@depends ILinelist, ILinelistSpecs, ILLFormat, ITranslationObject, TableSpecs, ICrossTable, ICrossTableFormula, Graphs, AnaTabIds, Buttons, IPasswords, IDropdownLists, ILLdictionary, ILLVariables, IFormulaData, BetterArray
+'@depends ILinelist, ILinelistSpecs, ILLFormat, ITranslationObject, TableSpecs, CrossTable, CrossTableFormula, Graphs, AnaTabIds, Buttons, IPasswords, IDropdownLists, ILLdictionary, ILLVariables, IFormulaData, BetterArray
 '@version 1.0 (2026-02-10)
 
 
@@ -520,8 +520,8 @@ Private Sub WriteTable(ByVal loName As String, _
     Dim tabRng As Range
     Dim hRng As Range
     Dim graphCounter As Long
-    Dim tabl As ICrossTable
-    Dim tabform As ICrossTableFormula
+    Dim tabl As CrossTable
+    Dim tabform As CrossTableFormula
     Dim gr As Graphs
     Dim lo As ListObject
     Dim specs As TableSpecs
@@ -945,7 +945,7 @@ Private Sub WriteSpatioTemporalGraph(ByVal loName As String, _
     Dim graphCounter As Long
     Dim trads As ITranslationObject
     Dim lo As ListObject
-    Dim tabl As ICrossTable
+    Dim tabl As CrossTable
     Dim namObj As AnaTabIds
     Dim goToGraphLabel As String
 

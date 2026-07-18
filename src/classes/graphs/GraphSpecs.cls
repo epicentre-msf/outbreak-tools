@@ -20,14 +20,14 @@ Option Explicit
 '@description
 'Builds and stores chart series specifications for both simple (non-time-series)
 'and complex (time series) analysis graphs. In simple mode, the class reads chart
-'configuration directly from an ICrossTable and produces flat parallel arrays of
+'configuration directly from an CrossTable and produces flat parallel arrays of
 'series metadata (names, types, positions, labels). In complex mode, it reads from
 'three setup ListObjects to produce a nested BetterArray collection of graph entries,
 'each containing its own set of parallel series arrays plus a display title. Consumers
 'create an instance via Create (simple) or CreateRangeSpecs (complex), call
 'CreateSeries (or let Valid trigger it lazily), then read series data via the
 'public accessors.
-'@depends ICrossTable, TableSpecs, ILinelistSpecs, BetterArray
+'@depends CrossTable, TableSpecs, ILinelistSpecs, BetterArray
 '@version 1.0 (2026-02-09)
 
 
@@ -40,7 +40,7 @@ Private Const TAB_ON_TITLE_GRAPHS_TIME_SERIES As String = "labels for time serie
 Private Type TGraphSpecs
     specsType As GraphSpecsType
     ' Simple mode: one cross-table
-    tabl As ICrossTable
+    tabl As CrossTable
     ' Complex mode: 3 listobjects + output sheet + linelist specs
     loList As BetterArray
     outSh As Worksheet
@@ -77,7 +77,7 @@ Private Const CLASS_NAME As String = "GraphSpecs"
 '(which require CreateRangeSpecs) and GlobalSummary tables (which do not support
 'graphing). The returned GraphSpecs instance stores a reference to the cross-table
 'and can later produce chart series definitions via CreateSeries.
-'@param tabl ICrossTable. The fully-built cross-table whose named ranges contain
+'@param tabl CrossTable. The fully-built cross-table whose named ranges contain
 'the data to graph. Must not be Nothing, ScopeTimeSeries, or ScopeGlobalSummary.
 '@return GraphSpecs. An instance configured in simple mode (GraphTypeSimple)
 'ready for series creation via CreateSeries.
@@ -86,7 +86,7 @@ Private Const CLASS_NAME As String = "GraphSpecs"
 'series properties (SeriesName, SeriesType, etc.). The cross-table must already
 'have its named ranges written to the worksheet before series data can be consumed.
 '@export
-Public Function Create(ByVal tabl As ICrossTable) As GraphSpecs
+Public Function Create(ByVal tabl As CrossTable) As GraphSpecs
     If tabl Is Nothing Then
         ThrowError InvalidArgument, "Cross-table is not defined"
     End If
@@ -169,15 +169,15 @@ End Property
 
 '@label:table
 '@prop-title Cross-table reference for simple mode
-'@return ICrossTable. The stored cross-table instance.
-Public Property Get Table() As ICrossTable
+'@return CrossTable. The stored cross-table instance.
+Public Property Get Table() As CrossTable
     Set Table = this.tabl
 End Property
 
 '@label:table-set
 '@prop-title Assign the cross-table reference
-'@param tabl ICrossTable. The cross-table to store.
-Public Property Set Table(ByVal tabl As ICrossTable)
+'@param tabl CrossTable. The cross-table to store.
+Public Property Set Table(ByVal tabl As CrossTable)
     Set this.tabl = tabl
 End Property
 
