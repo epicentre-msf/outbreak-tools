@@ -938,7 +938,7 @@ Private Sub LogInfo(ByVal label As String, _
                     Optional ByVal scope As Byte = checkingNote)
 
     Dim checkName As String
-    checkName = "CustomTable " & Name() & " object trace"
+    checkName = "DataSheet " & Name() & " object trace"
     'First, instanciante the internalCheks Objects
     If internalChecks Is Nothing Then Set internalChecks = Checking.Create(checkName)
     
