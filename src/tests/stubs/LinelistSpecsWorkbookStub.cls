@@ -19,7 +19,7 @@ Implements ILinelistSpecs
 Private Type TSpecs
     dictionary As ILLdictionary
     workbook As Workbook
-    password As IPasswords
+    password As Passwords
     translations As ITranslationObject
 End Type
 
@@ -58,7 +58,7 @@ Private Property Get ILinelistSpecs_ExportObject() As LLExport
     Set ILinelistSpecs_ExportObject = Nothing
 End Property
 
-Private Property Get ILinelistSpecs_Password() As IPasswords
+Private Property Get ILinelistSpecs_Password() As Passwords
     Set ILinelistSpecs_Password = this.password
 End Property
 
@@ -86,7 +86,7 @@ Private Property Get ILinelistSpecs_TransObject(Optional ByVal translationScope 
     Set ILinelistSpecs_TransObject = this.translations
 End Property
 
-Public Sub SetPassword(ByVal value As IPasswords)
+Public Sub SetPassword(ByVal value As Passwords)
     Set this.password = value
 End Sub
 

@@ -44,7 +44,7 @@ Private Sub LabPath_Click()
 
     If NumberOfClicks < LimitOfClicks Then Exit Sub
 
-    Dim pass As IPasswords
+    Dim pass As Passwords
     Dim pwdUser As Variant
     Dim expectedPassword As String
     Dim appState As ApplicationState

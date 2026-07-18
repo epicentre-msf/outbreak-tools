@@ -25,7 +25,7 @@ Option Explicit
 'deployment by protecting and hiding registered worksheets. Consumers
 'interact with the Development class using the predeclared factory
 'pattern (Development.Create).
-'@depends BetterArray, IPasswords
+'@depends BetterArray, Passwords
 '@version 1.0 (2026-02-09)
 
 
@@ -436,12 +436,12 @@ End Sub
 'from the Dev sheet, then synchronises form modules without confirmation.
 'Every worksheet registered via AddHiddenSheet is set to xlSheetVeryHidden.
 'Every worksheet registered via AddProtectedSheet is protected using the
-'supplied IPasswords handler with the recorded permission flags. When
+'supplied Passwords handler with the recorded permission flags. When
 'lockWorkbook is True, the host workbook itself is locked. The code
 'worksheet (if distinct from the Dev sheet) is hidden. Finally, a debug
 'exit handler is installed and the workbook-level deployment flag is set
 'to "Yes".
-'@param pass IPasswords. The password handler used to apply protection to
+'@param pass Passwords. The password handler used to apply protection to
 'worksheets and optionally lock the workbook.
 '@param lockWorkbook Optional Boolean. When True, the host workbook
 'structure is locked after protecting sheets. Defaults to False.
@@ -449,7 +449,7 @@ End Sub
 'called or when pass is Nothing.
 '@throws ProjectError.ErrorUnexpectedState When a host sheet is protected.
 '@Description("Protect worksheets, hide Dev assets, copy forms code, and set deployment marker.")
-Public Sub Deploy(ByVal pass As IPasswords, Optional ByVal lockWorkbook As Boolean = False)
+Public Sub Deploy(ByVal pass As Passwords, Optional ByVal lockWorkbook As Boolean = False)
     EnsureInitialised
     EnsureHostSheetsUnlocked
 
@@ -1310,10 +1310,10 @@ End Sub
 '@sub-title Read and apply the default password from the Dev sheet.
 '@details
 'Checks for a named range "DefaultPassword" on the Dev sheet. When found
-'and non-empty, passes its value to the IPasswords handler via
+'and non-empty, passes its value to the Passwords handler via
 'NewDebugingPassword. Silently exits when no default password is configured.
-'@param passwords IPasswords. The password handler to configure.
-Private Sub ApplyDefaultPassword(ByVal passwords As IPasswords)
+'@param passwords Passwords. The password handler to configure.
+Private Sub ApplyDefaultPassword(ByVal passwords As Passwords)
     Dim defaultCell As Range
     Dim defaultValue As String
 

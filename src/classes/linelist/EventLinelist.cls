@@ -41,7 +41,7 @@ Private Type TEventLinelist
     sp              As LLSpatial          'Cached spatial helper
     dict            As ILLdictionary      'Cached dictionary helper
     vars            As LLVariables       'Cached variable lookup helper
-    pass            As IPasswords         'Cached password manager
+    pass            As Passwords         'Cached password manager
 End Type
 
 Private this As TEventLinelist

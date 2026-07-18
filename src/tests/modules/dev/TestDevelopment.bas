@@ -9,6 +9,7 @@ Private Const NAMED_CLASSES As String = "ClassesImplementation"
 Private Const NAMED_TESTS As String = "TestsCodes"
 Private Const GENERAL_FOLDER As String = "general"
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
+Private Const PASSWORD_SHEET_NAME As String = "TestDevelopmentPasswords"
 
 '@Folder("CustomTests")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
@@ -349,8 +350,10 @@ Public Sub TestDeployHidesCodeSheetAndSetsFlag()
 
     Manager.AddProtectedSheet DevSheet.Name
 
-    Dim pass As IPasswords
-    Set pass = New LinelistPasswordStub
+    PasswordsTestFixture.PreparePasswordsFixture PASSWORD_SHEET_NAME, TestBook
+
+    Dim pass As Passwords
+    Set pass = Passwords.Create(TestBook.Worksheets(PASSWORD_SHEET_NAME))
 
     DoEvents
     Manager.Deploy pass

@@ -28,7 +28,7 @@ Implements ILinelistSpecs
 'construct instances via LinelistSpecs.Create(workbook) and receive an
 'ILinelistSpecs interface reference.
 '@depends ILLdictionary, LLChoices, LLTranslation, IDesignerTranslation
-'@depends LLGeo, LLExport, IPasswords, LLFormat
+'@depends LLGeo, LLExport, Passwords, LLFormat
 '@depends LinelistBuildService, TemporaryRepos
 '@depends FormulaData, ILLVariables, Formulas
 '@depends ITranslationObject, ApplicationState
@@ -52,7 +52,7 @@ Private Type TLinelistSpecs
     geo As LLGeo
     exports As LLExport
     ana As Analysis
-    passwords As IPasswords
+    passwords As Passwords
     format As LLFormat
     formulaData As FormulaData
     variables As LLVariables
@@ -1013,11 +1013,11 @@ End Property
 '@label:password
 '@prop-title Password manager
 '@details
-'Returns the IPasswords instance providing workbook and sheet protection
+'Returns the Passwords instance providing workbook and sheet protection
 'utilities from the __pass worksheet. Lazy-loaded on first access.
-'@return IPasswords. The password collaborator.
+'@return Passwords. The password collaborator.
 '@export
-Public Property Get Password() As IPasswords
+Public Property Get Password() As Passwords
     EnsurePasswords
     Set Password = this.passwords
 End Property
@@ -1312,7 +1312,7 @@ Public Sub Prepare(ByVal buildService As LinelistBuildService, ByVal setupPath A
     Dim outWkb As Workbook
     Dim templatePath As String
     Dim tempPath As String
-    Dim pass As IPasswords
+    Dim pass As Passwords
 
     If buildService Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, _
@@ -1518,7 +1518,7 @@ Private Property Get ILinelistSpecs_ExportObject() As LLExport
     Set ILinelistSpecs_ExportObject = Me.ExportObject
 End Property
 
-Private Property Get ILinelistSpecs_Password() As IPasswords
+Private Property Get ILinelistSpecs_Password() As Passwords
     Set ILinelistSpecs_Password = Me.Password
 End Property
 

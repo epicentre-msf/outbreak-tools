@@ -119,7 +119,7 @@ Public Sub clickDevDeploy(ByRef control As IRibbonControl)
 
     EnsureCodeSheet manager
 
-    Dim pass As IPasswords
+    Dim pass As Passwords
     Set pass = ResolvePasswords()
     If pass Is Nothing Then
         MsgBox "Passwords sheet '" & PASS_SHEET_NAME & "' not found. Cannot deploy.", vbExclamation + vbOKOnly, PROMPT_TITLE
@@ -315,7 +315,7 @@ Private Function EnsureCodeSheet(ByVal manager As Development) As Worksheet
     Set EnsureCodeSheet = sh
 End Function
 
-Private Function ResolvePasswords() As IPasswords
+Private Function ResolvePasswords() As Passwords
     Dim passSheet As Worksheet
     On Error Resume Next
         Set passSheet = ThisWorkbook.Worksheets(PASS_SHEET_NAME)
@@ -336,7 +336,7 @@ Private Sub UpdateTables(ByVal addRows As Boolean)
     Dim targetSheet As Worksheet
     Set targetSheet = EnsureCodeSheet(manager)
 
-    Dim pass As IPasswords
+    Dim pass As Passwords
     Set pass = ResolvePasswords()
 
     On Error GoTo Cleanup

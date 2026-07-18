@@ -471,7 +471,7 @@ Public Sub clickImportFile(ByRef control As IRibbonControl)
 
     Dim importPath As String
     Dim service As SetupImportService
-    Dim pass As IPasswords
+    Dim pass As Passwords
     Dim sheets As BetterArray
     Dim success As Boolean
     Dim originalSheet As Worksheet
@@ -522,7 +522,7 @@ End Sub
 Public  Sub clickEditStyle(ByRef control As IRibbonControl)
     Const FORMATSHEET As String = "__formatter"
     Static opened As Boolean
-    Dim pass As IPasswords
+    Dim pass As Passwords
     Dim targetsheet As Worksheet
 
     On Error GoTo Handler

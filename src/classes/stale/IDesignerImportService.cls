@@ -114,9 +114,9 @@ End Property
 
 '@jump:exported-passwords
 '@prop-title Passwords manager targeting the exported workbook
-'@return IPasswords. The exported passwords manager, or Nothing.
+'@return Passwords. The exported passwords manager, or Nothing.
 '@export
-Public Property Get ExportedPasswords() As IPasswords
+Public Property Get ExportedPasswords() As Passwords
 End Property
 
 '@jump:exported-translations

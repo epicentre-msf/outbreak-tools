@@ -30,7 +30,7 @@ Implements ILinelist
 'factory consumers create instances via `New Linelist` rather than
 '`With New Linelist`.
 '@depends ILinelistSpecs, ILLdictionary, ITranslationObject,
-'  IPasswords, LLFormat, HiddenNames,
+'  Passwords, LLFormat, HiddenNames,
 '  IDropdownLists, DropdownLists,
 '  CustomPivotTable, TemporaryRepos, HiddenNames, Buttons, CodeTransfer,
 '  BetterArray
@@ -434,7 +434,7 @@ End Sub
 '@sub-title Save the output workbook as .xlsb with password protection
 '@details
 'Saves the output workbook in .xlsb format with the configured password,
-'protects the workbook structure via IPasswords.Protect, activates an
+'protects the workbook structure via Passwords.Protect, activates an
 'appropriate visible sheet (admin or instruction), closes the workbook,
 'and cleans up temporary files via TemporaryRepos.Reset.
 '@export
@@ -442,7 +442,7 @@ Public Sub SaveLL()
     Dim outWkb As Workbook
     Dim passwd As String
     Dim outPath As String
-    Dim passObj As IPasswords
+    Dim passObj As Passwords
     Dim msgTrads As ITranslationObject
 
     Set outWkb = OutputWkb
@@ -760,7 +760,7 @@ End Sub
 'Applies the linelist design format to the admin sheet, then creates two
 'large-scope buttons (Advanced and Export) with translated labels. After
 'placing the buttons, re-suppresses UI updates and activates the admin
-'sheet. Finally protects the active sheet via IPasswords.Protect with
+'sheet. Finally protects the active sheet via Passwords.Protect with
 'the "_active" scope marker.
 '@remarks
 'The trads object is switched to TranslationOfShapes scope to fetch
@@ -774,7 +774,7 @@ Private Sub PrepareAdmin()
     Dim sh As Worksheet
     Dim trads As ITranslationObject
     Dim design As LLFormat
-    Dim pass As IPasswords
+    Dim pass As Passwords
     Dim but As Buttons
     Dim rng As Range
 
@@ -837,7 +837,7 @@ Private Sub TransferAllCode(ByVal codeTransfer As CodeTransfer)
     codesList.Push "BetterArray", "DataSheet", "LLExport", _
                    "LLChoices", _
                    "LLdictionary", "ILLdictionary", "LLGeo", _
-                   "Passwords", "IPasswords", _
+                   "Passwords", _
                    "Checking", _
                    "LLSheets", "LLTranslation", _
                    "OSFiles", _

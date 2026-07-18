@@ -5,7 +5,7 @@ Attribute VB_Name = "TestPasswords"
 '   and VBProject code injection for the debug exit handler.
 '
 ' @description
-'   This test module exercises the full public surface of the IPasswords interface as
+'   This test module exercises the full public surface of the Passwords interface as
 '   implemented by the Passwords class. Tests are organised into logical groups:
 '
 '     - Creation and value retrieval: verifies that Passwords.Create correctly
@@ -14,7 +14,7 @@ Attribute VB_Name = "TestPasswords"
 '       settings persistence in the T_ProtectedSheets table.
 '     - Debug mode: ensures EnterDebugMode and LeaveDebugMode toggle protection state
 '       correctly and record diagnostic log entries via the Checking interface.
-'     - Import/Export/Clone: tests data transfer between IPasswords instances across
+'     - Import/Export/Clone: tests data transfer between Passwords instances across
 '       worksheets and workbooks.
 '     - Key generation: confirms GenerateKey selects a valid key pair, updates named
 '       ranges, and captures the private key prompt.
@@ -30,7 +30,7 @@ Attribute VB_Name = "TestPasswords"
 '   access to be enabled in the host application's Trust Center; when access is denied,
 '   those tests are skipped with an explicit log message.
 '
-' @depends Passwords, IPasswords, TranslationObject, ITranslationObject,
+' @depends Passwords, Passwords, TranslationObject, ITranslationObject,
 '   ApplicationState, HiddenNames, Checking,
 '   BetterArray, CustomTest, TestHelpers, PasswordsTestFixture
 
@@ -42,7 +42,7 @@ Option Explicit
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Private Assert As CustomTest
-Private PasswordSubject As IPasswords
+Private PasswordSubject As Passwords
 Private FixtureSheet As Worksheet
 Private ProtectedSheet As Worksheet
 Private FixtureWorkbook As Workbook
@@ -366,7 +366,7 @@ End Sub
 
 ' @sub-title Verify that ImportFrom copies key values from a source Passwords instance
 ' @details Tests the ImportFrom method by confirming that key values are transferred between
-'   two independent IPasswords instances. Arrange: creates a clone of PasswordSubject on a
+'   two independent Passwords instances. Arrange: creates a clone of PasswordSubject on a
 '   new worksheet, then overwrites the clone's public key, private key, and keys table with
 '   placeholder values. Act: calls clone.ImportFrom(PasswordSubject). Assert: checks that
 '   the clone's publickey value now matches the original source value. This validates the
@@ -378,7 +378,7 @@ Public Sub TestImportFromCopiesKeys()
     Set destination = FixtureWorkbook.Worksheets.Add(After:=FixtureWorkbook.Worksheets(FixtureWorkbook.Worksheets.Count))
     destination.Name = "PwdImport" & Format(Timer, "000")
 
-    Dim clone As IPasswords
+    Dim clone As Passwords
     Set clone = PasswordSubject.CloneToWorksheet(destination)
 
     clone.PasswordSheet.Range(NAMEPUBLICKEY).Value = "placeholder"
@@ -411,7 +411,7 @@ Public Sub TestImportFromEmptySourceClearsTable()
     Set destinationSheet = FixtureWorkbook.Worksheets.Add(After:=FixtureWorkbook.Worksheets(FixtureWorkbook.Worksheets.Count))
     destinationSheet.Name = "PwdImportEmpty" & Format(Timer, "000")
 
-    Dim target As IPasswords
+    Dim target As Passwords
     Set target = PasswordSubject.CloneToWorksheet(destinationSheet)
 
     Dim targetKeys As ListObject
@@ -452,7 +452,7 @@ End Sub
 ' @sub-title Verify that CloneToWorksheet creates an independent copy on a given sheet
 ' @details Tests CloneToWorksheet by cloning the password data to a new worksheet within
 '   the same workbook. Arrange: creates a fresh worksheet named with a timestamp suffix.
-'   Act: calls CloneToWorksheet to produce a new IPasswords instance backed by the new
+'   Act: calls CloneToWorksheet to produce a new Passwords instance backed by the new
 '   sheet. Assert: confirms the cloned instance's publickey matches the original's value,
 '   proving that the clone received a faithful copy of the keys data. Cleanup: deletes
 '   the cloned worksheet to avoid polluting subsequent tests.
@@ -463,7 +463,7 @@ Public Sub TestCloneToWorksheetProducesIndependentSheet()
     Set cloneSheet = FixtureWorkbook.Worksheets.Add(After:=FixtureWorkbook.Worksheets(FixtureWorkbook.Worksheets.Count))
     cloneSheet.Name = "PasswordsClone" & Format(Timer, "000")
 
-    Dim cloned As IPasswords
+    Dim cloned As Passwords
     Set cloned = PasswordSubject.CloneToWorksheet(cloneSheet)
 
     Assert.AreEqual PasswordSubject.Value("publickey"), cloned.Value("publickey"), _
@@ -477,7 +477,7 @@ End Sub
 ' @sub-title Verify that CloneToWorkbook creates a new workbook-hosted Passwords handler
 ' @details Tests CloneToWorkbook by cloning the password data into a separate workbook.
 '   Arrange: creates a new empty workbook. Act: calls CloneToWorkbook, which should copy
-'   the password sheet into the target workbook and return a new IPasswords instance.
+'   the password sheet into the target workbook and return a new Passwords instance.
 '   Assert: verifies the cloned handler's PasswordSheet.Name matches DEFAULTPASSWORDSHEET,
 '   confirming the sheet was created with the correct name. Cleanup: closes the temporary
 '   workbook without saving.
@@ -487,7 +487,7 @@ Public Sub TestCloneToWorkbookProducesHandler()
     Dim tempWb As Workbook
     Set tempWb = Workbooks.Add
 
-    Dim cloned As IPasswords
+    Dim cloned As Passwords
     Set cloned = PasswordSubject.CloneToWorkbook(tempWb)
 
     Assert.AreEqual DEFAULTPASSWORDSHEET, cloned.PasswordSheet.Name, _
@@ -658,7 +658,7 @@ Public Sub TestEnsureDebugExitHandlerInjectsCode()
 
     On Error GoTo InjectionAccessDenied
 
-    Dim cloned As IPasswords
+    Dim cloned As Passwords
     Set cloned = PasswordSubject.CloneToWorkbook(tempWb)
     cloned.EnsureDebugExitHandler tempWb
 
@@ -709,7 +709,7 @@ Public Sub TestEnsureDebugExitHandlerPreservesExistingBeforeCloseCode()
     CustomTestSetTitles Assert, "Passwords", "TestEnsureDebugExitHandlerPreservesExistingBeforeCloseCode"
 
     Dim tempWb As Workbook
-    Dim cloned As IPasswords
+    Dim cloned As Passwords
     Dim codeModule As Object
     Dim baseLines As String
     Dim procStart As Long
@@ -804,7 +804,7 @@ Public Sub TestDebugExitHandlerRoundtripPersistsProtections()
     CustomTestSetTitles Assert, "Passwords", "TestDebugExitHandlerRoundtripPersistsProtections"
 
     Dim tempWb As Workbook
-    Dim cloned As IPasswords
+    Dim cloned As Passwords
     Dim guardSheet As Worksheet
     Dim guardSheetName As String
     Dim workbookPath As String
@@ -902,7 +902,7 @@ Private Sub ImportPasswordsComponents(ByVal targetWorkbook As Workbook, _
     Dim idx As Long
     Dim exportPath As String
 
-    components = Array("BetterArray", "Checking", "IPasswords", "Passwords", "TranslationObject", "ITranslationObject")
+    components = Array("BetterArray", "Checking", "Passwords", "TranslationObject", "ITranslationObject")
 
     For idx = LBound(components) To UBound(components)
         exportPath = TestHelpers.ExportComponentToFolder(ThisWorkbook, CStr(components(idx)), exportFolder)

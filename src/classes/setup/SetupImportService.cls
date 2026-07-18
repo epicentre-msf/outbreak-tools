@@ -13,7 +13,7 @@ Attribute VB_Description = "Improved setup import service orchestrating workbook
 '@Folder("Setup")
 '@ModuleDescription("Improved setup import service orchestrating workbook synchronisation")
 '@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
-'@depends ProjectError, ApplicationState, BetterArray, CustomTable, LLExport, LLdictionary, ILLdictionary, LLFormat, IPasswords, Analysis, SetupTranslationsTable
+'@depends ProjectError, ApplicationState, BetterArray, CustomTable, LLExport, LLdictionary, ILLdictionary, LLFormat, Passwords, Analysis, SetupTranslationsTable
 
 Option Explicit
 
@@ -24,7 +24,7 @@ Option Explicit
 'Translations). Supports both table-level import via CustomTable and
 'domain-class-driven import via dedicated managers (LLdictionary, LLChoices,
 'LLExport, Analysis, SetupTranslationsTable). Guards Excel state through
-'ApplicationState and protects/unprotects worksheets via IPasswords.
+'ApplicationState and protects/unprotects worksheets via Passwords.
 
 
 '@section State and constants
@@ -296,10 +296,10 @@ End Sub
 '@details
 'Iterates over the requested sheets, unprotects each one, clears all
 'ListObject data and worksheet comments, then re-protects.
-'@param pass IPasswords. Password handler for worksheet protection.
+'@param pass Passwords. Password handler for worksheet protection.
 '@param sheetsList BetterArray. Worksheets participating in the clean-up.
 '@export
-Public Sub Clean(ByVal pass As IPasswords, ByVal sheetsList As BetterArray)
+Public Sub Clean(ByVal pass As Passwords, ByVal sheetsList As BetterArray)
     Dim workbook As Workbook
     Dim idx As Long
     Dim sheetName As String
@@ -355,10 +355,10 @@ End Sub
 'ListObjects between source and host, and delegates import to
 'CustomTable.Import. Handles sheet protection/unprotection and export
 'column alignment via PrepareImport.
-'@param pass IPasswords. Password handler for worksheet protection.
+'@param pass Passwords. Password handler for worksheet protection.
 '@param sheetsList BetterArray. Worksheets participating in the import.
 '@export
-Public Sub Import(ByVal pass As IPasswords, ByVal sheetsList As BetterArray)
+Public Sub Import(ByVal pass As Passwords, ByVal sheetsList As BetterArray)
     Dim importBook As Workbook
     Dim hostWorkbook As Workbook
     Dim sheetName As String
@@ -449,10 +449,10 @@ End Sub
 'Uses domain-specific classes (LLdictionary, LLChoices, LLExport, Analysis,
 'SetupTranslationsTable) to import each worksheet from the source workbook.
 'Falls back to the default sheets list when none is provided.
-'@param pass IPasswords. Password handler for worksheet protection.
+'@param pass Passwords. Password handler for worksheet protection.
 '@param sheetsList Optional BetterArray. Worksheets to import. Defaults to all five setup sheets.
 '@export
-Public Sub ImportFromWorkbook(ByVal pass As IPasswords, Optional ByVal sheetsList As BetterArray = Nothing)
+Public Sub ImportFromWorkbook(ByVal pass As Passwords, Optional ByVal sheetsList As BetterArray = Nothing)
     Dim importBook As Workbook
     Dim hostWorkbook As Workbook
     Dim resolvedSheets As BetterArray
@@ -511,7 +511,7 @@ End Sub
 
 '@label:import-dictionary
 '@sub-title Import dictionary worksheet using LLdictionary.
-Private Sub ImportDictionaryUsingClass(ByVal pass As IPasswords, _
+Private Sub ImportDictionaryUsingClass(ByVal pass As Passwords, _
                                        ByVal hostWorkbook As Workbook, _
                                        ByVal importWorkbook As Workbook)
 
@@ -555,7 +555,7 @@ End Sub
 
 '@label:import-choices
 '@sub-title Import choices worksheet using LLChoices.
-Private Sub ImportChoicesUsingClass(ByVal pass As IPasswords, ByVal hostworkbook As Workbook, ByVal importworkbook As Workbook)
+Private Sub ImportChoicesUsingClass(ByVal pass As Passwords, ByVal hostworkbook As Workbook, ByVal importworkbook As Workbook)
 
     Dim hostsheet As worksheet
     Dim sourcesheet As Worksheet
@@ -596,7 +596,7 @@ End Sub
 
 '@label:import-exports
 '@sub-title Import export specifications via LLExport.
-Private Sub ImportExportUsingClass(ByVal pass As IPasswords, _
+Private Sub ImportExportUsingClass(ByVal pass As Passwords, _
                                    ByVal hostWorkbook As Workbook, _
                                    ByVal importWorkbook As Workbook)
 
@@ -642,7 +642,7 @@ End Sub
 
 '@label:import-analysis
 '@sub-title Import analysis worksheet content via Analysis class.
-Private Sub ImportAnalysisUsingClass(ByVal pass As IPasswords, _
+Private Sub ImportAnalysisUsingClass(ByVal pass As Passwords, _
                                      ByVal hostWorkbook As Workbook, _
                                      ByVal importWorkbook As Workbook)
 
@@ -686,7 +686,7 @@ End Sub
 
 '@label:import-translations
 '@sub-title Import translations worksheet using CustomTable and SetupTranslationsTable.
-Private Sub ImportTranslationsUsingClass(ByVal pass As IPasswords, _
+Private Sub ImportTranslationsUsingClass(ByVal pass As Passwords, _
                                          ByVal hostWorkbook As Workbook, _
                                          ByVal importWorkbook As Workbook)
 
@@ -892,7 +892,7 @@ End Sub
 '===============================================================================
 '@label:prepare-import
 '@sub-title Ensure the exports and dictionary sheets are aligned prior to import.
-Private Sub PrepareImport(ByVal pass As IPasswords, _
+Private Sub PrepareImport(ByVal pass As Passwords, _
                           Optional ByVal sheetsList As BetterArray, _ 
                           Optional ByVal forceSync As Boolean = True, _
                           Optional ByVal impStartRow As Long = EXPORT_HOST_START_ROW, _
@@ -992,7 +992,7 @@ End Sub
 
 '@label:post-import
 '@sub-title Restore choices column names after import completes.
-Private Sub PostImport(ByVal pass As IPasswords, _
+Private Sub PostImport(ByVal pass As Passwords, _
                         Optional ByVal sheetsList As BetterArray)
 
     If sheetsList Is Nothing Then Exit Sub
@@ -1112,7 +1112,7 @@ End Sub
 
 '@label:validate-passwords
 '@sub-title Validate availability of requested passwords object.
-Private Sub ValidatePasswords(ByVal pass As IPasswords)
+Private Sub ValidatePasswords(ByVal pass As Passwords)
     If pass Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, "Passwords handler is required for worksheet protection."
     End If
@@ -1391,7 +1391,7 @@ End Sub
 
 '@label:protect-worksheet
 '@sub-title Protect worksheet with default rules.
-Private Sub ProtectWorksheet(ByVal pass As IPasswords, ByVal sheetName As String)
+Private Sub ProtectWorksheet(ByVal pass As Passwords, ByVal sheetName As String)
     pass.Protect sheetName, _
                       (sheetName = TRANSLATIONS_SHEET_NAME Or sheetName = ANALYSIS_SHEET_NAME), _
                       (sheetName = TRANSLATIONS_SHEET_NAME)

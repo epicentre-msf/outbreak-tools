@@ -23,7 +23,7 @@ Option Explicit
 'editable labels, single metadata values, and geobase data. Tracks which
 'sheets and variables were imported, and builds a report of items not
 'imported or not touched.
-'@depends ILLdictionary, IPasswords, CustomTable, DataSheet
+'@depends ILLdictionary, Passwords, CustomTable, DataSheet
 '@depends LLGeo, LLChoices, ILLVariables, IDropdownLists, HiddenNames
 
 
@@ -223,12 +223,12 @@ End Function
 'Iterates over all worksheets in the source workbook. For HList sheets,
 'clears non-formula column values from the ListObject data body. For
 'VList sheets, clears non-formula named range values. Unprotects and
-'re-protects each sheet via IPasswords.
+'re-protects each sheet via Passwords.
 '@export
 Public Sub ClearData()
 
     Dim sh As Worksheet
-    Dim pass As IPasswords
+    Dim pass As Passwords
     Dim lo As ListObject
     Dim valueRng As Range
     Dim labelRng As Range
@@ -292,7 +292,7 @@ Public Sub ImportData(ByVal impwb As Workbook, ByVal pasteAtBottom As Boolean)
 
     Dim dict As ILLdictionary
     Dim sheetsList As BetterArray
-    Dim pass As IPasswords
+    Dim pass As Passwords
     Dim impsh As Worksheet
     Dim currsh As Worksheet
 
@@ -645,7 +645,7 @@ Public Sub ImportGeobase(ByVal impwb As Workbook, Optional ByVal histoOnly As Bo
 
     Dim geo As LLGeo
     Dim dict As ILLdictionary
-    Dim pass As IPasswords
+    Dim pass As Passwords
     Dim showHideSh As Worksheet
 
     Set geo = GeoObject()
@@ -846,8 +846,8 @@ End Function
 
 '@label:passwords-object
 '@sub-title Get passwords from the source workbook
-'@return IPasswords. Passwords instance from the __pass sheet.
-Private Function PasswordsObject() As IPasswords
+'@return Passwords. Passwords instance from the __pass sheet.
+Private Function PasswordsObject() As Passwords
     Set PasswordsObject = Passwords.Create(this.sourceWkb.Worksheets(PASSWORDSHEET))
 End Function
 

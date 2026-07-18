@@ -47,7 +47,7 @@ Private Type TEventSetup
     ana                 As Analysis         'Cached analysis helper
     exports             As LLExport         'Cached exports manager
     translations        As SetupTranslationsTable 'Cached translations manager
-    passwords           As IPasswords        'Cached password helper (lazily created once)
+    passwords           As Passwords        'Cached password helper (lazily created once)
     choicesTable        As CustomTable      'Cached Choices table wrapper
 End Type
 
@@ -350,8 +350,8 @@ End Function
 '@export
 Public Sub ManageRows(ByVal sheetName As String, Optional ByVal del As Boolean = False)
     Dim normalized As String
-    Dim sheetPass As IPasswords
-    Dim dictPass As IPasswords
+    Dim sheetPass As Passwords
+    Dim dictPass As Passwords
     Dim unlockedSheet As String
     Dim unlockedDict As String
 
@@ -432,8 +432,8 @@ Public Sub InsertRows(ByVal sheetName As String, _
                       ByVal targetCell As Range, _
                       Optional ByVal insertShift As Boolean = False)
     Dim normalized As String
-    Dim sheetPass As IPasswords
-    Dim dictPass As IPasswords
+    Dim sheetPass As Passwords
+    Dim dictPass As Passwords
     Dim unlockedSheet As String
     Dim unlockedDict As String
     Dim effectiveShift As Boolean
@@ -515,8 +515,8 @@ Public Sub DeleteRows(ByVal sheetName As String, _
                       ByVal targetCell As Range, _
                       Optional ByVal forceShift As Boolean = False)
     Dim normalized As String
-    Dim sheetPass As IPasswords
-    Dim dictPass As IPasswords
+    Dim sheetPass As Passwords
+    Dim dictPass As Passwords
     Dim unlockedSheet As String
     Dim unlockedDict As String
 
@@ -593,8 +593,8 @@ End Sub
 '@export
 Public Sub SortTables(ByVal sheetName As String)
     Dim normalized As String
-    Dim sheetPass As IPasswords
-    Dim dictPass As IPasswords
+    Dim sheetPass As Passwords
+    Dim dictPass As Passwords
     Dim unlockedSheet As String
     Dim unlockedDict As String
 
@@ -999,10 +999,10 @@ End Function
 '@label:password-manager
 '@sub-title Build a password helper from the passwords worksheet.
 '@details
-'Creates an IPasswords helper from the "__pass" worksheet. Returns Nothing
+'Creates an Passwords helper from the "__pass" worksheet. Returns Nothing
 'when the sheet does not exist or creation fails.
-'@return IPasswords. The password helper, or Nothing when unavailable.
-Private Function PasswordManager() As IPasswords
+'@return Passwords. The password helper, or Nothing when unavailable.
+Private Function PasswordManager() As Passwords
     Dim passSheet As Worksheet
 
     Set passSheet = SheetOrNothing(SHEET_PASSWORDS)
@@ -1016,11 +1016,11 @@ End Function
 '@label:cached-password-manager
 '@sub-title Return the cached password helper, creating it on first call.
 '@details
-'Lazily creates the IPasswords instance once and caches it for the lifetime
+'Lazily creates the Passwords instance once and caches it for the lifetime
 'of this EventSetup instance. Eliminates repeated Passwords.Create calls
 'during BeginSheetUpdate / EndSheetUpdate cycles.
-'@return IPasswords. The cached password helper, or Nothing when unavailable.
-Private Function CachedPasswordManager() As IPasswords
+'@return Passwords. The cached password helper, or Nothing when unavailable.
+Private Function CachedPasswordManager() As Passwords
     If this.passwords Is Nothing Then
         Set this.passwords = PasswordManager()
     End If
@@ -1031,12 +1031,12 @@ End Function
 '@sub-title Temporarily unlock the provided sheet and return the password helper.
 '@details
 'Removes sheet protection using the cached password helper so callers can modify
-'protected cells. Returns the IPasswords instance for later re-locking via
+'protected cells. Returns the Passwords instance for later re-locking via
 'EndSheetUpdate.
 '@param sheetName String. Name of the sheet to unprotect.
-'@return IPasswords. The password helper for later re-locking.
-Private Function BeginSheetUpdate(ByVal sheetName As String) As IPasswords
-    Dim pass As IPasswords
+'@return Passwords. The password helper for later re-locking.
+Private Function BeginSheetUpdate(ByVal sheetName As String) As Passwords
+    Dim pass As Passwords
 
     Set pass = CachedPasswordManager()
     On Error Resume Next
@@ -1048,9 +1048,9 @@ End Function
 
 '@label:end-sheet-update
 '@sub-title Restore sheet protection previously removed via BeginSheetUpdate.
-'@param pass IPasswords. Password helper returned by BeginSheetUpdate.
+'@param pass Passwords. Password helper returned by BeginSheetUpdate.
 '@param sheetName String. Name of the sheet to re-protect.
-Private Sub EndSheetUpdate(ByVal pass As IPasswords, ByVal sheetName As String)
+Private Sub EndSheetUpdate(ByVal pass As Passwords, ByVal sheetName As String)
     On Error Resume Next
         If Not pass Is Nothing Then pass.Protect sheetName
     On Error GoTo 0
@@ -1301,7 +1301,7 @@ Private Sub AddGeoDropdown(ByVal target As Range)
     Dim geoCell As Range
     Dim spatialTypeCell As Range
     Dim spatialType As String
-    Dim pass As IPasswords
+    Dim pass As Passwords
     Const ANALYSIS_SHEET As String = SHEET_ANALYSIS
 
     If Not EnsureAnalysisTable(this.spatioTable, LIST_SPATIO_TEMPORAL, "section") Then Exit Sub
@@ -1353,7 +1353,7 @@ Private Sub SyncGeoFromSpecs(ByVal target As Range)
     Dim spatialTypeCell As Range
     Dim sectionName As String
     Dim newSpatialType As String
-    Dim pass As IPasswords
+    Dim pass As Passwords
     Const ANALYSIS_SHEET As String = SHEET_ANALYSIS
 
     'Ensure the specs table is cached
@@ -1416,7 +1416,7 @@ Private Sub AddChoicesDropdown(ByVal target As Range)
     Dim listName As String
     Dim choiceCell As Range
     Dim valueCell As Range
-    Dim pass As IPasswords
+    Dim pass As Passwords
 
     If Not EnsureAnalysisTable(this.graphTable, LIST_GRAPH_TS, "series title") Then Exit Sub
     If Not EnsureAnalysisTable(this.tsTable, LIST_TS_DATA, "title") Then Exit Sub

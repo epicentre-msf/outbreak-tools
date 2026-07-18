@@ -17,8 +17,6 @@ Attribute VB_Description = "Lock/unlock workbooks and worksheets"
 
 Option Explicit
 
-Implements IPasswords
-
 '@class Passwords
 '@description
 'Manages workbook/worksheet protection, key generation, debug-mode
@@ -31,6 +29,16 @@ Implements IPasswords
 
 '@section State and Constants
 '===============================================================================
+Public Enum PaswordTag
+  PasswordTagDebug = 1
+  PasswordTagPublic = 2
+  PasswordTagPrivate = 3
+  PasswordTagVersion = 4
+  PasswordTagMode = 5
+  PasswordTagLabPublic = 6
+  PasswordTagLabPrivate = 7
+End Enum
+
 Private Type TPasswords
     sh As Worksheet                          'Password worksheet backing the object
     wb As Workbook                           'Cached workbook reference
@@ -74,9 +82,9 @@ Private Const CHECKINGCONTEXT As String = "Passwords object trace"
 'Factory returning an interface reference that wraps the provided
 'password worksheet.
 '@param sh Worksheet. Worksheet hosting password tables and named ranges.
-'@return IPasswords. Fully initialised password handler.
+'@return Passwords. Fully initialised password handler.
 '@export
-Public Function Create(ByVal sh As Worksheet) As IPasswords
+Public Function Create(ByVal sh As Worksheet) As Passwords
 
     ValidateSheet sh
 
@@ -88,9 +96,9 @@ Public Function Create(ByVal sh As Worksheet) As IPasswords
 End Function
 
 '@label:self
-'@prop-title Self-reference as IPasswords
-'@return IPasswords. Self-reference.
-Public Property Get Self() As IPasswords
+'@prop-title Self-reference as Passwords
+'@return Passwords. Self-reference.
+Public Property Get Self() As Passwords
     Set Self = Me
 End Property
 
@@ -260,7 +268,7 @@ End Sub
 '@export
 Public Sub LeaveDebugMode(Optional ByVal targetWorkbook As Workbook)
 
-    If Not InDebugMode() Then Exit Sub
+    If Not IsInDebugMode() Then Exit Sub
 
     Dim wb As Workbook
     Set wb = ResolveWorkbook(targetWorkbook)
@@ -368,7 +376,7 @@ Private Sub ProtectSheet(sheetObject As Variant, _
 
     EnsureWorkbookReady
 
-    If InDebugMode() Then
+    If IsInDebugMode() Then
         LogInfo "Protection request ignored because workbook is in debug mode", checkingWarning
         Exit Sub
     End If
@@ -515,7 +523,7 @@ End Sub
 '@param allowDeletingRows Optional Boolean. Allow row deletion. Defaults to True.
 '@param registerState Optional Boolean. Persist protection metadata. Defaults to True.
 '@export
-Private Sub Protect(Optional  targetObject As Variant = "_active", _
+Public Sub Protect(Optional  targetObject As Variant = "_active", _
                    Optional ByVal allowShapes As Boolean = True, _
                    Optional ByVal allowDeletingRows As Boolean = True, _
                    Optional ByVal registerState As Boolean = True)
@@ -527,7 +535,7 @@ End Sub
 '@sub-title Unprotect a worksheet or workbook
 '@param targetObject Optional Variant. Workbook, Worksheet, or String tag. Defaults to "_active".
 '@export
-Private Sub UnProtect(Optional targetObject As Variant = "_active")
+Public Sub UnProtect(Optional targetObject As Variant = "_active")
     ResolveProtection targetObject, setProtection:=False
 End Sub
 
@@ -540,7 +548,7 @@ End Sub
 '@sub-title Randomly select a public/private key pair
 '@param trads ITranslationObject. Translation helper for prompts.
 '@export
-Private Sub GenerateKey(ByVal trads As ITranslationObject)
+Public Sub GenerateKey(ByVal trads As ITranslationObject)
 
     Dim Lo As ListObject
     Dim dataRange As Range
@@ -578,7 +586,7 @@ End Sub
 '@sub-title Display the current private key via a translated prompt
 '@param trads ITranslationObject. Translation helper for the message.
 '@export
-Private Sub DisplayPrivateKey(ByVal trads As ITranslationObject)
+Public Sub DisplayPrivateKey(ByVal trads As ITranslationObject)
 
     Dim promptText As String
     Dim titleText As String
@@ -607,7 +615,7 @@ End Sub
 '@sub-title Export the password worksheet into another workbook
 '@param destination Workbook. Target workbook.
 '@export
-Private Sub ExportToWorkbook(ByVal destination As Workbook)
+Public Sub ExportToWorkbook(ByVal destination As Workbook)
 
     Dim sourceSheet As Worksheet
     Dim targetSheet As Worksheet
@@ -640,9 +648,9 @@ End Sub
 
 '@label:import-from
 '@sub-title Import keys and metadata from another password handler
-'@param source IPasswords. Source password object.
+'@param source Passwords. Source password object.
 '@export
-Private Sub ImportFrom(ByVal source As IPasswords)
+Public Sub ImportFrom(ByVal source As Passwords)
 
     Dim loSource As Range
     Dim destinationLo As ListObject
@@ -678,7 +686,7 @@ End Sub
 '@sub-title Update the debugging password stored on the password worksheet
 '@param newValue String. The new debugging password value.
 '@export
-Private Sub UpdateDebugingPassword(ByVal newValue As String)
+Public Sub NewDebugingPassword(ByVal newValue As String)
     Dim target As Range
 
     EnsureSheetReady
@@ -695,11 +703,11 @@ End Sub
 '@label:clone-to-worksheet
 '@sub-title Clone the password worksheet into another sheet
 '@param targetSheet Worksheet. Destination worksheet.
-'@return IPasswords. Handler bound to the cloned sheet.
+'@return Passwords. Handler bound to the cloned sheet.
 '@export
-Private Function CloneToWorksheet(ByVal targetSheet As Worksheet) As IPasswords
+Public Function CloneToWorksheet(ByVal targetSheet As Worksheet) As Passwords
 
-    Dim pass As IPasswords
+    Dim pass As Passwords
 
     If targetSheet Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, "Target sheet is required when cloning password data"
@@ -722,118 +730,14 @@ End Function
 'Exports the password data to the target workbook and returns a
 'new handler bound to the cloned sheet.
 '@param wb Workbook. Destination workbook.
-'@return IPasswords. Handler bound to the cloned sheet.
+'@return Passwords. Handler bound to the cloned sheet.
 '@export
-Private Function CloneToWorkbook(ByVal wb As Workbook) As IPasswords
+Public Function CloneToWorkbook(ByVal wb As Workbook) As Passwords
     Dim sh As Worksheet
     ExportToWorkbook wb
     Set sh = wb.Worksheets(Name())
     Set CloneToWorkbook = Create(sh)
 End Function
-
-
-'@section Interface
-'===============================================================================
-'IPasswords delegation wiring.
-
-Private Property Get IPasswords_PasswordSheet() As Worksheet
-    Set IPasswords_PasswordSheet = PasswordSheet()
-End Property
-
-Private Property Get IPasswords_Value(ByVal tagName As String) As String
-    IPasswords_Value = Value(tagName)
-End Property
-
-Private Property Get IPasswords_DisplayPrompts() As Boolean
-    IPasswords_DisplayPrompts = DisplayPrompts
-End Property
-
-Private Property Let IPasswords_DisplayPrompts(ByVal value As Boolean)
-    DisplayPrompts = value
-End Property
-
-Private Property Get IPasswords_LastPrivatePrompt() As String
-    IPasswords_LastPrivatePrompt = LastPrivatePrompt
-End Property
-
-Private Property Get IPasswords_LastPrivatePromptTitle() As String
-    IPasswords_LastPrivatePromptTitle = LastPrivatePromptTitle
-End Property
-
-Private Property Get IPasswords_TableRange(ByVal tableName As String, Optional ByVal includeHeaders As Boolean = False) As Range
-    Set IPasswords_TableRange = TableRange(tableName, includeHeaders:=includeHeaders)
-End Property
-
-Private Property Get IPasswords_HasCheckings() As Boolean
-    IPasswords_HasCheckings = HasCheckings
-End Property
-
-Private Property Get IPasswords_IsInDebugMode() As Boolean
-    IPasswords_IsInDebugMode = InDebugMode()
-End Property
-
-Private Property Get IPasswords_CheckingValues() As Checking
-    Set IPasswords_CheckingValues = CheckingValues
-End Property
-
-Private Sub IPasswords_EnterDebugMode(Optional ByVal targetWorkbook As Workbook)
-    EnterDebugMode targetWorkbook
-End Sub
-
-Private Sub IPasswords_LeaveDebugMode(Optional ByVal targetWorkbook As Workbook)
-    LeaveDebugMode targetWorkbook
-End Sub
-
-Private Sub IPasswords_EnsureDebugExitHandler(Optional ByVal targetWorkbook As Workbook)
-    EnsureDebugExitHandler targetWorkbook
-End Sub
-
-Private Sub IPasswords_Protect(Optional targetObject As Variant = "_active", _
-                   Optional ByVal allowShapes As Boolean = True, _
-                   Optional ByVal allowDeletingRows As Boolean = True, _
-                   Optional ByVal registerState As Boolean = True)
-    Protect targetObject, allowShapes, allowDeletingRows, registerState
-End Sub
-
-Private Sub IPasswords_UnProtect(Optional targetObject As Variant = "_active")
-    UnProtect targetObject
-End Sub
-
-Private Sub IPasswords_GenerateKey(ByVal trads As ITranslationObject)
-    GenerateKey trads
-End Sub
-
-Private Sub IPasswords_DisplayPrivateKey(ByVal trads As ITranslationObject)
-    DisplayPrivateKey trads
-End Sub
-
-Private Sub IPasswords_ExportToWorkbook(ByVal wb As Workbook)
-    ExportToWorkbook wb
-End Sub
-
-Private Sub IPasswords_ImportFrom(ByVal source As IPasswords)
-    ImportFrom source
-End Sub
-
-Private Sub IPasswords_NewDebugingPassword(ByVal newValue As String)
-    UpdateDebugingPassword newValue
-End Sub
-
-Private Function IPasswords_CloneToWorksheet(ByVal targetSheet As Worksheet) As IPasswords
-    Set IPasswords_CloneToWorksheet = CloneToWorksheet(targetSheet)
-End Function
-
-Private Function IPasswords_CloneToWorkbook(ByVal wb As Workbook) As IPasswords
-    Set IPasswords_CloneToWorkbook = CloneToWorkbook(wb)
-End Function
-
-Private Sub IPasswords_EnsureProtectedSheetsName(Optional ByVal targetWorkbook As Workbook)
-    EnsureProtectedSheetsName targetWorkbook
-End Sub
-
-Private Sub IPasswords_ApplyProtectionMatrix(ByVal wb As Workbook)
-    ApplyProtectionMatrix wb
-End Sub
 
 '@section Private Helpers
 '===============================================================================
@@ -1061,15 +965,15 @@ End Sub
 '@label:is-in-debug-mode
 '@sub-title Test whether the workbook is in debug mode
 '@return Boolean. True when debug mode is active.
-Private Function InDebugMode() As Boolean
-    InDebugMode = (StrComp(CStr(NamedRange(NAMEDEBUGMODE).Value), DEFAULTBOOLYES, vbTextCompare) = 0)
+Public Function IsInDebugMode() As Boolean
+    IsInDebugMode = (StrComp(CStr(NamedRange(NAMEDEBUGMODE).Value), DEFAULTBOOLYES, vbTextCompare) = 0)
 End Function
 
 '@label:apply-protection-matrix
 '@sub-title Apply stored protection settings to all listed worksheets
 '@param wb Workbook. Target workbook whose sheets will be protected.
 '@export
-Private Sub ApplyProtectionMatrix(ByVal wb As Workbook)
+Public Sub ApplyProtectionMatrix(ByVal wb As Workbook)
     Dim Lo As ListObject
     Dim bodyRange As Range
     Dim rowIdx As Long
@@ -1239,7 +1143,7 @@ Private Function BuildLeaveDebugProcedure() As String
            "    If guardName Is Nothing Then Exit Sub" & vbNewLine & _
            "    Dim targetSheet As Worksheet" & vbNewLine & _
            "    Set targetSheet = guardName.RefersToRange.Worksheet" & vbNewLine & _
-           "    Dim passObj As IPasswords" & vbNewLine & _
+           "    Dim passObj As Passwords" & vbNewLine & _
            "    Set passObj = Passwords.Create(targetSheet)" & vbNewLine & _
            "    passObj.LeaveDebugMode ThisWorkbook" & vbNewLine & _
            "End Sub"

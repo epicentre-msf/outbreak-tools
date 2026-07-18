@@ -12,7 +12,7 @@ Attribute VB_Description = "Designer import/export service for setup and linelis
 '@PredeclaredId
 '@Folder("Designer")
 '@ModuleDescription("Imports setup components into a designer workbook and exports them to a linelist workbook.")
-'@depends ProjectError, LLdictionary, ILLdictionary, LLChoices, LLExport, Analysis, IAnalysis, LLGeo, IPasswords, Passwords, LLFormat, LLTranslation, HiddenNames
+'@depends ProjectError, LLdictionary, ILLdictionary, LLChoices, LLExport, Analysis, IAnalysis, LLGeo, Passwords, Passwords, LLFormat, LLTranslation, HiddenNames
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, ParameterNotUsed
 
 Option Explicit
@@ -40,7 +40,7 @@ Private Type TDesignerImportService
     exportedAnalysis As IAnalysis   'Analysis manager on exported workbook
     exportedExport As LLExport    'Export manager on exported workbook
     exportedGeo As LLGeo          'Geo manager on exported workbook
-    exportedPass As IPasswords     'Passwords manager on exported workbook
+    exportedPass As Passwords     'Passwords manager on exported workbook
     exportedTrans As LLTranslation 'Translations manager on exported workbook
 End Type
 
@@ -295,7 +295,7 @@ Public Property Get ExportedGeo() As LLGeo
 End Property
 
 '@label:exported-passwords
-Public Property Get ExportedPasswords() As IPasswords
+Public Property Get ExportedPasswords() As Passwords
     Set ExportedPasswords = this.exportedPass
 End Property
 
@@ -529,7 +529,7 @@ End Sub
 '@sub-title Export passwords from host to target workbook
 Private Sub ExportPasswords(ByVal hostBook As Workbook, ByVal targetBook As Workbook)
     Dim hostSheet As Worksheet
-    Dim passManager As IPasswords
+    Dim passManager As Passwords
 
     Set hostSheet = ResolveWorksheet(hostBook, SHEET_PASS)
     If hostSheet Is Nothing Then Exit Sub
@@ -841,7 +841,7 @@ Private Property Get IDesignerImportService_ExportedGeo() As LLGeo
     Set IDesignerImportService_ExportedGeo = ExportedGeo
 End Property
 
-Private Property Get IDesignerImportService_ExportedPasswords() As IPasswords
+Private Property Get IDesignerImportService_ExportedPasswords() As Passwords
     Set IDesignerImportService_ExportedPasswords = ExportedPasswords
 End Property
 

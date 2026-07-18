@@ -32,7 +32,7 @@ Option Explicit
 Private Type TSetupErrorsState
     hostBook As Workbook              'Target workbook containing setup data
     formulaSheet As Worksheet         'Worksheet storing helper tables and formulas
-    passwordService As IPasswords     'Password handler protecting/unprotecting sheets
+    passwordService As Passwords     'Password handler protecting/unprotecting sheets
     dictionary As ILLdictionary       'Dictionary accessor for setup data
     choices As LLChoices             'Choices accessor for list validation
     formulaStore As FormulaData      'Formula data repository used for validation
@@ -110,7 +110,7 @@ Private Const EXP_UNFOUND_DICTCOLUMN As String      = "Exports, line %1--The Exp
 'calls Initialise with the supplied workbook and optional collaborators,
 'then returns the newly built instance.
 '@param hostBook Workbook. The workbook containing setup data.
-'@param passwordService Optional IPasswords. Sheet protection handler.
+'@param passwordService Optional Passwords. Sheet protection handler.
 '@param dictionary Optional ILLdictionary. Dictionary data accessor.
 '@param choices Optional LLChoices. Choices data accessor.
 '@param formulaStore Optional FormulaData. Formula validation handler.
@@ -120,7 +120,7 @@ Private Const EXP_UNFOUND_DICTCOLUMN As String      = "Exports, line %1--The Exp
 '@throws ProjectError.ObjectNotInitialized When hostBook is Nothing.
 '@export
 Public Function Create(ByVal hostBook As Workbook, _
-                       Optional ByVal passwordService As IPasswords, _
+                       Optional ByVal passwordService As Passwords, _
                        Optional ByVal dictionary As ILLdictionary, _
                        Optional ByVal choices As LLChoices, _
                        Optional ByVal formulaStore As FormulaData, _
@@ -144,7 +144,7 @@ End Function
 'collaborators, then calls ConfigureDependencies to create any missing
 'default instances and EnsureCheckContainer to prepare the results array.
 '@param hostBook Workbook. The workbook containing setup tables.
-'@param passwordService Optional IPasswords. Sheet protection handler.
+'@param passwordService Optional Passwords. Sheet protection handler.
 '@param dictionary Optional ILLdictionary. Dictionary data accessor.
 '@param choices Optional LLChoices. Choices data accessor.
 '@param formulaStore Optional FormulaData. Formula validation handler.
@@ -153,7 +153,7 @@ End Function
 '@throws ProjectError.ObjectNotInitialized When hostBook is Nothing.
 '@export
 Public Sub Initialise(ByVal hostBook As Workbook, _
-                      Optional ByVal passwordService As IPasswords, _
+                      Optional ByVal passwordService As Passwords, _
                       Optional ByVal dictionary As ILLdictionary, _
                       Optional ByVal choices As LLChoices, _
                       Optional ByVal formulaStore As FormulaData, _

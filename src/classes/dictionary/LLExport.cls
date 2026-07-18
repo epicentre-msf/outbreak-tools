@@ -795,7 +795,7 @@ End Sub
 '@throws ProjectError.ObjectNotInitialized when required collaborators are missing.
 Public Function ExportFileName(ByVal exportNumber As Long, _
                                ByVal dict As ILLdictionary, _
-                               ByVal pass As IPasswords, _
+                               ByVal pass As Passwords, _
                                Optional ByVal exportAll As Boolean = False) As String
 
     Dim currWb As Workbook
@@ -1038,7 +1038,7 @@ End Sub
 
 '@label:ValidatePasswords
 '@prop-title Validate password provider dependency
-Private Sub ValidatePasswords(ByVal pass As IPasswords)
+Private Sub ValidatePasswords(ByVal pass As Passwords)
     If pass Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, "Passwords object is required"
     End If
@@ -1322,7 +1322,7 @@ End Sub
 
 '@label:BuildVersionSuffix
 '@prop-title Compose version/public key suffix for filenames
-Private Function BuildVersionSuffix(ByVal pass As IPasswords) As String
+Private Function BuildVersionSuffix(ByVal pass As Passwords) As String
     Dim versionValue As String
     Dim publicKeyValue As String
 

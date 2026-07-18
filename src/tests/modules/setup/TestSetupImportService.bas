@@ -10,7 +10,7 @@ Option Explicit
 Private Assert As CustomTest
 Private Service As SetupImportService
 Private ProgressStub As ProgressDisplayStub
-Private PasswordsHandler As IPasswords
+Private PasswordsHandler As Passwords
 
 Private Const PASSWORD_SHEET As String = "TST_SetupImport_Passwords"
 Private Const CLEAN_TARGET_SHEET As String = "TST_SetupImport_Clean"

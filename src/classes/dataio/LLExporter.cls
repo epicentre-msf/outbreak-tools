@@ -24,7 +24,7 @@ Option Explicit
 'geobase exports (ExportGeo). Each mode builds a temporary output workbook,
 'populates it with the relevant data, metadata, and formatting, then saves
 'and closes it.
-'@depends ILLdictionary, LLExport, IPasswords, CustomTable
+'@depends ILLdictionary, LLExport, Passwords, CustomTable
 '@depends DataSheet, AnaTabIds, LLGeo, LLChoices, HiddenNames
 
 
@@ -167,7 +167,7 @@ Public Function ExportCustom(ByVal exportNumber As Long, _
     Dim outwb As Workbook
     Dim expObj As LLExport
     Dim dict As ILLdictionary
-    Dim pass As IPasswords
+    Dim pass As Passwords
     Dim expDict As ILLdictionary
     Dim sheetNames As BetterArray
     Dim expName As String
@@ -281,7 +281,7 @@ Public Function ExportMigration(ByVal folderPath As String, _
     Dim outwb As Workbook
     Dim expObj As LLExport
     Dim dict As ILLdictionary
-    Dim pass As IPasswords
+    Dim pass As Passwords
     Dim expDict As ILLdictionary
     Dim sheetNames As BetterArray
     Dim fileName As String
@@ -358,7 +358,7 @@ Public Function ExportAnalysis(ByVal folderPath As String) As String
     Dim outwb As Workbook
     Dim expObj As LLExport
     Dim dict As ILLdictionary
-    Dim pass As IPasswords
+    Dim pass As Passwords
     Dim fileName As String
     Dim filePath As String
     Dim firstSheetName As String
@@ -480,8 +480,8 @@ End Function
 
 '@label:passwords-object
 '@sub-title Get passwords from the source workbook
-'@return IPasswords. Passwords instance from the __pass sheet.
-Private Function PasswordsObject() As IPasswords
+'@return Passwords. Passwords instance from the __pass sheet.
+Private Function PasswordsObject() As Passwords
     Set PasswordsObject = Passwords.Create(this.sourceWkb.Worksheets(PASSWORDSHEET))
 End Function
 
@@ -1038,7 +1038,7 @@ Private Sub AddDataSheets(ByVal outwb As Workbook, ByVal expDict As ILLdictionar
     Dim outsh As Worksheet
     Dim lo As ListObject
     Dim csTab As CustomTable
-    Dim pass As IPasswords
+    Dim pass As Passwords
     Dim counter As Long
 
     Set sheetNames = expDict.UniqueValues("sheet name")

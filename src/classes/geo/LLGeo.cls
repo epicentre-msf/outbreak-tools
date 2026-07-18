@@ -57,7 +57,7 @@ End Enum
 'AutoFilter cascades, import/export in both flat-data and full-structure
 'modes, and synchronisation of translated labels across linelist sheets,
 'dictionary, and show/hide tables.
-'@depends BetterArray, IPasswords, ILLdictionary, CustomTable, ILLVariables, IDropdownLists, DropdownLists, LLVariables, CustomTable, HiddenNames
+'@depends BetterArray, Passwords, ILLdictionary, CustomTable, ILLVariables, IDropdownLists, DropdownLists, LLVariables, CustomTable, HiddenNames
 
 '@section State
 '===============================================================================
@@ -1157,9 +1157,9 @@ End Sub
 'geo display names. Also updates corresponding labels on print sheets. Finally,
 'refreshes the admin1 dropdown list on the dropdown_lists__ sheet so that it
 'reflects the current geobase content.
-'@param pass IPasswords. Password manager for sheet protection and unprotection.
+'@param pass Passwords. Password manager for sheet protection and unprotection.
 '@export
-Public Sub Update(ByVal pass As IPasswords)
+Public Sub Update(ByVal pass As Passwords)
 
     Const DROPDOWNSHEET As String = "dropdown_lists__"
 

@@ -24,7 +24,7 @@ Option Explicit
 '(normal, time series, spatial, spatio-temporal), builds cross-tables from
 'table specifications, writes formulas, registers metadata in AnaTabIds, and
 'renders charts.
-'@depends ILinelist, ILinelistSpecs, LLFormat, ITranslationObject, TableSpecs, CrossTable, CrossTableFormula, Graphs, AnaTabIds, Buttons, IPasswords, IDropdownLists, ILLdictionary, ILLVariables, FormulaData, BetterArray
+'@depends ILinelist, ILinelistSpecs, LLFormat, ITranslationObject, TableSpecs, CrossTable, CrossTableFormula, Graphs, AnaTabIds, Buttons, Passwords, IDropdownLists, ILLdictionary, ILLVariables, FormulaData, BetterArray
 '@version 1.0 (2026-02-10)
 
 
@@ -1054,7 +1054,7 @@ Public Sub WriteAnalysis(Optional ByVal part As Byte = 0)
     Dim outsh As Worksheet
     Dim cellRng As Range
     Dim scope As Byte
-    Dim pass As IPasswords
+    Dim pass As Passwords
     Dim lData As ILinelistSpecs
     Dim trads As ITranslationObject
     Dim goToSectionLabel As String

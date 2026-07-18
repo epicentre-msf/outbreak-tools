@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Master Setup")
 '@ModuleDescription("Utility helpers shared across master setup modules.")
-'@depends DropdownLists, IDropdownLists, CustomTable, Passwords, IPasswords, Translation, ITranslationObject, BetterArray
+'@depends DropdownLists, IDropdownLists, CustomTable, Passwords, Passwords, Translation, ITranslationObject, BetterArray
 
 Private Const VARIABLES_SHEETNAME As String = "Variables"
 Private Const TRANSLATIONS_SHEETNAME As String = "Translations"
@@ -174,7 +174,7 @@ Public Function ResolveMasterDropdowns(Optional ByVal hostSheet As Worksheet, _
     Set ResolveMasterDropdowns = DropdownLists.Create(targetSheet, headerPrefix)
 End Function
 
-Public Function ResolveMasterPasswords(Optional ByVal hostSheet As Worksheet) As IPasswords
+Public Function ResolveMasterPasswords(Optional ByVal hostSheet As Worksheet) As Passwords
     Dim targetSheet As Worksheet
 
     If hostSheet Is Nothing Then
@@ -321,7 +321,7 @@ Handler:
 End Sub
 
 Public Sub UnProtectMasterSetupSheet(ByVal targetSheet As Worksheet, ByVal sheetTag As String)
-    Dim passwords As IPasswords
+    Dim passwords As Passwords
 
     If targetSheet Is Nothing Then Exit Sub
 
@@ -332,7 +332,7 @@ Public Sub UnProtectMasterSetupSheet(ByVal targetSheet As Worksheet, ByVal sheet
 End Sub
 
 Public Sub ProtectMasterSetupSheet(ByVal targetSheet As Worksheet, ByVal sheetTag As String)
-    Dim passwords As IPasswords
+    Dim passwords As Passwords
     Dim allowDelete As Boolean
     Dim normalized As String
 

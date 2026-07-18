@@ -12,7 +12,7 @@ Attribute VB_Description = "Direct setup-to-linelist build service eliminating t
 '@PredeclaredId
 '@Folder("Designer")
 '@ModuleDescription("Exports pass-through setup data directly to the linelist, bypassing the designer intermediary.")
-'@depends ProjectError, LLdictionary, ILLdictionary, LLChoices, LLExport, Analysis, LLGeo, IPasswords, Passwords, LLFormat, LLTranslation, HiddenNames
+'@depends ProjectError, LLdictionary, ILLdictionary, LLChoices, LLExport, Analysis, LLGeo, Passwords, Passwords, LLFormat, LLTranslation, HiddenNames
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, ParameterNotUsed
 
 Option Explicit
@@ -39,7 +39,7 @@ Private Type TLinelistBuildService
     exportedAnalysis As Analysis   'Analysis manager on linelist workbook
     exportedExport As LLExport     'Export manager on linelist workbook
     exportedGeo As LLGeo           'Geo manager on linelist workbook
-    exportedPass As IPasswords      'Passwords manager on linelist workbook
+    exportedPass As Passwords      'Passwords manager on linelist workbook
     exportedTrans As LLTranslation 'Translations manager on linelist workbook
 End Type
 
@@ -357,7 +357,7 @@ Public Property Get ExportedGeo() As LLGeo
 End Property
 
 '@label:exported-passwords
-Public Property Get ExportedPasswords() As IPasswords
+Public Property Get ExportedPasswords() As Passwords
     Set ExportedPasswords = this.exportedPass
 End Property
 
@@ -527,7 +527,7 @@ End Sub
 '@sub-title Export passwords from designer to linelist
 Private Sub ExportPasswordsFromDesigner(ByVal hostBook As Workbook, ByVal targetBook As Workbook)
     Dim hostSheet As Worksheet
-    Dim passManager As IPasswords
+    Dim passManager As Passwords
 
     Set hostSheet = ResolveWorksheet(hostBook, SHEET_PASS)
     If hostSheet Is Nothing Then Exit Sub

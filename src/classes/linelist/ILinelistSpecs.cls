@@ -119,10 +119,10 @@ End Property
 '@jump:password
 '@prop-title Password manager
 '@details
-'Returns the IPasswords instance providing workbook and sheet protection
+'Returns the Passwords instance providing workbook and sheet protection
 'utilities from the __pass worksheet. Lazy-loaded on first access.
-'@return IPasswords. The password collaborator.
-Public Property Get Password() As IPasswords
+'@return Passwords. The password collaborator.
+Public Property Get Password() As Passwords
 End Property
 
 '@jump:geo-object

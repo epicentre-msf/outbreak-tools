@@ -29,7 +29,7 @@ Private geo As LLGeo
 Private drop As IDropdownLists
 Private tradmess As ITranslationObject
 Private lltrads As LLTranslation
-Private pass As IPasswords
+Private pass As Passwords
 
 '@section Initialization
 '===============================================================================

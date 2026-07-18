@@ -33,7 +33,7 @@ Private Const START_COLUMN_CHOICES As Long = 1
 Private Const START_COLUMN_EXPORTS As Long = 1
 
 'Cached password helper (lazily created once per VBA session)
-Private cachedPasswords As IPasswords
+Private cachedPasswords As Passwords
 
 '@section Basic Rows management in tables
 '===============================================================================
@@ -148,14 +148,14 @@ End Sub
 
 '@sub-title Unprotect a worksheet
 Public Sub UnProtectSetupSheet(ByVal sheetName As String)
-    Dim pass As IPasswords
+    Dim pass As Passwords
     Set pass = ResolveSetupPasswords()
     pass.UnProtect sheetName
 End Sub
 
 '@sub-title Protect a worksheet
 Public Sub ProtectSetupSheet(ByVal sheetName As String)
-    Dim pass As IPasswords
+    Dim pass As Passwords
     Dim delRow As Boolean
     
     If sheetName = "__checkRep" Then Exit Sub
@@ -345,7 +345,7 @@ Public Sub ImportOrCleanSetup()
     Dim importPath As String
     Dim servicePath As String
     Dim service As SetupImportService
-    Dim pass As IPasswords
+    Dim pass As Passwords
     Dim sheets As BetterArray
     Dim infoText As String
     Dim completed As Boolean
@@ -452,7 +452,7 @@ End Function
 
 '@Description("Execute the workbook-driven import using the selected sheets")
 Private Function ExecuteImportOperation(ByVal service As SetupImportService, _
-                                        ByVal pass As IPasswords, _
+                                        ByVal pass As Passwords, _
                                         ByVal sheets As BetterArray, _
                                         ByVal runConformityCheck As Boolean, _
                                         ByVal successMessage As String) As String
@@ -468,7 +468,7 @@ End Function
 
 '@Description("Execute the clean workflow against selected sheets")
 Private Function ExecuteCleanOperation(ByVal service As SetupImportService, _
-                                       ByVal pass As IPasswords, _
+                                       ByVal pass As Passwords, _
                                        ByVal sheets As BetterArray, _
                                        ByVal successMessage As String, _
                                        ByVal abortMessage As String) As String
@@ -593,7 +593,7 @@ End Function
 
 
 '@Description("Provide the password manager used for setup protections")
-Public Function ResolveSetupPasswords() As IPasswords
+Public Function ResolveSetupPasswords() As Passwords
     If cachedPasswords Is Nothing Then
         Dim passSheet As Worksheet
         Set passSheet = ThisWorkbook.Worksheets(PASSSHEETNAME)
