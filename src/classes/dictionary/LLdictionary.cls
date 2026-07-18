@@ -580,7 +580,7 @@ Private Sub ManageRows(Optional ByVal del As Boolean = False)
     'ListObject is found we simply log the attempt for traceability.
     Dim hostSheet As Worksheet
     Dim listObj As ListObject
-    Dim table As ICustomTable
+    Dim table As CustomTable
 
     Set hostSheet = Wksh()
 
@@ -622,7 +622,7 @@ End Sub
 Public Sub InsertRows(ByVal targetCell As Range, _
                       Optional ByVal insertShift As Boolean = False)
     Dim listObj As ListObject
-    Dim table As ICustomTable
+    Dim table As CustomTable
 
     Set listObj = ResolveRowTarget(targetCell, "insert")
     If listObj Is Nothing Then Exit Sub
@@ -638,7 +638,7 @@ Public Sub DeleteRows(ByVal targetCell As Range, _
                       Optional ByVal forceShift As Boolean = False)
 
     Dim listObj As ListObject
-    Dim table As ICustomTable
+    Dim table As CustomTable
 
     Set listObj = ResolveRowTarget(targetCell, "delete")
     If listObj Is Nothing Then Exit Sub

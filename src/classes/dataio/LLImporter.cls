@@ -23,7 +23,7 @@ Option Explicit
 'editable labels, single metadata values, and geobase data. Tracks which
 'sheets and variables were imported, and builds a report of items not
 'imported or not touched.
-'@depends ILLdictionary, IPasswords, ICustomTable, DataSheet
+'@depends ILLdictionary, IPasswords, CustomTable, DataSheet
 '@depends ILLGeo, ILLChoices, ILLVariables, IDropdownLists, IHiddenNames
 
 
@@ -937,7 +937,7 @@ End Sub
 Private Sub ImportHListSheet(ByVal currsh As Worksheet, ByVal impsh As Worksheet, _
                              ByVal pasteAtBottom As Boolean)
 
-    Dim currTab As ICustomTable
+    Dim currTab As CustomTable
     Dim impTab As DataSheet
     Dim varsNotImpList As BetterArray
     Dim impHeaders As BetterArray

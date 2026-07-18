@@ -1378,8 +1378,8 @@ Private Sub Import(ByVal inpsh As Worksheet)
     Dim targetSheet As Worksheet
     Dim inputTable As ListObject
     Dim targetTable As ListObject
-    Dim inputTab As ICustomTable
-    Dim targetTab As ICustomTable
+    Dim inputTab As CustomTable
+    Dim targetTab As CustomTable
     Dim designList As BetterArray
     Dim designName As String
     Dim sourceRange As Range
@@ -1439,7 +1439,7 @@ Private Sub Export(ByVal toWkb As Workbook)
     Dim sourceTable As ListObject
     Dim targetSheet As Worksheet
     Dim targetTable As ListObject
-    Dim exportTable As ICustomTable
+    Dim exportTable As CustomTable
     Dim sheetName As String
 
     If toWkb Is Nothing Then

@@ -68,7 +68,7 @@ Private Type TBuilderState
     initialised As Boolean
     hostSheet As Worksheet
     hostIndex As Long
-    hostTable As ICustomTable
+    hostTable As CustomTable
     hostVariables As MasterSetupVariables
     hostLanguage As String
 End Type

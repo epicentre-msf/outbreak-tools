@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Dev")
 '@ModuleDescription("Ribbon callbacks coordinating development workflows")
-'@depends Development, CustomTable, ICustomTable, Passwords, OSFiles
+'@depends Development, CustomTable, Passwords, OSFiles
 '@IgnoreModule UnrecognizedAnnotation, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Private devManager As Development
@@ -344,7 +344,7 @@ Private Sub UpdateTables(ByVal addRows As Boolean)
 
     Dim lo As ListObject
     For Each lo In targetSheet.ListObjects
-        Dim table As ICustomTable
+        Dim table As CustomTable
         Set table = CustomTable.Create(lo)
         If addRows Then
             'Pad tables with one extra row to speed up data entry.

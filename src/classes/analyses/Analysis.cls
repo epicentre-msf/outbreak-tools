@@ -138,7 +138,7 @@ End Sub
 Public Sub InsertRows(ByVal targetCell As Range, _
                        Optional ByVal insertShift As Boolean = True)
     Dim targetList As ListObject
-    Dim targetTable As ICustomTable
+    Dim targetTable As CustomTable
     Dim prefixName As String
     Dim idColumn As String
     Dim minimumCount As Long
@@ -173,7 +173,7 @@ Public Sub DeleteRows(ByVal targetCell As Range, _
                        Optional ByVal includeIds As Boolean = True, _
                        Optional ByVal forceShift As Boolean = True)
     Dim targetList As ListObject
-    Dim targetTable As ICustomTable
+    Dim targetTable As CustomTable
     Dim prefixName As String
     Dim idColumn As String
     Dim minimumCount As Long
@@ -221,7 +221,7 @@ Public Sub ManageRows(Optional ByVal del As Boolean = False)
     Dim requiredCount As Long
     Dim sh As Worksheet
     Dim lo As ListObject
-    Dim tabl As ICustomTable
+    Dim tabl As CustomTable
     Dim idx As Long
     Dim headerValue As Variant
 
@@ -376,7 +376,7 @@ End Sub
 '@export
 Private Sub Clean()
     Dim hostLo As ListObject
-    Dim hostTab As ICustomTable
+    Dim hostTab As CustomTable
     Dim hostSheet As Worksheet
     Dim counter As Long
     EnsureRequiredTables
@@ -403,8 +403,8 @@ Public Sub Import(ByVal sourcesheet As Worksheet)
     Dim hostsheet As Worksheet
     Dim srcLo As ListObject
     Dim hostLo As ListObject
-    Dim srcTab As ICustomTable
-    Dim hostTab As ICustomTable
+    Dim srcTab As CustomTable
+    Dim hostTab As CustomTable
     Dim counter As Long
     Dim tabName As String
 
@@ -462,7 +462,7 @@ End Sub
 Public Sub Sort()
     Dim sh As Worksheet
     Dim Lo As listObject
-    Dim csTab As ICustomTable
+    Dim csTab As CustomTable
     Dim colName As String
     Dim counter As Long
     Dim loName As String
@@ -583,7 +583,7 @@ End Sub
 Public Sub Translate(ByVal TransObject As ITranslationObject)
     Dim sh As Worksheet
     Dim lo As ListObject
-    Dim csTab As ICustomTable
+    Dim csTab As CustomTable
     Dim columnsToTranslate As BetterArray
     Dim idx As Long
     Dim colName As String

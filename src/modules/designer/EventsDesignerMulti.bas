@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Designer")
 '@ModuleDescription("Ribbon callbacks for the Multi group on the designer workbook.")
-'@depends CustomTable, ICustomTable, ApplicationState, IApplicationState, OSFiles, HiddenNames, IHiddenNames, DropdownLists, IDropdownLists, BetterArray
+'@depends CustomTable, ApplicationState, IApplicationState, OSFiles, HiddenNames, IHiddenNames, DropdownLists, IDropdownLists, BetterArray
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 'Ribbon callbacks for the Multi group manage the T_Multi ListObject on
@@ -168,7 +168,7 @@ End Sub
 '@EntryPoint
 Public Sub clickAddRowsMulti(ByRef control As IRibbonControl)
     Dim lo As ListObject
-    Dim table As ICustomTable
+    Dim table As CustomTable
     Dim appScope As IApplicationState
 
     Set lo = ResolveMultiTable()
@@ -203,7 +203,7 @@ End Sub
 '@EntryPoint
 Public Sub clickResizeMulti(ByRef control As IRibbonControl)
     Dim lo As ListObject
-    Dim table As ICustomTable
+    Dim table As CustomTable
     Dim appScope As IApplicationState
 
     Set lo = ResolveMultiTable()
@@ -242,8 +242,8 @@ Public Sub clickImpMulti(ByRef control As IRibbonControl)
     Dim importBook As Workbook
     Dim sourceLo As ListObject
     Dim targetLo As ListObject
-    Dim sourceTable As ICustomTable
-    Dim targetTable As ICustomTable
+    Dim sourceTable As CustomTable
+    Dim targetTable As CustomTable
 
     'Show file picker before entering busy state
     Set io = OSFiles.Create()
@@ -314,7 +314,7 @@ Public Sub clickExportMulti(ByRef control As IRibbonControl)
     Dim io As OSFiles
     Dim appScope As IApplicationState
     Dim lo As ListObject
-    Dim table As ICustomTable
+    Dim table As CustomTable
     Dim exportBook As Workbook
     Dim exportSheet As Worksheet
     Dim folderPath As String

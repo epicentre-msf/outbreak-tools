@@ -24,7 +24,7 @@ Implements ILLTranslation
 'scoped ITranslationObject accessors, import/export of full translation
 'tables, dictionary-specific exchange, and workbook-level hidden name
 'initialisation for translated configuration values.
-'@depends ITranslationObject, TranslationObject, ICustomTable, CustomTable
+'@depends ITranslationObject, TranslationObject, CustomTable
 '@depends IHiddenNames, HiddenNames, BetterArray
 '@version 1.0 (2026-02-10)
 
@@ -168,7 +168,7 @@ Public Sub Export(ByVal outputWkb As Workbook, _
     Dim sh As Worksheet
     Dim exportSheet As Worksheet
     Dim Lo As ListObject
-    Dim tableAdapter As ICustomTable
+    Dim tableAdapter As CustomTable
     Dim startLine As Long
 
     If outputWkb Is Nothing Then
@@ -204,8 +204,8 @@ Public Sub Import(ByVal fromWkb As Workbook)
     Dim importSheet As Worksheet
     Dim Lo As ListObject
     Dim impLo As ListObject
-    Dim tableAdapter As ICustomTable
-    Dim impTableAdapter As ICustomTable
+    Dim tableAdapter As CustomTable
+    Dim impTableAdapter As CustomTable
 
     If fromWkb Is Nothing Then Exit Sub
 
@@ -248,8 +248,8 @@ End Sub
 '@export
 Public Sub ImportDictionary(ByVal dictionaryTable As ListObject)
     Dim dictLo As ListObject
-    Dim tableAdapter As ICustomTable
-    Dim impTableAdapter As ICustomTable
+    Dim tableAdapter As CustomTable
+    Dim impTableAdapter As CustomTable
 
     If dictionaryTable Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, _
@@ -281,7 +281,7 @@ Public Sub ExportDictionary(ByVal outputWkb As Workbook, _
                             Optional ByVal sheetName As String = "Translations", _
                             Optional ByVal Hide As Long = xlSheetVisible)
     Dim dictLo As ListObject
-    Dim tableAdapter As ICustomTable
+    Dim tableAdapter As CustomTable
     Dim exportSheet As Worksheet
 
     If outputWkb Is Nothing Then
@@ -484,7 +484,7 @@ End Sub
 'dictionary table does not exist.
 Private Sub CleanDictionary()
     Dim dictLo As ListObject
-    Dim tableAdapter As ICustomTable
+    Dim tableAdapter As CustomTable
 
     On Error Resume Next
     Set dictLo = this.translationSheet.ListObjects(DICTTRANS)

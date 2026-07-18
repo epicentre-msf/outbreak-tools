@@ -465,18 +465,18 @@ End Sub
 '@label:add-format
 '@sub-title Apply formatting settings to a built graph
 '@details
-'Reads format metadata from the graph_formats_ ICustomTable by graphId
+'Reads format metadata from the graph_formats_ CustomTable by graphId
 'and calls gr.Format. Maps AnalysisIdsScope to GraphScope: TimeSeries
 'and SpatioTemporal map to GraphScopeTimeSeries, Spatial maps to
 'GraphScopeSpatial, and all others default to GraphScopeNormal.
 '@param gr Graphs. The chart object to format.
-'@param grTab ICustomTable. Wrapper around graph_formats_ ListObject,
+'@param grTab CustomTable. Wrapper around graph_formats_ ListObject,
 'keyed by "graphId".
 '@param scope Byte. AnalysisIdsScope value for scope-to-GraphScope mapping.
 '@param graphId String. The graph identifier for the format lookup.
 '@remarks heightFactor defaults to 1 and hardCodeLabels defaults to False
 'when the stored values cannot be converted.
-Private Sub AddFormat(ByVal gr As Graphs, ByVal grTab As ICustomTable, _
+Private Sub AddFormat(ByVal gr As Graphs, ByVal grTab As CustomTable, _
                        ByVal scope As Byte, ByVal graphId As String)
     Dim valuesTitle As String
     Dim catTitle As String
@@ -517,7 +517,7 @@ End Sub
 'created at each graph boundary (detected when graphId changes). Each
 'series row is processed by AddSeries. When the loop ends, the final
 'graph is formatted via AddFormat. Format metadata is read from the
-'graph_formats_ ListObject wrapped in an ICustomTable keyed by "graphId".
+'graph_formats_ ListObject wrapped in an CustomTable keyed by "graphId".
 '@param outsh Worksheet. The output worksheet receiving the chart objects.
 '@param scope Byte. AnalysisIdsScope value selecting the tracking tables.
 '@remarks The loop walks column 2 (graphId) of graph_ids_. The
@@ -530,7 +530,7 @@ Public Sub WriteGraphs(ByVal outsh As Worksheet, ByVal scope As Byte)
     Dim cellRng As Range
     Dim outCellRng As Range
     Dim grLo As ListObject
-    Dim grFormatTab As ICustomTable
+    Dim grFormatTab As CustomTable
     Dim grFormLo As ListObject
     Dim newId As Boolean
     Dim firstGraph As Boolean

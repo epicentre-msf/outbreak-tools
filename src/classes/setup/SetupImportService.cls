@@ -13,7 +13,7 @@ Attribute VB_Description = "Improved setup import service orchestrating workbook
 '@Folder("Setup")
 '@ModuleDescription("Improved setup import service orchestrating workbook synchronisation")
 '@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
-'@depends ProjectError, ApplicationState, IApplicationState, BetterArray, CustomTable, ICustomTable, LLExport, ILLExport, LLdictionary, ILLdictionary, LLFormat, ILLFormat, IPasswords, Analysis, SetupTranslationsTable
+'@depends ProjectError, ApplicationState, IApplicationState, BetterArray, CustomTable, LLExport, ILLExport, LLdictionary, ILLdictionary, LLFormat, ILLFormat, IPasswords, Analysis, SetupTranslationsTable
 
 Option Explicit
 
@@ -367,8 +367,8 @@ Public Sub Import(ByVal pass As IPasswords, ByVal sheetsList As BetterArray)
     Dim hostSheet As Worksheet
     Dim importList As ListObject
     Dim hostList As ListObject
-    Dim importTable As ICustomTable
-    Dim hostTable As ICustomTable
+    Dim importTable As CustomTable
+    Dim hostTable As CustomTable
     Dim sheetUnlocked As Boolean
     Dim lastSheetName As String
     Dim errNumber As Long
@@ -693,7 +693,7 @@ Private Sub ImportTranslationsUsingClass(ByVal pass As IPasswords, _
     Dim hostSheet As Worksheet
     Dim sourceSheet As Worksheet
     Dim hostTable As ListObject
-    Dim hostTableAdapter As ICustomTable
+    Dim hostTableAdapter As CustomTable
     Dim sourceTableAdapter As DataSheet
     Dim sheetUnlocked As Boolean
     Dim errNumber As Long
@@ -912,7 +912,7 @@ Private Sub PrepareImport(ByVal pass As IPasswords, _
     Dim dictUnlocked As Boolean
     Dim exportsUnlocked As Boolean
     Dim choiUnlocked As Boolean
-    Dim currentChoiceData As ICustomTable
+    Dim currentChoiceData As CustomTable
     Dim errNumber As Long
     Dim errSource As String
     Dim errDescription As String
@@ -1001,7 +1001,7 @@ Private Sub PostImport(ByVal pass As IPasswords, _
     Dim importBook As Workbook
     Dim hostworkbook As Workbook
     Dim choiUnlocked As Boolean
-    Dim currentChoiceData As ICustomTable
+    Dim currentChoiceData As CustomTable
     Dim errNumber As Long
     Dim errSource As String
     Dim errDescription As String
@@ -1364,7 +1364,7 @@ End Function
 '@sub-title Clean all ListObjects within a worksheet.
 Private Sub CleanWorksheetTables(ByVal targetSheet As Worksheet)
     Dim listRef As ListObject
-    Dim table As ICustomTable
+    Dim table As CustomTable
 
     For Each listRef In targetSheet.ListObjects
         Set table = CustomTable.Create(listRef)

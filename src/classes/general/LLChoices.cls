@@ -443,7 +443,7 @@ End Sub
 Private Sub ManageRows(Optional ByVal del As Boolean = False)
     Dim sh As Worksheet
     Dim Lo As ListObject
-    Dim tabl As ICustomTable
+    Dim tabl As CustomTable
 
     Set sh = Wksh()
 
@@ -478,7 +478,7 @@ End Sub
 Private Sub InsertRows(ByVal targetCell As Range, _
                        Optional ByVal insertShift As Boolean = False)
     Dim lo As ListObject
-    Dim tabl As ICustomTable
+    Dim tabl As CustomTable
 
     Set lo = ResolveRowTarget(targetCell, "insert")
     If lo Is Nothing Then Exit Sub
@@ -497,7 +497,7 @@ Private Sub DeleteRows(ByVal targetCell As Range, _
                        Optional ByVal includeIds As Boolean = True, _
                        Optional ByVal forceShift As Boolean = False)
     Dim lo As ListObject
-    Dim tabl As ICustomTable
+    Dim tabl As CustomTable
 
     Set lo = ResolveRowTarget(targetCell, "delete")
     If lo Is Nothing Then Exit Sub

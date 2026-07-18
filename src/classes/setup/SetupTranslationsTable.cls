@@ -13,7 +13,7 @@ Attribute VB_Description = "Translations table manager with helper tag column"
 '@Folder("Setup")
 '@ModuleDescription("Translations table manager with helper tag column")
 '@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
-'@depends ProjectError, ApplicationState, IApplicationState, HiddenNames, IHiddenNames, CustomTable, ICustomTable
+'@depends ProjectError, ApplicationState, IApplicationState, HiddenNames, IHiddenNames, CustomTable
 
 Option Explicit
 
@@ -1703,7 +1703,7 @@ End Sub
 '@sub-title Export translations into a destination workbook.
 Public Sub Export(ByVal exportWorkbook As Workbook, Optional ByVal Hide As Long = xlSheetVisible)
     Dim exportSheet As Worksheet
-    Dim tableAdapter As ICustomTable
+    Dim tableAdapter As CustomTable
     Dim hostSheet As Worksheet
     Dim store As IHiddenNames
 

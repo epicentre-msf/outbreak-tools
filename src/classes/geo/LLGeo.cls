@@ -27,7 +27,7 @@ Implements ILLGeo
 'AutoFilter cascades, import/export in both flat-data and full-structure
 'modes, and synchronisation of translated labels across linelist sheets,
 'dictionary, and show/hide tables.
-'@depends BetterArray, IPasswords, ILLdictionary, ICustomTable, ILLVariables, IDropdownLists, DropdownLists, LLVariables, CustomTable, HiddenNames, IHiddenNames
+'@depends BetterArray, IPasswords, ILLdictionary, CustomTable, ILLVariables, IDropdownLists, DropdownLists, LLVariables, CustomTable, HiddenNames, IHiddenNames
 
 '@section State
 '===============================================================================
@@ -1244,7 +1244,7 @@ End Sub
 '@param dict ILLdictionary. The linelist dictionary for resolving control and subsection values.
 '@export
 Private Sub UpdateShowHide(ByVal sh As Worksheet, ByVal dict As ILLdictionary)
-    Dim csTab As ICustomTable
+    Dim csTab As CustomTable
     Dim vars As ILLVariables
     Dim Lo As ListObject
     Dim counter As Long

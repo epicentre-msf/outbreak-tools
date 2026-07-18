@@ -22,7 +22,7 @@ Option Explicit
 '===============================================================================
 Private Type TMasterSetupVariables
     table As ListObject              'Underlying variables table
-    wrapper As ICustomTable          'Cached CustomTable wrapper for row management
+    wrapper As CustomTable          'Cached CustomTable wrapper for row management
     hiddenNames As IHiddenNames      'Worksheet-level hidden name manager
     colOrder As Long                 'Cached column index for "Variable Order"
     colSection As Long               'Cached column index for "Variable Section"
@@ -310,7 +310,7 @@ End Sub
 '@sub-title Copy the managed table content into a supplied ListObject.
 '@param targetTable ListObject receiving headers, values, and formatting.
 Public Sub CopyToListObject(ByVal targetTable As ListObject)
-    Dim targetWrapper As ICustomTable
+    Dim targetWrapper As CustomTable
 
     ValidateReady
     ValidateListObject targetTable
@@ -678,7 +678,7 @@ Private Function WorkbookHiddenNameStore() As IHiddenNames
     On Error GoTo 0
 End Function
 
-Private Function TableWrapper() As ICustomTable
+Private Function TableWrapper() As CustomTable
     If this.wrapper Is Nothing Then
         Set this.wrapper = CustomTable.Create(this.table)
     End If

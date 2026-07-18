@@ -12,7 +12,7 @@ Attribute VB_Description = "Prepares designer workbooks and ribbon settings"
 '@PredeclaredId
 '@Folder("Designer")
 '@ModuleDescription("Prepares designer workbooks and persists ribbon settings through hidden names.")
-'@depends ProjectError, HiddenNames, IHiddenNames, Development, OSFiles, CustomTable, ICustomTable, BetterArray, DropdownLists, IDropdownLists
+'@depends ProjectError, HiddenNames, IHiddenNames, Development, OSFiles, CustomTable, BetterArray, DropdownLists, IDropdownLists
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, ParameterNotUsed
 
 Option Explicit
@@ -29,7 +29,7 @@ Option Explicit
 'T_Multi table on the GenerateMultiple worksheet, and registers hidden
 'sheets with the development manager. Also provides methods to read and
 'write ribbon checkbox flags persisted through workbook-level hidden names.
-'@depends HiddenNames, IHiddenNames, Development, OSFiles, CustomTable, ICustomTable, BetterArray, DropdownLists, IDropdownLists
+'@depends HiddenNames, IHiddenNames, Development, OSFiles, CustomTable, BetterArray, DropdownLists, IDropdownLists
 
 
 '@section State
@@ -280,8 +280,8 @@ Private Sub ImportTranslations()
     Dim targetSheet As Worksheet
     Dim sourceSheet As Worksheet
     Dim lo As ListObject
-    Dim targetTable As ICustomTable
-    Dim sourceTable As ICustomTable
+    Dim targetTable As CustomTable
+    Dim sourceTable As CustomTable
 
     Set io = OSFiles.Create()
     io.LoadFile "*.xlsx"
@@ -530,7 +530,7 @@ End Sub
 Private Sub ApplyMultiValidations()
     Dim sh As Worksheet
     Dim lo As ListObject
-    Dim table As ICustomTable
+    Dim table As CustomTable
     Dim drop As IDropdownLists
 
     Set sh = ResolveWorksheet(SHEET_GENERATE_MULTIPLE)

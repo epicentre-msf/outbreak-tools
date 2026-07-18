@@ -21,7 +21,7 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 '   shift behavior for InsertRowsAt/DeleteRowsAt, Export with header filtering
 '   and ListObject creation, DataRange returning Nothing when empty, and
 '   snapshot restoration on import failure.
-'@depends CustomTable, ICustomTable, DataSheet, BetterArray, CustomTest, TestHelpers
+'@depends CustomTable, DataSheet, BetterArray, CustomTest, TestHelpers
 
 Private Const TABLESHEETNAME As String = "CustomTableFixture"
 Private Const TABLENAME As String = "tblCustom"
@@ -144,7 +144,7 @@ Private Sub PrepareCustomTable(Optional ByVal includeData As Boolean = True, _
 End Sub
 
 '@sub-title Convenience shortcut that prepares the default fixture and returns a CustomTable instance
-Private Function BuildCustomTable() As ICustomTable
+Private Function BuildCustomTable() As CustomTable
     PrepareCustomTable
     Set BuildCustomTable = CustomTable.Create(ThisWorkbook.Worksheets(TABLESHEETNAME).ListObjects(TABLENAME), "ID", "row")
 End Function
@@ -158,7 +158,7 @@ Private Function CreateCustomTableWithData(ByVal sheetName As String, _
                                           headers As Variant, _
                                           rows As Variant, _
                                           Optional ByVal idColumnName As String = "ID", _
-                                          Optional ByVal idPrefix As String = "row") As ICustomTable
+                                          Optional ByVal idPrefix As String = "row") As CustomTable
 
     Dim hostSheet As Worksheet
     Dim listRange As Range
@@ -300,7 +300,7 @@ Public Sub TestCreateInitialisesTable()
     CustomTestSetTitles Assert, "CustomTable", "TestCreateInitialisesTable"
     On Error GoTo Fail
 
-    Dim tableObject As ICustomTable
+    Dim tableObject As CustomTable
     Set tableObject = BuildCustomTable
 
     Assert.AreEqual TABLENAME, tableObject.Name, "Table name should match listObject name"
@@ -320,7 +320,7 @@ Public Sub TestAddRowsAssignsIds()
     CustomTestSetTitles Assert, "CustomTable", "TestAddRowsAssignsIds"
     On Error GoTo Fail
 
-    Dim tableObject As ICustomTable
+    Dim tableObject As CustomTable
     Dim Lo As ListObject
 
     Set tableObject = BuildCustomTable
@@ -348,7 +348,7 @@ Public Sub TestRemoveRowsDeletesEmpty()
     CustomTestSetTitles Assert, "CustomTable", "TestRemoveRowsDeletesEmpty"
     On Error GoTo Fail
 
-    Dim tableObject As ICustomTable
+    Dim tableObject As CustomTable
     Dim Lo As ListObject
 
     Set tableObject = BuildCustomTable
@@ -376,7 +376,7 @@ Public Sub TestSetValueUpdatesCell()
     CustomTestSetTitles Assert, "CustomTable", "TestSetValueUpdatesCell"
     On Error GoTo Fail
 
-    Dim tableObject As ICustomTable
+    Dim tableObject As CustomTable
 
     Set tableObject = BuildCustomTable
     tableObject.SetValue "Amount", "2", "99"
@@ -400,7 +400,7 @@ Public Sub TestSortOnFirstGroupsByFirstOccurrence()
 
     Dim headers As Variant
     Dim rows As Variant
-    Dim tableObject As ICustomTable
+    Dim tableObject As CustomTable
     Dim Lo As ListObject
 
     headers = CustomTableHeaders()
@@ -440,8 +440,8 @@ Public Sub TestImportWithMatchingHeaders()
     CustomTestSetTitles Assert, "CustomTable", "TestImportWithMatchingHeaders"
     On Error GoTo Fail
 
-    Dim sourceTable As ICustomTable
-    Dim targetTable As ICustomTable
+    Dim sourceTable As CustomTable
+    Dim targetTable As CustomTable
     Dim Lo As ListObject
 
     PrepareCustomTable includeData:=False
@@ -470,8 +470,8 @@ Public Sub TestImportShrinksTrailingRows()
     CustomTestSetTitles Assert, "CustomTable", "TestImportShrinksTrailingRows"
     On Error GoTo Fail
 
-    Dim targetTable As ICustomTable
-    Dim sourceTable As ICustomTable
+    Dim targetTable As CustomTable
+    Dim sourceTable As CustomTable
     Dim targetList As ListObject
 
     PrepareCustomTable
@@ -508,7 +508,7 @@ Public Sub TestImportFromDataSheetPreservesFormulas()
     CustomTestSetTitles Assert, "CustomTable", "TestImportFromDataSheetPreservesFormulas"
     On Error GoTo Fail
 
-    Dim tableObject As ICustomTable
+    Dim tableObject As CustomTable
     Dim Lo As ListObject
     Dim headers As Variant
     Dim rows As Variant
@@ -551,7 +551,7 @@ Public Sub TestAddRowsRespectsAdjacentTables()
 
     Dim topLo As ListObject
     Dim bottomLo As ListObject
-    Dim topTable As ICustomTable
+    Dim topTable As CustomTable
     Dim originalBottomHeaderRow As Long
 
     PrepareMultiTableFixture topLo, bottomLo
@@ -579,7 +579,7 @@ Public Sub TestInsertRowsAtInsertsSelectionRowCount()
     CustomTestSetTitles Assert, "CustomTable", "TestInsertRowsAtInsertsSelectionRowCount"
     On Error GoTo Fail
 
-    Dim tableObject As ICustomTable
+    Dim tableObject As CustomTable
     Dim lo As ListObject
     Dim selectionRange As Range
 
@@ -616,7 +616,7 @@ Public Sub TestDeleteRowsAtRemovesSelectedRows()
     CustomTestSetTitles Assert, "CustomTable", "TestDeleteRowsAtRemovesSelectedRows"
     On Error GoTo Fail
 
-    Dim tableObject As ICustomTable
+    Dim tableObject As CustomTable
     Dim lo As ListObject
     Dim selectionRange As Range
 
@@ -647,7 +647,7 @@ Public Sub TestDeleteRowsAtKeepsTemplateRow()
     CustomTestSetTitles Assert, "CustomTable", "TestDeleteRowsAtKeepsTemplateRow"
     On Error GoTo Fail
 
-    Dim tableObject As ICustomTable
+    Dim tableObject As CustomTable
     Dim lo As ListObject
     Dim selectionRange As Range
 
@@ -683,7 +683,7 @@ Public Sub TestInsertRowsAtWithShiftMovesStackedTables()
 
     Dim topLo As ListObject
     Dim bottomLo As ListObject
-    Dim topTable As ICustomTable
+    Dim topTable As CustomTable
     Dim originalBottomHeaderRow As Long
     Dim originalTopRowCount As Long
     Dim insertSelection As Range
@@ -727,7 +727,7 @@ Public Sub TestDeleteRowsAtForceShiftMovesStackedTables()
 
     Dim topLo As ListObject
     Dim bottomLo As ListObject
-    Dim topTable As ICustomTable
+    Dim topTable As CustomTable
     Dim originalBottomHeaderRow As Long
     Dim originalTopRowCount As Long
     Dim removalSelection As Range
@@ -761,7 +761,7 @@ Public Sub TestImportRecordsMissingColumns()
     CustomTestSetTitles Assert, "CustomTable", "TestImportRecordsMissingColumns"
     On Error GoTo Fail
 
-    Dim tableObject As ICustomTable
+    Dim tableObject As CustomTable
     Dim dataSheetObj As DataSheet
     Dim headers As Variant
     Dim rows As Variant
@@ -801,8 +801,8 @@ Public Sub TestImportPasteAtBottomAppendsData()
     CustomTestSetTitles Assert, "CustomTable", "TestImportPasteAtBottomAppendsData"
     On Error GoTo Fail
 
-    Dim targetTable As ICustomTable
-    Dim sourceTable As ICustomTable
+    Dim targetTable As CustomTable
+    Dim sourceTable As CustomTable
     Dim Lo As ListObject
     Dim headers As Variant
     Dim rows As Variant
@@ -842,7 +842,7 @@ Public Sub TestImportPreservesHiddenColumns()
     CustomTestSetTitles Assert, "CustomTable", "TestImportPreservesHiddenColumns"
     On Error GoTo Fail
 
-    Dim tableObject As ICustomTable
+    Dim tableObject As CustomTable
     Dim Lo As ListObject
     Dim headers As Variant
     Dim rows As Variant
@@ -895,7 +895,7 @@ Public Sub TestImportStrictColumnSearchRequiresExactMatch()
     CustomTestSetTitles Assert, "CustomTable", "TestImportStrictColumnSearchRequiresExactMatch"
     On Error GoTo Fail
 
-    Dim tableObject As ICustomTable
+    Dim tableObject As CustomTable
     Dim Lo As ListObject
     Dim headers As Variant
     Dim rows As Variant
@@ -939,7 +939,7 @@ End Sub
 Public Sub TestImportFailureRestoresSnapshot()
     CustomTestSetTitles Assert, "CustomTable", "TestImportFailureRestoresSnapshot"
 
-    Dim tableObject As ICustomTable
+    Dim tableObject As CustomTable
     Dim headers As Variant
     Dim rows As Variant
     Dim dataSheetObj As DataSheet
@@ -976,8 +976,8 @@ Public Sub TestImportAllCustomTableShiftsFollowingTables()
 
     Dim topLo As ListObject
     Dim bottomLo As ListObject
-    Dim topTable As ICustomTable
-    Dim sourceTable As ICustomTable
+    Dim topTable As CustomTable
+    Dim sourceTable As CustomTable
     Dim headers As Variant
     Dim rows As Variant
     Dim originalBottomHeaderRow As Long
@@ -1025,7 +1025,7 @@ Public Sub TestImportAllDataSheetShiftsFollowingTables()
 
     Dim topLo As ListObject
     Dim bottomLo As ListObject
-    Dim topTable As ICustomTable
+    Dim topTable As CustomTable
     Dim dataSheetObj As DataSheet
     Dim headers As Variant
     Dim rows As Variant
@@ -1073,8 +1073,8 @@ Public Sub TestImportAllExpandsColumnsWithHeaders()
     CustomTestSetTitles Assert, "CustomTable", "TestImportAllExpandsColumnsWithHeaders"
     On Error GoTo Fail
 
-    Dim targetTable As ICustomTable
-    Dim sourceTable As ICustomTable
+    Dim targetTable As CustomTable
+    Dim sourceTable As CustomTable
     Dim targetLo As ListObject
     Dim targetHeaders As Variant
     Dim targetRows As Variant
@@ -1111,8 +1111,8 @@ Public Sub TestImportAllTrimsExtraColumns()
     CustomTestSetTitles Assert, "CustomTable", "TestImportAllTrimsExtraColumns"
     On Error GoTo Fail
 
-    Dim targetTable As ICustomTable
-    Dim sourceTable As ICustomTable
+    Dim targetTable As CustomTable
+    Dim sourceTable As CustomTable
     Dim targetLo As ListObject
     Dim targetHeaders As Variant
     Dim targetRows As Variant
@@ -1150,8 +1150,8 @@ Public Sub TestImportWithFormatHeadersCopiesStyling()
     CustomTestSetTitles Assert, "CustomTable", "TestImportWithFormatHeadersCopiesStyling"
     On Error GoTo Fail
 
-    Dim targetTable As ICustomTable
-    Dim sourceTable As ICustomTable
+    Dim targetTable As CustomTable
+    Dim sourceTable As CustomTable
     Dim formatHeaders As BetterArray
     Dim sourceCell As Range
     Dim targetCell As Range
@@ -1203,7 +1203,7 @@ Public Sub TestExportWritesSelectedHeadersAtRow()
     CustomTestSetTitles Assert, "CustomTable", "TestExportWritesSelectedHeadersAtRow"
     On Error GoTo Fail
 
-    Dim tableObject As ICustomTable
+    Dim tableObject As CustomTable
     Dim exportSheet As Worksheet
     Dim selectedHeaders As BetterArray
 
@@ -1237,7 +1237,7 @@ Public Sub TestExportRestoresHiddenColumns()
     CustomTestSetTitles Assert, "CustomTable", "TestExportRestoresHiddenColumns"
     On Error GoTo Fail
 
-    Dim tableObject As ICustomTable
+    Dim tableObject As CustomTable
     Dim Lo As ListObject
     Dim exportSheet As Worksheet
 
@@ -1270,7 +1270,7 @@ Public Sub TestExportAddsListObjectWhenRequested()
     CustomTestSetTitles Assert, "CustomTable", "TestExportAddsListObjectWhenRequested"
     On Error GoTo Fail
 
-    Dim tableObject As ICustomTable
+    Dim tableObject As CustomTable
     Dim exportSheet As Worksheet
     Dim outLo As ListObject
     Dim sourceLo As ListObject
@@ -1303,7 +1303,7 @@ Public Sub TestCreateRejectsMissingListObject()
     CustomTestSetTitles Assert, "CustomTable", "TestCreateRejectsMissingListObject"
     On Error GoTo ExpectError
 
-    Dim tableObject As ICustomTable
+    Dim tableObject As CustomTable
     '@Ignore AssignmentNotUsed
     Set tableObject = CustomTable.Create(Nothing)
     Assert.LogFailure "Create should raise when no ListObject is supplied"
@@ -1326,7 +1326,7 @@ Public Sub TestDataRangeReturnsNothingWhenEmpty()
 
     PrepareCustomTable includeData:=False
 
-    Dim tableObject As ICustomTable
+    Dim tableObject As CustomTable
     Set tableObject = CustomTable.Create(ThisWorkbook.Worksheets(TABLESHEETNAME).ListObjects(TABLENAME), "ID", "row")
 
     Dim nameRange As Range
@@ -1350,7 +1350,7 @@ Public Sub TestSortOnFirstHandlesNonStringValues()
 
     Dim headers As Variant
     Dim rows As Variant
-    Dim tableObject As ICustomTable
+    Dim tableObject As CustomTable
     Dim Lo As ListObject
 
     headers = CustomTableHeaders()

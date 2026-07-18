@@ -530,7 +530,7 @@ End Function
 '@param drop IDropdownLists. The dropdown manager providing validation ranges.
 Private Sub ApplyDictionaryValidations(ByVal drop As IDropdownLists)
     Dim sh As Worksheet
-    Dim table As ICustomTable
+    Dim table As CustomTable
 
     Set sh = RequireWorksheet(SHEET_DICTIONARY)
     Set table = RequireCustomTable(sh, TABLE_DICTIONARY)
@@ -556,7 +556,7 @@ End Sub
 '@param drop IDropdownLists. The dropdown manager providing validation ranges.
 Private Sub ApplyExportsValidations(ByVal drop As IDropdownLists)
     Dim sh As Worksheet
-    Dim table As ICustomTable
+    Dim table As CustomTable
 
     Set sh = RequireWorksheet(SHEET_EXPORTS)
     Set table = RequireCustomTable(sh, TABLE_EXPORTS)
@@ -582,7 +582,7 @@ End Sub
 '@param drop IDropdownLists. The dropdown manager providing validation ranges.
 Private Sub ApplyAnalysisValidations(ByVal drop As IDropdownLists)
     Dim sh As Worksheet
-    Dim table As ICustomTable
+    Dim table As CustomTable
     Dim targetRange As Range
 
     Set sh = RequireWorksheet(SHEET_ANALYSIS)
@@ -685,8 +685,8 @@ End Function
 '@sub-title Return a CustomTable helper for the requested ListObject
 '@param sh Worksheet. The worksheet hosting the ListObject.
 '@param listName String. The ListObject name to wrap.
-'@return ICustomTable. A CustomTable wrapper for the ListObject.
-Private Function RequireCustomTable(ByVal sh As Worksheet, ByVal listName As String) As ICustomTable
+'@return CustomTable. A CustomTable wrapper for the ListObject.
+Private Function RequireCustomTable(ByVal sh As Worksheet, ByVal listName As String) As CustomTable
     Dim lo As ListObject
 
     Set lo = RequireListObject(sh, listName)

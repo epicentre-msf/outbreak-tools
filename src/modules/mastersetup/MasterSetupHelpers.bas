@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Master Setup")
 '@ModuleDescription("Utility helpers shared across master setup modules.")
-'@depends DropdownLists, IDropdownLists, CustomTable, ICustomTable, Passwords, IPasswords, Translation, ITranslationObject, BetterArray
+'@depends DropdownLists, IDropdownLists, CustomTable, Passwords, IPasswords, Translation, ITranslationObject, BetterArray
 
 Private Const VARIABLES_SHEETNAME As String = "Variables"
 Private Const TRANSLATIONS_SHEETNAME As String = "Translations"
@@ -233,7 +233,7 @@ End Function
 Public Sub ManageRows(ByVal targetSheet As Worksheet, ByVal addRows As Boolean)
 
     Dim lo As ListObject
-    Dim wrapper As ICustomTable
+    Dim wrapper As CustomTable
     Dim store As IHiddenNames
     Dim sheetTag As String
     Dim rowCount As Long
@@ -354,7 +354,7 @@ End Sub
 
 Public Sub SortMasterVariablesTables(ByVal targetSheet As Worksheet)
     Dim table As ListObject
-    Dim wrapper As ICustomTable
+    Dim wrapper As CustomTable
     Dim columns As BetterArray
 
     If targetSheet Is Nothing Then Exit Sub

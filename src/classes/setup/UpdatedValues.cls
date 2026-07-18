@@ -12,7 +12,7 @@ Attribute VB_Description = "Watch updated values in the setup"
 '@PredeclaredId
 '@Folder("Setup")
 '@ModuleDescription("Tracks watched setup columns and exposes update status to events")
-'@Depends(ProjectError, CustomTable, ICustomTable, BetterArray)
+'@Depends(ProjectError, CustomTable, BetterArray)
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 Option Explicit
 
@@ -177,7 +177,7 @@ End Function
 
 '@label:registry-table
 '@sub-title Return a CustomTable helper for the specified registry ListObject name or the last accessed one.
-Private Property Get RegistryTable(Optional ByVal tableName As String = vbNullString) As ICustomTable
+Private Property Get RegistryTable(Optional ByVal tableName As String = vbNullString) As CustomTable
   Dim targetName As String
   Dim lo As ListObject
 

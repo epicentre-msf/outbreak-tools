@@ -77,7 +77,7 @@ Public Sub TestAddRowsIncreasesRowCount()
     Dim initialRowCount As Long
     initialRowCount = lo.ListRows.Count
 
-    Dim table As ICustomTable
+    Dim table As CustomTable
     Set table = CustomTable.Create(lo)
 
     'Act
@@ -109,7 +109,7 @@ Public Sub TestRemoveRowsClearsEmptyRows()
     Dim filledRowCount As Long
     filledRowCount = 1
 
-    Dim table As ICustomTable
+    Dim table As CustomTable
     Set table = CustomTable.Create(lo)
     table.AddRows nbRows:=5, insertShift:=False, includeIds:=False
 
@@ -182,7 +182,7 @@ Public Sub TestImportReplacesTableData()
     sourceLo.ListRows(1).Range.Cells(1, 1).Value = "imported_setup.xlsb"
     sourceLo.ListRows(1).Range.Cells(1, 2).Value = "imported_geo.xlsx"
 
-    Dim sourceTable As ICustomTable
+    Dim sourceTable As CustomTable
     Set sourceTable = CustomTable.Create(sourceLo)
 
     'Target table
@@ -190,7 +190,7 @@ Public Sub TestImportReplacesTableData()
     Set targetLo = MultiSheet.ListObjects(TABLE_MULTI)
     targetLo.ListRows(1).Range.Cells(1, 1).Value = "old_setup.xlsb"
 
-    Dim targetTable As ICustomTable
+    Dim targetTable As CustomTable
     Set targetTable = CustomTable.Create(targetLo)
 
     'Act
@@ -223,7 +223,7 @@ Public Sub TestExportWritesToWorksheet()
     lo.ListRows(1).Range.Cells(1, 1).Value = "export_setup.xlsb"
     lo.ListRows(1).Range.Cells(1, 2).Value = "export_geo.xlsx"
 
-    Dim table As ICustomTable
+    Dim table As CustomTable
     Set table = CustomTable.Create(lo)
 
     Dim exportSheet As Worksheet

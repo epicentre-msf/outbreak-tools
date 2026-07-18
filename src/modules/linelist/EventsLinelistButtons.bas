@@ -619,7 +619,7 @@ Public Sub ClickAddRows()
     Attribute ClickAddRows.VB_Description = "Add rows to a data entry table in the Linelist"
 
     Dim Lo As listObject
-    Dim csTab As ICustomTable
+    Dim csTab As CustomTable
     Dim sh As Worksheet
     Dim shType As String
     Dim nbRows As Long
@@ -670,7 +670,7 @@ Public Sub ClickResize()
     Attribute ClickResize.VB_Description = "Resize the data entry table in the linelist"
 
     Dim Lo As listObject
-    Dim csTab As ICustomTable
+    Dim csTab As CustomTable
     Dim sh As Worksheet
     Dim shType As String
     Dim nbBlank As Long
@@ -1181,7 +1181,7 @@ Public Sub ClickImportData()
     Attribute clickImportData.VB_Description = "Import new data in the linelist"
 
     Dim sh As Worksheet
-    Dim csTab As ICustomTable
+    Dim csTab As CustomTable
     Dim Lo As ListObject
     Dim nbBlank As Long
 

@@ -403,8 +403,8 @@ End Sub
 Private Sub CheckDictionary()
 
     Dim check As IChecking
-    Dim csTab As ICustomTable
-    Dim expTab As ICustomTable
+    Dim csTab As CustomTable
+    Dim expTab As CustomTable
     Dim varRng As Range
     Dim sheetRng As Range
     Dim workFun As WorksheetFunction
@@ -657,8 +657,8 @@ Private Sub CheckChoice()
     Dim check As IChecking
     Dim shChoices As Worksheet
     Dim shDictionary As Worksheet
-    Dim choiTab As ICustomTable
-    Dim dictTab As ICustomTable
+    Dim choiTab As CustomTable
+    Dim dictTab As CustomTable
     Dim choiList As BetterArray
     Dim counter As Long
     Dim checkingCounter As Long
@@ -794,7 +794,7 @@ End Sub
 'password/identifier consistency, and validates filename variable references.
 Private Sub CheckExports()
 
-    Dim expTab As ICustomTable
+    Dim expTab As CustomTable
     Dim counter As Long
     Dim shExports As Worksheet
     Dim check As IChecking

@@ -24,7 +24,7 @@ Option Explicit
 'geobase exports (ExportGeo). Each mode builds a temporary output workbook,
 'populates it with the relevant data, metadata, and formatting, then saves
 'and closes it.
-'@depends ILLdictionary, ILLExport, IPasswords, ICustomTable
+'@depends ILLdictionary, ILLExport, IPasswords, CustomTable
 '@depends DataSheet, AnaTabIds, ILLGeo, ILLChoices, IHiddenNames
 
 
@@ -1037,7 +1037,7 @@ Private Sub AddDataSheets(ByVal outwb As Workbook, ByVal expDict As ILLdictionar
     Dim inpsh As Worksheet
     Dim outsh As Worksheet
     Dim lo As ListObject
-    Dim csTab As ICustomTable
+    Dim csTab As CustomTable
     Dim pass As IPasswords
     Dim counter As Long
 

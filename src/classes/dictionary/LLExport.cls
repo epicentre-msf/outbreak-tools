@@ -164,7 +164,7 @@ Private Sub ManageRows(Optional ByVal del As Boolean = False, _
                        Optional ByVal dict As ILLdictionary, _
                        Optional ByVal rowCount As Long = 2)
 
-    Dim tableObj As ICustomTable
+    Dim tableObj As CustomTable
     Dim previousCount As Long
     Dim newCount As Long
     Dim exportNumbers As BetterArray
@@ -209,7 +209,7 @@ Public Sub InsertRows(ByVal targetCell As Range, _
                       Optional ByVal dict As ILLdictionary, _
                       Optional ByVal insertShift As Boolean = False)
 
-    Dim tableObj As ICustomTable
+    Dim tableObj As CustomTable
     Dim exportNumbers As BetterArray
     Dim dictionaryReady As Boolean
     Dim dictRef As ILLdictionary
@@ -262,7 +262,7 @@ Public Sub DeleteRows(ByVal targetCell As Range, _
                       Optional ByVal dict As ILLdictionary, _
                       Optional ByVal forceShift As Boolean = False)
 
-    Dim tableObj As ICustomTable
+    Dim tableObj As CustomTable
     Dim exportNumbers As BetterArray
     Dim dictionaryReady As Boolean
     Dim dictRef As ILLdictionary
@@ -316,7 +316,7 @@ End Sub
 '@label:SyncDictionaryExports
 '@prop-title Synchronise dictionary export columns
 Public Sub SyncDictionaryExports(Optional ByVal dict As ILLdictionary)
-    Dim tableObj As ICustomTable
+    Dim tableObj As CustomTable
     Dim exportNumbers As BetterArray
     Dim targetDict As ILLdictionary
 
@@ -340,7 +340,7 @@ End Sub
 '@label:Sort
 '@sub-title Sort export definitions and normalize identifiers
 Public Sub Sort(Optional ByVal dict As ILLdictionary)
-    Dim tableObj As ICustomTable
+    Dim tableObj As CustomTable
     Dim dictRef As ILLdictionary
 
     EnsureDataReady
@@ -365,7 +365,7 @@ End Sub
 '@section Row Coordination Helpers
 '===============================================================================
 
-Private Sub ApplyIncludeDefaults(ByVal tableObj As ICustomTable, _
+Private Sub ApplyIncludeDefaults(ByVal tableObj As CustomTable, _
                                  ByVal startIndex As Long, _
                                  ByVal endIndex As Long)
     Dim includeColumn As Range
@@ -385,7 +385,7 @@ Private Sub ApplyIncludeDefaults(ByVal tableObj As ICustomTable, _
     Next idx
 End Sub
 
-Private Function ResolveSelectionRowIndex(ByVal tableObj As ICustomTable, _
+Private Function ResolveSelectionRowIndex(ByVal tableObj As CustomTable, _
                                           ByVal targetCell As Range) As Long
 
     Dim exportRange As Range
@@ -401,7 +401,7 @@ Private Function ResolveSelectionRowIndex(ByVal tableObj As ICustomTable, _
     ResolveSelectionRowIndex = relativeRow
 End Function
 
-Private Sub AssignExportNumbers(ByVal tableObj As ICustomTable, _
+Private Sub AssignExportNumbers(ByVal tableObj As CustomTable, _
                                 ByVal startIndex As Long, _
                                 ByVal insertCount As Long)
 
@@ -427,7 +427,7 @@ Private Sub AssignExportNumbers(ByVal tableObj As ICustomTable, _
     Next idx
 End Sub
 
-Private Sub SequentiallyRenameExports(ByVal tableObj As ICustomTable, _
+Private Sub SequentiallyRenameExports(ByVal tableObj As CustomTable, _
                                       Optional ByVal dict As ILLdictionary)
 
     Dim exportRange As Range
@@ -541,7 +541,7 @@ Private Function NormalizedExportHeader(ByVal headerText As String) As String
     NormalizedExportHeader = ExportColumnName(parsed)
 End Function
 
-Private Sub EnsureExportIdentifiers(ByVal tableObj As ICustomTable)
+Private Sub EnsureExportIdentifiers(ByVal tableObj As CustomTable)
     Dim exportRange As Range
     Dim usedNumbers As BetterArray
     Dim pendingRows As BetterArray
@@ -585,7 +585,7 @@ Private Sub EnsureExportIdentifiers(ByVal tableObj As ICustomTable)
     End If
 End Sub
 
-Private Function CollectExportNumbers(ByVal tableObj As ICustomTable) As BetterArray
+Private Function CollectExportNumbers(ByVal tableObj As CustomTable) As BetterArray
     Dim exportRange As Range
     Dim result As BetterArray
     Dim idx As Long
@@ -1047,7 +1047,7 @@ End Sub
 
 '@label:ExportTable
 '@prop-title Retrieve export table wrapper
-Private Function ExportTable() As ICustomTable
+Private Function ExportTable() As CustomTable
     Dim listObjects As ListObjects
     Dim lo As ListObject
 

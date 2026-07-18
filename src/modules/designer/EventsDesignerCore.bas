@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Designer")
 '@ModuleDescription("Ribbon callbacks for the designer workbook.")
-'@depends DesignerPreparation, RibbonDev, OSFiles, BetterArray, CustomTable, ICustomTable, Passwords, IPasswords, LLFormat, ILLFormat, ApplicationState, IApplicationState, DesignerTranslation, IDesignerTranslation, HiddenNames, IHiddenNames
+'@depends DesignerPreparation, RibbonDev, OSFiles, BetterArray, CustomTable, Passwords, IPasswords, LLFormat, ILLFormat, ApplicationState, IApplicationState, DesignerTranslation, IDesignerTranslation, HiddenNames, IHiddenNames
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Private Const SHEET_FORMAT As String = "__formatter"
@@ -97,8 +97,8 @@ Public Sub clickImpTrans(ByRef control As IRibbonControl)
     Dim targetSheet As Worksheet
     Dim sourceSheet As Worksheet
     Dim lo As ListObject
-    Dim targetTable As ICustomTable
-    Dim sourceTable As ICustomTable
+    Dim targetTable As CustomTable
+    Dim sourceTable As CustomTable
     Dim appScope As IApplicationState
 
     Set io = OSFiles.Create()

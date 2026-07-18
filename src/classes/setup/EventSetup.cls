@@ -35,12 +35,12 @@ Private Type TEventSetup
     updater             As UpdatedValues    'Registry tracker for watched columns
     drop                As IDropdownLists    'Cached dropdown manager
     ribbon              As IRibbonUI         'Cached ribbon instance when available
-    tsTable             As ICustomTable      'Analysis time-series table wrapper
-    graphTable          As ICustomTable      'Analysis graph table wrapper
-    graphLabTable       As ICustomTable      'Analysis graph table label wrapper
-    spatioTable         As ICustomTable      'Analysis spatio-temporal table wrapper
-    spatioSpecsTable    As ICustomTable     'Spatio-temporal specification table wrapper
-    exportsTable        As ICustomTable      'Exports listobject wrapper
+    tsTable             As CustomTable      'Analysis time-series table wrapper
+    graphTable          As CustomTable      'Analysis graph table wrapper
+    graphLabTable       As CustomTable      'Analysis graph table label wrapper
+    spatioTable         As CustomTable      'Analysis spatio-temporal table wrapper
+    spatioSpecsTable    As CustomTable     'Spatio-temporal specification table wrapper
+    exportsTable        As CustomTable      'Exports listobject wrapper
     variables           As ILLVariables      'Dictionary variable helper
     dictionary          As ILLdictionary     'Cached dictionary reference
     choices             As ILLChoices        'Cached choices helper
@@ -48,7 +48,7 @@ Private Type TEventSetup
     exports             As ILLExport         'Cached exports manager
     translations        As SetupTranslationsTable 'Cached translations manager
     passwords           As IPasswords        'Cached password helper (lazily created once)
-    choicesTable        As ICustomTable      'Cached Choices table wrapper
+    choicesTable        As CustomTable      'Cached Choices table wrapper
 End Type
 
 Private this As TEventSetup
@@ -896,11 +896,11 @@ End Function
 'Creates a CustomTable wrapper around the named ListObject on the Analysis
 'sheet. The ByRef tableRef parameter is populated on success and reused on
 'subsequent calls. Returns True when the table is available.
-'@param tableRef ByRef ICustomTable. Cached table reference, populated on first call and reused.
+'@param tableRef ByRef CustomTable. Cached table reference, populated on first call and reused.
 '@param listName String. Name of the ListObject on the Analysis worksheet.
 '@param keyColumn String. Column to use as the table key.
 '@return Boolean. True when the table is available.
-Private Function EnsureAnalysisTable(ByRef tableRef As ICustomTable, _
+Private Function EnsureAnalysisTable(ByRef tableRef As CustomTable, _
                                      ByVal listName As String, _
                                      ByVal keyColumn As String) As Boolean
     If Not (tableRef Is Nothing) Then
@@ -924,10 +924,10 @@ End Function
 '@details
 'Ensures the analysis table is initialised via EnsureAnalysisTable, then
 'recalculates its data range. Silently exits when the table cannot be created.
-'@param tableRef ByRef ICustomTable. Cached table reference.
+'@param tableRef ByRef CustomTable. Cached table reference.
 '@param listName String. Name of the ListObject on the Analysis worksheet.
 '@param keyColumn String. Column to use as the table key.
-Private Sub EnsureTableCalculated(ByRef tableRef As ICustomTable, _
+Private Sub EnsureTableCalculated(ByRef tableRef As CustomTable, _
                                   ByVal listName As String, _
                                   ByVal keyColumn As String)
     If Not EnsureAnalysisTable(tableRef, listName, keyColumn) Then Exit Sub
@@ -1248,11 +1248,11 @@ End Function
 
 '@label:safe-table-value
 '@sub-title Safely retrieve a value from a CustomTable, returning empty on error.
-'@param tableRef ICustomTable. The table to query.
+'@param tableRef CustomTable. The table to query.
 '@param columnName String. Column header to read.
 '@param keyName String. Key value to look up.
 '@return String. The retrieved value, or empty on error.
-Private Function SafeTableValue(ByVal tableRef As ICustomTable, _
+Private Function SafeTableValue(ByVal tableRef As CustomTable, _
                                 ByVal columnName As String, _
                                 ByVal keyName As String) As String
     Dim value As Variant
@@ -1273,13 +1273,13 @@ End Function
 '@details
 'Ensures the requested analysis table is initialised via EnsureAnalysisTable,
 'then delegates to SafeTableValue for the actual retrieval.
-'@param tableRef ByRef ICustomTable. Cached table reference.
+'@param tableRef ByRef CustomTable. Cached table reference.
 '@param listName String. Name of the ListObject.
 '@param keyColumn String. Column used as the table key.
 '@param valueColumn String. Column to read.
 '@param keyValue String. Key value to look up.
 '@return String. The retrieved value, or empty.
-Private Function AnalysisTableValue(ByRef tableRef As ICustomTable, _
+Private Function AnalysisTableValue(ByRef tableRef As CustomTable, _
                                     ByVal listName As String, _
                                     ByVal keyColumn As String, _
                                     ByVal valueColumn As String, _
