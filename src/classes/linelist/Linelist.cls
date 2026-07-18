@@ -741,7 +741,7 @@ End Sub
 'on the translation sheet. Then calls InitialiseHiddenNames to create
 'all RNG_* translated message/sheet names on the output workbook.
 Private Sub InitialiseTranslationNames()
-    Dim transObj As ILLTranslation
+    Dim transObj As LLTranslation
     Dim dictLang As String
     Dim llLang As String
 
@@ -833,14 +833,14 @@ Private Sub TransferAllCode(ByVal codeTransfer As CodeTransfer)
 
     Set codesList = New BetterArray
 
-    'Transfer classes (32 classes)
+    'Transfer classes (31 classes)
     codesList.Push "BetterArray", "DataSheet", "LLExport", _
                    "LLChoices", _
                    "LLdictionary", "ILLdictionary", "LLGeo", _
                    "ILLGeo", "Passwords", "IPasswords", _
                    "Checking", _
                    "LLSheets", "LLTranslation", _
-                   "ILLTranslation", "OSFiles", _
+                   "OSFiles", _
                    "TranslationObject", "ITranslationObject", "LLVariables", _
                    "ILLVariables", "LLSpatial", _
                    "DropdownLists", "IDropdownLists", "ShowHideManager", _

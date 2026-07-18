@@ -30,7 +30,7 @@ End Function
 
 ' @description Initialize translation objects and the LLGeo instance.
 Private Sub InitializeTrads()
-    Dim lltrads As ILLTranslation
+    Dim lltrads As LLTranslation
     Dim wb As Workbook
 
     Set wb = ThisWorkbook

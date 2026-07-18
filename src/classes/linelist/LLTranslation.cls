@@ -16,7 +16,24 @@ Attribute VB_Description = "Linelist translation tables manager"
 
 Option Explicit
 
-Implements ILLTranslation
+
+'@section Enumerations
+'===============================================================================
+'@description Supported translation content scopes.
+
+'@sub-title Available translation content scopes
+'@details
+'Each value maps to a specific ListObject on the translation worksheet.
+'Used as a Byte parameter to select which translation table backs the
+'returned ITranslationObject.
+Public Enum TranslationScope
+    TranslationOfMessages = 0
+    TranslationOfDictionary = 1
+    TranslationOfShapes = 2
+    TranslationOfForms = 3
+    TranslationOfRibbon = 4
+End Enum
+
 
 '@class LLTranslation
 '@description
@@ -60,11 +77,11 @@ Private Const CLASS_NAME             As String = "LLTranslation"
 'Tab_Translations). T_TradLLRibbon is optional.
 '@param translationSheet Worksheet. The worksheet hosting all translation
 'ListObjects.
-'@return ILLTranslation. A fully initialised facade.
+'@return LLTranslation. A fully initialised facade.
 '@throws ProjectError.ObjectNotInitialized When translationSheet is Nothing.
 '@throws ProjectError.ElementNotFound When a required ListObject is missing.
 '@export
-Public Function Create(ByVal translationSheet As Worksheet) As ILLTranslation
+Public Function Create(ByVal translationSheet As Worksheet) As LLTranslation
     CheckRequirements translationSheet
 
     With New LLTranslation
@@ -74,9 +91,9 @@ Public Function Create(ByVal translationSheet As Worksheet) As ILLTranslation
 End Function
 
 '@label:self
-'@prop-title Interface-cast self reference
-'@return ILLTranslation. This instance as its interface type.
-Public Property Get Self() As ILLTranslation
+'@prop-title Self reference
+'@return LLTranslation. This instance.
+Public Property Get Self() As LLTranslation
     Set Self = Me
 End Property
 
@@ -558,47 +575,3 @@ End Sub
 Private Sub ThrowError(ByVal errNumber As Long, ByVal message As String)
     Err.Raise CLng(errNumber), CLASS_NAME, message
 End Sub
-
-
-'@section Interface Implementation
-'===============================================================================
-'@description Delegated members satisfying the ILLTranslation contract.
-
-Private Property Get ILLTranslation_TransObject(Optional ByVal trans As Byte = TranslationOfMessages) As ITranslationObject
-    Set ILLTranslation_TransObject = TransObject(trans)
-End Property
-
-Private Property Get ILLTranslation_Wksh() As Worksheet
-    Set ILLTranslation_Wksh = Wksh
-End Property
-
-Private Sub ILLTranslation_Export(ByVal outputWkb As Workbook, _
-                                  Optional ByVal Hide As Long = xlSheetVeryHidden)
-    Export outputWkb, Hide
-End Sub
-
-Private Sub ILLTranslation_Import(ByVal fromWkb As Workbook)
-    Import fromWkb
-End Sub
-
-Private Sub ILLTranslation_ImportDictionary(ByVal dictionaryTable As ListObject)
-    ImportDictionary dictionaryTable
-End Sub
-
-Private Sub ILLTranslation_ExportDictionary(ByVal outputWkb As Workbook, _
-                                            Optional ByVal sheetName As String = "Translations", _
-                                            Optional ByVal Hide As Long = xlSheetVisible)
-    ExportDictionary outputWkb, sheetName, Hide
-End Sub
-
-Private Sub ILLTranslation_InitialiseHiddenNames(ByVal targetWkb As Workbook)
-    InitialiseHiddenNames targetWkb
-End Sub
-
-Private Sub ILLTranslation_InitialiseSheetNames(ByVal dictLang As String, ByVal llLang As String)
-    InitialiseSheetNames dictLang, llLang
-End Sub
-
-Private Property Get ILLTranslation_Value(ByVal nameId As String) As String
-    ILLTranslation_Value = Value(nameId)
-End Property

@@ -155,11 +155,11 @@ End Property
 '@jump:translations
 '@prop-title Translation tables manager
 '@details
-'Returns the ILLTranslation instance providing access to all translation
+'Returns the LLTranslation instance providing access to all translation
 'ListObjects on the consolidated translation worksheet. Lazy-loaded on
 'first access.
-'@return ILLTranslation. The translations collaborator.
-Public Property Get Translations() As ILLTranslation
+'@return LLTranslation. The translations collaborator.
+Public Property Get Translations() As LLTranslation
 End Property
 
 '@jump:designer-translations

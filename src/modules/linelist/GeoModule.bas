@@ -28,7 +28,7 @@ Private concatenateHFTable As BetterArray
 Private geo As ILLGeo
 Private drop As IDropdownLists
 Private tradmess As ITranslationObject
-Private lltrads As ILLTranslation
+Private lltrads As LLTranslation
 Private pass As IPasswords
 
 '@section Initialization

@@ -154,7 +154,7 @@ Public Sub TestCreateReturnsInstance()
     CustomTestSetTitles Assert, TESTMODULE, "TestCreateReturnsInstance"
     On Error GoTo TestFail
 
-    Dim sut As ILLTranslation
+    Dim sut As LLTranslation
     Set sut = LLTranslation.Create(TransSheet)
 
     Assert.IsTrue Not sut Is Nothing, _
@@ -170,7 +170,7 @@ Public Sub TestCreateRejectsNothingSheet()
     CustomTestSetTitles Assert, TESTMODULE, "TestCreateRejectsNothingSheet"
     On Error GoTo ExpectError
 
-    Dim sut As ILLTranslation
+    Dim sut As LLTranslation
     Set sut = LLTranslation.Create(Nothing)
 
     CustomTestLogFailure Assert, "TestCreateRejectsNothingSheet", , _
@@ -193,7 +193,7 @@ Public Sub TestCreateRejectsMissingTables()
     Set emptyWkb = TestHelpers.NewWorkbook
     Set emptySheet = emptyWkb.Worksheets(1)
 
-    Dim sut As ILLTranslation
+    Dim sut As LLTranslation
     Set sut = LLTranslation.Create(emptySheet)
 
     TestHelpers.DeleteWorkbook emptyWkb
@@ -219,7 +219,7 @@ Public Sub TestTransObjectReturnsTranslationObject()
     CustomTestSetTitles Assert, TESTMODULE, "TestTransObjectReturnsTranslationObject"
     On Error GoTo TestFail
 
-    Dim sut As ILLTranslation
+    Dim sut As LLTranslation
     Set sut = LLTranslation.Create(TransSheet)
 
     Dim transObj As ITranslationObject
@@ -238,7 +238,7 @@ Public Sub TestWkshReturnsHostSheet()
     CustomTestSetTitles Assert, TESTMODULE, "TestWkshReturnsHostSheet"
     On Error GoTo TestFail
 
-    Dim sut As ILLTranslation
+    Dim sut As LLTranslation
     Set sut = LLTranslation.Create(TransSheet)
 
     Assert.IsTrue sut.Wksh.Name = TRANS_SHEET_NAME, _
@@ -258,7 +258,7 @@ Public Sub TestExportCreatesSheet()
     CustomTestSetTitles Assert, TESTMODULE, "TestExportCreatesSheet"
     On Error GoTo TestFail
 
-    Dim sut As ILLTranslation
+    Dim sut As LLTranslation
     Set sut = LLTranslation.Create(TransSheet)
 
     Dim targetWkb As Workbook
@@ -295,7 +295,7 @@ Public Sub TestImportSkipsMissingTables()
     CustomTestSetTitles Assert, TESTMODULE, "TestImportSkipsMissingTables"
     On Error GoTo TestFail
 
-    Dim sut As ILLTranslation
+    Dim sut As LLTranslation
     Set sut = LLTranslation.Create(TransSheet)
 
     'Create a source workbook with only one matching table
@@ -338,7 +338,7 @@ Public Sub TestInitialiseHiddenNamesCreatesNames()
     CustomTestSetTitles Assert, TESTMODULE, "TestInitialiseHiddenNamesCreatesNames"
     On Error GoTo TestFail
 
-    Dim sut As ILLTranslation
+    Dim sut As LLTranslation
     Set sut = LLTranslation.Create(TransSheet)
 
     Dim targetWkb As Workbook

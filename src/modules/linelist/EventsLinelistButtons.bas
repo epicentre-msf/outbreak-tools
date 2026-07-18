@@ -22,7 +22,7 @@ Private tradsform As ITranslationObject   'Translation of forms
 Private tradsmess As ITranslationObject   'Translation of messages
 Private pass As IPasswords
 Private wb As Workbook
-Private lltrads As ILLTranslation
+Private lltrads As LLTranslation
 Private wkbNames As HiddenNames
 
 'Initialize translation of forms object

@@ -12,7 +12,7 @@ Attribute VB_Description = "Designer import/export service for setup and linelis
 '@PredeclaredId
 '@Folder("Designer")
 '@ModuleDescription("Imports setup components into a designer workbook and exports them to a linelist workbook.")
-'@depends ProjectError, LLdictionary, ILLdictionary, LLChoices, LLExport, Analysis, IAnalysis, LLGeo, ILLGeo, IPasswords, Passwords, LLFormat, ILLFormat, LLTranslation, ILLTranslation, HiddenNames
+'@depends ProjectError, LLdictionary, ILLdictionary, LLChoices, LLExport, Analysis, IAnalysis, LLGeo, ILLGeo, IPasswords, Passwords, LLFormat, ILLFormat, LLTranslation, HiddenNames
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, ParameterNotUsed
 
 Option Explicit
@@ -41,7 +41,7 @@ Private Type TDesignerImportService
     exportedExport As LLExport    'Export manager on exported workbook
     exportedGeo As ILLGeo          'Geo manager on exported workbook
     exportedPass As IPasswords     'Passwords manager on exported workbook
-    exportedTrans As ILLTranslation 'Translations manager on exported workbook
+    exportedTrans As LLTranslation 'Translations manager on exported workbook
 End Type
 
 Private this As TDesignerImportService
@@ -300,7 +300,7 @@ Public Property Get ExportedPasswords() As IPasswords
 End Property
 
 '@label:exported-translations
-Public Property Get ExportedTranslations() As ILLTranslation
+Public Property Get ExportedTranslations() As LLTranslation
     Set ExportedTranslations = this.exportedTrans
 End Property
 
@@ -404,7 +404,7 @@ Private Sub ImportTranslations(ByVal setupBook As Workbook, ByVal hostBook As Wo
     Dim setupSheet As Worksheet
     Dim hostTransSheet As Worksheet
     Dim sourceTable As ListObject
-    Dim translations As ILLTranslation
+    Dim translations As LLTranslation
 
     Set setupSheet = ResolveWorksheet(setupBook, SHEET_TRANSLATIONS)
     If setupSheet Is Nothing Then Exit Sub
@@ -542,7 +542,7 @@ End Sub
 '@sub-title Export translations from host to target workbook
 Private Sub ExportTranslations(ByVal hostBook As Workbook, ByVal targetBook As Workbook)
     Dim hostSheet As Worksheet
-    Dim translations As ILLTranslation
+    Dim translations As LLTranslation
 
     Set hostSheet = ResolveWorksheet(hostBook, SHEET_LL_TRANSLATION)
     If hostSheet Is Nothing Then Exit Sub
@@ -845,7 +845,7 @@ Private Property Get IDesignerImportService_ExportedPasswords() As IPasswords
     Set IDesignerImportService_ExportedPasswords = ExportedPasswords
 End Property
 
-Private Property Get IDesignerImportService_ExportedTranslations() As ILLTranslation
+Private Property Get IDesignerImportService_ExportedTranslations() As LLTranslation
     Set IDesignerImportService_ExportedTranslations = ExportedTranslations
 End Property
 

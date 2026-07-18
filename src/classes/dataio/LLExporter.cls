@@ -703,7 +703,7 @@ Private Sub AddMetadataSheets(ByVal outwb As Workbook, ByVal dict As ILLdictiona
     Dim sh As Worksheet
     Dim counter As Long
     Dim sheetName As String
-    Dim translations As ILLTranslation
+    Dim translations As LLTranslation
 
     Set sheetNames = New BetterArray
     sheetNames.Push METADATASHEET, CHOICESSHEET

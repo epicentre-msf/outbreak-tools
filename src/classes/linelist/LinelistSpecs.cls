@@ -27,7 +27,7 @@ Implements ILinelistSpecs
 'user-facing error dialogs. Uses a PredeclaredId factory pattern so callers
 'construct instances via LinelistSpecs.Create(workbook) and receive an
 'ILinelistSpecs interface reference.
-'@depends ILLdictionary, LLChoices, ILLTranslation, IDesignerTranslation
+'@depends ILLdictionary, LLChoices, LLTranslation, IDesignerTranslation
 '@depends ILLGeo, LLExport, IPasswords, ILLFormat
 '@depends LinelistBuildService, TemporaryRepos
 '@depends IFormulaData, ILLVariables, Formulas
@@ -47,7 +47,7 @@ Private Type TLinelistSpecs
     specsWkb As Workbook
     dictionary As ILLdictionary
     choices As LLChoices
-    translations As ILLTranslation
+    translations As LLTranslation
     designerTranslations As IDesignerTranslation
     geo As ILLGeo
     exports As LLExport
@@ -1064,11 +1064,11 @@ End Property
 '@label:translations
 '@prop-title Translation tables manager
 '@details
-'Returns the ILLTranslation instance providing access to the linelist
+'Returns the LLTranslation instance providing access to the linelist
 'translation worksheet. Lazy-loaded on first access.
-'@return ILLTranslation. The translations collaborator.
+'@return LLTranslation. The translations collaborator.
 '@export
-Public Property Get Translations() As ILLTranslation
+Public Property Get Translations() As LLTranslation
     EnsureTranslations
     Set Translations = this.translations
 End Property
@@ -1474,12 +1474,12 @@ Public Sub TestAssignDesignerTranslations(ByVal designerTrads As IDesignerTransl
 End Sub
 
 '@label:test-assign-translations
-'@sub-title Inject a mock ILLTranslation instance for testing
+'@sub-title Inject a mock LLTranslation instance for testing
 '@details
 'Also resets the translation cache to ensure the mock object is used
 'for subsequent TransObject lookups.
-'@param translations ILLTranslation. The mock translations object.
-Public Sub TestAssignTranslations(ByVal translations As ILLTranslation)
+'@param translations LLTranslation. The mock translations object.
+Public Sub TestAssignTranslations(ByVal translations As LLTranslation)
     Set this.translations = translations
     ResetTranslationCache
 End Sub
@@ -1534,7 +1534,7 @@ Private Property Get ILinelistSpecs_HasTemplate() As Boolean
     ILinelistSpecs_HasTemplate = Me.HasTemplate
 End Property
 
-Private Property Get ILinelistSpecs_Translations() As ILLTranslation
+Private Property Get ILinelistSpecs_Translations() As LLTranslation
     Set ILinelistSpecs_Translations = Me.Translations
 End Property
 

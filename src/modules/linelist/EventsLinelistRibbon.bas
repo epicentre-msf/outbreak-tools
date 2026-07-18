@@ -13,7 +13,7 @@ Private tradrib As ITranslationObject   'Translation of ribbon labels
 
 'Initialize translation of ribbon labels
 Private Sub InitializeTrads()
-    Dim lltrads As ILLTranslation
+    Dim lltrads As LLTranslation
 
     Set lltrads = LLTranslation.Create(ThisWorkbook.Worksheets(LLSHEET))
     Set tradrib = lltrads.TransObject(TranslationOfRibbon)

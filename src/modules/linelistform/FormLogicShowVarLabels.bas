@@ -13,7 +13,7 @@ Private tradform As ITranslationObject
 
 
 Private Sub InitializeTrads()
-    Dim lltrads As ILLTranslation
+    Dim lltrads As LLTranslation
 
     Set lltrads = LLTranslation.Create(ThisWorkbook.Worksheets(LLSHEET))
     Set tradform = lltrads.TransObject(TranslationOfForms)

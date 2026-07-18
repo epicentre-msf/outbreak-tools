@@ -74,7 +74,7 @@ Private Property Get ILinelistSpecs_HasTemplate() As Boolean
     ILinelistSpecs_HasTemplate = False
 End Property
 
-Private Property Get ILinelistSpecs_Translations() As ILLTranslation
+Private Property Get ILinelistSpecs_Translations() As LLTranslation
     Set ILinelistSpecs_Translations = Nothing
 End Property
 

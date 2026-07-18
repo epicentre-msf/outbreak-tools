@@ -12,7 +12,7 @@ Attribute VB_Description = "Direct setup-to-linelist build service eliminating t
 '@PredeclaredId
 '@Folder("Designer")
 '@ModuleDescription("Exports pass-through setup data directly to the linelist, bypassing the designer intermediary.")
-'@depends ProjectError, LLdictionary, ILLdictionary, LLChoices, LLExport, Analysis, LLGeo, ILLGeo, IPasswords, Passwords, LLFormat, ILLFormat, LLTranslation, ILLTranslation, HiddenNames
+'@depends ProjectError, LLdictionary, ILLdictionary, LLChoices, LLExport, Analysis, LLGeo, ILLGeo, IPasswords, Passwords, LLFormat, ILLFormat, LLTranslation, HiddenNames
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, ParameterNotUsed
 
 Option Explicit
@@ -40,7 +40,7 @@ Private Type TLinelistBuildService
     exportedExport As LLExport     'Export manager on linelist workbook
     exportedGeo As ILLGeo           'Geo manager on linelist workbook
     exportedPass As IPasswords      'Passwords manager on linelist workbook
-    exportedTrans As ILLTranslation 'Translations manager on linelist workbook
+    exportedTrans As LLTranslation 'Translations manager on linelist workbook
 End Type
 
 Private this As TLinelistBuildService
@@ -362,7 +362,7 @@ Public Property Get ExportedPasswords() As IPasswords
 End Property
 
 '@label:exported-translations
-Public Property Get ExportedTranslations() As ILLTranslation
+Public Property Get ExportedTranslations() As LLTranslation
     Set ExportedTranslations = this.exportedTrans
 End Property
 
@@ -467,7 +467,7 @@ Private Sub ImportTranslationsToDesigner(ByVal setupBook As Workbook, ByVal host
     Dim setupSheet As Worksheet
     Dim hostTransSheet As Worksheet
     Dim sourceTable As ListObject
-    Dim translations As ILLTranslation
+    Dim translations As LLTranslation
 
     Set setupSheet = ResolveWorksheet(setupBook, SHEET_TRANSLATIONS)
     If setupSheet Is Nothing Then Exit Sub
@@ -544,7 +544,7 @@ End Sub
 'linelist workbook.
 Private Sub ExportTranslationsFromDesigner(ByVal hostBook As Workbook, ByVal targetBook As Workbook)
     Dim hostSheet As Worksheet
-    Dim translations As ILLTranslation
+    Dim translations As LLTranslation
 
     Set hostSheet = ResolveWorksheet(hostBook, SHEET_LL_TRANSLATION)
     If hostSheet Is Nothing Then Exit Sub

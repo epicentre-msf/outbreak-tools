@@ -34,7 +34,7 @@ Option Explicit
 Private Type TEventLinelist
     hostBook        As Workbook           'Linelist workbook
     tradmess        As ITranslationObject 'Cached message translations
-    lltrads         As ILLTranslation     'Cached translation helper
+    lltrads         As LLTranslation     'Cached translation helper
     wkbNames        As HiddenNames       'Cached workbook-level hidden names
     drop            As IDropdownLists     'Cached dropdown manager
     geo             As ILLGeo             'Cached geo helper
