@@ -115,7 +115,7 @@ End Property
 '@label:wksh-set
 '@prop-title Assign the host worksheet
 '@param sh Worksheet. The worksheet where graph data resides.
-Public Property Set Wksh(ByVal sh As Worksheet)
+Private Property Set Wksh(ByVal sh As Worksheet)
     Set this.sh = sh
 End Property
 
@@ -132,14 +132,14 @@ End Property
 '@label:start-range-set
 '@prop-title Assign the starting position range
 '@param strtRng Range. The cell or range used to position the graph.
-Public Property Set StartRange(ByVal strtRng As Range)
+Private Property Set StartRange(ByVal strtRng As Range)
     Set this.strtRng = strtRng
 End Property
 
 '@label:name-set
 '@prop-title Assign the graph display name
 '@param grName String. The graph name.
-Public Property Let Name(ByVal grName As String)
+Private Property Let Name(ByVal grName As String)
     this.grName = grName
 End Property
 

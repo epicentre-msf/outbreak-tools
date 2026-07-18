@@ -177,7 +177,7 @@ End Property
 '@label:table-set
 '@prop-title Assign the cross-table reference
 '@param tabl CrossTable. The cross-table to store.
-Public Property Set Table(ByVal tabl As CrossTable)
+Private Property Set Table(ByVal tabl As CrossTable)
     Set this.tabl = tabl
 End Property
 
@@ -191,7 +191,7 @@ End Property
 '@label:graph-type-set
 '@prop-title Assign the graph specifications mode
 '@param specType GraphSpecsType. The mode to set.
-Public Property Let GraphType(ByVal specType As GraphSpecsType)
+Private Property Let GraphType(ByVal specType As GraphSpecsType)
     this.specsType = specType
 End Property
 
@@ -205,7 +205,7 @@ End Property
 '@label:lo-list-set
 '@prop-title Assign the ListObject collection
 '@param loTable BetterArray. The 3-element ListObject array to clone and store.
-Public Property Set LoList(ByVal loTable As BetterArray)
+Private Property Set LoList(ByVal loTable As BetterArray)
     Set this.loList = loTable.Clone()
 End Property
 
@@ -219,7 +219,7 @@ End Property
 '@label:output-sheet-set
 '@prop-title Assign the output worksheet
 '@param sh Worksheet. The worksheet to store.
-Public Property Set OutputSheet(ByVal sh As Worksheet)
+Private Property Set OutputSheet(ByVal sh As Worksheet)
     Set this.outSh = sh
 End Property
 
@@ -233,7 +233,7 @@ End Property
 '@label:linelist-specifications-set
 '@prop-title Assign the linelist specifications
 '@param lData LinelistSpecs. The linelist specifications to store.
-Public Property Set LinelistSpecifications(ByVal lData As LinelistSpecs)
+Private Property Set LinelistSpecifications(ByVal lData As LinelistSpecs)
     Set this.lData = lData
 End Property
 
