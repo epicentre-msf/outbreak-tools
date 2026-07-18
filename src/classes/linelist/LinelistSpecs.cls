@@ -28,7 +28,7 @@ Implements ILinelistSpecs
 'construct instances via LinelistSpecs.Create(workbook) and receive an
 'ILinelistSpecs interface reference.
 '@depends ILLdictionary, LLChoices, LLTranslation, IDesignerTranslation
-'@depends ILLGeo, LLExport, IPasswords, LLFormat
+'@depends LLGeo, LLExport, IPasswords, LLFormat
 '@depends LinelistBuildService, TemporaryRepos
 '@depends FormulaData, ILLVariables, Formulas
 '@depends ITranslationObject, ApplicationState
@@ -49,7 +49,7 @@ Private Type TLinelistSpecs
     choices As LLChoices
     translations As LLTranslation
     designerTranslations As IDesignerTranslation
-    geo As ILLGeo
+    geo As LLGeo
     exports As LLExport
     ana As Analysis
     passwords As IPasswords
@@ -301,9 +301,9 @@ End Sub
 'exported geo worksheet via RNG_MetaLang, calls geoObj.Import to populate
 'the output geo sheet, then closes the geobase workbook. Silently skips
 'if the path is empty or the file cannot be opened.
-'@param geoObj ILLGeo. The geo instance on the output workbook.
+'@param geoObj LLGeo. The geo instance on the output workbook.
 '@param dictLang String. The dictionary language code for RNG_MetaLang.
-Private Sub ImportGeobase(ByVal geoObj As ILLGeo)
+Private Sub ImportGeobase(ByVal geoObj As LLGeo)
     Dim geoPath As String
     Dim geoWkb As Workbook
     Dim geoNames As HiddenNames
@@ -1025,11 +1025,11 @@ End Property
 '@label:geo-object
 '@prop-title Geographic data manager
 '@details
-'Returns the ILLGeo instance providing geographic hierarchy lookups from
+'Returns the LLGeo instance providing geographic hierarchy lookups from
 'the Geo worksheet. Lazy-loaded on first access.
-'@return ILLGeo. The geo collaborator.
+'@return LLGeo. The geo collaborator.
 '@export
-Public Property Get GeoObject() As ILLGeo
+Public Property Get GeoObject() As LLGeo
     EnsureGeo
     Set GeoObject = this.geo
 End Property
@@ -1303,7 +1303,7 @@ Public Sub Prepare(ByVal buildService As LinelistBuildService, ByVal setupPath A
     Dim choicesObj As LLChoices
     Dim exportsObj As LLExport
     Dim analysisObj As Analysis
-    Dim geoObj As ILLGeo
+    Dim geoObj As LLGeo
     Dim dictTrads As ITranslationObject
     Dim msgTrads As ITranslationObject
     Dim preservedNames As BetterArray
@@ -1522,7 +1522,7 @@ Private Property Get ILinelistSpecs_Password() As IPasswords
     Set ILinelistSpecs_Password = Me.Password
 End Property
 
-Private Property Get ILinelistSpecs_GeoObject() As ILLGeo
+Private Property Get ILinelistSpecs_GeoObject() As LLGeo
     Set ILinelistSpecs_GeoObject = Me.GeoObject
 End Property
 

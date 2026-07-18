@@ -164,7 +164,7 @@ End Property
 '@jump:prepare
 '@sub-title Prepare dictionary for designer workflows
 '@param PreservedSheetNames BetterArray containing table names to preserve.
-'@param geoObject ILLGeo implementation to enrich geographic variables.
+'@param geoObject LLGeo implementation to enrich geographic variables.
 '@param msgTrads ITranslationObject providing translations.
 '@param tablePrefix Optional String prefix for generated table names. Defaults to "table".
 Public Sub Prepare(Optional ByVal PreservedSheetNames As BetterArray, _

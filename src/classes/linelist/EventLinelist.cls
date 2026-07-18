@@ -37,7 +37,7 @@ Private Type TEventLinelist
     lltrads         As LLTranslation     'Cached translation helper
     wkbNames        As HiddenNames       'Cached workbook-level hidden names
     drop            As IDropdownLists     'Cached dropdown manager
-    geo             As ILLGeo             'Cached geo helper
+    geo             As LLGeo             'Cached geo helper
     sp              As LLSpatial          'Cached spatial helper
     dict            As ILLdictionary      'Cached dictionary helper
     vars            As ILLVariables       'Cached variable lookup helper

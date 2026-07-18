@@ -19,7 +19,7 @@ Option Explicit
 'with a full fixture; HasNoData reflects RNG_GeoUpdated state; GeoNames
 'resolves from named range cache; GeoNames falls back to raw name for unknown
 'keys; GeoLevel returns empty when geobase has no data.
-'@depends LLGeo, ILLGeo, BetterArray, CustomTest, TestHelpers, HiddenNames
+'@depends LLGeo, BetterArray, CustomTest, TestHelpers, HiddenNames
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const GEO_FIXTURE As String = "GeoFixture"
@@ -187,7 +187,7 @@ Public Sub TestCreateRejectsNothing()
     On Error GoTo TestFail
 
     On Error Resume Next
-    Dim geo As ILLGeo
+    Dim geo As LLGeo
     Set geo = LLGeo.Create(Nothing)
     On Error GoTo 0
 
@@ -215,7 +215,7 @@ Public Sub TestCreateRejectsSheetMissingTables()
     Set sh = EnsureWorksheet("GeoEmptyTest", clearSheet:=True, visibility:=xlSheetHidden)
 
     On Error Resume Next
-    Dim geo As ILLGeo
+    Dim geo As LLGeo
     Set geo = LLGeo.Create(sh)
     On Error GoTo 0
 
@@ -241,7 +241,7 @@ Public Sub TestCreateSucceedsWithFullFixture()
     Dim sh As Worksheet
     Set sh = BuildGeoFixture()
 
-    Dim geo As ILLGeo
+    Dim geo As LLGeo
     Set geo = LLGeo.Create(sh)
 
     Assert.IsNotNothing geo, _
@@ -269,7 +269,7 @@ Public Sub TestHasNoDataWhenEmpty()
     Dim sh As Worksheet
     Set sh = BuildGeoFixture()
 
-    Dim geo As ILLGeo
+    Dim geo As LLGeo
     Set geo = LLGeo.Create(sh)
 
     Assert.IsTrue geo.HasNoData, _
@@ -297,7 +297,7 @@ Public Sub TestHasNoDataFalseWhenUpdated()
     Set geoStore = HiddenNames.Create(sh)
     geoStore.SetValue "RNG_GeoUpdated", "updated, not translated"
 
-    Dim geo As ILLGeo
+    Dim geo As LLGeo
     Set geo = LLGeo.Create(sh)
 
     Assert.IsFalse geo.HasNoData, _
@@ -331,7 +331,7 @@ Public Sub TestGeoNamesResolvesFromCache()
     Set geoStore = HiddenNames.Create(sh)
     geoStore.SetValue "RNG_GeoUpdated", "updated, not translated"
 
-    Dim geo As ILLGeo
+    Dim geo As LLGeo
     Set geo = LLGeo.Create(sh)
 
     Assert.AreEqual "Province", geo.GeoNames("adm1_name"), _
@@ -356,7 +356,7 @@ Public Sub TestGeoNamesFallsBackToRawName()
     Dim sh As Worksheet
     Set sh = BuildGeoFixture()
 
-    Dim geo As ILLGeo
+    Dim geo As LLGeo
     Set geo = LLGeo.Create(sh)
 
     Assert.AreEqual "unknown_field", geo.GeoNames("unknown_field"), _
@@ -416,7 +416,7 @@ Public Sub TestUpdateLevelNamesPopulatesFromTNAMES()
     geoStore.SetValue "RNG_GeoUpdated", "updated"
 
     'Act: Create LLGeo and call Translate which triggers UpdateLevelNames
-    Dim geo As ILLGeo
+    Dim geo As LLGeo
     Set geo = LLGeo.Create(sh)
     geo.Translate rawNames:=False
 
@@ -464,7 +464,7 @@ Public Sub TestUpdateLevelNamesSkipsWithNoLangCode()
     geoStore.SetValue "RNG_GeoUpdated", "updated"
 
     'Act
-    Dim geo As ILLGeo
+    Dim geo As LLGeo
     Set geo = LLGeo.Create(sh)
     geo.Translate rawNames:=False
 
@@ -495,7 +495,7 @@ Public Sub TestGeoLevelReturnsEmptyWhenNoData()
     Dim sh As Worksheet
     Set sh = BuildGeoFixture()
 
-    Dim geo As ILLGeo
+    Dim geo As LLGeo
     Set geo = LLGeo.Create(sh)
 
     Dim result As BetterArray

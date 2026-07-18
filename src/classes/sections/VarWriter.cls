@@ -25,7 +25,7 @@ Option Explicit
 'to the resolved cell range. The class caches dictionary, variables, and
 'sheets accessors for performance across repeated calls.
 '@depends ILinelistSpecs, ILLdictionary, ILLVariables, LLSheets, LLFormat,
-'ITranslationObject, FormulaData, Formulas, IDropdownLists, ILLGeo,
+'ITranslationObject, FormulaData, Formulas, IDropdownLists, LLGeo,
 'Formulas, LLVariables, LLSheets, BetterArray
 '@version 1.0 (2026-02-10)
 
@@ -765,7 +765,7 @@ Private Sub AddChoices()
     Dim cat As BetterArray
     Dim drop As IDropdownLists
     Dim cellRng As Range
-    Dim geo As ILLGeo
+    Dim geo As LLGeo
     Dim choicust As String
     Dim transObj As ITranslationObject
     Dim varMainLab As String

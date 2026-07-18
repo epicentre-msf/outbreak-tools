@@ -12,7 +12,7 @@ Attribute VB_Description = "Designer import/export service for setup and linelis
 '@PredeclaredId
 '@Folder("Designer")
 '@ModuleDescription("Imports setup components into a designer workbook and exports them to a linelist workbook.")
-'@depends ProjectError, LLdictionary, ILLdictionary, LLChoices, LLExport, Analysis, IAnalysis, LLGeo, ILLGeo, IPasswords, Passwords, LLFormat, LLTranslation, HiddenNames
+'@depends ProjectError, LLdictionary, ILLdictionary, LLChoices, LLExport, Analysis, IAnalysis, LLGeo, IPasswords, Passwords, LLFormat, LLTranslation, HiddenNames
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, ParameterNotUsed
 
 Option Explicit
@@ -39,7 +39,7 @@ Private Type TDesignerImportService
     exportedChoices As LLChoices   'Choices manager on exported workbook
     exportedAnalysis As IAnalysis   'Analysis manager on exported workbook
     exportedExport As LLExport    'Export manager on exported workbook
-    exportedGeo As ILLGeo          'Geo manager on exported workbook
+    exportedGeo As LLGeo          'Geo manager on exported workbook
     exportedPass As IPasswords     'Passwords manager on exported workbook
     exportedTrans As LLTranslation 'Translations manager on exported workbook
 End Type
@@ -290,7 +290,7 @@ Public Property Get ExportedExport() As LLExport
 End Property
 
 '@label:exported-geo
-Public Property Get ExportedGeo() As ILLGeo
+Public Property Get ExportedGeo() As LLGeo
     Set ExportedGeo = this.exportedGeo
 End Property
 
@@ -497,7 +497,7 @@ End Sub
 Private Sub ExportGeo(ByVal hostBook As Workbook, ByVal targetBook As Workbook, _
                       ByVal llName As String, ByVal setupPath As String)
     Dim hostSheet As Worksheet
-    Dim geoManager As ILLGeo
+    Dim geoManager As LLGeo
     Dim geoStore As HiddenNames
     Dim dictLang As String
     Dim langCode As String
@@ -837,7 +837,7 @@ Private Property Get IDesignerImportService_ExportedExport() As LLExport
     Set IDesignerImportService_ExportedExport = ExportedExport
 End Property
 
-Private Property Get IDesignerImportService_ExportedGeo() As ILLGeo
+Private Property Get IDesignerImportService_ExportedGeo() As LLGeo
     Set IDesignerImportService_ExportedGeo = ExportedGeo
 End Property
 

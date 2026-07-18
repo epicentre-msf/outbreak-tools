@@ -15,7 +15,7 @@ Private Const NACHARREV As String = "N/A | "
 
 Private tradform As ITranslationObject
 Private tradmess As ITranslationObject
-Private geo As ILLGeo
+Private geo As LLGeo
 Private hfOrGeo As Byte
 
 'Get the sheet type tag (HiddenNames first, cell fallback for legacy sheets).

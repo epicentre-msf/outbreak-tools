@@ -107,9 +107,9 @@ End Property
 
 '@jump:exported-geo
 '@prop-title Geo manager targeting the exported workbook
-'@return ILLGeo. The exported geo manager, or Nothing.
+'@return LLGeo. The exported geo manager, or Nothing.
 '@export
-Public Property Get ExportedGeo() As ILLGeo
+Public Property Get ExportedGeo() As LLGeo
 End Property
 
 '@jump:exported-passwords

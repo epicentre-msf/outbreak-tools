@@ -15,7 +15,37 @@ Attribute VB_Description = "Geobase management class"
 '@IgnoreModule UnrecognizedAnnotation, ExcelMemberMayReturnNothing
 
 Option Explicit
-Implements ILLGeo
+
+'@section Enumerations
+'===============================================================================
+
+'@details Geographic scope selector: admin hierarchy vs health facility.
+Public Enum GeoScope
+    GeoScopeAdmin = 0
+    GeoScopeHF = 1
+End Enum
+
+'@details
+'Admin-only scope selects one of the four administrative levels without
+'including health facilities. Used by GeoLevel when geoType is
+'GeoScopeAdmin.
+Public Enum AdminOnlyScope
+    LevelAdmin1 = 0
+    LevelAdmin2 = 1
+    LevelAdmin3 = 2
+    LevelAdmin4 = 3
+End Enum
+
+'@details
+'Extended scope that includes both admin levels and health facility. Used
+'for operations that need to address all five geographic tiers.
+Public Enum AdminAndHFScope
+    LevelGeoAdmin1 = 0
+    LevelGeoAdmin2 = 1
+    LevelGeoAdmin3 = 2
+    LevelGeoAdmin4 = 3
+    LevelHF = 4
+End Enum
 
 '@class LLGeo
 '@description
@@ -76,9 +106,9 @@ Private Const NAMES_LEVEL_COL As String = "level"
 'way to create a usable LLGeo object because the class relies on
 'specific ListObjects, named ranges, and HiddenNames being present.
 '@param sh Worksheet. The geobase worksheet containing T_ADM1 through T_ADM4, T_HF, T_NAMES, T_HISTOGEO, T_HISTOHF, T_METADATA, and required named ranges/hidden names.
-'@return ILLGeo. A fully initialised LLGeo instance exposed through the ILLGeo interface.
+'@return LLGeo. A fully initialised LLGeo instance exposed through the LLGeo interface.
 '@export
-Public Function Create(ByVal sh As Worksheet) As ILLGeo
+Public Function Create(ByVal sh As Worksheet) As LLGeo
     CheckRequirements sh
     Dim instance As LLGeo
     Set instance = New LLGeo
@@ -319,7 +349,7 @@ End Function
 '@param admname String. Raw column name to translate.
 '@return String. Translated display name, or the raw name if no translation exists.
 '@export
-Private Property Get GeoNames(ByVal admname As String) As String
+Public Property Get GeoNames(ByVal admname As String) As String
     Dim counter As Long
 
     EnsureNamesCache
@@ -488,7 +518,7 @@ End Function
 '@throws ProjectError.InvalidArgument When adminNames has wrong type or length.
 '@throws ProjectError.ErrorUnexpectedState When the ListObject has no data.
 '@export
-Private Property Get GeoLevel(ByVal adminLevel As Byte, _
+Public Property Get GeoLevel(ByVal adminLevel As Byte, _
                               Optional ByVal geoType As Byte = GeoScopeAdmin, _
                               Optional adminNames As Variant = vbNullString) As BetterArray
 
@@ -636,7 +666,7 @@ End Property
 'translation cache both before and after the change.
 '@param rawNames Optional Boolean. True to revert to raw names, False to apply translated names. Defaults to False.
 '@export
-Private Sub Translate(Optional ByVal rawNames As Boolean = False)
+Public Sub Translate(Optional ByVal rawNames As Boolean = False)
     Dim sh As Worksheet
     Dim tabl As BetterArray
     Dim counter As Long
@@ -710,7 +740,7 @@ End Sub
 'translation name cache so subsequent GeoNames lookups will rebuild from
 'fresh data.
 '@export
-Private Sub Clear()
+Public Sub Clear()
     Dim sh As Worksheet
     Dim Lo As ListObject
 
@@ -737,7 +767,7 @@ End Sub
 'succeeds even when a table has no data body.
 '@param scope Optional Byte. 0 = geo only, 1 = HF only, 3 = both. Defaults to 3.
 '@export
-Private Sub ClearHistoric(Optional ByVal scope As Byte = 3)
+Public Sub ClearHistoric(Optional ByVal scope As Byte = 3)
     Dim sh As Worksheet
     Set sh = Wksh()
 
@@ -767,7 +797,7 @@ End Sub
 '@param fromWkb Workbook. Source workbook containing geo data sheets.
 '@param histoOnly Optional Boolean. True to import only historic data. Defaults to False.
 '@export
-Private Sub Import(ByVal fromWkb As Workbook, _
+Public Sub Import(ByVal fromWkb As Workbook, _
                    Optional ByVal histoOnly As Boolean = False)
 
     Dim sh As Worksheet
@@ -902,7 +932,7 @@ End Sub
 '@param outputWkb Workbook. Target workbook to receive exported sheets.
 '@param onlyHistory Optional Boolean. True to export only historic tables. Defaults to False.
 '@export
-Private Sub ExportToFile(ByVal outputWkb As Workbook, _
+Public Sub ExportToFile(ByVal outputWkb As Workbook, _
                          Optional ByVal onlyHistory As Boolean = False)
 
     Const METADATASHEET As String = "Metadata"
@@ -975,7 +1005,7 @@ End Sub
 '@param setupPath Optional String. Setup file path for metadata. Defaults to vbNullString.
 '@throws ProjectError.ElementShouldNotExists When target sheets already exist.
 '@export
-Private Sub ExportToWkb(ByVal outputWkb As Workbook, _
+Public Sub ExportToWkb(ByVal outputWkb As Workbook, _
                         Optional ByVal llName As String = vbNullString, _
                         Optional ByVal setupPath As String = vbNullString)
 
@@ -1129,7 +1159,7 @@ End Sub
 'reflects the current geobase content.
 '@param pass IPasswords. Password manager for sheet protection and unprotection.
 '@export
-Private Sub Update(ByVal pass As IPasswords)
+Public Sub Update(ByVal pass As IPasswords)
 
     Const DROPDOWNSHEET As String = "dropdown_lists__"
 
@@ -1208,7 +1238,7 @@ End Sub
 'import or translation change.
 '@param dict ILLdictionary. The linelist dictionary whose labels should be updated.
 '@export
-Private Sub UpdateDict(ByVal dict As ILLdictionary)
+Public Sub UpdateDict(ByVal dict As ILLdictionary)
     Dim controlRng As Range
     Dim mainlabRng As Range
     Dim counter As Long
@@ -1243,7 +1273,7 @@ End Sub
 '@param sh Worksheet. The show/hide worksheet containing ListObjects to update.
 '@param dict ILLdictionary. The linelist dictionary for resolving control and subsection values.
 '@export
-Private Sub UpdateShowHide(ByVal sh As Worksheet, ByVal dict As ILLdictionary)
+Public Sub UpdateShowHide(ByVal sh As Worksheet, ByVal dict As ILLdictionary)
     Dim csTab As CustomTable
     Dim vars As ILLVariables
     Dim Lo As ListObject
@@ -1300,7 +1330,7 @@ End Sub
 '@param newValue String. The value to add to the historic list.
 '@param scope Optional Byte. 0 = geo historic (T_HISTOGEO), 1 = HF historic (T_HISTOHF). Defaults to 0.
 '@export
-Private Sub UpdateHistoric(ByVal newValue As String, _
+Public Sub UpdateHistoric(ByVal newValue As String, _
                            Optional ByVal scope As Byte = 0)
     Dim sh As Worksheet
     Dim loName As String
@@ -1344,7 +1374,7 @@ End Sub
 '@param selectedAdmin String. The translated admin display name to resolve.
 '@return String. Admin code ("adm1", "adm2", "adm3", or "adm4").
 '@export
-Private Function AdminCode(ByVal selectedAdmin As String) As String
+Public Function AdminCode(ByVal selectedAdmin As String) As String
     Select Case selectedAdmin
     Case GeoNames("adm1_name")
         AdminCode = "adm1"
@@ -1368,7 +1398,7 @@ End Function
 'available.
 '@return Boolean. True when the geobase is empty.
 '@export
-Private Property Get HasNoData() As Boolean
+Public Property Get HasNoData() As Boolean
     HasNoData = (GeoHiddenStore().ValueAsString(HN_GEO_UPDATED) = "empty")
 End Property
 
@@ -1540,73 +1570,3 @@ Private Sub ThrowError(ByVal errNumber As Long, ByVal message As String)
     Err.Raise CLng(errNumber), CLASS_NAME, message
 End Sub
 
-'@section Interface Implementation
-'===============================================================================
-
-Private Property Get ILLGeo_GeoLevel(ByVal adminLevel As Byte, _
-                                     Optional ByVal geoType As Byte = GeoScopeAdmin, _
-                                     Optional adminNames As Variant = vbNullString _
-                                     ) As BetterArray
-    Set ILLGeo_GeoLevel = GeoLevel(adminLevel, geoType, adminNames)
-End Property
-
-Private Property Get ILLGeo_GeoNames(ByVal admname As String) As String
-    ILLGeo_GeoNames = GeoNames(admname)
-End Property
-
-Private Property Get ILLGeo_HasNoData() As Boolean
-    ILLGeo_HasNoData = HasNoData()
-End Property
-
-Private Property Get ILLGeo_Wksh() As Worksheet
-    Set ILLGeo_Wksh = Wksh()
-End Property
-
-Private Sub ILLGeo_Translate(Optional ByVal rawNames As Boolean = False)
-    Translate rawNames
-End Sub
-
-Private Sub ILLGeo_Import(ByVal fromWkb As Workbook, _
-                          Optional ByVal histoOnly As Boolean = False)
-    Import fromWkb, histoOnly
-End Sub
-
-Private Sub ILLGeo_ExportToFile(ByVal outputWkb As Workbook, _
-                                Optional ByVal onlyHistory As Boolean = False)
-    ExportToFile outputWkb, onlyHistory
-End Sub
-
-Private Sub ILLGeo_ExportToWkb(ByVal Wkb As Workbook, _
-                               Optional ByVal llName As String = vbNullString, _
-                               Optional ByVal setupPath As String = vbNullString)
-    ExportToWkb Wkb, llName, setupPath
-End Sub
-
-Private Sub ILLGeo_Clear()
-    Clear
-End Sub
-
-Private Sub ILLGeo_ClearHistoric(Optional ByVal scope As Byte = 3)
-    ClearHistoric scope
-End Sub
-
-Private Sub ILLGeo_UpdateHistoric(ByVal newValue As String, _
-                                  Optional ByVal scope As Byte = 0)
-    UpdateHistoric newValue, scope
-End Sub
-
-Private Sub ILLGeo_Update(ByVal pass As IPasswords)
-    Update pass
-End Sub
-
-Private Sub ILLGeo_UpdateDict(ByVal dict As ILLdictionary)
-    UpdateDict dict
-End Sub
-
-Private Sub ILLGeo_UpdateShowHide(ByVal sh As Worksheet, ByVal dict As ILLdictionary)
-    UpdateShowHide sh, dict
-End Sub
-
-Private Function ILLGeo_AdminCode(ByVal selectedAdmin As String) As String
-    ILLGeo_AdminCode = AdminCode(selectedAdmin)
-End Function

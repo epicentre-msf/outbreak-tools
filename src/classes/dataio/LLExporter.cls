@@ -25,7 +25,7 @@ Option Explicit
 'populates it with the relevant data, metadata, and formatting, then saves
 'and closes it.
 '@depends ILLdictionary, LLExport, IPasswords, CustomTable
-'@depends DataSheet, AnaTabIds, ILLGeo, LLChoices, HiddenNames
+'@depends DataSheet, AnaTabIds, LLGeo, LLChoices, HiddenNames
 
 
 '@section Enumerations
@@ -407,7 +407,7 @@ Public Function ExportGeo(ByVal folderPath As String, _
                            Optional ByVal onlyHistoric As Boolean = False) As String
 
     Dim outwb As Workbook
-    Dim geo As ILLGeo
+    Dim geo As LLGeo
     Dim geobaseName As String
     Dim filePath As String
 
@@ -487,8 +487,8 @@ End Function
 
 '@label:geo-object
 '@sub-title Get the geo object from the source workbook
-'@return ILLGeo. Geo instance from the Geo sheet.
-Private Function GeoObject() As ILLGeo
+'@return LLGeo. Geo instance from the Geo sheet.
+Private Function GeoObject() As LLGeo
     Set GeoObject = LLGeo.Create(this.sourceWkb.Worksheets(GEOSHEET))
 End Function
 

@@ -24,7 +24,7 @@ Option Explicit
 'sheets and variables were imported, and builds a report of items not
 'imported or not touched.
 '@depends ILLdictionary, IPasswords, CustomTable, DataSheet
-'@depends ILLGeo, LLChoices, ILLVariables, IDropdownLists, HiddenNames
+'@depends LLGeo, LLChoices, ILLVariables, IDropdownLists, HiddenNames
 
 
 '@section Enumerations
@@ -643,7 +643,7 @@ End Sub
 '@export
 Public Sub ImportGeobase(ByVal impwb As Workbook, Optional ByVal histoOnly As Boolean = False)
 
-    Dim geo As ILLGeo
+    Dim geo As LLGeo
     Dim dict As ILLdictionary
     Dim pass As IPasswords
     Dim showHideSh As Worksheet
@@ -853,8 +853,8 @@ End Function
 
 '@label:geo-object
 '@sub-title Get the geo object from the source workbook
-'@return ILLGeo. Geo instance from the Geo sheet.
-Private Function GeoObject() As ILLGeo
+'@return LLGeo. Geo instance from the Geo sheet.
+Private Function GeoObject() As LLGeo
     Set GeoObject = LLGeo.Create(this.sourceWkb.Worksheets(GEOSHEET))
 End Function
 

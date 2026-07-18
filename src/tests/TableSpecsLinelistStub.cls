@@ -68,7 +68,7 @@ Private Property Get ILinelistSpecs_Password() As IPasswords
     Set ILinelistSpecs_Password = Nothing
 End Property
 
-Private Property Get ILinelistSpecs_GeoObject() As ILLGeo
+Private Property Get ILinelistSpecs_GeoObject() As LLGeo
     Set ILinelistSpecs_GeoObject = Nothing
 End Property
 

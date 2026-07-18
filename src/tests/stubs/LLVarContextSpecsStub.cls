@@ -21,7 +21,7 @@ Private designFormat As LLFormat
 Private dictionary As ILLdictionary
 Private formulaData As FormulaData
 Private translationObject As ITranslationObject
-Private geoObject As ILLGeo
+Private geoObject As LLGeo
 
 Private Sub Class_Initialize()
     Set categoriesMap = New Collection
@@ -70,7 +70,7 @@ Public Sub SetTranslation(ByVal translation As ITranslationObject)
     Set translationObject = translation
 End Sub
 
-Public Sub SetGeo(ByVal geo As ILLGeo)
+Public Sub SetGeo(ByVal geo As LLGeo)
     Set geoObject = geo
 End Sub
 
@@ -109,7 +109,7 @@ Private Property Get ILinelistSpecs_Password() As IPasswords
     Set ILinelistSpecs_Password = Nothing
 End Property
 
-Private Property Get ILinelistSpecs_GeoObject() As ILLGeo
+Private Property Get ILinelistSpecs_GeoObject() As LLGeo
     Set ILinelistSpecs_GeoObject = geoObject
 End Property
 

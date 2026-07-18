@@ -128,10 +128,10 @@ End Property
 '@jump:geo-object
 '@prop-title Geographic data manager
 '@details
-'Returns the ILLGeo instance providing geographic hierarchy lookups from the
+'Returns the LLGeo instance providing geographic hierarchy lookups from the
 'Geo worksheet. Lazy-loaded on first access.
-'@return ILLGeo. The geo collaborator.
-Public Property Get GeoObject() As ILLGeo
+'@return LLGeo. The geo collaborator.
+Public Property Get GeoObject() As LLGeo
 End Property
 
 '@jump:formula-data-object

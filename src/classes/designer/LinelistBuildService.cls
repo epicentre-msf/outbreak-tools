@@ -12,7 +12,7 @@ Attribute VB_Description = "Direct setup-to-linelist build service eliminating t
 '@PredeclaredId
 '@Folder("Designer")
 '@ModuleDescription("Exports pass-through setup data directly to the linelist, bypassing the designer intermediary.")
-'@depends ProjectError, LLdictionary, ILLdictionary, LLChoices, LLExport, Analysis, LLGeo, ILLGeo, IPasswords, Passwords, LLFormat, LLTranslation, HiddenNames
+'@depends ProjectError, LLdictionary, ILLdictionary, LLChoices, LLExport, Analysis, LLGeo, IPasswords, Passwords, LLFormat, LLTranslation, HiddenNames
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, ParameterNotUsed
 
 Option Explicit
@@ -38,7 +38,7 @@ Private Type TLinelistBuildService
     exportedChoices As LLChoices   'Choices manager on linelist workbook
     exportedAnalysis As Analysis   'Analysis manager on linelist workbook
     exportedExport As LLExport     'Export manager on linelist workbook
-    exportedGeo As ILLGeo           'Geo manager on linelist workbook
+    exportedGeo As LLGeo           'Geo manager on linelist workbook
     exportedPass As IPasswords      'Passwords manager on linelist workbook
     exportedTrans As LLTranslation 'Translations manager on linelist workbook
 End Type
@@ -352,7 +352,7 @@ Public Property Get ExportedExport() As LLExport
 End Property
 
 '@label:exported-geo
-Public Property Get ExportedGeo() As ILLGeo
+Public Property Get ExportedGeo() As LLGeo
     Set ExportedGeo = this.exportedGeo
 End Property
 
@@ -494,7 +494,7 @@ End Sub
 'during ExportToWkb.
 Private Sub ExportGeoFromDesigner(ByVal hostBook As Workbook, ByVal targetBook As Workbook)
     Dim hostSheet As Worksheet
-    Dim geoManager As ILLGeo
+    Dim geoManager As LLGeo
     Dim geoStore As HiddenNames
     Dim dictLang As String
     Dim langCode As String
