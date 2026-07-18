@@ -57,7 +57,7 @@ Private this As TAnaOutput
 
 'Checking support
 Private checkCounter As Long
-Private internalChecks As IChecking
+Private internalChecks As Checking
 
 '@section Instantiation
 '===============================================================================
@@ -1193,7 +1193,7 @@ Private Sub LogInfo(ByVal label As String, Optional ByVal scope As Byte = checki
     this.hasChecks = True
 End Sub
 
-Private Sub HarvestCollaboratorCheckings(ByVal collaboratorChecks As IChecking)
+Private Sub HarvestCollaboratorCheckings(ByVal collaboratorChecks As Checking)
     If collaboratorChecks Is Nothing Then Exit Sub
     If internalChecks Is Nothing Then
         Set internalChecks = Checking.Create("Analysis output")
@@ -1206,7 +1206,7 @@ Public Property Get HasCheckings() As Boolean
     HasCheckings = this.hasChecks
 End Property
 
-Public Property Get CheckingValues() As IChecking
+Public Property Get CheckingValues() As Checking
     If Not HasCheckings Then Exit Property
     Set CheckingValues = internalChecks
 End Property

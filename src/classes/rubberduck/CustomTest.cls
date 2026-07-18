@@ -24,7 +24,7 @@ Private Type THarnessState
     outputSheetName As String
     pendingTestName As String
     pendingTestSubtitle As String
-    currentChecking As IChecking
+    currentChecking As Checking
     Results As BetterArray
     assertCounter As Long
 End Type
@@ -540,7 +540,7 @@ End Sub
 '@label:PersistActiveChecking
 '@prop-title Store the active checking into the results buffer when it has entries
 Private Sub PersistActiveChecking(Optional ByVal resetNames As Boolean = False)
-    Dim persisted As IChecking
+    Dim persisted As Checking
 
     If this.currentChecking Is Nothing Then Exit Sub
     If this.currentChecking.Length = 0 Then

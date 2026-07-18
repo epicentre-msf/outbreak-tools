@@ -25,7 +25,7 @@ Private Type TVariable
     columnCache As BetterArray
     variablesCache As BetterArray
     checkCounter As Long
-    internalChecks As IChecking
+    internalChecks As Checking
 End Type
 
 Private this As TVariable
@@ -529,6 +529,6 @@ Private Function ILLVariables_HasCheckings() As Boolean
     ILLVariables_HasCheckings = HasInternalChecks
 End Function
 
-Private Property Get ILLVariables_CheckingValues() As IChecking
+Private Property Get ILLVariables_CheckingValues() As Checking
     If HasInternalChecks Then Set ILLVariables_CheckingValues = this.internalChecks
 End Property

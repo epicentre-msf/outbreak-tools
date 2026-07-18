@@ -37,6 +37,6 @@ Private Property Get ILLFormat_HasCheckings() As Boolean
     ILLFormat_HasCheckings = False
 End Property
 
-Private Property Get ILLFormat_CheckingValues() As IChecking
+Private Property Get ILLFormat_CheckingValues() As Checking
     Set ILLFormat_CheckingValues = Nothing
 End Property

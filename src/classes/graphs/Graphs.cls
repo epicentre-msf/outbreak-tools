@@ -46,7 +46,7 @@ Private this As TGraph
 
 'Checking objects
 Private checkCounter As Long
-Private internalChecks As IChecking
+Private internalChecks As Checking
 
 
 '@section Enumerations
@@ -536,7 +536,7 @@ End Function
 
 '@section Checking
 '===============================================================================
-'@description Logging and validation support via the IChecking interface.
+'@description Logging and validation support via the Checking interface.
 
 '@label:log-info
 '@sub-title Record a diagnostic entry in the internal checking store
@@ -577,11 +577,11 @@ End Property
 '@label:checking-values
 '@prop-title Retrieve the collected checking entries
 '@details
-'Returns the internal IChecking store when at least one entry has
+'Returns the internal Checking store when at least one entry has
 'been recorded. Returns Nothing otherwise.
-'@return Object. The IChecking instance with logged diagnostics.
+'@return Object. The Checking instance with logged diagnostics.
 '@export
-Public Property Get CheckingValues() As IChecking
+Public Property Get CheckingValues() As Checking
 
     'If there are no checks, exit the property
     If Not HasCheckings() Then  Exit Property

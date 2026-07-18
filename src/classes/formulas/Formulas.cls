@@ -79,7 +79,7 @@ Private Const FORMULA_GROUP_UNKNOWN_AGGREGATOR As String = "Grouped formula '%1'
 
 Private this As TFormulas
 Private deps As TDependencies
-Private internalChecks As IChecking
+Private internalChecks As Checking
 Private checkCounter As Long
 Private hasChecks As Boolean
 
@@ -1253,11 +1253,11 @@ End Property
 '@label:checking-values
 '@sub-title Expose the collected checking entries if available
 '@details
-'Returns the internal IChecking store when at least one entry has
+'Returns the internal Checking store when at least one entry has
 'been recorded. Returns Nothing otherwise.
-'@return IChecking. Logged diagnostics.
+'@return Checking. Logged diagnostics.
 '@export
-Public Property Get CheckingValues() As IChecking
+Public Property Get CheckingValues() As Checking
     If Not HasChecking Then Exit Property
     Set CheckingValues = internalChecks
 End Property

@@ -44,7 +44,7 @@ Private Type TLLFormat
     designColumnCache As BetterArray
     labelRowCache As BetterArray
     hasChecks As Boolean
-    checks As IChecking
+    checks As Checking
     checkCounter As Long
 End Type
 
@@ -354,8 +354,8 @@ End Property
 
 '@label:checking-values
 '@prop-title Retrieve the diagnostic log entries
-'@return IChecking. The checking instance, or Nothing.
-Public Property Get CheckingValues() As IChecking
+'@return Checking. The checking instance, or Nothing.
+Public Property Get CheckingValues() As Checking
     If this.hasChecks Then
         Set CheckingValues = this.checks
     End If
@@ -1643,6 +1643,6 @@ Private Property Get ILLFormat_HasCheckings() As Boolean
     ILLFormat_HasCheckings = HasCheckings
 End Property
 
-Private Property Get ILLFormat_CheckingValues() As IChecking
+Private Property Get ILLFormat_CheckingValues() As Checking
     Set ILLFormat_CheckingValues = CheckingValues
 End Property

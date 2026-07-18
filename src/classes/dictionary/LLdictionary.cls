@@ -44,7 +44,7 @@ Private Const TOTAL_EXPORTS_NAME As String = "__ll_exports_total__"
 
 'Checking support
 Private checkCounter As Long
-Private internalChecks As IChecking
+Private internalChecks As Checking
 
 '@section Instantiation
 '===============================================================================
@@ -1550,7 +1550,7 @@ Public Property Get HasCheckings() As Boolean
     HasCheckings = this.hasChecks
 End Property
 
-Public Property Get CheckingValues() As IChecking
+Public Property Get CheckingValues() As Checking
     If Not HasCheckings() Then Exit Property
     Set CheckingValues = internalChecks
 End Property
@@ -1723,6 +1723,6 @@ Private Property Get ILLdictionary_HasCheckings() As Boolean
 End Property
 
 '@jump:checking-values
-Private Property Get ILLdictionary_CheckingValues() As IChecking
+Private Property Get ILLdictionary_CheckingValues() As Checking
     Set ILLdictionary_CheckingValues = CheckingValues
 End Property

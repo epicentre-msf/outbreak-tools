@@ -13,11 +13,11 @@ Option Explicit
 'series, spatial, and spatio-temporal analyses. Tests cover factory
 'initialisation (Create, Self, Wksh), row management (AddRows, RemoveRows,
 'InsertRows, DeleteRows), data exchange (Import, Export, Translate), sorting,
-'and diagnostic logging via the IChecking interface. The fixture uses
+'and diagnostic logging via the Checking interface. The fixture uses
 'AnalysisTestFixture helpers to build throwaway worksheets with pre-populated
 'analysis tables, and tears down all temporary sheets on cleanup to ensure
 'test isolation.
-'@depends Analysis, ITranslationObject, TranslationObject, IChecking, Checking, BetterArray, CustomTest, AnalysisTestFixture, TestHelpers
+'@depends Analysis, ITranslationObject, TranslationObject, Checking, BetterArray, CustomTest, AnalysisTestFixture, TestHelpers
 
 Private Assert As ICustomTest
 Private CoreAnalysis As Analysis
@@ -216,7 +216,7 @@ End Sub
 'Uses the default CoreAnalysis fixture which has had no operations that
 'produce diagnostics. Asserts that HasCheckings returns False and that
 'CheckingValues returns Nothing, confirming the initial clean state of the
-'internal IChecking store.
+'internal Checking store.
 '@TestMethod("Analysis")
 Public Sub TestHasCheckingsReturnsNothingWhenEmpty()
     CustomTestSetTitles Assert, "Analysis", "TestHasCheckingsReturnsNothingWhenEmpty"
@@ -447,7 +447,7 @@ End Sub
 'Arranges by resetting CoreAnalysis with a simple fixture sheet and
 'changing the header instruction to target Spatial Analysis, whose
 'ListObject does not exist on the minimal sheet. Acts by calling AddRows.
-'Asserts that HasCheckings is True, and iterates the IChecking keys to
+'Asserts that HasCheckings is True, and iterates the Checking keys to
 'find a warning entry whose label contains "Tab_Spatial_Analysis",
 'confirming the diagnostic logging path for missing tables.
 '@TestMethod("Analysis")
@@ -457,7 +457,7 @@ Public Sub TestAddRowsLogsMissingListObject()
 
     On Error GoTo Fail
 
-    Dim logs As IChecking
+    Dim logs As Checking
     Dim keys As BetterArray
     Dim idx As Long
     Dim foundWarning As Boolean
@@ -493,7 +493,7 @@ End Sub
 '@sub-title Verify Import with Nothing as source logs an error diagnostic.
 '@details
 'Acts by calling CoreAnalysis.Import with Nothing. Asserts that
-'HasCheckings is True, then iterates the IChecking keys to locate an
+'HasCheckings is True, then iterates the Checking keys to locate an
 'error entry whose label contains "source worksheet not provided",
 'confirming that the guard clause logs the expected error rather than
 'raising an exception.
@@ -503,7 +503,7 @@ Public Sub TestImportWithNothingLogsError()
 
     On Error GoTo Fail
 
-    Dim logs As IChecking
+    Dim logs As Checking
     Dim keys As BetterArray
     Dim idx As Long
     Dim foundError As Boolean
@@ -544,7 +544,7 @@ Public Sub TestImportRecordsMissingTables()
     On Error GoTo Fail
 
     Dim sourceSheet As Worksheet
-    Dim logs As IChecking
+    Dim logs As Checking
     Dim keys As BetterArray
     Dim idx As Long
     Dim missingLogged As Boolean
@@ -580,7 +580,7 @@ End Sub
 '@sub-title Verify Translate with Nothing as translator logs a warning diagnostic.
 '@details
 'Acts by calling CoreAnalysis.Translate with Nothing. Asserts that
-'HasCheckings is True, then iterates the IChecking keys to locate a
+'HasCheckings is True, then iterates the Checking keys to locate a
 'warning entry whose label contains "translation object not provided",
 'confirming the guard clause logs a warning instead of raising an error.
 '@TestMethod("Analysis")
@@ -588,7 +588,7 @@ Public Sub TestTranslateWithoutTranslatorRecordsWarning()
     CustomTestSetTitles Assert, "Analysis", "TestTranslateWithoutTranslatorRecordsWarning"
     On Error GoTo Fail
 
-    Dim logs As IChecking
+    Dim logs As Checking
     Dim keys As BetterArray
     Dim idx As Long
     Dim foundWarning As Boolean

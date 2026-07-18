@@ -37,7 +37,7 @@ Private Type TPasswords
     keyTable As ListObject                   'Cached list object holding keys
     protectedTable As ListObject             'Cached list object holding protection metadata
     hasChecks As Boolean                     'Whether checkings were emitted
-    checks As IChecking                      'Checking aggregation object
+    checks As Checking                      'Checking aggregation object
     checkCounter As Long                     'Incremental counter for checking keys
     nm As String                             'Name of the password worksheet
     displayPrompts As Boolean                'Whether UI prompts should be displayed
@@ -219,8 +219,8 @@ End Property
 
 '@label:checking-values
 '@prop-title Retrieve the aggregated checking entries
-'@return IChecking. The checking object, or Nothing.
-Public Property Get CheckingValues() As IChecking
+'@return Checking. The checking object, or Nothing.
+Public Property Get CheckingValues() As Checking
     If this.hasChecks Then
         Set CheckingValues = this.checks
     End If
@@ -772,7 +772,7 @@ Private Property Get IPasswords_IsInDebugMode() As Boolean
     IPasswords_IsInDebugMode = InDebugMode()
 End Property
 
-Private Property Get IPasswords_CheckingValues() As IChecking
+Private Property Get IPasswords_CheckingValues() As Checking
     Set IPasswords_CheckingValues = CheckingValues
 End Property
 

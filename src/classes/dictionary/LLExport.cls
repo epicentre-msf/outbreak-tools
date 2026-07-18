@@ -26,7 +26,7 @@ Private Type TLLExport
     exportSheet As Worksheet
     dictInt As ILLdictionary
     variables As ILLVariables
-    checks As IChecking
+    checks As Checking
     hasChecks As Boolean
     checkCounter As Long
     sanitizeList As Variant
@@ -141,7 +141,7 @@ End Property
 '@label:CheckingValues
 '@prop-title Collected informational diagnostics
 '@return Checking object containing log entries, if any.
-Public Property Get CheckingValues() As IChecking
+Public Property Get CheckingValues() As Checking
     If this.hasChecks Then
         Set CheckingValues = this.checks
     End If
@@ -1395,7 +1395,7 @@ Private Property Get ILLExport_HasCheckings() As Boolean
     ILLExport_HasCheckings = HasCheckings
 End Property
 
-Private Property Get ILLExport_CheckingValues() As IChecking
+Private Property Get ILLExport_CheckingValues() As Checking
     Set ILLExport_CheckingValues = CheckingValues
 End Property
 

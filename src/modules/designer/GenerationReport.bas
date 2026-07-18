@@ -2,8 +2,8 @@ Attribute VB_Name = "GenerationReport"
 Option Explicit
 
 '@Folder("Designer")
-'@ModuleDescription("Incremental generation report: harvests IChecking objects and flushes them to the designer __checking worksheet.")
-'@depends CheckingOutput, Checking, IChecking, HiddenNames, IHiddenNames, BetterArray, ILinelistSpecs, ILLdictionary, ILLChoices, ILLExport, IPasswords, ILLFormat
+'@ModuleDescription("Incremental generation report: harvests Checking objects and flushes them to the designer __checking worksheet.")
+'@depends CheckingOutput, Checking, HiddenNames, IHiddenNames, BetterArray, ILinelistSpecs, ILLdictionary, ILLChoices, ILLExport, IPasswords, ILLFormat
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, UseMeaningfulName
 
 '@description
@@ -36,11 +36,11 @@ Public Sub InitReport(ByVal designerBook As Workbook)
     Set reportOutput = CheckingOutput.Create(sh, "Generation Report")
 End Sub
 
-'@sub-title Flush a batch of IChecking objects to the report worksheet
+'@sub-title Flush a batch of Checking objects to the report worksheet
 '@details
 'Appends the supplied checkings to the designer __checking sheet.
 'Skips silently when the batch is empty or InitReport was not called.
-'@param checkBatch BetterArray. Collection of IChecking instances to write.
+'@param checkBatch BetterArray. Collection of Checking instances to write.
 Public Sub FlushCheckings(ByVal checkBatch As BetterArray)
     If reportOutput Is Nothing Then Exit Sub
     If checkBatch Is Nothing Then Exit Sub
@@ -51,10 +51,10 @@ End Sub
 
 '@sub-title Harvest checkings from all specification collaborators after Prepare
 '@details
-'Collects IChecking objects from Dictionary, Choices, Exports, Analysis,
+'Collects Checking objects from Dictionary, Choices, Exports, Analysis,
 'Passwords, and DesignFormat into a BetterArray ready for FlushCheckings.
 '@param specs ILinelistSpecs. The specs object after Prepare.
-'@return BetterArray. Collection of IChecking instances (may be empty).
+'@return BetterArray. Collection of Checking instances (may be empty).
 Public Function HarvestSpecsCheckings(ByVal specs As ILinelistSpecs) As BetterArray
     Dim result As BetterArray
     Set result = New BetterArray

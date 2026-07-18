@@ -17,7 +17,7 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 'against an LLFormat design template. The fixture creates a temporary
 'worksheet for each test and cleans up all shapes and format sheets on
 'teardown to guarantee isolation.
-'@depends Buttons, LLFormat, ILLFormat, Checking, IChecking, CustomTest, TestHelpers, LLFormatTestFixture
+'@depends Buttons, LLFormat, ILLFormat, Checking, CustomTest, TestHelpers, LLFormatTestFixture
 
 Private Const BUTTONS_SHEET As String = "ButtonsFixture"
 Private Const DEFAULT_BUTTON_NAME As String = "FixtureButton"
@@ -181,7 +181,7 @@ End Sub
 Public Sub TestAddExistingRecordsCheckings()
     CustomTestSetTitles Assert, "Buttons", "TestAddExistingRecordsCheckings"
     Dim buttonHelper As Buttons
-    Dim logs As IChecking
+    Dim logs As Checking
 
     On Error GoTo Fail
 
@@ -193,7 +193,7 @@ Public Sub TestAddExistingRecordsCheckings()
     Assert.IsTrue buttonHelper.HasCheckings, "Repeated Add should log a checking entry"
 
     Set logs = buttonHelper.CheckingValues
-    Assert.IsTrue (Not logs Is Nothing), "CheckingValues should yield an IChecking instance"
+    Assert.IsTrue (Not logs Is Nothing), "CheckingValues should yield an Checking instance"
     Assert.AreEqual 1, logs.Length, "Only one checking entry should be recorded"
     Assert.AreEqual "Button ExistingButton already exists; skipping creation", _
                    logs.ValueOf("0", checkingLabel), _

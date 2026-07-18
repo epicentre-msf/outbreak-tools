@@ -32,7 +32,7 @@ Attribute VB_Name = "TestPasswords"
 '
 ' @depends Passwords, IPasswords, TranslationObject, ITranslationObject,
 '   ApplicationState, IApplicationState, HiddenNames, IHiddenNames, Checking,
-'   IChecking, BetterArray, CustomTest, TestHelpers, PasswordsTestFixture
+'   BetterArray, CustomTest, TestHelpers, PasswordsTestFixture
 
 Option Explicit
 
@@ -547,7 +547,7 @@ Public Sub TestDisplayPrivateKeySilentModeCapturesPrompt()
     Dim translator As ITranslationObject
     Dim expectedPrompt As String
     Dim expectedTitle As String
-    Dim logs As IChecking
+    Dim logs As Checking
     Dim logKeys As BetterArray
     Dim lastKey As String
     Dim loggedMessage As String
@@ -902,7 +902,7 @@ Private Sub ImportPasswordsComponents(ByVal targetWorkbook As Workbook, _
     Dim idx As Long
     Dim exportPath As String
 
-    components = Array("BetterArray", "IChecking", "Checking", "IPasswords", "Passwords", "TranslationObject", "ITranslationObject")
+    components = Array("BetterArray", "Checking", "IPasswords", "Passwords", "TranslationObject", "ITranslationObject")
 
     For idx = LBound(components) To UBound(components)
         exportPath = TestHelpers.ExportComponentToFolder(ThisWorkbook, CStr(components(idx)), exportFolder)

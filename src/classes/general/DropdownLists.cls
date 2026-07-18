@@ -60,7 +60,7 @@ Private Const DROPDOWNSTARTROW As Integer = 2
 
 'checking objects
 Private checkCounter As Long
-Private internalChecks As IChecking
+Private internalChecks As Checking
 
 '@section Factory
 '===============================================================================
@@ -1125,7 +1125,7 @@ End Property
 
 '@label:checking-values
 '@prop-title Retrieve the diagnostic log entries
-'@return Object. An IChecking instance, or Nothing.
+'@return Object. An Checking instance, or Nothing.
 Private Property Get CheckingValues() As Object
 
     'If there is no checking, exit the property

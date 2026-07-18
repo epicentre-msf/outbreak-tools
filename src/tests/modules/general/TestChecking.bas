@@ -19,19 +19,19 @@ Option Private Module
 'A fresh Checking instance with four entries (one per severity) is created
 'in TestInitialize so every test starts from the same baseline.
 'Uses the Rubberduck test runner (Rubberduck.AssertClass).
-'@depends Checking, IChecking, TestHelpers
+'@depends Checking, TestHelpers
 
 Private Assert As Object
 Private Fakes As Object
 Private CheckingTitle As String
 Private CheckingSubTitle As String
-Private checkingUnderTest As IChecking
+Private checkingUnderTest As Checking
 
 '@section Helpers
 '===============================================================================
 
 '@sub-title Populate a checking instance with four entries covering all severity levels.
-Private Sub PopulateDefaultEntries(ByVal checkingInstance As IChecking)
+Private Sub PopulateDefaultEntries(ByVal checkingInstance As Checking)
     checkingInstance.Add "key-1", "Key 1, error", checkingError
     checkingInstance.Add "key-2", "Key 2, warning", checkingWarning
     checkingInstance.Add "key-3", "Key 3, Note", checkingNote
@@ -90,12 +90,12 @@ End Sub
 '@sub-title Verify factory creates a valid Checking with title only or title and subtitle.
 '@details
 'Calls Checking.Create with one argument and then with two. Both calls
-'must return a non-Nothing IChecking reference.
+'must return a non-Nothing Checking reference.
 '@TestMethod("Checkings")
 Public Sub TestCreateCheck()
     On Error GoTo Fail
 
-    Dim checkingInstance As IChecking
+    Dim checkingInstance As Checking
 
     '@
     Set checkingInstance = checking.Create("A title")
@@ -145,7 +145,7 @@ End Sub
 Public Sub TestAddValuesCheck()
     On Error GoTo Fail
 
-    Dim checkingInstance As IChecking
+    Dim checkingInstance As Checking
 
     Set checkingInstance = checking.Create(CheckingTitle, CheckingSubTitle)
     PopulateDefaultEntries checkingInstance
@@ -228,8 +228,8 @@ End Sub
 Public Sub TestCloneProducesIndependentCopy()
     On Error GoTo Fail
 
-    Dim original As IChecking
-    Dim cloned As IChecking
+    Dim original As Checking
+    Dim cloned As Checking
 
     Set original = checking.Create(CheckingTitle, CheckingSubTitle)
     PopulateDefaultEntries original
@@ -269,8 +269,8 @@ End Sub
 Public Sub TestAppendCopiesEntriesFromSource()
     On Error GoTo Fail
 
-    Dim destination As IChecking
-    Dim source As IChecking
+    Dim destination As Checking
+    Dim source As Checking
 
     Set destination = checking.Create(CheckingTitle, CheckingSubTitle)
     PopulateDefaultEntries destination
@@ -304,8 +304,8 @@ End Sub
 Public Sub TestAppendRaisesErrorWhenDuplicateKeyExists()
     On Error GoTo HandleDuplicate
 
-    Dim destination As IChecking
-    Dim source As IChecking
+    Dim destination As Checking
+    Dim source As Checking
 
     Set destination = checking.Create(CheckingTitle, CheckingSubTitle)
     PopulateDefaultEntries destination

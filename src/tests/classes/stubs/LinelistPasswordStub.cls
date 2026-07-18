@@ -83,7 +83,7 @@ Private Property Get IPasswords_IsInDebugMode() As Boolean
 End Property
 
 '@prop-title Checkings values implementation
-Private Property Get IPasswords_CheckingValues() As IChecking
+Private Property Get IPasswords_CheckingValues() As Checking
 End Property
 
 '@sub-title Enter debug mode impl.

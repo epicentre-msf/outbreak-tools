@@ -30,7 +30,7 @@ Option Explicit
 '   before every test via TestInitialize and torn down in TestCleanup, ensuring
 '   test isolation.
 '
-' @depends LLFormat, ILLFormat, Checking, IChecking, BetterArray, CustomTest,
+' @depends LLFormat, ILLFormat, Checking, BetterArray, CustomTest,
 '          TestHelpers, LLFormatTestFixture
 '===============================================================================
 
@@ -398,7 +398,7 @@ End Sub
 '   Arranges by using the standard FormatUnderTest, acts by requesting DesignValue
 '   with "missing label" for both colour and numeric modes. Asserts that the colour
 '   fallback is vbBlack, the numeric fallback is 0, that HasCheckings returns True,
-'   and that the IChecking log contains at least one entry referencing "missing label".
+'   and that the Checking log contains at least one entry referencing "missing label".
 '   This confirms graceful degradation and traceability for unrecognised labels.
 Public Sub TestDesignValueMissingLabelFallsBackAndLogs()
     CustomTestSetTitles Assert, "LLFormat", "TestDesignValueMissingLabelFallsBackAndLogs"
@@ -408,7 +408,7 @@ Public Sub TestDesignValueMissingLabelFallsBackAndLogs()
     Dim numericValue As Long
     Dim keys As BetterArray
     Dim firstKey As String
-    Dim logEntry As IChecking
+    Dim logEntry As Checking
 
     colourValue = RequireNumericLong(FormatUnderTest.DesignValue("missing label"), _
                                      "Fallback colour for missing labels")

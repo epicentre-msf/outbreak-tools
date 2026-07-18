@@ -13,7 +13,7 @@ Attribute VB_Description = "Translate various objects from one language to anoth
 '@Folder("General")
 '@ModuleDescription("Translate various objects from one language to another")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument,   ExcelMemberMayReturnNothing,  SuperfluousAnnotationArgument, MissingAnnotationArgument, UseMeaningfulName, HungarianNotation
-'@depends BetterArray, Checking, IChecking, ProjectError
+'@depends BetterArray, Checking, ProjectError
 
 
 Option Explicit
@@ -25,7 +25,7 @@ Implements ITranslationObject
 'the first column and returns the value from the active language column.
 'Supports plain text, formula-aware translation (quoted chunks only),
 'range bulk-translation, and user-form caption translation.
-'@depends BetterArray, Checking, IChecking, ProjectError
+'@depends BetterArray, Checking, ProjectError
 '@version 1.0 (2026-02-09)
 
 
@@ -42,7 +42,7 @@ Private this As TTranslationObject
 
 'checking objects
 Private checkCounter As Long
-Private internalChecks As IChecking
+Private internalChecks As Checking
 
 '@section Factory
 '===============================================================================

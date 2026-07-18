@@ -8,14 +8,14 @@ Option Private Module
 
 '@description
 '  Unit tests for the CustomTest class, which is the project's own test harness
-'  replacing Rubberduck assertions with an IChecking-based result model. Tests
+'  replacing Rubberduck assertions with an Checking-based result model. Tests
 '  validate that AreEqual, AreNotEqual, IsTrue, and IsFalse correctly log both
 '  successes and failures, that ObjectExists performs type checking and IsNothing
 '  detects unset references, that Flush queues results and BeginTest respects the
 '  resetNames flag, that direct LogFailure and LogSuccesses calls produce the
 '  expected entries, and that PrintResults writes structured output to a worksheet
 '  with filter integration and subtitle overrides.
-'@depends CustomTest, ICustomTest, Checking, IChecking, CheckingOutput, BetterArray, TestHelpers
+'@depends CustomTest, ICustomTest, Checking, CheckingOutput, BetterArray, TestHelpers
 
 Private Const OUTPUT_SHEET_NAME As String = "HarnessOutput"
 Private Const VISIBLE_COLUMN_COUNT As Long = 3
@@ -68,13 +68,13 @@ End Sub
 '@sub-title Verify AreEqual logs success for matching values and error for mismatched values
 '@details Arranges two AreEqual assertions: one with identical numbers (42, 42) and one
 '  with different strings ("alpha" vs "beta"). Flushes the current test to retrieve the
-'  IChecking log, then asserts that the first key is marked Success and the second is
+'  Checking log, then asserts that the first key is marked Success and the second is
 '  marked Error with the supplied failure message captured in the label.
 '@TestMethod("Harness")
 Private Sub TestAreEqualCapturesSuccessAndFailure()
     On Error GoTo Fail
 
-    Dim checkLog As IChecking
+    Dim checkLog As Checking
     Dim keys As BetterArray
     Dim firstKey As String
     Dim secondKey As String
@@ -118,7 +118,7 @@ End Sub
 Private Sub TestAreNotEqualCapturesSuccessAndFailure()
     On Error GoTo Fail
 
-    Dim checkLog As IChecking
+    Dim checkLog As Checking
     Dim keys As BetterArray
     Dim firstKey As String
     Dim secondKey As String
@@ -161,7 +161,7 @@ End Sub
 Private Sub TestIsFalseCapturesSuccessAndFailure()
     On Error GoTo Fail
 
-    Dim checkLog As IChecking
+    Dim checkLog As Checking
     Dim keys As BetterArray
     Dim firstKey As String
     Dim secondKey As String
@@ -201,7 +201,7 @@ End Sub
 Private Sub TestSubtitleOverridesDefault()
     On Error GoTo Fail
 
-    Dim checkLog As IChecking
+    Dim checkLog As Checking
 
     Harness.SetTestName "Boolean"
     Harness.SetTestSubtitle "Custom subtitle"
@@ -230,7 +230,7 @@ End Sub
 Private Sub TestObjectExistsValidatesReferences()
     On Error GoTo Fail
 
-    Dim checkLog As IChecking
+    Dim checkLog As Checking
     Dim keys As BetterArray
     Dim firstKey As String
     Dim secondKey As String
@@ -287,7 +287,7 @@ End Sub
 Private Sub TestIsNothingCapturesSuccessAndFailure()
     On Error GoTo Fail
 
-    Dim checkLog As IChecking
+    Dim checkLog As Checking
     Dim keys As BetterArray
     Dim firstKey As String
     Dim secondKey As String
@@ -335,7 +335,7 @@ Private Sub TestFlushQueuesCurrentCheckingWithoutReturn()
     On Error GoTo Fail
 
     Dim resultsBuffer As BetterArray
-    Dim persisted As IChecking
+    Dim persisted As Checking
     Dim keys As BetterArray
 
     Harness.SetTestName "FlushOnly"
@@ -374,9 +374,9 @@ Private Sub TestFlushRespectsResetNamesFlag()
     On Error GoTo Fail
 
     Dim resultsBuffer As BetterArray
-    Dim firstLog As IChecking
-    Dim secondLog As IChecking
-    Dim thirdLog As IChecking
+    Dim firstLog As Checking
+    Dim secondLog As Checking
+    Dim thirdLog As Checking
 
     Harness.SetTestName "Sticky"
     Harness.SetTestSubtitle "Subtitle"
@@ -415,13 +415,13 @@ End Sub
 
 '@sub-title Verify LogFailure and LogSuccesses directly record typed entries in the checking log
 '@details Calls LogSuccesses and LogFailure on the harness, then flushes and inspects the
-'  resulting IChecking. Asserts that the first entry is marked Success with the correct label
+'  resulting Checking. Asserts that the first entry is marked Success with the correct label
 '  text, and the second entry is marked Error with the corresponding failure message.
 '@TestMethod("Harness")
 Private Sub TestLogFailureAndLogSuccesses()
     On Error GoTo Fail
 
-    Dim checkLog As IChecking
+    Dim checkLog As Checking
     Dim keys As BetterArray
     Dim firstKey As String
     Dim secondKey As String

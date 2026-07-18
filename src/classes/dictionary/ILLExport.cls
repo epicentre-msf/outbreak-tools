@@ -42,7 +42,7 @@ End Property
 
 '@jump:CheckingValues
 '@prop-title Collected informational diagnostics about export generation.
-Public Property Get CheckingValues() As IChecking
+Public Property Get CheckingValues() As Checking
 End Property
 
 

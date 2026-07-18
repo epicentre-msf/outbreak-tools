@@ -237,6 +237,6 @@ Private Function ILLVariables_HasCheckings() As Boolean
     ILLVariables_HasCheckings = False
 End Function
 
-Private Property Get ILLVariables_CheckingValues() As IChecking
+Private Property Get ILLVariables_CheckingValues() As Checking
     Set ILLVariables_CheckingValues = Nothing
 End Property

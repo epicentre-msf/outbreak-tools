@@ -828,7 +828,7 @@ End Function
 Private Function CheckingsContain(ByVal source As BetterArray, ByVal expectedText As String) As Boolean
     Dim idx As Long
     Dim keyIdx As Long
-    Dim check As IChecking
+    Dim check As Checking
     Dim keys As BetterArray
     Dim keyName As String
     Dim labelValue As String

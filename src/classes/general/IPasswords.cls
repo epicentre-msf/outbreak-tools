@@ -92,8 +92,8 @@ Public Property Get HasCheckings() As Boolean: End Property
 
 '@jump:checking-values
 '@prop-title Retrieve the aggregated checking entries
-'@return IChecking. The checking object, or Nothing.
-Public Property Get CheckingValues() As IChecking: End Property
+'@return Checking. The checking object, or Nothing.
+Public Property Get CheckingValues() As Checking: End Property
 
 '@jump:is-in-debug-mode
 '@prop-title Whether the workbook is currently in debug mode

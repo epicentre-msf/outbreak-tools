@@ -17,7 +17,7 @@ Option Explicit
 'both prefix modes throughout the suite.
 'Tests cover: factory creation with error on Nothing sheet, Name property,
 'adding lists with labels and counter prefixes, duplicate detection surfaced
-'through IChecking, removal, HiddenNames-backed counter persistence at workbook
+'through Checking, removal, HiddenNames-backed counter persistence at workbook
 'and worksheet scope, existence checks across instances, AllDropdowns enumeration
 'that excludes removed entries, translation of all lists via ITranslationObject,
 'LabelRange text with auto-incrementing counter prefixes, value retrieval with
@@ -27,7 +27,7 @@ Option Explicit
 'alert styles plus forward and return hyperlinks between output and dropdown
 'sheets.
 'Uses the CustomTest harness (ICustomTest), not Rubberduck.
-'@depends DropdownLists, IDropdownLists, Checking, IChecking, HiddenNames, IHiddenNames, TranslationObject, ITranslationObject, BetterArray, CustomTest, TestHelpers
+'@depends DropdownLists, IDropdownLists, Checking, HiddenNames, IHiddenNames, TranslationObject, ITranslationObject, BetterArray, CustomTest, TestHelpers
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const DROPTESTONE As String = "DropTestList1"
@@ -189,7 +189,7 @@ Fail:
 End Sub
 
 
-'@sub-title Verify adding a duplicate list name surfaces an error through IChecking.
+'@sub-title Verify adding a duplicate list name surfaces an error through Checking.
 '@details
 'Adds "listValues" once, then adds the same name again. Asserts that
 'HasCheckings becomes True and that CheckingValues contains exactly one
@@ -200,7 +200,7 @@ End Sub
 Public Sub TestAddExisting()
     CustomTestSetTitles Assert, "DropdownLists", "TestAddExisting"
 
-    Dim checking As IChecking
+    Dim checking As Checking
     Dim valuesList As BetterArray
 
     On Error GoTo Fail

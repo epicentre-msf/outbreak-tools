@@ -37,7 +37,7 @@ Private Type TFormulaCondition
     varList As BetterArray                      'Variables for the formulas
     cachedTableName As String                    'Validated table name across variables
     hasChecks As Boolean
-    internalChecks As IChecking
+    internalChecks As Checking
     checkCounter As Long
     cachedValidDone As Boolean                   'Whether Valid has produced a cached result
     cachedValidResult As Boolean                 'Cached True/False from last Valid call
@@ -424,10 +424,10 @@ End Property
 '@label:checking-values
 '@prop-title Retrieve the internal checking log
 '@details
-'Returns the accumulated IChecking instance containing all diagnostic
+'Returns the accumulated Checking instance containing all diagnostic
 'messages from the last validation run, or Nothing when none recorded.
-'@return IChecking. The diagnostic log.
+'@return Checking. The diagnostic log.
 '@export
-Public Property Get CheckingValues() As IChecking
+Public Property Get CheckingValues() As Checking
     If this.hasChecks Then Set CheckingValues = this.internalChecks
 End Property

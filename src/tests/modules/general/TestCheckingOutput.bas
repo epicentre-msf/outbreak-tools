@@ -10,13 +10,13 @@ Option Private Module
 '@ModuleDescription("Tests for the CheckingOutput class")
 
 '@description
-'   Tests the CheckingOutput class which writes IChecking entries to a worksheet
+'   Tests the CheckingOutput class which writes Checking entries to a worksheet
 '   and provides filter dropdowns for status and title. Tests cover PrintOutput row
 '   writing, filter dropdown validation, explicit and cell-based filtering,
 '   title-priority filtering when combined with status, Worksheet_Change handler
 '   injection, handler replacement of existing code, and append behavior across
 '   multiple print calls.
-'@depends CheckingOutput, Checking, IChecking, HiddenNames, BetterArray, TestHelpers
+'@depends CheckingOutput, Checking, HiddenNames, BetterArray, TestHelpers
 
 Private Const DEFAULTCHECKINGSHEET As String = "CheckingOutputFixture"
 Private Const DEFAULTFILTERCELL As String = "C1"
@@ -33,19 +33,19 @@ Private Const VISIBLE_COLUMN_COUNT As Long = 3
 Private Assert As Object
 Private Fakes As Object
 Private OutputWriter As CheckingOutput
-Private PrimaryCheck As IChecking
-Private SecondaryCheck As IChecking
+Private PrimaryCheck As Checking
+Private SecondaryCheck As Checking
 
 '@section Helpers
 '===============================================================================
 
-'@sub-title Build an IChecking instance from a heading, subheading, and entry arrays
+'@sub-title Build an Checking instance from a heading, subheading, and entry arrays
 '@details Each element of entries is expected to be a three-element Array(key, label,
 '   checkingType). The function creates a Checking, adds all entries, and returns
-'   the resulting IChecking interface.
+'   the resulting Checking interface.
 Private Function BuildChecking(ByVal Heading As String, ByVal subHeading As String, _
-                               ParamArray entries() As Variant) As IChecking
-    Dim checkingInstance As IChecking
+                               ParamArray entries() As Variant) As Checking
+    Dim checkingInstance As Checking
     Dim index As Long
 
     Set checkingInstance = checking.Create(Heading, subHeading)
@@ -205,7 +205,7 @@ End Sub
 '===============================================================================
 
 '@sub-title Verify that PrintOutput writes rows, headers, dropdowns, colours, and named ranges
-'@details Arranges two IChecking objects with error, warning, note, and info entries,
+'@details Arranges two Checking objects with error, warning, note, and info entries,
 '   calls PrintOutput, then asserts on cell values (title, subtitle, type labels, data
 '   labels), dropdown validations, font and fill colours per type, the hidden title
 '   column content and styling, the event-installed marker, and the title named range
@@ -259,8 +259,8 @@ Fail:
     FailUnexpectedError Assert, "TestPrintOutputWritesRows"
 End Sub
 
-'@sub-title Verify that PrintOutput raises an error when items are not IChecking
-'@details Arranges a BetterArray containing a plain string instead of an IChecking
+'@sub-title Verify that PrintOutput raises an error when items are not Checking
+'@details Arranges a BetterArray containing a plain string instead of an Checking
 '   object, calls PrintOutput, and asserts that the resulting error number equals
 '   ProjectError.InvalidArgument.
 '@TestMethod("CheckingOutput")
@@ -270,7 +270,7 @@ Private Sub TestPrintOutputRejectsInvalidItems()
     Set invalidChecks = BetterArrayFromList("invalid entry")
     On Error Resume Next
     OutputWriter.PrintOutput invalidChecks
-    Assert.IsTrue (Err.Number = ProjectError.InvalidArgument), "PrintOutput should raise when items are not IChecking"
+    Assert.IsTrue (Err.Number = ProjectError.InvalidArgument), "PrintOutput should raise when items are not Checking"
     On Error GoTo 0
 End Sub
 
@@ -380,8 +380,8 @@ Fail:
 End Sub
 
 '@sub-title Verify that PrintOutput appends content and extends the title named range
-'@details Writes a first IChecking ("Batch One"), records the last row, then writes a
-'   second IChecking ("Batch Two") and asserts the last row increased. Confirms that
+'@details Writes a first Checking ("Batch One"), records the last row, then writes a
+'   second Checking ("Batch Two") and asserts the last row increased. Confirms that
 '   both titles and their entries appear exactly once, and that the title named range
 '   now contains three entries: the default, Batch One, and Batch Two.
 '@TestMethod("CheckingOutput")
@@ -436,7 +436,7 @@ Fail:
 End Sub
 
 '@sub-title Verify that the title filter takes priority over the status filter
-'@details Arranges two IChecking groups under different titles, applies a title-only
+'@details Arranges two Checking groups under different titles, applies a title-only
 '   filter for "Quality Checks", then asserts that rows from the other title are
 '   hidden while all Quality Checks rows remain visible. Next applies both a status
 '   filter ("Errors") and the title filter, asserting that non-matching status rows
@@ -448,7 +448,7 @@ Private Sub TestTitleFilterHasPriorityOverStatusFilter()
 
     Dim checks As BetterArray
     Dim sh As Worksheet
-    Dim qualityCheck As IChecking
+    Dim qualityCheck As Checking
     Dim otherTitleRow As Long
     Dim qualityTitleRow As Long
     Dim qualityDataRow As Long
@@ -500,7 +500,7 @@ Private Sub TestWorksheetChangeSyncsStatusWhenTitleChanges()
     Dim statusCell As Range
     Dim titleCell As Range
     Dim previousEventState As Boolean
-    Dim qualityCheck As IChecking
+    Dim qualityCheck As Checking
     Dim qualityDataRow As Long
     Dim primaryDataRow As Long
 
@@ -557,7 +557,7 @@ Private Sub TestFilterWorksheetIgnoresStatusWhenOnlyTitleProvided()
     Dim sh As Worksheet
     Dim statusCell As Range
     Dim previousEventState As Boolean
-    Dim qualityCheck As IChecking
+    Dim qualityCheck As Checking
     Dim otherTitleRow As Long
     Dim qualityDataRow As Long
 

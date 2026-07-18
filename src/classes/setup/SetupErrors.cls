@@ -24,7 +24,7 @@ Option Explicit
 'and formula correctness; inspects choices for unused entries and missing
 'labels; audits exports for missing metadata and dictionary alignment;
 'and reviews translations for missing or duplicate labels. Results are
-'collected as IChecking objects and published to the __checkRep reporting
+'collected as Checking objects and published to the __checkRep reporting
 'worksheet via CheckingOutput.
 
 '@section State
@@ -182,7 +182,7 @@ End Sub
 '@details
 'Suspends Excel UI via EnterBusyState, resets the check container, then
 'runs each checker in sequence: CheckDictionary, CheckChoice, CheckExports,
-'CheckTranslations. On completion, publishes all collected IChecking objects
+'CheckTranslations. On completion, publishes all collected Checking objects
 'to the reporting worksheet via PrintReport. Restores Excel state even when
 'an error occurs during the checking run.
 '@export
@@ -221,9 +221,9 @@ End Sub
 '@label:checkings
 '@prop-title Collection of generated checking objects
 '@details
-'Returns a BetterArray containing the IChecking instances produced by the
+'Returns a BetterArray containing the Checking instances produced by the
 'most recent Run call. Raises when the checker has not been initialised.
-'@return BetterArray. The generated IChecking instances.
+'@return BetterArray. The generated Checking instances.
 '@export
 Public Property Get Checkings() As BetterArray
     EnsureInitialised
@@ -398,11 +398,11 @@ End Sub
 'names, short variable names, missing main labels, missing sheet names,
 'unknown controls, choice formula mismatches, formula validity, min/max
 'validation types, format/type consistency, and export column alignment.
-'Collects all findings into a single IChecking object and re-protects
+'Collects all findings into a single Checking object and re-protects
 'sheets on exit.
 Private Sub CheckDictionary()
 
-    Dim check As IChecking
+    Dim check As Checking
     Dim csTab As CustomTable
     Dim expTab As CustomTable
     Dim varRng As Range
@@ -652,9 +652,9 @@ End Sub
 'Unprotects the choices sheet, builds a list of choice names actually
 'referenced in dictionary controls, then flags unused choices, missing
 'list names, missing ordering values, and missing labels. Collects all
-'findings into a single IChecking object and re-protects on exit.
+'findings into a single Checking object and re-protects on exit.
 Private Sub CheckChoice()
-    Dim check As IChecking
+    Dim check As Checking
     Dim shChoices As Worksheet
     Dim shDictionary As Worksheet
     Dim choiTab As CustomTable
@@ -797,7 +797,7 @@ Private Sub CheckExports()
     Dim expTab As CustomTable
     Dim counter As Long
     Dim shExports As Worksheet
-    Dim check As IChecking
+    Dim check As Checking
     Dim keyName As String
     Dim checkingCounter As Long
     Dim expStatus As String
@@ -914,10 +914,10 @@ End Sub
 '@details
 'Unprotects the translations sheet, updates the translations manager from
 'the registry, then queries for missing and duplicate labels. Collects
-'findings into a single IChecking object and re-protects on exit.
+'findings into a single Checking object and re-protects on exit.
 Private Sub CheckTranslations()
 
-    Dim check As IChecking
+    Dim check As Checking
     Dim counter As Long
     Dim summary As BetterArray
     Dim shRegistry As Worksheet
@@ -1054,7 +1054,7 @@ Private Sub CheckTable(ByVal partName As String, _
     Dim headerRange As Range
     Dim specsRange As Range
     Dim specs As ITableSpecs
-    Dim check As IChecking
+    Dim check As Checking
     Dim rowIndex As Long
     Dim checkingCounter As Long
     Dim keyName As String
@@ -1171,7 +1171,7 @@ End Sub
 '@sub-title Publish all collected checkings to the reporting worksheet
 '@details
 'Resolves the __checkRep worksheet, clears its content, creates a
-'CheckingOutput helper, and prints all collected IChecking objects.
+'CheckingOutput helper, and prints all collected Checking objects.
 'Installs the worksheet change handler for filtering support and
 'activates the report sheet.
 Private Sub PrintReport()

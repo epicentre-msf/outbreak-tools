@@ -221,7 +221,7 @@ Public Property Get HasCheckings() As Boolean: End Property
 '@jump:checking-values
 '@prop-title Retrieve the diagnostic log entries
 '@details
-'Returns the internal IChecking object containing all logged messages.
+'Returns the internal Checking object containing all logged messages.
 'Returns Nothing when no entries have been recorded.
-'@return Object. An IChecking instance, or Nothing.
+'@return Object. An Checking instance, or Nothing.
 Public Property Get CheckingValues() As Object: End Property

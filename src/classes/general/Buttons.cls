@@ -57,7 +57,7 @@ Private Const BUTTON_PADDING As Long = 3
 Private Const LARGE_MULTIPLIER As Long = 2
 
 Private checkCounter As Long
-Private internalChecks As IChecking
+Private internalChecks As Checking
 
 '@section Enumerations
 '===============================================================================

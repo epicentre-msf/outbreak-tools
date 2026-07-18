@@ -65,5 +65,5 @@ End Sub
 Public Function HasCheckings() As Boolean
 End Function
 
-Public Property Get CheckingValues() As IChecking
+Public Property Get CheckingValues() As Checking
 End Property

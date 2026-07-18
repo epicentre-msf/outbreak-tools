@@ -19,7 +19,7 @@ Option Explicit
 
 '@class CheckingOutput
 '@description
-'Renders IChecking diagnostic entries to a worksheet with formatted rows,
+'Renders Checking diagnostic entries to a worksheet with formatted rows,
 'severity-based colour coding, and interactive drop-down filters for
 'status and title. The class manages hidden helper columns, a title
 'store for filter validation lists, and optional worksheet event
@@ -313,16 +313,16 @@ End Function
 '@description Outputs headings and detail entries for individual checking bundles.
 
 '@label:write-checking
-'@sub-title Write a single IChecking bundle to the worksheet
+'@sub-title Write a single Checking bundle to the worksheet
 '@details
 'Outputs the title heading (once per unique title), optional subtitle,
 'and all keyed entries with their severity colour coding. Advances the
 'current row counter and tracks written titles to avoid duplicates.
-'@param checking IChecking. Bundle to render.
+'@param checking Checking. Bundle to render.
 '@param currentRow Long. ByRef row counter advanced during writing.
 '@param writtenTitles Collection. ByRef collection tracking emitted titles.
 '@param sep Optional String. Separator for text fragments. Defaults to "--".
-Private Sub WriteChecking(ByVal checking As IChecking, _
+Private Sub WriteChecking(ByVal checking As Checking, _
                           ByRef currentRow As Long, _
                           ByRef writtenTitles As Collection, _
                           Optional ByVal sep As String = DEFAULT_SEPARATOR)
@@ -1082,18 +1082,18 @@ End Sub
 '@description Private utility methods for validation, normalisation, and storage.
 
 '@label:validate-check-table
-'@sub-title Verify that the BetterArray contains only IChecking entries
+'@sub-title Verify that the BetterArray contains only Checking entries
 '@details
 'Iterates the array and raises an error for any item that does not
-'implement IChecking.
+'implement Checking.
 '@param checkTable BetterArray. Table of checking entries to validate.
-'@throws ProjectError.InvalidArgument When an item does not implement IChecking.
+'@throws ProjectError.InvalidArgument When an item does not implement Checking.
 Private Sub ValidateCheckTable(ByVal checkTable As BetterArray)
     Dim index As Long
     For index = checkTable.lowerBound To checkTable.upperBound
-        If Not TypeOf checkTable.Item(index) Is IChecking Then
+        If Not TypeOf checkTable.Item(index) Is Checking Then
            ThrowError ProjectError.InvalidArgument, _
-            "Items in PrintOutput must implement IChecking. Item " & CStr(index) & " does not."
+            "Items in PrintOutput must implement Checking. Item " & CStr(index) & " does not."
         End If
     Next index
 End Sub
@@ -1208,7 +1208,7 @@ End Sub
 'Coordinates the end-to-end rendering: validates the input array,
 'initialises the worksheet, writes each checking bundle, appends the
 'end marker, and records the final row position.
-'@param checkTable BetterArray. Collection of IChecking instances to print.
+'@param checkTable BetterArray. Collection of Checking instances to print.
 '@throws ProjectError.ElementNotFound When checkTable is Nothing.
 '@export
 Public Sub PrintOutput(ByVal checkTable As BetterArray)
@@ -1219,7 +1219,7 @@ Public Sub PrintOutput(ByVal checkTable As BetterArray)
     Dim store As IHiddenNames
 
     If checkTable Is Nothing Then
-        ThrowError ProjectError.ElementNotFound, "PrintOutput requires a BetterArray of IChecking instances"
+        ThrowError ProjectError.ElementNotFound, "PrintOutput requires a BetterArray of Checking instances"
     End If
 
     previousEventState = Application.EnableEvents

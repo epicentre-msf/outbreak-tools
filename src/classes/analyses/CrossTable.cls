@@ -26,7 +26,7 @@ Implements ICrossTable
 'ranges, and visual formatting. Consumers interact through the ICrossTable
 'interface, and AnalysisOutput orchestrates the build sequence by calling
 'Build followed by Format for each table specification.
-'@depends ITableSpecs, ILinelistSpecs, ITranslationObject, ILLVariables, LLVariables, ILLFormat, IHiddenNames, HiddenNames, BetterArray, Checking, IChecking
+'@depends ITableSpecs, ILinelistSpecs, ITranslationObject, ILLVariables, LLVariables, ILLFormat, IHiddenNames, HiddenNames, BetterArray, Checking
 '@version 1.1 (2026-02-11)
 
 
@@ -48,7 +48,7 @@ Private Const STANDARD_START_COL As Long = 3
 Private Const CLASS_NAME As String = "CrossTable"
 Private Const NB_ROWS_TIME_SERIES As Long = 56
 Private allRangeNames As BetterArray
-Private internalChecks As IChecking
+Private internalChecks As Checking
 
 '@section Factory
 '===============================================================================
@@ -1787,7 +1787,7 @@ End Sub
 '===============================================================================
 '@description Diagnostic logging for cross-table building.
 
-'Adds a trace entry to the internal IChecking instance, initialising it
+'Adds a trace entry to the internal Checking instance, initialising it
 'lazily on first use.
 '@param message String. The diagnostic message text.
 '@param scope Optional Byte. The checking scope (default checkingSuccess).
@@ -1804,7 +1804,7 @@ Private Property Get HasCheckings() As Boolean
     HasCheckings = this.hasChecks
 End Property
 
-Private Property Get CheckingValues() As IChecking
+Private Property Get CheckingValues() As Checking
     If Not HasCheckings Then Exit Property
     Set CheckingValues = internalChecks
 End Property
@@ -1914,6 +1914,6 @@ Private Property Get ICrossTable_HasCheckings() As Boolean
     ICrossTable_HasCheckings = HasCheckings
 End Property
 
-Private Property Get ICrossTable_CheckingValues() As IChecking
+Private Property Get ICrossTable_CheckingValues() As Checking
     Set ICrossTable_CheckingValues = CheckingValues
 End Property

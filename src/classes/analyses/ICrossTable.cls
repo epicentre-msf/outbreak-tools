@@ -236,6 +236,6 @@ End Property
 
 '@jump:checking-values
 '@prop-title Retrieve the diagnostic log entries
-'@return IChecking. The checking instance, or Nothing.
-Public Property Get CheckingValues() As IChecking
+'@return Checking. The checking instance, or Nothing.
+Public Property Get CheckingValues() As Checking
 End Property

@@ -46,7 +46,7 @@ Private this As TSectionBuilder
 Private Const CLASS_NAME As String = "SectionBuilder"
 
 'Checking support
-Private internalChecks As IChecking
+Private internalChecks As Checking
 
 ' Row/column constants for section and subsection headers
 Private Const HLIST_SEC_ROW As Long = 5
@@ -729,7 +729,7 @@ Public Property Get HasCheckings() As Boolean
     HasCheckings = this.hasChecks
 End Property
 
-Public Property Get CheckingValues() As IChecking
+Public Property Get CheckingValues() As Checking
     If Not HasCheckings Then Exit Property
     Set CheckingValues = internalChecks
 End Property

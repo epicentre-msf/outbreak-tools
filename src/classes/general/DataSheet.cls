@@ -44,7 +44,7 @@ Private FORMATCOLUMNS As BetterArray
 
 'checking objects
 Private checkCounter As Long
-Private internalChecks As IChecking
+Private internalChecks As Checking
 
 '@section Factory
 '===============================================================================
@@ -930,7 +930,7 @@ End Sub
 '@label:log-info
 '@sub-title Log a diagnostic message
 '@details
-'Adds a message to the internal IChecking object, creating it on first
+'Adds a message to the internal Checking object, creating it on first
 'use. The checkCounter provides a unique key for each entry.
 '@param label String. The message to record.
 '@param scope Optional Byte. Severity level from CheckingScope. Defaults to checkingNote.
@@ -959,7 +959,7 @@ End Property
 
 '@label:checking-values
 '@prop-title Retrieve the diagnostic log entries
-'@return Object. An IChecking instance, or Nothing.
+'@return Object. An Checking instance, or Nothing.
 '@export
 Private Property Get CheckingValues() As Object
     'If there is no checking, exit the property

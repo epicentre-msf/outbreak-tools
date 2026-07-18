@@ -22,7 +22,7 @@ Option Explicit
 'row manipulation (add, insert, delete, remove), data exchange (import, export,
 'sort, clean), translation of analysis labels, and validation of required
 'ListObjects. Each instance is bound to a single worksheet and delegates table
-'operations to CustomTable. Trace diagnostics are recorded via IChecking and
+'operations to CustomTable. Trace diagnostics are recorded via Checking and
 'can be retrieved through HasCheckings and CheckingValues.
 '@depends CustomTable, Checking, ITranslationObject, BetterArray
 '@version 2025-01-15
@@ -37,7 +37,7 @@ Private this As TAnalysis
 
 'Checking support
 Private checkCounter As Long
-Private internalChecks As IChecking
+Private internalChecks As Checking
 Private requiredTablesCaches As BetterArray
 
 'ListObject names used in analysis worksheets
@@ -623,7 +623,7 @@ End Sub
 '@label:log-info
 '@sub-title Log an informational or warning message
 '@details
-'Adds a trace entry to the internal IChecking instance, initialising it
+'Adds a trace entry to the internal Checking instance, initialising it
 'on first use with a name derived from the class and worksheet. Each call
 'increments the check counter and sets the hasChecks flag.
 '@param label String. The message to record.
@@ -653,9 +653,9 @@ End Property
 '@label:checkingvalues
 '@prop-title Retrieve collected trace entries
 '@details
-'Returns the underlying IChecking object when traces are available.
+'Returns the underlying Checking object when traces are available.
 'Returns Nothing when no traces have been logged.
-'@return Object. The IChecking instance, or Nothing.
+'@return Object. The Checking instance, or Nothing.
 Public Property Get CheckingValues() As Object
     If Not HasCheckings() Then Exit Property
     Set CheckingValues = internalChecks

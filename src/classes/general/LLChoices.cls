@@ -48,7 +48,7 @@ Private Const ORDERINLISTCODE   As String = "ordering list"
 
 'Those are for log tracing in case
 Private checkCounter As Long
-Private internalChecks As IChecking
+Private internalChecks As Checking
 
 'constant / keys for tracing something to the checks class
 
@@ -847,9 +847,9 @@ End Property
 '@label:checking-values
 '@prop-title Retrieve the diagnostic log entries
 '@details
-'Returns the internal IChecking object containing all logged messages.
+'Returns the internal Checking object containing all logged messages.
 'Returns Nothing when no entries have been recorded.
-'@return Object. An IChecking instance, or Nothing.
+'@return Object. An Checking instance, or Nothing.
 '@export
 Private Property Get CheckingValues() As Object
 
