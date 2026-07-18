@@ -156,7 +156,7 @@ End Property
 '@details
 'Used during construction to assign the workbook before caches are
 'initialised. Not part of the public interface.
-Public Property Set InternalWorkbook(ByVal specsWorkbook As Workbook)
+Private Property Set InternalWorkbook(ByVal specsWorkbook As Workbook)
     Set this.specsWkb = specsWorkbook
 End Property
 
