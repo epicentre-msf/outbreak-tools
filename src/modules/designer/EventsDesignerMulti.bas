@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Designer")
 '@ModuleDescription("Ribbon callbacks for the Multi group on the designer workbook.")
-'@depends CustomTable, ICustomTable, ApplicationState, IApplicationState, OSFiles, IOSFiles, HiddenNames, IHiddenNames, DropdownLists, IDropdownLists, BetterArray
+'@depends CustomTable, ICustomTable, ApplicationState, IApplicationState, OSFiles, HiddenNames, IHiddenNames, DropdownLists, IDropdownLists, BetterArray
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 'Ribbon callbacks for the Multi group manage the T_Multi ListObject on
@@ -41,7 +41,7 @@ Private Const LANG_SUFFIX As String = "_lang"
 Public Sub clickFolderMulti(ByRef control As IRibbonControl)
     Dim lo As ListObject
     Dim colName As String
-    Dim io As IOSFiles
+    Dim io As OSFiles
     Dim appScope As IApplicationState
 
     Set lo = ResolveMultiTable()
@@ -237,7 +237,7 @@ End Sub
 '@Description("Import T_Multi data from another workbook.")
 '@EntryPoint
 Public Sub clickImpMulti(ByRef control As IRibbonControl)
-    Dim io As IOSFiles
+    Dim io As OSFiles
     Dim appScope As IApplicationState
     Dim importBook As Workbook
     Dim sourceLo As ListObject
@@ -311,7 +311,7 @@ End Sub
 '@Description("Export the T_Multi table to a new workbook in a user-selected folder.")
 '@EntryPoint
 Public Sub clickExportMulti(ByRef control As IRibbonControl)
-    Dim io As IOSFiles
+    Dim io As OSFiles
     Dim appScope As IApplicationState
     Dim lo As ListObject
     Dim table As ICustomTable
@@ -431,8 +431,8 @@ End Function
 
 '@Description("Load selected setup files into the setups column and apply per-row language validation.")
 '@param lo ListObject. The T_Multi ListObject.
-'@param io IOSFiles. The file picker with selected files.
-Private Sub LoadSetupFiles(ByVal lo As ListObject, ByVal io As IOSFiles)
+'@param io OSFiles. The file picker with selected files.
+Private Sub LoadSetupFiles(ByVal lo As ListObject, ByVal io As OSFiles)
     Dim filePaths As BetterArray
     Dim setupBook As Workbook
     Dim tradSheet As Worksheet
@@ -530,8 +530,8 @@ End Sub
 
 '@Description("Load selected geobase files into the geobases column.")
 '@param lo ListObject. The T_Multi ListObject.
-'@param io IOSFiles. The file picker with selected files.
-Private Sub LoadGeobaseFiles(ByVal lo As ListObject, ByVal io As IOSFiles)
+'@param io OSFiles. The file picker with selected files.
+Private Sub LoadGeobaseFiles(ByVal lo As ListObject, ByVal io As OSFiles)
     Dim filePaths As BetterArray
     Dim startRow As Long
 
@@ -550,8 +550,8 @@ End Sub
 
 '@Description("Write a folder path into the output folders column at the active cell row.")
 '@param lo ListObject. The T_Multi ListObject.
-'@param io IOSFiles. The folder picker with selected folder.
-Private Sub LoadOutputFolder(ByVal lo As ListObject, ByVal io As IOSFiles)
+'@param io OSFiles. The folder picker with selected folder.
+Private Sub LoadOutputFolder(ByVal lo As ListObject, ByVal io As OSFiles)
     Dim col As ListColumn
     Dim targetCell As Range
 

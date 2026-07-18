@@ -16,7 +16,6 @@ Attribute VB_Description = "Importing files from the operating system"
 
 
 Option Explicit
-Implements IOSFiles
 
 '@class OSFiles
 '@description
@@ -902,9 +901,9 @@ End Function
 
 '@label:create
 '@sub-title Factory returning an initialised interface
-'@return IOSFiles. Ready to use.
+'@return OSFiles. Ready to use.
 '@export
-Public Function Create() As IOSFiles
+Public Function Create() As OSFiles
 
     'Will run on Mac or windows operating system
     Dim currentOS As String
@@ -923,9 +922,9 @@ End Function
 'File and folder path accessors.
 
 '@label:self
-'@prop-title Self-reference as IOSFiles
-'@return IOSFiles. Self-reference.
-Public Property Get Self() As IOSFiles
+'@prop-title Self-reference as OSFiles
+'@return OSFiles. Self-reference.
+Public Property Get Self() As OSFiles
     'Return the class instance as the interface the consumer expects.
     Set Self = Me
 End Property
@@ -948,7 +947,7 @@ End Property
 '@prop-title Current loaded file path
 '@return String. The first selected file path.
 '@export
-Private Property Get File() As String
+Public Property Get File() As String
     File = this.currentLoadedFile
 End Property
 
@@ -956,7 +955,7 @@ End Property
 '@prop-title All loaded file paths from a multi-selection
 '@return Variant. Zero-based string array of file paths.
 '@export
-Private Property Get Files() As Variant
+Public Property Get Files() As Variant
     Files = CloneStringArray(this.currentLoadedFiles)
 End Property
 
@@ -964,7 +963,7 @@ End Property
 '@prop-title Current loaded folder path
 '@return String. The first selected folder path.
 '@export
-Private Property Get Folder() As String
+Public Property Get Folder() As String
     Folder = this.currentLoadedFolder
 End Property
 
@@ -972,7 +971,7 @@ End Property
 '@prop-title All loaded folder paths from a multi-selection
 '@return Variant. Zero-based string array of folder paths.
 '@export
-Private Property Get Folders() As Variant
+Public Property Get Folders() As Variant
     Folders = CloneStringArray(this.currentLoadedFolders)
 End Property
 
@@ -1120,7 +1119,7 @@ End Function
 '@label:load-folder
 '@sub-title Show a single-folder picker dialog
 '@export
-Private Sub LoadFolder()
+Public Sub LoadFolder()
     Dim selectedFolder As String
 
     'Delegate to the correct picker based on runtime OS and Excel version.
@@ -1145,7 +1144,7 @@ End Sub
 '@param filters String. File type filters (e.g. "*.xlsx").
 '@param customMacFilter String. Optional UTI override for macOS. Defaults to vbNullString.
 '@export
-Private Sub LoadFile(ByVal filters As String, _ 
+Public Sub LoadFile(ByVal filters As String, _ 
                      Optional ByVal customMacFilter As String = vbNullString)
     Dim selectedFile As String
 
@@ -1170,7 +1169,7 @@ End Sub
 '@param filters String. File type filters.
 '@param customMacFilter String. Optional UTI override for macOS. Defaults to vbNullString.
 '@export
-Private Sub LoadFiles(ByVal filters As String, _
+Public Sub LoadFiles(ByVal filters As String, _
                       Optional ByVal customMacFilter As String = vbNullString)
 
     Dim selection As Variant
@@ -1193,7 +1192,7 @@ End Sub
 '@label:load-folders
 '@sub-title Show a multi-folder picker dialog
 '@export
-Private Sub LoadFolders()
+Public Sub LoadFolders()
 
     Dim selection As Variant
     selection = EmptyStringArray()
@@ -1219,7 +1218,7 @@ End Sub
 '@label:reset-files-iterator
 '@sub-title Reset the file iteration cursor to the beginning
 '@export
-Private Sub ResetFilesCursor()
+Public Sub ResetFilesIterator()
     'Reset iteration so external callers can enumerate from the first file.
     this.currentFileIndex = 0
 End Sub
@@ -1227,7 +1226,7 @@ End Sub
 '@label:reset-folders-iterator
 '@sub-title Reset the folder iteration cursor to the beginning
 '@export
-Private Sub ResetFoldersCursor()
+Public Sub ResetFoldersIterator()
     'Reset iteration so external callers can enumerate from the first folder.
     this.currentFolderIndex = 0
 End Sub
@@ -1235,33 +1234,33 @@ End Sub
 '@label:has-next-file
 '@sub-title Check if another file is available in the iterator
 '@export
-Private Function HasNextFileValue() As Boolean
+Public Function HasNextFile() As Boolean
     'Expose whether the internal file iterator has another entry.
-    HasNextFileValue = HasNextArrayItem(this.currentLoadedFiles, this.currentFileIndex)
+    HasNextFile = HasNextArrayItem(this.currentLoadedFiles, this.currentFileIndex)
 End Function
 
 '@label:has-next-folder
 '@sub-title Check if another folder is available in the iterator
 '@export
-Private Function HasNextFolderValue() As Boolean
+Public Function HasNextFolder() As Boolean
     'Expose whether the internal folder iterator has another entry.
-    HasNextFolderValue = HasNextArrayItem(this.currentLoadedFolders, this.currentFolderIndex)
+    HasNextFolder = HasNextArrayItem(this.currentLoadedFolders, this.currentFolderIndex)
 End Function
 
 '@label:next-file
 '@sub-title Return the next file path and advance the cursor
 '@export
-Private Function NextFileValue() As String
+Public Function NextFile() As String
     'Return the next file path in sequence and advance the cursor.
-    NextFileValue = GetNextArrayItem(this.currentLoadedFiles, this.currentFileIndex)
+    NextFile = GetNextArrayItem(this.currentLoadedFiles, this.currentFileIndex)
 End Function
 
 '@label:next-folder
 '@sub-title Return the next folder path and advance the cursor
 '@export
-Private Function NextFolderValue() As String
+Public Function NextFolder() As String
     'Return the next folder path in sequence and advance the cursor.
-    NextFolderValue = GetNextArrayItem(this.currentLoadedFolders, this.currentFolderIndex)
+    NextFolder = GetNextArrayItem(this.currentLoadedFolders, this.currentFolderIndex)
 End Function
 
 '@section Test Support
@@ -1294,7 +1293,7 @@ End Sub
 '@sub-title Whether the loaded file path is valid
 '@return Boolean. True when a non-empty file path exists.
 '@export
-Private Function HasValidFile() As Boolean
+Public Function HasValidFile() As Boolean
     'A simple sanity check used by clients before acting on File().
     HasValidFile = (File() <> vbNullString)
 End Function
@@ -1303,7 +1302,7 @@ End Function
 '@sub-title Whether the loaded files array contains entries
 '@return Boolean. True when at least one file was selected.
 '@export
-Private Function HasValidFiles() As Boolean
+Public Function HasValidFiles() As Boolean
     'Report whether any file selections exist in the internal buffer.
     HasValidFiles = (CountArrayItems(this.currentLoadedFiles) > 0)
 End Function
@@ -1312,7 +1311,7 @@ End Function
 '@sub-title Whether the loaded folder path is valid
 '@return Boolean. True when a non-empty folder path exists.
 '@export
-Private Function HasValidFolder() As Boolean
+Public Function HasValidFolder() As Boolean
     'A simple sanity check used by clients before acting on Folder().
     HasValidFolder = (Folder() <> vbNullString)
 End Function
@@ -1321,89 +1320,8 @@ End Function
 '@sub-title Whether the loaded folders array contains entries
 '@return Boolean. True when at least one folder was selected.
 '@export
-Private Function HasValidFolders() As Boolean
+Public Function HasValidFolders() As Boolean
     'Report whether any folder selections exist in the internal buffer.
     HasValidFolders = (CountArrayItems(this.currentLoadedFolders) > 0)
-End Function
-
-
-'@section Interface
-'===============================================================================
-'IOSFiles delegation wiring.
-
-Private Property Get IOSFiles_File() As String
-    IOSFiles_File = File()
-End Property
-
-Private Property Get IOSFiles_Files() As Variant
-    IOSFiles_Files = Files()
-End Property
-
-Private Property Get IOSFiles_Folder() As String
-    IOSFiles_Folder = Folder()
-End Property
-
-Private Property Get IOSFiles_Folders() As Variant
-    IOSFiles_Folders = Folders()
-End Property
-
-Private Sub IOSFiles_LoadFolder()
-    LoadFolder
-End Sub
-
-Private Sub IOSFiles_LoadFolders()
-    LoadFolders
-End Sub
-
-Private Sub IOSFiles_ResetFilesIterator()
-    ResetFilesCursor
-End Sub
-
-Private Function IOSFiles_HasNextFile() As Boolean
-    IOSFiles_HasNextFile = HasNextFileValue()
-End Function
-
-Private Function IOSFiles_NextFile() As String
-    IOSFiles_NextFile = NextFileValue()
-End Function
-
-Private Sub IOSFiles_ResetFoldersIterator()
-    ResetFoldersCursor
-End Sub
-
-Private Function IOSFiles_HasNextFolder() As Boolean
-    IOSFiles_HasNextFolder = HasNextFolderValue()
-End Function
-
-Private Function IOSFiles_NextFolder() As String
-    IOSFiles_NextFolder = NextFolderValue()
-End Function
-
-Private Sub IOSFiles_LoadFile( _
-    ByVal filters As String, _
-    Optional ByVal customMacFilter As String = vbNullString)
-    LoadFile filters:=filters, customMacFilter:=customMacFilter
-End Sub
-
-Private Sub IOSFiles_LoadFiles( _
-    ByVal filters As String, _
-    Optional ByVal customMacFilter As String = vbNullString)
-    LoadFiles filters:=filters, customMacFilter:=customMacFilter
-End Sub
-
-Private Function IOSFiles_HasValidFile() As Boolean
-    IOSFiles_HasValidFile = HasValidFile()
-End Function
-
-Private Function IOSFiles_HasValidFiles() As Boolean
-    IOSFiles_HasValidFiles = HasValidFiles()
-End Function
-
-Private Function IOSFiles_HasValidFolder() As Boolean
-    IOSFiles_HasValidFolder = HasValidFolder()
-End Function
-
-Private Function IOSFiles_HasValidFolders() As Boolean
-    IOSFiles_HasValidFolders = HasValidFolders()
 End Function
 

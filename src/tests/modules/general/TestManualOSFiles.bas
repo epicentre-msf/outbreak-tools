@@ -19,7 +19,7 @@ Option Private Module
 'iterator traversal. A shared SafeArrayLength helper is used to count
 'picker results safely without risking an error on uninitialised arrays.
 'Uses the CustomTest runner with results printed to the testsOutputs sheet.
-'@depends OSFiles, IOSFiles, CustomTest, ICustomTest, TestHelpers
+'@depends OSFiles, CustomTest, ICustomTest, TestHelpers
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 
@@ -108,7 +108,7 @@ Public Sub TestManualSelectSingleFile()
     CustomTestSetTitles Assert, "ManualOSFiles", "SelectSingleFile"
     On Error GoTo Fail
 
-    Dim os As IOSFiles
+    Dim os As OSFiles
     Dim selected As Variant
 
     Set os = OSFiles.Create()
@@ -145,7 +145,7 @@ Public Sub TestManualSelectMultipleFiles()
     CustomTestSetTitles Assert, "ManualOSFiles", "SelectMultipleFiles"
     On Error GoTo Fail
 
-    Dim os As IOSFiles
+    Dim os As OSFiles
     Dim files As Variant
     Dim count As Long
 
@@ -195,7 +195,7 @@ Public Sub TestManualSelectFolders()
     CustomTestSetTitles Assert, "ManualOSFiles", "SelectFolders"
     On Error GoTo Fail
 
-    Dim os As IOSFiles
+    Dim os As OSFiles
     Dim folders As Variant
     Dim count As Long
 

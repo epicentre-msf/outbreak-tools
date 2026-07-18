@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Dev")
 '@ModuleDescription("Ribbon callbacks coordinating development workflows")
-'@depends Development, CustomTable, ICustomTable, Passwords, OSFiles, IOSFiles
+'@depends Development, CustomTable, ICustomTable, Passwords, OSFiles
 '@IgnoreModule UnrecognizedAnnotation, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Private devManager As Development
@@ -42,7 +42,7 @@ Public Sub clickDevFolder(ByRef control As IRibbonControl)
     Dim sh As Worksheet
     Set sh = DevSheet()
 
-    Dim io As IOSFiles
+    Dim io As OSFiles
     Set io = OSFiles.Create()
     io.LoadFolder
     If Not io.HasValidFolder() Then Exit Sub

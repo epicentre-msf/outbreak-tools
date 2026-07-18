@@ -20,7 +20,7 @@ Option Private Module
 'end), and correct restart after calling ResetFilesIterator or
 'ResetFoldersIterator.
 'Uses the CustomTest runner with results printed to the testsOutputs sheet.
-'@depends OSFiles, IOSFiles, CustomTest, ICustomTest, TestHelpers
+'@depends OSFiles, CustomTest, ICustomTest, TestHelpers
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 
@@ -107,7 +107,7 @@ Public Sub TestFilesCollectionInitialState()
     CustomTestSetTitles Assert, "OSFiles", "FilesCollectionInitialState"
     On Error GoTo Fail
 
-    Dim os As IOSFiles
+    Dim os As OSFiles
     Dim files As Variant
 
     Set os = OSFiles.Create()
@@ -137,7 +137,7 @@ Public Sub TestFoldersCollectionInitialState()
     CustomTestSetTitles Assert, "OSFiles", "FoldersCollectionInitialState"
     On Error GoTo Fail
 
-    Dim os As IOSFiles
+    Dim os As OSFiles
     Dim folders As Variant
 
     Set os = OSFiles.Create()
@@ -172,7 +172,7 @@ Public Sub TestLoadFilesUnsupportedSystemDoesNotPopulate()
     On Error GoTo Fail
 
     Dim raw As OSFiles
-    Dim sut As IOSFiles
+    Dim sut As OSFiles
     Dim files As Variant
 
     Set raw = New OSFiles
@@ -206,7 +206,7 @@ Public Sub TestLoadFoldersUnsupportedSystemDoesNotPopulate()
     On Error GoTo Fail
 
     Dim raw As OSFiles
-    Dim sut As IOSFiles
+    Dim sut As OSFiles
     Dim folders As Variant
 
     Set raw = New OSFiles
@@ -245,7 +245,7 @@ Public Sub TestFileIteratorTraversesAssignedSelection()
     On Error GoTo Fail
 
     Dim raw As OSFiles
-    Dim sut As IOSFiles
+    Dim sut As OSFiles
     Dim results As Variant
 
     Set raw = New OSFiles
@@ -289,7 +289,7 @@ Public Sub TestFolderIteratorTraversesAssignedSelection()
     On Error GoTo Fail
 
     Dim raw As OSFiles
-    Dim sut As IOSFiles
+    Dim sut As OSFiles
 
     Set raw = New OSFiles
     raw.AssignFoldersForTesting Array("/tmp", "/var")

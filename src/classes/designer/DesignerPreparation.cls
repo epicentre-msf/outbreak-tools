@@ -12,7 +12,7 @@ Attribute VB_Description = "Prepares designer workbooks and ribbon settings"
 '@PredeclaredId
 '@Folder("Designer")
 '@ModuleDescription("Prepares designer workbooks and persists ribbon settings through hidden names.")
-'@depends ProjectError, HiddenNames, IHiddenNames, Development, OSFiles, IOSFiles, CustomTable, ICustomTable, BetterArray, DropdownLists, IDropdownLists
+'@depends ProjectError, HiddenNames, IHiddenNames, Development, OSFiles, CustomTable, ICustomTable, BetterArray, DropdownLists, IDropdownLists
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, ParameterNotUsed
 
 Option Explicit
@@ -29,7 +29,7 @@ Option Explicit
 'T_Multi table on the GenerateMultiple worksheet, and registers hidden
 'sheets with the development manager. Also provides methods to read and
 'write ribbon checkbox flags persisted through workbook-level hidden names.
-'@depends HiddenNames, IHiddenNames, Development, OSFiles, IOSFiles, CustomTable, ICustomTable, BetterArray, DropdownLists, IDropdownLists
+'@depends HiddenNames, IHiddenNames, Development, OSFiles, CustomTable, ICustomTable, BetterArray, DropdownLists, IDropdownLists
 
 
 '@section State
@@ -270,7 +270,7 @@ End Property
 'logic as the clickImpTrans ribbon callback, encapsulated here so it
 'runs as part of the preparation sequence.
 Private Sub ImportTranslations()
-    Dim io As IOSFiles
+    Dim io As OSFiles
     Dim importBook As Workbook
     Dim wb As Workbook
     Dim sheetNames As BetterArray

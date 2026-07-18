@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Designer")
 '@ModuleDescription("Ribbon callbacks for the designer workbook.")
-'@depends DesignerPreparation, RibbonDev, OSFiles, IOSFiles, BetterArray, CustomTable, ICustomTable, Passwords, IPasswords, LLFormat, ILLFormat, ApplicationState, IApplicationState, DesignerTranslation, IDesignerTranslation, HiddenNames, IHiddenNames
+'@depends DesignerPreparation, RibbonDev, OSFiles, BetterArray, CustomTable, ICustomTable, Passwords, IPasswords, LLFormat, ILLFormat, ApplicationState, IApplicationState, DesignerTranslation, IDesignerTranslation, HiddenNames, IHiddenNames
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Private Const SHEET_FORMAT As String = "__formatter"
@@ -87,7 +87,7 @@ End Sub
 '@Description("Import translations tables from an external workbook.")
 '@EntryPoint
 Public Sub clickImpTrans(ByRef control As IRibbonControl)
-    Dim io As IOSFiles
+    Dim io As OSFiles
     Dim importBook As Workbook
     Dim targetBook As Workbook
     Dim sheetNames As BetterArray
@@ -152,7 +152,7 @@ End Sub
 '@Description("Import passwords from an external workbook.")
 '@EntryPoint
 Public Sub clickImpPass(ByRef control As IRibbonControl)
-    Dim io As IOSFiles
+    Dim io As OSFiles
     Dim importBook As Workbook
     Dim importer As IPasswords
     Dim target As IPasswords
@@ -186,7 +186,7 @@ End Sub
 '@Description("Import linelist format from a workbook.")
 '@EntryPoint
 Public Sub clickImpStyle(ByRef control As IRibbonControl)
-    Dim io As IOSFiles
+    Dim io As OSFiles
     Dim importBook As Workbook
     Dim formatManager As ILLFormat
     Dim appScope As IApplicationState
@@ -225,7 +225,7 @@ End Sub
 '@Description("Open a linelist workbook selected by the user.")
 '@EntryPoint
 Public Sub clickOpen(ByRef control As IRibbonControl)
-    Dim io As IOSFiles
+    Dim io As OSFiles
 
     Set io = OSFiles.Create()
     io.LoadFile "*.xlsb"

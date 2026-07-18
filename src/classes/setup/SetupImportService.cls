@@ -1216,7 +1216,7 @@ End Function
 '@sub-title Obtain or create the export workbook, prompting for a folder when needed.
 Private Function EnsureExportWorkbook() As Workbook
 
-    Dim io As IOSFiles
+    Dim io As OSFiles
 
     If (this.exportWorkbook Is Nothing) Then
         If LenB(this.exportPath) = 0 Then

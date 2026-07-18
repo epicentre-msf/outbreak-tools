@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Designer")
 '@ModuleDescription("Non-core ribbon callbacks for the designer workbook.")
-'@depends DesignerPreparation, DesignerEntry, RibbonDev, LLGeo, ILLGeo, ApplicationState, IApplicationState, OSFiles, IOSFiles, HiddenNames, IHiddenNames, BetterArray, DropdownLists, IDropdownLists, LinelistBuildService, LinelistSpecs, ILinelistSpecs, Linelist, ILinelist, ListBuilder, LLSheets, GenerationReport
+'@depends DesignerPreparation, DesignerEntry, RibbonDev, LLGeo, ILLGeo, ApplicationState, IApplicationState, OSFiles, HiddenNames, IHiddenNames, BetterArray, DropdownLists, IDropdownLists, LinelistBuildService, LinelistSpecs, ILinelistSpecs, Linelist, ILinelist, ListBuilder, LLSheets, GenerationReport
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 'Non-core ribbon logics are callbacks whose absence will not fire a
@@ -138,7 +138,7 @@ End Sub
 '@Description("Load a setup file (dictionary): store path, extract languages, update dropdown.")
 '@EntryPoint
 Public Sub clickLoadFileDic()
-    Dim io As IOSFiles
+    Dim io As OSFiles
     Dim entry As DesignerEntry
     Dim appScope As IApplicationState
     Dim setupBook As Workbook
@@ -204,7 +204,7 @@ End Sub
 '@Description("Load a geobase file path into the Main sheet.")
 '@EntryPoint
 Public Sub clickLoadGeoFile()
-    Dim io As IOSFiles
+    Dim io As OSFiles
     Dim entry As DesignerEntry
     Dim appScope As IApplicationState
 
@@ -242,7 +242,7 @@ End Sub
 '@Description("Select a folder for linelist output directory.")
 '@EntryPoint
 Public Sub clickLinelistDir()
-    Dim io As IOSFiles
+    Dim io As OSFiles
     Dim entry As DesignerEntry
     Dim appScope As IApplicationState
 
@@ -280,7 +280,7 @@ End Sub
 '@Description("Load a template file for linelist creation.")
 '@EntryPoint
 Public Sub clickLoadTemplate()
-    Dim io As IOSFiles
+    Dim io As OSFiles
     Dim entry As DesignerEntry
     Dim appScope As IApplicationState
 

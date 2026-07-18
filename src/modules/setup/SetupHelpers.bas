@@ -562,7 +562,7 @@ End Sub
 
 '@Description("Prompt user to pick an import workbook and return its path")
 Public Function SelectSetupImportPath(ByVal filters As String) As String
-    Dim io As IOSFiles
+    Dim io As OSFiles
 
     Set io = OSFiles.Create()
     io.LoadFile filters
