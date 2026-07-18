@@ -123,7 +123,7 @@ End Property
 '@label:header-range-set
 '@prop-title Assign the header range
 '@param hRng Range. The header row range to store.
-Public Property Set HeaderRange(ByVal hRng As Range)
+Private Property Set HeaderRange(ByVal hRng As Range)
     Set this.hRng = hRng
 End Property
 
@@ -140,7 +140,7 @@ End Property
 '@label:table-range-set
 '@prop-title Assign the table specification row range
 '@param tRng Range. The data-row range to store.
-Public Property Set TableRange(ByVal tRng As Range)
+Private Property Set TableRange(ByVal tRng As Range)
     Set this.tRng = tRng
 End Property
 
@@ -158,7 +158,7 @@ End Property
 '@label:dictionary-object-set
 '@prop-title Assign the dictionary object
 '@param dict LLdictionary. The dictionary to store.
-Public Property Set DictionaryObject(ByVal dict As LLdictionary)
+Private Property Set DictionaryObject(ByVal dict As LLdictionary)
     Set this.dict = dict
 End Property
 

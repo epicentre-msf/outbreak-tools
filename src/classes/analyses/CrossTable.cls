@@ -117,7 +117,7 @@ End Property
 '@label:wksh-set
 '@prop-title Assign the output worksheet.
 '@param sh Worksheet. The target worksheet to assign.
-Public Property Set Wksh(ByVal sh As Worksheet)
+Private Property Set Wksh(ByVal sh As Worksheet)
     Set this.outputSh = sh
 End Property
 
@@ -136,7 +136,7 @@ End Property
 '@label:specifications-set
 '@prop-title Assign the table specifications.
 '@param specs TableSpecs. The table specification to assign.
-Public Property Set Specifications(ByVal specs As TableSpecs)
+Private Property Set Specifications(ByVal specs As TableSpecs)
     Set this.specs = specs
 End Property
 
@@ -154,7 +154,7 @@ End Property
 '@label:linelist-data-set
 '@prop-title Assign the linelist specifications.
 '@param lData LinelistSpecs. The linelist specifications to assign.
-Public Property Set LinelistData(ByVal lData As LinelistSpecs)
+Private Property Set LinelistData(ByVal lData As LinelistSpecs)
     Set this.lData = lData
 End Property
 

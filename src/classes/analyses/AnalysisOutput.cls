@@ -120,7 +120,7 @@ End Property
 '@label:output-ll-set
 '@prop-title Assign the output linelist facade.
 '@param ll Linelist. The output linelist workbook facade to store.
-Public Property Set OutputLL(ByVal ll As Linelist)
+Private Property Set OutputLL(ByVal ll As Linelist)
     Set this.anaLL = ll
 End Property
 
@@ -136,7 +136,7 @@ End Property
 '@label:wksh-set
 '@prop-title Assign the setup worksheet reference.
 '@param specSh Worksheet. The setup worksheet to store.
-Public Property Set Wksh(ByVal specSh As Worksheet)
+Private Property Set Wksh(ByVal specSh As Worksheet)
     Set this.sh = specSh
 End Property
 

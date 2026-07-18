@@ -93,7 +93,7 @@ End Property
 '@label:wksh-set
 '@prop-title Assign the host worksheet (factory use only)
 '@param sh Worksheet. The worksheet to assign.
-Public Property Set Wksh(ByVal sh As Worksheet)
+Private Property Set Wksh(ByVal sh As Worksheet)
     Set this.sh = sh
 End Property
 

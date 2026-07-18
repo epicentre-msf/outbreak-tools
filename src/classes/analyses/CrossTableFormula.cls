@@ -100,7 +100,7 @@ End Property
 '@label:table-set
 '@prop-title Assign the CrossTable backing store.
 '@param tabl CrossTable. The cross-table to bind to this formula writer.
-Public Property Set Table(ByVal tabl As CrossTable)
+Private Property Set Table(ByVal tabl As CrossTable)
     Set this.tabl = tabl
 End Property
 
@@ -117,7 +117,7 @@ End Property
 '@label:form-data-set
 '@prop-title Assign the FormulaData backing store.
 '@param fData FormulaData. The formula-data source to bind.
-Public Property Set formData(ByVal fData As FormulaData)
+Private Property Set formData(ByVal fData As FormulaData)
     Set this.fData = fData
 End Property
 

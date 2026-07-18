@@ -95,7 +95,7 @@ End Property
 '@label:table-set
 '@prop-title Assign the cross-table reference
 '@param tabl CrossTable. The cross-table to bind.
-Public Property Set Table(ByVal tabl As CrossTable)
+Private Property Set Table(ByVal tabl As CrossTable)
     Set this.tab = tabl
 End Property
 
