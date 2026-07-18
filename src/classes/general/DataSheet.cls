@@ -99,35 +99,35 @@ End Property
 '@label:wksh-set
 '@prop-title Assign the worksheet reference
 '@param sh Worksheet. The worksheet to assign.
-Public Property Set Wksh(ByVal sh As Worksheet)
+Private Property Set Wksh(ByVal sh As Worksheet)
     Set this.sh = sh
 End Property
 
 '@label:data-start-row-set
 '@prop-title Assign the header row index
 '@param startLn Long. The 1-based header row index.
-Public Property Let DataStartRow(ByVal startLn As Long)
+Private Property Let DataStartRow(ByVal startLn As Long)
     this.startLn = startLn
 End Property
 
 '@label:data-start-column-set
 '@prop-title Assign the starting column index
 '@param startCl Long. The 1-based starting column index.
-Public Property Let DataStartColumn(ByVal startCl As Long)
+Private Property Let DataStartColumn(ByVal startCl As Long)
     this.startCl = startCl
 End Property
 
 '@label:strict-end-set
 '@prop-title Assign the strict end row flag
 '@param forceEnd Boolean. When True, scans all columns for the last row.
-Public Property Let StrictEnd(ByVal forceEnd As Boolean)
+Private Property Let StrictEnd(ByVal forceEnd As Boolean)
     this.forceEnd = forceEnd
 End Property
 
 '@label:name-set
 '@prop-title Assign the DataSheet name
 '@param objName String. The name to assign.
-Public Property Let Name(ByVal objName As String)
+Private Property Let Name(ByVal objName As String)
     this.objName = objName
 End Property
 

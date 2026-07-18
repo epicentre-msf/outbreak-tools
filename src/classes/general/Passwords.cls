@@ -105,7 +105,7 @@ End Property
 '@label:password-sheet-set
 '@prop-title Assign the password worksheet and reset caches
 '@param sh Worksheet. The password worksheet to bind.
-Public Property Set PasswordSheet(ByVal sh As Worksheet)
+Private Property Set PasswordSheet(ByVal sh As Worksheet)
     Set this.sh = sh
     Set this.wb = sh.Parent
     this.nm = sh.Name()

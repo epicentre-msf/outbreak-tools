@@ -110,14 +110,14 @@ End Property
 '@label:checking-title-set
 '@prop-title Assign the checking title
 '@param titleName String. Title to assign.
-Public Property Let CheckingTitle(ByVal titleName As String)
+Private Property Let CheckingTitle(ByVal titleName As String)
   this.title = titleName
 End Property
 
 '@label:checking-subtitle-set
 '@prop-title Assign the checking subtitle
 '@param subtitleName String. Subtitle to assign.
-Public Property Let CheckingSubTitle(ByVal subtitleName As String)
+Private Property Let CheckingSubTitle(ByVal subtitleName As String)
   this.subtitle = subtitleName
 End Property
 

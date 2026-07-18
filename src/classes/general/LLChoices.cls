@@ -120,7 +120,7 @@ End Property
 '@label:choice-data-set
 '@prop-title Assign the backing DataSheet
 '@param customDataSheet DataSheet. The DataSheet to assign.
-Public Property Set ChoiceData(ByVal customDataSheet As DataSheet)
+Private Property Set ChoiceData(ByVal customDataSheet As DataSheet)
     Set this.choiceDataSheet = customDataSheet
 End Property
 
@@ -211,7 +211,7 @@ End Property
 '@label:name-set
 '@prop-title Assign the choice object name
 '@param choiceName String. The name to assign.
-Public Property Let Name(ByVal choiceName As String)
+Private Property Let Name(ByVal choiceName As String)
     this.choiceName = choiceName
 End Property
 

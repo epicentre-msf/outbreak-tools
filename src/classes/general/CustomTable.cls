@@ -353,7 +353,7 @@ End Property
 'name. Raises an error when Lo is Nothing.
 '@param Lo ListObject. The table to assign.
 '@throws ProjectError.ObjectNotInitialized When Lo is Nothing.
-Public Property Set Table(ByVal Lo As ListObject)
+Private Property Set Table(ByVal Lo As ListObject)
   If Lo Is Nothing Then
     ThrowError ProjectError.ObjectNotInitialized, _
                "Cannot assign an empty ListObject reference to CustomTable"
@@ -386,14 +386,14 @@ End Property
 '@label:id-value-set
 '@prop-title Assign the ID column name
 '@param idCol String. Column name to use as the row key.
-Public Property Let IdValue(ByVal idCol As String)
+Private Property Let IdValue(ByVal idCol As String)
   this.idCol = idCol
 End Property
 
 '@label:prefix-value-set
 '@prop-title Assign the ID prefix string
 '@param idPrefix String. Prefix to prepend to sequential ID values.
-Public Property Let PrefixValue(ByVal idPrefix As String)
+Private Property Let PrefixValue(ByVal idPrefix As String)
   this.idPrefix = idPrefix
 End Property
 

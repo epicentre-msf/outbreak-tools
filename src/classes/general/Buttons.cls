@@ -120,7 +120,7 @@ End Property
 '@prop-title Update the anchor range used for placement
 '@param rng Range. Providing the top-left anchor cell.
 '@export
-Public Property Set OutputRange(ByVal rng As Range)
+Private Property Set OutputRange(ByVal rng As Range)
     Set this.rng = rng
 End Property
 
@@ -135,7 +135,7 @@ End Property
 '@label:name-set
 '@prop-title Store the shape name assigned in the worksheet
 '@param nm String. Identifier for the shape.
-Public Property Let Name(ByVal nm As String)
+Private Property Let Name(ByVal nm As String)
     this.shapeName = nm
 End Property
 
@@ -154,7 +154,7 @@ End Property
 '@label:shape-scope-set
 '@prop-title Store the formatting scope applied to the button
 '@param scope Byte. ButtonScope value.
-Public Property Let ShapeScope(ByVal scope As Byte)
+Private Property Let ShapeScope(ByVal scope As Byte)
     Select Case scope
         Case ButtonScopeLarge, ButtonScopeSmall, ButtonScopeGeo
             this.scope = scope

@@ -89,7 +89,7 @@ End Property
 '@label:table-set
 '@prop-title Assign the backing ListObject and reset caches
 '@param lo ListObject. The translation table.
-Public Property Set Table(ByVal lo As ListObject)
+Private Property Set Table(ByVal lo As ListObject)
     ValidateListObject lo, "Table"
     Set this.transLo = lo
     ResetCaches
@@ -138,7 +138,7 @@ End Property
 '@label:language-set
 '@prop-title Set the target language and reset caches
 '@param transLng String. The new language column header.
-Public Property Let Language(ByVal transLng As String)
+Private Property Let Language(ByVal transLng As String)
     this.transLng = Trim$(transLng)
     ResetCaches
 End Property

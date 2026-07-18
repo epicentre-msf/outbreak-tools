@@ -111,7 +111,7 @@ End Property
 '@label:wksh-set
 '@prop-title Define the worksheet that will receive the output
 '@param sh Worksheet. Target worksheet to use.
-Public Property Set Wksh(ByVal sh As Worksheet)
+Private Property Set Wksh(ByVal sh As Worksheet)
     Set this.targetSheet = sh
 End Property
 
@@ -136,7 +136,7 @@ End Property
 '@label:name-set
 '@prop-title Assign the output session name
 '@param nm String. Label to assign.
-Public Property Let Name(ByVal nm As String)
+Private Property Let Name(ByVal nm As String)
     this.nm = nm
 End Property
 

@@ -399,7 +399,7 @@ End Property
 '@prop-title Assign the worksheet backing this formatter
 '@details Clears all caches when the worksheet changes.
 '@param sh Worksheet. The new host worksheet.
-Public Property Set Wksh(ByVal sh As Worksheet)
+Private Property Set Wksh(ByVal sh As Worksheet)
     Set this.sheet = sh
     ResetCaches
 End Property
@@ -415,7 +415,7 @@ End Property
 '@prop-title Change the active design column
 '@details Resets cached lookups when the design changes.
 '@param design String. The new design column name.
-Public Property Let DesignName(ByVal design As String)
+Private Property Let DesignName(ByVal design As String)
     this.design = design
     ResetCaches
 End Property

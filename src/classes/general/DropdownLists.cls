@@ -114,7 +114,7 @@ End Property
 'internal registry columns) and stores an initialisation flag. Resets
 'cached HiddenNames stores on every assignment.
 '@param outsh Worksheet. The worksheet to host dropdown ListObjects.
-Public Property Set Wksh(ByVal outsh As Worksheet)
+Private Property Set Wksh(ByVal outsh As Worksheet)
     
     Dim store As HiddenNames
     Set store = HiddenNames.Create(outsh)
@@ -192,7 +192,7 @@ End Property
 '@label:header-prefix-set
 '@prop-title Assign the header prefix
 '@param hprefix String. The new prefix value.
-Public Property Let headerPrefix(ByVal hprefix As String)
+Private Property Let headerPrefix(ByVal hprefix As String)
     this.hprefix = hprefix
 End Property
 
