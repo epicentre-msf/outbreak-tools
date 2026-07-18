@@ -17,10 +17,10 @@ Option Explicit
 'AnalysisTestFixture helpers to build throwaway worksheets with pre-populated
 'analysis tables, and tears down all temporary sheets on cleanup to ensure
 'test isolation.
-'@depends Analysis, IAnalysis, ITranslationObject, TranslationObject, IChecking, Checking, BetterArray, CustomTest, AnalysisTestFixture, TestHelpers
+'@depends Analysis, ITranslationObject, TranslationObject, IChecking, Checking, BetterArray, CustomTest, AnalysisTestFixture, TestHelpers
 
 Private Assert As ICustomTest
-Private CoreAnalysis As IAnalysis
+Private CoreAnalysis As Analysis
 Private Translator As ITranslationObject
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 
@@ -110,7 +110,7 @@ Public Sub TestCreateInitialisesWorksheet()
     On Error GoTo Fail
 
     Dim hostSheet As Worksheet
-    Dim sut As IAnalysis
+    Dim sut As Analysis
 
     Set hostSheet = EnsureWorksheet("AnalysisCreate")
     hostSheet.Cells(1, 1).Value = "Add or remove rows of Global Summary"
@@ -137,7 +137,7 @@ Public Sub TestCreateRaisesWhenWorksheetMissing()
     CustomTestSetTitles Assert, "Analysis", "TestCreateRaisesWhenWorksheetMissing"
     On Error GoTo Handler
 
-    Dim sut As IAnalysis
+    Dim sut As Analysis
 
     '@Ignore AssignmentNotUsed
     Set sut = Analysis.Create(Nothing)
@@ -153,7 +153,7 @@ End Sub
 '@details
 'Arranges by creating a raw Analysis instance via New and assigning its
 'Wksh property directly. Acts by calling Self on the concrete instance.
-'Asserts that the returned IAnalysis reference is the same object (Is)
+'Asserts that the returned Analysis reference is the same object (Is)
 'as the original instance, confirming the factory pattern wiring.
 '@TestMethod("Analysis")
 Public Sub TestSelfReturnsSameInstance()
@@ -162,7 +162,7 @@ Public Sub TestSelfReturnsSameInstance()
 
     Dim hostSheet As Worksheet
     Dim instance As Analysis
-    Dim reference As IAnalysis
+    Dim reference As Analysis
 
     Set hostSheet = EnsureWorksheet("AnalysisSelf")
     BuildAnalysisTable hostSheet, "Self Section"
@@ -184,7 +184,7 @@ End Sub
 '@sub-title Verify the Wksh property round-trips the assigned worksheet.
 '@details
 'Arranges by creating an Analysis via the factory with a known worksheet.
-'Acts by reading Wksh back from the IAnalysis interface. Asserts that the
+'Acts by reading Wksh back from the Analysis instance. Asserts that the
 'returned worksheet object Is the same as the one originally supplied,
 'confirming that Create correctly stores and exposes the host sheet.
 '@TestMethod("Analysis")
@@ -193,7 +193,7 @@ Public Sub TestWkshPropertyRoundtrips()
     On Error GoTo Fail
 
     Dim hostSheet As Worksheet
-    Dim anaObj As IAnalysis
+    Dim anaObj As Analysis
     Dim anaSheet As Worksheet
 
     Set hostSheet = EnsureWorksheet("AnalysisWksh")
@@ -348,7 +348,7 @@ Public Sub TestInsertRowsUsesSelectionHeight()
     On Error GoTo Fail
 
     Dim hostSheet As Worksheet
-    Dim sut As IAnalysis
+    Dim sut As Analysis
     Dim summaryTable As ListObject
     Dim univariateTable As ListObject
     Dim selectionRange As Range
@@ -392,7 +392,7 @@ Public Sub TestDeleteRowsRemovesSelectedRows()
     On Error GoTo Fail
 
     Dim hostSheet As Worksheet
-    Dim sut As IAnalysis
+    Dim sut As Analysis
     Dim summaryTable As ListObject
     Dim selectionRange As Range
     Dim baseline As Long

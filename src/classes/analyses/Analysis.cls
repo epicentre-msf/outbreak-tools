@@ -16,8 +16,6 @@ Option Explicit
 '@ModuleDescription("Core analysis worksheet manager")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument,   ExcelMemberMayReturnNothing,  UseMeaningfulName, HungarianNotation
 
-Implements IAnalysis
-
 '@class Analysis
 '@description
 'Manages an analysis worksheet within an outbreak linelist workbook. Provides
@@ -63,13 +61,13 @@ Private Const CLASSNAME As String = "Analysis"
 'Factory method on the predeclared instance. Validates that the worksheet
 'is not Nothing, binds a new Analysis to it, and populates the required-
 'tables cache on the predeclared instance. Callers interact with the
-'returned IAnalysis interface.
+'returned Analysis instance.
 '@param hostsheet Worksheet. The worksheet hosting the analysis tables.
-'@return IAnalysis. A fully initialised analysis controller.
+'@return Analysis. A fully initialised analysis controller.
 '@throws ProjectError.ObjectNotInitialized When hostsheet is Nothing.
 '@depends CustomTable, Checking
 '@export
-Public Function Create(ByVal hostsheet As Worksheet) As IAnalysis
+Public Function Create(ByVal hostsheet As Worksheet) As Analysis
     If hostsheet Is Nothing Then ThrowError ProjectError.ObjectNotInitialized, _
                                          "Worksheet object not defined"
     'You can create analysis on a empty worksheet, without tables.
@@ -86,8 +84,8 @@ End Function
 '@details
 'Convenience accessor so consuming code can fluently retrieve the interface
 'reference from the predeclared Create method.
-'@return IAnalysis. The current instance cast to the interface.
-Public Property Get Self() As IAnalysis
+'@return Analysis. The current instance.
+Public Property Get Self() As Analysis
     Set Self = Me
 End Property
 
@@ -97,7 +95,7 @@ End Property
 'Returns the worksheet that stores the analysis tables manipulated by
 'this class. Set during construction via the Create factory.
 '@return Worksheet. The bound analysis worksheet.
-Private Property Get Wksh() As Worksheet
+Public Property Get Wksh() As Worksheet
     Set Wksh = this.hostsheet
 End Property
 
@@ -121,7 +119,7 @@ End Property
 'Delegates to ManageRows in append mode to add rows to each target
 'analysis table based on the instruction in cell A1 of the worksheet.
 '@export
-Private Sub AddRows()
+Public Sub AddRows()
     ManageRows
 End Sub
 
@@ -137,7 +135,7 @@ End Sub
 '@param insertShift Optional Boolean. When True, worksheet rows are
 'inserted ahead of the resize. Defaults to True.
 '@export
-Private Sub InsertRows(ByVal targetCell As Range, _
+Public Sub InsertRows(ByVal targetCell As Range, _
                        Optional ByVal insertShift As Boolean = True)
     Dim targetList As ListObject
     Dim targetTable As ICustomTable
@@ -171,7 +169,7 @@ End Sub
 '@param forceShift Optional Boolean. When True, worksheet rows are shifted
 'up after deletion. Defaults to True.
 '@export
-Private Sub DeleteRows(ByVal targetCell As Range, _
+Public Sub DeleteRows(ByVal targetCell As Range, _
                        Optional ByVal includeIds As Boolean = True, _
                        Optional ByVal forceShift As Boolean = True)
     Dim targetList As ListObject
@@ -199,7 +197,7 @@ End Sub
 'Calls ManageRows in deletion mode to trim each analysis table down to
 'its required minimum row count.
 '@export
-Private Sub RemoveRows()
+Public Sub RemoveRows()
     ManageRows True
 End Sub
 
@@ -214,7 +212,7 @@ End Sub
 'header text does not match a specific table name.
 '@param del Optional Boolean. When True, rows are removed; otherwise rows
 'are added. Defaults to False.
-Private Sub ManageRows(Optional ByVal del As Boolean = False)
+Public Sub ManageRows(Optional ByVal del As Boolean = False)
     Dim listNames As BetterArray
     Dim selectionText As String
     Dim loname As String
@@ -400,7 +398,7 @@ End Sub
 'method validates all required tables and sorts them.
 '@param sourcesheet Worksheet. The worksheet providing the source analysis tables.
 '@export
-Private Sub Import(ByVal sourcesheet As Worksheet)
+Public Sub Import(ByVal sourcesheet As Worksheet)
 
     Dim hostsheet As Worksheet
     Dim srcLo As ListObject
@@ -461,7 +459,7 @@ End Sub
 'needed (Table order, Graph order), and trims trailing rows via
 'CustomTable.RemoveRows to enforce structural rules.
 '@export
-Private Sub Sort()
+Public Sub Sort()
     Dim sh As Worksheet
     Dim Lo As listObject
     Dim csTab As ICustomTable
@@ -518,7 +516,7 @@ End Sub
 '@param Hide Optional Long. Excel visibility constant applied to the
 'exported sheet. Defaults to xlSheetHidden.
 '@export
-Private Sub Export(ByVal sourcewb As Workbook, Optional ByVal Hide As Long = xlSheetHidden)
+Public Sub Export(ByVal sourcewb As Workbook, Optional ByVal Hide As Long = xlSheetHidden)
 
     Dim hostsheet As Worksheet
     Dim hostLo As ListObject
@@ -582,7 +580,7 @@ End Sub
 'Logs a note on completion and a warning when the translator is Nothing.
 '@param TransObject ITranslationObject. The translation engine to use.
 '@export
-Private Sub Translate(ByVal TransObject As ITranslationObject)
+Public Sub Translate(ByVal TransObject As ITranslationObject)
     Dim sh As Worksheet
     Dim lo As ListObject
     Dim csTab As ICustomTable
@@ -648,7 +646,7 @@ End Sub
 'Provides a quick way for callers to know if diagnostics are available.
 'Returns True when at least one trace entry has been logged via LogInfo.
 '@return Boolean. True when trace entries exist.
-Private Property Get HasCheckings() As Boolean
+Public Property Get HasCheckings() As Boolean
     HasCheckings = this.hasChecks
 End Property
 
@@ -658,7 +656,7 @@ End Property
 'Returns the underlying IChecking object when traces are available.
 'Returns Nothing when no traces have been logged.
 '@return Object. The IChecking instance, or Nothing.
-Private Property Get CheckingValues() As Object
+Public Property Get CheckingValues() As Object
     If Not HasCheckings() Then Exit Property
     Set CheckingValues = internalChecks
 End Property
@@ -675,71 +673,6 @@ End Property
 Private Sub ThrowError(ByVal errNumber As Long, ByVal errorMessage As String)
     Err.Raise errNumber, CLASSNAME, "Error message : " & Chr$(34) & errorMessage & Chr$(34)
 End Sub
-
-'@section Interface Implementation
-'===============================================================================
-'@description Delegated members satisfying the IAnalysis contract.
-'See the corresponding Private/Public members above for full documentation.
-
-Private Property Get IAnalysis_Wksh() As Worksheet
-    Set IAnalysis_Wksh = Wksh()
-End Property
-
-
-Private Sub IAnalysis_AddRows()
-    AddRows
-End Sub
-
-Private Sub IAnalysis_InsertRows(ByVal targetCell As Range, _
-                                 Optional ByVal insertShift As Boolean = True)
-    InsertRows targetCell, insertShift
-End Sub
-
-Private Sub IAnalysis_DeleteRows(ByVal targetCell As Range, _
-                                 Optional ByVal includeIds As Boolean = True, _
-                                 Optional ByVal forceShift As Boolean = True)
-    DeleteRows targetCell, includeIds, forceShift
-End Sub
-
-Private Sub IAnalysis_RemoveRows()
-    RemoveRows
-End Sub
-
-Private Sub IAnalysis_ManageRows(Optional ByVal del As Boolean = False)
-    ManageRows del
-End Sub
-
-Private Sub IAnalysis_Import(ByVal sourcesheet As Worksheet)
-    Import sourcesheet
-End Sub
-
-Private Sub IAnalysis_Export(ByVal sourcewb As Workbook, Optional ByVal Hide As Long = xlSheetHidden)
-    Export sourcewb, Hide
-End Sub
-
-Private Sub IAnalysis_Translate(ByVal translator As ITranslationObject)
-    Translate translator
-End Sub
-
-Private Sub IAnalysis_Sort()
-    Sort
-End Sub
-
-Private Sub IAnalysis_Clean()
-    Clean
-End Sub
-
-Private Sub IAnalysis_EnsureAnalysisTables()
-    EnsureAnalysisTables True
-End Sub
-
-Private Property Get IAnalysis_HasCheckings() As Boolean
-    IAnalysis_HasCheckings = HasCheckings()
-End Property
-
-Private Property Get IAnalysis_CheckingValues() As Object
-    Set IAnalysis_CheckingValues = CheckingValues()
-End Property
 
 '@section Helpers
 '===============================================================================

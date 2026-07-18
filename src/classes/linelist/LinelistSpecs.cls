@@ -28,7 +28,7 @@ Implements ILinelistSpecs
 'construct instances via LinelistSpecs.Create(workbook) and receive an
 'ILinelistSpecs interface reference.
 '@depends ILLdictionary, ILLChoices, ILLTranslation, IDesignerTranslation
-'@depends ILLGeo, ILLExport, IAnalysis, IPasswords, ILLFormat
+'@depends ILLGeo, ILLExport, IPasswords, ILLFormat
 '@depends LinelistBuildService, TemporaryRepos
 '@depends IFormulaData, ILLVariables, Formulas
 '@depends ITranslationObject, IApplicationState, ApplicationState
@@ -51,7 +51,7 @@ Private Type TLinelistSpecs
     designerTranslations As IDesignerTranslation
     geo As ILLGeo
     exports As ILLExport
-    ana As IAnalysis
+    ana As Analysis
     passwords As IPasswords
     format As ILLFormat
     formulaData As IFormulaData
@@ -989,11 +989,11 @@ End Property
 '@label:analysis
 '@prop-title Analysis setup specifications
 '@details
-'Returns the IAnalysis instance providing access to the Analysis
+'Returns the Analysis instance providing access to the Analysis
 'worksheet configuration. Lazy-loaded on first access.
-'@return IAnalysis. The analysis collaborator.
+'@return Analysis. The analysis collaborator.
 '@export
-Public Property Get AnalysisObject() As IAnalysis
+Public Property Get AnalysisObject() As Analysis
     EnsureAnalysis
     Set AnalysisObject = this.ana
 End Property
@@ -1302,7 +1302,7 @@ Public Sub Prepare(ByVal buildService As LinelistBuildService, ByVal setupPath A
     Dim dict As ILLdictionary
     Dim choicesObj As ILLChoices
     Dim exportsObj As ILLExport
-    Dim analysisObj As IAnalysis
+    Dim analysisObj As Analysis
     Dim geoObj As ILLGeo
     Dim dictTrads As ITranslationObject
     Dim msgTrads As ITranslationObject
@@ -1510,7 +1510,7 @@ Private Property Get ILinelistSpecs_DesignFormat() As ILLFormat
     Set ILinelistSpecs_DesignFormat = Me.DesignFormat
 End Property
 
-Private Property Get ILinelistSpecs_AnalysisObject() As IAnalysis
+Private Property Get ILinelistSpecs_AnalysisObject() As Analysis
     Set ILinelistSpecs_AnalysisObject = Me.AnalysisObject
 End Property
 

@@ -97,7 +97,7 @@ Private Property Get ILinelistSpecs_DesignFormat() As ILLFormat
     Set ILinelistSpecs_DesignFormat = designFormat
 End Property
 
-Private Property Get ILinelistSpecs_Analysis() As IAnalysis
+Private Property Get ILinelistSpecs_Analysis() As Analysis
     Set ILinelistSpecs_Analysis = Nothing
 End Property
 

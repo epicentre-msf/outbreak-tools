@@ -12,7 +12,7 @@ Attribute VB_Description = "Direct setup-to-linelist build service eliminating t
 '@PredeclaredId
 '@Folder("Designer")
 '@ModuleDescription("Exports pass-through setup data directly to the linelist, bypassing the designer intermediary.")
-'@depends ProjectError, LLdictionary, ILLdictionary, LLChoices, ILLChoices, LLExport, ILLExport, Analysis, IAnalysis, LLGeo, ILLGeo, IPasswords, Passwords, LLFormat, ILLFormat, LLTranslation, ILLTranslation, HiddenNames, IHiddenNames
+'@depends ProjectError, LLdictionary, ILLdictionary, LLChoices, ILLChoices, LLExport, ILLExport, Analysis, LLGeo, ILLGeo, IPasswords, Passwords, LLFormat, ILLFormat, LLTranslation, ILLTranslation, HiddenNames, IHiddenNames
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, ParameterNotUsed
 
 Option Explicit
@@ -36,7 +36,7 @@ Private Type TLinelistBuildService
     hostBook As Workbook            'Designer workbook
     exportedDict As ILLdictionary   'Dictionary manager on linelist workbook
     exportedChoices As ILLChoices   'Choices manager on linelist workbook
-    exportedAnalysis As IAnalysis   'Analysis manager on linelist workbook
+    exportedAnalysis As Analysis   'Analysis manager on linelist workbook
     exportedExport As ILLExport     'Export manager on linelist workbook
     exportedGeo As ILLGeo           'Geo manager on linelist workbook
     exportedPass As IPasswords      'Passwords manager on linelist workbook
@@ -342,7 +342,7 @@ Public Property Get ExportedChoices() As ILLChoices
 End Property
 
 '@label:exported-analysis
-Public Property Get ExportedAnalysis() As IAnalysis
+Public Property Get ExportedAnalysis() As Analysis
     Set ExportedAnalysis = this.exportedAnalysis
 End Property
 
@@ -420,7 +420,7 @@ End Sub
 '@sub-title Export analysis directly from setup to linelist
 Private Sub ExportAnalysisFromSetup(ByVal setupBook As Workbook, ByVal targetBook As Workbook)
     Dim setupSheet As Worksheet
-    Dim analysisManager As IAnalysis
+    Dim analysisManager As Analysis
 
     Set setupSheet = ResolveWorksheet(setupBook, SHEET_ANALYSIS)
     If setupSheet Is Nothing Then Exit Sub

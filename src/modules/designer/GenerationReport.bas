@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Designer")
 '@ModuleDescription("Incremental generation report: harvests IChecking objects and flushes them to the designer __checking worksheet.")
-'@depends CheckingOutput, Checking, IChecking, HiddenNames, IHiddenNames, BetterArray, ILinelistSpecs, ILLdictionary, ILLChoices, ILLExport, IAnalysis, IPasswords, ILLFormat
+'@depends CheckingOutput, Checking, IChecking, HiddenNames, IHiddenNames, BetterArray, ILinelistSpecs, ILLdictionary, ILLChoices, ILLExport, IPasswords, ILLFormat
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, UseMeaningfulName
 
 '@description

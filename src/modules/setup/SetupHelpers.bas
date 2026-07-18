@@ -176,7 +176,7 @@ Public Sub ApplySetupTranslation(ByVal translator As ITranslationObject)
     Dim exportsSheet As Worksheet
     Dim dictionary As ILLdictionary
     Dim choices As ILLChoices
-    Dim analysis As IAnalysis
+    Dim analysis As Analysis
     Dim exports As ILLExport
     Dim unlockDict As Boolean
     Dim unlockChoices As Boolean
@@ -635,7 +635,7 @@ Public Function ResolveChoices(Optional ByVal hostSheet As Worksheet) As ILLChoi
     Set ResolveChoices = LLChoices.Create(targetSheet, START_ROW_CHOICES, START_COLUMN_CHOICES)
 End Function
 
-Public Function ResolveAnalysis(Optional ByVal hostSheet As Worksheet) As IAnalysis
+Public Function ResolveAnalysis(Optional ByVal hostSheet As Worksheet) As Analysis
     Dim targetSheet As Worksheet
 
     If hostSheet Is Nothing Then

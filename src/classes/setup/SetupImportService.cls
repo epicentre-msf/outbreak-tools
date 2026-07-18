@@ -13,7 +13,7 @@ Attribute VB_Description = "Improved setup import service orchestrating workbook
 '@Folder("Setup")
 '@ModuleDescription("Improved setup import service orchestrating workbook synchronisation")
 '@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
-'@depends ProjectError, ApplicationState, IApplicationState, BetterArray, CustomTable, ICustomTable, LLExport, ILLExport, LLdictionary, ILLdictionary, LLFormat, ILLFormat, IPasswords, Analysis, IAnalysis, SetupTranslationsTable
+'@depends ProjectError, ApplicationState, IApplicationState, BetterArray, CustomTable, ICustomTable, LLExport, ILLExport, LLdictionary, ILLdictionary, LLFormat, ILLFormat, IPasswords, Analysis, SetupTranslationsTable
 
 Option Explicit
 
@@ -648,7 +648,7 @@ Private Sub ImportAnalysisUsingClass(ByVal pass As IPasswords, _
 
     Dim hostSheet As Worksheet
     Dim sourceSheet As Worksheet
-    Dim analysisManager As IAnalysis
+    Dim analysisManager As Analysis
     Dim sheetUnlocked As Boolean
     Dim errNumber As Long
     Dim errSource As String
@@ -782,7 +782,7 @@ Public Sub Export(Optional Byval outwb As Workbook)
     Dim dictionaryManager As ILLdictionary
     Dim translationManager As SetupTranslationsTable
     Dim translationsTable As ListObject
-    Dim analysisManager As IAnalysis
+    Dim analysisManager As Analysis
     Dim exportsManager As ILLExport
     Dim choicesManager As ILLChoices
     Dim formatManager As ILLFormat

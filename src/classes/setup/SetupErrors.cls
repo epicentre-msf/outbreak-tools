@@ -13,7 +13,7 @@ Attribute VB_Description = "Analyses setup sheets and publishes consistency repo
 '@Folder("Setup")
 '@ModuleDescription("Analyses setup sheets and publishes consistency reports")
 '@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
-'@depends Analysis, ApplicationState, BetterArray, Checking, CheckingOutput, CustomTable, DropdownLists, FormulaData, Formulas, IAnalysis, IDropdownLists, LLChoices, LLVariables, LLdictionary, Passwords, ProjectError, TableSpecs
+'@depends Analysis, ApplicationState, BetterArray, Checking, CheckingOutput, CustomTable, DropdownLists, FormulaData, Formulas, IDropdownLists, LLChoices, LLVariables, LLdictionary, Passwords, ProjectError, TableSpecs
 
 Option Explicit
 
@@ -978,7 +978,7 @@ End Sub
 'CheckTable to avoid repeated lookups.
 Private Sub CheckAnalysis()
     Dim analysisSheet As Worksheet
-    Dim analysisManager As IAnalysis
+    Dim analysisManager As Analysis
     Dim selectionCell As Range
     Dim previousSelection As String
     Dim selectionConfigured As Boolean
