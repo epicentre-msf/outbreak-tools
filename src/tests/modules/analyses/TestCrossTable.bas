@@ -16,7 +16,7 @@ Option Explicit
 'headers), and NamedRangesList population. The fixture writes a minimal
 'TableSpecs layout on a hidden worksheet and uses stubs for the dictionary,
 'linelist data, and translation dependencies.
-'@depends CrossTable, ICrossTable, TableSpecs, ITableSpecs, TableSpecsLinelistStub,
+'@depends CrossTable, ICrossTable, TableSpecs, TableSpecsLinelistStub,
 '  AnalysisDictionaryStub, LinelistSpecsTranslationStub, ILLdictionary,
 '  BetterArray, CustomTest, TestHelpers
 
@@ -89,7 +89,7 @@ Private Function FixtureDataRange(ByVal dataRowIndex As Long) As Range
 End Function
 
 '@sub-title Build a TableSpecs instance from the fixture header and a data row.
-Private Function CreateSpecs(ByVal dataRowIndex As Long) As ITableSpecs
+Private Function CreateSpecs(ByVal dataRowIndex As Long) As TableSpecs
     Set CreateSpecs = TableSpecs.Create( _
         FixtureHeaderRange(), _
         FixtureDataRange(dataRowIndex), _
@@ -217,7 +217,7 @@ Public Sub TestCreateRejectsNothingWorksheet()
     ' Build a valid specs fixture
     BuildFixture "univariate analysis", Array( _
         Array("S1", "row_var", "", "yes", "no", "no", "no", "Count", "N", ""))
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Set specs = CreateSpecs(1)
 
     On Error Resume Next
@@ -246,7 +246,7 @@ Public Sub TestCreateRejectsNothingLData()
 
     BuildFixture "univariate analysis", Array( _
         Array("S1", "row_var", "", "yes", "no", "no", "no", "Count", "N", ""))
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Set specs = CreateSpecs(1)
 
     Dim sh As Worksheet
@@ -277,7 +277,7 @@ Public Sub TestCreateReturnsValidObject()
 
     BuildFixture "univariate analysis", Array( _
         Array("S1", "row_var", "", "yes", "no", "no", "no", "Count", "N", ""))
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Set specs = CreateSpecs(1)
 
     Dim sh As Worksheet
@@ -310,7 +310,7 @@ Public Sub TestSpecificationsProperty()
 
     BuildFixture "univariate analysis", Array( _
         Array("S1", "row_var", "", "yes", "no", "no", "no", "Count", "N", ""))
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Set specs = CreateSpecs(1)
 
     Dim sh As Worksheet
@@ -339,7 +339,7 @@ Public Sub TestWkshProperty()
 
     BuildFixture "univariate analysis", Array( _
         Array("S1", "row_var", "", "yes", "no", "no", "no", "Count", "N", ""))
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Set specs = CreateSpecs(1)
 
     Dim sh As Worksheet
@@ -372,7 +372,7 @@ Public Sub TestBuildGlobalSummaryCreatesRowGsSet()
 
     BuildFixture "Add or remove rows of Global Summary", Array( _
         Array("S1", "", "", "", "", "", "", "Total Cases", "N", ""))
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Set specs = CreateSpecs(1)
 
     Dim sh As Worksheet
@@ -402,7 +402,7 @@ Public Sub TestBuildGlobalSummaryCreatesColGsSet()
 
     BuildFixture "Add or remove rows of Global Summary", Array( _
         Array("S1", "", "", "", "", "", "", "Total Cases", "N", ""))
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Set specs = CreateSpecs(1)
 
     Dim sh As Worksheet
@@ -437,7 +437,7 @@ Public Sub TestBuildUnivariateCreatesNamedRanges()
 
     BuildFixture "univariate analysis", Array( _
         Array("S1", "row_var", "", "yes", "no", "no", "no", "Count", "N", ""))
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Set specs = CreateSpecs(1)
 
     Dim sh As Worksheet
@@ -478,7 +478,7 @@ Public Sub TestBuildUnivariateEndRowSet()
 
     BuildFixture "univariate analysis", Array( _
         Array("S1", "row_var", "", "yes", "no", "no", "no", "Count", "N", ""))
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Set specs = CreateSpecs(1)
 
     Dim sh As Worksheet
@@ -510,7 +510,7 @@ Public Sub TestBuildUnivariateNumberOfColumns()
 
     BuildFixture "univariate analysis", Array( _
         Array("S1", "row_var", "", "yes", "no", "no", "no", "Count", "N", ""))
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Set specs = CreateSpecs(1)
 
     Dim sh As Worksheet
@@ -544,7 +544,7 @@ Public Sub TestBuildUnivariateNewSectionCreatesSection()
 
     BuildFixture "univariate analysis", Array( _
         Array("S1", "row_var", "", "yes", "no", "no", "no", "Count", "N", ""))
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Set specs = CreateSpecs(1)
 
     Dim sh As Worksheet
@@ -581,7 +581,7 @@ Public Sub TestNamedRangesListPopulatedAfterBuild()
 
     BuildFixture "univariate analysis", Array( _
         Array("S1", "row_var", "", "yes", "no", "no", "no", "Count", "N", ""))
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Set specs = CreateSpecs(1)
 
     Dim sh As Worksheet

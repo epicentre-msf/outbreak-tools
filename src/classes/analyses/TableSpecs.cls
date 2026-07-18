@@ -15,7 +15,6 @@ Attribute VB_Description = "Analysis table specifications"
 '@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
-Implements ITableSpecs
 
 '@class TableSpecs
 '@description
@@ -34,7 +33,7 @@ Implements ITableSpecs
 'dictionary and choices; otherwise an empty BetterArray is returned. This
 'design decouples TableSpecs from LinelistSpecs at instantiation, making it
 'usable in the setup error-checking context without geo or translation
-'dependencies. Consumers interact through the ITableSpecs interface.
+'dependencies. Consumers interact through the TableSpecs interface.
 '@depends ILLdictionary, ILLVariables, LLVariables, BetterArray
 '@version 2.0 (2026-02-11)
 
@@ -83,7 +82,7 @@ Private Const CLASS_NAME As String = "TableSpecs"
 '@param dict ILLdictionary. The linelist dictionary that provides variable
 'definitions, existence checks, and control type lookups needed for
 'validation and spatial type detection.
-'@return ITableSpecs. A fully initialised TableSpecs instance ready for use.
+'@return TableSpecs. A fully initialised TableSpecs instance ready for use.
 '@throws InvalidArgument When headerRng is Nothing.
 '@throws InvalidArgument When tableSpecsRng is Nothing.
 '@throws InvalidArgument When dict is Nothing.
@@ -93,7 +92,7 @@ Private Const CLASS_NAME As String = "TableSpecs"
 '@export
 Public Function Create(ByVal headerRng As Range, _
                        ByVal tableSpecsRng As Range, _
-                       ByVal dict As ILLdictionary) As ITableSpecs
+                       ByVal dict As ILLdictionary) As TableSpecs
 
     Dim instance As TableSpecs
     CheckRequirements headerRng, tableSpecsRng, dict
@@ -576,18 +575,18 @@ End Property
 'stops at the header row to prevent reading outside the data area. This
 'property is used by TableSectionId to recursively find the first table in
 'a section.
-'@return ITableSpecs. The nearest valid preceding table in the same section.
+'@return TableSpecs. The nearest valid preceding table in the same section.
 '@throws InvalidArgument When IsNewSection is True, because there is no
 'previous table in the same section for a section-starting table.
 '@remarks Callers must check IsNewSection before accessing Previous. Each
 'candidate row examined creates a new TableSpecs instance, so performance
 'degrades with many consecutive invalid rows.
 '@export
-Public Property Get Previous() As ITableSpecs
+Public Property Get Previous() As TableSpecs
     Dim hRng As Range
     Dim tRng As Range
     Dim prevRng As Range
-    Dim prevSpec As ITableSpecs
+    Dim prevSpec As TableSpecs
 
     If IsNewSection() Then
         ThrowError InvalidArgument, _
@@ -624,16 +623,16 @@ End Property
 'property returns Nothing.
 '@param anchorRng Range. A Range representing the last row of the setup
 'ListObject. The forward walk will not advance past this row.
-'@return ITableSpecs. The next valid table after this row, or Nothing if no
+'@return TableSpecs. The next valid table after this row, or Nothing if no
 'valid table exists between this row and the anchor range.
 '@remarks This property is the primary iteration mechanism for processing all
 'tables in an analysis block. Callers typically start with the first table and
 'call NextSpecs repeatedly until Nothing is returned.
 '@export
-Public Property Get NextSpecs(ByVal anchorRng As Range) As ITableSpecs
+Public Property Get NextSpecs(ByVal anchorRng As Range) As TableSpecs
     Dim tRng As Range
     Dim hRng As Range
-    Dim nextSpec As ITableSpecs
+    Dim nextSpec As TableSpecs
 
     Set tRng = TableRange()
     Set hRng = HeaderRange()
@@ -1028,75 +1027,3 @@ Private Sub CheckRequirements(ByVal headerRng As Range, _
     End If
 End Sub
 
-'@section Interface Implementation
-'===============================================================================
-'@description Delegated members satisfying the ITableSpecs contract.
-'See the corresponding Public members above for full documentation.
-
-Private Property Get ITableSpecs_TableScope() As AnalysisTableScope
-    ITableSpecs_TableScope = TableScope()
-End Property
-
-Private Property Get ITableSpecs_Dictionary() As ILLdictionary
-    Set ITableSpecs_Dictionary = Dictionary()
-End Property
-
-Private Property Get ITableSpecs_RowCategories(ByRef lData As Object) As BetterArray
-    Set ITableSpecs_RowCategories = RowCategories(lData)
-End Property
-
-Private Property Get ITableSpecs_ColumnCategories(ByRef lData As Object) As BetterArray
-    Set ITableSpecs_ColumnCategories = ColumnCategories(lData)
-End Property
-
-Private Property Get ITableSpecs_IsNewSection() As Boolean
-    ITableSpecs_IsNewSection = IsNewSection()
-End Property
-
-Private Property Get ITableSpecs_TableId() As String
-    ITableSpecs_TableId = TableId()
-End Property
-
-Private Property Get ITableSpecs_ValidTable() As Boolean
-    ITableSpecs_ValidTable = ValidTable()
-End Property
-
-Private Property Get ITableSpecs_HasMissing() As Boolean
-    ITableSpecs_HasMissing = HasMissing()
-End Property
-
-Private Property Get ITableSpecs_HasTotal() As Boolean
-    ITableSpecs_HasTotal = HasTotal()
-End Property
-
-Private Property Get ITableSpecs_TotalRequested() As Boolean
-    ITableSpecs_TotalRequested = TotalRequested()
-End Property
-
-Private Property Get ITableSpecs_HasGraph() As Boolean
-    ITableSpecs_HasGraph = HasGraph()
-End Property
-
-Private Property Get ITableSpecs_HasPercentage() As Boolean
-    ITableSpecs_HasPercentage = HasPercentage()
-End Property
-
-Private Property Get ITableSpecs_SpatialTableScopes() As String
-    ITableSpecs_SpatialTableScopes = SpatialTableScopes()
-End Property
-
-Private Property Get ITableSpecs_Previous() As ITableSpecs
-    Set ITableSpecs_Previous = Previous()
-End Property
-
-Private Property Get ITableSpecs_NextSpecs(ByVal anchorRng As Range) As ITableSpecs
-    Set ITableSpecs_NextSpecs = NextSpecs(anchorRng)
-End Property
-
-Private Property Get ITableSpecs_TableSectionId() As String
-    ITableSpecs_TableSectionId = TableSectionId()
-End Property
-
-Private Function ITableSpecs_Value(ByVal colName As String) As String
-    ITableSpecs_Value = Value(colName)
-End Function

@@ -17,7 +17,7 @@ Option Explicit
 'the TotalRequested vs HasTotal distinction (Bug #1 fix), and forward/backward
 'row navigation. The fixture builds a hidden worksheet with a typed header row
 'and data rows, backed by a dictionary fixture for variable validation.
-'@depends TableSpecs, ITableSpecs, LLdictionary, ILLdictionary, CustomTest, TestHelpers
+'@depends TableSpecs, LLdictionary, ILLdictionary, CustomTest, TestHelpers
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const FIXTURE_SHEET As String = "TableSpecsFixture"
@@ -94,8 +94,8 @@ Private Function FixtureDataRange(ByVal dataRowIndex As Long) As Range
     Set FixtureDataRange = sh.Range(sh.Cells(rowNum, 1), sh.Cells(rowNum, NUM_COLUMNS))
 End Function
 
-'@sub-title Create an ITableSpecs from a fixture data row index.
-Private Function CreateSpecs(ByVal dataRowIndex As Long) As ITableSpecs
+'@sub-title Create an TableSpecs from a fixture data row index.
+Private Function CreateSpecs(ByVal dataRowIndex As Long) As TableSpecs
     Set CreateSpecs = TableSpecs.Create( _
         FixtureHeaderRange(), _
         FixtureDataRange(dataRowIndex), _
@@ -186,7 +186,7 @@ Public Sub TestCreateRejectsNothingHeader()
     Set dataRng = sh.Range(sh.Cells(4, 1), sh.Cells(4, NUM_COLUMNS))
 
     On Error Resume Next
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Set specs = TableSpecs.Create(Nothing, dataRng, dict)
     On Error GoTo 0
 
@@ -215,7 +215,7 @@ Public Sub TestCreateRejectsNothingRange()
     Set hRng = sh.Range(sh.Cells(3, 1), sh.Cells(3, NUM_COLUMNS))
 
     On Error Resume Next
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Set specs = TableSpecs.Create(hRng, Nothing, dict)
     On Error GoTo 0
 
@@ -246,7 +246,7 @@ Public Sub TestCreateRejectsNothingDict()
     Set dataRng = sh.Range(sh.Cells(4, 1), sh.Cells(4, NUM_COLUMNS))
 
     On Error Resume Next
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Set specs = TableSpecs.Create(hRng, dataRng, Nothing)
     On Error GoTo 0
 
@@ -278,7 +278,7 @@ Public Sub TestCreateRejectsMismatchedColumns()
     Set dataRng = sh.Range(sh.Cells(4, 1), sh.Cells(4, 5))
 
     On Error Resume Next
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Set specs = TableSpecs.Create(hRng, dataRng, dict)
     On Error GoTo 0
 
@@ -304,7 +304,7 @@ Public Sub TestTableScopeTimeSeries()
     On Error GoTo TestFail
 
     BuildFixture "time series analysis", TimeSeriesDataRows()
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Set specs = CreateSpecs(1)
 
     Assert.AreEqual CLng(ScopeTimeSeries), CLng(specs.TableScope), _
@@ -329,7 +329,7 @@ Public Sub TestTableScopeGlobalSummary()
     rows = Array(Array("", "", "", "", "", "", "", "Count of cases", "sum", ""))
     BuildFixture "global summary", rows
 
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Set specs = CreateSpecs(1)
 
     Assert.AreEqual CLng(ScopeGlobalSummary), CLng(specs.TableScope), _
@@ -354,7 +354,7 @@ Public Sub TestTableScopeUnivariate()
     rows = Array(Array("S1", "choi_v1", "", "", "yes", "yes", "yes", "", "", ""))
     BuildFixture "univariate analysis", rows
 
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Set specs = CreateSpecs(1)
 
     Assert.AreEqual CLng(ScopeUnivariate), CLng(specs.TableScope), _
@@ -379,7 +379,7 @@ Public Sub TestTableScopeBivariate()
     rows = Array(Array("S1", "choi_v1", "choi_h2", "", "row", "row", "values", "", "", ""))
     BuildFixture "bivariate analysis", rows
 
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Set specs = CreateSpecs(1)
 
     Assert.AreEqual CLng(ScopeBivariate), CLng(specs.TableScope), _
@@ -404,7 +404,7 @@ Public Sub TestTableScopeSpatial()
     rows = Array(Array("S1", "geo_h2", "choi_v1", "", "yes", "yes", "yes", "", "", ""))
     BuildFixture "spatial analysis", rows
 
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Set specs = CreateSpecs(1)
 
     Assert.AreEqual CLng(ScopeSpatial), CLng(specs.TableScope), _
@@ -429,7 +429,7 @@ Public Sub TestTableScopeSpatioTemporal()
     rows = Array(Array("S1", "date_v1", "geo_h2", "", "", "", "yes", "", "", "5"))
     BuildFixture "spatio-temporal analysis", rows
 
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Set specs = CreateSpecs(1)
 
     Assert.AreEqual CLng(ScopeSpatioTemporal), CLng(specs.TableScope), _
@@ -457,7 +457,7 @@ Public Sub TestTableIdTimeSeries()
     BuildFixture "time series analysis", TimeSeriesDataRows()
 
     ' First data row at sheet row 4, header at row 3: offset = 4 - 3 = 1
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Set specs = CreateSpecs(1)
 
     Assert.AreEqual "TS_tab1", specs.TableId, _
@@ -486,7 +486,7 @@ Public Sub TestTableIdGlobalSummary()
     rows = Array(Array("", "", "", "", "", "", "", "Count", "sum", ""))
     BuildFixture "global summary", rows
 
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Set specs = CreateSpecs(1)
 
     Assert.AreEqual "GS_tab1", specs.TableId, _
@@ -511,7 +511,7 @@ Public Sub TestValueReturnsColumnData()
     On Error GoTo TestFail
 
     BuildFixture "time series analysis", TimeSeriesDataRows()
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Set specs = CreateSpecs(1)
 
     Assert.AreEqual "S1", specs.Value("section"), _
@@ -541,7 +541,7 @@ Public Sub TestValueReturnsEmptyForUnknownColumn()
     On Error GoTo TestFail
 
     BuildFixture "time series analysis", TimeSeriesDataRows()
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Set specs = CreateSpecs(1)
 
     Assert.AreEqual vbNullString, specs.Value("nonexistent_column"), _
@@ -566,7 +566,7 @@ Public Sub TestIsNewSectionFirstRow()
     On Error GoTo TestFail
 
     BuildFixture "time series analysis", TimeSeriesDataRows()
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Set specs = CreateSpecs(1)
 
     ' First data row: previous row is the header, so section won't match
@@ -588,7 +588,7 @@ Public Sub TestIsNewSectionSameSection()
     On Error GoTo TestFail
 
     BuildFixture "time series analysis", TimeSeriesDataRows()
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
 
     ' Row 2 has section "S1" same as row 1
     Set specs = CreateSpecs(2)
@@ -610,7 +610,7 @@ Public Sub TestIsNewSectionDifferentSection()
     On Error GoTo TestFail
 
     BuildFixture "time series analysis", TimeSeriesDataRows()
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
 
     ' Row 3 has section "S2", different from row 2 "S1"
     Set specs = CreateSpecs(3)
@@ -636,7 +636,7 @@ Public Sub TestIsNewSectionGlobalSummaryAlwaysFalse()
     rows = Array(Array("S1", "", "", "", "", "", "", "Count", "sum", ""))
     BuildFixture "global summary", rows
 
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Set specs = CreateSpecs(1)
 
     Assert.IsFalse specs.IsNewSection, _
@@ -661,7 +661,7 @@ Public Sub TestHasTotalTimeSeriesWithTotalYes()
 
     ' Row with total=yes and column variable present
     BuildFixture "time series analysis", TimeSeriesDataRows()
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Set specs = CreateSpecs(1)  ' total=yes, column=choi_v1
 
     Assert.IsTrue specs.HasTotal, _
@@ -687,7 +687,7 @@ Public Sub TestHasTotalTimeSeriesPercentageDriven()
     rows = Array(Array("S1", "date_v1", "choi_v1", "no", "row", "no", "no", "", "", ""))
     BuildFixture "time series analysis", rows
 
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Set specs = CreateSpecs(1)
 
     Assert.IsTrue specs.HasTotal, _
@@ -712,7 +712,7 @@ Public Sub TestHasTotalTimeSeriesPercentageColumnDriven()
     rows = Array(Array("S1", "date_v1", "choi_v1", "no", "column", "no", "no", "", "", ""))
     BuildFixture "time series analysis", rows
 
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Set specs = CreateSpecs(1)
 
     Assert.IsTrue specs.HasTotal, _
@@ -734,7 +734,7 @@ Public Sub TestHasTotalTimeSeriesNoColumnNoTotal()
     On Error GoTo TestFail
 
     BuildFixture "time series analysis", TimeSeriesDataRows()
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
 
     ' Row 3: no column, total=no, percentage=no
     Set specs = CreateSpecs(3)
@@ -761,7 +761,7 @@ Public Sub TestHasTotalGlobalSummaryAlwaysFalse()
     rows = Array(Array("", "", "", "yes", "", "", "", "Count", "sum", ""))
     BuildFixture "global summary", rows
 
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Set specs = CreateSpecs(1)
 
     Assert.IsFalse specs.HasTotal, _
@@ -786,7 +786,7 @@ Public Sub TestHasTotalUnivariateAlwaysTrue()
     rows = Array(Array("S1", "choi_v1", "", "no", "no", "no", "no", "", "", ""))
     BuildFixture "univariate analysis", rows
 
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Set specs = CreateSpecs(1)
 
     Assert.IsTrue specs.HasTotal, _
@@ -811,7 +811,7 @@ Public Sub TestTotalRequestedTrueWhenExplicit()
     On Error GoTo TestFail
 
     BuildFixture "time series analysis", TimeSeriesDataRows()
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Set specs = CreateSpecs(1)  ' total=yes
 
     Assert.IsTrue specs.TotalRequested, _
@@ -839,7 +839,7 @@ Public Sub TestTotalRequestedFalseWhenPercentageDriven()
     rows = Array(Array("S1", "date_v1", "choi_v1", "no", "row", "no", "no", "", "", ""))
     BuildFixture "time series analysis", rows
 
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Set specs = CreateSpecs(1)
 
     Assert.IsTrue specs.HasTotal, _
@@ -862,7 +862,7 @@ Public Sub TestTotalRequestedFalseWhenNoTotal()
     On Error GoTo TestFail
 
     BuildFixture "time series analysis", TimeSeriesDataRows()
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Set specs = CreateSpecs(2)  ' total=no, percentage=no
 
     Assert.IsFalse specs.TotalRequested, _
@@ -887,7 +887,7 @@ Public Sub TestHasPercentageTimeSeriesRowWithTotal()
     On Error GoTo TestFail
 
     BuildFixture "time series analysis", TimeSeriesDataRows()
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Set specs = CreateSpecs(1)  ' percentage=row, total=yes, column present
 
     Assert.IsTrue specs.HasPercentage, _
@@ -913,7 +913,7 @@ Public Sub TestHasPercentageTimeSeriesNoTotal()
     rows = Array(Array("S1", "date_v1", "", "no", "row", "no", "no", "", "", ""))
     BuildFixture "time series analysis", rows
 
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Set specs = CreateSpecs(1)
 
     Assert.IsFalse specs.HasPercentage, _
@@ -938,7 +938,7 @@ Public Sub TestHasPercentageSpatioTemporalAlwaysFalse()
     rows = Array(Array("S1", "date_v1", "geo_h2", "", "row", "", "yes", "", "", "5"))
     BuildFixture "spatio-temporal analysis", rows
 
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Set specs = CreateSpecs(1)
 
     Assert.IsFalse specs.HasPercentage, _
@@ -962,7 +962,7 @@ Public Sub TestHasPercentageBivariateRow()
     rows = Array(Array("S1", "choi_v1", "choi_h2", "", "row", "", "", "", "", ""))
     BuildFixture "bivariate analysis", rows
 
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Set specs = CreateSpecs(1)
 
     Assert.IsTrue specs.HasPercentage, _
@@ -986,7 +986,7 @@ Public Sub TestHasMissingTimeSeriesWithColumn()
     On Error GoTo TestFail
 
     BuildFixture "time series analysis", TimeSeriesDataRows()
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Set specs = CreateSpecs(1)  ' missing=yes, column=choi_v1
 
     Assert.IsTrue specs.HasMissing, _
@@ -1012,7 +1012,7 @@ Public Sub TestHasMissingTimeSeriesNoColumn()
     rows = Array(Array("S1", "date_v1", "", "no", "no", "yes", "no", "", "", ""))
     BuildFixture "time series analysis", rows
 
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Set specs = CreateSpecs(1)
 
     Assert.IsFalse specs.HasMissing, _
@@ -1037,7 +1037,7 @@ Public Sub TestHasMissingBivariateAll()
     rows = Array(Array("S1", "choi_v1", "choi_h2", "", "", "all", "", "", "", ""))
     BuildFixture "bivariate analysis", rows
 
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Set specs = CreateSpecs(1)
 
     Assert.IsTrue specs.HasMissing, _
@@ -1061,7 +1061,7 @@ Public Sub TestHasGraphTimeSeriesYes()
     On Error GoTo TestFail
 
     BuildFixture "time series analysis", TimeSeriesDataRows()
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Set specs = CreateSpecs(1)  ' graph=yes
 
     Assert.IsTrue specs.HasGraph, _
@@ -1082,7 +1082,7 @@ Public Sub TestHasGraphTimeSeriesNo()
     On Error GoTo TestFail
 
     BuildFixture "time series analysis", TimeSeriesDataRows()
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Set specs = CreateSpecs(2)  ' graph=no
 
     Assert.IsFalse specs.HasGraph, _
@@ -1107,7 +1107,7 @@ Public Sub TestHasGraphGlobalSummaryAlwaysFalse()
     rows = Array(Array("", "", "", "", "", "", "yes", "Count", "sum", ""))
     BuildFixture "global summary", rows
 
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Set specs = CreateSpecs(1)
 
     Assert.IsFalse specs.HasGraph, _
@@ -1132,7 +1132,7 @@ Public Sub TestHasGraphBivariateValues()
     rows = Array(Array("S1", "choi_v1", "choi_h2", "", "", "", "values", "", "", ""))
     BuildFixture "bivariate analysis", rows
 
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Set specs = CreateSpecs(1)
 
     Assert.IsTrue specs.HasGraph, _
@@ -1150,17 +1150,17 @@ End Sub
 '@details
 'Builds a time series fixture and creates specs from data row 2 (same
 'section S1 as row 1). Calls Previous and asserts that the returned
-'ITableSpecs has TableId "TS_tab1", confirming backward navigation works.
+'TableSpecs has TableId "TS_tab1", confirming backward navigation works.
 '@TestMethod("TableSpecs")
 Public Sub TestPreviousReturnsPriorRow()
     CustomTestSetTitles Assert, "TableSpecs", "TestPreviousReturnsPriorRow"
     On Error GoTo TestFail
 
     BuildFixture "time series analysis", TimeSeriesDataRows()
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Set specs = CreateSpecs(2)  ' Same section S1 as row 1
 
-    Dim prevSpec As ITableSpecs
+    Dim prevSpec As TableSpecs
     Set prevSpec = specs.Previous
 
     Assert.IsTrue (Not prevSpec Is Nothing), _
@@ -1185,10 +1185,10 @@ Public Sub TestPreviousThrowsOnNewSection()
     On Error GoTo TestFail
 
     BuildFixture "time series analysis", TimeSeriesDataRows()
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Set specs = CreateSpecs(1)  ' First row = new section
 
-    Dim prevSpec As ITableSpecs
+    Dim prevSpec As TableSpecs
     On Error Resume Next
     Set prevSpec = specs.Previous
     Dim errNum As Long
@@ -1207,7 +1207,7 @@ End Sub
 '@details
 'Builds a time series fixture and creates specs from data row 1. Calls
 'NextSpecs with an anchor range pointing to the last data row (row 3).
-'Asserts that the returned ITableSpecs has TableId "TS_tab2", confirming
+'Asserts that the returned TableSpecs has TableId "TS_tab2", confirming
 'forward navigation works within the anchor boundary.
 '@TestMethod("TableSpecs")
 Public Sub TestNextSpecsReturnsNextRow()
@@ -1215,14 +1215,14 @@ Public Sub TestNextSpecsReturnsNextRow()
     On Error GoTo TestFail
 
     BuildFixture "time series analysis", TimeSeriesDataRows()
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Set specs = CreateSpecs(1)
 
     ' Anchor range = last data row (row 6 = row 3 + 3 data rows)
     Dim anchorRng As Range
     Set anchorRng = FixtureDataRange(3)
 
-    Dim nextSpec As ITableSpecs
+    Dim nextSpec As TableSpecs
     Set nextSpec = specs.NextSpecs(anchorRng)
 
     Assert.IsTrue (Not nextSpec Is Nothing), _
@@ -1246,14 +1246,14 @@ Public Sub TestNextSpecsNothingBeyondAnchor()
     On Error GoTo TestFail
 
     BuildFixture "time series analysis", TimeSeriesDataRows()
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Set specs = CreateSpecs(3)  ' Last data row
 
     ' Anchor range = same row (no room for next)
     Dim anchorRng As Range
     Set anchorRng = FixtureDataRange(3)
 
-    Dim nextSpec As ITableSpecs
+    Dim nextSpec As TableSpecs
     Set nextSpec = specs.NextSpecs(anchorRng)
 
     Assert.IsTrue (nextSpec Is Nothing), _
@@ -1275,7 +1275,7 @@ Public Sub TestTableSectionIdFirstInSection()
     On Error GoTo TestFail
 
     BuildFixture "time series analysis", TimeSeriesDataRows()
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Set specs = CreateSpecs(1)  ' New section
 
     Assert.AreEqual specs.TableId, specs.TableSectionId, _
@@ -1297,7 +1297,7 @@ Public Sub TestTableSectionIdSubsequentInSection()
     On Error GoTo TestFail
 
     BuildFixture "time series analysis", TimeSeriesDataRows()
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Set specs = CreateSpecs(2)  ' Same section S1
 
     Assert.AreEqual "TS_tab1", specs.TableSectionId, _

@@ -28,7 +28,7 @@ Implements ICrossTableFormula
 'spatial lookups, and data-validation dropdowns. Consumers obtain an instance
 'through the predeclared Create factory and interact via the ICrossTableFormula
 'interface.
-'@depends ICrossTable, IFormulaData, Formulas, FormulaCondition, ITableSpecs, SpatialTables, BetterArray
+'@depends ICrossTable, IFormulaData, Formulas, FormulaCondition, TableSpecs, SpatialTables, BetterArray
 '@version 1.0 (2026-02-10)
 
 
@@ -128,15 +128,15 @@ End Property
 'specifications, reducing repetitive chaining throughout the class.
 
 '@label:specifications
-'@prop-title ITableSpecs shortcut for the cross-table specifications.
+'@prop-title TableSpecs shortcut for the cross-table specifications.
 '@details
-'Provides a shortcut to the ITableSpecs object associated with this cross-table.
-'ITableSpecs encapsulates all configuration metadata for a table: its row/column
+'Provides a shortcut to the TableSpecs object associated with this cross-table.
+'TableSpecs encapsulates all configuration metadata for a table: its row/column
 'variable names, summary function, table scope, missing/total/percentage flags,
 'and the section it belongs to. This property avoids repeatedly chaining
 'Table.Specifications throughout the class methods.
-'@return ITableSpecs. The specification dictionary for the underlying cross-table.
-Private Property Get Specifications() As ITableSpecs
+'@return TableSpecs. The specification dictionary for the underlying cross-table.
+Private Property Get Specifications() As TableSpecs
     Set Specifications = Table.Specifications
 End Property
 
@@ -210,7 +210,7 @@ End Property
 'lazy because not all code paths need the formula engine (e.g., if Valid is False).
 Private Property Get TableFormula() As Formulas
     If this.forml Is Nothing Then
-        Dim specs As ITableSpecs
+        Dim specs As TableSpecs
         Set specs = Specifications
         Set this.forml = Formulas.Create(specs.Dictionary, formData(), SummaryFunction)
     End If
@@ -600,7 +600,7 @@ Private Sub AddFormulas()
     Dim tabFormObject As Formulas
     Dim spTabType As String
     Dim counter As Long
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
 
     If Not Valid() Then Exit Sub
 

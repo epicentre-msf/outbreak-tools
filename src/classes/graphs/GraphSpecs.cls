@@ -27,7 +27,7 @@ Option Explicit
 'create an instance via Create (simple) or CreateRangeSpecs (complex), call
 'CreateSeries (or let Valid trigger it lazily), then read series data via the
 'public accessors.
-'@depends ICrossTable, ITableSpecs, TableSpecs, ILinelistSpecs, BetterArray
+'@depends ICrossTable, TableSpecs, ILinelistSpecs, BetterArray
 '@version 1.0 (2026-02-09)
 
 
@@ -276,7 +276,7 @@ End Sub
 '@label:build-simple-series
 '@sub-title Build chart series for a non-time-series cross-table
 '@details
-'Reads the table scope and configuration from the cross-table's ITableSpecs to
+'Reads the table scope and configuration from the cross-table's TableSpecs to
 'determine what kind of series to generate. The "flip" setting controls plot
 'direction: when flip is "yes", horizontal bars ("hbar") are used; otherwise
 'vertical bars ("bar") are the default. For spatio-temporal tables, the number
@@ -288,7 +288,7 @@ End Sub
 '@remarks The "n geo" override uses On Error Resume Next to gracefully handle
 'missing or non-numeric values, falling back to 5 columns.
 Private Sub BuildSimpleSeries()
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Dim tabId As String
     Dim tabType As Byte
     Dim nbCols As Long
@@ -373,7 +373,7 @@ End Sub
 'categories use the section-level range (ROW_CATEGORIES_ + tabSecId) instead
 'of the table-level range, because spatio-temporal tables share row categories
 'across all tables in the same section.
-'@param specs ITableSpecs. The table specifications providing access to the
+'@param specs TableSpecs. The table specifications providing access to the
 '"graph" and "flip" settings as well as HasPercentage.
 '@param tabId String. The unique table identifier for named range construction.
 '@param tabSecId String. The section-level table identifier, used only for
@@ -385,7 +385,7 @@ End Sub
 '@remarks When graphValue is "both", percentage point series are only added if
 'specs.HasPercentage is True. The "percentages" mode silently produces no series
 'if HasPercentage is False.
-Private Sub BuildMultiColumnSeries(ByVal specs As ITableSpecs, _
+Private Sub BuildMultiColumnSeries(ByVal specs As TableSpecs, _
                                     ByVal tabId As String, _
                                     ByVal tabSecId As String, _
                                     ByVal tabType As Byte, _
@@ -495,7 +495,7 @@ Private Sub DefineGraphSpecs(ByVal graphId As String)
     Dim val As String
     Dim cellRng As Range
     Dim tabRng As Range
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Dim tabId As String
     Dim secId As String
     Dim choiValue As String

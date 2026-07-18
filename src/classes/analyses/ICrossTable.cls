@@ -103,11 +103,11 @@ Public Property Get Previous() As ICrossTable: End Property
 '@jump:specifications
 '@prop-title Table specifications used to build this cross-table
 '@details
-'Returns the ITableSpecs instance that defines the configuration for
+'Returns the TableSpecs instance that defines the configuration for
 'this cross-table. Provides access to table scope, variable names,
 'category lists, and validation flags.
-'@return ITableSpecs. The backing table specification.
-Public Property Get Specifications() As ITableSpecs: End Property
+'@return TableSpecs. The backing table specification.
+Public Property Get Specifications() As TableSpecs: End Property
 
 '@jump:wksh
 '@prop-title Output worksheet where the table is built

@@ -1053,7 +1053,7 @@ Private Sub CheckTable(ByVal partName As String, _
     Dim listName As String
     Dim headerRange As Range
     Dim specsRange As Range
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Dim check As Checking
     Dim rowIndex As Long
     Dim checkingCounter As Long

@@ -24,7 +24,7 @@ Option Explicit
 '(for hf type), each with formula, population, and attack rate columns.
 'Manages formula conditions and validates that the spatial sheet exists
 'before writing.
-'@depends ICrossTable, ITableSpecs, Formulas, FormulaCondition, BetterArray
+'@depends ICrossTable, TableSpecs, Formulas, FormulaCondition, BetterArray
 '@version 2025-01-15
 
 
@@ -61,7 +61,7 @@ Private Const CONCAT As String = "concat_"
 '@return SpatialTables. A fully initialised spatial tables builder.
 '@throws ProjectError.ObjectNotInitialized When tabl is Nothing.
 '@throws ProjectError.ElementNotFound When the spatial worksheet is missing.
-'@depends ICrossTable, ITableSpecs
+'@depends ICrossTable, TableSpecs
 '@export
 Public Function Create(ByVal tabl As ICrossTable) As SpatialTables
     CheckRequirements tabl
@@ -449,7 +449,7 @@ Public Sub Add(ByVal formObject As Formulas)
     Dim loName As String
     Dim rng As Range
     Dim counter As Long
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Dim tabl As ICrossTable
     Dim cellRng As Range
     Dim finalFormula As String

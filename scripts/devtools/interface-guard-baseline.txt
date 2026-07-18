@@ -18,4 +18,3 @@ IHiddenNames
 ILLChoices
 ILLExport
 ILLTranslation
-ITableSpecs

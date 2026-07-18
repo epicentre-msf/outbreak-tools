@@ -24,7 +24,7 @@ Option Explicit
 '(normal, time series, spatial, spatio-temporal), builds cross-tables from
 'table specifications, writes formulas, registers metadata in AnaTabIds, and
 'renders charts.
-'@depends ILinelist, ILinelistSpecs, ILLFormat, ITranslationObject, ITableSpecs, ICrossTable, ICrossTableFormula, Graphs, AnaTabIds, Buttons, IPasswords, IDropdownLists, ILLdictionary, ILLVariables, IFormulaData, BetterArray
+'@depends ILinelist, ILinelistSpecs, ILLFormat, ITranslationObject, TableSpecs, ICrossTable, ICrossTableFormula, Graphs, AnaTabIds, Buttons, IPasswords, IDropdownLists, ILLdictionary, ILLVariables, IFormulaData, BetterArray
 '@version 1.0 (2026-02-10)
 
 
@@ -524,7 +524,7 @@ Private Sub WriteTable(ByVal loName As String, _
     Dim tabform As ICrossTableFormula
     Dim gr As Graphs
     Dim lo As ListObject
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Dim lData As ILinelistSpecs
     Dim trads As ITranslationObject
     Dim formData As IFormulaData
@@ -546,8 +546,8 @@ Private Sub WriteTable(ByVal loName As String, _
     Dim rowVar As String
     Dim minFormula As String
     Dim maxFormula As String
-    Dim prevSpecs As ITableSpecs
-    Dim nextSpecs As ITableSpecs
+    Dim prevSpecs As TableSpecs
+    Dim nextSpecs As TableSpecs
     Dim prevSecId As String
     Dim secId As String
     Dim dict As ILLdictionary
@@ -932,7 +932,7 @@ Private Sub WriteSpatioTemporalGraph(ByVal loName As String, _
     Dim sh As Worksheet
     Dim outsh As Worksheet
     Dim cellRng As Range
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Dim lData As ILinelistSpecs
     Dim design As ILLFormat
     Dim hRng As Range

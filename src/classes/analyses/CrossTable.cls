@@ -26,12 +26,12 @@ Implements ICrossTable
 'ranges, and visual formatting. Consumers interact through the ICrossTable
 'interface, and AnalysisOutput orchestrates the build sequence by calling
 'Build followed by Format for each table specification.
-'@depends ITableSpecs, ILinelistSpecs, ITranslationObject, ILLVariables, LLVariables, ILLFormat, IHiddenNames, HiddenNames, BetterArray, Checking
+'@depends TableSpecs, ILinelistSpecs, ITranslationObject, ILLVariables, LLVariables, ILLFormat, IHiddenNames, HiddenNames, BetterArray, Checking
 '@version 1.1 (2026-02-11)
 
 
 Private Type TCrossTable
-    specs As ITableSpecs
+    specs As TableSpecs
     outputSh As Worksheet
     lData As ILinelistSpecs
     endRw As Long
@@ -64,17 +64,17 @@ Private internalChecks As Checking
 'validates all three required dependencies, then injects them into a
 'fresh CrossTable instance via the PredeclaredId/New pattern and returns
 'the interface reference.
-'@param specs ITableSpecs. An ITableSpecs object representing one row from the analysis setup sheet.
+'@param specs TableSpecs. An TableSpecs object representing one row from the analysis setup sheet.
 '@param outputWksh Worksheet. The Excel Worksheet where this cross-table will physically write its headers, row labels, column labels, data placeholders, and named ranges.
 '@param lData ILinelistSpecs. The linelist specifications object that provides the translation object
-'for locale-aware labels and is passed to ITableSpecs.RowCategories / ColumnCategories for
+'for locale-aware labels and is passed to TableSpecs.RowCategories / ColumnCategories for
 'category resolution at build time.
 '@return ICrossTable. A fully initialized ICrossTable ready for Build or individual step calls.
 '@throws InvalidArgument When specs is Nothing.
 '@throws InvalidArgument When outputWksh is Nothing.
 '@throws InvalidArgument When lData is Nothing.
 '@export
-Public Function Create(ByVal specs As ITableSpecs, _
+Public Function Create(ByVal specs As TableSpecs, _
                        ByVal outputWksh As Worksheet, _
                        ByRef lData As ILinelistSpecs) As ICrossTable
 
@@ -125,19 +125,19 @@ End Property
 '@label:specifications
 '@prop-title Table specifications used to build this cross-table.
 '@details
-'Returns the ITableSpecs instance that defines the configuration for
+'Returns the TableSpecs instance that defines the configuration for
 'this cross-table. Provides access to table scope, variable names,
 'category lists, and validation flags.
-'@return ITableSpecs. The backing table specification.
+'@return TableSpecs. The backing table specification.
 '@export
-Public Property Get Specifications() As ITableSpecs
+Public Property Get Specifications() As TableSpecs
     Set Specifications = this.specs
 End Property
 
 '@label:specifications-set
 '@prop-title Assign the table specifications.
-'@param specs ITableSpecs. The table specification to assign.
-Public Property Set Specifications(ByVal specs As ITableSpecs)
+'@param specs TableSpecs. The table specification to assign.
+Public Property Set Specifications(ByVal specs As TableSpecs)
     Set this.specs = specs
 End Property
 
@@ -251,7 +251,7 @@ End Function
 'lookups.
 Private Property Get StartRow() As Long
     Dim sh As Worksheet
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Dim strtRow As Long
     Dim tabId As String
 
@@ -308,7 +308,7 @@ End Property
 'side-by-side in columns. The previous table's start row and end column
 'are needed to position the current table correctly. The method delegates
 'to the Create factory, passing the Previous spec from the current
-'table's ITableSpecs, along with the same output worksheet and
+'table's TableSpecs, along with the same output worksheet and
 'translation object.
 '@return ICrossTable. The preceding cross-table, or Nothing when this is the first table.
 '@remarks Each call creates a new CrossTable instance; the result is not cached. For
@@ -338,7 +338,7 @@ End Property
 'named range's column to recover the true start column.
 Private Property Get StartColumn() As Long
     Dim sh As Worksheet
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Dim strtCol As Long
     Dim tabId As String
     Dim tablType As Byte
@@ -474,7 +474,7 @@ Public Property Get RowsCategoriesRange(Optional ByVal includeHeaders As Boolean
     Dim startRw As Long
     Dim endRw As Long
     Dim sh As Worksheet
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Dim tablType As Byte
 
     Set specs = Specifications
@@ -585,7 +585,7 @@ Public Property Get ColumnRange(ByVal colVal As String, _
     Dim startRw As Long
     Dim endRw As Long
     Dim sh As Worksheet
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Dim tablType As Byte
 
     Set rng = HeaderRange()
@@ -636,7 +636,7 @@ End Property
 '@export
 Private Sub AddRows()
     Dim startRw As Long
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Dim sh As Worksheet
     Dim vars As ILLVariables
     Dim rowVar As String
@@ -758,12 +758,12 @@ End Function
 'summary column is created. This sub also sets NumberOfColumns and
 'EndColumn.
 '@param startRw Long. The starting row for column headers.
-'@param specs ITableSpecs. The ITableSpecs providing column categories and flags.
+'@param specs TableSpecs. The TableSpecs providing column categories and flags.
 '@param trans ITranslationObject. The ITranslationObject providing translated strings.
 '@param sh Worksheet. The output Worksheet where the column headers are written.
 '@remarks NumberOfColumns counts only the "pure" data columns, not including Missing
 'or Total. However, EndColumn includes all columns written.
-Private Sub BivariateColumns(ByVal startRw As Long, ByVal specs As ITableSpecs, _
+Private Sub BivariateColumns(ByVal startRw As Long, ByVal specs As TableSpecs, _
                               ByVal trans As ITranslationObject, ByVal sh As Worksheet)
     Dim colLab As String
     Dim colData As BetterArray
@@ -849,7 +849,7 @@ End Sub
 '@export
 Private Sub AddColumns()
     Dim startRw As Long
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Dim sh As Worksheet
     Dim vars As ILLVariables
     Dim trans As ITranslationObject
@@ -957,7 +957,7 @@ End Sub
 Private Sub AddHeader()
     Dim startRw As Long
     Dim sh As Worksheet
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Dim counter As Long
     Dim trans As ITranslationObject
     Dim tabId As String
@@ -1198,7 +1198,7 @@ End Sub
 'column structure beyond the two fixed columns).
 '@export
 Private Sub NameRanges()
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Dim sh As Worksheet
     Dim nbCols As Long
     Dim catRng As Range
@@ -1407,7 +1407,7 @@ End Sub
 '@sub-title Determine whether this table is a de-facto new section.
 '@details
 'Determines whether this table should be treated as a de-facto new
-'section even though its ITableSpecs.IsNewSection returns False. This
+'section even though its TableSpecs.IsNewSection returns False. This
 'situation arises from Bug #3: when the previous table in the same section
 'was invalid and was therefore skipped during the build process, the
 'section infrastructure was never created. The logic checks whether the
@@ -1425,7 +1425,7 @@ Private Function IsDeFactoNewSection() As Boolean
         Exit Function
     End If
 
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Dim result As Boolean
     Set specs = Specifications
 
@@ -1477,7 +1477,7 @@ End Function
 '@export
 Private Sub Format(ByVal desFormat As ILLFormat)
     Dim sh As Worksheet
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Dim rng As Range
     Dim rngTable As BetterArray
     Dim counter As Long
@@ -1886,7 +1886,7 @@ Private Property Get ICrossTable_Previous() As ICrossTable
     Set ICrossTable_Previous = Previous
 End Property
 
-Private Property Get ICrossTable_Specifications() As ITableSpecs
+Private Property Get ICrossTable_Specifications() As TableSpecs
     Set ICrossTable_Specifications = Specifications
 End Property
 

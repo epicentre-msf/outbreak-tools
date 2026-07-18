@@ -17,7 +17,7 @@ Option Explicit
 'fixture builds a minimal CrossTable via stubs for the dictionary, linelist
 'data, and translation dependencies.
 '@depends CrossTableFormula, ICrossTableFormula, CrossTable, ICrossTable,
-'  FormulaData, IFormulaData, TableSpecs, ITableSpecs, TableSpecsLinelistStub,
+'  FormulaData, IFormulaData, TableSpecs, TableSpecsLinelistStub,
 '  AnalysisDictionaryStub, LinelistSpecsTranslationStub, ILLdictionary,
 '  CustomTest, TestHelpers
 
@@ -89,7 +89,7 @@ Private Function FixtureDataRange(ByVal dataRowIndex As Long) As Range
 End Function
 
 '@sub-title Build a TableSpecs instance from the fixture header and a data row.
-Private Function CreateSpecs(ByVal dataRowIndex As Long) As ITableSpecs
+Private Function CreateSpecs(ByVal dataRowIndex As Long) As TableSpecs
     Set CreateSpecs = TableSpecs.Create( _
         FixtureHeaderRange(), _
         FixtureDataRange(dataRowIndex), _
@@ -107,7 +107,7 @@ End Function
 'specs and linelist data stub, calls Build to write the table layout,
 'and returns the fully built ICrossTable. Used by tests that need a
 'valid cross-table before exercising CrossTableFormula.
-Private Function BuildCrossTable(ByVal specs As ITableSpecs) As ICrossTable
+Private Function BuildCrossTable(ByVal specs As TableSpecs) As ICrossTable
     Dim sh As Worksheet
     Set sh = OutputSheet()
     Dim ct As ICrossTable
@@ -227,7 +227,7 @@ Public Sub TestCreateRejectsNothingFormulaData()
 
     BuildFixture "univariate analysis", Array( _
         Array("S1", "row_var", "", "yes", "no", "no", "no", "Count", "N", ""))
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Set specs = CreateSpecs(1)
 
     Dim ct As ICrossTable
@@ -258,7 +258,7 @@ Public Sub TestCreateReturnsValidObject()
 
     BuildFixture "univariate analysis", Array( _
         Array("S1", "row_var", "", "yes", "no", "no", "no", "Count", "N", ""))
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Set specs = CreateSpecs(1)
 
     Dim ct As ICrossTable
@@ -298,7 +298,7 @@ Public Sub TestValidReturnsFalseForInvalidFormula()
     ' "InvalidFunc" is not a recognized summary function, so Valid should be False
     BuildFixture "univariate analysis", Array( _
         Array("S1", "row_var", "", "yes", "no", "no", "no", "Count", "InvalidFunc", ""))
-    Dim specs As ITableSpecs
+    Dim specs As TableSpecs
     Set specs = CreateSpecs(1)
 
     Dim ct As ICrossTable
