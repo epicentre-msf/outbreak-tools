@@ -35,7 +35,7 @@ Private Type TSetupErrorsState
     passwordService As IPasswords     'Password handler protecting/unprotecting sheets
     dictionary As ILLdictionary       'Dictionary accessor for setup data
     choices As LLChoices             'Choices accessor for list validation
-    formulaStore As IFormulaData      'Formula data repository used for validation
+    formulaStore As FormulaData      'Formula data repository used for validation
     checkTables As BetterArray        'Collection of generated checkings
     appScope As ApplicationState     'Application state guard ensuring UI stays responsive
     transManager As SetupTranslationsTable 'translation table accessor for setup data
@@ -113,7 +113,7 @@ Private Const EXP_UNFOUND_DICTCOLUMN As String      = "Exports, line %1--The Exp
 '@param passwordService Optional IPasswords. Sheet protection handler.
 '@param dictionary Optional ILLdictionary. Dictionary data accessor.
 '@param choices Optional LLChoices. Choices data accessor.
-'@param formulaStore Optional IFormulaData. Formula validation handler.
+'@param formulaStore Optional FormulaData. Formula validation handler.
 '@param transManager Optional SetupTranslationsTable. Translations table accessor.
 '@param stateScope Optional ApplicationState. Application state guard.
 '@return SetupErrors. A fully initialised instance ready to run checks.
@@ -123,7 +123,7 @@ Public Function Create(ByVal hostBook As Workbook, _
                        Optional ByVal passwordService As IPasswords, _
                        Optional ByVal dictionary As ILLdictionary, _
                        Optional ByVal choices As LLChoices, _
-                       Optional ByVal formulaStore As IFormulaData, _
+                       Optional ByVal formulaStore As FormulaData, _
                        Optional ByVal transManager As SetupTranslationsTable, _
                        Optional ByVal stateScope As ApplicationState) As SetupErrors
     Dim instance As SetupErrors
@@ -147,7 +147,7 @@ End Function
 '@param passwordService Optional IPasswords. Sheet protection handler.
 '@param dictionary Optional ILLdictionary. Dictionary data accessor.
 '@param choices Optional LLChoices. Choices data accessor.
-'@param formulaStore Optional IFormulaData. Formula validation handler.
+'@param formulaStore Optional FormulaData. Formula validation handler.
 '@param transManager Optional SetupTranslationsTable. Translations table accessor.
 '@param stateScope Optional ApplicationState. Application state guard.
 '@throws ProjectError.ObjectNotInitialized When hostBook is Nothing.
@@ -156,7 +156,7 @@ Public Sub Initialise(ByVal hostBook As Workbook, _
                       Optional ByVal passwordService As IPasswords, _
                       Optional ByVal dictionary As ILLdictionary, _
                       Optional ByVal choices As LLChoices, _
-                      Optional ByVal formulaStore As IFormulaData, _
+                      Optional ByVal formulaStore As FormulaData, _
                       Optional ByVal transManager As SetupTranslationsTable, _
                       Optional ByVal stateScope As ApplicationState)
 

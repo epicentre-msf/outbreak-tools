@@ -25,7 +25,7 @@ Option Explicit
 'to the resolved cell range. The class caches dictionary, variables, and
 'sheets accessors for performance across repeated calls.
 '@depends ILinelistSpecs, ILLdictionary, ILLVariables, LLSheets, ILLFormat,
-'ITranslationObject, IFormulaData, Formulas, IDropdownLists, ILLGeo,
+'ITranslationObject, FormulaData, Formulas, IDropdownLists, ILLGeo,
 'Formulas, LLVariables, LLSheets, BetterArray
 '@version 1.0 (2026-02-10)
 
@@ -235,8 +235,8 @@ End Property
 '@details
 'Delegates directly to specs.FormulaDataObject on every call. Provides
 'the lookup tables and metadata needed by the Formulas parser.
-'@return IFormulaData. The formula data provider.
-Private Property Get FormulaDataObj() As IFormulaData
+'@return FormulaData. The formula data provider.
+Private Property Get FormulaDataObj() As FormulaData
     Set FormulaDataObj = this.specs.FormulaDataObject()
 End Property
 
@@ -705,7 +705,7 @@ Private Sub AddFormula()
     Dim varForm As String
     Dim excelForm As String
     Dim cellRng As Range
-    Dim varFormData As IFormulaData
+    Dim varFormData As FormulaData
     Dim dict As ILLdictionary
     Dim varFormObject As Formulas
     Dim design As ILLFormat
@@ -1328,7 +1328,7 @@ Private Function ExcelFormula(ByVal formVal As String, _
                               ByVal validationTypes As Long, _
                               Optional ByVal useOS As Boolean = False) As Variant
     Dim dict As ILLdictionary
-    Dim varFormData As IFormulaData
+    Dim varFormData As FormulaData
     Dim varFormObject As Formulas
     Dim excelForm As String
     Dim convForm As Variant

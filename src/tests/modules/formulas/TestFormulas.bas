@@ -20,7 +20,7 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 'and edge cases such as empty input, escaped quotes, and large expressions.
 'Each test builds a fresh dictionary and FormulaData fixture via worksheet
 'helpers so tests run in isolation.
-'@depends Formulas, FormulaData, IFormulaData, FormulaCondition,
+'@depends Formulas, FormulaData, FormulaCondition,
 'LLdictionary, ILLdictionary, LLVariables, ILLVariables,
 'LLSheets, BetterArray, CustomTest,
 'DictionaryTestFixture, FormulaTestFixture
@@ -58,7 +58,7 @@ Private Assert As CustomTest
 Private Fakes As Object
 Private FixtureSheet As Worksheet
 Private DictionarySheet As Worksheet
-Private FormulaDataSource As IFormulaData
+Private FormulaDataSource As FormulaData
 Private LinelistDictionary As ILLdictionary
 
 '@section Helpers

@@ -17,7 +17,7 @@ Option Private Module
 'cache durability after worksheet mutation, and grouped-function metadata
 '(aggregator mapping, native-function flags). Each test builds a minimal
 'fixture sheet with two ListObjects seeded in PrepareFixtureSheet.
-'@depends FormulaData, IFormulaData, CustomTest, TestHelpers
+'@depends FormulaData, CustomTest, TestHelpers
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 
@@ -74,7 +74,7 @@ Private Sub PrepareFixtureSheet()
 End Sub
 
 '@sub-title Create a FormulaData instance from the current fixture sheet
-Private Function BuildFormulaData() As IFormulaData
+Private Function BuildFormulaData() As FormulaData
     Set BuildFormulaData = FormulaData.Create(FixtureSheet)
 End Function
 
@@ -142,7 +142,7 @@ End Sub
 '@TestMethod("FormulaData")
 Public Sub TestCreateCachesLookups()
     CustomTestSetTitles Assert, "FormulaData", "TestCreateCachesLookups"
-    Dim formData As IFormulaData
+    Dim formData As FormulaData
 
     On Error GoTo Fail
 
@@ -170,7 +170,7 @@ End Sub
 Public Sub TestCreateRequiresWorksheet()
     CustomTestSetTitles Assert, "FormulaData", "TestCreateRequiresWorksheet"
     Dim raisedError As Boolean
-    Dim formData As IFormulaData
+    Dim formData As FormulaData
 
     On Error Resume Next
         '@Ignore AssignmentNotUsed
@@ -192,7 +192,7 @@ End Sub
 Public Sub TestMissingTableRaises()
     CustomTestSetTitles Assert, "FormulaData", "TestMissingTableRaises"
     Dim raisedError As Boolean
-    Dim formData As IFormulaData
+    Dim formData As FormulaData
 
     On Error GoTo Fail
 
@@ -222,7 +222,7 @@ End Sub
 '@TestMethod("FormulaData")
 Public Sub TestCachesSurviveWorksheetChanges()
     CustomTestSetTitles Assert, "FormulaData", "TestCachesSurviveWorksheetChanges"
-    Dim formData As IFormulaData
+    Dim formData As FormulaData
     Dim formulaTable As ListObject
 
     On Error GoTo Fail
@@ -254,7 +254,7 @@ End Sub
 '@TestMethod("FormulaData")
 Public Sub TestGroupedFunctionMetadata()
     CustomTestSetTitles Assert, "FormulaData", "TestGroupedFunctionMetadata"
-    Dim formData As IFormulaData
+    Dim formData As FormulaData
 
     On Error GoTo Fail
 

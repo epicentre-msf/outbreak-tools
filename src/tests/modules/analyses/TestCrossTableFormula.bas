@@ -17,7 +17,7 @@ Option Explicit
 'fixture builds a minimal CrossTable via stubs for the dictionary, linelist
 'data, and translation dependencies.
 '@depends CrossTableFormula, CrossTable,
-'  FormulaData, IFormulaData, TableSpecs, TableSpecsLinelistStub,
+'  FormulaData, TableSpecs, TableSpecsLinelistStub,
 '  AnalysisDictionaryStub, LinelistSpecsTranslationStub, ILLdictionary,
 '  CustomTest, TestHelpers
 
@@ -198,7 +198,7 @@ Public Sub TestCreateRejectsNothingTable()
     ' For factory validation we just need to pass Nothing for tabl.
     Dim sh As Worksheet
     Set sh = OutputSheet()
-    Dim fData As IFormulaData
+    Dim fData As FormulaData
     Set fData = FormulaData.Create(sh)
 
     On Error Resume Next
@@ -266,7 +266,7 @@ Public Sub TestCreateReturnsValidObject()
 
     Dim sh As Worksheet
     Set sh = OutputSheet()
-    Dim fData As IFormulaData
+    Dim fData As FormulaData
     Set fData = FormulaData.Create(sh)
 
     Dim ctf As CrossTableFormula
@@ -306,7 +306,7 @@ Public Sub TestValidReturnsFalseForInvalidFormula()
 
     Dim sh As Worksheet
     Set sh = OutputSheet()
-    Dim fData As IFormulaData
+    Dim fData As FormulaData
     Set fData = FormulaData.Create(sh)
 
     Dim ctf As CrossTableFormula

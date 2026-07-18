@@ -15,7 +15,6 @@ Attribute VB_Description = "Provides cached lookups of allowed excel functions f
 '@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit
-Implements IFormulaData
 
 '@class FormulaData
 '@description
@@ -26,7 +25,7 @@ Implements IFormulaData
 'caches. It also maintains a registry of grouped formula mappings that
 'translate custom tokens (e.g. SUMIFS, MEANIFS) into their canonical
 'Excel aggregation functions. Consumers interact with this class
-'exclusively through the IFormulaData interface.
+'exclusively through the FormulaData interface.
 '@depends BetterArray
 '@version 1.0 (2026-02-09)
 
@@ -59,16 +58,16 @@ Private this As TFormulaData
 'Validates that the supplied worksheet contains the required ListObjects
 '(T_XlsFonctions and T_ascii) with expected columns, then reads their
 'data into memory caches. The returned instance exposes its surface
-'through the IFormulaData interface so consumers never depend on the
+'through the FormulaData interface so consumers never depend on the
 'concrete class.
 '@param formWksh Worksheet. The worksheet hosting the lookup tables.
-'@return IFormulaData. A fully initialised instance ready for use by the Formulas parser.
+'@return FormulaData. A fully initialised instance ready for use by the Formulas parser.
 '@throws ProjectError.ObjectNotInitialized When formWksh is Nothing.
 '@throws ProjectError.ElementNotFound When a required table or column is missing.
 '@throws ProjectError.ErrorUnexpectedState When a required column contains no data.
 '@depends BetterArray
 '@export
-Public Function Create(ByVal formWksh As Worksheet) As IFormulaData
+Public Function Create(ByVal formWksh As Worksheet) As FormulaData
     ValidateWorksheet formWksh
 
     With New FormulaData
@@ -86,9 +85,9 @@ End Function
 '@details
 'Convenience accessor that returns the current instance cast to its
 'interface. Used internally by the factory method to hand back an
-'IFormulaData reference from the predeclared Create pattern.
-'@return IFormulaData. The current instance cast to the interface.
-Public Property Get Self() As IFormulaData
+'FormulaData reference from the predeclared Create pattern.
+'@return FormulaData. The current instance.
+Public Property Get Self() As FormulaData
     Set Self = Me
 End Property
 
@@ -150,7 +149,7 @@ End Property
 '@param specialChar String. Single-character token to inspect.
 '@return Boolean. True when the character is listed in the lookup table.
 '@export
-Private Function SpecialCharacterIncludes(ByVal specialChar As String) As Boolean
+Public Function SpecialCharacterIncludes(ByVal specialChar As String) As Boolean
     Dim characterLookup As BetterArray
 
     If LenB(specialChar) = 0 Then Exit Function
@@ -168,7 +167,7 @@ End Function
 '@param ExcelFormula String. Function name to inspect.
 '@return Boolean. True when the function is listed in the lookup table.
 '@export
-Private Function ExcelFormulasIncludes(ByVal ExcelFormula As String) As Boolean
+Public Function ExcelFormulasIncludes(ByVal ExcelFormula As String) As Boolean
     Dim functionLookup As BetterArray
     Dim normalized As String
 
@@ -490,7 +489,7 @@ End Sub
 '@param functionName String. Grouped token to look up.
 '@return Boolean. True when the token is known.
 '@export
-Private Function GroupFunctionIncludes(ByVal functionName As String) As Boolean
+Public Function IsGroupFunction(ByVal functionName As String) As Boolean
     Dim idx As Long
     Dim entry As Variant
     Dim normalized As String
@@ -506,7 +505,7 @@ Private Function GroupFunctionIncludes(ByVal functionName As String) As Boolean
         entry = this.groupFunctions.Item(idx)
         If IsArray(entry) Then
             If StrComp(CStr(entry(0)), normalized, vbBinaryCompare) = 0 Then
-                GroupFunctionIncludes = True
+                IsGroupFunction = True
                 Exit Function
             End If
         End If
@@ -522,7 +521,7 @@ End Function
 '@param functionName String. Grouped token to translate.
 '@return String. Aggregator name or vbNullString when unknown.
 '@export
-Private Function GroupAggregator(ByVal functionName As String) As String
+Public Function GroupAggregator(ByVal functionName As String) As String
     Dim idx As Long
     Dim entry As Variant
     Dim normalized As String
@@ -554,7 +553,7 @@ End Function
 '@param functionName String. Grouped token to inspect.
 '@return Boolean. True when the output uses the corresponding *IFS function directly.
 '@export
-Private Function GroupUsesNative(ByVal functionName As String) As Boolean
+Public Function GroupUsesNativeFunction(ByVal functionName As String) As Boolean
     Dim idx As Long
     Dim entry As Variant
     Dim normalized As String
@@ -570,7 +569,7 @@ Private Function GroupUsesNative(ByVal functionName As String) As Boolean
         entry = this.groupFunctions.Item(idx)
         If IsArray(entry) Then
             If StrComp(CStr(entry(0)), normalized, vbBinaryCompare) = 0 Then
-                GroupUsesNative = CBool(entry(2))
+                GroupUsesNativeFunction = CBool(entry(2))
                 Exit Function
             End If
         End If
@@ -592,28 +591,3 @@ End Function
 Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
     Err.Raise errNumb, "FormulaData", "Error: " & errorMessage
 End Sub
-
-'@section Interface
-'===============================================================================
-'@description Delegated members satisfying the IFormulaData contract.
-'See the corresponding Private members above for full documentation.
-
-Private Function IFormulaData_SpecialCharacterIncludes(ByVal specialChar As String) As Boolean
-    IFormulaData_SpecialCharacterIncludes = SpecialCharacterIncludes(specialChar)
-End Function
-
-Private Function IFormulaData_ExcelFormulasIncludes(ByVal ExcelFormula As String) As Boolean
-    IFormulaData_ExcelFormulasIncludes = ExcelFormulasIncludes(ExcelFormula)
-End Function
-
-Private Function IFormulaData_IsGroupFunction(ByVal functionName As String) As Boolean
-    IFormulaData_IsGroupFunction = GroupFunctionIncludes(functionName)
-End Function
-
-Private Function IFormulaData_GroupAggregator(ByVal functionName As String) As String
-    IFormulaData_GroupAggregator = GroupAggregator(functionName)
-End Function
-
-Private Function IFormulaData_GroupUsesNativeFunction(ByVal functionName As String) As Boolean
-    IFormulaData_GroupUsesNativeFunction = GroupUsesNative(functionName)
-End Function

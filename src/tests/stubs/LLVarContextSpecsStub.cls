@@ -19,7 +19,7 @@ Implements ILinelistSpecs
 Private categoriesMap As Collection
 Private designFormat As ILLFormat
 Private dictionary As ILLdictionary
-Private formulaData As IFormulaData
+Private formulaData As FormulaData
 Private translationObject As ITranslationObject
 Private geoObject As ILLGeo
 
@@ -62,7 +62,7 @@ Public Sub SetDictionary(ByVal dict As ILLdictionary)
     Set dictionary = dict
 End Sub
 
-Public Sub SetFormulaData(ByVal data As IFormulaData)
+Public Sub SetFormulaData(ByVal data As FormulaData)
     Set formulaData = data
 End Sub
 
@@ -113,7 +113,7 @@ Private Property Get ILinelistSpecs_GeoObject() As ILLGeo
     Set ILinelistSpecs_GeoObject = geoObject
 End Property
 
-Private Property Get ILinelistSpecs_FormulaDataObject() As IFormulaData
+Private Property Get ILinelistSpecs_FormulaDataObject() As FormulaData
     Set ILinelistSpecs_FormulaDataObject = formulaData
 End Property
 

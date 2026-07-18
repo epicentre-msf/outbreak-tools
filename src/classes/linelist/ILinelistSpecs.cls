@@ -137,10 +137,10 @@ End Property
 '@jump:formula-data-object
 '@prop-title Formula data provider
 '@details
-'Returns the IFormulaData instance providing formula parsing support from the
+'Returns the FormulaData instance providing formula parsing support from the
 '__formula worksheet. Lazy-loaded on first access.
-'@return IFormulaData. The formula data collaborator.
-Public Property Get FormulaDataObject() As IFormulaData
+'@return FormulaData. The formula data collaborator.
+Public Property Get FormulaDataObject() As FormulaData
 End Property
 
 '@jump:has-template

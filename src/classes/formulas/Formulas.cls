@@ -46,7 +46,7 @@ End Type
 
 Private Type TFormulas
     dict As ILLdictionary                       'Dictionary describing available variables and metadata
-    data As IFormulaData                        'Configuration of accepted Excel formulas and tokens
+    data As FormulaData                        'Configuration of accepted Excel formulas and tokens
     setupForm As String                         'Original pseudo-formula provided by setup
     tokens As BetterArray                       'Tokenised representation of the parsed formula
     variables As BetterArray                    'Ordered list of variables detected in the formula
@@ -95,14 +95,14 @@ Private hasChecks As Boolean
 'expression. No eager parsing occurs; the formula is parsed lazily on
 'first access to Valid, Varlists, or any parsed formula property.
 '@param dict ILLdictionary. Variable metadata provider.
-'@param formData IFormulaData. Catalogue of approved Excel functions and separators.
+'@param formData FormulaData. Catalogue of approved Excel functions and separators.
 '@param setupForm String. Pseudo-formula to parse and validate.
 '@return Formulas. Initialised instance.
 '@throws ProjectError.ObjectNotInitialized When dict is Nothing.
 '@throws ProjectError.ObjectNotInitialized When formData is Nothing.
 '@export
 Public Function Create(ByVal dict As ILLdictionary, _
-                       ByVal formData As IFormulaData, _
+                       ByVal formData As FormulaData, _
                        ByVal setupForm As String) As Formulas
 
     If dict Is Nothing Then ThrowError ProjectError.ObjectNotInitialized, "Dictionary is not found"
@@ -154,10 +154,10 @@ End Property
 '@label:data
 '@sub-title Retrieve the formula configuration catalogue
 '@details
-'Returns the IFormulaData describing available Excel tokens,
+'Returns the FormulaData describing available Excel tokens,
 'operators, and special characters used during tokenisation.
-'@return IFormulaData. Configuration catalogue.
-Public Property Get Data() As IFormulaData
+'@return FormulaData. Configuration catalogue.
+Public Property Get Data() As FormulaData
     Set Data = this.data
 End Property
 
@@ -166,9 +166,9 @@ End Property
 '@details
 'Replaces the current formula data and invalidates all cached parsing
 'results so subsequent accesses trigger a fresh evaluation.
-'@param formData IFormulaData. Catalogue of allowed operators and functions.
+'@param formData FormulaData. Catalogue of allowed operators and functions.
 '@throws ProjectError.ObjectNotInitialized When formData is Nothing.
-Public Property Set Data(ByVal formData As IFormulaData)
+Public Property Set Data(ByVal formData As FormulaData)
     If formData Is Nothing Then ThrowError ProjectError.ObjectNotInitialized, "Formula Data not found"
     Set this.data = formData
     InvalidateCaches
@@ -414,10 +414,10 @@ End Property
 'invalidates all caches and registers the default custom formulas
 'recognised during analysis parsing.
 '@param dict ILLdictionary. Variable metadata provider.
-'@param formData IFormulaData. Catalogue of allowed tokens and operators.
+'@param formData FormulaData. Catalogue of allowed tokens and operators.
 '@param setupForm String. Pseudo-formula to parse.
 Public Sub Initialise(ByVal dict As ILLdictionary, _
-                       ByVal formData As IFormulaData, _
+                       ByVal formData As FormulaData, _
                        ByVal setupForm As String)
     Set this.dict = dict
     Set this.data = formData
@@ -559,7 +559,7 @@ End Function
 Private Sub EvaluateFormula(ByVal formulaType As String)
     Dim converted As String
     Dim vars As ILLVariables
-    Dim dataSource As IFormulaData
+    Dim dataSource As FormulaData
     Dim tokens As BetterArray
     Dim variableTokens As BetterArray
     Dim formulaHasSetupVariables As Boolean
@@ -655,12 +655,12 @@ End Sub
 '@param tokens BetterArray. Tokenised formula.
 '@param variableTokens BetterArray. Variable names in encounter order.
 '@param vars ILLVariables. Helper exposing dictionary metadata.
-'@param dataSource IFormulaData. Configuration describing grouped functions.
+'@param dataSource FormulaData. Configuration describing grouped functions.
 '@return Boolean. True when grouped context is captured or not required.
 Private Function GroupContexExtractionSucceed(ByVal tokens As BetterArray, _
                                        ByVal variableTokens As BetterArray, _
                                        ByVal vars As ILLVariables, _
-                                       ByVal dataSource As IFormulaData) As Boolean
+                                       ByVal dataSource As FormulaData) As Boolean
     Dim functionName As String
     Dim aggregatorName As String
     Dim usesNative As Boolean
@@ -882,7 +882,7 @@ End Function
 '@sub-title Break the converted formula into tokens while validating parentheses and literals
 '@details
 'Walks the formula character by character, splitting on special
-'characters defined by the IFormulaData configuration. Tracks
+'characters defined by the FormulaData configuration. Tracks
 'parenthesis depth and quotation state. Each extracted chunk is
 'validated through AppendToken.
 '@param formula String. Cleaned setup expression.
@@ -904,7 +904,7 @@ Private Function TokeniseFormula(ByVal formula As String, _
     Dim chunk As String
     Dim parenthesisLevel As Long
     Dim inQuotes As Boolean
-    Dim dataSource As IFormulaData
+    Dim dataSource As FormulaData
     Dim vars As ILLVariables
 
     previousBreak = 1
@@ -959,7 +959,7 @@ End Function
 '@param tokens BetterArray. Recipient for all tokens.
 '@param variableTokens BetterArray. Recipient for variable-only tokens.
 '@param vars ILLVariables. Metadata provider.
-'@param dataSource IFormulaData. Formula metadata provider.
+'@param dataSource FormulaData. Formula metadata provider.
 '@param HasSetupVariables Boolean. Flag capturing literal presence.
 '@param failureReason String. Explanation when parsing fails.
 '@return Boolean. True when the chunk is accepted.
@@ -968,7 +968,7 @@ Private Function AppendToken(ByVal chunk As String, _
                              ByRef tokens As BetterArray, _
                              ByRef variableTokens As BetterArray, _
                              ByRef vars As ILLVariables, _
-                             ByRef dataSource As IFormulaData, _
+                             ByRef dataSource As FormulaData, _
                              ByRef HasSetupVariables As Boolean, _
                              ByRef failureReason As String) As Boolean
     Dim upperChunk As String

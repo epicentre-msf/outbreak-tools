@@ -30,7 +30,7 @@ Implements ILinelistSpecs
 '@depends ILLdictionary, LLChoices, LLTranslation, IDesignerTranslation
 '@depends ILLGeo, LLExport, IPasswords, ILLFormat
 '@depends LinelistBuildService, TemporaryRepos
-'@depends IFormulaData, ILLVariables, Formulas
+'@depends FormulaData, ILLVariables, Formulas
 '@depends ITranslationObject, ApplicationState
 '@depends BetterArray, LLdictionary, LLChoices, LLTranslation
 '@depends DesignerTranslation, LLGeo, LLExport, Analysis, Passwords
@@ -54,7 +54,7 @@ Private Type TLinelistSpecs
     ana As Analysis
     passwords As IPasswords
     format As ILLFormat
-    formulaData As IFormulaData
+    formulaData As FormulaData
     variables As ILLVariables
     'Translation scope cache: direct fields for each TranslationScope value (0-4)
     transMessages As ITranslationObject
@@ -1037,11 +1037,11 @@ End Property
 '@label:formula-data-object
 '@prop-title Formula data provider
 '@details
-'Returns the IFormulaData instance providing formula parsing support from
+'Returns the FormulaData instance providing formula parsing support from
 'the __formula worksheet. Lazy-loaded on first access.
-'@return IFormulaData. The formula data collaborator.
+'@return FormulaData. The formula data collaborator.
 '@export
-Public Property Get FormulaDataObject() As IFormulaData
+Public Property Get FormulaDataObject() As FormulaData
     EnsureFormulaData
     Set FormulaDataObject = this.formulaData
 End Property
@@ -1526,7 +1526,7 @@ Private Property Get ILinelistSpecs_GeoObject() As ILLGeo
     Set ILinelistSpecs_GeoObject = Me.GeoObject
 End Property
 
-Private Property Get ILinelistSpecs_FormulaDataObject() As IFormulaData
+Private Property Get ILinelistSpecs_FormulaDataObject() As FormulaData
     Set ILinelistSpecs_FormulaDataObject = Me.FormulaDataObject
 End Property
 

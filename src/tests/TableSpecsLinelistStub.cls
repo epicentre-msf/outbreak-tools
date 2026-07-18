@@ -72,7 +72,7 @@ Private Property Get ILinelistSpecs_GeoObject() As ILLGeo
     Set ILinelistSpecs_GeoObject = Nothing
 End Property
 
-Private Property Get ILinelistSpecs_FormulaDataObject() As IFormulaData
+Private Property Get ILinelistSpecs_FormulaDataObject() As FormulaData
     Set ILinelistSpecs_FormulaDataObject = Nothing
 End Property
 

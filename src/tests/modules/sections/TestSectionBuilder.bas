@@ -45,7 +45,8 @@ End Sub
 Private Sub TestInitialize()
     Dim transStub As LinelistTranslationCounterStub
     Dim fmtStub As LLFormatStub
-    Dim formulaStub As FormulaDataStub
+    Dim formData As FormulaData
+    Dim formulaSheet As Worksheet
 
     BusyApp
     Set FixtureWorkbook = TestHelpers.NewWorkbook
@@ -56,7 +57,8 @@ Private Sub TestInitialize()
     Set transStub = New LinelistTranslationCounterStub
     transStub.Initialise
     Set fmtStub = New LLFormatStub
-    Set formulaStub = New FormulaDataStub
+    Set formulaSheet = FormulaTestFixture.PrepareFormulaFixtureSheet("FormulaFixture", outwb:=FixtureWorkbook)
+    Set formData = FormulaData.Create(formulaSheet)
 
     Set TargetSheet = FixtureWorkbook.Worksheets.Add
 
@@ -69,7 +71,7 @@ Private Sub TestInitialize()
     Specs.SetDictionary Dict
     Specs.SetDesignFormat fmtStub
     Specs.SetTranslation transStub
-    Specs.SetFormulaData formulaStub
+    Specs.SetFormulaData formData
 
     Assert.BeginTest
 End Sub

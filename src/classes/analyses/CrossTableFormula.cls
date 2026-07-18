@@ -20,20 +20,20 @@ Option Explicit
 '@description
 'Translates cross-table specifications into concrete Excel formulas and writes
 'them into the cells of analysis worksheets. Each instance is bound to one
-'CrossTable and its companion IFormulaData, and the central AddFormulas method
+'CrossTable and its companion FormulaData, and the central AddFormulas method
 'dispatches to type-specific branches (GlobalSummary, Univariate, Bivariate,
 'TimeSeries, SpatioTemporal, Spatial) to produce COUNTIFS / SUMPRODUCT-style
 'array formulas, percentage columns, number formatting, time-period scaffolding,
 'spatial lookups, and data-validation dropdowns. Consumers obtain an instance
 'through the predeclared Create factory and interact via the CrossTableFormula
 'interface.
-'@depends CrossTable, IFormulaData, Formulas, FormulaCondition, TableSpecs, SpatialTables, BetterArray
+'@depends CrossTable, FormulaData, Formulas, FormulaCondition, TableSpecs, SpatialTables, BetterArray
 '@version 1.0 (2026-02-10)
 
 
 Private Type TCrossTableFormula
     tabl As CrossTable
-    fData As IFormulaData
+    fData As FormulaData
     forml As Formulas
     condVars As BetterArray
     condTests As BetterArray
@@ -54,13 +54,13 @@ Private Const CLASS_NAME As String = "CrossTableFormula"
 'constructed. The returned object exposes the CrossTableFormula interface so
 'callers program against the contract rather than the concrete class.
 '@param tabl CrossTable. The already-constructed cross-table layout providing named ranges, headers, and worksheet reference.
-'@param fData IFormulaData. The dictionary-based lookup object supplying variable names, ranges, and formula templates.
+'@param fData FormulaData. The dictionary-based lookup object supplying variable names, ranges, and formula templates.
 '@return CrossTableFormula. A fully initialised instance ready to write formulas.
 '@throws InvalidArgument When tabl is Nothing.
 '@throws InvalidArgument When fData is Nothing.
 '@export
 Public Function Create(ByVal tabl As CrossTable, _
-                       ByVal fData As IFormulaData) As CrossTableFormula
+                       ByVal fData As FormulaData) As CrossTableFormula
 
     If tabl Is Nothing Then ThrowError InvalidArgument, "Cross-table not defined"
     If fData Is Nothing Then ThrowError InvalidArgument, "Formula data not defined"
@@ -105,19 +105,19 @@ Public Property Set Table(ByVal tabl As CrossTable)
 End Property
 
 '@label:form-data-get
-'@prop-title IFormulaData backing store.
+'@prop-title FormulaData backing store.
 '@details
 'Returns the formula-data object that supplies dictionary-based lookups for
 'variable names, linelist ranges, and formula templates during generation.
-'@return IFormulaData. The bound formula-data instance.
-Public Property Get formData() As IFormulaData
+'@return FormulaData. The bound formula-data instance.
+Public Property Get formData() As FormulaData
     Set formData = this.fData
 End Property
 
 '@label:form-data-set
-'@prop-title Assign the IFormulaData backing store.
-'@param fData IFormulaData. The formula-data source to bind.
-Public Property Set formData(ByVal fData As IFormulaData)
+'@prop-title Assign the FormulaData backing store.
+'@param fData FormulaData. The formula-data source to bind.
+Public Property Set formData(ByVal fData As FormulaData)
     Set this.fData = fData
 End Property
 
@@ -205,7 +205,7 @@ End Property
 'so subsequent calls reuse the same object without re-parsing.
 '@return Formulas. The formula parsing engine providing ParsedLinelistFormula and ParsedAnalysisFormula methods.
 '@remarks The Formulas object is initialised with the table specification dictionary,
-'the IFormulaData reference, and the summary function string. This is intentionally
+'the FormulaData reference, and the summary function string. This is intentionally
 'lazy because not all code paths need the formula engine (e.g., if Valid is False).
 Private Property Get TableFormula() As Formulas
     If this.forml Is Nothing Then
