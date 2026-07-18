@@ -10,7 +10,7 @@ Option Explicit
 Private Assert As ICustomTest
 Private SourceWkb As Workbook
 Private TargetWkb As Workbook
-Private TempRepos As ITemporaryRepos
+Private TempRepos As TemporaryRepos
 
 Private Const TESTOUTPUTSHEET As String = "testsOutputs"
 Private Const TESTMODULE As String = "CodeTransfer"

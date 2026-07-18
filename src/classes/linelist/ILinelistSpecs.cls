@@ -256,10 +256,10 @@ End Property
 '@jump:output-temporary-repos
 '@prop-title The temporary repository created during Prepare
 '@details
-'Returns the ITemporaryRepos instance created by Prepare for working files.
+'Returns the TemporaryRepos instance created by Prepare for working files.
 'Returns Nothing before Prepare is called.
-'@return ITemporaryRepos. The temporary repository, or Nothing.
-Public Property Get OutputTemporaryRepos() As ITemporaryRepos
+'@return TemporaryRepos. The temporary repository, or Nothing.
+Public Property Get OutputTemporaryRepos() As TemporaryRepos
 End Property
 
 '@jump:error-manage

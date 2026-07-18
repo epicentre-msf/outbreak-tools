@@ -113,7 +113,7 @@ Private Property Get ILinelistSpecs_LLWorkbook() As Workbook
     Set ILinelistSpecs_LLWorkbook = Nothing
 End Property
 
-Private Property Get ILinelistSpecs_OutputTemporaryRepos() As ITemporaryRepos
+Private Property Get ILinelistSpecs_OutputTemporaryRepos() As TemporaryRepos
     Set ILinelistSpecs_OutputTemporaryRepos = Nothing
 End Property
 

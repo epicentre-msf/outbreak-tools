@@ -17,8 +17,6 @@ Attribute VB_Description = "Manages temporary files for Linelist preparation wit
 
 Option Explicit
 
-Implements ITemporaryRepos
-
 '@class TemporaryRepos
 '@description
 'Manages a temporary folder on disk for linelist preparation artefacts.
@@ -44,9 +42,9 @@ Private Const DEFAULT_FOLDER_NAME As String = "OBTApp_"
 '@label:create
 '@sub-title Build and initialise a temporary repository service
 '@param baseDirectory String. Optional custom root location.
-'@return ITemporaryRepos. Ready for use.
+'@return TemporaryRepos. Ready for use.
 '@export
-Public Function Create(Optional ByVal baseDirectory As String) As ITemporaryRepos
+Public Function Create(Optional ByVal baseDirectory As String) As TemporaryRepos
     Dim service As TemporaryRepos
     Set service = New TemporaryRepos
     service.Initialise baseDirectory
@@ -333,33 +331,4 @@ End Sub
 '@param message String. Descriptive error message.
 Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal message As String)
     Err.Raise errNumber, "TemporaryRepos", message
-End Sub
-
-
-'@section Interface
-'===============================================================================
-'ITemporaryRepos delegation wiring.
-
-Private Sub ITemporaryRepos_EnsureReady()
-    EnsureReady
-End Sub
-
-Private Sub ITemporaryRepos_Reset()
-    Reset
-End Sub
-
-Private Property Get ITemporaryRepos_RootPath() As String
-    ITemporaryRepos_RootPath = RootPath
-End Property
-
-Private Function ITemporaryRepos_CreateFilePath(ByVal fileName As String) As String
-    ITemporaryRepos_CreateFilePath = CreateFilePath(fileName)
-End Function
-
-Private Sub ITemporaryRepos_DeleteFile(ByVal path As String)
-    DeleteFile path
-End Sub
-
-Private Sub ITemporaryRepos_DeleteAll()
-    DeleteAll
 End Sub

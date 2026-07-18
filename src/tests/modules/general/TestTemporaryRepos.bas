@@ -1,14 +1,14 @@
 Attribute VB_Name = "TestTemporaryRepos"
 
 '@ModuleDescription
-'Test module for the TemporaryRepos class (ITemporaryRepos interface).
+'Test module for the TemporaryRepos class (TemporaryRepos interface).
 'Validates the temporary folder lifecycle: creation via EnsureReady, path
 'generation and filename sanitisation via CreateFilePath, and file cleanup
 'via DeleteAll. Each test starts with a freshly constructed repository
 'rooted under the host workbook directory and tears down all artefacts
 'on completion to guarantee full isolation between test runs.
 '
-'@depends TemporaryRepos, ITemporaryRepos, CustomTest, TestHelpers
+'@depends TemporaryRepos, CustomTest, TestHelpers
 
 Option Explicit
 
@@ -18,7 +18,7 @@ Private Const TESTOUTPUTSHEET As String = "testsOutputs"
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Private Assert As ICustomTest
-Private Service As ITemporaryRepos
+Private Service As TemporaryRepos
 Private BaseFolder As String
 
 

@@ -20,10 +20,10 @@ Option Explicit
 '@description
 'Transfers VBA code components (classes, modules, forms, workbook code) from a
 'source workbook to a target workbook using temporary file export/import cycles.
-'Each component is exported to a temp file via the ITemporaryRepos, imported
+'Each component is exported to a temp file via the TemporaryRepos, imported
 'into the target, and the temp file is cleaned up. Consumers create an instance
 'via Create and then call the transfer methods for each component type.
-'@depends ITemporaryRepos
+'@depends TemporaryRepos
 '@version 1.0 (2026-02-09)
 
 
@@ -33,7 +33,7 @@ Private Const CLASS_NAME As String = "CodeTransfer"
 Private Type TCodeTransfer
     sourceWkb As Workbook
     targetWkb As Workbook
-    tempRepos As ITemporaryRepos
+    tempRepos As TemporaryRepos
 End Type
 
 Private this As TCodeTransfer
@@ -51,13 +51,13 @@ Private this As TCodeTransfer
 'are validated as non-Nothing.
 '@param sourceWkb Workbook. The workbook containing the VBA components to export.
 '@param targetWkb Workbook. The workbook that will receive the imported components.
-'@param tempRepos ITemporaryRepos. The temporary file repository for export/import.
+'@param tempRepos TemporaryRepos. The temporary file repository for export/import.
 '@return CodeTransfer. A fully initialised instance ready for transfers.
 '@throws ProjectError.ObjectNotInitialized When any parameter is Nothing.
 '@export
 Public Function Create(ByVal sourceWkb As Workbook, _
                        ByVal targetWkb As Workbook, _
-                       ByVal tempRepos As ITemporaryRepos) As CodeTransfer
+                       ByVal tempRepos As TemporaryRepos) As CodeTransfer
 
     If sourceWkb Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, "Source workbook is required"
@@ -102,8 +102,8 @@ End Property
 
 '@label:bin-temp-repos
 '@prop-title Assign the temporary repository
-'@param value ITemporaryRepos. The temporary repository to store.
-Friend Property Set BinTempRepos(ByVal value As ITemporaryRepos)
+'@param value TemporaryRepos. The temporary repository to store.
+Friend Property Set BinTempRepos(ByVal value As TemporaryRepos)
     Set this.tempRepos = value
 End Property
 

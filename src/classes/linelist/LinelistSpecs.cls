@@ -29,7 +29,7 @@ Implements ILinelistSpecs
 'ILinelistSpecs interface reference.
 '@depends ILLdictionary, ILLChoices, ILLTranslation, IDesignerTranslation
 '@depends ILLGeo, ILLExport, IAnalysis, IPasswords, ILLFormat
-'@depends LinelistBuildService, ITemporaryRepos, TemporaryRepos
+'@depends LinelistBuildService, TemporaryRepos
 '@depends IFormulaData, ILLVariables, Formulas
 '@depends ITranslationObject, IApplicationState, ApplicationState
 '@depends BetterArray, LLdictionary, LLChoices, LLTranslation
@@ -66,7 +66,7 @@ Private Type TLinelistSpecs
     catKeys As BetterArray
     catValues As BetterArray
     outputWkb As Workbook
-    tempRepos As ITemporaryRepos
+    tempRepos As TemporaryRepos
     prepared As Boolean
 End Type
 
@@ -1425,11 +1425,11 @@ End Property
 '@label:temporary-repos
 '@prop-title The temporary repository created during Prepare
 '@details
-'Returns the ITemporaryRepos instance created by Prepare for working files.
+'Returns the TemporaryRepos instance created by Prepare for working files.
 'Returns Nothing before Prepare is called.
-'@return ITemporaryRepos. The temporary repository, or Nothing.
+'@return TemporaryRepos. The temporary repository, or Nothing.
 '@export
-Public Property Get OutputTemporaryRepos() As ITemporaryRepos
+Public Property Get OutputTemporaryRepos() As TemporaryRepos
     Set OutputTemporaryRepos = this.tempRepos
 End Property
 
@@ -1566,7 +1566,7 @@ Private Property Get ILinelistSpecs_LLWorkbook() As Workbook
     Set ILinelistSpecs_LLWorkbook = Me.LLWorkbook
 End Property
 
-Private Property Get ILinelistSpecs_OutputTemporaryRepos() As ITemporaryRepos
+Private Property Get ILinelistSpecs_OutputTemporaryRepos() As TemporaryRepos
     Set ILinelistSpecs_OutputTemporaryRepos = Me.OutputTemporaryRepos
 End Property
 

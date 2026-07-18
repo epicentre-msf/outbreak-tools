@@ -30,7 +30,7 @@ Implements ILinelist
 'factory consumers create instances via `New Linelist` rather than
 '`With New Linelist`.
 '@depends ILinelistSpecs, ILLdictionary, ITranslationObject,
-'  IPasswords, ILLFormat, ITemporaryRepos, IHiddenNames,
+'  IPasswords, ILLFormat, IHiddenNames,
 '  IDropdownLists, DropdownLists,
 '  CustomPivotTable, TemporaryRepos, HiddenNames, Buttons, CodeTransfer,
 '  BetterArray
@@ -53,7 +53,7 @@ Private Const SHEET_GEO As String = "Geo"
 Private Type TLinelist
     outWkb As Workbook
     specs As ILinelistSpecs
-    tempRepos As ITemporaryRepos
+    tempRepos As TemporaryRepos
     firstSheet As String
 End Type
 
@@ -436,7 +436,7 @@ End Sub
 'Saves the output workbook in .xlsb format with the configured password,
 'protects the workbook structure via IPasswords.Protect, activates an
 'appropriate visible sheet (admin or instruction), closes the workbook,
-'and cleans up temporary files via ITemporaryRepos.Reset.
+'and cleans up temporary files via TemporaryRepos.Reset.
 '@export
 Public Sub SaveLL()
     Dim outWkb As Workbook

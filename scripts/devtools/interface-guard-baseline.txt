@@ -25,5 +25,4 @@ ILLTranslation
 IMasterSetupVariables
 IOSFiles
 ITableSpecs
-ITemporaryRepos
 IUpdatedValues
