@@ -22,7 +22,6 @@ IHiddenNames
 ILLChoices
 ILLExport
 ILLTranslation
-IMasterSetupVariables
 IOSFiles
 ITableSpecs
 IUpdatedValues

@@ -12,7 +12,7 @@ Attribute VB_Description = "Workbook-level orchestrator for master setup lifecyc
 '@PredeclaredId
 '@Folder("MasterSetup")
 '@ModuleDescription("Coordinates workbook events and shared services for the master setup workbook.")
-'@depends MasterSetupPreparation, MasterSetupVariables, IMasterSetupVariables, DropdownLists, IDropdownLists, LLChoices, ILLChoices, Translation, ITranslationObject
+'@depends MasterSetupPreparation, MasterSetupVariables, DropdownLists, IDropdownLists, LLChoices, ILLChoices, Translation, ITranslationObject
 '@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit
@@ -24,7 +24,7 @@ Private Type TEventMasterSetup
     hostBook As Workbook                 'Workbook hosting master setup assets
     prep As MasterSetupPreparation      'Preparation helper ensuring tables and dropdowns exist
     dropdowns As IDropdownLists          'Cached dropdown manager
-    variables As IMasterSetupVariables   'Cached variables manager
+    variables As MasterSetupVariables   'Cached variables manager
     choices As ILLChoices                'Cached choices helper
     translations As ITranslationObject   'Cached workbook translations
     ribbonTranslations As ITranslationObject 'Cached ribbon translations
@@ -116,7 +116,7 @@ Public Property Get Dropdowns() As IDropdownLists
 End Property
 
 '@sub-title Provide the master setup variables manager.
-Public Property Get Variables() As IMasterSetupVariables
+Public Property Get Variables() As MasterSetupVariables
     Set Variables = EnsureVariablesManager
 End Property
 
@@ -201,7 +201,7 @@ Private Function EnsureDropdownManager() As IDropdownLists
     Set EnsureDropdownManager = this.dropdowns
 End Function
 
-Private Function EnsureVariablesManager() As IMasterSetupVariables
+Private Function EnsureVariablesManager() As MasterSetupVariables
     EnsureCorePrepared
 
     If this.variables Is Nothing Then

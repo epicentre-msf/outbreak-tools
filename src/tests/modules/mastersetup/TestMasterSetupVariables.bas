@@ -7,7 +7,7 @@ Option Explicit
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Private Assert As ICustomTest
-Private Manager As IMasterSetupVariables
+Private Manager As MasterSetupVariables
 Private FixtureSheet As Worksheet
 
 Private Const VARIABLES_SHEET As String = "TST_MasterVariables"
@@ -211,7 +211,7 @@ End Sub
 Public Sub TestCloneToWorkbookCopiesStructureAndMetadata()
     Dim dropdowns As IDropdownLists
     Dim targetBook As Workbook
-    Dim clone As IMasterSetupVariables
+    Dim clone As MasterSetupVariables
     Dim targetSheet As Worksheet
     Dim targetHidden As IHiddenNames
 

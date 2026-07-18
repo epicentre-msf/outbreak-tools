@@ -12,7 +12,7 @@ Attribute VB_Description = "Implementation for Master Setup preparation and conf
 '@PredeclaredId
 '@Folder("MasterSetup")
 '@ModuleDescription("Implementation for Master Setup preparation and configuration")
-'@depends ApplicationState, IApplicationState, DropdownLists, IDropdownLists, BetterArray, MasterSetupVariables, IMasterSetupVariables, ProjectError, HiddenNames, IHiddenNames
+'@depends ApplicationState, IApplicationState, DropdownLists, IDropdownLists, BetterArray, MasterSetupVariables, ProjectError, HiddenNames, IHiddenNames
 '@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit
@@ -24,7 +24,7 @@ Private Type TMasterSetupPreparation
     dropdownSheet As Worksheet       'Worksheet hosting dropdown listobjects
     variablesSheet As Worksheet      'Worksheet hosting the variables table
     dropdowns As IDropdownLists      'Cached dropdown manager
-    variables As IMasterSetupVariables  'Cached variables manager
+    variables As MasterSetupVariables  'Cached variables manager
 End Type
 
 Private this As TMasterSetupPreparation
@@ -145,7 +145,7 @@ End Sub
 
 '@Description("Ensure the variables worksheet exposes an initialised manager with validations applied.")
 Public Sub EnsureVariables()
-    Dim manager As IMasterSetupVariables
+    Dim manager As MasterSetupVariables
 
     Set manager = EnsureVariablesManager
     If manager Is Nothing Then Exit Sub
@@ -164,7 +164,7 @@ Public Property Get Dropdowns() As IDropdownLists
 End Property
 
 '@Description("Expose the variables manager associated with the master setup table.")
-Public Property Get Variables() As IMasterSetupVariables
+Public Property Get Variables() As MasterSetupVariables
     EnsureVariablesManager
     Set Variables = this.variables
 End Property
@@ -200,7 +200,7 @@ Private Function EnsureDropdownManager() As IDropdownLists
 End Function
 
 '@Description("Ensure the variables manager is initialised over an existing listobject.")
-Private Function EnsureVariablesManager() As IMasterSetupVariables
+Private Function EnsureVariablesManager() As MasterSetupVariables
     If Not this.variables Is Nothing Then
         Set EnsureVariablesManager = this.variables
         Exit Function
@@ -460,7 +460,7 @@ Private Sub EnsureSheetTag(ByVal targetSheet As Worksheet, ByVal tagValue As Str
 End Sub
 
 '@Description("Publish the Variable Name column range as a hidden workbook name for downstream formulas.")
-Private Sub EnsureVariableNameColumnName(ByVal manager As IMasterSetupVariables)
+Private Sub EnsureVariableNameColumnName(ByVal manager As MasterSetupVariables)
     Dim nameRange As Range
     Dim lo As ListObject
     Dim workbookStore As IHiddenNames

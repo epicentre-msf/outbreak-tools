@@ -17,8 +17,6 @@ Attribute VB_Description = "Lightweight manager for the Master Setup Variables t
 
 Option Explicit
 
-Implements IMasterSetupVariables
-
 
 '@section State and constants
 '===============================================================================
@@ -75,8 +73,8 @@ Private Const VARIABLE_NAME_RANGE As String = "__Col__Variables"
 '===============================================================================
 '@sub-title Create a configured variables table manager instance.
 '@param listObject ListObject representing the Master Setup Variables worksheet table.
-'@return IMasterSetupVariables ready to manage the associated ListObject.
-Public Function Create(ByVal listObject As ListObject) As IMasterSetupVariables
+'@return MasterSetupVariables ready to manage the associated ListObject.
+Public Function Create(ByVal listObject As ListObject) As MasterSetupVariables
 
     ValidateListObject listObject
     EnsureRequiredColumns listObject
@@ -88,7 +86,7 @@ Public Function Create(ByVal listObject As ListObject) As IMasterSetupVariables
 End Function
 
 '@sub-title Self reference used by factories returning interface instances.
-Public Property Get Self() As IMasterSetupVariables
+Public Property Get Self() As MasterSetupVariables
     Set Self = Me
 End Property
 
@@ -209,7 +207,7 @@ Public Sub TranslateAll(ByVal contentsTrads As ITranslationObject, Optional ByVa
 End Sub
 
 '@sub-title Apply workbook-scoped validation for variable names onto the supplied range.
-Private Sub SetVariableValidation(ByVal targetRange As Range)
+Public Sub SetVariableValidation(ByVal targetRange As Range)
     Dim workbookStore As IHiddenNames
 
     ValidateReady
@@ -226,10 +224,10 @@ End Sub
 '@param targetWorkbook Workbook receiving the cloned table.
 '@param sheetName Optional sheet name; defaults to the source worksheet name.
 '@param startCell Optional starting cell; defaults to the source table anchor.
-'@return IMasterSetupVariables bound to the cloned ListObject.
+'@return MasterSetupVariables bound to the cloned ListObject.
 Public Function CloneToWorkbook(ByVal targetWorkbook As Workbook, _
                                 Optional ByVal sheetName As String = vbNullString, _
-                                Optional ByVal startCell As Range = Nothing) As IMasterSetupVariables
+                                Optional ByVal startCell As Range = Nothing) As MasterSetupVariables
 
     Dim targetSheet As Worksheet
     Dim targetTable As ListObject
@@ -252,8 +250,8 @@ Public Function CloneToWorkbook(ByVal targetWorkbook As Workbook, _
 End Function
 
 '@sub-title Restore current table contents from a peer instance.
-'@param source IMasterSetupVariables providing data and metadata.
-Public Sub RestoreFrom(ByVal source As IMasterSetupVariables)
+'@param source MasterSetupVariables providing data and metadata.
+Public Sub RestoreFrom(ByVal source As MasterSetupVariables)
     ValidateReady
     If source Is Nothing Then
         ThrowError ProjectError.InvalidArgument, "RestoreFrom requires a source instance."
@@ -354,7 +352,7 @@ Public Property Get Initialised() As Boolean
 End Property
 
 '@sub-title Return the range for the supplied column header, optionally including headers.
-Private Function DataRange(ByVal headerName As String, _
+Public Function DataRange(ByVal headerName As String, _
                           Optional ByVal includeHeaders As Boolean = False) As Range
     ValidateReady
     Set DataRange = ColumnRange(headerName, includeHeaders)
@@ -920,99 +918,3 @@ Private Sub ThrowError(ByVal errNumber As Long, ByVal message As String)
     Err.Raise errNumber, CLASS_NAME, message
 End Sub
 
-
-'@section Interface implementation
-'===============================================================================
-Private Sub IMasterSetupVariables_Initialise(ByVal dropdowns As IDropdownLists)
-    Initialise dropdowns
-End Sub
-
-Private Sub IMasterSetupVariables_RefreshChoices(ByVal variableName As String, ByVal choices As ILLChoices)
-    RefreshChoices variableName, choices
-End Sub
-
-Private Function IMasterSetupVariables_LabelFor(ByVal variableName As String) As String
-    IMasterSetupVariables_LabelFor = LabelFor(variableName)
-End Function
-
-Private Function IMasterSetupVariables_DefaultChoiceFor(ByVal variableName As String) As String
-    IMasterSetupVariables_DefaultChoiceFor = DefaultChoiceFor(variableName)
-End Function
-
-Private Function IMasterSetupVariables_ChoicesFor(ByVal variableName As String) As String
-    IMasterSetupVariables_ChoicesFor = ChoicesFor(variableName)
-End Function
-
-Private Function IMasterSetupVariables_DefaultStatusFor(ByVal variableName As String) As String
-    IMasterSetupVariables_DefaultStatusFor = DefaultStatusFor(variableName)
-End Function
-
-Private Function IMasterSetupVariables_SectionFor(ByVal variableName As String) As String
-    IMasterSetupVariables_SectionFor = SectionFor(variableName)
-End Function
-
-Private Sub IMasterSetupVariables_AddRows(Optional ByVal count As Long = 5)
-    AddRows count
-End Sub
-
-Private Function IMasterSetupVariables_DataRange(ByVal headerName As String, _
-                          Optional ByVal includeHeaders As Boolean = False) As Range
-
-   Set IMasterSetupVariables_DataRange = DataRange(headerName, includeHeaders)
-End Function
-
-Private Sub IMasterSetupVariables_RemoveRows(Optional ByVal count As Long = 1)
-    RemoveRows count
-End Sub
-
-Private Sub IMasterSetupVariables_TranslateHeaders(ByVal trads As ITranslationObject)
-    TranslateHeaders trads
-End Sub
-
-Private Sub IMasterSetupVariables_TranslateContent(ByVal trads As ITranslationObject)
-    TranslateContent trads
-End Sub
-
-Private Sub IMasterSetupVariables_TranslateAll(ByVal trads As ITranslationObject)
-    TranslateAll trads
-End Sub
-
-Private Function IMasterSetupVariables_CloneToWorkbook(ByVal targetWorkbook As Workbook, _
-                                                       Optional ByVal sheetName As String = vbNullString, _
-                                                       Optional ByVal startCell As Range = Nothing) As IMasterSetupVariables
-    Set IMasterSetupVariables_CloneToWorkbook = CloneToWorkbook(targetWorkbook, sheetName, startCell)
-End Function
-
-Private Sub IMasterSetupVariables_RestoreFrom(ByVal source As IMasterSetupVariables)
-    RestoreFrom source
-End Sub
-
-Private Sub IMasterSetupVariables_ExportToWorksheet(ByVal targetSheet As Worksheet)
-    ExportToWorksheet targetSheet
-End Sub
-
-Private Sub IMasterSetupVariables_ImportFromWorksheet(ByVal sourceSheet As Worksheet)
-    ImportFromWorksheet sourceSheet
-End Sub
-
-Private Sub IMasterSetupVariables_CopyToListObject(ByVal targetTable As ListObject)
-    CopyToListObject targetTable
-End Sub
-
-Private Sub IMasterSetupVariables_ExportMetadata(ByVal targetSheet As Worksheet)
-    ExportMetadata targetSheet
-End Sub
-
-Private Property Get IMasterSetupVariables_Table() As ListObject
-    Set IMasterSetupVariables_Table = Table
-End Property
-
-Private Property Get IMasterSetupVariables_Initialised() As Boolean
-    IMasterSetupVariables_Initialised = Initialised
-End Property
-
-
-'@sub-title Apply workbook-scoped variable dropdown validation to a target range.
-Private Sub IMasterSetupVariables_SetVariableValidation(ByVal targetRange As Range)
-    SetVariableValidation targetRange
-End Sub

@@ -69,7 +69,7 @@ Private Type TBuilderState
     hostSheet As Worksheet
     hostIndex As Long
     hostTable As ICustomTable
-    hostVariables As IMasterSetupVariables
+    hostVariables As MasterSetupVariables
     hostLanguage As String
 End Type
 
@@ -94,7 +94,7 @@ Private hostHeaders As TCurrentHeaders
 Public Function Create(ByVal hostWorkbook As Workbook, _
                        ByVal dropdowns As IDropdownLists, _
                        ByVal translator As ITranslationObject, _ 
-                       ByVal varObj As IMasterSetupVariables) As IDiseaseSheet
+                       ByVal varObj As MasterSetupVariables) As IDiseaseSheet
 
     With New DiseaseSheet
         .Initialise hostWorkbook, dropdowns, translator, varObj
@@ -113,7 +113,7 @@ End Property
 Public Sub Initialise(ByVal hostWorkbook As Workbook, _
                       ByVal dropdowns As IDropdownLists, _
                       ByVal translator As ITranslationObject, _ 
-                      ByVal varObj As IMasterSetupVariables)
+                      ByVal varObj As MasterSetupVariables)
 
     ValidateInitialise hostWorkbook, dropdowns, varObj
 
@@ -197,7 +197,7 @@ End Sub
 
 Private Sub ValidateInitialise(ByVal hostWorkbook As Workbook, _
                                ByVal dropdowns As IDropdownLists, _
-                               ByVal varObj As IMasterSetupVariables)
+                               ByVal varObj As MasterSetupVariables)
 
     If hostWorkbook Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, "Workbook reference cannot be Nothing"
@@ -595,7 +595,7 @@ End Sub
 Private Sub IDiseaseSheet_Initialise(ByVal hostWorkbook As Workbook, _
                                      ByVal dropdowns As IDropdownLists, _
                                      ByVal translations As ITranslationObject, _
-                                     ByVal varObj As IMasterSetupVariables)
+                                     ByVal varObj As MasterSetupVariables)
     Initialise hostWorkbook, dropdowns, translations, varObj
 End Sub
 

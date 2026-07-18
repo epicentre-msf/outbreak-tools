@@ -108,7 +108,7 @@ Public Sub TestOnWorkbookOpenInitialisesDependencies()
     Subject.OnWorkbookOpen Application
 
     Dim drops As IDropdownLists
-    Dim vars As IMasterSetupVariables
+    Dim vars As MasterSetupVariables
     Dim choices As ILLChoices
     Dim trads As ITranslationObject
     Dim ribTrads As ITranslationObject

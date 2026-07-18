@@ -114,7 +114,7 @@ Public Sub TestPrepareInitialisesVariablesTable()
 
     Subject.Prepare Application
 
-    Dim manager As IMasterSetupVariables
+    Dim manager As MasterSetupVariables
     Dim table As ListObject
     Dim statusRange As Range
 
@@ -140,7 +140,7 @@ End Sub
 
 '@TestMethod("MasterSetupPreparation")
 Public Sub TestEnsureVariablesPublishesWorkbookRange()
-    Dim manager As IMasterSetupVariables
+    Dim manager As MasterSetupVariables
     Dim definedName As Name
     Dim expectedRange As Range
     Dim actualRange As Range

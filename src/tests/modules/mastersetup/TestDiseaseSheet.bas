@@ -28,7 +28,7 @@ Private Assert As ICustomTest
 Private Builder As IDiseaseSheet
 Private Dropdowns As IDropdownLists
 Private Translations As ITranslationObject
-Private VariablesManager As IMasterSetupVariables
+Private VariablesManager As MasterSetupVariables
 
 '@section Module lifecycle
 '===============================================================================

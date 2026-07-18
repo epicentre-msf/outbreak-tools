@@ -26,7 +26,7 @@ Option Explicit
 Public Sub Initialise(ByVal hostWorkbook As Workbook, _
                       ByVal dropdowns As IDropdownLists, _
                       ByVal translations As ITranslationObject, _
-                      ByVal varObj As IMasterSetupVariables)
+                      ByVal varObj As MasterSetupVariables)
 End Sub
 
 '@section Worksheet Construction
