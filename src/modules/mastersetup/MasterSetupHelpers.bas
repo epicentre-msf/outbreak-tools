@@ -188,7 +188,7 @@ Public Function ResolveMasterPasswords(Optional ByVal hostSheet As Worksheet) As
     Set ResolveMasterPasswords = Passwords.Create(targetSheet)
 End Function
 
-Public Function ResolveMasterUpdatedValues(Optional ByVal registrySheet As Worksheet) As IUpdatedValues
+Public Function ResolveMasterUpdatedValues(Optional ByVal registrySheet As Worksheet) As UpdatedValues
     Dim targetSheet As Worksheet
 
     If registrySheet Is Nothing Then

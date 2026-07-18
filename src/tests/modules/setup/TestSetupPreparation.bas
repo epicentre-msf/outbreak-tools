@@ -15,7 +15,7 @@ Option Explicit
 '
 ' @depends SetupPreparation, Development,
 '   BetterArray, CustomTest, ICustomTest, TestHelpers, DropdownLists,
-'   IDropdownLists, UpdatedValues, IUpdatedValues, CustomTable
+'   IDropdownLists, UpdatedValues, CustomTable
 '
 ' The fixture workbook is rebuilt before every test via TestInitialize so each
 ' test runs in isolation. Dropdown content is verified by checking the

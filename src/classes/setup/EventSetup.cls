@@ -32,7 +32,7 @@ Option Explicit
 '===============================================================================
 Private Type TEventSetup
     hostBook            As Workbook          'Workbook owning the setup sheets
-    updater             As IUpdatedValues    'Registry tracker for watched columns
+    updater             As UpdatedValues    'Registry tracker for watched columns
     drop                As IDropdownLists    'Cached dropdown manager
     ribbon              As IRibbonUI         'Cached ribbon instance when available
     tsTable             As ICustomTable      'Analysis time-series table wrapper
@@ -708,7 +708,7 @@ End Sub
 '@label:ensure-updated-values
 '@sub-title Lazily initialise the update watcher from the registry worksheet.
 '@details
-'Creates an IUpdatedValues instance from the "__updated" registry worksheet.
+'Creates an UpdatedValues instance from the "__updated" registry worksheet.
 'Exits silently when the worksheet does not exist or creation fails, so
 'callers must always check this.updater before use.
 Private Sub EnsureUpdatedValues()

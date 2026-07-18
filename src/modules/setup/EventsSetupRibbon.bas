@@ -248,7 +248,7 @@ Public Sub clickAddTrans(ByRef control As IRibbonControl)
     Dim registrySheet As Worksheet
     Dim manager As SetupTranslationsTable
     Dim sheetUnlocked As Boolean
-    Dim upVal As IUpdatedValues
+    Dim upVal As UpdatedValues
 
     answer = MsgBox("Do you want to update the translation sheet?", vbYesNo + vbQuestion, "Confirm")
     If answer <> vbYes Then Exit Sub

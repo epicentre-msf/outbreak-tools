@@ -12,7 +12,7 @@ Private FixtureWorkbook As Workbook
 Private UpdatedSheet As Worksheet
 Private SourceSheet As Worksheet
 Private SourceTable As ListObject
-Private Subject As IUpdatedValues
+Private Subject As UpdatedValues
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const UPDATED_SHEET_NAME As String = "__updated"
@@ -184,7 +184,7 @@ Public Sub TestCreateRegistersWithoutIdentifier()
     CustomTestSetTitles Assert, "UpdatedValues", "TestCreateRegistersWithoutIdentifier"
     On Error GoTo Fail
 
-    Dim watcher As IUpdatedValues
+    Dim watcher As UpdatedValues
     Dim defaultRange As String
 
     defaultRange = ExpectedRangeName(SOURCE_TABLE_NAME, "Name", UpdatedSheet)

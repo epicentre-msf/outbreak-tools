@@ -602,7 +602,7 @@ Public Function ResolveSetupPasswords() As IPasswords
     Set ResolveSetupPasswords = cachedPasswords
 End Function
 
-Public Function ResolveUpdatedValues() As IUpdatedValues
+Public Function ResolveUpdatedValues() As UpdatedValues
     Set ResolveUpdatedValues = UpdatedValues.Create(ResolveRegistrySheet())
 End Function
 

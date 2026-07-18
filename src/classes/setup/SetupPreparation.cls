@@ -34,7 +34,7 @@ Private Type TSetupPreparation
     dropSheet   As Worksheet         'Worksheet hosting dropdown listobjects
     registrySheet As Worksheet       'Worksheet hosting updated values registry
     dropdowns   As IDropdownLists    'Dropdown manager bound to drop sheet
-    updater     As IUpdatedValues    'Updated values watcher bound to registry sheet
+    updater     As UpdatedValues    'Updated values watcher bound to registry sheet
 End Type
 
 Private this As TSetupPreparation
@@ -175,12 +175,12 @@ End Property
 '@label:updated-watcher
 '@prop-title Updated values watcher for external callers
 '@details
-'Returns the IUpdatedValues watcher bound to the registry worksheet.
+'Returns the UpdatedValues watcher bound to the registry worksheet.
 'Lazily initialises the watcher on first access if it was not already
 'created by EnsureUpdatedRegistry or Prepare.
-'@return IUpdatedValues. The update watcher instance.
+'@return UpdatedValues. The update watcher instance.
 '@export
-Public Property Get UpdatedWatcher() As IUpdatedValues
+Public Property Get UpdatedWatcher() As UpdatedValues
     EnsureUpdatedValuesWatcher
     Set UpdatedWatcher = this.updater
 End Property

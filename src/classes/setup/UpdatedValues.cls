@@ -16,8 +16,6 @@ Attribute VB_Description = "Watch updated values in the setup"
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 Option Explicit
 
-Implements IUpdatedValues
-
 '@class UpdatedValues
 '@description
 'Tracks watched setup columns and exposes update status to events. Maintains
@@ -81,9 +79,9 @@ Private this As TUpValues
 '@sub-title Build a new watcher bound to the specified registry worksheet.
 '@param sh Worksheet. Registry worksheet hosting the watcher tables.
 '@param ignoredId Optional String. Reserved for future use (ignored).
-'@return IUpdatedValues. Configured watcher instance.
+'@return UpdatedValues. Configured watcher instance.
 '@export
-Public Function Create(ByVal sh As Worksheet, Optional ByVal ignoredId As String = vbNullString) As IUpdatedValues
+Public Function Create(ByVal sh As Worksheet, Optional ByVal ignoredId As String = vbNullString) As UpdatedValues
   If sh Is Nothing Then
     ThrowError ProjectError.ObjectNotInitialized, "Worksheet reference is required to create UpdatedValues"
   End If
@@ -96,8 +94,8 @@ End Function
 
 '@label:self
 '@prop-title Current object instance cast to the interface.
-'@return IUpdatedValues. The current instance.
-Public Property Get Self() As IUpdatedValues
+'@return UpdatedValues. The current instance.
+Public Property Get Self() As UpdatedValues
   Set Self = Me
 End Property
 
@@ -603,7 +601,7 @@ End Sub
 'Scans the source ListObject header row for metadata tags and synchronises
 'the registry table so named ranges remain aligned with the current layout.
 '@param source ListObject. Table to inspect for update tags.
-Private Sub AddColumns(ByVal source As ListObject)
+Public Sub AddColumns(ByVal source As ListObject)
   Dim headerCell As Range
   Dim expected As BetterArray
   Dim registryIndex As BetterArray
@@ -647,7 +645,7 @@ End Sub
 
 '@label:add-sheet
 '@sub-title Register tagged columns for every ListObject on the provided worksheet.
-Private Sub AddSheet(ByVal targetSheet As Worksheet)
+Public Sub AddSheet(ByVal targetSheet As Worksheet)
   Dim lo As ListObject
 
   If targetSheet Is Nothing Then
@@ -663,7 +661,7 @@ End Sub
 
 '@label:remove-lo
 '@sub-title Remove registry entries associated with the supplied ListObject.
-Private Sub RemoveListObject(ByVal target As ListObject)
+Public Sub RemoveLo(ByVal target As ListObject)
   Dim registry As ListObject
 
   If target Is Nothing Then Exit Sub
@@ -925,7 +923,7 @@ End Sub
 '@details
 'Searches across all registry ListObjects for a matching entry and returns
 'True when the column is flagged as updated since the last reset.
-Private Property Get IsUpdated(ByVal checkColName As String) As Boolean
+Public Property Get IsUpdated(ByVal checkColName As String) As Boolean
   Dim registries As Collection
   Dim registry As ListObject
   Dim rangeColumn As Range
@@ -986,7 +984,7 @@ End Property
 'marks the first matching entry as updated.
 '@param tagReference Variant. Identifier selecting the registry scope.
 '@param Target Range. The changed cells to evaluate.
-Private Sub CheckStatus(ByVal tagReference As Variant, ByVal Target As Range)
+Public Sub CheckUpdate(ByVal tagReference As Variant, ByVal Target As Range)
   Dim registries As Collection
   Dim registry As ListObject
   Dim rangeColumn As Range
@@ -1180,13 +1178,13 @@ End Sub
 '===============================================================================
 '@label:clear-up
 '@sub-title Reset all tracked columns to the default (not updated) status.
-Private Sub ClearUp()
+Public Sub ClearUp()
   ResetUpdateStatus
 End Sub
 
 '@label:delete-up
 '@sub-title Remove the watcher registry and associated workbook named ranges.
-Private Sub DeleteUp()
+Public Sub DeleteUp()
   Dim registries As Collection
   Dim registry As ListObject
   Dim sheetLast As Long
@@ -1503,45 +1501,20 @@ Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal errorMessage As St
   Err.Raise CLng(errNumber), CLASS_NAME, "Error: " & errorMessage
 End Sub
 
-'@section Interface implementation
-'@description Thin delegation stubs forwarding each IUpdatedValues member
-'to the corresponding internal implementation above.
+'@section Status switching
 '===============================================================================
-Private Sub IUpdatedValues_AddColumns(ByVal Lo As ListObject)
-  AddColumns Lo
-End Sub
-
-Private Sub IUpdatedValues_AddSheet(ByVal sh As Worksheet)
-  AddSheet sh
-End Sub
-
-Private Sub IUpdatedValues_RemoveLo(ByVal Lo As ListObject)
-  RemoveListObject Lo
-End Sub
-
-Private Property Get IUpdatedValues_IsUpdated(ByVal colName As String) As Boolean
-  IUpdatedValues_IsUpdated = IsUpdated(colName)
-End Property
-
-Private Sub IUpdatedValues_CheckUpdate(ByVal tagReference As Variant, ByVal Target As Range)
-  CheckStatus tagReference, Target
-End Sub
-
-Private Sub IUpdatedValues_ClearUp()
-  ClearUp
-End Sub
-
-Private Sub IUpdatedValues_DeleteUp()
-  DeleteUp
-End Sub
 
 '@label:switch-tags-to-no
-Private Sub IUpdatedValues_SwitchTagsToNo()
+'@sub-title Force every registry status flag to the default value.
+'@export
+Public Sub SwitchTagsToNo()
   SwitchTags STATUS_DEFAULT
 End Sub
 
 '@label:switch-tags-to-yes
-Private Sub IUpdatedValues_SwitchTagsToYes()
+'@sub-title Force every registry status flag to the updated value.
+'@export
+Public Sub SwitchTagsToYes()
   SwitchTags STATUS_UPDATED
 End Sub
 
