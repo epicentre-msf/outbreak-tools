@@ -1035,6 +1035,7 @@ Private Sub AddDataSheets(ByVal outwb As Workbook, ByVal expDict As LLdictionary
     Dim labelsList As BetterArray
     Dim sheetName As String
     Dim inpsh As Worksheet
+    Dim inpshNames As HiddenNames
     Dim outsh As Worksheet
     Dim lo As ListObject
     Dim csTab As CustomTable
@@ -1047,16 +1048,18 @@ Private Sub AddDataSheets(ByVal outwb As Workbook, ByVal expDict As LLdictionary
     For counter = sheetNames.LowerBound To sheetNames.UpperBound
         sheetName = sheetNames.Item(counter)
         Set inpsh = this.sourceWkb.Worksheets(sheetName)
+        ' Build the sheet metadata once and read every tag from the same instance
+        Set inpshNames = HiddenNames.Create(inpsh)
         Set headersList = expDict.Data.FilterData("sheet name", sheetName, "variable name")
         Set outsh = outwb.Worksheets(sheetName)
 
-        Select Case SheetTagOf(inpsh)
+        Select Case inpshNames.ValueAsString("sheet_type")
 
         Case "HList"
             ' Choose between filtered or raw data
             If useFilters Then
                 Set lo = this.sourceWkb.Worksheets( _
-                    SheetTagOf(inpsh, "filtered_sheet")).ListObjects(1)
+                    inpshNames.ValueAsString("filtered_sheet")).ListObjects(1)
             Else
                 Set lo = inpsh.ListObjects(1)
             End If
