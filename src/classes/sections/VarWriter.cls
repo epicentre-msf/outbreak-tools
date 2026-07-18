@@ -24,7 +24,7 @@ Option Explicit
 'formulas, dropdown choices, data validation, and conditional formatting
 'to the resolved cell range. The class caches dictionary, variables, and
 'sheets accessors for performance across repeated calls.
-'@depends ILinelistSpecs, ILLdictionary, ILLVariables, LLSheets, ILLFormat,
+'@depends ILinelistSpecs, ILLdictionary, ILLVariables, LLSheets, LLFormat,
 'ITranslationObject, FormulaData, Formulas, IDropdownLists, ILLGeo,
 'Formulas, LLVariables, LLSheets, BetterArray
 '@version 1.0 (2026-02-10)
@@ -211,8 +211,8 @@ End Property
 '@details
 'Delegates directly to specs.DesignFormat on every call because the
 'format object is lightweight and does not benefit from caching.
-'@return ILLFormat. The design format provider.
-Private Property Get DesignFormat() As ILLFormat
+'@return LLFormat. The design format provider.
+Private Property Get DesignFormat() As LLFormat
     Set DesignFormat = this.specs.DesignFormat()
 End Property
 
@@ -448,7 +448,7 @@ Private Sub AddLabel(Optional ByVal usePrinted As Boolean = False)
     Dim calculated As String
     Dim mandatory As String
     Dim mainLabLength As Long
-    Dim design As ILLFormat
+    Dim design As LLFormat
     Dim varToPrint As String
     Dim choicust As String
     Dim varEditLab As String
@@ -708,7 +708,7 @@ Private Sub AddFormula()
     Dim varFormData As FormulaData
     Dim dict As ILLdictionary
     Dim varFormObject As Formulas
-    Dim design As ILLFormat
+    Dim design As LLFormat
     Dim varControl As String
 
     varControl = ValueOf("control")
@@ -774,7 +774,7 @@ Private Sub AddChoices()
     Dim labRng As Range
     Dim targetAddress As String
     Dim mainLabLength As Long
-    Dim design As ILLFormat
+    Dim design As LLFormat
 
 
     varControl = ValueOf("control")
@@ -1132,7 +1132,7 @@ End Sub
 'CRF row.
 '@param crfRng Range. The target cell on the CRF companion worksheet.
 Private Sub AddCRFLabel(ByVal crfRng As Range)
-    Dim design As ILLFormat
+    Dim design As LLFormat
     Dim varMainLab As String
     Dim varSubLab As String
     Dim varControl As String
@@ -1188,7 +1188,7 @@ Private Sub AddCRFType(ByVal crfRng As Range)
     Dim varControl As String
     Dim scope As Long
     Dim nbDecimals As Integer
-    Dim design As ILLFormat
+    Dim design As LLFormat
 
     Set design = DesignFormat()
 
@@ -1247,7 +1247,7 @@ Private Sub AddCRFChoices(ByVal crfRng As Range)
     Dim cellRng As Range
     Dim counter As Long
     Dim varControl As String
-    Dim design As ILLFormat
+    Dim design As LLFormat
 
     varControl = ValueOf("control")
     If (varControl <> "choice_manual") Then Exit Sub

@@ -92,10 +92,10 @@ End Property
 '@jump:design-format
 '@prop-title Visual formatting specifications
 '@details
-'Returns the ILLFormat instance providing sheet and cell formatting methods
+'Returns the LLFormat instance providing sheet and cell formatting methods
 'based on the __formatter worksheet. Lazy-loaded on first access.
-'@return ILLFormat. The format collaborator.
-Public Property Get DesignFormat() As ILLFormat
+'@return LLFormat. The format collaborator.
+Public Property Get DesignFormat() As LLFormat
 End Property
 
 '@jump:analysis

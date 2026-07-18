@@ -30,7 +30,7 @@ Implements ILinelist
 'factory consumers create instances via `New Linelist` rather than
 '`With New Linelist`.
 '@depends ILinelistSpecs, ILLdictionary, ITranslationObject,
-'  IPasswords, ILLFormat, HiddenNames,
+'  IPasswords, LLFormat, HiddenNames,
 '  IDropdownLists, DropdownLists,
 '  CustomPivotTable, TemporaryRepos, HiddenNames, Buttons, CodeTransfer,
 '  BetterArray
@@ -773,7 +773,7 @@ Private Sub PrepareAdmin()
 
     Dim sh As Worksheet
     Dim trads As ITranslationObject
-    Dim design As ILLFormat
+    Dim design As LLFormat
     Dim pass As IPasswords
     Dim but As Buttons
     Dim rng As Range

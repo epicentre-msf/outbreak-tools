@@ -23,7 +23,7 @@ Option Explicit
 'subsection, delegates variable writing to VarWriter, and applies
 'merged-cell section and subsection header formatting. Supports both
 'HList (horizontal) and VList (vertical) layouts via the layer byte.
-'@depends ILinelistSpecs, ILLdictionary, ILLVariables, ILLFormat,
+'@depends ILinelistSpecs, ILLdictionary, ILLVariables, LLFormat,
 'IDropdownLists, VarWriter, LLVariables
 '@version 1.0 (2026-02-10)
 
@@ -196,8 +196,8 @@ End Property
 
 '@label:design-format
 '@prop-title Design format accessor
-'@return ILLFormat. The formatting object from the specifications.
-Private Property Get DesignFormat() As ILLFormat
+'@return LLFormat. The formatting object from the specifications.
+Private Property Get DesignFormat() As LLFormat
     Set DesignFormat = this.specs.DesignFormat()
 End Property
 
@@ -461,7 +461,7 @@ Private Sub FormatSection(ByVal sectionName As String, _
     Dim vars As ILLVariables
     Dim varRng As Range
     Dim dict As ILLdictionary
-    Dim design As ILLFormat
+    Dim design As LLFormat
     Dim firstVarName As String
     Dim lastVarName As String
     Dim rng As Range
@@ -498,7 +498,7 @@ Private Sub FormatHListSection(ByVal sectionName As String, _
                                 ByVal lastVarName As String, _
                                 ByVal sheetName As String)
     Dim vars As ILLVariables
-    Dim design As ILLFormat
+    Dim design As LLFormat
     Dim startCol As Long
     Dim endCol As Long
     Dim crfLine As Long
@@ -556,7 +556,7 @@ Private Sub FormatVListSection(ByVal sectionName As String, _
                                 ByVal lastVarName As String, _
                                 ByVal sheetName As String)
     Dim vars As ILLVariables
-    Dim design As ILLFormat
+    Dim design As LLFormat
     Dim startIdx As Long
     Dim endIdx As Long
     Dim rng As Range
@@ -617,7 +617,7 @@ Private Sub FormatHListSubSection(ByVal subSectionName As String, _
                                    ByVal sheetName As String)
     Dim dict As ILLdictionary
     Dim vars As ILLVariables
-    Dim design As ILLFormat
+    Dim design As LLFormat
     Dim varRng As Range
     Dim firstVarName As String
     Dim lastVarName As String
@@ -683,7 +683,7 @@ Private Sub FormatVListSubSection(ByVal subSectionName As String, _
                                    ByVal sheetName As String)
     Dim dict As ILLdictionary
     Dim vars As ILLVariables
-    Dim design As ILLFormat
+    Dim design As LLFormat
     Dim varRng As Range
     Dim firstVarName As String
     Dim lastVarName As String

@@ -28,7 +28,7 @@ Implements ILinelistSpecs
 'construct instances via LinelistSpecs.Create(workbook) and receive an
 'ILinelistSpecs interface reference.
 '@depends ILLdictionary, LLChoices, LLTranslation, IDesignerTranslation
-'@depends ILLGeo, LLExport, IPasswords, ILLFormat
+'@depends ILLGeo, LLExport, IPasswords, LLFormat
 '@depends LinelistBuildService, TemporaryRepos
 '@depends FormulaData, ILLVariables, Formulas
 '@depends ITranslationObject, ApplicationState
@@ -53,7 +53,7 @@ Private Type TLinelistSpecs
     exports As LLExport
     ana As Analysis
     passwords As IPasswords
-    format As ILLFormat
+    format As LLFormat
     formulaData As FormulaData
     variables As ILLVariables
     'Translation scope cache: direct fields for each TranslationScope value (0-4)
@@ -977,11 +977,11 @@ End Property
 '@label:design-format
 '@prop-title Visual formatting specifications
 '@details
-'Returns the ILLFormat instance providing sheet and cell formatting
+'Returns the LLFormat instance providing sheet and cell formatting
 'methods based on the __formatter worksheet. Lazy-loaded on first access.
-'@return ILLFormat. The format collaborator.
+'@return LLFormat. The format collaborator.
 '@export
-Public Property Get DesignFormat() As ILLFormat
+Public Property Get DesignFormat() As LLFormat
     EnsureFormat
     Set DesignFormat = this.format
 End Property
@@ -1506,7 +1506,7 @@ Private Property Get ILinelistSpecs_Choices() As LLChoices
     Set ILinelistSpecs_Choices = Me.Choices
 End Property
 
-Private Property Get ILinelistSpecs_DesignFormat() As ILLFormat
+Private Property Get ILinelistSpecs_DesignFormat() As LLFormat
     Set ILinelistSpecs_DesignFormat = Me.DesignFormat
 End Property
 

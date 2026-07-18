@@ -12,7 +12,7 @@ Attribute VB_Description = "Direct setup-to-linelist build service eliminating t
 '@PredeclaredId
 '@Folder("Designer")
 '@ModuleDescription("Exports pass-through setup data directly to the linelist, bypassing the designer intermediary.")
-'@depends ProjectError, LLdictionary, ILLdictionary, LLChoices, LLExport, Analysis, LLGeo, ILLGeo, IPasswords, Passwords, LLFormat, ILLFormat, LLTranslation, HiddenNames
+'@depends ProjectError, LLdictionary, ILLdictionary, LLChoices, LLExport, Analysis, LLGeo, ILLGeo, IPasswords, Passwords, LLFormat, LLTranslation, HiddenNames
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, ParameterNotUsed
 
 Option Explicit
@@ -442,7 +442,7 @@ End Sub
 '@sub-title Export formatter from setup to linelist (when not ribbon-imported)
 Private Sub ExportFormatterFromSetup(ByVal setupBook As Workbook, ByVal targetBook As Workbook)
     Dim setupSheet As Worksheet
-    Dim formatManager As ILLFormat
+    Dim formatManager As LLFormat
 
     Set setupSheet = ResolveWorksheet(setupBook, SHEET_FORMATTER)
     If setupSheet Is Nothing Then Exit Sub
@@ -557,7 +557,7 @@ End Sub
 '@sub-title Export formatter from designer to linelist (when ribbon-imported)
 Private Sub ExportFormatterFromDesigner(ByVal hostBook As Workbook, ByVal targetBook As Workbook)
     Dim hostSheet As Worksheet
-    Dim formatManager As ILLFormat
+    Dim formatManager As LLFormat
 
     Set hostSheet = ResolveWorksheet(hostBook, SHEET_FORMATTER)
     If hostSheet Is Nothing Then Exit Sub

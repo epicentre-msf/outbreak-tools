@@ -15,8 +15,83 @@ Attribute VB_Exposed = False
 '@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation, ProcedureNotUsed, SuperfluousAnnotationArgument
 
 Option Explicit
-Implements ILLFormat
 Private Const CLASSNAME As String = "LLFormat"
+
+'@section Enumerations
+'===============================================================================
+'@description Supported formatting scopes. Each constant identifies a
+'specific visual pattern that ApplyFormat applies to the supplied object.
+
+Public Enum FormatScope
+  AdminLargeButton = 1
+  AllAnalysisSheet = 2
+  AllLinelistSheet = 3
+  AnalysisCategoriesBivariateColumn = 4
+  AnalysisCategoriesBivariateRow = 5
+  AnalysisCategoriesLabelColumn = 6
+  AnalysisCategoriesLabelRow = 7
+  AnalysisCategoriesUnivariateRow = 8
+  AnalysisDateCell = 9
+  AnalysisEndTable = 10
+  AnalysisFirstRow = 11
+  AnalysisGlobalSummaryRow = 12
+  AnalysisInfoCell = 13
+  AnalysisInfoCellLeft = 14
+  AnalysisInteriorTable = 15
+  AnalysisMissingColumn = 16
+  AnalysisMissingRow = 17
+  AnalysisMissingRowWithoutHeader = 18
+  AnalysisOneCell = 19
+  AnalysisOneCellCenter = 20
+  AnalysisOneCellLeft = 21
+  AnalysisPercent = 22
+  AnalysisSection = 23
+  AnalysisTableTitle = 24
+  AnalysisTimeSeriesHeader = 25
+  AnalysisUnivariateHeader = 26
+  AnalysisWholeTable = 27
+  CRFChoiceHeader = 28
+  CRFChoiceValues = 29
+  CRFDate = 30
+  CRFDecimal = 31
+  CRFFormatCustom = 32
+  CRFInteger = 33
+  CRFPercentage = 34
+  CRFText = 35
+  HListBorders = 36
+  HListCalculatedFormulaCell = 37
+  HListCalculatedFormulaHeader = 38
+  HListCRFSection = 39
+  HListCRFSheet = 40
+  HListCRFSubSection = 41
+  HListCustomPivotTables = 42
+  HListGeo = 43
+  HListGeoHeader = 44
+  HListHeader = 45
+  HListMainLab = 46
+  HListNote = 47
+  HListPrintedHeader = 48
+  HListPrintedSheet = 49
+  HListPrintedTable = 50
+  HListSection = 51
+  HListSimpleHeaderCell = 52
+  HListSublab = 53
+  HListSubSection = 54
+  HListTable = 55
+  LinelistGeoButton = 56
+  LinelistGeoShape = 57
+  LinelistHiddenCell = 58
+  LinelistSelectionDropdown = 59
+  LinelistShape = 60
+  LinelistSmallButton = 61
+  LinelistWarning = 62
+  VListBorders = 63
+  VListInnerBorders = 64
+  VListMainLab = 65
+  VListSection = 66
+  VListSublab = 67
+  VListSubSection = 68
+End Enum
 
 '@class LLFormat
 '@description
@@ -270,10 +345,10 @@ End Function
 'returns a fully initialised LLFormat instance.
 '@param formatSh Worksheet. Worksheet containing the format specification table.
 '@param designType String. Design column to use. Defaults to DEFAULT_DESIGN.
-'@return ILLFormat. A fully initialised LLFormat instance.
+'@return LLFormat. A fully initialised LLFormat instance.
 '@export
 Public Function Create(ByVal formatSh As Worksheet, _
-                       Optional ByVal designType As String = DEFAULT_DESIGN) As ILLFormat
+                       Optional ByVal designType As String = DEFAULT_DESIGN) As LLFormat
 
     Dim resolvedDesign As String
 
@@ -307,9 +382,9 @@ End Function
 'Public properties exposed by the factory and the interface.
 
 '@label:self
-'@prop-title Retrieve this formatter as an interface
-'@return ILLFormat. Self-reference.
-Public Property Get Self() As ILLFormat
+'@prop-title Retrieve this formatter instance
+'@return LLFormat. Self-reference.
+Public Property Get Self() As LLFormat
     Set Self = Me
 End Property
 
@@ -375,7 +450,7 @@ End Property
 '@param returnColor Boolean. When True returns Interior.Color; otherwise the raw value. Defaults to True.
 '@return Variant. The colour (Long) or cell value.
 '@export
-Private Function DesignValue(ByVal labelName As String, _
+Public Function DesignValue(ByVal labelName As String, _
                              Optional ByVal returnColor As Boolean = True) As Variant
 
     Dim rowIndex As Long
@@ -641,7 +716,7 @@ End Sub
 '@param scope Byte. FormatScope constant selecting the visual pattern.
 '@param nbDecimals Integer. Decimal count for numeric formatting. Defaults to 0.
 '@export
-Private Sub ApplyFormat(ByVal formattingObject As Variant, _
+Public Sub ApplyFormat(ByVal formattingObject As Variant, _
                         ByVal scope As Byte, _
                         Optional ByVal nbDecimals As Integer = 0)
 
@@ -1373,7 +1448,7 @@ End Sub
 'design name from the source DESIGNTYPE named range.
 '@param inpsh Worksheet. Source worksheet containing the format table.
 '@export
-Private Sub Import(ByVal inpsh As Worksheet)
+Public Sub Import(ByVal inpsh As Worksheet)
 
     Dim targetSheet As Worksheet
     Dim inputTable As ListObject
@@ -1432,7 +1507,7 @@ End Sub
 'exists, imports from it instead of exporting.
 '@param toWkb Workbook. Destination workbook.
 '@export
-Private Sub Export(ByVal toWkb As Workbook)
+Public Sub Export(ByVal toWkb As Workbook)
 
     Dim targetWorkbook As Workbook
     Dim sourceSheet As Worksheet
@@ -1616,33 +1691,3 @@ End Function
 Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal errorMessage As String)
     Err.Raise errNumber, CLASSNAME, errorMessage
 End Sub
-
-'@section Interface
-'===============================================================================
-'ILLFormat delegation wiring.
-
-Private Sub ILLFormat_ApplyFormat(formattingObject As Variant, ByVal scope As Byte, _
-                                  Optional ByVal nbDecimals As Integer = 0)
-    ApplyFormat formattingObject:=formattingObject, scope:=scope, nbDecimals:=nbDecimals
-End Sub
-
-Private Sub ILLFormat_Import(ByVal inpsh As Worksheet)
-    Import inpsh
-End Sub
-
-Private Sub ILLFormat_Export(ByVal toWkb As Workbook)
-    Export toWkb
-End Sub
-
-Private Function ILLFormat_DesignValue(ByVal labelName As String, _ 
-                                       Optional ByVal returnColor As Boolean = True) As Variant
-    ILLFormat_DesignValue = DesignValue(labelName, returnColor)
-End Function
-
-Private Property Get ILLFormat_HasCheckings() As Boolean
-    ILLFormat_HasCheckings = HasCheckings
-End Property
-
-Private Property Get ILLFormat_CheckingValues() As Checking
-    Set ILLFormat_CheckingValues = CheckingValues
-End Property

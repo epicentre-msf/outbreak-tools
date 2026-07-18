@@ -26,7 +26,7 @@ Option Explicit
 'mode creates a PLAGEVALUES range reference for vertical data entry.
 'Consumers call Create with a layer mode, sheet name, and linelist
 'reference, then invoke Build to construct the sheet.
-'@depends ILinelist, LLSheets, ILinelistSpecs, ILLFormat, IDropdownLists,
+'@depends ILinelist, LLSheets, ILinelistSpecs, LLFormat, IDropdownLists,
 '  IPasswords, ITranslationObject, Buttons, HiddenNames, SectionBuilder,
 '  BetterArray
 '@version 1.0 (2026-02-09)
@@ -183,7 +183,7 @@ Private Sub BuildHList()
     Dim dict As ILLdictionary
     Dim llshs As LLSheets
     Dim specs As ILinelistSpecs
-    Dim design As ILLFormat
+    Dim design As LLFormat
     Dim drop As IDropdownLists
     Dim pass As IPasswords
     Dim pivotObj As CustomPivotTable
@@ -402,7 +402,7 @@ Private Sub BuildVList()
     Dim dict As ILLdictionary
     Dim llshs As LLSheets
     Dim specs As ILinelistSpecs
-    Dim design As ILLFormat
+    Dim design As LLFormat
     Dim drop As IDropdownLists
     Dim pass As IPasswords
     Dim trads As ITranslationObject

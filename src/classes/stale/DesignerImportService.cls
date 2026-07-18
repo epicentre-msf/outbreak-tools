@@ -12,7 +12,7 @@ Attribute VB_Description = "Designer import/export service for setup and linelis
 '@PredeclaredId
 '@Folder("Designer")
 '@ModuleDescription("Imports setup components into a designer workbook and exports them to a linelist workbook.")
-'@depends ProjectError, LLdictionary, ILLdictionary, LLChoices, LLExport, Analysis, IAnalysis, LLGeo, ILLGeo, IPasswords, Passwords, LLFormat, ILLFormat, LLTranslation, HiddenNames
+'@depends ProjectError, LLdictionary, ILLdictionary, LLChoices, LLExport, Analysis, IAnalysis, LLGeo, ILLGeo, IPasswords, Passwords, LLFormat, LLTranslation, HiddenNames
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, ParameterNotUsed
 
 Option Explicit
@@ -374,7 +374,7 @@ End Sub
 '(clickImpStyle sets TAG_FORMATTER_IMPORTED on the host workbook).
 Private Sub ImportFormatter(ByVal setupBook As Workbook, ByVal hostBook As Workbook)
     Dim setupSheet As Worksheet
-    Dim formatManager As ILLFormat
+    Dim formatManager As LLFormat
     Dim store As HiddenNames
 
     'Skip if the formatter was already imported via the ribbon
@@ -555,7 +555,7 @@ End Sub
 '@sub-title Export formatter from host to target workbook
 Private Sub ExportFormatter(ByVal hostBook As Workbook, ByVal targetBook As Workbook)
     Dim hostSheet As Worksheet
-    Dim formatManager As ILLFormat
+    Dim formatManager As LLFormat
 
     Set hostSheet = ResolveWorksheet(hostBook, SHEET_FORMATTER)
     If hostSheet Is Nothing Then Exit Sub

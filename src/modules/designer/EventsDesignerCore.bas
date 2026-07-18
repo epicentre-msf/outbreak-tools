@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Designer")
 '@ModuleDescription("Ribbon callbacks for the designer workbook.")
-'@depends DesignerPreparation, RibbonDev, OSFiles, BetterArray, CustomTable, Passwords, IPasswords, LLFormat, ILLFormat, ApplicationState, DesignerTranslation, IDesignerTranslation, HiddenNames
+'@depends DesignerPreparation, RibbonDev, OSFiles, BetterArray, CustomTable, Passwords, IPasswords, LLFormat, ApplicationState, DesignerTranslation, IDesignerTranslation, HiddenNames
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Private Const SHEET_FORMAT As String = "__formatter"
@@ -188,7 +188,7 @@ End Sub
 Public Sub clickImpStyle(ByRef control As IRibbonControl)
     Dim io As OSFiles
     Dim importBook As Workbook
-    Dim formatManager As ILLFormat
+    Dim formatManager As LLFormat
     Dim appScope As ApplicationState
 
     Set io = OSFiles.Create()

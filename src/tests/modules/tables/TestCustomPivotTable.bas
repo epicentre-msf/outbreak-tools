@@ -226,9 +226,9 @@ Public Sub TestFormatDoesNotError()
     Dim sut As CustomPivotTable
     Set sut = CustomPivotTable.Create(PivotSheet)
 
-    'Format requires an ILLFormat, but we test only that no error occurs.
+    'Format requires an LLFormat, but we test only that no error occurs.
     'Actual formatting is validated in LLFormat tests.
-    'We cannot easily create a real ILLFormat here, so this is a smoke test
+    'We cannot easily create a real LLFormat here, so this is a smoke test
     'that the interface delegation works.
     Assert.IsTrue True, _
                   "Format method should be callable without error (smoke test)"

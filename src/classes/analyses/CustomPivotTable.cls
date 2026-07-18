@@ -23,7 +23,7 @@ Option Explicit
 'stacked vertically. Position tracking and title references are stored as
 'worksheet-level HiddenNames instead of hidden cell values.
 '
-'@depends ILLFormat, HiddenNames, ProjectError
+'@depends LLFormat, HiddenNames, ProjectError
 
 
 '@section State
@@ -166,9 +166,9 @@ End Sub
 '@label:format
 '@sub-title Apply design formatting to the pivot table worksheet
 '@details
-'Delegates to ILLFormat.ApplyFormat with the HListCustomPivotTables scope.
-'@param design ILLFormat. The format object providing style rules.
-Public Sub Format(ByVal design As ILLFormat)
+'Delegates to LLFormat.ApplyFormat with the HListCustomPivotTables scope.
+'@param design LLFormat. The format object providing style rules.
+Public Sub Format(ByVal design As LLFormat)
     design.ApplyFormat this.sh, HListCustomPivotTables
 End Sub
 

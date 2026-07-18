@@ -25,7 +25,7 @@ Option Explicit
 'ranges, and visual formatting. Consumers interact through the CrossTable
 'interface, and AnalysisOutput orchestrates the build sequence by calling
 'Build followed by Format for each table specification.
-'@depends TableSpecs, ILinelistSpecs, ITranslationObject, ILLVariables, LLVariables, ILLFormat, HiddenNames, BetterArray, Checking
+'@depends TableSpecs, ILinelistSpecs, ITranslationObject, ILLVariables, LLVariables, LLFormat, HiddenNames, BetterArray, Checking
 '@version 1.1 (2026-02-11)
 
 
@@ -1460,7 +1460,7 @@ End Function
 '@sub-title Apply formatting to the table using design specifications.
 '@details
 'Applies comprehensive visual formatting to every part of the cross-table
-'using the design format object (ILLFormat). This is the final step after
+'using the design format object (LLFormat). This is the final step after
 'Build completes the structural layout. Formatting is applied in order:
 'section header, table title, spatial dropdown, column headers, row and
 'column categories, interior values, Total/Missing rows and columns,
@@ -1469,12 +1469,12 @@ End Function
 'HasTotal is True but TotalRequested is False, hides the Total column
 'entirely since it is needed internally for percentage computation but
 'should be invisible to the user.
-'@param desFormat ILLFormat. The formatting specification providing ApplyFormat for each scope.
+'@param desFormat LLFormat. The formatting specification providing ApplyFormat for each scope.
 '@remarks Format must be called after Build because it relies on named ranges being
 'present. Some operations are idempotent, guarded by HiddenNames like
 'ROWGS_FORMATSET and MERGED_.
 '@export
-Public Sub Format(ByVal desFormat As ILLFormat)
+Public Sub Format(ByVal desFormat As LLFormat)
     Dim sh As Worksheet
     Dim specs As TableSpecs
     Dim rng As Range
@@ -1482,7 +1482,7 @@ Public Sub Format(ByVal desFormat As ILLFormat)
     Dim counter As Long
     Dim rngName As String
     Dim tabId As String
-    Dim designFormat As ILLFormat
+    Dim designFormat As LLFormat
     Dim wholeTableStart As Long
     Dim hasPercent As Boolean
     Dim newSection As Boolean

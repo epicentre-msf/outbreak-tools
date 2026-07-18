@@ -6,7 +6,7 @@ Option Explicit
 ' @ModuleDescription Behavioural tests for LLFormat
 '
 ' @description
-'   Comprehensive test suite for the LLFormat class (ILLFormat interface), which
+'   Comprehensive test suite for the LLFormat class (LLFormat interface), which
 '   manages linelist visual formatting including design colours, font sizes, cell
 '   styling, and import/export of format data between workbooks. Tests are grouped
 '   into seven logical areas:
@@ -30,7 +30,7 @@ Option Explicit
 '   before every test via TestInitialize and torn down in TestCleanup, ensuring
 '   test isolation.
 '
-' @depends LLFormat, ILLFormat, Checking, BetterArray, CustomTest,
+' @depends LLFormat, Checking, BetterArray, CustomTest,
 '          TestHelpers, LLFormatTestFixture
 '===============================================================================
 
@@ -42,7 +42,7 @@ Option Explicit
 Private Assert As CustomTest
 Private FormatWorkbook As Workbook
 Private FormatSheet As Worksheet
-Private FormatUnderTest As ILLFormat
+Private FormatUnderTest As LLFormat
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const FORMAT_SHEET_NAME As String = "LLFormatFixture_Test"
@@ -303,7 +303,7 @@ Public Sub TestCreateFallsBackToDefaultDesign()
     CustomTestSetTitles Assert, "LLFormat", "TestCreateFallsBackToDefaultDesign"
     On Error GoTo TestFail
 
-    Dim sut As ILLFormat
+    Dim sut As LLFormat
 
     Set sut = LLFormat.Create(FormatSheet, designType:="unknown design")
 
@@ -647,7 +647,7 @@ End Sub
 '@TestMethod("LLFormat")
 '@description Importing from another sheet should copy font and interior colours for designs.
 ' @sub-title TestImportCopiesDesignColours
-' @details Tests ILLFormat.Import by verifying that design colours are transferred
+' @details Tests LLFormat.Import by verifying that design colours are transferred
 '   from an import sheet into the active format instance. Arranges by preparing a
 '   secondary fixture sheet with green interior and blue font for the "missing font
 '   color" label under the secondary design, then sets the DESIGNTYPE to that design.

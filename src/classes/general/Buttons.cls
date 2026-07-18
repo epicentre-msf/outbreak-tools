@@ -23,7 +23,7 @@ Option Explicit
 'Light wrapper around worksheet shapes for creating, positioning,
 'and formatting linelist buttons. Supports large, small, and geo
 'button scopes with automatic placement offset calculations.
-'@depends Checking, ILLFormat, ProjectError
+'@depends Checking, LLFormat, ProjectError
 '@version 1.0 (2026-02-09)
 
 
@@ -251,9 +251,9 @@ End Sub
 
 '@label:format
 '@sub-title Apply the appropriate visual design to the button
-'@param design ILLFormat. Formatter responsible for styling the shape.
+'@param design LLFormat. Formatter responsible for styling the shape.
 '@export
-Public Sub Format(ByVal design As ILLFormat)
+Public Sub Format(ByVal design As LLFormat)
     Dim shp As Shape
     Dim formatToken As Variant
 

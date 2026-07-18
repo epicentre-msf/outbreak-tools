@@ -1078,7 +1078,7 @@ End Sub
 
 'Format
 
-Private Sub Format(ByVal desFormat As ILLFormat)
+Private Sub Format(ByVal desFormat As LLFormat)
     Dim sh As Worksheet
     Dim specs As ITablesSpecs
     Dim rng As Range
@@ -1086,7 +1086,7 @@ Private Sub Format(ByVal desFormat As ILLFormat)
     Dim counter As Long
     Dim rngName As String
     Dim tabId As String
-    Dim DesignFormat As ILLFormat
+    Dim DesignFormat As LLFormat
     Dim wholeTableStart As Long
     Dim HasPercent As Boolean
     Dim NewSection As Boolean
@@ -1428,7 +1428,7 @@ Private Sub ICrossTable_NameRanges()
     NameRanges
 End Sub
 
-Private Sub ICrossTable_Format(ByVal DesignFormat As ILLFormat)
+Private Sub ICrossTable_Format(ByVal DesignFormat As LLFormat)
     Format DesignFormat
 End Sub
 

@@ -46,7 +46,7 @@ Private Property Get ILinelistSpecs_Choices() As LLChoices
     Set ILinelistSpecs_Choices = Nothing
 End Property
 
-Private Property Get ILinelistSpecs_DesignFormat() As ILLFormat
+Private Property Get ILinelistSpecs_DesignFormat() As LLFormat
     Set ILinelistSpecs_DesignFormat = Nothing
 End Property
 

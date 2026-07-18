@@ -24,7 +24,7 @@ Option Explicit
 '(normal, time series, spatial, spatio-temporal), builds cross-tables from
 'table specifications, writes formulas, registers metadata in AnaTabIds, and
 'renders charts.
-'@depends ILinelist, ILinelistSpecs, ILLFormat, ITranslationObject, TableSpecs, CrossTable, CrossTableFormula, Graphs, AnaTabIds, Buttons, IPasswords, IDropdownLists, ILLdictionary, ILLVariables, FormulaData, BetterArray
+'@depends ILinelist, ILinelistSpecs, LLFormat, ITranslationObject, TableSpecs, CrossTable, CrossTableFormula, Graphs, AnaTabIds, Buttons, IPasswords, IDropdownLists, ILLdictionary, ILLVariables, FormulaData, BetterArray
 '@version 1.0 (2026-02-10)
 
 
@@ -161,13 +161,13 @@ End Property
 '@label:design-format
 '@prop-title Design format object.
 '@details
-'Convenience accessor for the ILLFormat design format object used to
+'Convenience accessor for the LLFormat design format object used to
 'apply visual formatting (fonts, colours, borders, cell styles) to analysis
 'worksheets, cells, and chart elements. Delegates through LinelistData to
 'retrieve the shared format singleton so all analysis output uses consistent
 'styling from the setup workbook.
-'@return ILLFormat. Design format object for the output linelist.
-Private Property Get DesignFormat() As ILLFormat
+'@return LLFormat. Design format object for the output linelist.
+Private Property Get DesignFormat() As LLFormat
     Set DesignFormat = LinelistData().DesignFormat()
 End Property
 
@@ -318,7 +318,7 @@ Private Sub AddCommands(Optional ByVal scope As Byte = AnalysisScopeNormal)
     Dim cellRng As Range
     Dim commandName As String
     Dim shapeLabel As String
-    Dim design As ILLFormat
+    Dim design As LLFormat
     Dim but As Buttons
     Dim outsh As Worksheet
     Dim trads As ITranslationObject
@@ -357,7 +357,7 @@ Private Sub PrepareSheet(Optional ByVal scope As Byte = AnalysisScopeNormal)
     Dim outsh As Worksheet
     Dim cellRng As Range
     Dim sheetInfo As String
-    Dim design As ILLFormat
+    Dim design As LLFormat
     Dim shHn As HiddenNames
 
     Select Case scope
@@ -419,7 +419,7 @@ Private Sub AddGoTo(ByVal cellRng As Range, _
     Dim drop As IDropdownLists
     Dim ll As ILinelist
     Dim dropName As String
-    Dim design As ILLFormat
+    Dim design As LLFormat
 
     If dropArray.Length = 0 Then Exit Sub
 
@@ -532,7 +532,7 @@ Private Sub WriteTable(ByVal loName As String, _
     Dim grSpecs As GraphSpecs
     Dim tabId As String
     Dim tabType As Byte
-    Dim design As ILLFormat
+    Dim design As LLFormat
     Dim anchorRng As Range
     Dim containsTimeSeries As Boolean
     Dim spatRng As Range
@@ -809,7 +809,7 @@ Private Sub WriteTimeSeriesGraphs(ByVal graphLoName As String, _
     Dim grSpecs As GraphSpecs
     Dim gr As Graphs
     Dim trads As ITranslationObject
-    Dim design As ILLFormat
+    Dim design As LLFormat
     Dim namObj As AnaTabIds
     Dim goToGraphLabel As String
 
@@ -934,7 +934,7 @@ Private Sub WriteSpatioTemporalGraph(ByVal loName As String, _
     Dim cellRng As Range
     Dim specs As TableSpecs
     Dim lData As ILinelistSpecs
-    Dim design As ILLFormat
+    Dim design As LLFormat
     Dim hRng As Range
     Dim tabRng As Range
     Dim anchorRng As Range

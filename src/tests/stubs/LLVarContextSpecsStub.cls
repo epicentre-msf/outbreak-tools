@@ -17,7 +17,7 @@ Option Explicit
 Implements ILinelistSpecs
 
 Private categoriesMap As Collection
-Private designFormat As ILLFormat
+Private designFormat As LLFormat
 Private dictionary As ILLdictionary
 Private formulaData As FormulaData
 Private translationObject As ITranslationObject
@@ -54,7 +54,7 @@ Public Sub SetCategories(ByVal varName As String, values As Variant, _
     categoriesMap.Add categoryList, key
 End Sub
 
-Public Sub SetDesignFormat(ByVal fmt As ILLFormat)
+Public Sub SetDesignFormat(ByVal fmt As LLFormat)
     Set designFormat = fmt
 End Sub
 
@@ -93,7 +93,7 @@ Private Property Get ILinelistSpecs_Choices() As LLChoices
     Set ILinelistSpecs_Choices = Nothing
 End Property
 
-Private Property Get ILinelistSpecs_DesignFormat() As ILLFormat
+Private Property Get ILinelistSpecs_DesignFormat() As LLFormat
     Set ILinelistSpecs_DesignFormat = designFormat
 End Property
 
