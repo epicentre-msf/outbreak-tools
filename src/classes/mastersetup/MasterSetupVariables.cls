@@ -94,8 +94,8 @@ End Property
 '@section Public API
 '===============================================================================
 '@sub-title Initialise validation, hidden names, and duplicate detection.
-'@param dropdowns IDropdownLists provider used to configure the Default Status validation.
-Public Sub Initialise(ByVal dropdowns As IDropdownLists)
+'@param dropdowns DropdownLists provider used to configure the Default Status validation.
+Public Sub Initialise(ByVal dropdowns As DropdownLists)
     ValidateReady
     ApplyDropdownValidation dropdowns
     PersistColumnMetadata
@@ -458,7 +458,7 @@ Private Function ResolveOrCreateSheet(ByVal wb As Workbook, ByVal sheetName As S
     End If
 End Function
 
-Private Sub ApplyDropdownValidation(ByVal dropdowns As IDropdownLists)
+Private Sub ApplyDropdownValidation(ByVal dropdowns As DropdownLists)
     Dim statusRange As Range
     Dim values As BetterArray
 
@@ -466,7 +466,7 @@ Private Sub ApplyDropdownValidation(ByVal dropdowns As IDropdownLists)
     If statusRange Is Nothing Then Exit Sub
 
     If dropdowns Is Nothing Then
-        ThrowError ProjectError.InvalidArgument, "Initialise requires an IDropdownLists dependency."
+        ThrowError ProjectError.InvalidArgument, "Initialise requires an DropdownLists dependency."
     End If
 
     If Not dropdowns.Exists(STATUS_DROPDOWN_NAME) Then

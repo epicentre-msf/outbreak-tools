@@ -33,7 +33,7 @@ Option Explicit
 Private Type TEventSetup
     hostBook            As Workbook          'Workbook owning the setup sheets
     updater             As UpdatedValues    'Registry tracker for watched columns
-    drop                As IDropdownLists    'Cached dropdown manager
+    drop                As DropdownLists    'Cached dropdown manager
     ribbon              As IRibbonUI         'Cached ribbon instance when available
     tsTable             As CustomTable      'Analysis time-series table wrapper
     graphTable          As CustomTable      'Analysis graph table wrapper
@@ -727,7 +727,7 @@ End Sub
 '@label:ensure-dropdown-values
 '@sub-title Lazily initialise the dropdown manager from the variables worksheet.
 '@details
-'Creates an IDropdownLists instance from the "__variables" worksheet using
+'Creates an DropdownLists instance from the "__variables" worksheet using
 'the standard dropdown prefix. Exits silently when the worksheet does not
 'exist or creation fails.
 Private Sub EnsureDropdownValues()

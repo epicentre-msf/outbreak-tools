@@ -12,7 +12,7 @@ Attribute VB_Description = "Prepares designer workbooks and ribbon settings"
 '@PredeclaredId
 '@Folder("Designer")
 '@ModuleDescription("Prepares designer workbooks and persists ribbon settings through hidden names.")
-'@depends ProjectError, HiddenNames, Development, OSFiles, CustomTable, BetterArray, DropdownLists, IDropdownLists
+'@depends ProjectError, HiddenNames, Development, OSFiles, CustomTable, BetterArray, DropdownLists, DropdownLists
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, ParameterNotUsed
 
 Option Explicit
@@ -29,7 +29,7 @@ Option Explicit
 'T_Multi table on the GenerateMultiple worksheet, and registers hidden
 'sheets with the development manager. Also provides methods to read and
 'write ribbon checkbox flags persisted through workbook-level hidden names.
-'@depends HiddenNames, Development, OSFiles, CustomTable, BetterArray, DropdownLists, IDropdownLists
+'@depends HiddenNames, Development, OSFiles, CustomTable, BetterArray, DropdownLists, DropdownLists
 
 
 '@section State
@@ -38,7 +38,7 @@ Option Explicit
 Private Type TDesignerPreparation
     hostBook As Workbook       'Designer workbook being prepared
     store As HiddenNames      'Workbook-level hidden names manager
-    dropdowns As IDropdownLists 'Dropdown manager bound to dropdown sheet
+    dropdowns As DropdownLists 'Dropdown manager bound to dropdown sheet
     dropSheet As Worksheet     'Worksheet hosting dropdown listobjects
 End Type
 
@@ -247,12 +247,12 @@ End Property
 '@label:dropdowns
 '@prop-title The dropdown manager created during preparation
 '@details
-'Returns the IDropdownLists manager bound to the designer dropdown
+'Returns the DropdownLists manager bound to the designer dropdown
 'worksheet. Lazily initialises the manager on first access if it was
 'not already created by EnsureDropdowns or Prepare.
-'@return IDropdownLists. The dropdown manager instance.
+'@return DropdownLists. The dropdown manager instance.
 '@export
-Public Property Get Dropdowns() As IDropdownLists
+Public Property Get Dropdowns() As DropdownLists
     EnsureDropdownManager
     Set Dropdowns = this.dropdowns
 End Property
@@ -531,7 +531,7 @@ Private Sub ApplyMultiValidations()
     Dim sh As Worksheet
     Dim lo As ListObject
     Dim table As CustomTable
-    Dim drop As IDropdownLists
+    Dim drop As DropdownLists
 
     Set sh = ResolveWorksheet(SHEET_GENERATE_MULTIPLE)
     If sh Is Nothing Then Exit Sub
@@ -570,7 +570,7 @@ End Sub
 'that does not exist.
 Private Sub ApplyMainValidations()
     Dim sh As Worksheet
-    Dim drop As IDropdownLists
+    Dim drop As DropdownLists
     Dim rng As Range
 
     Set sh = ResolveWorksheet(SHEET_MAIN)
@@ -609,7 +609,7 @@ End Sub
 'worksheet does not exist or individual named ranges are missing.
 Private Sub ApplyMainValidations()
     Dim sh As Worksheet
-    Dim drop As IDropdownLists
+    Dim drop As DropdownLists
 
     Set sh = ResolveWorksheet(SHEET_MAIN)
     If sh Is Nothing Then Exit Sub
@@ -630,10 +630,10 @@ End Sub
 'named range does not exist on the worksheet.
 '@param sh Worksheet. The worksheet containing the named range.
 '@param rngName String. The named range identifier.
-'@param drop IDropdownLists. The dropdown manager with registered lists.
+'@param drop DropdownLists. The dropdown manager with registered lists.
 '@param dropName String. The dropdown list name to use as validation source.
 Private Sub ApplyRangeValidation(ByVal sh As Worksheet, ByVal rngName As String, _
-                                 ByVal drop As IDropdownLists, ByVal dropName As String)
+                                 ByVal drop As DropdownLists, ByVal dropName As String)
     Dim rng As Range
 
     On Error Resume Next

@@ -13,7 +13,7 @@ Attribute VB_Description = "Analyses setup sheets and publishes consistency repo
 '@Folder("Setup")
 '@ModuleDescription("Analyses setup sheets and publishes consistency reports")
 '@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
-'@depends Analysis, ApplicationState, BetterArray, Checking, CheckingOutput, CustomTable, DropdownLists, FormulaData, Formulas, IDropdownLists, LLChoices, LLVariables, LLdictionary, Passwords, ProjectError, TableSpecs
+'@depends Analysis, ApplicationState, BetterArray, Checking, CheckingOutput, CustomTable, DropdownLists, FormulaData, Formulas, DropdownLists, LLChoices, LLVariables, LLdictionary, Passwords, ProjectError, TableSpecs
 
 Option Explicit
 
@@ -1177,7 +1177,7 @@ End Sub
 Private Sub PrintReport()
     Dim checkOutput As CheckingOutput
     Dim reportSheet As Worksheet
-    Dim dropdowns As IDropdownLists
+    Dim dropdowns As DropdownLists
     Dim formatRange As Range
 
     Set reportSheet = ResolveWorksheet(SHEET_CHECK_OUTPUT)

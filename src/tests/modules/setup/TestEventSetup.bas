@@ -97,7 +97,7 @@ Public Sub TestUpdateAnalysisDropdownsBuildsGeoLists()
 
     Subject.UpdateAnalysisDropdowns True
 
-    Dim dropInspector As IDropdownLists
+    Dim dropInspector As DropdownLists
     Set dropInspector = DropdownLists.Create(FixtureWorkbook.Worksheets(SHEET_DROPDOWN))
 
     Assert.IsTrue dropInspector.Exists("__geo_vars"), "Geo dropdown must be created after refresh"
@@ -123,7 +123,7 @@ Public Sub TestResetCachesRebuildsGeoDropdowns()
     Subject.ResetCaches
     Subject.UpdateAnalysisDropdowns True
 
-    Dim dropInspector As IDropdownLists
+    Dim dropInspector As DropdownLists
     Set dropInspector = DropdownLists.Create(FixtureWorkbook.Worksheets(SHEET_DROPDOWN))
 
     Assert.IsTrue dropInspector.Values("__geo_vars").Includes("geo_var_new"), "Geo dropdown should include newly added variable after cache reset"

@@ -26,7 +26,7 @@ Option Explicit
 'and tracks hidden-column state so that Find-based operations see all
 'columns. An optional ID column provides dictionary-style keyed access to
 'individual rows.
-'@depends BetterArray, Checking, HiddenNames, IDropdownLists
+'@depends BetterArray, Checking, HiddenNames, DropdownLists
 '@version 1.0 (2026-02-09)
 
 
@@ -1313,17 +1313,17 @@ End Sub
 '@label:set-validation
 '@sub-title Set dropdown validation on a column
 '@details
-'Applies data validation from the supplied IDropdownLists to every cell
+'Applies data validation from the supplied DropdownLists to every cell
 'in the specified column. Silently exits when the column does not exist
 'or has no data range.
 '@param colName String. Column header to validate.
-'@param drop IDropdownLists. Dropdown source providing the validation list.
+'@param drop DropdownLists. Dropdown source providing the validation list.
 '@param dropName String. Name of the dropdown list within the source.
 '@param alertType Optional String. Alert severity ("info", "warning", "error"). Defaults to "info".
 '@param message Optional String. Message shown when validation fails. Defaults to vbNullString.
 '@export
 Public Sub SetValidation(ByVal colName As String, _
-                          ByVal drop As IDropdownLists, _
+                          ByVal drop As DropdownLists, _
                           ByVal dropName As String, _
                           Optional ByVal alertType As String = "info", _
                           Optional ByVal message As String = vbNullString)

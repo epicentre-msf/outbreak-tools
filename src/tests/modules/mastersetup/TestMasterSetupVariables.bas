@@ -122,7 +122,7 @@ End Sub
 
 '@TestMethod("MasterSetupVariables")
 Public Sub TestInitialisePersistsMetadataAndValidation()
-    Dim dropdowns As IDropdownLists
+    Dim dropdowns As DropdownLists
     Dim statusRange As Range
     Dim hidden As HiddenNames
 
@@ -209,7 +209,7 @@ End Sub
 
 '@TestMethod("MasterSetupVariables")
 Public Sub TestCloneToWorkbookCopiesStructureAndMetadata()
-    Dim dropdowns As IDropdownLists
+    Dim dropdowns As DropdownLists
     Dim targetBook As Workbook
     Dim clone As MasterSetupVariables
     Dim targetSheet As Worksheet
@@ -290,7 +290,7 @@ End Sub
 
 '@TestMethod("MasterSetupVariables")
 Public Sub TestCopyToListObjectAppliesNameStyleAndOrder()
-    Dim dropdowns As IDropdownLists
+    Dim dropdowns As DropdownLists
     Dim targetSheet As Worksheet
     Dim targetTable As ListObject
     Dim expectedStyle As String
@@ -343,7 +343,7 @@ Private Function BuildChoicesStub() As LLChoices
     Set BuildChoicesStub = LLChoices.Create(sh, 4, 1)
 End Function
 
-Private Function BuildDropdownsStub() As IDropdownLists
+Private Function BuildDropdownsStub() As DropdownLists
     Dim sh As Worksheet
 
     Set sh = TestHelpers.EnsureWorksheet(DROPDOWNS_SHEET)

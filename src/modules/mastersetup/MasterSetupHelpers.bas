@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Master Setup")
 '@ModuleDescription("Utility helpers shared across master setup modules.")
-'@depends DropdownLists, IDropdownLists, CustomTable, Passwords, Passwords, Translation, ITranslationObject, BetterArray
+'@depends DropdownLists, DropdownLists, CustomTable, Passwords, Passwords, Translation, ITranslationObject, BetterArray
 
 Private Const VARIABLES_SHEETNAME As String = "Variables"
 Private Const TRANSLATIONS_SHEETNAME As String = "Translations"
@@ -160,7 +160,7 @@ Public Function ResolveMasterVariables(Optional ByVal dictionary As ILLdictionar
 End Function
 
 Public Function ResolveMasterDropdowns(Optional ByVal hostSheet As Worksheet, _
-                                       Optional ByVal headerPrefix As String = DEFAULT_DROPDOWN_PREFIX) As IDropdownLists
+                                       Optional ByVal headerPrefix As String = DEFAULT_DROPDOWN_PREFIX) As DropdownLists
     Dim targetSheet As Worksheet
 
     If hostSheet Is Nothing Then
@@ -384,7 +384,7 @@ Public Sub ClearMasterSheetData(ByVal targetSheet As Worksheet)
 End Sub
 
 Public Function ShouldManageMasterSheet(ByVal sheetName As String) As Boolean
-    Dim dropdowns As IDropdownLists
+    Dim dropdowns As DropdownLists
     Dim configSheets As BetterArray
 
     sheetName = Trim$(sheetName)

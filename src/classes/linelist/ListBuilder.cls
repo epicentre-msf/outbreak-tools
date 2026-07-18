@@ -26,7 +26,7 @@ Option Explicit
 'mode creates a PLAGEVALUES range reference for vertical data entry.
 'Consumers call Create with a layer mode, sheet name, and linelist
 'reference, then invoke Build to construct the sheet.
-'@depends ILinelist, LLSheets, ILinelistSpecs, LLFormat, IDropdownLists,
+'@depends ILinelist, LLSheets, ILinelistSpecs, LLFormat, DropdownLists,
 '  Passwords, ITranslationObject, Buttons, HiddenNames, SectionBuilder,
 '  BetterArray
 '@version 1.0 (2026-02-09)
@@ -184,7 +184,7 @@ Private Sub BuildHList()
     Dim llshs As LLSheets
     Dim specs As ILinelistSpecs
     Dim design As LLFormat
-    Dim drop As IDropdownLists
+    Dim drop As DropdownLists
     Dim pass As Passwords
     Dim pivotObj As CustomPivotTable
     Dim trads As ITranslationObject
@@ -403,7 +403,7 @@ Private Sub BuildVList()
     Dim llshs As LLSheets
     Dim specs As ILinelistSpecs
     Dim design As LLFormat
-    Dim drop As IDropdownLists
+    Dim drop As DropdownLists
     Dim pass As Passwords
     Dim trads As ITranslationObject
     Dim rng As Range
@@ -499,8 +499,8 @@ Private Sub BuildSections(ByVal sh As Worksheet, ByVal printSh As Worksheet)
     Dim startRow As Long
     Dim secBuilder As SectionBuilder
     Dim crfSh As Worksheet
-    Dim dropdownObj As IDropdownLists
-    Dim customDropdownObj As IDropdownLists
+    Dim dropdownObj As DropdownLists
+    Dim customDropdownObj As DropdownLists
 
     Set specs = this.ll.LinelistData
     Set llshs = LLSheets.Create(this.ll.Dictionary)

@@ -20,7 +20,7 @@ Private Importer As IDiseaseImporter
 Private Exporter As IDiseaseExporter
 Private ExportManager As IDiseaseExportWorkbook
 Private AppGuard As IDiseaseApplicationState
-Private Dropdowns As IDropdownLists
+Private Dropdowns As DropdownLists
 Private RibbonTranslations As ITranslationObject
 Private TranslationTable As ListObject
 
@@ -149,7 +149,7 @@ Private Sub PrepareEnvironment()
     AddName "PARAMVARNAME", dropdownSheet.Range("C2:C5")
     AddName "PARAMCHOICESLIST", dropdownSheet.Range("D2:D5")
 
-    Set Dropdowns = New TestDropdownStub
+    Set Dropdowns = DropdownLists.Create(dropdownSheet)
 
     Set translationSheet = EnsureWorksheet(TRANSLATION_SHEET)
     ClearWorksheet translationSheet

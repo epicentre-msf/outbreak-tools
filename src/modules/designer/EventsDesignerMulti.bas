@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Designer")
 '@ModuleDescription("Ribbon callbacks for the Multi group on the designer workbook.")
-'@depends CustomTable, ApplicationState, OSFiles, HiddenNames, DropdownLists, IDropdownLists, BetterArray
+'@depends CustomTable, ApplicationState, OSFiles, HiddenNames, DropdownLists, DropdownLists, BetterArray
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 'Ribbon callbacks for the Multi group manage the T_Multi ListObject on
@@ -412,8 +412,8 @@ Private Function ActiveCellColumnName(ByVal lo As ListObject) As String
 End Function
 
 '@Description("Resolve the DropdownLists manager on the __dropdowns worksheet.")
-'@return IDropdownLists. The dropdown manager, or Nothing when the sheet is missing.
-Private Function ResolveDropdownManager() As IDropdownLists
+'@return DropdownLists. The dropdown manager, or Nothing when the sheet is missing.
+Private Function ResolveDropdownManager() As DropdownLists
     Dim dropSheet As Worksheet
 
     On Error Resume Next
@@ -442,7 +442,7 @@ Private Sub LoadSetupFiles(ByVal lo As ListObject, ByVal io As OSFiles)
     Dim startRow As Long
     Dim currentRow As Long
     Dim filePath As String
-    Dim drop As IDropdownLists
+    Dim drop As DropdownLists
     Dim dropName As String
     Dim rowId As String
     Dim langCell As Range

@@ -26,7 +26,7 @@ Private Const NAME_INDEX As String = "__Var_DISINDEX"
 
 Private Assert As CustomTest
 Private Builder As IDiseaseSheet
-Private Dropdowns As IDropdownLists
+Private Dropdowns As DropdownLists
 Private Translations As ITranslationObject
 Private VariablesManager As MasterSetupVariables
 
@@ -335,7 +335,7 @@ Private Sub RegisterVariableName(ByVal lo As ListObject)
     store.SetListObjectHeader VARIABLE_NAME_RANGE, lo, "Variable Name"
 End Sub
 
-Private Sub AddDropdownList(ByVal target As IDropdownLists, ByVal listName As String, ByVal values As Variant)
+Private Sub AddDropdownList(ByVal target As DropdownLists, ByVal listName As String, ByVal values As Variant)
     Dim listValues As BetterArray
 
     Set listValues = BuildBetterArray(values)

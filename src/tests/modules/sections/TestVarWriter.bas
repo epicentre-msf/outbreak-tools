@@ -13,8 +13,8 @@ Private Dict As ILLdictionary
 Private Specs As LLVarContextSpecsStub
 Private TargetSheet As Worksheet
 Private PrintSheet As Worksheet
-Private DropStub As DropdownListsStub
-Private CustDropStub As DropdownListsStub
+Private DropStub As DropdownLists
+Private CustDropStub As DropdownLists
 
 Private Const TESTOUTPUTSHEET As String = "testsOutputs"
 Private Const TESTMODULE As String = "VarWriter"
@@ -64,10 +64,11 @@ Private Sub TestInitialize()
     Set TargetSheet = FixtureWorkbook.Worksheets.Add
     Set PrintSheet = FixtureWorkbook.Worksheets.Add
 
-    Set DropStub = New DropdownListsStub
-    DropStub.Initialise TargetSheet
-    Set CustDropStub = New DropdownListsStub
-    CustDropStub.Initialise TargetSheet
+    'Dropdown lists live on their own host sheets (as in production) so their
+    'list tables and validations never collide with the variable content the
+    'tests assert on TargetSheet.
+    Set DropStub = DropdownLists.Create(FixtureWorkbook.Worksheets.Add, hprefix:=vbNullString)
+    Set CustDropStub = DropdownLists.Create(FixtureWorkbook.Worksheets.Add, hprefix:=vbNullString)
 
     Set Specs = New LLVarContextSpecsStub
     Specs.SetDictionary Dict

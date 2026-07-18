@@ -12,7 +12,7 @@ Attribute VB_Description = "Implementation for Master Setup preparation and conf
 '@PredeclaredId
 '@Folder("MasterSetup")
 '@ModuleDescription("Implementation for Master Setup preparation and configuration")
-'@depends ApplicationState, DropdownLists, IDropdownLists, BetterArray, MasterSetupVariables, ProjectError, HiddenNames
+'@depends ApplicationState, DropdownLists, DropdownLists, BetterArray, MasterSetupVariables, ProjectError, HiddenNames
 '@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit
@@ -23,7 +23,7 @@ Private Type TMasterSetupPreparation
     hostBook As Workbook             'Workbook hosting master setup artefacts
     dropdownSheet As Worksheet       'Worksheet hosting dropdown listobjects
     variablesSheet As Worksheet      'Worksheet hosting the variables table
-    dropdowns As IDropdownLists      'Cached dropdown manager
+    dropdowns As DropdownLists      'Cached dropdown manager
     variables As MasterSetupVariables  'Cached variables manager
 End Type
 
@@ -126,7 +126,7 @@ End Sub
 
 '@Description("Ensure the dropdown worksheet hosts all required dropdown lists.")
 Public Sub EnsureDropdowns()
-    Dim drop As IDropdownLists
+    Dim drop As DropdownLists
     Dim definitions As Variant
     Dim idx As Long
     Dim entry As Variant
@@ -158,7 +158,7 @@ Public Sub EnsureVariables()
 End Sub
 
 '@Description("Expose the dropdown manager for callers needing direct access.")
-Public Property Get Dropdowns() As IDropdownLists
+Public Property Get Dropdowns() As DropdownLists
     EnsureDropdownManager
     Set Dropdowns = this.dropdowns
 End Property
@@ -186,7 +186,7 @@ Private Sub ResetCaches()
 End Sub
 
 '@Description("Ensure the dropdown manager is initialised and cached.")
-Private Function EnsureDropdownManager() As IDropdownLists
+Private Function EnsureDropdownManager() As DropdownLists
     If Not this.dropdowns Is Nothing Then
         Set EnsureDropdownManager = this.dropdowns
         Exit Function
@@ -374,7 +374,7 @@ Private Function DefaultConfigSheets() As Variant
 End Function
 
 '@Description("Ensure a dropdown definition exists with the supplied values.")
-Private Sub EnsureDropdownDefinition(ByVal drop As IDropdownLists, _
+Private Sub EnsureDropdownDefinition(ByVal drop As DropdownLists, _
                                      ByVal listName As String, _
                                      ByVal items As Variant)
     Dim values As BetterArray
@@ -384,7 +384,7 @@ Private Sub EnsureDropdownDefinition(ByVal drop As IDropdownLists, _
 End Sub
 
 '@Description("Populate the languages dropdowns using the translations sheet headers.")
-Private Sub RefreshLanguageDropdowns(ByVal drop As IDropdownLists)
+Private Sub RefreshLanguageDropdowns(ByVal drop As DropdownLists)
     Dim wsTrans As Worksheet
     Dim translations As ListObject
     Dim langValues As BetterArray
@@ -430,7 +430,7 @@ Private Function BuildArray(ByVal items As Variant) As BetterArray
 End Function
 
 '@Description("Ensure a dropdown either exists or is updated with the supplied values.")
-Private Sub EnsureDropdownHasValues(ByVal drop As IDropdownLists, _
+Private Sub EnsureDropdownHasValues(ByVal drop As DropdownLists, _
                                     ByVal listName As String, _
                                     ByVal values As BetterArray)
     If drop Is Nothing Then Exit Sub

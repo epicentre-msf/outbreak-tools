@@ -25,7 +25,7 @@ Option Explicit
 'to the resolved cell range. The class caches dictionary, variables, and
 'sheets accessors for performance across repeated calls.
 '@depends ILinelistSpecs, ILLdictionary, ILLVariables, LLSheets, LLFormat,
-'ITranslationObject, FormulaData, Formulas, IDropdownLists, LLGeo,
+'ITranslationObject, FormulaData, Formulas, DropdownLists, LLGeo,
 'Formulas, LLVariables, LLSheets, BetterArray
 '@version 1.0 (2026-02-10)
 
@@ -37,8 +37,8 @@ Private Type TVarWriter
     hn As HiddenNames
     printWksh As Worksheet
     crfWksh As Worksheet
-    dropdown As IDropdownLists
-    customDropdown As IDropdownLists
+    dropdown As DropdownLists
+    customDropdown As DropdownLists
     varName As String
     cachedRange As Range
     cachedPrintRange As Range
@@ -74,8 +74,8 @@ Private internalChecks As Checking
 '@param wksh Worksheet. The target main worksheet.
 '@param printWksh Optional Worksheet. Printed companion worksheet (HList only). Defaults to Nothing.
 '@param crfWksh Optional Worksheet. CRF companion worksheet (HList only). Defaults to Nothing.
-'@param dropdownObj Optional IDropdownLists. Dropdown lists manager. Defaults to Nothing.
-'@param customDropdownObj Optional IDropdownLists. Custom dropdown lists manager (for choice_custom). Defaults to Nothing.
+'@param dropdownObj Optional DropdownLists. Dropdown lists manager. Defaults to Nothing.
+'@param customDropdownObj Optional DropdownLists. Custom dropdown lists manager (for choice_custom). Defaults to Nothing.
 '@return VarWriter. A fully initialised writer bound to the given layer and worksheets.
 '@throws VBA.vbObjectError + 516 if specs or wksh is Nothing.
 '@export
@@ -84,8 +84,8 @@ Public Function Create(ByVal layer As Byte, _
                        ByVal wksh As Worksheet, _
                        Optional ByVal printWksh As Worksheet = Nothing, _
                        Optional ByVal crfWksh As Worksheet = Nothing, _
-                       Optional ByVal dropdownObj As IDropdownLists = Nothing, _
-                       Optional ByVal customDropdownObj As IDropdownLists = Nothing) As VarWriter
+                       Optional ByVal dropdownObj As DropdownLists = Nothing, _
+                       Optional ByVal customDropdownObj As DropdownLists = Nothing) As VarWriter
 
     If specs Is Nothing Then ThrowError ProjectError.ObjectNotInitialized, "Specifications object is required"
     If wksh Is Nothing Then ThrowError ProjectError.ObjectNotInitialized, "Target worksheet is required"
@@ -149,13 +149,13 @@ End Property
 
 '@label:internal-dropdown
 '@prop-title Assign the dropdown lists manager
-Public Property Set InternalDropdown(ByVal dropdownObj As IDropdownLists)
+Public Property Set InternalDropdown(ByVal dropdownObj As DropdownLists)
     Set this.dropdown = dropdownObj
 End Property
 
 '@label:internal-custom-dropdown
 '@prop-title Assign the custom dropdown lists manager
-Public Property Set InternalCustomDropdown(ByVal dropdownObj As IDropdownLists)
+Public Property Set InternalCustomDropdown(ByVal dropdownObj As DropdownLists)
     Set this.customDropdown = dropdownObj
 End Property
 
@@ -752,7 +752,7 @@ End Sub
 '@details
 'Handles choice_manual, choice_multiple, choice_custom, list_auto, and geo1
 'control types. For each type it populates a BetterArray of categories,
-'registers them with the appropriate IDropdownLists manager, and calls
+'registers them with the appropriate DropdownLists manager, and calls
 'SetValidation to apply dropdown data validation to the cell. The
 'choice_custom branch additionally creates a hyperlink from the label cell
 'to the dropdown worksheet and adds a return link. The geo1 branch sets up
@@ -763,7 +763,7 @@ Private Sub AddChoices()
     Dim varAlert As String
     Dim varMessage As String
     Dim cat As BetterArray
-    Dim drop As IDropdownLists
+    Dim drop As DropdownLists
     Dim cellRng As Range
     Dim geo As LLGeo
     Dim choicust As String

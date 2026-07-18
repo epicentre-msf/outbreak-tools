@@ -51,7 +51,7 @@ Private Sub ILinelist_AddOutputSheet(ByVal sheetName As String, _
                                      Optional ByVal sheetScope As Byte = 1)
 End Sub
 
-Private Property Get ILinelist_Dropdown(Optional ByVal scope As Byte = 1) As IDropdownLists
+Private Property Get ILinelist_Dropdown(Optional ByVal scope As Byte = 1) As DropdownLists
     Set ILinelist_Dropdown = Nothing
 End Property
 

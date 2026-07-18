@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Master Setup")
 '@ModuleDescription("Ribbon callbacks supporting master setup operations.")
-'@depends MasterSetupPreparation, MasterSetupHelpers, IDropdownLists, Passwords, Passwords, Translation, ITranslationObject, TranslationChunks, ITranslationChunks, ApplicationState, SetupTranslationsTable, UpdatedValues, DiseaseSheetBuilder, IDiseaseSheetBuilder
+'@depends MasterSetupPreparation, MasterSetupHelpers, DropdownLists, Passwords, Passwords, Translation, ITranslationObject, TranslationChunks, ITranslationChunks, ApplicationState, SetupTranslationsTable, UpdatedValues, DiseaseSheetBuilder, IDiseaseSheetBuilder
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Private Const RIBBON_TRANSLATION_SHEET As String = "__ribbonTranslation"
@@ -80,7 +80,7 @@ End Sub
 Public Sub clickAddSheet(ByRef control As IRibbonControl)
     Dim scope As ApplicationState
     Dim passwords As Passwords
-    Dim dropdowns As IDropdownLists
+    Dim dropdowns As DropdownLists
     Dim translations As ITranslationObject
     Dim builder As IDiseaseSheetBuilder
     Dim diseaseSheet As Worksheet
@@ -343,7 +343,7 @@ Public Sub clickAddLang(ByRef control As IRibbonControl, ByRef text As String)
     Dim translationsSheet As Worksheet
     Dim translationTagSheet As Worksheet
     Dim translationTable As ListObject
-    Dim dropdowns As IDropdownLists
+    Dim dropdowns As DropdownLists
     Dim chunks As ITranslationChunks
     Dim passwords As Passwords
     Dim translations As ITranslationObject

@@ -27,7 +27,7 @@ Option Explicit
 'alert styles plus forward and return hyperlinks between output and dropdown
 'sheets.
 'Uses the CustomTest harness (CustomTest), not Rubberduck.
-'@depends DropdownLists, IDropdownLists, Checking, HiddenNames, TranslationObject, ITranslationObject, BetterArray, CustomTest, TestHelpers
+'@depends DropdownLists, DropdownLists, Checking, HiddenNames, TranslationObject, ITranslationObject, BetterArray, CustomTest, TestHelpers
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const DROPTESTONE As String = "DropTestList1"
@@ -39,8 +39,8 @@ Private Const TEST_TRANSLATIONS_SHEET As String = "__dropTranslations"
 
 Private Assert As CustomTest
 Private Fakes As Object
-Private dropOne As IDropdownLists
-Private dropTwo As IDropdownLists
+Private dropOne As DropdownLists
+Private dropTwo As DropdownLists
 
 '@section Helpers
 '===============================================================================
@@ -116,7 +116,7 @@ Public Sub TestCreateCheck()
 
     Dim workbook As Workbook
     Dim sheet As Worksheet
-    Dim temporaryDropdown As IDropdownLists
+    Dim temporaryDropdown As DropdownLists
 
     On Error GoTo Fail
 

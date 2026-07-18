@@ -57,7 +57,7 @@ End Enum
 'AutoFilter cascades, import/export in both flat-data and full-structure
 'modes, and synchronisation of translated labels across linelist sheets,
 'dictionary, and show/hide tables.
-'@depends BetterArray, Passwords, ILLdictionary, CustomTable, ILLVariables, IDropdownLists, DropdownLists, LLVariables, CustomTable, HiddenNames
+'@depends BetterArray, Passwords, ILLdictionary, CustomTable, ILLVariables, DropdownLists, DropdownLists, LLVariables, CustomTable, HiddenNames
 
 '@section State
 '===============================================================================
@@ -1168,7 +1168,7 @@ Public Sub Update(ByVal pass As Passwords)
     Dim cellRng As Range
     Dim controlValue As String
     Dim geoData As BetterArray
-    Dim drop As IDropdownLists
+    Dim drop As DropdownLists
     Dim cellPrintRng As Range
     Dim printsh As Worksheet
     Dim shHn As HiddenNames

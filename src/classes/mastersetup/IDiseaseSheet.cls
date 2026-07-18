@@ -21,10 +21,10 @@ Option Explicit
 
 '@sub-title Configure builder dependencies.
 '@param hostWorkbook Workbook where disease sheets are created.
-'@param dropdowns IDropdownLists providing data validation helpers.
+'@param dropdowns DropdownLists providing data validation helpers.
 '@param translations ITranslationObject supplying translated labels.
 Public Sub Initialise(ByVal hostWorkbook As Workbook, _
-                      ByVal dropdowns As IDropdownLists, _
+                      ByVal dropdowns As DropdownLists, _
                       ByVal translations As ITranslationObject, _
                       ByVal varObj As MasterSetupVariables)
 End Sub

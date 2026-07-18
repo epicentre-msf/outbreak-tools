@@ -24,7 +24,7 @@ Option Explicit
 '(normal, time series, spatial, spatio-temporal), builds cross-tables from
 'table specifications, writes formulas, registers metadata in AnaTabIds, and
 'renders charts.
-'@depends ILinelist, ILinelistSpecs, LLFormat, ITranslationObject, TableSpecs, CrossTable, CrossTableFormula, Graphs, AnaTabIds, Buttons, Passwords, IDropdownLists, ILLdictionary, ILLVariables, FormulaData, BetterArray
+'@depends ILinelist, ILinelistSpecs, LLFormat, ITranslationObject, TableSpecs, CrossTable, CrossTableFormula, Graphs, AnaTabIds, Buttons, Passwords, DropdownLists, ILLdictionary, ILLVariables, FormulaData, BetterArray
 '@version 1.0 (2026-02-10)
 
 
@@ -416,7 +416,7 @@ Private Sub AddGoTo(ByVal cellRng As Range, _
                     Optional ByVal goToPrefix As String = "ua_", _
                     Optional ByVal goToSuffix As String = vbNullString)
 
-    Dim drop As IDropdownLists
+    Dim drop As DropdownLists
     Dim ll As ILinelist
     Dim dropName As String
     Dim design As LLFormat

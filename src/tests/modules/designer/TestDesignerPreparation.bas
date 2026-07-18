@@ -256,7 +256,7 @@ Public Sub TestPrepareRegistersAllDropdowns()
     subject.Prepare Nothing
 
     'Assert: all 4 dropdowns should be registered
-    Dim drop As IDropdownLists
+    Dim drop As DropdownLists
     Set drop = subject.Dropdowns
 
     Assert.IsTrue drop.Exists("__setup_languages"), "Setup languages dropdown should exist."
@@ -350,7 +350,7 @@ Public Sub TestDropdownsPropertyLazilyInitialises()
     Set subject = DesignerPreparation.Create(FixtureWorkbook)
 
     'Act: access Dropdowns property directly (lazy init)
-    Dim drop As IDropdownLists
+    Dim drop As DropdownLists
     Set drop = subject.Dropdowns
 
     'Assert: should have created the dropdown sheet and manager
@@ -382,7 +382,7 @@ Public Sub TestDropdownUpdateReplacesValues()
     Dim dropSheet As Worksheet
     Set dropSheet = FixtureWorkbook.Worksheets("__dropdowns")
 
-    Dim drop As IDropdownLists
+    Dim drop As DropdownLists
     Set drop = DropdownLists.Create(dropSheet)
     drop.Update langValues, "__setup_languages"
 

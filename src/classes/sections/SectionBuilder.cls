@@ -24,7 +24,7 @@ Option Explicit
 'merged-cell section and subsection header formatting. Supports both
 'HList (horizontal) and VList (vertical) layouts via the layer byte.
 '@depends ILinelistSpecs, ILLdictionary, ILLVariables, LLFormat,
-'IDropdownLists, VarWriter, LLVariables
+'DropdownLists, VarWriter, LLVariables
 '@version 1.0 (2026-02-10)
 
 
@@ -35,8 +35,8 @@ Private Type TSectionBuilder
     wksh As Worksheet
     printWksh As Worksheet
     crfWksh As Worksheet
-    dropdown As IDropdownLists
-    customDropdown As IDropdownLists
+    dropdown As DropdownLists
+    customDropdown As DropdownLists
     cachedDict As ILLdictionary
     cachedVars As LLVariables
     hasChecks As Boolean
@@ -71,8 +71,8 @@ Private Const CRF_SHEET_PREFIX As String = "crf_"
 '@param wksh Worksheet. The target main worksheet.
 '@param printWksh Optional Worksheet. Printed companion worksheet (HList only).
 '@param crfWksh Optional Worksheet. CRF companion worksheet (HList only).
-'@param dropdownObj Optional IDropdownLists. Dropdown lists manager.
-'@param customDropdownObj Optional IDropdownLists. Custom dropdown lists manager.
+'@param dropdownObj Optional DropdownLists. Dropdown lists manager.
+'@param customDropdownObj Optional DropdownLists. Custom dropdown lists manager.
 '@return SectionBuilder. A fully initialised instance ready for use.
 '@throws VbObjectError+516 When specs or wksh is Nothing.
 '@export
@@ -81,8 +81,8 @@ Public Function Create(ByVal layer As Byte, _
                        ByVal wksh As Worksheet, _
                        Optional ByVal printWksh As Worksheet = Nothing, _
                        Optional ByVal crfWksh As Worksheet = Nothing, _
-                       Optional ByVal dropdownObj As IDropdownLists = Nothing, _
-                       Optional ByVal customDropdownObj As IDropdownLists = Nothing) As SectionBuilder
+                       Optional ByVal dropdownObj As DropdownLists = Nothing, _
+                       Optional ByVal customDropdownObj As DropdownLists = Nothing) As SectionBuilder
 
     If specs Is Nothing Then ThrowError ProjectError.ObjectNotInitialized, "Specifications object is required"
     If wksh Is Nothing Then ThrowError ProjectError.ObjectNotInitialized, "Target worksheet is required"
@@ -151,15 +151,15 @@ End Property
 
 '@label:internal-dropdown
 '@prop-title Assign the dropdown lists manager
-'@param dropdownObj IDropdownLists. The dropdown manager.
-Public Property Set InternalDropdown(ByVal dropdownObj As IDropdownLists)
+'@param dropdownObj DropdownLists. The dropdown manager.
+Public Property Set InternalDropdown(ByVal dropdownObj As DropdownLists)
     Set this.dropdown = dropdownObj
 End Property
 
 '@label:internal-custom-dropdown
 '@prop-title Assign the custom dropdown lists manager
-'@param dropdownObj IDropdownLists. The custom dropdown manager.
-Public Property Set InternalCustomDropdown(ByVal dropdownObj As IDropdownLists)
+'@param dropdownObj DropdownLists. The custom dropdown manager.
+Public Property Set InternalCustomDropdown(ByVal dropdownObj As DropdownLists)
     Set this.customDropdown = dropdownObj
 End Property
 

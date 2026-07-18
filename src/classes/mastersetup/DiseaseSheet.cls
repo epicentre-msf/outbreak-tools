@@ -63,7 +63,7 @@ Private Const DISEASE_MARKER_COLUMN As Long = 4
 
 Private Type TBuilderState
     hostwb As Workbook
-    dropdowns As IDropdownLists
+    dropdowns As DropdownLists
     trads As ITranslationObject
     initialised As Boolean
     hostSheet As Worksheet
@@ -92,7 +92,7 @@ Private hostHeaders As TCurrentHeaders
 
 '@sub-title Instantiate a sheet builder with provided dependencies.
 Public Function Create(ByVal hostWorkbook As Workbook, _
-                       ByVal dropdowns As IDropdownLists, _
+                       ByVal dropdowns As DropdownLists, _
                        ByVal translator As ITranslationObject, _ 
                        ByVal varObj As MasterSetupVariables) As IDiseaseSheet
 
@@ -111,7 +111,7 @@ End Property
 '===============================================================================
 
 Public Sub Initialise(ByVal hostWorkbook As Workbook, _
-                      ByVal dropdowns As IDropdownLists, _
+                      ByVal dropdowns As DropdownLists, _
                       ByVal translator As ITranslationObject, _ 
                       ByVal varObj As MasterSetupVariables)
 
@@ -196,7 +196,7 @@ End Sub
 
 
 Private Sub ValidateInitialise(ByVal hostWorkbook As Workbook, _
-                               ByVal dropdowns As IDropdownLists, _
+                               ByVal dropdowns As DropdownLists, _
                                ByVal varObj As MasterSetupVariables)
 
     If hostWorkbook Is Nothing Then
@@ -593,7 +593,7 @@ End Sub
 '===============================================================================
 
 Private Sub IDiseaseSheet_Initialise(ByVal hostWorkbook As Workbook, _
-                                     ByVal dropdowns As IDropdownLists, _
+                                     ByVal dropdowns As DropdownLists, _
                                      ByVal translations As ITranslationObject, _
                                      ByVal varObj As MasterSetupVariables)
     Initialise hostWorkbook, dropdowns, translations, varObj

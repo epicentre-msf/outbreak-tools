@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Designer")
 '@ModuleDescription("Non-core ribbon callbacks for the designer workbook.")
-'@depends DesignerPreparation, DesignerEntry, RibbonDev, LLGeo, ApplicationState, OSFiles, HiddenNames, BetterArray, DropdownLists, IDropdownLists, LinelistBuildService, LinelistSpecs, ILinelistSpecs, Linelist, ILinelist, ListBuilder, LLSheets, GenerationReport
+'@depends DesignerPreparation, DesignerEntry, RibbonDev, LLGeo, ApplicationState, OSFiles, HiddenNames, BetterArray, DropdownLists, DropdownLists, LinelistBuildService, LinelistSpecs, ILinelistSpecs, Linelist, ILinelist, ListBuilder, LLSheets, GenerationReport
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 'Non-core ribbon logics are callbacks whose absence will not fire a
@@ -394,11 +394,11 @@ Public Sub clickGenerate()
     Set dropChecks = New BetterArray
     dropChecks.LowerBound = 1
 
-    Dim dropStd As IDropdownLists
+    Dim dropStd As DropdownLists
     Set dropStd = ll.Dropdown(1)
     If dropStd.HasCheckings Then dropChecks.Push dropStd.CheckingValues
 
-    Dim dropCust As IDropdownLists
+    Dim dropCust As DropdownLists
     Set dropCust = ll.Dropdown(2)
     If dropCust.HasCheckings Then dropChecks.Push dropCust.CheckingValues
 
@@ -494,7 +494,7 @@ Private Sub ExtractAndUpdateLanguages(ByVal tradSheet As Worksheet)
     Dim languages() As String
     Dim langValues As BetterArray
     Dim idx As Long
-    Dim drop As IDropdownLists
+    Dim drop As DropdownLists
 
     'Read the persisted language list from the setup's Translations worksheet
     Set setupStore = HiddenNames.Create(tradSheet)
@@ -593,7 +593,7 @@ End Function
 Private Sub ExtractLanguagesFromHeaders(ByVal tradSheet As Worksheet)
     Dim lo As ListObject
     Dim langValues As BetterArray
-    Dim drop As IDropdownLists
+    Dim drop As DropdownLists
 
     If tradSheet.ListObjects.Count = 0 Then Exit Sub
 

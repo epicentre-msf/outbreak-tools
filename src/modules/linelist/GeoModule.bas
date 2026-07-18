@@ -26,7 +26,7 @@ Private historicHFTable As BetterArray
 Private concatenateGeoTable As BetterArray
 Private concatenateHFTable As BetterArray
 Private geo As LLGeo
-Private drop As IDropdownLists
+Private drop As DropdownLists
 Private tradmess As ITranslationObject
 Private lltrads As LLTranslation
 Private pass As Passwords

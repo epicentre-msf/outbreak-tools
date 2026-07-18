@@ -33,7 +33,7 @@ Private Type TSetupPreparation
     hostBook    As Workbook          'Workbook owning setup assets
     dropSheet   As Worksheet         'Worksheet hosting dropdown listobjects
     registrySheet As Worksheet       'Worksheet hosting updated values registry
-    dropdowns   As IDropdownLists    'Dropdown manager bound to drop sheet
+    dropdowns   As DropdownLists    'Dropdown manager bound to drop sheet
     updater     As UpdatedValues    'Updated values watcher bound to registry sheet
 End Type
 
@@ -162,12 +162,12 @@ End Sub
 '@label:dropdowns
 '@prop-title Dropdown manager for external callers
 '@details
-'Returns the IDropdownLists manager bound to the dropdown worksheet.
+'Returns the DropdownLists manager bound to the dropdown worksheet.
 'Lazily initialises the manager on first access if it was not already
 'created by EnsureDropdowns or Prepare.
-'@return IDropdownLists. The dropdown manager instance.
+'@return DropdownLists. The dropdown manager instance.
 '@export
-Public Property Get Dropdowns() As IDropdownLists
+Public Property Get Dropdowns() As DropdownLists
     EnsureDropdownManager
     Set Dropdowns = this.dropdowns
 End Property
@@ -254,7 +254,7 @@ End Sub
 'ApplyDictionaryValidations, ApplyExportsValidations, and
 'ApplyAnalysisValidations to wire each table column to its dropdown list.
 Private Sub ApplyValidationsAndUpdates()
-    Dim drop As IDropdownLists
+    Dim drop As DropdownLists
 
     EnsureDropdownManager
     Set drop = this.dropdowns
@@ -527,8 +527,8 @@ End Function
 'Resolves the Dictionary worksheet and its Tab_Dictionary ListObject,
 'then wires each column (sheet type, status, variable type, format,
 'control, etc.) to its corresponding dropdown list via SetValidation.
-'@param drop IDropdownLists. The dropdown manager providing validation ranges.
-Private Sub ApplyDictionaryValidations(ByVal drop As IDropdownLists)
+'@param drop DropdownLists. The dropdown manager providing validation ranges.
+Private Sub ApplyDictionaryValidations(ByVal drop As DropdownLists)
     Dim sh As Worksheet
     Dim table As CustomTable
 
@@ -553,8 +553,8 @@ End Sub
 '@details
 'Resolves the Exports worksheet and its Tab_Export ListObject, then wires
 'each column (status, file format, password, etc.) to its dropdown list.
-'@param drop IDropdownLists. The dropdown manager providing validation ranges.
-Private Sub ApplyExportsValidations(ByVal drop As IDropdownLists)
+'@param drop DropdownLists. The dropdown manager providing validation ranges.
+Private Sub ApplyExportsValidations(ByVal drop As DropdownLists)
     Dim sh As Worksheet
     Dim table As CustomTable
 
@@ -579,8 +579,8 @@ End Sub
 '(global summary, univariate, bivariate, time series, graph, spatial,
 'spatio-temporal specs, spatio-temporal) to their respective dropdown
 'lists.
-'@param drop IDropdownLists. The dropdown manager providing validation ranges.
-Private Sub ApplyAnalysisValidations(ByVal drop As IDropdownLists)
+'@param drop DropdownLists. The dropdown manager providing validation ranges.
+Private Sub ApplyAnalysisValidations(ByVal drop As DropdownLists)
     Dim sh As Worksheet
     Dim table As CustomTable
     Dim targetRange As Range

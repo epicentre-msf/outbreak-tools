@@ -94,13 +94,13 @@ End Sub
 '@jump:dropdown
 '@prop-title Dropdown lists manager for the output workbook
 '@details
-'Returns an IDropdownLists instance backed by the appropriate list sheet.
+'Returns an DropdownLists instance backed by the appropriate list sheet.
 'Scope 1 uses the temporary dropdown_lists__ sheet with "dropdown_" prefix;
 'scope 2 uses the custom choice sheet with no prefix.
 '@param scope Optional Byte. 1 = standard dropdowns, 2 = custom choice dropdowns.
 'Defaults to 1.
-'@return IDropdownLists. The dropdown lists manager.
-Public Property Get Dropdown(Optional ByVal scope As Byte = 1) As IDropdownLists
+'@return DropdownLists. The dropdown lists manager.
+Public Property Get Dropdown(Optional ByVal scope As Byte = 1) As DropdownLists
 End Property
 
 '@jump:pivots

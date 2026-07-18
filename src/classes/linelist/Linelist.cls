@@ -31,7 +31,7 @@ Implements ILinelist
 '`With New Linelist`.
 '@depends ILinelistSpecs, ILLdictionary, ITranslationObject,
 '  Passwords, LLFormat, HiddenNames,
-'  IDropdownLists, DropdownLists,
+'  DropdownLists, DropdownLists,
 '  CustomPivotTable, TemporaryRepos, HiddenNames, Buttons, CodeTransfer,
 '  BetterArray
 '@version 1.0 (2026-02-09)
@@ -175,14 +175,14 @@ End Property
 '@label:dropdown
 '@prop-title Dropdown lists manager for the output workbook
 '@details
-'Returns an IDropdownLists instance backed by the appropriate list sheet.
+'Returns an DropdownLists instance backed by the appropriate list sheet.
 'Scope 1 uses the temporary dropdown_lists__ sheet with "dropdown_" prefix;
 'scope 2 uses the custom choice sheet with no prefix.
 '@param scope Optional Byte. 1 = standard dropdowns, 2 = custom choice
 'dropdowns. Defaults to 1.
-'@return IDropdownLists. The dropdown lists manager.
+'@return DropdownLists. The dropdown lists manager.
 '@export
-Public Property Get Dropdown(Optional ByVal scope As Byte = 1) As IDropdownLists
+Public Property Get Dropdown(Optional ByVal scope As Byte = 1) As DropdownLists
     Dim sh As Worksheet
     Dim listSheetName As String
     Dim trans As ITranslationObject
@@ -843,7 +843,7 @@ Private Sub TransferAllCode(ByVal codeTransfer As CodeTransfer)
                    "OSFiles", _
                    "TranslationObject", "ITranslationObject", "LLVariables", _
                    "LLSpatial", _
-                   "DropdownLists", "IDropdownLists", "ShowHideManager", _
+                   "DropdownLists", "ShowHideManager", _
                    "CustomTable", _
                    "LLExporter", _
                     "LLImporter", _
@@ -943,7 +943,7 @@ Private Property Get ILinelist_CRFWksh(ByVal sheetName As String) As Worksheet
     Set ILinelist_CRFWksh = CRFWksh(sheetName)
 End Property
 
-Private Property Get ILinelist_Dropdown(Optional ByVal scope As Byte = 1) As IDropdownLists
+Private Property Get ILinelist_Dropdown(Optional ByVal scope As Byte = 1) As DropdownLists
     Set ILinelist_Dropdown = Dropdown(scope)
 End Property
 
