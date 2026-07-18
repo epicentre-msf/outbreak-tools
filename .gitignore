@@ -42,7 +42,6 @@ logs
 /.quarto/
 docs/
 site/dev
-src/.docignore
 
 # --- Temp / scratch / build output -------------------------------------------
 temp

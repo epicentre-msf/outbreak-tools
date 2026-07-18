@@ -75,7 +75,7 @@ Private Const ERROR_EMPTY_FORMULA As String = "VALUE_OF formula cannot be blank"
 'redundant instantiation when the caller already holds them.
 '@param formula String. Representation of the VALUE_OF call.
 '@param dict LLdictionary. The dictionary exposing variables and sheets metadata.
-'@param variables Optional ILLVariables. Reuse an existing helper instance.
+'@param variables Optional LLVariables. Reuse an existing helper instance.
 '@param sheets Optional LLSheets. Reuse an existing helper instance.
 '@return ValueOfFormula. A ready-to-inspect parser instance.
 '@throws ProjectError.ObjectNotInitialized When dict is Nothing.
@@ -469,7 +469,7 @@ End Function
 'all cached state so the parser is ready for lazy evaluation.
 '@param formula String. The VALUE_OF expression.
 '@param dict LLdictionary. The dictionary providing metadata.
-'@param variables ILLVariables. Optional helper for variable lookups.
+'@param variables LLVariables. Optional helper for variable lookups.
 '@param sheets LLSheets. Optional helper for sheet validation.
 Public Sub Initialise(ByVal formula As String, _
                        ByVal dict As LLdictionary, _
@@ -527,7 +527,7 @@ End Sub
 '@details
 'Ensures the dictionary is ready, creates the LLVariables helper on
 'first access, and caches it for subsequent calls.
-'@return ILLVariables. Helper for the current dictionary.
+'@return LLVariables. Helper for the current dictionary.
 '@throws ProjectError.ObjectNotInitialized When the dictionary is Nothing.
 Private Function VariablesProvider() As LLVariables
     EnsureDictionaryReady

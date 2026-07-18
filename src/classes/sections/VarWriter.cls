@@ -24,7 +24,7 @@ Option Explicit
 'formulas, dropdown choices, data validation, and conditional formatting
 'to the resolved cell range. The class caches dictionary, variables, and
 'sheets accessors for performance across repeated calls.
-'@depends LinelistSpecs, LLdictionary, ILLVariables, LLSheets, LLFormat,
+'@depends LinelistSpecs, LLdictionary, LLVariables, LLSheets, LLFormat,
 'TranslationObject, FormulaData, Formulas, DropdownLists, LLGeo,
 'Formulas, LLVariables, LLSheets, BetterArray
 '@version 1.0 (2026-02-10)
@@ -184,7 +184,7 @@ End Property
 'Creates an LLVariables wrapper around the dictionary on first access.
 'The wrapper provides convenient lookup methods such as Value and Contains
 'that are used throughout the writer.
-'@return ILLVariables. The variables helper object.
+'@return LLVariables. The variables helper object.
 Private Property Get Variables() As LLVariables
     If this.cachedVars Is Nothing Then
         Set this.cachedVars = LLVariables.Create(Dictionary())

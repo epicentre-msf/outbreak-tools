@@ -511,7 +511,7 @@ End Sub
 '@details
 'Creates the LLVariables wrapper on first access and caches it for
 'subsequent calls.
-'@return ILLVariables. Bound to the current dictionary.
+'@return LLVariables. Bound to the current dictionary.
 Private Function Variables() As LLVariables
     If deps.variables Is Nothing Then
         Set deps.variables = LLVariables.Create(Dictionary())
@@ -654,7 +654,7 @@ End Sub
 'in the TGroupContext UDT for BuildGroupedFormula.
 '@param tokens BetterArray. Tokenised formula.
 '@param variableTokens BetterArray. Variable names in encounter order.
-'@param vars ILLVariables. Helper exposing dictionary metadata.
+'@param vars LLVariables. Helper exposing dictionary metadata.
 '@param dataSource FormulaData. Configuration describing grouped functions.
 '@return Boolean. True when grouped context is captured or not required.
 Private Function GroupContexExtractionSucceed(ByVal tokens As BetterArray, _
@@ -958,7 +958,7 @@ End Function
 '@param formulaType String. Context (analysis/simple).
 '@param tokens BetterArray. Recipient for all tokens.
 '@param variableTokens BetterArray. Recipient for variable-only tokens.
-'@param vars ILLVariables. Metadata provider.
+'@param vars LLVariables. Metadata provider.
 '@param dataSource FormulaData. Formula metadata provider.
 '@param HasSetupVariables Boolean. Flag capturing literal presence.
 '@param failureReason String. Explanation when parsing fails.

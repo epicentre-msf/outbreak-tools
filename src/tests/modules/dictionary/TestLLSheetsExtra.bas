@@ -18,7 +18,7 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 'that ContainsControl raises when the control column is removed from the
 'dictionary, and that VariableAddress resolves correct cell references
 'for horizontal and vertical variables after dictionary preparation.
-'@depends LLSheets, LLdictionary, LLdictionary, LLVariables, ILLVariables, CustomTest
+'@depends LLSheets, LLdictionary, LLdictionary, LLVariables, CustomTest
 
 Private Const DICT_SHEET As String = "LLSheetsExtraDict"
 

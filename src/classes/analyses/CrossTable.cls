@@ -25,7 +25,7 @@ Option Explicit
 'ranges, and visual formatting. Consumers interact through the CrossTable
 'interface, and AnalysisOutput orchestrates the build sequence by calling
 'Build followed by Format for each table specification.
-'@depends TableSpecs, LinelistSpecs, TranslationObject, ILLVariables, LLVariables, LLFormat, HiddenNames, BetterArray, Checking
+'@depends TableSpecs, LinelistSpecs, TranslationObject, LLVariables, LLFormat, HiddenNames, BetterArray, Checking
 '@version 1.1 (2026-02-11)
 
 

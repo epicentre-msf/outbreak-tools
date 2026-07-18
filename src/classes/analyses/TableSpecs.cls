@@ -34,7 +34,7 @@ Option Explicit
 'design decouples TableSpecs from LinelistSpecs at instantiation, making it
 'usable in the setup error-checking context without geo or translation
 'dependencies. Consumers interact through the TableSpecs interface.
-'@depends LLdictionary, ILLVariables, LLVariables, BetterArray
+'@depends LLdictionary, LLVariables, BetterArray
 '@version 2.0 (2026-02-11)
 
 

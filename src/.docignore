@@ -1,0 +1,7 @@
+# Files/paths the doc generator skips (read by scripts/docs/create-docs.R).
+# One pattern per line. A trailing "/" means "any path containing this folder".
+
+# Dead code kept only until deletion. It still names removed interfaces
+# (e.g. IAnalysis, IDesignerImportService), so documenting it would point the
+# reference site at interfaces that no longer exist. Never build docs from it.
+stale/

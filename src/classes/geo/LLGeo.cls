@@ -57,7 +57,7 @@ End Enum
 'AutoFilter cascades, import/export in both flat-data and full-structure
 'modes, and synchronisation of translated labels across linelist sheets,
 'dictionary, and show/hide tables.
-'@depends BetterArray, Passwords, LLdictionary, CustomTable, ILLVariables, DropdownLists, DropdownLists, LLVariables, CustomTable, HiddenNames
+'@depends BetterArray, Passwords, LLdictionary, CustomTable, DropdownLists, DropdownLists, LLVariables, CustomTable, HiddenNames
 
 '@section State
 '===============================================================================

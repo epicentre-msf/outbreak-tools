@@ -24,7 +24,7 @@ Option Explicit
 'sheets and variables were imported, and builds a report of items not
 'imported or not touched.
 '@depends LLdictionary, Passwords, CustomTable, DataSheet
-'@depends LLGeo, LLChoices, ILLVariables, DropdownLists, HiddenNames
+'@depends LLGeo, LLChoices, LLVariables, DropdownLists, HiddenNames
 
 
 '@section Enumerations

@@ -13,7 +13,7 @@ Attribute VB_Description = "Consolidated show/hide visibility manager for all wo
 '@PredeclaredId
 '@Folder("ShowHide")
 '@ModuleDescription("Consolidated show/hide visibility manager for all worksheet layers")
-'@depends LLdictionary, ILLVariables, LLVariables, BetterArray, Checking
+'@depends LLdictionary, LLVariables, BetterArray, Checking
 
 Option Explicit
 

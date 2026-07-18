@@ -85,8 +85,11 @@ if (length(args) == 0) {
   } else if (mode %in% c("--all", "-a", "all")) {
     parser$parse(exclude_files = exclude_files)
   } else {
-    # Backwards compatibility: single argument treated as interface name
-    parse_mode <- "interface"
+    # A single bare argument is a class name. Classes no longer carry a
+    # paired I<Class> interface (interface-slimming, §4.4), so class mode is
+    # the default; use --interface explicitly for the few remaining
+    # interfaces (the IDisease* family).
+    parse_mode <- "class"
     target <- args[[1]]
   }
 

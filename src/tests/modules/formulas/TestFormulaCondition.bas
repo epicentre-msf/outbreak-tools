@@ -19,7 +19,7 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 'via BetterArrayFromList and a shared dictionary fixture seeded from
 'DictionaryTestFixture.
 '@depends FormulaCondition, LLdictionary, LLdictionary,
-'  LLVariables, ILLVariables, BetterArray, CustomTest,
+'  LLVariables, BetterArray, CustomTest,
 '  DictionaryTestFixture, TestHelpers
 
 Private Const DICT_SHEET As String = "FormulaConditionDict"

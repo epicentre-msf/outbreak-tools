@@ -40,7 +40,7 @@ End Enum
 '@depends LLdictionary, LLChoices, LLTranslation, DesignerTranslation
 '@depends LLGeo, LLExport, Passwords, LLFormat
 '@depends LinelistBuildService, TemporaryRepos
-'@depends FormulaData, ILLVariables, Formulas
+'@depends FormulaData, LLVariables, Formulas
 '@depends TranslationObject, ApplicationState
 '@depends BetterArray, LLdictionary, LLChoices, LLTranslation
 '@depends DesignerTranslation, LLGeo, LLExport, Analysis, Passwords

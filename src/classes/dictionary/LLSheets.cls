@@ -484,7 +484,7 @@ End Function
 
 '@label:VariablesProvider
 '@sub-title Lazily initialise the LLVariables helper for address resolution
-'@return ILLVariables cached instance.
+'@return LLVariables cached instance.
 Private Function VariablesProvider() As LLVariables
     If this.variables Is Nothing Then
         Set this.variables = LLVariables.Create(this.dict)

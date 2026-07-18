@@ -24,7 +24,7 @@ Option Explicit
 '(normal, time series, spatial, spatio-temporal), builds cross-tables from
 'table specifications, writes formulas, registers metadata in AnaTabIds, and
 'renders charts.
-'@depends Linelist, LinelistSpecs, LLFormat, TranslationObject, TableSpecs, CrossTable, CrossTableFormula, Graphs, AnaTabIds, Buttons, Passwords, DropdownLists, LLdictionary, ILLVariables, FormulaData, BetterArray
+'@depends Linelist, LinelistSpecs, LLFormat, TranslationObject, TableSpecs, CrossTable, CrossTableFormula, Graphs, AnaTabIds, Buttons, Passwords, DropdownLists, LLdictionary, LLVariables, FormulaData, BetterArray
 '@version 1.0 (2026-02-10)
 
 

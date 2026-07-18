@@ -209,9 +209,18 @@ VBADocParser <- R6Class(
 
       for (file in all_files) {
         content <- read_file(file)
+        file_stem <- path_ext_remove(path_file(file))
         for (class_name in private$class_names) {
-          iface <- paste0("I", class_name)
-          if (str_detect(content, fixed(iface))) {
+          # Classes are referenced by their own name now that the paired
+          # I<Class> interface layer is gone (interface-slimming, §4.4).
+          # Match on a word boundary so "Linelist" does not also count
+          # "LinelistSpecs", and skip the class's own definition file
+          # (a trivial self-match).
+          if (identical(file_stem, class_name)) {
+            next
+          }
+          token <- regex(paste0("\\b", class_name, "\\b"))
+          if (str_detect(content, token)) {
             usage_map[[class_name]] <- unique(c(
               usage_map[[class_name]],
               path_rel(file, private$proj_path)

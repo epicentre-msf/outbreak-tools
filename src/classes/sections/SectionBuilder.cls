@@ -23,7 +23,7 @@ Option Explicit
 'subsection, delegates variable writing to VarWriter, and applies
 'merged-cell section and subsection header formatting. Supports both
 'HList (horizontal) and VList (vertical) layouts via the layer byte.
-'@depends LinelistSpecs, LLdictionary, ILLVariables, LLFormat,
+'@depends LinelistSpecs, LLdictionary, LLVariables, LLFormat,
 'DropdownLists, VarWriter, LLVariables
 '@version 1.0 (2026-02-10)
 
@@ -184,9 +184,9 @@ End Property
 '@label:variables
 '@prop-title Lazy-loaded variables accessor
 '@details
-'Returns the cached ILLVariables instance. On first access, creates it
+'Returns the cached LLVariables instance. On first access, creates it
 'from the dictionary via LLVariables.Create and caches it.
-'@return ILLVariables. The variables helper for dictionary lookups.
+'@return LLVariables. The variables helper for dictionary lookups.
 Private Property Get Variables() As LLVariables
     If this.cachedVars Is Nothing Then
         Set this.cachedVars = LLVariables.Create(Dictionary())

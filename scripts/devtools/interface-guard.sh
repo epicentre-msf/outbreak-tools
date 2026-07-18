@@ -39,12 +39,12 @@ TESTS_DIR="src/tests"
 LINELIST_FILE="src/classes/linelist/Linelist.cls"
 BASELINE_FILE="$SCRIPT_DIR/interface-guard-baseline.txt"
 
-# The 11 keepers from the interface-slimming decision (project-rules.md §4.4).
-# They are all test seams, so case (b) already keeps them; this allowlist is a
-# belt-and-suspenders safety net so they can never be flagged for removal.
-# (Session H8 considered ICustomTest as a 12th keeper but REJECTED it: the
-# Rubberduck.AssertClass asserter is assigned into `As Object` variables, never
-# into `As ICustomTest`, so ICustomTest is 1:1 ceremony and folds — see H12.)
+# Allowlist of interfaces that are kept despite being 1:1 (case (c), or a
+# deliberate seam). EMPTY as of Phase 4C: all 11 former keepers were folded
+# into their concrete classes — the codebase no longer leans on the I<Class>
+# interface layer. The only interfaces still present are the IDisease* family
+# (deferred, see the baseline file); they are genuine 1:1 ceremony pending a
+# later fold and are carried by the baseline, not by this allowlist.
 KEEPERS=""
 
 MODE="check"
