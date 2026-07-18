@@ -27,7 +27,7 @@ Implements ILinelistSpecs
 'user-facing error dialogs. Uses a PredeclaredId factory pattern so callers
 'construct instances via LinelistSpecs.Create(workbook) and receive an
 'ILinelistSpecs interface reference.
-'@depends ILLdictionary, LLChoices, LLTranslation, IDesignerTranslation
+'@depends ILLdictionary, LLChoices, LLTranslation, DesignerTranslation
 '@depends LLGeo, LLExport, Passwords, LLFormat
 '@depends LinelistBuildService, TemporaryRepos
 '@depends FormulaData, ILLVariables, Formulas
@@ -48,7 +48,7 @@ Private Type TLinelistSpecs
     dictionary As ILLdictionary
     choices As LLChoices
     translations As LLTranslation
-    designerTranslations As IDesignerTranslation
+    designerTranslations As DesignerTranslation
     geo As LLGeo
     exports As LLExport
     ana As Analysis
@@ -1076,11 +1076,11 @@ End Property
 '@label:designer-translations
 '@prop-title Designer translation accessor
 '@details
-'Returns the IDesignerTranslation instance providing designer UI translations
+'Returns the DesignerTranslation instance providing designer UI translations
 'from the DesignerTranslation worksheet. Lazy-loaded on first access.
-'@return IDesignerTranslation. The designer translation collaborator.
+'@return DesignerTranslation. The designer translation collaborator.
 '@export
-Public Property Get DesignerTranslations() As IDesignerTranslation
+Public Property Get DesignerTranslations() As DesignerTranslation
     EnsureDesignerTranslations
     Set DesignerTranslations = this.designerTranslations
 End Property
@@ -1467,9 +1467,9 @@ End Sub
 '@description Backdoor setters for injecting mock collaborators during testing.
 
 '@label:test-assign-designer-translations
-'@sub-title Inject a mock IDesignerTranslation instance for testing
-'@param designerTrads IDesignerTranslation. The mock designer translations object.
-Public Sub TestAssignDesignerTranslations(ByVal designerTrads As IDesignerTranslation)
+'@sub-title Inject a mock DesignerTranslation instance for testing
+'@param designerTrads DesignerTranslation. The mock designer translations object.
+Public Sub TestAssignDesignerTranslations(ByVal designerTrads As DesignerTranslation)
     Set this.designerTranslations = designerTrads
 End Sub
 
@@ -1538,7 +1538,7 @@ Private Property Get ILinelistSpecs_Translations() As LLTranslation
     Set ILinelistSpecs_Translations = Me.Translations
 End Property
 
-Private Property Get ILinelistSpecs_DesignerTranslations() As IDesignerTranslation
+Private Property Get ILinelistSpecs_DesignerTranslations() As DesignerTranslation
     Set ILinelistSpecs_DesignerTranslations = Me.DesignerTranslations
 End Property
 

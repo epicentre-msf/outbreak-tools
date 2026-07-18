@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Designer")
 '@ModuleDescription("Ribbon callbacks for the designer workbook.")
-'@depends DesignerPreparation, RibbonDev, OSFiles, BetterArray, CustomTable, Passwords, Passwords, LLFormat, ApplicationState, DesignerTranslation, IDesignerTranslation, HiddenNames
+'@depends DesignerPreparation, RibbonDev, OSFiles, BetterArray, CustomTable, Passwords, Passwords, LLFormat, ApplicationState, DesignerTranslation, DesignerTranslation, HiddenNames
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Private Const SHEET_FORMAT As String = "__formatter"
@@ -12,7 +12,7 @@ Private Const MAINSHEET As String = "Main"
 Private Const PROMPT_TITLE As String = "Designer"
 Private Const TAG_FORMATTER_IMPORTED As String = "TAG_FORMATTER_IMPORTED"
 
-Private trads As IDesignerTranslation
+Private trads As DesignerTranslation
 Private prep As DesignerPreparation
 
 '@section Ribbon lifecycle

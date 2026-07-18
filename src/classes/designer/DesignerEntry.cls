@@ -12,7 +12,7 @@ Attribute VB_Description = "Coordinates clearing and translation behaviours for 
 '@PredeclaredId
 '@Folder("Designer")
 '@ModuleDescription("Coordinates clearing and translation behaviours for designer entry sheets.")
-'@depends ProjectError, DesignerTranslation, IDesignerTranslation
+'@depends ProjectError, DesignerTranslation, DesignerTranslation
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, ParameterNotUsed
 
 Option Explicit
@@ -20,11 +20,11 @@ Option Explicit
 '@class DesignerEntry
 '@description
 'Coordinates clearing, translation, and info read/write actions for a
-'designer entry worksheet. Lazily resolves an IDesignerTranslation
+'designer entry worksheet. Lazily resolves an DesignerTranslation
 'translator (for applying language translations and translating message
 'codes) from the host worksheet and its parent workbook. The translator
 'can be replaced via setter injection for testing.
-'@depends DesignerTranslation, IDesignerTranslation
+'@depends DesignerTranslation, DesignerTranslation
 
 
 '@section State
@@ -32,7 +32,7 @@ Option Explicit
 
 Private Type TDesignerEntry
     hostSheet As Worksheet      'Worksheet hosting designer inputs
-    translator As IDesignerTranslation 'Translation handler for the designer workbook
+    translator As DesignerTranslation 'Translation handler for the designer workbook
 End Type
 
 Private this As TDesignerEntry
@@ -109,11 +109,11 @@ End Sub
 '@label:use-translator
 '@sub-title Use a provided translations manager instead of creating one
 '@details
-'Replaces the internally resolved IDesignerTranslation translator with the
+'Replaces the internally resolved DesignerTranslation translator with the
 'supplied instance. Primarily used in tests to inject a stub or mock.
-'@param translator IDesignerTranslation. The translations provider to use.
+'@param translator DesignerTranslation. The translations provider to use.
 '@export
-Public Sub UseTranslator(ByVal translator As IDesignerTranslation)
+Public Sub UseTranslator(ByVal translator As DesignerTranslation)
     Set this.translator = translator
 End Sub
 
@@ -147,7 +147,7 @@ End Sub
 '@param language Optional String. Language string in "CODE - Label" format. Defaults to vbNullString.
 '@export
 Public Sub Translate(Optional ByVal language As String = vbNullString)
-    Dim translator As IDesignerTranslation
+    Dim translator As DesignerTranslation
     Set translator = ResolveTranslator()
     translator.TranslateDesigner HostSheet, language
 End Sub
@@ -201,7 +201,7 @@ End Property
 '@return String. The translated message text.
 '@export
 Public Function TranslateMessage(ByVal msgCode As String) As String
-    Dim translator As IDesignerTranslation
+    Dim translator As DesignerTranslation
     Dim result As String
 
     Set translator = ResolveTranslator()
@@ -315,12 +315,12 @@ End Function
 '@label:resolve-translator
 '@sub-title Lazily resolve or return the translations provider
 '@details
-'Returns the cached IDesignerTranslation translator, or creates one via
+'Returns the cached DesignerTranslation translator, or creates one via
 'DesignerTranslation.Create with the DesignerTranslation worksheet on first
 'access. Raises an error when the translation sheet cannot be found.
-'@return IDesignerTranslation. The translations provider instance.
+'@return DesignerTranslation. The translations provider instance.
 '@throws ProjectError.ElementNotFound When the translation sheet is missing.
-Private Function ResolveTranslator() As IDesignerTranslation
+Private Function ResolveTranslator() As DesignerTranslation
     If this.translator Is Nothing Then
         On Error GoTo Handler
             Set this.translator = DesignerTranslation.Create(TranslationSheet())

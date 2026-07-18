@@ -160,16 +160,19 @@ Public Sub TestTranslateUpdatesLanguageCode()
     On Error GoTo Fail
 
     Dim subject As DesignerEntry
-    Dim translator As DesignerTranslationStub
+    Dim translator As DesignerTranslation
 
-    Set translator = New DesignerTranslationStub
+    Set translator = MakeDesignerTranslator()
+    FixtureWorkbook.Names.Add Name:="RNG_DesignerTitle", RefersTo:=EntrySheet.Range("A1")
 
     Set subject = DesignerEntry.Create(EntrySheet)
     subject.UseTranslator translator
     subject.Translate "ENG"
 
-    Assert.IsTrue translator.TranslateRequested, "Translator should be invoked."
-    Assert.AreEqual EntrySheet.Name, translator.TargetSheet.Name, "Translation target should be the entry sheet."
+    Assert.IsTrue Not (translator.TransObject Is Nothing), _
+                  "Translate should set the designer language so translation objects resolve."
+    Assert.AreEqual "Designer Title", CStr(EntrySheet.Range("RNG_DesignerTitle").value), _
+                    "Translate should apply the designer range translation to the entry sheet."
     Exit Sub
 
 Fail:
@@ -278,14 +281,14 @@ Public Sub TestTranslateMessageReturnsTranslatedText()
     CustomTestSetTitles Assert, "DesignerEntry", "TestTranslateMessageReturnsTranslatedText"
     On Error GoTo Fail
 
-    'Arrange
-    Dim translator As DesignerTranslationStub
-    Set translator = New DesignerTranslationStub
-    translator.SetMessage "MSG_ChemFich", "File path loaded"
+    'Arrange: the fixture seeds T_tradMsg with MSG_ChemFich -> "File path loaded"
+    Dim translator As DesignerTranslation
+    Set translator = MakeDesignerTranslator()
 
     Dim subject As DesignerEntry
     Set subject = DesignerEntry.Create(EntrySheet)
     subject.UseTranslator translator
+    subject.Translate "ENG"    'set the designer language so message lookups resolve
 
     'Act
     Dim result As String
@@ -305,19 +308,20 @@ Public Sub TestTranslateMessageFallsBackToRawCode()
     CustomTestSetTitles Assert, "DesignerEntry", "TestTranslateMessageFallsBackToRawCode"
     On Error GoTo Fail
 
-    'Arrange: translator with no messages registered
-    Dim translator As DesignerTranslationStub
-    Set translator = New DesignerTranslationStub
+    'Arrange: a real translator whose message table has no MSG_Unknown entry
+    Dim translator As DesignerTranslation
+    Set translator = MakeDesignerTranslator()
 
     Dim subject As DesignerEntry
     Set subject = DesignerEntry.Create(EntrySheet)
     subject.UseTranslator translator
+    subject.Translate "ENG"
 
     'Act
     Dim result As String
     result = subject.TranslateMessage("MSG_Unknown")
 
-    'Assert: stub returns raw msgCode for unknown codes
+    'Assert: unknown codes fall back to the raw message code
     Assert.AreEqual "MSG_Unknown", result, _
                     "TranslateMessage should fall back to the raw message code."
     Exit Sub
@@ -893,4 +897,38 @@ Private Sub ReportTestFailure(ByVal context As String)
     message = context & " failed with error " & Err.Number & " (" & Err.Source & "): " & Err.Description
     Assert.LogFailure message
     Err.Clear
+End Sub
+
+'@sub-title Build a real DesignerTranslation backed by a seeded translation sheet
+Private Function MakeDesignerTranslator() As DesignerTranslation
+    Dim sh As Worksheet
+    Set sh = TestHelpers.EnsureWorksheet("DesignerTradTables", FixtureWorkbook)
+    SeedDesignerTranslationTables sh
+    Set MakeDesignerTranslator = DesignerTranslation.Create(sh)
+End Function
+
+'@sub-title Seed the four designer translation ListObjects (ENG) required by DesignerTranslation
+Private Sub SeedDesignerTranslationTables(ByVal sh As Worksheet)
+    sh.Cells.Clear
+    AddTradTable sh, sh.Range("A1"), "T_tradMsg", _
+        Array(Array("tag", "ENG"), Array("MSG_ChemFich", "File path loaded"), Array("MSG_Info", "Information"))
+    AddTradTable sh, sh.Range("D1"), "T_tradShape", _
+        Array(Array("tag", "ENG"), Array("shp_title", "Designer"))
+    AddTradTable sh, sh.Range("G1"), "T_tradRange", _
+        Array(Array("tag", "ENG"), Array("RNG_DesignerTitle", "Designer Title"))
+    AddTradTable sh, sh.Range("J1"), "T_tradDrop", _
+        Array(Array("tag", "ENG"), Array("drp_choice", "list_values"))
+End Sub
+
+Private Sub AddTradTable(ByVal sh As Worksheet, ByVal startCell As Range, _
+                         ByVal tableName As String, ByVal rows As Variant)
+    Dim matrix As Variant
+    Dim dataRange As Range
+    Dim lo As ListObject
+
+    matrix = TestHelpers.RowsToMatrix(rows)
+    TestHelpers.WriteMatrix startCell, matrix
+    Set dataRange = startCell.Resize(UBound(matrix, 1), UBound(matrix, 2))
+    Set lo = sh.ListObjects.Add(xlSrcRange, dataRange, , xlYes)
+    lo.Name = tableName
 End Sub

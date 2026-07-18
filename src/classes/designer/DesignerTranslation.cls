@@ -17,8 +17,6 @@ Attribute VB_Description = "Translation of the designer"
 
 Option Explicit
 
-Implements IDesignerTranslation
-
 '@class DesignerTranslation
 '@description
 'Manages translation of the designer workbook by reading translation
@@ -31,7 +29,7 @@ Implements IDesignerTranslation
 'string (e.g. "FRA - Francais") and persisted as a worksheet-level
 'HiddenName for cross-session persistence. All translation objects
 'and name lists are cached for fast repeated access.
-'Consumers interact through the IDesignerTranslation interface.
+'Consumers interact through the DesignerTranslation interface.
 '@depends TranslationObject, ITranslationObject, BetterArray, HiddenNames
 
 
@@ -65,6 +63,15 @@ Private Const TABDROP As String = "T_tradDrop"
 Private Const CLASS_NAME As String = "DesignerTranslation"
 Private Const LANG_HIDDEN_NAME As String = "TAG_DES_LANG"
 
+'@section Enums
+'===============================================================================
+Public Enum DesignerTranslationScope
+    DesignerTranslationOfMessages = 0
+    DesignerTranslationOfShapes = 2
+    DesignerTranslationOfRanges = 5
+    DesignerTranslationOfDropdowns = 6
+End Enum
+
 '@section Factory
 '===============================================================================
 
@@ -73,11 +80,11 @@ Private Const LANG_HIDDEN_NAME As String = "TAG_DES_LANG"
 '@details
 'Factory method that validates all required ListObjects on the supplied
 'worksheet, then constructs and returns a new instance through the
-'IDesignerTranslation interface. Called on the predeclared instance.
+'DesignerTranslation interface. Called on the predeclared instance.
 '@param sh Worksheet. The translation worksheet containing T_tradShape, T_tradRange, T_tradMsg, T_tradDrop.
-'@return IDesignerTranslation. A fully initialised instance ready for use.
+'@return DesignerTranslation. A fully initialised instance ready for use.
 '@export
-Public Function Create(ByVal sh As Worksheet) As IDesignerTranslation
+Public Function Create(ByVal sh As Worksheet) As DesignerTranslation
     CheckRequirements sh
     Dim instance As DesignerTranslation
     Set instance = New DesignerTranslation
@@ -169,7 +176,7 @@ End Property
 '@param mainsh Worksheet. The designer worksheet to translate.
 '@param language String. Language string in "CODE - Label" format. Pass vbNullString to use the stored language.
 '@export
-Private Sub TranslateDesigner(ByVal mainsh As Worksheet, ByVal language As String)
+Public Sub TranslateDesigner(ByVal mainsh As Worksheet, ByVal language As String)
     Dim langCode As String
 
     If LenB(language) > 0 Then
@@ -293,7 +300,7 @@ End Sub
 '@param msgCode String. The message code to translate.
 '@return String. The translated message text.
 '@export
-Private Function TranslatedValue(ByVal msgCode As String) As String
+Public Function TranslatedValue(ByVal msgCode As String) As String
     Dim langCode As String
     langCode = DesignerLanguage()
 
@@ -445,20 +452,3 @@ Private Sub LoExists(sh As Worksheet, ByVal loNames As BetterArray)
             "Table " & lName & " does not exists in Worksheet " & sh.Name
     Next
 End Sub
-
-'@section Interface Implementation
-'===============================================================================
-'@description Delegated members satisfying the IDesignerTranslation contract.
-'See the corresponding members above for full documentation.
-
-Private Property Get IDesignerTranslation_TransObject(Optional ByVal trans As Byte = DesignerTranslationOfMessages) As ITranslationObject
-    Set IDesignerTranslation_TransObject = TransObject(trans)
-End Property
-
-Private Sub IDesignerTranslation_TranslateDesigner(ByVal mainsh As Worksheet, ByVal language As String)
-    TranslateDesigner mainsh, language
-End Sub
-
-Private Function IDesignerTranslation_TranslatedValue(ByVal msgCode As String) As String
-    IDesignerTranslation_TranslatedValue = TranslatedValue(msgCode)
-End Function

@@ -165,10 +165,10 @@ End Property
 '@jump:designer-translations
 '@prop-title Designer translation accessor
 '@details
-'Returns the IDesignerTranslation instance providing designer UI translations from
+'Returns the DesignerTranslation instance providing designer UI translations from
 'the DesignerTranslation worksheet. Lazy-loaded on first access.
-'@return IDesignerTranslation. The designer translation collaborator.
-Public Property Get DesignerTranslations() As IDesignerTranslation
+'@return DesignerTranslation. The designer translation collaborator.
+Public Property Get DesignerTranslations() As DesignerTranslation
 End Property
 
 '@jump:trans-object

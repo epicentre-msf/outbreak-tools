@@ -11,8 +11,6 @@ Option Private Module
 Private Assert As Object
 Private SpecsWorkbook As Workbook
 Private Specs As ILinelistSpecs
-Private DesignerStub As LinelistSpecsDesignerTranslationStub
-Private MessageStub As LinelistSpecsTranslationStub
 
 Private Const TEST_DESIGN_NAME As String = "UnitTestDesign"
 
@@ -43,8 +41,6 @@ End Sub
 '@ModuleCleanup
 Private Sub ModuleCleanup()
     Set Specs = Nothing
-    Set MessageStub = Nothing
-    Set DesignerStub = Nothing
     TestHelpers.DeleteWorkbook SpecsWorkbook
     Set SpecsWorkbook = Nothing
     Set Assert = Nothing
@@ -52,14 +48,10 @@ End Sub
 
 '@TestInitialize
 Private Sub TestInitialize()
+    'The DesignerTranslation sheet in the fixture is seeded with the four required
+    'translation tables, so Specs lazily builds a real DesignerTranslation on demand
+    'via EnsureDesignerTranslations -- no test double is injected.
     Specs.ResetCaches
-
-    Set DesignerStub = New LinelistSpecsDesignerTranslationStub
-    Set MessageStub = New LinelistSpecsTranslationStub
-    MessageStub.Initialise
-    DesignerStub.UseTranslationObject MessageStub
-
-    Specs.TestAssignDesignerTranslations DesignerStub
 End Sub
 
 '@section Tests
@@ -182,6 +174,36 @@ Private Sub PrepareSpecificationWorkbook(ByVal targetBook As Workbook, _
     If StrComp(SHEET_EXPORT, excludeSheet, vbTextCompare) <> 0 Then
         SeedExportsSheet targetBook.Worksheets(SHEET_EXPORT)
     End If
+
+    If StrComp(SHEET_DESIGNER_TRANSLATION, excludeSheet, vbTextCompare) <> 0 Then
+        SeedDesignerTranslationSheet targetBook.Worksheets(SHEET_DESIGNER_TRANSLATION)
+    End If
+End Sub
+
+'@sub-title Seed the four ListObjects DesignerTranslation.Create requires (ENG)
+Private Sub SeedDesignerTranslationSheet(ByVal designerSheet As Worksheet)
+    designerSheet.Cells.Clear
+    AddTradTable designerSheet, designerSheet.Range("A1"), "T_tradMsg", _
+        Array(Array("tag", "ENG"), Array("MSG_Info", "Information"))
+    AddTradTable designerSheet, designerSheet.Range("D1"), "T_tradShape", _
+        Array(Array("tag", "ENG"), Array("shp_title", "Designer"))
+    AddTradTable designerSheet, designerSheet.Range("G1"), "T_tradRange", _
+        Array(Array("tag", "ENG"), Array("RNG_DesignerTitle", "Designer Title"))
+    AddTradTable designerSheet, designerSheet.Range("J1"), "T_tradDrop", _
+        Array(Array("tag", "ENG"), Array("drp_choice", "list_values"))
+End Sub
+
+Private Sub AddTradTable(ByVal sh As Worksheet, ByVal startCell As Range, _
+                         ByVal tableName As String, ByVal rows As Variant)
+    Dim matrix As Variant
+    Dim dataRange As Range
+    Dim lo As ListObject
+
+    matrix = TestHelpers.RowsToMatrix(rows)
+    TestHelpers.WriteMatrix startCell, matrix
+    Set dataRange = startCell.Resize(UBound(matrix, 1), UBound(matrix, 2))
+    Set lo = sh.ListObjects.Add(xlSrcRange, dataRange, , xlYes)
+    lo.Name = tableName
 End Sub
 
 Private Sub SeedFormatSheet(ByVal formatSheet As Worksheet)

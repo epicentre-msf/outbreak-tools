@@ -78,7 +78,7 @@ Private Property Get ILinelistSpecs_Translations() As LLTranslation
     Set ILinelistSpecs_Translations = Nothing
 End Property
 
-Private Property Get ILinelistSpecs_DesignerTranslations() As IDesignerTranslation
+Private Property Get ILinelistSpecs_DesignerTranslations() As DesignerTranslation
     Set ILinelistSpecs_DesignerTranslations = Nothing
 End Property
 
