@@ -9,7 +9,6 @@ ICrossTableFormula
 ICustomTable
 ICustomTest
 IDataSheet
-IDesignerPreparation
 IDevelopment
 IDiseaseApplicationState
 IDiseaseExportWorkbook

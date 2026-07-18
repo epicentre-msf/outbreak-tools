@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Designer")
 '@ModuleDescription("Ribbon callbacks for the designer workbook.")
-'@depends DesignerPreparation, IDesignerPreparation, RibbonDev, OSFiles, IOSFiles, BetterArray, CustomTable, ICustomTable, Passwords, IPasswords, LLFormat, ILLFormat, ApplicationState, IApplicationState, DesignerTranslation, IDesignerTranslation, HiddenNames, IHiddenNames
+'@depends DesignerPreparation, RibbonDev, OSFiles, IOSFiles, BetterArray, CustomTable, ICustomTable, Passwords, IPasswords, LLFormat, ILLFormat, ApplicationState, IApplicationState, DesignerTranslation, IDesignerTranslation, HiddenNames, IHiddenNames
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Private Const SHEET_FORMAT As String = "__formatter"
@@ -13,7 +13,7 @@ Private Const PROMPT_TITLE As String = "Designer"
 Private Const TAG_FORMATTER_IMPORTED As String = "TAG_FORMATTER_IMPORTED"
 
 Private trads As IDesignerTranslation
-Private prep As IDesignerPreparation
+Private prep As DesignerPreparation
 
 '@section Ribbon lifecycle
 '===============================================================================
@@ -269,7 +269,7 @@ End Sub
 '===============================================================================
 
 '@Description("Lazily resolve and cache the designer preparation helper bound to ThisWorkbook.")
-Private Function ResolvePreparation() As IDesignerPreparation
+Private Function ResolvePreparation() As DesignerPreparation
     If prep Is Nothing Then
         Set prep = DesignerPreparation.Create(ThisWorkbook)
     End If

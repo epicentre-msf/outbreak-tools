@@ -74,7 +74,7 @@ Public Sub TestPrepareSeedsFlags()
     CustomTestSetTitles Assert, "DesignerPreparation", "TestPrepareSeedsFlags"
     On Error GoTo Fail
 
-    Dim subject As IDesignerPreparation
+    Dim subject As DesignerPreparation
     Set subject = DesignerPreparation.Create(FixtureWorkbook)
     subject.Prepare Nothing
 
@@ -105,7 +105,7 @@ Public Sub TestPrepareHidesInternalSheets()
     Set formulaSheet = TestHelpers.EnsureWorksheet("__formula", FixtureWorkbook)
 
     'Act
-    Dim subject As IDesignerPreparation
+    Dim subject As DesignerPreparation
     Set subject = DesignerPreparation.Create(FixtureWorkbook)
     subject.Prepare Nothing
 
@@ -129,7 +129,7 @@ Public Sub TestPrepareHidesTranslationSheets()
     Set llTransSheet = TestHelpers.EnsureWorksheet("LinelistTranslation", FixtureWorkbook)
 
     'Act
-    Dim subject As IDesignerPreparation
+    Dim subject As DesignerPreparation
     Set subject = DesignerPreparation.Create(FixtureWorkbook)
     subject.Prepare Nothing
 
@@ -148,7 +148,7 @@ Public Sub TestPrepareCreatesWorkbookFlags()
     On Error GoTo Fail
 
     'Act
-    Dim subject As IDesignerPreparation
+    Dim subject As DesignerPreparation
     Set subject = DesignerPreparation.Create(FixtureWorkbook)
     subject.Prepare Nothing
 
@@ -180,7 +180,7 @@ Public Sub TestPrepareCreatesGeoFlags()
     Set geoSheet = TestHelpers.EnsureWorksheet("Geo", FixtureWorkbook)
 
     'Act
-    Dim subject As IDesignerPreparation
+    Dim subject As DesignerPreparation
     Set subject = DesignerPreparation.Create(FixtureWorkbook)
     subject.Prepare Nothing
 
@@ -208,7 +208,7 @@ Public Sub TestPrepareSkipsGeoWhenSheetMissing()
     'Arrange: do NOT create a Geo sheet
 
     'Act: should not raise an error
-    Dim subject As IDesignerPreparation
+    Dim subject As DesignerPreparation
     Set subject = DesignerPreparation.Create(FixtureWorkbook)
     subject.Prepare Nothing
 
@@ -229,7 +229,7 @@ Public Sub TestPrepareCreatesDropdownSheet()
     On Error GoTo Fail
 
     'Act
-    Dim subject As IDesignerPreparation
+    Dim subject As DesignerPreparation
     Set subject = DesignerPreparation.Create(FixtureWorkbook)
     subject.Prepare Nothing
 
@@ -251,7 +251,7 @@ Public Sub TestPrepareRegistersAllDropdowns()
     On Error GoTo Fail
 
     'Act
-    Dim subject As IDesignerPreparation
+    Dim subject As DesignerPreparation
     Set subject = DesignerPreparation.Create(FixtureWorkbook)
     subject.Prepare Nothing
 
@@ -276,7 +276,7 @@ Public Sub TestInterfaceLanguagesContainsExpectedValues()
     On Error GoTo Fail
 
     'Act
-    Dim subject As IDesignerPreparation
+    Dim subject As DesignerPreparation
     Set subject = DesignerPreparation.Create(FixtureWorkbook)
     subject.Prepare Nothing
 
@@ -299,7 +299,7 @@ Public Sub TestEpiweekStartContainsSevenDays()
     On Error GoTo Fail
 
     'Act
-    Dim subject As IDesignerPreparation
+    Dim subject As DesignerPreparation
     Set subject = DesignerPreparation.Create(FixtureWorkbook)
     subject.Prepare Nothing
 
@@ -322,7 +322,7 @@ Public Sub TestDesignValuesMatchesLLFormat()
     On Error GoTo Fail
 
     'Act
-    Dim subject As IDesignerPreparation
+    Dim subject As DesignerPreparation
     Set subject = DesignerPreparation.Create(FixtureWorkbook)
     subject.Prepare Nothing
 
@@ -346,7 +346,7 @@ Public Sub TestDropdownsPropertyLazilyInitialises()
     On Error GoTo Fail
 
     'Arrange: create without calling Prepare
-    Dim subject As IDesignerPreparation
+    Dim subject As DesignerPreparation
     Set subject = DesignerPreparation.Create(FixtureWorkbook)
 
     'Act: access Dropdowns property directly (lazy init)
@@ -369,7 +369,7 @@ Public Sub TestDropdownUpdateReplacesValues()
     On Error GoTo Fail
 
     'Arrange: create dropdown sheet and register initial __setup_languages
-    Dim subject As IDesignerPreparation
+    Dim subject As DesignerPreparation
     Set subject = DesignerPreparation.Create(FixtureWorkbook)
     subject.Prepare Nothing
 
@@ -417,7 +417,7 @@ Public Sub TestPrepareAppliesMultiValidations()
     CreateMultiTable multiSheet
 
     'Act
-    Dim subject As IDesignerPreparation
+    Dim subject As DesignerPreparation
     Set subject = DesignerPreparation.Create(FixtureWorkbook)
     subject.Prepare Nothing
 
@@ -454,7 +454,7 @@ Public Sub TestPrepareSkipsMultiWhenSheetMissing()
     'Arrange: do NOT create GenerateMultiple sheet
 
     'Act: should not raise an error
-    Dim subject As IDesignerPreparation
+    Dim subject As DesignerPreparation
     Set subject = DesignerPreparation.Create(FixtureWorkbook)
     subject.Prepare Nothing
 
@@ -481,7 +481,7 @@ Public Sub TestPrepareAppliesMainValidations()
     FixtureWorkbook.Names.Add Name:="RNG_LLDesign", RefersTo:=MainSheet.Range("H3")
 
     'Act
-    Dim subject As IDesignerPreparation
+    Dim subject As DesignerPreparation
     Set subject = DesignerPreparation.Create(FixtureWorkbook)
     subject.Prepare Nothing
 
@@ -506,7 +506,7 @@ Public Sub TestPrepareSkipsMainValidationsWhenRangesMissing()
     'Arrange: do NOT create named ranges on the Main sheet
 
     'Act: should not raise an error
-    Dim subject As IDesignerPreparation
+    Dim subject As DesignerPreparation
     Set subject = DesignerPreparation.Create(FixtureWorkbook)
     subject.Prepare Nothing
 

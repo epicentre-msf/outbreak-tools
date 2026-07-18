@@ -16,7 +16,6 @@ Attribute VB_Description = "Prepares designer workbooks and ribbon settings"
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, ParameterNotUsed
 
 Option Explicit
-Implements IDesignerPreparation
 
 '@class DesignerPreparation
 '@description
@@ -108,12 +107,11 @@ Private Const RNG_LL_FORM As String = "RNG_LLForm"
 '@details
 'Factory method that creates a new DesignerPreparation instance, binds
 'it to the supplied designer workbook via Configure, and returns the
-'result through the IDesignerPreparation interface. Called on the
-'predeclared instance.
+'result. Called on the predeclared instance.
 '@param hostBook Workbook. The designer workbook to prepare.
-'@return IDesignerPreparation. A fully initialised instance ready for use.
+'@return DesignerPreparation. A fully initialised instance ready for use.
 '@export
-Public Function Create(ByVal hostBook As Workbook) As IDesignerPreparation
+Public Function Create(ByVal hostBook As Workbook) As DesignerPreparation
     Dim instance As DesignerPreparation
 
     Set instance = New DesignerPreparation
@@ -125,9 +123,9 @@ End Function
 '@prop-title Current object instance
 '@details
 'Convenience accessor so consuming code can fluently retrieve the
-'interface reference from the predeclared Create method.
-'@return IDesignerPreparation. The current instance cast to the interface.
-Public Property Get Self() As IDesignerPreparation
+'instance from the predeclared Create method.
+'@return DesignerPreparation. The current instance.
+Public Property Get Self() As DesignerPreparation
     Set Self = Me
 End Property
 
@@ -757,38 +755,4 @@ End Sub
 '@throws ProjectError.<varies> Always raises the specified error.
 Private Sub RaiseError(ByVal errorCode As ProjectError, ByVal messageText As String)
     Err.Raise CLng(errorCode), CLASS_NAME, messageText
-End Sub
-
-
-'@section Interface Implementation
-'===============================================================================
-'@description Delegated members satisfying the IDesignerPreparation contract.
-'See the corresponding members above for full documentation.
-
-Private Sub IDesignerPreparation_Configure(ByVal hostBook As Workbook)
-    Configure hostBook
-End Sub
-
-Private Property Get IDesignerPreparation_Dropdowns() As IDropdownLists
-    Set IDesignerPreparation_Dropdowns = Dropdowns
-End Property
-
-Private Function IDesignerPreparation_GetFlag(ByVal nameId As String, Optional ByVal defaultValue As Boolean = False) As Boolean
-    IDesignerPreparation_GetFlag = GetFlag(nameId, defaultValue)
-End Function
-
-Private Property Get IDesignerPreparation_HiddenStore() As IHiddenNames
-    Set IDesignerPreparation_HiddenStore = HiddenStore
-End Property
-
-Private Property Get IDesignerPreparation_HostWorkbook() As Workbook
-    Set IDesignerPreparation_HostWorkbook = HostWorkbook
-End Property
-
-Private Sub IDesignerPreparation_Prepare(ByRef devManager As IDevelopment)
-    Prepare devManager
-End Sub
-
-Private Sub IDesignerPreparation_SetFlag(ByVal nameId As String, ByVal enabled As Boolean)
-    SetFlag nameId, enabled
 End Sub
