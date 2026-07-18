@@ -392,6 +392,53 @@ Public Function BuildTranslationObject(ByVal targetBook As workbook, _
     Set BuildTranslationObject = TranslationObject.Create(lo, language)
 End Function
 
+'@label EnsureSpecsSheets
+'@fun-title Add the minimal sheets LinelistSpecs.Create validates.
+'@details Creates the seven required designer worksheets (Geo, __pass, __formula,
+'LinelistTranslation, __formatter, Main, DesignerTranslation), a DESIGNTYPE named
+'range on __formatter, and the four ListObjects LLTranslation.Create requires on
+'LinelistTranslation (so EnsureTranslations succeeds even though tests inject the
+'real TransObject). Lets a test build a real LinelistSpecs and drive it through the
+'TestAssign* hooks instead of the former LinelistSpecs stubs.
+'@param targetBook Workbook to receive the sheets.
+Public Sub EnsureSpecsSheets(ByVal targetBook As workbook)
+    Dim sheetNames As Variant
+    Dim idx As Long
+    Dim formatSheet As Worksheet
+    Dim transSheet As Worksheet
+
+    sheetNames = Array("Geo", "__pass", "__formula", "LinelistTranslation", _
+                       "__formatter", "Main", "DesignerTranslation")
+    For idx = LBound(sheetNames) To UBound(sheetNames)
+        EnsureWorksheet CStr(sheetNames(idx)), targetBook, clearSheet:=False, visibility:=xlSheetHidden
+    Next idx
+
+    Set formatSheet = targetBook.Worksheets("__formatter")
+    formatSheet.Range("A1").value = "UnitTestDesign"
+    On Error Resume Next
+        targetBook.Names("DESIGNTYPE").Delete
+        formatSheet.Names("DESIGNTYPE").Delete
+    On Error GoTo 0
+    targetBook.Names.Add Name:="DESIGNTYPE", RefersTo:=formatSheet.Range("A1")
+
+    Set transSheet = targetBook.Worksheets("LinelistTranslation")
+    transSheet.Cells.Clear
+    AddEmptyTable transSheet, transSheet.Range("A1"), "T_TradLLMsg"
+    AddEmptyTable transSheet, transSheet.Range("D1"), "T_TradLLShapes"
+    AddEmptyTable transSheet, transSheet.Range("G1"), "T_TradLLForms"
+    AddEmptyTable transSheet, transSheet.Range("J1"), "Tab_Translations"
+End Sub
+
+'@label AddEmptyTable
+'@sub-title Create a minimal two-column ListObject (tag + ENG, one blank row).
+Private Sub AddEmptyTable(ByVal sh As Worksheet, ByVal startCell As Range, ByVal tableName As String)
+    Dim lo As ListObject
+    startCell.value = "tag"
+    startCell.Offset(0, 1).value = "ENG"
+    Set lo = sh.ListObjects.Add(xlSrcRange, startCell.Resize(2, 2), , xlYes)
+    lo.Name = tableName
+End Sub
+
 '@section Data Builders
 '===============================================================================
 

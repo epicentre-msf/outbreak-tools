@@ -25,14 +25,14 @@ Option Explicit
 'ranges, and visual formatting. Consumers interact through the CrossTable
 'interface, and AnalysisOutput orchestrates the build sequence by calling
 'Build followed by Format for each table specification.
-'@depends TableSpecs, ILinelistSpecs, TranslationObject, ILLVariables, LLVariables, LLFormat, HiddenNames, BetterArray, Checking
+'@depends TableSpecs, LinelistSpecs, TranslationObject, ILLVariables, LLVariables, LLFormat, HiddenNames, BetterArray, Checking
 '@version 1.1 (2026-02-11)
 
 
 Private Type TCrossTable
     specs As TableSpecs
     outputSh As Worksheet
-    lData As ILinelistSpecs
+    lData As LinelistSpecs
     endRw As Long
     endCol As Long
     nbCols As Long
@@ -65,7 +65,7 @@ Private internalChecks As Checking
 'the interface reference.
 '@param specs TableSpecs. An TableSpecs object representing one row from the analysis setup sheet.
 '@param outputWksh Worksheet. The Excel Worksheet where this cross-table will physically write its headers, row labels, column labels, data placeholders, and named ranges.
-'@param lData ILinelistSpecs. The linelist specifications object that provides the translation object
+'@param lData LinelistSpecs. The linelist specifications object that provides the translation object
 'for locale-aware labels and is passed to TableSpecs.RowCategories / ColumnCategories for
 'category resolution at build time.
 '@return CrossTable. A fully initialized CrossTable ready for Build or individual step calls.
@@ -75,7 +75,7 @@ Private internalChecks As Checking
 '@export
 Public Function Create(ByVal specs As TableSpecs, _
                        ByVal outputWksh As Worksheet, _
-                       ByRef lData As ILinelistSpecs) As CrossTable
+                       ByRef lData As LinelistSpecs) As CrossTable
 
     If specs Is Nothing Then ThrowError InvalidArgument, "Table specifications not defined"
     If outputWksh Is Nothing Then ThrowError InvalidArgument, "Output worksheet not defined"
@@ -143,18 +143,18 @@ End Property
 '@label:linelist-data
 '@prop-title Linelist specifications providing translations and categories.
 '@details
-'Returns the ILinelistSpecs instance stored at construction time. Used to
+'Returns the LinelistSpecs instance stored at construction time. Used to
 'extract the translation object and to pass as the lData parameter when
 'calling specs.RowCategories(lData) and specs.ColumnCategories(lData).
-'@return ILinelistSpecs. The linelist specifications.
-Public Property Get LinelistData() As ILinelistSpecs
+'@return LinelistSpecs. The linelist specifications.
+Public Property Get LinelistData() As LinelistSpecs
     Set LinelistData = this.lData
 End Property
 
 '@label:linelist-data-set
 '@prop-title Assign the linelist specifications.
-'@param lData ILinelistSpecs. The linelist specifications to assign.
-Public Property Set LinelistData(ByVal lData As ILinelistSpecs)
+'@param lData LinelistSpecs. The linelist specifications to assign.
+Public Property Set LinelistData(ByVal lData As LinelistSpecs)
     Set this.lData = lData
 End Property
 

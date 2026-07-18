@@ -27,7 +27,7 @@ Option Explicit
 'create an instance via Create (simple) or CreateRangeSpecs (complex), call
 'CreateSeries (or let Valid trigger it lazily), then read series data via the
 'public accessors.
-'@depends CrossTable, TableSpecs, ILinelistSpecs, BetterArray
+'@depends CrossTable, TableSpecs, LinelistSpecs, BetterArray
 '@version 1.0 (2026-02-09)
 
 
@@ -44,7 +44,7 @@ Private Type TGraphSpecs
     ' Complex mode: 3 listobjects + output sheet + linelist specs
     loList As BetterArray
     outSh As Worksheet
-    lData As ILinelistSpecs
+    lData As LinelistSpecs
     ' Series data (simple mode)
     seriesNames As BetterArray
     seriesTypes As BetterArray
@@ -122,7 +122,7 @@ End Function
 '[graphLo, timeSeriesLo, titleLo]. Each must be a non-empty ListObject with the
 'correct title label in its header area.
 '@param outputSh Worksheet. The worksheet where time series graphs will be drawn.
-'@param lData ILinelistSpecs. Linelist-level metadata (section names, sheet info)
+'@param lData LinelistSpecs. Linelist-level metadata (section names, sheet info)
 'needed to resolve table specifications during series building.
 '@return GraphSpecs. An instance configured in complex mode (GraphTypeComplex)
 'ready for series creation via CreateSeries.
@@ -135,7 +135,7 @@ End Function
 '@export
 Public Function CreateRangeSpecs(ByVal loTable As BetterArray, _
                                  ByVal outputSh As Worksheet, _
-                                 ByVal lData As ILinelistSpecs) As GraphSpecs
+                                 ByVal lData As LinelistSpecs) As GraphSpecs
 
     ValidateListObjects loTable
     If lData Is Nothing Then ThrowError InvalidArgument, "Linelist specifications not defined"
@@ -225,15 +225,15 @@ End Property
 
 '@label:linelist-specifications
 '@prop-title Linelist specifications for complex mode
-'@return ILinelistSpecs. The stored linelist specifications instance.
-Public Property Get LinelistSpecifications() As ILinelistSpecs
+'@return LinelistSpecs. The stored linelist specifications instance.
+Public Property Get LinelistSpecifications() As LinelistSpecs
     Set LinelistSpecifications = this.lData
 End Property
 
 '@label:linelist-specifications-set
 '@prop-title Assign the linelist specifications
-'@param lData ILinelistSpecs. The linelist specifications to store.
-Public Property Set LinelistSpecifications(ByVal lData As ILinelistSpecs)
+'@param lData LinelistSpecs. The linelist specifications to store.
+Public Property Set LinelistSpecifications(ByVal lData As LinelistSpecs)
     Set this.lData = lData
 End Property
 

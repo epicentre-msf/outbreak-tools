@@ -26,7 +26,7 @@ Option Explicit
 'mode creates a PLAGEVALUES range reference for vertical data entry.
 'Consumers call Create with a layer mode, sheet name, and linelist
 'reference, then invoke Build to construct the sheet.
-'@depends Linelist, LLSheets, ILinelistSpecs, LLFormat, DropdownLists,
+'@depends Linelist, LLSheets, LinelistSpecs, LLFormat, DropdownLists,
 '  Passwords, TranslationObject, Buttons, HiddenNames, SectionBuilder,
 '  BetterArray
 '@version 1.0 (2026-02-09)
@@ -182,7 +182,7 @@ Private Sub BuildHList()
     Dim filtSh As Worksheet
     Dim dict As LLdictionary
     Dim llshs As LLSheets
-    Dim specs As ILinelistSpecs
+    Dim specs As LinelistSpecs
     Dim design As LLFormat
     Dim drop As DropdownLists
     Dim pass As Passwords
@@ -401,7 +401,7 @@ Private Sub BuildVList()
     Dim sh As Worksheet
     Dim dict As LLdictionary
     Dim llshs As LLSheets
-    Dim specs As ILinelistSpecs
+    Dim specs As LinelistSpecs
     Dim design As LLFormat
     Dim drop As DropdownLists
     Dim pass As Passwords
@@ -494,7 +494,7 @@ End Sub
 '@param sh Worksheet. The main data entry sheet to build sections on.
 '@param printSh Worksheet. The printed companion sheet (Nothing for VList).
 Private Sub BuildSections(ByVal sh As Worksheet, ByVal printSh As Worksheet)
-    Dim specs As ILinelistSpecs
+    Dim specs As LinelistSpecs
     Dim llshs As LLSheets
     Dim startRow As Long
     Dim secBuilder As SectionBuilder

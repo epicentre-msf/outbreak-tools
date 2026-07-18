@@ -24,7 +24,7 @@ Option Explicit
 '(normal, time series, spatial, spatio-temporal), builds cross-tables from
 'table specifications, writes formulas, registers metadata in AnaTabIds, and
 'renders charts.
-'@depends Linelist, ILinelistSpecs, LLFormat, TranslationObject, TableSpecs, CrossTable, CrossTableFormula, Graphs, AnaTabIds, Buttons, Passwords, DropdownLists, LLdictionary, ILLVariables, FormulaData, BetterArray
+'@depends Linelist, LinelistSpecs, LLFormat, TranslationObject, TableSpecs, CrossTable, CrossTableFormula, Graphs, AnaTabIds, Buttons, Passwords, DropdownLists, LLdictionary, ILLVariables, FormulaData, BetterArray
 '@version 1.0 (2026-02-10)
 
 
@@ -148,13 +148,13 @@ End Property
 '@label:linelist-data
 '@prop-title Linelist metadata facade.
 '@details
-'Convenience accessor that retrieves the ILinelistSpecs object from the
-'stored output linelist. ILinelistSpecs is the central metadata facade
+'Convenience accessor that retrieves the LinelistSpecs object from the
+'stored output linelist. LinelistSpecs is the central metadata facade
 'providing access to the dictionary, translation objects, formula data,
 'design format, passwords, and sheet configuration. This property avoids
 'repeating OutputLL().LinelistData() throughout the class.
-'@return ILinelistSpecs. Metadata facade for the output linelist.
-Private Property Get LinelistData() As ILinelistSpecs
+'@return LinelistSpecs. Metadata facade for the output linelist.
+Private Property Get LinelistData() As LinelistSpecs
     Set LinelistData = OutputLL().LinelistData()
 End Property
 
@@ -230,7 +230,7 @@ End Property
 'which must exist in the output linelist before this property is first accessed.
 Private Property Get NamesObject() As AnaTabIds
     If this.namObj Is Nothing Then
-        Dim lData As ILinelistSpecs
+        Dim lData As LinelistSpecs
         Dim ll As Linelist
         Dim sh As Worksheet
 
@@ -322,7 +322,7 @@ Private Sub AddCommands(Optional ByVal scope As Byte = AnalysisScopeNormal)
     Dim but As Buttons
     Dim outsh As Worksheet
     Dim trads As TranslationObject
-    Dim lData As ILinelistSpecs
+    Dim lData As LinelistSpecs
 
     Set lData = LinelistData()
     If lData.HasTemplate() Then Exit Sub
@@ -525,7 +525,7 @@ Private Sub WriteTable(ByVal loName As String, _
     Dim gr As Graphs
     Dim lo As ListObject
     Dim specs As TableSpecs
-    Dim lData As ILinelistSpecs
+    Dim lData As LinelistSpecs
     Dim trads As TranslationObject
     Dim formData As FormulaData
     Dim cellRng As Range
@@ -800,7 +800,7 @@ Private Sub WriteTimeSeriesGraphs(ByVal graphLoName As String, _
     Dim outsh As Worksheet
     Dim graphCounter As Long
     Dim cellRng As Range
-    Dim lData As ILinelistSpecs
+    Dim lData As LinelistSpecs
     Dim seriesCounter As Long
 
     Dim grLo As ListObject
@@ -933,7 +933,7 @@ Private Sub WriteSpatioTemporalGraph(ByVal loName As String, _
     Dim outsh As Worksheet
     Dim cellRng As Range
     Dim specs As TableSpecs
-    Dim lData As ILinelistSpecs
+    Dim lData As LinelistSpecs
     Dim design As LLFormat
     Dim hRng As Range
     Dim tabRng As Range
@@ -1055,7 +1055,7 @@ Public Sub WriteAnalysis(Optional ByVal part As Byte = 0)
     Dim cellRng As Range
     Dim scope As Byte
     Dim pass As Passwords
-    Dim lData As ILinelistSpecs
+    Dim lData As LinelistSpecs
     Dim trads As TranslationObject
     Dim goToSectionLabel As String
     Dim outshHn As HiddenNames

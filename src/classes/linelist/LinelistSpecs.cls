@@ -14,7 +14,17 @@ Attribute VB_Exposed = False
 '@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation
 
 Option Explicit
-Implements ILinelistSpecs
+
+Public Enum TempSheetScope
+    TempSheetSingle = 1
+    TempSheetList = 2
+    TempSheetUpdates = 3
+    TempSheetMetadata = 4
+    TempSheetAnalysis = 5
+    TempSheetImport = 6
+    TempSheetSpatial = 7
+    TempSheetShowHide = 8
+End Enum
 
 '@class LinelistSpecs
 '@description
@@ -26,7 +36,7 @@ Implements ILinelistSpecs
 'exporting specifications to a destination linelist workbook, and surfacing
 'user-facing error dialogs. Uses a PredeclaredId factory pattern so callers
 'construct instances via LinelistSpecs.Create(workbook) and receive an
-'ILinelistSpecs interface reference.
+'LinelistSpecs interface reference.
 '@depends LLdictionary, LLChoices, LLTranslation, DesignerTranslation
 '@depends LLGeo, LLExport, Passwords, LLFormat
 '@depends LinelistBuildService, TemporaryRepos
@@ -102,13 +112,13 @@ Private Const RANGE_DESIGN_TYPE As String = "DESIGNTYPE"
 '@details
 'Validates the workbook structure upfront (checking for all required
 'worksheets and named ranges), then constructs a new LinelistSpecs
-'instance with caches initialised. Returns the ILinelistSpecs interface.
+'instance with caches initialised. Returns the LinelistSpecs interface.
 '@param specsWorkbook Workbook. The specifications workbook to wrap.
-'@return ILinelistSpecs. A fully initialised facade ready for use.
+'@return LinelistSpecs. A fully initialised facade ready for use.
 '@throws ProjectError.ObjectNotInitialized When specsWorkbook is Nothing.
 '@throws ProjectError.ElementNotFound When required worksheets are missing.
 '@export
-Public Function Create(ByVal specsWorkbook As Workbook) As ILinelistSpecs
+Public Function Create(ByVal specsWorkbook As Workbook) As LinelistSpecs
     ValidateWorkbookReference specsWorkbook
 
     With New LinelistSpecs
@@ -121,10 +131,10 @@ End Function
 '@label:self
 '@prop-title Interface-cast self reference
 '@details
-'Returns the current instance cast as ILinelistSpecs for fluent
+'Returns the current instance cast as LinelistSpecs for fluent
 'construction patterns within the factory method.
-'@return ILinelistSpecs. This instance as its interface type.
-Public Property Get Self() As ILinelistSpecs
+'@return LinelistSpecs. This instance as its interface type.
+Public Property Get Self() As LinelistSpecs
     Set Self = Me
 End Property
 
@@ -1484,96 +1494,36 @@ Public Sub TestAssignTranslations(ByVal translations As LLTranslation)
     ResetTranslationCache
 End Sub
 
-'@section Interface implementation
-'===============================================================================
-'@description ILinelistSpecs delegation stubs. Each member forwards to its
-'corresponding public member on the concrete class. No @label tags are
-'needed on delegation stubs.
-
-Private Sub ILinelistSpecs_ResetCaches()
-    ResetCaches
+'@label:test-assign-dictionary
+'@sub-title Inject a dictionary collaborator for testing
+'@param dict LLdictionary. The dictionary to expose through Dictionary().
+Public Sub TestAssignDictionary(ByVal dict As LLdictionary)
+    Set this.dictionary = dict
 End Sub
 
-Private Property Get ILinelistSpecs_DesWorkbook() As Workbook
-    Set ILinelistSpecs_DesWorkbook = Me.DesWorkbook
-End Property
-
-Private Property Get ILinelistSpecs_Dictionary() As LLdictionary
-    Set ILinelistSpecs_Dictionary = Me.Dictionary
-End Property
-
-Private Property Get ILinelistSpecs_Choices() As LLChoices
-    Set ILinelistSpecs_Choices = Me.Choices
-End Property
-
-Private Property Get ILinelistSpecs_DesignFormat() As LLFormat
-    Set ILinelistSpecs_DesignFormat = Me.DesignFormat
-End Property
-
-Private Property Get ILinelistSpecs_AnalysisObject() As Analysis
-    Set ILinelistSpecs_AnalysisObject = Me.AnalysisObject
-End Property
-
-Private Property Get ILinelistSpecs_ExportObject() As LLExport
-    Set ILinelistSpecs_ExportObject = Me.ExportObject
-End Property
-
-Private Property Get ILinelistSpecs_Password() As Passwords
-    Set ILinelistSpecs_Password = Me.Password
-End Property
-
-Private Property Get ILinelistSpecs_GeoObject() As LLGeo
-    Set ILinelistSpecs_GeoObject = Me.GeoObject
-End Property
-
-Private Property Get ILinelistSpecs_FormulaDataObject() As FormulaData
-    Set ILinelistSpecs_FormulaDataObject = Me.FormulaDataObject
-End Property
-
-Private Property Get ILinelistSpecs_HasTemplate() As Boolean
-    ILinelistSpecs_HasTemplate = Me.HasTemplate
-End Property
-
-Private Property Get ILinelistSpecs_Translations() As LLTranslation
-    Set ILinelistSpecs_Translations = Me.Translations
-End Property
-
-Private Property Get ILinelistSpecs_DesignerTranslations() As DesignerTranslation
-    Set ILinelistSpecs_DesignerTranslations = Me.DesignerTranslations
-End Property
-
-Private Property Get ILinelistSpecs_TransObject(Optional ByVal translationScope As Byte = TranslationOfMessages) As TranslationObject
-    Set ILinelistSpecs_TransObject = Me.TransObject(translationScope)
-End Property
-
-Private Property Get ILinelistSpecs_TemporarySheetName(ByVal scope As Byte) As String
-    ILinelistSpecs_TemporarySheetName = Me.TemporarySheetName(scope)
-End Property
-
-Private Property Get ILinelistSpecs_Value(ByVal tagName As String) As String
-    ILinelistSpecs_Value = Me.Value(tagName)
-End Property
-
-Private Function ILinelistSpecs_Categories(ByVal varName As String, Optional ByVal useShortlabels As Boolean = False) As BetterArray
-    Set ILinelistSpecs_Categories = Me.Categories(varName, useShortlabels)
-End Function
-
-Private Sub ILinelistSpecs_Prepare(ByVal buildService As LinelistBuildService, ByVal setupPath As String)
-    Prepare buildService, setupPath
+'@label:test-assign-design-format
+'@sub-title Inject a design-format collaborator for testing
+'@param fmt LLFormat. The format object to expose through DesignFormat().
+Public Sub TestAssignDesignFormat(ByVal fmt As LLFormat)
+    Set this.format = fmt
 End Sub
 
-Private Property Get ILinelistSpecs_LLWorkbook() As Workbook
-    Set ILinelistSpecs_LLWorkbook = Me.LLWorkbook
-End Property
-
-Private Property Get ILinelistSpecs_OutputTemporaryRepos() As TemporaryRepos
-    Set ILinelistSpecs_OutputTemporaryRepos = Me.OutputTemporaryRepos
-End Property
-
-Private Sub ILinelistSpecs_ErrorManage(Optional ByVal textMessage As String = vbNullString)
-    ErrorManage textMessage
+'@label:test-assign-formula-data
+'@sub-title Inject a formula-data collaborator for testing
+'@param data FormulaData. The formula data to expose through FormulaDataObject().
+Public Sub TestAssignFormulaData(ByVal data As FormulaData)
+    Set this.formulaData = data
 End Sub
 
-Private Property Get ILinelistSpecs_Prepared() As Boolean
-    ILinelistSpecs_Prepared = this.prepared
-End Property
+'@label:test-assign-trans-object
+'@sub-title Inject one TranslationObject for every translation scope
+'@details Sets all five scope-cache fields so TransObject returns the same
+'object regardless of scope, mirroring the former single-object test stubs.
+'@param trans TranslationObject. The translation object to expose.
+Public Sub TestAssignTransObject(ByVal trans As TranslationObject)
+    Set this.transMessages = trans
+    Set this.transDictionary = trans
+    Set this.transShapes = trans
+    Set this.transForms = trans
+    Set this.transRibbon = trans
+End Sub

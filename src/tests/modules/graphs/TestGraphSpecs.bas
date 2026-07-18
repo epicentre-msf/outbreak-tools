@@ -18,7 +18,7 @@ Option Explicit
 'loTable, Nothing sheet, Nothing lData, and wrong ListObject count
 '(complex mode); complex mode initial state has zero series and graphs
 'before CreateSeries; Wksh returns the output sheet in complex mode.
-'@depends GraphSpecs, BetterArray, TableSpecsLinelistStub, LLdictionary, DictionaryTestFixture, CustomTest, TestHelpers
+'@depends GraphSpecs, BetterArray, LinelistSpecs, LLdictionary, DictionaryTestFixture, CustomTest, TestHelpers
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const FIXTURE_SHEET As String = "GraphSpecsFixture"
@@ -45,13 +45,18 @@ End Function
 '@details
 'GraphSpecs.CreateRangeSpecs stores lData and later passes
 'lData.Dictionary() to TableSpecs.Create, so the dictionary must not be
-'Nothing. Instantiates a TableSpecsLinelistStub and assigns a fresh
+'Nothing. Instantiates a LinelistSpecs and assigns a fresh
 'real LLdictionary to satisfy this requirement.
-'@return TableSpecsLinelistStub. A stub with a valid dictionary reference.
-Private Function CreateLDataStub() As TableSpecsLinelistStub
-    Dim stub As TableSpecsLinelistStub
-    Set stub = New TableSpecsLinelistStub
-    stub.SetDictionary MinimalDictionary()
+'@return LinelistSpecs. A stub with a valid dictionary reference.
+Private Function CreateLDataStub() As LinelistSpecs
+    Dim dict As LLdictionary
+    Dim stub As LinelistSpecs
+
+    Set dict = MinimalDictionary()          'also lazily builds DictBook
+    TestHelpers.EnsureSpecsSheets DictBook
+    Set stub = LinelistSpecs.Create(DictBook)
+    stub.TestAssignDictionary dict
+    stub.TestAssignTransObject TestHelpers.BuildTranslationObject(DictBook, "ENG", Array())
     Set CreateLDataStub = stub
 End Function
 
@@ -219,7 +224,7 @@ Public Sub TestCreateRangeSpecsRejectsNothingLoTable()
     Dim sh As Worksheet
     Set sh = EnsureWorksheet(FIXTURE_SHEET, clearSheet:=True, visibility:=xlSheetHidden)
 
-    Dim lDataStub As TableSpecsLinelistStub
+    Dim lDataStub As LinelistSpecs
     Set lDataStub = CreateLDataStub()
 
     On Error Resume Next
@@ -249,7 +254,7 @@ Public Sub TestCreateRangeSpecsRejectsNothingSheet()
     Dim loTable As BetterArray
     Set loTable = BuildComplexFixture()
 
-    Dim lDataStub As TableSpecsLinelistStub
+    Dim lDataStub As LinelistSpecs
     Set lDataStub = CreateLDataStub()
 
     On Error Resume Next
@@ -324,7 +329,7 @@ Public Sub TestCreateRangeSpecsRejectsWrongCount()
     loTable.LowerBound = 1
     loTable.Push lo
 
-    Dim lDataStub As TableSpecsLinelistStub
+    Dim lDataStub As LinelistSpecs
     Set lDataStub = CreateLDataStub()
 
     On Error Resume Next
@@ -361,7 +366,7 @@ Public Sub TestComplexModeInitialState()
     Dim sh As Worksheet
     Set sh = ThisWorkbook.Worksheets(FIXTURE_SHEET)
 
-    Dim lDataStub As TableSpecsLinelistStub
+    Dim lDataStub As LinelistSpecs
     Set lDataStub = CreateLDataStub()
 
     Dim specs As GraphSpecs
@@ -398,7 +403,7 @@ Public Sub TestComplexModeWkshReturnsOutputSheet()
     Dim sh As Worksheet
     Set sh = ThisWorkbook.Worksheets(FIXTURE_SHEET)
 
-    Dim lDataStub As TableSpecsLinelistStub
+    Dim lDataStub As LinelistSpecs
     Set lDataStub = CreateLDataStub()
 
     Dim specs As GraphSpecs

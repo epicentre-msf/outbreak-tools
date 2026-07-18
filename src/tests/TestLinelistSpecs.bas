@@ -10,7 +10,7 @@ Option Private Module
 
 Private Assert As Object
 Private SpecsWorkbook As Workbook
-Private Specs As ILinelistSpecs
+Private Specs As LinelistSpecs
 
 Private Const TEST_DESIGN_NAME As String = "UnitTestDesign"
 

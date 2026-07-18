@@ -24,7 +24,7 @@ Option Explicit
 'formulas, dropdown choices, data validation, and conditional formatting
 'to the resolved cell range. The class caches dictionary, variables, and
 'sheets accessors for performance across repeated calls.
-'@depends ILinelistSpecs, LLdictionary, ILLVariables, LLSheets, LLFormat,
+'@depends LinelistSpecs, LLdictionary, ILLVariables, LLSheets, LLFormat,
 'TranslationObject, FormulaData, Formulas, DropdownLists, LLGeo,
 'Formulas, LLVariables, LLSheets, BetterArray
 '@version 1.0 (2026-02-10)
@@ -32,7 +32,7 @@ Option Explicit
 
 Private Type TVarWriter
     layer As Byte
-    specs As ILinelistSpecs
+    specs As LinelistSpecs
     wksh As Worksheet
     hn As HiddenNames
     printWksh As Worksheet
@@ -65,12 +65,12 @@ Private internalChecks As Checking
 '@sub-title Create a new VarWriter for the given layer and dependencies
 '@details
 'Factory method that instantiates and configures a VarWriter. The caller
-'must supply a valid ILinelistSpecs and target Worksheet at minimum.
+'must supply a valid LinelistSpecs and target Worksheet at minimum.
 'Optional parameters allow attaching printed and CRF companion worksheets
 '(used only for HList layers) and dropdown list managers. Raises an error
 'if specs or wksh is Nothing.
 '@param layer Byte. VarWriterLayer enum value (HList=1, VList=2). Use Byte for macOS compatibility.
-'@param specs ILinelistSpecs. The linelist specifications object providing dictionary, format, translations, etc.
+'@param specs LinelistSpecs. The linelist specifications object providing dictionary, format, translations, etc.
 '@param wksh Worksheet. The target main worksheet.
 '@param printWksh Optional Worksheet. Printed companion worksheet (HList only). Defaults to Nothing.
 '@param crfWksh Optional Worksheet. CRF companion worksheet (HList only). Defaults to Nothing.
@@ -80,7 +80,7 @@ Private internalChecks As Checking
 '@throws VBA.vbObjectError + 516 if specs or wksh is Nothing.
 '@export
 Public Function Create(ByVal layer As Byte, _
-                       ByVal specs As ILinelistSpecs, _
+                       ByVal specs As LinelistSpecs, _
                        ByVal wksh As Worksheet, _
                        Optional ByVal printWksh As Worksheet = Nothing, _
                        Optional ByVal crfWksh As Worksheet = Nothing, _
@@ -118,7 +118,7 @@ End Property
 
 '@label:internal-specs
 '@prop-title Assign the linelist specifications object
-Public Property Set InternalSpecs(ByVal specs As ILinelistSpecs)
+Public Property Set InternalSpecs(ByVal specs As LinelistSpecs)
     Set this.specs = specs
 End Property
 

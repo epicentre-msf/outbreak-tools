@@ -45,7 +45,7 @@ BASELINE_FILE="$SCRIPT_DIR/interface-guard-baseline.txt"
 # (Session H8 considered ICustomTest as a 12th keeper but REJECTED it: the
 # Rubberduck.AssertClass asserter is assigned into `As Object` variables, never
 # into `As ICustomTest`, so ICustomTest is 1:1 ceremony and folds — see H12.)
-KEEPERS="ILinelistSpecs"
+KEEPERS=""
 
 MODE="check"
 case "${1:-}" in

@@ -9,7 +9,7 @@ Option Explicit
 
 Private Assert As CustomTest
 Private SpecsWkb As Workbook
-Private Specs As LinelistSpecsWorkbookStub
+Private Specs As LinelistSpecs
 Private Dict As LLdictionary
 
 Private Const TESTOUTPUTSHEET As String = "testsOutputs"
@@ -44,8 +44,9 @@ Private Sub TestInitialize()
     Set Dict = LLdictionary.Create(SpecsWkb.Worksheets(DICTIONARY_SHEET), 1, 1)
     Dict.Prepare
 
-    Set Specs = New LinelistSpecsWorkbookStub
-    Specs.Initialise Dict, SpecsWkb
+    TestHelpers.EnsureSpecsSheets SpecsWkb
+    Set Specs = LinelistSpecs.Create(SpecsWkb)
+    Specs.TestAssignDictionary Dict
 
     Assert.BeginTest
 End Sub

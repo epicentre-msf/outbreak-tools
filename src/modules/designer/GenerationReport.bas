@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Designer")
 '@ModuleDescription("Incremental generation report: harvests Checking objects and flushes them to the designer __checking worksheet.")
-'@depends CheckingOutput, Checking, HiddenNames, BetterArray, ILinelistSpecs, LLdictionary, LLChoices, LLExport, Passwords, LLFormat
+'@depends CheckingOutput, Checking, HiddenNames, BetterArray, LinelistSpecs, LLdictionary, LLChoices, LLExport, Passwords, LLFormat
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, UseMeaningfulName
 
 '@description
@@ -53,9 +53,9 @@ End Sub
 '@details
 'Collects Checking objects from Dictionary, Choices, Exports, Analysis,
 'Passwords, and DesignFormat into a BetterArray ready for FlushCheckings.
-'@param specs ILinelistSpecs. The specs object after Prepare.
+'@param specs LinelistSpecs. The specs object after Prepare.
 '@return BetterArray. Collection of Checking instances (may be empty).
-Public Function HarvestSpecsCheckings(ByVal specs As ILinelistSpecs) As BetterArray
+Public Function HarvestSpecsCheckings(ByVal specs As LinelistSpecs) As BetterArray
     Dim result As BetterArray
     Set result = New BetterArray
     result.LowerBound = 1

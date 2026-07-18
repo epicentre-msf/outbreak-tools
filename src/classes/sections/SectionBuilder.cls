@@ -23,7 +23,7 @@ Option Explicit
 'subsection, delegates variable writing to VarWriter, and applies
 'merged-cell section and subsection header formatting. Supports both
 'HList (horizontal) and VList (vertical) layouts via the layer byte.
-'@depends ILinelistSpecs, LLdictionary, ILLVariables, LLFormat,
+'@depends LinelistSpecs, LLdictionary, ILLVariables, LLFormat,
 'DropdownLists, VarWriter, LLVariables
 '@version 1.0 (2026-02-10)
 
@@ -31,7 +31,7 @@ Option Explicit
 
 Private Type TSectionBuilder
     layer As Byte
-    specs As ILinelistSpecs
+    specs As LinelistSpecs
     wksh As Worksheet
     printWksh As Worksheet
     crfWksh As Worksheet
@@ -67,7 +67,7 @@ Private Const CRF_SHEET_PREFIX As String = "crf_"
 'given layer, specifications, and optional companion worksheets and
 'dropdown managers. Returns the newly built instance.
 '@param layer Byte. SectionBuilderMode enum value (HList=1, VList=2).
-'@param specs ILinelistSpecs. The linelist specifications object.
+'@param specs LinelistSpecs. The linelist specifications object.
 '@param wksh Worksheet. The target main worksheet.
 '@param printWksh Optional Worksheet. Printed companion worksheet (HList only).
 '@param crfWksh Optional Worksheet. CRF companion worksheet (HList only).
@@ -77,7 +77,7 @@ Private Const CRF_SHEET_PREFIX As String = "crf_"
 '@throws VbObjectError+516 When specs or wksh is Nothing.
 '@export
 Public Function Create(ByVal layer As Byte, _
-                       ByVal specs As ILinelistSpecs, _
+                       ByVal specs As LinelistSpecs, _
                        ByVal wksh As Worksheet, _
                        Optional ByVal printWksh As Worksheet = Nothing, _
                        Optional ByVal crfWksh As Worksheet = Nothing, _
@@ -123,8 +123,8 @@ End Property
 
 '@label:internal-specs
 '@prop-title Assign the linelist specifications
-'@param specs ILinelistSpecs. The specifications object.
-Public Property Set InternalSpecs(ByVal specs As ILinelistSpecs)
+'@param specs LinelistSpecs. The specifications object.
+Public Property Set InternalSpecs(ByVal specs As LinelistSpecs)
     Set this.specs = specs
 End Property
 

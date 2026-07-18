@@ -16,7 +16,7 @@ Option Explicit
 'headers), and NamedRangesList population. The fixture writes a minimal
 'TableSpecs layout on a hidden worksheet and uses stubs for the dictionary,
 'linelist data, and translation dependencies.
-'@depends CrossTable, TableSpecs, TableSpecsLinelistStub,
+'@depends CrossTable, TableSpecs, LinelistSpecs,
 '  LLdictionary, TranslationObject, LLdictionary,
 '  BetterArray, CustomTest, TestHelpers
 
@@ -40,7 +40,7 @@ Private Const NUM_COLUMNS As Long = 10
 Private Assert As CustomTest
 Private dictStub As LLdictionary
 Private dictBook As Workbook
-Private lDataStub As TableSpecsLinelistStub
+Private lDataStub As LinelistSpecs
 Private transStub As TranslationObject
 
 '@section Helpers
@@ -119,7 +119,7 @@ End Function
 'Suppresses screen updates, creates the CustomTest assertion object, and
 'initialises the three stubs: LLdictionary for dictionary
 'lookups, TranslationObject with standard message keys
-'(MSG_NA, MSG_Total, MSG_Percent, etc.), and TableSpecsLinelistStub
+'(MSG_NA, MSG_Total, MSG_Percent, etc.), and LinelistSpecs
 'wired to both. These stubs remain alive for all tests in the module.
 '@ModuleInitialize
 Private Sub ModuleInitialize()
@@ -130,13 +130,14 @@ Private Sub ModuleInitialize()
     Set dictBook = TestHelpers.NewWorkbook
     DictionaryTestFixture.PrepareDictionaryFixture "CrossTableDict", dictBook
     Set dictStub = LLdictionary.Create(dictBook.Worksheets("CrossTableDict"), 1, 1)
-    Set lDataStub = New TableSpecsLinelistStub
+    TestHelpers.EnsureSpecsSheets dictBook
+    Set lDataStub = LinelistSpecs.Create(dictBook)
     Set transStub = TestHelpers.BuildTranslationObject(ThisWorkbook, "ENG", Array( _
         Array("MSG_NA", "Missing"), Array("MSG_Total", "Total"), Array("MSG_Percent", "%"), _
         Array("MSG_AllData", "All Data"), Array("MSG_FilteredData", "Filtered Data"), _
         Array("MSG_GlobalSummary", "Global Summary"), Array("MSG_Period", "Period")))
-    lDataStub.SetDictionary dictStub
-    lDataStub.SetTranslation transStub
+    lDataStub.TestAssignDictionary dictStub
+    lDataStub.TestAssignTransObject transStub
 End Sub
 
 '@sub-title Print test results and tear down all fixture resources.

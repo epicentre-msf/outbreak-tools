@@ -10,7 +10,7 @@ Option Explicit
 Private Assert As CustomTest
 Private FixtureWorkbook As Workbook
 Private Dict As LLdictionary
-Private Specs As LLVarContextSpecsStub
+Private Specs As LinelistSpecs
 Private TargetSheet As Worksheet
 Private DropStub As DropdownLists
 Private CustDropStub As DropdownLists
@@ -69,11 +69,12 @@ Private Sub TestInitialize()
     Set DropStub = DropdownLists.Create(FixtureWorkbook.Worksheets.Add, hprefix:=vbNullString)
     Set CustDropStub = DropdownLists.Create(FixtureWorkbook.Worksheets.Add, hprefix:=vbNullString)
 
-    Set Specs = New LLVarContextSpecsStub
-    Specs.SetDictionary Dict
-    Specs.SetDesignFormat design
-    Specs.SetTranslation transStub
-    Specs.SetFormulaData formData
+    TestHelpers.EnsureSpecsSheets FixtureWorkbook
+    Set Specs = LinelistSpecs.Create(FixtureWorkbook)
+    Specs.TestAssignDictionary Dict
+    Specs.TestAssignDesignFormat design
+    Specs.TestAssignTransObject transStub
+    Specs.TestAssignFormulaData formData
 
     Assert.BeginTest
 End Sub

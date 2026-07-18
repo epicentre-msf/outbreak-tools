@@ -27,7 +27,7 @@ Option Explicit
 'with password protection. The class uses VB_Creatable = True so that
 'factory consumers create instances via `New Linelist` rather than
 '`With New Linelist`.
-'@depends ILinelistSpecs, LLdictionary, TranslationObject,
+'@depends LinelistSpecs, LLdictionary, TranslationObject,
 '  Passwords, LLFormat, HiddenNames,
 '  DropdownLists, DropdownLists,
 '  CustomPivotTable, TemporaryRepos, HiddenNames, Buttons, CodeTransfer,
@@ -50,7 +50,7 @@ Private Const SHEET_GEO As String = "Geo"
 
 Private Type TLinelist
     outWkb As Workbook
-    specs As ILinelistSpecs
+    specs As LinelistSpecs
     tempRepos As TemporaryRepos
     firstSheet As String
 End Type
@@ -67,13 +67,13 @@ Private this As TLinelist
 'Validates that the supplied specifications object is not Nothing, creates
 'a new Linelist instance via `New Linelist`, binds the specifications
 'through the Friend property, and returns an Linelist interface reference.
-'@param specs ILinelistSpecs. The linelist specifications providing
+'@param specs LinelistSpecs. The linelist specifications providing
 'dictionary, translations, design format, passwords, and all other setup
 'data required to build the output workbook.
 '@return Linelist. A ready-to-use linelist facade.
 '@throws ProjectError.ObjectNotInitialized When specs is Nothing.
 '@export
-Public Function Create(ByVal specs As ILinelistSpecs) As Linelist
+Public Function Create(ByVal specs As LinelistSpecs) As Linelist
     If specs Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, "Linelist specifications are required"
     End If
@@ -92,11 +92,11 @@ End Function
 '@label:bin-specs
 '@prop-title Bind the linelist specifications to this instance
 '@details
-'Called by Create to inject the ILinelistSpecs dependency into the
+'Called by Create to inject the LinelistSpecs dependency into the
 'backing UDT. Exposed as Friend to prevent external callers from
 'resetting specifications after construction.
-'@param value ILinelistSpecs. The specifications to bind.
-Friend Property Set BinSpecs(ByVal value As ILinelistSpecs)
+'@param value LinelistSpecs. The specifications to bind.
+Friend Property Set BinSpecs(ByVal value As LinelistSpecs)
     Set this.specs = value
 End Property
 
@@ -108,12 +108,12 @@ End Property
 '@label:linelist-data
 '@prop-title Specifications backing this linelist
 '@details
-'Returns the ILinelistSpecs instance that was supplied during factory
+'Returns the LinelistSpecs instance that was supplied during factory
 'construction, providing access to dictionary, choices, translations,
 'and all other setup data.
-'@return ILinelistSpecs. The linelist specifications.
+'@return LinelistSpecs. The linelist specifications.
 '@export
-Public Property Get LinelistData() As ILinelistSpecs
+Public Property Get LinelistData() As LinelistSpecs
     Set LinelistData = this.specs
 End Property
 
@@ -306,7 +306,7 @@ End Sub
 '3. Optionally shows the instruction sheet for template workbooks.
 '4. Adds six temporary sheets (single, list, analysis, import, spatial,
 '   show/hide) and prepares them with hidden names and ListObjects.
-'5. Exports specifications to the workbook via ILinelistSpecs.Export.
+'5. Exports specifications to the workbook via LinelistSpecs.Export.
 '6. Adds analysis and custom sheets in reversed dictionary order.
 '7. Adds data entry sheets from the dictionary's unique sheet names.
 '8. Repositions the instruction sheet.
