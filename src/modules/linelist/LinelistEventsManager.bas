@@ -6,7 +6,7 @@ Option Explicit
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Private linelistService As EventLinelist
-Private appScope As IApplicationState
+Private appScope As ApplicationState
 Private busyDepth As Long
 Private persisted As Boolean
 

@@ -833,7 +833,7 @@ Private Sub TransferAllCode(ByVal codeTransfer As CodeTransfer)
 
     Set codesList = New BetterArray
 
-    'Transfer classes (33 classes)
+    'Transfer classes (32 classes)
     codesList.Push "BetterArray", "DataSheet", "LLExport", _
                    "LLChoices", _
                    "LLdictionary", "ILLdictionary", "LLGeo", _
@@ -851,7 +851,7 @@ Private Sub TransferAllCode(ByVal codeTransfer As CodeTransfer)
                    "ExportButton", _
                    "HiddenNames", _
                    "EventLinelist", _
-                   "ApplicationState", "IApplicationState"
+                   "ApplicationState"
 
     For counter = codesList.LowerBound To codesList.UpperBound
         codeName = codesList.Item(counter)

@@ -31,7 +31,7 @@ Implements ILinelistSpecs
 '@depends ILLGeo, LLExport, IPasswords, ILLFormat
 '@depends LinelistBuildService, TemporaryRepos
 '@depends IFormulaData, ILLVariables, Formulas
-'@depends ITranslationObject, IApplicationState, ApplicationState
+'@depends ITranslationObject, ApplicationState
 '@depends BetterArray, LLdictionary, LLChoices, LLTranslation
 '@depends DesignerTranslation, LLGeo, LLExport, Analysis, Passwords
 '@depends LLFormat, FormulaData, LLVariables, Formulas
@@ -277,8 +277,8 @@ End Function
 '@details
 'Creates or refreshes an ApplicationState snapshot and applies the busy
 'state (suppressing screen updates and calculation) if not already busy.
-'@param busyScope IApplicationState (ByRef). The state object to manage.
-Private Sub EnterBusyState(ByRef busyScope As IApplicationState)
+'@param busyScope ApplicationState (ByRef). The state object to manage.
+Private Sub EnterBusyState(ByRef busyScope As ApplicationState)
     If busyScope Is Nothing Then
         Set busyScope = ApplicationState.Create(Application)
     ElseIf Not busyScope.HasSnapshot Then
@@ -323,8 +323,8 @@ End Sub
 
 '@label:exit-busy-state
 '@sub-title Restore the application from a busy state
-'@param busyScope IApplicationState (ByRef). The state object to restore and release.
-Private Sub ExitBusyState(ByRef busyScope As IApplicationState)
+'@param busyScope ApplicationState (ByRef). The state object to restore and release.
+Private Sub ExitBusyState(ByRef busyScope As ApplicationState)
     If busyScope Is Nothing Then Exit Sub
 
     On Error Resume Next
@@ -1307,7 +1307,7 @@ Public Sub Prepare(ByVal buildService As LinelistBuildService, ByVal setupPath A
     Dim dictTrads As ITranslationObject
     Dim msgTrads As ITranslationObject
     Dim preservedNames As BetterArray
-    Dim busyScope As IApplicationState
+    Dim busyScope As ApplicationState
     Dim prepared As Boolean
     Dim outWkb As Workbook
     Dim templatePath As String

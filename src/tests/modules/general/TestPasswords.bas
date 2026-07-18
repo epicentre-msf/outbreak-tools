@@ -31,7 +31,7 @@ Attribute VB_Name = "TestPasswords"
 '   those tests are skipped with an explicit log message.
 '
 ' @depends Passwords, IPasswords, TranslationObject, ITranslationObject,
-'   ApplicationState, IApplicationState, HiddenNames, Checking,
+'   ApplicationState, HiddenNames, Checking,
 '   BetterArray, CustomTest, TestHelpers, PasswordsTestFixture
 
 Option Explicit
@@ -716,7 +716,7 @@ Public Sub TestEnsureDebugExitHandlerPreservesExistingBeforeCloseCode()
     Dim procLines As Long
     Dim procText As String
     Dim firstCall As Long
-    Dim app As IApplicationState
+    Dim app As ApplicationState
 
     On Error GoTo InjectionAccessDenied
         Set app = ApplicationState.Create(Application)

@@ -37,7 +37,7 @@ Private Type TSetupErrorsState
     choices As LLChoices             'Choices accessor for list validation
     formulaStore As IFormulaData      'Formula data repository used for validation
     checkTables As BetterArray        'Collection of generated checkings
-    appScope As IApplicationState     'Application state guard ensuring UI stays responsive
+    appScope As ApplicationState     'Application state guard ensuring UI stays responsive
     transManager As SetupTranslationsTable 'translation table accessor for setup data
 End Type
 
@@ -115,7 +115,7 @@ Private Const EXP_UNFOUND_DICTCOLUMN As String      = "Exports, line %1--The Exp
 '@param choices Optional LLChoices. Choices data accessor.
 '@param formulaStore Optional IFormulaData. Formula validation handler.
 '@param transManager Optional SetupTranslationsTable. Translations table accessor.
-'@param stateScope Optional IApplicationState. Application state guard.
+'@param stateScope Optional ApplicationState. Application state guard.
 '@return SetupErrors. A fully initialised instance ready to run checks.
 '@throws ProjectError.ObjectNotInitialized When hostBook is Nothing.
 '@export
@@ -125,7 +125,7 @@ Public Function Create(ByVal hostBook As Workbook, _
                        Optional ByVal choices As LLChoices, _
                        Optional ByVal formulaStore As IFormulaData, _
                        Optional ByVal transManager As SetupTranslationsTable, _
-                       Optional ByVal stateScope As IApplicationState) As SetupErrors
+                       Optional ByVal stateScope As ApplicationState) As SetupErrors
     Dim instance As SetupErrors
 
     Set instance = New SetupErrors
@@ -149,7 +149,7 @@ End Function
 '@param choices Optional LLChoices. Choices data accessor.
 '@param formulaStore Optional IFormulaData. Formula validation handler.
 '@param transManager Optional SetupTranslationsTable. Translations table accessor.
-'@param stateScope Optional IApplicationState. Application state guard.
+'@param stateScope Optional ApplicationState. Application state guard.
 '@throws ProjectError.ObjectNotInitialized When hostBook is Nothing.
 '@export
 Public Sub Initialise(ByVal hostBook As Workbook, _
@@ -158,7 +158,7 @@ Public Sub Initialise(ByVal hostBook As Workbook, _
                       Optional ByVal choices As LLChoices, _
                       Optional ByVal formulaStore As IFormulaData, _
                       Optional ByVal transManager As SetupTranslationsTable, _
-                      Optional ByVal stateScope As IApplicationState)
+                      Optional ByVal stateScope As ApplicationState)
 
     ValidateWorkbook hostBook
     Set this.hostBook = hostBook
@@ -313,8 +313,8 @@ End Sub
 
 '@label:application-scope
 '@sub-title Retrieve or create the application state scope
-'@return IApplicationState. The cached or newly created scope.
-Private Function ApplicationScope() As IApplicationState
+'@return ApplicationState. The cached or newly created scope.
+Private Function ApplicationScope() As ApplicationState
     If this.appScope Is Nothing Then
         Set this.appScope = ApplicationState.Create(Application)
     End If
@@ -325,7 +325,7 @@ End Function
 '@label:enter-busy-state
 '@sub-title Suspend Excel UI features while running checks
 Private Sub EnterBusyState()
-    Dim scope As IApplicationState
+    Dim scope As ApplicationState
 
     Set scope = ApplicationScope()
 
@@ -338,7 +338,7 @@ End Sub
 '@sub-title Restore Excel UI configuration
 '@param silent Optional Boolean. When True, suppresses errors during restore. Defaults to False.
 Private Sub LeaveBusyState(Optional ByVal silent As Boolean = False)
-    Dim scope As IApplicationState
+    Dim scope As ApplicationState
 
     Set scope = this.appScope
     If scope Is Nothing Then Exit Sub

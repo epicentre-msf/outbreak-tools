@@ -12,7 +12,7 @@ Attribute VB_Description = "Implementation for Master Setup preparation and conf
 '@PredeclaredId
 '@Folder("MasterSetup")
 '@ModuleDescription("Implementation for Master Setup preparation and configuration")
-'@depends ApplicationState, IApplicationState, DropdownLists, IDropdownLists, BetterArray, MasterSetupVariables, ProjectError, HiddenNames
+'@depends ApplicationState, DropdownLists, IDropdownLists, BetterArray, MasterSetupVariables, ProjectError, HiddenNames
 '@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit
@@ -90,7 +90,7 @@ End Sub
 
 '@Description("Run the preparation workflow: register dropdowns then initialise the variables table.")
 Public Sub Prepare(Optional ByVal excelApplication As Application)
-    Dim scope As IApplicationState
+    Dim scope As ApplicationState
     Dim errNumber As Long
     Dim errSource As String
     Dim errDescription As String

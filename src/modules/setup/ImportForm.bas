@@ -47,7 +47,7 @@ Private Sub LabPath_Click()
     Dim pass As IPasswords
     Dim pwdUser As Variant
     Dim expectedPassword As String
-    Dim appState As IApplicationState
+    Dim appState As ApplicationState
 
     Me.LabProgress.Caption = vbNullString
 

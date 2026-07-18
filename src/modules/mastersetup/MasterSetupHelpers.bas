@@ -237,7 +237,7 @@ Public Sub ManageRows(ByVal targetSheet As Worksheet, ByVal addRows As Boolean)
     Dim store As HiddenNames
     Dim sheetTag As String
     Dim rowCount As Long
-    Dim scope As IApplicationState
+    Dim scope As ApplicationState
 
     If targetSheet Is Nothing Then Exit Sub
 
@@ -287,7 +287,7 @@ End Sub
 Public Sub ClearMasterSheetFilters(ByVal targetSheet As Worksheet)
 
     Dim lo As ListObject
-    Dim scope As IApplicationState
+    Dim scope As ApplicationState
 
     If targetSheet Is Nothing Then Exit Sub
     

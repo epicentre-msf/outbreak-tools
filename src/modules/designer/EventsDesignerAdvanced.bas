@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Designer")
 '@ModuleDescription("Non-core ribbon callbacks for the designer workbook.")
-'@depends DesignerPreparation, DesignerEntry, RibbonDev, LLGeo, ILLGeo, ApplicationState, IApplicationState, OSFiles, HiddenNames, BetterArray, DropdownLists, IDropdownLists, LinelistBuildService, LinelistSpecs, ILinelistSpecs, Linelist, ILinelist, ListBuilder, LLSheets, GenerationReport
+'@depends DesignerPreparation, DesignerEntry, RibbonDev, LLGeo, ILLGeo, ApplicationState, OSFiles, HiddenNames, BetterArray, DropdownLists, IDropdownLists, LinelistBuildService, LinelistSpecs, ILinelistSpecs, Linelist, ILinelist, ListBuilder, LLSheets, GenerationReport
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 'Non-core ribbon logics are callbacks whose absence will not fire a
@@ -32,7 +32,7 @@ Private Const DROP_SETUP_LANGUAGES As String = "__setup_languages"
 '@EntryPoint
 Public Sub clickDevInitialize(ByRef control As IRibbonControl)
     Dim prep As DesignerPreparation
-    Dim appScope As IApplicationState
+    Dim appScope As ApplicationState
 
     On Error GoTo Cleanup
     Set appScope = ApplicationState.Create(Application)
@@ -72,7 +72,7 @@ End Sub
 Public Sub clickDelGeo()
     Dim geoSheet As Worksheet
     Dim geo As ILLGeo
-    Dim appScope As IApplicationState
+    Dim appScope As ApplicationState
 
     On Error GoTo Cleanup
     Set appScope = ApplicationState.Create(Application)
@@ -104,7 +104,7 @@ End Sub
 '@EntryPoint
 Public Sub clickClearEnt()
     Dim entry As DesignerEntry
-    Dim appScope As IApplicationState
+    Dim appScope As ApplicationState
 
     On Error GoTo Cleanup
     Set appScope = ApplicationState.Create(Application)
@@ -140,7 +140,7 @@ End Sub
 Public Sub clickLoadFileDic()
     Dim io As OSFiles
     Dim entry As DesignerEntry
-    Dim appScope As IApplicationState
+    Dim appScope As ApplicationState
     Dim setupBook As Workbook
     Dim tradSheet As Worksheet
 
@@ -206,7 +206,7 @@ End Sub
 Public Sub clickLoadGeoFile()
     Dim io As OSFiles
     Dim entry As DesignerEntry
-    Dim appScope As IApplicationState
+    Dim appScope As ApplicationState
 
     'Show the file dialog before entering busy state
     Set io = OSFiles.Create()
@@ -244,7 +244,7 @@ End Sub
 Public Sub clickLinelistDir()
     Dim io As OSFiles
     Dim entry As DesignerEntry
-    Dim appScope As IApplicationState
+    Dim appScope As ApplicationState
 
     'Show the folder dialog before entering busy state
     Set io = OSFiles.Create()
@@ -282,7 +282,7 @@ End Sub
 Public Sub clickLoadTemplate()
     Dim io As OSFiles
     Dim entry As DesignerEntry
-    Dim appScope As IApplicationState
+    Dim appScope As ApplicationState
 
     'Show the file dialog before entering busy state
     Set io = OSFiles.Create()
@@ -324,7 +324,7 @@ End Sub
 '@EntryPoint
 Public Sub clickGenerate()
     Dim entry As DesignerEntry
-    Dim appScope As IApplicationState
+    Dim appScope As ApplicationState
     Dim buildService As LinelistBuildService
     Dim specs As ILinelistSpecs
     Dim ll As ILinelist

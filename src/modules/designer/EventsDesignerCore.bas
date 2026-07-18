@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Designer")
 '@ModuleDescription("Ribbon callbacks for the designer workbook.")
-'@depends DesignerPreparation, RibbonDev, OSFiles, BetterArray, CustomTable, Passwords, IPasswords, LLFormat, ILLFormat, ApplicationState, IApplicationState, DesignerTranslation, IDesignerTranslation, HiddenNames
+'@depends DesignerPreparation, RibbonDev, OSFiles, BetterArray, CustomTable, Passwords, IPasswords, LLFormat, ILLFormat, ApplicationState, DesignerTranslation, IDesignerTranslation, HiddenNames
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Private Const SHEET_FORMAT As String = "__formatter"
@@ -59,7 +59,7 @@ End Sub
 '@EntryPoint
 Public Sub clickLangChange(ByRef control As IRibbonControl, ByRef langId As String, ByRef Index As Integer)
     Dim targetSheet As Worksheet
-    Dim appScope As IApplicationState
+    Dim appScope As ApplicationState
 
     On Error GoTo Cleanup
     Set targetSheet = ThisWorkbook.Worksheets(MAINSHEET)
@@ -99,7 +99,7 @@ Public Sub clickImpTrans(ByRef control As IRibbonControl)
     Dim lo As ListObject
     Dim targetTable As CustomTable
     Dim sourceTable As CustomTable
-    Dim appScope As IApplicationState
+    Dim appScope As ApplicationState
 
     Set io = OSFiles.Create()
     io.LoadFile "*.xlsx"
@@ -156,7 +156,7 @@ Public Sub clickImpPass(ByRef control As IRibbonControl)
     Dim importBook As Workbook
     Dim importer As IPasswords
     Dim target As IPasswords
-    Dim appScope As IApplicationState
+    Dim appScope As ApplicationState
 
     Set io = OSFiles.Create()
     io.LoadFile "*.xlsx"
@@ -189,7 +189,7 @@ Public Sub clickImpStyle(ByRef control As IRibbonControl)
     Dim io As OSFiles
     Dim importBook As Workbook
     Dim formatManager As ILLFormat
-    Dim appScope As IApplicationState
+    Dim appScope As ApplicationState
 
     Set io = OSFiles.Create()
     io.LoadFile "*.xlsx"

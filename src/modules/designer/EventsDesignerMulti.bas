@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Designer")
 '@ModuleDescription("Ribbon callbacks for the Multi group on the designer workbook.")
-'@depends CustomTable, ApplicationState, IApplicationState, OSFiles, HiddenNames, DropdownLists, IDropdownLists, BetterArray
+'@depends CustomTable, ApplicationState, OSFiles, HiddenNames, DropdownLists, IDropdownLists, BetterArray
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 'Ribbon callbacks for the Multi group manage the T_Multi ListObject on
@@ -42,7 +42,7 @@ Public Sub clickFolderMulti(ByRef control As IRibbonControl)
     Dim lo As ListObject
     Dim colName As String
     Dim io As OSFiles
-    Dim appScope As IApplicationState
+    Dim appScope As ApplicationState
 
     Set lo = ResolveMultiTable()
     If lo Is Nothing Then Exit Sub
@@ -111,7 +111,7 @@ End Sub
 '@EntryPoint
 Public Sub clickDupMulti(ByRef control As IRibbonControl)
     Dim lo As ListObject
-    Dim appScope As IApplicationState
+    Dim appScope As ApplicationState
     Dim relPos As Long
     Dim sourceRow As Range
     Dim destRow As Range
@@ -169,7 +169,7 @@ End Sub
 Public Sub clickAddRowsMulti(ByRef control As IRibbonControl)
     Dim lo As ListObject
     Dim table As CustomTable
-    Dim appScope As IApplicationState
+    Dim appScope As ApplicationState
 
     Set lo = ResolveMultiTable()
     If lo Is Nothing Then Exit Sub
@@ -204,7 +204,7 @@ End Sub
 Public Sub clickResizeMulti(ByRef control As IRibbonControl)
     Dim lo As ListObject
     Dim table As CustomTable
-    Dim appScope As IApplicationState
+    Dim appScope As ApplicationState
 
     Set lo = ResolveMultiTable()
     If lo Is Nothing Then Exit Sub
@@ -238,7 +238,7 @@ End Sub
 '@EntryPoint
 Public Sub clickImpMulti(ByRef control As IRibbonControl)
     Dim io As OSFiles
-    Dim appScope As IApplicationState
+    Dim appScope As ApplicationState
     Dim importBook As Workbook
     Dim sourceLo As ListObject
     Dim targetLo As ListObject
@@ -312,7 +312,7 @@ End Sub
 '@EntryPoint
 Public Sub clickExportMulti(ByRef control As IRibbonControl)
     Dim io As OSFiles
-    Dim appScope As IApplicationState
+    Dim appScope As ApplicationState
     Dim lo As ListObject
     Dim table As CustomTable
     Dim exportBook As Workbook

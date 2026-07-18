@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Master Setup")
 '@ModuleDescription("Ribbon callbacks supporting master setup operations.")
-'@depends MasterSetupPreparation, MasterSetupHelpers, IDropdownLists, Passwords, IPasswords, Translation, ITranslationObject, TranslationChunks, ITranslationChunks, ApplicationState, IApplicationState, SetupTranslationsTable, UpdatedValues, DiseaseSheetBuilder, IDiseaseSheetBuilder
+'@depends MasterSetupPreparation, MasterSetupHelpers, IDropdownLists, Passwords, IPasswords, Translation, ITranslationObject, TranslationChunks, ITranslationChunks, ApplicationState, SetupTranslationsTable, UpdatedValues, DiseaseSheetBuilder, IDiseaseSheetBuilder
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Private Const RIBBON_TRANSLATION_SHEET As String = "__ribbonTranslation"
@@ -50,7 +50,7 @@ End Sub
 '@Description("Sort master setup tables on the active worksheet using default ordering.")
 '@EntryPoint
 Public Sub clickRibbonSortTable(ByRef control As IRibbonControl)
-    Dim scope As IApplicationState
+    Dim scope As ApplicationState
     Dim targetSheet As Worksheet
 
     On Error GoTo Handler
@@ -78,7 +78,7 @@ End Sub
 '@Description("Create a new disease worksheet using the builder template.")
 '@EntryPoint
 Public Sub clickAddSheet(ByRef control As IRibbonControl)
-    Dim scope As IApplicationState
+    Dim scope As ApplicationState
     Dim passwords As IPasswords
     Dim dropdowns As IDropdownLists
     Dim translations As ITranslationObject
@@ -150,7 +150,7 @@ End Sub
 '@Description("Remove the current disease worksheet after confirmation.")
 '@EntryPoint
 Public Sub clickRemSheet(ByRef control As IRibbonControl)
-    Dim scope As IApplicationState
+    Dim scope As ApplicationState
     Dim passwords As IPasswords
     Dim translations As ITranslationObject
     Dim targetSheet As Worksheet
@@ -214,7 +214,7 @@ End Sub
 '@Description("Clear data rows within the active disease worksheet tables.")
 '@EntryPoint
 Public Sub clickClearSheet(ByRef control As IRibbonControl)
-    Dim scope As IApplicationState
+    Dim scope As ApplicationState
     Dim translations As ITranslationObject
     Dim passwords As IPasswords
     Dim targetSheet As Worksheet
@@ -270,7 +270,7 @@ End Sub
 '@Description("Synchronise the translations table with the registry entries.")
 '@EntryPoint
 Public Sub clickAddTrans(ByRef control As IRibbonControl)
-    Dim scope As IApplicationState
+    Dim scope As ApplicationState
     Dim translationsSheet As Worksheet
     Dim translationsTable As ListObject
     Dim registrySheet As Worksheet
@@ -338,7 +338,7 @@ End Sub
 '@Description("Add a new language column to the translations table.")
 '@EntryPoint
 Public Sub clickAddLang(ByRef control As IRibbonControl, ByRef text As String)
-    Dim scope As IApplicationState
+    Dim scope As ApplicationState
     Dim workbook As Workbook
     Dim translationsSheet As Worksheet
     Dim translationTagSheet As Worksheet
@@ -405,7 +405,7 @@ End Sub
 '@Description("Change the current ribbon language and refresh workbook labels.")
 '@EntryPoint
 Public Sub clickLangChange(ByRef control As IRibbonControl, ByVal langId As String, ByVal index As Integer)
-    Dim scope As IApplicationState
+    Dim scope As ApplicationState
     Dim tagSheet As Worksheet
     Dim ribbon As IRibbonUI
 
@@ -459,7 +459,7 @@ End Sub
 '@Description("Export the current disease worksheet to a standalone setup workbook.")
 '@EntryPoint
 Public Sub clickExpSheet(ByRef control As IRibbonControl)
-    Dim scope As IApplicationState
+    Dim scope As ApplicationState
 
     On Error GoTo Handler
 
@@ -481,7 +481,7 @@ End Sub
 '@Description("Export diseases for migration workflows.")
 '@EntryPoint
 Public Sub clickExp(ByRef control As IRibbonControl)
-    Dim scope As IApplicationState
+    Dim scope As ApplicationState
 
     On Error GoTo Handler
 
@@ -503,7 +503,7 @@ End Sub
 '@Description("Import diseases from a flat file using the legacy importer.")
 '@EntryPoint
 Public Sub clickImp(ByRef control As IRibbonControl)
-    Dim scope As IApplicationState
+    Dim scope As ApplicationState
 
     On Error GoTo Handler
 

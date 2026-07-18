@@ -17,8 +17,6 @@ Attribute VB_Description = "Guards Excel application settings while the linelist
 
 Option Explicit
 
-Implements IApplicationState
-
 '@class ApplicationState
 '@description
 'Cell-based guard that snapshots Excel Application settings before
@@ -62,9 +60,9 @@ Private Const CLASSNAME As String = "ApplicationState"
 'Captures the current application state immediately so callers can
 'switch to busy mode without an additional call.
 '@param excelApplication Application. Target application. Defaults to Excel.Application.
-'@return IApplicationState. Ready to use.
+'@return ApplicationState. Ready to use.
 '@export
-Public Function Create(Optional ByVal excelApplication As Application) As IApplicationState
+Public Function Create(Optional ByVal excelApplication As Application) As ApplicationState
     Dim scope As ApplicationState
 
     Set scope = New ApplicationState
@@ -75,9 +73,9 @@ Public Function Create(Optional ByVal excelApplication As Application) As IAppli
 End Function
 
 '@label:self
-'@prop-title Self-reference as IApplicationState
-'@return IApplicationState. Self-reference.
-Public Property Get Self() As IApplicationState
+'@prop-title Self-reference as ApplicationState
+'@return ApplicationState. Self-reference.
+Public Property Get Self() As ApplicationState
     Set Self = Me
 End Property
 
@@ -151,7 +149,7 @@ End Sub
 '@param blockSecurity Optional Boolean. When True, forces msoAutomationSecurityForceDisable. Defaults to False.
 '@throws ProjectError.ErrorUnexpectedState When the application settings cannot be applied.
 '@export
-Private Sub ApplyBusyStateCore(Optional ByVal suppressEvents As Boolean = False, _
+Public Sub ApplyBusyState(Optional ByVal suppressEvents As Boolean = False, _
                                Optional ByVal calculateOnSave As Boolean = True, _
                                Optional ByVal busyCursor As Long = 0, _
                                Optional ByVal blockSecurity As Boolean = False)
@@ -215,7 +213,7 @@ End Sub
 '@label:refresh-snapshot
 '@sub-title Re-capture the snapshot from the current application state
 '@export
-Private Sub RefreshSnapshotCore()
+Public Sub RefreshSnapshot()
     EnsureNotBusy "RefreshSnapshot"
     CaptureSnapshotCore
 End Sub
@@ -262,9 +260,9 @@ End Sub
 
 '@label:restore
 '@sub-title Restore all captured settings to the application
-'@param silent Boolean. When True, swallows errors instead of raising them.
+'@param silent Optional Boolean. When True, swallows errors instead of raising them. Defaults to False.
 '@export
-Private Sub RestoreInternal(ByVal silent As Boolean)
+Public Sub Restore(Optional ByVal silent As Boolean = False)
     Dim target As Application
 
     If Not this.snapshotCaptured Then Exit Sub
@@ -350,35 +348,3 @@ End Function
 Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal message As String)
     Err.Raise errNumber, "ApplicationState", message
 End Sub
-
-'@section Interface
-'===============================================================================
-'IApplicationState delegation wiring.
-
-Private Sub IApplicationState_ApplyBusyState( _
-    Optional ByVal suppressEvents As Boolean = False, _
-    Optional ByVal calculateOnSave As Boolean = True, _
-    Optional ByVal busyCursor As Long = 0, _
-    Optional ByVal blockSecurity As Boolean = False)
-    ApplyBusyStateCore suppressEvents, calculateOnSave, busyCursor, blockSecurity
-End Sub
-
-Private Sub IApplicationState_Restore()
-    RestoreInternal False
-End Sub
-
-Private Sub IApplicationState_RefreshSnapshot()
-    RefreshSnapshotCore
-End Sub
-
-Private Property Get IApplicationState_ApplicationObject() As Application
-    Set IApplicationState_ApplicationObject = TargetApplication
-End Property
-
-Private Property Get IApplicationState_IsBusy() As Boolean
-    IApplicationState_IsBusy = this.isBusy
-End Property
-
-Private Property Get IApplicationState_HasSnapshot() As Boolean
-    IApplicationState_HasSnapshot = this.snapshotCaptured
-End Property

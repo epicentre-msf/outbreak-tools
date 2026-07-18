@@ -13,7 +13,7 @@ Attribute VB_Description = "Improved setup import service orchestrating workbook
 '@Folder("Setup")
 '@ModuleDescription("Improved setup import service orchestrating workbook synchronisation")
 '@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
-'@depends ProjectError, ApplicationState, IApplicationState, BetterArray, CustomTable, LLExport, LLdictionary, ILLdictionary, LLFormat, ILLFormat, IPasswords, Analysis, SetupTranslationsTable
+'@depends ProjectError, ApplicationState, BetterArray, CustomTable, LLExport, LLdictionary, ILLdictionary, LLFormat, ILLFormat, IPasswords, Analysis, SetupTranslationsTable
 
 Option Explicit
 
@@ -53,7 +53,7 @@ Private Type TSetupImportState
     importPath As String                    'Path to the source setup workbook
     progressDisplay As Object               'UI element displaying progress messages
     importWorkbook As Workbook              'Lazy loaded reference to the imported workbook
-    appScope As IApplicationState           'Application state guard ensuring Excel settings are restored
+    appScope As ApplicationState           'Application state guard ensuring Excel settings are restored
     hasCaption As Boolean
     exportPath As String
     exportWorkbook As Workbook
@@ -183,7 +183,7 @@ End Property
 '===============================================================================
 '@label:application-scope
 '@sub-title Guard Excel with the reusable ApplicationState scope.
-Private Function ApplicationScope() As IApplicationState
+Private Function ApplicationScope() As ApplicationState
     If this.appScope Is Nothing Then
         Set this.appScope = ApplicationState.Create(Application)
     End If
@@ -194,7 +194,7 @@ End Function
 '@label:enter-busy-state
 '@sub-title Apply the busy state when heavy work starts.
 Private Sub EnterBusyState()
-    Dim scope As IApplicationState
+    Dim scope As ApplicationState
 
     Set scope = ApplicationScope()
     If Not scope.IsBusy Then

@@ -13,7 +13,7 @@ Attribute VB_Description = "Translations table manager with helper tag column"
 '@Folder("Setup")
 '@ModuleDescription("Translations table manager with helper tag column")
 '@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
-'@depends ProjectError, ApplicationState, IApplicationState, HiddenNames, CustomTable
+'@depends ProjectError, ApplicationState, HiddenNames, CustomTable
 
 Option Explicit
 
@@ -34,7 +34,7 @@ Private Type TSetupTranslations
     labelCount As Long                'Number of entries in the label buffer
     processedRanges As BetterArray    'Ranges processed during the current update cycle
     displayPrompts As Boolean         'Toggle to avoid message prompts during automated tests
-    stateScope As IApplicationState   'Optional application guard for busy sections
+    stateScope As ApplicationState   'Optional application guard for busy sections
     tagsIntegrated As Boolean         'Tracks whether the helper tag column is currently merged in the table
     missingSummary As BetterArray     'Keep missing summary on non default languages
     duplicatesSummary As BetterArray  'keep duplicate summary on all the languages
@@ -67,10 +67,10 @@ End Type
 '@label:create
 '@sub-title Create a configured translations table manager instance.
 '@param translationTable ListObject. The managed translations table.
-'@param stateScope Optional IApplicationState. Guard for Excel settings during updates.
+'@param stateScope Optional ApplicationState. Guard for Excel settings during updates.
 '@return SetupTranslationsTable. Ready to process registry updates.
 '@export
-Public Function Create(ByVal translationTable As ListObject, Optional ByVal stateScope As IApplicationState = Nothing) As SetupTranslationsTable
+Public Function Create(ByVal translationTable As ListObject, Optional ByVal stateScope As ApplicationState = Nothing) As SetupTranslationsTable
     Dim instance As SetupTranslationsTable
 
     ValidateTranslationTable translationTable
@@ -83,7 +83,7 @@ End Function
 
 '@label:initialise-core
 '@sub-title Store the supplied table and optional scope inside the current instance.
-Public Sub InitialiseCore(ByVal translationTable As ListObject, Optional ByVal stateScope As IApplicationState = Nothing)
+Public Sub InitialiseCore(ByVal translationTable As ListObject, Optional ByVal stateScope As ApplicationState = Nothing)
     With this
         Set .table = translationTable
         Set .stateScope = stateScope
@@ -127,7 +127,7 @@ End Sub
 
 '@label:resolve-scope
 '@sub-title Guarded access to the application scope.
-Private Function ResolveScope() As IApplicationState
+Private Function ResolveScope() As ApplicationState
     If this.stateScope Is Nothing Then
         Set this.stateScope = ApplicationState.Create(Application)
     End If
@@ -235,7 +235,7 @@ End Sub
 '@sub-title Promote the requested language column to become the primary language.
 Public Sub SwitchDefaultLanguage(ByVal languageName As String)
     Dim targetIndex As Long
-    Dim scope As IApplicationState
+    Dim scope As ApplicationState
 
     ValidateInitialised
 
@@ -477,7 +477,7 @@ End Sub
 '@sub-title Update the translations table using the supplied registry sheet.
 Public Sub UpdateFromRegistry(ByVal registrySheet As Worksheet, _
                              Optional ByVal languages As String = vbNullString)
-    Dim scope As IApplicationState
+    Dim scope As ApplicationState
     Dim updateSequence As Long
     Dim errNumb As Long
     Dim errDesc As String

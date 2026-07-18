@@ -22,7 +22,7 @@ Private Const TESTOUTPUTSHEET As String = "testsOutputs"
 'Each test creates a fresh ApplicationState scope and restores the
 'original environment in TestInitialize / TestCleanup to prevent
 'cross-test interference.
-'@depends ApplicationState, IApplicationState, CustomTest, TestHelpers
+'@depends ApplicationState, CustomTest, TestHelpers
 
 Private Assert As ICustomTest
 Private initialScreenUpdating As Boolean
@@ -128,7 +128,7 @@ End Function
 Public Sub TestApplyBusyStateSwitchesSettings()
     CustomTestSetTitles Assert, "ApplicationState", "ApplyBusyStateSwitchesSettings"
 
-    Dim scope As IApplicationState
+    Dim scope As ApplicationState
     Set scope = ApplicationState.Create(Application)
 
     scope.ApplyBusyState
@@ -158,7 +158,7 @@ End Sub
 Public Sub TestRestoreReturnsOriginalSettings()
     CustomTestSetTitles Assert, "ApplicationState", "RestoreReturnsOriginalSettings"
 
-    Dim scope As IApplicationState
+    Dim scope As ApplicationState
     Set scope = ApplicationState.Create(Application)
 
     scope.ApplyBusyState
@@ -192,7 +192,7 @@ End Sub
 Public Sub TestRefreshSnapshotRequiresIdle()
     CustomTestSetTitles Assert, "ApplicationState", "RefreshSnapshotRequiresIdle"
 
-    Dim scope As IApplicationState
+    Dim scope As ApplicationState
     Set scope = ApplicationState.Create(Application)
 
     scope.ApplyBusyState
@@ -219,7 +219,7 @@ End Sub
 Public Sub TestApplyBusyStateSuppressEventsWhenRequested()
     CustomTestSetTitles Assert, "ApplicationState", "TestApplyBusyStateSuppressEventsWhenRequested"
 
-    Dim scope As IApplicationState
+    Dim scope As ApplicationState
     Set scope = ApplicationState.Create(Application)
 
     scope.ApplyBusyState suppressEvents:=True
@@ -240,7 +240,7 @@ End Sub
 Public Sub TestApplyBusyStateRespectsCalculateOnSaveParameter()
     CustomTestSetTitles Assert, "ApplicationState", "TestApplyBusyStateRespectsCalculateOnSaveParameter"
 
-    Dim scope As IApplicationState
+    Dim scope As ApplicationState
     Set scope = ApplicationState.Create(Application)
 
     scope.ApplyBusyState calculateOnSave:=False
