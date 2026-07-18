@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Master Setup")
 '@ModuleDescription("Ribbon callbacks supporting master setup operations.")
-'@depends MasterSetupPreparation, MasterSetupHelpers, IDropdownLists, Passwords, IPasswords, Translation, ITranslationObject, TranslationChunks, ITranslationChunks, ApplicationState, IApplicationState, SetupTranslationsTable, ISetupTranslationsTable, IUpdatedValues, DiseaseSheetBuilder, IDiseaseSheetBuilder
+'@depends MasterSetupPreparation, MasterSetupHelpers, IDropdownLists, Passwords, IPasswords, Translation, ITranslationObject, TranslationChunks, ITranslationChunks, ApplicationState, IApplicationState, SetupTranslationsTable, IUpdatedValues, DiseaseSheetBuilder, IDiseaseSheetBuilder
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Private Const RIBBON_TRANSLATION_SHEET As String = "__ribbonTranslation"
@@ -274,7 +274,7 @@ Public Sub clickAddTrans(ByRef control As IRibbonControl)
     Dim translationsSheet As Worksheet
     Dim translationsTable As ListObject
     Dim registrySheet As Worksheet
-    Dim manager As ISetupTranslationsTable
+    Dim manager As SetupTranslationsTable
     Dim updatedValues As IUpdatedValues
     Dim passwords As IPasswords
     Dim confirmTitle As String

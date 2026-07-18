@@ -193,7 +193,7 @@ Public Sub clickAddLang(ByRef control As IRibbonControl, ByRef text As String)
     Dim languages As String
     Dim answer As VbMsgBoxResult
     Dim translationsTable As ListObject
-    Dim manager As ISetupTranslationsTable
+    Dim manager As SetupTranslationsTable
     Dim sheetUnlocked As Boolean
     Dim success As Boolean
 
@@ -246,7 +246,7 @@ Public Sub clickAddTrans(ByRef control As IRibbonControl)
     Dim answer As VbMsgBoxResult
     Dim translationsTable As ListObject
     Dim registrySheet As Worksheet
-    Dim manager As ISetupTranslationsTable
+    Dim manager As SetupTranslationsTable
     Dim sheetUnlocked As Boolean
     Dim upVal As IUpdatedValues
 
@@ -303,7 +303,7 @@ Public Sub clickTransSetup(ByRef control As IRibbonControl)
     Application.ScreenUpdating = False
 
     Dim translationsTable As ListObject
-    Dim manager As ISetupTranslationsTable
+    Dim manager As SetupTranslationsTable
     Dim languages As BetterArray
     Dim selectedLanguage As String
     Dim translator As ITranslationObject

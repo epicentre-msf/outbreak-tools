@@ -26,7 +26,6 @@ ILLSheets
 ILLTranslation
 IMasterSetupVariables
 IOSFiles
-ISetupTranslationsTable
 ITableSpecs
 ITemporaryRepos
 IUpdatedValues

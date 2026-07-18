@@ -17,8 +17,6 @@ Attribute VB_Description = "Translations table manager with helper tag column"
 
 Option Explicit
 
-Implements ISetupTranslationsTable
-
 '@class SetupTranslationsTable
 '@description
 'Manages a translations ListObject backed by a helper tag column.
@@ -70,9 +68,9 @@ End Type
 '@sub-title Create a configured translations table manager instance.
 '@param translationTable ListObject. The managed translations table.
 '@param stateScope Optional IApplicationState. Guard for Excel settings during updates.
-'@return ISetupTranslationsTable. Ready to process registry updates.
+'@return SetupTranslationsTable. Ready to process registry updates.
 '@export
-Public Function Create(ByVal translationTable As ListObject, Optional ByVal stateScope As IApplicationState = Nothing) As ISetupTranslationsTable
+Public Function Create(ByVal translationTable As ListObject, Optional ByVal stateScope As IApplicationState = Nothing) As SetupTranslationsTable
     Dim instance As SetupTranslationsTable
 
     ValidateTranslationTable translationTable
@@ -117,7 +115,7 @@ End Property
 
 '@label:self
 '@prop-title Self reference used by factories returning interface instances.
-Public Property Get Self() As ISetupTranslationsTable
+Public Property Get Self() As SetupTranslationsTable
     Set Self = Me
 End Property
 
@@ -142,7 +140,7 @@ End Function
 '===============================================================================
 '@label:ensure-languages
 '@sub-title Ensure all provided languages exist as table headers.
-Private Sub EnsureLanguages(Optional ByVal lang As String = vbNullString)
+Public Sub EnsureLanguages(Optional ByVal lang As String = vbNullString)
     ValidateInitialised
 
     Dim languageList() As String
@@ -1135,7 +1133,7 @@ End Function
 '===============================================================================
 '@label:missing-labels
 '@sub-title Count missing translation labels for a specific language.
-Private Function MissingLabels(ByVal lang As String) As Long
+Public Function MissingLabels(ByVal lang As String) As Long
     Dim trimmedLanguage As String
     Dim columnIndex As Long
     Dim dataRange As Range
@@ -1163,7 +1161,7 @@ End Function
 
 '@label:number-of-missing
 '@sub-title Summarise missing translations per language and optionally prompt the user.
-Private Function NumberOfMissing() As String
+Public Function NumberOfMissing() As String
     Dim columnIndex As Long
     Dim dataRange As Range
     Dim missingCount As Long
@@ -1216,7 +1214,7 @@ End Sub
 
 '@label:internal-missing-summary
 '@prop-title Cached missing-labels summary across languages.
-Private Property Get InternalMissingSummary() As BetterArray
+Public Property Get InternalMissingSummary() As BetterArray
     If this.missingSummary Is Nothing Then
         Set this.missingSummary = CreateBuffer()
     End If
@@ -1257,7 +1255,7 @@ End Sub
 
 '@label:internal-duplicates-summary
 '@prop-title Cached duplicates summary across languages.
-Private Property Get InternalDuplicatesSummary() As BetterArray
+Public Property Get InternalDuplicatesSummary() As BetterArray
     If this.duplicatesSummary Is Nothing Then
         Set this.duplicatesSummary = CreateBuffer()
     End If
@@ -1268,7 +1266,7 @@ End Property
 
 '@label:duplicate-labels
 '@sub-title Report duplicate translation labels when they exist.
-Private Function DuplicateLabels(ByRef duplicateMessage As String, Optional ByVal languageName As String = vbNullString) As Boolean
+Public Function DuplicateLabels(ByRef duplicateMessage As String, Optional ByVal languageName As String = vbNullString) As Boolean
     Dim summary As TDuplicateSummary
 
     summary = ComputeDuplicateSummary(languageName)
@@ -1863,80 +1861,3 @@ End Function
 Private Sub ThrowProjectError(ByVal errNumber As ProjectError, ByVal message As String)
     Err.Raise CLng(errNumber), CLASS_NAME, message
 End Sub
-
-
-'@section Interface implementation
-'===============================================================================
-'@description
-'Thin delegation stubs wiring ISetupTranslationsTable members to
-'the corresponding public or private methods on this class.
-
-Private Sub ISetupTranslationsTable_EnsureLanguages(Optional ByVal languages As String = vbNullString)
-    EnsureLanguages languages
-End Sub
-
-Private Sub ISetupTranslationsTable_SwitchDefaultLanguage(ByVal languageName As String)
-    SwitchDefaultLanguage languageName
-End Sub
-
-Private Function ISetupTranslationsTable_SwitchableLanguages() As BetterArray
-    Set ISetupTranslationsTable_SwitchableLanguages = SwitchableLanguages
-End Function
-
-Private Property Get ISetupTranslationsTable_Languages(Optional ByVal includeDefault As Boolean = False) As BetterArray
-    Set ISetupTranslationsTable_Languages = Languages(includeDefault)
-End Property
-
-Private Property Get ISetupTranslationsTable_HostWorksheet() As Worksheet
-    Set ISetupTranslationsTable_HostWorksheet = HostWorksheet
-End Property
-
-'@label:initialise
-Private Sub ISetupTranslationsTable_Initialise(ByVal translationTable As ListObject, Optional ByVal stateScope As IApplicationState)
-    ValidateTranslationTable translationTable
-    InitialiseCore translationTable, stateScope
-End Sub
-
-Private Property Get ISetupTranslationsTable_Self() As ISetupTranslationsTable
-    Set ISetupTranslationsTable_Self = Self
-End Property
-
-Private Property Get ISetupTranslationsTable_TableName() As String
-    ISetupTranslationsTable_TableName = TableName
-End Property
-
-Private Sub ISetupTranslationsTable_Export(ByVal exportWorkbook As Workbook, Optional ByVal Hide As Long = xlSheetVisible)
-    Export exportWorkbook, Hide
-End Sub
-
-Private Sub ISetupTranslationsTable_UpdateFromRegistry(ByVal registrySheet As Worksheet, Optional ByVal languages As String = vbNullString)
-    UpdateFromRegistry registrySheet, languages
-End Sub
-
-Private Sub ISetupTranslationsTable_ResetSequence(ByVal registrySheet As Worksheet)
-    ResetSequence registrySheet
-End Sub
-
-Private Function ISetupTranslationsTable_NumberOfMissing() As String
-    ISetupTranslationsTable_NumberOfMissing = NumberOfMissing
-End Function
-
-Private Sub ISetupTranslationsTable_SetDisplayPrompts(ByVal state As Boolean)
-    SetDisplayPrompts state
-End Sub
-
-Private Function ISetupTranslationsTable_MissingLabels(ByVal lang As String) As Long
-    ISetupTranslationsTable_MissingLabels = MissingLabels(lang)
-End Function
-
-Private Function ISetupTranslationsTable_DuplicateLabels(ByRef duplicateMessage As String, Optional ByVal languageName As String = vbNullString) As Boolean
-    ISetupTranslationsTable_DuplicateLabels = DuplicateLabels(duplicateMessage, languageName)
-End Function
-
-Private Property Get ISetupTranslationsTable_InternalMissingSummary() As BetterArray
-    Set ISetupTranslationsTable_InternalMissingSummary = InternalMissingSummary
-End Property
-
-Private Property Get ISetupTranslationsTable_InternalDuplicatesSummary() As BetterArray
-    Set ISetupTranslationsTable_InternalDuplicatesSummary = InternalDuplicatesSummary
-End Property

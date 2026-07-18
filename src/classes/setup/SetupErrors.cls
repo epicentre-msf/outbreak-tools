@@ -38,7 +38,7 @@ Private Type TSetupErrorsState
     formulaStore As IFormulaData      'Formula data repository used for validation
     checkTables As BetterArray        'Collection of generated checkings
     appScope As IApplicationState     'Application state guard ensuring UI stays responsive
-    transManager As ISetupTranslationsTable 'translation table accessor for setup data
+    transManager As SetupTranslationsTable 'translation table accessor for setup data
 End Type
 
 Private this As TSetupErrorsState
@@ -114,7 +114,7 @@ Private Const EXP_UNFOUND_DICTCOLUMN As String      = "Exports, line %1--The Exp
 '@param dictionary Optional ILLdictionary. Dictionary data accessor.
 '@param choices Optional ILLChoices. Choices data accessor.
 '@param formulaStore Optional IFormulaData. Formula validation handler.
-'@param transManager Optional ISetupTranslationsTable. Translations table accessor.
+'@param transManager Optional SetupTranslationsTable. Translations table accessor.
 '@param stateScope Optional IApplicationState. Application state guard.
 '@return SetupErrors. A fully initialised instance ready to run checks.
 '@throws ProjectError.ObjectNotInitialized When hostBook is Nothing.
@@ -124,7 +124,7 @@ Public Function Create(ByVal hostBook As Workbook, _
                        Optional ByVal dictionary As ILLdictionary, _
                        Optional ByVal choices As ILLChoices, _
                        Optional ByVal formulaStore As IFormulaData, _
-                       Optional ByVal transManager As ISetupTranslationsTable, _
+                       Optional ByVal transManager As SetupTranslationsTable, _
                        Optional ByVal stateScope As IApplicationState) As SetupErrors
     Dim instance As SetupErrors
 
@@ -148,7 +148,7 @@ End Function
 '@param dictionary Optional ILLdictionary. Dictionary data accessor.
 '@param choices Optional ILLChoices. Choices data accessor.
 '@param formulaStore Optional IFormulaData. Formula validation handler.
-'@param transManager Optional ISetupTranslationsTable. Translations table accessor.
+'@param transManager Optional SetupTranslationsTable. Translations table accessor.
 '@param stateScope Optional IApplicationState. Application state guard.
 '@throws ProjectError.ObjectNotInitialized When hostBook is Nothing.
 '@export
@@ -157,7 +157,7 @@ Public Sub Initialise(ByVal hostBook As Workbook, _
                       Optional ByVal dictionary As ILLdictionary, _
                       Optional ByVal choices As ILLChoices, _
                       Optional ByVal formulaStore As IFormulaData, _
-                      Optional ByVal transManager As ISetupTranslationsTable, _
+                      Optional ByVal transManager As SetupTranslationsTable, _
                       Optional ByVal stateScope As IApplicationState)
 
     ValidateWorkbook hostBook

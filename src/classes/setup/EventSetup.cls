@@ -46,7 +46,7 @@ Private Type TEventSetup
     choices             As ILLChoices        'Cached choices helper
     ana                 As IAnalysis         'Cached analysis helper
     exports             As ILLExport         'Cached exports manager
-    translations        As ISetupTranslationsTable 'Cached translations manager
+    translations        As SetupTranslationsTable 'Cached translations manager
     passwords           As IPasswords        'Cached password helper (lazily created once)
     choicesTable        As ICustomTable      'Cached Choices table wrapper
 End Type

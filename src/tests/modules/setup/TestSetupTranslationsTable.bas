@@ -14,7 +14,7 @@ Private RegistrySheet As Worksheet
 Private SourceSheet As Worksheet
 Private TranslationsTable As ListObject
 Private RegistryTable As ListObject
-Private Subject As ISetupTranslationsTable
+Private Subject As SetupTranslationsTable
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const TRANSLATIONS_SHEET_NAME As String = "Translations"
@@ -85,7 +85,7 @@ Public Sub TestCreateRejectsMissingTable()
     CustomTestSetTitles Assert, "SetupTranslationsTable", "TestCreateRejectsMissingTable"
 
     On Error GoTo ExpectError
-        Dim invalid As ISetupTranslationsTable
+        Dim invalid As SetupTranslationsTable
         Set invalid = SetupTranslationsTable.Create(Nothing)
         Assert.LogFailure "Create should reject a missing listobject"
         Exit Sub
