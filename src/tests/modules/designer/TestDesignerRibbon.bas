@@ -422,7 +422,6 @@ Fail:
     ReportTestFailure "TestValueOfTempPathRange"
 End Sub
 
-<<<<<<< Updated upstream
 '@TestMethod("DesignerEntry.Dropdowns")
 Public Sub TestDropdownUpdateReplacesValues()
     CustomTestSetTitles Assert, "DesignerEntry", "TestDropdownUpdateReplacesValues"
@@ -830,8 +829,6 @@ Fail:
     ReportTestFailure "TestPrepareSkipsMultiWhenSheetMissing"
 End Sub
 
-=======
->>>>>>> Stashed changes
 
 '@section Main Validation Tests
 '===============================================================================
