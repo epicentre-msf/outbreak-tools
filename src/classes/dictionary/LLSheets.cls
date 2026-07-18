@@ -17,7 +17,23 @@ Attribute VB_Description = "Linelist sheets of a dictionary"
 
 Option Explicit
 
-Implements ILLSheets
+'@section Enumerations
+'===============================================================================
+
+'@description Bound selectors used by DataBounds. The original spelling of
+'@description RowSart is preserved for backwards compatibility.
+Public Enum SheetBound
+    RowSart = 1
+    RowEnd = 2
+    ColStart = 3
+    ColEnd = 4
+End Enum
+
+'@description Metadata selectors consumed by SheetInfo.
+Public Enum SheetInfoType
+    SheetInfoSheetType = 1
+    SheetInfoSheetTable = 2
+End Enum
 
 '@section Overview
 '===============================================================================
@@ -69,9 +85,9 @@ Private Const LLSheetBoundRight As Byte = SheetBound.ColEnd
 '@label:Create
 '@sub-title Instantiate a sheet helper bound to the supplied dictionary
 '@param dict ILLdictionary providing sheet metadata.
-'@return ILLSheets fully initialised helper.
+'@return LLSheets fully initialised helper.
 '@export
-Public Function Create(ByVal dict As ILLdictionary) As ILLSheets
+Public Function Create(ByVal dict As ILLdictionary) As LLSheets
 
     If dict Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, _
@@ -89,8 +105,8 @@ End Function
 
 '@label:Self
 '@sub-title Expose the interface reference of this predeclared instance
-'@return ILLSheets reference to the current object.
-Public Property Get Self() As ILLSheets
+'@return LLSheets reference to the current object.
+Public Property Get Self() As LLSheets
     Set Self = Me
 End Property
 
@@ -125,7 +141,7 @@ End Property
 '@sub-title Determine whether the dictionary includes the supplied sheet
 '@param sheetName String. Sheet identifier to locate.
 '@return True when the sheet exists.
-Private Function Contains(ByVal sheetName As String) As Boolean
+Public Function Contains(ByVal sheetName As String) As Boolean
     Dim found As Range
 
     If LenB(sheetName) = 0 Then Exit Function
@@ -139,7 +155,7 @@ End Function
 '@sub-title Lookup the worksheet row hosting the sheet metadata
 '@param sheetName String. Sheet identifier to locate.
 '@return Worksheet row index for the sheet entry, or 0 when not found.
-Private Function RowIndex(ByVal sheetName As String) As Long
+Public Function RowIndex(ByVal sheetName As String) As Long
     Dim found As Range
 
     If LenB(sheetName) = 0 Then Exit Function
@@ -173,11 +189,11 @@ End Function
 '@sub-title Count the variables associated with a sheet
 '@param sheetName String. Sheet identifier.
 '@return Long number of variables present on the sheet.
-Private Function NumberVars(ByVal sheetName As String) As Long
+Public Function NumberOfVars(ByVal sheetName As String) As Long
     Dim vars As BetterArray
 
     Set vars = Varlist(sheetName)
-    NumberVars = vars.Length
+    NumberOfVars = vars.Length
 End Function
 
 '@label:DataBounds
@@ -185,7 +201,7 @@ End Function
 '@param sheetName String. Sheet identifier.
 '@param Bound Byte. Selector from SheetBound enumeration.
 '@return Long representing the requested bound.
-Private Function DataBounds(ByVal sheetName As String, _
+Public Function DataBounds(ByVal sheetName As String, _
                             Optional ByVal Bound As Byte = SheetBound.RowSart) As Long
     Dim sheetType As String
     Dim varCount As Long
@@ -210,7 +226,7 @@ Private Function DataBounds(ByVal sheetName As String, _
                 Case SHEETTYPE_HORIZONTAL
                     DataBounds = SHEET_START_ROW_HORIZONTAL + SHEET_HORIZONTAL_DATA_ROWS
                 Case SHEETTYPE_VERTICAL
-                    varCount = NumberVars(sheetName)
+                    varCount = NumberOfVars(sheetName)
                     offset = IIf(varCount > 0, varCount - 1, 0)
                     DataBounds = SHEET_START_ROW_VERTICAL + offset
                 Case Else
@@ -232,7 +248,7 @@ Private Function DataBounds(ByVal sheetName As String, _
         Case LLSheetBoundRight
             Select Case sheetType
                 Case SHEETTYPE_HORIZONTAL
-                    varCount = NumberVars(sheetName)
+                    varCount = NumberOfVars(sheetName)
                     offset = IIf(varCount > 0, varCount - 1, 0)
                     DataBounds = SHEET_START_COL_HORIZONTAL + offset
                 Case SHEETTYPE_VERTICAL
@@ -254,7 +270,7 @@ End Function
 '@param Control String. Control type to search for.
 '@param colName String. Column hosting the control types. Defaults to "control".
 '@return True when the control type exists on the sheet.
-Private Function ContainsControl(ByVal sheetName As String, _
+Public Function ContainsControl(ByVal sheetName As String, _
                                  Optional ByVal Control As String = "list_auto", _
                                  Optional ByVal colName As String = COL_CONTROL) As Boolean
     Dim values As BetterArray
@@ -271,7 +287,7 @@ End Function
 '@param varName String. Variable identifier.
 '@param onSheet Optional String. Sheet where the reference will be consumed; suppresses sheet prefix when matching.
 '@return String Excel address for the variable.
-Private Function VariableAddress(ByVal varName As String, Optional ByVal onSheet As String = vbNullString) As String
+Public Function VariableAddress(ByVal varName As String, Optional ByVal onSheet As String = vbNullString) As String
     Dim vars As ILLVariables
     Dim targetSheet As String
     Dim sheetType As String
@@ -592,46 +608,4 @@ End Sub
 '@param errorMessage String human readable description.
 Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
     Err.Raise errNumb, CLASSNAME, errorMessage
-End Sub
-
-'@section Interface
-'===============================================================================
-
-Private Property Get ILLSheets_Dictionary() As ILLdictionary
-    Set ILLSheets_Dictionary = Dictionary()
-End Property
-
-Private Function ILLSheets_SheetInfo(ByVal sheetName As String, Optional ByVal info As Byte = SheetInfoType.SheetInfoSheetType) As String
-    ILLSheets_SheetInfo = sheetInfo(sheetName, info)
-End Function
-
-Private Function ILLSheets_Contains(ByVal sheetName As String) As Boolean
-    ILLSheets_Contains = Contains(sheetName)
-End Function
-
-Private Function ILLSheets_DataBounds(ByVal sheetName As String, _
-                                     Optional ByVal Bound As Byte = SheetBound.RowSart) As Long
-    ILLSheets_DataBounds = DataBounds(sheetName, Bound)
-End Function
-
-Private Function ILLSheets_ContainsControl(ByVal sheetName As String, _
-                                          Optional ByVal Control As String = "list_auto", _
-                                          Optional ByVal colName As String = COL_CONTROL) As Boolean
-    ILLSheets_ContainsControl = ContainsControl(sheetName, Control, colName)
-End Function
-
-Private Function ILLSheets_VariableAddress(ByVal varName As String, Optional ByVal onSheet As String = vbNullString) As String
-    ILLSheets_VariableAddress = VariableAddress(varName, onSheet)
-End Function
-
-Private Function ILLSheets_RowIndex(ByVal sheetName As String) As Long
-    ILLSheets_RowIndex = RowIndex(sheetName)
-End Function
-
-Private Function ILLSheets_NumberOfVars(ByVal sheetName As String) As Long
-    ILLSheets_NumberOfVars = NumberVars(sheetName)
-End Function
-
-Private Sub ILLSheets_InvalidateCaches()
-    InvalidateCaches
 End Sub

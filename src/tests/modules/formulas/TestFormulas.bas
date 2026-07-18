@@ -22,7 +22,7 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 'helpers so tests run in isolation.
 '@depends Formulas, FormulaData, IFormulaData, FormulaCondition,
 'LLdictionary, ILLdictionary, LLVariables, ILLVariables,
-'LLSheets, ILLSheets, BetterArray, CustomTest, ICustomTest,
+'LLSheets, BetterArray, CustomTest, ICustomTest,
 'DictionaryTestFixture, FormulaTestFixture
 
 
@@ -232,13 +232,13 @@ End Function
 '@param tableName String. The table that owns the variable.
 '@param useTableName Boolean. When True, emit a structured reference.
 '@param tablePrefix String. Prefix prepended to the table name for structured references.
-'@param sheets ILLSheets. Sheet-address resolver used for cell references.
+'@param sheets LLSheets. Sheet-address resolver used for cell references.
 '@return String. The formatted range reference.
 Private Function GroupedRangeReferenceForTest(ByVal variableName As String, _
                                               ByVal tableName As String, _
                                               ByVal useTableName As Boolean, _
                                               ByVal tablePrefix As String, _
-                                              ByVal sheets As ILLSheets) As String
+                                              ByVal sheets As LLSheets) As String
     If useTableName Then
         GroupedRangeReferenceForTest = tablePrefix & tableName & "[" & variableName & "]"
     Else
@@ -264,7 +264,7 @@ Private Function ExpectedSumIfsFormula(ByVal criteriaVar As String, _
                                        ByVal tableName As String, _
                                        ByVal tablePrefix As String, _
                                        ByVal useTableName As Boolean) As String
-    Dim sheets As ILLSheets
+    Dim sheets As LLSheets
     Dim criteriaRange As String
     Dim resultRange As String
     Dim conditionValue As String
@@ -295,7 +295,7 @@ Private Function ExpectedCountIfsFormula(ByVal criteriaVar As String, _
                                          ByVal tableName As String, _
                                          ByVal tablePrefix As String, _
                                          ByVal useTableName As Boolean) As String
-    Dim sheets As ILLSheets
+    Dim sheets As LLSheets
     Dim criteriaRange As String
     Dim resultRange As String
     Dim conditionValue As String
@@ -329,7 +329,7 @@ Private Function ExpectedArrayGroupedFormula(ByVal aggregator As String, _
                                              ByVal tableName As String, _
                                              ByVal tablePrefix As String, _
                                              ByVal useTableName As Boolean) As String
-    Dim sheets As ILLSheets
+    Dim sheets As LLSheets
     Dim criteriaRange As String
     Dim resultRange As String
     Dim conditionValue As String
@@ -589,7 +589,7 @@ Public Sub TestParsedLinelistUsesCellReferencesWhenOptedOut()
     Dim variableName As String
     Dim formulaInstance As Formulas
     Dim parsed As String
-    Dim sheets As ILLSheets
+    Dim sheets As LLSheets
     Dim expectedAddress As String
 
     On Error GoTo Fail

@@ -833,13 +833,13 @@ Private Sub TransferAllCode(ByVal codeTransfer As CodeTransfer)
 
     Set codesList = New BetterArray
 
-    'Transfer classes (41 classes)
+    'Transfer classes (40 classes)
     codesList.Push "BetterArray", "DataSheet", "IDataSheet", "LLExport", _
                    "ILLExport", "LLChoices", "ILLChoices", _
                    "LLdictionary", "ILLdictionary", "LLGeo", _
                    "ILLGeo", "Passwords", "IPasswords", _
                    "IChecking", "Checking", _
-                   "LLSheets", "ILLSheets", "LLTranslation", _
+                   "LLSheets", "LLTranslation", _
                    "ILLTranslation", "OSFiles", "IOSFiles", _
                    "TranslationObject", "ITranslationObject", "LLVariables", _
                    "ILLVariables", "LLSpatial", _
@@ -897,7 +897,7 @@ Private Sub TransferAllCode(ByVal codeTransfer As CodeTransfer)
     'The dictionary identifies HList sheets by type "hlist2D". The source template
     'module (EventLinelistSelection) is read from the designer workbook and its
     'code is written into each HList worksheet's CodeModule in the output workbook.
-    Dim llshs As ILLSheets
+    Dim llshs As LLSheets
     Dim hlistSheets As BetterArray
 
     Set llshs = LLSheets.Create(this.specs.Dictionary)

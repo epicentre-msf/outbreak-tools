@@ -19,7 +19,7 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 'detection, variable-count guards, and variable-address preparation
 'requirements. Each test builds an LLSheets instance from a dictionary
 'fixture and exercises one public method or error condition.
-'@depends LLSheets, ILLSheets, LLdictionary, ILLdictionary, CustomTest, ICustomTest
+'@depends LLSheets, LLdictionary, ILLdictionary, CustomTest, ICustomTest
 
 Private Const DICT_SHEET As String = "LLSheetsDict"
 Private Const SHEET_VERTICAL As String = "vlist1D-sheet1"
@@ -28,7 +28,7 @@ Private Const KNOWN_VARIABLE As String = "choi_v1"
 
 Private Assert As ICustomTest
 Private Dictionary As ILLdictionary
-Private Sheets As ILLSheets
+Private Sheets As LLSheets
 
 '@section Fixture Lifecycle
 '===============================================================================
@@ -113,7 +113,7 @@ Public Sub TestCreateRejectsNullDictionary()
     CustomTestSetTitles Assert, "LLSheets", "TestCreateRejectsNullDictionary"
     On Error GoTo ExpectError
 
-    Dim invalid As ILLSheets
+    Dim invalid As LLSheets
     '@Ignore AssignmentNotUsed
     Set invalid = LLSheets.Create(Nothing)
     Assert.LogFailure "Create should raise when dictionary is Nothing"

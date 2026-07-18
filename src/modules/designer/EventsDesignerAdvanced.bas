@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Designer")
 '@ModuleDescription("Non-core ribbon callbacks for the designer workbook.")
-'@depends DesignerPreparation, DesignerEntry, RibbonDev, LLGeo, ILLGeo, ApplicationState, IApplicationState, OSFiles, IOSFiles, HiddenNames, IHiddenNames, BetterArray, DropdownLists, IDropdownLists, LinelistBuildService, LinelistSpecs, ILinelistSpecs, Linelist, ILinelist, ListBuilder, LLSheets, ILLSheets, GenerationReport
+'@depends DesignerPreparation, DesignerEntry, RibbonDev, LLGeo, ILLGeo, ApplicationState, IApplicationState, OSFiles, IOSFiles, HiddenNames, IHiddenNames, BetterArray, DropdownLists, IDropdownLists, LinelistBuildService, LinelistSpecs, ILinelistSpecs, Linelist, ILinelist, ListBuilder, LLSheets, GenerationReport
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 'Non-core ribbon logics are callbacks whose absence will not fire a
@@ -463,7 +463,7 @@ End Sub
 '@Description("Build a data entry worksheet from the dictionary and return the builder.")
 Private Function BuildOneSheet(ByVal specs As ILinelistSpecs, ByVal ll As ILinelist, ByVal sheetName As String) As ListBuilder
     Dim dict As ILLdictionary
-    Dim llshs As ILLSheets
+    Dim llshs As LLSheets
     Dim sheetType As String
     Dim layer As Byte
     Dim listBld As ListBuilder

@@ -37,7 +37,7 @@ Private Type TValueOfFormula
     expression As String            'Original VALUE_OF specification
     dict As ILLdictionary           'Dictionary reference providing metadata
     variables As ILLVariables       'Helper for variable lookups
-    sheets As ILLSheets             'Helper for sheet validation
+    sheets As LLSheets             'Helper for sheet validation
     parsed As Boolean               'Tracks whether parsing already occurred
     valid As Boolean                'Final validity flag
     converted As String             'Converted VALUE_OF expression
@@ -76,14 +76,14 @@ Private Const ERROR_EMPTY_FORMULA As String = "VALUE_OF formula cannot be blank"
 '@param formula String. Representation of the VALUE_OF call.
 '@param dict ILLdictionary. The dictionary exposing variables and sheets metadata.
 '@param variables Optional ILLVariables. Reuse an existing helper instance.
-'@param sheets Optional ILLSheets. Reuse an existing helper instance.
+'@param sheets Optional LLSheets. Reuse an existing helper instance.
 '@return ValueOfFormula. A ready-to-inspect parser instance.
 '@throws ProjectError.ObjectNotInitialized When dict is Nothing.
 '@export
 Public Function Create(ByVal formula As String, _
                        ByVal dict As ILLdictionary, _
                        Optional ByVal variables As ILLVariables, _
-                       Optional ByVal sheets As ILLSheets) As ValueOfFormula
+                       Optional ByVal sheets As LLSheets) As ValueOfFormula
 
     If dict Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, _
@@ -255,7 +255,7 @@ Private Sub EnsureParsed()
     Dim valueVar As String
     Dim vars As ILLVariables
     Dim sheetName As String
-    Dim sheets As ILLSheets
+    Dim sheets As LLSheets
 
     If this.parsed Then Exit Sub
 
@@ -470,11 +470,11 @@ End Function
 '@param formula String. The VALUE_OF expression.
 '@param dict ILLdictionary. The dictionary providing metadata.
 '@param variables ILLVariables. Optional helper for variable lookups.
-'@param sheets ILLSheets. Optional helper for sheet validation.
+'@param sheets LLSheets. Optional helper for sheet validation.
 Public Sub Initialise(ByVal formula As String, _
                        ByVal dict As ILLdictionary, _
                        ByVal variables As ILLVariables, _
-                       ByVal sheets As ILLSheets)
+                       ByVal sheets As LLSheets)
     Set this.dict = dict
     If Not (variables Is Nothing) Then Set this.variables = variables
     If Not (sheets Is Nothing) Then Set this.sheets = sheets
@@ -542,9 +542,9 @@ End Function
 '@details
 'Ensures the dictionary is ready, creates the LLSheets helper on
 'first access, and caches it for subsequent calls.
-'@return ILLSheets. Helper for the current dictionary.
+'@return LLSheets. Helper for the current dictionary.
 '@throws ProjectError.ObjectNotInitialized When the dictionary is Nothing.
-Private Function SheetsProvider() As ILLSheets
+Private Function SheetsProvider() As LLSheets
     EnsureDictionaryReady
     If this.sheets Is Nothing Then
         Set this.sheets = LLSheets.Create(this.dict)

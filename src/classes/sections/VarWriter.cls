@@ -24,7 +24,7 @@ Option Explicit
 'formulas, dropdown choices, data validation, and conditional formatting
 'to the resolved cell range. The class caches dictionary, variables, and
 'sheets accessors for performance across repeated calls.
-'@depends ILinelistSpecs, ILLdictionary, ILLVariables, ILLSheets, ILLFormat,
+'@depends ILinelistSpecs, ILLdictionary, ILLVariables, LLSheets, ILLFormat,
 'ITranslationObject, IFormulaData, Formulas, IDropdownLists, ILLGeo,
 'Formulas, LLVariables, LLSheets, BetterArray
 '@version 1.0 (2026-02-10)
@@ -45,7 +45,7 @@ Private Type TVarWriter
     cachedCRFRange As Range
     cachedDict As ILLdictionary
     cachedVars As ILLVariables
-    cachedSheets As ILLSheets
+    cachedSheets As LLSheets
     hasChecks As Boolean
 End Type
 
@@ -198,8 +198,8 @@ End Property
 'Creates an LLSheets wrapper around the dictionary on first access.
 'The wrapper provides VariableAddress and SheetInfo lookups used when
 'building conditional-formatting formulas and resolving table anchors.
-'@return ILLSheets. The sheets helper object.
-Private Property Get SheetsObject() As ILLSheets
+'@return LLSheets. The sheets helper object.
+Private Property Get SheetsObject() As LLSheets
     If this.cachedSheets Is Nothing Then
         Set this.cachedSheets = LLSheets.Create(Dictionary())
     End If
@@ -1016,7 +1016,7 @@ Private Sub AddConditionalFormatting()
     Dim cellRng As Range
     Dim formatRng As Range
     Dim varObject As ILLVariables
-    Dim shObj As ILLSheets
+    Dim shObj As LLSheets
     Dim condAdd As String
     Dim condForm As String
     Dim OScondForm As String
@@ -1084,7 +1084,7 @@ Private Sub AddGeoConditionalFormatting()
     Dim varValid As String
     Dim cellRng As Range
     Dim varObject As ILLVariables
-    Dim shObj As ILLSheets
+    Dim shObj As LLSheets
     Dim condAdd As String
     Dim varControl As String
     Dim actAdd As String

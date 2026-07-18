@@ -26,7 +26,7 @@ Option Explicit
 'mode creates a PLAGEVALUES range reference for vertical data entry.
 'Consumers call Create with a layer mode, sheet name, and linelist
 'reference, then invoke Build to construct the sheet.
-'@depends ILinelist, ILLSheets, ILinelistSpecs, ILLFormat, IDropdownLists,
+'@depends ILinelist, LLSheets, ILinelistSpecs, ILLFormat, IDropdownLists,
 '  IPasswords, ITranslationObject, Buttons, IHiddenNames, SectionBuilder,
 '  BetterArray
 '@version 1.0 (2026-02-09)
@@ -91,7 +91,7 @@ Public Function Create(ByVal layer As Byte, _
         ThrowError ProjectError.InvalidArgument, "Sheet name cannot be empty"
     End If
 
-    Dim llshs As ILLSheets
+    Dim llshs As LLSheets
     Set llshs = LLSheets.Create(ll.Dictionary)
 
     If Not llshs.Contains(sheetName) Then
@@ -181,7 +181,7 @@ Private Sub BuildHList()
     Dim printSh As Worksheet
     Dim filtSh As Worksheet
     Dim dict As ILLdictionary
-    Dim llshs As ILLSheets
+    Dim llshs As LLSheets
     Dim specs As ILinelistSpecs
     Dim design As ILLFormat
     Dim drop As IDropdownLists
@@ -400,7 +400,7 @@ End Sub
 Private Sub BuildVList()
     Dim sh As Worksheet
     Dim dict As ILLdictionary
-    Dim llshs As ILLSheets
+    Dim llshs As LLSheets
     Dim specs As ILinelistSpecs
     Dim design As ILLFormat
     Dim drop As IDropdownLists
@@ -495,7 +495,7 @@ End Sub
 '@param printSh Worksheet. The printed companion sheet (Nothing for VList).
 Private Sub BuildSections(ByVal sh As Worksheet, ByVal printSh As Worksheet)
     Dim specs As ILinelistSpecs
-    Dim llshs As ILLSheets
+    Dim llshs As LLSheets
     Dim startRow As Long
     Dim secBuilder As SectionBuilder
     Dim crfSh As Worksheet
@@ -542,11 +542,11 @@ End Sub
 '(e.g., "Go to section: SectionName"). Duplicate consecutive sections are
 'skipped to avoid redundant dropdown entries.
 '@param dict ILLdictionary. The linelist dictionary providing data ranges.
-'@param llshs ILLSheets. Sheet metadata for row indices and variable counts.
+'@param llshs LLSheets. Sheet metadata for row indices and variable counts.
 '@param goToLabel String. The translated "Go to section" prefix label.
 '@return BetterArray. A 1-based array of prefixed section name strings.
 Private Function CollectSectionNames(ByVal dict As ILLdictionary, _
-                                     ByVal llshs As ILLSheets, _
+                                     ByVal llshs As LLSheets, _
                                      ByVal goToLabel As String) As BetterArray
     Dim sectionRng As Range
     Dim sheetRng As Range

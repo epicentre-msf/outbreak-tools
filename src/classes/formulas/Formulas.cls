@@ -60,7 +60,7 @@ End Type
 
 Private Type TDependencies
     variables As ILLVariables                   'Lazy wrapper resolving variable metadata
-    sheets As ILLSheets                         'Lazy wrapper resolving worksheet addresses
+    sheets As LLSheets                         'Lazy wrapper resolving worksheet addresses
     customFormulas As BetterArray               'Registered custom formula identifiers
 End Type
 
@@ -299,7 +299,7 @@ Public Property Get ParsedLinelistFormula(Optional ByVal useTableName As Boolean
     Dim idx As Long
     Dim current As String
     Dim vars As ILLVariables
-    Dim sheets As ILLSheets
+    Dim sheets As LLSheets
 
     If Not EnsureEvaluation("simple") Then Exit Property
 
@@ -524,8 +524,8 @@ End Function
 '@details
 'Creates the LLSheets wrapper on first access and caches it for
 'subsequent calls.
-'@return ILLSheets. Bound to the current dictionary.
-Private Function SheetProvider() As ILLSheets
+'@return LLSheets. Bound to the current dictionary.
+Private Function SheetProvider() As LLSheets
     If deps.sheets Is Nothing Then
         Set deps.sheets = LLSheets.Create(Dictionary())
     End If
@@ -820,7 +820,7 @@ End Function
 '@return String. Grouped Excel formula ready for consumption.
 Private Function BuildGroupedFormula(ByVal useTableName As Boolean, _
                                      ByVal tablePrefix As String) As String
-    Dim sheets As ILLSheets
+    Dim sheets As LLSheets
     Dim criteriaRange As String
     Dim conditionValue As String
     Dim resultRange As String
@@ -857,12 +857,12 @@ End Function
 '@param variableName String. Variable identifier.
 '@param useTableName Boolean. True to emit structured references.
 '@param tablePrefix String. Prefix applied to structured references.
-'@param sheets ILLSheets. Provider for address resolution.
+'@param sheets LLSheets. Provider for address resolution.
 '@return String. Excel reference targeting the grouped variable.
 Private Function GroupedDataRange(ByVal variableName As String, _
                                   ByVal useTableName As Boolean, _
                                   ByVal tablePrefix As String, _
-                                  ByVal sheets As ILLSheets) As String
+                                  ByVal sheets As LLSheets) As String
     Dim tableName As String
 
     tableName = this.group.TableName
