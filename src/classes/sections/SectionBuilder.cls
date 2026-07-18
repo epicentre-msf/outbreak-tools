@@ -117,49 +117,49 @@ End Property
 '@label:internal-layer
 '@prop-title Assign the layer mode
 '@param layer Byte. SectionBuilderMode enum value.
-Public Property Let InternalLayer(ByVal layer As Byte)
+Private Property Let InternalLayer(ByVal layer As Byte)
     this.layer = layer
 End Property
 
 '@label:internal-specs
 '@prop-title Assign the linelist specifications
 '@param specs LinelistSpecs. The specifications object.
-Public Property Set InternalSpecs(ByVal specs As LinelistSpecs)
+Private Property Set InternalSpecs(ByVal specs As LinelistSpecs)
     Set this.specs = specs
 End Property
 
 '@label:internal-wksh
 '@prop-title Assign the target main worksheet
 '@param wksh Worksheet. The main worksheet to build on.
-Public Property Set InternalWksh(ByVal wksh As Worksheet)
+Private Property Set InternalWksh(ByVal wksh As Worksheet)
     Set this.wksh = wksh
 End Property
 
 '@label:internal-print-wksh
 '@prop-title Assign the printed companion worksheet
 '@param wksh Worksheet. The printed companion worksheet.
-Public Property Set InternalPrintWksh(ByVal wksh As Worksheet)
+Private Property Set InternalPrintWksh(ByVal wksh As Worksheet)
     Set this.printWksh = wksh
 End Property
 
 '@label:internal-crf-wksh
 '@prop-title Assign the CRF companion worksheet
 '@param wksh Worksheet. The CRF companion worksheet.
-Public Property Set InternalCRFWksh(ByVal wksh As Worksheet)
+Private Property Set InternalCRFWksh(ByVal wksh As Worksheet)
     Set this.crfWksh = wksh
 End Property
 
 '@label:internal-dropdown
 '@prop-title Assign the dropdown lists manager
 '@param dropdownObj DropdownLists. The dropdown manager.
-Public Property Set InternalDropdown(ByVal dropdownObj As DropdownLists)
+Private Property Set InternalDropdown(ByVal dropdownObj As DropdownLists)
     Set this.dropdown = dropdownObj
 End Property
 
 '@label:internal-custom-dropdown
 '@prop-title Assign the custom dropdown lists manager
 '@param dropdownObj DropdownLists. The custom dropdown manager.
-Public Property Set InternalCustomDropdown(ByVal dropdownObj As DropdownLists)
+Private Property Set InternalCustomDropdown(ByVal dropdownObj As DropdownLists)
     Set this.customDropdown = dropdownObj
 End Property
 

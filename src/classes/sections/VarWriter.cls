@@ -118,44 +118,44 @@ End Property
 
 '@label:internal-specs
 '@prop-title Assign the linelist specifications object
-Public Property Set InternalSpecs(ByVal specs As LinelistSpecs)
+Private Property Set InternalSpecs(ByVal specs As LinelistSpecs)
     Set this.specs = specs
 End Property
 
 '@label:internal-wksh
 '@prop-title Assign the target main worksheet
-Public Property Set InternalWksh(ByVal wksh As Worksheet)
+Private Property Set InternalWksh(ByVal wksh As Worksheet)
     Set this.wksh = wksh
     Set this.hn = HiddenNames.Create(this.wksh)
 End Property
 
 '@label:internal-layer
 '@prop-title Assign the writer layer (HList or VList)
-Public Property Let InternalLayer(ByVal layer As Byte)
+Private Property Let InternalLayer(ByVal layer As Byte)
     this.layer = layer
 End Property
 
 '@label:internal-print-wksh
 '@prop-title Assign the printed companion worksheet
-Public Property Set InternalPrintWksh(ByVal wksh As Worksheet)
+Private Property Set InternalPrintWksh(ByVal wksh As Worksheet)
     Set this.printWksh = wksh
 End Property
 
 '@label:internal-crf-wksh
 '@prop-title Assign the CRF companion worksheet
-Public Property Set InternalCRFWksh(ByVal wksh As Worksheet)
+Private Property Set InternalCRFWksh(ByVal wksh As Worksheet)
     Set this.crfWksh = wksh
 End Property
 
 '@label:internal-dropdown
 '@prop-title Assign the dropdown lists manager
-Public Property Set InternalDropdown(ByVal dropdownObj As DropdownLists)
+Private Property Set InternalDropdown(ByVal dropdownObj As DropdownLists)
     Set this.dropdown = dropdownObj
 End Property
 
 '@label:internal-custom-dropdown
 '@prop-title Assign the custom dropdown lists manager
-Public Property Set InternalCustomDropdown(ByVal dropdownObj As DropdownLists)
+Private Property Set InternalCustomDropdown(ByVal dropdownObj As DropdownLists)
     Set this.customDropdown = dropdownObj
 End Property
 
