@@ -46,19 +46,11 @@ Private Const KEY_PREFIX As String = "ASSERT_"
 '@export
 Public Function Create(ByVal targetWorkbook As workbook, _
                        Optional ByVal outputSheetName As String = vbNullString) As CustomTest
-    With New CustomTest
-        .Configure targetWorkbook, outputSheetName
-        Set Create = .Self
-    End With
+    Dim newInstance As CustomTest
+    Set newInstance = New CustomTest
+    newInstance.Configure targetWorkbook, outputSheetName
+    Set Create = newInstance
 End Function
-
-'@label:Self
-'@prop-title Access the current harness reference
-'@return CustomTest reference for fluent usage
-'@export
-Public Property Get Self() As CustomTest
-    Set Self = Me
-End Property
 
 '@section Public members
 '===============================================================================
