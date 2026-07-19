@@ -37,6 +37,7 @@ Private Type TCrossTableFormula
     forml As Formulas
     condVars As BetterArray
     condTests As BetterArray
+    sealed As Boolean
 End Type
 
 Private this As TCrossTableFormula
@@ -65,26 +66,31 @@ Public Function Create(ByVal tabl As CrossTable, _
     If tabl Is Nothing Then ThrowError InvalidArgument, "Cross-table not defined"
     If fData Is Nothing Then ThrowError InvalidArgument, "Formula data not defined"
 
-    With New CrossTableFormula
-        Set .Table = tabl
-        Set .formData = fData
-        Set Create = .Self
-    End With
+    Dim instance As CrossTableFormula
+    Set instance = New CrossTableFormula
+    Set instance.Table = tabl
+    Set instance.formData = fData
+    instance.Seal
+    Set Create = instance
 End Function
 
 '@section Internal Properties
 '===============================================================================
 '@description Properties used during factory construction and internal wiring.
 
-'@label:self
-'@prop-title Current object instance cast to the interface.
-'@details
-'Convenience accessor so the Create factory can return the newly constructed
-'object through the CrossTableFormula interface.
-'@return CrossTableFormula. The current instance.
-Public Property Get Self() As CrossTableFormula
-    Set Self = Me
-End Property
+'@label:seal
+'@sub-title Seal the instance against further setup writes.
+Public Sub Seal()
+    this.sealed = True
+End Sub
+
+'@label:guard-not-sealed
+'@sub-title Guard a setup setter against post-creation writes.
+'@param propName String. The property name for the error message.
+Private Sub GuardNotSealed(ByVal propName As String)
+    If this.sealed Then _
+        ThrowError ProjectError.SomethingWentWrong, propName & " is set at creation only"
+End Sub
 
 '@label:table-get
 '@prop-title CrossTable backing store.
@@ -100,7 +106,8 @@ End Property
 '@label:table-set
 '@prop-title Assign the CrossTable backing store.
 '@param tabl CrossTable. The cross-table to bind to this formula writer.
-Private Property Set Table(ByVal tabl As CrossTable)
+Public Property Set Table(ByVal tabl As CrossTable)
+    GuardNotSealed "Table"
     Set this.tabl = tabl
 End Property
 
@@ -117,7 +124,8 @@ End Property
 '@label:form-data-set
 '@prop-title Assign the FormulaData backing store.
 '@param fData FormulaData. The formula-data source to bind.
-Private Property Set formData(ByVal fData As FormulaData)
+Public Property Set formData(ByVal fData As FormulaData)
+    GuardNotSealed "formData"
     Set this.fData = fData
 End Property
 

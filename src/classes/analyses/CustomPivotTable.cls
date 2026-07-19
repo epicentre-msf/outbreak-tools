@@ -31,6 +31,7 @@ Option Explicit
 
 Private Type TCustomPivotTable
     sh As Worksheet
+    sealed As Boolean
 End Type
 
 Private this As TCustomPivotTable
@@ -69,19 +70,27 @@ Public Function Create(ByVal sh As Worksheet) As CustomPivotTable
     If sh Is Nothing Then ThrowError InvalidArgument, _
         "Unable to create custom pivot table, sheet is Nothing"
 
-    With New CustomPivotTable
-        Set .Wksh = sh
-        .InitialiseMetadata
-        Set Create = .Self
-    End With
+    Dim instance As CustomPivotTable
+    Set instance = New CustomPivotTable
+    Set instance.Wksh = sh
+    instance.InitialiseMetadata
+    instance.Seal
+    Set Create = instance
 End Function
 
-'@label:self
-'@prop-title Return the current instance
-'@return CustomPivotTable. Self-reference for factory pattern.
-Public Property Get Self() As CustomPivotTable
-    Set Self = Me
-End Property
+'@label:seal
+'@sub-title Seal the instance against further setup writes.
+Public Sub Seal()
+    this.sealed = True
+End Sub
+
+'@label:guard-not-sealed
+'@sub-title Guard a setup setter against post-creation writes.
+'@param propName String. The property name for the error message.
+Private Sub GuardNotSealed(ByVal propName As String)
+    If this.sealed Then _
+        ThrowError ProjectError.SomethingWentWrong, propName & " is set at creation only"
+End Sub
 
 '@label:wksh-get
 '@prop-title The dedicated pivot table worksheet
@@ -93,7 +102,8 @@ End Property
 '@label:wksh-set
 '@prop-title Assign the host worksheet (factory use only)
 '@param sh Worksheet. The worksheet to assign.
-Private Property Set Wksh(ByVal sh As Worksheet)
+Public Property Set Wksh(ByVal sh As Worksheet)
+    GuardNotSealed "Wksh"
     Set this.sh = sh
 End Property
 

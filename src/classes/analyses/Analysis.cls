@@ -71,23 +71,13 @@ Public Function Create(ByVal hostsheet As Worksheet) As Analysis
     If hostsheet Is Nothing Then ThrowError ProjectError.ObjectNotInitialized, _
                                          "Worksheet object not defined"
     'You can create analysis on a empty worksheet, without tables.
-    With New Analysis
-        Set .Wksh = hostsheet
-        Set Create = .Self
-    End With
+    Dim instance As Analysis
+    Set instance = New Analysis
+    Set instance.Wksh = hostsheet
+    Set Create = instance
 
     EnsureRequiredTables
 End Function
-
-'@label:self
-'@prop-title Current object instance
-'@details
-'Convenience accessor so consuming code can fluently retrieve the interface
-'reference from the predeclared Create method.
-'@return Analysis. The current instance.
-Public Property Get Self() As Analysis
-    Set Self = Me
-End Property
 
 '@label:wksh
 '@prop-title Backing analysis worksheet

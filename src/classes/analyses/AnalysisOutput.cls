@@ -51,6 +51,7 @@ Private Type TAnaOutput
     ' Bug #2 fix: GoTo arrays are now local to each scope, not shared instance state.
     ' They are passed as parameters to WriteTable and managed per-scope in WriteAnalysis.
     hasChecks As Boolean
+    sealed As Boolean
 End Type
 
 Private this As TAnaOutput
@@ -86,26 +87,31 @@ Public Function Create(ByVal specSh As Worksheet, _
     If specSh Is Nothing Then ThrowError InvalidArgument, "Specifications worksheet not defined"
     If ll Is Nothing Then ThrowError InvalidArgument, "Linelist not defined"
 
-    With New AnalysisOutput
-        Set .OutputLL = ll
-        Set .Wksh = specSh
-        Set Create = .Self
-    End With
+    Dim instance As AnalysisOutput
+    Set instance = New AnalysisOutput
+    Set instance.OutputLL = ll
+    Set instance.Wksh = specSh
+    instance.Seal
+    Set Create = instance
 End Function
 
 '@section Internal Properties
 '===============================================================================
 '@description Properties used during factory construction and internal wiring.
 
-'@label:self
-'@prop-title Current object instance.
-'@details
-'Convenience accessor that returns the current instance, enabling the
-'predeclared factory pattern.
-'@return AnalysisOutput. The current instance.
-Public Property Get Self() As AnalysisOutput
-    Set Self = Me
-End Property
+'@label:seal
+'@sub-title Seal the instance against further setup writes.
+Public Sub Seal()
+    this.sealed = True
+End Sub
+
+'@label:guard-not-sealed
+'@sub-title Guard a setup setter against post-creation writes.
+'@param propName String. The property name for the error message.
+Private Sub GuardNotSealed(ByVal propName As String)
+    If this.sealed Then _
+        ThrowError ProjectError.SomethingWentWrong, propName & " is set at creation only"
+End Sub
 
 '@label:output-ll-get
 '@prop-title Output linelist facade.
@@ -120,7 +126,8 @@ End Property
 '@label:output-ll-set
 '@prop-title Assign the output linelist facade.
 '@param ll Linelist. The output linelist workbook facade to store.
-Private Property Set OutputLL(ByVal ll As Linelist)
+Public Property Set OutputLL(ByVal ll As Linelist)
+    GuardNotSealed "OutputLL"
     Set this.anaLL = ll
 End Property
 
@@ -136,7 +143,8 @@ End Property
 '@label:wksh-set
 '@prop-title Assign the setup worksheet reference.
 '@param specSh Worksheet. The setup worksheet to store.
-Private Property Set Wksh(ByVal specSh As Worksheet)
+Public Property Set Wksh(ByVal specSh As Worksheet)
+    GuardNotSealed "Wksh"
     Set this.sh = specSh
 End Property
 

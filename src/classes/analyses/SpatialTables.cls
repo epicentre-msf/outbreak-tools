@@ -37,6 +37,7 @@ Private Type TSpatialTables
     tab As CrossTable
     condVars As BetterArray
     condTests As BetterArray
+    sealed As Boolean
 End Type
 
 Private this As TSpatialTables
@@ -66,21 +67,26 @@ Private Const CONCAT As String = "concat_"
 Public Function Create(ByVal tabl As CrossTable) As SpatialTables
     CheckRequirements tabl
 
-    With New SpatialTables
-        Set .Table = tabl
-        Set Create = .Self
-    End With
+    Dim instance As SpatialTables
+    Set instance = New SpatialTables
+    Set instance.Table = tabl
+    instance.Seal
+    Set Create = instance
 End Function
 
-'@label:self
-'@prop-title Current object instance
-'@details
-'Convenience accessor for fluent retrieval of the instance from the
-'predeclared Create method.
-'@return SpatialTables. The current instance.
-Public Property Get Self() As SpatialTables
-    Set Self = Me
-End Property
+'@label:seal
+'@sub-title Seal the instance against further setup writes.
+Public Sub Seal()
+    this.sealed = True
+End Sub
+
+'@label:guard-not-sealed
+'@sub-title Guard a setup setter against post-creation writes.
+'@param propName String. The property name for the error message.
+Private Sub GuardNotSealed(ByVal propName As String)
+    If this.sealed Then _
+        ThrowError ProjectError.SomethingWentWrong, propName & " is set at creation only"
+End Sub
 
 '@label:table
 '@prop-title Cross-table bound to this builder
@@ -95,7 +101,8 @@ End Property
 '@label:table-set
 '@prop-title Assign the cross-table reference
 '@param tabl CrossTable. The cross-table to bind.
-Private Property Set Table(ByVal tabl As CrossTable)
+Public Property Set Table(ByVal tabl As CrossTable)
+    GuardNotSealed "Table"
     Set this.tab = tabl
 End Property
 

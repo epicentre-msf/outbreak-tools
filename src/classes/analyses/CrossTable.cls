@@ -40,6 +40,7 @@ Private Type TCrossTable
     deFactoNewSect As Boolean                    'Cached IsDeFactoNewSection result
     deFactoNewSectCached As Boolean              'Whether the cache has been computed
     hasChecks As Boolean
+    sealed As Boolean
 End Type
 
 Private this As TCrossTable
@@ -81,27 +82,32 @@ Public Function Create(ByVal specs As TableSpecs, _
     If outputWksh Is Nothing Then ThrowError InvalidArgument, "Output worksheet not defined"
     If lData Is Nothing Then ThrowError InvalidArgument, "Linelist specifications not defined"
 
-    With New CrossTable
-        Set .Specifications = specs
-        Set .Wksh = outputWksh
-        Set .LinelistData = lData
-        Set Create = .Self
-    End With
+    Dim instance As CrossTable
+    Set instance = New CrossTable
+    Set instance.Specifications = specs
+    Set instance.Wksh = outputWksh
+    Set instance.LinelistData = lData
+    instance.Seal
+    Set Create = instance
 End Function
 
 '@section Internal Properties
 '===============================================================================
 '@description Properties used during factory instantiation and internal wiring.
 
-'@label:self
-'@prop-title Current object instance.
-'@details
-'Convenience accessor so consuming code can fluently retrieve the interface
-'reference from the predeclared Create method.
-'@return CrossTable. The current instance cast to the interface.
-Public Property Get Self() As CrossTable
-    Set Self = Me
-End Property
+'@label:seal
+'@sub-title Seal the instance against further setup writes.
+Public Sub Seal()
+    this.sealed = True
+End Sub
+
+'@label:guard-not-sealed
+'@sub-title Guard a setup setter against post-creation writes.
+'@param propName String. The property name for the error message.
+Private Sub GuardNotSealed(ByVal propName As String)
+    If this.sealed Then _
+        ThrowError ProjectError.SomethingWentWrong, propName & " is set at creation only"
+End Sub
 
 '@label:wksh
 '@prop-title Output worksheet where the table is built.
@@ -117,7 +123,8 @@ End Property
 '@label:wksh-set
 '@prop-title Assign the output worksheet.
 '@param sh Worksheet. The target worksheet to assign.
-Private Property Set Wksh(ByVal sh As Worksheet)
+Public Property Set Wksh(ByVal sh As Worksheet)
+    GuardNotSealed "Wksh"
     Set this.outputSh = sh
 End Property
 
@@ -136,7 +143,8 @@ End Property
 '@label:specifications-set
 '@prop-title Assign the table specifications.
 '@param specs TableSpecs. The table specification to assign.
-Private Property Set Specifications(ByVal specs As TableSpecs)
+Public Property Set Specifications(ByVal specs As TableSpecs)
+    GuardNotSealed "Specifications"
     Set this.specs = specs
 End Property
 
@@ -154,7 +162,8 @@ End Property
 '@label:linelist-data-set
 '@prop-title Assign the linelist specifications.
 '@param lData LinelistSpecs. The linelist specifications to assign.
-Private Property Set LinelistData(ByVal lData As LinelistSpecs)
+Public Property Set LinelistData(ByVal lData As LinelistSpecs)
+    GuardNotSealed "LinelistData"
     Set this.lData = lData
 End Property
 

@@ -52,6 +52,7 @@ Private Type TTableSpecs
     validCached As Boolean                       'Whether cachedValid is populated
     cachedNewSection As Boolean                  'Cached IsNewSection result
     newSectionCached As Boolean                  'Whether cachedNewSection is populated
+    sealed As Boolean
 End Type
 
 Private this As TTableSpecs
@@ -102,8 +103,23 @@ Public Function Create(ByVal headerRng As Range, _
     Set instance.TableRange = tableSpecsRng
     Set instance.DictionaryObject = dict
     instance.InitCache
+    instance.Seal
     Set Create = instance
 End Function
+
+'@label:seal
+'@sub-title Seal the instance against further setup writes.
+Public Sub Seal()
+    this.sealed = True
+End Sub
+
+'@label:guard-not-sealed
+'@sub-title Guard a setup setter against post-creation writes.
+'@param propName String. The property name for the error message.
+Private Sub GuardNotSealed(ByVal propName As String)
+    If this.sealed Then _
+        ThrowError ProjectError.SomethingWentWrong, propName & " is set at creation only"
+End Sub
 
 '@section Internal Properties
 '===============================================================================
@@ -123,7 +139,8 @@ End Property
 '@label:header-range-set
 '@prop-title Assign the header range
 '@param hRng Range. The header row range to store.
-Private Property Set HeaderRange(ByVal hRng As Range)
+Public Property Set HeaderRange(ByVal hRng As Range)
+    GuardNotSealed "HeaderRange"
     Set this.hRng = hRng
 End Property
 
@@ -140,7 +157,8 @@ End Property
 '@label:table-range-set
 '@prop-title Assign the table specification row range
 '@param tRng Range. The data-row range to store.
-Private Property Set TableRange(ByVal tRng As Range)
+Public Property Set TableRange(ByVal tRng As Range)
+    GuardNotSealed "TableRange"
     Set this.tRng = tRng
 End Property
 
@@ -158,7 +176,8 @@ End Property
 '@label:dictionary-object-set
 '@prop-title Assign the dictionary object
 '@param dict LLdictionary. The dictionary to store.
-Private Property Set DictionaryObject(ByVal dict As LLdictionary)
+Public Property Set DictionaryObject(ByVal dict As LLdictionary)
+    GuardNotSealed "DictionaryObject"
     Set this.dict = dict
 End Property
 

@@ -30,6 +30,7 @@ Option Explicit
 
 Private Type TAnaIds
     sh As Worksheet
+    sealed As Boolean
 End Type
 
 Private this As TAnaIds
@@ -75,10 +76,11 @@ Public Function Create(ByVal idsh As Worksheet, _
     If idsh Is Nothing Then ThrowError ProjectError.InvalidArgument, "Worksheet not defined"
     If check Then CheckRequirements idsh
 
-    With New AnaTabIds
-        Set .Wksh = idsh
-        Set Create = .Self
-    End With
+    Dim instance As AnaTabIds
+    Set instance = New AnaTabIds
+    Set instance.Wksh = idsh
+    instance.Seal
+    Set Create = instance
 End Function
 
 
@@ -86,20 +88,25 @@ End Function
 '===============================================================================
 '@description Factory-support properties for construction and worksheet access.
 
-'@label:self
-'@prop-title Current object instance
-'@details
-'Convenience accessor so consuming code can fluently retrieve the interface
-'reference from the predeclared Create method.
-'@return AnaTabIds. The current instance.
-Public Property Get Self() As AnaTabIds
-    Set Self = Me
-End Property
+'@label:seal
+'@sub-title Seal the instance against further setup writes.
+Public Sub Seal()
+    this.sealed = True
+End Sub
+
+'@label:guard-not-sealed
+'@sub-title Guard a setup setter against post-creation writes.
+'@param propName String. The property name for the error message.
+Private Sub GuardNotSealed(ByVal propName As String)
+    If this.sealed Then _
+        ThrowError ProjectError.SomethingWentWrong, propName & " is set at creation only"
+End Sub
 
 '@label:wksh-set
 '@prop-title Assign the tracking worksheet
 '@param sh Worksheet. The worksheet to bind.
-Private Property Set Wksh(ByVal sh As Worksheet)
+Public Property Set Wksh(ByVal sh As Worksheet)
+    GuardNotSealed "Wksh"
     Set this.sh = sh
 End Property
 
