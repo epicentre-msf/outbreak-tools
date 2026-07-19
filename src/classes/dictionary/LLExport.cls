@@ -30,6 +30,7 @@ Private Type TLLExport
     checkCounter As Long
     sanitizeList As Variant
     store As HiddenNames
+    sealed As Boolean
 End Type
 
 Private Const COL_STATUS As String = "status"
@@ -71,33 +72,42 @@ Public Function Create(ByVal exportSheet As Worksheet, _
 
     Set exportData = DataSheet.Create(exportSheet, startRow, startColumn, True, "ExportsDataSheet")
 
-    With New LLExport
-        Set .InternalData = exportData
-        Set .InternalWorksheet = exportSheet
-        .ResetCaches
-        Set Create = .Self()
-    End With
+    Dim newExport As LLExport
+    Set newExport = New LLExport
+    Set newExport.InternalData = exportData
+    Set newExport.InternalWorksheet = exportSheet
+    newExport.ResetCaches
+    newExport.Seal
+    Set Create = newExport
 End Function
 
 '@label:SetInternalData
 '@param exportData Datasheet wrapper over the specification table.
-Private Property Set InternalData(ByVal exportData As DataSheet)
+Public Property Set InternalData(ByVal exportData As DataSheet)
+    GuardNotSealed "InternalData"
     Set this.expData = exportData
 End Property
 
 '@label:SetInternalWorksheet
 '@param exportSheet Worksheet that stores the export specification table.
-Private Property Set InternalWorksheet(ByVal exportSheet As Worksheet)
+Public Property Set InternalWorksheet(ByVal exportSheet As Worksheet)
+    GuardNotSealed "InternalWorksheet"
     Set this.exportSheet = exportSheet
     Set this.store = Nothing
 End Property
 
-'@label:Self
-'@prop-title Return the current instance as interface
-'@return The object cast as `LLExport`.
-Public Property Get Self() As LLExport
-    Set Self = Me
-End Property
+'@label:Seal
+'@prop-title Prevent further changes to creation-only setters
+Public Sub Seal()
+    this.sealed = True
+End Sub
+
+'@label:GuardNotSealed
+'@prop-title Guard creation-only setters after sealing
+Private Sub GuardNotSealed(ByVal propName As String)
+    If this.sealed Then _
+        ThrowError ProjectError.SomethingWentWrong, propName & " is set at creation only"
+End Sub
 
 '@section Properties
 '===============================================================================

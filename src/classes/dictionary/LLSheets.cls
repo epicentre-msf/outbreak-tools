@@ -52,6 +52,7 @@ Private Type TLLSheets
     tableNameColumnIndex As Long
     controlColumnIndex As Long
     variables As LLVariables
+    sealed As Boolean
 End Type
 
 Private this As TLLSheets
@@ -94,21 +95,15 @@ Public Function Create(ByVal dict As LLdictionary) As LLSheets
                    "Unable to create LLSheets: dictionary reference is missing"
     End If
 
-    With New LLSheets
-        Set .Dictionary = dict
-        Set Create = .Self
-    End With
+    Dim newSheets As LLSheets
+    Set newSheets = New LLSheets
+    Set newSheets.Dictionary = dict
+    newSheets.Seal
+    Set Create = newSheets
 End Function
 
 '@section Public Accessors
 '===============================================================================
-
-'@label:Self
-'@sub-title Expose the interface reference of this predeclared instance
-'@return LLSheets reference to the current object.
-Public Property Get Self() As LLSheets
-    Set Self = Me
-End Property
 
 '@label:Dictionary
 '@sub-title Retrieve the backing dictionary
@@ -119,12 +114,26 @@ End Property
 
 '@sub-title Store the backing dictionary and prime cached lookups
 '@param dict LLdictionary holding linelist metadata.
-Private Property Set Dictionary(ByVal dict As LLdictionary)
+Public Property Set Dictionary(ByVal dict As LLdictionary)
+    GuardNotSealed "Dictionary"
     ValidateDictionary dict
     Set this.dict = dict
     ResetCaches
     Set this.sheetRng = dict.DataRange(colName:=COL_SHEET_NAME, includeHeaders:=True)
 End Property
+
+'@label:Seal
+'@sub-title Prevent further changes to creation-only setters
+Public Sub Seal()
+    this.sealed = True
+End Sub
+
+'@label:GuardNotSealed
+'@sub-title Guard creation-only setters after sealing
+Private Sub GuardNotSealed(ByVal propName As String)
+    If this.sealed Then _
+        ThrowError ProjectError.SomethingWentWrong, propName & " is set at creation only"
+End Sub
 
 '@label:SheetRange
 '@sub-title Return the cached range referencing sheet names

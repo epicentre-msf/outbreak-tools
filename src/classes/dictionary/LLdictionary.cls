@@ -27,6 +27,7 @@ Private Type TDictionary
     numberOfExports As Long
     hasChecks As Boolean
     hiddenValues As HiddenNames
+    sealed As Boolean
 End Type
 
 Private this As TDictionary
@@ -69,11 +70,12 @@ Public Function Create(ByVal dictWksh As Worksheet, ByVal dictStartRow As Long, 
 
     Set customDataSheet = DataSheet.Create(dictWksh, dictStartRow, dictStartColumn)
 
-    With New LLdictionary
-        Set .Data = customDataSheet
-        .InitialiseTotalExports numberOfExports
-        Set Create = .Self
-    End With
+    Dim newDictionary As LLdictionary
+    Set newDictionary = New LLdictionary
+    Set newDictionary.Data = customDataSheet
+    newDictionary.InitialiseTotalExports numberOfExports
+    newDictionary.Seal
+    Set Create = newDictionary
 End Function
 
 '@label:init-exports
@@ -100,17 +102,6 @@ Public Sub InitialiseTotalExports(ByVal requestedTotal As Long)
     End If
 End Sub
 
-'@label:self
-'@prop-title Current object instance
-'@details
-'Convenience accessor so consuming code can fluently retrieve the instance
-'returned by `Create` without repeatedly typing `Set x = New LLdictionary`.
-'@return LLdictionary
-Public Property Get Self() As LLdictionary
-    Set Self = Me
-End Property
-
-
 '@section Data Elements
 '===============================================================================
 
@@ -125,10 +116,24 @@ Public Property Get Data() As DataSheet
     Set Data = this.dictDataSheet
 End Property
 
-Private Property Set Data(ByVal customDataSheet As DataSheet)
+Public Property Set Data(ByVal customDataSheet As DataSheet)
+    GuardNotSealed "Data"
     Set this.dictDataSheet = customDataSheet
     Set this.hiddenValues = Nothing
 End Property
+
+'@label:seal
+'@sub-title Prevent further changes to creation-only setters
+Public Sub Seal()
+    this.sealed = True
+End Sub
+
+'@label:guard-not-sealed
+'@sub-title Guard creation-only setters after sealing
+Private Sub GuardNotSealed(ByVal propName As String)
+    If this.sealed Then _
+        ThrowError ProjectError.SomethingWentWrong, propName & " is set at creation only"
+End Sub
 
 '@label:exports
 '@prop-title Number of export columns

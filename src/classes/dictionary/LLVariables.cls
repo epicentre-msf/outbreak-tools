@@ -24,6 +24,7 @@ Private Type TVariable
     variablesCache As BetterArray
     checkCounter As Long
     internalChecks As Checking
+    sealed As Boolean
 End Type
 
 Private this As TVariable
@@ -51,26 +52,33 @@ Public Function Create(ByVal dict As LLdictionary) As LLVariables
             "Unable to create LLVariables, required column '" & VARIABLENAMECOLUMN & "' is missing"
     End If
 
-    With New LLVariables
-        Set .Dictionary = dict
-        Set Create = .Self
-    End With
+    Dim newVariables As LLVariables
+    Set newVariables = New LLVariables
+    Set newVariables.Dictionary = dict
+    newVariables.Seal
+    Set Create = newVariables
 
 End Function
-
-Public Property Get Self() As LLVariables
-    Set Self = Me
-End Property
 
 Public Property Get Dictionary() As LLdictionary
     Set Dictionary = this.dict
 End Property
 
-Private Property Set Dictionary(ByVal dict As LLdictionary)
+Public Property Set Dictionary(ByVal dict As LLdictionary)
+    GuardNotSealed "Dictionary"
     Set this.dict = dict
     ResetCaches
     RefreshVariableRange
 End Property
+
+Public Sub Seal()
+    this.sealed = True
+End Sub
+
+Private Sub GuardNotSealed(ByVal propName As String)
+    If this.sealed Then _
+        ThrowError ProjectError.SomethingWentWrong, propName & " is set at creation only"
+End Sub
 
 Public Property Get VarRange() As Range
     EnsureVariableRange
