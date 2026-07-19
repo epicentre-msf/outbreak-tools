@@ -177,7 +177,7 @@ Public Sub TestLoadFilesUnsupportedSystemDoesNotPopulate()
 
     Set raw = New OSFiles
     raw.OS = "Unsupported"
-    Set sut = raw.Self
+    Set sut = raw
 
     sut.LoadFiles "*.xlsx"
     files = sut.Files()
@@ -211,7 +211,7 @@ Public Sub TestLoadFoldersUnsupportedSystemDoesNotPopulate()
 
     Set raw = New OSFiles
     raw.OS = "Unsupported"
-    Set sut = raw.Self
+    Set sut = raw
 
     sut.LoadFolders
     folders = sut.Folders()
@@ -250,7 +250,7 @@ Public Sub TestFileIteratorTraversesAssignedSelection()
 
     Set raw = New OSFiles
     raw.AssignFilesForTesting Array("fileA", "fileB")
-    Set sut = raw.Self
+    Set sut = raw
 
     Assert.IsTrue sut.HasValidFiles(), "AssignFilesForTesting should seed selections"
     Assert.IsTrue sut.HasNextFile(), "Iterator should detect first element"
@@ -293,7 +293,7 @@ Public Sub TestFolderIteratorTraversesAssignedSelection()
 
     Set raw = New OSFiles
     raw.AssignFoldersForTesting Array("/tmp", "/var")
-    Set sut = raw.Self
+    Set sut = raw
 
     Assert.IsTrue sut.HasValidFolders(), "AssignFoldersForTesting should seed folder selections"
     Assert.IsTrue sut.HasNextFolder(), "Iterator should detect first folder"

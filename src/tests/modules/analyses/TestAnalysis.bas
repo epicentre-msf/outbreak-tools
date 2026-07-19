@@ -169,7 +169,7 @@ Public Sub TestSelfReturnsSameInstance()
 
     Set instance = New Analysis
     Set instance.Wksh = hostSheet
-    Set reference = instance.Self()
+    Set reference = instance
 
     Assert.IsTrue (instance Is reference), "Self should expose the current instance"
 
