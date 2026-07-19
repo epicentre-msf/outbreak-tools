@@ -96,16 +96,11 @@ Public Function Create(ByVal hostWorkbook As Workbook, _
                        ByVal translator As TranslationObject, _ 
                        ByVal varObj As MasterSetupVariables) As IDiseaseSheet
 
-    With New DiseaseSheet
-        .Initialise hostWorkbook, dropdowns, translator, varObj
-        Set Create = .Self
-    End With
+    Dim instance As DiseaseSheet
+    Set instance = New DiseaseSheet
+    instance.Initialise hostWorkbook, dropdowns, translator, varObj
+    Set Create = instance
 End Function
-
-'@sub-title Return the current instance as its interface.
-Public Property Get Self() As IDiseaseSheet
-    Set Self = Me
-End Property
 
 '@section Configuration
 '===============================================================================

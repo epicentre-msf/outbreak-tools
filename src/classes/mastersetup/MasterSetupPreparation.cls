@@ -67,13 +67,8 @@ Public Function Create(ByVal hostBook As Workbook) As MasterSetupPreparation
 
     Set instance = New MasterSetupPreparation
     instance.Configure hostBook
-    Set Create = instance.Self
+    Set Create = instance
 End Function
-
-'@Description("Return the current instance.")
-Public Property Get Self() As MasterSetupPreparation
-    Set Self = Me
-End Property
 
 
 '@section Public API

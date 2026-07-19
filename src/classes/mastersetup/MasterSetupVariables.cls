@@ -79,16 +79,11 @@ Public Function Create(ByVal listObject As ListObject) As MasterSetupVariables
     ValidateListObject listObject
     EnsureRequiredColumns listObject
 
-    With New MasterSetupVariables
-        .AssignListObject listObject
-        Set Create = .Self
-    End With
+    Dim instance As MasterSetupVariables
+    Set instance = New MasterSetupVariables
+    instance.AssignListObject listObject
+    Set Create = instance
 End Function
-
-'@sub-title Self reference used by factories returning interface instances.
-Public Property Get Self() As MasterSetupVariables
-    Set Self = Me
-End Property
 
 
 '@section Public API

@@ -60,16 +60,11 @@ Private Const RIBBON_LANGUAGE_RANGE As String = "RNG_FileLang"
 '@sub-title Create a configured master setup event manager.
 Public Function Create(ByVal hostBook As Workbook) As EventMasterSetup
 
-    With New EventMasterSetup
-        .Configure hostBook
-        Set Create = .Self
-    End With
+    Dim instance As EventMasterSetup
+    Set instance = New EventMasterSetup
+    instance.Configure hostBook
+    Set Create = instance
 End Function
-
-'@sub-title Self reference used by factories returning the class.
-Public Property Get Self() As EventMasterSetup
-    Set Self = Me
-End Property
 
 
 '@section Lifecycle
