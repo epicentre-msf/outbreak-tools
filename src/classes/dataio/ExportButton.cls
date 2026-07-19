@@ -45,6 +45,7 @@ Private chkFilt As MSForms.CheckBox
 Private Type TExportButton
     sourceWkb As Workbook
     trads As TranslationObject
+    sealed As Boolean
 End Type
 
 Private this As TExportButton
@@ -83,53 +84,65 @@ Public Function Create(ByVal sourceWkb As Workbook, _
         ThrowError ObjectNotInitialized, "Button required"
     End If
 
-    With New ExportButton
-        Set .SourceWorkbook = sourceWkb
-        Set .Translations = trads
-        Set .PushButton = expBtn
-        If Not expChk Is Nothing Then Set .FilterCheckBox = expChk
-        Set Create = .Self
-    End With
+    Dim newButton As ExportButton
+    Set newButton = New ExportButton
+    Set newButton.SourceWorkbook = sourceWkb
+    Set newButton.Translations = trads
+    Set newButton.PushButton = expBtn
+    If Not expChk Is Nothing Then Set newButton.FilterCheckBox = expChk
+    newButton.Seal
+    Set Create = newButton
 End Function
 
 
 '@section Public Accessors
 '===============================================================================
 
-'@label:self
-'@prop-title Current object instance
-'@return ExportButton. The current instance.
-Public Property Get Self() As ExportButton
-    Set Self = Me
-End Property
-
 '@label:source-workbook-set
 '@prop-title Assign the source linelist workbook
 '@param wb Workbook. The workbook to store.
-Private Property Set SourceWorkbook(ByVal wb As Workbook)
+Public Property Set SourceWorkbook(ByVal wb As Workbook)
+    GuardNotSealed "SourceWorkbook"
     Set this.sourceWkb = wb
 End Property
 
 '@label:translations-set
 '@prop-title Assign the translations object
 '@param trads TranslationObject. The translations to store.
-Private Property Set Translations(ByVal trads As TranslationObject)
+Public Property Set Translations(ByVal trads As TranslationObject)
+    GuardNotSealed "Translations"
     Set this.trads = trads
 End Property
 
 '@label:push-button-set
 '@prop-title Wire the WithEvents button binding
 '@param expBtn MSForms.CommandButton. The button to listen to.
-Private Property Set PushButton(ByVal expBtn As MSForms.CommandButton)
+Public Property Set PushButton(ByVal expBtn As MSForms.CommandButton)
+    GuardNotSealed "PushButton"
     Set Btn = expBtn
 End Property
 
 '@label:filter-checkbox-set
 '@prop-title Assign the optional filter checkbox
 '@param expChk MSForms.CheckBox. The checkbox to bind.
-Private Property Set FilterCheckBox(ByVal expChk As MSForms.CheckBox)
+Public Property Set FilterCheckBox(ByVal expChk As MSForms.CheckBox)
+    GuardNotSealed "FilterCheckBox"
     Set chkFilt = expChk
 End Property
+
+'@label:seal
+'@sub-title Prevent further changes to setup-only properties
+Public Sub Seal()
+    this.sealed = True
+End Sub
+
+'@label:guard-not-sealed
+'@sub-title Raise when a setup-only property is written after sealing
+'@param propName String. The name of the property being guarded.
+Private Sub GuardNotSealed(ByVal propName As String)
+    If this.sealed Then _
+        ThrowError ProjectError.SomethingWentWrong, propName & " is set at creation only"
+End Sub
 
 '@label:export-number
 '@prop-title Export number derived from button name

@@ -69,6 +69,7 @@ Private Type TLLImporter
     ' Tracking
     importedSheets As BetterArray
     importedVars As BetterArray
+    sealed As Boolean
 End Type
 
 Private this As TLLImporter
@@ -92,22 +93,16 @@ Public Function Create(ByVal sourceWkb As Workbook) As LLImporter
         ThrowError "LLImporter requires a source workbook"
     End If
 
-    With New LLImporter
-        Set .SourceWorkbook = sourceWkb
-        Set Create = .Self
-    End With
+    Dim newImporter As LLImporter
+    Set newImporter = New LLImporter
+    Set newImporter.SourceWorkbook = sourceWkb
+    newImporter.Seal
+    Set Create = newImporter
 End Function
 
 
 '@section Public Accessors
 '===============================================================================
-
-'@label:self
-'@prop-title Current object instance
-'@return LLImporter. The current instance.
-Public Property Get Self() As LLImporter
-    Set Self = Me
-End Property
 
 '@label:source-workbook
 '@prop-title Source linelist workbook
@@ -119,9 +114,24 @@ End Property
 '@label:source-workbook-set
 '@prop-title Assign the source linelist workbook
 '@param wb Workbook. The workbook to store.
-Private Property Set SourceWorkbook(ByVal wb As Workbook)
+Public Property Set SourceWorkbook(ByVal wb As Workbook)
+    GuardNotSealed "SourceWorkbook"
     Set this.sourceWkb = wb
 End Property
+
+'@label:seal
+'@prop-title Prevent further changes to setup-only properties
+Public Sub Seal()
+    this.sealed = True
+End Sub
+
+'@label:guard-not-sealed
+'@sub-title Raise when a setup-only property is written after sealing
+'@param propName String. The name of the property being guarded.
+Private Sub GuardNotSealed(ByVal propName As String)
+    If this.sealed Then _
+        ThrowError propName & " is set at creation only"
+End Sub
 
 
 '@section Data Checks

@@ -75,6 +75,7 @@ Private Type TLLExporter
     sourceWkb As Workbook
     lastPassword As String
     activeWkb As Workbook
+    sealed As Boolean
 End Type
 
 Private this As TLLExporter
@@ -99,22 +100,16 @@ Public Function Create(ByVal sourceWkb As Workbook) As LLExporter
                    "LLExporter requires a source workbook"
     End If
 
-    With New LLExporter
-        Set .SourceWorkbook = sourceWkb
-        Set Create = .Self
-    End With
+    Dim newExporter As LLExporter
+    Set newExporter = New LLExporter
+    Set newExporter.SourceWorkbook = sourceWkb
+    newExporter.Seal
+    Set Create = newExporter
 End Function
 
 
 '@section Public Accessors
 '===============================================================================
-
-'@label:self
-'@prop-title Current object instance
-'@return LLExporter. The current instance.
-Public Property Get Self() As LLExporter
-    Set Self = Me
-End Property
 
 '@label:source-workbook
 '@prop-title Source linelist workbook
@@ -126,9 +121,24 @@ End Property
 '@label:source-workbook-set
 '@prop-title Assign the source linelist workbook
 '@param wb Workbook. The workbook to store.
-Private Property Set SourceWorkbook(ByVal wb As Workbook)
+Public Property Set SourceWorkbook(ByVal wb As Workbook)
+    GuardNotSealed "SourceWorkbook"
     Set this.sourceWkb = wb
 End Property
+
+'@label:seal
+'@prop-title Prevent further changes to setup-only properties
+Public Sub Seal()
+    this.sealed = True
+End Sub
+
+'@label:guard-not-sealed
+'@sub-title Raise when a setup-only property is written after sealing
+'@param propName String. The name of the property being guarded.
+Private Sub GuardNotSealed(ByVal propName As String)
+    If this.sealed Then _
+        ThrowError ProjectError.SomethingWentWrong, propName & " is set at creation only"
+End Sub
 
 '@label:last-export-password
 '@prop-title Password used in the last export operation
