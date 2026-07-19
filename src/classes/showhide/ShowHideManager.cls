@@ -103,20 +103,15 @@ Public Function Create(ByVal dict As LLdictionary, _
 
     ValidateLayer layer
 
-    With New ShowHideManager
-        .Initialise dict, layer, sheetName
-        Set Create = .Self
-    End With
+    Dim newInstance As ShowHideManager
+    Set newInstance = New ShowHideManager
+    newInstance.Initialise dict, layer, sheetName
+    Set Create = newInstance
 End Function
 
 
 '@section Public accessors
 '===============================================================================
-
-' @description Return the current instance.
-Public Property Get Self() As ShowHideManager
-    Set Self = Me
-End Property
 
 ' @description Number of entries in the manager.
 Public Property Get EntryCount() As Long
