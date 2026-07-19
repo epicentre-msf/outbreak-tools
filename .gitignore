@@ -80,3 +80,5 @@ scripts/history-rewrite
 
 #--- Test harness machine output (build-registry.R + run-tests.R)
 src/tests/.generated/
+# Throwaway experiments / scratch
+.draft/
