@@ -35,6 +35,7 @@ Private Type TTranslationObject
     transLng As String
     hasChecks As Boolean
     languageColumnIndex As Long
+    sealed As Boolean
 End Type
 
 Private this As TTranslationObject
@@ -61,23 +62,18 @@ Public Function Create(ByVal translationLo As ListObject, ByVal translationLang 
 
     ValidateListObject translationLo, "Create"
 
-    With New TranslationObject
-        Set .Table = translationLo
-        .Language = Trim$(translationLang)
-        Set Create = .Self
-    End With
+    Dim newTranslation As TranslationObject
+    Set newTranslation = New TranslationObject
+
+    Set newTranslation.Table = translationLo
+    newTranslation.Language = Trim$(translationLang)
+    newTranslation.Seal
+    Set Create = newTranslation
 End Function
 
 '@section Elements
 '===============================================================================
 'Core translation accessors and lookups.
-
-'@label:self
-'@prop-title Self-reference as TranslationObject
-'@return TranslationObject. Self-reference.
-Public Property Get Self() As TranslationObject
-    Set Self = Me
-End Property
 
 '@label:table
 '@prop-title The backing ListObject translation table
@@ -89,7 +85,8 @@ End Property
 '@label:table-set
 '@prop-title Assign the backing ListObject and reset caches
 '@param lo ListObject. The translation table.
-Private Property Set Table(ByVal lo As ListObject)
+Public Property Set Table(ByVal lo As ListObject)
+    GuardNotSealed "Table"
     ValidateListObject lo, "Table"
     Set this.transLo = lo
     ResetCaches
@@ -138,7 +135,8 @@ End Property
 '@label:language-set
 '@prop-title Set the target language and reset caches
 '@param transLng String. The new language column header.
-Private Property Let Language(ByVal transLng As String)
+Public Property Let Language(ByVal transLng As String)
+    GuardNotSealed "Language"
     this.transLng = Trim$(transLng)
     ResetCaches
 End Property
@@ -539,4 +537,18 @@ Private Sub RaiseError(ByVal errNumber As ProjectError, ByVal message As String,
     End If
 
     Err.Raise CLng(errNumber), sourceName, message
+End Sub
+
+'@label:seal
+'@sub-title Seal the instance so setup setters can no longer be written
+Public Sub Seal()
+    this.sealed = True
+End Sub
+
+'@label:guard-not-sealed
+'@sub-title Guard a setup setter against writes after sealing
+'@param propName String. Name of the property being guarded.
+Private Sub GuardNotSealed(ByVal propName As String)
+    If this.sealed Then _
+        RaiseError ProjectError.SomethingWentWrong, propName & " is set at creation only"
 End Sub

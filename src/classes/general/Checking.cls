@@ -43,6 +43,7 @@ Private Type TChecking
   labelsTable As BetterArray
   scopesTable As BetterArray
   nbElmts As Long
+  sealed As Boolean
 End Type
 
 Private this As TChecking
@@ -68,26 +69,18 @@ Private this As TChecking
 Public Function Create(ByVal titleName As String, _
                        Optional ByVal subtitleName As String = vbNullString) As _
                       Checking
-  With New Checking
-    .CheckingTitle = titleName
-    .CheckingSubTitle = subtitleName
-    Set Create = .Self()
-  End With
+  Dim newChecking As Checking
+  Set newChecking = New Checking
+
+  newChecking.CheckingTitle = titleName
+  newChecking.CheckingSubTitle = subtitleName
+  newChecking.Seal
+  Set Create = newChecking
 End Function
 
 '@section PublicAccessors
 '===============================================================================
 '@description Properties that expose internal state and the object pointer.
-
-'@label:self
-'@prop-title Current object instance
-'@details
-'Returns the current instance. Used internally by the factory method
-'to return a Checking reference.
-'@return Checking. Reference to the current object.
-Public Property Get Self() As Checking
-  Set Self = Me
-End Property
 
 '@label:checking-title
 '@prop-title Title of the checking topic
@@ -110,14 +103,16 @@ End Property
 '@label:checking-title-set
 '@prop-title Assign the checking title
 '@param titleName String. Title to assign.
-Private Property Let CheckingTitle(ByVal titleName As String)
+Public Property Let CheckingTitle(ByVal titleName As String)
+  GuardNotSealed "CheckingTitle"
   this.title = titleName
 End Property
 
 '@label:checking-subtitle-set
 '@prop-title Assign the checking subtitle
 '@param subtitleName String. Subtitle to assign.
-Private Property Let CheckingSubTitle(ByVal subtitleName As String)
+Public Property Let CheckingSubTitle(ByVal subtitleName As String)
+  GuardNotSealed "CheckingSubTitle"
   this.subtitle = subtitleName
 End Property
 
@@ -320,14 +315,15 @@ Public Function Clone() As Checking
   Set cloneInstance = New Checking
   cloneInstance.CheckingTitle = this.title
   cloneInstance.CheckingSubTitle = this.subtitle
+  cloneInstance.Seal
 
   If this.nbElmts <= 0 Then
-    Set Clone = cloneInstance.Self
+    Set Clone = cloneInstance
     Exit Function
   End If
 
   If this.keysTable Is Nothing Then
-    Set Clone = cloneInstance.Self
+    Set Clone = cloneInstance
     Exit Function
   End If
 
@@ -340,7 +336,7 @@ Public Function Clone() As Checking
                      CByte(this.scopesTable.Item(idx))
   Next
 
-  Set Clone = cloneInstance.Self()
+  Set Clone = cloneInstance
 End Function
 
 '@label:append
@@ -425,4 +421,18 @@ End Function
 '@throws ProjectError.<varies> Always raises the specified error.
 Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
     Err.Raise errNumb, CLASSNAME, "Error message : " & Chr(34) & errorMessage
+End Sub
+
+'@label:seal
+'@sub-title Seal the instance so setup setters can no longer be written
+Public Sub Seal()
+  this.sealed = True
+End Sub
+
+'@label:guard-not-sealed
+'@sub-title Guard a setup setter against writes after sealing
+'@param propName String. Name of the property being guarded.
+Private Sub GuardNotSealed(ByVal propName As String)
+  If this.sealed Then _
+      ThrowError ProjectError.SomethingWentWrong, propName & " is set at creation only"
 End Sub

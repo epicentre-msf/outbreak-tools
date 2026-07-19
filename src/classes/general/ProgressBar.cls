@@ -66,18 +66,12 @@ End Sub
 '@return ProgressBar. Ready to use.
 '@export
 Public Function Create(ByVal barRange As Range, Optional ByVal maximum As Long = DEFAULT_MAXIMUM) As ProgressBar
-    With New ProgressBar
-        .Attach barRange, maximum
-        Set Create = .Self
-    End With
-End Function
+    Dim newBar As ProgressBar
+    Set newBar = New ProgressBar
 
-'@label:self
-'@prop-title Self-reference as ProgressBar
-'@return ProgressBar. Self-reference.
-Public Property Get Self() As ProgressBar
-    Set Self = Me
-End Property
+    newBar.Attach barRange, maximum
+    Set Create = newBar
+End Function
 
 '@section Public API
 '===============================================================================

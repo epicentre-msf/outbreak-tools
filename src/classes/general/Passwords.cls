@@ -51,6 +51,7 @@ Private Type TPasswords
     displayPrompts As Boolean                'Whether UI prompts should be displayed
     lastPrivatePrompt As String              'Most recent private key prompt text
     lastPrivateTitle As String               'Most recent private key prompt title
+    sealed As Boolean                        'Whether creation-time setters are sealed
 End Type
 
 Private this As TPasswords
@@ -88,24 +89,20 @@ Public Function Create(ByVal sh As Worksheet) As Passwords
 
     ValidateSheet sh
 
-    With New Passwords
-        Set .PasswordSheet = sh
-        Set Create = .Self
-    End With
+    Dim newPasswords As Passwords
+    Set newPasswords = New Passwords
+
+    Set newPasswords.PasswordSheet = sh
+    newPasswords.Seal
+    Set Create = newPasswords
 
 End Function
-
-'@label:self
-'@prop-title Self-reference as Passwords
-'@return Passwords. Self-reference.
-Public Property Get Self() As Passwords
-    Set Self = Me
-End Property
 
 '@label:password-sheet-set
 '@prop-title Assign the password worksheet and reset caches
 '@param sh Worksheet. The password worksheet to bind.
-Private Property Set PasswordSheet(ByVal sh As Worksheet)
+Public Property Set PasswordSheet(ByVal sh As Worksheet)
+    GuardNotSealed "PasswordSheet"
     Set this.sh = sh
     Set this.wb = sh.Parent
     this.nm = sh.Name()
@@ -1336,4 +1333,18 @@ End Sub
 '@sub-title Raise a typed project error
 Private Sub ThrowError(ByVal errNumber As Long, ByVal message As String)
     Err.Raise errNumber, CLASSNAME, message
+End Sub
+
+'@label:seal
+'@sub-title Seal the instance so setup setters can no longer be written
+Public Sub Seal()
+    this.sealed = True
+End Sub
+
+'@label:guard-not-sealed
+'@sub-title Guard a setup setter against writes after sealing
+'@param propName String. Name of the property being guarded.
+Private Sub GuardNotSealed(ByVal propName As String)
+    If this.sealed Then _
+        ThrowError ProjectError.SomethingWentWrong, propName & " is set at creation only"
 End Sub

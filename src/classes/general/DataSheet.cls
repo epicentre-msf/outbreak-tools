@@ -35,6 +35,7 @@ Private Type TDataSheet
     hasImport As Boolean
     hasChecks As Boolean
     objName As String
+    sealed As Boolean
 End Type
 
 Private this As TDataSheet
@@ -79,55 +80,55 @@ Public Function Create(ByVal sh As Worksheet, ByVal startLn As Long, _
     If startLn < 1 Then ThrowErrorStartNumber startLn, "start row"
     If startCl < 1 Then ThrowErrorStartNumber startCl, "start column"
 
-    With New DataSheet
-        Set .Wksh = sh
-        .DataStartRow = startLn
-        .DataStartColumn = startCl
-        .StrictEnd = forceEndRow
-        .Name = objName
-        Set Create = .Self
-    End With
-End Function
+    Dim newDataSheet As DataSheet
+    Set newDataSheet = New DataSheet
 
-'@label:self
-'@prop-title Current object instance
-'@return DataSheet. Reference to the current object.
-Public Property Get Self() As DataSheet
-    Set Self = Me
-End Property
+    Set newDataSheet.Wksh = sh
+    newDataSheet.DataStartRow = startLn
+    newDataSheet.DataStartColumn = startCl
+    newDataSheet.StrictEnd = forceEndRow
+    newDataSheet.Name = objName
+    newDataSheet.Seal
+    Set Create = newDataSheet
+End Function
 
 '@label:wksh-set
 '@prop-title Assign the worksheet reference
 '@param sh Worksheet. The worksheet to assign.
-Private Property Set Wksh(ByVal sh As Worksheet)
+Public Property Set Wksh(ByVal sh As Worksheet)
+    GuardNotSealed "Wksh"
     Set this.sh = sh
 End Property
 
 '@label:data-start-row-set
 '@prop-title Assign the header row index
 '@param startLn Long. The 1-based header row index.
-Private Property Let DataStartRow(ByVal startLn As Long)
+Public Property Let DataStartRow(ByVal startLn As Long)
+    GuardNotSealed "DataStartRow"
     this.startLn = startLn
 End Property
 
 '@label:data-start-column-set
 '@prop-title Assign the starting column index
 '@param startCl Long. The 1-based starting column index.
-Private Property Let DataStartColumn(ByVal startCl As Long)
+Public Property Let DataStartColumn(ByVal startCl As Long)
+    GuardNotSealed "DataStartColumn"
     this.startCl = startCl
 End Property
 
 '@label:strict-end-set
 '@prop-title Assign the strict end row flag
 '@param forceEnd Boolean. When True, scans all columns for the last row.
-Private Property Let StrictEnd(ByVal forceEnd As Boolean)
+Public Property Let StrictEnd(ByVal forceEnd As Boolean)
+    GuardNotSealed "StrictEnd"
     this.forceEnd = forceEnd
 End Property
 
 '@label:name-set
 '@prop-title Assign the DataSheet name
 '@param objName String. The name to assign.
-Private Property Let Name(ByVal objName As String)
+Public Property Let Name(ByVal objName As String)
+    GuardNotSealed "Name"
     this.objName = objName
 End Property
 
@@ -981,6 +982,20 @@ End Sub
 '@throws ProjectError.<varies> Always raises the specified error.
 Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
     Err.Raise errNumb, "DataSheet", "Error : " & Chr(34) & errorMessage
+End Sub
+
+'@label:seal
+'@sub-title Seal the instance so setup setters can no longer be written
+Public Sub Seal()
+    this.sealed = True
+End Sub
+
+'@label:guard-not-sealed
+'@sub-title Guard a setup setter against writes after sealing
+'@param propName String. Name of the property being guarded.
+Private Sub GuardNotSealed(ByVal propName As String)
+    If this.sealed Then _
+        ThrowError ProjectError.SomethingWentWrong, propName & " is set at creation only"
 End Sub
 
 '@label:throw-error-empty-sheet

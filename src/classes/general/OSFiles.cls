@@ -910,24 +910,17 @@ Public Function Create() As OSFiles
     'OperatingSystem string differs per platform; we only need a simple flag.
     currentOS = IIf(Application.OperatingSystem Like "*Mac*", "Mac", "Windows")
   
-    With New OSFiles
-        'Store the detected OS before handing back the interface implementation.
-        .OS = currentOS
-        Set Create = .Self
-    End With
+    Dim newOSFiles As OSFiles
+    Set newOSFiles = New OSFiles
+
+    'Store the detected OS before handing back the interface implementation.
+    newOSFiles.OS = currentOS
+    Set Create = newOSFiles
 End Function
 
 '@section Elements
 '===============================================================================
 'File and folder path accessors.
-
-'@label:self
-'@prop-title Self-reference as OSFiles
-'@return OSFiles. Self-reference.
-Public Property Get Self() As OSFiles
-    'Return the class instance as the interface the consumer expects.
-    Set Self = Me
-End Property
 
 '@label:os
 '@prop-title Current operating system flag

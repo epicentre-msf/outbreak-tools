@@ -34,6 +34,7 @@ Private Type TDropdownLists
     initialised As Boolean
     wbStored As HiddenNames
     shStored As HiddenNames
+    sealed As Boolean
 End Type
 
 Private this As TDropdownLists
@@ -83,22 +84,17 @@ Public Function Create(ByVal outsh As Worksheet, Optional ByVal hprefix As Strin
         ThrowError ProjectError.ElementNotFound, "Dropdown worksheet not found"
     End If
 
-    With New DropdownLists
-        Set .Wksh = outsh
-        Let .headerPrefix = hprefix
-        Set Create = .Self()
-    End With
+    Dim newDropdown As DropdownLists
+    Set newDropdown = New DropdownLists
+
+    Set newDropdown.Wksh = outsh
+    newDropdown.headerPrefix = hprefix
+    newDropdown.Seal
+    Set Create = newDropdown
 End Function
 
 '@section Elements
 '===============================================================================
-
-'@label:self
-'@prop-title Self-reference returning the interface pointer
-'@return DropdownLists. This instance.
-Public Property Get Self() As DropdownLists
-    Set Self = Me
-End Property
 
 '@label:wksh
 '@prop-title Worksheet hosting the dropdown lists
@@ -114,8 +110,9 @@ End Property
 'internal registry columns) and stores an initialisation flag. Resets
 'cached HiddenNames stores on every assignment.
 '@param outsh Worksheet. The worksheet to host dropdown ListObjects.
-Private Property Set Wksh(ByVal outsh As Worksheet)
-    
+Public Property Set Wksh(ByVal outsh As Worksheet)
+    GuardNotSealed "Wksh"
+
     Dim store As HiddenNames
     Set store = HiddenNames.Create(outsh)
     this.initialised = (store.ValueAsString(DROPDOWNINITIALSEDNAME) = "Yes")
@@ -192,7 +189,8 @@ End Property
 '@label:header-prefix-set
 '@prop-title Assign the header prefix
 '@param hprefix String. The new prefix value.
-Private Property Let headerPrefix(ByVal hprefix As String)
+Public Property Let headerPrefix(ByVal hprefix As String)
+    GuardNotSealed "headerPrefix"
     this.hprefix = hprefix
 End Property
 
@@ -1146,5 +1144,19 @@ End Sub
 '@throws ProjectError.<varies> Always raises the specified error.
 Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
     Err.Raise errNumb, CLASSNAME, "Error : " & Chr(34) & errorMessage
+End Sub
+
+'@label:seal
+'@sub-title Seal the instance so setup setters can no longer be written
+Public Sub Seal()
+    this.sealed = True
+End Sub
+
+'@label:guard-not-sealed
+'@sub-title Guard a setup setter against writes after sealing
+'@param propName String. Name of the property being guarded.
+Private Sub GuardNotSealed(ByVal propName As String)
+    If this.sealed Then _
+        ThrowError ProjectError.SomethingWentWrong, propName & " is set at creation only"
 End Sub
 

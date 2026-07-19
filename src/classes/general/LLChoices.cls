@@ -35,6 +35,7 @@ Private Type Tchoice
     choiceDataSheet As DataSheet
     hasChecks As Boolean
     choiceName As String
+    sealed As Boolean
 End Type
 
 
@@ -80,6 +81,7 @@ Public Function Create(ByVal choiceWorksheet As Worksheet, _
 
     Set instance.ChoiceData = customDataSheet
     instance.Name = choiceName
+    instance.Seal
     Set Create = instance
 End Function
 
@@ -120,7 +122,8 @@ End Property
 '@label:choice-data-set
 '@prop-title Assign the backing DataSheet
 '@param customDataSheet DataSheet. The DataSheet to assign.
-Private Property Set ChoiceData(ByVal customDataSheet As DataSheet)
+Public Property Set ChoiceData(ByVal customDataSheet As DataSheet)
+    GuardNotSealed "ChoiceData"
     Set this.choiceDataSheet = customDataSheet
 End Property
 
@@ -211,7 +214,8 @@ End Property
 '@label:name-set
 '@prop-title Assign the choice object name
 '@param choiceName String. The name to assign.
-Private Property Let Name(ByVal choiceName As String)
+Public Property Let Name(ByVal choiceName As String)
+    GuardNotSealed "Name"
     this.choiceName = choiceName
 End Property
 
@@ -857,4 +861,31 @@ Public Property Get CheckingValues() As Object
 
     Set CheckingValues = internalChecks
 End Property
+
+'@section Instantiation Guard
+'===============================================================================
+'Set-once sealing for the creation-time setters.
+
+'@label:throw-error
+'@sub-title Raise a ProjectError-based exception
+'@param errNumb Long. ProjectError code.
+'@param errorMessage String. Descriptive message.
+'@throws ProjectError.<varies> Always raises the specified error.
+Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
+    Err.Raise errNumb, "LLChoices", "Error : " & Chr(34) & errorMessage
+End Sub
+
+'@label:seal
+'@sub-title Seal the instance so setup setters can no longer be written
+Public Sub Seal()
+    this.sealed = True
+End Sub
+
+'@label:guard-not-sealed
+'@sub-title Guard a setup setter against writes after sealing
+'@param propName String. Name of the property being guarded.
+Private Sub GuardNotSealed(ByVal propName As String)
+    If this.sealed Then _
+        ThrowError ProjectError.SomethingWentWrong, propName & " is set at creation only"
+End Sub
 

@@ -37,6 +37,7 @@ Private Type TState
     targetSheet As Worksheet
     nm As String
     store As HiddenNames
+    sealed As Boolean
 End Type
 
 Private Type TFormatting
@@ -88,11 +89,13 @@ Public Function Create(ByVal sh As Worksheet, Optional ByVal title As String = v
          "Unable to create an instance of the class, please provide a valid worksheet"
     End If
 
-    With New CheckingOutput
-        Set .Wksh = sh
-         .Name = title
-        Set Create = .Self
-    End With
+    Dim newOutput As CheckingOutput
+    Set newOutput = New CheckingOutput
+
+    Set newOutput.Wksh = sh
+    newOutput.Name = title
+    newOutput.Seal
+    Set Create = newOutput
 End Function
 
 '@section PublicAccessors
@@ -111,17 +114,9 @@ End Property
 '@label:wksh-set
 '@prop-title Define the worksheet that will receive the output
 '@param sh Worksheet. Target worksheet to use.
-Private Property Set Wksh(ByVal sh As Worksheet)
+Public Property Set Wksh(ByVal sh As Worksheet)
+    GuardNotSealed "Wksh"
     Set this.targetSheet = sh
-End Property
-
-'@label:self
-'@prop-title Current object instance
-'@details
-'Returns the current instance. Used internally by the factory method.
-'@return CheckingOutput. Reference to the current object.
-Public Property Get Self() As CheckingOutput
-    Set Self = Me
 End Property
 
 '@label:name
@@ -136,7 +131,8 @@ End Property
 '@label:name-set
 '@prop-title Assign the output session name
 '@param nm String. Label to assign.
-Private Property Let Name(ByVal nm As String)
+Public Property Let Name(ByVal nm As String)
+    GuardNotSealed "Name"
     this.nm = nm
 End Property
 
@@ -1196,6 +1192,20 @@ End Function
 '@throws ProjectError.<varies> Always raises the specified error.
 Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
     Err.Raise errNumb, "CheckingOutput", errorMessage
+End Sub
+
+'@label:seal
+'@sub-title Seal the instance so setup setters can no longer be written
+Public Sub Seal()
+    this.sealed = True
+End Sub
+
+'@label:guard-not-sealed
+'@sub-title Guard a setup setter against writes after sealing
+'@param propName String. Name of the property being guarded.
+Private Sub GuardNotSealed(ByVal propName As String)
+    If this.sealed Then _
+        ThrowError ProjectError.SomethingWentWrong, propName & " is set at creation only"
 End Sub
 
 '@section Output

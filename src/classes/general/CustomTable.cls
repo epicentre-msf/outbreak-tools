@@ -43,6 +43,7 @@ Private Type TCustomTable
   csName As String
   hasHiddenList As Boolean
   hasShiftSetup As Boolean
+  sealed As Boolean
 End Type
 
 Private this As TCustomTable
@@ -300,23 +301,15 @@ Public Function Create(ByVal Lo As ListObject, _
   
   If Lo Is Nothing Then ThrowError ProjectError.ObjectNotInitialized, "Unable to initialize the class, no listobject provided"
 
-  With New CustomTable
-    Set .Table = Lo
-    .IdValue = idCol
-    .PrefixValue = idPrefix
-    Set Create = .Self()
-  End With
-End Function
+  Dim newTable As CustomTable
+  Set newTable = New CustomTable
 
-'@label:self
-'@prop-title Current object instance
-'@details
-'Returns the current instance cast to CustomTable. Used internally
-'by the factory method to return an interface reference.
-'@return CustomTable. Reference to the current object.
-Public Property Get Self() As CustomTable
-  Set Self = Me
-End Property
+  Set newTable.Table = Lo
+  newTable.IdValue = idCol
+  newTable.PrefixValue = idPrefix
+  newTable.Seal
+  Set Create = newTable
+End Function
 
 
 '@section Elements
@@ -353,7 +346,8 @@ End Property
 'name. Raises an error when Lo is Nothing.
 '@param Lo ListObject. The table to assign.
 '@throws ProjectError.ObjectNotInitialized When Lo is Nothing.
-Private Property Set Table(ByVal Lo As ListObject)
+Public Property Set Table(ByVal Lo As ListObject)
+  GuardNotSealed "Table"
   If Lo Is Nothing Then
     ThrowError ProjectError.ObjectNotInitialized, _
                "Cannot assign an empty ListObject reference to CustomTable"
@@ -386,14 +380,16 @@ End Property
 '@label:id-value-set
 '@prop-title Assign the ID column name
 '@param idCol String. Column name to use as the row key.
-Private Property Let IdValue(ByVal idCol As String)
+Public Property Let IdValue(ByVal idCol As String)
+  GuardNotSealed "IdValue"
   this.idCol = idCol
 End Property
 
 '@label:prefix-value-set
 '@prop-title Assign the ID prefix string
 '@param idPrefix String. Prefix to prepend to sequential ID values.
-Private Property Let PrefixValue(ByVal idPrefix As String)
+Public Property Let PrefixValue(ByVal idPrefix As String)
+  GuardNotSealed "PrefixValue"
   this.idPrefix = idPrefix
 End Property
 
@@ -2076,5 +2072,19 @@ End Sub
 '@throws ProjectError.<varies> Always raises the specified error.
 Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
     Err.Raise errNumb, "CustomTable", "Error: " & errorMessage
+End Sub
+
+'@label:seal
+'@sub-title Seal the instance so setup setters can no longer be written
+Public Sub Seal()
+  this.sealed = True
+End Sub
+
+'@label:guard-not-sealed
+'@sub-title Guard a setup setter against writes after sealing
+'@param propName String. Name of the property being guarded.
+Private Sub GuardNotSealed(ByVal propName As String)
+  If this.sealed Then _
+      ThrowError ProjectError.SomethingWentWrong, propName & " is set at creation only"
 End Sub
 

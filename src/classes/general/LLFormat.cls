@@ -121,6 +121,7 @@ Private Type TLLFormat
     hasChecks As Boolean
     checks As Checking
     checkCounter As Long
+    sealed As Boolean
 End Type
 
 Private Type TFormatting
@@ -356,11 +357,13 @@ Public Function Create(ByVal formatSh As Worksheet, _
 
     EnsureFormatSheetReady formatSh, resolvedDesign
 
-    With New LLFormat
-        Set .Wksh = formatSh
-        .DesignName = resolvedDesign
-        Set Create = .Self
-    End With
+    Dim newFormat As LLFormat
+    Set newFormat = New LLFormat
+
+    Set newFormat.Wksh = formatSh
+    newFormat.DesignName = resolvedDesign
+    newFormat.Seal
+    Set Create = newFormat
 
 End Function
 
@@ -381,13 +384,6 @@ End Function
 '===============================================================================
 'Public properties exposed by the factory and the interface.
 
-'@label:self
-'@prop-title Retrieve this formatter instance
-'@return LLFormat. Self-reference.
-Public Property Get Self() As LLFormat
-    Set Self = Me
-End Property
-
 '@label:wksh
 '@prop-title Retrieve the worksheet hosting the format table
 '@return Worksheet. The host worksheet.
@@ -399,7 +395,8 @@ End Property
 '@prop-title Assign the worksheet backing this formatter
 '@details Clears all caches when the worksheet changes.
 '@param sh Worksheet. The new host worksheet.
-Private Property Set Wksh(ByVal sh As Worksheet)
+Public Property Set Wksh(ByVal sh As Worksheet)
+    GuardNotSealed "Wksh"
     Set this.sheet = sh
     ResetCaches
 End Property
@@ -415,7 +412,8 @@ End Property
 '@prop-title Change the active design column
 '@details Resets cached lookups when the design changes.
 '@param design String. The new design column name.
-Private Property Let DesignName(ByVal design As String)
+Public Property Let DesignName(ByVal design As String)
+    GuardNotSealed "DesignName"
     this.design = design
     ResetCaches
 End Property
@@ -1690,4 +1688,18 @@ End Function
 '@sub-title Raise a typed project error
 Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal errorMessage As String)
     Err.Raise errNumber, CLASSNAME, errorMessage
+End Sub
+
+'@label:seal
+'@sub-title Seal the instance so setup setters can no longer be written
+Public Sub Seal()
+    this.sealed = True
+End Sub
+
+'@label:guard-not-sealed
+'@sub-title Guard a setup setter against writes after sealing
+'@param propName String. Name of the property being guarded.
+Private Sub GuardNotSealed(ByVal propName As String)
+    If this.sealed Then _
+        ThrowError ProjectError.SomethingWentWrong, propName & " is set at creation only"
 End Sub

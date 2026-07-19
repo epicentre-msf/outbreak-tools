@@ -69,16 +69,8 @@ Public Function Create(Optional ByVal excelApplication As Application) As Applic
     scope.BindApplication excelApplication
     scope.CaptureSnapshot
 
-    Set Create = scope.Self
+    Set Create = scope
 End Function
-
-'@label:self
-'@prop-title Self-reference as ApplicationState
-'@return ApplicationState. Self-reference.
-Public Property Get Self() As ApplicationState
-    Set Self = Me
-End Property
-
 
 '@section Introspection
 '===============================================================================

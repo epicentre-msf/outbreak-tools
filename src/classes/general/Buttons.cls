@@ -35,6 +35,7 @@ Private Type TButton
     shapeName As String
     scope As Byte
     hasChecks As Boolean
+    sealed As Boolean
 End Type
 
 Private Type TDimensions
@@ -89,24 +90,19 @@ Public Function Create(ByVal outrng As Range, ByVal codeName As String, _
                    "Unable to create button: no anchor range provided"
     End If
 
-    With New Buttons
-        Set .OutputRange = outrng
-        .Name = codeName
-        .ShapeScope = scope
-        Set Create = .Self
-    End With
+    Dim newButton As Buttons
+    Set newButton = New Buttons
+
+    Set newButton.OutputRange = outrng
+    newButton.Name = codeName
+    newButton.ShapeScope = scope
+    newButton.Seal
+    Set Create = newButton
 End Function
 
 '@section Properties
 '===============================================================================
 'State accessors.
-
-'@label:self
-'@prop-title Self-reference
-'@return Buttons. Self-reference.
-Public Property Get Self() As Buttons
-    Set Self = Me
-End Property
 
 '@label:output-range
 '@prop-title Anchor range used for placement
@@ -120,7 +116,8 @@ End Property
 '@prop-title Update the anchor range used for placement
 '@param rng Range. Providing the top-left anchor cell.
 '@export
-Private Property Set OutputRange(ByVal rng As Range)
+Public Property Set OutputRange(ByVal rng As Range)
+    GuardNotSealed "OutputRange"
     Set this.rng = rng
 End Property
 
@@ -135,7 +132,8 @@ End Property
 '@label:name-set
 '@prop-title Store the shape name assigned in the worksheet
 '@param nm String. Identifier for the shape.
-Private Property Let Name(ByVal nm As String)
+Public Property Let Name(ByVal nm As String)
+    GuardNotSealed "Name"
     this.shapeName = nm
 End Property
 
@@ -154,7 +152,8 @@ End Property
 '@label:shape-scope-set
 '@prop-title Store the formatting scope applied to the button
 '@param scope Byte. ButtonScope value.
-Private Property Let ShapeScope(ByVal scope As Byte)
+Public Property Let ShapeScope(ByVal scope As Byte)
+    GuardNotSealed "ShapeScope"
     Select Case scope
         Case ButtonScopeLarge, ButtonScopeSmall, ButtonScopeGeo
             this.scope = scope
@@ -329,6 +328,20 @@ End Property
 '@param errorMessage String. Descriptive error message.
 Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
     Err.Raise errNumb, CLASSNAME, "Error: " & errorMessage
+End Sub
+
+'@label:seal
+'@sub-title Seal the instance so setup setters can no longer be written
+Public Sub Seal()
+    this.sealed = True
+End Sub
+
+'@label:guard-not-sealed
+'@sub-title Guard a setup setter against writes after sealing
+'@param propName String. Name of the property being guarded.
+Private Sub GuardNotSealed(ByVal propName As String)
+    If this.sealed Then _
+        ThrowError ProjectError.SomethingWentWrong, propName & " is set at creation only"
 End Sub
 
 '@section Helpers

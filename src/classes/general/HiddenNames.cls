@@ -207,15 +207,8 @@ Public Function Create(ByVal targetObj As Object) As HiddenNames
 
     Set manager = New HiddenNames
     manager.Initialise targetObj
-    Set Create = manager.Self
+    Set Create = manager
 End Function
-
-'@label:self
-'@prop-title Self-reference returning this instance
-'@return HiddenNames. This instance.
-Public Property Get Self() As HiddenNames
-    Set Self = Me
-End Property
 
 
 '@section Initialisation
