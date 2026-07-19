@@ -42,6 +42,7 @@ Private Type TFormulaCondition
     cachedValidDone As Boolean                   'Whether Valid has produced a cached result
     cachedValidResult As Boolean                 'Cached True/False from last Valid call
     cachedValidTable As String                   'The tablename parameter used for cached result
+    sealed As Boolean
 End Type
 
 
@@ -70,25 +71,36 @@ Public Function Create(ByVal formVar As BetterArray, ByVal formCond As BetterArr
         ThrowError ProjectError.InvalidArgument, _
                   "Condition length " & formCond.Length & " different from variable length " & formVar.Length
 
-    With New FormulaCondition
-        Set .LstConditions = formCond
-        Set .LstVars = formVar
-        Set Create = .Self
-    End With
+    Dim instance As FormulaCondition
+    Set instance = New FormulaCondition
+    Set instance.LstConditions = formCond
+    Set instance.LstVars = formVar
+    instance.Seal
+    Set Create = instance
 End Function
+
+'@label:seal
+'@sub-title Prevent further changes to setup-only properties
+'@details
+'Marks the instance as sealed so guarded setters raise when invoked
+'after construction. Called by the factory before returning.
+Public Sub Seal()
+    this.sealed = True
+End Sub
+
+'@label:guard-not-sealed
+'@sub-title Reject writes to setup-only properties after sealing
+'@details
+'Raises an error when a guarded setter is invoked on a sealed instance.
+'@param propName String. Name of the property being guarded.
+Private Sub GuardNotSealed(ByVal propName As String)
+    If this.sealed Then _
+        ThrowError ProjectError.SomethingWentWrong, propName & " is set at creation only"
+End Sub
 
 '@section PublicAccessors
 '===============================================================================
 '@description Provide controlled access to stored collections and interface pointer.
-
-'@label:self
-'@prop-title Current object instance
-'@details
-'Returns the current instance. Used internally by the factory method.
-'@return FormulaCondition. The current object.
-Public Property Get Self() As FormulaCondition
-    Set Self = Me
-End Property
 
 '@label:conditions
 '@prop-title Retrieve the stored condition fragments
@@ -108,7 +120,8 @@ End Property
 'lower bound of 1, then resets all cached validation artefacts so
 'the next call to Valid triggers a fresh check.
 '@param formCond BetterArray. The array containing predicate fragments.
-Private Property Set LstConditions(ByVal formCond As BetterArray)
+Public Property Set LstConditions(ByVal formCond As BetterArray)
+    GuardNotSealed "LstConditions"
     Set this.condList = New BetterArray
     this.condList.LowerBound = 1
     this.condList.Items = formCond.Items
@@ -132,7 +145,8 @@ End Property
 'Copies the incoming array into a new BetterArray normalised to a
 'lower bound of 1, then invalidates all cached data.
 '@param formVar BetterArray. The array containing variable identifiers.
-Private Property Set LstVars(ByVal formVar As BetterArray)
+Public Property Set LstVars(ByVal formVar As BetterArray)
+    GuardNotSealed "LstVars"
     Set this.varList = New BetterArray
     this.varList.LowerBound = 1
     this.varList.Items = formVar.Items

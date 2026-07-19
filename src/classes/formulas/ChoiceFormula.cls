@@ -37,6 +37,7 @@ Private Type TChoiceFormula
     cachedArguments As BetterArray  'Cached list of arguments extracted from the formula
     cachedCaseWhen As CaseWhen     'Lazily created CaseWhen wrapper
     cachedChoiceName As String      'Memoised choice list identifier
+    sealed As Boolean
 End Type
 
 Private this As TChoiceFormula
@@ -59,24 +60,35 @@ Private Const QUOTE_CHAR As String = """"
 '@return ChoiceFormula. A ready-to-query parser instance.
 '@export
 Public Function Create(ByVal formula As String) As ChoiceFormula
-    With New ChoiceFormula
-        .ChoiceSpecifications = formula
-        Set Create = .Self
-    End With
+    Dim instance As ChoiceFormula
+    Set instance = New ChoiceFormula
+    instance.ChoiceSpecifications = formula
+    instance.Seal
+    Set Create = instance
 End Function
+
+'@label:seal
+'@sub-title Prevent further changes to setup-only properties
+'@details
+'Marks the instance as sealed so guarded setters raise when invoked
+'after construction. Called by the factory before returning.
+Public Sub Seal()
+    this.sealed = True
+End Sub
+
+'@label:guard-not-sealed
+'@sub-title Reject writes to setup-only properties after sealing
+'@details
+'Raises an error when a guarded setter is invoked on a sealed instance.
+'@param propName String. Name of the property being guarded.
+Private Sub GuardNotSealed(ByVal propName As String)
+    If this.sealed Then _
+        ThrowError ProjectError.SomethingWentWrong, propName & " is set at creation only"
+End Sub
 
 '@section PublicAccessors
 '===============================================================================
 '@description Properties that expose internal state and the interface pointer.
-
-'@label:self
-'@prop-title Current object instance
-'@details
-'Returns the current instance. Used internally by the factory method.
-'@return ChoiceFormula. Reference to the current object.
-Public Property Get Self() As ChoiceFormula
-    Set Self = Me
-End Property
 
 '@label:choice-specifications
 '@prop-title Retrieve the stored CHOICE_FORMULA expression
@@ -94,7 +106,8 @@ End Property
 'Trims the incoming formula and stores it, then invalidates all
 'cached artefacts so subsequent reads trigger a fresh parse.
 '@param formula String. Expression to parse.
-Private Property Let ChoiceSpecifications(ByVal formula As String)
+Public Property Let ChoiceSpecifications(ByVal formula As String)
+    GuardNotSealed "ChoiceSpecifications"
     this.formula = Trim$(formula)
     ResetCaches
 End Property

@@ -70,26 +70,15 @@ Private this As TFormulaData
 Public Function Create(ByVal formWksh As Worksheet) As FormulaData
     ValidateWorksheet formWksh
 
-    With New FormulaData
-        .Initialise formWksh
-        Set Create = .Self
-    End With
+    Dim instance As FormulaData
+    Set instance = New FormulaData
+    instance.Initialise formWksh
+    Set Create = instance
 End Function
 
 '@section PublicAccessors
 '===============================================================================
 '@description Properties that expose the internal state and worksheet ranges.
-
-'@label:self
-'@prop-title Current object instance
-'@details
-'Convenience accessor that returns the current instance cast to its
-'interface. Used internally by the factory method to hand back an
-'FormulaData reference from the predeclared Create pattern.
-'@return FormulaData. The current instance.
-Public Property Get Self() As FormulaData
-    Set Self = Me
-End Property
 
 '@label:wksh
 '@prop-title Worksheet hosting the lookup tables

@@ -35,6 +35,7 @@ Option Explicit
 Private Type TCaseWhen
     formula As String
     parsingTable As BetterArray
+    sealed As Boolean
 End Type
 
 Private this As TCaseWhen
@@ -57,25 +58,46 @@ Private Const QUOTE_CHAR As String = """"
 '@return CaseWhen. A ready-to-query parser instance.
 '@export
 Public Function Create(ByVal formula As String) As CaseWhen
-    With New CaseWhen
-        .casewhenFormula = formula
-        Set Create = .Self
-    End With
+    Dim instance As CaseWhen
+    Set instance = New CaseWhen
+    instance.casewhenFormula = formula
+    instance.Seal
+    Set Create = instance
 End Function
+
+'@label:seal
+'@sub-title Prevent further changes to setup-only properties
+'@details
+'Marks the instance as sealed so guarded setters raise when invoked
+'after construction. Called by the factory before returning.
+Public Sub Seal()
+    this.sealed = True
+End Sub
+
+'@label:guard-not-sealed
+'@sub-title Reject writes to setup-only properties after sealing
+'@details
+'Raises an error when a guarded setter is invoked on a sealed instance.
+'@param propName String. Name of the property being guarded.
+Private Sub GuardNotSealed(ByVal propName As String)
+    If this.sealed Then _
+        ThrowError ProjectError.SomethingWentWrong, propName & " is set at creation only"
+End Sub
+
+'@label:throw-error
+'@sub-title Raise a project-specific error
+'@details
+'Wrapper around Err.Raise that standardises the source to "CaseWhen".
+'@param errNumb Long. ProjectError code describing the failure.
+'@param errorMessage String. Human-readable explanation.
+'@throws ProjectError.<varies> Always raises the specified error.
+Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
+    Err.Raise errNumb, "CaseWhen", errorMessage
+End Sub
 
 '@section PublicAccessors
 '===============================================================================
 '@description Properties that expose the internal state and interface pointer.
-
-'@label:self
-'@prop-title Current object instance
-'@details
-'Returns the current instance. Used internally by the factory method
-'to return the built object.
-'@return CaseWhen. Reference to the current object.
-Public Property Get Self() As CaseWhen
-    Set Self = Me
-End Property
 
 '@label:formula
 '@prop-title Retrieve the raw CASE_WHEN formula
@@ -93,7 +115,8 @@ End Property
 'Trims the incoming formula and stores it, then invalidates the
 'cached parsing table so subsequent reads trigger a fresh parse.
 '@param formula String. Expression to analyse.
-Private Property Let casewhenFormula(ByVal formula As String)
+Public Property Let casewhenFormula(ByVal formula As String)
+    GuardNotSealed "casewhenFormula"
     this.formula = Trim$(formula)
     ResetCache
 End Property

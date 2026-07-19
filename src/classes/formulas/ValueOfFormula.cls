@@ -90,25 +90,15 @@ Public Function Create(ByVal formula As String, _
                    "Unable to create ValueOfFormula without a dictionary reference"
     End If
 
-    With New ValueOfFormula
-        .Initialise formula, dict, variables, sheets
-        Set Create = .Self
-    End With
+    Dim instance As ValueOfFormula
+    Set instance = New ValueOfFormula
+    instance.Initialise formula, dict, variables, sheets
+    Set Create = instance
 End Function
 
 '@section PublicAccessors
 '===============================================================================
 '@description Properties that expose internal state and the interface pointer.
-
-'@label:self
-'@prop-title Current object instance
-'@details
-'Returns the current instance. Used internally by the factory method to
-'return the parser reference.
-'@return ValueOfFormula. Reference to the current object.
-Public Property Get Self() As ValueOfFormula
-    Set Self = Me
-End Property
 
 '@label:dictionary
 '@prop-title Retrieve the dictionary backing this instance

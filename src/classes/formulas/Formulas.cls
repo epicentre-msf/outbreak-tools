@@ -108,25 +108,15 @@ Public Function Create(ByVal dict As LLdictionary, _
     If dict Is Nothing Then ThrowError ProjectError.ObjectNotInitialized, "Dictionary is not found"
     If formData Is Nothing Then ThrowError ProjectError.ObjectNotInitialized, "Formula Data not found"
 
-    With New Formulas
-        .Initialise dict, formData, setupForm
-        Set Create = .Self
-    End With
+    Dim instance As Formulas
+    Set instance = New Formulas
+    instance.Initialise dict, formData, setupForm
+    Set Create = instance
 End Function
 
 '@section PublicAccessors
 '===============================================================================
 '@description Exposes configured dependencies, cached evaluation results, and parsed Excel expressions.
-
-'@label:self
-'@sub-title Return the interface pointer for the current instance
-'@details
-'Returns the current instance cast to its interface. Used internally
-'by the factory method to return a Formulas reference.
-'@return Formulas. Reference to the current object.
-Public Property Get Self() As Formulas
-    Set Self = Me
-End Property
 
 '@label:dictionary
 '@sub-title Retrieve the underlying dictionary used during parsing
