@@ -49,6 +49,7 @@ Private Type TDesignerTranslation
     dropNames As BetterArray
     wkshNames As HiddenNames
     isCached As Boolean
+    sealed As Boolean
 End Type
 
 Private this As TDesignerTranslation
@@ -89,8 +90,23 @@ Public Function Create(ByVal sh As Worksheet) As DesignerTranslation
     Dim instance As DesignerTranslation
     Set instance = New DesignerTranslation
     Set instance.Wksh = sh
+    instance.Seal
     Set Create = instance
 End Function
+
+'@label:seal
+'@sub-title Seal the instance against further setup writes
+Public Sub Seal()
+    this.sealed = True
+End Sub
+
+'@label:guard-not-sealed
+'@sub-title Guard a setup setter against post-seal mutation
+'@param propName String. The name of the property being guarded.
+Private Sub GuardNotSealed(ByVal propName As String)
+    If this.sealed Then _
+        ThrowError ProjectError.SomethingWentWrong, propName & " is set at creation only"
+End Sub
 
 '@label:wksh
 '@prop-title Translation worksheet
@@ -102,7 +118,8 @@ End Property
 '@label:wksh-set
 '@prop-title Assign the translation worksheet
 '@param sh Worksheet. The worksheet to store.
-Private Property Set Wksh(ByVal sh As Worksheet)
+Public Property Set Wksh(ByVal sh As Worksheet)
+    GuardNotSealed "Wksh"
     Set this.sh = sh
 End Property
 

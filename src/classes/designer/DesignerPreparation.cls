@@ -116,18 +116,8 @@ Public Function Create(ByVal hostBook As Workbook) As DesignerPreparation
 
     Set instance = New DesignerPreparation
     instance.Configure hostBook
-    Set Create = instance.Self
+    Set Create = instance
 End Function
-
-'@label:self
-'@prop-title Current object instance
-'@details
-'Convenience accessor so consuming code can fluently retrieve the
-'instance from the predeclared Create method.
-'@return DesignerPreparation. The current instance.
-Public Property Get Self() As DesignerPreparation
-    Set Self = Me
-End Property
 
 
 '@section Public API

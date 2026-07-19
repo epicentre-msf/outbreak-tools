@@ -113,15 +113,8 @@ Public Function Create(Optional ByVal hostBook As Workbook = Nothing) As Linelis
         instance.Configure hostBook
     End If
 
-    Set Create = instance.Self
+    Set Create = instance
 End Function
-
-'@label:self
-'@prop-title Current object instance
-'@return LinelistBuildService. The current instance.
-Public Property Get Self() As LinelistBuildService
-    Set Self = Me
-End Property
 
 
 '@section Public API

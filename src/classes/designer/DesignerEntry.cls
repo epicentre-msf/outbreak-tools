@@ -72,18 +72,8 @@ Public Function Create(ByVal hostSheet As Worksheet) As DesignerEntry
 
     Set instance = New DesignerEntry
     instance.Configure hostSheet
-    Set Create = instance.Self
+    Set Create = instance
 End Function
-
-'@label:self
-'@prop-title Current object instance
-'@details
-'Convenience accessor so consuming code can fluently retrieve the
-'instance from the predeclared Create method.
-'@return DesignerEntry. The current instance.
-Public Property Get Self() As DesignerEntry
-    Set Self = Me
-End Property
 
 
 '@section Public API
