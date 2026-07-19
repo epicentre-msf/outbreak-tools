@@ -74,14 +74,8 @@ Public Function Create(ByVal hostBook As Workbook) As EventLinelist
 
     Set instance = New EventLinelist
     instance.Configure hostBook
-    Set Create = instance.Self
+    Set Create = instance
 End Function
-
-'@sub-title Current object instance.
-'@return EventLinelist. The current instance.
-Public Property Get Self() As EventLinelist
-    Set Self = Me
-End Property
 
 
 '@section Public operations

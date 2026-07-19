@@ -84,18 +84,11 @@ Private Const CLASS_NAME             As String = "LLTranslation"
 Public Function Create(ByVal translationSheet As Worksheet) As LLTranslation
     CheckRequirements translationSheet
 
-    With New LLTranslation
-        Set .InternalSheet = translationSheet
-        Set Create = .Self
-    End With
+    Dim newTranslation As LLTranslation
+    Set newTranslation = New LLTranslation
+    Set newTranslation.InternalSheet = translationSheet
+    Set Create = newTranslation
 End Function
-
-'@label:self
-'@prop-title Self reference
-'@return LLTranslation. This instance.
-Public Property Get Self() As LLTranslation
-    Set Self = Me
-End Property
 
 '@label:internal-sheet
 '@prop-title Friend setter for the host worksheet

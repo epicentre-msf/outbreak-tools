@@ -78,6 +78,7 @@ Private Type TLinelistSpecs
     outputWkb As Workbook
     tempRepos As TemporaryRepos
     prepared As Boolean
+    sealed As Boolean
 End Type
 
 Private this As TLinelistSpecs
@@ -121,22 +122,27 @@ Private Const RANGE_DESIGN_TYPE As String = "DESIGNTYPE"
 Public Function Create(ByVal specsWorkbook As Workbook) As LinelistSpecs
     ValidateWorkbookReference specsWorkbook
 
-    With New LinelistSpecs
-        Set .InternalWorkbook = specsWorkbook
-        .ResetCaches
-        Set Create = .Self
-    End With
+    Dim newSpecs As LinelistSpecs
+    Set newSpecs = New LinelistSpecs
+    Set newSpecs.InternalWorkbook = specsWorkbook
+    newSpecs.ResetCaches
+    newSpecs.Seal
+    Set Create = newSpecs
 End Function
 
-'@label:self
-'@prop-title Interface-cast self reference
-'@details
-'Returns the current instance cast as LinelistSpecs for fluent
-'construction patterns within the factory method.
-'@return LinelistSpecs. This instance as its interface type.
-Public Property Get Self() As LinelistSpecs
-    Set Self = Me
-End Property
+'@label:seal
+'@sub-title Seal the instance against further creation-only writes
+Public Sub Seal()
+    this.sealed = True
+End Sub
+
+'@label:guard-not-sealed
+'@sub-title Guard a creation-only setter against post-seal writes
+'@param propName String. The property name for the error message.
+Private Sub GuardNotSealed(ByVal propName As String)
+    If this.sealed Then _
+        ThrowError ProjectError.SomethingWentWrong, propName & " is set at creation only"
+End Sub
 
 '@label:des-workbook
 '@prop-title Designer workbook backing all specification queries
@@ -156,7 +162,8 @@ End Property
 '@details
 'Used during construction to assign the workbook before caches are
 'initialised. Not part of the public interface.
-Private Property Set InternalWorkbook(ByVal specsWorkbook As Workbook)
+Public Property Set InternalWorkbook(ByVal specsWorkbook As Workbook)
+    GuardNotSealed "InternalWorkbook"
     Set this.specsWkb = specsWorkbook
 End Property
 
