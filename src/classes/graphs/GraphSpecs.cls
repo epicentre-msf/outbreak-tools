@@ -58,6 +58,7 @@ Private Type TGraphSpecs
     ' Validity cache
     validityTested As Boolean
     validityResult As Boolean
+    sealed As Boolean
 End Type
 
 Private this As TGraphSpecs
@@ -100,11 +101,12 @@ Public Function Create(ByVal tabl As CrossTable) As GraphSpecs
         ThrowError InvalidArgument, "Global summary tables do not support graphs"
     End If
 
-    With New GraphSpecs
-        Set .Table = tabl
-        .GraphType = GraphTypeSimple
-        Set Create = .Self
-    End With
+    Dim newSpecs As GraphSpecs
+    Set newSpecs = New GraphSpecs
+    Set newSpecs.Table = tabl
+    newSpecs.GraphType = GraphTypeSimple
+    newSpecs.Seal
+    Set Create = newSpecs
 End Function
 
 '@label:create-range-specs
@@ -141,24 +143,32 @@ Public Function CreateRangeSpecs(ByVal loTable As BetterArray, _
     If lData Is Nothing Then ThrowError InvalidArgument, "Linelist specifications not defined"
     If outputSh Is Nothing Then ThrowError InvalidArgument, "Output worksheet not defined"
 
-    With New GraphSpecs
-        Set .LoList = loTable
-        Set .OutputSheet = outputSh
-        .GraphType = GraphTypeComplex
-        Set .LinelistSpecifications = lData
-        Set CreateRangeSpecs = .Self()
-    End With
+    Dim newSpecs As GraphSpecs
+    Set newSpecs = New GraphSpecs
+    Set newSpecs.LoList = loTable
+    Set newSpecs.OutputSheet = outputSh
+    newSpecs.GraphType = GraphTypeComplex
+    Set newSpecs.LinelistSpecifications = lData
+    newSpecs.Seal
+    Set CreateRangeSpecs = newSpecs
 End Function
 
-'@label:self
-'@prop-title Current object instance
+'@label:seal
+'@sub-title Seal the instance against further setup writes
 '@details
-'Convenience accessor so consuming code can fluently retrieve the interface
-'reference from the predeclared Create or CreateRangeSpecs method.
-'@return GraphSpecs. The current instance.
-Public Property Get Self() As GraphSpecs
-    Set Self = Me
-End Property
+'Called by the factory after the last setup write. Once sealed, the
+'creation-only setters raise through ThrowError.
+Public Sub Seal()
+    this.sealed = True
+End Sub
+
+'@label:guard-not-sealed
+'@sub-title Guard a setup setter against post-creation writes
+'@param propName String. The property name reported in the error message.
+Private Sub GuardNotSealed(ByVal propName As String)
+    If this.sealed Then _
+        ThrowError ProjectError.SomethingWentWrong, propName & " is set at creation only"
+End Sub
 
 
 '@section InternalSetters
@@ -177,7 +187,8 @@ End Property
 '@label:table-set
 '@prop-title Assign the cross-table reference
 '@param tabl CrossTable. The cross-table to store.
-Private Property Set Table(ByVal tabl As CrossTable)
+Public Property Set Table(ByVal tabl As CrossTable)
+    GuardNotSealed "Table"
     Set this.tabl = tabl
 End Property
 
@@ -191,7 +202,8 @@ End Property
 '@label:graph-type-set
 '@prop-title Assign the graph specifications mode
 '@param specType GraphSpecsType. The mode to set.
-Private Property Let GraphType(ByVal specType As GraphSpecsType)
+Public Property Let GraphType(ByVal specType As GraphSpecsType)
+    GuardNotSealed "GraphType"
     this.specsType = specType
 End Property
 
@@ -205,7 +217,8 @@ End Property
 '@label:lo-list-set
 '@prop-title Assign the ListObject collection
 '@param loTable BetterArray. The 3-element ListObject array to clone and store.
-Private Property Set LoList(ByVal loTable As BetterArray)
+Public Property Set LoList(ByVal loTable As BetterArray)
+    GuardNotSealed "LoList"
     Set this.loList = loTable.Clone()
 End Property
 
@@ -219,7 +232,8 @@ End Property
 '@label:output-sheet-set
 '@prop-title Assign the output worksheet
 '@param sh Worksheet. The worksheet to store.
-Private Property Set OutputSheet(ByVal sh As Worksheet)
+Public Property Set OutputSheet(ByVal sh As Worksheet)
+    GuardNotSealed "OutputSheet"
     Set this.outSh = sh
 End Property
 
@@ -233,7 +247,8 @@ End Property
 '@label:linelist-specifications-set
 '@prop-title Assign the linelist specifications
 '@param lData LinelistSpecs. The linelist specifications to store.
-Private Property Set LinelistSpecifications(ByVal lData As LinelistSpecs)
+Public Property Set LinelistSpecifications(ByVal lData As LinelistSpecs)
+    GuardNotSealed "LinelistSpecifications"
     Set this.lData = lData
 End Property
 

@@ -40,6 +40,7 @@ Private Type TGraph
     Index As Long
     grName As String
     hasChecks As Boolean
+    sealed As Boolean
 End Type
 
 Private this As TGraph
@@ -84,23 +85,31 @@ Public Function Create(sh As Worksheet, posRng As Range, Optional ByVal grName A
     If (sh Is Nothing) Then ThrowError ProjectError.ObjectNotInitialized, "Worksheet not initialized, unable to create graph"
     If (posRng Is Nothing) Then ThrowError ProjectError.ObjectNotInitialized, "Range not initialized, unable to create graph"
 
-    With New Graphs
-        Set .Wksh = sh
-        Set .StartRange = posRng
-        .Name = grName
-        Set Create = .Self
-    End With
+    Dim newGraph As Graphs
+    Set newGraph = New Graphs
+    Set newGraph.Wksh = sh
+    Set newGraph.StartRange = posRng
+    newGraph.Name = grName
+    newGraph.Seal
+    Set Create = newGraph
 End Function
 
-'@label:self
-'@prop-title Current object instance
+'@label:seal
+'@sub-title Seal the instance against further setup writes
 '@details
-'Returns the current instance. Used internally by the factory method
-'to return the built object.
-'@return Graphs. Reference to the current object.
-Public Property Get Self() As Graphs
-    Set Self = Me
-End Property
+'Called by the factory after the last setup write. Once sealed, the
+'creation-only setters raise through ThrowError.
+Public Sub Seal()
+    this.sealed = True
+End Sub
+
+'@label:guard-not-sealed
+'@sub-title Guard a setup setter against post-creation writes
+'@param propName String. The property name reported in the error message.
+Private Sub GuardNotSealed(ByVal propName As String)
+    If this.sealed Then _
+        ThrowError ProjectError.SomethingWentWrong, propName & " is set at creation only"
+End Sub
 
 '@label:wksh
 '@prop-title Host worksheet for the graph
@@ -115,7 +124,8 @@ End Property
 '@label:wksh-set
 '@prop-title Assign the host worksheet
 '@param sh Worksheet. The worksheet where graph data resides.
-Private Property Set Wksh(ByVal sh As Worksheet)
+Public Property Set Wksh(ByVal sh As Worksheet)
+    GuardNotSealed "Wksh"
     Set this.sh = sh
 End Property
 
@@ -132,14 +142,16 @@ End Property
 '@label:start-range-set
 '@prop-title Assign the starting position range
 '@param strtRng Range. The cell or range used to position the graph.
-Private Property Set StartRange(ByVal strtRng As Range)
+Public Property Set StartRange(ByVal strtRng As Range)
+    GuardNotSealed "StartRange"
     Set this.strtRng = strtRng
 End Property
 
 '@label:name-set
 '@prop-title Assign the graph display name
 '@param grName String. The graph name.
-Private Property Let Name(ByVal grName As String)
+Public Property Let Name(ByVal grName As String)
+    GuardNotSealed "Name"
     this.grName = grName
 End Property
 
