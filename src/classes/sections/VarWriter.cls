@@ -47,6 +47,7 @@ Private Type TVarWriter
     cachedVars As LLVariables
     cachedSheets As LLSheets
     hasChecks As Boolean
+    sealed As Boolean
 End Type
 
 Private this As TVarWriter
@@ -90,27 +91,35 @@ Public Function Create(ByVal layer As Byte, _
     If specs Is Nothing Then ThrowError ProjectError.ObjectNotInitialized, "Specifications object is required"
     If wksh Is Nothing Then ThrowError ProjectError.ObjectNotInitialized, "Target worksheet is required"
 
-    With New VarWriter
-        Set .InternalSpecs = specs
-        Set .InternalWksh = wksh
-        .InternalLayer = layer
-        If Not printWksh Is Nothing Then Set .InternalPrintWksh = printWksh
-        If Not crfWksh Is Nothing Then Set .InternalCRFWksh = crfWksh
-        If Not dropdownObj Is Nothing Then Set .InternalDropdown = dropdownObj
-        If Not customDropdownObj Is Nothing Then Set .InternalCustomDropdown = customDropdownObj
-        Set Create = .Self
-    End With
+    Dim newWriter As VarWriter
+    Set newWriter = New VarWriter
+    Set newWriter.InternalSpecs = specs
+    Set newWriter.InternalWksh = wksh
+    newWriter.InternalLayer = layer
+    If Not printWksh Is Nothing Then Set newWriter.InternalPrintWksh = printWksh
+    If Not crfWksh Is Nothing Then Set newWriter.InternalCRFWksh = crfWksh
+    If Not dropdownObj Is Nothing Then Set newWriter.InternalDropdown = dropdownObj
+    If Not customDropdownObj Is Nothing Then Set newWriter.InternalCustomDropdown = customDropdownObj
+    newWriter.Seal
+    Set Create = newWriter
 End Function
 
-'@label:self
-'@prop-title Return the current instance
-'@details
-'Used by the factory pattern so that the With New block can return the
-'newly built instance.
-'@return VarWriter. The current instance.
-Public Property Get Self() As VarWriter
-    Set Self = Me
-End Property
+'@section Instance Sealing
+'===============================================================================
+
+'@label:seal
+'@sub-title Seal the instance against further setup writes
+Public Sub Seal()
+    this.sealed = True
+End Sub
+
+'@label:guard-not-sealed
+'@sub-title Guard a setup-only setter against post-seal writes
+'@param propName String. The property name for the error message.
+Private Sub GuardNotSealed(ByVal propName As String)
+    If this.sealed Then _
+        ThrowError ProjectError.SomethingWentWrong, propName & " is set at creation only"
+End Sub
 
 '@section Internal Setters
 '@description Properties used by the factory only during instantiation.
@@ -118,44 +127,51 @@ End Property
 
 '@label:internal-specs
 '@prop-title Assign the linelist specifications object
-Private Property Set InternalSpecs(ByVal specs As LinelistSpecs)
+Public Property Set InternalSpecs(ByVal specs As LinelistSpecs)
+    GuardNotSealed "InternalSpecs"
     Set this.specs = specs
 End Property
 
 '@label:internal-wksh
 '@prop-title Assign the target main worksheet
-Private Property Set InternalWksh(ByVal wksh As Worksheet)
+Public Property Set InternalWksh(ByVal wksh As Worksheet)
+    GuardNotSealed "InternalWksh"
     Set this.wksh = wksh
     Set this.hn = HiddenNames.Create(this.wksh)
 End Property
 
 '@label:internal-layer
 '@prop-title Assign the writer layer (HList or VList)
-Private Property Let InternalLayer(ByVal layer As Byte)
+Public Property Let InternalLayer(ByVal layer As Byte)
+    GuardNotSealed "InternalLayer"
     this.layer = layer
 End Property
 
 '@label:internal-print-wksh
 '@prop-title Assign the printed companion worksheet
-Private Property Set InternalPrintWksh(ByVal wksh As Worksheet)
+Public Property Set InternalPrintWksh(ByVal wksh As Worksheet)
+    GuardNotSealed "InternalPrintWksh"
     Set this.printWksh = wksh
 End Property
 
 '@label:internal-crf-wksh
 '@prop-title Assign the CRF companion worksheet
-Private Property Set InternalCRFWksh(ByVal wksh As Worksheet)
+Public Property Set InternalCRFWksh(ByVal wksh As Worksheet)
+    GuardNotSealed "InternalCRFWksh"
     Set this.crfWksh = wksh
 End Property
 
 '@label:internal-dropdown
 '@prop-title Assign the dropdown lists manager
-Private Property Set InternalDropdown(ByVal dropdownObj As DropdownLists)
+Public Property Set InternalDropdown(ByVal dropdownObj As DropdownLists)
+    GuardNotSealed "InternalDropdown"
     Set this.dropdown = dropdownObj
 End Property
 
 '@label:internal-custom-dropdown
 '@prop-title Assign the custom dropdown lists manager
-Private Property Set InternalCustomDropdown(ByVal dropdownObj As DropdownLists)
+Public Property Set InternalCustomDropdown(ByVal dropdownObj As DropdownLists)
+    GuardNotSealed "InternalCustomDropdown"
     Set this.customDropdown = dropdownObj
 End Property
 

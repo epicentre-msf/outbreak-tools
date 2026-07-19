@@ -40,6 +40,7 @@ Private Type TSectionBuilder
     cachedDict As LLdictionary
     cachedVars As LLVariables
     hasChecks As Boolean
+    sealed As Boolean
 End Type
 
 Private this As TSectionBuilder
@@ -87,27 +88,35 @@ Public Function Create(ByVal layer As Byte, _
     If specs Is Nothing Then ThrowError ProjectError.ObjectNotInitialized, "Specifications object is required"
     If wksh Is Nothing Then ThrowError ProjectError.ObjectNotInitialized, "Target worksheet is required"
 
-    With New SectionBuilder
-        .InternalLayer = layer
-        Set .InternalSpecs = specs
-        Set .InternalWksh = wksh
-        If Not printWksh Is Nothing Then Set .InternalPrintWksh = printWksh
-        If Not crfWksh Is Nothing Then Set .InternalCRFWksh = crfWksh
-        If Not dropdownObj Is Nothing Then Set .InternalDropdown = dropdownObj
-        If Not customDropdownObj Is Nothing Then Set .InternalCustomDropdown = customDropdownObj
-        Set Create = .Self
-    End With
+    Dim newBuilder As SectionBuilder
+    Set newBuilder = New SectionBuilder
+    newBuilder.InternalLayer = layer
+    Set newBuilder.InternalSpecs = specs
+    Set newBuilder.InternalWksh = wksh
+    If Not printWksh Is Nothing Then Set newBuilder.InternalPrintWksh = printWksh
+    If Not crfWksh Is Nothing Then Set newBuilder.InternalCRFWksh = crfWksh
+    If Not dropdownObj Is Nothing Then Set newBuilder.InternalDropdown = dropdownObj
+    If Not customDropdownObj Is Nothing Then Set newBuilder.InternalCustomDropdown = customDropdownObj
+    newBuilder.Seal
+    Set Create = newBuilder
 End Function
 
-'@label:self
-'@prop-title Current object instance
-'@details
-'Returns the current instance, used by the Create factory to return the
-'newly built object.
-'@return SectionBuilder. The current instance.
-Public Property Get Self() As SectionBuilder
-    Set Self = Me
-End Property
+'@section Instance Sealing
+'===============================================================================
+
+'@label:seal
+'@sub-title Seal the instance against further setup writes
+Public Sub Seal()
+    this.sealed = True
+End Sub
+
+'@label:guard-not-sealed
+'@sub-title Guard a setup-only setter against post-seal writes
+'@param propName String. The property name for the error message.
+Private Sub GuardNotSealed(ByVal propName As String)
+    If this.sealed Then _
+        ThrowError ProjectError.SomethingWentWrong, propName & " is set at creation only"
+End Sub
 
 
 '@section Internal Setters
@@ -117,49 +126,56 @@ End Property
 '@label:internal-layer
 '@prop-title Assign the layer mode
 '@param layer Byte. SectionBuilderMode enum value.
-Private Property Let InternalLayer(ByVal layer As Byte)
+Public Property Let InternalLayer(ByVal layer As Byte)
+    GuardNotSealed "InternalLayer"
     this.layer = layer
 End Property
 
 '@label:internal-specs
 '@prop-title Assign the linelist specifications
 '@param specs LinelistSpecs. The specifications object.
-Private Property Set InternalSpecs(ByVal specs As LinelistSpecs)
+Public Property Set InternalSpecs(ByVal specs As LinelistSpecs)
+    GuardNotSealed "InternalSpecs"
     Set this.specs = specs
 End Property
 
 '@label:internal-wksh
 '@prop-title Assign the target main worksheet
 '@param wksh Worksheet. The main worksheet to build on.
-Private Property Set InternalWksh(ByVal wksh As Worksheet)
+Public Property Set InternalWksh(ByVal wksh As Worksheet)
+    GuardNotSealed "InternalWksh"
     Set this.wksh = wksh
 End Property
 
 '@label:internal-print-wksh
 '@prop-title Assign the printed companion worksheet
 '@param wksh Worksheet. The printed companion worksheet.
-Private Property Set InternalPrintWksh(ByVal wksh As Worksheet)
+Public Property Set InternalPrintWksh(ByVal wksh As Worksheet)
+    GuardNotSealed "InternalPrintWksh"
     Set this.printWksh = wksh
 End Property
 
 '@label:internal-crf-wksh
 '@prop-title Assign the CRF companion worksheet
 '@param wksh Worksheet. The CRF companion worksheet.
-Private Property Set InternalCRFWksh(ByVal wksh As Worksheet)
+Public Property Set InternalCRFWksh(ByVal wksh As Worksheet)
+    GuardNotSealed "InternalCRFWksh"
     Set this.crfWksh = wksh
 End Property
 
 '@label:internal-dropdown
 '@prop-title Assign the dropdown lists manager
 '@param dropdownObj DropdownLists. The dropdown manager.
-Private Property Set InternalDropdown(ByVal dropdownObj As DropdownLists)
+Public Property Set InternalDropdown(ByVal dropdownObj As DropdownLists)
+    GuardNotSealed "InternalDropdown"
     Set this.dropdown = dropdownObj
 End Property
 
 '@label:internal-custom-dropdown
 '@prop-title Assign the custom dropdown lists manager
 '@param dropdownObj DropdownLists. The custom dropdown manager.
-Private Property Set InternalCustomDropdown(ByVal dropdownObj As DropdownLists)
+Public Property Set InternalCustomDropdown(ByVal dropdownObj As DropdownLists)
+    GuardNotSealed "InternalCustomDropdown"
     Set this.customDropdown = dropdownObj
 End Property
 
