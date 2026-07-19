@@ -84,15 +84,8 @@ Public Function Create(ByVal hostBook As Workbook) As SetupPreparation
 
     Set instance = New SetupPreparation
     instance.Configure hostBook
-    Set Create = instance.Self
+    Set Create = instance
 End Function
-
-'@label:self
-'@prop-title Current object instance
-'@return SetupPreparation. The current instance.
-Public Property Get Self() As SetupPreparation
-    Set Self = Me
-End Property
 
 '@section Public API
 '===============================================================================

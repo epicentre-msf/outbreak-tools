@@ -131,7 +131,7 @@ Public Function Create(ByVal hostBook As Workbook, _
     Set instance = New SetupErrors
     instance.Initialise hostBook, passwordService, dictionary, choices, formulaStore, transManager, stateScope
 
-    Set Create = instance.Self
+    Set Create = instance
 End Function
 
 '@section Initialisation
@@ -232,13 +232,6 @@ End Property
 
 '@section Helper workflow
 '===============================================================================
-
-'@label:self
-'@prop-title Current object instance
-'@return SetupErrors. The current instance.
-Public Property Get Self() As SetupErrors
-    Set Self = Me
-End Property
 
 '@label:ensure-initialised
 '@sub-title Ensure the checker has been initialised

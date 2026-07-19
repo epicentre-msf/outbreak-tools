@@ -93,7 +93,7 @@ Public Function Create(ByVal importPath As String, Optional ByVal progressDispla
     instance.Path = Trim$(importPath)
     Set instance.ProgressObject = progressDisplay
 
-    Set Create = instance.Self
+    Set Create = instance
 End Function
 
 
@@ -129,13 +129,6 @@ End Property
 Public Property Set ProgressObject(ByVal value As Object)
     ValidateProgressDisplay value
     Set this.progressDisplay = value
-End Property
-
-'@label:self
-'@prop-title Current object instance.
-'@return SetupImportService. The current instance.
-Public Property Get Self() As SetupImportService
-    Set Self = Me
 End Property
 
 '@label:display-prompts-set

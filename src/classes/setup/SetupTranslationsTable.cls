@@ -78,7 +78,7 @@ Public Function Create(ByVal translationTable As ListObject, Optional ByVal stat
     Set instance = New SetupTranslationsTable
     instance.InitialiseCore translationTable, stateScope
 
-    Set Create = instance.Self
+    Set Create = instance
 End Function
 
 '@label:initialise-core
@@ -111,12 +111,6 @@ End Property
 Public Property Get TableName() As String
     ValidateInitialised
     TableName = this.table.Name
-End Property
-
-'@label:self
-'@prop-title Self reference used by factories returning interface instances.
-Public Property Get Self() As SetupTranslationsTable
-    Set Self = Me
 End Property
 
 '@label:set-display-prompts

@@ -109,15 +109,8 @@ Public Function Create(ByVal hostBook As Workbook) As EventSetup
 
     Set instance = New EventSetup
     instance.Configure hostBook
-    Set Create = instance.Self
+    Set Create = instance
 End Function
-
-'@label:self
-'@prop-title Current object instance.
-'@return EventSetup. The current instance.
-Public Property Get Self() As EventSetup
-    Set Self = Me
-End Property
 
 '@section Event handling and operations
 '===============================================================================

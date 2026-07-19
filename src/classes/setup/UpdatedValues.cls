@@ -69,6 +69,7 @@ Private Type TUpValues
   lastColumn As Long                  'Tracks the last column used by the registry
   lastRegistryName As String          'Tracks the most recently accessed registry ListObject name
   nameCache As Collection             'In-memory cache of registry names keyed by listobject name
+  sealed As Boolean                   'When True, setup-only setters are blocked
 End Type
 
 Private this As TUpValues
@@ -82,22 +83,30 @@ Private this As TUpValues
 '@return UpdatedValues. Configured watcher instance.
 '@export
 Public Function Create(ByVal sh As Worksheet, Optional ByVal ignoredId As String = vbNullString) As UpdatedValues
+  Dim instance As UpdatedValues
+
   If sh Is Nothing Then
     ThrowError ProjectError.ObjectNotInitialized, "Worksheet reference is required to create UpdatedValues"
   End If
 
-  With New UpdatedValues
-    Set .Wksh = sh
-    Set Create = .Self
-  End With
+  Set instance = New UpdatedValues
+  Set instance.Wksh = sh
+  instance.Seal
+  Set Create = instance
 End Function
 
-'@label:self
-'@prop-title Current object instance cast to the interface.
-'@return UpdatedValues. The current instance.
-Public Property Get Self() As UpdatedValues
-  Set Self = Me
-End Property
+'@label:seal
+'@sub-title Seal the instance so setup-only setters can no longer be used.
+Public Sub Seal()
+  this.sealed = True
+End Sub
+
+'@label:guard-not-sealed
+'@sub-title Raise when a setup-only setter is used after sealing.
+Private Sub GuardNotSealed(ByVal propName As String)
+  If this.sealed Then _
+    ThrowError ProjectError.SomethingWentWrong, propName & " is set at creation only"
+End Sub
 
 '@section PublicState
 '===============================================================================
@@ -112,7 +121,8 @@ End Property
 '@label:worksheet-set
 '@prop-title Bind the watcher to a registry worksheet.
 '@param sh Worksheet. The worksheet to assign.
-Private Property Set Wksh(ByVal sh As Worksheet)
+Public Property Set Wksh(ByVal sh As Worksheet)
+  GuardNotSealed "Wksh"
   If sh Is Nothing Then
     ThrowError ProjectError.ObjectNotInitialized, "Worksheet reference cannot be Nothing"
   End If
