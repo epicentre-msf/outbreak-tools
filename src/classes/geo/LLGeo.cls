@@ -68,6 +68,7 @@ Private Type TGeo
     namesCacheKeys As BetterArray
     namesCacheValues As BetterArray
     namesCacheLoaded As Boolean
+    sealed As Boolean
 End Type
 
 Private this As TGeo
@@ -113,8 +114,25 @@ Public Function Create(ByVal sh As Worksheet) As LLGeo
     Dim instance As LLGeo
     Set instance = New LLGeo
     Set instance.Wksh = sh
+    instance.Seal
     Set Create = instance
 End Function
+
+'@label:seal
+'@sub-title Seal the instance against further setup writes.
+'@details
+'Marks the instance as sealed so setup-only setters raise if called again.
+'Called by the factory after the last setup write.
+Public Sub Seal()
+    this.sealed = True
+End Sub
+
+'@sub-title Guard a setup-only setter against post-seal writes.
+'@param propName String. The property name used in the error message.
+Private Sub GuardNotSealed(ByVal propName As String)
+    If this.sealed Then _
+        ThrowError ProjectError.SomethingWentWrong, propName & " is set at creation only"
+End Sub
 
 '@label:wksh
 '@prop-title Get the geobase worksheet.
@@ -133,7 +151,8 @@ End Property
 'Assigns the internal worksheet reference. Called only from the factory Create
 'method after validation. Not intended for external use.
 '@param sh Worksheet. The geobase worksheet to bind to this instance.
-Private Property Set Wksh(ByVal sh As Worksheet)
+Public Property Set Wksh(ByVal sh As Worksheet)
+    GuardNotSealed "Wksh"
     Set this.geosh = sh
 End Property
 

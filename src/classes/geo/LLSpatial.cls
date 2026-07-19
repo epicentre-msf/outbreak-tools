@@ -34,6 +34,7 @@ Option Explicit
 
 Private Type TLLSpatial
     sh As Worksheet
+    sealed As Boolean
 End Type
 
 Private this As TLLSpatial
@@ -61,21 +62,28 @@ Private Const HF As String = "hf"
 Public Function Create(ByVal sh As Worksheet) As LLSpatial
     CheckRequirements sh
 
-    With New LLSpatial
-        Set .Wksh = sh
-        Set Create = .Self
-    End With
+    Dim instance As LLSpatial
+    Set instance = New LLSpatial
+    Set instance.Wksh = sh
+    instance.Seal
+    Set Create = instance
 End Function
 
-'@label:self
-'@prop-title Current object instance
+'@label:seal
+'@sub-title Seal the instance against further setup writes.
 '@details
-'Convenience accessor so consuming code can fluently retrieve the
-'instance from the predeclared Create method.
-'@return LLSpatial. The current instance.
-Public Property Get Self() As LLSpatial
-    Set Self = Me
-End Property
+'Marks the instance as sealed so setup-only setters raise if called again.
+'Called by the factory after the last setup write.
+Public Sub Seal()
+    this.sealed = True
+End Sub
+
+'@sub-title Guard a setup-only setter against post-seal writes.
+'@param propName String. The property name used in the error message.
+Private Sub GuardNotSealed(ByVal propName As String)
+    If this.sealed Then _
+        ThrowError ProjectError.SomethingWentWrong, propName & " is set at creation only"
+End Sub
 
 '@label:wksh
 '@prop-title Spatial tables worksheet
@@ -87,7 +95,8 @@ End Property
 '@label:wksh-set
 '@prop-title Assign the spatial tables worksheet
 '@param sh Worksheet. The worksheet to store.
-Private Property Set Wksh(ByVal sh As Worksheet)
+Public Property Set Wksh(ByVal sh As Worksheet)
+    GuardNotSealed "Wksh"
     Set this.sh = sh
 End Property
 
