@@ -14,6 +14,7 @@ Attribute VB_Description = "Harness providing assertion helpers and worksheet ou
 '@Folder("Rubberduck")
 '@ModuleDescription("Harness providing assertion helpers and worksheet output for custom tests")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
+'@depends BetterArray, Checking, CheckingOutput
 
 Option Explicit
 
