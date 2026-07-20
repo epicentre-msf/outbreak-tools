@@ -15,6 +15,7 @@ Option Explicit
 '@PredeclaredId
 '@Folder("Dictionary")
 '@ModuleDescription("Linelist dictionary utilities")
+'@depends Checking, CustomTable, DataSheet, HiddenNames, TranslationObject
 
 
 'The linelist dictionary class centralises all logic that manipulates the Excel
@@ -28,6 +29,9 @@ Private Type TDictionary
     hasChecks As Boolean
     hiddenValues As HiddenNames
     sealed As Boolean
+    savedCalc As XlCalculation
+    savedEvents As Boolean
+    fastDepth As Long
 End Type
 
 Private this As TDictionary
@@ -205,23 +209,13 @@ Private Sub ResetColumnCaches()
 End Sub
 
 '@label:persist-exports
-Private Sub PersistTotalExports(ByVal totalCount As Long)
+'@details
+'Persist the export counter into the hidden name store. With no sheet the store
+'resolves to the current dictionary worksheet; passing a sheet targets that sheet
+'(used when writing the counter into an exported workbook).
+Private Sub PersistTotalExports(ByVal totalCount As Long, Optional ByVal sheet As Worksheet)
     Dim store As HiddenNames
 
-    Set store = HiddenNameStore()
-    If store Is Nothing Then Exit Sub
-
-    If totalCount < 0 Then totalCount = 0
-
-    store.EnsureName TOTAL_EXPORTS_NAME, totalCount, HiddenNameTypeLong
-    store.SetValue TOTAL_EXPORTS_NAME, totalCount
-End Sub
-
-'@label:persist-exports-sheet
-Private Sub PersistTotalExportsOnSheet(ByVal sheet As Worksheet, ByVal totalCount As Long)
-    Dim store As HiddenNames
-
-    If sheet Is Nothing Then Exit Sub
     If totalCount < 0 Then totalCount = 0
 
     Set store = HiddenNameStore(sheet)
@@ -261,32 +255,6 @@ Private Function HiddenNameStore(Optional ByVal sheet As Worksheet) As HiddenNam
         Set HiddenNameStore = this.hiddenValues
     Else
         Set HiddenNameStore = HiddenNames.Create(sheet)
-    End If
-End Function
-
-'@label:try-sheet-name
-Private Function TrySheetNameDefinition(ByVal sheet As Worksheet, ByVal nameId As String) As Name
-    Dim definition As Name
-
-    If sheet Is Nothing Then Exit Function
-
-    For Each definition In sheet.Names
-        If StrComp(ExtractSimpleName(definition.Name), nameId, vbTextCompare) = 0 Then
-            Set TrySheetNameDefinition = definition
-            Exit Function
-        End If
-    Next definition
-End Function
-
-'@label:extract-name
-Private Function ExtractSimpleName(ByVal qualifiedName As String) As String
-    Dim exclPos As Long
-
-    exclPos = InStr(qualifiedName, "!")
-    If exclPos = 0 Then
-        ExtractSimpleName = qualifiedName
-    Else
-        ExtractSimpleName = Mid$(qualifiedName, exclPos + 1)
     End If
 End Function
 
@@ -550,9 +518,7 @@ Public Sub RemoveColumn(ByVal colName As String)
 
     Set columnRange = DataRange(colName)
     On Error Resume Next
-        Application.ScreenUpdating = False
         columnRange.EntireColumn.Delete
-        Application.ScreenUpdating = False
     On Error GoTo 0
 End Sub
 
@@ -567,9 +533,7 @@ Public Sub RenameColumn(ByVal currentName As String, _
         ThrowError ProjectError.InvalidArgument, "New column name cannot be empty"
     End If
 
-    Application.ScreenUpdating = False
     Data.RenameColumn currentName, newName, strictSearch, matchCase
-    Application.ScreenUpdating = False
     ResetColumnCaches
 End Sub
 
@@ -854,6 +818,10 @@ Public Sub Prepare(Optional ByVal PreservedSheetNames As BetterArray, _
     Dim controlRange As Range
 
     If Prepared Then Exit Sub
+
+    BeginFastMode
+    On Error GoTo CleanFail
+
     EnsureRequiredColumns
 
     If Not ColumnExists("table name") Then AppendNumberColumn "sheet name", tablePrefix, "table name"
@@ -882,6 +850,11 @@ Public Sub Prepare(Optional ByVal PreservedSheetNames As BetterArray, _
     With Wksh()
         .Cells(DictEndRow() + 1, StartColumn()).Font.color = vbBlue
     End With
+
+    EndFastMode
+    Exit Sub
+CleanFail:
+    RestoreAfterFailure
 End Sub
 
 '@label:EnsureRequiredColumns
@@ -1417,6 +1390,9 @@ Public Sub Import(ByVal fromWksh As Worksheet, _
     Dim hostSheet As Worksheet
     Dim importedTotal As Long
 
+    BeginFastMode
+    On Error GoTo CleanFail
+
     Set sourceData = DataSheet.Create(fromWksh, fromStartRow, fromStartcol)
     Set hostSheet = Wksh()
     importedTotal = StoredTotalExportsFromSheet(fromWksh)
@@ -1438,6 +1414,11 @@ Public Sub Import(ByVal fromWksh As Worksheet, _
     Set targetData = Data()
     Clean removeAddedColumns:=True
     targetData.Import sourceData, False
+
+    EndFastMode
+    Exit Sub
+CleanFail:
+    RestoreAfterFailure
 End Sub
 
 '@label:export
@@ -1467,6 +1448,9 @@ Public Sub Export(ByVal toWkb As Workbook, _
     Dim targetSheet As Worksheet
     Dim sheetName As String
 
+    BeginFastMode
+    On Error GoTo CleanFail
+
     EnsureFormatColumns
     Set targetData = Data()
     
@@ -1479,7 +1463,7 @@ Public Sub Export(ByVal toWkb As Workbook, _
     sheetName = Wksh().Name
     Set targetSheet = toWkb.Worksheets(sheetName)
 
-    PersistTotalExportsOnSheet targetSheet, TotalNumberOfExports
+    PersistTotalExports TotalNumberOfExports, targetSheet
 
     If addListObject Then
         Set exportRange = DataRange(includeHeaders:=True)
@@ -1494,6 +1478,11 @@ Public Sub Export(ByVal toWkb As Workbook, _
         targetSheet.ListObjects("o" & LCase$(sheetName)).TableStyle = ""
 
     End If
+
+    EndFastMode
+    Exit Sub
+CleanFail:
+    RestoreAfterFailure
 End Sub
 
 '@label:translate
@@ -1557,6 +1546,68 @@ Public Property Get CheckingValues() As Checking
     If Not HasCheckings() Then Exit Property
     Set CheckingValues = internalChecks
 End Property
+
+
+'@section Performance
+'===============================================================================
+
+'@label:begin-fast-mode
+'@sub-title Enter a batched Excel state for heavy write operations
+'@details
+'Turns off calculation and events so bulk worksheet writes do not recalculate on
+'every change. Screen updating is deliberately left untouched - it is the caller's
+'responsibility. Re-entrant: nested calls share one saved state and only the
+'outermost pair toggles Application settings.
+Private Sub BeginFastMode()
+    If this.fastDepth = 0 Then
+        With Application
+            this.savedCalc = .Calculation
+            this.savedEvents = .EnableEvents
+            .EnableEvents = False
+            'Setting Calculation can flush pending calcs and raise 1004; scope it.
+            On Error Resume Next
+            .Calculation = xlCalculationManual
+            On Error GoTo 0
+        End With
+    End If
+    this.fastDepth = this.fastDepth + 1
+End Sub
+
+'@label:end-fast-mode
+'@sub-title Restore the Excel state saved by BeginFastMode
+Private Sub EndFastMode()
+    If this.fastDepth = 0 Then Exit Sub
+
+    this.fastDepth = this.fastDepth - 1
+    If this.fastDepth = 0 Then
+        With Application
+            .EnableEvents = this.savedEvents
+            'Setting Calculation can flush pending calcs and raise 1004; scope it.
+            On Error Resume Next
+            .Calculation = this.savedCalc
+            On Error GoTo 0
+        End With
+    End If
+End Sub
+
+'@label:restore-after-failure
+'@sub-title Restore the batched state after a failure and re-raise the error
+'@details
+'Called from the error handler of every fast-mode entry point so a mid-pipeline
+'error still restores Application settings before propagating to the caller.
+Private Sub RestoreAfterFailure()
+    Dim en As Long
+    Dim es As String
+    Dim ed As String
+
+    en = Err.Number
+    es = Err.Source
+    ed = Err.Description
+
+    EndFastMode
+
+    If en <> 0 Then Err.Raise en, es, ed
+End Sub
 
 
 '@section Errors
