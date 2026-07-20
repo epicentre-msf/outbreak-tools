@@ -16,6 +16,18 @@ Attribute VB_Description = "Formulas for all the cross tables in the analysis"
 
 Option Explicit
 
+'@section Enumerations
+'===============================================================================
+'@description
+'Target context for generated Excel formulas. Re-homed from the removed
+'ICrossTableFormula interface; depending on CrossTableFormula resolves these
+'everywhere.
+Public Enum ExcelFormulaScope
+    FormulaScopeLinelist = 1
+    FormulaScopeAnalysis = 2
+End Enum
+
+
 '@class CrossTableFormula
 '@description
 'Translates cross-table specifications into concrete Excel formulas and writes

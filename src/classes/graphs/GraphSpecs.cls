@@ -16,6 +16,17 @@ Attribute VB_Description = "Graph series specifications for analysis charts"
 
 Option Explicit
 
+'@section Enumerations
+'===============================================================================
+'@description
+'Graph specification modes. Re-homed from the removed IGraphSpecs interface;
+'depending on GraphSpecs resolves these everywhere.
+Public Enum GraphSpecsType
+    GraphTypeSimple = 1                          'Non-time-series (univariate, bivariate, spatial, spatio-temporal)
+    GraphTypeComplex = 2                         'Time series (multiple graphs from setup listobjects)
+End Enum
+
+
 '@class GraphSpecs
 '@description
 'Builds and stores chart series specifications for both simple (non-time-series)

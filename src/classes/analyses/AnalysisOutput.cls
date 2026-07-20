@@ -16,6 +16,20 @@ Attribute VB_Description = "Build and format all analysis worksheets"
 
 Option Explicit
 
+'@section Enumerations
+'===============================================================================
+'@description
+'Analysis output scopes. Re-homed from the removed IAnalysisOutput interface;
+'depending on AnalysisOutput resolves these everywhere.
+Public Enum AnalysisScope
+    AnalysisScopeTimeSeries = 1
+    AnalysisScopeSpatial = 2
+    AnalysisScopeNormal = 3
+    AnalysisScopeSpatioTemporal = 4
+    AnalysisScopeTimeSeriesTablesOnly = 5
+End Enum
+
+
 '@class AnalysisOutput
 '@description
 'Orchestrates the complete analysis output pipeline for the linelist builder.

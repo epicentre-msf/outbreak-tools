@@ -16,6 +16,17 @@ Attribute VB_Description = "Builds HList or VList data entry sheets with section
 
 Option Explicit
 
+'@section Enumerations
+'===============================================================================
+'@description
+'Data-entry sheet layers built by ListBuilder. Re-homed from the removed
+'IListBuilder interface; depending on ListBuilder resolves these everywhere.
+Public Enum ListBuilderLayer
+    ListBuilderLayerHList = 1
+    ListBuilderLayerVList = 2
+End Enum
+
+
 '@class ListBuilder
 '@description
 'Builds horizontal (HList) or vertical (VList) data entry sheets for the

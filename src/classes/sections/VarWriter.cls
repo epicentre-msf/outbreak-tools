@@ -15,6 +15,17 @@ Attribute VB_Exposed = False
 
 Option Explicit
 
+'@section Enumerations
+'===============================================================================
+'@description
+'Sheet layers a variable is written to. Re-homed from the removed IVarWriter
+'interface; depending on VarWriter resolves these everywhere.
+Public Enum VarWriterLayer
+    VarWriterLayerHList = 1
+    VarWriterLayerVList = 2
+End Enum
+
+
 '@class VarWriter
 '@description
 'Writes a single dictionary variable to one or more linelist worksheets.

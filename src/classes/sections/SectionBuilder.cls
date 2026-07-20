@@ -15,6 +15,17 @@ Attribute VB_Exposed = False
 
 Option Explicit
 
+'@section Enumerations
+'===============================================================================
+'@description
+'Section layout modes handled by SectionBuilder. Re-homed from the removed
+'ISectionBuilder interface; depending on SectionBuilder resolves these everywhere.
+Public Enum SectionBuilderMode
+    SectionBuilderModeHList = 1
+    SectionBuilderModeVList = 2
+End Enum
+
+
 '@class SectionBuilder
 '@description
 'Builds all sections, subsections, and variables for a single linelist

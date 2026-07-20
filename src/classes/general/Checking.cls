@@ -29,6 +29,42 @@ Option Explicit
 '@version 1.0 (2026-02-09)
 
 
+'@section Enumerations
+'===============================================================================
+'@description
+'Project-wide enumerations for diagnostic scopes, value selectors, and
+'error codes. These lived in the removed IChecking interface; they are
+'re-homed on the Checking class so it is their single source of truth.
+'Depending on Checking is enough to resolve them everywhere.
+
+'Severity levels for diagnostic entries.
+Public Enum CheckingScope
+  checkingError = 1
+  checkingWarning = 2
+  checkingInfo = 3
+  checkingNote = 4
+  checkingSuccess = 5
+End Enum
+
+'Selectors for retrieving entry properties.
+Public Enum CheckingValue
+  checkingLabel = 1
+  checkingType = 2
+  checkingColor = 3
+End Enum
+
+'Application-wide error codes used with Err.Raise.
+Public Enum ProjectError
+  ErrorNone = 0
+  InvalidArgument = 1001
+  ObjectNotInitialized = 1002
+  ErrorUnexpectedState = 1004
+  ElementShouldExists = 1005
+  ElementShouldNotExists = 1006
+  ElementNotFound = 1007
+  SomethingWentWrong = 1008
+End Enum
+
 
 '@section State
 '===============================================================================

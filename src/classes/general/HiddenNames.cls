@@ -40,7 +40,7 @@ End Enum
 '(String/Boolean/Long/Variant) and a last-updated timestamp stored in
 'the Name.Comment field. Supports cross-scope import/export between
 'worksheets and workbooks.
-'@depends ProjectError, BetterArray
+'@depends Checking, BetterArray
 '@version 1.0 (2026-02-09)
 
 

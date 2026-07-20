@@ -16,6 +16,23 @@ Attribute VB_Description = "Analysis table specifications"
 
 Option Explicit
 
+'@section Enumerations
+'===============================================================================
+'@description
+'Analysis table scopes describing the kind of table a setup row defines.
+'Re-homed from the removed ITableSpecs interface; depending on TableSpecs
+'resolves these everywhere.
+Public Enum AnalysisTableScope
+    ScopeGlobalSummary = 1
+    ScopeUnivariate = 2
+    ScopeBivariate = 3
+    ScopeTimeSeries = 4
+    ScopeSpatial = 5
+    ScopeSpatioTemporal = 6
+    ScopeTimeSeriesGraph = 7
+End Enum
+
+
 '@class TableSpecs
 '@description
 'Represents a single row from an analysis setup ListObject and exposes
