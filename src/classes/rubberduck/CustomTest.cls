@@ -189,8 +189,23 @@ Public Sub PrintResults(Optional ByVal outputSheetName As String = vbNullString)
     Set targetSheet = PrintOutputWorksheet(this.targetWorkbook, sheetName)
     Set writer = CheckingOutput.Create(targetSheet, this.moduleName)
     writer.PrintOutput this.Results
-    writer.EnsureWorksheetChangeHandler
+    ' EnsureWorksheetChangeHandler writes VBA into the sheet's code module. That
+    ' write stalls under Apple Events automation, so skip it for headless runs
+    ' (the interactive row filter is a UI convenience only). Interactive and
+    ' Windows runs are unaffected: without a headless runner the flag is False.
+    If Not HeadlessRunActive() Then writer.EnsureWorksheetChangeHandler
 End Sub
+
+'@label:HeadlessRunActive
+'@prop-title True when a headless runner (OBTHeadless) is driving the suite
+'@details Late-bound so this class carries no dependency on the runner: if the
+' OBTHeadlessActive entry point is absent, Application.Run raises and we treat
+' the run as interactive.
+Private Function HeadlessRunActive() As Boolean
+    On Error Resume Next
+    HeadlessRunActive = CBool(Application.Run("OBTHeadlessActive"))
+    On Error GoTo 0
+End Function
 
 '@label:AreEqual
 '@prop-title Log an assertion comparing expected and actual values

@@ -29,6 +29,17 @@
 version: 1
 
 suites:
+  # --- draft ----------------------------------------------------------------
+  # Probe suite for the AppleScript test loop. Greeter is a self-contained
+  # made-up class; TestGreeter exercises it through the CustomTest harness.
+  - folder: draft
+    classes:
+      - name: Greeter
+        interface: false
+    tests:
+      - module: TestGreeter
+        covers: [Greeter]
+
   # --- sections -------------------------------------------------------------
   # Fully verified against the current tree. Use as the template for new suites.
   - folder: sections
