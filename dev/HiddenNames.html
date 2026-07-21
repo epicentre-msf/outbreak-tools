@@ -16,7 +16,7 @@ serialization and metadata caching. Each name carries a type annotation
 (String/Boolean/Long/Variant) and a last-updated timestamp stored in
 the Name.Comment field. Supports cross-scope import/export between
 worksheets and workbooks.</p>
-<p><strong>Depends on:</strong> ProjectError, <a href="BetterArray.html">BetterArray</a></p>
+<p><strong>Depends on:</strong> <a href="Checking.html">Checking</a>, <a href="BetterArray.html">BetterArray</a></p>
 <p><strong>Version:</strong> 1.0 (2026-02-09)</p>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
@@ -25,7 +25,7 @@ worksheets and workbooks.</p>
 <p><em>create</em></p>
 <p><strong>Create a new HiddenNames instance</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Create(ByVal targetObj As Object) As IHiddenNames
+<pre><code class="language-vb">Public Function Create(ByVal targetObj As Object) As HiddenNames
 </code></pre>
 <p>Validates the input and creates a fully initialised manager bound to
 the supplied worksheet or workbook.</p>
@@ -33,7 +33,7 @@ the supplied worksheet or workbook.</p>
 <ul>
 <li><code>targetObj</code>: Object. A Worksheet or Workbook hosting the hidden names.</li>
 </ul>
-<p><strong>Returns:</strong> IHiddenNames. The configured instance.</p>
+<p><strong>Returns:</strong> HiddenNames. The configured instance.</p>
 <p><strong>Throws:</strong></p>
 <ul>
 <li>ProjectError.ObjectNotInitialized When targetObj is Nothing.</li>
@@ -45,11 +45,11 @@ the supplied worksheet or workbook.</p>
 <details open class="doc-section" id="interface-helpers">
 <summary>Interface Helpers</summary>
 <div class="section-body">
-<h3 id="sheetinternal">SheetInternal <a class="anchor-link" href="#sheetinternal">#</a></h3>
+<h3 id="sheet">Sheet <a class="anchor-link" href="#sheet">#</a></h3>
 <p><em>sheet</em></p>
 <p><strong>Worksheet backing this manager</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get SheetInternal() As Worksheet
+<pre><code class="language-vb">Public Property Get Sheet() As Worksheet
 </code></pre>
 <hr />
 </div>
@@ -61,38 +61,38 @@ the supplied worksheet or workbook.</p>
 <p><em>has-name</em></p>
 <p><strong>Check whether a hidden name exists</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function HasName(ByVal nameId As String) As Boolean
+<pre><code class="language-vb">Public Function HasName(ByVal nameId As String) As Boolean
 </code></pre>
 <hr />
-<h3 id="ensure">Ensure <a class="anchor-link" href="#ensure">#</a></h3>
+<h3 id="ensurename">EnsureName <a class="anchor-link" href="#ensurename">#</a></h3>
 <p><em>ensure-name</em></p>
 <p><strong>Ensure a hidden name exists with the provided default</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function Ensure(ByVal nameId As String, _
+<pre><code class="language-vb">Public Function EnsureName(ByVal nameId As String, _
                         ByVal initialValue As Variant, _
                         Optional ByVal valueType As Byte = HiddenNameTypeVariant) As Name
 </code></pre>
 <hr />
-<h3 id="valueof">ValueOf <a class="anchor-link" href="#valueof">#</a></h3>
+<h3 id="value">Value <a class="anchor-link" href="#value">#</a></h3>
 <p><em>value</em></p>
 <p><strong>Retrieve a hidden value without coercion</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ValueOf(ByVal nameId As String, _
+<pre><code class="language-vb">Public Function Value(ByVal nameId As String, _
                          Optional ByVal defaultValue As Variant) As Variant
 </code></pre>
 <hr />
-<h3 id="update">Update <a class="anchor-link" href="#update">#</a></h3>
+<h3 id="setvalue">SetValue <a class="anchor-link" href="#setvalue">#</a></h3>
 <p><em>set-value</em></p>
 <p><strong>Update the stored value of an existing hidden name</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub Update(ByVal nameId As String, ByVal value As Variant)
+<pre><code class="language-vb">Public Sub SetValue(ByVal nameId As String, ByVal value As Variant)
 </code></pre>
 <hr />
 <h3 id="valueasstring">ValueAsString <a class="anchor-link" href="#valueasstring">#</a></h3>
 <p><em>value-as-string</em></p>
 <p><strong>Retrieve the hidden value coerced to String</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ValueAsString(ByVal nameId As String, _
+<pre><code class="language-vb">Public Function ValueAsString(ByVal nameId As String, _
                                Optional ByVal defaultValue As String = vbNullString) As String
 </code></pre>
 <hr />
@@ -100,7 +100,7 @@ the supplied worksheet or workbook.</p>
 <p><em>value-as-boolean</em></p>
 <p><strong>Retrieve the hidden value coerced to Boolean</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ValueAsBoolean(ByVal nameId As String, _
+<pre><code class="language-vb">Public Function ValueAsBoolean(ByVal nameId As String, _
                                 Optional ByVal defaultValue As Boolean = False) As Boolean
 </code></pre>
 <hr />
@@ -108,54 +108,54 @@ the supplied worksheet or workbook.</p>
 <p><em>value-as-long</em></p>
 <p><strong>Retrieve the hidden value coerced to Long</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ValueAsLong(ByVal nameId As String, _
+<pre><code class="language-vb">Public Function ValueAsLong(ByVal nameId As String, _
                              Optional ByVal defaultValue As Long = 0) As Long
 </code></pre>
 <hr />
-<h3 id="remove">Remove <a class="anchor-link" href="#remove">#</a></h3>
+<h3 id="removename">RemoveName <a class="anchor-link" href="#removename">#</a></h3>
 <p><em>remove-name</em></p>
 <p><strong>Remove a hidden name definition</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub Remove(ByVal nameId As String)
+<pre><code class="language-vb">Public Sub RemoveName(ByVal nameId As String)
 </code></pre>
 <hr />
-<h3 id="enumerate">Enumerate <a class="anchor-link" href="#enumerate">#</a></h3>
+<h3 id="listnames">ListNames <a class="anchor-link" href="#listnames">#</a></h3>
 <p><em>list-names</em></p>
 <p><strong>Enumerate recorded hidden names filtered by optional prefix</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function Enumerate(Optional ByVal prefix As String = vbNullString) As BetterArray
+<pre><code class="language-vb">Public Function ListNames(Optional ByVal prefix As String = vbNullString) As BetterArray
 </code></pre>
 <hr />
-<h3 id="exportall">ExportAll <a class="anchor-link" href="#exportall">#</a></h3>
+<h3 id="exportnames">ExportNames <a class="anchor-link" href="#exportnames">#</a></h3>
 <p><em>export-names</em></p>
 <p><strong>Export all tracked hidden names to another worksheet</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ExportAll(ByVal targetSh As Worksheet, _
+<pre><code class="language-vb">Public Sub ExportNames(ByVal targetSh As Worksheet, _
                       Optional ByVal prefix As String = vbNullString)
 </code></pre>
 <hr />
-<h3 id="exportalltoworkbook">ExportAllToWorkbook <a class="anchor-link" href="#exportalltoworkbook">#</a></h3>
+<h3 id="exportnamestoworkbook">ExportNamesToWorkbook <a class="anchor-link" href="#exportnamestoworkbook">#</a></h3>
 <p><em>export-names-to-workbook</em></p>
 <p><strong>Export tracked names to another workbook scope</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ExportAllToWorkbook(ByVal targetWb As Workbook, _
+<pre><code class="language-vb">Public Sub ExportNamesToWorkbook(ByVal targetWb As Workbook, _
                                 Optional ByVal prefix As String = vbNullString)
 </code></pre>
 <hr />
-<h3 id="importall">ImportAll <a class="anchor-link" href="#importall">#</a></h3>
+<h3 id="importnames">ImportNames <a class="anchor-link" href="#importnames">#</a></h3>
 <p><em>import-names</em></p>
 <p><strong>Import hidden names from another worksheet</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ImportAll(ByVal sourceSh As Worksheet, _
+<pre><code class="language-vb">Public Sub ImportNames(ByVal sourceSh As Worksheet, _
                       Optional ByVal prefix As String = vbNullString, _
                       Optional ByVal overwriteExisting As Boolean = True)
 </code></pre>
 <hr />
-<h3 id="importallfromworkbook">ImportAllFromWorkbook <a class="anchor-link" href="#importallfromworkbook">#</a></h3>
+<h3 id="importnamesfromworkbook">ImportNamesFromWorkbook <a class="anchor-link" href="#importnamesfromworkbook">#</a></h3>
 <p><em>import-names-from-workbook</em></p>
 <p><strong>Import hidden names from another workbook scope</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ImportAllFromWorkbook(ByVal sourceWb As Workbook, _
+<pre><code class="language-vb">Public Sub ImportNamesFromWorkbook(ByVal sourceWb As Workbook, _
                                   Optional ByVal prefix As String = vbNullString, _
                                   Optional ByVal overwriteExisting As Boolean = True)
 </code></pre>
@@ -255,15 +255,6 @@ the supplied worksheet or workbook.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub StoreMetadataRecord(ByVal nameId As String, ByRef record As Variant)
 </code></pre>
-<hr />
-<h2 id="int-factory">Factory</h2>
-<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
-<p><em>self</em></p>
-<p><strong>Self-reference returning the interface pointer</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Self() As IHiddenNames
-</code></pre>
-<p><strong>Returns:</strong> IHiddenNames. This instance.</p>
 <hr />
 <h2 id="int-initialisation">Initialisation</h2>
 <h3 id="int-initialise">Initialise <a class="anchor-link" href="#int-initialise">#</a></h3>
@@ -471,7 +462,7 @@ internal methods receive pre-sanitized identifiers.</p>
 <pre><code class="language-vb">Private Function RecordValue(ByVal record As Variant) As Variant
 </code></pre>
 <p>Reads the value from the record definition without going through the
-public ValueOf method, avoiding redundant SanitizeNameId calls and
+public Value method, avoiding redundant SanitizeNameId calls and
 metadata index lookups when the record is already resolved.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -559,7 +550,7 @@ metadata index lookups when the record is already resolved.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (61 file(s))</summary>
+<summary>Used in (57 file(s))</summary>
 <ul>
 <li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
 <li><a href="AnaTabIds.html">AnaTabIds.cls</a></li>
@@ -570,7 +561,6 @@ metadata index lookups when the record is already resolved.</p>
 <li><a href="LLImporter.html">LLImporter.cls</a></li>
 <li><a href="DesignerPreparation.html">DesignerPreparation.cls</a></li>
 <li><a href="DesignerTranslation.html">DesignerTranslation.cls</a></li>
-<li><a href="IDesignerPreparation.html">IDesignerPreparation.cls</a></li>
 <li><a href="LinelistBuildService.html">LinelistBuildService.cls</a></li>
 <li><a href="LLdictionary.html">LLdictionary.cls</a></li>
 <li><a href="LLExport.html">LLExport.cls</a></li>
@@ -578,12 +568,9 @@ metadata index lookups when the record is already resolved.</p>
 <li><a href="CustomTable.html">CustomTable.cls</a></li>
 <li><a href="DataSheet.html">DataSheet.cls</a></li>
 <li><a href="DropdownLists.html">DropdownLists.cls</a></li>
-<li><a href="HiddenNames.html">HiddenNames.cls</a></li>
-<li><a href="IHiddenNames.html">IHiddenNames.cls</a></li>
 <li><a href="LLGeo.html">LLGeo.cls</a></li>
 <li><a href="LLSpatial.html">LLSpatial.cls</a></li>
 <li><a href="EventLinelist.html">EventLinelist.cls</a></li>
-<li><a href="IEventLinelist.html">IEventLinelist.cls</a></li>
 <li><a href="Linelist.html">Linelist.cls</a></li>
 <li><a href="LinelistSpecs.html">LinelistSpecs.cls</a></li>
 <li><a href="ListBuilder.html">ListBuilder.cls</a></li>
@@ -595,11 +582,11 @@ metadata index lookups when the record is already resolved.</p>
 <li><a href="EventSetup.html">EventSetup.cls</a></li>
 <li><a href="SetupImportService.html">SetupImportService.cls</a></li>
 <li><a href="SetupTranslationsTable.html">SetupTranslationsTable.cls</a></li>
-<li><a href="DesignerImportService.html">DesignerImportService.cls</a></li>
 <li>EventsDesignerAdvanced.bas</li>
 <li>EventsDesignerCore.bas</li>
 <li>EventsDesignerMulti.bas</li>
 <li>GenerationReport.bas</li>
+<li>CustomLinelistFunctions.bas</li>
 <li>EventsLinelistButtons.bas</li>
 <li>LinelistEventsManager.bas</li>
 <li>FormLogicEpiWeek.bas</li>

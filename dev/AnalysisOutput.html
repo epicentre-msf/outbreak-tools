@@ -16,8 +16,8 @@ Given a setup worksheet containing analysis definition ListObjects and an
 output linelist facade, this class iterates through each analysis scope
 (normal, time series, spatial, spatio-temporal), builds cross-tables from
 table specifications, writes formulas, registers metadata in AnaTabIds, and
-renders charts. Consumers interact through the IAnalysisOutput interface.</p>
-<p><strong>Depends on:</strong> <a href="ILinelist.html">ILinelist</a>, <a href="ILinelistSpecs.html">ILinelistSpecs</a>, <a href="ILLFormat.html">ILLFormat</a>, <a href="ITranslationObject.html">ITranslationObject</a>, <a href="ITableSpecs.html">ITableSpecs</a>, <a href="ICrossTable.html">ICrossTable</a>, <a href="ICrossTableFormula.html">ICrossTableFormula</a>, <a href="IGraphSpecs.html">IGraphSpecs</a>, <a href="IGraphs.html">IGraphs</a>, <a href="IAnaTabIds.html">IAnaTabIds</a>, <a href="IButtons.html">IButtons</a>, <a href="IPasswords.html">IPasswords</a>, <a href="IDropdownLists.html">IDropdownLists</a>, <a href="ILLdictionary.html">ILLdictionary</a>, <a href="ILLVariables.html">ILLVariables</a>, <a href="IFormulaData.html">IFormulaData</a>, <a href="BetterArray.html">BetterArray</a>, ListObject names in the setup worksheet, Bug #2 fix: GoTo arrays are now local to each scope, not shared instance state., They are passed as parameters to WriteTable and managed per-scope in WriteAnalysis., Checking support</p>
+renders charts.</p>
+<p><strong>Depends on:</strong> <a href="Linelist.html">Linelist</a>, <a href="LinelistSpecs.html">LinelistSpecs</a>, <a href="LLFormat.html">LLFormat</a>, <a href="TranslationObject.html">TranslationObject</a>, <a href="TableSpecs.html">TableSpecs</a>, <a href="CrossTable.html">CrossTable</a>, <a href="CrossTableFormula.html">CrossTableFormula</a>, <a href="Graphs.html">Graphs</a>, <a href="AnaTabIds.html">AnaTabIds</a>, <a href="Buttons.html">Buttons</a>, <a href="Passwords.html">Passwords</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="LLdictionary.html">LLdictionary</a>, <a href="LLVariables.html">LLVariables</a>, <a href="FormulaData.html">FormulaData</a>, <a href="BetterArray.html">BetterArray</a>, ListObject names in the setup worksheet, Bug #2 fix: GoTo arrays are now local to each scope, not shared instance state., They are passed as parameters to WriteTable and managed per-scope in WriteAnalysis., Checking support</p>
 <p><strong>Version:</strong> 1.0 (2026-02-10)</p>
 <details open class="doc-section" id="instantiation">
 <summary>Instantiation</summary>
@@ -27,7 +27,7 @@ renders charts. Consumers interact through the IAnalysisOutput interface.</p>
 <p><strong>Create an AnalysisOutput orchestrator bound to a setup worksheet and output linelist.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal specSh As Worksheet, _
-                       ByVal ll As ILinelist) As IAnalysisOutput
+                       ByVal ll As Linelist) As AnalysisOutput
 </code></pre>
 <p>Factory method that creates a new AnalysisOutput instance tied to the given
 setup worksheet and output linelist. The setup worksheet contains the
@@ -40,10 +40,10 @@ populated. Both parameters are validated before construction.</p>
 <li><code>specSh</code>: Worksheet. The setup worksheet containing analysis ListObjects
 (Tab_global_summary, Tab_Univariate_Analysis, Tab_Bivariate_Analysis,
 Tab_TimeSeries_Analysis, Tab_Spatial_Analysis, Tab_SpatioTemporal_Analysis).</li>
-<li><code>ll</code>: ILinelist. The output linelist workbook facade where analysis sheets
+<li><code>ll</code>: Linelist. The output linelist workbook facade where analysis sheets
 will be created.</li>
 </ul>
-<p><strong>Returns:</strong> IAnalysisOutput. A fully initialised orchestrator instance ready for use.</p>
+<p><strong>Returns:</strong> AnalysisOutput. A fully initialised orchestrator instance ready for use.</p>
 <p><strong>Throws:</strong></p>
 <ul>
 <li>InvalidArgument When the specifications worksheet is Nothing.</li>
@@ -59,7 +59,7 @@ will be created.</li>
 <p><em>write-analysis</em></p>
 <p><strong>Write all analysis tables, formulas, and graphs to the output.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub WriteAnalysis(Optional ByVal part As Byte = 0)
+<pre><code class="language-vb">Public Sub WriteAnalysis(Optional ByVal part As Byte = 0)
 </code></pre>
 <p>Top-level entry point that builds all four analysis output worksheets.
 Top-level orchestrator that builds all four analysis output worksheets in
@@ -77,8 +77,8 @@ enabled once at the top via BusyApp.</p>
 <li>The normal scope writes three ListObjects (GLOBALSUMMARY,
 UNIVARIATE, BIVARIATE) in sequence. Time-series and spatio-temporal
 scopes also create graphs and a graph-level GoTo dropdown. The caller
-(IAnalysisOutput_WriteAnalysis) is responsible for restoring Application
-settings after this method returns.</li>
+of WriteAnalysis is responsible for restoring Application settings after
+this method returns.</li>
 </ul>
 <hr />
 </div>
@@ -86,36 +86,44 @@ settings after this method returns.</li>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-internal-properties">Internal Properties</h2>
-<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
-<p><em>self</em></p>
-<p><strong>Current object instance.</strong></p>
+<h3 id="int-seal">Seal <a class="anchor-link" href="#int-seal">#</a></h3>
+<p><em>seal</em></p>
+<p><strong>Seal the instance against further setup writes.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Self() As IAnalysisOutput
+<pre><code class="language-vb">Public Sub Seal()
 </code></pre>
-<p>Properties used during factory construction and internal wiring.
-Convenience accessor that returns the current instance cast to the
-IAnalysisOutput interface, enabling the predeclared factory pattern.</p>
-<p><strong>Returns:</strong> IAnalysisOutput. The current instance cast to the interface.</p>
+<p>Properties used during factory construction and internal wiring.</p>
+<hr />
+<h3 id="int-guardnotsealed">GuardNotSealed <a class="anchor-link" href="#int-guardnotsealed">#</a></h3>
+<p><em>guard-not-sealed</em></p>
+<p><strong>Guard a setup setter against post-creation writes.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub GuardNotSealed(ByVal propName As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>propName</code>: String. The property name for the error message.</li>
+</ul>
 <hr />
 <h3 id="int-outputll">OutputLL <a class="anchor-link" href="#int-outputll">#</a></h3>
 <p><em>output-ll-get</em></p>
 <p><strong>Output linelist facade.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get OutputLL() As ILinelist
+<pre><code class="language-vb">Public Property Get OutputLL() As Linelist
 </code></pre>
-<p>Returns the ILinelist reference representing the output workbook where
+<p>Returns the Linelist reference representing the output workbook where
 analysis worksheets are created and populated.</p>
-<p><strong>Returns:</strong> ILinelist. The output linelist workbook facade.</p>
+<p><strong>Returns:</strong> Linelist. The output linelist workbook facade.</p>
 <hr />
 <h3 id="int-outputll">OutputLL <a class="anchor-link" href="#int-outputll">#</a></h3>
 <p><em>output-ll-set</em></p>
 <p><strong>Assign the output linelist facade.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Set OutputLL(ByVal ll As ILinelist)
+<pre><code class="language-vb">Public Property Set OutputLL(ByVal ll As Linelist)
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>ll</code>: ILinelist. The output linelist workbook facade to store.</li>
+<li><code>ll</code>: Linelist. The output linelist workbook facade to store.</li>
 </ul>
 <hr />
 <h3 id="int-wksh">Wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
@@ -143,37 +151,37 @@ analysis worksheets are created and populated.</p>
 <p><em>linelist-data</em></p>
 <p><strong>Linelist metadata facade.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get LinelistData() As ILinelistSpecs
+<pre><code class="language-vb">Private Property Get LinelistData() As LinelistSpecs
 </code></pre>
 <p>Convenience accessors for frequently used collaborators retrieved
 through the output linelist and its metadata facade.
-Convenience accessor that retrieves the ILinelistSpecs object from the
-stored output linelist. ILinelistSpecs is the central metadata facade
+Convenience accessor that retrieves the LinelistSpecs object from the
+stored output linelist. LinelistSpecs is the central metadata facade
 providing access to the dictionary, translation objects, formula data,
 design format, passwords, and sheet configuration. This property avoids
 repeating OutputLL().LinelistData() throughout the class.</p>
-<p><strong>Returns:</strong> ILinelistSpecs. Metadata facade for the output linelist.</p>
+<p><strong>Returns:</strong> LinelistSpecs. Metadata facade for the output linelist.</p>
 <hr />
 <h3 id="int-designformat">DesignFormat <a class="anchor-link" href="#int-designformat">#</a></h3>
 <p><em>design-format</em></p>
 <p><strong>Design format object.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get DesignFormat() As ILLFormat
+<pre><code class="language-vb">Private Property Get DesignFormat() As LLFormat
 </code></pre>
-<p>Convenience accessor for the ILLFormat design format object used to
+<p>Convenience accessor for the LLFormat design format object used to
 apply visual formatting (fonts, colours, borders, cell styles) to analysis
 worksheets, cells, and chart elements. Delegates through LinelistData to
 retrieve the shared format singleton so all analysis output uses consistent
 styling from the setup workbook.</p>
-<p><strong>Returns:</strong> ILLFormat. Design format object for the output linelist.</p>
+<p><strong>Returns:</strong> LLFormat. Design format object for the output linelist.</p>
 <hr />
 <h3 id="int-transobject">TransObject <a class="anchor-link" href="#int-transobject">#</a></h3>
 <p><em>trans-object</em></p>
 <p><strong>Translation object for a given scope.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get TransObject(Optional ByVal scope As Byte = TranslationOfMessages) As ITranslationObject
+<pre><code class="language-vb">Public Property Get TransObject(Optional ByVal scope As Byte = TranslationOfMessages) As TranslationObject
 </code></pre>
-<p>Retrieves an ITranslationObject for the requested translation scope.
+<p>Retrieves an TranslationObject for the requested translation scope.
 Translation objects resolve human-readable labels, button captions, sheet
 names, and other locale-dependent strings from the setup workbook. The
 scope parameter controls which translation table is used: messages (default),
@@ -183,7 +191,7 @@ shape names, or other categories defined by the TranslationScope enum.</p>
 <li><code>scope</code>: Optional Byte. A constant from the TranslationScope enum.
 Defaults to TranslationOfMessages. Use TranslationOfShapes for button/shape labels.</li>
 </ul>
-<p><strong>Returns:</strong> ITranslationObject. Bound to the requested translation scope.</p>
+<p><strong>Returns:</strong> TranslationObject. Bound to the requested translation scope.</p>
 <hr />
 <h3 id="int-outputsh">OutputSh <a class="anchor-link" href="#int-outputsh">#</a></h3>
 <p><em>output-sh</em></p>
@@ -207,15 +215,15 @@ which analysis worksheet to return. Defaults to AnalysisScopeNormal.</li>
 <p><em>names-object</em></p>
 <p><strong>Lazily-initialised analysis tracking object.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get NamesObject() As IAnaTabIds
+<pre><code class="language-vb">Private Property Get NamesObject() As AnaTabIds
 </code></pre>
-<p>Lazily-initialised accessor for the IAnaTabIds tracking object. AnaTabIds
+<p>Lazily-initialised accessor for the AnaTabIds tracking object. AnaTabIds
 maintains a registry of all cross-table named ranges and graph metadata
 created during the analysis build. This registry is later used by the
 update/filter commands to locate tables and graphs at runtime. The object
 is created once on first access using the temporary analysis worksheet
 from the linelist, and all subsequent calls return the cached instance.</p>
-<p><strong>Returns:</strong> IAnaTabIds. Tracking object that records table and graph metadata.</p>
+<p><strong>Returns:</strong> AnaTabIds. Tracking object that records table and graph metadata.</p>
 <p><strong>Remarks:</strong></p>
 <ul>
 <li>The backing worksheet comes from lData.TemporarySheetName(TemporarySheetAnalysis),
@@ -501,21 +509,13 @@ providing a consistent stack trace across all methods in this class.</p>
 <li>ProjectError.<varies> Always raises the specified error.</li>
 </ul>
 <hr />
-<h2 id="int-interface-implementation">Interface Implementation</h2>
-<h3 id="int-ianalysisoutput-writeanalysis">IAnalysisOutput_WriteAnalysis <a class="anchor-link" href="#int-ianalysisoutput-writeanalysis">#</a></h3>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub IAnalysisOutput_WriteAnalysis(Optional ByVal part As Byte = 0)
-</code></pre>
-<p>Delegated members satisfying the IAnalysisOutput contract.
-See the corresponding Public/Private members above for full documentation.</p>
-<hr />
 </details>
 <details>
 <summary>Used in (4 file(s))</summary>
 <ul>
-<li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
-<li><a href="IAnalysisOutput.html">IAnalysisOutput.cls</a></li>
+<li><a href="CrossTable.html">CrossTable.cls</a></li>
 <li>EventsDesignerAdvanced.bas</li>
+<li>LinelistEventsManager.bas</li>
 <li>TestAnalysisOutput.bas</li>
 </ul>
 </details>

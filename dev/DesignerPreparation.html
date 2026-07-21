@@ -21,7 +21,7 @@ worksheet-level HiddenNames flags, applies data validation to the
 T_Multi table on the GenerateMultiple worksheet, and registers hidden
 sheets with the development manager. Also provides methods to read and
 write ribbon checkbox flags persisted through workbook-level hidden names.</p>
-<p><strong>Depends on:</strong> <a href="HiddenNames.html">HiddenNames</a>, <a href="IHiddenNames.html">IHiddenNames</a>, <a href="IDevelopment.html">IDevelopment</a>, <a href="OSFiles.html">OSFiles</a>, <a href="IOSFiles.html">IOSFiles</a>, <a href="CustomTable.html">CustomTable</a>, <a href="ICustomTable.html">ICustomTable</a>, <a href="BetterArray.html">BetterArray</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="IDropdownLists.html">IDropdownLists</a></p>
+<p><strong>Depends on:</strong> <a href="HiddenNames.html">HiddenNames</a>, <a href="Development.html">Development</a>, <a href="OSFiles.html">OSFiles</a>, <a href="CustomTable.html">CustomTable</a>, <a href="BetterArray.html">BetterArray</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="DropdownLists.html">DropdownLists</a></p>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
 <div class="section-body">
@@ -29,17 +29,16 @@ write ribbon checkbox flags persisted through workbook-level hidden names.</p>
 <p><em>create</em></p>
 <p><strong>Create and configure a designer preparation helper</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Create(ByVal hostBook As Workbook) As IDesignerPreparation
+<pre><code class="language-vb">Public Function Create(ByVal hostBook As Workbook) As DesignerPreparation
 </code></pre>
 <p>Factory method that creates a new DesignerPreparation instance, binds
 it to the supplied designer workbook via Configure, and returns the
-result through the IDesignerPreparation interface. Called on the
-predeclared instance.</p>
+result. Called on the predeclared instance.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>hostBook</code>: Workbook. The designer workbook to prepare.</li>
 </ul>
-<p><strong>Returns:</strong> IDesignerPreparation. A fully initialised instance ready for use.</p>
+<p><strong>Returns:</strong> DesignerPreparation. A fully initialised instance ready for use.</p>
 <hr />
 </div>
 </details>
@@ -68,7 +67,7 @@ on next access. Raises an error when the workbook is Nothing.</p>
 <p><em>prepare</em></p>
 <p><strong>Execute all preparation tasks on the designer workbook</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub Prepare(ByRef devManager As IDevelopment)
+<pre><code class="language-vb">Public Sub Prepare(ByRef devManager As Development)
 </code></pre>
 <p>Runs the full preparation sequence:</p>
 <ol>
@@ -89,7 +88,7 @@ the manager for deployment.</li>
 </ol>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>devManager</code>: IDevelopment. ByRef development manager instance, or Nothing.</li>
+<li><code>devManager</code>: Development. ByRef development manager instance, or Nothing.</li>
 </ul>
 <hr />
 <h3 id="setflag">SetFlag <a class="anchor-link" href="#setflag">#</a></h3>
@@ -140,38 +139,27 @@ error when accessed before configuration.</p>
 <p><em>hidden-store</em></p>
 <p><strong>The workbook-level hidden names manager</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get HiddenStore() As IHiddenNames
+<pre><code class="language-vb">Public Property Get HiddenStore() As HiddenNames
 </code></pre>
-<p>Returns the IHiddenNames instance lazily created from the host workbook.
+<p>Returns the HiddenNames instance lazily created from the host workbook.
 Used internally to persist and retrieve ribbon flag values.</p>
-<p><strong>Returns:</strong> IHiddenNames. The hidden names manager.</p>
+<p><strong>Returns:</strong> HiddenNames. The hidden names manager.</p>
 <hr />
 <h3 id="dropdowns">Dropdowns <a class="anchor-link" href="#dropdowns">#</a></h3>
 <p><em>dropdowns</em></p>
 <p><strong>The dropdown manager created during preparation</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Dropdowns() As IDropdownLists
+<pre><code class="language-vb">Public Property Get Dropdowns() As DropdownLists
 </code></pre>
-<p>Returns the IDropdownLists manager bound to the designer dropdown
+<p>Returns the DropdownLists manager bound to the designer dropdown
 worksheet. Lazily initialises the manager on first access if it was
 not already created by EnsureDropdowns or Prepare.</p>
-<p><strong>Returns:</strong> IDropdownLists. The dropdown manager instance.</p>
+<p><strong>Returns:</strong> DropdownLists. The dropdown manager instance.</p>
 <hr />
 </div>
 </details>
 <details>
 <summary>Internal members (not exported)</summary>
-<h2 id="int-factory">Factory</h2>
-<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
-<p><em>self</em></p>
-<p><strong>Current object instance</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Self() As IDesignerPreparation
-</code></pre>
-<p>Convenience accessor so consuming code can fluently retrieve the
-interface reference from the predeclared Create method.</p>
-<p><strong>Returns:</strong> IDesignerPreparation. The current instance cast to the interface.</p>
-<hr />
 <h2 id="int-preparation-helpers">Preparation Helpers</h2>
 <h3 id="int-importtranslations">ImportTranslations <a class="anchor-link" href="#int-importtranslations">#</a></h3>
 <p><em>import-translations</em></p>
@@ -199,7 +187,7 @@ design values dropdown lists.</p>
 <p><em>hide-worksheets</em></p>
 <p><strong>Hide internal worksheets and register them with the dev manager</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub HideWorksheets(ByRef devManager As IDevelopment)
+<pre><code class="language-vb">Private Sub HideWorksheets(ByRef devManager As Development)
 </code></pre>
 <p>Sets __pass, __formatter, __formula, __dropdowns to xlSheetVeryHidden.
 Sets LinelistTranslation and DesignerTranslation to xlSheetHidden
@@ -208,7 +196,7 @@ is provided, all sheets are also registered via AddHiddenSheet for
 deployment. Silently skips any worksheet that does not exist.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>devManager</code>: IDevelopment. Development manager for deployment registration, or Nothing.</li>
+<li><code>devManager</code>: Development. Development manager for deployment registration, or Nothing.</li>
 </ul>
 <hr />
 <h3 id="int-ensureworkbookflags">EnsureWorkbookFlags <a class="anchor-link" href="#int-ensureworkbookflags">#</a></h3>
@@ -327,7 +315,7 @@ worksheet does not exist or individual named ranges are missing.</p>
 <p><strong>Apply dropdown validation to a single named range</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ApplyRangeValidation(ByVal sh As Worksheet, ByVal rngName As String, _
-                                 ByVal drop As IDropdownLists, ByVal dropName As String)
+                                 ByVal drop As DropdownLists, ByVal dropName As String)
 </code></pre>
 <p>Resolves the named range from the worksheet and applies list
 validation using the specified dropdown. Silently exits when the
@@ -336,7 +324,7 @@ named range does not exist on the worksheet.</p>
 <ul>
 <li><code>sh</code>: Worksheet. The worksheet containing the named range.</li>
 <li><code>rngName</code>: String. The named range identifier.</li>
-<li><code>drop</code>: IDropdownLists. The dropdown manager with registered lists.</li>
+<li><code>drop</code>: DropdownLists. The dropdown manager with registered lists.</li>
 <li><code>dropName</code>: String. The dropdown list name to use as validation source.</li>
 </ul>
 <hr />
@@ -347,7 +335,7 @@ named range does not exist on the worksheet.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureHiddenStore()
 </code></pre>
-<p>Creates the IHiddenNames instance on first access by calling
+<p>Creates the HiddenNames instance on first access by calling
 HiddenNames.Create with the host workbook. Subsequent calls are no-ops.</p>
 <hr />
 <h3 id="int-ensuredefaultflags">EnsureDefaultFlags <a class="anchor-link" href="#int-ensuredefaultflags">#</a></h3>
@@ -407,13 +395,13 @@ property. Silently skips when the worksheet does not exist.</p>
 <p><em>register-hidden-sheet</em></p>
 <p><strong>Register a sheet with the development manager for deployment hiding</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub RegisterHiddenSheet(ByRef manager As IDevelopment, ByVal sheetName As String)
+<pre><code class="language-vb">Private Sub RegisterHiddenSheet(ByRef manager As Development, ByVal sheetName As String)
 </code></pre>
 <p>Wraps manager.AddHiddenSheet in error handling so a missing sheet does
 not abort the preparation sequence.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>manager</code>: IDevelopment. The development manager to register with.</li>
+<li><code>manager</code>: Development. The development manager to register with.</li>
 <li><code>sheetName</code>: String. The worksheet name to register.</li>
 </ul>
 <hr />
@@ -449,20 +437,10 @@ overlap with existing ListObjects or other content.</p>
 <li>ProjectError.<varies> Always raises the specified error.</li>
 </ul>
 <hr />
-<h2 id="int-interface-implementation">Interface Implementation</h2>
-<h3 id="int-idesignerpreparation-configure">IDesignerPreparation_Configure <a class="anchor-link" href="#int-idesignerpreparation-configure">#</a></h3>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub IDesignerPreparation_Configure(ByVal hostBook As Workbook)
-</code></pre>
-<p>Delegated members satisfying the IDesignerPreparation contract.
-See the corresponding members above for full documentation.</p>
-<hr />
 </details>
 <details>
-<summary>Used in (6 file(s))</summary>
+<summary>Used in (4 file(s))</summary>
 <ul>
-<li><a href="DesignerPreparation.html">DesignerPreparation.cls</a></li>
-<li><a href="IDesignerPreparation.html">IDesignerPreparation.cls</a></li>
 <li>EventsDesignerAdvanced.bas</li>
 <li>EventsDesignerCore.bas</li>
 <li>TestDesignerPreparation.bas</li>

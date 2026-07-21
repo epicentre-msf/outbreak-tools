@@ -26,18 +26,17 @@ for the lifetime of the instance.</p>
 <p><em>create</em></p>
 <p><strong>Build a configured EventSetup instance bound to a host workbook.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Create(ByVal hostBook As Workbook) As IEventSetup
+<pre><code class="language-vb">Public Function Create(ByVal hostBook As Workbook) As EventSetup
 </code></pre>
 <p>Factory method using the predeclared-instance pattern. Creates a new
 EventSetup, calls Configure to bind it to the host workbook and reset all
-internal caches, then returns the initialised object through the IEventSetup
-interface. Raises an error when hostBook is Nothing because Configure
-performs the validation.</p>
+internal caches, then returns the initialised object. Raises an error when
+hostBook is Nothing because Configure performs the validation.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>hostBook</code>: Workbook. The workbook owning the setup sheets.</li>
 </ul>
-<p><strong>Returns:</strong> IEventSetup. Configured service instance.</p>
+<p><strong>Returns:</strong> EventSetup. Configured service instance.</p>
 <p><strong>Throws:</strong></p>
 <ul>
 <li>ProjectError.ObjectNotInitialized When hostBook is Nothing (raised by Configure).</li>
@@ -45,8 +44,8 @@ performs the validation.</p>
 <hr />
 </div>
 </details>
-<details open class="doc-section" id="ieventsetup-implementation">
-<summary>IEventSetup implementation</summary>
+<details open class="doc-section" id="event-handling-and-operations">
+<summary>Event handling and operations</summary>
 <div class="section-body">
 <h3 id="configure">Configure <a class="anchor-link" href="#configure">#</a></h3>
 <p><em>configure</em></p>
@@ -54,8 +53,7 @@ performs the validation.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Configure(ByVal hostBook As Workbook)
 </code></pre>
-<p>Direct implementations and thin delegation stubs for each
-IEventSetup interface member.
+<p>Workbook event handlers and setup row operations.
 Stores the host workbook reference and resets every lazily-cached domain
 manager so subsequent calls rebuild them from the new workbook. Must be
 called before any event handler or row operation. Raises an error when the
@@ -69,11 +67,11 @@ supplied workbook is Nothing.</p>
 <li>ProjectError.ObjectNotInitialized When hostBook is Nothing.</li>
 </ul>
 <hr />
-<h3 id="ieventsetup-onworkbookopen">IEventSetup_OnWorkbookOpen <a class="anchor-link" href="#ieventsetup-onworkbookopen">#</a></h3>
+<h3 id="onworkbookopen">OnWorkbookOpen <a class="anchor-link" href="#onworkbookopen">#</a></h3>
 <p><em>on-workbook-open</em></p>
 <p><strong>React to workbook open notifications.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub IEventSetup_OnWorkbookOpen()
+<pre><code class="language-vb">Public Sub OnWorkbookOpen()
 </code></pre>
 <p>Switches update watcher tags to &quot;yes&quot; so tracked columns are marked as
 needing recalculation, resets the translation counter hidden name to zero,
@@ -81,11 +79,11 @@ disables Application.FormatStaleValues to suppress recalculation prompts,
 and applies the full password protection matrix across all setup sheets.
 Silently skips each step when the required helper cannot be created.</p>
 <hr />
-<h3 id="ieventsetup-onsheetactivate">IEventSetup_OnSheetActivate <a class="anchor-link" href="#ieventsetup-onsheetactivate">#</a></h3>
+<h3 id="onsheetactivate">OnSheetActivate <a class="anchor-link" href="#onsheetactivate">#</a></h3>
 <p><em>on-sheet-activate</em></p>
 <p><strong>Handle worksheet activation events.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub IEventSetup_OnSheetActivate(ByVal sh As Worksheet)
+<pre><code class="language-vb">Public Sub OnSheetActivate(ByVal sh As Worksheet)
 </code></pre>
 <p>Invalidates relevant ribbon controls (delete row, delete column, sort) so
 their enabled state reflects the newly active sheet. When the Analysis sheet
@@ -96,11 +94,11 @@ are current.</p>
 <li><code>sh</code>: Worksheet. The worksheet that became active.</li>
 </ul>
 <hr />
-<h3 id="ieventsetup-onsheetchange">IEventSetup_OnSheetChange <a class="anchor-link" href="#ieventsetup-onsheetchange">#</a></h3>
+<h3 id="onsheetchange">OnSheetChange <a class="anchor-link" href="#onsheetchange">#</a></h3>
 <p><em>on-sheet-change</em></p>
 <p><strong>Handle worksheet change events fired by Excel.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub IEventSetup_OnSheetChange(ByVal sh As Worksheet, ByVal target As Range)
+<pre><code class="language-vb">Public Sub OnSheetChange(ByVal sh As Worksheet, ByVal target As Range)
 </code></pre>
 <p>Forwards every change to the update watcher so tracked columns are flagged.
 When the Choices sheet changes, recalculates label formulas via
@@ -118,7 +116,7 @@ relevant ListObject.</p>
 <p><em>update-analysis-dropdowns</em></p>
 <p><strong>Refresh cached dropdowns and related analysis helpers.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub UpdateAnalysisDropdowns(Optional ByVal forceUpdate As Boolean = False)
+<pre><code class="language-vb">Public Sub UpdateAnalysisDropdowns(Optional ByVal forceUpdate As Boolean = False)
 </code></pre>
 <p>Conditionally rebuilds dropdown lists used by the Analysis sheet. When
 forceUpdate is True or when the update watcher reports that &quot;control_details&quot;
@@ -131,25 +129,51 @@ subsequent lookups reflect the latest dictionary state.</p>
 <li><code>forceUpdate</code>: Optional Boolean. When True, forces a full refresh regardless of update tags. Defaults to False.</li>
 </ul>
 <hr />
-<h3 id="ieventsetup-resetcaches">IEventSetup_ResetCaches <a class="anchor-link" href="#ieventsetup-resetcaches">#</a></h3>
+<h3 id="resetcaches">ResetCaches <a class="anchor-link" href="#resetcaches">#</a></h3>
 <p><em>reset-caches</em></p>
 <p><strong>Clear cached resources so they are lazily rebuilt on demand.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub IEventSetup_ResetCaches()
+<pre><code class="language-vb">Public Sub ResetCaches()
 </code></pre>
 <hr />
-<h3 id="ieventsetup-recalculateanalysis">IEventSetup_RecalculateAnalysis <a class="anchor-link" href="#ieventsetup-recalculateanalysis">#</a></h3>
+<h3 id="recalculateanalysis">RecalculateAnalysis <a class="anchor-link" href="#recalculateanalysis">#</a></h3>
 <p><em>recalculate-analysis</em></p>
 <p><strong>Recalculate analysis tables in response to structural edits.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub IEventSetup_RecalculateAnalysis()
+<pre><code class="language-vb">Public Sub RecalculateAnalysis()
 </code></pre>
 <hr />
-<h3 id="ieventsetup-resettranslationcounter">IEventSetup_ResetTranslationCounter <a class="anchor-link" href="#ieventsetup-resettranslationcounter">#</a></h3>
-<p><em>reset-translation-counter</em></p>
-<p><strong>Reset the translation update counter stored in hidden names.</strong></p>
+<h3 id="buildtimeseriesheader">BuildTimeSeriesHeader <a class="anchor-link" href="#buildtimeseriesheader">#</a></h3>
+<p><em>build-time-series-header</em></p>
+<p><strong>Compose the time-series header displayed in analysis tables.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub IEventSetup_ResetTranslationCounter()
+<pre><code class="language-vb">Public Function BuildTimeSeriesHeader(ByVal timeVar As String, _
+                                      ByVal groupVar As String, _
+                                      ByVal sumLabel As String) As String
+</code></pre>
+<hr />
+<h3 id="analysisgraphvalue">AnalysisGraphValue <a class="anchor-link" href="#analysisgraphvalue">#</a></h3>
+<p><em>analysis-graph-value</em></p>
+<p><strong>Retrieve a value from the analysis graph label table.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function AnalysisGraphValue(ByVal graphTitle As String, _
+                                   Optional ByVal graphCol As String = &quot;Graph ID&quot;) As String
+</code></pre>
+<hr />
+<h3 id="analysistimeseriesvalue">AnalysisTimeSeriesValue <a class="anchor-link" href="#analysistimeseriesvalue">#</a></h3>
+<p><em>analysis-time-series-value</em></p>
+<p><strong>Retrieve a value from the analysis time-series table.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function AnalysisTimeSeriesValue(ByVal seriesTitle As String, _
+                                        Optional ByVal tsColumn As String = &quot;Series ID&quot;) As String
+</code></pre>
+<hr />
+<h3 id="spatiotemporalspecvalue">SpatioTemporalSpecValue <a class="anchor-link" href="#spatiotemporalspecvalue">#</a></h3>
+<p><em>spatio-temporal-spec-value</em></p>
+<p><strong>Retrieve a value from the spatio-temporal specifications table.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function SpatioTemporalSpecValue(ByVal sectionName As String, _
+                                        Optional ByVal specColumn As String = &quot;N geo max&quot;) As String
 </code></pre>
 <hr />
 </div>
@@ -250,45 +274,6 @@ columns. Silently exits for unrecognised sheets.</p>
 </details>
 <details>
 <summary>Internal members (not exported)</summary>
-<h2 id="int-factory-helpers">Factory helpers</h2>
-<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
-<p><em>self</em></p>
-<p><strong>Current object instance cast to the interface.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Self() As IEventSetup
-</code></pre>
-<p><strong>Returns:</strong> IEventSetup. The current instance.</p>
-<hr />
-<h2 id="int-ieventsetup-implementation">IEventSetup implementation</h2>
-<h3 id="int-ieventsetup-buildtimeseriesheader">IEventSetup_BuildTimeSeriesHeader <a class="anchor-link" href="#int-ieventsetup-buildtimeseriesheader">#</a></h3>
-<p><em>build-time-series-header</em></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function IEventSetup_BuildTimeSeriesHeader(ByVal timeVar As String, _
-                                                   ByVal groupVar As String, _
-                                                   ByVal sumLabel As String) As String
-</code></pre>
-<hr />
-<h3 id="int-ieventsetup-analysisgraphvalue">IEventSetup_AnalysisGraphValue <a class="anchor-link" href="#int-ieventsetup-analysisgraphvalue">#</a></h3>
-<p><em>analysis-graph-value</em></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function IEventSetup_AnalysisGraphValue(ByVal graphTitle As String, _
-                                                Optional ByVal graphCol As String = &quot;Graph ID&quot;) As String
-</code></pre>
-<hr />
-<h3 id="int-ieventsetup-analysistimeseriesvalue">IEventSetup_AnalysisTimeSeriesValue <a class="anchor-link" href="#int-ieventsetup-analysistimeseriesvalue">#</a></h3>
-<p><em>analysis-time-series-value</em></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function IEventSetup_AnalysisTimeSeriesValue(ByVal seriesTitle As String, _
-                                                     Optional ByVal tsColumn As String = &quot;Series ID&quot;) As String
-</code></pre>
-<hr />
-<h3 id="int-ieventsetup-spatiotemporalspecvalue">IEventSetup_SpatioTemporalSpecValue <a class="anchor-link" href="#int-ieventsetup-spatiotemporalspecvalue">#</a></h3>
-<p><em>spatio-temporal-spec-value</em></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function IEventSetup_SpatioTemporalSpecValue(ByVal sectionName As String, _
-                                                     Optional ByVal specColumn As String = &quot;N geo max&quot;) As String
-</code></pre>
-<hr />
 <h2 id="int-internal-helpers">Internal helpers</h2>
 <h3 id="int-resetinternalcaches">ResetInternalCaches <a class="anchor-link" href="#int-resetinternalcaches">#</a></h3>
 <p><em>reset-internal-caches</em></p>
@@ -320,7 +305,7 @@ before attempting the operation.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureUpdatedValues()
 </code></pre>
-<p>Creates an IUpdatedValues instance from the &quot;__updated&quot; registry worksheet.
+<p>Creates an UpdatedValues instance from the &quot;__updated&quot; registry worksheet.
 Exits silently when the worksheet does not exist or creation fails, so
 callers must always check this.updater before use.</p>
 <hr />
@@ -330,7 +315,7 @@ callers must always check this.updater before use.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureDropdownValues()
 </code></pre>
-<p>Creates an IDropdownLists instance from the &quot;__variables&quot; worksheet using
+<p>Creates an DropdownLists instance from the &quot;__variables&quot; worksheet using
 the standard dropdown prefix. Exits silently when the worksheet does not
 exist or creation fails.</p>
 <hr />
@@ -407,7 +392,7 @@ silently. Returns True when available.</p>
 <p><em>ensure-analysis-table</em></p>
 <p><strong>Ensure the cached analysis tables are created lazily and reused.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function EnsureAnalysisTable(ByRef tableRef As ICustomTable, _
+<pre><code class="language-vb">Private Function EnsureAnalysisTable(ByRef tableRef As CustomTable, _
                                      ByVal listName As String, _
                                      ByVal keyColumn As String) As Boolean
 </code></pre>
@@ -416,7 +401,7 @@ sheet. The ByRef tableRef parameter is populated on success and reused on
 subsequent calls. Returns True when the table is available.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>tableRef</code>: ByRef ICustomTable. Cached table reference, populated on first call and reused.</li>
+<li><code>tableRef</code>: ByRef CustomTable. Cached table reference, populated on first call and reused.</li>
 <li><code>listName</code>: String. Name of the ListObject on the Analysis worksheet.</li>
 <li><code>keyColumn</code>: String. Column to use as the table key.</li>
 </ul>
@@ -426,7 +411,7 @@ subsequent calls. Returns True when the table is available.</p>
 <p><em>ensure-table-calculated</em></p>
 <p><strong>Calculate the associated ListObject once the cache is primed.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub EnsureTableCalculated(ByRef tableRef As ICustomTable, _
+<pre><code class="language-vb">Private Sub EnsureTableCalculated(ByRef tableRef As CustomTable, _
                                   ByVal listName As String, _
                                   ByVal keyColumn As String)
 </code></pre>
@@ -434,7 +419,7 @@ subsequent calls. Returns True when the table is available.</p>
 recalculates its data range. Silently exits when the table cannot be created.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>tableRef</code>: ByRef ICustomTable. Cached table reference.</li>
+<li><code>tableRef</code>: ByRef CustomTable. Cached table reference.</li>
 <li><code>listName</code>: String. Name of the ListObject on the Analysis worksheet.</li>
 <li><code>keyColumn</code>: String. Column to use as the table key.</li>
 </ul>
@@ -487,47 +472,47 @@ recalculates its data range. Silently exits when the table cannot be created.</p
 <p><em>password-manager</em></p>
 <p><strong>Build a password helper from the passwords worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function PasswordManager() As IPasswords
+<pre><code class="language-vb">Private Function PasswordManager() As Passwords
 </code></pre>
-<p>Creates an IPasswords helper from the &quot;__pass&quot; worksheet. Returns Nothing
+<p>Creates an Passwords helper from the &quot;__pass&quot; worksheet. Returns Nothing
 when the sheet does not exist or creation fails.</p>
-<p><strong>Returns:</strong> IPasswords. The password helper, or Nothing when unavailable.</p>
+<p><strong>Returns:</strong> Passwords. The password helper, or Nothing when unavailable.</p>
 <hr />
 <h3 id="int-cachedpasswordmanager">CachedPasswordManager <a class="anchor-link" href="#int-cachedpasswordmanager">#</a></h3>
 <p><em>cached-password-manager</em></p>
 <p><strong>Return the cached password helper, creating it on first call.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function CachedPasswordManager() As IPasswords
+<pre><code class="language-vb">Private Function CachedPasswordManager() As Passwords
 </code></pre>
-<p>Lazily creates the IPasswords instance once and caches it for the lifetime
+<p>Lazily creates the Passwords instance once and caches it for the lifetime
 of this EventSetup instance. Eliminates repeated Passwords.Create calls
 during BeginSheetUpdate / EndSheetUpdate cycles.</p>
-<p><strong>Returns:</strong> IPasswords. The cached password helper, or Nothing when unavailable.</p>
+<p><strong>Returns:</strong> Passwords. The cached password helper, or Nothing when unavailable.</p>
 <hr />
 <h3 id="int-beginsheetupdate">BeginSheetUpdate <a class="anchor-link" href="#int-beginsheetupdate">#</a></h3>
 <p><em>begin-sheet-update</em></p>
 <p><strong>Temporarily unlock the provided sheet and return the password helper.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function BeginSheetUpdate(ByVal sheetName As String) As IPasswords
+<pre><code class="language-vb">Private Function BeginSheetUpdate(ByVal sheetName As String) As Passwords
 </code></pre>
 <p>Removes sheet protection using the cached password helper so callers can modify
-protected cells. Returns the IPasswords instance for later re-locking via
+protected cells. Returns the Passwords instance for later re-locking via
 EndSheetUpdate.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>sheetName</code>: String. Name of the sheet to unprotect.</li>
 </ul>
-<p><strong>Returns:</strong> IPasswords. The password helper for later re-locking.</p>
+<p><strong>Returns:</strong> Passwords. The password helper for later re-locking.</p>
 <hr />
 <h3 id="int-endsheetupdate">EndSheetUpdate <a class="anchor-link" href="#int-endsheetupdate">#</a></h3>
 <p><em>end-sheet-update</em></p>
 <p><strong>Restore sheet protection previously removed via BeginSheetUpdate.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub EndSheetUpdate(ByVal pass As IPasswords, ByVal sheetName As String)
+<pre><code class="language-vb">Private Sub EndSheetUpdate(ByVal pass As Passwords, ByVal sheetName As String)
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>pass</code>: IPasswords. Password helper returned by BeginSheetUpdate.</li>
+<li><code>pass</code>: Passwords. Password helper returned by BeginSheetUpdate.</li>
 <li><code>sheetName</code>: String. Name of the sheet to re-protect.</li>
 </ul>
 <hr />
@@ -565,7 +550,7 @@ the relevant range.</p>
 <p><em>reset-translation-counter-impl</em></p>
 <p><strong>Reset the translation update counter stored in hidden names.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ResetTranslationCounter()
+<pre><code class="language-vb">Public Sub ResetTranslationCounter()
 </code></pre>
 <p>Resets the &quot;_SetupTranslationsCounter&quot; hidden name to zero on the registry
 worksheet. Uses HiddenNames to ensure the name exists before setting its
@@ -651,13 +636,13 @@ raw variable name when the helper is unavailable or the lookup returns empty.</p
 <p><em>safe-table-value</em></p>
 <p><strong>Safely retrieve a value from a CustomTable, returning empty on error.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function SafeTableValue(ByVal tableRef As ICustomTable, _
+<pre><code class="language-vb">Private Function SafeTableValue(ByVal tableRef As CustomTable, _
                                 ByVal columnName As String, _
                                 ByVal keyName As String) As String
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>tableRef</code>: ICustomTable. The table to query.</li>
+<li><code>tableRef</code>: CustomTable. The table to query.</li>
 <li><code>columnName</code>: String. Column header to read.</li>
 <li><code>keyName</code>: String. Key value to look up.</li>
 </ul>
@@ -667,7 +652,7 @@ raw variable name when the helper is unavailable or the lookup returns empty.</p
 <p><em>analysis-table-value</em></p>
 <p><strong>Shared lookup helper for analysis ListObjects.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function AnalysisTableValue(ByRef tableRef As ICustomTable, _
+<pre><code class="language-vb">Private Function AnalysisTableValue(ByRef tableRef As CustomTable, _
                                     ByVal listName As String, _
                                     ByVal keyColumn As String, _
                                     ByVal valueColumn As String, _
@@ -677,7 +662,7 @@ raw variable name when the helper is unavailable or the lookup returns empty.</p
 then delegates to SafeTableValue for the actual retrieval.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>tableRef</code>: ByRef ICustomTable. Cached table reference.</li>
+<li><code>tableRef</code>: ByRef CustomTable. Cached table reference.</li>
 <li><code>listName</code>: String. Name of the ListObject.</li>
 <li><code>keyColumn</code>: String. Column used as the table key.</li>
 <li><code>valueColumn</code>: String. Column to read.</li>
@@ -801,12 +786,12 @@ providing a consistent stack trace across all methods in this class.</p>
 <details>
 <summary>Used in (6 file(s))</summary>
 <ul>
-<li><a href="EventSetup.html">EventSetup.cls</a></li>
-<li><a href="IEventSetup.html">IEventSetup.cls</a></li>
 <li>CustomSetupFunctions.bas</li>
+<li>EventSetupWorkbook.bas</li>
 <li>SetupEventsManager.bas</li>
 <li>SetupHelpers.bas</li>
 <li>TestEventSetup.bas</li>
+<li>TestUpdatedValues.bas</li>
 </ul>
 </details>
   </main>

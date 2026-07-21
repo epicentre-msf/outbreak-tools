@@ -18,7 +18,7 @@ references. On click, RunExport selects a folder, optionally confirms
 filter usage, then delegates to LLExporter.ExportCustom. The factory
 returns the concrete class because callers hold a
 reference to keep the WithEvents binding alive.</p>
-<p><strong>Depends on:</strong> <a href="ILLExporter.html">ILLExporter</a>, <a href="LLExporter.html">LLExporter</a>, <a href="IApplicationState.html">IApplicationState</a>, <a href="ApplicationState.html">ApplicationState</a>, <a href="IOSFiles.html">IOSFiles</a>, <a href="OSFiles.html">OSFiles</a></p>
+<p><strong>Depends on:</strong> <a href="LLExporter.html">LLExporter</a>, <a href="ApplicationState.html">ApplicationState</a>, <a href="OSFiles.html">OSFiles</a></p>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
 <div class="section-body">
@@ -27,7 +27,7 @@ reference to keep the WithEvents binding alive.</p>
 <p><strong>Create an export button wrapper</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal sourceWkb As Workbook, _
-                       ByVal trads As ITranslationObject, _
+                       ByVal trads As TranslationObject, _
                        ByVal expBtn As MSForms.CommandButton, _
                        Optional ByVal expChk As MSForms.CheckBox = Nothing) As ExportButton
 </code></pre>
@@ -39,7 +39,7 @@ WithEvents binding alive.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>sourceWkb</code>: Workbook. The linelist workbook.</li>
-<li><code>trads</code>: ITranslationObject. Translations for user-facing messages.</li>
+<li><code>trads</code>: TranslationObject. Translations for user-facing messages.</li>
 <li><code>expBtn</code>: MSForms.CommandButton. The button to listen to.</li>
 <li><code>expChk</code>: Optional MSForms.CheckBox. Filter checkbox, or Nothing. Defaults to Nothing.</li>
 </ul>
@@ -80,14 +80,6 @@ no checkbox was bound.</p>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-public-accessors">Public Accessors</h2>
-<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
-<p><em>self</em></p>
-<p><strong>Current object instance</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Self() As ExportButton
-</code></pre>
-<p><strong>Returns:</strong> ExportButton. The current instance.</p>
-<hr />
 <h3 id="int-sourceworkbook">SourceWorkbook <a class="anchor-link" href="#int-sourceworkbook">#</a></h3>
 <p><em>source-workbook-set</em></p>
 <p><strong>Assign the source linelist workbook</strong></p>
@@ -103,11 +95,11 @@ no checkbox was bound.</p>
 <p><em>translations-set</em></p>
 <p><strong>Assign the translations object</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Set Translations(ByVal trads As ITranslationObject)
+<pre><code class="language-vb">Public Property Set Translations(ByVal trads As TranslationObject)
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>trads</code>: ITranslationObject. The translations to store.</li>
+<li><code>trads</code>: TranslationObject. The translations to store.</li>
 </ul>
 <hr />
 <h3 id="int-pushbutton">PushButton <a class="anchor-link" href="#int-pushbutton">#</a></h3>
@@ -130,6 +122,24 @@ no checkbox was bound.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>expChk</code>: MSForms.CheckBox. The checkbox to bind.</li>
+</ul>
+<hr />
+<h3 id="int-seal">Seal <a class="anchor-link" href="#int-seal">#</a></h3>
+<p><em>seal</em></p>
+<p><strong>Prevent further changes to setup-only properties</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Seal()
+</code></pre>
+<hr />
+<h3 id="int-guardnotsealed">GuardNotSealed <a class="anchor-link" href="#int-guardnotsealed">#</a></h3>
+<p><em>guard-not-sealed</em></p>
+<p><strong>Raise when a setup-only property is written after sealing</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub GuardNotSealed(ByVal propName As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>propName</code>: String. The name of the property being guarded.</li>
 </ul>
 <hr />
 <h3 id="int-usefilter">UseFilter <a class="anchor-link" href="#int-usefilter">#</a></h3>
@@ -213,6 +223,15 @@ filter state.</p>
 <li>ProjectError.<varies> Always raises the specified error.</li>
 </ul>
 <hr />
+</details>
+<details>
+<summary>Used in (4 file(s))</summary>
+<ul>
+<li><a href="Linelist.html">Linelist.cls</a></li>
+<li>EventsLinelistButtons.bas</li>
+<li>FormLogicExport.bas</li>
+<li>TestExportButton.bas</li>
+</ul>
 </details>
   </main>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>

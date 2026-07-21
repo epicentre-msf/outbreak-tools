@@ -12,10 +12,10 @@
   <main>
 <h1>LLTranslation</h1>
 <p>Manages translation ListObjects hosted on a single worksheet and provides
-scoped ITranslationObject accessors, import/export of full translation
+scoped TranslationObject accessors, import/export of full translation
 tables, dictionary-specific exchange, and workbook-level hidden name
 initialisation for translated configuration values.</p>
-<p><strong>Depends on:</strong> <a href="ITranslationObject.html">ITranslationObject</a>, <a href="TranslationObject.html">TranslationObject</a>, <a href="ICustomTable.html">ICustomTable</a>, <a href="CustomTable.html">CustomTable</a>, <a href="IHiddenNames.html">IHiddenNames</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="BetterArray.html">BetterArray</a></p>
+<p><strong>Depends on:</strong> <a href="TranslationObject.html">TranslationObject</a>, <a href="TranslationObject.html">TranslationObject</a>, <a href="CustomTable.html">CustomTable</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="BetterArray.html">BetterArray</a></p>
 <p><strong>Version:</strong> 1.0 (2026-02-10)</p>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
@@ -24,7 +24,7 @@ initialisation for translated configuration values.</p>
 <p><em>create</em></p>
 <p><strong>Create a new LLTranslation from a translation worksheet</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Create(ByVal translationSheet As Worksheet) As ILLTranslation
+<pre><code class="language-vb">Public Function Create(ByVal translationSheet As Worksheet) As LLTranslation
 </code></pre>
 <p>Instance creation via VB_PredeclaredId factory pattern.
 Validates that the worksheet is not Nothing and that all required
@@ -35,7 +35,7 @@ Tab_Translations). T_TradLLRibbon is optional.</p>
 <li><code>translationSheet</code>: Worksheet. The worksheet hosting all translation
 ListObjects.</li>
 </ul>
-<p><strong>Returns:</strong> ILLTranslation. A fully initialised facade.</p>
+<p><strong>Returns:</strong> LLTranslation. A fully initialised facade.</p>
 <p><strong>Throws:</strong></p>
 <ul>
 <li>ProjectError.ObjectNotInitialized When translationSheet is Nothing.</li>
@@ -61,9 +61,9 @@ Returns the worksheet bound to this instance.</p>
 <p><em>trans-object</em></p>
 <p><strong>Scoped translation object</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get TransObject(Optional ByVal trans As Byte = TranslationOfMessages) As ITranslationObject
+<pre><code class="language-vb">Public Property Get TransObject(Optional ByVal trans As Byte = TranslationOfMessages) As TranslationObject
 </code></pre>
-<p>Returns an ITranslationObject configured for the requested translation
+<p>Returns an TranslationObject configured for the requested translation
 scope. The language code is resolved from the host workbook HiddenNames
 (RNG_LLLanguageCode or RNG_DictionaryLanguage depending on scope).</p>
 <p><strong>Parameters:</strong></p>
@@ -71,7 +71,7 @@ scope. The language code is resolved from the host workbook HiddenNames
 <li><code>trans</code>: Optional Byte. TranslationScope value selecting the content
 scope. Defaults to TranslationOfMessages.</li>
 </ul>
-<p><strong>Returns:</strong> ITranslationObject. The translation object for the requested scope.</p>
+<p><strong>Returns:</strong> TranslationObject. The translation object for the requested scope.</p>
 <p><strong>Throws:</strong></p>
 <ul>
 <li>ProjectError.ElementNotFound When the requested ListObject does
@@ -242,14 +242,6 @@ Other keys return vbNullString.</p>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-factory">Factory</h2>
-<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
-<p><em>self</em></p>
-<p><strong>Interface-cast self reference</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Self() As ILLTranslation
-</code></pre>
-<p><strong>Returns:</strong> ILLTranslation. This instance as its interface type.</p>
-<hr />
 <h3 id="int-internalsheet">InternalSheet <a class="anchor-link" href="#int-internalsheet">#</a></h3>
 <p><em>internal-sheet</em></p>
 <p><strong>Friend setter for the host worksheet</strong></p>
@@ -346,13 +338,13 @@ present. T_TradLLRibbon is optional and not validated.</p>
 <p><em>ensure-and-set</em></p>
 <p><strong>Create a HiddenName if missing, then always update its value</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub EnsureAndSet(ByVal store As IHiddenNames, ByVal nameId As String, _
+<pre><code class="language-vb">Private Sub EnsureAndSet(ByVal store As HiddenNames, ByVal nameId As String, _
                          ByVal value As String)
 </code></pre>
 <p>Centralised error raising.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>store</code>: IHiddenNames. The hidden names manager.</li>
+<li><code>store</code>: HiddenNames. The hidden names manager.</li>
 <li><code>nameId</code>: String. The hidden name identifier.</li>
 <li><code>value</code>: String. The value to set.</li>
 </ul>
@@ -369,37 +361,15 @@ present. T_TradLLRibbon is optional and not validated.</p>
 <li><code>message</code>: String. Descriptive error message.</li>
 </ul>
 <hr />
-<h2 id="int-interface-implementation">Interface Implementation</h2>
-<h3 id="int-illtranslation-transobject">ILLTranslation_TransObject <a class="anchor-link" href="#int-illtranslation-transobject">#</a></h3>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get ILLTranslation_TransObject(Optional ByVal trans As Byte = TranslationOfMessages) As ITranslationObject
-</code></pre>
-<p>Delegated members satisfying the ILLTranslation contract.</p>
-<hr />
 </details>
 <details>
-<summary>Used in (31 file(s))</summary>
+<summary>Used in (14 file(s))</summary>
 <ul>
 <li><a href="LLExporter.html">LLExporter.cls</a></li>
-<li><a href="ILinelistBuildService.html">ILinelistBuildService.cls</a></li>
 <li><a href="LinelistBuildService.html">LinelistBuildService.cls</a></li>
 <li><a href="EventLinelist.html">EventLinelist.cls</a></li>
-<li><a href="IEventLinelist.html">IEventLinelist.cls</a></li>
-<li><a href="ILinelistSpecs.html">ILinelistSpecs.cls</a></li>
-<li><a href="ILLTranslation.html">ILLTranslation.cls</a></li>
 <li><a href="Linelist.html">Linelist.cls</a></li>
 <li><a href="LinelistSpecs.html">LinelistSpecs.cls</a></li>
-<li><a href="LLTranslation.html">LLTranslation.cls</a></li>
-<li>FormLogicAdvanced.bas</li>
-<li>FormLogicExport.bas</li>
-<li>FormLogicExportMigration.bas</li>
-<li>FormLogicGeo.bas</li>
-<li>FormLogicImportRep.bas</li>
-<li>FormLogicShowVarLabels.bas</li>
-<li>LinelistEvents.bas</li>
-<li>LinelistGeo.bas</li>
-<li><a href="DesignerImportService.html">DesignerImportService.cls</a></li>
-<li><a href="IDesignerImportService.html">IDesignerImportService.cls</a></li>
 <li>EventsLinelistButtons.bas</li>
 <li>EventsLinelistRibbon.bas</li>
 <li>GeoModule.bas</li>
@@ -407,10 +377,8 @@ present. T_TradLLRibbon is optional and not validated.</p>
 <li>FormLogicGeo.bas</li>
 <li>FormLogicImportRep.bas</li>
 <li>FormLogicShowVarLabels.bas</li>
+<li>TestHelpers.bas</li>
 <li>TestLLTranslation.bas</li>
-<li><a href="LinelistSpecsWorkbookStub.html">LinelistSpecsWorkbookStub.cls</a></li>
-<li><a href="LLVarContextSpecsStub.html">LLVarContextSpecsStub.cls</a></li>
-<li><a href="TableSpecsLinelistStub.html">TableSpecsLinelistStub.cls</a></li>
 </ul>
 </details>
   </main>

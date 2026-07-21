@@ -15,7 +15,7 @@
 the first column and returns the value from the active language column.
 Supports plain text, formula-aware translation (quoted chunks only),
 range bulk-translation, and user-form caption translation.</p>
-<p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="Checking.html">Checking</a>, <a href="IChecking.html">IChecking</a>, ProjectError, checking objects</p>
+<p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="Checking.html">Checking</a>, ProjectError, checking objects</p>
 <p><strong>Version:</strong> 1.0 (2026-02-09)</p>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
@@ -24,7 +24,7 @@ range bulk-translation, and user-form caption translation.</p>
 <p><em>create</em></p>
 <p><strong>Factory returning an initialised interface</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Create(ByVal translationLo As ListObject, ByVal translationLang As String) As ITranslationObject
+<pre><code class="language-vb">Public Function Create(ByVal translationLo As ListObject, ByVal translationLang As String) As TranslationObject
 </code></pre>
 <p>A translation object wraps a ListObject whose first column contains tags
 and remaining columns hold language translations. Tags not found during
@@ -34,7 +34,7 @@ translation are returned as-is.</p>
 <li><code>translationLo</code>: ListObject. The translation table.</li>
 <li><code>translationLang</code>: String. The target language column header.</li>
 </ul>
-<p><strong>Returns:</strong> ITranslationObject. Ready to use.</p>
+<p><strong>Returns:</strong> TranslationObject. Ready to use.</p>
 <hr />
 </div>
 </details>
@@ -61,7 +61,7 @@ translation are returned as-is.</p>
 <p><em>name</em></p>
 <p><strong>Descriptive name including table and language</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get Name() As String
+<pre><code class="language-vb">Public Property Get Name() As String
 </code></pre>
 <p><strong>Returns:</strong> String. Identifier for diagnostic output.</p>
 <hr />
@@ -69,7 +69,7 @@ translation are returned as-is.</p>
 <p><em>value-exists</em></p>
 <p><strong>Whether a tag exists in the translation table</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ValueExists(ByVal Text As String) As Boolean
+<pre><code class="language-vb">Public Function ValueExists(ByVal Text As String) As Boolean
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -81,7 +81,7 @@ translation are returned as-is.</p>
 <p><em>translated-value</em></p>
 <p><strong>Translate a text tag or formula string</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function TranslatedValue(ByVal textToTranslate As String, _ 
+<pre><code class="language-vb">Public Function TranslatedValue(ByVal textToTranslate As String, _ 
                                  Optional ByVal containsFormula As Boolean = False) As String
 </code></pre>
 <p>When containsFormula is True, only double-quoted chunks inside the text
@@ -102,7 +102,7 @@ are translated; unquoted characters pass through unchanged.</p>
 <p><em>translate-range</em></p>
 <p><strong>Translate all values in a column range</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub TranslateRange(ByVal colRng As Range, Optional ByVal containsFormula As Boolean = False)
+<pre><code class="language-vb">Public Sub TranslateRange(ByVal colRng As Range, Optional ByVal containsFormula As Boolean = False)
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -114,7 +114,7 @@ are translated; unquoted characters pass through unchanged.</p>
 <p><em>translate-form</em></p>
 <p><strong>Translate all supported controls on a user form</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub TranslateForm(ByVal UserFrm As Object)
+<pre><code class="language-vb">Public Sub TranslateForm(ByVal UserFrm As Object)
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -130,7 +130,7 @@ are translated; unquoted characters pass through unchanged.</p>
 <p><em>has-checkings</em></p>
 <p><strong>Whether diagnostic entries have been recorded</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get HasCheckings() As Boolean
+<pre><code class="language-vb">Public Property Get HasCheckings() As Boolean
 </code></pre>
 <p><strong>Returns:</strong> Boolean. True when at least one entry exists.</p>
 <hr />
@@ -138,7 +138,7 @@ are translated; unquoted characters pass through unchanged.</p>
 <p><em>checking-values</em></p>
 <p><strong>Retrieve the diagnostic log entries</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get CheckingValues() As Object
+<pre><code class="language-vb">Public Property Get CheckingValues() As Object
 </code></pre>
 <p><strong>Returns:</strong> Object. The checking instance, or Nothing.</p>
 <hr />
@@ -147,14 +147,6 @@ are translated; unquoted characters pass through unchanged.</p>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-elements">Elements</h2>
-<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
-<p><em>self</em></p>
-<p><strong>Self-reference as ITranslationObject</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Self() As ITranslationObject
-</code></pre>
-<p><strong>Returns:</strong> ITranslationObject. Self-reference.</p>
-<hr />
 <h3 id="int-table">Table <a class="anchor-link" href="#int-table">#</a></h3>
 <p><em>table</em></p>
 <p><strong>The backing ListObject translation table</strong></p>
@@ -338,31 +330,39 @@ are translated; unquoted characters pass through unchanged.</p>
 <li><code>sourceMember</code>: String. Optional calling member name.</li>
 </ul>
 <hr />
+<h3 id="int-seal">Seal <a class="anchor-link" href="#int-seal">#</a></h3>
+<p><em>seal</em></p>
+<p><strong>Seal the instance so setup setters can no longer be written</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Seal()
+</code></pre>
+<hr />
+<h3 id="int-guardnotsealed">GuardNotSealed <a class="anchor-link" href="#int-guardnotsealed">#</a></h3>
+<p><em>guard-not-sealed</em></p>
+<p><strong>Guard a setup setter against writes after sealing</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub GuardNotSealed(ByVal propName As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>propName</code>: String. Name of the property being guarded.</li>
+</ul>
+<hr />
 </details>
 <details>
-<summary>Used in (84 file(s))</summary>
+<summary>Used in (54 file(s))</summary>
 <ul>
 <li><a href="Analysis.html">Analysis.cls</a></li>
 <li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
 <li><a href="CrossTable.html">CrossTable.cls</a></li>
-<li><a href="IAnalysis.html">IAnalysis.cls</a></li>
 <li><a href="ExportButton.html">ExportButton.cls</a></li>
 <li><a href="DesignerTranslation.html">DesignerTranslation.cls</a></li>
-<li><a href="IDesignerTranslation.html">IDesignerTranslation.cls</a></li>
-<li><a href="ILLdictionary.html">ILLdictionary.cls</a></li>
-<li><a href="ILLExport.html">ILLExport.cls</a></li>
 <li><a href="LLdictionary.html">LLdictionary.cls</a></li>
 <li><a href="LLExport.html">LLExport.cls</a></li>
-<li><a href="ILLChoices.html">ILLChoices.cls</a></li>
-<li><a href="IPasswords.html">IPasswords.cls</a></li>
-<li><a href="ITranslationObject.html">ITranslationObject.cls</a></li>
+<li><a href="DropdownLists.html">DropdownLists.cls</a></li>
 <li><a href="LLChoices.html">LLChoices.cls</a></li>
 <li><a href="Passwords.html">Passwords.cls</a></li>
-<li><a href="TranslationObject.html">TranslationObject.cls</a></li>
 <li><a href="EventLinelist.html">EventLinelist.cls</a></li>
-<li><a href="IEventLinelist.html">IEventLinelist.cls</a></li>
-<li><a href="ILinelistSpecs.html">ILinelistSpecs.cls</a></li>
-<li><a href="ILLTranslation.html">ILLTranslation.cls</a></li>
 <li><a href="Linelist.html">Linelist.cls</a></li>
 <li><a href="LinelistSpecs.html">LinelistSpecs.cls</a></li>
 <li><a href="ListBuilder.html">ListBuilder.cls</a></li>
@@ -370,20 +370,10 @@ are translated; unquoted characters pass through unchanged.</p>
 <li><a href="DiseaseSheet.html">DiseaseSheet.cls</a></li>
 <li><a href="EventMasterSetup.html">EventMasterSetup.cls</a></li>
 <li><a href="IDiseaseSheet.html">IDiseaseSheet.cls</a></li>
-<li><a href="IEventMasterSetup.html">IEventMasterSetup.cls</a></li>
-<li><a href="IMasterSetupVariables.html">IMasterSetupVariables.cls</a></li>
 <li><a href="MasterSetupVariables.html">MasterSetupVariables.cls</a></li>
 <li><a href="DiseaseExporter.html">DiseaseExporter.cls</a></li>
 <li><a href="IDiseaseExporter.html">IDiseaseExporter.cls</a></li>
 <li><a href="VarWriter.html">VarWriter.cls</a></li>
-<li>FormLogicAdvanced.bas</li>
-<li>FormLogicExport.bas</li>
-<li>FormLogicExportMigration.bas</li>
-<li>FormLogicGeo.bas</li>
-<li>FormLogicImportRep.bas</li>
-<li>FormLogicShowVarLabels.bas</li>
-<li>LinelistEvents.bas</li>
-<li>LinelistGeo.bas</li>
 <li>EventsLinelistButtons.bas</li>
 <li>EventsLinelistRibbon.bas</li>
 <li>GeoModule.bas</li>
@@ -398,34 +388,24 @@ are translated; unquoted characters pass through unchanged.</p>
 <li>MasterSetupHelpers.bas</li>
 <li>EventsSetupRibbon.bas</li>
 <li>SetupHelpers.bas</li>
-<li>EventsGlobal.bas</li>
-<li>EventsRibbon.bas</li>
-<li>Exports.bas</li>
-<li>ManageDiseases.bas</li>
-<li>Misc.bas</li>
-<li><a href="LinelistPasswordStub.html">LinelistPasswordStub.cls</a></li>
 <li>TestAnalysis.bas</li>
+<li>TestCrossTable.bas</li>
+<li>TestCrossTableFormula.bas</li>
 <li>TestExportButton.bas</li>
 <li>TestDropdownLists.bas</li>
 <li>TestLLChoices.bas</li>
 <li>TestPasswords.bas</li>
 <li>TestTranslationObject.bas</li>
 <li>AnalysisTestFixture.bas</li>
+<li>TestHelpers.bas</li>
 <li>TestLLTranslation.bas</li>
 <li>TestDiseaseExporter.bas</li>
 <li>TestDiseaseIntegration.bas</li>
 <li>TestDiseaseSheet.bas</li>
 <li>TestDiseaseTranslationCache.bas</li>
 <li>TestEventMasterSetup.bas</li>
-<li><a href="AnalysisDictionaryStub.html">AnalysisDictionaryStub.cls</a></li>
-<li><a href="DesignerTranslationStub.html">DesignerTranslationStub.cls</a></li>
-<li><a href="DictionaryMinimalStub.html">DictionaryMinimalStub.cls</a></li>
-<li><a href="LinelistSpecsDesignerTranslationStub.html">LinelistSpecsDesignerTranslationStub.cls</a></li>
-<li><a href="LinelistSpecsTranslationStub.html">LinelistSpecsTranslationStub.cls</a></li>
-<li><a href="LinelistSpecsWorkbookStub.html">LinelistSpecsWorkbookStub.cls</a></li>
-<li><a href="LinelistTranslationCounterStub.html">LinelistTranslationCounterStub.cls</a></li>
-<li><a href="LLVarContextSpecsStub.html">LLVarContextSpecsStub.cls</a></li>
-<li><a href="TableSpecsLinelistStub.html">TableSpecsLinelistStub.cls</a></li>
+<li>TestSectionBuilder.bas</li>
+<li>TestVarWriter.bas</li>
 </ul>
 </details>
   </main>

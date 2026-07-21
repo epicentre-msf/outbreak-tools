@@ -12,12 +12,11 @@
   <main>
 <h1>DesignerEntry</h1>
 <p>Coordinates clearing, translation, and info read/write actions for a
-designer entry worksheet. Lazily resolves an IDesignerTranslation
+designer entry worksheet. Lazily resolves an DesignerTranslation
 translator (for applying language translations and translating message
 codes) from the host worksheet and its parent workbook. The translator
-can be replaced via setter injection for testing.
-Consumers interact through the IDesignerEntry interface.</p>
-<p><strong>Depends on:</strong> <a href="DesignerTranslation.html">DesignerTranslation</a>, <a href="IDesignerTranslation.html">IDesignerTranslation</a></p>
+can be replaced via setter injection for testing.</p>
+<p><strong>Depends on:</strong> <a href="DesignerTranslation.html">DesignerTranslation</a>, <a href="DesignerTranslation.html">DesignerTranslation</a></p>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
 <div class="section-body">
@@ -25,16 +24,16 @@ Consumers interact through the IDesignerEntry interface.</p>
 <p><em>create</em></p>
 <p><strong>Create and configure a designer entry helper</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Create(ByVal hostSheet As Worksheet) As IDesignerEntry
+<pre><code class="language-vb">Public Function Create(ByVal hostSheet As Worksheet) As DesignerEntry
 </code></pre>
 <p>Factory method that creates a new DesignerEntry instance, binds it to
-the supplied worksheet via Configure, and returns the result through
-the IDesignerEntry interface. Called on the predeclared instance.</p>
+the supplied worksheet via Configure, and returns the result. Called
+on the predeclared instance.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>hostSheet</code>: Worksheet. The worksheet hosting designer inputs.</li>
 </ul>
-<p><strong>Returns:</strong> IDesignerEntry. A fully initialised instance ready for use.</p>
+<p><strong>Returns:</strong> DesignerEntry. A fully initialised instance ready for use.</p>
 <hr />
 </div>
 </details>
@@ -63,13 +62,13 @@ previously injected test double is preserved.</p>
 <p><em>use-translator</em></p>
 <p><strong>Use a provided translations manager instead of creating one</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub UseTranslator(ByVal translator As IDesignerTranslation)
+<pre><code class="language-vb">Public Sub UseTranslator(ByVal translator As DesignerTranslation)
 </code></pre>
-<p>Replaces the internally resolved IDesignerTranslation translator with the
+<p>Replaces the internally resolved DesignerTranslation translator with the
 supplied instance. Primarily used in tests to inject a stub or mock.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>translator</code>: IDesignerTranslation. The translations provider to use.</li>
+<li><code>translator</code>: DesignerTranslation. The translations provider to use.</li>
 </ul>
 <hr />
 <h3 id="clear">Clear <a class="anchor-link" href="#clear">#</a></h3>
@@ -161,17 +160,6 @@ Raises an error when accessed before configuration.</p>
 </details>
 <details>
 <summary>Internal members (not exported)</summary>
-<h2 id="int-factory">Factory</h2>
-<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
-<p><em>self</em></p>
-<p><strong>Current object instance</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Self() As IDesignerEntry
-</code></pre>
-<p>Convenience accessor so consuming code can fluently retrieve the
-interface reference from the predeclared Create method.</p>
-<p><strong>Returns:</strong> IDesignerEntry. The current instance cast to the interface.</p>
-<hr />
 <h2 id="int-internal-helpers">Internal Helpers</h2>
 <h3 id="int-clearrange">ClearRange <a class="anchor-link" href="#int-clearrange">#</a></h3>
 <p><em>clear-range</em></p>
@@ -216,12 +204,12 @@ when the infoName is unknown or the named range does not exist.</p>
 <p><em>resolve-translator</em></p>
 <p><strong>Lazily resolve or return the translations provider</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ResolveTranslator() As IDesignerTranslation
+<pre><code class="language-vb">Private Function ResolveTranslator() As DesignerTranslation
 </code></pre>
-<p>Returns the cached IDesignerTranslation translator, or creates one via
+<p>Returns the cached DesignerTranslation translator, or creates one via
 DesignerTranslation.Create with the DesignerTranslation worksheet on first
 access. Raises an error when the translation sheet cannot be found.</p>
-<p><strong>Returns:</strong> IDesignerTranslation. The translations provider instance.</p>
+<p><strong>Returns:</strong> DesignerTranslation. The translations provider instance.</p>
 <p><strong>Throws:</strong></p>
 <ul>
 <li>ProjectError.ElementNotFound When the translation sheet is missing.</li>
@@ -258,20 +246,10 @@ access. Raises an error when the translation sheet cannot be found.</p>
 <li>ProjectError.<varies> Always raises the specified error.</li>
 </ul>
 <hr />
-<h2 id="int-interface-implementation">Interface Implementation</h2>
-<h3 id="int-idesignerentry-addinfo">IDesignerEntry_AddInfo <a class="anchor-link" href="#int-idesignerentry-addinfo">#</a></h3>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub IDesignerEntry_AddInfo(ByVal value As String, ByVal infoName As String)
-</code></pre>
-<p>Delegated members satisfying the IDesignerEntry contract.
-See the corresponding members above for full documentation.</p>
-<hr />
 </details>
 <details>
-<summary>Used in (4 file(s))</summary>
+<summary>Used in (2 file(s))</summary>
 <ul>
-<li><a href="DesignerEntry.html">DesignerEntry.cls</a></li>
-<li><a href="IDesignerEntry.html">IDesignerEntry.cls</a></li>
 <li>EventsDesignerAdvanced.bas</li>
 <li>TestDesignerRibbon.bas</li>
 </ul>

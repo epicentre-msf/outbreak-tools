@@ -25,17 +25,17 @@ also extracts textual category labels for downstream analysis consumers.</p>
 <p><em>create</em></p>
 <p><strong>Instantiate a CaseWhen parser bound to a formula</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Create(ByVal formula As String) As ICaseWhen
+<pre><code class="language-vb">Public Function Create(ByVal formula As String) As CaseWhen
 </code></pre>
 <p>Trims the incoming formula, stores it in a new instance, and returns
-the ICaseWhen interface reference for fluent downstream consumption.
+the new instance for fluent downstream consumption.
 No eager parsing occurs; the formula is parsed lazily on first access
 to Valid, ParsedFormula, or Categories.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>formula</code>: String. The CASE_WHEN expression to parse.</li>
 </ul>
-<p><strong>Returns:</strong> ICaseWhen. A ready-to-query parser instance.</p>
+<p><strong>Returns:</strong> CaseWhen. A ready-to-query parser instance.</p>
 <hr />
 </div>
 </details>
@@ -46,7 +46,7 @@ to Valid, ParsedFormula, or Categories.</p>
 <p><em>valid</em></p>
 <p><strong>Determine whether the stored formula is a CASE_WHEN</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get Valid() As Boolean
+<pre><code class="language-vb">Public Property Get Valid() As Boolean
 </code></pre>
 <p>Checks whether the stored formula matches the CASE_WHEN pattern.
 Accepts formulas that begin with the CASE_WHEN( token
@@ -63,7 +63,7 @@ False for empty strings or formulas that do not match the token.</p>
 <p><em>parsed-formula</em></p>
 <p><strong>Convert CASE_WHEN into nested IF statements</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function parsedFormula() As String
+<pre><code class="language-vb">Public Function parsedFormula() As String
 </code></pre>
 <p>Core conversion and category extraction logic.
 Iterates through the argument table in pairs (condition, result) and
@@ -77,7 +77,7 @@ nested IF calls.</p>
 <p><em>categories</em></p>
 <p><strong>Extract textual result labels from the CASE_WHEN arguments</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function Categories() As BetterArray
+<pre><code class="language-vb">Public Function Categories() As BetterArray
 </code></pre>
 <p>Evaluates each result expression (even-indexed entries in the argument
 table) and returns the literal values that will appear to end-users.
@@ -89,25 +89,54 @@ wrapped in quotes for consistent downstream handling.</p>
 </details>
 <details>
 <summary>Internal members (not exported)</summary>
-<h2 id="int-publicaccessors">PublicAccessors</h2>
-<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
-<p><em>self</em></p>
-<p><strong>Current object instance</strong></p>
+<h2 id="int-factory">Factory</h2>
+<h3 id="int-seal">Seal <a class="anchor-link" href="#int-seal">#</a></h3>
+<p><em>seal</em></p>
+<p><strong>Prevent further changes to setup-only properties</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Self() As ICaseWhen
+<pre><code class="language-vb">Public Sub Seal()
 </code></pre>
-<p>Properties that expose the internal state and interface pointer.
-Returns the current instance cast to its interface. Used internally
-by the factory method to return an ICaseWhen reference.</p>
-<p><strong>Returns:</strong> ICaseWhen. Reference to the current object.</p>
+<p>Marks the instance as sealed so guarded setters raise when invoked
+after construction. Called by the factory before returning.</p>
 <hr />
+<h3 id="int-guardnotsealed">GuardNotSealed <a class="anchor-link" href="#int-guardnotsealed">#</a></h3>
+<p><em>guard-not-sealed</em></p>
+<p><strong>Reject writes to setup-only properties after sealing</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub GuardNotSealed(ByVal propName As String)
+</code></pre>
+<p>Raises an error when a guarded setter is invoked on a sealed instance.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>propName</code>: String. Name of the property being guarded.</li>
+</ul>
+<hr />
+<h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
+<p><em>throw-error</em></p>
+<p><strong>Raise a project-specific error</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
+</code></pre>
+<p>Wrapper around Err.Raise that standardises the source to &quot;CaseWhen&quot;.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>errNumb</code>: Long. ProjectError code describing the failure.</li>
+<li><code>errorMessage</code>: String. Human-readable explanation.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.<varies> Always raises the specified error.</li>
+</ul>
+<hr />
+<h2 id="int-publicaccessors">PublicAccessors</h2>
 <h3 id="int-casewhenformula">casewhenFormula <a class="anchor-link" href="#int-casewhenformula">#</a></h3>
 <p><em>formula</em></p>
 <p><strong>Retrieve the raw CASE_WHEN formula</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get casewhenFormula() As String
 </code></pre>
-<p>Returns the original formula text as stored after trimming during
+<p>Properties that expose the internal state and interface pointer.
+Returns the original formula text as stored after trimming during
 assignment. This is the full CASE_WHEN(...) expression.</p>
 <p><strong>Returns:</strong> String. Original formula text.</p>
 <hr />
@@ -174,22 +203,14 @@ preserving nested expressions and quoted strings intact.</p>
 </ul>
 <p><strong>Returns:</strong> BetterArray. Alternating condition and result expressions.</p>
 <hr />
-<h2 id="int-interface">Interface</h2>
-<h3 id="int-icasewhen-valid">ICaseWhen_Valid <a class="anchor-link" href="#int-icasewhen-valid">#</a></h3>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get ICaseWhen_Valid() As Boolean
-</code></pre>
-<p>Delegated members satisfying the ICaseWhen contract.</p>
-<hr />
 </details>
 <details>
-<summary>Used in (5 file(s))</summary>
+<summary>Used in (4 file(s))</summary>
 <ul>
-<li><a href="CaseWhen.html">CaseWhen.cls</a></li>
 <li><a href="ChoiceFormula.html">ChoiceFormula.cls</a></li>
 <li><a href="Formulas.html">Formulas.cls</a></li>
-<li><a href="ICaseWhen.html">ICaseWhen.cls</a></li>
 <li>TestCaseWhen.bas</li>
+<li>TestChoiceFormula.bas</li>
 </ul>
 </details>
   </main>

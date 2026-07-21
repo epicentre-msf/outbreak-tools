@@ -17,42 +17,47 @@
 <h3 id="create">Create <a class="anchor-link" href="#create">#</a></h3>
 <p><strong>Instantiate a sheet helper bound to the supplied dictionary</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Create(ByVal dict As ILLdictionary) As ILLSheets
+<pre><code class="language-vb">Public Function Create(ByVal dict As LLdictionary) As LLSheets
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>dict</code>: ILLdictionary providing sheet metadata.</li>
+<li><code>dict</code>: LLdictionary providing sheet metadata.</li>
 </ul>
-<p><strong>Returns:</strong> ILLSheets fully initialised helper.</p>
+<p><strong>Returns:</strong> LLSheets fully initialised helper.</p>
 <hr />
 </div>
 </details>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-public-accessors">Public Accessors</h2>
-<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
-<p><strong>Expose the interface reference of this predeclared instance</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Self() As ILLSheets
-</code></pre>
-<p><strong>Returns:</strong> ILLSheets reference to the current object.</p>
-<hr />
 <h3 id="int-dictionary">Dictionary <a class="anchor-link" href="#int-dictionary">#</a></h3>
 <p><strong>Retrieve the backing dictionary</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Dictionary() As ILLdictionary
+<pre><code class="language-vb">Public Property Get Dictionary() As LLdictionary
 </code></pre>
-<p><strong>Returns:</strong> ILLdictionary reference captured during initialisation.</p>
+<p><strong>Returns:</strong> LLdictionary reference captured during initialisation.</p>
 <hr />
 <h3 id="int-dictionary">Dictionary <a class="anchor-link" href="#int-dictionary">#</a></h3>
 <p><strong>Store the backing dictionary and prime cached lookups</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Set Dictionary(ByVal dict As ILLdictionary)
+<pre><code class="language-vb">Public Property Set Dictionary(ByVal dict As LLdictionary)
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>dict</code>: ILLdictionary holding linelist metadata.</li>
+<li><code>dict</code>: LLdictionary holding linelist metadata.</li>
 </ul>
+<hr />
+<h3 id="int-seal">Seal <a class="anchor-link" href="#int-seal">#</a></h3>
+<p><strong>Prevent further changes to creation-only setters</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Seal()
+</code></pre>
+<hr />
+<h3 id="int-guardnotsealed">GuardNotSealed <a class="anchor-link" href="#int-guardnotsealed">#</a></h3>
+<p><strong>Guard creation-only setters after sealing</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub GuardNotSealed(ByVal propName As String)
+</code></pre>
 <hr />
 <h3 id="int-sheetrange">SheetRange <a class="anchor-link" href="#int-sheetrange">#</a></h3>
 <p><strong>Return the cached range referencing sheet names</strong></p>
@@ -65,7 +70,7 @@
 <h3 id="int-contains">Contains <a class="anchor-link" href="#int-contains">#</a></h3>
 <p><strong>Determine whether the dictionary includes the supplied sheet</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function Contains(ByVal sheetName As String) As Boolean
+<pre><code class="language-vb">Public Function Contains(ByVal sheetName As String) As Boolean
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -76,7 +81,7 @@
 <h3 id="int-rowindex">RowIndex <a class="anchor-link" href="#int-rowindex">#</a></h3>
 <p><strong>Lookup the worksheet row hosting the sheet metadata</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function RowIndex(ByVal sheetName As String) As Long
+<pre><code class="language-vb">Public Function RowIndex(ByVal sheetName As String) As Long
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -108,10 +113,11 @@
 </ul>
 <p><strong>Returns:</strong> BetterArray containing variable names for the sheet.</p>
 <hr />
-<h3 id="int-numbervars">NumberVars <a class="anchor-link" href="#int-numbervars">#</a></h3>
+<h3 id="int-numberofvars">NumberOfVars <a class="anchor-link" href="#int-numberofvars">#</a></h3>
+<p><em>NumberVars</em></p>
 <p><strong>Count the variables associated with a sheet</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function NumberVars(ByVal sheetName As String) As Long
+<pre><code class="language-vb">Public Function NumberOfVars(ByVal sheetName As String) As Long
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -122,7 +128,7 @@
 <h3 id="int-databounds">DataBounds <a class="anchor-link" href="#int-databounds">#</a></h3>
 <p><strong>Compute the data boundaries for a sheet layout</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function DataBounds(ByVal sheetName As String, _
+<pre><code class="language-vb">Public Function DataBounds(ByVal sheetName As String, _
                             Optional ByVal Bound As Byte = SheetBound.RowSart) As Long
 </code></pre>
 <p><strong>Parameters:</strong></p>
@@ -135,7 +141,7 @@
 <h3 id="int-containscontrol">ContainsControl <a class="anchor-link" href="#int-containscontrol">#</a></h3>
 <p><strong>Test whether a sheet exposes a control of the requested type</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ContainsControl(ByVal sheetName As String, _
+<pre><code class="language-vb">Public Function ContainsControl(ByVal sheetName As String, _
                                  Optional ByVal Control As String = &quot;list_auto&quot;, _
                                  Optional ByVal colName As String = COL_CONTROL) As Boolean
 </code></pre>
@@ -150,7 +156,7 @@
 <h3 id="int-variableaddress">VariableAddress <a class="anchor-link" href="#int-variableaddress">#</a></h3>
 <p><strong>Build an Excel address pointing to the variable slot on its sheet</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function VariableAddress(ByVal varName As String, Optional ByVal onSheet As String = vbNullString) As String
+<pre><code class="language-vb">Public Function VariableAddress(ByVal varName As String, Optional ByVal onSheet As String = vbNullString) As String
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -241,12 +247,12 @@
 <h3 id="int-variablesprovider">VariablesProvider <a class="anchor-link" href="#int-variablesprovider">#</a></h3>
 <p><strong>Lazily initialise the LLVariables helper for address resolution</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function VariablesProvider() As ILLVariables
+<pre><code class="language-vb">Private Function VariablesProvider() As LLVariables
 </code></pre>
-<p><strong>Returns:</strong> ILLVariables cached instance.</p>
+<p><strong>Returns:</strong> LLVariables cached instance.</p>
 <hr />
 <h3 id="int-columnindex">ColumnIndex <a class="anchor-link" href="#int-columnindex">#</a></h3>
-<p><strong>Wrapper around IDataSheet.ColumnIndex with optional caching</strong></p>
+<p><strong>Wrapper around DataSheet.ColumnIndex with optional caching</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ColumnIndex(ByVal colName As String, ByVal allowMissing As Boolean) As Long
 </code></pre>
@@ -304,21 +310,21 @@
 <h3 id="int-validatedictionary">ValidateDictionary <a class="anchor-link" href="#int-validatedictionary">#</a></h3>
 <p><strong>Ensure the supplied dictionary exposes the required columns</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ValidateDictionary(ByVal dict As ILLdictionary)
+<pre><code class="language-vb">Private Sub ValidateDictionary(ByVal dict As LLdictionary)
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>dict</code>: ILLdictionary to validate.</li>
+<li><code>dict</code>: LLdictionary to validate.</li>
 </ul>
 <hr />
 <h3 id="int-ensurecolumnexists">EnsureColumnExists <a class="anchor-link" href="#int-ensurecolumnexists">#</a></h3>
 <p><strong>Validate that a dictionary column is present</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub EnsureColumnExists(ByVal dict As ILLdictionary, ByVal colName As String)
+<pre><code class="language-vb">Private Sub EnsureColumnExists(ByVal dict As LLdictionary, ByVal colName As String)
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>dict</code>: ILLdictionary to inspect.</li>
+<li><code>dict</code>: LLdictionary to inspect.</li>
 <li><code>colName</code>: String. Column header to verify.</li>
 </ul>
 <hr />
@@ -336,16 +342,13 @@
 <hr />
 </details>
 <details>
-<summary>Used in (12 file(s))</summary>
+<summary>Used in (9 file(s))</summary>
 <ul>
-<li><a href="ILLSheets.html">ILLSheets.cls</a></li>
-<li><a href="LLSheets.html">LLSheets.cls</a></li>
 <li><a href="Formulas.html">Formulas.cls</a></li>
 <li><a href="ValueOfFormula.html">ValueOfFormula.cls</a></li>
 <li><a href="Linelist.html">Linelist.cls</a></li>
 <li><a href="ListBuilder.html">ListBuilder.cls</a></li>
 <li><a href="VarWriter.html">VarWriter.cls</a></li>
-<li>DesignerMain.bas</li>
 <li>EventsDesignerAdvanced.bas</li>
 <li>TestLLSheets.bas</li>
 <li>TestLLSheetsExtra.bas</li>

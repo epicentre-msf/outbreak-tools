@@ -18,7 +18,7 @@ Each invocation of WriteVariable applies label text, number formatting,
 formulas, dropdown choices, data validation, and conditional formatting
 to the resolved cell range. The class caches dictionary, variables, and
 sheets accessors for performance across repeated calls.</p>
-<p><strong>Depends on:</strong> <a href="ILinelistSpecs.html">ILinelistSpecs</a>, <a href="ILLdictionary.html">ILLdictionary</a>, <a href="ILLVariables.html">ILLVariables</a>, <a href="ILLSheets.html">ILLSheets</a>, <a href="ILLFormat.html">ILLFormat</a>, <a href="ITranslationObject.html">ITranslationObject</a>, <a href="IFormulaData.html">IFormulaData</a>, <a href="IFormulas.html">IFormulas</a>, <a href="IDropdownLists.html">IDropdownLists</a>, <a href="ILLGeo.html">ILLGeo</a>, <a href="Formulas.html">Formulas</a>, <a href="LLVariables.html">LLVariables</a>, <a href="LLSheets.html">LLSheets</a>, <a href="BetterArray.html">BetterArray</a>, Checking support</p>
+<p><strong>Depends on:</strong> <a href="LinelistSpecs.html">LinelistSpecs</a>, <a href="LLdictionary.html">LLdictionary</a>, <a href="LLVariables.html">LLVariables</a>, <a href="LLSheets.html">LLSheets</a>, <a href="LLFormat.html">LLFormat</a>, <a href="TranslationObject.html">TranslationObject</a>, <a href="FormulaData.html">FormulaData</a>, <a href="Formulas.html">Formulas</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="LLGeo.html">LLGeo</a>, <a href="Formulas.html">Formulas</a>, <a href="LLVariables.html">LLVariables</a>, <a href="LLSheets.html">LLSheets</a>, <a href="BetterArray.html">BetterArray</a>, Checking support</p>
 <p><strong>Version:</strong> 1.0 (2026-02-10)</p>
 <details open class="doc-section" id="instantiation">
 <summary>Instantiation</summary>
@@ -28,29 +28,29 @@ sheets accessors for performance across repeated calls.</p>
 <p><strong>Create a new VarWriter for the given layer and dependencies</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal layer As Byte, _
-                       ByVal specs As ILinelistSpecs, _
+                       ByVal specs As LinelistSpecs, _
                        ByVal wksh As Worksheet, _
                        Optional ByVal printWksh As Worksheet = Nothing, _
                        Optional ByVal crfWksh As Worksheet = Nothing, _
-                       Optional ByVal dropdownObj As IDropdownLists = Nothing, _
-                       Optional ByVal customDropdownObj As IDropdownLists = Nothing) As IVarWriter
+                       Optional ByVal dropdownObj As DropdownLists = Nothing, _
+                       Optional ByVal customDropdownObj As DropdownLists = Nothing) As VarWriter
 </code></pre>
 <p>Factory method that instantiates and configures a VarWriter. The caller
-must supply a valid ILinelistSpecs and target Worksheet at minimum.
+must supply a valid LinelistSpecs and target Worksheet at minimum.
 Optional parameters allow attaching printed and CRF companion worksheets
 (used only for HList layers) and dropdown list managers. Raises an error
 if specs or wksh is Nothing.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>layer</code>: Byte. VarWriterLayer enum value (HList=1, VList=2). Use Byte for macOS compatibility.</li>
-<li><code>specs</code>: ILinelistSpecs. The linelist specifications object providing dictionary, format, translations, etc.</li>
+<li><code>specs</code>: LinelistSpecs. The linelist specifications object providing dictionary, format, translations, etc.</li>
 <li><code>wksh</code>: Worksheet. The target main worksheet.</li>
 <li><code>printWksh</code>: Optional Worksheet. Printed companion worksheet (HList only). Defaults to Nothing.</li>
 <li><code>crfWksh</code>: Optional Worksheet. CRF companion worksheet (HList only). Defaults to Nothing.</li>
-<li><code>dropdownObj</code>: Optional IDropdownLists. Dropdown lists manager. Defaults to Nothing.</li>
-<li><code>customDropdownObj</code>: Optional IDropdownLists. Custom dropdown lists manager (for choice_custom). Defaults to Nothing.</li>
+<li><code>dropdownObj</code>: Optional DropdownLists. Dropdown lists manager. Defaults to Nothing.</li>
+<li><code>customDropdownObj</code>: Optional DropdownLists. Custom dropdown lists manager (for choice_custom). Defaults to Nothing.</li>
 </ul>
-<p><strong>Returns:</strong> IVarWriter. A fully initialised writer bound to the given layer and worksheets.</p>
+<p><strong>Returns:</strong> VarWriter. A fully initialised writer bound to the given layer and worksheets.</p>
 <p><strong>Throws:</strong></p>
 <ul>
 <li>VBA.vbObjectError + 516 if specs or wksh is Nothing.</li>
@@ -101,23 +101,31 @@ WriteCRFSheet for the companion worksheets.</p>
 </details>
 <details>
 <summary>Internal members (not exported)</summary>
-<h2 id="int-instantiation">Instantiation</h2>
-<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
-<p><em>self</em></p>
-<p><strong>Return the current instance cast to the IVarWriter interface</strong></p>
+<h2 id="int-instance-sealing">Instance Sealing</h2>
+<h3 id="int-seal">Seal <a class="anchor-link" href="#int-seal">#</a></h3>
+<p><em>seal</em></p>
+<p><strong>Seal the instance against further setup writes</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Self() As IVarWriter
+<pre><code class="language-vb">Public Sub Seal()
 </code></pre>
-<p>Used by the factory pattern so that the With New block can return an
-interface-typed reference instead of the concrete class.</p>
-<p><strong>Returns:</strong> IVarWriter. The current instance.</p>
+<hr />
+<h3 id="int-guardnotsealed">GuardNotSealed <a class="anchor-link" href="#int-guardnotsealed">#</a></h3>
+<p><em>guard-not-sealed</em></p>
+<p><strong>Guard a setup-only setter against post-seal writes</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub GuardNotSealed(ByVal propName As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>propName</code>: String. The property name for the error message.</li>
+</ul>
 <hr />
 <h2 id="int-internal-setters">Internal Setters</h2>
 <h3 id="int-internalspecs">InternalSpecs <a class="anchor-link" href="#int-internalspecs">#</a></h3>
 <p><em>internal-specs</em></p>
 <p><strong>Assign the linelist specifications object</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Set InternalSpecs(ByVal specs As ILinelistSpecs)
+<pre><code class="language-vb">Public Property Set InternalSpecs(ByVal specs As LinelistSpecs)
 </code></pre>
 <h1>Properties used by the factory only during instantiation.</h1>
 <hr />
@@ -153,14 +161,14 @@ interface-typed reference instead of the concrete class.</p>
 <p><em>internal-dropdown</em></p>
 <p><strong>Assign the dropdown lists manager</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Set InternalDropdown(ByVal dropdownObj As IDropdownLists)
+<pre><code class="language-vb">Public Property Set InternalDropdown(ByVal dropdownObj As DropdownLists)
 </code></pre>
 <hr />
 <h3 id="int-internalcustomdropdown">InternalCustomDropdown <a class="anchor-link" href="#int-internalcustomdropdown">#</a></h3>
 <p><em>internal-custom-dropdown</em></p>
 <p><strong>Assign the custom dropdown lists manager</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Set InternalCustomDropdown(ByVal dropdownObj As IDropdownLists)
+<pre><code class="language-vb">Public Property Set InternalCustomDropdown(ByVal dropdownObj As DropdownLists)
 </code></pre>
 <hr />
 <h2 id="int-cached-accessors">Cached Accessors</h2>
@@ -168,66 +176,66 @@ interface-typed reference instead of the concrete class.</p>
 <p><em>dictionary</em></p>
 <p><strong>Return the cached dictionary object</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get Dictionary() As ILLdictionary
+<pre><code class="language-vb">Private Property Get Dictionary() As LLdictionary
 </code></pre>
 <h1>Lazy-loaded accessors for frequently used dependency objects.</h1>
-<p>Lazily loads the ILLdictionary from specs on first access and caches it
+<p>Lazily loads the LLdictionary from specs on first access and caches it
 in the TVarWriter UDT. Subsequent calls return the cached instance
 without re-querying specs, which improves performance when writing many
 variables in sequence.</p>
-<p><strong>Returns:</strong> ILLdictionary. The linelist dictionary.</p>
+<p><strong>Returns:</strong> LLdictionary. The linelist dictionary.</p>
 <hr />
 <h3 id="int-variables">Variables <a class="anchor-link" href="#int-variables">#</a></h3>
 <p><em>variables</em></p>
 <p><strong>Return the cached variables helper</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get Variables() As ILLVariables
+<pre><code class="language-vb">Private Property Get Variables() As LLVariables
 </code></pre>
 <p>Creates an LLVariables wrapper around the dictionary on first access.
 The wrapper provides convenient lookup methods such as Value and Contains
 that are used throughout the writer.</p>
-<p><strong>Returns:</strong> ILLVariables. The variables helper object.</p>
+<p><strong>Returns:</strong> LLVariables. The variables helper object.</p>
 <hr />
 <h3 id="int-sheetsobject">SheetsObject <a class="anchor-link" href="#int-sheetsobject">#</a></h3>
 <p><em>sheets-object</em></p>
 <p><strong>Return the cached sheets helper</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get SheetsObject() As ILLSheets
+<pre><code class="language-vb">Private Property Get SheetsObject() As LLSheets
 </code></pre>
 <p>Creates an LLSheets wrapper around the dictionary on first access.
 The wrapper provides VariableAddress and SheetInfo lookups used when
 building conditional-formatting formulas and resolving table anchors.</p>
-<p><strong>Returns:</strong> ILLSheets. The sheets helper object.</p>
+<p><strong>Returns:</strong> LLSheets. The sheets helper object.</p>
 <hr />
 <h3 id="int-designformat">DesignFormat <a class="anchor-link" href="#int-designformat">#</a></h3>
 <p><em>design-format</em></p>
 <p><strong>Return the design format object from specs</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get DesignFormat() As ILLFormat
+<pre><code class="language-vb">Private Property Get DesignFormat() As LLFormat
 </code></pre>
 <p>Delegates directly to specs.DesignFormat on every call because the
 format object is lightweight and does not benefit from caching.</p>
-<p><strong>Returns:</strong> ILLFormat. The design format provider.</p>
+<p><strong>Returns:</strong> LLFormat. The design format provider.</p>
 <hr />
 <h3 id="int-trans">Trans <a class="anchor-link" href="#int-trans">#</a></h3>
 <p><em>trans</em></p>
 <p><strong>Return the translation object from specs</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get Trans() As ITranslationObject
+<pre><code class="language-vb">Private Property Get Trans() As TranslationObject
 </code></pre>
 <p>Delegates directly to specs.TransObject on every call. Used to fetch
 translated UI messages such as MSG_Calculated and MSG_CustomChoice.</p>
-<p><strong>Returns:</strong> ITranslationObject. The translation provider.</p>
+<p><strong>Returns:</strong> TranslationObject. The translation provider.</p>
 <hr />
 <h3 id="int-formuladataobj">FormulaDataObj <a class="anchor-link" href="#int-formuladataobj">#</a></h3>
 <p><em>formula-data-obj</em></p>
 <p><strong>Return the formula data object from specs</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get FormulaDataObj() As IFormulaData
+<pre><code class="language-vb">Private Property Get FormulaDataObj() As FormulaData
 </code></pre>
 <p>Delegates directly to specs.FormulaDataObject on every call. Provides
 the lookup tables and metadata needed by the Formulas parser.</p>
-<p><strong>Returns:</strong> IFormulaData. The formula data provider.</p>
+<p><strong>Returns:</strong> FormulaData. The formula data provider.</p>
 <hr />
 <h2 id="int-cell-range-resolution">Cell Range Resolution</h2>
 <h3 id="int-varrange">VarRange <a class="anchor-link" href="#int-varrange">#</a></h3>
@@ -349,7 +357,7 @@ applies calculated-formula design formatting to the cell and its header.</p>
 </code></pre>
 <p>Handles choice_manual, choice_multiple, choice_custom, list_auto, and geo1
 control types. For each type it populates a BetterArray of categories,
-registers them with the appropriate IDropdownLists manager, and calls
+registers them with the appropriate DropdownLists manager, and calls
 SetValidation to apply dropdown data validation to the cell. The
 choice_custom branch additionally creates a hyperlink from the label cell
 to the dropdown worksheet and adds a return link. The geo1 branch sets up
@@ -524,20 +532,11 @@ Nothing.</p>
 <li>VBA.vbObjectError + 516 always.</li>
 </ul>
 <hr />
-<h2 id="int-interface-implementation">Interface Implementation</h2>
-<h3 id="int-ivarwriter-writevariable">IVarWriter_WriteVariable <a class="anchor-link" href="#int-ivarwriter-writevariable">#</a></h3>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub IVarWriter_WriteVariable(ByVal varName As String)
-</code></pre>
-<h1>Delegated members satisfying the IVarWriter contract.</h1>
-<hr />
 </details>
 <details>
-<summary>Used in (4 file(s))</summary>
+<summary>Used in (2 file(s))</summary>
 <ul>
-<li><a href="IVarWriter.html">IVarWriter.cls</a></li>
 <li><a href="SectionBuilder.html">SectionBuilder.cls</a></li>
-<li><a href="VarWriter.html">VarWriter.cls</a></li>
 <li>TestVarWriter.bas</li>
 </ul>
 </details>

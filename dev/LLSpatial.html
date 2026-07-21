@@ -27,17 +27,17 @@ ranked values for use in analyses and graphs.</p>
 <p><em>create</em></p>
 <p><strong>Create a new LLSpatial instance from the spatial tables worksheet</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Create(ByVal sh As Worksheet) As ILLSpatial
+<pre><code class="language-vb">Public Function Create(ByVal sh As Worksheet) As LLSpatial
 </code></pre>
 <p>Factory method that validates the supplied worksheet meets requirements
 (must be named &quot;spatial_tables__&quot; and contain the &quot;listofgeovars&quot;
-ListObject), then returns a new instance through the ILLSpatial
-interface. Called on the predeclared instance.</p>
+ListObject), then returns a new instance. Called on the predeclared
+instance.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>sh</code>: Worksheet. The spatial tables worksheet.</li>
 </ul>
-<p><strong>Returns:</strong> ILLSpatial. A fully initialised instance ready for use.</p>
+<p><strong>Returns:</strong> LLSpatial. A fully initialised instance ready for use.</p>
 <p><strong>Throws:</strong></p>
 <ul>
 <li>ProjectError.ObjectNotInitialized When the worksheet is Nothing.</li>
@@ -53,7 +53,7 @@ interface. Called on the predeclared instance.</p>
 <p><em>exists</em></p>
 <p><strong>Check if a variable name exists in the spatial variables list</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function Exists(ByVal varName As String) As Boolean
+<pre><code class="language-vb">Public Function Exists(ByVal varName As String) As Boolean
 </code></pre>
 <p>Searches the &quot;listofgeovars&quot; ListObject range for a partial match of the
 supplied variable name using xlPart matching. Returns True when at least
@@ -74,7 +74,7 @@ spatial analysis tables exist for this variable.</p>
 <p><em>update</em></p>
 <p><strong>Update all spatial tables from HList filtered data</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub Update()
+<pre><code class="language-vb">Public Sub Update()
 </code></pre>
 <p>Iterates all worksheets in the workbook looking for HList sheets. For
 each HList sheet, locates its filtered companion sheet (from cell(1,5)),
@@ -94,7 +94,7 @@ the spatial sheet so formula columns update.</p>
 <p><em>sort</em></p>
 <p><strong>Sort spatial tables by formula value or attack rate for a given table id</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub Sort(ByVal tabId As String, Optional ByVal onAR As Boolean = False)
+<pre><code class="language-vb">Public Sub Sort(ByVal tabId As String, Optional ByVal onAR As Boolean = False)
 </code></pre>
 <p>Locates the spatial variable whose name partially matches tabId in the
 &quot;listofgeovars&quot; list, then iterates admin1 through admin4 and sorts each
@@ -116,7 +116,7 @@ no data body, or whose first column is empty.</p>
 <p><em>top-geo-value</em></p>
 <p><strong>Value at a given rank from a sorted spatial geo table</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get TopGeoValue(ByVal adminName As String, _
+<pre><code class="language-vb">Public Property Get TopGeoValue(ByVal adminName As String, _
                                  ByVal orderValue As Long, _
                                  ByVal inputVarName As String, _
                                  Optional ByVal tabId As String = vbNullString, _
@@ -142,7 +142,7 @@ not exist, has no data, or the rank exceeds available rows.</p>
 <p><em>top-hf-value</em></p>
 <p><strong>Value at a given rank from a sorted spatial HF table</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get TopHFValue(ByVal orderValue As Long, _
+<pre><code class="language-vb">Public Property Get TopHFValue(ByVal orderValue As Long, _
                                 ByVal inputVarName As String, _
                                 Optional ByVal tabId As String = vbNullString) As String
 </code></pre>
@@ -163,15 +163,24 @@ has no data, or the rank exceeds available rows.</p>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-factory">Factory</h2>
-<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
-<p><em>self</em></p>
-<p><strong>Current object instance</strong></p>
+<h3 id="int-seal">Seal <a class="anchor-link" href="#int-seal">#</a></h3>
+<p><em>seal</em></p>
+<p><strong>Seal the instance against further setup writes.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Self() As ILLSpatial
+<pre><code class="language-vb">Public Sub Seal()
 </code></pre>
-<p>Convenience accessor so consuming code can fluently retrieve the
-interface reference from the predeclared Create method.</p>
-<p><strong>Returns:</strong> ILLSpatial. The current instance cast to the interface.</p>
+<p>Marks the instance as sealed so setup-only setters raise if called again.
+Called by the factory after the last setup write.</p>
+<hr />
+<h3 id="int-guardnotsealed">GuardNotSealed <a class="anchor-link" href="#int-guardnotsealed">#</a></h3>
+<p><strong>Guard a setup-only setter against post-seal writes.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub GuardNotSealed(ByVal propName As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>propName</code>: String. The property name used in the error message.</li>
+</ul>
 <hr />
 <h3 id="int-wksh">Wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
 <p><em>wksh</em></p>
@@ -332,22 +341,11 @@ providing a consistent stack trace across all methods in this class.</p>
 <li>ProjectError.<varies> Always raises the specified error.</li>
 </ul>
 <hr />
-<h2 id="int-interface-implementation">Interface Implementation</h2>
-<h3 id="int-illspatial-exists">ILLSpatial_Exists <a class="anchor-link" href="#int-illspatial-exists">#</a></h3>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get ILLSpatial_Exists(ByVal varName As String) As Boolean
-</code></pre>
-<p>Delegated members satisfying the ILLSpatial contract.
-See the corresponding members above for full documentation.</p>
-<hr />
 </details>
 <details>
-<summary>Used in (7 file(s))</summary>
+<summary>Used in (4 file(s))</summary>
 <ul>
-<li><a href="ILLSpatial.html">ILLSpatial.cls</a></li>
-<li><a href="LLSpatial.html">LLSpatial.cls</a></li>
 <li><a href="EventLinelist.html">EventLinelist.cls</a></li>
-<li><a href="IEventLinelist.html">IEventLinelist.cls</a></li>
 <li><a href="Linelist.html">Linelist.cls</a></li>
 <li>GeoModule.bas</li>
 <li>TestLLSpatial.bas</li>

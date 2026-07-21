@@ -16,9 +16,9 @@ workflows in OutbreakTools. It manages code tables (ListObjects that list
 VBA classes, modules, forms, and tests), drives bulk import and export of
 code artefacts between disk and the host workbook VBProject, and executes
 deployment by protecting and hiding registered worksheets. Consumers
-interact through the IDevelopment interface using the predeclared factory
+interact with the Development class using the predeclared factory
 pattern (Development.Create).</p>
-<p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="IPasswords.html">IPasswords</a></p>
+<p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="Passwords.html">Passwords</a></p>
 <p><strong>Version:</strong> 1.0 (2026-02-09)</p>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
@@ -27,14 +27,14 @@ pattern (Development.Create).</p>
 <p><em>create</em></p>
 <p><strong>Create a Development instance.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Create(ByVal devSheet As Worksheet, Optional ByVal codeSheet As Worksheet) As IDevelopment
+<pre><code class="language-vb">Public Function Create(ByVal devSheet As Worksheet, Optional ByVal codeSheet As Worksheet) As Development
 </code></pre>
 <p>Predeclared factory entry point for creating Development instances.
 Factory method on the predeclared instance that allocates a new Development
 object and binds it to the supplied Dev worksheet via Initialise. When a
 codeSheet is provided, it is registered as the target for new development
-tables. The returned object is cast to the IDevelopment interface so
-consumers program against the contract rather than the concrete class.</p>
+tables. The returned object is a fully built Development instance ready
+for consumers to use.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>devSheet</code>: Worksheet. The worksheet hosting development named ranges
@@ -42,7 +42,7 @@ such as module and class folder paths.</li>
 <li><code>codeSheet</code>: Optional Worksheet. A separate worksheet to host code
 ListObjects. When omitted, tables are placed on devSheet.</li>
 </ul>
-<p><strong>Returns:</strong> IDevelopment. A fully initialised instance ready for use.</p>
+<p><strong>Returns:</strong> Development. A fully initialised instance ready for use.</p>
 <p><strong>Throws:</strong></p>
 <ul>
 <li>ProjectError.ObjectNotInitialized When devSheet is Nothing.</li>
@@ -316,14 +316,14 @@ Requires that host sheets are unlocked.
 <p><em>deploy</em></p>
 <p><strong>Protect worksheets, hide Dev assets, copy forms code, and set the deployment marker.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub Deploy(ByVal pass As IPasswords, Optional ByVal lockWorkbook As Boolean = False)
+<pre><code class="language-vb">Public Sub Deploy(ByVal pass As Passwords, Optional ByVal lockWorkbook As Boolean = False)
 </code></pre>
 <p>Full deployment workflow: protect, hide, and lock the workbook.
 Executes the full deployment workflow. First applies the default password
 from the Dev sheet, then synchronises form modules without confirmation.
 Every worksheet registered via AddHiddenSheet is set to xlSheetVeryHidden.
 Every worksheet registered via AddProtectedSheet is protected using the
-supplied IPasswords handler with the recorded permission flags. When
+supplied Passwords handler with the recorded permission flags. When
 lockWorkbook is True, the host workbook itself is locked. The code
 worksheet (if distinct from the Dev sheet) is hidden. Finally, a debug
 exit handler is installed and the workbook-level deployment flag is set
@@ -331,7 +331,7 @@ to &quot;Yes&quot;.
 (&quot;Protect worksheets, hide Dev assets, copy forms code, and set deployment marker.&quot;)</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>pass</code>: IPasswords. The password handler used to apply protection to
+<li><code>pass</code>: Passwords. The password handler used to apply protection to
 worksheets and optionally lock the workbook.</li>
 <li><code>lockWorkbook</code>: Optional Boolean. When True, the host workbook
 structure is locked after protecting sheets. Defaults to False.</li>
@@ -857,14 +857,14 @@ requireConfirmation is True, a dialog is shown before proceeding.
 <p><em>apply-default-password</em></p>
 <p><strong>Read and apply the default password from the Dev sheet.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ApplyDefaultPassword(ByVal passwords As IPasswords)
+<pre><code class="language-vb">Private Sub ApplyDefaultPassword(ByVal passwords As Passwords)
 </code></pre>
 <p>Checks for a named range &quot;DefaultPassword&quot; on the Dev sheet. When found
-and non-empty, passes its value to the IPasswords handler via
+and non-empty, passes its value to the Passwords handler via
 NewDebugingPassword. Silently exits when no default password is configured.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>passwords</code>: IPasswords. The password handler to configure.</li>
+<li><code>passwords</code>: Passwords. The password handler to configure.</li>
 </ul>
 <hr />
 <h3 id="int-processformstable">ProcessFormsTable <a class="anchor-link" href="#int-processformstable">#</a></h3>
@@ -1280,23 +1280,11 @@ the user selects Yes.
 <li>ProjectError.<varies> Always raises the specified error.</li>
 </ul>
 <hr />
-<h2 id="int-interface-implementation">Interface Implementation</h2>
-<h3 id="int-idevelopment-initialise">IDevelopment_Initialise <a class="anchor-link" href="#int-idevelopment-initialise">#</a></h3>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub IDevelopment_Initialise(ByVal devSheet As Worksheet, Optional ByVal codeSheet As Worksheet)
-</code></pre>
-<p>Delegated members that satisfy the IDevelopment contract.
-See the corresponding Public members above for full documentation.</p>
-<hr />
 </details>
 <details>
-<summary>Used in (10 file(s))</summary>
+<summary>Used in (6 file(s))</summary>
 <ul>
 <li><a href="DesignerPreparation.html">DesignerPreparation.cls</a></li>
-<li><a href="IDesignerPreparation.html">IDesignerPreparation.cls</a></li>
-<li><a href="Development.html">Development.cls</a></li>
-<li><a href="IDevelopment.html">IDevelopment.cls</a></li>
-<li><a href="ISetupPreparation.html">ISetupPreparation.cls</a></li>
 <li><a href="SetupPreparation.html">SetupPreparation.cls</a></li>
 <li>RibbonDev.bas</li>
 <li>MasterSetupHelpers.bas</li>

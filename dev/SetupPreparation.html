@@ -16,8 +16,7 @@ dropdown list objects, initialising the updated values registry, applying
 data validations to setup tables (Dictionary, Exports, Analysis), and
 configuring hidden and protected sheets. Consumed by the setup entry
 point to prepare all worksheet assets before the workbook is ready for
-use. Uses the predeclared factory pattern through the ISetupPreparation
-interface.</p>
+use. Uses the predeclared factory pattern.</p>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
 <div class="section-body">
@@ -25,16 +24,15 @@ interface.</p>
 <p><em>create</em></p>
 <p><strong>Create an initialised SetupPreparation instance</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Create(ByVal hostBook As Workbook) As ISetupPreparation
+<pre><code class="language-vb">Public Function Create(ByVal hostBook As Workbook) As SetupPreparation
 </code></pre>
 <p>Factory method on the predeclared instance. Validates the workbook is
-not Nothing via Configure, then returns the new instance through the
-ISetupPreparation interface.</p>
+not Nothing via Configure, then returns the new instance.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>hostBook</code>: Workbook. The workbook hosting setup worksheets.</li>
 </ul>
-<p><strong>Returns:</strong> ISetupPreparation. A fully initialised instance ready for use.</p>
+<p><strong>Returns:</strong> SetupPreparation. A fully initialised instance ready for use.</p>
 <p><strong>Throws:</strong></p>
 <ul>
 <li>ProjectError.ObjectNotInitialized When hostBook is Nothing.</li>
@@ -66,7 +64,7 @@ objects to Nothing, forcing lazy re-initialisation on next access.</p>
 <p><em>prepare</em></p>
 <p><strong>Execute the full preparation workflow</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub Prepare(ByRef manager As IDevelopment)
+<pre><code class="language-vb">Public Sub Prepare(ByRef manager As Development)
 </code></pre>
 <p>Runs the complete preparation sequence: registers all dropdown list objects,
 initialises the updated values registry, applies data validations to the
@@ -74,7 +72,7 @@ Dictionary, Exports, and Analysis tables, then registers hidden and
 protected sheets via the supplied development manager.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>manager</code>: IDevelopment. Development manager providing hidden/protected sheet registration.</li>
+<li><code>manager</code>: Development. Development manager providing hidden/protected sheet registration.</li>
 </ul>
 <hr />
 <h3 id="ensuredropdowns">EnsureDropdowns <a class="anchor-link" href="#ensuredropdowns">#</a></h3>
@@ -102,23 +100,23 @@ and resets all status tags to &quot;yes&quot; (the default ready state).</p>
 <p><em>dropdowns</em></p>
 <p><strong>Dropdown manager for external callers</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Dropdowns() As IDropdownLists
+<pre><code class="language-vb">Public Property Get Dropdowns() As DropdownLists
 </code></pre>
-<p>Returns the IDropdownLists manager bound to the dropdown worksheet.
+<p>Returns the DropdownLists manager bound to the dropdown worksheet.
 Lazily initialises the manager on first access if it was not already
 created by EnsureDropdowns or Prepare.</p>
-<p><strong>Returns:</strong> IDropdownLists. The dropdown manager instance.</p>
+<p><strong>Returns:</strong> DropdownLists. The dropdown manager instance.</p>
 <hr />
 <h3 id="updatedwatcher">UpdatedWatcher <a class="anchor-link" href="#updatedwatcher">#</a></h3>
 <p><em>updated-watcher</em></p>
 <p><strong>Updated values watcher for external callers</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get UpdatedWatcher() As IUpdatedValues
+<pre><code class="language-vb">Public Property Get UpdatedWatcher() As UpdatedValues
 </code></pre>
-<p>Returns the IUpdatedValues watcher bound to the registry worksheet.
+<p>Returns the UpdatedValues watcher bound to the registry worksheet.
 Lazily initialises the watcher on first access if it was not already
 created by EnsureUpdatedRegistry or Prepare.</p>
-<p><strong>Returns:</strong> IUpdatedValues. The update watcher instance.</p>
+<p><strong>Returns:</strong> UpdatedValues. The update watcher instance.</p>
 <hr />
 <h3 id="hostworkbook">HostWorkbook <a class="anchor-link" href="#hostworkbook">#</a></h3>
 <p><em>host-workbook</em></p>
@@ -139,23 +137,6 @@ has not been configured.</p>
 </details>
 <details>
 <summary>Internal members (not exported)</summary>
-<h2 id="int-factory">Factory</h2>
-<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
-<p><em>self</em></p>
-<p><strong>Current object instance</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Self() As ISetupPreparation
-</code></pre>
-<p><strong>Returns:</strong> ISetupPreparation. The current instance cast to the interface.</p>
-<hr />
-<h2 id="int-isetuppreparation-implementation">ISetupPreparation implementation</h2>
-<h3 id="int-isetuppreparation-configure">ISetupPreparation_Configure <a class="anchor-link" href="#int-isetuppreparation-configure">#</a></h3>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ISetupPreparation_Configure(ByVal hostBook As Workbook)
-</code></pre>
-<p>Delegated members satisfying the ISetupPreparation contract.
-See the corresponding Public members above for full documentation.</p>
-<hr />
 <h2 id="int-preparation-helpers">Preparation helpers</h2>
 <h3 id="int-resetcaches">ResetCaches <a class="anchor-link" href="#int-resetcaches">#</a></h3>
 <p><em>reset-caches</em></p>
@@ -205,13 +186,13 @@ ApplyAnalysisValidations to wire each table column to its dropdown list.</p>
 <p><em>ensure-hidden-sheets</em></p>
 <p><strong>Register internal worksheets as hidden via the development manager</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub EnsureHiddenSheets(ByRef manager As IDevelopment)
+<pre><code class="language-vb">Private Sub EnsureHiddenSheets(ByRef manager As Development)
 </code></pre>
 <p>Calls manager.AddHiddenSheet for each internal worksheet constant
 (updated, variables, formatter, pass, formula, dev).</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>manager</code>: IDevelopment. Development manager to register with.</li>
+<li><code>manager</code>: Development. Development manager to register with.</li>
 </ul>
 <p><strong>Throws:</strong></p>
 <ul>
@@ -222,13 +203,13 @@ ApplyAnalysisValidations to wire each table column to its dropdown list.</p>
 <p><em>ensure-protected-sheets</em></p>
 <p><strong>Register user-facing worksheets as protected via the development manager</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub EnsureProtectedSheets(ByRef manager As IDevelopment)
+<pre><code class="language-vb">Private Sub EnsureProtectedSheets(ByRef manager As Development)
 </code></pre>
 <p>Calls manager.AddProtectedSheet for each user-facing worksheet, specifying
 whether filtering and sorting are allowed on the protected sheet.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>manager</code>: IDevelopment. Development manager to register with.</li>
+<li><code>manager</code>: Development. Development manager to register with.</li>
 </ul>
 <p><strong>Throws:</strong></p>
 <ul>
@@ -354,34 +335,34 @@ applies the supplied visibility state.</p>
 <p><em>apply-dictionary-validations</em></p>
 <p><strong>Apply data validation rules to the dictionary worksheet tables</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ApplyDictionaryValidations(ByVal drop As IDropdownLists)
+<pre><code class="language-vb">Private Sub ApplyDictionaryValidations(ByVal drop As DropdownLists)
 </code></pre>
 <p>Resolves the Dictionary worksheet and its Tab_Dictionary ListObject,
 then wires each column (sheet type, status, variable type, format,
 control, etc.) to its corresponding dropdown list via SetValidation.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>drop</code>: IDropdownLists. The dropdown manager providing validation ranges.</li>
+<li><code>drop</code>: DropdownLists. The dropdown manager providing validation ranges.</li>
 </ul>
 <hr />
 <h3 id="int-applyexportsvalidations">ApplyExportsValidations <a class="anchor-link" href="#int-applyexportsvalidations">#</a></h3>
 <p><em>apply-exports-validations</em></p>
 <p><strong>Apply export worksheet validations</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ApplyExportsValidations(ByVal drop As IDropdownLists)
+<pre><code class="language-vb">Private Sub ApplyExportsValidations(ByVal drop As DropdownLists)
 </code></pre>
 <p>Resolves the Exports worksheet and its Tab_Export ListObject, then wires
 each column (status, file format, password, etc.) to its dropdown list.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>drop</code>: IDropdownLists. The dropdown manager providing validation ranges.</li>
+<li><code>drop</code>: DropdownLists. The dropdown manager providing validation ranges.</li>
 </ul>
 <hr />
 <h3 id="int-applyanalysisvalidations">ApplyAnalysisValidations <a class="anchor-link" href="#int-applyanalysisvalidations">#</a></h3>
 <p><em>apply-analysis-validations</em></p>
 <p><strong>Apply validations to all analysis tables and named ranges</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ApplyAnalysisValidations(ByVal drop As IDropdownLists)
+<pre><code class="language-vb">Private Sub ApplyAnalysisValidations(ByVal drop As DropdownLists)
 </code></pre>
 <p>Resolves the Analysis worksheet, applies the table-switcher validation
 to the RNG_SelectTable named range, then wires every analysis table
@@ -390,7 +371,7 @@ spatio-temporal specs, spatio-temporal) to their respective dropdown
 lists.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>drop</code>: IDropdownLists. The dropdown manager providing validation ranges.</li>
+<li><code>drop</code>: DropdownLists. The dropdown manager providing validation ranges.</li>
 </ul>
 <hr />
 <h3 id="int-requireworksheet">RequireWorksheet <a class="anchor-link" href="#int-requireworksheet">#</a></h3>
@@ -430,14 +411,14 @@ lists.</p>
 <p><em>require-custom-table</em></p>
 <p><strong>Return a CustomTable helper for the requested ListObject</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function RequireCustomTable(ByVal sh As Worksheet, ByVal listName As String) As ICustomTable
+<pre><code class="language-vb">Private Function RequireCustomTable(ByVal sh As Worksheet, ByVal listName As String) As CustomTable
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>sh</code>: Worksheet. The worksheet hosting the ListObject.</li>
 <li><code>listName</code>: String. The ListObject name to wrap.</li>
 </ul>
-<p><strong>Returns:</strong> ICustomTable. A CustomTable wrapper for the ListObject.</p>
+<p><strong>Returns:</strong> CustomTable. A CustomTable wrapper for the ListObject.</p>
 <hr />
 <h3 id="int-resolvenamedrange">ResolveNamedRange <a class="anchor-link" href="#int-resolvenamedrange">#</a></h3>
 <p><em>resolve-named-range</em></p>
@@ -486,10 +467,8 @@ all methods in this class.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (5 file(s))</summary>
+<summary>Used in (3 file(s))</summary>
 <ul>
-<li><a href="ISetupPreparation.html">ISetupPreparation.cls</a></li>
-<li><a href="SetupPreparation.html">SetupPreparation.cls</a></li>
 <li>EventsSetupRibbon.bas</li>
 <li>SetupHelpers.bas</li>
 <li>TestSetupPreparation.bas</li>

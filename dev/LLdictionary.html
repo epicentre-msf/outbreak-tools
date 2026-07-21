@@ -20,7 +20,7 @@
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal dictWksh As Worksheet, ByVal dictStartRow As Long, _
                        ByVal dictStartColumn As Long, _
-                       Optional ByVal numberOfExports As Long = DEFAULTNUMBEROFEXPORTS) As ILLdictionary
+                       Optional ByVal numberOfExports As Long = DEFAULTNUMBEROFEXPORTS) As LLdictionary
 </code></pre>
 <p>Creates a linelist dictionary wrapper around the supplied worksheet. The
 routine initialises a backing <code>DataSheet</code> so all subsequent access goes through
@@ -32,7 +32,7 @@ a consistent abstraction and callers interact with a predeclared instance.</p>
 <li><code>dictStartColumn</code>: Long. First column of the dictionary</li>
 <li><code>numberOfExports</code>: Optional Long. Expected number of export columns</li>
 </ul>
-<p><strong>Returns:</strong> An ILLdictionary instance</p>
+<p><strong>Returns:</strong> An LLdictionary instance</p>
 <p><strong>Depends on:</strong></p>
 <ul>
 <li>DataSheet</li>
@@ -54,27 +54,31 @@ a consistent abstraction and callers interact with a predeclared instance.</p>
 When no persisted value exists, the routine falls back to the requested input
 and persists it so subsequent sessions pick up the same configuration.</p>
 <hr />
-<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
-<p><em>self</em></p>
-<p><strong>Current object instance</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Self() As ILLdictionary
-</code></pre>
-<p>Convenience accessor so consuming code can fluently retrieve the instance
-returned by <code>Create</code> without repeatedly typing <code>Set x = New LLdictionary</code>.</p>
-<p><strong>Returns:</strong> ILLdictionary</p>
-<hr />
 <h2 id="int-data-elements">Data Elements</h2>
 <h3 id="int-data">Data <a class="anchor-link" href="#int-data">#</a></h3>
 <p><em>data</em></p>
 <p><strong>DataSheet backing store</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Data() As IDataSheet
+<pre><code class="language-vb">Public Property Get Data() As DataSheet
 </code></pre>
 <p>Expose the lazily initialised <code>DataSheet</code> wrapper used for all worksheet
 interactions. Consumers rely on this to perform advanced queries without
 directly manipulating Excel ranges.</p>
-<p><strong>Returns:</strong> IDataSheet</p>
+<p><strong>Returns:</strong> DataSheet</p>
+<hr />
+<h3 id="int-seal">Seal <a class="anchor-link" href="#int-seal">#</a></h3>
+<p><em>seal</em></p>
+<p><strong>Prevent further changes to creation-only setters</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Seal()
+</code></pre>
+<hr />
+<h3 id="int-guardnotsealed">GuardNotSealed <a class="anchor-link" href="#int-guardnotsealed">#</a></h3>
+<p><em>guard-not-sealed</em></p>
+<p><strong>Guard creation-only setters after sealing</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub GuardNotSealed(ByVal propName As String)
+</code></pre>
 <hr />
 <h3 id="int-totalnumberofexports">TotalNumberOfExports <a class="anchor-link" href="#int-totalnumberofexports">#</a></h3>
 <p><em>exports</em></p>
@@ -128,14 +132,11 @@ hidden counter.</p>
 <h3 id="int-persisttotalexports">PersistTotalExports <a class="anchor-link" href="#int-persisttotalexports">#</a></h3>
 <p><em>persist-exports</em></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub PersistTotalExports(ByVal totalCount As Long)
+<pre><code class="language-vb">Private Sub PersistTotalExports(ByVal totalCount As Long, Optional ByVal sheet As Worksheet)
 </code></pre>
-<hr />
-<h3 id="int-persisttotalexportsonsheet">PersistTotalExportsOnSheet <a class="anchor-link" href="#int-persisttotalexportsonsheet">#</a></h3>
-<p><em>persist-exports-sheet</em></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub PersistTotalExportsOnSheet(ByVal sheet As Worksheet, ByVal totalCount As Long)
-</code></pre>
+<p>Persist the export counter into the hidden name store. With no sheet the store
+resolves to the current dictionary worksheet; passing a sheet targets that sheet
+(used when writing the counter into an exported workbook).</p>
 <hr />
 <h3 id="int-storedtotalexportsfromsheet">StoredTotalExportsFromSheet <a class="anchor-link" href="#int-storedtotalexportsfromsheet">#</a></h3>
 <p><em>stored-exports</em></p>
@@ -146,19 +147,7 @@ hidden counter.</p>
 <h3 id="int-hiddennamestore">HiddenNameStore <a class="anchor-link" href="#int-hiddennamestore">#</a></h3>
 <p><em>hidden-name-store</em></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function HiddenNameStore(Optional ByVal sheet As Worksheet) As IHiddenNames
-</code></pre>
-<hr />
-<h3 id="int-trysheetnamedefinition">TrySheetNameDefinition <a class="anchor-link" href="#int-trysheetnamedefinition">#</a></h3>
-<p><em>try-sheet-name</em></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function TrySheetNameDefinition(ByVal sheet As Worksheet, ByVal nameId As String) As Name
-</code></pre>
-<hr />
-<h3 id="int-extractsimplename">ExtractSimpleName <a class="anchor-link" href="#int-extractsimplename">#</a></h3>
-<p><em>extract-name</em></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ExtractSimpleName(ByVal qualifiedName As String) As String
+<pre><code class="language-vb">Private Function HiddenNameStore(Optional ByVal sheet As Worksheet) As HiddenNames
 </code></pre>
 <hr />
 <h3 id="int-wksh">Wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
@@ -453,7 +442,7 @@ issues discovered during enrichment.</p>
 <li><code>PreservedSheetNames</code>: BetterArray of sheet names that should keep their</li>
 <li><code>original</code>: values</li>
 <li><code>geoObject</code>: LLGeo instance required for geo expansions</li>
-<li><code>msgTrads</code>: ITranslationObject used during column creation</li>
+<li><code>msgTrads</code>: TranslationObject used during column creation</li>
 <li><code>tablePrefix</code>: Optional String prefix applied to generated table names</li>
 </ul>
 <hr />
@@ -523,60 +512,70 @@ export workflow.</p>
 <p><em>translate</em></p>
 <p><strong>Translate dictionary labels</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub Translate(ByVal TransObject As ITranslationObject)
+<pre><code class="language-vb">Public Sub Translate(ByVal TransObject As TranslationObject)
 </code></pre>
 <p>Delegates the translation of user-facing columns (labels, notes, sections) to
 the provided translation object while protecting formula columns from direct
 text replacement.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>TransObject</code>: ITranslationObject responsible for translations</li>
+<li><code>TransObject</code>: TranslationObject responsible for translations</li>
 </ul>
+<hr />
+<h2 id="int-performance">Performance</h2>
+<h3 id="int-beginfastmode">BeginFastMode <a class="anchor-link" href="#int-beginfastmode">#</a></h3>
+<p><em>begin-fast-mode</em></p>
+<p><strong>Enter a batched Excel state for heavy write operations</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub BeginFastMode()
+</code></pre>
+<p>Turns off calculation and events so bulk worksheet writes do not recalculate on
+every change. Screen updating is deliberately left untouched - it is the caller's
+responsibility. Re-entrant: nested calls share one saved state and only the
+outermost pair toggles Application settings.</p>
+<hr />
+<h3 id="int-endfastmode">EndFastMode <a class="anchor-link" href="#int-endfastmode">#</a></h3>
+<p><em>end-fast-mode</em></p>
+<p><strong>Restore the Excel state saved by BeginFastMode</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EndFastMode()
+</code></pre>
+<hr />
+<h3 id="int-restoreafterfailure">RestoreAfterFailure <a class="anchor-link" href="#int-restoreafterfailure">#</a></h3>
+<p><em>restore-after-failure</em></p>
+<p><strong>Restore the batched state after a failure and re-raise the error</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RestoreAfterFailure()
+</code></pre>
+<p>Called from the error handler of every fast-mode entry point so a mid-pipeline
+error still restores Application settings before propagating to the caller.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (71 file(s))</summary>
+<summary>Used in (47 file(s))</summary>
 <ul>
 <li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
-<li><a href="ITableSpecs.html">ITableSpecs.cls</a></li>
 <li><a href="TableSpecs.html">TableSpecs.cls</a></li>
 <li><a href="LLExporter.html">LLExporter.cls</a></li>
 <li><a href="LLImporter.html">LLImporter.cls</a></li>
-<li><a href="ILinelistBuildService.html">ILinelistBuildService.cls</a></li>
 <li><a href="LinelistBuildService.html">LinelistBuildService.cls</a></li>
-<li><a href="ILLdictionary.html">ILLdictionary.cls</a></li>
-<li><a href="ILLExport.html">ILLExport.cls</a></li>
-<li><a href="ILLSheets.html">ILLSheets.cls</a></li>
-<li><a href="ILLVariables.html">ILLVariables.cls</a></li>
-<li><a href="LLdictionary.html">LLdictionary.cls</a></li>
 <li><a href="LLExport.html">LLExport.cls</a></li>
 <li><a href="LLSheets.html">LLSheets.cls</a></li>
 <li><a href="LLVariables.html">LLVariables.cls</a></li>
 <li><a href="FormulaCondition.html">FormulaCondition.cls</a></li>
 <li><a href="Formulas.html">Formulas.cls</a></li>
-<li><a href="IFormulaCondition.html">IFormulaCondition.cls</a></li>
 <li><a href="ValueOfFormula.html">ValueOfFormula.cls</a></li>
-<li><a href="ILLGeo.html">ILLGeo.cls</a></li>
 <li><a href="LLGeo.html">LLGeo.cls</a></li>
 <li><a href="EventLinelist.html">EventLinelist.cls</a></li>
-<li><a href="IEventLinelist.html">IEventLinelist.cls</a></li>
-<li><a href="ILinelist.html">ILinelist.cls</a></li>
-<li><a href="ILinelistSpecs.html">ILinelistSpecs.cls</a></li>
 <li><a href="Linelist.html">Linelist.cls</a></li>
 <li><a href="LinelistSpecs.html">LinelistSpecs.cls</a></li>
 <li><a href="ListBuilder.html">ListBuilder.cls</a></li>
 <li><a href="SectionBuilder.html">SectionBuilder.cls</a></li>
 <li><a href="VarWriter.html">VarWriter.cls</a></li>
 <li><a href="EventSetup.html">EventSetup.cls</a></li>
-<li><a href="IEventSetup.html">IEventSetup.cls</a></li>
-<li><a href="ISetupErrors.html">ISetupErrors.cls</a></li>
 <li><a href="SetupErrors.html">SetupErrors.cls</a></li>
 <li><a href="SetupImportService.html">SetupImportService.cls</a></li>
 <li><a href="ShowHideManager.html">ShowHideManager.cls</a></li>
-<li>DesignerMain.bas</li>
-<li>LinelistEvents.bas</li>
-<li><a href="DesignerImportService.html">DesignerImportService.cls</a></li>
-<li><a href="IDesignerImportService.html">IDesignerImportService.cls</a></li>
 <li>EventsDesignerAdvanced.bas</li>
 <li>GenerationReport.bas</li>
 <li>EventsLinelistButtons.bas</li>
@@ -594,19 +593,13 @@ text replacement.</p>
 <li>TestFormulaCondition.bas</li>
 <li>TestFormulas.bas</li>
 <li>TestValueOfFormula.bas</li>
+<li>TestGraphSpecs.bas</li>
 <li>TestLinelist.bas</li>
 <li>TestListBuilder.bas</li>
 <li>TestSectionBuilder.bas</li>
 <li>TestVarWriter.bas</li>
+<li>TestSetupImportService.bas</li>
 <li>TestShowHideManager.bas</li>
-<li><a href="AnalysisDictionaryStub.html">AnalysisDictionaryStub.cls</a></li>
-<li><a href="DictionaryMinimalStub.html">DictionaryMinimalStub.cls</a></li>
-<li><a href="LinelistSpecsWorkbookStub.html">LinelistSpecsWorkbookStub.cls</a></li>
-<li><a href="LinelistStub.html">LinelistStub.cls</a></li>
-<li><a href="LLGeoDropdownStub.html">LLGeoDropdownStub.cls</a></li>
-<li><a href="LLVarContextSpecsStub.html">LLVarContextSpecsStub.cls</a></li>
-<li><a href="LLVarContextVariablesStub.html">LLVarContextVariablesStub.cls</a></li>
-<li><a href="TableSpecsLinelistStub.html">TableSpecsLinelistStub.cls</a></li>
 <li>TestLinelistSpecs.bas</li>
 </ul>
 </details>

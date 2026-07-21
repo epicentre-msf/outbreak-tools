@@ -47,7 +47,7 @@
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function BuildDiseaseWorkbook(ByVal diseaseSheet As Worksheet, _
                                      ByVal translationTable As ListObject, _
-                                     ByVal ribbonTranslations As ITranslationObject, _
+                                     ByVal ribbonTranslations As TranslationObject, _
                                      ByVal diseaseName As String, _
                                      ByVal languageTag As String, _
                                      Optional ByVal diseaseCode As String = vbNullString) As Workbook
@@ -59,7 +59,7 @@
 <pre><code class="language-vb">Public Function ExportDisease(ByVal exportFolder As String, _
                               ByVal diseaseSheet As Worksheet, _
                               ByVal translationTable As ListObject, _
-                              ByVal ribbonTranslations As ITranslationObject, _
+                              ByVal ribbonTranslations As TranslationObject, _
                               ByVal diseaseName As String, _
                               ByVal languageTag As String, _
                               Optional ByVal diseaseCode As String = vbNullString) As String
@@ -314,10 +314,8 @@
 <hr />
 </details>
 <details>
-<summary>Used in (4 file(s))</summary>
+<summary>Used in (2 file(s))</summary>
 <ul>
-<li><a href="DiseaseExporter.html">DiseaseExporter.cls</a></li>
-<li><a href="IDiseaseExporter.html">IDiseaseExporter.cls</a></li>
 <li>TestDiseaseExporter.bas</li>
 <li>TestDiseaseIntegration.bas</li>
 </ul>

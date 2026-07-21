@@ -26,8 +26,8 @@ a LinelistSpecs instance is passed, categories are resolved from its
 dictionary and choices; otherwise an empty BetterArray is returned. This
 design decouples TableSpecs from LinelistSpecs at instantiation, making it
 usable in the setup error-checking context without geo or translation
-dependencies. Consumers interact through the ITableSpecs interface.</p>
-<p><strong>Depends on:</strong> <a href="ILLdictionary.html">ILLdictionary</a>, <a href="ILLVariables.html">ILLVariables</a>, <a href="LLVariables.html">LLVariables</a>, <a href="BetterArray.html">BetterArray</a>, --- Column and cell value caches (Tier 1 + Tier 3) ---, --- Scalar caches (Tier 2 + Tier 4 + Tier 5) ---</p>
+dependencies. Consumers interact through the TableSpecs interface.</p>
+<p><strong>Depends on:</strong> <a href="LLdictionary.html">LLdictionary</a>, <a href="LLVariables.html">LLVariables</a>, <a href="BetterArray.html">BetterArray</a>, --- Column and cell value caches (Tier 1 + Tier 3) ---, --- Scalar caches (Tier 2 + Tier 4 + Tier 5) ---</p>
 <p><strong>Version:</strong> 2.0 (2026-02-11)</p>
 <details open class="doc-section" id="instantiation">
 <summary>Instantiation</summary>
@@ -38,7 +38,7 @@ dependencies. Consumers interact through the ITableSpecs interface.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal headerRng As Range, _
                        ByVal tableSpecsRng As Range, _
-                       ByVal dict As ILLdictionary) As ITableSpecs
+                       ByVal dict As LLdictionary) As TableSpecs
 </code></pre>
 <p>Factory method that creates a new TableSpecs instance representing one row
 from an analysis setup ListObject. Each row in the setup table defines a
@@ -58,11 +58,11 @@ Column names in this range are used by Value() and ColumnIndex() to locate
 fields such as &quot;row&quot;, &quot;column&quot;, &quot;total&quot;, &quot;section&quot;, etc.</li>
 <li><code>tableSpecsRng</code>: Range. A single data-row Range from the same ListObject.
 Must be below headerRng and have the same number of columns.</li>
-<li><code>dict</code>: ILLdictionary. The linelist dictionary that provides variable
+<li><code>dict</code>: LLdictionary. The linelist dictionary that provides variable
 definitions, existence checks, and control type lookups needed for
 validation and spatial type detection.</li>
 </ul>
-<p><strong>Returns:</strong> ITableSpecs. A fully initialised TableSpecs instance ready for use.</p>
+<p><strong>Returns:</strong> TableSpecs. A fully initialised TableSpecs instance ready for use.</p>
 <p><strong>Throws:</strong></p>
 <ul>
 <li>InvalidArgument When headerRng is Nothing.</li>
@@ -151,13 +151,13 @@ tables short-circuit immediately because they are standalone.</li>
 <p><em>dictionary</em></p>
 <p><strong>Linelist dictionary bound to this specification</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Dictionary() As ILLdictionary
+<pre><code class="language-vb">Public Property Get Dictionary() As LLdictionary
 </code></pre>
-<p>Returns the ILLdictionary reference stored at construction time. The
+<p>Returns the LLdictionary reference stored at construction time. The
 dictionary provides variable existence checks, control type lookups,
 and spatial prefix detection used throughout validation and category
 resolution.</p>
-<p><strong>Returns:</strong> ILLdictionary. The linelist dictionary instance.</p>
+<p><strong>Returns:</strong> LLdictionary. The linelist dictionary instance.</p>
 <hr />
 <h3 id="spatialtablescopes">SpatialTableScopes <a class="anchor-link" href="#spatialtablescopes">#</a></h3>
 <p><em>spatial-table-types</em></p>
@@ -332,7 +332,7 @@ the chart builder; this property only signals whether one should be created.</p>
 <p><em>previous</em></p>
 <p><strong>Previous valid specification in the same section</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Previous() As ITableSpecs
+<pre><code class="language-vb">Public Property Get Previous() As TableSpecs
 </code></pre>
 <p>Linked-list navigation between sibling specifications.
 Returns the nearest valid table specification that precedes this one within
@@ -342,7 +342,7 @@ encounters a section boundary (IsNewSection on the candidate). The walk
 stops at the header row to prevent reading outside the data area. This
 property is used by TableSectionId to recursively find the first table in
 a section.</p>
-<p><strong>Returns:</strong> ITableSpecs. The nearest valid preceding table in the same section.</p>
+<p><strong>Returns:</strong> TableSpecs. The nearest valid preceding table in the same section.</p>
 <p><strong>Remarks:</strong></p>
 <ul>
 <li>Callers must check IsNewSection before accessing Previous. Each
@@ -359,7 +359,7 @@ previous table in the same section for a section-starting table.</li>
 <p><em>next-specs</em></p>
 <p><strong>Next valid specification following an anchor range</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get NextSpecs(ByVal anchorRng As Range) As ITableSpecs
+<pre><code class="language-vb">Public Property Get NextSpecs(ByVal anchorRng As Range) As TableSpecs
 </code></pre>
 <p>Returns the next valid table specification after this row by walking forward
 through the setup ListObject. Starting from the row immediately below the
@@ -373,7 +373,7 @@ property returns Nothing.</p>
 <li><code>anchorRng</code>: Range. A Range representing the last row of the setup
 ListObject. The forward walk will not advance past this row.</li>
 </ul>
-<p><strong>Returns:</strong> ITableSpecs. The next valid table after this row, or Nothing if no
+<p><strong>Returns:</strong> TableSpecs. The next valid table after this row, or Nothing if no
 valid table exists between this row and the anchor range.</p>
 <p><strong>Remarks:</strong></p>
 <ul>
@@ -454,6 +454,25 @@ column variable is not found or not specified.</p>
 </details>
 <details>
 <summary>Internal members (not exported)</summary>
+<h2 id="int-instantiation">Instantiation</h2>
+<h3 id="int-seal">Seal <a class="anchor-link" href="#int-seal">#</a></h3>
+<p><em>seal</em></p>
+<p><strong>Seal the instance against further setup writes.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Seal()
+</code></pre>
+<hr />
+<h3 id="int-guardnotsealed">GuardNotSealed <a class="anchor-link" href="#int-guardnotsealed">#</a></h3>
+<p><em>guard-not-sealed</em></p>
+<p><strong>Guard a setup setter against post-creation writes.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub GuardNotSealed(ByVal propName As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>propName</code>: String. The property name for the error message.</li>
+</ul>
+<hr />
 <h2 id="int-internal-properties">Internal Properties</h2>
 <h3 id="int-headerrange">HeaderRange <a class="anchor-link" href="#int-headerrange">#</a></h3>
 <p><em>header-range</em></p>
@@ -503,22 +522,22 @@ defines this table specification.</p>
 <p><em>dictionary-object</em></p>
 <p><strong>Dictionary object used for validation and variable lookups</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get DictionaryObject() As ILLdictionary
+<pre><code class="language-vb">Public Property Get DictionaryObject() As LLdictionary
 </code></pre>
-<p>Returns the ILLdictionary instance that provides variable existence
+<p>Returns the LLdictionary instance that provides variable existence
 checks, control type lookups, and spatial prefix detection. Set during
 factory construction.</p>
-<p><strong>Returns:</strong> ILLdictionary. The dictionary object.</p>
+<p><strong>Returns:</strong> LLdictionary. The dictionary object.</p>
 <hr />
 <h3 id="int-dictionaryobject">DictionaryObject <a class="anchor-link" href="#int-dictionaryobject">#</a></h3>
 <p><em>dictionary-object-set</em></p>
 <p><strong>Assign the dictionary object</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Set DictionaryObject(ByVal dict As ILLdictionary)
+<pre><code class="language-vb">Public Property Set DictionaryObject(ByVal dict As LLdictionary)
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>dict</code>: ILLdictionary. The dictionary to store.</li>
+<li><code>dict</code>: LLdictionary. The dictionary to store.</li>
 </ul>
 <hr />
 <h2 id="int-helpers">Helpers</h2>
@@ -651,7 +670,7 @@ providing a consistent stack trace across all methods in this class.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub CheckRequirements(ByVal headerRng As Range, _
                               ByVal tableSpecsRng As Range, _
-                              ByVal dict As ILLdictionary)
+                              ByVal dict As LLdictionary)
 </code></pre>
 <p>Validates all preconditions required by the Create factory before populating
 a new TableSpecs instance. Checks that headerRng, tableSpecsRng, and dict
@@ -662,37 +681,27 @@ If any check fails, a descriptive error is raised via ThrowError.</p>
 <ul>
 <li><code>headerRng</code>: Range. The header range to validate.</li>
 <li><code>tableSpecsRng</code>: Range. The table specification row range to validate.</li>
-<li><code>dict</code>: ILLdictionary. The dictionary object to validate.</li>
+<li><code>dict</code>: LLdictionary. The dictionary object to validate.</li>
 </ul>
 <p><strong>Throws:</strong></p>
 <ul>
 <li>InvalidArgument When any precondition fails.</li>
 </ul>
 <hr />
-<h2 id="int-interface-implementation">Interface Implementation</h2>
-<h3 id="int-itablespecs-tablescope">ITableSpecs_TableScope <a class="anchor-link" href="#int-itablespecs-tablescope">#</a></h3>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get ITableSpecs_TableScope() As AnalysisTableScope
-</code></pre>
-<p>Delegated members satisfying the ITableSpecs contract.
-See the corresponding Public members above for full documentation.</p>
-<hr />
 </details>
 <details>
-<summary>Used in (12 file(s))</summary>
+<summary>Used in (10 file(s))</summary>
 <ul>
 <li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
 <li><a href="CrossTable.html">CrossTable.cls</a></li>
 <li><a href="CrossTableFormula.html">CrossTableFormula.cls</a></li>
-<li><a href="ICrossTable.html">ICrossTable.cls</a></li>
-<li><a href="ITableSpecs.html">ITableSpecs.cls</a></li>
 <li><a href="SpatialTables.html">SpatialTables.cls</a></li>
-<li><a href="TableSpecs.html">TableSpecs.cls</a></li>
 <li><a href="GraphSpecs.html">GraphSpecs.cls</a></li>
 <li><a href="SetupErrors.html">SetupErrors.cls</a></li>
 <li>TestCrossTable.bas</li>
 <li>TestCrossTableFormula.bas</li>
 <li>TestTableSpecs.bas</li>
+<li>TestGraphSpecs.bas</li>
 </ul>
 </details>
   </main>

@@ -21,14 +21,14 @@ named ranges, to detect column-level changes and report update flags.</p>
 <p><em>create</em></p>
 <p><strong>Build a new watcher bound to the specified registry worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Create(ByVal sh As Worksheet, Optional ByVal ignoredId As String = vbNullString) As IUpdatedValues
+<pre><code class="language-vb">Public Function Create(ByVal sh As Worksheet, Optional ByVal ignoredId As String = vbNullString) As UpdatedValues
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>sh</code>: Worksheet. Registry worksheet hosting the watcher tables.</li>
 <li><code>ignoredId</code>: Optional String. Reserved for future use (ignored).</li>
 </ul>
-<p><strong>Returns:</strong> IUpdatedValues. Configured watcher instance.</p>
+<p><strong>Returns:</strong> UpdatedValues. Configured watcher instance.</p>
 <hr />
 </div>
 </details>
@@ -45,9 +45,23 @@ named ranges, to detect column-level changes and report update flags.</p>
 <hr />
 </div>
 </details>
-<details open class="doc-section" id="interface-implementation">
-<summary>Interface implementation</summary>
+<details open class="doc-section" id="status-switching">
+<summary>Status switching</summary>
 <div class="section-body">
+<h3 id="switchtagstono">SwitchTagsToNo <a class="anchor-link" href="#switchtagstono">#</a></h3>
+<p><em>switch-tags-to-no</em></p>
+<p><strong>Force every registry status flag to the default value.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub SwitchTagsToNo()
+</code></pre>
+<hr />
+<h3 id="switchtagstoyes">SwitchTagsToYes <a class="anchor-link" href="#switchtagstoyes">#</a></h3>
+<p><em>switch-tags-to-yes</em></p>
+<p><strong>Force every registry status flag to the updated value.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub SwitchTagsToYes()
+</code></pre>
+<hr />
 <h3 id="exists">Exists <a class="anchor-link" href="#exists">#</a></h3>
 <p><em>exists</em></p>
 <p><strong>Determine whether a registry ListObject already exists for the supplied identifier.</strong></p>
@@ -65,13 +79,19 @@ named ranges, to detect column-level changes and report update flags.</p>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-factory">Factory</h2>
-<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
-<p><em>self</em></p>
-<p><strong>Current object instance cast to the interface.</strong></p>
+<h3 id="int-seal">Seal <a class="anchor-link" href="#int-seal">#</a></h3>
+<p><em>seal</em></p>
+<p><strong>Seal the instance so setup-only setters can no longer be used.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Self() As IUpdatedValues
+<pre><code class="language-vb">Public Sub Seal()
 </code></pre>
-<p><strong>Returns:</strong> IUpdatedValues. The current instance.</p>
+<hr />
+<h3 id="int-guardnotsealed">GuardNotSealed <a class="anchor-link" href="#int-guardnotsealed">#</a></h3>
+<p><em>guard-not-sealed</em></p>
+<p><strong>Raise when a setup-only setter is used after sealing.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub GuardNotSealed(ByVal propName As String)
+</code></pre>
 <hr />
 <h2 id="int-publicstate">PublicState</h2>
 <h3 id="int-wksh">Wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
@@ -112,7 +132,7 @@ named ranges, to detect column-level changes and report update flags.</p>
 <p><em>registry-table</em></p>
 <p><strong>Return a CustomTable helper for the specified registry ListObject name or the last accessed one.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get RegistryTable(Optional ByVal tableName As String = vbNullString) As ICustomTable
+<pre><code class="language-vb">Private Property Get RegistryTable(Optional ByVal tableName As String = vbNullString) As CustomTable
 </code></pre>
 <hr />
 <h3 id="int-resetregistrycache">ResetRegistryCache <a class="anchor-link" href="#int-resetregistrycache">#</a></h3>
@@ -270,7 +290,7 @@ named ranges, to detect column-level changes and report update flags.</p>
 <p><em>add-columns</em></p>
 <p><strong>Register or refresh watched columns for the supplied ListObject.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub AddColumns(ByVal source As ListObject)
+<pre><code class="language-vb">Public Sub AddColumns(ByVal source As ListObject)
 </code></pre>
 <p>Scans the source ListObject header row for metadata tags and synchronises
 the registry table so named ranges remain aligned with the current layout.</p>
@@ -283,14 +303,14 @@ the registry table so named ranges remain aligned with the current layout.</p>
 <p><em>add-sheet</em></p>
 <p><strong>Register tagged columns for every ListObject on the provided worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub AddSheet(ByVal targetSheet As Worksheet)
+<pre><code class="language-vb">Public Sub AddSheet(ByVal targetSheet As Worksheet)
 </code></pre>
 <hr />
-<h3 id="int-removelistobject">RemoveListObject <a class="anchor-link" href="#int-removelistobject">#</a></h3>
+<h3 id="int-removelo">RemoveLo <a class="anchor-link" href="#int-removelo">#</a></h3>
 <p><em>remove-lo</em></p>
 <p><strong>Remove registry entries associated with the supplied ListObject.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub RemoveListObject(ByVal target As ListObject)
+<pre><code class="language-vb">Public Sub RemoveLo(ByVal target As ListObject)
 </code></pre>
 <hr />
 <h3 id="int-columnlabelmatchestable">ColumnLabelMatchesTable <a class="anchor-link" href="#int-columnlabelmatchestable">#</a></h3>
@@ -403,16 +423,16 @@ the registry table so named ranges remain aligned with the current layout.</p>
 <p><em>is-updated</em></p>
 <p><strong>Determine whether the tracked column has been marked as updated.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get IsUpdated(ByVal checkColName As String) As Boolean
+<pre><code class="language-vb">Public Property Get IsUpdated(ByVal checkColName As String) As Boolean
 </code></pre>
 <p>Searches across all registry ListObjects for a matching entry and returns
 True when the column is flagged as updated since the last reset.</p>
 <hr />
-<h3 id="int-checkstatus">CheckStatus <a class="anchor-link" href="#int-checkstatus">#</a></h3>
+<h3 id="int-checkupdate">CheckUpdate <a class="anchor-link" href="#int-checkupdate">#</a></h3>
 <p><em>check-update</em></p>
 <p><strong>Evaluate a range change against the registered watchers and flag updates.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub CheckStatus(ByVal tagReference As Variant, ByVal Target As Range)
+<pre><code class="language-vb">Public Sub CheckUpdate(ByVal tagReference As Variant, ByVal Target As Range)
 </code></pre>
 <p>Compares the changed range with named ranges tracked in the registry and
 marks the first matching entry as updated.</p>
@@ -456,14 +476,14 @@ marks the first matching entry as updated.</p>
 <p><em>clear-up</em></p>
 <p><strong>Reset all tracked columns to the default (not updated) status.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ClearUp()
+<pre><code class="language-vb">Public Sub ClearUp()
 </code></pre>
 <hr />
 <h3 id="int-deleteup">DeleteUp <a class="anchor-link" href="#int-deleteup">#</a></h3>
 <p><em>delete-up</em></p>
 <p><strong>Remove the watcher registry and associated workbook named ranges.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub DeleteUp()
+<pre><code class="language-vb">Public Sub DeleteUp()
 </code></pre>
 <hr />
 <h3 id="int-removeregistrytable">RemoveRegistryTable <a class="anchor-link" href="#int-removeregistrytable">#</a></h3>
@@ -628,36 +648,12 @@ rather than a 2D array. This helper transparently handles both cases.</p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal errorMessage As String)
 </code></pre>
 <hr />
-<h2 id="int-interface-implementation">Interface implementation</h2>
-<h3 id="int-iupdatedvalues-addcolumns">IUpdatedValues_AddColumns <a class="anchor-link" href="#int-iupdatedvalues-addcolumns">#</a></h3>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub IUpdatedValues_AddColumns(ByVal Lo As ListObject)
-</code></pre>
-<h1>Thin delegation stubs forwarding each IUpdatedValues member
-to the corresponding internal implementation above.</h1>
-<hr />
-<h3 id="int-iupdatedvalues-switchtagstono">IUpdatedValues_SwitchTagsToNo <a class="anchor-link" href="#int-iupdatedvalues-switchtagstono">#</a></h3>
-<p><em>switch-tags-to-no</em></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub IUpdatedValues_SwitchTagsToNo()
-</code></pre>
-<hr />
-<h3 id="int-iupdatedvalues-switchtagstoyes">IUpdatedValues_SwitchTagsToYes <a class="anchor-link" href="#int-iupdatedvalues-switchtagstoyes">#</a></h3>
-<p><em>switch-tags-to-yes</em></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub IUpdatedValues_SwitchTagsToYes()
-</code></pre>
-<hr />
 </details>
 <details>
-<summary>Used in (14 file(s))</summary>
+<summary>Used in (10 file(s))</summary>
 <ul>
 <li><a href="EventSetup.html">EventSetup.cls</a></li>
-<li><a href="IEventSetup.html">IEventSetup.cls</a></li>
-<li><a href="ISetupPreparation.html">ISetupPreparation.cls</a></li>
-<li><a href="IUpdatedValues.html">IUpdatedValues.cls</a></li>
 <li><a href="SetupPreparation.html">SetupPreparation.cls</a></li>
-<li><a href="UpdatedValues.html">UpdatedValues.cls</a></li>
 <li>EventsMasterSetupRibbon.bas</li>
 <li>MasterSetupHelpers.bas</li>
 <li>EventsSetupRibbon.bas</li>

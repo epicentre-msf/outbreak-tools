@@ -13,10 +13,10 @@
 <h1>CodeTransfer</h1>
 <p>Transfers VBA code components (classes, modules, forms, workbook code) from a
 source workbook to a target workbook using temporary file export/import cycles.
-Each component is exported to a temp file via the ITemporaryRepos, imported
+Each component is exported to a temp file via the TemporaryRepos, imported
 into the target, and the temp file is cleaned up. Consumers create an instance
 via Create and then call the transfer methods for each component type.</p>
-<p><strong>Depends on:</strong> <a href="ITemporaryRepos.html">ITemporaryRepos</a></p>
+<p><strong>Depends on:</strong> <a href="TemporaryRepos.html">TemporaryRepos</a></p>
 <p><strong>Version:</strong> 1.0 (2026-02-09)</p>
 <details open class="doc-section" id="instantiation">
 <summary>Instantiation</summary>
@@ -27,7 +27,7 @@ via Create and then call the transfer methods for each component type.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal sourceWkb As Workbook, _
                        ByVal targetWkb As Workbook, _
-                       ByVal tempRepos As ITemporaryRepos) As ICodeTransfer
+                       ByVal tempRepos As TemporaryRepos) As CodeTransfer
 </code></pre>
 <p>Factory method and Friend bindings for construction.
 Creates a new CodeTransfer wired to transfer components from sourceWkb to
@@ -37,9 +37,9 @@ are validated as non-Nothing.</p>
 <ul>
 <li><code>sourceWkb</code>: Workbook. The workbook containing the VBA components to export.</li>
 <li><code>targetWkb</code>: Workbook. The workbook that will receive the imported components.</li>
-<li><code>tempRepos</code>: ITemporaryRepos. The temporary file repository for export/import.</li>
+<li><code>tempRepos</code>: TemporaryRepos. The temporary file repository for export/import.</li>
 </ul>
-<p><strong>Returns:</strong> ICodeTransfer. A fully initialised instance ready for transfers.</p>
+<p><strong>Returns:</strong> CodeTransfer. A fully initialised instance ready for transfers.</p>
 <p><strong>Throws:</strong></p>
 <ul>
 <li>ProjectError.ObjectNotInitialized When any parameter is Nothing.</li>
@@ -199,11 +199,11 @@ not found in the target workbook.</li>
 <p><em>bin-temp-repos</em></p>
 <p><strong>Assign the temporary repository</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Friend Property Set BinTempRepos(ByVal value As ITemporaryRepos)
+<pre><code class="language-vb">Friend Property Set BinTempRepos(ByVal value As TemporaryRepos)
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>value</code>: ITemporaryRepos. The temporary repository to store.</li>
+<li><code>value</code>: TemporaryRepos. The temporary repository to store.</li>
 </ul>
 <hr />
 <h2 id="int-helpers">Helpers</h2>
@@ -235,21 +235,12 @@ TransferModule.</p>
 <li><code>errorMessage</code>: String. Human-readable description of the failure.</li>
 </ul>
 <hr />
-<h2 id="int-interfaceimplementation">InterfaceImplementation</h2>
-<h3 id="int-icodetransfer-transferclass">ICodeTransfer_TransferClass <a class="anchor-link" href="#int-icodetransfer-transferclass">#</a></h3>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ICodeTransfer_TransferClass(ByVal className As String)
-</code></pre>
-<p>Delegated members satisfying the ICodeTransfer contract.
-See the corresponding Public members above for full documentation.</p>
-<hr />
 </details>
 <details>
-<summary>Used in (4 file(s))</summary>
+<summary>Used in (3 file(s))</summary>
 <ul>
-<li><a href="CodeTransfer.html">CodeTransfer.cls</a></li>
-<li><a href="ICodeTransfer.html">ICodeTransfer.cls</a></li>
 <li><a href="Linelist.html">Linelist.cls</a></li>
+<li>EventLinelistSelection.bas</li>
 <li>TestCodeTransfer.bas</li>
 </ul>
 </details>

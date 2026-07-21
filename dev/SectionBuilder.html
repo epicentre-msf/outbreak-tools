@@ -17,7 +17,7 @@ scans the dictionary for matching rows, groups them by section and
 subsection, delegates variable writing to VarWriter, and applies
 merged-cell section and subsection header formatting. Supports both
 HList (horizontal) and VList (vertical) layouts via the layer byte.</p>
-<p><strong>Depends on:</strong> <a href="ILinelistSpecs.html">ILinelistSpecs</a>, <a href="ILLdictionary.html">ILLdictionary</a>, <a href="ILLVariables.html">ILLVariables</a>, <a href="ILLFormat.html">ILLFormat</a>, <a href="IDropdownLists.html">IDropdownLists</a>, <a href="VarWriter.html">VarWriter</a>, <a href="LLVariables.html">LLVariables</a>, Checking support, Row/column constants for section and subsection headers</p>
+<p><strong>Depends on:</strong> <a href="LinelistSpecs.html">LinelistSpecs</a>, <a href="LLdictionary.html">LLdictionary</a>, <a href="LLVariables.html">LLVariables</a>, <a href="LLFormat.html">LLFormat</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="VarWriter.html">VarWriter</a>, <a href="LLVariables.html">LLVariables</a>, Checking support, Row/column constants for section and subsection headers</p>
 <p><strong>Version:</strong> 1.0 (2026-02-10)</p>
 <details open class="doc-section" id="instantiation">
 <summary>Instantiation</summary>
@@ -27,29 +27,28 @@ HList (horizontal) and VList (vertical) layouts via the layer byte.</p>
 <p><strong>Create a new SectionBuilder instance</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal layer As Byte, _
-                       ByVal specs As ILinelistSpecs, _
+                       ByVal specs As LinelistSpecs, _
                        ByVal wksh As Worksheet, _
                        Optional ByVal printWksh As Worksheet = Nothing, _
                        Optional ByVal crfWksh As Worksheet = Nothing, _
-                       Optional ByVal dropdownObj As IDropdownLists = Nothing, _
-                       Optional ByVal customDropdownObj As IDropdownLists = Nothing) As ISectionBuilder
+                       Optional ByVal dropdownObj As DropdownLists = Nothing, _
+                       Optional ByVal customDropdownObj As DropdownLists = Nothing) As SectionBuilder
 </code></pre>
 <p>Factory method on the predeclared instance. Validates that specs and
 wksh are not Nothing, then initialises a new SectionBuilder with the
 given layer, specifications, and optional companion worksheets and
-dropdown managers. Returns the instance through the ISectionBuilder
-interface.</p>
+dropdown managers. Returns the newly built instance.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>layer</code>: Byte. SectionBuilderMode enum value (HList=1, VList=2).</li>
-<li><code>specs</code>: ILinelistSpecs. The linelist specifications object.</li>
+<li><code>specs</code>: LinelistSpecs. The linelist specifications object.</li>
 <li><code>wksh</code>: Worksheet. The target main worksheet.</li>
 <li><code>printWksh</code>: Optional Worksheet. Printed companion worksheet (HList only).</li>
 <li><code>crfWksh</code>: Optional Worksheet. CRF companion worksheet (HList only).</li>
-<li><code>dropdownObj</code>: Optional IDropdownLists. Dropdown lists manager.</li>
-<li><code>customDropdownObj</code>: Optional IDropdownLists. Custom dropdown lists manager.</li>
+<li><code>dropdownObj</code>: Optional DropdownLists. Dropdown lists manager.</li>
+<li><code>customDropdownObj</code>: Optional DropdownLists. Custom dropdown lists manager.</li>
 </ul>
-<p><strong>Returns:</strong> ISectionBuilder. A fully initialised instance ready for use.</p>
+<p><strong>Returns:</strong> SectionBuilder. A fully initialised instance ready for use.</p>
 <p><strong>Throws:</strong></p>
 <ul>
 <li>VbObjectError+516 When specs or wksh is Nothing.</li>
@@ -82,16 +81,24 @@ sheet name changes or the dictionary ends.</p>
 </details>
 <details>
 <summary>Internal members (not exported)</summary>
-<h2 id="int-instantiation">Instantiation</h2>
-<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
-<p><em>self</em></p>
-<p><strong>Current object instance</strong></p>
+<h2 id="int-instance-sealing">Instance Sealing</h2>
+<h3 id="int-seal">Seal <a class="anchor-link" href="#int-seal">#</a></h3>
+<p><em>seal</em></p>
+<p><strong>Seal the instance against further setup writes</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Self() As ISectionBuilder
+<pre><code class="language-vb">Public Sub Seal()
 </code></pre>
-<p>Returns the current instance cast to the ISectionBuilder interface,
-used by the Create factory to return the newly built object.</p>
-<p><strong>Returns:</strong> ISectionBuilder. The current instance.</p>
+<hr />
+<h3 id="int-guardnotsealed">GuardNotSealed <a class="anchor-link" href="#int-guardnotsealed">#</a></h3>
+<p><em>guard-not-sealed</em></p>
+<p><strong>Guard a setup-only setter against post-seal writes</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub GuardNotSealed(ByVal propName As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>propName</code>: String. The property name for the error message.</li>
+</ul>
 <hr />
 <h2 id="int-internal-setters">Internal Setters</h2>
 <h3 id="int-internallayer">InternalLayer <a class="anchor-link" href="#int-internallayer">#</a></h3>
@@ -110,11 +117,11 @@ used by the Create factory to return the newly built object.</p>
 <p><em>internal-specs</em></p>
 <p><strong>Assign the linelist specifications</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Set InternalSpecs(ByVal specs As ILinelistSpecs)
+<pre><code class="language-vb">Public Property Set InternalSpecs(ByVal specs As LinelistSpecs)
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>specs</code>: ILinelistSpecs. The specifications object.</li>
+<li><code>specs</code>: LinelistSpecs. The specifications object.</li>
 </ul>
 <hr />
 <h3 id="int-internalwksh">InternalWksh <a class="anchor-link" href="#int-internalwksh">#</a></h3>
@@ -154,22 +161,22 @@ used by the Create factory to return the newly built object.</p>
 <p><em>internal-dropdown</em></p>
 <p><strong>Assign the dropdown lists manager</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Set InternalDropdown(ByVal dropdownObj As IDropdownLists)
+<pre><code class="language-vb">Public Property Set InternalDropdown(ByVal dropdownObj As DropdownLists)
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>dropdownObj</code>: IDropdownLists. The dropdown manager.</li>
+<li><code>dropdownObj</code>: DropdownLists. The dropdown manager.</li>
 </ul>
 <hr />
 <h3 id="int-internalcustomdropdown">InternalCustomDropdown <a class="anchor-link" href="#int-internalcustomdropdown">#</a></h3>
 <p><em>internal-custom-dropdown</em></p>
 <p><strong>Assign the custom dropdown lists manager</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Set InternalCustomDropdown(ByVal dropdownObj As IDropdownLists)
+<pre><code class="language-vb">Public Property Set InternalCustomDropdown(ByVal dropdownObj As DropdownLists)
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>dropdownObj</code>: IDropdownLists. The custom dropdown manager.</li>
+<li><code>dropdownObj</code>: DropdownLists. The custom dropdown manager.</li>
 </ul>
 <hr />
 <h2 id="int-cached-accessors">Cached Accessors</h2>
@@ -177,30 +184,30 @@ used by the Create factory to return the newly built object.</p>
 <p><em>dictionary</em></p>
 <p><strong>Lazy-loaded dictionary accessor</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get Dictionary() As ILLdictionary
+<pre><code class="language-vb">Private Property Get Dictionary() As LLdictionary
 </code></pre>
 <p>Lazy-loaded accessors for frequently used dependency objects.
-Returns the cached ILLdictionary instance. On first access, retrieves
+Returns the cached LLdictionary instance. On first access, retrieves
 it from the specifications object and caches it for subsequent calls.</p>
-<p><strong>Returns:</strong> ILLdictionary. The linelist dictionary.</p>
+<p><strong>Returns:</strong> LLdictionary. The linelist dictionary.</p>
 <hr />
 <h3 id="int-variables">Variables <a class="anchor-link" href="#int-variables">#</a></h3>
 <p><em>variables</em></p>
 <p><strong>Lazy-loaded variables accessor</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get Variables() As ILLVariables
+<pre><code class="language-vb">Private Property Get Variables() As LLVariables
 </code></pre>
-<p>Returns the cached ILLVariables instance. On first access, creates it
+<p>Returns the cached LLVariables instance. On first access, creates it
 from the dictionary via LLVariables.Create and caches it.</p>
-<p><strong>Returns:</strong> ILLVariables. The variables helper for dictionary lookups.</p>
+<p><strong>Returns:</strong> LLVariables. The variables helper for dictionary lookups.</p>
 <hr />
 <h3 id="int-designformat">DesignFormat <a class="anchor-link" href="#int-designformat">#</a></h3>
 <p><em>design-format</em></p>
 <p><strong>Design format accessor</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get DesignFormat() As ILLFormat
+<pre><code class="language-vb">Private Property Get DesignFormat() As LLFormat
 </code></pre>
-<p><strong>Returns:</strong> ILLFormat. The formatting object from the specifications.</p>
+<p><strong>Returns:</strong> LLFormat. The formatting object from the specifications.</p>
 <hr />
 <h2 id="int-section-boundary-detection">Section Boundary Detection</h2>
 <h3 id="int-findsectionend">FindSectionEnd <a class="anchor-link" href="#int-findsectionend">#</a></h3>
@@ -441,20 +448,11 @@ VListSubSection formatting.</p>
 <li>VbObjectError+516 Always raises the specified error.</li>
 </ul>
 <hr />
-<h2 id="int-interface-implementation">Interface Implementation</h2>
-<h3 id="int-isectionbuilder-build">ISectionBuilder_Build <a class="anchor-link" href="#int-isectionbuilder-build">#</a></h3>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ISectionBuilder_Build(ByVal sheetName As String, ByVal startRow As Long)
-</code></pre>
-<p>Delegated members satisfying the ISectionBuilder contract.</p>
-<hr />
 </details>
 <details>
-<summary>Used in (4 file(s))</summary>
+<summary>Used in (2 file(s))</summary>
 <ul>
 <li><a href="ListBuilder.html">ListBuilder.cls</a></li>
-<li><a href="ISectionBuilder.html">ISectionBuilder.cls</a></li>
-<li><a href="SectionBuilder.html">SectionBuilder.cls</a></li>
 <li>TestSectionBuilder.bas</li>
 </ul>
 </details>

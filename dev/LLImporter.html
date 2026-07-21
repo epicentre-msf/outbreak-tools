@@ -15,9 +15,8 @@
 Supports importing HList/VList data, custom dropdowns, show/hide state,
 editable labels, single metadata values, and geobase data. Tracks which
 sheets and variables were imported, and builds a report of items not
-imported or not touched. Consumers interact through the ILLImporter
-interface.</p>
-<p><strong>Depends on:</strong> <a href="ILLdictionary.html">ILLdictionary</a>, <a href="IPasswords.html">IPasswords</a>, <a href="ICustomTable.html">ICustomTable</a>, <a href="IDataSheet.html">IDataSheet</a>, <a href="IShowHideManager.html">IShowHideManager</a>, <a href="ILLGeo.html">ILLGeo</a>, <a href="ILLChoices.html">ILLChoices</a>, <a href="ILLVariables.html">ILLVariables</a>, <a href="IDropdownLists.html">IDropdownLists</a>, <a href="IHiddenNames.html">IHiddenNames</a></p>
+imported or not touched.</p>
+<p><strong>Depends on:</strong> <a href="LLdictionary.html">LLdictionary</a>, <a href="Passwords.html">Passwords</a>, <a href="CustomTable.html">CustomTable</a>, <a href="DataSheet.html">DataSheet</a>, <a href="LLGeo.html">LLGeo</a>, <a href="LLChoices.html">LLChoices</a>, <a href="LLVariables.html">LLVariables</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="HiddenNames.html">HiddenNames</a></p>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
 <div class="section-body">
@@ -25,16 +24,15 @@ interface.</p>
 <p><em>create</em></p>
 <p><strong>Create an importer from the source linelist workbook</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Create(ByVal sourceWkb As Workbook) As ILLImporter
+<pre><code class="language-vb">Public Function Create(ByVal sourceWkb As Workbook) As LLImporter
 </code></pre>
 <p>Factory method that validates the workbook is not Nothing, then constructs
-and returns a new LLImporter instance through the ILLImporter interface.
-Called on the predeclared instance.</p>
+and returns a new LLImporter instance. Called on the predeclared instance.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>sourceWkb</code>: Workbook. The linelist workbook that will receive imported data.</li>
 </ul>
-<p><strong>Returns:</strong> ILLImporter. A fully initialised instance ready for import operations.</p>
+<p><strong>Returns:</strong> LLImporter. A fully initialised instance ready for import operations.</p>
 <p><strong>Throws:</strong></p>
 <ul>
 <li>vbObjectError When the workbook is Nothing.</li>
@@ -87,7 +85,7 @@ languages differ. Returns False when the Metadata sheet is missing.</p>
 <p>Iterates over all worksheets in the source workbook. For HList sheets,
 clears non-formula column values from the ListObject data body. For
 VList sheets, clears non-formula named range values. Unprotects and
-re-protects each sheet via IPasswords.</p>
+re-protects each sheet via Passwords.</p>
 <hr />
 <h3 id="importdata">ImportData <a class="anchor-link" href="#importdata">#</a></h3>
 <p><em>import-data</em></p>
@@ -262,14 +260,6 @@ before starting a new import session to ensure a clean report.</p>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-public-accessors">Public Accessors</h2>
-<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
-<p><em>self</em></p>
-<p><strong>Current object instance</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Self() As ILLImporter
-</code></pre>
-<p><strong>Returns:</strong> ILLImporter. The current instance cast to the interface.</p>
-<hr />
 <h3 id="int-sourceworkbook">SourceWorkbook <a class="anchor-link" href="#int-sourceworkbook">#</a></h3>
 <p><em>source-workbook</em></p>
 <p><strong>Source linelist workbook</strong></p>
@@ -289,30 +279,48 @@ before starting a new import session to ensure a clean report.</p>
 <li><code>wb</code>: Workbook. The workbook to store.</li>
 </ul>
 <hr />
+<h3 id="int-seal">Seal <a class="anchor-link" href="#int-seal">#</a></h3>
+<p><em>seal</em></p>
+<p><strong>Prevent further changes to setup-only properties</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Seal()
+</code></pre>
+<hr />
+<h3 id="int-guardnotsealed">GuardNotSealed <a class="anchor-link" href="#int-guardnotsealed">#</a></h3>
+<p><em>guard-not-sealed</em></p>
+<p><strong>Raise when a setup-only property is written after sealing</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub GuardNotSealed(ByVal propName As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>propName</code>: String. The name of the property being guarded.</li>
+</ul>
+<hr />
 <h2 id="int-private-source-object-accessors">Private - Source Object Accessors</h2>
 <h3 id="int-sourcedictionary">SourceDictionary <a class="anchor-link" href="#int-sourcedictionary">#</a></h3>
 <p><em>source-dictionary</em></p>
 <p><strong>Get the dictionary from the source workbook</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function SourceDictionary() As ILLdictionary
+<pre><code class="language-vb">Private Function SourceDictionary() As LLdictionary
 </code></pre>
-<p><strong>Returns:</strong> ILLdictionary. Dictionary instance from the Dictionary sheet.</p>
+<p><strong>Returns:</strong> LLdictionary. Dictionary instance from the Dictionary sheet.</p>
 <hr />
 <h3 id="int-passwordsobject">PasswordsObject <a class="anchor-link" href="#int-passwordsobject">#</a></h3>
 <p><em>passwords-object</em></p>
 <p><strong>Get passwords from the source workbook</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function PasswordsObject() As IPasswords
+<pre><code class="language-vb">Private Function PasswordsObject() As Passwords
 </code></pre>
-<p><strong>Returns:</strong> IPasswords. Passwords instance from the __pass sheet.</p>
+<p><strong>Returns:</strong> Passwords. Passwords instance from the __pass sheet.</p>
 <hr />
 <h3 id="int-geoobject">GeoObject <a class="anchor-link" href="#int-geoobject">#</a></h3>
 <p><em>geo-object</em></p>
 <p><strong>Get the geo object from the source workbook</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function GeoObject() As ILLGeo
+<pre><code class="language-vb">Private Function GeoObject() As LLGeo
 </code></pre>
-<p><strong>Returns:</strong> ILLGeo. Geo instance from the Geo sheet.</p>
+<p><strong>Returns:</strong> LLGeo. Geo instance from the Geo sheet.</p>
 <hr />
 <h2 id="int-private-import-helpers">Private - Import Helpers</h2>
 <h3 id="int-initializetracking">InitializeTracking <a class="anchor-link" href="#int-initializetracking">#</a></h3>
@@ -410,21 +418,12 @@ to CLASS_NAME.</p>
 <li>vbObjectError Always raises the error.</li>
 </ul>
 <hr />
-<h2 id="int-interface-implementation">Interface Implementation</h2>
-<h3 id="int-illimporter-hasdata">ILLImporter_HasData <a class="anchor-link" href="#int-illimporter-hasdata">#</a></h3>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get ILLImporter_HasData() As Boolean
-</code></pre>
-<p>Delegated members satisfying the ILLImporter contract.
-See the corresponding members above for full documentation.</p>
-<hr />
 </details>
 <details>
-<summary>Used in (5 file(s))</summary>
+<summary>Used in (4 file(s))</summary>
 <ul>
-<li><a href="ILLImporter.html">ILLImporter.cls</a></li>
-<li><a href="LLImporter.html">LLImporter.cls</a></li>
 <li><a href="Linelist.html">Linelist.cls</a></li>
+<li>EventsLinelistButtons.bas</li>
 <li>FormLogicAdvanced.bas</li>
 <li>TestLLImporter.bas</li>
 </ul>

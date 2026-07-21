@@ -17,7 +17,7 @@ during export to recreate the full analysis structure (tables and charts)
 on output worksheets. Manages three ListObject families (tab_ids_<em>,
 graph_ids_</em>, graph_formats_*) across four analysis scopes (normal, time
 series, spatial, spatio-temporal).</p>
-<p><strong>Depends on:</strong> <a href="CustomTable.html">CustomTable</a>, <a href="Graphs.html">Graphs</a>, <a href="IGraphs.html">IGraphs</a>, <a href="BetterArray.html">BetterArray</a>, <a href="IFormulas.html">IFormulas</a>, Named ranges for sheet names</p>
+<p><strong>Depends on:</strong> <a href="CustomTable.html">CustomTable</a>, <a href="Graphs.html">Graphs</a>, <a href="BetterArray.html">BetterArray</a>, <a href="Formulas.html">Formulas</a>, Named ranges for sheet names, Scope for analysis ID operations</p>
 <p><strong>Version:</strong> 2025-01-15</p>
 <details open class="doc-section" id="instantiation">
 <summary>Instantiation</summary>
@@ -27,7 +27,7 @@ series, spatial, spatio-temporal).</p>
 <p><strong>Create a new AnaTabIds instance bound to a tracking worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal idsh As Worksheet, _
-                       Optional ByVal check As Boolean = True) As IAnaTabIds
+                       Optional ByVal check As Boolean = True) As AnaTabIds
 </code></pre>
 <p>Factory method on the predeclared instance. Validates the worksheet reference
 and optionally checks that all 12 tracking ListObjects (3 prefixes x 4 scopes)
@@ -40,7 +40,7 @@ sheet-name named ranges.</li>
 <li><code>check</code>: Optional Boolean. When True, calls CheckRequirements to validate
 all expected infrastructure. Defaults to True.</li>
 </ul>
-<p><strong>Returns:</strong> IAnaTabIds. A fully initialised tracking instance.</p>
+<p><strong>Returns:</strong> AnaTabIds. A fully initialised tracking instance.</p>
 <p><strong>Throws:</strong></p>
 <ul>
 <li>ProjectError.InvalidArgument When idsh is Nothing.</li>
@@ -62,7 +62,7 @@ ListObject or named range is missing.</li>
 <p><em>add-table-infos</em></p>
 <p><strong>Register table named ranges in the tracking ListObject</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub AddTableInfos(ByVal scope As Byte, _
+<pre><code class="language-vb">Public Sub AddTableInfos(ByVal scope As Byte, _
                            ByVal tabId As String, _
                            ByVal tabRangesNames As BetterArray, _
                            Optional ByVal exportTable As String = &quot;yes&quot;)
@@ -91,7 +91,7 @@ Defaults to &quot;yes&quot;.</li>
 <p><em>add-graph-info</em></p>
 <p><strong>Register a graph series row in the tracking ListObject</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub AddGraphInfo(ByVal scope As Byte, _
+<pre><code class="language-vb">Public Sub AddGraphInfo(ByVal scope As Byte, _
                           ByVal tabId As String, _
                           ByVal graphId As String, _
                           ByVal seriesName As String, _
@@ -137,7 +137,7 @@ cross-session persistence in Excel ListObject cells.</li>
 <p><em>add-graph-format</em></p>
 <p><strong>Register graph formatting metadata in the tracking ListObject</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub AddGraphFormat(ByVal scope As Byte, _
+<pre><code class="language-vb">Public Sub AddGraphFormat(ByVal scope As Byte, _
                             ByVal tabId As String, _
                             ByVal graphId As String, _
                             ByVal catTitle As String, _
@@ -172,14 +172,14 @@ format entry to its corresponding series entries in graph_ids_.</p>
 <p><em>write-graphs</em></p>
 <p><strong>Write all tracked graphs to the output worksheet</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub WriteGraphs(ByVal outsh As Worksheet, ByVal scope As Byte)
+<pre><code class="language-vb">Public Sub WriteGraphs(ByVal outsh As Worksheet, ByVal scope As Byte)
 </code></pre>
 <p>First calls WriteTableNames to transfer all named ranges, then iterates
-the graph_ids_ ListObject to build charts. A new IGraphs object is
+the graph_ids_ ListObject to build charts. A new Graphs object is
 created at each graph boundary (detected when graphId changes). Each
 series row is processed by AddSeries. When the loop ends, the final
 graph is formatted via AddFormat. Format metadata is read from the
-graph_formats_ ListObject wrapped in an ICustomTable keyed by &quot;graphId&quot;.</p>
+graph_formats_ ListObject wrapped in an CustomTable keyed by &quot;graphId&quot;.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>outsh</code>: Worksheet. The output worksheet receiving the chart objects.</li>
@@ -198,16 +198,24 @@ correct chart placement in some Excel versions.</li>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-internal-properties">Internal Properties</h2>
-<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
-<p><em>self</em></p>
-<p><strong>Current object instance</strong></p>
+<h3 id="int-seal">Seal <a class="anchor-link" href="#int-seal">#</a></h3>
+<p><em>seal</em></p>
+<p><strong>Seal the instance against further setup writes.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Self() As IAnaTabIds
+<pre><code class="language-vb">Public Sub Seal()
 </code></pre>
-<p>Factory-support properties for construction and worksheet access.
-Convenience accessor so consuming code can fluently retrieve the interface
-reference from the predeclared Create method.</p>
-<p><strong>Returns:</strong> IAnaTabIds. The current instance cast to the interface.</p>
+<p>Factory-support properties for construction and worksheet access.</p>
+<hr />
+<h3 id="int-guardnotsealed">GuardNotSealed <a class="anchor-link" href="#int-guardnotsealed">#</a></h3>
+<p><em>guard-not-sealed</em></p>
+<p><strong>Guard a setup setter against post-creation writes.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub GuardNotSealed(ByVal propName As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>propName</code>: String. The property name for the error message.</li>
+</ul>
 <hr />
 <h3 id="int-wksh">Wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
 <p><em>wksh-set</em></p>
@@ -332,7 +340,7 @@ cell is hit in column 1.</p>
 <p><em>add-series</em></p>
 <p><strong>Read one series entry and add it to a graph object</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub AddSeries(ByVal gr As IGraphs, ByVal cellRng As Range)
+<pre><code class="language-vb">Private Sub AddSeries(ByVal gr As Graphs, ByVal cellRng As Range)
 </code></pre>
 <p>Reads series metadata from a row in the graph_ids_ ListObject and calls
 gr.AddSeries and gr.AddLabels. The cellRng points to the graphId cell
@@ -340,7 +348,7 @@ gr.AddSeries and gr.AddLabels. The cellRng points to the graphId cell
 read with error trapping because they are stored as numeric 0/1.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>gr</code>: IGraphs. The chart object receiving the series.</li>
+<li><code>gr</code>: Graphs. The chart object receiving the series.</li>
 <li><code>cellRng</code>: Range. The graphId cell in the current tracking row.</li>
 </ul>
 <p><strong>Remarks:</strong></p>
@@ -354,17 +362,17 @@ the 11-column layout stored by AddGraphInfo.</li>
 <p><em>add-format</em></p>
 <p><strong>Apply formatting settings to a built graph</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub AddFormat(ByVal gr As IGraphs, ByVal grTab As ICustomTable, _
+<pre><code class="language-vb">Private Sub AddFormat(ByVal gr As Graphs, ByVal grTab As CustomTable, _
                        ByVal scope As Byte, ByVal graphId As String)
 </code></pre>
-<p>Reads format metadata from the graph_formats_ ICustomTable by graphId
+<p>Reads format metadata from the graph_formats_ CustomTable by graphId
 and calls gr.Format. Maps AnalysisIdsScope to GraphScope: TimeSeries
 and SpatioTemporal map to GraphScopeTimeSeries, Spatial maps to
 GraphScopeSpatial, and all others default to GraphScopeNormal.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>gr</code>: IGraphs. The chart object to format.</li>
-<li><code>grTab</code>: ICustomTable. Wrapper around graph_formats_ ListObject,
+<li><code>gr</code>: Graphs. The chart object to format.</li>
+<li><code>grTab</code>: CustomTable. Wrapper around graph_formats_ ListObject,
 keyed by &quot;graphId&quot;.</li>
 <li><code>scope</code>: Byte. AnalysisIdsScope value for scope-to-GraphScope mapping.</li>
 <li><code>graphId</code>: String. The graph identifier for the format lookup.</li>
@@ -447,28 +455,12 @@ or referenced worksheet is missing.</li>
 <li>ProjectError. Always raises the specified error.</li>
 </ul>
 <hr />
-<h2 id="int-interface-implementation">Interface Implementation</h2>
-<h3 id="int-ianatabids-addgraphinfo">IAnaTabIds_AddGraphInfo <a class="anchor-link" href="#int-ianatabids-addgraphinfo">#</a></h3>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub IAnaTabIds_AddGraphInfo(ByVal scope As Byte, _
-    ByVal tabId As String, ByVal graphId As String, _
-    ByVal seriesName As String, ByVal seriesType As String, _
-    ByVal seriesPos As String, ByVal seriesLabel As String, _
-    ByVal seriesColumnLabel As String, ByVal outRangeAddress As String, _
-    Optional ByVal hardCodeLabels As Boolean = False, _
-    Optional ByVal prefix As String = vbNullString, _
-    Optional ByVal prefixOnly As Boolean = False)
-</code></pre>
-<p>Delegated members satisfying the IAnaTabIds contract.
-See the corresponding Private members above for full documentation.</p>
-<hr />
 </details>
 <details>
-<summary>Used in (6 file(s))</summary>
+<summary>Used in (5 file(s))</summary>
 <ul>
 <li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
-<li><a href="AnaTabIds.html">AnaTabIds.cls</a></li>
-<li><a href="IAnaTabIds.html">IAnaTabIds.cls</a></li>
+<li><a href="CrossTable.html">CrossTable.cls</a></li>
 <li><a href="LLExporter.html">LLExporter.cls</a></li>
 <li><a href="Linelist.html">Linelist.cls</a></li>
 <li>TestAnaTabIds.bas</li>

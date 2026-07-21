@@ -23,14 +23,14 @@ external workbooks. Uses HiddenNames for sequence counters.</p>
 <p><em>create</em></p>
 <p><strong>Create a configured translations table manager instance.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Create(ByVal translationTable As ListObject, Optional ByVal stateScope As IApplicationState = Nothing) As ISetupTranslationsTable
+<pre><code class="language-vb">Public Function Create(ByVal translationTable As ListObject, Optional ByVal stateScope As ApplicationState = Nothing) As SetupTranslationsTable
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>translationTable</code>: ListObject. The managed translations table.</li>
-<li><code>stateScope</code>: Optional IApplicationState. Guard for Excel settings during updates.</li>
+<li><code>stateScope</code>: Optional ApplicationState. Guard for Excel settings during updates.</li>
 </ul>
-<p><strong>Returns:</strong> ISetupTranslationsTable. Ready to process registry updates.</p>
+<p><strong>Returns:</strong> SetupTranslationsTable. Ready to process registry updates.</p>
 <hr />
 </div>
 </details>
@@ -41,7 +41,7 @@ external workbooks. Uses HiddenNames for sequence counters.</p>
 <p><em>initialise-core</em></p>
 <p><strong>Store the supplied table and optional scope inside the current instance.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub InitialiseCore(ByVal translationTable As ListObject, Optional ByVal stateScope As IApplicationState = Nothing)
+<pre><code class="language-vb">Public Sub InitialiseCore(ByVal translationTable As ListObject, Optional ByVal stateScope As ApplicationState = Nothing)
 </code></pre>
 <hr />
 <h2 id="int-public-configuration">Public configuration</h2>
@@ -59,13 +59,6 @@ external workbooks. Uses HiddenNames for sequence counters.</p>
 <pre><code class="language-vb">Public Property Get TableName() As String
 </code></pre>
 <hr />
-<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
-<p><em>self</em></p>
-<p><strong>Self reference used by factories returning interface instances.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Self() As ISetupTranslationsTable
-</code></pre>
-<hr />
 <h3 id="int-setdisplayprompts">SetDisplayPrompts <a class="anchor-link" href="#int-setdisplayprompts">#</a></h3>
 <p><em>set-display-prompts</em></p>
 <p><strong>Allow callers to toggle display prompts used during updates.</strong></p>
@@ -77,7 +70,7 @@ external workbooks. Uses HiddenNames for sequence counters.</p>
 <p><em>resolve-scope</em></p>
 <p><strong>Guarded access to the application scope.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ResolveScope() As IApplicationState
+<pre><code class="language-vb">Private Function ResolveScope() As ApplicationState
 </code></pre>
 <hr />
 <h2 id="int-language-management">Language management</h2>
@@ -85,7 +78,7 @@ external workbooks. Uses HiddenNames for sequence counters.</p>
 <p><em>ensure-languages</em></p>
 <p><strong>Ensure all provided languages exist as table headers.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub EnsureLanguages(Optional ByVal lang As String = vbNullString)
+<pre><code class="language-vb">Public Sub EnsureLanguages(Optional ByVal lang As String = vbNullString)
 </code></pre>
 <hr />
 <h3 id="int-trygetwrittenlanguages">TryGetWrittenLanguages <a class="anchor-link" href="#int-trygetwrittenlanguages">#</a></h3>
@@ -352,14 +345,14 @@ external workbooks. Uses HiddenNames for sequence counters.</p>
 <p><em>missing-labels</em></p>
 <p><strong>Count missing translation labels for a specific language.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function MissingLabels(ByVal lang As String) As Long
+<pre><code class="language-vb">Public Function MissingLabels(ByVal lang As String) As Long
 </code></pre>
 <hr />
 <h3 id="int-numberofmissing">NumberOfMissing <a class="anchor-link" href="#int-numberofmissing">#</a></h3>
 <p><em>number-of-missing</em></p>
 <p><strong>Summarise missing translations per language and optionally prompt the user.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function NumberOfMissing() As String
+<pre><code class="language-vb">Public Function NumberOfMissing() As String
 </code></pre>
 <hr />
 <h3 id="int-updatemissingsummary">UpdateMissingSummary <a class="anchor-link" href="#int-updatemissingsummary">#</a></h3>
@@ -373,7 +366,7 @@ external workbooks. Uses HiddenNames for sequence counters.</p>
 <p><em>internal-missing-summary</em></p>
 <p><strong>Cached missing-labels summary across languages.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get InternalMissingSummary() As BetterArray
+<pre><code class="language-vb">Public Property Get InternalMissingSummary() As BetterArray
 </code></pre>
 <hr />
 <h3 id="int-updateduplicatessummary">UpdateDuplicatesSummary <a class="anchor-link" href="#int-updateduplicatessummary">#</a></h3>
@@ -387,14 +380,14 @@ external workbooks. Uses HiddenNames for sequence counters.</p>
 <p><em>internal-duplicates-summary</em></p>
 <p><strong>Cached duplicates summary across languages.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get InternalDuplicatesSummary() As BetterArray
+<pre><code class="language-vb">Public Property Get InternalDuplicatesSummary() As BetterArray
 </code></pre>
 <hr />
 <h3 id="int-duplicatelabels">DuplicateLabels <a class="anchor-link" href="#int-duplicatelabels">#</a></h3>
 <p><em>duplicate-labels</em></p>
 <p><strong>Report duplicate translation labels when they exist.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function DuplicateLabels(ByRef duplicateMessage As String, Optional ByVal languageName As String = vbNullString) As Boolean
+<pre><code class="language-vb">Public Function DuplicateLabels(ByRef duplicateMessage As String, Optional ByVal languageName As String = vbNullString) As Boolean
 </code></pre>
 <hr />
 <h3 id="int-computeduplicatesummary">ComputeDuplicateSummary <a class="anchor-link" href="#int-computeduplicatesummary">#</a></h3>
@@ -539,14 +532,14 @@ external workbooks. Uses HiddenNames for sequence counters.</p>
 <p><em>hidden-name-store</em></p>
 <p><strong>Create a HiddenNames wrapper for the supplied registry sheet.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function HiddenNameStore(ByVal registrySheet As Worksheet) As IHiddenNames
+<pre><code class="language-vb">Private Function HiddenNameStore(ByVal registrySheet As Worksheet) As HiddenNames
 </code></pre>
 <hr />
 <h3 id="int-metadatastore">MetadataStore <a class="anchor-link" href="#int-metadatastore">#</a></h3>
 <p><em>metadata-store</em></p>
 <p><strong>Resolve the hidden name store hosting metadata.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function MetadataStore() As IHiddenNames
+<pre><code class="language-vb">Private Function MetadataStore() As HiddenNames
 </code></pre>
 <hr />
 <h2 id="int-validation-and-utilities">Validation and utilities</h2>
@@ -585,33 +578,16 @@ external workbooks. Uses HiddenNames for sequence counters.</p>
 <pre><code class="language-vb">Private Sub ThrowProjectError(ByVal errNumber As ProjectError, ByVal message As String)
 </code></pre>
 <hr />
-<h2 id="int-interface-implementation">Interface implementation</h2>
-<h3 id="int-isetuptranslationstable-ensurelanguages">ISetupTranslationsTable_EnsureLanguages <a class="anchor-link" href="#int-isetuptranslationstable-ensurelanguages">#</a></h3>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ISetupTranslationsTable_EnsureLanguages(Optional ByVal languages As String = vbNullString)
-</code></pre>
-<p>Thin delegation stubs wiring ISetupTranslationsTable members to
-the corresponding public or private methods on this class.</p>
-<hr />
-<h3 id="int-isetuptranslationstable-initialise">ISetupTranslationsTable_Initialise <a class="anchor-link" href="#int-isetuptranslationstable-initialise">#</a></h3>
-<p><em>initialise</em></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ISetupTranslationsTable_Initialise(ByVal translationTable As ListObject, Optional ByVal stateScope As IApplicationState)
-</code></pre>
-<hr />
 </details>
 <details>
-<summary>Used in (10 file(s))</summary>
+<summary>Used in (7 file(s))</summary>
 <ul>
 <li><a href="EventSetup.html">EventSetup.cls</a></li>
-<li><a href="IEventSetup.html">IEventSetup.cls</a></li>
-<li><a href="ISetupErrors.html">ISetupErrors.cls</a></li>
-<li><a href="ISetupTranslationsTable.html">ISetupTranslationsTable.cls</a></li>
 <li><a href="SetupErrors.html">SetupErrors.cls</a></li>
 <li><a href="SetupImportService.html">SetupImportService.cls</a></li>
-<li><a href="SetupTranslationsTable.html">SetupTranslationsTable.cls</a></li>
 <li>EventsMasterSetupRibbon.bas</li>
 <li>EventsSetupRibbon.bas</li>
+<li>SetupImportTestFixture.bas</li>
 <li>TestSetupTranslationsTable.bas</li>
 </ul>
 </details>

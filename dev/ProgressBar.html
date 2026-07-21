@@ -23,14 +23,14 @@ a companion cell.</p>
 <p><em>create</em></p>
 <p><strong>Factory returning an initialised interface</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Create(ByVal barRange As Range, Optional ByVal maximum As Long = DEFAULT_MAXIMUM) As IProgressBar
+<pre><code class="language-vb">Public Function Create(ByVal barRange As Range, Optional ByVal maximum As Long = DEFAULT_MAXIMUM) As ProgressBar
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>barRange</code>: Range. Range that will host the indicator.</li>
 <li><code>maximum</code>: Long. Maximum value. Defaults to DEFAULT_MAXIMUM.</li>
 </ul>
-<p><strong>Returns:</strong> IProgressBar. Ready to use.</p>
+<p><strong>Returns:</strong> ProgressBar. Ready to use.</p>
 <hr />
 </div>
 </details>
@@ -197,14 +197,6 @@ a companion cell.</p>
 <pre><code class="language-vb">Private Sub Class_Initialize()
 </code></pre>
 <hr />
-<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
-<p><em>self</em></p>
-<p><strong>Self-reference as IProgressBar</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Self() As IProgressBar
-</code></pre>
-<p><strong>Returns:</strong> IProgressBar. Self-reference.</p>
-<hr />
 <h2 id="int-internal-helpers">Internal Helpers</h2>
 <h3 id="int-ensureinitialised">EnsureInitialised <a class="anchor-link" href="#int-ensureinitialised">#</a></h3>
 <p><em>ensure-initialised</em></p>
@@ -303,10 +295,8 @@ a companion cell.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (3 file(s))</summary>
+<summary>Used in (1 file(s))</summary>
 <ul>
-<li><a href="IProgressBar.html">IProgressBar.cls</a></li>
-<li><a href="ProgressBar.html">ProgressBar.cls</a></li>
 <li>TestProgressBar.bas</li>
 </ul>
 </details>

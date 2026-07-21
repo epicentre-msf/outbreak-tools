@@ -20,7 +20,7 @@ sheet, transfers all VBA code components, and finally saves the workbook
 with password protection. The class uses VB_Creatable = True so that
 factory consumers create instances via <code>New Linelist</code> rather than
 <code>With New Linelist</code>.</p>
-<p><strong>Depends on:</strong> <a href="ILinelistSpecs.html">ILinelistSpecs</a>, <a href="ILLdictionary.html">ILLdictionary</a>, <a href="ITranslationObject.html">ITranslationObject</a>, <a href="IPasswords.html">IPasswords</a>, <a href="ILLFormat.html">ILLFormat</a>, <a href="ITemporaryRepos.html">ITemporaryRepos</a>, <a href="ICodeTransfer.html">ICodeTransfer</a>, <a href="IHiddenNames.html">IHiddenNames</a>, <a href="IButtons.html">IButtons</a>, <a href="IDropdownLists.html">IDropdownLists</a>, <a href="ICustomPivotTable.html">ICustomPivotTable</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="CustomPivotTable.html">CustomPivotTable</a>, <a href="TemporaryRepos.html">TemporaryRepos</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="Buttons.html">Buttons</a>, <a href="CodeTransfer.html">CodeTransfer</a>, <a href="BetterArray.html">BetterArray</a></p>
+<p><strong>Depends on:</strong> <a href="LinelistSpecs.html">LinelistSpecs</a>, <a href="LLdictionary.html">LLdictionary</a>, <a href="TranslationObject.html">TranslationObject</a>, <a href="Passwords.html">Passwords</a>, <a href="LLFormat.html">LLFormat</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="CustomPivotTable.html">CustomPivotTable</a>, <a href="TemporaryRepos.html">TemporaryRepos</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="Buttons.html">Buttons</a>, <a href="CodeTransfer.html">CodeTransfer</a>, <a href="BetterArray.html">BetterArray</a></p>
 <p><strong>Version:</strong> 1.0 (2026-02-09)</p>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
@@ -29,19 +29,19 @@ factory consumers create instances via <code>New Linelist</code> rather than
 <p><em>create</em></p>
 <p><strong>Instantiate a Linelist facade bound to specifications</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Create(ByVal specs As ILinelistSpecs) As ILinelist
+<pre><code class="language-vb">Public Function Create(ByVal specs As LinelistSpecs) As Linelist
 </code></pre>
 <p>Instance creation via VB_Creatable = True factory pattern.
 Validates that the supplied specifications object is not Nothing, creates
 a new Linelist instance via <code>New Linelist</code>, binds the specifications
-through the Friend property, and returns an ILinelist interface reference.</p>
+through the Friend property, and returns an Linelist interface reference.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>specs</code>: ILinelistSpecs. The linelist specifications providing
+<li><code>specs</code>: LinelistSpecs. The linelist specifications providing
 dictionary, translations, design format, passwords, and all other setup
 data required to build the output workbook.</li>
 </ul>
-<p><strong>Returns:</strong> ILinelist. A ready-to-use linelist facade.</p>
+<p><strong>Returns:</strong> Linelist. A ready-to-use linelist facade.</p>
 <p><strong>Throws:</strong></p>
 <ul>
 <li>ProjectError.ObjectNotInitialized When specs is Nothing.</li>
@@ -56,24 +56,24 @@ data required to build the output workbook.</li>
 <p><em>linelist-data</em></p>
 <p><strong>Specifications backing this linelist</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get LinelistData() As ILinelistSpecs
+<pre><code class="language-vb">Public Property Get LinelistData() As LinelistSpecs
 </code></pre>
 <p>Worksheet resolution and collaborator accessors exposed through
-the ILinelist contract.
-Returns the ILinelistSpecs instance that was supplied during factory
+the Linelist contract.
+Returns the LinelistSpecs instance that was supplied during factory
 construction, providing access to dictionary, choices, translations,
 and all other setup data.</p>
-<p><strong>Returns:</strong> ILinelistSpecs. The linelist specifications.</p>
+<p><strong>Returns:</strong> LinelistSpecs. The linelist specifications.</p>
 <hr />
 <h3 id="dictionary">Dictionary <a class="anchor-link" href="#dictionary">#</a></h3>
 <p><em>dictionary</em></p>
 <p><strong>Dictionary from the specifications</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Dictionary() As ILLdictionary
+<pre><code class="language-vb">Public Property Get Dictionary() As LLdictionary
 </code></pre>
 <p>Convenience accessor that delegates to specs.Dictionary, avoiding
 the extra indirection at call sites.</p>
-<p><strong>Returns:</strong> ILLdictionary. The linelist dictionary.</p>
+<p><strong>Returns:</strong> LLdictionary. The linelist dictionary.</p>
 <hr />
 <h3 id="wksh">Wksh <a class="anchor-link" href="#wksh">#</a></h3>
 <p><em>wksh</em></p>
@@ -136,9 +136,9 @@ ResolveWksh with scope 3.</p>
 <p><em>dropdown</em></p>
 <p><strong>Dropdown lists manager for the output workbook</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Dropdown(Optional ByVal scope As Byte = 1) As IDropdownLists
+<pre><code class="language-vb">Public Property Get Dropdown(Optional ByVal scope As Byte = 1) As DropdownLists
 </code></pre>
-<p>Returns an IDropdownLists instance backed by the appropriate list sheet.
+<p>Returns an DropdownLists instance backed by the appropriate list sheet.
 Scope 1 uses the temporary dropdown_lists__ sheet with &quot;dropdown_&quot; prefix;
 scope 2 uses the custom choice sheet with no prefix.</p>
 <p><strong>Parameters:</strong></p>
@@ -146,17 +146,17 @@ scope 2 uses the custom choice sheet with no prefix.</p>
 <li><code>scope</code>: Optional Byte. 1 = standard dropdowns, 2 = custom choice
 dropdowns. Defaults to 1.</li>
 </ul>
-<p><strong>Returns:</strong> IDropdownLists. The dropdown lists manager.</p>
+<p><strong>Returns:</strong> DropdownLists. The dropdown lists manager.</p>
 <hr />
 <h3 id="pivots">Pivots <a class="anchor-link" href="#pivots">#</a></h3>
 <p><em>pivots</em></p>
 <p><strong>Pivot tables manager for the output workbook</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Pivots() As ICustomPivotTable
+<pre><code class="language-vb">Public Property Get Pivots() As CustomPivotTable
 </code></pre>
-<p>Returns an ICustomPivotTable instance backed by the translated custom
+<p>Returns a CustomPivotTable instance backed by the translated custom
 pivot table sheet in the output workbook.</p>
-<p><strong>Returns:</strong> ICustomPivotTable. The pivot tables manager.</p>
+<p><strong>Returns:</strong> CustomPivotTable. The pivot tables manager.</p>
 <hr />
 <h3 id="sheetexists">SheetExists <a class="anchor-link" href="#sheetexists">#</a></h3>
 <p><em>sheet-exists</em></p>
@@ -217,7 +217,7 @@ Orchestrates the complete linelist creation process:</p>
 <li>Optionally shows the instruction sheet for template workbooks.</li>
 <li>Adds six temporary sheets (single, list, analysis, import, spatial,
 show/hide) and prepares them with hidden names and ListObjects.</li>
-<li>Exports specifications to the workbook via ILinelistSpecs.Export.</li>
+<li>Exports specifications to the workbook via LinelistSpecs.Export.</li>
 <li>Adds analysis and custom sheets in reversed dictionary order.</li>
 <li>Adds data entry sheets from the dictionary's unique sheet names.</li>
 <li>Repositions the instruction sheet.</li>
@@ -234,9 +234,9 @@ workbook code).</li>
 <pre><code class="language-vb">Public Sub SaveLL()
 </code></pre>
 <p>Saves the output workbook in .xlsb format with the configured password,
-protects the workbook structure via IPasswords.Protect, activates an
+protects the workbook structure via Passwords.Protect, activates an
 appropriate visible sheet (admin or instruction), closes the workbook,
-and cleans up temporary files via ITemporaryRepos.Reset.</p>
+and cleans up temporary files via TemporaryRepos.Reset.</p>
 <hr />
 <h3 id="errormanage">ErrorManage <a class="anchor-link" href="#errormanage">#</a></h3>
 <p><em>error-manage</em></p>
@@ -263,15 +263,15 @@ Defaults to vbNullString.</li>
 <p><em>bin-specs</em></p>
 <p><strong>Bind the linelist specifications to this instance</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Friend Property Set BinSpecs(ByVal value As ILinelistSpecs)
+<pre><code class="language-vb">Friend Property Set BinSpecs(ByVal value As LinelistSpecs)
 </code></pre>
 <p>Friend setters used by the factory to inject dependencies.
-Called by Create to inject the ILinelistSpecs dependency into the
+Called by Create to inject the LinelistSpecs dependency into the
 backing UDT. Exposed as Friend to prevent external callers from
 resetting specifications after construction.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>value</code>: ILinelistSpecs. The specifications to bind.</li>
+<li><code>value</code>: LinelistSpecs. The specifications to bind.</li>
 </ul>
 <hr />
 <h2 id="int-private-workbook-management">Private — Workbook management</h2>
@@ -362,7 +362,7 @@ all RNG_* translated message/sheet names on the output workbook.</p>
 <p>Applies the linelist design format to the admin sheet, then creates two
 large-scope buttons (Advanced and Export) with translated labels. After
 placing the buttons, re-suppresses UI updates and activates the admin
-sheet. Finally protects the active sheet via IPasswords.Protect with
+sheet. Finally protects the active sheet via Passwords.Protect with
 the &quot;_active&quot; scope marker.</p>
 <p><strong>Remarks:</strong></p>
 <ul>
@@ -374,9 +374,9 @@ shape-specific translated labels for the buttons.</li>
 <p><em>transfer-all-code</em></p>
 <p><strong>Transfer all VBA code components to the output workbook</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub TransferAllCode(ByVal codeTransfer As ICodeTransfer)
+<pre><code class="language-vb">Private Sub TransferAllCode(ByVal codeTransfer As CodeTransfer)
 </code></pre>
-<p>Uses the supplied ICodeTransfer to copy VBA components from the setup
+<p>Uses the supplied CodeTransfer to copy VBA components from the setup
 workbook to the output workbook in five phases:</p>
 <ol>
 <li>Transfers 49 class modules (interface+implementation pairs for
@@ -397,7 +397,7 @@ F_EpiWeek).</li>
 </ol>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>codeTransfer</code>: ICodeTransfer. The code transfer engine.</li>
+<li><code>codeTransfer</code>: CodeTransfer. The code transfer engine.</li>
 </ul>
 <hr />
 <h2 id="int-private-error-handling">Private — Error handling</h2>
@@ -416,39 +416,48 @@ error attribution across all methods in this class.</p>
 <li><code>errorMessage</code>: String. Descriptive message for the error.</li>
 </ul>
 <hr />
-<h2 id="int-ilinelist-implementation">ILinelist implementation</h2>
-<h3 id="int-ilinelist-wksh">ILinelist_Wksh <a class="anchor-link" href="#int-ilinelist-wksh">#</a></h3>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get ILinelist_Wksh(ByVal sheetName As String) As Worksheet
-</code></pre>
-<p>Delegated members satisfying the ILinelist contract.
-All members forward to their Public counterparts above.</p>
-<hr />
 </details>
 <details>
-<summary>Used in (21 file(s))</summary>
+<summary>Used in (38 file(s))</summary>
 <ul>
 <li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
 <li><a href="CrossTable.html">CrossTable.cls</a></li>
-<li><a href="ILinelistBuildService.html">ILinelistBuildService.cls</a></li>
+<li><a href="CrossTableFormula.html">CrossTableFormula.cls</a></li>
+<li><a href="TableSpecs.html">TableSpecs.cls</a></li>
+<li><a href="LLExporter.html">LLExporter.cls</a></li>
+<li><a href="LLImporter.html">LLImporter.cls</a></li>
 <li><a href="LinelistBuildService.html">LinelistBuildService.cls</a></li>
+<li><a href="LLdictionary.html">LLdictionary.cls</a></li>
+<li><a href="LLSheets.html">LLSheets.cls</a></li>
+<li><a href="LLChoices.html">LLChoices.cls</a></li>
+<li><a href="LLFormat.html">LLFormat.cls</a></li>
+<li><a href="TemporaryRepos.html">TemporaryRepos.cls</a></li>
+<li><a href="LLGeo.html">LLGeo.cls</a></li>
 <li><a href="GraphSpecs.html">GraphSpecs.cls</a></li>
-<li><a href="ILinelist.html">ILinelist.cls</a></li>
-<li><a href="ILinelistSpecs.html">ILinelistSpecs.cls</a></li>
-<li><a href="Linelist.html">Linelist.cls</a></li>
+<li><a href="CodeTransfer.html">CodeTransfer.cls</a></li>
+<li><a href="EventLinelist.html">EventLinelist.cls</a></li>
 <li><a href="LinelistSpecs.html">LinelistSpecs.cls</a></li>
 <li><a href="ListBuilder.html">ListBuilder.cls</a></li>
-<li><a href="SectionBuilder.html">SectionBuilder.cls</a></li>
-<li><a href="VarWriter.html">VarWriter.cls</a></li>
-<li>DesignerMain.bas</li>
+<li><a href="LLTranslation.html">LLTranslation.cls</a></li>
 <li>EventsDesignerAdvanced.bas</li>
-<li>GenerationReport.bas</li>
+<li>EventLinelistSelection.bas</li>
+<li>EventLinelistWorkbook.bas</li>
+<li>EventsLinelistButtons.bas</li>
+<li>EventsLinelistRibbon.bas</li>
+<li>LinelistEventsManager.bas</li>
+<li>FormLogicAdvanced.bas</li>
+<li>FormLogicEpiWeek.bas</li>
+<li>FormLogicExport.bas</li>
+<li>FormLogicExportMig.bas</li>
+<li>FormLogicGeo.bas</li>
+<li>FormLogicImportRep.bas</li>
+<li>FormLogicShowHide.bas</li>
+<li>FormLogicShowHidePrint.bas</li>
+<li>FormLogicShowVarLabels.bas</li>
+<li>TestFormulas.bas</li>
+<li>LLFormatTestFixture.bas</li>
 <li>TestLinelist.bas</li>
-<li><a href="LinelistSpecsWorkbookStub.html">LinelistSpecsWorkbookStub.cls</a></li>
-<li><a href="LinelistStub.html">LinelistStub.cls</a></li>
-<li><a href="LLVarContextSpecsStub.html">LLVarContextSpecsStub.cls</a></li>
-<li><a href="TableSpecsLinelistStub.html">TableSpecsLinelistStub.cls</a></li>
-<li>TestLinelistSpecs.bas</li>
+<li>TestListBuilder.bas</li>
 </ul>
 </details>
   </main>

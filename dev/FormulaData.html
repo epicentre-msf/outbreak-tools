@@ -18,7 +18,7 @@ T_ascii for separator characters) and stores the values in BetterArray
 caches. It also maintains a registry of grouped formula mappings that
 translate custom tokens (e.g. SUMIFS, MEANIFS) into their canonical
 Excel aggregation functions. Consumers interact with this class
-exclusively through the IFormulaData interface.</p>
+exclusively through the FormulaData interface.</p>
 <p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a></p>
 <p><strong>Version:</strong> 1.0 (2026-02-09)</p>
 <details open class="doc-section" id="factory">
@@ -28,18 +28,18 @@ exclusively through the IFormulaData interface.</p>
 <p><em>create</em></p>
 <p><strong>Instantiate a FormulaData helper bound to a worksheet source</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Create(ByVal formWksh As Worksheet) As IFormulaData
+<pre><code class="language-vb">Public Function Create(ByVal formWksh As Worksheet) As FormulaData
 </code></pre>
 <p>Validates that the supplied worksheet contains the required ListObjects
 (T_XlsFonctions and T_ascii) with expected columns, then reads their
 data into memory caches. The returned instance exposes its surface
-through the IFormulaData interface so consumers never depend on the
+through the FormulaData interface so consumers never depend on the
 concrete class.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>formWksh</code>: Worksheet. The worksheet hosting the lookup tables.</li>
 </ul>
-<p><strong>Returns:</strong> IFormulaData. A fully initialised instance ready for use by the Formulas parser.</p>
+<p><strong>Returns:</strong> FormulaData. A fully initialised instance ready for use by the Formulas parser.</p>
 <p><strong>Throws:</strong></p>
 <ul>
 <li>ProjectError.ObjectNotInitialized When formWksh is Nothing.</li>
@@ -60,7 +60,7 @@ concrete class.</p>
 <p><em>special-character-includes</em></p>
 <p><strong>Determine whether a special character is allowed</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function SpecialCharacterIncludes(ByVal specialChar As String) As Boolean
+<pre><code class="language-vb">Public Function SpecialCharacterIncludes(ByVal specialChar As String) As Boolean
 </code></pre>
 <p>Membership tests against the cached function and character lists.
 Checks the in-memory character cache for the provided token. Returns
@@ -76,7 +76,7 @@ from the T_ascii table on first access.</p>
 <p><em>excel-formulas-includes</em></p>
 <p><strong>Determine whether an Excel function is allowed</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ExcelFormulasIncludes(ByVal ExcelFormula As String) As Boolean
+<pre><code class="language-vb">Public Function ExcelFormulasIncludes(ByVal ExcelFormula As String) As Boolean
 </code></pre>
 <p>Normalises the input to uppercase and checks the in-memory function
 cache. Returns False immediately when the input is empty. The cache
@@ -92,11 +92,11 @@ is built lazily from the T_XlsFonctions table on first access.</p>
 <details open class="doc-section" id="groupfunctions">
 <summary>GroupFunctions</summary>
 <div class="section-body">
-<h3 id="groupfunctionincludes">GroupFunctionIncludes <a class="anchor-link" href="#groupfunctionincludes">#</a></h3>
+<h3 id="isgroupfunction">IsGroupFunction <a class="anchor-link" href="#isgroupfunction">#</a></h3>
 <p><em>group-function-includes</em></p>
 <p><strong>Determine whether a grouped function token is registered</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function GroupFunctionIncludes(ByVal functionName As String) As Boolean
+<pre><code class="language-vb">Public Function IsGroupFunction(ByVal functionName As String) As Boolean
 </code></pre>
 <p>Normalises the input and scans the registry for a matching first
 element. Returns True on the first match. Returns False when the
@@ -111,7 +111,7 @@ registry is empty or no match is found.</p>
 <p><em>group-aggregator</em></p>
 <p><strong>Retrieve the Excel aggregator linked to a grouped formula token</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function GroupAggregator(ByVal functionName As String) As String
+<pre><code class="language-vb">Public Function GroupAggregator(ByVal functionName As String) As String
 </code></pre>
 <p>Scans the registry for the matching token and returns the second
 element of the mapping array, which is the canonical Excel aggregator
@@ -122,11 +122,11 @@ function name. Returns vbNullString when the token is not found.</p>
 </ul>
 <p><strong>Returns:</strong> String. Aggregator name or vbNullString when unknown.</p>
 <hr />
-<h3 id="groupusesnative">GroupUsesNative <a class="anchor-link" href="#groupusesnative">#</a></h3>
+<h3 id="groupusesnativefunction">GroupUsesNativeFunction <a class="anchor-link" href="#groupusesnativefunction">#</a></h3>
 <p><em>group-uses-native</em></p>
 <p>*<em>Determine whether the grouped function should emit a native Excel <em>IFS aggregator</em></em></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function GroupUsesNative(ByVal functionName As String) As Boolean
+<pre><code class="language-vb">Public Function GroupUsesNativeFunction(ByVal functionName As String) As Boolean
 </code></pre>
 <p>Looks up the third element of the mapping array for the given token.
 When True, the Formulas class emits the native *IFS function (e.g.
@@ -142,25 +142,14 @@ SUMIFS) instead of wrapping the aggregator in an IF block.</p>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-publicaccessors">PublicAccessors</h2>
-<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
-<p><em>self</em></p>
-<p><strong>Current object instance</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Self() As IFormulaData
-</code></pre>
-<p>Properties that expose the internal state and worksheet ranges.
-Convenience accessor that returns the current instance cast to its
-interface. Used internally by the factory method to hand back an
-IFormulaData reference from the predeclared Create pattern.</p>
-<p><strong>Returns:</strong> IFormulaData. The current instance cast to the interface.</p>
-<hr />
 <h3 id="int-wksh">Wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
 <p><em>wksh</em></p>
 <p><strong>Worksheet hosting the lookup tables</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Wksh() As Worksheet
 </code></pre>
-<p>Returns the worksheet reference stored during creation. All cached
+<p>Properties that expose the internal state and worksheet ranges.
+Returns the worksheet reference stored during creation. All cached
 lookups originate from ListObjects on this worksheet.</p>
 <p><strong>Returns:</strong> Worksheet. The worksheet reference stored at creation.</p>
 <hr />
@@ -437,35 +426,21 @@ providing a consistent stack trace across all methods in this class.</p>
 <li>ProjectError.<varies> Always raises the specified error.</li>
 </ul>
 <hr />
-<h2 id="int-interface">Interface</h2>
-<h3 id="int-iformuladata-specialcharacterincludes">IFormulaData_SpecialCharacterIncludes <a class="anchor-link" href="#int-iformuladata-specialcharacterincludes">#</a></h3>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function IFormulaData_SpecialCharacterIncludes(ByVal specialChar As String) As Boolean
-</code></pre>
-<p>Delegated members satisfying the IFormulaData contract.
-See the corresponding Private members above for full documentation.</p>
-<hr />
 </details>
 <details>
-<summary>Used in (17 file(s))</summary>
+<summary>Used in (11 file(s))</summary>
 <ul>
 <li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
 <li><a href="CrossTableFormula.html">CrossTableFormula.cls</a></li>
-<li><a href="FormulaData.html">FormulaData.cls</a></li>
 <li><a href="Formulas.html">Formulas.cls</a></li>
-<li><a href="IFormulaData.html">IFormulaData.cls</a></li>
-<li><a href="ILinelistSpecs.html">ILinelistSpecs.cls</a></li>
 <li><a href="LinelistSpecs.html">LinelistSpecs.cls</a></li>
 <li><a href="VarWriter.html">VarWriter.cls</a></li>
-<li><a href="ISetupErrors.html">ISetupErrors.cls</a></li>
 <li><a href="SetupErrors.html">SetupErrors.cls</a></li>
 <li>TestCrossTableFormula.bas</li>
 <li>TestFormulaData.bas</li>
 <li>TestFormulas.bas</li>
-<li><a href="FormulaDataStub.html">FormulaDataStub.cls</a></li>
-<li><a href="LinelistSpecsWorkbookStub.html">LinelistSpecsWorkbookStub.cls</a></li>
-<li><a href="LLVarContextSpecsStub.html">LLVarContextSpecsStub.cls</a></li>
-<li><a href="TableSpecsLinelistStub.html">TableSpecsLinelistStub.cls</a></li>
+<li>TestSectionBuilder.bas</li>
+<li>TestVarWriter.bas</li>
 </ul>
 </details>
   </main>

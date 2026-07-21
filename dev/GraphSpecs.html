@@ -13,14 +13,14 @@
 <h1>GraphSpecs</h1>
 <p>Builds and stores chart series specifications for both simple (non-time-series)
 and complex (time series) analysis graphs. In simple mode, the class reads chart
-configuration directly from an ICrossTable and produces flat parallel arrays of
+configuration directly from an CrossTable and produces flat parallel arrays of
 series metadata (names, types, positions, labels). In complex mode, it reads from
 three setup ListObjects to produce a nested BetterArray collection of graph entries,
 each containing its own set of parallel series arrays plus a display title. Consumers
 create an instance via Create (simple) or CreateRangeSpecs (complex), call
 CreateSeries (or let Valid trigger it lazily), then read series data via the
-IGraphSpecs interface.</p>
-<p><strong>Depends on:</strong> <a href="ICrossTable.html">ICrossTable</a>, <a href="ITableSpecs.html">ITableSpecs</a>, <a href="TableSpecs.html">TableSpecs</a>, <a href="ILinelistSpecs.html">ILinelistSpecs</a>, <a href="BetterArray.html">BetterArray</a>, Table title constants used to validate listobject order, Simple mode: one cross-table, Complex mode: 3 listobjects + output sheet + linelist specs, Series data (simple mode), Graph collection (complex mode), Validity cache</p>
+public accessors.</p>
+<p><strong>Depends on:</strong> <a href="CrossTable.html">CrossTable</a>, <a href="TableSpecs.html">TableSpecs</a>, <a href="LinelistSpecs.html">LinelistSpecs</a>, <a href="BetterArray.html">BetterArray</a>, Table title constants used to validate listobject order, Simple mode: one cross-table, Complex mode: 3 listobjects + output sheet + linelist specs, Series data (simple mode), Graph collection (complex mode), Validity cache</p>
 <p><strong>Version:</strong> 1.0 (2026-02-09)</p>
 <details open class="doc-section" id="instantiation">
 <summary>Instantiation</summary>
@@ -29,21 +29,21 @@ IGraphSpecs interface.</p>
 <p><em>create</em></p>
 <p><strong>Create a GraphSpecs instance in simple mode from a cross-table</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Create(ByVal tabl As ICrossTable) As IGraphSpecs
+<pre><code class="language-vb">Public Function Create(ByVal tabl As CrossTable) As GraphSpecs
 </code></pre>
 <p>Factory methods and Self accessor for the predeclared instance pattern.
 Factory method that creates a GraphSpecs object in simple mode for non-time-series
 cross-tables. Simple mode is used for univariate, bivariate, spatial, and
 spatio-temporal analysis tables. This method explicitly rejects TimeSeries tables
 (which require CreateRangeSpecs) and GlobalSummary tables (which do not support
-graphing). The returned IGraphSpecs instance stores a reference to the cross-table
+graphing). The returned GraphSpecs instance stores a reference to the cross-table
 and can later produce chart series definitions via CreateSeries.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>tabl</code>: ICrossTable. The fully-built cross-table whose named ranges contain
+<li><code>tabl</code>: CrossTable. The fully-built cross-table whose named ranges contain
 the data to graph. Must not be Nothing, ScopeTimeSeries, or ScopeGlobalSummary.</li>
 </ul>
-<p><strong>Returns:</strong> IGraphSpecs. An instance configured in simple mode (GraphTypeSimple)
+<p><strong>Returns:</strong> GraphSpecs. An instance configured in simple mode (GraphTypeSimple)
 ready for series creation via CreateSeries.</p>
 <p><strong>Remarks:</strong></p>
 <ul>
@@ -62,7 +62,7 @@ have its named ranges written to the worksheet before series data can be consume
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function CreateRangeSpecs(ByVal loTable As BetterArray, _
                                  ByVal outputSh As Worksheet, _
-                                 ByVal lData As ILinelistSpecs) As IGraphSpecs
+                                 ByVal lData As LinelistSpecs) As GraphSpecs
 </code></pre>
 <p>Factory method that creates a GraphSpecs object in complex mode for time series
 graphs. Complex mode requires exactly 3 ListObjects passed as a BetterArray:
@@ -78,10 +78,10 @@ per unique graph ID) when CreateSeries is called later.</p>
 [graphLo, timeSeriesLo, titleLo]. Each must be a non-empty ListObject with the
 correct title label in its header area.</li>
 <li><code>outputSh</code>: Worksheet. The worksheet where time series graphs will be drawn.</li>
-<li><code>lData</code>: ILinelistSpecs. Linelist-level metadata (section names, sheet info)
+<li><code>lData</code>: LinelistSpecs. Linelist-level metadata (section names, sheet info)
 needed to resolve table specifications during series building.</li>
 </ul>
-<p><strong>Returns:</strong> IGraphSpecs. An instance configured in complex mode (GraphTypeComplex)
+<p><strong>Returns:</strong> GraphSpecs. An instance configured in complex mode (GraphTypeComplex)
 ready for series creation via CreateSeries.</p>
 <p><strong>Remarks:</strong></p>
 <ul>
@@ -127,37 +127,47 @@ series data from scratch each time.</li>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-instantiation">Instantiation</h2>
-<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
-<p><em>self</em></p>
-<p><strong>Current object instance</strong></p>
+<h3 id="int-seal">Seal <a class="anchor-link" href="#int-seal">#</a></h3>
+<p><em>seal</em></p>
+<p><strong>Seal the instance against further setup writes</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Self() As IGraphSpecs
+<pre><code class="language-vb">Public Sub Seal()
 </code></pre>
-<p>Convenience accessor so consuming code can fluently retrieve the interface
-reference from the predeclared Create or CreateRangeSpecs method.</p>
-<p><strong>Returns:</strong> IGraphSpecs. The current instance cast to the interface.</p>
+<p>Called by the factory after the last setup write. Once sealed, the
+creation-only setters raise through ThrowError.</p>
+<hr />
+<h3 id="int-guardnotsealed">GuardNotSealed <a class="anchor-link" href="#int-guardnotsealed">#</a></h3>
+<p><em>guard-not-sealed</em></p>
+<p><strong>Guard a setup setter against post-creation writes</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub GuardNotSealed(ByVal propName As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>propName</code>: String. The property name reported in the error message.</li>
+</ul>
 <hr />
 <h2 id="int-internalsetters">InternalSetters</h2>
 <h3 id="int-table">Table <a class="anchor-link" href="#int-table">#</a></h3>
 <p><em>table</em></p>
 <p><strong>Cross-table reference for simple mode</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Table() As ICrossTable
+<pre><code class="language-vb">Public Property Get Table() As CrossTable
 </code></pre>
 <p>Property accessors used only during factory construction.
 These are Public to support the With New pattern but are not part of the
 caller contract.</p>
-<p><strong>Returns:</strong> ICrossTable. The stored cross-table instance.</p>
+<p><strong>Returns:</strong> CrossTable. The stored cross-table instance.</p>
 <hr />
 <h3 id="int-table">Table <a class="anchor-link" href="#int-table">#</a></h3>
 <p><em>table-set</em></p>
 <p><strong>Assign the cross-table reference</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Set Table(ByVal tabl As ICrossTable)
+<pre><code class="language-vb">Public Property Set Table(ByVal tabl As CrossTable)
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>tabl</code>: ICrossTable. The cross-table to store.</li>
+<li><code>tabl</code>: CrossTable. The cross-table to store.</li>
 </ul>
 <hr />
 <h3 id="int-graphtype">GraphType <a class="anchor-link" href="#int-graphtype">#</a></h3>
@@ -221,19 +231,19 @@ caller contract.</p>
 <p><em>linelist-specifications</em></p>
 <p><strong>Linelist specifications for complex mode</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get LinelistSpecifications() As ILinelistSpecs
+<pre><code class="language-vb">Public Property Get LinelistSpecifications() As LinelistSpecs
 </code></pre>
-<p><strong>Returns:</strong> ILinelistSpecs. The stored linelist specifications instance.</p>
+<p><strong>Returns:</strong> LinelistSpecs. The stored linelist specifications instance.</p>
 <hr />
 <h3 id="int-linelistspecifications">LinelistSpecifications <a class="anchor-link" href="#int-linelistspecifications">#</a></h3>
 <p><em>linelist-specifications-set</em></p>
 <p><strong>Assign the linelist specifications</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Set LinelistSpecifications(ByVal lData As ILinelistSpecs)
+<pre><code class="language-vb">Public Property Set LinelistSpecifications(ByVal lData As LinelistSpecs)
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>lData</code>: ILinelistSpecs. The linelist specifications to store.</li>
+<li><code>lData</code>: LinelistSpecs. The linelist specifications to store.</li>
 </ul>
 <hr />
 <h2 id="int-simplemode">SimpleMode</h2>
@@ -244,7 +254,7 @@ caller contract.</p>
 <pre><code class="language-vb">Private Sub BuildSimpleSeries()
 </code></pre>
 <p>Series building logic for non-time-series cross-tables.
-Reads the table scope and configuration from the cross-table's ITableSpecs to
+Reads the table scope and configuration from the cross-table's TableSpecs to
 determine what kind of series to generate. The &quot;flip&quot; setting controls plot
 direction: when flip is &quot;yes&quot;, horizontal bars (&quot;hbar&quot;) are used; otherwise
 vertical bars (&quot;bar&quot;) are the default. For spatio-temporal tables, the number
@@ -293,7 +303,7 @@ because Excel point series render poorly on horizontally-oriented charts.</li>
 <p><em>build-multi-column-series</em></p>
 <p><strong>Build chart series for multi-column cross-tables</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub BuildMultiColumnSeries(ByVal specs As ITableSpecs, _
+<pre><code class="language-vb">Private Sub BuildMultiColumnSeries(ByVal specs As TableSpecs, _
                                     ByVal tabId As String, _
                                     ByVal tabSecId As String, _
                                     ByVal tabType As Byte, _
@@ -312,7 +322,7 @@ of the table-level range, because spatio-temporal tables share row categories
 across all tables in the same section.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>specs</code>: ITableSpecs. The table specifications providing access to the
+<li><code>specs</code>: TableSpecs. The table specifications providing access to the
 &quot;graph&quot; and &quot;flip&quot; settings as well as HasPercentage.</li>
 <li><code>tabId</code>: String. The unique table identifier for named range construction.</li>
 <li><code>tabSecId</code>: String. The section-level table identifier, used only for
@@ -948,21 +958,11 @@ a consistent stack trace across all methods in this class.</p>
 <li>ProjectError.<varies> Always raises the specified error.</li>
 </ul>
 <hr />
-<h2 id="int-interfaceimplementation">InterfaceImplementation</h2>
-<h3 id="int-igraphspecs-numberofseries">IGraphSpecs_NumberOfSeries <a class="anchor-link" href="#int-igraphspecs-numberofseries">#</a></h3>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get IGraphSpecs_NumberOfSeries() As Long
-</code></pre>
-<p>Delegated members satisfying the IGraphSpecs contract.
-See the corresponding Public members above for full documentation.</p>
-<hr />
 </details>
 <details>
-<summary>Used in (4 file(s))</summary>
+<summary>Used in (2 file(s))</summary>
 <ul>
 <li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
-<li><a href="GraphSpecs.html">GraphSpecs.cls</a></li>
-<li><a href="IGraphSpecs.html">IGraphSpecs.cls</a></li>
 <li>TestGraphSpecs.bas</li>
 </ul>
 </details>

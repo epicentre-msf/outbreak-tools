@@ -16,7 +16,7 @@ analysis worksheets. The class wraps a single chart, allowing callers to
 attach data series from named ranges, assign category and legend labels,
 and apply scope-dependent formatting (time series, spatial, or standard).
 Charts are positioned at a caller-supplied Range and sized according to
-the GraphScope enum. Consumers interact through the IGraphs interface.</p>
+the GraphScope enum.</p>
 <p><strong>Depends on:</strong> <a href="Checking.html">Checking</a></p>
 <p><strong>Version:</strong> 1.0 (2026-02-09)</p>
 <details open class="doc-section" id="instantiation">
@@ -26,7 +26,7 @@ the GraphScope enum. Consumers interact through the IGraphs interface.</p>
 <p><em>create</em></p>
 <p><strong>Create a Graph object bound to a worksheet and position</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Create(sh As Worksheet, posRng As Range, Optional ByVal grName As String = vbNullString) As IGraphs
+<pre><code class="language-vb">Public Function Create(sh As Worksheet, posRng As Range, Optional ByVal grName As String = vbNullString) As Graphs
 </code></pre>
 <p>Graph objects simplify the manipulation of Excel graphs. They are based on a basic
 graphic grammar with the ability to stack graphs on top of each other.
@@ -39,7 +39,7 @@ worksheet used to instantiate the class.</p>
 <li><code>posRng</code>: Range. The cell or range determining where to position the graph.</li>
 <li><code>grName</code>: Optional String. Display name for the graph. Defaults to vbNullString.</li>
 </ul>
-<p><strong>Returns:</strong> IGraphs. A ready-to-use graph instance.</p>
+<p><strong>Returns:</strong> Graphs. A ready-to-use graph instance.</p>
 <p><strong>Throws:</strong></p>
 <ul>
 <li>ProjectError.ObjectNotInitialized When sh is Nothing.</li>
@@ -59,7 +59,7 @@ worksheet used to instantiate the class.</p>
 <p><em>add</em></p>
 <p><strong>Create an empty chart on the worksheet</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub Add()
+<pre><code class="language-vb">Public Sub Add()
 </code></pre>
 <p>Chart creation, series attachment, labelling, and formatting.
 Creates an empty graph on a worksheet, ready for data to be
@@ -70,7 +70,7 @@ of the graph object may change depending on the scope in the future.</p>
 <p><em>addseries</em></p>
 <p><strong>Attach a data series from a named range</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub AddSeries(ByVal rngName As String, ByVal chrtType As String, _
+<pre><code class="language-vb">Public Sub AddSeries(ByVal rngName As String, ByVal chrtType As String, _
                     Optional axisPos As String = vbNullString)
 </code></pre>
 <p>One graph can have multiple series added. Series are referenced using
@@ -93,7 +93,7 @@ yet, Add is called lazily before attaching the series.</p>
 <p><em>has-checkings</em></p>
 <p><strong>Determine whether diagnostics have been captured</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get HasCheckings() As Boolean
+<pre><code class="language-vb">Public Property Get HasCheckings() As Boolean
 </code></pre>
 <p>Returns True when at least one LogInfo call has been made,
 indicating that diagnostic information is available.</p>
@@ -103,26 +103,36 @@ indicating that diagnostic information is available.</p>
 <p><em>checking-values</em></p>
 <p><strong>Retrieve the collected checking entries</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get CheckingValues() As IChecking
+<pre><code class="language-vb">Public Property Get CheckingValues() As Checking
 </code></pre>
-<p>Returns the internal IChecking store when at least one entry has
+<p>Returns the internal Checking store when at least one entry has
 been recorded. Returns Nothing otherwise.</p>
-<p><strong>Returns:</strong> Object. The IChecking instance with logged diagnostics.</p>
+<p><strong>Returns:</strong> Object. The Checking instance with logged diagnostics.</p>
 <hr />
 </div>
 </details>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-instantiation">Instantiation</h2>
-<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
-<p><em>self</em></p>
-<p><strong>Current object instance</strong></p>
+<h3 id="int-seal">Seal <a class="anchor-link" href="#int-seal">#</a></h3>
+<p><em>seal</em></p>
+<p><strong>Seal the instance against further setup writes</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Self() As IGraphs
+<pre><code class="language-vb">Public Sub Seal()
 </code></pre>
-<p>Returns the current instance cast to its interface. Used internally
-by the factory method to return an IGraphs reference.</p>
-<p><strong>Returns:</strong> IGraphs. Reference to the current object.</p>
+<p>Called by the factory after the last setup write. Once sealed, the
+creation-only setters raise through ThrowError.</p>
+<hr />
+<h3 id="int-guardnotsealed">GuardNotSealed <a class="anchor-link" href="#int-guardnotsealed">#</a></h3>
+<p><em>guard-not-sealed</em></p>
+<p><strong>Guard a setup setter against post-creation writes</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub GuardNotSealed(ByVal propName As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>propName</code>: String. The property name reported in the error message.</li>
+</ul>
 <hr />
 <h3 id="int-wksh">Wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
 <p><em>wksh</em></p>
@@ -223,7 +233,7 @@ correct series entry.</p>
 <p><em>addlabels</em></p>
 <p><strong>Assign category and legend labels to the current series</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub AddLabels(ByVal catName As String, _
+<pre><code class="language-vb">Public Sub AddLabels(ByVal catName As String, _
                      ByVal lblName As String, _
                      Optional ByVal prefix As String = vbNullString, _
                      Optional ByVal prefixOnly As Boolean = False, _
@@ -247,7 +257,7 @@ than using a literal string.</p>
 <p><em>format</em></p>
 <p><strong>Apply layout and formatting to the chart</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub Format(Optional ByVal valuesTitle As String = vbNullString, _
+<pre><code class="language-vb">Public Sub Format(Optional ByVal valuesTitle As String = vbNullString, _
                   Optional ByVal catTitle As String = vbNullString, _
                   Optional ByVal plotTitle As String = vbNullString, _
                   Optional ByVal secondAxisTitle As String = vbNullString, _
@@ -310,7 +320,7 @@ does not exist.</p>
 <pre><code class="language-vb">Private Sub LogInfo(ByVal label As String, _
                     Optional ByVal scope As Byte = checkingNote)
 </code></pre>
-<p>Logging and validation support via the IChecking interface.
+<p>Logging and validation support via the Checking interface.
 Lazily creates the Checking instance on first use and appends the
 message using a monotonically increasing counter key. The checking
 store is exposed through HasCheckings and CheckingValues.</p>
@@ -348,21 +358,12 @@ stack traces across all methods in this class.</p>
 <li>ProjectError.<varies> Always raises the specified error.</li>
 </ul>
 <hr />
-<h2 id="int-interface">Interface</h2>
-<h3 id="int-igraphs-add">IGraphs_Add <a class="anchor-link" href="#int-igraphs-add">#</a></h3>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub IGraphs_Add()
-</code></pre>
-<p>Delegated members satisfying the IGraphs contract.</p>
-<hr />
 </details>
 <details>
-<summary>Used in (6 file(s))</summary>
+<summary>Used in (4 file(s))</summary>
 <ul>
 <li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
 <li><a href="AnaTabIds.html">AnaTabIds.cls</a></li>
-<li><a href="Graphs.html">Graphs.cls</a></li>
-<li><a href="IGraphs.html">IGraphs.cls</a></li>
 <li><a href="Linelist.html">Linelist.cls</a></li>
 <li>TestGraphs.bas</li>
 </ul>

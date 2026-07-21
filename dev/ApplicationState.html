@@ -24,7 +24,7 @@ EnableEvents, AutomationSecurity, cursor, and CalculateBeforeSave.</p>
 <p><em>create</em></p>
 <p><strong>Factory returning an initialised interface</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Create(Optional ByVal excelApplication As Application) As IApplicationState
+<pre><code class="language-vb">Public Function Create(Optional ByVal excelApplication As Application) As ApplicationState
 </code></pre>
 <p>Captures the current application state immediately so callers can
 switch to busy mode without an additional call.</p>
@@ -32,18 +32,18 @@ switch to busy mode without an additional call.</p>
 <ul>
 <li><code>excelApplication</code>: Application. Target application. Defaults to Excel.Application.</li>
 </ul>
-<p><strong>Returns:</strong> IApplicationState. Ready to use.</p>
+<p><strong>Returns:</strong> ApplicationState. Ready to use.</p>
 <hr />
 </div>
 </details>
 <details open class="doc-section" id="core-logic">
 <summary>Core Logic</summary>
 <div class="section-body">
-<h3 id="applybusystatecore">ApplyBusyStateCore <a class="anchor-link" href="#applybusystatecore">#</a></h3>
+<h3 id="applybusystate">ApplyBusyState <a class="anchor-link" href="#applybusystate">#</a></h3>
 <p><em>apply-busy-state</em></p>
 <p><strong>Apply the busy state to the target application</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ApplyBusyStateCore(Optional ByVal suppressEvents As Boolean = False, _
+<pre><code class="language-vb">Public Sub ApplyBusyState(Optional ByVal suppressEvents As Boolean = False, _
                                Optional ByVal calculateOnSave As Boolean = True, _
                                Optional ByVal busyCursor As Long = 0, _
                                Optional ByVal blockSecurity As Boolean = False)
@@ -65,37 +65,28 @@ ProjectError is raised so the caller can attempt recovery.</p>
 <li>ProjectError.ErrorUnexpectedState When the application settings cannot be applied.</li>
 </ul>
 <hr />
-<h3 id="refreshsnapshotcore">RefreshSnapshotCore <a class="anchor-link" href="#refreshsnapshotcore">#</a></h3>
+<h3 id="refreshsnapshot">RefreshSnapshot <a class="anchor-link" href="#refreshsnapshot">#</a></h3>
 <p><em>refresh-snapshot</em></p>
 <p><strong>Re-capture the snapshot from the current application state</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub RefreshSnapshotCore()
+<pre><code class="language-vb">Public Sub RefreshSnapshot()
 </code></pre>
 <hr />
-<h3 id="restoreinternal">RestoreInternal <a class="anchor-link" href="#restoreinternal">#</a></h3>
+<h3 id="restore">Restore <a class="anchor-link" href="#restore">#</a></h3>
 <p><em>restore</em></p>
 <p><strong>Restore all captured settings to the application</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub RestoreInternal(ByVal silent As Boolean)
+<pre><code class="language-vb">Public Sub Restore(Optional ByVal silent As Boolean = False)
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>silent</code>: Boolean. When True, swallows errors instead of raising them.</li>
+<li><code>silent</code>: Optional Boolean. When True, swallows errors instead of raising them. Defaults to False.</li>
 </ul>
 <hr />
 </div>
 </details>
 <details>
 <summary>Internal members (not exported)</summary>
-<h2 id="int-factory">Factory</h2>
-<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
-<p><em>self</em></p>
-<p><strong>Self-reference as IApplicationState</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Self() As IApplicationState
-</code></pre>
-<p><strong>Returns:</strong> IApplicationState. Self-reference.</p>
-<hr />
 <h2 id="int-introspection">Introspection</h2>
 <h3 id="int-applicationobject">ApplicationObject <a class="anchor-link" href="#int-applicationobject">#</a></h3>
 <p><em>application-object</em></p>
@@ -218,16 +209,12 @@ ProjectError is raised so the caller can attempt recovery.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (23 file(s))</summary>
+<summary>Used in (19 file(s))</summary>
 <ul>
 <li><a href="ExportButton.html">ExportButton.cls</a></li>
-<li><a href="ApplicationState.html">ApplicationState.cls</a></li>
-<li><a href="IApplicationState.html">IApplicationState.cls</a></li>
 <li><a href="Linelist.html">Linelist.cls</a></li>
 <li><a href="LinelistSpecs.html">LinelistSpecs.cls</a></li>
 <li><a href="MasterSetupPreparation.html">MasterSetupPreparation.cls</a></li>
-<li><a href="ISetupErrors.html">ISetupErrors.cls</a></li>
-<li><a href="ISetupTranslationsTable.html">ISetupTranslationsTable.cls</a></li>
 <li><a href="SetupErrors.html">SetupErrors.cls</a></li>
 <li><a href="SetupImportService.html">SetupImportService.cls</a></li>
 <li><a href="SetupTranslationsTable.html">SetupTranslationsTable.cls</a></li>

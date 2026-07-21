@@ -16,8 +16,7 @@ structure identified by a starting row and column. Unlike CustomTable,
 DataSheet does not require a ListObject — it works directly with cell
 ranges. Supports column lookup, filtering (single and multi-column),
 import/export to other DataSheets or CustomTables, and formatting
-transfer for designated columns. Consumers interact through the
-IDataSheet interface.</p>
+transfer for designated columns.</p>
 <p><strong>Depends on:</strong> <a href="Checking.html">Checking</a>, <a href="BetterArray.html">BetterArray</a>, <a href="HiddenNames.html">HiddenNames</a>, Formated columns list, checking objects</p>
 <p><strong>Version:</strong> 1.0 (2026-02-09)</p>
 <details open class="doc-section" id="factory">
@@ -30,7 +29,7 @@ IDataSheet interface.</p>
 <pre><code class="language-vb">Public Function Create(ByVal sh As Worksheet, ByVal startLn As Long, _
                        ByVal startCl As Long, _
                        Optional ByVal forceEndRow As Boolean = False, _
-                       Optional ByVal objName As String = vbNullString) As IDataSheet
+                       Optional ByVal objName As String = vbNullString) As DataSheet
 </code></pre>
 <p>Entry point for creating DataSheet instances.
 Wraps the supplied worksheet with convenience methods for column
@@ -46,7 +45,7 @@ is required.</p>
 <li><code>forceEndRow</code>: Optional Boolean. When True, scans all columns to find the last row. Defaults to False.</li>
 <li><code>objName</code>: Optional String. Object name. Defaults to the worksheet name.</li>
 </ul>
-<p><strong>Returns:</strong> IDataSheet. A fully initialised DataSheet instance.</p>
+<p><strong>Returns:</strong> DataSheet. A fully initialised DataSheet instance.</p>
 <p><strong>Throws:</strong></p>
 <ul>
 <li>ProjectError.ObjectNotInitialized When sh is Nothing.</li>
@@ -93,7 +92,7 @@ Returns the worksheet that hosts the table-like data.</p>
 <p><em>name</em></p>
 <p><strong>Name of the DataSheet</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get Name() As String
+<pre><code class="language-vb">Public Property Get Name() As String
 </code></pre>
 <p>Returns the assigned object name. When no name was provided during
 creation, defaults to the worksheet name.</p>
@@ -103,7 +102,7 @@ creation, defaults to the worksheet name.</p>
 <p><em>data-end-row</em></p>
 <p><strong>Last row containing data</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get DataEndRow() As Long
+<pre><code class="language-vb">Public Property Get DataEndRow() As Long
 </code></pre>
 <p>Dynamically computes the last occupied row. When StrictEnd is True,
 scans all non-formula columns for the furthest row. Guarantees at
@@ -114,7 +113,7 @@ least one data row below the header.</p>
 <p><em>data-end-column</em></p>
 <p><strong>Last column containing data</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get DataEndColumn() As Long
+<pre><code class="language-vb">Public Property Get DataEndColumn() As Long
 </code></pre>
 <p><strong>Returns:</strong> Long. The 1-based last column index.</p>
 <hr />
@@ -132,7 +131,7 @@ on the header row.</p>
 <p><em>column-exists</em></p>
 <p><strong>Check whether a column exists in the DataSheet</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ColumnExists(ByVal colName As String, _ 
+<pre><code class="language-vb">Public Function ColumnExists(ByVal colName As String, _
                               Optional ByVal strictSearch As Boolean = True, _
                               Optional ByVal matchCase As Boolean = True) As Boolean
 </code></pre>
@@ -150,7 +149,7 @@ Returns False for empty column names.</p>
 <p><em>column-index</em></p>
 <p><strong>Resolve the column index for a header name</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ColumnIndex(ByVal colName As String, _
+<pre><code class="language-vb">Public Function ColumnIndex(ByVal colName As String, _
                              Optional ByVal inDataRange As Boolean = False, _
                              Optional ByVal shouldExist As Boolean = False, _ 
                              Optional ByVal strictSearch As Boolean = True, _
@@ -237,7 +236,7 @@ those that do not contain formulas in their first data cell.</p>
 <p><em>filter-data</em></p>
 <p><strong>Filter data on a single column and return the result</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function FilterData(ByVal varName As String, _
+<pre><code class="language-vb">Public Function FilterData(ByVal varName As String, _
                             ByVal criteriaName As String, _
                             ByVal returnedColumnName As String, _
                             Optional ByVal includeHeaders As Boolean = False, _
@@ -261,7 +260,7 @@ after the operation, leaving the DataSheet untouched.</p>
 <p><em>filters-data</em></p>
 <p><strong>Filter data on multiple columns and return the result</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function FiltersData(ByVal varData As BetterArray, _
+<pre><code class="language-vb">Public Function FiltersData(ByVal varData As BetterArray, _
                              ByVal criteriaData As BetterArray, _
                              ByVal returnedColumnsData As BetterArray) As BetterArray
 </code></pre>
@@ -281,7 +280,7 @@ have different lengths.</p>
 <p><em>import</em></p>
 <p><strong>Import data from another DataSheet or CustomTable</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub Import(ByVal importData As Object, Optional ByVal strictColumnSearch As Boolean = True)
+<pre><code class="language-vb">Public Sub Import(ByVal importData As Object, Optional ByVal strictColumnSearch As Boolean = True)
 </code></pre>
 <p>Cleans this DataSheet, then iterates the source headers and copies
 matching column data. Formula columns are preserved. Applies format
@@ -296,7 +295,7 @@ import for registered formatting columns after the data copy.</p>
 <p><em>import-format</em></p>
 <p><strong>Import column formatting from a source object</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ImportFormat(ByVal importData As Object, Optional ByVal matchColumnsCase As Boolean = True)
+<pre><code class="language-vb">Public Sub ImportFormat(ByVal importData As Object, Optional ByVal matchColumnsCase As Boolean = True)
 </code></pre>
 <p>Copies visual formatting (colours, font weight, italic) from the
 source for all columns registered via AddFormatsColumns. Logs a
@@ -311,7 +310,7 @@ warning when the source and destination row counts differ.</p>
 <p><em>export</em></p>
 <p><strong>Export the DataSheet to a workbook</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub Export(ByVal Wkb As Workbook, Optional ByVal filteredVarName As String = &quot;__all__&quot;, _
+<pre><code class="language-vb">Public Sub Export(ByVal toWkb As Workbook, Optional ByVal filteredVarName As String = &quot;__all__&quot;, _
                    Optional ByVal filteredCondition As String = &quot;&lt;&gt;&quot;, _ 
                    Optional ByVal Hide As Long = xlSheetHidden, _ 
                    Optional ByVal includeNames As Boolean = False)
@@ -323,7 +322,7 @@ default. Applies formatting for registered columns and optionally
 exports hidden names.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>Wkb</code>: Workbook. Destination workbook.</li>
+<li><code>toWkb</code>: Workbook. Destination workbook.</li>
 <li><code>filteredVarName</code>: Optional String. Column used for filtering. Defaults to &quot;<strong>all</strong>&quot; (no filter).</li>
 <li><code>filteredCondition</code>: Optional String. Filter criteria. Defaults to &quot;&lt;&gt;&quot;.</li>
 <li><code>Hide</code>: Optional Long. Worksheet visibility after export. Defaults to xlSheetHidden.</li>
@@ -349,21 +348,29 @@ exports hidden names.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get CheckingValues() As Object
 </code></pre>
-<p><strong>Returns:</strong> Object. An IChecking instance, or Nothing.</p>
+<p><strong>Returns:</strong> Object. An Checking instance, or Nothing.</p>
+<hr />
+<h3 id="addformatscolumns">AddFormatsColumns <a class="anchor-link" href="#addformatscolumns">#</a></h3>
+<p><em>add-formats-columns</em></p>
+<p><strong>Register columns for formatting import/export</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub AddFormatsColumns(ByVal matchColumnsCase As Boolean, ByVal resetColumns As Boolean, ParamArray lsCols() As Variant)
+</code></pre>
+<p>Adds the specified column names to the internal formatting list so that
+Import and Export preserve their visual formatting. Validates each
+column exists before registering it.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>matchColumnsCase</code>: Boolean. When True, uses case-sensitive column matching.</li>
+<li><code>resetColumns</code>: Boolean. When True, clears the existing list before adding.</li>
+<li><code>lsCols</code>: ParamArray Variant. Column names to register for formatting.</li>
+</ul>
 <hr />
 </div>
 </details>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-factory">Factory</h2>
-<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
-<p><em>self</em></p>
-<p><strong>Current object instance</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Self() As IDataSheet
-</code></pre>
-<p><strong>Returns:</strong> IDataSheet. Reference to the current object.</p>
-<hr />
 <h3 id="int-wksh">Wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
 <p><em>wksh-set</em></p>
 <p><strong>Assign the worksheet reference</strong></p>
@@ -479,7 +486,7 @@ cell in impRng to the corresponding cell in actRng.</p>
                     Optional ByVal scope As Byte = checkingNote)
 </code></pre>
 <p>Diagnostic logging and error handling.
-Adds a message to the internal IChecking object, creating it on first
+Adds a message to the internal Checking object, creating it on first
 use. The checkCounter provides a unique key for each entry.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -508,6 +515,24 @@ use. The checkCounter provides a unique key for each entry.</p>
 <p><strong>Throws:</strong></p>
 <ul>
 <li>ProjectError.<varies> Always raises the specified error.</li>
+</ul>
+<hr />
+<h3 id="int-seal">Seal <a class="anchor-link" href="#int-seal">#</a></h3>
+<p><em>seal</em></p>
+<p><strong>Seal the instance so setup setters can no longer be written</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Seal()
+</code></pre>
+<hr />
+<h3 id="int-guardnotsealed">GuardNotSealed <a class="anchor-link" href="#int-guardnotsealed">#</a></h3>
+<p><em>guard-not-sealed</em></p>
+<p><strong>Guard a setup setter against writes after sealing</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub GuardNotSealed(ByVal propName As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>propName</code>: String. Name of the property being guarded.</li>
 </ul>
 <hr />
 <h3 id="int-throwerroremptysheetgiven">ThrowErrorEmptySheetGiven <a class="anchor-link" href="#int-throwerroremptysheetgiven">#</a></h3>
@@ -553,44 +578,17 @@ use. The checkCounter provides a unique key for each entry.</p>
 <li>ProjectError.ElementNotFound Always.</li>
 </ul>
 <hr />
-<h2 id="int-interface">Interface</h2>
-<h3 id="int-idatasheet-wksh">IDataSheet_Wksh <a class="anchor-link" href="#int-idatasheet-wksh">#</a></h3>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get IDataSheet_Wksh() As Worksheet
-</code></pre>
-<p>Delegated members satisfying the IDataSheet contract.</p>
-<hr />
-<h3 id="int-idatasheet-addformatscolumns">IDataSheet_AddFormatsColumns <a class="anchor-link" href="#int-idatasheet-addformatscolumns">#</a></h3>
-<p><em>add-formats-columns</em></p>
-<p><strong>Register columns for formatting import/export</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub IDataSheet_AddFormatsColumns(ByVal matchColumnsCase As Boolean, ByVal resetColumns As Boolean, ParamArray lsCols() As Variant)
-</code></pre>
-<p>Adds the specified column names to the internal formatting list so that
-Import and Export preserve their visual formatting. Validates each
-column exists before registering it.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>matchColumnsCase</code>: Boolean. When True, uses case-sensitive column matching.</li>
-<li><code>resetColumns</code>: Boolean. When True, clears the existing list before adding.</li>
-<li><code>lsCols</code>: ParamArray Variant. Column names to register for formatting.</li>
-</ul>
-<hr />
 </details>
 <details>
-<summary>Used in (21 file(s))</summary>
+<summary>Used in (16 file(s))</summary>
 <ul>
 <li><a href="LLExporter.html">LLExporter.cls</a></li>
 <li><a href="LLImporter.html">LLImporter.cls</a></li>
-<li><a href="ILLdictionary.html">ILLdictionary.cls</a></li>
-<li><a href="ILLExport.html">ILLExport.cls</a></li>
 <li><a href="LLdictionary.html">LLdictionary.cls</a></li>
 <li><a href="LLExport.html">LLExport.cls</a></li>
 <li><a href="LLSheets.html">LLSheets.cls</a></li>
 <li><a href="LLVariables.html">LLVariables.cls</a></li>
-<li><a href="DataSheet.html">DataSheet.cls</a></li>
-<li><a href="IDataSheet.html">IDataSheet.cls</a></li>
-<li><a href="ILLChoices.html">ILLChoices.cls</a></li>
+<li><a href="CustomTable.html">CustomTable.cls</a></li>
 <li><a href="LLChoices.html">LLChoices.cls</a></li>
 <li><a href="Linelist.html">Linelist.cls</a></li>
 <li><a href="MasterSetupVariables.html">MasterSetupVariables.cls</a></li>
@@ -599,8 +597,7 @@ column exists before registering it.</p>
 <li>TestCustomTable.bas</li>
 <li>TestDataSheet.bas</li>
 <li>TestSetupErrors.bas</li>
-<li><a href="AnalysisDictionaryStub.html">AnalysisDictionaryStub.cls</a></li>
-<li><a href="DictionaryMinimalStub.html">DictionaryMinimalStub.cls</a></li>
+<li>TestCustomPivotTable.bas</li>
 </ul>
 </details>
   </main>

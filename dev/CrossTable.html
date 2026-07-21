@@ -15,10 +15,10 @@
 on an Excel worksheet. It supports six table scopes: univariate, bivariate,
 time series, spatial, spatio-temporal, and global summary. Each cross-table
 occupies a rectangular region with row categories, column categories, named
-ranges, and visual formatting. Consumers interact through the ICrossTable
+ranges, and visual formatting. Consumers interact through the CrossTable
 interface, and AnalysisOutput orchestrates the build sequence by calling
 Build followed by Format for each table specification.</p>
-<p><strong>Depends on:</strong> <a href="ITableSpecs.html">ITableSpecs</a>, <a href="ILinelistSpecs.html">ILinelistSpecs</a>, <a href="ITranslationObject.html">ITranslationObject</a>, <a href="ILLVariables.html">ILLVariables</a>, <a href="LLVariables.html">LLVariables</a>, <a href="ILLFormat.html">ILLFormat</a>, <a href="IHiddenNames.html">IHiddenNames</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="BetterArray.html">BetterArray</a>, <a href="Checking.html">Checking</a>, <a href="IChecking.html">IChecking</a></p>
+<p><strong>Depends on:</strong> <a href="TableSpecs.html">TableSpecs</a>, <a href="LinelistSpecs.html">LinelistSpecs</a>, <a href="TranslationObject.html">TranslationObject</a>, <a href="LLVariables.html">LLVariables</a>, <a href="LLFormat.html">LLFormat</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="BetterArray.html">BetterArray</a>, <a href="Checking.html">Checking</a></p>
 <p><strong>Version:</strong> 1.1 (2026-02-11)</p>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
@@ -27,11 +27,11 @@ Build followed by Format for each table specification.</p>
 <p><em>create</em></p>
 <p><strong>Create a CrossTable instance from table specifications.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Create(ByVal specs As ITableSpecs, _
+<pre><code class="language-vb">Public Function Create(ByVal specs As TableSpecs, _
                        ByVal outputWksh As Worksheet, _
-                       ByRef lData As ILinelistSpecs) As ICrossTable
+                       ByRef lData As LinelistSpecs) As CrossTable
 </code></pre>
-<p>Factory method that creates and returns a new ICrossTable instance from
+<p>Factory method that creates and returns a new CrossTable instance from
 the given table specifications. A cross-table is a structured analysis
 output (univariate, bivariate, time series, spatial, spatio-temporal, or
 global summary) that is built on an output worksheet and contains row
@@ -41,13 +41,13 @@ fresh CrossTable instance via the PredeclaredId/New pattern and returns
 the interface reference.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>specs</code>: ITableSpecs. An ITableSpecs object representing one row from the analysis setup sheet.</li>
+<li><code>specs</code>: TableSpecs. An TableSpecs object representing one row from the analysis setup sheet.</li>
 <li><code>outputWksh</code>: Worksheet. The Excel Worksheet where this cross-table will physically write its headers, row labels, column labels, data placeholders, and named ranges.</li>
-<li><code>lData</code>: ILinelistSpecs. The linelist specifications object that provides the translation object
-for locale-aware labels and is passed to ITableSpecs.RowCategories / ColumnCategories for
+<li><code>lData</code>: LinelistSpecs. The linelist specifications object that provides the translation object
+for locale-aware labels and is passed to TableSpecs.RowCategories / ColumnCategories for
 category resolution at build time.</li>
 </ul>
-<p><strong>Returns:</strong> ICrossTable. A fully initialized ICrossTable ready for Build or individual step calls.</p>
+<p><strong>Returns:</strong> CrossTable. A fully initialized CrossTable ready for Build or individual step calls.</p>
 <p><strong>Throws:</strong></p>
 <ul>
 <li>InvalidArgument When specs is Nothing.</li>
@@ -74,12 +74,12 @@ headers, row labels, column labels, and data cells.</p>
 <p><em>specifications</em></p>
 <p><strong>Table specifications used to build this cross-table.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Specifications() As ITableSpecs
+<pre><code class="language-vb">Public Property Get Specifications() As TableSpecs
 </code></pre>
-<p>Returns the ITableSpecs instance that defines the configuration for
+<p>Returns the TableSpecs instance that defines the configuration for
 this cross-table. Provides access to table scope, variable names,
 category lists, and validation flags.</p>
-<p><strong>Returns:</strong> ITableSpecs. The backing table specification.</p>
+<p><strong>Returns:</strong> TableSpecs. The backing table specification.</p>
 <hr />
 </div>
 </details>
@@ -204,7 +204,7 @@ cell. Returns Nothing if colVal is not found.</p>
 <p><em>addrows</em></p>
 <p><strong>Add row headers and row category labels to the worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub AddRows()
+<pre><code class="language-vb">Public Sub AddRows()
 </code></pre>
 <p>Populate row categories on the output worksheet.
 Populates the row category labels in the leftmost column
@@ -233,7 +233,7 @@ reuse the row structure from the first table and only add columns.</li>
 <p><em>addcolumns</em></p>
 <p><strong>Add column headers and column category labels to the worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub AddColumns()
+<pre><code class="language-vb">Public Sub AddColumns()
 </code></pre>
 <p>Populate column headers on the output worksheet.
 Writes column headers and category labels to the output worksheet. The
@@ -260,7 +260,7 @@ as a guard to prevent duplicate creation.</li>
 <p><em>addheader</em></p>
 <p><strong>Add the table title and header to the worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub AddHeader()
+<pre><code class="language-vb">Public Sub AddHeader()
 </code></pre>
 <p>Create section headers, titles, and date/geo controls.
 Inserts the structural header infrastructure above the data area of this
@@ -290,7 +290,7 @@ dates at runtime.</li>
 <p><em>name-ranges</em></p>
 <p><strong>Create all named ranges for the table data regions.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub NameRanges()
+<pre><code class="language-vb">Public Sub NameRanges()
 </code></pre>
 <p>Create all structural named ranges for the table.
 Creates all structural named ranges for this cross-table after the data
@@ -321,11 +321,11 @@ column structure beyond the two fixed columns).</li>
 <p><em>format</em></p>
 <p><strong>Apply formatting to the table using design specifications.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub Format(ByVal desFormat As ILLFormat)
+<pre><code class="language-vb">Public Sub Format(ByVal desFormat As LLFormat)
 </code></pre>
 <p>Apply visual formatting to all structural regions of the cross-table.
 Applies comprehensive visual formatting to every part of the cross-table
-using the design format object (ILLFormat). This is the final step after
+using the design format object (LLFormat). This is the final step after
 Build completes the structural layout. Formatting is applied in order:
 section header, table title, spatial dropdown, column headers, row and
 column categories, interior values, Total/Missing rows and columns,
@@ -336,7 +336,7 @@ entirely since it is needed internally for percentage computation but
 should be invisible to the user.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>desFormat</code>: ILLFormat. The formatting specification providing ApplyFormat for each scope.</li>
+<li><code>desFormat</code>: LLFormat. The formatting specification providing ApplyFormat for each scope.</li>
 </ul>
 <p><strong>Remarks:</strong></p>
 <ul>
@@ -354,7 +354,7 @@ ROWGS_FORMATSET and MERGED_.</li>
 <p><em>build</em></p>
 <p><strong>Build the complete cross-table on the worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub Build()
+<pre><code class="language-vb">Public Sub Build()
 </code></pre>
 <p>Orchestrate the complete table construction sequence.
 Orchestrates the complete construction of this cross-table by calling
@@ -376,16 +376,24 @@ and formula generation.</p>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-internal-properties">Internal Properties</h2>
-<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
-<p><em>self</em></p>
-<p><strong>Current object instance.</strong></p>
+<h3 id="int-seal">Seal <a class="anchor-link" href="#int-seal">#</a></h3>
+<p><em>seal</em></p>
+<p><strong>Seal the instance against further setup writes.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Self() As ICrossTable
+<pre><code class="language-vb">Public Sub Seal()
 </code></pre>
-<p>Properties used during factory instantiation and internal wiring.
-Convenience accessor so consuming code can fluently retrieve the interface
-reference from the predeclared Create method.</p>
-<p><strong>Returns:</strong> ICrossTable. The current instance cast to the interface.</p>
+<p>Properties used during factory instantiation and internal wiring.</p>
+<hr />
+<h3 id="int-guardnotsealed">GuardNotSealed <a class="anchor-link" href="#int-guardnotsealed">#</a></h3>
+<p><em>guard-not-sealed</em></p>
+<p><strong>Guard a setup setter against post-creation writes.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub GuardNotSealed(ByVal propName As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>propName</code>: String. The property name for the error message.</li>
+</ul>
 <hr />
 <h3 id="int-wksh">Wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
 <p><em>wksh-set</em></p>
@@ -402,51 +410,51 @@ reference from the predeclared Create method.</p>
 <p><em>specifications-set</em></p>
 <p><strong>Assign the table specifications.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Set Specifications(ByVal specs As ITableSpecs)
+<pre><code class="language-vb">Public Property Set Specifications(ByVal specs As TableSpecs)
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>specs</code>: ITableSpecs. The table specification to assign.</li>
+<li><code>specs</code>: TableSpecs. The table specification to assign.</li>
 </ul>
 <hr />
 <h3 id="int-linelistdata">LinelistData <a class="anchor-link" href="#int-linelistdata">#</a></h3>
 <p><em>linelist-data</em></p>
 <p><strong>Linelist specifications providing translations and categories.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get LinelistData() As ILinelistSpecs
+<pre><code class="language-vb">Public Property Get LinelistData() As LinelistSpecs
 </code></pre>
-<p>Returns the ILinelistSpecs instance stored at construction time. Used to
+<p>Returns the LinelistSpecs instance stored at construction time. Used to
 extract the translation object and to pass as the lData parameter when
 calling specs.RowCategories(lData) and specs.ColumnCategories(lData).</p>
-<p><strong>Returns:</strong> ILinelistSpecs. The linelist specifications.</p>
+<p><strong>Returns:</strong> LinelistSpecs. The linelist specifications.</p>
 <hr />
 <h3 id="int-linelistdata">LinelistData <a class="anchor-link" href="#int-linelistdata">#</a></h3>
 <p><em>linelist-data-set</em></p>
 <p><strong>Assign the linelist specifications.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Set LinelistData(ByVal lData As ILinelistSpecs)
+<pre><code class="language-vb">Public Property Set LinelistData(ByVal lData As LinelistSpecs)
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>lData</code>: ILinelistSpecs. The linelist specifications to assign.</li>
+<li><code>lData</code>: LinelistSpecs. The linelist specifications to assign.</li>
 </ul>
 <hr />
 <h3 id="int-translations">Translations <a class="anchor-link" href="#int-translations">#</a></h3>
 <p><em>translations</em></p>
 <p><strong>Translation object for locale-aware labels.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Translations() As ITranslationObject
+<pre><code class="language-vb">Public Property Get Translations() As TranslationObject
 </code></pre>
-<p>Returns the ITranslationObject extracted from the stored linelist
+<p>Returns the TranslationObject extracted from the stored linelist
 specifications. Resolves translated strings such as &quot;Total&quot;, &quot;Missing&quot;,
 &quot;Percent&quot;, and date-unit names.</p>
-<p><strong>Returns:</strong> ITranslationObject. The translation object.</p>
+<p><strong>Returns:</strong> TranslationObject. The translation object.</p>
 <hr />
 <h3 id="int-numberofcolumns">NumberOfColumns <a class="anchor-link" href="#int-numberofcolumns">#</a></h3>
 <p><em>number-of-columns</em></p>
 <p><strong>Number of data columns in the table.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get NumberOfColumns() As Long
+<pre><code class="language-vb">Public Property Get NumberOfColumns() As Long
 </code></pre>
 <p>Returns the count of data columns excluding the row-label column.
 For bivariate and time series tables this equals the number of column
@@ -468,7 +476,7 @@ categories plus optional total and missing columns.</p>
 <p><em>named-ranges-list</em></p>
 <p><strong>List of named range names created by this table.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get NamedRangesList() As BetterArray
+<pre><code class="language-vb">Public Property Get NamedRangesList() As BetterArray
 </code></pre>
 <p>Returns a cloned BetterArray containing all the named range names that
 were accumulated during the build process. Used by AnaTabIds to register
@@ -509,7 +517,7 @@ Cell.Name which produces workbook-scoped names.</li>
 <p><em>start-row</em></p>
 <p><strong>Starting row of the table on the output worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get StartRow() As Long
+<pre><code class="language-vb">Public Property Get StartRow() As Long
 </code></pre>
 <p>Computes or retrieves the starting row for this cross-table on the
 output worksheet. The logic has three branches depending on whether the
@@ -536,18 +544,18 @@ lookups.</li>
 <p><em>previous</em></p>
 <p><strong>Previous cross-table in the same section.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get Previous() As ICrossTable
+<pre><code class="language-vb">Public Property Get Previous() As CrossTable
 </code></pre>
-<p>Creates and returns an ICrossTable instance representing the table
+<p>Creates and returns an CrossTable instance representing the table
 that immediately precedes this one within the same analysis section.
 This is used by temporal table scopes (time series and spatio-temporal)
 where multiple tables share the same row structure and are laid out
 side-by-side in columns. The previous table's start row and end column
 are needed to position the current table correctly. The method delegates
 to the Create factory, passing the Previous spec from the current
-table's ITableSpecs, along with the same output worksheet and
+table's TableSpecs, along with the same output worksheet and
 translation object.</p>
-<p><strong>Returns:</strong> ICrossTable. The preceding cross-table, or Nothing when this is the first table.</p>
+<p><strong>Returns:</strong> CrossTable. The preceding cross-table, or Nothing when this is the first table.</p>
 <p><strong>Remarks:</strong></p>
 <ul>
 <li>Each call creates a new CrossTable instance; the result is not cached. For
@@ -606,7 +614,7 @@ named range's column to recover the true start column.</li>
 <p><em>end-row</em></p>
 <p><strong>Last row used by the table on the worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get EndRow() As Long
+<pre><code class="language-vb">Public Property Get EndRow() As Long
 </code></pre>
 <p>Returns the 1-based row index of the bottommost cell occupied by this
 cross-table. Used to compute the start row for the next stacked table.</p>
@@ -616,7 +624,7 @@ cross-table. Used to compute the start row for the next stacked table.</p>
 <p><em>end-column</em></p>
 <p><strong>Last column used by the table on the worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get EndColumn() As Long
+<pre><code class="language-vb">Public Property Get EndColumn() As Long
 </code></pre>
 <p>Returns the 1-based column index of the rightmost cell occupied by
 this cross-table. Used by sibling tables and formatting routines to
@@ -628,7 +636,7 @@ avoid overlapping output.</p>
 <p><em>time-series-header</em></p>
 <p><strong>Header label for time series tables.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get TimeSeriesHeader() As String
+<pre><code class="language-vb">Public Property Get TimeSeriesHeader() As String
 </code></pre>
 <p>Returns the composite header text for a time-series or spatio-temporal
 table. This text is a human-readable string like
@@ -704,8 +712,8 @@ value, no arrow is appended.</p>
 <p><em>bivariate-columns</em></p>
 <p><strong>Write column headers for bivariate, temporal, and spatial tables.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub BivariateColumns(ByVal startRw As Long, ByVal specs As ITableSpecs, _
-                              ByVal trans As ITranslationObject, ByVal sh As Worksheet)
+<pre><code class="language-vb">Private Sub BivariateColumns(ByVal startRw As Long, ByVal specs As TableSpecs, _
+                              ByVal trans As TranslationObject, ByVal sh As Worksheet)
 </code></pre>
 <p>Shared column-building logic used by bivariate, time series, spatial,
 and spatio-temporal table scopes. This sub writes the column category
@@ -718,8 +726,8 @@ EndColumn.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>startRw</code>: Long. The starting row for column headers.</li>
-<li><code>specs</code>: ITableSpecs. The ITableSpecs providing column categories and flags.</li>
-<li><code>trans</code>: ITranslationObject. The ITranslationObject providing translated strings.</li>
+<li><code>specs</code>: TableSpecs. The TableSpecs providing column categories and flags.</li>
+<li><code>trans</code>: TranslationObject. The TranslationObject providing translated strings.</li>
 <li><code>sh</code>: Worksheet. The output Worksheet where the column headers are written.</li>
 </ul>
 <p><strong>Remarks:</strong></p>
@@ -737,7 +745,7 @@ or Total. However, EndColumn includes all columns written.</li>
 </code></pre>
 <p>Detect de-facto new sections when the previous table was never built.
 Determines whether this table should be treated as a de-facto new
-section even though its ITableSpecs.IsNewSection returns False. This
+section even though its TableSpecs.IsNewSection returns False. This
 situation arises from Bug #3: when the previous table in the same section
 was invalid and was therefore skipped during the build process, the
 section infrastructure was never created. The logic checks whether the
@@ -759,7 +767,7 @@ False. The typical usage pattern is: &quot;If specs.IsNewSection() Or IsDeFactoN
                     Optional ByVal scope As Byte = checkingSuccess)
 </code></pre>
 <p>Diagnostic logging for cross-table building.
-Adds a trace entry to the internal IChecking instance, initialising it
+Adds a trace entry to the internal Checking instance, initialising it
 lazily on first use.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -786,43 +794,14 @@ providing a consistent stack trace across all methods in this class.</p>
 <li>ProjectError.<varies> Always raises the specified error.</li>
 </ul>
 <hr />
-<h2 id="int-interface-implementation">Interface Implementation</h2>
-<h3 id="int-icrosstable-addrows">ICrossTable_AddRows <a class="anchor-link" href="#int-icrosstable-addrows">#</a></h3>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ICrossTable_AddRows()
-</code></pre>
-<p>Delegated members satisfying the ICrossTable contract.
-See the corresponding Public members above for full documentation.</p>
-<hr />
 </details>
 <details>
-<summary>Used in (12 file(s))</summary>
+<summary>Used in (8 file(s))</summary>
 <ul>
 <li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
-<li><a href="CrossTable.html">CrossTable.cls</a></li>
 <li><a href="CrossTableFormula.html">CrossTableFormula.cls</a></li>
-<li><a href="ICrossTable.html">ICrossTable.cls</a></li>
-<li><a href="ICrossTableFormula.html">ICrossTableFormula.cls</a></li>
 <li><a href="SpatialTables.html">SpatialTables.cls</a></li>
 <li><a href="GraphSpecs.html">GraphSpecs.cls</a></li>
-<li><a href="CrossTable.html">CrossTable.cls</a></li>
-<li>TestCrossTable.bas</li>
-<li>TestCrossTableFormula.bas</li>
-<li>TestSpatialTables.bas</li>
-<li>TestGraphSpecs.bas</li>
-</ul>
-</details>
-<details>
-<summary>Used in (12 file(s))</summary>
-<ul>
-<li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
-<li><a href="CrossTable.html">CrossTable.cls</a></li>
-<li><a href="CrossTableFormula.html">CrossTableFormula.cls</a></li>
-<li><a href="ICrossTable.html">ICrossTable.cls</a></li>
-<li><a href="ICrossTableFormula.html">ICrossTableFormula.cls</a></li>
-<li><a href="SpatialTables.html">SpatialTables.cls</a></li>
-<li><a href="GraphSpecs.html">GraphSpecs.cls</a></li>
-<li><a href="CrossTable.html">CrossTable.cls</a></li>
 <li>TestCrossTable.bas</li>
 <li>TestCrossTableFormula.bas</li>
 <li>TestSpatialTables.bas</li>

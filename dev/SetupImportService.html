@@ -16,7 +16,7 @@ and cleaning setup worksheets (Dictionary, Choices, Exports, Analysis,
 Translations). Supports both table-level import via CustomTable and
 domain-class-driven import via dedicated managers (LLdictionary, LLChoices,
 LLExport, Analysis, SetupTranslationsTable). Guards Excel state through
-ApplicationState and protects/unprotects worksheets via IPasswords.</p>
+ApplicationState and protects/unprotects worksheets via Passwords.</p>
 <details open class="doc-section" id="factory-helpers">
 <summary>Factory helpers</summary>
 <div class="section-body">
@@ -24,17 +24,17 @@ ApplicationState and protects/unprotects worksheets via IPasswords.</p>
 <p><em>create</em></p>
 <p><strong>Create a ready-to-use service instance</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Create(ByVal importPath As String, Optional ByVal progressDisplay As Object) As ISetupImportService
+<pre><code class="language-vb">Public Function Create(ByVal importPath As String, Optional ByVal progressDisplay As Object) As SetupImportService
 </code></pre>
 <p>Validates the import path and optional progress display, creates a new
 SetupImportService instance, assigns the path and display, and returns
-the configured interface reference.</p>
+the configured instance.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>importPath</code>: String. Path to the source setup workbook.</li>
 <li><code>progressDisplay</code>: Optional Object. UI element receiving textual updates (must expose Caption or Value).</li>
 </ul>
-<p><strong>Returns:</strong> ISetupImportService. Configured service instance.</p>
+<p><strong>Returns:</strong> SetupImportService. Configured service instance.</p>
 <hr />
 </div>
 </details>
@@ -124,13 +124,13 @@ immediately close the source workbook to confirm it is readable.</p>
 <p><em>clean</em></p>
 <p><strong>Clean target worksheets ahead of a fresh import.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub Clean(ByVal pass As IPasswords, ByVal sheetsList As BetterArray)
+<pre><code class="language-vb">Public Sub Clean(ByVal pass As Passwords, ByVal sheetsList As BetterArray)
 </code></pre>
 <p>Iterates over the requested sheets, unprotects each one, clears all
 ListObject data and worksheet comments, then re-protects.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>pass</code>: IPasswords. Password handler for worksheet protection.</li>
+<li><code>pass</code>: Passwords. Password handler for worksheet protection.</li>
 <li><code>sheetsList</code>: BetterArray. Worksheets participating in the clean-up.</li>
 </ul>
 <hr />
@@ -138,7 +138,7 @@ ListObject data and worksheet comments, then re-protects.</p>
 <p><em>import</em></p>
 <p><strong>Perform the setup import from the configured workbook into the host workbook.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub Import(ByVal pass As IPasswords, ByVal sheetsList As BetterArray)
+<pre><code class="language-vb">Public Sub Import(ByVal pass As Passwords, ByVal sheetsList As BetterArray)
 </code></pre>
 <p>Opens the source workbook, iterates over each requested sheet, matches
 ListObjects between source and host, and delegates import to
@@ -146,7 +146,7 @@ CustomTable.Import. Handles sheet protection/unprotection and export
 column alignment via PrepareImport.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>pass</code>: IPasswords. Password handler for worksheet protection.</li>
+<li><code>pass</code>: Passwords. Password handler for worksheet protection.</li>
 <li><code>sheetsList</code>: BetterArray. Worksheets participating in the import.</li>
 </ul>
 <hr />
@@ -159,14 +159,14 @@ column alignment via PrepareImport.</p>
 <p><em>import-from-workbook</em></p>
 <p><strong>Perform the setup import leveraging dedicated worksheet classes.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub ImportFromWorkbook(ByVal pass As IPasswords, Optional ByVal sheetsList As BetterArray = Nothing)
+<pre><code class="language-vb">Public Sub ImportFromWorkbook(ByVal pass As Passwords, Optional ByVal sheetsList As BetterArray = Nothing)
 </code></pre>
 <p>Uses domain-specific classes (LLdictionary, LLChoices, LLExport, Analysis,
 SetupTranslationsTable) to import each worksheet from the source workbook.
 Falls back to the default sheets list when none is provided.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>pass</code>: IPasswords. Password handler for worksheet protection.</li>
+<li><code>pass</code>: Passwords. Password handler for worksheet protection.</li>
 <li><code>sheetsList</code>: Optional BetterArray. Worksheets to import. Defaults to all five setup sheets.</li>
 </ul>
 <hr />
@@ -179,7 +179,7 @@ Falls back to the default sheets list when none is provided.</p>
 <p><em>export-to-workbook</em></p>
 <p><strong>Export all setup worksheets to a new workbook.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub Export(Optional Byval outwb As Workbook)
+<pre><code class="language-vb">Public Sub Export(Optional Byval outwb As Workbook)
 </code></pre>
 <p>Creates or reuses an export workbook, then exports each setup worksheet
 (Dictionary, Choices, Exports, Analysis, Translations) using domain-specific
@@ -224,14 +224,6 @@ managers, along with hidden names and formatting data.</p>
 <li><code>value</code>: Object. The progress display to store.</li>
 </ul>
 <hr />
-<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
-<p><em>self</em></p>
-<p><strong>Current object instance cast to the interface.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Self() As ISetupImportService
-</code></pre>
-<p><strong>Returns:</strong> ISetupImportService. The current instance.</p>
-<hr />
 <h3 id="int-displayprompts">DisplayPrompts <a class="anchor-link" href="#int-displayprompts">#</a></h3>
 <p><em>display-prompts-set</em></p>
 <p><strong>Toggle UI prompts displayed during operations.</strong></p>
@@ -250,7 +242,7 @@ Primarily used by automated tests.</p>
 <p><em>application-scope</em></p>
 <p><strong>Guard Excel with the reusable ApplicationState scope.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ApplicationScope() As IApplicationState
+<pre><code class="language-vb">Private Function ApplicationScope() As ApplicationState
 </code></pre>
 <hr />
 <h3 id="int-enterbusystate">EnterBusyState <a class="anchor-link" href="#int-enterbusystate">#</a></h3>
@@ -272,7 +264,7 @@ Primarily used by automated tests.</p>
 <p><em>import-dictionary</em></p>
 <p><strong>Import dictionary worksheet using LLdictionary.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ImportDictionaryUsingClass(ByVal pass As IPasswords, _
+<pre><code class="language-vb">Private Sub ImportDictionaryUsingClass(ByVal pass As Passwords, _
                                        ByVal hostWorkbook As Workbook, _
                                        ByVal importWorkbook As Workbook)
 </code></pre>
@@ -281,14 +273,14 @@ Primarily used by automated tests.</p>
 <p><em>import-choices</em></p>
 <p><strong>Import choices worksheet using LLChoices.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ImportChoicesUsingClass(ByVal pass As IPasswords, ByVal hostworkbook As Workbook, ByVal importworkbook As Workbook)
+<pre><code class="language-vb">Private Sub ImportChoicesUsingClass(ByVal pass As Passwords, ByVal hostworkbook As Workbook, ByVal importworkbook As Workbook)
 </code></pre>
 <hr />
 <h3 id="int-importexportusingclass">ImportExportUsingClass <a class="anchor-link" href="#int-importexportusingclass">#</a></h3>
 <p><em>import-exports</em></p>
 <p><strong>Import export specifications via LLExport.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ImportExportUsingClass(ByVal pass As IPasswords, _
+<pre><code class="language-vb">Private Sub ImportExportUsingClass(ByVal pass As Passwords, _
                                    ByVal hostWorkbook As Workbook, _
                                    ByVal importWorkbook As Workbook)
 </code></pre>
@@ -297,7 +289,7 @@ Primarily used by automated tests.</p>
 <p><em>import-analysis</em></p>
 <p><strong>Import analysis worksheet content via Analysis class.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ImportAnalysisUsingClass(ByVal pass As IPasswords, _
+<pre><code class="language-vb">Private Sub ImportAnalysisUsingClass(ByVal pass As Passwords, _
                                      ByVal hostWorkbook As Workbook, _
                                      ByVal importWorkbook As Workbook)
 </code></pre>
@@ -306,7 +298,7 @@ Primarily used by automated tests.</p>
 <p><em>import-translations</em></p>
 <p><strong>Import translations worksheet using CustomTable and SetupTranslationsTable.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ImportTranslationsUsingClass(ByVal pass As IPasswords, _
+<pre><code class="language-vb">Private Sub ImportTranslationsUsingClass(ByVal pass As Passwords, _
                                          ByVal hostWorkbook As Workbook, _
                                          ByVal importWorkbook As Workbook)
 </code></pre>
@@ -324,7 +316,7 @@ Primarily used by automated tests.</p>
 <p><em>prepare-import</em></p>
 <p><strong>Ensure the exports and dictionary sheets are aligned prior to import.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub PrepareImport(ByVal pass As IPasswords, _
+<pre><code class="language-vb">Private Sub PrepareImport(ByVal pass As Passwords, _
                           Optional ByVal sheetsList As BetterArray, _ 
                           Optional ByVal forceSync As Boolean = True, _
                           Optional ByVal impStartRow As Long = EXPORT_HOST_START_ROW, _
@@ -336,7 +328,7 @@ Primarily used by automated tests.</p>
 <p><em>post-import</em></p>
 <p><strong>Restore choices column names after import completes.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub PostImport(ByVal pass As IPasswords, _
+<pre><code class="language-vb">Private Sub PostImport(ByVal pass As Passwords, _
                         Optional ByVal sheetsList As BetterArray)
 </code></pre>
 <hr />
@@ -385,7 +377,7 @@ Primarily used by automated tests.</p>
 <p><em>validate-passwords</em></p>
 <p><strong>Validate availability of requested passwords object.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ValidatePasswords(ByVal pass As IPasswords)
+<pre><code class="language-vb">Private Sub ValidatePasswords(ByVal pass As Passwords)
 </code></pre>
 <hr />
 <h3 id="int-ensuresheetslist">EnsureSheetsList <a class="anchor-link" href="#int-ensuresheetslist">#</a></h3>
@@ -520,7 +512,7 @@ Primarily used by automated tests.</p>
 <p><em>protect-worksheet</em></p>
 <p><strong>Protect worksheet with default rules.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ProtectWorksheet(ByVal pass As IPasswords, ByVal sheetName As String)
+<pre><code class="language-vb">Private Sub ProtectWorksheet(ByVal pass As Passwords, ByVal sheetName As String)
 </code></pre>
 <hr />
 <h2 id="int-messaging-helpers">Messaging helpers</h2>
@@ -567,28 +559,16 @@ Primarily used by automated tests.</p>
 <pre><code class="language-vb">Private Sub Class_Terminate()
 </code></pre>
 <hr />
-<h2 id="int-interface-implementation">Interface implementation</h2>
-<h3 id="int-isetupimportservice-check">ISetupImportService_Check <a class="anchor-link" href="#int-isetupimportservice-check">#</a></h3>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ISetupImportService_Check(ByVal importDictionary As Boolean, _
-                                      ByVal importChoices As Boolean, _
-                                      ByVal importExports As Boolean, _
-                                      ByVal importAnalysis As Boolean, _
-                                      ByVal importTranslations As Boolean, _
-                                      Optional ByVal cleanSetup As Boolean = False)
-</code></pre>
-<h1>Thin delegation stubs forwarding each ISetupImportService member
-to the corresponding public implementation above.</h1>
-<hr />
 </details>
 <details>
-<summary>Used in (5 file(s))</summary>
+<summary>Used in (6 file(s))</summary>
 <ul>
-<li><a href="ISetupImportService.html">ISetupImportService.cls</a></li>
-<li><a href="SetupImportService.html">SetupImportService.cls</a></li>
 <li>EventsSetupRibbon.bas</li>
 <li>SetupHelpers.bas</li>
+<li><a href="ProgressDisplayStub.html">ProgressDisplayStub.cls</a></li>
+<li>SetupImportTestFixture.bas</li>
 <li>TestSetupImportService.bas</li>
+<li><a href="ProgressDisplayStub.html">ProgressDisplayStub.cls</a></li>
 </ul>
 </details>
   </main>

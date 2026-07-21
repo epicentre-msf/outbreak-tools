@@ -19,7 +19,7 @@ and filtered companion sheets, action buttons, and a pivot table. VList
 mode creates a PLAGEVALUES range reference for vertical data entry.
 Consumers call Create with a layer mode, sheet name, and linelist
 reference, then invoke Build to construct the sheet.</p>
-<p><strong>Depends on:</strong> <a href="ILinelist.html">ILinelist</a>, <a href="ILLSheets.html">ILLSheets</a>, <a href="ILinelistSpecs.html">ILinelistSpecs</a>, <a href="ILLFormat.html">ILLFormat</a>, <a href="IDropdownLists.html">IDropdownLists</a>, <a href="IPasswords.html">IPasswords</a>, <a href="ITranslationObject.html">ITranslationObject</a>, <a href="IButtons.html">IButtons</a>, <a href="IHiddenNames.html">IHiddenNames</a>, <a href="ISectionBuilder.html">ISectionBuilder</a>, ICustomPivotTables, <a href="BetterArray.html">BetterArray</a>, Button shape codes, Checking support</p>
+<p><strong>Depends on:</strong> <a href="Linelist.html">Linelist</a>, <a href="LLSheets.html">LLSheets</a>, <a href="LinelistSpecs.html">LinelistSpecs</a>, <a href="LLFormat.html">LLFormat</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="Passwords.html">Passwords</a>, <a href="TranslationObject.html">TranslationObject</a>, <a href="Buttons.html">Buttons</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="SectionBuilder.html">SectionBuilder</a>, <a href="BetterArray.html">BetterArray</a>, Button shape codes, Checking support</p>
 <p><strong>Version:</strong> 1.0 (2026-02-09)</p>
 <details open class="doc-section" id="instantiation">
 <summary>Instantiation</summary>
@@ -30,7 +30,7 @@ reference, then invoke Build to construct the sheet.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal layer As Byte, _
                        ByVal sheetName As String, _
-                       ByVal ll As ILinelist) As IListBuilder
+                       ByVal ll As Linelist) As ListBuilder
 </code></pre>
 <p>Factory method and Friend bindings for construction.
 Creates a new ListBuilder wired to build a data entry sheet of the given
@@ -41,10 +41,10 @@ validated before construction.</p>
 <ul>
 <li><code>layer</code>: Byte. The ListBuilderLayer mode (HList = 1, VList = 2).</li>
 <li><code>sheetName</code>: String. The dictionary sheet name to build.</li>
-<li><code>ll</code>: ILinelist. The linelist workbook facade providing worksheets,
+<li><code>ll</code>: Linelist. The linelist workbook facade providing worksheets,
 dropdowns, pivots, and specs.</li>
 </ul>
-<p><strong>Returns:</strong> IListBuilder. A fully initialised instance ready for Build.</p>
+<p><strong>Returns:</strong> ListBuilder. A fully initialised instance ready for Build.</p>
 <p><strong>Throws:</strong></p>
 <ul>
 <li>ProjectError.ObjectNotInitialized When ll is Nothing.</li>
@@ -105,11 +105,11 @@ ListBuilderLayerHList or ListBuilderLayerVList.</li>
 <p><em>bin-linelist</em></p>
 <p><strong>Assign the linelist facade</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Friend Property Set BinLinelist(ByVal value As ILinelist)
+<pre><code class="language-vb">Friend Property Set BinLinelist(ByVal value As Linelist)
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>value</code>: ILinelist. The linelist workbook facade.</li>
+<li><code>value</code>: Linelist. The linelist workbook facade.</li>
 </ul>
 <hr />
 <h2 id="int-hlistbuild">HListBuild</h2>
@@ -164,8 +164,8 @@ passed to the builder for variable validation setup.</p>
 <p><em>collect-section-names</em></p>
 <p><strong>Collect section names for the GoTo dropdown</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function CollectSectionNames(ByVal dict As ILLdictionary, _
-                                     ByVal llshs As ILLSheets, _
+<pre><code class="language-vb">Private Function CollectSectionNames(ByVal dict As LLdictionary, _
+                                     ByVal llshs As LLSheets, _
                                      ByVal goToLabel As String) As BetterArray
 </code></pre>
 <p>Iterates through the dictionary rows for the current sheet, extracting
@@ -174,8 +174,8 @@ unique section names in order. Each name is prefixed with the GoTo label
 skipped to avoid redundant dropdown entries.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>dict</code>: ILLdictionary. The linelist dictionary providing data ranges.</li>
-<li><code>llshs</code>: ILLSheets. Sheet metadata for row indices and variable counts.</li>
+<li><code>dict</code>: LLdictionary. The linelist dictionary providing data ranges.</li>
+<li><code>llshs</code>: LLSheets. Sheet metadata for row indices and variable counts.</li>
 <li><code>goToLabel</code>: String. The translated &quot;Go to section&quot; prefix label.</li>
 </ul>
 <p><strong>Returns:</strong> BetterArray. A 1-based array of prefixed section name strings.</p>
@@ -193,20 +193,10 @@ skipped to avoid redundant dropdown entries.</p>
 <li><code>errorMessage</code>: String. Human-readable description of the failure.</li>
 </ul>
 <hr />
-<h2 id="int-interfaceimplementation">InterfaceImplementation</h2>
-<h3 id="int-ilistbuilder-build">IListBuilder_Build <a class="anchor-link" href="#int-ilistbuilder-build">#</a></h3>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub IListBuilder_Build()
-</code></pre>
-<p>Delegated members satisfying the IListBuilder contract.
-See the corresponding Public members above for full documentation.</p>
-<hr />
 </details>
 <details>
-<summary>Used in (4 file(s))</summary>
+<summary>Used in (2 file(s))</summary>
 <ul>
-<li><a href="IListBuilder.html">IListBuilder.cls</a></li>
-<li><a href="ListBuilder.html">ListBuilder.cls</a></li>
 <li>EventsDesignerAdvanced.bas</li>
 <li>TestListBuilder.bas</li>
 </ul>

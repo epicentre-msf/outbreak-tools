@@ -17,7 +17,7 @@ admin-level tables (adm1-adm4 for geo type) or one health-facility table
 (for hf type), each with formula, population, and attack rate columns.
 Manages formula conditions and validates that the spatial sheet exists
 before writing.</p>
-<p><strong>Depends on:</strong> <a href="ICrossTable.html">ICrossTable</a>, <a href="ITableSpecs.html">ITableSpecs</a>, <a href="IFormulas.html">IFormulas</a>, <a href="IFormulaCondition.html">IFormulaCondition</a>, <a href="BetterArray.html">BetterArray</a></p>
+<p><strong>Depends on:</strong> <a href="CrossTable.html">CrossTable</a>, <a href="TableSpecs.html">TableSpecs</a>, <a href="Formulas.html">Formulas</a>, <a href="FormulaCondition.html">FormulaCondition</a>, <a href="BetterArray.html">BetterArray</a></p>
 <p><strong>Version:</strong> 2025-01-15</p>
 <details open class="doc-section" id="instantiation">
 <summary>Instantiation</summary>
@@ -26,7 +26,7 @@ before writing.</p>
 <p><em>create</em></p>
 <p><strong>Create a SpatialTables instance from a cross-table</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Create(ByVal tabl As ICrossTable) As ISpatialTables
+<pre><code class="language-vb">Public Function Create(ByVal tabl As CrossTable) As SpatialTables
 </code></pre>
 <p>Factory method on the predeclared instance. Validates that the cross-table
 is not Nothing and that the &quot;spatial_tables__&quot; worksheet exists in the same
@@ -34,10 +34,10 @@ workbook. Binds the cross-table to the new instance so subsequent Add calls
 can read the row variable and table specifications.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>tabl</code>: ICrossTable. The cross-table whose row variable defines the
+<li><code>tabl</code>: CrossTable. The cross-table whose row variable defines the
 spatial tables to create.</li>
 </ul>
-<p><strong>Returns:</strong> ISpatialTables. A fully initialised spatial tables builder.</p>
+<p><strong>Returns:</strong> SpatialTables. A fully initialised spatial tables builder.</p>
 <p><strong>Throws:</strong></p>
 <ul>
 <li>ProjectError.ObjectNotInitialized When tabl is Nothing.</li>
@@ -45,8 +45,8 @@ spatial tables to create.</li>
 </ul>
 <p><strong>Depends on:</strong></p>
 <ul>
-<li>ICrossTable</li>
-<li>ITableSpecs</li>
+<li>CrossTable</li>
+<li>TableSpecs</li>
 </ul>
 <hr />
 </div>
@@ -58,7 +58,7 @@ spatial tables to create.</li>
 <p><em>add</em></p>
 <p><strong>Create spatial ListObjects for the cross-table row variable</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub Add(ByVal formObject As IFormulas)
+<pre><code class="language-vb">Public Sub Add(ByVal formObject As Formulas)
 </code></pre>
 <p>Builds the spatial table set for the current cross-table. For geo-type
 tables, creates four admin-level tables (adm1-adm4) each with formula,
@@ -70,7 +70,7 @@ from the parsed analysis formula via CurrentExcelFormula. Skips creation
 when the tables already exist for this variable.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>formObject</code>: IFormulas. The formula object whose parsed expression
+<li><code>formObject</code>: Formulas. The formula object whose parsed expression
 is written into each spatial table formula column.</li>
 </ul>
 <hr />
@@ -79,35 +79,43 @@ is written into each spatial table formula column.</li>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-instantiation">Instantiation</h2>
-<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
-<p><em>self</em></p>
-<p><strong>Current object instance</strong></p>
+<h3 id="int-seal">Seal <a class="anchor-link" href="#int-seal">#</a></h3>
+<p><em>seal</em></p>
+<p><strong>Seal the instance against further setup writes.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Self() As ISpatialTables
+<pre><code class="language-vb">Public Sub Seal()
 </code></pre>
-<p>Convenience accessor for fluent retrieval of the interface reference from
-the predeclared Create method.</p>
-<p><strong>Returns:</strong> ISpatialTables. The current instance cast to the interface.</p>
+<hr />
+<h3 id="int-guardnotsealed">GuardNotSealed <a class="anchor-link" href="#int-guardnotsealed">#</a></h3>
+<p><em>guard-not-sealed</em></p>
+<p><strong>Guard a setup setter against post-creation writes.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub GuardNotSealed(ByVal propName As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>propName</code>: String. The property name for the error message.</li>
+</ul>
 <hr />
 <h3 id="int-table">Table <a class="anchor-link" href="#int-table">#</a></h3>
 <p><em>table</em></p>
 <p><strong>Cross-table bound to this builder</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Table() As ICrossTable
+<pre><code class="language-vb">Public Property Get Table() As CrossTable
 </code></pre>
-<p>Returns the ICrossTable instance whose row variable and specifications
+<p>Returns the CrossTable instance whose row variable and specifications
 drive the spatial table creation in Add.</p>
-<p><strong>Returns:</strong> ICrossTable. The bound cross-table.</p>
+<p><strong>Returns:</strong> CrossTable. The bound cross-table.</p>
 <hr />
 <h3 id="int-table">Table <a class="anchor-link" href="#int-table">#</a></h3>
 <p><em>table-set</em></p>
 <p><strong>Assign the cross-table reference</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Set Table(ByVal tabl As ICrossTable)
+<pre><code class="language-vb">Public Property Set Table(ByVal tabl As CrossTable)
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>tabl</code>: ICrossTable. The cross-table to bind.</li>
+<li><code>tabl</code>: CrossTable. The cross-table to bind.</li>
 </ul>
 <hr />
 <h2 id="int-worksheet">Worksheet</h2>
@@ -278,18 +286,18 @@ Defaults to 0 (clear all).</li>
 <p><em>current-excel-formula</em></p>
 <p><strong>Build an Excel formula string using the current conditions</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get CurrentExcelFormula(ByVal tabFormObject As IFormulas, _
+<pre><code class="language-vb">Private Property Get CurrentExcelFormula(ByVal tabFormObject As Formulas, _
                                          Optional ByVal scope As Byte = FormulaScopeAnalysis, _
                                          Optional ByVal prefix As String = &quot;f&quot;) As String
 </code></pre>
-<p>Constructs a parsed formula from the IFormulas object, applying either
+<p>Constructs a parsed formula from the Formulas object, applying either
 linelist scope (with table name prefix) or analysis scope (with condition
 pairs from condVars/condTests). Validates the result via FailedFormula
 and returns an empty string when the formula is invalid or the object
 is not valid.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>tabFormObject</code>: IFormulas. The formula definition to parse.</li>
+<li><code>tabFormObject</code>: Formulas. The formula definition to parse.</li>
 <li><code>scope</code>: Optional Byte. FormulaScopeLinelist or FormulaScopeAnalysis.
 Defaults to FormulaScopeAnalysis.</li>
 <li><code>prefix</code>: Optional String. Table name prefix for linelist scope.
@@ -326,13 +334,13 @@ ListObject. Uses CountA to determine the current row count.</p>
 <p><em>check-requirements</em></p>
 <p><strong>Validate cross-table and spatial sheet existence</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub CheckRequirements(ByVal tabl As ICrossTable)
+<pre><code class="language-vb">Private Sub CheckRequirements(ByVal tabl As CrossTable)
 </code></pre>
 <p>Guards the Create factory by ensuring the cross-table is not Nothing and
 that a worksheet named &quot;spatial_tables__&quot; exists in the same workbook.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>tabl</code>: ICrossTable. The cross-table to validate.</li>
+<li><code>tabl</code>: CrossTable. The cross-table to validate.</li>
 </ul>
 <p><strong>Throws:</strong></p>
 <ul>
@@ -358,21 +366,11 @@ that a worksheet named &quot;spatial_tables__&quot; exists in the same workbook.
 <li>ProjectError. Always raises the specified error.</li>
 </ul>
 <hr />
-<h2 id="int-interface-implementation">Interface Implementation</h2>
-<h3 id="int-ispatialtables-exists">ISpatialTables_Exists <a class="anchor-link" href="#int-ispatialtables-exists">#</a></h3>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get ISpatialTables_Exists(ByVal varName As String) As Boolean
-</code></pre>
-<p>Delegated members satisfying the ISpatialTables contract.
-See the corresponding Private members above for full documentation.</p>
-<hr />
 </details>
 <details>
-<summary>Used in (4 file(s))</summary>
+<summary>Used in (2 file(s))</summary>
 <ul>
 <li><a href="CrossTableFormula.html">CrossTableFormula.cls</a></li>
-<li><a href="ISpatialTables.html">ISpatialTables.cls</a></li>
-<li><a href="SpatialTables.html">SpatialTables.cls</a></li>
 <li>TestSpatialTables.bas</li>
 </ul>
 </details>

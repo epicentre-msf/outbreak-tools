@@ -16,10 +16,9 @@ row insertion and deletion, sorting, validation, import/export, and
 diagnostic logging. The class maintains a header-index cache for fast
 repeated column lookups, supports snapshot-based rollback during import,
 and tracks hidden-column state so that Find-based operations see all
-columns. Consumers interact through the ICustomTable interface. An
-optional ID column provides dictionary-style keyed access to individual
-rows.</p>
-<p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="Checking.html">Checking</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="IDropdownLists.html">IDropdownLists</a>, checking objects</p>
+columns. An optional ID column provides dictionary-style keyed access to
+individual rows.</p>
+<p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="Checking.html">Checking</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="DropdownLists.html">DropdownLists</a>, checking objects</p>
 <p><strong>Version:</strong> 1.0 (2026-02-09)</p>
 <details open class="doc-section" id="statemanagement">
 <summary>StateManagement</summary>
@@ -42,7 +41,7 @@ Unhides hidden columns before reading to ensure full coverage.</p>
 <p><em>restore-table-snapshot</em></p>
 <p><strong>Restore the table from a previously saved snapshot</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub RestoreTableSnapshot()
+<pre><code class="language-vb">Public Sub RestoreTableSnapshot()
 </code></pre>
 <p>Reapplies the cached headers and rows when an import needs to roll
 back. Resizes the ListObject, writes the backup data, resets caches,
@@ -59,7 +58,7 @@ and re-hides previously hidden columns.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal Lo As ListObject, _
                       Optional ByVal idCol As String = vbNullString, _
-                      Optional ByVal idPrefix As String = vbNullString) As ICustomTable
+                      Optional ByVal idPrefix As String = vbNullString) As CustomTable
 </code></pre>
 <p>Entry point for creating CustomTable instances.
 Wraps the supplied ListObject with convenience methods for column
@@ -73,7 +72,7 @@ optionally prefixed (e.g. &quot;line 1&quot;, &quot;line 2&quot;).</p>
 <li><code>idCol</code>: Optional String. Name of the ID column. Defaults to vbNullString.</li>
 <li><code>idPrefix</code>: Optional String. Prefix for auto-generated ID values. Defaults to vbNullString.</li>
 </ul>
-<p><strong>Returns:</strong> ICustomTable. A fully initialised CustomTable instance.</p>
+<p><strong>Returns:</strong> CustomTable. A fully initialised CustomTable instance.</p>
 <p><strong>Throws:</strong></p>
 <ul>
 <li>ProjectError.ObjectNotInitialized When Lo is Nothing.</li>
@@ -102,7 +101,7 @@ optionally prefixed (e.g. &quot;line 1&quot;, &quot;line 2&quot;).</p>
 <p><em>header-range</em></p>
 <p><strong>Header row Range of the CustomTable</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get HeaderRange() As Range
+<pre><code class="language-vb">Public Property Get HeaderRange() As Range
 </code></pre>
 <p>Returns the Range covering the header row of the underlying ListObject.</p>
 <p><strong>Returns:</strong> Range. The header row range.</p>
@@ -111,7 +110,7 @@ optionally prefixed (e.g. &quot;line 1&quot;, &quot;line 2&quot;).</p>
 <p><em>data-range</em></p>
 <p><strong>Range of a column or the entire data body</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get DataRange(Optional ByVal colName As String = &quot;__all__&quot;, _
+<pre><code class="language-vb">Public Property Get DataRange(Optional ByVal colName As String = &quot;__all__&quot;, _
                                Optional ByVal includeHeaders As Boolean = False, _
                                Optional ByVal strictSearch As Boolean = False, _
                                Optional ByVal matchCase As Boolean = False) As Range
@@ -134,7 +133,7 @@ Nothing when the column has no data rows or is not found.</p>
 <p><em>name</em></p>
 <p><strong>Name of the attached ListObject</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get Name() As String
+<pre><code class="language-vb">Public Property Get Name() As String
 </code></pre>
 <p>Returns the cached name of the ListObject assigned during creation.</p>
 <p><strong>Returns:</strong> String. The table name.</p>
@@ -143,7 +142,7 @@ Nothing when the column has no data rows or is not found.</p>
 <p><em>cell-range</em></p>
 <p><strong>A specific cell in the CustomTable</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get CellRange(ByVal colName As String, _
+<pre><code class="language-vb">Public Property Get CellRange(ByVal colName As String, _
                                ByVal lineNum As Long) As Range
 </code></pre>
 <p>Returns the cell at the intersection of the given column and worksheet
@@ -160,7 +159,7 @@ is out of bounds.</p>
 <p><em>value-range</em></p>
 <p><strong>Locate the cell Range by column and key</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ValueRange(ByVal colName As String, ByVal keyName As String) As Range
+<pre><code class="language-vb">Public Function ValueRange(ByVal colName As String, ByVal keyName As String) As Range
 </code></pre>
 <p>Returns the Range at the intersection of the specified column and the
 row matching keyName in the ID column. Returns Nothing when the key or
@@ -176,7 +175,7 @@ column is not found, or when no ID column is configured.</p>
 <p><em>value</em></p>
 <p><strong>Retrieve a cell value by column and key</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get Value(ByVal colName As String, _
+<pre><code class="language-vb">Public Property Get Value(ByVal colName As String, _
                            ByVal keyName As String) As String
 </code></pre>
 <p>For tables with a key column, returns the cell value at the intersection
@@ -199,7 +198,7 @@ cannot be converted to string.</p>
 <p><em>insert-rows-at</em></p>
 <p><strong>Insert rows at the selected position</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub InsertRowsAt(ByVal targetCell As Range, _
+<pre><code class="language-vb">Public Sub InsertRowsAt(ByVal targetCell As Range, _
                          Optional ByVal insertShift As Boolean = False, _
                          Optional ByVal includeIds As Boolean = True)
 </code></pre>
@@ -218,7 +217,7 @@ includeIds is True.</p>
 <p><em>delete-rows-at</em></p>
 <p><strong>Delete rows intersecting the selection</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub DeleteRowsAt(ByVal targetCell As Range, _
+<pre><code class="language-vb">Public Sub DeleteRowsAt(ByVal targetCell As Range, _
                          Optional ByVal includeIds As Boolean = True, _
                          Optional ByVal forceShift As Boolean = False)
 </code></pre>
@@ -237,7 +236,7 @@ all rows are deleted. Renumbers the ID column when includeIds is True.</p>
 <p><em>add-ids</em></p>
 <p><strong>Fill the ID column with sequential values</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub AddIds()
+<pre><code class="language-vb">Public Sub AddIds()
 </code></pre>
 <p>Writes sequential numbers (optionally prefixed) to every cell in the
 ID column. Silently exits when no ID column is configured or when the
@@ -248,7 +247,7 @@ modified by the user directly.</p>
 <p><em>add-rows</em></p>
 <p><strong>Add rows to the CustomTable</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub AddRows(Optional ByVal nbRows As Long = 5, _ 
+<pre><code class="language-vb">Public Sub AddRows(Optional ByVal nbRows As Long = 5, _ 
                     Optional Byval insertShift As Boolean = False, _ 
                     Optional ByVal includeIds As Boolean = True)
 </code></pre>
@@ -268,7 +267,7 @@ column afterwards.</p>
 <p><em>remove-rows</em></p>
 <p><strong>Remove empty rows from the CustomTable</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub RemoveRows(Optional ByVal totalCount As Long = 0, _ 
+<pre><code class="language-vb">Public Sub RemoveRows(Optional ByVal totalCount As Long = 0, _ 
                        Optional ByVal includeIds As Boolean = True, _
                        Optional ByVal forceShift As Boolean = False)
 </code></pre>
@@ -287,19 +286,19 @@ ID column afterwards.</p>
 <p><em>set-validation</em></p>
 <p><strong>Set dropdown validation on a column</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub SetValidation(ByVal colName As String, _
-                          ByVal drop As IDropdownLists, _
+<pre><code class="language-vb">Public Sub SetValidation(ByVal colName As String, _
+                          ByVal drop As DropdownLists, _
                           ByVal dropName As String, _
                           Optional ByVal alertType As String = &quot;info&quot;, _
                           Optional ByVal message As String = vbNullString)
 </code></pre>
-<p>Applies data validation from the supplied IDropdownLists to every cell
+<p>Applies data validation from the supplied DropdownLists to every cell
 in the specified column. Silently exits when the column does not exist
 or has no data range.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>colName</code>: String. Column header to validate.</li>
-<li><code>drop</code>: IDropdownLists. Dropdown source providing the validation list.</li>
+<li><code>drop</code>: DropdownLists. Dropdown source providing the validation list.</li>
 <li><code>dropName</code>: String. Name of the dropdown list within the source.</li>
 <li><code>alertType</code>: Optional String. Alert severity (&quot;info&quot;, &quot;warning&quot;, &quot;error&quot;). Defaults to &quot;info&quot;.</li>
 <li><code>message</code>: Optional String. Message shown when validation fails. Defaults to vbNullString.</li>
@@ -309,7 +308,7 @@ or has no data range.</p>
 <p><em>set-value</em></p>
 <p><strong>Change the value of one specific cell</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub SetValue(ByVal colName As String, ByVal keyName As String, ByVal newValue As String)
+<pre><code class="language-vb">Public Sub SetValue(ByVal colName As String, ByVal keyName As String, ByVal newValue As String)
 </code></pre>
 <p>Writes newValue to the cell identified by column name and key.
 Silently exits when the key or column is not found. Use with caution
@@ -325,7 +324,7 @@ as it modifies data inside the ListObject.</p>
 <p><em>rename-column</em></p>
 <p><strong>Rename a column header within the table</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub RenameColumn(ByVal colName As String, _
+<pre><code class="language-vb">Public Sub RenameColumn(ByVal colName As String, _
                          ByVal newName As String, _
                          Optional ByVal strictSearch As Boolean = True, _
                          Optional ByVal matchCase As Boolean = False)
@@ -348,7 +347,7 @@ the lookup cache. Raises an error when newName is empty.</p>
 <p><em>clean</em></p>
 <p><strong>Clear all non-formula, non-key columns</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub Clean()
+<pre><code class="language-vb">Public Sub Clean()
 </code></pre>
 <p>Iterates every column in the table and clears the contents of those
 that do not contain formulas. Key columns are preserved since they
@@ -358,7 +357,7 @@ are identified by their header, not by content.</p>
 <p><em>sort</em></p>
 <p><strong>Sort the table on one or more columns</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub Sort(Optional ByVal colName As String = vbNullString, _ 
+<pre><code class="language-vb">Public Sub Sort(Optional ByVal colName As String = vbNullString, _ 
                  Optional ByVal colList As Object = Nothing, _
                  Optional ByVal directSort As Boolean = True, _ 
                  Optional ByVal strictSearch As Boolean = True)
@@ -383,7 +382,7 @@ False, groups rows by first occurrence of each distinct value.</p>
 <p><em>import</em></p>
 <p><strong>Import data from a DataSheet or CustomTable</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub Import(ByVal impTab As Object, _
+<pre><code class="language-vb">Public Sub Import(ByVal impTab As Object, _
                    Optional ByVal pasteAtBottom As Boolean = False, _
                    Optional ByVal strictColumnSearch As Boolean = False, _ 
                    Optional ByVal insertShift As Boolean = True, _ 
@@ -425,7 +424,7 @@ data body.</p>
 <p><em>import-columns-not-found</em></p>
 <p><strong>Columns not matched during the last import</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get ImportColumnsNotFound() As BetterArray
+<pre><code class="language-vb">Public Property Get ImportColumnsNotFound() As BetterArray
 </code></pre>
 <p>Returns a clone of the BetterArray containing column headers from the
 source that had no match in this table. Only available after a
@@ -437,7 +436,7 @@ occurred.</p>
 <p><em>has-columns-not-imported</em></p>
 <p><strong>Whether the last import had unmatched columns</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get HasColumnsNotImported() As Boolean
+<pre><code class="language-vb">Public Property Get HasColumnsNotImported() As Boolean
 </code></pre>
 <p>Returns True when the most recent import left some source columns
 unmatched against this table.</p>
@@ -447,7 +446,7 @@ unmatched against this table.</p>
 <p><em>export</em></p>
 <p><strong>Export the table to a worksheet</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub Export(ByVal sh As Worksheet, _ 
+<pre><code class="language-vb">Public Sub Export(ByVal sh As Worksheet, _ 
            Optional ByVal headersTable As Object = Nothing, _ 
            Optional ByVal startLine As Long = 1, _ 
            Optional ByVal startColumn As Long = 1, _ 
@@ -487,9 +486,9 @@ operation and restores their state afterwards.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get CheckingValues() As Object
 </code></pre>
-<p>Returns the internal IChecking object containing all logged messages.
+<p>Returns the internal Checking object containing all logged messages.
 Returns Nothing when no entries have been recorded.</p>
-<p><strong>Returns:</strong> Object. An IChecking instance, or Nothing.</p>
+<p><strong>Returns:</strong> Object. An Checking instance, or Nothing.</p>
 <hr />
 </div>
 </details>
@@ -583,17 +582,6 @@ all table operations from executing on an uninitialised instance.</p>
 <ul>
 <li>ProjectError.ObjectNotInitialized When the ListObject is Nothing.</li>
 </ul>
-<hr />
-<h2 id="int-factory">Factory</h2>
-<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
-<p><em>self</em></p>
-<p><strong>Current object instance</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Self() As ICustomTable
-</code></pre>
-<p>Returns the current instance cast to ICustomTable. Used internally
-by the factory method to return an interface reference.</p>
-<p><strong>Returns:</strong> ICustomTable. Reference to the current object.</p>
 <hr />
 <h2 id="int-elements">Elements</h2>
 <h3 id="int-wksh">Wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
@@ -1060,7 +1048,7 @@ suppression as a safeguard against stale column indexes.</p>
                     Optional ByVal scope As Byte = checkingNote)
 </code></pre>
 <p>Diagnostic logging and error handling.
-Adds a message to the internal IChecking object, creating it on first
+Adds a message to the internal Checking object, creating it on first
 use. The checkCounter provides a unique key for each entry.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -1093,16 +1081,27 @@ for consistent stack traces.</p>
 <li>ProjectError.<varies> Always raises the specified error.</li>
 </ul>
 <hr />
-<h2 id="int-interface">Interface</h2>
-<h3 id="int-icustomtable-headerrange">ICustomTable_HeaderRange <a class="anchor-link" href="#int-icustomtable-headerrange">#</a></h3>
+<h3 id="int-seal">Seal <a class="anchor-link" href="#int-seal">#</a></h3>
+<p><em>seal</em></p>
+<p><strong>Seal the instance so setup setters can no longer be written</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get ICustomTable_HeaderRange() As Range
+<pre><code class="language-vb">Public Sub Seal()
 </code></pre>
-<p>Delegated members satisfying the ICustomTable contract.</p>
+<hr />
+<h3 id="int-guardnotsealed">GuardNotSealed <a class="anchor-link" href="#int-guardnotsealed">#</a></h3>
+<p><em>guard-not-sealed</em></p>
+<p><strong>Guard a setup setter against writes after sealing</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub GuardNotSealed(ByVal propName As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>propName</code>: String. Name of the property being guarded.</li>
+</ul>
 <hr />
 </details>
 <details>
-<summary>Used in (33 file(s))</summary>
+<summary>Used in (32 file(s))</summary>
 <ul>
 <li><a href="Analysis.html">Analysis.cls</a></li>
 <li><a href="AnaTabIds.html">AnaTabIds.cls</a></li>
@@ -1111,12 +1110,11 @@ for consistent stack traces.</p>
 <li><a href="DesignerPreparation.html">DesignerPreparation.cls</a></li>
 <li><a href="LLdictionary.html">LLdictionary.cls</a></li>
 <li><a href="LLExport.html">LLExport.cls</a></li>
-<li><a href="CustomTable.html">CustomTable.cls</a></li>
-<li><a href="ICustomTable.html">ICustomTable.cls</a></li>
+<li><a href="DataSheet.html">DataSheet.cls</a></li>
 <li><a href="LLChoices.html">LLChoices.cls</a></li>
 <li><a href="LLFormat.html">LLFormat.cls</a></li>
 <li><a href="LLGeo.html">LLGeo.cls</a></li>
-<li><a href="IEventLinelist.html">IEventLinelist.cls</a></li>
+<li><a href="Graphs.html">Graphs.cls</a></li>
 <li><a href="Linelist.html">Linelist.cls</a></li>
 <li><a href="LLTranslation.html">LLTranslation.cls</a></li>
 <li><a href="DiseaseSheet.html">DiseaseSheet.cls</a></li>
@@ -1127,7 +1125,6 @@ for consistent stack traces.</p>
 <li><a href="SetupPreparation.html">SetupPreparation.cls</a></li>
 <li><a href="SetupTranslationsTable.html">SetupTranslationsTable.cls</a></li>
 <li><a href="UpdatedValues.html">UpdatedValues.cls</a></li>
-<li>LinelistEvents.bas</li>
 <li>EventsDesignerCore.bas</li>
 <li>EventsDesignerMulti.bas</li>
 <li>RibbonDev.bas</li>
@@ -1137,6 +1134,7 @@ for consistent stack traces.</p>
 <li>EventsRibbon.bas</li>
 <li>TestDesignerMulti.bas</li>
 <li>TestCustomTable.bas</li>
+<li>TestSetupPreparation.bas</li>
 </ul>
 </details>
   </main>

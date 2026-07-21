@@ -25,16 +25,16 @@ nested IF conversion and category extraction.</p>
 <p><em>create</em></p>
 <p><strong>Instantiate a ChoiceFormula parser bound to a formula</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Create(ByVal formula As String) As IChoiceFormula
+<pre><code class="language-vb">Public Function Create(ByVal formula As String) As ChoiceFormula
 </code></pre>
 <p>Trims the incoming formula, stores it in a new instance, and returns
-the IChoiceFormula interface for fluent downstream operations. No
-eager parsing occurs; the formula is parsed lazily on first access.</p>
+the ChoiceFormula for fluent downstream operations. No eager parsing
+occurs; the formula is parsed lazily on first access.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>formula</code>: String. Representation of a CHOICE_FORMULA call.</li>
 </ul>
-<p><strong>Returns:</strong> IChoiceFormula. A ready-to-query parser instance.</p>
+<p><strong>Returns:</strong> ChoiceFormula. A ready-to-query parser instance.</p>
 <hr />
 </div>
 </details>
@@ -45,7 +45,7 @@ eager parsing occurs; the formula is parsed lazily on first access.</p>
 <p><em>valid</em></p>
 <p><strong>Determine whether the stored formula is a CHOICE_FORMULA with arguments</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get Valid() As Boolean
+<pre><code class="language-vb">Public Property Get Valid() As Boolean
 </code></pre>
 <p>Checks whether the stored formula matches the CHOICE_FORMULA pattern.
 Requires the CHOICE_FORMULA token, balanced parentheses, and at least
@@ -62,7 +62,7 @@ when any argument is blank.</p>
 <p><em>parsed-formula</em></p>
 <p><strong>Convert CHOICE_FORMULA into nested IF statements through CASE_WHEN</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function parsedFormula() As String
+<pre><code class="language-vb">Public Function parsedFormula() As String
 </code></pre>
 <p>Core conversion, category extraction, and choice name resolution.
 Builds the equivalent CASE_WHEN expression from the parsed arguments,
@@ -74,7 +74,7 @@ Returns an empty string when the formula is invalid or conversion fails.</p>
 <p><em>categories</em></p>
 <p><strong>Extract textual labels from the CHOICE_FORMULA results</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function Categories() As BetterArray
+<pre><code class="language-vb">Public Function Categories() As BetterArray
 </code></pre>
 <p>Delegates to the CaseWhen converter to reuse category parsing logic.
 Returns an empty BetterArray when the formula is invalid or the
@@ -85,7 +85,7 @@ CaseWhen wrapper cannot be created.</p>
 <p><em>choice-name</em></p>
 <p><strong>Retrieve the name of the choice list referenced by the formula</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function choiceName() As String
+<pre><code class="language-vb">Public Function choiceName() As String
 </code></pre>
 <p>Returns the first argument of the CHOICE_FORMULA expression, which
 identifies the choice list that provides the valid options. The value
@@ -96,25 +96,37 @@ is memoised after the first resolution.</p>
 </details>
 <details>
 <summary>Internal members (not exported)</summary>
-<h2 id="int-publicaccessors">PublicAccessors</h2>
-<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
-<p><em>self</em></p>
-<p><strong>Current object instance</strong></p>
+<h2 id="int-factory">Factory</h2>
+<h3 id="int-seal">Seal <a class="anchor-link" href="#int-seal">#</a></h3>
+<p><em>seal</em></p>
+<p><strong>Prevent further changes to setup-only properties</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Self() As IChoiceFormula
+<pre><code class="language-vb">Public Sub Seal()
 </code></pre>
-<p>Properties that expose internal state and the interface pointer.
-Returns the current instance cast to its interface. Used internally
-by the factory method to return an IChoiceFormula reference.</p>
-<p><strong>Returns:</strong> IChoiceFormula. Reference to the current object.</p>
+<p>Marks the instance as sealed so guarded setters raise when invoked
+after construction. Called by the factory before returning.</p>
 <hr />
+<h3 id="int-guardnotsealed">GuardNotSealed <a class="anchor-link" href="#int-guardnotsealed">#</a></h3>
+<p><em>guard-not-sealed</em></p>
+<p><strong>Reject writes to setup-only properties after sealing</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub GuardNotSealed(ByVal propName As String)
+</code></pre>
+<p>Raises an error when a guarded setter is invoked on a sealed instance.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>propName</code>: String. Name of the property being guarded.</li>
+</ul>
+<hr />
+<h2 id="int-publicaccessors">PublicAccessors</h2>
 <h3 id="int-choicespecifications">ChoiceSpecifications <a class="anchor-link" href="#int-choicespecifications">#</a></h3>
 <p><em>choice-specifications</em></p>
 <p><strong>Retrieve the stored CHOICE_FORMULA expression</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get ChoiceSpecifications() As String
 </code></pre>
-<p>Returns the original formula text as stored after trimming during
+<p>Properties that expose internal state and the interface pointer.
+Returns the original formula text as stored after trimming during
 assignment. This is the full CHOICE_FORMULA(...) expression.</p>
 <p><strong>Returns:</strong> String. Original formula specification.</p>
 <hr />
@@ -195,12 +207,12 @@ the name.</p>
 <p><em>case-when-wrapper</em></p>
 <p><strong>Provide a lazily created CaseWhen instance</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get CaseWhenWrapper() As ICaseWhen
+<pre><code class="language-vb">Private Property Get CaseWhenWrapper() As CaseWhen
 </code></pre>
 <p>Builds the CASE_WHEN expression from parsed arguments and delegates
 to CaseWhen.Create to obtain the parser. The result is cached for
 subsequent accesses. Raises an error when conversion fails.</p>
-<p><strong>Returns:</strong> ICaseWhen. The converted formula parser.</p>
+<p><strong>Returns:</strong> CaseWhen. The converted formula parser.</p>
 <p><strong>Throws:</strong></p>
 <ul>
 <li>ProjectError.ErrorUnexpectedState When conversion to CASE_WHEN fails.</li>
@@ -235,20 +247,13 @@ constant CLASSNAME for consistent stack traces.</p>
 <li>ProjectError.<varies> Always raises the specified error.</li>
 </ul>
 <hr />
-<h2 id="int-interface">Interface</h2>
-<h3 id="int-ichoiceformula-parsedformula">IChoiceFormula_parsedFormula <a class="anchor-link" href="#int-ichoiceformula-parsedformula">#</a></h3>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get IChoiceFormula_parsedFormula() As String
-</code></pre>
-<p>Delegated members satisfying the IChoiceFormula contract.</p>
-<hr />
 </details>
 <details>
 <summary>Used in (4 file(s))</summary>
 <ul>
-<li><a href="ChoiceFormula.html">ChoiceFormula.cls</a></li>
 <li><a href="Formulas.html">Formulas.cls</a></li>
-<li><a href="IChoiceFormula.html">IChoiceFormula.cls</a></li>
+<li><a href="EventSetup.html">EventSetup.cls</a></li>
+<li><a href="SetupErrors.html">SetupErrors.cls</a></li>
 <li>TestChoiceFormula.bas</li>
 </ul>
 </details>

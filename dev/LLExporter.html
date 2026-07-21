@@ -16,8 +16,8 @@ four export modes: custom filtered exports (ExportCustom), full migration
 exports (ExportMigration), analysis-only exports (ExportAnalysis), and
 geobase exports (ExportGeo). Each mode builds a temporary output workbook,
 populates it with the relevant data, metadata, and formatting, then saves
-and closes it. Consumers interact through the ILLExporter interface.</p>
-<p><strong>Depends on:</strong> <a href="ILLdictionary.html">ILLdictionary</a>, <a href="ILLExport.html">ILLExport</a>, <a href="IPasswords.html">IPasswords</a>, <a href="ICustomTable.html">ICustomTable</a>, <a href="IDataSheet.html">IDataSheet</a>, <a href="IShowHideManager.html">IShowHideManager</a>, <a href="IAnaTabIds.html">IAnaTabIds</a>, <a href="ILLGeo.html">ILLGeo</a>, <a href="ILLChoices.html">ILLChoices</a>, <a href="IHiddenNames.html">IHiddenNames</a></p>
+and closes it.</p>
+<p><strong>Depends on:</strong> <a href="LLdictionary.html">LLdictionary</a>, <a href="LLExport.html">LLExport</a>, <a href="Passwords.html">Passwords</a>, <a href="CustomTable.html">CustomTable</a>, <a href="DataSheet.html">DataSheet</a>, <a href="AnaTabIds.html">AnaTabIds</a>, <a href="LLGeo.html">LLGeo</a>, <a href="LLChoices.html">LLChoices</a>, <a href="HiddenNames.html">HiddenNames</a></p>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
 <div class="section-body">
@@ -25,16 +25,15 @@ and closes it. Consumers interact through the ILLExporter interface.</p>
 <p><em>create</em></p>
 <p><strong>Create an exporter from the source linelist workbook</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Create(ByVal sourceWkb As Workbook) As ILLExporter
+<pre><code class="language-vb">Public Function Create(ByVal sourceWkb As Workbook) As LLExporter
 </code></pre>
 <p>Factory method that validates the workbook is not Nothing, then constructs
-and returns a new LLExporter instance through the ILLExporter interface.
-Called on the predeclared instance.</p>
+and returns a new LLExporter instance. Called on the predeclared instance.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>sourceWkb</code>: Workbook. The linelist workbook containing the data to export.</li>
 </ul>
-<p><strong>Returns:</strong> ILLExporter. A fully initialised instance ready for export operations.</p>
+<p><strong>Returns:</strong> LLExporter. A fully initialised instance ready for export operations.</p>
 <p><strong>Throws:</strong></p>
 <ul>
 <li>ProjectError.ObjectNotInitialized When the workbook is Nothing.</li>
@@ -151,14 +150,6 @@ orphaned minimized windows. Safe to call even when no workbook is open.</p>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-public-accessors">Public Accessors</h2>
-<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
-<p><em>self</em></p>
-<p><strong>Current object instance</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Self() As ILLExporter
-</code></pre>
-<p><strong>Returns:</strong> ILLExporter. The current instance cast to the interface.</p>
-<hr />
 <h3 id="int-sourceworkbook">SourceWorkbook <a class="anchor-link" href="#int-sourceworkbook">#</a></h3>
 <p><em>source-workbook</em></p>
 <p><strong>Source linelist workbook</strong></p>
@@ -176,6 +167,24 @@ orphaned minimized windows. Safe to call even when no workbook is open.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>wb</code>: Workbook. The workbook to store.</li>
+</ul>
+<hr />
+<h3 id="int-seal">Seal <a class="anchor-link" href="#int-seal">#</a></h3>
+<p><em>seal</em></p>
+<p><strong>Prevent further changes to setup-only properties</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Seal()
+</code></pre>
+<hr />
+<h3 id="int-guardnotsealed">GuardNotSealed <a class="anchor-link" href="#int-guardnotsealed">#</a></h3>
+<p><em>guard-not-sealed</em></p>
+<p><strong>Raise when a setup-only property is written after sealing</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub GuardNotSealed(ByVal propName As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>propName</code>: String. The name of the property being guarded.</li>
 </ul>
 <hr />
 <h2 id="int-export-methods">Export Methods</h2>
@@ -196,37 +205,37 @@ orphaned minimized windows. Safe to call even when no workbook is open.</p>
 <p><em>source-dictionary</em></p>
 <p><strong>Get a dictionary from the source workbook</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function SourceDictionary(ByVal nbExp As Long) As ILLdictionary
+<pre><code class="language-vb">Private Function SourceDictionary(ByVal nbExp As Long) As LLdictionary
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>nbExp</code>: Long. Number of export columns to configure.</li>
 </ul>
-<p><strong>Returns:</strong> ILLdictionary. Dictionary instance from the Dictionary sheet.</p>
+<p><strong>Returns:</strong> LLdictionary. Dictionary instance from the Dictionary sheet.</p>
 <hr />
 <h3 id="int-exportobject">ExportObject <a class="anchor-link" href="#int-exportobject">#</a></h3>
 <p><em>export-object</em></p>
 <p><strong>Get the export configuration from the source workbook</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ExportObject() As ILLExport
+<pre><code class="language-vb">Private Function ExportObject() As LLExport
 </code></pre>
-<p><strong>Returns:</strong> ILLExport. Export configuration from the Exports sheet.</p>
+<p><strong>Returns:</strong> LLExport. Export configuration from the Exports sheet.</p>
 <hr />
 <h3 id="int-passwordsobject">PasswordsObject <a class="anchor-link" href="#int-passwordsobject">#</a></h3>
 <p><em>passwords-object</em></p>
 <p><strong>Get passwords from the source workbook</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function PasswordsObject() As IPasswords
+<pre><code class="language-vb">Private Function PasswordsObject() As Passwords
 </code></pre>
-<p><strong>Returns:</strong> IPasswords. Passwords instance from the __pass sheet.</p>
+<p><strong>Returns:</strong> Passwords. Passwords instance from the __pass sheet.</p>
 <hr />
 <h3 id="int-geoobject">GeoObject <a class="anchor-link" href="#int-geoobject">#</a></h3>
 <p><em>geo-object</em></p>
 <p><strong>Get the geo object from the source workbook</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function GeoObject() As ILLGeo
+<pre><code class="language-vb">Private Function GeoObject() As LLGeo
 </code></pre>
-<p><strong>Returns:</strong> ILLGeo. Geo instance from the Geo sheet.</p>
+<p><strong>Returns:</strong> LLGeo. Geo instance from the Geo sheet.</p>
 <hr />
 <h2 id="int-private-output-workbook-management">Private - Output Workbook Management</h2>
 <h3 id="int-createoutputworkbook">CreateOutputWorkbook <a class="anchor-link" href="#int-createoutputworkbook">#</a></h3>
@@ -274,7 +283,7 @@ optional password, then closes it without saving again.</p>
 <p><em>remove-pcodes</em></p>
 <p><strong>Remove p-codes variables from a custom export if configured</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub RemovePCodes(ByVal dict As ILLdictionary, ByVal expObj As ILLExport, _
+<pre><code class="language-vb">Private Sub RemovePCodes(ByVal dict As LLdictionary, ByVal expObj As LLExport, _
                          ByVal exportNumber As Long, ByVal expName As String)
 </code></pre>
 <p>Checks the export configuration for &quot;include p-codes&quot;. When set to &quot;no&quot;,
@@ -282,8 +291,8 @@ clears the export column cells for all dictionary rows whose main label
 matches a geo p-code or geo concat tag.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>dict</code>: ILLdictionary. The source dictionary.</li>
-<li><code>expObj</code>: ILLExport. The export configuration.</li>
+<li><code>dict</code>: LLdictionary. The source dictionary.</li>
+<li><code>expObj</code>: LLExport. The export configuration.</li>
 <li><code>exportNumber</code>: Long. Which export definition to check.</li>
 <li><code>expName</code>: String. The export column name (e.g. &quot;export 1&quot;).</li>
 </ul>
@@ -292,7 +301,7 @@ matches a geo p-code or geo concat tag.</p>
 <p><em>remove-personal-identifiers</em></p>
 <p><strong>Remove personal identifiers from a custom export if configured</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub RemovePersonalIdentifiers(ByVal dict As ILLdictionary, ByVal expObj As ILLExport, _
+<pre><code class="language-vb">Private Sub RemovePersonalIdentifiers(ByVal dict As LLdictionary, ByVal expObj As LLExport, _
                                       ByVal exportNumber As Long, ByVal expName As String)
 </code></pre>
 <p>Checks the export configuration for &quot;include personal identifiers&quot;. When
@@ -300,8 +309,8 @@ set to &quot;no&quot;, clears the export column cells for all dictionary rows
 flagged as personal identifiers.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>dict</code>: ILLdictionary. The source dictionary.</li>
-<li><code>expObj</code>: ILLExport. The export configuration.</li>
+<li><code>dict</code>: LLdictionary. The source dictionary.</li>
+<li><code>expObj</code>: LLExport. The export configuration.</li>
 <li><code>exportNumber</code>: Long. Which export definition to check.</li>
 <li><code>expName</code>: String. The export column name.</li>
 </ul>
@@ -310,7 +319,7 @@ flagged as personal identifiers.</p>
 <p><em>prepare-temp-dictionary</em></p>
 <p><strong>Write dictionary data to the temp sheet for export processing</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub PrepareTempDictionary(ByVal dict As ILLdictionary, _
+<pre><code class="language-vb">Private Sub PrepareTempDictionary(ByVal dict As LLdictionary, _
                                   ByVal expName As String, _
                                   ByVal fullExport As Boolean)
 </code></pre>
@@ -320,7 +329,7 @@ export. Writes the result to the temp__ sheet and adds a blue font tag
 to mark the dictionary as prepared.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>dict</code>: ILLdictionary. The source dictionary.</li>
+<li><code>dict</code>: LLdictionary. The source dictionary.</li>
 <li><code>expName</code>: String. The export column name to filter on, or vbNullString for full.</li>
 <li><code>fullExport</code>: Boolean. When True, copies the entire dictionary unfiltered.</li>
 </ul>
@@ -329,23 +338,23 @@ to mark the dictionary as prepared.</p>
 <p><em>export-dictionary-from-temp</em></p>
 <p><strong>Create an export dictionary from the temp sheet</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ExportDictionaryFromTemp(ByVal nbExp As Long) As ILLdictionary
+<pre><code class="language-vb">Private Function ExportDictionaryFromTemp(ByVal nbExp As Long) As LLdictionary
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>nbExp</code>: Long. Number of export columns.</li>
 </ul>
-<p><strong>Returns:</strong> ILLdictionary. Dictionary built from the temp__ sheet.</p>
+<p><strong>Returns:</strong> LLdictionary. Dictionary built from the temp__ sheet.</p>
 <hr />
 <h3 id="int-sortexportdictionary">SortExportDictionary <a class="anchor-link" href="#int-sortexportdictionary">#</a></h3>
 <p><em>sort-export-dictionary</em></p>
 <p><strong>Sort the export dictionary by table name and export column</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub SortExportDictionary(ByVal expDict As ILLdictionary, ByVal expName As String)
+<pre><code class="language-vb">Private Sub SortExportDictionary(ByVal expDict As LLdictionary, ByVal expName As String)
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>expDict</code>: ILLdictionary. The dictionary to sort.</li>
+<li><code>expDict</code>: LLdictionary. The dictionary to sort.</li>
 <li><code>expName</code>: String. The export column name to use as secondary sort key.</li>
 </ul>
 <hr />
@@ -354,13 +363,13 @@ to mark the dictionary as prepared.</p>
 <p><em>add-metadata-sheets</em></p>
 <p><strong>Add Metadata, Choices, and Translations sheets to the output workbook</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub AddMetadataSheets(ByVal outwb As Workbook, ByVal dict As ILLdictionary, _
+<pre><code class="language-vb">Private Sub AddMetadataSheets(ByVal outwb As Workbook, ByVal dict As LLdictionary, _
                               ByVal nbExp As Long)
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>outwb</code>: Workbook. The output workbook.</li>
-<li><code>dict</code>: ILLdictionary. The source dictionary.</li>
+<li><code>dict</code>: LLdictionary. The source dictionary.</li>
 <li><code>nbExp</code>: Long. Number of export columns.</li>
 </ul>
 <hr />
@@ -368,7 +377,7 @@ to mark the dictionary as prepared.</p>
 <p><em>add-dictionary</em></p>
 <p><strong>Add the dictionary to the output workbook</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub AddDictionary(ByVal outwb As Workbook, ByVal dict As ILLdictionary, _
+<pre><code class="language-vb">Private Sub AddDictionary(ByVal outwb As Workbook, ByVal dict As LLdictionary, _
                           ByVal nbExp As Long, ByVal exportColumn As String)
 </code></pre>
 <p>Exports the dictionary filtered by exportColumn, then marks the output
@@ -376,7 +385,7 @@ dictionary as prepared with a blue font tag.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>outwb</code>: Workbook. The output workbook.</li>
-<li><code>dict</code>: ILLdictionary. The source dictionary.</li>
+<li><code>dict</code>: LLdictionary. The source dictionary.</li>
 <li><code>nbExp</code>: Long. Number of export columns.</li>
 <li><code>exportColumn</code>: String. The export column to filter on, or &quot;<strong>all</strong>&quot;.</li>
 </ul>
@@ -435,14 +444,14 @@ layer (HList, Printed, VList) and exports the current visibility state.</p>
 <p><em>import-current-show-hide</em></p>
 <p><strong>Import current user overrides from the show_hide__ ListObject</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ImportCurrentShowHide(ByVal shm As IShowHideManager)
+<pre><code class="language-vb">Private Sub ImportCurrentShowHide(ByVal shm As ShowHideManager)
 </code></pre>
 <p>Reads the show_hide__ sheet from the source workbook and imports the
 user visibility plan into the ShowHideManager, ensuring the exported
 show/hide reflects the user actual choices.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>shm</code>: IShowHideManager. The manager to populate.</li>
+<li><code>shm</code>: ShowHideManager. The manager to populate.</li>
 </ul>
 <hr />
 <h3 id="int-addanalysissheets">AddAnalysisSheets <a class="anchor-link" href="#int-addanalysissheets">#</a></h3>
@@ -466,7 +475,7 @@ objects via AnaTabIds.</p>
 <p><em>add-data-sheets</em></p>
 <p><strong>Add data to each output sheet from source HList/VList worksheets</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub AddDataSheets(ByVal outwb As Workbook, ByVal expDict As ILLdictionary, _
+<pre><code class="language-vb">Private Sub AddDataSheets(ByVal outwb As Workbook, ByVal expDict As LLdictionary, _
                           ByVal useLabels As Boolean, ByVal startLine As Long, _
                           ByVal useFilters As Boolean)
 </code></pre>
@@ -477,7 +486,7 @@ delegates to ExportVListData. Applies formatting to each output sheet.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>outwb</code>: Workbook. The output workbook.</li>
-<li><code>expDict</code>: ILLdictionary. The export dictionary with variable assignments.</li>
+<li><code>expDict</code>: LLdictionary. The export dictionary with variable assignments.</li>
 <li><code>useLabels</code>: Boolean. When True, writes label row above data headers.</li>
 <li><code>startLine</code>: Long. Data start row (2 when labels are on row 1).</li>
 <li><code>useFilters</code>: Boolean. When True, reads from filtered companion sheets.</li>
@@ -546,23 +555,11 @@ or special sheets.</p>
 <li>ProjectError.<varies> Always raises the specified error.</li>
 </ul>
 <hr />
-<h2 id="int-interface-implementation">Interface Implementation</h2>
-<h3 id="int-illexporter-exportcustom">ILLExporter_ExportCustom <a class="anchor-link" href="#int-illexporter-exportcustom">#</a></h3>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ILLExporter_ExportCustom(ByVal exportNumber As Long, _
-                                          ByVal folderPath As String, _
-                                          Optional ByVal useFilters As Boolean = False) As String
-</code></pre>
-<p>Delegated members satisfying the ILLExporter contract.
-See the corresponding members above for full documentation.</p>
-<hr />
 </details>
 <details>
-<summary>Used in (6 file(s))</summary>
+<summary>Used in (4 file(s))</summary>
 <ul>
 <li><a href="ExportButton.html">ExportButton.cls</a></li>
-<li><a href="ILLExporter.html">ILLExporter.cls</a></li>
-<li><a href="LLExporter.html">LLExporter.cls</a></li>
 <li><a href="Linelist.html">Linelist.cls</a></li>
 <li>FormLogicExportMig.bas</li>
 <li>TestLLExporter.bas</li>

@@ -19,7 +19,7 @@ parallel BetterArray keys/values, hierarchical geo-level lookups using
 AutoFilter cascades, import/export in both flat-data and full-structure
 modes, and synchronisation of translated labels across linelist sheets,
 dictionary, and show/hide tables.</p>
-<p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="IPasswords.html">IPasswords</a>, <a href="ILLdictionary.html">ILLdictionary</a>, <a href="ICustomTable.html">ICustomTable</a>, <a href="ILLVariables.html">ILLVariables</a>, <a href="IDropdownLists.html">IDropdownLists</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="LLVariables.html">LLVariables</a>, <a href="CustomTable.html">CustomTable</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="IHiddenNames.html">IHiddenNames</a></p>
+<p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="Passwords.html">Passwords</a>, <a href="LLdictionary.html">LLdictionary</a>, <a href="CustomTable.html">CustomTable</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="LLVariables.html">LLVariables</a>, <a href="CustomTable.html">CustomTable</a>, <a href="HiddenNames.html">HiddenNames</a></p>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
 <div class="section-body">
@@ -27,7 +27,7 @@ dictionary, and show/hide tables.</p>
 <p><em>create</em></p>
 <p><strong>Create a new LLGeo instance from a geobase worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Create(ByVal sh As Worksheet) As ILLGeo
+<pre><code class="language-vb">Public Function Create(ByVal sh As Worksheet) As LLGeo
 </code></pre>
 <p>Factory method that validates all required tables, named ranges, and
 hidden names on the supplied worksheet, then constructs and returns a
@@ -38,7 +38,7 @@ specific ListObjects, named ranges, and HiddenNames being present.</p>
 <ul>
 <li><code>sh</code>: Worksheet. The geobase worksheet containing T_ADM1 through T_ADM4, T_HF, T_NAMES, T_HISTOGEO, T_HISTOHF, T_METADATA, and required named ranges/hidden names.</li>
 </ul>
-<p><strong>Returns:</strong> ILLGeo. A fully initialised LLGeo instance exposed through the ILLGeo interface.</p>
+<p><strong>Returns:</strong> LLGeo. A fully initialised LLGeo instance exposed through the LLGeo interface.</p>
 <hr />
 </div>
 </details>
@@ -49,7 +49,7 @@ specific ListObjects, named ranges, and HiddenNames being present.</p>
 <p><em>geo-names</em></p>
 <p><strong>Translated display name for a raw admin column name.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get GeoNames(ByVal admname As String) As String
+<pre><code class="language-vb">Public Property Get GeoNames(ByVal admname As String) As String
 </code></pre>
 <p>Converts a raw admin column name (such as &quot;adm1_name&quot; or &quot;hf_name&quot;)
 to its translated display name by searching the lazily loaded translation
@@ -70,7 +70,7 @@ is built on first access from cell-based named ranges on the geo worksheet.</p>
 <p><em>geo-level</em></p>
 <p><strong>List of values at a given admin level.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get GeoLevel(ByVal adminLevel As Byte, _
+<pre><code class="language-vb">Public Property Get GeoLevel(ByVal adminLevel As Byte, _
                               Optional ByVal geoType As Byte = GeoScopeAdmin, _
                               Optional adminNames As Variant = vbNullString) As BetterArray
 </code></pre>
@@ -102,7 +102,7 @@ Calculation is temporarily disabled for performance during filtering.</p>
 <p><em>translate</em></p>
 <p><strong>Translate or revert geobase table headers.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub Translate(Optional ByVal rawNames As Boolean = False)
+<pre><code class="language-vb">Public Sub Translate(Optional ByVal rawNames As Boolean = False)
 </code></pre>
 <p>Applies or reverts translated display names on all geobase table headers
 (admin1 through admin4 and health facility). When rawNames is False, headers
@@ -124,7 +124,7 @@ translation cache both before and after the change.</p>
 <p><em>clear</em></p>
 <p><strong>Clear all geobase data.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub Clear()
+<pre><code class="language-vb">Public Sub Clear()
 </code></pre>
 <p>Removes all data from every ListObject on the geobase worksheet except
 T_LevelNames and T_CONCAT, and sets the update flag to &quot;empty&quot;. Resets the
@@ -135,7 +135,7 @@ fresh data.</p>
 <p><em>clear-historic</em></p>
 <p><strong>Clear historic entries.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ClearHistoric(Optional ByVal scope As Byte = 3)
+<pre><code class="language-vb">Public Sub ClearHistoric(Optional ByVal scope As Byte = 3)
 </code></pre>
 <p>Clears the data body of historic ListObjects. The scope parameter controls
 which tables are cleared: 0 for geo only (T_HISTOGEO), 1 for HF only
@@ -155,7 +155,7 @@ succeeds even when a table has no data body.</p>
 <p><em>import</em></p>
 <p><strong>Import geobase data from an external workbook.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub Import(ByVal fromWkb As Workbook, _
+<pre><code class="language-vb">Public Sub Import(ByVal fromWkb As Workbook, _
                    Optional ByVal histoOnly As Boolean = False)
 </code></pre>
 <p>Imports geographic data from the supplied workbook into the geobase worksheet.
@@ -180,7 +180,7 @@ updated and headers are translated.</p>
 <p><em>export-to-file</em></p>
 <p><strong>Export geobase tables to a workbook as flat data.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ExportToFile(ByVal outputWkb As Workbook, _
+<pre><code class="language-vb">Public Sub ExportToFile(ByVal outputWkb As Workbook, _
                          Optional ByVal onlyHistory As Boolean = False)
 </code></pre>
 <p>Exports geobase tables to the target workbook with one sheet per table and a
@@ -198,7 +198,7 @@ When onlyHistory is True only the HISTOGEO and HISTOHF tables are exported.</p>
 <p><em>export-to-wkb</em></p>
 <p><strong>Export the geobase worksheet structure to a workbook.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ExportToWkb(ByVal outputWkb As Workbook, _
+<pre><code class="language-vb">Public Sub ExportToWkb(ByVal outputWkb As Workbook, _
                         Optional ByVal llName As String = vbNullString, _
                         Optional ByVal setupPath As String = vbNullString)
 </code></pre>
@@ -230,7 +230,7 @@ conflicting names already exist in the target workbook.</p>
 <p><em>update</em></p>
 <p><strong>Update linelist geo column headers and dropdowns.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub Update(ByVal pass As IPasswords)
+<pre><code class="language-vb">Public Sub Update(ByVal pass As Passwords)
 </code></pre>
 <p>Iterates all HList worksheets in the parent workbook, finds columns controlled
 by geo1 through geo4 and hf, and updates their header labels with translated
@@ -239,14 +239,14 @@ refreshes the admin1 dropdown list on the dropdown_lists__ sheet so that it
 reflects the current geobase content.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>pass</code>: IPasswords. Password manager for sheet protection and unprotection.</li>
+<li><code>pass</code>: Passwords. Password manager for sheet protection and unprotection.</li>
 </ul>
 <hr />
 <h3 id="updatedict">UpdateDict <a class="anchor-link" href="#updatedict">#</a></h3>
 <p><em>update-dict</em></p>
 <p><strong>Update dictionary labels for geo-related variables.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub UpdateDict(ByVal dict As ILLdictionary)
+<pre><code class="language-vb">Public Sub UpdateDict(ByVal dict As LLdictionary)
 </code></pre>
 <p>Scans the dictionary control column for geo1 through geo4 and hf entries and
 overwrites the corresponding main label cells with translated geo display
@@ -254,14 +254,14 @@ names from the geobase. This keeps the dictionary in sync after a geobase
 import or translation change.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>dict</code>: ILLdictionary. The linelist dictionary whose labels should be updated.</li>
+<li><code>dict</code>: LLdictionary. The linelist dictionary whose labels should be updated.</li>
 </ul>
 <hr />
 <h3 id="updateshowhide">UpdateShowHide <a class="anchor-link" href="#updateshowhide">#</a></h3>
 <p><em>update-show-hide</em></p>
 <p><strong>Update show/hide tables with translated geo labels.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub UpdateShowHide(ByVal sh As Worksheet, ByVal dict As ILLdictionary)
+<pre><code class="language-vb">Public Sub UpdateShowHide(ByVal sh As Worksheet, ByVal dict As LLdictionary)
 </code></pre>
 <p>Iterates all ListObjects on the show/hide worksheet, finds variables
 controlled by geo1 through geo4 and hf via the dictionary, and updates their
@@ -271,7 +271,7 @@ current geobase translation.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>sh</code>: Worksheet. The show/hide worksheet containing ListObjects to update.</li>
-<li><code>dict</code>: ILLdictionary. The linelist dictionary for resolving control and subsection values.</li>
+<li><code>dict</code>: LLdictionary. The linelist dictionary for resolving control and subsection values.</li>
 </ul>
 <hr />
 </div>
@@ -283,7 +283,7 @@ current geobase translation.</p>
 <p><em>update-historic</em></p>
 <p><strong>Add a new entry to the historic data.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub UpdateHistoric(ByVal newValue As String, _
+<pre><code class="language-vb">Public Sub UpdateHistoric(ByVal newValue As String, _
                            Optional ByVal scope As Byte = 0)
 </code></pre>
 <p>Appends a value to the appropriate historic ListObject (T_HISTOGEO or
@@ -305,7 +305,7 @@ data body or is empty by inserting at the first data row.</p>
 <p><em>admin-code</em></p>
 <p><strong>Resolve the admin code from a translated display name.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function AdminCode(ByVal selectedAdmin As String) As String
+<pre><code class="language-vb">Public Function AdminCode(ByVal selectedAdmin As String) As String
 </code></pre>
 <p>Compares the supplied translated admin name against GeoNames for each admin
 level and returns the matching raw code (&quot;adm1&quot; through &quot;adm4&quot;). Falls back
@@ -321,7 +321,7 @@ downstream callers.</p>
 <p><em>has-no-data</em></p>
 <p><strong>Whether the geobase has no imported data.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get HasNoData() As Boolean
+<pre><code class="language-vb">Public Property Get HasNoData() As Boolean
 </code></pre>
 <p>Returns True when the geobase update flag (RNG_GeoUpdated) reads &quot;empty&quot;,
 indicating that no geo data has been imported yet or that all data has been
@@ -334,6 +334,25 @@ available.</p>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-factory">Factory</h2>
+<h3 id="int-seal">Seal <a class="anchor-link" href="#int-seal">#</a></h3>
+<p><em>seal</em></p>
+<p><strong>Seal the instance against further setup writes.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Seal()
+</code></pre>
+<p>Marks the instance as sealed so setup-only setters raise if called again.
+Called by the factory after the last setup write.</p>
+<hr />
+<h3 id="int-guardnotsealed">GuardNotSealed <a class="anchor-link" href="#int-guardnotsealed">#</a></h3>
+<p><strong>Guard a setup-only setter against post-seal writes.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub GuardNotSealed(ByVal propName As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>propName</code>: String. The property name used in the error message.</li>
+</ul>
+<hr />
 <h3 id="int-wksh">Wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
 <p><em>wksh</em></p>
 <p><strong>Get the geobase worksheet.</strong></p>
@@ -363,13 +382,13 @@ method after validation. Not intended for external use.</p>
 <p><em>geo-hidden-store</em></p>
 <p><strong>Lazy-loaded HiddenNames manager for the geo worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function GeoHiddenStore() As IHiddenNames
+<pre><code class="language-vb">Private Function GeoHiddenStore() As HiddenNames
 </code></pre>
-<p>Creates and caches an IHiddenNames instance bound to the geobase
+<p>Creates and caches an HiddenNames instance bound to the geobase
 worksheet on first access. Used by all methods that read or write
 the 5 hidden name values (RNG_GeoUpdated, RNG_GeoName, RNG_MetaLang,
 RNG_GeoLangCode, RNG_FormLoaded).</p>
-<p><strong>Returns:</strong> IHiddenNames. The worksheet-level hidden names manager.</p>
+<p><strong>Returns:</strong> HiddenNames. The worksheet-level hidden names manager.</p>
 <hr />
 <h2 id="int-table-names">Table Names</h2>
 <h3 id="int-tablenames">TableNames <a class="anchor-link" href="#int-tablenames">#</a></h3>
@@ -600,13 +619,13 @@ requirement is missing.</p>
 <p><em>hidden-name-required</em></p>
 <p><strong>Verify that a hidden name exists in the store.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub HiddenNameRequired(ByVal store As IHiddenNames, ByVal nameId As String)
+<pre><code class="language-vb">Private Sub HiddenNameRequired(ByVal store As HiddenNames, ByVal nameId As String)
 </code></pre>
 <p>Checks whether the specified name exists in the given HiddenNames store.
 If not found, raises an ElementNotFound error with a descriptive message.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>store</code>: IHiddenNames. The hidden names manager to check.</li>
+<li><code>store</code>: HiddenNames. The hidden names manager to check.</li>
 <li><code>nameId</code>: String. The hidden name identifier to look for.</li>
 </ul>
 <p><strong>Throws:</strong></p>
@@ -669,38 +688,20 @@ ProjectError values exceed the Byte range (they start at 1001+).</p>
 <hr />
 </details>
 <details>
-<summary>Used in (30 file(s))</summary>
+<summary>Used in (12 file(s))</summary>
 <ul>
 <li><a href="LLExporter.html">LLExporter.cls</a></li>
 <li><a href="LLImporter.html">LLImporter.cls</a></li>
-<li><a href="ILinelistBuildService.html">ILinelistBuildService.cls</a></li>
 <li><a href="LinelistBuildService.html">LinelistBuildService.cls</a></li>
-<li><a href="ILLdictionary.html">ILLdictionary.cls</a></li>
-<li><a href="ILLGeo.html">ILLGeo.cls</a></li>
-<li><a href="LLGeo.html">LLGeo.cls</a></li>
+<li><a href="LLdictionary.html">LLdictionary.cls</a></li>
 <li><a href="EventLinelist.html">EventLinelist.cls</a></li>
-<li><a href="IEventLinelist.html">IEventLinelist.cls</a></li>
-<li><a href="ILinelistSpecs.html">ILinelistSpecs.cls</a></li>
 <li><a href="Linelist.html">Linelist.cls</a></li>
 <li><a href="LinelistSpecs.html">LinelistSpecs.cls</a></li>
 <li><a href="VarWriter.html">VarWriter.cls</a></li>
-<li>EventsDesignerWorkbook.bas</li>
-<li>EventsMainSheet.bas</li>
-<li>FormLogicAdvanced.bas</li>
-<li>FormLogicExportMigration.bas</li>
-<li>FormLogicGeo.bas</li>
-<li>LinelistEvents.bas</li>
-<li>LinelistGeo.bas</li>
-<li><a href="DesignerImportService.html">DesignerImportService.cls</a></li>
-<li><a href="IDesignerImportService.html">IDesignerImportService.cls</a></li>
 <li>EventsDesignerAdvanced.bas</li>
 <li>GeoModule.bas</li>
 <li>FormLogicGeo.bas</li>
 <li>TestLLGeo.bas</li>
-<li><a href="LinelistSpecsWorkbookStub.html">LinelistSpecsWorkbookStub.cls</a></li>
-<li><a href="LLGeoDropdownStub.html">LLGeoDropdownStub.cls</a></li>
-<li><a href="LLVarContextSpecsStub.html">LLVarContextSpecsStub.cls</a></li>
-<li><a href="TableSpecsLinelistStub.html">TableSpecsLinelistStub.cls</a></li>
 </ul>
 </details>
   </main>

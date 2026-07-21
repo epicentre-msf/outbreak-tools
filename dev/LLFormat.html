@@ -26,7 +26,7 @@ Ranges, Shapes, ListObjects, or Characters.</p>
 <p><strong>Instantiate an LL format engine for a worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal formatSh As Worksheet, _
-                       Optional ByVal designType As String = DEFAULT_DESIGN) As ILLFormat
+                       Optional ByVal designType As String = DEFAULT_DESIGN) As LLFormat
 </code></pre>
 <p>Validates the format worksheet, resolves the design column, and
 returns a fully initialised LLFormat instance.</p>
@@ -35,7 +35,7 @@ returns a fully initialised LLFormat instance.</p>
 <li><code>formatSh</code>: Worksheet. Worksheet containing the format specification table.</li>
 <li><code>designType</code>: String. Design column to use. Defaults to DEFAULT_DESIGN.</li>
 </ul>
-<p><strong>Returns:</strong> ILLFormat. A fully initialised LLFormat instance.</p>
+<p><strong>Returns:</strong> LLFormat. A fully initialised LLFormat instance.</p>
 <hr />
 </div>
 </details>
@@ -46,7 +46,7 @@ returns a fully initialised LLFormat instance.</p>
 <p><em>design-value</em></p>
 <p><strong>Look up a design value or colour from the format table</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function DesignValue(ByVal labelName As String, _
+<pre><code class="language-vb">Public Function DesignValue(ByVal labelName As String, _
                              Optional ByVal returnColor As Boolean = True) As Variant
 </code></pre>
 <p>Retrieves either the fill colour (Interior.Color) or the raw cell
@@ -68,7 +68,7 @@ Returns a fallback when the label is not found and logs a diagnostic.</p>
 <p><em>apply-format</em></p>
 <p><strong>Apply a design-driven format to an Excel object</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ApplyFormat(ByVal formattingObject As Variant, _
+<pre><code class="language-vb">Public Sub ApplyFormat(ByVal formattingObject As Variant, _
                         ByVal scope As Byte, _
                         Optional ByVal nbDecimals As Integer = 0)
 </code></pre>
@@ -90,7 +90,7 @@ supplied object according to the given FormatScope constant.</p>
 <p><em>import</em></p>
 <p><strong>Import formatting definitions from another worksheet</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub Import(ByVal inpsh As Worksheet)
+<pre><code class="language-vb">Public Sub Import(ByVal inpsh As Worksheet)
 </code></pre>
 <p>Reads design columns from the source worksheet and merges them into
 the current format table via CustomTable.Import. Updates the active
@@ -109,7 +109,7 @@ design name from the source DESIGNTYPE named range.</p>
 <p><em>export</em></p>
 <p><strong>Export the format table to another workbook</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub Export(ByVal toWkb As Workbook)
+<pre><code class="language-vb">Public Sub Export(ByVal toWkb As Workbook)
 </code></pre>
 <p>Copies the format table and cell styles to a new worksheet in the
 destination workbook. When a worksheet with the same name already
@@ -236,14 +236,6 @@ exists, imports from it instead of exporting.</p>
 <p><strong>Returns:</strong> Boolean. True when the column is found.</p>
 <hr />
 <h2 id="int-public-interface">Public Interface</h2>
-<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
-<p><em>self</em></p>
-<p><strong>Retrieve this formatter as an interface</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Self() As ILLFormat
-</code></pre>
-<p><strong>Returns:</strong> ILLFormat. Self-reference.</p>
-<hr />
 <h3 id="int-wksh">Wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
 <p><em>wksh</em></p>
 <p><strong>Retrieve the worksheet hosting the format table</strong></p>
@@ -296,9 +288,9 @@ exists, imports from it instead of exporting.</p>
 <p><em>checking-values</em></p>
 <p><strong>Retrieve the diagnostic log entries</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get CheckingValues() As IChecking
+<pre><code class="language-vb">Public Property Get CheckingValues() As Checking
 </code></pre>
-<p><strong>Returns:</strong> IChecking. The checking instance, or Nothing.</p>
+<p><strong>Returns:</strong> Checking. The checking instance, or Nothing.</p>
 <hr />
 <h2 id="int-design-lookups">Design Lookups</h2>
 <h3 id="int-drawlines">DrawLines <a class="anchor-link" href="#int-drawlines">#</a></h3>
@@ -472,38 +464,50 @@ exists, imports from it instead of exporting.</p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal errorMessage As String)
 </code></pre>
 <hr />
+<h3 id="int-seal">Seal <a class="anchor-link" href="#int-seal">#</a></h3>
+<p><em>seal</em></p>
+<p><strong>Seal the instance so setup setters can no longer be written</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Seal()
+</code></pre>
+<hr />
+<h3 id="int-guardnotsealed">GuardNotSealed <a class="anchor-link" href="#int-guardnotsealed">#</a></h3>
+<p><em>guard-not-sealed</em></p>
+<p><strong>Guard a setup setter against writes after sealing</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub GuardNotSealed(ByVal propName As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>propName</code>: String. Name of the property being guarded.</li>
+</ul>
+<hr />
 </details>
 <details>
-<summary>Used in (28 file(s))</summary>
+<summary>Used in (22 file(s))</summary>
 <ul>
 <li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
 <li><a href="CrossTable.html">CrossTable.cls</a></li>
 <li><a href="CustomPivotTable.html">CustomPivotTable.cls</a></li>
-<li><a href="ICrossTable.html">ICrossTable.cls</a></li>
-<li><a href="ICustomPivotTable.html">ICustomPivotTable.cls</a></li>
+<li><a href="DesignerPreparation.html">DesignerPreparation.cls</a></li>
 <li><a href="LinelistBuildService.html">LinelistBuildService.cls</a></li>
 <li><a href="Buttons.html">Buttons.cls</a></li>
-<li><a href="IButtons.html">IButtons.cls</a></li>
-<li><a href="ILLFormat.html">ILLFormat.cls</a></li>
-<li><a href="LLFormat.html">LLFormat.cls</a></li>
-<li><a href="ILinelistSpecs.html">ILinelistSpecs.cls</a></li>
 <li><a href="Linelist.html">Linelist.cls</a></li>
 <li><a href="LinelistSpecs.html">LinelistSpecs.cls</a></li>
 <li><a href="ListBuilder.html">ListBuilder.cls</a></li>
 <li><a href="SectionBuilder.html">SectionBuilder.cls</a></li>
 <li><a href="VarWriter.html">VarWriter.cls</a></li>
 <li><a href="SetupImportService.html">SetupImportService.cls</a></li>
-<li><a href="CrossTable.html">CrossTable.cls</a></li>
-<li><a href="DesignerImportService.html">DesignerImportService.cls</a></li>
 <li>EventsDesignerCore.bas</li>
 <li>GenerationReport.bas</li>
+<li>TestDesignerPreparation.bas</li>
+<li>TestDesignerRibbon.bas</li>
 <li>TestButtons.bas</li>
 <li>TestLLFormat.bas</li>
+<li>LLFormatTestFixture.bas</li>
+<li>TestSectionBuilder.bas</li>
+<li>TestVarWriter.bas</li>
 <li>TestCustomPivotTable.bas</li>
-<li><a href="LinelistSpecsWorkbookStub.html">LinelistSpecsWorkbookStub.cls</a></li>
-<li><a href="LLFormatStub.html">LLFormatStub.cls</a></li>
-<li><a href="LLVarContextSpecsStub.html">LLVarContextSpecsStub.cls</a></li>
-<li><a href="TableSpecsLinelistStub.html">TableSpecsLinelistStub.cls</a></li>
 </ul>
 </details>
   </main>

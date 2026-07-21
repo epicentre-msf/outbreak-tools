@@ -26,9 +26,9 @@ detected and rewritten as aggregated Excel expressions.</p>
 <p><em>create</em></p>
 <p><strong>Instantiate a Formulas helper ready to parse the provided setup expression</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Create(ByVal dict As ILLdictionary, _
-                       ByVal formData As IFormulaData, _
-                       ByVal setupForm As String) As IFormulas
+<pre><code class="language-vb">Public Function Create(ByVal dict As LLdictionary, _
+                       ByVal formData As FormulaData, _
+                       ByVal setupForm As String) As Formulas
 </code></pre>
 <p>Provides the single entry point to instantiate the parser and initialise core state.
 Validates that the required dictionary and formula data objects are
@@ -37,11 +37,11 @@ expression. No eager parsing occurs; the formula is parsed lazily on
 first access to Valid, Varlists, or any parsed formula property.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>dict</code>: ILLdictionary. Variable metadata provider.</li>
-<li><code>formData</code>: IFormulaData. Catalogue of approved Excel functions and separators.</li>
+<li><code>dict</code>: LLdictionary. Variable metadata provider.</li>
+<li><code>formData</code>: FormulaData. Catalogue of approved Excel functions and separators.</li>
 <li><code>setupForm</code>: String. Pseudo-formula to parse and validate.</li>
 </ul>
-<p><strong>Returns:</strong> IFormulas. Initialised instance.</p>
+<p><strong>Returns:</strong> Formulas. Initialised instance.</p>
 <p><strong>Throws:</strong></p>
 <ul>
 <li>ProjectError.ObjectNotInitialized When dict is Nothing.</li>
@@ -140,7 +140,7 @@ Excel equivalents (AVERAGE, COUNT).</p>
 <p><em>parsed-analysis-formula</em></p>
 <p><strong>Build the Excel expression for aggregated analysis results</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get ParsedAnalysisFormula(ByVal formCond As IFormulaCondition, _
+<pre><code class="language-vb">Public Property Get ParsedAnalysisFormula(ByVal formCond As FormulaCondition, _
                                           Optional ByVal tablePrefix As String = vbNullString, _
                                           Optional ByVal Connector As String = &quot;*&quot;) As String
 </code></pre>
@@ -150,7 +150,7 @@ formula tokens are delegated to ParsedCustomFormula. Grouped formulas
 are delegated to BuildGroupedFormula.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>formCond</code>: IFormulaCondition. Provides conditional aggregation logic.</li>
+<li><code>formCond</code>: FormulaCondition. Provides conditional aggregation logic.</li>
 <li><code>tablePrefix</code>: Optional String. Prefix for table references.</li>
 <li><code>Connector</code>: Optional String. Connector between conditional fragments.</li>
 </ul>
@@ -161,11 +161,11 @@ are delegated to BuildGroupedFormula.</p>
 <details open class="doc-section" id="checkings">
 <summary>Checkings</summary>
 <div class="section-body">
-<h3 id="hascheckings">HasCheckings <a class="anchor-link" href="#hascheckings">#</a></h3>
+<h3 id="haschecking">HasChecking <a class="anchor-link" href="#haschecking">#</a></h3>
 <p><em>has-checkings</em></p>
 <p><strong>Indicate whether any diagnostic entries were recorded</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get HasCheckings() As Boolean
+<pre><code class="language-vb">Public Property Get HasChecking() As Boolean
 </code></pre>
 <p>Returns the module-level flag set by LogCheck.</p>
 <p><strong>Returns:</strong> Boolean. True when checkings exist.</p>
@@ -174,49 +174,39 @@ are delegated to BuildGroupedFormula.</p>
 <p><em>checking-values</em></p>
 <p><strong>Expose the collected checking entries if available</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get CheckingValues() As IChecking
+<pre><code class="language-vb">Public Property Get CheckingValues() As Checking
 </code></pre>
-<p>Returns the internal IChecking store when at least one entry has
+<p>Returns the internal Checking store when at least one entry has
 been recorded. Returns Nothing otherwise.</p>
-<p><strong>Returns:</strong> IChecking. Logged diagnostics.</p>
+<p><strong>Returns:</strong> Checking. Logged diagnostics.</p>
 <hr />
 </div>
 </details>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-publicaccessors">PublicAccessors</h2>
-<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
-<p><em>self</em></p>
-<p><strong>Return the interface pointer for the current instance</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Self() As IFormulas
-</code></pre>
-<p>Exposes configured dependencies, cached evaluation results, and parsed Excel expressions.
-Returns the current instance cast to its interface. Used internally
-by the factory method to return an IFormulas reference.</p>
-<p><strong>Returns:</strong> IFormulas. Reference to the current object.</p>
-<hr />
 <h3 id="int-dictionary">Dictionary <a class="anchor-link" href="#int-dictionary">#</a></h3>
 <p><em>dictionary</em></p>
 <p><strong>Retrieve the underlying dictionary used during parsing</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Dictionary() As ILLdictionary
+<pre><code class="language-vb">Public Property Get Dictionary() As LLdictionary
 </code></pre>
-<p>Returns the ILLdictionary previously supplied during Create or
+<p>Exposes configured dependencies, cached evaluation results, and parsed Excel expressions.
+Returns the LLdictionary previously supplied during Create or
 Initialise. Used by downstream helpers to resolve variable metadata.</p>
-<p><strong>Returns:</strong> ILLdictionary. Dictionary backing metadata lookups.</p>
+<p><strong>Returns:</strong> LLdictionary. Dictionary backing metadata lookups.</p>
 <hr />
 <h3 id="int-dictionary">Dictionary <a class="anchor-link" href="#int-dictionary">#</a></h3>
 <p><em>dictionary-set</em></p>
 <p><strong>Assign a new dictionary and reset dependent caches</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Set Dictionary(ByVal dict As ILLdictionary)
+<pre><code class="language-vb">Public Property Set Dictionary(ByVal dict As LLdictionary)
 </code></pre>
 <p>Replaces the current dictionary and invalidates all lazily resolved
 dependencies so subsequent property accesses trigger a fresh parse.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>dict</code>: ILLdictionary. Variable metadata provider.</li>
+<li><code>dict</code>: LLdictionary. Variable metadata provider.</li>
 </ul>
 <p><strong>Throws:</strong></p>
 <ul>
@@ -227,23 +217,23 @@ dependencies so subsequent property accesses trigger a fresh parse.</p>
 <p><em>data</em></p>
 <p><strong>Retrieve the formula configuration catalogue</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Data() As IFormulaData
+<pre><code class="language-vb">Public Property Get Data() As FormulaData
 </code></pre>
-<p>Returns the IFormulaData describing available Excel tokens,
+<p>Returns the FormulaData describing available Excel tokens,
 operators, and special characters used during tokenisation.</p>
-<p><strong>Returns:</strong> IFormulaData. Configuration catalogue.</p>
+<p><strong>Returns:</strong> FormulaData. Configuration catalogue.</p>
 <hr />
 <h3 id="int-data">Data <a class="anchor-link" href="#int-data">#</a></h3>
 <p><em>data-set</em></p>
 <p><strong>Update the formula configuration catalogue and invalidate caches</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Set Data(ByVal formData As IFormulaData)
+<pre><code class="language-vb">Public Property Set Data(ByVal formData As FormulaData)
 </code></pre>
 <p>Replaces the current formula data and invalidates all cached parsing
 results so subsequent accesses trigger a fresh evaluation.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>formData</code>: IFormulaData. Catalogue of allowed operators and functions.</li>
+<li><code>formData</code>: FormulaData. Catalogue of allowed operators and functions.</li>
 </ul>
 <p><strong>Throws:</strong></p>
 <ul>
@@ -278,8 +268,8 @@ results so subsequent accesses trigger a fresh evaluation.</p>
 <p><em>initialise</em></p>
 <p><strong>Store incoming dependencies and prepare caches</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub Initialise(ByVal dict As ILLdictionary, _
-                       ByVal formData As IFormulaData, _
+<pre><code class="language-vb">Public Sub Initialise(ByVal dict As LLdictionary, _
+                       ByVal formData As FormulaData, _
                        ByVal setupForm As String)
 </code></pre>
 <p>Internal utilities for dependency management, cache invalidation, and token resolution.
@@ -288,8 +278,8 @@ invalidates all caches and registers the default custom formulas
 recognised during analysis parsing.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>dict</code>: ILLdictionary. Variable metadata provider.</li>
-<li><code>formData</code>: IFormulaData. Catalogue of allowed tokens and operators.</li>
+<li><code>dict</code>: LLdictionary. Variable metadata provider.</li>
+<li><code>formData</code>: FormulaData. Catalogue of allowed tokens and operators.</li>
 <li><code>setupForm</code>: String. Pseudo-formula to parse.</li>
 </ul>
 <hr />
@@ -348,21 +338,21 @@ setup expression.</p>
 <p><em>variables</em></p>
 <p><strong>Lazily instantiate the LLVariables helper from the dictionary</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function Variables() As ILLVariables
+<pre><code class="language-vb">Private Function Variables() As LLVariables
 </code></pre>
 <p>Creates the LLVariables wrapper on first access and caches it for
 subsequent calls.</p>
-<p><strong>Returns:</strong> ILLVariables. Bound to the current dictionary.</p>
+<p><strong>Returns:</strong> LLVariables. Bound to the current dictionary.</p>
 <hr />
 <h3 id="int-sheetprovider">SheetProvider <a class="anchor-link" href="#int-sheetprovider">#</a></h3>
 <p><em>sheet-provider</em></p>
 <p><strong>Lazily instantiate the LLSheets helper for address resolution</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function SheetProvider() As ILLSheets
+<pre><code class="language-vb">Private Function SheetProvider() As LLSheets
 </code></pre>
 <p>Creates the LLSheets wrapper on first access and caches it for
 subsequent calls.</p>
-<p><strong>Returns:</strong> ILLSheets. Bound to the current dictionary.</p>
+<p><strong>Returns:</strong> LLSheets. Bound to the current dictionary.</p>
 <hr />
 <h3 id="int-ensureevaluation">EnsureEvaluation <a class="anchor-link" href="#int-ensureevaluation">#</a></h3>
 <p><em>ensure-evaluation</em></p>
@@ -402,8 +392,8 @@ GroupContexExtractionSucceed.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function GroupContexExtractionSucceed(ByVal tokens As BetterArray, _
                                        ByVal variableTokens As BetterArray, _
-                                       ByVal vars As ILLVariables, _
-                                       ByVal dataSource As IFormulaData) As Boolean
+                                       ByVal vars As LLVariables, _
+                                       ByVal dataSource As FormulaData) As Boolean
 </code></pre>
 <p>Detects grouped formulas, validates arguments, and prepares metadata for downstream builders.
 Inspects the root function name to determine whether the formula
@@ -415,8 +405,8 @@ in the TGroupContext UDT for BuildGroupedFormula.</p>
 <ul>
 <li><code>tokens</code>: BetterArray. Tokenised formula.</li>
 <li><code>variableTokens</code>: BetterArray. Variable names in encounter order.</li>
-<li><code>vars</code>: ILLVariables. Helper exposing dictionary metadata.</li>
-<li><code>dataSource</code>: IFormulaData. Configuration describing grouped functions.</li>
+<li><code>vars</code>: LLVariables. Helper exposing dictionary metadata.</li>
+<li><code>dataSource</code>: FormulaData. Configuration describing grouped functions.</li>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when grouped context is captured or not required.</p>
 <hr />
@@ -487,7 +477,7 @@ in an IF-based array formula.</p>
 <pre><code class="language-vb">Private Function GroupedDataRange(ByVal variableName As String, _
                                   ByVal useTableName As Boolean, _
                                   ByVal tablePrefix As String, _
-                                  ByVal sheets As ILLSheets) As String
+                                  ByVal sheets As LLSheets) As String
 </code></pre>
 <p>Emits either a structured table reference or a sheet-level address
 depending on the useTableName flag.</p>
@@ -496,7 +486,7 @@ depending on the useTableName flag.</p>
 <li><code>variableName</code>: String. Variable identifier.</li>
 <li><code>useTableName</code>: Boolean. True to emit structured references.</li>
 <li><code>tablePrefix</code>: String. Prefix applied to structured references.</li>
-<li><code>sheets</code>: ILLSheets. Provider for address resolution.</li>
+<li><code>sheets</code>: LLSheets. Provider for address resolution.</li>
 </ul>
 <p><strong>Returns:</strong> String. Excel reference targeting the grouped variable.</p>
 <hr />
@@ -514,7 +504,7 @@ depending on the useTableName flag.</p>
 </code></pre>
 <p>Breaks expressions into tokens, validates each chunk, and handles custom formula expansion.
 Walks the formula character by character, splitting on special
-characters defined by the IFormulaData configuration. Tracks
+characters defined by the FormulaData configuration. Tracks
 parenthesis depth and quotation state. Each extracted chunk is
 validated through AppendToken.</p>
 <p><strong>Parameters:</strong></p>
@@ -536,8 +526,8 @@ validated through AppendToken.</p>
                              ByRef formulaType As String, _
                              ByRef tokens As BetterArray, _
                              ByRef variableTokens As BetterArray, _
-                             ByRef vars As ILLVariables, _
-                             ByRef dataSource As IFormulaData, _
+                             ByRef vars As LLVariables, _
+                             ByRef dataSource As FormulaData, _
                              ByRef HasSetupVariables As Boolean, _
                              ByRef failureReason As String) As Boolean
 </code></pre>
@@ -550,8 +540,8 @@ or quoted string. Unknown chunks cause a validation failure.</p>
 <li><code>formulaType</code>: String. Context (analysis/simple).</li>
 <li><code>tokens</code>: BetterArray. Recipient for all tokens.</li>
 <li><code>variableTokens</code>: BetterArray. Recipient for variable-only tokens.</li>
-<li><code>vars</code>: ILLVariables. Metadata provider.</li>
-<li><code>dataSource</code>: IFormulaData. Formula metadata provider.</li>
+<li><code>vars</code>: LLVariables. Metadata provider.</li>
+<li><code>dataSource</code>: FormulaData. Formula metadata provider.</li>
 <li><code>HasSetupVariables</code>: Boolean. Flag capturing literal presence.</li>
 <li><code>failureReason</code>: String. Explanation when parsing fails.</li>
 </ul>
@@ -590,17 +580,17 @@ Application.WorksheetFunction.Clean, and trims whitespace.</p>
 <p><strong>Delegate parsing to custom functions when present in analysis context</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ParsedCustomFormula(ByVal customFunction As String, _
-                                     ByVal formCond As IFormulaCondition, _
+                                     ByVal formCond As FormulaCondition, _
                                      Optional ByVal TableName As String = vbNullString, _
                                      Optional ByVal tablePrefix As String = vbNullString) As String
 </code></pre>
 <p>Handles MEAN (mapped to AVERAGE), N/N() (mapped to COUNTIFS), and
 passes through unknown custom identifiers unchanged. The COUNTIFS
-expansion builds criteria pairs from the IFormulaCondition.</p>
+expansion builds criteria pairs from the FormulaCondition.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>customFunction</code>: String. Identifier of the custom formula.</li>
-<li><code>formCond</code>: IFormulaCondition. Provides condition logic.</li>
+<li><code>formCond</code>: FormulaCondition. Provides condition logic.</li>
 <li><code>TableName</code>: Optional String. Table name resolved for variables.</li>
 <li><code>tablePrefix</code>: Optional String. Prefix for structured references.</li>
 </ul>
@@ -712,29 +702,18 @@ constant CLASSNAME for consistent stack traces.</p>
 <li>ProjectError.<varies> Always raises the specified error.</li>
 </ul>
 <hr />
-<h2 id="int-interface">Interface</h2>
-<h3 id="int-iformulas-varlists">IFormulas_Varlists <a class="anchor-link" href="#int-iformulas-varlists">#</a></h3>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get IFormulas_Varlists(Optional ByVal formulaType As String = &quot;analysis&quot;) As BetterArray
-</code></pre>
-<p>Delegated members satisfying the IFormulas contract.</p>
-<hr />
-<h3 id="int-iformulas-formulatablelist">IFormulas_FormulaTableList <a class="anchor-link" href="#int-iformulas-formulatablelist">#</a></h3>
-<p><em>formula-table-list</em></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get IFormulas_FormulaTableList() As BetterArray
-</code></pre>
-<hr />
 </details>
 <details>
-<summary>Used in (11 file(s))</summary>
+<summary>Used in (13 file(s))</summary>
 <ul>
 <li><a href="AnaTabIds.html">AnaTabIds.cls</a></li>
 <li><a href="CrossTableFormula.html">CrossTableFormula.cls</a></li>
-<li><a href="ISpatialTables.html">ISpatialTables.cls</a></li>
 <li><a href="SpatialTables.html">SpatialTables.cls</a></li>
-<li><a href="Formulas.html">Formulas.cls</a></li>
-<li><a href="IFormulas.html">IFormulas.cls</a></li>
+<li><a href="CaseWhen.html">CaseWhen.cls</a></li>
+<li><a href="ChoiceFormula.html">ChoiceFormula.cls</a></li>
+<li><a href="FormulaCondition.html">FormulaCondition.cls</a></li>
+<li><a href="FormulaData.html">FormulaData.cls</a></li>
+<li><a href="ValueOfFormula.html">ValueOfFormula.cls</a></li>
 <li><a href="LinelistSpecs.html">LinelistSpecs.cls</a></li>
 <li><a href="VarWriter.html">VarWriter.cls</a></li>
 <li><a href="SetupErrors.html">SetupErrors.cls</a></li>

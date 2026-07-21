@@ -26,17 +26,16 @@ Replaces DesignerImportService for the generation flow.</p>
 <p><em>create</em></p>
 <p><strong>Create and configure a linelist build service</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Create(Optional ByVal hostBook As Workbook = Nothing) As ILinelistBuildService
+<pre><code class="language-vb">Public Function Create(Optional ByVal hostBook As Workbook = Nothing) As LinelistBuildService
 </code></pre>
 <p>Factory method that creates a new LinelistBuildService instance, binds it
-to the supplied designer workbook, and returns the result through the
-ILinelistBuildService interface. When no workbook is provided, defaults
-to ThisWorkbook.</p>
+to the supplied designer workbook, and returns the result. When no
+workbook is provided, defaults to ThisWorkbook.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>hostBook</code>: Optional Workbook. The designer workbook. Defaults to ThisWorkbook.</li>
 </ul>
-<p><strong>Returns:</strong> ILinelistBuildService. A configured instance ready for use.</p>
+<p><strong>Returns:</strong> LinelistBuildService. A configured instance ready for use.</p>
 <hr />
 </div>
 </details>
@@ -130,56 +129,47 @@ remaining managers can still be created.</p>
 </details>
 <details>
 <summary>Internal members (not exported)</summary>
-<h2 id="int-factory">Factory</h2>
-<h3 id="int-self">Self <a class="anchor-link" href="#int-self">#</a></h3>
-<p><em>self</em></p>
-<p><strong>Current object instance</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Self() As ILinelistBuildService
-</code></pre>
-<p><strong>Returns:</strong> ILinelistBuildService. The current instance cast to the interface.</p>
-<hr />
 <h2 id="int-exported-instance-properties">Exported Instance Properties</h2>
 <h3 id="int-exporteddictionary">ExportedDictionary <a class="anchor-link" href="#int-exporteddictionary">#</a></h3>
 <p><em>exported-dictionary</em></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get ExportedDictionary() As ILLdictionary
+<pre><code class="language-vb">Public Property Get ExportedDictionary() As LLdictionary
 </code></pre>
 <hr />
 <h3 id="int-exportedchoices">ExportedChoices <a class="anchor-link" href="#int-exportedchoices">#</a></h3>
 <p><em>exported-choices</em></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get ExportedChoices() As ILLChoices
+<pre><code class="language-vb">Public Property Get ExportedChoices() As LLChoices
 </code></pre>
 <hr />
 <h3 id="int-exportedanalysis">ExportedAnalysis <a class="anchor-link" href="#int-exportedanalysis">#</a></h3>
 <p><em>exported-analysis</em></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get ExportedAnalysis() As IAnalysis
+<pre><code class="language-vb">Public Property Get ExportedAnalysis() As Analysis
 </code></pre>
 <hr />
 <h3 id="int-exportedexport">ExportedExport <a class="anchor-link" href="#int-exportedexport">#</a></h3>
 <p><em>exported-export</em></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get ExportedExport() As ILLExport
+<pre><code class="language-vb">Public Property Get ExportedExport() As LLExport
 </code></pre>
 <hr />
 <h3 id="int-exportedgeo">ExportedGeo <a class="anchor-link" href="#int-exportedgeo">#</a></h3>
 <p><em>exported-geo</em></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get ExportedGeo() As ILLGeo
+<pre><code class="language-vb">Public Property Get ExportedGeo() As LLGeo
 </code></pre>
 <hr />
 <h3 id="int-exportedpasswords">ExportedPasswords <a class="anchor-link" href="#int-exportedpasswords">#</a></h3>
 <p><em>exported-passwords</em></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get ExportedPasswords() As IPasswords
+<pre><code class="language-vb">Public Property Get ExportedPasswords() As Passwords
 </code></pre>
 <hr />
 <h3 id="int-exportedtranslations">ExportedTranslations <a class="anchor-link" href="#int-exportedtranslations">#</a></h3>
 <p><em>exported-translations</em></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get ExportedTranslations() As ILLTranslation
+<pre><code class="language-vb">Public Property Get ExportedTranslations() As LLTranslation
 </code></pre>
 <hr />
 <h2 id="int-setup-to-linelist-export-helpers-direct-path">Setup-to-Linelist Export Helpers (Direct Path)</h2>
@@ -369,25 +359,12 @@ format the data always starts at row 1.</p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errorCode As ProjectError, ByVal messageText As String)
 </code></pre>
 <hr />
-<h2 id="int-interface-implementation">Interface Implementation</h2>
-<h3 id="int-ilinelistbuildservice-configure">ILinelistBuildService_Configure <a class="anchor-link" href="#int-ilinelistbuildservice-configure">#</a></h3>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ILinelistBuildService_Configure(ByVal hostBook As Workbook)
-</code></pre>
-<p>Delegated members satisfying the ILinelistBuildService contract.</p>
-<hr />
 </details>
 <details>
-<summary>Used in (8 file(s))</summary>
+<summary>Used in (2 file(s))</summary>
 <ul>
-<li><a href="ILinelistBuildService.html">ILinelistBuildService.cls</a></li>
-<li><a href="LinelistBuildService.html">LinelistBuildService.cls</a></li>
-<li><a href="ILinelistSpecs.html">ILinelistSpecs.cls</a></li>
 <li><a href="LinelistSpecs.html">LinelistSpecs.cls</a></li>
 <li>EventsDesignerAdvanced.bas</li>
-<li><a href="LinelistSpecsWorkbookStub.html">LinelistSpecsWorkbookStub.cls</a></li>
-<li><a href="LLVarContextSpecsStub.html">LLVarContextSpecsStub.cls</a></li>
-<li><a href="TableSpecsLinelistStub.html">TableSpecsLinelistStub.cls</a></li>
 </ul>
 </details>
   </main>
