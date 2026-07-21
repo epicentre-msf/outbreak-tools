@@ -30,9 +30,13 @@ version: 1
 
 suites:
   # --- draft ----------------------------------------------------------------
-  # Probe suite for the AppleScript test loop. Greeter and Calculator are
-  # self-contained made-up classes; their tests exercise the CustomTest harness.
-  # Two classes on purpose: proves the loop imports and runs across more than one.
+  # LOCAL PROBE suite for the AppleScript test loop -- a smoke test of the harness
+  # itself. Greeter and Calculator are self-contained made-up classes (two on
+  # purpose: proves the loop runs across more than one). Their .cls/.bas fixtures
+  # are TEST-ONLY and are NOT committed to src/ -- they live untracked under
+  # .draft/tests/phase2/{classes,tests}/draft, and run-tests.R sources the `draft`
+  # folder from there (src/ first, then the .draft fallback). Real project suites
+  # below are sourced from src/. Remove this entry when the probe is no longer wanted.
   - folder: draft
     classes:
       - name: Greeter

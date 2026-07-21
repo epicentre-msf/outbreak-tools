@@ -104,27 +104,43 @@ message("run-tests.R: working copy -> ", work_copy)
 # sources. Excel reads them from ThisWorkbook.Path (the run dir), which the
 # repo-root folder grant covers -> no per-file prompts.
 #
-# Map each Development tag to its src base and the matching run-dir base, then
-# copy src/<base>/<folder> -> run/<base>/<folder> for every registered pairing.
-tag_bases <- list(
-  "general classes" = c(src = file.path(repo_root, "src", "classes"),
-                        run = file.path(run_dir, "classes")),
-  "general modules" = c(src = file.path(repo_root, "src", "modules"),
-                        run = file.path(run_dir, "modules")),
-  "tests modules"   = c(src = file.path(repo_root, "src", "tests", "modules"),
-                        run = file.path(run_dir, "tests", "modules")),
-  "tests classes"   = c(src = file.path(repo_root, "src", "tests", "classes"),
-                        run = file.path(run_dir, "tests", "classes"))
+# Map each Development tag to (candidate source bases, run-dir base). Real suites
+# live in src/; the local `draft` PROBE is test-only and lives untracked under
+# .draft/tests/phase2 -- so each folder resolves from src first, then falls back
+# to the .draft staging. Then copy <base>/<folder> -> run/<runbase>/<folder>.
+tag_srcs <- list(
+  "general classes" = c(file.path(repo_root, "src", "classes"),
+                        file.path(stage2, "classes")),
+  "general modules" = c(file.path(repo_root, "src", "modules"),
+                        file.path(stage2, "modules")),
+  "tests modules"   = c(file.path(repo_root, "src", "tests", "modules"),
+                        file.path(stage2, "tests", "modules")),
+  "tests classes"   = c(file.path(repo_root, "src", "tests", "classes"),
+                        file.path(stage2, "tests", "classes"))
+)
+tag_runs <- list(
+  "general classes" = file.path(run_dir, "classes"),
+  "general modules" = file.path(run_dir, "modules"),
+  "tests modules"   = file.path(run_dir, "tests", "modules"),
+  "tests classes"   = file.path(run_dir, "tests", "classes")
 )
 tbl <- read.delim(file.path(generated, "code-tables.tsv"), stringsAsFactors = FALSE)
 pairs <- unique(tbl[, c("folder", "tag")])
 for (i in seq_len(nrow(pairs))) {
-  base <- tag_bases[[pairs$tag[i]]]
-  if (is.null(base)) next
-  src_folder <- file.path(base[["src"]], pairs$folder[i])
-  if (!dir.exists(src_folder)) next
-  dir.create(base[["run"]], recursive = TRUE, showWarnings = FALSE)
-  file.copy(src_folder, base[["run"]], recursive = TRUE)
+  cands   <- tag_srcs[[pairs$tag[i]]]
+  run_base <- tag_runs[[pairs$tag[i]]]
+  if (is.null(cands)) next
+  found <- NULL
+  for (b in cands) {
+    if (dir.exists(file.path(b, pairs$folder[i]))) { found <- file.path(b, pairs$folder[i]); break }
+  }
+  if (is.null(found)) {
+    message("run-tests.R: WARNING - no source found for folder '", pairs$folder[i],
+            "' (tag '", pairs$tag[i], "') in src/ or .draft; skipping.")
+    next
+  }
+  dir.create(run_base, recursive = TRUE, showWarnings = FALSE)
+  file.copy(found, run_base, recursive = TRUE)
 }
 
 dir.create(file.path(run_dir, ".generated"), showWarnings = FALSE)
