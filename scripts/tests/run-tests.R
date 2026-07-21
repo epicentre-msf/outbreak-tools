@@ -6,17 +6,24 @@
 #
 #   --build   also rebuild the Codes tables + ModulesForTesting from the
 #             registry before running (runs build-registry.R, then asks the
-#             workbook to rebuild via OBT_BuildCodeTables). Omit to run the
-#             tables/Name already in the workbook.
+#             workbook to rebuild via OBTBuildCodeTables). Required on the first
+#             run and after any registry change; omit to reuse the tables the
+#             workbook already holds.
 #   --keep    never delete the per-run working copy, even on success
 #             (for inspecting a green run).
 #
+# The harness + probes now live in src/ (promoted). This script assembles a
+# per-run dir under .draft/tests/phase2/run/ from src/ (the workbook is the only
+# thing kept in .draft, as an untracked binary). The repo-root folder grant
+# (OBTGrantAccess, one-time) lets Excel read it all with no per-file prompts.
+#
 # What it does (all portable logic lives here; the OS-specific trigger is thin):
-#   1. copy src/bin/test-files/unit_tests_dev.xlsb -> a fresh per-run dir under
-#      src/tests/.generated/run-<stamp>/ (NEVER touch the original).
-#   2. (optional) regenerate the registry intermediates.
-#   3. shell out to the macOS trigger, which opens the copy, runs the OBT_*
-#      macros, and quits Excel.
+#   1. copy .draft/PartialTests.xlsb -> the stable run dir (NEVER touch original)
+#      and assemble the registered probe sources + manifest + harness from src/.
+#   2. (optional, --build) regenerate the registry intermediates (src/tests/.generated).
+#   3. quit any running Excel (run VB macro fails against an already-open one),
+#      then shell out to the macOS trigger, which opens the copy fresh, runs the
+#      OBT* macros (refresh -> build -> import -> run), and quits Excel.
 #   4. read test-results.csv written next to the copy; summarise.
 #   5. success (csv present, 0 failures) -> delete the run dir.
 #      failure -> KEEP the run dir and print the stale-copy path so it can be
@@ -29,9 +36,9 @@
 # trigger differs — macos/run-tests.applescript today; windows/run-tests.vbs
 # (trigger-file watcher) is Phase D. See .obt/plans/test-scripts-status.md.
 #
-# NOTE: not run yet. The OBT_* VBA entry points (Phase A/B) are still to be
-# built; until they exist this script will fail at the macro-run step. That is
-# expected and documented.
+# The workbook must carry the Development manager + the OBTImport / OBTHeadless
+# modules and the Codes-sheet folder named ranges (ModulesCodes /
+# ClassesImplementation / TestsCodes). See the Phase-2 operator setup notes.
 # =============================================================================
 
 # --- args --------------------------------------------------------------------
@@ -48,10 +55,20 @@ if (length(repo_root) != 1L || is.na(repo_root) || !nzchar(repo_root)) {
   stop("run-tests.R: not inside a git repository (could not resolve repo root).")
 }
 
-workbook_src <- file.path(repo_root, "src", "bin", "test-files", "unit_tests_dev.xlsb")
+workbook_src <- file.path(repo_root, ".draft", "PartialTests.xlsb")
 scripts_dir  <- file.path(repo_root, "scripts", "tests")
 trigger      <- file.path(scripts_dir, "macos", "run-tests.applescript")
-generated    <- file.path(repo_root, "src", "tests", ".generated")
+generated    <- file.path(repo_root, "src", "tests", ".generated")     # build-registry.R output
+stage2       <- file.path(repo_root, ".draft", "tests", "phase2")       # untracked phase-2 staging
+# STABLE run dir (fixed path, cleared+reused each run). macOS grants Excel file
+# access per PATH, so a fixed path is prompted for at most once, then never again
+# -- a fresh run-<stamp> dir each time is what caused the repeated grant prompts.
+run_dir      <- file.path(stage2, "run")
+
+if (!dir.exists(stage2)) {
+  stop("run-tests.R: phase-2 staging tree not found: ", stage2,
+       " (expected the untracked .draft/tests/phase2 layout).")
+}
 
 if (Sys.info()[["sysname"]] != "Darwin") {
   stop("run-tests.R: the macOS trigger is the only one implemented. ",
@@ -61,6 +78,9 @@ if (!file.exists(workbook_src)) stop("run-tests.R: workbook not found: ", workbo
 if (!file.exists(trigger))      stop("run-tests.R: trigger not found: ", trigger)
 
 # --- optional: refresh registry intermediates --------------------------------
+# build-registry.R writes the canonical manifest under src/tests/.generated; it
+# is copied into the run dir (next to the workbook) below, where OBTImport reads
+# it. Only needed on --build, which is also when OBTBuildCodeTables runs.
 if (do_build) {
   message("run-tests.R: rebuilding registry intermediates ...")
   rc <- system2("Rscript", file.path(scripts_dir, "build-registry.R"))
@@ -68,31 +88,109 @@ if (do_build) {
 }
 
 # --- 1) per-run working copy -------------------------------------------------
-stamp   <- format(Sys.time(), "%Y%m%d-%H%M%S")
-run_dir <- file.path(generated, paste0("run-", stamp))
+# Clear and recreate the STABLE run dir (same path every run -> no repeat grants).
+unlink(run_dir, recursive = TRUE, force = TRUE)
 dir.create(run_dir, recursive = TRUE, showWarnings = FALSE)
 
 work_copy <- file.path(run_dir, "unit_tests_run.xlsb")
 if (!file.copy(workbook_src, work_copy, overwrite = TRUE)) {
   stop("run-tests.R: failed to copy workbook into ", run_dir)
 }
-csv_path <- file.path(run_dir, "test-results.csv")   # written by OBT_RunAllTests
+csv_path <- file.path(run_dir, "test-results.csv")   # written by OBTRunAllTests
 message("run-tests.R: working copy -> ", work_copy)
 
-# --- 2/3) drive Excel via the thin trigger -----------------------------------
+# Assemble a SELF-CONTAINED run dir next to the workbook copy: the probe sources
+# (pulled from src/, only the registered folders) + the manifest + the harness
+# sources. Excel reads them from ThisWorkbook.Path (the run dir), which the
+# repo-root folder grant covers -> no per-file prompts.
+#
+# Map each Development tag to its src base and the matching run-dir base, then
+# copy src/<base>/<folder> -> run/<base>/<folder> for every registered pairing.
+tag_bases <- list(
+  "general classes" = c(src = file.path(repo_root, "src", "classes"),
+                        run = file.path(run_dir, "classes")),
+  "general modules" = c(src = file.path(repo_root, "src", "modules"),
+                        run = file.path(run_dir, "modules")),
+  "tests modules"   = c(src = file.path(repo_root, "src", "tests", "modules"),
+                        run = file.path(run_dir, "tests", "modules")),
+  "tests classes"   = c(src = file.path(repo_root, "src", "tests", "classes"),
+                        run = file.path(run_dir, "tests", "classes"))
+)
+tbl <- read.delim(file.path(generated, "code-tables.tsv"), stringsAsFactors = FALSE)
+pairs <- unique(tbl[, c("folder", "tag")])
+for (i in seq_len(nrow(pairs))) {
+  base <- tag_bases[[pairs$tag[i]]]
+  if (is.null(base)) next
+  src_folder <- file.path(base[["src"]], pairs$folder[i])
+  if (!dir.exists(src_folder)) next
+  dir.create(base[["run"]], recursive = TRUE, showWarnings = FALSE)
+  file.copy(src_folder, base[["run"]], recursive = TRUE)
+}
+
+dir.create(file.path(run_dir, ".generated"), showWarnings = FALSE)
+for (f in c("code-tables.tsv", "modules-for-testing.txt")) {  # manifest (built above)
+  src_f <- file.path(generated, f)
+  if (file.exists(src_f)) file.copy(src_f, file.path(run_dir, ".generated", f), overwrite = TRUE)
+}
+# Harness sources for OBTRefreshHarness to re-import at run start (so OBTImport /
+# OBTHeadless load the current src/ version without a manual VBE re-import).
+dir.create(file.path(run_dir, "bootstrap"), showWarnings = FALSE)
+for (f in c("OBTImport.bas", "OBTHeadless.bas")) {
+  src_f <- file.path(repo_root, "src", "tests", "modules", "rubberduck", f)
+  if (file.exists(src_f)) file.copy(src_f, file.path(run_dir, "bootstrap", f), overwrite = TRUE)
+}
+message("run-tests.R: run dir assembled from src/ (classes/, tests/, .generated/, bootstrap/)")
+
+# --- 2a) ensure Excel is fully closed before we launch a fresh instance ------
+# `run VB macro` returns AppleScript Parameter error (-50) against an Excel that
+# is already open interactively, so quit any running instance and wait until the
+# process is gone. Only quit when it is actually running (a bare `tell ... quit`
+# would auto-launch Excel just to close it).
+excel_running <- function() {
+  identical(system2("pgrep", c("-x", "Microsoft Excel"),
+                    stdout = FALSE, stderr = FALSE), 0L)
+}
+if (excel_running()) {
+  message("run-tests.R: quitting the running Excel instance ...")
+  system2("osascript",
+          c("-e", shQuote('tell application "Microsoft Excel" to quit saving no')),
+          stdout = FALSE, stderr = FALSE)
+  for (i in seq_len(40)) {          # up to ~20s
+    if (!excel_running()) break
+    Sys.sleep(0.5)
+  }
+  if (excel_running()) {
+    stop("run-tests.R: Excel would not quit; close it by hand before re-running.")
+  }
+}
+
+# --- 2b/3) drive Excel via the thin trigger ----------------------------------
 build_flag <- if (do_build) "build" else "nobuild"
 message("run-tests.R: launching Excel via osascript (", build_flag, ") ...")
 trigger_rc <- system2("osascript", c(shQuote(trigger), shQuote(work_copy), build_flag))
 
 # --- 4) collect + summarise --------------------------------------------------
+# Helper: dump the VBA-side diagnostics log if the wrappers wrote one.
+show_import_log <- function() {
+  log_path <- file.path(run_dir, "obt-import.log")
+  if (file.exists(log_path)) {
+    message("\n       --- obt-import.log (OBTBuildCodeTables/OBTSilentImport) ---")
+    for (ln in readLines(log_path, warn = FALSE)) message("       ", ln)
+    message("       --- end log ---")
+  } else {
+    message("\n       (no obt-import.log written — the wrappers may not have run, ",
+            "or could not write to ", run_dir, ")")
+  }
+}
+
 # Helper: keep the stale copy, explain, and exit non-zero.
 fail <- function(msg) {
   message("\n[FAIL] ", msg)
-  message("       Stale working copy kept for inspection:")
+  show_import_log()
+  message("\n       Stale working copy kept for inspection:")
   message("       ", work_copy)
   message("       Open it in Excel to read whatever `testsOutputs` was written,")
   message("       or re-run with --build if the Codes tables look stale.")
-  message("       Ask for a manual test run only as a last resort.")
   quit(status = 1L, save = "no")
 }
 
@@ -117,8 +215,29 @@ types    <- tolower(as.character(results[[type_col[1]]]))
 failures <- sum(types == "error", na.rm = TRUE)
 passes   <- sum(types == "success", na.rm = TRUE)
 
+# Surface the serializer's __summary__ diagnostics (modulesRun / testsFound /
+# vbe / name) whatever the outcome — they explain an empty run at a glance.
+mod_col <- intersect(c("module", "Module"), names(results))
+if (length(mod_col)) {
+  summ <- results[results[[mod_col[1]]] == "__summary__", , drop = FALSE]
+  if (nrow(summ)) {
+    lab_col <- intersect(c("label", "Label"), names(results))
+    msg_col <- intersect(c("message", "Message"), names(results))
+    message("run-tests.R: summary — ",
+            if (length(lab_col)) summ[[lab_col[1]]][1] else "",
+            " | ",
+            if (length(msg_col)) summ[[msg_col[1]]][1] else "")
+  }
+}
+
 message(sprintf("\nrun-tests.R: %d success / %d failure row(s) across %d result line(s).",
                 passes, failures, nrow(results)))
+
+# An all-zero run means no test actually executed (only the summary row was
+# written) — that is a FAILURE, not a pass. Do not let it clean up green.
+if (passes + failures == 0L) {
+  fail("no test result rows were produced — 0 tests ran. See summary + log above.")
+}
 
 if (failures > 0L) {
   # Show the failing rows so they can be worked directly from here.
@@ -135,14 +254,11 @@ if (failures > 0L) {
 }
 
 # --- 5) success: copy the CSV out, then clean up -----------------------------
-final_csv <- file.path(generated, "test-results.csv")
+final_csv <- file.path(stage2, "test-results.csv")
 file.copy(csv_path, final_csv, overwrite = TRUE)
 message("run-tests.R: latest results -> ", final_csv)
 
-if (do_keep) {
-  message("run-tests.R: --keep set; leaving working copy at ", run_dir)
-} else {
-  unlink(run_dir, recursive = TRUE, force = TRUE)
-  message("run-tests.R: all tests passed; removed working copy.")
-}
+# Leave the stable run dir in place (it is cleared at the start of the next run).
+# Keeping the same path is what avoids re-triggering the macOS file-access grant.
+message("run-tests.R: all tests passed. Run dir left at ", run_dir)
 quit(status = 0L, save = "no")

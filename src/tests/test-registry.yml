@@ -30,31 +30,42 @@ version: 1
 
 suites:
   # --- draft ----------------------------------------------------------------
-  # Probe suite for the AppleScript test loop. Greeter is a self-contained
-  # made-up class; TestGreeter exercises it through the CustomTest harness.
+  # Probe suite for the AppleScript test loop. Greeter and Calculator are
+  # self-contained made-up classes; their tests exercise the CustomTest harness.
+  # Two classes on purpose: proves the loop imports and runs across more than one.
   - folder: draft
     classes:
       - name: Greeter
         interface: false
+      - name: Calculator
+        interface: false
     tests:
       - module: TestGreeter
         covers: [Greeter]
+      - module: TestCalculator
+        covers: [Calculator]
 
   # --- sections -------------------------------------------------------------
-  # Fully verified against the current tree. Use as the template for new suites.
-  - folder: sections
-    classes:
-      - name: VarWriter
-        interface: true
-      - name: SectionBuilder
-        interface: true
-    modules: []          # general modules under src/modules/sections (none)
-    fixtures: []         # test-only helper classes under src/tests/classes/sections
-    tests:
-      - module: TestVarWriter
-        covers: [VarWriter]
-      - module: TestSectionBuilder
-        covers: [SectionBuilder]
+  # DISABLED for the Phase-2 probe loop. Kept as the template for new suites.
+  # VarWriter/SectionBuilder pull a large dependency tree (LLVariables, Formulas,
+  # LLdictionary, LinelistSpecs, ...) that is NOT present in the minimal probe
+  # workbook (.draft/PartialTests.xlsb) -- importing them there fails to compile
+  # and would break the whole run. Re-enable once the target workbook carries
+  # those dependencies. (Also note: interface: true is stale -- IVarWriter /
+  # ISectionBuilder were folded and no longer exist; import skips missing files.)
+  # - folder: sections
+  #   classes:
+  #     - name: VarWriter
+  #       interface: true
+  #     - name: SectionBuilder
+  #       interface: true
+  #   modules: []          # general modules under src/modules/sections (none)
+  #   fixtures: []         # test-only helper classes under src/tests/classes/sections
+  #   tests:
+  #     - module: TestVarWriter
+  #       covers: [VarWriter]
+  #     - module: TestSectionBuilder
+  #       covers: [SectionBuilder]
 
 # ---------------------------------------------------------------------------
 # TEMPLATE — copy per folder as coverage is added. Delete fields left empty.
