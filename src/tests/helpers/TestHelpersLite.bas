@@ -9,22 +9,19 @@ Option Explicit
 '@ModuleDescription("Minimal test helpers for the OSFiles suite (CustomTest dependency only)")
 
 ' =============================================================================
-' A deliberately small subset of TestHelpers, carrying ONLY the routines that
-' TestOSFiles calls: BusyApp / RestoreApp / EnsureWorksheet (+ ClearWorksheet) /
-' CustomTestSetTitles / FailUnexpectedError. Its single project dependency is
-' CustomTest, which is always present in the baseline.
+' A small subset of TestHelpers, carrying only the routines the registered
+' CustomTest suites call: BusyApp / RestoreApp / EnsureWorksheet / ClearWorksheet
+' / DeleteWorksheet(s) / FailUnexpectedError / CustomTestSetTitles /
+' CustomTestLogFailure / BetterArrayFromList. Project dependencies: CustomTest
+' and BetterArray, both present in the baseline workbook.
 '
-' The full TestHelpers additionally binds TranslationObject and BetterArray
-' (BuildTranslationObject, BetterArrayFromList, ...). When a minimal run imports
-' only OSFiles + its test, those extra classes may be absent, so the full module
-' would not compile and the whole project would fail -- surfacing as the opaque
-' AppleScript -50 at OBTRunAllTests. This lite variant removes that coupling so
-' the OSFiles suite compiles from just its own dependencies. The full TestHelpers
-' stays on disk for suites that need the richer helpers.
+' Registered in place of the full TestHelpers. NB the full module also compiles
+' in this workbook -- its TranslationObject/BetterArray deps ARE present -- so
+' this split is optional: grow it as suites are added, or point the registry
+' back at the full TestHelpers once several suites need the richer helpers.
 '
 ' The public names mirror TestHelpers exactly, so only one of the two may be
 ' imported at a time (importing both would raise "Ambiguous name detected").
-' The registry registers this lite module for the minimal OSFiles run.
 ' =============================================================================
 
 '@section Application State
@@ -124,6 +121,27 @@ Public Sub ClearWorksheet(ByVal sh As Worksheet)
     On Error GoTo 0
 End Sub
 
+'@label DeleteWorksheet
+'@sub-title Delete a worksheet if it exists.
+'@param sheetName String. Worksheet to delete.
+Public Sub DeleteWorksheet(ByVal sheetName As String)
+    On Error Resume Next
+        BusyApp
+        ThisWorkbook.Worksheets(sheetName).Delete
+    On Error GoTo 0
+End Sub
+
+'@label DeleteWorksheets
+'@sub-title Delete several worksheets in a single call.
+'@param sheetNames ParamArray list of worksheet names.
+Public Sub DeleteWorksheets(ParamArray sheetNames() As Variant)
+    Dim idx As Long
+
+    For idx = LBound(sheetNames) To UBound(sheetNames)
+        DeleteWorksheet CStr(sheetNames(idx))
+    Next idx
+End Sub
+
 '@section Assertions
 '===============================================================================
 
@@ -151,3 +169,61 @@ Public Sub CustomTestSetTitles(ByVal harness As CustomTest, _
     harness.SetTestName testName
     harness.SetTestSubtitle testSubtitle
 End Sub
+
+'@label CustomTestLogFailure
+'@sub-title Log a formatted failure message on a CustomTest harness.
+'@details Builds a descriptive failure message containing the routine name and optional error info, then logs it.
+'@param harness CustomTest harness instance.
+'@param routineName String name of the failing routine.
+'@param errNumber Optional Long error number to include.
+'@param errDescription Optional String error description to include.
+Public Sub CustomTestLogFailure(ByVal harness As CustomTest, _
+                                ByVal routineName As String, _
+                                Optional ByVal errNumber As Long = 0, _
+                                Optional ByVal errDescription As String = vbNullString)
+    Dim message As String
+    Dim errorExplanation As String
+
+    If harness Is Nothing Then Exit Sub
+    message = routineName
+
+    If errNumber <> 0 Or LenB(errDescription) > 0 Then
+
+        Select Case errNumber
+        Case 1001: errorExplanation = "Invalid argument"
+        Case 1002: errorExplanation = "Object not initialized"
+        Case 1004: errorExplanation = "Unexpected state"
+        Case 1005: errorExplanation = "Element should exists"
+        Case 1006: errorExplanation = "Element should not exists"
+        Case 1007: errorExplanation = "Element not found"
+        Case 1008: errorExplanation = "Something went wrong"
+        Case Else: errorExplanation = "Unkown error: (" & errNumber & ")"
+        End Select
+
+        message = message & ": " & errorExplanation & " - " & errDescription
+    End If
+
+    harness.LogFailure message
+End Sub
+
+'@section Data Builders
+'===============================================================================
+
+'@label BetterArrayFromList
+'@fun-title Create a BetterArray with the supplied items.
+'@details Create a BetterArray with the supplied items.
+'@param items ParamArray values to push.
+'@return BetterArray containing the items.
+Public Function BetterArrayFromList(ParamArray items() As Variant) As BetterArray
+    Dim result As BetterArray
+    Dim idx As Long
+
+    Set result = New BetterArray
+    result.lowerBound = 0
+
+    For idx = LBound(items) To UBound(items)
+        result.Push items(idx)
+    Next idx
+
+    Set BetterArrayFromList = result
+End Function

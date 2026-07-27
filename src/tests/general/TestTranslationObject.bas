@@ -60,8 +60,8 @@ End Sub
 'three-row ListObject (Tag/ENG/FRA) via PrepareTranslationTable, and builds an
 'ENG-targeted Translator from it.
 Public Sub TestInitialize()
-    TestHelpers.DeleteWorksheets TRANSLATION_SHEET
-    Set TranslationSheet = TestHelpers.EnsureWorksheet(TRANSLATION_SHEET)
+    DeleteWorksheets TRANSLATION_SHEET
+    Set TranslationSheet = EnsureWorksheet(TRANSLATION_SHEET)
     PrepareTranslationTable
     Set Translator = TranslationObject.Create(TranslationTable, "ENG")
 End Sub
@@ -75,7 +75,7 @@ Public Sub TestCleanup()
     Set Translator = Nothing
     Set TranslationTable = Nothing
     Set TranslationSheet = Nothing
-    TestHelpers.DeleteWorksheets TRANSLATION_SHEET
+    DeleteWorksheets TRANSLATION_SHEET
 End Sub
 
 

@@ -61,13 +61,20 @@ suites:
     tests:
       - module: TestHelpersLite
 
-  # --- general (OSFiles) ----------------------------------------------------
+  # --- general (OSFiles, DropdownLists) --------------------------------------
+  # DropdownLists' whole dependency closure (HiddenNames, BetterArray, Checking)
+  # is already in the workbook, so it needs no extra class imports.
   - folder: general
     classes:
       - name: OSFiles
+      - name: DropdownLists
     tests:
       - module: TestOSFiles
         covers: [OSFiles]
+      - module: TestDropdownLists
+        covers: [DropdownLists]
+      - module: TestTranslationObject
+        covers: [TranslationObject]
 
   # --- sections -------------------------------------------------------------
   # (Also note: interface: true is stale -- IVarWriter /

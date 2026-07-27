@@ -106,9 +106,17 @@ if (do_build) {
 }
 
 # --- 1) per-run working copy -------------------------------------------------
-# Clear and recreate the STABLE run dir (same path every run -> no repeat grants).
-unlink(run_dir, recursive = TRUE, force = TRUE)
-dir.create(run_dir, recursive = TRUE, showWarnings = FALSE)
+# Keep the run dir at a STABLE identity (same folder, not just same path) every
+# run. A macOS folder-access grant is tied to the folder's identity (inode), so
+# DELETING and recreating it -- even at the same path -- makes a new folder the
+# grant no longer covers, and Excel re-prompts. So clear the CONTENTS and keep
+# the folder itself. (The grant should be on the repo root, a stable parent.)
+if (dir.exists(run_dir)) {
+  unlink(list.files(run_dir, all.files = TRUE, full.names = TRUE, no.. = TRUE),
+         recursive = TRUE, force = TRUE)
+} else {
+  dir.create(run_dir, recursive = TRUE, showWarnings = FALSE)
+}
 
 work_copy <- file.path(run_dir, "unit_tests_run.xlsb")
 if (!file.copy(workbook_src, work_copy, overwrite = TRUE)) {
