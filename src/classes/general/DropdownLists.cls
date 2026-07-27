@@ -23,6 +23,13 @@ Option Explicit
 'and a workbook-level named reference. Supports adding, removing,
 'updating, sorting, translating, and validating dropdown entries, plus
 'hyperlink navigation between the dropdown sheet and consuming cells.
+'@details
+'The name-to-ListObject mapping lives in two worksheet columns. Every
+'public method reads those two columns once into memory and then works
+'from that copy, so a single call touches Excel once instead of once per
+'registered dropdown. The copy is never kept between calls: another
+'DropdownLists object can hold the same worksheet and change the mapping
+'in between.
 '@depends HiddenNames, BetterArray, Checking
 '@version 1.0 (2026-02-09)
 
@@ -35,6 +42,9 @@ Private Type TDropdownLists
     wbStored As HiddenNames
     shStored As HiddenNames
     sealed As Boolean
+    registryLoaded As Boolean
+    registryRows As Long
+    registryBlock As Variant
 End Type
 
 Private this As TDropdownLists
@@ -56,6 +66,23 @@ Private Const DROPDOWNCOUNTERINCREMENT As Byte = 1
 'Where all the dropdowns should start, sometimes there could be a need
 'for header for the dropdown (like in custom dropdowns, so we shift one line)
 Private Const DROPDOWNSTARTROW As Integer = 2
+
+'The registry that maps a dropdown name to its ListObject name. The dropdown
+'name is in column C, the ListObject name in column D. Both columns carry a
+'header on DROPDOWNSTARTROW.
+Private Const REGISTRYNAMECOLUMN As Long = 3
+Private Const REGISTRYLONAMECOLUMN As Long = 4
+
+'Field positions inside one row of the registry block held in memory
+Private Const REGISTRYNAMEITEM As Long = 1
+Private Const REGISTRYLONAMEITEM As Long = 2
+
+'Row 1 of the registry block is the column header, so data starts on row 2
+Private Const REGISTRYFIRSTDATAITEM As Long = 2
+
+'Counter start values: the workbook counter starts at 1, the worksheet one at 0
+Private Const WORKBOOKCOUNTERSTART As Long = 1
+Private Const WORKSHEETCOUNTERSTART As Long = 0
 
 
 'checking objects
@@ -125,8 +152,8 @@ Public Property Set Wksh(ByVal outsh As Worksheet)
         outsh.Range("A:D").Font.Color = vbWhite
         outsh.Range("A:D").Interior.Color = vbWhite
 
-        outsh.Cells(DROPDOWNSTARTROW, 3).Value = LISTNAMECOLUMNHEADER
-        outsh.Cells(DROPDOWNSTARTROW, 4).Value = LONAMECOLUMNHEADER
+        outsh.Cells(DROPDOWNSTARTROW, REGISTRYNAMECOLUMN).Value = LISTNAMECOLUMNHEADER
+        outsh.Cells(DROPDOWNSTARTROW, REGISTRYLONAMECOLUMN).Value = LONAMECOLUMNHEADER
 
         this.initialised = True
         store.EnsureName DROPDOWNINITIALSEDNAME, "Yes", HiddenNameTypeString
@@ -135,6 +162,7 @@ Public Property Set Wksh(ByVal outsh As Worksheet)
     Set this.sh = outsh
     Set this.shStored = Nothing
     Set this.wbStored = Nothing
+    this.registryLoaded = False
 End Property
 
 
@@ -145,36 +173,20 @@ End Property
 'into a BetterArray.
 '@return BetterArray. The dropdown name list.
 Public Property Get AllDropdowns() As BetterArray
-    Dim sh As Worksheet
     Dim temp As BetterArray
-    Dim headerCell As Range
-    Dim cursor As Range
+    Dim listName As String
+    Dim rowIndex As Long
 
     Set temp = New BetterArray
     temp.LowerBound = 1
 
-    Set sh = Wksh()
-    If sh Is Nothing Then
-        Set AllDropdowns = temp
-        Exit Property
-    End If
+    RefreshRegistry
 
-    Set headerCell = sh.Cells(DROPDOWNSTARTROW, 3)
-    Set cursor = sh.Cells(sh.Rows.Count, 3).End(xlUp)
+    For rowIndex = REGISTRYFIRSTDATAITEM To this.registryRows
+        listName = RegistryItem(rowIndex, REGISTRYNAMEITEM)
+        If LenB(Trim$(listName)) > 0 Then temp.Push listName
+    Next rowIndex
 
-    If cursor.Row <= headerCell.Row Then
-        Set AllDropdowns = temp
-        Exit Property
-    End If
-
-    Do While cursor.Row > headerCell.Row
-        If LenB(Trim$(CStr(cursor.Value))) > 0 Then
-            temp.Push CStr(cursor.Value)
-        End If
-        Set cursor = cursor.Offset(-1)
-    Loop
-
-    temp.Reverse
     Set AllDropdowns = temp.Clone()
 End Property
 
@@ -204,7 +216,141 @@ Public Property Get Name() As String
 End Property
 
 
-'@section Workbook Counter
+'@section Registry
+'===============================================================================
+
+'@label:refresh-registry
+'@sub-title Read the dropdown registry again from the worksheet
+'@details
+'Every public entry point calls this once. One call therefore reads the
+'two registry columns a single time, and every lookup after that runs in
+'memory. The copy is dropped at the start of the next call because
+'another DropdownLists object can hold the same worksheet and change the
+'registry in between.
+Private Sub RefreshRegistry()
+    this.registryLoaded = False
+    EnsureRegistry
+End Sub
+
+'@label:ensure-registry
+'@sub-title Load the registry when no copy is held
+Private Sub EnsureRegistry()
+    If this.registryLoaded Then Exit Sub
+    LoadRegistry
+End Sub
+
+'@label:load-registry
+'@sub-title Read the two registry columns into memory in one block
+'@details
+'Reads from the header row down to the last used row of the dropdown
+'name column. Row 1 of the block is the header, so dropdown entries
+'start at REGISTRYFIRSTDATAITEM.
+Private Sub LoadRegistry()
+    Dim sh As Worksheet
+    Dim lastRow As Long
+
+    this.registryLoaded = True
+    this.registryRows = 0
+    this.registryBlock = Empty
+
+    Set sh = Wksh()
+    If sh Is Nothing Then Exit Sub
+
+    lastRow = sh.Cells(sh.Rows.Count, REGISTRYNAMECOLUMN).End(xlUp).Row
+    If lastRow < DROPDOWNSTARTROW Then Exit Sub
+
+    this.registryRows = lastRow - DROPDOWNSTARTROW + 1
+    this.registryBlock = sh.Range( _
+        sh.Cells(DROPDOWNSTARTROW, REGISTRYNAMECOLUMN), _
+        sh.Cells(lastRow, REGISTRYLONAMECOLUMN)).Value
+End Sub
+
+'@label:registry-item
+'@sub-title Read one field of one registry row as text
+'@param rowIndex Long. Row position inside the registry block.
+'@param fieldIndex Long. REGISTRYNAMEITEM or REGISTRYLONAMEITEM.
+'@return String. The stored text, or an empty string when out of range.
+Private Function RegistryItem(ByVal rowIndex As Long, ByVal fieldIndex As Long) As String
+    EnsureRegistry
+    If rowIndex < 1 Or rowIndex > this.registryRows Then Exit Function
+    RegistryItem = CStr(this.registryBlock(rowIndex, fieldIndex))
+End Function
+
+'@label:registry-index-of
+'@sub-title Find the registry row that holds a dropdown name
+'@param listName String. Dropdown name to look for.
+'@return Long. Row position inside the registry block, or 0 when absent.
+Private Function RegistryIndexOf(ByVal listName As String) As Long
+    Dim rowIndex As Long
+
+    EnsureRegistry
+
+    For rowIndex = 1 To this.registryRows
+        If this.registryBlock(rowIndex, REGISTRYNAMEITEM) = listName Then
+            RegistryIndexOf = rowIndex
+            Exit Function
+        End If
+    Next rowIndex
+End Function
+
+'@label:registry-row
+'@sub-title Worksheet row of a registry block position
+'@param rowIndex Long. Row position inside the registry block.
+'@return Long. The 1-based worksheet row.
+Private Function RegistryRow(ByVal rowIndex As Long) As Long
+    RegistryRow = DROPDOWNSTARTROW + rowIndex - 1
+End Function
+
+'@label:registry-free-row
+'@sub-title First worksheet row free for a new registry entry
+'@details
+'A removed dropdown leaves an empty row behind, and that row is used
+'again before the registry grows.
+'@return Long. The 1-based worksheet row to write on.
+Private Function RegistryFreeRow() As Long
+    Dim rowIndex As Long
+
+    EnsureRegistry
+
+    For rowIndex = 1 To this.registryRows
+        If LenB(RegistryItem(rowIndex, REGISTRYNAMEITEM)) = 0 Then
+            RegistryFreeRow = RegistryRow(rowIndex)
+            Exit Function
+        End If
+    Next rowIndex
+
+    RegistryFreeRow = DROPDOWNSTARTROW + this.registryRows
+End Function
+
+'@label:has-dropdown
+'@sub-title Whether a dropdown name is in the registry held in memory
+'@param listName String. Dropdown name to look for.
+'@return Boolean. True when the name is registered.
+Private Function HasDropdown(ByVal listName As String) As Boolean
+    HasDropdown = (RegistryIndexOf(listName) > 0)
+End Function
+
+'@label:missing-dropdown
+'@sub-title Report a dropdown that is not on the worksheet
+'@details
+'Logs the given message and prints the debug trace when the dropdown is
+'absent. Callers use the return value to leave at once.
+'@param listName String. Dropdown name to look for.
+'@param message String. Text to log when the dropdown is missing.
+'@param showTrace Optional Boolean. When True, prints the debug trace. Defaults to True.
+'@return Boolean. True when the dropdown does not exist.
+Private Function MissingDropdown(ByVal listName As String, ByVal message As String, _
+    Optional ByVal showTrace As Boolean = True) As Boolean
+
+    If HasDropdown(listName) Then Exit Function
+
+    LogInfo message
+    If showTrace Then ShowDebug
+    MissingDropdown = True
+End Function
+
+
+'@section Counters
 '===============================================================================
 
 '@label:internal-store
@@ -240,122 +386,89 @@ Private Property Get InternalStore(Optional ByVal sheetLevel As Boolean = False)
     End If
 End Property
 
-
-'@label:ensure-workbook-counter
-'@sub-title Ensure the workbook-level dropdown counter exists
-Private Sub EnsureWorkbookCounter()
-    Dim store As HiddenNames
-
-    Set store = InternalStore(False)
-    If Not store.HasName(WORKBOOKCOUNTERNAME) Then
-        store.EnsureName WORKBOOKCOUNTERNAME, 1, HiddenNameTypeLong
-    End If
-End Sub
-
-'@label:workbook-counter-value
-'@sub-title Read the current workbook dropdown counter
-'@return Long. The counter value.
-Private Function WorkbookCounterValue() As Long
-    Dim store As HiddenNames
-
-    EnsureWorkbookCounter
-    Set store = InternalStore(False)
-    WorkbookCounterValue = store.ValueAsLong(WORKBOOKCOUNTERNAME, 1)
+'@label:counter-name
+'@sub-title Stored name of a dropdown counter
+'@param sheetLevel Boolean. True for the worksheet counter, False for the workbook one.
+'@return String. The hidden name holding the counter.
+Private Function CounterName(ByVal sheetLevel As Boolean) As String
+    CounterName = IIf(sheetLevel, WORKSHEETCOUNTERNAME, WORKBOOKCOUNTERNAME)
 End Function
 
-'@label:set-workbook-counter
-'@sub-title Write a new workbook dropdown counter value
-'@param newValue Long. The value to store.
-Private Sub SetWorkbookCounter(ByVal newValue As Long)
-    Dim store As HiddenNames
-
-    EnsureWorkbookCounter
-    Set store = InternalStore(False)
-    store.SetValue WORKBOOKCOUNTERNAME, newValue
-End Sub
-
-'@label:increment-workbook-counter
-'@sub-title Increment the workbook dropdown counter by one
-Private Sub IncrementWorkbookCounter()
-    Dim nextValue As Long
-    nextValue = WorkbookCounterValue() + DROPDOWNCOUNTERINCREMENT
-    SetWorkbookCounter nextValue
-End Sub
-
-'@label:decrement-workbook-counter
-'@sub-title Decrement the workbook dropdown counter by one
-Private Sub DecrementWorkbookCounter()
-     Dim nextValue As Long
-    nextValue = WorkbookCounterValue() - DROPDOWNCOUNTERINCREMENT
-    SetWorkbookCounter nextValue
-End Sub
-'@section Worksheet Counter
-'===============================================================================
-
-'@label:ensure-worksheet-counter
-'@sub-title Ensure the worksheet-level dropdown counter exists
-Private Sub EnsureWorksheetCounter()
-    Dim store As HiddenNames
-
-    Set store = InternalStore(True)
-    If Not store.HasName(WORKSHEETCOUNTERNAME) Then
-        store.EnsureName WORKSHEETCOUNTERNAME, 0, HiddenNameTypeLong
-    End If
-End Sub
-
-
-'@label:sheet-counter-value
-'@sub-title Read the current worksheet dropdown counter
-'@return Long. The counter value.
-Private Function SheetCounterValue() As Long
-    Dim store As HiddenNames
-
-    EnsureWorksheetCounter
-    Set store = InternalStore(True)
-    SheetCounterValue = store.ValueAsLong(WORKSHEETCOUNTERNAME, 0)
+'@label:counter-start
+'@sub-title Start value of a dropdown counter
+'@param sheetLevel Boolean. True for the worksheet counter, False for the workbook one.
+'@return Long. The value the counter takes when it is created.
+Private Function CounterStart(ByVal sheetLevel As Boolean) As Long
+    CounterStart = IIf(sheetLevel, WORKSHEETCOUNTERSTART, WORKBOOKCOUNTERSTART)
 End Function
 
-'@label:set-sheet-counter
-'@sub-title Write a new worksheet dropdown counter value
-'@param newValue Long. The value to store (clamped to 0).
-Private Sub SetSheetCounter(ByVal newValue As Long)
+'@label:counter-store
+'@sub-title Store holding a dropdown counter, created when missing
+'@details
+'The counters are shared by every DropdownLists object of the workbook,
+'so they live in HiddenNames and never in memory. Only the store object
+'is cached.
+'@param sheetLevel Boolean. True for the worksheet counter, False for the workbook one.
+'@return HiddenNames. The store that holds the counter.
+Private Function CounterStore(ByVal sheetLevel As Boolean) As HiddenNames
     Dim store As HiddenNames
 
-    EnsureWorksheetCounter
-    If newValue < 0 Then newValue = 0
+    Set store = InternalStore(sheetLevel)
+    If Not store.HasName(CounterName(sheetLevel)) Then
+        store.EnsureName CounterName(sheetLevel), CounterStart(sheetLevel), HiddenNameTypeLong
+    End If
 
-    Set store = InternalStore(True)
-    store.SetValue WORKSHEETCOUNTERNAME, newValue
+    Set CounterStore = store
+End Function
+
+'@label:counter-value
+'@sub-title Read a dropdown counter
+'@param sheetLevel Boolean. True for the worksheet counter, False for the workbook one.
+'@return Long. The counter value.
+Private Function CounterValue(ByVal sheetLevel As Boolean) As Long
+    CounterValue = CounterStore(sheetLevel).ValueAsLong(CounterName(sheetLevel), CounterStart(sheetLevel))
+End Function
+
+'@label:step-counter
+'@sub-title Move one dropdown counter and write it through at once
+'@details
+'The worksheet counter never goes below zero. The value is written back
+'to the store on every step because other DropdownLists objects read the
+'same counter.
+'@param sheetLevel Boolean. True for the worksheet counter, False for the workbook one.
+'@param stepValue Long. Amount to add, negative to go down.
+Private Sub StepCounter(ByVal sheetLevel As Boolean, ByVal stepValue As Long)
+    Dim store As HiddenNames
+    Dim nextValue As Long
+
+    Set store = CounterStore(sheetLevel)
+    nextValue = store.ValueAsLong(CounterName(sheetLevel), CounterStart(sheetLevel)) + stepValue
+
+    If sheetLevel Then
+        If nextValue < 0 Then nextValue = 0
+    End If
+
+    store.SetValue CounterName(sheetLevel), nextValue
 End Sub
 
-'@label:increment-sheet-counter
-'@sub-title Increment the worksheet dropdown counter by one
-Private Sub IncrementSheetCounter()
-    Dim nextValue As Long
-    nextValue = SheetCounterValue() + DROPDOWNCOUNTERINCREMENT
-    SetSheetCounter nextValue
-End Sub
-
-'@label:decrement-sheet-counter
-'@sub-title Decrement the worksheet dropdown counter by one
-Private Sub DecrementSheetCounter()
-    Dim nextValue As Long
-    nextValue = SheetCounterValue() - DROPDOWNCOUNTERINCREMENT
-    SetSheetCounter nextValue
+'@label:step-counters
+'@sub-title Move the worksheet and workbook counters together
+'@param stepValue Long. Amount to add, negative to go down.
+Private Sub StepCounters(ByVal stepValue As Long)
+    StepCounter True, stepValue
+    StepCounter False, stepValue
 End Sub
 
 '@label:increment-counters
 '@sub-title Increment both workbook and worksheet counters
 Private Sub IncrementCounters()
-    IncrementSheetCounter
-    IncrementWorkbookCounter
+    StepCounters CLng(DROPDOWNCOUNTERINCREMENT)
 End Sub
 
 '@label:decrement-counters
 '@sub-title Decrement both workbook and worksheet counters
 Private Sub DecrementCounters()
-    DecrementSheetCounter
-    DecrementWorkbookCounter
+    StepCounters -CLng(DROPDOWNCOUNTERINCREMENT)
 End Sub
 
 '@section Helpers
@@ -430,84 +543,105 @@ End Property
 '@label:list-object-name
 '@prop-title ListObject name for a dropdown
 '@details
-'Returns the cached ListObject name for an existing dropdown, or
-'generates and registers a new one for a dropdown being created.
+'Returns the stored ListObject name for an existing dropdown, or
+'generates and registers a new one for a dropdown being created. The
+'workbook counter is what keeps the generated name unique across the
+'whole workbook, so two worksheets can hold a dropdown of the same name.
 '@param listName String. Dropdown name.
 '@return String. The ListObject name.
 Private Property Get ListObjectName(ByVal listName As String) As String
+    Dim rowIndex As Long
     Dim loName As String
 
-    If Not Exists(listName) Then
-        loName = "list_" & SanitizedListName(listName) & WorkbookCounterValue()
+    rowIndex = RegistryIndexOf(listName)
+
+    If rowIndex = 0 Then
+        loName = "list_" & SanitizedListName(listName) & CounterValue(False)
         AddLoName listName, loName
     Else
-        loName = RetrieveLoName(listName)
+        loName = RegistryItem(rowIndex, REGISTRYLONAMEITEM)
     End If
 
     ListObjectName = loName
 End Property
+
+'@label:dropdown-list-object
+'@sub-title ListObject that holds the values of a dropdown
+'@param listName String. The dropdown name.
+'@return ListObject. The table on the dropdown worksheet.
+Private Function DropdownListObject(ByVal listName As String) As ListObject
+    Set DropdownListObject = Wksh().ListObjects(ListObjectName(listName))
+End Function
+
+'@label:dropdown-label-cell
+'@sub-title Cell that carries the label of a dropdown
+'@details
+'The label sits one row above the header row of the ListObject.
+'@param listName String. The dropdown name.
+'@return Range. The label cell.
+Private Function DropdownLabelCell(ByVal listName As String) As Range
+    Set DropdownLabelCell = DropdownListObject(listName).Range.Cells(0, 1)
+End Function
+
+'@label:format-label-cell
+'@sub-title Write and format the label cell of a dropdown
+'@details
+'Used when a dropdown is added, and again after a hyperlink is placed on
+'the label, because adding a hyperlink wipes the text and the format.
+'@param labelCell Range. The cell above the ListObject header.
+'@param labelText String. Text to write. An empty text leaves the value alone.
+'@param interiorColor Long. Background colour of the cell.
+'@param fontColor Long. Colour of the text.
+Private Sub FormatLabelCell(ByVal labelCell As Range, ByVal labelText As String, _
+    ByVal interiorColor As Long, ByVal fontColor As Long)
+
+    With labelCell
+        If LenB(labelText) > 0 Then .Value = labelText
+        .Font.UnderLine = xlUnderlineStyleNone
+        .Interior.Color = interiorColor
+        .Font.Color = fontColor
+        .Font.Bold = True
+        .Font.Italic = True
+    End With
+End Sub
 
 '@label:add-lo-name
 '@sub-title Register a dropdown-to-ListObject name mapping
 '@param listName String. The dropdown name.
 '@param loName String. The corresponding ListObject name.
 Private Sub AddLoName(ByVal listName As String, ByVal loName As String)
-
-    Dim cellRng As Range
     Dim sh As Worksheet
+    Dim targetRow As Long
 
     Set sh = Wksh()
-    Set cellRng = sh.Cells(DROPDOWNSTARTROW, 3)
+    targetRow = RegistryFreeRow()
 
-    Do While (LenB(CStr(cellRng.Value)) <> 0)
-        Set cellRng = cellRng.Offset(1)
-    Loop
+    sh.Cells(targetRow, REGISTRYNAMECOLUMN).Value = listName
+    sh.Cells(targetRow, REGISTRYLONAMECOLUMN).Value = loName
 
-    cellRng.Value = listName
-    cellRng.Offset(, 1).Value = loName
+    'The worksheet no longer matches the copy held in memory
+    this.registryLoaded = False
 End Sub
 
-
-'@label:retrieve-lo-name
-'@prop-title Retrieve the ListObject name for a dropdown
-'@param lst String. The dropdown name.
-'@return String. The ListObject name, or vbNullString when not found.
-Private Property Get RetrieveLoName(ByVal lst As String) As String
-    Dim cellRng As Range
-    Dim sh As Worksheet
-    Dim nbElmts As Long
-
-    Set sh = Wksh()
-    Set cellRng = sh.Cells(DROPDOWNSTARTROW, 3)
-
-    For nbElmts = 0 To Length()
-        If cellRng.Value = lst Then
-            RetrieveLoName = cellRng.Offset(, 1).Value
-            Exit Property
-        End If
-        Set cellRng = cellRng.Offset(1)
-    Next
-End Property
 
 '@label:remove-lo-name
 '@sub-title Remove a dropdown-to-ListObject name mapping
 '@param lst String. The dropdown name to unregister.
 Private Sub RemoveLoName(ByVal lst As String)
-    Dim cellRng As Range
     Dim sh As Worksheet
-    Dim nbElmts As Long
+    Dim rowIndex As Long
+    Dim targetRow As Long
+
+    rowIndex = RegistryIndexOf(lst)
+    If rowIndex = 0 Then Exit Sub
 
     Set sh = Wksh()
-    Set cellRng = sh.Cells(DROPDOWNSTARTROW, 3)
+    targetRow = RegistryRow(rowIndex)
+    sh.Range(sh.Cells(targetRow, REGISTRYNAMECOLUMN), _
+             sh.Cells(targetRow, REGISTRYLONAMECOLUMN)).ClearContents
 
-    For nbElmts = 0 To Length()
-        If cellRng.Value = lst Then
-            cellRng.ClearContents
-            cellRng.Offset(, 1).ClearContents
-            Exit Sub
-        End If
-        Set cellRng = cellRng.Offset(1)
-    Next
+    'The worksheet no longer matches the copy held in memory
+    this.registryLoaded = False
 End Sub
 
 
@@ -515,7 +649,7 @@ End Sub
 '@prop-title Total number of dropdowns on the worksheet
 '@return Long. The dropdown count.
 Public Property Get Length() As Long
-    Length = SheetCounterValue()
+    Length = CounterValue(True)
 End Property
 
 
@@ -529,31 +663,20 @@ End Property
 Private Function CurrentDropdownLabel(ByVal labelPrefix As String) As String
     Dim dropCounter As Long
 
-    dropCounter = SheetCounterValue()
+    dropCounter = CounterValue(True)
     CurrentDropdownLabel = labelPrefix & " " & dropCounter
 End Function
 
 '@label:exists
 '@sub-title Check whether a dropdown exists on the worksheet
+'@details
+'Looks only at the registry of this worksheet, so two worksheets can
+'hold a dropdown of the same name without seeing each other.
 '@param listName String. Dropdown name to search for.
 '@return Boolean. True when the dropdown is found.
 Public Function Exists(ByVal listName As String) As Boolean
-
-    Dim sh As Worksheet
-    Dim cellRng As Range
-    Dim count As Long
-
-    Set sh = Wksh()
-    Set cellRng = sh.Cells(DROPDOWNSTARTROW, 3)
-
-    For count = 0 To Length()
-        If cellRng.Value = listName Then
-            Exists = True
-            Exit Function
-        End If
-        Set cellRng = cellRng.Offset(1)
-    Next
-
+    RefreshRegistry
+    Exists = HasDropdown(listName)
 End Function
 
 '@label:label-range
@@ -564,15 +687,11 @@ End Function
 '@param listName String. Dropdown name to look up.
 '@return Range. The label cell, or Nothing.
 Public Property Get LabelRange(ByVal listName As String) As Range
+    RefreshRegistry
+    If Not HasDropdown(listName) Then Exit Property
 
-    Dim loName As String
-    Dim sh As Worksheet
-
-    If Not Exists(listName) Then Exit Property
-    Set sh = Wksh()
-    loName = ListObjectName(listName)
     'Top header of the range of the listObject
-    Set LabelRange = sh.ListObjects(loName).Range.Cells(0, 1)
+    Set LabelRange = DropdownLabelCell(listName)
 End Property
 
 
@@ -589,20 +708,17 @@ Public Property Get Values(ByVal listName As String, Optional ByVal includeHeade
     Dim lstVal As BetterArray
     Dim sh As Worksheet
     Dim rng As Range
-    Dim loName As String
-    Dim lo As ListObject
 
     Set lstVal = New BetterArray
     lstVal.LowerBound = 1
 
-    If Not Exists(listName) Then
-        LogInfo "Can not retrive values of a non existing dropdown: " & listName & " not found."
-        ShowDebug
-    Else
+    RefreshRegistry
+
+    If Not MissingDropdown(listName, _
+        "Can not retrive values of a non existing dropdown: " & listName & " not found.") Then
+
         Set sh = Wksh()
-        loName = ListObjectName(listName)
-        Set Lo = sh.ListObjects(loName)
-        Set rng = Lo.Range
+        Set rng = DropdownListObject(listName).Range
 
         If Not includeHeaders Then
             Set rng = sh.Range(rng.Cells(2, 1), rng.Cells(rng.Rows.Count, 1))
@@ -624,6 +740,9 @@ End Property
 'registers the name-to-ListObject mapping, and creates a workbook-level
 'named reference. Optionally writes a visible label above the ListObject
 'and applies a table style. Silently exits when the dropdown already exists.
+'The ListObject name is built before the counters move, so it carries the
+'old workbook number, while the label is built after and carries the new
+'worksheet number.
 '@param listValues BetterArray. String values to populate the ListObject.
 '@param listName String. Name to assign to the dropdown.
 '@param addLabel Optional Boolean. When True, writes a label above the ListObject. Defaults to False.
@@ -644,8 +763,10 @@ Public Sub Add(ByVal listValues As BetterArray, ByVal listName As String, _
     Dim store As HiddenNames
     Dim dropdownLo As ListObject
 
+    RefreshRegistry
+
     'Do not add a new dropdown if there is already another one
-    If Exists(listName) Then
+    If HasDropdown(listName) Then
         LogInfo "Dropdown " & listName & " already exits: not added"
         Exit Sub
     End If
@@ -660,7 +781,7 @@ Public Sub Add(ByVal listValues As BetterArray, ByVal listName As String, _
 
     colIndex = LastColumn()
     Set sh = Wksh()
-    
+
     'Add an increment to the dropdown counter
     IncrementCounters
 
@@ -675,23 +796,21 @@ Public Sub Add(ByVal listValues As BetterArray, ByVal listName As String, _
         '@Ignore ReadOnlyPropertyAssignment
         .ListObjects.Add(xlSrcRange, rng, , xlYes).Name = loName
 
-        'Add the label, with a prefix if needed
-        If addLabel Then
-            .Cells(DROPDOWNSTARTROW - 1, colIndex).Value = CurrentDropdownLabel(counterPrefix)
-            .Cells(DROPDOWNSTARTROW - 1, colIndex).Interior.Color = vbWhite
-            .Cells(DROPDOWNSTARTROW - 1, colIndex).Font.Color = RGB(91, 155, 213)
-            .Cells(DROPDOWNSTARTROW - 1, colIndex).Font.Bold = True
-            .Cells(DROPDOWNSTARTROW - 1, colIndex).Font.Italic = True
-        End If
-        
         Set dropdownLo = .ListObjects(loName)
     End With
+
+    'Add the label, with a prefix if needed
+    If addLabel Then
+        FormatLabelCell sh.Cells(DROPDOWNSTARTROW - 1, colIndex), _
+                        CurrentDropdownLabel(counterPrefix), _
+                        vbWhite, RGB(91, 155, 213)
+    End If
 
     'Add a style to the listObject
     On Error Resume Next
     dropdownLo.TableStyle = tableStyle
     On Error GoTo 0
-    
+
 
     'Add the corresponding name at workbook level
     Set store = InternalStore(False)
@@ -710,33 +829,29 @@ End Sub
 '@param listName String. Dropdown name to remove.
 '@export
 Public Sub Remove(ByVal listName As String)
-    Dim sh As Worksheet
     Dim rng As Range
-    Dim loName As String
     Dim store As HiddenNames
 
-    If Not Exists(listName) Then
-        LogInfo "Can not delete a dropdown that does not exits: " & listName & "Not found"
-        Exit Sub
-    End If
+    RefreshRegistry
 
+    If MissingDropdown(listName, _
+        "Can not delete a dropdown that does not exits: " & listName & "Not found", _
+        showTrace:=False) Then Exit Sub
 
     Set store = InternalStore(False)
     store.RemoveName CorrespondingWorkbookName(listName)
 
     'Remove the listObject
-    loName = ListObjectName(listName)
-    Set sh = Wksh()
-    Set rng = sh.ListObjects(loName).Range
+    Set rng = DropdownListObject(listName).Range
 
-    'Important to delete the range at the left before deleting the
-    'range itself
+    'Important to delete the blank column on the right before the
+    'dropdown column itself
     rng.Offset(, 1).EntireColumn.Delete
     rng.EntireColumn.Delete
 
     'Remove the name from the stored name in the worksheet
     RemoveLoName listName
-    
+
     'Decrement counters
     DecrementCounters
 End Sub
@@ -750,19 +865,14 @@ End Sub
 '@export
 Public Sub ClearList(ByVal listName As String)
 
-    Dim sh As Worksheet
-    Dim loName As String
+    RefreshRegistry
 
-    If Not Exists(listName) Then
-        LogInfo "Can not clear a dropdown that does not exits: " & listName & " Not found"
-        ShowDebug
-        Exit Sub
-    End If
+    If MissingDropdown(listName, _
+        "Can not clear a dropdown that does not exits: " & listName & " Not found") Then Exit Sub
 
-    loName = ListObjectName(listName)
-    Set sh = Wksh()
+    'The table may hold no data row at all, so let Excel fail quietly here
     On Error Resume Next
-    sh.ListObjects(loName).DataBodyRange.Delete
+    DropdownListObject(listName).DataBodyRange.Delete
     On Error GoTo 0
 End Sub
 
@@ -786,15 +896,13 @@ Public Sub Update(ByVal UpdateData As BetterArray, ByVal listName As String, _
     Dim cellRng As Range
     Dim rng As Range
     Dim loRng As Range
-    Dim loName As String
     Dim Lo As listObject
     Dim tabLength As Long
 
-    If Not Exists(listName) Then
-        LogInfo "Can not Update a dropdown that does not exists: " & listName & " Not found"
-        ShowDebug
-        Exit Sub
-    End If
+    RefreshRegistry
+
+    If MissingDropdown(listName, _
+        "Can not Update a dropdown that does not exists: " & listName & " Not found") Then Exit Sub
 
     If  (UpdateData.Length = 0) Then
         LogInfo "Can not Update because updated data is empty"
@@ -802,8 +910,7 @@ Public Sub Update(ByVal UpdateData As BetterArray, ByVal listName As String, _
     End If
 
     Set sh = Wksh()
-    loName = ListObjectName(listName)
-    Set Lo = sh.ListObjects(loName)
+    Set Lo = DropdownListObject(listName)
     Set loRng = Lo.Range
 
     If (Not pasteAtBottom) Then
@@ -843,19 +950,14 @@ End Sub
 Public Sub Sort(ByVal listName As String, _
     Optional ByVal sortOrder As Long = xlAscending)
 
-    Dim loName As String
     Dim rng As Range
-    Dim sh As Worksheet
 
-    If Not Exists(listName) Then
-        LogInfo "Can not sort a dropdown that does not exits: " & listName & " not found."
-        ShowDebug
-        Exit Sub
-    End If
+    RefreshRegistry
 
-    loName = ListObjectName(listName)
-    Set sh = Wksh()
-    Set rng = sh.ListObjects(loName).Range
+    If MissingDropdown(listName, _
+        "Can not sort a dropdown that does not exits: " & listName & " not found.") Then Exit Sub
+
+    Set rng = DropdownListObject(listName).Range
 
     On Error Resume Next
     rng.Sort key1:=rng, Order1:=sortOrder, Header:=xlYes
@@ -875,18 +977,18 @@ End Sub
 '@export
 Public Sub Translate(ByVal trads As Object, Optional ByVal force As Boolean = False, Optional ByVal exclude As String)
     Dim sh As Worksheet
-    Dim headerCell As Range
-    Dim cursor As Range
     Dim loName As String
-    Dim lo As ListObject
+    Dim Lo As ListObject
     Dim store As HiddenNames
+    Dim rowIndex As Long
+    Dim skipList As Boolean
 
     If trads Is Nothing Then Exit Sub
     If TypeName(trads) <> "TranslationObject" Then Exit Sub
 
     'check language before moving to translation
     Set store = InternalStore()
-    
+
     If (trads.Language = store.ValueAsString(WORKSHEETLANGUAGENAME)) And (Not force) Then
         Exit Sub
     End If
@@ -894,29 +996,27 @@ Public Sub Translate(ByVal trads As Object, Optional ByVal force As Boolean = Fa
     Set sh = Wksh()
     If sh Is Nothing Then Exit Sub
 
-    Set headerCell = sh.Cells(DROPDOWNSTARTROW, 4)
-    Set cursor = sh.Cells(sh.Rows.Count, 4).End(xlUp)
+    RefreshRegistry
 
-    If cursor.Row <= headerCell.Row Then
-        Exit Sub
-    End If
+    For rowIndex = this.registryRows To REGISTRYFIRSTDATAITEM Step -1
 
-    Do While cursor.Row > headerCell.Row
-        loName = CStr(cursor.Value) 
-        If LenB(loName) = 0 Then GoTo NextLo
-        If LenB(exclude) > 0 Then
-            If InStr(1, loName, exclude, vbTextCompare) > 0 Then GoTo NextLo
+        loName = RegistryItem(rowIndex, REGISTRYLONAMEITEM)
+        skipList = (LenB(loName) = 0)
+
+        If (Not skipList) And (LenB(exclude) > 0) Then
+            skipList = (InStr(1, loName, exclude, vbTextCompare) > 0)
         End If
 
-        On Error Resume Next
-            Set lo = sh.ListObjects(loName)
-        On Error GoTo 0 
-        
-        If Not (lo Is Nothing) Then trads.TranslateRange lo.DataBodyRange   
-NextLo:    
-        Set lo = Nothing
-        Set cursor = cursor.Offset(-1)
-    Loop
+        If Not skipList Then
+            Set Lo = Nothing
+            'A registered name can point to a table that is already gone
+            On Error Resume Next
+                Set Lo = sh.ListObjects(loName)
+            On Error GoTo 0
+
+            If Not (Lo Is Nothing) Then trads.TranslateRange Lo.DataBodyRange
+        End If
+    Next rowIndex
 
     'update language value
     store.EnsureName WORKSHEETLANGUAGENAME, trads.Language, HiddenNameTypeString
@@ -947,11 +1047,9 @@ Public Sub SetValidation(ByVal cellRng As Range, ByVal listName As String, _
 
     Dim dropdownName As String
 
-    If Not Exists(listName) Then
-        LogInfo "There is no available dropdown for " & listName
-        ShowDebug
-        Exit Sub
-    End If
+    RefreshRegistry
+
+    If MissingDropdown(listName, "There is no available dropdown for " & listName) Then Exit Sub
 
     If cellRng Is Nothing Then
         LogInfo "There is no range to set the validation of " & listName & " on."
@@ -1002,7 +1100,6 @@ End Sub
 Private Sub AddLink(ByVal listName As String, ByVal targetRng As Range, _
     Optional ByVal returnLink As Boolean = False)
 
-    Dim loName As String
     Dim sh As Worksheet
     Dim anchorRng As Range
     Dim headerRng As Range
@@ -1011,12 +1108,10 @@ Private Sub AddLink(ByVal listName As String, ByVal targetRng As Range, _
     Dim savedInteriorColor As Long
     Dim savedFontColor As Long
 
+    RefreshRegistry
 
-    If Not Exists(listName) Then
-        LogInfo "Can not add a returnlink on a non existing dropdown: " & listName & " not found."
-        ShowDebug
-        Exit Sub
-    End If
+    If MissingDropdown(listName, _
+        "Can not add a returnlink on a non existing dropdown: " & listName & " not found.") Then Exit Sub
 
     If (targetRng Is Nothing) Then
         LogInfo "Can not add a returnlink to a non existing Range: " & listName & " not found."
@@ -1024,8 +1119,7 @@ Private Sub AddLink(ByVal listName As String, ByVal targetRng As Range, _
         Exit Sub
     End If
 
-    loName = ListObjectName(listName)
-    Set headerRng = Wksh.ListObjects(loName).Range.Cells(0, 1)
+    Set headerRng = DropdownLabelCell(listName)
 
     If returnLink Then
         Set sh =  Wksh()
@@ -1042,7 +1136,7 @@ Private Sub AddLink(ByVal listName As String, ByVal targetRng As Range, _
     savedInteriorColor = anchorRng.Interior.Color
     savedFontColor = anchorRng.Font.Color
 
-    'Adding hyperlinks remove the writings 
+    'Adding hyperlinks remove the writings
     '(sub label and so on, so need to set it back)
     With sh
         .Hyperlinks.Add _
@@ -1053,14 +1147,7 @@ Private Sub AddLink(ByVal listName As String, ByVal targetRng As Range, _
     End With
 
     'Adding links remove the formatting, set it back
-    With anchorRng
-        If savedValue <> vbNullString Then .Value = savedValue
-        .Font.UnderLine = xlUnderlineStyleNone
-        .Interior.Color = savedInteriorColor
-        .Font.Color = savedFontColor
-        .Font.Bold = True
-        .Font.Italic = True
-    End With
+    FormatLabelCell anchorRng, savedValue, savedInteriorColor, savedFontColor
 End Sub
 
 '@label:add-return-link
@@ -1159,4 +1246,3 @@ Private Sub GuardNotSealed(ByVal propName As String)
     If this.sealed Then _
         ThrowError ProjectError.SomethingWentWrong, propName & " is set at creation only"
 End Sub
-
