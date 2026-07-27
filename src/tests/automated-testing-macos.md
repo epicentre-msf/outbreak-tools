@@ -80,7 +80,8 @@ Rscript run-tests.R --build
 ├─ 2. Assemble the run dir  .test-runner/tests/staging/run/
 │        unit_tests_run.xlsb          (copy of .test-runner/unit_tests_dev.xlsb — original untouched)
 │        classes/<folder>/…           (registered class sources, from src/ then .test-runner fallback)
-│        tests/modules/<folder>/…      (registered test modules)
+│        modules/<folder>/…           (registered general modules)
+│        tests/<folder>/…             (registered test modules AND fixture classes)
 │        .generated/…                 (the manifest, copied in)
 │        bootstrap/OBTImport.bas       (harness sources for the refresh step)
 │        bootstrap/OBTHeadless.bas
@@ -120,7 +121,7 @@ loaded before any of the steps that use it.
 
 ### Workbook side (VBA — the harness)
 
-Tracked in `src/tests/modules/rubberduck/`:
+Tracked in `src/tests/rubberduck/`:
 
 | Module | Entry point(s) | Role |
 |---|---|---|
@@ -165,10 +166,10 @@ Development manager + dependencies
 
 Harness
   CustomTest.cls         (src/classes/rubberduck)
-  OBTHeadless.bas        (src/tests/modules/rubberduck)
-  OBTImport.bas          (src/tests/modules/rubberduck)
-  OBTBootstrap.bas       (src/tests/modules/rubberduck)
-  OBTGrantAccess.bas     (src/tests/modules/rubberduck)
+  OBTHeadless.bas        (src/tests/rubberduck)
+  OBTImport.bas          (src/tests/rubberduck)
+  OBTBootstrap.bas       (src/tests/rubberduck)
+  OBTGrantAccess.bas     (src/tests/rubberduck)
 ```
 
 > **You do NOT import the probe/test classes by hand.** Importing the code under
@@ -274,8 +275,14 @@ For a suite `folder: F`, components resolve to:
 |---|---|---|
 | `classes[].name` | `src/classes/F/<name>.cls` (+ `I<name>.cls` if `interface: true`) | `general classes` |
 | `modules[]` | `src/modules/F/<name>.bas` | `general modules` |
-| `fixtures[].name` | `src/tests/classes/F/<name>.cls` | `tests classes` |
-| `tests[].module` | `src/tests/modules/F/<module>.bas` | `tests modules` |
+| `fixtures[].name` | `src/tests/F/<name>.cls` | `tests classes` |
+| `tests[].module` | `src/tests/F/<module>.bas` | `tests modules` |
+
+> **Test modules and their fixture classes share one folder**, `src/tests/F/`.
+> The old `src/tests/modules/F` + `src/tests/classes/F` split was retired — that
+> extra `modules`/`classes` level read confusingly against the top-level
+> `src/modules` and `src/classes`. The two tags still differ (a `.bas` imports as
+> a module, a `.cls` as a class); only the on-disk folder is now shared.
 
 `build-registry.R` flattens all of this into:
 
@@ -300,9 +307,11 @@ reads everything relative to its own folder (`ThisWorkbook.Path`). Because that
 folder is inside the granted repo tree, all reads/writes are prompt‑free.
 
 For each registered `(folder, tag)` the runner copies the folder's sources into
-the run dir, resolving **`src/` first, then the `.test-runner` staging** as a fallback.
-That fallback is what lets the local `draft` probe (whose fixtures are
-intentionally untracked) run alongside real suites sourced from `src/`.
+the run dir, resolving **`src/` first, then the `.test-runner` staging** as a
+fallback. That fallback is what lets a local, deliberately untracked suite (a
+throwaway probe, say) run alongside real suites sourced from `src/`: drop it
+under `<home>/tests/staging/{classes,modules,tests}/<folder>/` and register the
+folder as usual.
 
 Layout of `.test-runner/tests/staging/run/` during a run:
 
@@ -310,13 +319,17 @@ Layout of `.test-runner/tests/staging/run/` during a run:
 unit_tests_run.xlsb     the workbook copy (opened by AppleScript)
 classes/<folder>/*.cls  general classes           → ClassesImplementation
 modules/<folder>/*.bas  general modules           → ModulesCodes
-tests/modules/<folder>/ test modules              → TestsCodes/modules
-tests/classes/<folder>/ test-only fixtures        → TestsCodes/classes
+tests/<folder>/*.bas    test modules              → TestsCodes  (tag "tests modules")
+tests/<folder>/*.cls    test-only fixtures        → TestsCodes  (tag "tests classes")
 .generated/*            the manifest (read by OBTBuildCodeTables)
 bootstrap/*.bas         OBTImport + OBTHeadless    (read by OBTRefreshHarness)
 test-results.csv        written by OBTRunAllTests
 obt-import.log          written by OBTImport
 ```
+
+Both test tags land in the same `tests/<folder>/` directory, mirroring
+`src/tests/<folder>/`. `Development` still reads the tag to decide the import
+scope (module vs class); the path no longer carries that distinction.
 
 `OBTImport` writes the three folder‑path named ranges (`ModulesCodes`,
 `ClassesImplementation`, `TestsCodes`) into the `Codes` sheet **in code** at run
@@ -357,8 +370,9 @@ copies the CSV to `.test-runner/tests/staging/test-results.csv`.
 
 ## 9. Adding a new test suite
 
-1. Write the class(es) under `src/classes/<folder>/` and the test module(s)
-   under `src/tests/modules/<folder>/`, following the `CustomTest` pattern
+1. Write the class(es) under `src/classes/<folder>/` and the test module(s) —
+   plus any test-only fixture classes — under `src/tests/<folder>/`, following
+   the `CustomTest` pattern
    (`CustomTest.Create` + `@TestMethod` + `Assert.AreEqual`/`LogFailure` — never
    `Err.Raise` in a test).
 2. Register them in `src/tests/test-registry.yml`.
@@ -381,13 +395,13 @@ copies the CSV to `.test-runner/tests/staging/test-results.csv`.
 |---|---|
 | `scripts/tests/*` (orchestrator, trigger, registry builder) | `unit_tests_dev.xlsb` (the driver workbook — a binary artefact) |
 | `src/tests/test-registry.yml` | `tests/staging/run/` (the per‑run working dir) |
-| `src/tests/modules/rubberduck/OBT*.bas` (the harness) | `tests/staging/{classes,tests}/draft/…` (the local **probe** fixtures) |
-| Real project classes + their real test suites | `tests/staging/bootstrap/*` (staging copies) |
+| `src/tests/rubberduck/OBT*.bas` (the harness) | `tests/staging/test-results.csv` (latest results) |
+| Real project classes + their real test suites (`src/tests/<folder>/`) | `tests/staging/{classes,modules,tests}/<folder>/` (optional local‑only sources) |
 
-**The `draft` probe classes are test‑only smoke‑test fixtures and are
-deliberately NOT committed to `src/`.** They exercise the loop itself (import →
-run across more than one class) and live only in `.test-runner`. Real project suites
-go in `src/` and are the point of the loop.
+**Everything real lives in `src/`.** The staging source folders are only a
+fallback for suites you deliberately keep out of the repo — a throwaway probe
+that exercises the loop itself, say. They are empty in a normal checkout, and
+`src/` always wins when a folder exists in both.
 
 ---
 
@@ -424,7 +438,8 @@ Rscript scripts/tests/run-tests.R --home=DIR  # workbook + staging live under DI
 **Key paths:**
 - Registry: `src/tests/test-registry.yml`
 - Manifest: `src/tests/.generated/{code-tables.tsv, modules-for-testing.txt}`
-- Harness: `src/tests/modules/rubberduck/OBT*.bas`
+- Harness: `src/tests/rubberduck/OBT*.bas`
+- Suites: `src/tests/<folder>/` (test `.bas` + fixture `.cls` together)
 - Workbook: `.test-runner/unit_tests_dev.xlsb`
 - Run dir: `.test-runner/tests/staging/run/`
 - Results: `.test-runner/tests/staging/test-results.csv` (+ `run/test-results.csv`, `run/obt-import.log`)
