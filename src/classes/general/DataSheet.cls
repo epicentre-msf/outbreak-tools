@@ -24,6 +24,13 @@ Option Explicit
 'ranges. Supports column lookup, filtering (single and multi-column),
 'import/export to other DataSheets or CustomTables, and formatting
 'transfer for designated columns.
+'@details
+'The start row and start column are sealed at creation. Everything else on
+'the sheet moves: callers insert and delete rows and columns behind this
+'object's back while it stays alive, and the class moves the end row and
+'end column itself inside Clean, Import and the two filter routines. So no
+'geometry is ever held on the instance. The header row is read as one block
+'inside a single call, and read again on the next call.
 '@depends Checking, BetterArray, HiddenNames
 '@version 1.0 (2026-02-09)
 
@@ -32,20 +39,15 @@ Private Type TDataSheet
     startLn As Long                              'The line where the data starts
     startCl As Long                             'The column where the data starts (the first column is the column of the variable names.
     forceEnd As Boolean
-    hasImport As Boolean
     hasChecks As Boolean
     objName As String
     sealed As Boolean
+    formatColumns As BetterArray           'Columns whose formats travel with the data
+    checkCounter As Long                   'Unique key for each logged message
+    internalChecks As Checking
 End Type
 
 Private this As TDataSheet
-
-'Formated columns list
-Private FORMATCOLUMNS As BetterArray
-
-'checking objects
-Private checkCounter As Long
-Private internalChecks As Checking
 
 '@section Factory
 '===============================================================================
@@ -178,8 +180,8 @@ End Property
 '@return String. The DataSheet name.
 '@export
 Public Property Get Name() As String
-    
-    If this.objName = vbNullString Then 
+
+    If this.objName = vbNullString Then
         this.objName = Wksh.Name
     End If
 
@@ -192,37 +194,50 @@ End Property
 'Dynamically computes the last occupied row. When StrictEnd is True,
 'scans all non-formula columns for the furthest row. Guarantees at
 'least one data row below the header.
+'This is read fresh every single time. It is the value that moves most:
+'the class itself collapses it in Clean and grows it back in Import, and
+'callers insert and delete body rows without telling this object.
 '@return Long. The 1-based last data row index.
 '@export
 Public Property Get DataEndRow() As Long
 
     Dim endrw As Long
-    Dim hRng As Range
+    Dim headerRng As Range
+    Dim headers As Variant
     Dim sh As Worksheet
-    Dim cellRng As Range
-    Dim colEndRw As Long 'column end row, used in loop  
+    Dim counter As Long
+    Dim columnNumber As Long
+    Dim colEndRw As Long 'column end row, used in loop
 
     Set sh = Wksh()
 
-    With sh
-        If StrictEnd() Then
-            Set hRng = HeaderRange()
-            Set cellRng = hRng.Cells(1, 1)
-            endrw = hRng.Row
-            Do While Not IsEmpty(cellRng)
-                'For each column, search and update the last row. Columns with
-                'formulas are not included in the search
-                If (Not cellRng.HasFormula) Then
-                    colEndRw = .Cells(.Rows.Count, cellRng.Column).End(xlUp).Row
-                    If endrw < colEndRw Then endrw = colEndRw
-                End If
-                Set cellRng = cellRng.Offset(, 1)
-            Loop
-        Else
-            endrw = .Cells(.Rows.Count, DataStartColumn()).End(xlUp).Row
-        End If
-    End With
-    
+    If StrictEnd() Then
+        'The header row is read once as a block. Walking it cell by cell
+        'with Offset used to cost one worksheet read per column just to
+        'ask whether the cell was empty.
+        Set headerRng = HeaderRange()
+        headers = RowValues(headerRng)
+        endrw = headerRng.Row
+
+        For counter = 1 To UBound(headers)
+            'Stop at the first empty header cell. That rule is NOT the same
+            'as DataEndColumn, which jumps over a hole with End(xlToLeft).
+            'The two disagree when the header row has a gap, and both are
+            'pinned by the tests. Keep each as it is.
+            If IsEmpty(headers(counter)) Then Exit For
+
+            columnNumber = headerRng.Column + counter - 1
+            'For each column, search and update the last row. Columns with
+            'formulas are not included in the search
+            If Not sh.Cells(DataStartRow(), columnNumber).HasFormula Then
+                colEndRw = sh.Cells(sh.Rows.Count, columnNumber).End(xlUp).Row
+                If endrw < colEndRw Then endrw = colEndRw
+            End If
+        Next
+    Else
+        endrw = sh.Cells(sh.Rows.Count, DataStartColumn()).End(xlUp).Row
+    End If
+
     'In case the endrow is the headerRow, add 1
     If (endrw = DataStartRow()) Then
         DataEndRow = DataStartRow() + 1
@@ -250,16 +265,135 @@ End Property
 '@export
 Public Property Get HeaderRange() As Range
     'updating the header range
-    With Wksh
-        Set HeaderRange = .Range(.Cells(DataStartRow(), DataStartColumn()), .Cells(DataStartRow(), DataEndColumn()))
-    End With
+    Set HeaderRange = SheetBlock(DataStartRow(), DataStartColumn(), _
+                                 DataStartRow(), DataEndColumn())
 End Property
 
+'@label:sheet-block
+'@sub-title Build a Range on the host worksheet from four numbers
+'@details
+'The "With sh ... .Range(.Cells(a, b), .Cells(c, d))" shape was written
+'out in five places. One small builder replaces all of them.
+'@param firstRow Long. Top row.
+'@param firstColumn Long. Left column.
+'@param lastRow Long. Bottom row.
+'@param lastColumn Long. Right column.
+'@return Range. The block.
+Private Function SheetBlock(ByVal firstRow As Long, ByVal firstColumn As Long, _
+                            ByVal lastRow As Long, ByVal lastColumn As Long) As Range
+    With Wksh
+        Set SheetBlock = .Range(.Cells(firstRow, firstColumn), .Cells(lastRow, lastColumn))
+    End With
+End Function
+
+'@label:row-values
+'@sub-title Read a one-row Range as a 1-based list of values
+'@details
+'Range.Value hands back a plain value when the Range is one cell, and a
+'two-dimensional array otherwise. This flattens both cases so callers see
+'one shape and do not repeat the test.
+'@param blockRng Range. A single-row block.
+'@return Variant. A 1-based one-dimensional array of cell values.
+Private Function RowValues(ByVal blockRng As Range) As Variant
+    Dim rawValues As Variant
+    Dim flat() As Variant
+    Dim counter As Long
+    Dim nbColumns As Long
+
+    nbColumns = blockRng.Columns.Count
+    ReDim flat(1 To nbColumns)
+
+    If nbColumns = 1 Then
+        flat(1) = blockRng.Cells(1, 1).Value
+    Else
+        rawValues = blockRng.Value
+        For counter = 1 To nbColumns
+            flat(counter) = rawValues(1, counter)
+        Next
+    End If
+
+    RowValues = flat
+End Function
+
+'@label:cell-text
+'@sub-title Read one cell value as text without raising
+'@details
+'A cell holding an error value (#N/A and the like) makes CStr raise a
+'type mismatch. Such a header can never match a column name, so it reads
+'as empty text instead of stopping the caller.
+'@param cellValue Variant. The raw cell value.
+'@return String. The value as text, or empty text.
+Private Function CellText(ByVal cellValue As Variant) As String
+    If IsError(cellValue) Then Exit Function
+    If IsNull(cellValue) Then Exit Function
+    CellText = CStr(cellValue)
+End Function
+
+'@label:find-column
+'@sub-title Find one column in the header row, reading that row once
+'@details
+'This is the single lookup behind ColumnExists, ColumnIndex, RenameColumn
+'and AddFormatsColumns. Each of them used to build the header Range and
+'run Range.Find on its own, so one ColumnIndex call built the range twice
+'and searched twice. Here the row is read once and matched in memory. The
+'out argument carries the third answer: the header text as the sheet
+'spells it.
+'The four match rules are kept exactly as Range.Find applied them:
+'strictSearch True is whole-string equality (xlWhole) and False is a
+'substring test (xlPart); matchCase True compares binary and False
+'compares text.
+'The header block is deliberately NOT kept on the instance. Callers write
+'to these sheets without going through this object, so it is read again
+'on the next call.
+'@param colName String. Column header to look for.
+'@param strictSearch Boolean. True for whole-string matching.
+'@param matchCase Boolean. True for case-sensitive matching.
+'@param matchedHeader String. Out. The header text exactly as the sheet spells it.
+'@return Long. The worksheet column of the match, or -1 when there is none.
+Private Function FindColumn(ByVal colName As String, _
+                            ByVal strictSearch As Boolean, _
+                            ByVal matchCase As Boolean, _
+                            Optional ByRef matchedHeader As String) As Long
+
+    Dim headerRng As Range
+    Dim headers As Variant
+    Dim currentHeader As String
+    Dim compareMethod As Long
+    Dim isMatch As Boolean
+    Dim counter As Long
+
+    matchedHeader = vbNullString
+    FindColumn = -1
+
+    'An empty name never matches, so answer it without touching the sheet.
+    If colName = vbNullString Then Exit Function
+
+    compareMethod = IIF(matchCase, vbBinaryCompare, vbTextCompare)
+
+    Set headerRng = HeaderRange()
+    headers = RowValues(headerRng)
+
+    For counter = 1 To UBound(headers)
+        currentHeader = CellText(headers(counter))
+
+        If strictSearch Then
+            isMatch = (StrComp(currentHeader, colName, compareMethod) = 0)
+        Else
+            isMatch = (InStr(1, currentHeader, colName, compareMethod) > 0)
+        End If
+
+        If isMatch Then
+            matchedHeader = currentHeader
+            FindColumn = headerRng.Column + counter - 1
+            Exit Function
+        End If
+    Next
+End Function
 
 '@label:column-exists
 '@sub-title Check whether a column exists in the DataSheet
 '@details
-'Searches the header row for the specified column name using Range.Find.
+'Searches the header row for the specified column name.
 'Returns False for empty column names.
 '@param colName String. Column header to search for.
 '@param strictSearch Optional Boolean. When True, uses exact whole-string matching. Defaults to True.
@@ -269,17 +403,9 @@ End Property
 Public Function ColumnExists(ByVal colName As String, _
                               Optional ByVal strictSearch As Boolean = True, _
                               Optional ByVal matchCase As Boolean = True) As Boolean
-    Dim hRng As Range
-    Dim Exist As Boolean
-    Set hRng = HeaderRange()                     'Header Range of the dictionary
-    If colName = vbNullString Then
-        Exist = False
-    Else
-        Exist = Not (hRng.Find(What:=colName, _ 
-                     lookAt:=IIF(strictSearch, xlWhole, xlPart), _ 
-                     MatchCase:=matchCase) Is Nothing)
-    End If
-    ColumnExists = Exist
+    'The empty name is answered before any worksheet read.
+    If colName = vbNullString Then Exit Function
+    ColumnExists = (FindColumn(colName, strictSearch, matchCase) > 0)
 End Function
 
 
@@ -299,29 +425,24 @@ End Function
 '@export
 Public Function ColumnIndex(ByVal colName As String, _
                              Optional ByVal inDataRange As Boolean = False, _
-                             Optional ByVal shouldExist As Boolean = False, _ 
+                             Optional ByVal shouldExist As Boolean = False, _
                              Optional ByVal strictSearch As Boolean = True, _
                              Optional ByVal matchCase As Boolean = True) As Long
-    Dim hRng As Range
     Dim colIndex As Long
-    Set hRng = HeaderRange()
 
-    If ColumnExists(colName, strictSearch, matchCase) Then
-        colIndex = hRng.Find(What:=colName, _ 
-                            lookAt:=IIF(strictSearch, xlWhole, xlPart), _ 
-                            MatchCase:=matchCase).Column
-        If inDataRange Then
-            ColumnIndex = colIndex - DataStartColumn() + 1
-        Else
-            ColumnIndex = colIndex
-        End If
+    colIndex = FindColumn(colName, strictSearch, matchCase)
+
+    If colIndex < 0 Then
+        If shouldExist Then ThrowErrorUnFoundColumn colName
+        'By default, unfound columns will have -1 as Index
+        ColumnIndex = -1
+        Exit Function
+    End If
+
+    If inDataRange Then
+        ColumnIndex = colIndex - DataStartColumn() + 1
     Else
-        If shouldExist Then
-            ThrowErrorUnFoundColumn colName
-        Else
-            'By default, unfound columns will have -1 as Index
-            ColumnIndex = -1
-        End If
+        ColumnIndex = colIndex
     End If
 End Function
 
@@ -339,60 +460,27 @@ End Function
 '@return Range. The requested data range.
 '@export
 Public Property Get DataRange(Optional ByVal colName As String = "__all__", _
-                              Optional ByVal includeHeaders As Boolean = False, _ 
-                              Optional ByVal strictSearch As Boolean = True, _ 
+                              Optional ByVal includeHeaders As Boolean = False, _
+                              Optional ByVal strictSearch As Boolean = True, _
                               Optional ByVal matchCase As Boolean = True) As Range
     Dim customStartRow As Long
-    Dim sh As Worksheet
     Dim endCol As Long
     Dim customStartCol As Long
-    Set sh = Wksh()
 
-    With sh
-        customStartRow = DataStartRow() + 1
-        If includeHeaders Then customStartRow = DataStartRow()
-        If colName = "__all__" Then
-            customStartCol = DataStartColumn()
-            endCol = DataEndColumn()
-        Else
-            customStartCol = ColumnIndex(colName, shouldExist:=True, strictSearch:=strictSearch, matchCase:=matchCase)
-            endCol = customStartCol
-        End If
-        Set DataRange = .Range(.Cells(customStartRow, customStartCol), .Cells(DataEndRow(), endCol))
-    End With
+    customStartRow = DataStartRow() + 1
+    If includeHeaders Then customStartRow = DataStartRow()
+
+    If colName = "__all__" Then
+        customStartCol = DataStartColumn()
+        endCol = DataEndColumn()
+    Else
+        customStartCol = ColumnIndex(colName, shouldExist:=True, strictSearch:=strictSearch, matchCase:=matchCase)
+        endCol = customStartCol
+    End If
+
+    Set DataRange = SheetBlock(customStartRow, customStartCol, DataEndRow(), endCol)
 End Property
 
-
-'@label:matched-column-name
-'@sub-title Return the actual header text for a column name match
-'@details
-'Searches the header row and returns the exact text of the matched
-'cell. Returns vbNullString when no match is found.
-'@param colName String. Column name to search for.
-'@param strictSearch Optional Boolean. When True, uses exact matching. Defaults to True.
-'@param matchCase Optional Boolean. When True, matching is case-sensitive. Defaults to True.
-'@return String. The matched header text, or vbNullString.
-Private Function MatchedColumnName(ByVal colName As String, _
-                                Optional ByVal strictSearch As Boolean = True, _
-                                Optional ByVal matchCase As Boolean = True) As String
-    Dim hRng As Range
-    Dim colIndex As Long
-
-    Set hRng = HeaderRange()
-
-    On Error Resume Next
-         colIndex = (hRng.Find(What:=colName, _ 
-                     lookAt:=IIF(strictSearch, xlWhole, xlPart), _ 
-                     MatchCase:=matchCase).Column - hRng.Column + 1  _
-        )
-    On Error GoTo 0
-
-    If  (colIndex = 0) Then 
-        MatchedColumnName = vbNullString
-    Else
-        MatchedColumnName = hRng.Cells(1, colIndex).Value
-    End If
-End Function
 
 '@label:rename-column
 '@sub-title Rename a header in the DataSheet
@@ -411,23 +499,19 @@ Public Sub RenameColumn(ByVal currentName As String, _
                         Optional ByVal strictSearch As Boolean = True, _
                         Optional ByVal matchCase As Boolean = False)
 
-    Dim hRng As Range
-    Dim headerIndex As Long
+    Dim headerColumn As Long
 
     If LenB(newName) = 0 Then
         ThrowError ProjectError.InvalidArgument, "New column name cannot be empty"
     End If
 
-    headerIndex = ColumnIndex(currentName, inDataRange:=True, _
-                              shouldExist:=True, _
-                              strictSearch:=strictSearch, _
-                              matchCase:=matchCase)
+    headerColumn = FindColumn(currentName, strictSearch, matchCase)
+    If headerColumn < 0 Then ThrowErrorUnFoundColumn currentName
 
-    Set hRng = HeaderRange()
-    If hRng Is Nothing Then Exit Sub
-    If headerIndex <= 0 Or headerIndex > hRng.Columns.Count Then Exit Sub
-
-    hRng.Cells(1, headerIndex).Value = newName
+    'The header row moves under this object, so the cell is taken straight
+    'from the column that was just found rather than from a second build
+    'of the header Range.
+    Wksh.Cells(DataStartRow(), headerColumn).Value = newName
 End Sub
 
 '@section Operations
@@ -437,25 +521,37 @@ End Sub
 '@label:clean
 '@sub-title Clear all non-formula columns
 '@details
-'Iterates every column in the header row and clears the contents of
-'those that do not contain formulas in their first data cell.
-'@export
+'Clears the body of every column that does not hold a formula in its
+'first data cell. Formula columns are generated and must survive an
+'import.
+'The column range is built from the loop position. Looking each header
+'text back up paid for a full column lookup on a column whose place was
+'already known, and it had two faults: a blank header inside the range
+'made the lookup raise and killed the whole import, and two columns
+'sharing a header cleared the first twice and the second never.
+'The last row is read once, before the first clear. Reading it per column
+'shrinks it as soon as the first column is emptied, so the columns after
+'it were left with old values below the first row.
 Private Sub Clean()
-  Dim rng As Range
-  Dim hRng As Range
-  Dim headerValue As String
-  Dim counter As Long
+    Dim headerRng As Range
+    Dim headers As Variant
+    Dim columnRng As Range
+    Dim counter As Long
+    Dim columnNumber As Long
+    Dim firstRow As Long
+    Dim lastRow As Long
 
-  Set hRng = HeaderRange()
+    Set headerRng = HeaderRange()
+    headers = RowValues(headerRng)
+    firstRow = DataStartRow() + 1
+    lastRow = DataEndRow()
 
-  'Clean only columns without formulas that are not keys (key columns are kept as it).
-  For counter = 1 To hRng.Columns.Count
-    headerValue = hRng.Cells(1, counter).Value
-    Set rng = DataRange(colName:=headerValue, strictSearch:=True, includeHeaders:=False)
-     'On formula colunms, Or  no clearing is done, 
-    'clear only "non formula" columns      
-    If (Not rng.Cells(1, 1).HasFormula) Then rng.ClearContents
-  Next
+    For counter = 1 To UBound(headers)
+        columnNumber = headerRng.Column + counter - 1
+        Set columnRng = SheetBlock(firstRow, columnNumber, lastRow, columnNumber)
+        'clear only "non formula" columns
+        If (Not columnRng.Cells(1, 1).HasFormula) Then columnRng.ClearContents
+    Next
 End Sub
 
 '@label:remove-autofilter
@@ -468,6 +564,11 @@ Private Sub RemoveAutoFilter()
     Dim Lo As ListObject
 
     Set sh = Wksh()
+
+    'Nothing to undo when the sheet carries no filter and holds no table.
+    'This routine runs twice per filter call, so the cheap exit matters.
+    If (Not sh.AutoFilterMode) And (sh.ListObjects.Count = 0) Then Exit Sub
+
     For Each lo In sh.ListObjects
         If Not lo.AutoFilter Is Nothing Then
             On Error Resume Next
@@ -480,7 +581,6 @@ Private Sub RemoveAutoFilter()
     'It errors when no criteria are active, so guard with On Error.
     On Error Resume Next
     sh.AutoFilter.ShowAllData
-    sh.UsedRange.AutoFilter.ShowAllData
     On Error GoTo 0
 
     'Remove the AutoFilter entirely (dropdown arrows)
@@ -510,16 +610,18 @@ Public Function FilterData(ByVal varName As String, _
         As BetterArray
 
     Dim dataRng As Range
-    Dim returnedRng As Range
+    Dim visibleRng As Range
     Dim startRetColIndex As Long
     Dim startRetRow As Long
     Dim endRetColIndex As Long
     Dim returnedData As BetterArray
     Dim sh As Worksheet
     Dim endCol As Long
-    Dim outRng As Range
+    Dim scratchRng As Range
     Dim endRow As Long
 
+    'The caller always gets an array back, never Nothing. LowerBound 1 and
+    'the Clone() at the end are part of what the callers read.
     Set returnedData = New BetterArray
     returnedData.LowerBound = 1
 
@@ -528,38 +630,54 @@ Public Function FilterData(ByVal varName As String, _
     endCol = DataEndColumn()                     'End column and rows of the dictionary
     endRow = DataEndRow()
 
-    
-    startRetRow = DataStartRow() + 1 
+
+    startRetRow = DataStartRow() + 1
     If includeHeaders Then startRetRow = (startRetRow - 1)
 
     If returnedColumnName = "__all__" Then
         startRetColIndex = DataStartColumn()
         endRetColIndex = endCol
     Else
-        startRetColIndex = ColumnIndex(returnedColumnName, inDataRange:=True, shouldExist:=True, matchCase:=matchCase) 'Which index to return, the startcolumn is returned if the returned colname is not found
+        'An unknown column raises ElementNotFound on purpose. Which index to
+        'return, the startcolumn is returned if the returned colname is not found
+        startRetColIndex = ColumnIndex(returnedColumnName, inDataRange:=True, shouldExist:=True, matchCase:=matchCase)
         endRetColIndex = startRetColIndex
     End If
 
     With sh
+        'A filter left over from an earlier call would hide rows before the
+        'new one is applied, so the sheet is cleaned first.
         RemoveAutoFilter
 
         dataRng.AutoFilter Field:=ColumnIndex(varName, inDataRange:=True, shouldExist:=True, matchCase:=matchCase), Criteria1:=criteriaName
 
+        'SpecialCells raises when every row is hidden. That raise IS how
+        '"the filter matched nothing" is detected: visibleRng stays Nothing
+        'and the caller gets the empty array built above, with no error.
         On Error Resume Next
-        Set returnedRng = .Range(.Cells(startRetRow, startRetColIndex), .Cells(endRow, endRetColIndex)).SpecialCells(xlCellTypeVisible)
+        Set visibleRng = SheetBlock(startRetRow, startRetColIndex, endRow, endRetColIndex).SpecialCells(xlCellTypeVisible)
         On Error GoTo 0
 
-        If Not returnedRng Is Nothing Then
-            Set outRng = .Cells(DataStartRow(), endCol + 2)
-            Set outRng = .Range(outRng, outRng.Offset(returnedRng.Rows.Count - 1, returnedRng.Columns.Count -1))
-            returnedRng.Copy
-            outRng.PasteSpecial xlPasteValues
+        If Not visibleRng Is Nothing Then
+            'The scratch area starts two columns past the last data column.
+            'The one empty column in between keeps End(xlToLeft) and
+            'UsedRange from running out of the data into the scratch block.
+            Set scratchRng = .Cells(DataStartRow(), endCol + 2)
+            Set scratchRng = .Range(scratchRng, scratchRng.Offset(visibleRng.Rows.Count - 1, visibleRng.Columns.Count -1))
+            'Copy and PasteSpecial is what collapses the visible rows into
+            'one solid block: a filtered range is made of many Areas and
+            'cannot be read in a single .Value.
+            visibleRng.Copy
+            scratchRng.PasteSpecial xlPasteValues
 
-            returnedData.FromExcelRange outRng, DetectLastRow:=False, _
+            'The block is exactly the size that was pasted, so BetterArray
+            'must not go looking for the last row or column itself.
+            returnedData.FromExcelRange scratchRng, DetectLastRow:=False, _
                                         DetectLastColumn:=False
-            outRng.ClearContents
+            scratchRng.ClearContents
         End If
 
+        'Leave the sheet as it was found: no filter, no scratch block.
         RemoveAutoFilter
     End With
 
@@ -585,36 +703,41 @@ Public Function FiltersData(ByVal varData As BetterArray, _
 
     Dim dataRng As Range                         'Range of the data
     Dim sh As Worksheet
-    Dim returnedRng As Range
+    Dim visibleRng As Range
+    Dim outputRng As Range
     Dim returnedColumnIndex As Long
     Dim returnedData As BetterArray
     Dim counter As Long
-    Dim Col As Long
+    Dim scratchColumn As Long
     Dim EndRow As Long
     Dim endCol As Long
     Dim retEndRow As Long
     Dim retEndCol As Long
-    Dim outRng As Range
+    Dim scratchRng As Range
 
+    'The caller always gets an array back, on every exit path below.
     Set returnedData = New BetterArray
     returnedData.LowerBound = 1
 
     Set dataRng = DataRange(includeHeaders:=True)
     Set FiltersData = returnedData.Clone()
 
-    'On Error GoTo ErrFilter
-    If varData.Length <> criteriaData.Length Or varData.Length = 0 Then 
-        LogInfo "Unable to filter DataSheet: Column names and criteria tables have different length"
-        ShowDebug
+    'Mismatched counts are a caller mistake that is logged and answered
+    'with an empty array. An unknown column name further down RAISES
+    'instead. Two different answers to two different mistakes.
+    If varData.Length <> criteriaData.Length Or varData.Length = 0 Then
+        LogAndTrace "Unable to filter DataSheet: Column names and criteria tables have different length"
         Exit Function
     End If
 
     'returned Range
-    Col = 2                                      'Iterator for columns to extract
+    scratchColumn = 2                            'Iterator for columns to extract
     Set sh = Wksh()
 
     With sh
 
+        'A filter left over from an earlier call would hide rows before the
+        'new ones are applied.
         RemoveAutoFilter
         EndRow = DataEndRow()
         endCol = DataEndColumn()
@@ -628,29 +751,43 @@ Public Function FiltersData(ByVal varData As BetterArray, _
         For counter = returnedColumnsData.LowerBound To returnedColumnsData.UpperBound
             returnedColumnIndex = ColumnIndex(returnedColumnsData.Item(counter), shouldExist:=True)
 
+            'SpecialCells raises when every row is hidden. That raise is how
+            '"the filter matched nothing" is detected, so the guard here is
+            'real error handling and not laziness.
             On Error Resume Next
-            Set returnedRng = .Range(.Cells(DataStartRow() + 1, returnedColumnIndex), .Cells(EndRow, returnedColumnIndex)).SpecialCells(xlCellTypeVisible)
+            Set visibleRng = .Range(.Cells(DataStartRow() + 1, returnedColumnIndex), .Cells(EndRow, returnedColumnIndex)).SpecialCells(xlCellTypeVisible)
             On Error GoTo 0
 
-            If Not returnedRng Is Nothing Then
-                Set outRng = .Cells(DataStartRow(), endCol + Col).Resize(returnedRng.Rows.Count, 1)
-                returnedRng.Copy
-                outRng.PasteSpecial xlPasteValues
+            If Not visibleRng Is Nothing Then
+                'Each returned column gets its OWN scratch column. The
+                'scratch area starts two columns past the last data column,
+                'so the empty column in between keeps End(xlToLeft) from
+                'running out of the data into the scratch block.
+                Set outputRng = .Cells(DataStartRow(), endCol + scratchColumn).Resize(visibleRng.Rows.Count, 1)
+                visibleRng.Copy
+                outputRng.PasteSpecial xlPasteValues
             End If
-            Col = Col + 1
+            scratchColumn = scratchColumn + 1
         Next
 
         RemoveAutoFilter
 
         'end row and end columns of data to return
+        'The end column is read AFTER the scratch block was written, on
+        'purpose: that is how the right edge of this routine's own output
+        'is found. A held end column would break it.
         retEndRow = .Cells(.Rows.Count, endCol + 2).End(xlUp).Row
         retEndCol = .Cells(DataStartRow(), .Columns.Count).End(xlToLeft).Column
 
         If Not IsEmpty(.Cells(DataStartRow(), endCol + 2)) Then
-            Set returnedRng = .Range(.Cells(DataStartRow(), endCol + 2), .Cells(retEndRow, retEndCol))
+            Set scratchRng = .Range(.Cells(DataStartRow(), endCol + 2), .Cells(retEndRow, retEndCol))
             'returned data is the data returned by the filter
-            returnedData.FromExcelRange returnedRng, DetectLastRow:=False, DetectLastColumn:=False
-            returnedRng.Cells.Clear
+            'The block is exactly the size that was written, so BetterArray
+            'must not go looking for the last row or column itself.
+            returnedData.FromExcelRange scratchRng, DetectLastRow:=False, DetectLastColumn:=False
+            'Cells.Clear and not ClearContents: the paste carried formats
+            'across too, and they have to go with the values.
+            scratchRng.Cells.Clear
         End If
     End With
     Set FiltersData = returnedData.Clone()
@@ -671,55 +808,59 @@ End Function
 Public Sub Import(ByVal importData As Object, Optional ByVal strictColumnSearch As Boolean = True)
 
     Dim imphRng As Range 'Import Header Range
+    Dim sourceHeaders As Variant
     Dim headerValue As String
     Dim counter As Long
     Dim nbImpRows As Long
     Dim impDataRng As Range
-    Dim currDataRng As Range
     Dim rng As Range
-    Dim sh As Worksheet
+    Dim destColumn As Long
+    Dim firstDataRow As Long
 
     'You can immport either another datasheet or a custom table
-    If (TypeName(importData) <> "DataSheet") And _
-       (TypeName(importData) <> "CustomTable") Then 
-        Loginfo "Imports are done only on DataSheet or CustomTable Objects", checkingWarning
-        ShowDebug
-        Exit Sub
-    End If
+    If Not IsImportable(importData, "Imports") Then Exit Sub
 
+    'The source header row is read once as a block instead of one
+    'worksheet read per column.
     Set imphRng = importData.HeaderRange()
-    Set sh = Wksh()
+    sourceHeaders = RowValues(imphRng)
+    firstDataRow = DataStartRow() + 1
 
     'Clean the actual dictionary
     Clean
 
-    For counter = 1 To imphRng.Columns.Count
+    For counter = 1 To UBound(sourceHeaders)
         'all the headers are in lowercase and are trimed
-        headerValue = imphRng.Cells(1, counter).Value
+        headerValue = CellText(sourceHeaders(counter))
 
-        If ColumnExists(headerValue, matchCase:=strictColumnSearch) Then
-            'This data Range does not includes colnames. 
-            'Strict search is to look for whole column names and not part only
-            'In some cases we need to match the column names case wise, and in other cases
-            'especially when working with customtable, this is not mandatory
+        'One lookup answers both questions that ColumnExists and DataRange
+        'used to answer with two lookups and four worksheet searches.
+        'Strict search is to look for whole column names and not part only
+        'In some cases we need to match the column names case wise, and in other cases
+        'especially when working with customtable, this is not mandatory
+        destColumn = FindColumn(headerValue, True, strictColumnSearch)
+
+        If destColumn > 0 Then
+            'The source is always read whole-string and case-sensitive while
+            'the destination follows the caller's flag. The two are
+            'deliberately different, do not line them up.
             Set impDataRng = importData.DataRange(headerValue, strictSearch:=True, matchCase:=True)
-            Set currDataRng = DataRange(headerValue, strictSearch:=True, matchCase:=strictColumnSearch)
             nbImpRows = impDataRng.Rows.Count
-            'Add values if the range does not contains formulas. If the range contains formulas, do nothing
-            Set rng = sh.Range(currDataRng.Cells(1, 1), currDataRng.Cells(nbImpRows, 1))
-            If (Not rng.Cells(1, 1).HasFormula) Then
-                currDataRng.Cells.ClearContents
-                rng.Value = impDataRng.Value
-            End If
+
+            'Add values if the range does not contains formulas. If the range
+            'contains formulas, do nothing. Clean above already emptied every
+            'column that passes this same test on this same cell, so there is
+            'nothing left to clear here.
+            Set rng = SheetBlock(firstDataRow, destColumn, firstDataRow + nbImpRows - 1, destColumn)
+            If (Not rng.Cells(1, 1).HasFormula) Then rng.Value = impDataRng.Value
         End If
     Next
 
     'Calculate current DataRange after import
     DataRange.Calculate
-    
+
     'importformats
     ImportFormat importData:=importData, matchColumnsCase:=strictColumnSearch
-    this.hasImport = True
 End Sub
 
 '@label:import-format
@@ -732,43 +873,31 @@ End Sub
 '@param matchColumnsCase Optional Boolean. When True, uses case-sensitive column matching. Defaults to True.
 '@export
 Public Sub ImportFormat(ByVal importData As Object, Optional ByVal matchColumnsCase As Boolean = True)
-  
+
     Dim actRng As Range
     Dim counter As Long
     Dim impRng As Range
     Dim colName As String
 
+    If Not IsImportable(importData, "Imports of formats") Then Exit Sub
 
-    If (TypeName(importData) <> "DataSheet") And (TypeName(importData) <> "CustomTable") Then
-        LogInfo "Imports of formats are done only on DataSheet or CustomTable Objects", checkingWarning
-        ShowDebug
-        Exit Sub
-    End If
-
-    If (Not TypeName(FORMATCOLUMNS) = "BetterArray") Then
-        LogInfo "Trying to import formats without specifying formats columns. Maybe use AddFormatsColumns first?", checkingWarning
-        ShowDebug
-        Exit Sub
-    End If
-    
-    If (FORMATCOLUMNS.Length = 0) Then 
-        LogInfo "Trying to import formats without specifying formats columns. Maybe use AddFormatsColumns first?", checkingWarning
-        ShowDebug
+    If Not HasFormatColumns() Then
+        LogAndTrace "Trying to import formats without specifying formats columns. Maybe use AddFormatsColumns first?", checkingWarning
         Exit Sub
     End If
 
     'importing colunms that need formatting
-    For counter = FORMATCOLUMNS.LowerBound To FORMATCOLUMNS.UpperBound
-        
-        colName = FORMATCOLUMNS.Item(counter)
-        
+    For counter = this.formatColumns.LowerBound To this.formatColumns.UpperBound
+
+        colName = this.formatColumns.Item(counter)
+
 
         'The column might not exists in the exported DataBase
         If importData.ColumnExists(colName, strictSearch:=True, matchCase:=matchColumnsCase) Then
 
             Set actRng = DataRange(colName, matchCase:=matchColumnsCase)
             Set impRng = importData.DataRange(colName, matchCase:=matchColumnsCase)
-            
+
             If (impRng.Rows.Count <> actRng.Rows.Count) Then
                 'Add a warning on the the checkings here
                 LogInfo "Importing Range " & colName & "formatting is truncated; source and target columns have different rows", checkingWarning
@@ -777,7 +906,7 @@ Public Sub ImportFormat(ByVal importData As Object, Optional ByVal matchColumnsC
             'Start importing formats
             ApplyFormat actRng, impRng
         End If
-        
+
     Next
 End Sub
 
@@ -786,25 +915,39 @@ End Sub
 '@details
 'Transfers interior colour, font colour, bold, and italic from each
 'cell in impRng to the corresponding cell in actRng.
-'@param actRng Range. Destination range to format.
-'@param impRng Range. Source range with formatting to copy.
+'This is not a straight format copy and xlPasteFormats would not do the
+'same thing: only a colour that is not the default travels, so the
+'destination keeps its own white background and black text, and borders,
+'number formats and font names are left alone.
 Private Sub ApplyFormat(ByVal actRng As Range, ByVal impRng As Range)
 
     Dim cellRng As Range
     Dim actCellRng As Range
+    Dim lastRow As Long
+    Dim interiorColor As Long
+    Dim fontColor As Long
 
     actRng.ClearFormats
     Set cellRng = impRng.Cells(1, 1)
     Set actCellRng = actRng.Cells(1, 1)
 
-    Do While (cellRng.Row <= impRng.Cells(impRng.Rows.Count, 1).Row)
+    'The bound used to be measured from the worksheet on every single pass
+    'of the loop. It cannot move while this runs, so read it once.
+    lastRow = impRng.Cells(impRng.Rows.Count, 1).Row
 
-        If (cellRng.Interior.Color <> vbWhite) Then 
-            actCellRng.Interior.color = cellRng.Interior.color
+    Do While (cellRng.Row <= lastRow)
+
+        'Read each source colour once. Reading Interior and Font again for
+        'the assignment cost a second round trip per cell.
+        interiorColor = cellRng.Interior.Color
+        fontColor = cellRng.Font.Color
+
+        If (interiorColor <> vbWhite) Then
+            actCellRng.Interior.color = interiorColor
         End If
 
-        If (cellRng.Font.Color <> vbBlack) Then 
-            actCellRng.Font.color = cellRng.Font.color
+        If (fontColor <> vbBlack) Then
+            actCellRng.Font.color = fontColor
         End If
 
         actCellRng.Font.Bold = cellRng.Font.Bold
@@ -831,8 +974,8 @@ End Sub
 '@param includeNames Optional Boolean. When True, exports hidden names alongside data. Defaults to False.
 '@export
 Public Sub Export(ByVal toWkb As Workbook, Optional ByVal filteredVarName As String = "__all__", _
-                   Optional ByVal filteredCondition As String = "<>", _ 
-                   Optional ByVal Hide As Long = xlSheetHidden, _ 
+                   Optional ByVal filteredCondition As String = "<>", _
+                   Optional ByVal Hide As Long = xlSheetHidden, _
                    Optional ByVal includeNames As Boolean = False)
 
     Dim dataExportData As BetterArray
@@ -842,14 +985,17 @@ Public Sub Export(ByVal toWkb As Workbook, Optional ByVal filteredVarName As Str
     Dim colName As String
     Dim actRng As Range
     Dim impRng As Range
+    Dim exportedRng As Range
     Dim counter As Long
     Dim colIndex As Long
+    Dim sourceColumn As Long
+    Dim firstDataRow As Long
+    Dim lastDataRow As Long
     Dim store As HiddenNames
 
     'Trace on errors on export
     If toWkb Is Nothing Then
-        LogInfo "Export can not be done, workbook not found", checkingError
-        ShowDebug
+        LogAndTrace "Export can not be done, workbook not found", checkingError
         Exit Sub
     End If
     'Test if the sheet  exists in the workbook
@@ -861,7 +1007,7 @@ Public Sub Export(ByVal toWkb As Workbook, Optional ByVal filteredVarName As Str
     On Error GoTo 0
 
     'Trace on errors on exports
-    If sheetDataExist Then 
+    If sheetDataExist Then
         LogInfo "There is already a worksheet of the same name in the workbook, the worksheet will be cleared completely", checkingWarning
         dataExportWksh.Cells.Clear
     Else
@@ -870,7 +1016,7 @@ Public Sub Export(ByVal toWkb As Workbook, Optional ByVal filteredVarName As Str
     End If
 
     Set dataExportData = New BetterArray
-    
+
     If filteredVarName = "__all__" Then
         dataExportData.FromExcelRange DataRange(colName:="__all__", includeHeaders:=True)
     Else
@@ -881,36 +1027,53 @@ Public Sub Export(ByVal toWkb As Workbook, Optional ByVal filteredVarName As Str
     dataExportData.ToExcelRange dataExportWksh.Cells(1, 1)
     dataExportWksh.Visible = Hide
 
-    'Change the font and other elements on exports
+    'Change the font and other elements on exports.
+    'Only the block that was just written is formatted. Formatting the whole
+    'worksheet meant AutoFit ran over a million empty rows and the column
+    'width was set on every column of the sheet. The .Rows(1) lines stay on
+    'the whole row so the header band still runs across the sheet.
+    'The target workbook belongs to the caller and its sheet may be
+    'protected. Formatting is cosmetic, so a refusal here must not stop the
+    'export: that is what the On Error covers, and nothing else.
+    Set exportedRng = dataExportWksh.UsedRange
     With dataExportWksh
         On Error Resume Next
-        .Cells.EntireColumn.ColumnWidth = 25
-        .Cells.Font.Size = 9
+        exportedRng.EntireColumn.ColumnWidth = 25
+        exportedRng.Font.Size = 9
         .Rows(1).Font.Size = 10
         .Rows(1).RowHeight = 20
         .Rows(1).Interior.Color = RGB(240, 240, 244)
         .Rows(1).Font.Bold = True
-        .Cells.Font.Name = "Consolas"
-        .Cells.WrapText = True
-        .Cells.HorizontalAlignment = xlHAlignLeft
-        .Cells.VerticalAlignment = xlVAlignCenter
-        .Cells.EntireRow.AutoFit
+        exportedRng.Font.Name = "Consolas"
+        exportedRng.WrapText = True
+        exportedRng.HorizontalAlignment = xlHAlignLeft
+        exportedRng.VerticalAlignment = xlVAlignCenter
+        exportedRng.EntireRow.AutoFit
         On Error GoTo 0
     End With
 
     'Export the formats
-    If TypeName(FORMATCOLUMNS) = "BetterArray" Then
-        If (FORMATCOLUMNS.Length <> 0) Then 
-            For counter = FORMATCOLUMNS.LowerBound To FORMATCOLUMNS.UpperBound
-                colName = FORMATCOLUMNS.Item(counter)
-                colIndex = ColumnIndex(colName, inDataRange := True)
-                Set impRng = DataRange(colName)
+    If HasFormatColumns() Then
+        firstDataRow = DataStartRow() + 1
+        'Nothing below writes to the source sheet, so the last row is read
+        'once instead of once per format column.
+        lastDataRow = DataEndRow()
+
+        For counter = this.formatColumns.LowerBound To this.formatColumns.UpperBound
+            colName = this.formatColumns.Item(counter)
+            'One lookup, where ColumnIndex followed by DataRange each paid
+            'for their own header read.
+            sourceColumn = FindColumn(colName, True, True)
+
+            If sourceColumn > 0 Then
+                Set impRng = SheetBlock(firstDataRow, sourceColumn, lastDataRow, sourceColumn)
+                colIndex = sourceColumn - DataStartColumn() + 1
                 With dataExportWksh
                     Set actRng = .Range(.Cells(2, colIndex), .Cells(impRng.Rows.Count, colIndex))
                 End With
                 ApplyFormat actRng, impRng
-            Next
-        End If
+            End If
+        Next
     End If
 
     'Export HiddenNames
@@ -920,9 +1083,39 @@ Public Sub Export(ByVal toWkb As Workbook, Optional ByVal filteredVarName As Str
             On Error Resume Next
                 store.ExportNames dataExportWksh
             On Error GoTo 0
-        End If 
+        End If
     End If
 End Sub
+
+'@label:is-importable
+'@sub-title Test whether an object can be imported from
+'@details
+'Import and ImportFormat both accept a DataSheet or a CustomTable and
+'nothing else. The argument is declared As Object on purpose, so the test
+'is on TypeName. Passing anything else logs and returns False; it does
+'not raise, and a test drives that path with a Range.
+'@param importData Object. The object handed to Import or ImportFormat.
+'@param whatIsImported String. Word used in the message ("Imports", "Imports of formats").
+'@return Boolean. True when the object can be read from.
+Private Function IsImportable(ByVal importData As Object, ByVal whatIsImported As String) As Boolean
+    If (TypeName(importData) = "DataSheet") Or (TypeName(importData) = "CustomTable") Then
+        IsImportable = True
+        Exit Function
+    End If
+
+    LogAndTrace whatIsImported & " are done only on DataSheet or CustomTable Objects", checkingWarning
+End Function
+
+'@label:has-format-columns
+'@sub-title Test whether any column was registered for formatting
+'@details
+'TypeName is used and not Is Nothing because it answers both "never
+'created" and "not a BetterArray" in one test.
+'@return Boolean. True when at least one format column is registered.
+Private Function HasFormatColumns() As Boolean
+    If Not (TypeName(this.formatColumns) = "BetterArray") Then Exit Function
+    HasFormatColumns = (this.formatColumns.Length > 0)
+End Function
 
 '@section Checkings
 '===============================================================================
@@ -932,29 +1125,42 @@ End Sub
 '@sub-title Log a diagnostic message
 '@details
 'Adds a message to the internal Checking object, creating it on first
-'use. The checkCounter provides a unique key for each entry.
+'use. The check counter provides a unique key for each entry.
 '@param label String. The message to record.
 '@param scope Optional Byte. Severity level from CheckingScope. Defaults to checkingNote.
-Private Sub LogInfo(ByVal label As String, _ 
+Private Sub LogInfo(ByVal label As String, _
                     Optional ByVal scope As Byte = checkingNote)
 
     Dim checkName As String
     checkName = "DataSheet " & Name() & " object trace"
     'First, instanciante the internalCheks Objects
-    If internalChecks Is Nothing Then Set internalChecks = Checking.Create(checkName)
-    
+    If this.internalChecks Is Nothing Then Set this.internalChecks = Checking.Create(checkName)
+
     'Add new informations to the checking object
-    internalChecks.Add Cstr(checkCounter), label, scope
-    checkCounter = checkCounter + 1
+    this.internalChecks.Add Cstr(this.checkCounter), label, scope
+    this.checkCounter = this.checkCounter + 1
 
     If Not this.hasChecks Then this.hasChecks = True
+End Sub
+
+'@label:log-and-trace
+'@sub-title Log a message and print the debug trace
+'@details
+'The "log, show the trace, then leave" tail was written out six times on
+'the failure paths of FiltersData, Import, ImportFormat and Export.
+'@param label String. The message to record.
+'@param scope Optional Byte. Severity level from CheckingScope. Defaults to checkingNote.
+Private Sub LogAndTrace(ByVal label As String, _
+                        Optional ByVal scope As Byte = checkingNote)
+    LogInfo label, scope
+    ShowDebug
 End Sub
 
 '@label:has-checkings
 '@prop-title Whether the DataSheet has logged diagnostic messages
 '@return Boolean. True when diagnostic entries exist.
 '@export
-Private Property Get HasCheckings() As Boolean
+Public Property Get HasCheckings() As Boolean
     HasCheckings = this.hasChecks
 End Property
 
@@ -962,10 +1168,10 @@ End Property
 '@prop-title Retrieve the diagnostic log entries
 '@return Object. An Checking instance, or Nothing.
 '@export
-Private Property Get CheckingValues() As Object
+Public Property Get CheckingValues() As Object
     'If there is no checking, exit the property
     If Not HasCheckings() Then  Exit Property
-    Set CheckingValues = internalChecks
+    Set CheckingValues = this.internalChecks
 End Property
 
 
@@ -1043,10 +1249,10 @@ Public Sub AddFormatsColumns(ByVal matchColumnsCase As Boolean, ByVal resetColum
     Dim colName As String
     Dim newColName As String
 
-    If FORMATCOLUMNS Is Nothing Then
-        Set FORMATCOLUMNS = New BetterArray
+    If this.formatColumns Is Nothing Then
+        Set this.formatColumns = New BetterArray
     ElseIf resetColumns Then
-        FORMATCOLUMNS.Clear
+        this.formatColumns.Clear
     End If
 
     If UBound(lsCols) = -1 Then Exit Sub
@@ -1054,9 +1260,11 @@ Public Sub AddFormatsColumns(ByVal matchColumnsCase As Boolean, ByVal resetColum
         'Silently ignore non strings passed to the format columns
         If TypeName(lsCols(nbEls)) = "String" Then
             colName = lsCols(nbEls)
-            If ColumnExists(colName, matchCase:=matchColumnsCase) Then
-                newColName = MatchedColumnName(colName:=colName, matchCase:=matchColumnsCase)
-                If Not FORMATCOLUMNS.Includes(newColName) Then FORMATCOLUMNS.Push newColName
+            'One lookup answers both "does it exist" and "how does the sheet
+            'spell it". The name is stored as the sheet spells it, so Import
+            'and Export can match it exactly afterwards.
+            If FindColumn(colName, True, matchColumnsCase, newColName) > 0 Then
+                If Not this.formatColumns.Includes(newColName) Then this.formatColumns.Push newColName
             End If
         End If
     Next
