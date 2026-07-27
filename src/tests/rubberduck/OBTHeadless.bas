@@ -223,19 +223,25 @@ Private Sub RunModule(ByVal moduleName As String)
     Dim tests As Collection
     Dim idx As Long
 
-    RunProc moduleName, "ModuleInitialize"
-
+    ' Discover FIRST. A module with no '@TestMethod is not a test module -- e.g. a
+    ' shared helper (TestHelpersLite) imported only so the real test modules
+    ' compile. Skip it entirely: running a lifecycle proc it does not define would
+    ' call Application.Run on a missing proc, which -- nested inside the Apple
+    ' Events `run VB macro` call -- raises a NON-trappable -50 (RunProc's On Error
+    ' Resume Next cannot catch it) that aborts the whole run.
     Set tests = DiscoverTestMethods(moduleName)
-    If Not tests Is Nothing Then
-        mTestsFound = mTestsFound + tests.Count
-        For idx = 1 To tests.Count
-            RunProc moduleName, "TestInitialize"
-            RunProc moduleName, CStr(tests.Item(idx))
-            RunProc moduleName, "TestCleanup"
-            DoEvents
-        Next idx
-    End If
+    If tests Is Nothing Then Exit Sub
+    If tests.Count = 0 Then Exit Sub
 
+    mTestsFound = mTestsFound + tests.Count
+
+    RunProc moduleName, "ModuleInitialize"
+    For idx = 1 To tests.Count
+        RunProc moduleName, "TestInitialize"
+        RunProc moduleName, CStr(tests.Item(idx))
+        RunProc moduleName, "TestCleanup"
+        DoEvents
+    Next idx
     RunProc moduleName, "ModuleCleanup"
 End Sub
 

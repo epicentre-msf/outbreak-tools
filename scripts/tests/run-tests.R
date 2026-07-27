@@ -12,7 +12,7 @@
 #   --keep    never delete the per-run working copy, even on success
 #             (for inspecting a green run).
 #   --home    root of the untracked working area holding the driver workbook
-#             (PartialTests.xlsb) + the per-run staging tree. Defaults to the
+#             (unit_tests_dev.xlsb) + the per-run staging tree. Defaults to the
 #             OBT_TEST_HOME env var, else <repo>/.test-runner. Gitignored, so its
 #             location is a local setting, not fixed in the repo.
 #
@@ -22,7 +22,7 @@
 # grant (OBTGrantAccess, one-time) lets Excel read it all with no per-file prompts.
 #
 # What it does (all portable logic lives here; the OS-specific trigger is thin):
-#   1. copy <home>/PartialTests.xlsb -> the stable run dir (NEVER touch original)
+#   1. copy <home>/unit_tests_dev.xlsb -> the stable run dir (NEVER touch original)
 #      and assemble the registered probe sources + manifest + harness from src/.
 #   2. (optional, --build) regenerate the registry intermediates (src/tests/.generated).
 #   3. quit any running Excel (run VB macro fails against an already-open one),
@@ -73,7 +73,7 @@ test_home <- if (length(home_opt) && nzchar(home_opt[1])) {
 }
 if (!grepl("^(/|~|[A-Za-z]:)", test_home)) test_home <- file.path(repo_root, test_home)
 
-workbook_src <- file.path(test_home, "PartialTests.xlsb")
+workbook_src <- file.path(test_home, "unit_tests_dev.xlsb")
 scripts_dir  <- file.path(repo_root, "scripts", "tests")
 trigger      <- file.path(scripts_dir, "macos", "run-tests.applescript")
 generated    <- file.path(repo_root, "src", "tests", ".generated")     # build-registry.R output

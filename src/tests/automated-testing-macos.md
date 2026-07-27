@@ -78,7 +78,7 @@ Rscript run-tests.R --build
 │        → src/tests/.generated/modules-for-testing.txt  (flat list of test modules)
 │
 ├─ 2. Assemble the run dir  .test-runner/tests/staging/run/
-│        unit_tests_run.xlsb          (copy of .test-runner/PartialTests.xlsb — original untouched)
+│        unit_tests_run.xlsb          (copy of .test-runner/unit_tests_dev.xlsb — original untouched)
 │        classes/<folder>/…           (registered class sources, from src/ then .test-runner fallback)
 │        tests/modules/<folder>/…      (registered test modules)
 │        .generated/…                 (the manifest, copied in)
@@ -134,7 +134,7 @@ workbook — see [setup](#4-one-time-setup).
 
 ### The workbook
 
-`.test-runner/PartialTests.xlsb` — the driver workbook. It carries the harness + the
+`.test-runner/unit_tests_dev.xlsb` — the driver workbook. It carries the harness + the
 `Development` manager, plus two worksheets: **`Codes`** (import tables +
 `ModulesForTesting`) and **`testsOutputs`** (rendered results). It is an
 **untracked binary artefact** (under `.test-runner/`, which is git‑ignored). The
@@ -149,7 +149,7 @@ future run is just `Rscript scripts/tests/run-tests.R --build`.
 
 ### 4.1 Import the harness + `Development` into the workbook
 
-Open `.test-runner/PartialTests.xlsb` and, in the VBE (**File → Import File…**),
+Open `.test-runner/unit_tests_dev.xlsb` and, in the VBE (**File → Import File…**),
 import these components. They form the compile closure needed for `Development`
 + the harness to compile:
 
@@ -195,8 +195,17 @@ headless run.
 
 Run **`OBTGrantAccess` once, by hand**:
 
-1. In the VBE, put the cursor inside `OBTGrantAccess` and press **F5**.
-2. In the folder picker, select the **`outbreak-tools` repo root** and confirm.
+1. **Open the driver workbook `.test-runner/unit_tests_dev.xlsb`** in Excel.
+2. Open the VBE (**⌥F11**), find the `OBTGrantAccess` module, put the cursor
+   inside the `OBTGrantAccess` sub, and press **F5**.
+3. In the folder picker, select the **`outbreak-tools` repo root**
+   (`/Users/…/Unsync-Working-Folders/outbreak-tools`) and confirm.
+
+> If the suite already runs green (the harness, `Development`, and its
+> dependencies are imported and compiling), **this grant is the only remaining
+> setup** — 4.1–4.3 are already done. You saw two prompts because the run reads
+> from both `src/` and `.test-runner/…/run/`; both live under the repo root, so
+> one pick covers them.
 
 This is the step that stops the “grant access to files” prompts. See
 [§5](#5-the-macos-sandbox-story) for why it's necessary and why Full Disk Access
@@ -370,7 +379,7 @@ copies the CSV to `.test-runner/tests/staging/test-results.csv`.
 
 | Lives in `src/` (tracked) | Lives in `.test-runner/` (untracked, git‑ignored) |
 |---|---|
-| `scripts/tests/*` (orchestrator, trigger, registry builder) | `PartialTests.xlsb` (the driver workbook — a binary artefact) |
+| `scripts/tests/*` (orchestrator, trigger, registry builder) | `unit_tests_dev.xlsb` (the driver workbook — a binary artefact) |
 | `src/tests/test-registry.yml` | `tests/staging/run/` (the per‑run working dir) |
 | `src/tests/modules/rubberduck/OBT*.bas` (the harness) | `tests/staging/{classes,tests}/draft/…` (the local **probe** fixtures) |
 | Real project classes + their real test suites | `tests/staging/bootstrap/*` (staging copies) |
@@ -416,12 +425,12 @@ Rscript scripts/tests/run-tests.R --home=DIR  # workbook + staging live under DI
 - Registry: `src/tests/test-registry.yml`
 - Manifest: `src/tests/.generated/{code-tables.tsv, modules-for-testing.txt}`
 - Harness: `src/tests/modules/rubberduck/OBT*.bas`
-- Workbook: `.test-runner/PartialTests.xlsb`
+- Workbook: `.test-runner/unit_tests_dev.xlsb`
 - Run dir: `.test-runner/tests/staging/run/`
 - Results: `.test-runner/tests/staging/test-results.csv` (+ `run/test-results.csv`, `run/obt-import.log`)
 
 **One‑time setup checklist:**
-- [ ] Import the harness + `Development` + its deps into `PartialTests.xlsb`
+- [ ] Import the harness + `Development` + its deps into `unit_tests_dev.xlsb`
 - [ ] Trust access to the VBA project object model = ON
 - [ ] VBE Error Trapping = “Break on Unhandled Errors”
 - [ ] Run `OBTGrantAccess` once, pick the repo root

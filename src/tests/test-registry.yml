@@ -44,6 +44,31 @@
 version: 1
 
 suites:
+  # --- helpers --------------------------------------------------------------
+  # Shared test utilities (CustomTestSetTitles, BusyApp, EnsureWorksheet, ...)
+  # that every CustomTest module calls. Registered so the runner imports it and
+  # the test modules compile. The helper module has no @TestMethod, so
+  # OBTRunAllTests runs it as a no-op (0 tests). Keep this suite in place.
+  #
+  # TestHelpersLite is a minimal subset carrying only the routines TestOSFiles
+  # calls, with CustomTest as its sole project dependency. The full TestHelpers
+  # also binds TranslationObject + BetterArray; on a minimal OSFiles-only run
+  # those classes are absent, so the full module would break the project compile
+  # (surfacing as the opaque AppleScript -50). Swap back to `TestHelpers` once a
+  # suite needs the richer helpers and their classes are also registered. Only
+  # one of the two may be imported at a time (identical public names).
+  - folder: helpers
+    tests:
+      - module: TestHelpersLite
+
+  # --- general (OSFiles) ----------------------------------------------------
+  - folder: general
+    classes:
+      - name: OSFiles
+    tests:
+      - module: TestOSFiles
+        covers: [OSFiles]
+
   # --- sections -------------------------------------------------------------
   # (Also note: interface: true is stale -- IVarWriter /
   # ISectionBuilder were folded and no longer exist; import skips missing files.)

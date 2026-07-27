@@ -170,8 +170,11 @@ Public Sub OBTSilentImport()
     Set manager = Development.Create(codeSheet, codeSheet)
     manager.DisplayPrompts = False
     LogStep "  importing from " & StagePath("classes") & " and " & StagePath("tests")
+    RemoveNonHeadlessModules
     manager.ImportAll
     LogStep "  ImportAll returned; components now = " & ComponentCount()
+
+    LogCompileProbe
 
 CleanExit:
     If Err.Number <> 0 Then
@@ -566,6 +569,112 @@ Private Function ComponentCount() As String
         If Err.Number <> 0 Then ComponentCount = "VBE-ERR" & Err.Number
     On Error GoTo 0
 End Function
+
+'@sub-title Log an inventory of every component after import (safe post-import diagnostic).
+'@details
+'Runs IN-PROCESS at the tail of OBTSilentImport and records each component's
+'name, type and line count to obt-import.log, which run-tests.R echoes on
+'failure. This is what surfaces a stale or duplicate module -- e.g. an orphaned
+'TestHelpers left in the saved workbook beside a freshly imported one -- whose
+'colliding Public names would otherwise show up only as the opaque AppleScript
+'-50 at OBTRunAllTests (a compile error names neither module nor symbol across
+'the Apple Events boundary). Kept deliberately passive: it never invokes freshly
+'imported code, because a compile error triggered mid-macro propagates as -50 and
+'aborts the run rather than being trappable, so the inventory always completes.
+'@vbext-ct component-type codes: 1 std module, 2 class, 3 MSForm, 100 document.
+Private Sub LogCompileProbe()
+    On Error Resume Next
+
+    LogStep "=== COMPONENT INVENTORY (in-process, post-import) ==="
+
+    Dim proj As Object
+    Set proj = ThisWorkbook.VBProject
+    If Err.Number <> 0 Then
+        LogStep "  VBProject inaccessible: Err " & Err.Number & " - " & Err.Description & _
+                " (Trust access to the VBA project object model?)"
+        Err.Clear
+        LogStep "=== END INVENTORY ==="
+        Exit Sub
+    End If
+
+    Dim comp As Object
+    Dim lineCount As Long
+    For Each comp In proj.VBComponents
+        lineCount = -1
+        lineCount = comp.CodeModule.CountOfLines
+        LogStep "  comp: " & comp.Name & " | type=" & comp.Type & " | lines=" & lineCount
+        Err.Clear
+    Next comp
+
+    LogStep "=== END INVENTORY ==="
+    On Error GoTo 0
+End Sub
+
+'@sub-title Prune modules a headless Mac run must not carry, before import.
+'@details
+'Two hazards are swept here, both otherwise surfacing as the opaque AppleScript
+'-50 (a compile failure names neither module nor symbol across Apple Events):
+'  1. CustomTestImplementation -- the clicked/Ribbon runner. Its
+'     clickRibbonTests(Control As IRibbonControl) signature binds the Windows-only
+'     Office type IRibbonControl, which is undefined on Mac, so the whole project
+'     stops compiling. The headless loop runs through OBTHeadless and never needs
+'     it (see OBTHeadless header), so it is dropped from the run copy.
+'  2. Orphan Test* standard modules absent from modules-for-testing.txt. Because
+'     Development refreshes only REGISTERED names, a module left by a previous
+'     registry lingers and, once a newly registered module redefines the same
+'     Public names, every unqualified call becomes "Ambiguous name detected".
+'Registered test modules and all production/harness code are left untouched.
+'Best-effort: guarded so a VBE-access failure can never break the import.
+Private Sub RemoveNonHeadlessModules()
+    On Error Resume Next
+
+    Dim proj As Object
+    Set proj = ThisWorkbook.VBProject
+    If proj Is Nothing Then Exit Sub
+
+    ' Registered-name set, framed with pipes for whole-name InStr matching.
+    Dim registered As String
+    registered = "|"
+
+    Dim modulesFile As String
+    modulesFile = JoinPath(GeneratedFolder(), MODULES_FILE)
+
+    If Dir$(modulesFile) <> vbNullString Then
+        Dim lines As Variant
+        Dim idx As Long
+        Dim moduleName As String
+        lines = SplitLines(ReadAllText(modulesFile))
+        For idx = LBound(lines) To UBound(lines)
+            moduleName = Trim$(CStr(lines(idx)))
+            If LenB(moduleName) > 0 Then registered = registered & moduleName & "|"
+        Next idx
+    End If
+
+    ' Collect first, remove second: removing while iterating VBComponents is unsafe.
+    Dim doomed As Collection
+    Set doomed = New Collection
+
+    Dim comp As Object
+    For Each comp In proj.VBComponents
+        If comp.Type = 1 Then                              ' vbext_ct_StdModule
+            If StrComp(comp.Name, "CustomTestImplementation", vbTextCompare) = 0 Then
+                doomed.Add comp.Name
+            ElseIf StrComp(Left$(comp.Name, 4), "Test", vbTextCompare) = 0 Then
+                If InStr(1, registered, "|" & comp.Name & "|", vbTextCompare) = 0 Then
+                    doomed.Add comp.Name
+                End If
+            End If
+        End If
+    Next comp
+
+    Dim item As Variant
+    For Each item In doomed
+        LogStep "  pruning module not used by the headless loop: " & CStr(item)
+        proj.VBComponents.Remove proj.VBComponents(CStr(item))
+    Next item
+
+    On Error GoTo 0
+End Sub
 
 '@fun-title Absolute path of the diagnostics log, next to the running workbook.
 Private Function LogPath() As String
