@@ -10,10 +10,16 @@ Option Explicit
 
 ' =============================================================================
 ' A small subset of TestHelpers, carrying only the routines the registered
-' CustomTest suites call: BusyApp / RestoreApp / EnsureWorksheet / ClearWorksheet
-' / DeleteWorksheet(s) / FailUnexpectedError / CustomTestSetTitles /
-' CustomTestLogFailure / BetterArrayFromList. Project dependencies: CustomTest
-' and BetterArray, both present in the baseline workbook.
+' CustomTest suites call: BusyApp / RestoreApp / NewWorkbook / DeleteWorkbook /
+' EnsureWorksheet / ClearWorksheet / DeleteWorksheet(s) / WriteRow /
+' WriteColumn / SingleColumnRows / RowsToMatrix / WriteMatrix /
+' FailUnexpectedError / CustomTestSetTitles / CustomTestLogFailure /
+' BetterArrayFromList. Project dependencies: CustomTest and BetterArray, both
+' present in the baseline workbook.
+'
+' The whole "Range Writers" section was taken in one go, not routine by routine:
+' DictionaryTestFixture needs RowsToMatrix + WriteMatrix, and every other
+' fixture in src/tests/helpers/ uses the other three.
 '
 ' Registered in place of the full TestHelpers. NB the full module also compiles
 ' in this workbook -- its TranslationObject/BetterArray deps ARE present -- so
@@ -45,6 +51,30 @@ Public Sub RestoreApp()
     Application.DisplayAlerts = True
     Application.Calculation = xlCalculationAutomatic
     Application.EnableAnimations = True
+End Sub
+
+'@section Workbooks
+'===============================================================================
+
+'@label NewWorkbook
+'@fun-title Create a new workbook ready for test usage.
+'@details Create a new workbook ready for test usage.
+'@return Workbook freshly created.
+Public Function NewWorkbook() As workbook
+    BusyApp
+    Set NewWorkbook = Workbooks.Add
+    ActiveWindow.WindowState = xlMinimized
+End Function
+
+'@label DeleteWorkbook
+'@sub-title Close and discard a workbook if it exists.
+'@details Close and discard a workbook if it exists.
+'@param wb Workbook or Object reference to close.
+Public Sub DeleteWorkbook(ByVal wb As workbook)
+    On Error Resume Next
+        BusyApp
+        wb.Close saveChanges:=False
+    On Error GoTo 0
 End Sub
 
 '@section Worksheets
@@ -140,6 +170,107 @@ Public Sub DeleteWorksheets(ParamArray sheetNames() As Variant)
     For idx = LBound(sheetNames) To UBound(sheetNames)
         DeleteWorksheet CStr(sheetNames(idx))
     Next idx
+End Sub
+
+'@section Range Writers
+'===============================================================================
+
+'@label WriteRow
+'@sub-title Write a row of values to a target range.
+'@details Write a row of values to a target range.
+'@param target Range. Starting cell.
+'@param values ParamArray values to write.
+Public Sub WriteRow(ByVal target As Range, ParamArray values() As Variant)
+    Dim idx As Long
+
+    For idx = LBound(values) To UBound(values)
+        target.Offset(0, idx - LBound(values)).value = values(idx)
+    Next idx
+End Sub
+
+'@label WriteColumn
+'@sub-title Write a column of values to a target range.
+'@details Write a column of values to a target range.
+'@param target Range. Starting cell.
+'@param values ParamArray values to write.
+Public Sub WriteColumn(ByVal target As Range, ParamArray values() As Variant)
+    Dim idx As Long
+
+    For idx = LBound(values) To UBound(values)
+        target.Offset(idx - LBound(values), 0).value = values(idx)
+    Next idx
+End Sub
+
+'@label SingleColumnRows
+'@fun-title Convert a 1-D array into an array of single-column rows.
+'@details Convert a 1-D array into an array where each element is wrapped in its own single-column row array.
+'@param values Variant. One-dimensional array to convert.
+'@return Variant array of row arrays or Empty when input is invalid.
+Public Function SingleColumnRows(values As Variant) As Variant
+    Dim result() As Variant
+    Dim idx As Long
+    Dim lower As Long
+    Dim upper As Long
+
+    If Not IsArray(values) Then Exit Function
+
+    lower = LBound(values)
+    upper = UBound(values)
+    If upper < lower Then
+        SingleColumnRows = Array()
+        Exit Function
+    End If
+    ReDim result(0 To upper - lower)
+
+    For idx = lower To upper
+        result(idx - lower) = Array(values(idx))
+    Next idx
+
+    SingleColumnRows = result
+End Function
+
+'@label RowsToMatrix
+'@fun-title Convert an array of row arrays into a 2D matrix.
+'@details Convert an array of row arrays into a 2D matrix.
+'@param rows Variant. Array of arrays to convert.
+'@return Variant 2D matrix or Empty when invalid.
+Public Function RowsToMatrix(rows As Variant) As Variant
+    Dim rowLower As Long
+    Dim rowUpper As Long
+    Dim colLower As Long
+    Dim colUpper As Long
+    Dim r As Long
+    Dim c As Long
+    Dim matrix() As Variant
+
+    If Not IsArray(rows) Then Exit Function
+
+    rowLower = LBound(rows)
+    rowUpper = UBound(rows)
+    colLower = LBound(rows(rowLower))
+    colUpper = UBound(rows(rowLower))
+
+    ReDim matrix(1 To rowUpper - rowLower + 1, 1 To colUpper - colLower + 1)
+
+    For r = rowLower To rowUpper
+        For c = colLower To colUpper
+            matrix(r - rowLower + 1, c - colLower + 1) = rows(r)(c)
+        Next c
+    Next r
+
+    RowsToMatrix = matrix
+End Function
+
+'@label WriteMatrix
+'@sub-title Write a 2D matrix into the supplied range.
+'@details Write a 2D matrix into the supplied range.
+'@param target Range. Upper-left cell for the matrix.
+'@param matrix Variant. 2D array of values.
+Public Sub WriteMatrix(ByVal target As Range, matrix As Variant)
+    If IsEmpty(matrix) Then Exit Sub
+
+    target.Resize(UBound(matrix, 1) - LBound(matrix, 1) + 1, _
+                  UBound(matrix, 2) - LBound(matrix, 2) + 1).value = matrix
 End Sub
 
 '@section Assertions

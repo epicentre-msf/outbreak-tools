@@ -68,6 +68,7 @@ suites:
   - folder: helpers
     tests:
       - module: TestHelpersLite
+      - module: DictionaryTestFixture
 
   # --- general (OSFiles, DropdownLists) --------------------------------------
   # DropdownLists' whole dependency closure (HiddenNames, BetterArray, Checking)
@@ -76,6 +77,11 @@ suites:
     classes:
       - name: OSFiles
       - name: DropdownLists
+      # DataSheet names CustomTable only inside TypeName(...) string tests and
+      # takes its import argument As Object, so CustomTable is NOT a compile
+      # dependency and must not be imported. Its real deps (Checking,
+      # BetterArray, HiddenNames) are already in the workbook.
+      - name: DataSheet
     tests:
       - module: TestOSFiles
         covers: [OSFiles]
@@ -83,6 +89,8 @@ suites:
         covers: [DropdownLists]
       - module: TestTranslationObject
         covers: [TranslationObject]
+      - module: TestDataSheet
+        covers: [DataSheet]
 
   # --- sections -------------------------------------------------------------
   # (Also note: interface: true is stale -- IVarWriter /
