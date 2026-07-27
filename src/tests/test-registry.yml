@@ -50,13 +50,21 @@ suites:
   # the test modules compile. The helper module has no @TestMethod, so
   # OBTRunAllTests runs it as a no-op (0 tests). Keep this suite in place.
   #
-  # TestHelpersLite is a minimal subset carrying only the routines TestOSFiles
-  # calls, with CustomTest as its sole project dependency. The full TestHelpers
-  # also binds TranslationObject + BetterArray; on a minimal OSFiles-only run
-  # those classes are absent, so the full module would break the project compile
-  # (surfacing as the opaque AppleScript -50). Swap back to `TestHelpers` once a
-  # suite needs the richer helpers and their classes are also registered. Only
-  # one of the two may be imported at a time (identical public names).
+  # TestHelpersLite is the registered helper. It started as the subset TestOSFiles
+  # needed and GROWS as suites are added: when a new test module wants a routine
+  # the full TestHelpers already has, copy that routine in here rather than
+  # switching the registration over.
+  #
+  # Only ONE helper module may be imported at a time -- the two define the same
+  # Public names, and two live copies make every unqualified call "Ambiguous name
+  # detected", which stops the whole project compiling and surfaces as the opaque
+  # AppleScript -50. That is exactly the fault OBTImport.RemoveNonHeadlessModules
+  # now sweeps: a stale full TestHelpers left in the saved workbook beside this
+  # one. TestHelpers.bas stays on disk (79 test modules still call its richer
+  # routines) but is deliberately NOT registered, so it is never imported.
+  #
+  # An earlier note here blamed TranslationObject + BetterArray being absent from
+  # the workbook. That premise was wrong -- both classes are present.
   - folder: helpers
     tests:
       - module: TestHelpersLite

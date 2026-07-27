@@ -612,17 +612,23 @@ End Sub
 
 '@sub-title Prune modules a headless Mac run must not carry, before import.
 '@details
-'Two hazards are swept here, both otherwise surfacing as the opaque AppleScript
-'-50 (a compile failure names neither module nor symbol across Apple Events):
-'  1. CustomTestImplementation -- the clicked/Ribbon runner. Its
-'     clickRibbonTests(Control As IRibbonControl) signature binds the Windows-only
-'     Office type IRibbonControl, which is undefined on Mac, so the whole project
-'     stops compiling. The headless loop runs through OBTHeadless and never needs
-'     it (see OBTHeadless header), so it is dropped from the run copy.
-'  2. Orphan Test* standard modules absent from modules-for-testing.txt. Because
+'One fault, swept in two places. It surfaces as the opaque AppleScript -50,
+'because a compile failure names neither module nor symbol across Apple Events.
+'  1. Orphan Test* standard modules absent from modules-for-testing.txt. Because
 '     Development refreshes only REGISTERED names, a module left by a previous
-'     registry lingers and, once a newly registered module redefines the same
-'     Public names, every unqualified call becomes "Ambiguous name detected".
+'     registry lingers; once a newly registered module redefines the same Public
+'     names, every unqualified call becomes "Ambiguous name detected" and the
+'     whole project stops compiling. THIS is the real cause: a stale full
+'     TestHelpers sat beside the registered TestHelpersLite, and both define
+'     BusyApp and EnsureWorksheet.
+'  2. CustomTestImplementation -- the ribbon/click runner. It calls BusyApp and
+'     EnsureWorksheet unqualified, so it was a casualty of (1), not a cause. It
+'     is dropped anyway: the headless loop runs through OBTHeadless and never
+'     clicks a ribbon (see OBTHeadless header).
+'NOT the cause: the clickRibbonTests(Control As IRibbonControl) signature. That
+'was the first diagnosis and it is wrong -- IRibbonControl resolves fine on Mac.
+'EventsLinelistRibbon uses it unguarded, and Linelist.cls copies that module into
+'every generated linelist, which compiles on Mac. Do not re-add the claim.
 'Registered test modules and all production/harness code are left untouched.
 'Best-effort: guarded so a VBE-access failure can never break the import.
 Private Sub RemoveNonHeadlessModules()
