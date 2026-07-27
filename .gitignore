@@ -71,6 +71,7 @@ config.json
 obt-skill/
 obt-doc-skill/
 .claude/
+.test-runner/
 
 #------- Rewrite workflow
 scripts/history-rewrite
