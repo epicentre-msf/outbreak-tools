@@ -10,7 +10,7 @@ Option Explicit
 ' =============================================================================
 ' OBTGrantAccess -- pops a macOS folder picker so the operator can grant Excel
 ' PERSISTENT sandbox access to the test tree (pick the outbreak-tools repo root,
-' or at least .draft/tests/phase2). Excel for Mac is a SANDBOXED app: VBA file
+' or at least the untracked working area). Excel for Mac is a SANDBOXED app: VBA file
 ' reads (Open / Dir / VBComponents.Import) need a security-scoped grant, and
 ' Full Disk Access does NOT provide it -- only a folder-pick through a dialog
 ' does (the same mechanism clickDevFolder / OSFiles.LoadFolder use). One pick of

@@ -13,6 +13,12 @@ mode we hit while building this.
 > **Platforms.** Only the macOS path is implemented here. Windows parity (a
 > trigger‑file watcher) is a separate, later effort. Everything below is macOS.
 
+> **Working area.** The driver workbook and every per-run file live in an
+> untracked, gitignored working area — not in the repo. Its location defaults to
+> `.test-runner/` but is a local setting: pass `--home=<dir>` to run-tests.R or set the
+> `OBT_TEST_HOME` env var. Paths below show the `.test-runner` default; read
+> `.test-runner/tests/staging` as `<home>/tests/staging`.
+
 ---
 
 ## Table of contents
@@ -71,9 +77,9 @@ Rscript run-tests.R --build
 │        → src/tests/.generated/code-tables.tsv          (folder, tag, component, interface)
 │        → src/tests/.generated/modules-for-testing.txt  (flat list of test modules)
 │
-├─ 2. Assemble the run dir  .draft/tests/phase2/run/
-│        unit_tests_run.xlsb          (copy of .draft/PartialTests.xlsb — original untouched)
-│        classes/<folder>/…           (registered class sources, from src/ then .draft fallback)
+├─ 2. Assemble the run dir  .test-runner/tests/staging/run/
+│        unit_tests_run.xlsb          (copy of .test-runner/PartialTests.xlsb — original untouched)
+│        classes/<folder>/…           (registered class sources, from src/ then .test-runner fallback)
 │        tests/modules/<folder>/…      (registered test modules)
 │        .generated/…                 (the manifest, copied in)
 │        bootstrap/OBTImport.bas       (harness sources for the refresh step)
@@ -89,9 +95,9 @@ Rscript run-tests.R --build
 │        run VB macro "…!OBTRunAllTests"           (run every module, serialize testsOutputs → CSV, Save)
 │        quit saving no                            (AppleScript quits Excel; VBA already Saved)
 │
-└─ 5. read .draft/tests/phase2/run/test-results.csv
+└─ 5. read .test-runner/tests/staging/run/test-results.csv
          summarise: total, passed, failed, per-module failures
-         copy latest → .draft/tests/phase2/test-results.csv
+         copy latest → .test-runner/tests/staging/test-results.csv
 ```
 
 **Order matters.** `OBTBuildCodeTables` runs *before* `OBTSilentImport`, because
@@ -128,10 +134,10 @@ workbook — see [setup](#4-one-time-setup).
 
 ### The workbook
 
-`.draft/PartialTests.xlsb` — the driver workbook. It carries the harness + the
+`.test-runner/PartialTests.xlsb` — the driver workbook. It carries the harness + the
 `Development` manager, plus two worksheets: **`Codes`** (import tables +
 `ModulesForTesting`) and **`testsOutputs`** (rendered results). It is an
-**untracked binary artefact** (under `.draft/`, which is git‑ignored). The
+**untracked binary artefact** (under `.test-runner/`, which is git‑ignored). The
 runner copies it per run and never mutates the original.
 
 ---
@@ -143,7 +149,7 @@ future run is just `Rscript scripts/tests/run-tests.R --build`.
 
 ### 4.1 Import the harness + `Development` into the workbook
 
-Open `.draft/PartialTests.xlsb` and, in the VBE (**File → Import File…**),
+Open `.test-runner/PartialTests.xlsb` and, in the VBE (**File → Import File…**),
 import these components. They form the compile closure needed for `Development`
 + the harness to compile:
 
@@ -224,7 +230,7 @@ Two consequences baked into the design:
 - **`OBTGrantAccess` grants the repo tree once.** Verified: the grant survives
   Excel's quit→relaunch, so subsequent headless runs are silent, for any number
   of files.
-- **The run directory is a stable path** (`.draft/tests/phase2/run`), not a
+- **The run directory is a stable path** (`.test-runner/tests/staging/run`), not a
   fresh `run-<timestamp>` each time. macOS grants file access *per path*; a new
   path every run is what caused repeated prompts.
 
@@ -285,11 +291,11 @@ reads everything relative to its own folder (`ThisWorkbook.Path`). Because that
 folder is inside the granted repo tree, all reads/writes are prompt‑free.
 
 For each registered `(folder, tag)` the runner copies the folder's sources into
-the run dir, resolving **`src/` first, then the `.draft` staging** as a fallback.
+the run dir, resolving **`src/` first, then the `.test-runner` staging** as a fallback.
 That fallback is what lets the local `draft` probe (whose fixtures are
 intentionally untracked) run alongside real suites sourced from `src/`.
 
-Layout of `.draft/tests/phase2/run/` during a run:
+Layout of `.test-runner/tests/staging/run/` during a run:
 
 ```
 unit_tests_run.xlsb     the workbook copy (opened by AppleScript)
@@ -313,7 +319,7 @@ by hand.
 ## 8. Reading the results
 
 `OBTRunAllTests` serialises the `testsOutputs` sheet to
-`.draft/tests/phase2/run/test-results.csv`:
+`.test-runner/tests/staging/run/test-results.csv`:
 
 ```
 module,title,type,label,message
@@ -336,7 +342,7 @@ module,title,type,label,message
 
 `run-tests.R` prints the summary line, the pass/fail totals, and — on failure —
 the per‑module failing rows and the contents of `obt-import.log`. On success it
-copies the CSV to `.draft/tests/phase2/test-results.csv`.
+copies the CSV to `.test-runner/tests/staging/test-results.csv`.
 
 ---
 
@@ -362,16 +368,16 @@ copies the CSV to `.draft/tests/phase2/test-results.csv`.
 
 ## 10. Tracked vs untracked
 
-| Lives in `src/` (tracked) | Lives in `.draft/` (untracked, git‑ignored) |
+| Lives in `src/` (tracked) | Lives in `.test-runner/` (untracked, git‑ignored) |
 |---|---|
 | `scripts/tests/*` (orchestrator, trigger, registry builder) | `PartialTests.xlsb` (the driver workbook — a binary artefact) |
-| `src/tests/test-registry.yml` | `tests/phase2/run/` (the per‑run working dir) |
-| `src/tests/modules/rubberduck/OBT*.bas` (the harness) | `tests/phase2/{classes,tests}/draft/…` (the local **probe** fixtures) |
-| Real project classes + their real test suites | `tests/phase2/bootstrap/*` (staging copies) |
+| `src/tests/test-registry.yml` | `tests/staging/run/` (the per‑run working dir) |
+| `src/tests/modules/rubberduck/OBT*.bas` (the harness) | `tests/staging/{classes,tests}/draft/…` (the local **probe** fixtures) |
+| Real project classes + their real test suites | `tests/staging/bootstrap/*` (staging copies) |
 
 **The `draft` probe classes are test‑only smoke‑test fixtures and are
 deliberately NOT committed to `src/`.** They exercise the loop itself (import →
-run across more than one class) and live only in `.draft`. Real project suites
+run across more than one class) and live only in `.test-runner`. Real project suites
 go in `src/` and are the point of the loop.
 
 ---
@@ -400,6 +406,7 @@ Every one of these was hit for real while building this loop.
 ```bash
 Rscript scripts/tests/run-tests.R --build     # first run / after registry change
 Rscript scripts/tests/run-tests.R             # reuse existing Codes tables
+Rscript scripts/tests/run-tests.R --home=DIR  # workbook + staging live under DIR (default .test-runner)
 ```
 
 **Macro order (inside the workbook, per run):**
@@ -409,9 +416,9 @@ Rscript scripts/tests/run-tests.R             # reuse existing Codes tables
 - Registry: `src/tests/test-registry.yml`
 - Manifest: `src/tests/.generated/{code-tables.tsv, modules-for-testing.txt}`
 - Harness: `src/tests/modules/rubberduck/OBT*.bas`
-- Workbook: `.draft/PartialTests.xlsb`
-- Run dir: `.draft/tests/phase2/run/`
-- Results: `.draft/tests/phase2/test-results.csv` (+ `run/test-results.csv`, `run/obt-import.log`)
+- Workbook: `.test-runner/PartialTests.xlsb`
+- Run dir: `.test-runner/tests/staging/run/`
+- Results: `.test-runner/tests/staging/test-results.csv` (+ `run/test-results.csv`, `run/obt-import.log`)
 
 **One‑time setup checklist:**
 - [ ] Import the harness + `Development` + its deps into `PartialTests.xlsb`

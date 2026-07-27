@@ -8,7 +8,7 @@ Option Explicit
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, UseMeaningfulName
 
 ' =============================================================================
-' Phase-2 headless import wrappers for the macOS AppleScript test loop.
+' Headless import wrappers for the macOS AppleScript test loop.
 '
 ' Thin layer AROUND the Development manager (Development.cls). OBTHeadless runs
 ' the suite; this module refreshes the workbook FROM src/ before the run, so the
@@ -26,7 +26,7 @@ Option Explicit
 ' assembles a self-contained run dir next to the workbook copy, so Excel reads
 ' the sources and manifest from the folder it opened the workbook from -- which
 ' the macOS sandbox auto-grants (reading/writing next to the open document needs
-' no Full Disk Access; proven in phase 1 by the results CSV). This sidesteps the
+' no Full Disk Access; proven by the results CSV). This sidesteps the
 ' TCC prompt / -1712 hang a fixed staging path outside that folder triggers.
 '
 ' Sub names carry no underscore on purpose: in a document/class module `Foo_Bar`
@@ -34,7 +34,7 @@ Option Explicit
 '
 ' Run-dir layout the wrappers read (assembled by run-tests.R next to the copy):
 '   Root()/classes/draft/*.cls        general classes the import pulls
-'   Root()/tests/modules/draft/*.bas  test modules the import pulls
+'   Root()/tests/draft/*.bas          test modules + fixtures the import pulls
 '   Root()/.generated/*               code-tables.tsv + modules-for-testing.txt
 '
 ' Codes-sheet layout these wrappers own:

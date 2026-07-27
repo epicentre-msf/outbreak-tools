@@ -8,7 +8,7 @@ Option Explicit
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, UseMeaningfulName
 
 ' =============================================================================
-' Headless entry point for the macOS AppleScript test loop (plan Phase B).
+' Headless entry point for the macOS AppleScript test loop.
 '
 ' Self-contained on purpose: depends only on the test modules (invoked through
 ' Application.Run) and on VBProject access for '@TestMethod discovery. It does

@@ -930,12 +930,18 @@ Private Function ProcessListObject(ByVal lo As ListObject, _
 
         Case TAG_TESTS
             If LenB(folders.testsPath) = 0 Then Exit Function
-            baseFolder = AppendPath(folders.testsPath, "modules")
+            'Test modules now sit directly under the tests base (src/tests/<folder>).
+            'The old tests/modules subfolder was retired; the tag still selects
+            'module scope so a .bas test imports as a standard module.
+            baseFolder = folders.testsPath
             scope = transferModules
 
         Case TAG_TEST_CLASSES
             If LenB(folders.testsPath) = 0 Then Exit Function
-            baseFolder = AppendPath(folders.testsPath, "classes")
+            'Fixture classes share the same per-suite folder as the test modules
+            '(src/tests/<folder>); the old tests/classes subfolder was retired. The
+            'tag still selects class scope so a .cls fixture imports as a class.
+            baseFolder = folders.testsPath
             scope = transferClasses
             includeInterface = True
 

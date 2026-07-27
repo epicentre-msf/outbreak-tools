@@ -16,8 +16,8 @@
 # Usage:  Rscript scripts/tests/build-registry.R
 #         (run from anywhere — paths resolve against the git root)
 #
-# NOTE: nothing here is run against Excel. See .obt/plans/automated-testing.md
-#       and .obt/plans/test-scripts-status.md for how this fits the harness.
+# NOTE: nothing here is run against Excel. See src/tests/automated-testing-macos.md
+#       for how this fits the harness.
 # =============================================================================
 
 # --- deps --------------------------------------------------------------------

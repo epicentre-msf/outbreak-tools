@@ -2,7 +2,7 @@
 # =============================================================================
 # Orchestrator for the automated VBA test harness (macOS-driven). One command:
 #
-#   Rscript scripts/tests/run-tests.R [--build] [--keep]
+#   Rscript scripts/tests/run-tests.R [--build] [--keep] [--home=<dir>]
 #
 #   --build   also rebuild the Codes tables + ModulesForTesting from the
 #             registry before running (runs build-registry.R, then asks the
@@ -11,14 +11,18 @@
 #             workbook already holds.
 #   --keep    never delete the per-run working copy, even on success
 #             (for inspecting a green run).
+#   --home    root of the untracked working area holding the driver workbook
+#             (PartialTests.xlsb) + the per-run staging tree. Defaults to the
+#             OBT_TEST_HOME env var, else <repo>/.test-runner. Gitignored, so its
+#             location is a local setting, not fixed in the repo.
 #
 # The harness + probes now live in src/ (promoted). This script assembles a
-# per-run dir under .draft/tests/phase2/run/ from src/ (the workbook is the only
-# thing kept in .draft, as an untracked binary). The repo-root folder grant
-# (OBTGrantAccess, one-time) lets Excel read it all with no per-file prompts.
+# per-run dir under <home>/tests/staging/run/ from src/ (the workbook is the only
+# thing kept in the working area, as an untracked binary). The repo-root folder
+# grant (OBTGrantAccess, one-time) lets Excel read it all with no per-file prompts.
 #
 # What it does (all portable logic lives here; the OS-specific trigger is thin):
-#   1. copy .draft/PartialTests.xlsb -> the stable run dir (NEVER touch original)
+#   1. copy <home>/PartialTests.xlsb -> the stable run dir (NEVER touch original)
 #      and assemble the registered probe sources + manifest + harness from src/.
 #   2. (optional, --build) regenerate the registry intermediates (src/tests/.generated).
 #   3. quit any running Excel (run VB macro fails against an already-open one),
@@ -33,18 +37,19 @@
 #   Exit code: 0 on all-pass, 1 on any failure or incomplete run.
 #
 # Cross-platform: the copy/collect/summarise logic is OS-agnostic. Only the
-# trigger differs — macos/run-tests.applescript today; windows/run-tests.vbs
-# (trigger-file watcher) is Phase D. See .obt/plans/test-scripts-status.md.
+# trigger differs — macos/run-tests.applescript today. A Windows trigger
+# (windows/run-tests.vbs, a trigger-file watcher) is not wired in here yet.
 #
 # The workbook must carry the Development manager + the OBTImport / OBTHeadless
 # modules and the Codes-sheet folder named ranges (ModulesCodes /
-# ClassesImplementation / TestsCodes). See the Phase-2 operator setup notes.
+# ClassesImplementation / TestsCodes). See src/tests/automated-testing-macos.md.
 # =============================================================================
 
 # --- args --------------------------------------------------------------------
 args     <- commandArgs(trailingOnly = TRUE)
 do_build <- "--build" %in% args
 do_keep  <- "--keep"  %in% args
+home_opt <- sub("^--home=", "", grep("^--home=", args, value = TRUE))  # "" when absent
 
 # --- locate repo root + key paths --------------------------------------------
 repo_root <- tryCatch(
@@ -55,24 +60,37 @@ if (length(repo_root) != 1L || is.na(repo_root) || !nzchar(repo_root)) {
   stop("run-tests.R: not inside a git repository (could not resolve repo root).")
 }
 
-workbook_src <- file.path(repo_root, ".draft", "PartialTests.xlsb")
+# The untracked working area (driver workbook + per-run staging). It is gitignored,
+# so where it lives is a local choice, not a repo fact: --home=<dir> wins, else the
+# OBT_TEST_HOME env var, else <repo>/.test-runner. A relative home resolves against the
+# repo root, so the default and a relative --home behave the same from any cwd.
+test_home <- if (length(home_opt) && nzchar(home_opt[1])) {
+  home_opt[1]
+} else if (nzchar(Sys.getenv("OBT_TEST_HOME"))) {
+  Sys.getenv("OBT_TEST_HOME")
+} else {
+  file.path(repo_root, ".test-runner")
+}
+if (!grepl("^(/|~|[A-Za-z]:)", test_home)) test_home <- file.path(repo_root, test_home)
+
+workbook_src <- file.path(test_home, "PartialTests.xlsb")
 scripts_dir  <- file.path(repo_root, "scripts", "tests")
 trigger      <- file.path(scripts_dir, "macos", "run-tests.applescript")
 generated    <- file.path(repo_root, "src", "tests", ".generated")     # build-registry.R output
-stage2       <- file.path(repo_root, ".draft", "tests", "phase2")       # untracked phase-2 staging
+staging      <- file.path(test_home, "tests", "staging")                # untracked staging tree
 # STABLE run dir (fixed path, cleared+reused each run). macOS grants Excel file
 # access per PATH, so a fixed path is prompted for at most once, then never again
 # -- a fresh run-<stamp> dir each time is what caused the repeated grant prompts.
-run_dir      <- file.path(stage2, "run")
+run_dir      <- file.path(staging, "run")
 
-if (!dir.exists(stage2)) {
-  stop("run-tests.R: phase-2 staging tree not found: ", stage2,
-       " (expected the untracked .draft/tests/phase2 layout).")
+if (!dir.exists(staging)) {
+  stop("run-tests.R: staging tree not found: ", staging,
+       " (set --home / OBT_TEST_HOME, or create <home>/tests/staging).")
 }
 
 if (Sys.info()[["sysname"]] != "Darwin") {
   stop("run-tests.R: the macOS trigger is the only one implemented. ",
-       "Windows parity is Phase D (windows/run-tests.vbs).")
+       "The Windows trigger (windows/run-tests.vbs) is not wired in yet.")
 }
 if (!file.exists(workbook_src)) stop("run-tests.R: workbook not found: ", workbook_src)
 if (!file.exists(trigger))      stop("run-tests.R: trigger not found: ", trigger)
@@ -106,23 +124,26 @@ message("run-tests.R: working copy -> ", work_copy)
 #
 # Map each Development tag to (candidate source bases, run-dir base). Real suites
 # live in src/; the local `draft` PROBE is test-only and lives untracked under
-# .draft/tests/phase2 -- so each folder resolves from src first, then falls back
-# to the .draft staging. Then copy <base>/<folder> -> run/<runbase>/<folder>.
+# <home>/tests/staging -- so each folder resolves from src first, then falls back
+# to the staging area. Then copy <base>/<folder> -> run/<runbase>/<folder>.
 tag_srcs <- list(
   "general classes" = c(file.path(repo_root, "src", "classes"),
-                        file.path(stage2, "classes")),
+                        file.path(staging, "classes")),
   "general modules" = c(file.path(repo_root, "src", "modules"),
-                        file.path(stage2, "modules")),
-  "tests modules"   = c(file.path(repo_root, "src", "tests", "modules"),
-                        file.path(stage2, "tests", "modules")),
-  "tests classes"   = c(file.path(repo_root, "src", "tests", "classes"),
-                        file.path(stage2, "tests", "classes"))
+                        file.path(staging, "modules")),
+  # Test modules AND fixture classes now share one per-suite folder, src/tests/<folder>
+  # (the old tests/modules + tests/classes split was retired). Both tags therefore
+  # resolve to the same base; scope (module vs class) is still decided by the tag.
+  "tests modules"   = c(file.path(repo_root, "src", "tests"),
+                        file.path(staging, "tests")),
+  "tests classes"   = c(file.path(repo_root, "src", "tests"),
+                        file.path(staging, "tests"))
 )
 tag_runs <- list(
   "general classes" = file.path(run_dir, "classes"),
   "general modules" = file.path(run_dir, "modules"),
-  "tests modules"   = file.path(run_dir, "tests", "modules"),
-  "tests classes"   = file.path(run_dir, "tests", "classes")
+  "tests modules"   = file.path(run_dir, "tests"),
+  "tests classes"   = file.path(run_dir, "tests")
 )
 tbl <- read.delim(file.path(generated, "code-tables.tsv"), stringsAsFactors = FALSE)
 pairs <- unique(tbl[, c("folder", "tag")])
@@ -136,7 +157,7 @@ for (i in seq_len(nrow(pairs))) {
   }
   if (is.null(found)) {
     message("run-tests.R: WARNING - no source found for folder '", pairs$folder[i],
-            "' (tag '", pairs$tag[i], "') in src/ or .draft; skipping.")
+            "' (tag '", pairs$tag[i], "') in src/ or the staging area; skipping.")
     next
   }
   dir.create(run_base, recursive = TRUE, showWarnings = FALSE)
@@ -152,7 +173,7 @@ for (f in c("code-tables.tsv", "modules-for-testing.txt")) {  # manifest (built 
 # OBTHeadless load the current src/ version without a manual VBE re-import).
 dir.create(file.path(run_dir, "bootstrap"), showWarnings = FALSE)
 for (f in c("OBTImport.bas", "OBTHeadless.bas")) {
-  src_f <- file.path(repo_root, "src", "tests", "modules", "rubberduck", f)
+  src_f <- file.path(repo_root, "src", "tests", "rubberduck", f)
   if (file.exists(src_f)) file.copy(src_f, file.path(run_dir, "bootstrap", f), overwrite = TRUE)
 }
 message("run-tests.R: run dir assembled from src/ (classes/, tests/, .generated/, bootstrap/)")
@@ -222,7 +243,7 @@ results <- tryCatch(
   error = function(e) fail(paste0("test-results.csv is unreadable: ", conditionMessage(e)))
 )
 
-# Expected columns (see plan Phase B SerializeTestOutputs): module,title,type,label,message
+# Expected serializer columns (from OBTRunAllTests): module,title,type,label,message
 type_col <- intersect(c("type", "Type"), names(results))
 if (!length(type_col)) {
   fail("test-results.csv has no `type` column — serializer format changed?")
@@ -270,7 +291,7 @@ if (failures > 0L) {
 }
 
 # --- 5) success: copy the CSV out, then clean up -----------------------------
-final_csv <- file.path(stage2, "test-results.csv")
+final_csv <- file.path(staging, "test-results.csv")
 file.copy(csv_path, final_csv, overwrite = TRUE)
 message("run-tests.R: latest results -> ", final_csv)
 

@@ -2,9 +2,9 @@
 # =============================================================================
 # Single source of truth for the test suite AND the Codes-worksheet ListObjects.
 #
-# A generator (see .obt/plans/automated-testing.md) reads this file and:
+# A generator reads this file and:
 #   1. (re)creates and populates the Codes-sheet ListObjects — "tests modules",
-#      "general classes", "tests classes", etc. — through Development.
+#      "general classes", "tests classes", etc. — through Development class.
 #   2. rebuilds the worksheet-scoped Name `ModulesForTesting`, which the test
 #      runner (CustomTestImplementation.clickRibbonTests) iterates to decide
 #      which modules to execute.
@@ -17,45 +17,35 @@
 # components resolve to:
 #     classes         -> src/classes/F/<name>.cls        (+ I<name>.cls if interface)
 #     modules          -> src/modules/F/<name>.bas
-#     tests[].module   -> src/tests/modules/F/<module>.bas
-#     fixtures         -> src/tests/classes/F/<name>.cls  (imported as "tests classes")
+#     tests[].module   -> src/tests/F/<module>.bas
+#     fixtures         -> src/tests/F/<name>.cls          (imported as "tests classes")
+#
+# Test modules and their fixture classes now live TOGETHER in one per-suite
+# folder, src/tests/F/. The former src/tests/modules/F + src/tests/classes/F
+# split was retired: that extra "modules"/"classes" level clashed confusingly
+# with the top-level src/modules and src/classes. The two tags below still
+# differ (a .bas test imports as a module, a .cls fixture as a class); only the
+# on-disk folder is now shared.
 #
 # The tag written above each generated table (read by Development.cls) is:
 #     classes  -> "general classes"      modules  -> "general modules"
 #     tests    -> "tests modules"        fixtures -> "tests classes"
 # `interface: true` on a class also imports the matching I<name>.cls.
+#
+# `tests[].covers` is DOCUMENTATION ONLY. It records which production class(es)
+# a test module exercises, so the test<->class mapping is visible at a glance
+# (and available to a future coverage report). The generator does not read it:
+# build-registry.R consumes only `tests[].module` (to emit the "tests modules"
+# rows and the ModulesForTesting list). Adding, changing, or omitting `covers`
+# never affects what is imported or run -- keep it accurate for humans, but it
+# carries no build weight.
 # =============================================================================
 
 version: 1
 
 suites:
-  # --- draft ----------------------------------------------------------------
-  # LOCAL PROBE suite for the AppleScript test loop -- a smoke test of the harness
-  # itself. Greeter and Calculator are self-contained made-up classes (two on
-  # purpose: proves the loop runs across more than one). Their .cls/.bas fixtures
-  # are TEST-ONLY and are NOT committed to src/ -- they live untracked under
-  # .draft/tests/phase2/{classes,tests}/draft, and run-tests.R sources the `draft`
-  # folder from there (src/ first, then the .draft fallback). Real project suites
-  # below are sourced from src/. Remove this entry when the probe is no longer wanted.
-  - folder: draft
-    classes:
-      - name: Greeter
-        interface: false
-      - name: Calculator
-        interface: false
-    tests:
-      - module: TestGreeter
-        covers: [Greeter]
-      - module: TestCalculator
-        covers: [Calculator]
-
   # --- sections -------------------------------------------------------------
-  # DISABLED for the Phase-2 probe loop. Kept as the template for new suites.
-  # VarWriter/SectionBuilder pull a large dependency tree (LLVariables, Formulas,
-  # LLdictionary, LinelistSpecs, ...) that is NOT present in the minimal probe
-  # workbook (.draft/PartialTests.xlsb) -- importing them there fails to compile
-  # and would break the whole run. Re-enable once the target workbook carries
-  # those dependencies. (Also note: interface: true is stale -- IVarWriter /
+  # (Also note: interface: true is stale -- IVarWriter /
   # ISectionBuilder were folded and no longer exist; import skips missing files.)
   # - folder: sections
   #   classes:
@@ -73,7 +63,7 @@ suites:
 
 # ---------------------------------------------------------------------------
 # TEMPLATE — copy per folder as coverage is added. Delete fields left empty.
-# Expansion backlog (folders present under src/tests/modules that are not yet
+# Expansion backlog (suite folders under src/tests/ that are not yet
 # registered): analyses, dataio, designer, dictionary, formulas, general, geo,
 # graphs, linelist, mastersetup, setup, showhide, tables.
 #
