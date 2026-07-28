@@ -688,9 +688,20 @@ Private Function LogPath() As String
 End Function
 
 '@sub-title Start a fresh diagnostics log for this run.
+'@details
+'Empties the file in place. Open For Output truncates and keeps the file
+'itself, where Kill deleted it and left the next Open to create a NEW one.
+'That matters on Mac: Excel is sandboxed, a file-access grant is tied to the
+'file identity rather than to the path, and a file Excel creates itself has no
+'grant - so deleting the log every run made the operator answer an access
+'prompt every run. run-tests.R keeps the workbook and this log for the same
+'reason and empties them the same way.
 Private Sub LogReset()
+    Dim fileNum As Integer
     On Error Resume Next
-        If Dir$(LogPath()) <> vbNullString Then Kill LogPath()
+        fileNum = FreeFile
+        Open LogPath() For Output As #fileNum
+        Close #fileNum
     On Error GoTo 0
 End Sub
 

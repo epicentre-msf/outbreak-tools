@@ -118,13 +118,24 @@ if (do_build) {
 # file.copy(overwrite = TRUE) truncates and rewrites it, which preserves the
 # inode (verified on this machine). Sweeping it away first, as this used to do,
 # handed Excel a brand new file every run and threw away any grant on it.
-# Everything else in the run dir IS swept -- above all the previous
-# test-results.csv, so a stale one can never be read as this run's result.
+# The same rule reaches the two files EXCEL ITSELF creates -- test-results.csv
+# and obt-import.log. Sweeping them handed Excel a brand new file to create on
+# every run, and a file Excel creates outside its container needs a grant, so
+# the operator was asked for access to obt-import.log every single time. They
+# are kept too, and EMPTIED IN PLACE instead: cat(append = FALSE) opens with
+# "w", which truncates and preserves the inode (verified on this machine).
+# Emptying loses nothing that sweeping bought -- a 0-byte file carries no stale
+# result -- so the guards below test for CONTENT rather than for existence.
+# Everything else in the run dir IS swept.
 work_copy <- file.path(run_dir, "unit_tests_run.xlsb")
+csv_path  <- file.path(run_dir, "test-results.csv")   # written by OBTRunAllTests
+log_path  <- file.path(run_dir, "obt-import.log")     # written by OBTImport
+
+keep <- c(basename(work_copy), basename(csv_path), basename(log_path))
 
 if (dir.exists(run_dir)) {
   stale <- list.files(run_dir, all.files = TRUE, full.names = TRUE, no.. = TRUE)
-  stale <- stale[basename(stale) != basename(work_copy)]
+  stale <- stale[!(basename(stale) %in% keep)]
   unlink(stale, recursive = TRUE, force = TRUE)
 } else {
   dir.create(run_dir, recursive = TRUE, showWarnings = FALSE)
@@ -133,7 +144,13 @@ if (dir.exists(run_dir)) {
 if (!file.copy(workbook_src, work_copy, overwrite = TRUE)) {
   stop("run-tests.R: failed to copy workbook into ", run_dir)
 }
-csv_path <- file.path(run_dir, "test-results.csv")   # written by OBTRunAllTests
+
+# Create them if they are missing, empty them if they are not. Creating them
+# here means the FIRST run after this change is the last one that can prompt.
+for (kept_file in c(csv_path, log_path)) {
+  cat("", file = kept_file, append = FALSE)
+}
+
 message("run-tests.R: working copy -> ", work_copy)
 
 # Assemble a SELF-CONTAINED run dir next to the workbook copy: the probe sources
@@ -228,8 +245,9 @@ trigger_rc <- system2("osascript", c(shQuote(trigger), shQuote(work_copy), build
 # --- 4) collect + summarise --------------------------------------------------
 # Helper: dump the VBA-side diagnostics log if the wrappers wrote one.
 show_import_log <- function() {
-  log_path <- file.path(run_dir, "obt-import.log")
-  if (file.exists(log_path)) {
+  # The file is always present now (emptied in place before the run), so an
+  # empty one is what "the wrappers wrote nothing" looks like.
+  if (file.exists(log_path) && file.size(log_path) > 0L) {
     message("\n       --- obt-import.log (OBTBuildCodeTables/OBTSilentImport) ---")
     for (ln in readLines(log_path, warn = FALSE)) message("       ", ln)
     message("       --- end log ---")
@@ -253,7 +271,9 @@ fail <- function(msg) {
 if (trigger_rc != 0L) {
   fail(sprintf("osascript trigger returned %d (Excel may have wedged on a dialog / timed out).", trigger_rc))
 }
-if (!file.exists(csv_path)) {
+# Emptied in place before the run, so it always exists. An empty one means the
+# run wrote nothing, which is the same signal a missing one used to carry.
+if (!file.exists(csv_path) || file.size(csv_path) == 0L) {
   fail("no test-results.csv was produced (the run likely died before serialising).")
 }
 

@@ -327,6 +327,20 @@ test-results.csv        written by OBTRunAllTests
 obt-import.log          written by OBTImport
 ```
 
+**Three files in this folder are kept between runs, and it is deliberate.**
+`unit_tests_run.xlsb`, `test-results.csv` and `obt-import.log` are the files
+Excel itself opens or creates. On macOS a file-access grant is tied to the file
+identity (inode), not to the path, so a file that is deleted and recreated is a
+file Excel has never been granted — and it asks the operator for access again.
+The run dir sweep therefore skips those three, and `run-tests.R` empties the CSV
+and the log in place instead (`cat(append = FALSE)`, which truncates and keeps
+the inode). `OBTImport.LogReset` does the same on the VBA side with
+`Open For Output`, where it used to `Kill` the log.
+
+Emptying gives up nothing that sweeping bought: a 0-byte file holds no stale
+result. The two guards that used to ask "does this file exist" now ask "does it
+have content", which carries the same meaning.
+
 Both test tags land in the same `tests/<folder>/` directory, mirroring
 `src/tests/<folder>/`. `Development` still reads the tag to decide the import
 scope (module vs class); the path no longer carries that distinction.
