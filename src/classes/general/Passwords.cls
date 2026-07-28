@@ -12,7 +12,7 @@ Attribute VB_Description = "Lock/unlock workbooks and worksheets"
 '@PredeclaredId
 '@Folder("General")
 '@ModuleDescription("Lock/unlock workbooks and worksheets")
-'@depends Checking, BetterArray
+'@depends Checking, ProjectError, TranslationObject
 '@IgnoreModule ProcedureNotUsed, ReadOnlyPropertyAssignment, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit
@@ -23,13 +23,25 @@ Option Explicit
 'toggling, and import/export of password metadata. Uses TypeName
 'dispatch to handle Workbook, Worksheet, and String target arguments
 'through a single Protect/UnProtect entry point.
-'@depends Checking, BetterArray, ProjectError, TranslationObject
-'@version 1.0 (2026-02-09)
+'@details
+'This class is on the hot path of a whole build, so it reads the worksheet as
+'little as it can. The debugging password and the debug-mode flag are each read
+'once and kept on the instance; ResetCaches drops them, and ResetCaches runs
+'when the sheet is bound and after ImportFrom. The protection table is read as
+'one block and matched in memory.
+'
+'Excel state belongs to the caller. This class never touches
+'Application.ScreenUpdating, Calculation or EnableEvents.
+'@depends Checking, ProjectError, TranslationObject
+'@version 1.1 (2026-07-28)
 
 
 '@section State and Constants
 '===============================================================================
-Public Enum PaswordTag
+'Tag identifiers for the named ranges this class reads. The enum is Private:
+'nothing outside the class names a tag. Parameters take Byte, which is the
+'macOS-safe way to carry an enum value.
+Private Enum PasswordTag
   PasswordTagDebug = 1
   PasswordTagPublic = 2
   PasswordTagPrivate = 3
@@ -44,8 +56,12 @@ Private Type TPasswords
     wb As Workbook                           'Cached workbook reference
     keyTable As ListObject                   'Cached list object holding keys
     protectedTable As ListObject             'Cached list object holding protection metadata
+    debugPassword As String                  'Cached debugging password
+    debugPasswordLoaded As Boolean           'Whether the debugging password was read
+    debugMode As Boolean                     'Cached debug-mode flag
+    debugModeLoaded As Boolean               'Whether the debug-mode flag was read
     hasChecks As Boolean                     'Whether checkings were emitted
-    checks As Checking                      'Checking aggregation object
+    checks As Checking                       'Checking aggregation object
     checkCounter As Long                     'Incremental counter for checking keys
     nm As String                             'Name of the password worksheet
     displayPrompts As Boolean                'Whether UI prompts should be displayed
@@ -70,6 +86,7 @@ Private Const NAMEPROTECTEDSHEETS As String = "Passwords_ProtectedSheets"
 Private Const DEFAULTBOOLYES As String = "yes"
 Private Const DEFAULTBOOLNO As String = "no"
 Private Const CHECKINGCONTEXT As String = "Passwords object trace"
+Private Const PROTECTIONCOLUMNS As Long = 3
 
 
 
@@ -80,8 +97,9 @@ Private Const CHECKINGCONTEXT As String = "Passwords object trace"
 '@label:create
 '@sub-title Create an instance of password
 '@details
-'Factory returning an interface reference that wraps the provided
-'password worksheet.
+'Factory returning a password handler bound to the provided worksheet. The
+'sheet is validated first: both tables and the five core named ranges must be
+'there. The instance is sealed, so the setup setter can no longer be written.
 '@param sh Worksheet. Worksheet hosting password tables and named ranges.
 '@return Passwords. Fully initialised password handler.
 '@export
@@ -114,6 +132,10 @@ End Property
 
 '@label:name
 '@prop-title Name of the password worksheet
+'@details
+'The name is taken once, when the sheet is bound. Renaming the sheet afterwards
+'leaves this answer on the old name. Reading this.sh.Name live would cost a
+'crossing on a value that stays the same in practice.
 '@return String. The worksheet name.
 Public Property Get Name() As String
     Name = this.nm
@@ -127,14 +149,6 @@ Public Property Get PasswordSheet() As Worksheet
     Set PasswordSheet = this.sh
 End Property
 
-'@label:password-workbook
-'@prop-title Workbook owning the password worksheet
-'@return Workbook. The parent workbook.
-Public Property Get PasswordWorkbook() As Workbook
-    EnsureWorkbookReady
-    Set PasswordWorkbook = this.wb
-End Property
-
 '@label:display-prompts
 '@prop-title Whether UI prompts are displayed during operations
 '@return Boolean. True when prompts are enabled.
@@ -144,6 +158,9 @@ End Property
 
 '@label:display-prompts-set
 '@prop-title Toggle UI prompt display
+'@details
+'Set this to False to run the key routines without a dialog. A test harness
+'needs it: MsgBox blocks a headless run.
 Public Property Let DisplayPrompts(ByVal value As Boolean)
     this.displayPrompts = value
 End Property
@@ -166,7 +183,7 @@ End Property
 '@label:value
 '@sub-title Retrieve a range value
 '@details Retrieve the value stored in the named range associated with the supplied tag.
-'@param tagName A tag identifier (debuggingpassword, publickey, privatekey, version, labpublickey, labprivatekey).
+'@param tagName A tag identifier (debuggingpassword, publickey, privatekey, version, debugmode, labpublickey, labprivatekey).
 '@return A String, value stored in the named range associated with the tag.
 Public Property Get Value(ByVal tagName As String) As String
     Value = TagValue(TagFromName(tagName))
@@ -196,22 +213,22 @@ End Property
 Public Property Get TableRange(Optional ByVal tableName As String = TABLEKEYS, _
                                Optional ByVal includeHeaders As Boolean = False) As Range
 
-    Dim Lo As ListObject
+    Dim lo As ListObject
 
     Select Case LCase$(Trim$(tableName))
         Case LCase$(TABLEKEYS)
-            Set Lo = KeysTable()
+            Set lo = KeysTable()
         Case LCase$(TABLEPROTECTED)
-            Set Lo = ProtectedSheetsTable()
+            Set lo = ProtectedSheetsTable()
         Case Else
             ThrowError ProjectError.ElementNotFound, _
                       "Unknown password table '" & tableName & "'"
     End Select
- 
+
     If includeHeaders Then
-        Set TableRange = Lo.Range
+        Set TableRange = lo.Range
     Else
-        Set TableRange = Lo.DataBodyRange
+        Set TableRange = lo.DataBodyRange
     End If
 End Property
 
@@ -237,6 +254,14 @@ End Property
 
 '@label:enter-debug-mode
 '@sub-title Put the workbook into a fully unprotected debug state
+'@details
+'Every worksheet in the target workbook is unprotected. LeaveDebugMode restores
+'only the sheets listed in the protection table, so a sheet protected by hand,
+'or protected with registerState:=False, comes back unprotected. That is the
+'contract of this pair.
+'
+'The debug-mode flag is always written to the bound worksheet, whichever
+'workbook is passed in. Bind the object to the workbook you are toggling.
 '@param targetWorkbook Optional Workbook. Target workbook. Defaults to the bound workbook.
 '@export
 Public Sub EnterDebugMode(Optional ByVal targetWorkbook As Workbook)
@@ -251,16 +276,21 @@ Public Sub EnterDebugMode(Optional ByVal targetWorkbook As Workbook)
 
     For Each childSheet In wb.Worksheets
         'Each sheet must be explicitly unprotected for unrestricted debugging.
-        UnprotectSheet childSheet.Name
+        'The sheet object goes straight through, so nothing looks it up by name again.
+        UnprotectSheet childSheet
     Next
 
-    NamedRange(NAMEDEBUGMODE).Value = DEFAULTBOOLYES
+    SetDebugModeFlag True
     EnsureProtectedSheetsName wb
     LogInfo "Workbook entered debug mode; protections removed", checkingWarning
 End Sub
 
 '@label:leave-debug-mode
 '@sub-title Restore protections after debug mode
+'@details
+'Only the sheets listed in the protection table come back protected. The
+'debug-mode flag is always written to the bound worksheet, whichever workbook
+'is passed in. Bind the object to the workbook you are toggling.
 '@param targetWorkbook Optional Workbook. Target workbook. Defaults to the bound workbook.
 '@export
 Public Sub LeaveDebugMode(Optional ByVal targetWorkbook As Workbook)
@@ -274,13 +304,18 @@ Public Sub LeaveDebugMode(Optional ByVal targetWorkbook As Workbook)
     ApplyProtectionMatrix wb
     'Restore workbook structure protection once sheets are locked again.
     ProtectWorkbook wb
-    NamedRange(NAMEDEBUGMODE).Value = DEFAULTBOOLNO
+    SetDebugModeFlag False
     LogInfo "Workbook protections restored after leaving debug mode", checkingInfo
 End Sub
 
 
 '@label:ensure-protected-sheets-name
 '@sub-title Ensure the workbook exposes a named range referencing the protection table
+'@details
+'The reference is built from this object's own protection table. When the target
+'workbook holds no table by that name, the name resolves to #REF! and the
+'generated close handler fails on it. CloneToWorksheet avoids that by calling
+'through the handler bound to the new sheet.
 '@param targetWorkbook Optional Workbook. Target workbook. Defaults to the bound workbook.
 '@export
 Public Sub EnsureProtectedSheetsName(Optional ByVal targetWorkbook As Workbook)
@@ -357,10 +392,18 @@ End Sub
 
 '@label:protect-sheet
 '@sub-title Protect a worksheet with the debugging password
+'@details
+'When registerState is True the two capability flags are folded with the values
+'already stored for the sheet, and the result is written back. The fold is
+'one-way: once a sheet is stored as "no" for shapes or for row deletion, no
+'later call widens it back to "yes".
+'
+'When registerState is False the incoming flags are used as they are and the
+'protection table is left alone.
 '@param sheetObject Variant. Worksheet or sheet name.
 '@param allowShapes Boolean. Permit shape manipulation. Defaults to True.
 '@param allowDeletingRows Boolean. Enable row deletion. Defaults to True.
-'@param registerState Boolean. Reuse stored table settings. Defaults to True.
+'@param registerState Boolean. Fold in the stored settings and write the result back. Defaults to True.
 Private Sub ProtectSheet(sheetObject As Variant, _
                         Optional ByVal allowShapes As Boolean = True, _
                         Optional ByVal allowDeletingRows As Boolean = True, _
@@ -369,9 +412,11 @@ Private Sub ProtectSheet(sheetObject As Variant, _
     Dim targetSheet As Worksheet
     Dim allowDraw As Boolean
     Dim allowDelete As Boolean
-    Dim record As BetterArray
+    Dim storedDraw As Boolean
+    Dim storedDelete As Boolean
+    Dim storedRow As Long
 
-    EnsureWorkbookReady
+    EnsureSheetReady
 
     If IsInDebugMode() Then
         LogInfo "Protection request ignored because workbook is in debug mode", checkingWarning
@@ -380,20 +425,17 @@ Private Sub ProtectSheet(sheetObject As Variant, _
 
     Set targetSheet = ResolveSheet(sheetObject)
 
+    allowDraw = allowShapes
+    allowDelete = allowDeletingRows
+
     If registerState Then
-        'Reuse existing stored preferences to guarantee consistent application.
-        Set record = ProtectionRecord(targetSheet.Name)
-        allowDraw = ParseBoolean(record.Item(record.LowerBound + 1))
-        allowDelete = ParseBoolean(record.Item(record.LowerBound + 2))
+        ReadProtectionFlags targetSheet.Name, storedDraw, storedDelete, storedRow
+        allowDraw = (allowDraw And storedDraw)
+        allowDelete = (allowDelete And storedDelete)
+        PersistProtectionSettings targetSheet.Name, allowDraw, allowDelete, storedRow
     End If
 
-    'If one of the two (registered or incoming is false, Set to false)
-    allowDraw = (allowShapes And allowDraw)
-    allowDelete = (allowDeletingRows And AllowDelete)
-
-
-    If registerState Then PersistProtectionSettings targetSheet.Name, allowDraw, allowDelete
-    ApplySheetProtection targetSheet, allowDraw, allowDelete, TagValue(PasswordTagDebug)
+    ApplySheetProtection targetSheet, allowDraw, allowDelete, DebugPassword()
 End Sub
 
 '@label:unprotect-sheet
@@ -404,34 +446,15 @@ Private Sub UnprotectSheet(Optional sheetObject As Variant)
     Dim targetSheet As Worksheet
     Dim pwd As String
 
-    EnsureWorkbookReady
+    EnsureSheetReady
     Set targetSheet = ResolveSheet(sheetObject)
-    pwd = TagValue(PasswordTagDebug)
-    
+    pwd = DebugPassword()
+
+    'Excel raises when the stored password does not open the sheet. That sheet is
+    'left as it is and the caller carries on with the rest of its work.
     On Error Resume Next
-        Application.ScreenUpdating = False
         If targetSheet.ProtectContents Then targetSheet.Unprotect pwd
     On Error GoTo 0
-End Sub
-
-'@label:resolve-worksheet-protection
-'@sub-title Dispatch worksheet protect or unprotect
-'@param sheetObject Variant. Worksheet reference or sheet name.
-'@param allowShapes Optional Boolean. Allow shape editing when protected. Defaults to True.
-'@param allowDeletingRows Optional Boolean. Allow row deletion when protected. Defaults to True.
-'@param registerState Optional Boolean. Persist protection metadata. Defaults to True.
-'@param setProtection Optional Boolean. When True, protects; when False, unprotects. Defaults to True.
-Private Sub ResolveWorksheetProtection( sheetObject As Variant, _
-                        Optional ByVal allowShapes As Boolean = True, _
-                        Optional ByVal allowDeletingRows As Boolean = True, _
-                        Optional ByVal registerState As Boolean = True, _
-                        Optional ByVal setProtection As Boolean = True)
-
-    If setProtection Then
-        ProtectSheet sheetObject, allowShapes, allowDeletingRows, registerState
-    Else 
-        UnprotectSheet sheetObject
-    End If
 End Sub
 
 '@label:protect-workbook
@@ -441,7 +464,7 @@ Private Sub ProtectWorkbook(targetObject As Variant)
     Dim pwd As String
     Dim wb As Workbook
 
-    pwd = TagValue(PasswordTagDebug)
+    pwd = DebugPassword()
     Set wb = ResolveWorkbook(targetObject)
 
     wb.Protect Password:=pwd, Structure:=True
@@ -454,24 +477,13 @@ Private Sub UnprotectWorkbook(targetObject As Variant)
     Dim pwd As String
     Dim wb As Workbook
 
-    pwd = TagValue(PasswordTagDebug)
+    pwd = DebugPassword()
     Set wb = ResolveWorkbook(targetObject)
 
+    'Excel raises when the workbook is already open or the password does not match.
     On Error Resume Next
         wb.Unprotect Password:=pwd
     On Error GoTo 0
-End Sub
-
-'@label:resolve-workbook-protection
-'@sub-title Dispatch workbook protect or unprotect
-'@param targetObject Variant. Workbook reference.
-'@param setProtection Optional Boolean. When True, protects; when False, unprotects. Defaults to True.
-Private Sub ResolveWorkbookProtection(targetObject As Variant, Optional ByVal setProtection As Boolean = True)
-    If setProtection Then
-        ProtectWorkbook targetObject
-    Else
-        UnprotectWorkbook targetObject
-    End If
 End Sub
 
 '@label:resolve-protection
@@ -479,38 +491,54 @@ End Sub
 '@details
 'Accepts a Workbook, Worksheet, or String. The string "_active"
 'targets the active worksheet; "_wbactive" targets the active workbook.
+'Nothing shares the workbook branch, where ResolveWorkbook turns it back into
+'the bound workbook.
+'
+'This is the one place the protect/unprotect choice is made. Protect and
+'UnProtect both come through here, so the two paths cannot drift apart.
 '@param targetObject Optional Variant. Workbook, Worksheet, or String tag. Defaults to "_active".
 '@param allowShapes Optional Boolean. Allow shape editing when protected. Defaults to True.
 '@param allowDeletingRows Optional Boolean. Allow row deletion when protected. Defaults to True.
 '@param registerState Optional Boolean. Persist protection metadata. Defaults to True.
 '@param setProtection Optional Boolean. When True, protects; when False, unprotects. Defaults to True.
-Private Sub ResolveProtection(Optional  targetObject As Variant = "_active", _
+Private Sub ResolveProtection(Optional targetObject As Variant = "_active", _
                    Optional ByVal allowShapes As Boolean = True, _
                    Optional ByVal allowDeletingRows As Boolean = True, _
                    Optional ByVal registerState As Boolean = True, _
                    Optional ByVal setProtection As Boolean = True)
 
     Dim typeNameValue As String
+    Dim targetsWorkbook As Boolean
 
     typeNameValue = TypeName(targetObject)
 
     Select Case typeNameValue
-
     Case "Workbook", "Nothing"
-        ResolveWorkbookProtection targetObject, setProtection
+        targetsWorkbook = True
     Case "Worksheet"
-        ResolveWorksheetProtection  targetObject, allowShapes, allowDeletingRows, registerState
+        targetsWorkbook = False
     Case "String"
-        If (targetObject = "_wbactive") Then
-            ResolveWorkbookProtection targetObject, setProtection
-        Else
-            ResolveWorksheetProtection  targetObject, allowShapes, allowDeletingRows, registerState, setProtection
-        End If
+        targetsWorkbook = (targetObject = "_wbactive")
     Case Else
         ThrowError ProjectError.InvalidArgument, _
                       "Expected workbook, worksheet or sheet name, or specific tags" & _
                       "(_active, _wbactive) received " & typeNameValue
     End Select
+
+    If targetsWorkbook Then
+        If setProtection Then
+            ProtectWorkbook targetObject
+        Else
+            UnprotectWorkbook targetObject
+        End If
+        Exit Sub
+    End If
+
+    If setProtection Then
+        ProtectSheet targetObject, allowShapes, allowDeletingRows, registerState
+    Else
+        UnprotectSheet targetObject
+    End If
 End Sub
 
 '@label:protect
@@ -520,7 +548,7 @@ End Sub
 '@param allowDeletingRows Optional Boolean. Allow row deletion. Defaults to True.
 '@param registerState Optional Boolean. Persist protection metadata. Defaults to True.
 '@export
-Public Sub Protect(Optional  targetObject As Variant = "_active", _
+Public Sub Protect(Optional targetObject As Variant = "_active", _
                    Optional ByVal allowShapes As Boolean = True, _
                    Optional ByVal allowDeletingRows As Boolean = True, _
                    Optional ByVal registerState As Boolean = True)
@@ -547,7 +575,7 @@ End Sub
 '@export
 Public Sub GenerateKey(ByVal trads As TranslationObject)
 
-    Dim Lo As ListObject
+    Dim lo As ListObject
     Dim dataRange As Range
     Dim recordIndex As Long
     Dim publicValue As String
@@ -557,18 +585,18 @@ Public Sub GenerateKey(ByVal trads As TranslationObject)
         ThrowError ProjectError.ObjectNotInitialized, "Translation object is required to generate a key"
     End If
 
-    Set Lo = KeysTable()
-    Set dataRange = Lo.DataBodyRange
+    Set lo = KeysTable()
+    Set dataRange = lo.DataBodyRange
 
     If dataRange Is Nothing Then
         LogInfo "Unable to generate key; keys table has no data", checkingWarning
         Exit Sub
     End If
 
+    'Int() gives every row the same chance. CLng() rounds to nearest, which halves
+    'the chance of the first and last rows and can overshoot the row count.
     Randomize
-    recordIndex = CLng((dataRange.Rows.Count * Rnd()) + 1)
-    If recordIndex > dataRange.Rows.Count Then recordIndex = dataRange.Rows.Count
-    If recordIndex < 1 Then recordIndex = 1
+    recordIndex = Int(dataRange.Rows.Count * Rnd()) + 1
 
     publicValue = CStr(dataRange.Cells(recordIndex, 1).Value)
     privateValue = CStr(dataRange.Cells(recordIndex, 2).Value)
@@ -581,6 +609,10 @@ End Sub
 
 '@label:display-private-key
 '@sub-title Display the current private key via a translated prompt
+'@details
+'The dialog is shown only when DisplayPrompts is True, which is the default.
+'The prompt text and title are always recorded, so a caller that suppresses the
+'dialog can still read what would have been shown.
 '@param trads TranslationObject. Translation helper for the message.
 '@export
 Public Sub DisplayPrivateKey(ByVal trads As TranslationObject)
@@ -617,7 +649,7 @@ Public Sub ExportToWorkbook(ByVal destination As Workbook)
     Dim sourceSheet As Worksheet
     Dim targetSheet As Worksheet
 
-    EnsureWorkbookReady
+    EnsureSheetReady
 
     If destination Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, "Destination workbook is required for export"
@@ -633,7 +665,7 @@ Public Sub ExportToWorkbook(ByVal destination As Workbook)
         ThrowError ProjectError.ElementShouldNotExists, _
                   "Workbook already contains a worksheet named '" & sourceSheet.Name & "'"
     End If
-    
+
     '@Ignore AssignmentNotUsed
     Set targetSheet = destination.Worksheets.Add(After:=destination.Worksheets(destination.Worksheets.Count))
     targetSheet.Name = sourceSheet.Name
@@ -645,6 +677,11 @@ End Sub
 
 '@label:import-from
 '@sub-title Import keys and metadata from another password handler
+'@details
+'Three named values move across: the public key, the private key and the
+'version. The debugging password, the lab keys and the protection table stay
+'as they are on this sheet. The destination keys table is resized to the shape
+'of the source table, columns included.
 '@param source Passwords. Source password object.
 '@export
 Public Sub ImportFrom(ByVal source As Passwords)
@@ -681,20 +718,21 @@ End Sub
 
 '@label:new-debuging-password
 '@sub-title Update the debugging password stored on the password worksheet
+'@details
+'Raises ElementNotFound when the named range is gone. Create validates that
+'name, so this can only fire when the name was removed after the object was
+'built.
 '@param newValue String. The new debugging password value.
 '@export
 Public Sub NewDebugingPassword(ByVal newValue As String)
-    Dim target As Range
 
     EnsureSheetReady
 
-    On Error Resume Next
-        Set target = NamedRange(NAMEDEBUGPASSWORD)
-    On Error GoTo 0
+    NamedRange(NAMEDEBUGPASSWORD).Value = newValue
 
-    If target Is Nothing Then Exit Sub
-
-    target.Value = newValue
+    'The cached copy is now stale.
+    this.debugPassword = vbNullString
+    this.debugPasswordLoaded = False
 End Sub
 
 '@label:clone-to-worksheet
@@ -715,6 +753,7 @@ Public Function CloneToWorksheet(ByVal targetSheet As Worksheet) As Passwords
     CopyNamedRanges PasswordSheet(), targetSheet
 
     Set pass = Create(targetSheet)
+    'The name is written through the new handler, so it points at the new table.
     pass.EnsureProtectedSheetsName
 
     Set CloneToWorksheet = pass
@@ -742,102 +781,139 @@ End Function
 
 '@label:validate-sheet
 '@sub-title Validate the password worksheet
+'@details
+'The two lab key names are left out on purpose: password sheets built before
+'those names exist still work. CopyNamedRanges skips whichever of them is
+'missing and records the gap.
 Private Sub ValidateSheet(ByVal sh As Worksheet)
     If sh Is Nothing Then ThrowError ProjectError.ObjectNotInitialized, "Password sheet is required"
-    EnsureLoExists sh, TABLEKEYS
-    EnsureLoExists sh,TABLEPROTECTED
-    EnsureRangeExists sh, NAMEDEBUGPASSWORD
-    EnsureRangeExists sh, NAMEPUBLICKEY
-    EnsureRangeExists sh, NAMEPRIVATEKEY
-    EnsureRangeExists sh, NAMEDEBUGMODE
-    EnsureRangeExists sh, NAMEVERSION
+    SheetTable sh, TABLEKEYS
+    SheetTable sh, TABLEPROTECTED
+    NamedRange NAMEDEBUGPASSWORD, sh
+    NamedRange NAMEPUBLICKEY, sh
+    NamedRange NAMEPRIVATEKEY, sh
+    NamedRange NAMEDEBUGMODE, sh
+    NamedRange NAMEVERSION, sh
 End Sub
 
 '@label:ensure-sheet-ready
 '@sub-title Ensure password worksheet is initialised
+'@details
+'this.wb is written on the same statement as this.sh, and Create is the only
+'way in, so a ready sheet always carries a ready workbook.
 Private Sub EnsureSheetReady()
     If this.sh Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, "Password sheet is not initialised"
     End If
 End Sub
 
-'@label:ensure-workbook-ready
-'@sub-title Ensure the password workbook reference is resolved
-Private Sub EnsureWorkbookReady()
-    EnsureSheetReady
-    If this.wb Is Nothing Then Set this.wb = this.sh.Parent
+'@label:reset-caches
+'@sub-title Clear the cached tables, password and debug flag
+Private Sub ResetCaches()
+    Set this.keyTable = Nothing
+    Set this.protectedTable = Nothing
+    this.debugPassword = vbNullString
+    this.debugPasswordLoaded = False
+    this.debugMode = False
+    this.debugModeLoaded = False
 End Sub
 
-'@label:ensure-lo-exists
-'@sub-title Validate that a ListObject exists on a worksheet
-Private Sub EnsureLoExists(ByVal sh As Worksheet, ByVal loName As String)
-    Dim Lo As ListObject
+'@label:sheet-table
+'@sub-title Resolve a ListObject on a worksheet
+'@param targetSheet Worksheet. Sheet holding the table.
+'@param tableName String. Name of the table.
+'@return ListObject. The resolved table.
+Private Function SheetTable(ByVal targetSheet As Worksheet, ByVal tableName As String) As ListObject
+
+    Dim result As ListObject
 
     On Error Resume Next
-    Set Lo = sh.ListObjects(loName)
+        Set result = targetSheet.ListObjects(tableName)
     On Error GoTo 0
 
-    If Lo Is Nothing Then
-        ThrowError ProjectError.ElementNotFound, loName & " does not exists in worksheet " & sh.Name
+    If result Is Nothing Then
+        ThrowError ProjectError.ElementNotFound, _
+                  "ListObject '" & tableName & "' not found on sheet '" & targetSheet.Name & "'"
     End If
-End Sub
 
-'@label:reset-caches
-'@sub-title Clear cached ListObject references
-Private Sub ResetCaches()
-    Set this.keyTable = Nothing 'ListObject
-    Set this.protectedTable = Nothing 'ListObject
-End Sub
+    Set SheetTable = result
+End Function
+
+'@label:cached-table
+'@sub-title Resolve a table on the bound sheet and remember it
+'@param tableName String. Name of the table.
+'@param cache ListObject. The field that holds the answer between calls.
+'@return ListObject. The resolved table.
+Private Function CachedTable(ByVal tableName As String, ByRef cache As ListObject) As ListObject
+    EnsureSheetReady
+
+    If cache Is Nothing Then Set cache = SheetTable(this.sh, tableName)
+
+    Set CachedTable = cache
+End Function
 
 '@label:keys-table
 '@sub-title Retrieve and cache the keys ListObject
 '@return ListObject. The keys table.
 Private Function KeysTable() As ListObject
-    EnsureSheetReady
-    If this.keyTable Is Nothing Then
-        Set this.keyTable = this.sh.ListObjects(TABLEKEYS)
-        If this.keyTable Is Nothing Then
-            ThrowError ProjectError.ElementNotFound, _
-                      "ListObject '" & TABLEKEYS & "' not found on sheet '" & this.sh.Name & "'"
-        End If
-    End If
-    Set KeysTable = this.keyTable
+    Set KeysTable = CachedTable(TABLEKEYS, this.keyTable)
 End Function
 
 '@label:protected-sheets-table
 '@sub-title Retrieve and cache the protected-sheets ListObject
 '@return ListObject. The protection table.
 Private Function ProtectedSheetsTable() As ListObject
-    EnsureSheetReady
-    If this.protectedTable Is Nothing Then
-        Set this.protectedTable = this.sh.ListObjects(TABLEPROTECTED)
-        If this.protectedTable Is Nothing Then
-            ThrowError ProjectError.ElementNotFound, _
-                      "ListObject '" &TABLEPROTECTED & "' not found on sheet '" & this.sh.Name & "'"
-        End If
-    End If
-    Set ProtectedSheetsTable = this.protectedTable
+    Set ProtectedSheetsTable = CachedTable(TABLEPROTECTED, this.protectedTable)
 End Function
 
 '@label:named-range
-'@sub-title Retrieve a named range from the password worksheet
+'@sub-title Retrieve a named range
+'@details
+'Resolves against the bound worksheet, or against targetSheet when one is
+'passed. Create validates the sheet before it is bound, which is what the
+'second argument is for.
+'@param rangeName String. Name to resolve.
+'@param targetSheet Optional Worksheet. Sheet to resolve against. Defaults to the bound sheet.
 '@return Range. The named range.
-Private Function NamedRange(ByVal rangeName As String) As Range
+Private Function NamedRange(ByVal rangeName As String, _
+                            Optional ByVal targetSheet As Worksheet) As Range
 
+    Dim sourceSheet As Worksheet
     Dim result As Range
 
-    EnsureSheetReady
+    If targetSheet Is Nothing Then
+        EnsureSheetReady
+        Set sourceSheet = this.sh
+    Else
+        Set sourceSheet = targetSheet
+    End If
 
     On Error Resume Next
-        Set result = this.sh.Range(rangeName)
+        Set result = sourceSheet.Range(rangeName)
     On Error GoTo 0
 
     If result Is Nothing Then
         ThrowError ProjectError.ElementNotFound, _
-                  "Named range '" & rangeName & "' is missing on sheet '" & this.sh.Name & "'"
+                  "Named range '" & rangeName & "' is missing on sheet '" & sourceSheet.Name & "'"
     End If
 
     Set NamedRange = result
+End Function
+
+'@label:debug-password
+'@sub-title Read the debugging password, once per object
+'@details
+'The password is one cell that changes at most once in a session, and every
+'protect and unprotect call needs it. It is read on the first call and kept.
+'ResetCaches and NewDebugingPassword drop the copy.
+'@return String. The debugging password.
+Private Function DebugPassword() As String
+    If Not this.debugPasswordLoaded Then
+        this.debugPassword = TagValue(PasswordTagDebug)
+        this.debugPasswordLoaded = True
+    End If
+
+    DebugPassword = this.debugPassword
 End Function
 
 '@label:resolve-workbook
@@ -846,14 +922,14 @@ End Function
 Private Function ResolveWorkbook(Optional candidate As Variant) As Workbook
 
     If IsMissing(candidate) Or IsEmpty(candidate) Then
-        EnsureWorkbookReady
+        EnsureSheetReady
         Set ResolveWorkbook = this.wb
         Exit Function
     End If
 
     If IsObject(candidate) Then
         If (candidate Is Nothing) Then
-            EnsureWorkbookReady
+            EnsureSheetReady
             Set ResolveWorkbook = this.wb
         ElseIf StrComp(TypeName(candidate), "Workbook", vbTextCompare) = 0 Then
             Set ResolveWorkbook = candidate
@@ -866,7 +942,7 @@ Private Function ResolveWorkbook(Optional candidate As Variant) As Workbook
 
     If VarType(candidate) = vbString Then
         If candidate = "_wbactive" Then
-            EnsureWorkbookReady
+            EnsureSheetReady
             Set ResolveWorkbook = this.wb
         Else
             ThrowError ProjectError.InvalidArgument, _
@@ -894,7 +970,7 @@ Private Function ResolveSheet(sheetObject As Variant) As Worksheet
         Case "Worksheet"
             Set ResolveSheet = sheetObject
         Case "String"
-            If  sheetObject =  "_active" Then
+            If sheetObject = "_active" Then
                 Set ResolveSheet = ActiveSheet
             Else
                 Set wb = ResolveWorkbook()
@@ -946,32 +1022,45 @@ Private Function TagFromName(ByVal tagName As String) As Byte
     End Select
 End Function
 
-'@label:ensure-range-exists
-'@sub-title Validate that a named range exists on a worksheet
-Private Sub EnsureRangeExists(ByVal targetSheet As Worksheet, ByVal rangeName As String)
-    Dim rng As Range
-    On Error Resume Next
-        Set rng = targetSheet.Range(rangeName)
-    On Error GoTo 0
-    If rng Is Nothing Then
-        ThrowError ProjectError.ElementNotFound, _
-                  "Named range '" & rangeName & "' is missing on sheet '" & targetSheet.Name & "'"
-    End If
-End Sub
-
 '@label:is-in-debug-mode
 '@sub-title Test whether the workbook is in debug mode
+'@details
+'The flag is one cell on the bound sheet, and ProtectSheet asks for it on every
+'call. It is read once and kept. EnterDebugMode and LeaveDebugMode are the two
+'writers and both refresh the copy; ResetCaches drops it.
 '@return Boolean. True when debug mode is active.
 Public Function IsInDebugMode() As Boolean
-    IsInDebugMode = (StrComp(CStr(NamedRange(NAMEDEBUGMODE).Value), DEFAULTBOOLYES, vbTextCompare) = 0)
+    If Not this.debugModeLoaded Then
+        this.debugMode = (StrComp(CStr(NamedRange(NAMEDEBUGMODE).Value), DEFAULTBOOLYES, vbTextCompare) = 0)
+        this.debugModeLoaded = True
+    End If
+
+    IsInDebugMode = this.debugMode
 End Function
+
+'@label:set-debug-mode-flag
+'@sub-title Write the debug-mode flag and refresh the cached copy
+'@param active Boolean. True to record debug mode as on.
+Private Sub SetDebugModeFlag(ByVal active As Boolean)
+    If active Then
+        NamedRange(NAMEDEBUGMODE).Value = DEFAULTBOOLYES
+    Else
+        NamedRange(NAMEDEBUGMODE).Value = DEFAULTBOOLNO
+    End If
+
+    this.debugMode = active
+    this.debugModeLoaded = True
+End Sub
 
 '@label:apply-protection-matrix
 '@sub-title Apply stored protection settings to all listed worksheets
+'@details
+'Reads the whole protection table in one go and protects each listed sheet with
+'the same password. A row naming a sheet that was renamed or deleted is written
+'to the checking log, and the remaining rows still get their protection.
 '@param wb Workbook. Target workbook whose sheets will be protected.
 '@export
 Public Sub ApplyProtectionMatrix(ByVal wb As Workbook)
-    Dim Lo As ListObject
     Dim bodyRange As Range
     Dim rowIdx As Long
     Dim sheetName As String
@@ -979,31 +1068,47 @@ Public Sub ApplyProtectionMatrix(ByVal wb As Workbook)
     Dim allowDeleteRows As Boolean
     Dim data As Variant
     Dim pwd As String
+    Dim protectFailed As Boolean
+    Dim failureText As String
 
-    Set Lo = ProtectedSheetsTable()
-    Set bodyRange = Lo.DataBodyRange
+    Set bodyRange = ProtectedSheetsTable().DataBodyRange
 
     If bodyRange Is Nothing Then Exit Sub
 
     'Read password once (same for all sheets) and bulk-read the table
-    pwd = TagValue(PasswordTagDebug)
+    pwd = DebugPassword()
     data = bodyRange.Value2
 
     For rowIdx = 1 To UBound(data, 1)
         sheetName = CStr(data(rowIdx, 1))
-        If LenB(sheetName) = 0 Then GoTo NextRow
-        allowShapesValue = ParseBoolean(data(rowIdx, 2))
-        allowDeleteRows = ParseBoolean(data(rowIdx, 3))
+        If LenB(sheetName) > 0 Then
+            allowShapesValue = ParseBoolean(CStr(data(rowIdx, 2)))
+            allowDeleteRows = ParseBoolean(CStr(data(rowIdx, 3)))
 
-        On Error Resume Next
-            ApplySheetProtection wb.Worksheets(sheetName), allowShapesValue, allowDeleteRows, pwd
-        On Error GoTo 0
-NextRow:
+            protectFailed = False
+            failureText = vbNullString
+
+            On Error Resume Next
+                ApplySheetProtection wb.Worksheets(sheetName), allowShapesValue, allowDeleteRows, pwd
+                protectFailed = (Err.Number <> 0)
+                failureText = Err.Description
+                Err.Clear
+            On Error GoTo 0
+
+            If protectFailed Then
+                LogInfo "Protection was not restored for sheet '" & sheetName & "': " & failureText, _
+                        checkingWarning
+            End If
+        End If
     Next rowIdx
 End Sub
 
 '@label:apply-sheet-protection
 '@sub-title Protect a worksheet using debugging password and capability flags
+'@details
+'UserInterfaceOnly keeps macros able to write to the sheet. Excel drops that
+'flag when the file closes, so a reopened workbook has to run
+'ApplyProtectionMatrix again before code writes anywhere.
 Private Sub ApplySheetProtection(ByVal targetSheet As Worksheet, _
                                  ByVal allowShapes As Boolean, _
                                  ByVal allowDeleting As Boolean, _
@@ -1019,88 +1124,72 @@ Private Sub ApplySheetProtection(ByVal targetSheet As Worksheet, _
         AllowFormattingCells:=False, _
         AllowDeletingRows:=allowDeleting, _
         AllowFormattingColumns:=True, _
-        AllowFormattingRows:=True, _ 
+        AllowFormattingRows:=True, _
         UserInterfaceOnly:=True
 End Sub
 
-'@label:protection-record
-'@sub-title Retrieve stored protection preferences for a sheet
-'@return BetterArray. Array(sheetName, allowShapes, allowDelete).
-Private Function ProtectionRecord(ByVal sheetName As String) As BetterArray
+'@label:read-protection-flags
+'@sub-title Read the stored capability flags for a worksheet
+'@details
+'The protection table is read as one block and matched in memory, so a lookup
+'costs one crossing. Sheet names are matched without regard to case, the way
+'Excel itself treats them, so "Data" and "data" resolve to the same row.
+'@param sheetName String. Sheet to look up.
+'@param allowShapes Boolean. Receives the stored shape flag, True when the sheet has no row.
+'@param allowDeletingRows Boolean. Receives the stored row-deletion flag, True when the sheet has no row.
+'@param rowIndex Long. Receives the 1-based data row, 0 when the sheet has no row.
+Private Sub ReadProtectionFlags(ByVal sheetName As String, _
+                                ByRef allowShapes As Boolean, _
+                                ByRef allowDeletingRows As Boolean, _
+                                ByRef rowIndex As Long)
 
-    Dim Lo As ListObject
-    Dim idRange As Range
-    Dim found As Range
-    Dim record As BetterArray
+    Dim bodyRange As Range
+    Dim data As Variant
+    Dim rowIdx As Long
 
-    Set Lo = ProtectedSheetsTable()
-    Set idRange = Lo.ListColumns(1).DataBodyRange
+    'Defaults for a sheet the table has never seen.
+    allowShapes = True
+    allowDeletingRows = True
+    rowIndex = 0
 
-    If idRange Is Nothing Then
-        Set ProtectionRecord = EmptyProtectionRecord(sheetName)
-        Exit Function
-    End If
+    Set bodyRange = ProtectedSheetsTable().DataBodyRange
+    If bodyRange Is Nothing Then Exit Sub
 
-    On Error Resume Next
-        Set found = idRange.Find(What:=sheetName, _
-                                 LookAt:=xlWhole, _
-                                 MatchCase:=True, _
-                                 after:=idRange.Cells(idRange.Rows.Count, 1))
-    On Error GoTo 0
+    data = bodyRange.Value2
+    If Not IsArray(data) Then Exit Sub
+    If UBound(data, 2) < PROTECTIONCOLUMNS Then Exit Sub
 
-    If found Is Nothing Then
-        Set ProtectionRecord = EmptyProtectionRecord(sheetName)
-        Exit Function
-    End If
-
-    Set record = New BetterArray
-    record.LowerBound = 1
-    record.Push sheetName
-    record.Push CStr(found.Offset(0, 1).Value)
-    record.Push CStr(found.Offset(0, 2).Value)
-
-    Set ProtectionRecord = record
-End Function
-
-'@label:empty-protection-record
-'@sub-title Construct default protection settings for a sheet
-'@return BetterArray. Array(sheetName, "yes", "yes").
-Private Function EmptyProtectionRecord(ByVal sheetName As String) As BetterArray
-
-    Dim record As BetterArray
-    Set record = New BetterArray
-    record.LowerBound = 1
-    record.Push sheetName
-    record.Push DEFAULTBOOLYES
-    record.Push DEFAULTBOOLYES
-    Set EmptyProtectionRecord = record
-End Function
+    For rowIdx = 1 To UBound(data, 1)
+        If StrComp(CStr(data(rowIdx, 1)), sheetName, vbTextCompare) = 0 Then
+            allowShapes = ParseBoolean(CStr(data(rowIdx, 2)))
+            allowDeletingRows = ParseBoolean(CStr(data(rowIdx, 3)))
+            rowIndex = rowIdx
+            Exit Sub
+        End If
+    Next rowIdx
+End Sub
 
 '@label:persist-protection-settings
 '@sub-title Insert or update the protection table entry for a sheet
+'@param sheetName String. Sheet the row describes.
+'@param allowShapes Boolean. Shape flag to store.
+'@param allowDeletingRows Boolean. Row-deletion flag to store.
+'@param rowIndex Long. 1-based data row to overwrite. 0 appends a new row.
 Private Sub PersistProtectionSettings(ByVal sheetName As String, _
                                       ByVal allowShapes As Boolean, _
-                                      ByVal allowDeletingRows As Boolean)
+                                      ByVal allowDeletingRows As Boolean, _
+                                      ByVal rowIndex As Long)
 
-
-    Dim Lo As ListObject
-    Dim idRange As Range
+    Dim lo As ListObject
     Dim targetRow As Range
 
-    Set Lo = ProtectedSheetsTable()
+    Set lo = ProtectedSheetsTable()
 
-    Set idRange = Lo.ListColumns(1).DataBodyRange
-
-    If idRange Is Nothing Then
-        Set targetRow = Lo.ListRows.Add.Range
+    If rowIndex > 0 Then
+        Set targetRow = lo.DataBodyRange.Rows(rowIndex)
     Else
-        On Error Resume Next
-            Set targetRow = idRange.Find(What:=sheetName, LookAt:=xlWhole, MatchCase:=True)
-        On Error GoTo 0
-        If targetRow Is Nothing Then
-            'Append a new row when the sheet was not found in the table.
-            Set targetRow = Lo.ListRows.Add.Range
-        End If
+        'Append a new row when the sheet was not found in the table.
+        Set targetRow = lo.ListRows.Add.Range
     End If
 
     targetRow.Cells(1, 1).Value = sheetName
@@ -1167,7 +1256,6 @@ Private Sub EnsureWorkbookBeforeCloseHook(ByVal component As Object)
     Dim procStart As Long
     Dim procLines As Long
     Dim bodyStart As Long
-    Dim insertLine As Long
     Dim guardToken As String
 
     procedureName = "Workbook_BeforeClose"
@@ -1175,12 +1263,12 @@ Private Sub EnsureWorkbookBeforeCloseHook(ByVal component As Object)
 
     Set codeModule = component.CodeModule
     If codeModule Is Nothing Then
-        ThrowError ProjectError.ErrorUnexpectedState, _
+        ThrowError ProjectError.SomethingWentWrong, _
                    "Unable to access workbook module when installing Workbook_BeforeClose guard"
     End If
 
     On Error Resume Next
-    procStart = codeModule.ProcStartLine(procedureName, 0) 
+    procStart = codeModule.ProcStartLine(procedureName, 0)
     On Error GoTo Handler
 
     If procStart <= 0 Then
@@ -1239,12 +1327,11 @@ Private Sub InsertOrReplaceProcedure(ByVal component As Object, _
     Dim codeModule As Object
     Dim startLine As Long
     Dim endLine As Long
-    Dim lineCount As Long
 
     Set codeModule = component.CodeModule
 
     If codeModule Is Nothing Then
-        ThrowError ProjectError.ErrorUnexpectedState, "Unable to access code module for VB component"
+        ThrowError ProjectError.SomethingWentWrong, "Unable to access code module for VB component"
     End If
 
     On Error Resume Next
@@ -1255,38 +1342,42 @@ Private Sub InsertOrReplaceProcedure(ByVal component As Object, _
         End If
     On Error GoTo 0
 
-    lineCount = codeModule.CountOfLines
-    If lineCount > 0 Then lineCount = lineCount + 1
     'Append the generated procedure at the end of the module.
-    codeModule.InsertLines lineCount + 1, procedureCode
+    AppendProcedure codeModule, procedureCode
 End Sub
 
 '@label:copy-list-objects
 '@sub-title Replicate ListObjects from source to target sheet
 Private Sub CopyListObjects(ByVal sourceSheet As Worksheet, ByVal targetSheet As Worksheet)
 
-    Dim Lo As ListObject
+    Dim lo As ListObject
     Dim targetRange As Range
 
-    For Each Lo In sourceSheet.ListObjects
-        Set targetRange = targetSheet.Range(Lo.Range.Address)
+    For Each lo In sourceSheet.ListObjects
+        Set targetRange = targetSheet.Range(lo.Range.Address)
         'Copy values first so table resize includes data.
-        targetRange.Value = Lo.Range.Value
+        targetRange.Value = lo.Range.Value
         With targetSheet.ListObjects.Add(xlSrcRange, targetRange, , xlYes)
-            .Name = Lo.Name
-            .TableStyle = Lo.TableStyle
-            .HeaderRowRange.Interior.Color = Lo.HeaderRowRange.Interior.Color
-            .HeaderRowRange.Font.Color = Lo.HeaderRowRange.Font.Color
+            .Name = lo.Name
+            .TableStyle = lo.TableStyle
+            .HeaderRowRange.Interior.Color = lo.HeaderRowRange.Interior.Color
+            .HeaderRowRange.Font.Color = lo.HeaderRowRange.Font.Color
         End With
     Next lo
 End Sub
 
 '@label:copy-named-ranges
 '@sub-title Copy critical named ranges to the target sheet
+'@details
+'The two lab key names are younger than the other five, so a password sheet
+'built before them passes ValidateSheet without them. Each missing name is
+'skipped and written to the checking log, which keeps an old password sheet
+'usable at build time.
 Private Sub CopyNamedRanges(ByVal sourceSheet As Worksheet, ByVal targetSheet As Worksheet)
 
     Dim rangeNames As Variant
     Dim idx As Long
+    Dim rangeName As String
     Dim sourceRange As Range
     Dim targetRange As Range
 
@@ -1294,15 +1385,26 @@ Private Sub CopyNamedRanges(ByVal sourceSheet As Worksheet, ByVal targetSheet As
                        NAMEPRIVATEKEY, NAMELABPRIVATEKEY, NAMEDEBUGMODE, NAMEVERSION)
 
     For idx = LBound(rangeNames) To UBound(rangeNames)
-        Set sourceRange = sourceSheet.Range(CStr(rangeNames(idx)))
-        Set targetRange = targetSheet.Range(sourceRange.Address)
-        targetRange.Value = sourceRange.Value
-        If sourceRange.HasFormula Then targetRange.Formula = sourceRange.Formula
+        rangeName = CStr(rangeNames(idx))
+        Set sourceRange = Nothing
+
         On Error Resume Next
-            targetSheet.Names(CStr(rangeNames(idx))).Delete
+            Set sourceRange = sourceSheet.Range(rangeName)
         On Error GoTo 0
-        'Recreate the name so the clone is self-contained.
-        targetSheet.Names.Add Name:=CStr(rangeNames(idx)), RefersTo:=targetRange, Visible:=False
+
+        If sourceRange Is Nothing Then
+            LogInfo "Named range '" & rangeName & "' is missing on sheet '" & _
+                    sourceSheet.Name & "' and was not copied", checkingWarning
+        Else
+            Set targetRange = targetSheet.Range(sourceRange.Address)
+            targetRange.Value = sourceRange.Value
+            If sourceRange.HasFormula Then targetRange.Formula = sourceRange.Formula
+            On Error Resume Next
+                targetSheet.Names(rangeName).Delete
+            On Error GoTo 0
+            'Recreate the name so the clone is self-contained.
+            targetSheet.Names.Add Name:=rangeName, RefersTo:=targetRange, Visible:=False
+        End If
     Next idx
 End Sub
 
