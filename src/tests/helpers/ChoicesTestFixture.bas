@@ -54,31 +54,44 @@ End Sub
 '@section Fixture Metadata
 '===============================================================================
 
-'@description Retrieve distinct list names from the fixture.
+'@description Retrieve distinct list names from the fixture, in fixture order.
+'@details This used to hold the names in a Collection keyed on the value, under
+'         a blanket On Error Resume Next that swallowed the duplicate-key error.
+'         The house rule is a plain array or a BetterArray, so the names are
+'         kept in a String array and the duplicates are tested for.
 '@return Variant 1-D array of list names.
 Public Function ChoicesFixtureDistinctLists() As Variant
-    Dim names As Collection
     Dim rowData As Variant
     Dim value As String
     Dim result() As String
+    Dim nbNames As Long
     Dim idx As Long
+    Dim alreadySeen As Boolean
 
     EnsureFixtureLoaded
 
-    Set names = New Collection
+    ReDim result(0 To UBound(fixtureRows) - LBound(fixtureRows))
 
-    On Error Resume Next
-        For Each rowData In fixtureRows
-            value = CStr(rowData(LBound(fixtureHeaders)))
-            names.Add value, CStr(value)
-        Next rowData
-    On Error GoTo 0
+    For Each rowData In fixtureRows
+        value = CStr(rowData(LBound(fixtureHeaders)))
 
-    ReDim result(0 To names.Count - 1)
-    For idx = 1 To names.Count
-        result(idx - 1) = names(idx)
-    Next idx
+        alreadySeen = False
+        For idx = 0 To nbNames - 1
+            If StrComp(result(idx), value, vbBinaryCompare) = 0 Then
+                alreadySeen = True
+                Exit For
+            End If
+        Next idx
 
+        If Not alreadySeen Then
+            result(nbNames) = value
+            nbNames = nbNames + 1
+        End If
+    Next rowData
+
+    If nbNames = 0 Then Exit Function
+
+    ReDim Preserve result(0 To nbNames - 1)
     ChoicesFixtureDistinctLists = result
 End Function
 

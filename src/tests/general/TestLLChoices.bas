@@ -19,8 +19,8 @@ Option Explicit
 '   also validates the edge case of requesting categories for a nonexistent
 '   choice list.
 '
-' @depends LLChoices, TranslationObject, TranslationObject,
-'   BetterArray, CustomTest, TestHelpers, ChoicesTestFixture
+' @depends LLChoices, TranslationObject, BetterArray, CustomTest,
+'   TestHelpersLite, ChoicesTestFixture
 '
 ' Test fixture data is supplied by ChoicesTestFixture.bas, which provides three
 ' named lists: "list_correct_order" (A/B/C in order 1-2-3),
@@ -210,12 +210,22 @@ End Sub
 ' @details Ensures the test output sheet exists, creates the CustomTest assert
 '   object, registers the module name for reporting, and performs an initial
 '   ResetChoices to prepare the fixture sheet.
-Private Sub ModuleInitialize()
+'   Public, not Private: the headless runner reaches every lifecycle hook
+'   through Application.Run, which cannot see a Private Sub.
+'   The handler matters as much. An error escaping a lifecycle hook aborts the
+'   WHOLE module, so a fixture problem here would drop all 13 tests and the run
+'   would report no failures, because nothing ran.
+Public Sub ModuleInitialize()
+    On Error GoTo Fail
     BusyApp
     EnsureWorksheet TEST_OUTPUT_SHEET, clearSheet:=False
     Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
     Assert.SetModuleName "TestLLChoices"
     ResetChoices
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "ModuleInitialize", Err.Number, Err.Description
 End Sub
 
 '@ModuleCleanup
@@ -223,13 +233,20 @@ End Sub
 ' @details Prints accumulated test results, removes all fixture worksheets
 '   (translation, import, choices), restores application state, and releases
 '   object references.
-Private Sub ModuleCleanup()
-    If Not Assert Is Nothing Then
-        Assert.PrintResults TEST_OUTPUT_SHEET
-    End If
-    CleanupChoicesTranslation
-    CleanupChoicesImportSource
-    DeleteWorksheet CHOICESSHEET
+'   Every step before RestoreApp is wrapped, because RestoreApp has to run
+'   whatever happened above: every test proc here opens with BusyApp, which
+'   puts Excel in manual calculation with events off, and the next module in
+'   the run would inherit that.
+Public Sub ModuleCleanup()
+    On Error Resume Next
+        If Not Assert Is Nothing Then
+            Assert.PrintResults TEST_OUTPUT_SHEET
+        End If
+        CleanupChoicesTranslation
+        CleanupChoicesImportSource
+        DeleteWorksheet CHOICESSHEET
+    On Error GoTo 0
+
     RestoreApp
 
     Set Choices = Nothing
@@ -240,22 +257,31 @@ End Sub
 ' @sub-title Per-test setup: rebuild the fixture from scratch.
 ' @details Calls BusyApp to suppress screen updates, then ResetChoices to
 '   ensure each test starts with an identical, unmodified fixture.
-Private Sub TestInitialize()
+Public Sub TestInitialize()
+    On Error GoTo Fail
     BusyApp
     ResetChoices
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestInitialize", Err.Number, Err.Description
 End Sub
 
 '@TestCleanup
 ' @sub-title Per-test teardown: flush assertions and remove ephemeral sheets.
 ' @details Flushes any pending assertion output, removes translation and import
 '   sheets that may have been created during the test, and releases the Choices
-'   reference.
-Private Sub TestCleanup()
-    If Not Assert Is Nothing Then
-        Assert.Flush
-    End If
-    CleanupChoicesTranslation
-    CleanupChoicesImportSource
+'   reference. Nothing here may raise: an error would take the rest of the
+'   module with it.
+Public Sub TestCleanup()
+    On Error Resume Next
+        If Not Assert Is Nothing Then
+            Assert.Flush
+        End If
+        CleanupChoicesTranslation
+        CleanupChoicesImportSource
+    On Error GoTo 0
+
     Set Choices = Nothing
 End Sub
 
@@ -271,8 +297,14 @@ End Sub
 '   behavioural tests run.
 Public Sub TestCreateInitialisesChoice()
     CustomTestSetTitles Assert, "LLChoices", "TestCreateInitialisesChoice"
+    On Error GoTo Fail
+
     Assert.IsTrue (TypeName(Choices) = "LLChoices"), "Expected Create to return LLChoices implementation"
     Assert.AreEqual CHOICESSHEET, Choices.Wksh.Name, "Choice object should target the configured sheet"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestCreateInitialisesChoice", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("LLChoices")

@@ -73,6 +73,11 @@ suites:
       # module. The `fixtures` tag would resolve it to src/tests/F/<name>.cls,
       # which it is not. Same shape as DictionaryTestFixture above.
       - module: LLFormatTestFixture
+      # ChoicesTestFixture is the same shape again, and it is not optional:
+      # TestLLChoices calls PrepareChoicesFixture, ChoicesFixtureHeaders,
+      # ChoicesFixtureDistinctLists and ChoicesFixtureRowCount. Without it the
+      # whole project fails to compile and the runner shows the opaque -50.
+      - module: ChoicesTestFixture
 
   # --- general (OSFiles, DropdownLists) --------------------------------------
   # DropdownLists' whole dependency closure (HiddenNames, BetterArray, Checking)
@@ -95,6 +100,15 @@ suites:
       # LLFormat needs CustomTable (Import and Export), Checking and BetterArray.
       # CustomTable is above and the other two are already in the workbook.
       - name: LLFormat
+      # TranslationObject was in the workbook but registered only as a TEST
+      # module, so ImportAll never refreshed it from src/ and it had to be
+      # pasted in by hand after every change. It is a class here now. Its own
+      # deps are BetterArray and Checking, both already in the workbook.
+      - name: TranslationObject
+      # LLChoices needs DataSheet, CustomTable, TranslationObject, Checking and
+      # BetterArray. The first three are above, the last two are in the
+      # workbook.
+      - name: LLChoices
     tests:
       - module: TestOSFiles
         covers: [OSFiles]
@@ -110,6 +124,8 @@ suites:
         covers: [ApplicationState]
       - module: TestLLFormat
         covers: [LLFormat]
+      - module: TestLLChoices
+        covers: [LLChoices]
 
   # --- sections -------------------------------------------------------------
   # (Also note: interface: true is stale -- IVarWriter /
