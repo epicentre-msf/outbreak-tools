@@ -124,10 +124,10 @@ Public Sub clickAddSheet(ByRef control As IRibbonControl)
     Set builder = DiseaseSheetBuilder.Create(ThisWorkbook, dropdowns, translations)
     languageTag = MasterSetupHelpers.ResolveRibbonLanguageTag()
 
-    passwords.UnProtectWkb ThisWorkbook
+    passwords.UnProtect ThisWorkbook
     Set diseaseSheet = builder.Build(diseaseName, MasterSetupHelpers.ResolveNextDiseaseIndex(), languageTag)
     passwords.Protect diseaseSheet.Name
-    passwords.ProtectWkb ThisWorkbook
+    passwords.Protect ThisWorkbook
 
     RefreshDropdownCaches
     MsgBox MasterSetupHelpers.TranslateValue(translations, "done", "Done!"), vbInformation + vbOKOnly, confirmTitle
@@ -141,7 +141,7 @@ Handler:
     MsgBox MasterSetupHelpers.TranslateValue(translations, "errDisCreate", "Unable to create the disease worksheet."), vbCritical + vbOKOnly, confirmTitle
     If Not passwords Is Nothing Then
         On Error Resume Next
-            passwords.ProtectWkb ThisWorkbook
+            passwords.Protect ThisWorkbook
         On Error GoTo 0
     End If
     Resume Cleanup
@@ -183,14 +183,14 @@ Public Sub clickRemSheet(ByRef control As IRibbonControl)
     If passwords Is Nothing Then Err.Raise ProjectError.ElementNotFound, "clickRemSheet", "Passwords worksheet '" & PASSWORD_SHEET_NAME & "' was not found."
 
     passwords.UnProtect targetSheet.Name
-    passwords.UnProtectWkb ThisWorkbook
+    passwords.UnProtect ThisWorkbook
 
     alertsState = Application.DisplayAlerts
     Application.DisplayAlerts = False
     targetSheet.Delete
     Application.DisplayAlerts = alertsState
 
-    passwords.ProtectWkb ThisWorkbook
+    passwords.Protect ThisWorkbook
 
     RefreshDropdownCaches
 
@@ -204,7 +204,7 @@ Handler:
     If Not passwords Is Nothing Then
         On Error Resume Next
             passwords.Protect targetSheet.Name
-            passwords.ProtectWkb ThisWorkbook
+            passwords.Protect ThisWorkbook
         On Error GoTo 0
     End If
     MsgBox MasterSetupHelpers.TranslateValue(translations, "errDisRemove", "Unable to remove the selected worksheet."), vbCritical + vbOKOnly, confirmTitle
