@@ -1780,10 +1780,16 @@ End Function
 '@details
 'Column at a time. Excel answers Null for a property that is not the same on
 'every cell of a range, so a column styled the same all the way down is
-'copied with six writes instead of six writes per cell, and only a mixed
-'column falls back to the cell loop. The clipboard would do the whole table
-'in one step, but it is the least reliable path on Mac Excel and this runs on
-'the user's own workbook.
+'copied with six writes instead of six writes per cell, and only a mixed block
+'falls back to the cell loop. The header row is taken on its own, because it
+'is styled differently from the body and would otherwise make every column
+'mixed.
+'What this CANNOT do: the design columns hold a different colour on every row,
+'which is the whole point of the format table, so those columns are still
+'walked cell by cell. VBA has no way to copy formats in a block off the
+'clipboard. Copy plus PasteSpecial xlPasteFormats would do the whole table in
+'one step, but the clipboard is the least reliable path on Mac Excel and this
+'runs on the user's own workbook, so it is not used here.
 Private Sub CopyFormatTableStyles(ByVal sourceTable As ListObject, ByVal targetTable As ListObject)
     Dim sourceRange As Range
     Dim targetRange As Range
@@ -1809,22 +1815,44 @@ Private Sub CopyFormatTableStyles(ByVal sourceTable As ListObject, ByVal targetT
         ThrowError ProjectError.ErrorUnexpectedState, "Export format table dimensions do not match the source"
     End If
 
+    'The header row goes across on its own. It is styled as one band on every
+    'format sheet, and it is ALSO the reason a whole table column is never
+    'uniform - mixing it in with the body would send every column to the cell
+    'loop and the block path would never run at all
+    CopyStyles sourceRange.Rows(1), targetRange.Rows(1)
+
+    If rowCount <= 1 Then Exit Sub
+
+    'Then one body column at a time. The text columns carry no per-row styling
+    'and cross in one step each; the design columns really do hold a different
+    'colour on every row, so those are the ones that fall to the cell loop
     For columnIndex = 1 To columnCount
-        If Not CopyColumnStylesAsBlock(sourceRange.Columns(columnIndex), _
-                                       targetRange.Columns(columnIndex)) Then
-            CopyColumnStylesByCell sourceRange.Columns(columnIndex), _
-                                   targetRange.Columns(columnIndex), rowCount
-        End If
+        CopyStyles sourceRange.Columns(columnIndex).Offset(1).Resize(rowCount - 1), _
+                   targetRange.Columns(columnIndex).Offset(1).Resize(rowCount - 1)
     Next columnIndex
 End Sub
 
-'@label:copy-column-styles-as-block
-'@sub-title Copy one column of styles in a single write when the column is uniform
-'@param sourceColumn Range. Column to read.
-'@param targetColumn Range. Column to write.
-'@return Boolean. True when the whole column was copied in one block.
-Private Function CopyColumnStylesAsBlock(ByVal sourceColumn As Range, _
-                                         ByVal targetColumn As Range) As Boolean
+'@label:copy-styles
+'@sub-title Copy the styles of one block, in one step when the block allows it
+'@param sourceBlock Range. Block to read.
+'@param targetBlock Range. Block of the same shape to write.
+Private Sub CopyStyles(ByVal sourceBlock As Range, ByVal targetBlock As Range)
+    If Not CopyStylesAsBlock(sourceBlock, targetBlock) Then
+        CopyStylesByCell sourceBlock, targetBlock
+    End If
+End Sub
+
+'@label:copy-styles-as-block
+'@sub-title Copy a block of styles in a single write when the block is uniform
+'@details
+'Excel answers Null for a property that is not the same on every cell of a
+'range, so reading the six properties off the whole block is both the test
+'and the read.
+'@param sourceBlock Range. Block to read.
+'@param targetBlock Range. Block of the same shape to write.
+'@return Boolean. True when the whole block was copied in one step.
+Private Function CopyStylesAsBlock(ByVal sourceBlock As Range, _
+                                   ByVal targetBlock As Range) As Boolean
     Dim patternValue As Variant
     Dim interiorColorValue As Variant
     Dim fontColorValue As Variant
@@ -1832,7 +1860,7 @@ Private Function CopyColumnStylesAsBlock(ByVal sourceColumn As Range, _
     Dim italicValue As Variant
     Dim sizeValue As Variant
 
-    With sourceColumn
+    With sourceBlock
         patternValue = .Interior.Pattern
         interiorColorValue = .Interior.color
         fontColorValue = .Font.color
@@ -1841,12 +1869,12 @@ Private Function CopyColumnStylesAsBlock(ByVal sourceColumn As Range, _
         sizeValue = .Font.Size
     End With
 
-    'Null on any one of them means the column is mixed and cannot be block copied
+    'Null on any one of them means the block is mixed and cannot be copied whole
     If IsNull(patternValue) Or IsNull(interiorColorValue) Then Exit Function
     If IsNull(fontColorValue) Or IsNull(boldValue) Then Exit Function
     If IsNull(italicValue) Or IsNull(sizeValue) Then Exit Function
 
-    With targetColumn
+    With targetBlock
         .Interior.Pattern = patternValue
         .Interior.color = interiorColorValue
         .Font.color = fontColorValue
@@ -1855,18 +1883,20 @@ Private Function CopyColumnStylesAsBlock(ByVal sourceColumn As Range, _
         .Font.Size = sizeValue
     End With
 
-    CopyColumnStylesAsBlock = True
+    CopyStylesAsBlock = True
 End Function
 
-'@label:copy-column-styles-by-cell
-'@sub-title Copy one column of styles cell by cell
-'@param sourceColumn Range. Column to read.
-'@param targetColumn Range. Column to write.
-'@param rowCount Long. Number of rows in the column.
-Private Sub CopyColumnStylesByCell(ByVal sourceColumn As Range, _
-                                   ByVal targetColumn As Range, _
-                                   ByVal rowCount As Long)
-    Dim rowIndex As Long
+'@label:copy-styles-by-cell
+'@sub-title Copy a block of styles cell by cell
+'@details
+'Both blocks are walked with a single Cells index, so the same loop serves a
+'one-row block and a one-column block. Each cell reads its Interior and its
+'Font once instead of chaining through them six times.
+'@param sourceBlock Range. Block to read.
+'@param targetBlock Range. Block of the same shape to write.
+Private Sub CopyStylesByCell(ByVal sourceBlock As Range, ByVal targetBlock As Range)
+    Dim cellIndex As Long
+    Dim cellCount As Long
     Dim patternValue As Variant
     Dim interiorColorValue As Variant
     Dim fontColorValue As Variant
@@ -1874,8 +1904,10 @@ Private Sub CopyColumnStylesByCell(ByVal sourceColumn As Range, _
     Dim italicValue As Variant
     Dim sizeValue As Variant
 
-    For rowIndex = 1 To rowCount
-        With sourceColumn.Cells(rowIndex, 1)
+    cellCount = sourceBlock.Cells.Count
+
+    For cellIndex = 1 To cellCount
+        With sourceBlock.Cells(cellIndex)
             patternValue = .Interior.Pattern
             interiorColorValue = .Interior.color
             fontColorValue = .Font.color
@@ -1884,7 +1916,7 @@ Private Sub CopyColumnStylesByCell(ByVal sourceColumn As Range, _
             sizeValue = .Font.Size
         End With
 
-        With targetColumn.Cells(rowIndex, 1)
+        With targetBlock.Cells(cellIndex)
             .Interior.Pattern = patternValue
             .Interior.color = interiorColorValue
             .Font.color = fontColorValue
@@ -1892,7 +1924,7 @@ Private Sub CopyColumnStylesByCell(ByVal sourceColumn As Range, _
             .Font.Italic = italicValue
             .Font.Size = sizeValue
         End With
-    Next rowIndex
+    Next cellIndex
 End Sub
 
 '@label:ensure-design-type-range
