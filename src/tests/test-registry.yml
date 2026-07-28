@@ -112,9 +112,14 @@ suites:
       # BetterArray. The first three are above, the last two are in the
       # workbook.
       - name: LLChoices
-      # Passwords names Checking, ProjectError and TranslationObject. All three
-      # are already in the workbook, so it needs no extra class imports.
-      - name: Passwords
+      # Do NOT add Passwords as a class, for the same reason as TranslationObject
+      # above. It is one of the classes imported BY HAND into the driver workbook
+      # (see automated-testing-macos.md 4.1) because Development types
+      # `As Passwords` and would not compile without it. Registering it made
+      # ImportAll keep BOTH copies, the second one named Passwords1, and the
+      # project stopped compiling -- the runner showed the opaque -50 with the
+      # import log reporting "done". Refreshing the baked-in copy is a hand
+      # re-import in the VBE, not a registry row.
     tests:
       - module: TestOSFiles
         covers: [OSFiles]
