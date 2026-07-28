@@ -100,6 +100,14 @@ End Enum
 'import/export of format definitions across workbooks. Each FormatScope
 'constant maps to a specific visual pattern applied to Worksheets,
 'Ranges, Shapes, ListObjects, or Characters.
+'@details
+'The design values a format object reads do not move while the object is
+'alive, so DesignValue caches the ANSWER and not only the row and column it
+'came from. ApplyFormat is the hot path of a whole linelist build (127 call
+'sites, 72 DesignValue calls in its own body), and without the answer cache
+'every one of those calls crossed into Excel. A caller that edits the format
+'sheet by hand and wants the new values asks for a new object, or goes
+'through Import, which clears every cache.
 '@depends CustomTable, Checking, BetterArray
 '@version 1.0 (2026-02-09)
 
@@ -110,25 +118,20 @@ Private Const DESIGN_TWO As String = "design 2"
 Private Const DESIGN_USER_DEFINED As String = "user defined"
 Private Const FALLBACK_COLOR As Long = vbBlack
 Private Const FALLBACK_VALUE As Long = 0
+Private Const CACHE_SEPARATOR As String = "|"
 
 Private Type TLLFormat
     sheet As Worksheet
     design As String
     formatTable As ListObject
     labelColumnIndex As Long
-    designColumnCache As BetterArray
-    labelRowCache As BetterArray
+    designColumnCache As Collection
+    labelRowCache As Collection
+    valueCache As Collection
     hasChecks As Boolean
     checks As Checking
     checkCounter As Long
     sealed As Boolean
-End Type
-
-Private Type TFormatting
-    fontColour As Long
-    fillColour As Long
-    fontSize As Long
-    borderColour As Long
 End Type
 
 Private this As TLLFormat
@@ -136,6 +139,9 @@ Private this As TLLFormat
 '@section Cache Management
 '===============================================================================
 'Lazy-init and invalidation of internal lookup caches.
+'
+'A keyed Collection is used, not a Dictionary: Scripting.Dictionary is not
+'available on Mac Excel. UpdatedValues.RegistryNameCache uses the same shape.
 
 '@label:reset-caches
 '@sub-title Invalidate all cached references
@@ -143,6 +149,10 @@ Private Sub ResetCaches()
     Set this.formatTable = Nothing
     Set this.designColumnCache = Nothing
     Set this.labelRowCache = Nothing
+    Set this.valueCache = Nothing
+    'The label column index is a cache too, and it used to survive its own
+    'invalidation because EnsureLabelColumn leaves early whenever it is above zero
+    this.labelColumnIndex = 0
 End Sub
 
 '@label:ensure-format-ready
@@ -151,25 +161,63 @@ Private Sub EnsureFormatReady()
     If this.sheet Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, "Format worksheet reference is missing"
     End If
-    If this.designColumnCache Is Nothing Then
-        Set this.designColumnCache = New BetterArray
-        this.designColumnCache.LowerBound = 1
-    End If
-    If this.labelRowCache Is Nothing Then
-        Set this.labelRowCache = New BetterArray
-        this.labelRowCache.LowerBound = 1
-    End If
+    If this.designColumnCache Is Nothing Then Set this.designColumnCache = New Collection
+    If this.labelRowCache Is Nothing Then Set this.labelRowCache = New Collection
+    If this.valueCache Is Nothing Then Set this.valueCache = New Collection
 End Sub
 
-'@label:ensure-format-sheet-ready
-'@sub-title Validate a worksheet as a valid format source
-'@param sh Worksheet. The worksheet to validate.
-'@param resolvedDesign String (ByRef). Falls back to DEFAULT_DESIGN when the requested design column is absent.
-Private Sub EnsureFormatSheetReady(ByVal sh As Worksheet, ByRef resolvedDesign As String)
-    
-    Dim Lo As ListObject
-    Dim header As Range
+'@label:cached-value
+'@sub-title Read one entry out of a keyed cache
+'@param store Collection. The cache to read.
+'@param cacheKey String. Key of the entry.
+'@param found Boolean (ByRef). True when the key was present.
+'@return Variant. The stored value, or Empty when the key is absent.
+Private Function CachedValue(ByVal store As Collection, _
+                             ByVal cacheKey As String, _
+                             ByRef found As Boolean) As Variant
+    Dim result As Variant
 
+    found = False
+    If store Is Nothing Then Exit Function
+
+    'A Collection has no "does this key exist" test, so the miss is read off Err.
+    'Err is cleared first: neither On Error Resume Next nor On Error GoTo 0
+    'clears it, so a stale number from earlier code would read as a miss
+    On Error Resume Next
+        Err.Clear
+        result = store.Item(cacheKey)
+        found = (Err.Number = 0)
+        Err.Clear
+    On Error GoTo 0
+
+    If found Then CachedValue = result
+End Function
+
+'@label:store-cached-value
+'@sub-title Add one entry to a keyed cache
+'@param store Collection. The cache to write.
+'@param cacheKey String. Key of the entry.
+'@param cacheValue Variant. Value to keep.
+Private Sub StoreCachedValue(ByVal store As Collection, _
+                             ByVal cacheKey As String, _
+                             ByVal cacheValue As Variant)
+    If store Is Nothing Then Exit Sub
+
+    'A duplicate key means another path already answered; keep the first answer
+    On Error Resume Next
+        store.Add cacheValue, cacheKey
+    On Error GoTo 0
+End Sub
+
+'@section Format Table Access
+'===============================================================================
+'One owner for each rule about what a valid format sheet looks like.
+
+'@label:table-of-sheet
+'@sub-title Retrieve the first ListObject of a worksheet
+'@param sh Worksheet. The worksheet to read.
+'@return ListObject. The first table on the sheet.
+Private Function TableOfSheet(ByVal sh As Worksheet) As ListObject
     If sh Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, "Format worksheet must be supplied"
     End If
@@ -179,29 +227,60 @@ Private Sub EnsureFormatSheetReady(ByVal sh As Worksheet, ByRef resolvedDesign A
                   "No format table found on worksheet '" & sh.Name & "'"
     End If
 
-    Set Lo = sh.ListObjects(1)
+    Set TableOfSheet = sh.ListObjects(1)
+End Function
+
+'@label:header-of-table
+'@sub-title Retrieve the header row of a format table
+'@param formatLo ListObject. The format table.
+'@return Range. The header row.
+Private Function HeaderOfTable(ByVal formatLo As ListObject) As Range
+    Dim header As Range
+
     On Error Resume Next
-        Set header = Lo.HeaderRowRange
+        Set header = formatLo.HeaderRowRange
     On Error GoTo 0
 
     If header Is Nothing Then
         ThrowError ProjectError.ElementNotFound, _
-                  "Format table on worksheet '" & sh.Name & "' is missing headers"
+                  "Format table on worksheet '" & formatLo.Parent.Name & "' is missing headers"
     End If
 
-    If Lo.DataBodyRange Is Nothing Or Lo.DataBodyRange.Rows.Count = 0 Then
+    Set HeaderOfTable = header
+End Function
+
+'@label:ensure-format-sheet-ready
+'@sub-title Validate a worksheet as a valid format source
+'@param sh Worksheet. The worksheet to validate.
+'@param resolvedDesign String (ByRef). Falls back to DEFAULT_DESIGN when the requested design column is absent.
+Private Sub EnsureFormatSheetReady(ByVal sh As Worksheet, ByRef resolvedDesign As String)
+
+    Dim formatLo As ListObject
+    Dim header As Range
+
+    Set formatLo = TableOfSheet(sh)
+    Set header = HeaderOfTable(formatLo)
+
+    'Two tests, not one joined by Or: VBA runs both sides of Or, so the old
+    'single line read Rows.Count off Nothing and raised 91 instead of the message
+    If formatLo.DataBodyRange Is Nothing Then
         ThrowError ProjectError.ElementNotFound, _
-                  "Format table '" & lo.Name & "' does not contain any data rows"
+                  "Format table '" & formatLo.Name & "' does not contain any data rows"
+    End If
+
+    If formatLo.DataBodyRange.Rows.Count = 0 Then
+        ThrowError ProjectError.ElementNotFound, _
+                  "Format table '" & formatLo.Name & "' does not contain any data rows"
     End If
 
     If Not ColumnExists(header, COLUMN_LABEL) Then
         ThrowError ProjectError.ElementNotFound, _
-                  "Column '" & COLUMN_LABEL & "' is required in format table '" & lo.Name & "'"
+                  "Column '" & COLUMN_LABEL & "' is required in format table '" & formatLo.Name & "'"
     End If
 
     If Not ColumnExists(header, DEFAULT_DESIGN) Then
         ThrowError ProjectError.ElementNotFound, _
-                  "Default design '" & DEFAULT_DESIGN & "' was not found in format table '" & lo.Name & "'"
+                  "Default design '" & DEFAULT_DESIGN & "' was not found in format table '" & formatLo.Name & "'"
     End If
 
     If Not ColumnExists(header, resolvedDesign) Then
@@ -227,10 +306,7 @@ End Sub
 Private Function FormatTable() As ListObject
     EnsureFormatReady
     If this.formatTable Is Nothing Then
-        If this.sheet.ListObjects.Count = 0 Then
-            ThrowError ProjectError.ElementNotFound, "Format worksheet must contain at least one table"
-        End If
-        Set this.formatTable = this.sheet.ListObjects(1)
+        Set this.formatTable = TableOfSheet(this.sheet)
     End If
     Set FormatTable = this.formatTable
 End Function
@@ -239,39 +315,50 @@ End Function
 '@sub-title Retrieve the header row range of the format table
 '@return Range. The header row.
 Private Function HeaderRange() As Range
-    Dim lo As ListObject
-    Set lo = FormatTable()
-    On Error Resume Next
-        Set HeaderRange = lo.HeaderRowRange
-    On Error GoTo 0
-    If HeaderRange Is Nothing Then
-        ThrowError ProjectError.ElementNotFound, "Format table header row is missing"
-    End If
+    Set HeaderRange = HeaderOfTable(FormatTable())
 End Function
 
 '@label:ensure-label-column
 '@sub-title Cache the column index of the Label column
 Private Sub EnsureLabelColumn()
-    Dim header As Range
     If this.labelColumnIndex > 0 Then Exit Sub
-    Set header = HeaderRange()
-    this.labelColumnIndex = ResolveColumnIndex(header, COLUMN_LABEL)
+    this.labelColumnIndex = ResolveColumnIndex(HeaderRange(), COLUMN_LABEL)
 End Sub
 
+'@label:find-column-index
+'@sub-title Find the column index of a named header, or zero when it is absent
+'@param header Range. The header row to search.
+'@param columnName String. Column caption to locate.
+'@return Long. The 1-based column index, or 0 when not found.
+Private Function FindColumnIndex(ByVal header As Range, ByVal columnName As String) As Long
+    Dim matchCell As Range
+
+    On Error Resume Next
+        Set matchCell = header.Find(What:=columnName, LookAt:=xlWhole, MatchCase:=False)
+    On Error GoTo 0
+
+    If Not matchCell Is Nothing Then FindColumnIndex = matchCell.Column
+End Function
+
+'@label:column-exists
+'@sub-title Test whether a named column exists in a header range
+'@param header Range. The header row to search.
+'@param columnName String. Column caption to test.
+'@return Boolean. True when the column is found.
+Private Function ColumnExists(ByVal header As Range, ByVal columnName As String) As Boolean
+    ColumnExists = (FindColumnIndex(header, columnName) > 0)
+End Function
+
 '@label:resolve-column-index
-'@sub-title Find the column index of a named header
+'@sub-title Find the column index of a named header, raising when it is absent
 '@param header Range. The header row to search.
 '@param columnName String. Column caption to locate.
 '@return Long. The 1-based column index.
 Private Function ResolveColumnIndex(ByVal header As Range, ByVal columnName As String) As Long
-    Dim matchCell As Range
-    On Error Resume Next
-        Set matchCell = header.Find(What:=columnName, LookAt:=xlWhole, MatchCase:=False)
-    On Error GoTo 0
-    If matchCell Is Nothing Then
+    ResolveColumnIndex = FindColumnIndex(header, columnName)
+    If ResolveColumnIndex = 0 Then
         ThrowError ProjectError.ElementNotFound, "Column '" & columnName & "' missing from format table"
     End If
-    ResolveColumnIndex = matchCell.Column
 End Function
 
 '@label:design-column-index
@@ -279,60 +366,68 @@ End Function
 '@param designName String. Name of the design column.
 '@return Long. The 1-based column index.
 Private Function DesignColumnIndex(ByVal designName As String) As Long
-    Dim idx As Long
-    Dim entry As Variant
-    Dim header As Range
+    Dim cached As Variant
+    Dim found As Boolean
+
     EnsureFormatReady
 
-    For idx = this.designColumnCache.LowerBound To this.designColumnCache.UpperBound
-        entry = this.designColumnCache.Item(idx)
-        If IsArray(entry) Then
-            'With lowerbound = 1 for the BetterArray, the inner stored array starts at 1
-            If StrComp(CStr(entry(1)), designName, vbTextCompare) = 0 Then
-                DesignColumnIndex = CLng(entry(2))
-                Exit Function
-            End If
-        End If
-    Next idx
+    cached = CachedValue(this.designColumnCache, LCase$(designName), found)
+    If found Then
+        DesignColumnIndex = CLng(cached)
+        Exit Function
+    End If
 
-    Set header = HeaderRange()
-    DesignColumnIndex = ResolveColumnIndex(header, designName)
-    this.designColumnCache.Push Array(designName, DesignColumnIndex)
+    DesignColumnIndex = ResolveColumnIndex(HeaderRange(), designName)
+    StoreCachedValue this.designColumnCache, LCase$(designName), DesignColumnIndex
 End Function
 
 '@label:label-row-index
 '@sub-title Resolve and cache the row index for a format label
+'@details
+'The lookup tries an exact match first and only then a partial one. Four of
+'the labels this class asks for are stored in the format table with extra
+'words around them - "gap for graphs" sits in "default row height gap for
+'graphs", "dropdown interior color" in "Select dropdown interior color",
+'"time series header font" in "Time series header font color" and "time
+'series header interior" in "Time series header interior color" - so partial
+'matching cannot simply be dropped. Trying the whole string first means a new
+'row whose label merely CONTAINS an existing one can no longer take it over.
 '@param labelName String. Label text to locate in the Label column.
 '@return Long. The 1-based row index, or 0 when not found.
 Private Function LabelRowIndex(ByVal labelName As String) As Long
-    Dim idx As Long
-    Dim entry As Variant
+    Dim cached As Variant
+    Dim found As Boolean
     Dim dataColumn As Range
     Dim matchCell As Range
 
     EnsureFormatReady
     EnsureLabelColumn
 
-    For idx = this.labelRowCache.LowerBound To this.labelRowCache.UpperBound
-        entry = this.labelRowCache.Item(idx)
-        If IsArray(entry) Then
-            'With lowerbound = 1 for the BetterArray, the stored array starts at 1
-            If StrComp(CStr(entry(1)), labelName, vbTextCompare) = 0 Then
-                LabelRowIndex = CLng(entry(2))
-                Exit Function
-            End If
-        End If
-    Next idx
+    cached = CachedValue(this.labelRowCache, LCase$(labelName), found)
+    If found Then
+        LabelRowIndex = CLng(cached)
+        Exit Function
+    End If
 
     Set dataColumn = FormatTable().ListColumns(COLUMN_LABEL).DataBodyRange
+
     On Error Resume Next
-        Set matchCell = dataColumn.Find(What:=labelName, LookAt:=xlPart, MatchCase:=False)
+        Set matchCell = dataColumn.Find(What:=labelName, LookAt:=xlWhole, MatchCase:=False)
+        If matchCell Is Nothing Then
+            Set matchCell = dataColumn.Find(What:=labelName, LookAt:=xlPart, MatchCase:=False)
+        End If
     On Error GoTo 0
 
-    If Not matchCell Is Nothing Then
-        LabelRowIndex = matchCell.Row
-        this.labelRowCache.Push Array(labelName, LabelRowIndex)
+    If Not matchCell Is Nothing Then LabelRowIndex = matchCell.Row
+
+    'The miss is cached and logged here, exactly once per label. A label that is
+    'never found used to re-scan the whole Label column and add one more log line
+    'on every single call, and a typo inside a build loop meant thousands of both
+    If LabelRowIndex = 0 Then
+        LogInfo "Label '" & labelName & "' not found; returning fallback value"
     End If
+
+    StoreCachedValue this.labelRowCache, LCase$(labelName), LabelRowIndex
 End Function
 
 '@section Factory
@@ -365,19 +460,6 @@ Public Function Create(ByVal formatSh As Worksheet, _
     newFormat.Seal
     Set Create = newFormat
 
-End Function
-
-'@label:column-exists
-'@sub-title Test whether a named column exists in a header range
-'@param header Range. The header row to search.
-'@param columnName String. Column caption to test.
-'@return Boolean. True when the column is found.
-Private Function ColumnExists(ByVal header As Range, ByVal columnName As String) As Boolean
-    Dim found As Range
-    On Error Resume Next
-        Set found = header.Find(What:=columnName, LookAt:=xlWhole, MatchCase:=False)
-    On Error GoTo 0
-    ColumnExists = Not (found Is Nothing)
 End Function
 
 '@section Public Interface
@@ -444,6 +526,7 @@ End Property
 'Retrieves either the fill colour (Interior.Color) or the raw cell
 'value for the specified label row under the active design column.
 'Returns a fallback when the label is not found and logs a diagnostic.
+'The answer is cached for the life of the object; see the class @details.
 '@param labelName String. Label text stored in the format table.
 '@param returnColor Boolean. When True returns Interior.Color; otherwise the raw value. Defaults to True.
 '@return Variant. The colour (Long) or cell value.
@@ -455,13 +538,29 @@ Public Function DesignValue(ByVal labelName As String, _
     Dim columnIndex As Long
     Dim targetCell As Range
     Dim resultValue As Variant
+    Dim cacheKey As String
+    Dim cached As Variant
+    Dim found As Boolean
 
     EnsureFormatReady
 
+    'The key carries the design and returnColor as well as the label. The two
+    'fallbacks are different constants, and the same cell answers with its fill
+    'colour or with its value depending on returnColor, so the label alone would
+    'hand one caller the other caller's answer
+    cacheKey = LCase$(this.design) & CACHE_SEPARATOR & CStr(returnColor) & _
+               CACHE_SEPARATOR & LCase$(labelName)
+
+    cached = CachedValue(this.valueCache, cacheKey, found)
+    If found Then
+        DesignValue = cached
+        Exit Function
+    End If
+
     rowIndex = LabelRowIndex(labelName)
     If rowIndex = 0 Then
-        LogInfo "Label '" & labelName & "' not found; returning fallback value"
         DesignValue = IIf(returnColor, FALLBACK_COLOR, FALLBACK_VALUE)
+        StoreCachedValue this.valueCache, cacheKey, DesignValue
         Exit Function
     End If
 
@@ -477,7 +576,22 @@ Public Function DesignValue(ByVal labelName As String, _
     End If
 
     DesignValue = resultValue
+    StoreCachedValue this.valueCache, cacheKey, resultValue
 End Function
+
+'@label:analysis-base-font-size
+'@sub-title Base font size used by the analysis format scopes
+'@return Variant. The design font size, or 11 when the design cell is blank.
+Private Function AnalysisBaseFontSize() As Variant
+    Dim styleValue As Variant
+
+    styleValue = DesignValue("analysis base font size", False)
+    AnalysisBaseFontSize = IIf(styleValue = 0, 11, styleValue)
+End Function
+
+'@section Drawing Helpers
+'===============================================================================
+'Borders, fills and fonts.
 
 '@label:draw-lines
 '@sub-title Draw border lines around a range
@@ -491,48 +605,70 @@ Private Sub DrawLines(ByVal rng As Range, _
                       Optional weight As Integer = xlHairline, _
                       Optional line As Integer = xlContinuous, _
                       Optional color As Variant = vbBlack)
-    Dim borderpos As Byte
-    Dim bordersList As BetterArray
-    Dim counter As Long
 
-    Set bordersList = New BetterArray
+    'A fixed local array, not a BetterArray. This sub is written 50 times inside
+    'the format branches and runs far more often than that, so building an object
+    'to hold between one and six constants was the whole cost of the call
+    Dim borderPositions(1 To 6) As Long
+    Dim borderCount As Long
+    Dim counter As Long
 
     Select Case At
 
     Case "All"
-        bordersList.Push xlEdgeLeft, xlEdgeRight, xlEdgeBottom, xlEdgeTop, _ 
-                         xlInsideHorizontal, xlInsideVertical
+        borderCount = 6
+        borderPositions(1) = xlEdgeLeft
+        borderPositions(2) = xlEdgeRight
+        borderPositions(3) = xlEdgeBottom
+        borderPositions(4) = xlEdgeTop
+        borderPositions(5) = xlInsideHorizontal
+        borderPositions(6) = xlInsideVertical
     Case "AvoidLeft", "AvoidRight"
-        bordersList.Push xlEdgeBottom, xlEdgeTop, xlInsideHorizontal
+        borderCount = 3
+        borderPositions(1) = xlEdgeBottom
+        borderPositions(2) = xlEdgeTop
+        borderPositions(3) = xlInsideHorizontal
     Case "AvoidTop", "AvoidBottom"
-        bordersList.Push xlEdgeLeft, xlEdgeRight, xlInsideVertical
+        borderCount = 3
+        borderPositions(1) = xlEdgeLeft
+        borderPositions(2) = xlEdgeRight
+        borderPositions(3) = xlInsideVertical
     Case "Left"
-        bordersList.Push xlEdgeLeft
+        borderCount = 1
+        borderPositions(1) = xlEdgeLeft
     Case "Right"
-        bordersList.Push xlEdgeRight
+        borderCount = 1
+        borderPositions(1) = xlEdgeRight
     Case "Bottom"
-        bordersList.Push xlEdgeBottom
+        borderCount = 1
+        borderPositions(1) = xlEdgeBottom
     Case "Top"
-        bordersList.Push xlEdgeTop
+        borderCount = 1
+        borderPositions(1) = xlEdgeTop
     Case Else
-        bordersList.Push xlEdgeBottom
+        borderCount = 1
+        borderPositions(1) = xlEdgeBottom
     End Select
 
     With rng
-        For counter = bordersList.LowerBound To bordersList.UpperBound
-            borderpos = bordersList.Item(counter)
-            With .Borders(borderpos)
+        For counter = 1 To borderCount
+            With .Borders(borderPositions(counter))
                 .weight = weight
                 .LineStyle = line
                 .color = color
                 .TintAndShade = 0.2
             End With
-        Next
+        Next counter
     End With
 End Sub
 
 '@label:draw-border
 '@sub-title Draw a rectangular border around a range
+'@details
+'Writes the four properties in the SAME order as DrawLines. Several scopes
+'used to call DrawLines four times, once per edge, and now call this sub once
+'instead; with line:=xlDouble the LineStyle write is what settles the final
+'weight, so a different order would make those frames come out heavier.
 '@param rng Range. Target range to border.
 '@param weight Optional Integer. Line weight constant. Defaults to xlThin.
 '@param color Optional Variant. Border colour. Defaults to vbBlack.
@@ -544,16 +680,20 @@ Private Sub DrawBorder(ByVal rng As Range, Optional weight As Integer = xlThin, 
     Dim counter As Integer
     For counter = 7 To 10                        'xltop, left, right and bottom
         With rng.Borders(counter)
+            .weight = weight
             .LineStyle = line
             .color = color
             .TintAndShade = 0.2
-            .weight = weight
         End With
-    Next
+    Next counter
 End Sub
 
 '@label:format-range
 '@sub-title Apply fill, font, alignment, and number format to a range
+'@details
+'The Variant arguments are compared against vbNullString to mean "leave this
+'property alone". That works because VBA sorts every number below every
+'string, and several scopes pass vbNullString on purpose to skip a property.
 '@param rng Range. Target range.
 '@param fillValue Optional String. Cell value to write. Defaults to "".
 '@param interiorColor Optional Variant. Interior fill colour. Defaults to "".
@@ -649,13 +789,16 @@ End Sub
 '@param DisplayZeros Optional Boolean. When True, shows zero values. Defaults to False.
 Private Sub RemoveGridLines(ByVal sh As Worksheet, Optional DisplayZeros As Boolean = False)
     Dim View As WorksheetView
+
+    'The views are compared as objects, not by name: reading two sheet names per
+    'view was two crossings into Excel where the identity test is one
     For Each View In sh.Parent.Windows(1).SheetViews
-        If View.Sheet.Name = sh.Name Then
+        If View.Sheet Is sh Then
             View.DisplayGridlines = False
             View.DisplayZeros = DisplayZeros
             Exit Sub
         End If
-    Next
+    Next View
 End Sub
 
 '@label:prepare-print-sheet
@@ -710,6 +853,10 @@ End Sub
 '@details
 'Reads style metadata from the format table and applies it to the
 'supplied object according to the given FormatScope constant.
+'The object is sorted ONCE here, by its type, and then handed to the sub that
+'formats that kind of object. Every branch used to open with its own
+'TypeName test and its own Set, 31 times over. An object of the wrong kind
+'for the requested scope still leaves quietly - callers rely on that silence.
 '@param formattingObject Variant. The Excel object to format.
 '@param scope Byte. FormatScope constant selecting the visual pattern.
 '@param nbDecimals Integer. Decimal count for numeric formatting. Defaults to 0.
@@ -719,40 +866,76 @@ Public Sub ApplyFormat(ByVal formattingObject As Variant, _
                         Optional ByVal nbDecimals As Integer = 0)
 
     Dim rng As Range
-    Dim cellRng As Range
     Dim Char As Characters
     Dim sh As Worksheet
     Dim shp As Shape
-    Dim Lo As listObject
-
-    Dim fontColorValue As Variant
-    Dim interiorColorValue As Variant
-    Dim bordersColorValue As Variant
-    Dim styleValue As Variant
-    Dim dimensionValue As Variant
-    Dim verticalAlign As Long                    'Vertical Alignment
-    Dim horizAlign As Long
-
+    Dim tableObject As ListObject
 
     EnsureFormatReady
 
-    'Formatting on analysis  part:
-    styleValue = DesignValue("analysis base font size", False)
-    styleValue = IIf(styleValue = 0, 11, styleValue)
+    Select Case TypeName(formattingObject)
+    Case "Range"
+        Set rng = formattingObject
+    Case "Worksheet"
+        Set sh = formattingObject
+    Case "Characters"
+        Set Char = formattingObject
+    Case "Shape"
+        Set shp = formattingObject
+    Case "ListObject"
+        Set tableObject = formattingObject
+    Case Else
+        Exit Sub
+    End Select
 
     Select Case scope
-    Case AllAnalysisSheet, AllLinelistSheet
-        If (Not TypeName(formattingObject) = "Worksheet") Then Exit Sub
 
-        Set sh = formattingObject
+    Case AllAnalysisSheet, AllLinelistSheet, HListCRFSheet, HListPrintedSheet, _
+         HListCustomPivotTables
+        If sh Is Nothing Then Exit Sub
+        ApplyWorksheetFormat sh, scope
+
+    Case HListMainLab, HListSublab, VListMainLab, VListSublab
+        If Char Is Nothing Then Exit Sub
+        ApplyCharactersFormat Char, scope
+
+    Case LinelistSmallButton, AdminLargeButton, LinelistGeoButton
+        If shp Is Nothing Then Exit Sub
+        ApplyShapeFormat shp, scope
+
+    Case HListTable, HListPrintedTable
+        If tableObject Is Nothing Then Exit Sub
+        ApplyListObjectFormat tableObject, scope
+
+    Case Else
+        'Every remaining scope formats a Range. A scope with no branch at all
+        'falls through the inner Select Case and does nothing, as before
+        If rng Is Nothing Then Exit Sub
+        ApplyRangeFormat rng, scope, nbDecimals
+    End Select
+End Sub
+
+'@label:apply-worksheet-format
+'@sub-title Apply the worksheet-level format scopes
+'@param sh Worksheet. The worksheet to format.
+'@param scope Byte. FormatScope constant.
+Private Sub ApplyWorksheetFormat(ByVal sh As Worksheet, ByVal scope As Byte)
+
+    Dim styleValue As Variant
+    Dim dimensionValue As Variant
+
+    Select Case scope
+
+    Case AllAnalysisSheet, AllLinelistSheet
+
+        'Zeros are shown on both kinds of sheet
+        RemoveGridLines sh, DisplayZeros:=True
 
         If scope = AllAnalysisSheet Then
-            RemoveGridLines sh, DisplayZeros:=True
+            styleValue = AnalysisBaseFontSize()
             dimensionValue = DesignValue("default analysis column width", False)
             sh.Rows("2:3").RowHeight = 25
         Else
-            'on Linelist worksheets, show zeros
-            RemoveGridLines sh, DisplayZeros:=(scope = AllLinelistSheet)
             styleValue = DesignValue("linelist base font size", False)
             dimensionValue = DesignValue("default linelist column width", False)
             sh.Rows("1:4").RowHeight = 25
@@ -768,11 +951,9 @@ Public Sub ApplyFormat(ByVal formattingObject As Variant, _
             sh.Columns(3).EntireColumn.ColumnWidth = dimensionValue + 5
             sh.Columns("A:B").EntireColumn.ColumnWidth = dimensionValue
         End If
-    
+
     Case HListCRFSheet
-    
-        If (Not TypeName(formattingObject) = "Worksheet") Then Exit Sub
-        Set sh = formattingObject
+
         RemoveGridLines sh, DisplayZeros:=True
         sh.Cells.Font.Size = 9
         sh.Cells.EntireColumn.ColumnWidth = 4
@@ -780,18 +961,13 @@ Public Sub ApplyFormat(ByVal formattingObject As Variant, _
         sh.Range("A1").EntireColumn.ColumnWidth = 30
 
     Case HListPrintedSheet
-        If (Not TypeName(formattingObject) = "Worksheet") Then Exit Sub
-        Set sh = formattingObject
 
         RemoveGridLines sh, DisplayZeros:=True
         sh.Cells.EntireRow.RowHeight = 20
         sh.Rows("1:4").EntireRow.RowHeight = 15
         PreparePrintSheet sh
-    
+
     Case HListCustomPivotTables
-        If (Not TypeName(formattingObject) = "Worksheet") Then Exit Sub
-        
-        Set sh = formattingObject
 
         If Not IsEmpty(sh.Cells(1, 1).Value) And (sh.Cells(1, 2).Value <> "formated") Then
             RemoveGridLines sh, DisplayZeros:=True
@@ -803,10 +979,199 @@ Public Sub ApplyFormat(ByVal formattingObject As Variant, _
             sh.Visible = xlSheetVeryHidden
         End If
 
+    End Select
+End Sub
+
+'@label:apply-characters-format
+'@sub-title Apply the label format scopes to a Characters object
+'@param Char Characters. The label text to format.
+'@param scope Byte. FormatScope constant.
+Private Sub ApplyCharactersFormat(ByVal Char As Characters, ByVal scope As Byte)
+
+    Dim fontColorValue As Variant
+    Dim dimensionValue As Variant
+
+    Select Case scope
+
+    Case HListMainLab
+        fontColorValue = DesignValue("hlist main label font color")
+        dimensionValue = DesignValue("hlist main label font size", False)
+        FormatCharacters Char:=Char, fontColor:=fontColorValue, _
+                         FontSize:=dimensionValue, isBold:=True
+
+    Case HListSublab
+        fontColorValue = DesignValue("hlist sub label font color")
+        dimensionValue = DesignValue("hlist sub label font size", False)
+        FormatCharacters Char:=Char, FontSize:=dimensionValue, fontColor:=fontColorValue
+
+    Case VListMainLab
+        fontColorValue = DesignValue("vlist main label font color")
+        dimensionValue = DesignValue("vlist main label font size", False)
+        FormatCharacters Char:=Char, fontColor:=fontColorValue, _
+                         FontSize:=dimensionValue, isBold:=False
+
+    Case VListSublab
+        fontColorValue = DesignValue("vlist sub label font color")
+        dimensionValue = DesignValue("vlist sub label font size", False)
+        FormatCharacters Char:=Char, FontSize:=dimensionValue, fontColor:=fontColorValue
+
+    End Select
+End Sub
+
+'@label:apply-shape-format
+'@sub-title Apply the button format scopes to a Shape
+'@param shp Shape. The button to format.
+'@param scope Byte. FormatScope constant.
+Private Sub ApplyShapeFormat(ByVal shp As Shape, ByVal scope As Byte)
+
+    Dim fontColorValue As Variant
+    Dim interiorColorValue As Variant
+    Dim dimensionValue As Variant
+
+    Select Case scope
+
+    Case LinelistSmallButton, AdminLargeButton
+
+        fontColorValue = DesignValue("button default font color")
+        interiorColorValue = DesignValue("button default interior color")
+        dimensionValue = DesignValue("linelist base font size", False)
+        dimensionValue = IIf(dimensionValue = 0, 9, dimensionValue)
+        dimensionValue = IIf(scope = AdminLargeButton, dimensionValue + 3, dimensionValue)
+
+        FormatShape shp, interiorColor:=interiorColorValue, fontColor:=fontColorValue, _
+                    FontSize:=dimensionValue
+
+    Case LinelistGeoButton
+
+        fontColorValue = DesignValue("geo font color")
+        interiorColorValue = DesignValue("geo interior color")
+        dimensionValue = DesignValue("linelist base font size", False)
+        dimensionValue = IIf(dimensionValue = 0, 9, dimensionValue) + 1
+
+        FormatShape shp, interiorColor:=interiorColorValue, fontColor:=fontColorValue, _
+                    FontSize:=dimensionValue
+
+    End Select
+End Sub
+
+'@label:apply-listobject-format
+'@sub-title Apply the entry table format scopes to a ListObject
+'@param tableObject ListObject. The entry table to format.
+'@param scope Byte. FormatScope constant.
+Private Sub ApplyListObjectFormat(ByVal tableObject As ListObject, ByVal scope As Byte)
+
+    Dim interiorColorValue As Variant
+    Dim bordersColorValue As Variant
+
+    interiorColorValue = DesignValue("entry table style", False)
+    bordersColorValue = DesignValue("hlist table borders color")
+
+    If interiorColorValue = "None, with borders" Then
+
+        tableObject.TableStyle = ""
+        DrawLines tableObject.DataBodyRange, At:="AvoidLeft", color:=bordersColorValue
+
+    ElseIf interiorColorValue = "None" Then
+        tableObject.TableStyle = ""
+    Else
+        'The design cell can name a style this Excel does not know; fall back to
+        'a built-in one first so the table is never left unstyled
+        On Error Resume Next
+        tableObject.TableStyle = "TableStyleLight16"
+        tableObject.TableStyle = interiorColorValue
+        On Error GoTo 0
+    End If
+
+    'Increase the RowHeight of the ListObject on printed sheet
+    If scope = HListPrintedTable Then
+        tableObject.DataBodyRange.EntireRow.RowHeight = 70
+    End If
+End Sub
+
+'@label:format-missing-look
+'@sub-title The shared look of the missing and one-cell analysis scopes
+'@details
+'Six scopes share this block: the same two design colours, the same
+'FormatRange call apart from the horizontal alignment, and the same double
+'frame around the cells.
+'@param rng Range. Target range.
+'@param horizAlign Long. Horizontal alignment constant.
+'@param drawInsideLines Boolean. True to rule the inside of the block as well.
+Private Sub FormatMissingLook(ByVal rng As Range, _
+                              ByVal horizAlign As Long, _
+                              ByVal drawInsideLines As Boolean)
+
+    Dim fontColorValue As Variant
+    Dim interiorColorValue As Variant
+
+    fontColorValue = DesignValue("missing font color")
+    interiorColorValue = DesignValue("missing interior color")
+
+    FormatRange rng, fontColor:=fontColorValue, interiorColor:=interiorColorValue, _
+                FontSize:=AnalysisBaseFontSize(), isBold:=True, Horiz:=horizAlign
+
+    'Only the missing row and column scopes rule the inside of the block
+    If drawInsideLines Then DrawLines rng, color:=DesignValue("analysis table borders color")
+
+    'A double frame on all four edges, at the hairline weight DrawLines defaults to
+    DrawBorder rng, weight:=xlHairline, color:=fontColorValue, line:=xlDouble
+End Sub
+
+'@label:format-section-body
+'@sub-title The shared tail of the section and sub-section scopes
+'@param rng Range. Target range.
+'@param interiorColorValue Variant. Fill colour.
+'@param fontColorValue Variant. Font colour.
+'@param fontSizeValue Variant. Font size in points.
+Private Sub FormatSectionBody(ByVal rng As Range, _
+                              ByVal interiorColorValue As Variant, _
+                              ByVal fontColorValue As Variant, _
+                              ByVal fontSizeValue As Variant)
+
+    FormatRange rng, interiorColor:=interiorColorValue, fontColor:=fontColorValue, _
+                FontSize:=fontSizeValue, isBold:=True
+
+    'Locking and merging both refuse on a protected sheet or on cells that are
+    'already part of another merge. The colours are written either way, so a
+    'failure here must not stop the format
+    On Error Resume Next
+    rng.Locked = True
+    rng.Merge
+    On Error GoTo 0
+End Sub
+
+'@label:apply-range-format
+'@sub-title Apply every range-level format scope
+'@details
+'baseRng always holds the range the caller passed. rng is the working range
+'and several scopes move it, so anything that has to measure from the
+'original reads baseRng.
+'@param baseRng Range. The range the caller passed.
+'@param scope Byte. FormatScope constant.
+'@param nbDecimals Integer. Decimal count for the CRF numeric scopes.
+Private Sub ApplyRangeFormat(ByVal baseRng As Range, _
+                             ByVal scope As Byte, _
+                             ByVal nbDecimals As Integer)
+
+    Dim rng As Range
+    Dim cellRng As Range
+    Dim sh As Worksheet
+
+    Dim fontColorValue As Variant
+    Dim interiorColorValue As Variant
+    Dim bordersColorValue As Variant
+    Dim styleValue As Variant
+    Dim dimensionValue As Variant
+    Dim verticalAlign As Long                    'Vertical Alignment
+    Dim horizAlign As Long
+
+    Set rng = baseRng
+
+    Select Case scope
+
     Case AnalysisSection
 
-        If (Not TypeName(formattingObject) = "Range") Then Exit Sub
-        Set rng = formattingObject
+        styleValue = AnalysisBaseFontSize()
         fontColorValue = DesignValue("table sections font color")
         dimensionValue = DesignValue("default analysis column width", False)
 
@@ -831,11 +1196,10 @@ Public Sub ApplyFormat(ByVal formattingObject As Variant, _
         rng.Cells(1, 1).WrapText = True
 
     Case AnalysisTableTitle
-        If (Not TypeName(formattingObject) = "Range") Then Exit Sub
-        Set rng = formattingObject
+
+        styleValue = AnalysisBaseFontSize()
         dimensionValue = DesignValue("gap for graphs", False)
         fontColorValue = DesignValue("table title font color")
-
 
         FormatRange rng, FontSize:=styleValue, _
                     fontColor:=fontColorValue, Horiz:=xlHAlignLeft, _
@@ -850,26 +1214,20 @@ Public Sub ApplyFormat(ByVal formattingObject As Variant, _
 
     Case HListCRFSection
 
-        If (Not TypeName(formattingObject) = "Range") Then Exit Sub
-        Set rng = formattingObject
-
         fontColorValue = DesignValue("sub section font color")
         dimensionValue = DesignValue("main section font size", False)
         dimensionValue = IIf(dimensionValue = 0, 12, dimensionValue)
-        
+
         FormatRange rng, FontSize:=dimensionValue, _
                     fontColor:=fontColorValue, Horiz:=xlHAlignLeft, Verti:=xlVAlignBottom, _
                     isBold:=True
-        If (rng.Cells(1, 1).Value <> vbNullString) Then 
+        If (rng.Cells(1, 1).Value <> vbNullString) Then
             DrawLines rng, color:=fontColorValue, At:="Bottom", weight:=xlMedium
             rng.EntireRow.RowHeight = 14
         End If
-        
+
     Case HListCRFSubSection
 
-        If (Not TypeName(formattingObject) = "Range") Then Exit Sub
-        Set rng = formattingObject
-        
         fontColorValue = DesignValue("sub section font color")
         dimensionValue = DesignValue("sub section font size", False)
         dimensionValue = IIf(dimensionValue = 0, 11, dimensionValue)
@@ -878,66 +1236,60 @@ Public Sub ApplyFormat(ByVal formattingObject As Variant, _
                     fontColor:=fontColorValue, Horiz:=xlHAlignLeft, Verti:=xlVAlignBottom, _
                     isBold:=False
 
-        If (rng.Cells(1, 1).Value <> vbNullString) Then 
+        If (rng.Cells(1, 1).Value <> vbNullString) Then
             DrawLines rng, color:=fontColorValue, At:="Bottom", weight:=xlThin
             rng.EntireRow.RowHeight = 14
         End If
-    
+
     Case CRFText
 
-        If (Not TypeName(formattingObject) = "Range") Then Exit Sub
-        Set rng = formattingObject
-        Set rng = rng.Parent.Range(rng.Cells(1, 2), rng.Cells(1, 9))
+        Set rng = baseRng.Parent.Range(baseRng.Cells(1, 2), baseRng.Cells(1, 9))
         fontColorValue = DesignValue("main section interior color")
         DrawLines rng, color:=fontColorValue, At:="Bottom"
 
     Case CRFDate
 
-        If (Not TypeName(formattingObject) = "Range") Then Exit Sub
         fontColorValue = DesignValue("main section interior color")
         'Format the overall range
-        Set rng = formattingObject.Parent.Range(formattingObject.Cells(1, 2), formattingObject.Cells(1, 9))
+        Set rng = baseRng.Parent.Range(baseRng.Cells(1, 2), baseRng.Cells(1, 9))
         DrawLines rng, At:="Bottom", weight:=xlMedium, color:=fontColorValue
 
         'Day
-
-        Set rng = rng.Parent.Range(formattingObject.Cells(1, 2), formattingObject.Cells(1, 3))
+        Set rng = baseRng.Parent.Range(baseRng.Cells(1, 2), baseRng.Cells(1, 3))
         DrawLines rng, At:="AvoidTop", color:=fontColorValue
         DrawLines rng, At:="Left", weight:=xlMedium, color:=fontColorValue
 
         'Month
-        Set rng = rng.Parent.Range(formattingObject.Cells(1, 4), formattingObject.Cells(1, 5))
+        Set rng = baseRng.Parent.Range(baseRng.Cells(1, 4), baseRng.Cells(1, 5))
         DrawLines rng, At:="AvoidTop"
         DrawLines rng, At:="Left", weight:=xlMedium, color:=fontColorValue
 
         'Year
-        Set rng = rng.Parent.Range(formattingObject.Cells(1, 6), formattingObject.Cells(1, 9))
+        Set rng = baseRng.Parent.Range(baseRng.Cells(1, 6), baseRng.Cells(1, 9))
         DrawLines rng, At:="AvoidTop"
         DrawLines rng, At:="Left", weight:=xlMedium, color:=fontColorValue
         DrawLines rng, At:="Right", weight:=xlMedium, color:=fontColorValue
 
     Case CRFInteger
 
-        If (Not TypeName(formattingObject) = "Range") Then Exit Sub
         fontColorValue = DesignValue("sub section font color")
 
         'Draw 3 squares
-        Set rng = formattingObject.Parent.Range(formattingObject.Cells(1, 2), formattingObject.Cells(1, 4))
+        Set rng = baseRng.Parent.Range(baseRng.Cells(1, 2), baseRng.Cells(1, 4))
         DrawLines rng, At:="AvoidTop", weight:=xlMedium, color:=fontColorValue
         DrawLines rng, At:="Bottom", weight:=xlMedium, color:=fontColorValue
 
     Case CRFDecimal, CRFPercentage
 
-        If (Not TypeName(formattingObject) = "Range") Then Exit Sub
         fontColorValue = DesignValue("sub section font color")
-        
+
         'Draw 3 squares
-        Set rng = formattingObject.Parent.Range(formattingObject.Cells(1, 2), formattingObject.Cells(1, 7))
+        Set rng = baseRng.Parent.Range(baseRng.Cells(1, 2), baseRng.Cells(1, 7))
         DrawLines rng, At:="AvoidTop", weight:=xlMedium, color:=fontColorValue
         DrawLines rng, At:="Bottom", weight:=xlMedium, color:=fontColorValue
 
         'Draw Decimals
-        FormatRange rng.Cells(1, 3), fillValue:=".", Horiz:=xlHAlignCenter, _ 
+        FormatRange rng.Cells(1, 3), fillValue:=".", Horiz:=xlHAlignCenter, _
                     Verti:=xlVAlignCenter, FontSize:=16, isBold:=True
 
         'Draw the cases for the number of decimals
@@ -948,40 +1300,34 @@ Public Sub ApplyFormat(ByVal formattingObject As Variant, _
         End If
 
         'Add percentage if required
-        If scope = CRFPercentage Then 
-           FormatRange rng.Cells(1, 5 + nbDecimals), fillValue:="%", Horiz:=xlHAlignCenter, _ 
+        If scope = CRFPercentage Then
+           FormatRange rng.Cells(1, 5 + nbDecimals), fillValue:="%", Horiz:=xlHAlignCenter, _
                     Verti:=xlVAlignCenter, FontSize:=16, isBold:=True
         End If
 
     Case CRFChoiceHeader
 
-        If (Not TypeName(formattingObject) = "Range") Then Exit Sub
-        Set rng = formattingObject
+        styleValue = AnalysisBaseFontSize()
         fontColorValue = DesignValue("sub section font color")
         FormatRange rng, fontColor:=fontColorValue, isBold:=False, _
-                         Verti:=xlVAlignCenter, FontSize:=styleValue - 2  
+                         Verti:=xlVAlignCenter, FontSize:=styleValue - 2
 
     Case CRFChoiceValues
 
-        If (Not TypeName(formattingObject) = "Range") Then Exit Sub
-        Set rng = formattingObject
         fontColorValue = DesignValue("sub section font color")
         DrawBorder rng, color:=fontColorValue
 
     Case CRFFormatCustom
 
-        If (Not TypeName(formattingObject) = "Range") Then Exit Sub
-        Set rng = formattingObject
         fontColorValue = DesignValue("sub section font color")
-        
+
         'Draw 5 squares
         Set rng = rng.Parent.Range(rng.Cells(1, 2), rng.Cells(1, 6))
         DrawLines rng, At:="AvoidTop", weight:=xlMedium, color:=fontColorValue
 
-
     Case LinelistSelectionDropdown
-        If (Not TypeName(formattingObject) = "Range") Then Exit Sub
-        Set rng = formattingObject
+
+        styleValue = AnalysisBaseFontSize()
         fontColorValue = DesignValue("select dropdown font color")
         interiorColorValue = DesignValue("dropdown interior color")
         FormatRange rng, fontColor:=fontColorValue, _
@@ -992,9 +1338,8 @@ Public Sub ApplyFormat(ByVal formattingObject As Variant, _
         rng.Locked = False
 
     Case AnalysisCategoriesLabelRow, AnalysisCategoriesLabelColumn, AnalysisUnivariateHeader
-        If (Not TypeName(formattingObject) = "Range") Then Exit Sub
-        Set rng = formattingObject
 
+        styleValue = AnalysisBaseFontSize()
         verticalAlign = IIf(scope = AnalysisCategoriesLabelRow, xlVAlignCenter, xlVAlignBottom)
         horizAlign = IIf(scope = AnalysisUnivariateHeader, xlHAlignCenter, xlHAlignLeft)
 
@@ -1002,10 +1347,10 @@ Public Sub ApplyFormat(ByVal formattingObject As Variant, _
         FormatRange rng, fontColor:=fontColorValue, isBold:=True, FontSize:=styleValue - 1, _
                     Horiz:=horizAlign, Verti:=verticalAlign, wrap:="wrap"
 
-    Case AnalysisCategoriesUnivariateRow, AnalysisFirstRow, AnalysisCategoriesBivariateRow, AnalysisCategoriesBivariateColumn
+    Case AnalysisCategoriesUnivariateRow, AnalysisFirstRow, AnalysisCategoriesBivariateRow, _
+         AnalysisCategoriesBivariateColumn
 
-        If (Not TypeName(formattingObject) = "Range") Then Exit Sub
-        Set rng = formattingObject
+        styleValue = AnalysisBaseFontSize()
         fontColorValue = DesignValue("table categories font color")
         bordersColorValue = DesignValue("analysis table borders color")
         interiorColorValue = DesignValue("table categories interior color")
@@ -1040,8 +1385,8 @@ Public Sub ApplyFormat(ByVal formattingObject As Variant, _
         rng.WrapText = True
 
     Case AnalysisGlobalSummaryRow
-        If (Not TypeName(formattingObject) = "Range") Then Exit Sub
-        Set rng = formattingObject
+
+        styleValue = AnalysisBaseFontSize()
         fontColorValue = DesignValue("table categories font color")
         bordersColorValue = DesignValue("analysis table borders color")
         interiorColorValue = DesignValue("table categories interior color")
@@ -1061,24 +1406,19 @@ Public Sub ApplyFormat(ByVal formattingObject As Variant, _
 
     Case AnalysisInteriorTable, AnalysisWholeTable
 
-        If (Not TypeName(formattingObject) = "Range") Then Exit Sub
-        Set rng = formattingObject
         bordersColorValue = DesignValue("analysis table borders color")
 
         If scope = AnalysisInteriorTable Then
             DrawLines rng, color:=bordersColorValue
-            DrawLines rng, color:=bordersColorValue, At:="Top", line:=xlDouble
-            DrawLines rng, color:=bordersColorValue, At:="Bottom", line:=xlDouble
-            DrawLines rng, color:=bordersColorValue, At:="Right", line:=xlDouble
-            DrawLines rng, color:=bordersColorValue, At:="Left", line:=xlDouble
+            'The four edges, all double, at the hairline weight DrawLines defaults to
+            DrawBorder rng, weight:=xlHairline, color:=bordersColorValue, line:=xlDouble
         End If
 
         If scope = AnalysisWholeTable Then DrawBorder rng, color:=bordersColorValue
 
     Case AnalysisTimeSeriesHeader
 
-        If (Not TypeName(formattingObject) = "Range") Then Exit Sub
-        Set rng = formattingObject
+        styleValue = AnalysisBaseFontSize()
         fontColorValue = DesignValue("time series header font")
         bordersColorValue = DesignValue("analysis table borders color")
         interiorColorValue = DesignValue("time series header interior")
@@ -1087,65 +1427,34 @@ Public Sub ApplyFormat(ByVal formattingObject As Variant, _
         rng.Merge
         On Error GoTo 0
         FormatRange rng, fontColor:=fontColorValue, interiorColor:=interiorColorValue, _
-                    FontSize:=styleValue + 1, Horiz:=xlHAlignCenter, Verti:=xlVAlignCenter, isBold:=True, _ 
-                    wrap:="wrap"
-        DrawLines rng, At:="Top", color:=bordersColorValue, line:=xlDouble
-        DrawLines rng, At:="Left", color:=bordersColorValue, line:=xlDouble
-        DrawLines rng, At:="Bottom", color:=bordersColorValue, line:=xlDouble
-        DrawLines rng, At:="Right", color:=bordersColorValue, line:=xlDouble
+                    FontSize:=styleValue + 1, Horiz:=xlHAlignCenter, Verti:=xlVAlignCenter, _
+                    isBold:=True, wrap:="wrap"
+        DrawBorder rng, weight:=xlHairline, color:=bordersColorValue, line:=xlDouble
 
     Case AnalysisMissingRow, AnalysisMissingColumn, AnalysisMissingRowWithoutHeader
 
-        If (Not TypeName(formattingObject) = "Range") Then Exit Sub
-        Set rng = formattingObject
-        fontColorValue = DesignValue("missing font color")
-        bordersColorValue = DesignValue("analysis table borders color")
-        interiorColorValue = DesignValue("missing interior color")
-
-        FormatRange rng, fontColor:=fontColorValue, interiorColor:=interiorColorValue, _
-                    FontSize:=styleValue, isBold:=True, Horiz:=xlHAlignRight
-
-        'Draw lines
-        DrawLines rng, color:=bordersColorValue
-        DrawLines rng, color:=fontColorValue, At:="Top", line:=xlDouble
-        DrawLines rng, color:=fontColorValue, At:="Left", line:=xlDouble
-        DrawLines rng, color:=fontColorValue, At:="Bottom", line:=xlDouble
-        DrawLines rng, color:=fontColorValue, At:="Right", line:=xlDouble
+        FormatMissingLook rng, xlHAlignRight, drawInsideLines:=True
 
         If scope = AnalysisMissingRow Then
-            Set rng = rng.Cells(1, 0)
-            ApplyFormat rng, scope:=AnalysisOneCellLeft
+            'Straight to the range formatter: the object kind and the base font
+            'size were both settled on the way in
+            ApplyRangeFormat baseRng.Cells(1, 0), AnalysisOneCellLeft, 0
         End If
 
     Case AnalysisOneCell, AnalysisOneCellLeft, AnalysisOneCellCenter
 
-        If (Not TypeName(formattingObject) = "Range") Then Exit Sub
-        Set rng = formattingObject
-        fontColorValue = DesignValue("missing font color")
-        interiorColorValue = DesignValue("missing interior color")
         horizAlign = Switch(scope = AnalysisOneCellLeft, xlHAlignLeft, _
                             scope = AnalysisOneCellCenter, xlHAlignCenter, _
                             True, xlHAlignRight)
 
-        FormatRange rng, fontColor:=fontColorValue, interiorColor:=interiorColorValue, _
-                    FontSize:=styleValue, isBold:=True, Horiz:=horizAlign
-
-        DrawLines rng, color:=fontColorValue, At:="Bottom", line:=xlDouble
-        DrawLines rng, color:=fontColorValue, At:="Top", line:=xlDouble
-        DrawLines rng, color:=fontColorValue, At:="Left", line:=xlDouble
-        DrawLines rng, color:=fontColorValue, At:="Right", line:=xlDouble
+        FormatMissingLook rng, horizAlign, drawInsideLines:=False
 
     Case AnalysisPercent
 
-        If (Not TypeName(formattingObject) = "Range") Then Exit Sub
-        Set rng = formattingObject
         FormatRange rng, NumFormat:="0.00%"
 
     Case LinelistHiddenCell
 
-        If (Not TypeName(formattingObject) = "Range") Then Exit Sub
-
-        Set rng = formattingObject
         rng.Interior.color = vbWhite
         rng.Font.color = vbWhite
         rng.Locked = True
@@ -1153,9 +1462,6 @@ Public Sub ApplyFormat(ByVal formattingObject As Variant, _
 
     Case AnalysisEndTable
 
-        If (Not TypeName(formattingObject) = "Range") Then Exit Sub
-
-        Set rng = formattingObject
         dimensionValue = DesignValue("gap for graphs", False)
 
         On Error Resume Next
@@ -1171,12 +1477,9 @@ Public Sub ApplyFormat(ByVal formattingObject As Variant, _
 
     Case AnalysisInfoCell, AnalysisInfoCellLeft, LinelistWarning
 
-        If (Not TypeName(formattingObject) = "Range") Then Exit Sub
-
         'Horizontal alignment to left for cellLeft
         horizAlign = IIf(scope = AnalysisInfoCellLeft, xlHAlignLeft, xlHAlignCenter)
 
-        Set rng = formattingObject
         fontColorValue = Switch(scope = LinelistWarning, vbRed, IsEmpty(rng), "", _
                             True, DesignValue("missing font color"))
 
@@ -1186,25 +1489,8 @@ Public Sub ApplyFormat(ByVal formattingObject As Variant, _
                     Horiz:=horizAlign, Verti:=xlVAlignCenter, wrap:="wrap"
         If scope <> LinelistWarning Then rng.EntireRow.RowHeight = 45
 
-    Case HListMainLab
-        If (Not TypeName(formattingObject) = "Characters") Then Exit Sub
-        Set Char = formattingObject
-        fontColorValue = DesignValue("hlist main label font color")
-        dimensionValue = DesignValue("hlist main label font size", False)
-        FormatCharacters Char:=Char, fontColor:=fontColorValue, _
-                         FontSize:=dimensionValue, isBold:=True
-
-    Case HListSublab
-        If (Not TypeName(formattingObject) = "Characters") Then Exit Sub
-        Set Char = formattingObject
-        fontColorValue = DesignValue("hlist sub label font color")
-        dimensionValue = DesignValue("hlist sub label font size", False)
-
-        FormatCharacters Char:=Char, FontSize:=dimensionValue, fontColor:=fontColorValue
-
     Case HListCalculatedFormulaCell
-        If (Not TypeName(formattingObject) = "Range") Then Exit Sub
-        Set rng = formattingObject
+
         fontColorValue = DesignValue("calculated formula font color")
         interiorColorValue = DesignValue("calculated formula column interior color")
         FormatRange rng, fontColor:=fontColorValue, interiorColor:=interiorColorValue
@@ -1212,73 +1498,29 @@ Public Sub ApplyFormat(ByVal formattingObject As Variant, _
         rng.FormulaHidden = True
 
     Case HListCalculatedFormulaHeader
-        If (Not TypeName(formattingObject) = "Range") Then Exit Sub
-        Set rng = formattingObject
+
         interiorColorValue = DesignValue("calculated formula header color")
-        FormatRange rng, interiorColor:=interiorColorValue, Verti:=xlVAlignCenter, Horiz:=xlHAlignLeft
+        FormatRange rng, interiorColor:=interiorColorValue, Verti:=xlVAlignCenter, _
+                    Horiz:=xlHAlignLeft
 
     Case HListGeoHeader, HListGeo
-        If (Not TypeName(formattingObject) = "Range") Then Exit Sub
-        Set rng = formattingObject
+
         If scope = HListGeoHeader Then
             interiorColorValue = DesignValue("geo interior color")
         Else
+            'vbNullString tells FormatRange to leave the fill alone
             interiorColorValue = vbNullString
         End If
         fontColorValue = DesignValue("geo font color")
-        FormatRange rng, interiorColor:=interiorColorValue, fontColor:=fontColorValue, Verti:=xlVAlignCenter, Horiz:=xlHAlignLeft
-
-    Case VListMainLab
-        If (Not TypeName(formattingObject) = "Characters") Then Exit Sub
-        Set Char = formattingObject
-        fontColorValue = DesignValue("vlist main label font color")
-        dimensionValue = DesignValue("vlist main label font size", False)
-        FormatCharacters Char:=Char, fontColor:=fontColorValue, _
-                         FontSize:=dimensionValue, isBold:=False
-
-    Case VListSublab
-
-        If (Not TypeName(formattingObject) = "Characters") Then Exit Sub
-        Set Char = formattingObject
-        fontColorValue = DesignValue("vlist sub label font color")
-        dimensionValue = DesignValue("vlist sub label font size", False)
-        FormatCharacters Char:=Char, FontSize:=dimensionValue, fontColor:=fontColorValue
+        FormatRange rng, interiorColor:=interiorColorValue, fontColor:=fontColorValue, _
+                    Verti:=xlVAlignCenter, Horiz:=xlHAlignLeft
 
     Case HListSimpleHeaderCell
 
-        If (Not TypeName(formattingObject) = "Range") Then Exit Sub
-        Set rng = formattingObject
         FormatRange rng, Verti:=xlVAlignCenter, Horiz:=xlHAlignLeft, wrap:="wrap"
-
-    Case LinelistSmallButton, AdminLargeButton
-
-        If (Not TypeName(formattingObject) = "Shape") Then Exit Sub
-        Set shp = formattingObject
-
-        fontColorValue = DesignValue("button default font color")
-        interiorColorValue = DesignValue("button default interior color")
-        dimensionValue = DesignValue("linelist base font size", False)
-        dimensionValue = IIf(dimensionValue = 0, 9, dimensionValue)
-        dimensionValue = IIf(scope = AdminLargeButton, dimensionValue + 3, dimensionValue)
-
-        FormatShape shp, interiorColor:=interiorColorValue, fontColor:=fontColorValue, FontSize:=dimensionValue
-
-    Case LinelistGeoButton
-
-        If (Not TypeName(formattingObject) = "Shape") Then Exit Sub
-        Set shp = formattingObject
-
-        fontColorValue = DesignValue("geo font color")
-        interiorColorValue = DesignValue("geo interior color")
-        dimensionValue = DesignValue("linelist base font size", False)
-        dimensionValue = IIf(dimensionValue = 0, 9, dimensionValue) + 1
-
-        FormatShape shp, interiorColor:=interiorColorValue, fontColor:=fontColorValue, FontSize:=dimensionValue
 
     Case HListSubSection, VListSubSection
 
-        If (Not TypeName(formattingObject) = "Range") Then Exit Sub
-        Set rng = formattingObject
         Set sh = rng.Parent
         'Borders arround subsections
         bordersColorValue = DesignValue("hlist and vlist table borders color")
@@ -1299,27 +1541,18 @@ Public Sub ApplyFormat(ByVal formattingObject As Variant, _
         End With
 
         'format the range.
-        Set rng = formattingObject
-
         interiorColorValue = DesignValue("sub section interior color")
         fontColorValue = DesignValue("sub section font color")
-        dimensionValue = 11
         dimensionValue = DesignValue("sub section font size", False)
+        'Same fallback as every sibling scope; it was lost here because the
+        'assignment above it wrote 11 and the design read overwrote it
+        dimensionValue = IIf(dimensionValue = 0, 11, dimensionValue)
 
-        FormatRange rng, interiorColor:=interiorColorValue, fontColor:=fontColorValue, FontSize:=dimensionValue, _
-                    isBold:=True
-
-        On Error Resume Next
-        rng.Locked = True
-        rng.Merge
-        On Error GoTo 0
+        FormatSectionBody baseRng, interiorColorValue, fontColorValue, dimensionValue
 
     Case HListSection, VListSection
 
-        If (Not TypeName(formattingObject) = "Range") Then Exit Sub
-
         'draw borders
-        Set rng = formattingObject
         Set sh = rng.Parent
         bordersColorValue = DesignValue("hlist and vlist table borders color")
 
@@ -1336,67 +1569,26 @@ Public Sub ApplyFormat(ByVal formattingObject As Variant, _
         End With
 
         'format the range
-        Set rng = formattingObject
-
         fontColorValue = DesignValue("main section font color")
         interiorColorValue = DesignValue("main section interior color")
         dimensionValue = DesignValue("main section font size", False)
         dimensionValue = IIf(dimensionValue = 0, 12, dimensionValue)
 
-        FormatRange rng, interiorColor:=interiorColorValue, fontColor:=fontColorValue, FontSize:=dimensionValue, _
-                    isBold:=True
-
-        On Error Resume Next
-        rng.Locked = True
-        rng.Merge
-        On Error GoTo 0
+        FormatSectionBody baseRng, interiorColorValue, fontColorValue, dimensionValue
 
     Case AnalysisDateCell
-        If (Not TypeName(formattingObject) = "Range") Then Exit Sub
-        'draw borders
-        Set rng = formattingObject
+
         rng.NumberFormat = "dd/mm/yyyy"
-
-
-    Case HListTable, HListPrintedTable
-
-        If (Not TypeName(formattingObject) = "ListObject") Then Exit Sub
-        Set Lo = formattingObject
-
-        interiorColorValue = DesignValue("entry table style", False)
-        bordersColorValue = DesignValue("hlist table borders color")
-
-        If interiorColorValue = "None, with borders" Then
-            
-            Lo.TableStyle = ""
-            DrawLines Lo.DataBodyRange, At:="AvoidLeft", color:=bordersColorValue
-
-        ElseIf interiorColorValue = "None" Then
-            Lo.TableStyle = ""
-        Else
-            On Error Resume Next
-            Lo.TableStyle = "TableStyleLight16"
-            Lo.TableStyle = interiorColorValue
-            On Error GoTo 0
-        End If
-
-        'Increase the RowHeight of the ListObject on printed sheet
-        If scope = HListPrintedTable Then
-            Lo.DataBodyRange.EntireRow.RowHeight = 70
-        End If
 
     Case HListHeader, HListPrintedHeader
 
-        If (Not TypeName(formattingObject) = "Range") Then Exit Sub
-
-        Set rng = formattingObject
         dimensionValue = IIf(scope = HListPrintedHeader, 5, 1)
         interiorColorValue = DesignValue("hlist table header color")
         FormatRange rng, fontColor:=interiorColorValue, _
                     interiorColor:=interiorColorValue, _
                     FontSize:=dimensionValue
         rng.Locked = False
-        
+
         If scope = HListPrintedHeader Then
 
             'hide the headers
@@ -1415,7 +1607,7 @@ Public Sub ApplyFormat(ByVal formattingObject As Variant, _
                     cellRng.EntireColumn.ColumnWidth = 30
                     cellRng.WrapText = True
                 End If
-            Next
+            Next cellRng
 
             'Formating sub section (increasing the font)
             dimensionValue = DesignValue("sub section font size", False)
@@ -1454,10 +1646,7 @@ Public Sub Import(ByVal inpsh As Worksheet)
     Dim inputTab As CustomTable
     Dim targetTab As CustomTable
     Dim designList As BetterArray
-    Dim designName As String
-    Dim sourceRange As Range
-    Dim targetRange As Range
-    Dim rowIndex As Long
+    Dim sourceDesign As Range
 
     If inpsh Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, "Import worksheet is required"
@@ -1467,7 +1656,8 @@ Public Sub Import(ByVal inpsh As Worksheet)
         ThrowError ProjectError.ElementNotFound, "Import worksheet must expose a format table"
     End If
 
-    If Not HasNamedRange(inpsh, "DESIGNTYPE") Then
+    Set sourceDesign = NamedRange(inpsh, "DESIGNTYPE")
+    If sourceDesign Is Nothing Then
         ThrowError ProjectError.ElementNotFound, "Range 'DESIGNTYPE' is missing from import worksheet"
     End If
 
@@ -1476,9 +1666,11 @@ Public Sub Import(ByVal inpsh As Worksheet)
     Set targetTable = FormatTable()
     Set inputTable = inpsh.ListObjects(1)
 
-    'Import the design names
-    targetSheet.Range("DESIGNTYPE").Value = inpsh.Range("DESIGNTYPE").Value
-    DesignName = CStr(targetSheet.Range("DESIGNTYPE").Value)
+    'Import the design names. The field is written straight, not through the
+    'DesignName property: that property calls GuardNotSealed and Create seals
+    'every instance, so the property route would raise on every import
+    targetSheet.Range("DESIGNTYPE").Value = sourceDesign.Value
+    this.design = CStr(targetSheet.Range("DESIGNTYPE").Value)
 
     'Import the different formats
     Set designList = New BetterArray
@@ -1585,13 +1777,19 @@ End Function
 
 '@label:copy-format-table-styles
 '@sub-title Copy cell-level styles between two format tables
+'@details
+'Column at a time. Excel answers Null for a property that is not the same on
+'every cell of a range, so a column styled the same all the way down is
+'copied with six writes instead of six writes per cell, and only a mixed
+'column falls back to the cell loop. The clipboard would do the whole table
+'in one step, but it is the least reliable path on Mac Excel and this runs on
+'the user's own workbook.
 Private Sub CopyFormatTableStyles(ByVal sourceTable As ListObject, ByVal targetTable As ListObject)
     Dim sourceRange As Range
     Dim targetRange As Range
-    Dim rowIndex As Long
     Dim columnIndex As Long
-    Dim sourceCell As Range
-    Dim targetCell As Range
+    Dim rowCount As Long
+    Dim columnCount As Long
 
     If sourceTable Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, "Source format table is required for export"
@@ -1604,30 +1802,103 @@ Private Sub CopyFormatTableStyles(ByVal sourceTable As ListObject, ByVal targetT
     Set sourceRange = sourceTable.Range
     Set targetRange = targetTable.Range
 
-    If sourceRange.Rows.Count <> targetRange.Rows.Count Or _
-       sourceRange.Columns.Count <> targetRange.Columns.Count Then
+    rowCount = sourceRange.Rows.Count
+    columnCount = sourceRange.Columns.Count
+
+    If rowCount <> targetRange.Rows.Count Or columnCount <> targetRange.Columns.Count Then
         ThrowError ProjectError.ErrorUnexpectedState, "Export format table dimensions do not match the source"
     End If
 
-    For rowIndex = 1 To sourceRange.Rows.Count
-        For columnIndex = 1 To sourceRange.Columns.Count
-            Set sourceCell = sourceRange.Cells(rowIndex, columnIndex)
-            Set targetCell = targetRange.Cells(rowIndex, columnIndex)
+    For columnIndex = 1 To columnCount
+        If Not CopyColumnStylesAsBlock(sourceRange.Columns(columnIndex), _
+                                       targetRange.Columns(columnIndex)) Then
+            CopyColumnStylesByCell sourceRange.Columns(columnIndex), _
+                                   targetRange.Columns(columnIndex), rowCount
+        End If
+    Next columnIndex
+End Sub
 
-            targetCell.Interior.Pattern = sourceCell.Interior.Pattern
-            targetCell.Interior.color = sourceCell.Interior.color
-            targetCell.Font.color = sourceCell.Font.color
-            targetCell.Font.Bold = sourceCell.Font.Bold
-            targetCell.Font.Italic = sourceCell.Font.Italic
-            targetCell.Font.Size = sourceCell.Font.Size
-        Next columnIndex
+'@label:copy-column-styles-as-block
+'@sub-title Copy one column of styles in a single write when the column is uniform
+'@param sourceColumn Range. Column to read.
+'@param targetColumn Range. Column to write.
+'@return Boolean. True when the whole column was copied in one block.
+Private Function CopyColumnStylesAsBlock(ByVal sourceColumn As Range, _
+                                         ByVal targetColumn As Range) As Boolean
+    Dim patternValue As Variant
+    Dim interiorColorValue As Variant
+    Dim fontColorValue As Variant
+    Dim boldValue As Variant
+    Dim italicValue As Variant
+    Dim sizeValue As Variant
+
+    With sourceColumn
+        patternValue = .Interior.Pattern
+        interiorColorValue = .Interior.color
+        fontColorValue = .Font.color
+        boldValue = .Font.Bold
+        italicValue = .Font.Italic
+        sizeValue = .Font.Size
+    End With
+
+    'Null on any one of them means the column is mixed and cannot be block copied
+    If IsNull(patternValue) Or IsNull(interiorColorValue) Then Exit Function
+    If IsNull(fontColorValue) Or IsNull(boldValue) Then Exit Function
+    If IsNull(italicValue) Or IsNull(sizeValue) Then Exit Function
+
+    With targetColumn
+        .Interior.Pattern = patternValue
+        .Interior.color = interiorColorValue
+        .Font.color = fontColorValue
+        .Font.Bold = boldValue
+        .Font.Italic = italicValue
+        .Font.Size = sizeValue
+    End With
+
+    CopyColumnStylesAsBlock = True
+End Function
+
+'@label:copy-column-styles-by-cell
+'@sub-title Copy one column of styles cell by cell
+'@param sourceColumn Range. Column to read.
+'@param targetColumn Range. Column to write.
+'@param rowCount Long. Number of rows in the column.
+Private Sub CopyColumnStylesByCell(ByVal sourceColumn As Range, _
+                                   ByVal targetColumn As Range, _
+                                   ByVal rowCount As Long)
+    Dim rowIndex As Long
+    Dim patternValue As Variant
+    Dim interiorColorValue As Variant
+    Dim fontColorValue As Variant
+    Dim boldValue As Variant
+    Dim italicValue As Variant
+    Dim sizeValue As Variant
+
+    For rowIndex = 1 To rowCount
+        With sourceColumn.Cells(rowIndex, 1)
+            patternValue = .Interior.Pattern
+            interiorColorValue = .Interior.color
+            fontColorValue = .Font.color
+            boldValue = .Font.Bold
+            italicValue = .Font.Italic
+            sizeValue = .Font.Size
+        End With
+
+        With targetColumn.Cells(rowIndex, 1)
+            .Interior.Pattern = patternValue
+            .Interior.color = interiorColorValue
+            .Font.color = fontColorValue
+            .Font.Bold = boldValue
+            .Font.Italic = italicValue
+            .Font.Size = sizeValue
+        End With
     Next rowIndex
 End Sub
 
 '@label:ensure-design-type-range
 '@sub-title Create the DESIGNTYPE named range on the target sheet
 Private Sub EnsureDesignTypeRange(ByVal sourceSheet As Worksheet, _
-                                  ByVal targetSheet As Worksheet, _ 
+                                  ByVal targetSheet As Worksheet, _
                                   ByVal targetTable As ListObject)
 
     Dim sourceDesignRange As Range
@@ -1649,8 +1920,9 @@ Private Sub EnsureDesignTypeRange(ByVal sourceSheet As Worksheet, _
         ThrowError ProjectError.ObjectNotInitialized, "Target format table is required for design export"
     End If
 
-    If HasNamedRange(sourceSheet, "DESIGNTYPE") Then
-        Set sourceDesignRange = sourceSheet.Range("DESIGNTYPE")
+    Set sourceDesignRange = NamedRange(sourceSheet, "DESIGNTYPE")
+
+    If Not sourceDesignRange Is Nothing Then
         designLabel = CStr(sourceDesignRange.Value)
         If LenB(designLabel) = 0 Then designLabel = DEFAULT_DESIGN
         Set targetDesignRange = targetSheet.Cells(sourceDesignRange.Row, sourceDesignRange.Column)
@@ -1673,15 +1945,15 @@ Private Sub EnsureDesignTypeRange(ByVal sourceSheet As Worksheet, _
     targetSheet.Names.Add Name:="DESIGNTYPE", RefersTo:=targetDesignRange, Visible:=False
 End Sub
 
-'@label:has-named-range
-'@sub-title Test whether a worksheet-scoped named range exists
-'@return Boolean. True when the named range is found.
-Private Function HasNamedRange(ByVal sh As Worksheet, ByVal rngName As String) As Boolean
-    Dim rng As Range
+'@label:named-range
+'@sub-title Retrieve a worksheet-scoped named range, or Nothing when it is absent
+'@param sh Worksheet. The worksheet to read.
+'@param rngName String. The name to look up.
+'@return Range. The named range, or Nothing.
+Private Function NamedRange(ByVal sh As Worksheet, ByVal rngName As String) As Range
     On Error Resume Next
-        Set rng = sh.Range(rngName)
+        Set NamedRange = sh.Range(rngName)
     On Error GoTo 0
-    HasNamedRange = Not (rng Is Nothing)
 End Function
 
 '@label:throw-error
