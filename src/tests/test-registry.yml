@@ -78,6 +78,11 @@ suites:
       # ChoicesFixtureDistinctLists and ChoicesFixtureRowCount. Without it the
       # whole project fails to compile and the runner shows the opaque -50.
       - module: ChoicesTestFixture
+      # PasswordsTestFixture lives beside the other .bas fixtures in
+      # src/tests/helpers/, so it is registered here rather than under `general`
+      # with the test module it serves. TestPasswords calls
+      # PreparePasswordsFixture, and the project does not compile without it.
+      - module: PasswordsTestFixture
 
   # --- general (OSFiles, DropdownLists) --------------------------------------
   # DropdownLists' whole dependency closure (HiddenNames, BetterArray, Checking)
@@ -107,6 +112,9 @@ suites:
       # BetterArray. The first three are above, the last two are in the
       # workbook.
       - name: LLChoices
+      # Passwords names Checking, ProjectError and TranslationObject. All three
+      # are already in the workbook, so it needs no extra class imports.
+      - name: Passwords
     tests:
       - module: TestOSFiles
         covers: [OSFiles]
@@ -124,6 +132,8 @@ suites:
         covers: [LLFormat]
       - module: TestLLChoices
         covers: [LLChoices]
+      - module: TestPasswords
+        covers: [Passwords]
 
   # --- sections -------------------------------------------------------------
   # (Also note: interface: true is stale -- IVarWriter /

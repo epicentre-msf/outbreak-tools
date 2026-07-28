@@ -14,8 +14,9 @@ Option Explicit
 ' EnsureWorksheet / ClearWorksheet / DeleteWorksheet(s) / WriteRow /
 ' WriteColumn / SingleColumnRows / RowsToMatrix / WriteMatrix /
 ' FailUnexpectedError / CustomTestSetTitles / CustomTestLogFailure /
-' BetterArrayFromList. Project dependencies: CustomTest and BetterArray, both
-' present in the baseline workbook.
+' BetterArrayFromList / BuildTempFolder / BuildWorkbookPath /
+' ExportComponentToFolder / CleanupExportedFiles. Project dependencies:
+' CustomTest and BetterArray, both present in the baseline workbook.
 '
 ' The whole "Range Writers" section was taken in one go, not routine by routine:
 ' DictionaryTestFixture needs RowsToMatrix + WriteMatrix, and every other
@@ -29,6 +30,13 @@ Option Explicit
 ' The public names mirror TestHelpers exactly, so only one of the two may be
 ' imported at a time (importing both would raise "Ambiguous name detected").
 ' =============================================================================
+
+' VBComponent kinds, used when an exported component is given a file extension.
+' The literals are the VBIDE values; naming them here keeps this module free of
+' a reference to the VBA extensibility library.
+Private Const VBEXT_CT_STD_MODULE As Long = 1
+Private Const VBEXT_CT_CLASS_MODULE As Long = 2
+Private Const VBEXT_CT_DOCUMENT As Long = 100
 
 '@section Application State
 '===============================================================================
@@ -382,4 +390,144 @@ Public Function BetterArrayFromList(ParamArray items() As Variant) As BetterArra
     Next idx
 
     Set BetterArrayFromList = result
+End Function
+
+'@section VBProject and folder helpers
+'===============================================================================
+' Copied over from TestHelpers for the Passwords suite, which exports VB
+' components to disk and reopens a saved workbook.
+
+'@label BuildTempFolder
+'@fun-title Determine a writable folder for exported test artifacts.
+'@details Prefers the provided workbook path, falling back to ThisWorkbook or the current directory.
+'@param referenceWorkbook Optional Workbook used to resolve the path context.
+'@param folderName Optional String subfolder to create under that path.
+'@return String path guaranteed non-empty.
+Public Function BuildTempFolder(Optional ByVal referenceWorkbook As workbook, _
+                                Optional ByVal folderName As String = vbNullString) As String
+
+    Dim folderPath As String
+
+    If Not referenceWorkbook Is Nothing Then
+        folderPath = referenceWorkbook.Path
+    Else
+        On Error Resume Next
+            folderPath = ThisWorkbook.Path
+        On Error GoTo 0
+    End If
+
+    If LenB(folderPath) = 0 Then folderPath = CurDir$
+    If LenB(folderName) <> 0 Then folderPath = folderPath & Application.PathSeparator & folderName
+
+    ' The folder may already be there, and Dir on a missing path answers empty
+    ' on some hosts, so the create is allowed to fail quietly.
+    On Error Resume Next
+        If Dir$(folderPath, vbDirectory) = vbNullString Then MkDir folderPath
+    On Error GoTo 0
+
+    BuildTempFolder = folderPath
+End Function
+
+'@label BuildWorkbookPath
+'@fun-title Construct a unique workbook path inside the export folder.
+'@details Appends timestamp fragments to avoid collisions while keeping the requested prefix.
+'@param exportFolder String target folder.
+'@param filePrefix String prefix to apply to the generated filename.
+'@param extension Optional String file extension including the leading dot. Defaults to .xlsb.
+'@return Fully qualified path suitable for saving an Excel workbook.
+Public Function BuildWorkbookPath(ByVal exportFolder As String, _
+                                  ByVal filePrefix As String, _
+                                  Optional ByVal extension As String = ".xlsb") As String
+
+    Dim separatorChar As String
+    Dim sanitizedExtension As String
+
+    separatorChar = Application.PathSeparator
+    If LenB(extension) = 0 Then
+        sanitizedExtension = ".xlsb"
+    ElseIf Left$(extension, 1) <> "." Then
+        sanitizedExtension = "." & extension
+    Else
+        sanitizedExtension = extension
+    End If
+
+    BuildWorkbookPath = exportFolder & separatorChar & filePrefix & "_" & _
+                        Format$(Now, "yyyymmdd_hhnnss") & "_" & _
+                        Format$(Timer, "000000") & sanitizedExtension
+End Function
+
+'@label ExportComponentToFolder
+'@fun-title Export a VBComponent to disk and return its path.
+'@details Removes any pre-existing file before exporting to guarantee fresh contents.
+'@param sourceWorkbook Workbook hosting the component.
+'@param componentName String component code name.
+'@param exportFolder String destination folder.
+'@return Fully qualified path to the exported component.
+Public Function ExportComponentToFolder(ByVal sourceWorkbook As workbook, _
+                                        ByVal componentName As String, _
+                                        ByVal exportFolder As String) As String
+
+    Dim vbComp As Object
+    Dim exportPath As String
+    Dim separatorChar As String
+
+    If sourceWorkbook Is Nothing Then
+        Err.Raise vbObjectError + 512, "TestHelpersLite.ExportComponentToFolder", _
+                  "Source workbook is required"
+    End If
+
+    separatorChar = Application.PathSeparator
+
+    On Error GoTo MissingComponent
+        Set vbComp = sourceWorkbook.VBProject.VBComponents(componentName)
+    On Error GoTo 0
+
+    exportPath = exportFolder & separatorChar & componentName & "_" & _
+                 Format$(Now, "yyyymmdd_hhnnss") & "_" & Format$(Timer, "000000") & _
+                 ComponentExtensionName(vbComp.Type)
+
+    On Error Resume Next
+        If Dir$(exportPath) <> vbNullString Then Kill exportPath
+    On Error GoTo 0
+
+    vbComp.Export exportPath
+    ExportComponentToFolder = exportPath
+    Exit Function
+
+MissingComponent:
+    Err.Raise vbObjectError + 513, "TestHelpersLite.ExportComponentToFolder", _
+              "Component '" & componentName & "' not found"
+End Function
+
+'@label CleanupExportedFiles
+'@sub-title Delete exported component files captured during a test.
+'@details Iterates through supplied collection paths, ignoring errors when files are already removed.
+'@param exportedFiles Collection of file paths.
+Public Sub CleanupExportedFiles(ByVal exportedFiles As Collection)
+    Dim idx As Long
+
+    If exportedFiles Is Nothing Then Exit Sub
+
+    On Error Resume Next
+        For idx = 1 To exportedFiles.Count
+            If Dir$(CStr(exportedFiles(idx))) <> vbNullString Then
+                Kill CStr(exportedFiles(idx))
+            End If
+        Next idx
+    On Error GoTo 0
+End Sub
+
+'@label ComponentExtensionName
+'@fun-title File extension matching a VBComponent kind.
+'@param componentType Long. VBComponent Type value.
+'@return String extension including the leading dot.
+Private Function ComponentExtensionName(ByVal componentType As Long) As String
+    Select Case componentType
+        Case VBEXT_CT_DOCUMENT, VBEXT_CT_CLASS_MODULE
+            ComponentExtensionName = ".cls"
+        Case VBEXT_CT_STD_MODULE
+            ComponentExtensionName = ".bas"
+        Case Else
+            ComponentExtensionName = ".cls"
+    End Select
 End Function

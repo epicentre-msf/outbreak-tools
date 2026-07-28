@@ -46,7 +46,7 @@ Public Sub PreparePasswordsFixture(ByVal sheetName As String, Optional ByVal tar
     Dim sh As Worksheet
 
     Set wb = ResolveWorkbook(targetBook)
-    Set sh = TestHelpers.EnsureWorksheet(sheetName, wb)
+    Set sh = EnsureWorksheet(sheetName, wb)
 
     SeedNamedRanges sh
     SeedKeysTable sh
@@ -77,7 +77,7 @@ Private Sub SeedKeysTable(ByVal sh As Worksheet)
 
     Set startCell = sh.Range(KEY_TABLE_START)
     keysTable = KeysTableMatrix()
-    TestHelpers.WriteMatrix startCell, keysTable
+    WriteMatrix startCell, keysTable
     Set dataRange = startCell.Resize(UBound(keysTable, 1), UBound(keysTable, 2))
 
     Set lo = sh.ListObjects.Add(xlSrcRange, dataRange, , xlYes)
@@ -94,7 +94,7 @@ Private Sub SeedProtectedTable(ByVal sh As Worksheet)
 
     Set startCell = sh.Range(PROTECTED_TABLE_START)
     protectedTable = ProtectedTableMatrix()
-    TestHelpers.WriteMatrix startCell, protectedTable
+    WriteMatrix startCell, protectedTable
     Set dataRange = startCell.Resize(UBound(protectedTable, 1), UBound(protectedTable, 2))
 
     Set lo = sh.ListObjects.Add(xlSrcRange, dataRange, , xlYes)
@@ -134,7 +134,7 @@ Private Function KeysTableMatrix() As Variant
         Array("ABCD", "WXYZ"), _
         Array("ZXCV", "BNMQ"))
 
-    KeysTableMatrix = TestHelpers.RowsToMatrix(rows)
+    KeysTableMatrix = RowsToMatrix(rows)
 End Function
 
 Private Function ProtectedTableMatrix() As Variant
@@ -145,7 +145,7 @@ Private Function ProtectedTableMatrix() As Variant
         Array("ID", "DrawObjects", "DeleteRows"), _
         Array("", "", ""))
 
-    ProtectedTableMatrix = TestHelpers.RowsToMatrix(rows)
+    ProtectedTableMatrix = RowsToMatrix(rows)
 End Function
 
 Private Sub AddNamedRange(ByVal sh As Worksheet, _
