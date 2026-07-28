@@ -33,7 +33,8 @@ Public Sub HandleMigrationExport(ByVal sourceWkb As Workbook, _
 
     ' Busy state
     Set appState = ApplicationState.Create()
-    appState.ApplyBusyState True, False, xlWait, False
+    appState.ApplyBusyState suppressEvents:=True, calculateOnSave:=False, _
+                            busyCursor:=xlWait, blockSecurity:=False
 
     ' Export
     Set exporter = LLExporter.Create(sourceWkb)
@@ -74,7 +75,8 @@ Public Sub HandleAnalysisExport(ByVal sourceWkb As Workbook, _
     folderPath = io.Folder()
 
     Set appState = ApplicationState.Create()
-    appState.ApplyBusyState True, False, xlWait, False
+    appState.ApplyBusyState suppressEvents:=True, calculateOnSave:=False, _
+                            busyCursor:=xlWait, blockSecurity:=False
 
     Set exporter = LLExporter.Create(sourceWkb)
     exporter.ExportAnalysis folderPath
@@ -116,7 +118,8 @@ Public Sub HandleGeoExport(ByVal sourceWkb As Workbook, _
     folderPath = io.Folder()
 
     Set appState = ApplicationState.Create()
-    appState.ApplyBusyState True, False, xlWait, False
+    appState.ApplyBusyState suppressEvents:=True, calculateOnSave:=False, _
+                            busyCursor:=xlWait, blockSecurity:=False
 
     Set exporter = LLExporter.Create(sourceWkb)
     exporter.ExportGeo folderPath, onlyHistoric

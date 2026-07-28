@@ -336,18 +336,9 @@ Private Sub LeaveBusyState(Optional ByVal silent As Boolean = False)
     Set scope = this.appScope
     If scope Is Nothing Then Exit Sub
 
-    On Error GoTo RestoreFailed
-        scope.Restore
-    On Error GoTo 0
-
-    Exit Sub
-
-RestoreFailed:
-    If Not silent Then
-        Err.Raise Err.Number, CLASS_NAME, "Failed to restore application state: " & Err.Description
-    Else
-        Err.Clear
-    End If
+    'ApplicationState already knows how to fail quietly, so hand the flag to it
+    'instead of trapping the error again here.
+    scope.Restore silent:=silent
 End Sub
 
 '@label:resolve-worksheet

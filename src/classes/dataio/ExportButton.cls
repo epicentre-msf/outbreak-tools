@@ -210,7 +210,8 @@ Private Sub RunExport()
 
     ' Apply busy state
     Set appState = ApplicationState.Create()
-    appState.ApplyBusyState True, False, xlWait, False
+    appState.ApplyBusyState suppressEvents:=True, calculateOnSave:=False, _
+                            busyCursor:=xlWait, blockSecurity:=False
 
     ' Handle filter confirmation
     useFilt = UseFilter

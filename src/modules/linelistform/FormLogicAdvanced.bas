@@ -39,7 +39,8 @@ Public Sub HandleImportData(ByVal sourceWkb As Workbook, _
 
     ' Busy state
     Set appState = ApplicationState.Create()
-    appState.ApplyBusyState True, True, xlWait, False
+    appState.ApplyBusyState suppressEvents:=True, calculateOnSave:=True, _
+                            busyCursor:=xlWait, blockSecurity:=False
     Set actsh = ActiveSheet
 
     ' Open import workbook
@@ -129,7 +130,8 @@ Public Sub HandleImportGeobase(ByVal sourceWkb As Workbook, _
 
     ' Busy state
     Set appState = ApplicationState.Create()
-    appState.ApplyBusyState True, True, xlWait, False
+    appState.ApplyBusyState suppressEvents:=True, calculateOnSave:=True, _
+                            busyCursor:=xlWait, blockSecurity:=False
 
     ' Open geobase workbook
     Set impwb = Workbooks.Open(filePath)
@@ -209,7 +211,8 @@ Public Sub HandleClearData(ByVal sourceWkb As Workbook, _
 
     ' Proceed with deletion
     Set appState = ApplicationState.Create()
-    appState.ApplyBusyState True, False, xlWait, False
+    appState.ApplyBusyState suppressEvents:=True, calculateOnSave:=False, _
+                            busyCursor:=xlWait, blockSecurity:=False
 
     Set impObj = LLImporter.Create(sourceWkb)
     impObj.ClearData

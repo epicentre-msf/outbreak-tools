@@ -29,23 +29,23 @@ Option Explicit
 
 '@section State and constants
 '===============================================================================
-Private Type TScopeState
-    screenUpdating As Boolean                   'Cached ScreenUpdating value
-    displayAlerts As Boolean                    'Cached DisplayAlerts value
-    calculationMode As XlCalculation            'Cached Calculation mode
-    enableAnimations As Boolean                 'Cached EnableAnimations value
-    supportsAnimations As Boolean               'Flag indicating whether EnableAnimations is available
-    supportsEvents As Boolean
-    cursor As XlMousePointer                    'Cached cursor value
-    snapshotCaptured As Boolean                 'Flag indicating a snapshot is ready for restoration
-    isBusy As Boolean
-    calcBeforeSave As Boolean                    'Flag indicating busy mode is currently applied
+Private Type TApplicationState
+    excelApp As Application                      'Guarded Excel Application reference
+    screenUpdating As Boolean                    'Cached ScreenUpdating value
+    displayAlerts As Boolean                     'Cached DisplayAlerts value
+    calculationMode As XlCalculation             'Cached Calculation mode
+    enableAnimations As Boolean                  'Cached EnableAnimations value
+    supportsAnimations As Boolean                'Flag indicating whether EnableAnimations is available
+    enableEvents As Boolean                      'Cached EnableEvents value
+    cursor As XlMousePointer                     'Cached cursor value
+    snapshotCaptured As Boolean                  'Flag indicating a snapshot is ready for restoration
+    isBusy As Boolean                            'Flag indicating busy mode is currently applied
+    calcBeforeSave As Boolean                    'Cached CalculateBeforeSave value
     automationSecurity As MsoAutomationSecurity  'Cached automation security level
     securityBlocked As Boolean                   'Indicates whether automation security is currently blocked
 End Type
 
-Private this As TScopeState
-Private excelApp As Application
+Private this As TApplicationState
 
 Private Const CLASSNAME As String = "ApplicationState"
 
@@ -67,7 +67,7 @@ Public Function Create(Optional ByVal excelApplication As Application) As Applic
 
     Set scope = New ApplicationState
     scope.BindApplication excelApplication
-    scope.CaptureSnapshot
+    scope.RefreshSnapshot
 
     Set Create = scope
 End Function
@@ -75,13 +75,6 @@ End Function
 '@section Introspection
 '===============================================================================
 'Read-only state accessors.
-
-'@label:application-object
-'@prop-title Application reference currently guarded
-'@return Application. The Excel Application instance.
-Public Property Get ApplicationObject() As Application
-    Set ApplicationObject = TargetApplication
-End Property
 
 '@label:is-busy
 '@prop-title Whether the busy state is currently active
@@ -107,19 +100,13 @@ End Property
 '@param excelApplication Application. The Excel Application to guard.
 Friend Sub BindApplication(ByVal excelApplication As Application)
     If excelApplication Is Nothing Then
-        Set excelApp = Nothing
+        Set this.excelApp = Nothing
     ElseIf StrComp(TypeName(excelApplication), "Application", vbTextCompare) = 0 Then
-        Set excelApp = excelApplication
+        Set this.excelApp = excelApplication
     Else
         ThrowError ProjectError.InvalidArgument, _
                   "excelApplication must be an Excel Application reference"
     End If
-End Sub
-
-'@label:capture-snapshot
-'@sub-title Capture current application settings
-Friend Sub CaptureSnapshot()
-    CaptureSnapshotCore
 End Sub
 
 
@@ -135,6 +122,11 @@ End Sub
 'optionally suppresses events and blocks automation security.  Does nothing
 'when the scope is already busy.  On failure the busy flag is cleared and a
 'ProjectError is raised so the caller can attempt recovery.
+'The snapshot restored later is the one this object already holds; it belongs
+'to the whole life of the object and is NOT re-taken here.  A caller that
+'changed a setting on purpose between two busy blocks must ask for a new
+'snapshot with RefreshSnapshot, otherwise the next Restore puts the old value
+'back.
 '@param suppressEvents Optional Boolean. When True, disables Application.EnableEvents. Defaults to False.
 '@param calculateOnSave Optional Boolean. Value assigned to CalculateBeforeSave. Defaults to True.
 '@param busyCursor Optional Long. Cursor shown while busy. When 0 (default), leaves cursor unchanged.
@@ -149,7 +141,7 @@ Public Sub ApplyBusyState(Optional ByVal suppressEvents As Boolean = False, _
 
     If this.isBusy Then Exit Sub
 
-    EnsureSnapshot "ApplyBusyState"
+    EnsureSnapshot
     Set target = TargetApplication
 
     On Error GoTo ApplyFail
@@ -162,7 +154,7 @@ Public Sub ApplyBusyState(Optional ByVal suppressEvents As Boolean = False, _
         On Error Resume Next
         target.Calculation = xlCalculationManual
         On Error GoTo ApplyFail
-        If suppressEvents Then target.EnableEvents = (Not suppressEvents)
+        If suppressEvents Then target.EnableEvents = False
         target.CalculateBeforeSave = calculateOnSave
         If busyCursor <> 0 Then target.Cursor = busyCursor
         If blockSecurity And Not this.securityBlocked Then
@@ -188,14 +180,13 @@ End Sub
 Private Sub CaptureSnapshotCore()
     Dim target As Application
 
-    EnsureNotBusy "CaptureSnapshot"
     Set target = TargetApplication
 
     this.screenUpdating = target.ScreenUpdating
     this.displayAlerts = target.DisplayAlerts
     this.calculationMode = target.Calculation
     this.supportsAnimations = TryReadEnableAnimations(target, this.enableAnimations)
-    this.supportsEvents = target.EnableEvents
+    this.enableEvents = target.EnableEvents
     this.calcBeforeSave = target.CalculateBeforeSave
     this.automationSecurity = target.AutomationSecurity
     this.cursor = target.Cursor
@@ -204,6 +195,7 @@ End Sub
 
 '@label:refresh-snapshot
 '@sub-title Re-capture the snapshot from the current application state
+'@throws ProjectError.ErrorUnexpectedState When the scope is busy.
 '@export
 Public Sub RefreshSnapshot()
     EnsureNotBusy "RefreshSnapshot"
@@ -214,29 +206,27 @@ End Sub
 '@sub-title Resolve the Excel Application reference
 '@return Application. The guarded Application instance.
 Private Function TargetApplication() As Application
-    If excelApp Is Nothing Then
-        Set excelApp = Application
+    If this.excelApp Is Nothing Then
+        Set this.excelApp = Application
     End If
 
-    If excelApp Is Nothing Then
+    If this.excelApp Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, _
                   "Excel application reference is required"
     End If
 
-    Set TargetApplication = excelApp
+    Set TargetApplication = this.excelApp
 End Function
 
 '@label:ensure-snapshot
 '@sub-title Guard that a snapshot exists before proceeding
-'@param operationName String. Name of the calling operation for error messages.
-Private Sub EnsureSnapshot(ByVal operationName As String)
+'@details
+'Takes the snapshot only when the object does not have one yet.  The snapshot
+'belongs to the whole life of the object: once taken it stays until a caller
+'asks for a new one with RefreshSnapshot.
+Private Sub EnsureSnapshot()
     If Not this.snapshotCaptured Then
         CaptureSnapshotCore
-    End If
-
-    If Not this.snapshotCaptured Then
-        ThrowError ProjectError.ErrorUnexpectedState, _
-                  operationName & " requires a captured snapshot. Unexpected error"
     End If
 End Sub
 
@@ -256,6 +246,7 @@ End Sub
 '@export
 Public Sub Restore(Optional ByVal silent As Boolean = False)
     Dim target As Application
+    Dim failMessage As String
 
     If Not this.snapshotCaptured Then Exit Sub
 
@@ -271,7 +262,7 @@ Public Sub Restore(Optional ByVal silent As Boolean = False)
         target.Calculation = this.calculationMode
         On Error GoTo RestoreFail
         target.DisplayAlerts = this.displayAlerts
-        target.EnableEvents = this.supportsEvents
+        target.EnableEvents = this.enableEvents
         target.CalculateBeforeSave = this.calcBeforeSave
         If this.securityBlocked Then
             target.AutomationSecurity = this.automationSecurity
@@ -290,12 +281,19 @@ Public Sub Restore(Optional ByVal silent As Boolean = False)
     Exit Sub
 
 RestoreFail:
+    failMessage = Err.Description
     this.isBusy = False
+    'Put the screen back even when the restore failed.  Without this line a
+    'failure above leaves the whole Excel session with a frozen screen, which
+    'is the state this class exists to prevent.
+    On Error Resume Next
+    target.ScreenUpdating = this.screenUpdating
+    On Error GoTo 0
     If silent Then
         Err.Clear
     Else
         ThrowError ProjectError.ErrorUnexpectedState, _
-                  "Unable to restore application state: " & Err.Description
+                  "Unable to restore application state: " & failMessage
     End If
 End Sub
 
@@ -338,5 +336,5 @@ End Function
 '@param errNumber ProjectError. The error code.
 '@param message String. Descriptive error message.
 Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal message As String)
-    Err.Raise errNumber, "ApplicationState", message
+    Err.Raise errNumber, CLASSNAME, message
 End Sub
