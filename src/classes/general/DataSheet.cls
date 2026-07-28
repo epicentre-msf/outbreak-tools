@@ -633,35 +633,69 @@ End Function
 '.Rows.Count and .Columns.Count off the Range - all Areas(1) answers - and
 'then rebuilds one contiguous block from those bounds, which would pull in
 'the hidden rows sitting inside the first area.
+'Only the ROW runs are taken from the areas. A column hidden inside the
+'block splits the areas sideways as well, and each row run then shows up
+'more than once, so a run already taken is never taken twice and every run
+'is read across the WHOLE requested column span. That also keeps a hidden
+'column from stopping the routine: Copy raises 1004 on areas that do not
+'line up.
 '@param visibleRng Range. The visible part of a filtered block.
+'@param firstColumn Long. Left worksheet column of the block that was filtered.
+'@param lastColumn Long. Right worksheet column of the block that was filtered.
 '@return Variant. A two-dimensional array, 1 To total visible rows, 1 To columns.
-Private Function VisibleBlock(ByVal visibleRng As Range) As Variant
+Private Function VisibleBlock(ByVal visibleRng As Range, _
+                              ByVal firstColumn As Long, _
+                              ByVal lastColumn As Long) As Variant
     Dim areaRng As Range
     Dim blockValues As Variant
     Dim block() As Variant
+    Dim runFirstRow() As Long
+    Dim runRowCount() As Long
+    Dim nbRuns As Long
     Dim totalRows As Long
     Dim nbColumns As Long
     Dim rowCursor As Long
     Dim rowCounter As Long
     Dim columnCounter As Long
+    Dim counter As Long
+    Dim areaFirstRow As Long
+    Dim alreadyTaken As Boolean
 
-    'Every area spans the same columns, so the first one answers for all.
-    nbColumns = visibleRng.Areas(1).Columns.Count
+    nbColumns = lastColumn - firstColumn + 1
+    ReDim runFirstRow(1 To visibleRng.Areas.Count)
+    ReDim runRowCount(1 To visibleRng.Areas.Count)
 
     For Each areaRng In visibleRng.Areas
-        totalRows = totalRows + areaRng.Rows.Count
+        areaFirstRow = areaRng.Row
+        alreadyTaken = False
+
+        For counter = nbRuns To 1 Step -1
+            If runFirstRow(counter) = areaFirstRow Then
+                alreadyTaken = True
+                Exit For
+            End If
+        Next
+
+        If Not alreadyTaken Then
+            nbRuns = nbRuns + 1
+            runFirstRow(nbRuns) = areaFirstRow
+            runRowCount(nbRuns) = areaRng.Rows.Count
+            totalRows = totalRows + areaRng.Rows.Count
+        End If
     Next
 
     ReDim block(1 To totalRows, 1 To nbColumns)
 
-    For Each areaRng In visibleRng.Areas
-        blockValues = AreaValues(areaRng)
-        For rowCounter = 1 To areaRng.Rows.Count
+    For counter = 1 To nbRuns
+        blockValues = AreaValues(SheetBlock(runFirstRow(counter), firstColumn, _
+                                            runFirstRow(counter) + runRowCount(counter) - 1, _
+                                            lastColumn))
+        For rowCounter = 1 To runRowCount(counter)
             For columnCounter = 1 To nbColumns
                 block(rowCursor + rowCounter, columnCounter) = blockValues(rowCounter, columnCounter)
             Next
         Next
-        rowCursor = rowCursor + areaRng.Rows.Count
+        rowCursor = rowCursor + runRowCount(counter)
     Next
 
     VisibleBlock = block
@@ -801,7 +835,7 @@ Public Function FilterData(ByVal varName As String, _
     On Error GoTo FilterFail
 
     If Not visibleRng Is Nothing Then
-        block = VisibleBlock(visibleRng)
+        block = VisibleBlock(visibleRng, startRetColIndex, endRetColIndex)
         StoreBlock returnedData, block
     End If
 
@@ -916,7 +950,7 @@ Public Function FiltersData(ByVal varData As BetterArray, _
         'answers "nothing is visible" they all do.
         If visibleRng Is Nothing Then Exit For
 
-        columnBlock = VisibleBlock(visibleRng)
+        columnBlock = VisibleBlock(visibleRng, returnedColumnIndex, returnedColumnIndex)
 
         'The first column that answers sets the height of the result.
         If IsEmpty(block) Then
