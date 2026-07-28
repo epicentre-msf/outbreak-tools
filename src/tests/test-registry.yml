@@ -147,6 +147,28 @@ suites:
       # - module: TestPasswords
       #   covers: [Passwords]
 
+  # --- dictionary (LLExport) -------------------------------------------------
+  # LLExport names LLdictionary, LLVariables, DataSheet, CustomTable, Passwords,
+  # TranslationObject, Checking and BetterArray. DataSheet and CustomTable are
+  # registered under `general` above; Passwords, TranslationObject, Checking and
+  # BetterArray are baked into the driver workbook, so registering any of them
+  # would leave Excel holding two copies and stop the project compiling.
+  # LLdictionary and LLVariables are neither, so both are imported here.
+  #
+  # WARNING for the first run of this suite: LLdictionary.cls carries three
+  # line-continuation underscores with a trailing space (AddMainSectionSort).
+  # If VBA rejects them the whole project fails to compile and the runner shows
+  # the opaque -50. That file is fixed by the session that owns LLdictionary;
+  # read the LogCompileProbe inventory first on any -50 that follows.
+  - folder: dictionary
+    classes:
+      - name: LLdictionary
+      - name: LLVariables
+      - name: LLExport
+    tests:
+      - module: TestLLExport
+        covers: [LLExport]
+
   # --- sections -------------------------------------------------------------
   # (Also note: interface: true is stale -- IVarWriter /
   # ISectionBuilder were folded and no longer exist; import skips missing files.)

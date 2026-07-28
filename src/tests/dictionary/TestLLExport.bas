@@ -13,7 +13,7 @@ Option Explicit
 'export-spec replication into destination workbooks, filename template
 'resolution with literal and variable chunks, active/inactive status filtering,
 'and threshold-based row removal.
-'@depends LLExport, LLdictionary, LLdictionary, HiddenNames, Passwords, Passwords, CustomTest, BetterArray, TestHelpers, PasswordsTestFixture
+'@depends LLExport, LLdictionary, Passwords, CustomTest, BetterArray, TestHelpersLite, DictionaryTestFixture, PasswordsTestFixture
 
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
@@ -21,7 +21,6 @@ Private Const EXPORT_SHEET As String = "LLExportSpec"
 Private Const DICT_SHEET As String = "LLExportDict"
 Private Const VLIST_SHEET As String = "vlist1D-sheet1"
 Private Const PASSWORD_SHEET As String = "LLExportPasswords"
-Private Const EXPORT_TOTAL_NAME As String = "__ll_exports_total__"
 Private Const DICT_LO_NAME As String = "Tab_Dictionary"
 
 Private Assert As CustomTest
@@ -36,44 +35,71 @@ Private PasswordsSubject As Passwords
 '===============================================================================
 
 '@sub-title Initialise the test module and prepare shared fixtures
+'@details
+'Public, so the headless runner reaches it: the runner calls every lifecycle
+'hook through Application.Run, which cannot see a Private Sub. The handler
+'matters as much. An error escaping a lifecycle hook aborts the WHOLE module,
+'so a fixture problem here would drop all 23 tests and the run would report no
+'failures, because nothing ran.
 '@ModuleInitialize
 Public Sub ModuleInitialize()
+    On Error GoTo Fail
+    BusyApp
     EnsureWorksheet TEST_OUTPUT_SHEET, clearSheet:=False
     Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
     Assert.SetModuleName "TestLLExport"
     PrepareTestSheets
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "ModuleInitialize", Err.Number, Err.Description
 End Sub
 
 '@sub-title Tear down worksheets and print test results
+'@details
+'Every step before RestoreApp is wrapped, because RestoreApp has to run
+'whatever happened above: the hooks here call BusyApp, which puts Excel in
+'manual calculation, and the next module in the run would inherit that.
 '@ModuleCleanup
 Public Sub ModuleCleanup()
     On Error Resume Next
-    ThisWorkbook.Names("choi_v1").Delete
-    DeleteWorksheet EXPORT_SHEET
-    DeleteWorksheet DICT_SHEET
-    DeleteWorksheet VLIST_SHEET
-    DeleteWorksheet PASSWORD_SHEET
+        If Not Assert Is Nothing Then
+            Assert.PrintResults TEST_OUTPUT_SHEET
+        End If
+        ThisWorkbook.Names("choi_v1").Delete
+        DeleteWorksheet EXPORT_SHEET
+        DeleteWorksheet DICT_SHEET
+        DeleteWorksheet VLIST_SHEET
+        DeleteWorksheet PASSWORD_SHEET
     On Error GoTo 0
-    If Not Assert Is Nothing Then
-        Assert.PrintResults TEST_OUTPUT_SHEET
-    End If
+
+    RestoreApp
     Set Assert = Nothing
 End Sub
 
 '@sub-title Reset test sheets and create fresh Manager and Passwords instances before each test
 '@TestInitialize
 Public Sub TestInitialize()
+    On Error GoTo Fail
+    BusyApp
     PrepareTestSheets
     Set Manager = LLExport.Create(ExportSheet)
     Set PasswordsSubject = Passwords.Create(PasswordSheet)
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestInitialize", Err.Number, Err.Description
 End Sub
 
 '@sub-title Flush current test results and release object references after each test
 '@TestCleanup
 Public Sub TestCleanup()
-    If Not Assert Is Nothing Then
-        Assert.FlushCurrentTest
-    End If
+    On Error Resume Next
+        If Not Assert Is Nothing Then
+            Assert.FlushCurrentTest
+        End If
+    On Error GoTo 0
+
     Set Manager = Nothing
     Set PasswordsSubject = Nothing
 End Sub
@@ -81,51 +107,64 @@ End Sub
 '@section Creation
 '===============================================================================
 
-'@sub-title Verify that Create initialises the Data property and hidden export counter
+'@sub-title Verify that Create initialises the Data property and reports the row count
 '@details
 'Arranges by creating a Manager via LLExport.Create with a single-row export
-'table. Asserts that Data is not Nothing, NumberOfExports returns one, and the
-'hidden worksheet-level name storing the export total matches the initial count.
+'table. Asserts that Data is not Nothing and that NumberOfExports agrees with
+'the rows the table holds.
 '@TestMethod("LLExport")
 Public Sub TestCreateInitialisesData()
     CustomTestSetTitles Assert, "LLExport", "TestCreateInitialisesData"
+    On Error GoTo Fail
+
     Assert.IsTrue (Not Manager.Data Is Nothing), "Expected Data to be initialised"
     Assert.AreEqual 1, Manager.NumberOfExports, "Should report single export row"
-    Assert.AreEqual 1, StoredExportTotal(), "Hidden export counter should match initial export count"
+    Assert.AreEqual TableRowCount(), Manager.NumberOfExports, _
+                    "NumberOfExports should agree with the rows the table holds"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestCreateInitialisesData", Err.Number, Err.Description
 End Sub
 
 '@section ExportSpecs
 '===============================================================================
 
-'@sub-title Verify that ExportSpecs replicates hidden names into the destination workbook
+'@sub-title Verify that ExportSpecs replicates the specification sheet into the destination workbook
 '@details
 'Arranges by reading the current number of exports, then creates a temporary
 'workbook and calls ExportSpecs to copy the export sheet into it. Asserts that
-'the hidden name storing the export total is present in the destination and
-'carries the expected value. Closes the temporary workbook without saving.
+'the destination carries a sheet of the same name, with the same number of data
+'rows and the same file name template. Closes the temporary workbook without
+'saving.
 '@TestMethod("LLExport")
-Public Sub TestExportSpecsCopiesHiddenNames()
-    CustomTestSetTitles Assert, "LLExport", "TestExportSpecsCopiesHiddenNames"
+Public Sub TestExportSpecsCopiesSpecificationSheet()
+    CustomTestSetTitles Assert, "LLExport", "TestExportSpecsCopiesSpecificationSheet"
     Dim exportBook As Workbook
-    Dim exportedStore As HiddenNames
+    Dim exportedManager As LLExport
     Dim expectedTotal As Long
+    Dim expectedTemplate As String
 
     On Error GoTo Fail
 
     expectedTotal = Manager.NumberOfExports
+    expectedTemplate = Manager.ColumnValue(1, "file name")
 
-    Set exportBook = TestHelpers.NewWorkbook
+    Set exportBook = NewWorkbook
     Manager.ExportSpecs exportBook, Hide:=xlSheetVisible
 
-    Set exportedStore = HiddenNames.Create(exportBook.Worksheets(EXPORT_SHEET))
-    Assert.AreEqual expectedTotal, exportedStore.ValueAsLong(EXPORT_TOTAL_NAME, -1), _
-                    "ExportSpecs should replicate the hidden export counter into the destination workbook."
+    Set exportedManager = LLExport.Create(exportBook.Worksheets(EXPORT_SHEET))
+
+    Assert.AreEqual expectedTotal, exportedManager.NumberOfExports, _
+                    "ExportSpecs should replicate every specification row into the destination workbook."
+    Assert.AreEqual expectedTemplate, exportedManager.ColumnValue(1, "file name"), _
+                    "ExportSpecs should replicate the file name template."
 
     exportBook.Close SaveChanges:=False
     Exit Sub
 
 Fail:
-    CustomTestLogFailure Assert, "TestExportSpecsCopiesHiddenNames", Err.Number, Err.Description
+    CustomTestLogFailure Assert, "TestExportSpecsCopiesSpecificationSheet", Err.Number, Err.Description
     On Error Resume Next
         If Not exportBook Is Nothing Then exportBook.Close SaveChanges:=False
     On Error GoTo 0
@@ -143,27 +182,37 @@ End Sub
 '@TestMethod("LLExport")
 Public Sub TestAddRowsAppliesDefaults()
     CustomTestSetTitles Assert, "LLExport", "TestAddRowsAppliesDefaults"
+    On Error GoTo Fail
+
+    Dim exportIdx As Long
+
     Manager.AddRows
     Assert.AreEqual 2, Manager.NumberOfExports, "Row count should grow by one"
     Assert.AreEqual "no", Manager.ColumnValue(2, "include personal identifiers"), _
                      "Include personal identifiers should default to 'no'"
-    Dim exportIdx As Long
+
     exportIdx = ColumnIndexOf("export number")
     Assert.AreEqual "export 1", ExportSheet.ListObjects(1).DataBodyRange.Cells(1, exportIdx).Value, _
                      "Existing export should be normalised to prefixed identifier"
     Assert.AreEqual "export 2", ExportSheet.ListObjects(1).DataBodyRange.Cells(2, exportIdx).Value, _
                      "Newly added export should receive the next identifier"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestAddRowsAppliesDefaults", Err.Number, Err.Description
 End Sub
 
 '@sub-title Verify that AddRows synchronises Export columns in the dictionary
 '@details
 'Arranges by creating a dictionary and removing surplus Export columns so only
 'Export 1 remains. Calls AddRows with the dictionary parameter. Asserts that
-'the stored export counter increments, NumberOfExports increases, the dictionary
-'gains an "Export 2" column, and the dictionary total mirrors the stored counter.
+'NumberOfExports increases, the table row count follows, the dictionary gains
+'an "Export 2" column, and the dictionary export counter matches the number of
+'export rows.
 '@TestMethod("LLExport")
 Public Sub TestAddRowsSynchronisesDictionaryColumns()
     CustomTestSetTitles Assert, "LLExport", "TestAddRowsSynchronisesDictionaryColumns"
+    On Error GoTo Fail
 
     Dim dict As LLdictionary
     Dim idx As Long
@@ -176,30 +225,40 @@ Public Sub TestAddRowsSynchronisesDictionaryColumns()
     Next idx
 
     startTotal = Manager.NumberOfExports
-    Assert.AreEqual startTotal, StoredExportTotal(), "Stored export counter should match current number before adding rows"
+    Assert.AreEqual startTotal, TableRowCount(), "NumberOfExports should match the table rows before adding"
 
     Manager.AddRows dict:=dict
 
-    Assert.AreEqual startTotal + 1, StoredExportTotal(), "Stored export counter should increment after adding rows"
+    Assert.AreEqual startTotal + 1, TableRowCount(), "The table should carry one more row after adding"
     Assert.AreEqual startTotal + 1, Manager.NumberOfExports, "NumberOfExports should report the updated total after adding rows"
     Assert.IsTrue dict.ColumnExists("Export 2"), "Dictionary should expose Export 2 column after row addition"
-    Assert.AreEqual StoredExportTotal(), CLng(dict.TotalNumberOfExports), "Dictionary export total should mirror stored counter"
+    Assert.AreEqual Manager.NumberOfExports, CLng(dict.TotalNumberOfExports), _
+                    "Dictionary export counter should hold one column per export row"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestAddRowsSynchronisesDictionaryColumns", Err.Number, Err.Description
 End Sub
 
 '@sub-title Verify that AddRows works after ResetCaches when no dictionary is supplied
 '@details
 'Calls ResetCaches to clear any cached state, then calls AddRows without a
-'dictionary parameter. Asserts that NumberOfExports increases to two and the
-'hidden export counter stays aligned with the table row count.
+'dictionary parameter. Asserts that NumberOfExports increases to two and stays
+'aligned with the table row count.
 '@TestMethod("LLExport")
 Public Sub TestAddRowsWithoutDictionaryAfterReset()
     CustomTestSetTitles Assert, "LLExport", "TestAddRowsWithoutDictionaryAfterReset"
+    On Error GoTo Fail
 
     Manager.ResetCaches
     Manager.AddRows
 
     Assert.AreEqual 2, Manager.NumberOfExports, "Row count should grow when dictionary is not supplied"
-    Assert.AreEqual 2, StoredExportTotal(), "Hidden export counter should align with table rows even without dictionary"
+    Assert.AreEqual 2, TableRowCount(), "The table should carry two rows even without a dictionary"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestAddRowsWithoutDictionaryAfterReset", Err.Number, Err.Description
 End Sub
 
 '@section InsertRows
@@ -211,7 +270,7 @@ End Sub
 'calling AddRows to reach two rows. Inserts a row at row 2 using a selection
 'range. Asserts that the export count increases to three, inserted rows default
 '"include personal identifiers" to "no", existing dictionary data is preserved,
-'the new Export 3 column starts blank, and the hidden counter mirrors the total.
+'the new Export 3 column starts blank, and the table row count mirrors the total.
 '@TestMethod("LLExport")
 Public Sub TestInsertRowsAppliesDefaultsAndSyncsDictionary()
     CustomTestSetTitles Assert, "LLExport", "TestInsertRowsAppliesDefaultsAndSyncsDictionary"
@@ -248,8 +307,8 @@ Public Sub TestInsertRowsAppliesDefaultsAndSyncsDictionary()
     Assert.IsTrue dictLo.ListColumns.Count >= 3, "Dictionary should expose the new export column"
     Assert.AreEqual vbNullString, CStr(dictLo.ListColumns("Export 3").DataBodyRange.Cells(1, 1).Value), _
                      "New export column should start blank"
-    Assert.AreEqual Manager.NumberOfExports, StoredExportTotal(), _
-                     "Hidden export counter should mirror the table row count"
+    Assert.AreEqual Manager.NumberOfExports, TableRowCount(), _
+                     "NumberOfExports should mirror the table row count"
     Exit Sub
 
 Fail:
@@ -260,7 +319,7 @@ End Sub
 '@details
 'Arranges by recording the initial export count and selecting a cell far outside
 'the table body (Z100). Calls InsertRows with the invalid selection. Asserts
-'that NumberOfExports and the stored counter remain unchanged.
+'that NumberOfExports and the table row count remain unchanged.
 '@TestMethod("LLExport")
 Public Sub TestInsertRowsIgnoresSelectionOutsideTable()
     CustomTestSetTitles Assert, "LLExport", "InsertRows ignores selection outside the exports table"
@@ -276,8 +335,8 @@ Public Sub TestInsertRowsIgnoresSelectionOutsideTable()
 
     Assert.AreEqual initialCount, Manager.NumberOfExports, _
                      "InsertRows should leave the export count unchanged when the selection is invalid"
-    Assert.AreEqual initialCount, StoredExportTotal(), _
-                     "Stored export counter should remain aligned when no insertion occurs"
+    Assert.AreEqual initialCount, TableRowCount(), _
+                     "The table row count should remain aligned when no insertion occurs"
     Exit Sub
 
 Fail:
@@ -291,8 +350,8 @@ End Sub
 '@details
 'Arranges by adding a row via AddRows with a dictionary so there are two rows.
 'Selects the second row and calls DeleteRows. Asserts that NumberOfExports
-'returns one, the stored counter reflects the remaining row, and the dictionary
-'no longer contains the "Export 2" column.
+'returns one, the table row count follows, and the dictionary no longer contains
+'the "Export 2" column.
 '@TestMethod("LLExport")
 Public Sub TestDeleteRowsShrinksExportsAndDictionary()
     CustomTestSetTitles Assert, "LLExport", "TestDeleteRowsShrinksExportsAndDictionary"
@@ -308,7 +367,7 @@ Public Sub TestDeleteRowsShrinksExportsAndDictionary()
     Manager.DeleteRows selectionRange, dict:=dict
 
     Assert.AreEqual 1, Manager.NumberOfExports, "DeleteRows should remove export entries"
-    Assert.AreEqual 1, StoredExportTotal(), "Hidden export counter should reflect the remaining rows"
+    Assert.AreEqual 1, TableRowCount(), "The table should carry the remaining row only"
     Assert.IsFalse dict.ColumnExists("Export 2"), "Dictionary should drop columns for deleted exports"
     Exit Sub
 
@@ -342,13 +401,11 @@ Public Sub TestSortRenamesExportsSequentially()
     EnsureExportColumn dictLo, "Export 2"
     EnsureExportColumn dictLo, "Export 3"
 
-
     Manager.AddRows dict:=dict
     Manager.AddRows dict:=dict
 
     Set lo = ExportSheet.ListObjects(1)
     exportNumberIndex = lo.ListColumns("export number").Index
-
 
     dictLo.ListColumns("Export 1").DataBodyRange.Cells(1, 1).Value = "One"
     dictLo.ListColumns("Export 2").DataBodyRange.Cells(1, 1).Value = "Two"
@@ -379,11 +436,12 @@ End Sub
 '@details
 'Arranges by creating a dictionary, removing "Export 3", and adding a custom
 'column "mainlab_3_backup". Calls AddRows with the dictionary. Asserts that the
-'custom column is preserved, the stored counter reflects actual export rows, and
-'the dictionary total ignores non-export-prefixed columns.
+'custom column is preserved, the table row count reflects actual export rows,
+'and the dictionary counter ignores non-export-prefixed columns.
 '@TestMethod("LLExport")
 Public Sub TestSyncDictionaryIgnoresNonExportPrefixedColumns()
     CustomTestSetTitles Assert, "LLExport", "TestSyncDictionaryIgnoresNonExportPrefixedColumns"
+    On Error GoTo Fail
 
     Dim dict As LLdictionary
 
@@ -395,8 +453,12 @@ Public Sub TestSyncDictionaryIgnoresNonExportPrefixedColumns()
     Manager.AddRows dict:=dict
 
     Assert.IsTrue dict.ColumnExists("mainlab_3_backup"), "Custom column should remain untouched"
-    Assert.AreEqual 2, StoredExportTotal(), "Stored export counter should reflect actual export rows"
-    Assert.AreEqual 2, CLng(dict.TotalNumberOfExports), "Dictionary total should ignore non-export-prefixed columns"
+    Assert.AreEqual 2, TableRowCount(), "The table should carry the actual export rows"
+    Assert.AreEqual 2, CLng(dict.TotalNumberOfExports), "Dictionary counter should ignore non-export-prefixed columns"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestSyncDictionaryIgnoresNonExportPrefixedColumns", Err.Number, Err.Description
 End Sub
 
 '@sub-title Verify that SyncDictionaryExports works with an explicit dictionary and with the cached one
@@ -408,6 +470,7 @@ End Sub
 '@TestMethod("LLExport")
 Public Sub TestPublicSyncDictionaryExportsWithAndWithoutParameter()
     CustomTestSetTitles Assert, "LLExport", "TestPublicSyncDictionaryExportsWithAndWithoutParameter"
+    On Error GoTo Fail
 
     Dim dict As LLdictionary
 
@@ -422,6 +485,10 @@ Public Sub TestPublicSyncDictionaryExportsWithAndWithoutParameter()
     dict.RemoveColumn "Export 2"
     Manager.SyncDictionaryExports
     Assert.IsTrue dict.ColumnExists("Export 2"), "SyncDictionaryExports should reuse cached dictionary when none supplied"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestPublicSyncDictionaryExportsWithAndWithoutParameter", Err.Number, Err.Description
 End Sub
 
 '@section RemoveRows
@@ -435,23 +502,31 @@ End Sub
 '@TestMethod("LLExport")
 Public Sub TestRemoveRowsDeletesEmpty()
     CustomTestSetTitles Assert, "LLExport", "TestRemoveRowsDeletesEmpty"
+    On Error GoTo Fail
+
     Manager.AddRows
     ExportSheet.ListObjects(1).DataBodyRange.Rows(2).ClearContents
     Manager.RemoveRows
+
     Assert.AreEqual 1, Manager.NumberOfExports, "Removing rows should trim empty rows"
     Assert.AreEqual "export 1", ExportSheet.ListObjects(1).DataBodyRange.Cells(1, ColumnIndexOf("export number")).Value, _
                      "Remaining export should keep its prefixed identifier"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestRemoveRowsDeletesEmpty", Err.Number, Err.Description
 End Sub
 
 '@sub-title Verify that RemoveRows prunes dictionary columns for removed exports
 '@details
 'Arranges by creating a dictionary with reduced Export columns, adding two
 'rows to reach three exports, then calling RemoveRows with the dictionary.
-'Asserts that the stored counter, NumberOfExports, and dictionary columns all
-'reflect one remaining export, and the dictionary total matches.
+'Asserts that the table row count, NumberOfExports, and dictionary columns all
+'reflect one remaining export, and the dictionary counter matches.
 '@TestMethod("LLExport")
 Public Sub TestRemoveRowsPrunesDictionaryColumns()
     CustomTestSetTitles Assert, "LLExport", "TestRemoveRowsPrunesDictionaryColumns"
+    On Error GoTo Fail
 
     Dim dict As LLdictionary
     Dim idx As Long
@@ -464,29 +539,35 @@ Public Sub TestRemoveRowsPrunesDictionaryColumns()
 
     Manager.AddRows dict:=dict
     Manager.AddRows dict:=dict
-    Assert.AreEqual 3, StoredExportTotal(), "Expected stored export counter to include added rows"
+    Assert.AreEqual 3, TableRowCount(), "Expected the table to carry the added rows"
 
     Manager.RemoveRows dict:=dict
 
-    Assert.AreEqual 1, StoredExportTotal(), "Stored export counter should reflect the trimmed rows"
+    Assert.AreEqual 1, TableRowCount(), "The table should carry the trimmed rows"
     Assert.AreEqual 1, Manager.NumberOfExports, "NumberOfExports should reflect the trimmed export rows"
     Assert.IsFalse dict.ColumnExists("Export 2"), "Export 2 column should be removed when only one export remains"
     Assert.IsFalse dict.ColumnExists("Export 3"), "Export 3 column should be removed when not present"
     Assert.AreEqual 1, CLng(dict.TotalNumberOfExports), "Dictionary export count should match remaining exports"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestRemoveRowsPrunesDictionaryColumns", Err.Number, Err.Description
 End Sub
 
 '@sub-title Verify that RemoveRows retains dictionary columns for identifiers still present
 '@details
 'Arranges by adding three rows so four exports exist, manually deleting
 'row 3 from the ListObject, then calling RemoveRows. Asserts that the row count
-'drops, the stored counter aligns, Export 4 is gone because its identifier was
+'drops, the table row count aligns, Export 4 is gone because its identifier was
 'removed, and Export 3 is also gone.
 '@TestMethod("LLExport")
 Public Sub TestRemoveRowsKeepsColumnsForRemainingIdentifiers()
     CustomTestSetTitles Assert, "LLExport", "TestRemoveRowsKeepsColumnsForRemainingIdentifiers"
+    On Error GoTo Fail
 
     Dim dict As LLdictionary
     Dim exportIdx As Long
+
     Set dict = LLdictionary.Create(DictionarySheet, 1, 1)
 
     dict.RemoveColumn "Export 5"
@@ -504,9 +585,13 @@ Public Sub TestRemoveRowsKeepsColumnsForRemainingIdentifiers()
     Manager.RemoveRows
 
     Assert.AreEqual 1, Manager.NumberOfExports, "Row count should drop after deleting one export"
-    Assert.AreEqual 1, StoredExportTotal(), "Stored export counter should align with current export count"
+    Assert.AreEqual 1, TableRowCount(), "The table row count should align with the current export count"
     Assert.IsFalse dict.ColumnExists("Export 4"), "Export column 4 should persist when its identifier still exists"
     Assert.IsFalse dict.ColumnExists("Export 3"), "Export column 3 should be removed when identifier is missing"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestRemoveRowsKeepsColumnsForRemainingIdentifiers", Err.Number, Err.Description
 End Sub
 
 '@sub-title Verify that RemoveRows honours the rowCount threshold parameter
@@ -518,6 +603,7 @@ End Sub
 '@TestMethod("LLExport")
 Public Sub TestRemoveRowsHonoursThreshold()
     CustomTestSetTitles Assert, "LLExport", "TestRemoveRowsHonoursThreshold"
+    On Error GoTo Fail
 
     Manager.AddRows
     Manager.RemoveRows rowCount:=0
@@ -525,6 +611,10 @@ Public Sub TestRemoveRowsHonoursThreshold()
 
     Manager.RemoveRows rowCount:=2
     Assert.AreEqual 1, Manager.NumberOfExports, "Rows at or below the threshold should be trimmed"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestRemoveRowsHonoursThreshold", Err.Number, Err.Description
 End Sub
 
 '@section ExportFileName
@@ -539,12 +629,19 @@ End Sub
 '@TestMethod("LLExport")
 Public Sub TestExportFileNameBuildsFromTemplate()
     CustomTestSetTitles Assert, "LLExport", "TestExportFileNameBuildsFromTemplate"
+    On Error GoTo Fail
+
     Dim fileName As String
+
     fileName = Manager.ExportFileName(1, LLdictionary.Create(DictionarySheet, 1, 1), PasswordsSubject)
     Assert.IsTrue InStr(1, fileName, "custom_value__literal_suffix", vbTextCompare) > 0, _
                   "Filename should include resolved variable and literal chunks"
     Assert.IsTrue fileName Like "*__vd0099-1234__*", "Version suffix should be appended - Actual finename: " & fileName
     Assert.IsFalse Manager.HasCheckings, "Default template should not trigger checkings for literal chunks"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestExportFileNameBuildsFromTemplate", Err.Number, Err.Description
 End Sub
 
 '@sub-title Verify that ExportFileName preserves single-quoted literal chunks
@@ -555,15 +652,21 @@ End Sub
 '@TestMethod("LLExport")
 Public Sub TestExportFileNameHandlesSingleQuotedLiteral()
     CustomTestSetTitles Assert, "LLExport", "TestExportFileNameHandlesSingleQuotedLiteral"
+    On Error GoTo Fail
+
+    Dim fileName As String
 
     ExportSheet.ListObjects(1).DataBodyRange.Cells(1, ColumnIndexOf("file name")).Value = "choi_v1 + 'single literal'"
 
-    Dim fileName As String
     fileName = Manager.ExportFileName(1, LLdictionary.Create(DictionarySheet, 1, 1), PasswordsSubject)
 
     Assert.IsTrue InStr(1, fileName, "custom_value__single_literal", vbTextCompare) > 0, _
                   "Single-quoted literal chunks should be preserved"
     Assert.IsFalse Manager.HasCheckings, "Single-quoted literal chunks should not trigger checkings"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestExportFileNameHandlesSingleQuotedLiteral", Err.Number, Err.Description
 End Sub
 
 '@sub-title Verify that ExportFileName concatenates all-literal templates correctly
@@ -575,15 +678,58 @@ End Sub
 '@TestMethod("LLExport")
 Public Sub TestExportFileNameWithOnlyLiteralChunks()
     CustomTestSetTitles Assert, "LLExport", "TestExportFileNameWithOnlyLiteralChunks"
+    On Error GoTo Fail
+
+    Dim fileName As String
 
     ExportSheet.ListObjects(1).DataBodyRange.Cells(1, ColumnIndexOf("file name")).Value = """static chunk"" + ""second part"""
 
-    Dim fileName As String
     fileName = Manager.ExportFileName(1, LLdictionary.Create(DictionarySheet, 1, 1), PasswordsSubject)
 
     Assert.IsTrue InStr(1, fileName, "static_chunk__second_part", vbTextCompare) > 0, _
                   "All-literal templates should concatenate sanitized literals"
     Assert.IsFalse Manager.HasCheckings, "All-literal templates should not trigger checkings"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestExportFileNameWithOnlyLiteralChunks", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verify that every character in the sanitize list is replaced
+'@details
+'Writes a literal template holding the whole set of characters the class calls
+'invalid. Asserts that none of them survives into the file name. Against the
+'earlier sanitiser only the last entry in the list, a space, was replaced, so
+'a template chunk carrying a slash or a colon reached the SaveAs path.
+'@TestMethod("LLExport")
+Public Sub TestExportFileNameReplacesEveryInvalidCharacter()
+    CustomTestSetTitles Assert, "LLExport", "TestExportFileNameReplacesEveryInvalidCharacter"
+    On Error GoTo Fail
+
+    Dim fileName As String
+    Dim invalidChars As Variant
+    Dim idx As Long
+    Dim badChar As String
+
+    ExportSheet.ListObjects(1).DataBodyRange.Cells(1, ColumnIndexOf("file name")).Value = _
+        Chr$(34) & "a<b>c:d\e/f|g?h*i&j.k l" & Chr$(34)
+
+    fileName = Manager.ExportFileName(1, LLdictionary.Create(DictionarySheet, 1, 1), PasswordsSubject)
+
+    invalidChars = Array("<", ">", ":", "\", "/", "|", "?", "*", "&", " ")
+
+    For idx = LBound(invalidChars) To UBound(invalidChars)
+        badChar = CStr(invalidChars(idx))
+        Assert.AreEqual 0, InStr(1, fileName, badChar, vbBinaryCompare), _
+                        "Character " & badChar & " should be replaced - Actual filename: " & fileName
+    Next idx
+
+    Assert.IsTrue InStr(1, fileName, "a_b_c_d_e_f_g_h_i_j_k_l", vbTextCompare) > 0, _
+                  "Every invalid character should become an underscore - Actual filename: " & fileName
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestExportFileNameReplacesEveryInvalidCharacter", Err.Number, Err.Description
 End Sub
 
 '@sub-title Verify that ExportFileName logs a checking entry for inactive exports
@@ -594,12 +740,20 @@ End Sub
 '@TestMethod("LLExport")
 Public Sub TestExportFileNameLogsWhenInactive()
     CustomTestSetTitles Assert, "LLExport", "TestExportFileNameLogsWhenInactive"
+    On Error GoTo Fail
+
+    Dim name As String
+
     Manager.AddRows
     ExportSheet.ListObjects(1).DataBodyRange.Cells(2, ColumnIndexOf("status")).Value = "inactive"
-    Dim name As String
+
     name = Manager.ExportFileName(2, LLdictionary.Create(DictionarySheet, 1, 1), PasswordsSubject)
     Assert.IsTrue Manager.HasCheckings, "Inactive export should log information"
     Assert.IsTrue LenB(name) > 0, "Should still return a filename"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestExportFileNameLogsWhenInactive", Err.Number, Err.Description
 End Sub
 
 '@sub-title Verify that exportAll flag overrides the scope portion of the filename
@@ -609,9 +763,16 @@ End Sub
 '@TestMethod("LLExport")
 Public Sub TestExportAllOverridesScope()
     CustomTestSetTitles Assert, "LLExport", "TestExportAllOverridesScope"
+    On Error GoTo Fail
+
     Dim name As String
+
     name = Manager.ExportFileName(1, LLdictionary.Create(DictionarySheet, 1, 1), PasswordsSubject, exportAll:=True)
     Assert.IsTrue InStr(1, name, "export_all", vbTextCompare) > 0, "ExportAll should override scope - fileName : " & name
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestExportAllOverridesScope", Err.Number, Err.Description
 End Sub
 
 '@sub-title Verify that ExportFileName logs a checking entry for unresolvable chunks
@@ -623,14 +784,21 @@ End Sub
 '@TestMethod("LLExport")
 Public Sub TestExportFileNameLogsMissingChunk()
     CustomTestSetTitles Assert, "LLExport", "TestExportFileNameLogsMissingChunk"
-    ExportSheet.ListObjects(1).DataBodyRange.Cells(1, ColumnIndexOf("file name")).Value = "unknown_chunk"
+    On Error GoTo Fail
 
     Dim fileName As String
+
+    ExportSheet.ListObjects(1).DataBodyRange.Cells(1, ColumnIndexOf("file name")).Value = "unknown_chunk"
+
     fileName = Manager.ExportFileName(1, LLdictionary.Create(DictionarySheet, 1, 1), PasswordsSubject)
 
     Assert.IsTrue Manager.HasCheckings, "Missing chunk should produce checking entries"
     Assert.IsTrue InStr(1, fileName, "unknown_chunk", vbTextCompare) > 0, _
                   "Fallback filename should include sanitized chunk"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestExportFileNameLogsMissingChunk", Err.Number, Err.Description
 End Sub
 
 '@section Status
@@ -640,12 +808,23 @@ End Sub
 '@details
 'Asserts that the default row (status "active") returns True from IsActive.
 'Overwrites the status cell to "inactive" and asserts IsActive returns False.
+'The class keeps a copy of the specification table, so a test that writes to
+'the sheet itself calls ResetCaches before reading again.
 '@TestMethod("LLExport")
 Public Sub TestIsActiveReflectsStatus()
     CustomTestSetTitles Assert, "LLExport", "TestIsActiveReflectsStatus"
+    On Error GoTo Fail
+
     Assert.IsTrue Manager.IsActive(1), "Row with active status should be active"
+
     ExportSheet.ListObjects(1).DataBodyRange.Cells(1, ColumnIndexOf("status")).Value = "inactive"
+    Manager.ResetCaches
+
     Assert.IsFalse Manager.IsActive(1), "Row with inactive status should report false"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestIsActiveReflectsStatus", Err.Number, Err.Description
 End Sub
 
 '@sub-title Verify that ActiveExportNumbers returns only active row indices
@@ -657,23 +836,30 @@ End Sub
 '@TestMethod("LLExport")
 Public Sub TestActiveExportNumbersReturnsActiveRows()
     CustomTestSetTitles Assert, "LLExport", "TestActiveExportNumbersReturnsActiveRows"
+    On Error GoTo Fail
+
+    Dim statusCol As Long
+    Dim active As BetterArray
+    Dim startIndex As Long
+
     Manager.AddRows
     Manager.AddRows
 
-    Dim statusCol As Long
     statusCol = ColumnIndexOf("status")
 
     ExportSheet.ListObjects(1).DataBodyRange.Cells(2, statusCol).Value = "inactive"
     ExportSheet.ListObjects(1).DataBodyRange.Cells(3, statusCol).Value = "active"
 
-    Dim active As BetterArray
     Set active = Manager.ActiveExportNumbers
 
     Assert.AreEqual 2, active.Length, "Expected two active exports"
-    Dim startIndex As Long
     startIndex = active.LowerBound
     Assert.AreEqual 1, CLng(active.Item(startIndex)), "First active export should be row 1"
     Assert.AreEqual 3, CLng(active.Item(startIndex + 1)), "Second active export should be row 3"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestActiveExportNumbersReturnsActiveRows", Err.Number, Err.Description
 End Sub
 
 '@section Helpers
@@ -752,26 +938,15 @@ Private Function ColumnIndexOf(ByVal headerName As String) As Long
     ColumnIndexOf = ExportSheet.ListObjects(1).ListColumns(headerName).Index
 End Function
 
-'@sub-title Read the hidden worksheet-level name that stores the export total
+'@sub-title Count the data rows the export table holds on the worksheet
 '@details
-'Looks up the worksheet-scoped Name defined by EXPORT_TOTAL_NAME on the export
-'sheet. If the name exists, parses its value by stripping the leading equals
-'sign and converting to Long. Returns zero when the name is missing or empty.
-Private Function StoredExportTotal() As Long
-    Dim definition As Name
-    Dim evaluated As String
+'Read straight off the ListObject, so it answers what the sheet holds rather
+'than what the class believes.
+Private Function TableRowCount() As Long
+    Dim lo As ListObject
 
-    On Error Resume Next
-        Set definition = ExportSheet.Names(EXPORT_TOTAL_NAME)
-    On Error GoTo 0
+    Set lo = ExportSheet.ListObjects(1)
+    If lo.DataBodyRange Is Nothing Then Exit Function
 
-    If definition Is Nothing Then Exit Function
-
-    On Error Resume Next
-        evaluated = Trim$(Replace$(definition.Value, "=", vbNullString))
-    On Error GoTo 0
-
-    If LenB(evaluated) <> 0 Then
-        StoredExportTotal = CLng(evaluated)
-    End If
+    TableRowCount = lo.DataBodyRange.Rows.Count
 End Function
