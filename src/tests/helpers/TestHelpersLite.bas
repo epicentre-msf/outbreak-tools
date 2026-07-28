@@ -118,6 +118,31 @@ Public Function EnsureWorksheet(ByVal sheetName As String, _
     Set EnsureWorksheet = sh
 End Function
 
+'@label WorksheetExists
+'@fun-title Test whether a worksheet exists in a workbook.
+'@details Test whether a worksheet exists in a workbook.
+'@param sheetName String. Name to look up.
+'@param targetBook Optional Workbook. Defaults to ThisWorkbook.
+'@return Boolean indicating existence.
+Public Function WorksheetExists(ByVal sheetName As String, _
+                                Optional ByVal targetBook As workbook) As Boolean
+
+    Dim wb As workbook
+    Dim sh As Worksheet
+
+    If targetBook Is Nothing Then
+        Set wb = ThisWorkbook
+    Else
+        Set wb = targetBook
+    End If
+
+    On Error Resume Next
+        Set sh = wb.Worksheets(sheetName)
+    On Error GoTo 0
+
+    WorksheetExists = Not (sh Is Nothing)
+End Function
+
 '@label ClearWorksheet
 '@sub-title Remove data, tables, shapes and names from a worksheet.
 '@details Remove data, tables, shapes and names from a worksheet.

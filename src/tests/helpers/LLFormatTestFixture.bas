@@ -161,7 +161,7 @@ Public Function PrepareLLFormatFixture(ByVal sheetName As String, _
     Set wb = ResolveWorkbook(targetBook)
 
     DeleteLLFormatFixture sheetName, wb
-    Set fixtureSheet = TestHelpers.EnsureWorksheet(sheetName, wb)
+    Set fixtureSheet = TestHelpersLite.EnsureWorksheet(sheetName, wb)
 
     BuildFormatTemplate fixtureSheet
 
@@ -182,10 +182,10 @@ Public Sub DeleteLLFormatFixture(ByVal sheetName As String, _
 
     Set wb = ResolveWorkbook(targetBook)
 
-    If Not TestHelpers.WorksheetExists(sheetName, wb) Then Exit Sub
+    If Not TestHelpersLite.WorksheetExists(sheetName, wb) Then Exit Sub
 
     If wb Is ThisWorkbook Then
-        TestHelpers.DeleteWorksheet sheetName
+        TestHelpersLite.DeleteWorksheet sheetName
     Else
         DeleteWorksheetInternal sheetName, wb
     End If
@@ -200,7 +200,7 @@ Public Function LLFormatTemplate(Optional ByVal targetBook As Workbook) As Works
     Dim template As Worksheet
 
     Set wb = ResolveWorkbook(targetBook)
-    Set template = TestHelpers.EnsureWorksheet(LLFORMAT_TEMPLATE_SHEET, wb)
+    Set template = TestHelpersLite.EnsureWorksheet(LLFORMAT_TEMPLATE_SHEET, wb)
     BuildFormatTemplate template
     Set LLFormatTemplate = template
 End Function
@@ -464,9 +464,9 @@ Private Sub BuildFormatTemplate(ByVal targetSheet As Worksheet)
             rowData(ROW_DESIGN2_VALUE_INDEX))
     Next rowIndex
 
-    matrix = TestHelpers.RowsToMatrix(matrixRows)
+    matrix = TestHelpersLite.RowsToMatrix(matrixRows)
     Set startCell = targetSheet.Range("A1")
-    TestHelpers.WriteMatrix startCell, matrix
+    TestHelpersLite.WriteMatrix startCell, matrix
 
     Set tableRange = startCell.Resize(UBound(matrix, 1), UBound(matrix, 2))
     Set lo = targetSheet.ListObjects.Add(xlSrcRange, source:=tableRange, XlListObjectHasHeaders:=xlYes)

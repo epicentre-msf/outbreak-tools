@@ -69,6 +69,10 @@ suites:
     tests:
       - module: TestHelpersLite
       - module: DictionaryTestFixture
+      # LLFormatTestFixture is a .bas, so it is registered here as a helper
+      # module. The `fixtures` tag would resolve it to src/tests/F/<name>.cls,
+      # which it is not. Same shape as DictionaryTestFixture above.
+      - module: LLFormatTestFixture
 
   # --- general (OSFiles, DropdownLists) --------------------------------------
   # DropdownLists' whole dependency closure (HiddenNames, BetterArray, Checking)
@@ -88,6 +92,9 @@ suites:
       # ApplicationState compile-depends on ProjectError alone, which lives in
       # Checking and is already in the workbook.
       - name: ApplicationState
+      # LLFormat needs CustomTable (Import and Export), Checking and BetterArray.
+      # CustomTable is above and the other two are already in the workbook.
+      - name: LLFormat
     tests:
       - module: TestOSFiles
         covers: [OSFiles]
@@ -101,6 +108,8 @@ suites:
         covers: [CustomTable]
       - module: TestApplicationState
         covers: [ApplicationState]
+      - module: TestLLFormat
+        covers: [LLFormat]
 
   # --- sections -------------------------------------------------------------
   # (Also note: interface: true is stale -- IVarWriter /

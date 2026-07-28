@@ -31,7 +31,7 @@ Option Explicit
 '   test isolation.
 '
 ' @depends LLFormat, Checking, BetterArray, CustomTest,
-'          TestHelpers, LLFormatTestFixture
+'          TestHelpersLite, LLFormatTestFixture
 '===============================================================================
 
 '@Folder("CustomTests")
@@ -279,7 +279,7 @@ Public Sub TestCleanup()
         LLFormatTestFixture.DeleteLLFormatFixture IMPORT_SHEET_NAME, FormatWorkbook
         LLFormatTestFixture.DeleteLLFormatFixture FORMAT_SHEET_NAME, FormatWorkbook
         LLFormatTestFixture.DeleteLLFormatFixture "LLFormatFixture_DesignRange", FormatWorkbook
-        TestHelpers.DeleteWorksheet "LLFormat_AllAnalysis_Test"
+        TestHelpersLite.DeleteWorksheet "LLFormat_AllAnalysis_Test"
     On Error GoTo 0
 
     Set FormatUnderTest = Nothing
@@ -557,13 +557,13 @@ Public Sub TestApplyFormatAllAnalysisSheetUsesDesignDimensions()
                      "Worksheet column width should match the design value"
     Assert.AreEqual 25, tempSheet.Rows(2).RowHeight, "Row height for row 2 should match specification"
 
-    TestHelpers.DeleteWorksheet "LLFormat_AllAnalysis_Test"
+    TestHelpersLite.DeleteWorksheet "LLFormat_AllAnalysis_Test"
 
     Exit Sub
 
 TestFail:
     On Error Resume Next
-    TestHelpers.DeleteWorksheet "LLFormat_AllAnalysis_Test"
+    TestHelpersLite.DeleteWorksheet "LLFormat_AllAnalysis_Test"
     On Error GoTo 0
     CustomTestLogFailure Assert, "TestApplyFormatAllAnalysisSheetUsesDesignDimensions", Err.Number, Err.Description
 End Sub
@@ -700,7 +700,7 @@ End Sub
 '@description Export should create a new worksheet in the target workbook when it does not exist.
 ' @sub-title TestExportCreatesNewSheetInTargetWorkbook
 ' @details Tests that Export creates a new worksheet in a fresh target workbook.
-'   Arranges by creating an empty workbook via TestHelpers.NewWorkbook, acts by
+'   Arranges by creating an empty workbook via TestHelpersLite.NewWorkbook, acts by
 '   calling FormatUnderTest.Export, then asserts that a worksheet matching the
 '   source format sheet name exists in the target and is the last sheet in the
 '   workbook. The target workbook is deleted in both success and failure paths.
@@ -711,23 +711,23 @@ Public Sub TestExportCreatesNewSheetInTargetWorkbook()
     Dim targetWkb As Workbook
     Dim sourceSheetName As String
 
-    Set targetWkb = TestHelpers.NewWorkbook()
+    Set targetWkb = TestHelpersLite.NewWorkbook()
     sourceSheetName = FormatSheet.Name
 
     FormatUnderTest.Export targetWkb
 
-    Assert.IsTrue TestHelpers.WorksheetExists(sourceSheetName, targetWkb), _
+    Assert.IsTrue TestHelpersLite.WorksheetExists(sourceSheetName, targetWkb), _
                  "Export should create worksheet in target workbook"
     Assert.AreEqual sourceSheetName, targetWkb.Worksheets(targetWkb.Worksheets.Count).Name, _
                      "Export should add worksheet at the end of the workbook"
 
-    TestHelpers.DeleteWorkbook targetWkb
+    TestHelpersLite.DeleteWorkbook targetWkb
 
     Exit Sub
 
 TestFail:
     On Error Resume Next
-    TestHelpers.DeleteWorkbook targetWkb
+    TestHelpersLite.DeleteWorkbook targetWkb
     On Error GoTo 0
     CustomTestLogFailure Assert, "TestExportCreatesNewSheetInTargetWorkbook", Err.Number, Err.Description
 End Sub
@@ -749,7 +749,7 @@ Public Sub TestExportCopiesTableDataToNewWorkbook()
     Dim targetSheet As Worksheet
     Dim targetTable As ListObject
 
-    Set targetWkb = TestHelpers.NewWorkbook()
+    Set targetWkb = TestHelpersLite.NewWorkbook()
     Set sourceTable = FormatSheet.ListObjects(1)
 
     FormatUnderTest.Export targetWkb
@@ -759,13 +759,13 @@ Public Sub TestExportCopiesTableDataToNewWorkbook()
 
     Call VerifyTableStructureMatches(sourceTable, targetTable, "Export")
 
-    TestHelpers.DeleteWorkbook targetWkb
+    TestHelpersLite.DeleteWorkbook targetWkb
 
     Exit Sub
 
 TestFail:
     On Error Resume Next
-    TestHelpers.DeleteWorkbook targetWkb
+    TestHelpersLite.DeleteWorkbook targetWkb
     On Error GoTo 0
     CustomTestLogFailure Assert, "TestExportCopiesTableDataToNewWorkbook", Err.Number, Err.Description
 End Sub
@@ -794,7 +794,7 @@ Public Sub TestExportCopiesFormatTableStyles()
     sourceCell.Font.Color = RGB(255, 0, 0)
     sourceCell.Interior.Color = RGB(0, 255, 0)
 
-    Set targetWkb = TestHelpers.NewWorkbook()
+    Set targetWkb = TestHelpersLite.NewWorkbook()
 
     FormatUnderTest.Export targetWkb
 
@@ -806,13 +806,13 @@ Public Sub TestExportCopiesFormatTableStyles()
     Assert.AreEqual CLng(RGB(0, 255, 0)), CLng(targetCell.Interior.Color), _
                      "Interior color should be copied to target"
 
-    TestHelpers.DeleteWorkbook targetWkb
+    TestHelpersLite.DeleteWorkbook targetWkb
 
     Exit Sub
 
 TestFail:
     On Error Resume Next
-    TestHelpers.DeleteWorkbook targetWkb
+    TestHelpersLite.DeleteWorkbook targetWkb
     On Error GoTo 0
     CustomTestLogFailure Assert, "TestExportCopiesFormatTableStyles", Err.Number, Err.Description
 End Sub
@@ -834,7 +834,7 @@ Public Sub TestExportCreatesListObjectInTarget()
     Dim targetSheet As Worksheet
     Dim targetTable As ListObject
 
-    Set targetWkb = TestHelpers.NewWorkbook()
+    Set targetWkb = TestHelpersLite.NewWorkbook()
 
     FormatUnderTest.Export targetWkb
 
@@ -846,13 +846,13 @@ Public Sub TestExportCreatesListObjectInTarget()
     Set targetTable = targetSheet.ListObjects(1)
     Assert.ObjectExists targetTable, "ListObject", "Export should create a valid ListObject"
 
-    TestHelpers.DeleteWorkbook targetWkb
+    TestHelpersLite.DeleteWorkbook targetWkb
 
     Exit Sub
 
 TestFail:
     On Error Resume Next
-    TestHelpers.DeleteWorkbook targetWkb
+    TestHelpersLite.DeleteWorkbook targetWkb
     On Error GoTo 0
     CustomTestLogFailure Assert, "TestExportCreatesListObjectInTarget", Err.Number, Err.Description
 End Sub
@@ -873,7 +873,7 @@ Public Sub TestExportCreatesDesignTypeNamedRange()
     Dim targetSheet As Worksheet
     Dim designRange As Range
 
-    Set targetWkb = TestHelpers.NewWorkbook()
+    Set targetWkb = TestHelpersLite.NewWorkbook()
 
     FormatUnderTest.Export targetWkb
 
@@ -886,13 +886,13 @@ Public Sub TestExportCreatesDesignTypeNamedRange()
     Assert.ObjectExists designRange, "Range", _
                         "Export should create DESIGNTYPE named range in target"
 
-    TestHelpers.DeleteWorkbook targetWkb
+    TestHelpersLite.DeleteWorkbook targetWkb
 
     Exit Sub
 
 TestFail:
     On Error Resume Next
-    TestHelpers.DeleteWorkbook targetWkb
+    TestHelpersLite.DeleteWorkbook targetWkb
     On Error GoTo 0
     CustomTestLogFailure Assert, "TestExportCreatesDesignTypeNamedRange", Err.Number, Err.Description
 End Sub
@@ -916,7 +916,7 @@ Public Sub TestExportPreservesDesignTypeValue()
     Dim targetDesign As String
 
     sourceDesign = CStr(FormatSheet.Range("DESIGNTYPE").Value)
-    Set targetWkb = TestHelpers.NewWorkbook()
+    Set targetWkb = TestHelpersLite.NewWorkbook()
 
     FormatUnderTest.Export targetWkb
 
@@ -926,13 +926,13 @@ Public Sub TestExportPreservesDesignTypeValue()
     Assert.AreEqual sourceDesign, targetDesign, _
                      "Export should preserve DESIGNTYPE value in target"
 
-    TestHelpers.DeleteWorkbook targetWkb
+    TestHelpersLite.DeleteWorkbook targetWkb
 
     Exit Sub
 
 TestFail:
     On Error Resume Next
-    TestHelpers.DeleteWorkbook targetWkb
+    TestHelpersLite.DeleteWorkbook targetWkb
     On Error GoTo 0
     CustomTestLogFailure Assert, "TestExportPreservesDesignTypeValue", Err.Number, Err.Description
 End Sub
@@ -957,7 +957,7 @@ Public Sub TestExportWithExistingSheetCallsImport()
     Dim colorValue As Long
 
     defaultDesign = FixtureDefaultDesign()
-    Set targetWkb = TestHelpers.NewWorkbook()
+    Set targetWkb = TestHelpersLite.NewWorkbook()
     Set targetSheet = LLFormatTestFixture.PrepareLLFormatFixture(FormatSheet.Name, targetWkb)
 
     With LLFormatTestFixture.FixtureCell(targetSheet, LABEL_MISSING_FONT_COLOR, defaultDesign)
@@ -971,13 +971,13 @@ Public Sub TestExportWithExistingSheetCallsImport()
     Assert.AreEqual RGB(100, 100, 100), colorValue, _
                      "Export with existing sheet should Import instead of overwriting"
 
-    TestHelpers.DeleteWorkbook targetWkb
+    TestHelpersLite.DeleteWorkbook targetWkb
 
     Exit Sub
 
 TestFail:
     On Error Resume Next
-    TestHelpers.DeleteWorkbook targetWkb
+    TestHelpersLite.DeleteWorkbook targetWkb
     On Error GoTo 0
     CustomTestLogFailure Assert, "TestExportWithExistingSheetCallsImport", Err.Number, Err.Description
 End Sub
