@@ -15,13 +15,21 @@ Option Explicit
 '@PredeclaredId
 '@Folder("Dictionary")
 '@ModuleDescription("Linelist dictionary utilities")
-'@depends Checking, CustomTable, DataSheet, HiddenNames, TranslationObject
+'@depends BetterArray, Checking, CustomTable, DataSheet, HiddenNames, TranslationObject
 
 
 'The linelist dictionary class centralises all logic that manipulates the Excel
 '"Dictionary" worksheet used across setup and designer workflows. It merges
 'behaviour from the legacy implementations so consumers interact with a single
 'surface area and tests target a unified object model.
+'
+'The geo object handed to `Prepare` is taken `As Object` and reached late, so
+'`LLGeo` is not a compile dependency of this class.
+'
+'Speed rule for this file: read a block once into a Variant, work in memory,
+'write it back once. Every `Cells(row, column).Value` inside a row loop is one
+'crossing into Excel, and the preparation pipeline runs over the whole
+'dictionary.
 
 Private Type TDictionary
     dictDataSheet As DataSheet
@@ -29,22 +37,23 @@ Private Type TDictionary
     hasChecks As Boolean
     hiddenValues As HiddenNames
     sealed As Boolean
+    allowedColumns As BetterArray      'Headers the dictionary accepts
+    addedColumns As BetterArray        'Headers preparation creates
+    preparedValue As Boolean           'True once the dictionary was seen prepared
+    checkCounter As Long
+    internalChecks As Checking
 End Type
 
 Private this As TDictionary
-Private dictionaryColumns As BetterArray
-Private dictionaryAddedColumns As BetterArray
 
+Private Const CLASSNAME As String = "LLdictionary"
 Private Const SHEETTYPEVERTICAL As String = "vlist1D"
 Private Const SHEETTYPEHORIZONTAL As String = "hlist2D"
 Private Const DEFAULTNUMBEROFEXPORTS As Long = 20
 Private Const DEFAULTDICTIONARYCOLUMNS As String = "variable name|main label|dev comments|editable label|sub label|note|sheet name|sheet type|main section|sub section|status|register book|personal identifier|variable type|variable format|control|control details|unique|min|max|alert|message|formatting condition|formatting values|lock cells"
 Private Const DEFAULTCREATEDCOLUMNS As String = "table name|column index|visibility|crf index|crf choices|crf status|list auto"
 Private Const TOTAL_EXPORTS_NAME As String = "__ll_exports_total__"
-
-'Checking support
-Private checkCounter As Long
-Private internalChecks As Checking
+Private Const MAXREPORTEDROWS As Long = 20
 
 '@section Instantiation
 '===============================================================================
@@ -55,17 +64,25 @@ Private internalChecks As Checking
 'Creates a linelist dictionary wrapper around the supplied worksheet. The
 'routine initialises a backing `DataSheet` so all subsequent access goes through
 'a consistent abstraction and callers interact with a predeclared instance.
+'
+'`numberOfExports` defaults to 0, which means "keep whatever the worksheet
+'already stores". Fourteen of the twenty production call sites omit the
+'argument, and a default of 20 wrote 20 over the real count and persisted it,
+'so a workbook holding 3 exports came back claiming 20. `SetupErrors` then
+'looped 1 To 20 over a three-row status table and reported notes about exports
+'that are not there. The four call sites that pass a number still decide.
 '@params
 '- dictWksh Worksheet hosting the dictionary data
 '- dictStartRow Long. Header row of the dictionary
 '- dictStartColumn Long. First column of the dictionary
-'- numberOfExports Optional Long. Expected number of export columns
+'- numberOfExports Optional Long. Expected number of export columns. Zero reads
+'  the stored value.
 '@return An LLdictionary instance
 '@depends DataSheet, Checking
 '@export
 Public Function Create(ByVal dictWksh As Worksheet, ByVal dictStartRow As Long, _
                        ByVal dictStartColumn As Long, _
-                       Optional ByVal numberOfExports As Long = DEFAULTNUMBEROFEXPORTS) As LLdictionary
+                       Optional ByVal numberOfExports As Long = 0) As LLdictionary
 
     Dim customDataSheet As DataSheet
 
@@ -85,10 +102,11 @@ End Function
 'Loads the stored number of export columns from the worksheet when available.
 'When no persisted value exists, the routine falls back to the requested input
 'and persists it so subsequent sessions pick up the same configuration.
+'A requested total of zero means "use what is stored".
 Public Sub InitialiseTotalExports(ByVal requestedTotal As Long)
     Dim storedTotal As Long
 
-    storedTotal = StoredTotalExportsFromSheet(Wksh())
+    storedTotal = StoredTotalExports()
 
     If requestedTotal > 0 Then
         If (storedTotal = 0) Or (storedTotal <> requestedTotal) Then
@@ -121,6 +139,7 @@ Public Property Set Data(ByVal customDataSheet As DataSheet)
     GuardNotSealed "Data"
     Set this.dictDataSheet = customDataSheet
     Set this.hiddenValues = Nothing
+    ClearPreparedCache
 End Property
 
 '@label:seal
@@ -174,15 +193,11 @@ End Property
 Private Sub ApplyTotalExports(ByVal requestedTotal As Long, _
                               Optional ByVal persist As Boolean = True, _
                               Optional ByVal suppressInvalidLog As Boolean = False)
+
     Dim normalisedTotal As Long
-    Dim previousTotal As Long
 
-    previousTotal = this.numberOfExports
     normalisedTotal = NormaliseTotalExports(requestedTotal, suppressInvalidLog)
-
     this.numberOfExports = normalisedTotal
-
-    If normalisedTotal <> previousTotal Then ResetColumnCaches
 
     If persist Then PersistTotalExports normalisedTotal
 End Sub
@@ -199,60 +214,78 @@ Private Function NormaliseTotalExports(ByVal requestedTotal As Long, ByVal suppr
     End If
 End Function
 
-'@label:reset-export-cache
-Private Sub ResetColumnCaches()
-    Set dictionaryColumns = Nothing
-    Set dictionaryAddedColumns = Nothing
-End Sub
-
 '@label:persist-exports
 '@details
-'Persist the export counter into the hidden name store. With no sheet the store
-'resolves to the current dictionary worksheet; passing a sheet targets that sheet
-'(used when writing the counter into an exported workbook).
-Private Sub PersistTotalExports(ByVal totalCount As Long, Optional ByVal sheet As Worksheet)
+'Persist the export counter into the hidden name store of the dictionary
+'worksheet.
+Private Sub PersistTotalExports(ByVal totalCount As Long)
     Dim store As HiddenNames
 
-    If totalCount < 0 Then totalCount = 0
-
-    Set store = HiddenNameStore(sheet)
+    Set store = HiddenNameStore()
     If store Is Nothing Then Exit Sub
+
+    WriteTotalExports store, totalCount
+End Sub
+
+'@label:persist-exports-on
+'@details
+'Persist the export counter onto a worksheet this object does not own. Used
+'when the counter is written into an exported workbook.
+Private Sub PersistTotalExportsOn(ByVal targetSheet As Worksheet, ByVal totalCount As Long)
+    If targetSheet Is Nothing Then Exit Sub
+
+    WriteTotalExports HiddenNames.Create(targetSheet), totalCount
+End Sub
+
+'@label:write-exports
+Private Sub WriteTotalExports(ByVal store As HiddenNames, ByVal totalCount As Long)
+    If store Is Nothing Then Exit Sub
+    If totalCount < 0 Then totalCount = 0
 
     store.EnsureName TOTAL_EXPORTS_NAME, totalCount, HiddenNameTypeLong
     store.SetValue TOTAL_EXPORTS_NAME, totalCount
 End Sub
 
 '@label:stored-exports
-Private Function StoredTotalExportsFromSheet(ByVal sheet As Worksheet) As Long
+'@sub-title Export counter held on the dictionary worksheet
+Private Function StoredTotalExports() As Long
     Dim store As HiddenNames
 
-    If sheet Is Nothing Then Exit Function
-
-    Set store = HiddenNameStore(sheet)
+    Set store = HiddenNameStore()
     If store Is Nothing Then Exit Function
 
-    StoredTotalExportsFromSheet = store.ValueAsLong(TOTAL_EXPORTS_NAME, 0)
+    StoredTotalExports = store.ValueAsLong(TOTAL_EXPORTS_NAME, 0)
+End Function
+
+'@label:stored-exports-from
+'@sub-title Export counter held on a foreign worksheet
+Private Function StoredTotalExportsFromSheet(ByVal sourceSheet As Worksheet) As Long
+    If sourceSheet Is Nothing Then Exit Function
+
+    StoredTotalExportsFromSheet = HiddenNames.Create(sourceSheet).ValueAsLong(TOTAL_EXPORTS_NAME, 0)
 End Function
 
 '@label:hidden-name-store
-Private Function HiddenNameStore(Optional ByVal sheet As Worksheet) As HiddenNames
+'@sub-title Hidden name store of the dictionary worksheet
+'@details
+'The store is built once and kept. The host worksheet is fixed at creation, so
+'the second test only guards the case where the backing DataSheet was replaced
+'before the object was sealed.
+Private Function HiddenNameStore() As HiddenNames
     Dim target As Worksheet
 
-    If sheet Is Nothing Then
-        If this.dictDataSheet Is Nothing Then Exit Function
-        Set target = Wksh()
-        If target Is Nothing Then Exit Function
+    If this.dictDataSheet Is Nothing Then Exit Function
 
-        If this.hiddenValues Is Nothing Then
-            Set this.hiddenValues = HiddenNames.Create(target)
-        ElseIf Not this.hiddenValues.Sheet Is target Then
-            Set this.hiddenValues = HiddenNames.Create(target)
-        End If
+    Set target = Wksh()
+    If target Is Nothing Then Exit Function
 
-        Set HiddenNameStore = this.hiddenValues
-    Else
-        Set HiddenNameStore = HiddenNames.Create(sheet)
+    If this.hiddenValues Is Nothing Then
+        Set this.hiddenValues = HiddenNames.Create(target)
+    ElseIf Not this.hiddenValues.Sheet Is target Then
+        Set this.hiddenValues = HiddenNames.Create(target)
     End If
+
+    Set HiddenNameStore = this.hiddenValues
 End Function
 
 '@label:wksh
@@ -282,6 +315,9 @@ End Property
 
 '@label:endrow
 '@prop-title Last data row
+'@details
+'One `End(xlUp)` scan per call, so callers read it once and hold the number
+'rather than asking inside a loop.
 '@return Long
 Private Property Get DictEndRow() As Long
     DictEndRow = Data().DataEndRow
@@ -289,6 +325,8 @@ End Property
 
 '@label:endcol
 '@prop-title Last data column
+'@details
+'One `End(xlToLeft)` scan per call. Same rule as `DictEndRow`.
 '@return Long
 Private Property Get DictEndColumn() As Long
     DictEndColumn = Data().DataEndColumn
@@ -310,36 +348,185 @@ Public Property Get DataRange(Optional ByVal colName As String = "__all__", _
 End Property
 
 
+'@section Block Readers And Writers
+'===============================================================================
+'@description
+'Small helpers that move a whole column between the worksheet and a plain
+'Variant array. They exist so every row loop in this class costs one read and
+'one write instead of one crossing per cell.
+
+'@label:column-values
+'@sub-title Read a single-column Range as a 1-based list of values
+'@details
+'`Range.Value` hands back a plain value for one cell and a two-dimensional
+'array otherwise. This flattens both cases so callers see one shape.
+'@param target Range. A single-column block.
+'@return Variant. A 1-based one-dimensional array of cell values.
+Private Function ColumnValues(ByVal target As Range) As Variant
+    Dim rawValues As Variant
+    Dim flat() As Variant
+    Dim counter As Long
+    Dim nbRows As Long
+
+    If target Is Nothing Then Exit Function
+
+    nbRows = target.Rows.Count
+    ReDim flat(1 To nbRows)
+
+    If nbRows = 1 Then
+        flat(1) = target.Cells(1, 1).Value
+    Else
+        rawValues = target.Columns(1).Value
+        For counter = 1 To nbRows
+            flat(counter) = rawValues(counter, 1)
+        Next
+    End If
+
+    ColumnValues = flat
+End Function
+
+'@label:row-values
+'@sub-title Read a single-row Range as a 1-based list of values
+'@param target Range. A single-row block.
+'@return Variant. A 1-based one-dimensional array of cell values.
+Private Function RowValues(ByVal target As Range) As Variant
+    Dim rawValues As Variant
+    Dim flat() As Variant
+    Dim counter As Long
+    Dim nbColumns As Long
+
+    If target Is Nothing Then Exit Function
+
+    nbColumns = target.Columns.Count
+    ReDim flat(1 To nbColumns)
+
+    If nbColumns = 1 Then
+        flat(1) = target.Cells(1, 1).Value
+    Else
+        rawValues = target.Rows(1).Value
+        For counter = 1 To nbColumns
+            flat(counter) = rawValues(1, counter)
+        Next
+    End If
+
+    RowValues = flat
+End Function
+
+'@label:sheet-column-values
+'@sub-title Read one worksheet column between two rows
+'@param columnNumber Long. Worksheet column index.
+'@param firstRow Long. Top row of the block.
+'@param lastRow Long. Bottom row of the block.
+'@return Variant. A 1-based one-dimensional array of cell values.
+Private Function SheetColumnValues(ByVal columnNumber As Long, _
+                                   ByVal firstRow As Long, _
+                                   ByVal lastRow As Long) As Variant
+    Dim hostSheet As Worksheet
+
+    Set hostSheet = Wksh()
+    SheetColumnValues = ColumnValues(hostSheet.Range(hostSheet.Cells(firstRow, columnNumber), _
+                                                     hostSheet.Cells(lastRow, columnNumber)))
+End Function
+
+'@label:write-sheet-column
+'@sub-title Write a 1-based list of values back into one worksheet column
+'@details
+'An element left `Empty` clears its cell, which is how the routines below leave
+'a row untouched without writing an empty string into it. An empty string would
+'count as content for `End(xlUp)` and move the last data row.
+'@param columnNumber Long. Worksheet column index.
+'@param firstRow Long. Top row of the block.
+'@param values Variant. A one-dimensional array of values.
+Private Sub WriteSheetColumn(ByVal columnNumber As Long, ByVal firstRow As Long, ByRef values As Variant)
+    Dim hostSheet As Worksheet
+    Dim block() As Variant
+    Dim counter As Long
+    Dim nbRows As Long
+
+    If Not IsArray(values) Then Exit Sub
+
+    nbRows = UBound(values) - LBound(values) + 1
+    If nbRows <= 0 Then Exit Sub
+
+    ReDim block(1 To nbRows, 1 To 1)
+    For counter = 1 To nbRows
+        block(counter, 1) = values(LBound(values) + counter - 1)
+    Next
+
+    Set hostSheet = Wksh()
+    hostSheet.Range(hostSheet.Cells(firstRow, columnNumber), _
+                    hostSheet.Cells(firstRow + nbRows - 1, columnNumber)).Value = block
+End Sub
+
+'@label:text-of
+'@sub-title Read one cell value as text without raising
+'@details
+'A cell holding an error value (#N/A and the like) or Null makes `CStr` raise a
+'type mismatch. Such a value can never match a header or a control tag, so it
+'reads as empty text.
+'@param cellValue Variant. The raw cell value.
+'@return String
+Private Function TextOf(ByVal cellValue As Variant) As String
+    If IsError(cellValue) Then Exit Function
+    If IsNull(cellValue) Then Exit Function
+
+    TextOf = CStr(cellValue)
+End Function
+
+'@label:list-position
+'@sub-title Find a value in a plain String list
+'@details
+'`BetterArray.Includes` copies the whole internal array on every call, so a
+'linear scan over a local array is cheaper inside a row loop.
+'@param values String array. The list, filled from index 1.
+'@param usedCount Long. How many entries are filled.
+'@param searchValue String. The value to look for.
+'@return Long. The 1-based position, or zero when the value is absent.
+Private Function ListPosition(ByRef values() As String, ByVal usedCount As Long, _
+                              ByVal searchValue As String) As Long
+    Dim counter As Long
+
+    For counter = 1 To usedCount
+        If values(counter) = searchValue Then
+            ListPosition = counter
+            Exit Function
+        End If
+    Next
+End Function
+
+
 '@section Column Configuration
 '===============================================================================
 
+'@label:ensure-columns
+'@sub-title Build the allowed and generated column lists
+'@details
+'Both lists come from constants that never move, so they are built once per
+'object and never rebuilt. Export columns are answered by the "export" prefix
+'test in `ColumnExists`; pushing `export 1` ... `export N` into the list as
+'well changed no answer, and it made the list depend on the export counter.
 Private Sub EnsureColumnsInitialized()
-    'Initialise the cached column lists on demand. Using `BetterArray`
-    'structures keeps lookups platform-agnostic while providing helper
-    'functions such as `Includes`.
-    Dim counter As Long
+    If Not this.allowedColumns Is Nothing Then Exit Sub
 
-    If Not dictionaryColumns Is Nothing Then Exit Sub
+    Set this.allowedColumns = New BetterArray
+    Set this.addedColumns = New BetterArray
 
-    Set dictionaryColumns = New BetterArray
-    Set dictionaryAddedColumns = New BetterArray
-
-    dictionaryColumns.Items = Split(DEFAULTDICTIONARYCOLUMNS, "|")
-                           
-
-    For counter = 1 To TotalNumberOfExports()
-        dictionaryColumns.Push "export " & CStr(counter)
-    Next
+    this.allowedColumns.Items = Split(DEFAULTDICTIONARYCOLUMNS, "|")
 
     'Columns introduced during preparation (e.g. table name, CRF helpers) are
     'tracked separately so we can optionally strip them during cleaning.
-    dictionaryAddedColumns.Items = Split(DEFAULTCREATEDCOLUMNS, "|") 
+    this.addedColumns.Items = Split(DEFAULTCREATEDCOLUMNS, "|")
 
-    dictionaryColumns.Concat dictionaryAddedColumns.Items
+    this.allowedColumns.Concat this.addedColumns.Items
 End Sub
 
+'@label:ensure-format-columns
+'@sub-title Ensure the conditional formatting columns exist
 Private Sub EnsureFormatColumns()
-    this.dictDataSheet.AddFormatsColumns False, True, "formatting condition", "formatting values", "variable name", "control", "main label", "lock cells", "dev comments"
+    Data().AddFormatsColumns False, True, _
+                             "formatting condition", "formatting values", _
+                             "variable name", "control", "main label", _
+                             "lock cells", "dev comments"
 End Sub
 
 '@label:columnexists
@@ -348,6 +535,10 @@ End Sub
 'Checks whether a column header is present in the dictionary and optionally
 'verifies it belongs to the known schema. Recording the attempt helps capture
 'incomplete dictionaries during setup.
+'
+'The lookup lower-cases its argument and searches with `matchCase` False.
+'`LLExport.ExportColumnName` builds "Export 3" with a capital and relies on
+'that, so both sides have to keep it true.
 '@params
 '- colName Column header to look for
 '- checkValidity Optional: ensure the column belongs to the expected list
@@ -362,7 +553,7 @@ Public Function ColumnExists(ByVal colName As String, Optional ByVal checkValidi
 
     If exists And checkValidity Then
         EnsureColumnsInitialized
-        exists = dictionaryColumns.Includes(colName) Or (Split(colName, " ")(0) = "export")
+        exists = this.allowedColumns.Includes(colName) Or (Split(colName, " ")(0) = "export")
         If Not exists Then LogInfo "Column " & colName & " exists but is not part of the allowed dictionary columns", checkingWarning
     ElseIf (Not exists) And checkValidity Then
         LogInfo "Column " & colName & " is missing from dictionary", checkingWarning
@@ -383,23 +574,23 @@ End Function
 '@label:uniquevalues
 '@prop-title Unique values in a column
 '@details
-'Collects a distinct list of values for the requested column, ignoring
-'case-sensitive duplicates to reflect how dictionary metadata is typically
-'interpreted.
+'Collects a distinct list of values for the requested column. The column is
+'read in one crossing and the duplicates are dropped in memory.
 '@params
 '- colName Column header
 '@return BetterArray
 Public Function UniqueValues(ByVal colName As String) As BetterArray
-    'Collect a distinct list of entries for the supplied column. Downstream
-    'components use this information to populate combo boxes or validate user
-    'input against known dictionary metadata.
+    'Downstream components use this information to populate combo boxes or
+    'validate user input against known dictionary metadata.
 
     Dim values As BetterArray
+    Dim columnValues As Variant
+    Dim seen() As String
+    Dim seenCount As Long
     Dim counter As Long
-    Dim lastRow As Long
     Dim nextValue As String
-    Dim dictSheet As Worksheet
-    Dim colIdx As Long
+    Dim firstRow As Long
+    Dim lastRow As Long
 
     Set values = New BetterArray
 
@@ -409,16 +600,50 @@ Public Function UniqueValues(ByVal colName As String) As BetterArray
         Exit Function
     End If
 
+    firstRow = StartRow() + 1
     lastRow = DictEndRow()
-    colIdx = ColumnIndex(colName)
-    Set dictSheet = Wksh()
 
-    For counter = StartRow() + 1 To lastRow
-        nextValue = dictSheet.Cells(counter, colIdx).Value
-        If Not values.Includes(nextValue) Then values.Push nextValue
+    If lastRow < firstRow Then
+        Set UniqueValues = values.Clone()
+        Exit Function
+    End If
+
+    columnValues = SheetColumnValues(ColumnIndex(colName), firstRow, lastRow)
+    ReDim seen(1 To UBound(columnValues))
+
+    For counter = 1 To UBound(columnValues)
+        nextValue = TextOf(columnValues(counter))
+        If ListPosition(seen, seenCount, nextValue) = 0 Then
+            seenCount = seenCount + 1
+            seen(seenCount) = nextValue
+            values.Push nextValue
+        End If
     Next
 
     Set UniqueValues = values.Clone()
+End Function
+
+'@label:sanitize-search-term
+'@sub-title Escape the characters Excel reads as a search pattern
+'@details
+'`Range.Find` treats *, ?, [, ] and # as patterns, and a tilde as the escape.
+'`TableSpecs` asks about composed names such as "adm1_" & rowVar, so a user
+'variable name carrying one of those characters would match the wrong row.
+'`LLVariables` and `LLSheets` each hold their own copy of this routine; folding
+'the three into one place belongs to the session that owns those two files.
+'@param searchText String. The raw search term.
+'@return String. The escaped term.
+Private Function SanitizeSearchTerm(ByVal searchText As String) As String
+    Dim sanitized As String
+
+    sanitized = Replace(searchText, "~", "~~")
+    sanitized = Replace(sanitized, "*", "~*")
+    sanitized = Replace(sanitized, "?", "~?")
+    sanitized = Replace(sanitized, "[", "~[")
+    sanitized = Replace(sanitized, "]", "~]")
+    sanitized = Replace(sanitized, "#", "~#")
+
+    SanitizeSearchTerm = sanitized
 End Function
 
 '@label:variableexists
@@ -427,19 +652,38 @@ End Function
 'Tests the dictionary for a specific variable identifier by scanning the
 '"variable name" column. Used to guard operations that may attempt to insert
 'duplicate entries.
+'
+'`LookIn` and `SearchOrder` are named because `Range.Find` reuses whatever the
+'last search anywhere in the application used, the user's own Ctrl+F included.
+'The match stays case-sensitive: `LLVariables.Contains` answers the same way and
+'`TableSpecs` reads both.
 '@params
 '- varName Variable identifier
 '@return Boolean
 Public Function VariableExists(ByVal varName As String) As Boolean
     Dim varRange As Range
+    Dim searchValue As String
+
     Set varRange = DataRange("variable name")
 
     If varRange Is Nothing Then
         LogInfo "Unable to locate variable name column while checking for variable " & varName, checkingError
-        VariableExists = False
-    Else
-        VariableExists = Not (varRange.Find(What:=varName, lookAt:=xlWhole, MatchCase:=True) Is Nothing)
+        Exit Function
     End If
+
+    If LenB(varName) = 0 Then Exit Function
+
+    searchValue = SanitizeSearchTerm(varName)
+
+    'Scoped to the search alone. Find raises on a range Excel cannot search,
+    'and the answer for this class is then "the variable is absent".
+    On Error Resume Next
+        VariableExists = Not (varRange.Find(What:=searchValue, _
+                                            LookAt:=xlWhole, _
+                                            MatchCase:=True, _
+                                            LookIn:=xlValues, _
+                                            SearchOrder:=xlByRows) Is Nothing)
+    On Error GoTo 0
 End Function
 
 '@label:addcolumn
@@ -459,6 +703,7 @@ Public Sub AddColumn(ByVal colName As String)
     endCol = DictEndColumn()
 
     targetSheet.Cells(StartRow(), endCol + 1).Value = colName
+    ClearPreparedCache
 End Sub
 
 '@label:insertcolumn
@@ -492,10 +737,14 @@ Public Sub InsertColumn(ByVal colName As String, ByVal After As String)
     anchorRange.Offset(, 1).EntireColumn.Insert Shift:=xlToRight, CopyOrigin:=xlFormatFromLeftOrAbove
     anchorRange.Offset(, 1).Cells(1, 1).Value = colName
 
+    'Scoped to the merge alone. A dictionary with no banner row above the
+    'headers has no cells to merge, and the insert itself has already worked.
     On Error Resume Next
         Set headerCell = hostSheet.Range(anchorRange.Cells(-1, 1), anchorRange.Cells(0, 2))
         headerCell.Merge
     On Error GoTo 0
+
+    ClearPreparedCache
 End Sub
 
 '@label:removecolumn
@@ -514,9 +763,14 @@ Public Sub RemoveColumn(ByVal colName As String)
     End If
 
     Set columnRange = DataRange(colName)
+
+    'Scoped to the delete alone. A protected worksheet refuses it, and the
+    'caller is told through the checking log rather than by a raise.
     On Error Resume Next
         columnRange.EntireColumn.Delete
     On Error GoTo 0
+
+    ClearPreparedCache
 End Sub
 
 '@label:RenameColumn
@@ -531,23 +785,30 @@ Public Sub RenameColumn(ByVal currentName As String, _
     End If
 
     Data.RenameColumn currentName, newName, strictSearch, matchCase
-    ResetColumnCaches
+    ClearPreparedCache
 End Sub
 
 
 '@section Row Operations
 '===============================================================================
 
+'@label:managerows
+'@sub-title Add or remove rows on the dictionary listobject
+'@details
+'The dictionary listobject is taken as the first one on the worksheet, because
+'this entry point has no selection to start from. `InsertRows` and `DeleteRows`
+'work from the caller's selection and reach the table through it.
+'Not every dictionary is table-backed; with no ListObject the attempt is logged.
+'@param del Optional Boolean. True removes rows, False adds them.
 Public Sub ManageRows(Optional ByVal del As Boolean = False)
-    'Wrapper around the worksheet listobject to add or remove rows while
-    'preserving formatting. Not every dictionary is table-backed; if no
-    'ListObject is found we simply log the attempt for traceability.
     Dim hostSheet As Worksheet
     Dim listObj As ListObject
     Dim table As CustomTable
 
     Set hostSheet = Wksh()
 
+    'Scoped to the lookup alone. A worksheet with no listobject raises here,
+    'and the guard below turns that into a logged note.
     On Error Resume Next
         Set listObj = hostSheet.ListObjects(1)
     On Error GoTo 0
@@ -563,16 +824,8 @@ Public Sub ManageRows(Optional ByVal del As Boolean = False)
     Else
         table.AddRows
     End If
-End Sub
 
-'@label:addrows
-'@sub-title Append rows via listobject
-'@details
-'Adds rows to the listobject backing the dictionary while preserving table
-'formatting. When no listobject is available the action is logged for
-'traceability.
-Public Sub AddRows()
-    ManageRows
+    ClearPreparedCache
 End Sub
 
 '@label:InsertRows
@@ -593,6 +846,8 @@ Public Sub InsertRows(ByVal targetCell As Range, _
 
     Set table = CustomTable.Create(listObj)
     table.InsertRowsAt targetCell:=targetCell, insertShift:=insertShift
+
+    ClearPreparedCache
 End Sub
 
 '@label:DeleteRows
@@ -611,17 +866,12 @@ Public Sub DeleteRows(ByVal targetCell As Range, _
     table.DeleteRowsAt targetCell:=targetCell, _
                         includeIds:=includeIds, _
                         forceShift:=forceShift
+
+    ClearPreparedCache
 End Sub
 
-'@label:removerows
-'@sub-title Remove rows via listobject
-'@details
-'Removes rows from the dictionary listobject using the shared `ManageRows`
-'helper. Logs a note when a listobject is not present.
-Public Sub RemoveRows()
-    ManageRows del:=True
-End Sub
-
+'@label:resolve-row-target
+'@sub-title Resolve the listobject behind a selection
 Private Function ResolveRowTarget(ByVal targetCell As Range, ByVal actionLabel As String) As ListObject
     'Validate that the supplied selection belongs to the dictionary worksheet and lives inside a listobject.
     Dim hostSheet As Worksheet
@@ -636,6 +886,8 @@ Private Function ResolveRowTarget(ByVal targetCell As Range, ByVal actionLabel A
         Exit Function
     End If
 
+    'Scoped to the worksheet read alone. It raises when the sheet holding the
+    'selection has since been deleted, and the guard below reports that.
     On Error Resume Next
         Set selectionSheet = targetCell.Worksheet
     On Error GoTo 0
@@ -650,6 +902,8 @@ Private Function ResolveRowTarget(ByVal targetCell As Range, ByVal actionLabel A
         Exit Function
     End If
 
+    'Scoped to the listobject read alone. A selection outside any table raises,
+    'and the guard below turns that into a logged warning.
     On Error Resume Next
         Set ResolveRowTarget = targetCell.ListObject
     On Error GoTo 0
@@ -663,18 +917,25 @@ End Function
 '@section Specialised Views
 '===============================================================================
 
+'@label:resolve-special-vars
+'@sub-title Filter variables on a tag column
+'@details
+'Shared filtering routine behind `ChoicesVars`, `GeoVars`, and `TimeVars`. The
+'function inspects the control column (or a custom column) and returns the
+'variables that match the supplied criteria. Only variables living on
+'horizontal sheets (`hlist2D`) are relevant for these helpers.
+'
+'The three columns are read as three blocks and matched in memory. `EventSetup`
+'asks for five different filters back to back, so this used to walk the same
+'three columns cell by cell five times.
 Private Function ResolveSpecialVars(ByVal firstCondition As String, _
                                     Optional ByVal secondCondition As String = vbNullString, _
                                     Optional ByVal conditionName As String = "Control") As BetterArray
-    'Shared filtering routine behind `ChoicesVars`, `GeoVars`, and
-    '`TimeVars`. The function inspects the control column (or a custom column)
-    'and returns the variables that match the supplied criteria. Only variables
-    'living on horizontal sheets (`hlist2D`) are relevant for these helpers.
     Dim result As BetterArray
-    Dim controlRange As Range
-    Dim variableRange As Range
-    Dim sheetRange As Range
-    Dim lastRow As Long
+    Dim controlValues As Variant
+    Dim variableValues As Variant
+    Dim sheetValues As Variant
+    Dim lastIndex As Long
     Dim idx As Long
     Dim controlValue As String
     Dim sheetValue As String
@@ -699,18 +960,26 @@ Private Function ResolveSpecialVars(ByVal firstCondition As String, _
         Exit Function
     End If
 
-    Set controlRange = DataRange(conditionName)
-    Set variableRange = DataRange("variable name")
-    Set sheetRange = DataRange("sheet type")
-    lastRow = DictEndRow()
+    controlValues = ColumnValues(DataRange(conditionName))
+    variableValues = ColumnValues(DataRange("variable name"))
+    sheetValues = ColumnValues(DataRange("sheet type"))
 
-    For idx = 1 To lastRow - StartRow()
-        controlValue = controlRange.Cells(idx, 1).Value
-        sheetValue = sheetRange.Cells(idx, 1).Value
+    If Not (IsArray(controlValues) And IsArray(variableValues) And IsArray(sheetValues)) Then
+        Set ResolveSpecialVars = result.Clone()
+        Exit Function
+    End If
+
+    lastIndex = UBound(controlValues)
+    If UBound(sheetValues) < lastIndex Then lastIndex = UBound(sheetValues)
+    If UBound(variableValues) < lastIndex Then lastIndex = UBound(variableValues)
+
+    For idx = 1 To lastIndex
+        controlValue = TextOf(controlValues(idx))
+        sheetValue = TextOf(sheetValues(idx))
 
         If sheetValue = SHEETTYPEHORIZONTAL Then
             If (controlValue = firstCondition) Or ((controlValue = secondCondition) And (secondCondition <> vbNullString)) Then
-                result.Push variableRange.Cells(idx, 1).Value
+                result.Push TextOf(variableValues(idx))
             End If
         End If
     Next
@@ -769,26 +1038,50 @@ End Property
 '@section Preparation
 '===============================================================================
 
+'@label:clear-prepared
+'@sub-title Drop the held preparation answer
+'@details
+'Called by every routine that adds, removes or renames a column, or moves the
+'last data row, because `Prepared` reads six column names, two forbidden ones
+'and the font colour of the cell below the data.
+Private Sub ClearPreparedCache()
+    this.preparedValue = False
+End Sub
+
 '@label:prepared
 '@prop-title Dictionary preparation flag
 '@details
 'Indicates whether all helper columns have been generated for designer
 'workflows. The heuristic mirrors the legacy implementation by inspecting
 'specific markers instead of tracking explicit state.
+'
+'A True answer is held on the object. VBA evaluates every operand of `And`, so
+'one read costs eight column searches plus a font read, and
+'`Formulas.ParsedLinelistFormula` reaches it once per token in every formula in
+'the workbook through `LLSheets.VariableAddress`. That hot path always runs on a
+'prepared dictionary, so holding True is where the whole win is.
+'
+'A False answer is read again every time. Preparation is what turns False into
+'True, and another object over the same worksheet can be the one that runs it,
+'so a held False could go stale with nothing to drop it. Every routine here that
+'can turn True back into False drops the held answer itself.
 '@return Boolean
 Public Property Get Prepared() As Boolean
-    'Quick heuristic used throughout the designer flows to check whether the
-    'dictionary already contains all generated helper columns. Preparation is a
-    'one-time operation, so we compare against the known set of structural
-    'markers instead of storing additional state.
     Dim hostSheet As Worksheet
 
+    If this.preparedValue Then
+        Prepared = True
+        Exit Property
+    End If
+
     Set hostSheet = Wksh()
-    Prepared = (hostSheet.Cells(DictEndRow() + 1, StartColumn()).Font.color = vbBlue) And _
+    this.preparedValue = (hostSheet.Cells(DictEndRow() + 1, StartColumn()).Font.color = vbBlue) And _
                ColumnExists("table name") And ColumnExists("column index") And _
                ColumnExists("visibility") And ColumnExists("crf index") And _
                ColumnExists("crf choices") And ColumnExists("crf status") And _
                (Not ColumnExists("main section sort")) And (Not ColumnExists("main section index"))
+
+    Prepared = this.preparedValue
 End Property
 
 '@label:prepare
@@ -798,20 +1091,24 @@ End Property
 'table names, CRF indices, geo duplications, and visibility columns. The method
 'guards against repeated execution by checking the `Prepared` flag and logs
 'issues discovered during enrichment.
+'
+'The order of operations is fixed: exported workbooks depend on it. The sheet is
+'sorted twice, once by `AppendNumberColumn` to group the rows by sheet and again
+'inside `AddMainSectionSort` to order each sheet by main section. The second
+'sort numbers its groups in first-seen order, so it needs the rows already
+'grouped by sheet. Both sorts stay.
 '@params
-'- PreservedSheetNames BetterArray of sheet names that should keep their
+'- preservedSheetNames BetterArray of sheet names that should keep their
 '  original values
-'- geoObject LLGeo instance required for geo expansions
-'- msgTrads TranslationObject used during column creation
+'- geoObject LLGeo instance required for geo expansions. Taken as Object and
+'  reached late.
 '- tablePrefix Optional String prefix applied to generated table names
-Public Sub Prepare(Optional ByVal PreservedSheetNames As BetterArray, _
+Public Sub Prepare(Optional ByVal preservedSheetNames As BetterArray, _
                    Optional ByVal geoObject As Object, _
                    Optional ByVal tablePrefix As String = "table")
 
     'Augment the user dictionary with all helper columns required by the
-    'designer (table names, CRF metadata, geo expansions, etc.). The order of
-    'operations mirrors the legacy implementations to keep exported workbooks
-    'compatible with existing automation.
+    'designer (table names, CRF metadata, geo expansions, etc.).
     Dim controlRange As Range
 
     If Prepared Then Exit Sub
@@ -834,7 +1131,7 @@ Public Sub Prepare(Optional ByVal PreservedSheetNames As BetterArray, _
     End If
 
     UniqueVarNames
-    GoodSheetNames PreservedSheetNames
+    GoodSheetNames preservedSheetNames
 
     If Not ColumnExists("visibility") Then AddVisibility
     If Not ColumnExists("crf index") Then AppendCRFLineIndex
@@ -844,12 +1141,13 @@ Public Sub Prepare(Optional ByVal PreservedSheetNames As BetterArray, _
     With Wksh()
         .Cells(DictEndRow() + 1, StartColumn()).Font.color = vbBlue
     End With
+
+    ClearPreparedCache
 End Sub
 
 '@label:EnsureRequiredColumns
 '@sub-title Ensure required columns are present in the dictionary
 Private Sub EnsureRequiredColumns()
-    
     Dim colName As String
     Dim counter As Long
     Dim requiredCols As BetterArray
@@ -861,10 +1159,37 @@ Private Sub EnsureRequiredColumns()
         colName = requiredCols.Item(counter)
         'Check existence for all columns except exports
         If Not ColumnExists(colName) Then
-            ThrowError ProjectError.ElementNotFound, "Column -" & colName &  "- not found in the dictionary"
+            ThrowError ProjectError.ElementNotFound, "Column -" & colName & "- not found in the dictionary"
         End If
     Next
 End Sub
+
+'@label:valid-dictionary-column
+'@sub-title Decide in memory whether a header belongs to the dictionary
+'@details
+'Same rule as `ColumnExists` with `checkValidity` set: the header must sit in
+'the dictionary header row, and it must either be in the allowed list or start
+'with the word "export". The two log messages match the ones `ColumnExists`
+'writes, so a cleaned workbook still reports the same notes.
+'@param columnName String. The header, already lower-cased.
+'@param knownHeaders String array. Lower-cased headers of the dictionary block.
+'@param knownCount Long. How many entries of that array are filled.
+'@return Boolean. True when the column is kept.
+Private Function ValidDictionaryColumn(ByVal columnName As String, _
+                                       ByRef knownHeaders() As String, _
+                                       ByVal knownCount As Long) As Boolean
+    If ListPosition(knownHeaders, knownCount, columnName) = 0 Then
+        LogInfo "Column " & columnName & " is missing from dictionary", checkingWarning
+        Exit Function
+    End If
+
+    EnsureColumnsInitialized
+    ValidDictionaryColumn = this.allowedColumns.Includes(columnName) Or (Split(columnName, " ")(0) = "export")
+
+    If Not ValidDictionaryColumn Then
+        LogInfo "Column " & columnName & " exists but is not part of the allowed dictionary columns", checkingWarning
+    End If
+End Function
 
 '@label:clean
 '@sub-title Remove unexpected columns
@@ -872,153 +1197,296 @@ End Sub
 'Deletes columns that fall outside the supported dictionary schema. When the
 'optional argument is True, helper columns introduced during preparation are
 'removed as well so the dictionary reverts to the user-provided structure.
+'
+'The header row is read once and every decision is taken in memory. Asking the
+'worksheet for each header and then searching the worksheet again for its name
+'cost two crossings a column.
+'
+'The walk starts at the dictionary start column. It used to start at column 1,
+'so for a dictionary that does not begin in column A the columns to its left
+'were read as headers and deleted.
+'
+'This deletes ENTIRE worksheet columns. Anything else living on the Dictionary
+'sheet to the right of the table goes with them.
 '@params
 '- removeAddedColumns Optional Boolean. Remove preparation columns too.
 Public Sub Clean(Optional ByVal removeAddedColumns As Boolean = False)
-    'Strip unexpected columns from the dictionary. When `removeAddedColumns` is
-    'True we also delete helper columns that were previously generated during
-    'preparation so the dictionary reverts to the original user-supplied shape.
     Dim hostSheet As Worksheet
     Dim usedCols As Long
+    Dim firstCol As Long
+    Dim dataEndCol As Long
+    Dim headerRow As Long
+    Dim headerValues As Variant
+    Dim knownHeaders() As String
+    Dim knownCount As Long
     Dim colIndex As Long
+    Dim counter As Long
     Dim columnName As String
     Dim removeAdded As Boolean
 
     Set hostSheet = Wksh()
     EnsureColumnsInitialized
 
+    firstCol = StartColumn()
+    headerRow = StartRow()
     usedCols = hostSheet.UsedRange.Columns.Count + hostSheet.UsedRange.Column - 1
 
-    For colIndex = usedCols To 1 Step -1
-        columnName = hostSheet.Cells(StartRow(), colIndex).Value
-        removeAdded = removeAddedColumns And dictionaryAddedColumns.Includes(LCase$(columnName))
-        If (Not ColumnExists(columnName, True)) Or removeAdded Then
+    If usedCols < firstCol Then Exit Sub
+
+    dataEndCol = DictEndColumn()
+    headerValues = RowValues(hostSheet.Range(hostSheet.Cells(headerRow, firstCol), _
+                                             hostSheet.Cells(headerRow, usedCols)))
+
+    'Headers inside the dictionary block are what `Data.ColumnExists` can see.
+    'A header sitting past the last data column reads as absent, which is how a
+    'stray column beyond the table is removed.
+    ReDim knownHeaders(1 To UBound(headerValues))
+    For counter = 1 To UBound(headerValues)
+        If firstCol + counter - 1 <= dataEndCol Then
+            columnName = LCase$(TextOf(headerValues(counter)))
+            If LenB(columnName) > 0 Then
+                knownCount = knownCount + 1
+                knownHeaders(knownCount) = columnName
+            End If
+        End If
+    Next
+
+    For colIndex = usedCols To firstCol Step -1
+        columnName = LCase$(TextOf(headerValues(colIndex - firstCol + 1)))
+        removeAdded = removeAddedColumns And this.addedColumns.Includes(columnName)
+
+        If (Not ValidDictionaryColumn(columnName, knownHeaders, knownCount)) Or removeAdded Then
             hostSheet.Columns(colIndex).EntireColumn.Delete
         End If
     Next
+
+    ClearPreparedCache
 End Sub
 
-Private Sub GoodSheetNames(ByVal PreservedSheetNames As BetterArray)
-    Dim hostSheet As Worksheet
+'@label:good-sheet-names
+'@sub-title Suffix sheet names that clash with reserved names
+'@details
+'The sheet-name column is read once and written back only when a name really
+'moved, so a dictionary with nothing to rename keeps its cells untouched.
+Private Sub GoodSheetNames(ByVal preservedSheetNames As BetterArray)
     Dim sheetNameIndex As Long
+    Dim firstRow As Long
     Dim lastRow As Long
-    Dim rowIndex As Long
+    Dim sheetValues As Variant
+    Dim counter As Long
     Dim currValue As String
+    Dim changed As Boolean
 
-    If PreservedSheetNames Is Nothing Then Exit Sub
+    If preservedSheetNames Is Nothing Then Exit Sub
 
-    Set hostSheet = Wksh()
-    sheetNameIndex = ColumnIndex("sheet name")
+    firstRow = StartRow() + 1
     lastRow = DictEndRow()
+    If lastRow < firstRow Then Exit Sub
 
-    For rowIndex = StartRow() + 1 To lastRow
-        currValue = hostSheet.Cells(rowIndex, sheetNameIndex).Value
-        If PreservedSheetNames.Includes(currValue) Then
-            hostSheet.Cells(rowIndex, sheetNameIndex).Value = currValue & "_"
+    sheetNameIndex = ColumnIndex("sheet name")
+    sheetValues = SheetColumnValues(sheetNameIndex, firstRow, lastRow)
+
+    For counter = 1 To UBound(sheetValues)
+        currValue = TextOf(sheetValues(counter))
+        If preservedSheetNames.Includes(currValue) Then
+            sheetValues(counter) = currValue & "_"
+            changed = True
             LogInfo "Sheet name " & currValue & " duplicated and suffixed with underscore during preparation", checkingNote
         End If
     Next
+
+    If changed Then WriteSheetColumn sheetNameIndex, firstRow, sheetValues
 End Sub
 
+'@label:normalise-variable-name
+'@sub-title Clean one variable name in plain VBA
+'@details
+'Reproduces the three worksheet functions this used to call, with no crossing
+'into Excel: Chr(160) becomes a space, codes below 32 are dropped (worksheet
+'CLEAN), the ends are trimmed and runs of spaces inside the text collapse to one
+'(worksheet TRIM does that as well as trimming), then the remaining spaces
+'become underscores.
+'
+'AscW answers a NEGATIVE number above code point 32767, so the control-code test
+'guards on zero as well.
+'@param rawName String. The value read from the variable name cell.
+'@return String. The normalised identifier.
+Private Function NormaliseVariableName(ByVal rawName As String) As String
+    Dim source As String
+    Dim result As String
+    Dim counter As Long
+    Dim charCode As Long
+    Dim oneChar As String
+    Dim previousWasSpace As Boolean
+
+    source = Replace(rawName, Chr$(160), " ")
+
+    For counter = 1 To Len(source)
+        oneChar = Mid$(source, counter, 1)
+        charCode = AscW(oneChar)
+
+        If charCode >= 0 And charCode < 32 Then
+            'Dropped, the same as the worksheet CLEAN function.
+        ElseIf oneChar = " " Then
+            If Not previousWasSpace Then
+                result = result & " "
+                previousWasSpace = True
+            End If
+        Else
+            result = result & oneChar
+            previousWasSpace = False
+        End If
+    Next
+
+    NormaliseVariableName = Replace(Trim$(result), " ", "_")
+End Function
+
+'@label:unique-var-names
+'@sub-title Normalise variable names and force uniqueness
+'@details
+'Trims whitespace, replaces spaces with underscores, and appends an underscore
+'when two rows end up with the same identifier.
+'
+'Every short name is collected and reported in ONE message, and nothing is
+'written when one is found. Raising on the first bad row left the rows above
+'normalised and the rows below untouched, so the user was told about one row and
+'handed a half-rewritten dictionary.
 Private Sub UniqueVarNames()
-    'Normalise variable names so downstream code can rely on predictable
-    'identifiers. The rules mimic the designer implementation: trim whitespace,
-    'replace spaces with underscores, and force uniqueness by appending an
-    'underscore when clashes occur.
-    Dim hostSheet As Worksheet
-    Dim seen As BetterArray
+    Dim firstRow As Long
     Dim lastRow As Long
     Dim varIndex As Long
-    Dim rowIndex As Long
+    Dim varValues As Variant
+    Dim seen() As String
+    Dim seenCount As Long
+    Dim counter As Long
     Dim varName As String
+    Dim shortRows As String
+    Dim shortCount As Long
 
     EnsureColumnsInitialized
 
-    Set hostSheet = Wksh()
-    Set seen = New BetterArray
+    firstRow = StartRow() + 1
     lastRow = DictEndRow()
-    varIndex = ColumnIndex("variable name")
+    If lastRow < firstRow Then Exit Sub
 
-    For rowIndex = StartRow() + 1 To lastRow
-        varName = hostSheet.Cells(rowIndex, varIndex).Value
-        varName = Application.WorksheetFunction.Substitute(varName, Chr$(160), " ")
-        varName = Application.WorksheetFunction.Clean(varName)
-        varName = Application.WorksheetFunction.Trim(varName)
-        varName = Replace(varName, " ", "_")
+    varIndex = ColumnIndex("variable name")
+    varValues = SheetColumnValues(varIndex, firstRow, lastRow)
+    ReDim seen(1 To UBound(varValues))
+
+    For counter = 1 To UBound(varValues)
+        varName = NormaliseVariableName(TextOf(varValues(counter)))
 
         If Len(varName) < 4 Then
-            ThrowError ProjectError.InvalidArgument, "Variable names should be at least 4 characters. Please review variable at row " & rowIndex
+            shortCount = shortCount + 1
+            If shortCount <= MAXREPORTEDROWS Then
+                If LenB(shortRows) > 0 Then shortRows = shortRows & ", "
+                shortRows = shortRows & CStr(firstRow + counter - 1)
+            End If
         End If
 
-        If seen.Includes(varName) Then varName = varName & "_"
-        seen.Push varName
-        hostSheet.Cells(rowIndex, varIndex).Value = varName
+        If ListPosition(seen, seenCount, varName) > 0 Then varName = varName & "_"
+        seenCount = seenCount + 1
+        seen(seenCount) = varName
+        varValues(counter) = varName
     Next
+
+    If shortCount > 0 Then
+        If shortCount > MAXREPORTEDROWS Then
+            shortRows = shortRows & " and " & CStr(shortCount - MAXREPORTEDROWS) & " more"
+        End If
+        ThrowError ProjectError.InvalidArgument, _
+                   "Variable names should be at least 4 characters. Please review variables at row " & shortRows
+    End If
+
+    WriteSheetColumn varIndex, firstRow, varValues
 End Sub
 
+'@label:add-visibility
+'@sub-title Derive the visibility and CRF status columns
+'@details
+'The logic mirrors the designer wizard so that prepared dictionaries behave the
+'same whether produced manually or through automation. The status and control
+'columns are read as two blocks and the two answers are written as two blocks.
+'A row with an unhandled status keeps both cells empty, and the status is logged.
 Private Sub AddVisibility()
-    'Derive the visibility and CRF status columns based on the current status
-    'and control definitions. The logic mirrors the designer wizard so that
-    'prepared dictionaries behave the same whether produced manually or via
-    'automation.
-    Dim hostSheet As Worksheet
+    Dim firstRow As Long
     Dim lastRow As Long
     Dim statusIdx As Long
     Dim visibilityIdx As Long
     Dim crfStatusIdx As Long
     Dim controlIdx As Long
-    Dim rowIndex As Long
+    Dim statusValues As Variant
+    Dim controlValues As Variant
+    Dim visibilityValues As Variant
+    Dim crfStatusValues As Variant
+    Dim counter As Long
     Dim statusValue As String
     Dim controlValue As String
 
     AddColumn "visibility"
     AddColumn "crf status"
 
-    Set hostSheet = Wksh()
-    lastRow = DictEndRow
+    firstRow = StartRow() + 1
+    lastRow = DictEndRow()
+    If lastRow < firstRow Then Exit Sub
+
     statusIdx = ColumnIndex("status")
     visibilityIdx = ColumnIndex("visibility")
     crfStatusIdx = ColumnIndex("crf status")
     controlIdx = ColumnIndex("control")
 
-    For rowIndex = StartRow() + 1 To lastRow
-        statusValue = hostSheet.Cells(rowIndex, statusIdx).Value
+    statusValues = SheetColumnValues(statusIdx, firstRow, lastRow)
+    controlValues = SheetColumnValues(controlIdx, firstRow, lastRow)
+
+    ReDim visibilityValues(1 To UBound(statusValues))
+    ReDim crfStatusValues(1 To UBound(statusValues))
+
+    For counter = 1 To UBound(statusValues)
+        statusValue = TextOf(statusValues(counter))
+
         Select Case statusValue
             Case "hidden"
-                hostSheet.Cells(rowIndex, visibilityIdx).Value = "always hidden"
-                hostSheet.Cells(rowIndex, crfStatusIdx).Value = "always hidden"
+                visibilityValues(counter) = "always hidden"
+                crfStatusValues(counter) = "always hidden"
             Case "mandatory"
-                hostSheet.Cells(rowIndex, visibilityIdx).Value = "always visible"
-                controlValue = hostSheet.Cells(rowIndex, controlIdx).Value
+                visibilityValues(counter) = "always visible"
+                controlValue = TextOf(controlValues(counter))
                 If controlValue = "formula" Or controlValue = "choice_formula" Or controlValue = "case_when" Then
-                    hostSheet.Cells(rowIndex, crfStatusIdx).Value = "always hidden"
+                    crfStatusValues(counter) = "always hidden"
                 Else
-                    hostSheet.Cells(rowIndex, crfStatusIdx).Value = "visible on creation"
+                    crfStatusValues(counter) = "visible on creation"
                 End If
             Case "optional, hidden"
-                hostSheet.Cells(rowIndex, visibilityIdx).Value = "hidden on creation"
-                hostSheet.Cells(rowIndex, crfStatusIdx).Value = "hidden on creation"
+                visibilityValues(counter) = "hidden on creation"
+                crfStatusValues(counter) = "hidden on creation"
             Case "optional, visible", "optional"
-                hostSheet.Cells(rowIndex, visibilityIdx).Value = "visible on creation"
-                hostSheet.Cells(rowIndex, crfStatusIdx).Value = "visible on creation"
+                visibilityValues(counter) = "visible on creation"
+                crfStatusValues(counter) = "visible on creation"
             Case Else
-                LogInfo "Unhandled status value " & statusValue & " at row " & rowIndex, checkingNote
+                LogInfo "Unhandled status value " & statusValue & " at row " & CStr(firstRow + counter - 1), checkingNote
         End Select
     Next
+
+    WriteSheetColumn visibilityIdx, firstRow, visibilityValues
+    WriteSheetColumn crfStatusIdx, firstRow, crfStatusValues
 End Sub
 
-'Note: AppendNumberColumn, AppendColumnIndex, AppendCRFLineIndex retain much of
-'the original designer implementation with minor guard rails.
-
+'@label:append-geo-lines
+'@sub-title Expand every geo control variable into twelve rows
+'@details
+'Each "geo" control variable becomes 12 contiguous rows:
+'  4 admin levels   (adm1-4) with geo1-4 controls
+'  4 p-codes        (pcode_adm1-4) hidden, formula-driven
+'  4 concatenations (concat_adm1-4) hidden, formula-driven
+'
+'The original geo row is modified in place to become adm1 and 11 new rows are
+'inserted right after it. `DictEndRow()` is read on every pass ON PURPOSE, so
+'the search range follows the rows this routine keeps inserting. Do not turn
+'this into a single block read.
+'
+'`geoObject.GeoNames(...)` is read per level; `LLGeo` holds those in its own
+'cache, so the repeat costs nothing here.
 Private Sub AppendGeoLines(ByVal geoObject As Object)
-    'Expand each "geo" control variable into 12 contiguous rows:
-    '  4 admin levels  (adm1-4) with geo1-4 controls
-    '  4 p-codes       (pcode_adm1-4) hidden, formula-driven
-    '  4 concatenations (concat_adm1-4) hidden, formula-driven
-    '
-    'The original geo row is modified in-place to become adm1.
-    '11 new rows are inserted immediately after for adm2-4, pcodes, and concats.
-    'DictEndRow() is called each iteration so the search range stays current.
     Const ADMIN_LEVELS As Long = 4
     Const GEO_EXPANSION As Long = 12
     Const INSERTED_ROWS As Long = 11
@@ -1139,67 +1607,103 @@ Private Sub AppendGeoLines(ByVal geoObject As Object)
         'Advance past all expanded rows
         geoRow = geoRow + GEO_EXPANSION
     Loop
+
+    ClearPreparedCache
 End Sub
 
+'@label:append-number-column
+'@sub-title Number each distinct group and sort the dictionary on it
+'@details
+'Assigns an incrementing number to each distinct sheet (or user-defined group)
+'so the dictionary can later produce stable table names, sorts the whole block
+'on that number, then writes the visible name column as a formula.
+'
+'The source column index is resolved ONCE. It used to be resolved inside the row
+'loop, and `DataSheet.ColumnIndex` is a header scan plus a search, so an N-row
+'pass cost N searches.
+'
+'The name column stays a formula write: the formula is written, autofilled and
+'then flattened on purpose (`sortRange.Value = sortRange.Value`).
 Private Sub AppendNumberColumn(Optional ByVal onColName As String = "sheet name", _
                                Optional ByVal tablePrefix As String = "table", _
                                Optional ByVal newColumn As String = "table name")
-    'Assign an incrementing number to each distinct sheet (or user-defined
-    'group) so the dictionary can later produce stable table names.
+    Dim hostSheet As Worksheet
+    Dim firstRow As Long
     Dim lastRow As Long
     Dim endCol As Long
+    Dim sourceIdx As Long
     Dim tableOrder As Long
-    Dim sheetNames As BetterArray
-    Dim sheetTrack As BetterArray
-    Dim hostSheet As Worksheet
-    Dim rowIndex As Long
-    Dim sheetName As String
+    Dim sourceValues As Variant
+    Dim numbers As Variant
+    Dim seen() As String
+    Dim seenOrder() As Long
+    Dim seenCount As Long
+    Dim counter As Long
+    Dim position As Long
+    Dim groupName As String
     Dim sortRange As Range
 
     Set hostSheet = Wksh()
+    firstRow = StartRow() + 1
     lastRow = DictEndRow()
     endCol = DictEndColumn()
-    tableOrder = 1
-    Set sheetNames = New BetterArray
-    Set sheetTrack = New BetterArray
+    sourceIdx = ColumnIndex(onColName)
 
     hostSheet.Cells(StartRow(), endCol + 1).Value = "number_" & newColumn
-    sheetTrack.Push hostSheet.Cells(StartRow() + 1, ColumnIndex(onColName)).Value
-    sheetNames.Push tableOrder
 
-    For rowIndex = StartRow() + 1 To lastRow
-        sheetName = hostSheet.Cells(rowIndex, ColumnIndex(onColName)).Value
-        If sheetTrack.Includes(sheetName) Then
-            hostSheet.Cells(rowIndex, endCol + 1).Value = sheetNames.Item(sheetTrack.IndexOf(sheetName))
-        Else
-            tableOrder = tableOrder + 1
-            sheetTrack.Push sheetName
-            sheetNames.Push tableOrder
-            hostSheet.Cells(rowIndex, endCol + 1).Value = tableOrder
-        End If
-    Next
+    If lastRow >= firstRow Then
+        sourceValues = SheetColumnValues(sourceIdx, firstRow, lastRow)
+        ReDim numbers(1 To UBound(sourceValues))
+        ReDim seen(1 To UBound(sourceValues))
+        ReDim seenOrder(1 To UBound(sourceValues))
+
+        For counter = 1 To UBound(sourceValues)
+            groupName = TextOf(sourceValues(counter))
+            position = ListPosition(seen, seenCount, groupName)
+
+            If position = 0 Then
+                tableOrder = tableOrder + 1
+                seenCount = seenCount + 1
+                seen(seenCount) = groupName
+                seenOrder(seenCount) = tableOrder
+                numbers(counter) = tableOrder
+            Else
+                numbers(counter) = seenOrder(position)
+            End If
+        Next
+
+        WriteSheetColumn endCol + 1, firstRow, numbers
+    End If
 
     Set sortRange = DataRange(includeHeaders:=True)
     sortRange.Sort key1:=DataRange("number_" & newColumn), Order1:=xlAscending, Header:=xlYes
 
-    '@Ignore AssignmentNotUsed
+    'The number column moved the last data column, so it is read again here.
     endCol = DictEndColumn()
     hostSheet.Cells(StartRow(), endCol + 1).Value = newColumn
-    hostSheet.Cells(StartRow() + 1, endCol + 1).Formula = "= " & Chr$(34) & tablePrefix & Chr$(34) & " " & Chr$(38) & " " & hostSheet.Cells(StartRow() + 1, endCol).Address(Rowabsolute:=False)
+    hostSheet.Cells(StartRow() + 1, endCol + 1).Formula = "= " & Chr$(34) & tablePrefix & Chr$(34) & " " & Chr$(38) & " " & hostSheet.Cells(StartRow() + 1, endCol).Address(RowAbsolute:=False)
     Set sortRange = DataRange(newColumn)
     hostSheet.Cells(StartRow() + 1, endCol + 1).AutoFill sortRange, Type:=xlFillValues
     hostSheet.UsedRange.Calculate
     sortRange.Value = sortRange.Value
+
+    ClearPreparedCache
 End Sub
 
+'@label:add-main-section-sort
+'@sub-title Add the main section sort helper and order the sheet on it
+'@details
+'Writes a formula column holding "<sheet name> - <main section>", or the row
+'number when the main section is empty, then numbers and sorts on it through
+'`AppendNumberColumn`. The formula write and its autofill stay as they are.
 Private Sub AddMainSectionSort()
-
     Dim hostSheet As Worksheet
     Dim sheetNameAddress As String
     Dim mainSecAddress As String
+    Dim sortFormula As String
     Dim sortRange As Range
     Dim mainSectionIdx As Long
-    Dim sheetNameIdx As Long 
+    Dim sheetNameIdx As Long
     Dim endCol As Long
 
     Set hostSheet = Wksh()
@@ -1207,67 +1711,100 @@ Private Sub AddMainSectionSort()
     sheetNameIdx = ColumnIndex("sheet name")
     endCol = DictEndColumn()
 
-    
     hostSheet.Cells(StartRow(), endCol + 1).Value = "main section sort"
-    sheetNameAddress = hostSheet.Cells(StartRow() + 1, sheetNameIdx).Address(Rowabsolute:=False) & " "
-    mainSecAddress = hostSheet.Cells(StartRow() + 1, mainSectionIdx).Address(Rowabsolute:=False)
-    hostSheet.Cells(StartRow() + 1, endCol + 1).Formula = "= IF(" & mainSecAddress & "=" & Chr$(34) & Chr$(34) & _ 
-                                                          ", ROW(" & mainSecAddress & "), " & sheetNameAddress & _ 
-                                                           Chr$(38) & Chr$(34) & " - " & Chr$(34) & Chr$(38) & _ 
-                                                           mainSecAddress & ")"
+    sheetNameAddress = hostSheet.Cells(StartRow() + 1, sheetNameIdx).Address(RowAbsolute:=False) & " "
+    mainSecAddress = hostSheet.Cells(StartRow() + 1, mainSectionIdx).Address(RowAbsolute:=False)
+
+    sortFormula = "= IF(" & mainSecAddress & "=" & Chr$(34) & Chr$(34) & _
+                  ", ROW(" & mainSecAddress & "), " & sheetNameAddress & _
+                  Chr$(38) & Chr$(34) & " - " & Chr$(34) & Chr$(38) & _
+                  mainSecAddress & ")"
+
+    hostSheet.Cells(StartRow() + 1, endCol + 1).Formula = sortFormula
     Set sortRange = DataRange("main section sort")
     hostSheet.Cells(StartRow() + 1, endCol + 1).AutoFill sortRange, Type:=xlFillValues
     sortRange.Calculate
     AppendNumberColumn "main section sort", "main section", "main section index"
 End Sub
 
-
+'@label:sort
+'@sub-title Sort the dictionary by sheet and main section
+'@details
+'Reached from the designer Sort button on the setup Dictionary sheet, through
+'`EventSetup.SortTables`.
+'
+'The clean afterwards keeps the generated columns. The three helper columns the
+'sort writes ("main section sort", "main section index" and its number_ helper)
+'sit outside the allowed list, so the plain clean already removes them. Passing
+'True here also deleted table name, column index, visibility, crf index, crf
+'choices, crf status and list auto, so a sort on a prepared dictionary undid the
+'preparation.
+'@export
 Public Sub Sort()
-    'Start by adding the Main section sort column
     AddMainSectionSort
-
-    'Clean new columns
-    Clean True
+    Clean removeAddedColumns:=False
 End Sub
 
-
+'@label:append-column-index
+'@sub-title Compute the final column order used by the designer
+'@details
+'Sheet-level grouping is respected and gaps are inserted for geo/hf variables
+'that expand into several columns. The three source columns are read as three
+'blocks and the answer is written as one block.
 Private Sub AppendColumnIndex()
-    
-    'Compute the final column order used by the designer when producing
-    'workbooks. The routine ensures sheet-level grouping is respected while
-    'inserting gaps for geo/hf variables that expand into multiple columns.
-    Dim hostSheet As Worksheet 
+    Dim hostSheet As Worksheet
+    Dim firstRow As Long
     Dim lastRow As Long
+    Dim endCol As Long
+    Dim sheetNameIdx As Long
     Dim sheetTypeIdx As Long
     Dim controlIdx As Long
+    Dim sheetNameValues As Variant
+    Dim sheetTypeValues As Variant
+    Dim controlValues As Variant
+    Dim orders As Variant
+    Dim counter As Long
     Dim sheetName As String
     Dim varOrder As Long
     Dim prevControl As String
-    Dim rowIndex As Long
-    Dim sheetNameIdx As Long 
-    Dim endCol As Long
 
     AddMainSectionSort
-    
+
     Set hostSheet = Wksh()
+    firstRow = StartRow() + 1
     lastRow = DictEndRow()
     endCol = DictEndColumn()
-    
 
     sheetNameIdx = ColumnIndex("sheet name")
     sheetTypeIdx = ColumnIndex("sheet type")
     controlIdx = ColumnIndex("control")
 
     hostSheet.Cells(StartRow(), endCol + 1).Value = "column index"
+    ClearPreparedCache
+
+    If lastRow < firstRow Then Exit Sub
+
+    sheetNameValues = SheetColumnValues(sheetNameIdx, firstRow, lastRow)
+    sheetTypeValues = SheetColumnValues(sheetTypeIdx, firstRow, lastRow)
+    controlValues = SheetColumnValues(controlIdx, firstRow, lastRow)
+
+    ReDim orders(1 To UBound(sheetNameValues))
     sheetName = vbNullString
     varOrder = 1
 
-    For rowIndex = StartRow() + 1 To lastRow
-        If hostSheet.Cells(rowIndex, sheetNameIdx).Value <> sheetName Then
-            varOrder = IIf(hostSheet.Cells(rowIndex, sheetTypeIdx).Value = SHEETTYPEVERTICAL, 4, 1)
-            sheetName = hostSheet.Cells(rowIndex, sheetNameIdx).Value
+    For counter = 1 To UBound(sheetNameValues)
+        If TextOf(sheetNameValues(counter)) <> sheetName Then
+            varOrder = IIf(TextOf(sheetTypeValues(counter)) = SHEETTYPEVERTICAL, 4, 1)
+            sheetName = TextOf(sheetNameValues(counter))
         Else
-            prevControl = hostSheet.Cells(rowIndex - 1, controlIdx).Value
+            'The row above decides the gap. On the first data row there is no
+            'row above inside the block, so the default step applies.
+            If counter > 1 Then
+                prevControl = TextOf(controlValues(counter - 1))
+            Else
+                prevControl = vbNullString
+            End If
+
             Select Case prevControl
                 Case "geo"
                     varOrder = varOrder + 12
@@ -1277,24 +1814,38 @@ Private Sub AppendColumnIndex()
                     varOrder = varOrder + 1
             End Select
         End If
-        hostSheet.Cells(rowIndex, endCol + 1).Value = varOrder
+
+        orders(counter) = varOrder
     Next
+
+    WriteSheetColumn endCol + 1, firstRow, orders
 End Sub
 
+'@label:append-crf-line-index
+'@sub-title Populate the CRF indices
+'@details
+'Form designers map dictionary variables to the rows shown in CRF-style layouts.
+'The walk goes through sections, subsections and controls to insert spacing
+'exactly like the interactive designer.
+'
+'Five columns are read as five blocks and the two answers are written as two
+'blocks. This was the heaviest loop in the class: five range reads and up to two
+'writes per row.
+'
+'A row that needs no choices marker keeps its cell Empty. Writing an empty
+'string there would count as content for the last-row scan.
 Private Sub AppendCRFLineIndex()
-    'Populate CRF indices so form designers can map dictionary variables to the
-    'rows displayed in CRF-style layouts. The logic walks through sections,
-    'subsections, and controls to insert spacing exactly like the interactive
-    'designer.
     Dim hostSheet As Worksheet
     Dim endCol As Long
-    Dim subSectionRange As Range
-    Dim sectionRange As Range
-    Dim sheetRange As Range
-    Dim controlRange As Range
-    Dim detailsRange As Range
+    Dim firstRow As Long
+    Dim subSectionValues As Variant
+    Dim sectionValues As Variant
+    Dim sheetValues As Variant
+    Dim controlValues As Variant
+    Dim detailsValues As Variant
+    Dim crfIndexValues As Variant
+    Dim choicesValues As Variant
     Dim crfIndexRange As Range
-    Dim choicesRange As Range
     Dim lineCounter As Long
     Dim currentSection As String
     Dim currentSubSection As String
@@ -1302,55 +1853,88 @@ Private Sub AppendCRFLineIndex()
     Dim currentControl As String
     Dim currentDetails As String
     Dim previousDetails As String
-    Dim rowIndex As Long
+    Dim rowSection As String
+    Dim rowSubSection As String
+    Dim rowSheet As String
+    Dim counter As Long
+    Dim lastIndex As Long
 
     Set hostSheet = Wksh()
     endCol = DictEndColumn()
-    Set subSectionRange = DataRange("sub section")
-    Set sectionRange = DataRange("main section")
-    Set sheetRange = DataRange("sheet name")
-    Set controlRange = DataRange("control")
-    Set detailsRange = DataRange("control details")
+    firstRow = StartRow() + 1
+
+    subSectionValues = ColumnValues(DataRange("sub section"))
+    sectionValues = ColumnValues(DataRange("main section"))
+    sheetValues = ColumnValues(DataRange("sheet name"))
+    controlValues = ColumnValues(DataRange("control"))
+    detailsValues = ColumnValues(DataRange("control details"))
+
+    If Not (IsArray(subSectionValues) And IsArray(sectionValues) And IsArray(sheetValues) _
+            And IsArray(controlValues) And IsArray(detailsValues)) Then
+        LogInfo "CRF indices were not computed because a source column could not be read", checkingError
+        Exit Sub
+    End If
 
     hostSheet.Cells(StartRow(), endCol + 1).Value = "crf index"
     hostSheet.Cells(StartRow(), endCol + 2).Value = "crf choices"
+    ClearPreparedCache
 
     Set crfIndexRange = DataRange("crf index")
-    Set choicesRange = DataRange("crf choices")
+    If crfIndexRange Is Nothing Then Exit Sub
+
+    'All six blocks span the same rows. The smallest one still bounds the walk,
+    'so a dictionary whose columns disagree gives a short answer rather than a
+    'subscript error in the middle of preparation.
+    lastIndex = crfIndexRange.Rows.Count
+    If UBound(subSectionValues) < lastIndex Then lastIndex = UBound(subSectionValues)
+    If UBound(sectionValues) < lastIndex Then lastIndex = UBound(sectionValues)
+    If UBound(sheetValues) < lastIndex Then lastIndex = UBound(sheetValues)
+    If UBound(controlValues) < lastIndex Then lastIndex = UBound(controlValues)
+    If UBound(detailsValues) < lastIndex Then lastIndex = UBound(detailsValues)
+    If lastIndex < 1 Then Exit Sub
+
+    ReDim crfIndexValues(1 To lastIndex)
+    ReDim choicesValues(1 To lastIndex)
 
     lineCounter = 0
     currentSection = vbNullString
     currentSubSection = vbNullString
     currentSheet = vbNullString
 
-    For rowIndex = 1 To crfIndexRange.Rows.Count
+    For counter = 1 To UBound(crfIndexValues)
         previousDetails = currentDetails
-        currentControl = controlRange.Cells(rowIndex, 1).Value
-        currentDetails = detailsRange.Cells(rowIndex, 1).Value
+        currentControl = TextOf(controlValues(counter))
+        currentDetails = TextOf(detailsValues(counter))
+        rowSheet = TextOf(sheetValues(counter))
+        rowSection = TextOf(sectionValues(counter))
+        rowSubSection = TextOf(subSectionValues(counter))
 
-        If currentSheet <> sheetRange.Cells(rowIndex, 1).Value Then
+        If currentSheet <> rowSheet Then
             lineCounter = 6
-            currentSheet = sheetRange.Cells(rowIndex, 1).Value
-            currentSection = sectionRange.Cells(rowIndex, 1).Value
-            currentSubSection = subSectionRange.Cells(rowIndex, 1).Value
-        ElseIf (currentSection <> sectionRange.Cells(rowIndex, 1).Value) And (sectionRange.Cells(rowIndex, 1).Value <> vbNullString) Then
+            currentSheet = rowSheet
+            currentSection = rowSection
+            currentSubSection = rowSubSection
+        ElseIf (currentSection <> rowSection) And (rowSection <> vbNullString) Then
             lineCounter = lineCounter + 7
-            currentSection = sectionRange.Cells(rowIndex, 1).Value
-            currentSubSection = subSectionRange.Cells(rowIndex, 1).Value
-        ElseIf (currentSubSection <> subSectionRange.Cells(rowIndex, 1).Value) And (subSectionRange.Cells(rowIndex, 1).Value <> vbNullString) Then
+            currentSection = rowSection
+            currentSubSection = rowSubSection
+        ElseIf (currentSubSection <> rowSubSection) And (rowSubSection <> vbNullString) Then
             lineCounter = lineCounter + 6
-            currentSubSection = subSectionRange.Cells(rowIndex, 1).Value
+            currentSubSection = rowSubSection
         Else
             lineCounter = lineCounter + 2
         End If
 
         If (currentControl = "choice_manual") And (currentDetails <> previousDetails) Then
             lineCounter = lineCounter + 2
-            choicesRange.Cells(rowIndex, 1).Value = "yes"
+            choicesValues(counter) = "yes"
         End If
 
-        crfIndexRange.Cells(rowIndex, 1).Value = lineCounter
+        crfIndexValues(counter) = lineCounter
     Next
+
+    WriteSheetColumn endCol + 1, firstRow, crfIndexValues
+    WriteSheetColumn endCol + 2, firstRow, choicesValues
 End Sub
 
 
@@ -1363,17 +1947,20 @@ End Sub
 'Replaces the current dictionary content with data copied from another
 'worksheet. The incoming data is wrapped in a temporary `DataSheet` so the
 'existing cleaning and formatting routines can be reused.
+'
+'With `clearSheet` True the whole worksheet is cleared. Sheet-level hidden names
+'survive a `Cells.Clear`, and the export counter is one of them, which is why
+'the source counter is read first.
 '@params
 '- fromWksh Source worksheet
 '- fromStartRow Long. Start row of the source data
 '- fromStartcol Long. Start column of the source data
+'- clearSheet Optional Boolean. Clear the whole host worksheet first.
 Public Sub Import(ByVal fromWksh As Worksheet, _
                   ByVal fromStartRow As Long, _
                   ByVal fromStartcol As Long, _
                   Optional ByVal clearSheet As Boolean = False)
-    'Replace the current dictionary content with data imported from another
-    'worksheet. Helper columns are initialised before the import so the
-    'datasheet can drop unexpected headers and reapply formatting.
+
     Dim targetData As DataSheet
     Dim sourceData As DataSheet
     Dim hostSheet As Worksheet
@@ -1392,14 +1979,16 @@ Public Sub Import(ByVal fromWksh As Worksheet, _
     EnsureColumnsInitialized
     EnsureFormatColumns
 
-    If clearSheet Then 
+    If clearSheet Then
         hostSheet.Cells.Clear
-        dictionaryColumns.ToExcelRange hostSheet.Cells(StartRow(), StartColumn()), TransposeValues:=True
+        this.allowedColumns.ToExcelRange hostSheet.Cells(StartRow(), StartColumn()), TransposeValues:=True
     End If
 
     Set targetData = Data()
     Clean removeAddedColumns:=True
     targetData.Import sourceData, False
+
+    ClearPreparedCache
 End Sub
 
 '@label:export
@@ -1408,6 +1997,13 @@ End Sub
 'Copies the dictionary into the destination workbook with optional filtering,
 'table creation, and sheet visibility adjustments to mirror the interactive
 'export workflow.
+'
+'The prepared marker is written from the TARGET worksheet and it is written
+'whatever `addListObject` says. The copy always lands on the first cell of the
+'target, so taking the row from the source put the marker four rows below the
+'data for every setup workbook, whose dictionary starts at row 5, and `Prepared`
+'then answered False on the copy. `LLExporter.AddDictionary` writes the same
+'marker itself, at the same cell, because it could not rely on this one.
 '@params
 '- toWkb Destination workbook
 '- exportType Optional String. Filter by column name. Defaults to "__all__"
@@ -1420,18 +2016,17 @@ Public Sub Export(ByVal toWkb As Workbook, _
                   Optional ByVal addListObject As Boolean = True, _
                   Optional ByVal Hide As Long = xlSheetHidden)
 
-    'Copy the dictionary to another workbook, optionally filtering by export
-    'type and adding a listobject for backwards compatibility with legacy
-    'macros. Visual tweaks (fonts, colours) match the manual export workflow.
-
+    'Visual tweaks (fonts, colours) match the manual export workflow.
     Dim targetData As DataSheet
     Dim exportRange As Range
     Dim targetSheet As Worksheet
     Dim sheetName As String
+    Dim tableName As String
+    Dim markerRow As Long
 
     EnsureFormatColumns
     Set targetData = Data()
-    
+
     If ColumnExists(exportType) Then
         targetData.Export toWkb, filteredVarName:=exportType, Hide:=Hide
     Else
@@ -1441,7 +2036,7 @@ Public Sub Export(ByVal toWkb As Workbook, _
     sheetName = Wksh().Name
     Set targetSheet = toWkb.Worksheets(sheetName)
 
-    PersistTotalExports TotalNumberOfExports, targetSheet
+    PersistTotalExportsOn targetSheet, TotalNumberOfExports
 
     If addListObject Then
         Set exportRange = DataRange(includeHeaders:=True)
@@ -1451,11 +2046,13 @@ Public Sub Export(ByVal toWkb As Workbook, _
             Set exportRange = .Range(.Cells(1, 1), .Cells(exportRange.Rows.Count, exportRange.Columns.Count))
         End With
 
-        targetSheet.ListObjects.Add(xlSrcRange, exportRange, , xlYes).Name = "o" & LCase$(sheetName)
-        targetSheet.Cells(DictEndRow() + 1, StartColumn()).Font.color = vbBlue
-        targetSheet.ListObjects("o" & LCase$(sheetName)).TableStyle = ""
-
+        tableName = "o" & LCase$(sheetName)
+        targetSheet.ListObjects.Add(xlSrcRange, exportRange, , xlYes).Name = tableName
+        targetSheet.ListObjects(tableName).TableStyle = ""
     End If
+
+    markerRow = targetSheet.Cells(targetSheet.Rows.Count, 1).End(xlUp).Row + 1
+    targetSheet.Cells(markerRow, 1).Font.color = vbBlue
 End Sub
 
 '@label:translate
@@ -1467,11 +2064,8 @@ End Sub
 '@params
 '- TransObject TranslationObject responsible for translations
 Public Sub Translate(ByVal TransObject As TranslationObject)
-    
-    'Delegate translation of human-readable columns to the provided translation
-    'object. Control details may contain formulas, so we pass the
-    '`containsFormula` flag when appropriate to avoid breaking references.
-
+    'Control details may contain formulas, so the `containsFormula` flag is
+    'passed for that column to avoid breaking references.
     Dim transCols As BetterArray
     Dim idx As Long
     Dim targetRange As Range
@@ -1497,37 +2091,50 @@ End Sub
 '@section Checkings
 '===============================================================================
 
+'@label:log-info
+'@sub-title Record one event in the shared checking object
+'@details
+'All noteworthy events (missing columns, normalisation steps, etc.) are piped
+'into the shared checking object so setup and designer screens can surface
+'diagnostics to the user. The host worksheet name is read only when the checking
+'object is built; it used to cost two crossings on every logged line, and `Clean`
+'can log once per deleted column.
 Private Sub LogInfo(ByVal label As String, Optional ByVal scope As Byte = checkingNote)
-    'All noteworthy events (missing columns, normalisation steps, etc.) are
-    'piped into the shared checking object so setup and designer screens can
-    'surface diagnostics to the user.
-    Dim checkName As String
+    If this.internalChecks Is Nothing Then
+        Set this.internalChecks = Checking.Create(Wksh().Name)
+    End If
 
-    checkName = Wksh().Name
-
-    If internalChecks Is Nothing Then Set internalChecks = Checking.Create(checkName)
-    internalChecks.Add CStr(checkCounter), label, scope
-    checkCounter = checkCounter + 1
+    this.internalChecks.Add CStr(this.checkCounter), label, scope
+    this.checkCounter = this.checkCounter + 1
     this.hasChecks = True
 End Sub
 
+'@label:has-checkings
+'@prop-title True once something was logged
+'@return Boolean
 Public Property Get HasCheckings() As Boolean
     HasCheckings = this.hasChecks
 End Property
 
+'@label:checking-values
+'@prop-title The logged events
+'@return Checking
 Public Property Get CheckingValues() As Checking
     If Not HasCheckings() Then Exit Property
-    Set CheckingValues = internalChecks
+    Set CheckingValues = this.internalChecks
 End Property
 
 
 '@section Errors
 '===============================================================================
 
+'@label:throw-error
+'@sub-title Raise a ProjectError and record it
+'@details
+'The message is logged BEFORE the raise. Logging afterwards meant the line never
+'ran, so every raise from this class was missing from the generation report,
+'which is the one place the user sees why a build stopped.
 Private Sub ThrowError(ByVal errNumber As Long, ByVal errorMessage As String)
-    'Standardised error helper used across the class. Centralising the wording
-    'keeps raised errors consistent with those emitted by other components.
-    Err.Raise errNumber, "LLdictionary",   errorMessage
     LogInfo errNumber & " - " & errorMessage, checkingError
+    Err.Raise errNumber, CLASSNAME, errorMessage
 End Sub
-
