@@ -857,7 +857,7 @@ Public Sub TestEnsureDebugExitHandlerInjectsCode()
     Set cloned = PasswordSubject.CloneToWorkbook(tempWb)
     cloned.EnsureDebugExitHandler tempWb
 
-    Set codeModule = tempWb.VBProject.VBComponents(tempWb.CodeName).CodeModule
+    Set codeModule = WorkbookCodeModule(tempWb)
     moduleText = codeModule.Lines(1, codeModule.CountOfLines)
 
     Assert.IsTrue InStr(1, moduleText, "LeaveDebugModeOnClose", vbTextCompare) > 0, _
@@ -904,43 +904,69 @@ Public Sub TestEnsureDebugExitHandlerPreservesExistingBeforeCloseCode()
     Dim procText As String
     Dim firstCall As Long
     Dim app As ApplicationState
+    Dim stage As String
 
     If Not VBProjectAvailable() Then
         Debug.Print "VBProject access is disabled; skipping TestEnsureDebugExitHandlerPreservesExistingBeforeCloseCode"
         Exit Sub
     End If
 
+    'Every VBE call below can answer error 9, and "Subscript out of range" names
+    'neither the call nor the argument. stage carries the last step reached into
+    'the failure message so one run says where.
     On Error GoTo InjectionFailed
+        stage = "ApplicationState.Create"
         Set app = ApplicationState.Create(Application)
         app.ApplyBusyState suppressEvents:=True, calculateOnSave:=True
 
+        stage = "Workbooks.Add"
         Set tempWb = Workbooks.Add
+
+        stage = "CloneToWorkbook"
         Set cloned = PasswordSubject.CloneToWorkbook(tempWb)
 
-        Set codeModule = tempWb.VBProject.VBComponents(tempWb.CodeName).CodeModule
+        stage = "resolve the ThisWorkbook code module"
+        Set codeModule = WorkbookCodeModule(tempWb)
 
         baseLines = "Private Sub Workbook_BeforeClose(Cancel As Boolean)" & vbNewLine & _
                     "    On Error GoTo Restore" & vbNewLine & _
                     "    Debug.Print ""Closing""" & vbNewLine & _
                     "Restore:" & vbNewLine & _
                     "End Sub"
-        codeModule.InsertLines 3, baseLines
+        'A fresh workbook's ThisWorkbook module is empty, and InsertLines accepts
+        'a line from 1 to CountOfLines + 1 only, so the baseline is appended.
+        stage = "InsertLines baseline at " & CStr(codeModule.CountOfLines + 1)
+        codeModule.InsertLines codeModule.CountOfLines + 1, baseLines
         DoEvents
 
+        stage = "EnsureDebugExitHandler #1 (lines=" & CStr(codeModule.CountOfLines) & ")"
         cloned.EnsureDebugExitHandler tempWb
         DoEvents
 
+        stage = "EnsureDebugExitHandler #2 (lines=" & CStr(codeModule.CountOfLines) & ")"
         cloned.EnsureDebugExitHandler tempWb
         DoEvents
 
+        stage = "ProcStartLine (lines=" & CStr(codeModule.CountOfLines) & ")"
         procStart = codeModule.ProcStartLine("Workbook_BeforeClose", 0)
         DoEvents
 
+        'CodeModule.Lines raises error 9 on a start line of 0, which reads as an
+        'opaque "Subscript out of range". Say what is actually wrong instead.
+        If procStart <= 0 Then
+            Assert.LogFailure "Workbook_BeforeClose should be in the module after injection"
+            GoTo InjectionCleanup
+        End If
+
+        stage = "ProcCountLines (start=" & CStr(procStart) & ")"
         procLines = codeModule.ProcCountLines("Workbook_BeforeClose", 0)
         DoEvents
 
+        stage = "Lines(" & CStr(procStart) & ", " & CStr(procLines) & ") of " & CStr(codeModule.CountOfLines)
         procText = codeModule.Lines(procStart, procLines)
         DoEvents
+
+        stage = "assertions"
 
         Assert.IsTrue InStr(1, procText, "If Not Cancel Then LeaveDebugModeOnClose", vbTextCompare) > 0, _
                       "Existing Workbook_BeforeClose should call LeaveDebugModeOnClose"
@@ -954,7 +980,8 @@ Public Sub TestEnsureDebugExitHandlerPreservesExistingBeforeCloseCode()
     GoTo InjectionCleanup
 
 InjectionFailed:
-    CustomTestLogFailure Assert, "TestEnsureDebugExitHandlerPreservesExistingBeforeCloseCode", _
+    CustomTestLogFailure Assert, _
+                         "TestEnsureDebugExitHandlerPreservesExistingBeforeCloseCode at [" & stage & "]", _
                          Err.Number, Err.Description
     Resume InjectionCleanup
 
@@ -1098,6 +1125,26 @@ Private Sub ImportPasswordsComponents(ByVal targetWorkbook As Workbook, _
         targetWorkbook.VBProject.VBComponents.Import exportPath
     Next idx
 End Sub
+
+' @sub-title Resolve a workbook's ThisWorkbook code module
+' @details Workbook.CodeName answers an empty string until something has read the
+'   workbook's VBProject, and VBComponents("") raises error 9 — which reports as a
+'   bare "Subscript out of range". Reading VBProject first is what settles the
+'   name; "ThisWorkbook" is the fallback for the case where it stays empty.
+'   Passwords.EnsureDebugExitHandler is safe by construction because it reads
+'   wb.VBProject before wb.CodeName.
+' @param wb Workbook. The workbook whose document module is wanted.
+' @return Object. The ThisWorkbook CodeModule.
+Private Function WorkbookCodeModule(ByVal wb As Workbook) As Object
+    Dim vbProj As Object
+    Dim compName As String
+
+    Set vbProj = wb.VBProject
+    compName = wb.CodeName
+    If LenB(compName) = 0 Then compName = "ThisWorkbook"
+
+    Set WorkbookCodeModule = vbProj.VBComponents(compName).CodeModule
+End Function
 
 ' @sub-title Return the first worksheet in a workbook whose name does not match the excluded name
 Private Function FirstWorkbookSheet(ByVal wb As Workbook, ByVal excludedName As String) As Worksheet
