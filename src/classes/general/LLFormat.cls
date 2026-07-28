@@ -100,7 +100,7 @@ End Enum
 'import/export of format definitions across workbooks. Each FormatScope
 'constant maps to a specific visual pattern applied to Worksheets,
 'Ranges, Shapes, ListObjects, or Characters.
-'@depends CustomTable, Checking, BetterArray, ProjectError
+'@depends CustomTable, Checking, BetterArray
 '@version 1.0 (2026-02-09)
 
 
