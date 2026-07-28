@@ -16,7 +16,7 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 'test creates a fresh dictionary fixture so that worksheet state does not
 'leak between runs. Error-path tests verify that missing columns and
 'invalid state raise the expected ProjectError codes.
-'@depends LLVariables, LLdictionary, CustomTest, DictionaryTestFixture, TestHelpers, BetterArray
+'@depends LLVariables, LLdictionary, CustomTest, DictionaryTestFixture, TestHelpersLite, BetterArray
 
 Private Const DICT_SHEET As String = "LLVarDict"
 
@@ -28,21 +28,42 @@ Private Variables As LLVariables
 '===============================================================================
 
 '@sub-title Initialise the test module and prepare shared fixtures
+'@details
+'Public, so the headless runner reaches it: the runner calls every lifecycle
+'hook through Application.Run, which cannot see a Private Sub. The handler
+'matters as much. An error escaping a lifecycle hook aborts the WHOLE module,
+'so a fixture problem here would drop every test and the run would report no
+'failures, because nothing ran.
 '@ModuleInitialize
-Private Sub ModuleInitialize()
+Public Sub ModuleInitialize()
+    On Error GoTo Fail
+    BusyApp
     EnsureWorksheet TEST_OUTPUT_SHEET, clearSheet:=False
     Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
     Assert.SetModuleName "TestLLVariables"
     PrepareDictionaryFixture DICT_SHEET
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "ModuleInitialize", Err.Number, Err.Description
 End Sub
 
 '@sub-title Tear down the module by printing results and releasing objects
+'@details
+'Every step before RestoreApp is wrapped, because RestoreApp has to run
+'whatever happened above: the hooks here call BusyApp, which puts Excel in
+'manual calculation, and the next module in the run would inherit that.
 '@ModuleCleanup
-Private Sub ModuleCleanup()
-    If Not Assert Is Nothing Then
-        Assert.PrintResults TEST_OUTPUT_SHEET
-    End If
-    DeleteWorksheet DICT_SHEET
+Public Sub ModuleCleanup()
+    On Error Resume Next
+        If Not Assert Is Nothing Then
+            Assert.PrintResults TEST_OUTPUT_SHEET
+        End If
+        DeleteWorksheet DICT_SHEET
+    On Error GoTo 0
+
+    RestoreApp
+
     Set Variables = Nothing
     Set Dictionary = Nothing
     Set Assert = Nothing
@@ -50,18 +71,27 @@ End Sub
 
 '@sub-title Rebuild the dictionary fixture and create fresh LLVariables before each test
 '@TestInitialize
-Private Sub TestInitialize()
+Public Sub TestInitialize()
+    On Error GoTo Fail
+    BusyApp
     PrepareDictionaryFixture DICT_SHEET
     Set Dictionary = LLdictionary.Create(ThisWorkbook.Worksheets(DICT_SHEET), 1, 1)
     Set Variables = LLVariables.Create(Dictionary)
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestInitialize", Err.Number, Err.Description
 End Sub
 
 '@sub-title Flush assertion output and release per-test objects
 '@TestCleanup
-Private Sub TestCleanup()
-    If Not Assert Is Nothing Then
-        Assert.Flush
-    End If
+Public Sub TestCleanup()
+    On Error Resume Next
+        If Not Assert Is Nothing Then
+            Assert.Flush
+        End If
+    On Error GoTo 0
+
     Set Variables = Nothing
     Set Dictionary = Nothing
 End Sub
@@ -100,11 +130,13 @@ End Sub
 'Arranges by writing the string "star*value?" into the first variable
 'name cell so the name itself contains wildcard characters. Acts by
 'calling Contains with the exact string and a case-insensitive variant.
-'Asserts that both lookups succeed, confirming that Contains treats
-'wildcard characters literally rather than as pattern metacharacters.
+'Asserts that both lookups succeed. The match is a string compare in
+'memory, so wildcard characters carry no special meaning.
 '@TestMethod("LLVariables")
 Public Sub TestContainsHandlesWildcards()
     CustomTestSetTitles Assert, "LLVariables", "TestContainsHandlesWildcards"
+    On Error GoTo Fail
+
     Dim varRange As Range
 
     Set varRange = Dictionary.DataRange("Variable Name")
@@ -114,6 +146,10 @@ Public Sub TestContainsHandlesWildcards()
     Assert.IsTrue Variables.Contains("star*value?"), "Contains should match literal wildcard characters"
     Assert.IsTrue Variables.Contains("STAR*VALUE?", matchCase:=False), _
                   "Contains should support case-insensitive comparisons when requested"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestContainsHandlesWildcards", Err.Number, Err.Description
 End Sub
 
 '@sub-title Verify that SetValue respects the onEmpty flag
@@ -126,6 +162,8 @@ End Sub
 '@TestMethod("LLVariables")
 Public Sub TestSetValueHonoursOnEmpty()
     CustomTestSetTitles Assert, "LLVariables", "TestSetValueHonoursOnEmpty"
+    On Error GoTo Fail
+
     Dim devComments As Range
 
     Set devComments = Dictionary.DataRange("Dev Comments")
@@ -139,6 +177,10 @@ Public Sub TestSetValueHonoursOnEmpty()
     Variables.SetValue "choi_v1", "Dev Comments", "new text", onEmpty:=True
     Assert.AreEqual "new text", devComments.Cells(2, 1).Value, _
                      "SetValue should update empty cells when onEmpty is True"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestSetValueHonoursOnEmpty", Err.Number, Err.Description
 End Sub
 
 '@sub-title Verify that Index raises when the column index column is missing
@@ -165,6 +207,33 @@ ExpectError:
     Err.Clear
 End Sub
 
+'@sub-title Verify that Index raises InvalidArgument when the stored index is text
+'@details
+'Arranges by writing the text "abc" into the Column Index cell of choi_v1.
+'Acts by calling Variables.Index for that variable. Asserts that
+'ProjectError.InvalidArgument is raised. The class used to hand back a bare
+'type mismatch from CLng, with no variable name anywhere in the message.
+'@TestMethod("LLVariables")
+Public Sub TestIndexRaisesInvalidArgumentOnTextIndex()
+    CustomTestSetTitles Assert, "LLVariables", "TestIndexRaisesInvalidArgumentOnTextIndex"
+
+    Dim indexCell As Range
+
+    Set indexCell = Variables.CellRange("Column Index", "choi_v1")
+    indexCell.Value = "abc"
+
+    On Error GoTo ExpectError
+        Dim idx As Long
+        '@Ignore VariableNotUsed, AssignmentNotUsed
+        idx = Variables.Index("choi_v1")
+        Assert.LogFailure "Index should raise when the stored column index is text"
+        Exit Sub
+ExpectError:
+    Assert.AreEqual ProjectError.InvalidArgument, Err.Number, _
+                     "A column index that is not a number should raise InvalidArgument"
+    Err.Clear
+End Sub
+
 '@sub-title Verify that VariableNames returns a populated BetterArray
 '@details
 'Acts by calling Variables.VariableNames with no prior arrangement
@@ -175,11 +244,17 @@ End Sub
 '@TestMethod("LLVariables")
 Public Sub TestVariableNamesReturnsBetterArray()
     CustomTestSetTitles Assert, "LLVariables", "TestVariableNamesReturnsBetterArray"
+    On Error GoTo Fail
+
     Dim names As BetterArray
 
     Set names = Variables.VariableNames
     Assert.IsTrue (names.Length > 0), "VariableNames should return non-empty list"
     Assert.IsTrue names.Includes("choi_v1"), "Expected known variable to appear in VariableNames list"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestVariableNamesReturnsBetterArray", Err.Number, Err.Description
 End Sub
 
 '@sub-title Verify that SetValue raises when the target column is removed after caching
@@ -205,6 +280,38 @@ ExpectError:
     Err.Clear
 End Sub
 
+'@sub-title Verify that a column added after creation still resolves
+'@details
+'Arranges by reading a value through the Variables object, which loads the
+'header row into memory, then adding a brand new column to the dictionary.
+'Acts by writing to that new column through SetValue. Asserts that the write
+'lands. This is the shape LinelistSpecs.AddListAuto uses: it adds "list auto"
+'to the dictionary and then writes to it through a variables object it built
+'earlier, so a header snapshot that never refreshed would break the build.
+'@TestMethod("LLVariables")
+Public Sub TestColumnAddedAfterCreationResolves()
+    CustomTestSetTitles Assert, "LLVariables", "TestColumnAddedAfterCreationResolves"
+    On Error GoTo Fail
+
+    Dim newColumn As Range
+
+    'Warm the header snapshot before the column exists.
+    Assert.AreEqual "choice_manual", Variables.ControlType("choi_v1"), _
+                     "The fixture control type should be readable before the new column"
+
+    Dictionary.AddColumn "late column"
+    Variables.SetValue "choi_v1", "late column", "written"
+
+    Set newColumn = Variables.CellRange("late column", "choi_v1")
+    Assert.IsTrue (Not newColumn Is Nothing), "A column added after creation should resolve"
+    Assert.AreEqual "written", CStr(newColumn.Value), _
+                     "SetValue should write into a column added after creation"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestColumnAddedAfterCreationResolves", Err.Number, Err.Description
+End Sub
+
 '@sub-title Verify that VariableNames reflects new entries after cache invalidation
 '@details
 'Arranges by warming the VariableNames cache with an initial call, then
@@ -215,6 +322,7 @@ End Sub
 '@TestMethod("LLVariables")
 Public Sub TestVariableNamesCacheInvalidation()
     CustomTestSetTitles Assert, "LLVariables", "TestVariableNamesCacheInvalidation"
+    On Error GoTo Fail
 
     Dim newRow As Range
     Dim names As BetterArray
@@ -228,6 +336,10 @@ Public Sub TestVariableNamesCacheInvalidation()
 
     Assert.IsTrue names.Includes("cache_test_var"), _
                   "VariableNames should include new variables after invalidating caches"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestVariableNamesCacheInvalidation", Err.Number, Err.Description
 End Sub
 
 '@sub-title Verify that metadata helpers return expected dictionary values
@@ -241,6 +353,8 @@ End Sub
 '@TestMethod("LLVariables")
 Public Sub TestMetadataHelpers()
     CustomTestSetTitles Assert, "LLVariables", "TestMetadataHelpers"
+    On Error GoTo Fail
+
     Dim sheetName As String
     Dim controlType As String
     Dim tableName As String
@@ -252,4 +366,8 @@ Public Sub TestMetadataHelpers()
     Assert.AreEqual "vlist1D-sheet1", sheetName, "SheetName helper should return dictionary sheet name"
     Assert.AreEqual "choice_manual", controlType, "ControlType helper should return control value"
     Assert.IsTrue LenB(tableName) = 0, "TableName helper should empty dictionary table if dictionary is not prepared"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestMetadataHelpers", Err.Number, Err.Description
 End Sub

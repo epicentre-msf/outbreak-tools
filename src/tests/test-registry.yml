@@ -155,11 +155,10 @@ suites:
   # would leave Excel holding two copies and stop the project compiling.
   # LLdictionary and LLVariables are neither, so both are imported here.
   #
-  # The three line-continuation underscores with a trailing space that used to
-  # sit in LLdictionary.AddMainSectionSort are gone. LLVariables still carries
-  # two of the same shape (FindVariableCell, LogInfo); if VBA rejects them the
-  # whole project fails to compile and the runner shows the opaque -50. Those
-  # two are fixed by the session that owns LLVariables. Read the LogCompileProbe
+  # Every line-continuation underscore with a trailing space is gone from the
+  # three classes in this folder (LLdictionary.AddMainSectionSort had three,
+  # LLVariables had two). VBA rejects that shape, the whole project then fails
+  # to compile, and the runner shows the opaque -50. Read the LogCompileProbe
   # inventory first on any -50 that follows a change here.
   - folder: dictionary
     classes:
@@ -171,6 +170,10 @@ suites:
         covers: [LLExport]
       - module: TestLLdictionary
         covers: [LLdictionary]
+      - module: TestLLVariables
+        covers: [LLVariables]
+      - module: TestLLVariablesExtra
+        covers: [LLVariables]
 
   # --- sections -------------------------------------------------------------
   # (Also note: interface: true is stale -- IVarWriter /
