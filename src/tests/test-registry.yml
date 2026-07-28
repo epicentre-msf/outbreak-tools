@@ -100,11 +100,9 @@ suites:
       # LLFormat needs CustomTable (Import and Export), Checking and BetterArray.
       # CustomTable is above and the other two are already in the workbook.
       - name: LLFormat
-      # TranslationObject was in the workbook but registered only as a TEST
-      # module, so ImportAll never refreshed it from src/ and it had to be
-      # pasted in by hand after every change. It is a class here now. Its own
-      # deps are BetterArray and Checking, both already in the workbook.
-      - name: TranslationObject
+      # Do NOT add TranslationObject as a class. It is already baked into the
+      # workbook, and importing it again makes Excel keep both copies under a
+      # second name (TranslationObject1). Only its TEST module is registered.
       # LLChoices needs DataSheet, CustomTable, TranslationObject, Checking and
       # BetterArray. The first three are above, the last two are in the
       # workbook.
