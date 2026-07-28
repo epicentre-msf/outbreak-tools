@@ -107,18 +107,29 @@ if (do_build) {
 
 # --- 1) per-run working copy -------------------------------------------------
 # Keep the run dir at a STABLE identity (same folder, not just same path) every
-# run. A macOS folder-access grant is tied to the folder's identity (inode), so
-# DELETING and recreating it -- even at the same path -- makes a new folder the
-# grant no longer covers, and Excel re-prompts. So clear the CONTENTS and keep
-# the folder itself. (The grant should be on the repo root, a stable parent.)
+# run. A macOS file-access grant is tied to the identity (inode), not the path,
+# so DELETING and recreating a folder -- even at the same path -- makes a new
+# folder the grant no longer covers, and Excel re-prompts. So clear the CONTENTS
+# and keep the folder itself.
+#
+# The SAME rule applies to the workbook copy, and it is the file Excel actually
+# opens. `unit_tests_dev.xlsb` is only ever read by this script; a grant on it
+# can never help Excel. So the copy is kept too: it is left in place and
+# file.copy(overwrite = TRUE) truncates and rewrites it, which preserves the
+# inode (verified on this machine). Sweeping it away first, as this used to do,
+# handed Excel a brand new file every run and threw away any grant on it.
+# Everything else in the run dir IS swept -- above all the previous
+# test-results.csv, so a stale one can never be read as this run's result.
+work_copy <- file.path(run_dir, "unit_tests_run.xlsb")
+
 if (dir.exists(run_dir)) {
-  unlink(list.files(run_dir, all.files = TRUE, full.names = TRUE, no.. = TRUE),
-         recursive = TRUE, force = TRUE)
+  stale <- list.files(run_dir, all.files = TRUE, full.names = TRUE, no.. = TRUE)
+  stale <- stale[basename(stale) != basename(work_copy)]
+  unlink(stale, recursive = TRUE, force = TRUE)
 } else {
   dir.create(run_dir, recursive = TRUE, showWarnings = FALSE)
 }
 
-work_copy <- file.path(run_dir, "unit_tests_run.xlsb")
 if (!file.copy(workbook_src, work_copy, overwrite = TRUE)) {
   stop("run-tests.R: failed to copy workbook into ", run_dir)
 }
