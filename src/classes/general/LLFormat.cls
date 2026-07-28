@@ -101,12 +101,11 @@ End Enum
 'constant maps to a specific visual pattern applied to Worksheets,
 'Ranges, Shapes, ListObjects, or Characters.
 '@details
-'The design values a format object reads do not move while the object is
-'alive, so DesignValue caches the ANSWER and not only the row and column it
-'came from. ApplyFormat is the hot path of a whole linelist build (127 call
-'sites, 72 DesignValue calls in its own body), and without the answer cache
-'every one of those calls crossed into Excel. A caller that edits the format
-'sheet by hand and wants the new values asks for a new object, or goes
+'The design values a format object reads stay the same while the object is
+'alive, so DesignValue keeps the answer itself. ApplyFormat is the hot path of
+'a whole linelist build (127 call sites, 72 DesignValue calls in its own body),
+'and each of those calls used to cross into Excel. A caller that edits the
+'format sheet by hand and wants the new values asks for a new object, or goes
 'through Import, which clears every cache.
 '@depends CustomTable, Checking, BetterArray
 '@version 1.0 (2026-02-09)
@@ -140,8 +139,8 @@ Private this As TLLFormat
 '===============================================================================
 'Lazy-init and invalidation of internal lookup caches.
 '
-'A keyed Collection is used, not a Dictionary: Scripting.Dictionary is not
-'available on Mac Excel. UpdatedValues.RegistryNameCache uses the same shape.
+'Lookups are kept in a keyed Collection. Scripting.Dictionary is missing on
+'Mac Excel. UpdatedValues.RegistryNameCache uses the same shape.
 
 '@label:reset-caches
 '@sub-title Invalidate all cached references
@@ -181,8 +180,8 @@ Private Function CachedValue(ByVal store As Collection, _
     If store Is Nothing Then Exit Function
 
     'A Collection has no "does this key exist" test, so the miss is read off Err.
-    'Err is cleared first: neither On Error Resume Next nor On Error GoTo 0
-    'clears it, so a stale number from earlier code would read as a miss
+    'Err is cleared first, because On Error Resume Next and On Error GoTo 0 both
+    'leave it alone and a stale number from earlier code would read as a miss
     On Error Resume Next
         Err.Clear
         result = store.Item(cacheKey)
@@ -261,8 +260,8 @@ Private Sub EnsureFormatSheetReady(ByVal sh As Worksheet, ByRef resolvedDesign A
     Set formatLo = TableOfSheet(sh)
     Set header = HeaderOfTable(formatLo)
 
-    'Two tests, not one joined by Or: VBA runs both sides of Or, so the old
-    'single line read Rows.Count off Nothing and raised 91 instead of the message
+    'VBA runs both sides of Or. The old single line joined these two tests, so an
+    'empty table read Rows.Count off Nothing and raised 91 before the message
     If formatLo.DataBodyRange Is Nothing Then
         ThrowError ProjectError.ElementNotFound, _
                   "Format table '" & formatLo.Name & "' does not contain any data rows"
@@ -384,14 +383,14 @@ End Function
 '@label:label-row-index
 '@sub-title Resolve and cache the row index for a format label
 '@details
-'The lookup tries an exact match first and only then a partial one. Four of
-'the labels this class asks for are stored in the format table with extra
-'words around them - "gap for graphs" sits in "default row height gap for
-'graphs", "dropdown interior color" in "Select dropdown interior color",
-'"time series header font" in "Time series header font color" and "time
-'series header interior" in "Time series header interior color" - so partial
-'matching cannot simply be dropped. Trying the whole string first means a new
-'row whose label merely CONTAINS an existing one can no longer take it over.
+'The lookup tries an exact match first and then a partial one. Four of the
+'labels this class asks for are stored in the format table with extra words
+'around them - "gap for graphs" sits in "default row height gap for graphs",
+'"dropdown interior color" in "Select dropdown interior color", "time series
+'header font" in "Time series header font color" and "time series header
+'interior" in "Time series header interior color". Partial matching has to
+'stay for those four. The exact pass runs first so that a new row whose label
+'merely CONTAINS an existing one leaves that older row alone.
 '@param labelName String. Label text to locate in the Label column.
 '@return Long. The 1-based row index, or 0 when not found.
 Private Function LabelRowIndex(ByVal labelName As String) As Long
@@ -546,7 +545,7 @@ Public Function DesignValue(ByVal labelName As String, _
 
     'The key carries the design and returnColor as well as the label. The two
     'fallbacks are different constants, and the same cell answers with its fill
-    'colour or with its value depending on returnColor, so the label alone would
+    'colour or with its value depending on returnColor, so a label-only key would
     'hand one caller the other caller's answer
     cacheKey = LCase$(this.design) & CACHE_SEPARATOR & CStr(returnColor) & _
                CACHE_SEPARATOR & LCase$(labelName)
@@ -606,9 +605,9 @@ Private Sub DrawLines(ByVal rng As Range, _
                       Optional line As Integer = xlContinuous, _
                       Optional color As Variant = vbBlack)
 
-    'A fixed local array, not a BetterArray. This sub is written 50 times inside
-    'the format branches and runs far more often than that, so building an object
-    'to hold between one and six constants was the whole cost of the call
+    'A fixed local array. This sub is written 50 times inside the format branches
+    'and runs far more often than that, and building an object to hold between
+    'one and six constants was the whole cost of the call
     Dim borderPositions(1 To 6) As Long
     Dim borderCount As Long
     Dim counter As Long
@@ -666,9 +665,9 @@ End Sub
 '@sub-title Draw a rectangular border around a range
 '@details
 'Writes the four properties in the SAME order as DrawLines. Several scopes
-'used to call DrawLines four times, once per edge, and now call this sub once
-'instead; with line:=xlDouble the LineStyle write is what settles the final
-'weight, so a different order would make those frames come out heavier.
+'called DrawLines four times, once per edge, and now call this sub once. With
+'line:=xlDouble the LineStyle write is what settles the final weight, so a
+'different order would make those frames come out heavier.
 '@param rng Range. Target range to border.
 '@param weight Optional Integer. Line weight constant. Defaults to xlThin.
 '@param color Optional Variant. Border colour. Defaults to vbBlack.
@@ -790,8 +789,8 @@ End Sub
 Private Sub RemoveGridLines(ByVal sh As Worksheet, Optional DisplayZeros As Boolean = False)
     Dim View As WorksheetView
 
-    'The views are compared as objects, not by name: reading two sheet names per
-    'view was two crossings into Excel where the identity test is one
+    'The views are compared as objects. Reading two sheet names per view costs
+    'two crossings into Excel, and the identity test costs one
     For Each View In sh.Parent.Windows(1).SheetViews
         If View.Sheet Is sh Then
             View.DisplayGridlines = False
@@ -1075,7 +1074,7 @@ Private Sub ApplyListObjectFormat(ByVal tableObject As ListObject, ByVal scope A
         tableObject.TableStyle = ""
     Else
         'The design cell can name a style this Excel does not know; fall back to
-        'a built-in one first so the table is never left unstyled
+        'a built-in one first so the table always keeps a style
         On Error Resume Next
         tableObject.TableStyle = "TableStyleLight16"
         tableObject.TableStyle = interiorColorValue
@@ -1666,9 +1665,9 @@ Public Sub Import(ByVal inpsh As Worksheet)
     Set targetTable = FormatTable()
     Set inputTable = inpsh.ListObjects(1)
 
-    'Import the design names. The field is written straight, not through the
-    'DesignName property: that property calls GuardNotSealed and Create seals
-    'every instance, so the property route would raise on every import
+    'Import the design names. The field is written straight here. The DesignName
+    'property calls GuardNotSealed and Create seals every instance, so going
+    'through the property would raise on every import
     targetSheet.Range("DESIGNTYPE").Value = sourceDesign.Value
     this.design = CStr(targetSheet.Range("DESIGNTYPE").Value)
 
@@ -1778,18 +1777,17 @@ End Function
 '@label:copy-format-table-styles
 '@sub-title Copy cell-level styles between two format tables
 '@details
-'Column at a time. Excel answers Null for a property that is not the same on
-'every cell of a range, so a column styled the same all the way down is
-'copied with six writes instead of six writes per cell, and only a mixed block
-'falls back to the cell loop. The header row is taken on its own, because it
-'is styled differently from the body and would otherwise make every column
-'mixed.
-'What this CANNOT do: the design columns hold a different colour on every row,
+'Block at a time. Excel answers Null for a property whose value varies across
+'a range, so a block styled the same all the way down takes six writes for the
+'whole block, and a mixed block falls back to the cell loop. The header row is
+'taken on its own, because it carries its own styling and would make every
+'column read as mixed.
+'The limit of this: the design columns hold a different colour on every row,
 'which is the whole point of the format table, so those columns are still
-'walked cell by cell. VBA has no way to copy formats in a block off the
+'walked cell by cell. VBA offers a block format copy only through the
 'clipboard. Copy plus PasteSpecial xlPasteFormats would do the whole table in
-'one step, but the clipboard is the least reliable path on Mac Excel and this
-'runs on the user's own workbook, so it is not used here.
+'one step, and the clipboard is the least reliable path on Mac Excel, so this
+'code stays off it.
 Private Sub CopyFormatTableStyles(ByVal sourceTable As ListObject, ByVal targetTable As ListObject)
     Dim sourceRange As Range
     Dim targetRange As Range
@@ -1816,16 +1814,15 @@ Private Sub CopyFormatTableStyles(ByVal sourceTable As ListObject, ByVal targetT
     End If
 
     'The header row goes across on its own. It is styled as one band on every
-    'format sheet, and it is ALSO the reason a whole table column is never
-    'uniform - mixing it in with the body would send every column to the cell
-    'loop and the block path would never run at all
+    'format sheet, and that styling is what makes a whole table column read as
+    'mixed - keeping it separate is what lets the body columns cross in one step
     CopyStyles sourceRange.Rows(1), targetRange.Rows(1)
 
     If rowCount <= 1 Then Exit Sub
 
-    'Then one body column at a time. The text columns carry no per-row styling
-    'and cross in one step each; the design columns really do hold a different
-    'colour on every row, so those are the ones that fall to the cell loop
+    'Then one body column at a time. The text columns are styled the same all the
+    'way down and cross in one step each. The design columns hold a different
+    'colour on every row, so those fall to the cell loop
     For columnIndex = 1 To columnCount
         CopyStyles sourceRange.Columns(columnIndex).Offset(1).Resize(rowCount - 1), _
                    targetRange.Columns(columnIndex).Offset(1).Resize(rowCount - 1)
@@ -1845,9 +1842,8 @@ End Sub
 '@label:copy-styles-as-block
 '@sub-title Copy a block of styles in a single write when the block is uniform
 '@details
-'Excel answers Null for a property that is not the same on every cell of a
-'range, so reading the six properties off the whole block is both the test
-'and the read.
+'Excel answers Null for a property whose value varies across a range, so
+'reading the six properties off the whole block is both the test and the read.
 '@param sourceBlock Range. Block to read.
 '@param targetBlock Range. Block of the same shape to write.
 '@return Boolean. True when the whole block was copied in one step.
@@ -1890,8 +1886,8 @@ End Function
 '@sub-title Copy a block of styles cell by cell
 '@details
 'Both blocks are walked with a single Cells index, so the same loop serves a
-'one-row block and a one-column block. Each cell reads its Interior and its
-'Font once instead of chaining through them six times.
+'one-row block and a one-column block. Each cell fetches its Interior and its
+'Font once, then takes three properties off each.
 '@param sourceBlock Range. Block to read.
 '@param targetBlock Range. Block of the same shape to write.
 Private Sub CopyStylesByCell(ByVal sourceBlock As Range, ByVal targetBlock As Range)

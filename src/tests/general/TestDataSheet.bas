@@ -26,6 +26,7 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 
 Private Const DICTIONARYFIXTURESHEET As String = "LLDictTest"
 Private Const DICTOUTPUTSHEET As String = "DataOut"
+Private Const SPLITFILTERSHEET As String = "DataSplitFilter"
 
 Private fixtureRowCount As Long
 Private fixtureColumnCount As Long
@@ -78,6 +79,7 @@ Public Sub ModuleCleanup()
     Set Assert = Nothing
     DeleteWorksheet DICTOUTPUTSHEET
     DeleteWorksheet DICTIONARYFIXTURESHEET
+    DeleteWorksheet SPLITFILTERSHEET
     'Every test proc here opens with BusyApp, which puts Excel in manual
     'calculation with events off. Give it back, or the next module runs in
     'manual calculation.
@@ -243,6 +245,81 @@ Public Sub TestSimpleFilter()
 
 Fail:
     CustomTestLogFailure Assert, "TestSimpleFilter", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("DataSheet")
+'@sub-title TestFilterDataReadsEveryVisibleBlock
+'@details Guards the fault that left a column of copied values behind on the choices sheet.
+'         Builds a sheet where the rows matching one criteria sit in THREE separate blocks, so
+'         the visible range the filter produces carries three Areas. Range.Rows.Count on such a
+'         range answers for the first Area only, so the old code sized its working block from 1
+'         row, pasted all four matching rows into it, read one value back and cleared one cell --
+'         the other three rows stayed on the worksheet two columns past the data and showed up as
+'         soon as the filter was removed. Asserts that every matching value comes back in
+'         worksheet order for a single column and for "__all__", that nothing at all was written
+'         past the data, and that the sheet is left unfiltered.
+Public Sub TestFilterDataReadsEveryVisibleBlock()
+    CustomTestSetTitles Assert, "DataSheet", "TestFilterDataReadsEveryVisibleBlock"
+    On Error GoTo Fail
+
+    Dim splitSheet As Worksheet
+    Dim splitData As DataSheet
+    Dim values As BetterArray
+    Dim expected As Variant
+    Dim index As Long
+    Dim current As Long
+    Dim leftOver As Long
+    Dim rowIndex As Long
+    Dim columnIndex As Long
+
+    Set splitSheet = EnsureWorksheet(SPLITFILTERSHEET)
+    WriteMatrix splitSheet.Cells(1, 1), RowsToMatrix(Array( _
+        Array("key", "value"), _
+        Array("A", "v1"), _
+        Array("B", "v2"), _
+        Array("A", "v3"), _
+        Array("A", "v4"), _
+        Array("B", "v5"), _
+        Array("A", "v6")))
+
+    Set splitData = DataSheet.Create(splitSheet, 1, 1)
+
+    expected = Array("v1", "v3", "v4", "v6")
+    Set values = splitData.FilterData("key", "A", "value")
+
+    Assert.AreEqual UBound(expected) - LBound(expected) + 1, values.Length, _
+                    "FilterData should return every matching row when the matches sit in several blocks"
+
+    current = values.LowerBound
+    For index = LBound(expected) To UBound(expected)
+        Assert.AreEqual CStr(expected(index)), CStr(values.Item(current)), _
+                        "Unexpected filtered value at position " & CStr(index - LBound(expected) + 1)
+        current = current + 1
+    Next index
+
+    Set values = splitData.FilterData("key", "A", "__all__")
+    Assert.AreEqual 4, values.Length, "Filtering all the columns should also return every matching row"
+    Assert.IsTrue (values.ArrayType = BA_MULTIDIMENSION), "Filtering all the columns should return a multidimensional array"
+
+    'Columns 3 and beyond are checked with plain numbers on purpose. The old
+    'working block sat two columns past the last data column, and a value
+    'left in its top cell moves the last data column itself, so asking
+    'DataEndColumn where to look would look in the wrong place.
+    For columnIndex = 3 To 8
+        For rowIndex = 1 To 10
+            If Not IsEmpty(splitSheet.Cells(rowIndex, columnIndex).Value) Then leftOver = leftOver + 1
+        Next rowIndex
+    Next columnIndex
+    Assert.AreEqual 0, leftOver, "Filtering should leave no copied values on the worksheet"
+
+    Assert.IsFalse splitSheet.AutoFilterMode, "Filtering should leave the sheet unfiltered"
+
+    DeleteWorksheet SPLITFILTERSHEET
+    Exit Sub
+
+Fail:
+    DeleteWorksheet SPLITFILTERSHEET
+    CustomTestLogFailure Assert, "TestFilterDataReadsEveryVisibleBlock", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("DataSheet")

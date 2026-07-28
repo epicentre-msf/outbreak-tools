@@ -559,6 +559,12 @@ End Sub
 '@details
 'Reliably removes any active AutoFilter. Called before and after
 'filtering operations to guarantee a clean state.
+'Known, and left as it is on purpose: this clears EVERY filter on the host
+'sheet, including one the user set by hand on a ListObject of their own.
+'The two filter routines below need the sheet unfiltered to read the right
+'rows, and a stray filter left behind hides data from the user, which is
+'worse than losing their view. Do not narrow this sweep without a way to
+'prove the sheet ends up unfiltered on every path.
 Private Sub RemoveAutoFilter()
     Dim sh As Worksheet
     Dim Lo As ListObject
@@ -588,19 +594,138 @@ Private Sub RemoveAutoFilter()
 End Sub
 
 
+'@label:area-values
+'@sub-title Read one solid Range as a 1-based two-dimensional array
+'@details
+'Range.Value hands back a plain value when the Range is a single cell and
+'a two-dimensional array otherwise. This gives callers one shape so they do
+'not repeat the test.
+'@param blockRng Range. One solid block, never a multi-area Range.
+'@return Variant. A two-dimensional array, 1 To rows, 1 To columns.
+Private Function AreaValues(ByVal blockRng As Range) As Variant
+    Dim oneCell(1 To 1, 1 To 1) As Variant
+
+    If blockRng.Cells.Count = 1 Then
+        oneCell(1, 1) = blockRng.Value
+        AreaValues = oneCell
+    Else
+        AreaValues = blockRng.Value
+    End If
+End Function
+
+'@label:visible-block
+'@sub-title Read a filtered Range as one solid 1-based two-dimensional array
+'@details
+'SpecialCells(xlCellTypeVisible) hands back one Area per unbroken run of
+'visible rows, and Range.Rows.Count on such a Range answers for Areas(1)
+'ONLY. Anything sized from that number is short as soon as the filter
+'leaves two blocks, which is what used to break the two routines below:
+'they sized a scratch block on the sheet from it, pasted the WHOLE
+'selection into it (Excel anchors the paste at the top-left and writes
+'everything, a smaller destination neither truncates nor raises), read the
+'short block back and cleared the short block. So the caller got a
+'truncated list and the rows past the block stayed on the worksheet.
+'Every area is read with one .Value instead and the areas are stacked in
+'the order Excel hands them out, which is top to bottom. Nothing is written
+'to the worksheet, so there is no block to clear, no clipboard to reset and
+'no fixed spot past the last column to collide with.
+'BetterArray.FromExcelRange cannot do this job: it reads .Row, .Column,
+'.Rows.Count and .Columns.Count off the Range - all Areas(1) answers - and
+'then rebuilds one contiguous block from those bounds, which would pull in
+'the hidden rows sitting inside the first area.
+'@param visibleRng Range. The visible part of a filtered block.
+'@return Variant. A two-dimensional array, 1 To total visible rows, 1 To columns.
+Private Function VisibleBlock(ByVal visibleRng As Range) As Variant
+    Dim areaRng As Range
+    Dim blockValues As Variant
+    Dim block() As Variant
+    Dim totalRows As Long
+    Dim nbColumns As Long
+    Dim rowCursor As Long
+    Dim rowCounter As Long
+    Dim columnCounter As Long
+
+    'Every area spans the same columns, so the first one answers for all.
+    nbColumns = visibleRng.Areas(1).Columns.Count
+
+    For Each areaRng In visibleRng.Areas
+        totalRows = totalRows + areaRng.Rows.Count
+    Next
+
+    ReDim block(1 To totalRows, 1 To nbColumns)
+
+    For Each areaRng In visibleRng.Areas
+        blockValues = AreaValues(areaRng)
+        For rowCounter = 1 To areaRng.Rows.Count
+            For columnCounter = 1 To nbColumns
+                block(rowCursor + rowCounter, columnCounter) = blockValues(rowCounter, columnCounter)
+            Next
+        Next
+        rowCursor = rowCursor + areaRng.Rows.Count
+    Next
+
+    VisibleBlock = block
+End Function
+
+'@label:store-block
+'@sub-title Put a block into a BetterArray with the shape callers expect
+'@details
+'This reproduces exactly what BetterArray.FromExcelRange did for the block
+'the two filter routines used to build, and callers depend on all four
+'cases: one cell gives a one-element array, a single column gives a FLAT
+'one-dimensional array, a single row gives a flat one-dimensional array,
+'and anything wider gives a two-dimensional array (BA_MULTIDIMENSION,
+'pinned by TestDataSheet). The array is handed over in ONE Items
+'assignment. Pushing row by row would reallocate and copy the whole array
+'on every element.
+'@param target BetterArray. The array to fill. Its LowerBound is already 1.
+'@param block Variant. A 1-based two-dimensional array.
+Private Sub StoreBlock(ByVal target As BetterArray, ByRef block As Variant)
+    Dim nbRows As Long
+    Dim nbColumns As Long
+    Dim flat() As Variant
+    Dim counter As Long
+
+    nbRows = UBound(block, 1)
+    nbColumns = UBound(block, 2)
+
+    If (nbRows = 1) And (nbColumns = 1) Then
+        target.Push block(1, 1)
+    ElseIf nbColumns = 1 Then
+        ReDim flat(1 To nbRows)
+        For counter = 1 To nbRows
+            flat(counter) = block(counter, 1)
+        Next
+        target.Items = flat
+    ElseIf nbRows = 1 Then
+        ReDim flat(1 To nbColumns)
+        For counter = 1 To nbColumns
+            flat(counter) = block(1, counter)
+        Next
+        target.Items = flat
+    Else
+        target.Items = block
+    End If
+End Sub
+
 '@label:filter-data
 '@sub-title Filter data on a single column and return the result
 '@details
-'Applies an AutoFilter on varName with criteriaName, extracts the
-'visible rows from returnedColumnName into a temporary output area,
-'reads them into a BetterArray, then cleans up. The filter is removed
-'after the operation, leaving the DataSheet untouched.
+'Applies an AutoFilter on varName with criteriaName and reads the visible
+'rows of returnedColumnName straight into a BetterArray. The filter is
+'removed on every path, including the failure paths, so the DataSheet is
+'left as it was found.
+'Nothing is written to the worksheet. The routine used to copy the visible
+'rows into a scratch block two columns past the last data column, read it
+'back and clear it; see VisibleBlock for why that block was sized wrong and
+'what it left behind.
 '@param varName String. Column to filter on.
 '@param criteriaName String. Filter criteria to apply.
 '@param returnedColumnName String. Column whose values to return ("__all__" for all columns).
 '@param includeHeaders Optional Boolean. When True, includes the header row. Defaults to False.
 '@param matchCase Optional Boolean. When True, column lookup is case-sensitive. Defaults to True.
 '@return BetterArray. The filtered values.
+'@throws ProjectError.ElementNotFound When a column name is not found.
 '@export
 Public Function FilterData(ByVal varName As String, _
                             ByVal criteriaName As String, _
@@ -611,25 +736,31 @@ Public Function FilterData(ByVal varName As String, _
 
     Dim dataRng As Range
     Dim visibleRng As Range
-    Dim startRetColIndex As Long
-    Dim startRetRow As Long
-    Dim endRetColIndex As Long
     Dim returnedData As BetterArray
-    Dim sh As Worksheet
-    Dim endCol As Long
-    Dim scratchRng As Range
+    Dim startRetColIndex As Long
+    Dim endRetColIndex As Long
+    Dim startRetRow As Long
     Dim endRow As Long
+    Dim endCol As Long
+    Dim filterField As Long
+    Dim block As Variant
+    Dim errNumber As Long
+    Dim errSource As String
+    Dim errDescription As String
 
     'The caller always gets an array back, never Nothing. LowerBound 1 and
     'the Clone() at the end are part of what the callers read.
     Set returnedData = New BetterArray
     returnedData.LowerBound = 1
 
-    Set dataRng = DataRange(includeHeaders:=True) 'Plage of the dictionary data
-    Set sh = Wksh()
-    endCol = DataEndColumn()                     'End column and rows of the dictionary
-    endRow = DataEndRow()
-
+    'One build answers three questions: the range to filter, the last row
+    'and the last column. Reading the two ends off it saves asking the
+    'worksheet for them a second time, and it is the same answer, because
+    'DataRange("__all__") spans exactly DataStartRow to DataEndRow and
+    'DataStartColumn to DataEndColumn.
+    Set dataRng = DataRange(includeHeaders:=True)
+    endCol = dataRng.Column + dataRng.Columns.Count - 1
+    endRow = dataRng.Row + dataRng.Rows.Count - 1
 
     startRetRow = DataStartRow() + 1
     If includeHeaders Then startRetRow = (startRetRow - 1)
@@ -638,50 +769,58 @@ Public Function FilterData(ByVal varName As String, _
         startRetColIndex = DataStartColumn()
         endRetColIndex = endCol
     Else
-        'An unknown column raises ElementNotFound on purpose. Which index to
-        'return, the startcolumn is returned if the returned colname is not found
-        startRetColIndex = ColumnIndex(returnedColumnName, inDataRange:=True, shouldExist:=True, matchCase:=matchCase)
+        'A WORKSHEET column, because SheetBlock below works in worksheet
+        'coordinates. This used to ask for inDataRange:=True, which answers
+        'with a position relative to the data range; the two only agree
+        'while the data starts at column 1, and not every DataSheet does.
+        'An unknown column raises ElementNotFound on purpose, and it raises
+        'before any filter is applied.
+        startRetColIndex = ColumnIndex(returnedColumnName, shouldExist:=True, matchCase:=matchCase)
         endRetColIndex = startRetColIndex
     End If
 
-    With sh
-        'A filter left over from an earlier call would hide rows before the
-        'new one is applied, so the sheet is cleaned first.
-        RemoveAutoFilter
+    'AutoFilter counts its Field from the left edge of the filtered range,
+    'so THIS one really is relative to the data range.
+    filterField = ColumnIndex(varName, inDataRange:=True, shouldExist:=True, matchCase:=matchCase)
 
-        dataRng.AutoFilter Field:=ColumnIndex(varName, inDataRange:=True, shouldExist:=True, matchCase:=matchCase), Criteria1:=criteriaName
+    'From here on the sheet carries a filter, so every path has to take it
+    'off again.
+    On Error GoTo FilterFail
 
-        'SpecialCells raises when every row is hidden. That raise IS how
-        '"the filter matched nothing" is detected: visibleRng stays Nothing
-        'and the caller gets the empty array built above, with no error.
-        On Error Resume Next
-        Set visibleRng = SheetBlock(startRetRow, startRetColIndex, endRow, endRetColIndex).SpecialCells(xlCellTypeVisible)
-        On Error GoTo 0
+    'A filter left over from an earlier call would hide rows before the
+    'new one is applied, so the sheet is cleaned first.
+    RemoveAutoFilter
 
-        If Not visibleRng Is Nothing Then
-            'The scratch area starts two columns past the last data column.
-            'The one empty column in between keeps End(xlToLeft) and
-            'UsedRange from running out of the data into the scratch block.
-            Set scratchRng = .Cells(DataStartRow(), endCol + 2)
-            Set scratchRng = .Range(scratchRng, scratchRng.Offset(visibleRng.Rows.Count - 1, visibleRng.Columns.Count -1))
-            'Copy and PasteSpecial is what collapses the visible rows into
-            'one solid block: a filtered range is made of many Areas and
-            'cannot be read in a single .Value.
-            visibleRng.Copy
-            scratchRng.PasteSpecial xlPasteValues
+    dataRng.AutoFilter Field:=filterField, Criteria1:=criteriaName
 
-            'The block is exactly the size that was pasted, so BetterArray
-            'must not go looking for the last row or column itself.
-            returnedData.FromExcelRange scratchRng, DetectLastRow:=False, _
-                                        DetectLastColumn:=False
-            scratchRng.ClearContents
-        End If
+    'SpecialCells raises when every row is hidden. That raise IS how
+    '"the filter matched nothing" is detected: visibleRng stays Nothing
+    'and the caller gets the empty array built above, with no error.
+    On Error Resume Next
+    Set visibleRng = SheetBlock(startRetRow, startRetColIndex, endRow, endRetColIndex).SpecialCells(xlCellTypeVisible)
+    On Error GoTo FilterFail
 
-        'Leave the sheet as it was found: no filter, no scratch block.
-        RemoveAutoFilter
-    End With
+    If Not visibleRng Is Nothing Then
+        block = VisibleBlock(visibleRng)
+        StoreBlock returnedData, block
+    End If
+
+    'Leave the sheet as it was found: no filter.
+    RemoveAutoFilter
 
     Set FilterData = returnedData.Clone()
+    Exit Function
+
+FilterFail:
+    'The sheet is mid-filter with its rows hidden. Put it back before the
+    'error goes up, or the caller is left looking at part of the data.
+    errNumber = Err.Number
+    errSource = Err.Source
+    errDescription = Err.Description
+    On Error Resume Next
+    RemoveAutoFilter
+    On Error GoTo 0
+    Err.Raise errNumber, errSource, errDescription
 End Function
 
 
@@ -690,36 +829,47 @@ End Function
 '@details
 'Applies multiple AutoFilters (one per entry in varData/criteriaData)
 'and returns the visible values from each column in returnedColumnsData
-'as a two-dimensional BetterArray. Exits when varData and criteriaData
-'have different lengths.
+'as a two-dimensional BetterArray. Exits with an empty array when varData
+'and criteriaData have different lengths. The filters are removed on every
+'path, including the failure paths.
+'Nothing is written to the worksheet. Each returned column used to be
+'pasted into its own scratch column past the last data column and the block
+'measured back off the sheet, which had three ways to answer wrong: it
+'gated BOTH the read and the clear on ONE cell being non-empty, so a blank
+'first value (normal for a short-label column) dropped the whole block; it
+'took the bottom edge from the first scratch column only; and it took the
+'right edge from the header row, so it stopped short when the last column
+'started blank and ran into the user's own content when anything already
+'sat further right.
 '@param varData BetterArray. Column names to filter on.
 '@param criteriaData BetterArray. Criteria corresponding to each column.
 '@param returnedColumnsData BetterArray. Columns whose values to return.
 '@return BetterArray. A two-dimensional array of filtered values.
+'@throws ProjectError.ElementNotFound When a column name is not found.
 '@export
 Public Function FiltersData(ByVal varData As BetterArray, _
                              ByVal criteriaData As BetterArray, _
                              ByVal returnedColumnsData As BetterArray) As BetterArray
 
-    Dim dataRng As Range                         'Range of the data
-    Dim sh As Worksheet
+    Dim dataRng As Range
     Dim visibleRng As Range
-    Dim outputRng As Range
-    Dim returnedColumnIndex As Long
     Dim returnedData As BetterArray
+    Dim returnedColumnIndex As Long
     Dim counter As Long
-    Dim scratchColumn As Long
-    Dim EndRow As Long
-    Dim endCol As Long
-    Dim retEndRow As Long
-    Dim retEndCol As Long
-    Dim scratchRng As Range
+    Dim columnCursor As Long
+    Dim rowCounter As Long
+    Dim endRow As Long
+    Dim nbColumns As Long
+    Dim nbRows As Long
+    Dim block As Variant
+    Dim columnBlock As Variant
+    Dim errNumber As Long
+    Dim errSource As String
+    Dim errDescription As String
 
     'The caller always gets an array back, on every exit path below.
     Set returnedData = New BetterArray
     returnedData.LowerBound = 1
-
-    Set dataRng = DataRange(includeHeaders:=True)
     Set FiltersData = returnedData.Clone()
 
     'Mismatched counts are a caller mistake that is logged and answered
@@ -730,67 +880,73 @@ Public Function FiltersData(ByVal varData As BetterArray, _
         Exit Function
     End If
 
-    'returned Range
-    scratchColumn = 2                            'Iterator for columns to extract
-    Set sh = Wksh()
+    nbColumns = returnedColumnsData.Length
+    If nbColumns = 0 Then Exit Function
 
-    With sh
+    Set dataRng = DataRange(includeHeaders:=True)
+    endRow = dataRng.Row + dataRng.Rows.Count - 1
 
-        'A filter left over from an earlier call would hide rows before the
-        'new ones are applied.
-        RemoveAutoFilter
-        EndRow = DataEndRow()
-        endCol = DataEndColumn()
+    'From here on the sheet carries filters, so every path has to take them
+    'off again.
+    On Error GoTo FiltersFail
 
-        With dataRng
-            For counter = varData.LowerBound To varData.UpperBound
-                .AutoFilter Field:=ColumnIndex(varData.Item(counter), inDataRange:=True, shouldExist:=True), Criteria1:=criteriaData.Item(counter)
-            Next
-        End With
+    'A filter left over from an earlier call would hide rows before the
+    'new ones are applied.
+    RemoveAutoFilter
 
-        For counter = returnedColumnsData.LowerBound To returnedColumnsData.UpperBound
-            returnedColumnIndex = ColumnIndex(returnedColumnsData.Item(counter), shouldExist:=True)
-
-            'SpecialCells raises when every row is hidden. That raise is how
-            '"the filter matched nothing" is detected, so the guard here is
-            'real error handling and not laziness.
-            On Error Resume Next
-            Set visibleRng = .Range(.Cells(DataStartRow() + 1, returnedColumnIndex), .Cells(EndRow, returnedColumnIndex)).SpecialCells(xlCellTypeVisible)
-            On Error GoTo 0
-
-            If Not visibleRng Is Nothing Then
-                'Each returned column gets its OWN scratch column. The
-                'scratch area starts two columns past the last data column,
-                'so the empty column in between keeps End(xlToLeft) from
-                'running out of the data into the scratch block.
-                Set outputRng = .Cells(DataStartRow(), endCol + scratchColumn).Resize(visibleRng.Rows.Count, 1)
-                visibleRng.Copy
-                outputRng.PasteSpecial xlPasteValues
-            End If
-            scratchColumn = scratchColumn + 1
+    With dataRng
+        For counter = varData.LowerBound To varData.UpperBound
+            .AutoFilter Field:=ColumnIndex(varData.Item(counter), inDataRange:=True, shouldExist:=True), Criteria1:=criteriaData.Item(counter)
         Next
-
-        RemoveAutoFilter
-
-        'end row and end columns of data to return
-        'The end column is read AFTER the scratch block was written, on
-        'purpose: that is how the right edge of this routine's own output
-        'is found. A held end column would break it.
-        retEndRow = .Cells(.Rows.Count, endCol + 2).End(xlUp).Row
-        retEndCol = .Cells(DataStartRow(), .Columns.Count).End(xlToLeft).Column
-
-        If Not IsEmpty(.Cells(DataStartRow(), endCol + 2)) Then
-            Set scratchRng = .Range(.Cells(DataStartRow(), endCol + 2), .Cells(retEndRow, retEndCol))
-            'returned data is the data returned by the filter
-            'The block is exactly the size that was written, so BetterArray
-            'must not go looking for the last row or column itself.
-            returnedData.FromExcelRange scratchRng, DetectLastRow:=False, DetectLastColumn:=False
-            'Cells.Clear and not ClearContents: the paste carried formats
-            'across too, and they have to go with the values.
-            scratchRng.Cells.Clear
-        End If
     End With
+
+    For counter = returnedColumnsData.LowerBound To returnedColumnsData.UpperBound
+        returnedColumnIndex = ColumnIndex(returnedColumnsData.Item(counter), shouldExist:=True)
+        columnCursor = columnCursor + 1
+
+        'SpecialCells raises when every row is hidden. That raise is how
+        '"the filter matched nothing" is detected, so the guard here is
+        'real error handling and not laziness.
+        Set visibleRng = Nothing
+        On Error Resume Next
+        Set visibleRng = SheetBlock(DataStartRow() + 1, returnedColumnIndex, endRow, returnedColumnIndex).SpecialCells(xlCellTypeVisible)
+        On Error GoTo FiltersFail
+
+        'The same filters are active for every returned column, so when one
+        'answers "nothing is visible" they all do.
+        If visibleRng Is Nothing Then Exit For
+
+        columnBlock = VisibleBlock(visibleRng)
+
+        'The first column that answers sets the height of the result.
+        If IsEmpty(block) Then
+            nbRows = UBound(columnBlock, 1)
+            ReDim block(1 To nbRows, 1 To nbColumns)
+        End If
+
+        For rowCounter = 1 To nbRows
+            If rowCounter > UBound(columnBlock, 1) Then Exit For
+            block(rowCounter, columnCursor) = columnBlock(rowCounter, 1)
+        Next
+    Next
+
+    RemoveAutoFilter
+
+    If Not IsEmpty(block) Then StoreBlock returnedData, block
+
     Set FiltersData = returnedData.Clone()
+    Exit Function
+
+FiltersFail:
+    'The sheet is mid-filter with its rows hidden. Put it back before the
+    'error goes up.
+    errNumber = Err.Number
+    errSource = Err.Source
+    errDescription = Err.Description
+    On Error Resume Next
+    RemoveAutoFilter
+    On Error GoTo 0
+    Err.Raise errNumber, errSource, errDescription
 End Function
 
 
