@@ -1692,8 +1692,8 @@ End Sub
 '@sub-title Export the format table to another workbook
 '@details
 'Copies the format table and cell styles to a new worksheet in the
-'destination workbook. When a worksheet with the same name already
-'exists, imports from it instead of exporting.
+'destination workbook. When a worksheet with the same name already exists,
+'the call turns into an Import from that sheet.
 '@param toWkb Workbook. Destination workbook.
 '@export
 Public Sub Export(ByVal toWkb As Workbook)
@@ -1865,7 +1865,7 @@ Private Function CopyStylesAsBlock(ByVal sourceBlock As Range, _
         sizeValue = .Font.Size
     End With
 
-    'Null on any one of them means the block is mixed and cannot be copied whole
+    'Null on any one of them means the block is mixed, so it goes to the cell loop
     If IsNull(patternValue) Or IsNull(interiorColorValue) Then Exit Function
     If IsNull(fontColorValue) Or IsNull(boldValue) Then Exit Function
     If IsNull(italicValue) Or IsNull(sizeValue) Then Exit Function
