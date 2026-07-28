@@ -78,6 +78,10 @@ Public Sub ModuleCleanup()
     Set Assert = Nothing
     DeleteWorksheet DICTOUTPUTSHEET
     DeleteWorksheet DICTIONARYFIXTURESHEET
+    'Every test proc here opens with BusyApp, which puts Excel in manual
+    'calculation with events off. Give it back, or the next module runs in
+    'manual calculation.
+    RestoreApp
 End Sub
 
 '@TestInitialize

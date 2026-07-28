@@ -77,11 +77,14 @@ suites:
     classes:
       - name: OSFiles
       - name: DropdownLists
-      # DataSheet names CustomTable only inside TypeName(...) string tests and
-      # takes its import argument As Object, so CustomTable is NOT a compile
-      # dependency and must not be imported. Its real deps (Checking,
-      # BetterArray, HiddenNames) are already in the workbook.
+      # DataSheet and CustomTable each name the other only inside TypeName(...)
+      # string tests and take their import argument As Object, so neither is a
+      # compile dependency of the other and either can be imported on its own.
+      # CustomTable is imported here because TestCustomTable needs it. The real
+      # deps of both (Checking, BetterArray, HiddenNames, DropdownLists) are
+      # already in the workbook.
       - name: DataSheet
+      - name: CustomTable
     tests:
       - module: TestOSFiles
         covers: [OSFiles]
@@ -91,6 +94,8 @@ suites:
         covers: [TranslationObject]
       - module: TestDataSheet
         covers: [DataSheet]
+      - module: TestCustomTable
+        covers: [CustomTable]
 
   # --- sections -------------------------------------------------------------
   # (Also note: interface: true is stale -- IVarWriter /

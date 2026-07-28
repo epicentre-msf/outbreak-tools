@@ -35,7 +35,6 @@ Private Const TRIM_SHEETNAME As String = "CustomTableTrim"
 Private Const TRIM_TABLE_NAME As String = "tblTrimTarget"
 
 Private Assert As CustomTest
-Private Fakes As Object
 
 '@section Helpers
 '===============================================================================
@@ -272,7 +271,10 @@ Public Sub ModuleCleanup()
     DeleteWorksheet EXPAND_SHEETNAME
 
     Set Assert = Nothing
-    Set Fakes = Nothing
+    'Every test proc here opens with BusyApp, which puts Excel in manual
+    'calculation with events off. Give it back, or the next module runs in
+    'manual calculation.
+    RestoreApp
 End Sub
 
 '@TestInitialize
@@ -326,8 +328,8 @@ Public Sub TestAddRowsAssignsIds()
     Set tableObject = BuildCustomTable
     Set Lo =  ThisWorkbook.Worksheets(TABLESHEETNAME).ListObjects(TABLENAME)
 
+    'AddRows already ends in AddIds, so it is not called again here.
     tableObject.AddRows nbRows:=2
-    tableObject.AddIds
 
     Assert.IsTrue (Lo.DataBodyRange.Rows.Count = 5), "AddRows should append rows"
     Assert.AreEqual "row 4", Lo.ListColumns("ID").DataBodyRange.Cells(4, 1).Value, _
@@ -938,6 +940,7 @@ End Sub
 '@TestMethod("CustomTable")
 Public Sub TestImportFailureRestoresSnapshot()
     CustomTestSetTitles Assert, "CustomTable", "TestImportFailureRestoresSnapshot"
+    On Error GoTo Fail
 
     Dim tableObject As CustomTable
     Dim headers As Variant
@@ -962,7 +965,11 @@ Public Sub TestImportFailureRestoresSnapshot()
     Assert.AreEqual "Gamma", Lo.ListColumns("Name").DataBodyRange.Cells(3, 1).Value, _
                      "Failed import should keep trailing rows intact"
 
-      Assert.IsTrue Not (Lo.ListColumns("Amount") Is Nothing), "failed to estore listcolumns"
+    Assert.IsTrue Not (Lo.ListColumns("Amount") Is Nothing), "failed to estore listcolumns"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestImportFailureRestoresSnapshot", Err.Number, Err.Description
 End Sub
 
 '@sub-title Verifies that importing a larger CustomTable into a stacked top table shifts the bottom table
