@@ -760,7 +760,11 @@ Public Sub ClickExport()
             'Add the control if not initialized  
             If expObj.IsActive(exportNumber) Then
                 Set btn = F_Export.Controls.Add("Forms.CommandButton.1", "CMDExport" & exportNumber, True)
-                btn.Caption = expObj.Value("label button", exportNumber)
+                'Read the button wording from the export row. LLExport exposes
+                'this as ColumnValue(exportNumber, columnName); it has no Value
+                'member, so the old expObj.Value("label button", exportNumber)
+                'call stopped this module compiling.
+                btn.Caption = expObj.ColumnValue(exportNumber, "label button")
                 btn.Top = topPosition
                 btn.height = COMMANDHEIGHT
                 btn.width = 160
