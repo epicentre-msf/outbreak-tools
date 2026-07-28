@@ -10,13 +10,13 @@ Attribute VB_Exposed = False
 Attribute VB_Description = "Manage linelist and setup exports"
 
 '@PredeclaredId
-'@Folder("General")
+'@Folder("Dictionary")
 '@ModuleDescription("Manage linelist and setup exports")
 
 '@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation, ProcedureNotUsed, SuperfluousAnnotationArgument
 
 
-'@depends Checking, DataSheet, LLVariables, HiddenNames
+'@depends BetterArray, Checking, CustomTable, DataSheet, LLdictionary, LLVariables, Passwords, TranslationObject
 Option Explicit
 
 
@@ -29,19 +29,21 @@ Private Type TLLExport
     hasChecks As Boolean
     checkCounter As Long
     sanitizeList As Variant
-    store As HiddenNames
+    specHeaders As Variant
+    specBlock As Variant
+    specLoaded As Boolean
     sealed As Boolean
 End Type
 
 Private Const COL_STATUS As String = "status"
 Private Const COL_FILE_NAME As String = "file name"
+Private Const COL_LABEL_BUTTON As String = "label button"
 Private Const COL_EXPORT_NUMBER As String = "export number"
 Private Const COL_INCLUDE_IDS As String = "include personal identifiers"
 Private Const STATUS_ACTIVE As String = "active"
 Private Const DEFAULT_INCLUDE_IDS As String = "no"
 Private Const TIMESTAMP_FORMAT As String = "yyyymmdd-HhNn"
 Private Const CHECKING_CONTEXT As String = "LLExport checks"
-Private Const TOTAL_EXPORTS_NAME As String = "__ll_exports_total__"
 Private Const CLASSNAME As String = "LLExport"
 
 Private this As TLLExport
@@ -93,7 +95,6 @@ End Property
 Public Property Set InternalWorksheet(ByVal exportSheet As Worksheet)
     GuardNotSealed "InternalWorksheet"
     Set this.exportSheet = exportSheet
-    Set this.store = Nothing
 End Property
 
 '@label:Seal
@@ -119,26 +120,16 @@ Public Property Get Data() As DataSheet
     Set Data = this.expData
 End Property
 
-'@label:Worksheet
-'@prop-title Worksheet hosting the export specification table
-'@return Worksheet reference used by the handler.
-Public Property Get Worksheet() As Worksheet
-    EnsureWorksheetReady
-    Set Worksheet = this.exportSheet
-End Property
-
 '@label:NumberOfExports
 '@prop-title Count the configured export rows
-'@details Counts rows within the specification table excluding headers.
+'@details
+'Counts rows within the specification table excluding headers. The count is
+'read from the table itself, so it always agrees with what the sheet holds.
 '@return Total number of export definitions currently present.
 Public Property Get NumberOfExports() As Long
     EnsureDataReady
     EnsureWorksheetReady
-    NumberOfExports = StoredTotalExports()
-    If NumberOfExports <= 0 Then
-        NumberOfExports = CountExportRows()
-        PersistTotalExports NumberOfExports
-    End If
+    NumberOfExports = CountExportRows()
 End Property
 
 '@label:HasCheckings
@@ -164,29 +155,23 @@ End Property
 '@details
 'Handle the addition or removal of export rows while keeping the dictionary
 'columns aligned with the actual identifiers present in the worksheet. The
-'logic operates on identifiers rather than simple counts so arbitrary deletions
-'do not remove unrelated export columns.
-'@param dict Optional dictionary used to add/remove export columns.
+'logic operates on identifiers, so arbitrary deletions leave unrelated export
+'columns in place.
 '@param del Optional flag switching to row removal mode.
-'@param rowCount Optional threshold for row removal; rows with non-empty cells at or below the threshold are trimmed (defaults to 0, removing empty rows).
-Public Sub ManageRows(Optional ByVal del As Boolean = False, _ 
-                       Optional ByVal dict As LLdictionary, _
-                       Optional ByVal rowCount As Long = 2)
+'@param dict Optional dictionary used to add/remove export columns.
+'@param rowCount Optional threshold for row removal; rows with non-empty cells at or below the threshold are trimmed (defaults to 2).
+Public Sub ManageRows(Optional ByVal del As Boolean = False, _
+                      Optional ByVal dict As LLdictionary, _
+                      Optional ByVal rowCount As Long = 2)
 
     Dim tableObj As CustomTable
     Dim previousCount As Long
-    Dim newCount As Long
     Dim exportNumbers As BetterArray
-    Dim dictionaryReady As Boolean
-    Dim dictRef As LLdictionary
 
-    
     EnsureDataReady
     EnsureWorksheetReady
-    EnsureDictionaryReady dict, Not dict Is Nothing, False
-    dictionaryReady = DictionaryIsAvailable()
-    If dictionaryReady Then Set dictRef = this.dictInt
-   
+    ResolveDictionary dict, required:=False
+
     Set tableObj = ExportTable()
     previousCount = CountExportRows()
 
@@ -200,13 +185,10 @@ Public Sub ManageRows(Optional ByVal del As Boolean = False, _
         ApplyIncludeDefaults tableObj, previousCount + 1, CountExportRows()
     End If
 
-    EnsureExportIdentifiers tableObj
+    Set exportNumbers = EnsureExportIdentifiers(tableObj)
+    DropSpecification
 
-    newCount = CountExportRows()
-    PersistTotalExports newCount
-
-    Set exportNumbers = CollectExportNumbers(tableObj)
-    If dictionaryReady Then SyncDictionaryExportsCore exportNumbers, dictRef
+    If DictionaryIsAvailable() Then SyncDictionaryExportsCore exportNumbers, this.dictInt
 End Sub
 
 '@label:InsertRows
@@ -220,26 +202,19 @@ Public Sub InsertRows(ByVal targetCell As Range, _
 
     Dim tableObj As CustomTable
     Dim exportNumbers As BetterArray
-    Dim dictionaryReady As Boolean
-    Dim dictRef As LLdictionary
     Dim insertIndex As Long
-    Dim insertCount As Long
+    Dim lastDefaultRow As Long
     Dim actualInserted As Long
     Dim previousCount As Long
     Dim newCount As Long
 
-    If (targetCell Is Nothing) Then Exit Sub
+    If targetCell Is Nothing Then Exit Sub
 
     EnsureDataReady
     EnsureWorksheetReady
-
-    EnsureDictionaryReady dict, (Not dict Is Nothing), False
-
-    dictionaryReady = DictionaryIsAvailable()
-    If dictionaryReady Then Set dictRef = this.dictInt
+    ResolveDictionary dict, required:=False
 
     Set tableObj = ExportTable()
-    insertCount = targetCell.Rows.Count
     previousCount = CountExportRows()
 
     insertIndex = ResolveSelectionRowIndex(tableObj, targetCell)
@@ -252,29 +227,31 @@ Public Sub InsertRows(ByVal targetCell As Range, _
     actualInserted = newCount - previousCount
 
     If actualInserted <= 0 Then
-        PersistTotalExports newCount
+        DropSpecification
         Exit Sub
     End If
 
-    ApplyIncludeDefaults tableObj, insertIndex, Application.WorksheetFunction.Min(newCount, insertIndex + actualInserted - 1)
-    AssignExportNumbers tableObj, insertIndex, actualInserted
+    lastDefaultRow = insertIndex + actualInserted - 1
+    If lastDefaultRow > newCount Then lastDefaultRow = newCount
 
-    PersistTotalExports newCount
+    ApplyIncludeDefaults tableObj, insertIndex, lastDefaultRow
+    Set exportNumbers = AssignExportNumbers(tableObj, insertIndex, actualInserted)
+    DropSpecification
 
-    Set exportNumbers = CollectExportNumbers(tableObj)
-    If dictionaryReady Then SyncDictionaryExportsCore exportNumbers, dictRef
+    If DictionaryIsAvailable() Then SyncDictionaryExportsCore exportNumbers, this.dictInt
 End Sub
 
 '@label:DeleteRows
 '@prop-title Delete export rows intersecting the supplied selection
+'@param targetCell Range holding the rows the user selected.
+'@param dict Optional dictionary to prune export columns from.
+'@param forceShift Optional Boolean asking the table to shift worksheet rows up.
 Public Sub DeleteRows(ByVal targetCell As Range, _
                       Optional ByVal dict As LLdictionary, _
                       Optional ByVal forceShift As Boolean = False)
 
     Dim tableObj As CustomTable
     Dim exportNumbers As BetterArray
-    Dim dictionaryReady As Boolean
-    Dim dictRef As LLdictionary
     Dim previousCount As Long
     Dim newCount As Long
 
@@ -282,10 +259,7 @@ Public Sub DeleteRows(ByVal targetCell As Range, _
 
     EnsureDataReady
     EnsureWorksheetReady
-
-    EnsureDictionaryReady dict, Not dict Is Nothing, False
-    dictionaryReady = DictionaryIsAvailable()
-    If dictionaryReady Then Set dictRef = this.dictInt
+    ResolveDictionary dict, required:=False
 
     Set tableObj = ExportTable()
     previousCount = CountExportRows()
@@ -296,15 +270,14 @@ Public Sub DeleteRows(ByVal targetCell As Range, _
 
     newCount = CountExportRows()
     If newCount = previousCount Then
-        PersistTotalExports newCount
+        DropSpecification
         Exit Sub
     End If
 
-    EnsureExportIdentifiers tableObj
-    PersistTotalExports newCount
+    Set exportNumbers = EnsureExportIdentifiers(tableObj)
+    DropSpecification
 
-    Set exportNumbers = CollectExportNumbers(tableObj)
-    If dictionaryReady Then SyncDictionaryExportsCore exportNumbers, dictRef
+    If DictionaryIsAvailable() Then SyncDictionaryExportsCore exportNumbers, this.dictInt
 End Sub
 
 '@label:AddRows
@@ -316,18 +289,19 @@ End Sub
 
 '@label:RemoveRows
 '@prop-title Remove empty export rows
-'@param rowCount Optional threshold; rows with non-empty cell counts at or below this value are removed (defaults to 0).
-Public Sub RemoveRows(Optional ByVal dict As LLdictionary, _ 
+'@param dict Optional dictionary to align export columns with.
+'@param rowCount Optional threshold; rows with non-empty cell counts at or below this value are removed (defaults to 2).
+Public Sub RemoveRows(Optional ByVal dict As LLdictionary, _
                       Optional ByVal rowCount As Long = 2)
     ManageRows del:=True, dict:=dict, rowCount:=rowCount
 End Sub
 
 '@label:SyncDictionaryExports
 '@prop-title Synchronise dictionary export columns
+'@param dict Optional dictionary; the cached one is used when this is missing.
 Public Sub SyncDictionaryExports(Optional ByVal dict As LLdictionary)
     Dim tableObj As CustomTable
     Dim exportNumbers As BetterArray
-    Dim targetDict As LLdictionary
 
     EnsureDataReady
     EnsureWorksheetReady
@@ -335,65 +309,87 @@ Public Sub SyncDictionaryExports(Optional ByVal dict As LLdictionary)
     Set tableObj = ExportTable()
     Set exportNumbers = CollectExportNumbers(tableObj)
 
-    EnsureDictionaryReady dict, Not dict Is Nothing, False
+    ResolveDictionary dict, required:=False
 
-    If Not (this.dictInt Is Nothing) Then
-        Set targetDict = this.dictInt
-    Else
-        Set targetDict = dict
-    End If
-
-    SyncDictionaryExportsCore exportNumbers, targetDict
+    SyncDictionaryExportsCore exportNumbers, this.dictInt
 End Sub
 
 '@label:Sort
 '@sub-title Sort export definitions and normalize identifiers
+'@param dict Optional dictionary whose export columns follow the new order.
 Public Sub Sort(Optional ByVal dict As LLdictionary)
     Dim tableObj As CustomTable
-    Dim dictRef As LLdictionary
+    Dim sortError As Long
+    Dim sortMessage As String
 
     EnsureDataReady
     EnsureWorksheetReady
 
     Set tableObj = ExportTable()
 
+    'A table that refuses to sort still gets its identifiers renumbered below,
+    'so the failure is recorded and the routine carries on.
+    Err.Clear
     On Error Resume Next
         tableObj.Sort colName:=COL_EXPORT_NUMBER
+        sortError = Err.Number
+        sortMessage = Err.Description
+        If sortError <> 0 Then Err.Clear
     On Error GoTo 0
 
-    EnsureDictionaryReady dict, Not dict Is Nothing, False
-    If Not (this.dictInt Is Nothing) Then
-        Set dictRef = this.dictInt
-    Else
-        Set dictRef = dict
+    If sortError <> 0 Then
+        LogInfo "Sorting the export table failed: " & sortMessage, checkingWarning
     End If
 
-    SequentiallyRenameExports tableObj, dictRef
+    ResolveDictionary dict, required:=False
+
+    SequentiallyRenameExports tableObj, this.dictInt
+    DropSpecification
 End Sub
 
 '@section Row Coordination Helpers
 '===============================================================================
 
+'@label:ApplyIncludeDefaults
+'@sub-title Write the default identifier flag into the rows that have none
+'@param tableObj CustomTable wrapping the export specification table.
+'@param startIndex First row of the range to fill, 1-based within the table body.
+'@param endIndex Last row of the range to fill.
 Private Sub ApplyIncludeDefaults(ByVal tableObj As CustomTable, _
                                  ByVal startIndex As Long, _
                                  ByVal endIndex As Long)
     Dim includeColumn As Range
+    Dim cellValues As Variant
+    Dim lastIndex As Long
     Dim idx As Long
 
-    If startIndex <= 0 Or endIndex < startIndex Then Exit Sub
+    If startIndex <= 0 Then Exit Sub
+    If endIndex < startIndex Then Exit Sub
 
     Set includeColumn = tableObj.DataRange(COL_INCLUDE_IDS)
     If includeColumn Is Nothing Then Exit Sub
 
-    For idx = startIndex To endIndex
-        If idx > includeColumn.Rows.Count Then Exit For
-        If LenB(CStr(includeColumn.Cells(idx, 1).Value)) = 0 Then
-            includeColumn.Cells(idx, 1).Value = DEFAULT_INCLUDE_IDS
-            includeColumn.Cells(idx, 1).Locked = False
+    lastIndex = endIndex
+    If lastIndex > includeColumn.Rows.Count Then lastIndex = includeColumn.Rows.Count
+    If startIndex > lastIndex Then Exit Sub
+
+    cellValues = ColumnValues(includeColumn)
+
+    For idx = startIndex To lastIndex
+        If LenB(CStr(cellValues(idx))) = 0 Then
+            With includeColumn.Cells(idx, 1)
+                .Value = DEFAULT_INCLUDE_IDS
+                .Locked = False
+            End With
         End If
     Next idx
 End Sub
 
+'@label:ResolveSelectionRowIndex
+'@sub-title Turn a worksheet selection into a row index inside the table body
+'@param tableObj CustomTable wrapping the export specification table.
+'@param targetCell Range the user selected.
+'@return Long. The 1-based row index, clamped to one past the last row.
 Private Function ResolveSelectionRowIndex(ByVal tableObj As CustomTable, _
                                           ByVal targetCell As Range) As Long
 
@@ -410,39 +406,53 @@ Private Function ResolveSelectionRowIndex(ByVal tableObj As CustomTable, _
     ResolveSelectionRowIndex = relativeRow
 End Function
 
-Private Sub AssignExportNumbers(ByVal tableObj As CustomTable, _
-                                ByVal startIndex As Long, _
-                                ByVal insertCount As Long)
+'@label:AssignExportNumbers
+'@sub-title Give the freshly inserted rows the next free export numbers
+'@details
+'The numbers in use are read once and kept in memory, so the routine answers
+'every later question about them without going back to the worksheet.
+'@param tableObj CustomTable wrapping the export specification table.
+'@param startIndex First inserted row, 1-based within the table body.
+'@param insertCount How many rows were inserted.
+'@return BetterArray. Every export number in use once the rows are numbered.
+Private Function AssignExportNumbers(ByVal tableObj As CustomTable, _
+                                     ByVal startIndex As Long, _
+                                     ByVal insertCount As Long) As BetterArray
 
     Dim exportRange As Range
     Dim existing As BetterArray
     Dim idx As Long
     Dim nextNumber As Long
 
-    If insertCount <= 0 Then Exit Sub
+    Set existing = CollectExportNumbers(tableObj)
+    If existing Is Nothing Then Set existing = NewNumberList()
+    Set AssignExportNumbers = existing
+
+    If insertCount <= 0 Then Exit Function
 
     Set exportRange = tableObj.DataRange(COL_EXPORT_NUMBER)
-    If exportRange Is Nothing Then Exit Sub
+    If exportRange Is Nothing Then Exit Function
 
-    Set existing = CollectExportNumbers(tableObj)
     For idx = 0 To insertCount - 1
         nextNumber = NextAvailableExportNumber(existing)
         exportRange.Cells(startIndex + idx, 1).Value = ExportColumnName(nextNumber)
-        If existing Is Nothing Then
-            Set existing = New BetterArray
-            existing.LowerBound = 1
-        End If
         existing.Push nextNumber
     Next idx
-End Sub
+End Function
 
+'@label:SequentiallyRenameExports
+'@sub-title Renumber every export row from 1 and follow up in the dictionary
+'@param tableObj CustomTable wrapping the export specification table.
+'@param dict Optional dictionary whose export columns follow the new order.
 Private Sub SequentiallyRenameExports(ByVal tableObj As CustomTable, _
                                       Optional ByVal dict As LLdictionary)
 
     Dim exportRange As Range
+    Dim cellValues As Variant
+    Dim written() As Variant
+    Dim previousNames() As String
     Dim total As Long
     Dim idx As Long
-    Dim previousNames() As String
 
     Set exportRange = tableObj.DataRange(COL_EXPORT_NUMBER)
     If exportRange Is Nothing Then Exit Sub
@@ -450,24 +460,39 @@ Private Sub SequentiallyRenameExports(ByVal tableObj As CustomTable, _
     total = exportRange.Rows.Count
     If total = 0 Then Exit Sub
 
+    cellValues = ColumnValues(exportRange)
+
     ReDim previousNames(1 To total)
+    ReDim written(1 To total, 1 To 1)
+
     For idx = 1 To total
-        previousNames(idx) = CStr(exportRange.Cells(idx, 1).Value)
-        exportRange.Cells(idx, 1).Value = ExportColumnName(idx)
+        previousNames(idx) = CStr(cellValues(idx))
+        written(idx, 1) = ExportColumnName(idx)
     Next idx
 
-    PersistTotalExports total
+    exportRange.Value = written
 
-    If( Not dict Is Nothing) Then
+    If Not dict Is Nothing Then
         RenameDictionaryExports dict, previousNames, total
     End If
 End Sub
 
+'@label:RenameDictionaryExports
+'@sub-title Move the dictionary export columns onto the new sequence
+'@details
+'The rename runs in two passes through temporary names so an old "Export 3"
+'can become "Export 1" while another column still carries that name.
+'@param dict Dictionary holding the export columns.
+'@param previousNames The export identifiers as they read before the sort.
+'@param total How many export rows there are now.
 Private Sub RenameDictionaryExports(ByVal dict As LLdictionary, _
                                     ByRef previousNames() As String, _
                                     ByVal total As Long)
 
+    Dim placed As BetterArray
+    Dim existing As BetterArray
     Dim idx As Long
+    Dim pointer As Long
     Dim tempName As String
     Dim normalized As String
 
@@ -477,31 +502,27 @@ Private Sub RenameDictionaryExports(ByVal dict As LLdictionary, _
     'First pass: rename old export columns to temporary placeholders.
     For idx = 1 To total
         normalized = NormalizedExportHeader(previousNames(idx))
-        If LenB(normalized) = 0 Then
-            GoTo ContinueFor
+        If LenB(normalized) > 0 Then
+            If dict.ColumnExists(normalized) Then
+                tempName = TemporaryExportColumn(idx)
+                dict.RenameColumn normalized, tempName, strictSearch:=True, matchCase:=False
+            End If
         End If
-        If dict.ColumnExists(normalized) Then
-            tempName = TemporaryExportColumn(idx)
-            dict.RenameColumn normalized, tempName, strictSearch:=True, matchCase:=False
-        End If
-    
-ContinueFor:
     Next idx
 
     'Second pass: rename placeholders to sequential export names or create columns when missing.
+    Set placed = NewNumberList()
     For idx = 1 To total
         tempName = TemporaryExportColumn(idx)
         If dict.ColumnExists(tempName) Then
             dict.RenameColumn tempName, ExportColumnName(idx), strictSearch:=True, matchCase:=True
         Else
-            EnsureDictionaryExportColumn dict, idx
+            EnsureDictionaryExportColumn dict, idx, placed
         End If
+        placed.Push idx
     Next idx
 
     'Remove extra export columns beyond the active count.
-    Dim existing As BetterArray
-    Dim pointer As Long
-
     Set existing = EnumerateDictionaryExportNumbers(dict)
     If Not existing Is Nothing Then
         For pointer = existing.UpperBound To existing.LowerBound Step -1
@@ -514,10 +535,14 @@ ContinueFor:
     dict.TotalNumberOfExports = total
 End Sub
 
+'@label:NextAvailableExportNumber
+'@sub-title Pick the lowest export number that is still free
+'@param existing BetterArray of the export numbers already in use.
+'@return Long. The next free number.
 Private Function NextAvailableExportNumber(ByVal existing As BetterArray) As Long
     Dim candidate As Long
 
-    candidate = Application.WorksheetFunction.Max(StoredTotalExports(), HighestNumber(existing))
+    candidate = HighestNumber(existing)
 
     Do
         candidate = candidate + 1
@@ -526,6 +551,10 @@ Private Function NextAvailableExportNumber(ByVal existing As BetterArray) As Lon
     NextAvailableExportNumber = candidate
 End Function
 
+'@label:HighestNumber
+'@sub-title Largest value in a list of export numbers
+'@param numbers BetterArray of export numbers, possibly Nothing.
+'@return Long. The largest value, or zero for an empty list.
 Private Function HighestNumber(ByVal numbers As BetterArray) As Long
     Dim idx As Long
     Dim current As Long
@@ -537,10 +566,29 @@ Private Function HighestNumber(ByVal numbers As BetterArray) As Long
     Next idx
 End Function
 
+'@label:NewNumberList
+'@sub-title Build an empty 1-based list of export numbers
+'@return BetterArray. An empty list ready to be pushed into.
+Private Function NewNumberList() As BetterArray
+    Dim numbers As BetterArray
+
+    Set numbers = New BetterArray
+    numbers.LowerBound = 1
+    Set NewNumberList = numbers
+End Function
+
+'@label:TemporaryExportColumn
+'@sub-title Placeholder header used while export columns swap names
+'@param orderIndex Position in the new sequence.
+'@return String. The placeholder header.
 Private Function TemporaryExportColumn(ByVal orderIndex As Long) As String
     TemporaryExportColumn = "__exp_tmp_" & Format$(orderIndex, "0000")
 End Function
 
+'@label:NormalizedExportHeader
+'@sub-title Turn an export identifier into the dictionary column header
+'@param headerText The identifier as it reads on the export sheet.
+'@return String. The matching column header, empty when the text carries no number.
 Private Function NormalizedExportHeader(ByVal headerText As String) As String
     Dim parsed As Long
 
@@ -550,52 +598,79 @@ Private Function NormalizedExportHeader(ByVal headerText As String) As String
     NormalizedExportHeader = ExportColumnName(parsed)
 End Function
 
-Private Sub EnsureExportIdentifiers(ByVal tableObj As CustomTable)
+'@label:EnsureExportIdentifiers
+'@sub-title Give every export row a unique identifier
+'@details
+'The identifier column is read as one block, settled in memory and written back
+'in one go. A row whose number repeats an earlier one, or whose text carries no
+'number, takes the next free number.
+'@param tableObj CustomTable wrapping the export specification table.
+'@return BetterArray. The export numbers in worksheet order.
+Private Function EnsureExportIdentifiers(ByVal tableObj As CustomTable) As BetterArray
     Dim exportRange As Range
+    Dim cellValues As Variant
+    Dim written() As Variant
+    Dim assigned() As Long
     Dim usedNumbers As BetterArray
-    Dim pendingRows As BetterArray
+    Dim result As BetterArray
     Dim idx As Long
     Dim parsed As Long
     Dim maxNumber As Long
-    Dim rowIndex As Long
+    Dim total As Long
 
     Set exportRange = tableObj.DataRange(COL_EXPORT_NUMBER)
-    If exportRange Is Nothing Then Exit Sub
+    If exportRange Is Nothing Then Exit Function
 
-    Set usedNumbers = New BetterArray
-    usedNumbers.LowerBound = 1
-    Set pendingRows = New BetterArray
-    pendingRows.LowerBound = 1
-    maxNumber = 0
+    cellValues = ColumnValues(exportRange)
+    total = UBound(cellValues)
+    If total <= 0 Then Exit Function
 
-    For idx = 1 To exportRange.Rows.Count
-        parsed = ParseExportIdentifier(exportRange.Cells(idx, 1).Value)
+    ReDim assigned(1 To total)
+    Set usedNumbers = NewNumberList()
+
+    'First sighting of a number wins; every other row is left at zero.
+    For idx = 1 To total
+        parsed = ParseExportIdentifier(cellValues(idx))
         If parsed > 0 Then
-            If ContainsNumber(usedNumbers, parsed) Then
-                exportRange.Cells(idx, 1).Value = vbNullString
-                pendingRows.Push idx
-            Else
+            If Not ContainsNumber(usedNumbers, parsed) Then
                 usedNumbers.Push parsed
-                exportRange.Cells(idx, 1).Value = ExportColumnName(parsed)
+                assigned(idx) = parsed
                 If parsed > maxNumber Then maxNumber = parsed
             End If
-        Else
-            exportRange.Cells(idx, 1).Value = vbNullString
-            pendingRows.Push idx
         End If
     Next idx
 
-    If pendingRows.Length > 0 Then
-        For idx = pendingRows.LowerBound To pendingRows.UpperBound
-            rowIndex = CLng(pendingRows.Item(idx))
+    'Every row still at zero takes the next number above the highest in use.
+    For idx = 1 To total
+        If assigned(idx) = 0 Then
             maxNumber = maxNumber + 1
-            exportRange.Cells(rowIndex, 1).Value = ExportColumnName(maxNumber)
-        Next idx
-    End If
-End Sub
+            assigned(idx) = maxNumber
+        End If
+    Next idx
 
+    ReDim written(1 To total, 1 To 1)
+    Set result = NewNumberList()
+
+    For idx = 1 To total
+        written(idx, 1) = ExportColumnName(assigned(idx))
+        result.Push assigned(idx)
+    Next idx
+
+    exportRange.Value = written
+
+    If result.Length = 0 Then Exit Function
+    Set EnsureExportIdentifiers = result
+End Function
+
+'@label:CollectExportNumbers
+'@sub-title Read the export numbers the specification table holds
+'@details
+'The identifier column is read as one block and parsed in memory.
+'@param tableObj CustomTable wrapping the export specification table.
+'@return BetterArray. The export numbers in worksheet order, Nothing when there are none.
 Private Function CollectExportNumbers(ByVal tableObj As CustomTable) As BetterArray
     Dim exportRange As Range
+    Dim cellValues As Variant
     Dim result As BetterArray
     Dim idx As Long
     Dim parsed As Long
@@ -603,11 +678,11 @@ Private Function CollectExportNumbers(ByVal tableObj As CustomTable) As BetterAr
     Set exportRange = tableObj.DataRange(COL_EXPORT_NUMBER)
     If exportRange Is Nothing Then Exit Function
 
-    Set result = New BetterArray
-    result.LowerBound = 1
+    cellValues = ColumnValues(exportRange)
+    Set result = NewNumberList()
 
-    For idx = 1 To exportRange.Rows.Count
-        parsed = ParseExportIdentifier(exportRange.Cells(idx, 1).Value)
+    For idx = 1 To UBound(cellValues)
+        parsed = ParseExportIdentifier(cellValues(idx))
         If parsed > 0 Then
             If Not ContainsNumber(result, parsed) Then
                 result.Push parsed
@@ -615,28 +690,34 @@ Private Function CollectExportNumbers(ByVal tableObj As CustomTable) As BetterAr
         End If
     Next idx
 
-    If result.Length = 0 Then
-        Set CollectExportNumbers = Nothing
-    Else
-        Set CollectExportNumbers = result
-    End If
+    If result.Length = 0 Then Exit Function
+    Set CollectExportNumbers = result
 End Function
 
+'@label:EnumerateDictionaryExportNumbers
+'@sub-title Read the export numbers the dictionary columns carry
+'@details
+'The dictionary header row is read as one block, so a wide dictionary costs one
+'worksheet crossing instead of one per column.
+'@param dict Dictionary to inspect.
+'@return BetterArray. The export numbers found, Nothing when there are none.
 Private Function EnumerateDictionaryExportNumbers(ByVal dict As LLdictionary) As BetterArray
     Dim headers As Range
+    Dim headerValues As Variant
     Dim result As BetterArray
     Dim idx As Long
     Dim parsed As Long
+
     If dict Is Nothing Then Exit Function
 
     Set headers = dict.DataRange(includeHeaders:=True)
     If headers Is Nothing Then Exit Function
 
-    Set result = New BetterArray
-    result.LowerBound = 1
+    headerValues = RowValues(headers.Rows(1))
+    Set result = NewNumberList()
 
-    For idx = 1 To headers.Columns.Count
-        parsed = ParseExportIdentifier(headers.Cells(1, idx).Value)
+    For idx = 1 To UBound(headerValues)
+        parsed = ParseExportIdentifier(headerValues(idx))
         If parsed > 0 Then
             If Not ContainsNumber(result, parsed) Then
                 result.Push parsed
@@ -644,19 +725,29 @@ Private Function EnumerateDictionaryExportNumbers(ByVal dict As LLdictionary) As
         End If
     Next idx
 
-    If result.Length = 0 Then
-        Set EnumerateDictionaryExportNumbers = Nothing
-    Else
-        Set EnumerateDictionaryExportNumbers = result
-    End If
+    If result.Length = 0 Then Exit Function
+    Set EnumerateDictionaryExportNumbers = result
 End Function
 
+'@label:ContainsNumber
+'@sub-title Whether a list of export numbers holds a value
+'@param numbers BetterArray of export numbers, possibly Nothing.
+'@param target The value to look for.
+'@return Boolean. True when the value is in the list.
 Private Function ContainsNumber(ByVal numbers As BetterArray, ByVal target As Long) As Boolean
     If numbers Is Nothing Then Exit Function
     If numbers.Length = 0 Then Exit Function
     ContainsNumber = numbers.Includes(target)
 End Function
 
+'@label:ParseExportIdentifier
+'@sub-title Read the number out of an export identifier
+'@details
+'Anything that starts with "export" and ends in digits gives that number.
+'"export" on its own, and text such as "exported", give zero: the conversion
+'runs under On Error Resume Next so a bad tail reads as "no number".
+'@param rawValue The cell value to read.
+'@return Long. The export number, or zero.
 Private Function ParseExportIdentifier(ByVal rawValue As Variant) As Long
     Dim text As String
     Dim suffix As String
@@ -676,52 +767,68 @@ Private Function ParseExportIdentifier(ByVal rawValue As Variant) As Long
     On Error GoTo 0
 End Function
 
+'@label:SyncDictionaryExportsCore
+'@sub-title Make the dictionary export columns match the export rows
+'@details
+'The dictionary header is read once and the list of export columns is kept in
+'memory as columns are added, so a sync of n exports costs one header read.
+'The dictionary is then told how many export columns it carries.
+'@param exportNumbers BetterArray of the export numbers on the specification sheet.
+'@param dict Dictionary to align.
 Private Sub SyncDictionaryExportsCore(ByVal exportNumbers As BetterArray, ByVal dict As LLdictionary)
     Dim existing As BetterArray
     Dim idx As Long
     Dim number As Long
-    Dim highest As Long
+    Dim columnCount As Long
 
     If dict Is Nothing Then Exit Sub
 
     Set existing = EnumerateDictionaryExportNumbers(dict)
+    If existing Is Nothing Then Set existing = NewNumberList()
 
     If Not exportNumbers Is Nothing Then
+        columnCount = exportNumbers.Length
         For idx = exportNumbers.LowerBound To exportNumbers.UpperBound
             number = CLng(exportNumbers.Item(idx))
-            EnsureDictionaryExportColumn dict, number
-            If number > highest Then highest = number
-        Next idx
-    End If
-
-    If Not existing Is Nothing Then
-        For idx = existing.LowerBound To existing.UpperBound
-            number = CLng(existing.Item(idx))
-            If Not ContainsNumber(exportNumbers, number) Then
-                this.exportSheet.Activate
-                dict.RemoveColumn ExportColumnName(number)
-                this.exportSheet.Activate
-            ElseIf number > highest Then
-                highest = number
+            If Not ContainsNumber(existing, number) Then
+                EnsureDictionaryExportColumn dict, number, existing
+                existing.Push number
             End If
         Next idx
     End If
-    dict.TotalNumberOfExports = highest
+
+    For idx = existing.LowerBound To existing.UpperBound
+        number = CLng(existing.Item(idx))
+        If Not ContainsNumber(exportNumbers, number) Then
+            dict.RemoveColumn ExportColumnName(number)
+        End If
+    Next idx
+
+    'The dictionary counter holds how many export COLUMNS it carries, which is
+    'one per export row once the two sides agree.
+    dict.TotalNumberOfExports = columnCount
 End Sub
 
-Private Sub EnsureDictionaryExportColumn(ByVal dict As LLdictionary, ByVal exportIndex As Long)
+'@label:EnsureDictionaryExportColumn
+'@sub-title Add one export column to the dictionary in the right place
+'@details
+'The new column goes right after the highest numbered export column below it,
+'and after "unique" when there is none. The list of numbers already placed is
+'passed in, so the dictionary header is read once per sync.
+'@param dict Dictionary to add the column to.
+'@param exportIndex Export number the column belongs to.
+'@param existing BetterArray of the export numbers already present.
+Private Sub EnsureDictionaryExportColumn(ByVal dict As LLdictionary, _
+                                         ByVal exportIndex As Long, _
+                                         ByVal existing As BetterArray)
     Dim columnName As String
     Dim anchorName As String
     Dim previousIdx As Long
-    Dim existing As BetterArray
 
     If dict Is Nothing Then Exit Sub
-    Application.ScreenUpdating = False
 
     columnName = ExportColumnName(exportIndex)
     If dict.ColumnExists(columnName) Then Exit Sub
-
-    Set existing = EnumerateDictionaryExportNumbers(dict)
 
     previousIdx = exportIndex - 1
     Do While previousIdx >= 1
@@ -736,9 +843,7 @@ Private Sub EnsureDictionaryExportColumn(ByVal dict As LLdictionary, ByVal expor
         If dict.ColumnExists("unique") Then
             anchorName = "unique"
         Else
-            this.exportSheet.Activate
             dict.AddColumn columnName
-            this.exportSheet.Activate
             Exit Sub
         End If
     End If
@@ -750,6 +855,13 @@ Private Sub EnsureDictionaryExportColumn(ByVal dict As LLdictionary, ByVal expor
     End If
 End Sub
 
+'@label:ExportColumnName
+'@sub-title Dictionary column header for an export number
+'@details
+'The header is capitalised here while `LLdictionary` lower-cases what it is
+'given and searches with matchCase False. Both sides have to keep that true.
+'@param exportIndex Export number.
+'@return String. The column header.
 Private Function ExportColumnName(ByVal exportIndex As Long) As String
     ExportColumnName = "Export " & CStr(exportIndex)
 End Function
@@ -766,13 +878,13 @@ End Function
 Public Sub ImportSpecs(ByVal fromWksh As Worksheet, _
                        ByVal fromStartRow As Long, _
                        ByVal fromStartColumn As Long)
-    
+
     Dim sourceData As DataSheet
-    
+
     EnsureDataReady
     If fromWksh Is Nothing Then ThrowError ProjectError.ObjectNotInitialized, "Source worksheet is missing"
     Set sourceData = DataSheet.Create(fromWksh, fromStartRow, fromStartColumn)
-    
+
     this.expData.Import sourceData
     ResetCaches
 End Sub
@@ -786,7 +898,7 @@ Public Sub ExportSpecs(ByVal toWkb As Workbook, _
                        Optional ByVal Hide As Long = xlSheetHidden)
 
     EnsureDataReady
-    
+
     If toWkb Is Nothing Then ThrowError ProjectError.ObjectNotInitialized, "Target workbook is missing"
     this.expData.Export toWkb, Hide:=Hide, includeNames:=True
 End Sub
@@ -816,7 +928,7 @@ Public Function ExportFileName(ByVal exportNumber As Long, _
     EnsureDataReady
     EnsureWorksheetReady
     ValidatePasswords pass
-    EnsureDictionaryReady dict, True
+    ResolveDictionary dict
 
     Set currWb = this.exportSheet.Parent
 
@@ -844,20 +956,12 @@ Public Function ExportFileName(ByVal exportNumber As Long, _
     ExportFileName = sanitizedPath & suffix & "__" & BuildTimestamp
 End Function
 
-'@section Export Count Tracking
+'@section Export Count
 '===============================================================================
 
-'@sub-title Resolve worksheet name manager
-Private Function HiddenNameStore() As HiddenNames
-    If this.exportSheet Is Nothing Then Exit Function
-
-    If this.store Is Nothing Then
-        Set this.store = HiddenNames.Create(this.exportSheet)
-    End If
-
-    Set HiddenNameStore = this.store
-End Function
-
+'@label:CountExportRows
+'@sub-title How many rows the specification table holds
+'@return Long. The row count, zero when there is no data store.
 Private Function CountExportRows() As Long
     Dim exportRange As Range
 
@@ -868,43 +972,6 @@ Private Function CountExportRows() As Long
         CountExportRows = exportRange.Rows.Count
     End If
 End Function
-
-Private Function StoredTotalExports() As Long
-    Dim store As HiddenNames
-
-    Set store = HiddenNameStore()
-    If store Is Nothing Then Exit Function
-
-    StoredTotalExports = store.ValueAsLong(TOTAL_EXPORTS_NAME, 0)
-End Function
-
-Private Sub PersistTotalExports(ByVal totalCount As Long)
-    Dim store As HiddenNames
-
-    If totalCount < 0 Then totalCount = 0
-
-    Set store = HiddenNameStore()
-    If store Is Nothing Then Exit Sub
-
-    store.EnsureName TOTAL_EXPORTS_NAME, totalCount, HiddenNameTypeLong
-    store.SetValue TOTAL_EXPORTS_NAME, totalCount
-End Sub
-
-Private Sub EnsureStoredTotalExports()
-    Dim store As HiddenNames
-    Dim total As Long
-
-    If this.exportSheet Is Nothing Then Exit Sub
-    If this.expData Is Nothing Then Exit Sub
-
-    total = CountExportRows()
-
-    Set store = HiddenNameStore()
-    If store Is Nothing Then Exit Sub
-
-    store.EnsureName TOTAL_EXPORTS_NAME, total, HiddenNameTypeLong
-    store.SetValue TOTAL_EXPORTS_NAME, total
-End Sub
 
 
 '@section Utilities
@@ -939,8 +1006,7 @@ Public Function ActiveExportNumbers() As BetterArray
     EnsureDataReady
     total = NumberOfExports()
 
-    Set result = New BetterArray
-    result.LowerBound = 1
+    Set result = NewNumberList()
 
     For idx = 1 To total
         If IsActive(idx) Then result.Push idx
@@ -951,14 +1017,35 @@ End Function
 
 '@label:Translate
 '@sub-title Translate the current LLExport
+'@details
+'A setup workbook that lacks one of the two translated columns is logged and
+'the other column is still translated.
+'@param trads Translation table to read the wording from.
+'@throws ProjectError.ObjectNotInitialized when the translation object is missing.
 Public Sub Translate(ByVal trads As TranslationObject)
-    
-    If trads Is Nothing Then 
+
+    Dim labelRange As Range
+    Dim fileNameRange As Range
+
+    If trads Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, "Translations are not initialised"
     End If
 
-    trads.TranslateRange Data.DataRange("label button", matchCase:=False)
-    trads.TranslateRange Data.DataRange("file name", matchCase:=False), containsFormula:=True
+    EnsureDataReady
+
+    Set labelRange = SpecColumnRange(COL_LABEL_BUTTON)
+    If labelRange Is Nothing Then
+        LogInfo "Export column '" & COL_LABEL_BUTTON & "' is missing, nothing to translate", checkingWarning
+    Else
+        trads.TranslateRange labelRange
+    End If
+
+    Set fileNameRange = SpecColumnRange(COL_FILE_NAME)
+    If fileNameRange Is Nothing Then
+        LogInfo "Export column '" & COL_FILE_NAME & "' is missing, nothing to translate", checkingWarning
+    Else
+        trads.TranslateRange fileNameRange, containsFormula:=True
+    End If
 
 End Sub
 
@@ -980,14 +1067,17 @@ Private Sub EnsureWorksheetReady()
     End If
 End Sub
 
-'@label:EnsureDictionaryReady
-'@prop-title Validate dictionary dependency
-Private Sub EnsureDictionaryReady(Optional ByVal dict As LLdictionary, Optional ByVal resetInt As Boolean = False, Optional ByVal required As Boolean = True)
-    If resetInt Then Set this.dictInt = Nothing
-
-    If Not dict Is Nothing Then
-        Set this.dictInt = dict
-    End If
+'@label:ResolveDictionary
+'@prop-title Keep the dictionary the caller passed, or reuse the cached one
+'@details
+'A dictionary passed in becomes the cached one. When nothing is passed the
+'cached one stands. This is the single place the class picks its dictionary.
+'@param dict Optional dictionary supplied by the caller.
+'@param required Optional; raise when no dictionary can be resolved. Defaults to True.
+'@throws ProjectError.ObjectNotInitialized when required is True and none is found.
+Private Sub ResolveDictionary(Optional ByVal dict As LLdictionary, _
+                              Optional ByVal required As Boolean = True)
+    If Not dict Is Nothing Then Set this.dictInt = dict
 
     If required And (this.dictInt Is Nothing) Then
         ThrowError ProjectError.ObjectNotInitialized, "LLExport Internal dictionary is required; none found"
@@ -996,18 +1086,20 @@ End Sub
 
 '@label:EnsureVariablesReady
 '@prop-title Lazily instantiate dictionary-backed variable helper
+'@param dict Optional dictionary the variables read from.
 Private Sub EnsureVariablesReady(Optional ByVal dict As LLdictionary)
-    EnsureDictionaryReady dict
+    Dim currentDict As LLdictionary
+    Dim existingDict As LLdictionary
+
+    ResolveDictionary dict
 
     If Not DictionaryIsAvailable() Then Exit Sub
 
-    Dim currentDict As LLdictionary
     Set currentDict = InternalDictionary()
 
     If this.variables Is Nothing Then
         Set this.variables = LLVariables.Create(currentDict)
     Else
-        Dim existingDict As LLdictionary
         Set existingDict = this.variables.Dictionary
         If (existingDict Is Nothing) Or (Not (existingDict Is currentDict)) Then
             Set this.variables = LLVariables.Create(currentDict)
@@ -1016,22 +1108,23 @@ Private Sub EnsureVariablesReady(Optional ByVal dict As LLdictionary)
 End Sub
 
 '@label:InternalDictionary
+'@prop-title Dictionary the class is currently working with
+'@return LLdictionary. The cached dictionary.
 Private Property Get InternalDictionary() As LLdictionary
-    EnsureDictionaryReady
+    ResolveDictionary
     Set InternalDictionary = this.dictInt
 End Property
 
-'@label:InternalDictionary
-Private Property Set InternalDictionary(ByVal dict As LLdictionary)
-    EnsureDictionaryReady dict
-End Property
-
+'@label:DictionaryIsAvailable
+'@sub-title Whether a dictionary is cached
+'@return Boolean. True when the class holds one.
 Private Function DictionaryIsAvailable() As Boolean
     DictionaryIsAvailable = Not (this.dictInt Is Nothing)
 End Function
 
 '@label:ValidateExportNumber
 '@prop-title Validate export number bounds
+'@param exportNumber The number to check.
 Private Sub ValidateExportNumber(ByVal exportNumber As Long)
     Dim total As Long
     total = NumberOfExports()
@@ -1048,6 +1141,7 @@ End Sub
 
 '@label:ValidatePasswords
 '@prop-title Validate password provider dependency
+'@param pass The password object to check.
 Private Sub ValidatePasswords(ByVal pass As Passwords)
     If pass Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, "Passwords object is required"
@@ -1056,101 +1150,258 @@ End Sub
 
 '@label:ExportTable
 '@prop-title Retrieve export table wrapper
+'@details
+'VBA evaluates both sides of Or, so the two guards below are written as two
+'separate tests: reading Count off Nothing would raise on the very case the
+'first test is there to catch.
+'@return CustomTable. The wrapper over the first table on the export sheet.
 Private Function ExportTable() As CustomTable
-    Dim listObjects As ListObjects
+    Dim sheetTables As ListObjects
     Dim lo As ListObject
 
     EnsureWorksheetReady
 
-    Set listObjects = this.exportSheet.ListObjects
-    If listObjects Is Nothing Or listObjects.Count = 0 Then
+    Set sheetTables = this.exportSheet.ListObjects
+    If sheetTables Is Nothing Then
         ThrowError ProjectError.ElementNotFound, "No table found on export worksheet"
     End If
 
-    Set lo = listObjects(1)
+    If sheetTables.Count = 0 Then
+        ThrowError ProjectError.ElementNotFound, "No table found on export worksheet"
+    End If
+
+    Set lo = sheetTables(1)
     Set ExportTable = CustomTable.Create(lo, COL_EXPORT_NUMBER)
 End Function
 
+'@section Specification Reads
+'===============================================================================
+
+'@label:LoadSpecification
+'@sub-title Read the whole specification table once
+'@details
+'The header row and the data body are each read in one crossing and kept.
+'Every later read of a cell is answered from those two arrays, so an export
+'that reads eight columns costs two crossings instead of eight searches.
+'The copy is dropped by `DropSpecification` whenever the class writes to the
+'table, and by `ResetCaches` for a caller that wrote to the sheet itself.
+Private Sub LoadSpecification()
+    Dim headerRng As Range
+    Dim bodyRng As Range
+
+    If this.specLoaded Then Exit Sub
+
+    EnsureDataReady
+
+    Set headerRng = this.expData.HeaderRange
+    Set bodyRng = this.expData.DataRange(includeHeaders:=False)
+
+    If headerRng Is Nothing Then Exit Sub
+    If bodyRng Is Nothing Then Exit Sub
+
+    this.specHeaders = RowValues(headerRng)
+    this.specBlock = BlockValues(bodyRng)
+    this.specLoaded = True
+End Sub
+
+'@label:DropSpecification
+'@sub-title Forget the copy of the specification table
+Private Sub DropSpecification()
+    this.specHeaders = Empty
+    this.specBlock = Empty
+    this.specLoaded = False
+End Sub
+
+'@label:SpecColumnIndex
+'@sub-title Position of a column in the specification table
+'@details
+'Whole string, case-insensitive, leftmost wins. That is the same rule the
+'worksheet search used before, applied to the header row held in memory.
+'@param columnName Header to look for.
+'@return Long. The 1-based position, zero when the header is missing.
+Private Function SpecColumnIndex(ByVal columnName As String) As Long
+    Dim idx As Long
+
+    If Not this.specLoaded Then Exit Function
+
+    For idx = 1 To UBound(this.specHeaders)
+        If StrComp(Trim$(CStr(this.specHeaders(idx))), columnName, vbTextCompare) = 0 Then
+            SpecColumnIndex = idx
+            Exit Function
+        End If
+    Next idx
+End Function
+
+'@label:SpecRowCount
+'@sub-title How many rows the copy of the specification table holds
+'@return Long. The row count, zero when nothing is loaded.
+Private Function SpecRowCount() As Long
+    If Not this.specLoaded Then Exit Function
+    SpecRowCount = UBound(this.specBlock, 1)
+End Function
+
 '@label:ReadValue
-'@prop-title Read a column value from the cached datasheet
+'@prop-title Read a column value for one export row
+'@param columnName Header of the column to read.
+'@param exportNumber Row to read, 1-based within the table body.
+'@param required Optional; raise when the column or the row is missing.
+'@return String. The cell value, empty when it cannot be read and required is False.
+'@throws ProjectError.ElementNotFound when a required column is missing.
+'@throws ProjectError.InvalidArgument when a required row is out of range.
 Private Function ReadValue(ByVal columnName As String, _
                            ByVal exportNumber As Long, _
                            Optional ByVal required As Boolean = False) As String
 
-    Dim columnRange As Range
+    Dim columnIdx As Long
 
-    Set columnRange = ResolveColumnRange(columnName, required)
+    LoadSpecification
 
-    If columnRange Is Nothing Then Exit Function
+    columnIdx = SpecColumnIndex(columnName)
+    If columnIdx = 0 Then
+        If required Then
+            ThrowError ProjectError.ElementNotFound, _
+                       "Export specification column '" & columnName & "' not found"
+        End If
+        Exit Function
+    End If
 
-    If exportNumber < 1 Or exportNumber > columnRange.Rows.Count Then
+    If exportNumber < 1 Or exportNumber > SpecRowCount() Then
         If required Then
             ThrowError ProjectError.InvalidArgument, _
                       "Export number " & CStr(exportNumber) & " is outside the specification range"
-        Else
-            Exit Function
         End If
+        Exit Function
     End If
 
-    ReadValue = CStr(columnRange.Cells(exportNumber, 1).Value)
+    ReadValue = CStr(this.specBlock(exportNumber, columnIdx))
 End Function
 
-'@label:ResolveColumnRange
-'@prop-title Resolve and cache a specification column
-Private Function ResolveColumnRange(ByVal columnName As String, _
-                                    ByVal required As Boolean) As Range
-
-    Dim resolved As Range
+'@label:SpecColumnRange
+'@sub-title Resolve one specification column as a worksheet Range
+'@details
+'`Translate` writes back into the cells, so it needs the Range itself rather
+'than the values held in memory.
+'@param columnName Header of the column.
+'@return Range. The column body, Nothing when the header is missing.
+Private Function SpecColumnRange(ByVal columnName As String) As Range
 
     On Error GoTo ColumnMissing
-        Set resolved = this.expData.DataRange(colName:=columnName, _
-                                             includeHeaders:=False, _
-                                             strictSearch:=True, _
-                                             matchCase:=False)
+        Set SpecColumnRange = this.expData.DataRange(colName:=columnName, _
+                                                     includeHeaders:=False, _
+                                                     strictSearch:=True, _
+                                                     matchCase:=False)
     On Error GoTo 0
-
-    Set ResolveColumnRange = resolved
     Exit Function
 
 ColumnMissing:
     On Error GoTo 0
-    If required Then
-        ThrowError ProjectError.ElementNotFound, _
-                   "Export specification column '" & columnName & "' not found"
+End Function
+
+'@label:RowValues
+'@sub-title Read a one-row Range as a 1-based list of values
+'@param rowRange Range spanning one row.
+'@return Variant. A 1-based one-dimensional array.
+Private Function RowValues(ByVal rowRange As Range) As Variant
+    Dim rawValues As Variant
+    Dim flat() As Variant
+    Dim counter As Long
+    Dim nbColumns As Long
+
+    nbColumns = rowRange.Columns.Count
+    ReDim flat(1 To nbColumns)
+
+    If nbColumns = 1 Then
+        flat(1) = rowRange.Cells(1, 1).Value
+    Else
+        rawValues = rowRange.Value
+        For counter = 1 To nbColumns
+            flat(counter) = rawValues(1, counter)
+        Next counter
+    End If
+
+    RowValues = flat
+End Function
+
+'@label:ColumnValues
+'@sub-title Read a one-column Range as a 1-based list of values
+'@param columnRange Range spanning one column.
+'@return Variant. A 1-based one-dimensional array.
+Private Function ColumnValues(ByVal columnRange As Range) As Variant
+    Dim rawValues As Variant
+    Dim flat() As Variant
+    Dim counter As Long
+    Dim nbRows As Long
+
+    nbRows = columnRange.Rows.Count
+    ReDim flat(1 To nbRows)
+
+    If nbRows = 1 Then
+        flat(1) = columnRange.Cells(1, 1).Value
+    Else
+        rawValues = columnRange.Value
+        For counter = 1 To nbRows
+            flat(counter) = rawValues(counter, 1)
+        Next counter
+    End If
+
+    ColumnValues = flat
+End Function
+
+'@label:BlockValues
+'@sub-title Read a Range as a 1-based two-dimensional array
+'@details
+'Range.Value hands back a plain value for one cell and a two-dimensional array
+'otherwise. This gives callers one shape.
+'@param blockRange Range to read.
+'@return Variant. A 1-based two-dimensional array.
+Private Function BlockValues(ByVal blockRange As Range) As Variant
+    Dim block() As Variant
+
+    If blockRange.Rows.Count = 1 And blockRange.Columns.Count = 1 Then
+        ReDim block(1 To 1, 1 To 1)
+        block(1, 1) = blockRange.Value
+        BlockValues = block
+    Else
+        BlockValues = blockRange.Value
     End If
 End Function
 
 '@label:ResetCaches
 '@prop-title Reset cached references and diagnostics
+'@details
+'Callers that write to the export sheet themselves call this so the next read
+'goes back to the worksheet.
 Public Sub ResetCaches()
     Set this.dictInt = Nothing
     Set this.variables = Nothing
     this.checkCounter = 0
     Set this.checks = Nothing
+    this.hasChecks = False
     this.sanitizeList = Empty
-    Set this.store = Nothing
-    EnsureStoredTotalExports
+    DropSpecification
 End Sub
 
 
 '@label:ComposeTemplatePath
 '@prop-title Build the filename path from template chunks
+'@param template The file name template read from the specification table.
+'@return String. The resolved chunks joined by a double underscore.
 Private Function ComposeTemplatePath(ByVal template As String) As String
 
     Dim pathParts As BetterArray
     Dim chunks As Variant
     Dim idx As Long
     Dim resolved As String
-    Dim workbook As Workbook
-    
-    Set workbook = this.exportSheet.Parent
+    Dim hostWorkbook As Workbook
+
+    Set hostWorkbook = this.exportSheet.Parent
 
     chunks = Split(template, "+")
     Set pathParts = New BetterArray
     pathParts.LowerBound = LBound(chunks)
 
     For idx = LBound(chunks) To UBound(chunks)
-        resolved = ResolveTemplateChunk(CStr(chunks(idx)), workbook)
+        resolved = ResolveTemplateChunk(CStr(chunks(idx)), hostWorkbook)
         pathParts.Push resolved
     Next idx
 
@@ -1162,8 +1413,11 @@ End Function
 
 '@label:ResolveTemplateChunk
 '@prop-title Resolve a single template chunk into a safe string
+'@param rawChunk One piece of the template.
+'@param hostWorkbook Workbook holding the named ranges the chunk may point at.
+'@return String. The resolved and sanitised value.
 Private Function ResolveTemplateChunk(ByVal rawChunk As String, _
-                                      ByVal workbook As Workbook) As String
+                                      ByVal hostWorkbook As Workbook) As String
 
     Dim chunk As String
     Dim value As String
@@ -1179,7 +1433,7 @@ Private Function ResolveTemplateChunk(ByVal rawChunk As String, _
         Exit Function
     End If
 
-    value = ResolveVariableChunk(chunk, workbook)
+    value = ResolveVariableChunk(chunk, hostWorkbook)
 
     If LenB(value) = 0 Then
         LogInfo "Chunk resolved to empty string: " & chunk
@@ -1191,6 +1445,8 @@ End Function
 
 '@label:IsLiteralTemplateChunk
 '@prop-title Determine whether a chunk represents a literal string
+'@param chunk The chunk text.
+'@return Boolean. True when the chunk is wrapped in quotes.
 Private Function IsLiteralTemplateChunk(ByVal chunk As String) As Boolean
     Dim firstChar As String
     Dim lastChar As String
@@ -1213,6 +1469,8 @@ End Function
 
 '@label:StripLiteralChunk
 '@prop-title Remove wrapping quotes from literal chunk values
+'@param chunk The chunk text.
+'@return String. The chunk without its wrapping quotes.
 Private Function StripLiteralChunk(ByVal chunk As String) As String
     Dim lengthValue As Long
 
@@ -1230,8 +1488,11 @@ End Function
 
 '@label:ResolveVariableChunk
 '@prop-title Resolve dictionary-driven chunk value
+'@param chunk Name of the variable the chunk points at.
+'@param hostWorkbook Workbook holding the named range.
+'@return String. The sanitised value, empty when the chunk cannot be resolved.
 Private Function ResolveVariableChunk(ByVal chunk As String, _
-                                       ByVal workbook As Workbook) As String
+                                      ByVal hostWorkbook As Workbook) As String
 
     Dim vars As LLVariables
     Dim sheetName As String
@@ -1252,13 +1513,13 @@ Private Function ResolveVariableChunk(ByVal chunk As String, _
     If LenB(sheetName) = 0 Then Exit Function
     If StrComp(sheetType, "vlist1D", vbTextCompare) <> 0 Then Exit Function
 
-    Set targetSheet = TryGetWorksheet(workbook, sheetName)
+    Set targetSheet = TryGetWorksheet(hostWorkbook, sheetName)
     If targetSheet Is Nothing Then
         LogInfo "Worksheet '" & sheetName & "' for chunk '" & chunk & "' is missing"
         Exit Function
     End If
 
-    Set namedRange = TryGetNamedRange(workbook, chunk, targetSheet)
+    Set namedRange = TryGetNamedRange(hostWorkbook, chunk, targetSheet)
 
     If namedRange Is Nothing Then
         LogInfo "Named range for chunk '" & chunk & "' is missing", checkingWarning
@@ -1273,20 +1534,27 @@ End Function
 
 '@label:TryGetWorksheet
 '@prop-title Safely retrieve a worksheet by name
-Private Function TryGetWorksheet(ByVal workbook As Workbook, ByVal sheetName As String) As Worksheet
+'@param hostWorkbook Workbook to look in.
+'@param sheetName Name of the worksheet.
+'@return Worksheet. Nothing when there is no such sheet.
+Private Function TryGetWorksheet(ByVal hostWorkbook As Workbook, ByVal sheetName As String) As Worksheet
     On Error Resume Next
-        Set TryGetWorksheet = workbook.Worksheets(sheetName)
+        Set TryGetWorksheet = hostWorkbook.Worksheets(sheetName)
     On Error GoTo 0
 End Function
 
 '@label:TryGetNamedRange
 '@prop-title Safely retrieve a named range for a chunk
-Private Function TryGetNamedRange(ByVal workbook As Workbook, _
+'@param hostWorkbook Workbook holding the workbook-level names.
+'@param chunk Name to look for.
+'@param targetSheet Worksheet to fall back on for a sheet-level name.
+'@return Range. Nothing when there is no such name.
+Private Function TryGetNamedRange(ByVal hostWorkbook As Workbook, _
                                   ByVal chunk As String, _
                                   ByVal targetSheet As Worksheet) As Range
 
     On Error Resume Next
-        Set TryGetNamedRange = workbook.Names(chunk).RefersToRange
+        Set TryGetNamedRange = hostWorkbook.Names(chunk).RefersToRange
     On Error GoTo 0
 
     If TryGetNamedRange Is Nothing Then
@@ -1298,6 +1566,8 @@ End Function
 
 '@label:SanitizeChunk
 '@prop-title Sanitise individual chunk values for filenames
+'@param chunk The value to clean.
+'@return String. The cleaned value, "chunk" when nothing is left.
 Private Function SanitizeChunk(ByVal chunk As String) As String
     Dim sanitized As String
     sanitized = Trim$(chunk)
@@ -1308,17 +1578,21 @@ End Function
 
 '@label:ReplaceInvalidCharacters
 '@prop-title Replace characters unsupported in filenames
+'@details
+'Each pass works on the result of the one before it, so every character in the
+'list is replaced. The value goes straight into a SaveAs path.
+'@param value The text to clean.
+'@return String. The text with every listed character turned into an underscore.
 Private Function ReplaceInvalidCharacters(ByVal value As String) As String
     Dim invalidChar As Variant
-    Dim newValue As String
 
     EnsureSanitizeList
 
     For Each invalidChar In this.sanitizeList
-        newValue = Replace(value, CStr(invalidChar), "_")
+        value = Replace(value, CStr(invalidChar), "_")
     Next invalidChar
 
-    ReplaceInvalidCharacters = newValue
+    ReplaceInvalidCharacters = value
 End Function
 
 '@label:EnsureSanitizeList
@@ -1332,6 +1606,8 @@ End Sub
 
 '@label:BuildVersionSuffix
 '@prop-title Compose version/public key suffix for filenames
+'@param pass Password provider holding the version and the public key.
+'@return String. The suffix to append to the file name.
 Private Function BuildVersionSuffix(ByVal pass As Passwords) As String
     Dim versionValue As String
     Dim publicKeyValue As String
@@ -1344,12 +1620,15 @@ End Function
 
 '@label:BuildTimestamp
 '@prop-title Compose timestamp fragment for filenames
+'@return String. The current date and time in the file name format.
 Private Function BuildTimestamp() As String
     BuildTimestamp = Format$(Now, TIMESTAMP_FORMAT)
 End Function
 
 '@label:DefaultTemplate
 '@prop-title Provide fallback filename template
+'@param exportNumber The export the template belongs to.
+'@return String. The fallback template.
 Private Function DefaultTemplate(ByVal exportNumber As Long) As String
     DefaultTemplate = "export" & CStr(exportNumber)
 End Function
@@ -1357,10 +1636,12 @@ End Function
 
 '@label:WorkbookBaseName
 '@prop-title Remove Excel extensions from workbook name
-Private Function WorkbookBaseName(ByVal workbook As Workbook) As String
+'@param hostWorkbook The workbook to name.
+'@return String. The lower-cased name without its extension.
+Private Function WorkbookBaseName(ByVal hostWorkbook As Workbook) As String
     Dim cleaned As String
 
-    cleaned = LCase$(workbook.Name)
+    cleaned = LCase$(hostWorkbook.Name)
     cleaned = Replace(cleaned, ".xlsm", vbNullString)
     cleaned = Replace(cleaned, ".xlsb", vbNullString)
     cleaned = Replace(cleaned, ".xlsx", vbNullString)
@@ -1371,6 +1652,8 @@ End Function
 
 '@label:LogInfo
 '@prop-title Append informational diagnostics to the Checking log
+'@param label The message to record.
+'@param scope Optional checking scope. Defaults to checkingInfo.
 Private Sub LogInfo(ByVal label As String, Optional ByVal scope As Byte = checkingInfo)
     If this.checks Is Nothing Then Set this.checks = Checking.Create(CHECKING_CONTEXT)
     this.checks.Add CStr(this.checkCounter), label, scope
@@ -1382,8 +1665,8 @@ End Sub
 '===============================================================================
 '@label:ThrowError
 '@prop-title Raise a ProjectError coded runtime error
+'@param errNumb The ProjectError value to raise.
+'@param errorMessage The message to carry with it.
 Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
     Err.Raise errNumb, CLASSNAME, errorMessage
-End Sub
-
 End Sub
