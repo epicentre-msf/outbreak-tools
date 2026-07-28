@@ -155,11 +155,12 @@ suites:
   # would leave Excel holding two copies and stop the project compiling.
   # LLdictionary and LLVariables are neither, so both are imported here.
   #
-  # WARNING for the first run of this suite: LLdictionary.cls carries three
-  # line-continuation underscores with a trailing space (AddMainSectionSort).
-  # If VBA rejects them the whole project fails to compile and the runner shows
-  # the opaque -50. That file is fixed by the session that owns LLdictionary;
-  # read the LogCompileProbe inventory first on any -50 that follows.
+  # The three line-continuation underscores with a trailing space that used to
+  # sit in LLdictionary.AddMainSectionSort are gone. LLVariables still carries
+  # two of the same shape (FindVariableCell, LogInfo); if VBA rejects them the
+  # whole project fails to compile and the runner shows the opaque -50. Those
+  # two are fixed by the session that owns LLVariables. Read the LogCompileProbe
+  # inventory first on any -50 that follows a change here.
   - folder: dictionary
     classes:
       - name: LLdictionary
@@ -168,6 +169,8 @@ suites:
     tests:
       - module: TestLLExport
         covers: [LLExport]
+      - module: TestLLdictionary
+        covers: [LLdictionary]
 
   # --- sections -------------------------------------------------------------
   # (Also note: interface: true is stale -- IVarWriter /

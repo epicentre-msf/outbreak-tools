@@ -21,8 +21,8 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 'column insert/remove/rename, row insert/delete, preparation helpers,
 'data exchange (import/export), and export-counter persistence through
 'hidden worksheet-level names.
-'@depends LLdictionary, LLdictionary, DictionaryTestFixture, CustomTest,
-'  CustomTest, BetterArray, DataSheet
+'@depends LLdictionary, DictionaryTestFixture, CustomTest, BetterArray,
+'  DataSheet, TestHelpersLite
 
 
 Private Const DICT_SHEET As String = "LLDictTest"
@@ -75,42 +75,72 @@ End Function
 'module as a whole.
 
 '@sub-title Initialise the test module and create shared resources
+'@details
+'Public, so the headless runner reaches it: the runner calls every lifecycle
+'hook through Application.Run, which cannot see a Private Sub. The handler
+'matters as much. An error escaping a lifecycle hook aborts the WHOLE module,
+'so a fixture problem here would drop all 18 tests and the run would report no
+'failures, because nothing ran.
 '@ModuleInitialize
-Private Sub ModuleInitialize()
+Public Sub ModuleInitialize()
+    On Error GoTo Fail
+    BusyApp
     EnsureWorksheet TEST_OUTPUT_SHEET, clearSheet:=False
     Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
     Assert.SetModuleName "TestLLdictionary"
     ResetDictionarySheet
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "ModuleInitialize", Err.Number, Err.Description
 End Sub
 
 '@sub-title Print results and release all module-level resources
+'@details
+'Every step before RestoreApp is wrapped, because RestoreApp has to run
+'whatever happened above: the hooks here call BusyApp, which puts Excel in
+'manual calculation, and the next module in the run would inherit that.
 '@ModuleCleanup
-Private Sub ModuleCleanup()
-    If Not Assert Is Nothing Then
-        Assert.PrintResults TEST_OUTPUT_SHEET
-    End If
+Public Sub ModuleCleanup()
+    On Error Resume Next
+        If Not Assert Is Nothing Then
+            Assert.PrintResults TEST_OUTPUT_SHEET
+        End If
+        DeleteWorksheet DICT_SHEET
+    On Error GoTo 0
+
+    RestoreApp
+
     'Release references captured during `ModuleInitialize`. Keeping things tidy
     'helps when the suite is executed repeatedly within the same Excel session.
     Set Assert = Nothing
     Set Dictionary = Nothing
-    DeleteWorksheet DICT_SHEET
 End Sub
 
 '@sub-title Reset fixture and create a fresh dictionary before each test
 '@TestInitialize
-Private Sub TestInitialize()
+Public Sub TestInitialize()
+    On Error GoTo Fail
+    BusyApp
     'Refresh the fixture worksheet ahead of each test to guarantee isolation.
     ResetDictionarySheet
     Set Dictionary = LLdictionary.Create(ThisWorkbook.Worksheets(DICT_SHEET), 1, 1)
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestInitialize", Err.Number, Err.Description
 End Sub
 
 '@sub-title Flush assertions and release per-test resources
 '@TestCleanup
-Private Sub TestCleanup()
-    If Not Assert Is Nothing Then
-        Assert.Flush
-    End If
-    RemoveDictionaryExportName ThisWorkbook.Worksheets(DICT_SHEET)
+Public Sub TestCleanup()
+    On Error Resume Next
+        If Not Assert Is Nothing Then
+            Assert.Flush
+        End If
+        RemoveDictionaryExportName ThisWorkbook.Worksheets(DICT_SHEET)
+    On Error GoTo 0
+
     'Drop references to ensure subsequent tests cannot accidentally reuse
     'stateful resources from previous runs.
     Set Dictionary = Nothing
@@ -417,7 +447,7 @@ Public Sub TestPrepareRenamesPreservedSheetNames()
 
     Set preserved = BetterArrayFromList("vlist1D-sheet1", "hlist2D-sheet1")
 
-    Dictionary.Prepare PreservedSheetNames:=preserved
+    Dictionary.Prepare preservedSheetNames:=preserved
 
     Set sheetNames = Dictionary.UniqueValues("sheet name")
 
@@ -575,6 +605,84 @@ Public Sub TestCreateOverridesStoredExportCounterWhenRequested()
 
 Fail:
     CustomTestLogFailure Assert, "TestCreateOverridesStoredExportCounterWhenRequested", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verify Create with no export count keeps the stored counter
+'@details
+'Arranges by storing 7 through the dictionary built in TestInitialize, which
+'writes the counter the same way production does. Acts by creating a second
+'LLdictionary over the same sheet with no numberOfExports argument. Asserts that
+'the new object reports 7 and that the hidden name still holds 7.
+'This goes RED against the old class. The argument defaulted to 20, so every
+'caller that omitted it wrote 20 over the real count and persisted it. Fourteen
+'of the twenty production call sites omit it, and SetupErrors then looped 1 To
+'20 over a status table with fewer rows and reported notes about exports that
+'are not there.
+'@TestMethod("LLdictionary")
+Public Sub TestCreateKeepsStoredExportCounterWhenNotRequested()
+    CustomTestSetTitles Assert, "LLdictionary", "TestCreateKeepsStoredExportCounterWhenNotRequested"
+
+    Dim dictSheet As Worksheet
+    Dim definition As Name
+    Dim created As LLdictionary
+
+    On Error GoTo Fail
+
+    Set dictSheet = ThisWorkbook.Worksheets(DICT_SHEET)
+    Dictionary.TotalNumberOfExports = 7
+
+    Set created = LLdictionary.Create(dictSheet, 1, 1)
+
+    Assert.AreEqual 7, CLng(created.TotalNumberOfExports), _
+        "Create with no export count should report the stored total"
+
+    Set definition = SheetNameDefinition(dictSheet, EXPORT_TOTAL_NAME)
+    Assert.IsTrue Not definition Is Nothing, "Hidden counter should remain defined after creation"
+    Assert.AreEqual 7, NameNumericValue(definition), _
+        "Create with no export count should leave the stored counter alone"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestCreateKeepsStoredExportCounterWhenNotRequested", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verify Export marks the copy as prepared with no table added
+'@details
+'Arranges by creating a temporary workbook. Acts by exporting with
+'addListObject set to False. Asserts that the exported sheet holds no
+'ListObject and that the row below the exported data carries the blue font
+'marker Prepared reads back.
+'This goes RED against the old class. The marker write sat inside the
+'addListObject branch, so LLExporter.AddDictionary had to build a second
+'dictionary over the copy and write the same marker itself.
+'@TestMethod("LLdictionary")
+Public Sub TestExportWritesPreparedMarkerWithoutTable()
+    CustomTestSetTitles Assert, "LLdictionary", "TestExportWritesPreparedMarkerWithoutTable"
+
+    Dim exportBook As Workbook
+    Dim exportedSheet As Worksheet
+    Dim expectedRow As Long
+
+    On Error GoTo Fail
+
+    Set exportBook = NewWorkbook()
+    expectedRow = Dictionary.Data.DataEndRow + 1
+
+    Dictionary.Export exportBook, addListObject:=False
+
+    Set exportedSheet = exportBook.Worksheets(DICT_SHEET)
+
+    Assert.AreEqual 0, CLng(exportedSheet.ListObjects.Count), _
+        "Export should add no table when addListObject is False"
+    Assert.IsTrue (exportedSheet.Cells(expectedRow, 1).Font.Color = vbBlue), _
+        "Export should mark the copy as prepared whatever addListObject says"
+
+    DeleteWorkbook exportBook
+    Exit Sub
+
+Fail:
+    If Not exportBook Is Nothing Then DeleteWorkbook exportBook
+    CustomTestLogFailure Assert, "TestExportWritesPreparedMarkerWithoutTable", Err.Number, Err.Description
 End Sub
 
 '@sub-title Verify Export writes the export counter to the destination sheet
