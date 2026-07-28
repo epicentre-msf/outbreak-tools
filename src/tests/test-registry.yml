@@ -85,6 +85,9 @@ suites:
       # already in the workbook.
       - name: DataSheet
       - name: CustomTable
+      # ApplicationState compile-depends on ProjectError alone, which lives in
+      # Checking and is already in the workbook.
+      - name: ApplicationState
     tests:
       - module: TestOSFiles
         covers: [OSFiles]
@@ -96,6 +99,8 @@ suites:
         covers: [DataSheet]
       - module: TestCustomTable
         covers: [CustomTable]
+      - module: TestApplicationState
+        covers: [ApplicationState]
 
   # --- sections -------------------------------------------------------------
   # (Also note: interface: true is stale -- IVarWriter /
