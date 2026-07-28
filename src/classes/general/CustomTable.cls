@@ -1571,12 +1571,21 @@ End Sub
 '@label:sort
 '@sub-title Sort the table on one or more columns
 '@details
-'Sorts in ascending order on the specified column, then on each column
-'in colList. When directSort is True, uses a simple Range.Sort; when
-'False, groups rows by first occurrence of each distinct value.
-'@param colName Optional String. Column header to sort on. Defaults to vbNullString.
-'@param colList Optional Object. BetterArray of additional column headers. Defaults to Nothing.
-'@param directSort Optional Boolean. When True, sorts directly. Defaults to True.
+'colList holds the sort keys in DECREASING significance: its first item ends
+'up the primary key, its last item the weakest of the list, and colName is
+'the final tiebreak of them all.
+'That reads backwards until you see how it works. Each pass is a full
+'single-key Range.Sort over the whole table, so the LAST pass applied is the
+'one that decides the order. colName is therefore sorted first and colList is
+'walked from its last item to its first.
+'Because the keys are applied one at a time, the precedence between them
+'rests on Excel leaving rows that tie on a key in the order it found them.
+'Excel behaves that way, but it does not promise to. A caller that cannot
+'live with that should issue one Range.Sort carrying key1/key2/key3 instead,
+'the way LLChoices does.
+'@param colName Optional String. Column header sorted first, so it ends up the weakest key. Defaults to vbNullString.
+'@param colList Optional Object. BetterArray of column headers, most significant first. Defaults to Nothing.
+'@param directSort Optional Boolean. When True, sorts directly; when False, groups rows by first occurrence of each distinct value. Defaults to True.
 '@param strictSearch Optional Boolean. When True, uses exact column matching. Defaults to True.
 '@export
 Public Sub Sort(Optional ByVal colName As String = vbNullString, _
@@ -1594,22 +1603,24 @@ Public Sub Sort(Optional ByVal colName As String = vbNullString, _
     'Exit if there is no need to sort on
     If (colName = vbNullString) And (colList Is Nothing) Then Exit Sub
 
-    'Sort only one colName
+    'colName goes first so that it ends up the weakest key: every later pass
+    'sorts the whole table again and demotes it to a tiebreak.
     SortHelper colName:=colName, directSort:=directSort, strictSearch:=strictSearch
 
     'Sort multiple column names (in a Betterarray).
-    'KNOWN FAULT, left exactly as it is: the loop below counts UPWARD from
-    'the high number with no Step -1, so for a list of more than one item the
-    'body runs zero times and every extra column is silently ignored. The one
-    'caller in the tree passes two columns. Changing it would change what the
-    'master setup variables sheet looks like, which is a decision for the
-    'owner, not a tidy-up. The dropped strictSearch on the call below is part
-    'of the same fault.
+    'Step -1 is load-bearing. The caller writes the list most significant
+    'first, and the last column sorted is the one that wins, so the first item
+    'has to be applied last. Without it the loop counts upward from the high
+    'number, runs zero times for any list of more than one item, and every
+    'extra column is dropped in silence.
+    'strictSearch travels with every key. The caller asked for one matching
+    'rule, and a key that cannot find its column is skipped without an error,
+    'so a mismatch here shows up as a half-sorted table and nothing else.
     If (TypeName(colList) = "BetterArray") Then
         If (colList.Length > 0) Then
-            For counter = colList.UpperBound To colList.LowerBound
+            For counter = colList.UpperBound To colList.LowerBound Step -1
                 cName = colList.Item(counter)
-                SortHelper colName:=cName, directSort:=directSort
+                SortHelper colName:=cName, directSort:=directSort, strictSearch:=strictSearch
             Next
         End If
     End If

@@ -433,6 +433,108 @@ Fail:
     CustomTestLogFailure Assert, "TestSortOnFirstGroupsByFirstOccurrence", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verifies that Sort applies every colList column, the first one last
+'@details Builds a four-row table where Amount, VarName and Section each impose a different
+'   row order, then sorts on Amount with a two-item colList ("Section", "VarName"). The
+'   passes run Amount, then VarName, then Section, so the table finishes in Section order
+'   and the FIRST item of colList is the primary key. Every value of every key is distinct,
+'   so the final order is decided outright and never depends on where Excel puts rows that
+'   tie. This pins both halves of the loop: with no Step -1 the body runs zero times and the
+'   table stops in Amount order, and walking the list forwards instead finishes in VarName
+'   order. Both spellings fail the first assertion.
+'@TestMethod("CustomTable")
+Public Sub TestSortAppliesColListFirstItemLast()
+    CustomTestSetTitles Assert, "CustomTable", "TestSortAppliesColListFirstItemLast"
+    On Error GoTo Fail
+
+    Dim headers As Variant
+    Dim rows As Variant
+    Dim tableObject As CustomTable
+    Dim sortColumns As BetterArray
+    Dim Lo As ListObject
+    Dim sectionColumn As Range
+    Dim amountColumn As Range
+
+    headers = Array("ID", "Amount", "Section", "VarName")
+    rows = Array( _
+        Array("row 1", 20, "S3", "vD"), _
+        Array("row 2", 40, "S1", "vC"), _
+        Array("row 3", 10, "S4", "vB"), _
+        Array("row 4", 30, "S2", "vA"))
+
+    Set tableObject = CreateCustomTableWithData(TABLESHEETNAME, TABLENAME, headers, rows)
+    Set Lo = ThisWorkbook.Worksheets(TABLESHEETNAME).ListObjects(TABLENAME)
+    Set sortColumns = NewBetterArray("Section", "VarName")
+
+    tableObject.Sort colName:="Amount", colList:=sortColumns, directSort:=True
+
+    Set sectionColumn = Lo.ListColumns("Section").DataBodyRange
+    Set amountColumn = Lo.ListColumns("Amount").DataBodyRange
+
+    Assert.AreEqual "S1", sectionColumn.Cells(1, 1).Value, _
+                     "The first column of colList should decide the final order"
+    Assert.AreEqual "S2", sectionColumn.Cells(2, 1).Value, _
+                     "The first column of colList should be sorted ascending"
+    Assert.AreEqual "S3", sectionColumn.Cells(3, 1).Value, _
+                     "The first column of colList should be sorted ascending"
+    Assert.AreEqual "S4", sectionColumn.Cells(4, 1).Value, _
+                     "The first column of colList should be sorted ascending"
+    Assert.AreEqual "40", CStr(amountColumn.Cells(1, 1).Value), _
+                     "colName should stop deciding the order once colList is applied"
+    Assert.AreEqual "10", CStr(amountColumn.Cells(4, 1).Value), _
+                     "colName should end up the weakest key, not the order the table sits in"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestSortAppliesColListFirstItemLast", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verifies that Sort passes strictSearch down to the colList columns
+'@details Uses a ONE-item colList, which is the case that already runs today, so this
+'   isolates the dropped strictSearch from the loop direction. The list asks for "Section"
+'   while the table only carries "Group Section", so the key resolves under loose matching
+'   and misses under strict. The caller asks for strictSearch:=False; if that is not handed
+'   down, SortHelper falls back to its own True default, the key finds no column, SortSimple
+'   exits without a word and the table stays in Amount order. All values are distinct, so
+'   the expected order is decided outright.
+'@TestMethod("CustomTable")
+Public Sub TestSortPassesStrictSearchToColList()
+    CustomTestSetTitles Assert, "CustomTable", "TestSortPassesStrictSearchToColList"
+    On Error GoTo Fail
+
+    Dim headers As Variant
+    Dim rows As Variant
+    Dim tableObject As CustomTable
+    Dim sortColumns As BetterArray
+    Dim Lo As ListObject
+    Dim groupColumn As Range
+
+    headers = Array("ID", "Amount", "Group Section")
+    rows = Array( _
+        Array("row 1", 10, "Z"), _
+        Array("row 2", 20, "Y"), _
+        Array("row 3", 30, "X"))
+
+    Set tableObject = CreateCustomTableWithData(TABLESHEETNAME, TABLENAME, headers, rows)
+    Set Lo = ThisWorkbook.Worksheets(TABLESHEETNAME).ListObjects(TABLENAME)
+    Set sortColumns = NewBetterArray("Section")
+
+    tableObject.Sort colName:="Amount", colList:=sortColumns, directSort:=True, strictSearch:=False
+
+    Set groupColumn = Lo.ListColumns("Group Section").DataBodyRange
+
+    Assert.AreEqual "X", groupColumn.Cells(1, 1).Value, _
+                     "A colList column should be matched with the strictSearch the caller asked for"
+    Assert.AreEqual "Y", groupColumn.Cells(2, 1).Value, _
+                     "A loosely matched colList column should sort the table ascending"
+    Assert.AreEqual "Z", groupColumn.Cells(3, 1).Value, _
+                     "A loosely matched colList column should sort the table ascending"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestSortPassesStrictSearchToColList", Err.Number, Err.Description
+End Sub
+
 '@sub-title Verifies that importing from a CustomTable with matching headers copies all rows
 '@details Creates an empty target table and a populated source table with the same three
 '   columns. Calls Import with keepSourceHeaders:=True. Asserts the target receives all
