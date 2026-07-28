@@ -991,10 +991,11 @@ End Sub
 ' @sub-title TestExportThrowsInvalidArgumentWhenWorkbookIsNothing
 ' @details Tests the Nothing guard on Export. Arranges using the standard
 '   FormatUnderTest, acts by calling Export with Nothing under On Error Resume Next,
-'   then captures Err.Number and Err.Description. Asserts that the error number
-'   equals ProjectError.InvalidArgument and the description contains the word
-'   "workbook". This ensures callers receive a clear, typed error rather than a
-'   generic runtime 91 (Object variable not set).
+'   then captures Err.Number, Err.Description and Err.Source. Asserts that the
+'   error number equals ProjectError.InvalidArgument, which is what callers can
+'   rely on, and that the description names the member that refused. VBA replaces
+'   the class's own message at the object boundary, so the text ThrowError wrote
+'   never reaches the caller - see the comment on the second assertion.
 Public Sub TestExportThrowsInvalidArgumentWhenWorkbookIsNothing()
     CustomTestSetTitles Assert, "LLFormat", "TestExportThrowsInvalidArgumentWhenWorkbookIsNothing"
     On Error GoTo TestFail
@@ -1004,14 +1005,27 @@ Public Sub TestExportThrowsInvalidArgumentWhenWorkbookIsNothing()
 
     Dim errNum As Long
     Dim errDesc As String
+    Dim errSource As String
     errNum = Err.Number
     errDesc = Err.Description
+    errSource = Err.Source
     On Error GoTo TestFail
 
     Assert.AreEqual CLng(ProjectError.InvalidArgument), errNum, _
                      "Export should throw InvalidArgument when workbook is Nothing"
-    Assert.IsTrue InStr(1, errDesc, "workbook", vbTextCompare) > 0, _
-                 "Error description should mention workbook"
+
+    'VBA rewrites Err.Source and Err.Description at the class boundary. Export
+    'raises with source "LLFormat" and message "Export workbook is required",
+    'and a caller in a standard module reads back:
+    '   source      = the VBA project name
+    '   description = "Method 'Export' of object 'LLFormat' failed"
+    'The NUMBER is the part that survives, and the assertion above is the one
+    'that holds the contract. This check holds the description to what a caller
+    'really receives - the name of the member that refused. Asserting the word
+    '"workbook" here fails on every run, because that text never leaves the class.
+    Assert.IsTrue InStr(1, errDesc, "Export", vbTextCompare) > 0, _
+                 "Error description should name the member that refused - " & _
+                 "source was [" & errSource & "], description was [" & errDesc & "]"
 
     Exit Sub
 
