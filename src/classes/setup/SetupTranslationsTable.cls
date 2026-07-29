@@ -2032,11 +2032,11 @@ Private Sub ApplyFormatting()
     Set dataRange = this.table.DataBodyRange
     Set tableRange = this.table.Range
 
-    On Error Resume Next
-        this.table.TableStyle = "TableStyleLight11"
-        tableRange.EntireColumn.ColumnWidth = 60
-        tableRange.Rows(1).Font.Color = vbWhite
-    On Error GoTo 0
+    'TestTableHeaderRowIsWhite and TestTagColumnStaysInvisibleAfterUpdate both
+    'read back what these three writes produce, so a failure shows as a red test.
+    this.table.TableStyle = "TableStyleLight11"
+    tableRange.EntireColumn.ColumnWidth = 60
+    tableRange.Rows(1).Font.Color = vbWhite
 
     If dataRange Is Nothing Then Exit Sub
 
