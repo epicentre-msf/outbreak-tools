@@ -344,7 +344,7 @@ Public Sub ImportOrCleanSetup()
     Dim isClean As Boolean
     Dim importPath As String
     Dim servicePath As String
-    Dim service As SetupImportService
+    Dim service As SetupImport
     Dim pass As Passwords
     Dim sheets As BetterArray
     Dim infoText As String
@@ -388,7 +388,7 @@ Public Sub ImportOrCleanSetup()
     Set pass = ResolveSetupPasswords()
     SetupEventsManager.EnterBusyState calculateOnSave:=False
 
-    Set service = SetupImportService.Create(servicePath, progressLabel)
+    Set service = SetupImport.Create(servicePath, progressLabel)
     service.Check importDict, importChoi, importExp, importAna, importTrans, cleanSetup:=isClean
 
     If isClean Then
@@ -451,7 +451,7 @@ Private Function ParseImportPath(ByVal captionText As String) As String
 End Function
 
 '@Description("Execute the workbook-driven import using the selected sheets")
-Private Function ExecuteImportOperation(ByVal service As SetupImportService, _
+Private Function ExecuteImportOperation(ByVal service As SetupImport, _
                                         ByVal pass As Passwords, _
                                         ByVal sheets As BetterArray, _
                                         ByVal runConformityCheck As Boolean, _
@@ -467,7 +467,7 @@ Private Function ExecuteImportOperation(ByVal service As SetupImportService, _
 End Function
 
 '@Description("Execute the clean workflow against selected sheets")
-Private Function ExecuteCleanOperation(ByVal service As SetupImportService, _
+Private Function ExecuteCleanOperation(ByVal service As SetupImport, _
                                        ByVal pass As Passwords, _
                                        ByVal sheets As BetterArray, _
                                        ByVal successMessage As String, _

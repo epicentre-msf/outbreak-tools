@@ -412,7 +412,7 @@ End Function
 Public Sub clickExport(ByRef control As IRibbonControl)
     Application.ScreenUpdating = False
 
-    Dim service As SetupImportService
+    Dim service As SetupImport
     Dim exportPath As String
     Dim analysisSheet As String
 
@@ -422,7 +422,7 @@ Public Sub clickExport(ByRef control As IRibbonControl)
 
     SetupEventsManager.EnterBusyState
 
-    Set service = SetupImportService.Create(ThisWorkbook.FullName)
+    Set service = SetupImport.Create(ThisWorkbook.FullName)
 
     'UnProtect the analysis before proceeding
     UnProtectSetupSheet analysisSheet
@@ -470,7 +470,7 @@ Public Sub clickImportFile(ByRef control As IRibbonControl)
     Const SUCCESS_MESSAGE As String = "Workbook import completed."
 
     Dim importPath As String
-    Dim service As SetupImportService
+    Dim service As SetupImport
     Dim pass As Passwords
     Dim sheets As BetterArray
     Dim success As Boolean
@@ -482,7 +482,7 @@ Public Sub clickImportFile(ByRef control As IRibbonControl)
     importPath = SetupHelpers.SelectSetupImportPath("*.xlsx")
     If LenB(importPath) = 0 Then Exit Sub
 
-    Set service = SetupImportService.Create(importPath)
+    Set service = SetupImport.Create(importPath)
     Set pass = SetupHelpers.ResolveSetupPasswords()
     Set sheets = SetupHelpers.BuildSelectedSheets(True, True, True, True, True)
     Set originalSheet = ActiveSheet

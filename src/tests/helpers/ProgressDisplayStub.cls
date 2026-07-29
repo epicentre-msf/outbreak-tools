@@ -17,7 +17,7 @@ Option Explicit
 
 '@class ProgressDisplayStub
 '@description
-'Stands in for the progress label of the Imports form. SetupImportService asks
+'Stands in for the progress label of the Imports form. SetupImport asks
 'a display object for a Caption or a Value before it writes to it, and this
 'stub answers both, so a test can read back whatever the service wrote.
 

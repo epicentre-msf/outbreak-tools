@@ -299,7 +299,7 @@ End Sub
 '@sub-title Verify blockSecurity forces automation security off and Restore puts it back.
 '@details
 'blockSecurity has a single caller in the whole tree
-'(SetupImportService), so nothing else would surface a break here.
+'(SetupImport), so nothing else would surface a break here.
 '@TestMethod("ApplicationState")
 Public Sub TestApplyBusyStateBlocksAutomationSecurity()
     CustomTestSetTitles Assert, "ApplicationState", "ApplyBusyStateBlocksAutomationSecurity"

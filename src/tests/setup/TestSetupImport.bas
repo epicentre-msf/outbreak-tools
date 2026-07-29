@@ -1,4 +1,4 @@
-Attribute VB_Name = "TestSetupImportService"
+Attribute VB_Name = "TestSetupImport"
 Option Explicit
 
 
@@ -8,7 +8,7 @@ Option Explicit
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Private Assert As CustomTest
-Private Service As SetupImportService
+Private Service As SetupImport
 Private ProgressStub As ProgressDisplayStub
 Private PasswordsHandler As Passwords
 
@@ -62,7 +62,7 @@ Private KeepExportArtifacts As Boolean
 '@ModuleInitialize
 Public Sub ModuleInitialize()
     Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
-    Assert.SetModuleName "TestSetupImportService"
+    Assert.SetModuleName "TestSetupImport"
     KeepExportArtifacts = False
 End Sub
 
@@ -82,7 +82,7 @@ Public Sub TestInitialize()
     Set ProgressStub = New ProgressDisplayStub
     ProgressStub.Caption = vbNullString
     ProgressStub.Value = vbNullString
-    Set Service = New SetupImportService
+    Set Service = New SetupImport
     Service.Path = ThisWorkbook.FullName
     Set Service.ProgressObject = ProgressStub
     EnsurePasswordsFixture
@@ -113,9 +113,9 @@ End Sub
 
 '@section Tests - Check and Clean
 '===============================================================================
-'@TestMethod("SetupImportService")
+'@TestMethod("SetupImport")
 Public Sub TestCheckRaisesWhenNoSelection()
-    CustomTestSetTitles Assert, "SetupImportService", "TestCheckRaisesWhenNoSelection"
+    CustomTestSetTitles Assert, "SetupImport", "TestCheckRaisesWhenNoSelection"
     On Error GoTo ExpectInvalid
 
     Service.Check False, False, False, False, False
@@ -130,9 +130,9 @@ ExpectInvalid:
     Err.Clear
 End Sub
 
-'@TestMethod("SetupImportService")
+'@TestMethod("SetupImport")
 Public Sub TestCheckRaisesWhenFileMissing()
-    CustomTestSetTitles Assert, "SetupImportService", "TestCheckRaisesWhenFileMissing"
+    CustomTestSetTitles Assert, "SetupImport", "TestCheckRaisesWhenFileMissing"
     Dim missingPath As String
 
     On Error GoTo Fail
@@ -158,9 +158,9 @@ Fail:
     Err.Clear
 End Sub
 
-'@TestMethod("SetupImportService")
+'@TestMethod("SetupImport")
 Public Sub TestCleanRemovesWorksheetComments()
-    CustomTestSetTitles Assert, "SetupImportService", "TestCleanRemovesWorksheetComments"
+    CustomTestSetTitles Assert, "SetupImport", "TestCleanRemovesWorksheetComments"
     Dim targetSheet As Worksheet
     Dim sheetsList As BetterArray
 
@@ -183,9 +183,9 @@ End Sub
 
 '@section Tests - Import
 '===============================================================================
-'@TestMethod("SetupImportService")
+'@TestMethod("SetupImport")
 Public Sub TestImportClosesWorkbookAfterRun()
-    CustomTestSetTitles Assert, "SetupImportService", "TestImportClosesWorkbookAfterRun"
+    CustomTestSetTitles Assert, "SetupImport", "TestImportClosesWorkbookAfterRun"
     Dim tempBook As Workbook
     Dim exportFolder As String
     Dim workbookPath As String
@@ -220,9 +220,9 @@ CleanupFailure:
     LogUnexpected "TestImportClosesWorkbookAfterRun", workbookPath
 End Sub
 
-'@TestMethod("SetupImportService")
+'@TestMethod("SetupImport")
 Public Sub TestImportFromWorkbookUsingDomainClasses()
-    CustomTestSetTitles Assert, "SetupImportService", "TestImportFromWorkbookUsingDomainClasses"
+    CustomTestSetTitles Assert, "SetupImport", "TestImportFromWorkbookUsingDomainClasses"
     Dim sourceBook As Workbook
     Dim exportFolder As String
     Dim workbookPath As String
@@ -277,9 +277,9 @@ CleanupFailure:
     Exit Sub
 End Sub
 
-'@TestMethod("SetupImportService")
+'@TestMethod("SetupImport")
 Public Sub TestImportFromWorkbookSkipsMissingSheets()
-    CustomTestSetTitles Assert, "SetupImportService", "TestImportFromWorkbookSkipsMissingSheets"
+    CustomTestSetTitles Assert, "SetupImport", "TestImportFromWorkbookSkipsMissingSheets"
     Dim sourceBook As Workbook
     Dim exportFolder As String
     Dim workbookPath As String
@@ -335,11 +335,11 @@ End Sub
 
 '@section Tests - Export cancellation and file creation
 '===============================================================================
-'@TestMethod("SetupImportService")
+'@TestMethod("SetupImport")
 Public Sub TestExportAbortsWhenFolderSelectionCancelled()
-    CustomTestSetTitles Assert, "SetupImportService", "TestExportAbortsWhenFolderSelectionCancelled"
+    CustomTestSetTitles Assert, "SetupImport", "TestExportAbortsWhenFolderSelectionCancelled"
     Dim initialWorkbookCount As Long
-    Dim svc As SetupImportService
+    Dim svc As SetupImport
 
     On Error GoTo Fail
 
@@ -363,13 +363,13 @@ Fail:
     Err.Clear
 End Sub
 
-'@TestMethod("SetupImportService")
+'@TestMethod("SetupImport")
 Public Sub TestExportCreatesWorkbookInProvidedFolder()
-    CustomTestSetTitles Assert, "SetupImportService", "TestExportCreatesWorkbookInProvidedFolder"
+    CustomTestSetTitles Assert, "SetupImport", "TestExportCreatesWorkbookInProvidedFolder"
     Dim exportFolder As String
     Dim expectedFilePath As String
     Dim expectedPrefix As String
-    Dim svc As SetupImportService
+    Dim svc As SetupImport
     Dim initialWorkbookCount As Long
     Dim exportBook As Workbook
     Dim translationSheet As Worksheet
@@ -436,9 +436,9 @@ End Sub
 '@section Tests - Export component verification
 '===============================================================================
 
-'@TestMethod("SetupImportService")
+'@TestMethod("SetupImport")
 Public Sub TestExportContainsDictionarySheet()
-    CustomTestSetTitles Assert, "SetupImportService", "TestExportContainsDictionarySheet"
+    CustomTestSetTitles Assert, "SetupImport", "TestExportContainsDictionarySheet"
     Dim exportBook As Workbook
     Dim exportFilePath As String
     Dim exportedSheet As Worksheet
@@ -478,9 +478,9 @@ CleanupFailure:
     End If
 End Sub
 
-'@TestMethod("SetupImportService")
+'@TestMethod("SetupImport")
 Public Sub TestExportContainsChoicesSheet()
-    CustomTestSetTitles Assert, "SetupImportService", "TestExportContainsChoicesSheet"
+    CustomTestSetTitles Assert, "SetupImport", "TestExportContainsChoicesSheet"
     Dim exportBook As Workbook
     Dim exportFilePath As String
     Dim exportedSheet As Worksheet
@@ -522,9 +522,9 @@ CleanupFailure:
     End If
 End Sub
 
-'@TestMethod("SetupImportService")
+'@TestMethod("SetupImport")
 Public Sub TestExportContainsExportSpecsSheet()
-    CustomTestSetTitles Assert, "SetupImportService", "TestExportContainsExportSpecsSheet"
+    CustomTestSetTitles Assert, "SetupImport", "TestExportContainsExportSpecsSheet"
     Dim exportBook As Workbook
     Dim exportFilePath As String
     Dim exportedSheet As Worksheet
@@ -587,9 +587,9 @@ CleanupFailure:
     End If
 End Sub
 
-'@TestMethod("SetupImportService")
+'@TestMethod("SetupImport")
 Public Sub TestExportContainsAnalysisSheet()
-    CustomTestSetTitles Assert, "SetupImportService", "TestExportContainsAnalysisSheet"
+    CustomTestSetTitles Assert, "SetupImport", "TestExportContainsAnalysisSheet"
     Dim exportBook As Workbook
     Dim exportFilePath As String
     Dim exportedSheet As Worksheet
@@ -639,9 +639,9 @@ CleanupFailure:
     End If
 End Sub
 
-'@TestMethod("SetupImportService")
+'@TestMethod("SetupImport")
 Public Sub TestExportContainsMultipleAnalysisTables()
-    CustomTestSetTitles Assert, "SetupImportService", "TestExportContainsMultipleAnalysisTables"
+    CustomTestSetTitles Assert, "SetupImport", "TestExportContainsMultipleAnalysisTables"
     Dim exportBook As Workbook
     Dim exportFilePath As String
     Dim exportedSheet As Worksheet
@@ -693,9 +693,9 @@ End Sub
 '@section Tests - Export structural checks
 '===============================================================================
 
-'@TestMethod("SetupImportService")
+'@TestMethod("SetupImport")
 Public Sub TestExportRemovesDefaultWorksheet()
-    CustomTestSetTitles Assert, "SetupImportService", "TestExportRemovesDefaultWorksheet"
+    CustomTestSetTitles Assert, "SetupImport", "TestExportRemovesDefaultWorksheet"
     Dim exportBook As Workbook
     Dim exportFilePath As String
 
@@ -726,9 +726,9 @@ CleanupFailure:
     End If
 End Sub
 
-'@TestMethod("SetupImportService")
+'@TestMethod("SetupImport")
 Public Sub TestExportMainSheetsAreVisible()
-    CustomTestSetTitles Assert, "SetupImportService", "TestExportMainSheetsAreVisible"
+    CustomTestSetTitles Assert, "SetupImport", "TestExportMainSheetsAreVisible"
     Dim exportBook As Workbook
     Dim exportFilePath As String
 
@@ -781,12 +781,12 @@ CleanupFailure:
     End If
 End Sub
 
-'@TestMethod("SetupImportService")
+'@TestMethod("SetupImport")
 Public Sub TestExportClosesWorkbookAfterCompletion()
-    CustomTestSetTitles Assert, "SetupImportService", "TestExportClosesWorkbookAfterCompletion"
+    CustomTestSetTitles Assert, "SetupImport", "TestExportClosesWorkbookAfterCompletion"
     Dim exportFilePath As String
     Dim initialCount As Long
-    Dim svc As SetupImportService
+    Dim svc As SetupImport
 
     On Error GoTo CleanupFailure
 
@@ -827,9 +827,9 @@ End Sub
 '@section Tests - Export edge cases
 '===============================================================================
 
-'@TestMethod("SetupImportService")
+'@TestMethod("SetupImport")
 Public Sub TestExportSkipsMissingHostDictionarySheet()
-    CustomTestSetTitles Assert, "SetupImportService", "TestExportSkipsMissingHostDictionarySheet"
+    CustomTestSetTitles Assert, "SetupImport", "TestExportSkipsMissingHostDictionarySheet"
     Dim exportBook As Workbook
     Dim exportFilePath As String
 
@@ -874,9 +874,9 @@ CleanupFailure:
     End If
 End Sub
 
-'@TestMethod("SetupImportService")
+'@TestMethod("SetupImport")
 Public Sub TestExportSkipsMissingHostAnalysisSheet()
-    CustomTestSetTitles Assert, "SetupImportService", "TestExportSkipsMissingHostAnalysisSheet"
+    CustomTestSetTitles Assert, "SetupImport", "TestExportSkipsMissingHostAnalysisSheet"
     Dim exportBook As Workbook
     Dim exportFilePath As String
 
@@ -917,9 +917,9 @@ CleanupFailure:
     End If
 End Sub
 
-'@TestMethod("SetupImportService")
+'@TestMethod("SetupImport")
 Public Sub TestExportSkipsMissingHostChoicesSheet()
-    CustomTestSetTitles Assert, "SetupImportService", "TestExportSkipsMissingHostChoicesSheet"
+    CustomTestSetTitles Assert, "SetupImport", "TestExportSkipsMissingHostChoicesSheet"
     Dim exportBook As Workbook
     Dim exportFilePath As String
 
@@ -959,9 +959,9 @@ CleanupFailure:
     End If
 End Sub
 
-'@TestMethod("SetupImportService")
+'@TestMethod("SetupImport")
 Public Sub TestExportDictionaryContainsListObject()
-    CustomTestSetTitles Assert, "SetupImportService", "TestExportDictionaryContainsListObject"
+    CustomTestSetTitles Assert, "SetupImport", "TestExportDictionaryContainsListObject"
     Dim exportBook As Workbook
     Dim exportFilePath As String
     Dim exportedSheet As Worksheet
@@ -995,9 +995,9 @@ CleanupFailure:
     End If
 End Sub
 
-'@TestMethod("SetupImportService")
+'@TestMethod("SetupImport")
 Public Sub TestExportDictionaryPreservesMultipleHeaders()
-    CustomTestSetTitles Assert, "SetupImportService", "TestExportDictionaryPreservesMultipleHeaders"
+    CustomTestSetTitles Assert, "SetupImport", "TestExportDictionaryPreservesMultipleHeaders"
     Dim exportBook As Workbook
     Dim exportFilePath As String
     Dim exportedSheet As Worksheet
@@ -1033,9 +1033,9 @@ CleanupFailure:
     End If
 End Sub
 
-'@TestMethod("SetupImportService")
+'@TestMethod("SetupImport")
 Public Sub TestExportChoicesPreservesAllDataRows()
-    CustomTestSetTitles Assert, "SetupImportService", "TestExportChoicesPreservesAllDataRows"
+    CustomTestSetTitles Assert, "SetupImport", "TestExportChoicesPreservesAllDataRows"
     Dim exportBook As Workbook
     Dim exportFilePath As String
     Dim exportedSheet As Worksheet
@@ -1088,9 +1088,9 @@ CleanupFailure:
     End If
 End Sub
 
-'@TestMethod("SetupImportService")
+'@TestMethod("SetupImport")
 Public Sub TestExportExportsHiddenNames()
-    CustomTestSetTitles Assert, "SetupImportService", "TestExportExportsHiddenNames"
+    CustomTestSetTitles Assert, "SetupImport", "TestExportExportsHiddenNames"
     Dim exportBook As Workbook
     Dim exportFilePath As String
     Dim exportedName As Name
@@ -1127,9 +1127,9 @@ CleanupFailure:
     End If
 End Sub
 
-'@TestMethod("SetupImportService")
+'@TestMethod("SetupImport")
 Public Sub TestExportTranslationsStartsAtColumnTwo()
-    CustomTestSetTitles Assert, "SetupImportService", "TestExportTranslationsStartsAtColumnTwo"
+    CustomTestSetTitles Assert, "SetupImport", "TestExportTranslationsStartsAtColumnTwo"
     Dim exportBook As Workbook
     Dim exportFilePath As String
     Dim exportedSheet As Worksheet
@@ -1168,9 +1168,9 @@ End Sub
 
 '@section Tests - the progress display
 '===============================================================================
-'@TestMethod("SetupImportService")
+'@TestMethod("SetupImport")
 Public Sub TestProgressObjectRejectsUnsupportedDisplay()
-    CustomTestSetTitles Assert, "SetupImportService", "TestProgressObjectRejectsUnsupportedDisplay"
+    CustomTestSetTitles Assert, "SetupImport", "TestProgressObjectRejectsUnsupportedDisplay"
     On Error GoTo ExpectInvalid
 
     'A Collection carries neither Caption nor Value.
@@ -1183,9 +1183,9 @@ ExpectInvalid:
     Err.Clear
 End Sub
 
-'@TestMethod("SetupImportService")
+'@TestMethod("SetupImport")
 Public Sub TestImportReportsProgress()
-    CustomTestSetTitles Assert, "SetupImportService", "TestImportReportsProgress"
+    CustomTestSetTitles Assert, "SetupImport", "TestImportReportsProgress"
     Dim workbookPath As String
     Dim sheetsList As BetterArray
 
@@ -1214,9 +1214,9 @@ End Sub
 
 '@section Tests - the Choices column round trip
 '===============================================================================
-'@TestMethod("SetupImportService")
+'@TestMethod("SetupImport")
 Public Sub TestImportRestoresChoicesColumnNames()
-    CustomTestSetTitles Assert, "SetupImportService", "TestImportRestoresChoicesColumnNames"
+    CustomTestSetTitles Assert, "SetupImport", "TestImportRestoresChoicesColumnNames"
     Dim workbookPath As String
     Dim sheetsList As BetterArray
     Dim lo As ListObject
@@ -1246,9 +1246,9 @@ CleanupFailure:
     LogUnexpected "TestImportRestoresChoicesColumnNames", workbookPath
 End Sub
 
-'@TestMethod("SetupImportService")
+'@TestMethod("SetupImport")
 Public Sub TestImportRestoresChoicesColumnNamesAfterFailure()
-    CustomTestSetTitles Assert, "SetupImportService", "TestImportRestoresChoicesColumnNamesAfterFailure"
+    CustomTestSetTitles Assert, "SetupImport", "TestImportRestoresChoicesColumnNamesAfterFailure"
     Dim workbookPath As String
     Dim sheetsList As BetterArray
     Dim lo As ListObject
@@ -1294,9 +1294,9 @@ CleanupFailure:
     UnlockForeignKeySheet EXPORTS_SHEET_NAME
 End Sub
 
-'@TestMethod("SetupImportService")
+'@TestMethod("SetupImport")
 Public Sub TestImportLeavesChoicesProtectionLocked()
-    CustomTestSetTitles Assert, "SetupImportService", "TestImportLeavesChoicesProtectionLocked"
+    CustomTestSetTitles Assert, "SetupImport", "TestImportLeavesChoicesProtectionLocked"
     Dim workbookPath As String
     Dim sheetsList As BetterArray
     Dim choicesSheet As Worksheet
@@ -1330,9 +1330,9 @@ End Sub
 
 '@section Tests - the export row sync
 '===============================================================================
-'@TestMethod("SetupImportService")
+'@TestMethod("SetupImport")
 Public Sub TestImportGrowsHostExportsToMatchSource()
-    CustomTestSetTitles Assert, "SetupImportService", "TestImportGrowsHostExportsToMatchSource"
+    CustomTestSetTitles Assert, "SetupImport", "TestImportGrowsHostExportsToMatchSource"
     Dim workbookPath As String
     Dim sheetsList As BetterArray
     Dim hostExports As ListObject
@@ -1359,9 +1359,9 @@ CleanupFailure:
     LogUnexpected "TestImportGrowsHostExportsToMatchSource", workbookPath
 End Sub
 
-'@TestMethod("SetupImportService")
+'@TestMethod("SetupImport")
 Public Sub TestImportFromWorkbookSyncsExportsWithoutSheetList()
-    CustomTestSetTitles Assert, "SetupImportService", "TestImportFromWorkbookSyncsExportsWithoutSheetList"
+    CustomTestSetTitles Assert, "SetupImport", "TestImportFromWorkbookSyncsExportsWithoutSheetList"
     Dim workbookPath As String
     Dim workbookName As String
     Dim hostExports As ListObject
@@ -1396,9 +1396,9 @@ End Sub
 
 '@section Tests - Clean on a missing sheet
 '===============================================================================
-'@TestMethod("SetupImportService")
+'@TestMethod("SetupImport")
 Public Sub TestCleanSkipsMissingWorksheet()
-    CustomTestSetTitles Assert, "SetupImportService", "TestCleanSkipsMissingWorksheet"
+    CustomTestSetTitles Assert, "SetupImport", "TestCleanSkipsMissingWorksheet"
     Dim targetSheet As Worksheet
     Dim sheetsList As BetterArray
 
@@ -1423,9 +1423,9 @@ End Sub
 
 '@section Tests - the export file
 '===============================================================================
-'@TestMethod("SetupImportService")
+'@TestMethod("SetupImport")
 Public Sub TestExportFileNameDropsHostExtension()
-    CustomTestSetTitles Assert, "SetupImportService", "TestExportFileNameDropsHostExtension"
+    CustomTestSetTitles Assert, "SetupImport", "TestExportFileNameDropsHostExtension"
     Dim exportBook As Workbook
     Dim exportFilePath As String
     Dim fileName As String
@@ -1450,13 +1450,13 @@ CleanupFailure:
     LogExportFailure "TestExportFileNameDropsHostExtension", exportBook, exportFilePath
 End Sub
 
-'@TestMethod("SetupImportService")
+'@TestMethod("SetupImport")
 Public Sub TestExportFileNamesAreUniquePerRun()
-    CustomTestSetTitles Assert, "SetupImportService", "TestExportFileNamesAreUniquePerRun"
+    CustomTestSetTitles Assert, "SetupImport", "TestExportFileNamesAreUniquePerRun"
     Dim exportFolder As String
     Dim firstPath As String
     Dim secondPath As String
-    Dim svc As SetupImportService
+    Dim svc As SetupImport
 
     On Error GoTo CleanupFailure
 
@@ -1492,9 +1492,9 @@ CleanupFailure:
     Err.Clear
 End Sub
 
-'@TestMethod("SetupImportService")
+'@TestMethod("SetupImport")
 Public Sub TestExportSavesAsOpenXml()
-    CustomTestSetTitles Assert, "SetupImportService", "TestExportSavesAsOpenXml"
+    CustomTestSetTitles Assert, "SetupImport", "TestExportSavesAsOpenXml"
     Dim exportBook As Workbook
     Dim exportFilePath As String
 
@@ -1514,9 +1514,9 @@ CleanupFailure:
     LogExportFailure "TestExportSavesAsOpenXml", exportBook, exportFilePath
 End Sub
 
-'@TestMethod("SetupImportService")
+'@TestMethod("SetupImport")
 Public Sub TestExportContainsNoLeftoverBlankSheet()
-    CustomTestSetTitles Assert, "SetupImportService", "TestExportContainsNoLeftoverBlankSheet"
+    CustomTestSetTitles Assert, "SetupImport", "TestExportContainsNoLeftoverBlankSheet"
     Dim exportBook As Workbook
     Dim exportFilePath As String
     Dim exportedSheet As Worksheet
@@ -1549,12 +1549,12 @@ CleanupFailure:
     LogExportFailure "TestExportContainsNoLeftoverBlankSheet", exportBook, exportFilePath
 End Sub
 
-'@TestMethod("SetupImportService")
+'@TestMethod("SetupImport")
 Public Sub TestExportWithSuppliedWorkbookLeavesItOpen()
-    CustomTestSetTitles Assert, "SetupImportService", "TestExportWithSuppliedWorkbookLeavesItOpen"
+    CustomTestSetTitles Assert, "SetupImport", "TestExportWithSuppliedWorkbookLeavesItOpen"
     Dim suppliedBook As Workbook
     Dim suppliedName As String
-    Dim svc As SetupImportService
+    Dim svc As SetupImport
 
     On Error GoTo CleanupFailure
 
@@ -1588,9 +1588,9 @@ End Sub
 
 '@section Tests - the error Check reports
 '===============================================================================
-'@TestMethod("SetupImportService")
+'@TestMethod("SetupImport")
 Public Sub TestCheckReportsOpenFailureWithProjectError()
-    CustomTestSetTitles Assert, "SetupImportService", "TestCheckReportsOpenFailureWithProjectError"
+    CustomTestSetTitles Assert, "SetupImport", "TestCheckReportsOpenFailureWithProjectError"
     Dim unreadablePath As String
     Dim raisedNumber As Long
 
@@ -1891,7 +1891,7 @@ End Sub
 '@return Workbook opened from the exported file, or Nothing if export did not produce a file.
 Private Function PerformExportAndOpen(ByRef exportFilePath As String) As Workbook
     Dim exportFolder As String
-    Dim svc As SetupImportService
+    Dim svc As SetupImport
 
     exportFolder = BuildTempFolder(ThisWorkbook, "SetupExportTests")
 

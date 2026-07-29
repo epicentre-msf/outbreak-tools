@@ -82,7 +82,7 @@ suites:
       # src/tests/helpers/, so it is registered here rather than under `general`
       # with the suites it serves. It stays registered while TestPasswords is
       # parked: PreparePasswordsFixture is also called by TestSetupErrors,
-      # TestEventSetup, TestSetupImportService, TestLLExport and TestDevelopment,
+      # TestEventSetup, TestSetupImport, TestLLExport and TestDevelopment,
       # so it is wanted again the moment any of those is added. It declares no
       # @TestMethod, so the runner imports it and runs it as a 0-test no-op.
       - module: PasswordsTestFixture
@@ -93,13 +93,13 @@ suites:
       - module: FormulaTestFixture
       # SetupImportTestFixture is the same shape again. It builds the
       # Dictionary, Choices, Exports, Analysis and Translations sheets that
-      # TestSetupImportService reads, and TestSetupErrors will call it too.
+      # TestSetupImport reads, and TestSetupErrors will call it too.
       - module: SetupImportTestFixture
     fixtures:
       # ProgressDisplayStub stands in for the progress label of the Imports
-      # form. TestSetupImportService declares one and SetupImportService probes
-      # it for a Caption or a Value. It went with the whole src/tests/stubs/
-      # folder in d6897661 and came back here, beside the other fixtures.
+      # form. TestSetupImport declares one and SetupImport probes it for a
+      # Caption or a Value. It went with the whole src/tests/stubs/ folder in
+      # d6897661 and came back here, beside the other fixtures.
       - name: ProgressDisplayStub
 
   # --- general (OSFiles, DropdownLists) --------------------------------------
@@ -230,7 +230,7 @@ suites:
 
   # --- setup (SetupTranslationsTable) ---------------------------------------
   # This block is shared. The other four setup classes (UpdatedValues,
-  # SetupImportService, SetupPreparation, SetupErrors) add their rows here as
+  # SetupImport, SetupPreparation, SetupErrors) add their rows here as
   # their own sessions land. Register a class only after confirming it is
   # absent from the saved driver workbook: the six classes baked in there are
   # BetterArray, Checking, Development, HiddenNames, Passwords and
@@ -243,7 +243,7 @@ suites:
   # Checking, HiddenNames and BetterArray are baked into the workbook. So the
   # one class row below closes its own compile closure.
   #
-  # SetupImportService names ProjectError, ApplicationState, BetterArray,
+  # SetupImport names ProjectError, ApplicationState, BetterArray,
   # CustomTable, DataSheet, HiddenNames, LLChoices, LLdictionary, LLExport,
   # LLFormat, OSFiles, Passwords, Analysis and SetupTranslationsTable.
   # ApplicationState, CustomTable, DataSheet, LLChoices, LLFormat and OSFiles
@@ -254,22 +254,22 @@ suites:
   - folder: setup
     classes:
       - name: SetupTranslationsTable
-      - name: SetupImportService
+      - name: SetupImport
     tests:
       - module: TestSetupTranslationsTable
         covers: [SetupTranslationsTable]
-      # TestSetupImportService is parked by owner decision. Its 29 tests each
+      # TestSetupImport is parked by owner decision. Its 29 tests each
       # open, write, save and close a real workbook, and together they push the
       # whole run past the 600-second Apple Events timeout the runner wraps
       # OBTRunAllTests in -- the run comes back as the opaque -50 with an
       # export workbook still open. The import and export suite runs last,
       # after the rest of the setup folder lands. Re-enable by uncommenting:
       # the class row above is already there, so nothing else has to change.
-      #- module: TestSetupImportService
-      #  covers: [SetupImportService]
+      #- module: TestSetupImport
+      #  covers: [SetupImport]
 
   # --- analyses (Analysis) ---------------------------------------------------
-  # Opened by SetupImportService, which names Analysis and cannot reach it from
+  # Opened by SetupImport, which names Analysis and cannot reach it from
   # the `setup` block: the registry resolves `classes` to src/classes/<folder>/
   # and Analysis lives in src/classes/analyses/. Its own suite is not here yet,
   # so this block carries the class row alone. Whoever adds TestAnalysis and

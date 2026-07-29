@@ -2,7 +2,7 @@ VERSION 1.0 CLASS
 BEGIN
   MultiUse = -1  'True
 END
-Attribute VB_Name = "SetupImportService"
+Attribute VB_Name = "SetupImport"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
@@ -17,7 +17,7 @@ Attribute VB_Description = "Improved setup import service orchestrating workbook
 
 Option Explicit
 
-'@class SetupImportService
+'@class SetupImport
 '@description
 'Orchestrates setup workbook synchronisation: validating, importing, exporting,
 'and cleaning setup worksheets (Dictionary, Choices, Exports, Analysis,
@@ -43,7 +43,7 @@ Option Explicit
 
 '@section State and constants
 '===============================================================================
-Private Const CLASS_NAME As String = "SetupImportService"
+Private Const CLASS_NAME As String = "SetupImport"
 Private Const EXPORT_SHEET_NAME As String = "Exports"
 Private Const DICTIONARY_SHEET_NAME As String = "Dictionary"
 Private Const ANALYSIS_SHEET_NAME As String = "Analysis"
@@ -101,7 +101,7 @@ End Sub
 '@label:create
 '@sub-title Create a ready-to-use service instance
 '@details
-'Creates a new SetupImportService instance and assigns the path and the display
+'Creates a new SetupImport instance and assigns the path and the display
 'through the property setters, which validate both.
 '
 'The validation is left to the setters on purpose. Create runs on the
@@ -110,12 +110,12 @@ End Sub
 'value until a setter fills it in.
 '@param importPath String. Path to the source setup workbook.
 '@param progressDisplay Optional Object. UI element receiving textual updates (must expose Caption or Value).
-'@return SetupImportService. Configured service instance.
+'@return SetupImport. Configured service instance.
 '@export
-Public Function Create(ByVal importPath As String, Optional ByVal progressDisplay As Object) As SetupImportService
-    Dim instance As SetupImportService
+Public Function Create(ByVal importPath As String, Optional ByVal progressDisplay As Object) As SetupImport
+    Dim instance As SetupImport
 
-    Set instance = New SetupImportService
+    Set instance = New SetupImport
     instance.Path = importPath
     Set instance.ProgressObject = progressDisplay
 

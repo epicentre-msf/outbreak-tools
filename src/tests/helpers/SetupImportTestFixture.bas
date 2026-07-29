@@ -1,10 +1,10 @@
 Attribute VB_Name = "SetupImportTestFixture"
-Attribute VB_Description = "Helpers creating real setup worksheets for SetupImportService tests"
+Attribute VB_Description = "Helpers creating real setup worksheets for SetupImport tests"
 
 Option Explicit
 
 '@Folder("Tests.Helpers")
-'@ModuleDescription("Helpers creating real setup worksheets for SetupImportService tests")
+'@ModuleDescription("Helpers creating real setup worksheets for SetupImport tests")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 '@section Dictionary helpers
