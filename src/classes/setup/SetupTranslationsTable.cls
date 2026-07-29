@@ -2108,15 +2108,16 @@ Public Sub Export(ByVal exportWorkbook As Workbook, Optional ByVal Hide As Long 
     'Persist translation metadata (languages, formatting markers) alongside the exported table.
     If Not store Is Nothing Then store.ExportNames exportSheet
 
-    On Error Resume Next
-        exportSheet.Rows(1).Font.Bold = True
-        exportSheet.Cells.Font.Name = "Consolas"
-        exportSheet.Cells.HorizontalAlignment = xlHAlignLeft
-        exportSheet.Cells.VerticalAlignment = xlVAlignCenter
-        exportSheet.Cells.EntireRow.AutoFit
-        exportSheet.Cells.EntireColumn.AutoFit
-        exportSheet.Visible = Hide
-    On Error GoTo 0
+    exportSheet.Rows(1).Font.Bold = True
+    exportSheet.Cells.Font.Name = "Consolas"
+    exportSheet.Cells.HorizontalAlignment = xlHAlignLeft
+    exportSheet.Cells.VerticalAlignment = xlVAlignCenter
+    exportSheet.Cells.EntireRow.AutoFit
+    exportSheet.Cells.EntireColumn.AutoFit
+
+    'A visibility write that fails leaves an internal sheet on show in the
+    'workbook the user receives.
+    exportSheet.Visible = Hide
 End Sub
 
 
