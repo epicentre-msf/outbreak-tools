@@ -274,6 +274,18 @@ suites:
       # Development must NOT be registered: it is what builds the Codes-sheet
       # tables the runner reads, so a second copy stops the project compiling.
       - name: SetupPreparation
+      # SetupErrors names Analysis, ApplicationState, BetterArray, Checking,
+      # CheckingOutput, ChoiceFormula, CustomTable, FormulaData, Formulas,
+      # LLChoices, LLVariables, LLdictionary, Passwords, SetupTranslationsTable
+      # and TableSpecs. ApplicationState, CustomTable and LLChoices are under
+      # `general`; LLdictionary and LLVariables under `dictionary`;
+      # ChoiceFormula, FormulaData and Formulas under `formulas`; Analysis and
+      # TableSpecs under `analyses`; SetupTranslationsTable is above. Checking,
+      # CheckingOutput, BetterArray and Passwords are baked into the driver
+      # workbook. CheckingOutput belongs to that hand-import list too (it is in
+      # the 4.1 closure of automated-testing-macos.md and the component
+      # inventory shows it at 1247 lines), so it gets no class row here.
+      - name: SetupErrors
     tests:
       - module: TestSetupTranslationsTable
         covers: [SetupTranslationsTable]
@@ -281,6 +293,12 @@ suites:
         covers: [UpdatedValues]
       - module: TestSetupPreparation
         covers: [SetupPreparation]
+      # TestSetupErrors builds its workbook through SetupImportTestFixture,
+      # PasswordsTestFixture and FormulaTestFixture, all three registered under
+      # `helpers`. Its helper calls are unqualified, so they resolve to
+      # TestHelpersLite.
+      - module: TestSetupErrors
+        covers: [SetupErrors]
       # TestSetupImport is parked by owner decision. Its 29 tests each
       # open, write, save and close a real workbook, and together they push the
       # whole run past the 600-second Apple Events timeout the runner wraps

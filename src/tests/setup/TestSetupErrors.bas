@@ -15,6 +15,17 @@ Private Const DROPDOWN_SHEET As String = "__variables"
 Private Const CHECK_OUTPUT_SHEET As String = "__checkRep"
 Private Const REGISTRY_SHEET As String = "__updated"
 
+'Dictionary geometry of the fixture: headers on row 5, data rows 6 to 12.
+Private Const DICT_HEADER_ROW As Long = 5
+Private Const DICT_LAST_DATA_ROW As Long = 12
+
+'A password the Passwords service does not hold, used to make the Analysis
+'tidy-up fail the way a real locked sheet makes it fail.
+
+'A file name chunk that resolves to a literal, so a test can silence every
+'export it is not looking at.
+Private Const SAFE_FILE_NAME As String = """report"""
+
 
 '@Folder("CustomTests")
 '@Folder("Tests.Setup")
@@ -69,13 +80,13 @@ Public Sub TestCreateReturnsInterface()
 
 Cleanup:
     Set checker = Nothing
-    TestHelpers.DeleteWorkbook hostBook
+    DeleteWorkbook hostBook
     Exit Sub
 
 Fail:
     Set checker = Nothing
     CustomTestLogFailure Assert, "TestCreateReturnsInterface", Err.Number, Err.Description
-    TestHelpers.DeleteWorkbook hostBook
+    DeleteWorkbook hostBook
 End Sub
 
 '@TestMethod("SetupErrors")
@@ -97,12 +108,12 @@ Public Sub TestCheckingsInitialisedEmpty()
 
 Cleanup:
     Set checker = Nothing
-    TestHelpers.DeleteWorkbook hostBook
+    DeleteWorkbook hostBook
     Exit Sub
 
 Fail:
     CustomTestLogFailure Assert, "TestCheckingsInitialisedEmpty", Err.Number, Err.Description
-    TestHelpers.DeleteWorkbook hostBook
+    DeleteWorkbook hostBook
     Set checker = Nothing
 End Sub
 
@@ -154,6 +165,47 @@ Fail:
 End Sub
 
 '@TestMethod("SetupErrors")
+'Covers C18. Against the old code Initialise was Public with no guard, so a
+'holder could re-point a live checker at another workbook between Run and
+'Checkings.
+Public Sub TestInitialiseRaisesOnASealedChecker()
+    CustomTestSetTitles Assert, "SetupErrors", "TestInitialiseRaisesOnASealedChecker"
+    On Error GoTo Fail
+
+    Dim hostBook As Workbook
+    Dim checker As SetupErrors
+
+    Set hostBook = PrepareSetupWorkbook()
+    Set checker = SetupErrors.Create(hostBook)
+
+    On Error GoTo ExpectSealed
+        checker.Initialise hostBook
+        On Error GoTo Fail
+        Assert.LogFailure "Initialise should raise once the factory has sealed the instance."
+        GoTo Cleanup
+
+ExpectSealed:
+    Assert.AreEqual CLng(ProjectError.SomethingWentWrong), CLng(Err.Number), _
+                    "Expected SomethingWentWrong when Initialise runs on a sealed checker."
+    Err.Clear
+
+Cleanup:
+    On Error Resume Next
+    Set checker = Nothing
+    DeleteWorkbook hostBook
+    Exit Sub
+
+Fail:
+    Set checker = Nothing
+    CustomTestLogFailure Assert, "TestInitialiseRaisesOnASealedChecker", Err.Number, Err.Description
+    DeleteWorkbook hostBook
+End Sub
+
+'@TestMethod("SetupErrors")
+'Covers C2 as far as an assertion can reach it: a failure inside Run leaves the
+'application settings as they were. The raise that happens INSIDE
+'EnterBusyState is closed by arming the handler above it, and no test can force
+'ApplyBusyState to fail from here.
 Public Sub TestRunRestoresApplicationStateOnFailure()
     CustomTestSetTitles Assert, "SetupErrors", "TestRunRestoresApplicationStateOnFailure"
     On Error GoTo Fail
@@ -161,9 +213,11 @@ Public Sub TestRunRestoresApplicationStateOnFailure()
     Dim hostBook As Workbook
     Dim subject As SetupErrors
     Dim previousCalcBeforeSave As Boolean
+    Dim previousScreenUpdating As Boolean
     Dim previousAlerts As Boolean
 
     previousCalcBeforeSave = Application.CalculateBeforeSave
+    previousScreenUpdating = Application.ScreenUpdating
     previousAlerts = Application.DisplayAlerts
     Set hostBook = PrepareSetupWorkbook()
     Set subject = SetupErrors.Create(hostBook)
@@ -184,22 +238,63 @@ ExpectMissingWorksheet:
     Err.Clear
     Assert.AreEqual previousCalcBeforeSave, Application.CalculateBeforeSave, _
                     "CalculateBeforeSave should be restored after failure."
+    Assert.AreEqual previousScreenUpdating, Application.ScreenUpdating, _
+                    "ScreenUpdating should be restored after failure."
     Assert.IsNotNothing subject.Checkings, _
                         "Failure should not make the checkings container unusable."
 
 CleanupFailure:
     Application.DisplayAlerts = previousAlerts
     Set subject = Nothing
-    TestHelpers.DeleteWorkbook hostBook
+    DeleteWorkbook hostBook
     Application.CalculateBeforeSave = previousCalcBeforeSave
+    Application.ScreenUpdating = previousScreenUpdating
     Exit Sub
 
 Fail:
     Application.DisplayAlerts = previousAlerts
     Set subject = Nothing
     Application.CalculateBeforeSave = previousCalcBeforeSave
+    Application.ScreenUpdating = previousScreenUpdating
     CustomTestLogFailure Assert, "TestRunRestoresApplicationStateOnFailure", Err.Number, Err.Description
-    TestHelpers.DeleteWorkbook hostBook
+    DeleteWorkbook hostBook
+End Sub
+
+'@TestMethod("SetupErrors")
+'Covers C3. Against the old code LeaveBusyState called Restore whatever
+'happened, so a scope the caller had already made busy came back with screen
+'updating on, calculation automatic and events on the moment Run returned.
+Public Sub TestRunLeavesInjectedBusyScopeAlone()
+    CustomTestSetTitles Assert, "SetupErrors", "TestRunLeavesInjectedBusyScopeAlone"
+    On Error GoTo Fail
+
+    Dim hostBook As Workbook
+    Dim checker As SetupErrors
+    Dim scope As ApplicationState
+
+    Set hostBook = PrepareSetupWorkbook(includeIssues:=True)
+    Set scope = ApplicationState.Create(Application)
+    scope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
+
+    Set checker = SetupErrors.Create(hostBook, stateScope:=scope)
+    checker.Run
+
+    Assert.IsTrue scope.IsBusy, _
+                  "A busy scope handed in by the caller should still be busy after Run."
+
+Cleanup:
+    On Error Resume Next
+    scope.Restore silent:=True
+    Set checker = Nothing
+    DeleteWorkbook hostBook
+    Exit Sub
+
+Fail:
+    On Error Resume Next
+    scope.Restore silent:=True
+    Set checker = Nothing
+    CustomTestLogFailure Assert, "TestRunLeavesInjectedBusyScopeAlone", Err.Number, Err.Description
+    DeleteWorkbook hostBook
 End Sub
 
 '@TestMethod("SetupErrors")
@@ -228,13 +323,13 @@ Public Sub TestRunDetectsDictionaryAndChoicesIssues()
 
 Cleanup:
     Set checker = Nothing
-    TestHelpers.DeleteWorkbook hostBook
+    DeleteWorkbook hostBook
     Exit Sub
 
 Fail:
     Set checker = Nothing
     CustomTestLogFailure Assert, "TestRunDetectsDictionaryAndChoicesIssues", Err.Number, Err.Description
-    TestHelpers.DeleteWorkbook hostBook
+    DeleteWorkbook hostBook
 End Sub
 
 '@TestMethod("SetupErrors")
@@ -276,7 +371,7 @@ Public Sub TestDictionaryChecksReportAllMessages()
 
 Cleanup:
     Set checker = Nothing
-    TestHelpers.DeleteWorkbook hostBook
+    DeleteWorkbook hostBook
     Exit Sub
 
 Fail:
@@ -313,7 +408,7 @@ Public Sub TestChoicesChecksReportAllMessages()
 
 Cleanup:
     Set checker = Nothing
-    TestHelpers.DeleteWorkbook hostBook
+    DeleteWorkbook hostBook
     Exit Sub
 
 Fail:
@@ -356,7 +451,7 @@ Public Sub TestExportsChecksReportAllMessages()
 
 Cleanup:
     Set checker = Nothing
-    TestHelpers.DeleteWorkbook hostBook
+    DeleteWorkbook hostBook
     Exit Sub
 
 Fail:
@@ -383,7 +478,7 @@ Public Sub TestAnalysisChecksDetectInvalidTables()
 
 Cleanup:
     Set checker = Nothing
-    TestHelpers.DeleteWorkbook hostBook
+    DeleteWorkbook hostBook
     Exit Sub
 
 Fail:
@@ -413,7 +508,7 @@ Public Sub TestAnalysisChecksDetectEmptyRows()
 
 Cleanup:
     Set checker = Nothing
-    TestHelpers.DeleteWorkbook hostBook
+    DeleteWorkbook hostBook
     Exit Sub
 
 Fail:
@@ -440,11 +535,485 @@ Public Sub TestAnalysisChecksProduceCheckingObject()
 
 Cleanup:
     Set checker = Nothing
-    TestHelpers.DeleteWorkbook hostBook
+    DeleteWorkbook hostBook
     Exit Sub
 
 Fail:
     CustomTestLogFailure Assert, "TestAnalysisChecksProduceCheckingObject", Err.Number, Err.Description
+    Resume Cleanup
+End Sub
+
+'@TestMethod("SetupErrors")
+'Covers the whole reporting path, which no assertion reached before: Run has to
+'leave the findings on the __checkRep worksheet.
+Public Sub TestRunPublishesTheReportSheet()
+    CustomTestSetTitles Assert, "SetupErrors", "TestRunPublishesTheReportSheet"
+    On Error GoTo Fail
+
+    Dim hostBook As Workbook
+    Dim checker As SetupErrors
+
+    Set hostBook = PrepareSetupWorkbook(includeIssues:=True)
+    Set checker = SetupErrors.Create(hostBook)
+    checker.Run
+
+    Assert.IsTrue SheetHoldsText(hostBook.Worksheets(CHECK_OUTPUT_SHEET), "incoherences"), _
+                  "Run should print the checking titles on the report worksheet."
+
+Cleanup:
+    Set checker = Nothing
+    DeleteWorkbook hostBook
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestRunPublishesTheReportSheet", Err.Number, Err.Description
+    Resume Cleanup
+End Sub
+
+'@TestMethod("SetupErrors")
+'Covers C1. N() is valid as an analysis formula and invalid as a linelist one.
+'The old code asked Reason for the default analysis context, so the line saying
+'the formula will fail ended with "The formula seems correct". MEAN cannot play
+'this part here: the fixture worksheet lists it among the Excel functions, so
+'the tokeniser takes it in both contexts.
+Public Sub TestInvalidFormulaReasonMatchesContext()
+    CustomTestSetTitles Assert, "SetupErrors", "TestInvalidFormulaReasonMatchesContext"
+    On Error GoTo Fail
+
+    Dim hostBook As Workbook
+    Dim checker As SetupErrors
+    Dim results As BetterArray
+
+    Set hostBook = PrepareSetupWorkbook(includeIssues:=True)
+    SetDictionaryValue hostBook, 3, "Control Details", "N(dup_variable)"
+    SetDictionaryValue hostBook, 3, "Min", vbNullString
+    SetDictionaryValue hostBook, 3, "Max", vbNullString
+
+    Set checker = SetupErrors.Create(hostBook)
+    checker.Run
+    Set results = checker.Checkings
+
+    Assert.IsTrue CheckingsContain(results, "formula for variable ""calc_invalid"" will eventually fail"), _
+                  "A formula that is invalid in the linelist context should be reported."
+    Assert.IsFalse CheckingsContain(results, "The formula seems correct"), _
+                   "The reason must come from the context the formula was validated in."
+
+Cleanup:
+    Set checker = Nothing
+    DeleteWorkbook hostBook
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestInvalidFormulaReasonMatchesContext", Err.Number, Err.Description
+    Resume Cleanup
+End Sub
+
+'C4 has no test of its own. TidyAnalysisSheet now hands its failure reason back
+'and CheckAnalysis reports it, where the old code ran the whole block under
+'On Error Resume Next. Locking the Analysis sheet with a key the service does
+'not hold is the only way a test can reach that failure, and a locked Analysis
+'sheet makes Run refuse further down, before the report is written. Three
+'shapes were tried against the live workbook: the checker still tidied the
+'sheet and Run still refused later, so the assertion measured the second
+'problem rather than the first one.
+
+'@TestMethod("SetupErrors")
+'Covers C5. WorksheetFunction.Trim collapses the inner double space, and the
+'trimmed name was then used as the lookup key against the raw column, so the
+'row answered an empty control and seven checks were skipped.
+Public Sub TestSpacedVariableNameStillReadsItsControl()
+    CustomTestSetTitles Assert, "SetupErrors", "TestSpacedVariableNameStillReadsItsControl"
+    On Error GoTo Fail
+
+    Dim hostBook As Workbook
+    Dim checker As SetupErrors
+    Dim results As BetterArray
+
+    Set hostBook = PrepareSetupWorkbook(includeIssues:=True)
+    SetDictionaryValue hostBook, 5, "Variable Name", "spaced  ctrl"
+
+    Set checker = SetupErrors.Create(hostBook)
+    checker.Run
+    Set results = checker.Checkings
+
+    Assert.IsTrue CheckingsContain(results, "control ""unknown_control"" of variable ""spaced ctrl"" is unknown"), _
+                  "A variable name holding a double space should still have its control checked."
+
+Cleanup:
+    Set checker = Nothing
+    DeleteWorkbook hostBook
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestSpacedVariableNameStillReadsItsControl", Err.Number, Err.Description
+    Resume Cleanup
+End Sub
+
+'@TestMethod("SetupErrors")
+'Covers C6. CustomTable.DataRange answers Nothing for a missing column, and the
+'old code read .Column off it, so a renamed header raised error 91 out of Run
+'and the user got no report at all.
+Public Sub TestMissingDictionaryColumnReportsInsteadOfRaising()
+    CustomTestSetTitles Assert, "SetupErrors", "TestMissingDictionaryColumnReportsInsteadOfRaising"
+    On Error GoTo Fail
+
+    Dim hostBook As Workbook
+    Dim checker As SetupErrors
+    Dim results As BetterArray
+
+    Set hostBook = PrepareSetupWorkbook(includeIssues:=True)
+    RenameDictionaryHeader hostBook, "Main Label", "Renamed by hand"
+
+    Set checker = SetupErrors.Create(hostBook)
+    checker.Run
+    Set results = checker.Checkings
+
+    Assert.IsTrue CheckingsContain(results, "The column ""Main Label"" is missing"), _
+                  "A missing dictionary column should be reported rather than raised."
+
+Cleanup:
+    Set checker = Nothing
+    DeleteWorkbook hostBook
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestMissingDictionaryColumnReportsInsteadOfRaising", Err.Number, Err.Description
+    Resume Cleanup
+End Sub
+
+'@TestMethod("SetupErrors")
+'Covers C7. Row 4 carries Export Number 7. The old code read the status by row
+'position and the password by Export Number, so it looked for a row numbered 4,
+'found none, and reported nothing at all for that export.
+Public Sub TestExportChecksFollowExportNumber()
+    CustomTestSetTitles Assert, "SetupErrors", "TestExportChecksFollowExportNumber"
+    On Error GoTo Fail
+
+    Dim hostBook As Workbook
+    Dim checker As SetupErrors
+    Dim results As BetterArray
+
+    Set hostBook = PrepareSetupWorkbook(includeIssues:=True)
+    SetExportValue hostBook, 4, "export number", 7
+    SetExportValue hostBook, 4, "password", vbNullString
+    SetExportValue hostBook, 4, "include personal identifiers", "yes"
+
+    Set checker = SetupErrors.Create(hostBook)
+    checker.Run
+    Set results = checker.Checkings
+
+    Assert.IsTrue CheckingsContain(results, "The Export Number 7 has no password, but keeps identifiers"), _
+                  "The export checks should name the Export Number the row carries."
+    Assert.IsFalse CheckingsContain(results, "The Export Number 4 has no password"), _
+                   "No finding should name an export number that has no row."
+
+Cleanup:
+    Set checker = Nothing
+    DeleteWorkbook hostBook
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestExportChecksFollowExportNumber", Err.Number, Err.Description
+    Resume Cleanup
+End Sub
+
+'@TestMethod("SetupErrors")
+'Covers C8. LLExport trims every chunk before it resolves it. The old code did
+'not, so " dup_variable" was reported as a variable that does not exist.
+Public Sub TestFileNameChunksAreTrimmed()
+    CustomTestSetTitles Assert, "SetupErrors", "TestFileNameChunksAreTrimmed"
+    On Error GoTo Fail
+
+    Dim hostBook As Workbook
+    Dim checker As SetupErrors
+    Dim results As BetterArray
+
+    Set hostBook = PrepareSetupWorkbook(includeIssues:=True)
+    SetAllExportFileNames hostBook, SAFE_FILE_NAME
+    SetExportValue hostBook, 3, "file name", """pre"" + dup_variable"
+
+    Set checker = SetupErrors.Create(hostBook)
+    checker.Run
+    Set results = checker.Checkings
+
+    Assert.IsFalse CheckingsContain(results, "which does not exists"), _
+                   "A chunk with spaces around it should be trimmed before the lookup."
+
+Cleanup:
+    Set checker = Nothing
+    DeleteWorkbook hostBook
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestFileNameChunksAreTrimmed", Err.Number, Err.Description
+    Resume Cleanup
+End Sub
+
+'@TestMethod("SetupErrors")
+'Covers C8. LLExport reads a chunk wrapped in single quotes as a literal. The
+'old test looked for a double quote anywhere in the chunk, so 'my label' was
+'reported as a missing variable. The literal chunk sits second in the template
+'because Excel reads a leading apostrophe in a cell as the text-prefix marker
+'and drops it from the stored value.
+Public Sub TestSingleQuotedFileNameChunkIsLiteral()
+    CustomTestSetTitles Assert, "SetupErrors", "TestSingleQuotedFileNameChunkIsLiteral"
+    On Error GoTo Fail
+
+    Dim hostBook As Workbook
+    Dim checker As SetupErrors
+    Dim results As BetterArray
+
+    Set hostBook = PrepareSetupWorkbook(includeIssues:=True)
+    SetAllExportFileNames hostBook, SAFE_FILE_NAME
+    SetExportValue hostBook, 3, "file name", """pre"" + 'my label'"
+
+    Set checker = SetupErrors.Create(hostBook)
+    checker.Run
+    Set results = checker.Checkings
+
+    Assert.IsFalse CheckingsContain(results, "which does not exists"), _
+                   "A single-quoted chunk is a literal, the same way LLExport reads it."
+
+Cleanup:
+    Set checker = Nothing
+    DeleteWorkbook hostBook
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestSingleQuotedFileNameChunkIsLiteral", Err.Number, Err.Description
+    Resume Cleanup
+End Sub
+
+'@TestMethod("SetupErrors")
+'Covers C8. LLExport compares the sheet type without regard to case. The old
+'code used a case-sensitive <>, so VLIST1D was reported as "not a vlist1D
+'variable".
+Public Sub TestUpperCaseSheetTypePassesFileNameCheck()
+    CustomTestSetTitles Assert, "SetupErrors", "TestUpperCaseSheetTypePassesFileNameCheck"
+    On Error GoTo Fail
+
+    Dim hostBook As Workbook
+    Dim checker As SetupErrors
+    Dim results As BetterArray
+
+    Set hostBook = PrepareSetupWorkbook(includeIssues:=True)
+    SetAllExportFileNames hostBook, SAFE_FILE_NAME
+    SetDictionaryValue hostBook, 1, "Sheet Type", "VLIST1D"
+    SetExportValue hostBook, 3, "file name", "dup_variable"
+
+    Set checker = SetupErrors.Create(hostBook)
+    checker.Run
+    Set results = checker.Checkings
+
+    Assert.IsFalse CheckingsContain(results, "which is not a vlist1D variable"), _
+                   "An upper-case sheet type is a vlist1D sheet for the exporter."
+
+Cleanup:
+    Set checker = Nothing
+    DeleteWorkbook hostBook
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestUpperCaseSheetTypePassesFileNameCheck", Err.Number, Err.Description
+    Resume Cleanup
+End Sub
+
+'@TestMethod("SetupErrors")
+'Covers C9. Split("", "+") gives one empty chunk, which the old code read as a
+'variable named "", so an export with no file name got two findings.
+Public Sub TestEmptyFileNameReportsOnlyMissingName()
+    CustomTestSetTitles Assert, "SetupErrors", "TestEmptyFileNameReportsOnlyMissingName"
+    On Error GoTo Fail
+
+    Dim hostBook As Workbook
+    Dim checker As SetupErrors
+    Dim results As BetterArray
+
+    Set hostBook = PrepareSetupWorkbook(includeIssues:=True)
+    SetAllExportFileNames hostBook, SAFE_FILE_NAME
+    SetExportValue hostBook, 2, "file name", vbNullString
+
+    Set checker = SetupErrors.Create(hostBook)
+    checker.Run
+    Set results = checker.Checkings
+
+    Assert.IsTrue CheckingsContain(results, "there is no value for ""File name"""), _
+                  "An active export with no file name should be reported once."
+    Assert.IsFalse CheckingsContain(results, "named """" which does not exists"), _
+                   "An empty file name should not produce a phantom variable finding."
+
+Cleanup:
+    Set checker = Nothing
+    DeleteWorkbook hostBook
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestEmptyFileNameReportsOnlyMissingName", Err.Number, Err.Description
+    Resume Cleanup
+End Sub
+
+'@TestMethod("SetupErrors")
+'Covers C10. The Exports table stops at export number 4 while the dictionary
+'counter runs to 20. Reading the status by row position walked off the end of
+'the range, which reads the cell below and raises nothing, so the note fired
+'for an export that does not exist.
+Public Sub TestExportCounterBeyondExportRowsIsQuiet()
+    CustomTestSetTitles Assert, "SetupErrors", "TestExportCounterBeyondExportRowsIsQuiet"
+    On Error GoTo Fail
+
+    Dim hostBook As Workbook
+    Dim checker As SetupErrors
+    Dim results As BetterArray
+
+    Set hostBook = PrepareSetupWorkbook(includeIssues:=True)
+    SetDictionaryValue hostBook, 1, "Export 5", "included"
+
+    Set checker = SetupErrors.Create(hostBook)
+    checker.Run
+    Set results = checker.Checkings
+
+    Assert.IsFalse CheckingsContain(results, """Export 5"" column is filled"), _
+                   "An export number with no row in the Exports table should be quiet."
+
+Cleanup:
+    Set checker = Nothing
+    DeleteWorkbook hostBook
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestExportCounterBeyondExportRowsIsQuiet", Err.Number, Err.Description
+    Resume Cleanup
+End Sub
+
+'@TestMethod("SetupErrors")
+'Covers C11. CustomTable.CellRange answers Nothing for a missing column and
+'IsEmpty(Nothing) is False, so a missing required column used to read as "this
+'field is filled" and the check was skipped.
+Public Sub TestMissingExportColumnIsReported()
+    CustomTestSetTitles Assert, "SetupErrors", "TestMissingExportColumnIsReported"
+    On Error GoTo Fail
+
+    Dim hostBook As Workbook
+    Dim checker As SetupErrors
+    Dim results As BetterArray
+
+    Set hostBook = PrepareSetupWorkbook(includeIssues:=True)
+    DeleteExportColumn hostBook, "password"
+
+    Set checker = SetupErrors.Create(hostBook)
+    checker.Run
+    Set results = checker.Checkings
+
+    Assert.IsTrue CheckingsContain(results, "The column ""Password"" is missing"), _
+                  "A missing required export column should be named in the report."
+
+Cleanup:
+    Set checker = Nothing
+    DeleteWorkbook hostBook
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestMissingExportColumnIsReported", Err.Number, Err.Description
+    Resume Cleanup
+End Sub
+
+'@TestMethod("SetupErrors")
+'Covers C12. LLChoices.Categories matches without regard to case at build time,
+'so "choice a" and "Choice A" are one category. BetterArray.Includes compares
+'in binary, so the old code reported a category that exists as missing.
+Public Sub TestCategoryMatchIgnoresCase()
+    CustomTestSetTitles Assert, "SetupErrors", "TestCategoryMatchIgnoresCase"
+    On Error GoTo Fail
+
+    Dim hostBook As Workbook
+    Dim checker As SetupErrors
+    Dim results As BetterArray
+
+    Set hostBook = PrepareSetupWorkbook(includeIssues:=True)
+    SetDictionaryValue hostBook, 7, "Control Details", _
+                       "CHOICE_FORMULA(LIST_primary, A1=""Yes"", ""choice a"")"
+
+    Set checker = SetupErrors.Create(hostBook)
+    checker.Run
+    Set results = checker.Checkings
+
+    Assert.IsFalse CheckingsContain(results, "category ""choice a"" does not exists"), _
+                   "A category that differs only in case should be found."
+    Assert.IsFalse CheckingsContain(results, "choice formula ""LIST_primary"" is not present"), _
+                   "A choice list whose name differs only in case should be found."
+
+Cleanup:
+    Set checker = Nothing
+    DeleteWorkbook hostBook
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestCategoryMatchIgnoresCase", Err.Number, Err.Description
+    Resume Cleanup
+End Sub
+
+'@TestMethod("SetupErrors")
+'Covers C16. Checkings used to hand out the live container, so a caller that
+'cleared it emptied the checker's own results.
+Public Sub TestCheckingsReturnsACopy()
+    CustomTestSetTitles Assert, "SetupErrors", "TestCheckingsReturnsACopy"
+    On Error GoTo Fail
+
+    Dim hostBook As Workbook
+    Dim checker As SetupErrors
+    Dim results As BetterArray
+
+    Set hostBook = PrepareSetupWorkbook(includeIssues:=True)
+    Set checker = SetupErrors.Create(hostBook)
+    checker.Run
+
+    Set results = checker.Checkings
+    Assert.IsTrue results.Length > 0, "Run should produce checkings."
+
+    results.Clear
+
+    Assert.IsTrue checker.Checkings.Length > 0, _
+                  "Clearing the returned array should leave the checker's own results alone."
+
+Cleanup:
+    Set checker = Nothing
+    DeleteWorkbook hostBook
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestCheckingsReturnsACopy", Err.Number, Err.Description
+    Resume Cleanup
+End Sub
+
+'@TestMethod("SetupErrors")
+'Covers C17. With "Control Details" sitting before "Control", a partial column
+'search answers the details for a request for the control, so the control
+'checks read the wrong cell in silence.
+Public Sub TestControlLookupIgnoresControlDetails()
+    CustomTestSetTitles Assert, "SetupErrors", "TestControlLookupIgnoresControlDetails"
+    On Error GoTo Fail
+
+    Dim hostBook As Workbook
+    Dim checker As SetupErrors
+    Dim results As BetterArray
+
+    Set hostBook = PrepareSetupWorkbook(includeIssues:=True)
+    SwapControlColumns hostBook
+
+    Set checker = SetupErrors.Create(hostBook)
+    checker.Run
+    Set results = checker.Checkings
+
+    Assert.IsTrue CheckingsContain(results, "control ""unknown_control"" of variable ""unknown_ctrl"" is unknown"), _
+                  "The control must be read from the Control column whatever the column order is."
+
+Cleanup:
+    Set checker = Nothing
+    DeleteWorkbook hostBook
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestControlLookupIgnoresControlDetails", Err.Number, Err.Description
     Resume Cleanup
 End Sub
 
@@ -454,7 +1023,7 @@ End Sub
 Private Function PrepareSetupWorkbook(Optional ByVal includeIssues As Boolean = False) As Workbook
     Dim wb As Workbook
 
-    Set wb = TestHelpers.NewWorkbook
+    Set wb = NewWorkbook
 
     FormulaTestFixture.PrepareFormulaFixtureSheet FORMULA_SHEET, outwb:=wb
     PasswordsTestFixture.PreparePasswordsFixture PASSWORD_SHEET, wb
@@ -463,9 +1032,9 @@ Private Function PrepareSetupWorkbook(Optional ByVal includeIssues As Boolean = 
     SetupImportTestFixture.PrepareSetupExportsSheet EXPORTS_SHEET, "active", """" & "export" & """", "Export Label", 4, 1, wb
     SetupImportTestFixture.PrepareSetupAnalysisSheet ANALYSIS_SHEET, "fixture", "Analysis header", wb
     SetupImportTestFixture.PrepareSetupTranslationsSheet TRANSLATIONS_SHEET, "Tab_Translations", "Label", "Translation", "tag", 5, 2, True, wb
-    TestHelpers.EnsureWorksheet DROPDOWN_SHEET, wb, True
-    TestHelpers.EnsureWorksheet CHECK_OUTPUT_SHEET, wb, True
-    TestHelpers.EnsureWorksheet REGISTRY_SHEET, wb, True
+    EnsureWorksheet DROPDOWN_SHEET, wb, True
+    EnsureWorksheet CHECK_OUTPUT_SHEET, wb, True
+    EnsureWorksheet REGISTRY_SHEET, wb, True
 
     ConfigureDictionarySheet wb, includeIssues
     ConfigureChoicesSheet wb, includeIssues
@@ -479,6 +1048,86 @@ Private Sub AssertContainsMessage(ByVal results As BetterArray, ByVal expectedTe
     Assert.IsTrue CheckingsContain(results, expectedText), context & " should include """ & expectedText & """"
 End Sub
 
+'@description Column index of one dictionary header, matched whole-string.
+Private Function DictionaryColumn(ByVal hostBook As Workbook, ByVal headerName As String) As Long
+    Dim dictTable As DataSheet
+
+    Set dictTable = DataSheet.Create(hostBook.Worksheets(DICTIONARY_SHEET), DICT_HEADER_ROW, 1)
+    DictionaryColumn = dictTable.ColumnIndex(headerName, shouldExist:=True, matchCase:=False)
+End Function
+
+'@description Write one dictionary cell. dataRow 1 is the first data row.
+Private Sub SetDictionaryValue(ByVal hostBook As Workbook, ByVal dataRow As Long, _
+                               ByVal headerName As String, ByVal newValue As Variant)
+    hostBook.Worksheets(DICTIONARY_SHEET) _
+            .Cells(DICT_HEADER_ROW + dataRow, DictionaryColumn(hostBook, headerName)).Value = newValue
+End Sub
+
+'@description Rename one dictionary header so the column stops answering.
+Private Sub RenameDictionaryHeader(ByVal hostBook As Workbook, ByVal headerName As String, _
+                                   ByVal newHeader As String)
+    hostBook.Worksheets(DICTIONARY_SHEET) _
+            .Cells(DICT_HEADER_ROW, DictionaryColumn(hostBook, headerName)).Value = newHeader
+End Sub
+
+'@description Put Control Details ahead of Control, values and headers together.
+Private Sub SwapControlColumns(ByVal hostBook As Workbook)
+    Dim sh As Worksheet
+    Dim controlCol As Long
+    Dim detailsCol As Long
+    Dim rowIdx As Long
+    Dim controlText As String
+    Dim detailsText As String
+
+    Set sh = hostBook.Worksheets(DICTIONARY_SHEET)
+    controlCol = DictionaryColumn(hostBook, "Control")
+    detailsCol = DictionaryColumn(hostBook, "Control Details")
+
+    For rowIdx = DICT_HEADER_ROW + 1 To DICT_LAST_DATA_ROW
+        controlText = CStr(sh.Cells(rowIdx, controlCol).Value)
+        detailsText = CStr(sh.Cells(rowIdx, detailsCol).Value)
+        sh.Cells(rowIdx, controlCol).Value = detailsText
+        sh.Cells(rowIdx, detailsCol).Value = controlText
+    Next rowIdx
+
+    sh.Cells(DICT_HEADER_ROW, controlCol).Value = "Control Details"
+    sh.Cells(DICT_HEADER_ROW, detailsCol).Value = "Control"
+End Sub
+
+'@description Write one cell of the exports table by column name and row index.
+Private Sub SetExportValue(ByVal hostBook As Workbook, ByVal rowIndex As Long, _
+                           ByVal columnName As String, ByVal newValue As Variant)
+    hostBook.Worksheets(EXPORTS_SHEET).ListObjects(1) _
+            .ListColumns(columnName).DataBodyRange.Cells(rowIndex, 1).Value = newValue
+End Sub
+
+'@description Give every export the same file name, so one test can change one.
+Private Sub SetAllExportFileNames(ByVal hostBook As Workbook, ByVal newValue As String)
+    Dim lo As ListObject
+    Dim idx As Long
+
+    Set lo = hostBook.Worksheets(EXPORTS_SHEET).ListObjects(1)
+
+    For idx = 1 To lo.ListRows.Count
+        lo.ListColumns("file name").DataBodyRange.Cells(idx, 1).Value = newValue
+    Next idx
+End Sub
+
+'@description Drop one column of the exports table.
+Private Sub DeleteExportColumn(ByVal hostBook As Workbook, ByVal columnName As String)
+    hostBook.Worksheets(EXPORTS_SHEET).ListObjects(1).ListColumns(columnName).Delete
+End Sub
+
+'@description Answer whether a worksheet holds a piece of text anywhere.
+Private Function SheetHoldsText(ByVal sh As Worksheet, ByVal needle As String) As Boolean
+    Dim found As Range
+
+    On Error Resume Next
+        Set found = sh.UsedRange.Find(What:=needle, LookIn:=xlValues, LookAt:=xlPart)
+    On Error GoTo 0
+
+    SheetHoldsText = Not (found Is Nothing)
+End Function
 
 Private Sub ConfigureDictionarySheet(ByVal hostBook As Workbook, ByVal includeIssues As Boolean)
     Dim dictSheet As Worksheet
@@ -770,7 +1419,7 @@ Private Sub ConfigureExportsSheet(ByVal hostBook As Workbook, ByVal includeIssue
         exportsTable.ListColumns("status").DataBodyRange.Cells(4, 1).Value = "active"
         exportsTable.ListColumns("label button").DataBodyRange.Cells(4, 1).Value = "Missing dictionary column"
         exportsTable.ListColumns("file format").DataBodyRange.Cells(4, 1).Value = "xlsx"
-        exportsTable.ListColumns("file name").DataBodyRange.Cells(4, 1).Value = "literal"
+        exportsTable.ListColumns("file name").DataBodyRange.Cells(4, 1).Value = """literal"""
         exportsTable.ListColumns("password").DataBodyRange.Cells(4, 1).Value = "yes"
         exportsTable.ListColumns("include personal identifiers").DataBodyRange.Cells(4, 1).Value = "no"
         exportsTable.ListColumns("header format").DataBodyRange.Cells(4, 1).Value = "variables names"
@@ -788,6 +1437,7 @@ Private Sub AddEmptyAnalysisRow(ByVal hostBook As Workbook)
     'the new row is empty. Existing data shifts to position 2.
     analysisSheet.Rows(lo.DataBodyRange.Row).Insert Shift:=xlShiftDown
 End Sub
+
 
 Private Sub ConfigureAnalysisSheet(ByVal hostBook As Workbook, ByVal includeIssues As Boolean)
     Dim analysisSheet As Worksheet
