@@ -26,7 +26,8 @@ Option Explicit
 'registry table; the change handler flips that row's flag when the user edits
 'the column; the translations run and the analysis dropdowns read the flag.
 '
-'@section On the sheet
+'ON THE SHEET
+'-------------------------------------------------------------------------------
 'The registry worksheet holds ONE registry ListObject, named UpLo_<sheetkey>
 'where sheetkey is the normalised worksheet name. It carries four columns in
 'this order, and both the names and the order are a published format that
@@ -44,7 +45,8 @@ Option Explicit
 'The sheet is then free of tables, which is what SetupTranslationsTable expects:
 'it treats every table it finds on that sheet as a registry.
 '
-'@section In memory
+'IN MEMORY
+'-------------------------------------------------------------------------------
 'The registry is read once, lazily, in a single .Value2 call, into keyed
 'Collections: the composite key "<tablekey>|<columnkey>" points at a row index
 'and a flag, an alias map answers IsUpdated, and a table set lets the change
@@ -55,14 +57,16 @@ Option Explicit
 'registry holds, and the flag write happens only the first time a column flips
 'within a reset cycle.
 '
-'@section Two readers, one flag column
+'TWO READERS, ONE FLAG COLUMN
+'-------------------------------------------------------------------------------
 'The translations run resets the flags itself through SwitchTagsToNo. The
 'analysis dropdown refresh resets nothing, so it calls AcknowledgeUpdates: every
 'flag reading "yes" at that moment goes into an in-memory set, and IsUpdated
 'answers False for those keys until the user edits the column again. The set
 'lives in memory alone, so opening the workbook starts it empty.
 '
-'@section Create writes nothing
+'CREATE WRITES NOTHING
+'-------------------------------------------------------------------------------
 'Building an instance binds a worksheet and stops there. Two helper factories
 'build a fresh instance on every ribbon click, so a factory that wrote to the
 'sheet would write on every click.
