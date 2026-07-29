@@ -2002,14 +2002,17 @@ End Function
 '@label:sort-translations
 '@sub-title Sort the translations by their primary language column.
 Private Sub SortTranslations()
-    On Error Resume Next
-        With this.table.Sort
-            .SortFields.Clear
-            .SortFields.Add Key:=this.table.ListColumns(LabelColumnIndex).Range, SortOn:=xlSortOnValues, Order:=xlAscending, DataOption:=xlSortNormal
-            .Header = xlYes
-            .Apply
-        End With
-    On Error GoTo 0
+    'One row or none is already in order, and that is the case where Apply has
+    'nothing to work on. Past that a failed sort is reported: the caller has
+    'been told the table is ordered and acts on it.
+    If this.table.ListRows.Count < 2 Then Exit Sub
+
+    With this.table.Sort
+        .SortFields.Clear
+        .SortFields.Add Key:=this.table.ListColumns(LabelColumnIndex).Range, SortOn:=xlSortOnValues, Order:=xlAscending, DataOption:=xlSortNormal
+        .Header = xlYes
+        .Apply
+    End With
 End Sub
 
 '@label:apply-formatting
