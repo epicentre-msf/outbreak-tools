@@ -354,11 +354,22 @@ End Function
 'Creates the CustomTest assertion object, suppresses screen updates via
 'BusyApp, and registers "TestFormulas" as the current module so that
 'test results are labelled correctly.
+'Public, so the headless runner reaches it: the runner calls every lifecycle
+'hook through Application.Run, which cannot see a Private Sub. The handler
+'matters as much. An error escaping a lifecycle hook aborts the WHOLE module,
+'so a fixture problem here would drop all 27 tests and the run would report
+'no failures, because nothing ran.
 '@ModuleInitialize
-Private Sub ModuleInitialize()
+Public Sub ModuleInitialize()
+    On Error GoTo Fail
     BusyApp
+    EnsureWorksheet TEST_OUTPUT_SHEET, clearSheet:=False
     Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
     Assert.SetModuleName "TestFormulas"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "ModuleInitialize", Err.Number, Err.Description
 End Sub
 
 '@sub-title Print results and release all module-level references
@@ -366,14 +377,21 @@ End Sub
 'Flushes accumulated assertion results to the output sheet, deletes the
 'formula and dictionary fixture worksheets, restores the Excel application
 'state via RestoreApp, and sets every module-level object to Nothing.
+'Every step before RestoreApp is wrapped, because RestoreApp has to run
+'whatever happened above: the hooks here call BusyApp, which puts Excel in
+'manual calculation, and the next module in the run would inherit that.
 '@ModuleCleanup
-Private Sub ModuleCleanup()
-    If Not Assert Is Nothing Then
-        Assert.PrintResults TEST_OUTPUT_SHEET
-    End If
-    DeleteWorksheet FORMULA_SHEET
-    DeleteWorksheet DICTIONARY_SHEET
+Public Sub ModuleCleanup()
+    On Error Resume Next
+        If Not Assert Is Nothing Then
+            Assert.PrintResults TEST_OUTPUT_SHEET
+        End If
+        DeleteWorksheet FORMULA_SHEET
+        DeleteWorksheet DICTIONARY_SHEET
+    On Error GoTo 0
+
     RestoreApp
+
     Set Assert = Nothing
     Set Fakes = Nothing
     Set FixtureSheet = Nothing
@@ -388,11 +406,16 @@ End Sub
 'the functions and ASCII character tables, wraps it in a FormulaData
 'instance, and prepares the dictionary via PrepareDictionary.
 '@TestInitialize
-Private Sub TestInitialize()
+Public Sub TestInitialize()
+    On Error GoTo Fail
     BusyApp
     Set FixtureSheet = PrepareFormulaFixtureSheet(FORMULA_SHEET, FORMULAS_TABLE_NAME, CHARACTERS_TABLE_NAME)
     Set FormulaDataSource = FormulaData.Create(FixtureSheet)
     PrepareDictionary
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestInitialize", Err.Number, Err.Description
 End Sub
 
 '@sub-title Flush assertions and release per-test references
@@ -400,10 +423,13 @@ End Sub
 'Calls Assert.Flush to write any buffered results and then clears the
 'per-test worksheet and object references so the next test starts clean.
 '@TestCleanup
-Private Sub TestCleanup()
-    If Not Assert Is Nothing Then
-        Assert.Flush
-    End If
+Public Sub TestCleanup()
+    On Error Resume Next
+        If Not Assert Is Nothing Then
+            Assert.Flush
+        End If
+    On Error GoTo 0
+
     Set FixtureSheet = Nothing
     Set DictionarySheet = Nothing
     Set FormulaDataSource = Nothing
@@ -442,6 +468,59 @@ Public Sub TestSimpleVariableValidForLinelist()
 
 Fail:
     CustomTestLogFailure Assert, "TestSimpleVariableValidForLinelist", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verify a leading space does not stop a CASE_WHEN being converted
+'@details
+'Arranges a CASE_WHEN expression with a space in front of it. The three
+'prefix tests anchor at position 1, so the raw CASE_WHEN text used to reach
+'the tokeniser and come back as an unknown token. Asserts the expression is
+'valid and that the converted output is the nested IF.
+'@TestMethod("Formulas")
+Public Sub TestLeadingSpaceBeforeCaseWhenIsConverted()
+    CustomTestSetTitles Assert, "Formulas", "TestLeadingSpaceBeforeCaseWhenIsConverted"
+    Dim variableName As String
+    Dim formulaInstance As Formulas
+
+    On Error GoTo Fail
+
+    variableName = AnyVariableName()
+    Set formulaInstance = BuildFormula("  CASE_WHEN(" & variableName & "=1, 2, 3)")
+
+    Assert.IsTrue formulaInstance.Valid("simple"), _
+                  "A leading space should not stop the CASE_WHEN conversion. Reason: " & formulaInstance.Reason("simple")
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestLeadingSpaceBeforeCaseWhenIsConverted", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verify a bad custom function reports its own reason
+'@details
+'Arranges a CASE_WHEN header with no body. The converter answers with an
+'empty string, and the class used to report that as "the formula is empty"
+'for an expression the user did write. Asserts the formula is rejected and
+'that the reason is the converter's own message.
+'@TestMethod("Formulas")
+Public Sub TestFailedCustomConversionReportsItsOwnReason()
+    CustomTestSetTitles Assert, "Formulas", "TestFailedCustomConversionReportsItsOwnReason"
+    Dim formulaInstance As Formulas
+    Dim reasonText As String
+
+    On Error GoTo Fail
+
+    Set formulaInstance = BuildFormula("CASE_WHEN(")
+    reasonText = formulaInstance.Reason("simple")
+
+    Assert.IsFalse formulaInstance.Valid("simple"), "A CASE_WHEN with no body should be rejected"
+    Assert.IsFalse (StrComp(reasonText, FORMULA_EMPTY_MESSAGE, vbBinaryCompare) = 0), _
+                   "A written expression should not be reported as an empty formula"
+    Assert.IsTrue (InStr(1, reasonText, "CASE_WHEN", vbTextCompare) > 0), _
+                  "The reason should come from the CASE_WHEN converter. Found: " & reasonText
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestFailedCustomConversionReportsItsOwnReason", Err.Number, Err.Description
 End Sub
 
 '@sub-title Verify analysis context rejects a single-variable formula
