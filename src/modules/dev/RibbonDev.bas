@@ -47,11 +47,20 @@ Public Sub clickDevFolder(ByRef control As IRibbonControl)
     io.LoadFolder
     If Not io.HasValidFolder() Then Exit Sub
 
+    Dim sep As String
+    sep = Application.PathSeparator
+
     Dim rootPath As String
     rootPath = io.Folder()
 
-    Dim sep As String
-    sep = Application.PathSeparator
+    'A drive root comes back already ending in a separator, and the three
+    'paths below add one of their own. The doubled separator survives into
+    'Dir$, where Development.ProcessListObject uses it to decide a folder is
+    'missing and skips every table under that path.
+    Do While Len(rootPath) > 0
+        If Right$(rootPath, 1) <> sep Then Exit Do
+        rootPath = Left$(rootPath, Len(rootPath) - 1)
+    Loop
 
     sh.Range("ModulesCodes").Value = rootPath & sep & "src" & sep & "modules"
     sh.Range("TestsCodes").Value = rootPath & sep & "src" & sep & "tests"
