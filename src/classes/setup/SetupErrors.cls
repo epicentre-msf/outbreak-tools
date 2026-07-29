@@ -501,7 +501,7 @@ Private Sub CheckDictionary()
 
         If (controlValue = "choice_formula") And (InStr(1, controlDetailsValue, "CHOICE_FORMULA") = 1) Then
             Set setupForm = ChoiceFormula.Create(controlDetailsValue)
-            choiName = setupForm.choiceName()
+            choiName = setupForm.ChoiceName()
             If Not this.choices.ChoiceExists(choiName) Then
                 checkingCounter = checkingCounter + 1
                 keyName = "dict-choiform-empty"
