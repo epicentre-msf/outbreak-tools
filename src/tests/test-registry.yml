@@ -303,16 +303,29 @@ suites:
   # into the workbook, so the rows below close their own compile closure.
   # TestAnalysis adds CustomTest, which is baked in too.
   #
-  # The other five test modules in src/tests/analyses/ -- TestAnaTabIds,
-  # TestAnalysisOutput, TestCrossTable, TestCrossTableFormula and
-  # TestTableSpecs -- each bring their own compile closure and stay out until
-  # their own class rows are here.
+  # TableSpecs names LLdictionary, LLVariables and BetterArray. The first two
+  # are registered under `dictionary` and BetterArray is baked into the
+  # workbook, so its class row closes its own compile closure. LinelistSpecs
+  # is reached through a TypeName string alone, so it is no compile
+  # dependency. TestTableSpecs adds CustomTest, baked in too, and reaches
+  # PrepareDictionaryFixture in DictionaryTestFixture under `helpers`.
+  #
+  # The other four test modules in src/tests/analyses/ -- TestAnaTabIds,
+  # TestAnalysisOutput, TestCrossTable and TestCrossTableFormula -- each bring
+  # their own compile closure and stay out until their own class rows are
+  # here. TestCrossTable and TestCrossTableFormula also build their fixture
+  # ranges on a bare worksheet, so both need a real ListObject before they can
+  # pass: TableSpecs reads the analysis scope from the name of the table the
+  # row sits in.
   - folder: analyses
     classes:
       - name: Analysis
+      - name: TableSpecs
     tests:
       - module: TestAnalysis
         covers: [Analysis]
+      - module: TestTableSpecs
+        covers: [TableSpecs]
 
   # --- dev (Development) ----------------------------------------------------
   # THIS BLOCK CARRIES A TEST MODULE AND NO CLASS, AND IT MUST STAY THAT WAY.
