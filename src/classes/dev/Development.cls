@@ -312,6 +312,11 @@ End Function
 'Appends the supplied worksheet name to the internal hiddenSheets
 'collection. During Deploy, every entry in this collection is set to
 'xlSheetVeryHidden. The worksheet must exist in the host workbook.
+'
+'A name already in the collection is left alone. RibbonDev keeps one
+'Development object for the whole VBA session, so pressing the dev
+'initialise button twice would otherwise push the same six sheets again and
+'Deploy would hide each of them twice.
 '@param sheetName String. Name of the worksheet to hide during deployment.
 '@throws ProjectError.ObjectNotInitialized When Initialise has not been called.
 '@throws ProjectError.InvalidArgument When sheetName is empty.
@@ -323,6 +328,8 @@ Public Sub AddHiddenSheet(ByVal sheetName As String)
 
     Dim sheet As Worksheet
     Set sheet = EnsureWorksheet(sheetName, "hidden")
+
+    If HasRegisteredSheet(this.hiddenSheets, sheet.Name) Then Exit Sub
 
     this.hiddenSheets.Push sheet.Name
 End Sub
@@ -958,8 +965,18 @@ Private Function ProcessListObject(ByVal lo As ListObject, _
     Dim targetFolder As String
     targetFolder = AppendPath(baseFolder, subFolder)
 
-    If LenB(targetFolder) = 0 Then Exit Function
-    If Not DirectoryExists(targetFolder) Then Exit Function
+    If LenB(targetFolder) = 0 Then
+        AppendLogLine "Skipped table '" & lo.Name & "': no folder was resolved for it."
+        Exit Function
+    End If
+
+    'A missing folder used to end the table in silence, and ImportAll still
+    'reported "Import Done!". A half import is the worst outcome here, so it
+    'is written to the log.
+    If Not DirectoryExists(targetFolder) Then
+        AppendLogLine "Skipped table '" & lo.Name & "': folder not found: " & targetFolder
+        Exit Function
+    End If
 
     Dim processed As Boolean
     processed = TransferListEntries(lo, targetFolder, scope, mode, includeInterface)
@@ -1064,7 +1081,9 @@ End Function
 'True, the second column for a Yes/No interface flag. For each non-empty
 'entry the component is transferred via TransferComponent. When the flag
 'is "yes", the corresponding interface file (prefixed with "I") is also
-'transferred. Returns True when at least one component was processed.
+'transferred, and on export InterfaceIsTransferable first asks the class
+'whether it implements that interface. Returns True when at least one
+'component was processed.
 '@param lo ListObject. The development table containing component entries.
 '@param destinationFolder String. The disk folder for the transfer.
 '@param scope DevelopmentTransferScope. Whether entries are modules or classes.
@@ -1108,7 +1127,9 @@ Private Function TransferListEntries(ByVal lo As ListObject, _
                 'For classes the second column stores Yes/No for interface duplication.
                 flagValue = ResolveInterfaceFlag(interfaceColumn, rowIndex)
                 If flagValue = "yes" Then
-                    TransferComponent "I" & codeName, destinationFolder, scope, mode
+                    If InterfaceIsTransferable(codeName, mode) Then
+                        TransferComponent "I" & codeName, destinationFolder, scope, mode
+                    End If
                 End If
             End If
         End If
@@ -1126,6 +1147,60 @@ Private Function ResolveInterfaceFlag(ByVal interfaceColumn As Range, ByVal rowI
     If rowIndex > interfaceColumn.Rows.Count Then Exit Function
 
     ResolveInterfaceFlag = LCase$(Trim$(CStr(interfaceColumn.Cells(rowIndex, 1).Value)))
+End Function
+
+'@label:interface-is-transferable
+'@sub-title Whether the interface of a class may be moved in this direction.
+'@details
+'On import the answer is always yes: ImportComponent exits when the file is
+'absent, so a class whose flag says yes and whose interface file was deleted
+'costs one Dir$ call.
+'
+'On export the class has to say so itself. The workbook keeps every class it
+'was ever given, so an interface that was deleted from the repo can still sit
+'in the VBProject; exporting it would write that deleted file back to disk.
+'The declaration block of the class is read and the interface goes out only
+'when an "Implements I<name>" line is there.
+'@param codeName String. The class name read from the table.
+'@param mode DevelopmentTransferMode. Whether entries are being imported or exported.
+'@return Boolean. True when the interface may be transferred.
+'@Description("Return True when the class interface may be imported or exported.")
+Private Function InterfaceIsTransferable(ByVal codeName As String, _
+                                         ByVal mode As DevelopmentTransferMode) As Boolean
+
+    Dim component As Object
+    Dim codeLines As String
+    Dim declarationCount As Long
+    Dim entry As Variant
+    Dim expected As String
+
+    If mode <> transferExport Then
+        InterfaceIsTransferable = True
+        Exit Function
+    End If
+
+    On Error Resume Next
+        Set component = this.hostwb.VBProject.VBComponents(codeName)
+    On Error GoTo 0
+
+    If component Is Nothing Then Exit Function
+
+    On Error Resume Next
+        declarationCount = component.CodeModule.CountOfDeclarationLines
+        If declarationCount > 0 Then codeLines = component.CodeModule.Lines(1, declarationCount)
+    On Error GoTo 0
+
+    If LenB(codeLines) = 0 Then Exit Function
+
+    expected = "implements i" & LCase$(codeName)
+    codeLines = Replace$(Replace$(codeLines, vbCrLf, vbLf), vbCr, vbLf)
+
+    For Each entry In Split(codeLines, vbLf)
+        If LCase$(Trim$(CStr(entry))) = expected Then
+            InterfaceIsTransferable = True
+            Exit Function
+        End If
+    Next entry
 End Function
 
 '@label:transfer-component
@@ -1226,18 +1301,6 @@ Private Sub AppendInformationLog(ByVal targetPath As String, _
                                  ByVal scope As DevelopmentTransferScope, _
                                  ByVal mode As DevelopmentTransferMode)
 
-    Dim infoCell As Range
-    Set infoCell = EnsureInformationCell()
-    If infoCell Is Nothing Then Exit Sub
-
-    Dim logCell As Range
-    Set logCell = infoCell.Offset(9, 0)
-
-    Do While LenB(Trim$(CStr(logCell.Value))) > 0
-        Set logCell = logCell.Offset(1, 0)
-        If logCell.Row >= infoCell.Worksheet.Rows.Count Then Exit Sub
-    Loop
-
     Dim actionLabel As String
     Select Case mode
         Case transferImport: actionLabel = "Imported "
@@ -1252,7 +1315,32 @@ Private Sub AppendInformationLog(ByVal targetPath As String, _
         Case Else: scopeLabel = "Items using path: "
     End Select
 
-    logCell.Value = Format$(Now(), "yyyy-mm-dd hh:mm:ss") & " - " & actionLabel & scopeLabel & targetPath
+    AppendLogLine actionLabel & scopeLabel & targetPath
+End Sub
+
+'@label:append-log-line
+'@sub-title Write one timestamped line under the Dev sheet Informations cell.
+'@details
+'Walks down from the first log row to the first empty cell and writes there.
+'Exits without a word when the Informations cell is missing or the sheet has
+'no room left.
+'@param messageText String. The text to write after the timestamp.
+'@Description("Append one timestamped line to the Dev sheet log block.")
+Private Sub AppendLogLine(ByVal messageText As String)
+
+    Dim infoCell As Range
+    Set infoCell = EnsureInformationCell()
+    If infoCell Is Nothing Then Exit Sub
+
+    Dim logCell As Range
+    Set logCell = infoCell.Offset(9, 0)
+
+    Do While LenB(Trim$(CStr(logCell.Value))) > 0
+        Set logCell = logCell.Offset(1, 0)
+        If logCell.Row >= infoCell.Worksheet.Rows.Count Then Exit Sub
+    Loop
+
+    logCell.Value = Format$(Now(), "yyyy-mm-dd hh:mm:ss") & " - " & messageText
 End Sub
 
 '@label:write-information
@@ -1919,6 +2007,10 @@ Private Sub RegisterSheet(ByVal registry As BetterArray, ByVal sheetName As Stri
     trimmed = Trim$(sheetName)
     If LenB(trimmed) = 0 Then Exit Sub
 
+    'One triplet per sheet. A second registration keeps the first set of
+    'flags, so the caller that registers earliest decides what Deploy writes.
+    If HasRegisteredSheet(registry, sheetName) Then Exit Sub
+
     Set sheetInfo = New BetterArray
     sheetInfo.LowerBound = 1
     sheetInfo.Push sheetName, allowShape, allowDeletingRows
@@ -1927,6 +2019,48 @@ Private Sub RegisterSheet(ByVal registry As BetterArray, ByVal sheetName As Stri
     registry.Push sheetInfo
 
 End Sub
+
+'@label:has-registered-sheet
+'@sub-title Whether a deployment registry already holds a worksheet name
+'@details
+'hiddenSheets holds plain names and protectedSheets holds a triplet whose
+'first item is the name, so both shapes are read here. Deploy also accepts a
+'Worksheet in the hidden list, which is why that case is covered too. Names
+'are matched without regard to case, the way Excel itself treats them.
+'@param registry BetterArray. The collection to search.
+'@param sheetName String. The worksheet name to look for.
+'@return Boolean. True when the name is already registered.
+'@Description("Return True when the registry already holds the worksheet name.")
+Private Function HasRegisteredSheet(ByVal registry As BetterArray, ByVal sheetName As String) As Boolean
+
+    Dim idx As Long
+    Dim entry As Object
+    Dim storedName As String
+
+    If registry Is Nothing Then Exit Function
+    If registry.Length = 0 Then Exit Function
+
+    For idx = registry.LowerBound To registry.UpperBound
+        storedName = vbNullString
+
+        If IsObject(registry.Item(idx)) Then
+            Set entry = registry.Item(idx)
+            Select Case TypeName(entry)
+                Case "BetterArray"
+                    If entry.Length > 0 Then storedName = CStr(entry.Item(entry.LowerBound))
+                Case "Worksheet"
+                    storedName = entry.Name
+            End Select
+        Else
+            storedName = CStr(registry.Item(idx))
+        End If
+
+        If StrComp(storedName, sheetName, vbTextCompare) = 0 Then
+            HasRegisteredSheet = True
+            Exit Function
+        End If
+    Next idx
+End Function
 
 
 '@section Prompts
