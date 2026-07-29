@@ -2040,9 +2040,10 @@ Private Sub ApplyFormatting()
 
     If dataRange Is Nothing Then Exit Sub
 
-    On Error Resume Next
-        dataRange.FormatConditions.Delete
-    On Error GoTo 0
+    'A delete that fails leaves the old rules in place and a new one is added
+    'below on every update, until the sheet is slow to scroll.
+    'TestFormatConditionsDoNotAccumulate watches the count.
+    dataRange.FormatConditions.Delete
 
     unlockWidth = this.table.ListColumns.Count - LabelColumnIndex()
     If unlockWidth > 0 Then
