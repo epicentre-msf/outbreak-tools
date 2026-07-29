@@ -919,16 +919,23 @@ VBADocParser <- R6Class(
       addition <- as.character(addition)
       addition <- addition[!is.na(addition)]
       addition <- str_trim(addition)
-      addition <- addition[nzchar(addition)]
       if (length(addition) == 0) {
+        return(existing)
+      }
+      # A blank comment line is a paragraph break once the text is rendered.
+      # Dropping it joined every paragraph of a description into one, so a
+      # heading written in capitals over a rule became a setext heading
+      # covering the whole text. Blank lines are kept from the first real line
+      # onwards, and skipped before it so nothing starts with an empty line.
+      if (!private$has_text(existing) && !any(nzchar(addition))) {
         return(existing)
       }
       addition_text <- paste(addition, collapse = "\n")
       if (!private$has_text(existing)) {
         return(addition_text)
       }
-      existing_text <- str_trim(paste(as.character(existing), collapse = "\n"))
-      if (!nzchar(existing_text)) {
+      existing_text <- paste(as.character(existing), collapse = "\n")
+      if (!nzchar(str_trim(existing_text))) {
         return(addition_text)
       }
       paste(existing_text, addition_text, sep = "\n")
