@@ -1302,7 +1302,7 @@ End Sub
 '@sub-title Clean one variable name in plain VBA
 '@details
 'Reproduces the three worksheet functions this used to call, with no crossing
-'into Excel: Chr(160) becomes a space, codes below 32 are dropped (worksheet
+'into Excel: U+00A0 NO-BREAK SPACE becomes a space, codes below 32 are dropped (worksheet
 'CLEAN), the ends are trimmed and runs of spaces inside the text collapse to one
 '(worksheet TRIM does that as well as trimming), then the remaining spaces
 'become underscores.
@@ -1319,7 +1319,10 @@ Private Function NormaliseVariableName(ByVal rawName As String) As String
     Dim oneChar As String
     Dim previousWasSpace As Boolean
 
-    source = Replace(rawName, Chr$(160), " ")
+    'ChrW$ reads 160 as a Unicode code point, so U+00A0 comes back on every
+    'machine. Chr$ would read it as a byte position in the machine's ANSI
+    'codepage, which on this Mac holds the dagger.
+    source = Replace(rawName, ChrW$(160), " ")
 
     For counter = 1 To Len(source)
         oneChar = Mid$(source, counter, 1)

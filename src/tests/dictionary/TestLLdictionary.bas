@@ -461,6 +461,48 @@ Fail:
     CustomTestLogFailure Assert, "TestPrepareRenamesPreservedSheetNames", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify a non-breaking space in a variable name normalises like a plain space
+'@details
+'Arranges by overwriting one fixture variable name with a value carrying
+'U+00A0 NO-BREAK SPACE, which is what a name pasted out of Word brings with it.
+'Acts by calling Prepare, which normalises every variable name. Asserts the
+'name comes back with underscores, the same as if plain spaces had been typed.
+'
+'The fixture builds its own U+00A0 with ChrW$, never Chr$. Chr$ reads its
+'argument as a byte position in the machine's ANSI codepage, so a fixture built
+'with Chr$(160) would be testing the code against whatever that codepage
+'happens to hold rather than against a non-breaking space.
+'@TestMethod("LLdictionary")
+Public Sub TestVariableNameWithNonBreakingSpaceNormalisesLikeASpace()
+    CustomTestSetTitles Assert, "LLdictionary", "TestVariableNameWithNonBreakingSpaceNormalisesLikeASpace"
+
+    Dim dictSheet As Worksheet
+    Dim targetCell As Range
+    Dim varNames As BetterArray
+
+    On Error GoTo Fail
+
+    Set dictSheet = ThisWorkbook.Worksheets(DICT_SHEET)
+    Set targetCell = dictSheet.Columns(1).Find(What:="bad name h2", _
+                                               LookIn:=xlValues, _
+                                               lookAt:=xlWhole)
+    Assert.IsFalse targetCell Is Nothing, "Fixture should carry the 'bad name h2' variable row"
+    If targetCell Is Nothing Then Exit Sub
+
+    targetCell.Value = "nbsp" & ChrW$(160) & "name" & ChrW$(160) & "h2"
+
+    Dictionary.Prepare
+
+    Set varNames = Dictionary.UniqueValues("variable name")
+
+    Assert.IsTrue varNames.Includes("nbsp_name_h2"), _
+                  "A non-breaking space in a variable name should normalise to an underscore"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestVariableNameWithNonBreakingSpaceNormalisesLikeASpace", Err.Number, Err.Description
+End Sub
+
 '@section Clean Tests
 '===============================================================================
 '@description Tests that verify the Clean method removes columns that do not

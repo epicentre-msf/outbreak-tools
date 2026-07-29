@@ -537,6 +537,37 @@ Fail:
     ReportTestFailure "TestCheckUpdateWithWorksheetMultiTableScoping"
 End Sub
 
+'A column header carrying U+00A0 NO-BREAK SPACE must reach the same range name
+'as one carrying a plain space, so a header pasted out of Word does not register
+'under a second identifier.
+'
+'The header builds its own U+00A0 with ChrW$, never Chr$. Chr$ reads its
+'argument as a byte position in the machine's ANSI codepage, so a header built
+'with Chr$(160) would be testing the code against whatever that codepage
+'happens to hold rather than against a non-breaking space.
+'
+'This one pins behaviour rather than mechanism: NormalizeIdentifier maps every
+'non-alphanumeric character to a single underscore, so the U+00A0 collapses
+'whether or not the Replace ahead of the loop caught it. The test holds the
+'result in place so nobody drops that Replace and nobody "harmonises" the
+'ChrW$ back to Chr$; it cannot on its own tell the two apart.
+'@TestMethod("UpdatedValues")
+Public Sub TestIdentifierWithNonBreakingSpaceIsNormalised()
+    CustomTestSetTitles Assert, "UpdatedValues", "TestIdentifierWithNonBreakingSpaceIsNormalised"
+    On Error GoTo Fail
+
+    SourceTable.HeaderRowRange.Cells(1, 4).Value = "Control" & ChrW$(160) & "Details"
+
+    Subject.AddColumns SourceTable
+
+    Assert.IsTrue WorkbookHasName(RangeNameControl), _
+        "A header carrying a non-breaking space should reach the plain-space range name"
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestIdentifierWithNonBreakingSpaceIsNormalised"
+End Sub
+
 '@section Helpers
 '===============================================================================
 
@@ -727,7 +758,8 @@ Private Function NormalizeKey(ByVal valueText As String) As String
     Dim ch As String
     Dim buffer As String
 
-    valueText = Replace(valueText, Chr$(160), " ")
+    'Mirrors UpdatedValues.NormalizeIdentifier, which strips U+00A0 with ChrW$.
+    valueText = Replace(valueText, ChrW$(160), " ")
     valueText = Trim$(valueText)
 
     For idx = 1 To Len(valueText)

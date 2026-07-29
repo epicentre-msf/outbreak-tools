@@ -1112,8 +1112,12 @@ Private Function CleanString(ByVal value As String) As String
     Dim oneChar As String
     Dim previousWasSpace As Boolean
 
-    'Chr$(160) is the non-breaking space. It cannot sit in a Const.
-    source = Replace$(value, Chr$(160), " ")
+    'ChrW$(160) is U+00A0 NO-BREAK SPACE. ChrW$ reads 160 as a Unicode code
+    'point, so the answer is the same on every machine. Chr$ would read it as a
+    'byte position in the machine's ANSI codepage, which on this Mac holds the
+    'dagger, and the non-breaking spaces would all survive. It cannot sit in a
+    'Const either way, since a Const takes a constant expression.
+    source = Replace$(value, ChrW$(160), " ")
 
     For counter = 1 To Len(source)
         oneChar = Mid$(source, counter, 1)

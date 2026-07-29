@@ -772,6 +772,41 @@ Fail:
     CustomTestLogFailure Assert, "TestNestedParenthesesAndWhitespace", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify a token padded with non-breaking spaces still resolves
+'@details
+'Arranges an IF expression whose variable token is wrapped in U+00A0 NO-BREAK
+'SPACE, which is what an expression pasted out of Word brings with it. The
+'tokeniser cleans each chunk before looking it up, and Trim$ does not remove
+'U+00A0, so a surviving one leaves the token unrecognisable. Asserts the
+'formula parses exactly as the plain-space version does.
+'
+'The expression builds its own U+00A0 with ChrW$, never Chr$. Chr$ reads its
+'argument as a byte position in the machine's ANSI codepage, so an expression
+'built with Chr$(160) would be testing the code against whatever that codepage
+'happens to hold rather than against a non-breaking space.
+'@TestMethod("Formulas")
+Public Sub TestFormulaTokenWithNonBreakingSpaceIsCleaned()
+    CustomTestSetTitles Assert, "Formulas", "TestFormulaTokenWithNonBreakingSpaceIsCleaned"
+    Dim variableName As String
+    Dim expression As String
+    Dim formulaInstance As Formulas
+
+    On Error GoTo Fail
+
+    variableName = AnyVariableName()
+    expression = "IF(" & ChrW$(160) & variableName & ChrW$(160) & " = 1, 2, 3)"
+    Set formulaInstance = BuildFormula(expression)
+
+    Assert.IsTrue formulaInstance.Valid("simple"), _
+                  "A token padded with non-breaking spaces should parse. Reason: " & formulaInstance.Reason("simple")
+    Assert.IsTrue formulaInstance.HasSetupVariables, _
+                  "The padded token should still be recognised as a dictionary variable"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestFormulaTokenWithNonBreakingSpaceIsCleaned", Err.Number, Err.Description
+End Sub
+
 '@sub-title Verify escaped double-quotes inside string literals are recognised
 '@details
 'Arranges a formula containing doubled double-quotes within string
