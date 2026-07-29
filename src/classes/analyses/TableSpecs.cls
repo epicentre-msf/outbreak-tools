@@ -96,6 +96,8 @@ Private Type TTableSpecs
     sectionIdCached As Boolean                   'Whether cachedSectionId is populated
     cachedSpatialScope As String                 'Cached SpatialTableScopes answer
     spatialScopeCached As Boolean                'Whether cachedSpatialScope is populated
+    prevValid As TableSpecs                      'Nearest valid row above, whatever its section
+    prevValidResolved As Boolean                 'Whether the backward walk has run
     sealed As Boolean
 End Type
 
@@ -559,20 +561,19 @@ End Property
 '@details
 'Returns the cached section-boundary result. On first access, determines
 'whether this table specification row begins a new section within the analysis
-'setup block. Sections group related tables together. The method checks the
-'"section" column: if the current row's section value differs from the
-'previous row's section value, or if this is the first data row (where the
-'previous row is the header), the table is considered a new section.
+'setup block. Sections group related tables together. The method reads the
+'"section" column of the nearest row above this one that the build will draw,
+'and answers True when this row's section differs from it. A row with no valid
+'row above it starts a section too, which covers the first data row of the
+'block and the row whose section anchor failed validation.
 'GlobalSummary tables are never considered new sections regardless of their
 'section value, because each GlobalSummary table is standalone and does not
 'participate in section grouping.
 '@return Boolean. True if this table starts a new section.
-'@remarks The comparison uses the cell at row offset 0 (prevCell =
-'tRng.Cells(0, sectIndex)), which in Excel Range addressing corresponds
-'to the row immediately above the current row. The section column is free
-'text, so the two values are compared without regard to case: a
-'capitalisation slip would otherwise split one section in two and every
-'section-keyed named range would follow it.
+'@remarks The row physically above may be one the build skips. Comparing
+'against it made a section whose anchor row was invalid unopenable, so the
+'comparison walks back to the nearest valid row instead. The section column
+'is free text, so the two values are matched without regard to case.
 '@export
 Public Property Get IsNewSection() As Boolean
     If this.newSectionCached Then
@@ -791,39 +792,17 @@ End Property
 '@prop-title Previous valid specification in the same section
 '@details
 'Returns the nearest valid table specification that precedes this one within
-'the same section. Starting from the row immediately above the current table
-'range, it walks backward one row at a time. Every candidate, including the
-'first, is tested the same way: a valid table is returned, and a candidate
-'that starts a new section ends the walk. The walk also stops at the header
-'row, to stay inside the data area.
+'the same section. The search itself is PreviousValidSpec, which walks back
+'over the rows the build will skip. This property adds the section rule: a
+'row that starts a section has no predecessor to hand back.
 '@return TableSpecs. The nearest valid preceding table in the same section,
-'or Nothing when this row starts a section and when the section holds no
-'valid table above this row.
-'@remarks Each candidate row examined creates a new TableSpecs instance, so
-'a long run of invalid rows costs one instance per row.
+'or Nothing when this row starts a section.
+'@remarks The walk runs once per instance and is shared with IsNewSection,
+'which asks the same question of the same row.
 '@export
 Public Property Get Previous() As TableSpecs
-    Dim hRng As Range
-    Dim prevRng As Range
-    Dim candidate As TableSpecs
-
     If IsNewSection() Then Exit Property
-
-    Set hRng = HeaderRange()
-    Set prevRng = TableRange().Offset(-1)
-
-    Do While prevRng.Row > hRng.Row
-        Set candidate = Create(hRng, prevRng, Dictionary(), VariablesObject())
-
-        If candidate.ValidTable() Then
-            Set Previous = candidate
-            Exit Property
-        End If
-
-        If candidate.IsNewSection() Then Exit Property
-
-        Set prevRng = prevRng.Offset(-1)
-    Loop
+    Set Previous = PreviousValidSpec()
 End Property
 
 '@label:next-specs
@@ -1213,36 +1192,92 @@ Private Function ComputeValidTable() As Boolean
     ComputeValidTable = isValid
 End Function
 
+'@label:previous-valid-spec
+'@sub-title The nearest row above this one that the build will draw
+'@details
+'Walks backward one row at a time from the row above this one and answers
+'the first candidate whose ValidTable is True, whatever section it belongs
+'to. The walk stops at the header row, to stay inside the data area, and the
+'answer is held for the life of the instance.
+'
+'This is the one search behind both IsNewSection and Previous, and it has to
+'stay free of both: ComputeValidTable reads the scope, the cached values, the
+'dictionary and the variable reader, and touches neither of them, so the walk
+'cannot recurse.
+'@return TableSpecs. The nearest valid row above this one, or Nothing when
+'there is none between here and the header.
+Private Function PreviousValidSpec() As TableSpecs
+    Dim hRng As Range
+    Dim prevRng As Range
+    Dim candidate As TableSpecs
+
+    If this.prevValidResolved Then
+        Set PreviousValidSpec = this.prevValid
+        Exit Function
+    End If
+
+    this.prevValidResolved = True
+
+    Set hRng = HeaderRange()
+    Set prevRng = TableRange().Offset(-1)
+
+    Do While prevRng.Row > hRng.Row
+        Set candidate = Create(hRng, prevRng, Dictionary(), VariablesObject())
+
+        If candidate.ValidTable() Then
+            Set this.prevValid = candidate
+            Exit Do
+        End If
+
+        Set prevRng = prevRng.Offset(-1)
+    Loop
+
+    Set PreviousValidSpec = this.prevValid
+End Function
+
 '@label:compute-is-new-section
 '@sub-title Compute whether this table begins a new section group
 '@details
-'Determines whether this table specification row begins a new section by
-'comparing the current and previous row section values. Called once on first
-'access of IsNewSection to populate the Boolean cache. The previous row cell
-'value is the only remaining worksheet read (the current row value comes
-'from the value cache), and it goes through the same coercion the cache
-'used, so an error value in that cell reads as an empty section.
+'Compares this row's section value against the section value of the nearest
+'row above it that the build will actually draw. A row whose section differs
+'from that one starts a section, and so does a row with no valid row above it
+'at all. Called once on first access of IsNewSection to populate the Boolean
+'cache.
+'
+'The comparison used to read the row physically above, whatever state it was
+'in. Everything else in the pipeline works over valid tables only, and that
+'mismatch is what broke a section whose anchor row failed validation: the
+'anchor was skipped, every row below it still reported False, and each one
+'appended itself to section infrastructure nothing had built. It broke the
+'mirror case too, where an invalid row carrying a new section name hid the
+'boundary from the valid row under it.
+'
+'Sections are matched without regard to case, because the section column is
+'free text: a capitalisation slip would otherwise split one section in two
+'and every section-keyed named range would follow it.
 '@return Boolean. True if this table starts a new section.
 Private Function ComputeIsNewSection() As Boolean
     Dim sectIndex As Long
-    Dim actualSection As String
-    Dim previousSection As String
-    Dim isSameSection As Boolean
-    Dim prevCell As Range
+    Dim prevSpec As TableSpecs
 
-    isSameSection = False
+    ' Each global summary row stands alone and joins no section.
+    If TableScope = ScopeGlobalSummary Then Exit Function
 
     sectIndex = ColumnIndex(COLUMN_SECTION)
-
-    If sectIndex > 0 Then
-        actualSection = Value(COLUMN_SECTION)
-        Set prevCell = this.tRng.Cells(0, sectIndex)
-        previousSection = CellText(prevCell.Value)
-        isSameSection = (StrComp(actualSection, previousSection, vbTextCompare) = 0) And _
-                        (prevCell.Row <> this.hRng.Row)
+    If sectIndex < 1 Then
+        ComputeIsNewSection = True
+        Exit Function
     End If
 
-    ComputeIsNewSection = (Not isSameSection) And (TableScope <> ScopeGlobalSummary)
+    Set prevSpec = PreviousValidSpec()
+    If prevSpec Is Nothing Then
+        ComputeIsNewSection = True
+        Exit Function
+    End If
+
+    ComputeIsNewSection = (StrComp(Value(COLUMN_SECTION), _
+                                   prevSpec.Value(COLUMN_SECTION), _
+                                   vbTextCompare) <> 0)
 End Function
 
 '@section Error Handling

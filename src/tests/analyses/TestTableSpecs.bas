@@ -1809,15 +1809,15 @@ TestFail:
     CustomTestLogFailure Assert, "TestPreviousNothingOnNewSection", Err.Number, Err.Description
 End Sub
 
-'@sub-title Verify Previous stops at a section boundary it steps over.
+'@sub-title Verify a boundary carried by an invalid row still opens the section.
 '@details
-'Rows are S1 valid, S2 invalid, S2 valid. The walk from row 3 steps over the
-'invalid row 2, which opens S2, and stops there. Skipping that check on the
-'first candidate returned the S1 row, and every named range keyed on the
-'section id landed on the wrong section.
+'Rows are S1 valid, S2 invalid, S2 valid. The build skips the invalid row, so
+'row 3 is the first row of S2 that is drawn and it has to open the section.
+'Comparing against the row physically above read "S2 follows S2", row 3
+'reported no new section, and section S2 never opened at all.
 '@TestMethod("TableSpecs")
-Public Sub TestPreviousStopsAtASectionBoundary()
-    CustomTestSetTitles Assert, "TableSpecs", "TestPreviousStopsAtASectionBoundary"
+Public Sub TestIsNewSectionSeesABoundaryCarriedByAnInvalidRow()
+    CustomTestSetTitles Assert, "TableSpecs", "TestIsNewSectionSeesABoundaryCarriedByAnInvalidRow"
     On Error GoTo TestFail
 
     BuildFixture TABLE_TIMESERIES, TimeSeriesHeader(), _
@@ -1830,21 +1830,116 @@ Public Sub TestPreviousStopsAtASectionBoundary()
                            "", "", "", "no", "no", "3"))
 
     Dim specs As TableSpecs
-    Dim prevSpec As TableSpecs
     Set specs = CreateSpecs(3)
 
-    Assert.IsFalse specs.IsNewSection, _
-                   "Row 3 repeats section S2, so it continues it"
-
-    Set prevSpec = specs.Previous
-    Assert.IsTrue (prevSpec Is Nothing), _
-                  "Section S2 holds no valid table above row 3"
+    Assert.IsTrue specs.IsNewSection, _
+                  "Row 3 is the first drawn row of S2, so it opens the section"
+    Assert.IsTrue (specs.Previous Is Nothing), _
+                  "A row that opens a section has no previous table"
     Assert.AreEqual "TS_tab3", specs.TableSectionId, _
-                    "With no valid table above it, row 3 opens its own section id"
+                    "Row 3 owns the section id of S2"
 
     Exit Sub
 TestFail:
-    CustomTestLogFailure Assert, "TestPreviousStopsAtASectionBoundary", Err.Number, Err.Description
+    CustomTestLogFailure Assert, "TestIsNewSectionSeesABoundaryCarriedByAnInvalidRow", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verify the row below an invalid section anchor becomes the anchor.
+'@details
+'Rows are S1 invalid, S1 valid, S1 valid. The build skips row 1, so row 2 is
+'the first row of S1 that is drawn and it has to carry the section header and
+'the date controls. Row 2 used to report no new section, then every row of
+'the section appended itself to infrastructure nothing had built. This is
+'issue #183.
+'@TestMethod("TableSpecs")
+Public Sub TestIsNewSectionWhenTheSectionAnchorIsInvalid()
+    CustomTestSetTitles Assert, "TableSpecs", "TestIsNewSectionWhenTheSectionAnchorIsInvalid"
+    On Error GoTo TestFail
+
+    BuildFixture TABLE_TIMESERIES, TimeSeriesHeader(), _
+                 Array( _
+                     Array("Series 1", "S1", "choi_v1", "choi_v1", "T1", "no", _
+                           "", "", "", "no", "no", "1"), _
+                     Array("Series 2", "S1", "date_v1", "choi_v1", "T2", "no", _
+                           "", "", "", "no", "no", "2"), _
+                     Array("Series 3", "S1", "date_v1", "choi_v1", "T3", "no", _
+                           "", "", "", "no", "no", "3"))
+
+    Assert.IsFalse CreateSpecs(1).ValidTable, _
+                   "Row 1 groups by a choice variable, so the build skips it"
+    Assert.IsTrue CreateSpecs(2).IsNewSection, _
+                  "Row 2 is the first drawn row of S1, so it opens the section"
+    Assert.AreEqual "TS_tab2", CreateSpecs(2).TableSectionId, _
+                    "Row 2 owns the section id"
+    Assert.IsFalse CreateSpecs(3).IsNewSection, _
+                   "Row 3 follows a drawn row of the same section"
+    Assert.AreEqual "TS_tab2", CreateSpecs(3).TableSectionId, _
+                    "Row 3 joins the section row 2 opened"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestIsNewSectionWhenTheSectionAnchorIsInvalid", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verify a run of invalid rows leaves the first drawn row as anchor.
+'@TestMethod("TableSpecs")
+Public Sub TestIsNewSectionAfterARunOfInvalidRows()
+    CustomTestSetTitles Assert, "TableSpecs", "TestIsNewSectionAfterARunOfInvalidRows"
+    On Error GoTo TestFail
+
+    BuildFixture TABLE_TIMESERIES, TimeSeriesHeader(), _
+                 Array( _
+                     Array("Series 1", "S1", "choi_v1", "choi_v1", "T1", "no", _
+                           "", "", "", "no", "no", "1"), _
+                     Array("Series 2", "S1", "choi_v1", "choi_v1", "T2", "no", _
+                           "", "", "", "no", "no", "2"), _
+                     Array("Series 3", "S1", "date_v1", "choi_v1", "T3", "no", _
+                           "", "", "", "no", "no", "3"))
+
+    Assert.IsTrue CreateSpecs(3).IsNewSection, _
+                  "With two invalid rows above it, row 3 opens the section"
+    Assert.IsTrue (CreateSpecs(3).Previous Is Nothing), _
+                  "There is no drawn table above row 3"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestIsNewSectionAfterARunOfInvalidRows", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verify the same rule reaches the non-temporal blocks.
+'@details
+'ComputeIsNewSection serves every scope, so an invalid section anchor changes
+'the grouping of univariate and bivariate tables too.
+'@TestMethod("TableSpecs")
+Public Sub TestIsNewSectionAnchorRuleReachesEveryScope()
+    CustomTestSetTitles Assert, "TableSpecs", "TestIsNewSectionAnchorRuleReachesEveryScope"
+    On Error GoTo TestFail
+
+    ' Univariate: row 1 groups by a date variable, so the build skips it.
+    BuildFixture TABLE_UNIVARIATE, UnivariateHeader(), _
+                 Array( _
+                     Array("S1", "First", "date_v1", "no", "", "", "", "no", "no", "no"), _
+                     Array("S1", "Second", "choi_v1", "no", "", "", "", "no", "no", "no"))
+    Assert.IsFalse CreateSpecs(1).ValidTable, _
+                   "A univariate row over a date variable is skipped"
+    Assert.IsTrue CreateSpecs(2).IsNewSection, _
+                  "The first drawn univariate row opens the section"
+
+    ' Bivariate: row 1 crosses a date variable, so the build skips it.
+    BuildFixture TABLE_BIVARIATE, BivariateHeader(), _
+                 Array( _
+                     Array("S1", "First", "choi_v1", "date_v1", "no", "", "", "", _
+                           "no", "no", "no"), _
+                     Array("S1", "Second", "choi_v1", "choi_h2", "no", "", "", "", _
+                           "no", "no", "no"))
+    Assert.IsFalse CreateSpecs(1).ValidTable, _
+                   "A bivariate row crossing a date variable is skipped"
+    Assert.IsTrue CreateSpecs(2).IsNewSection, _
+                  "The first drawn bivariate row opens the section"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestIsNewSectionAnchorRuleReachesEveryScope", Err.Number, Err.Description
 End Sub
 
 '@sub-title Verify Previous walks over an invalid row inside a section.
