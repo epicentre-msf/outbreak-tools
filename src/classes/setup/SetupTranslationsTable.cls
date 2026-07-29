@@ -25,7 +25,8 @@ Option Explicit
 'reports missing and duplicate entries, and exports the table to
 'external workbooks. Uses HiddenNames for sequence counters.
 '
-'@section Label matching policy
+'LABEL MATCHING POLICY
+'-------------------------------------------------------------------------------
 'A label is always matched without regard to case. FindLabelRow,
 'DeduplicateLabels and ComputeDuplicateSummary all answer from one keyed
 'Collection whose key is the lower-cased label, so "Hello" and "hello" are
@@ -34,7 +35,8 @@ Option Explicit
 'case-sensitive is the __TagInternal__ header title, which is a fixed
 'internal marker.
 '
-'@section The helper tag column
+'THE HELPER TAG COLUMN
+'-------------------------------------------------------------------------------
 'The translations ListObject sits with one spare worksheet column to its
 'left holding a tag per row, shaped <rangename>__<sequence>. That column
 'lives outside the ListObject most of the time. During an update the table
@@ -43,13 +45,15 @@ Option Explicit
 'is inside the table and 1 otherwise, and every column index in this class
 'comes from that one function.
 '
-'@section Create writes nothing
+'CREATE WRITES NOTHING
+'-------------------------------------------------------------------------------
 'Create locates and validates the helper column. The title, the formatting
 'and the hidden language list are written by the update path alone
 '(EnsureTagColumnReady and EnsureLanguages), so a caller that only reads
 'can build a manager over a protected sheet.
 '
-'@section Source ranges are contiguous
+'SOURCE RANGES ARE CONTIGUOUS
+'-------------------------------------------------------------------------------
 'A registry range refers to one block of cells on one worksheet.
 'SetupPreparation and UpdatedValues both build their names over a single table
 'column, so that always holds. ProcessTextRange and ProcessFormulaRange read
@@ -57,7 +61,8 @@ Option Explicit
 'range, so a name built by hand over scattered cells would import its first
 'block and drop the rest.
 '
-'@section Error numbers
+'ERROR NUMBERS
+'-------------------------------------------------------------------------------
 'ProjectError.ErrorUnexpectedState is 1004, which is also Excel's generic
 'error number. An Excel 1004 that escapes an update is re-raised as 1004,
 'so a caller reading the number alone cannot tell the two apart. Nothing
