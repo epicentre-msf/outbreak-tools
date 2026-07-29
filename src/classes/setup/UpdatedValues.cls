@@ -69,6 +69,7 @@ Private Type TUpValues
   lastColumn As Long                  'Tracks the last column used by the registry
   lastRegistryName As String          'Tracks the most recently accessed registry ListObject name
   nameCache As Collection             'In-memory cache of registry names keyed by listobject name
+  handled As Collection               'Range names the in-session reader has already acted on
   sealed As Boolean                   'When True, setup-only setters are blocked
 End Type
 
@@ -905,7 +906,9 @@ End Sub
 '@prop-title Determine whether the tracked column has been marked as updated.
 '@details
 'Searches across all registry ListObjects for a matching entry and returns
-'True when the column is flagged as updated since the last reset.
+'True when the column is flagged as updated since the last reset and the
+'in-session reader has not acknowledged it yet. AcknowledgeUpdates is what
+'moves a flag into the acknowledged set; a later edit takes it back out.
 Public Property Get IsUpdated(ByVal checkColName As String) As Boolean
   Dim registries As Collection
   Dim registry As ListObject
@@ -922,8 +925,10 @@ Public Property Get IsUpdated(ByVal checkColName As String) As Boolean
   Dim labelData As Variant
   Dim rowTotal As Long
 
-  targetKey = NormalizeValue(checkColName)
-  If targetKey = vbNullString Then Exit Property
+  'NormalizeIdentifier answers "field" for text with no letter or digit in it,
+  'so an empty name is turned away before it is normalised.
+  If NormalizeValue(checkColName) = vbNullString Then Exit Property
+  targetKey = NormalizeIdentifier(checkColName)
 
   Set registries = RegistryListObjects()
   If registries Is Nothing Then Exit Property
@@ -951,7 +956,7 @@ Public Property Get IsUpdated(ByVal checkColName As String) As Boolean
       statusValue = NormalizeValue(CStr(BulkValue(statusData, idx, rowTotal)))
 
       If ColumnMatchesIdentifier(columnLabel, rangeName, targetKey) Then
-        IsUpdated = (statusValue = STATUS_UPDATED)
+        IsUpdated = (statusValue = STATUS_UPDATED) And Not HandledContains(rangeName)
         Exit Property
       End If
     Next idx
@@ -959,6 +964,102 @@ Public Property Get IsUpdated(ByVal checkColName As String) As Boolean
 NextRegistry:
   Next registry
 End Property
+
+'@label:acknowledge-updates
+'@sub-title Record every flag that is currently "yes" as already acted on.
+'@details
+'One status column serves two readers that reset at different moments. The
+'translations run resets the column itself through SwitchTagsToNo. The analysis
+'dropdown refresh resets nothing, so it calls this instead: every flag that
+'reads "yes" right now is put into an in-memory set, and IsUpdated answers
+'False for it until the column is edited again. The set lives in memory alone,
+'so opening the workbook starts it empty.
+'@export
+Public Sub AcknowledgeUpdates()
+  Dim registries As Collection
+  Dim registry As ListObject
+  Dim rangeColumn As Range
+  Dim statusColumn As Range
+  Dim rangeData As Variant
+  Dim statusData As Variant
+  Dim rowTotal As Long
+  Dim idx As Long
+
+  Set registries = RegistryListObjects()
+  If registries Is Nothing Then Exit Sub
+
+  For Each registry In registries
+    Set rangeColumn = RegistryColumnData(registry, HEADER_RANGE_NAME)
+    Set statusColumn = RegistryColumnData(registry, HEADER_STATUS)
+
+    If rangeColumn Is Nothing Then GoTo NextRegistry
+    If statusColumn Is Nothing Then GoTo NextRegistry
+
+    rowTotal = RowCount(rangeColumn)
+    If rowTotal = 0 Then GoTo NextRegistry
+
+    rangeData = rangeColumn.Value2
+    statusData = statusColumn.Value2
+
+    For idx = 1 To rowTotal
+      If NormalizeValue(CStr(BulkValue(statusData, idx, rowTotal))) = STATUS_UPDATED Then
+        MarkHandled CStr(BulkValue(rangeData, idx, rowTotal))
+      End If
+    Next idx
+
+NextRegistry:
+  Next registry
+End Sub
+
+'@label:mark-handled
+'@sub-title Put a range name into the acknowledged set.
+Private Sub MarkHandled(ByVal rangeName As String)
+  Dim key As String
+
+  key = NormalizeValue(rangeName)
+  If key = vbNullString Then Exit Sub
+
+  If this.handled Is Nothing Then Set this.handled = New Collection
+
+  'A key already in the set raises 457; the entry is there either way.
+  On Error Resume Next
+    this.handled.Add True, key
+  On Error GoTo 0
+End Sub
+
+'@label:drop-handled
+'@sub-title Take a range name back out of the acknowledged set.
+Private Sub DropHandled(ByVal rangeName As String)
+  Dim key As String
+
+  If this.handled Is Nothing Then Exit Sub
+
+  key = NormalizeValue(rangeName)
+  If key = vbNullString Then Exit Sub
+
+  'A key that was never acknowledged raises 5; there is nothing to remove.
+  On Error Resume Next
+    this.handled.Remove key
+  On Error GoTo 0
+End Sub
+
+'@label:handled-contains
+'@sub-title Report whether a range name has already been acknowledged.
+Private Function HandledContains(ByVal rangeName As String) As Boolean
+  Dim held As Variant
+  Dim key As String
+
+  If this.handled Is Nothing Then Exit Function
+
+  key = NormalizeValue(rangeName)
+  If key = vbNullString Then Exit Function
+
+  On Error Resume Next
+    held = this.handled(key)
+  On Error GoTo 0
+
+  HandledContains = Not IsEmpty(held)
+End Function
 
 '@label:check-update
 '@sub-title Evaluate a range change against the registered watchers and flag updates.
@@ -1052,6 +1153,7 @@ Public Sub CheckUpdate(ByVal tagReference As Variant, ByVal Target As Range)
       End If
 
       statusColumn.Cells(idx, 1).Value = STATUS_UPDATED
+      DropHandled rangeName
       TrackLastRegistryName registry.Name
       Exit Sub
 
@@ -1214,6 +1316,9 @@ Private Sub SwitchTags(ByVal value As String)
     Dim registry As ListObject
     Dim rng As Range
 
+    'Both flag resets start a fresh acknowledgement cycle.
+    Set this.handled = Nothing
+
     Set registries = RegistryListObjects()
     If registries Is Nothing Then Exit Sub
 
@@ -1310,9 +1415,12 @@ Private Function ColumnMatchesIdentifier(ByVal columnLabel As String, _
   Dim normalizedColumn As String
   Dim normalizedRange As String
 
-  normalizedLabel = NormalizeValue(columnLabel)
-  normalizedColumn = NormalizeValue(ExtractColumnNameFromLabel(columnLabel))
-  normalizedRange = NormalizeValue(rangeName)
+  'Both sides go through NormalizeIdentifier, which turns a space into an
+  'underscore. A caller asking for "variable_name" and a Dictionary header
+  'reading "Variable Name" then land on the same key.
+  normalizedLabel = NormalizeIdentifier(columnLabel)
+  normalizedColumn = NormalizeIdentifier(ExtractColumnNameFromLabel(columnLabel))
+  normalizedRange = NormalizeIdentifier(rangeName)
 
   ColumnMatchesIdentifier = (normalizedLabel = targetKey) _
                             Or (normalizedColumn = targetKey) _

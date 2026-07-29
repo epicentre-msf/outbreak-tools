@@ -236,14 +236,18 @@ End Sub
 '@sub-title Refresh cached dropdowns and related analysis helpers.
 '@details
 'Conditionally rebuilds dropdown lists used by the Analysis sheet. When
-'forceUpdate is True or when the update watcher reports that "control_details"
-'or "variable_name" columns changed, refreshes geo, choices, and special-
-'variable dropdowns. When "variable_type" or "variable_name" changed, refreshes
-'the time-variable dropdown. Finally invalidates the LLVariables cache so
-'subsequent lookups reflect the latest dictionary state.
+'forceUpdate is True or when the update watcher reports that "control details"
+'or "variable name" columns changed, refreshes geo, choices, and special-
+'variable dropdowns. When "variable type" or "variable name" changed, refreshes
+'the time-variable dropdown. The keys are the Dictionary header names as the
+'sheet carries them. It then tells the watcher what it has acted on, and
+'invalidates the LLVariables cache so subsequent lookups reflect the latest
+'dictionary state.
 '@param forceUpdate Optional Boolean. When True, forces a full refresh regardless of update tags. Defaults to False.
 '@export
 Public Sub UpdateAnalysisDropdowns(Optional ByVal forceUpdate As Boolean = False)
+    Dim refreshVariables As Boolean
+    Dim refreshTimeVariables As Boolean
 
     EnsureUpdatedValues
     If (this.updater Is Nothing) Then Exit Sub
@@ -253,23 +257,30 @@ Public Sub UpdateAnalysisDropdowns(Optional ByVal forceUpdate As Boolean = False
     EnsureDropdownValues
     If this.drop Is Nothing Then Exit Sub
 
-    If forceUpdate Or _
-       this.updater.IsUpdated("control_details") Or _
-       this.updater.IsUpdated("variable_name") Then
+    'VBA runs both sides of Or, so each question is asked in its own statement
+    'and a forced refresh asks the watcher nothing at all.
+    refreshVariables = forceUpdate
+    If Not refreshVariables Then refreshVariables = this.updater.IsUpdated("control details")
+    If Not refreshVariables Then refreshVariables = this.updater.IsUpdated("variable name")
 
+    refreshTimeVariables = forceUpdate
+    If Not refreshTimeVariables Then refreshTimeVariables = this.updater.IsUpdated("variable type")
+    If Not refreshTimeVariables Then refreshTimeVariables = this.updater.IsUpdated("variable name")
 
+    If refreshVariables Then
         AddOrUpdateDrop this.dictionary.GeoVars, "__geo_vars"
         AddOrUpdateDrop this.dictionary.ChoicesVars, "__choice_vars"
         AddOrUpdateDrop this.dictionary.SpecialVars("hf"), "__hfonly_vars"
         AddOrUpdateDrop this.dictionary.SpecialVars("geo"), "__geoonly_vars"
-
     End If
 
-    If forceUpdate Or _
-       this.updater.IsUpdated("variable_type") Or _
-       this.updater.IsUpdated("variable_name") Then
+    If refreshTimeVariables Then
         AddOrUpdateDrop this.dictionary.TimeVars, "__time_vars"
     End If
+
+    'Every flag that reads "yes" now has been acted on, so the next activation
+    'rebuilds only what the user has edited since.
+    this.updater.AcknowledgeUpdates
 
     EnsureVars
     If Not this.variables Is Nothing Then
