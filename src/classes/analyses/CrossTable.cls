@@ -282,12 +282,15 @@ Public Property Get StartRow() As Long
                 .Cells(strtRow, STANDARD_START_COL).Name = "STARTROW_" & tabId
 
             ElseIf Not specs.IsNewSection() Then
-                ' Non-new-section temporal: use previous table's start row
-                ' Bug #3 fix: check that previous table was actually built
+                ' Non-new-section temporal: use previous table's start row.
+                ' Previous answers Nothing when the section holds no valid
+                ' table above this row, so the condition is read directly.
+                ' The previous table also has to have been built.
+                Dim prevSpecs As TableSpecs
                 Dim prevTabId As String
-                On Error Resume Next
-                prevTabId = specs.Previous.TableId
-                On Error GoTo 0
+
+                Set prevSpecs = specs.Previous
+                If Not prevSpecs Is Nothing Then prevTabId = prevSpecs.TableId
 
                 If prevTabId <> vbNullString And RangeExists("ENDTABLE_" & prevTabId) Then
                     strtRow = Previous.StartRow
@@ -714,7 +717,9 @@ Public Sub AddRows()
                 rowsData.Push vars.Value(colName:="main label", varName:="hf_" & rowVar)
             End If
 
-            For counter = 1 To CLng(specs.Value("geo max"))
+            ' GeoCount carries the clamp and the default, so an empty
+            ' "N geo max" cell no longer reaches CLng("").
+            For counter = 1 To specs.GeoCount()
                 rowsData.Push vbNullString
             Next
 
@@ -1266,8 +1271,12 @@ Public Sub NameRanges()
         ' Non-new-section temporal: derive catRng from ENDTABLE position
         ' Bug #3 fix: only enter this block if section infrastructure actually exists
         If (tablType = ScopeTimeSeries Or tablType = ScopeSpatioTemporal) And Not isNewSect Then
+            Dim prevSpecs As TableSpecs
             Dim prevTabId As String
-            prevTabId = specs.Previous.TableId
+
+            Set prevSpecs = specs.Previous
+            If Not prevSpecs Is Nothing Then prevTabId = prevSpecs.TableId
+
             If Not RangeExists("ENDTABLE_" & prevTabId) Then
                 ThrowError ErrorUnexpectedState, _
                            "Cannot append time series: no previous table found for " & prevTabId
@@ -1443,10 +1452,11 @@ Private Function IsDeFactoNewSection() As Boolean
     ElseIf specs.TableScope <> ScopeTimeSeries And specs.TableScope <> ScopeSpatioTemporal Then
         result = False
     Else
+        Dim prevSpecs As TableSpecs
         Dim prevTabId As String
-        On Error Resume Next
-        prevTabId = specs.Previous.TableId
-        On Error GoTo 0
+
+        Set prevSpecs = specs.Previous
+        If Not prevSpecs Is Nothing Then prevTabId = prevSpecs.TableId
 
         If prevTabId = vbNullString Then
             result = True
