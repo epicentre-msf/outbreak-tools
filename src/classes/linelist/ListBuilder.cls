@@ -237,7 +237,7 @@ Private Sub BuildHList()
     sh.Activate
     Application.ScreenUpdating = False
     With ActiveWindow
-        .SplitRow = llshs.DataBounds(this.sheetName, 1)
+        .SplitRow = llshs.DataBounds(this.sheetName, SheetBound.RowSart)
         .SplitColumn = 2
         .FreezePanes = True
     End With
@@ -329,17 +329,17 @@ Private Sub BuildHList()
 
     'Create the main ListObject table
     With sh
-        shRowStart = llshs.DataBounds(this.sheetName, 1)
+        shRowStart = llshs.DataBounds(this.sheetName, SheetBound.RowSart)
         shRowEnd = shRowStart + 1
-        shColStart = llshs.DataBounds(this.sheetName, 3)
-        shColEnd = llshs.DataBounds(this.sheetName, 4)
+        shColStart = llshs.DataBounds(this.sheetName, SheetBound.ColStart)
+        shColEnd = llshs.DataBounds(this.sheetName, SheetBound.ColEnd)
 
         Set rng = .Range(.Cells(shRowStart, shColStart), .Cells(shRowEnd, shColEnd))
         .ListObjects.Add(xlSrcRange, rng, , xlYes).Name = tableName
 
         'Resize to full data bounds
         Set Lo = .ListObjects(tableName)
-        shRowEnd = llshs.DataBounds(this.sheetName, 2)
+        shRowEnd = llshs.DataBounds(this.sheetName, SheetBound.RowEnd)
         Set rng = .Range(.Cells(shRowStart, shColStart), .Cells(shRowEnd, shColEnd))
         .Calculate
         Lo.Resize rng
