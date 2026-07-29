@@ -200,11 +200,14 @@ suites:
     classes:
       - name: CaseWhen
       - name: ChoiceFormula
+      - name: ValueOfFormula
     tests:
       - module: TestCaseWhen
         covers: [CaseWhen]
       - module: TestChoiceFormula
         covers: [ChoiceFormula]
+      - module: TestValueOfFormula
+        covers: [ValueOfFormula]
 
   # --- sections -------------------------------------------------------------
   # (Also note: interface: true is stale -- IVarWriter /

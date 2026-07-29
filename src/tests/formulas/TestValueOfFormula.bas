@@ -14,13 +14,13 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 'Tests the ValueOfFormula class, which parses VALUE_OF custom expressions and
 'resolves them into workbook-ready formulas containing sheet names and column
 'indices. Covers the happy-path conversion of a valid three-argument VALUE_OF
-'expression as well as rejection of cross-sheet arguments where the lookup
-'and value variables reside on different worksheets. Each test rebuilds a
-'fresh dictionary fixture via PrepareDictionaryFixture so that dictionary
-'state is isolated between runs.
-'@depends ValueOfFormula, LLdictionary, LLdictionary,
-'  LLVariables, BetterArray, CustomTest,
-'  DictionaryTestFixture, TestHelpers
+'expression, rejection of cross-sheet arguments where the lookup and value
+'variables reside on different worksheets, rejection of a token that only
+'starts with VALUE_OF, an undefined variable, and a dictionary that carries no
+'column index. Each test rebuilds a fresh dictionary fixture via
+'PrepareDictionaryFixture so that dictionary state is isolated between runs.
+'@depends ValueOfFormula, LLdictionary, LLVariables, BetterArray, CustomTest,
+'  DictionaryTestFixture, TestHelpersLite
 
 
 '@section Constants
@@ -100,11 +100,22 @@ End Function
 '@details
 'Runs once before any test in this module. Ensures the shared output
 'worksheet exists and creates a CustomTest harness targeted at it.
+'Public, so the headless runner reaches it: the runner calls every lifecycle
+'hook through Application.Run, which cannot see a Private Sub. The handler
+'matters as much. An error escaping a lifecycle hook aborts the WHOLE module,
+'so a fixture problem here would drop every test and the run would report no
+'failures, because nothing ran.
 '@ModuleInitialize
-Private Sub ModuleInitialize()
+Public Sub ModuleInitialize()
+    On Error GoTo Fail
+    BusyApp
     EnsureWorksheet TEST_OUTPUT_SHEET, clearSheet:=False
     Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
     Assert.SetModuleName "TestValueOfFormula"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "ModuleInitialize", Err.Number, Err.Description
 End Sub
 
 '@sub-title Print results and tear down module-level state
@@ -112,13 +123,20 @@ End Sub
 'Runs once after all tests in this module have completed. Prints the
 'accumulated test results, deletes the dictionary fixture worksheet, and
 'releases all module-level object references.
+'Every step before RestoreApp is wrapped, because RestoreApp has to run
+'whatever happened above: the hooks here call BusyApp, which puts Excel in
+'manual calculation, and the next module in the run would inherit that.
 '@ModuleCleanup
-Private Sub ModuleCleanup()
+Public Sub ModuleCleanup()
+    On Error Resume Next
+        If Not Assert Is Nothing Then
+            Assert.PrintResults TEST_OUTPUT_SHEET
+        End If
+        DeleteWorksheet DICTIONARY_SHEET
+    On Error GoTo 0
 
-    If Not Assert Is Nothing Then
-        Assert.PrintResults TEST_OUTPUT_SHEET
-    End If
-    DeleteWorksheet DICTIONARY_SHEET
+    RestoreApp
+
     Set Assert = Nothing
     Set dictionary = Nothing
     Set dictionarySheet = Nothing
@@ -128,12 +146,20 @@ End Sub
 '@details
 'Populates the dictionary fixture worksheet via PrepareDictionaryFixture,
 'then creates an LLdictionary instance backed by that worksheet. This
-'ensures each test starts with a clean, consistent dictionary state.
+'ensures each test starts with a clean, consistent dictionary state. The
+'fixture is left unprepared; a test that needs the prepared columns calls
+'Prepare itself.
 '@TestInitialize
-Private Sub TestInitialize()
+Public Sub TestInitialize()
+    On Error GoTo Fail
+    BusyApp
     PrepareDictionaryFixture DICTIONARY_SHEET
     Set dictionarySheet = ThisWorkbook.Worksheets(DICTIONARY_SHEET)
     Set dictionary = LLdictionary.Create(dictionarySheet, 1, 1)
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestInitialize", Err.Number, Err.Description
 End Sub
 
 '@sub-title Flush assertions and release per-test state
@@ -141,10 +167,13 @@ End Sub
 'Flushes any pending assertion output and releases the dictionary and
 'worksheet references so the next test starts with a clean slate.
 '@TestCleanup
-Private Sub TestCleanup()
-    If Not Assert Is Nothing Then
-        Assert.Flush
-    End If
+Public Sub TestCleanup()
+    On Error Resume Next
+        If Not Assert Is Nothing Then
+            Assert.Flush
+        End If
+    On Error GoTo 0
+
     Set dictionary = Nothing
     Set dictionarySheet = Nothing
 End Sub
@@ -183,8 +212,6 @@ Public Sub TestValueOfFormulaConvertsToNewSignature()
     valueIndex = vars.Index("text_h2")
 
     expected = "VALUE_OF(lauto_drop_h2, " & QuoteSheet(lookupSheet) & ", " & CStr(lookupIndex) & ", " & CStr(valueIndex) & ")"
-
-    Debug.print expected
 
     Assert.IsTrue parser.Valid, "Expected VALUE_OF parser to accept valid arguments"
     Assert.AreEqual expected, parser.ConvertedFormula, "Converted VALUE_OF formula should include sheet name and column indices"
@@ -233,4 +260,84 @@ Public Sub TestValueOfFormulaRejectsCrossSheetArguments()
 
 Fail:
     CustomTestLogFailure Assert, "TestValueOfFormulaRejectsCrossSheetArguments", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verify a token that only starts with VALUE_OF is rejected
+'@details
+'Arranges VALUE_OFX(...), which shares its first eight characters with the
+'real token. Acts by reading Valid and ConvertedFormula. Asserts that the
+'expression is rejected. The old class compared the leading characters only
+'and then looked for the first bracket anywhere, so VALUE_OFX and
+'VALUE_OF_EXTRA both parsed as a VALUE_OF.
+'@TestMethod("ValueOfFormula")
+Public Sub TestValueOfFormulaRejectsLongerToken()
+    CustomTestSetTitles Assert, "ValueOfFormula", "TestValueOfFormulaRejectsLongerToken"
+    On Error GoTo Fail
+
+    Dim parser As ValueOfFormula
+
+    Set parser = BuildParser("VALUE_OFX(lauto_drop_h2, choi_h2, text_h2)")
+
+    Assert.IsFalse parser.Valid, "A longer token should not parse as VALUE_OF"
+    Assert.AreEqual vbNullString, parser.ConvertedFormula, "A rejected token should produce no converted expression"
+    Assert.IsTrue (LenB(parser.FailureReason) > 0), "A rejected expression should carry a reason"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestValueOfFormulaRejectsLongerToken", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verify an undefined variable is named in the failure reason
+'@details
+'Arranges a VALUE_OF whose value argument names a variable the dictionary
+'does not hold. Acts by reading Valid and FailureReason. Asserts the
+'expression is rejected and the message names the variable, so the user can
+'find it in the dictionary.
+'@TestMethod("ValueOfFormula")
+Public Sub TestValueOfFormulaNamesTheMissingVariable()
+    CustomTestSetTitles Assert, "ValueOfFormula", "TestValueOfFormulaNamesTheMissingVariable"
+    On Error GoTo Fail
+
+    Dim parser As ValueOfFormula
+    Dim reason As String
+
+    Set parser = BuildParser("VALUE_OF(lauto_drop_h2, choi_h2, not_a_variable)")
+    reason = parser.FailureReason
+
+    Assert.IsFalse parser.Valid, "An undefined variable should be rejected"
+    Assert.IsTrue (InStr(1, reason, "not_a_variable", vbTextCompare) > 0), _
+                  "Failure reason should name the missing variable. Found: " & reason
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestValueOfFormulaNamesTheMissingVariable", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verify a missing column index is reported as a missing column index
+'@details
+'Arranges a valid VALUE_OF over a dictionary that has NOT been prepared, so
+'the column index column carries nothing. LLVariables.Index raises for that,
+'and the old class swallowed the raise into one generic "Unable to parse
+'VALUE_OF formula" message. Asserts the expression is rejected and the
+'message says the column index is missing and names the variable.
+'@TestMethod("ValueOfFormula")
+Public Sub TestValueOfFormulaReportsMissingColumnIndex()
+    CustomTestSetTitles Assert, "ValueOfFormula", "TestValueOfFormulaReportsMissingColumnIndex"
+    On Error GoTo Fail
+
+    Dim parser As ValueOfFormula
+    Dim reason As String
+
+    Set parser = BuildParser("VALUE_OF(lauto_drop_h2, choi_h2, text_h2)")
+    reason = parser.FailureReason
+
+    Assert.IsFalse parser.Valid, "An unprepared dictionary carries no column index, so the formula is rejected"
+    Assert.IsTrue (InStr(1, reason, "column index", vbTextCompare) > 0), _
+                  "Failure reason should say the column index is missing. Found: " & reason
+    Assert.IsTrue (InStr(1, reason, "choi_h2", vbTextCompare) > 0), _
+                  "Failure reason should name the variable. Found: " & reason
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestValueOfFormulaReportsMissingColumnIndex", Err.Number, Err.Description
 End Sub
