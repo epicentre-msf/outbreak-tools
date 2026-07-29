@@ -338,13 +338,23 @@ Public Sub Check(ByVal importDictionary As Boolean, _
     LeaveBusyState
     Exit Sub
 
+CheckCleanup:
+    'Reached through Resume, which leaves the handler. The two On Error lines
+    'here are load-bearing: Resume leaves the handler and leaves CheckFailed
+    'ARMED, so a raise below would jump back into it and Resume here again, for
+    'ever. Every cleanup label in this class disarms before it does its work.
+    On Error Resume Next
+        CloseWorkbook opened
+    On Error GoTo 0
+    LeaveBusyState True
+    If errNumber <> 0 Then Err.Raise errNumber, errSource, errDescription
+    Exit Sub
+
 CheckFailed:
     errNumber = Err.Number
     errSource = Err.Source
     errDescription = Err.Description
-    CloseWorkbook opened
-    LeaveBusyState True
-    If errNumber <> 0 Then Err.Raise errNumber, errSource, errDescription
+    Resume CheckCleanup
 End Sub
 
 '@label:clean
@@ -397,10 +407,10 @@ Public Sub Clean(ByVal pass As Passwords, ByVal sheetsList As BetterArray)
     LeaveBusyState
     Exit Sub
 
-CleanFailed:
-    errNumber = Err.Number
-    errSource = Err.Source
-    errDescription = Err.Description
+CleanCleanup:
+    'Reached through Resume, which leaves the handler. A sheet that refused the
+    'clean is also a sheet that can refuse the re-protect, and a second error
+    'inside an active handler is not trappable.
     On Error Resume Next
         If sheetUnlocked Then
             ProtectWorksheet pass, sheetName
@@ -409,6 +419,13 @@ CleanFailed:
     On Error GoTo 0
     LeaveBusyState True
     If errNumber <> 0 Then Err.Raise errNumber, errSource, errDescription
+    Exit Sub
+
+CleanFailed:
+    errNumber = Err.Number
+    errSource = Err.Source
+    errDescription = Err.Description
+    Resume CleanCleanup
 End Sub
 
 '@label:import
@@ -512,21 +529,13 @@ Public Sub Import(ByVal pass As Passwords, ByVal sheetsList As BetterArray)
     LeaveBusyState
     Exit Sub
 
-ImportCleanupFailed:
-    errNumber = Err.Number
-    errSource = Err.Source
-    errDescription = Err.Description
-    On Error Resume Next
-        CloseImportWorkbook
-    On Error GoTo 0
-    LeaveBusyState True
-    If errNumber <> 0 Then Err.Raise errNumber, errSource, errDescription
-    Exit Sub
-
-ImportFailed:
-    errNumber = Err.Number
-    errSource = Err.Source
-    errDescription = Err.Description
+ImportCleanup:
+    'Both handlers reach this label through Resume, which LEAVES the handler.
+    'A second error raised while a handler is still active is not trappable and
+    'ends the run where it stands, so the recovery below has to sit outside it.
+    'That is what used to keep the borrowed "Formula Label" name on the Choices
+    'table: re-protecting the sheet that had just refused the write raised, and
+    'PostImport never ran.
     On Error Resume Next
         If sheetUnlocked Then
             ProtectWorksheet pass, lastSheetName
@@ -540,6 +549,19 @@ ImportFailed:
     On Error GoTo 0
     LeaveBusyState True
     If errNumber <> 0 Then Err.Raise errNumber, errSource, errDescription
+    Exit Sub
+
+ImportCleanupFailed:
+    errNumber = Err.Number
+    errSource = Err.Source
+    errDescription = Err.Description
+    Resume ImportCleanup
+
+ImportFailed:
+    errNumber = Err.Number
+    errSource = Err.Source
+    errDescription = Err.Description
+    Resume ImportCleanup
 End Sub
 
 
@@ -613,15 +635,21 @@ Public Sub ImportFromWorkbook(ByVal pass As Passwords, Optional ByVal sheetsList
     LeaveBusyState
     Exit Sub
 
-ImportWorkbookFailed:
-    errNumber = Err.Number
-    errSource = Err.Source
-    errDescription = Err.Description
+ImportWorkbookCleanup:
+    'Reached through Resume, so the close below runs outside the handler. A
+    'second error inside an active handler is not trappable.
     On Error Resume Next
         CloseImportWorkbook
     On Error GoTo 0
     LeaveBusyState True
     If errNumber <> 0 Then Err.Raise errNumber, errSource, errDescription
+    Exit Sub
+
+ImportWorkbookFailed:
+    errNumber = Err.Number
+    errSource = Err.Source
+    errDescription = Err.Description
+    Resume ImportWorkbookCleanup
 End Sub
 
 '@label:import-dictionary
@@ -1013,10 +1041,10 @@ Public Sub Export(Optional ByVal outwb As Workbook)
     LeaveBusyState
     Exit Sub
 
-ExportCleanupFailed:
-    errNumber = Err.Number
-    errSource = Err.Source
-    errDescription = Err.Description
+ExportCleanup:
+    'Both handlers reach this label through Resume, which leaves the handler. A
+    'second error inside an active handler is not trappable, so the close has to
+    'sit outside it or a half-written export workbook stays open.
     On Error Resume Next
         CloseExportWorkbook
     On Error GoTo 0
@@ -1024,15 +1052,17 @@ ExportCleanupFailed:
     If errNumber <> 0 Then Err.Raise errNumber, errSource, errDescription
     Exit Sub
 
+ExportCleanupFailed:
+    errNumber = Err.Number
+    errSource = Err.Source
+    errDescription = Err.Description
+    Resume ExportCleanup
+
 ExportFailed:
     errNumber = Err.Number
     errSource = Err.Source
     errDescription = Err.Description
-    On Error Resume Next
-        CloseExportWorkbook
-    On Error GoTo 0
-    LeaveBusyState True
-    If errNumber <> 0 Then Err.Raise errNumber, errSource, errDescription
+    Resume ExportCleanup
 End Sub
 
 
