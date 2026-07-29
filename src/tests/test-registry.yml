@@ -199,9 +199,12 @@ suites:
   - folder: formulas
     classes:
       - name: CaseWhen
+      - name: ChoiceFormula
     tests:
       - module: TestCaseWhen
         covers: [CaseWhen]
+      - module: TestChoiceFormula
+        covers: [ChoiceFormula]
 
   # --- sections -------------------------------------------------------------
   # (Also note: interface: true is stale -- IVarWriter /
