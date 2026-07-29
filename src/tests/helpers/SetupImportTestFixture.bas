@@ -276,7 +276,7 @@ Public Sub PrepareSetupAnalysisSheet(ByVal sheetName As String, _
     sh.Cells(2, 1).Value = headerText
     nextRow = 3
 
-    nextRow = AddAnalysisTable(sh, nextRow, "Tab_global_summary", _
+    nextRow = AddAnalysisTable(sh, nextRow, "Tab_Global_Summary", _
                                Array("Section"), _
                                Array(Array(prefix & " global section")))
 

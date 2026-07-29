@@ -49,7 +49,7 @@ Private Const UPDATESPCOMMAND As String = "UpdateSpTables"
 Private Const CLASS_NAME As String = "AnalysisOutput"
 
 ' ListObject names in the setup worksheet
-Private Const GLOBALSUMMARY As String = "Tab_global_summary"
+Private Const GLOBALSUMMARY As String = "Tab_Global_Summary"
 Private Const UNIVARIATE As String = "Tab_Univariate_Analysis"
 Private Const BIVARIATE As String = "Tab_Bivariate_Analysis"
 Private Const TIMESERIES As String = "Tab_TimeSeries_Analysis"
@@ -87,7 +87,7 @@ Private internalChecks As Checking
 'the output workbook facade where analysis sheets will be created and
 'populated. Both parameters are validated before construction.
 '@param specSh Worksheet. The setup worksheet containing analysis ListObjects
-'(Tab_global_summary, Tab_Univariate_Analysis, Tab_Bivariate_Analysis,
+'(Tab_Global_Summary, Tab_Univariate_Analysis, Tab_Bivariate_Analysis,
 'Tab_TimeSeries_Analysis, Tab_Spatial_Analysis, Tab_SpatioTemporal_Analysis).
 '@param ll Linelist. The output linelist workbook facade where analysis sheets
 'will be created.

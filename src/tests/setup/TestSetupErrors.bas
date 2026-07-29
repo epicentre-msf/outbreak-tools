@@ -806,7 +806,7 @@ End Sub
 
 Private Function AnalysisTableTypeLabel(ByVal tableName As String) As String
     Select Case tableName
-    Case "Tab_global_summary"
+    Case "Tab_Global_Summary"
         AnalysisTableTypeLabel = "Global summary"
     Case "Tab_Univariate_Analysis"
         AnalysisTableTypeLabel = "Univariate analysis"

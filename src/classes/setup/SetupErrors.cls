@@ -1025,7 +1025,7 @@ Private Sub CheckTable(ByVal partName As String, _
                        ByVal analysisSheet As Worksheet, _
                        ByVal workFun As WorksheetFunction)
 
-    Const TAB_GLOBAL_SUMMARY As String = "Tab_global_summary"
+    Const TAB_GLOBAL_SUMMARY As String = "Tab_Global_Summary"
     Const TAB_UNIVARIATE As String = "Tab_Univariate_Analysis"
     Const TAB_BIVARIATE As String = "Tab_Bivariate_Analysis"
     Const TAB_TIME_SERIES As String = "Tab_TimeSeries_Analysis"
