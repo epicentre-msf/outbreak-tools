@@ -23,6 +23,7 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 '  DictionaryTestFixture, TestHelpers
 
 Private Const DICT_SHEET As String = "FormulaConditionDict"
+Private Const OTHER_DICT_SHEET As String = "FormulaConditionDict2"
 
 Private Assert As CustomTest
 Private Dictionary As LLdictionary
@@ -45,25 +46,45 @@ End Function
 'Creates the test output sheet, sets up the CustomTest assertion object,
 'seeds a dictionary worksheet via PrepareDictionaryFixture, and wraps it
 'in an LLdictionary instance used by all tests.
+'Public, so the headless runner reaches it: the runner calls every lifecycle
+'hook through Application.Run, which cannot see a Private Sub. The handler
+'matters as much. An error escaping a lifecycle hook aborts the WHOLE module,
+'so a fixture problem here would drop every test and the run would report no
+'failures, because nothing ran.
 '@ModuleInitialize
-Private Sub ModuleInitialize()
+Public Sub ModuleInitialize()
+    On Error GoTo Fail
+    BusyApp
     EnsureWorksheet TEST_OUTPUT_SHEET, clearSheet:=False
     Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
     Assert.SetModuleName "TestFormulaCondition"
     PrepareDictionaryFixture DICT_SHEET
     Set Dictionary = LLdictionary.Create(ThisWorkbook.Worksheets(DICT_SHEET), 1, 1)
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "ModuleInitialize", Err.Number, Err.Description
 End Sub
 
 '@sub-title Print results and tear down the dictionary fixture
 '@details
 'Flushes remaining assertion output to the test sheet, deletes the
 'dictionary fixture worksheet, and releases object references.
+'Every step before RestoreApp is wrapped, because RestoreApp has to run
+'whatever happened above: the hooks here call BusyApp, which puts Excel in
+'manual calculation, and the next module in the run would inherit that.
 '@ModuleCleanup
-Private Sub ModuleCleanup()
-    If Not Assert Is Nothing Then
-        Assert.PrintResults TEST_OUTPUT_SHEET
-    End If
-    DeleteWorksheet DICT_SHEET
+Public Sub ModuleCleanup()
+    On Error Resume Next
+        If Not Assert Is Nothing Then
+            Assert.PrintResults TEST_OUTPUT_SHEET
+        End If
+        DeleteWorksheet DICT_SHEET
+        DeleteWorksheet OTHER_DICT_SHEET
+    On Error GoTo 0
+
+    RestoreApp
+
     Set Dictionary = Nothing
     Set Assert = Nothing
 End Sub
@@ -73,18 +94,27 @@ End Sub
 'Recreates the dictionary worksheet and prepares it via LLdictionary.Prepare
 'so that each test starts from a known clean state with prepared metadata.
 '@TestInitialize
-Private Sub TestInitialize()
+Public Sub TestInitialize()
+    On Error GoTo Fail
+    BusyApp
     PrepareDictionaryFixture DICT_SHEET
     Set Dictionary = LLdictionary.Create(ThisWorkbook.Worksheets(DICT_SHEET), 1, 1)
     Dictionary.Prepare
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestInitialize", Err.Number, Err.Description
 End Sub
 
 '@sub-title Flush assertions and release the dictionary after each test
 '@TestCleanup
-Private Sub TestCleanup()
-    If Not Assert Is Nothing Then
-        Assert.Flush
-    End If
+Public Sub TestCleanup()
+    On Error Resume Next
+        If Not Assert Is Nothing Then
+            Assert.Flush
+        End If
+    On Error GoTo 0
+
     Set Dictionary = Nothing
 End Sub
 
@@ -240,6 +270,49 @@ Public Sub TestValidFailsForDifferentTables()
 
     Assert.IsFalse form.Valid(Dictionary), "Valid should fail when variables belong to different tables"
     Assert.IsTrue form.HasCheckings, "Cross-table validation failure should log diagnostics"
+End Sub
+
+'@sub-title Verify a cached validity answer belongs to the dictionary it was computed against
+'@details
+'Validates against the shared dictionary, then validates the same instance
+'against a SECOND dictionary whose fixture no longer holds one of the
+'variables. Both calls pass the same (empty) table name, so a cache keyed on
+'the table name alone hands the first dictionary's True answer back for the
+'second one. Asserts the second call answers for its own dictionary.
+'@TestMethod("FormulaCondition")
+Public Sub TestValidCacheBelongsToOneDictionary()
+    CustomTestSetTitles Assert, "FormulaCondition", "TestValidCacheBelongsToOneDictionary"
+    On Error GoTo Fail
+
+    Dim vars As BetterArray
+    Dim conds As BetterArray
+    Dim form As FormulaCondition
+    Dim otherDictionary As LLdictionary
+    Dim otherVars As LLVariables
+    Dim renamedCell As Range
+
+    Set vars = BetterArrayFromList("choi_v1", "choi_mult_v1")
+    Set conds = BetterArrayFromList(">0", "<5")
+
+    PrepareDictionaryFixture OTHER_DICT_SHEET
+    Set otherDictionary = LLdictionary.Create(ThisWorkbook.Worksheets(OTHER_DICT_SHEET), 1, 1)
+    otherDictionary.Prepare
+
+    Set otherVars = LLVariables.Create(otherDictionary)
+    Set renamedCell = otherVars.CellRange("variable name", "choi_v1")
+    Assert.IsTrue Not renamedCell Is Nothing, "Fixture assumption broken: choi_v1 should exist on the second sheet"
+    renamedCell.Value = "renamed_choi_v1"
+    otherVars.InvalidateCaches
+
+    Set form = FormulaCondition.Create(vars, conds)
+
+    Assert.IsTrue form.Valid(Dictionary), "The first dictionary holds both variables"
+    Assert.IsFalse form.Valid(otherDictionary), _
+                   "The second dictionary is missing a variable, so it answers False"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestValidCacheBelongsToOneDictionary", Err.Number, Err.Description
 End Sub
 
 '@sub-title Verify the optional table override parameter of Valid

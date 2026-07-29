@@ -202,6 +202,7 @@ suites:
       - name: ChoiceFormula
       - name: ValueOfFormula
       - name: FormulaData
+      - name: FormulaCondition
     tests:
       - module: TestCaseWhen
         covers: [CaseWhen]
@@ -211,6 +212,8 @@ suites:
         covers: [ValueOfFormula]
       - module: TestFormulaData
         covers: [FormulaData]
+      - module: TestFormulaCondition
+        covers: [FormulaCondition]
 
   # --- sections -------------------------------------------------------------
   # (Also note: interface: true is stale -- IVarWriter /
