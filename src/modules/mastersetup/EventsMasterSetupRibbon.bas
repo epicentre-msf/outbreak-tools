@@ -275,7 +275,10 @@ Public Sub clickAddTrans(ByRef control As IRibbonControl)
     Dim translationsTable As ListObject
     Dim registrySheet As Worksheet
     Dim manager As SetupTranslationsTable
-    Dim updatedValues As UpdatedValues
+    'Named updater, because a local called updatedValues would take over the
+    'identifier and put the predeclared UpdatedValues instance out of reach in
+    'this procedure.
+    Dim updater As UpdatedValues
     Dim passwords As Passwords
     Dim confirmTitle As String
 
@@ -321,8 +324,8 @@ Public Sub clickAddTrans(ByRef control As IRibbonControl)
 
     passwords.Protect translationsSheet.Name
 
-    Set updatedValues = MasterSetupHelpers.ResolveMasterUpdatedValues()
-    If Not updatedValues Is Nothing Then updatedValues.SwitchTagsToNo
+    Set updater = MasterSetupHelpers.ResolveMasterUpdatedValues()
+    If Not updater Is Nothing Then updater.SwitchTagsToNo
 
 Cleanup:
     If Not scope Is Nothing Then scope.Restore

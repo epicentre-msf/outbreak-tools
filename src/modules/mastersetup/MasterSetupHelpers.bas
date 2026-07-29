@@ -188,6 +188,11 @@ Public Function ResolveMasterPasswords(Optional ByVal hostSheet As Worksheet) As
     Set ResolveMasterPasswords = Passwords.Create(targetSheet)
 End Function
 
+'The master registry on "__updated" is hand-built. Nothing in master setup calls
+'AddSheet or AddColumns, so the watcher is used here to read flags and to reset
+'them, never to build the tables. UpdatedValues.SwitchTags walks every table on
+'the sheet and resets any that carries an "updated" column, which is how the
+'master tables are reached even though this class never created them.
 Public Function ResolveMasterUpdatedValues(Optional ByVal registrySheet As Worksheet) As UpdatedValues
     Dim targetSheet As Worksheet
 
