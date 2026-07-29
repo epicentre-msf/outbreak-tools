@@ -13,9 +13,8 @@ Option Explicit
 '   creates a fresh fixture workbook with the required sheets and ListObjects,
 '   calls Subject.Prepare, then asserts the expected side effects.
 '
-' @depends SetupPreparation, Development,
-'   BetterArray, CustomTest, TestHelpers, DropdownLists,
-'   DropdownLists, UpdatedValues, CustomTable
+' @depends SetupPreparation, Development, BetterArray, CustomTest,
+'   TestHelpersLite, DropdownLists, UpdatedValues, CustomTable, Checking
 '
 ' The fixture workbook is rebuilt before every test via TestInitialize so each
 ' test runs in isolation. Dropdown content is verified by checking the
@@ -47,7 +46,6 @@ Private Const DROPDOWN_SHEET_NAME As String = "__variables"
 Private Const UPDATED_SHEET_NAME As String = "__updated"
 Private Const VARIABLES_SHEET_NAME As String = "Dictionary"
 Private Const CHOICES_SHEET_NAME As String = "Choices"
-Private Const STATUS_DEFAULT As String = "no"
 Private Const STATUS_UPDATED As String = "yes"
 Private Const TAG_WATCH_UPDATE As String = "watch for update"
 
@@ -57,12 +55,12 @@ Private Const TAG_WATCH_UPDATE As String = "watch for update"
 
 '@sub-title Initialise the test module and configure the output sheet.
 '@details
-'Disables screen updating via TestHelpers.BusyApp, ensures the output sheet
+'Disables screen updating via BusyApp, ensures the output sheet
 'exists, creates the CustomTest assertion object, and sets the module name
 'for grouped test reporting.
 '@ModuleInitialize
 Public Sub ModuleInitialize()
-    TestHelpers.BusyApp
+    BusyApp
     AssertSheetSetup
     Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
     Assert.SetModuleName "TestSetupPreparation"
@@ -81,7 +79,7 @@ Public Sub ModuleCleanup()
         End If
     On Error GoTo 0
     Set Assert = Nothing
-    TestHelpers.RestoreApp
+    RestoreApp
 End Sub
 
 '@sub-title Build a fresh fixture workbook before each test.
@@ -94,19 +92,19 @@ End Sub
 'instances.
 '@TestInitialize
 Public Sub TestInitialize()
-    TestHelpers.BusyApp
-    Set FixtureWorkbook = TestHelpers.NewWorkbook
-    Set DropdownSheet = TestHelpers.EnsureWorksheet(DROPDOWN_SHEET_NAME, FixtureWorkbook)
-    Set RegistrySheet = TestHelpers.EnsureWorksheet(UPDATED_SHEET_NAME, FixtureWorkbook, True, xlSheetVeryHidden)
-    Set VariablesSheet = TestHelpers.EnsureWorksheet(VARIABLES_SHEET_NAME, FixtureWorkbook)
-    Set ChoicesSheet = TestHelpers.EnsureWorksheet(CHOICES_SHEET_NAME, FixtureWorkbook)
-    Set ExportsSheet = TestHelpers.EnsureWorksheet("Exports", FixtureWorkbook)
-    Set AnalysisSheet = TestHelpers.EnsureWorksheet("Analysis", FixtureWorkbook)
-    Set CheckingSheet = TestHelpers.EnsureWorksheet("__checkRep", FixtureWorkbook)
-    TestHelpers.EnsureWorksheet "__formatter", FixtureWorkbook
-    TestHelpers.EnsureWorksheet "__formula", FixtureWorkbook
-    TestHelpers.EnsureWorksheet "__pass", FixtureWorkbook
-    TestHelpers.EnsureWorksheet "Translations", FixtureWorkbook
+    BusyApp
+    Set FixtureWorkbook = NewWorkbook
+    Set DropdownSheet = EnsureWorksheet(DROPDOWN_SHEET_NAME, FixtureWorkbook)
+    Set RegistrySheet = EnsureWorksheet(UPDATED_SHEET_NAME, FixtureWorkbook, True, xlSheetVeryHidden)
+    Set VariablesSheet = EnsureWorksheet(VARIABLES_SHEET_NAME, FixtureWorkbook)
+    Set ChoicesSheet = EnsureWorksheet(CHOICES_SHEET_NAME, FixtureWorkbook)
+    Set ExportsSheet = EnsureWorksheet("Exports", FixtureWorkbook)
+    Set AnalysisSheet = EnsureWorksheet("Analysis", FixtureWorkbook)
+    Set CheckingSheet = EnsureWorksheet("__checkRep", FixtureWorkbook)
+    EnsureWorksheet "__formatter", FixtureWorkbook
+    EnsureWorksheet "__formula", FixtureWorkbook
+    EnsureWorksheet "__pass", FixtureWorkbook
+    EnsureWorksheet "Translations", FixtureWorkbook
 
     BuildWatchedTable VariablesSheet, "Tab_Dictionary", _
         Array("sheet type", "editable label", "status", "personal identifier", "variable type", "variable format", _
@@ -122,7 +120,7 @@ Public Sub TestInitialize()
     EnsureWorkbookName FixtureWorkbook, "RNG_SelectTable", AnalysisSheet.Cells(1, 1)
     EnsureWorkbookName FixtureWorkbook, "RNG_CheckingFilter", CheckingSheet.Cells(1, 1)
 
-    Set DevSheet = TestHelpers.EnsureWorksheet("Dev", FixtureWorkbook)
+    Set DevSheet = EnsureWorksheet("Dev", FixtureWorkbook)
     EnsureLocalName DevSheet, "ModulesCodes", DevSheet.Cells(1, 1)
     EnsureLocalName DevSheet, "ClassesImplementation", DevSheet.Cells(2, 1)
 
@@ -141,7 +139,7 @@ Public Sub TestCleanup()
     End If
 
     On Error Resume Next
-        TestHelpers.DeleteWorkbook FixtureWorkbook
+        DeleteWorkbook FixtureWorkbook
     On Error GoTo 0
 
     Set Subject = Nothing
@@ -196,11 +194,10 @@ End Sub
 
 '@sub-title Verify that Prepare initialises the updated values registry.
 '@details
-'Calls Subject.Prepare, then scans all ListObjects on the __updated sheet
-'(skipping the internal __UpLo__Names__ table). For each table that has
-'"updated" and "rngname" columns, verifies that every status cell is set
-'to the default "yes" value and that every non-empty rngname cell has a
-'corresponding workbook-level defined Name. Asserts that at least one
+'Calls Subject.Prepare, then scans all ListObjects on the __updated sheet.
+'For each table that has "updated" and "rngname" columns, verifies that
+'every status cell is set to "yes" and that every non-empty rngname cell
+'has a corresponding workbook-level defined Name. Asserts that at least one
 'registry table was populated.
 '@TestMethod("SetupPreparation")
 Public Sub TestPrepareInitialisesUpdatedValuesRegistry()
@@ -219,7 +216,6 @@ Public Sub TestPrepareInitialisesUpdatedValuesRegistry()
     Set RegistrySheet = FixtureWorkbook.Worksheets(UPDATED_SHEET_NAME)
 
     For Each lo In RegistrySheet.ListObjects
-        If lo.Name = "__UpLo__Names__" Then GoTo NextLo
         On Error Resume Next
             Set statusColumn = lo.ListColumns("updated").DataBodyRange
             Set rangeColumn = lo.ListColumns("rngname").DataBodyRange
@@ -229,7 +225,7 @@ Public Sub TestPrepareInitialisesUpdatedValuesRegistry()
             registryCount = registryCount + 1
 
             For Each cell In statusColumn.Cells
-                Assert.AreEqual STATUS_UPDATED, NormalizeText(CStr(cell.Value)), "Registry rows should be initialised to 'no' on listObject " & lo.Name
+                Assert.AreEqual STATUS_UPDATED, NormalizeText(CStr(cell.Value)), "Registry rows should be initialised to 'yes' on listObject " & lo.Name
             Next cell
 
             For Each cell In rangeColumn.Cells
@@ -244,7 +240,6 @@ Public Sub TestPrepareInitialisesUpdatedValuesRegistry()
 
         Set statusColumn = Nothing
         Set rangeColumn = Nothing
-    NextLo:
     Next
 
     Assert.IsTrue registryCount > 0, "Registry should be populated when tagged columns are registered"
@@ -284,7 +279,7 @@ End Sub
 '@details
 'Calls Subject.Prepare, then checks two analysis-level validations: the
 'RNG_SelectTable named range should have a list validation referencing
-'"__swicth_tables", and the Tab_TimeSeries_Analysis table's "row" column
+'"__switch_tables", and the Tab_TimeSeries_Analysis table's "row" column
 'should reference "__time_vars". This confirms that both named-range and
 'table-column validations are applied correctly.
 '@TestMethod("SetupPreparation")
@@ -299,7 +294,7 @@ Public Sub TestPrepareAppliesAnalysisValidation()
     Dim columnRange As Range
 
     Set selectTable = AnalysisSheet.Range("RNG_SelectTable")
-    AssertValidationContains selectTable, "__swicth_tables"
+    AssertValidationContains selectTable, "__switch_tables"
 
     Set tsTable = AnalysisSheet.ListObjects("Tab_TimeSeries_Analysis")
     Set columnRange = tsTable.ListColumns("row").DataBodyRange
@@ -310,13 +305,142 @@ Fail:
     ReportTestFailure "TestPrepareAppliesAnalysisValidation"
 End Sub
 
+'@sub-title Verify that Prepare rejects a missing manager before it writes anything.
+'@details
+'RibbonDev.EnsureDevelopment answers Nothing on any failure and its caller
+'passes that straight through, so a user can reach Prepare with no manager.
+'Calls Prepare with Nothing, asserts the raised error is
+'ProjectError.ObjectNotInitialized, and asserts that neither the dropdown
+'sheet nor the registry sheet gained a ListObject. Before the guard moved to
+'the top of Prepare, both sheets were fully built and the error came last.
+'@TestMethod("SetupPreparation")
+Public Sub TestPrepareRejectsMissingManagerBeforeWriting()
+    CustomTestSetTitles Assert, "SetupPreparation", "TestPrepareRejectsMissingManagerBeforeWriting"
+    On Error GoTo Fail
+
+    Dim raisedNumber As Long
+
+    On Error Resume Next
+        Subject.Prepare Nothing
+        raisedNumber = Err.Number
+        Err.Clear
+    On Error GoTo Fail
+
+    Assert.AreEqual CLng(ProjectError.ObjectNotInitialized), raisedNumber, _
+        "Prepare should raise ObjectNotInitialized when the manager is missing"
+    Assert.AreEqual CLng(0), CLng(DropdownSheet.ListObjects.Count), _
+        "Prepare should register no dropdown before it tests the manager"
+    Assert.AreEqual CLng(0), CLng(RegistrySheet.ListObjects.Count), _
+        "Prepare should build no registry table before it tests the manager"
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestPrepareRejectsMissingManagerBeforeWriting"
+End Sub
+
+'@sub-title Verify that a second Prepare writes a dropdown this class owns again.
+'@details
+'Runs Prepare, replaces the content of __yesno so the sheet no longer matches
+'what the class declares, then runs Prepare again and asserts the two
+'declared entries are back. DropdownLists.Add exits when the name is already
+'registered, so before this session a prepared workbook kept its old lists
+'for ever and a new format never reached it.
+'@TestMethod("SetupPreparation")
+Public Sub TestSecondPrepareRefreshesAnOwnedDropdown()
+    CustomTestSetTitles Assert, "SetupPreparation", "TestSecondPrepareRefreshesAnOwnedDropdown"
+    On Error GoTo Fail
+
+    Dim drift As BetterArray
+    Dim yesNo As BetterArray
+
+    Subject.Prepare Manager
+
+    Set drift = New BetterArray
+    drift.LowerBound = 1
+    drift.Push "maybe"
+    Subject.Dropdowns.Update drift, "__yesno", removeDuplicates:=False
+
+    Set yesNo = Subject.Dropdowns.Values("__yesno")
+    Assert.IsTrue ContainsValue(yesNo, "maybe"), "the arrange step should have changed __yesno"
+
+    Subject.Prepare Manager
+
+    Set yesNo = Subject.Dropdowns.Values("__yesno")
+    Assert.IsFalse ContainsValue(yesNo, "maybe"), "a second Prepare should write __yesno again"
+    Assert.AreEqual CLng(2), yesNo.Length, "__yesno should hold its two declared entries again"
+    Assert.IsTrue ContainsValue(yesNo, "yes"), "__yesno should contain 'yes' after the refresh"
+    Assert.IsTrue ContainsValue(yesNo, "no"), "__yesno should contain 'no' after the refresh"
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestSecondPrepareRefreshesAnOwnedDropdown"
+End Sub
+
+'@sub-title Verify that a second Prepare leaves the placeholder dropdowns alone.
+'@details
+'__geo_vars is one of the seven lists seeded with two empty strings here and
+'filled later by EventSetup from the workbook's own content. Fills it, runs
+'Prepare again, and asserts the content survived. This is the other half of
+'the refresh above: writing every list again would wipe these seven on every
+'press of the dev initialise button.
+'@TestMethod("SetupPreparation")
+Public Sub TestSecondPrepareKeepsPlaceholderDropdowns()
+    CustomTestSetTitles Assert, "SetupPreparation", "TestSecondPrepareKeepsPlaceholderDropdowns"
+    On Error GoTo Fail
+
+    Dim filled As BetterArray
+    Dim geoVars As BetterArray
+
+    Subject.Prepare Manager
+
+    Set filled = New BetterArray
+    filled.LowerBound = 1
+    filled.Push "adm1", "adm2"
+    Subject.Dropdowns.Update filled, "__geo_vars", removeDuplicates:=False
+
+    Subject.Prepare Manager
+
+    Set geoVars = Subject.Dropdowns.Values("__geo_vars")
+    Assert.IsTrue ContainsValue(geoVars, "adm1"), "a second Prepare should keep what EventSetup put in __geo_vars"
+    Assert.IsTrue ContainsValue(geoVars, "adm2"), "a second Prepare should keep every placeholder entry"
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestSecondPrepareKeepsPlaceholderDropdowns"
+End Sub
+
+'@sub-title Verify that Prepare leaves the visibility of an existing sheet alone.
+'@details
+'The fixture creates __updated as very hidden. ResolveOrCreateWorksheet used
+'to write the visibility on every call, which forced __variables back on
+'screen after every dev initialise. Asserts the registry sheet keeps the
+'state the workbook gave it.
+'@TestMethod("SetupPreparation")
+Public Sub TestPrepareKeepsTheVisibilityOfAnExistingSheet()
+    CustomTestSetTitles Assert, "SetupPreparation", "TestPrepareKeepsTheVisibilityOfAnExistingSheet"
+    On Error GoTo Fail
+
+    DropdownSheet.Visible = xlSheetHidden
+
+    Subject.Prepare Manager
+
+    Assert.AreEqual CLng(xlSheetVeryHidden), CLng(RegistrySheet.Visible), _
+        "Prepare should leave the registry sheet very hidden"
+    Assert.AreEqual CLng(xlSheetHidden), CLng(DropdownSheet.Visible), _
+        "Prepare should leave a hidden dropdown sheet hidden"
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestPrepareKeepsTheVisibilityOfAnExistingSheet"
+End Sub
+
 '@section Helpers
 '===============================================================================
 '@description Private utilities for fixture construction and assertion support.
 
 '@sub-title Ensure the test output worksheet exists in ThisWorkbook.
 Private Sub AssertSheetSetup()
-    TestHelpers.EnsureWorksheet TEST_OUTPUT_SHEET, ThisWorkbook, False
+    EnsureWorksheet TEST_OUTPUT_SHEET, ThisWorkbook, False
 End Sub
 
 '@sub-title Build a ListObject with a "watch for update" tag row above the header.
@@ -365,8 +489,8 @@ Private Function BuildWatchedTable(ByVal targetSheet As Worksheet, _
         valuesRow = dataRow
     End If
 
-    matrix = TestHelpers.RowsToMatrix(Array(tagRow, headers, valuesRow))
-    TestHelpers.WriteMatrix targetSheet.Cells(startRow - 1, startColumn), matrix
+    matrix = RowsToMatrix(Array(tagRow, headers, valuesRow))
+    WriteMatrix targetSheet.Cells(startRow - 1, startColumn), matrix
 
     Set tableRange = targetSheet.Range(targetSheet.Cells(startRow, startColumn), _
                                        targetSheet.Cells(startRow + 1, startColumn + columnCount - 1))
@@ -403,8 +527,8 @@ Private Sub BuildSimpleTable(ByVal targetSheet As Worksheet, _
         dataRow(idx) = headers(idx) & "_value"
     Next idx
 
-    matrix = TestHelpers.RowsToMatrix(Array(headers, dataRow))
-    TestHelpers.WriteMatrix targetSheet.Cells(startRow, startColumn), matrix
+    matrix = RowsToMatrix(Array(headers, dataRow))
+    WriteMatrix targetSheet.Cells(startRow, startColumn), matrix
 
     Set tableRange = targetSheet.Range(targetSheet.Cells(startRow, startColumn), _
                                        targetSheet.Cells(startRow + 1, startColumn + UBound(headers)))
