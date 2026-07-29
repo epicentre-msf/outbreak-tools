@@ -919,7 +919,7 @@ Public Sub TestLargeTableKeepsEveryLabelAndTag()
 
     started = Timer
     Subject.UpdateFromRegistry RegistrySheet
-    Debug.Print "TestLargeTableKeepsEveryLabelAndTag: 500 labels in " & Format$(Timer - started, "0.000") & "s"
+    Assert.LogSuccesses "TestLargeTableKeepsEveryLabelAndTag: 500 labels in " & Format$(Timer - started, "0.000") & "s"
 
     Assert.AreEqual CLng(500), TranslationsTable.ListRows.Count, "Every source label must reach the table"
 
@@ -952,7 +952,7 @@ Public Sub TestLargeTableDeduplicatesCorrectly()
 
     started = Timer
     Subject.UpdateFromRegistry RegistrySheet
-    Debug.Print "TestLargeTableDeduplicatesCorrectly: 550 rows deduped in " & Format$(Timer - started, "0.000") & "s"
+    Assert.LogSuccesses "TestLargeTableDeduplicatesCorrectly: 550 rows deduped in " & Format$(Timer - started, "0.000") & "s"
 
     Assert.AreEqual CLng(500), TranslationsTable.ListRows.Count, "Dedup must leave one row per label"
     Assert.AreEqual ExpectedTag(LARGE_RANGE_NAME, 2), TagForLabel(LargeLabel(1)), _
@@ -1027,7 +1027,7 @@ Public Sub TestSwitchDefaultLanguageOnManyRows()
 
     started = Timer
     Subject.SwitchDefaultLanguage "French"
-    Debug.Print "TestSwitchDefaultLanguageOnManyRows: 200 rows swapped in " & Format$(Timer - started, "0.000") & "s"
+    Assert.LogSuccesses "TestSwitchDefaultLanguageOnManyRows: 200 rows swapped in " & Format$(Timer - started, "0.000") & "s"
 
     frenchAfter = SnapshotColumnValues("French")
     Assert.AreEqual CStr(frenchBefore(200, 1)), CStr(frenchAfter(200, 1)), _
@@ -1062,7 +1062,7 @@ Public Sub TestFormatConditionsDoNotAccumulate()
     Next runIndex
 
     countAfter = TranslationsTable.Range.FormatConditions.Count
-    Debug.Print "TestFormatConditionsDoNotAccumulate: before=" & CStr(countBefore) & " after=" & CStr(countAfter)
+    Assert.LogSuccesses "TestFormatConditionsDoNotAccumulate: before=" & CStr(countBefore) & " after=" & CStr(countAfter)
 
     Assert.AreEqual countBefore, countAfter, "Repeated updates must not pile up conditional format rules"
     Exit Sub
@@ -1243,6 +1243,251 @@ Public Sub TestRegistryColumnsResolvedByHeaderName()
 
 Fail:
     CustomTestLogFailure Assert, "TestRegistryColumnsResolvedByHeaderName", Err.Number, Err.Description
+End Sub
+
+
+'@section Edge cases
+'===============================================================================
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestUpdateAddsOneRowForRepeatedSourceLabel()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestUpdateAddsOneRowForRepeatedSourceLabel"
+    On Error GoTo Fail
+
+    SourceSheet.Range("A1").Value = "Twice"
+    SourceSheet.Range("A2").Value = "Twice"
+
+    Subject.UpdateFromRegistry RegistrySheet
+
+    Assert.AreEqual CLng(1), CountLabelIgnoringCase("Twice"), _
+                    "A label that appears twice in one source range must land on one row"
+    Assert.AreEqual CLng(5), TranslationsTable.ListRows.Count, "The repeated label costs one row"
+    Assert.AreEqual ExpectedTag("RNG_Greetings", 1), TagForLabel("Twice"), "The one row must carry its range tag"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestUpdateAddsOneRowForRepeatedSourceLabel", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestUpdateHandlesNumericLabel()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestUpdateHandlesNumericLabel"
+    On Error GoTo Fail
+
+    SourceSheet.Range("A1").Value = 2024
+    SourceSheet.Range("A2").Value = 2024
+
+    Subject.UpdateFromRegistry RegistrySheet
+
+    Assert.AreEqual CLng(1), CountLabelIgnoringCase("2024"), _
+                    "A label made only of digits must still be looked up as one label"
+    Assert.AreEqual ExpectedTag("RNG_Greetings", 1), TagForLabel("2024"), "A numeric label must carry its range tag"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestUpdateHandlesNumericLabel", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestLargeTableDeletesMoreThanOneBatch()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestLargeTableDeletesMoreThanOneBatch"
+    On Error GoTo Fail
+
+    Dim started As Single
+
+    BuildLargeSource 600
+    Subject.UpdateFromRegistry RegistrySheet
+
+    'Shrink the watched range to its first 50 cells, so 550 rows go stale in
+    'one call and the delete has to flush more than one batch.
+    DropName LARGE_RANGE_NAME
+    FixtureWorkbook.Names.Add Name:=LARGE_RANGE_NAME, _
+                              RefersTo:=SourceSheet.Range(SourceSheet.Cells(1, 1), SourceSheet.Cells(50, 1))
+
+    started = Timer
+    Subject.UpdateFromRegistry RegistrySheet
+    Assert.LogSuccesses "TestLargeTableDeletesMoreThanOneBatch: 550 rows deleted in " & Format$(Timer - started, "0.000") & "s"
+
+    Assert.AreEqual CLng(50), TranslationsTable.ListRows.Count, "Only the rows the range no longer produces may go"
+    Assert.IsTrue LabelExists(LargeLabel(1)), "The first surviving label must stay"
+    Assert.IsTrue LabelExists(LargeLabel(50)), "The last surviving label must stay"
+    Assert.IsFalse LabelExists(LargeLabel(600)), "A label past the shrunk range must go"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestLargeTableDeletesMoreThanOneBatch", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestUpdateOnEmptyTranslationsTable()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestUpdateOnEmptyTranslationsTable"
+    On Error GoTo Fail
+
+    Dim duplicateMessage As String
+
+    ResetTranslationsTableRows
+    Assert.IsFalse Subject.DuplicateLabels(duplicateMessage), "A table holding no data row reports no duplicate"
+
+    Subject.UpdateFromRegistry RegistrySheet
+
+    Assert.AreEqual CLng(6), TranslationsTable.ListRows.Count, "An update against an empty table must fill it"
+    Assert.AreEqual ExpectedTag("RNG_Greetings", 1), TagForLabel("Hello"), "Every row written into an empty table must carry its tag"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestUpdateOnEmptyTranslationsTable", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestUpdateSkipsRangeOutsideUsedRange()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestUpdateSkipsRangeOutsideUsedRange"
+    On Error GoTo Fail
+
+    DropName "RNG_Far"
+    FixtureWorkbook.Names.Add Name:="RNG_Far", RefersTo:=SourceSheet.Range("Z900:Z910")
+    RegistryTable.ListRows(1).Range.Cells(1, 2).Value = "RNG_Far"
+
+    Subject.UpdateFromRegistry RegistrySheet
+
+    Assert.IsFalse LabelExists("Hello"), "A range that sits outside the used cells brings no label"
+    Assert.IsTrue LabelExists("Farewell"), "A range outside the used cells must not stop the rest of the registry"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestUpdateSkipsRangeOutsideUsedRange", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestUpdateKeepsRowWithUnparsableTag()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestUpdateKeepsRowWithUnparsableTag"
+    On Error GoTo Fail
+
+    ResetTranslationsTableRows
+    AppendTaggedLabel "Odd tag row", "junk"
+    AppendTaggedLabel "Bad sequence row", "RNG_Greetings" & TAG_SEPARATOR & "abc"
+
+    Subject.UpdateFromRegistry RegistrySheet
+
+    Assert.IsTrue LabelExists("Odd tag row"), "A tag with no separator must leave its row alone"
+    Assert.IsTrue LabelExists("Bad sequence row"), "A tag whose sequence is not a number must leave its row alone"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestUpdateKeepsRowWithUnparsableTag", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestUpdateIgnoresWhitespaceOnlySourceCell()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestUpdateIgnoresWhitespaceOnlySourceCell"
+    On Error GoTo Fail
+
+    SourceSheet.Range("A2").Value = "   "
+
+    Subject.UpdateFromRegistry RegistrySheet
+
+    Assert.AreEqual CLng(5), TranslationsTable.ListRows.Count, "A cell holding only spaces brings no label"
+    Assert.IsTrue LabelExists("Hello"), "The rest of the range still imports"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestUpdateIgnoresWhitespaceOnlySourceCell", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestUnresolvedRangesClearOnNextRun()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestUnresolvedRangesClearOnNextRun"
+    On Error GoTo Fail
+
+    Subject.UpdateFromRegistry RegistrySheet
+    DropName "RNG_Farewell"
+    SetRegistryStatus "yes", "yes", "yes"
+    Subject.UpdateFromRegistry RegistrySheet
+
+    Assert.AreEqual CLng(1), Subject.UnresolvedRanges.Length, "The failed range must be reported"
+
+    FixtureWorkbook.Names.Add Name:="RNG_Farewell", RefersTo:=SourceSheet.Range("B1:B2")
+    SetRegistryStatus "yes", "yes", "yes"
+    Subject.UpdateFromRegistry RegistrySheet
+
+    Assert.AreEqual CLng(0), Subject.UnresolvedRanges.Length, "A clean run must clear the report from the run before it"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestUnresolvedRangesClearOnNextRun", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestUpdateAcceptsRegistrySheetWithNoTables()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestUpdateAcceptsRegistrySheetWithNoTables"
+    On Error GoTo Fail
+
+    RemoveRegistryTables
+
+    Subject.UpdateFromRegistry RegistrySheet
+
+    Assert.AreEqual CLng(1), CounterValue(), "A registry sheet holding no table still completes the update"
+    Assert.IsFalse LabelExists("Hello"), "A registry sheet holding no table brings no label"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestUpdateAcceptsRegistrySheetWithNoTables", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestSwitchDefaultLanguageRejectsUnknownLanguage()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestSwitchDefaultLanguageRejectsUnknownLanguage"
+
+    On Error GoTo ExpectError
+        Subject.SwitchDefaultLanguage "Spanish"
+        Assert.LogFailure "SwitchDefaultLanguage should reject a language the table does not hold"
+        Exit Sub
+ExpectError:
+    Assert.AreEqual CLng(ProjectError.InvalidArgument), Err.Number, _
+                    "An unknown language must raise InvalidArgument"
+    Err.Clear
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestSwitchDefaultLanguageIgnoresCurrentDefault()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestSwitchDefaultLanguageIgnoresCurrentDefault"
+    On Error GoTo Fail
+
+    Subject.EnsureLanguages "French"
+    Subject.SwitchDefaultLanguage "English"
+
+    Assert.AreEqual "English", TranslationsTable.ListColumns(1).Name, "Promoting the current default must change nothing"
+    Assert.AreEqual "French", TranslationsTable.ListColumns(2).Name, "The other language must stay where it was"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestSwitchDefaultLanguageIgnoresCurrentDefault", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestExportRejectsMissingWorkbook()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestExportRejectsMissingWorkbook"
+
+    On Error GoTo ExpectError
+        Subject.Export Nothing
+        Assert.LogFailure "Export should reject a missing destination workbook"
+        Exit Sub
+ExpectError:
+    Assert.AreEqual CLng(ProjectError.ObjectNotInitialized), Err.Number, _
+                    "A missing destination workbook must raise ObjectNotInitialized"
+    Err.Clear
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestUpdateFromRegistryRejectsMissingRegistrySheet()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestUpdateFromRegistryRejectsMissingRegistrySheet"
+
+    On Error GoTo ExpectError
+        Subject.UpdateFromRegistry Nothing
+        Assert.LogFailure "UpdateFromRegistry should reject a missing registry sheet"
+        Exit Sub
+ExpectError:
+    Assert.AreEqual CLng(ProjectError.InvalidArgument), Err.Number, _
+                    "A missing registry sheet must raise InvalidArgument"
+    Err.Clear
 End Sub
 
 
