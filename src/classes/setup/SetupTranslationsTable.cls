@@ -1955,9 +1955,11 @@ Private Sub BeginTagIntegration()
     this.table.Resize expandedRange
     this.tagsIntegrated = True
 
-    On Error Resume Next
-        this.table.ListColumns(1).Name = TAG_HEADER_TITLE
-    On Error GoTo 0
+    'A rename that fails leaves the tag column inside the table under whatever
+    'name it carried. Every index here comes from LabelColumnIndex(), which
+    'counts positions, so the update would still run and the sheet would be
+    'left holding a column nobody can name.
+    this.table.ListColumns(1).Name = TAG_HEADER_TITLE
 End Sub
 
 '@label:end-tag-integration
