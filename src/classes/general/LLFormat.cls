@@ -140,7 +140,7 @@ Private this As TLLFormat
 'Lazy-init and invalidation of internal lookup caches.
 '
 'Lookups are kept in a keyed Collection. Scripting.Dictionary is missing on
-'Mac Excel. UpdatedValues.RegistryNameCache uses the same shape.
+'Mac Excel. UpdatedValues.LoadIndex builds its registry index the same shape.
 
 '@label:reset-caches
 '@sub-title Invalidate all cached references
