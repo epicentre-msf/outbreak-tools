@@ -10,6 +10,7 @@ Private Const NAMED_TESTS As String = "TestsCodes"
 Private Const GENERAL_FOLDER As String = "general"
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const PASSWORD_SHEET_NAME As String = "TestDevelopmentPasswords"
+Private Const TABLE_PROTECTED As String = "T_ProtectedSheets"
 
 '@Folder("CustomTests")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
@@ -29,7 +30,7 @@ Private TestsPath As String
 '@section Module lifecycle
 '===============================================================================
 '@ModuleInitialize
-Private Sub ModuleInitialize()
+Public Sub ModuleInitialize()
     BusyApp
     EnsureWorksheet TEST_OUTPUT_SHEET, clearSheet:=False
     Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
@@ -37,7 +38,7 @@ Private Sub ModuleInitialize()
 End Sub
 
 '@ModuleCleanup
-Private Sub ModuleCleanup()
+Public Sub ModuleCleanup()
     If Not Assert Is Nothing Then
         Assert.PrintResults "testsOutputs"
     End If
@@ -49,10 +50,10 @@ End Sub
 '@section Test lifecycle
 '===============================================================================
 '@TestInitialize
-Private Sub TestInitialize()
-    Set TestBook = TestHelpers.NewWorkbook
-    Set DevSheet = TestHelpers.EnsureWorksheet(DEV_SHEET_NAME, TestBook)
-    Set CodeSheet = TestHelpers.EnsureWorksheet(CODE_SHEET_NAME, TestBook)
+Public Sub TestInitialize()
+    Set TestBook = NewWorkbook
+    Set DevSheet = EnsureWorksheet(DEV_SHEET_NAME, TestBook)
+    Set CodeSheet = EnsureWorksheet(CODE_SHEET_NAME, TestBook)
     PrepareNamedRanges
 
     Set Manager = Development.Create(DevSheet, CodeSheet)
@@ -60,13 +61,13 @@ Private Sub TestInitialize()
 End Sub
 
 '@TestCleanup
-Private Sub TestCleanup()
+Public Sub TestCleanup()
     If Not Manager Is Nothing Then
         Set Manager = Nothing
     End If
 
     If Not TestBook Is Nothing Then
-        TestHelpers.DeleteWorkbook TestBook
+        DeleteWorkbook TestBook
         Set TestBook = Nothing
     End If
 
@@ -393,18 +394,124 @@ TestFail:
 End Sub
 
 
+'@TestMethod("Development")
+Public Sub TestRegisteringAProtectedSheetTwiceKeepsTheFirstFlags()
+    CustomTestSetTitles Assert, "Development", "TestRegisteringAProtectedSheetTwiceKeepsTheFirstFlags"
+    On Error GoTo TestFail
+
+    'RibbonDev keeps one Development object for the whole VBA session, so
+    'pressing the dev initialise button twice registers the same sheets again.
+    'The second registration is dropped, which is what this checks: the two
+    'calls below disagree about row deletion and the FIRST answer is the one
+    'Deploy writes.
+    Manager.AddProtectedSheet DevSheet.Name, allowShapes:=True, allowDeletingRows:=True
+    Manager.AddProtectedSheet DevSheet.Name, allowShapes:=True, allowDeletingRows:=False
+
+    PasswordsTestFixture.PreparePasswordsFixture PASSWORD_SHEET_NAME, TestBook
+
+    Dim pass As Passwords
+    Set pass = Passwords.Create(TestBook.Worksheets(PASSWORD_SHEET_NAME))
+
+    DoEvents
+    Manager.Deploy pass
+
+    Assert.AreEqual CLng(1), ProtectionRowCount(DevSheet.Name), _
+        "A sheet registered twice should hold one row in the protection table"
+    Assert.AreEqual "yes", ProtectionFlag(DevSheet.Name, 3), _
+        "The first registration should decide the row-deletion flag"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestRegisteringAProtectedSheetTwiceKeepsTheFirstFlags", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("Development")
+Public Sub TestRegisteringAHiddenSheetTwiceIsHarmless()
+    CustomTestSetTitles Assert, "Development", "TestRegisteringAHiddenSheetTwiceIsHarmless"
+    On Error GoTo TestFail
+
+    'The hidden list holds plain names where the protected list holds triplets,
+    'and both are read by the same HasRegisteredSheet. Registering twice and
+    'deploying proves the name shape is handled: a duplicate that slipped
+    'through would make Deploy walk the same sheet twice, and a Nothing or a
+    'type mismatch inside the walk would raise here.
+    Manager.AddHiddenSheet CodeSheet.Name
+    Manager.AddHiddenSheet CodeSheet.Name
+
+    PasswordsTestFixture.PreparePasswordsFixture PASSWORD_SHEET_NAME, TestBook
+
+    Dim pass As Passwords
+    Set pass = Passwords.Create(TestBook.Worksheets(PASSWORD_SHEET_NAME))
+
+    DoEvents
+    Manager.Deploy pass
+
+    Assert.AreEqual xlSheetVeryHidden, CodeSheet.Visible, _
+        "A sheet registered twice should still be hidden once Deploy has run"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestRegisteringAHiddenSheetTwiceIsHarmless", Err.Number, Err.Description
+End Sub
+
+
 '@section Helpers
 '===============================================================================
+
+'Count the rows naming a sheet in the protection table Passwords writes.
+Private Function ProtectionRowCount(ByVal sheetName As String) As Long
+    Dim lo As ListObject
+    Dim rowIdx As Long
+    Dim total As Long
+
+    Set lo = ProtectionTable()
+    If lo Is Nothing Then Exit Function
+    If lo.DataBodyRange Is Nothing Then Exit Function
+
+    For rowIdx = 1 To lo.DataBodyRange.Rows.Count
+        If StrComp(CStr(lo.DataBodyRange.Cells(rowIdx, 1).Value), sheetName, vbTextCompare) = 0 Then
+            total = total + 1
+        End If
+    Next rowIdx
+
+    ProtectionRowCount = total
+End Function
+
+'Read one stored flag of the first row naming a sheet, lowercased.
+Private Function ProtectionFlag(ByVal sheetName As String, ByVal columnIndex As Long) As String
+    Dim lo As ListObject
+    Dim rowIdx As Long
+
+    Set lo = ProtectionTable()
+    If lo Is Nothing Then Exit Function
+    If lo.DataBodyRange Is Nothing Then Exit Function
+
+    For rowIdx = 1 To lo.DataBodyRange.Rows.Count
+        If StrComp(CStr(lo.DataBodyRange.Cells(rowIdx, 1).Value), sheetName, vbTextCompare) = 0 Then
+            ProtectionFlag = LCase$(Trim$(CStr(lo.DataBodyRange.Cells(rowIdx, columnIndex).Value)))
+            Exit Function
+        End If
+    Next rowIdx
+End Function
+
+'Locate the protection table on the fixture password sheet. The name matches
+'Passwords.TABLEPROTECTED and the one PasswordsTestFixture writes.
+Private Function ProtectionTable() As ListObject
+    On Error Resume Next
+        Set ProtectionTable = TestBook.Worksheets(PASSWORD_SHEET_NAME).ListObjects(TABLE_PROTECTED)
+    On Error GoTo 0
+End Function
+
 Private Sub PrepareNamedRanges()
-    TempRoot = TestHelpers.BuildTempFolder(ThisWorkbook, "DevelopmentTests")
+    TempRoot = BuildTempFolder(ThisWorkbook, "DevelopmentTests")
 
     ModulesPath = JoinPath(TempRoot, "src", "modules")
     ClassesPath = JoinPath(TempRoot, "src", "classes")
     TestsPath = JoinPath(TempRoot, "src", "tests")
 
-    TestHelpers.EnsureFolder ModulesPath
-    TestHelpers.EnsureFolder ClassesPath
-    TestHelpers.EnsureFolder TestsPath
+    EnsureFolder ModulesPath
+    EnsureFolder ClassesPath
+    EnsureFolder TestsPath
 
     BindNamedRange DevSheet, NAMED_MODULES, DevSheet.Range("A1"), ModulesPath
     BindNamedRange DevSheet, NAMED_CLASSES, DevSheet.Range("A2"), ClassesPath
@@ -412,10 +519,10 @@ Private Sub PrepareNamedRanges()
 End Sub
 
 Private Sub PrepareGeneralFolders()
-    TestHelpers.EnsureFolder JoinPath(ModulesPath, GENERAL_FOLDER)
-    TestHelpers.EnsureFolder JoinPath(ClassesPath, GENERAL_FOLDER)
-    TestHelpers.EnsureFolder JoinPath(TestsPath, "modules")
-    TestHelpers.EnsureFolder JoinPath(TestsPath, "classes")
+    EnsureFolder JoinPath(ModulesPath, GENERAL_FOLDER)
+    EnsureFolder JoinPath(ClassesPath, GENERAL_FOLDER)
+    EnsureFolder JoinPath(TestsPath, "modules")
+    EnsureFolder JoinPath(TestsPath, "classes")
 End Sub
 
 Private Sub BindNamedRange(ByVal sheet As Worksheet, _
@@ -453,7 +560,7 @@ End Sub
 
 Private Sub WriteTextFile(ByVal filePath As String, ByVal content As String)
     Dim fileNum As Integer
-    TestHelpers.EnsureFolder TestHelpers.ParentFolder(filePath)
+    EnsureFolder ParentFolder(filePath)
     fileNum = FreeFile()
     Open filePath For Output As #fileNum
         Print #fileNum, content
