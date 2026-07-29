@@ -314,10 +314,18 @@ suites:
   # TestDevelopment needs PasswordsTestFixture (registered under `helpers`) and
   # JoinPath / EnsureFolder / ParentFolder, which were copied into
   # TestHelpersLite for it.
+  #
+  # TestDevelopment is parked by owner decision, the same way TestPasswords is:
+  # it ran once, green at 25 assertions over 11 tests, and is not wanted in the
+  # regular loop. Its tests write real files, add and remove VBComponents and
+  # deploy a workbook, so they are the slowest kind here, and they only ever
+  # report on the copy of Development the driver workbook already holds.
+  # Re-enable by uncommenting -- and re-import Development.cls by hand in the
+  # VBE first, or the run reports on whatever copy is in there.
   - folder: dev
-    tests:
-      - module: TestDevelopment
-        covers: [Development]
+    tests: []
+      # - module: TestDevelopment
+      #   covers: [Development]
 
   # --- sections -------------------------------------------------------------
   # (Also note: interface: true is stale -- IVarWriter /
