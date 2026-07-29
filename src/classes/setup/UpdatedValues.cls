@@ -1065,7 +1065,13 @@ End Function
 '@sub-title Evaluate a range change against the registered watchers and flag updates.
 '@details
 'Compares the changed range with named ranges tracked in the registry and
-'marks the first matching entry as updated.
+'marks every matching entry as updated. A paste across two watched columns
+'therefore flips two flags.
+'The handler only ever writes a flag. A row whose range name is blank, or whose
+'defined name will not resolve, is left alone: the name can be missing for a
+'moment while a source table resizes or a sheet is renamed, and deleting the
+'row on that would take the registration away for good. Cleanup belongs to
+'AddColumns and AddSheet, which run at build time.
 '@param tagReference Variant. Identifier selecting the registry scope.
 '@param Target Range. The changed cells to evaluate.
 Public Sub CheckUpdate(ByVal tagReference As Variant, ByVal Target As Range)
@@ -1077,8 +1083,7 @@ Public Sub CheckUpdate(ByVal tagReference As Variant, ByVal Target As Range)
   Dim rangeName As String
   Dim namedRange As Range
   Dim registryName As String
-  Dim rowRemoved As Boolean
-  Dim newCount As Long
+  Dim marked As Boolean
   Dim registryTag As String
   Dim rangeData As Variant
   Dim statusData As Variant
@@ -1120,62 +1125,26 @@ Public Sub CheckUpdate(ByVal tagReference As Variant, ByVal Target As Range)
     'Bulk-read both columns (2 COM calls instead of 2*N cell reads)
     rangeData = rangeColumn.Value2
     statusData = statusColumn.Value2
+    marked = False
 
-    idx = rowTotal
-
-    Do While idx >= 1
+    For idx = 1 To rowTotal
       rangeName = CStr(BulkValue(rangeData, idx, rowTotal))
-      rowRemoved = False
 
-      If NormalizeValue(rangeName) = vbNullString Then
-        rowRemoved = True
-        If Not RemoveOutdatedEntry(registry, rangeColumn.Cells(idx, 1)) Then
-          Exit Do
-        End If
-        GoTo NextIteration
-      End If
-
-      If NormalizeValue(CStr(BulkValue(statusData, idx, rowTotal))) = STATUS_UPDATED Then
-        GoTo NextIteration
-      End If
+      If NormalizeValue(rangeName) = vbNullString Then GoTo NextRow
+      If NormalizeValue(CStr(BulkValue(statusData, idx, rowTotal))) = STATUS_UPDATED Then GoTo NextRow
 
       Set namedRange = ResolveNamedRange(rangeName)
-      If namedRange Is Nothing Then
-        rowRemoved = True
-        If Not RemoveOutdatedEntry(registry, rangeColumn.Cells(idx, 1)) Then
-          Exit Do
-        End If
-        GoTo NextIteration
-      End If
-
-      If Intersect(Target, namedRange) Is Nothing Then
-        GoTo NextIteration
-      End If
+      If namedRange Is Nothing Then GoTo NextRow
+      If Intersect(Target, namedRange) Is Nothing Then GoTo NextRow
 
       statusColumn.Cells(idx, 1).Value = STATUS_UPDATED
       DropHandled rangeName
-      TrackLastRegistryName registry.Name
-      Exit Sub
+      marked = True
 
-NextIteration:
-      If Not rowRemoved Then
-        idx = idx - 1
-      Else
-        'Re-read arrays after row deletion
-        Set rangeColumn = RegistryColumnData(registry, HEADER_RANGE_NAME)
-        Set statusColumn = RegistryColumnData(registry, HEADER_STATUS)
-        newCount = RowCount(rangeColumn)
-        If newCount = 0 Then Exit Do
-        rowTotal = newCount
-        rangeData = rangeColumn.Value2
-        statusData = statusColumn.Value2
-        If idx - 1 > newCount Then
-          idx = newCount
-        Else
-          idx = idx - 1
-        End If
-      End If
-    Loop
+NextRow:
+    Next idx
+
+    If marked Then TrackLastRegistryName registry.Name
 
 NextRegistry:
   Next registry
@@ -1197,34 +1166,6 @@ Private Function ResolveNamedRange(ByVal rangeName As String) As Range
       Set ResolveNamedRange = definedName.RefersToRange
     End If
   On Error GoTo 0
-End Function
-
-'@label:remove-outdated-entry
-'@sub-title Clean registry rows that point to missing or invalid named ranges.
-Private Function RemoveOutdatedEntry(ByVal registry As ListObject, _
-                                     ByVal rangeCell As Range) As Boolean
-  Dim rowIndex As Long
-  Dim rangeName As String
-  Dim tableName As String
-
-  If rangeCell Is Nothing Then Exit Function
-  If registry Is Nothing Then Exit Function
-
-  rowIndex = rangeCell.Row - registry.HeaderRowRange.Row
-
-  If rowIndex < 1 Or rowIndex > registry.ListRows.Count Then Exit Function
-
-  rangeName = CStr(rangeCell.Value)
-  RemoveNamedRange rangeName
-  registry.ListRows(rowIndex).Delete
-
-  If registry.ListRows.Count = 0 Then
-    tableName = LookupTableNameFromRegistry(registry.Name)
-    RemoveRegistryTable registry, tableName
-     Exit Function
-  End If
-
-  RemoveOutdatedEntry = True
 End Function
 
 '@section CleanupHelpers
