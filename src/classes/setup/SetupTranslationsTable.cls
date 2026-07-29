@@ -49,6 +49,14 @@ Option Explicit
 '(EnsureTagColumnReady and EnsureLanguages), so a caller that only reads
 'can build a manager over a protected sheet.
 '
+'@section Source ranges are contiguous
+'A registry range refers to one block of cells on one worksheet.
+'SetupPreparation and UpdatedValues both build their names over a single table
+'column, so that always holds. ProcessTextRange and ProcessFormulaRange read
+'each source in one crossing, and Range.Value2 answers for the first area of a
+'range, so a name built by hand over scattered cells would import its first
+'block and drop the rest.
+'
 '@section Error numbers
 'ProjectError.ErrorUnexpectedState is 1004, which is also Excel's generic
 'error number. An Excel 1004 that escapes an update is re-raised as 1004,
@@ -449,10 +457,11 @@ Private Function ResolveLanguageColumn(ByVal languageName As String) As Range
 End Function
 
 '@label:swap-language-columns
-'@sub-title Swap the headers, data, and totals between two language columns.
+'@sub-title Swap the headers and the data between two language columns.
 '@details The data body of each column is read and written as one block, so a
 '         swap costs four Excel crossings whatever the row count. Number
-'         formats stay where they are: translation columns hold text.
+'         formats stay where they are: translation columns hold text. The
+'         translations table carries no totals row, so nothing here handles one.
 Private Sub SwapLanguageColumns(ByVal firstIndex As Long, ByVal secondIndex As Long)
     Dim firstColumn As ListColumn
     Dim secondColumn As ListColumn
@@ -464,11 +473,6 @@ Private Sub SwapLanguageColumns(ByVal firstIndex As Long, ByVal secondIndex As L
     Dim firstBlock As Variant
     Dim secondBlock As Variant
     Dim rowCount As Long
-    Dim hasTotalsRow As Boolean
-    Dim firstTotalsCalc As XlTotalsCalculation
-    Dim secondTotalsCalc As XlTotalsCalculation
-    Dim firstTotalFormula As Variant
-    Dim secondTotalFormula As Variant
 
     Set firstColumn = this.table.ListColumns(firstIndex)
     Set secondColumn = this.table.ListColumns(secondIndex)
@@ -481,25 +485,10 @@ Private Sub SwapLanguageColumns(ByVal firstIndex As Long, ByVal secondIndex As L
         Set secondRange = secondColumn.DataBodyRange
     On Error GoTo 0
 
-    hasTotalsRow = this.table.ShowTotals
-    If hasTotalsRow Then
-        firstTotalsCalc = firstColumn.TotalsCalculation
-        secondTotalsCalc = secondColumn.TotalsCalculation
-        firstTotalFormula = firstColumn.Total
-        secondTotalFormula = secondColumn.Total
-    End If
-
     temporaryHeader = UniqueTemporaryHeader()
     secondColumn.Name = temporaryHeader
     firstColumn.Name = secondHeader
     secondColumn.Name = firstHeader
-
-    If hasTotalsRow Then
-        firstColumn.TotalsCalculation = secondTotalsCalc
-        secondColumn.TotalsCalculation = firstTotalsCalc
-        secondColumn.Total = firstTotalFormula
-        firstColumn.Total = secondTotalFormula
-    End If
 
     If firstRange Is Nothing Or secondRange Is Nothing Then Exit Sub
 
