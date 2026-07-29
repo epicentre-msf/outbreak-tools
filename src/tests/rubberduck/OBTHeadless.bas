@@ -91,11 +91,41 @@ CleanExit:
     mHeadlessActive = False
     If Err.Number <> 0 Then
         Debug.Print "OBTRunAllTests error " & Err.Number & ": " & Err.Description
+        LogRunStep "OBTRunAllTests error " & Err.Number & ": " & Err.Description
     End If
-    Application.Calculation = prevCalc
-    Application.EnableEvents = prevEvents
-    Application.DisplayAlerts = prevAlerts
-    Application.ScreenUpdating = prevScreen
+
+    'The restore runs inside the handler, where a second error is not
+    'trappable: it kills the macro, and Application.Run then answers the
+    'caller with a bare -50 on a run whose results are already written and
+    'saved. Assigning Calculation can flush pending calculations and raise
+    '1004, so every step here is scoped.
+    On Error Resume Next
+        Application.Calculation = prevCalc
+        Application.EnableEvents = prevEvents
+        Application.DisplayAlerts = prevAlerts
+        Application.ScreenUpdating = prevScreen
+        If Err.Number <> 0 Then
+            LogRunStep "OBTRunAllTests restore error " & Err.Number & ": " & Err.Description
+            Err.Clear
+        End If
+    On Error GoTo 0
+End Sub
+
+'@sub-title Append one line to the diagnostics log next to the workbook.
+'@details
+'The same file OBTImport writes, opened and closed per line so the last line
+'always survives. Failures here are swallowed: a log write must never be what
+'stops a run.
+'@param message String. The line to write.
+Private Sub LogRunStep(ByVal message As String)
+    Dim fileNum As Integer
+
+    On Error Resume Next
+        fileNum = FreeFile
+        Open ThisWorkbook.Path & Application.PathSeparator & "obt-import.log" For Append As #fileNum
+        Print #fileNum, message
+        Close #fileNum
+    On Error GoTo 0
 End Sub
 
 '@sub-title Clear testsOutputs and its CheckingOutput helper Names so the run starts clean.
