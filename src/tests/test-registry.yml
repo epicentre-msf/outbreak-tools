@@ -86,6 +86,11 @@ suites:
       # so it is wanted again the moment any of those is added. It declares no
       # @TestMethod, so the runner imports it and runs it as a 0-test no-op.
       - module: PasswordsTestFixture
+      # FormulaTestFixture is the same shape again. PrepareFormulaFixtureSheet
+      # builds the two lookup ListObjects (T_XlsFonctions and T_ascii) that
+      # FormulaData reads, and TestFormulas calls it. It declares no
+      # @TestMethod, so the runner imports it and runs it as a 0-test no-op.
+      - module: FormulaTestFixture
 
   # --- general (OSFiles, DropdownLists) --------------------------------------
   # DropdownLists' whole dependency closure (HiddenNames, BetterArray, Checking)
@@ -181,6 +186,22 @@ suites:
         covers: [LLSheets]
       - module: TestLLSheetsExtra
         covers: [LLSheets]
+
+  # --- formulas (CaseWhen, ChoiceFormula, ValueOfFormula, FormulaData, ------
+  #     FormulaCondition, Formulas) ----------------------------------------
+  # The six classes form one chain. Formulas is the engine and names all five
+  # others plus LLdictionary, LLVariables, LLSheets, Checking and BetterArray.
+  # The three LL* classes are registered under `dictionary` above; Checking and
+  # BetterArray are baked into the driver workbook, so registering either would
+  # leave Excel holding two copies and stop the project compiling.
+  # ChoiceFormula builds a CaseWhen, ValueOfFormula reads the dictionary
+  # helpers, and FormulaData names BetterArray and ProjectError only.
+  - folder: formulas
+    classes:
+      - name: CaseWhen
+    tests:
+      - module: TestCaseWhen
+        covers: [CaseWhen]
 
   # --- sections -------------------------------------------------------------
   # (Also note: interface: true is stale -- IVarWriter /
