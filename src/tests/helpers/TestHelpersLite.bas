@@ -547,6 +547,81 @@ Public Sub CleanupExportedFiles(ByVal exportedFiles As Collection)
     On Error GoTo 0
 End Sub
 
+'@section Paths and folders
+'===============================================================================
+'Copied in from the full TestHelpers for TestDevelopment, which builds a
+'temporary src tree on disk and imports and exports components through it.
+
+'@label JoinPath
+'@fun-title Join path segments with the platform separator.
+'@details Empty segments are skipped, and a segment that already ends in a
+'separator does not gain a second one.
+'@param parts ParamArray. The segments to join.
+'@return String the joined path.
+Public Function JoinPath(ParamArray parts() As Variant) As String
+    Dim sep As String
+    sep = Application.PathSeparator
+
+    Dim idx As Long
+    Dim piece As String
+    Dim result As String
+
+    For idx = LBound(parts) To UBound(parts)
+        piece = Trim$(CStr(parts(idx)))
+        If LenB(piece) = 0 Then
+            'Skip empty segments
+        ElseIf LenB(result) = 0 Then
+            result = piece
+        ElseIf Right$(result, 1) = sep Then
+            result = result & piece
+        Else
+            result = result & sep & piece
+        End If
+    Next idx
+
+    JoinPath = result
+End Function
+
+'@label EnsureFolder
+'@sub-title Create a folder and every missing parent above it.
+'@param targetPath String. The folder to create.
+Public Sub EnsureFolder(ByVal targetPath As String)
+    If LenB(targetPath) = 0 Then Exit Sub
+    If Dir$(targetPath, vbDirectory) <> vbNullString Then Exit Sub
+
+    Dim parentPath As String
+    parentPath = ParentFolder(targetPath)
+    If LenB(parentPath) > 0 And Dir$(parentPath, vbDirectory) = vbNullString Then
+        EnsureFolder parentPath
+    End If
+
+    MkDir targetPath
+End Sub
+
+'@label ParentFolder
+'@fun-title Return the folder holding a given path.
+'@details Trailing separators are trimmed first, so a path ending in one still
+'answers its own parent.
+'@param targetPath String. The path to walk up from.
+'@return String the parent folder, empty when there is none.
+Public Function ParentFolder(ByVal targetPath As String) As String
+    Dim sep As String
+    sep = Application.PathSeparator
+
+    Dim position As Long
+    Dim sanitized As String
+
+    sanitized = targetPath
+    Do While Right$(sanitized, 1) = sep
+        sanitized = Left$(sanitized, Len(sanitized) - 1)
+    Loop
+
+    position = InStrRev(sanitized, sep)
+    If position > 0 Then
+        ParentFolder = Left$(sanitized, position - 1)
+    End If
+End Function
+
 '@label ComponentExtensionName
 '@fun-title File extension matching a VBComponent kind.
 '@param componentType Long. VBComponent Type value.
