@@ -261,6 +261,16 @@
 </details>
 <details>
 <summary>Internal members (not exported)</summary>
+<h2 id="int-public-members">Public members</h2>
+<h3 id="int-headlessrunactive">HeadlessRunActive <a class="anchor-link" href="#int-headlessrunactive">#</a></h3>
+<p><strong>True when a headless runner (OBTHeadless) is driving the suite</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function HeadlessRunActive() As Boolean
+</code></pre>
+<p>Late-bound so this class carries no dependency on the runner: if the
+OBTHeadlessActive entry point is absent, Application.Run raises and we treat
+the run as interactive.</p>
+<hr />
 <h2 id="int-internal-helpers">Internal helpers</h2>
 <h3 id="int-initialisecurrentchecking">InitialiseCurrentChecking <a class="anchor-link" href="#int-initialisecurrentchecking">#</a></h3>
 <p><strong>Instantiate a fresh checking object for the active test</strong></p>
@@ -417,7 +427,7 @@
 <hr />
 </details>
 <details>
-<summary>Used in (73 file(s))</summary>
+<summary>Used in (75 file(s))</summary>
 <ul>
 <li>TestAnalysis.bas</li>
 <li>TestAnalysisOutput.bas</li>
@@ -465,6 +475,7 @@
 <li>TestGraphs.bas</li>
 <li>TestGraphSpecs.bas</li>
 <li>TestHelpers.bas</li>
+<li>TestHelpersLite.bas</li>
 <li>TestCodeTransfer.bas</li>
 <li>TestLinelist.bas</li>
 <li>TestListBuilder.bas</li>
@@ -482,11 +493,12 @@
 <li>TestEventMasterSetup.bas</li>
 <li>TestMasterSetupPreparation.bas</li>
 <li>TestMasterSetupVariables.bas</li>
+<li>OBTHeadless.bas</li>
 <li>TestSectionBuilder.bas</li>
 <li>TestVarWriter.bas</li>
 <li>TestEventSetup.bas</li>
 <li>TestSetupErrors.bas</li>
-<li>TestSetupImportService.bas</li>
+<li>TestSetupImport.bas</li>
 <li>TestSetupPreparation.bas</li>
 <li>TestSetupTranslationsTable.bas</li>
 <li>TestUpdatedValues.bas</li>

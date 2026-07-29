@@ -67,8 +67,8 @@ ListObject or named range is missing.</li>
                            ByVal tabRangesNames As BetterArray, _
                            Optional ByVal exportTable As String = &quot;yes&quot;)
 </code></pre>
-<p>Methods for registering table named ranges for export.
-Writes entries into the scope-specific tab_ids_ ListObject. Each entry
+<p>Methods for registering table named ranges for export.</p>
+<p>Writes entries into the scope-specific tab_ids_ ListObject. Each entry
 consists of the table identifier in column 1, the named range name in
 column 2, and the export flag in column 3. The range names are bulk-
 written via BetterArray.ToExcelRange. The ListObject is resized after
@@ -104,8 +104,8 @@ Defaults to &quot;yes&quot;.</li>
                           Optional ByVal prefix As String = vbNullString, _
                           Optional ByVal prefixOnly As Boolean = False)
 </code></pre>
-<p>Methods for registering graph series and formatting metadata.
-Writes one series entry into the scope-specific graph_ids_ ListObject.
+<p>Methods for registering graph series and formatting metadata.</p>
+<p>Writes one series entry into the scope-specific graph_ids_ ListObject.
 The 11 columns store: tabId, graphId, seriesName, seriesType, seriesPos,
 seriesLabel, seriesColumnLabel, hardCodeLabels (as CLng 0/1),
 outRangeAddress, prefix, and prefixOnly (as CLng 0/1). The method
@@ -246,8 +246,8 @@ named ranges.</p>
 <pre><code class="language-vb">Private Property Get ActualLo(ByVal scope As Byte, _
                               Optional ByVal prefix As String = &quot;tab_ids_&quot;) As ListObject
 </code></pre>
-<p>Routing helpers that resolve scope-specific ListObjects and worksheets.
-Maps the AnalysisIdsScope enum value to a suffix string (ts, sp, uba,
+<p>Routing helpers that resolve scope-specific ListObjects and worksheets.</p>
+<p>Maps the AnalysisIdsScope enum value to a suffix string (ts, sp, uba,
 sptemp) and concatenates it with the prefix to form the ListObject name.
 This is the central routing mechanism all tracking methods use.</p>
 <p><strong>Parameters:</strong></p>
@@ -291,8 +291,8 @@ worksheet, the Worksheets collection access raises a runtime error.</li>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function RangeExists(ByVal sh As Worksheet, ByVal rngName As String) As Boolean
 </code></pre>
-<p>Helpers for transferring named ranges and rendering charts.
-Attempts to resolve the name via sh.Range(rngName) with error trapping.
+<p>Helpers for transferring named ranges and rendering charts.</p>
+<p>Attempts to resolve the name via sh.Range(rngName) with error trapping.
 Returns True when the name resolves to a valid Range. Also picks up
 workbook-level names resolved through the worksheet.</p>
 <p><strong>Parameters:</strong></p>
@@ -390,8 +390,8 @@ when the stored values cannot be converted.</li>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function LoExists(ByVal sh As Worksheet, ByVal loName As String) As Boolean
 </code></pre>
-<p>Existence checks and factory validation.
-Uses the standard VBA error-trapping pattern to test for ListObject
+<p>Existence checks and factory validation.</p>
+<p>Uses the standard VBA error-trapping pattern to test for ListObject
 existence. Used by CheckRequirements to validate the tracking sheet.</p>
 <p><strong>Parameters:</strong></p>
 <ul>

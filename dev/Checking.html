@@ -30,8 +30,8 @@ class.</p>
 <pre><code class="language-vb">Public Function Create(ByVal titleName As String, _
                        Optional ByVal subtitleName As String = vbNullString) As _
 </code></pre>
-<p>Entry point for creating Checking instances.
-Checking objects are collections of messages tagged with a scope
+<p>Entry point for creating Checking instances.</p>
+<p>Checking objects are collections of messages tagged with a scope
 (Error, Warning, Info, Note, or Success) for logging purposes. The
 entries are stored in three parallel BetterArray tables (keys, labels,
 scopes). Checkings must have a title identifying the topic. Optionally,
@@ -59,8 +59,8 @@ when printing the messages to a worksheet via CheckingOutput.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Name() As String
 </code></pre>
-<p>Read-only metadata properties.
-Returns the checking title as the object name. Used for identification
+<p>Read-only metadata properties.</p>
+<p>Returns the checking title as the object name. Used for identification
 in output and presentation contexts.</p>
 <p><strong>Returns:</strong> String. The checking title.</p>
 <hr />
@@ -98,8 +98,8 @@ the title. Used by CheckingOutput for heading display.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get ListOfKeys() As BetterArray
 </code></pre>
-<p>Key lookup and enumeration.
-Returns a clone of the internal keys BetterArray. When the keys table
+<p>Key lookup and enumeration.</p>
+<p>Returns a clone of the internal keys BetterArray. When the keys table
 is uninitialised, creates an empty BetterArray with LowerBound 1.</p>
 <p><strong>Returns:</strong> BetterArray. Clone of stored keys.</p>
 <hr />
@@ -129,8 +129,8 @@ False immediately for empty strings.</p>
 <pre><code class="language-vb">Public Sub Add(ByVal keyName As String, ByVal label As String, _
                 Optional ByVal scope As Byte = checkingNote)
 </code></pre>
-<p>Adding, retrieving, cloning, and appending diagnostic entries.
-Adds a key, the corresponding label, and the scope to the checking.
+<p>Adding, retrieving, cloning, and appending diagnostic entries.</p>
+<p>Adds a key, the corresponding label, and the scope to the checking.
 Keys must be unique; duplicate keys raise an error. On first call,
 initialises the three parallel BetterArray tables.</p>
 <p><strong>Parameters:</strong></p>
@@ -200,8 +200,8 @@ is Nothing or empty.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get CheckingTitle() As String
 </code></pre>
-<p>Properties that expose internal state and the object pointer.
-Returns the title string assigned during creation or via the setter.</p>
+<p>Properties that expose internal state and the object pointer.</p>
+<p>Returns the title string assigned during creation or via the setter.</p>
 <p><strong>Returns:</strong> String. Title of the checkings.</p>
 <hr />
 <h3 id="int-checkingsubtitle">CheckingSubTitle <a class="anchor-link" href="#int-checkingsubtitle">#</a></h3>
@@ -242,8 +242,8 @@ Returns the title string assigned during creation or via the setter.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ScopeFromTypeLabel(ByVal typeLabel As String) As Byte
 </code></pre>
-<p>Private utility methods.
-Parses the human-readable type label (e.g. &quot;Error&quot;, &quot;Warning&quot;) and
+<p>Private utility methods.</p>
+<p>Parses the human-readable type label (e.g. &quot;Error&quot;, &quot;Warning&quot;) and
 returns the corresponding CheckingScope enum value. Defaults to
 checkingNote when no match is found.</p>
 <p><strong>Parameters:</strong></p>
@@ -259,8 +259,8 @@ checkingNote when no match is found.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
 </code></pre>
-<p>Centralised error-raising pattern.
-Wrapper around Err.Raise that standardises the source to CLASSNAME
+<p>Centralised error-raising pattern.</p>
+<p>Wrapper around Err.Raise that standardises the source to CLASSNAME
 for consistent stack traces.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -292,7 +292,7 @@ for consistent stack traces.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (38 file(s))</summary>
+<summary>Used in (40 file(s))</summary>
 <ul>
 <li><a href="Analysis.html">Analysis.cls</a></li>
 <li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
@@ -320,6 +320,7 @@ for consistent stack traces.</p>
 <li><a href="SectionBuilder.html">SectionBuilder.cls</a></li>
 <li><a href="VarWriter.html">VarWriter.cls</a></li>
 <li><a href="SetupErrors.html">SetupErrors.cls</a></li>
+<li><a href="SetupPreparation.html">SetupPreparation.cls</a></li>
 <li><a href="ShowHideManager.html">ShowHideManager.cls</a></li>
 <li>GenerationReport.bas</li>
 <li>TestAnalysis.bas</li>
@@ -332,6 +333,7 @@ for consistent stack traces.</p>
 <li>TestLLFormat.bas</li>
 <li>TestPasswords.bas</li>
 <li>TestSetupErrors.bas</li>
+<li>TestSetupPreparation.bas</li>
 </ul>
 </details>
   </main>

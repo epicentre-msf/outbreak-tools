@@ -84,8 +84,8 @@ validation and spatial type detection.</li>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub InitCache()
 </code></pre>
-<p>One-time cache population called from the factory.
-Scans the header range once to build parallel BetterArray caches of column
+<p>One-time cache population called from the factory.</p>
+<p>Scans the header range once to build parallel BetterArray caches of column
 names and cell values (Tier 1 + Tier 3). Also eagerly resolves the table
 scope from the cell above the header (Tier 2). Must be called exactly once
 after HeaderRange, TableRange, and DictionaryObject have been assigned.
@@ -103,8 +103,8 @@ computed on first access.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get TableScope() As AnalysisTableScope
 </code></pre>
-<p>Type identification and identity properties for each table spec.
-Returns the cached AnalysisTableScope enum value. The scope is computed
+<p>Type identification and identity properties for each table spec.</p>
+<p>Returns the cached AnalysisTableScope enum value. The scope is computed
 once eagerly during InitCache by reading the type label cell above the
 header range. On subsequent calls the cached Long value is returned
 directly without any worksheet access.</p>
@@ -193,8 +193,8 @@ prefixes.</li>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get ValidTable() As Boolean
 </code></pre>
-<p>Properties that validate table configuration and detect section boundaries.
-Returns the cached validation result. On first access, validates whether
+<p>Properties that validate table configuration and detect section boundaries.</p>
+<p>Returns the cached validation result. On first access, validates whether
 this table specification row contains all required fields and references
 valid variables for its analysis type. Each table scope has different
 validation rules: GlobalSummary requires non-empty &quot;label&quot; and &quot;function&quot;
@@ -246,8 +246,8 @@ with exact string equality (case-sensitive).</li>
 <pre><code class="language-vb">Public Property Get HasTotal() As Boolean
 </code></pre>
 <p>Properties controlling optional table features: totals, missing,
-percentage, and graphs.
-Determines whether a total row/column is needed for this table. The logic
+percentage, and graphs.</p>
+<p>Determines whether a total row/column is needed for this table. The logic
 varies by table scope: GlobalSummary and SpatioTemporal always return False;
 Univariate and Bivariate always return True; TimeSeries returns True when
 the user explicitly requested total=&quot;yes&quot; or when percentage is set to &quot;row&quot;
@@ -334,8 +334,8 @@ the chart builder; this property only signals whether one should be created.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Previous() As TableSpecs
 </code></pre>
-<p>Linked-list navigation between sibling specifications.
-Returns the nearest valid table specification that precedes this one within
+<p>Linked-list navigation between sibling specifications.</p>
+<p>Returns the nearest valid table specification that precedes this one within
 the same section. Starting from the row immediately above the current table
 range, it walks backward one row at a time until it finds a valid table or
 encounters a section boundary (IsNewSection on the candidate). The walk
@@ -393,8 +393,8 @@ call NextSpecs repeatedly until Nothing is returned.</li>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Value(ByVal colName As String) As String
 </code></pre>
-<p>Value retrieval and category lookups from the specification row.
-Retrieves the cached cell value from this table specification row for a
+<p>Value retrieval and category lookups from the specification row.</p>
+<p>Retrieves the cached cell value from this table specification row for a
 given column name. The column is located by scanning the cached column
 names array for a case-insensitive substring match (replicating the
 original Range.Find with xlPart and MatchCase:=False). Once found, the
@@ -480,8 +480,8 @@ column variable is not found or not specified.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get HeaderRange() As Range
 </code></pre>
-<p>Properties used by the factory pattern during initialisation.
-Returns the header row Range that contains column names such as &quot;row&quot;,
+<p>Properties used by the factory pattern during initialisation.</p>
+<p>Returns the header row Range that contains column names such as &quot;row&quot;,
 &quot;column&quot;, &quot;total&quot;, &quot;section&quot;, etc. Used by Value() and ColumnIndex()
 for all field lookups.</p>
 <p><strong>Returns:</strong> Range. The header row range.</p>
@@ -547,8 +547,8 @@ factory construction.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ColumnExists(ByVal colName As String) As Boolean
 </code></pre>
-<p>Private helper methods that support data access and validation.
-Delegates to ColumnIndex and checks for a positive return value. Replaces
+<p>Private helper methods that support data access and validation.</p>
+<p>Delegates to ColumnIndex and checks for a positive return value. Replaces
 the original Range.Find call with a scan of the cached column names array.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -651,8 +651,8 @@ from the cellValues cache).</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As Long, ByVal message As String)
 </code></pre>
-<p>Logging and error-raising helpers.
-Wrapper around Err.Raise that standardises the source to CLASS_NAME,
+<p>Logging and error-raising helpers.</p>
+<p>Wrapper around Err.Raise that standardises the source to CLASS_NAME,
 providing a consistent stack trace across all methods in this class.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -690,12 +690,13 @@ If any check fails, a descriptive error is raised via ThrowError.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (10 file(s))</summary>
+<summary>Used in (11 file(s))</summary>
 <ul>
 <li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
 <li><a href="CrossTable.html">CrossTable.cls</a></li>
 <li><a href="CrossTableFormula.html">CrossTableFormula.cls</a></li>
 <li><a href="SpatialTables.html">SpatialTables.cls</a></li>
+<li><a href="LLdictionary.html">LLdictionary.cls</a></li>
 <li><a href="GraphSpecs.html">GraphSpecs.cls</a></li>
 <li><a href="SetupErrors.html">SetupErrors.cls</a></li>
 <li>TestCrossTable.bas</li>

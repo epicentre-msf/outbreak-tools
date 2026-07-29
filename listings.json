@@ -17,6 +17,13 @@
     ]
   },
   {
+    "listing": "/cheatsheets/home_cheatsheets.html",
+    "items": [
+      "/cheatsheets/analyses.html",
+      "/cheatsheets/variable_control.html"
+    ]
+  },
+  {
     "listing": "/reference/home_reference.html",
     "items": [
       "/reference/ribbons_designer.html",
@@ -44,13 +51,6 @@
       "/how_to/export_subset_geo.html",
       "/how_to/link_tables.html",
       "/how_to/migrate_setup.html"
-    ]
-  },
-  {
-    "listing": "/cheatsheets/home_cheatsheets.html",
-    "items": [
-      "/cheatsheets/analyses.html",
-      "/cheatsheets/variable_control.html"
     ]
   }
 ]

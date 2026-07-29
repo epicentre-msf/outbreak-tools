@@ -27,8 +27,8 @@ automatically.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal sh As Worksheet, Optional ByVal title As String = vbNullString) As CheckingOutput
 </code></pre>
-<p>Entry point for creating CheckingOutput instances.
-Instantiates a new writer and associates it with the supplied
+<p>Entry point for creating CheckingOutput instances.</p>
+<p>Instantiates a new writer and associates it with the supplied
 worksheet. Optionally assigns a title used for the end-of-checkings
 marker.</p>
 <p><strong>Parameters:</strong></p>
@@ -74,8 +74,8 @@ ApplyWorksheetFilter.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub EnsureWorksheetChangeHandler()
 </code></pre>
-<p>Injection and generation of the Worksheet_Change handler for interactive filtering.
-Injects the filtering VBA code into the worksheet's code module so
+<p>Injection and generation of the Worksheet_Change handler for interactive filtering.</p>
+<p>Injects the filtering VBA code into the worksheet's code module so
 filter drop-down changes trigger row visibility updates automatically.
 Skips injection when the event marker hidden name is already present.</p>
 <p><strong>Throws:</strong></p>
@@ -94,8 +94,8 @@ Skips injection when the event marker hidden name is already present.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub PrintOutput(ByVal checkTable As BetterArray)
 </code></pre>
-<p>End-to-end rendering of checking entries to the worksheet.
-Coordinates the end-to-end rendering: validates the input array,
+<p>End-to-end rendering of checking entries to the worksheet.</p>
+<p>Coordinates the end-to-end rendering: validates the input array,
 initialises the worksheet, writes each checking bundle, appends the
 end marker, and records the final row position.</p>
 <p><strong>Parameters:</strong></p>
@@ -118,8 +118,8 @@ end marker, and records the final row position.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Wksh() As Worksheet
 </code></pre>
-<p>Properties that expose internal state and the interface pointer.
-Returns the worksheet previously supplied during Create or the setter.</p>
+<p>Properties that expose internal state and the interface pointer.</p>
+<p>Returns the worksheet previously supplied during Create or the setter.</p>
 <p><strong>Returns:</strong> Worksheet. Reference to the target worksheet.</p>
 <hr />
 <h3 id="int-wksh">Wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
@@ -160,8 +160,8 @@ Returns the worksheet previously supplied during Create or the setter.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ResolveFormatting(Optional ByVal tag As String) As TFormatting
 </code></pre>
-<p>Colour resolution, text decoration, and border styling.
-Maps a tag string (colour name or heading level) to font, fill, and
+<p>Colour resolution, text decoration, and border styling.</p>
+<p>Maps a tag string (colour name or heading level) to font, fill, and
 border properties returned in a TFormatting structure.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -242,8 +242,8 @@ vbNullString when the index exceeds the array bounds.</p>
                           ByRef writtenTitles As Collection, _
                           Optional ByVal sep As String = DEFAULT_SEPARATOR)
 </code></pre>
-<p>Outputs headings and detail entries for individual checking bundles.
-Outputs the title heading (once per unique title), optional subtitle,
+<p>Outputs headings and detail entries for individual checking bundles.</p>
+<p>Outputs the title heading (once per unique title), optional subtitle,
 and all keyed entries with their severity colour coding. Advances the
 current row counter and tracks written titles to avoid duplicates.</p>
 <p><strong>Parameters:</strong></p>
@@ -276,8 +276,8 @@ Uses On Error Resume Next to handle missing keys.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureTitleStore(Optional ByVal resetStore As Boolean = False)
 </code></pre>
-<p>Manages the hidden title store used for the title filter validation list.
-When resetStore is True, clears all stored titles and re-creates
+<p>Manages the hidden title store used for the title filter validation list.</p>
+<p>When resetStore is True, clears all stored titles and re-creates
 the anchor cell. Otherwise ensures the anchor exists and the named
 range is defined.</p>
 <p><strong>Parameters:</strong></p>
@@ -400,8 +400,8 @@ keep a white font and hidden presentation.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function InitialiseWorksheet() As Long
 </code></pre>
-<p>Resets and initialises the worksheet before rendering.
-On first render, clears all cells, sets the Consolas font, creates
+<p>Resets and initialises the worksheet before rendering.</p>
+<p>On first render, clears all cells, sets the Consolas font, creates
 the title store, installs filter dropdowns, removes gridlines, and
 records the starting row marker. On subsequent renders, resumes from
 the last written row.</p>
@@ -414,8 +414,8 @@ the last written row.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureFilterDropdown()
 </code></pre>
-<p>Drop-down filter management and row-visibility algorithms.
-Creates validation drop-downs for both status (severity) and title
+<p>Drop-down filter management and row-visibility algorithms.</p>
+<p>Creates validation drop-downs for both status (severity) and title
 filtering. Ensures the title store named range is available for the
 title validation list.</p>
 <hr />
@@ -457,8 +457,8 @@ FilterCheckingOutputRows procedures.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RemoveManagedWorksheetProcedures(ByVal codeModule As Object)
 </code></pre>
-<p>Utilities for managing injected worksheet procedures.
-Removes any instance of the managed procedures so a single fresh
+<p>Utilities for managing injected worksheet procedures.</p>
+<p>Removes any instance of the managed procedures so a single fresh
 handler can be written without duplication.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -486,8 +486,8 @@ procedure is not found.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ValidateCheckTable(ByVal checkTable As BetterArray)
 </code></pre>
-<p>Private utility methods for validation, normalisation, and storage.
-Iterates the array and raises an error for any item that does not
+<p>Private utility methods for validation, normalisation, and storage.</p>
+<p>Iterates the array and raises an error for any item that does not
 implement Checking.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -572,8 +572,8 @@ first access. Raises an error when no worksheet is assigned.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
 </code></pre>
-<p>Centralised error-raising pattern.
-Wrapper around Err.Raise that standardises the source to
+<p>Centralised error-raising pattern.</p>
+<p>Wrapper around Err.Raise that standardises the source to
 &quot;CheckingOutput&quot; for consistent stack traces.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -605,7 +605,7 @@ Wrapper around Err.Raise that standardises the source to
 <hr />
 </details>
 <details>
-<summary>Used in (6 file(s))</summary>
+<summary>Used in (7 file(s))</summary>
 <ul>
 <li><a href="Checking.html">Checking.cls</a></li>
 <li><a href="CustomTest.html">CustomTest.cls</a></li>
@@ -613,6 +613,7 @@ Wrapper around Err.Raise that standardises the source to
 <li>GenerationReport.bas</li>
 <li>TestCheckingOutput.bas</li>
 <li>TestCustomTest.bas</li>
+<li>OBTHeadless.bas</li>
 </ul>
 </details>
   </main>

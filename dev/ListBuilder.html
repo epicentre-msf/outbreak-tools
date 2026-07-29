@@ -32,8 +32,8 @@ reference, then invoke Build to construct the sheet.</p>
                        ByVal sheetName As String, _
                        ByVal ll As Linelist) As ListBuilder
 </code></pre>
-<p>Factory method and Friend bindings for construction.
-Creates a new ListBuilder wired to build a data entry sheet of the given
+<p>Factory method and Friend bindings for construction.</p>
+<p>Creates a new ListBuilder wired to build a data entry sheet of the given
 layer type (HList or VList) for the named sheet within the linelist. The
 linelist object, sheet name, and presence in the dictionary are all
 validated before construction.</p>
@@ -63,8 +63,8 @@ present in the dictionary.</li>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Build()
 </code></pre>
-<p>Public entry point for building the data entry sheet.
-Dispatches to the appropriate private builder based on the layer mode set
+<p>Public entry point for building the data entry sheet.</p>
+<p>Dispatches to the appropriate private builder based on the layer mode set
 during factory construction. HList mode delegates to BuildHList; VList
 mode delegates to BuildVList. Raises an error for unknown layer values.</p>
 <p><strong>Throws:</strong></p>
@@ -119,8 +119,8 @@ ListBuilderLayerHList or ListBuilderLayerVList.</li>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub BuildHList()
 </code></pre>
-<p>Private implementation for horizontal data entry sheet construction.
-Constructs a full HList sheet: applies design formatting, freezes panes,
+<p>Private implementation for horizontal data entry sheet construction.</p>
+<p>Constructs a full HList sheet: applies design formatting, freezes panes,
 adds action buttons (Show/Hide, Add Rows, Clear Filters, Open Print, and
 optionally Geo), builds sections via SectionBuilder, creates the GoTo
 section dropdown, stores sheet metadata as hidden names, creates the main
@@ -135,8 +135,8 @@ are skipped and rows 3-4 are hidden instead.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub BuildVList()
 </code></pre>
-<p>Private implementation for vertical data entry sheet construction.
-Constructs a VList sheet: applies design formatting, freezes pane row 1,
+<p>Private implementation for vertical data entry sheet construction.</p>
+<p>Constructs a VList sheet: applies design formatting, freezes pane row 1,
 builds sections via SectionBuilder, creates the GoTo section dropdown,
 stores sheet metadata as hidden names, computes the PLAGEVALUES range
 reference (the contiguous vertical data range starting at the table start
@@ -149,8 +149,8 @@ marker), and protects the active sheet.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub BuildSections(ByVal sh As Worksheet, ByVal printSh As Worksheet)
 </code></pre>
-<p>Private utilities shared by both build modes.
-Creates a SectionBuilder in the appropriate mode (HList or VList) and
+<p>Private utilities shared by both build modes.</p>
+<p>Creates a SectionBuilder in the appropriate mode (HList or VList) and
 invokes its Build method. For HList mode, also retrieves the CRF companion
 worksheet (if it exists). Both standard and custom dropdown objects are
 passed to the builder for variable validation setup.</p>
@@ -195,9 +195,11 @@ skipped to avoid redundant dropdown entries.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (2 file(s))</summary>
+<summary>Used in (4 file(s))</summary>
 <ul>
+<li><a href="LLSheets.html">LLSheets.cls</a></li>
 <li>EventsDesignerAdvanced.bas</li>
+<li>TestLLSheets.bas</li>
 <li>TestListBuilder.bas</li>
 </ul>
 </details>

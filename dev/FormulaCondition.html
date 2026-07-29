@@ -27,8 +27,8 @@ exposes methods to render IF-wrapped condition strings and joined predicates.</p
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal formVar As BetterArray, ByVal formCond As BetterArray) As FormulaCondition
 </code></pre>
-<p>Validate paired arrays and expose the ready-to-use condition helper.
-Validates that both arrays are non-Nothing and have equal lengths, then
+<p>Validate paired arrays and expose the ready-to-use condition helper.</p>
+<p>Validates that both arrays are non-Nothing and have equal lengths, then
 stores normalised copies with a lower bound of 1.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -52,8 +52,8 @@ stores normalised copies with a lower bound of 1.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get LstConditions() As BetterArray
 </code></pre>
-<p>Provide controlled access to stored collections and interface pointer.
-Returns the internal BetterArray holding the condition predicates
+<p>Provide controlled access to stored collections.</p>
+<p>Returns the internal BetterArray holding the condition predicates
 in the same order they were supplied at creation.</p>
 <p><strong>Returns:</strong> BetterArray. The condition fragments preserving the original order.</p>
 <hr />
@@ -79,7 +79,7 @@ same order they were supplied at creation.</p>
 <pre><code class="language-vb">Public Property Get HasCheckings() As Boolean
 </code></pre>
 <p>Returns True when at least one LogInfo call has been made since the
-last ResetCaches, indicating that diagnostic information is available.</p>
+last validation run, indicating that diagnostic information is available.</p>
 <p><strong>Returns:</strong> Boolean. True when internal checks exist.</p>
 <hr />
 </div>
@@ -93,10 +93,12 @@ last ResetCaches, indicating that diagnostic information is available.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get VariablesTable(ByVal dict As LLdictionary) As String
 </code></pre>
-<p>Provide metadata derived from the last validation run.
-Returns the cached table name when validation has already occurred.
+<p>Provide metadata derived from the last validation run.</p>
+<p>Returns the cached table name when validation has already occurred.
 When the cache is empty, triggers a full validation pass against
-the supplied dictionary before returning the result.</p>
+the supplied dictionary before returning the result.
+Formulas.ParsedCustomFormula calls this as a fallback when the table name
+is unknown, so it sits on the hot path for N and N() formulas.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>dict</code>: LLdictionary. The dictionary used when validation has not occurred yet.</li>
@@ -114,14 +116,13 @@ the supplied dictionary before returning the result.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Valid(ByVal dict As LLdictionary, Optional ByVal tablename As String = vbNullString) As Boolean
 </code></pre>
-<p>Confirm that variables/conditions are aligned and belong to the same table.
-Checks that both lists are non-empty and equal in length, then
-verifies each variable exists in the dictionary and belongs to the
-expected table. When a tablename argument is supplied it overrides
-the table resolved from the first variable. Results are cached so
-repeated calls with the same tablename parameter return immediately
-without re-validating. The cache is invalidated when underlying data
-changes (via Set LstVars or Set LstConditions).</p>
+<p>Confirm that variables/conditions are aligned and belong to the same table.</p>
+<p>Checks that the lists are non-empty, then verifies each variable exists in
+the dictionary and belongs to the expected table. When a tablename argument
+is supplied it overrides the table resolved from the first variable.
+The result is cached against BOTH the tablename argument and the dictionary
+object. Keying on the tablename alone handed the answer computed for one
+dictionary back to a caller asking about another one.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>dict</code>: LLdictionary. The metadata provider used for variable lookups.</li>
@@ -141,11 +142,13 @@ changes (via Set LstVars or Set LstConditions).</p>
 <pre><code class="language-vb">Public Function ConditionString(ByVal tablename As String, ByVal varName As String, _
                                 Optional ByVal Connector As String = &quot;*&quot;) As String
 </code></pre>
-<p>Produce Excel-ready predicates and wrapper formulas.
-Joins all variable/condition pairs using ConditionPredicate, then
+<p>Produce Excel-ready predicates and wrapper formulas.</p>
+<p>Joins all variable/condition pairs using ConditionPredicate, then
 wraps the result in an IF function that returns the variable value
 when the predicate evaluates to True. Returns an empty string when
-the predicate is empty.</p>
+the predicate is empty.
+The space before the comma is deliberate: CrossTableFormula compares
+generated formulas in its tests.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>tablename</code>: String. Structured reference table name.</li>
@@ -163,7 +166,13 @@ the predicate is empty.</p>
 <p>Iterates through all variable/condition pairs and concatenates them
 into a single predicate string using the supplied connector (typically
 &quot;*&quot; for AND logic). Each fragment is wrapped in parentheses using
-structured table references.</p>
+structured table references, and the condition fragment carries its own
+operator: &quot;&gt;= 5&quot; becomes (f_table[age]&gt;= 5). Formulas.ClearCountIf rewrites
+those fragments for COUNTIFS, so the two have to keep agreeing on the shape.
+The answer is held against the table name and the connector. The lists
+cannot change after Seal, so the same pair always gives the same string,
+and Formulas.ParsedAnalysisFormula asks for it once per variable token of
+the same formula.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>tablename</code>: String. Structured reference table name.</li>
@@ -182,8 +191,8 @@ structured table references.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Variables() As BetterArray
 </code></pre>
-<p>Defensive copies of the tracked lists and the diagnostic log.
-Returns a BetterArray copy of the variable identifiers in the order
+<p>Defensive copies of the tracked lists and the diagnostic log.</p>
+<p>Returns a BetterArray copy of the variable identifiers in the order
 they were supplied at creation.</p>
 <p><strong>Returns:</strong> BetterArray. The variable names preserving the original order.</p>
 <hr />
@@ -242,7 +251,10 @@ after construction. Called by the factory before returning.</p>
 </code></pre>
 <p>Copies the incoming array into a new BetterArray normalised to a
 lower bound of 1, then resets all cached validation artefacts so
-the next call to Valid triggers a fresh check.</p>
+the next call to Valid triggers a fresh check.
+Both setters copy with LowerBound 1, so the two lists always share one
+lower bound. ConditionPredicate indexes both lists from that bound and it
+is correct because of this.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>formCond</code>: BetterArray. The array containing predicate fragments.</li>
@@ -266,12 +278,19 @@ lower bound of 1, then invalidates all cached data.</p>
 <p><em>reset-caches</em></p>
 <p><strong>Clear cached table names, validation results, and diagnostics</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub ResetCaches()
+<pre><code class="language-vb">Private Sub ResetCaches()
 </code></pre>
-<p>Maintain cached validation artefacts and diagnostics.
-Resets all memoised validation state so the next call to Valid or
-VariablesTable triggers a fresh evaluation. Also clears any
-diagnostic entries accumulated during previous validations.</p>
+<p>Maintain cached validation artefacts and diagnostics.</p>
+<p>Resets all memoised state so the next call to Valid, VariablesTable or
+ConditionPredicate starts fresh. Its two callers are the setters above,
+and both are guarded by Seal, so this runs at construction only.</p>
+<hr />
+<h3 id="int-clearcheckings">ClearCheckings <a class="anchor-link" href="#int-clearcheckings">#</a></h3>
+<p><em>clear-checkings</em></p>
+<p><strong>Drop the diagnostic entries of the previous validation run</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ClearCheckings()
+</code></pre>
 <hr />
 <h3 id="int-loginfo">LogInfo <a class="anchor-link" href="#int-loginfo">#</a></h3>
 <p><em>log-info</em></p>
@@ -280,23 +299,32 @@ diagnostic entries accumulated during previous validations.</p>
 <pre><code class="language-vb">Private Sub LogInfo(ByVal message As String, Optional ByVal scope As Byte = checkingInfo)
 </code></pre>
 <p>Creates the checking instance on first use and appends the message
-using a monotonically increasing counter key. The checking store
-is exposed through the interface for callers needing diagnostic traces.</p>
+using a monotonically increasing counter key. The log is what says WHY
+a formula failed: the analysis path gives up quietly when Valid is False,
+and the reason lives here.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>message</code>: String. The event description to record.</li>
 <li><code>scope</code>: Optional Byte. Severity level from CheckingLogType. Defaults to checkingInfo.</li>
 </ul>
 <hr />
-<h3 id="int-cachedtable">CachedTable <a class="anchor-link" href="#int-cachedtable">#</a></h3>
-<p><em>cached-table</em></p>
-<p><strong>Retrieve the memoised table name resolved during validation</strong></p>
+<h2 id="int-validation">Validation</h2>
+<h3 id="int-variablesprovider">VariablesProvider <a class="anchor-link" href="#int-variablesprovider">#</a></h3>
+<p><em>variables-provider</em></p>
+<p><strong>Build the variables helper once per dictionary</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get CachedTable() As String
+<pre><code class="language-vb">Private Function VariablesProvider(ByVal dict As LLdictionary) As LLVariables
 </code></pre>
-<p>Holds the table name that all variables were confirmed to share
-after a successful call to Valid. Empty until validation completes.</p>
-<p><strong>Returns:</strong> String. Cached table identifier.</p>
+<p>Valid used to build a fresh LLVariables on every call, and
+Formulas.ParsedAnalysisFormula calls Valid once per variable token of every
+analysis formula. Each helper carries its own block reads over the same
+dictionary worksheet. The helper is held against the dictionary it was
+built over, so a call naming another dictionary builds a new one.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>dict</code>: LLdictionary. The dictionary to read.</li>
+</ul>
+<p><strong>Returns:</strong> LLVariables. Helper bound to that dictionary.</p>
 <hr />
 <h2 id="int-errorhandling">ErrorHandling</h2>
 <h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
@@ -305,8 +333,8 @@ after a successful call to Valid. Empty until validation completes.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
 </code></pre>
-<p>Centralised helper to raise ProjectError-compliant errors.
-Wrapper around Err.Raise that standardises the source to
+<p>Centralised helper to raise ProjectError-compliant errors.</p>
+<p>Wrapper around Err.Raise that standardises the source to
 &quot;FormulaCondition&quot;, providing a consistent stack trace.</p>
 <p><strong>Parameters:</strong></p>
 <ul>

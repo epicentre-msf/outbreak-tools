@@ -92,8 +92,8 @@ category lists, and validation flags.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get HeaderRange() As Range
 </code></pre>
-<p>Properties that return Range objects for structural regions of the table.
-Returns the Range object spanning the column header row of this
+<p>Properties that return Range objects for structural regions of the table.</p>
+<p>Returns the Range object spanning the column header row of this
 cross-table. The range starts at (StartRow, StartColumn + 1) and
 extends to (StartRow, EndColumn), covering all column category cells
 but excluding the row-label column at StartColumn. This range is used
@@ -206,8 +206,8 @@ cell. Returns Nothing if colVal is not found.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub AddRows()
 </code></pre>
-<p>Populate row categories on the output worksheet.
-Populates the row category labels in the leftmost column
+<p>Populate row categories on the output worksheet.</p>
+<p>Populates the row category labels in the leftmost column
 (STANDARD_START_COL) of this cross-table on the output worksheet. The
 row content depends entirely on the table scope: ScopeGlobalSummary writes
 a single label cell; ScopeUnivariate writes the row variable's main label
@@ -235,8 +235,8 @@ reuse the row structure from the first table and only add columns.</li>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub AddColumns()
 </code></pre>
-<p>Populate column headers on the output worksheet.
-Writes column headers and category labels to the output worksheet. The
+<p>Populate column headers on the output worksheet.</p>
+<p>Writes column headers and category labels to the output worksheet. The
 column structure depends on the table scope: ScopeGlobalSummary creates two
 fixed columns; ScopeUnivariate creates one data column plus an optional
 percentage column; ScopeBivariate delegates to BivariateColumns then writes
@@ -262,8 +262,8 @@ as a guard to prevent duplicate creation.</li>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub AddHeader()
 </code></pre>
-<p>Create section headers, titles, and date/geo controls.
-Inserts the structural header infrastructure above the data area of this
+<p>Create section headers, titles, and date/geo controls.</p>
+<p>Inserts the structural header infrastructure above the data area of this
 cross-table: section titles, table titles, date/time input controls for
 temporal tables, and geo-level selection controls for spatial tables.
 This is the first step called by Build and may insert rows into the
@@ -292,8 +292,8 @@ dates at runtime.</li>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub NameRanges()
 </code></pre>
-<p>Create all structural named ranges for the table.
-Creates all structural named ranges for this cross-table after the data
+<p>Create all structural named ranges for the table.</p>
+<p>Creates all structural named ranges for this cross-table after the data
 area (rows and columns) has been populated. These named ranges serve as
 stable references for formula generation, VBA-driven data updates, and
 export tracking. The method creates ENDTABLE_, ROW_CATEGORIES_,
@@ -323,8 +323,8 @@ column structure beyond the two fixed columns).</li>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Format(ByVal desFormat As LLFormat)
 </code></pre>
-<p>Apply visual formatting to all structural regions of the cross-table.
-Applies comprehensive visual formatting to every part of the cross-table
+<p>Apply visual formatting to all structural regions of the cross-table.</p>
+<p>Applies comprehensive visual formatting to every part of the cross-table
 using the design format object (LLFormat). This is the final step after
 Build completes the structural layout. Formatting is applied in order:
 section header, table title, spatial dropdown, column headers, row and
@@ -356,8 +356,8 @@ ROWGS_FORMATSET and MERGED_.</li>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Build()
 </code></pre>
-<p>Orchestrate the complete table construction sequence.
-Orchestrates the complete construction of this cross-table by calling
+<p>Orchestrate the complete table construction sequence.</p>
+<p>Orchestrates the complete construction of this cross-table by calling
 the four build steps in the correct order: AddHeader (inserts rows),
 AddRows (populates row categories and sets EndRow), AddColumns
 (populates column headers and sets EndColumn/NumberOfColumns), and
@@ -490,8 +490,8 @@ the ranges for export tracking.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function RangeExists(ByVal rngName As String) As Boolean
 </code></pre>
-<p>Properties that compute or retrieve the table position on the worksheet.
-Checks whether a named range with the given name is defined and
+<p>Properties that compute or retrieve the table position on the worksheet.</p>
+<p>Checks whether a named range with the given name is defined and
 reachable on the current output worksheet. This is used extensively
 throughout the class to decide whether structural infrastructure
 (section headers, start rows, end-table markers, column setups, etc.)
@@ -694,8 +694,8 @@ important because translated labels may have specific capitalization.</li>
 <pre><code class="language-vb">Private Function PercentLabel(ByVal percentVal As String, _
                                Optional ByVal percentType As String = &quot;all&quot;) As String
 </code></pre>
-<p>Private helper methods that support the public API.
-Builds a display label for percentage columns by appending a directional
+<p>Private helper methods that support the public API.</p>
+<p>Builds a display label for percentage columns by appending a directional
 Unicode arrow to the translated percentage string. The arrow indicates
 the direction of the percentage computation: a horizontal double arrow
 (U+2194) for row percentages and a vertical double arrow (U+2195) for
@@ -743,8 +743,8 @@ or Total. However, EndColumn includes all columns written.</li>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function IsDeFactoNewSection() As Boolean
 </code></pre>
-<p>Detect de-facto new sections when the previous table was never built.
-Determines whether this table should be treated as a de-facto new
+<p>Detect de-facto new sections when the previous table was never built.</p>
+<p>Determines whether this table should be treated as a de-facto new
 section even though its TableSpecs.IsNewSection returns False. This
 situation arises from Bug #3: when the previous table in the same section
 was invalid and was therefore skipped during the build process, the

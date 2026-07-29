@@ -11,112 +11,460 @@
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>LLVariables</h1>
-<details>
-<summary>Internal members (not exported)</summary>
-<h2 id="int-cachemanagement">CacheManagement</h2>
-<h3 id="int-resetcaches">ResetCaches <a class="anchor-link" href="#int-resetcaches">#</a></h3>
+<details open class="doc-section" id="creation">
+<summary>Creation</summary>
+<div class="section-body">
+<h3 id="create">Create <a class="anchor-link" href="#create">#</a></h3>
+<p><em>create</em></p>
+<p><strong>Build a variables reader over one dictionary</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ResetCaches()
+<pre><code class="language-vb">Public Function Create(ByVal dict As LLdictionary) As LLVariables
 </code></pre>
+<p>Validates the dictionary before anything else: a missing object, a dictionary
+with no <code>DataSheet</code>, and a dictionary with no &quot;variable name&quot; column each
+raise their own error. <code>TestLLVariables</code> pins all three numbers.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>dict</code>: LLdictionary. The dictionary to read.</li>
+</ul>
+<p><strong>Returns:</strong> LLVariables. A sealed instance bound to that dictionary.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.InvalidArgument When dict is Nothing.</li>
+<li>ProjectError.ObjectNotInitialized When the dictionary has no DataSheet.</li>
+<li>ProjectError.ElementNotFound When the variable-name column is missing.</li>
+</ul>
 <hr />
-<h3 id="int-invalidatecaches">InvalidateCaches <a class="anchor-link" href="#int-invalidatecaches">#</a></h3>
+<h3 id="dictionary">Dictionary <a class="anchor-link" href="#dictionary">#</a></h3>
+<p><em>dictionary</em></p>
+<p><strong>Dictionary this object reads</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Dictionary() As LLdictionary
+</code></pre>
+<p><strong>Returns:</strong> LLdictionary</p>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="cache-management">
+<summary>Cache management</summary>
+<div class="section-body">
+<h3 id="invalidatecaches">InvalidateCaches <a class="anchor-link" href="#invalidatecaches">#</a></h3>
+<p><strong>Drop everything this object holds about the worksheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub InvalidateCaches()
 </code></pre>
+<p>The two snapshots and the host worksheet live here. Read the class header for
+what each one promises.</p>
+<p>The way out for a caller that changed the dictionary behind this object:
+<code>EventSetup</code> calls it after the setup sheets are rebuilt. The search range
+goes too, so the next read rebuilds it from the dictionary.</p>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="reading">
+<summary>Reading</summary>
+<div class="section-body">
+<h3 id="contains">Contains <a class="anchor-link" href="#contains">#</a></h3>
+<p><em>contains</em></p>
+<p><strong>Test whether a variable is in the dictionary</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Contains(ByVal varName As String, Optional ByVal matchCase As Boolean = True) As Boolean
+</code></pre>
+<p>Case-sensitive by default. <code>LLdictionary.UniqueVarNames</code> normalises variable
+names during preparation, so the stored case is whatever the user typed, and
+<code>LLSheets.VariableAddress</code> and <code>LLExport.ResolveVariableChunk</code> both rely on
+the case-sensitive answer.
+The match is a string compare in memory, so a name holding <code>*</code>, <code>?</code>, <code>[</code>, <code>]</code>
+or <code>#</code> is matched as written. The <code>Range.Find</code> this replaced had to escape
+those characters first.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>varName</code>: String. Variable to look for.</li>
+<li><code>matchCase</code>: Optional Boolean. When True, the match is case-sensitive. Defaults to True.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the variable is present.</p>
+<hr />
+<h3 id="value">Value <a class="anchor-link" href="#value">#</a></h3>
+<p><em>value</em></p>
+<p><strong>Value of one column for one variable</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Value(ByVal colName As String, ByVal varName As String) As String
+</code></pre>
+<p>The argument order is column first. Twenty production sites call it with
+named arguments, so both names are part of the contract.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>colName</code>: String. Column header.</li>
+<li><code>varName</code>: String. Variable name.</li>
+</ul>
+<p><strong>Returns:</strong> String. The cell text, or an empty string when either is missing.</p>
+<hr />
+<h3 id="sheetname">SheetName <a class="anchor-link" href="#sheetname">#</a></h3>
+<p><strong>Sheet a variable belongs to</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function SheetName(ByVal varName As String, Optional ByVal matchCase As Boolean = True) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>varName</code>: String. Variable name.</li>
+<li><code>matchCase</code>: Optional Boolean. When True, the variable match is case-sensitive. Defaults to True.</li>
+</ul>
+<p><strong>Returns:</strong> String. The sheet name, or an empty string.</p>
+<hr />
+<h3 id="controltype">ControlType <a class="anchor-link" href="#controltype">#</a></h3>
+<p><strong>Control type of a variable</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function ControlType(ByVal varName As String, Optional ByVal matchCase As Boolean = True) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>varName</code>: String. Variable name.</li>
+<li><code>matchCase</code>: Optional Boolean. When True, the variable match is case-sensitive. Defaults to True.</li>
+</ul>
+<p><strong>Returns:</strong> String. The control value, or an empty string.</p>
+<hr />
+<h3 id="tablename">TableName <a class="anchor-link" href="#tablename">#</a></h3>
+<p><strong>Table a variable belongs to</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function TableName(ByVal varName As String) As String
+</code></pre>
+<p>The table name column is written by <code>LLdictionary.Prepare</code>, so this answers
+an empty string on a dictionary that has not been prepared.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>varName</code>: String. Variable name.</li>
+</ul>
+<p><strong>Returns:</strong> String. The table name, or an empty string.</p>
+<hr />
+<h3 id="cellrange">CellRange <a class="anchor-link" href="#cellrange">#</a></h3>
+<p><em>cell-range</em></p>
+<p><strong>Cell holding one column of one variable</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get CellRange(ByVal colName As String, ByVal varName As String) As Range
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>colName</code>: String. Column header.</li>
+<li><code>varName</code>: String. Variable name.</li>
+</ul>
+<p><strong>Returns:</strong> Range. The cell, or Nothing when the row or the column is missing.</p>
+<hr />
+<h3 id="variablenames">VariableNames <a class="anchor-link" href="#variablenames">#</a></h3>
+<p><strong>List of every variable name in the dictionary</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function VariableNames() As BetterArray
+</code></pre>
+<p>Built from the snapshot, so it costs no worksheet read once the column has
+been loaded. Empty cells are left out.</p>
+<p><strong>Returns:</strong> BetterArray. The names, lower bound 1.</p>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="writing">
+<summary>Writing</summary>
+<div class="section-body">
+<h3 id="setvalue">SetValue <a class="anchor-link" href="#setvalue">#</a></h3>
+<p><strong>Write one column of one variable</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function SetValue(ByVal varName As String, _
+                         ByVal colName As String, _
+                         ByVal newValue As String, _
+                         Optional ByVal onEmpty As Boolean = False) As Boolean
+</code></pre>
+<p><code>onEmpty</code> tests <code>IsEmpty</code> on the target cell. That is False for a cell holding
+an empty string and for a formula that returns &quot;&quot;, which is the behaviour
+<code>LinelistSpecs</code> relies on for the &quot;list auto&quot; column.
+The return value says whether the write happened. A skipped write used to be
+recorded in a checking object that nothing ever read.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>varName</code>: String. Variable to write to.</li>
+<li><code>colName</code>: String. Column header to write to.</li>
+<li><code>newValue</code>: String. The value to write.</li>
+<li><code>onEmpty</code>: Optional Boolean. When True, write only into an empty cell. Defaults to False.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the value was written.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ElementNotFound When the variable or the column is missing.</li>
+</ul>
+<hr />
+<h3 id="index">Index <a class="anchor-link" href="#index">#</a></h3>
+<p><em>index</em></p>
+<p><strong>Column index of a variable on its own sheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Index(ByVal varName As String) As Long
+</code></pre>
+<p>Reads the &quot;column index&quot; column, which <code>LLdictionary.Prepare</code> creates. Before
+preparation the cell is empty and this raises <code>ElementNotFound</code>; that is the
+contract <code>LLSheets.VariableAddress</code> turns into its own message.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>varName</code>: String. Variable name.</li>
+</ul>
+<p><strong>Returns:</strong> Long. The index stored for that variable.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ElementNotFound When the column index is missing.</li>
+<li>ProjectError.InvalidArgument When the stored index is not a number.</li>
+</ul>
+<hr />
+</div>
+</details>
+<details>
+<summary>Internal members (not exported)</summary>
+<h2 id="int-creation">Creation</h2>
+<h3 id="int-dictionary">Dictionary <a class="anchor-link" href="#int-dictionary">#</a></h3>
+<p><em>dictionary-set</em></p>
+<p><strong>Bind the dictionary, at creation only</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Set Dictionary(ByVal dict As LLdictionary)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>dict</code>: LLdictionary. The dictionary to read.</li>
+</ul>
+<hr />
+<h3 id="int-seal">Seal <a class="anchor-link" href="#int-seal">#</a></h3>
+<p><em>seal</em></p>
+<p><strong>Prevent further changes to creation-only setters</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Seal()
+</code></pre>
+<hr />
+<h3 id="int-guardnotsealed">GuardNotSealed <a class="anchor-link" href="#int-guardnotsealed">#</a></h3>
+<p><em>guard-not-sealed</em></p>
+<p><strong>Refuse a write to a creation-only setter</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub GuardNotSealed(ByVal propName As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>propName</code>: String. Name used in the message.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.SomethingWentWrong When the instance is already sealed.</li>
+</ul>
+<hr />
+<h2 id="int-cache-management">Cache management</h2>
+<h3 id="int-dropsnapshots">DropSnapshots <a class="anchor-link" href="#int-dropsnapshots">#</a></h3>
+<p><em>drop-snapshots</em></p>
+<p><strong>Forget the two blocks and the host worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub DropSnapshots()
+</code></pre>
 <hr />
 <h3 id="int-ensuredictionaryready">EnsureDictionaryReady <a class="anchor-link" href="#int-ensuredictionaryready">#</a></h3>
+<p><strong>Refuse to read without a dictionary</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureDictionaryReady()
 </code></pre>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When no dictionary is bound.</li>
+</ul>
+<hr />
+<h3 id="int-hostsheet">HostSheet <a class="anchor-link" href="#int-hostsheet">#</a></h3>
+<p><em>host-sheet</em></p>
+<p><strong>Worksheet holding the dictionary</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get HostSheet() As Worksheet
+</code></pre>
+<p>Held on the instance. Reaching it through <code>dict.Data.Wksh</code> cost two crossings
+before any work, on every cell this class resolved.</p>
+<p><strong>Returns:</strong> Worksheet</p>
 <hr />
 <h3 id="int-refreshvariablerange">RefreshVariableRange <a class="anchor-link" href="#int-refreshvariablerange">#</a></h3>
+<p><strong>Rebuild the range holding the variable names</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RefreshVariableRange()
 </code></pre>
+<p>One path. <code>DataSheet.DataRange</code> resolves the column with <code>shouldExist:=True</code>,
+so a dictionary without a &quot;variable name&quot; column raises here, and it always
+hands back at least one data row. The second hand-built path this routine
+used to carry could never run.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ElementNotFound When the variable-name column is missing.</li>
+</ul>
 <hr />
 <h3 id="int-ensurevariablerange">EnsureVariableRange <a class="anchor-link" href="#int-ensurevariablerange">#</a></h3>
+<p><strong>Build the search range when it is missing</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureVariableRange()
 </code></pre>
 <hr />
-<h3 id="int-cachekeyforcolumn">CacheKeyForColumn <a class="anchor-link" href="#int-cachekeyforcolumn">#</a></h3>
+<h3 id="int-ensurenamesloaded">EnsureNamesLoaded <a class="anchor-link" href="#int-ensurenamesloaded">#</a></h3>
+<p><em>ensure-names-loaded</em></p>
+<p><strong>Read the variable-name column once</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function CacheKeyForColumn(ByVal colName As String) As String
+<pre><code class="language-vb">Private Sub EnsureNamesLoaded()
+</code></pre>
+<p>One crossing for the whole column. Every <code>Contains</code>, <code>RowIndex</code>,
+<code>VariableNames</code> and cell resolve is answered from this array afterwards.</p>
+<hr />
+<h3 id="int-reloadheaders">ReloadHeaders <a class="anchor-link" href="#int-reloadheaders">#</a></h3>
+<p><em>reload-headers</em></p>
+<p><strong>Read the header row once</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ReloadHeaders()
 </code></pre>
 <hr />
-<h3 id="int-trygetcachedcolumnindex">TryGetCachedColumnIndex <a class="anchor-link" href="#int-trygetcachedcolumnindex">#</a></h3>
+<h3 id="int-ensureheadersloaded">EnsureHeadersLoaded <a class="anchor-link" href="#int-ensureheadersloaded">#</a></h3>
+<p><em>ensure-headers-loaded</em></p>
+<p><strong>Read the header row when it has not been read yet</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function TryGetCachedColumnIndex(ByVal cacheKey As String, ByRef cachedIndex As Long) As Boolean
+<pre><code class="language-vb">Private Function EnsureHeadersLoaded() As Boolean
 </code></pre>
+<p>Says whether it read the sheet. A snapshot built in this very call is already
+fresh, so the caller can skip both the cell check and the second read.</p>
+<p><strong>Returns:</strong> Boolean. True when the header row was read in this call.</p>
 <hr />
-<h3 id="int-storecolumnindex">StoreColumnIndex <a class="anchor-link" href="#int-storecolumnindex">#</a></h3>
+<h3 id="int-headercolumn">HeaderColumn <a class="anchor-link" href="#int-headercolumn">#</a></h3>
+<p><em>header-column</em></p>
+<p><strong>Find a column in the header snapshot</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub StoreColumnIndex(ByVal cacheKey As String, ByVal columnIndexValue As Long)
+<pre><code class="language-vb">Private Function HeaderColumn(ByVal colName As String) As Long
 </code></pre>
+<p>Whole string, case-insensitive, leftmost wins. That is the same rule
+<code>DataSheet.FindColumn</code> applies for the arguments this class used to pass it
+(<code>strictSearch:=True</code>, <code>matchCase:=False</code>).</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>colName</code>: String. Column header to look for.</li>
+</ul>
+<p><strong>Returns:</strong> Long. The worksheet column, or 0 when the snapshot does not hold it.</p>
 <hr />
-<h3 id="int-sanitizesearchterm">SanitizeSearchTerm <a class="anchor-link" href="#int-sanitizesearchterm">#</a></h3>
+<h3 id="int-headerstillreads">HeaderStillReads <a class="anchor-link" href="#int-headerstillreads">#</a></h3>
+<p><em>header-still-reads</em></p>
+<p><strong>Check one header cell against the name it is expected to hold</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function SanitizeSearchTerm(ByVal searchText As String) As String
+<pre><code class="language-vb">Private Function HeaderStillReads(ByVal columnNumber As Long, ByVal colName As String) As Boolean
 </code></pre>
-<hr />
-<h3 id="int-findvariablecell">FindVariableCell <a class="anchor-link" href="#int-findvariablecell">#</a></h3>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function FindVariableCell(ByVal varName As String, _ 
-                                  Optional ByVal matchCase As Boolean = True) As Range
-</code></pre>
+<p>One crossing, and it is what stops a stale index. A header renamed on the
+worksheet leaves the snapshot pointing at a column that now holds something
+else, and handing that index out would read the wrong column's value.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>columnNumber</code>: Long. The worksheet column to test.</li>
+<li><code>colName</code>: String. The header it should hold.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the cell still reads as colName.</p>
 <hr />
 <h3 id="int-resolvecolumnindex">ResolveColumnIndex <a class="anchor-link" href="#int-resolvecolumnindex">#</a></h3>
+<p><strong>Resolve a dictionary column to a worksheet column</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ResolveColumnIndex(ByVal colName As String, Optional ByVal required As Boolean = False) As Long
 </code></pre>
+<p>Answers from the header snapshot, checks the answer with one cell read, and
+reads the header row again when either step comes up short. The second read
+is what lets a column added after this object was built resolve.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>colName</code>: String. Column header to resolve.</li>
+<li><code>required</code>: Optional Boolean. When True, a missing column raises. Defaults to False.</li>
+</ul>
+<p><strong>Returns:</strong> Long. The worksheet column, or 0 when it is missing and required is False.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.InvalidArgument When colName is empty and required is True.</li>
+<li>ProjectError.ElementNotFound When the column is missing and required is True.</li>
+</ul>
 <hr />
-<h3 id="int-variablenames">VariableNames <a class="anchor-link" href="#int-variablenames">#</a></h3>
+<h3 id="int-celltext">CellText <a class="anchor-link" href="#int-celltext">#</a></h3>
+<p><em>cell-text</em></p>
+<p><strong>Read one cell value as text</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function VariableNames() As BetterArray
+<pre><code class="language-vb">Private Function CellText(ByVal cellValue As Variant) As String
 </code></pre>
+<p>A dictionary cell can hold an error value (<code>#N/A</code>, <code>#REF!</code>) or a Null, and
+<code>CStr</code> raises on both. Every read in this class goes through here.
+The parameter is called <code>cellValue</code> because this module also holds a public
+<code>Value</code> function. VBA renormalises every use of an identifier to whichever
+spelling it saw last, across the whole project.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>cellValue</code>: Variant. The raw cell value.</li>
+</ul>
+<p><strong>Returns:</strong> String. The text, or an empty string when there is none.</p>
 <hr />
-<h2 id="int-logging">Logging</h2>
-<h3 id="int-loginfo">LogInfo <a class="anchor-link" href="#int-loginfo">#</a></h3>
+<h2 id="int-reading">Reading</h2>
+<h3 id="int-rowindex">RowIndex <a class="anchor-link" href="#int-rowindex">#</a></h3>
+<p><em>row-index</em></p>
+<p><strong>Find the worksheet row of one variable</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub LogInfo(ByVal label As String, _
-                    Optional ByVal varName As String = vbNullString, _
-                    Optional ByVal colName As String = vbNullString, _ 
-                    Optional ByVal scope As Byte = checkingInfo)
+<pre><code class="language-vb">Private Function RowIndex(ByVal varName As String, Optional ByVal matchCase As Boolean = True) As Long
 </code></pre>
-<hr />
-<h3 id="int-sheetname">SheetName <a class="anchor-link" href="#int-sheetname">#</a></h3>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function SheetName(ByVal varName As String, Optional ByVal matchCase As Boolean = True) As String
-</code></pre>
-<hr />
-<h3 id="int-controltype">ControlType <a class="anchor-link" href="#int-controltype">#</a></h3>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function ControlType(ByVal varName As String, Optional ByVal matchCase As Boolean = True) As String
-</code></pre>
-<hr />
-<h3 id="int-tablename">TableName <a class="anchor-link" href="#int-tablename">#</a></h3>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function TableName(ByVal varName As String) As String
-</code></pre>
+<p>Answers 0 when the variable is absent, and every caller tests for 0.
+A duplicated variable name answers with the FIRST row that holds it.
+<code>Range.Find</code> started after the first cell and wrapped, so it used to answer
+with the second. <code>LLdictionary.UniqueVarNames</code> makes the names unique during
+preparation, so two equal names are a fault in the sheet either way.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>varName</code>: String. Variable to look for.</li>
+<li><code>matchCase</code>: Optional Boolean. When True, the match is case-sensitive. Defaults to True.</li>
+</ul>
+<p><strong>Returns:</strong> Long. The worksheet row, or 0 when the variable is absent.</p>
 <hr />
 <h3 id="int-cellrangeinternal">CellRangeInternal <a class="anchor-link" href="#int-cellrangeinternal">#</a></h3>
+<p><em>cell-range-internal</em></p>
+<p><strong>Resolve the cell holding one column of one variable</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function CellRangeInternal(ByVal colName As String, ByVal varName As String, ByVal matchCase As Boolean) As Range
+<pre><code class="language-vb">Private Function CellRangeInternal(ByVal colName As String, _
+                                   ByVal varName As String, _
+                                   ByVal matchCase As Boolean) As Range
 </code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>colName</code>: String. Column header.</li>
+<li><code>varName</code>: String. Variable name.</li>
+<li><code>matchCase</code>: Boolean. When True, the variable match is case-sensitive.</li>
+</ul>
+<p><strong>Returns:</strong> Range. The cell, or Nothing when the row or the column is missing.</p>
 <hr />
-<h3 id="int-columnvalue">ColumnValue <a class="anchor-link" href="#int-columnvalue">#</a></h3>
+<h3 id="int-readcolumnvalue">ReadColumnValue <a class="anchor-link" href="#int-readcolumnvalue">#</a></h3>
+<p><em>read-column-value</em></p>
+<p><strong>Read one column of one variable as text</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ColumnValue(ByVal varName As String, ByVal columnName As String, ByVal matchCase As Boolean) As String
+<pre><code class="language-vb">Private Function ReadColumnValue(ByVal varName As String, _
+                                 ByVal colName As String, _
+                                 ByVal matchCase As Boolean) As String
 </code></pre>
+<p>The single reader. <code>Value</code>, <code>SheetName</code>, <code>ControlType</code> and <code>TableName</code> are all
+one line over this; the two argument orders those members expose are the only
+thing that used to differ between them.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>varName</code>: String. Variable name.</li>
+<li><code>colName</code>: String. Column header.</li>
+<li><code>matchCase</code>: Boolean. When True, the variable match is case-sensitive.</li>
+</ul>
+<p><strong>Returns:</strong> String. The cell text, or an empty string.</p>
+<hr />
+<h2 id="int-errors">Errors</h2>
+<h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
+<p><em>throw-error</em></p>
+<p><strong>Raise an error from this class</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>errNumb</code>: Long. The ProjectError value.</li>
+<li><code>errorMessage</code>: String. The message.</li>
+</ul>
 <hr />
 </details>
 <details>
-<summary>Used in (28 file(s))</summary>
+<summary>Used in (29 file(s))</summary>
 <ul>
 <li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
 <li><a href="CrossTable.html">CrossTable.cls</a></li>
 <li><a href="TableSpecs.html">TableSpecs.cls</a></li>
 <li><a href="LLImporter.html">LLImporter.cls</a></li>
+<li><a href="LLdictionary.html">LLdictionary.cls</a></li>
 <li><a href="LLExport.html">LLExport.cls</a></li>
 <li><a href="LLSheets.html">LLSheets.cls</a></li>
 <li><a href="FormulaCondition.html">FormulaCondition.cls</a></li>

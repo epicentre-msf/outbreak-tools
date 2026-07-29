@@ -52,7 +52,12 @@ switch to busy mode without an additional call.</p>
 operations: disables screen updating, alerts, automatic calculation, and
 optionally suppresses events and blocks automation security.  Does nothing
 when the scope is already busy.  On failure the busy flag is cleared and a
-ProjectError is raised so the caller can attempt recovery.</p>
+ProjectError is raised so the caller can attempt recovery.
+The snapshot restored later is the one this object already holds; it belongs
+to the whole life of the object and is NOT re-taken here.  A caller that
+changed a setting on purpose between two busy blocks must ask for a new
+snapshot with RefreshSnapshot, otherwise the next Restore puts the old value
+back.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>suppressEvents</code>: Optional Boolean. When True, disables Application.EnableEvents. Defaults to False.</li>
@@ -71,6 +76,10 @@ ProjectError is raised so the caller can attempt recovery.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub RefreshSnapshot()
 </code></pre>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ErrorUnexpectedState When the scope is busy.</li>
+</ul>
 <hr />
 <h3 id="restore">Restore <a class="anchor-link" href="#restore">#</a></h3>
 <p><em>restore</em></p>
@@ -88,14 +97,6 @@ ProjectError is raised so the caller can attempt recovery.</p>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-introspection">Introspection</h2>
-<h3 id="int-applicationobject">ApplicationObject <a class="anchor-link" href="#int-applicationobject">#</a></h3>
-<p><em>application-object</em></p>
-<p><strong>Application reference currently guarded</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get ApplicationObject() As Application
-</code></pre>
-<p><strong>Returns:</strong> Application. The Excel Application instance.</p>
-<hr />
 <h3 id="int-isbusy">IsBusy <a class="anchor-link" href="#int-isbusy">#</a></h3>
 <p><em>is-busy</em></p>
 <p><strong>Whether the busy state is currently active</strong></p>
@@ -124,13 +125,6 @@ ProjectError is raised so the caller can attempt recovery.</p>
 <li><code>excelApplication</code>: Application. The Excel Application to guard.</li>
 </ul>
 <hr />
-<h3 id="int-capturesnapshot">CaptureSnapshot <a class="anchor-link" href="#int-capturesnapshot">#</a></h3>
-<p><em>capture-snapshot</em></p>
-<p><strong>Capture current application settings</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Friend Sub CaptureSnapshot()
-</code></pre>
-<hr />
 <h2 id="int-core-logic">Core Logic</h2>
 <h3 id="int-capturesnapshotcore">CaptureSnapshotCore <a class="anchor-link" href="#int-capturesnapshotcore">#</a></h3>
 <p><em>capture-snapshot-core</em></p>
@@ -151,12 +145,11 @@ ProjectError is raised so the caller can attempt recovery.</p>
 <p><em>ensure-snapshot</em></p>
 <p><strong>Guard that a snapshot exists before proceeding</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub EnsureSnapshot(ByVal operationName As String)
+<pre><code class="language-vb">Private Sub EnsureSnapshot()
 </code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>operationName</code>: String. Name of the calling operation for error messages.</li>
-</ul>
+<p>Takes the snapshot only when the object does not have one yet.  The snapshot
+belongs to the whole life of the object: once taken it stays until a caller
+asks for a new one with RefreshSnapshot.</p>
 <hr />
 <h3 id="int-ensurenotbusy">EnsureNotBusy <a class="anchor-link" href="#int-ensurenotbusy">#</a></h3>
 <p><em>ensure-not-busy</em></p>
@@ -209,14 +202,15 @@ ProjectError is raised so the caller can attempt recovery.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (19 file(s))</summary>
+<summary>Used in (20 file(s))</summary>
 <ul>
 <li><a href="ExportButton.html">ExportButton.cls</a></li>
+<li><a href="LLChoices.html">LLChoices.cls</a></li>
 <li><a href="Linelist.html">Linelist.cls</a></li>
 <li><a href="LinelistSpecs.html">LinelistSpecs.cls</a></li>
 <li><a href="MasterSetupPreparation.html">MasterSetupPreparation.cls</a></li>
 <li><a href="SetupErrors.html">SetupErrors.cls</a></li>
-<li><a href="SetupImportService.html">SetupImportService.cls</a></li>
+<li><a href="SetupImport.html">SetupImport.cls</a></li>
 <li><a href="SetupTranslationsTable.html">SetupTranslationsTable.cls</a></li>
 <li>EventsDesignerAdvanced.bas</li>
 <li>EventsDesignerCore.bas</li>

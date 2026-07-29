@@ -3,20 +3,34 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>SetupImportService - OBT Dev Docs</title>
+  <title>SetupImport - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
-<h1>SetupImportService</h1>
+<h1>SetupImport</h1>
 <p>Orchestrates setup workbook synchronisation: validating, importing, exporting,
 and cleaning setup worksheets (Dictionary, Choices, Exports, Analysis,
 Translations). Supports both table-level import via CustomTable and
 domain-class-driven import via dedicated managers (LLdictionary, LLChoices,
 LLExport, Analysis, SetupTranslationsTable). Guards Excel state through
 ApplicationState and protects/unprotects worksheets via Passwords.</p>
+<p>Three rules hold across the whole class.</p>
+<ol>
+<li>A cleanup block that is reached by falling off the end of the work runs with
+its own handler, never with the failure handler still armed. A raise inside
+such a block used to jump into the failure handler and repeat work that had
+already run - which is how an import could rename the Choices columns twice.</li>
+<li>Every failure handler copies Err.Number, Err.Source and Err.Description into
+locals as its first three statements. Cleanup calls run On Error Resume Next
+and clear Err, so an error read after them belongs to the cleanup or to
+nothing at all.</li>
+<li>Sheet names are compared without case. Excel worksheet names are already
+case insensitive, and a caller that passes &quot;choices&quot; must reach the same
+code as one that passes &quot;Choices&quot;.</li>
+</ol>
 <details open class="doc-section" id="factory-helpers">
 <summary>Factory helpers</summary>
 <div class="section-body">
@@ -24,17 +38,20 @@ ApplicationState and protects/unprotects worksheets via Passwords.</p>
 <p><em>create</em></p>
 <p><strong>Create a ready-to-use service instance</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Create(ByVal importPath As String, Optional ByVal progressDisplay As Object) As SetupImportService
+<pre><code class="language-vb">Public Function Create(ByVal importPath As String, Optional ByVal progressDisplay As Object) As SetupImport
 </code></pre>
-<p>Validates the import path and optional progress display, creates a new
-SetupImportService instance, assigns the path and display, and returns
-the configured instance.</p>
+<p>Creates a new SetupImport instance and assigns the path and the display
+through the property setters, which validate both.</p>
+<p>The validation is left to the setters on purpose. Create runs on the
+predeclared default instance, so a validator called here writes its answer
+(this.hasCaption) onto that default instance and the new object keeps a stale
+value until a setter fills it in.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>importPath</code>: String. Path to the source setup workbook.</li>
 <li><code>progressDisplay</code>: Optional Object. UI element receiving textual updates (must expose Caption or Value).</li>
 </ul>
-<p><strong>Returns:</strong> SetupImportService. Configured service instance.</p>
+<p><strong>Returns:</strong> SetupImport. Configured service instance.</p>
 <hr />
 </div>
 </details>
@@ -71,6 +88,9 @@ the configured instance.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub SetExportFolder(ByVal folderPath As String)
 </code></pre>
+<p>The folder is consumed by one export. Export clears it when it closes the
+export workbook, so a second export on the same instance needs a second call
+to this method.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>folderPath</code>: String. The folder path to use for exports.</li>
@@ -83,7 +103,8 @@ the configured instance.</p>
 <pre><code class="language-vb">Public Property Get LastExportFile() As String
 </code></pre>
 <p>Returns the full file path of the last export workbook saved by the
-service. Returns an empty string when no export has occurred.</p>
+service. Returns an empty string when no export has occurred, and when the
+caller supplied its own workbook to Export.</p>
 <p><strong>Returns:</strong> String. The last export file path, or empty.</p>
 <hr />
 </div>
@@ -117,6 +138,7 @@ immediately close the source workbook to confirm it is readable.</p>
 <p><strong>Throws:</strong></p>
 <ul>
 <li>ProjectError.InvalidArgument When no import option is selected.</li>
+<li>ProjectError.ElementNotFound When no file sits at the configured path.</li>
 <li>ProjectError.SomethingWentWrong When the source workbook cannot be opened.</li>
 </ul>
 <hr />
@@ -127,11 +149,18 @@ immediately close the source workbook to confirm it is readable.</p>
 <pre><code class="language-vb">Public Sub Clean(ByVal pass As Passwords, ByVal sheetsList As BetterArray)
 </code></pre>
 <p>Iterates over the requested sheets, unprotects each one, clears all
-ListObject data and worksheet comments, then re-protects.</p>
+ListObject data and worksheet comments, then re-protects. A sheet the host
+workbook does not carry is skipped, which is what Import does with the same
+list.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>pass</code>: Passwords. Password handler for worksheet protection.</li>
 <li><code>sheetsList</code>: BetterArray. Worksheets participating in the clean-up.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When no password handler is supplied.</li>
+<li>ProjectError.InvalidArgument When the sheets list is missing or empty.</li>
 </ul>
 <hr />
 <h3 id="import">Import <a class="anchor-link" href="#import">#</a></h3>
@@ -144,10 +173,20 @@ ListObject data and worksheet comments, then re-protects.</p>
 ListObjects between source and host, and delegates import to
 CustomTable.Import. Handles sheet protection/unprotection and export
 column alignment via PrepareImport.</p>
+<p>PrepareImport renames two Choices columns for the length of the run and
+PostImport puts the names back. PostImport runs exactly once per call,
+whichever way the run ends: the success path guards it with its own handler
+and the failure path checks postImportDone. A second run would leave two
+columns named &quot;Translated Label&quot; and no &quot;Formula Label&quot;.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>pass</code>: Passwords. Password handler for worksheet protection.</li>
 <li><code>sheetsList</code>: BetterArray. Worksheets participating in the import.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When no password handler is supplied.</li>
+<li>ProjectError.InvalidArgument When the sheets list is missing or empty.</li>
 </ul>
 <hr />
 </div>
@@ -164,10 +203,19 @@ column alignment via PrepareImport.</p>
 <p>Uses domain-specific classes (LLdictionary, LLChoices, LLExport, Analysis,
 SetupTranslationsTable) to import each worksheet from the source workbook.
 Falls back to the default sheets list when none is provided.</p>
+<p>The sheet list is resolved before anything else, and PrepareImport is handed
+the resolved list from inside the protected block. PrepareImport exits on a
+missing list, so handing it the raw argument used to skip the export-row sync
+on every call that named no sheets - and the run still imported Exports into a
+host table that was too short.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>pass</code>: Passwords. Password handler for worksheet protection.</li>
 <li><code>sheetsList</code>: Optional BetterArray. Worksheets to import. Defaults to all five setup sheets.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When no password handler is supplied.</li>
 </ul>
 <hr />
 </div>
@@ -179,11 +227,16 @@ Falls back to the default sheets list when none is provided.</p>
 <p><em>export-to-workbook</em></p>
 <p><strong>Export all setup worksheets to a new workbook.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub Export(Optional Byval outwb As Workbook)
+<pre><code class="language-vb">Public Sub Export(Optional ByVal outwb As Workbook)
 </code></pre>
 <p>Creates or reuses an export workbook, then exports each setup worksheet
 (Dictionary, Choices, Exports, Analysis, Translations) using domain-specific
 managers, along with hidden names and formatting data.</p>
+<p>The caller owns any workbook it supplies through outwb. On that path the
+service writes the sheets and stops: it saves nothing, leaves LastExportFile
+empty, leaves the workbook open, and removes no sheet from it. A workbook the
+service creates itself is saved to the configured folder, closed, and stripped
+of the blank sheets Workbooks.Add gave it.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>outwb</code>: Optional Workbook. Pre-existing target workbook. When Nothing, creates a new one.</li>
@@ -223,6 +276,10 @@ managers, along with hidden names and formatting data.</p>
 <ul>
 <li><code>value</code>: Object. The progress display to store.</li>
 </ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.InvalidArgument When the object exposes neither Caption nor Value.</li>
+</ul>
 <hr />
 <h3 id="int-displayprompts">DisplayPrompts <a class="anchor-link" href="#int-displayprompts">#</a></h3>
 <p><em>display-prompts-set</em></p>
@@ -251,13 +308,27 @@ Primarily used by automated tests.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnterBusyState()
 </code></pre>
+<p>One scope covers a whole operation, including any inner call that enters the
+busy state again. The depth counter is what makes that work: only the
+outermost call restores, so an inner return can no longer put Calculation back
+to automatic in the middle of the work.</p>
 <hr />
 <h3 id="int-leavebusystate">LeaveBusyState <a class="anchor-link" href="#int-leavebusystate">#</a></h3>
 <p><em>leave-busy-state</em></p>
-<p><strong>Restore Excel configuration when work completes.</strong></p>
+<p><strong>Restore Excel configuration when the outermost call completes.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub LeaveBusyState(Optional ByVal silent As Boolean = False)
 </code></pre>
+<hr />
+<h3 id="int-restoreapplicationstate">RestoreApplicationState <a class="anchor-link" href="#int-restoreapplicationstate">#</a></h3>
+<p><em>restore-application-state</em></p>
+<p><strong>Restore Excel and release the scope.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RestoreApplicationState(ByVal silent As Boolean)
+</code></pre>
+<p>The scope is released once it has restored. ApplicationState captures its
+snapshot once per object, so a released scope is what makes the next operation
+record the settings as they are then.</p>
 <hr />
 <h2 id="int-workbook-driven-import">Workbook-driven import</h2>
 <h3 id="int-importdictionaryusingclass">ImportDictionaryUsingClass <a class="anchor-link" href="#int-importdictionaryusingclass">#</a></h3>
@@ -273,7 +344,9 @@ Primarily used by automated tests.</p>
 <p><em>import-choices</em></p>
 <p><strong>Import choices worksheet using LLChoices.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ImportChoicesUsingClass(ByVal pass As Passwords, ByVal hostworkbook As Workbook, ByVal importworkbook As Workbook)
+<pre><code class="language-vb">Private Sub ImportChoicesUsingClass(ByVal pass As Passwords, _
+                                    ByVal hostWorkbook As Workbook, _
+                                    ByVal importWorkbook As Workbook)
 </code></pre>
 <hr />
 <h3 id="int-importexportusingclass">ImportExportUsingClass <a class="anchor-link" href="#int-importexportusingclass">#</a></h3>
@@ -296,7 +369,7 @@ Primarily used by automated tests.</p>
 <hr />
 <h3 id="int-importtranslationsusingclass">ImportTranslationsUsingClass <a class="anchor-link" href="#int-importtranslationsusingclass">#</a></h3>
 <p><em>import-translations</em></p>
-<p><strong>Import translations worksheet using CustomTable and SetupTranslationsTable.</strong></p>
+<p><strong>Import translations worksheet using CustomTable and DataSheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ImportTranslationsUsingClass(ByVal pass As Passwords, _
                                          ByVal hostWorkbook As Workbook, _
@@ -307,7 +380,7 @@ Primarily used by automated tests.</p>
 <p><em>resolve-translations-list</em></p>
 <p><strong>Resolve the translations ListObject from a worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ResolveTranslationsList(ByVal sheetRef As Worksheet, _ 
+<pre><code class="language-vb">Private Function ResolveTranslationsList(ByVal sheetRef As Worksheet, _
                                          Optional ByVal preferred As ListObject = Nothing) As ListObject
 </code></pre>
 <hr />
@@ -317,10 +390,10 @@ Primarily used by automated tests.</p>
 <p><strong>Ensure the exports and dictionary sheets are aligned prior to import.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub PrepareImport(ByVal pass As Passwords, _
-                          Optional ByVal sheetsList As BetterArray, _ 
+                          Optional ByVal sheetsList As BetterArray, _
                           Optional ByVal forceSync As Boolean = True, _
                           Optional ByVal impStartRow As Long = EXPORT_HOST_START_ROW, _
-                          Optional ByVal impStartColumn As Long = EXPORT_HOST_START_COLUMN, _ 
+                          Optional ByVal impStartColumn As Long = EXPORT_HOST_START_COLUMN, _
                           Optional ByVal renameChoices As Boolean = False)
 </code></pre>
 <hr />
@@ -347,11 +420,28 @@ Primarily used by automated tests.</p>
 <pre><code class="language-vb">Private Function DefaultImportSheets() As BetterArray
 </code></pre>
 <hr />
-<h3 id="int-shouldimportsheet">ShouldImportSheet <a class="anchor-link" href="#int-shouldimportsheet">#</a></h3>
-<p><em>should-import-sheet</em></p>
-<p><strong>Determine whether a sheet should participate in the import.</strong></p>
+<h3 id="int-sheetlistkeys">SheetListKeys <a class="anchor-link" href="#int-sheetlistkeys">#</a></h3>
+<p><em>sheet-list-keys</em></p>
+<p><strong>Build one lower-cased key string out of a sheets list.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ShouldImportSheet(ByVal sheetsList As BetterArray, ByVal sheetName As String) As Boolean
+<pre><code class="language-vb">Private Function SheetListKeys(ByVal sheetsList As BetterArray) As String
+</code></pre>
+<p>The list is walked once per call and every later question is answered with
+InStr. The separator sits on both sides of each name, so a short name cannot
+match inside a longer one.</p>
+<hr />
+<h3 id="int-sheetinkeys">SheetInKeys <a class="anchor-link" href="#int-sheetinkeys">#</a></h3>
+<p><em>sheet-in-keys</em></p>
+<p><strong>Answer whether a sheet name sits in a key string.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SheetInKeys(ByVal sheetKeys As String, ByVal sheetName As String) As Boolean
+</code></pre>
+<hr />
+<h3 id="int-samesheetname">SameSheetName <a class="anchor-link" href="#int-samesheetname">#</a></h3>
+<p><em>same-sheet-name</em></p>
+<p><strong>Compare two worksheet names the way Excel does.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SameSheetName(ByVal leftName As String, ByVal rightName As String) As Boolean
 </code></pre>
 <hr />
 <h3 id="int-ensureimportselection">EnsureImportSelection <a class="anchor-link" href="#int-ensureimportselection">#</a></h3>
@@ -400,13 +490,21 @@ Primarily used by automated tests.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ValidateProgressDisplay(ByVal progressDisplay As Object)
 </code></pre>
+<p>An object that carries neither property is refused. The refusal used to sit
+below a plain Exit Sub, on a label nothing could jump to, so any object at all
+was accepted and the writers below then wrote to nothing.</p>
 <hr />
 <h3 id="int-testproperty">TestProperty <a class="anchor-link" href="#int-testproperty">#</a></h3>
 <p><em>test-property</em></p>
 <p><strong>Test whether an object supports a named property.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function TestProperty(ByVal Obj As Object, ByRef hasProp As Boolean, Optional ByVal propName As String = &quot;Caption&quot;) As Boolean
+<pre><code class="language-vb">Private Function TestProperty(ByVal probeObject As Object, _
+                              ByRef hasProp As Boolean, _
+                              ByVal propName As String) As Boolean
 </code></pre>
+<p>The probe reads the property. Writing to it was how this used to work, so
+asking a label whether it had a caption erased the caption. A name the probe
+does not know answers False.</p>
 <hr />
 <h3 id="int-ensureimportfileexists">EnsureImportFileExists <a class="anchor-link" href="#int-ensureimportfileexists">#</a></h3>
 <p><em>ensure-import-file-exists</em></p>
@@ -429,6 +527,26 @@ Primarily used by automated tests.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function EnsureExportWorkbook() As Workbook
 </code></pre>
+<p>The sheets the new workbook is born with are captured here, by reference, so
+the export can drop exactly those at the end. Deleting Worksheets(1) instead
+assumed one blank sheet and assumed every manager appends after the last one.</p>
+<hr />
+<h3 id="int-captureworksheets">CaptureWorksheets <a class="anchor-link" href="#int-captureworksheets">#</a></h3>
+<p><em>capture-worksheets</em></p>
+<p><strong>Hold every worksheet of a workbook in a Collection.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function CaptureWorksheets(ByVal workbookRef As Workbook) As Collection
+</code></pre>
+<hr />
+<h3 id="int-removeexportbasesheets">RemoveExportBaseSheets <a class="anchor-link" href="#int-removeexportbasesheets">#</a></h3>
+<p><em>remove-export-base-sheets</em></p>
+<p><strong>Drop the blank sheets the export workbook was created with.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RemoveExportBaseSheets(ByVal targetWorkbook As Workbook)
+</code></pre>
+<p>Only a workbook the service created carries captured sheets, so a workbook the
+caller supplied keeps every sheet it had. The delete stops while one sheet is
+left, because a workbook cannot hold zero worksheets.</p>
 <hr />
 <h3 id="int-ensuresavedexport">EnsureSavedExport <a class="anchor-link" href="#int-ensuresavedexport">#</a></h3>
 <p><em>ensure-saved-export</em></p>
@@ -436,20 +554,26 @@ Primarily used by automated tests.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureSavedExport()
 </code></pre>
+<p>The format is stated. Without it Excel writes in whatever default format the
+machine is set to, so a machine set to .xlsb produced a binary payload under
+an .xlsx name.</p>
 <hr />
-<h3 id="int-resolvedictionaryformat">ResolveDictionaryFormat <a class="anchor-link" href="#int-resolvedictionaryformat">#</a></h3>
-<p><em>resolve-dictionary-format</em></p>
-<p><strong>Return format header names when the sheet is the dictionary.</strong></p>
+<h3 id="int-dictionaryformatheaders">DictionaryFormatHeaders <a class="anchor-link" href="#int-dictionaryformatheaders">#</a></h3>
+<p><em>dictionary-format-headers</em></p>
+<p><strong>Header names the dictionary import carries its formatting for.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ResolveDictionaryFormat(ByVal sheetName As String) As BetterArray
+<pre><code class="language-vb">Private Function DictionaryFormatHeaders() As BetterArray
 </code></pre>
 <hr />
 <h3 id="int-buildexportfilepath">BuildExportFilePath <a class="anchor-link" href="#int-buildexportfilepath">#</a></h3>
 <p><em>build-export-file-path</em></p>
-<p><strong>Build the timestamped export file path from the configured folder.</strong></p>
+<p><strong>Build the stamped export file path from the configured folder.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function BuildExportFilePath() As String
 </code></pre>
+<p>Whatever follows the last dot of the host name is dropped, so a host saved as
+.xlsm or .XLSB no longer carries its extension inside the new name. The stamp
+carries the time as well as the date, so two exports in one day are two files.</p>
 <hr />
 <h3 id="int-closeimportworkbook">CloseImportWorkbook <a class="anchor-link" href="#int-closeimportworkbook">#</a></h3>
 <p><em>close-import-workbook</em></p>
@@ -464,6 +588,8 @@ Primarily used by automated tests.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub CloseExportWorkbook()
 </code></pre>
+<p>The folder is cleared with the workbook, so a second export on the same
+instance needs a fresh SetExportFolder call.</p>
 <hr />
 <h3 id="int-closeworkbook">CloseWorkbook <a class="anchor-link" href="#int-closeworkbook">#</a></h3>
 <p><em>close-workbook</em></p>
@@ -472,25 +598,25 @@ Primarily used by automated tests.</p>
 <pre><code class="language-vb">Private Sub CloseWorkbook(ByVal workbookRef As Workbook)
 </code></pre>
 <hr />
-<h3 id="int-worksheetexists">WorksheetExists <a class="anchor-link" href="#int-worksheetexists">#</a></h3>
-<p><em>worksheet-exists</em></p>
-<p><strong>Detect whether a worksheet exists within a workbook.</strong></p>
+<h3 id="int-tryworksheet">TryWorksheet <a class="anchor-link" href="#int-tryworksheet">#</a></h3>
+<p><em>try-worksheet</em></p>
+<p><strong>Resolve a worksheet, answering Nothing when it is absent.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function WorksheetExists(ByVal workbookRef As Workbook, ByVal sheetName As String) As Boolean
+<pre><code class="language-vb">Private Function TryWorksheet(ByVal workbookRef As Workbook, ByVal sheetName As String) As Worksheet
 </code></pre>
 <hr />
-<h3 id="int-resolveregistrysheet">ResolveRegistrySheet <a class="anchor-link" href="#int-resolveregistrysheet">#</a></h3>
-<p><em>resolve-registry-sheet</em></p>
-<p><strong>Resolve the registry worksheet if present.</strong></p>
+<h3 id="int-trylistobject">TryListObject <a class="anchor-link" href="#int-trylistobject">#</a></h3>
+<p><em>try-list-object</em></p>
+<p><strong>Resolve a ListObject, answering Nothing when it is absent.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ResolveRegistrySheet(ByVal workbookRef As Workbook) As Worksheet
+<pre><code class="language-vb">Private Function TryListObject(ByVal sheetRef As Worksheet, ByVal listName As String) As ListObject
 </code></pre>
 <hr />
-<h3 id="int-listobjectexists">ListObjectExists <a class="anchor-link" href="#int-listobjectexists">#</a></h3>
-<p><em>list-object-exists</em></p>
-<p><strong>Detect whether a ListObject exists within a worksheet.</strong></p>
+<h3 id="int-firstlistobject">FirstListObject <a class="anchor-link" href="#int-firstlistobject">#</a></h3>
+<p><em>first-list-object</em></p>
+<p><strong>Resolve the first ListObject of a worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ListObjectExists(ByVal sheetRef As Worksheet, ByVal listName As String) As Boolean
+<pre><code class="language-vb">Private Function FirstListObject(ByVal sheetRef As Worksheet) As ListObject
 </code></pre>
 <hr />
 <h2 id="int-worksheet-helpers">Worksheet helpers</h2>
@@ -503,10 +629,12 @@ Primarily used by automated tests.</p>
 <hr />
 <h3 id="int-clearworksheetcomments">ClearWorksheetComments <a class="anchor-link" href="#int-clearworksheetcomments">#</a></h3>
 <p><em>clear-worksheet-comments</em></p>
-<p><strong>Remove both classic and threaded comments from a worksheet.</strong></p>
+<p><strong>Remove the classic comments from a worksheet.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ClearWorksheetComments(ByVal targetSheet As Worksheet)
 </code></pre>
+<p>Range.ClearComments covers classic comments. Threaded comments are reached
+through Worksheet.CommentsThreaded, which Mac Excel does not carry.</p>
 <hr />
 <h3 id="int-protectworksheet">ProtectWorksheet <a class="anchor-link" href="#int-protectworksheet">#</a></h3>
 <p><em>protect-worksheet</em></p>
@@ -514,6 +642,9 @@ Primarily used by automated tests.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ProtectWorksheet(ByVal pass As Passwords, ByVal sheetName As String)
 </code></pre>
+<p>Every protect call in this class comes through here. Passwords.Protect
+defaults both flags to True, so a bare call left the Choices sheet allowing
+shapes and row deletion at the end of every import.</p>
 <hr />
 <h2 id="int-messaging-helpers">Messaging helpers</h2>
 <h3 id="int-writeinfo">WriteInfo <a class="anchor-link" href="#int-writeinfo">#</a></h3>
@@ -527,7 +658,17 @@ Primarily used by automated tests.</p>
 <p><em>write-progress</em></p>
 <p><strong>Update a textual progress bar representation.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub WriteProgress(ByVal percentage As Integer)
+<pre><code class="language-vb">Private Sub WriteProgress(ByVal percentage As Long)
+</code></pre>
+<p>The percentage is clamped on both sides in plain VBA. A worksheet function
+call for a two-value minimum is a round trip into Excel, and it left the low
+side open, so a negative percentage reached String$ and raised error 5.</p>
+<hr />
+<h3 id="int-progresspercent">ProgressPercent <a class="anchor-link" href="#int-progresspercent">#</a></h3>
+<p><em>progress-percent</em></p>
+<p><strong>Turn a done-out-of-total pair into a percentage.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ProgressPercent(ByVal completed As Long, ByVal total As Long) As Long
 </code></pre>
 <hr />
 <h3 id="int-buildopenfailuremessage">BuildOpenFailureMessage <a class="anchor-link" href="#int-buildopenfailuremessage">#</a></h3>
@@ -542,15 +683,28 @@ Primarily used by automated tests.</p>
 <p><em>report-and-throw</em></p>
 <p><strong>Report message then raise a project error.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ReportAndThrow(ByVal errNumber As ProjectError, ByVal message As String)
+<pre><code class="language-vb">Private Sub ReportAndThrow(ByVal errNumber As Long, ByVal message As String)
 </code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>errNumber</code>: Long. A ProjectError code.</li>
+<li><code>message</code>: String. Text shown to the user and carried by the error.</li>
+</ul>
 <hr />
 <h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
 <p><em>throw-error</em></p>
 <p><strong>Raise a ProjectError-based exception.</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal message As String)
+<pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As Long, ByVal message As String)
 </code></pre>
+<p>The code is typed Long, which is the repo rule: an Enum in a parameter list
+misbehaves on Mac Excel, and every call site already passes a ProjectError
+member that widens to Long on its own.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>errNumber</code>: Long. A ProjectError code.</li>
+<li><code>message</code>: String. Text carried by the error.</li>
+</ul>
 <hr />
 <h3 id="int-class-terminate">Class_Terminate <a class="anchor-link" href="#int-class-terminate">#</a></h3>
 <p><em>terminate</em></p>
@@ -565,10 +719,10 @@ Primarily used by automated tests.</p>
 <ul>
 <li>EventsSetupRibbon.bas</li>
 <li>SetupHelpers.bas</li>
+<li>TestApplicationState.bas</li>
 <li><a href="ProgressDisplayStub.html">ProgressDisplayStub.cls</a></li>
 <li>SetupImportTestFixture.bas</li>
-<li>TestSetupImportService.bas</li>
-<li><a href="ProgressDisplayStub.html">ProgressDisplayStub.cls</a></li>
+<li>TestSetupImport.bas</li>
 </ul>
 </details>
   </main>

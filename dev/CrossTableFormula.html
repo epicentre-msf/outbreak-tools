@@ -78,8 +78,8 @@ exits immediately without writing any formulas to the worksheet.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub AddFormulas()
 </code></pre>
-<p>The main formula-writing method that dispatches by table scope.
-The main entry point that writes all Excel formulas into the cross-table
+<p>The main formula-writing method that dispatches by table scope.</p>
+<p>The main entry point that writes all Excel formulas into the cross-table
 worksheet cells. It reads the table scope from Specifications and dispatches to
 one of five branches, each handling a fundamentally different table layout:
 ScopeGlobalSummary writes two unfiltered linelist formulas into a single row;
@@ -166,8 +166,8 @@ variable names, linelist ranges, and formula templates during generation.</p>
 <pre><code class="language-vb">Private Property Get Specifications() As TableSpecs
 </code></pre>
 <p>Convenience accessors that delegate to the cross-table or its
-specifications, reducing repetitive chaining throughout the class.
-Provides a shortcut to the TableSpecs object associated with this cross-table.
+specifications, reducing repetitive chaining throughout the class.</p>
+<p>Provides a shortcut to the TableSpecs object associated with this cross-table.
 TableSpecs encapsulates all configuration metadata for a table: its row/column
 variable names, summary function, table scope, missing/total/percentage flags,
 and the section it belongs to. This property avoids repeatedly chaining
@@ -260,8 +260,8 @@ lazy because not all code paths need the formula engine (e.g., if Valid is False
 <pre><code class="language-vb">Private Function RangeExists(ByVal rngName As String) As Boolean
 </code></pre>
 <p>Utility functions for range existence checks, formula validation,
-string literals, percentage formulas, and conditional wrapping.
-Attempts to resolve a named range on the cross-table worksheet using On Error
+string literals, percentage formulas, and conditional wrapping.</p>
+<p>Attempts to resolve a named range on the cross-table worksheet using On Error
 Resume Next to silently handle missing ranges. This is used before writing
 formulas to optional table regions (e.g., &quot;MISSING_TOTAL_<id>&quot;,
 &quot;MISSING_MISSING_<id>&quot;, &quot;TOTAL_TOTAL_<id>&quot;) that may or may not be present
@@ -368,8 +368,8 @@ zero/error values for unused time period rows.</p>
 <pre><code class="language-vb">Private Sub AddTableConditions(ByVal varName As String, ByVal conditionName As String)
 </code></pre>
 <p>Methods that maintain the parallel condVars/condTests accumulator
-arrays used to build multi-criteria COUNTIFS/SUMPRODUCT formulas.
-Appends a variable name and its corresponding condition test string to the
+arrays used to build multi-criteria COUNTIFS/SUMPRODUCT formulas.</p>
+<p>Appends a variable name and its corresponding condition test string to the
 parallel accumulator arrays (condVars and condTests). These arrays are consumed
 by CurrentExcelFormula to build multi-criteria COUNTIFS/SUMPRODUCT formulas.
 Each call adds one criteria pair. The BetterArray objects are lazily initialised
@@ -436,8 +436,8 @@ SUMPRODUCT-style not-equal-to-empty test.</p>
                                          Optional ByVal prefix As String = &quot;f&quot;) As String
 </code></pre>
 <p>Central entry point that assembles the final Excel formula string
-from the accumulated condition pairs.
-Builds and returns the complete Excel formula string from the currently
+from the accumulated condition pairs.</p>
+<p>Builds and returns the complete Excel formula string from the currently
 accumulated condition pairs (condVars/condTests). This is the central
 formula-generation entry point that all table-type branches call after setting
 up their conditions. It operates in two modes: (1) Linelist scope calls
@@ -466,8 +466,8 @@ an analysis-scope formula.</li>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddRngFormat(ByVal formatValue As String, ByVal rng As Range)
 </code></pre>
-<p>Translates human-readable format keywords into Excel NumberFormat strings.
-Translates configuration-friendly format keywords into proper Excel custom
+<p>Translates human-readable format keywords into Excel NumberFormat strings.</p>
+<p>Translates configuration-friendly format keywords into proper Excel custom
 number format strings and applies them to the target range. Supported keywords
 include &quot;integer&quot;, &quot;round0&quot;, &quot;roundN&quot;, &quot;percentage0&quot;, &quot;percentageN&quot;, &quot;euros&quot;,
 &quot;dollars&quot;, and &quot;text&quot;. Any unrecognised string is treated as a custom Excel
@@ -492,8 +492,8 @@ defaults to 1.</li>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As Long, ByVal message As String)
 </code></pre>
-<p>Standardised error-raising helper for all methods in this class.
-Wrapper around Err.Raise that standardises the source to CLASS_NAME,
+<p>Standardised error-raising helper for all methods in this class.</p>
+<p>Wrapper around Err.Raise that standardises the source to CLASS_NAME,
 providing a consistent stack trace across all methods in this class.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -507,9 +507,11 @@ providing a consistent stack trace across all methods in this class.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (2 file(s))</summary>
+<summary>Used in (4 file(s))</summary>
 <ul>
 <li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
+<li><a href="FormulaCondition.html">FormulaCondition.cls</a></li>
+<li><a href="Formulas.html">Formulas.cls</a></li>
 <li>TestCrossTableFormula.bas</li>
 </ul>
 </details>

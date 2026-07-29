@@ -17,7 +17,13 @@ DataSheet does not require a ListObject — it works directly with cell
 ranges. Supports column lookup, filtering (single and multi-column),
 import/export to other DataSheets or CustomTables, and formatting
 transfer for designated columns.</p>
-<p><strong>Depends on:</strong> <a href="Checking.html">Checking</a>, <a href="BetterArray.html">BetterArray</a>, <a href="HiddenNames.html">HiddenNames</a>, Formated columns list, checking objects</p>
+<p>The start row and start column are sealed at creation. Everything else on
+the sheet moves: callers insert and delete rows and columns behind this
+object's back while it stays alive, and the class moves the end row and
+end column itself inside Clean, Import and the two filter routines. So no
+geometry is ever held on the instance. The header row is read as one block
+inside a single call, and read again on the next call.</p>
+<p><strong>Depends on:</strong> <a href="Checking.html">Checking</a>, <a href="BetterArray.html">BetterArray</a>, <a href="HiddenNames.html">HiddenNames</a></p>
 <p><strong>Version:</strong> 1.0 (2026-02-09)</p>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
@@ -31,8 +37,8 @@ transfer for designated columns.</p>
                        Optional ByVal forceEndRow As Boolean = False, _
                        Optional ByVal objName As String = vbNullString) As DataSheet
 </code></pre>
-<p>Entry point for creating DataSheet instances.
-Wraps the supplied worksheet with convenience methods for column
+<p>Entry point for creating DataSheet instances.</p>
+<p>Wraps the supplied worksheet with convenience methods for column
 lookup, filtering, import/export, and formatting transfer. The data
 structure is identified by a starting row and column; end row and
 column are computed dynamically. Unlike CustomTable, no ListObject
@@ -68,8 +74,8 @@ is required.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Wksh() As Worksheet
 </code></pre>
-<p>Properties that expose the worksheet layout and column access.
-Returns the worksheet that hosts the table-like data.</p>
+<p>Properties that expose the worksheet layout and column access.</p>
+<p>Returns the worksheet that hosts the table-like data.</p>
 <p><strong>Returns:</strong> Worksheet. The host worksheet.</p>
 <hr />
 <h3 id="datastartrow">DataStartRow <a class="anchor-link" href="#datastartrow">#</a></h3>
@@ -106,7 +112,10 @@ creation, defaults to the worksheet name.</p>
 </code></pre>
 <p>Dynamically computes the last occupied row. When StrictEnd is True,
 scans all non-formula columns for the furthest row. Guarantees at
-least one data row below the header.</p>
+least one data row below the header.
+This is read fresh every single time. It is the value that moves most:
+the class itself collapses it in Clean and grows it back in Import, and
+callers insert and delete body rows without telling this object.</p>
 <p><strong>Returns:</strong> Long. The 1-based last data row index.</p>
 <hr />
 <h3 id="dataendcolumn">DataEndColumn <a class="anchor-link" href="#dataendcolumn">#</a></h3>
@@ -135,7 +144,7 @@ on the header row.</p>
                               Optional ByVal strictSearch As Boolean = True, _
                               Optional ByVal matchCase As Boolean = True) As Boolean
 </code></pre>
-<p>Searches the header row for the specified column name using Range.Find.
+<p>Searches the header row for the specified column name.
 Returns False for empty column names.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -151,7 +160,7 @@ Returns False for empty column names.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function ColumnIndex(ByVal colName As String, _
                              Optional ByVal inDataRange As Boolean = False, _
-                             Optional ByVal shouldExist As Boolean = False, _ 
+                             Optional ByVal shouldExist As Boolean = False, _
                              Optional ByVal strictSearch As Boolean = True, _
                              Optional ByVal matchCase As Boolean = True) As Long
 </code></pre>
@@ -177,8 +186,8 @@ shouldExist is False; raises an error when shouldExist is True.</p>
 <p><strong>Range of a column or the entire data body</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get DataRange(Optional ByVal colName As String = &quot;__all__&quot;, _
-                              Optional ByVal includeHeaders As Boolean = False, _ 
-                              Optional ByVal strictSearch As Boolean = True, _ 
+                              Optional ByVal includeHeaders As Boolean = False, _
+                              Optional ByVal strictSearch As Boolean = True, _
                               Optional ByVal matchCase As Boolean = True) As Range
 </code></pre>
 <p>Returns a data Range for the specified column, or the entire data body
@@ -222,16 +231,6 @@ an error when newName is empty or the column is not found.</p>
 <details open class="doc-section" id="operations">
 <summary>Operations</summary>
 <div class="section-body">
-<h3 id="clean">Clean <a class="anchor-link" href="#clean">#</a></h3>
-<p><em>clean</em></p>
-<p><strong>Clear all non-formula columns</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub Clean()
-</code></pre>
-<p>Filtering, cleaning, import, and export operations.
-Iterates every column in the header row and clears the contents of
-those that do not contain formulas in their first data cell.</p>
-<hr />
 <h3 id="filterdata">FilterData <a class="anchor-link" href="#filterdata">#</a></h3>
 <p><em>filter-data</em></p>
 <p><strong>Filter data on a single column and return the result</strong></p>
@@ -242,10 +241,14 @@ those that do not contain formulas in their first data cell.</p>
                             Optional ByVal includeHeaders As Boolean = False, _
                             Optional ByVal matchCase As Boolean = True) _
 </code></pre>
-<p>Applies an AutoFilter on varName with criteriaName, extracts the
-visible rows from returnedColumnName into a temporary output area,
-reads them into a BetterArray, then cleans up. The filter is removed
-after the operation, leaving the DataSheet untouched.</p>
+<p>Applies an AutoFilter on varName with criteriaName and reads the visible
+rows of returnedColumnName straight into a BetterArray. The filter is
+removed on every path, including the failure paths, so the DataSheet is
+left as it was found.
+Nothing is written to the worksheet. The routine used to copy the visible
+rows into a scratch block two columns past the last data column, read it
+back and clear it; see VisibleBlock for why that block was sized wrong and
+what it left behind.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>varName</code>: String. Column to filter on.</li>
@@ -255,6 +258,10 @@ after the operation, leaving the DataSheet untouched.</p>
 <li><code>matchCase</code>: Optional Boolean. When True, column lookup is case-sensitive. Defaults to True.</li>
 </ul>
 <p><strong>Returns:</strong> BetterArray. The filtered values.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ElementNotFound When a column name is not found.</li>
+</ul>
 <hr />
 <h3 id="filtersdata">FiltersData <a class="anchor-link" href="#filtersdata">#</a></h3>
 <p><em>filters-data</em></p>
@@ -266,8 +273,18 @@ after the operation, leaving the DataSheet untouched.</p>
 </code></pre>
 <p>Applies multiple AutoFilters (one per entry in varData/criteriaData)
 and returns the visible values from each column in returnedColumnsData
-as a two-dimensional BetterArray. Exits when varData and criteriaData
-have different lengths.</p>
+as a two-dimensional BetterArray. Exits with an empty array when varData
+and criteriaData have different lengths. The filters are removed on every
+path, including the failure paths.
+Nothing is written to the worksheet. Each returned column used to be
+pasted into its own scratch column past the last data column and the block
+measured back off the sheet, which had three ways to answer wrong: it
+gated BOTH the read and the clear on ONE cell being non-empty, so a blank
+first value (normal for a short-label column) dropped the whole block; it
+took the bottom edge from the first scratch column only; and it took the
+right edge from the header row, so it stopped short when the last column
+started blank and ran into the user's own content when anything already
+sat further right.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>varData</code>: BetterArray. Column names to filter on.</li>
@@ -275,6 +292,10 @@ have different lengths.</p>
 <li><code>returnedColumnsData</code>: BetterArray. Columns whose values to return.</li>
 </ul>
 <p><strong>Returns:</strong> BetterArray. A two-dimensional array of filtered values.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ElementNotFound When a column name is not found.</li>
+</ul>
 <hr />
 <h3 id="import">Import <a class="anchor-link" href="#import">#</a></h3>
 <p><em>import</em></p>
@@ -311,8 +332,8 @@ warning when the source and destination row counts differ.</p>
 <p><strong>Export the DataSheet to a workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Export(ByVal toWkb As Workbook, Optional ByVal filteredVarName As String = &quot;__all__&quot;, _
-                   Optional ByVal filteredCondition As String = &quot;&lt;&gt;&quot;, _ 
-                   Optional ByVal Hide As Long = xlSheetHidden, _ 
+                   Optional ByVal filteredCondition As String = &quot;&lt;&gt;&quot;, _
+                   Optional ByVal Hide As Long = xlSheetHidden, _
                    Optional ByVal includeNames As Boolean = False)
 </code></pre>
 <p>Creates (or clears) a worksheet in the target workbook with the same
@@ -338,7 +359,7 @@ exports hidden names.</p>
 <p><em>has-checkings</em></p>
 <p><strong>Whether the DataSheet has logged diagnostic messages</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get HasCheckings() As Boolean
+<pre><code class="language-vb">Public Property Get HasCheckings() As Boolean
 </code></pre>
 <p><strong>Returns:</strong> Boolean. True when diagnostic entries exist.</p>
 <hr />
@@ -346,7 +367,7 @@ exports hidden names.</p>
 <p><em>checking-values</em></p>
 <p><strong>Retrieve the diagnostic log entries</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get CheckingValues() As Object
+<pre><code class="language-vb">Public Property Get CheckingValues() As Object
 </code></pre>
 <p><strong>Returns:</strong> Object. An Checking instance, or Nothing.</p>
 <hr />
@@ -435,25 +456,105 @@ column exists before registering it.</p>
 </code></pre>
 <p><strong>Returns:</strong> Boolean. True when all columns are scanned.</p>
 <hr />
-<h3 id="int-matchedcolumnname">MatchedColumnName <a class="anchor-link" href="#int-matchedcolumnname">#</a></h3>
-<p><em>matched-column-name</em></p>
-<p><strong>Return the actual header text for a column name match</strong></p>
+<h3 id="int-sheetblock">SheetBlock <a class="anchor-link" href="#int-sheetblock">#</a></h3>
+<p><em>sheet-block</em></p>
+<p><strong>Build a Range on the host worksheet from four numbers</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function MatchedColumnName(ByVal colName As String, _
-                                Optional ByVal strictSearch As Boolean = True, _
-                                Optional ByVal matchCase As Boolean = True) As String
+<pre><code class="language-vb">Private Function SheetBlock(ByVal firstRow As Long, ByVal firstColumn As Long, _
+                            ByVal lastRow As Long, ByVal lastColumn As Long) As Range
 </code></pre>
-<p>Searches the header row and returns the exact text of the matched
-cell. Returns vbNullString when no match is found.</p>
+<p>The &quot;With sh ... .Range(.Cells(a, b), .Cells(c, d))&quot; shape was written
+out in five places. One small builder replaces all of them.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>colName</code>: String. Column name to search for.</li>
-<li><code>strictSearch</code>: Optional Boolean. When True, uses exact matching. Defaults to True.</li>
-<li><code>matchCase</code>: Optional Boolean. When True, matching is case-sensitive. Defaults to True.</li>
+<li><code>firstRow</code>: Long. Top row.</li>
+<li><code>firstColumn</code>: Long. Left column.</li>
+<li><code>lastRow</code>: Long. Bottom row.</li>
+<li><code>lastColumn</code>: Long. Right column.</li>
 </ul>
-<p><strong>Returns:</strong> String. The matched header text, or vbNullString.</p>
+<p><strong>Returns:</strong> Range. The block.</p>
+<hr />
+<h3 id="int-rowvalues">RowValues <a class="anchor-link" href="#int-rowvalues">#</a></h3>
+<p><em>row-values</em></p>
+<p><strong>Read a one-row Range as a 1-based list of values</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function RowValues(ByVal blockRng As Range) As Variant
+</code></pre>
+<p>Range.Value hands back a plain value when the Range is one cell, and a
+two-dimensional array otherwise. This flattens both cases so callers see
+one shape and do not repeat the test.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>blockRng</code>: Range. A single-row block.</li>
+</ul>
+<p><strong>Returns:</strong> Variant. A 1-based one-dimensional array of cell values.</p>
+<hr />
+<h3 id="int-celltext">CellText <a class="anchor-link" href="#int-celltext">#</a></h3>
+<p><em>cell-text</em></p>
+<p><strong>Read one cell value as text without raising</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function CellText(ByVal cellValue As Variant) As String
+</code></pre>
+<p>A cell holding an error value (#N/A and the like) makes CStr raise a
+type mismatch. Such a header can never match a column name, so it reads
+as empty text instead of stopping the caller.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>cellValue</code>: Variant. The raw cell value.</li>
+</ul>
+<p><strong>Returns:</strong> String. The value as text, or empty text.</p>
+<hr />
+<h3 id="int-findcolumn">FindColumn <a class="anchor-link" href="#int-findcolumn">#</a></h3>
+<p><em>find-column</em></p>
+<p><strong>Find one column in the header row, reading that row once</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function FindColumn(ByVal colName As String, _
+                            ByVal strictSearch As Boolean, _
+                            ByVal matchCase As Boolean, _
+                            Optional ByRef matchedHeader As String) As Long
+</code></pre>
+<p>This is the single lookup behind ColumnExists, ColumnIndex, RenameColumn
+and AddFormatsColumns. Each of them used to build the header Range and
+run Range.Find on its own, so one ColumnIndex call built the range twice
+and searched twice. Here the row is read once and matched in memory. The
+out argument carries the third answer: the header text as the sheet
+spells it.
+The four match rules are kept exactly as Range.Find applied them:
+strictSearch True is whole-string equality (xlWhole) and False is a
+substring test (xlPart); matchCase True compares binary and False
+compares text.
+The header block is deliberately NOT kept on the instance. Callers write
+to these sheets without going through this object, so it is read again
+on the next call.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>colName</code>: String. Column header to look for.</li>
+<li><code>strictSearch</code>: Boolean. True for whole-string matching.</li>
+<li><code>matchCase</code>: Boolean. True for case-sensitive matching.</li>
+<li><code>matchedHeader</code>: String. Out. The header text exactly as the sheet spells it.</li>
+</ul>
+<p><strong>Returns:</strong> Long. The worksheet column of the match, or -1 when there is none.</p>
 <hr />
 <h2 id="int-operations">Operations</h2>
+<h3 id="int-clean">Clean <a class="anchor-link" href="#int-clean">#</a></h3>
+<p><em>clean</em></p>
+<p><strong>Clear all non-formula columns</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub Clean()
+</code></pre>
+<p>Filtering, cleaning, import, and export operations.</p>
+<p>Clears the body of every column that does not hold a formula in its
+first data cell. Formula columns are generated and must survive an
+import.
+The column range is built from the loop position. Looking each header
+text back up paid for a full column lookup on a column whose place was
+already known, and it had two faults: a blank header inside the range
+made the lookup raise and killed the whole import, and two columns
+sharing a header cleared the first twice and the second never.
+The last row is read once, before the first clear. Reading it per column
+shrinks it as soon as the first column is emptied, so the columns after
+it were left with old values below the first row.</p>
+<hr />
 <h3 id="int-removeautofilter">RemoveAutoFilter <a class="anchor-link" href="#int-removeautofilter">#</a></h3>
 <p><em>remove-autofilter</em></p>
 <p><strong>Turn off AutoFilter on the host worksheet</strong></p>
@@ -461,7 +562,87 @@ cell. Returns vbNullString when no match is found.</p>
 <pre><code class="language-vb">Private Sub RemoveAutoFilter()
 </code></pre>
 <p>Reliably removes any active AutoFilter. Called before and after
-filtering operations to guarantee a clean state.</p>
+filtering operations to guarantee a clean state.
+Known, and left as it is on purpose: this clears EVERY filter on the host
+sheet, including one the user set by hand on a ListObject of their own.
+The two filter routines below need the sheet unfiltered to read the right
+rows, and a stray filter left behind hides data from the user, which is
+worse than losing their view. Do not narrow this sweep without a way to
+prove the sheet ends up unfiltered on every path.</p>
+<hr />
+<h3 id="int-areavalues">AreaValues <a class="anchor-link" href="#int-areavalues">#</a></h3>
+<p><em>area-values</em></p>
+<p><strong>Read one solid Range as a 1-based two-dimensional array</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function AreaValues(ByVal blockRng As Range) As Variant
+</code></pre>
+<p>Range.Value hands back a plain value when the Range is a single cell and
+a two-dimensional array otherwise. This gives callers one shape so they do
+not repeat the test.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>blockRng</code>: Range. One solid block, never a multi-area Range.</li>
+</ul>
+<p><strong>Returns:</strong> Variant. A two-dimensional array, 1 To rows, 1 To columns.</p>
+<hr />
+<h3 id="int-visibleblock">VisibleBlock <a class="anchor-link" href="#int-visibleblock">#</a></h3>
+<p><em>visible-block</em></p>
+<p><strong>Read a filtered Range as one solid 1-based two-dimensional array</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function VisibleBlock(ByVal visibleRng As Range, _
+                              ByVal firstColumn As Long, _
+                              ByVal lastColumn As Long) As Variant
+</code></pre>
+<p>SpecialCells(xlCellTypeVisible) hands back one Area per unbroken run of
+visible rows, and Range.Rows.Count on such a Range answers for Areas(1)
+ONLY. Anything sized from that number is short as soon as the filter
+leaves two blocks, which is what used to break the two routines below:
+they sized a scratch block on the sheet from it, pasted the WHOLE
+selection into it (Excel anchors the paste at the top-left and writes
+everything, a smaller destination neither truncates nor raises), read the
+short block back and cleared the short block. So the caller got a
+truncated list and the rows past the block stayed on the worksheet.
+Every area is read with one .Value instead and the areas are stacked in
+the order Excel hands them out, which is top to bottom. Nothing is written
+to the worksheet, so there is no block to clear, no clipboard to reset and
+no fixed spot past the last column to collide with.
+BetterArray.FromExcelRange cannot do this job: it reads .Row, .Column,
+.Rows.Count and .Columns.Count off the Range - all Areas(1) answers - and
+then rebuilds one contiguous block from those bounds, which would pull in
+the hidden rows sitting inside the first area.
+Only the ROW runs are taken from the areas. A column hidden inside the
+block splits the areas sideways as well, and each row run then shows up
+more than once, so a run already taken is never taken twice and every run
+is read across the WHOLE requested column span. That also keeps a hidden
+column from stopping the routine: Copy raises 1004 on areas that do not
+line up.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>visibleRng</code>: Range. The visible part of a filtered block.</li>
+<li><code>firstColumn</code>: Long. Left worksheet column of the block that was filtered.</li>
+<li><code>lastColumn</code>: Long. Right worksheet column of the block that was filtered.</li>
+</ul>
+<p><strong>Returns:</strong> Variant. A two-dimensional array, 1 To total visible rows, 1 To columns.</p>
+<hr />
+<h3 id="int-storeblock">StoreBlock <a class="anchor-link" href="#int-storeblock">#</a></h3>
+<p><em>store-block</em></p>
+<p><strong>Put a block into a BetterArray with the shape callers expect</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub StoreBlock(ByVal target As BetterArray, ByRef block As Variant)
+</code></pre>
+<p>This reproduces exactly what BetterArray.FromExcelRange did for the block
+the two filter routines used to build, and callers depend on all four
+cases: one cell gives a one-element array, a single column gives a FLAT
+one-dimensional array, a single row gives a flat one-dimensional array,
+and anything wider gives a two-dimensional array (BA_MULTIDIMENSION,
+pinned by TestDataSheet). The array is handed over in ONE Items
+assignment. Pushing row by row would reallocate and copy the whole array
+on every element.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>target</code>: BetterArray. The array to fill. Its LowerBound is already 1.</li>
+<li><code>block</code>: Variant. A 1-based two-dimensional array.</li>
+</ul>
 <hr />
 <h3 id="int-applyformat">ApplyFormat <a class="anchor-link" href="#int-applyformat">#</a></h3>
 <p><em>apply-format</em></p>
@@ -470,24 +651,65 @@ filtering operations to guarantee a clean state.</p>
 <pre><code class="language-vb">Private Sub ApplyFormat(ByVal actRng As Range, ByVal impRng As Range)
 </code></pre>
 <p>Transfers interior colour, font colour, bold, and italic from each
-cell in impRng to the corresponding cell in actRng.</p>
+cell in impRng to the corresponding cell in actRng.
+This is not a straight format copy and xlPasteFormats would not do the
+same thing: only a colour that is not the default travels, so the
+destination keeps its own white background and black text, and borders,
+number formats and font names are left alone.</p>
+<hr />
+<h3 id="int-isimportable">IsImportable <a class="anchor-link" href="#int-isimportable">#</a></h3>
+<p><em>is-importable</em></p>
+<p><strong>Test whether an object can be imported from</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function IsImportable(ByVal importData As Object, ByVal whatIsImported As String) As Boolean
+</code></pre>
+<p>Import and ImportFormat both accept a DataSheet or a CustomTable and
+nothing else. The argument is declared As Object on purpose, so the test
+is on TypeName. Passing anything else logs and returns False; it does
+not raise, and a test drives that path with a Range.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>actRng</code>: Range. Destination range to format.</li>
-<li><code>impRng</code>: Range. Source range with formatting to copy.</li>
+<li><code>importData</code>: Object. The object handed to Import or ImportFormat.</li>
+<li><code>whatIsImported</code>: String. Word used in the message (&quot;Imports&quot;, &quot;Imports of formats&quot;).</li>
 </ul>
+<p><strong>Returns:</strong> Boolean. True when the object can be read from.</p>
+<hr />
+<h3 id="int-hasformatcolumns">HasFormatColumns <a class="anchor-link" href="#int-hasformatcolumns">#</a></h3>
+<p><em>has-format-columns</em></p>
+<p><strong>Test whether any column was registered for formatting</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function HasFormatColumns() As Boolean
+</code></pre>
+<p>TypeName is used and not Is Nothing because it answers both &quot;never
+created&quot; and &quot;not a BetterArray&quot; in one test.</p>
+<p><strong>Returns:</strong> Boolean. True when at least one format column is registered.</p>
 <hr />
 <h2 id="int-checkings">Checkings</h2>
 <h3 id="int-loginfo">LogInfo <a class="anchor-link" href="#int-loginfo">#</a></h3>
 <p><em>log-info</em></p>
 <p><strong>Log a diagnostic message</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub LogInfo(ByVal label As String, _ 
+<pre><code class="language-vb">Private Sub LogInfo(ByVal label As String, _
                     Optional ByVal scope As Byte = checkingNote)
 </code></pre>
-<p>Diagnostic logging and error handling.
-Adds a message to the internal Checking object, creating it on first
-use. The checkCounter provides a unique key for each entry.</p>
+<p>Diagnostic logging and error handling.</p>
+<p>Adds a message to the internal Checking object, creating it on first
+use. The check counter provides a unique key for each entry.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>label</code>: String. The message to record.</li>
+<li><code>scope</code>: Optional Byte. Severity level from CheckingScope. Defaults to checkingNote.</li>
+</ul>
+<hr />
+<h3 id="int-logandtrace">LogAndTrace <a class="anchor-link" href="#int-logandtrace">#</a></h3>
+<p><em>log-and-trace</em></p>
+<p><strong>Log a message and print the debug trace</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub LogAndTrace(ByVal label As String, _
+                        Optional ByVal scope As Byte = checkingNote)
+</code></pre>
+<p>The &quot;log, show the trace, then leave&quot; tail was written out six times on
+the failure paths of FiltersData, Import, ImportFormat and Export.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>label</code>: String. The message to record.</li>
@@ -592,7 +814,7 @@ use. The checkCounter provides a unique key for each entry.</p>
 <li><a href="LLChoices.html">LLChoices.cls</a></li>
 <li><a href="Linelist.html">Linelist.cls</a></li>
 <li><a href="MasterSetupVariables.html">MasterSetupVariables.cls</a></li>
-<li><a href="SetupImportService.html">SetupImportService.cls</a></li>
+<li><a href="SetupImport.html">SetupImport.cls</a></li>
 <li>TestLLdictionary.bas</li>
 <li>TestCustomTable.bas</li>
 <li>TestDataSheet.bas</li>

@@ -31,8 +31,8 @@ LinelistSpecs interface reference.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal specsWorkbook As Workbook) As LinelistSpecs
 </code></pre>
-<p>Construction and identity accessors.
-Validates the workbook structure upfront (checking for all required
+<p>Construction and identity accessors.</p>
+<p>Validates the workbook structure upfront (checking for all required
 worksheets and named ranges), then constructs a new LinelistSpecs
 instance with caches initialised. Returns the LinelistSpecs interface.</p>
 <p><strong>Parameters:</strong></p>
@@ -71,8 +71,8 @@ if the workbook has not been assigned via the factory method.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ResetCaches()
 </code></pre>
-<p>Cache invalidation for collaborator objects, translations, and categories.
-Clears all cached collaborator objects, the translation scope cache,
+<p>Cache invalidation for collaborator objects, translations, and categories.</p>
+<p>Clears all cached collaborator objects, the translation scope cache,
 and the category cache. Call after importing new data so subsequent
 reads query the workbook again.</p>
 <hr />
@@ -87,8 +87,8 @@ reads query the workbook again.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Categories(ByVal varName As String, Optional ByVal useShortlabels As Boolean = False) As BetterArray
 </code></pre>
-<p>Category resolution and caching for choice-type variables.
-Returns the list of category values for a choice-type variable
+<p>Category resolution and caching for choice-type variables.</p>
+<p>Returns the list of category values for a choice-type variable
 (choice_manual, choice_multiple, choice_custom, or choice_formula).
 Results are cached using parallel key/value BetterArrays for efficient
 repeated access. Always returns a cloned BetterArray to prevent callers
@@ -117,8 +117,8 @@ from modifying the cached copy.</p>
 <pre><code class="language-vb">Public Property Get Dictionary() As LLdictionary
 </code></pre>
 <p>Public property accessors for each collaborator object, exposing
-the lazy-loaded instances through their respective interfaces.
-Returns the LLdictionary instance providing column and row access to the
+the lazy-loaded instances through their respective interfaces.</p>
+<p>Returns the LLdictionary instance providing column and row access to the
 Dictionary worksheet. Lazy-loaded on first access.</p>
 <p><strong>Returns:</strong> LLdictionary. The dictionary collaborator.</p>
 <hr />
@@ -290,8 +290,8 @@ on the Main worksheet.</p>
 <pre><code class="language-vb">Public Sub Prepare(ByVal buildService As LinelistBuildService, ByVal setupPath As String)
 </code></pre>
 <p>Lifecycle methods for importing, preparing, exporting, and
-error-managing the specifications workbook.
-Orchestrates the full specification preparation workflow:</p>
+error-managing the specifications workbook.</p>
+<p>Orchestrates the full specification preparation workflow:</p>
 <ol>
 <li>Creates a temporary repository for working files.</li>
 <li>Creates a new output workbook (from template if configured).</li>
@@ -431,8 +431,8 @@ initialised. Not part of the public interface.</p>
 <pre><code class="language-vb">Private Function ResolveSheet(ByVal sheetName As String, _
                               Optional ByVal allowMissing As Boolean = False) As Worksheet
 </code></pre>
-<p>Direct worksheet lookups by name within the specifications workbook.
-Looks up a worksheet in the specifications workbook by name. When the
+<p>Direct worksheet lookups by name within the specifications workbook.</p>
+<p>Looks up a worksheet in the specifications workbook by name. When the
 sheet is not found and allowMissing is False, raises a descriptive error.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -454,8 +454,8 @@ sheet is not found and allowMissing is False, raises a descriptive error.</p>
 <pre><code class="language-vb">Private Sub EnterBusyState(ByRef busyScope As ApplicationState)
 </code></pre>
 <p>Utilities for opening, closing, and validating external workbooks
-during the Prepare workflow.
-Creates or refreshes an ApplicationState snapshot and applies the busy
+during the Prepare workflow.</p>
+<p>Creates or refreshes an ApplicationState snapshot and applies the busy
 state (suppressing screen updates and calculation) if not already busy.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -751,8 +751,8 @@ sheet, then creates the LLFormat instance.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddListAuto()
 </code></pre>
-<p>Automatic list column generation for formula-based variables.
-Adds a &quot;list auto&quot; column to the dictionary, then finds all variables
+<p>Automatic list column generation for formula-based variables.</p>
+<p>Adds a &quot;list auto&quot; column to the dictionary, then finds all variables
 with control type &quot;list_auto&quot; and marks their control details with
 &quot;list_auto_origin&quot;. For formula-type variables (formula, case_when,
 choice_formula), recursively traces referenced variables and marks
@@ -936,11 +936,12 @@ object regardless of scope, mirroring the former single-object test stubs.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (19 file(s))</summary>
+<summary>Used in (22 file(s))</summary>
 <ul>
 <li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
 <li><a href="CrossTable.html">CrossTable.cls</a></li>
 <li><a href="TableSpecs.html">TableSpecs.cls</a></li>
+<li><a href="LLVariables.html">LLVariables.cls</a></li>
 <li><a href="GraphSpecs.html">GraphSpecs.cls</a></li>
 <li><a href="Linelist.html">Linelist.cls</a></li>
 <li><a href="ListBuilder.html">ListBuilder.cls</a></li>
@@ -950,6 +951,8 @@ object regardless of scope, mirroring the former single-object test stubs.</p>
 <li>GenerationReport.bas</li>
 <li>TestCrossTable.bas</li>
 <li>TestCrossTableFormula.bas</li>
+<li>TestLLVariables.bas</li>
+<li>TestApplicationState.bas</li>
 <li>TestGraphSpecs.bas</li>
 <li>TestHelpers.bas</li>
 <li>TestLinelist.bas</li>

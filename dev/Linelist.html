@@ -31,8 +31,8 @@ factory consumers create instances via <code>New Linelist</code> rather than
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal specs As LinelistSpecs) As Linelist
 </code></pre>
-<p>Instance creation via VB_Creatable = True factory pattern.
-Validates that the supplied specifications object is not Nothing, creates
+<p>Instance creation via VB_Creatable = True factory pattern.</p>
+<p>Validates that the supplied specifications object is not Nothing, creates
 a new Linelist instance via <code>New Linelist</code>, binds the specifications
 through the Friend property, and returns an Linelist interface reference.</p>
 <p><strong>Parameters:</strong></p>
@@ -59,8 +59,8 @@ data required to build the output workbook.</li>
 <pre><code class="language-vb">Public Property Get LinelistData() As LinelistSpecs
 </code></pre>
 <p>Worksheet resolution and collaborator accessors exposed through
-the Linelist contract.
-Returns the LinelistSpecs instance that was supplied during factory
+the Linelist contract.</p>
+<p>Returns the LinelistSpecs instance that was supplied during factory
 construction, providing access to dictionary, choices, translations,
 and all other setup data.</p>
 <p><strong>Returns:</strong> LinelistSpecs. The linelist specifications.</p>
@@ -209,8 +209,8 @@ insert before. Defaults to vbNullString (append at default position).</li>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Prepare()
 </code></pre>
-<p>Build, save, and error-manage the output workbook.
-Orchestrates the complete linelist creation process:</p>
+<p>Build, save, and error-manage the output workbook.</p>
+<p>Orchestrates the complete linelist creation process:</p>
 <ol>
 <li>Initialises the temporary repository for code transfer files.</li>
 <li>Lazily creates the output workbook (or opens a template).</li>
@@ -265,8 +265,8 @@ Defaults to vbNullString.</li>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Friend Property Set BinSpecs(ByVal value As LinelistSpecs)
 </code></pre>
-<p>Friend setters used by the factory to inject dependencies.
-Called by Create to inject the LinelistSpecs dependency into the
+<p>Friend setters used by the factory to inject dependencies.</p>
+<p>Called by Create to inject the LinelistSpecs dependency into the
 backing UDT. Exposed as Friend to prevent external callers from
 resetting specifications after construction.</p>
 <p><strong>Parameters:</strong></p>
@@ -282,8 +282,8 @@ resetting specifications after construction.</p>
 <pre><code class="language-vb">Private Property Get OutputWkb() As Workbook
 </code></pre>
 <p>Internal helpers for lazily creating and managing the output
-workbook and suppressing UI updates during batch operations.
-On first access, retrieves the output workbook that LinelistSpecs.Prepare
+workbook and suppressing UI updates during batch operations.</p>
+<p>On first access, retrieves the output workbook that LinelistSpecs.Prepare
 created and caches it locally. Also records the name of the initial
 default sheet so Prepare can delete it later.</p>
 <p><strong>Returns:</strong> Workbook. The output workbook.</p>
@@ -317,8 +317,8 @@ exists, and returns a reference through the ByRef result parameter.</p>
 <pre><code class="language-vb">Private Sub PrepareTemporarySheets()
 </code></pre>
 <p>Internal routines called by Prepare to set up temporary sheets,
-the admin sheet, and code transfer.
-Performs three setup tasks on the output workbook:</p>
+the admin sheet, and code transfer.</p>
+<p>Performs three setup tasks on the output workbook:</p>
 <ol>
 <li>Creates workbook-level hidden names for global flags (update list auto,
 import done, geo update manual, show all optionals, export init, number
@@ -407,8 +407,8 @@ F_EpiWeek).</li>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As Long, ByVal errorMessage As String)
 </code></pre>
-<p>Centralised error-raising helper.
-Wraps Err.Raise with CLASS_NAME as the source, providing consistent
+<p>Centralised error-raising helper.</p>
+<p>Wraps Err.Raise with CLASS_NAME as the source, providing consistent
 error attribution across all methods in this class.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -430,7 +430,6 @@ error attribution across all methods in this class.</p>
 <li><a href="LLdictionary.html">LLdictionary.cls</a></li>
 <li><a href="LLSheets.html">LLSheets.cls</a></li>
 <li><a href="LLChoices.html">LLChoices.cls</a></li>
-<li><a href="LLFormat.html">LLFormat.cls</a></li>
 <li><a href="TemporaryRepos.html">TemporaryRepos.cls</a></li>
 <li><a href="LLGeo.html">LLGeo.cls</a></li>
 <li><a href="GraphSpecs.html">GraphSpecs.cls</a></li>
@@ -458,6 +457,7 @@ error attribution across all methods in this class.</p>
 <li>LLFormatTestFixture.bas</li>
 <li>TestLinelist.bas</li>
 <li>TestListBuilder.bas</li>
+<li>OBTImport.bas</li>
 </ul>
 </details>
   </main>

@@ -61,8 +61,8 @@ worksheet used to instantiate the class.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Add()
 </code></pre>
-<p>Chart creation, series attachment, labelling, and formatting.
-Creates an empty graph on a worksheet, ready for data to be
+<p>Chart creation, series attachment, labelling, and formatting.</p>
+<p>Creates an empty graph on a worksheet, ready for data to be
 attached to the graph. The graph is empty at creation. The width and height
 of the graph object may change depending on the scope in the future.</p>
 <hr />
@@ -202,8 +202,8 @@ chart on the worksheet.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get graphChart() As ChartObject
 </code></pre>
-<p>Internal chart object and series index state.
-Returns the ChartObject created by Add. Nothing until Add is called.</p>
+<p>Internal chart object and series index state.</p>
+<p>Returns the ChartObject created by Add. Nothing until Add is called.</p>
 <p><strong>Returns:</strong> ChartObject. The underlying Excel chart object.</p>
 <hr />
 <h3 id="int-seriesindex">seriesIndex <a class="anchor-link" href="#int-seriesindex">#</a></h3>
@@ -288,8 +288,8 @@ dynamically rather than using literal strings.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function RangeExist(ByVal rngName As String) As Boolean
 </code></pre>
-<p>Private utility functions for range validation and address resolution.
-Uses On Error Resume Next to attempt resolving the named range.
+<p>Private utility functions for range validation and address resolution.</p>
+<p>Uses On Error Resume Next to attempt resolving the named range.
 Returns True when the range is valid and non-Nothing.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -320,8 +320,8 @@ does not exist.</p>
 <pre><code class="language-vb">Private Sub LogInfo(ByVal label As String, _
                     Optional ByVal scope As Byte = checkingNote)
 </code></pre>
-<p>Logging and validation support via the Checking interface.
-Lazily creates the Checking instance on first use and appends the
+<p>Logging and validation support via the Checking interface.</p>
+<p>Lazily creates the Checking instance on first use and appends the
 message using a monotonically increasing counter key. The checking
 store is exposed through HasCheckings and CheckingValues.</p>
 <p><strong>Parameters:</strong></p>
@@ -337,8 +337,8 @@ store is exposed through HasCheckings and CheckingValues.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ShowDebug()
 </code></pre>
-<p>Centralised error-raising and debug helpers.
-Outputs basic debug information including the graph name.</p>
+<p>Centralised error-raising and debug helpers.</p>
+<p>Outputs basic debug information including the graph name.</p>
 <hr />
 <h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
 <p><em>throw-error</em></p>

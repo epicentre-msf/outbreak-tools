@@ -137,8 +137,8 @@ The reference is cached after the first access to avoid repeated lookups.</p>
 <pre><code class="language-vb">Private Property Get CurrentHeaderName(ByVal varName As String, _
                                        ByVal adminName As String) As String
 </code></pre>
-<p>Helpers for constructing spatial table and range names.
-Concatenates &quot;tabl_&quot;, the admin name, and the variable name to form a
+<p>Helpers for constructing spatial table and range names.</p>
+<p>Concatenates &quot;tabl_&quot;, the admin name, and the variable name to form a
 unique header range name (e.g. &quot;tabl_adm1_cases_sp1&quot;).</p>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -213,8 +213,8 @@ the initial 3-column setup (listofgeovars occupies column 3).</p>
 <pre><code class="language-vb">Private Function GeoPopulationFunction(ByVal adminName As String, _
                                        ByVal rangeAddress As String) As String
 </code></pre>
-<p>Helpers for building and testing Excel formula expressions.
-Constructs an INDEX/MATCH formula that looks up the population value for
+<p>Helpers for building and testing Excel formula expressions.</p>
+<p>Constructs an INDEX/MATCH formula that looks up the population value for
 an admin level from the corresponding geo reference table (T_ADM1 through
 T_ADM4). The formula is wrapped in ISERROR to return 0 when the lookup
 fails. The population column index is derived from the admin level number.</p>
@@ -257,8 +257,8 @@ temporarily disabled to suppress Excel prompts.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddTableConditions(ByVal varName As String, ByVal conditionName As String)
 </code></pre>
-<p>Manages variable/condition pairs for formula generation.
-Pushes the variable name and condition test onto the parallel condVars
+<p>Manages variable/condition pairs for formula generation.</p>
+<p>Pushes the variable name and condition test onto the parallel condVars
 and condTests BetterArrays. Lazily initialises both arrays with
 LowerBound 1 on first use. Ignores empty variable names.</p>
 <p><strong>Parameters:</strong></p>

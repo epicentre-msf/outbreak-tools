@@ -31,8 +31,8 @@ public accessors.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal tabl As CrossTable) As GraphSpecs
 </code></pre>
-<p>Factory methods and Self accessor for the predeclared instance pattern.
-Factory method that creates a GraphSpecs object in simple mode for non-time-series
+<p>Factory methods and Self accessor for the predeclared instance pattern.</p>
+<p>Factory method that creates a GraphSpecs object in simple mode for non-time-series
 cross-tables. Simple mode is used for univariate, bivariate, spatial, and
 spatio-temporal analysis tables. This method explicitly rejects TimeSeries tables
 (which require CreateRangeSpecs) and GlobalSummary tables (which do not support
@@ -107,8 +107,8 @@ outputSh is Nothing.</li>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub CreateSeries()
 </code></pre>
-<p>Entry point for building all chart series definitions.
-Dispatches series building to the appropriate handler based on the current
+<p>Entry point for building all chart series definitions.</p>
+<p>Dispatches series building to the appropriate handler based on the current
 GraphType. For simple mode (GraphTypeSimple), delegates to BuildSimpleSeries
 which reads chart configuration directly from the cross-table's named ranges.
 For complex mode (GraphTypeComplex), delegates to BuildComplexSeries which
@@ -253,8 +253,8 @@ caller contract.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub BuildSimpleSeries()
 </code></pre>
-<p>Series building logic for non-time-series cross-tables.
-Reads the table scope and configuration from the cross-table's TableSpecs to
+<p>Series building logic for non-time-series cross-tables.</p>
+<p>Reads the table scope and configuration from the cross-table's TableSpecs to
 determine what kind of series to generate. The &quot;flip&quot; setting controls plot
 direction: when flip is &quot;yes&quot;, horizontal bars (&quot;hbar&quot;) are used; otherwise
 vertical bars (&quot;bar&quot;) are the default. For spatio-temporal tables, the number
@@ -346,8 +346,8 @@ if HasPercentage is False.</li>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub BuildComplexSeries()
 </code></pre>
-<p>Time series graph building from setup ListObjects.
-Iterates over all unique graph IDs extracted by BuildGraphIdsList. For each
+<p>Time series graph building from setup ListObjects.</p>
+<p>Iterates over all unique graph IDs extracted by BuildGraphIdsList. For each
 graph ID, calls DefineGraphSpecs to populate the series arrays with that
 graph's series definitions, then PushGraph to package those arrays into a
 7-element BetterArray entry appended to the graphsChartSpecs collection.
@@ -449,8 +449,8 @@ cells in the COLUMN_CATEGORIES_ range may not have a named range assigned.</li>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub InitSeriesArrays()
 </code></pre>
-<p>Parallel array management for series names, types, positions, and labels.
-Creates six fresh BetterArray instances (all with LowerBound=1) to store the
+<p>Parallel array management for series names, types, positions, and labels.</p>
+<p>Creates six fresh BetterArray instances (all with LowerBound=1) to store the
 parallel series data arrays: seriesNames, seriesTypes, seriesPositions,
 seriesLabels, seriesColumnLabels, and seriesLabelPrefixes. These six arrays
 form matched parallel arrays where index N across all six describes one complete
@@ -557,8 +557,8 @@ calls .Pop on all six clones if they are one element too long.</li>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get GraphListObject() As ListObject
 </code></pre>
-<p>ListObject accessors and lookup utilities for complex mode.
-Returns the first ListObject in the LoList array, which is the graph setup
+<p>ListObject accessors and lookup utilities for complex mode.</p>
+<p>Returns the first ListObject in the LoList array, which is the graph setup
 table. This ListObject defines which series belong to each graph ID, including
 their chart types, axis positions, choice values, percentage overrides, and
 display labels.</p>
@@ -685,8 +685,8 @@ common substring.</li>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ValidateListObjects(ByVal loTable As BetterArray)
 </code></pre>
-<p>ListObject validation for complex mode construction.
-Performs three levels of validation: (1) Count validation -- the array must
+<p>ListObject validation for complex mode construction.</p>
+<p>Performs three levels of validation: (1) Count validation -- the array must
 contain exactly 3 elements. (2) Type and content validation -- each element must
 be a non-Nothing ListObject with a non-Nothing DataBodyRange. (3) Order
 validation -- the ListObjects must appear in the correct order, verified by
@@ -718,8 +718,8 @@ non-ListObject entries, or has empty ListObjects.</li>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Wksh() As Worksheet
 </code></pre>
-<p>Public accessors for series data, validity, and worksheet reference.
-Dispatches based on the current graph mode. In simple mode, returns
+<p>Public accessors for series data, validity, and worksheet reference.</p>
+<p>Dispatches based on the current graph mode. In simple mode, returns
 Table.Wksh -- the worksheet containing the cross-table's named ranges. In
 complex mode, returns OutputSheet -- a dedicated output worksheet provided
 during factory construction. This abstraction allows consumers to call Wksh

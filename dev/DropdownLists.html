@@ -16,7 +16,13 @@ Each dropdown is registered with an internal name-to-ListObject mapping
 and a workbook-level named reference. Supports adding, removing,
 updating, sorting, translating, and validating dropdown entries, plus
 hyperlink navigation between the dropdown sheet and consuming cells.</p>
-<p><strong>Depends on:</strong> <a href="HiddenNames.html">HiddenNames</a>, <a href="BetterArray.html">BetterArray</a>, <a href="Checking.html">Checking</a>, increment by default the counter on the number of dropdowns by 1. Everytime a, dropdown is added to the current worksheet. The counter is saved somewhere the, first cell fo the worksheet. It starts at 1., dropdowns in the current dropdown worksheet., Where all the dropdowns should start, sometimes there could be a need, for header for the dropdown (like in custom dropdowns, so we shift one line), checking objects</p>
+<p>The name-to-ListObject mapping lives in two worksheet columns. Every
+public method reads those two columns once into memory and then works
+from that copy, so a single call touches Excel once instead of once per
+registered dropdown. The copy is never kept between calls: another
+DropdownLists object can hold the same worksheet and change the mapping
+in between.</p>
+<p><strong>Depends on:</strong> <a href="HiddenNames.html">HiddenNames</a>, <a href="BetterArray.html">BetterArray</a>, <a href="Checking.html">Checking</a>, increment by default the counter on the number of dropdowns by 1. Everytime a, dropdown is added to the current worksheet. The counter is saved somewhere the, first cell fo the worksheet. It starts at 1., dropdowns in the current dropdown worksheet., Where all the dropdowns should start, sometimes there could be a need, for header for the dropdown (like in custom dropdowns, so we shift one line), The registry that maps a dropdown name to its ListObject name. The dropdown, name is in column C, the ListObject name in column D. Both columns carry a, header on DROPDOWNSTARTROW., Field positions inside one row of the registry block held in memory, Row 1 of the registry block is the column header, so data starts on row 2, Counter start values: the workbook counter starts at 1, the worksheet one at 0, checking objects</p>
 <p><strong>Version:</strong> 1.0 (2026-02-09)</p>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
@@ -60,7 +66,10 @@ columns created) and an initialisation flag is stored via HiddenNames.</p>
 <p>Creates a one-column ListObject populated with the supplied values,
 registers the name-to-ListObject mapping, and creates a workbook-level
 named reference. Optionally writes a visible label above the ListObject
-and applies a table style. Silently exits when the dropdown already exists.</p>
+and applies a table style. Silently exits when the dropdown already exists.
+The ListObject name is built before the counters move, so it carries the
+old workbook number, while the label is built after and carries the new
+worksheet number.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>listValues</code>: BetterArray. String values to populate the ListObject.</li>
@@ -270,7 +279,116 @@ into a BetterArray.</p>
 <p>Returns the name of the worksheet that hosts the dropdown lists.</p>
 <p><strong>Returns:</strong> String. The worksheet name.</p>
 <hr />
-<h2 id="int-workbook-counter">Workbook Counter</h2>
+<h2 id="int-registry">Registry</h2>
+<h3 id="int-refreshregistry">RefreshRegistry <a class="anchor-link" href="#int-refreshregistry">#</a></h3>
+<p><em>refresh-registry</em></p>
+<p><strong>Read the dropdown registry again from the worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RefreshRegistry()
+</code></pre>
+<p>A routine that changes the registry calls this once at its start. One call
+reads the two registry columns a single time, and every lookup after that
+runs in memory. The copy is dropped first because another DropdownLists
+object can hold the same worksheet and change the registry in between.</p>
+<p>SetValidation and AddLink read the registry and never write it, so they
+call EnsureRegistry and keep the copy. One SetupPreparation.Prepare makes
+56 SetValidation calls, and each forced reload costs two worksheet
+crossings for bookkeeping alone.</p>
+<hr />
+<h3 id="int-ensureregistry">EnsureRegistry <a class="anchor-link" href="#int-ensureregistry">#</a></h3>
+<p><em>ensure-registry</em></p>
+<p><strong>Load the registry when no copy is held</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureRegistry()
+</code></pre>
+<hr />
+<h3 id="int-loadregistry">LoadRegistry <a class="anchor-link" href="#int-loadregistry">#</a></h3>
+<p><em>load-registry</em></p>
+<p><strong>Read the two registry columns into memory in one block</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub LoadRegistry()
+</code></pre>
+<p>Reads from the header row down to the last used row of the dropdown
+name column. Row 1 of the block is the header, so dropdown entries
+start at REGISTRYFIRSTDATAITEM.</p>
+<hr />
+<h3 id="int-registryitem">RegistryItem <a class="anchor-link" href="#int-registryitem">#</a></h3>
+<p><em>registry-item</em></p>
+<p><strong>Read one field of one registry row as text</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function RegistryItem(ByVal rowIndex As Long, ByVal fieldIndex As Long) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>rowIndex</code>: Long. Row position inside the registry block.</li>
+<li><code>fieldIndex</code>: Long. REGISTRYNAMEITEM or REGISTRYLONAMEITEM.</li>
+</ul>
+<p><strong>Returns:</strong> String. The stored text, or an empty string when out of range.</p>
+<hr />
+<h3 id="int-registryindexof">RegistryIndexOf <a class="anchor-link" href="#int-registryindexof">#</a></h3>
+<p><em>registry-index-of</em></p>
+<p><strong>Find the registry row that holds a dropdown name</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function RegistryIndexOf(ByVal listName As String) As Long
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>listName</code>: String. Dropdown name to look for.</li>
+</ul>
+<p><strong>Returns:</strong> Long. Row position inside the registry block, or 0 when absent.</p>
+<hr />
+<h3 id="int-registryrow">RegistryRow <a class="anchor-link" href="#int-registryrow">#</a></h3>
+<p><em>registry-row</em></p>
+<p><strong>Worksheet row of a registry block position</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function RegistryRow(ByVal rowIndex As Long) As Long
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>rowIndex</code>: Long. Row position inside the registry block.</li>
+</ul>
+<p><strong>Returns:</strong> Long. The 1-based worksheet row.</p>
+<hr />
+<h3 id="int-registryfreerow">RegistryFreeRow <a class="anchor-link" href="#int-registryfreerow">#</a></h3>
+<p><em>registry-free-row</em></p>
+<p><strong>First worksheet row free for a new registry entry</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function RegistryFreeRow() As Long
+</code></pre>
+<p>A removed dropdown leaves an empty row behind, and that row is used
+again before the registry grows.</p>
+<p><strong>Returns:</strong> Long. The 1-based worksheet row to write on.</p>
+<hr />
+<h3 id="int-hasdropdown">HasDropdown <a class="anchor-link" href="#int-hasdropdown">#</a></h3>
+<p><em>has-dropdown</em></p>
+<p><strong>Whether a dropdown name is in the registry held in memory</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function HasDropdown(ByVal listName As String) As Boolean
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>listName</code>: String. Dropdown name to look for.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the name is registered.</p>
+<hr />
+<h3 id="int-missingdropdown">MissingDropdown <a class="anchor-link" href="#int-missingdropdown">#</a></h3>
+<p><em>missing-dropdown</em></p>
+<p><strong>Report a dropdown that is not on the worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function MissingDropdown(ByVal listName As String, ByVal message As String, _
+    Optional ByVal showTrace As Boolean = True) As Boolean
+</code></pre>
+<p>Logs the given message and prints the debug trace when the dropdown is
+absent. Callers use the return value to leave at once.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>listName</code>: String. Dropdown name to look for.</li>
+<li><code>message</code>: String. Text to log when the dropdown is missing.</li>
+<li><code>showTrace</code>: Optional Boolean. When True, prints the debug trace. Defaults to True.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the dropdown does not exist.</p>
+<hr />
+<h2 id="int-counters">Counters</h2>
 <h3 id="int-internalstore">InternalStore <a class="anchor-link" href="#int-internalstore">#</a></h3>
 <p><em>internal-store</em></p>
 <p><strong>Lazy-loaded HiddenNames store for workbook or sheet scope</strong></p>
@@ -285,86 +403,82 @@ into a BetterArray.</p>
 </ul>
 <p><strong>Returns:</strong> HiddenNames. The requested store.</p>
 <hr />
-<h3 id="int-ensureworkbookcounter">EnsureWorkbookCounter <a class="anchor-link" href="#int-ensureworkbookcounter">#</a></h3>
-<p><em>ensure-workbook-counter</em></p>
-<p><strong>Ensure the workbook-level dropdown counter exists</strong></p>
+<h3 id="int-countername">CounterName <a class="anchor-link" href="#int-countername">#</a></h3>
+<p><em>counter-name</em></p>
+<p><strong>Stored name of a dropdown counter</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub EnsureWorkbookCounter()
-</code></pre>
-<hr />
-<h3 id="int-workbookcountervalue">WorkbookCounterValue <a class="anchor-link" href="#int-workbookcountervalue">#</a></h3>
-<p><em>workbook-counter-value</em></p>
-<p><strong>Read the current workbook dropdown counter</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function WorkbookCounterValue() As Long
-</code></pre>
-<p><strong>Returns:</strong> Long. The counter value.</p>
-<hr />
-<h3 id="int-setworkbookcounter">SetWorkbookCounter <a class="anchor-link" href="#int-setworkbookcounter">#</a></h3>
-<p><em>set-workbook-counter</em></p>
-<p><strong>Write a new workbook dropdown counter value</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub SetWorkbookCounter(ByVal newValue As Long)
+<pre><code class="language-vb">Private Function CounterName(ByVal sheetLevel As Boolean) As String
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>newValue</code>: Long. The value to store.</li>
+<li><code>sheetLevel</code>: Boolean. True for the worksheet counter, False for the workbook one.</li>
 </ul>
+<p><strong>Returns:</strong> String. The hidden name holding the counter.</p>
 <hr />
-<h3 id="int-incrementworkbookcounter">IncrementWorkbookCounter <a class="anchor-link" href="#int-incrementworkbookcounter">#</a></h3>
-<p><em>increment-workbook-counter</em></p>
-<p><strong>Increment the workbook dropdown counter by one</strong></p>
+<h3 id="int-counterstart">CounterStart <a class="anchor-link" href="#int-counterstart">#</a></h3>
+<p><em>counter-start</em></p>
+<p><strong>Start value of a dropdown counter</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub IncrementWorkbookCounter()
-</code></pre>
-<hr />
-<h3 id="int-decrementworkbookcounter">DecrementWorkbookCounter <a class="anchor-link" href="#int-decrementworkbookcounter">#</a></h3>
-<p><em>decrement-workbook-counter</em></p>
-<p><strong>Decrement the workbook dropdown counter by one</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub DecrementWorkbookCounter()
-</code></pre>
-<hr />
-<h2 id="int-worksheet-counter">Worksheet Counter</h2>
-<h3 id="int-ensureworksheetcounter">EnsureWorksheetCounter <a class="anchor-link" href="#int-ensureworksheetcounter">#</a></h3>
-<p><em>ensure-worksheet-counter</em></p>
-<p><strong>Ensure the worksheet-level dropdown counter exists</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub EnsureWorksheetCounter()
-</code></pre>
-<hr />
-<h3 id="int-sheetcountervalue">SheetCounterValue <a class="anchor-link" href="#int-sheetcountervalue">#</a></h3>
-<p><em>sheet-counter-value</em></p>
-<p><strong>Read the current worksheet dropdown counter</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function SheetCounterValue() As Long
-</code></pre>
-<p><strong>Returns:</strong> Long. The counter value.</p>
-<hr />
-<h3 id="int-setsheetcounter">SetSheetCounter <a class="anchor-link" href="#int-setsheetcounter">#</a></h3>
-<p><em>set-sheet-counter</em></p>
-<p><strong>Write a new worksheet dropdown counter value</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub SetSheetCounter(ByVal newValue As Long)
+<pre><code class="language-vb">Private Function CounterStart(ByVal sheetLevel As Boolean) As Long
 </code></pre>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>newValue</code>: Long. The value to store (clamped to 0).</li>
+<li><code>sheetLevel</code>: Boolean. True for the worksheet counter, False for the workbook one.</li>
+</ul>
+<p><strong>Returns:</strong> Long. The value the counter takes when it is created.</p>
+<hr />
+<h3 id="int-counterstore">CounterStore <a class="anchor-link" href="#int-counterstore">#</a></h3>
+<p><em>counter-store</em></p>
+<p><strong>Store holding a dropdown counter, created when missing</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function CounterStore(ByVal sheetLevel As Boolean) As HiddenNames
+</code></pre>
+<p>The counters are shared by every DropdownLists object of the workbook,
+so they live in HiddenNames and never in memory. Only the store object
+is cached.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetLevel</code>: Boolean. True for the worksheet counter, False for the workbook one.</li>
+</ul>
+<p><strong>Returns:</strong> HiddenNames. The store that holds the counter.</p>
+<hr />
+<h3 id="int-countervalue">CounterValue <a class="anchor-link" href="#int-countervalue">#</a></h3>
+<p><em>counter-value</em></p>
+<p><strong>Read a dropdown counter</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function CounterValue(ByVal sheetLevel As Boolean) As Long
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetLevel</code>: Boolean. True for the worksheet counter, False for the workbook one.</li>
+</ul>
+<p><strong>Returns:</strong> Long. The counter value.</p>
+<hr />
+<h3 id="int-stepcounter">StepCounter <a class="anchor-link" href="#int-stepcounter">#</a></h3>
+<p><em>step-counter</em></p>
+<p><strong>Move one dropdown counter and write it through at once</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub StepCounter(ByVal sheetLevel As Boolean, ByVal stepValue As Long)
+</code></pre>
+<p>The worksheet counter never goes below zero. The value is written back
+to the store on every step because other DropdownLists objects read the
+same counter.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetLevel</code>: Boolean. True for the worksheet counter, False for the workbook one.</li>
+<li><code>stepValue</code>: Long. Amount to add, negative to go down.</li>
 </ul>
 <hr />
-<h3 id="int-incrementsheetcounter">IncrementSheetCounter <a class="anchor-link" href="#int-incrementsheetcounter">#</a></h3>
-<p><em>increment-sheet-counter</em></p>
-<p><strong>Increment the worksheet dropdown counter by one</strong></p>
+<h3 id="int-stepcounters">StepCounters <a class="anchor-link" href="#int-stepcounters">#</a></h3>
+<p><em>step-counters</em></p>
+<p><strong>Move the worksheet and workbook counters together</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub IncrementSheetCounter()
+<pre><code class="language-vb">Private Sub StepCounters(ByVal stepValue As Long)
 </code></pre>
-<hr />
-<h3 id="int-decrementsheetcounter">DecrementSheetCounter <a class="anchor-link" href="#int-decrementsheetcounter">#</a></h3>
-<p><em>decrement-sheet-counter</em></p>
-<p><strong>Decrement the worksheet dropdown counter by one</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub DecrementSheetCounter()
-</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>stepValue</code>: Long. Amount to add, negative to go down.</li>
+</ul>
 <hr />
 <h3 id="int-incrementcounters">IncrementCounters <a class="anchor-link" href="#int-incrementcounters">#</a></h3>
 <p><em>increment-counters</em></p>
@@ -448,13 +562,57 @@ prefix is set, falls back to the DEFAULTNAMEPREFIX constant.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Property Get ListObjectName(ByVal listName As String) As String
 </code></pre>
-<p>Returns the cached ListObject name for an existing dropdown, or
-generates and registers a new one for a dropdown being created.</p>
+<p>Returns the stored ListObject name for an existing dropdown, or
+generates and registers a new one for a dropdown being created. The
+workbook counter is what keeps the generated name unique across the
+whole workbook, so two worksheets can hold a dropdown of the same name.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>listName</code>: String. Dropdown name.</li>
 </ul>
 <p><strong>Returns:</strong> String. The ListObject name.</p>
+<hr />
+<h3 id="int-dropdownlistobject">DropdownListObject <a class="anchor-link" href="#int-dropdownlistobject">#</a></h3>
+<p><em>dropdown-list-object</em></p>
+<p><strong>ListObject that holds the values of a dropdown</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function DropdownListObject(ByVal listName As String) As ListObject
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>listName</code>: String. The dropdown name.</li>
+</ul>
+<p><strong>Returns:</strong> ListObject. The table on the dropdown worksheet.</p>
+<hr />
+<h3 id="int-dropdownlabelcell">DropdownLabelCell <a class="anchor-link" href="#int-dropdownlabelcell">#</a></h3>
+<p><em>dropdown-label-cell</em></p>
+<p><strong>Cell that carries the label of a dropdown</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function DropdownLabelCell(ByVal listName As String) As Range
+</code></pre>
+<p>The label sits one row above the header row of the ListObject.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>listName</code>: String. The dropdown name.</li>
+</ul>
+<p><strong>Returns:</strong> Range. The label cell.</p>
+<hr />
+<h3 id="int-formatlabelcell">FormatLabelCell <a class="anchor-link" href="#int-formatlabelcell">#</a></h3>
+<p><em>format-label-cell</em></p>
+<p><strong>Write and format the label cell of a dropdown</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub FormatLabelCell(ByVal labelCell As Range, ByVal labelText As String, _
+    ByVal interiorColor As Long, ByVal fontColor As Long)
+</code></pre>
+<p>Used when a dropdown is added, and again after a hyperlink is placed on
+the label, because adding a hyperlink wipes the text and the format.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>labelCell</code>: Range. The cell above the ListObject header.</li>
+<li><code>labelText</code>: String. Text to write. An empty text leaves the value alone.</li>
+<li><code>interiorColor</code>: Long. Background colour of the cell.</li>
+<li><code>fontColor</code>: Long. Colour of the text.</li>
+</ul>
 <hr />
 <h3 id="int-addloname">AddLoName <a class="anchor-link" href="#int-addloname">#</a></h3>
 <p><em>add-lo-name</em></p>
@@ -467,18 +625,6 @@ generates and registers a new one for a dropdown being created.</p>
 <li><code>listName</code>: String. The dropdown name.</li>
 <li><code>loName</code>: String. The corresponding ListObject name.</li>
 </ul>
-<hr />
-<h3 id="int-retrieveloname">RetrieveLoName <a class="anchor-link" href="#int-retrieveloname">#</a></h3>
-<p><em>retrieve-lo-name</em></p>
-<p><strong>Retrieve the ListObject name for a dropdown</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Property Get RetrieveLoName(ByVal lst As String) As String
-</code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>lst</code>: String. The dropdown name.</li>
-</ul>
-<p><strong>Returns:</strong> String. The ListObject name, or vbNullString when not found.</p>
 <hr />
 <h3 id="int-removeloname">RemoveLoName <a class="anchor-link" href="#int-removeloname">#</a></h3>
 <p><em>remove-lo-name</em></p>
@@ -519,6 +665,8 @@ human-readable label (e.g. &quot;Custom Dropdown 3&quot;).</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Exists(ByVal listName As String) As Boolean
 </code></pre>
+<p>Looks only at the registry of this worksheet, so two worksheets can
+hold a dropdown of the same name without seeing each other.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>listName</code>: String. Dropdown name to search for.</li>

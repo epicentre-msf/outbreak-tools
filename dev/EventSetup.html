@@ -53,8 +53,8 @@ hostBook is Nothing because Configure performs the validation.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Configure(ByVal hostBook As Workbook)
 </code></pre>
-<p>Workbook event handlers and setup row operations.
-Stores the host workbook reference and resets every lazily-cached domain
+<p>Workbook event handlers and setup row operations.</p>
+<p>Stores the host workbook reference and resets every lazily-cached domain
 manager so subsequent calls rebuild them from the new workbook. Must be
 called before any event handler or row operation. Raises an error when the
 supplied workbook is Nothing.</p>
@@ -119,11 +119,13 @@ relevant ListObject.</p>
 <pre><code class="language-vb">Public Sub UpdateAnalysisDropdowns(Optional ByVal forceUpdate As Boolean = False)
 </code></pre>
 <p>Conditionally rebuilds dropdown lists used by the Analysis sheet. When
-forceUpdate is True or when the update watcher reports that &quot;control_details&quot;
-or &quot;variable_name&quot; columns changed, refreshes geo, choices, and special-
-variable dropdowns. When &quot;variable_type&quot; or &quot;variable_name&quot; changed, refreshes
-the time-variable dropdown. Finally invalidates the LLVariables cache so
-subsequent lookups reflect the latest dictionary state.</p>
+forceUpdate is True or when the update watcher reports that &quot;control details&quot;
+or &quot;variable name&quot; columns changed, refreshes geo, choices, and special-
+variable dropdowns. When &quot;variable type&quot; or &quot;variable name&quot; changed, refreshes
+the time-variable dropdown. The keys are the Dictionary header names as the
+sheet carries them. It then tells the watcher what it has acted on, and
+invalidates the LLVariables cache so subsequent lookups reflect the latest
+dictionary state.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>forceUpdate</code>: Optional Boolean. When True, forces a full refresh regardless of update tags. Defaults to False.</li>
@@ -784,13 +786,19 @@ providing a consistent stack trace across all methods in this class.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (6 file(s))</summary>
+<summary>Used in (12 file(s))</summary>
 <ul>
+<li><a href="LLdictionary.html">LLdictionary.cls</a></li>
+<li><a href="LLVariables.html">LLVariables.cls</a></li>
+<li><a href="CaseWhen.html">CaseWhen.cls</a></li>
+<li><a href="SetupPreparation.html">SetupPreparation.cls</a></li>
 <li>CustomSetupFunctions.bas</li>
 <li>EventSetupWorkbook.bas</li>
 <li>SetupEventsManager.bas</li>
 <li>SetupHelpers.bas</li>
+<li>TestCaseWhen.bas</li>
 <li>TestEventSetup.bas</li>
+<li>TestSetupPreparation.bas</li>
 <li>TestUpdatedValues.bas</li>
 </ul>
 </details>

@@ -61,8 +61,8 @@ will be created.</li>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub WriteAnalysis(Optional ByVal part As Byte = 0)
 </code></pre>
-<p>Top-level entry point that builds all four analysis output worksheets.
-Top-level orchestrator that builds all four analysis output worksheets in
+<p>Top-level entry point that builds all four analysis output worksheets.</p>
+<p>Top-level orchestrator that builds all four analysis output worksheets in
 sequence: (1) Normal (univariate + bivariate + global summary), (2) Time
 Series, (3) Spatial, and (4) Spatio-Temporal. For each scope the method
 prepares the sheet (PrepareSheet), allocates fresh local GoTo arrays
@@ -154,8 +154,8 @@ analysis worksheets are created and populated.</p>
 <pre><code class="language-vb">Private Property Get LinelistData() As LinelistSpecs
 </code></pre>
 <p>Convenience accessors for frequently used collaborators retrieved
-through the output linelist and its metadata facade.
-Convenience accessor that retrieves the LinelistSpecs object from the
+through the output linelist and its metadata facade.</p>
+<p>Convenience accessor that retrieves the LinelistSpecs object from the
 stored output linelist. LinelistSpecs is the central metadata facade
 providing access to the dictionary, translation objects, formula data,
 design format, passwords, and sheet configuration. This property avoids
@@ -358,8 +358,8 @@ Defaults to vbNullString.</li>
                           ByVal headersList As BetterArray, _
                           ByVal goToHeaderLabel As String)
 </code></pre>
-<p>Min/Max formula finalisation and GoTo header dropdown for temporal sections.
-Finalises a temporal (time-series or spatio-temporal) section by writing
+<p>Min/Max formula finalisation and GoTo header dropdown for temporal sections.</p>
+<p>Finalises a temporal (time-series or spatio-temporal) section by writing
 its date-period boundary formulas and adding a GoTo Header dropdown. Each
 temporal section has two named ranges: MIN_MIN_DATE_{secId} and
 MAX_MAX_DATE_{secId}, which hold the overall minimum and maximum dates
@@ -393,8 +393,8 @@ default value.</li>
                        ByVal headersList As BetterArray, _
                        Optional ByVal scope As Byte = AnalysisScopeNormal)
 </code></pre>
-<p>Core table-creation loop and supporting write logic.
-Core table-creation loop. Iterates over every data row of the setup
+<p>Core table-creation loop and supporting write logic.</p>
+<p>Core table-creation loop. Iterates over every data row of the setup
 ListObject identified by loName, and for each valid row: creates a
 TableSpecs, builds a CrossTable on the output sheet, applies
 CrossTableFormula formulas, formats the table with the design, registers
@@ -435,8 +435,8 @@ ListObject has no DataBodyRange, the method exits early.</li>
                                    ByVal graphsList As BetterArray)
 </code></pre>
 <p>Methods that build time-series and spatio-temporal charts after
-tables have been written.
-Reads three setup ListObjects: the graph definition table (graphLoName),
+tables have been written.</p>
+<p>Reads three setup ListObjects: the graph definition table (graphLoName),
 the graph title/label table (graphTitleLoName), and the original time-series
 table (tabLoName). These are bundled into a BetterArray and passed to
 GraphSpecs.CreateRangeSpecs, which operates in complex mode -- resolving

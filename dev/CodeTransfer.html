@@ -29,8 +29,8 @@ via Create and then call the transfer methods for each component type.</p>
                        ByVal targetWkb As Workbook, _
                        ByVal tempRepos As TemporaryRepos) As CodeTransfer
 </code></pre>
-<p>Factory method and Friend bindings for construction.
-Creates a new CodeTransfer wired to transfer components from sourceWkb to
+<p>Factory method and Friend bindings for construction.</p>
+<p>Creates a new CodeTransfer wired to transfer components from sourceWkb to
 targetWkb using tempRepos for intermediate file storage. All three parameters
 are validated as non-Nothing.</p>
 <p><strong>Parameters:</strong></p>
@@ -56,8 +56,8 @@ are validated as non-Nothing.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub TransferClass(ByVal className As String)
 </code></pre>
-<p>Public methods for transferring VBA components.
-Exports the named class module (.cls) from the source workbook to a temporary
+<p>Public methods for transferring VBA components.</p>
+<p>Exports the named class module (.cls) from the source workbook to a temporary
 file named &quot;CopieCls.cls&quot;, then imports it into the target workbook. The
 temporary file is cleaned up after import.</p>
 <p><strong>Parameters:</strong></p>
@@ -213,8 +213,8 @@ not found in the target workbook.</li>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ExportImportComponent(ByVal componentName As String, ByVal tempFileName As String)
 </code></pre>
-<p>Private utilities for export/import and error handling.
-Exports the named component to a temporary file, imports it into the target
+<p>Private utilities for export/import and error handling.</p>
+<p>Exports the named component to a temporary file, imports it into the target
 workbook, then cleans up the temporary file. Used by TransferClass and
 TransferModule.</p>
 <p><strong>Parameters:</strong></p>
