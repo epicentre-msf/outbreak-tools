@@ -29,19 +29,36 @@ Private TestsPath As String
 
 '@section Module lifecycle
 '===============================================================================
+'An error escaping any of the four lifecycle hooks reaches the VBE as a modal
+'dialog, and a dialog stops the whole run: the runner reads -50, no results
+'file is written and there is nothing to read. So each hook below carries its
+'own handler and reports through Assert where it can.
+
 '@ModuleInitialize
 Public Sub ModuleInitialize()
+    On Error GoTo Handler
+
     BusyApp
     EnsureWorksheet TEST_OUTPUT_SHEET, clearSheet:=False
     Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
     Assert.SetModuleName "TestDevelopment"
+    Exit Sub
+
+Handler:
+    'Assert may be Nothing here, so this is the one hook with nowhere to report.
+    Debug.Print "TestDevelopment.ModuleInitialize failed with error " & _
+                Err.Number & " (" & Err.Source & "): " & Err.Description
+    Err.Clear
 End Sub
 
 '@ModuleCleanup
 Public Sub ModuleCleanup()
-    If Not Assert Is Nothing Then
-        Assert.PrintResults "testsOutputs"
-    End If
+    On Error Resume Next
+        If Not Assert Is Nothing Then
+            Assert.PrintResults "testsOutputs"
+        End If
+    On Error GoTo 0
+
     Set Assert = Nothing
     RestoreApp
 End Sub
@@ -51,6 +68,8 @@ End Sub
 '===============================================================================
 '@TestInitialize
 Public Sub TestInitialize()
+    On Error GoTo Handler
+
     Set TestBook = NewWorkbook
     Set DevSheet = EnsureWorksheet(DEV_SHEET_NAME, TestBook)
     Set CodeSheet = EnsureWorksheet(CODE_SHEET_NAME, TestBook)
@@ -58,25 +77,37 @@ Public Sub TestInitialize()
 
     Set Manager = Development.Create(DevSheet, CodeSheet)
     Manager.DisplayPrompts = False
+    Exit Sub
+
+Handler:
+    'Every test that follows will fail through its own handler, and this row
+    'says why. That reads better than a dialog nobody sees.
+    If Not Assert Is Nothing Then
+        Assert.LogFailure "TestDevelopment.TestInitialize failed with error " & _
+                          Err.Number & " (" & Err.Source & "): " & Err.Description
+    End If
+    Err.Clear
 End Sub
 
 '@TestCleanup
 Public Sub TestCleanup()
-    If Not Manager Is Nothing Then
-        Set Manager = Nothing
-    End If
+    On Error Resume Next
+        If Not Manager Is Nothing Then
+            Set Manager = Nothing
+        End If
 
-    If Not TestBook Is Nothing Then
-        DeleteWorkbook TestBook
-        Set TestBook = Nothing
-    End If
+        If Not TestBook Is Nothing Then
+            DeleteWorkbook TestBook
+            Set TestBook = Nothing
+        End If
 
-    CleanupFolder TempRoot
-    TempRoot = vbNullString
+        CleanupFolder TempRoot
+        TempRoot = vbNullString
 
-    If Not Assert Is Nothing Then
-        Assert.Flush
-    End If
+        If Not Assert Is Nothing Then
+            Assert.Flush
+        End If
+    On Error GoTo 0
 End Sub
 
 

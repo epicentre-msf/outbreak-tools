@@ -584,6 +584,13 @@ End Function
 
 '@label EnsureFolder
 '@sub-title Create a folder and every missing parent above it.
+'@details
+'MkDir raises 75 for a folder that is already there, and Dir$ on a directory
+'answers empty on Mac Excel often enough that the check above it cannot be
+'trusted. BuildTempFolder already allows its own MkDir to fail quietly for
+'that reason. Without the same tolerance here, the second call for a sibling
+'folder walks up to a parent Dir$ failed to see, tries to create it again and
+'takes the whole run down with error 75.
 '@param targetPath String. The folder to create.
 Public Sub EnsureFolder(ByVal targetPath As String)
     If LenB(targetPath) = 0 Then Exit Sub
@@ -591,11 +598,11 @@ Public Sub EnsureFolder(ByVal targetPath As String)
 
     Dim parentPath As String
     parentPath = ParentFolder(targetPath)
-    If LenB(parentPath) > 0 And Dir$(parentPath, vbDirectory) = vbNullString Then
-        EnsureFolder parentPath
-    End If
+    If LenB(parentPath) > 0 Then EnsureFolder parentPath
 
-    MkDir targetPath
+    On Error Resume Next
+        MkDir targetPath
+    On Error GoTo 0
 End Sub
 
 '@label ParentFolder

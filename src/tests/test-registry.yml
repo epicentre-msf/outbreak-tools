@@ -297,6 +297,28 @@ suites:
     classes:
       - name: Analysis
 
+  # --- dev (Development) ----------------------------------------------------
+  # THIS BLOCK CARRIES A TEST MODULE AND NO CLASS, AND IT MUST STAY THAT WAY.
+  # Development is one of the components imported BY HAND into the driver
+  # workbook (see automated-testing-macos.md 4.1) -- it is what builds the
+  # Codes-sheet tables the runner reads, so it has to exist before ImportAll
+  # can run. Adding `- name: Development` here makes ImportAll keep BOTH
+  # copies, the second one named Development1, and the project stops compiling:
+  # the runner shows the opaque -50 with the import log reporting "done".
+  #
+  # So TestDevelopment exercises the copy inside unit_tests_dev.xlsb, NOT
+  # src/classes/dev/Development.cls. An edit to that file reaches these tests
+  # only after a hand re-import in the VBE. The copy was refreshed on
+  # 2026-07-29, which is what let this block be added.
+  #
+  # TestDevelopment needs PasswordsTestFixture (registered under `helpers`) and
+  # JoinPath / EnsureFolder / ParentFolder, which were copied into
+  # TestHelpersLite for it.
+  - folder: dev
+    tests:
+      - module: TestDevelopment
+        covers: [Development]
+
   # --- sections -------------------------------------------------------------
   # (Also note: interface: true is stale -- IVarWriter /
   # ISectionBuilder were folded and no longer exist; import skips missing files.)
