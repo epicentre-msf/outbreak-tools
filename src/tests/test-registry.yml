@@ -218,6 +218,27 @@ suites:
       - module: TestFormulas
         covers: [Formulas]
 
+  # --- setup (SetupTranslationsTable) ---------------------------------------
+  # This block is shared. The other four setup classes (UpdatedValues,
+  # SetupImportService, SetupPreparation, SetupErrors) add their rows here as
+  # their own sessions land. Register a class only after confirming it is
+  # absent from the saved driver workbook: the six classes baked in there are
+  # BetterArray, Checking, Development, HiddenNames, Passwords and
+  # TranslationObject, and importing a second copy of any of them stops the
+  # project compiling and surfaces as the opaque -50.
+  #
+  # SetupTranslationsTable names ProjectError, ApplicationState, HiddenNames,
+  # CustomTable and BetterArray. ApplicationState and CustomTable are
+  # registered under `general` above; ProjectError lives in Checking, and
+  # Checking, HiddenNames and BetterArray are baked into the workbook. So the
+  # one class row below closes its own compile closure.
+  - folder: setup
+    classes:
+      - name: SetupTranslationsTable
+    tests:
+      - module: TestSetupTranslationsTable
+        covers: [SetupTranslationsTable]
+
   # --- sections -------------------------------------------------------------
   # (Also note: interface: true is stale -- IVarWriter /
   # ISectionBuilder were folded and no longer exist; import skips missing files.)
@@ -238,8 +259,8 @@ suites:
 # ---------------------------------------------------------------------------
 # TEMPLATE — copy per folder as coverage is added. Delete fields left empty.
 # Expansion backlog (suite folders under src/tests/ that are not yet
-# registered): analyses, dataio, designer, dictionary, formulas, general, geo,
-# graphs, linelist, mastersetup, setup, showhide, tables.
+# registered): analyses, dataio, designer, geo, graphs, linelist, mastersetup,
+# showhide, tables.
 #
 #   - folder: <subfolder>
 #     classes:

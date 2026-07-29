@@ -6,6 +6,7 @@ Option Explicit
 '@Folder("CustomTests.Setup")
 '@ModuleDescription("Exercises the SetupTranslationsTable class covering caching, registry updates and language management")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, ProcedureNotUsed
+'@depends SetupTranslationsTable, CustomTest, HiddenNames, BetterArray, ProjectError
 
 Private Assert As CustomTest
 Private FixtureWorkbook As Workbook
@@ -25,33 +26,42 @@ Private Const REGISTRY_TABLE_NAME As String = "Tab_Registry"
 Private Const COUNTER_NAME As String = "_SetupTranslationsCounter"
 Private Const TAG_SEPARATOR As String = "__"
 Private Const LANGUAGES_NAME_ID As String = "__SetupTranslationsLanguages__"
+Private Const LARGE_RANGE_NAME As String = "RNG_Large"
 
 '@ModuleInitialize
-Private Sub ModuleInitialize()
-    TestHelpers.BusyApp
+Public Sub ModuleInitialize()
+    On Error GoTo Fail
+
+    BusyApp
     AssertSheetSetup
     Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
     Assert.SetModuleName "TestSetupTranslationsTable"
+    Exit Sub
+
+Fail:
+    If Not Assert Is Nothing Then
+        CustomTestLogFailure Assert, "ModuleInitialize", Err.Number, Err.Description
+    End If
 End Sub
 
 '@ModuleCleanup
-Private Sub ModuleCleanup()
+Public Sub ModuleCleanup()
     On Error Resume Next
         If Not Assert Is Nothing Then
             Assert.PrintResults TEST_OUTPUT_SHEET
         End If
     On Error GoTo 0
     Set Assert = Nothing
-    TestHelpers.RestoreApp
+    RestoreApp
 End Sub
 
 '@TestInitialize
-Private Sub TestInitialize()
-    TestHelpers.BusyApp
-    Set FixtureWorkbook = TestHelpers.NewWorkbook
-    Set TranslationsSheet = TestHelpers.EnsureWorksheet(TRANSLATIONS_SHEET_NAME, FixtureWorkbook)
-    Set RegistrySheet = TestHelpers.EnsureWorksheet(REGISTRY_SHEET_NAME, FixtureWorkbook)
-    Set SourceSheet = TestHelpers.EnsureWorksheet(SOURCE_SHEET_NAME, FixtureWorkbook)
+Public Sub TestInitialize()
+    BusyApp
+    Set FixtureWorkbook = NewWorkbook
+    Set TranslationsSheet = EnsureWorksheet(TRANSLATIONS_SHEET_NAME, FixtureWorkbook)
+    Set RegistrySheet = EnsureWorksheet(REGISTRY_SHEET_NAME, FixtureWorkbook)
+    Set SourceSheet = EnsureWorksheet(SOURCE_SHEET_NAME, FixtureWorkbook)
 
     Set TranslationsTable = BuildTranslationsTable(TranslationsSheet)
     Set RegistryTable = BuildRegistryTable(RegistrySheet)
@@ -62,13 +72,14 @@ Private Sub TestInitialize()
 End Sub
 
 '@TestCleanup
-Private Sub TestCleanup()
+Public Sub TestCleanup()
     If Not Assert Is Nothing Then
         Assert.Flush
     End If
 
     On Error Resume Next
-        TestHelpers.DeleteWorkbook FixtureWorkbook
+        If Not TranslationsSheet Is Nothing Then TranslationsSheet.Unprotect
+        DeleteWorkbook FixtureWorkbook
         FixtureWorkbook = Nothing
     On Error GoTo 0
 
@@ -184,7 +195,7 @@ Public Sub TestExportStartsAtSecondColumnAndCopiesHiddenNames()
 
     expectedLanguages = HiddenNames.Create(TranslationsSheet).ValueAsString(LANGUAGES_NAME_ID)
 
-    Set exportBook = TestHelpers.NewWorkbook
+    Set exportBook = NewWorkbook
     Subject.Export exportBook
 
     Set exportedSheet = exportBook.Worksheets(TRANSLATIONS_SHEET_NAME)
@@ -349,10 +360,10 @@ Public Sub TestUpdateFromRegistryProcessesSingleCellRegistryTable()
     FixtureWorkbook.Names.Add Name:="RNG_Solo", RefersTo:=SourceSheet.Range("D1")
 
     Dim singleMatrix As Variant
-    singleMatrix = TestHelpers.RowsToMatrix(Array( _ 
-                                                Array("tabname", "rngname", "status", "mode"), _ 
-                                                Array("table", "RNG_Solo", "yes", "translate as text")))
-    TestHelpers.WriteMatrix RegistrySheet.Range("F1"), singleMatrix
+    singleMatrix = RowsToMatrix(Array( _
+                                    Array("tabname", "rngname", "status", "mode"), _
+                                    Array("table", "RNG_Solo", "yes", "translate as text")))
+    WriteMatrix RegistrySheet.Range("F1"), singleMatrix
 
     Dim singleTable As ListObject
     Set singleTable = RegistrySheet.ListObjects.Add(SourceType:=xlSrcRange, Source:=RegistrySheet.Range("F1:I2"), XlListObjectHasHeaders:=xlYes)
@@ -447,15 +458,14 @@ Public Sub TestDuplicateLabelsReportsAllDuplicate()
     AppendTranslationLabel "Hello"
     AppendTranslationLabel "World"
 
-    Dim summary As String
     Dim duplicateMessage As String
     Assert.IsTrue Subject.DuplicateLabels(duplicateMessage), "DuplicateLabels should return True when duplicates exist"
-    Assert.AreEqual "Duplicate labels detected in column English!" & vbLf & """Hello"" has 2 duplicates"  & vbLf & """World"" has 2 duplicates",  _ 
-    duplicateMessage, "DuplicateLabels should list all duplicates for the label column"
+    Assert.AreEqual "Duplicate labels detected in column English!" & vbLf & """Hello"" has 2 duplicates" & vbLf & """World"" has 2 duplicates", _
+                    duplicateMessage, "DuplicateLabels should list all duplicates for the label column"
     Exit Sub
 
 Fail:
-    CustomTestLogFailure Assert, "TestDuplicateLabelsReportsFirstDuplicate", Err.Number, Err.Description
+    CustomTestLogFailure Assert, "TestDuplicateLabelsReportsAllDuplicate", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("SetupTranslationsTable")
@@ -474,7 +484,6 @@ Public Sub TestDuplicateLabelsHonoursLanguageParameter()
     TranslationsTable.ListColumns("French").DataBodyRange.Cells(2, 1).Value = "Salut"
     TranslationsTable.ListColumns("French").DataBodyRange.Cells(3, 1).Value = "Bonjour"
 
-    Dim summary As String
     Dim frenchSummary As String
     Assert.IsTrue Subject.DuplicateLabels(frenchSummary, "French"), "DuplicateLabels should detect duplicates within the specified language column"
     Assert.AreEqual "Duplicate labels detected in column French!" & vbLf & """Bonjour"" has 2 duplicates", frenchSummary, "DuplicateLabels should evaluate duplicates within the specified language column"
@@ -534,25 +543,13 @@ Public Sub TestUpdateFromRegistryKeepsEldestDuplicateRow()
     Subject.UpdateFromRegistry RegistrySheet
 
     'Manually add a duplicate "Hello" with an older tag (sequence 0)
-    Dim dupRow As ListRow
-    Set dupRow = TranslationsTable.ListRows.Add
-    dupRow.Range.Cells(1, 1).Value = "Hello"
-    dupRow.Range.Cells(1, 1).Offset(0, -1).Value = "EXTRA" & TAG_SEPARATOR & "0"
+    AppendTaggedLabel "Hello", "EXTRA" & TAG_SEPARATOR & "0"
 
     'Second update with all statuses "yes" triggers dedup
     SetRegistryStatus "yes", "yes", "yes"
     Subject.UpdateFromRegistry RegistrySheet
 
-    'After dedup only one "Hello" should remain with the oldest tag (sequence 0)
-    Dim helloCount As Long
-    Dim row As ListRow
-    For Each row In TranslationsTable.ListRows
-        If StrComp(CStr(row.Range.Cells(1, 1).Value), "Hello", vbBinaryCompare) = 0 Then
-            helloCount = helloCount + 1
-        End If
-    Next row
-
-    Assert.AreEqual CLng(1), helloCount, "Dedup should leave exactly one Hello row"
+    Assert.AreEqual CLng(1), CountLabelIgnoringCase("Hello"), "Dedup should leave exactly one Hello row"
     Assert.AreEqual "EXTRA" & TAG_SEPARATOR & "0", TagForLabel("Hello"), _
                     "Dedup should keep the row with the oldest (lowest sequence) tag"
     Exit Sub
@@ -561,10 +558,698 @@ Fail:
     CustomTestLogFailure Assert, "TestUpdateFromRegistryKeepsEldestDuplicateRow", Err.Number, Err.Description
 End Sub
 
+
+'@section Correctness guards
+'===============================================================================
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestUpdateKeepsUntaggedRows()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestUpdateKeepsUntaggedRows"
+    On Error GoTo Fail
+
+    Subject.EnsureLanguages "French"
+    ResetTranslationsTableRows
+    AppendTaggedLabel "Handmade one", vbNullString
+    AppendTaggedLabel "Handmade two", vbNullString
+    AppendTaggedLabel "Handmade three", vbNullString
+    TranslationsTable.ListColumns("French").DataBodyRange.Cells(1, 1).Value = "Fait main"
+
+    Subject.UpdateFromRegistry RegistrySheet
+
+    Assert.IsTrue LabelExists("Handmade one"), "A row that carries no tag must survive the first update"
+    Assert.IsTrue LabelExists("Handmade two"), "Every untagged row must survive the first update"
+    Assert.IsTrue LabelExists("Handmade three"), "Every untagged row must survive the first update"
+    Assert.AreEqual "Fait main", TranslationForLabel("Handmade one", "French"), _
+                    "The translation typed against an untagged row must survive the update"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestUpdateKeepsUntaggedRows", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestUpdateKeepsLabelsWhenRangeIsMissing()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestUpdateKeepsLabelsWhenRangeIsMissing"
+    On Error GoTo Fail
+
+    Subject.UpdateFromRegistry RegistrySheet
+    DropName "RNG_Farewell"
+    SetRegistryStatus "yes", "yes", "yes"
+
+    Subject.UpdateFromRegistry RegistrySheet
+
+    Assert.IsTrue LabelExists("Farewell"), "A range that fails to resolve must keep the labels tagged to it"
+    Assert.IsTrue LabelExists("See you"), "Every label of an unresolved range must stay in the table"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestUpdateKeepsLabelsWhenRangeIsMissing", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestUpdateReportsUnresolvedRange()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestUpdateReportsUnresolvedRange"
+    On Error GoTo Fail
+
+    Subject.UpdateFromRegistry RegistrySheet
+    DropName "RNG_Farewell"
+    SetRegistryStatus "yes", "yes", "yes"
+
+    Subject.UpdateFromRegistry RegistrySheet
+
+    Assert.AreEqual CLng(1), Subject.UnresolvedRanges.Length, "One registry range failed to resolve"
+    Assert.IsTrue InStr(1, Subject.NumberOfMissing, "RNG_Farewell", vbTextCompare) > 0, _
+                  "The summary must name the range that could not be found"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestUpdateReportsUnresolvedRange", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestUpdateSurvivesErrorValueInSource()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestUpdateSurvivesErrorValueInSource"
+    On Error GoTo Fail
+
+    SourceSheet.Range("A2").Formula = "=NA()"
+
+    Subject.UpdateFromRegistry RegistrySheet
+
+    Assert.IsTrue LabelExists("Hello"), "A cell holding an error value must not stop the other cells importing"
+    Assert.IsTrue LabelExists("Farewell"), "The update must run to the end when a source cell holds an error"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestUpdateSurvivesErrorValueInSource", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestUpdateRejectsRegistryWithTooFewColumns()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestUpdateRejectsRegistryWithTooFewColumns"
+
+    Dim shortMatrix As Variant
+    Dim shortTable As ListObject
+
+    shortMatrix = RowsToMatrix(Array( _
+                                   Array("colname", "rngname"), _
+                                   Array("table", "RNG_Greetings")))
+    WriteMatrix RegistrySheet.Range("F1"), shortMatrix
+
+    Set shortTable = RegistrySheet.ListObjects.Add(SourceType:=xlSrcRange, Source:=RegistrySheet.Range("F1:G2"), XlListObjectHasHeaders:=xlYes)
+    shortTable.Name = "Tab_RegistryShort"
+
+    On Error GoTo ExpectError
+        Subject.UpdateFromRegistry RegistrySheet
+        Assert.LogFailure "A registry table with two columns should be reported"
+        Exit Sub
+ExpectError:
+    Assert.AreEqual CLng(ProjectError.ErrorUnexpectedState), Err.Number, _
+                    "A registry table with too few columns must raise ErrorUnexpectedState"
+    Err.Clear
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestUpdateAcceptsMixedCaseWatchMode()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestUpdateAcceptsMixedCaseWatchMode"
+    On Error GoTo Fail
+
+    RegistryTable.ListRows(1).Range.Cells(1, 4).Value = "Watch For Update"
+
+    Subject.UpdateFromRegistry RegistrySheet
+
+    Assert.IsFalse LabelExists("Hello"), "A watched range brings no label of its own"
+    Assert.IsTrue LabelExists("Farewell"), "A mixed case watch mode must not stop the rest of the registry"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestUpdateAcceptsMixedCaseWatchMode", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestUpdateAcceptsBlankMode()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestUpdateAcceptsBlankMode"
+    On Error GoTo Fail
+
+    RegistryTable.ListRows(1).Range.Cells(1, 4).ClearContents
+
+    Subject.UpdateFromRegistry RegistrySheet
+
+    Assert.IsFalse LabelExists("Hello"), "A blank mode brings no label"
+    Assert.IsTrue LabelExists("Farewell"), "A blank mode must not stop the rest of the registry"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestUpdateAcceptsBlankMode", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestSwitchDefaultLanguageMovesDataAndHeader()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestSwitchDefaultLanguageMovesDataAndHeader"
+    On Error GoTo Fail
+
+    Subject.EnsureLanguages "French"
+    ResetTranslationsTableRows
+    AppendTaggedLabel "Alpha", vbNullString
+    AppendTaggedLabel "Beta", vbNullString
+    AppendTaggedLabel "Gamma", vbNullString
+    AppendTaggedLabel "Delta", vbNullString
+    AppendTaggedLabel "Epsilon", vbNullString
+
+    Dim rowIndex As Long
+    For rowIndex = 1 To 5
+        TranslationsTable.ListColumns("French").DataBodyRange.Cells(rowIndex, 1).Value = "Fr " & PadNumber(rowIndex)
+    Next rowIndex
+
+    Subject.SwitchDefaultLanguage "French"
+
+    Assert.AreEqual "French", TranslationsTable.ListColumns(1).Name, "The promoted language must become the first column"
+    Assert.AreEqual "English", TranslationsTable.ListColumns(2).Name, "The old default must take the second column"
+    Assert.AreEqual "Fr 001", CStr(TranslationsTable.ListColumns(1).DataBodyRange.Cells(1, 1).Value), _
+                    "The French values must move with their header"
+    Assert.AreEqual "Alpha", CStr(TranslationsTable.ListColumns(2).DataBodyRange.Cells(1, 1).Value), _
+                    "The English values must move with their header"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestSwitchDefaultLanguageMovesDataAndHeader", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestDuplicateLabelsIgnoresCase()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestDuplicateLabelsIgnoresCase"
+    On Error GoTo Fail
+
+    ResetTranslationsTableRows
+    AppendTaggedLabel "Hello", vbNullString
+    AppendTaggedLabel "hello", vbNullString
+
+    Dim duplicateMessage As String
+    Assert.IsTrue Subject.DuplicateLabels(duplicateMessage), "Two labels that differ only by case are one duplicate"
+    Assert.IsTrue InStr(1, duplicateMessage, "has 2 duplicates", vbBinaryCompare) > 0, _
+                  "The duplicate count must add both spellings together"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestDuplicateLabelsIgnoresCase", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestDeduplicateIgnoresCase()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestDeduplicateIgnoresCase"
+    On Error GoTo Fail
+
+    Subject.UpdateFromRegistry RegistrySheet
+    AppendTaggedLabel "hello", "EXTRA" & TAG_SEPARATOR & "5"
+
+    SetRegistryStatus "yes", "yes", "yes"
+    Subject.UpdateFromRegistry RegistrySheet
+
+    Assert.AreEqual CLng(1), CountLabelIgnoringCase("hello"), "Dedup must treat Hello and hello as one label"
+    Assert.AreEqual CLng(6), TranslationsTable.ListRows.Count, "The table keeps its six labels after dedup"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestDeduplicateIgnoresCase", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestParseTagAcceptsRangeNameWithSeparator()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestParseTagAcceptsRangeNameWithSeparator"
+    On Error GoTo Fail
+
+    SourceSheet.Range("E1").Value = "Sep label"
+    DropName "RNG_a__b"
+    FixtureWorkbook.Names.Add Name:="RNG_a__b", RefersTo:=SourceSheet.Range("E1")
+
+    ResetTranslationsTableRows
+    AppendTaggedLabel "Stale sep", "RNG_a__b" & TAG_SEPARATOR & "3"
+
+    RegistryTable.ListRows(1).Range.Cells(1, 2).Value = "RNG_a__b"
+    SetRegistryStatus "yes", "no", "no"
+    SetCounterValue 3
+
+    Subject.UpdateFromRegistry RegistrySheet
+
+    Assert.IsTrue LabelExists("Sep label"), "The range whose name carries the separator must be processed"
+    Assert.IsFalse LabelExists("Stale sep"), "A tag whose range name carries the separator must still parse as stale"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestParseTagAcceptsRangeNameWithSeparator", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestCounterHoldsAfterFailedUpdate()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestCounterHoldsAfterFailedUpdate"
+    On Error GoTo Fail
+
+    Subject.UpdateFromRegistry RegistrySheet
+    RegistryTable.ListRows(1).Range.Cells(1, 4).Value = "unsupported"
+    SetRegistryStatus "yes", "no", "no"
+
+    RunFailingUpdate
+
+    Assert.AreEqual CLng(1), CounterValue(), "A failed update must leave the counter where it was"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestCounterHoldsAfterFailedUpdate", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestUpdateDetectsShiftedHelperColumn()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestUpdateDetectsShiftedHelperColumn"
+    On Error GoTo Fail
+
+    Subject.UpdateFromRegistry RegistrySheet
+    TranslationsSheet.Columns(2).Insert Shift:=xlToRight
+    SetRegistryStatus "yes", "yes", "yes"
+
+    Subject.UpdateFromRegistry RegistrySheet
+
+    Assert.AreEqual "English", TranslationsTable.ListColumns(1).Name, _
+                    "The label column keeps its name when a column is inserted beside the helper"
+    Assert.IsTrue LabelExists("Hello"), "Labels survive a helper column that moved away from the table"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestUpdateDetectsShiftedHelperColumn", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestUpdateRestoresScreenAfterFailure()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestUpdateRestoresScreenAfterFailure"
+    On Error GoTo Fail
+
+    Dim screenBefore As Boolean
+    Dim reported As Long
+
+    screenBefore = ScreenStateSnapshot()
+    RegistryTable.ListRows(1).Range.Cells(1, 4).Value = "unsupported"
+
+    reported = RunFailingUpdate()
+
+    AssertScreenRestored screenBefore, "UpdateFromRegistry"
+    Assert.AreEqual CLng(ProjectError.InvalidArgument), reported, _
+                    "The error the caller sees must be the real one, not one raised by the cleanup path"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestUpdateRestoresScreenAfterFailure", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestUpdateEndsTagIntegrationAfterFailure()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestUpdateEndsTagIntegrationAfterFailure"
+    On Error GoTo Fail
+
+    Dim columnsBefore As Long
+
+    columnsBefore = TranslationsTable.ListColumns.Count
+    RegistryTable.ListRows(1).Range.Cells(1, 4).Value = "unsupported"
+
+    RunFailingUpdate
+
+    Assert.AreEqual columnsBefore, TranslationsTable.ListColumns.Count, _
+                    "The helper column must be back outside the table after a failed update"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestUpdateEndsTagIntegrationAfterFailure", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestEnsureLanguagesKeepsTypedNamesWhenAddFails()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestEnsureLanguagesKeepsTypedNamesWhenAddFails"
+    On Error GoTo Fail
+
+    Dim typedCell As Range
+
+    Set typedCell = TranslationsTable.ListColumns(TranslationsTable.ListColumns.Count).Range.Offset(, 1).Cells(1, 1)
+    typedCell.Value = "German"
+    TranslationsSheet.Protect
+
+    RunFailingEnsureLanguages
+
+    TranslationsSheet.Unprotect
+
+    Assert.AreEqual "German", CStr(typedCell.Value), _
+                    "A language name typed by the user must survive a column add that fails"
+    Exit Sub
+
+Fail:
+    On Error Resume Next
+        TranslationsSheet.Unprotect
+    On Error GoTo 0
+    CustomTestLogFailure Assert, "TestEnsureLanguagesKeepsTypedNamesWhenAddFails", Err.Number, Err.Description
+End Sub
+
+
+'@section Speed guards
+'===============================================================================
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestLargeTableKeepsEveryLabelAndTag()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestLargeTableKeepsEveryLabelAndTag"
+    On Error GoTo Fail
+
+    Dim started As Single
+    Dim sampleIndex As Long
+    Dim sampledLabel As String
+
+    BuildLargeSource 500
+
+    started = Timer
+    Subject.UpdateFromRegistry RegistrySheet
+    Debug.Print "TestLargeTableKeepsEveryLabelAndTag: 500 labels in " & Format$(Timer - started, "0.000") & "s"
+
+    Assert.AreEqual CLng(500), TranslationsTable.ListRows.Count, "Every source label must reach the table"
+
+    For sampleIndex = 1 To 10
+        sampledLabel = LargeLabel(sampleIndex * 37)
+        Assert.AreEqual ExpectedTag(LARGE_RANGE_NAME, 1), TagForLabel(sampledLabel), _
+                        "Sampled label " & sampledLabel & " must carry its range tag"
+    Next sampleIndex
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestLargeTableKeepsEveryLabelAndTag", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestLargeTableDeduplicatesCorrectly()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestLargeTableDeduplicatesCorrectly"
+    On Error GoTo Fail
+
+    Dim started As Single
+    Dim plantIndex As Long
+
+    BuildLargeSource 500
+    Subject.UpdateFromRegistry RegistrySheet
+
+    'Plant 50 duplicates carrying a HIGHER sequence, so the original row wins.
+    For plantIndex = 1 To 50
+        AppendTaggedLabel LargeLabel(plantIndex), "EXTRA" & TAG_SEPARATOR & "9"
+    Next plantIndex
+
+    started = Timer
+    Subject.UpdateFromRegistry RegistrySheet
+    Debug.Print "TestLargeTableDeduplicatesCorrectly: 550 rows deduped in " & Format$(Timer - started, "0.000") & "s"
+
+    Assert.AreEqual CLng(500), TranslationsTable.ListRows.Count, "Dedup must leave one row per label"
+    Assert.AreEqual ExpectedTag(LARGE_RANGE_NAME, 2), TagForLabel(LargeLabel(1)), _
+                    "The surviving row of each pair is the one carrying the lower sequence"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestLargeTableDeduplicatesCorrectly", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestRemoveObsoleteDeletesOnlyStaleRows()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestRemoveObsoleteDeletesOnlyStaleRows"
+    On Error GoTo Fail
+
+    Subject.UpdateFromRegistry RegistrySheet
+    SourceSheet.Range("B1:B2").ClearContents
+    SetRegistryStatus "yes", "yes", "yes"
+
+    Subject.UpdateFromRegistry RegistrySheet
+
+    Assert.AreEqual CLng(4), TranslationsTable.ListRows.Count, "Only the retired range loses its rows"
+    Assert.IsFalse LabelExists("Farewell"), "A label whose range no longer produces it must go"
+    Assert.IsFalse LabelExists("See you"), "Every label of the retired range must go"
+    Assert.IsTrue LabelExists("Hello"), "A label from another range must stay"
+    Assert.IsTrue LabelExists("Morning"), "A label from the formula range must stay"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestRemoveObsoleteDeletesOnlyStaleRows", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestDuplicateSummaryMatchesPerLanguage()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestDuplicateSummaryMatchesPerLanguage"
+    On Error GoTo Fail
+
+    ResetTranslationsTableRows
+    Subject.EnsureLanguages "French"
+    AppendTaggedLabel "Alpha", vbNullString
+    AppendTaggedLabel "Beta", vbNullString
+    AppendTaggedLabel "Gamma", vbNullString
+
+    TranslationsTable.ListColumns("French").DataBodyRange.Cells(1, 1).Value = "Bonjour"
+    TranslationsTable.ListColumns("French").DataBodyRange.Cells(2, 1).Value = "Salut"
+    TranslationsTable.ListColumns("French").DataBodyRange.Cells(3, 1).Value = "Bonjour"
+
+    Dim englishSummary As String
+    Dim frenchSummary As String
+
+    Assert.IsFalse Subject.DuplicateLabels(englishSummary), "The label column holds no duplicate"
+    Assert.IsTrue Subject.DuplicateLabels(frenchSummary, "French"), "The French column holds one duplicate"
+    Assert.IsTrue InStr(1, frenchSummary, "French", vbTextCompare) > 0, "The summary must name the column it read"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestDuplicateSummaryMatchesPerLanguage", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestSwitchDefaultLanguageOnManyRows()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestSwitchDefaultLanguageOnManyRows"
+    On Error GoTo Fail
+
+    Dim started As Single
+    Dim frenchBefore As Variant
+    Dim frenchAfter As Variant
+
+    Subject.EnsureLanguages "French"
+    FillTranslationsRows 200
+    frenchBefore = SnapshotColumnValues("French")
+
+    started = Timer
+    Subject.SwitchDefaultLanguage "French"
+    Debug.Print "TestSwitchDefaultLanguageOnManyRows: 200 rows swapped in " & Format$(Timer - started, "0.000") & "s"
+
+    frenchAfter = SnapshotColumnValues("French")
+    Assert.AreEqual CStr(frenchBefore(200, 1)), CStr(frenchAfter(200, 1)), _
+                    "Every French value must sit on the same row after the swap"
+    Assert.AreEqual "Fr 001", CStr(TranslationsTable.ListColumns(1).DataBodyRange.Cells(1, 1).Value), _
+                    "The first row must carry its French value after the swap"
+    Assert.AreEqual "Fr 200", CStr(TranslationsTable.ListColumns(1).DataBodyRange.Cells(200, 1).Value), _
+                    "The last row must carry its French value after the swap"
+    Assert.AreEqual "Row 200", CStr(TranslationsTable.ListColumns(2).DataBodyRange.Cells(200, 1).Value), _
+                    "The last row must carry its English value after the swap"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestSwitchDefaultLanguageOnManyRows", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestFormatConditionsDoNotAccumulate()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestFormatConditionsDoNotAccumulate"
+    On Error GoTo Fail
+
+    Dim countBefore As Long
+    Dim countAfter As Long
+    Dim runIndex As Long
+
+    Subject.UpdateFromRegistry RegistrySheet, "French"
+    countBefore = TranslationsTable.Range.FormatConditions.Count
+
+    For runIndex = 1 To 5
+        SetRegistryStatus "yes", "yes", "yes"
+        Subject.UpdateFromRegistry RegistrySheet
+    Next runIndex
+
+    countAfter = TranslationsTable.Range.FormatConditions.Count
+    Debug.Print "TestFormatConditionsDoNotAccumulate: before=" & CStr(countBefore) & " after=" & CStr(countAfter)
+
+    Assert.AreEqual countBefore, countAfter, "Repeated updates must not pile up conditional format rules"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestFormatConditionsDoNotAccumulate", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestFormulaChunksUnchangedAfterRewrite()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestFormulaChunksUnchangedAfterRewrite"
+    On Error GoTo Fail
+
+    SourceSheet.Range("C2").Formula = "=CONCATENATE(""alpha"",""beta"")"
+    SourceSheet.Range("C3").Formula = "=""ex""&""why"""
+    DropName "RNG_Formula"
+    FixtureWorkbook.Names.Add Name:="RNG_Formula", RefersTo:=SourceSheet.Range("C1:C3")
+
+    Subject.UpdateFromRegistry RegistrySheet
+
+    Assert.IsTrue LabelExists("Morning"), "The IF branch text must still be extracted"
+    Assert.IsTrue LabelExists("Evening"), "Both IF branches must still be extracted"
+    Assert.IsTrue LabelExists("alpha"), "A CONCATENATE argument must still be extracted"
+    Assert.IsTrue LabelExists("beta"), "Every CONCATENATE argument must still be extracted"
+    Assert.IsTrue LabelExists("ex"), "A joined literal must still be extracted"
+    Assert.IsTrue LabelExists("why"), "Every joined literal must still be extracted"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestFormulaChunksUnchangedAfterRewrite", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestWholeColumnNamedRangeIsHandled()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestWholeColumnNamedRangeIsHandled"
+    On Error GoTo Fail
+
+    SourceSheet.Range("E1").Value = "Whole one"
+    SourceSheet.Range("E2").Value = "Whole two"
+    SourceSheet.Range("E3").Value = "Whole three"
+
+    DropName "RNG_Whole"
+    FixtureWorkbook.Names.Add Name:="RNG_Whole", RefersTo:=SourceSheet.Range("E:E")
+    RegistryTable.ListRows(1).Range.Cells(1, 2).Value = "RNG_Whole"
+
+    Subject.UpdateFromRegistry RegistrySheet
+
+    Assert.IsTrue LabelExists("Whole one"), "A name over a whole column must still import its first value"
+    Assert.IsTrue LabelExists("Whole three"), "A name over a whole column must import every value it holds"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestWholeColumnNamedRangeIsHandled", Err.Number, Err.Description
+End Sub
+
+
+'@section Structure guards
+'===============================================================================
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestCreateDoesNotWriteToWorkbook()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestCreateDoesNotWriteToWorkbook"
+    On Error GoTo Fail
+
+    Dim helperCell As Range
+    Dim other As SetupTranslationsTable
+
+    Set helperCell = TranslationsSheet.Cells(1, 1)
+    helperCell.Value = "Untouched"
+    helperCell.Font.Color = vbBlack
+
+    Set other = SetupTranslationsTable.Create(TranslationsTable)
+    other.SetDisplayPrompts False
+
+    Assert.AreEqual "Untouched", CStr(helperCell.Value), "Create must write no cell"
+    Assert.AreEqual CLng(vbBlack), CLng(helperCell.Font.Color), "Create must not repaint the helper header"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestCreateDoesNotWriteToWorkbook", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestCreateWorksOnProtectedSheet()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestCreateWorksOnProtectedSheet"
+    On Error GoTo Fail
+
+    Dim other As SetupTranslationsTable
+
+    TranslationsSheet.Protect
+    Set other = SetupTranslationsTable.Create(TranslationsTable)
+    TranslationsSheet.Unprotect
+
+    Assert.IsTrue Not other Is Nothing, "Create must succeed against a protected sheet"
+    Exit Sub
+
+Fail:
+    On Error Resume Next
+        TranslationsSheet.Unprotect
+    On Error GoTo 0
+    CustomTestLogFailure Assert, "TestCreateWorksOnProtectedSheet", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestExportLeavesSourceTableUnchanged()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestExportLeavesSourceTableUnchanged"
+    Dim exportBook As Workbook
+    Dim rowsBefore As Long
+    Dim columnsBefore As Long
+
+    On Error GoTo Fail
+
+    Subject.UpdateFromRegistry RegistrySheet, "French"
+    rowsBefore = TranslationsTable.ListRows.Count
+    columnsBefore = TranslationsTable.ListColumns.Count
+
+    Set exportBook = NewWorkbook
+    Subject.Export exportBook
+
+    Assert.AreEqual rowsBefore, TranslationsTable.ListRows.Count, "Export must leave the source table row count alone"
+    Assert.AreEqual columnsBefore, TranslationsTable.ListColumns.Count, "Export must leave the source table column count alone"
+
+    exportBook.Close SaveChanges:=False
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestExportLeavesSourceTableUnchanged", Err.Number, Err.Description
+    On Error Resume Next
+        If Not exportBook Is Nothing Then exportBook.Close SaveChanges:=False
+    On Error GoTo 0
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestEnsureLanguagesPersistsWhenNothingIsAdded()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestEnsureLanguagesPersistsWhenNothingIsAdded"
+    On Error GoTo Fail
+
+    Dim store As HiddenNames
+
+    Subject.EnsureLanguages "French"
+
+    Set store = HiddenNames.Create(TranslationsSheet)
+    store.SetValue LANGUAGES_NAME_ID, "stale value"
+
+    Subject.EnsureLanguages
+
+    Assert.AreEqual "English;French", store.ValueAsString(LANGUAGES_NAME_ID), _
+                    "The hidden language list must be rewritten even when no column is added"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestEnsureLanguagesPersistsWhenNothingIsAdded", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestRegistryColumnsResolvedByHeaderName()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestRegistryColumnsResolvedByHeaderName"
+    On Error GoTo Fail
+
+    Dim matrix As Variant
+
+    RemoveRegistryTables
+    RegistrySheet.Cells.Clear
+
+    matrix = RowsToMatrix(Array( _
+                              Array("updated", "headername", "colname", "rngname"), _
+                              Array("yes", "translate as text", "table", "RNG_Greetings")))
+    WriteMatrix RegistrySheet.Cells(1, 1), matrix
+
+    Set RegistryTable = RegistrySheet.ListObjects.Add(SourceType:=xlSrcRange, Source:=RegistrySheet.Range("A1:D2"), XlListObjectHasHeaders:=xlYes)
+    RegistryTable.Name = REGISTRY_TABLE_NAME
+
+    Subject.UpdateFromRegistry RegistrySheet
+
+    Assert.IsTrue LabelExists("Hello"), "The range column must be found by its header name whatever its position"
+    Assert.AreEqual ExpectedTag("RNG_Greetings", 1), TagForLabel("Hello"), _
+                    "The tag must carry the range name read from the rngname column"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestRegistryColumnsResolvedByHeaderName", Err.Number, Err.Description
+End Sub
+
+
 '@section Helpers
 '===============================================================================
 Private Sub AssertSheetSetup()
-    TestHelpers.EnsureWorksheet TEST_OUTPUT_SHEET, ThisWorkbook, False
+    EnsureWorksheet TEST_OUTPUT_SHEET, ThisWorkbook, False
 End Sub
 
 Private Function BuildTranslationsTable(ByVal targetSheet As Worksheet) As ListObject
@@ -584,14 +1269,14 @@ End Function
 
 Private Function BuildRegistryTable(ByVal targetSheet As Worksheet) As ListObject
     Dim matrix As Variant
-    matrix = TestHelpers.RowsToMatrix(Array( _
+    matrix = RowsToMatrix(Array( _
         Array("TableName", "rngname", "status", "mode"), _
         Array("table", "RNG_Greetings", "yes", "translate as text"), _
         Array("table", "RNG_Farewell", "no", "translate as text"), _
         Array("table", "RNG_Formula", "yes", "translate as formula")))
 
     targetSheet.Cells.Clear
-    TestHelpers.WriteMatrix targetSheet.Cells(1, 1), matrix
+    WriteMatrix targetSheet.Cells(1, 1), matrix
 
     Dim registryRange As Range
     Set registryRange = targetSheet.Range("A1:D4")
@@ -627,7 +1312,7 @@ Private Function TagForLabel(ByVal label As String) As String
     Dim row As ListRow
 
     For Each row In TranslationsTable.ListRows
-        If StrComp(CStr(row.Range.Cells(1, 1).Value), label, vbBinaryCompare) = 0 Then
+        If StrComp(CStr(row.Range.Cells(1, 1).Value), label, vbTextCompare) = 0 Then
             TagForLabel = CStr(row.Range.Cells(1, 1).Offset(0, -1).Value)
             Exit Function
         End If
@@ -635,9 +1320,15 @@ Private Function TagForLabel(ByVal label As String) As String
 End Function
 
 Private Sub ResetTranslationsTableRows()
+    Dim attempts As Long
+
+    'The attempt count bounds the loop. A Delete that fails under On Error
+    'Resume Next would otherwise spin here for ever.
     On Error Resume Next
         Do While TranslationsTable.ListRows.Count > 0
             TranslationsTable.ListRows(TranslationsTable.ListRows.Count).Delete
+            attempts = attempts + 1
+            If attempts > 1000 Then Exit Do
         Loop
     On Error GoTo 0
 End Sub
@@ -646,6 +1337,186 @@ Private Sub AppendTranslationLabel(ByVal label As String)
     Dim newRow As ListRow
     Set newRow = TranslationsTable.ListRows.Add
     newRow.Range.Cells(1, 1).Value = label
+End Sub
+
+'@sub-title Append a row carrying a label and, when supplied, its helper column tag.
+Private Sub AppendTaggedLabel(ByVal label As String, ByVal tag As String)
+    Dim newRow As ListRow
+
+    Set newRow = TranslationsTable.ListRows.Add
+    newRow.Range.Cells(1, 1).Value = label
+
+    If LenB(tag) > 0 Then
+        newRow.Range.Cells(1, 1).Offset(0, -1).Value = tag
+    End If
+End Sub
+
+'@sub-title Write count labels into the source sheet and point the registry at them.
+Private Sub BuildLargeSource(ByVal count As Long)
+    Dim block() As Variant
+    Dim idx As Long
+    Dim sourceRange As Range
+
+    SourceSheet.Cells.Clear
+
+    ReDim block(1 To count, 1 To 1)
+    For idx = 1 To count
+        block(idx, 1) = LargeLabel(idx)
+    Next idx
+
+    Set sourceRange = SourceSheet.Range(SourceSheet.Cells(1, 1), SourceSheet.Cells(count, 1))
+    sourceRange.Value = block
+
+    DropName LARGE_RANGE_NAME
+    FixtureWorkbook.Names.Add Name:=LARGE_RANGE_NAME, RefersTo:=sourceRange
+
+    UseSingleRegistryRow LARGE_RANGE_NAME
+End Sub
+
+'@sub-title Replace every registry table with one row watching the supplied range.
+Private Sub UseSingleRegistryRow(ByVal rangeName As String)
+    Dim matrix As Variant
+
+    RemoveRegistryTables
+    RegistrySheet.Cells.Clear
+
+    matrix = RowsToMatrix(Array( _
+                              Array("colname", "rngname", "updated", "headername"), _
+                              Array("table", rangeName, "yes", "translate as text")))
+    WriteMatrix RegistrySheet.Cells(1, 1), matrix
+
+    Set RegistryTable = RegistrySheet.ListObjects.Add(SourceType:=xlSrcRange, Source:=RegistrySheet.Range("A1:D2"), XlListObjectHasHeaders:=xlYes)
+    RegistryTable.Name = REGISTRY_TABLE_NAME
+End Sub
+
+Private Sub RemoveRegistryTables()
+    Dim idx As Long
+
+    On Error Resume Next
+        For idx = RegistrySheet.ListObjects.Count To 1 Step -1
+            RegistrySheet.ListObjects(idx).Delete
+        Next idx
+    On Error GoTo 0
+
+    Set RegistryTable = Nothing
+End Sub
+
+'@sub-title Fill the translations table with rowCount labels and their French values.
+Private Sub FillTranslationsRows(ByVal rowCount As Long)
+    Dim tableRange As Range
+    Dim labels() As Variant
+    Dim translations() As Variant
+    Dim idx As Long
+
+    ResetTranslationsTableRows
+
+    Set tableRange = TranslationsTable.Range
+    TranslationsTable.Resize tableRange.Resize(rowCount + 1, tableRange.Columns.Count)
+
+    ReDim labels(1 To rowCount, 1 To 1)
+    ReDim translations(1 To rowCount, 1 To 1)
+    For idx = 1 To rowCount
+        labels(idx, 1) = "Row " & PadNumber(idx)
+        translations(idx, 1) = "Fr " & PadNumber(idx)
+    Next idx
+
+    TranslationsTable.ListColumns("English").DataBodyRange.Value = labels
+    TranslationsTable.ListColumns("French").DataBodyRange.Value = translations
+End Sub
+
+'@sub-title Read a language column in one crossing for before and after comparisons.
+Private Function SnapshotColumnValues(ByVal columnName As String) As Variant
+    Dim target As Range
+
+    On Error Resume Next
+        Set target = TranslationsTable.ListColumns(columnName).DataBodyRange
+    On Error GoTo 0
+
+    If target Is Nothing Then Exit Function
+
+    SnapshotColumnValues = target.Value2
+End Function
+
+Private Function ScreenStateSnapshot() As Boolean
+    ScreenStateSnapshot = Application.ScreenUpdating
+End Function
+
+Private Sub AssertScreenRestored(ByVal snapshot As Boolean, ByVal routineName As String)
+    Assert.AreEqual snapshot, Application.ScreenUpdating, _
+                    routineName & " must leave screen updating as it found it"
+End Sub
+
+'@sub-title Run an update that is expected to fail and hand back the error it raised.
+Private Function RunFailingUpdate() As Long
+    On Error Resume Next
+        Subject.UpdateFromRegistry RegistrySheet
+        RunFailingUpdate = Err.Number
+    On Error GoTo 0
+
+    Err.Clear
+End Function
+
+'@sub-title Run a language add that is expected to fail and hand back the error it raised.
+Private Function RunFailingEnsureLanguages() As Long
+    On Error Resume Next
+        Subject.EnsureLanguages
+        RunFailingEnsureLanguages = Err.Number
+    On Error GoTo 0
+
+    Err.Clear
+End Function
+
+Private Function LabelExists(ByVal label As String) As Boolean
+    LabelExists = (CountLabelIgnoringCase(label) > 0)
+End Function
+
+Private Function CountLabelIgnoringCase(ByVal label As String) As Long
+    Dim row As ListRow
+
+    For Each row In TranslationsTable.ListRows
+        If StrComp(CStr(row.Range.Cells(1, 1).Value), label, vbTextCompare) = 0 Then
+            CountLabelIgnoringCase = CountLabelIgnoringCase + 1
+        End If
+    Next row
+End Function
+
+Private Function TranslationForLabel(ByVal label As String, ByVal languageName As String) As String
+    Dim labelColumn As Range
+    Dim rowIndex As Long
+
+    Set labelColumn = TranslationsTable.ListColumns(1).DataBodyRange
+    If labelColumn Is Nothing Then Exit Function
+
+    For rowIndex = 1 To labelColumn.Rows.Count
+        If StrComp(CStr(labelColumn.Cells(rowIndex, 1).Value), label, vbTextCompare) = 0 Then
+            TranslationForLabel = CStr(TranslationsTable.ListColumns(languageName).DataBodyRange.Cells(rowIndex, 1).Value)
+            Exit Function
+        End If
+    Next rowIndex
+End Function
+
+Private Sub DropName(ByVal nameText As String)
+    On Error Resume Next
+        FixtureWorkbook.Names(nameText).Delete
+    On Error GoTo 0
+End Sub
+
+Private Function LargeLabel(ByVal idx As Long) As String
+    LargeLabel = "Large label " & PadNumber(idx)
+End Function
+
+Private Function PadNumber(ByVal idx As Long) As String
+    PadNumber = Right$("000" & CStr(idx), 3)
+End Function
+
+Private Sub SetCounterValue(ByVal counterValue As Long)
+    Dim store As HiddenNames
+
+    Set store = HiddenNames.Create(RegistrySheet)
+    If store Is Nothing Then Exit Sub
+
+    store.EnsureName COUNTER_NAME, counterValue, HiddenNameTypeLong
+    store.SetValue COUNTER_NAME, counterValue
 End Sub
 
 Private Function HasColumn(ByVal columnName As String) As Boolean
