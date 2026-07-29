@@ -434,9 +434,341 @@ Fail:
     ReportTestFailure "TestPrepareKeepsTheVisibilityOfAnExistingSheet"
 End Sub
 
+'@sub-title Verify that every one of the 28 declared dropdowns is registered with its own vocabulary.
+'@details
+'The three tests above check two lists between them, so a typo in any of the
+'other 26 vocabularies would pass unseen — and one such typo, `__swicth_tables`,
+'lived in the class until Session 27. Walks every declared list, asserts it
+'exists, asserts its length, and asserts each declared entry is in it.
+'@TestMethod("SetupPreparation")
+Public Sub TestPrepareRegistersEveryDeclaredDropdown()
+    CustomTestSetTitles Assert, "SetupPreparation", "TestPrepareRegistersEveryDeclaredDropdown"
+    On Error GoTo Fail
+
+    Subject.Prepare Manager
+
+    AssertDropdownHolds "__yesno", Array("yes", "no")
+    AssertDropdownHolds "__formats", Array("integer", "round0", "round1", "round2", "round3", _
+                                           "percentage0", "percentage1", "percentage2", "percentage3", _
+                                           "text", "euros", "dollars", "dd/mm/yyyy", "d-mmm-yyyy", vbNullString)
+    AssertDropdownHolds "__var_status", Array("mandatory", "optional, visible", "optional, hidden", "hidden")
+    AssertDropdownHolds "__var_type", Array("date", "integer", "text", "decimal")
+    AssertDropdownHolds "__sheet_type", Array("vlist1D", "hlist2D")
+    AssertDropdownHolds "__var_control", Array("choice_manual", "choice_formula", "choice_custom", _
+                                               "choice_multiple", "formula", "geo", "hf", "list_auto", "case_when")
+    AssertDropdownHolds "__var_print", Array("print, horizontal header", "print, vertical header", "hidden")
+    AssertDropdownHolds "__var_alert", Array("error", "warning", "info")
+    AssertDropdownHolds "__geo_vars", Array(vbNullString, vbNullString)
+    AssertDropdownHolds "__hfonly_vars", Array(vbNullString, vbNullString)
+    AssertDropdownHolds "__geoonly_vars", Array(vbNullString, vbNullString)
+    AssertDropdownHolds "__choice_vars", Array(vbNullString, vbNullString)
+    AssertDropdownHolds "__time_vars", Array(vbNullString, vbNullString)
+    AssertDropdownHolds "__hf_or_geo", Array("hf", "geo")
+    AssertDropdownHolds "__export_status", Array("active", "inactive")
+    AssertDropdownHolds "__export_format", Array("xlsx", "xlsb")
+    AssertDropdownHolds "__export_header", Array("variables names", "variables labels", "variable names + variable labels")
+    AssertDropdownHolds "__percentage_ba", Array("no", "row", "column", "total")
+    AssertDropdownHolds "__missing_ba", Array("no", "row", "column", "all")
+    AssertDropdownHolds "__percentage_ta", Array("no", "row", "column")
+    AssertDropdownHolds "__perc_val", Array("percentages", "values")
+    AssertDropdownHolds "__chart_type", Array("bar", "line", "point")
+    AssertDropdownHolds "__axis_pos", Array("left", "right")
+    AssertDropdownHolds "__switch_tables", Array( _
+        "Add or remove rows of global summary", _
+        "Add or remove rows of univariate analysis", _
+        "Add or remove rows of bivariate analysis", _
+        "Add or remove rows of time series analysis", _
+        "Add or remove rows of labels for time series graphs", _
+        "Add or remove rows of graph on time series", _
+        "Add or remove rows of spatial analysis", _
+        "Add or remove rows of spatio-temporal specifications", _
+        "Add or remove rows of spatio-temporal analysis", _
+        "Add or remove rows of all tables")
+    AssertDropdownHolds "__graphs_titles", Array(vbNullString, vbNullString)
+    AssertDropdownHolds "__series_titles", Array(vbNullString, vbNullString)
+    AssertDropdownHolds "__checking_types", Array("all", "errors", "warnings", "info")
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestPrepareRegistersEveryDeclaredDropdown"
+End Sub
+
+'@sub-title Verify that all 56 data validations land on the column they name.
+'@details
+'Wiring the 56 validations is most of what this class does, and three of them
+'were checked before this test. CustomTable.SetValidation resolves a column by
+'case-insensitive substring and answers Nothing without a word for a name it
+'cannot find, so a wrong or missing name is silent. One assertion per
+'validation, named for the table and the column so a failure says which.
+'@TestMethod("SetupPreparation")
+Public Sub TestPrepareAppliesEveryValidation()
+    CustomTestSetTitles Assert, "SetupPreparation", "TestPrepareAppliesEveryValidation"
+    On Error GoTo Fail
+
+    Subject.Prepare Manager
+
+    'Dictionary, 11
+    AssertColumnValidation VariablesSheet, "Tab_Dictionary", "sheet type", "__sheet_type"
+    AssertColumnValidation VariablesSheet, "Tab_Dictionary", "editable label", "__yesno"
+    AssertColumnValidation VariablesSheet, "Tab_Dictionary", "status", "__var_status"
+    AssertColumnValidation VariablesSheet, "Tab_Dictionary", "personal identifier", "__yesno"
+    AssertColumnValidation VariablesSheet, "Tab_Dictionary", "variable type", "__var_type"
+    AssertColumnValidation VariablesSheet, "Tab_Dictionary", "variable format", "__formats"
+    AssertColumnValidation VariablesSheet, "Tab_Dictionary", "control", "__var_control"
+    AssertColumnValidation VariablesSheet, "Tab_Dictionary", "register book", "__var_print"
+    AssertColumnValidation VariablesSheet, "Tab_Dictionary", "unique", "__yesno"
+    AssertColumnValidation VariablesSheet, "Tab_Dictionary", "alert", "__var_alert"
+    AssertColumnValidation VariablesSheet, "Tab_Dictionary", "lock cells", "__yesno"
+
+    'Exports, 8
+    AssertColumnValidation ExportsSheet, "Tab_Export", "status", "__export_status"
+    AssertColumnValidation ExportsSheet, "Tab_Export", "file format", "__export_format"
+    AssertColumnValidation ExportsSheet, "Tab_Export", "password", "__yesno"
+    AssertColumnValidation ExportsSheet, "Tab_Export", "include personal identifiers", "__yesno"
+    AssertColumnValidation ExportsSheet, "Tab_Export", "include p-codes", "__yesno"
+    AssertColumnValidation ExportsSheet, "Tab_Export", "header format", "__export_header"
+    AssertColumnValidation ExportsSheet, "Tab_Export", "export metadata", "__yesno"
+    AssertColumnValidation ExportsSheet, "Tab_Export", "export analyses sheets", "__yesno"
+
+    'Analysis named range, 1
+    AssertValidationContains AnalysisSheet.Range("RNG_SelectTable"), "__switch_tables"
+
+    'Analysis tables, 36
+    AssertColumnValidation AnalysisSheet, "Tab_Global_Summary", "format", "__formats"
+
+    AssertColumnValidation AnalysisSheet, "Tab_Univariate_Analysis", "add missing data", "__yesno"
+    AssertColumnValidation AnalysisSheet, "Tab_Univariate_Analysis", "format", "__formats"
+    AssertColumnValidation AnalysisSheet, "Tab_Univariate_Analysis", "add percentage", "__yesno"
+    AssertColumnValidation AnalysisSheet, "Tab_Univariate_Analysis", "add graph", "__yesno"
+    AssertColumnValidation AnalysisSheet, "Tab_Univariate_Analysis", "flip coordinates", "__yesno"
+    AssertColumnValidation AnalysisSheet, "Tab_Univariate_Analysis", "row", "__choice_vars"
+
+    AssertColumnValidation AnalysisSheet, "Tab_Bivariate_Analysis", "add missing data", "__missing_ba"
+    AssertColumnValidation AnalysisSheet, "Tab_Bivariate_Analysis", "format", "__formats"
+    AssertColumnValidation AnalysisSheet, "Tab_Bivariate_Analysis", "add percentage", "__percentage_ba"
+    AssertColumnValidation AnalysisSheet, "Tab_Bivariate_Analysis", "add Graph", "__perc_val"
+    AssertColumnValidation AnalysisSheet, "Tab_Bivariate_Analysis", "flip coordinates", "__yesno"
+    AssertColumnValidation AnalysisSheet, "Tab_Bivariate_Analysis", "row", "__choice_vars"
+    AssertColumnValidation AnalysisSheet, "Tab_Bivariate_Analysis", "column", "__choice_vars"
+
+    AssertColumnValidation AnalysisSheet, "Tab_TimeSeries_Analysis", "add missing data", "__yesno"
+    AssertColumnValidation AnalysisSheet, "Tab_TimeSeries_Analysis", "format", "__formats"
+    AssertColumnValidation AnalysisSheet, "Tab_TimeSeries_Analysis", "add percentage", "__percentage_ta"
+    AssertColumnValidation AnalysisSheet, "Tab_TimeSeries_Analysis", "add total", "__yesno"
+    AssertColumnValidation AnalysisSheet, "Tab_TimeSeries_Analysis", "row", "__time_vars"
+    AssertColumnValidation AnalysisSheet, "Tab_TimeSeries_Analysis", "column", "__choice_vars"
+
+    AssertColumnValidation AnalysisSheet, "Tab_Graph_TimeSeries", "plot values or percentages", "__perc_val"
+    AssertColumnValidation AnalysisSheet, "Tab_Graph_TimeSeries", "chart type", "__chart_type"
+    AssertColumnValidation AnalysisSheet, "Tab_Graph_TimeSeries", "y-axis", "__axis_pos"
+
+    AssertColumnValidation AnalysisSheet, "Tab_Spatial_Analysis", "row", "__geo_vars"
+    AssertColumnValidation AnalysisSheet, "Tab_Spatial_Analysis", "column", "__choice_vars"
+    AssertColumnValidation AnalysisSheet, "Tab_Spatial_Analysis", "add missing data", "__yesno"
+    AssertColumnValidation AnalysisSheet, "Tab_Spatial_Analysis", "add percentage", "__yesno"
+    AssertColumnValidation AnalysisSheet, "Tab_Spatial_Analysis", "add graph", "__yesno"
+    AssertColumnValidation AnalysisSheet, "Tab_Spatial_Analysis", "flip coordinates", "__yesno"
+    AssertColumnValidation AnalysisSheet, "Tab_Spatial_Analysis", "format", "__formats"
+
+    AssertColumnValidation AnalysisSheet, "Tab_SpatioTemporal_Specs", "spatial type", "__hf_or_geo"
+
+    AssertColumnValidation AnalysisSheet, "Tab_SpatioTemporal_Analysis", "row", "__time_vars"
+    AssertColumnValidation AnalysisSheet, "Tab_SpatioTemporal_Analysis", "column", "__geo_vars"
+    AssertColumnValidation AnalysisSheet, "Tab_SpatioTemporal_Analysis", "format", "__formats"
+    AssertColumnValidation AnalysisSheet, "Tab_SpatioTemporal_Analysis", "flip coordinates", "__yesno"
+    AssertColumnValidation AnalysisSheet, "Tab_SpatioTemporal_Analysis", "add graph", "__yesno"
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestPrepareAppliesEveryValidation"
+End Sub
+
+'@sub-title Verify that Create rejects a missing workbook.
+'@details
+'Configure is the only caller of the workbook guard and Create is the only
+'caller of Configure, so this is the one way in.
+'@TestMethod("SetupPreparation")
+Public Sub TestCreateRejectsAMissingWorkbook()
+    CustomTestSetTitles Assert, "SetupPreparation", "TestCreateRejectsAMissingWorkbook"
+    On Error GoTo Fail
+
+    Dim raisedNumber As Long
+    Dim built As SetupPreparation
+
+    On Error Resume Next
+        Set built = SetupPreparation.Create(Nothing)
+        raisedNumber = Err.Number
+        Err.Clear
+    On Error GoTo Fail
+
+    Assert.AreEqual CLng(ProjectError.ObjectNotInitialized), raisedNumber, _
+        "Create should raise ObjectNotInitialized when the workbook is missing"
+    Assert.IsTrue built Is Nothing, "Create should hand back nothing when it raised"
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestCreateRejectsAMissingWorkbook"
+End Sub
+
+'@sub-title Verify that a missing setup table stops Prepare with a named error.
+'@details
+'RequireListObject raises ElementNotFound and names the table and the sheet.
+'Removing Tab_Dictionary is the cheapest way to reach it: the dropdown and
+'registry passes still run, and ApplyDictionaryValidations is where it lands.
+'@TestMethod("SetupPreparation")
+Public Sub TestPrepareRaisesWhenASetupTableIsMissing()
+    CustomTestSetTitles Assert, "SetupPreparation", "TestPrepareRaisesWhenASetupTableIsMissing"
+    On Error GoTo Fail
+
+    Dim raisedNumber As Long
+
+    VariablesSheet.ListObjects("Tab_Dictionary").Unlist
+
+    On Error Resume Next
+        Subject.Prepare Manager
+        raisedNumber = Err.Number
+        Err.Clear
+    On Error GoTo Fail
+
+    Assert.AreEqual CLng(ProjectError.ElementNotFound), raisedNumber, _
+        "Prepare should raise ElementNotFound when a setup table is gone"
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestPrepareRaisesWhenASetupTableIsMissing"
+End Sub
+
+'@sub-title Verify that rebuilding the registry twice leaves one set of tables.
+'@details
+'EnsureUpdatedRegistry is a teardown: DeleteUp drops every registry ListObject
+'before the watched sheets are registered again. Two ribbon buttons call it
+'directly, so running it twice in one session is a real path. Asserts the table
+'count and the row count are the same after the second run.
+'@TestMethod("SetupPreparation")
+Public Sub TestRebuildingTheRegistryTwiceLeavesOneSet()
+    CustomTestSetTitles Assert, "SetupPreparation", "TestRebuildingTheRegistryTwiceLeavesOneSet"
+    On Error GoTo Fail
+
+    Dim firstTables As Long
+    Dim firstRows As Long
+
+    Subject.EnsureUpdatedRegistry
+    Set RegistrySheet = FixtureWorkbook.Worksheets(UPDATED_SHEET_NAME)
+    firstTables = RegistrySheet.ListObjects.Count
+    firstRows = RegistryRowCount(RegistrySheet)
+
+    Assert.IsTrue firstTables > 0, "The first rebuild should leave at least one registry table"
+    Assert.IsTrue firstRows > 0, "The first rebuild should leave at least one registry row"
+
+    Subject.EnsureUpdatedRegistry
+
+    Assert.AreEqual firstTables, CLng(RegistrySheet.ListObjects.Count), _
+        "A second rebuild should leave the same number of registry tables"
+    Assert.AreEqual firstRows, RegistryRowCount(RegistrySheet), _
+        "A second rebuild should leave the same number of registry rows"
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestRebuildingTheRegistryTwiceLeavesOneSet"
+End Sub
+
 '@section Helpers
 '===============================================================================
 '@description Private utilities for fixture construction and assertion support.
+
+'@sub-title Assert a dropdown exists and holds exactly the declared entries.
+'@details
+'Compares the count and then looks for every declared entry without regard to
+'order, because the sheet round trip is what is under test here rather than the
+'ordering. An empty declared entry is compared as an empty string, which is how
+'a blank cell reads back.
+'@param dropdownName String. The dropdown to read.
+'@param expected Variant. Array of the entries the class declares.
+Private Sub AssertDropdownHolds(ByVal dropdownName As String, ByVal expected As Variant)
+    Dim items As BetterArray
+    Dim idx As Long
+    Dim missing As String
+
+    Set items = Subject.Dropdowns.Values(dropdownName)
+
+    If items Is Nothing Then
+        Assert.IsFalse items Is Nothing, dropdownName & " should be registered"
+        Exit Sub
+    End If
+
+    For idx = LBound(expected) To UBound(expected)
+        If Not ContainsValue(items, CStr(expected(idx))) Then
+            missing = missing & "'" & CStr(expected(idx)) & "' "
+        End If
+    Next idx
+
+    Assert.AreEqual vbNullString, missing, _
+        dropdownName & " should hold every declared entry, missing: " & missing
+End Sub
+
+'@sub-title Assert a table column carries a list validation naming the expected dropdown.
+'@details
+'Reads the validation formula through ValidationFormulaFor, which answers a
+'readable marker when the range or the validation is absent, so a failure
+'message says which of the two happened.
+'@param targetSheet Worksheet. The sheet hosting the table.
+'@param tableName String. The ListObject to look in.
+'@param colName String. The column header to read.
+'@param expectedDrop String. The dropdown name the formula should reference.
+Private Sub AssertColumnValidation(ByVal targetSheet As Worksheet, _
+                                   ByVal tableName As String, _
+                                   ByVal colName As String, _
+                                   ByVal expectedDrop As String)
+    Dim lo As ListObject
+    Dim targetRange As Range
+    Dim formulaText As String
+
+    On Error Resume Next
+        Set lo = targetSheet.ListObjects(tableName)
+        If Not lo Is Nothing Then Set targetRange = lo.ListColumns(colName).DataBodyRange
+    On Error GoTo 0
+
+    formulaText = ValidationFormulaFor(targetRange)
+
+    Assert.IsTrue InStr(1, formulaText, expectedDrop, vbTextCompare) > 0, _
+        tableName & "." & colName & " should be validated against " & expectedDrop & _
+        " (read: " & formulaText & ")"
+End Sub
+
+'@sub-title Read the list validation formula of a range, or a readable marker.
+'@param targetRange Range. The range to inspect.
+'@return String. The Formula1 text, "<no range>" or "<no validation>".
+Private Function ValidationFormulaFor(ByVal targetRange As Range) As String
+    Dim formulaText As String
+
+    If targetRange Is Nothing Then
+        ValidationFormulaFor = "<no range>"
+        Exit Function
+    End If
+
+    On Error Resume Next
+        formulaText = CStr(targetRange.Validation.Formula1)
+    On Error GoTo 0
+
+    If LenB(formulaText) = 0 Then formulaText = "<no validation>"
+    ValidationFormulaFor = formulaText
+End Function
+
+'@sub-title Count the data rows across every registry table on a sheet.
+'@param targetSheet Worksheet. The registry sheet to walk.
+'@return Long. The total number of data rows.
+Private Function RegistryRowCount(ByVal targetSheet As Worksheet) As Long
+    Dim lo As ListObject
+    Dim total As Long
+
+    For Each lo In targetSheet.ListObjects
+        If Not lo.DataBodyRange Is Nothing Then
+            total = total + lo.DataBodyRange.Rows.Count
+        End If
+    Next lo
+
+    RegistryRowCount = total
+End Function
 
 '@sub-title Ensure the test output worksheet exists in ThisWorkbook.
 Private Sub AssertSheetSetup()
