@@ -16,7 +16,7 @@ Private Const ANALYSISTESTSHEET As String = "AnalysisFixture"
 Private Const ANALYSISTRANSLATIONSHEET As String = "AnalysisTranslation"
 Private Const ANALYSISTRANSLATIONTABLE As String = "tblTranslation"
 
-Private Const TAB_GLOBAL_SUMMARY As String = "Tab_global_summary"
+Private Const TAB_GLOBAL_SUMMARY As String = "Tab_Global_Summary"
 Private Const TAB_UNIVARIATE As String = "Tab_Univariate_Analysis"
 Private Const TAB_BIVARIATE As String = "Tab_Bivariate_Analysis"
 Private Const TAB_TIME_SERIES As String = "Tab_TimeSeries_Analysis"
@@ -82,6 +82,81 @@ Public Function BuildAnalysisTable(ByVal hostSheet As Worksheet, ByVal sectionVa
     analysisTable.Name = TAB_GLOBAL_SUMMARY
 
     Set BuildAnalysisTable = analysisTable
+End Function
+
+'Build one global summary table under a caller-chosen name, so a test can
+'give the source sheet a different spelling of the name the host carries.
+'When extraColumn is supplied the table gains one column the host has no
+'home for, which is what an import has to report.
+Public Function BuildAnalysisTableNamed(ByVal hostSheet As Worksheet, _
+                                        ByVal tableName As String, _
+                                        ByVal sectionValue As String, _
+                                        Optional ByVal extraColumn As String = vbNullString) As ListObject
+    Dim headerRow As Variant
+    Dim dataRow As Variant
+    Dim headerMatrix As Variant
+    Dim dataMatrix As Variant
+    Dim tableRange As Range
+    Dim analysisTable As ListObject
+
+    If LenB(extraColumn) = 0 Then
+        headerRow = Array("Section", "Table Title", "Summary function")
+        dataRow = Array(sectionValue, "Imported Title", "Imported Summary")
+    Else
+        headerRow = Array("Section", "Table Title", "Summary function", extraColumn)
+        dataRow = Array(sectionValue, "Imported Title", "Imported Summary", "Extra Value")
+    End If
+
+    headerMatrix = RowsToMatrix(Array(headerRow))
+    dataMatrix = RowsToMatrix(Array(dataRow))
+
+    WriteMatrix hostSheet.Cells(3, 1), headerMatrix
+    WriteMatrix hostSheet.Cells(4, 1), dataMatrix
+
+    Set tableRange = hostSheet.Range("A3").Resize(2, UBound(headerMatrix, 2))
+
+    On Error Resume Next
+        hostSheet.ListObjects(tableName).Delete
+    On Error GoTo 0
+
+    Set analysisTable = hostSheet.ListObjects.Add(SourceType:=xlSrcRange, _
+                                                  Source:=tableRange, _
+                                                  XlListObjectHasHeaders:=xlYes)
+    analysisTable.Name = tableName
+
+    Set BuildAnalysisTableNamed = analysisTable
+End Function
+
+'Build a worksheet whose first table header sits on row 1. Export reads the
+'rows above each header, and there are none here.
+Public Function BuildTopEdgeAnalysisSheet(ByVal sheetName As String) As Worksheet
+    Dim hostSheet As Worksheet
+    Dim headerMatrix As Variant
+    Dim dataMatrix As Variant
+    Dim tableRange As Range
+    Dim analysisTable As ListObject
+
+    Set hostSheet = EnsureWorksheet(sheetName)
+    ClearWorksheet hostSheet
+
+    headerMatrix = RowsToMatrix(Array(AnalysisHeaders()))
+    dataMatrix = RowsToMatrix(AnalysisRows("Top Section"))
+
+    WriteMatrix hostSheet.Cells(1, 1), headerMatrix
+    WriteMatrix hostSheet.Cells(2, 1), dataMatrix
+
+    Set tableRange = hostSheet.Range("A1").Resize(2, UBound(headerMatrix, 2))
+
+    On Error Resume Next
+        hostSheet.ListObjects(TAB_GLOBAL_SUMMARY).Delete
+    On Error GoTo 0
+
+    Set analysisTable = hostSheet.ListObjects.Add(SourceType:=xlSrcRange, _
+                                                  Source:=tableRange, _
+                                                  XlListObjectHasHeaders:=xlYes)
+    analysisTable.Name = TAB_GLOBAL_SUMMARY
+
+    Set BuildTopEdgeAnalysisSheet = hostSheet
 End Function
 
 Public Function PrepareAnalysisSheet(Optional ByVal sectionValue As String = "Initial Section") As Worksheet

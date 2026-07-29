@@ -17,7 +17,7 @@ Option Explicit
 'AnalysisTestFixture helpers to build throwaway worksheets with pre-populated
 'analysis tables, and tears down all temporary sheets on cleanup to ensure
 'test isolation.
-'@depends Analysis, TranslationObject, TranslationObject, Checking, BetterArray, CustomTest, AnalysisTestFixture, TestHelpers
+'@depends Analysis, TranslationObject, Checking, BetterArray, CustomTest, AnalysisTestFixture, TestHelpersLite
 
 Private Assert As CustomTest
 Private CoreAnalysis As Analysis
@@ -34,6 +34,27 @@ Private Sub ResetAnalysis(Optional ByVal sectionValue As String = "Initial Secti
     Set hostSheet = PrepareAnalysisSheet(sectionValue)
     Set CoreAnalysis = Analysis.Create(hostSheet)
 End Sub
+
+'@sub-title Count the trace entries whose label carries a piece of text.
+'@details
+'Several tests below assert that a message is recorded once rather than
+'twice, so counting is the assertion.
+Private Function CountCheckingsContaining(ByVal logs As Checking, ByVal searchText As String) As Long
+    Dim keys As BetterArray
+    Dim idx As Long
+    Dim total As Long
+
+    If logs Is Nothing Then Exit Function
+
+    Set keys = logs.ListOfKeys
+    For idx = keys.LowerBound To keys.UpperBound
+        If InStr(1, logs.ValueOf(CStr(keys.Item(idx)), checkingLabel), searchText, vbTextCompare) > 0 Then
+            total = total + 1
+        End If
+    Next idx
+
+    CountCheckingsContaining = total
+End Function
 
 '@section Module lifecycle
 '===============================================================================
@@ -707,4 +728,231 @@ Public Sub TestTranslateUpdatesValues()
 
 Fail:
     CustomTestLogFailure Assert, "TestTranslateUpdatesValues", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verify Import accepts a source table whose name differs only by case.
+'@details
+'Arranges a full analysis worksheet as the host, whose global summary table
+'carries the shipped spelling Tab_Global_Summary, and a source sheet whose
+'table is spelled Tab_global_summary. Acts by importing the source. Asserts
+'that the source row landed in the host table. Against the old code the
+'required-table cache was compared with a binary string test, so
+'IsValidListObject answered False, Import skipped the table and this
+'assertion read "Initial Section".
+'@TestMethod("Analysis")
+Public Sub TestImportMatchesTableNamesCaseInsensitively()
+    CustomTestSetTitles Assert, "Analysis", "TestImportMatchesTableNamesCaseInsensitively"
+    On Error GoTo Fail
+
+    Dim hostSheet As Worksheet
+    Dim sourceSheet As Worksheet
+    Dim summaryTable As ListObject
+
+    Set hostSheet = PrepareFullAnalysisWorksheet()
+    Set CoreAnalysis = Analysis.Create(hostSheet)
+
+    Set sourceSheet = EnsureWorksheet("AnalysisSourceCase")
+    ClearWorksheet sourceSheet
+    BuildAnalysisTableNamed sourceSheet, "Tab_global_summary", "Imported Section"
+
+    CoreAnalysis.Import sourceSheet
+
+    Set summaryTable = AnalysisTestFixture.AnalysisTable("global summary", hostSheet)
+    Assert.AreEqual "Imported Section", CStr(summaryTable.DataBodyRange.Cells(1, 1).Value), _
+                   "Import should match table names without regard to case"
+
+    DeleteWorksheet "AnalysisSourceCase"
+    Exit Sub
+
+Fail:
+    DeleteWorksheet "AnalysisSourceCase"
+    CustomTestLogFailure Assert, "TestImportMatchesTableNamesCaseInsensitively", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verify Import reports the source columns it could not place.
+'@details
+'Arranges a source table carrying one column the host table has no home
+'for. Acts by importing it. Asserts that a trace entry names the dropped
+'column. Against the old code Import read neither ImportColumnsNotFound
+'nor HasColumnsNotImported, so the column went in silence.
+'@TestMethod("Analysis")
+Public Sub TestImportLogsColumnsNotImported()
+    CustomTestSetTitles Assert, "Analysis", "TestImportLogsColumnsNotImported"
+    On Error GoTo Fail
+
+    Dim hostSheet As Worksheet
+    Dim sourceSheet As Worksheet
+
+    Set hostSheet = PrepareFullAnalysisWorksheet()
+    Set CoreAnalysis = Analysis.Create(hostSheet)
+
+    Set sourceSheet = EnsureWorksheet("AnalysisSourceExtra")
+    ClearWorksheet sourceSheet
+    BuildAnalysisTableNamed sourceSheet, "Tab_Global_Summary", "Extra Section", "Ghost Column"
+
+    CoreAnalysis.Import sourceSheet
+
+    Assert.IsTrue CoreAnalysis.HasCheckings, "Import should record diagnostics"
+    Assert.IsTrue (CountCheckingsContaining(CoreAnalysis.CheckingValues, "Ghost Column") > 0), _
+                   "Import should report the column it could not place"
+
+    DeleteWorksheet "AnalysisSourceExtra"
+    Exit Sub
+
+Fail:
+    DeleteWorksheet "AnalysisSourceExtra"
+    CustomTestLogFailure Assert, "TestImportLogsColumnsNotImported", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verify Sort renumbers the series ids to match the rows that moved.
+'@details
+'Arranges a time series table grown through AddRows and filled so its three
+'populated rows are out of Table order. Acts by calling Sort. Asserts that
+'the rows come back in Table order and that the Series ID column reads
+'Series 1 to Series 3 top to bottom. Against the old code Sort built its
+'CustomTable with no id column, so AddIds exited at once and the ids stayed
+'with the rows they started on: row one read "Series 2".
+'@TestMethod("Analysis")
+Public Sub TestSortRenumbersSeriesIds()
+    CustomTestSetTitles Assert, "Analysis", "TestSortRenumbersSeriesIds"
+    On Error GoTo Fail
+
+    Dim hostSheet As Worksheet
+    Dim timeSeriesTable As ListObject
+    Dim idRange As Range
+    Dim labelRange As Range
+
+    Set hostSheet = PrepareFullAnalysisWorksheet("ADD OR REMOVE ROWS OF TIME SERIES ANALYSIS")
+    Set CoreAnalysis = Analysis.Create(hostSheet)
+
+    'AddRows grows the table to six rows. Three carry data and the three
+    'blank ones are dropped by the resize Sort ends with.
+    CoreAnalysis.AddRows
+
+    Set timeSeriesTable = AnalysisTestFixture.AnalysisTable("time series analysis", hostSheet)
+    WriteRow timeSeriesTable.ListRows(1).Range.Cells(1, 1), "Series 1", 3, "Alpha"
+    WriteRow timeSeriesTable.ListRows(2).Range.Cells(1, 1), "Series 2", 1, "Beta"
+    WriteRow timeSeriesTable.ListRows(3).Range.Cells(1, 1), "Series 3", 2, "Gamma"
+
+    CoreAnalysis.Sort
+
+    Set timeSeriesTable = AnalysisTestFixture.AnalysisTable("time series analysis", hostSheet)
+    Set idRange = timeSeriesTable.ListColumns("Series ID").DataBodyRange
+    Set labelRange = timeSeriesTable.ListColumns("Label").DataBodyRange
+
+    Assert.AreEqual "Beta", CStr(labelRange.Cells(1, 1).Value), "Sort should order rows by table order"
+    Assert.AreEqual "Series 1", CStr(idRange.Cells(1, 1).Value), "Sort should renumber the first id"
+    Assert.AreEqual "Series 3", CStr(idRange.Cells(3, 1).Value), "Sort should renumber the last id"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestSortRenumbersSeriesIds", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verify Export applies the requested visibility to a sheet that already exists.
+'@details
+'Arranges an export workbook that already carries a visible sheet under the
+'analysis worksheet name. Acts by exporting with xlSheetVeryHidden. Asserts
+'the sheet ends up very hidden. Against the old code the assignment sat
+'inside the branch that creates the sheet, so an existing sheet kept
+'whatever visibility it had.
+'@TestMethod("Analysis")
+Public Sub TestExportAppliesVisibilityToExistingSheet()
+    CustomTestSetTitles Assert, "Analysis", "TestExportAppliesVisibilityToExistingSheet"
+    On Error GoTo Fail
+
+    Dim exportBook As Workbook
+    Dim hostSheet As Worksheet
+    Dim existingSheet As Worksheet
+
+    Set exportBook = NewWorkbook()
+    Set hostSheet = PrepareFullAnalysisWorksheet()
+    Set CoreAnalysis = Analysis.Create(hostSheet)
+
+    Set existingSheet = exportBook.Worksheets.Add(after:=exportBook.Worksheets(exportBook.Worksheets.Count))
+    existingSheet.Name = hostSheet.Name
+    existingSheet.Visible = xlSheetVisible
+
+    CoreAnalysis.Export exportBook, xlSheetVeryHidden
+
+    Assert.AreEqual CLng(xlSheetVeryHidden), CLng(exportBook.Worksheets(hostSheet.Name).Visible), _
+                   "Export should apply the requested visibility to a sheet that already exists"
+
+    DeleteWorkbook exportBook
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestExportAppliesVisibilityToExistingSheet", Err.Number, Err.Description
+    DeleteWorkbook exportBook
+End Sub
+
+'@sub-title Verify a table missing from the host worksheet is reported once per import.
+'@details
+'Arranges the minimal fixture sheet as the host, which carries the global
+'summary table alone, and a source sheet carrying the same one table. Acts
+'by importing. Asserts that the missing univariate table is named once.
+'Against the old code Import called EnsureAnalysisTables and then Sort,
+'which calls it again, so the count read 2.
+'@TestMethod("Analysis")
+Public Sub TestImportLogsMissingTableOnce()
+    CustomTestSetTitles Assert, "Analysis", "TestImportLogsMissingTableOnce"
+    On Error GoTo Fail
+
+    Dim sourceSheet As Worksheet
+
+    ResetAnalysis
+
+    Set sourceSheet = EnsureWorksheet("AnalysisSourceOnce")
+    ClearWorksheet sourceSheet
+    BuildAnalysisTableNamed sourceSheet, "Tab_Global_Summary", "Once Section"
+
+    CoreAnalysis.Import sourceSheet
+
+    Assert.AreEqual 1, CountCheckingsContaining(CoreAnalysis.CheckingValues, _
+                       "Missing listobject Tab_Univariate_Analysis in analysis"), _
+                   "A missing host table should be reported once per import"
+
+    DeleteWorksheet "AnalysisSourceOnce"
+    Exit Sub
+
+Fail:
+    DeleteWorksheet "AnalysisSourceOnce"
+    CustomTestLogFailure Assert, "TestImportLogsMissingTableOnce", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verify Export handles a table whose header sits on the first row.
+'@details
+'Arranges a worksheet whose only table has its header on row 1, so there
+'is no row above it to copy. Acts by exporting. Asserts the exported sheet
+'carries the header text. Against the old code the loop ran a fixed five
+'times and Offset(-1) walked off the top of the sheet, raising 1004 out of
+'Export and aborting linelist generation.
+'@TestMethod("Analysis")
+Public Sub TestExportHandlesTableNearTopOfSheet()
+    CustomTestSetTitles Assert, "Analysis", "TestExportHandlesTableNearTopOfSheet"
+    On Error GoTo Fail
+
+    Dim exportBook As Workbook
+    Dim topSheet As Worksheet
+    Dim sut As Analysis
+    Dim exportedSheet As Worksheet
+
+    Set exportBook = NewWorkbook()
+    Set topSheet = BuildTopEdgeAnalysisSheet("AnalysisTopEdge")
+    Set sut = Analysis.Create(topSheet)
+
+    sut.Export exportBook
+
+    Set exportedSheet = exportBook.Worksheets(topSheet.Name)
+    Assert.AreEqual "Section", CStr(exportedSheet.Range("A1").Value), _
+                   "Export should copy a table whose header sits on the first row"
+
+    DeleteWorkbook exportBook
+    DeleteWorksheet "AnalysisTopEdge"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestExportHandlesTableNearTopOfSheet", Err.Number, Err.Description
+    DeleteWorkbook exportBook
+    DeleteWorksheet "AnalysisTopEdge"
 End Sub

@@ -95,6 +95,13 @@ suites:
       # Dictionary, Choices, Exports, Analysis and Translations sheets that
       # TestSetupImport reads, and TestSetupErrors will call it too.
       - module: SetupImportTestFixture
+      # AnalysisTestFixture is the same shape again. It builds the analysis
+      # worksheets TestAnalysis reads -- PrepareAnalysisSheet,
+      # PrepareFullAnalysisWorksheet, AnalysisTable, BuildAnalysisTable,
+      # CreateAnalysisTranslator and ClearTestAnalysisSheets. Its helper calls
+      # are unqualified, so they resolve to TestHelpersLite above. It declares
+      # no @TestMethod, so the runner imports it and runs it as a 0-test no-op.
+      - module: AnalysisTestFixture
     fixtures:
       # ProgressDisplayStub stands in for the progress label of the Imports
       # form. TestSetupImport declares one and SetupImport probes it for a
@@ -287,15 +294,25 @@ suites:
   # --- analyses (Analysis) ---------------------------------------------------
   # Opened by SetupImport, which names Analysis and cannot reach it from
   # the `setup` block: the registry resolves `classes` to src/classes/<folder>/
-  # and Analysis lives in src/classes/analyses/. Its own suite is not here yet,
-  # so this block carries the class row alone. Whoever adds TestAnalysis and
-  # AnalysisTestFixture joins this block rather than opening a second one.
+  # and Analysis lives in src/classes/analyses/. TestAnalysis joined it after,
+  # and AnalysisTestFixture is a .bas, so it sits under `helpers` with the
+  # other fixture modules. Whoever adds TableSpecs and TestTableSpecs joins
+  # this block rather than opening a second one.
   # Analysis names CustomTable, Checking, TranslationObject and BetterArray:
   # CustomTable is registered under `general` and the other three are baked
-  # into the workbook, so the one row below closes its own compile closure.
+  # into the workbook, so the rows below close their own compile closure.
+  # TestAnalysis adds CustomTest, which is baked in too.
+  #
+  # The other five test modules in src/tests/analyses/ -- TestAnaTabIds,
+  # TestAnalysisOutput, TestCrossTable, TestCrossTableFormula and
+  # TestTableSpecs -- each bring their own compile closure and stay out until
+  # their own class rows are here.
   - folder: analyses
     classes:
       - name: Analysis
+    tests:
+      - module: TestAnalysis
+        covers: [Analysis]
 
   # --- dev (Development) ----------------------------------------------------
   # THIS BLOCK CARRIES A TEST MODULE AND NO CLASS, AND IT MUST STAY THAT WAY.
@@ -347,7 +364,7 @@ suites:
 # ---------------------------------------------------------------------------
 # TEMPLATE — copy per folder as coverage is added. Delete fields left empty.
 # Expansion backlog (suite folders under src/tests/ that are not yet
-# registered): analyses, dataio, designer, geo, graphs, linelist, mastersetup,
+# registered): dataio, designer, geo, graphs, linelist, mastersetup,
 # showhide, tables.
 #
 #   - folder: <subfolder>
