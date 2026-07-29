@@ -54,9 +54,9 @@ Public Sub clickDevFolder(ByRef control As IRibbonControl)
     rootPath = io.Folder()
 
     'A drive root comes back already ending in a separator, and the three
-    'paths below add one of their own. The doubled separator survives into
-    'Dir$, where Development.ProcessListObject uses it to decide a folder is
-    'missing and skips every table under that path.
+    'paths below add one of their own, so Y:\ gives Y:\\src\modules. Windows
+    'collapses repeated separators and finds the folder, so this is about the
+    'three cells reading the same way whatever folder was picked.
     Do While Len(rootPath) > 0
         If Right$(rootPath, 1) <> sep Then Exit Do
         rootPath = Left$(rootPath, Len(rootPath) - 1)
