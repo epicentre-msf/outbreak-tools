@@ -641,24 +641,29 @@ Private Sub ProcessRegistryTable(ByVal registryTable As ListObject, ByVal update
     Set dataRange = registryTable.DataBodyRange
     If dataRange Is Nothing Then Exit Sub
 
-    values = dataRange.Value2
+    nameColumn = RegistryColumnByHeader(registryTable, REGISTRY_HEADER_RANGE)
+    columnCount = registryTable.ListColumns.Count
 
-    'Value2 answers with a scalar only for a single cell, which is a registry
-    'table one row wide. Four columns are required.
-    If Not IsArray(values) Then
-        ThrowRegistryShape registryTable, 1
-    End If
+    'The sheet that holds the registries also holds the name index table
+    'UpdatedValues keeps beside them. That one carries three columns and no
+    'rngname header, so it is skipped. Reading it as a registry would take a
+    'table name for a range name.
+    If nameColumn = 0 And columnCount < REGISTRY_COLUMN_COUNT Then Exit Sub
 
-    columnLower = LBound(values, 2)
-    columnCount = UBound(values, 2) - columnLower + 1
+    'Anything that names a range column, or is wide enough to be read by
+    'position, has to carry the whole published shape.
     If columnCount < REGISTRY_COLUMN_COUNT Then
         ThrowRegistryShape registryTable, columnCount
     End If
 
-    nameColumn = RegistryColumn(registryTable, REGISTRY_HEADER_RANGE, REGISTRY_COLUMN_RANGE)
+    If nameColumn = 0 Then nameColumn = REGISTRY_COLUMN_RANGE
     statusColumn = RegistryColumn(registryTable, REGISTRY_HEADER_STATUS, REGISTRY_COLUMN_STATUS)
     modeColumn = RegistryColumn(registryTable, REGISTRY_HEADER_MODE, REGISTRY_COLUMN_MODE)
 
+    values = dataRange.Value2
+    If Not IsArray(values) Then Exit Sub
+
+    columnLower = LBound(values, 2)
     Set hostWorkbook = registryTable.Parent.Parent
 
     For rowIndex = LBound(values, 1) To UBound(values, 1)
@@ -687,16 +692,22 @@ End Sub
 Private Function RegistryColumn(ByVal registryTable As ListObject, _
                                 ByVal headerName As String, _
                                 ByVal fallbackColumn As Long) As Long
+    RegistryColumn = RegistryColumnByHeader(registryTable, headerName)
+    If RegistryColumn = 0 Then RegistryColumn = fallbackColumn
+End Function
+
+'@label:registry-column-by-header
+'@sub-title Find a registry column by header name, answering 0 when the header is absent.
+Private Function RegistryColumnByHeader(ByVal registryTable As ListObject, _
+                                        ByVal headerName As String) As Long
     Dim column As ListColumn
 
     For Each column In registryTable.ListColumns
         If StrComp(Trim$(column.Name), headerName, vbTextCompare) = 0 Then
-            RegistryColumn = column.Index
+            RegistryColumnByHeader = column.Index
             Exit Function
         End If
     Next column
-
-    RegistryColumn = fallbackColumn
 End Function
 
 '@label:throw-registry-shape

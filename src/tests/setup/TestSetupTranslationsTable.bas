@@ -1491,6 +1491,36 @@ ExpectError:
 End Sub
 
 
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestUpdateSkipsTheNameIndexTable()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestUpdateSkipsTheNameIndexTable"
+    On Error GoTo Fail
+
+    Dim indexMatrix As Variant
+    Dim indexTable As ListObject
+
+    'UpdatedValues keeps this table on the same sheet as the registries. It
+    'holds three columns and no rngname header, so it is not a registry.
+    indexMatrix = RowsToMatrix(Array( _
+                                   Array("sheet", "listobject", "registry"), _
+                                   Array("Dictionary", "UpLo_Dictionary", "Tab_Registry")))
+    WriteMatrix RegistrySheet.Range("F1"), indexMatrix
+
+    Set indexTable = RegistrySheet.ListObjects.Add(SourceType:=xlSrcRange, Source:=RegistrySheet.Range("F1:H2"), XlListObjectHasHeaders:=xlYes)
+    indexTable.Name = "__UpLo__Names__"
+
+    Subject.UpdateFromRegistry RegistrySheet
+
+    Assert.AreEqual CLng(6), TranslationsTable.ListRows.Count, "The name index table must not stop the registries being read"
+    Assert.AreEqual ExpectedTag("RNG_Greetings", 1), TagForLabel("Hello"), "The real registry still tags its labels"
+    Assert.AreEqual CLng(0), Subject.UnresolvedRanges.Length, "The name index table must not be read as a registry"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestUpdateSkipsTheNameIndexTable", Err.Number, Err.Description
+End Sub
+
+
 '@section Tag column rendering
 '===============================================================================
 '@TestMethod("SetupTranslationsTable")
