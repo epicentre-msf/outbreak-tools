@@ -1758,52 +1758,44 @@ Private Sub ApplyTagColumnFormatting()
         Set header = RequireTagHeader()
     On Error GoTo 0
 
+    'TestTagColumnStaysInvisibleAfterUpdate reads all three back, so a failure
+    'here shows as a red test.
     If Not header Is Nothing Then
-        On Error Resume Next
-            header.Value = TAG_HEADER_TITLE
-            header.Font.Color = vbWhite
-            header.Interior.Color = vbWhite
-        On Error GoTo 0
+        header.Value = TAG_HEADER_TITLE
+        header.Font.Color = vbWhite
+        header.Interior.Color = vbWhite
     End If
 
     Set tagData = TagColumnDataRange()
-    If Not tagData Is Nothing Then
-        On Error Resume Next
-            tagData.Font.Color = vbWhite
-            With tagData
-                With .Borders(xlEdgeTop)
-                    .LineStyle = xlContinuous
-                    .Weight = xlHairline
-                    .Color = vbWhite
-                End With
-                With .Borders(xlEdgeBottom)
-                    .LineStyle = xlContinuous
-                    .Weight = xlHairline
-                    .Color = vbWhite
-                End With
-                With .Borders(xlEdgeRight)
-                    .LineStyle = xlContinuous
-                    .Weight = xlHairline
-                    .Color = vbWhite
-                End With
-                With .Borders(xlEdgeLeft)
-                    .LineStyle = xlContinuous
-                    .Weight = xlHairline
-                    .Color = vbWhite
-                End With
-                With .Borders(xlInsideHorizontal)
-                    .LineStyle = xlContinuous
-                    .Weight = xlHairline
-                    .Color = vbWhite
-                End With
-                With .Borders(xlInsideVertical)
-                    .LineStyle = xlContinuous
-                    .Weight = xlHairline
-                    .Color = vbWhite
-                End With
-        End With
-        On Error GoTo 0
-    End If
+    If tagData Is Nothing Then Exit Sub
+
+    tagData.Font.Color = vbWhite
+    PaintTagBorders tagData
+End Sub
+
+'@label:paint-tag-borders
+'@sub-title Paint every edge of the tag range white so the column reads as empty.
+Private Sub PaintTagBorders(ByVal target As Range)
+    PaintHairlineBorder target, xlEdgeTop
+    PaintHairlineBorder target, xlEdgeBottom
+    PaintHairlineBorder target, xlEdgeLeft
+    PaintHairlineBorder target, xlEdgeRight
+
+    'An inside edge exists only where there are two rows or two columns for it
+    'to sit between. Asking for one that cannot exist raises 1004, and the tag
+    'range is one column wide.
+    If target.Rows.Count > 1 Then PaintHairlineBorder target, xlInsideHorizontal
+    If target.Columns.Count > 1 Then PaintHairlineBorder target, xlInsideVertical
+End Sub
+
+'@label:paint-hairline-border
+'@sub-title Paint one edge of a range as a white hairline.
+Private Sub PaintHairlineBorder(ByVal target As Range, ByVal edge As Long)
+    With target.Borders(edge)
+        .LineStyle = xlContinuous
+        .Weight = xlHairline
+        .Color = vbWhite
+    End With
 End Sub
 
 '@label:apply-lang-column-formatting
