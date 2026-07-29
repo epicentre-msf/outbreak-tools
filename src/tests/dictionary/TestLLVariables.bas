@@ -111,6 +111,9 @@ Public Sub TestCreateFailsWhenNameColumnMissing()
     CustomTestSetTitles Assert, "LLVariables", "TestCreateFailsWhenNameColumnMissing"
     Dim dictSheet As Worksheet
 
+    'The arrange has its own handler. An error escaping it would reach the VBE
+    'as a modal dialog, and a dialog stops the whole headless run.
+    On Error GoTo Fail
     Set dictSheet = ThisWorkbook.Worksheets(DICT_SHEET)
     dictSheet.Columns(1).Delete
 
@@ -123,6 +126,10 @@ ExpectError:
     Assert.AreEqual ProjectError.ElementNotFound, Err.Number, _
                      "Missing variable-name column should raise ElementNotFound"
     Err.Clear
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestCreateFailsWhenNameColumnMissing", Err.Number, Err.Description
 End Sub
 
 '@sub-title Verify that Contains matches literal wildcard characters
@@ -193,6 +200,11 @@ End Sub
 '@TestMethod("LLVariables")
 Public Sub TestIndexRaisesWhenColumnMissing()
     CustomTestSetTitles Assert, "LLVariables", "TestIndexRaisesWhenColumnMissing"
+
+    'The fixture carries no "Column Index" column: that one is written by
+    'LLdictionary.Prepare. RemoveColumn logs a warning and returns for a column
+    'it cannot find, so this states the starting point rather than changing it.
+    On Error GoTo Fail
     Dictionary.RemoveColumn "Column Index"
 
     On Error GoTo ExpectError
@@ -205,11 +217,16 @@ ExpectError:
     Assert.AreEqual ProjectError.ElementNotFound, Err.Number, _
                      "Missing column index should raise ElementNotFound"
     Err.Clear
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestIndexRaisesWhenColumnMissing", Err.Number, Err.Description
 End Sub
 
 '@sub-title Verify that Index raises InvalidArgument when the stored index is text
 '@details
-'Arranges by writing the text "abc" into the Column Index cell of choi_v1.
+'Arranges by adding the "Column Index" column, which the fixture leaves to
+'LLdictionary.Prepare, and writing the text "abc" into the cell of choi_v1.
 'Acts by calling Variables.Index for that variable. Asserts that
 'ProjectError.InvalidArgument is raised. The class used to hand back a bare
 'type mismatch from CLng, with no variable name anywhere in the message.
@@ -219,7 +236,18 @@ Public Sub TestIndexRaisesInvalidArgumentOnTextIndex()
 
     Dim indexCell As Range
 
+    'The arrange has its own handler, and the cell is tested before it is
+    'written. Reading .Value off Nothing raises error 91, and an error escaping
+    'a test proc reaches the VBE as a modal dialog, which stops the whole run.
+    On Error GoTo Fail
+    Dictionary.AddColumn "Column Index"
     Set indexCell = Variables.CellRange("Column Index", "choi_v1")
+
+    If indexCell Is Nothing Then
+        Assert.LogFailure "The Column Index cell of choi_v1 could not be resolved"
+        Exit Sub
+    End If
+
     indexCell.Value = "abc"
 
     On Error GoTo ExpectError
@@ -232,6 +260,10 @@ ExpectError:
     Assert.AreEqual ProjectError.InvalidArgument, Err.Number, _
                      "A column index that is not a number should raise InvalidArgument"
     Err.Clear
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestIndexRaisesInvalidArgumentOnTextIndex", Err.Number, Err.Description
 End Sub
 
 '@sub-title Verify that VariableNames returns a populated BetterArray
