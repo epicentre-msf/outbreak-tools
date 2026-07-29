@@ -299,15 +299,13 @@ suites:
       # TestHelpersLite.
       - module: TestSetupErrors
         covers: [SetupErrors]
-      # TestSetupImport is parked by owner decision. Its 29 tests each
-      # open, write, save and close a real workbook, and together they push the
-      # whole run past the 600-second Apple Events timeout the runner wraps
-      # OBTRunAllTests in -- the run comes back as the opaque -50 with an
-      # export workbook still open. The import and export suite runs last,
-      # after the rest of the setup folder lands. Re-enable by uncommenting:
-      # the class row above is already there, so nothing else has to change.
-      #- module: TestSetupImport
-      #  covers: [SetupImport]
+      # TestSetupImport was parked while the rest of the setup folder landed.
+      # Every export test used to run a full export and open the file it wrote,
+      # and the run went past the 600-second Apple Events timeout the runner
+      # wraps OBTRunAllTests in. Fifteen of them share one export now, so the
+      # module fits inside the cap and the row is live again.
+      - module: TestSetupImport
+        covers: [SetupImport]
 
   # --- analyses (Analysis) ---------------------------------------------------
   # Opened by SetupImport, which names Analysis and cannot reach it from
