@@ -780,7 +780,10 @@ Private Sub WriteTable(ByVal loName As String, _
 TableError:
         Debug.Print "Error on table " & tabId & ": " & Err.Number & " " & Err.Description
         LogInfo "Table " & tabId & " failed: " & Err.Description, checkingError
-        On Error GoTo 0
+        ' Resume clears the error and hands control back to the loop, which
+        ' arms the handler again for the next table. Disabling the handler
+        ' here first left Resume with no error to clear, so a single bad
+        ' table took the whole run down instead of being skipped.
         Resume ContinueLoop
 
 ContinueLoop:
