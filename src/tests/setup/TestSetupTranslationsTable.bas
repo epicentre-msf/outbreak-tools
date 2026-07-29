@@ -735,8 +735,12 @@ Fail:
 End Sub
 
 '@TestMethod("SetupTranslationsTable")
-Public Sub TestDuplicateLabelsIgnoresCase()
-    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestDuplicateLabelsIgnoresCase"
+'@sub-title Two spellings of one word are two labels, so neither reports the other.
+'@details Fails against the old ComputeDuplicateSummary, which keyed both
+'         spellings to the same slot at SetupTranslationsTable:1662 and told the
+'         user to go and fix a duplicate that was never there.
+Public Sub TestDuplicateLabelsKeepsCasesApart()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestDuplicateLabelsKeepsCasesApart"
     On Error GoTo Fail
 
     ResetTranslationsTableRows
@@ -744,18 +748,21 @@ Public Sub TestDuplicateLabelsIgnoresCase()
     AppendTaggedLabel "hello", vbNullString
 
     Dim duplicateMessage As String
-    Assert.IsTrue Subject.DuplicateLabels(duplicateMessage), "Two labels that differ only by case are one duplicate"
-    Assert.IsTrue InStr(1, duplicateMessage, "has 2 duplicates", vbBinaryCompare) > 0, _
-                  "The duplicate count must add both spellings together"
+    Assert.IsFalse Subject.DuplicateLabels(duplicateMessage), "Two labels that differ only by case are two labels"
+    Assert.AreEqual vbNullString, duplicateMessage, "Nothing is reported when no spelling repeats"
     Exit Sub
 
 Fail:
-    CustomTestLogFailure Assert, "TestDuplicateLabelsIgnoresCase", Err.Number, Err.Description
+    CustomTestLogFailure Assert, "TestDuplicateLabelsKeepsCasesApart", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("SetupTranslationsTable")
-Public Sub TestDeduplicateIgnoresCase()
-    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestDeduplicateIgnoresCase"
+'@sub-title Dedup leaves both spellings standing.
+'@details Fails against the old DeduplicateLabels, which matched the two
+'         spellings at SetupTranslationsTable:1343 and deleted one of the user's
+'         rows outright.
+Public Sub TestDedupKeepsBothCasesOfALabel()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestDedupKeepsBothCasesOfALabel"
     On Error GoTo Fail
 
     Subject.UpdateFromRegistry RegistrySheet
@@ -764,12 +771,90 @@ Public Sub TestDeduplicateIgnoresCase()
     SetRegistryStatus "yes", "yes", "yes"
     Subject.UpdateFromRegistry RegistrySheet
 
-    Assert.AreEqual CLng(1), CountLabelIgnoringCase("hello"), "Dedup must treat Hello and hello as one label"
-    Assert.AreEqual CLng(6), TranslationsTable.ListRows.Count, "The table keeps its six labels after dedup"
+    'Hello, Good bye, Morning, Evening, hello, Farewell and See you.
+    Assert.AreEqual CLng(2), CountLabelIgnoringCase("hello"), "Dedup must leave Hello and hello both standing"
+    Assert.AreEqual CLng(1), CountLabelMatchingCase("Hello"), "The label the registry wrote keeps its own row"
+    Assert.AreEqual CLng(1), CountLabelMatchingCase("hello"), "The label the user typed keeps its own row"
+    Assert.AreEqual CLng(7), TranslationsTable.ListRows.Count, "The table keeps all seven labels after dedup"
     Exit Sub
 
 Fail:
-    CustomTestLogFailure Assert, "TestDeduplicateIgnoresCase", Err.Number, Err.Description
+    CustomTestLogFailure Assert, "TestDedupKeepsBothCasesOfALabel", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+'@sub-title A formula chunk spelled differently gets its own row.
+'@details Fails against the old FindLabelRow, which answered the existing row at
+'         SetupTranslationsTable:1074, so AddChunk never appended the spelling
+'         the formula actually asked for.
+Public Sub TestAddChunkCreatesASecondRowForADifferentCase()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestAddChunkCreatesASecondRowForADifferentCase"
+    On Error GoTo Fail
+
+    ResetTranslationsTableRows
+    AppendTaggedLabel "MORNING", vbNullString
+
+    SetRegistryStatus "no", "no", "yes"
+    Subject.UpdateFromRegistry RegistrySheet
+
+    Assert.AreEqual CLng(2), CountLabelIgnoringCase("morning"), "The formula chunk must add a row of its own"
+    Assert.AreEqual CLng(1), CountLabelMatchingCase("MORNING"), "The row already there is left alone"
+    Assert.AreEqual CLng(1), CountLabelMatchingCase("Morning"), "The chunk the formula carries gets its own row"
+    Assert.IsTrue LabelExists("Evening"), "The rest of the formula is still processed"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestAddChunkCreatesASecondRowForADifferentCase", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+'@sub-title A watched text cell matches only the row spelled the same way.
+'@details Fails against the old FindLabelRow at SetupTranslationsTable:1074, the
+'         text path this time: the cell reading hello was answered by the Hello
+'         row and no hello row was ever written.
+Public Sub TestLabelRowLookupIsCaseSensitive()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestLabelRowLookupIsCaseSensitive"
+    On Error GoTo Fail
+
+    SourceSheet.Range("A1").Value = "hello"
+
+    ResetTranslationsTableRows
+    AppendTaggedLabel "Hello", vbNullString
+
+    SetRegistryStatus "yes", "no", "no"
+    Subject.UpdateFromRegistry RegistrySheet
+
+    Assert.AreEqual CLng(1), CountLabelMatchingCase("Hello"), "The row already there is left alone"
+    Assert.AreEqual CLng(1), CountLabelMatchingCase("hello"), "The watched cell gets the row it is spelled for"
+    Assert.IsTrue LabelExists("Good bye"), "The rest of the watched range is still processed"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestLabelRowLookupIsCaseSensitive", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+'@sub-title A label that is a bare number still keys and still counts.
+'@details The key carries a leading character because a bare number is a legal
+'         label and an illegal Collection key. Whatever spells the case out has
+'         to leave that prefix in place.
+Public Sub TestNumericLabelStillWorks()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestNumericLabelStillWorks"
+    On Error GoTo Fail
+
+    ResetTranslationsTableRows
+    AppendTaggedLabel "123", vbNullString
+    AppendTaggedLabel "123", vbNullString
+    AppendTaggedLabel "456", vbNullString
+
+    Dim duplicateMessage As String
+    Assert.IsTrue Subject.DuplicateLabels(duplicateMessage), "A numeric label that repeats is still a duplicate"
+    Assert.IsTrue InStr(1, duplicateMessage, "123", vbBinaryCompare) > 0, "The repeated number must be named"
+    Assert.IsTrue InStr(1, duplicateMessage, "456", vbBinaryCompare) = 0, "The number that appears once is not a duplicate"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestNumericLabelStillWorks", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("SetupTranslationsTable")
@@ -1894,6 +1979,17 @@ Private Function CountLabelIgnoringCase(ByVal label As String) As Long
     For Each row In TranslationsTable.ListRows
         If StrComp(CStr(row.Range.Cells(1, 1).Value), label, vbTextCompare) = 0 Then
             CountLabelIgnoringCase = CountLabelIgnoringCase + 1
+        End If
+    Next row
+End Function
+
+'@sub-title Count the rows spelled exactly this way, case and all.
+Private Function CountLabelMatchingCase(ByVal label As String) As Long
+    Dim row As ListRow
+
+    For Each row In TranslationsTable.ListRows
+        If StrComp(CStr(row.Range.Cells(1, 1).Value), label, vbBinaryCompare) = 0 Then
+            CountLabelMatchingCase = CountLabelMatchingCase + 1
         End If
     Next row
 End Function

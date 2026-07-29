@@ -27,13 +27,22 @@ Option Explicit
 '
 'LABEL MATCHING POLICY
 '-------------------------------------------------------------------------------
-'A label is always matched without regard to case. FindLabelRow,
+'A label carries its case. "Hello" and "hello" are two labels, they take two
+'rows, and neither one stands in for the other. FindLabelRow,
 'DeduplicateLabels and ComputeDuplicateSummary all answer from one keyed
-'Collection whose key is the lower-cased label, so "Hello" and "hello" are
-'one label everywhere. Mac Excel has no Scripting.Dictionary, so a keyed
-'Collection is the house lookup. The only comparison that stays
-'case-sensitive is the __TagInternal__ header title, which is a fixed
-'internal marker.
+'Collection built by LabelKey, and that key spells the capitalisation out so
+'two spellings never share it. Mac Excel has no Scripting.Dictionary, so a
+'keyed Collection is the house lookup, and a Collection matches its own keys
+'without regard to case: the case has to travel inside the key rather than be
+'left to the Collection.
+'
+'TranslationObject.LookupRow is what reads this table at run time and it
+'compares with vbBinaryCompare, so a row this class folded away was a row that
+'class could never find. That reader is the reason for the rule.
+'
+'Column titles, registry status words, mode keywords and defined-name lookups
+'are not labels and stay case-insensitive. Excel matches defined names that way
+'itself.
 '
 'THE HELPER TAG COLUMN
 '-------------------------------------------------------------------------------
@@ -81,7 +90,7 @@ Private Type TSetupTranslations
     labelValues() As Variant          'In-memory label column for lookups during ProcessRegistry
     labelCount As Long                'Number of entries in the label buffer
     labelCapacity As Long             'Allocated size of the label buffer
-    labelIndex As Collection          'Lower-cased label -> row index, rebuilt each cycle
+    labelIndex As Collection          'Case-carrying label key -> row index, rebuilt each cycle
     pendingCount As Long              'Labels appended in memory and not yet written to the sheet
     processedRanges As BetterArray    'Ranges processed during the current update cycle
     unresolvedRanges As BetterArray   'Registry ranges that failed to resolve during the cycle
@@ -107,6 +116,7 @@ Private Const MODE_FORMULA As String = "translate as formula"
 Private Const MODE_WATCH As String = "watch for update"
 Private Const TAG_HEADER_TITLE As String = "__TagInternal__"
 Private Const TAG_SEPARATOR As String = "__"
+Private Const KEY_CASE_SEPARATOR As String = "|"
 Private Const LANGUAGES_NAME_ID As String = "__SetupTranslationsLanguages__"
 
 'Registry column headers, as UpdatedValues writes them. Each column is found
@@ -1048,15 +1058,47 @@ Private Sub InitLabelBuffer()
 End Sub
 
 '@label:label-key
-'@sub-title Build the lookup key for a label.
-'@details The leading character keeps a numeric label legal as a Collection key
-'         and the lower case is what makes matching ignore case.
+'@sub-title Build the lookup key for a label, one key per spelling.
+'@details The leading character keeps a numeric label legal as a Collection key.
+'         The trailing signature is what makes two spellings different keys: a
+'         Collection matches its own keys without regard to case, so dropping
+'         the label in on its own would fold "Hello" onto "hello" no matter how
+'         it was cased here.
 Private Function LabelKey(ByVal label As String) As String
-    LabelKey = "k" & LCase$(label)
+    LabelKey = "k" & label & KEY_CASE_SEPARATOR & CaseSignature(label)
+End Function
+
+'@label:case-signature
+'@sub-title Spell a label's capitalisation out in digits.
+'@details Digits carry no case of their own, so a Collection holds this part of
+'         the key exactly as written. A character reads 1 when it differs from
+'         its own lower case, which is the whole of what a case-insensitive
+'         comparison throws away.
+Private Function CaseSignature(ByVal label As String) As String
+    Dim idx As Long
+    Dim labelLength As Long
+    Dim character As String
+    Dim digits() As String
+
+    labelLength = Len(label)
+    If labelLength = 0 Then Exit Function
+
+    ReDim digits(1 To labelLength)
+
+    For idx = 1 To labelLength
+        character = Mid$(label, idx, 1)
+        If character = LCase$(character) Then
+            digits(idx) = "0"
+        Else
+            digits(idx) = "1"
+        End If
+    Next idx
+
+    CaseSignature = Join(digits, vbNullString)
 End Function
 
 '@label:register-label-key
-'@sub-title Record the row a label sits on, keeping the first row when it repeats.
+'@sub-title Record the row a label sits on, keeping the first row when the same spelling repeats.
 Private Sub RegisterLabelKey(ByVal label As String, ByVal rowIndex As Long)
     If LenB(label) = 0 Then Exit Sub
 
@@ -1606,7 +1648,8 @@ End Function
 '@label:compute-duplicate-summary
 '@sub-title Count duplicates for one language or for the label column.
 '@details Every label is counted through one keyed Collection, so the cost is
-'         linear in the row count and matching ignores case.
+'         linear in the row count. Two spellings of the same word are two
+'         labels here, so neither is reported as a duplicate of the other.
 Private Function ComputeDuplicateSummary(ByVal languageName As String) As TDuplicateSummary
     Dim labelRange As Range
     Dim targetRange As Range
