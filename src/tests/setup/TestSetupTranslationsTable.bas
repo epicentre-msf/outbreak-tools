@@ -27,6 +27,7 @@ Private Const COUNTER_NAME As String = "_SetupTranslationsCounter"
 Private Const TAG_SEPARATOR As String = "__"
 Private Const LANGUAGES_NAME_ID As String = "__SetupTranslationsLanguages__"
 Private Const LARGE_RANGE_NAME As String = "RNG_Large"
+Private Const MARKER_BELOW_TABLE As String = "Below the table"
 
 '@ModuleInitialize
 Public Sub ModuleInitialize()
@@ -1492,6 +1493,36 @@ End Sub
 
 
 '@TestMethod("SetupTranslationsTable")
+Public Sub TestUpdateKeepsCellsBelowTheTable()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestUpdateKeepsCellsBelowTheTable"
+    On Error GoTo Fail
+
+    Dim markerRow As Long
+    Dim labelColumn As Long
+    Dim found As Range
+
+    ResetTranslationsTableRows
+
+    labelColumn = TranslationsTable.Range.Column
+    markerRow = TranslationsTable.Range.Row + TranslationsTable.Range.Rows.Count
+    TranslationsSheet.Cells(markerRow, labelColumn).Value = MARKER_BELOW_TABLE
+
+    Subject.UpdateFromRegistry RegistrySheet
+
+    Set found = TranslationsSheet.Columns(labelColumn).Find(What:=MARKER_BELOW_TABLE, LookIn:=xlValues, LookAt:=xlWhole)
+
+    Assert.IsTrue Not found Is Nothing, "A value sitting under the table must survive an update that adds rows"
+    If found Is Nothing Then Exit Sub
+
+    Assert.IsTrue found.Row > LastTableRow(), "The value must still sit outside the table"
+    Assert.IsTrue LabelExists("Hello"), "The update still imports its own labels"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestUpdateKeepsCellsBelowTheTable", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
 Public Sub TestUpdateSkipsTheNameIndexTable()
     CustomTestSetTitles Assert, "SetupTranslationsTable", "TestUpdateSkipsTheNameIndexTable"
     On Error GoTo Fail
@@ -1607,6 +1638,10 @@ End Sub
 
 '@section Helpers
 '===============================================================================
+Private Function LastTableRow() As Long
+    LastTableRow = TranslationsTable.Range.Row + TranslationsTable.Range.Rows.Count - 1
+End Function
+
 Private Function TagHeaderCell() As Range
     Set TagHeaderCell = TranslationsTable.HeaderRowRange.Cells(1, 1).Offset(0, -1)
 End Function

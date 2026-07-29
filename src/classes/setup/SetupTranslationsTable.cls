@@ -952,10 +952,21 @@ End Sub
 '@sub-title Extend the managed table by the requested number of rows in one call.
 Private Sub GrowTableRows(ByVal extraRows As Long)
     Dim tableRange As Range
+    Dim below As Range
 
     If extraRows <= 0 Then Exit Sub
 
     Set tableRange = this.table.Range
+    Set below = tableRange.Rows(tableRange.Rows.Count).Offset(1, 0).Resize(extraRows)
+
+    'Anything sitting under the table is pushed down first. A plain Resize
+    'grows the table over those cells and the label write that follows
+    'overwrites whatever they held. Adding one ListRow at a time used to shift
+    'them down, and this keeps that behaviour at two Excel calls.
+    If Application.WorksheetFunction.CountA(below) > 0 Then
+        below.Insert Shift:=xlDown
+    End If
+
     this.table.Resize tableRange.Resize(tableRange.Rows.Count + extraRows, tableRange.Columns.Count)
 End Sub
 
