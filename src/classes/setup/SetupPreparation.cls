@@ -53,7 +53,6 @@ Private Const SHEET_PASS As String = "__pass"
 Private Const SHEET_DEV As String = "Dev"
 Private Const SHEET_CHECKING As String = "__checkRep"
 Private Const DROPDOWN_PREFIX As String = "dropdown_"
-Private Const STATUS_DEFAULT As String = "no"
 Private Const SHEET_TRANSLATIONS As String = "Translations"
 
 Private Const TABLE_DICTIONARY As String = "Tab_Dictionary"
