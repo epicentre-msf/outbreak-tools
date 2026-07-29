@@ -1491,8 +1491,116 @@ ExpectError:
 End Sub
 
 
+'@section Tag column rendering
+'===============================================================================
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestTagColumnStaysInvisibleAfterUpdate()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestTagColumnStaysInvisibleAfterUpdate"
+    On Error GoTo Fail
+
+    Dim header As Range
+    Dim tagData As Range
+
+    Subject.UpdateFromRegistry RegistrySheet, "French"
+
+    Set header = TagHeaderCell()
+    Set tagData = TagDataRange()
+
+    Assert.AreEqual "__TagInternal__", CStr(header.Value), "The helper header keeps its marker title"
+    Assert.AreEqual CLng(vbWhite), CLng(header.Font.Color), "The helper header text is white"
+    Assert.AreEqual CLng(vbWhite), CLng(header.Interior.Color), "The helper header fill is white"
+    Assert.AreEqual CLng(vbWhite), CLng(tagData.Font.Color), "Every tag reads white on white"
+
+    AssertTagBordersAreWhite tagData, "after an update that changed rows"
+
+    Assert.LogSuccesses "TestTagColumnStaysInvisibleAfterUpdate: tag column width = " & _
+                        Format$(header.EntireColumn.ColumnWidth, "0.0") & _
+                        ", table column width = " & Format$(TranslationsTable.Range.Columns(1).ColumnWidth, "0.0")
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestTagColumnStaysInvisibleAfterUpdate", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestTagColumnStaysInvisibleWhenNothingChanges()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestTagColumnStaysInvisibleWhenNothingChanges"
+    On Error GoTo Fail
+
+    Dim header As Range
+    Dim tagData As Range
+
+    'The first update adds rows, so ApplyFormatting runs. The second adds and
+    'removes nothing, so ApplyFormatting is skipped and EndTagIntegration is the
+    'only thing left painting the tag column.
+    Subject.UpdateFromRegistry RegistrySheet
+    SetRegistryStatus "no", "no", "no"
+
+    'Repaint the tag column in black so the update has something to undo.
+    Set header = TagHeaderCell()
+    Set tagData = TagDataRange()
+    header.Font.Color = vbBlack
+    tagData.Font.Color = vbBlack
+
+    Subject.UpdateFromRegistry RegistrySheet
+
+    Set header = TagHeaderCell()
+    Set tagData = TagDataRange()
+
+    Assert.AreEqual CLng(vbWhite), CLng(header.Font.Color), "An update that changes no row still hides the header"
+    Assert.AreEqual CLng(vbWhite), CLng(header.Interior.Color), "An update that changes no row still fills the header white"
+    Assert.AreEqual CLng(vbWhite), CLng(tagData.Font.Color), "An update that changes no row still hides every tag"
+
+    AssertTagBordersAreWhite tagData, "after an update that changed no row"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestTagColumnStaysInvisibleWhenNothingChanges", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestTableHeaderRowIsWhite()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestTableHeaderRowIsWhite"
+    On Error GoTo Fail
+
+    Subject.UpdateFromRegistry RegistrySheet, "French"
+
+    Assert.AreEqual "TableStyleLight11", CStr(TranslationsTable.TableStyle), "The table keeps the style that paints the header band"
+    Assert.AreEqual CLng(vbWhite), CLng(TranslationsTable.HeaderRowRange.Font.Color), _
+                    "The header row text is white, which is what reads on the band"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestTableHeaderRowIsWhite", Err.Number, Err.Description
+End Sub
+
+
 '@section Helpers
 '===============================================================================
+Private Function TagHeaderCell() As Range
+    Set TagHeaderCell = TranslationsTable.HeaderRowRange.Cells(1, 1).Offset(0, -1)
+End Function
+
+Private Function TagDataRange() As Range
+    Set TagDataRange = TagHeaderCell().Offset(1, 0).Resize(TranslationsTable.ListRows.Count, 1)
+End Function
+
+Private Sub AssertTagBordersAreWhite(ByVal tagData As Range, ByVal context As String)
+    AssertOneBorderIsWhite tagData, xlEdgeTop, "top", context
+    AssertOneBorderIsWhite tagData, xlEdgeBottom, "bottom", context
+    AssertOneBorderIsWhite tagData, xlEdgeLeft, "left", context
+    AssertOneBorderIsWhite tagData, xlEdgeRight, "right", context
+    AssertOneBorderIsWhite tagData, xlInsideHorizontal, "inside horizontal", context
+End Sub
+
+Private Sub AssertOneBorderIsWhite(ByVal tagData As Range, _
+                                   ByVal edge As Long, _
+                                   ByVal edgeName As String, _
+                                   ByVal context As String)
+    Assert.AreEqual CLng(vbWhite), CLng(tagData.Borders(edge).Color), _
+                    "The " & edgeName & " border of the tag column is white " & context
+End Sub
+
 Private Sub AssertSheetSetup()
     EnsureWorksheet TEST_OUTPUT_SHEET, ThisWorkbook, False
 End Sub
