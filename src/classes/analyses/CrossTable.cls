@@ -37,8 +37,6 @@ Private Type TCrossTable
     endCol As Long
     nbCols As Long
     tsHeader As String                           'Header for time series (used in go-to section)
-    deFactoNewSect As Boolean                    'Cached IsDeFactoNewSection result
-    deFactoNewSectCached As Boolean              'Whether the cache has been computed
     hasChecks As Boolean
     sealed As Boolean
 End Type
@@ -694,7 +692,7 @@ Public Sub AddRows()
 
         Case ScopeTimeSeries, ScopeSpatioTemporal
             ' Add rows only on new sections (or de-facto new sections for Bug #3)
-            If specs.IsNewSection() Or IsDeFactoNewSection() Then
+            If specs.IsNewSection() Then
                 rowsData.Clear
                 rowsData.Push trans.TranslatedValue("MSG_Period"), vbNullString
                 For counter = 1 To 13
@@ -1023,7 +1021,7 @@ Public Sub AddHeader()
 
         Case ScopeTimeSeries, ScopeSpatioTemporal
             ' Bug #3 fix: treat as new section if previous table was never built
-            If (specs.IsNewSection() Or IsDeFactoNewSection()) And _
+            If specs.IsNewSection() And _
                (Not RangeExists("SECTION_" & tabId)) Then
 
                 If tablType = ScopeSpatioTemporal Then
@@ -1237,7 +1235,7 @@ Public Sub NameRanges()
     tabId = specs.TableId
     tablType = specs.TableScope
     ' Bug #3 fix: treat as new section if previous table was never built
-    isNewSect = specs.IsNewSection() Or IsDeFactoNewSection()
+    isNewSect = specs.IsNewSection()
 
     If tablType = ScopeGlobalSummary Then Exit Sub
 
@@ -1416,61 +1414,6 @@ Public Sub NameRanges()
     End With
 End Sub
 
-'@section Bug #3 Helper
-'===============================================================================
-'@description Detect de-facto new sections when the previous table was never built.
-
-'@label:is-de-facto-new-section
-'@sub-title Determine whether this table is a de-facto new section.
-'@details
-'Determines whether this table should be treated as a de-facto new
-'section even though its TableSpecs.IsNewSection returns False. This
-'situation arises from Bug #3: when the previous table in the same section
-'was invalid and was therefore skipped during the build process, the
-'section infrastructure was never created. The logic checks whether the
-'previous table's ENDTABLE_ named range exists; if not, this table must
-'act as the section anchor. The result is cached after the first
-'computation since IsDeFactoNewSection is called multiple times during
-'a single Build cycle.
-'@return Boolean. True if this table must assume the section-anchor role; False otherwise.
-'@remarks For tables where specs.IsNewSection is True, this function always returns
-'False. The typical usage pattern is: "If specs.IsNewSection() Or IsDeFactoNewSection() Then ...".
-Private Function IsDeFactoNewSection() As Boolean
-
-    If this.deFactoNewSectCached Then
-        IsDeFactoNewSection = this.deFactoNewSect
-        Exit Function
-    End If
-
-    Dim specs As TableSpecs
-    Dim result As Boolean
-    Set specs = Specifications
-
-    ' Only relevant for non-new-section temporal tables
-    If specs.IsNewSection() Then
-        result = False
-    ElseIf specs.TableScope <> ScopeTimeSeries And specs.TableScope <> ScopeSpatioTemporal Then
-        result = False
-    Else
-        Dim prevSpecs As TableSpecs
-        Dim prevTabId As String
-
-        Set prevSpecs = specs.Previous
-        If Not prevSpecs Is Nothing Then prevTabId = prevSpecs.TableId
-
-        If prevTabId = vbNullString Then
-            result = True
-        Else
-            ' If the previous table's ENDTABLE range doesn't exist, it was never built
-            result = Not RangeExists("ENDTABLE_" & prevTabId)
-        End If
-    End If
-
-    this.deFactoNewSect = result
-    this.deFactoNewSectCached = True
-    IsDeFactoNewSection = result
-End Function
-
 '@section Format
 '===============================================================================
 '@description Apply visual formatting to all structural regions of the cross-table.
@@ -1515,7 +1458,7 @@ Public Sub Format(ByVal desFormat As LLFormat)
     tabId = specs.TableId
     tablType = specs.TableScope
     hasPercent = specs.HasPercentage
-    newSection = specs.IsNewSection() Or IsDeFactoNewSection()
+    newSection = specs.IsNewSection()
 
     With sh
         Dim hn As HiddenNames
