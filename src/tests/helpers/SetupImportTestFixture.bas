@@ -30,14 +30,14 @@ Public Sub PrepareSetupDictionarySheet(ByVal sheetName As String, _
     Dim dataMatrix As Variant
 
     Set wb = ResolveWorkbook(targetBook)
-    Set sh = TestHelpers.EnsureWorksheet(sheetName, wb, clearSheet:=True)
+    Set sh = EnsureWorksheet(sheetName, wb, clearSheet:=True)
 
     headers = DictionaryTestFixture.DictionaryFixtureHeaders()
-    headerMatrix = TestHelpers.RowsToMatrix(Array(headers))
-    dataMatrix = TestHelpers.RowsToMatrix(Array(BuildDictionaryRow(headers, variableName, sheetValue)))
+    headerMatrix = RowsToMatrix(Array(headers))
+    dataMatrix = RowsToMatrix(Array(BuildDictionaryRow(headers, variableName, sheetValue)))
 
-    TestHelpers.WriteMatrix sh.Cells(startRow, startColumn), headerMatrix
-    TestHelpers.WriteMatrix sh.Cells(startRow + 1, startColumn), dataMatrix
+    WriteMatrix sh.Cells(startRow, startColumn), headerMatrix
+    WriteMatrix sh.Cells(startRow + 1, startColumn), dataMatrix
 End Sub
 
 Private Function BuildDictionaryRow(ByVal headers As Variant, _
@@ -82,10 +82,15 @@ End Function
 '@param startRow Long row index where headers should begin.
 '@param startColumn Long column index where headers should begin.
 '@param targetBook Optional Workbook hosting the worksheet.
+'@param tableName Optional String. When given, the block is wrapped in a
+'   ListObject of that name. The import path matches source and host tables by
+'   name, and PrepareImport renames two columns of the first table on the
+'   Choices sheet, so any test that reaches either one needs the table.
 Public Sub PrepareSetupChoicesSheet(ByVal sheetName As String, _
                                     ByVal startRow As Long, _
                                     ByVal startColumn As Long, _
-                                    Optional ByVal targetBook As Workbook)
+                                    Optional ByVal targetBook As Workbook, _
+                                    Optional ByVal tableName As String = vbNullString)
 
     Dim wb As Workbook
     Dim sh As Worksheet
@@ -93,18 +98,34 @@ Public Sub PrepareSetupChoicesSheet(ByVal sheetName As String, _
     Dim dataRows As Variant
     Dim headerMatrix As Variant
     Dim dataMatrix As Variant
+    Dim totalColumns As Long
+    Dim totalDataRows As Long
+    Dim sourceRange As Range
+    Dim lo As ListObject
 
     Set wb = ResolveWorkbook(targetBook)
-    Set sh = TestHelpers.EnsureWorksheet(sheetName, wb, clearSheet:=True)
+    Set sh = EnsureWorksheet(sheetName, wb, clearSheet:=True)
 
     headers = SetupChoicesHeaders()
     dataRows = ChoicesSampleRows()
 
-    headerMatrix = TestHelpers.RowsToMatrix(Array(headers))
-    dataMatrix = TestHelpers.RowsToMatrix(dataRows)
+    headerMatrix = RowsToMatrix(Array(headers))
+    dataMatrix = RowsToMatrix(dataRows)
 
-    TestHelpers.WriteMatrix sh.Cells(startRow, startColumn), headerMatrix
-    TestHelpers.WriteMatrix sh.Cells(startRow + 1, startColumn), dataMatrix
+    WriteMatrix sh.Cells(startRow, startColumn), headerMatrix
+    WriteMatrix sh.Cells(startRow + 1, startColumn), dataMatrix
+
+    If LenB(tableName) = 0 Then Exit Sub
+
+    totalColumns = UBound(headers) - LBound(headers) + 1
+    totalDataRows = UBound(dataMatrix, 1) - LBound(dataMatrix, 1) + 1
+
+    Set sourceRange = sh.Range(sh.Cells(startRow, startColumn), _
+                               sh.Cells(startRow + totalDataRows, startColumn + totalColumns - 1))
+
+    Set lo = sh.ListObjects.Add(xlSrcRange, sourceRange, , xlYes)
+    lo.Name = tableName
+    lo.TableStyle = ""
 End Sub
 
 '@sub-title Return the 6-column header layout used in setup workbooks.
@@ -155,14 +176,14 @@ Public Sub PrepareSetupExportsSheet(ByVal sheetName As String, _
     Dim lo As ListObject
 
     Set wb = ResolveWorkbook(targetBook)
-    Set sh = TestHelpers.EnsureWorksheet(sheetName, wb, clearSheet:=True)
+    Set sh = EnsureWorksheet(sheetName, wb, clearSheet:=True)
 
     headers = ExportHeaders()
-    headerMatrix = TestHelpers.RowsToMatrix(Array(headers))
-    dataMatrix = TestHelpers.RowsToMatrix(Array(BuildExportRow(statusValue, fileNameValue, labelValue)))
+    headerMatrix = RowsToMatrix(Array(headers))
+    dataMatrix = RowsToMatrix(Array(BuildExportRow(statusValue, fileNameValue, labelValue)))
 
-    TestHelpers.WriteMatrix sh.Cells(startRow, startColumn), headerMatrix
-    TestHelpers.WriteMatrix sh.Cells(startRow + 1, startColumn), dataMatrix
+    WriteMatrix sh.Cells(startRow, startColumn), headerMatrix
+    WriteMatrix sh.Cells(startRow + 1, startColumn), dataMatrix
 
     totalColumns = UBound(headers) - LBound(headers) + 1
     dataRows = UBound(dataMatrix, 1) - LBound(dataMatrix, 1) + 1
@@ -250,7 +271,7 @@ Public Sub PrepareSetupAnalysisSheet(ByVal sheetName As String, _
     Dim nextRow As Long
 
     Set wb = ResolveWorkbook(targetBook)
-    Set sh = TestHelpers.EnsureWorksheet(sheetName, wb, clearSheet:=True)
+    Set sh = EnsureWorksheet(sheetName, wb, clearSheet:=True)
 
     sh.Cells(2, 1).Value = headerText
     nextRow = 3
@@ -311,11 +332,11 @@ Private Function AddAnalysisTable(ByVal targetSheet As Worksheet, _
     Dim loRange As Range
     Dim lo As ListObject
 
-    headerMatrix = TestHelpers.RowsToMatrix(Array(headers))
-    TestHelpers.WriteMatrix targetSheet.Cells(startRow, 1), headerMatrix
+    headerMatrix = RowsToMatrix(Array(headers))
+    WriteMatrix targetSheet.Cells(startRow, 1), headerMatrix
 
-    dataMatrix = TestHelpers.RowsToMatrix(dataRows)
-    TestHelpers.WriteMatrix targetSheet.Cells(startRow + 1, 1), dataMatrix
+    dataMatrix = RowsToMatrix(dataRows)
+    WriteMatrix targetSheet.Cells(startRow + 1, 1), dataMatrix
 
     totalColumns = UBound(headers) - LBound(headers) + 1
     totalDataRows = UBound(dataMatrix, 1) - LBound(dataMatrix, 1) + 1
@@ -365,13 +386,13 @@ Public Sub PrepareSetupTranslationsSheet(ByVal sheetName As String, _
     Dim sourceRange As Range
 
     Set wb = ResolveWorkbook(targetBook)
-    Set sh = TestHelpers.EnsureWorksheet(sheetName, wb, clearSheet:=True)
+    Set sh = EnsureWorksheet(sheetName, wb, clearSheet:=True)
 
-    headerMatrix = TestHelpers.RowsToMatrix(Array(Array("Lang1", "English")))
-    dataMatrix = TestHelpers.RowsToMatrix(Array(Array(labelValue, translationValue)))
+    headerMatrix = RowsToMatrix(Array(Array("Lang1", "English")))
+    dataMatrix = RowsToMatrix(Array(Array(labelValue, translationValue)))
 
-    TestHelpers.WriteMatrix sh.Cells(startRow, startColumn), headerMatrix
-    TestHelpers.WriteMatrix sh.Cells(startRow + 1, startColumn), dataMatrix
+    WriteMatrix sh.Cells(startRow, startColumn), headerMatrix
+    WriteMatrix sh.Cells(startRow + 1, startColumn), dataMatrix
 
     matrixRows = (UBound(headerMatrix, 1) - LBound(headerMatrix, 1) + 1) + _
                  (UBound(dataMatrix, 1) - LBound(dataMatrix, 1) + 1)

@@ -91,6 +91,16 @@ suites:
       # FormulaData reads, and TestFormulas calls it. It declares no
       # @TestMethod, so the runner imports it and runs it as a 0-test no-op.
       - module: FormulaTestFixture
+      # SetupImportTestFixture is the same shape again. It builds the
+      # Dictionary, Choices, Exports, Analysis and Translations sheets that
+      # TestSetupImportService reads, and TestSetupErrors will call it too.
+      - module: SetupImportTestFixture
+    fixtures:
+      # ProgressDisplayStub stands in for the progress label of the Imports
+      # form. TestSetupImportService declares one and SetupImportService probes
+      # it for a Caption or a Value. It went with the whole src/tests/stubs/
+      # folder in d6897661 and came back here, beside the other fixtures.
+      - name: ProgressDisplayStub
 
   # --- general (OSFiles, DropdownLists) --------------------------------------
   # DropdownLists' whole dependency closure (HiddenNames, BetterArray, Checking)
@@ -232,12 +242,44 @@ suites:
   # registered under `general` above; ProjectError lives in Checking, and
   # Checking, HiddenNames and BetterArray are baked into the workbook. So the
   # one class row below closes its own compile closure.
+  #
+  # SetupImportService names ProjectError, ApplicationState, BetterArray,
+  # CustomTable, DataSheet, HiddenNames, LLChoices, LLdictionary, LLExport,
+  # LLFormat, OSFiles, Passwords, Analysis and SetupTranslationsTable.
+  # ApplicationState, CustomTable, DataSheet, LLChoices, LLFormat and OSFiles
+  # are registered under `general`; LLdictionary and LLExport under
+  # `dictionary`; SetupTranslationsTable is right below; Analysis has its own
+  # `analyses` block further down; and Passwords, BetterArray, HiddenNames and
+  # Checking are baked into the workbook.
   - folder: setup
     classes:
       - name: SetupTranslationsTable
+      - name: SetupImportService
     tests:
       - module: TestSetupTranslationsTable
         covers: [SetupTranslationsTable]
+      # TestSetupImportService is parked by owner decision. Its 29 tests each
+      # open, write, save and close a real workbook, and together they push the
+      # whole run past the 600-second Apple Events timeout the runner wraps
+      # OBTRunAllTests in -- the run comes back as the opaque -50 with an
+      # export workbook still open. The import and export suite runs last,
+      # after the rest of the setup folder lands. Re-enable by uncommenting:
+      # the class row above is already there, so nothing else has to change.
+      #- module: TestSetupImportService
+      #  covers: [SetupImportService]
+
+  # --- analyses (Analysis) ---------------------------------------------------
+  # Opened by SetupImportService, which names Analysis and cannot reach it from
+  # the `setup` block: the registry resolves `classes` to src/classes/<folder>/
+  # and Analysis lives in src/classes/analyses/. Its own suite is not here yet,
+  # so this block carries the class row alone. Whoever adds TestAnalysis and
+  # AnalysisTestFixture joins this block rather than opening a second one.
+  # Analysis names CustomTable, Checking, TranslationObject and BetterArray:
+  # CustomTable is registered under `general` and the other three are baked
+  # into the workbook, so the one row below closes its own compile closure.
+  - folder: analyses
+    classes:
+      - name: Analysis
 
   # --- sections -------------------------------------------------------------
   # (Also note: interface: true is stale -- IVarWriter /
