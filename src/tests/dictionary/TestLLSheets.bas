@@ -19,7 +19,7 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 'detection, variable-count guards, and variable-address preparation
 'requirements. Each test builds an LLSheets instance from a dictionary
 'fixture and exercises one public method or error condition.
-'@depends LLSheets, LLdictionary, LLdictionary, CustomTest
+'@depends LLSheets, LLdictionary, CustomTest, DictionaryTestFixture, TestHelpersLite
 
 Private Const DICT_SHEET As String = "LLSheetsDict"
 Private Const SHEET_VERTICAL As String = "vlist1D-sheet1"
@@ -43,33 +43,44 @@ End Sub
 
 '@sub-title Initialise the test module and prepare shared resources
 '@details
-'Creates the test-output worksheet if it does not already exist, builds
-'the CustomTest assertion object, registers the module name for reporting,
-'and resets the dictionary fixture to a clean baseline. Runs once before
-'any test method in this module executes.
+'Public, so the headless runner reaches it: the runner calls every lifecycle
+'hook through Application.Run, which cannot see a Private Sub. The handler
+'matters as much. An error escaping a lifecycle hook aborts the WHOLE module,
+'so a fixture problem here would drop every test and the run would report no
+'failures, because nothing ran.
 '@ModuleInitialize
-Private Sub ModuleInitialize()
+Public Sub ModuleInitialize()
+    On Error GoTo Fail
+    BusyApp
     EnsureWorksheet TEST_OUTPUT_SHEET, clearSheet:=False
     Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
     Assert.SetModuleName "TestLLSheets"
     ResetDictionarySheet
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "ModuleInitialize", Err.Number, Err.Description
 End Sub
 
 '@sub-title Tear down module-level resources after all tests complete
 '@details
-'Prints accumulated test results to the output sheet, releases object
-'references for the Sheets, Dictionary, and Assert instances, and deletes
-'the temporary dictionary worksheet. Runs once after every test method in
-'this module has finished.
+'Every step before RestoreApp is wrapped, because RestoreApp has to run
+'whatever happened above: the hooks here call BusyApp, which puts Excel in
+'manual calculation, and the next module in the run would inherit that.
 '@ModuleCleanup
-Private Sub ModuleCleanup()
-    If Not Assert Is Nothing Then
-        Assert.PrintResults TEST_OUTPUT_SHEET
-    End If
+Public Sub ModuleCleanup()
+    On Error Resume Next
+        If Not Assert Is Nothing Then
+            Assert.PrintResults TEST_OUTPUT_SHEET
+        End If
+        DeleteWorksheet DICT_SHEET
+    On Error GoTo 0
+
+    RestoreApp
+
     Set Sheets = Nothing
     Set Dictionary = Nothing
     Set Assert = Nothing
-    DeleteWorksheet DICT_SHEET
 End Sub
 
 '@sub-title Create fresh Dictionary and Sheets instances before each test
@@ -79,10 +90,16 @@ End Sub
 'every test starts with an unmodified dictionary and a cleanly initialised
 'Sheets object so that tests remain independent of one another.
 '@TestInitialize
-Private Sub TestInitialize()
+Public Sub TestInitialize()
+    On Error GoTo Fail
+    BusyApp
     ResetDictionarySheet
     Set Dictionary = LLdictionary.Create(ThisWorkbook.Worksheets(DICT_SHEET), 1, 1)
     Set Sheets = LLSheets.Create(Dictionary)
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestInitialize", Err.Number, Err.Description
 End Sub
 
 '@sub-title Release per-test objects and flush assertion state
@@ -91,10 +108,13 @@ End Sub
 'the Sheets and Dictionary references. Runs after each individual test
 'method completes.
 '@TestCleanup
-Private Sub TestCleanup()
-    If Not Assert Is Nothing Then
-        Assert.Flush
-    End If
+Public Sub TestCleanup()
+    On Error Resume Next
+        If Not Assert Is Nothing Then
+            Assert.Flush
+        End If
+    On Error GoTo 0
+
     Set Sheets = Nothing
     Set Dictionary = Nothing
 End Sub
@@ -147,6 +167,34 @@ Fail:
     CustomTestLogFailure Assert, "TestContainsRecognisesFixtureSheets", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify that a sheet name is matched whatever case it is asked in
+'@details
+'Arranges by upper-casing and lower-casing the two fixture sheet names.
+'Acts by calling Contains and RowIndex with those spellings. Asserts that
+'both answer as they do for the stored spelling. Excel worksheet names are
+'case-insensitive, so a sheet stored as "vlist1D-sheet1" and asked for as
+'"VLIST1D-SHEET1" is the same sheet.
+'@TestMethod("LLSheets")
+Public Sub TestSheetLookupIgnoresCase()
+    CustomTestSetTitles Assert, "LLSheets", "TestSheetLookupIgnoresCase"
+    On Error GoTo Fail
+
+    Dim storedRow As Long
+
+    storedRow = Sheets.RowIndex(SHEET_VERTICAL)
+
+    Assert.IsTrue Sheets.Contains(UCase$(SHEET_VERTICAL)), _
+                  "Contains should answer True for the upper-cased sheet name"
+    Assert.IsTrue Sheets.Contains(LCase$(SHEET_HORIZONTAL)), _
+                  "Contains should answer True for the lower-cased sheet name"
+    Assert.AreEqual storedRow, Sheets.RowIndex(UCase$(SHEET_VERTICAL)), _
+                     "RowIndex should answer the same row whatever case is asked for"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestSheetLookupIgnoresCase", Err.Number, Err.Description
+End Sub
+
 '@sub-title Verify that RowIndex returns a positive worksheet row for a known sheet
 '@details
 'Arranges by using the module-level Sheets instance with the vertical
@@ -166,6 +214,56 @@ Public Sub TestRowIndexReturnsWorksheetRow()
 
 Fail:
     CustomTestLogFailure Assert, "TestRowIndexReturnsWorksheetRow", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verify that RowIndex answers 0 for the header row
+'@details
+'Arranges by using the module-level Sheets instance, whose sheet-name range
+'is captured with its header row. Acts by calling RowIndex with the header
+'text. Asserts that the answer is 0. ListBuilder places rows from this
+'answer, so a header row handed back as a sheet row would write over the
+'dictionary head.
+'@TestMethod("LLSheets")
+Public Sub TestRowIndexRejectsHeaderRow()
+    CustomTestSetTitles Assert, "LLSheets", "TestRowIndexRejectsHeaderRow"
+    On Error GoTo Fail
+
+    Assert.AreEqual 0&, Sheets.RowIndex("Sheet Name"), _
+                     "RowIndex should answer 0 when passed the header text"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestRowIndexRejectsHeaderRow", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verify that a held sheet row is checked before it is handed out
+'@details
+'Arranges by reading the row of the vertical fixture sheet, which makes the
+'object hold it, then writing another name into that very cell. Acts by
+'asking for the row again. Asserts that the answer is a different row that
+'still holds the sheet name. A held row that was handed back without the
+'check would answer for a row that now belongs to another sheet.
+'@TestMethod("LLSheets")
+Public Sub TestHeldSheetRowIsCheckedBeforeUse()
+    CustomTestSetTitles Assert, "LLSheets", "TestHeldSheetRowIsCheckedBeforeUse"
+    On Error GoTo Fail
+
+    Dim firstRow As Long
+    Dim laterRow As Long
+    Dim nameColumn As Long
+
+    firstRow = Sheets.RowIndex(SHEET_VERTICAL)
+    nameColumn = Dictionary.Data.ColumnIndex("sheet name", matchCase:=False)
+    ThisWorkbook.Worksheets(DICT_SHEET).Cells(firstRow, nameColumn).Value = "renamed-sheet"
+
+    laterRow = Sheets.RowIndex(SHEET_VERTICAL)
+
+    Assert.IsTrue (laterRow > 0), "RowIndex should still find the sheet on its other rows"
+    Assert.IsTrue (laterRow <> firstRow), "RowIndex should leave the row that now holds another name"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestHeldSheetRowIsCheckedBeforeUse", Err.Number, Err.Description
 End Sub
 
 '@sub-title Verify that DataBounds raises for an unsupported selector value

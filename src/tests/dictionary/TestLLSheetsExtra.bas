@@ -18,7 +18,7 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 'that ContainsControl raises when the control column is removed from the
 'dictionary, and that VariableAddress resolves correct cell references
 'for horizontal and vertical variables after dictionary preparation.
-'@depends LLSheets, LLdictionary, LLdictionary, LLVariables, CustomTest
+'@depends LLSheets, LLdictionary, LLVariables, CustomTest, DictionaryTestFixture, TestHelpersLite
 
 Private Const DICT_SHEET As String = "LLSheetsExtraDict"
 
@@ -39,33 +39,44 @@ End Sub
 
 '@sub-title Initialise the test module and prepare shared resources
 '@details
-'Creates the test-output worksheet if it does not already exist, builds
-'the CustomTest assertion object, registers the module name for reporting,
-'and resets the dictionary fixture to a clean baseline. Runs once before
-'any test method in this module executes.
+'Public, so the headless runner reaches it: the runner calls every lifecycle
+'hook through Application.Run, which cannot see a Private Sub. The handler
+'matters as much. An error escaping a lifecycle hook aborts the WHOLE module,
+'so a fixture problem here would drop every test and the run would report no
+'failures, because nothing ran.
 '@ModuleInitialize
-Private Sub ModuleInitialize()
+Public Sub ModuleInitialize()
+    On Error GoTo Fail
+    BusyApp
     EnsureWorksheet TEST_OUTPUT_SHEET, clearSheet:=False
     Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
     Assert.SetModuleName "TestLLSheetsExtra"
     ResetDictionarySheet
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "ModuleInitialize", Err.Number, Err.Description
 End Sub
 
 '@sub-title Tear down module-level resources after all tests complete
 '@details
-'Prints accumulated test results to the output sheet, releases object
-'references for the Sheets, Dictionary, and Assert instances, and deletes
-'the temporary dictionary worksheet. Runs once after every test method in
-'this module has finished.
+'Every step before RestoreApp is wrapped, because RestoreApp has to run
+'whatever happened above: the hooks here call BusyApp, which puts Excel in
+'manual calculation, and the next module in the run would inherit that.
 '@ModuleCleanup
-Private Sub ModuleCleanup()
-    If Not Assert Is Nothing Then
-        Assert.PrintResults TEST_OUTPUT_SHEET
-    End If
+Public Sub ModuleCleanup()
+    On Error Resume Next
+        If Not Assert Is Nothing Then
+            Assert.PrintResults TEST_OUTPUT_SHEET
+        End If
+        DeleteWorksheet DICT_SHEET
+    On Error GoTo 0
+
+    RestoreApp
+
     Set Sheets = Nothing
     Set Dictionary = Nothing
     Set Assert = Nothing
-    DeleteWorksheet DICT_SHEET
 End Sub
 
 '@sub-title Create fresh Dictionary and Sheets instances before each test
@@ -75,10 +86,16 @@ End Sub
 'every test starts with an unmodified dictionary and a cleanly initialised
 'Sheets object so that tests remain independent of one another.
 '@TestInitialize
-Private Sub TestInitialize()
+Public Sub TestInitialize()
+    On Error GoTo Fail
+    BusyApp
     ResetDictionarySheet
     Set Dictionary = LLdictionary.Create(ThisWorkbook.Worksheets(DICT_SHEET), 1, 1)
     Set Sheets = LLSheets.Create(Dictionary)
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestInitialize", Err.Number, Err.Description
 End Sub
 
 '@sub-title Release per-test objects and flush assertion state
@@ -87,10 +104,13 @@ End Sub
 'the Sheets and Dictionary references. Runs after each individual test
 'method completes.
 '@TestCleanup
-Private Sub TestCleanup()
-    If Not Assert Is Nothing Then
-        Assert.Flush
-    End If
+Public Sub TestCleanup()
+    On Error Resume Next
+        If Not Assert Is Nothing Then
+            Assert.Flush
+        End If
+    On Error GoTo 0
+
     Set Sheets = Nothing
     Set Dictionary = Nothing
 End Sub
@@ -166,6 +186,53 @@ Fail:
     CustomTestLogFailure Assert, "TestDataBoundsForBothLayouts", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify that DataBounds raises for a sheet type the class does not know
+'@details
+'Arranges by writing an unknown value into the sheet-type cell of the
+'vertical fixture sheet. Acts by asking for each of the four bounds.
+'Asserts that every one of them raises ProjectError.InvalidArgument. The
+'four bounds used to carry a copy of that raise each; they share one now.
+'@TestMethod("LLSheetsExtra")
+Public Sub TestDataBoundsRejectsUnknownSheetType()
+    CustomTestSetTitles Assert, "LLSheetsExtra", "TestDataBoundsRejectsUnknownSheetType"
+    On Error GoTo Fail
+
+    Dim typeColumn As Long
+    Dim sheetRow As Long
+    Dim bound As Long
+    Dim raised As Long
+
+    sheetRow = Sheets.RowIndex("vlist1D-sheet1")
+    typeColumn = Dictionary.Data.ColumnIndex("sheet type", matchCase:=False)
+    ThisWorkbook.Worksheets(DICT_SHEET).Cells(sheetRow, typeColumn).Value = "unknown-layout"
+
+    For bound = SheetBound.RowSart To SheetBound.ColEnd
+        If BoundRaisesInvalidArgument(CByte(bound)) Then raised = raised + 1
+    Next
+
+    Assert.AreEqual 4&, raised, "Every bound of an unknown sheet type should raise InvalidArgument"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestDataBoundsRejectsUnknownSheetType", Err.Number, Err.Description
+End Sub
+
+'@sub-title Ask for one bound and report whether it raised InvalidArgument
+'@param bound Byte. Selector from the SheetBound enumeration.
+'@return Boolean. True when the call raised ProjectError.InvalidArgument.
+Private Function BoundRaisesInvalidArgument(ByVal bound As Byte) As Boolean
+    Dim unused As Long
+
+    On Error GoTo ExpectError
+    '@Ignore VariableNotUsed, AssignmentNotUsed
+    unused = Sheets.DataBounds("vlist1D-sheet1", bound)
+    Exit Function
+
+ExpectError:
+    BoundRaisesInvalidArgument = (Err.Number = ProjectError.InvalidArgument)
+    Err.Clear
+End Function
+
 '@sub-title Verify that ContainsControl raises when the control column is removed
 '@details
 'Arranges by explicitly removing the "control" column from the dictionary
@@ -223,7 +290,7 @@ Public Sub TestVariableAddressHorizontalAndVertical()
     'When on the same sheet, horizontal address should be relative and omit prefix
     Dim addrH As String
     addrH = Sheets.VariableAddress("num_valid_h2", onSheet:="hlist2D-sheet1")
-    Assert.AreEqual "C9", addrH, "Expected horizontal variable address to be B9 given index=3 and top=8"
+    Assert.AreEqual "C9", addrH, "Expected horizontal variable address to be C9 given index=3 and top=8"
 
     'Vertical address should include sheet prefix and be absolute in A1 style
     Dim addrV As String

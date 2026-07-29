@@ -147,16 +147,18 @@ suites:
       # - module: TestPasswords
       #   covers: [Passwords]
 
-  # --- dictionary (LLExport) -------------------------------------------------
+  # --- dictionary (LLExport, LLSheets) ---------------------------------------
   # LLExport names LLdictionary, LLVariables, DataSheet, CustomTable, Passwords,
   # TranslationObject, Checking and BetterArray. DataSheet and CustomTable are
   # registered under `general` above; Passwords, TranslationObject, Checking and
   # BetterArray are baked into the driver workbook, so registering any of them
   # would leave Excel holding two copies and stop the project compiling.
   # LLdictionary and LLVariables are neither, so both are imported here.
+  # LLSheets names LLdictionary, LLVariables, DataSheet and BetterArray, so the
+  # three rows below already carry its closure.
   #
   # Every line-continuation underscore with a trailing space is gone from the
-  # three classes in this folder (LLdictionary.AddMainSectionSort had three,
+  # four classes in this folder (LLdictionary.AddMainSectionSort had three,
   # LLVariables had two). VBA rejects that shape, the whole project then fails
   # to compile, and the runner shows the opaque -50. Read the LogCompileProbe
   # inventory first on any -50 that follows a change here.
@@ -165,6 +167,7 @@ suites:
       - name: LLdictionary
       - name: LLVariables
       - name: LLExport
+      - name: LLSheets
     tests:
       - module: TestLLExport
         covers: [LLExport]
@@ -174,6 +177,10 @@ suites:
         covers: [LLVariables]
       - module: TestLLVariablesExtra
         covers: [LLVariables]
+      - module: TestLLSheets
+        covers: [LLSheets]
+      - module: TestLLSheetsExtra
+        covers: [LLSheets]
 
   # --- sections -------------------------------------------------------------
   # (Also note: interface: true is stale -- IVarWriter /
