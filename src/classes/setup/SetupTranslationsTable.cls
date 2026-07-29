@@ -2169,11 +2169,14 @@ End Function
 
 '@label:hidden-name-store
 '@sub-title Create a HiddenNames wrapper for the supplied registry sheet.
+'@details A store that cannot be built means the sequence counter is never
+'         written. The next run then reads zero, treats the cycle as sequence 1
+'         and reprocesses every row whatever its status, so this failure has to
+'         be heard.
 Private Function HiddenNameStore(ByVal registrySheet As Worksheet) As HiddenNames
     If registrySheet Is Nothing Then Exit Function
-    On Error Resume Next
-        Set HiddenNameStore = HiddenNames.Create(registrySheet)
-    On Error GoTo 0
+
+    Set HiddenNameStore = HiddenNames.Create(registrySheet)
 End Function
 
 '@label:metadata-store
@@ -2190,9 +2193,9 @@ Private Function MetadataStore() As HiddenNames
     Set hostSh = this.table.Parent
     If hostSh Is Nothing Then Exit Function
 
-    On Error Resume Next
-        Set this.metadataStore = HiddenNames.Create(hostSh)
-    On Error GoTo 0
+    'A store that cannot be built means the language list is never persisted,
+    'and the exported workbook carries no languages.
+    Set this.metadataStore = HiddenNames.Create(hostSh)
 
     Set MetadataStore = this.metadataStore
 End Function
