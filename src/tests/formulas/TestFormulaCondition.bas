@@ -18,6 +18,10 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 'VariablesTable accessor. Each test builds lightweight BetterArray fixtures
 'via BetterArrayFromList and a shared dictionary fixture seeded from
 'DictionaryTestFixture.
+'
+'Every test arms its handler above the arrange. An error that escapes a test
+'proc reaches the VBE as a modal dialog, the dialog blocks the Apple Event that
+'drives the run, and the whole suite comes back with no results file.
 '@depends FormulaCondition, LLdictionary, LLdictionary,
 '  LLVariables, BetterArray, CustomTest,
 '  DictionaryTestFixture, TestHelpers
@@ -126,25 +130,33 @@ End Sub
 'Arranges a single-element variables array and a two-element conditions array,
 'then calls FormulaCondition.Create. Asserts that an InvalidArgument error is
 'raised, confirming the factory guard clause prevents mismatched inputs.
+'The arrange runs under its own handler, and the act then switches to the
+'handler that expects the raise.
 '@TestMethod("FormulaCondition")
 Public Sub TestCreateRejectsMismatchedLengths()
     CustomTestSetTitles Assert, "FormulaCondition", "TestCreateRejectsMismatchedLengths"
     Dim vars As BetterArray
     Dim conds As BetterArray
+    Dim form As FormulaCondition
 
+    On Error GoTo Fail
     Set vars = BetterArrayFromList("choi_v1")
     Set conds = BetterArrayFromList("=0", "=1")
 
     On Error GoTo ExpectError
-        Dim form As FormulaCondition
         '@Ignored AssigmentNotUsed
         Set form = FormulaCondition.Create(vars, conds)
         Assert.LogFailure "Create should raise for mismatched inputs"
         Exit Sub
+
 ExpectError:
     Assert.AreEqual ProjectError.InvalidArgument, Err.Number, _
                      "Expected InvalidArgument when arrays lengths differ"
     Err.Clear
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestCreateRejectsMismatchedLengths", Err.Number, Err.Description
 End Sub
 
 '@sub-title Verify validation succeeds when all variables belong to the same table
@@ -160,6 +172,7 @@ Public Sub TestValidSucceedsForSameTable()
     Dim conds As BetterArray
     Dim form As FormulaCondition
 
+    On Error GoTo Fail
     Set vars = BetterArrayFromList("choi_v1", "choi_mult_v1")
     Set conds = BetterArrayFromList(">0", "<5")
 
@@ -168,13 +181,17 @@ Public Sub TestValidSucceedsForSameTable()
     Assert.IsFalse form.HasCheckings, "Matching tables should not record diagnostics"
     Assert.AreEqual TableNameFor("choi_v1"), form.VariablesTable(Dictionary), _
                     "VariablesTable should cache the resolved table"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestValidSucceedsForSameTable", Err.Number, Err.Description
 End Sub
 
 '@sub-title Verify validation fails and logs diagnostics when a variable is missing
 '@details
 'Uses one valid variable and one that does not exist in the dictionary.
 'Asserts Valid returns False, HasCheckings returns True, and the
-'CheckingValues object is available (not Nothing) for diagnostic inspection.
+'CheckingValues object is available for diagnostic inspection.
 '@TestMethod("FormulaCondition")
 Public Sub TestValidLogsWhenVariableMissing()
     CustomTestSetTitles Assert, "FormulaCondition", "TestValidLogsWhenVariableMissing"
@@ -182,6 +199,7 @@ Public Sub TestValidLogsWhenVariableMissing()
     Dim conds As BetterArray
     Dim form As FormulaCondition
 
+    On Error GoTo Fail
     Set vars = BetterArrayFromList("choi_v1", "missing_var")
     Set conds = BetterArrayFromList(">0", ">1")
 
@@ -190,6 +208,10 @@ Public Sub TestValidLogsWhenVariableMissing()
     Assert.IsFalse form.Valid(Dictionary), "Valid should return False when variables are missing"
     Assert.IsTrue form.HasCheckings, "Validation failures should produce checkings"
     Assert.IsTrue Not form.CheckingValues Is Nothing, "Checking log should be available after failure"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestValidLogsWhenVariableMissing", Err.Number, Err.Description
 End Sub
 
 '@sub-title Verify ConditionPredicate and ConditionString render correct Excel expressions
@@ -206,6 +228,7 @@ Public Sub TestConditionStringBuildsExpression()
     Dim form As FormulaCondition
     Dim predicate As String
 
+    On Error GoTo Fail
     Set vars = BetterArrayFromList("choi_v1", "choi_mult_v1")
     Set conds = BetterArrayFromList(">0", ">1")
 
@@ -218,13 +241,17 @@ Public Sub TestConditionStringBuildsExpression()
     Assert.AreEqual "IF((DataTable[choi_v1]>0)*(DataTable[choi_mult_v1]>1) , DataTable[result])", _
                  form.ConditionString("DataTable", "result", Connector:="*"), _
                  "ConditionString should wrap the predicate in an IF expression"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestConditionStringBuildsExpression", Err.Number, Err.Description
 End Sub
 
 '@sub-title Verify VariablesTable returns the cached value after a prior Valid call
 '@details
 'Creates a FormulaCondition, explicitly calls Valid to populate the cache,
 'then asserts that VariablesTable returns the same resolved table name
-'without requiring a second validation pass.
+'from a single validation pass.
 '@TestMethod("FormulaCondition")
 Public Sub TestVariablesTableUsesCachedValue()
     CustomTestSetTitles Assert, "FormulaCondition", "TestVariablesTableUsesCachedValue"
@@ -233,6 +260,7 @@ Public Sub TestVariablesTableUsesCachedValue()
     Dim form As FormulaCondition
     Dim expectedTable As String
 
+    On Error GoTo Fail
     Set vars = BetterArrayFromList("choi_v1", "choi_mult_v1")
     Set conds = BetterArrayFromList(">0", ">1")
     expectedTable = TableNameFor("choi_v1")
@@ -241,6 +269,10 @@ Public Sub TestVariablesTableUsesCachedValue()
     form.Valid Dictionary
     Assert.AreEqual expectedTable, form.VariablesTable(Dictionary), _
                     "VariablesTable should reuse the cached table name after validation"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestVariablesTableUsesCachedValue", Err.Number, Err.Description
 End Sub
 
 '@sub-title Verify validation fails when variables belong to different tables
@@ -258,6 +290,7 @@ Public Sub TestValidFailsForDifferentTables()
     Dim firstTable As String
     Dim secondTable As String
 
+    On Error GoTo Fail
     Set vars = BetterArrayFromList("choi_v1", "cond_test_h1")
     Set conds = BetterArrayFromList(">0", ">1")
 
@@ -270,6 +303,10 @@ Public Sub TestValidFailsForDifferentTables()
 
     Assert.IsFalse form.Valid(Dictionary), "Valid should fail when variables belong to different tables"
     Assert.IsTrue form.HasCheckings, "Cross-table validation failure should log diagnostics"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestValidFailsForDifferentTables", Err.Number, Err.Description
 End Sub
 
 '@sub-title Verify a cached validity answer belongs to the dictionary it was computed against
@@ -330,6 +367,7 @@ Public Sub TestValidRespectsTableOverride()
     Dim expectedTable As String
     Dim wrongTable As String
 
+    On Error GoTo Fail
     Set vars = BetterArrayFromList("choi_v1", "choi_mult_v1")
     Set conds = BetterArrayFromList(">=1", "<=5")
     expectedTable = TableNameFor("choi_v1")
@@ -348,4 +386,8 @@ Public Sub TestValidRespectsTableOverride()
     Assert.IsFalse form.HasCheckings, "Successful validation should clear previous diagnostics"
     Assert.AreEqual expectedTable, form.VariablesTable(Dictionary), _
                     "VariablesTable should return the override value once validation succeeds"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestValidRespectsTableOverride", Err.Number, Err.Description
 End Sub

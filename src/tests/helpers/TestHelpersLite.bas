@@ -373,6 +373,36 @@ End Sub
 '@section Data Builders
 '===============================================================================
 
+'@label CollectionToArray
+'@fun-title Copy the items from a collection into a zero-based variant array.
+'@details Copy the items from a collection into a zero-based variant array,
+'returning an empty array when the input is Nothing or empty. Copied here from
+'the full TestHelpers because FormulaTestFixture calls it, and only one helper
+'module is imported per run.
+'@param items Collection containing the values to copy.
+'@return Variant array containing the copied values.
+Public Function CollectionToArray(ByVal items As Collection) As Variant
+    Dim result() As Variant
+    Dim idx As Long
+
+    If items Is Nothing Then
+        CollectionToArray = Array()
+        Exit Function
+    End If
+
+    If items.Count = 0 Then
+        CollectionToArray = Array()
+        Exit Function
+    End If
+
+    ReDim result(0 To items.Count - 1)
+    For idx = 1 To items.Count
+        result(idx - 1) = items(idx)
+    Next idx
+
+    CollectionToArray = result
+End Function
+
 '@label BetterArrayFromList
 '@fun-title Create a BetterArray with the supplied items.
 '@details Create a BetterArray with the supplied items.

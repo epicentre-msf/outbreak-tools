@@ -47,13 +47,13 @@ Public Function FormulaFunctionsValues() As Variant
     parts.Add "Z.TEST|ZTEST|VALUE_OF|DATE_RANGE|MEAN|GEOPCODE|GEOCONCAT|HFPCODE|T_ADM1|T_ADM2|T_ADM3|T_ADM4|ADM1_PCODE|ADM2_PCODE|ADM3_PCODE|ADM4_PCODE|HF_PCODE|ADM1_CONCAT|ADM2_CONCAT|ADM3_CONCAT|ADM4_CONCAT"
     parts.Add "HF_CONCAT|T_HF|HF_CONCAT|EPIWEEK"
 
-    segments = TestHelpers.CollectionToArray(parts)
+    segments = CollectionToArray(parts)
     FormulaFunctionsValues = Split(Join(segments, "|"), "|")
 End Function
 
 '@description Convert the list of function names into single-column rows.
 Public Function FormulaFunctionsRows() As Variant
-    FormulaFunctionsRows = TestHelpers.SingleColumnRows(FormulaFunctionsValues())
+    FormulaFunctionsRows = SingleColumnRows(FormulaFunctionsValues())
 End Function
 
 '@description Header row for the allowed special characters table.
@@ -97,7 +97,7 @@ Public Function FormulaCharactersRows() As Variant
     rows.Add Array(125, "}")
     rows.Add Array(126, "~")
 
-    FormulaCharactersRows = TestHelpers.CollectionToArray(rows)
+    FormulaCharactersRows = CollectionToArray(rows)
 End Function
 
 '@description Seed a worksheet with formula fixtures and return it.
@@ -133,17 +133,17 @@ Public Function PrepareFormulaFixtureSheet(ByVal sheetName As String, _
     Dim characterDataRows As Long
 
     If outwb Is Nothing Then
-        Set sh = TestHelpers.EnsureWorksheet(sheetName, visibility:=xlSheetHidden)
+        Set sh = EnsureWorksheet(sheetName, visibility:=xlSheetHidden)
     Else
-        Set sh = TestHelpers.EnsureWorksheet(sheetName, targetBook:=outwb)
+        Set sh = EnsureWorksheet(sheetName, targetBook:=outwb)
     End If
 
     formulaHeader = FormulaFunctionsHeaderRow()
     formulaRows = FormulaFunctionsRows()
-    formulaHeaderMatrix = TestHelpers.RowsToMatrix(Array(formulaHeader))
-    formulaRowsMatrix = TestHelpers.RowsToMatrix(formulaRows)
-    TestHelpers.WriteMatrix sh.Range("A1"), formulaHeaderMatrix
-    TestHelpers.WriteMatrix sh.Range("A2"), formulaRowsMatrix
+    formulaHeaderMatrix = RowsToMatrix(Array(formulaHeader))
+    formulaRowsMatrix = RowsToMatrix(formulaRows)
+    WriteMatrix sh.Range("A1"), formulaHeaderMatrix
+    WriteMatrix sh.Range("A2"), formulaRowsMatrix
 
     formulaCols = UBound(formulaHeaderMatrix, 2) - LBound(formulaHeaderMatrix, 2) + 1
     formulaHeaderRows = UBound(formulaHeaderMatrix, 1) - LBound(formulaHeaderMatrix, 1) + 1
@@ -157,10 +157,10 @@ Public Function PrepareFormulaFixtureSheet(ByVal sheetName As String, _
 
     characterHeader = FormulaCharactersHeaderRow()
     characterRows = FormulaCharactersRows()
-    characterHeaderMatrix = TestHelpers.RowsToMatrix(Array(characterHeader))
-    characterRowsMatrix = TestHelpers.RowsToMatrix(characterRows)
-    TestHelpers.WriteMatrix sh.Range("C1"), characterHeaderMatrix
-    TestHelpers.WriteMatrix sh.Range("C2"), characterRowsMatrix
+    characterHeaderMatrix = RowsToMatrix(Array(characterHeader))
+    characterRowsMatrix = RowsToMatrix(characterRows)
+    WriteMatrix sh.Range("C1"), characterHeaderMatrix
+    WriteMatrix sh.Range("C2"), characterRowsMatrix
 
     characterCols = UBound(characterHeaderMatrix, 2) - LBound(characterHeaderMatrix, 2) + 1
     characterHeaderRows = UBound(characterHeaderMatrix, 1) - LBound(characterHeaderMatrix, 1) + 1
