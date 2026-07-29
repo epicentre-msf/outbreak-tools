@@ -195,12 +195,13 @@ suites:
   # BetterArray are baked into the driver workbook, so registering either would
   # leave Excel holding two copies and stop the project compiling.
   # ChoiceFormula builds a CaseWhen, ValueOfFormula reads the dictionary
-  # helpers, and FormulaData names BetterArray and ProjectError only.
+  # helpers, and FormulaData names ProjectError only.
   - folder: formulas
     classes:
       - name: CaseWhen
       - name: ChoiceFormula
       - name: ValueOfFormula
+      - name: FormulaData
     tests:
       - module: TestCaseWhen
         covers: [CaseWhen]
@@ -208,6 +209,8 @@ suites:
         covers: [ChoiceFormula]
       - module: TestValueOfFormula
         covers: [ValueOfFormula]
+      - module: TestFormulaData
+        covers: [FormulaData]
 
   # --- sections -------------------------------------------------------------
   # (Also note: interface: true is stale -- IVarWriter /

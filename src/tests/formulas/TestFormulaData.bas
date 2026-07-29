@@ -85,12 +85,22 @@ End Function
 '@details
 'Calls BusyApp to suppress screen updates for performance, creates the
 'test output sheet, and sets up the CustomTest assertion object.
+'Public, so the headless runner reaches it: the runner calls every lifecycle
+'hook through Application.Run, which cannot see a Private Sub. The handler
+'matters as much. An error escaping a lifecycle hook aborts the WHOLE module,
+'so a fixture problem here would drop every test and the run would report no
+'failures, because nothing ran.
 '@ModuleInitialize
-Private Sub ModuleInitialize()
+Public Sub ModuleInitialize()
+    On Error GoTo Fail
     BusyApp
     EnsureWorksheet TEST_OUTPUT_SHEET, clearSheet:=False
     Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
     Assert.SetModuleName "TestFormulaData"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "ModuleInitialize", Err.Number, Err.Description
 End Sub
 
 '@sub-title Print results, clean up the fixture sheet, and restore application state
@@ -98,13 +108,20 @@ End Sub
 'Flushes remaining assertion output to the test sheet, deletes the formula
 'fixture worksheet, restores Excel application settings via RestoreApp,
 'and releases all object references.
+'Every step before RestoreApp is wrapped, because RestoreApp has to run
+'whatever happened above: the hooks here call BusyApp, which puts Excel in
+'manual calculation, and the next module in the run would inherit that.
 '@ModuleCleanup
-Private Sub ModuleCleanup()
-    If Not Assert Is Nothing Then
-        Assert.PrintResults TEST_OUTPUT_SHEET
-    End If
-    DeleteWorksheet FORMULA_SHEET
+Public Sub ModuleCleanup()
+    On Error Resume Next
+        If Not Assert Is Nothing Then
+            Assert.PrintResults TEST_OUTPUT_SHEET
+        End If
+        DeleteWorksheet FORMULA_SHEET
+    On Error GoTo 0
+
     RestoreApp
+
     Set Assert = Nothing
     Set FixtureSheet = Nothing
 End Sub
@@ -115,17 +132,25 @@ End Sub
 'T_XlsFonctions and T_ascii tables, ensuring each test starts from a
 'clean and predictable state.
 '@TestInitialize
-Private Sub TestInitialize()
+Public Sub TestInitialize()
+    On Error GoTo Fail
     BusyApp
     PrepareFixtureSheet
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestInitialize", Err.Number, Err.Description
 End Sub
 
 '@sub-title Flush assertions and release the fixture sheet reference after each test
 '@TestCleanup
-Private Sub TestCleanup()
-    If Not Assert Is Nothing Then
-        Assert.Flush
-    End If
+Public Sub TestCleanup()
+    On Error Resume Next
+        If Not Assert Is Nothing Then
+            Assert.Flush
+        End If
+    On Error GoTo 0
+
     Set FixtureSheet = Nothing
 End Sub
 
@@ -159,6 +184,31 @@ Public Sub TestCreateCachesLookups()
 
 Fail:
     CustomTestLogFailure Assert, "TestCreateCachesLookups", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verify a lookup matches a whole entry and never a run of entries
+'@details
+'Both lookups are held as one delimited string, so a membership test has to
+'match a whole entry. The fixture lists "+", "-" and "/" as separate rows.
+'Asserts that each one is found on its own and that a pair of them joined
+'together is rejected, which a plain concatenated string would accept.
+'@TestMethod("FormulaData")
+Public Sub TestLookupMatchesWholeEntries()
+    CustomTestSetTitles Assert, "FormulaData", "TestLookupMatchesWholeEntries"
+    Dim formData As FormulaData
+
+    On Error GoTo Fail
+
+    Set formData = BuildFormulaData()
+
+    Assert.IsTrue formData.SpecialCharacterIncludes("-"), "Each listed character should be found on its own"
+    Assert.IsFalse formData.SpecialCharacterIncludes("+-"), "Two characters joined together are not one entry"
+    Assert.IsFalse formData.ExcelFormulasIncludes("SU"), "A prefix of a function name is not a function name"
+
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestLookupMatchesWholeEntries", Err.Number, Err.Description
 End Sub
 
 '@sub-title Verify Create raises when given a Nothing worksheet
