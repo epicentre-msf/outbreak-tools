@@ -1081,9 +1081,13 @@ End Function
 'True, the second column for a Yes/No interface flag. For each non-empty
 'entry the component is transferred via TransferComponent. When the flag
 'is "yes", the corresponding interface file (prefixed with "I") is also
-'transferred, and on export InterfaceIsTransferable first asks the class
-'whether it implements that interface. Returns True when at least one
-'component was processed.
+'transferred. Returns True when at least one component was processed.
+'
+'The flag is trusted in both directions. On export that means a table row
+'flagged "yes" writes I<name>.cls out of the VBProject, so a workbook still
+'holding an interface the repo deleted writes that file back. The guard for
+'that is the table itself: a class with no interface carries "no". Check
+'git status after an export.
 '@param lo ListObject. The development table containing component entries.
 '@param destinationFolder String. The disk folder for the transfer.
 '@param scope DevelopmentTransferScope. Whether entries are modules or classes.
@@ -1127,9 +1131,7 @@ Private Function TransferListEntries(ByVal lo As ListObject, _
                 'For classes the second column stores Yes/No for interface duplication.
                 flagValue = ResolveInterfaceFlag(interfaceColumn, rowIndex)
                 If flagValue = "yes" Then
-                    If InterfaceIsTransferable(codeName, mode) Then
-                        TransferComponent "I" & codeName, destinationFolder, scope, mode
-                    End If
+                    TransferComponent "I" & codeName, destinationFolder, scope, mode
                 End If
             End If
         End If
@@ -1147,60 +1149,6 @@ Private Function ResolveInterfaceFlag(ByVal interfaceColumn As Range, ByVal rowI
     If rowIndex > interfaceColumn.Rows.Count Then Exit Function
 
     ResolveInterfaceFlag = LCase$(Trim$(CStr(interfaceColumn.Cells(rowIndex, 1).Value)))
-End Function
-
-'@label:interface-is-transferable
-'@sub-title Whether the interface of a class may be moved in this direction.
-'@details
-'On import the answer is always yes: ImportComponent exits when the file is
-'absent, so a class whose flag says yes and whose interface file was deleted
-'costs one Dir$ call.
-'
-'On export the class has to say so itself. The workbook keeps every class it
-'was ever given, so an interface that was deleted from the repo can still sit
-'in the VBProject; exporting it would write that deleted file back to disk.
-'The declaration block of the class is read and the interface goes out only
-'when an "Implements I<name>" line is there.
-'@param codeName String. The class name read from the table.
-'@param mode DevelopmentTransferMode. Whether entries are being imported or exported.
-'@return Boolean. True when the interface may be transferred.
-'@Description("Return True when the class interface may be imported or exported.")
-Private Function InterfaceIsTransferable(ByVal codeName As String, _
-                                         ByVal mode As DevelopmentTransferMode) As Boolean
-
-    Dim component As Object
-    Dim codeLines As String
-    Dim declarationCount As Long
-    Dim entry As Variant
-    Dim expected As String
-
-    If mode <> transferExport Then
-        InterfaceIsTransferable = True
-        Exit Function
-    End If
-
-    On Error Resume Next
-        Set component = this.hostwb.VBProject.VBComponents(codeName)
-    On Error GoTo 0
-
-    If component Is Nothing Then Exit Function
-
-    On Error Resume Next
-        declarationCount = component.CodeModule.CountOfDeclarationLines
-        If declarationCount > 0 Then codeLines = component.CodeModule.Lines(1, declarationCount)
-    On Error GoTo 0
-
-    If LenB(codeLines) = 0 Then Exit Function
-
-    expected = "implements i" & LCase$(codeName)
-    codeLines = Replace$(Replace$(codeLines, vbCrLf, vbLf), vbCr, vbLf)
-
-    For Each entry In Split(codeLines, vbLf)
-        If LCase$(Trim$(CStr(entry))) = expected Then
-            InterfaceIsTransferable = True
-            Exit Function
-        End If
-    Next entry
 End Function
 
 '@label:transfer-component
