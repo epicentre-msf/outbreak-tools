@@ -2042,10 +2042,15 @@ Private Sub ApplyFormatting()
     unlockWidth = this.table.ListColumns.Count - LabelColumnIndex()
     If unlockWidth > 0 Then
         unlockOffset = LabelColumnIndex()
+        'An offset past the last column of the sheet answers Nothing, and that
+        'is a legitimate "there is nothing to unlock".
         On Error Resume Next
             Set unlockRange = dataRange.Offset(0, unlockOffset).Resize(dataRange.Rows.Count, unlockWidth)
-            If Not unlockRange Is Nothing Then unlockRange.Locked = False
         On Error GoTo 0
+
+        'A language column left locked stops the user typing a translation into
+        'it once the sheet is protected, with nothing saying why.
+        If Not unlockRange Is Nothing Then unlockRange.Locked = False
     End If
 
     On Error Resume Next
@@ -2060,9 +2065,7 @@ Private Sub ApplyFormatting()
         If columnRange.Column > dataRange.Columns(dataRange.Columns.Count).Column Then Exit Do
     Loop
 
-    On Error Resume Next
-        dataRange.EntireRow.AutoFit
-    On Error GoTo 0
+    dataRange.EntireRow.AutoFit
 End Sub
 
 
