@@ -217,8 +217,8 @@ End Sub
 'ObjectNotInitialized error is raised, confirming the factory guard clause
 'rejects a missing worksheet reference.
 '@TestMethod("FormulaData")
-Public Sub TestCreateRequiresWorksheet()
-    CustomTestSetTitles Assert, "FormulaData", "TestCreateRequiresWorksheet"
+Public Sub TestFormulaDataCreateRequiresWorksheet()
+    CustomTestSetTitles Assert, "FormulaData", "TestFormulaDataCreateRequiresWorksheet"
     Dim raisedError As Boolean
     Dim formData As FormulaData
 

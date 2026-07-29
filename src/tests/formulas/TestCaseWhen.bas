@@ -130,8 +130,8 @@ End Sub
 'property. Asserts that the formula is marked valid and that the output matches
 'the expected nested IF(condition, result, IF(...)) structure with the default
 'value as the innermost else.
-Public Sub TestValidFormulaParsesToNestedIf()
-    CustomTestSetTitles Assert, "CaseWhen", "TestValidFormulaParsesToNestedIf"
+Public Sub TestValidCaseWhenParsesToNestedIf()
+    CustomTestSetTitles Assert, "CaseWhen", "TestValidCaseWhenParsesToNestedIf"
     On Error GoTo Fail
 
     Dim expected As String
@@ -145,7 +145,7 @@ Public Sub TestValidFormulaParsesToNestedIf()
     Exit Sub
 
 Fail:
-    CustomTestLogFailure Assert, "TestValidFormulaParsesToNestedIf", Err.Number, Err.Description
+    CustomTestLogFailure Assert, "TestValidCaseWhenParsesToNestedIf", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("CaseWhen")
@@ -254,8 +254,8 @@ End Sub
 'parentheses. Acts by creating the parser and querying Valid, ParsedFormula,
 'and Categories. Asserts that the formula is marked invalid, the parsed output
 'is an empty string, and the category collection has zero length.
-Public Sub TestInvalidFormulaRejected()
-    CustomTestSetTitles Assert, "CaseWhen", "TestInvalidFormulaRejected"
+Public Sub TestInvalidCaseWhenRejected()
+    CustomTestSetTitles Assert, "CaseWhen", "TestInvalidCaseWhenRejected"
     On Error GoTo Fail
 
     Dim categories As BetterArray
@@ -270,7 +270,7 @@ Public Sub TestInvalidFormulaRejected()
     Exit Sub
 
 Fail:
-    CustomTestLogFailure Assert, "TestInvalidFormulaRejected", Err.Number, Err.Description
+    CustomTestLogFailure Assert, "TestInvalidCaseWhenRejected", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("CaseWhen")

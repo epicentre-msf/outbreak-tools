@@ -158,8 +158,8 @@ End Sub
 'Asserts that the result implements LLdictionary and that the start row,
 'start column, and target sheet name match the values passed to Create.
 '@TestMethod("LLdictionary")
-Public Sub TestCreateInitialisesData()
-    CustomTestSetTitles Assert, "LLdictionary", "TestCreateInitialisesData"
+Public Sub TestLLdictionaryCreateInitialisesData()
+    CustomTestSetTitles Assert, "LLdictionary", "TestLLdictionaryCreateInitialisesData"
     On Error GoTo Fail
     Assert.IsTrue (TypeOf Dictionary Is LLdictionary), "Expected Create to yield an interface implementation"
     Assert.IsTrue (Dictionary.Data.DataStartRow = 1), "Start row should remain at 1"
@@ -168,7 +168,7 @@ Public Sub TestCreateInitialisesData()
     Exit Sub
 
 Fail:
-    CustomTestLogFailure Assert, "TestCreateInitialisesData", Err.Number, Err.Description
+    CustomTestLogFailure Assert, "TestLLdictionaryCreateInitialisesData", Err.Number, Err.Description
 End Sub
 
 '@section Column Tests
@@ -342,8 +342,8 @@ End Sub
 'baseline row count. Acts by deleting the second list row via
 'Dictionary.DeleteRows. Asserts that the row count decreased by exactly one.
 '@TestMethod("LLdictionary")
-Public Sub TestDeleteRowsRemovesSelection()
-    CustomTestSetTitles Assert, "LLdictionary", "TestDeleteRowsRemovesSelection"
+Public Sub TestLLdictionaryDeleteRowsRemovesSelection()
+    CustomTestSetTitles Assert, "LLdictionary", "TestLLdictionaryDeleteRowsRemovesSelection"
     On Error GoTo Fail
 
     Dim lo As ListObject
@@ -358,7 +358,7 @@ Public Sub TestDeleteRowsRemovesSelection()
     Exit Sub
 
 Fail:
-    CustomTestLogFailure Assert, "TestDeleteRowsRemovesSelection", Err.Number, Err.Description
+    CustomTestLogFailure Assert, "TestLLdictionaryDeleteRowsRemovesSelection", Err.Number, Err.Description
 End Sub
 
 '@sub-title Verify InsertRows adds blank rows matching the selection height
@@ -369,8 +369,8 @@ End Sub
 'count increased by two, that the first inserted row is blank, and that the
 'original data shifted down below the inserted rows.
 '@TestMethod("LLdictionary")
-Public Sub TestInsertRowsMirrorsSelectionHeight()
-    CustomTestSetTitles Assert, "LLdictionary", "TestInsertRowsMirrorsSelectionHeight"
+Public Sub TestLLdictionaryInsertRowsMirrorsSelectionHeight()
+    CustomTestSetTitles Assert, "LLdictionary", "TestLLdictionaryInsertRowsMirrorsSelectionHeight"
     On Error GoTo Fail
 
     Dim lo As ListObject
@@ -396,7 +396,7 @@ Public Sub TestInsertRowsMirrorsSelectionHeight()
     Exit Sub
 
 Fail:
-    CustomTestLogFailure Assert, "TestInsertRowsMirrorsSelectionHeight", Err.Number, Err.Description
+    CustomTestLogFailure Assert, "TestLLdictionaryInsertRowsMirrorsSelectionHeight", Err.Number, Err.Description
 End Sub
 
 '@section Preparation Tests

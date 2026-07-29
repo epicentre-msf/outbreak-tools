@@ -113,8 +113,8 @@ End Sub
 'table. Asserts that Data is not Nothing and that NumberOfExports agrees with
 'the rows the table holds.
 '@TestMethod("LLExport")
-Public Sub TestCreateInitialisesData()
-    CustomTestSetTitles Assert, "LLExport", "TestCreateInitialisesData"
+Public Sub TestLLExportCreateInitialisesData()
+    CustomTestSetTitles Assert, "LLExport", "TestLLExportCreateInitialisesData"
     On Error GoTo Fail
 
     Assert.IsTrue (Not Manager.Data Is Nothing), "Expected Data to be initialised"
@@ -124,7 +124,7 @@ Public Sub TestCreateInitialisesData()
     Exit Sub
 
 Fail:
-    CustomTestLogFailure Assert, "TestCreateInitialisesData", Err.Number, Err.Description
+    CustomTestLogFailure Assert, "TestLLExportCreateInitialisesData", Err.Number, Err.Description
 End Sub
 
 '@section ExportSpecs
@@ -500,8 +500,8 @@ End Sub
 'Calls RemoveRows. Asserts that only one export remains and its identifier is
 'preserved as "export 1".
 '@TestMethod("LLExport")
-Public Sub TestRemoveRowsDeletesEmpty()
-    CustomTestSetTitles Assert, "LLExport", "TestRemoveRowsDeletesEmpty"
+Public Sub TestLLExportRemoveRowsDeletesEmpty()
+    CustomTestSetTitles Assert, "LLExport", "TestLLExportRemoveRowsDeletesEmpty"
     On Error GoTo Fail
 
     Manager.AddRows
@@ -514,7 +514,7 @@ Public Sub TestRemoveRowsDeletesEmpty()
     Exit Sub
 
 Fail:
-    CustomTestLogFailure Assert, "TestRemoveRowsDeletesEmpty", Err.Number, Err.Description
+    CustomTestLogFailure Assert, "TestLLExportRemoveRowsDeletesEmpty", Err.Number, Err.Description
 End Sub
 
 '@sub-title Verify that RemoveRows prunes dictionary columns for removed exports

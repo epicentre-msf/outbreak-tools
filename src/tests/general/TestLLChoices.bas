@@ -539,8 +539,8 @@ End Sub
 '   Choices.InsertRows, asserts that the row count increased by 2, the first
 '   inserted row is blank, and the previously second row shifted down to row 3
 '   with its value preserved.
-Public Sub TestInsertRowsMirrorsSelectionHeight()
-    CustomTestSetTitles Assert, "LLChoices", "TestInsertRowsMirrorsSelectionHeight"
+Public Sub TestLLChoicesInsertRowsMirrorsSelectionHeight()
+    CustomTestSetTitles Assert, "LLChoices", "TestLLChoicesInsertRowsMirrorsSelectionHeight"
     On Error GoTo Fail
 
     Dim lo As ListObject
@@ -566,7 +566,7 @@ Public Sub TestInsertRowsMirrorsSelectionHeight()
     Exit Sub
 
 Fail:
-    CustomTestLogFailure Assert, "TestInsertRowsMirrorsSelectionHeight", Err.Number, Err.Description
+    CustomTestLogFailure Assert, "TestLLChoicesInsertRowsMirrorsSelectionHeight", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("LLChoices")
@@ -575,8 +575,8 @@ End Sub
 '   targets the second data row for deletion, and calls Choices.DeleteRows.
 '   Asserts that the row count decreased by exactly one, confirming that only
 '   the targeted row was removed without side effects on adjacent rows.
-Public Sub TestDeleteRowsRemovesSelection()
-    CustomTestSetTitles Assert, "LLChoices", "TestDeleteRowsRemovesSelection"
+Public Sub TestLLChoicesDeleteRowsRemovesSelection()
+    CustomTestSetTitles Assert, "LLChoices", "TestLLChoicesDeleteRowsRemovesSelection"
     On Error GoTo Fail
 
     Dim lo As ListObject
@@ -594,7 +594,7 @@ Public Sub TestDeleteRowsRemovesSelection()
     Exit Sub
 
 Fail:
-    CustomTestLogFailure Assert, "TestDeleteRowsRemovesSelection", Err.Number, Err.Description
+    CustomTestLogFailure Assert, "TestLLChoicesDeleteRowsRemovesSelection", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("LLChoices")

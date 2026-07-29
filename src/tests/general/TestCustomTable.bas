@@ -346,8 +346,8 @@ End Sub
 '   ListRow, then calls RemoveRows(totalCount:=0) to strip empties. Asserts the table
 '   returns to three rows. A second call with totalCount:=2 further trims to two rows.
 '@TestMethod("CustomTable")
-Public Sub TestRemoveRowsDeletesEmpty()
-    CustomTestSetTitles Assert, "CustomTable", "TestRemoveRowsDeletesEmpty"
+Public Sub TestCustomTableRemoveRowsDeletesEmpty()
+    CustomTestSetTitles Assert, "CustomTable", "TestCustomTableRemoveRowsDeletesEmpty"
     On Error GoTo Fail
 
     Dim tableObject As CustomTable
@@ -366,7 +366,7 @@ Public Sub TestRemoveRowsDeletesEmpty()
     Exit Sub
 
 Fail:
-    CustomTestLogFailure Assert, "TestRemoveRowsDeletesEmpty", Err.Number, Err.Description
+    CustomTestLogFailure Assert, "TestCustomTableRemoveRowsDeletesEmpty", Err.Number, Err.Description
 End Sub
 
 '@sub-title Verifies that SetValue persists a value update to the correct cell

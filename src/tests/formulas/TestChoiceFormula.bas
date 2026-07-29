@@ -134,8 +134,8 @@ End Sub
 'and reading the ParsedFormula property. Asserts that the formula is marked
 'valid and that the output matches the expected nested IF structure with the
 'default value as the innermost else.
-Public Sub TestValidFormulaParsesToNestedIf()
-    CustomTestSetTitles Assert, "ChoiceFormula", "TestValidFormulaParsesToNestedIf"
+Public Sub TestValidChoiceFormulaParsesToNestedIf()
+    CustomTestSetTitles Assert, "ChoiceFormula", "TestValidChoiceFormulaParsesToNestedIf"
     On Error GoTo Fail
 
     Dim expected As String
@@ -149,7 +149,7 @@ Public Sub TestValidFormulaParsesToNestedIf()
     Exit Sub
 
 Fail:
-    CustomTestLogFailure Assert, "TestValidFormulaParsesToNestedIf", Err.Number, Err.Description
+    CustomTestLogFailure Assert, "TestValidChoiceFormulaParsesToNestedIf", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("ChoiceFormula")
@@ -234,8 +234,8 @@ End Sub
 'empty, and Categories has zero length. Second, a CASE_WHEN formula (wrong
 'token type) passed to the ChoiceFormula parser: asserts that it is also
 'rejected as invalid.
-Public Sub TestInvalidFormulaRejected()
-    CustomTestSetTitles Assert, "ChoiceFormula", "TestInvalidFormulaRejected"
+Public Sub TestInvalidChoiceFormulaRejected()
+    CustomTestSetTitles Assert, "ChoiceFormula", "TestInvalidChoiceFormulaRejected"
     On Error GoTo Fail
 
     Dim categories As BetterArray
@@ -253,7 +253,7 @@ Public Sub TestInvalidFormulaRejected()
     Exit Sub
 
 Fail:
-    CustomTestLogFailure Assert, "TestInvalidFormulaRejected", Err.Number, Err.Description
+    CustomTestLogFailure Assert, "TestInvalidChoiceFormulaRejected", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("ChoiceFormula")
