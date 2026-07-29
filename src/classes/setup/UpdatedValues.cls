@@ -861,12 +861,16 @@ Private Sub MarkKey(ByVal tableKey As String, ByVal headerText As String)
   rowIndex = KeyedNumber(this.rowsByKey, key)
   If rowIndex = 0 Then Exit Sub
   If rowIndex > this.rowCount Then Exit Sub
+
+  'The acknowledgement goes first, and it goes even when the flag already reads
+  '"yes". A reader that has acted on this column has to see the next edit too.
+  KeyedRemove this.handled, key
+
   If KeyedText(this.statusByKey, key) = STATUS_UPDATED Then Exit Sub
   If this.statusColumn Is Nothing Then Exit Sub
 
   this.statusColumn.Cells(rowIndex, 1).Value = STATUS_UPDATED
   SetStatus key, STATUS_UPDATED
-  KeyedRemove this.handled, key
 End Sub
 
 '@section CleanupHelpers
