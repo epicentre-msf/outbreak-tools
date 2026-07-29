@@ -21,12 +21,10 @@ Option Explicit
 'Provides cached, in-memory lookups for the Excel functions and special
 'characters that the formula parser is allowed to accept. On creation it
 'reads two ListObjects from a worksheet (T_XlsFonctions for functions,
-'T_ascii for separator characters) and stores the values in BetterArray
-'caches. It also maintains a registry of grouped formula mappings that
-'translate custom tokens (e.g. SUMIFS, MEANIFS) into their canonical
-'Excel aggregation functions. Consumers interact with this class
-'exclusively through the FormulaData interface.
-'@depends BetterArray
+'T_ascii for separator characters) and stores both as one delimited string
+'each. It also answers the grouped formula mappings that translate custom
+'tokens (e.g. SUMIFS, MEANIFS) into their canonical Excel aggregation
+'functions.
 '@version 1.0 (2026-02-09)
 
 
@@ -37,15 +35,24 @@ Option Explicit
 
 Private Type TFormulaData
     wksh As Worksheet
-    functions As BetterArray
-    characters As BetterArray
-    groupFunctions As BetterArray        'Registered grouped formula mappings
+    functionIndex As String         'Uppercase function names, delimited
+    characterIndex As String        'Separator characters as written, delimited
+    sealed As Boolean               'Set by the factory, closes the setter
 End Type
 
+Private Const CLASSNAME As String = "FormulaData"
 Private Const FORMULAS_TABLE_NAME As String = "T_XlsFonctions"
 Private Const FORMULAS_COLUMN_NAME As String = "ENG"
 Private Const CHARACTERS_TABLE_NAME As String = "T_ascii"
 Private Const CHARACTERS_COLUMN_NAME As String = "TEXT"
+
+'Both lookups are held as one string with this character around every entry,
+'so a membership test is one InStr rather than a walk over a BetterArray.
+'Formulas asks SpecialCharacterIncludes once per character of every formula in
+'the workbook and ExcelFormulasIncludes once per token, and BetterArray.Includes
+'copies the whole internal array before it searches. A worksheet cell cannot
+'hold this character, so it can never be part of an entry.
+Private Const INDEX_SEPARATOR As String = vbNullChar
 
 Private this As TFormulaData
 
@@ -57,28 +64,51 @@ Private this As TFormulaData
 '@details
 'Validates that the supplied worksheet contains the required ListObjects
 '(T_XlsFonctions and T_ascii) with expected columns, then reads their
-'data into memory caches. The returned instance exposes its surface
-'through the FormulaData interface so consumers never depend on the
-'concrete class.
+'data into memory. Each table is resolved once: the old code validated the
+'two tables and then resolved both again to read them.
 '@param formWksh Worksheet. The worksheet hosting the lookup tables.
 '@return FormulaData. A fully initialised instance ready for use by the Formulas parser.
 '@throws ProjectError.ObjectNotInitialized When formWksh is Nothing.
 '@throws ProjectError.ElementNotFound When a required table or column is missing.
 '@throws ProjectError.ErrorUnexpectedState When a required column contains no data.
-'@depends BetterArray
 '@export
 Public Function Create(ByVal formWksh As Worksheet) As FormulaData
-    ValidateWorksheet formWksh
+    If formWksh Is Nothing Then
+        ThrowError ProjectError.ObjectNotInitialized, "No worksheet supplied for FormulaData"
+    End If
 
     Dim instance As FormulaData
     Set instance = New FormulaData
     instance.Initialise formWksh
+    instance.Seal
     Set Create = instance
 End Function
 
+'@label:seal
+'@sub-title Prevent further changes to setup-only properties
+'@details
+'Marks the instance as sealed so guarded setters raise when invoked after
+'construction. Called by the factory before returning. It also closes the
+'back door the class used to carry: a direct New followed by Initialise
+'skipped nothing, but a later Wksh write rebuilt every lookup underneath a
+'parser that was already reading them.
+Public Sub Seal()
+    this.sealed = True
+End Sub
+
+'@label:guard-not-sealed
+'@sub-title Reject writes to setup-only properties after sealing
+'@details
+'Raises an error when a guarded setter is invoked on a sealed instance.
+'@param propName String. Name of the property being guarded.
+Private Sub GuardNotSealed(ByVal propName As String)
+    If this.sealed Then _
+        ThrowError ProjectError.SomethingWentWrong, propName & " is set at creation only"
+End Sub
+
 '@section PublicAccessors
 '===============================================================================
-'@description Properties that expose the internal state and worksheet ranges.
+'@description Properties that expose the internal state.
 
 '@label:wksh
 '@prop-title Worksheet hosting the lookup tables
@@ -93,36 +123,13 @@ End Property
 '@label:wksh-set
 '@prop-title Assign the worksheet hosting the lookup tables
 '@details
-'Replaces the worksheet reference and invalidates all cached lookups
-'so they are rebuilt from the new worksheet on the next access.
+'Replaces the worksheet reference and rereads both lookups from it. The
+'factory seals the instance, so this raises after construction.
 '@param formWksh Worksheet. The worksheet providing formula metadata.
+'@throws ProjectError.SomethingWentWrong When the instance is sealed.
 Public Property Set Wksh(ByVal formWksh As Worksheet)
-    Set this.wksh = formWksh
-    ResetCaches
-End Property
-
-'@label:formula-range
-'@prop-title Data body range containing allowed formulas
-'@details
-'Resolves the ENG column of the T_XlsFonctions ListObject and returns
-'its DataBodyRange. Callers can use this range to inspect the raw
-'worksheet data backing the function whitelist.
-'@return Range. The data body range covering the ENG column of the formulas table.
-'@throws ProjectError.ElementNotFound When the table or column cannot be resolved.
-Public Property Get FormulaRange() As Range
-    Set FormulaRange = ResolveColumnRange(FORMULAS_TABLE_NAME, FORMULAS_COLUMN_NAME)
-End Property
-
-'@label:special-characters-range
-'@prop-title Data body range containing allowed separator characters
-'@details
-'Resolves the TEXT column of the T_ascii ListObject and returns its
-'DataBodyRange. Provides direct access to the characters that the
-'tokeniser treats as delimiters.
-'@return Range. The data body range covering the TEXT column of the characters table.
-'@throws ProjectError.ElementNotFound When the table or column cannot be resolved.
-Public Property Get SpecialCharactersRange() As Range
-    Set SpecialCharactersRange = ResolveColumnRange(CHARACTERS_TABLE_NAME, CHARACTERS_COLUMN_NAME)
+    GuardNotSealed "Wksh"
+    Initialise formWksh
 End Property
 
 '@section Lookups
@@ -132,101 +139,203 @@ End Property
 '@label:special-character-includes
 '@sub-title Determine whether a special character is allowed
 '@details
-'Checks the in-memory character cache for the provided token. Returns
-'False immediately when the input is empty. The cache is built lazily
-'from the T_ascii table on first access.
+'Checks the character index for the provided token. Returns False when the
+'input is empty. The match is exact, including case: the T_ascii entries are
+'stored as they are written on the worksheet.
 '@param specialChar String. Single-character token to inspect.
 '@return Boolean. True when the character is listed in the lookup table.
 '@export
 Public Function SpecialCharacterIncludes(ByVal specialChar As String) As Boolean
-    Dim characterLookup As BetterArray
-
     If LenB(specialChar) = 0 Then Exit Function
 
-    Set characterLookup = EnsureCharacters()
-    SpecialCharacterIncludes = characterLookup.Includes(specialChar)
+    SpecialCharacterIncludes = IndexHolds(this.characterIndex, specialChar)
 End Function
 
 '@label:excel-formulas-includes
 '@sub-title Determine whether an Excel function is allowed
 '@details
-'Normalises the input to uppercase and checks the in-memory function
-'cache. Returns False immediately when the input is empty. The cache
-'is built lazily from the T_XlsFonctions table on first access.
+'Normalises the input to uppercase and checks the function index. Returns
+'False when the input is empty. Function names are stored uppercase, so the
+'lookup is case-insensitive.
 '@param ExcelFormula String. Function name to inspect.
 '@return Boolean. True when the function is listed in the lookup table.
 '@export
 Public Function ExcelFormulasIncludes(ByVal ExcelFormula As String) As Boolean
-    Dim functionLookup As BetterArray
-    Dim normalized As String
-
     If LenB(ExcelFormula) = 0 Then Exit Function
 
-    Set functionLookup = EnsureFunctions
-    normalized = UCase$(ExcelFormula)
-    ExcelFormulasIncludes = functionLookup.Includes(normalized)
+    ExcelFormulasIncludes = IndexHolds(this.functionIndex, UCase$(ExcelFormula))
 End Function
+
+'@section GroupFunctions
+'===============================================================================
+'@description The grouped formulas and the canonical Excel aggregation function
+'each token maps to.
+
+'@label:group-function-includes
+'@sub-title Determine whether a grouped function token is registered
+'@details
+'Normalises the input and looks it up in the mapping. Returns False for an
+'empty string and for a token that is not one of the seven.
+'@param functionName String. Grouped token to look up.
+'@return Boolean. True when the token is known.
+'@export
+Public Function IsGroupFunction(ByVal functionName As String) As Boolean
+    Dim aggregator As String
+    Dim usesNative As Boolean
+
+    IsGroupFunction = GroupMappingFound(functionName, aggregator, usesNative)
+End Function
+
+'@label:group-aggregator
+'@sub-title Retrieve the Excel aggregator linked to a grouped formula token
+'@details
+'Returns the canonical Excel aggregator function name for the token.
+'Returns vbNullString when the token is not one of the seven.
+'@param functionName String. Grouped token to translate.
+'@return String. Aggregator name or vbNullString when unknown.
+'@export
+Public Function GroupAggregator(ByVal functionName As String) As String
+    Dim aggregator As String
+    Dim usesNative As Boolean
+
+    If GroupMappingFound(functionName, aggregator, usesNative) Then
+        GroupAggregator = aggregator
+    End If
+End Function
+
+'@label:group-uses-native
+'@sub-title Determine whether the grouped function should emit a native Excel *IFS aggregator
+'@details
+'When True, the Formulas class emits the native *IFS function (e.g. SUMIFS)
+'instead of wrapping the aggregator in an IF block. Returns False when the
+'token is not one of the seven.
+'@param functionName String. Grouped token to inspect.
+'@return Boolean. True when the output uses the corresponding *IFS function directly.
+'@export
+Public Function GroupUsesNativeFunction(ByVal functionName As String) As Boolean
+    Dim aggregator As String
+    Dim usesNative As Boolean
+
+    If GroupMappingFound(functionName, aggregator, usesNative) Then
+        GroupUsesNativeFunction = usesNative
+    End If
+End Function
+
+'@label:group-mapping-found
+'@sub-title Resolve one grouped token to its aggregator and native flag
+'@details
+'The seven mappings are compiled in. The old class held them in a
+'BetterArray registry with routines to add and remove entries, and nothing
+'ever added one: the seven literals were the whole set. The three public
+'answers above each walked that registry with the same twenty lines.
+'@param functionName String. Grouped token to look up.
+'@param aggregator ByRef String. Filled with the Excel aggregator.
+'@param usesNative ByRef Boolean. Filled with the native-function flag.
+'@return Boolean. True when the token is one of the seven.
+Private Function GroupMappingFound(ByVal functionName As String, _
+                                   ByRef aggregator As String, _
+                                   ByRef usesNative As Boolean) As Boolean
+    Dim normalized As String
+
+    aggregator = vbNullString
+    usesNative = False
+
+    normalized = UCase$(Trim$(functionName))
+    If LenB(normalized) = 0 Then Exit Function
+
+    Select Case normalized
+        Case "SUMIFS"
+            aggregator = "SUMIFS"
+            usesNative = True
+        Case "COUNTIFS"
+            aggregator = "COUNTIFS"
+            usesNative = True
+        Case "NIFS"
+            aggregator = "COUNTIFS"
+            usesNative = True
+        Case "MINIFS"
+            aggregator = "MIN"
+        Case "MAXIFS"
+            aggregator = "MAX"
+        Case "MEDIANIFS"
+            aggregator = "MEDIAN"
+        Case "MEANIFS"
+            aggregator = "AVERAGE"
+        Case Else
+            Exit Function
+    End Select
+
+    GroupMappingFound = True
+End Function
+
+'@label:register-group-tokens
+'@sub-title Put the grouped tokens and their aggregators in the function index
+'@details
+'The seven tokens and the four aggregators they name are accepted by the
+'tokeniser whether or not the worksheet table lists them.
+'Formulas.AppendToken depends on this and a test asserts it.
+Private Sub RegisterGroupTokens()
+    AppendFunctionToken "SUMIFS"
+    AppendFunctionToken "COUNTIFS"
+    AppendFunctionToken "NIFS"
+    AppendFunctionToken "MINIFS"
+    AppendFunctionToken "MAXIFS"
+    AppendFunctionToken "MEDIANIFS"
+    AppendFunctionToken "MEANIFS"
+    AppendFunctionToken "MIN"
+    AppendFunctionToken "MAX"
+    AppendFunctionToken "MEDIAN"
+    AppendFunctionToken "AVERAGE"
+End Sub
 
 '@section PrivateHelpers
 '===============================================================================
-'@description Initialisation, validation, and cache management utilities.
+'@description Initialisation, validation, and index building.
 
 '@label:initialise
 '@sub-title Perform one-time initialisation of the instance
 '@details
-'Stores the worksheet reference, clears any stale caches, and eagerly
-'builds both function and character lookups so the instance is ready
-'for immediate use after creation.
+'Stores the worksheet reference and reads both lookup columns into memory.
+'It stays Public because the factory calls it on a second instance, and it
+'is guarded: after the factory seals that instance, this raises.
 '@param formWksh Worksheet. The worksheet providing lookup sources.
-Public Sub Initialise(ByVal formWksh As Worksheet)
-    Set this.wksh = formWksh
-    ResetCaches
-    BuildCaches
-End Sub
-
-'@label:validate-worksheet
-'@sub-title Ensure the worksheet contains the required list objects and columns
-'@details
-'Guards against Nothing references and delegates to ValidateListObject
-'for each of the two required tables (formulas and characters). Raises
-'an error at the first missing element encountered.
-'@param targetSheet Worksheet. The worksheet to validate.
-'@throws ProjectError.ObjectNotInitialized When targetSheet is Nothing.
 '@throws ProjectError.ElementNotFound When a required table or column is missing.
-'@throws ProjectError.ErrorUnexpectedState When a column contains no data.
-Private Sub ValidateWorksheet(ByVal targetSheet As Worksheet)
-    If targetSheet Is Nothing Then
-        ThrowError ProjectError.ObjectNotInitialized, "No worksheet supplied for FormulaData"
-    End If
+'@throws ProjectError.ErrorUnexpectedState When a required column contains no data.
+'@throws ProjectError.SomethingWentWrong When the instance is sealed.
+Public Sub Initialise(ByVal formWksh As Worksheet)
+    GuardNotSealed "Initialise"
 
-    ValidateListObject targetSheet, FORMULAS_TABLE_NAME, FORMULAS_COLUMN_NAME
-    ValidateListObject targetSheet, CHARACTERS_TABLE_NAME, CHARACTERS_COLUMN_NAME
+    Set this.wksh = formWksh
+    this.functionIndex = BuildIndex(ColumnRange(FORMULAS_TABLE_NAME, FORMULAS_COLUMN_NAME), True)
+    this.characterIndex = BuildIndex(ColumnRange(CHARACTERS_TABLE_NAME, CHARACTERS_COLUMN_NAME), False)
+    RegisterGroupTokens
 End Sub
 
-'@label:validate-list-object
-'@sub-title Confirm the presence of a specific ListObject and column
+'@label:column-range
+'@sub-title Resolve the data body range of one lookup column
 '@details
-'Attempts to locate the named ListObject and column on the host
-'worksheet using guarded On Error Resume Next blocks. Raises a
-'ProjectError when any component is missing or the column has no data.
-'@param hostSheet Worksheet. The worksheet containing the table.
-'@param tableName String. Name of the ListObject to inspect.
-'@param columnName String. Header expected within the table.
-'@throws ProjectError.ElementNotFound When the table or column is absent.
-'@throws ProjectError.ErrorUnexpectedState When the column DataBodyRange is Nothing.
-Private Sub ValidateListObject(ByVal hostSheet As Worksheet, _
-                               ByVal tableName As String, _
-                               ByVal columnName As String)
+'Locates the named ListObject and column on the stored worksheet and
+'returns the DataBodyRange, raising the error that says which part is
+'missing. This is the only place either table is resolved.
+'@param tableName String. ListObject name.
+'@param columnName String. ListColumn header.
+'@return Range. The data body range containing the column data.
+'@throws ProjectError.ElementNotFound When the table or the column is absent.
+'@throws ProjectError.ErrorUnexpectedState When the column holds no data.
+Private Function ColumnRange(ByVal tableName As String, _
+                             ByVal columnName As String) As Range
     Dim tableObj As ListObject
     Dim targetColumn As ListColumn
 
+    'Scoped: Excel raises when a ListObject or a ListColumn is absent, and
+    'the message it gives names neither the table nor the sheet.
     On Error Resume Next
-        Set tableObj = hostSheet.ListObjects(tableName)
+        Set tableObj = this.wksh.ListObjects(tableName)
     On Error GoTo 0
 
     If tableObj Is Nothing Then
         ThrowError ProjectError.ElementNotFound, _
-                   "Table " & tableName & " was not found on worksheet " & hostSheet.Name
+                   "Table " & tableName & " was not found on worksheet " & this.wksh.Name
     End If
 
     On Error Resume Next
@@ -242,328 +351,107 @@ Private Sub ValidateListObject(ByVal hostSheet As Worksheet, _
         ThrowError ProjectError.ErrorUnexpectedState, _
                    "Table " & tableName & " column " & columnName & " does not contain any data"
     End If
-End Sub
 
-'@label:resolve-column-range
-'@sub-title Resolve and return the data body range for a column
-'@details
-'Looks up the named table and column on the stored worksheet and
-'returns its DataBodyRange. Raises an error when the range cannot be
-'resolved, which typically indicates the table structure was modified
-'after the instance was created.
-'@param tableName String. ListObject name.
-'@param columnName String. ListColumn header.
-'@return Range. The data body range containing the column data.
-'@throws ProjectError.ElementNotFound When the column cannot be resolved.
-Private Function ResolveColumnRange(ByVal tableName As String, _
-                                    ByVal columnName As String) As Range
-    Dim columnRange As Range
-
-    On Error Resume Next
-        Set columnRange = Wksh.ListObjects(tableName).ListColumns(columnName).DataBodyRange
-    On Error GoTo 0
-
-    If columnRange Is Nothing Then
-        ThrowError ProjectError.ElementNotFound, _
-                   "Unable to resolve column " & columnName & " in table " & tableName
-    End If
-
-    Set ResolveColumnRange = columnRange
+    Set ColumnRange = targetColumn.DataBodyRange
 End Function
 
-'@label:reset-caches
-'@sub-title Reset cached lookups so they reload on next use
+'@label:build-index
+'@sub-title Read one column and turn it into a delimited lookup string
 '@details
-'Sets the three cache references (functions, characters, group
-'functions) to Nothing. The next call to any lookup method will
-'trigger a lazy rebuild from the worksheet.
-Private Sub ResetCaches()
-    Set this.functions = Nothing
-    Set this.characters = Nothing
-    Set this.groupFunctions = Nothing
-End Sub
-
-'@label:build-caches
-'@sub-title Build in-memory caches from the worksheet tables
-'@details
-'Reads the formula and character ranges into BetterArray instances
-'and seeds the grouped-function registry with default mappings.
-'Function names are uppercased for case-insensitive matching while
-'character tokens are stored verbatim.
-Private Sub BuildCaches()
-    Set this.functions = BuildLookup(ResolveColumnRange(FORMULAS_TABLE_NAME, FORMULAS_COLUMN_NAME), True)
-    Set this.characters = BuildLookup(ResolveColumnRange(CHARACTERS_TABLE_NAME, CHARACTERS_COLUMN_NAME), False)
-    InitialiseGroupFunctions
-End Sub
-
-'@label:ensure-functions
-'@sub-title Ensure the function lookup is initialised and return it
-'@details
-'Lazily rebuilds all caches when the function BetterArray is Nothing,
-'then returns the function lookup for immediate use.
-'@return BetterArray. Collection keyed by uppercase function names.
-Private Function EnsureFunctions() As BetterArray
-    If this.functions Is Nothing Then BuildCaches
-    Set EnsureFunctions = this.functions
-End Function
-
-'@label:ensure-characters
-'@sub-title Ensure the character lookup is initialised and return it
-'@details
-'Lazily rebuilds all caches when the character BetterArray is Nothing,
-'then returns the character lookup for immediate use.
-'@return BetterArray. Collection keyed by literal characters.
-Private Function EnsureCharacters() As BetterArray
-    If this.characters Is Nothing Then BuildCaches
-    Set EnsureCharacters = this.characters
-End Function
-
-'@label:build-lookup
-'@sub-title Convert a column of cells into a lookup array
-'@details
-'Iterates over each cell in the source range, skips empty values,
-'optionally uppercases the entry, and pushes only distinct values
-'into the resulting BetterArray. The array uses a zero-based lower
-'bound for consistent indexing across all caches.
-'@param sourceRange Range. The cells containing the values to cache.
+'Reads the whole column in one crossing, then walks the values in memory.
+'The old code read one cell at a time and called BetterArray.Includes once
+'per row against the very list it was filling, which copies the whole
+'internal array on every call. Duplicates are skipped with one InStr over
+'the string being built.
+'@param sourceRange Range. The cells containing the values to index.
 '@param normaliseCase Boolean. True to uppercase entries before storing.
-'@return BetterArray. Collection containing the distinct values.
-Private Function BuildLookup(ByVal sourceRange As Range, _
-                             ByVal normaliseCase As Boolean) As BetterArray
-    Dim list As BetterArray
-    Dim cell As Range
+'@return String. The distinct values, each wrapped in INDEX_SEPARATOR.
+Private Function BuildIndex(ByVal sourceRange As Range, _
+                            ByVal normaliseCase As Boolean) As String
+    Dim entries As Variant
     Dim entry As String
+    Dim counter As Long
+    Dim builder As String
 
-    Set list = New BetterArray
-    list.LowerBound = 0
+    entries = ColumnValues(sourceRange)
+    builder = INDEX_SEPARATOR
 
-    For Each cell In sourceRange.Cells
-        entry = CStr(cell.Value)
+    For counter = LBound(entries) To UBound(entries)
+        entry = entries(counter)
         If LenB(entry) > 0 Then
             If normaliseCase Then entry = UCase$(entry)
-            If Not list.Includes(entry) Then list.Push entry
+            If InStr(1, builder, INDEX_SEPARATOR & entry & INDEX_SEPARATOR, vbBinaryCompare) = 0 Then
+                builder = builder & entry & INDEX_SEPARATOR
+            End If
         End If
-    Next cell
+    Next
 
-    Set BuildLookup = list
+    BuildIndex = builder
 End Function
 
-'@section GroupFunctions
-'===============================================================================
-'@description Maintains an in-memory registry of grouped formulas along with
-'the canonical Excel aggregation function each token maps to.
-
-'@label:initialise-group-functions
-'@sub-title Seed the grouped-formula registry with recognised mappings
+'@label:column-values
+'@sub-title Read a one-column range into a string array
 '@details
-'Ensures the registry exists and registers the seven built-in grouped
-'formulas (SUMIFS, COUNTIFS, NIFS, MINIFS, MAXIFS, MEDIANIFS, MEANIFS)
-'together with their corresponding Excel aggregators and native flags.
-Private Sub InitialiseGroupFunctions()
+'A range of one cell answers with a scalar rather than an array, so that
+'case is handled on its own.
+'@param sourceRange Range. The one-column range to read.
+'@return Variant. A one-based array of strings.
+Private Function ColumnValues(ByVal sourceRange As Range) As Variant
+    Dim values As Variant
+    Dim result() As String
+    Dim counter As Long
 
-    EnsureGroupRegistry
-
-    RegisterGroupFunction "SUMIFS", "SUMIFS", True
-    RegisterGroupFunction "COUNTIFS", "COUNTIFS", True
-    RegisterGroupFunction "NIFS", "COUNTIFS", True
-    RegisterGroupFunction "MINIFS", "MIN", False
-    RegisterGroupFunction "MAXIFS", "MAX", False
-    RegisterGroupFunction "MEDIANIFS", "MEDIAN", False
-    RegisterGroupFunction "MEANIFS", "AVERAGE", False
-End Sub
-
-'@label:ensure-group-registry
-'@sub-title Guarantee the grouped-formula registry exists and is seeded
-'@details
-'Creates a new zero-based BetterArray when the registry is Nothing.
-'Called before any read or write operation on the grouped-function list
-'to prevent Nothing-reference errors.
-Private Sub EnsureGroupRegistry()
-    If this.groupFunctions Is Nothing Then
-        Set this.groupFunctions = New BetterArray
-        this.groupFunctions.LowerBound = 0
+    If sourceRange.Cells.Count = 1 Then
+        ReDim result(1 To 1)
+        result(1) = CellText(sourceRange.Value)
+    Else
+        values = sourceRange.Value
+        ReDim result(1 To UBound(values, 1))
+        For counter = 1 To UBound(values, 1)
+            result(counter) = CellText(values(counter, 1))
+        Next
     End If
-End Sub
 
-'@label:register-group-function
-'@sub-title Register a grouped formula token and its Excel aggregator
+    ColumnValues = result
+End Function
+
+'@label:cell-text
+'@sub-title Read one cell value as text
 '@details
-'Normalises both names to uppercase, removes any prior mapping for the
-'same token, and stores a three-element array (token, aggregator,
-'useNative flag). Also ensures that both the token and its aggregator
-'appear in the main function cache so the tokeniser accepts them.
-'@param functionName String. Grouped token as it appears in setup formulas.
-'@param aggregatorName String. Canonical Excel aggregator to generate.
-'@param useNative Optional Boolean. When True the output uses the native *IFS function directly. Defaults to False.
-Private Sub RegisterGroupFunction(ByVal functionName As String, _
-                                  ByVal aggregatorName As String, _
-                                  Optional ByVal useNative As Boolean = False)
-    Dim normalizedFunction As String
-    Dim normalizedAggregator As String
-    Dim mapping As Variant
+'A cell holding an error value raises a type mismatch on CStr, and a table
+'the user is editing can hold one.
+'@param cellValue Variant. The value read from the worksheet.
+'@return String. The text, or an empty string.
+Private Function CellText(ByVal cellValue As Variant) As String
+    If IsError(cellValue) Then Exit Function
+    If IsNull(cellValue) Then Exit Function
+    If IsEmpty(cellValue) Then Exit Function
 
-    normalizedFunction = UCase$(Trim$(functionName))
-    normalizedAggregator = UCase$(Trim$(aggregatorName))
+    CellText = CStr(cellValue)
+End Function
 
-    If LenB(normalizedFunction) = 0 Then Exit Sub
-    If LenB(normalizedAggregator) = 0 Then Exit Sub
+'@label:index-holds
+'@sub-title Test one entry against a delimited lookup string
+'@param lookupIndex String. The delimited index to search.
+'@param entry String. The entry to look for.
+'@return Boolean. True when the index holds the entry.
+Private Function IndexHolds(ByVal lookupIndex As String, ByVal entry As String) As Boolean
+    IndexHolds = (InStr(1, lookupIndex, INDEX_SEPARATOR & entry & INDEX_SEPARATOR, vbBinaryCompare) > 0)
+End Function
 
-    EnsureGroupRegistry
-    RemoveGroupFunctionMapping normalizedFunction
-
-    mapping = Array(normalizedFunction, normalizedAggregator, CBool(useNative))
-    this.groupFunctions.Push mapping
-
-    EnsureFunctionToken normalizedFunction
-    EnsureFunctionToken normalizedAggregator
-End Sub
-
-'@label:ensure-function-token
-'@sub-title Insert a token into the Excel-function cache when absent
-'@details
-'Normalises the token to uppercase, creates the function cache if
-'needed, and appends the token only when it is not already present.
-'This ensures grouped function names are accepted by the tokeniser.
+'@label:append-function-token
+'@sub-title Add one token to the function index when it is not already there
 '@param functionToken String. Token to guarantee in the lookup.
-Private Sub EnsureFunctionToken(ByVal functionToken As String)
+Private Sub AppendFunctionToken(ByVal functionToken As String)
     Dim normalized As String
 
     normalized = UCase$(Trim$(functionToken))
     If LenB(normalized) = 0 Then Exit Sub
 
-    If this.functions Is Nothing Then
-        Set this.functions = New BetterArray
-        this.functions.LowerBound = 0
-    End If
-
-    If Not this.functions.Includes(normalized) Then
-        this.functions.Push normalized
+    If Not IndexHolds(this.functionIndex, normalized) Then
+        this.functionIndex = this.functionIndex & normalized & INDEX_SEPARATOR
     End If
 End Sub
-
-'@label:remove-group-function-mapping
-'@sub-title Remove any existing mapping for the provided grouped token
-'@details
-'Iterates the registry in reverse order and removes entries whose
-'first element matches the normalised function name. Reverse iteration
-'prevents index shifting issues when removing from a BetterArray.
-'@param functionName String. Grouped formula token to clear.
-Private Sub RemoveGroupFunctionMapping(ByVal functionName As String)
-    Dim idx As Long
-    Dim entry As Variant
-    Dim normalized As String
-
-    If this.groupFunctions Is Nothing Then Exit Sub
-    If this.groupFunctions.Length = 0 Then Exit Sub
-
-    normalized = UCase$(Trim$(functionName))
-    If LenB(normalized) = 0 Then Exit Sub
-
-    For idx = this.groupFunctions.UpperBound To this.groupFunctions.LowerBound Step -1
-        entry = this.groupFunctions.Item(idx)
-        If IsArray(entry) Then
-            If StrComp(CStr(entry(0)), normalized, vbBinaryCompare) = 0 Then
-                this.groupFunctions.Remove idx
-            End If
-        End If
-    Next idx
-End Sub
-
-'@label:group-function-includes
-'@sub-title Determine whether a grouped function token is registered
-'@details
-'Normalises the input and scans the registry for a matching first
-'element. Returns True on the first match. Returns False when the
-'registry is empty or no match is found.
-'@param functionName String. Grouped token to look up.
-'@return Boolean. True when the token is known.
-'@export
-Public Function IsGroupFunction(ByVal functionName As String) As Boolean
-    Dim idx As Long
-    Dim entry As Variant
-    Dim normalized As String
-
-    normalized = UCase$(Trim$(functionName))
-    If LenB(normalized) = 0 Then Exit Function
-
-    EnsureGroupRegistry
-
-    If this.groupFunctions.Length = 0 Then Exit Function
-
-    For idx = this.groupFunctions.LowerBound To this.groupFunctions.UpperBound
-        entry = this.groupFunctions.Item(idx)
-        If IsArray(entry) Then
-            If StrComp(CStr(entry(0)), normalized, vbBinaryCompare) = 0 Then
-                IsGroupFunction = True
-                Exit Function
-            End If
-        End If
-    Next idx
-End Function
-
-'@label:group-aggregator
-'@sub-title Retrieve the Excel aggregator linked to a grouped formula token
-'@details
-'Scans the registry for the matching token and returns the second
-'element of the mapping array, which is the canonical Excel aggregator
-'function name. Returns vbNullString when the token is not found.
-'@param functionName String. Grouped token to translate.
-'@return String. Aggregator name or vbNullString when unknown.
-'@export
-Public Function GroupAggregator(ByVal functionName As String) As String
-    Dim idx As Long
-    Dim entry As Variant
-    Dim normalized As String
-
-    normalized = UCase$(Trim$(functionName))
-    If LenB(normalized) = 0 Then Exit Function
-
-    EnsureGroupRegistry
-
-    If this.groupFunctions.Length = 0 Then Exit Function
-
-    For idx = this.groupFunctions.LowerBound To this.groupFunctions.UpperBound
-        entry = this.groupFunctions.Item(idx)
-        If IsArray(entry) Then
-            If StrComp(CStr(entry(0)), normalized, vbBinaryCompare) = 0 Then
-                GroupAggregator = CStr(entry(1))
-                Exit Function
-            End If
-        End If
-    Next idx
-End Function
-
-'@label:group-uses-native
-'@sub-title Determine whether the grouped function should emit a native Excel *IFS aggregator
-'@details
-'Looks up the third element of the mapping array for the given token.
-'When True, the Formulas class emits the native *IFS function (e.g.
-'SUMIFS) instead of wrapping the aggregator in an IF block.
-'@param functionName String. Grouped token to inspect.
-'@return Boolean. True when the output uses the corresponding *IFS function directly.
-'@export
-Public Function GroupUsesNativeFunction(ByVal functionName As String) As Boolean
-    Dim idx As Long
-    Dim entry As Variant
-    Dim normalized As String
-
-    normalized = UCase$(Trim$(functionName))
-    If LenB(normalized) = 0 Then Exit Function
-
-    EnsureGroupRegistry
-
-    If this.groupFunctions.Length = 0 Then Exit Function
-
-    For idx = this.groupFunctions.LowerBound To this.groupFunctions.UpperBound
-        entry = this.groupFunctions.Item(idx)
-        If IsArray(entry) Then
-            If StrComp(CStr(entry(0)), normalized, vbBinaryCompare) = 0 Then
-                GroupUsesNativeFunction = CBool(entry(2))
-                Exit Function
-            End If
-        End If
-    Next idx
-End Function
 
 '@section ErrorHandling
 '===============================================================================
@@ -573,10 +461,12 @@ End Function
 '@sub-title Raise a consistent error for this class
 '@details
 'Wrapper around Err.Raise that standardises the source to "FormulaData",
-'providing a consistent stack trace across all methods in this class.
+'providing a consistent stack trace across all methods in this class. The
+'message goes through as written, the same as the other five classes in
+'this folder.
 '@param errNumb Long. ProjectError code describing the failure.
 '@param errorMessage String. Human-readable explanation.
 '@throws ProjectError.<varies> Always raises the specified error.
 Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
-    Err.Raise errNumb, "FormulaData", "Error: " & errorMessage
+    Err.Raise errNumb, CLASSNAME, errorMessage
 End Sub
