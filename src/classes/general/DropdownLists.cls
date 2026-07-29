@@ -222,11 +222,15 @@ End Property
 '@label:refresh-registry
 '@sub-title Read the dropdown registry again from the worksheet
 '@details
-'Every public entry point calls this once. One call therefore reads the
-'two registry columns a single time, and every lookup after that runs in
-'memory. The copy is dropped at the start of the next call because
-'another DropdownLists object can hold the same worksheet and change the
-'registry in between.
+'A routine that changes the registry calls this once at its start. One call
+'reads the two registry columns a single time, and every lookup after that
+'runs in memory. The copy is dropped first because another DropdownLists
+'object can hold the same worksheet and change the registry in between.
+'
+'SetValidation and AddLink read the registry and never write it, so they
+'call EnsureRegistry and keep the copy. One SetupPreparation.Prepare makes
+'56 SetValidation calls, and each forced reload costs two worksheet
+'crossings for bookkeeping alone.
 Private Sub RefreshRegistry()
     this.registryLoaded = False
     EnsureRegistry
@@ -1047,7 +1051,10 @@ Public Sub SetValidation(ByVal cellRng As Range, ByVal listName As String, _
 
     Dim dropdownName As String
 
-    RefreshRegistry
+    'This reads the registry and never writes it, so the copy held in memory
+    'is good enough. Every routine that changes the registry drops that copy,
+    'so a run of validations after an Add still sees the new entry.
+    EnsureRegistry
 
     If MissingDropdown(listName, "There is no available dropdown for " & listName) Then Exit Sub
 
@@ -1108,7 +1115,9 @@ Private Sub AddLink(ByVal listName As String, ByVal targetRng As Range, _
     Dim savedInteriorColor As Long
     Dim savedFontColor As Long
 
-    RefreshRegistry
+    'Reads the registry to find the label cell and never writes it, so the
+    'copy held in memory is used.
+    EnsureRegistry
 
     If MissingDropdown(listName, _
         "Can not add a returnlink on a non existing dropdown: " & listName & " not found.") Then Exit Sub
