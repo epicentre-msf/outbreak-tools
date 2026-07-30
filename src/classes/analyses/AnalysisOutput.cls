@@ -604,6 +604,15 @@ Private Sub WriteTable(ByVal loName As String, _
     Set tabRng = lo.ListRows(1).Range
 
     Do
+        ' The handler is armed before the specification is read, so a malformed
+        ' setup row is skipped like any other bad table. Reading it outside the
+        ' guarded window took the whole analysis down on one unreadable row.
+        ' Until TableId is known the row number stands in for it, because the
+        ' handler names the table it lost and an empty name would point at the
+        ' table before this one.
+        tabId = "row " & tabRng.Row
+        On Error GoTo TableError
+
         Set specs = TableSpecs.Create(hRng, tabRng, lData.Dictionary())
         Set nextSpecs = Nothing
         addPrevSecMinMaxFormula = False
@@ -620,16 +629,16 @@ Private Sub WriteTable(ByVal loName As String, _
         ' Bug #2 fix: push to LOCAL sectionsList, not shared instance array
         If isNewSection Then sectionsList.Push goToSectionLabel & ": " & specs.Value("section")
 
-        ' Bug #3 fix: per-table error handling — wrap table creation in error handler
-        On Error GoTo TableError
-
         Set tabl = CrossTable.Create(specs, outsh, lData)
         tabl.Build
         Set tabform = CrossTableFormula.Create(tabl, formData)
         tabform.AddFormulas
         tabl.Format design
 
-        On Error GoTo 0
+        ' The handler stays armed over the rest of the table. Disarming it here
+        ' left the checkings harvest, the range registration, the graphs and the
+        ' min-max formulas unguarded, so a failure in any of them escaped the
+        ' per-table skip and ended the run.
 
         ' Harvest cross-table checkings
         If tabl.HasCheckings Then HarvestCollaboratorCheckings tabl.CheckingValues
@@ -647,9 +656,13 @@ Private Sub WriteTable(ByVal loName As String, _
         ' Non-temporal graphs
         If specs.HasGraph() And (Not containsTimeSeries) Then
             grHeight = 1
+            ' An empty or non-numeric geo count leaves the default of 1 rather
+            ' than raising out of CLng.
             On Error Resume Next
             grHeight = CLng(specs.Value("n geo"))
-            On Error GoTo 0
+            ' Back to the per-table handler, not off. Switching the handler off
+            ' here disarmed it for the whole rest of the table.
+            On Error GoTo TableError
 
             Set cellRng = outsh.Cells(tabl.StartRow - 2, tabl.EndColumn + 2)
             If tabType = ScopeSpatial Then Set cellRng = cellRng.Offset(, 2)
