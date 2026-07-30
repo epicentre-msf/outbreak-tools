@@ -69,8 +69,8 @@ Private Const PASTING_NAME As String = "RNG_PastingCol"
 Private Const REGISTRY_COL As Long = 3
 Private Const FIRST_TABLE_COL As Long = 7
 
-' One table is four columns wide and the next one starts two columns past the
-' last one it used.
+' An administrative table is four columns wide and the next one starts two
+' columns past the last one it used.
 Private Const SECOND_TABLE_COL As Long = 12
 
 Private Assert As CustomTest
@@ -974,39 +974,44 @@ TestFail:
     CustomTestLogFailure Assert, "TestFacilityCreatesOneListObject", Err.Number, Err.Description
 End Sub
 
-'@sub-title Verify a facility table leaves its population and attack rate empty.
+'@sub-title Verify a facility table is the lookup key and the value.
 '@details
-'The population lookup reads the administrative population columns of the
-'geobase, and a facility carries no population column of its own. The two columns
-'are kept because LLSpatial.Update resizes every spatial table to four columns.
+'A health facility has no population, so the population and the attack rate
+'belong to an administrative table alone. The facility table used to carry all
+'four columns with the last two always blank, and LLSpatial.Update resized every
+'spatial table to four columns, which is what kept them.
 '@TestMethod("SpatialTables")
-Public Sub TestFacilitySkipsPopulationAndAttackRate()
-    CustomTestSetTitles Assert, "SpatialTables", "TestFacilitySkipsPopulationAndAttackRate"
+Public Sub TestAFacilityTableIsTwoColumns()
+    CustomTestSetTitles Assert, "SpatialTables", "TestAFacilityTableIsTwoColumns"
     On Error GoTo TestFail
 
     Dim varName As String
     Dim lo As ListObject
-    Dim dataRng As Range
+    Dim headerRng As Range
 
     SpatialSheet
     BuildFixture SpatialRows(HF_VARIABLE, COUNT_CALL_FUNCTION)
     WriteSpatial 1, varName
 
     Set lo = SpatialTable("spatial_hf_" & varName)
-    Set dataRng = lo.ListRows(1).Range
+    Set headerRng = lo.HeaderRowRange
 
-    Assert.AreEqual CLng(4), lo.ListColumns.Count, _
-                    "A facility table is four columns wide, the way LLSpatial resizes it"
-    Assert.IsTrue IsFormula(CStr(dataRng.Cells(1, 2).Formula)), _
+    Assert.AreEqual CLng(2), lo.ListColumns.Count, _
+                    "A facility table is the lookup key and the value"
+    Assert.AreEqual "tabl_hf_" & varName, CStr(headerRng.Cells(1, 1).Value), _
+                    "The first column is the lookup key"
+    Assert.AreEqual "formula_hf", CStr(headerRng.Cells(1, 2).Value), _
+                    "The second column is the value LLSpatial reads"
+    Assert.IsTrue IsFormula(CStr(lo.ListRows(1).Range.Cells(1, 2).Formula)), _
                   "The value column of a facility table holds its formula"
-    Assert.AreEqual vbNullString, CStr(dataRng.Cells(1, 3).Formula), _
-                    "The population column of a facility table stays empty"
-    Assert.AreEqual vbNullString, CStr(dataRng.Cells(1, 4).Formula), _
-                    "The attack rate column of a facility table stays empty"
+    Assert.IsFalse HasColumn(lo, "population_hf"), _
+                   "A facility table carries no population column"
+    Assert.IsFalse HasColumn(lo, "attack_rate_hf"), _
+                   "A facility table carries no attack rate column"
 
     Exit Sub
 TestFail:
-    CustomTestLogFailure Assert, "TestFacilitySkipsPopulationAndAttackRate", Err.Number, Err.Description
+    CustomTestLogFailure Assert, "TestAFacilityTableIsTwoColumns", Err.Number, Err.Description
 End Sub
 
 '@sub-title Verify a facility variable already built is left alone.

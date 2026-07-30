@@ -20,8 +20,7 @@ Option Explicit
 '@description
 'Creates the spatial analysis ListObjects on the "spatial_tables__" worksheet at
 'build time. For each cross-table row variable it builds either four
-'administrative tables (adm1 to adm4) or one health facility table, each with a
-'formula column, a population column and an attack rate column.
+'administrative tables (adm1 to adm4) or one health facility table.
 '
 'THE CONTRACT WITH LLSPATIAL
 '-------------------------------------------------------------------------------
@@ -32,11 +31,11 @@ Option Explicit
 '
 '    listofgeovars              one row per spatial variable
 '    RNG_PastingCol             the scratch column LLSpatial pastes through
-'    spatial_<level>_<var>      one ListObject per level, four columns wide
+'    spatial_<level>_<var>      one ListObject per level
 '      column 1  tabl_<level>_<var>    the lookup key
 '      column 2  formula_<level>       the value LLSpatial sorts on
-'      column 3  population_<level>
-'      column 4  attack_rate_<level>   the other value LLSpatial sorts on
+'      column 3  population_<level>    administrative levels only
+'      column 4  attack_rate_<level>   administrative levels only
 '
 'Every row of listofgeovars has to resolve to a real ListObject, because
 'LLSpatial walks that list and asks for the table by name. So the variable is
@@ -44,12 +43,15 @@ Option Explicit
 '
 'WHAT A FACILITY TABLE HOLDS
 '-------------------------------------------------------------------------------
-'A facility table carries the same four columns as an administrative one, and
-'its population and attack rate columns stay empty. The population lookup reads
-'the administrative population columns of the geobase (adm1_pop to adm4_pop),
-'and a facility carries no population column of its own. The four columns are
-'kept because LLSpatial.Update resizes every spatial table to four columns as it
-'refreshes it.
+'A facility table is two columns: the lookup key and the value. A health facility
+'has no population, so the population and the attack rate belong to an
+'administrative table alone — the geobase gives a population per administrative
+'level (adm1_pop to adm4_pop) and none for a facility. The facility table used to
+'carry all four columns with the last two always blank.
+'
+'LLSpatial.Update resizes a spatial table as it refreshes it and reads the width
+'off the table itself. It used to resize every one of them to four columns, which
+'is what kept the two blank columns here.
 '@depends CrossTable, TableSpecs, Formulas, FormulaBuilder, Checking
 '@version 2026-07-30
 
@@ -89,7 +91,8 @@ Private Const PASTING_NAME As String = "RNG_PastingCol"
 ' last used column the next one starts. Prepare and LastColumn share these; the
 ' two used to hold the same numbers as literals in different methods.
 Private Const FIRST_TABLE_COL As Long = 7
-Private Const TABLE_WIDTH As Long = 4
+Private Const ADMIN_TABLE_WIDTH As Long = 4
+Private Const HF_TABLE_WIDTH As Long = 2
 Private Const TABLE_GAP As Long = 2
 
 ' A geographic variable is spread over these four administrative levels.
@@ -229,6 +232,18 @@ End Property
 '@return Long. The number of tables to build.
 Private Property Get LevelCount(ByVal spatType As String) As Long
     LevelCount = IIf(spatType = HF, 1, ADMIN_LEVELS)
+End Property
+
+'@label:table-width
+'@prop-title How wide one table of a spatial variable is
+'@details
+'An administrative table carries the value, the population and the attack rate.
+'A facility table carries the value alone, because a health facility has no
+'population to divide by.
+'@param spatType String. The spatial type, "geo" or "hf".
+'@return Long. The number of columns.
+Private Property Get TableWidth(ByVal spatType As String) As Long
+    TableWidth = IIf(spatType = HF, HF_TABLE_WIDTH, ADMIN_TABLE_WIDTH)
 End Property
 
 '@label:level-name
@@ -481,10 +496,14 @@ Public Sub Add(ByVal formObject As Formulas)
             Builder.AddCondition rowVarName, _
                 "= " & cellRng.Cells(2, 1).Address(RowAbsolute:=False)
 
-            'Column headers
+            'Column headers. The population and the attack rate belong to an
+            'administrative table alone.
             cellRng.Cells(1, 2).Value = "formula_" & adminName
-            cellRng.Cells(1, 3).Value = "population_" & adminName
-            cellRng.Cells(1, 4).Value = "attack_rate_" & adminName
+
+            If spatType <> HF Then
+                cellRng.Cells(1, 3).Value = "population_" & adminName
+                cellRng.Cells(1, 4).Value = "attack_rate_" & adminName
+            End If
 
             'Formula column value
             finalFormula = vbNullString
@@ -506,10 +525,11 @@ Public Sub Add(ByVal formObject As Formulas)
             End If
 
             'Create the ListObject
-            Set rng = .Range(cellRng.Cells(1, 1), cellRng.Cells(2, TABLE_WIDTH))
+            Set rng = .Range(cellRng.Cells(1, 1), _
+                             cellRng.Cells(2, TableWidth(spatType)))
             .ListObjects.Add(xlSrcRange, rng, , xlYes).Name = loName
 
-            colIndex = colIndex + TABLE_WIDTH - 1 + TABLE_GAP
+            colIndex = colIndex + TableWidth(spatType) - 1 + TABLE_GAP
         Next
     End With
 

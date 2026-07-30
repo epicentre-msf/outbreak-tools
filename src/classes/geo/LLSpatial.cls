@@ -400,8 +400,14 @@ Private Sub UpdateSpatialValue(ByVal inputRng As Range, _
             LoRng.Value = pasteRng.Value
             pasteRng.Cells.Clear
 
-            'Resize the ListObject (including Attack Rate columns)
-            Set LoRng = sh.Range(cellRng.Cells(0, 1), cellRng.Cells(nbRows, 4))
+            'Resize the ListObject over the columns it carries. An
+            'administrative table holds the value, the population and the attack
+            'rate; a facility table holds the value alone, because a health
+            'facility has no population. This used to resize every table to four
+            'columns, so a facility table was widened over the gap beside it and
+            'the two extra columns came back with no header.
+            Set LoRng = sh.Range(cellRng.Cells(0, 1), _
+                                 cellRng.Cells(nbRows, Lo.ListColumns.Count))
             Lo.Resize LoRng
 
             'Sort by formula column
