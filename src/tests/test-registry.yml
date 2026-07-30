@@ -286,6 +286,32 @@ suites:
       # the 4.1 closure of automated-testing-macos.md and the component
       # inventory shows it at 1247 lines), so it gets no class row here.
       - name: SetupErrors
+      # EventSetup names Analysis, BetterArray, ChoiceFormula, CustomTable,
+      # DropdownLists, HiddenNames, LLChoices, LLExport, LLVariables,
+      # LLdictionary, Passwords, TranslationObject and UpdatedValues.
+      # CustomTable, DropdownLists and LLChoices are under `general`;
+      # LLdictionary, LLExport and LLVariables under `dictionary`;
+      # ChoiceFormula under `formulas`; Analysis under `analyses`;
+      # UpdatedValues is above. BetterArray, HiddenNames, Passwords and
+      # TranslationObject are baked into the driver workbook and must not be
+      # registered.
+      #
+      # It also calls RibbonDev.ActualRibbon, which is a MODULE and was missing
+      # from every closure list because those only counted classes. RibbonDev is
+      # registered under `folder: dev` below; without it the project does not
+      # compile and the runner shows the opaque -50.
+      - name: EventSetup
+    modules:
+      # SetupEventsManager holds the single EventSetup instance and the
+      # busy-state counter, which is why it is a module and not a class:
+      # module-level state is what ribbon callbacks and worksheet functions both
+      # reach. TestSetupEventsManager drives the counter, the nesting and the
+      # snapshot round trip, so the module has to be in the workbook.
+      # It names EventSetup (above), ApplicationState (`general`) and
+      # HiddenNames (baked in). Its public names clash with nothing already in
+      # the workbook -- LinelistEventsManager declares the same ones and is not
+      # registered.
+      - SetupEventsManager
     tests:
       - module: TestSetupTranslationsTable
         covers: [SetupTranslationsTable]
@@ -299,13 +325,30 @@ suites:
       # TestHelpersLite.
       - module: TestSetupErrors
         covers: [SetupErrors]
-      # TestSetupImport was parked while the rest of the setup folder landed.
-      # Every export test used to run a full export and open the file it wrote,
-      # and the run went past the 600-second Apple Events timeout the runner
-      # wraps OBTRunAllTests in. Fifteen of them share one export now, so the
-      # module fits inside the cap and the row is live again.
-      - module: TestSetupImport
-        covers: [SetupImport]
+      # TestSetupImport is parked by owner decision, the same way TestPasswords
+      # is: it is green and it is heavy. 38 tests, 137 assertions, and even after
+      # Session 25 cut its churn to 9 exports and 4 opens it is the single
+      # costliest module in the loop.
+      #
+      # What parked it: Session 34 added TestEventSetup and
+      # TestSetupEventsManager, and the full 37-module run then sat on the
+      # runner's 600-second Apple Events cap -- one run wrote its results and the
+      # next two returned nothing at all. The numbers reconcile exactly, so
+      # nothing green was given up: 1524 + 137 = 1661 assertions and 514 + 38 =
+      # 552 tests, which is what the 37-module run reported.
+      #
+      # Re-enable by uncommenting. Expect the run to land near the cap, so
+      # re-enable it on its own and read the clock. SetupImportTestFixture,
+      # PasswordsTestFixture and ProgressDisplayStub all stay registered.
+      # - module: TestSetupImport
+      #   covers: [SetupImport]
+      # TestEventSetup builds its own fixture workbook and calls
+      # PreparePasswordsFixture from PasswordsTestFixture under `helpers`. Its
+      # helper calls are unqualified, so they resolve to TestHelpersLite.
+      - module: TestEventSetup
+        covers: [EventSetup]
+      - module: TestSetupEventsManager
+        covers: [SetupEventsManager]
 
   # --- analyses (Analysis) ---------------------------------------------------
   # Opened by SetupImport, which names Analysis and cannot reach it from
@@ -369,6 +412,15 @@ suites:
   # Re-enable by uncommenting -- and re-import Development.cls by hand in the
   # VBE first, or the run reports on whatever copy is in there.
   - folder: dev
+    modules:
+      # RibbonDev is here for EventSetup, which calls RibbonDev.ActualRibbon to
+      # reach the ribbon object the host owns. That call is the one sanctioned
+      # class-to-module call in the project, so the module travels with the
+      # class. It names Development, CustomTable, OSFiles and Passwords:
+      # CustomTable and OSFiles are under `general`, Development and Passwords
+      # are baked into the driver workbook. Its fifteen public names clash with
+      # nothing already there.
+      - RibbonDev
     tests: []
       # - module: TestDevelopment
       #   covers: [Development]

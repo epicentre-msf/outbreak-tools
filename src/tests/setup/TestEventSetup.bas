@@ -34,7 +34,7 @@ Private Const TAB_TRANSLATIONS As String = "Tab_Translations"
 
 '@ModuleInitialize
 Public Sub ModuleInitialize()
-    TestHelpers.BusyApp
+    BusyApp
     Set Assert = CustomTest.Create(ThisWorkbook, OUTPUT_SHEET)
     Assert.SetModuleName "TestEventSetup"
 End Sub
@@ -47,13 +47,13 @@ Public Sub ModuleCleanup()
         End If
     On Error GoTo 0
     Set Assert = Nothing
-    TestHelpers.RestoreApp
+    RestoreApp
 End Sub
 
 '@TestInitialize
 Public Sub TestInitialize()
-    TestHelpers.BusyApp
-    Set FixtureWorkbook = TestHelpers.NewWorkbook
+    BusyApp
+    Set FixtureWorkbook = NewWorkbook
     BuildFixtureWorkbook
     Set Subject = EventSetup.Create(FixtureWorkbook)
 End Sub
@@ -65,7 +65,7 @@ Public Sub TestCleanup()
     End If
 
     On Error Resume Next
-        TestHelpers.DeleteWorkbook FixtureWorkbook
+        DeleteWorkbook FixtureWorkbook
     On Error GoTo 0
 
     Set Subject = Nothing
@@ -566,6 +566,158 @@ Fail:
     CustomTestLogFailure Assert, "TestDeleteRowsRemovesDictionarySelection", Err.Number, Err.Description
 End Sub
 
+'@TestMethod("EventSetup")
+Public Sub TestApplySetupTranslationDropsCachedManagers()
+    CustomTestSetTitles Assert, "EventSetup", "Translating the setup drops every cached manager"
+    On Error GoTo Fail
+
+    'The managers are built against the column names the sheets carry now. A
+    'translation renames those columns, so a manager kept past it looks for a
+    'name the sheet no longer has, and every lazy getter swallows that failure.
+    Subject.UpdateAnalysisDropdowns True
+
+    AppendGeoVariable "geo_var_after_trans"
+
+    Subject.ApplySetupTranslation FixtureTranslator()
+    Subject.UpdateAnalysisDropdowns True
+
+    Dim dropInspector As DropdownLists
+    Set dropInspector = DropdownLists.Create(FixtureWorkbook.Worksheets(SHEET_DROPDOWN))
+
+    Assert.IsTrue dropInspector.Values("__geo_vars").Includes("geo_var_after_trans"), _
+        "A translation should leave the service rebuilding its managers from the sheet"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestApplySetupTranslationDropsCachedManagers", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("EventSetup")
+Public Sub TestApplySetupTranslationRefusesAMissingTranslator()
+    CustomTestSetTitles Assert, "EventSetup", "Translating with no translator is refused"
+
+    On Error Resume Next
+        Subject.ApplySetupTranslation Nothing
+    Dim raised As Long
+    raised = Err.Number
+    On Error GoTo 0
+
+    Assert.AreEqual CLng(ProjectError.ObjectNotInitialized), raised, _
+        "A missing translator should be refused before any sheet is unlocked"
+End Sub
+
+'@TestMethod("EventSetup")
+Public Sub TestProtectSetupSheetHoldsRowDeletionOffAnalysis()
+    CustomTestSetTitles Assert, "EventSetup", "Analysis is locked with row deletion off"
+    On Error GoTo Fail
+
+    Dim analysisSheet As Worksheet
+    Set analysisSheet = FixtureWorkbook.Worksheets(SHEET_ANALYSIS)
+
+    Subject.ProtectSetupSheet SHEET_ANALYSIS
+
+    Assert.IsTrue analysisSheet.ProtectContents, "ProtectSetupSheet should lock the Analysis sheet"
+    Assert.IsFalse analysisSheet.Protection.AllowDeletingRows, _
+        "Analysis carries stacked tables, so row deletion stays off however the sheet was unlocked"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestProtectSetupSheetHoldsRowDeletionOffAnalysis", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("EventSetup")
+Public Sub TestProtectSetupSheetKeepsRowDeletionOnDictionary()
+    CustomTestSetTitles Assert, "EventSetup", "Dictionary keeps row deletion when locked"
+    On Error GoTo Fail
+
+    Dim dictSheet As Worksheet
+    Set dictSheet = FixtureWorkbook.Worksheets(SHEET_DICTIONARY)
+
+    Subject.ProtectSetupSheet SHEET_DICTIONARY
+
+    Assert.IsTrue dictSheet.ProtectContents, "ProtectSetupSheet should lock the Dictionary sheet"
+    Assert.IsTrue dictSheet.Protection.AllowDeletingRows, _
+        "The Dictionary holds one table, so a user may still delete a row"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestProtectSetupSheetKeepsRowDeletionOnDictionary", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("EventSetup")
+Public Sub TestUnprotectSetupSheetOpensASheetBackUp()
+    CustomTestSetTitles Assert, "EventSetup", "Unprotect opens a locked setup sheet"
+    On Error GoTo Fail
+
+    Dim dictSheet As Worksheet
+    Set dictSheet = FixtureWorkbook.Worksheets(SHEET_DICTIONARY)
+
+    Subject.ProtectSetupSheet SHEET_DICTIONARY
+    Assert.IsTrue dictSheet.ProtectContents, "Precondition failed: the sheet was not locked"
+
+    Subject.UnprotectSetupSheet SHEET_DICTIONARY
+
+    Assert.IsFalse dictSheet.ProtectContents, "UnprotectSetupSheet should open the sheet"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestUnprotectSetupSheetOpensASheetBackUp", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("EventSetup")
+Public Sub TestSheetActivateAsksTheWatcherBeforeRebuilding()
+    CustomTestSetTitles Assert, "EventSetup", "Activating Analysis asks the watcher first"
+    On Error GoTo Fail
+
+    'The fixture registry carries no watched column, so the watcher answers
+    '"nothing changed" for every key it is asked about. A forced rebuild would
+    'write the five dropdown lists anyway, on every click of the tab.
+    Subject.OnSheetActivate FixtureWorkbook.Worksheets(SHEET_ANALYSIS)
+
+    Dim dropInspector As DropdownLists
+    Set dropInspector = DropdownLists.Create(FixtureWorkbook.Worksheets(SHEET_DROPDOWN))
+
+    Assert.IsFalse dropInspector.Exists("__geo_vars"), _
+        "Activating the Analysis tab should rebuild only what the watcher reports as changed"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestSheetActivateAsksTheWatcherBeforeRebuilding", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("EventSetup")
+Public Sub TestFirstGraphEditBuildsItsOwnDropdownCache()
+    CustomTestSetTitles Assert, "EventSetup", "The first graph edit builds the dropdown cache it needs"
+    On Error GoTo Fail
+
+    'No UpdateAnalysisDropdowns call before this one, so the dropdown manager is
+    'unbuilt. AddChoicesDropdown used to test the cache without building it, so
+    'the first edit after a reset set no validation and the second one did.
+    Dim analysisSheet As Worksheet
+    Dim graphTable As ListObject
+    Dim seriesCell As Range
+    Dim choiceCell As Range
+    Dim hasValidation As Boolean
+
+    Set analysisSheet = FixtureWorkbook.Worksheets(SHEET_ANALYSIS)
+    Set graphTable = analysisSheet.ListObjects(LIST_GRAPH_TS)
+    Set seriesCell = graphTable.ListRows(1).Range.Cells(1, graphTable.ListColumns("series title").Index)
+    Set choiceCell = graphTable.ListRows(1).Range.Cells(1, graphTable.ListColumns("choice").Index)
+
+    Subject.OnSheetChange analysisSheet, seriesCell
+
+    On Error Resume Next
+        hasValidation = (choiceCell.Validation.Type = xlValidateList)
+    On Error GoTo 0
+
+    Assert.IsTrue hasValidation, _
+        "The choice cell should carry list validation after the first edit of a series title"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestFirstGraphEditBuildsItsOwnDropdownCache", Err.Number, Err.Description
+End Sub
+
 '@section Fixture builders
 '===============================================================================
 Private Sub BuildFixtureWorkbook()
@@ -580,12 +732,12 @@ Private Sub BuildFixtureWorkbook()
 End Sub
 
 Private Sub PrepareUpdatedSheet()
-    TestHelpers.EnsureWorksheet SHEET_UPDATED, FixtureWorkbook
+    EnsureWorksheet SHEET_UPDATED, FixtureWorkbook
 End Sub
 
 Private Sub PrepareDropdownSheet()
     Dim dropSheet As Worksheet
-    Set dropSheet = TestHelpers.EnsureWorksheet(SHEET_DROPDOWN, FixtureWorkbook)
+    Set dropSheet = EnsureWorksheet(SHEET_DROPDOWN, FixtureWorkbook)
     ClearWorksheetFormatting dropSheet
 End Sub
 
@@ -613,7 +765,7 @@ Private Sub PrepareDictionarySheet()
         Array("column_choice", "Choice Column", "choice_manual", "choice_list", "hlist2D", "SheetChoice", "Section Choice", "text") _
     )
 
-    Set dictSheet = TestHelpers.EnsureWorksheet(SHEET_DICTIONARY, FixtureWorkbook)
+    Set dictSheet = EnsureWorksheet(SHEET_DICTIONARY, FixtureWorkbook)
     dictSheet.Cells.Clear
 
     dictSheet.Rows("1:4").Insert
@@ -655,7 +807,7 @@ Private Sub PrepareChoicesSheet()
         Array("choice_list", 2, "Option B", "OptB") _
     ))
 
-    Set choicesSheet = TestHelpers.EnsureWorksheet(SHEET_CHOICES, FixtureWorkbook)
+    Set choicesSheet = EnsureWorksheet(SHEET_CHOICES, FixtureWorkbook)
     choicesSheet.Cells.Clear
 
     WriteMatrix choicesSheet.Cells(CHOICES_START_ROW, CHOICES_START_COLUMN), headerMatrix
@@ -676,7 +828,7 @@ Private Sub PrepareAnalysisSheet()
     Dim spatioRange As Range
     Dim lo As ListObject
 
-    Set analysis = TestHelpers.EnsureWorksheet(SHEET_ANALYSIS, FixtureWorkbook)
+    Set analysis = EnsureWorksheet(SHEET_ANALYSIS, FixtureWorkbook)
     analysis.Cells.Clear
     analysis.Cells(1, 1).Value = "Add or remove rows of all tables"
 
@@ -744,7 +896,7 @@ Private Sub PrepareExportsSheet()
         Array("export 1", "Export Alpha"), _
         Array("export 2", "Export Beta")))
 
-    Set exportsSheet = TestHelpers.EnsureWorksheet(SHEET_EXPORTS, FixtureWorkbook)
+    Set exportsSheet = EnsureWorksheet(SHEET_EXPORTS, FixtureWorkbook)
     exportsSheet.Cells.Clear
 
     WriteMatrix exportsSheet.Cells(4, 1), headerMatrix
@@ -763,7 +915,7 @@ Private Sub PrepareTranslationsSheet()
     Dim tableRange As Range
     Dim lo As ListObject
 
-    Set translationsSheet = TestHelpers.EnsureWorksheet(SHEET_TRANSLATIONS, FixtureWorkbook)
+    Set translationsSheet = EnsureWorksheet(SHEET_TRANSLATIONS, FixtureWorkbook)
     translationsSheet.Cells.Clear
 
     translationsSheet.Cells(1, 1).Value = "TranslationTag"
@@ -778,6 +930,14 @@ Private Sub PrepareTranslationsSheet()
     Set lo = translationsSheet.ListObjects.Add(SourceType:=xlSrcRange, Source:=tableRange, XlListObjectHasHeaders:=xlYes)
     lo.Name = TAB_TRANSLATIONS
 End Sub
+
+'@sub-title A translator built on the fixture translations table
+Private Function FixtureTranslator() As TranslationObject
+    Dim translationsTable As ListObject
+
+    Set translationsTable = FixtureWorkbook.Worksheets(SHEET_TRANSLATIONS).ListObjects(TAB_TRANSLATIONS)
+    Set FixtureTranslator = TranslationObject.Create(translationsTable, "English")
+End Function
 
 Private Sub AppendGeoVariable(ByVal variableName As String)
     Dim dictSheet As Worksheet
