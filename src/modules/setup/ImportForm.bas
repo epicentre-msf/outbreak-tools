@@ -47,7 +47,6 @@ Private Sub LabPath_Click()
     Dim pass As Passwords
     Dim pwdUser As Variant
     Dim expectedPassword As String
-    Dim appState As ApplicationState
 
     Me.LabProgress.Caption = vbNullString
 
@@ -64,7 +63,6 @@ Private Sub LabPath_Click()
         'while iterating through all worksheets to unprotect them
         On Error GoTo DebugCleanup
         SetupEventsManager.EnterBusyState
-        Application.ScreenUpdating = False
         pass.EnterDebugMode
         SetupEventsManager.ExitBusyState
         On Error GoTo 0
@@ -81,8 +79,11 @@ cleanExit:
     Exit Sub
 
 DebugCleanup:
+    'The manager owns the state, so it is the manager that puts it back. This
+    'used to test a local ApplicationState that was never assigned, so the busy
+    'state was left on after a failure.
     On Error Resume Next
-    If Not appState Is Nothing Then appState.Restore
+    SetupEventsManager.ExitBusyState
     Application.Cursor = xlDefault
     On Error GoTo 0
     Resume cleanExit

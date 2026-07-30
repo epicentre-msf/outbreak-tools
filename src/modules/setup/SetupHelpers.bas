@@ -2,6 +2,21 @@ Attribute VB_Name = "SetupHelpers"
 
 Option Explicit
 
+'@Folder("Setup")
+'@ModuleDescription("The import and clean flow of the setup, and the accessors its form and ribbon share")
+'@IgnoreModule UnrecognizedAnnotation, SheetAccessedUsingString
+
+'This module owns the import and clean flow and the few accessors the Imports
+'form and the ribbon share. Row management, sorting, sheet protection and the
+'setup translation all live on EventSetup now, and the ribbon reaches them
+'through SetupEventsManager.EventSetupService.
+'
+'THE SHEET NAMES BELOW ARE DECLARED TWICE ON PURPOSE
+'-------------------------------------------------------------------------------
+'EventSetup.cls declares the same names for the event and row work. Each file
+'keeps the constants it needs, so neither depends on the other for a string.
+'Change one and change the other.
+
 Private Const PASSSHEETNAME As String = "__pass"
 Private Const TRADSHEETNAME As String = "Translations"
 Private Const ANALYSISSHEETNAME As String = "Analysis"
@@ -11,102 +26,33 @@ Private Const DROPDOWNSHEETNAME As String = "__variables"
 Private Const UPDATEDSHEETNAME As String = "__updated"
 Private Const TABTRANSLATION As String = "Tab_Translations"
 Private Const EXPORTSHEETNAME As String = "Exports"
-Private Const TRANSLATIONSHEETNAME As String = "Translations"
 Private Const CHECKINGSHEETNAME As String = "__checkRep"
-Private Const ANALYSIS_TABLE_UNIVARIATE As String = "Tab_Univariate_Analysis"
-Private Const ANALYSIS_TABLE_BIVARIATE As String = "Tab_Bivariate_Analysis"
-Private Const ANALYSIS_TABLE_TS_DATA As String = "Tab_TimeSeries_Analysis"
-Private Const ANALYSIS_TABLE_TS_GRAPH As String = "Tab_Graph_TimeSeries"
-Private Const ANALYSIS_TABLE_TS_LABELS As String = "Tab_Label_TSGraph"
-Private Const ANALYSIS_TABLE_SPATIAL As String = "Tab_Spatial_Analysis"
-Private Const ANALYSIS_TABLE_SPATIOTEMP As String = "Tab_SpatioTemporal_Analysis"
-Private Const ANALYSIS_TABLE_SPATIOTEMP_SPECS As String = "Tab_SpatioTemporal_Specs"
-
-
-'Start Rows and columns for dictionary, choices, and exports.
-Private Const START_ROW_DICTIONARY As Long = 5
-Private Const START_ROW_CHOICES As Long = 4
-Private Const START_ROW_EXPORTS As Long = 4
-Private Const START_COLUMN_DICTIONARY As Long = 1
-Private Const START_COLUMN_CHOICES As Long = 1
-Private Const START_COLUMN_EXPORTS As Long = 1
 
 'Cached password helper (lazily created once per VBA session)
 Private cachedPasswords As Passwords
 
+'Which job the Imports form was prepared for. PrepareImportsForm writes it and
+'ImportOrCleanSetup reads it. The button caption used to carry this, so
+'translating the form or editing the caption changed what the button did.
+Private cleanModeSelected As Boolean
+
 '@section Basic Rows management in tables
 '===============================================================================
 
-'@sub-title Add or remove rows to a table
-Public Sub ManageRows(ByVal sheetName As String, _
-                      Optional ByVal del As Boolean = False, _
-                      Optional ByVal allAnalysis As Boolean = False)
-    Dim svc As EventSetup
-    Dim resolved As String
-    Dim targetSheet As Worksheet
-
-    resolved = ResolveSetupSheetName(sheetName)
-    If LenB(resolved) = 0 Then resolved = sheetName
-
-    If allAnalysis Then
-        On Error Resume Next
-            Set targetSheet = ThisWorkbook.Worksheets(resolved)
-            If Not targetSheet Is Nothing Then
-                targetSheet.Range("RNG_SelectTable").Value = "Add or remove rows of all tables"
-            End If
-        On Error GoTo 0
-    End If
-
-    Set svc = SetupEventsManager.EventSetupService
-    svc.ManageRows resolved, del
-End Sub
-
-'@sub-title Insert a list row at the active cell position
-Public Sub InsertListRowAt(ByVal sheetName As String, ByVal targetCell As Range)
-
-    Dim svc As EventSetup
-    Dim resolved As String
-
-    resolved = ResolveSetupSheetName(sheetName)
-    If LenB(resolved) = 0 Then resolved = sheetName
-
-    Set svc = SetupEventsManager.EventSetupService
-    svc.InsertRows resolved, targetCell
-
-End Sub
-
-'@sub-title Delete the list row intersecting the active cell
-Public Sub DeleteListRowAt(ByVal sheetName As String, ByVal targetCell As Range)
-    Dim svc As EventSetup
-    Dim resolved As String
-
-    
-    If MsgBox("Delete the selected rows?" & vbCrLf & "THIS OPERATION IS IRREVERSIBLE.", vbExclamation + vbYesNo, "Delete Rows") <> vbYes Then Exit Sub
-
-
-    resolved = ResolveSetupSheetName(sheetName)
-    If LenB(resolved) = 0 Then resolved = sheetName
-    
-    Set svc = SetupEventsManager.EventSetupService
-    svc.DeleteRows resolved, targetCell
-
-End Sub
-
 '@sub-title Delete the list column intersecting the active cell
+'@details
+'The caller confirms with the user and checks the sheet before calling this. Only
+'the Translations sheet has columns a user may remove, and the ribbon hides the
+'button everywhere else.
+'@param sheetName String. Sheet holding the table.
+'@param targetCell Range. Cell inside the column to remove.
 Public Sub DeleteListColumnAt(ByVal sheetName As String, ByVal targetCell As Range)
     Dim targetSheet As Worksheet
     Dim lo As ListObject
     Dim colIndex As Long
+    Dim svc As EventSetup
 
-    If (sheetName <> ResolveSetupSheetName("trans")) Then Exit Sub
-    
-    
-    If MsgBox("Delete the selected Column?" & vbCrLf & "THIS OPERATION IS IRREVERSIBLE.", vbExclamation + vbYesNo, "Delete Rows") <> vbYes Then Exit Sub
-
-    
     If targetCell Is Nothing Then Exit Sub
-
-
 
     On Error Resume Next
         Set targetSheet = ThisWorkbook.Worksheets(sheetName)
@@ -122,117 +68,19 @@ Public Sub DeleteListColumnAt(ByVal sheetName As String, ByVal targetCell As Ran
     colIndex = targetCell.Column - lo.Range.Column + 1
     If (colIndex <= 1) Or colIndex > lo.ListColumns.Count Then Exit Sub
 
-    UnProtectSetupSheet sheetName
-        lo.ListColumns(colIndex).Delete
-    ProtectSetupSheet sheetName
-End Sub
-
-'@section Filtering and Sorting tables
-'===============================================================================
-
-'@sub-title Sort setup tables based on the active worksheet
-Public Sub SortSetupTables(ByVal sheetName As String)
-    Dim svc As EventSetup
-    Dim resolved As String
-
-    resolved = ResolveSetupSheetName(sheetName)
-    If LenB(resolved) = 0 Then resolved = sheetName
-
     Set svc = SetupEventsManager.EventSetupService
-    svc.SortTables resolved
+
+    svc.UnprotectSetupSheet sheetName
+        lo.ListColumns(colIndex).Delete
+    svc.ProtectSetupSheet sheetName
 End Sub
 
-'@section Protect / UnProtect
+'@section Sheet name resolution
 '===============================================================================
 
-'@sub-title Unprotect a worksheet
-Public Sub UnProtectSetupSheet(ByVal sheetName As String)
-    Dim pass As Passwords
-    Set pass = ResolveSetupPasswords()
-    pass.UnProtect sheetName
-End Sub
-
-'@sub-title Protect a worksheet
-Public Sub ProtectSetupSheet(ByVal sheetName As String)
-    Dim pass As Passwords
-    Dim delRow As Boolean
-    
-    If sheetName = "__checkRep" Then Exit Sub
-
-    delRow = Not ((sheetName = TRADSHEETNAME) Or (sheetName = ANALYSISSHEETNAME))
-
-    Set pass = ResolveSetupPasswords()
-    pass.Protect sheetName, allowDeletingRows:=delRow
-End Sub
-
-'@section Translations
-'===============================================================================
-
-Public Sub ApplySetupTranslation(ByVal translator As TranslationObject)
-    Dim dictSheet As Worksheet
-    Dim choicesSheet As Worksheet
-    Dim analysisSheet As Worksheet
-    Dim exportsSheet As Worksheet
-    Dim dictionary As LLdictionary
-    Dim choices As LLChoices
-    Dim analysis As Analysis
-    Dim exports As LLExport
-    Dim unlockDict As Boolean
-    Dim unlockChoices As Boolean
-    Dim unlockAnalysis As Boolean
-    Dim unlockExports As Boolean
-
-    On Error GoTo Cleanup
-
-    Set dictSheet = ResolveSetupSheet("dict")
-    If Not dictSheet Is Nothing Then
-        UnProtectSetupSheet DICTSHEETNAME
-        unlockDict = True
-        Set dictionary = ResolveDictionary(dictSheet)
-        dictionary.Translate translator
-        ProtectSetupSheet DICTSHEETNAME
-        unlockDict = False
-    End If
-
-    Set choicesSheet = ResolveSetupSheet("choi")
-    If Not choicesSheet Is Nothing Then
-        UnProtectSetupSheet CHOICESSHEETNAME
-        unlockChoices = True
-        Set choices = ResolveChoices(choicesSheet)
-        choices.Translate translator
-        ProtectSetupSheet CHOICESSHEETNAME
-        unlockChoices = False
-    End If
-
-    Set analysisSheet = ResolveSetupSheet("ana")
-    If Not analysisSheet Is Nothing Then
-        UnProtectSetupSheet ANALYSISSHEETNAME
-        unlockAnalysis = True
-        Set analysis = ResolveAnalysis(analysisSheet)
-        analysis.Translate translator
-        ProtectSetupSheet ANALYSISSHEETNAME
-        unlockAnalysis = False
-    End If
-
-    Set exportsSheet = ResolveSetupSheet("exp")
-    If Not exportsSheet Is Nothing Then
-        UnProtectSetupSheet EXPORTSHEETNAME
-        unlockExports = True
-        Set exports = LLExport.Create(exportsSheet, START_ROW_EXPORTS, START_COLUMN_EXPORTS)
-        exports.Translate translator
-        ProtectSetupSheet EXPORTSHEETNAME
-        unlockExports = False
-    End If
-
-Cleanup:
-    If unlockDict Then ProtectSetupSheet DICTSHEETNAME
-    If unlockChoices Then ProtectSetupSheet CHOICESSHEETNAME
-    If unlockAnalysis Then ProtectSetupSheet ANALYSISSHEETNAME
-    If unlockExports Then ProtectSetupSheet EXPORTSHEETNAME
-    If Err.Number <> 0 Then Err.Raise Err.Number, "SetupHelpers.ApplySetupTranslation", Err.Description
-End Sub
-
-
+'@sub-title Turn a short sheet key into the sheet name the workbook carries
+'@param sheetKey String. Short key or full sheet name.
+'@return String. The sheet name, or empty when the key is unknown.
 Public Function ResolveSetupSheetName(ByVal sheetKey As String) As String
     Dim normalized As String
 
@@ -246,7 +94,7 @@ Public Function ResolveSetupSheetName(ByVal sheetKey As String) As String
         Case "ana", "analysis"
             ResolveSetupSheetName = ANALYSISSHEETNAME
         Case "trans", "translation", "translations"
-            ResolveSetupSheetName = TRANSLATIONSHEETNAME
+            ResolveSetupSheetName = TRADSHEETNAME
         Case "exp", "exports", "export"
             ResolveSetupSheetName = EXPORTSHEETNAME
         Case "drop", "dropdowns", "dropdown"
@@ -256,6 +104,9 @@ Public Function ResolveSetupSheetName(ByVal sheetKey As String) As String
     End Select
 End Function
 
+'@sub-title Resolve a sheet from a short key or a full name
+'@param sheetKey String. Short key or full sheet name.
+'@return Worksheet. The worksheet, or Nothing when it is absent.
 Public Function ResolveSetupSheet(ByVal sheetKey As String) As Worksheet
     Dim resolvedName As String
 
@@ -270,8 +121,11 @@ End Function
 '@section Imports/Exports
 '===============================================================================
 
-'Prepare the Import Form
+'@sub-title Lay the Imports form out for the job it is about to do
+'@param cleanSetup Optional Boolean. True prepares the clear job, False the import job.
 Public Sub PrepareImportsForm(Optional ByVal cleanSetup As Boolean = False)
+    cleanModeSelected = cleanSetup
+
     If cleanSetup Then
         [Imports].LoadButton.Visible = False
         [Imports].LabPath.Visible = False
@@ -323,10 +177,8 @@ Public Sub PrepareImportsForm(Optional ByVal cleanSetup As Boolean = False)
     End If
 End Sub
 
-'Import the setup from 
-
+'@sub-title Run the import or the clean the form was prepared for
 Public Sub ImportOrCleanSetup()
-    Const CLEAN_CAPTION As String = "Clear"
     Const IMPORT_DONE As String = "Import Done!"
     Const CLEAN_DONE As String = "Setup cleared!"
     Const ABORTED As String = "Aborted!"
@@ -339,7 +191,6 @@ Public Sub ImportOrCleanSetup()
     Dim importTrans As Boolean
     Dim conformityCheck As Boolean
     Dim progressLabel As Object
-    Dim importCaption As String
     Dim isClean As Boolean
     Dim importPath As String
     Dim servicePath As String
@@ -363,11 +214,10 @@ Public Sub ImportOrCleanSetup()
     importTrans = CBool(formRef.TranslationsCheck.Value)
     conformityCheck = CBool(formRef.ConformityCheck.Value)
     Set progressLabel = formRef.LabProgress
-    importCaption = Trim$(CStr(formRef.DoButton.Caption))
-    isClean = (StrComp(importCaption, CLEAN_CAPTION, vbTextCompare) = 0)
+    isClean = cleanModeSelected
 
     If isClean Then conformityCheck = False
-   
+
     importPath = ParseImportPath(formRef.LabPath.Caption)
     infoText = ABORTED
     progressLabel.Caption = vbNullString
@@ -436,7 +286,7 @@ Public Function BuildSelectedSheets(ByVal importDict As Boolean, _
     If importChoi Then sheets.Push CHOICESSHEETNAME
     If importExp Then sheets.Push EXPORTSHEETNAME
     If importAna Then sheets.Push ANALYSISSHEETNAME
-    If importTrans Then sheets.Push TRANSLATIONSHEETNAME
+    If importTrans Then sheets.Push TRADSHEETNAME
 
     Set BuildSelectedSheets = sheets
 End Function
@@ -455,8 +305,8 @@ Private Function ExecuteImportOperation(ByVal service As SetupImport, _
                                         ByVal sheets As BetterArray, _
                                         ByVal runConformityCheck As Boolean, _
                                         ByVal successMessage As String) As String
-    
-    
+
+
     service.Import pass, sheets
     If runConformityCheck Then CheckTheSetup
 
@@ -476,6 +326,7 @@ Private Function ExecuteCleanOperation(ByVal service As SetupImport, _
     Dim confirmation As VbMsgBoxResult
     Dim idx As Long
     Dim sheetName As String
+    Dim svc As EventSetup
 
     confirmation = MsgBox(CLEAR_PROMPT, vbYesNo + vbQuestion, "Confirmation")
     If confirmation <> vbYes Then
@@ -485,50 +336,74 @@ Private Function ExecuteCleanOperation(ByVal service As SetupImport, _
 
     service.Clean pass, sheets
 
+    'The clean emptied whole sheets, so the managers the service cached before it
+    'ran were built against columns those sheets may no longer carry.
+    SetupEventsManager.ResetEventSetupCaches
+    Set svc = SetupEventsManager.EventSetupService
+
     For idx = sheets.LowerBound To sheets.UpperBound
         sheetName = CStr(sheets.Item(idx))
         If StrComp(sheetName, ANALYSISSHEETNAME, vbTextCompare) = 0 Then
-            ManageRows sheetName, del:=True, allAnalysis:=True
-        Else
-            ManageRows sheetName, del:=True
+            SelectAllAnalysisTables sheetName
         End If
+        svc.ManageRows sheetName, del:=True
     Next idx
 
     On Error Resume Next
-        ThisWorkbook.Worksheets("__checkRep").Cells.Clear
+        ThisWorkbook.Worksheets(CHECKINGSHEETNAME).Cells.Clear
     On Error GoTo 0
 
     ExecuteCleanOperation = successMessage
 End Function
 
+'@sub-title Point the Analysis table selector at every table before a clean
+'@details
+'EventSetup.ManageRows reads RNG_SelectTable to learn which analysis table the
+'user means. The clean means all of them.
+'@param sheetName String. The Analysis sheet name.
+Private Sub SelectAllAnalysisTables(ByVal sheetName As String)
+    Dim targetSheet As Worksheet
+
+    On Error Resume Next
+        Set targetSheet = ThisWorkbook.Worksheets(sheetName)
+        If Not targetSheet Is Nothing Then
+            targetSheet.Range("RNG_SelectTable").Value = "Add or remove rows of all tables"
+        End If
+    On Error GoTo 0
+End Sub
+
+'@sub-title Rebuild the watcher registry and the analysis dropdowns after an import
+'@details
+'One busy pair covers the whole job. The three manager routines below each enter
+'a state of their own, and busyDepth makes that nesting safe, so this is one
+'restore instead of three.
 Public Sub PostImportMaintenance()
     Dim prep As SetupPreparation
-    
+    Dim errNumber As Long
+    Dim errDescription As String
+
+    On Error GoTo Cleanup
+    SetupEventsManager.EnterBusyState calculateOnSave:=False
+
+    'The import rewrote whole sheets, so the managers the service cached before
+    'it ran were built against columns those sheets may no longer carry.
+    SetupEventsManager.ResetEventSetupCaches
+
     Set prep = SetupPreparation.Create(ThisWorkbook)
-    prep.EnsureUpdatedRegistry
+    prep.ResetUpdatedRegistry
 
     SetupEventsManager.ResetTranslationCounter
     SetupEventsManager.RefreshAnalysisDropdowns forceUpdate:=True
     SetupEventsManager.RecalculateAnalysis
+
+Cleanup:
+    errNumber = Err.Number
+    errDescription = Err.Description
+    SetupEventsManager.ExitBusyState
+    If errNumber <> 0 Then
+        Err.Raise errNumber, "SetupHelpers.PostImportMaintenance", errDescription
+    End If
 End Sub
-
-
-'Factory helpers
-'-------------------------------------------------------------------------------
-'@sub-title Resolve the workbook that will be analysed.
-'@param hostBook Optional workbook reference. Defaults to ThisWorkbook.
-'@return Workbook reference guaranteed to be non-Nothing.
-Private Function ResolveWorkbook(Optional ByVal hostBook As Workbook) As Workbook
-    If hostBook Is Nothing Then
-        Set hostBook = ThisWorkbook
-    End If
-
-    If hostBook Is Nothing Then
-        Err.Raise ProjectError.ObjectNotInitialized, "Host workbook reference is required"
-    End If
-
-    Set ResolveWorkbook = hostBook
-End Function
 
 '@section Checkings
 '===============================================================================
@@ -536,14 +411,18 @@ End Function
 '@sub-title Execute setup checks against the provided workbook.
 '@param hostBook Optional workbook. When omitted, ThisWorkbook is used.
 Public Sub CheckTheSetup(Optional ByVal hostBook As Workbook)
-    
+
     Dim checker As SetupErrors
+    Dim targetBook As Workbook
     Dim errNumber As Long
     Dim errSource As String
     Dim errDescription As String
 
+    Set targetBook = hostBook
+    If targetBook Is Nothing Then Set targetBook = ThisWorkbook
+
     On Error GoTo RunFailed
-        Set checker = SetupErrors.Create(ResolveWorkbook(hostBook))
+        Set checker = SetupErrors.Create(targetBook)
         checker.Run
     Exit Sub
 
@@ -603,62 +482,4 @@ End Function
 
 Public Function ResolveUpdatedValues() As UpdatedValues
     Set ResolveUpdatedValues = UpdatedValues.Create(ResolveRegistrySheet())
-End Function
-
-Public Function ResolveDictionary(Optional ByVal hostSheet As Worksheet) As LLdictionary
-    Dim targetSheet As Worksheet
-
-    If hostSheet Is Nothing Then
-        Set targetSheet = ResolveSetupSheet("dict")
-    Else
-        Set targetSheet = hostSheet
-    End If
-
-    If targetSheet Is Nothing Then Exit Function
-
-    Set ResolveDictionary = LLdictionary.Create(targetSheet, START_ROW_DICTIONARY, START_COLUMN_DICTIONARY)
-End Function
-
-Public Function ResolveChoices(Optional ByVal hostSheet As Worksheet) As LLChoices
-
-    Dim targetSheet As Worksheet
-
-    If hostSheet Is Nothing Then
-        Set targetSheet = ResolveSetupSheet("choi")
-    Else
-        Set targetSheet = hostSheet
-    End If
-
-    If targetSheet Is Nothing Then Exit Function
-
-    Set ResolveChoices = LLChoices.Create(targetSheet, START_ROW_CHOICES, START_COLUMN_CHOICES)
-End Function
-
-Public Function ResolveAnalysis(Optional ByVal hostSheet As Worksheet) As Analysis
-    Dim targetSheet As Worksheet
-
-    If hostSheet Is Nothing Then
-        Set targetSheet = ResolveSetupSheet("ana")
-    Else
-        Set targetSheet = hostSheet
-    End If
-
-    If targetSheet Is Nothing Then Exit Function
-
-    Set ResolveAnalysis = Analysis.Create(targetSheet)
-End Function
-
-Public Function ResolveVariables(Optional ByVal dictionary As LLdictionary, _
-                                 Optional ByVal hostSheet As Worksheet) As LLVariables
-    Dim dict As LLdictionary
-
-    If dictionary Is Nothing Then
-        Set dict = ResolveDictionary(hostSheet)
-    Else
-        Set dict = dictionary
-    End If
-
-    If dict Is Nothing Then Exit Function
-
-    Set ResolveVariables = LLVariables.Create(dict)
 End Function

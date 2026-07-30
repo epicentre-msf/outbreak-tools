@@ -640,7 +640,7 @@ End Sub
 
 '@sub-title Verify that rebuilding the registry twice leaves one set of tables.
 '@details
-'EnsureUpdatedRegistry is a teardown: DeleteUp drops every registry ListObject
+'ResetUpdatedRegistry is a teardown: DeleteUp drops every registry ListObject
 'before the watched sheets are registered again. Two ribbon buttons call it
 'directly, so running it twice in one session is a real path. Asserts the table
 'count and the row count are the same after the second run.
@@ -652,7 +652,7 @@ Public Sub TestRebuildingTheRegistryTwiceLeavesOneSet()
     Dim firstTables As Long
     Dim firstRows As Long
 
-    Subject.EnsureUpdatedRegistry
+    Subject.ResetUpdatedRegistry
     Set RegistrySheet = FixtureWorkbook.Worksheets(UPDATED_SHEET_NAME)
     firstTables = RegistrySheet.ListObjects.Count
     firstRows = RegistryRowCount(RegistrySheet)
@@ -660,7 +660,7 @@ Public Sub TestRebuildingTheRegistryTwiceLeavesOneSet()
     Assert.IsTrue firstTables > 0, "The first rebuild should leave at least one registry table"
     Assert.IsTrue firstRows > 0, "The first rebuild should leave at least one registry row"
 
-    Subject.EnsureUpdatedRegistry
+    Subject.ResetUpdatedRegistry
 
     Assert.AreEqual firstTables, CLng(RegistrySheet.ListObjects.Count), _
         "A second rebuild should leave the same number of registry tables"

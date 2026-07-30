@@ -35,7 +35,7 @@ Option Explicit
 '  value reaches an old workbook. Seven placeholder lists are left as they
 '  are; see RegisterAllDropdowns.
 '- the update registry is dropped and rebuilt in full; see
-'  EnsureUpdatedRegistry.
+'  ResetUpdatedRegistry.
 '- the 56 validations are applied again.
 '- a sheet that already exists keeps its visibility; see
 '  ResolveOrCreateWorksheet.
@@ -142,7 +142,7 @@ Public Sub Prepare(ByRef manager As Development)
     End If
 
     EnsureDropdowns
-    EnsureUpdatedRegistry
+    ResetUpdatedRegistry
     ApplyValidationsAndUpdates
     EnsureHiddenSheets manager
     EnsureProtectedSheets manager
@@ -161,7 +161,7 @@ Public Sub EnsureDropdowns()
     RegisterAllDropdowns
 End Sub
 
-'@label:ensure-updated-registry
+'@label:reset-updated-registry
 '@sub-title Drop every registry table and build it again from the watched sheets
 '@details
 'This is a teardown. DeleteUp removes every registry ListObject on the
@@ -171,7 +171,7 @@ End Sub
 'wrong call for topping one up. Two of the three callers press a ribbon
 'button that means "start again"; the third is Prepare.
 '@export
-Public Sub EnsureUpdatedRegistry()
+Public Sub ResetUpdatedRegistry()
     EnsureUpdatedValuesWatcher
     this.updater.DeleteUp
     RegisterWatchedSheets
@@ -271,7 +271,7 @@ End Sub
 '
 '__checkRep is left off this list on purpose. SetupErrors publishes its
 'report there, so the sheet has to stay visible and writable.
-'SetupHelpers.ProtectSetupSheet returns early for it by name for the same
+'EventSetup.ProtectSetupSheet returns early for it by name for the same
 'reason.
 '@param manager Development. Development manager to register with.
 '@throws ProjectError.ObjectNotInitialized When manager is Nothing.
