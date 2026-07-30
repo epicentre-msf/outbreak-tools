@@ -28,92 +28,6 @@
             "problemMatcher": []
         },
         {
-            "label": "convert harness (perl)",
-            "type": "process",
-            "command": "perl",
-            "args": [
-                "scripts/devtools/harness-test-replacements.pl",
-                "${file}"
-            ],
-            "windows": {
-                "command": "perl",
-                "args": [
-                    "scripts/devtools/harness-test-replacements.pl",
-                    "${file}"
-                ]
-            },
-            "presentation": {
-                "reveal": "always",
-                "panel": "shared"
-            },
-            "problemMatcher": []
-        },
-        {
-            "label": "add failure logging (perl)",
-            "type": "process",
-            "command": "perl",
-            "args": [
-                "scripts/devtools/add-failure-logging.pl",
-                "${file}"
-            ],
-            "windows": {
-                "command": "perl",
-                "args": [
-                    "scripts/devtools/add-failure-logging.pl",
-                    "${file}"
-                ]
-            },
-            "presentation": {
-                "reveal": "always",
-                "panel": "shared"
-            },
-            "problemMatcher": []
-        },
-        {
-            "label": "find private properties missing end",
-            "type": "process",
-            "command": "perl",
-            "args": [
-                "scripts/devtools/find-private-properties-missing-end.pl",
-                "--root",
-                "${workspaceFolder}",
-                "--output",
-                "temp/private_properties_missing_end.txt"
-            ],
-            "windows": {
-                "command": "perl",
-                "args": [
-                    "scripts\\devtools\\find-private-properties-missing-end.pl",
-                    "--root",
-                    "${workspaceFolder}",
-                    "--output",
-                    "temp\\private_properties_missing_end.txt"
-                ]
-            },
-            "presentation": {
-                "reveal": "always",
-                "panel": "shared"
-            },
-            "problemMatcher": []
-        },
-        {
-            "label": "update unit test dev",
-            "type": "process",
-            "command": "Rscript",
-            "args": [
-                "-e",
-                "source('scripts/devtools/update-files.R'); update_unit_test('mock')"
-            ],
-            "windows": {
-                "command": "${env:RPATH}\\bin\\Rscript.exe"
-            },
-            "presentation": {
-                "reveal": "always",
-                "panel": "shared"
-            },
-            "problemMatcher": []
-        },
-        {
             "label": "update designer dev",
             "type": "process",
             "command": "Rscript",
@@ -216,7 +130,7 @@
             "problemMatcher": []
         },
         {
-            "label": "update unit test main",
+            "label": "update unit test",
             "type": "process",
             "command": "Rscript",
             "args": [
@@ -299,5 +213,10 @@
         }
     ],
     "inputs": [
+        {
+            "id": "docClassName",
+            "type": "promptString",
+            "description": "Class or interface name to document (without the .cls extension)"
+        }
     ]
 }
