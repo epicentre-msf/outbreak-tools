@@ -985,6 +985,159 @@ TestFail:
     CustomTestLogFailure Assert, "TestSpatialTableScopesUsesColumnForSpatioTemporal", Err.Number, Err.Description
 End Sub
 
+'@section Spatial naming tests
+'===============================================================================
+
+'@sub-title Verify the spatial prefix follows the sub-type.
+'@details
+'The prefix is the string SpatialTableScopes probed with. Four sites across two
+'classes used to rebuild it beside their own copy of the geo-against-facility
+'test, and a table with neither prefix gets an empty string rather than a
+'guessed one.
+'@TestMethod("TableSpecs")
+Public Sub TestSpatialPrefixFollowsTheSubType()
+    CustomTestSetTitles Assert, "TableSpecs", "TestSpatialPrefixFollowsTheSubType"
+    On Error GoTo TestFail
+
+    BuildFixture TABLE_SPATIAL, SpatialHeader(), _
+                 SpatialRow("h2", "", "5", "no", "no", "no")
+    Assert.AreEqual "hf_", CreateSpecs(1).SpatialPrefix, _
+                    "A facility table should carry the hf_ prefix"
+
+    BuildFixture TABLE_SPATIAL, SpatialHeader(), _
+                 SpatialRow(GEO_ROW_VARIABLE, "", "5", "no", "no", "no")
+    Assert.AreEqual "adm1_", CreateSpecs(1).SpatialPrefix, _
+                    "An administrative table should carry the adm1_ prefix"
+
+    BuildFixture TABLE_SPATIAL, SpatialHeader(), _
+                 SpatialRow("choi_v1", "", "5", "no", "no", "no")
+    Assert.AreEqual vbNullString, CreateSpecs(1).SpatialPrefix, _
+                    "A table with neither prefix should carry no prefix"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestSpatialPrefixFollowsTheSubType", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verify the spatial variable name joins the prefix to the base name.
+'@details
+'The empty case is the one that matters: joining an empty prefix would answer
+'the unprefixed variable, which the dictionary does hold, so the caller would
+'read a real but wrong variable instead of finding nothing.
+'@TestMethod("TableSpecs")
+Public Sub TestSpatialVariableNameJoinsThePrefix()
+    CustomTestSetTitles Assert, "TableSpecs", "TestSpatialVariableNameJoinsThePrefix"
+    On Error GoTo TestFail
+
+    BuildFixture TABLE_SPATIAL, SpatialHeader(), _
+                 SpatialRow(GEO_ROW_VARIABLE, "", "5", "no", "no", "no")
+    Assert.AreEqual "adm1_" & GEO_ROW_VARIABLE, _
+                    CreateSpecs(1).SpatialVariableName(GEO_ROW_VARIABLE), _
+                    "An administrative table should name the adm1_ variable"
+
+    BuildFixture TABLE_SPATIAL, SpatialHeader(), _
+                 SpatialRow("h2", "", "5", "no", "no", "no")
+    Assert.AreEqual "hf_h2", CreateSpecs(1).SpatialVariableName("h2"), _
+                    "A facility table should name the hf_ variable"
+
+    BuildFixture TABLE_SPATIAL, SpatialHeader(), _
+                 SpatialRow("choi_v1", "", "5", "no", "no", "no")
+    Assert.AreEqual vbNullString, CreateSpecs(1).SpatialVariableName("choi_v1"), _
+                    "A table with no spatial type should name no variable at all"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestSpatialVariableNameJoinsThePrefix", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verify only the administrative variable gains the concatenated form.
+'@details
+'This asymmetry is the reason there are two members rather than one prefix: an
+'administrative table is summarised over the concatenated column while a
+'facility table reads the same variable in both positions.
+'@TestMethod("TableSpecs")
+Public Sub TestSpatialConcatVariableNameIsAdministrativeOnly()
+    CustomTestSetTitles Assert, "TableSpecs", "TestSpatialConcatVariableNameIsAdministrativeOnly"
+    On Error GoTo TestFail
+
+    BuildFixture TABLE_SPATIAL, SpatialHeader(), _
+                 SpatialRow(GEO_ROW_VARIABLE, "", "5", "no", "no", "no")
+    Assert.AreEqual "concat_adm1_" & GEO_ROW_VARIABLE, _
+                    CreateSpecs(1).SpatialConcatVariableName(GEO_ROW_VARIABLE), _
+                    "An administrative table should read the concatenated column"
+
+    BuildFixture TABLE_SPATIAL, SpatialHeader(), _
+                 SpatialRow("h2", "", "5", "no", "no", "no")
+    Assert.AreEqual "hf_h2", CreateSpecs(1).SpatialConcatVariableName("h2"), _
+                    "A facility table should gain no concatenated form"
+
+    BuildFixture TABLE_SPATIAL, SpatialHeader(), _
+                 SpatialRow("choi_v1", "", "5", "no", "no", "no")
+    Assert.AreEqual vbNullString, _
+                    CreateSpecs(1).SpatialConcatVariableName("choi_v1"), _
+                    "A table with no spatial type should name no variable at all"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestSpatialConcatVariableNameIsAdministrativeOnly", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verify the label column follows the sub-type.
+'@details
+'The label column travels with the prefix at every call site, so a caller given
+'only the prefix would still have to branch to know which column to read.
+'@TestMethod("TableSpecs")
+Public Sub TestSpatialLabelColumnFollowsTheSubType()
+    CustomTestSetTitles Assert, "TableSpecs", "TestSpatialLabelColumnFollowsTheSubType"
+    On Error GoTo TestFail
+
+    BuildFixture TABLE_SPATIAL, SpatialHeader(), _
+                 SpatialRow(GEO_ROW_VARIABLE, "", "5", "no", "no", "no")
+    Assert.AreEqual "sub section", CreateSpecs(1).SpatialLabelColumn, _
+                    "An administrative level is labelled from its sub section"
+
+    BuildFixture TABLE_SPATIAL, SpatialHeader(), _
+                 SpatialRow("h2", "", "5", "no", "no", "no")
+    Assert.AreEqual "main label", CreateSpecs(1).SpatialLabelColumn, _
+                    "A health facility is labelled from its main label"
+
+    BuildFixture TABLE_SPATIAL, SpatialHeader(), _
+                 SpatialRow("choi_v1", "", "5", "no", "no", "no")
+    Assert.AreEqual vbNullString, CreateSpecs(1).SpatialLabelColumn, _
+                    "A table with no spatial type should name no label column"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestSpatialLabelColumnFollowsTheSubType", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verify a spatio-temporal table derives its names from the column variable.
+'@details
+'SpatialTableScopes reads the column field for this scope rather than the row
+'field, and the four members above inherit that without repeating the choice.
+'@TestMethod("TableSpecs")
+Public Sub TestSpatialNamesFollowTheColumnForSpatioTemporal()
+    CustomTestSetTitles Assert, "TableSpecs", "TestSpatialNamesFollowTheColumnForSpatioTemporal"
+    On Error GoTo TestFail
+
+    Dim specs As TableSpecs
+
+    BuildFixture TABLE_SPATIOTEMPORAL, SpatioTemporalHeader(), _
+                 SpatioTemporalRow("date_v1", "h2", "5", "no")
+    Set specs = CreateSpecs(1)
+
+    Assert.AreEqual "hf_", specs.SpatialPrefix, _
+                    "The prefix should follow the column variable"
+    Assert.AreEqual "hf_h2", specs.SpatialVariableName("h2"), _
+                    "The variable name should follow the column variable"
+    Assert.AreEqual "main label", specs.SpatialLabelColumn, _
+                    "The label column should follow the column variable"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestSpatialNamesFollowTheColumnForSpatioTemporal", Err.Number, Err.Description
+End Sub
+
 '@section ValidTable tests
 '===============================================================================
 

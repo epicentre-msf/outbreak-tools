@@ -139,6 +139,17 @@ Private Const VARIABLE_TYPE As String = "variable type"
 Private Const PREFIX_ADMIN As String = "adm1_"
 Private Const PREFIX_HEALTH_FACILITY As String = "hf_"
 
+' The concatenated form of an administrative variable, which the spatial
+' formulas summarise over. Health facility tables have no concatenated form and
+' read the plain prefix in the same position.
+Private Const PREFIX_CONCAT As String = "concat_"
+
+' Dictionary columns carrying the label of a spatial variable. An
+' administrative level is labelled from its sub section, a health facility from
+' its main label.
+Private Const COLUMN_SUB_SECTION As String = "sub section"
+Private Const COLUMN_MAIN_LABEL As String = "main label"
+
 ' VBA raises this when a late-bound object has no such member.
 Private Const ERR_MEMBER_NOT_FOUND As Long = 438
 
@@ -526,6 +537,82 @@ Public Property Get SpatialTableScopes() As String
 
     SpatialTableScopes = this.cachedSpatialScope
 End Property
+
+'@label:spatial-prefix
+'@prop-title Dictionary prefix for this table's spatial variable
+'@details
+'The prefix SpatialTableScopes probed with, handed back so callers stop
+'rebuilding it. Four sites across two classes wrote "adm1_" and "hf_" beside
+'their own copy of the geo-against-facility test, which is how the tag that
+'names the spatial input cells came to disagree with the tag the formulas
+'referenced.
+'@return String. "hf_", "adm1_", or an empty string when neither prefix matched.
+'@export
+Public Property Get SpatialPrefix() As String
+    Select Case SpatialTableScopes()
+    Case "hf"
+        SpatialPrefix = PREFIX_HEALTH_FACILITY
+    Case "geo"
+        SpatialPrefix = PREFIX_ADMIN
+    End Select
+End Property
+
+'@label:spatial-variable-name
+'@prop-title Dictionary variable holding the spatial value
+'@details
+'The prefixed variable name the dictionary answers for, which is the prefix
+'above joined to a variable read off this specification row.
+'@param baseVar String. The unprefixed variable name from the spec row.
+'@return String. For example "adm1_zone", or an empty string when this table
+'has no spatial type.
+'@export
+Public Property Get SpatialVariableName(ByVal baseVar As String) As String
+    Dim prefix As String
+
+    prefix = SpatialPrefix()
+    If LenB(prefix) = 0 Then Exit Property
+
+    SpatialVariableName = prefix & baseVar
+End Property
+
+'@label:spatial-concat-variable-name
+'@prop-title Dictionary variable the spatial formulas read
+'@details
+'The formula writer reads a different variable from the table writer: an
+'administrative table is summarised over the concatenated column, while a
+'health facility table uses the same variable in both places. That asymmetry
+'is the whole reason this is a second member rather than a prefix argument.
+'@param baseVar String. The unprefixed variable name from the spec row.
+'@return String. For example "concat_adm1_zone" or "hf_facility", or an empty
+'string when this table has no spatial type.
+'@export
+Public Property Get SpatialConcatVariableName(ByVal baseVar As String) As String
+    Select Case SpatialTableScopes()
+    Case "hf"
+        SpatialConcatVariableName = PREFIX_HEALTH_FACILITY & baseVar
+    Case "geo"
+        SpatialConcatVariableName = PREFIX_CONCAT & PREFIX_ADMIN & baseVar
+    End Select
+End Property
+
+'@label:spatial-label-column
+'@prop-title Dictionary column carrying the label of the spatial variable
+'@details
+'An administrative level is labelled from its sub section and a health facility
+'from its main label. The two travel with the prefix at every call site, so a
+'caller that asked only for the prefix would still have to branch.
+'@return String. "sub section", "main label", or an empty string when this
+'table has no spatial type.
+'@export
+Public Property Get SpatialLabelColumn() As String
+    Select Case SpatialTableScopes()
+    Case "hf"
+        SpatialLabelColumn = COLUMN_MAIN_LABEL
+    Case "geo"
+        SpatialLabelColumn = COLUMN_SUB_SECTION
+    End Select
+End Property
+
 
 '@section Validation Properties
 '===============================================================================
