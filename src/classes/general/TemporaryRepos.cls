@@ -157,18 +157,24 @@ End Function
 '@param folderPath String. Path that should represent a directory.
 Private Sub EnsureDirectoryExists(ByVal folderPath As String)
     Dim attr As Long
+    Dim readError As Long
 
-    'If it exists, ensure it is a directory
+    'A statement that succeeds leaves Err holding whatever it held before, so
+    'the number is cleared first. Without that, an error raised earlier in the
+    'call made this read as "the folder is missing" and the create ran anyway.
     On Error Resume Next
-    attr = GetAttr(folderPath)
-        If Err.Number = 0 Then
-            If (attr And vbDirectory) <> vbDirectory Then
-                ThrowError ProjectError.ErrorUnexpectedState, _
-                        "Path exists but is not a directory: " & folderPath
-            End If
-            Exit Sub ' already a folder, we’re done
-        End If
+        Err.Clear
+        attr = GetAttr(folderPath)
+        readError = Err.Number
     On Error GoTo 0
+
+    If readError = 0 Then
+        If (attr And vbDirectory) <> vbDirectory Then
+            ThrowError ProjectError.ErrorUnexpectedState, _
+                       "Path exists but is not a directory: " & folderPath
+        End If
+        Exit Sub
+    End If
 
     'Create the directory tree safely
     CreateDirectoryTree folderPath
@@ -182,10 +188,10 @@ Private Sub CreateDirectoryTree(ByVal folderPath As String)
     Dim i As Long
     Dim start As Long
     Dim sep As String
-    Dim parts() As String 
+    Dim parts() As String
     Dim build As String
 
-    sep = Application.PathSeparator ' "\" on Windows, ":" on old Mac, "/" also works on modern Mac
+    sep = Application.PathSeparator ' "\" on Windows, "/" on modern Mac
     parts = Split(NormalizePath(folderPath, sep), sep)
 
     ' Handle drive / UNC root
@@ -215,7 +221,8 @@ Private Sub CreateDirectoryTree(ByVal folderPath As String)
             Case 0
                 ' created successfully
             Case 75
-                ' Path/File access error — often means it already exists; verify it's a directory
+                ' Path or file access error. It usually means the folder is
+                ' already there, so check that it is a folder.
                 Err.Clear
                 If Not IsDirectory(build) Then
                     On Error GoTo 0
@@ -223,9 +230,8 @@ Private Sub CreateDirectoryTree(ByVal folderPath As String)
                               "A file already exists where a folder is expected: " & build
                 End If
             Case 76
-                ' Path not found — parent missing; try to create on next iterations (loop will handle)
-                ' (This case usually won’t occur because we’re building parents in order.)
-                ' Just continue; next iteration will attempt parent then child.
+                ' Path not found: the parent is missing. The loop builds the
+                ' parents in order, so the next turn creates it.
                 Err.Clear
             Case Else
                 ' Any other error is surfaced with context
@@ -302,19 +308,34 @@ Private Function SanitizeFileName(ByVal fileName As String) As String
 End Function
 
 '@label:delete-all-internal
-'@sub-title Wipe every file inside the repository without recreating the folder
+'@sub-title Wipe every file inside the repository, keeping the folder itself
+'@details
+'The whole listing is read before the first file is deleted. Dir$ walks one
+'folder through state the host holds, and deleting an entry part way through
+'that walk makes the rest of the listing unreliable, so files were left behind.
+'The listing is small: this folder holds the working files of one generation.
 Private Sub DeleteAllInternal()
-    Dim filePath As String
+    Dim fileName As String
+    Dim names As Collection
+    Dim entry As Variant
+
+    If LenB(this.rootPath) = 0 Then Exit Sub
+
+    Set names = New Collection
 
     On Error Resume Next
-        filePath = Dir$(this.rootPath & "*")
-        Do While LenB(filePath) > 0
-            If filePath <> "." And filePath <> ".." Then
-                Kill this.rootPath & filePath
-            End If
-            filePath = Dir$
+        fileName = Dir$(this.rootPath & "*")
+        Do While LenB(fileName) > 0
+            If fileName <> "." And fileName <> ".." Then names.Add fileName
+            fileName = Dir$
         Loop
     On Error GoTo 0
+
+    For Each entry In names
+        On Error Resume Next
+            Kill this.rootPath & CStr(entry)
+        On Error GoTo 0
+    Next entry
 End Sub
 
 '@label:class-terminate
