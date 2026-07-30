@@ -56,7 +56,15 @@ on run argv
 
 		-- Each run is wrapped in a timeout so a wedged modal cannot hang the
 		-- driver forever (surfaces as AppleEvent timed out -1712 to R).
-		with timeout of 600 seconds
+		--
+		-- The timeout covers all four macros below, so it has to hold the whole
+		-- refresh + build + import + run. It was 600 seconds, set when the suite
+		-- was about half its present size. At 46 modules the run sits right on
+		-- that edge: one run finished in about 7 minutes and reported success,
+		-- the next took 10 minutes 10 seconds and reported failure with a green
+		-- results file already on disk. Raised to 1200 so a green run stops
+		-- being reported as a failure; it still guards against a wedged modal.
+		with timeout of 1200 seconds
 			-- 0) refresh the harness modules (OBTImport/OBTHeadless) from the run
 			--    dir, so their code can be iterated without a manual VBE re-import.
 			--    Separate call, so the refreshed code is loaded for the steps below.
