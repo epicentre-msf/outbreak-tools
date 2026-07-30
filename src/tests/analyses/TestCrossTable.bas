@@ -1670,6 +1670,99 @@ TestFail:
     CustomTestLogFailure Assert, "TestSpatioTemporalNamesOneInputPerGeoUnit", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify a logged check files its message in the label.
+'@details
+'Checking.Add takes (key, label, scope). The call passed (message, scope), so the
+'message landed in the key, the Byte scope was coerced into the label, and the
+'scope the caller asked for was discarded in favour of the default note. The
+'report therefore showed a bare number where the text belonged.
+'@TestMethod("CrossTable")
+Public Sub TestALoggedCheckCarriesItsMessageAsTheLabel()
+    CustomTestSetTitles Assert, "CrossTable", "TestALoggedCheckCarriesItsMessageAsTheLabel"
+    On Error GoTo TestFail
+
+    Dim sh As Worksheet
+    Dim tabl As CrossTable
+    Dim checks As Checking
+    Dim firstKey As String
+    Dim label As String
+
+    BuildFixture TABLE_UNIVARIATE, UnivariateHeader(), _
+                 UnivariateRows(ROW_CHOICE_VARIABLE, "no", "no")
+    Set sh = OutputSheet()
+    Set tabl = BuildTable(sh, 1)
+
+    Assert.IsTrue tabl.HasCheckings, "Build should have logged at least one check"
+
+    Set checks = tabl.CheckingValues
+    firstKey = CStr(checks.ListOfKeys.Item(checks.ListOfKeys.LowerBound))
+    label = checks.ValueOf(firstKey)
+
+    Assert.IsTrue IsNumeric(firstKey), _
+                  "The key should be a counter, so it stays unique across calls"
+    Assert.IsTrue Not IsNumeric(label), _
+                  "The label should hold the message text the caller passed"
+    Assert.IsTrue Len(label) > 1, _
+                  "The label should carry readable text"
+
+    ' The scope was the third casualty: with the message occupying the key and
+    ' the scope byte occupying the label, the scope itself fell back to the
+    ' default note, so a success was filed as a note.
+    Assert.IsTrue InStr(1, checks.ValueOf(firstKey, checkingType), _
+                        "Success", vbTextCompare) > 0, _
+                  "The check should keep the success scope the caller asked for"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestALoggedCheckCarriesItsMessageAsTheLabel", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title Verify a spatial table lacking both prefixes raises a stated error.
+'@details
+'AddHeader assigns its range inside the geo and facility arms and dereferences it
+'underneath them. The third outcome of SpatialTableScopes reached that
+'dereference with the range still Nothing, and raised 91 with no mention of the
+'table or the cause.
+'
+'Only Err.Number is asserted, which is this module's convention for every error
+'test in it. VBA carries the number across a class boundary and replaces the
+'description with "Method 'X' of object 'Y' failed", so the guard's own wording
+'is unreachable from here; the LLFormat and LLSheets suites pin that same
+'behaviour. The description is captured anyway and travels in the assertion
+'message, so a later surprise reports the text it actually got.
+'@TestMethod("CrossTable")
+Public Sub TestSpatialTableWithoutAPrefixNamesTheProblem()
+    CustomTestSetTitles Assert, "CrossTable", "TestSpatialTableWithoutAPrefixNamesTheProblem"
+    On Error GoTo TestFail
+
+    Dim sh As Worksheet
+    Dim tabl As CrossTable
+    Dim errNumber As Long
+    Dim errDescription As String
+
+    ' A choice variable has no adm1_ or hf_ twin in the dictionary fixture.
+    BuildFixture TABLE_SPATIAL, SpatialHeader(), SpatialRows(ROW_CHOICE_VARIABLE, "3")
+    Set sh = OutputSheet()
+    Set tabl = NewTable(sh, 1)
+
+    On Error Resume Next
+    tabl.AddHeader
+    errNumber = Err.Number
+    errDescription = Err.Description
+    Err.Clear
+    On Error GoTo TestFail
+
+    Assert.AreEqual ProjectError.ErrorUnexpectedState, errNumber, _
+                    "A spatial table lacking both prefixes should raise " & _
+                    "unexpected state - description was [" & errDescription & "]"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestSpatialTableWithoutAPrefixNamesTheProblem", _
+                         Err.Number, Err.Description
+End Sub
+
 '@sub-title Verify a facility table tags its inputs from the dictionary, not the setup column.
 '@details
 'THE SPATIAL TYPE CELL IS EMPTY ON PURPOSE HERE, AND THAT IS THE WHOLE TEST.

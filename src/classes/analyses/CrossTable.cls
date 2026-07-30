@@ -56,6 +56,11 @@ Private Const NB_ROWS_TIME_SERIES As Long = 56
 Private allRangeNames As BetterArray
 Private internalChecks As Checking
 
+' Supplies the unique key every Checking.Add needs. It counts within one
+' instance, which is all uniqueness requires: each instance owns its own
+' Checking, and AnalysisOutput harvests them per table.
+Private checkCounter As Long
+
 '@section Factory
 '===============================================================================
 
@@ -233,16 +238,32 @@ End Property
 'reference is Nothing.
 '@param rngName String. The string name of the named range to look up, e.g. "STARTROW_T3" or "ENDTABLE_T5".
 '@return Boolean. True if the named range exists and resolves to a valid Range on the output worksheet; False otherwise.
-'@remarks This does not distinguish between workbook-scoped and worksheet-scoped names.
-'If a workbook-level name exists but does not refer to a range on this sheet,
-'the lookup may still succeed. All names in this class are created via
-'Cell.Name which produces workbook-scoped names.
+'@remarks Every name this class writes comes from Cell.Name, which produces a
+'WORKBOOK-scoped name, and Wksh().Range(name) resolves one of those whichever
+'sheet owns it. So the question "does this name exist" and the question this
+'class actually asks -- "did I already build that on MY sheet" -- were the same
+'question only while no two analysis sheets used a name in common. The answer is
+'now filtered on the owning worksheet. The names without a table id are where it
+'mattered: ROWGS_SET, COLGS_SET, TIME_UNIT_LIST, ADM_UNIT_LIST and
+'POPULATION_FACTOR_LIST are each written on one sheet and read from four.
 Private Function RangeExists(ByVal rngName As String) As Boolean
     Dim rng As Range
+
     On Error Resume Next
     Set rng = Wksh().Range(rngName)
     On Error GoTo 0
-    RangeExists = (Not rng Is Nothing)
+
+    If rng Is Nothing Then Exit Function
+
+    ' Compared by NAME. Wksh() hands back the stored reference while
+    ' Range.Worksheet builds a fresh wrapper over the same sheet, and Is compares
+    ' wrapper identity, so it can answer False for the very sheet it was handed.
+    ' An Is answering False for the right sheet makes this function answer False
+    ' everywhere, and every "did I already build this" guard then rebuilds: AddHeader
+    ' re-inserts its section rows on each call and StartRow recomputes from
+    ' End(xlUp) against a sheet that just grew. The table walks down the sheet and
+    ' the run never finishes.
+    RangeExists = (StrComp(rng.Worksheet.Name, Wksh().Name, vbTextCompare) = 0)
 End Function
 
 '@label:start-row
@@ -289,7 +310,7 @@ Public Property Get StartRow() As Long
 
                 .Cells(strtRow, STANDARD_START_COL).Name = "STARTROW_" & tabId
 
-            ElseIf Not specs.IsNewSection() Then
+            Else
                 ' Non-new-section temporal: use previous table's start row.
                 ' Previous answers Nothing when the section holds no valid
                 ' table above this row, so the condition is read directly.
@@ -310,6 +331,17 @@ Public Property Get StartRow() As Long
                     .Cells(strtRow, STANDARD_START_COL).Name = "STARTROW_" & tabId
                 End If
             End If
+
+            ' The two branches above are exhaustive today, so this cannot fire.
+            ' It is here because the second one used to be written as an ElseIf
+            ' repeating the first one's negation: a scope added to
+            ' AnalysisTableScope would have fallen past both arms, left strtRow
+            ' at zero, and handed every consumer row 0 to build from. That surfaces
+            ' as Cells(0, ...) raising 1004 several frames away from the cause.
+            If strtRow < 1 Then _
+                ThrowError ErrorUnexpectedState, _
+                           "Start row could not be resolved for " & tabId
+
             StartRow = strtRow
         Else
             StartRow = .Range("STARTROW_" & tabId).Row
@@ -420,7 +452,25 @@ End Property
 'Returns the 1-based column index of the rightmost cell occupied by
 'this cross-table. Used by sibling tables and formatting routines to
 'avoid overlapping output.
-'@return Long. The ending column index.
+'
+'THE CONTRACT, PINNED HERE BECAUSE IT IS DECIDED HERE
+'-------------------------------------------------------------------------------
+'EndColumn is INCLUSIVE and it is the last column WRITTEN. The total and missing
+'columns count toward it. NumberOfColumns stays outside it and stops at the data
+'columns. Every assignment below obeys this -- StartColumn + labData.Length for the
+'bivariate and temporal arms, StartColumn + 2 for the global summary pair,
+'StartColumn + colData.Length for the spatial arm -- because labData and colData
+'already carry whatever total and missing labels the table asked for.
+'
+'So a reader walking the value columns wants `< EndColumn` only if it means to
+'stop before the totals, and `<= EndColumn` if it means to include them. The
+'formula writer currently uses `< tabEndColumn` for bivariate and
+'`<= tabEndColumn` for time series and spatial, which cannot be right for all
+'three against one definition. That is the audit's C12, and the loops live in
+'CrossTableFormula, so they are fixed in that class's own session -- see
+'.obt/gotchas/crosstableformula-adoption.md. Stating the contract here is the
+'half that belongs to this class.
+'@return Long. The ending column index, inclusive of total and missing columns.
 Public Property Get EndColumn() As Long
     EndColumn = this.endCol
 End Property
@@ -523,6 +573,19 @@ Public Property Get RowsCategoriesRange(Optional ByVal includeHeaders As Boolean
         (specs.HasTotal Or tablType = ScopeSpatial) And onlyCategories, EndRow - 1, _
         True, EndRow)
 
+    ' STANDARD_START_COL, deliberately, until StartColumn is safe to call from a
+    ' read. StartColumn is a Property Get that MUTATES: it names
+    ' STARTCOL_<tabId> on the sheet, and it reaches StartRow, which walks the
+    ' ancestor chain through Previous. Calling it from here turned reading the
+    ' categories range into writing a name onto tables the caller had not built,
+    ' and the run stopped finishing.
+    '
+    ' The audit's item 47 is real and still open: a temporal table CONTINUING a
+    ' section starts further right than column 3, so this range is built in the
+    ' wrong column for that one case. It stays latent because on that path
+    ' NameRanges derives its range from the ENDTABLE_ marker and bypasses this
+    ' property. Fixing it needs StartColumn split into a pure read and an explicit
+    ' assignment first -- audit P2 and Move 1 of section 5.2.
     With sh
         Set RowsCategoriesRange = .Range(.Cells(startRw, STANDARD_START_COL), _
                                           .Cells(endRw, STANDARD_START_COL))
@@ -567,8 +630,8 @@ Public Property Get RowRange(ByVal rowVal As String, _
                               Optional ByVal includeHeaders As Boolean = True) As Range
     Dim rng As Range
     Dim valueRow As Long
-    Dim sh As Worksheet
     Dim startCol As Long
+    Dim sh As Worksheet
 
     Set rng = RowsCategoriesRange()
     Set sh = Wksh()
@@ -1178,6 +1241,19 @@ Public Sub AddHeader()
             If (Not RangeExists("ADM_DROPDOWN_" & tabId)) And _
                (Not RangeExists("HF_DROPDOWN_" & tabId)) Then
 
+                ' SpatialTableScopes has three outcomes and the two arms below
+                ' handle two of them. rng is assigned inside those arms and then
+                ' dereferenced unconditionally underneath, so the third outcome
+                ' reaches .Rows(rng.Row - 1) with rng still Nothing and raises 91
+                ' well away from the cause. TableSpecs already requires one of
+                ' the two prefixes before a spatial table is judged valid, so an
+                ' empty answer here means that invariant broke. Saying so costs
+                ' one line and names the table.
+                If LenB(specs.SpatialTableScopes()) = 0 Then _
+                    ThrowError ErrorUnexpectedState, _
+                               "Spatial table " & tabId & _
+                               " is missing both an adm1_ and an hf_ variable"
+
                 If specs.SpatialTableScopes = "geo" Then
                     .Cells(startRw - 2, STANDARD_START_COL).Name = "ADM_DROPDOWN_" & tabId
                     .Cells(startRw - 2, STANDARD_START_COL).Value = trans.TranslatedValue("MSG_SelectAdmin")
@@ -1513,7 +1589,16 @@ Public Sub Format(ByVal desFormat As LLFormat)
         If newSection Then
             Set rng = .Range("SECTION_" & tabId)
             designFormat.ApplyFormat rng, AnalysisSection
-        ElseIf RangeExists("ROWGS_SET") And (Not hn.HasName("ROWGS_FORMATSET")) Then
+        ' The guard is the table scope. ROWGS_SET, the name it used to read,
+        ' belongs to the global summary and is written on one sheet,
+        ' but this arm is reached by any table that does not start a section, on
+        ' any of the four analysis sheets. Asking whether the name resolved meant
+        ' the time series builder formatted a range on the NORMAL sheet and then
+        ' stamped ROWGS_FORMATSET, a worksheet-scoped flag, onto its own -- so
+        ' the flag described a sheet it was not written on. Tightening
+        ' RangeExists closes the same hole from the other side; this states the
+        ' intent.
+        ElseIf (tablType = ScopeGlobalSummary) And (Not hn.HasName("ROWGS_FORMATSET")) Then
             Set rng = .Range("ROWGS_SET")
             designFormat.ApplyFormat rng, scope:=AnalysisSection
             hn.EnsureName "ROWGS_FORMATSET", True, HiddenNameTypeBoolean
@@ -1802,7 +1887,16 @@ Private Sub LogInfo(ByVal message As String, _
     If internalChecks Is Nothing Then
         Set internalChecks = Checking.Create("CrossTable")
     End If
-    internalChecks.Add message, scope
+
+    ' Checking.Add takes (key, label, scope). Passing (message, scope) made the
+    ' message the key and coerced the Byte scope into the label, so every check
+    ' this class raised was filed as a note carrying a bare number where its text
+    ' belonged, and the scope the caller asked for was thrown away. Keys must
+    ' also be unique or Add raises, and a message used as a key is only unique
+    ' while every message differs — a second call with a fixed message would have
+    ' taken its table down from inside the guarded window.
+    checkCounter = checkCounter + 1
+    internalChecks.Add CStr(checkCounter), message, scope
     this.hasChecks = True
 End Sub
 
