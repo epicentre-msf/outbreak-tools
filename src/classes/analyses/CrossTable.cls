@@ -1898,8 +1898,14 @@ Private Sub LogInfo(ByVal message As String, _
     ' also be unique or Add raises, and a message used as a key is only unique
     ' while every message differs — a second call with a fixed message would have
     ' taken its table down from inside the guarded window.
+    '
+    ' The key names the class and the table as well as the counter. AnalysisOutput
+    ' pours the entries of this class and of CrossTableFormula, for every table of
+    ' the sheet, into one report, and a bare counter made the second Append raise
+    ' on a key the first had already taken.
     checkCounter = checkCounter + 1
-    internalChecks.Add CStr(checkCounter), message, scope
+    internalChecks.Add "CrossTable-" & Specifications.TableId & "-" & CStr(checkCounter), _
+                       message, scope
     this.hasChecks = True
 End Sub
 

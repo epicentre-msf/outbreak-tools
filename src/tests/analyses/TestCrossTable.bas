@@ -1676,6 +1676,11 @@ End Sub
 'message landed in the key, the Byte scope was coerced into the label, and the
 'scope the caller asked for was discarded in favour of the default note. The
 'report therefore showed a bare number where the text belonged.
+'
+'The key names the class, the table and a counter. AnalysisOutput pours the
+'entries of this class and of CrossTableFormula, for every table of the sheet,
+'into one report, and Checking.Add raises on a duplicate key, so a bare counter
+'made the second harvest raise on a key the first had taken.
 '@TestMethod("CrossTable")
 Public Sub TestALoggedCheckCarriesItsMessageAsTheLabel()
     CustomTestSetTitles Assert, "CrossTable", "TestALoggedCheckCarriesItsMessageAsTheLabel"
@@ -1698,8 +1703,9 @@ Public Sub TestALoggedCheckCarriesItsMessageAsTheLabel()
     firstKey = CStr(checks.ListOfKeys.Item(checks.ListOfKeys.LowerBound))
     label = checks.ValueOf(firstKey)
 
-    Assert.IsTrue IsNumeric(firstKey), _
-                  "The key should be a counter, so it stays unique across calls"
+    Assert.AreEqual "CrossTable-" & tabl.Specifications.TableId & "-1", firstKey, _
+                    "The key names the class, the table and the entry, and it reads [" & _
+                    firstKey & "]"
     Assert.IsTrue Not IsNumeric(label), _
                   "The label should hold the message text the caller passed"
     Assert.IsTrue Len(label) > 1, _
