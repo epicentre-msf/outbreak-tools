@@ -558,13 +558,16 @@ suites:
   # after Prepare it is the handle on the linelist's domain managers. Its
   # closure is five class rows across four blocks: these two, plus LLGeo under
   # `geo`, LinelistBuildService under `designer`, and
-  # TemporaryRepos under `general`. Everything else it names is registered
-  # already (Analysis, ApplicationState, FormulaData, Formulas, LLChoices,
-  # LLExport, LLFormat, LLVariables, LLdictionary) or baked into the driver
-  # workbook (BetterArray, Checking, HiddenNames, Passwords, TranslationObject).
+  # TemporaryRepos under `general`. Everything else LINELISTSPECS names is
+  # registered already (Analysis, ApplicationState, FormulaData, Formulas,
+  # LLChoices, LLExport, LLFormat, LLVariables, LLdictionary) or baked into the
+  # driver workbook (BetterArray, Checking, HiddenNames, Passwords,
+  # TranslationObject). That list belongs to LinelistSpecs alone.
   #
-  # LLTranslation names CustomTable (under `general`), BetterArray, HiddenNames
-  # and TranslationObject (all baked in), so it opens nothing further.
+  # LLTranslation names four collaborators: CustomTable (under `general`),
+  # BetterArray, HiddenNames and TranslationObject (all baked in). It never
+  # names LLdictionary. Its Tab_Translations table is the SETUP's translation
+  # table, which is a different thing from the linelist dictionary.
   #
   # Linelist, ListBuilder and CodeTransfer stay out. Linelist needs Buttons and
   # its own suite, and ListBuilder opens the `sections` folder through

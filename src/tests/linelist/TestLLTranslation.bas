@@ -7,18 +7,24 @@ Option Explicit
 '@ModuleDescription("Tests for LLTranslation class")
 
 '@description
-'Drives LLTranslation, which owns the translation tables of a linelist: the
-'messages, the shapes, the form labels, the ribbon labels, and the dictionary
-'table that carries the variable labels. Every linelist form module builds one,
-'and so do the build service, the exporter and LinelistSpecs.
+'Drives LLTranslation, which owns the five translation tables of a linelist:
+'the messages, the shapes, the form labels, the ribbon labels, and
+'Tab_Translations. That last one is the setup's own translation table, copied
+'onto the linelist translation worksheet while the linelist is built, and it is
+'what translates the dictionary, the choices and the analyses. Every linelist
+'form module builds one of these, and so do the build service, the exporter and
+'LinelistSpecs.
 '
-'The class has never been audited. This suite pins the behaviour that is worth
-'keeping while the audit is still owed, and the open questions it raised are in
-'.obt/gotchas/linelist-folder.md.
+'THE FIXTURE SPEAKS TWO LANGUAGES
+'-------------------------------------------------------------------------------
+'Every table carries an "en" column and a "fr" column with a different value in
+'each. A fixture with one language lets a routing test pass while the class
+'reads the wrong column, and it leaves the empty-language case impossible to
+'reach.
 '
-'The suite this replaced qualified ten helper calls with TestHelpers, which the
-'run does not import, and its module hooks were Private. Two of its tests
-'asserted only that an error number differed from zero, and one asserted True.
+'The tables are spaced six columns apart. An import that takes the source
+'headers grows the host table by a column, and a table with a neighbour one
+'column away has nowhere to grow into.
 '@depends LLTranslation, CustomTest, TranslationObject, HiddenNames
 
 Private Assert As CustomTest
@@ -91,71 +97,111 @@ End Sub
 '@section Test Fixture Helpers
 '===============================================================================
 
-'@sub-title Build a translation worksheet with the required tables and languages
-'@details
-'The four required tables are seeded plus T_TradLLRibbon, which Create treats
-'as optional and TransObject requires.
+'@sub-title Build a translation worksheet with the five tables and two languages
 '@param targetWkb Workbook. The workbook to seed.
 Private Sub SeedTranslationSheet(ByVal targetWkb As Workbook)
     Dim sh As Worksheet
-    Dim wkbNames As HiddenNames
 
     Set sh = targetWkb.Worksheets.Add
     sh.Name = TRANS_SHEET_NAME
 
-    SeedTable sh, 1, "T_TradLLMsg", Array( _
-        Array("MSG_GoToSection", "Go to section"), _
-        Array("MSG_AnaPeriod", "Analysis period"), _
-        Array("MSG_GoToHead", "Go to header"), _
-        Array("MSG_NoDevide", "Do not split"), _
-        Array("MSG_Devide", "Split"), _
-        Array("MSG_GoToGraph", "Go to graph"), _
-        Array("MSG_ComputeOnFiltered", "Compute on filtered"), _
-        Array("LLSHEET_CustomChoice", "Custom dropdown"), _
-        Array("LLSHEET_Analysis", "Analysis"), _
-        Array("LLSHEET_TemporalAnalysis", "Temporal"), _
-        Array("LLSHEET_SpatialAnalysis", "Spatial"), _
-        Array("LLSHEET_SpatioTemporalAnalysis", "SpatioTemporal"), _
-        Array("LLSHEET_CustomPivotTable", "Custom pivot"), _
-        Array("MSG_W", "W"), _
-        Array("MSG_Q", "Q"), _
-        Array("MSG_InfoStart", "Info start"), _
-        Array("MSG_InfoEnd", "Info end"))
+    SeedTable sh, 1, "T_TradLLMsg", "en", "fr", Array( _
+        Array("MSG_GoToSection", "Go to section", "Aller a la section"), _
+        Array("MSG_AnaPeriod", "Analysis period", "Periode d analyse"), _
+        Array("MSG_GoToHead", "Go to header", "Aller a l entete"), _
+        Array("MSG_NoDevide", "Do not split", "Ne pas diviser"), _
+        Array("MSG_Devide", "Split", "Diviser"), _
+        Array("MSG_GoToGraph", "Go to graph", "Aller au graphique"), _
+        Array("MSG_ComputeOnFiltered", "Compute on filtered", "Calculer sur le filtre"), _
+        Array("LLSHEET_CustomChoice", "Custom dropdown", "Liste personnalisee"), _
+        Array("LLSHEET_Analysis", "Analysis", "Analyse"), _
+        Array("LLSHEET_TemporalAnalysis", "Temporal", "Temporel"), _
+        Array("LLSHEET_SpatialAnalysis", "Spatial", "Spatial FR"), _
+        Array("LLSHEET_SpatioTemporalAnalysis", "SpatioTemporal", "Spatio temporel"), _
+        Array("LLSHEET_CustomPivotTable", "Custom pivot", "Pivot personnalise"), _
+        Array("MSG_W", "W", "S"), _
+        Array("MSG_Q", "Q", "T"), _
+        Array("MSG_InfoStart", "Info start", "Debut info"), _
+        Array("MSG_InfoEnd", "Info end", "Fin info"))
 
-    SeedTable sh, 4, "T_TradLLShapes", Array(Array("SHP_Advanced", "Advanced"))
-    SeedTable sh, 7, "T_TradLLForms", Array(Array("FRM_Title", "Form title"))
-    SeedTable sh, 10, "Tab_Translations", Array(Array("DICT_Var1", "Variable 1"))
-    SeedTable sh, 13, "T_TradLLRibbon", Array(Array("RIB_Advanced", "Ribbon advanced"))
+    SeedTable sh, 7, "T_TradLLShapes", "en", "fr", _
+              Array(Array("SHP_Advanced", "Advanced", "Avance"))
+    SeedTable sh, 13, "T_TradLLForms", "en", "fr", _
+              Array(Array("FRM_Title", "Form title", "Titre du formulaire"))
+    SeedTable sh, 19, "Tab_Translations", "en", "fr", _
+              Array(Array("DICT_Var1", "Variable 1", "Variable un"))
+    SeedTable sh, 25, "T_TradLLRibbon", "en", "fr", _
+              Array(Array("RIB_Advanced", "Ribbon advanced", "Ruban avance"))
 
     'TransObject reads both language codes from the WORKBOOK store.
-    Set wkbNames = HiddenNames.Create(targetWkb)
-    wkbNames.EnsureName "RNG_LLLanguageCode", "en", HiddenNameTypeString
-    wkbNames.EnsureName "RNG_DictionaryLanguage", "en", HiddenNameTypeString
+    SetWorkbookLanguage targetWkb, "RNG_LLLanguageCode", "en"
+    SetWorkbookLanguage targetWkb, "RNG_DictionaryLanguage", "en"
 End Sub
 
 '@sub-title Write one translation table and name it.
 '@param sh Worksheet. The host worksheet.
 '@param startColumn Long. The column the label column sits in.
 '@param tableName String. The name to give the ListObject.
-'@param entries Variant. An array of label and value pairs.
+'@param langOne String. The header of the first value column.
+'@param langTwo String. The header of the second value column.
+'@param entries Variant. An array of label, first value and second value.
 Private Sub SeedTable(ByVal sh As Worksheet, ByVal startColumn As Long, _
-                      ByVal tableName As String, ByVal entries As Variant)
+                      ByVal tableName As String, ByVal langOne As String, _
+                      ByVal langTwo As String, ByVal entries As Variant)
     Dim idx As Long
     Dim lastRow As Long
     Dim rng As Range
 
     sh.Cells(1, startColumn).Value = "label"
-    sh.Cells(1, startColumn + 1).Value = "en"
+    sh.Cells(1, startColumn + 1).Value = langOne
+    sh.Cells(1, startColumn + 2).Value = langTwo
 
     For idx = LBound(entries) To UBound(entries)
         sh.Cells(idx + 2, startColumn).Value = entries(idx)(0)
         sh.Cells(idx + 2, startColumn + 1).Value = entries(idx)(1)
+        sh.Cells(idx + 2, startColumn + 2).Value = entries(idx)(2)
     Next idx
 
     lastRow = UBound(entries) - LBound(entries) + 2
-    Set rng = sh.Range(sh.Cells(1, startColumn), sh.Cells(lastRow, startColumn + 1))
+    Set rng = sh.Range(sh.Cells(1, startColumn), sh.Cells(lastRow, startColumn + 2))
     sh.ListObjects.Add(SourceType:=xlSrcRange, Source:=rng, _
                        XlListObjectHasHeaders:=xlYes).Name = tableName
+End Sub
+
+'@sub-title Give a workbook-level language hidden name its value.
+'@param targetWkb Workbook. The workbook carrying the name.
+'@param nameId String. The hidden name.
+'@param value String. The language code to store.
+Private Sub SetWorkbookLanguage(ByVal targetWkb As Workbook, _
+                                ByVal nameId As String, ByVal value As String)
+    Dim store As HiddenNames
+
+    Set store = HiddenNames.Create(targetWkb)
+    If store.HasName(nameId) Then
+        store.SetValue nameId, value
+    Else
+        store.EnsureName nameId, value, HiddenNameTypeString
+    End If
+End Sub
+
+'@sub-title Replace one tag of the messages table with another.
+'@details
+'A loop rather than Range.Find, which inherits LookIn and SearchOrder from the
+'last search of the Excel session.
+'@param oldTag String. The tag to replace.
+'@param newTag String. The tag to write in its place.
+Private Sub RetagMessage(ByVal oldTag As String, ByVal newTag As String)
+    Dim tagColumn As Range
+    Dim cellRng As Range
+
+    Set tagColumn = TransSheet.ListObjects("T_TradLLMsg").ListColumns(1).DataBodyRange
+
+    For Each cellRng In tagColumn
+        If StrComp(CStr(cellRng.Value), oldTag, vbBinaryCompare) = 0 Then
+            cellRng.Value = newTag
+            Exit Sub
+        End If
+    Next
 End Sub
 
 '@section Factory Tests
@@ -234,11 +280,42 @@ TestFail:
     CustomTestLogFailure Assert, "TestCreateRejectsMissingTables", Err.Number, Err.Description
 End Sub
 
+'@sub-title The ribbon table is required at creation.
+'@details
+'It used to be optional there and required on read, so a sheet passed Create
+'and the ribbon callback died later at the one call site that asks for that
+'scope, with no error handler above it. The designer template ships the table.
+'@TestMethod("LLTranslation")
+Public Sub TestCreateRequiresTheRibbonTable()
+    CustomTestSetTitles Assert, TESTMODULE, "TestCreateRequiresTheRibbonTable"
+    On Error GoTo TestFail
+
+    Dim sut As LLTranslation
+    Dim errNumber As Long
+
+    TransSheet.ListObjects("T_TradLLRibbon").Delete
+
+    On Error Resume Next
+        Set sut = LLTranslation.Create(TransSheet)
+        errNumber = Err.Number
+    On Error GoTo 0
+
+    On Error GoTo TestFail
+    Assert.AreEqual CLng(ProjectError.ElementNotFound), errNumber, _
+                    "A sheet with no ribbon table is refused at creation"
+    Assert.IsTrue (sut Is Nothing), "Nothing comes back from the refused create"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestCreateRequiresTheRibbonTable", _
+                         Err.Number, Err.Description
+End Sub
+
 '@sub-title The host worksheet cannot be swapped after creation.
 '@details
-'The instance caches two hidden name stores taken from that worksheet and its
-'workbook, so a swap would leave the stores pointing at a worksheet the
-'instance had given up.
+'The instance caches a hidden name store taken from that worksheet's workbook
+'and five translation objects taken from its tables, so a swap would leave all
+'six pointing at a worksheet the instance had given up.
 '@TestMethod("LLTranslation")
 Public Sub TestInternalSheetIsSetAtCreationOnly()
     CustomTestSetTitles Assert, TESTMODULE, "TestInternalSheetIsSetAtCreationOnly"
@@ -351,115 +428,129 @@ TestFail:
                          Err.Number, Err.Description
 End Sub
 
-'@sub-title Create accepts a sheet with no ribbon table and that scope then raises.
+'@section Language codes
+'===============================================================================
+
+'@sub-title The interface code picks the column for four scopes and the dictionary code for the fifth.
 '@details
-'This pins the gap as it stands today. CheckRequirements calls T_TradLLRibbon
-'optional and TransObject requires it, so a workbook can pass creation and fail
-'later at the one call site that asks for the ribbon scope. The test states the
-'behaviour so a change to either side trips it.
+'Every table of the fixture carries a different value under "en" and under
+'"fr", so a scope reading the wrong column is visible here.
 '@TestMethod("LLTranslation")
-Public Sub TestRibbonTableIsOptionalAtCreationAndRequiredOnRead()
-    CustomTestSetTitles Assert, TESTMODULE, "TestRibbonTableIsOptionalAtCreationAndRequiredOnRead"
+Public Sub TestTheLanguageCodeDecidesTheColumn()
+    CustomTestSetTitles Assert, TESTMODULE, "TestTheLanguageCodeDecidesTheColumn"
     On Error GoTo TestFail
 
     Dim sut As LLTranslation
-    Dim answer As TranslationObject
-    Dim errNumber As Long
 
-    TransSheet.ListObjects("T_TradLLRibbon").Delete
+    SetWorkbookLanguage FixtureWkb, "RNG_LLLanguageCode", "fr"
 
     Set sut = LLTranslation.Create(TransSheet)
-    Assert.IsTrue (Not sut Is Nothing), "Create accepts a sheet with no ribbon table"
+
+    Assert.AreEqual "Aller a la section", _
+                    sut.TransObject(TranslationOfMessages).TranslatedValue("MSG_GoToSection"), _
+                    "The messages scope answers in the interface language"
+    Assert.AreEqual "Avance", _
+                    sut.TransObject(TranslationOfShapes).TranslatedValue("SHP_Advanced"), _
+                    "The shapes scope answers in the interface language"
+    Assert.AreEqual "Ruban avance", _
+                    sut.TransObject(TranslationOfRibbon).TranslatedValue("RIB_Advanced"), _
+                    "The ribbon scope answers in the interface language"
+    Assert.AreEqual "Variable 1", _
+                    sut.TransObject(TranslationOfDictionary).TranslatedValue("DICT_Var1"), _
+                    "The dictionary scope keeps its own code, which is still en"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestTheLanguageCodeDecidesTheColumn", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title An empty interface language code raises.
+'@details
+'An empty code used to give a translation object whose language matched no
+'column header, and every tag then translated to itself: buttons reading
+'SHP_Advanced, worksheets named LLSHEET_Analysis, and no error anywhere.
+'@TestMethod("LLTranslation")
+Public Sub TestAnAbsentLanguageCodeRaises()
+    CustomTestSetTitles Assert, TESTMODULE, "TestAnAbsentLanguageCodeRaises"
+    On Error GoTo TestFail
+
+    Dim sut As LLTranslation
+    Dim store As HiddenNames
+    Dim answer As TranslationObject
+    Dim errNumber As Long
+    Dim dictErrNumber As Long
+
+    Set store = HiddenNames.Create(FixtureWkb)
+    store.RemoveName "RNG_LLLanguageCode"
+    store.RemoveName "RNG_DictionaryLanguage"
+
+    Set sut = LLTranslation.Create(TransSheet)
 
     On Error Resume Next
-        Set answer = sut.TransObject(TranslationOfRibbon)
+        Set answer = sut.TransObject(TranslationOfMessages)
         errNumber = Err.Number
+    On Error GoTo 0
+
+    On Error Resume Next
+        Set answer = sut.TransObject(TranslationOfDictionary)
+        dictErrNumber = Err.Number
     On Error GoTo 0
 
     On Error GoTo TestFail
     Assert.AreEqual CLng(ProjectError.ElementNotFound), errNumber, _
-                    "Asking for the ribbon scope on that sheet raises"
+                    "An empty interface language code raises"
+    Assert.AreEqual CLng(ProjectError.ElementNotFound), dictErrNumber, _
+                    "An empty dictionary language code raises"
 
     Exit Sub
 TestFail:
-    CustomTestLogFailure Assert, "TestRibbonTableIsOptionalAtCreationAndRequiredOnRead", _
+    CustomTestLogFailure Assert, "TestAnAbsentLanguageCodeRaises", _
                          Err.Number, Err.Description
 End Sub
 
-'@section Language codes
-'===============================================================================
-
-'@sub-title InitialiseSheetNames writes the two codes and Value reads them back.
-'@TestMethod("LLTranslation")
-Public Sub TestSheetNamesRoundTripThroughValue()
-    CustomTestSetTitles Assert, TESTMODULE, "TestSheetNamesRoundTripThroughValue"
-    On Error GoTo TestFail
-
-    Dim sut As LLTranslation
-
-    Set sut = LLTranslation.Create(TransSheet)
-    sut.InitialiseSheetNames "en", "fr"
-
-    Assert.AreEqual "en", sut.Value("dictlang"), "The dictionary language reads back"
-    Assert.AreEqual "fr", sut.Value("lllang"), "The interface language reads back"
-    Assert.AreEqual "en", sut.Value("DictLang"), "The key is read without regard to case"
-
-    Exit Sub
-TestFail:
-    CustomTestLogFailure Assert, "TestSheetNamesRoundTripThroughValue", _
-                         Err.Number, Err.Description
-End Sub
-
-'@sub-title Writing the codes twice keeps the second value.
+'@sub-title A scope is built once, and Refresh drops what is held.
 '@details
-'EnsureName leaves an existing name alone, so the SetValue beside it is what
-'makes a second generation over the same workbook write the new language.
+'Each translation object holds its own copy of its table. A caller that keeps
+'the instance keeps the copy, which is the whole point of holding them here.
 '@TestMethod("LLTranslation")
-Public Sub TestSheetNamesAreOverwrittenOnASecondWrite()
-    CustomTestSetTitles Assert, TESTMODULE, "TestSheetNamesAreOverwrittenOnASecondWrite"
+Public Sub TestScopeIsBuiltOnceAndRefreshDropsIt()
+    CustomTestSetTitles Assert, TESTMODULE, "TestScopeIsBuiltOnceAndRefreshDropsIt"
     On Error GoTo TestFail
 
     Dim sut As LLTranslation
+    Dim firstRead As TranslationObject
+    Dim secondRead As TranslationObject
+    Dim afterRefresh As TranslationObject
 
     Set sut = LLTranslation.Create(TransSheet)
-    sut.InitialiseSheetNames "en", "en"
-    sut.InitialiseSheetNames "fr", "es"
 
-    Assert.AreEqual "fr", sut.Value("dictlang"), "The second dictionary language won"
-    Assert.AreEqual "es", sut.Value("lllang"), "The second interface language won"
+    Set firstRead = sut.TransObject(TranslationOfMessages)
+    Set secondRead = sut.TransObject(TranslationOfMessages)
+
+    Assert.IsTrue (firstRead Is secondRead), _
+                  "The second read of a scope gives the object the first one built"
+
+    sut.Refresh
+    Set afterRefresh = sut.TransObject(TranslationOfMessages)
+
+    Assert.IsTrue (Not (afterRefresh Is firstRead)), _
+                  "Refresh drops the held object and the next read builds another"
+    Assert.AreEqual "Go to section", afterRefresh.TranslatedValue("MSG_GoToSection"), _
+                    "The rebuilt object still reads its table"
 
     Exit Sub
 TestFail:
-    CustomTestLogFailure Assert, "TestSheetNamesAreOverwrittenOnASecondWrite", _
+    CustomTestLogFailure Assert, "TestScopeIsBuiltOnceAndRefreshDropsIt", _
                          Err.Number, Err.Description
-End Sub
-
-'@sub-title An unknown key answers an empty string.
-'@details
-'This is the behaviour today. It is the same silent shape that hid the
-'debugging password fault in LinelistSpecs, and it is written down here so the
-'audit that is owed can decide about it.
-'@TestMethod("LLTranslation")
-Public Sub TestValueOfAnUnknownKeyIsEmpty()
-    CustomTestSetTitles Assert, TESTMODULE, "TestValueOfAnUnknownKeyIsEmpty"
-    On Error GoTo TestFail
-
-    Dim sut As LLTranslation
-
-    Set sut = LLTranslation.Create(TransSheet)
-
-    Assert.AreEqual vbNullString, sut.Value("nosuchkey"), _
-                    "An unknown key answers an empty string today"
-
-    Exit Sub
-TestFail:
-    CustomTestLogFailure Assert, "TestValueOfAnUnknownKeyIsEmpty", Err.Number, Err.Description
 End Sub
 
 '@section Export and Import
 '===============================================================================
 
-'@sub-title Export copies every table onto a sheet of the target workbook.
+'@sub-title Export carries every table and the values inside them.
+'@details
+'A count alone passes for an export that wrote five empty tables.
 '@TestMethod("LLTranslation")
 Public Sub TestExportCarriesEveryTable()
     CustomTestSetTitles Assert, TESTMODULE, "TestExportCarriesEveryTable"
@@ -468,6 +559,7 @@ Public Sub TestExportCarriesEveryTable()
     Dim sut As LLTranslation
     Dim targetWkb As Workbook
     Dim exportSheet As Worksheet
+    Dim exported As LLTranslation
 
     Set sut = LLTranslation.Create(TransSheet)
     Set targetWkb = NewWorkbook()
@@ -486,6 +578,28 @@ Public Sub TestExportCarriesEveryTable()
                     CLng(exportSheet.ListObjects.Count), _
                     "Every table on the host sheet reaches the export"
 
+    'The exported sheet is read back through the class, which is what proves
+    'the five tables arrived with their values and their language columns.
+    SetWorkbookLanguage targetWkb, "RNG_LLLanguageCode", "en"
+    SetWorkbookLanguage targetWkb, "RNG_DictionaryLanguage", "en"
+    Set exported = LLTranslation.Create(exportSheet)
+
+    Assert.AreEqual "Go to section", _
+                    exported.TransObject(TranslationOfMessages).TranslatedValue("MSG_GoToSection"), _
+                    "The messages table carried its values"
+    Assert.AreEqual "Advanced", _
+                    exported.TransObject(TranslationOfShapes).TranslatedValue("SHP_Advanced"), _
+                    "The shapes table carried its values"
+    Assert.AreEqual "Form title", _
+                    exported.TransObject(TranslationOfForms).TranslatedValue("FRM_Title"), _
+                    "The forms table carried its values"
+    Assert.AreEqual "Variable 1", _
+                    exported.TransObject(TranslationOfDictionary).TranslatedValue("DICT_Var1"), _
+                    "The dictionary table carried its values"
+    Assert.AreEqual "Ribbon advanced", _
+                    exported.TransObject(TranslationOfRibbon).TranslatedValue("RIB_Advanced"), _
+                    "The ribbon table carried its values"
+
     DeleteWorkbook targetWkb
     Exit Sub
 TestFail:
@@ -493,6 +607,52 @@ TestFail:
         If Not targetWkb Is Nothing Then DeleteWorkbook targetWkb
     On Error GoTo 0
     CustomTestLogFailure Assert, "TestExportCarriesEveryTable", Err.Number, Err.Description
+End Sub
+
+'@sub-title Exporting twice into one workbook works the second time.
+'@details
+'Clearing the cells of the sheet leaves the ListObject objects standing, each
+'one still holding its table name, and the second export asks Excel for those
+'same five names.
+'@TestMethod("LLTranslation")
+Public Sub TestExportTwiceIntoOneWorkbook()
+    CustomTestSetTitles Assert, TESTMODULE, "TestExportTwiceIntoOneWorkbook"
+    On Error GoTo TestFail
+
+    Dim sut As LLTranslation
+    Dim targetWkb As Workbook
+    Dim exportSheet As Worksheet
+    Dim errNumber As Long
+
+    Set sut = LLTranslation.Create(TransSheet)
+    Set targetWkb = NewWorkbook()
+
+    sut.Export targetWkb, Hide:=xlSheetVisible
+
+    On Error Resume Next
+        sut.Export targetWkb, Hide:=xlSheetVisible
+        errNumber = Err.Number
+    On Error GoTo 0
+
+    Set exportSheet = Nothing
+    On Error Resume Next
+        Set exportSheet = targetWkb.Worksheets(TRANS_SHEET_NAME)
+    On Error GoTo 0
+
+    On Error GoTo TestFail
+    Assert.AreEqual CLng(0), errNumber, "The second export into one workbook raises nothing"
+    Assert.IsTrue (Not exportSheet Is Nothing), "The sheet is still there after the second export"
+    Assert.AreEqual CLng(TransSheet.ListObjects.Count), _
+                    CLng(exportSheet.ListObjects.Count), _
+                    "The second export leaves five tables, one per source table"
+
+    DeleteWorkbook targetWkb
+    Exit Sub
+TestFail:
+    On Error Resume Next
+        If Not targetWkb Is Nothing Then DeleteWorkbook targetWkb
+    On Error GoTo 0
+    CustomTestLogFailure Assert, "TestExportTwiceIntoOneWorkbook", Err.Number, Err.Description
 End Sub
 
 '@sub-title ExportDictionary writes the dictionary table on its own.
@@ -532,10 +692,12 @@ TestFail:
                          Err.Number, Err.Description
 End Sub
 
-'@sub-title Import takes the values of the tables the source carries.
+'@sub-title Import takes the values of the tables the source carries and leaves the rest standing.
 '@details
-'The suite this replaced asserted True here, so it proved that Import raised
-'nothing and nothing else. What matters is that the value moved.
+'The dictionary assertion is the one that matters. The dictionary table used
+'to be emptied before the loop had discovered what the source carried, and it
+'was emptied through a CustomTable with no key column, which takes the tag
+'column with the rest.
 '@TestMethod("LLTranslation")
 Public Sub TestImportTakesTheValuesItFinds()
     CustomTestSetTitles Assert, TESTMODULE, "TestImportTakesTheValuesItFinds"
@@ -550,7 +712,8 @@ Public Sub TestImportTakesTheValuesItFinds()
     Set sourceWkb = NewWorkbook()
     Set sourceSh = sourceWkb.Worksheets.Add
     sourceSh.Name = TRANS_SHEET_NAME
-    SeedTable sourceSh, 1, "T_TradLLMsg", Array(Array("MSG_GoToSection", "Updated section"))
+    SeedTable sourceSh, 1, "T_TradLLMsg", "en", "fr", _
+              Array(Array("MSG_GoToSection", "Updated section", "Section mise a jour"))
 
     sut.Import sourceWkb
 
@@ -561,6 +724,9 @@ Public Sub TestImportTakesTheValuesItFinds()
     Assert.AreEqual "Advanced", _
                     sut.TransObject(TranslationOfShapes).TranslatedValue("SHP_Advanced"), _
                     "A table the source does not carry is left alone"
+    Assert.AreEqual "Variable 1", _
+                    sut.TransObject(TranslationOfDictionary).TranslatedValue("DICT_Var1"), _
+                    "The dictionary table is left alone when the source has none"
 
     DeleteWorkbook sourceWkb
     Exit Sub
@@ -571,28 +737,42 @@ TestFail:
     CustomTestLogFailure Assert, "TestImportTakesTheValuesItFinds", Err.Number, Err.Description
 End Sub
 
-'@sub-title Import from a workbook with no matching sheet changes nothing.
+'@sub-title Import says so when there is nothing to import from.
 '@details
-'It returns quietly today. The test states that so the audit can decide whether
-'the caller deserves to hear about it.
+'Export raises on a Nothing workbook and Import used to return quietly on both
+'a Nothing workbook and a source with no matching worksheet. One pair of
+'operations, one contract.
 '@TestMethod("LLTranslation")
-Public Sub TestImportWithNoMatchingSheetChangesNothing()
-    CustomTestSetTitles Assert, TESTMODULE, "TestImportWithNoMatchingSheetChangesNothing"
+Public Sub TestImportRaisesWhenThereIsNothingToImport()
+    CustomTestSetTitles Assert, TESTMODULE, "TestImportRaisesWhenThereIsNothingToImport"
     On Error GoTo TestFail
 
     Dim sut As LLTranslation
     Dim sourceWkb As Workbook
+    Dim nothingErrNumber As Long
+    Dim missingSheetErrNumber As Long
 
     Set sut = LLTranslation.Create(TransSheet)
     Set sourceWkb = NewWorkbook()
 
-    sut.Import sourceWkb
-    sut.Import Nothing
+    On Error Resume Next
+        sut.Import Nothing
+        nothingErrNumber = Err.Number
+    On Error GoTo 0
+
+    On Error Resume Next
+        sut.Import sourceWkb
+        missingSheetErrNumber = Err.Number
+    On Error GoTo 0
 
     On Error GoTo TestFail
+    Assert.AreEqual CLng(ProjectError.ObjectNotInitialized), nothingErrNumber, _
+                    "A Nothing source workbook is refused"
+    Assert.AreEqual CLng(ProjectError.ElementNotFound), missingSheetErrNumber, _
+                    "A source with no translation worksheet is refused"
     Assert.AreEqual "Go to section", _
                     sut.TransObject(TranslationOfMessages).TranslatedValue("MSG_GoToSection"), _
-                    "A source with no translation sheet leaves the tables alone"
+                    "The host tables are left standing"
 
     DeleteWorkbook sourceWkb
     Exit Sub
@@ -600,7 +780,7 @@ TestFail:
     On Error Resume Next
         If Not sourceWkb Is Nothing Then DeleteWorkbook sourceWkb
     On Error GoTo 0
-    CustomTestLogFailure Assert, "TestImportWithNoMatchingSheetChangesNothing", _
+    CustomTestLogFailure Assert, "TestImportRaisesWhenThereIsNothingToImport", _
                          Err.Number, Err.Description
 End Sub
 
@@ -630,10 +810,59 @@ TestFail:
                          Err.Number, Err.Description
 End Sub
 
+'@sub-title ImportDictionary takes the language columns of the source.
+'@details
+'This is the most consequential thing the class does during a build: the host
+'dictionary table comes out carrying the source workbook's language columns.
+'The source here speaks en and es, the host speaks en and fr, and the host
+'answers in es afterwards.
+'@TestMethod("LLTranslation")
+Public Sub TestImportDictionaryTakesTheSourceHeaders()
+    CustomTestSetTitles Assert, TESTMODULE, "TestImportDictionaryTakesTheSourceHeaders"
+    On Error GoTo TestFail
+
+    Dim sut As LLTranslation
+    Dim sourceWkb As Workbook
+    Dim sourceSh As Worksheet
+
+    Set sut = LLTranslation.Create(TransSheet)
+
+    Set sourceWkb = NewWorkbook()
+    Set sourceSh = sourceWkb.Worksheets.Add
+    sourceSh.Name = "SourceDictionary"
+    SeedTable sourceSh, 1, "Tab_SourceTranslations", "en", "es", _
+              Array(Array("DICT_Var1", "Variable one", "Variable uno"))
+
+    sut.ImportDictionary sourceSh.ListObjects("Tab_SourceTranslations")
+
+    Assert.AreEqual "Variable one", _
+                    sut.TransObject(TranslationOfDictionary).TranslatedValue("DICT_Var1"), _
+                    "The values of the source reached the host table"
+
+    SetWorkbookLanguage FixtureWkb, "RNG_DictionaryLanguage", "es"
+    sut.Refresh
+
+    Assert.AreEqual "Variable uno", _
+                    sut.TransObject(TranslationOfDictionary).TranslatedValue("DICT_Var1"), _
+                    "The host answers in a language only the source carried"
+
+    DeleteWorkbook sourceWkb
+    Exit Sub
+TestFail:
+    On Error Resume Next
+        If Not sourceWkb Is Nothing Then DeleteWorkbook sourceWkb
+    On Error GoTo 0
+    CustomTestLogFailure Assert, "TestImportDictionaryTakesTheSourceHeaders", _
+                         Err.Number, Err.Description
+End Sub
+
 '@section Hidden names
 '===============================================================================
 
-'@sub-title InitialiseHiddenNames writes the translated values onto a workbook.
+'@sub-title InitialiseHiddenNames writes all seventeen translated values onto a workbook.
+'@details
+'Three of the seventeen used to be checked, so a typo in any of the other
+'fourteen tag strings was invisible.
 '@TestMethod("LLTranslation")
 Public Sub TestInitialiseHiddenNamesCreatesNames()
     CustomTestSetTitles Assert, TESTMODULE, "TestInitialiseHiddenNamesCreatesNames"
@@ -642,6 +871,8 @@ Public Sub TestInitialiseHiddenNamesCreatesNames()
     Dim sut As LLTranslation
     Dim targetWkb As Workbook
     Dim targetNames As HiddenNames
+    Dim expected As Variant
+    Dim idx As Long
 
     Set sut = LLTranslation.Create(TransSheet)
     Set targetWkb = NewWorkbook()
@@ -650,14 +881,31 @@ Public Sub TestInitialiseHiddenNamesCreatesNames()
 
     Set targetNames = HiddenNames.Create(targetWkb)
 
+    expected = Array( _
+        Array("RNG_GoToSection", "Go to section"), _
+        Array("RNG_AnaPeriod", "Analysis period"), _
+        Array("RNG_GoToHeader", "Go to header"), _
+        Array("RNG_NoDevide", "Do not split"), _
+        Array("RNG_Devide", "Split"), _
+        Array("RNG_GoToGraph", "Go to graph"), _
+        Array("RNG_OnFiltered", "Compute on filtered"), _
+        Array("RNG_CustomDrop", "Custom dropdown"), _
+        Array("RNG_UASheet", "Analysis"), _
+        Array("RNG_TSSheet", "Temporal"), _
+        Array("RNG_SPSheet", "Spatial"), _
+        Array("RNG_SPTSheet", "SpatioTemporal"), _
+        Array("RNG_CustomPivot", "Custom pivot"), _
+        Array("RNG_Week", "W"), _
+        Array("RNG_Quarter", "Q"), _
+        Array("RNG_InfoStart", "Info start"), _
+        Array("RNG_InfoEnd", "Info end"))
+
     On Error GoTo TestFail
-    Assert.IsTrue targetNames.HasName("RNG_GoToSection"), "RNG_GoToSection was created"
-    Assert.IsTrue targetNames.HasName("RNG_Week"), "RNG_Week was created"
-    Assert.IsTrue targetNames.HasName("RNG_SPTSheet"), "RNG_SPTSheet was created"
-    Assert.AreEqual "Go to section", targetNames.ValueAsString("RNG_GoToSection"), _
-                    "RNG_GoToSection carries the translated message"
-    Assert.AreEqual "SpatioTemporal", targetNames.ValueAsString("RNG_SPTSheet"), _
-                    "The sheet names carry their translated value"
+    For idx = LBound(expected) To UBound(expected)
+        Assert.AreEqual CStr(expected(idx)(1)), _
+                        targetNames.ValueAsString(CStr(expected(idx)(0))), _
+                        CStr(expected(idx)(0)) & " carries its translated value"
+    Next idx
 
     DeleteWorkbook targetWkb
     Exit Sub
@@ -666,6 +914,46 @@ TestFail:
         If Not targetWkb Is Nothing Then DeleteWorkbook targetWkb
     On Error GoTo 0
     CustomTestLogFailure Assert, "TestInitialiseHiddenNamesCreatesNames", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title A tag absent from the messages table gives a hidden name holding the tag.
+'@details
+'TranslatedValue answers with the tag itself when it finds no row for it, so
+'the hidden name carries "MSG_Q" and every reader downstream shows that. This
+'test states the behaviour as it is. Refusing to write such a name would need
+'the seventeen tags of the shipped designer checked one by one first, because
+'a tag the template never carried would then stop a generation.
+'@TestMethod("LLTranslation")
+Public Sub TestAnAbsentTagGivesAHiddenNameHoldingTheTag()
+    CustomTestSetTitles Assert, TESTMODULE, "TestAnAbsentTagGivesAHiddenNameHoldingTheTag"
+    On Error GoTo TestFail
+
+    Dim sut As LLTranslation
+    Dim targetWkb As Workbook
+    Dim targetNames As HiddenNames
+
+    RetagMessage "MSG_Q", "MSG_QUARTER_RENAMED"
+
+    Set sut = LLTranslation.Create(TransSheet)
+    Set targetWkb = NewWorkbook()
+
+    sut.InitialiseHiddenNames targetWkb
+    Set targetNames = HiddenNames.Create(targetWkb)
+
+    On Error GoTo TestFail
+    Assert.AreEqual "MSG_Q", targetNames.ValueAsString("RNG_Quarter"), _
+                    "A tag with no row gives a hidden name holding the tag"
+    Assert.AreEqual "W", targetNames.ValueAsString("RNG_Week"), _
+                    "The tags that are there are unaffected"
+
+    DeleteWorkbook targetWkb
+    Exit Sub
+TestFail:
+    On Error Resume Next
+        If Not targetWkb Is Nothing Then DeleteWorkbook targetWkb
+    On Error GoTo 0
+    CustomTestLogFailure Assert, "TestAnAbsentTagGivesAHiddenNameHoldingTheTag", _
                          Err.Number, Err.Description
 End Sub
 

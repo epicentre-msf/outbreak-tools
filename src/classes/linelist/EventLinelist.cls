@@ -1212,6 +1212,15 @@ End Function
 '===============================================================================
 
 '@sub-title Lazily initialise translation, message translator, and hidden names.
+'@details
+'A translation sheet missing a table, or a workbook whose language code is
+'empty, leaves the two translation fields Nothing and every event that needs
+'them does nothing. The suppression is kept for that reason: an event handler
+'has nothing above it to catch a raise.
+'
+'It covers the two translation reads alone. The hidden name store is built
+'outside it, so a translation sheet in that state costs the events their
+'labels and leaves everything else working.
 Private Sub EnsureTranslation()
     If Not (this.lltrads Is Nothing) Then Exit Sub
     If this.hostBook Is Nothing Then Exit Sub
@@ -1225,8 +1234,9 @@ Private Sub EnsureTranslation()
     If Not this.lltrads Is Nothing Then
         Set this.tradmess = this.lltrads.TransObject()
     End If
-    Set this.wkbNames = HiddenNames.Create(this.hostBook)
     On Error GoTo 0
+
+    Set this.wkbNames = HiddenNames.Create(this.hostBook)
 End Sub
 
 '@sub-title Lazily initialise the dropdown manager.

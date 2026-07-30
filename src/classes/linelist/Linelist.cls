@@ -663,22 +663,19 @@ Private Sub InitialiseWorkbookNames()
 End Sub
 
 '@label:initialise-translation-names
-'@sub-title Propagate language HiddenNames to the translation worksheet and create translated names
+'@sub-title Create the translated message and sheet names on the output workbook
 '@details
-'Calls InitialiseSheetNames on the LLTranslation instance to store
-'dictionary and interface language codes as worksheet-level HiddenNames
-'on the translation sheet. Then calls InitialiseHiddenNames to create
-'all RNG_* translated message/sheet names on the output workbook.
+'Calls InitialiseHiddenNames to create all RNG_* translated message and sheet
+'names on the output workbook. The two language codes reach the workbook
+'through InitialiseWorkbookNames, which runs just above this.
+'
+'A second copy of the two codes used to be written onto the translation
+'worksheet here. LLTranslation reads its languages from the workbook store,
+'so that copy was written and never read.
 Private Sub InitialiseTranslationNames()
     Dim transObj As LLTranslation
-    Dim dictLang As String
-    Dim llLang As String
-
-    dictLang = this.specs.Value("setuplang")
-    llLang = Split(this.specs.Value("lllang"), "-")(0)
 
     Set transObj = this.specs.Translations
-    transObj.InitialiseSheetNames dictLang, llLang
     transObj.InitialiseHiddenNames OutputWkb
 End Sub
 

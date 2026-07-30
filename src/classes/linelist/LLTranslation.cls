@@ -42,22 +42,46 @@ End Enum
 'tables, exchanges the dictionary table on its own, and writes the translated
 'configuration values into a workbook as hidden names.
 '
-'WHERE THE TABLES AND THE LANGUAGES LIVE
+'WHAT THE FIVE TABLES HOLD
 '-------------------------------------------------------------------------------
-'The five tables sit on the host worksheet. Four of them are required at
-'creation; T_TradLLRibbon is optional there and TransObject raises when a
-'caller asks for that scope on a sheet without it.
+'Four of them translate the linelist itself: T_TradLLMsg the messages,
+'T_TradLLShapes the button captions, T_TradLLForms the form labels and
+'T_TradLLRibbon the ribbon labels.
 '
-'The two language codes live in hidden names, and they are held in two
-'different places: RNG_LLLanguageCode and RNG_DictionaryLanguage are read from
-'the WORKBOOK store by TransObject, and written to the WORKSHEET store by
-'InitialiseSheetNames. Value reads the worksheet copy. The two copies are
-'written by different callers and nothing keeps them in step.
+'Tab_Translations is the SETUP's translation table, which is a different thing
+'from the linelist dictionary. The setup file carries it, the build service
+'copies it onto this worksheet while the linelist is being built, and it is
+'what translates the dictionary, the choices and the analyses.
+'ImportDictionary is the copy in and ExportDictionary the copy out: a data
+'export from a linelist carries this table on its own.
 '
-'This class has never been audited. What is known about it is in
-'.obt/gotchas/linelist-folder.md.
-'@depends TranslationObject, CustomTable, HiddenNames, BetterArray
-'@version 1.1 (2026-07-30)
+'THE FIVE TABLES ARE ALL REQUIRED
+'-------------------------------------------------------------------------------
+'Create asks for all five. The ribbon table used to be optional at creation and
+'required on read, so a sheet without it passed Create and then killed the
+'ribbon callback, which has no error handler above it. The designer template
+'ships the table, so a sheet without it is a broken sheet and the failure
+'belongs at creation.
+'
+'WHERE THE LANGUAGES LIVE
+'-------------------------------------------------------------------------------
+'The two language codes live in workbook-level hidden names,
+'RNG_LLLanguageCode and RNG_DictionaryLanguage, on the workbook that holds the
+'translation worksheet. TransObject reads them there and raises when the code
+'it needs is empty. An empty code used to give back a TranslationObject that
+'answered every tag with the tag itself, so a linelist could ship with buttons
+'reading SHP_Advanced and worksheets named LLSHEET_Analysis.
+'
+'WHAT IS HELD IN MEMORY
+'-------------------------------------------------------------------------------
+'The hidden name store and the five scoped TranslationObjects are built once
+'per instance. Building the store walks every Name of the workbook, and each
+'TranslationObject holds its own copy of its table, so a caller that keeps this
+'instance keeps both. Refresh drops all of them. The two import routines drop
+'the scoped objects themselves, and a caller that writes into a translation
+'table by any other route should call Refresh.
+'@depends TranslationObject, CustomTable, HiddenNames, Checking
+'@version 1.2 (2026-07-30)
 
 
 
@@ -67,11 +91,16 @@ End Enum
 
 Private Type TLLTranslation
     translationSheet As Worksheet
-    'Building a HiddenNames store walks every Name of its container, and both
-    'stores were rebuilt on every read. TransObject alone is called once per
-    'scope per caller, and the linelist form modules call it on every open.
+    'Building a HiddenNames store walks every Name of its container, and the
+    'store was rebuilt on every read.
     wkbNames As HiddenNames
-    shNames As HiddenNames
+    'One field per scope. TranslationObject holds its lookup per instance, so a
+    'caller that gets a fresh object on every call gets none of that copy.
+    transMessages As TranslationObject
+    transDictionary As TranslationObject
+    transShapes As TranslationObject
+    transForms As TranslationObject
+    transRibbon As TranslationObject
     sealed As Boolean
 End Type
 
@@ -82,6 +111,8 @@ Private Const TRADLLSHAPES           As String = "T_TradLLShapes"
 Private Const TRADLLFORMS            As String = "T_TradLLForms"
 Private Const TRADLLRIBBON           As String = "T_TradLLRibbon"
 Private Const DICTTRANS              As String = "Tab_Translations"
+Private Const LANG_INTERFACE         As String = "RNG_LLLanguageCode"
+Private Const LANG_DICTIONARY        As String = "RNG_DictionaryLanguage"
 Private Const CLASS_NAME             As String = "LLTranslation"
 
 
@@ -92,12 +123,12 @@ Private Const CLASS_NAME             As String = "LLTranslation"
 '@label:create
 '@sub-title Create a new LLTranslation from a translation worksheet
 '@details
-'Validates that the worksheet is not Nothing and that all required
+'Validates that the worksheet is not Nothing and that all five translation
 'ListObjects are present (T_TradLLMsg, T_TradLLShapes, T_TradLLForms,
-'Tab_Translations). T_TradLLRibbon is optional.
+'T_TradLLRibbon, Tab_Translations).
 '@param translationSheet Worksheet. The worksheet hosting all translation
 'ListObjects.
-'@return LLTranslation. A fully initialised facade.
+'@return LLTranslation. A facade over the five tables.
 '@throws ProjectError.ObjectNotInitialized When translationSheet is Nothing.
 '@throws ProjectError.ElementNotFound When a required ListObject is missing.
 '@export
@@ -121,8 +152,8 @@ End Sub
 '@prop-title Friend setter for the host worksheet
 '@details
 'Used by the factory method during construction. Writing to it after Create
-'raises, so the two cached hidden name stores can never point at a worksheet
-'the instance has given up.
+'raises, so the cached hidden name store and the cached translation objects
+'can never point at a worksheet the instance has given up.
 '@param value Worksheet. The translation worksheet to bind.
 '@throws ProjectError.SomethingWentWrong When the instance is already sealed.
 Friend Property Set InternalSheet(ByVal value As Worksheet)
@@ -135,26 +166,13 @@ End Property
 '@label:workbook-names
 '@sub-title The hidden name store of the workbook holding the translations
 '@details
-'Built once per instance. Every read used to build a new one, and building one
-'walks every Name of the workbook.
+'Built once per instance. Building one walks every Name of the workbook.
 '@return HiddenNames. The workbook-level store.
 Private Function WorkbookNames() As HiddenNames
     If this.wkbNames Is Nothing Then
         Set this.wkbNames = HiddenNames.Create(this.translationSheet.Parent)
     End If
     Set WorkbookNames = this.wkbNames
-End Function
-
-'@label:sheet-names
-'@sub-title The hidden name store of the translation worksheet
-'@details
-'Built once per instance, the same way the workbook store is.
-'@return HiddenNames. The worksheet-level store.
-Private Function SheetNames() As HiddenNames
-    If this.shNames Is Nothing Then
-        Set this.shNames = HiddenNames.Create(this.translationSheet)
-    End If
-    Set SheetNames = this.shNames
 End Function
 
 
@@ -175,42 +193,64 @@ End Property
 '@label:trans-object
 '@prop-title Scoped translation object
 '@details
-'Returns an TranslationObject configured for the requested translation
-'scope. The language code is resolved from the host workbook HiddenNames
-'(RNG_LLLanguageCode or RNG_DictionaryLanguage depending on scope).
+'Returns a TranslationObject configured for the requested translation scope.
+'The language code is resolved from the hidden names of the workbook holding
+'the translation worksheet: RNG_DictionaryLanguage for the dictionary scope
+'and RNG_LLLanguageCode for the other four.
+'
+'Each scope is built once and kept. Refresh drops the five.
 '@param trans Optional Byte. TranslationScope value selecting the content
 'scope. Defaults to TranslationOfMessages.
 '@return TranslationObject. The translation object for the requested scope.
-'@throws ProjectError.ElementNotFound When the requested ListObject does
-'not exist on the host worksheet.
+'@throws ProjectError.InvalidArgument When the scope is outside the enum.
+'@throws ProjectError.ElementNotFound When the requested ListObject is absent
+'from the host worksheet, or when the language code the scope needs is empty.
 '@export
 Public Property Get TransObject(Optional ByVal trans As Byte = TranslationOfMessages) As TranslationObject
-    Dim Lo As ListObject
-    Dim lang As String
-    Dim wkbNames As HiddenNames
-
-    Set wkbNames = WorkbookNames()
-    lang = wkbNames.ValueAsString("RNG_LLLanguageCode")
-
     Select Case trans
-    Case TranslationOfDictionary
-        lang = wkbNames.ValueAsString("RNG_DictionaryLanguage")
-        Set Lo = ResolveListObject(DICTTRANS)
-    Case TranslationOfShapes
-        Set Lo = ResolveListObject(TRADLLSHAPES)
-    Case TranslationOfForms
-        Set Lo = ResolveListObject(TRADLLFORMS)
     Case TranslationOfMessages
-        Set Lo = ResolveListObject(TRADLLMSG)
+        If this.transMessages Is Nothing Then _
+            Set this.transMessages = BuildScope(TRADLLMSG, LANG_INTERFACE)
+        Set TransObject = this.transMessages
+
+    Case TranslationOfDictionary
+        If this.transDictionary Is Nothing Then _
+            Set this.transDictionary = BuildScope(DICTTRANS, LANG_DICTIONARY)
+        Set TransObject = this.transDictionary
+
+    Case TranslationOfShapes
+        If this.transShapes Is Nothing Then _
+            Set this.transShapes = BuildScope(TRADLLSHAPES, LANG_INTERFACE)
+        Set TransObject = this.transShapes
+
+    Case TranslationOfForms
+        If this.transForms Is Nothing Then _
+            Set this.transForms = BuildScope(TRADLLFORMS, LANG_INTERFACE)
+        Set TransObject = this.transForms
+
     Case TranslationOfRibbon
-        Set Lo = ResolveListObject(TRADLLRIBBON)
+        If this.transRibbon Is Nothing Then _
+            Set this.transRibbon = BuildScope(TRADLLRIBBON, LANG_INTERFACE)
+        Set TransObject = this.transRibbon
+
     Case Else
         ThrowError ProjectError.InvalidArgument, _
                    "Unknown translation scope: " & CStr(trans)
     End Select
-
-    Set TransObject = TranslationObject.Create(Lo, lang)
 End Property
+
+'@label:refresh
+'@sub-title Drop everything this instance holds in memory
+'@details
+'Clears the hidden name store and the five scoped translation objects, so the
+'next read builds them again. Call it after a name is deleted and added back
+'on the workbook, and after writing into a translation table by any route
+'other than this class.
+'@export
+Public Sub Refresh()
+    Set this.wkbNames = Nothing
+    DropScopeCache
+End Sub
 
 
 '@section DataExchange
@@ -220,10 +260,10 @@ End Property
 '@label:export
 '@sub-title Export all translation tables to an output workbook
 '@details
-'Creates or clears a worksheet in the output workbook matching the host
+'Creates or empties a worksheet in the output workbook matching the host
 'sheet name, then exports every ListObject from the host sheet using
-'CustomTable.Export with stacking. Applies basic formatting and sets
-'the sheet visibility to the Hide parameter value.
+'CustomTable.Export with stacking. Formats the used range and sets the sheet
+'visibility to the Hide parameter value.
 '@param outputWkb Workbook. The destination workbook.
 '@param Hide Optional Long. Sheet visibility after export. Defaults to
 'xlSheetVeryHidden.
@@ -259,11 +299,20 @@ End Sub
 '@label:import
 '@sub-title Import translation tables from another workbook
 '@details
-'Finds a worksheet in the source workbook matching the host sheet name.
-'Cleans the dictionary ListObject before import. For each ListObject on
-'the host sheet, imports data from the matching ListObject on the source
-'sheet. Missing source tables are silently skipped.
+'Finds the worksheet in the source workbook carrying the host sheet name, and
+'for each ListObject on the host sheet imports the data of the matching
+'ListObject on that source sheet. A table the source does not carry is left
+'standing.
+'
+'Tab_Translations used to be emptied here before the loop had discovered
+'whether the source carried a replacement, and it was emptied through a
+'CustomTable with no key column, which takes the tag column with the rest. A
+'source without Tab_Translations left the setup translations blank with
+'nothing to write them back.
 '@param fromWkb Workbook. The source workbook containing translation data.
+'@throws ProjectError.ObjectNotInitialized When fromWkb is Nothing.
+'@throws ProjectError.ElementNotFound When the source workbook carries no
+'worksheet of the host sheet name.
 '@export
 Public Sub Import(ByVal fromWkb As Workbook)
     Dim sh As Worksheet
@@ -273,7 +322,10 @@ Public Sub Import(ByVal fromWkb As Workbook)
     Dim tableAdapter As CustomTable
     Dim impTableAdapter As CustomTable
 
-    If fromWkb Is Nothing Then Exit Sub
+    If fromWkb Is Nothing Then
+        ThrowError ProjectError.ObjectNotInitialized, _
+                   "Source workbook is missing; cannot import translations."
+    End If
 
     Set sh = this.translationSheet
 
@@ -281,10 +333,11 @@ Public Sub Import(ByVal fromWkb As Workbook)
     Set importSheet = fromWkb.Worksheets(sh.Name)
     On Error GoTo 0
 
-    If importSheet Is Nothing Then Exit Sub
-
-    'Clean dictionary table before import
-    CleanDictionary
+    If importSheet Is Nothing Then
+        ThrowError ProjectError.ElementNotFound, _
+                   "Worksheet '" & sh.Name & "' not found in workbook '" & _
+                   fromWkb.Name & "'; cannot import translations."
+    End If
 
     'Import each matching ListObject
     For Each Lo In sh.ListObjects
@@ -300,14 +353,20 @@ Public Sub Import(ByVal fromWkb As Workbook)
             tableAdapter.Import impTableAdapter
         End If
     Next
+
+    DropScopeCache
 End Sub
 
 '@label:import-dictionary
-'@sub-title Import dictionary translations from a raw ListObject
+'@sub-title Take the setup translation table onto the host worksheet
 '@details
-'Overwrites the host dictionary table with data from the supplied
-'ListObject, preserving the source column headers via keepSourceHeaders.
-'@param dictionaryTable ListObject. The source dictionary ListObject.
+'Overwrites Tab_Translations with the supplied ListObject, which is the
+'translation table of the setup file. The host table takes the source column
+'headers with keepSourceHeaders, so it comes out carrying the language columns
+'the setup carries. LinelistBuildService calls this while the linelist is
+'being built, and what lands here is what translates the dictionary, the
+'choices and the analyses.
+'@param dictionaryTable ListObject. The setup translation ListObject.
 '@throws ProjectError.ObjectNotInitialized When dictionaryTable is Nothing.
 '@throws ProjectError.ElementNotFound When the host dictionary table is
 'not found.
@@ -326,14 +385,20 @@ Public Sub ImportDictionary(ByVal dictionaryTable As ListObject)
     Set tableAdapter = CustomTable.Create(dictLo)
     Set impTableAdapter = CustomTable.Create(dictionaryTable)
     tableAdapter.Import impTableAdapter, keepSourceHeaders:=True
+
+    DropScopeCache
 End Sub
 
 '@label:export-dictionary
-'@sub-title Export the dictionary table to a named worksheet
+'@sub-title Write the setup translation table onto a worksheet of an output workbook
 '@details
-'Creates or clears a worksheet in the output workbook with the given
-'name, then exports the dictionary ListObject using CustomTable.Export.
-'Applies formatting and sets the sheet visibility.
+'Creates or empties a worksheet in the output workbook with the given
+'name, then exports Tab_Translations using CustomTable.Export. Formats the
+'used range and sets the sheet visibility.
+'
+'LLExporter calls this when a user exports data out of a linelist. Of the five
+'tables, this is the one that travels: it is what lets the exported dictionary
+'and choices still be read in the language the user picked.
 '@param outputWkb Workbook. The destination workbook.
 '@param sheetName Optional String. Worksheet name for the export.
 'Defaults to "Translations".
@@ -374,14 +439,17 @@ End Sub
 '@details
 'Translates message and sheet-name tags using the TranslationOfMessages
 'scope, then writes each translated value as a workbook-level hidden name
-'on the target workbook. The RNG_LLLanguage, RNG_LLLanguageCode, and
-'RNG_DictionaryLanguage names are NOT created here as they are expected
-'to already exist in the designer workbook HiddenNames.
+'on the target workbook. The three language names are left alone: they are
+'written by the build service and by Linelist before this runs.
+'
+'When the target workbook is the one holding the translation worksheet, the
+'store this instance already carries is used, which saves a second walk over
+'the same Names collection.
 '@param targetWkb Workbook. The workbook receiving the hidden names.
 '@throws ProjectError.ObjectNotInitialized When targetWkb is Nothing.
 '@export
 Public Sub InitialiseHiddenNames(ByVal targetWkb As Workbook)
-    Dim wkbNames As HiddenNames
+    Dim targetNames As HiddenNames
     Dim msgTrans As TranslationObject
 
     If targetWkb Is Nothing Then
@@ -389,86 +457,80 @@ Public Sub InitialiseHiddenNames(ByVal targetWkb As Workbook)
                    "Target workbook is required to initialise hidden names."
     End If
 
-    Set wkbNames = HiddenNames.Create(targetWkb)
+    If targetWkb Is this.translationSheet.Parent Then
+        Set targetNames = WorkbookNames()
+    Else
+        Set targetNames = HiddenNames.Create(targetWkb)
+    End If
+
     Set msgTrans = TransObject(TranslationOfMessages)
 
-    EnsureAndSet wkbNames, "RNG_GoToSection", msgTrans.TranslatedValue("MSG_GoToSection")
-    EnsureAndSet wkbNames, "RNG_AnaPeriod", msgTrans.TranslatedValue("MSG_AnaPeriod")
-    EnsureAndSet wkbNames, "RNG_GoToHeader", msgTrans.TranslatedValue("MSG_GoToHead")
-    EnsureAndSet wkbNames, "RNG_NoDevide", msgTrans.TranslatedValue("MSG_NoDevide")
-    EnsureAndSet wkbNames, "RNG_Devide", msgTrans.TranslatedValue("MSG_Devide")
-    EnsureAndSet wkbNames, "RNG_GoToGraph", msgTrans.TranslatedValue("MSG_GoToGraph")
-    EnsureAndSet wkbNames, "RNG_OnFiltered", msgTrans.TranslatedValue("MSG_ComputeOnFiltered")
-    EnsureAndSet wkbNames, "RNG_CustomDrop", msgTrans.TranslatedValue("LLSHEET_CustomChoice")
-    EnsureAndSet wkbNames, "RNG_UASheet", msgTrans.TranslatedValue("LLSHEET_Analysis")
-    EnsureAndSet wkbNames, "RNG_TSSheet", msgTrans.TranslatedValue("LLSHEET_TemporalAnalysis")
-    EnsureAndSet wkbNames, "RNG_SPSheet", msgTrans.TranslatedValue("LLSHEET_SpatialAnalysis")
-    EnsureAndSet wkbNames, "RNG_SPTSheet", msgTrans.TranslatedValue("LLSHEET_SpatioTemporalAnalysis")
-    EnsureAndSet wkbNames, "RNG_CustomPivot", msgTrans.TranslatedValue("LLSHEET_CustomPivotTable")
-    EnsureAndSet wkbNames, "RNG_Week", msgTrans.TranslatedValue("MSG_W")
-    EnsureAndSet wkbNames, "RNG_Quarter", msgTrans.TranslatedValue("MSG_Q")
-    EnsureAndSet wkbNames, "RNG_InfoStart", msgTrans.TranslatedValue("MSG_InfoStart")
-    EnsureAndSet wkbNames, "RNG_InfoEnd", msgTrans.TranslatedValue("MSG_InfoEnd")
+    EnsureAndSet targetNames, "RNG_GoToSection", msgTrans.TranslatedValue("MSG_GoToSection")
+    EnsureAndSet targetNames, "RNG_AnaPeriod", msgTrans.TranslatedValue("MSG_AnaPeriod")
+    EnsureAndSet targetNames, "RNG_GoToHeader", msgTrans.TranslatedValue("MSG_GoToHead")
+    EnsureAndSet targetNames, "RNG_NoDevide", msgTrans.TranslatedValue("MSG_NoDevide")
+    EnsureAndSet targetNames, "RNG_Devide", msgTrans.TranslatedValue("MSG_Devide")
+    EnsureAndSet targetNames, "RNG_GoToGraph", msgTrans.TranslatedValue("MSG_GoToGraph")
+    EnsureAndSet targetNames, "RNG_OnFiltered", msgTrans.TranslatedValue("MSG_ComputeOnFiltered")
+    EnsureAndSet targetNames, "RNG_CustomDrop", msgTrans.TranslatedValue("LLSHEET_CustomChoice")
+    EnsureAndSet targetNames, "RNG_UASheet", msgTrans.TranslatedValue("LLSHEET_Analysis")
+    EnsureAndSet targetNames, "RNG_TSSheet", msgTrans.TranslatedValue("LLSHEET_TemporalAnalysis")
+    EnsureAndSet targetNames, "RNG_SPSheet", msgTrans.TranslatedValue("LLSHEET_SpatialAnalysis")
+    EnsureAndSet targetNames, "RNG_SPTSheet", msgTrans.TranslatedValue("LLSHEET_SpatioTemporalAnalysis")
+    EnsureAndSet targetNames, "RNG_CustomPivot", msgTrans.TranslatedValue("LLSHEET_CustomPivotTable")
+    EnsureAndSet targetNames, "RNG_Week", msgTrans.TranslatedValue("MSG_W")
+    EnsureAndSet targetNames, "RNG_Quarter", msgTrans.TranslatedValue("MSG_Q")
+    EnsureAndSet targetNames, "RNG_InfoStart", msgTrans.TranslatedValue("MSG_InfoStart")
+    EnsureAndSet targetNames, "RNG_InfoEnd", msgTrans.TranslatedValue("MSG_InfoEnd")
 End Sub
-
-
-'@section SheetNames
-'===============================================================================
-'@description Worksheet-level HiddenNames for language codes.
-
-'@label:initialise-sheet-names
-'@sub-title Create language HiddenNames on the translation worksheet
-'@details
-'Creates worksheet-level HiddenNames for dictionary and interface language
-'codes on the translation worksheet itself. These are later read by
-'InitialiseWorkbookNames in Linelist.cls to propagate language settings
-'to the output workbook.
-'@param dictLang String. The dictionary language code (e.g., "en").
-'@param llLang String. The interface language code (e.g., "fr").
-'@export
-Public Sub InitialiseSheetNames(ByVal dictLang As String, ByVal llLang As String)
-    Dim store As HiddenNames
-
-    Set store = SheetNames()
-    EnsureAndSet store, "RNG_DictionaryLanguage", dictLang
-    EnsureAndSet store, "RNG_LLLanguageCode", llLang
-End Sub
-
-
-'@section ValueAccess
-'===============================================================================
-'@description Mapped value retrieval from worksheet-level HiddenNames.
-
-'@label:value
-'@prop-title Retrieve a named configuration value from the translation worksheet
-'@details
-'Returns a worksheet-level HiddenName value identified by a logical key.
-'Supported keys:
-'  "dictlang" -> RNG_DictionaryLanguage
-'  "lllang"   -> RNG_LLLanguageCode
-'Other keys return vbNullString.
-'@param nameId String. The logical key to look up.
-'@return String. The stored value, or vbNullString if the key is unknown.
-'@export
-Public Property Get Value(ByVal nameId As String) As String
-    Dim rngName As String
-
-    Select Case LCase$(Trim$(nameId))
-        Case "dictlang"
-            rngName = "RNG_DictionaryLanguage"
-        Case "lllang"
-            rngName = "RNG_LLLanguageCode"
-        Case Else
-            Exit Property
-    End Select
-
-    Value = SheetNames().ValueAsString(rngName)
-End Property
 
 
 '@section Internal Helpers
 '===============================================================================
 '@description Private utility methods.
+
+'@label:build-scope
+'@sub-title Build the translation object of one scope
+'@details
+'Resolves the table and the language code the scope needs, and raises when
+'the code is empty. An empty code gives a TranslationObject whose language
+'matches no column header, and every tag then translates to itself with no
+'error raised anywhere below it.
+'@param tableName String. The ListObject backing the scope.
+'@param langNameId String. The hidden name carrying the language code.
+'@return TranslationObject. The translation object for that table.
+'@throws ProjectError.ElementNotFound When the table is absent or the
+'language code is empty.
+Private Function BuildScope(ByVal tableName As String, _
+                            ByVal langNameId As String) As TranslationObject
+    Dim Lo As ListObject
+    Dim lang As String
+
+    Set Lo = ResolveListObject(tableName)
+    lang = WorkbookNames().ValueAsString(langNameId)
+
+    If LenB(lang) = 0 Then
+        ThrowError ProjectError.ElementNotFound, _
+                   "The hidden name '" & langNameId & "' holds no language code " & _
+                   "in workbook '" & this.translationSheet.Parent.Name & "', so " & _
+                   "table '" & tableName & "' cannot be read in any language."
+    End If
+
+    Set BuildScope = TranslationObject.Create(Lo, lang)
+End Function
+
+'@label:drop-scope-cache
+'@sub-title Forget the five scoped translation objects
+'@details
+'Each one holds a copy of its table, so anything that rewrites a table has to
+'drop them.
+Private Sub DropScopeCache()
+    Set this.transMessages = Nothing
+    Set this.transDictionary = Nothing
+    Set this.transShapes = Nothing
+    Set this.transForms = Nothing
+    Set this.transRibbon = Nothing
+End Sub
 
 '@label:resolve-list-object
 '@sub-title Resolve a ListObject by name from the host worksheet
@@ -497,15 +559,21 @@ End Function
 '@label:find-or-create-sheet
 '@sub-title Find or create a worksheet in the target workbook
 '@details
-'Attempts to find a worksheet with the given name in the target workbook.
-'If found, clears its contents entirely. If not found, creates a new
-'worksheet with the name appended at the end.
+'Finds the worksheet of the given name in the target workbook. When it is
+'there, its tables are deleted and its cells cleared; when it is absent, a
+'worksheet of that name is added at the end.
+'
+'Clearing cells leaves the ListObject objects standing, and each one keeps
+'its name. The export that follows adds tables under those same names, so a
+'second export into one workbook used to meet a name Excel had already given
+'out and raise 1004.
 '@param targetWkb Workbook. The target workbook.
 '@param targetName String. The worksheet name to find or create.
 '@return Worksheet. The resolved or newly created worksheet.
 Private Function FindOrCreateSheet(ByVal targetWkb As Workbook, _
                                    ByVal targetName As String) As Worksheet
     Dim sh As Worksheet
+    Dim counter As Long
 
     On Error Resume Next
     Set sh = targetWkb.Worksheets(targetName)
@@ -516,6 +584,9 @@ Private Function FindOrCreateSheet(ByVal targetWkb As Workbook, _
             After:=targetWkb.Worksheets(targetWkb.Worksheets.Count))
         sh.Name = targetName
     Else
+        For counter = sh.ListObjects.Count To 1 Step -1
+            sh.ListObjects(counter).Delete
+        Next
         sh.Cells.Clear
     End If
 
@@ -525,52 +596,43 @@ End Function
 '@label:format-export-sheet
 '@sub-title Apply standard formatting to an exported sheet
 '@details
-'Sets font, alignment, autofit, and visibility on the exported sheet.
+'Sets font and alignment over the used range, autofits it, then sets the
+'sheet visibility.
+'
+'The look of the sheet is cosmetic and a failure there is suppressed. The
+'visibility write is not cosmetic and stands outside the suppression: Excel
+'refuses to hide the last visible worksheet of a workbook and refuses a write
+'to a protected workbook structure, and either one leaves the translation
+'tables on show in a delivered linelist.
 '@param sh Worksheet. The sheet to format.
 '@param Hide Long. Sheet visibility constant.
 Private Sub FormatExportSheet(ByVal sh As Worksheet, ByVal Hide As Long)
+    Dim usedRng As Range
+
+    Set usedRng = sh.UsedRange
+
     On Error Resume Next
     sh.Rows(1).Font.Bold = True
-    sh.Cells.Font.Name = "Consolas"
-    sh.Cells.HorizontalAlignment = xlHAlignLeft
-    sh.Cells.VerticalAlignment = xlVAlignCenter
-    sh.Cells.EntireRow.AutoFit
-    sh.Cells.EntireColumn.AutoFit
+    usedRng.Font.Name = "Consolas"
+    usedRng.HorizontalAlignment = xlHAlignLeft
+    usedRng.VerticalAlignment = xlVAlignCenter
+    usedRng.EntireRow.AutoFit
+    usedRng.EntireColumn.AutoFit
+    On Error GoTo 0
+
     sh.Visible = Hide
-    On Error GoTo 0
-End Sub
-
-'@label:clean-dictionary
-'@sub-title Clear the dictionary ListObject data
-'@details
-'Wraps the host dictionary table in a CustomTable and calls Clean to
-'clear all non-formula, non-key columns. Silently exits when the
-'dictionary table does not exist.
-Private Sub CleanDictionary()
-    Dim dictLo As ListObject
-    Dim tableAdapter As CustomTable
-
-    On Error Resume Next
-    Set dictLo = this.translationSheet.ListObjects(DICTTRANS)
-    On Error GoTo 0
-
-    If Not dictLo Is Nothing Then
-        Set tableAdapter = CustomTable.Create(dictLo)
-        tableAdapter.Clean
-    End If
 End Sub
 
 '@label:check-requirements
 '@sub-title Validate that the translation sheet has all required tables
 '@details
-'Ensures the worksheet is not Nothing and that the required ListObjects
-'(T_TradLLMsg, T_TradLLShapes, T_TradLLForms, Tab_Translations) are
-'present. T_TradLLRibbon is optional and not validated.
+'Ensures the worksheet is not Nothing and that all five translation
+'ListObjects are present.
 '@param translationSheet Worksheet. The worksheet to validate.
 '@throws ProjectError.ObjectNotInitialized When the sheet is Nothing.
 '@throws ProjectError.ElementNotFound When a required table is missing.
 Private Sub CheckRequirements(ByVal translationSheet As Worksheet)
-    Dim requiredTables As BetterArray
+    Dim requiredTables As Variant
     Dim counter As Long
     Dim tableName As String
     Dim Lo As ListObject
@@ -580,11 +642,10 @@ Private Sub CheckRequirements(ByVal translationSheet As Worksheet)
                    "Translation sheet is required."
     End If
 
-    Set requiredTables = New BetterArray
-    requiredTables.Push TRADLLMSG, TRADLLSHAPES, TRADLLFORMS, DICTTRANS
+    requiredTables = Array(TRADLLMSG, TRADLLSHAPES, TRADLLFORMS, TRADLLRIBBON, DICTTRANS)
 
-    For counter = requiredTables.LowerBound To requiredTables.UpperBound
-        tableName = requiredTables.Item(counter)
+    For counter = LBound(requiredTables) To UBound(requiredTables)
+        tableName = requiredTables(counter)
         Set Lo = Nothing
 
         On Error Resume Next
@@ -605,14 +666,22 @@ End Sub
 '@description Creating a hidden name and giving it its value.
 
 '@label:ensure-and-set
-'@sub-title Create a HiddenName if missing, then always update its value
+'@sub-title Give a HiddenName its value, creating it when it is absent
+'@details
+'EnsureName writes the value only when it creates the name, so a name that is
+'already there needs the SetValue. Creating one and setting it straight after
+'costs a full RefersTo rewrite and a comment re-apply on every one of the 17
+'names, which is why the two are branches here.
 '@param store HiddenNames. The hidden names manager.
 '@param nameId String. The hidden name identifier.
 '@param value String. The value to set.
 Private Sub EnsureAndSet(ByVal store As HiddenNames, ByVal nameId As String, _
                          ByVal value As String)
-    store.EnsureName nameId, value, HiddenNameTypeString
-    store.SetValue nameId, value
+    If store.HasName(nameId) Then
+        store.SetValue nameId, value
+    Else
+        store.EnsureName nameId, value, HiddenNameTypeString
+    End If
 End Sub
 
 '@section Error Handling

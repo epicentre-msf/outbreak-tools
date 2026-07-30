@@ -1399,6 +1399,18 @@ Public Sub Prepare(ByVal buildService As LinelistBuildService, ByVal setupPath A
     Set this.passwords = buildService.ExportedPasswords
     Set this.translations = buildService.ExportedTranslations
 
+    'The build service swallows a failed Create, so this arrives Nothing when
+    'the linelist's translation sheet is missing a table. EnsureTranslations
+    'would then build one over the DESIGNER's translation sheet and the whole
+    'build would be translated from the designer's tables and the designer's
+    'language names, with nothing said.
+    If this.translations Is Nothing Then
+        ThrowError ProjectError.ElementNotFound, _
+                   "The translation manager could not be built on the linelist " & _
+                   "workbook. Its translation worksheet is missing or one of its " & _
+                   "five tables is absent."
+    End If
+
     Set this.outputWkb = outWkb
 
     Set dict = this.dictionary
