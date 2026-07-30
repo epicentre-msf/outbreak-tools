@@ -1614,7 +1614,7 @@ Private Sub CheckTable(ByVal partName As String, _
 
             If (tableScope = ScopeUnivariate) And _
                specs.HasGraph() And _
-               (specs.Value("flip") = "yes") And _
+               specs.FlipCoordinates() And _
                (specs.Value("percentage") = "yes") Then
 
                 checkingCounter = checkingCounter + 1
@@ -1624,7 +1624,7 @@ Private Sub CheckTable(ByVal partName As String, _
             End If
 
             If (tableScope <> ScopeTimeSeries) And (tableScope <> ScopeTimeSeriesGraph) Then
-                If (Not specs.HasGraph()) And (specs.Value("flip") = "yes") Then
+                If (Not specs.HasGraph()) And specs.FlipCoordinates() Then
                     checkingCounter = checkingCounter + 1
                     keyName = "ana-adgr-flip"
                     infoMessage = FormatMessage(ANA_ADGR_FLIP, specsRange.Row)

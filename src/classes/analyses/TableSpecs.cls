@@ -125,6 +125,7 @@ Private Const COLUMN_TOTAL As String = "total"
 Private Const COLUMN_MISSING As String = "missing"
 Private Const COLUMN_PERCENTAGE As String = "percentage"
 Private Const COLUMN_GRAPH As String = "graph"
+Private Const COLUMN_FLIP As String = "flip"
 Private Const COLUMN_LABEL As String = "label"
 Private Const COLUMN_FUNCTION As String = "function"
 Private Const COLUMN_NGEO As String = "n geo"
@@ -872,6 +873,32 @@ Public Property Get HasGraph() As Boolean
                    "HasGraph has no rule for scope " & TableScope
 
     End Select
+End Property
+
+'@label:graph-mode
+'@prop-title The kind of chart this table asks for
+'@details
+'Answers the "add graph" cell trimmed and lower-cased, which is the same
+'reading HasGraph uses to decide whether a chart is wanted at all. The chart
+'builder reads it to choose between value bars, percentage bars and both, so
+'the two answers come from one place. A cell holding " Yes " reads "yes" here.
+'@return String. One of "yes", "values", "percentages", "both", or an empty
+'string when the column is absent or the cell is empty.
+'@export
+Public Property Get GraphMode() As String
+    GraphMode = FlagValue(COLUMN_GRAPH)
+End Property
+
+'@label:flip-coordinates
+'@prop-title Whether the chart plots horizontal bars
+'@details
+'Answers the "flip coordinates" cell trimmed and lower-cased, compared against
+'"yes". The spatio-temporal block carries no such column, so it answers False
+'there.
+'@return Boolean. True when the table asks for horizontal bars.
+'@export
+Public Property Get FlipCoordinates() As Boolean
+    FlipCoordinates = (FlagValue(COLUMN_FLIP) = "yes")
 End Property
 
 '@section Navigation Properties

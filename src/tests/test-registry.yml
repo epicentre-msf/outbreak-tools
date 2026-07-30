@@ -443,10 +443,10 @@ suites:
   #
   # TestAnalysisOutput stays out until AnalysisOutput has a class row of its own.
   # LinelistSpecs is registered under `linelist` below, so that half of the wall
-  # is down. What AnalysisOutput still waits on is Linelist: it holds
-  # `anaLL As Linelist` and its factory takes `ByVal ll As Linelist`, both
-  # typed. It also needs a GraphSpecs row, which it types in three places.
-  # Those rows belong to the Linelist session.
+  # is down, and GraphSpecs -- which AnalysisOutput types in three places -- has
+  # a row under `graphs` now. What AnalysisOutput still waits on is Linelist: it
+  # holds `anaLL As Linelist` and its factory takes `ByVal ll As Linelist`, both
+  # typed. That row belongs to the Linelist session.
   - folder: analyses
     classes:
       - name: Analysis
@@ -496,17 +496,37 @@ suites:
       - module: TestTemporalSection
         covers: [TemporalSection]
 
-  # --- graphs (Graphs, for AnaTabIds) ----------------------------------------
-  # A class row is resolved against src/classes/<folder>/, so Graphs needs a
-  # block naming its own folder. It has no suite of its own yet: the block
-  # exists to stage the class AnaTabIds compiles against. Graphs names Checking
-  # alone, which is baked into the workbook, so this block closes its own
-  # compile closure. The folder copy carries GraphSpecs across too and nothing
-  # imports it, which is the same shape as the unregistered classes sitting in
-  # src/classes/analyses/.
+  # --- graphs (Graphs, GraphSpecs) -------------------------------------------
+  # A class row is resolved against src/classes/<folder>/, so both classes need
+  # a block naming their own folder.
+  #
+  # Graphs wraps one Excel ChartObject and names Checking alone, which is baked
+  # into the workbook. AnaTabIds compiles against it. It still has no suite.
+  #
+  # GraphSpecs decides what goes on every chart a linelist draws. It names
+  # CrossTable and TableSpecs (registered under `analyses`), LinelistSpecs
+  # (under `linelist`), and Checking and BetterArray, both baked into the
+  # driver workbook. So this row closes its own compile closure and waits on
+  # nothing. AnalysisOutput types it in three places, so the row is also half
+  # of what that class needs before it can be registered.
   - folder: graphs
     classes:
       - name: Graphs
+      - name: GraphSpecs
+    tests:
+      # TestGraphSpecs builds the three time series setup tables under the
+      # names the setup workbook gives them, plus a univariate and a
+      # spatio-temporal block for the simple builder. It reaches
+      # DictionaryTestFixture, registered under `helpers`; its other helper
+      # calls are unqualified, so they resolve to TestHelpersLite.
+      #
+      # TestGraphs stays out. It carries Option Private Module, every test proc
+      # is Private, and it builds its assert object with
+      # CreateObject("Rubberduck.AssertClass") plus Rubberduck.FakesProvider,
+      # which is a COM class this host does not have. It is a rewrite, and it
+      # belongs to the Graphs session.
+      - module: TestGraphSpecs
+        covers: [GraphSpecs]
 
   # --- geo (LLGeo, for LinelistSpecs) ----------------------------------------
   # LLGeo owns the Geo worksheet: the four admin tables, the health facility
@@ -647,11 +667,10 @@ suites:
 # TEMPLATE — copy per folder as coverage is added. Delete fields left empty.
 # Expansion backlog (suite folders under src/tests/ that are not yet
 # registered): dataio, mastersetup, showhide, tables. The designer, geo,
-# graphs and linelist folders now carry class rows; what they still lack is
+# geo and linelist folders now carry class rows; what they still lack is
 # suites. src/tests/geo/ holds TestLLGeo and TestLLSpatial, src/tests/graphs/
-# holds TestGraphs and TestGraphSpecs, and src/tests/linelist/ holds
-# TestLinelist, TestListBuilder, TestCodeTransfer and TestLLTranslation.
-# None of those has ever executed.
+# holds TestGraphs, and src/tests/linelist/ holds TestLinelist, TestListBuilder
+# and TestCodeTransfer. None of those has ever executed.
 #
 #   - folder: <subfolder>
 #     classes:

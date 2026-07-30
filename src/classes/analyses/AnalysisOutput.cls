@@ -867,6 +867,12 @@ Private Sub WriteTable(ByVal loName As String, _
 
             Set grSpecs = GraphSpecs.Create(tabl)
             grSpecs.CreateSeries
+
+            ' And the series builder's. It decides to build fewer series than
+            ' the setup asked for in nine places, and every one of them was
+            ' silent until this line.
+            If grSpecs.HasCheckings Then HarvestCollaboratorCheckings grSpecs.CheckingValues
+
             Set gr = Graphs.Create(outsh, cellRng)
             gr.Add
 
@@ -1174,6 +1180,10 @@ NextGraph:
         Next
     End If
 
+    ' Read after the loop, so a run that built no graph at all still reports
+    ' why. Valid() is what triggers the build, so the entries exist by here.
+    If grSpecs.HasCheckings Then HarvestCollaboratorCheckings grSpecs.CheckingValues
+
     ' Add GoTo graph dropdown
     AddGoTo outsh.Cells(3, 3), dropArray:=graphsList, _
             goToLabel:=goToGraphLabel, goToPrefix:="ts_", goToSuffix:="_graph"
@@ -1254,6 +1264,10 @@ Private Sub WriteSpatioTemporalGraph(ByVal loName As String, _
         plotTitle = graphLabel & ": " & outsh.Range("STARTCOL_" & tabId).Value
 
         grSpecs.CreateSeries
+
+        ' The series builder reports every series it left out.
+        If grSpecs.HasCheckings Then HarvestCollaboratorCheckings grSpecs.CheckingValues
+
         Set gr = Graphs.Create(outsh, cellRng)
         gr.Add
 
