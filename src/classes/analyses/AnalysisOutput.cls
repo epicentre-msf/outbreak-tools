@@ -643,6 +643,10 @@ Private Sub WriteTable(ByVal loName As String, _
         ' Harvest cross-table checkings
         If tabl.HasCheckings Then HarvestCollaboratorCheckings tabl.CheckingValues
 
+        ' And the formula writer's. Without this line the report showed the
+        ' analysis phase clean while a table carried a cell Excel had refused.
+        If tabform.HasCheckings Then HarvestCollaboratorCheckings tabform.CheckingValues
+
         LogInfo "Table " & tabId & " built (" & loName & ")"
 
         Set tabRangesNames = tabl.NamedRangesList()

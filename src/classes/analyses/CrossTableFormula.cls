@@ -37,10 +37,41 @@ End Enum
 'TimeSeries, SpatioTemporal, Spatial) to produce COUNTIFS / SUMPRODUCT-style
 'array formulas, percentage columns, number formatting, time-period scaffolding,
 'spatial lookups, and data-validation dropdowns. Consumers obtain an instance
-'through the predeclared Create factory and interact via the CrossTableFormula
-'interface.
-'@depends CrossTable, FormulaData, Formulas, FormulaCondition, TableSpecs, SpatialTables, BetterArray
-'@version 1.0 (2026-02-10)
+'through the predeclared Create factory.
+'
+'EXCEL IS THE JUDGE OF A FORMULA
+'-------------------------------------------------------------------------------
+'Every formula reaches its cell through WriteFormula, which assigns it and traps
+'what Excel raises. The class used to test each formula with
+'Application.Evaluate first, and that test had two faults: its string argument
+'stops at 255 characters, so every long formula was declared broken and a text
+'marker was written into the table in its place, and it resolves names against
+'the active sheet, and the formula belongs to another sheet. One build ran more
+'than a thousand of those round trips.
+'
+'A formula Excel refuses leaves the cell empty and files a check, so the
+'generation report names the table and the cell. Read AddFormulas for what is
+'written and Checkings for what is reported.
+'
+'THE 255 CHARACTER LIMIT ON FORMULAARRAY
+'-------------------------------------------------------------------------------
+'Range.FormulaArray refuses a formula longer than 255 characters, and an
+'analysis formula over three criteria passes that on ordinary variable names.
+'WriteFormula enters those through a short stub formula and Range.Replace, which
+'carries no such limit and keeps the cell an array formula. Array entry is
+'load-bearing: FormulaCondition builds IF(predicate, table[column]) fragments,
+'and a summary function other than a count wraps them in SUM or AVERAGE.
+'
+'WHICH COLUMNS THE VALUE LOOP OWNS
+'-------------------------------------------------------------------------------
+'The three column loops walk the data columns, one iteration per column of
+'CrossTable.NumberOfColumns, and advance by two when the table carries
+'percentages. The Missing column, the Total column and the four cells where
+'they cross are written by their own blocks below each loop. CrossTable.EndColumn
+'counts the missing and total columns, so walking to it made the loop write
+'value formulas into them with the criteria of a data column.
+'@depends CrossTable, TableSpecs, FormulaData, Formulas, FormulaCondition, SpatialTables, AnalysisRanges, Checking, BetterArray
+'@version 1.1 (2026-07-30)
 
 
 Private Type TCrossTableFormula
@@ -50,10 +81,31 @@ Private Type TCrossTableFormula
     condVars As BetterArray
     condTests As BetterArray
     sealed As Boolean
+    hasChecks As Boolean
 End Type
 
 Private this As TCrossTableFormula
+Private internalChecks As Checking
+Private checkCounter As Long
+
 Private Const CLASS_NAME As String = "CrossTableFormula"
+
+' The formula context the parser is asked for. Formulas.Valid and
+' Formulas.ParsedAnalysisFormula both key off this string.
+Private Const CONTEXT_ANALYSIS As String = "analysis"
+
+' Range.FormulaArray refuses a longer formula. See the class description.
+Private Const FORMULA_ARRAY_LIMIT As Long = 255
+
+' The stub a long array formula is entered through. It is a name no workbook
+' defines, so the cell holds a name error for as long as the swap takes, and it
+' cannot appear inside a generated formula.
+Private Const LONG_FORMULA_STUB As String = "OBTLONGFORMULASTUB"
+
+' The two count summary functions, which take a different formula shape from
+' every other summary function.
+Private Const COUNT_FUNCTION As String = "N"
+Private Const COUNT_FUNCTION_CALL As String = "N()"
 
 '@section Instantiation
 '===============================================================================
@@ -64,8 +116,7 @@ Private Const CLASS_NAME As String = "CrossTableFormula"
 '@details
 'Factory method that returns a new CrossTableFormula through the predeclared-id
 'pattern. Both parameters are validated for Nothing before the instance is
-'constructed. The returned object exposes the CrossTableFormula interface so
-'callers program against the contract rather than the concrete class.
+'constructed.
 '@param tabl CrossTable. The already-constructed cross-table layout providing named ranges, headers, and worksheet reference.
 '@param fData FormulaData. The dictionary-based lookup object supplying variable names, ranges, and formula templates.
 '@return CrossTableFormula. A fully initialised instance ready to write formulas.
@@ -173,6 +224,21 @@ Private Property Get SummaryFunction() As String
     SummaryFunction = Specifications.Value("summary function")
 End Property
 
+'@label:is-count-function
+'@prop-title Whether the summary function counts rows.
+'@details
+'The two count spellings take a different formula shape from every other
+'summary function: a total is a sum of counts and a non-empty test is written as
+'a COUNTIFS criteria. Six places asked this question with the same pair of
+'string tests.
+'@return Boolean. True for "N" and "N()".
+Private Property Get IsCountFunction() As Boolean
+    Dim summaryName As String
+
+    summaryName = SummaryFunction
+    IsCountFunction = (summaryName = COUNT_FUNCTION) Or (summaryName = COUNT_FUNCTION_CALL)
+End Property
+
 '@label:id
 '@prop-title Unique identifier string for this cross-table.
 '@details
@@ -241,59 +307,51 @@ End Property
 '@details
 'Checks whether the formula engine considers this table formula valid for
 'analysis use. Validity is determined by the Formulas.Valid method with the
-'"analysis" formula type. A formula may be invalid if the summary function is
+'analysis formula context. A formula may be invalid if the summary function is
 'unsupported, required variables are missing from the dictionary, or the formula
 'template cannot be parsed. When Valid returns False, the AddFormulas method
 'exits immediately without writing any formulas to the worksheet.
 '@return Boolean. True if the formula can be used for analysis-scope generation.
 '@export
 Public Property Get Valid() As Boolean
-    Valid = TableFormula.Valid(formulaType:="analysis")
+    Valid = TableFormula.Valid(formulaType:=CONTEXT_ANALYSIS)
 End Property
 
 '@section Range and Formula Helpers
 '===============================================================================
-'@description Utility functions for range existence checks, formula validation,
-'string literals, percentage formulas, and conditional wrapping.
+'@description Utility functions for range existence checks, string literals,
+'percentage formulas, and conditional wrapping.
 
 '@label:range-exists
 '@sub-title Check whether a named range exists on the cross-table worksheet.
 '@details
-'Attempts to resolve a named range on the cross-table worksheet using On Error
-'Resume Next to silently handle missing ranges. This is used before writing
-'formulas to optional table regions (e.g., "MISSING_TOTAL_<id>",
-'"MISSING_MISSING_<id>", "TOTAL_TOTAL_<id>") that may or may not be present
-'depending on the table missing/total configuration.
+'Attempts to resolve a named range on the cross-table worksheet, answering False
+'when the name is absent. This is used before writing formulas to optional table
+'regions (e.g., "MISSING_TOTAL_<id>", "TOTAL_TOTAL_<id>") that may or may not be
+'present depending on the table missing/total configuration.
 '@param rngName String. The named range to look up (e.g., "MISSING_TOTAL_T001").
 '@return Boolean. True if the named range resolves to a valid Range object.
 Private Function RangeExists(ByVal rngName As String) As Boolean
+    RangeExists = Not (ResolvedRange(rngName) Is Nothing)
+End Function
+
+'@label:resolved-range
+'@sub-title Resolve a named range on the cross-table worksheet, or answer Nothing.
+'@details
+'One resolution serves both the question and the answer. Twelve places asked
+'RangeExists and then resolved the same name a second time, so each optional
+'region cost two lookups.
+'@param rngName String. The named range to look up.
+'@return Range. The range, or Nothing when the name is absent.
+Private Function ResolvedRange(ByVal rngName As String) As Range
     Dim sh As Worksheet
     Dim rng As Range
+
     Set sh = Table.Wksh()
     On Error Resume Next
     Set rng = sh.Range(rngName)
     On Error GoTo 0
-    RangeExists = (Not rng Is Nothing)
-End Function
-
-'@label:failed-formula
-'@sub-title Test whether a generated Excel formula string is syntactically valid.
-'@details
-'Evaluates the formula string in memory using Application.Evaluate without
-'writing to any worksheet cell. If Evaluate raises an error or returns an
-'error variant (e.g., invalid function name, bad range reference, or formula
-'syntax error), the formula is considered broken and FailedFormula returns
-'True. This acts as a safety net to prevent writing broken formulas into
-'the actual table cells.
-'@param frmName String. The Excel formula string to test (without the leading "=" prefix).
-'@return Boolean. True if the formula raised an error (is broken), False if it succeeded.
-Private Function FailedFormula(ByVal frmName As String) As Boolean
-    Dim result As Variant
-
-    On Error Resume Next
-    result = Application.Evaluate(frmName)
-    FailedFormula = (Err.Number <> 0) Or IsError(result)
-    On Error GoTo 0
+    Set ResolvedRange = rng
 End Function
 
 '@label:emp-str
@@ -360,8 +418,225 @@ End Function
 '@return String. The complete IF(...="","",formulaValue) Excel formula text.
 Private Function Condition(ByVal rngCondition As Range, ByVal formulaValue As String, _
                            Optional ByVal rowabs As Boolean = False) As String
+    If LenB(formulaValue) = 0 Then Exit Function
     Condition = "IF(" & rngCondition.Address(RowAbsolute:=rowabs) & "=" & _
                 EmpStr & "," & EmpStr & "," & formulaValue & ")"
+End Function
+
+'@section Writing Formulas
+'===============================================================================
+'@description The one way a formula reaches a cell. Excel accepts it or raises,
+'and a raise is reported through Checkings.
+
+'@label:write-formula
+'@sub-title Write one formula into one cell and report what Excel says.
+'@details
+'Assigns the formula and traps the assignment. Excel rejects a malformed
+'formula with error 1004 at assignment time, which makes it the only judge the
+'class needs. A rejected formula leaves the cell empty and files a check
+'carrying the address and the message Excel gave.
+'
+'A formula over 255 characters cannot go through Range.FormulaArray at all, so
+'it is entered through a stub and Range.Replace. See the class description.
+'@param target Range. The cell the formula belongs in.
+'@param frm String. The formula text with no leading "=".
+'@param asArray Optional Boolean. True to enter the formula as an array formula. Defaults to True.
+'@return Boolean. True when the formula reached the cell.
+Private Function WriteFormula(ByVal target As Range, ByVal frm As String, _
+                              Optional ByVal asArray As Boolean = True) As Boolean
+    Dim targetAddress As String
+    Dim failureReason As String
+
+    targetAddress = target.Address(RowAbsolute:=False, ColumnAbsolute:=False)
+
+    If LenB(frm) = 0 Then
+        LogInfo "No formula could be built for cell " & targetAddress & _
+                " of table " & ID(), checkingError
+        Exit Function
+    End If
+
+    On Error GoTo WriteFailed
+
+    If asArray Then
+        If Len(frm) > FORMULA_ARRAY_LIMIT Then
+            WriteLongArrayFormula target, frm
+        Else
+            target.FormulaArray = "=" & frm
+        End If
+    Else
+        target.Formula = "=" & frm
+    End If
+
+    On Error GoTo 0
+    WriteFormula = True
+    Exit Function
+
+WriteCleanup:
+    On Error Resume Next
+    target.ClearContents
+    LogInfo "Excel refused the formula of cell " & targetAddress & " of table " & _
+            ID() & ": " & failureReason, checkingError
+    On Error GoTo 0
+    Exit Function
+
+WriteFailed:
+    failureReason = Err.Description
+    Resume WriteCleanup
+End Function
+
+'@label:write-long-array-formula
+'@sub-title Enter an array formula longer than 255 characters.
+'@details
+'Range.FormulaArray refuses the assignment, so a short stub goes in first and
+'Range.Replace swaps the real text in. Replace edits the cell the way a user
+'would and carries no length limit, and the cell stays an array formula.
+'Range.Replace is called as a statement and the cell is read back to see whether
+'the swap happened. Its return value is a Variant that this host does not always
+'fill, and testing it with Not raised a type mismatch that read as Excel refusing
+'the formula.
+'
+'When the host refuses the swap as well, the formula goes in as an ordinary
+'formula and a warning is filed carrying the step that refused it. Excel with
+'dynamic arrays gives the same answer either way; an older Excel returns the
+'first value of the range where the aggregate belongs, so the warning is the
+'reader's only sign of it.
+'@param target Range. The cell the formula belongs in.
+'@param frm String. The formula text with no leading "=".
+Private Sub WriteLongArrayFormula(ByVal target As Range, ByVal frm As String)
+    Dim stage As String
+    Dim refusal As String
+
+    On Error GoTo ArrayEntryFailed
+
+    stage = "stub"
+    target.FormulaArray = "=" & LONG_FORMULA_STUB
+
+    stage = "swap"
+    target.Replace What:=LONG_FORMULA_STUB, Replacement:=frm, _
+                   LookAt:=xlPart, MatchCase:=True
+
+    stage = "read back"
+    If InStr(1, CStr(target.Formula), LONG_FORMULA_STUB, vbBinaryCompare) > 0 Then
+        ThrowError ProjectError.SomethingWentWrong, "the stub survived the swap"
+    End If
+
+    On Error GoTo 0
+    Exit Sub
+
+ArrayEntryPlainFormula:
+    On Error GoTo 0
+    LogInfo "The formula of cell " & _
+            target.Address(RowAbsolute:=False, ColumnAbsolute:=False) & " of table " & _
+            ID() & " is " & Len(frm) & " characters, and the host refused an array " & _
+            "entry at [" & stage & "] with " & refusal & _
+            ". It was entered as an ordinary formula.", checkingWarning
+    target.Formula = "=" & frm
+    Exit Sub
+
+ArrayEntryFailed:
+    refusal = "(" & Err.Number & ") " & Err.Description
+    Resume ArrayEntryPlainFormula
+End Sub
+
+'@label:fill-down
+'@sub-title Copy the formula of one cell over a range.
+'@details
+'AutoFill needs a destination taller than one cell and raises 1004 otherwise.
+'A value column is one cell tall whenever the table has a single category row,
+'which a univariate table with one category and a spatial table with a geo count
+'of one both produce, so the guard is on the ordinary path.
+'@param sourceCell Range. The cell holding the formula to copy.
+'@param destination Range. The range to fill, including the source cell.
+Private Sub FillDown(ByVal sourceCell As Range, ByVal destination As Range)
+    If destination.Cells.Count <= 1 Then Exit Sub
+
+    On Error GoTo FillFailed
+    sourceCell.AutoFill Destination:=destination, Type:=xlFillValues
+    On Error GoTo 0
+    Exit Sub
+
+FillCleanup:
+    On Error Resume Next
+    LogInfo "The formula of cell " & _
+            sourceCell.Address(RowAbsolute:=False, ColumnAbsolute:=False) & _
+            " could not be copied over " & _
+            destination.Address(RowAbsolute:=False, ColumnAbsolute:=False) & _
+            " of table " & ID(), checkingError
+    On Error GoTo 0
+    Exit Sub
+
+FillFailed:
+    Resume FillCleanup
+End Sub
+
+'@label:write-percentage-twin
+'@sub-title Write the percentage column that sits beside one value column.
+'@details
+'A table with percentages carries one percentage column immediately right of
+'every value column, including the ones heading the Missing and the Total
+'columns. The formula is written into the first cell and copied down to the
+'last cell the caller names, because a bivariate table fills its percentage
+'column down to the total row while a temporal one stops at the value block.
+'@param valueRng Range. The value column the percentage is computed from.
+'@param denomRng Range. The cell holding the denominator.
+'@param lastCell Range. The last cell of the percentage column to fill.
+'@param rowabs Boolean. True to hold the denominator row fixed.
+Private Sub WritePercentageTwin(ByVal valueRng As Range, ByVal denomRng As Range, _
+                                ByVal lastCell As Range, ByVal rowabs As Boolean)
+    Dim firstCell As Range
+    Dim sh As Worksheet
+
+    If denomRng Is Nothing Then Exit Sub
+
+    Set sh = Table.Wksh()
+    Set firstCell = valueRng.Cells(1, 2)
+
+    If WriteFormula(firstCell, Percentage(denomRng, valueRng.Cells(1, 1), rowabs), False) Then
+        FillDown firstCell, sh.Range(firstCell, lastCell)
+    End If
+End Sub
+
+'@label:percentage-denominator
+'@sub-title Resolve the denominator one percentage column divides by.
+'@details
+'The setup sheet offers three percentages and each names a different
+'denominator: a row percentage divides by the total column of the same row, a
+'column percentage by the total row of the same column, and a total percentage
+'by the cell where the two cross. Three arms of AddFormulas held the same
+'Select Case.
+'@param tabNames AnalysisRanges. The names of this table.
+'@param percentageValue String. The percentage setting of the table.
+'@param totalRow Long. The row holding the totals.
+'@param valueColumn Long. The column the percentage belongs to.
+'@return Range. The denominator cell, or Nothing when the setting names none.
+Private Function PercentageDenominator(ByVal tabNames As AnalysisRanges, _
+                                       ByVal percentageValue As String, _
+                                       ByVal totalRow As Long, _
+                                       ByVal valueColumn As Long) As Range
+    Dim sh As Worksheet
+    Dim rng As Range
+
+    Set sh = Table.Wksh()
+
+    Select Case percentageValue
+    Case "row"
+        Set rng = ResolvedRange(tabNames.TotalColValues)
+        If Not rng Is Nothing Then Set rng = rng.Cells(1, 1)
+    Case "column"
+        Set rng = sh.Cells(totalRow, valueColumn)
+    Case "total"
+        Set rng = ResolvedRange(tabNames.TotalTotal)
+    End Select
+
+    Set PercentageDenominator = rng
+End Function
+
+'@label:percentage-row-absolute
+'@sub-title Whether the percentage denominator holds its row fixed.
+'@param percentageValue String. The percentage setting of the table.
+'@return Boolean. False for a row percentage, True for the other two.
+Private Function PercentageRowAbsolute(ByVal percentageValue As String) As Boolean
+    PercentageRowAbsolute = (percentageValue <> "row")
 End Function
 
 '@section Condition Management
@@ -400,45 +675,25 @@ Private Sub AddTableConditions(ByVal varName As String, ByVal conditionName As S
 End Sub
 
 '@label:clear-table-conditions
-'@sub-title Clear or trim conditions from the accumulator arrays.
+'@sub-title Empty the accumulator arrays before a new formula is built.
 '@details
-'Clears conditions from the condVars/condTests accumulator arrays. When called
-'with removeNumber = 0 (the default), all accumulated conditions are cleared,
-'resetting the formula builder to a blank state. When called with a positive
-'removeNumber, only the last N condition pairs are popped off the arrays, leaving
-'earlier conditions intact. This selective removal is useful when a base set of
-'conditions is shared across multiple formulas and only the last few criteria
-'need to change between iterations.
-'@param removeNumber Optional Long. Number of condition pairs to remove from the end. Defaults to 0 (clear all).
-'@remarks If the BetterArray objects have not been initialised yet (Nothing), they
-'are created fresh and removeNumber is forced to 0 to avoid popping from an empty array.
-Private Sub ClearTableConditions(Optional ByVal removeNumber As Long = 0)
-    Dim counter As Long
-    Dim remNum As Long
-
-    remNum = removeNumber
-
+'Every formula starts from a blank accumulator, and the arm building it is
+'responsible for calling this first. The routine used to take a count of pairs to
+'pop off the end, and all sixty-odd call sites took the default, so that branch
+'was unreachable.
+Private Sub ClearTableConditions()
     If this.condVars Is Nothing Then
         Set this.condVars = New BetterArray
         this.condVars.LowerBound = 1
-        remNum = 0
     End If
 
     If this.condTests Is Nothing Then
         Set this.condTests = New BetterArray
         this.condTests.LowerBound = 1
-        remNum = 0
     End If
 
-    If remNum <= 0 Then
-        this.condVars.Clear
-        this.condTests.Clear
-    Else
-        For counter = 1 To remNum
-            this.condVars.Pop
-            this.condTests.Pop
-        Next
-    End If
+    this.condVars.Clear
+    this.condTests.Clear
 End Sub
 
 '@label:add-non-empty-table-conditions
@@ -453,7 +708,7 @@ End Sub
 'SUMPRODUCT-style not-equal-to-empty test.
 '@param varName String. The linelist variable name to add the non-empty filter for.
 Private Sub AddNonEmptyTableConditions(ByVal varName As String)
-    If SummaryFunction = "N" Or SummaryFunction = "N()" Then
+    If IsCountFunction() Then
         AddTableConditions varName, "=" & NonEmpStr()
     Else
         AddTableConditions varName, "<>" & EmpStr()
@@ -474,39 +729,29 @@ End Sub
 'up their conditions. It operates in two modes: (1) Linelist scope calls
 'ParsedLinelistFormula for unfiltered formulas; (2) Analysis scope wraps the
 'accumulated condVars and condTests into a FormulaCondition object and calls
-'ParsedAnalysisFormula for COUNTIFS/SUMPRODUCT formulas with all criteria. After
-'generation, the formula is validated via FailedFormula, returning a fallback
-'error placeholder if parsing failed.
-'@param scope Optional Byte. FormulaScopeLinelist (1) for unfiltered formulas or FormulaScopeAnalysis (2) for conditional formulas. Defaults to 2.
+'ParsedAnalysisFormula for COUNTIFS/SUMPRODUCT formulas with all criteria.
+'
+'The text is handed back as the parser built it. Excel judges it when
+'WriteFormula assigns it.
+'@param scope Optional Byte. FormulaScopeLinelist for unfiltered formulas or FormulaScopeAnalysis for conditional formulas. Defaults to the analysis scope.
 '@param prefix Optional String. Table name prefix for the linelist reference. Defaults to "f".
-'@return String. The Excel formula text without "=" prefix, or an error placeholder if parsing failed.
-'@remarks If condVars or condTests is Nothing when scope is analysis, execution
-'jumps to Fail immediately. Always call AddTableConditions before requesting
-'an analysis-scope formula.
-Private Property Get CurrentExcelFormula(Optional ByVal scope As Byte = 2, _
+'@return String. The Excel formula text without "=" prefix, or an empty string when the parser produced none.
+Private Property Get CurrentExcelFormula(Optional ByVal scope As Byte = FormulaScopeAnalysis, _
                                          Optional ByVal prefix As String = "f") As String
     Dim cond As FormulaCondition
     Dim tabFormObject As Formulas
-    Dim eform As String
 
     Set tabFormObject = TableFormula
 
     If scope = FormulaScopeLinelist Then
-        eform = tabFormObject.ParsedLinelistFormula(useTableName:=True, tablePrefix:=prefix)
-    Else
-        If this.condVars Is Nothing Or this.condTests Is Nothing Then GoTo Fail
-        Set cond = FormulaCondition.Create(this.condVars, this.condTests)
-        eform = tabFormObject.ParsedAnalysisFormula(cond, tablePrefix:=prefix)
+        CurrentExcelFormula = tabFormObject.ParsedLinelistFormula(useTableName:=True, tablePrefix:=prefix)
+        Exit Property
     End If
 
-    If FailedFormula(eform) Then GoTo Fail
+    If this.condVars Is Nothing Or this.condTests Is Nothing Then Exit Property
 
-    CurrentExcelFormula = eform
-    Exit Property
-
-Fail:
-    eform = Chr(34) & "##== formula parsing failed :( ==##" & Chr(34)
-    CurrentExcelFormula = eform
+    Set cond = FormulaCondition.Create(this.condVars, this.condTests)
+    CurrentExcelFormula = tabFormObject.ParsedAnalysisFormula(cond, tablePrefix:=prefix)
 End Property
 
 '@section Number Format Helper
@@ -573,6 +818,52 @@ Private Sub AddRngFormat(ByVal formatValue As String, ByVal rng As Range)
     End If
 End Sub
 
+'@section Validation Lists
+'===============================================================================
+'@description The three dropdowns a table offers its reader.
+
+'@label:add-list-validation
+'@sub-title Point a cell at a workbook-wide choice list.
+'@details
+'The time unit control, the administrative unit control and the population
+'divisor each take their values from one list shared by every table on the
+'sheet. The three writes used to sit inside blanket error handlers, so a table
+'whose dropdown was never created looked exactly like one whose dropdown works.
+'@param targetName String. The name of the cell carrying the dropdown.
+'@param listName String. The name of the choice list the dropdown reads.
+Private Sub AddListValidation(ByVal targetName As String, ByVal listName As String)
+    Dim target As Range
+    Dim failureReason As String
+
+    Set target = ResolvedRange(targetName)
+
+    If target Is Nothing Then
+        LogInfo "Cell " & targetName & " is missing, so its dropdown was not created", _
+                checkingError
+        Exit Sub
+    End If
+
+    On Error GoTo ValidationFailed
+    With target.Validation
+        .Delete
+        .Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, _
+             Operator:=xlBetween, Formula1:="=" & listName
+    End With
+    On Error GoTo 0
+    Exit Sub
+
+ValidationCleanup:
+    On Error Resume Next
+    LogInfo "The dropdown of " & targetName & " reading " & listName & _
+            " was not created: " & failureReason, checkingError
+    On Error GoTo 0
+    Exit Sub
+
+ValidationFailed:
+    failureReason = Err.Description
+    Resume ValidationCleanup
+End Sub
+
 '@section Core Operations
 '===============================================================================
 '@description The main formula-writing method that dispatches by table scope.
@@ -582,7 +873,7 @@ End Sub
 '@details
 'The main entry point that writes all Excel formulas into the cross-table
 'worksheet cells. It reads the table scope from Specifications and dispatches to
-'one of five branches, each handling a fundamentally different table layout:
+'one of six branches, each handling a fundamentally different table layout:
 'ScopeGlobalSummary writes two unfiltered linelist formulas into a single row;
 'ScopeUnivariate writes a one-variable frequency table with missing/total/percentage
 'support; ScopeBivariate writes a two-variable cross-tabulation grid with column
@@ -601,25 +892,36 @@ Public Sub AddFormulas()
     Dim rngLab As Range
     Dim misRng As Range
     Dim cellRng As Range
+    Dim percRng As Range
+    Dim popRng As Range
+    Dim anchorRng As Range
+    Dim denomRng As Range
     Dim finalFormula As String
-    Dim tabEndColumn As Long
+    Dim countFormula As String
     Dim secId As String
     Dim perRng As Range
     Dim rowVar As String
     Dim colVar As String
     Dim tabFormat As String
     Dim rowCatAddress As String
+    Dim labAddress As String
     Dim startTimeAddress As String
     Dim endTimeAddress As String
     Dim hasMissing As Boolean
     Dim hasTotal As Boolean
     Dim hasPercentage As Boolean
+    Dim missingValue As String
+    Dim percentageValue As String
+    Dim nbDataColumns As Long
+    Dim columnStride As Long
+    Dim colCounter As Long
+    Dim totalRowNumber As Long
     Dim tabl As CrossTable
     Dim spTab As SpatialTables
-    Dim tabFormObject As Formulas
     Dim spTabType As String
-    Dim counter As Long
     Dim specs As TableSpecs
+    Dim tabNames As AnalysisRanges
+    Dim secNames As AnalysisRanges
 
     If Not Valid() Then Exit Sub
 
@@ -635,32 +937,48 @@ Public Sub AddFormulas()
     hasPercentage = specs.HasPercentage
     tabFormat = specs.Value("format")
 
+    ' The two setup answers used to be re-read inside every column loop, and
+    ' TableSpecs.Value is a header search followed by a cell read.
+    missingValue = specs.Value("missing")
+    percentageValue = specs.Value("percentage")
+
+    ' A percentage table carries one percentage column right of each value
+    ' column, so the walk steps two columns at a time.
+    columnStride = IIf(hasPercentage, 2, 1)
+    nbDataColumns = tabl.NumberOfColumns
+
+    ' The two name builders. TOTAL_ROW_ is built from the table id in one place
+    ' of this class and from the section id in another, so each call site says
+    ' which of the two it means.
+    Set tabNames = AnalysisRanges.Create(tabId)
+    Set secNames = AnalysisRanges.Create(secId)
+
     With sh
 
         Select Case tabType
 
         Case ScopeGlobalSummary
+            Set rng = .Range(tabNames.StartRow)
+
             finalFormula = CurrentExcelFormula(scope:=FormulaScopeLinelist, prefix:=vbNullString)
-            Set rng = .Range("STARTROW_" & tabId)
-            rng.Cells(1, 2).FormulaArray = "=" & finalFormula
-            AddRngFormat tabFormat, rng.Cells(1, 2)
+            If WriteFormula(rng.Cells(1, 2), finalFormula) Then _
+                AddRngFormat tabFormat, rng.Cells(1, 2)
 
             finalFormula = CurrentExcelFormula(scope:=FormulaScopeLinelist, prefix:="f")
-            rng.Cells(1, 3).FormulaArray = "=" & finalFormula
-            AddRngFormat tabFormat, rng.Cells(1, 3)
+            If WriteFormula(rng.Cells(1, 3), finalFormula) Then _
+                AddRngFormat tabFormat, rng.Cells(1, 3)
 
         Case ScopeUnivariate
 
-            Set rng = .Range("ROW_CATEGORIES_" & tabId)
+            Set rng = .Range(tabNames.RowCategories)
             rowVar = specs.Value("row")
             ClearTableConditions
             AddTableConditions rowVar, "=" & rng.Cells(1, 1).Address(RowAbsolute:=False)
             finalFormula = CurrentExcelFormula()
 
-            Set rng = .Range("VALUES_COL_1_" & tabId)
+            Set rng = .Range(tabNames.ValuesCol(1))
             Set cellRng = rng.Cells(1, 1)
-            cellRng.FormulaArray = "=" & finalFormula
-            cellRng.AutoFill Destination:=rng, Type:=xlFillValues
+            If WriteFormula(cellRng, finalFormula) Then FillDown cellRng, rng
             AddRngFormat tabFormat, rng
 
             ' Missing and total
@@ -668,117 +986,128 @@ Public Sub AddFormulas()
                 ClearTableConditions
                 AddTableConditions rowVar, "=" & EmpStr()
                 finalFormula = CurrentExcelFormula()
-                Set rng = .Range("MISSING_ROW_VALUES_" & tabId)
-                rng.Cells(1, 1).FormulaArray = "=" & finalFormula
+                Set rng = .Range(tabNames.MissingRowValues)
+                WriteFormula rng.Cells(1, 1), finalFormula
 
-                Set rng = .Range("TOTAL_ROW_VALUES_" & tabId)
-                If SummaryFunction = "N" Or SummaryFunction = "N()" Then
+                Set rng = .Range(tabNames.TotalRowValues)
+                If IsCountFunction() Then
+                    ' A count total is the missing count plus the non-empty
+                    ' count, so both halves have to be there.
                     ClearTableConditions
                     AddTableConditions rowVar, "=" & NonEmpStr()
-                    finalFormula = finalFormula & " + " & CurrentExcelFormula()
-                    rng.Cells(1, 1).FormulaArray = "=" & finalFormula
+                    countFormula = CurrentExcelFormula()
+                    If LenB(finalFormula) > 0 And LenB(countFormula) > 0 Then
+                        WriteFormula rng.Cells(1, 1), finalFormula & " + " & countFormula
+                    Else
+                        WriteFormula rng.Cells(1, 1), vbNullString
+                    End If
                 Else
                     ClearTableConditions
-                    finalFormula = CurrentExcelFormula(scope:=FormulaScopeLinelist)
-                    rng.Cells(1, 1).FormulaArray = "=" & finalFormula
+                    WriteFormula rng.Cells(1, 1), CurrentExcelFormula(scope:=FormulaScopeLinelist)
                 End If
             Else
-                Set rng = .Range("TOTAL_ROW_VALUES_" & tabId)
+                Set rng = .Range(tabNames.TotalRowValues)
                 ClearTableConditions
                 AddNonEmptyTableConditions rowVar
-                finalFormula = CurrentExcelFormula()
-                rng.Cells(1, 1).FormulaArray = "=" & finalFormula
+                WriteFormula rng.Cells(1, 1), CurrentExcelFormula()
             End If
 
             ' Percentage
             If hasPercentage Then
-                Set rng = .Range("VALUES_COL_1_" & tabId)
-                Set cellRng = .Range("TOTAL_ROW_VALUES_" & tabId).Cells(1, 1)
-                rng.Offset(, 1).Cells(1, 1).Formula = "=" & Percentage(cellRng, rng.Cells(1, 1), True)
-                rng.Offset(, 1).Cells(1, 1).AutoFill Destination:=rng.Offset(, 1), Type:=xlFillValues
-                cellRng.Cells(1, 2).Formula = "=" & Percentage(cellRng.Cells(1, 1), cellRng.Cells(1, 1))
+                Set rng = .Range(tabNames.ValuesCol(1))
+                Set cellRng = .Range(tabNames.TotalRowValues).Cells(1, 1)
+                Set percRng = rng.Offset(, 1)
+                If WriteFormula(percRng.Cells(1, 1), _
+                                Percentage(cellRng, rng.Cells(1, 1), True), False) Then
+                    FillDown percRng.Cells(1, 1), percRng
+                End If
+                WriteFormula cellRng.Cells(1, 2), _
+                             Percentage(cellRng.Cells(1, 1), cellRng.Cells(1, 1)), False
             End If
 
         Case ScopeBivariate
 
             rowVar = specs.Value("row")
             colVar = specs.Value("column")
-            rowCatAddress = .Range("ROW_CATEGORIES_" & tabId).Cells(1, 1).Address(RowAbsolute:=False)
-            tabEndColumn = tabl.EndColumn
+            rowCatAddress = .Range(tabNames.RowCategories).Cells(1, 1).Address(RowAbsolute:=False)
 
-            Set rng = .Range("VALUES_COL_1_" & tabId)
-            Set rngLab = .Range("LABEL_COL_1_" & tabId)
-            Set totRng = .Range("TOTAL_ROW_VALUES_" & tabId)
+            Set rng = .Range(tabNames.ValuesCol(1))
+            Set rngLab = .Range(tabNames.LabelCol(1))
+            Set totRng = .Range(tabNames.TotalRowValues)
+            totalRowNumber = totRng.Row
+            Set misRng = ResolvedRange(tabNames.MissingRowValues)
 
-            Do While rng.Column < tabEndColumn
+            If (missingValue = "row" Or missingValue = "all") And misRng Is Nothing Then
+                LogInfo "Table " & tabId & " asks for a missing row and has none", checkingError
+            End If
+
+            For colCounter = 1 To nbDataColumns
+
+                labAddress = rngLab.Address
 
                 ClearTableConditions
                 AddTableConditions rowVar, "=" & rowCatAddress
-                AddTableConditions colVar, "=" & rngLab.Address
+                AddTableConditions colVar, "=" & labAddress
                 finalFormula = CurrentExcelFormula()
 
-                rng.Cells(1, 1).FormulaArray = "=" & finalFormula
-                rng.Cells(1, 1).AutoFill Destination:=rng, Type:=xlFillValues
+                If WriteFormula(rng.Cells(1, 1), finalFormula) Then FillDown rng.Cells(1, 1), rng
                 AddRngFormat tabFormat, rng
 
                 ' Missing row
-                If specs.Value("missing") = "row" Or specs.Value("missing") = "all" Then
-                    Set misRng = .Range("MISSING_ROW_VALUES_" & tabId)
+                If (missingValue = "row" Or missingValue = "all") And Not misRng Is Nothing Then
                     ClearTableConditions
                     AddTableConditions rowVar, "=" & EmpStr()
-                    AddTableConditions colVar, "=" & rngLab.Address
-                    finalFormula = CurrentExcelFormula()
-                    Set cellRng = .Cells(misRng.Row, rng.Column)
-                    cellRng.FormulaArray = "=" & finalFormula
+                    AddTableConditions colVar, "=" & labAddress
+                    WriteFormula .Cells(misRng.Row, rng.Column), CurrentExcelFormula()
 
                     ClearTableConditions
-                    AddTableConditions colVar, "=" & rngLab.Address
-                    finalFormula = CurrentExcelFormula()
-                    Set cellRng = .Cells(totRng.Row, rng.Column)
-                    cellRng.FormulaArray = "=" & finalFormula
+                    AddTableConditions colVar, "=" & labAddress
+                    WriteFormula .Cells(totalRowNumber, rng.Column), CurrentExcelFormula()
                 Else
                     ClearTableConditions
                     AddNonEmptyTableConditions rowVar
-                    AddTableConditions colVar, "=" & rngLab.Address
-                    finalFormula = CurrentExcelFormula()
-                    Set cellRng = .Cells(totRng.Row, rng.Column)
-                    cellRng.FormulaArray = "=" & finalFormula
+                    AddTableConditions colVar, "=" & labAddress
+                    WriteFormula .Cells(totalRowNumber, rng.Column), CurrentExcelFormula()
                 End If
 
                 ' Percentage
                 If hasPercentage Then
-                    Select Case specs.Value("percentage")
-                    Case "row"
-                        Set cellRng = .Range("TOTAL_COL_VALUES_" & tabId).Cells(1, 1)
-                        rng.Cells(1, 2).Formula = "=" & Percentage(cellRng, rng.Cells(1, 1), rowabs:=False)
-                    Case "column"
-                        Set cellRng = .Cells(totRng.Row, rng.Column)
-                        rng.Cells(1, 2).Formula = "=" & Percentage(cellRng, rng.Cells(1, 1))
-                    Case "total"
-                        Set cellRng = .Range("TOTAL_TOTAL_" & tabId)
-                        rng.Cells(1, 2).Formula = "=" & Percentage(cellRng, rng.Cells(1, 1))
-                    End Select
-                    Set rng = rng.Offset(, 1)
-                    Set rngLab = rngLab.Offset(, 1)
-                    rng.Cells(1, 1).AutoFill _
-                        Destination:=.Range(.Cells(rng.Row, rng.Column), .Cells(totRng.Row, rng.Column)), _
-                        Type:=xlFillValues
+                    Set denomRng = PercentageDenominator(tabNames, percentageValue, _
+                                                         totalRowNumber, rng.Column)
+                    WritePercentageTwin rng, denomRng, _
+                                        .Cells(totalRowNumber, rng.Column + 1), _
+                                        PercentageRowAbsolute(percentageValue)
                 End If
 
-                Set rng = rng.Offset(, 1)
-                Set rngLab = rngLab.Offset(, 1)
-            Loop
+                Set rng = rng.Offset(, columnStride)
+                Set rngLab = rngLab.Offset(, columnStride)
+            Next
 
-            ' Missing column and total columns
-            If specs.Value("missing") = "column" Or specs.Value("missing") = "all" Then
-                Set misRng = .Range("MISSING_COL_VALUES_" & tabId)
-                ClearTableConditions
-                AddTableConditions rowVar, "=" & rowCatAddress
-                AddTableConditions colVar, "=" & EmpStr()
-                finalFormula = CurrentExcelFormula()
-                misRng.Cells(1, 1).FormulaArray = "=" & finalFormula
-                misRng.Cells(1, 1).AutoFill Destination:=misRng, Type:=xlFillValues
-                AddRngFormat tabFormat, misRng
+            ' Missing column
+            If missingValue = "column" Or missingValue = "all" Then
+                Set misRng = ResolvedRange(tabNames.MissingColValues)
+
+                If misRng Is Nothing Then
+                    LogInfo "Table " & tabId & " asks for a missing column and has none", _
+                            checkingError
+                Else
+                    ClearTableConditions
+                    AddTableConditions rowVar, "=" & rowCatAddress
+                    AddTableConditions colVar, "=" & EmpStr()
+                    finalFormula = CurrentExcelFormula()
+
+                    If WriteFormula(misRng.Cells(1, 1), finalFormula) Then _
+                        FillDown misRng.Cells(1, 1), misRng
+                    AddRngFormat tabFormat, misRng
+
+                    If hasPercentage Then
+                        Set denomRng = PercentageDenominator(tabNames, percentageValue, _
+                                                             totalRowNumber, misRng.Column)
+                        WritePercentageTwin misRng, denomRng, _
+                                            .Cells(totalRowNumber, misRng.Column + 1), _
+                                            PercentageRowAbsolute(percentageValue)
+                    End If
+                End If
 
                 ClearTableConditions
                 AddTableConditions rowVar, "=" & rowCatAddress
@@ -790,242 +1119,282 @@ Public Sub AddFormulas()
                 finalFormula = CurrentExcelFormula()
             End If
 
-            Set totRng = .Range("TOTAL_COL_VALUES_" & tabId)
-            totRng.Cells(1, 1).FormulaArray = "=" & finalFormula
-            totRng.Cells(1, 1).AutoFill Destination:=totRng, Type:=xlFillValues
+            ' Total column
+            Set totRng = .Range(tabNames.TotalColValues)
+            If WriteFormula(totRng.Cells(1, 1), finalFormula) Then _
+                FillDown totRng.Cells(1, 1), totRng
             AddRngFormat tabFormat, totRng
 
+            If hasPercentage Then
+                Set denomRng = PercentageDenominator(tabNames, percentageValue, _
+                                                     totalRowNumber, totRng.Column)
+                WritePercentageTwin totRng, denomRng, _
+                                    .Cells(totalRowNumber, totRng.Column + 1), _
+                                    PercentageRowAbsolute(percentageValue)
+            End If
+
             ' Missing row, total column
-            If RangeExists("MISSING_TOTAL_" & tabId) Then
+            Set cellRng = ResolvedRange(tabNames.MissingTotal)
+            If Not cellRng Is Nothing Then
                 ClearTableConditions
                 AddTableConditions rowVar, "=" & EmpStr()
-                finalFormula = CurrentExcelFormula()
-                .Range("MISSING_TOTAL_" & tabId).FormulaArray = "=" & finalFormula
-                AddRngFormat tabFormat, .Range("MISSING_TOTAL_" & tabId)
+                If WriteFormula(cellRng, CurrentExcelFormula()) Then _
+                    AddRngFormat tabFormat, cellRng
             End If
 
             ' Missing row, missing column
-            If RangeExists("MISSING_MISSING_" & tabId) Then
+            Set cellRng = ResolvedRange(tabNames.MissingMissing)
+            If Not cellRng Is Nothing Then
                 ClearTableConditions
                 AddTableConditions rowVar, "=" & EmpStr()
                 AddTableConditions colVar, "=" & EmpStr()
-                finalFormula = CurrentExcelFormula()
-                .Range("MISSING_MISSING_" & tabId).FormulaArray = "=" & finalFormula
-                AddRngFormat tabFormat, .Range("MISSING_MISSING_" & tabId)
+                If WriteFormula(cellRng, CurrentExcelFormula()) Then _
+                    AddRngFormat tabFormat, cellRng
             End If
 
             ' Total row, missing column
-            If RangeExists("TOTAL_MISSING_" & tabId) Then
+            Set cellRng = ResolvedRange(tabNames.TotalMissing)
+            If Not cellRng Is Nothing Then
                 ClearTableConditions
                 AddTableConditions colVar, "=" & EmpStr()
-                finalFormula = CurrentExcelFormula()
-                .Range("TOTAL_MISSING_" & tabId).FormulaArray = "=" & finalFormula
-                AddRngFormat tabFormat, .Range("TOTAL_MISSING_" & tabId)
+                If WriteFormula(cellRng, CurrentExcelFormula()) Then _
+                    AddRngFormat tabFormat, cellRng
             End If
 
             ' Total row, total column
-            If RangeExists("TOTAL_TOTAL_" & tabId) Then
-                If SummaryFunction = "N" Or SummaryFunction = "N()" Then
-                    .Range("TOTAL_TOTAL_" & tabId).Formula = _
-                        "= SUM(" & .Range("TOTAL_COL_VALUES_" & tabId).Address & ")"
+            Set cellRng = ResolvedRange(tabNames.TotalTotal)
+            If Not cellRng Is Nothing Then
+                If IsCountFunction() Then
+                    WriteFormula cellRng, _
+                                 "SUM(" & .Range(tabNames.TotalColValues).Address & ")", False
                 Else
-                    Select Case specs.Value("missing")
+                    Select Case missingValue
                     Case "all"
-                        finalFormula = CurrentExcelFormula(scope:=FormulaScopeLinelist)
-                        .Range("TOTAL_TOTAL_" & tabId).FormulaArray = "=" & finalFormula
+                        WriteFormula cellRng, CurrentExcelFormula(scope:=FormulaScopeLinelist)
                     Case "row"
                         ClearTableConditions
                         AddNonEmptyTableConditions colVar
-                        finalFormula = CurrentExcelFormula()
-                        .Range("TOTAL_TOTAL_" & tabId).FormulaArray = "=" & finalFormula
+                        WriteFormula cellRng, CurrentExcelFormula()
                     Case "column"
                         ClearTableConditions
                         AddNonEmptyTableConditions rowVar
-                        finalFormula = CurrentExcelFormula()
-                        .Range("TOTAL_TOTAL_" & tabId).FormulaArray = "=" & finalFormula
+                        WriteFormula cellRng, CurrentExcelFormula()
                     Case "no"
                         ClearTableConditions
                         AddNonEmptyTableConditions colVar
                         AddNonEmptyTableConditions rowVar
-                        finalFormula = CurrentExcelFormula()
-                        .Range("TOTAL_TOTAL_" & tabId).FormulaArray = "=" & finalFormula
+                        WriteFormula cellRng, CurrentExcelFormula()
                     End Select
                 End If
-                AddRngFormat tabFormat, .Range("TOTAL_TOTAL_" & tabId)
+                AddRngFormat tabFormat, cellRng
             End If
 
         Case ScopeTimeSeries, ScopeSpatioTemporal
 
             rowVar = specs.Value("time")
             colVar = specs.Value("column")
-            counter = 1
 
-            ' For spatio-temporal, column variable depends on geo/hf type
+            ' For spatio-temporal, the column variable is the prefixed one the
+            ' geo lines of the dictionary carry. TableSpecs owns the mapping
+            ' because an administrative table reads the concatenated column and
+            ' a facility table reads the plain one.
             If tabType = ScopeSpatioTemporal Then
                 spTabType = specs.SpatialTableScopes()
-                colVar = Switch(spTabType = "geo", "concat_adm1_" & colVar, _
-                                spTabType = "hf", "hf_" & colVar, _
-                                True, vbNullString)
+                If LenB(spTabType) = 0 Then
+                    LogInfo "Table " & tabId & " groups by a variable that is neither " & _
+                            "administrative nor a health facility, so no formula was written", _
+                            checkingError
+                    Exit Sub
+                End If
+                colVar = specs.SpatialConcatVariableName(colVar)
             End If
 
             ' Time period formulas (only for new sections)
             If specs.IsNewSection() Then
-                Set rng = .Range("ROW_CATEGORIES_" & tabId)
+                Set rng = .Range(tabNames.RowCategories)
                 Set cellRng = rng.Cells(1, 1)
-                cellRng.Formula = "= FormatDateFromLastDay(TIME_UNIT_" & tabId & "," & _
-                                  cellRng.Cells(1, -1).Address(RowAbsolute:=False) & "," & _
-                                  cellRng.Cells(1, 0).Address(RowAbsolute:=False) & ", " & _
-                                  "END_DATE_" & tabId & ")"
-                cellRng.AutoFill Destination:=rng, Type:=xlFillValues
+                If WriteFormula(cellRng, _
+                                "FormatDateFromLastDay(" & tabNames.TimeUnit & "," & _
+                                cellRng.Cells(1, -1).Address(RowAbsolute:=False) & "," & _
+                                cellRng.Cells(1, 0).Address(RowAbsolute:=False) & ", " & _
+                                tabNames.EndDate & ")", False) Then
+                    FillDown cellRng, rng
+                End If
 
                 ' Start period column
-                Set cellRng = .Range("FIRST_VALUE_START_TIME_" & tabId)
-                cellRng.Formula = "= START_DATE_" & tabId
-                cellRng.Cells(2, 1).Formula = "=" & _
-                    cellRng.Cells(1, 2).Address(RowAbsolute:=False) & " + 1"
-                Set rng = .Range("START_TIME_PERIOD_" & tabId)
-                Set cellRng = rng.Cells(1, 1)
-                cellRng.AutoFill Destination:=rng, Type:=xlFillValues
+                Set cellRng = .Range(tabNames.FirstValueStartTime)
+                WriteFormula cellRng, tabNames.StartDate, False
+                WriteFormula cellRng.Cells(2, 1), _
+                             cellRng.Cells(1, 2).Address(RowAbsolute:=False) & " + 1", False
+                Set rng = .Range(tabNames.StartTimePeriod)
+                FillDown rng.Cells(1, 1), rng
 
                 ' End period column
-                Set rng = .Range("END_TIME_PERIOD_" & tabId)
+                Set rng = .Range(tabNames.EndTimePeriod)
                 Set cellRng = rng.Cells(1, 1)
-                cellRng.Formula = "= FindLastDay(TIME_UNIT_" & tabId & "," & _
-                                  cellRng.Cells(1, 0).Address(RowAbsolute:=False) & ")"
-                cellRng.AutoFill Destination:=rng, Type:=xlFillValues
+                If WriteFormula(cellRng, _
+                                "FindLastDay(" & tabNames.TimeUnit & "," & _
+                                cellRng.Cells(1, 0).Address(RowAbsolute:=False) & ")", _
+                                False) Then
+                    FillDown cellRng, rng
+                End If
 
                 ' Total period
-                Set rng = .Range("TOTAL_ROW_" & tabId)
-                rng.Cells(1, -1).Formula = "= START_DATE_" & tabId
-                rng.Cells(1, 0).Formula = "= END_DATE_" & tabId
+                Set rng = .Range(tabNames.TotalRow)
+                WriteFormula rng.Cells(1, -1), tabNames.StartDate, False
+                WriteFormula rng.Cells(1, 0), tabNames.EndDate, False
 
                 ' Validation max/min
-                Set rng = .Range("VALIDATION_MAX_DATE_" & tabId)
-                rng.Formula = "=ValidMax(USER_START_DATE_" & tabId & _
-                              ", USER_END_DATE_" & tabId & ", MIN_MIN_DATE_" & tabId & _
-                              ", MAX_MAX_DATE_" & tabId & ", TIME_UNIT_" & tabId & ")"
+                WriteFormula .Range(tabNames.ValidationMaxDate), _
+                             "ValidMax(" & tabNames.UserStartDate & ", " & _
+                             tabNames.UserEndDate & ", " & tabNames.MinMinDate & ", " & _
+                             tabNames.MaxMaxDate & ", " & tabNames.TimeUnit & ")", False
 
-                Set rng = .Range("VALIDATION_MIN_DATE_" & tabId)
-                rng.Formula = "=ValidMin(USER_START_DATE_" & tabId & _
-                              ", USER_END_DATE_" & tabId & ", MIN_MIN_DATE_" & tabId & _
-                              ", MAX_MAX_DATE_" & tabId & ", TIME_UNIT_" & tabId & ")"
+                WriteFormula .Range(tabNames.ValidationMinDate), _
+                             "ValidMin(" & tabNames.UserStartDate & ", " & _
+                             tabNames.UserEndDate & ", " & tabNames.MinMinDate & ", " & _
+                             tabNames.MaxMaxDate & ", " & tabNames.TimeUnit & ")", False
 
                 ' Start/End dates
-                Set rng = .Range("START_DATE_" & tabId)
-                rng.Formula = "= MAX(USER_START_DATE_" & tabId & _
-                              ", VALIDATION_MIN_DATE_" & tabId & ")"
+                WriteFormula .Range(tabNames.StartDate), _
+                             "MAX(" & tabNames.UserStartDate & ", " & _
+                             tabNames.ValidationMinDate & ")", False
 
-                Set rng = .Range("END_DATE_" & tabId)
-                rng.Formula = "= MIN(USER_END_DATE_" & tabId & _
-                              ", VALIDATION_MAX_DATE_" & tabId & ")"
+                WriteFormula .Range(tabNames.EndDate), _
+                             "MIN(" & tabNames.UserEndDate & ", " & _
+                             tabNames.ValidationMaxDate & ")", False
 
                 ' Info cells
-                Set rng = .Range("INFO_START_DATE_" & tabId)
-                rng.Formula = "= InfoUser(USER_START_DATE_" & tabId & _
-                              ", START_DATE_" & tabId & ")"
+                WriteFormula .Range(tabNames.InfoStartDate), _
+                             "InfoUser(" & tabNames.UserStartDate & ", " & _
+                             tabNames.StartDate & ")", False
 
-                Set rng = .Range("INFO_END_DATE_" & tabId)
-                rng.Formula = "= InfoUser(USER_END_DATE_" & tabId & _
-                              ", END_DATE_" & tabId & ", 2)"
+                WriteFormula .Range(tabNames.InfoEndDate), _
+                             "InfoUser(" & tabNames.UserEndDate & ", " & _
+                             tabNames.EndDate & ", 2)", False
 
-                Set rng = .Range("INFO_ANA_PERIOD_" & tabId)
-                rng.Formula = "= RNG_AnaPeriod & " & _
-                              " PLAGE_VALUE(START_DATE_" & tabId & "," & _
-                              "END_DATE_" & tabId & ")"
+                WriteFormula .Range(tabNames.InfoAnaPeriod), _
+                             "RNG_AnaPeriod & PLAGE_VALUE(" & tabNames.StartDate & "," & _
+                             tabNames.EndDate & ")", False
 
-                ' Time unit validation
-                On Error Resume Next
-                With .Range("TIME_UNIT_" & tabId).Validation
-                    .Delete
-                    .Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, _
-                         Operator:=xlBetween, Formula1:="=TIME_UNIT_LIST"
-                End With
-                On Error GoTo 0
+                ' Time unit validation. The spatio-temporal tables are written to
+                ' a worksheet of their own and carry a time unit list of their
+                ' own, so the scope decides which list the dropdown reads.
+                AddListValidation tabNames.TimeUnit, _
+                                  AnalysisRanges.TimeUnitListOfScope( _
+                                      tabType = ScopeSpatioTemporal)
+            End If
+
+            ' The section anchor carries the period cells every table of the
+            ' section reads. A section whose anchor row failed validation was
+            ' skipped by the builder, so the names were never created and
+            ' reading one raises several frames away from the cause.
+            If Not RangeExists(secNames.FirstValueStartTime) Then
+                LogInfo "The section anchor " & secId & " has no start period cell, so " & _
+                        "the formulas of table " & tabId & " were skipped", checkingError
+                Exit Sub
             End If
 
             ' Column formulas
-            Set rng = .Range("VALUES_COL_1_" & tabId)
+            Set rng = .Range(tabNames.ValuesCol(1))
             Set rng = .Range(rng.Cells(1, 1), rng.Cells(rng.Rows.Count + 1, 1))
-            Set rngLab = .Range("LABEL_COL_1_" & tabId)
-            Set totRng = .Range("TOTAL_ROW_VALUES_" & tabId)
-            Set cellRng = .Range("FIRST_VALUE_START_TIME_" & secId)
-            Set misRng = .Range("MISSING_ROW_VALUES_" & tabId)
+            Set rngLab = .Range(tabNames.LabelCol(1))
+            Set totRng = .Range(tabNames.TotalRowValues)
+            totalRowNumber = totRng.Row
+            Set cellRng = .Range(secNames.FirstValueStartTime)
+            Set misRng = ResolvedRange(tabNames.MissingRowValues)
             Set perRng = cellRng.Cells(1, 3)
             startTimeAddress = cellRng.Address(RowAbsolute:=False)
             endTimeAddress = cellRng.Cells(1, 2).Address(RowAbsolute:=False)
-            tabEndColumn = tabl.EndColumn
 
-            Do While rng.Column <= tabEndColumn
+            If hasMissing And misRng Is Nothing Then
+                LogInfo "Table " & tabId & " asks for a missing row and has none", checkingError
+            End If
+
+            For colCounter = 1 To nbDataColumns
+
+                labAddress = rngLab.Address
 
                 ClearTableConditions
                 AddTableConditions rowVar, ">=" & startTimeAddress
                 AddTableConditions rowVar, "<=" & endTimeAddress
-                AddTableConditions colVar, "=" & rngLab.Address
+                AddTableConditions colVar, "=" & labAddress
                 finalFormula = CurrentExcelFormula()
 
-                rng.Cells(1, 1).FormulaArray = "=" & Condition(perRng, finalFormula)
-                rng.Cells(1, 1).AutoFill Destination:=rng, Type:=xlFillValues
+                If WriteFormula(rng.Cells(1, 1), Condition(perRng, finalFormula)) Then _
+                    FillDown rng.Cells(1, 1), rng
                 AddRngFormat tabFormat, rng
 
-                ' Missing row
-                ClearTableConditions
-                AddTableConditions rowVar, "=" & EmpStr()
-                AddTableConditions colVar, "=" & rngLab.Address
-                finalFormula = CurrentExcelFormula()
-                Set cellRng = .Cells(misRng.Row, rng.Column)
-                cellRng.FormulaArray = "=" & finalFormula
-                AddRngFormat tabFormat, cellRng
+                ' Missing row. The time variable is empty on those records, so
+                ' the two date bounds are left off on purpose: a record with no
+                ' date sits in no period.
+                If Not misRng Is Nothing Then
+                    ClearTableConditions
+                    AddTableConditions rowVar, "=" & EmpStr()
+                    AddTableConditions colVar, "=" & labAddress
+                    Set cellRng = .Cells(misRng.Row, rng.Column)
+                    If WriteFormula(cellRng, CurrentExcelFormula()) Then _
+                        AddRngFormat tabFormat, cellRng
+                End If
 
                 ' Percentage
                 If hasPercentage Then
-                    Select Case specs.Value("percentage")
-                    Case "row"
-                        Set cellRng = .Range("TOTAL_COL_VALUES_" & tabId).Cells(1, 1)
-                        rng.Cells(1, 2).Formula = "=" & Percentage(cellRng, rng.Cells(1, 1), rowabs:=False)
-                    Case "column"
-                        Set cellRng = .Cells(totRng.Row, rng.Column)
-                        rng.Cells(1, 2).Formula = "=" & Percentage(cellRng, rng.Cells(1, 1))
-                    Case "total"
-                        Set cellRng = .Range("TOTAL_TOTAL_" & tabId)
-                        rng.Cells(1, 2).Formula = "=" & Percentage(cellRng, rng.Cells(1, 1))
-                    End Select
-                    Set rng = rng.Offset(, 1)
-                    Set rngLab = rngLab.Offset(, 1)
-                    rng.Cells(1, 1).AutoFill Destination:=rng, Type:=xlFillValues
+                    Set denomRng = PercentageDenominator(tabNames, percentageValue, _
+                                                         totalRowNumber, rng.Column)
+                    WritePercentageTwin rng, denomRng, _
+                                        rng.Cells(rng.Rows.Count, 2), _
+                                        PercentageRowAbsolute(percentageValue)
                 End If
 
                 ' Spatio-temporal label formulas
                 If tabType = ScopeSpatioTemporal Then
-                    If spTabType = "geo" Then
-                        rngLab.Formula = "= IF(ISBLANK(INPUTSPTGEO_" & counter & "_" & secId & ")" & _
-                                         ", " & Chr(34) & Chr(34) & ", " & _
-                                         "INPUTSPTGEO_" & counter & "_" & secId & ")"
+                    If RangeExists(secNames.SpatialInput(colCounter, spTabType)) Then
+                        WriteFormula rngLab, _
+                                     "IF(ISBLANK(" & _
+                                     secNames.SpatialInput(colCounter, spTabType) & ")," & _
+                                     EmpStr() & "," & _
+                                     secNames.SpatialInput(colCounter, spTabType) & ")", _
+                                     False
                     Else
-                        rngLab.Formula = "= IF(ISBLANK(INPUTSPTHF_" & counter & "_" & secId & ")" & _
-                                         ", " & Chr(34) & Chr(34) & ", " & _
-                                         "INPUTSPTHF_" & counter & "_" & secId & ")"
+                        LogInfo "Input cell " & _
+                                secNames.SpatialInput(colCounter, spTabType) & _
+                                " is missing, so column " & colCounter & " of table " & _
+                                tabId & " has no header formula", checkingError
                     End If
-                    counter = counter + 1
                 End If
 
-                Set rng = rng.Offset(, 1)
-                Set rngLab = rngLab.Offset(, 1)
-            Loop
+                Set rng = rng.Offset(, columnStride)
+                Set rngLab = rngLab.Offset(, columnStride)
+            Next
 
             ' Missing column and total columns
             If hasMissing Then
-                Set misRng = .Range("MISSING_COL_VALUES_" & tabId)
-                Set misRng = .Range(misRng.Cells(1, 1), misRng.Cells(misRng.Rows.Count + 1, 1))
+                Set misRng = ResolvedRange(tabNames.MissingColValues)
 
-                ClearTableConditions
-                AddTableConditions rowVar, ">=" & startTimeAddress
-                AddTableConditions rowVar, "<=" & endTimeAddress
-                AddTableConditions colVar, "=" & EmpStr()
-                finalFormula = CurrentExcelFormula()
+                If misRng Is Nothing Then
+                    LogInfo "Table " & tabId & " asks for a missing column and has none", _
+                            checkingError
+                Else
+                    Set misRng = .Range(misRng.Cells(1, 1), misRng.Cells(misRng.Rows.Count + 1, 1))
 
-                misRng.Cells(1, 1).FormulaArray = "=" & Condition(perRng, finalFormula)
-                misRng.Cells(1, 1).AutoFill Destination:=misRng, Type:=xlFillValues
-                AddRngFormat tabFormat, misRng
+                    ClearTableConditions
+                    AddTableConditions rowVar, ">=" & startTimeAddress
+                    AddTableConditions rowVar, "<=" & endTimeAddress
+                    AddTableConditions colVar, "=" & EmpStr()
+                    finalFormula = CurrentExcelFormula()
+
+                    If WriteFormula(misRng.Cells(1, 1), Condition(perRng, finalFormula)) Then _
+                        FillDown misRng.Cells(1, 1), misRng
+                    AddRngFormat tabFormat, misRng
+
+                    If hasPercentage Then
+                        Set denomRng = PercentageDenominator(tabNames, percentageValue, _
+                                                             totalRowNumber, misRng.Column)
+                        WritePercentageTwin misRng, denomRng, _
+                                            misRng.Cells(misRng.Rows.Count, 2), _
+                                            PercentageRowAbsolute(percentageValue)
+                    End If
+                End If
 
                 If hasTotal Then
                     ClearTableConditions
@@ -1033,9 +1402,9 @@ Public Sub AddFormulas()
                     AddTableConditions rowVar, "<=" & endTimeAddress
                     finalFormula = CurrentExcelFormula()
 
-                    Set totRng = .Range("TOTAL_COL_VALUES_" & tabId)
-                    totRng.Cells(1, 1).FormulaArray = "=" & Condition(perRng, finalFormula)
-                    totRng.Cells(1, 1).AutoFill Destination:=totRng, Type:=xlFillValues
+                    Set totRng = .Range(tabNames.TotalColValues)
+                    If WriteFormula(totRng.Cells(1, 1), Condition(perRng, finalFormula)) Then _
+                        FillDown totRng.Cells(1, 1), totRng
                     AddRngFormat tabFormat, totRng
                 End If
             Else
@@ -1046,188 +1415,215 @@ Public Sub AddFormulas()
                     If colVar <> vbNullString Then AddNonEmptyTableConditions colVar
                     finalFormula = CurrentExcelFormula()
 
-                    Set totRng = .Range("TOTAL_COL_VALUES_" & tabId)
-                    totRng.Cells(1, 1).FormulaArray = "=" & Condition(perRng, finalFormula)
-                    totRng.Cells(1, 1).AutoFill Destination:=totRng, Type:=xlFillValues
+                    Set totRng = .Range(tabNames.TotalColValues)
+                    If WriteFormula(totRng.Cells(1, 1), Condition(perRng, finalFormula)) Then _
+                        FillDown totRng.Cells(1, 1), totRng
                     AddRngFormat tabFormat, totRng
                 End If
             End If
 
+            If hasTotal And hasPercentage Then
+                Set totRng = ResolvedRange(tabNames.TotalColValues)
+                If Not totRng Is Nothing Then
+                    Set denomRng = PercentageDenominator(tabNames, percentageValue, _
+                                                         totalRowNumber, totRng.Column)
+                    WritePercentageTwin totRng, denomRng, _
+                                        totRng.Cells(totRng.Rows.Count, 2), _
+                                        PercentageRowAbsolute(percentageValue)
+                End If
+            End If
+
             ' Missing row, total column
-            If RangeExists("MISSING_TOTAL_" & tabId) Then
+            Set cellRng = ResolvedRange(tabNames.MissingTotal)
+            If Not cellRng Is Nothing Then
                 ClearTableConditions
                 AddTableConditions rowVar, "=" & EmpStr()
-                finalFormula = CurrentExcelFormula()
-                .Range("MISSING_TOTAL_" & tabId).FormulaArray = "=" & finalFormula
-                AddRngFormat tabFormat, .Range("MISSING_TOTAL_" & tabId)
+                If WriteFormula(cellRng, CurrentExcelFormula()) Then _
+                    AddRngFormat tabFormat, cellRng
             End If
 
             ' Missing row, missing column
-            If RangeExists("MISSING_MISSING_" & tabId) Then
+            Set cellRng = ResolvedRange(tabNames.MissingMissing)
+            If Not cellRng Is Nothing Then
                 ClearTableConditions
                 AddTableConditions rowVar, "=" & EmpStr()
                 AddTableConditions colVar, "=" & EmpStr()
-                finalFormula = CurrentExcelFormula()
-                .Range("MISSING_MISSING_" & tabId).FormulaArray = "=" & finalFormula
-                AddRngFormat tabFormat, .Range("MISSING_MISSING_" & tabId)
+                If WriteFormula(cellRng, CurrentExcelFormula()) Then _
+                    AddRngFormat tabFormat, cellRng
             End If
 
             ' Total row, missing column
-            If RangeExists("TOTAL_MISSING_" & tabId) Then
+            Set cellRng = ResolvedRange(tabNames.TotalMissing)
+            If Not cellRng Is Nothing Then
                 ClearTableConditions
                 AddTableConditions colVar, "=" & EmpStr()
-                finalFormula = CurrentExcelFormula()
-                .Range("TOTAL_MISSING_" & tabId).FormulaArray = "=" & finalFormula
-                AddRngFormat tabFormat, .Range("TOTAL_MISSING_" & tabId)
+                If WriteFormula(cellRng, CurrentExcelFormula()) Then _
+                    AddRngFormat tabFormat, cellRng
             End If
 
             ' Total row, total column
-            If RangeExists("TOTAL_TOTAL_" & tabId) Then
-                If SummaryFunction = "N" Or SummaryFunction = "N()" Then
-                    .Range("TOTAL_TOTAL_" & tabId).Formula = _
-                        "= SUM(" & .Range("TOTAL_COL_VALUES_" & tabId).Address & ")"
+            Set cellRng = ResolvedRange(tabNames.TotalTotal)
+            If Not cellRng Is Nothing Then
+                If IsCountFunction() Then
+                    WriteFormula cellRng, _
+                                 "SUM(" & .Range(tabNames.TotalColValues).Address & ")", False
                 Else
-                    ClearTableConditions
-                    Set cellRng = .Range("TOTAL_ROW_" & secId).Cells(1, 0)
-                    AddTableConditions rowVar, "<=" & cellRng.Address
-                    AddTableConditions rowVar, ">=" & cellRng.Cells(1, 0).Address
-
-                    If hasMissing Then
-                        finalFormula = CurrentExcelFormula()
-                        .Range("TOTAL_TOTAL_" & tabId).FormulaArray = "=" & finalFormula
+                    Set anchorRng = ResolvedRange(secNames.TotalRow)
+                    If anchorRng Is Nothing Then
+                        LogInfo "The section anchor " & secId & " has no total row, so the " & _
+                                "grand total of table " & tabId & " was not written", _
+                                checkingError
                     Else
-                        AddNonEmptyTableConditions colVar
-                        finalFormula = CurrentExcelFormula()
-                        .Range("TOTAL_TOTAL_" & tabId).FormulaArray = "=" & finalFormula
+                        Set anchorRng = anchorRng.Cells(1, 0)
+                        ClearTableConditions
+                        AddTableConditions rowVar, "<=" & anchorRng.Address
+                        AddTableConditions rowVar, ">=" & anchorRng.Cells(1, 0).Address
+                        If Not hasMissing Then AddNonEmptyTableConditions colVar
+                        WriteFormula cellRng, CurrentExcelFormula()
                     End If
                 End If
-                AddRngFormat tabFormat, .Range("TOTAL_TOTAL_" & tabId)
+                AddRngFormat tabFormat, cellRng
             End If
 
         Case ScopeSpatial
 
             spTabType = specs.SpatialTableScopes()
-            rowVar = specs.Value("row")
-            rowVar = Switch(spTabType = "geo", "concat_adm1_" & rowVar, _
-                            spTabType = "hf", "hf_" & rowVar, _
-                            True, vbNullString)
+
+            ' Neither prefix answered, so there is no variable to summarise and
+            ' no dropdown to build. The order column used to be filled across
+            ' whatever range the geographic branch would have used.
+            If LenB(spTabType) = 0 Then
+                LogInfo "Table " & tabId & " groups by a variable that is neither " & _
+                        "administrative nor a health facility, so no formula was written", _
+                        checkingError
+                Exit Sub
+            End If
+
+            rowVar = specs.SpatialConcatVariableName(specs.Value("row"))
             colVar = specs.Value("column")
 
             ' Validation dropdowns
-            On Error Resume Next
             If spTabType = "geo" Then
-                With .Range("ADM_DROPDOWN_" & tabId).Validation
-                    .Delete
-                    .Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, _
-                         Operator:=xlBetween, Formula1:="=ADM_UNIT_LIST"
-                End With
-
-                With .Range("DEVIDEPOP_" & tabId).Validation
-                    .Delete
-                    .Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, _
-                         Operator:=xlBetween, Formula1:="=POPULATION_FACTOR_LIST"
-                End With
+                AddListValidation tabNames.AdmDropdown, AnalysisRanges.AdmUnitList
+                AddListValidation tabNames.DevidePop, AnalysisRanges.PopulationFactorList
             End If
-            On Error GoTo 0
 
             ' Order formula
-            Set rng = .Range("ROW_CATEGORIES_" & tabId).Offset(, -2)
-            Set cellRng = rng.Cells(1, 1)
-            cellRng.Value = 1
-            Set cellRng = rng.Cells(2, 1)
-            cellRng.Formula = "=" & cellRng.Offset(-1).Address(RowAbsolute:=False) & " + 1"
-            Set rng = .Range(rng.Cells(2, 1), rng.Cells(rng.Rows.Count, 1))
-            cellRng.AutoFill Destination:=rng, Type:=xlFillValues
+            Set rng = .Range(tabNames.RowCategories).Offset(, -2)
+            rng.Cells(1, 1).Value = 1
+            If rng.Rows.Count > 1 Then
+                Set cellRng = rng.Cells(2, 1)
+                If WriteFormula(cellRng, _
+                                cellRng.Offset(-1).Address(RowAbsolute:=False) & " + 1", _
+                                False) Then
+                    Set rng = .Range(rng.Cells(2, 1), rng.Cells(rng.Rows.Count, 1))
+                    FillDown cellRng, rng
+                End If
+            End If
 
-            Set rng = .Range("ROW_CATEGORIES_" & tabId)
+            Set rng = .Range(tabNames.RowCategories)
             rowCatAddress = rng.Cells(1, 1).Address(RowAbsolute:=False)
 
             If spTabType = "geo" Then
                 ' Population formula
-                Set rng = .Range("ROW_CATEGORIES_" & tabId).Offset(, -1)
-                Set cellRng = rng.Cells(1, 1)
-                cellRng.Formula = "= FindTopPop(ADM_DROPDOWN_" & tabId & "," & _
-                                  cellRng.Cells(1, 0).Address(RowAbsolute:=False) & "," & _
-                                  Chr(34) & rowVar & Chr(34) & "," & Chr(34) & tabId & Chr(34) & ")"
-                cellRng.AutoFill Destination:=rng, Type:=xlFillValues
+                Set popRng = rng.Offset(, -1)
+                Set cellRng = popRng.Cells(1, 1)
+                If WriteFormula(cellRng, _
+                                "FindTopPop(" & tabNames.AdmDropdown & "," & _
+                                cellRng.Cells(1, 0).Address(RowAbsolute:=False) & "," & _
+                                Chr(34) & rowVar & Chr(34) & "," & _
+                                Chr(34) & tabId & Chr(34) & ")", False) Then
+                    FillDown cellRng, popRng
+                End If
 
                 ' Top Admin formula
-                Set rng = .Range("ROW_CATEGORIES_" & tabId)
                 Set cellRng = rng.Cells(1, 1)
-                cellRng.Formula = "= FindTopAdmin(ADM_DROPDOWN_" & tabId & "," & _
-                                  cellRng.Cells(1, -1).Address(RowAbsolute:=False) & "," & _
-                                  Chr(34) & rowVar & Chr(34) & "," & Chr(34) & tabId & Chr(34) & ")"
-
-            ElseIf spTabType = "hf" Then
-                Set rng = .Range("ROW_CATEGORIES_" & tabId)
+                If WriteFormula(cellRng, _
+                                "FindTopAdmin(" & tabNames.AdmDropdown & "," & _
+                                cellRng.Cells(1, -1).Address(RowAbsolute:=False) & "," & _
+                                Chr(34) & rowVar & Chr(34) & "," & _
+                                Chr(34) & tabId & Chr(34) & ")", False) Then
+                    FillDown cellRng, rng
+                End If
+            Else
                 Set cellRng = rng.Cells(1, 1)
-                cellRng.Formula = "= FindTopHF(" & _
-                                  cellRng.Cells(1, 0).Address(RowAbsolute:=False) & "," & _
-                                  Chr(34) & rowVar & Chr(34) & "," & Chr(34) & tabId & Chr(34) & ")"
+                If WriteFormula(cellRng, _
+                                "FindTopHF(" & _
+                                cellRng.Cells(1, 0).Address(RowAbsolute:=False) & "," & _
+                                Chr(34) & rowVar & Chr(34) & "," & _
+                                Chr(34) & tabId & Chr(34) & ")", False) Then
+                    FillDown cellRng, rng
+                End If
             End If
 
-            cellRng.AutoFill Destination:=rng, Type:=xlFillValues
-
             ' Column value formulas (similar to bivariate)
-            Set rng = .Range("VALUES_COL_1_" & tabId)
-            Set rngLab = .Range("LABEL_COL_1_" & tabId)
-            Set misRng = .Range("MISSING_ROW_VALUES_" & tabId)
-            tabEndColumn = tabl.EndColumn
+            Set rng = .Range(tabNames.ValuesCol(1))
+            Set rngLab = .Range(tabNames.LabelCol(1))
+            Set misRng = ResolvedRange(tabNames.MissingRowValues)
 
-            Do While rng.Column <= tabEndColumn
+            For colCounter = 1 To nbDataColumns
+
+                labAddress = rngLab.Address
 
                 ClearTableConditions
                 AddTableConditions rowVar, "=" & rowCatAddress
                 AddNonEmptyTableConditions rowVar
-                AddTableConditions colVar, "=" & rngLab.Address
+                AddTableConditions colVar, "=" & labAddress
                 finalFormula = CurrentExcelFormula()
 
-                rng.Cells(1, 1).FormulaArray = "=" & finalFormula
-                rng.Cells(1, 1).AutoFill Destination:=rng, Type:=xlFillValues
+                If WriteFormula(rng.Cells(1, 1), finalFormula) Then FillDown rng.Cells(1, 1), rng
                 AddRngFormat tabFormat, rng
 
                 ' Missing row
-                ClearTableConditions
-                AddTableConditions rowVar, "=" & EmpStr()
-                AddTableConditions colVar, "=" & rngLab.Address
-                finalFormula = CurrentExcelFormula()
-                Set cellRng = .Cells(misRng.Row, rng.Column)
-                cellRng.FormulaArray = "=" & finalFormula
-
-                ' Percentage (spatial only supports row percentage)
-                If hasPercentage Then
-                    Set cellRng = .Range("TOTAL_COL_VALUES_" & tabId).Cells(1, 1)
-                    rng.Cells(1, 2).Formula = "=" & Percentage(cellRng, rng.Cells(1, 1), rowabs:=False)
-                    Set rng = rng.Offset(, 1)
-                    Set rngLab = rngLab.Offset(, 1)
-                    rng.Cells(1, 1).AutoFill Destination:=rng, Type:=xlFillValues
+                If Not misRng Is Nothing Then
+                    ClearTableConditions
+                    AddTableConditions rowVar, "=" & EmpStr()
+                    AddTableConditions colVar, "=" & labAddress
+                    WriteFormula .Cells(misRng.Row, rng.Column), CurrentExcelFormula()
                 End If
 
-                Set rng = rng.Offset(, 1)
-                Set rngLab = rngLab.Offset(, 1)
-            Loop
+                ' Percentage. A spatial table offers the row percentage alone.
+                If hasPercentage Then
+                    Set denomRng = PercentageDenominator(tabNames, "row", 0, rng.Column)
+                    WritePercentageTwin rng, denomRng, rng.Cells(rng.Rows.Count, 2), False
+                End If
+
+                Set rng = rng.Offset(, columnStride)
+                Set rngLab = rngLab.Offset(, columnStride)
+            Next
 
             ' Missing column and total columns
             If hasMissing Then
-                Set misRng = .Range("MISSING_COL_VALUES_" & tabId)
+                Set misRng = ResolvedRange(tabNames.MissingColValues)
 
-                ClearTableConditions
-                AddTableConditions rowVar, "=" & rowCatAddress
-                AddTableConditions colVar, "=" & EmpStr()
-                finalFormula = CurrentExcelFormula()
+                If misRng Is Nothing Then
+                    LogInfo "Table " & tabId & " asks for a missing column and has none", _
+                            checkingError
+                Else
+                    ClearTableConditions
+                    AddTableConditions rowVar, "=" & rowCatAddress
+                    AddTableConditions colVar, "=" & EmpStr()
+                    finalFormula = CurrentExcelFormula()
 
-                misRng.Cells(1, 1).FormulaArray = "=" & finalFormula
-                misRng.Cells(1, 1).AutoFill Destination:=misRng, Type:=xlFillValues
-                AddRngFormat tabFormat, misRng
+                    If WriteFormula(misRng.Cells(1, 1), finalFormula) Then _
+                        FillDown misRng.Cells(1, 1), misRng
+                    AddRngFormat tabFormat, misRng
+
+                    If hasPercentage Then
+                        Set denomRng = PercentageDenominator(tabNames, "row", 0, misRng.Column)
+                        WritePercentageTwin misRng, denomRng, _
+                                            misRng.Cells(misRng.Rows.Count, 2), False
+                    End If
+                End If
 
                 If hasTotal Then
                     ClearTableConditions
                     AddTableConditions rowVar, "=" & rowCatAddress
                     finalFormula = CurrentExcelFormula()
 
-                    Set totRng = .Range("TOTAL_COL_VALUES_" & tabId)
-                    totRng.Cells(1, 1).FormulaArray = "=" & finalFormula
-                    totRng.Cells(1, 1).AutoFill Destination:=totRng, Type:=xlFillValues
+                    Set totRng = .Range(tabNames.TotalColValues)
+                    If WriteFormula(totRng.Cells(1, 1), finalFormula) Then _
+                        FillDown totRng.Cells(1, 1), totRng
                     AddRngFormat tabFormat, totRng
                 End If
             Else
@@ -1237,80 +1633,120 @@ Public Sub AddFormulas()
                     AddNonEmptyTableConditions colVar
                     finalFormula = CurrentExcelFormula()
 
-                    Set totRng = .Range("TOTAL_COL_VALUES_" & tabId)
-                    totRng.Cells(1, 1).FormulaArray = "=" & finalFormula
-                    totRng.Cells(1, 1).AutoFill Destination:=totRng, Type:=xlFillValues
+                    Set totRng = .Range(tabNames.TotalColValues)
+                    If WriteFormula(totRng.Cells(1, 1), finalFormula) Then _
+                        FillDown totRng.Cells(1, 1), totRng
                     AddRngFormat tabFormat, totRng
                 End If
             End If
 
             ' Missing row, total column
-            If RangeExists("MISSING_TOTAL_" & tabId) Then
+            Set cellRng = ResolvedRange(tabNames.MissingTotal)
+            If Not cellRng Is Nothing Then
                 ClearTableConditions
                 AddTableConditions rowVar, "=" & EmpStr()
-                finalFormula = CurrentExcelFormula()
-                .Range("MISSING_TOTAL_" & tabId).FormulaArray = "=" & finalFormula
-                AddRngFormat tabFormat, .Range("MISSING_TOTAL_" & tabId)
+                If WriteFormula(cellRng, CurrentExcelFormula()) Then _
+                    AddRngFormat tabFormat, cellRng
             End If
 
             ' Missing row, missing column
-            If RangeExists("MISSING_MISSING_" & tabId) Then
+            Set cellRng = ResolvedRange(tabNames.MissingMissing)
+            If Not cellRng Is Nothing Then
                 ClearTableConditions
                 AddTableConditions rowVar, "=" & EmpStr()
                 AddTableConditions colVar, "=" & EmpStr()
-                finalFormula = CurrentExcelFormula()
-                .Range("MISSING_MISSING_" & tabId).FormulaArray = "=" & finalFormula
-                AddRngFormat tabFormat, .Range("MISSING_MISSING_" & tabId)
+                If WriteFormula(cellRng, CurrentExcelFormula()) Then _
+                    AddRngFormat tabFormat, cellRng
             End If
 
             ' Total row, missing column
-            If RangeExists("TOTAL_MISSING_" & tabId) Then
+            Set cellRng = ResolvedRange(tabNames.TotalMissing)
+            If Not cellRng Is Nothing Then
                 ClearTableConditions
                 AddTableConditions colVar, "=" & EmpStr()
-                finalFormula = CurrentExcelFormula()
-                .Range("TOTAL_MISSING_" & tabId).FormulaArray = "=" & finalFormula
-                AddRngFormat tabFormat, .Range("TOTAL_MISSING_" & tabId)
+                If WriteFormula(cellRng, CurrentExcelFormula()) Then _
+                    AddRngFormat tabFormat, cellRng
             End If
 
             ' Total row, total column
-            If RangeExists("TOTAL_TOTAL_" & tabId) Then
-                If SummaryFunction = "N" Or SummaryFunction = "N()" Then
-                    .Range("TOTAL_TOTAL_" & tabId).Formula = _
-                        "= SUM(" & .Range("TOTAL_COL_VALUES_" & tabId).Address & ")"
+            Set cellRng = ResolvedRange(tabNames.TotalTotal)
+            If Not cellRng Is Nothing Then
+                If IsCountFunction() Then
+                    WriteFormula cellRng, _
+                                 "SUM(" & .Range(tabNames.TotalColValues).Address & ")", False
                 Else
-                    Select Case specs.Value("missing")
+                    Select Case missingValue
                     Case "all"
-                        finalFormula = CurrentExcelFormula(scope:=FormulaScopeLinelist)
-                        .Range("TOTAL_TOTAL_" & tabId).FormulaArray = "=" & finalFormula
+                        WriteFormula cellRng, CurrentExcelFormula(scope:=FormulaScopeLinelist)
                     Case "row"
                         ClearTableConditions
                         AddNonEmptyTableConditions colVar
-                        finalFormula = CurrentExcelFormula()
-                        .Range("TOTAL_TOTAL_" & tabId).FormulaArray = "=" & finalFormula
+                        WriteFormula cellRng, CurrentExcelFormula()
                     Case "column"
                         ClearTableConditions
                         AddNonEmptyTableConditions rowVar
-                        finalFormula = CurrentExcelFormula()
-                        .Range("TOTAL_TOTAL_" & tabId).FormulaArray = "=" & finalFormula
+                        WriteFormula cellRng, CurrentExcelFormula()
                     Case "no"
                         ClearTableConditions
                         AddNonEmptyTableConditions colVar
                         AddNonEmptyTableConditions rowVar
-                        finalFormula = CurrentExcelFormula()
-                        .Range("TOTAL_TOTAL_" & tabId).FormulaArray = "=" & finalFormula
+                        WriteFormula cellRng, CurrentExcelFormula()
                     End Select
                 End If
-                AddRngFormat tabFormat, .Range("TOTAL_TOTAL_" & tabId)
+                AddRngFormat tabFormat, cellRng
             End If
 
             ' Create spatial table management
             Set spTab = SpatialTables.Create(tabl)
-            Set tabFormObject = TableFormula
-            spTab.Add tabFormObject
+            spTab.Add TableFormula
 
         End Select
     End With
 End Sub
+
+'@section Checkings
+'===============================================================================
+'@description What the class reports back to the generation report. The report
+'used to show the analysis phase clean while a table carried a cell Excel had
+'refused.
+
+'@label:log-info
+'@sub-title File one diagnostic entry.
+'@details
+'Checking.Add takes a key, a label and a scope, and it raises on a duplicate
+'key, so a counter supplies the key and the message travels as the label.
+'@param message String. The diagnostic message text.
+'@param scope Optional Byte. The checking scope (default checkingSuccess).
+Private Sub LogInfo(ByVal message As String, _
+                    Optional ByVal scope As Byte = checkingSuccess)
+    If internalChecks Is Nothing Then
+        Set internalChecks = Checking.Create(CLASS_NAME)
+    End If
+
+    checkCounter = checkCounter + 1
+    internalChecks.Add CStr(checkCounter), message, scope
+    this.hasChecks = True
+End Sub
+
+'@label:has-checkings
+'@prop-title Whether this instance has anything to report.
+'@return Boolean. True once one entry has been filed.
+'@export
+Public Property Get HasCheckings() As Boolean
+    HasCheckings = this.hasChecks
+End Property
+
+'@label:checking-values
+'@prop-title The entries filed while the formulas were written.
+'@details
+'AnalysisOutput harvests these after AddFormulas, the same way it harvests from
+'the cross-table.
+'@return Checking. The entries, or Nothing when none were filed.
+'@export
+Public Property Get CheckingValues() As Checking
+    If Not HasCheckings Then Exit Property
+    Set CheckingValues = internalChecks
+End Property
 
 '@section Error Handling
 '===============================================================================
@@ -1327,4 +1763,3 @@ End Sub
 Private Sub ThrowError(ByVal errNumber As Long, ByVal message As String)
     Err.Raise CLng(errNumber), CLASS_NAME, message
 End Sub
-

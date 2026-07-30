@@ -398,18 +398,33 @@ suites:
   # also what makes it cheap for Linelist.TransferAllCode to carry, so the
   # generated linelist and this builder can share one definition of every name.
   #
-  # The other three test modules in src/tests/analyses/ -- TestAnaTabIds,
-  # TestAnalysisOutput and TestCrossTableFormula -- each bring their own
-  # compile closure and stay out until their own class rows are here.
-  # TestCrossTableFormula also builds its fixture ranges on a bare worksheet,
-  # so it needs a real ListObject before it can pass: TableSpecs reads the
-  # analysis scope from the name of the table the row sits in.
+  # CrossTableFormula names CrossTable, TableSpecs, FormulaData, Formulas,
+  # FormulaCondition, SpatialTables, AnalysisRanges, Checking and BetterArray.
+  # CrossTable, TableSpecs, AnalysisRanges and SpatialTables sit in this block,
+  # FormulaData, Formulas and FormulaCondition are registered under `formulas`,
+  # and Checking and BetterArray are baked into the workbook. So the pair of
+  # rows below closes its own compile closure and opens no other folder.
+  #
+  # SpatialTables names CrossTable, TableSpecs, Formulas, FormulaCondition and
+  # BetterArray, all of them already covered by the line above. Its own suite,
+  # TestSpatialTables, sits in src/tests/geo/ and stays out: the registry
+  # resolves a test module to src/tests/<folder>/, so registering it means a
+  # `geo` block, and that suite gets its own session.
+  #
+  # The other two test modules in src/tests/analyses/ -- TestAnaTabIds and
+  # TestAnalysisOutput -- each bring their own compile closure and stay out
+  # until their own class rows are here. AnalysisOutput does not compile as it
+  # stands: WriteTimeSeriesGraphs omits a required argument in two early-bound
+  # calls, so the first session to give it a class row gets the opaque -50 with
+  # the import log reporting "done".
   - folder: analyses
     classes:
       - name: Analysis
       - name: AnalysisRanges
       - name: TableSpecs
       - name: CrossTable
+      - name: SpatialTables
+      - name: CrossTableFormula
     tests:
       - module: TestAnalysis
         covers: [Analysis]
@@ -419,6 +434,8 @@ suites:
         covers: [TableSpecs]
       - module: TestCrossTable
         covers: [CrossTable]
+      - module: TestCrossTableFormula
+        covers: [CrossTableFormula]
 
   # --- dev (Development) ----------------------------------------------------
   # THIS BLOCK CARRIES A TEST MODULE AND NO CLASS, AND IT MUST STAY THAT WAY.
