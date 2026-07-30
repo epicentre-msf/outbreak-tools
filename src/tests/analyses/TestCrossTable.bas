@@ -1966,6 +1966,8 @@ Public Sub TestBivariateColumnsAcceptAZeroBasedCategoryList()
     Dim sh As Worksheet
     Dim zeroBased As BetterArray
     Dim headerRow As Long
+    Dim errNumber As Long
+    Dim errDescription As String
 
     CustomTestSetTitles Assert, "CrossTable", "TestBivariateColumnsAcceptAZeroBasedCategoryList"
     On Error GoTo TestFail
@@ -1995,9 +1997,13 @@ Public Sub TestBivariateColumnsAcceptAZeroBasedCategoryList()
     lData.SetCategories COL_CHOICE_VARIABLE, BetterArrayFromList("X", "Y")
     Exit Sub
 TestFail:
+    ' Read the error before restoring the categories, for the reason given on
+    ' the single-cell test below.
+    errNumber = Err.Number
+    errDescription = Err.Description
     lData.SetCategories COL_CHOICE_VARIABLE, BetterArrayFromList("X", "Y")
     CustomTestLogFailure Assert, "TestBivariateColumnsAcceptAZeroBasedCategoryList", _
-                         Err.Number, Err.Description
+                         errNumber, errDescription
 End Sub
 
 '@section Stage isolation — AddHeader
@@ -2679,6 +2685,121 @@ Public Sub TestNameRangesNamesThePercentageTwins()
     Exit Sub
 TestFail:
     CustomTestLogFailure Assert, "TestNameRangesNamesThePercentageTwins", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title Verify the interior values range is named when it is a single cell.
+'@details
+'The interior range spans the first value column to the last, and it used to be
+'assembled by splitting each column's address on a colon and pasting the two
+'halves together. A one-cell range has no colon in its address, so the split
+'yielded one element and the second of them raised.
+'
+'A univariate table reaches that shape with one category and no missing row: the
+'value column is as tall as the category rows alone, since the total row is
+'trimmed off. The interior range is not optional — Format and CrossTableFormula
+'both read it, and twenty-odd names are already on the sheet by the time this
+'line runs, so the table was left half-named.
+'@TestMethod("CrossTable")
+Public Sub TestNameRangesInteriorValuesWithSingleCellColumn()
+    Dim tabl As CrossTable
+    Dim sh As Worksheet
+    Dim interior As Range
+    Dim tabId As String
+    Dim designFormat As LLFormat
+    Dim errNumber As Long
+    Dim errDescription As String
+
+    CustomTestSetTitles Assert, "CrossTable", "TestNameRangesInteriorValuesWithSingleCellColumn"
+    On Error GoTo TestFail
+
+    lData.SetCategories ROW_CHOICE_VARIABLE, BetterArrayFromList("A")
+
+    BuildFixture TABLE_UNIVARIATE, UnivariateHeader(), _
+                 UnivariateRows(ROW_CHOICE_VARIABLE, "no", "no")
+    Set sh = OutputSheet()
+    Set tabl = BuildTable(sh, 1)
+    tabId = tabl.Specifications.TableId
+
+    Assert.IsTrue RangeExistsOnSheet(sh, "VALUES_COL_1_" & tabId), _
+                  "The single value column is named"
+    Assert.AreEqual CLng(1), CLng(sh.Range("VALUES_COL_1_" & tabId).Rows.Count), _
+                    "One category and no missing row leave a value column one cell tall"
+    Assert.IsTrue RangeExistsOnSheet(sh, "INTERIOR_VALUES_" & tabId), _
+                  "And the interior range is still named over it"
+
+    Set interior = sh.Range("INTERIOR_VALUES_" & tabId)
+
+    Assert.AreEqual CLng(1), CLng(interior.Rows.Count), _
+                    "The interior range is one row tall"
+    Assert.AreEqual CLng(1), CLng(interior.Columns.Count), _
+                    "And one column wide"
+    Assert.AreEqual sh.Range("VALUES_COL_1_" & tabId).Address(False, False), _
+                    interior.Address(False, False), _
+                    "So it is the value column itself"
+
+    ' Format reads the interior range, and it is the reason the raise mattered:
+    ' the table was left half-named and every later reader saw a missing name.
+    Set designFormat = LLFormat.Create(PrepareLLFormatFixture(FORMAT_SHEET))
+    On Error Resume Next
+    tabl.Format designFormat
+    errNumber = Err.Number
+    errDescription = Err.Description
+    Err.Clear
+    On Error GoTo TestFail
+
+    Assert.AreEqual CLng(0), errNumber, _
+                    "Formatting a table whose interior is one cell should raise " & _
+                    "nothing, and it raised " & errNumber & ": " & errDescription
+
+    lData.SetCategories ROW_CHOICE_VARIABLE, BetterArrayFromList("A", "B", "C")
+    Exit Sub
+TestFail:
+    ' Read the error before restoring the categories. SetCategories closes its
+    ' own On Error, and On Error GoTo 0 clears Err, so restoring first reports a
+    ' blank failure.
+    errNumber = Err.Number
+    errDescription = Err.Description
+    lData.SetCategories ROW_CHOICE_VARIABLE, BetterArrayFromList("A", "B", "C")
+    CustomTestLogFailure Assert, "TestNameRangesInteriorValuesWithSingleCellColumn", _
+                         errNumber, errDescription
+End Sub
+
+'@sub-title Verify the interior values range spans to the last percentage column.
+'@details
+'With percentages on, the interior reaches the percentage twin of the last data
+'column rather than the data column itself, so the range is twice as wide as the
+'column count. This is the other half of the same assembly and it travels with
+'the single-cell case.
+'@TestMethod("CrossTable")
+Public Sub TestNameRangesInteriorValuesReachTheLastPercentageColumn()
+    Dim tabl As CrossTable
+    Dim sh As Worksheet
+    Dim interior As Range
+    Dim tabId As String
+
+    CustomTestSetTitles Assert, "CrossTable", "TestNameRangesInteriorValuesReachTheLastPercentageColumn"
+    On Error GoTo TestFail
+
+    BuildFixture TABLE_BIVARIATE, BivariateHeader(), _
+                 BivariateRows(ROW_CHOICE_VARIABLE, COL_CHOICE_VARIABLE, "no", "row")
+    Set sh = OutputSheet()
+    Set tabl = BuildTable(sh, 1)
+    tabId = tabl.Specifications.TableId
+    Set interior = sh.Range("INTERIOR_VALUES_" & tabId)
+
+    Assert.AreEqual sh.Range("VALUES_COL_1_" & tabId).Column, _
+                    CLng(interior.Column), _
+                    "The interior opens on the first value column"
+    Assert.AreEqual sh.Range("PERC_COL_" & tabl.NumberOfColumns & "_" & tabId).Column, _
+                    CLng(interior.Column + interior.Columns.Count - 1), _
+                    "And closes on the percentage twin of the last data column"
+    Assert.AreEqual CLng(3), CLng(interior.Rows.Count), _
+                    "It is as tall as the three category rows"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestNameRangesInteriorValuesReachTheLastPercentageColumn", _
                          Err.Number, Err.Description
 End Sub
 

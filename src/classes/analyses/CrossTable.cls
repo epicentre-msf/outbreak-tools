@@ -1248,8 +1248,8 @@ Public Sub NameRanges()
     Dim tData As BetterArray
     Dim rw As Long
     Dim col As Long
-    Dim addBegin As String
-    Dim addEnd As String
+    Dim firstValRng As Range
+    Dim lastValRng As Range
     Dim tabId As String
     Dim cellRng As Range
     Dim tablType As Byte
@@ -1418,11 +1418,21 @@ Public Sub NameRanges()
             End If
         End If
 
-        ' Interior values (all data cells)
-        addBegin = Split(.Range("VALUES_COL_1_" & tabId).Address, ":")(0)
-        addEnd = IIf(specs.HasPercentage, "PERC_COL_", "VALUES_COL_")
-        addEnd = Split(.Range(addEnd & nbCols & "_" & tabId).Address, ":")(1)
-        .Range(addBegin & ":" & addEnd).Name = "INTERIOR_VALUES_" & tabId
+        ' Interior values (all data cells). The two end columns are already in
+        ' hand, so the range is built from them rather than from their addresses.
+        ' Splitting an address on a colon reads the second half of a one-cell
+        ' address that has no colon in it, and a value column is one cell tall
+        ' whenever the table has one category row: one category and no missing
+        ' row for a univariate table, or a geo count of one for a spatial one.
+        ' This range is not optional — Format and CrossTableFormula both read it,
+        ' and twenty-odd names are already on the sheet by the time it is built,
+        ' so the raise left the table half-named.
+        Set firstValRng = .Range("VALUES_COL_1_" & tabId)
+        Set lastValRng = .Range(IIf(specs.HasPercentage, "PERC_COL_", "VALUES_COL_") & _
+                                nbCols & "_" & tabId)
+        .Range(firstValRng.Cells(1, 1), _
+               lastValRng.Cells(lastValRng.Rows.Count, 1)).Name = _
+               "INTERIOR_VALUES_" & tabId
         allRangeNames.Push "INTERIOR_VALUES_" & tabId
 
         ' Spatial outer values for population computation
