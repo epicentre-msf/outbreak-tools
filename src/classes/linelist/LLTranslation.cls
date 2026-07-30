@@ -37,13 +37,27 @@ End Enum
 
 '@class LLTranslation
 '@description
-'Manages translation ListObjects hosted on a single worksheet and provides
-'scoped TranslationObject accessors, import/export of full translation
-'tables, dictionary-specific exchange, and workbook-level hidden name
-'initialisation for translated configuration values.
-'@depends TranslationObject, TranslationObject, CustomTable
-'@depends HiddenNames, BetterArray
-'@version 1.0 (2026-02-10)
+'Manages the translation ListObjects that sit on one worksheet and hands out a
+'TranslationObject per scope. It also imports and exports whole translation
+'tables, exchanges the dictionary table on its own, and writes the translated
+'configuration values into a workbook as hidden names.
+'
+'WHERE THE TABLES AND THE LANGUAGES LIVE
+'-------------------------------------------------------------------------------
+'The five tables sit on the host worksheet. Four of them are required at
+'creation; T_TradLLRibbon is optional there and TransObject raises when a
+'caller asks for that scope on a sheet without it.
+'
+'The two language codes live in hidden names, and they are held in two
+'different places: RNG_LLLanguageCode and RNG_DictionaryLanguage are read from
+'the WORKBOOK store by TransObject, and written to the WORKSHEET store by
+'InitialiseSheetNames. Value reads the worksheet copy. The two copies are
+'written by different callers and nothing keeps them in step.
+'
+'This class has never been audited. What is known about it is in
+'.obt/gotchas/linelist-folder.md.
+'@depends TranslationObject, CustomTable, HiddenNames, BetterArray
+'@version 1.1 (2026-07-30)
 
 
 
@@ -53,6 +67,12 @@ End Enum
 
 Private Type TLLTranslation
     translationSheet As Worksheet
+    'Building a HiddenNames store walks every Name of its container, and both
+    'stores were rebuilt on every read. TransObject alone is called once per
+    'scope per caller, and the linelist form modules call it on every open.
+    wkbNames As HiddenNames
+    shNames As HiddenNames
+    sealed As Boolean
 End Type
 
 Private this As TLLTranslation
@@ -87,17 +107,55 @@ Public Function Create(ByVal translationSheet As Worksheet) As LLTranslation
     Dim newTranslation As LLTranslation
     Set newTranslation = New LLTranslation
     Set newTranslation.InternalSheet = translationSheet
+    newTranslation.Seal
     Set Create = newTranslation
 End Function
+
+'@label:seal
+'@sub-title Seal the instance against further creation-only writes
+Public Sub Seal()
+    this.sealed = True
+End Sub
 
 '@label:internal-sheet
 '@prop-title Friend setter for the host worksheet
 '@details
-'Used by the factory method during construction.
+'Used by the factory method during construction. Writing to it after Create
+'raises, so the two cached hidden name stores can never point at a worksheet
+'the instance has given up.
 '@param value Worksheet. The translation worksheet to bind.
+'@throws ProjectError.SomethingWentWrong When the instance is already sealed.
 Friend Property Set InternalSheet(ByVal value As Worksheet)
+    If this.sealed Then _
+        ThrowError ProjectError.SomethingWentWrong, _
+                   "InternalSheet is set at creation only"
     Set this.translationSheet = value
 End Property
+
+'@label:workbook-names
+'@sub-title The hidden name store of the workbook holding the translations
+'@details
+'Built once per instance. Every read used to build a new one, and building one
+'walks every Name of the workbook.
+'@return HiddenNames. The workbook-level store.
+Private Function WorkbookNames() As HiddenNames
+    If this.wkbNames Is Nothing Then
+        Set this.wkbNames = HiddenNames.Create(this.translationSheet.Parent)
+    End If
+    Set WorkbookNames = this.wkbNames
+End Function
+
+'@label:sheet-names
+'@sub-title The hidden name store of the translation worksheet
+'@details
+'Built once per instance, the same way the workbook store is.
+'@return HiddenNames. The worksheet-level store.
+Private Function SheetNames() As HiddenNames
+    If this.shNames Is Nothing Then
+        Set this.shNames = HiddenNames.Create(this.translationSheet)
+    End If
+    Set SheetNames = this.shNames
+End Function
 
 
 '@section Properties
@@ -129,11 +187,9 @@ End Property
 Public Property Get TransObject(Optional ByVal trans As Byte = TranslationOfMessages) As TranslationObject
     Dim Lo As ListObject
     Dim lang As String
-    Dim sh As Worksheet
     Dim wkbNames As HiddenNames
 
-    Set sh = this.translationSheet
-    Set wkbNames = HiddenNames.Create(sh.Parent)
+    Set wkbNames = WorkbookNames()
     lang = wkbNames.ValueAsString("RNG_LLLanguageCode")
 
     Select Case trans
@@ -371,11 +427,11 @@ End Sub
 '@param llLang String. The interface language code (e.g., "fr").
 '@export
 Public Sub InitialiseSheetNames(ByVal dictLang As String, ByVal llLang As String)
-    Dim shNames As HiddenNames
+    Dim store As HiddenNames
 
-    Set shNames = HiddenNames.Create(this.translationSheet)
-    EnsureAndSet shNames, "RNG_DictionaryLanguage", dictLang
-    EnsureAndSet shNames, "RNG_LLLanguageCode", llLang
+    Set store = SheetNames()
+    EnsureAndSet store, "RNG_DictionaryLanguage", dictLang
+    EnsureAndSet store, "RNG_LLLanguageCode", llLang
 End Sub
 
 
@@ -395,7 +451,6 @@ End Sub
 '@return String. The stored value, or vbNullString if the key is unknown.
 '@export
 Public Property Get Value(ByVal nameId As String) As String
-    Dim shNames As HiddenNames
     Dim rngName As String
 
     Select Case LCase$(Trim$(nameId))
@@ -407,8 +462,7 @@ Public Property Get Value(ByVal nameId As String) As String
             Exit Property
     End Select
 
-    Set shNames = HiddenNames.Create(this.translationSheet)
-    Value = shNames.ValueAsString(rngName)
+    Value = SheetNames().ValueAsString(rngName)
 End Property
 
 
@@ -546,9 +600,9 @@ Private Sub CheckRequirements(ByVal translationSheet As Worksheet)
 End Sub
 
 
-'@section Error Handling
+'@section HiddenName writing
 '===============================================================================
-'@description Centralised error raising.
+'@description Creating a hidden name and giving it its value.
 
 '@label:ensure-and-set
 '@sub-title Create a HiddenName if missing, then always update its value
@@ -560,6 +614,10 @@ Private Sub EnsureAndSet(ByVal store As HiddenNames, ByVal nameId As String, _
     store.EnsureName nameId, value, HiddenNameTypeString
     store.SetValue nameId, value
 End Sub
+
+'@section Error Handling
+'===============================================================================
+'@description Centralised error raising.
 
 '@label:throw-error
 '@sub-title Raise a ProjectError-based exception
