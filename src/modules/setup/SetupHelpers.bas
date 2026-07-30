@@ -9,7 +9,7 @@ Option Explicit
 'This module owns the import and clean flow and the few accessors the Imports
 'form and the ribbon share. Row management, sorting, sheet protection and the
 'setup translation all live on EventSetup now, and the ribbon reaches them
-'through SetupEventsManager.EventSetupService.
+'through EventsManager.EventSetupService.
 '
 'THE SHEET NAMES BELOW ARE DECLARED TWICE ON PURPOSE
 '-------------------------------------------------------------------------------
@@ -68,7 +68,7 @@ Public Sub DeleteListColumnAt(ByVal sheetName As String, ByVal targetCell As Ran
     colIndex = targetCell.Column - lo.Range.Column + 1
     If (colIndex <= 1) Or colIndex > lo.ListColumns.Count Then Exit Sub
 
-    Set svc = SetupEventsManager.EventSetupService
+    Set svc = EventsManager.EventSetupService
 
     svc.UnprotectSetupSheet sheetName
         lo.ListColumns(colIndex).Delete
@@ -235,7 +235,7 @@ Public Sub ImportOrCleanSetup()
 
     Set sheets = BuildSelectedSheets(importDict, importChoi, importExp, importAna, importTrans)
     Set pass = ResolveSetupPasswords()
-    SetupEventsManager.EnterBusyState calculateOnSave:=False
+    EventsManager.EnterBusyState calculateOnSave:=False
 
     Set service = SetupImport.Create(servicePath, progressLabel)
     service.Check importDict, importChoi, importExp, importAna, importTrans, cleanSetup:=isClean
@@ -248,7 +248,7 @@ Public Sub ImportOrCleanSetup()
     completed = True
 
 Cleanup:
-    SetupEventsManager.ExitBusyState
+    EventsManager.ExitBusyState
 
     If completed Then
         formRef.Hide
@@ -338,8 +338,8 @@ Private Function ExecuteCleanOperation(ByVal service As SetupImport, _
 
     'The clean emptied whole sheets, so the managers the service cached before it
     'ran were built against columns those sheets may no longer carry.
-    SetupEventsManager.ResetEventSetupCaches
-    Set svc = SetupEventsManager.EventSetupService
+    EventsManager.ResetEventSetupCaches
+    Set svc = EventsManager.EventSetupService
 
     For idx = sheets.LowerBound To sheets.UpperBound
         sheetName = CStr(sheets.Item(idx))
@@ -383,23 +383,23 @@ Public Sub PostImportMaintenance()
     Dim errDescription As String
 
     On Error GoTo Cleanup
-    SetupEventsManager.EnterBusyState calculateOnSave:=False
+    EventsManager.EnterBusyState calculateOnSave:=False
 
     'The import rewrote whole sheets, so the managers the service cached before
     'it ran were built against columns those sheets may no longer carry.
-    SetupEventsManager.ResetEventSetupCaches
+    EventsManager.ResetEventSetupCaches
 
     Set prep = SetupPreparation.Create(ThisWorkbook)
     prep.ResetUpdatedRegistry
 
-    SetupEventsManager.ResetTranslationCounter
-    SetupEventsManager.RefreshAnalysisDropdowns forceUpdate:=True
-    SetupEventsManager.RecalculateAnalysis
+    EventsManager.ResetTranslationCounter
+    EventsManager.RefreshAnalysisDropdowns forceUpdate:=True
+    EventsManager.RecalculateAnalysis
 
 Cleanup:
     errNumber = Err.Number
     errDescription = Err.Description
-    SetupEventsManager.ExitBusyState
+    EventsManager.ExitBusyState
     If errNumber <> 0 Then
         Err.Raise errNumber, "SetupHelpers.PostImportMaintenance", errDescription
     End If

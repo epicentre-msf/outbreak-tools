@@ -1,4 +1,4 @@
-Attribute VB_Name = "TestSetupEventsManager"
+Attribute VB_Name = "TestEventsManager"
 Attribute VB_Description = "Unit tests for the setup busy-state manager"
 
 Option Explicit
@@ -9,7 +9,7 @@ Option Explicit
 
 'WHAT THIS MODULE COVERS
 '-------------------------------------------------------------------------------
-'SetupEventsManager is a standard module because it holds two pieces of state
+'EventsManager is a standard module because it holds two pieces of state
 'that must survive between calls: the single EventSetup instance and the
 'busy-state nesting counter. Ribbon callbacks and worksheet functions both reach
 'them. None of that needs an Excel event to be raised, so all of it is testable
@@ -35,11 +35,11 @@ Public Sub ModuleInitialize()
     On Error GoTo Fail
     BusyApp
     Set Assert = CustomTest.Create(ThisWorkbook, OUTPUT_SHEET)
-    Assert.SetModuleName "TestSetupEventsManager"
+    Assert.SetModuleName "TestEventsManager"
     Exit Sub
 
 Fail:
-    Debug.Print "TestSetupEventsManager.ModuleInitialize: "; Err.Number; Err.Description
+    Debug.Print "TestEventsManager.ModuleInitialize: "; Err.Number; Err.Description
 End Sub
 
 '@ModuleCleanup
@@ -61,7 +61,7 @@ Public Sub TestInitialize()
         BusyApp
         DrainBusyState
         ClearSnapshotName
-        SetupEventsManager.DisposeEventSetup
+        EventsManager.DisposeEventSetup
     On Error GoTo 0
 End Sub
 
@@ -80,18 +80,18 @@ End Sub
 '@section The busy-state counter
 '===============================================================================
 
-'@TestMethod("SetupEventsManager")
+'@TestMethod("EventsManager")
 Public Sub TestEnterAndExitReportTheState()
-    CustomTestSetTitles Assert, "SetupEventsManager", "Enter reports busy and exit reports idle"
+    CustomTestSetTitles Assert, "EventsManager", "Enter reports busy and exit reports idle"
     On Error GoTo Fail
 
-    Assert.IsFalse SetupEventsManager.IsBusyState, "The manager should start idle"
+    Assert.IsFalse EventsManager.IsBusyState, "The manager should start idle"
 
-    SetupEventsManager.EnterBusyState persist:=False
-    Assert.IsTrue SetupEventsManager.IsBusyState, "The manager should report busy after entering"
+    EventsManager.EnterBusyState persist:=False
+    Assert.IsTrue EventsManager.IsBusyState, "The manager should report busy after entering"
 
-    SetupEventsManager.ExitBusyState
-    Assert.IsFalse SetupEventsManager.IsBusyState, "The manager should report idle after exiting"
+    EventsManager.ExitBusyState
+    Assert.IsFalse EventsManager.IsBusyState, "The manager should report idle after exiting"
     Exit Sub
 
 Fail:
@@ -99,26 +99,26 @@ Fail:
     CustomTestLogFailure Assert, "TestEnterAndExitReportTheState", Err.Number, Err.Description
 End Sub
 
-'@TestMethod("SetupEventsManager")
+'@TestMethod("EventsManager")
 Public Sub TestNestingRestoresOnTheOutermostExitAlone()
-    CustomTestSetTitles Assert, "SetupEventsManager", "Only the outermost exit restores the state"
+    CustomTestSetTitles Assert, "EventsManager", "Only the outermost exit restores the state"
     On Error GoTo Fail
 
     'The import flow nests three deep: ImportOrCleanSetup enters, and
     'PostImportMaintenance enters twice more through the two manager routines it
     'calls. An inner exit must not put the state back under the outer job.
-    SetupEventsManager.EnterBusyState persist:=False
-    SetupEventsManager.EnterBusyState persist:=False
-    SetupEventsManager.EnterBusyState persist:=False
+    EventsManager.EnterBusyState persist:=False
+    EventsManager.EnterBusyState persist:=False
+    EventsManager.EnterBusyState persist:=False
 
-    SetupEventsManager.ExitBusyState
-    Assert.IsTrue SetupEventsManager.IsBusyState, "Two levels are still held after the first exit"
+    EventsManager.ExitBusyState
+    Assert.IsTrue EventsManager.IsBusyState, "Two levels are still held after the first exit"
 
-    SetupEventsManager.ExitBusyState
-    Assert.IsTrue SetupEventsManager.IsBusyState, "One level is still held after the second exit"
+    EventsManager.ExitBusyState
+    Assert.IsTrue EventsManager.IsBusyState, "One level is still held after the second exit"
 
-    SetupEventsManager.ExitBusyState
-    Assert.IsFalse SetupEventsManager.IsBusyState, "The third exit is the outermost one and releases the state"
+    EventsManager.ExitBusyState
+    Assert.IsFalse EventsManager.IsBusyState, "The third exit is the outermost one and releases the state"
     Exit Sub
 
 Fail:
@@ -126,23 +126,23 @@ Fail:
     CustomTestLogFailure Assert, "TestNestingRestoresOnTheOutermostExitAlone", Err.Number, Err.Description
 End Sub
 
-'@TestMethod("SetupEventsManager")
+'@TestMethod("EventsManager")
 Public Sub TestExitOnAnIdleManagerCannotDriveTheCounterNegative()
-    CustomTestSetTitles Assert, "SetupEventsManager", "An unmatched exit leaves the counter at zero"
+    CustomTestSetTitles Assert, "EventsManager", "An unmatched exit leaves the counter at zero"
     On Error GoTo Fail
 
     'clickExport and clickResetTag both exit on the happy path and again in their
     'handler, so an unmatched exit is a case the workbook reaches. A counter
     'driven below zero would need as many enters to answer busy again.
-    SetupEventsManager.ExitBusyState
-    SetupEventsManager.ExitBusyState
-    SetupEventsManager.ExitBusyState
+    EventsManager.ExitBusyState
+    EventsManager.ExitBusyState
+    EventsManager.ExitBusyState
 
-    SetupEventsManager.EnterBusyState persist:=False
-    Assert.IsTrue SetupEventsManager.IsBusyState, "One enter after three unmatched exits should report busy"
+    EventsManager.EnterBusyState persist:=False
+    Assert.IsTrue EventsManager.IsBusyState, "One enter after three unmatched exits should report busy"
 
-    SetupEventsManager.ExitBusyState
-    Assert.IsFalse SetupEventsManager.IsBusyState, "One exit should then release it"
+    EventsManager.ExitBusyState
+    Assert.IsFalse EventsManager.IsBusyState, "One exit should then release it"
     Exit Sub
 
 Fail:
@@ -154,23 +154,23 @@ End Sub
 '@section The quiet state
 '===============================================================================
 
-'@TestMethod("SetupEventsManager")
+'@TestMethod("EventsManager")
 Public Sub TestQuietStateSuppressesEventsAndPutsThemBack()
-    CustomTestSetTitles Assert, "SetupEventsManager", "The quiet state suppresses events and puts them back"
+    CustomTestSetTitles Assert, "EventsManager", "The quiet state suppresses events and puts them back"
     On Error GoTo Fail
 
     Application.EnableEvents = True
 
-    SetupEventsManager.EnterQuietState
+    EventsManager.EnterQuietState
 
     Assert.IsFalse Application.EnableEvents, _
         "The watcher writes a flag into the hidden registry, so events must be off while it runs"
-    Assert.IsTrue SetupEventsManager.IsQuietState, "The manager should report the quiet state"
+    Assert.IsTrue EventsManager.IsQuietState, "The manager should report the quiet state"
 
-    SetupEventsManager.ExitBusyState
+    EventsManager.ExitBusyState
 
     Assert.IsTrue Application.EnableEvents, "Events should be back on after the quiet state ends"
-    Assert.IsFalse SetupEventsManager.IsQuietState, "The quiet state should be released"
+    Assert.IsFalse EventsManager.IsQuietState, "The quiet state should be released"
     Exit Sub
 
 Fail:
@@ -179,9 +179,9 @@ Fail:
     CustomTestLogFailure Assert, "TestQuietStateSuppressesEventsAndPutsThemBack", Err.Number, Err.Description
 End Sub
 
-'@TestMethod("SetupEventsManager")
+'@TestMethod("EventsManager")
 Public Sub TestQuietStateLeavesCalculationAlone()
-    CustomTestSetTitles Assert, "SetupEventsManager", "The quiet state leaves calculation alone"
+    CustomTestSetTitles Assert, "EventsManager", "The quiet state leaves calculation alone"
     On Error GoTo Fail
 
     'This is the flicker fix. Recording a watcher flag needs no manual
@@ -189,12 +189,12 @@ Public Sub TestQuietStateLeavesCalculationAlone()
     'committed edit that triggers the recalculation pass the user sees.
     Application.Calculation = xlCalculationAutomatic
 
-    SetupEventsManager.EnterQuietState
+    EventsManager.EnterQuietState
 
     Assert.AreEqual CLng(xlCalculationAutomatic), CLng(Application.Calculation), _
         "The quiet state should not switch calculation to manual"
 
-    SetupEventsManager.ExitBusyState
+    EventsManager.ExitBusyState
     Application.Calculation = xlCalculationManual
     Exit Sub
 
@@ -204,19 +204,19 @@ Fail:
     CustomTestLogFailure Assert, "TestQuietStateLeavesCalculationAlone", Err.Number, Err.Description
 End Sub
 
-'@TestMethod("SetupEventsManager")
+'@TestMethod("EventsManager")
 Public Sub TestBusyStateSwitchesCalculationToManual()
-    CustomTestSetTitles Assert, "SetupEventsManager", "The full state switches calculation to manual"
+    CustomTestSetTitles Assert, "EventsManager", "The full state switches calculation to manual"
     On Error GoTo Fail
 
     Application.Calculation = xlCalculationAutomatic
 
-    SetupEventsManager.EnterBusyState persist:=False
+    EventsManager.EnterBusyState persist:=False
 
     Assert.AreEqual CLng(xlCalculationManual), CLng(Application.Calculation), _
         "The Analysis branch clears cells and rewrites validation, so it keeps the full lockdown"
 
-    SetupEventsManager.ExitBusyState
+    EventsManager.ExitBusyState
 
     Assert.AreEqual CLng(xlCalculationAutomatic), CLng(Application.Calculation), _
         "The outermost exit should put the calculation mode back"
@@ -230,21 +230,21 @@ Fail:
     CustomTestLogFailure Assert, "TestBusyStateSwitchesCalculationToManual", Err.Number, Err.Description
 End Sub
 
-'@TestMethod("SetupEventsManager")
+'@TestMethod("EventsManager")
 Public Sub TestQuietStateSharesTheCounterWithTheFullState()
-    CustomTestSetTitles Assert, "SetupEventsManager", "Both states share one nesting counter"
+    CustomTestSetTitles Assert, "EventsManager", "Both states share one nesting counter"
     On Error GoTo Fail
 
     'One counter is what makes the two states safe to mix. A quiet outer state
     'with a full inner one must still take two exits.
-    SetupEventsManager.EnterQuietState
-    SetupEventsManager.EnterBusyState persist:=False
+    EventsManager.EnterQuietState
+    EventsManager.EnterBusyState persist:=False
 
-    SetupEventsManager.ExitBusyState
-    Assert.IsTrue SetupEventsManager.IsBusyState, "The outer quiet state is still held"
+    EventsManager.ExitBusyState
+    Assert.IsTrue EventsManager.IsBusyState, "The outer quiet state is still held"
 
-    SetupEventsManager.ExitBusyState
-    Assert.IsFalse SetupEventsManager.IsBusyState, "The second exit releases it"
+    EventsManager.ExitBusyState
+    Assert.IsFalse EventsManager.IsBusyState, "The second exit releases it"
     Exit Sub
 
 Fail:
@@ -257,18 +257,18 @@ End Sub
 '@section The crash-recovery snapshot
 '===============================================================================
 
-'@TestMethod("SetupEventsManager")
+'@TestMethod("EventsManager")
 Public Sub TestPersistedSnapshotIsWrittenThenCleared()
-    CustomTestSetTitles Assert, "SetupEventsManager", "The snapshot is written on entry and cleared on exit"
+    CustomTestSetTitles Assert, "EventsManager", "The snapshot is written on entry and cleared on exit"
     On Error GoTo Fail
 
     'A VBA state reset in the middle of a long job leaves the Application
     'locked down. The snapshot is what the next entry reads to undo that.
-    SetupEventsManager.EnterBusyState persist:=True
+    EventsManager.EnterBusyState persist:=True
 
     Assert.IsTrue SnapshotExists(), "Entering with persistence on should write the snapshot"
 
-    SetupEventsManager.ExitBusyState
+    EventsManager.ExitBusyState
 
     Assert.IsFalse SnapshotExists(), "A clean exit should clear the snapshot"
     Exit Sub
@@ -279,14 +279,14 @@ Fail:
     CustomTestLogFailure Assert, "TestPersistedSnapshotIsWrittenThenCleared", Err.Number, Err.Description
 End Sub
 
-'@TestMethod("SetupEventsManager")
+'@TestMethod("EventsManager")
 Public Sub TestSnapshotCarriesSixValuesInTheRestoreOrder()
-    CustomTestSetTitles Assert, "SetupEventsManager", "The snapshot carries six values"
+    CustomTestSetTitles Assert, "EventsManager", "The snapshot carries six values"
     On Error GoTo Fail
 
     'RecoverIfNeeded reads the six back by position and stops when there are
     'fewer than six, so the count is the contract between the two routines.
-    SetupEventsManager.EnterBusyState persist:=True
+    EventsManager.EnterBusyState persist:=True
 
     Dim parts() As String
     parts = Split(SnapshotValue(), "|")
@@ -294,7 +294,7 @@ Public Sub TestSnapshotCarriesSixValuesInTheRestoreOrder()
     Assert.AreEqual CLng(5), CLng(UBound(parts)), _
         "RecoverIfNeeded reads six pipe-delimited values, so the writer must produce six"
 
-    SetupEventsManager.ExitBusyState
+    EventsManager.ExitBusyState
     Exit Sub
 
 Fail:
@@ -303,17 +303,17 @@ Fail:
     CustomTestLogFailure Assert, "TestSnapshotCarriesSixValuesInTheRestoreOrder", Err.Number, Err.Description
 End Sub
 
-'@TestMethod("SetupEventsManager")
+'@TestMethod("EventsManager")
 Public Sub TestQuietStateWritesNoSnapshot()
-    CustomTestSetTitles Assert, "SetupEventsManager", "The quiet state writes no snapshot"
+    CustomTestSetTitles Assert, "EventsManager", "The quiet state writes no snapshot"
     On Error GoTo Fail
 
-    SetupEventsManager.EnterQuietState
+    EventsManager.EnterQuietState
 
     Assert.IsFalse SnapshotExists(), _
         "A handler that only records a flag has no locked-down state to recover"
 
-    SetupEventsManager.ExitBusyState
+    EventsManager.ExitBusyState
     Exit Sub
 
 Fail:
@@ -327,9 +327,9 @@ End Sub
 '@section The service instance
 '===============================================================================
 
-'@TestMethod("SetupEventsManager")
+'@TestMethod("EventsManager")
 Public Sub TestServiceIsBuiltOnceAndHandedBack()
-    CustomTestSetTitles Assert, "SetupEventsManager", "One service instance is handed to every caller"
+    CustomTestSetTitles Assert, "EventsManager", "One service instance is handed to every caller"
     On Error GoTo Fail
 
     'The four worksheet functions, the ribbon and the event handlers all reach
@@ -337,8 +337,8 @@ Public Sub TestServiceIsBuiltOnceAndHandedBack()
     Dim firstCall As EventSetup
     Dim secondCall As EventSetup
 
-    Set firstCall = SetupEventsManager.EventSetupService
-    Set secondCall = SetupEventsManager.EventSetupService
+    Set firstCall = EventsManager.EventSetupService
+    Set secondCall = EventsManager.EventSetupService
 
     Assert.IsTrue (firstCall Is secondCall), "Two calls should answer the same instance"
     Exit Sub
@@ -347,9 +347,9 @@ Fail:
     CustomTestLogFailure Assert, "TestServiceIsBuiltOnceAndHandedBack", Err.Number, Err.Description
 End Sub
 
-'@TestMethod("SetupEventsManager")
+'@TestMethod("EventsManager")
 Public Sub TestDisposeReleasesTheServiceSoTheNextCallRebuilds()
-    CustomTestSetTitles Assert, "SetupEventsManager", "Dispose releases the service"
+    CustomTestSetTitles Assert, "EventsManager", "Dispose releases the service"
     On Error GoTo Fail
 
     'Workbook_BeforeClose calls this. It had no caller at all, so the setup
@@ -357,9 +357,9 @@ Public Sub TestDisposeReleasesTheServiceSoTheNextCallRebuilds()
     Dim firstCall As EventSetup
     Dim afterDispose As EventSetup
 
-    Set firstCall = SetupEventsManager.EventSetupService
-    SetupEventsManager.DisposeEventSetup
-    Set afterDispose = SetupEventsManager.EventSetupService
+    Set firstCall = EventsManager.EventSetupService
+    EventsManager.DisposeEventSetup
+    Set afterDispose = EventsManager.EventSetupService
 
     Assert.IsFalse (firstCall Is afterDispose), "The call after Dispose should build a new instance"
     Exit Sub
@@ -368,15 +368,15 @@ Fail:
     CustomTestLogFailure Assert, "TestDisposeReleasesTheServiceSoTheNextCallRebuilds", Err.Number, Err.Description
 End Sub
 
-'@TestMethod("SetupEventsManager")
+'@TestMethod("EventsManager")
 Public Sub TestResetCachesIsSafeBeforeAnyServiceExists()
-    CustomTestSetTitles Assert, "SetupEventsManager", "Resetting caches with no service is safe"
+    CustomTestSetTitles Assert, "EventsManager", "Resetting caches with no service is safe"
     On Error GoTo Fail
 
     'PostImportMaintenance and the clean flow both call this, and either can run
     'before anything has asked for the service.
-    SetupEventsManager.DisposeEventSetup
-    SetupEventsManager.ResetEventSetupCaches
+    EventsManager.DisposeEventSetup
+    EventsManager.ResetEventSetupCaches
 
     Assert.IsTrue True, "Resetting the caches with no service held should not raise"
     Exit Sub
@@ -394,8 +394,8 @@ Private Sub DrainBusyState()
     Dim guard As Long
 
     On Error Resume Next
-    Do While SetupEventsManager.IsBusyState
-        SetupEventsManager.ExitBusyState
+    Do While EventsManager.IsBusyState
+        EventsManager.ExitBusyState
         guard = guard + 1
         If guard > 20 Then Exit Do
     Loop

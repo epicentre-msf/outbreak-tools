@@ -62,9 +62,9 @@ Private Sub LabPath_Click()
         'Wrap EnterDebugMode in BusyState to suppress screen flickering
         'while iterating through all worksheets to unprotect them
         On Error GoTo DebugCleanup
-        SetupEventsManager.EnterBusyState
+        EventsManager.EnterBusyState
         pass.EnterDebugMode
-        SetupEventsManager.ExitBusyState
+        EventsManager.ExitBusyState
         On Error GoTo 0
 
         Me.LabProgress.Caption = vbNullString
@@ -83,7 +83,7 @@ DebugCleanup:
     'used to test a local ApplicationState that was never assigned, so the busy
     'state was left on after a failure.
     On Error Resume Next
-    SetupEventsManager.ExitBusyState
+    EventsManager.ExitBusyState
     Application.Cursor = xlDefault
     On Error GoTo 0
     Resume cleanExit

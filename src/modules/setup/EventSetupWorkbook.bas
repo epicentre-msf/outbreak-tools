@@ -24,7 +24,7 @@ Private Sub Workbook_Open()
     mBooting = True
 
     On Error GoTo Clean
-    SetupEventsManager.WorkbookOpened
+    EventsManager.WorkbookOpened
 
 Clean:
     mBooting = False
@@ -35,7 +35,7 @@ Private Sub Workbook_BeforeClose(Cancel As Boolean)
     'the user into every other workbook of the session.
     On Error Resume Next
     Application.FormatStaleValues = True
-    SetupEventsManager.DisposeEventSetup
+    EventsManager.DisposeEventSetup
     On Error GoTo 0
 End Sub
 
@@ -49,7 +49,7 @@ Private Sub Workbook_SheetActivate(ByVal sh As Object)
 
     On Error GoTo Clean
 
-    SetupEventsManager.SheetActivated sh
+    EventsManager.SheetActivated sh
 
 Clean:
     mBooting = False
@@ -69,7 +69,7 @@ Private Sub Workbook_SheetChange(ByVal sh As Object, ByVal Target As Range)
 
     On Error GoTo Clean
 
-    SetupEventsManager.SheetChanged sh, Target
+    EventsManager.SheetChanged sh, Target
 
 Clean:
     mBooting = False

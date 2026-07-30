@@ -1,4 +1,4 @@
-Attribute VB_Name = "EventsSetupRibbon"
+Attribute VB_Name = "Ribbon"
 
 Option Explicit
 
@@ -6,7 +6,7 @@ Option Explicit
 '@IgnoreModule UnrecognizedAnnotation, SheetAccessedUsingString, ParameterCanBeByVal, ParameterNotUsed : some parameters of controls are not used
 
 'Every callback here reaches the setup service through
-'SetupEventsManager.EventSetupService. Row work, sorting, sheet protection and
+'EventsManager.EventSetupService. Row work, sorting, sheet protection and
 'the setup translation all live on EventSetup, so a click crosses the ribbon, the
 'manager and the service, and nothing in between.
 '
@@ -27,13 +27,13 @@ Public Sub clickResize(ByRef control As IRibbonControl)
 
     If ActiveSheet Is Nothing Then Exit Sub
     sheetName = ActiveSheet.Name
-    Set svc = SetupEventsManager.EventSetupService
+    Set svc = EventsManager.EventSetupService
 
     On Error GoTo Cleanup
-    SetupEventsManager.EnterBusyState persist:=False
+    EventsManager.EnterBusyState persist:=False
     svc.ManageRows sheetName, del:=True
 Cleanup:
-    SetupEventsManager.ExitBusyState
+    EventsManager.ExitBusyState
 End Sub
 
 '@Description("add rows to listObject")
@@ -44,13 +44,13 @@ Public Sub clickAddRows(ByRef control As Office.IRibbonControl)
 
     If ActiveSheet Is Nothing Then Exit Sub
     sheetName = ActiveSheet.Name
-    Set svc = SetupEventsManager.EventSetupService
+    Set svc = EventsManager.EventSetupService
 
     On Error GoTo Cleanup
-    SetupEventsManager.EnterBusyState persist:=False
+    EventsManager.EnterBusyState persist:=False
     svc.ManageRows sheetName, del:=False
 Cleanup:
-    SetupEventsManager.ExitBusyState
+    EventsManager.ExitBusyState
 End Sub
 
 '@Description("Clear all the filters in the current sheet")
@@ -65,11 +65,11 @@ Public Sub clickFilters(ByRef control As IRibbonControl)
     If targetSheet Is Nothing Then Exit Sub
 
     sheetName = targetSheet.Name
-    Set svc = SetupEventsManager.EventSetupService
+    Set svc = EventsManager.EventSetupService
 
     On Error GoTo Handler
 
-    SetupEventsManager.EnterBusyState calculateOnSave:=False
+    EventsManager.EnterBusyState calculateOnSave:=False
 
     svc.UnprotectSetupSheet sheetName
 
@@ -88,7 +88,7 @@ Public Sub clickFilters(ByRef control As IRibbonControl)
     svc.ProtectSetupSheet sheetName
 
 Cleanup:
-    SetupEventsManager.ExitBusyState
+    EventsManager.ExitBusyState
 
     Exit Sub
 
@@ -106,15 +106,15 @@ Public Sub clickSortTables(ByRef control As IRibbonControl)
 
     If ActiveSheet Is Nothing Then Exit Sub
     sheetName = ActiveSheet.Name
-    Set svc = SetupEventsManager.EventSetupService
+    Set svc = EventsManager.EventSetupService
 
     On Error GoTo Cleanup
 
-    SetupEventsManager.EnterBusyState
+    EventsManager.EnterBusyState
     svc.SortTables sheetName
 
 Cleanup:
-    SetupEventsManager.ExitBusyState
+    EventsManager.ExitBusyState
 End Sub
 
 '@Description("Insert a list row at the active position")
@@ -129,15 +129,15 @@ Public Sub clickInsertRow(ByRef control As IRibbonControl)
 
     sheetName = ActiveSheet.Name
     Set targetCell = Selection
-    Set svc = SetupEventsManager.EventSetupService
+    Set svc = EventsManager.EventSetupService
 
     On Error GoTo Cleanup
 
-    SetupEventsManager.EnterBusyState
+    EventsManager.EnterBusyState
     svc.InsertRows sheetName, targetCell
 
 Cleanup:
-    SetupEventsManager.ExitBusyState
+    EventsManager.ExitBusyState
 End Sub
 
 '@Description("Delete the current list row when the active cell belongs to a table")
@@ -156,15 +156,15 @@ Public Sub clickDelLoRows(ByRef control As IRibbonControl)
 
     sheetName = ActiveSheet.Name
     Set targetCell = Selection
-    Set svc = SetupEventsManager.EventSetupService
+    Set svc = EventsManager.EventSetupService
 
     On Error GoTo Cleanup
 
-    SetupEventsManager.EnterBusyState
+    EventsManager.EnterBusyState
     svc.DeleteRows sheetName, targetCell
 
 Cleanup:
-    SetupEventsManager.ExitBusyState
+    EventsManager.ExitBusyState
 End Sub
 
 '@Description("Delete the current list column when the active cell belongs to a table")
@@ -187,11 +187,11 @@ Public Sub clickDelLoColumn(ByRef control As IRibbonControl)
 
     On Error GoTo Cleanup
 
-    SetupEventsManager.EnterBusyState
+    EventsManager.EnterBusyState
     SetupHelpers.DeleteListColumnAt sheetName, targetCell
 
 Cleanup:
-    SetupEventsManager.ExitBusyState
+    EventsManager.ExitBusyState
 End Sub
 
 
@@ -203,18 +203,18 @@ Public Sub clickResetTag(ByRef control As IRibbonControl)
 
    On Error GoTo Handler
 
-   SetupEventsManager.EnterBusyState
+   EventsManager.EnterBusyState
 
    Set prep = SetupPreparation.Create(ThisWorkbook)
    prep.ResetUpdatedRegistry
 
-   SetupEventsManager.ExitBusyState
+   EventsManager.ExitBusyState
    MsgBox "Done!", vbInformation
 
    Exit Sub
 Handler:
     Debug.Print "clickResetTag: "; Err.Number; Err.Description
-    SetupEventsManager.ExitBusyState
+    EventsManager.ExitBusyState
 End Sub
 
 '@Description("Callback for editLang onChange: add translation language columns")
@@ -240,11 +240,11 @@ Public Sub clickAddLang(ByRef control As IRibbonControl, ByRef text As String)
         Exit Sub
     End If
 
-    Set svc = SetupEventsManager.EventSetupService
+    Set svc = EventsManager.EventSetupService
 
     On Error GoTo Handler
 
-    SetupEventsManager.EnterBusyState calculateOnSave:=False
+    EventsManager.EnterBusyState calculateOnSave:=False
 
     svc.UnprotectSetupSheet TRADSHEETNAME
     sheetUnlocked = True
@@ -261,7 +261,7 @@ Cleanup:
     On Error Resume Next
     If sheetUnlocked Then svc.ProtectSetupSheet TRADSHEETNAME
     On Error GoTo 0
-    SetupEventsManager.ExitBusyState
+    EventsManager.ExitBusyState
     If success Then MsgBox "Done!", vbInformation
     Exit Sub
 
@@ -297,11 +297,11 @@ Public Sub clickAddTrans(ByRef control As IRibbonControl)
         Exit Sub
     End If
 
-    Set svc = SetupEventsManager.EventSetupService
+    Set svc = EventsManager.EventSetupService
 
     On Error GoTo Handler
 
-    SetupEventsManager.EnterBusyState calculateOnSave:=False
+    EventsManager.EnterBusyState calculateOnSave:=False
 
     svc.UnprotectSetupSheet TRADSHEETNAME
     sheetUnlocked = True
@@ -323,7 +323,7 @@ Cleanup:
     On Error Resume Next
     If sheetUnlocked Then svc.ProtectSetupSheet TRADSHEETNAME
     On Error GoTo 0
-    SetupEventsManager.ExitBusyState
+    EventsManager.ExitBusyState
     Exit Sub
 
 Handler:
@@ -352,7 +352,7 @@ Public Sub clickTransSetup(ByRef control As IRibbonControl)
         Exit Sub
     End If
 
-    Set svc = SetupEventsManager.EventSetupService
+    Set svc = EventsManager.EventSetupService
 
     'Armed before the first unprotect. A failure between the unprotect and the
     'language prompt used to leave the Translations sheet open with no message.
@@ -387,7 +387,7 @@ Public Sub clickTransSetup(ByRef control As IRibbonControl)
         GoTo Cleanup
     End If
 
-    SetupEventsManager.EnterBusyState calculateOnSave:=False
+    EventsManager.EnterBusyState calculateOnSave:=False
 
     Set translator = TranslationObject.Create(translationsTable, selectedLanguage)
     svc.ApplySetupTranslation translator
@@ -400,7 +400,7 @@ Cleanup:
     On Error Resume Next
     If translationsUnlocked Then svc.ProtectSetupSheet TRADSHEETNAME
     On Error GoTo 0
-    SetupEventsManager.ExitBusyState
+    EventsManager.ExitBusyState
     If success Then MsgBox "Done!", vbInformation
     Exit Sub
 
@@ -453,13 +453,13 @@ Public Sub clickExport(ByRef control As IRibbonControl)
     Dim exportPath As String
     Dim analysisSheet As String
 
-    Set svc = SetupEventsManager.EventSetupService
+    Set svc = EventsManager.EventSetupService
 
     On Error GoTo Handler
 
     analysisSheet = SetupHelpers.ResolveSetupSheetName("ana")
 
-    SetupEventsManager.EnterBusyState
+    EventsManager.EnterBusyState
 
     Set service = SetupImport.Create(ThisWorkbook.FullName)
 
@@ -470,7 +470,7 @@ Public Sub clickExport(ByRef control As IRibbonControl)
 
     exportPath = service.LastExportFile
 
-    SetupEventsManager.ExitBusyState
+    EventsManager.ExitBusyState
 
     If LenB(exportPath) > 0 Then
         MsgBox "Setup exported to: " & vbCrLf & exportPath, vbInformation
@@ -483,7 +483,7 @@ Handler:
     On Error Resume Next
     svc.ProtectSetupSheet SetupHelpers.ResolveSetupSheetName("ana")
     On Error GoTo 0
-    SetupEventsManager.ExitBusyState
+    EventsManager.ExitBusyState
     Debug.Print "clickExport: "; Err.Number; Err.Description
     MsgBox "Failed to export the setup: " & Err.Description, vbCritical
 End Sub
@@ -524,14 +524,14 @@ Public Sub clickImportFile(ByRef control As IRibbonControl)
     Set sheets = SetupHelpers.BuildSelectedSheets(True, True, True, True, True)
     Set originalSheet = ActiveSheet
 
-    SetupEventsManager.EnterBusyState calculateOnSave:=False
+    EventsManager.EnterBusyState calculateOnSave:=False
 
     service.ImportFromWorkbook pass, sheets
     SetupHelpers.PostImportMaintenance
     success = True
 
 Cleanup:
-    SetupEventsManager.ExitBusyState
+    EventsManager.ExitBusyState
     If Not originalSheet Is Nothing Then originalSheet.Activate
     Application.ScreenUpdating = True
     If success Then MsgBox "Import Done!"
@@ -547,11 +547,11 @@ End Sub
 Public Sub clickCheck(ByRef control As IRibbonControl)
     On Error GoTo Cleanup
 
-    SetupEventsManager.EnterBusyState
+    EventsManager.EnterBusyState
     SetupHelpers.CheckTheSetup
 
 Cleanup:
-    SetupEventsManager.ExitBusyState
+    EventsManager.ExitBusyState
 End Sub
 
 '@section Formatter
@@ -612,16 +612,16 @@ Public Sub clickDevInitialize(ByRef control As IRibbonControl)
 
    On Error GoTo Cleanup
 
-   SetupEventsManager.EnterBusyState
+   EventsManager.EnterBusyState
 
    Set prep = SetupPreparation.Create(ThisWorkbook)
    prep.Prepare RibbonDev.EnsureDevelopment()
 
-   SetupEventsManager.ExitBusyState
+   EventsManager.ExitBusyState
    MsgBox "Done!", vbInformation
    Exit Sub
 
 Cleanup:
-   SetupEventsManager.ExitBusyState
+   EventsManager.ExitBusyState
    Debug.Print "clickDevInitialize: "; Err.Number; Err.Description
 End Sub

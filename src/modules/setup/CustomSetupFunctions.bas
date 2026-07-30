@@ -5,7 +5,7 @@ Option Explicit
 '@Folder("User Define Functions")
 
 Private Function EventService() As EventSetup
-    Set EventService = SetupEventsManager.EventSetupService
+    Set EventService = EventsManager.EventSetupService
 End Function
 
 '@section Headers

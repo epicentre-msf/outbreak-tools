@@ -309,16 +309,16 @@ suites:
       # compile and the runner shows the opaque -50.
       - name: EventSetup
     modules:
-      # SetupEventsManager holds the single EventSetup instance and the
+      # EventsManager holds the single EventSetup instance and the
       # busy-state counter, which is why it is a module and not a class:
       # module-level state is what ribbon callbacks and worksheet functions both
-      # reach. TestSetupEventsManager drives the counter, the nesting and the
+      # reach. TestEventsManager drives the counter, the nesting and the
       # snapshot round trip, so the module has to be in the workbook.
       # It names EventSetup (above), ApplicationState (`general`) and
       # HiddenNames (baked in). Its public names clash with nothing already in
       # the workbook -- LinelistEventsManager declares the same ones and is not
       # registered.
-      - SetupEventsManager
+      - EventsManager
     tests:
       - module: TestSetupTranslationsTable
         covers: [SetupTranslationsTable]
@@ -338,7 +338,7 @@ suites:
       # costliest module in the loop.
       #
       # What parked it: Session 34 added TestEventSetup and
-      # TestSetupEventsManager, and the full 37-module run then sat on the
+      # TestEventsManager, and the full 37-module run then sat on the
       # runner's 600-second Apple Events cap -- one run wrote its results and the
       # next two returned nothing at all. The numbers reconcile exactly, so
       # nothing green was given up: 1524 + 137 = 1661 assertions and 514 + 38 =
@@ -354,8 +354,8 @@ suites:
       # helper calls are unqualified, so they resolve to TestHelpersLite.
       - module: TestEventSetup
         covers: [EventSetup]
-      - module: TestSetupEventsManager
-        covers: [SetupEventsManager]
+      - module: TestEventsManager
+        covers: [EventsManager]
 
   # --- analyses (Analysis) ---------------------------------------------------
   # Opened by SetupImport, which names Analysis and cannot reach it from
