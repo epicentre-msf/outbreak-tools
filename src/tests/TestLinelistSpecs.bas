@@ -116,7 +116,7 @@ Private Sub TestPrepareRequiresImportService()
     Dim errNumber As Long
 
     On Error Resume Next
-        Specs.Prepare Nothing
+        Specs.Prepare Nothing, vbNullString
         errNumber = Err.Number
     On Error GoTo 0
 

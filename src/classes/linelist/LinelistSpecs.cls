@@ -167,6 +167,18 @@ Public Property Set InternalWorkbook(ByVal specsWorkbook As Workbook)
     Set this.specsWkb = specsWorkbook
 End Property
 
+'@label:prepared
+'@prop-title Whether Prepare has run on this instance
+'@details
+'Prepare imports the setup workbook into the linelist and points the
+'collaborators at it. Linelist refuses to build until that has happened, and
+'this is the flag it reads.
+'@return Boolean. True once Prepare has completed.
+'@export
+Public Property Get Prepared() As Boolean
+    Prepared = this.prepared
+End Property
+
 '@section State management
 '===============================================================================
 '@description Cache invalidation for collaborator objects, translations, and categories.

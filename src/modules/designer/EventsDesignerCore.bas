@@ -169,7 +169,7 @@ Public Sub clickImpPass(ByRef control As IRibbonControl)
     Set importBook = Workbooks.Open(io.File(), ReadOnly:=False)
     Set importer = Passwords.Create(importBook.Worksheets(1))
     Set target = Passwords.Create(ThisWorkbook.Worksheets("__pass"))
-    target.Import importer
+    target.ImportFrom importer
 
     MsgBox "Done!", vbInformation + vbOKOnly, PROMPT_TITLE
 
@@ -205,7 +205,7 @@ Public Sub clickImpStyle(ByRef control As IRibbonControl)
 
     Dim store As HiddenNames
     Set store = HiddenNames.Create(ThisWorkbook)
-    store.Add TAG_FORMATTER_IMPORTED, "Yes"
+    store.EnsureName TAG_FORMATTER_IMPORTED, "Yes", HiddenNameTypeString
 
     MsgBox "Done!", vbInformation + vbOKOnly, PROMPT_TITLE
 

@@ -1093,10 +1093,9 @@ Public Sub AddHeader()
                (Not RangeExists("SECTION_" & tabId)) Then
 
                 If tablType = ScopeSpatioTemporal Then
-                    nGeo = 5
-                    On Error Resume Next
-                    nGeo = CLng(specs.Value("n geo"))
-                    On Error GoTo 0
+                    ' GeoCount carries the default of 5 and clamps to 1..20, so
+                    ' an empty cell no longer raises out of CLng.
+                    nGeo = specs.GeoCount()
                     nbShift = nGeo + 14
                 Else
                     nbShift = 7

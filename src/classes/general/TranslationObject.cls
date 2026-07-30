@@ -24,9 +24,9 @@ Option Explicit
 'the first column and returns the value from the active language column.
 'Supports plain text, formula-aware translation (quoted chunks only),
 'range bulk-translation, and user-form caption translation.
-'Each public call reads the table once into memory and matches every
-'value against that copy, so a call costs the same two worksheet reads
-'whatever the number of values it translates.
+'The table is read once into memory and every value is matched against that
+'copy. The copy is kept until the table changes shape or Refresh is called, so
+'a run that translates a thousand strings reads the worksheet twice.
 '@depends BetterArray, Checking
 '@version 1.0 (2026-02-09)
 
@@ -41,6 +41,8 @@ Private Type TTranslationObject
     lookupTags() As String
     lookupValues() As String
     lookupCount As Long
+    lookupSignature As String
+    lookupLoaded As Boolean
 End Type
 
 Private this As TTranslationObject
@@ -417,20 +419,65 @@ Private Function LanguageIndex() As Long
     Next idx
 End Function
 
+'@label:refresh
+'@sub-title Drop the copy held in memory
+'@details
+'The next translation reads the table again. Call this after writing into the
+'translation table through anything other than this object.
+'@export
+Public Sub Refresh()
+    this.lookupLoaded = False
+    this.lookupSignature = vbNullString
+End Sub
+
+'@label:table-signature
+'@sub-title What the copy in memory was read from
+'@details
+'The table name, the address of its body and the target language. A row added
+'or removed, a column added or removed, a table replaced or a language switched
+'all change it, and each one is a reason to read the table again.
+'@return String. The signature of the table as it stands now.
+Private Function TableSignature() As String
+    Dim bodyRange As Range
+
+    If this.transLo Is Nothing Then Exit Function
+
+    'A table with no data row has no body range, which is a state of its own.
+    On Error Resume Next
+    Set bodyRange = this.transLo.DataBodyRange
+    On Error GoTo 0
+
+    TableSignature = this.transLo.Name & "|" & this.transLng & "|" & _
+                     IIf(bodyRange Is Nothing, "empty", bodyRange.Address(External:=True))
+End Function
+
 '@label:refresh-lookup
 '@sub-title Read the tags and the active language column into memory
 '@details
-'Called at the start of every public translation call. The table can be
-'edited while this object is alive, so the copy is never kept between
-'calls; inside a call it serves every value.
+'Called at the start of every public translation call. The copy is kept between
+'calls and reread when the table it came from changes shape or the language
+'moves. Building one analysis sheet asks for four translations per chart, and
+'every one of them used to read the whole table.
+'
+'THE LIMIT OF THIS
+'-------------------------------------------------------------------------------
+'A value typed over an existing cell leaves the shape of the table alone, so
+'the copy does not notice it. Refresh drops the copy for a caller that has just
+'done that.
 Private Sub RefreshLookup()
     Dim bodyRange As Range
     Dim bodyBlock As Variant
     Dim languageColumn As Long
     Dim rowCount As Long
     Dim idx As Long
+    Dim signature As String
+
+    signature = TableSignature()
+    If this.lookupLoaded And StrComp(signature, this.lookupSignature, vbBinaryCompare) = 0 Then Exit Sub
 
     this.lookupCount = 0
+    this.lookupLoaded = True
+    this.lookupSignature = signature
 
     If this.transLo Is Nothing Then Exit Sub
 

@@ -394,15 +394,21 @@ Public Sub Format(Optional ByVal valuesTitle As String = vbNullString, _
 
     Dim co As ChartObject
     Dim sh As Worksheet
-    Dim coef As Long
-    Dim heightCoef As Long
+    Dim coef As Double
+    Dim heightCoef As Double
 
     Set co = graphChart
     Set sh = Wksh()
 
+    'Both factors are fractional. Declared As Long, 1.75 became 2 and every
+    'height coefficient below 1.5 became 0 or 1 -- a spatial chart summarising
+    'five geographic units got a coefficient of 0.48, which rounded to zero and
+    'gave a chart of no height at all. The floor keeps a small chart at its
+    'normal size and lets a large one grow.
     coef = 1
     If (scope = GraphScopeTimeSeries) Then coef = 1.75
-    heightCoef = IIf(heightFactor <= 1, 1, (heightFactor + 1) * 0.08)
+    heightCoef = (heightFactor + 1) * 0.08
+    If heightCoef < 1 Then heightCoef = 1
 
     'Reapply the width and height
     co.width = CW * coef
@@ -550,12 +556,36 @@ End Function
 '===============================================================================
 '@description Logging and validation support via the Checking interface.
 
+'@label:graph-key
+'@sub-title A name for this chart that no other chart shares
+'@details
+'AnalysisOutput builds one chart per table and one per time series graph, and
+'the caller of a checking merges them all into one report. Checking.Add raises
+'on a duplicate key, so a key made of a bare counter took the whole generation
+'down on the second chart that filed anything. The display name is used when
+'the caller gave one; otherwise the cell the chart sits on names it, and every
+'chart of a sheet sits on a cell of its own.
+'@return String. The identifier used in every key this instance files.
+Private Function GraphKey() As String
+    If LenB(Name()) > 0 Then
+        GraphKey = Name()
+        Exit Function
+    End If
+
+    If Not this.strtRng Is Nothing Then
+        GraphKey = this.strtRng.Address(False, False)
+        Exit Function
+    End If
+
+    GraphKey = "unplaced"
+End Function
+
 '@label:log-info
 '@sub-title Record a diagnostic entry in the internal checking store
 '@details
-'Lazily creates the Checking instance on first use and appends the
-'message using a monotonically increasing counter key. The checking
-'store is exposed through HasCheckings and CheckingValues.
+'Lazily creates the Checking instance on first use and appends the message
+'under a key naming this class, this chart and a counter. The checking store is
+'exposed through HasCheckings and CheckingValues.
 '@param label String. The message to record.
 '@param scope Optional Byte. Severity level from CheckingLogType. Defaults to checkingNote.
 Private Sub LogInfo(ByVal label As String, _
@@ -563,13 +593,14 @@ Private Sub LogInfo(ByVal label As String, _
 
     Dim checkName As String
 
-    checkName = "CustomTable " & Name() & " object trace"
+    checkName = "Graph " & GraphKey() & " object trace"
 
     'First, instantiate the internalChecks object
     If internalChecks Is Nothing Then Set internalChecks = Checking.Create(checkName)
 
     'Add new information to the checking object
-    internalChecks.Add Cstr(checkCounter), label, scope
+    internalChecks.Add "Graphs-" & GraphKey() & "-" & CStr(checkCounter), _
+                       label, scope
     checkCounter = checkCounter + 1
 
     If Not this.hasChecks Then this.hasChecks = True

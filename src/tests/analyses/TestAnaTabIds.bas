@@ -38,6 +38,11 @@ Private Const OUTPUT_SHEET As String = "AnaIdsOutput"
 Private Const REGISTRY_TABLE As String = "ana_registry"
 Private Const FIXTURE_BLOCK As String = "A1:AZ200"
 
+' A scope value outside the four the class routes on. It used to be the
+' tables-only member of the scope enum, which was a build stage wearing the
+' type of a scope and has moved to AnalysisOutput.
+Private Const UNKNOWN_SCOPE As Byte = 9
+
 Private Assert As CustomTest
 
 '@section Fixture helpers
@@ -486,13 +491,13 @@ Public Sub TestAddGraphInfoRefusesAnUnknownScope()
     Set lo = sh.ListObjects(REGISTRY_TABLE)
 
     On Error Resume Next
-    RegisterSeries ids, AnalysisScopeTimeSeriesTablesOnly, "G1", "$D$2"
+    RegisterSeries ids, UNKNOWN_SCOPE, "G1", "$D$2"
     errNumber = Err.Number
     errText = Err.Description
     On Error GoTo 0
 
     Assert.AreEqual CLng(ProjectError.InvalidArgument), errNumber, _
-                    "The tables-only scope should raise InvalidArgument" & _
+                    "A scope outside the four should raise InvalidArgument" & _
                     " - description was [" & errText & "]"
     Assert.IsTrue IsEmpty(lo.DataBodyRange.Cells(1, 1)), _
                   "A refused scope should leave the registry empty"
@@ -517,13 +522,13 @@ Public Sub TestWriteGraphsRefusesAnUnknownScope()
     Set ids = AnaTabIds.Create(sh, check:=True)
 
     On Error Resume Next
-    ids.WriteGraphs OutputSheet(), AnalysisScopeTimeSeriesTablesOnly, InputSheet()
+    ids.WriteGraphs OutputSheet(), UNKNOWN_SCOPE, InputSheet()
     errNumber = Err.Number
     errText = Err.Description
     On Error GoTo 0
 
     Assert.AreEqual CLng(ProjectError.InvalidArgument), errNumber, _
-                    "WriteGraphs should refuse the tables-only scope" & _
+                    "WriteGraphs should refuse a scope outside the four" & _
                     " - description was [" & errText & "]"
     Assert.AreEqual 0, OutputSheet().ChartObjects.Count, _
                     "A refused scope should draw nothing"

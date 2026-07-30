@@ -57,17 +57,20 @@ Private Const KIND_SERIES As String = "series"
 Private Const KIND_FORMAT As String = "format"
 
 '@description
-'Analysis scopes. The four storage scopes are the ones this class routes on,
-'and the fifth is the tables-only pass AnalysisOutput drives. This class is
+'Analysis scopes. Each one is a sheet of the generated linelist. This class is
 'the leaf that reads the value, so it owns the enum: AnalysisOutput and
 'LLExporter both name it, and the generated linelist carries this class
 'without carrying AnalysisOutput.
+'
+'A fifth member used to sit here, standing for the tables-only pass. It was a
+'build stage wearing the type of a scope, and four Select Case blocks that
+'route on a scope had no branch for it. AnalysisOutput owns that enum now,
+'under the name AnalysisBuildStage.
 Public Enum AnalysisScope
     AnalysisScopeTimeSeries = 1
     AnalysisScopeSpatial = 2
     AnalysisScopeNormal = 3
     AnalysisScopeSpatioTemporal = 4
-    AnalysisScopeTimeSeriesTablesOnly = 5
 End Enum
 
 '@description

@@ -305,14 +305,14 @@ End Sub
 'Reads the table scope and configuration from the cross-table's TableSpecs to
 'determine what kind of series to generate. The "flip" setting controls plot
 'direction: when flip is "yes", horizontal bars ("hbar") are used; otherwise
-'vertical bars ("bar") are the default. For spatio-temporal tables, the number
-'of columns is overridden by the "n geo" setting (defaulting to 5 if not
-'specified), and the section-level table ID (tabSecId) is captured for use as
-'row category ranges. After initializing fresh series arrays, dispatches to
-'BuildUnivariateSeries for ScopeUnivariate tables, or BuildMultiColumnSeries
-'for ScopeBivariate, ScopeSpatial, and ScopeSpatioTemporal tables.
-'@remarks The "n geo" override uses On Error Resume Next to gracefully handle
-'missing or non-numeric values, falling back to 5 columns.
+'vertical bars ("bar") are the default. For spatio-temporal tables the column
+'count is the table's geographic unit count, and the section-level table ID
+'(tabSecId) is captured for use as row category ranges. After initializing
+'fresh series arrays, dispatches to BuildUnivariateSeries for ScopeUnivariate
+'tables, or BuildMultiColumnSeries for ScopeBivariate, ScopeSpatial, and
+'ScopeSpatioTemporal tables.
+'@remarks TableSpecs.GeoCount carries the default of 5 and clamps the value to
+'1..20, so an empty or unreadable cell needs no guard here.
 Private Sub BuildSimpleSeries()
     Dim specs As TableSpecs
     Dim tabId As String
@@ -328,12 +328,11 @@ Private Sub BuildSimpleSeries()
     tabType = specs.TableScope
     nbCols = Table.NumberOfColumns
 
-    ' For spatio-temporal, column count comes from "n geo" setting
+    ' For spatio-temporal, the column count is the geographic unit count.
+    ' GeoCount carries the default of 5 and clamps to 1..20, so an empty cell
+    ' no longer raises out of CLng.
     If tabType = ScopeSpatioTemporal Then
-        nbCols = 5
-        On Error Resume Next
-        nbCols = CLng(specs.Value("n geo"))
-        On Error GoTo 0
+        nbCols = specs.GeoCount()
         tabSecId = specs.TableSectionId
     End If
 

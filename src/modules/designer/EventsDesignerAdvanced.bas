@@ -406,7 +406,11 @@ Public Sub clickGenerate()
 
     'Build the analyses in clickGenerate
     Set anaOut = AnalysisOutput.Create(specs.AnalysisObject.Wksh(), ll)
-    anaOut.WriteAnalysis AnalysisScopeTimeSeriesTablesOnly
+    ' All four analysis sheets. The call used to stop after the time series
+    ' tables, so the generated linelist carried no time series chart, no
+    ' navigation dropdown on that sheet, and two empty sheets where the spatial
+    ' and spatio-temporal analyses belong.
+    anaOut.WriteAnalysis AnalysisBuildStageAll
 
     'Flush Phase 3: analysis checkings
     If anaOut.HasCheckings Then

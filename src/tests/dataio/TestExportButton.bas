@@ -33,7 +33,7 @@ Private testSheet As Worksheet
 'module. Called once before the first test executes.
 '@ModuleInitialize
 Public Sub ModuleInitialize()
-    Set Assert = CustomTest.Create()
+    Set Assert = CustomTest.Create(ThisWorkbook)
 End Sub
 
 '@sub-title Tear down the module after all tests complete.

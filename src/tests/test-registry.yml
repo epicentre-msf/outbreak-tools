@@ -441,6 +441,10 @@ suites:
       - name: SpatialTables
       - name: CrossTableFormula
       - name: AnaTabIds
+      # TemporalSection holds the date bounds and the headers of one temporal
+      # analysis section. It names BetterArray alone, which is baked into the
+      # workbook, so it adds no folder to this block.
+      - name: TemporalSection
     tests:
       - module: TestAnalysis
         covers: [Analysis]
@@ -470,6 +474,11 @@ suites:
       # be selectable because WriteGraphs calls Application.GoTo.
       - module: TestAnaTabIds
         covers: [AnaTabIds]
+      # TestTemporalSection needs no fixture at all: the class it drives holds
+      # strings and a list, so the suite runs with no workbook, no linelist and
+      # no dictionary.
+      - module: TestTemporalSection
+        covers: [TemporalSection]
 
   # --- graphs (Graphs, for AnaTabIds) ----------------------------------------
   # A class row is resolved against src/classes/<folder>/, so Graphs needs a
