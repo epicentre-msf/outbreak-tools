@@ -19,15 +19,9 @@ Option Explicit
 '@section Enumerations
 '===============================================================================
 '@description
-'Analysis output scopes. Re-homed from the removed IAnalysisOutput interface;
-'depending on AnalysisOutput resolves these everywhere.
-Public Enum AnalysisScope
-    AnalysisScopeTimeSeries = 1
-    AnalysisScopeSpatial = 2
-    AnalysisScopeNormal = 3
-    AnalysisScopeSpatioTemporal = 4
-    AnalysisScopeTimeSeriesTablesOnly = 5
-End Enum
+'The analysis scopes live in AnaTabIds. That class routes on the value and the
+'generated linelist carries it, so one definition serves this class, the export
+'and the linelist. Depending on AnaTabIds resolves AnalysisScope everywhere.
 
 
 '@class AnalysisOutput
@@ -559,7 +553,6 @@ Private Sub WriteTable(ByVal loName As String, _
     Dim containsTimeSeries As Boolean
     Dim spatRng As Range
     Dim namObj As AnaTabIds
-    Dim tabRangesNames As BetterArray
     Dim goToSectionLabel As String
     Dim goToHeaderLabel As String
 
@@ -649,9 +642,6 @@ Private Sub WriteTable(ByVal loName As String, _
 
         LogInfo "Table " & tabId & " built (" & loName & ")"
 
-        Set tabRangesNames = tabl.NamedRangesList()
-        namObj.AddTableInfos scope, tabId, tabRangesNames
-
         'Mark the sheet as having at least one table
         If LenB(outshHn.ValueAsString("has_table")) = 0 Then
             outshHn.EnsureName "has_table", "yes", HiddenNameTypeString
@@ -684,7 +674,7 @@ Private Sub WriteTable(ByVal loName As String, _
                              grSpecs.SeriesColumnLabel(graphCounter), _
                              hardCodeLabels:=False
 
-                namObj.AddGraphInfo scope:=scope, tabId:=tabId, graphId:=tabId, _
+                namObj.AddGraphInfo scope:=scope, graphId:=tabId, _
                                     seriesName:=grSpecs.SeriesName(graphCounter), _
                                     seriesType:=grSpecs.SeriesType(graphCounter), _
                                     seriesPos:=grSpecs.SeriesPos(graphCounter), _
@@ -698,7 +688,7 @@ Private Sub WriteTable(ByVal loName As String, _
                       valuesTitle:=specs.Value("label"), hardCodeLabels:=False, _
                       scope:=scope, heightFactor:=grHeight
 
-            namObj.AddGraphFormat scope:=scope, tabId:=tabId, graphId:=tabId, _
+            namObj.AddGraphFormat scope:=scope, graphId:=tabId, _
                                   catTitle:="LABEL_ROW_CATEGORIES_" & tabId, _
                                   valuesTitle:=specs.Value("label"), hardCodeLabels:=False, _
                                   heightFactor:=grHeight
@@ -913,12 +903,13 @@ Private Sub WriteTimeSeriesGraphs(ByVal graphLoName As String, _
                              prefix:=tabPrefLabel.Item(seriesCounter), prefixOnly:=True
 
                 namObj.AddGraphInfo scope:=AnalysisScopeTimeSeries, _
-                                    tabId:=graphCounter, graphId:=graphCounter, _
+                                    graphId:=graphCounter, _
                                     seriesName:=tabSeries.Item(seriesCounter), _
                                     seriesType:=tabTypes.Item(seriesCounter), _
                                     seriesPos:=tabPos.Item(seriesCounter), _
                                     seriesLabel:=tabLabel.Item(seriesCounter), _
                                     seriesColumnLabel:=vbNullString, _
+                                    hardCodeLabels:=True, _
                                     outRangeAddress:=cellRng.Address, _
                                     prefix:=tabPrefLabel.Item(seriesCounter), _
                                     prefixOnly:=True
@@ -932,9 +923,10 @@ Private Sub WriteTimeSeriesGraphs(ByVal graphLoName As String, _
             cellRng.Value = plotTitle
 
             namObj.AddGraphFormat scope:=AnalysisScopeTimeSeries, _
-                                  tabId:=graphCounter, graphId:=graphCounter, _
+                                  graphId:=graphCounter, _
                                   catTitle:=trads.TranslatedValue("MSG_Period"), _
                                   valuesTitle:=trads.TranslatedValue("MSG_Values"), _
+                                  hardCodeLabels:=True, _
                                   plotTitle:=plotTitle
 
             ' Harvest graph checkings
@@ -1032,7 +1024,7 @@ Private Sub WriteSpatioTemporalGraph(ByVal loName As String, _
                          grSpecs.SeriesColumnLabel(graphCounter), _
                          hardCodeLabels:=False
 
-            namObj.AddGraphInfo scope:=AnalysisScopeSpatioTemporal, tabId:=tabId, _
+            namObj.AddGraphInfo scope:=AnalysisScopeSpatioTemporal, _
                                 graphId:=tabId, _
                                 seriesName:=grSpecs.SeriesName(graphCounter), _
                                 seriesType:=grSpecs.SeriesType(graphCounter), _
@@ -1047,7 +1039,7 @@ Private Sub WriteSpatioTemporalGraph(ByVal loName As String, _
                   valuesTitle:=specs.Value("label"), hardCodeLabels:=False, _
                   scope:=GraphScopeTimeSeries, plotTitle:=plotTitle
 
-        namObj.AddGraphFormat scope:=AnalysisScopeSpatioTemporal, tabId:=tabId, _
+        namObj.AddGraphFormat scope:=AnalysisScopeSpatioTemporal, _
                               graphId:=tabId, _
                               catTitle:="LABEL_ROW_CATEGORIES_" & tabId, _
                               valuesTitle:=specs.Value("label"), hardCodeLabels:=False, _

@@ -562,26 +562,16 @@ End Sub
 '   of exports, epi week start) — replaces the removed TemporarySheetUpdates.
 '2. Creates four ListObjects on the import report sheet for tracking sheets
 '   and variables not imported/found.
-'3. Creates twelve ListObjects on the analysis sheet (tab_ids, graph_ids,
-'   graph_formats for each of the four analysis scopes: uba, ts, sp,
-'   sptemp) plus four worksheet-level hidden names storing the translated
-'   analysis sheet names.
+'3. Asks AnaTabIds to build its registry table on the analysis sheet. That
+'   class reads the columns, so it writes the headers.
 Private Sub PrepareTemporarySheets()
     Dim outWkb As Workbook
     Dim sh As Worksheet
     Dim rng As Range
-    Dim cellRng As Range
-    Dim trads As TranslationObject
     Dim sheetName As String
-    Dim counter As Long
-    Dim namesArray As BetterArray
-    Dim actName As String
     Dim wkbNames As HiddenNames
-    Dim shNames As HiddenNames
 
     Set outWkb = OutputWkb
-    Set trads = this.specs.TransObject
-    Set namesArray = New BetterArray
 
     'Workbook-level hidden names for global flags (replaces TemporarySheetUpdates)
     Set wkbNames = HiddenNames.Create(outWkb)
@@ -625,72 +615,13 @@ Private Sub PrepareTemporarySheets()
         .ListObjects.Add(xlSrcRange, rng, , xlYes).Name = "reptab_varsNotTouch"
     End With
 
-    'Analysis table IDs sheet — create ListObjects + worksheet-level hidden names
+    'Analysis sheet — one registry table, built by the class that reads it.
+    'The analysis sheet names used to live here as worksheet-level hidden names
+    'as well. The export passes the sheet it copies from, and the workbook-level
+    'set LLTranslation writes is the one every other reader uses.
     sheetName = this.specs.TemporarySheetName(TempSheetAnalysis)
     Set sh = outWkb.Worksheets(sheetName)
-    Set cellRng = sh.Cells(1, 1)
-
-    namesArray.Clear
-    namesArray.Push "uba", "ts", "sp", "sptemp"
-
-    For counter = namesArray.LowerBound To namesArray.UpperBound
-        actName = namesArray.Item(counter)
-
-        'Table IDs ListObject
-        cellRng.Value = "tabId"
-        cellRng.Cells(1, 2).Value = "tabRange"
-        cellRng.Cells(1, 3).Value = "exportTable"
-
-        Set rng = sh.Range(cellRng, cellRng.Cells(2, 3))
-        sh.ListObjects.Add(xlSrcRange, rng, , xlYes).Name = "tab_ids_" & actName
-
-        'Graph IDs ListObject
-        Set cellRng = cellRng.Cells(1, 5)
-        cellRng.Value = "tabId"
-        cellRng.Cells(1, 2).Value = "graphId"
-        cellRng.Cells(1, 3).Value = "SeriesName"
-        cellRng.Cells(1, 4).Value = "SeriesType"
-        cellRng.Cells(1, 5).Value = "SeriesPos"
-        cellRng.Cells(1, 6).Value = "SeriesLabel"
-        cellRng.Cells(1, 7).Value = "SeriesColumnLabel"
-        cellRng.Cells(1, 8).Value = "hardCodeLabels"
-        cellRng.Cells(1, 9).Value = "outRangeAddress"
-        cellRng.Cells(1, 10).Value = "prefix"
-        cellRng.Cells(1, 11).Value = "prefixOnly"
-
-        Set rng = sh.Range(cellRng, cellRng.Cells(2, 11))
-        sh.ListObjects.Add(xlSrcRange, rng, , xlYes).Name = "graph_ids_" & actName
-
-        'Graph formats ListObject
-        Set cellRng = cellRng.Cells(1, 13)
-        cellRng.Value = "tabId"
-        cellRng.Cells(1, 2).Value = "graphId"
-        cellRng.Cells(1, 3).Value = "catTitle"
-        cellRng.Cells(1, 4).Value = "valuesTitle"
-        cellRng.Cells(1, 5).Value = "hardCodeLabels"
-        cellRng.Cells(1, 6).Value = "heightFactor"
-        cellRng.Cells(1, 7).Value = "plotTitle"
-
-        Set rng = sh.Range(cellRng, cellRng.Cells(2, 7))
-        sh.ListObjects.Add(xlSrcRange, rng, , xlYes).Name = "graph_formats_" & actName
-
-        Set cellRng = cellRng.Cells(1, 10)
-    Next
-
-    'Worksheet-level hidden names for analysis sheet name references
-    Set shNames = HiddenNames.Create(sh)
-    shNames.EnsureName "RNG_SheetUAName", _
-                       trads.TranslatedValue("LLSHEET_Analysis"), HiddenNameTypeString
-    shNames.SetValue "RNG_SheetUAName", trads.TranslatedValue("LLSHEET_Analysis")
-    shNames.EnsureName "RNG_SheetTSName", _
-                       trads.TranslatedValue("LLSHEET_TemporalAnalysis"), HiddenNameTypeString
-    shNames.SetValue "RNG_SheetTSName", trads.TranslatedValue("LLSHEET_TemporalAnalysis")
-    shNames.EnsureName "RNG_SheetSPName", _
-                       trads.TranslatedValue("LLSHEET_SpatialAnalysis"), HiddenNameTypeString
-    shNames.SetValue "RNG_SheetSPName", trads.TranslatedValue("LLSHEET_SpatialAnalysis")
-    shNames.EnsureName "RNG_SheetSPTempName", _
-                       trads.TranslatedValue("LLSHEET_SpatioTemporalAnalysis"), HiddenNameTypeString
-    shNames.SetValue "RNG_SheetSPTempName", trads.TranslatedValue("LLSHEET_SpatioTemporalAnalysis")
+    AnaTabIds.PrepareSheet sh
 End Sub
 
 '@label:initialise-workbook-names

@@ -18,36 +18,78 @@ Option Explicit
 
 '@class AnaTabIds
 '@description
-'Records analysis table named ranges and graph series metadata into
-'ListObjects on a hidden tracking worksheet. The tracking data is consumed
-'during export to recreate the full analysis structure (tables and charts)
-'on output worksheets. Manages three ListObject families (tab_ids_*,
-'graph_ids_*, graph_formats_*) across four analysis scopes (normal, time
-'series, spatial, spatio-temporal).
-'@depends CustomTable, Graphs, BetterArray, Formulas
-'@version 2025-01-15
+'Records the charts of the analysis sheets so the export can draw them again on
+'the sheets it creates, and copies the named ranges those charts read.
+'
+'ONE REGISTRY TABLE
+'-------------------------------------------------------------------------------
+'The tracking worksheet holds a single ListObject. Every row carries the scope
+'it belongs to and a kind: a series row describes one chart series, a format row
+'describes the look of one chart. The rows of one chart stay together because
+'they are appended in call order, and the reader starts a new chart when the
+'graph identifier changes.
+'
+'THE TABLE NAMES COME FROM THE WORKBOOK
+'-------------------------------------------------------------------------------
+'Every named range of an analysis table was created by CrossTable through
+'Range.Name, so the workbook already holds it. TransferNames reads the
+'workbook name collection, keeps the names that resolve to a range on the
+'analysis sheet, and creates each one at the same address on the output sheet.
+'The collection is walked once per export and bucketed by owning worksheet,
+'because the export asks for four sheets in turn.
+'@depends Graphs
+'@version 2026-07-30
 
 
 Private Type TAnaIds
     sh As Worksheet
     sealed As Boolean
+    registry As ListObject
+    namesBySheet As Collection
 End Type
 
 Private this As TAnaIds
 Private Const CLASS_NAME As String = "AnaTabIds"
 
-' Named ranges for sheet names
-Private Const RNGUASHEET As String = "RNG_SheetUAName"
-Private Const RNGTSSHEET As String = "RNG_SheetTSName"
-Private Const RNGSPSHEET As String = "RNG_SheetSPName"
-Private Const RNGSPTEMPSHEET As String = "RNG_SheetSPTempName"
+Private Const REGISTRY_TABLE As String = "ana_registry"
+Private Const REGISTRY_COLUMN_COUNT As Long = 16
+Private Const KIND_SERIES As String = "series"
+Private Const KIND_FORMAT As String = "format"
 
-' Scope for analysis ID operations
-Public Enum AnalysisIdsScope
-    AnalysisIdsScopeTimeSeries = 1
-    AnalysisIdsScopeSpatial = 2
-    AnalysisIdsScopeNormal = 3
-    AnalysisIdsScopeSpatioTemporal = 4
+'@description
+'Analysis scopes. The four storage scopes are the ones this class routes on,
+'and the fifth is the tables-only pass AnalysisOutput drives. This class is
+'the leaf that reads the value, so it owns the enum: AnalysisOutput and
+'LLExporter both name it, and the generated linelist carries this class
+'without carrying AnalysisOutput.
+Public Enum AnalysisScope
+    AnalysisScopeTimeSeries = 1
+    AnalysisScopeSpatial = 2
+    AnalysisScopeNormal = 3
+    AnalysisScopeSpatioTemporal = 4
+    AnalysisScopeTimeSeriesTablesOnly = 5
+End Enum
+
+'@description
+'Column positions of the registry table. The headers are written from this
+'enum by PrepareSheet, so one place decides both the layout and every read.
+Private Enum RegistryColumnIndex
+    RegistryScope = 1
+    RegistryKind = 2
+    RegistryGraphId = 3
+    RegistrySeriesName = 4
+    RegistrySeriesType = 5
+    RegistrySeriesPos = 6
+    RegistrySeriesLabel = 7
+    RegistrySeriesColumnLabel = 8
+    RegistryHardCodeLabels = 9
+    RegistryOutRangeAddress = 10
+    RegistryPrefix = 11
+    RegistryPrefixOnly = 12
+    RegistryCatTitle = 13
+    RegistryValuesTitle = 14
+    RegistryHeightFactor = 15
+    RegistryPlotTitle = 16
 End Enum
 
 '@section Instantiation
@@ -57,18 +99,15 @@ End Enum
 '@sub-title Create a new AnaTabIds instance bound to a tracking worksheet
 '@details
 'Factory method on the predeclared instance. Validates the worksheet reference
-'and optionally checks that all 12 tracking ListObjects (3 prefixes x 4 scopes)
-'and 4 sheet-name named ranges exist. Pass check as False to skip validation
-'when the tracking sheet is being built incrementally.
-'@param idsh Worksheet. The worksheet containing the tracking ListObjects and
-'sheet-name named ranges.
-'@param check Optional Boolean. When True, calls CheckRequirements to validate
-'all expected infrastructure. Defaults to True.
+'and, when asked, that the registry table is on the sheet. Pass check as False
+'while the linelist is still being built.
+'@param idsh Worksheet. The worksheet hosting the registry table.
+'@param check Optional Boolean. When True, calls CheckRequirements. Defaults
+'to True.
 '@return AnaTabIds. A fully initialised tracking instance.
 '@throws ProjectError.InvalidArgument When idsh is Nothing.
-'@throws ProjectError.InvalidArgument When check is True and any required
-'ListObject or named range is missing.
-'@depends CustomTable, BetterArray
+'@throws ProjectError.InvalidArgument When check is True and the registry
+'table is missing.
 '@export
 Public Function Create(ByVal idsh As Worksheet, _
                        Optional ByVal check As Boolean = True) As AnaTabIds
@@ -82,6 +121,36 @@ Public Function Create(ByVal idsh As Worksheet, _
     instance.Seal
     Set Create = instance
 End Function
+
+'@label:prepare-sheet
+'@sub-title Build the registry table on a tracking worksheet
+'@details
+'Called on the predeclared instance while the linelist is being built. Writes
+'the header row from RegistryColumnIndex and lists it as REGISTRY_TABLE. A
+'sheet that already carries the table is left as it is, so a second build over
+'the same workbook changes nothing.
+'@param idsh Worksheet. The worksheet to prepare.
+'@throws ProjectError.InvalidArgument When idsh is Nothing.
+'@export
+Public Sub PrepareSheet(ByVal idsh As Worksheet)
+    Dim headers As Variant
+    Dim headerStart As Range
+    Dim tableRange As Range
+    Dim counter As Long
+
+    If idsh Is Nothing Then ThrowError ProjectError.InvalidArgument, "Worksheet not defined"
+    If LoExists(idsh, REGISTRY_TABLE) Then Exit Sub
+
+    headers = RegistryHeaders()
+    Set headerStart = idsh.Cells(1, 1)
+
+    For counter = LBound(headers) To UBound(headers)
+        headerStart.Cells(1, counter + 1).Value = headers(counter)
+    Next
+
+    Set tableRange = idsh.Range(headerStart, headerStart.Cells(2, REGISTRY_COLUMN_COUNT))
+    idsh.ListObjects.Add(xlSrcRange, tableRange, , xlYes).Name = REGISTRY_TABLE
+End Sub
 
 
 '@section Internal Properties
@@ -112,128 +181,99 @@ End Property
 
 '@label:wksh
 '@prop-title Tracking worksheet reference
-'@details
-'Returns the worksheet that hosts the tracking ListObjects and sheet-name
-'named ranges.
 '@return Worksheet. The bound tracking worksheet.
 Public Property Get Wksh() As Worksheet
     Set Wksh = this.sh
 End Property
 
-'@section ListObject Access
+'@section Registry Access
 '===============================================================================
-'@description Routing helpers that resolve scope-specific ListObjects and worksheets.
+'@description The one table every read and every write goes through.
 
-'@label:actual-lo
-'@prop-title Resolve the tracking ListObject for a scope and prefix
-'@details
-'Maps the AnalysisIdsScope enum value to a suffix string (ts, sp, uba,
-'sptemp) and concatenates it with the prefix to form the ListObject name.
-'This is the central routing mechanism all tracking methods use.
-'@param scope Byte. AnalysisIdsScope value selecting the analysis type.
-'@param prefix Optional String. ListObject name prefix. Defaults to
-'"tab_ids_". Pass "graph_ids_" or "graph_formats_" for other families.
-'@return ListObject. The resolved tracking ListObject.
-'@remarks If the scope does not match any known case, actName remains
-'empty and the ListObject lookup will raise a runtime error.
-Private Property Get ActualLo(ByVal scope As Byte, _
-                              Optional ByVal prefix As String = "tab_ids_") As ListObject
-    Dim actName As String
+'@label:registry-headers
+'@sub-title The header row of the registry table, in column order
+'@return Variant. A zero-based array of REGISTRY_COLUMN_COUNT header names.
+Private Function RegistryHeaders() As Variant
+    RegistryHeaders = Array("scope", "kind", "graphId", _
+                            "seriesName", "seriesType", "seriesPos", _
+                            "seriesLabel", "seriesColumnLabel", "hardCodeLabels", _
+                            "outRangeAddress", "prefix", "prefixOnly", _
+                            "catTitle", "valuesTitle", "heightFactor", "plotTitle")
+End Function
 
-    Select Case scope
-    Case AnalysisIdsScopeTimeSeries
-        actName = "ts"
-    Case AnalysisIdsScopeSpatial
-        actName = "sp"
-    Case AnalysisIdsScopeNormal
-        actName = "uba"
-    Case AnalysisIdsScopeSpatioTemporal
-        actName = "sptemp"
-    End Select
-
-    Set ActualLo = Wksh().ListObjects(prefix & actName)
+'@label:registry
+'@prop-title Resolve the registry table, held after the first read
+'@return ListObject. The registry table of the tracking worksheet.
+'@throws ProjectError.InvalidArgument When the table is missing.
+Private Property Get Registry() As ListObject
+    If this.registry Is Nothing Then
+        If Not LoExists(Wksh(), REGISTRY_TABLE) Then _
+            ThrowError ProjectError.InvalidArgument, _
+                       "Table " & REGISTRY_TABLE & " is missing"
+        Set this.registry = Wksh().ListObjects(REGISTRY_TABLE)
+    End If
+    Set Registry = this.registry
 End Property
 
-'@label:actual-analysis-sheet
-'@prop-title Resolve the analysis output worksheet for a scope
+'@label:registry-values
+'@sub-title Read the whole registry table into memory
 '@details
-'Reads the sheet-name named range corresponding to the scope from the
-'tracking worksheet (RNG_SheetUAName, RNG_SheetTSName, RNG_SheetSPName,
-'or RNG_SheetSPTempName) and returns the matching worksheet from the
-'parent workbook.
-'@param scope Byte. AnalysisIdsScope value selecting the output sheet.
-'@return Worksheet. The analysis output worksheet for the given scope.
-'@remarks If the named range value does not correspond to an existing
-'worksheet, the Worksheets collection access raises a runtime error.
-Private Property Get ActualAnalysisSheet(ByVal scope As Byte) As Worksheet
-    Dim sheetName As String
-    Dim sh As Worksheet
-
-    Set sh = Wksh()
-
-    Select Case scope
-    Case AnalysisIdsScopeNormal
-        sheetName = sh.Range(RNGUASHEET).Value
-    Case AnalysisIdsScopeTimeSeries
-        sheetName = sh.Range(RNGTSSHEET).Value
-    Case AnalysisIdsScopeSpatial
-        sheetName = sh.Range(RNGSPSHEET).Value
-    Case AnalysisIdsScopeSpatioTemporal
-        sheetName = sh.Range(RNGSPTEMPSHEET).Value
-    End Select
-
-    Set ActualAnalysisSheet = sh.Parent.Worksheets(sheetName)
-End Property
-
-'@section Table Tracking
-'===============================================================================
-'@description Methods for registering table named ranges for export.
-
-'@label:add-table-infos
-'@sub-title Register table named ranges in the tracking ListObject
-'@details
-'Writes entries into the scope-specific tab_ids_ ListObject. Each entry
-'consists of the table identifier in column 1, the named range name in
-'column 2, and the export flag in column 3. The range names are bulk-
-'written via BetterArray.ToExcelRange. The ListObject is resized after
-'appending. Exits immediately when tabRangesNames is empty.
-'@param scope Byte. AnalysisIdsScope value selecting the tracking ListObject.
-'@param tabId String. Identifier of the analysis table.
-'@param tabRangesNames BetterArray. Named range names to register.
-'@param exportTable Optional String. Export flag ("yes" or "no").
-'Defaults to "yes".
-'@export
-Public Sub AddTableInfos(ByVal scope As Byte, _
-                           ByVal tabId As String, _
-                           ByVal tabRangesNames As BetterArray, _
-                           Optional ByVal exportTable As String = "yes")
+'One read serves the whole walk of one scope. A table with no rows answers
+'Empty, which the callers test with IsEmpty.
+'@return Variant. A two-dimensional array of the data rows, or Empty.
+Private Function RegistryValues() As Variant
     Dim lo As ListObject
-    Dim loRng As Range
-    Dim cellRng As Range
-    Dim counter As Long
-    Dim sh As Worksheet
 
-    If tabRangesNames.Length = 0 Then Exit Sub
+    Set lo = Registry()
+    If lo.DataBodyRange Is Nothing Then Exit Function
+    RegistryValues = lo.DataBodyRange.Value2
+End Function
 
-    Set lo = ActualLo(scope)
-    Set loRng = lo.Range
-    Set sh = Wksh()
+'@label:append-row
+'@sub-title Append one row to the registry table in a single write
+'@details
+'The tracking worksheet holds this one table and nothing else, so growing the
+'table over the cells below it is safe. A freshly built table carries one blank
+'row and the first entry goes into it.
+'@param fields Variant. A one-dimensional array of REGISTRY_COLUMN_COUNT
+'values, in RegistryColumnIndex order.
+Private Sub AppendRow(ByRef fields As Variant)
+    Dim lo As ListObject
+    Dim rowCount As Long
 
-    If loRng.Cells(2, 1).Value = vbNullString Then
-        Set cellRng = loRng.Cells(1, 1)
-    Else
-        Set cellRng = loRng.Cells(loRng.Rows.Count, 1)
+    Set lo = Registry()
+
+    If lo.DataBodyRange Is Nothing Then
+        lo.Resize lo.Range.Resize(2)
+        lo.DataBodyRange.Rows(1).Value2 = fields
+        Exit Sub
     End If
 
-    tabRangesNames.ToExcelRange cellRng.Offset(1, 1)
+    rowCount = lo.DataBodyRange.Rows.Count
 
-    For counter = 1 To tabRangesNames.Length
-        cellRng.Offset(counter).Value = tabId
-        cellRng.Offset(counter, 2).Value = exportTable
-    Next
+    If rowCount = 1 And IsEmpty(lo.DataBodyRange.Cells(1, 1)) Then
+        lo.DataBodyRange.Rows(1).Value2 = fields
+        Exit Sub
+    End If
 
-    Set loRng = sh.Range(loRng.Cells(1, 1), cellRng.Offset(counter - 1, 2))
-    lo.Resize loRng
+    lo.Resize lo.Range.Resize(rowCount + 2)
+    lo.DataBodyRange.Rows(rowCount + 1).Value2 = fields
+End Sub
+
+'@label:validate-scope
+'@sub-title Refuse a scope this class cannot route
+'@param scope Byte. AnalysisScope value to test.
+'@throws ProjectError.InvalidArgument When the scope is outside the four
+'storage scopes.
+Private Sub ValidateScope(ByVal scope As Byte)
+    Select Case scope
+    Case AnalysisScopeTimeSeries, AnalysisScopeSpatial, _
+         AnalysisScopeNormal, AnalysisScopeSpatioTemporal
+        Exit Sub
+    Case Else
+        ThrowError ProjectError.InvalidArgument, _
+                   "Unknown analysis scope: " & scope
+    End Select
 End Sub
 
 '@section Graph Tracking
@@ -241,340 +281,409 @@ End Sub
 '@description Methods for registering graph series and formatting metadata.
 
 '@label:add-graph-info
-'@sub-title Register a graph series row in the tracking ListObject
+'@sub-title Register a graph series row in the registry
 '@details
-'Writes one series entry into the scope-specific graph_ids_ ListObject.
-'The 11 columns store: tabId, graphId, seriesName, seriesType, seriesPos,
-'seriesLabel, seriesColumnLabel, hardCodeLabels (as CLng 0/1),
-'outRangeAddress, prefix, and prefixOnly (as CLng 0/1). The method
-'appends after the last populated row and resizes the ListObject.
-'@param scope Byte. AnalysisIdsScope value selecting the tracking ListObject.
-'@param tabId String. Identifier of the parent analysis table.
-'@param graphId String. Identifier of the graph receiving this series.
+'Writes one series row. The rows of one chart have to stay together, and they
+'do because every writer registers the series of a chart one after the other.
+'The two flags are stored as 0 or 1 so they survive a save and reopen.
+'@param scope Byte. AnalysisScope value the chart belongs to.
+'@param graphId String. Identifier of the chart receiving this series.
 '@param seriesName String. Named range name for the series data.
-'@param seriesType String. Chart series type (e.g. "xlLine").
+'@param seriesType String. Chart series type (e.g. "line").
 '@param seriesPos String. Axis position indicator for the series.
 '@param seriesLabel String. Named range name for category labels.
 '@param seriesColumnLabel String. Named range name for column header labels.
 '@param hardCodeLabels Boolean. When True, labels are written as literals.
-'@param outRangeAddress String. Cell address for graph placement on output.
+'@param outRangeAddress String. Cell address for chart placement on output.
 '@param prefix Optional String. Admin-level prefix for spatial graphs.
 'Defaults to vbNullString.
 '@param prefixOnly Optional Boolean. When True, only the prefix is used as
 'the label. Defaults to False.
-'@remarks Boolean parameters are stored as Long (0/1) via CLng for reliable
-'cross-session persistence in Excel ListObject cells.
+'@throws ProjectError.InvalidArgument When the scope is unknown.
 '@export
 Public Sub AddGraphInfo(ByVal scope As Byte, _
-                          ByVal tabId As String, _
-                          ByVal graphId As String, _
-                          ByVal seriesName As String, _
-                          ByVal seriesType As String, _
-                          ByVal seriesPos As String, _
-                          ByVal seriesLabel As String, _
-                          ByVal seriesColumnLabel As String, _
-                          ByVal hardCodeLabels As Boolean, _
-                          ByVal outRangeAddress As String, _
-                          Optional ByVal prefix As String = vbNullString, _
-                          Optional ByVal prefixOnly As Boolean = False)
-    Dim lo As ListObject
-    Dim loRng As Range
-    Dim cellRng As Range
-    Dim sh As Worksheet
+                        ByVal graphId As String, _
+                        ByVal seriesName As String, _
+                        ByVal seriesType As String, _
+                        ByVal seriesPos As String, _
+                        ByVal seriesLabel As String, _
+                        ByVal seriesColumnLabel As String, _
+                        ByVal hardCodeLabels As Boolean, _
+                        ByVal outRangeAddress As String, _
+                        Optional ByVal prefix As String = vbNullString, _
+                        Optional ByVal prefixOnly As Boolean = False)
+    Dim fields As Variant
 
-    Set lo = ActualLo(scope, prefix:="graph_ids_")
-    Set loRng = lo.Range
-    Set sh = Wksh()
+    ValidateScope scope
 
-    If loRng.Cells(2, 1).Value = vbNullString Then
-        Set cellRng = loRng.Cells(2, 1)
-    Else
-        Set cellRng = loRng.Cells(loRng.Rows.Count + 1, 1)
-    End If
+    fields = EmptyRow()
+    fields(RegistryScope) = CLng(scope)
+    fields(RegistryKind) = KIND_SERIES
+    fields(RegistryGraphId) = graphId
+    fields(RegistrySeriesName) = seriesName
+    fields(RegistrySeriesType) = seriesType
+    fields(RegistrySeriesPos) = seriesPos
+    fields(RegistrySeriesLabel) = seriesLabel
+    fields(RegistrySeriesColumnLabel) = seriesColumnLabel
+    fields(RegistryHardCodeLabels) = CLng(hardCodeLabels)
+    fields(RegistryOutRangeAddress) = outRangeAddress
+    fields(RegistryPrefix) = prefix
+    fields(RegistryPrefixOnly) = CLng(prefixOnly)
 
-    cellRng.Value = tabId
-    cellRng.Cells(1, 2).Value = graphId
-    cellRng.Cells(1, 3).Value = seriesName
-    cellRng.Cells(1, 4).Value = seriesType
-    cellRng.Cells(1, 5).Value = seriesPos
-    cellRng.Cells(1, 6).Value = seriesLabel
-    cellRng.Cells(1, 7).Value = seriesColumnLabel
-    cellRng.Cells(1, 8).Value = CLng(hardCodeLabels)
-    cellRng.Cells(1, 9).Value = outRangeAddress
-    cellRng.Cells(1, 10).Value = prefix
-    cellRng.Cells(1, 11).Value = CLng(prefixOnly)
-
-    Set loRng = sh.Range(loRng.Cells(1, 1), cellRng.Cells(1, 11))
-    lo.Resize loRng
+    AppendRow fields
 End Sub
 
 '@label:add-graph-format
-'@sub-title Register graph formatting metadata in the tracking ListObject
+'@sub-title Register the look of one chart in the registry
 '@details
-'Writes one format entry into the scope-specific graph_formats_ ListObject.
-'The 7 columns store: tabId, graphId, catTitle, valuesTitle, hardCodeLabels
-'(as CLng 0/1), heightFactor, and plotTitle. The method appends after the
-'last populated row and resizes the ListObject. The graphId links this
-'format entry to its corresponding series entries in graph_ids_.
-'@param scope Byte. AnalysisIdsScope value selecting the tracking ListObject.
-'@param tabId String. Identifier of the parent analysis table.
-'@param graphId String. Identifier of the graph to format.
+'Writes one format row, found again by the graph identifier when the chart has
+'all its series.
+'@param scope Byte. AnalysisScope value the chart belongs to.
+'@param graphId String. Identifier of the chart to format.
 '@param catTitle String. Category (X) axis title.
 '@param valuesTitle String. Value (Y) axis title.
 '@param hardCodeLabels Boolean. When True, axis labels are written as literals.
-'@param heightFactor Optional Long. Multiplier for graph height. Defaults to 1.
+'@param heightFactor Optional Long. Multiplier for chart height. Defaults to 1.
 '@param plotTitle Optional String. Chart title. Defaults to vbNullString.
+'@throws ProjectError.InvalidArgument When the scope is unknown.
 '@export
 Public Sub AddGraphFormat(ByVal scope As Byte, _
-                            ByVal tabId As String, _
-                            ByVal graphId As String, _
-                            ByVal catTitle As String, _
-                            ByVal valuesTitle As String, _
-                            ByVal hardCodeLabels As Boolean, _
-                            Optional ByVal heightFactor As Long = 1, _
-                            Optional ByVal plotTitle As String = vbNullString)
-    Dim lo As ListObject
-    Dim loRng As Range
-    Dim cellRng As Range
-    Dim sh As Worksheet
+                          ByVal graphId As String, _
+                          ByVal catTitle As String, _
+                          ByVal valuesTitle As String, _
+                          ByVal hardCodeLabels As Boolean, _
+                          Optional ByVal heightFactor As Long = 1, _
+                          Optional ByVal plotTitle As String = vbNullString)
+    Dim fields As Variant
 
-    Set lo = ActualLo(scope, prefix:="graph_formats_")
-    Set loRng = lo.Range
-    Set sh = Wksh()
+    ValidateScope scope
 
-    If loRng.Cells(2, 1).Value = vbNullString Then
-        Set cellRng = loRng.Cells(2, 1)
-    Else
-        Set cellRng = loRng.Cells(loRng.Rows.Count + 1, 1)
-    End If
+    fields = EmptyRow()
+    fields(RegistryScope) = CLng(scope)
+    fields(RegistryKind) = KIND_FORMAT
+    fields(RegistryGraphId) = graphId
+    fields(RegistryHardCodeLabels) = CLng(hardCodeLabels)
+    fields(RegistryCatTitle) = catTitle
+    fields(RegistryValuesTitle) = valuesTitle
+    fields(RegistryHeightFactor) = heightFactor
+    fields(RegistryPlotTitle) = plotTitle
 
-    cellRng.Value = tabId
-    cellRng.Cells(1, 2).Value = graphId
-    cellRng.Cells(1, 3).Value = catTitle
-    cellRng.Cells(1, 4).Value = valuesTitle
-    cellRng.Cells(1, 5).Value = CLng(hardCodeLabels)
-    cellRng.Cells(1, 6).Value = heightFactor
-    cellRng.Cells(1, 7).Value = plotTitle
-
-    Set loRng = sh.Range(loRng.Cells(1, 1), cellRng.Cells(1, 7))
-    lo.Resize loRng
+    AppendRow fields
 End Sub
 
-'@section Range Transfer and Graph Writing
-'===============================================================================
-'@description Helpers for transferring named ranges and rendering charts.
+'@label:empty-row
+'@sub-title A registry row with every column blank
+'@return Variant. A one-based array of REGISTRY_COLUMN_COUNT empty strings.
+Private Function EmptyRow() As Variant
+    Dim fields As Variant
+    Dim counter As Long
 
-'@label:range-exists
-'@sub-title Check whether a named range exists on a worksheet
-'@details
-'Attempts to resolve the name via sh.Range(rngName) with error trapping.
-'Returns True when the name resolves to a valid Range. Also picks up
-'workbook-level names resolved through the worksheet.
-'@param sh Worksheet. The worksheet to check.
-'@param rngName String. The named range to look for.
-'@return Boolean. True when the named range exists.
-Private Function RangeExists(ByVal sh As Worksheet, ByVal rngName As String) As Boolean
-    Dim rng As Range
-    On Error Resume Next
-    Set rng = sh.Range(rngName)
-    On Error GoTo 0
-    RangeExists = (Not rng Is Nothing)
+    ReDim fields(1 To REGISTRY_COLUMN_COUNT)
+    For counter = 1 To REGISTRY_COLUMN_COUNT
+        fields(counter) = vbNullString
+    Next
+
+    EmptyRow = fields
 End Function
 
-'@label:transfer-range
-'@sub-title Copy a named range definition from source to output worksheet
+'@section Name Transfer
+'===============================================================================
+'@description Copying the named ranges of an analysis sheet to the output sheet.
+
+'@label:transfer-names
+'@sub-title Recreate every named range of an analysis sheet on the output sheet
 '@details
-'Recreates a named range on the output worksheet using the same cell address
-'as the source. This is the core mechanism for export: graphs and formulas
-'that reference these names work correctly on the new sheet. Silently exits
-'when the source range does not exist.
-'@param inpsh Worksheet. The source worksheet owning the named range.
-'@param outsh Worksheet. The destination worksheet for the new name.
-'@param rngName String. The named range to transfer.
-Private Sub TransferRange(ByVal inpsh As Worksheet, ByVal outsh As Worksheet, _
-                           ByVal rngName As String)
-    Dim inpRng As Range
-    Dim outRng As Range
+'A chart reads its values and its labels through named ranges, so the output
+'sheet needs the same names at the same addresses. The names are read from the
+'workbook collection: every one of them was created on the analysis sheet by
+'the table builder, which is why nothing has to be stored to find them again.
+'A name holding a value has no range behind it, so it is skipped, and so is a
+'name that no longer resolves.
+'@param inpsh Worksheet. The analysis sheet the names live on.
+'@param outsh Worksheet. The sheet the names are recreated on.
+'@throws ProjectError.InvalidArgument When either worksheet is Nothing.
+'@export
+Public Sub TransferNames(ByVal inpsh As Worksheet, ByVal outsh As Worksheet)
+    Dim bucket As Collection
+    Dim entry As Variant
 
-    If Not RangeExists(inpsh, rngName) Then Exit Sub
+    If inpsh Is Nothing Then _
+        ThrowError ProjectError.InvalidArgument, "Input worksheet not defined"
+    If outsh Is Nothing Then _
+        ThrowError ProjectError.InvalidArgument, "Output worksheet not defined"
 
-    Set inpRng = inpsh.Range(rngName)
-    Set outRng = outsh.Range(inpRng.Address)
-    outRng.Name = rngName
+    Set bucket = SheetNames(inpsh)
+
+    For Each entry In bucket
+        outsh.Range(entry(1)).Name = entry(0)
+    Next entry
 End Sub
 
-'@label:write-table-names
-'@sub-title Transfer all tracked named ranges to the output worksheet
+'@label:sheet-names
+'@sub-title The tracked names of one worksheet, name and address
 '@details
-'Iterates the tab_ids_ ListObject for the scope and calls TransferRange
-'for each named range name found in column 2. The source analysis sheet
-'is resolved via ActualAnalysisSheet. The loop continues until an empty
-'cell is hit in column 1.
-'@param outsh Worksheet. The destination worksheet for the named ranges.
-'@param scope Byte. AnalysisIdsScope value selecting the tracking table.
-Private Sub WriteTableNames(ByVal outsh As Worksheet, ByVal scope As Byte)
-    Dim inpsh As Worksheet
-    Dim tabLo As ListObject
-    Dim cellRng As Range
-    Dim rngName As String
+'Answers from the bucket built on the first call. The export asks for four
+'sheets in turn and the workbook name collection holds thousands of entries,
+'so it is walked once.
+'@param inpsh Worksheet. The worksheet to answer for.
+'@return Collection. Array(simple name, address) entries, empty when the sheet
+'carries no name.
+Private Function SheetNames(ByVal inpsh As Worksheet) As Collection
+    Dim bucket As Collection
 
-    Set inpsh = ActualAnalysisSheet(scope)
-    Set tabLo = ActualLo(scope)
-    Set cellRng = tabLo.Range.Cells(2, 1)
+    If this.namesBySheet Is Nothing Then BuildNameBuckets inpsh.Parent
 
-    Do While Not IsEmpty(cellRng)
-        rngName = cellRng.Offset(, 1).Value
-        TransferRange inpsh, outsh, rngName
-        Set cellRng = cellRng.Offset(1)
-    Loop
-End Sub
-
-'@label:add-series
-'@sub-title Read one series entry and add it to a graph object
-'@details
-'Reads series metadata from a row in the graph_ids_ ListObject and calls
-'gr.AddSeries and gr.AddLabels. The cellRng points to the graphId cell
-'(column 2); all other values are read as offsets. Boolean values are
-'read with error trapping because they are stored as numeric 0/1.
-'@param gr Graphs. The chart object receiving the series.
-'@param cellRng Range. The graphId cell in the current tracking row.
-'@remarks Offset numbering skips column 9 (outRangeAddress, offset 7)
-'and jumps to offset 8 (prefix) and offset 9 (prefixOnly), matching
-'the 11-column layout stored by AddGraphInfo.
-Private Sub AddSeries(ByVal gr As Graphs, ByVal cellRng As Range)
-    Dim seriesName As String
-    Dim seriesType As String
-    Dim seriesPos As String
-    Dim seriesLabel As String
-    Dim seriesColumnLabel As String
-    Dim prefix As String
-    Dim prefixOnly As Boolean
-    Dim hardCodeLabels As Boolean
-
-    seriesName = cellRng.Offset(, 1).Value
-    seriesType = cellRng.Offset(, 2).Value
-    seriesPos = cellRng.Offset(, 3).Value
-    seriesLabel = cellRng.Offset(, 4).Value
-    seriesColumnLabel = cellRng.Offset(, 5).Value
-    prefix = cellRng.Offset(, 8).Value
-
+    Set bucket = Nothing
+    'A sheet with no tracked name has no bucket, and Collection answers a
+    'missing key by raising. This one call is what the trap covers.
     On Error Resume Next
-    hardCodeLabels = CBool(cellRng.Offset(, 6).Value)
-    prefixOnly = CBool(cellRng.Offset(, 9).Value)
+    Set bucket = this.namesBySheet(inpsh.Name)
     On Error GoTo 0
 
-    gr.AddSeries rngName:=seriesName, chrtType:=seriesType, axisPos:=seriesPos
-    gr.AddLabels catName:=seriesLabel, lblName:=seriesColumnLabel, _
-                 hardCodeLabels:=hardCodeLabels, prefix:=prefix, _
-                 prefixOnly:=prefixOnly
-End Sub
+    If bucket Is Nothing Then Set bucket = New Collection
+    Set SheetNames = bucket
+End Function
 
-'@label:add-format
-'@sub-title Apply formatting settings to a built graph
+'@label:build-name-buckets
+'@sub-title Walk the workbook names once and bucket them by owning worksheet
 '@details
-'Reads format metadata from the graph_formats_ CustomTable by graphId
-'and calls gr.Format. Maps AnalysisIdsScope to GraphScope: TimeSeries
-'and SpatioTemporal map to GraphScopeTimeSeries, Spatial maps to
-'GraphScopeSpatial, and all others default to GraphScopeNormal.
-'@param gr Graphs. The chart object to format.
-'@param grTab CustomTable. Wrapper around graph_formats_ ListObject,
-'keyed by "graphId".
-'@param scope Byte. AnalysisIdsScope value for scope-to-GraphScope mapping.
-'@param graphId String. The graph identifier for the format lookup.
-'@remarks heightFactor defaults to 1 and hardCodeLabels defaults to False
-'when the stored values cannot be converted.
-Private Sub AddFormat(ByVal gr As Graphs, ByVal grTab As CustomTable, _
-                       ByVal scope As Byte, ByVal graphId As String)
-    Dim valuesTitle As String
-    Dim catTitle As String
-    Dim plotTitle As String
-    Dim heightFactor As Long
-    Dim grscope As Byte
-    Dim hardCodeLabels As Boolean
+'The owning sheet is read off RefersToRange. An analysis sheet name is
+'translated and can carry spaces and apostrophes, which makes the RefersTo text
+'a poor thing to match on. A name that holds a value has no range behind it and
+'raises, which is how the two are told apart.
+'@param wkb Workbook. The workbook whose names are read.
+Private Sub BuildNameBuckets(ByVal wkb As Workbook)
+    Dim definition As Name
+    Dim target As Range
+    Dim bucket As Collection
+    Dim sheetKey As String
 
-    heightFactor = 1
-    On Error Resume Next
-    heightFactor = CLng(grTab.Value(colName:="heightFactor", keyName:=graphId))
-    On Error GoTo 0
+    Set this.namesBySheet = New Collection
 
-    grscope = Switch( _
-        (scope = AnalysisIdsScopeTimeSeries Or scope = AnalysisIdsScopeSpatioTemporal), _
-            GraphScopeTimeSeries, _
-        scope = AnalysisIdsScopeSpatial, GraphScopeSpatial, _
-        True, GraphScopeNormal)
+    For Each definition In wkb.Names
+        Set target = Nothing
+        'A constant name, a name over several sheets and a broken name all
+        'raise here. The trap covers this one call and nothing else.
+        On Error Resume Next
+        Set target = definition.RefersToRange
+        On Error GoTo 0
 
-    On Error Resume Next
-    hardCodeLabels = CBool(grTab.Value(colName:="hardCodeLabels", keyName:=graphId))
-    On Error GoTo 0
+        If Not target Is Nothing Then
+            sheetKey = target.Worksheet.Name
 
-    valuesTitle = grTab.Value(colName:="valuesTitle", keyName:=graphId)
-    catTitle = grTab.Value(colName:="catTitle", keyName:=graphId)
-    plotTitle = grTab.Value(colName:="plotTitle", keyName:=graphId)
+            Set bucket = Nothing
+            On Error Resume Next
+            Set bucket = this.namesBySheet(sheetKey)
+            On Error GoTo 0
 
-    gr.Format valuesTitle:=valuesTitle, catTitle:=catTitle, _
-              plotTitle:=plotTitle, scope:=grscope, _
-              heightFactor:=heightFactor, hardCodeLabels:=hardCodeLabels
+            If bucket Is Nothing Then
+                Set bucket = New Collection
+                this.namesBySheet.Add bucket, sheetKey
+            End If
+
+            bucket.Add Array(SimpleName(definition.Name), target.Address)
+        End If
+    Next definition
 End Sub
+
+'@label:simple-name
+'@sub-title The name without its worksheet qualifier
+'@details
+'A worksheet-scoped name reads as "Sheet name!LOCAL_NAME". The output sheet
+'gets the part after the separator.
+'@param fullName String. The name as the Names collection reports it.
+'@return String. The name with no qualifier.
+Private Function SimpleName(ByVal fullName As String) As String
+    Dim position As Long
+
+    position = InStrRev(fullName, "!")
+    If position = 0 Then
+        SimpleName = fullName
+    Else
+        SimpleName = Mid$(fullName, position + 1)
+    End If
+End Function
+
+'@section Graph Writing
+'===============================================================================
+'@description Drawing the tracked charts on an output worksheet.
 
 '@label:write-graphs
-'@sub-title Write all tracked graphs to the output worksheet
+'@sub-title Recreate the named ranges and the charts of one scope
 '@details
-'First calls WriteTableNames to transfer all named ranges, then iterates
-'the graph_ids_ ListObject to build charts. A new Graphs object is
-'created at each graph boundary (detected when graphId changes). Each
-'series row is processed by AddSeries. When the loop ends, the final
-'graph is formatted via AddFormat. Format metadata is read from the
-'graph_formats_ ListObject wrapped in an CustomTable keyed by "graphId".
-'@param outsh Worksheet. The output worksheet receiving the chart objects.
-'@param scope Byte. AnalysisIdsScope value selecting the tracking tables.
-'@remarks The loop walks column 2 (graphId) of graph_ids_. The
-'outRangeAddress is read from column 9 (offset 7 from column 2).
-'Application.GoTo scrolls to the chart position, which is required for
-'correct chart placement in some Excel versions.
+'Copies the named ranges of the analysis sheet first, because a chart cannot
+'read a series before its name exists. Then walks the series rows of the scope
+'in registry order and starts a new chart every time the graph identifier
+'changes. Each chart is formatted once it holds all its series.
+'@param outsh Worksheet. The output worksheet receiving the charts.
+'@param scope Byte. AnalysisScope value selecting the registry rows.
+'@param inpsh Worksheet. The analysis sheet the names are copied from. The
+'caller holds it already, which is why it is passed in.
+'@throws ProjectError.InvalidArgument When a worksheet is Nothing or the
+'scope is unknown.
+'@remarks Application.GoTo scrolls to the chart position, which some Excel
+'versions need for correct chart placement. It also means the output sheet
+'has to be selectable.
 '@export
-Public Sub WriteGraphs(ByVal outsh As Worksheet, ByVal scope As Byte)
+Public Sub WriteGraphs(ByVal outsh As Worksheet, ByVal scope As Byte, _
+                       ByVal inpsh As Worksheet)
     Dim gr As Graphs
-    Dim cellRng As Range
+    Dim values As Variant
     Dim outCellRng As Range
-    Dim grLo As ListObject
-    Dim grFormatTab As CustomTable
-    Dim grFormLo As ListObject
-    Dim newId As Boolean
-    Dim firstGraph As Boolean
     Dim graphId As String
-    Dim outRangeAddress As String
+    Dim previousId As String
+    Dim rowIndex As Long
 
-    WriteTableNames outsh, scope
+    ValidateScope scope
+    TransferNames inpsh, outsh
 
-    Set grLo = ActualLo(scope, prefix:="graph_ids_")
-    Set grFormLo = ActualLo(scope, prefix:="graph_formats_")
-    Set grFormatTab = CustomTable.Create(grFormLo, idCol:="graphId")
+    values = RegistryValues()
+    If IsEmpty(values) Then Exit Sub
 
-    Set cellRng = grLo.Range.Cells(2, 2)
+    For rowIndex = LBound(values, 1) To UBound(values, 1)
+        If IsSeriesRow(values, rowIndex, scope) Then
+            graphId = CStr(values(rowIndex, RegistryGraphId))
 
-    Do While Not IsEmpty(cellRng)
-        firstGraph = (cellRng.Offset(-1).Value = "graphId")
-        newId = (cellRng.Offset(-1).Value <> cellRng.Value) And (Not firstGraph)
+            If graphId <> previousId Then
+                If Not gr Is Nothing Then ApplyFormat gr, values, scope, previousId
 
-        If newId And (Not gr Is Nothing) Then AddFormat gr, grFormatTab, scope, graphId
+                Set outCellRng = outsh.Range( _
+                    CStr(values(rowIndex, RegistryOutRangeAddress)))
+                Set gr = Graphs.Create(outsh, outCellRng)
+                Application.GoTo outCellRng
+                gr.Add
+                previousId = graphId
+            End If
 
-        graphId = cellRng.Value
-        outRangeAddress = cellRng.Offset(, 7).Value
-
-        If newId Or firstGraph Then
-            Set outCellRng = outsh.Range(outRangeAddress)
-            Set gr = Graphs.Create(outsh, outCellRng)
-            Application.GoTo outCellRng
-            gr.Add
+            AddSeries gr, values, rowIndex
         End If
+    Next rowIndex
 
-        AddSeries gr, cellRng
-
-        If IsEmpty(cellRng.Offset(1)) Then AddFormat gr, grFormatTab, scope, graphId
-
-        Set cellRng = cellRng.Offset(1)
-    Loop
+    If Not gr Is Nothing Then ApplyFormat gr, values, scope, previousId
 End Sub
+
+'@label:is-series-row
+'@sub-title Test whether a registry row describes a series of this scope
+'@param values Variant. The registry rows.
+'@param rowIndex Long. The row to test.
+'@param scope Byte. The scope being written.
+'@return Boolean. True for a series row of that scope.
+Private Function IsSeriesRow(ByRef values As Variant, ByVal rowIndex As Long, _
+                             ByVal scope As Byte) As Boolean
+    If ReadLong(values(rowIndex, RegistryScope), 0) <> scope Then Exit Function
+    IsSeriesRow = (CStr(values(rowIndex, RegistryKind)) = KIND_SERIES)
+End Function
+
+'@label:add-series
+'@sub-title Read one series row and add it to a chart
+'@param gr Graphs. The chart receiving the series.
+'@param values Variant. The registry rows.
+'@param rowIndex Long. The series row to read.
+Private Sub AddSeries(ByVal gr As Graphs, ByRef values As Variant, _
+                      ByVal rowIndex As Long)
+
+    gr.AddSeries rngName:=CStr(values(rowIndex, RegistrySeriesName)), _
+                 chrtType:=CStr(values(rowIndex, RegistrySeriesType)), _
+                 axisPos:=CStr(values(rowIndex, RegistrySeriesPos))
+
+    gr.AddLabels catName:=CStr(values(rowIndex, RegistrySeriesLabel)), _
+                 lblName:=CStr(values(rowIndex, RegistrySeriesColumnLabel)), _
+                 hardCodeLabels:=ReadBoolean(values(rowIndex, RegistryHardCodeLabels)), _
+                 prefix:=CStr(values(rowIndex, RegistryPrefix)), _
+                 prefixOnly:=ReadBoolean(values(rowIndex, RegistryPrefixOnly))
+End Sub
+
+'@label:apply-format
+'@sub-title Apply the format row of one chart
+'@details
+'Finds the format row of the graph identifier inside the scope. A chart with
+'no format row keeps the chart defaults.
+'@param gr Graphs. The chart to format.
+'@param values Variant. The registry rows.
+'@param scope Byte. The scope being written.
+'@param graphId String. The chart whose format row is wanted.
+Private Sub ApplyFormat(ByVal gr As Graphs, ByRef values As Variant, _
+                        ByVal scope As Byte, ByVal graphId As String)
+    Dim rowIndex As Long
+    Dim graphScope As Byte
+
+    rowIndex = FormatRowIndex(values, scope, graphId)
+    If rowIndex = 0 Then Exit Sub
+
+    graphScope = Switch( _
+        (scope = AnalysisScopeTimeSeries Or scope = AnalysisScopeSpatioTemporal), _
+            GraphScopeTimeSeries, _
+        scope = AnalysisScopeSpatial, GraphScopeSpatial, _
+        True, GraphScopeNormal)
+
+    gr.Format valuesTitle:=CStr(values(rowIndex, RegistryValuesTitle)), _
+              catTitle:=CStr(values(rowIndex, RegistryCatTitle)), _
+              plotTitle:=CStr(values(rowIndex, RegistryPlotTitle)), _
+              scope:=graphScope, _
+              heightFactor:=ReadLong(values(rowIndex, RegistryHeightFactor), 1), _
+              hardCodeLabels:=ReadBoolean(values(rowIndex, RegistryHardCodeLabels))
+End Sub
+
+'@label:format-row-index
+'@sub-title Locate the format row of one chart
+'@param values Variant. The registry rows.
+'@param scope Byte. The scope being written.
+'@param graphId String. The chart to look for.
+'@return Long. The row index, or 0 when the chart has no format row.
+Private Function FormatRowIndex(ByRef values As Variant, ByVal scope As Byte, _
+                                ByVal graphId As String) As Long
+    Dim rowIndex As Long
+
+    For rowIndex = LBound(values, 1) To UBound(values, 1)
+        If ReadLong(values(rowIndex, RegistryScope), 0) = scope Then
+            If CStr(values(rowIndex, RegistryKind)) = KIND_FORMAT Then
+                If CStr(values(rowIndex, RegistryGraphId)) = graphId Then
+                    FormatRowIndex = rowIndex
+                    Exit Function
+                End If
+            End If
+        End If
+    Next rowIndex
+End Function
+
+'@section Typed Reads
+'===============================================================================
+'@description Turning a stored cell value back into a typed value, with no
+'silent trap.
+
+'@label:read-boolean
+'@sub-title Read a stored flag
+'@details
+'The writers store a flag as 0 or 1, so the numeric arm answers every value
+'this class has ever written. The text arms cover a value typed by hand into
+'the sheet, and anything else answers False.
+'@param value Variant. The cell value.
+'@return Boolean. The stored flag.
+Private Function ReadBoolean(ByVal value As Variant) As Boolean
+    If IsEmpty(value) Then Exit Function
+
+    If IsNumeric(value) Then
+        ReadBoolean = (CDbl(value) <> 0)
+        Exit Function
+    End If
+
+    Select Case LCase$(CStr(value))
+    Case "true", "yes", "1"
+        ReadBoolean = True
+    End Select
+End Function
+
+'@label:read-long
+'@sub-title Read a stored whole number
+'@param value Variant. The cell value.
+'@param defaultValue Long. What an empty or non-numeric cell answers.
+'@return Long. The stored number, or the default.
+Private Function ReadLong(ByVal value As Variant, ByVal defaultValue As Long) As Long
+    ReadLong = defaultValue
+    If IsEmpty(value) Then Exit Function
+    If Not IsNumeric(value) Then Exit Function
+    ReadLong = CLng(value)
+End Function
 
 '@section Validation
 '===============================================================================
@@ -582,79 +691,32 @@ End Sub
 
 '@label:lo-exists
 '@sub-title Check whether a ListObject exists on a worksheet
-'@details
-'Uses the standard VBA error-trapping pattern to test for ListObject
-'existence. Used by CheckRequirements to validate the tracking sheet.
 '@param sh Worksheet. The worksheet to search.
 '@param loName String. The ListObject name to look for.
 '@return Boolean. True when the ListObject exists.
 Private Function LoExists(ByVal sh As Worksheet, ByVal loName As String) As Boolean
     Dim lo As ListObject
+
+    'ListObjects answers a missing name by raising. The trap covers this one
+    'call and the test that follows reads the outcome.
     On Error Resume Next
     Set lo = sh.ListObjects(loName)
     On Error GoTo 0
-    LoExists = Not (lo Is Nothing)
-End Function
 
-'@label:sheet-exists
-'@sub-title Check whether a worksheet exists in a workbook
-'@details
-'Uses the standard VBA error-trapping pattern to test for worksheet
-'existence. Used by CheckRequirements to verify that the sheets
-'referenced by the named ranges actually exist.
-'@param wb Workbook. The workbook to search.
-'@param sheetName String. The worksheet name to look for.
-'@return Boolean. True when the worksheet exists.
-Private Function SheetExists(ByVal wb As Workbook, ByVal sheetName As String) As Boolean
-    Dim sh As Worksheet
-    On Error Resume Next
-    Set sh = wb.Worksheets(sheetName)
-    On Error GoTo 0
-    SheetExists = Not (sh Is Nothing)
+    LoExists = Not (lo Is Nothing)
 End Function
 
 '@label:check-requirements
 '@sub-title Validate the tracking worksheet infrastructure
 '@details
-'Checks for all 12 tracking ListObjects (tab_ids_uba/sp/ts/sptemp,
-'graph_ids_uba/sp/ts/sptemp, graph_formats_uba/sp/ts/sptemp) and the
-'4 sheet-name named ranges (RNG_SheetUAName, RNG_SheetTSName,
-'RNG_SheetSPName, RNG_SheetSPTempName). Also verifies that each named
-'range value corresponds to an actual worksheet in the workbook.
+'Checks that the registry table is on the sheet. The export passes the sheet it
+'copies from, so no analysis sheet name is looked up here.
 '@param sh Worksheet. The tracking worksheet to validate.
-'@throws ProjectError.InvalidArgument When any ListObject, named range,
-'or referenced worksheet is missing.
+'@throws ProjectError.InvalidArgument When the registry table is missing.
 Private Sub CheckRequirements(ByVal sh As Worksheet)
-    Dim loArray As BetterArray
-    Dim counter As Long
-    Dim wb As Workbook
-    Dim actName As String
-    Dim rngArray As BetterArray
-    Dim shNames As HiddenNames
-
-    Set loArray = New BetterArray
-    loArray.Push "tab_ids_uba", "tab_ids_sp", "tab_ids_ts", "tab_ids_sptemp", _
-                 "graph_ids_uba", "graph_ids_sp", "graph_ids_ts", "graph_ids_sptemp", _
-                 "graph_formats_uba", "graph_formats_sp", "graph_formats_ts", "graph_formats_sptemp"
-
-    For counter = loArray.LowerBound To loArray.UpperBound
-        actName = loArray.Item(counter)
-        If Not LoExists(sh, actName) Then _
-            ThrowError ProjectError.InvalidArgument, "Table " & actName & " is missing"
-    Next
-
-    Set rngArray = New BetterArray
-    rngArray.Push RNGUASHEET, RNGTSSHEET, RNGSPSHEET, RNGSPTEMPSHEET
-    Set wb = sh.Parent
-    Set shNames = HiddenNames.Create(sh)
-
-    For counter = rngArray.LowerBound To rngArray.UpperBound
-        actName = rngArray.Item(counter)
-        If Not shNames.HasName(actName) Then _
-            ThrowError ProjectError.InvalidArgument, "Range " & actName & " is missing"
-        If Not SheetExists(wb, shNames.ValueAsString(actName)) Then _
-            ThrowError ProjectError.InvalidArgument, "Sheet for " & actName & " is missing"
-    Next
+    If Not LoExists(sh, REGISTRY_TABLE) Then _
+        ThrowError ProjectError.InvalidArgument, _
+                   "Table " & REGISTRY_TABLE & " is missing"
 End Sub
 
 '@section Error Handling

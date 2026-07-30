@@ -53,7 +53,6 @@ Private this As TCrossTable
 Private Const STANDARD_START_COL As Long = 3
 Private Const CLASS_NAME As String = "CrossTable"
 Private Const NB_ROWS_TIME_SERIES As Long = 56
-Private allRangeNames As BetterArray
 Private internalChecks As Checking
 
 ' Supplies the unique key every Checking.Add needs. It counts within one
@@ -207,17 +206,6 @@ End Property
 '@param col Long. The data column count to store.
 Private Property Let NumberOfColumns(ByVal col As Long)
     this.nbCols = col
-End Property
-
-'@label:named-ranges-list
-'@prop-title List of named range names created by this table.
-'@details
-'Returns a cloned BetterArray containing all the named range names that
-'were accumulated during the build process. Used by AnaTabIds to register
-'the ranges for export tracking.
-'@return BetterArray. The collection of named range names.
-Public Property Get NamedRangesList() As BetterArray
-    Set NamedRangesList = allRangeNames.Clone()
 End Property
 
 '@section Position Properties
@@ -1045,8 +1033,7 @@ End Sub
 'Behavior varies by table scope: univariate and bivariate write a title
 'and optional section header; global summary writes a shared label once;
 'temporal tables insert date controls and optional geo-level inputs;
-'spatial tables create admin-unit or health-facility dropdowns. This sub
-'also initializes the allRangeNames BetterArray.
+'spatial tables create admin-unit or health-facility dropdowns.
 '@remarks Row insertions shift the entire sheet down, which is why AddHeader must run
 'before AddRows, AddColumns, and NameRanges. For temporal tables, the date
 'controls are unlocked (Locked = False) so the user can interactively change
@@ -1071,8 +1058,6 @@ Public Sub AddHeader()
     Set specs = Specifications
     Set trans = Translations()
 
-    Set allRangeNames = New BetterArray
-
     startRw = StartRow
     tabId = specs.TableId
     tablType = specs.TableScope
@@ -1084,7 +1069,6 @@ Public Sub AddHeader()
         Case ScopeUnivariate, ScopeBivariate
             .Cells(startRw - 2, STANDARD_START_COL).Value = specs.Value("title")
             .Cells(startRw - 2, STANDARD_START_COL).Name = "TITLE_" & tabId
-            allRangeNames.Push "TITLE_" & tabId
 
             If specs.IsNewSection() And (Not RangeExists("SECTION_" & tabId)) Then
                 For counter = 1 To 3
@@ -1092,7 +1076,6 @@ Public Sub AddHeader()
                 Next
                 .Range("TITLE_" & tabId).Cells(-1, 1) = specs.Value("section")
                 .Range("TITLE_" & tabId).Cells(-1, 1).Name = "SECTION_" & tabId
-                allRangeNames.Push "SECTION_" & tabId
             End If
 
         Case ScopeGlobalSummary
@@ -1102,7 +1085,6 @@ Public Sub AddHeader()
                 Next
                 .Cells(startRw - 2, STANDARD_START_COL).Value = trans.TranslatedValue("MSG_GlobalSummary")
                 .Cells(startRw - 2, STANDARD_START_COL).Name = "ROWGS_SET"
-                allRangeNames.Push "ROWGS_SET"
             End If
 
         Case ScopeTimeSeries, ScopeSpatioTemporal
@@ -1125,7 +1107,6 @@ Public Sub AddHeader()
                 Next
                 .Cells(startRw - 2, StartColumn).Value = specs.Value("section")
                 .Cells(startRw - 2, StartColumn).Name = "SECTION_" & tabId
-                allRangeNames.Push "SECTION_" & tabId
 
                 Set rng = .Range("SECTION_" & tabId)
 
@@ -1134,7 +1115,6 @@ Public Sub AddHeader()
                     Set rng = rng.Offset(4)
                     rng.Value = trans.TranslatedValue("MSG_InputGeoLevels")
                     rng.Name = "INPUTSPTGEO_LABEL_" & tabId
-                    allRangeNames.Push "INPUTSPTGEO_LABEL_" & tabId
                     rng.Cells(1, 2).Value = nGeo
                     rng.Cells(1, 2).Name = "INPUTSPTGEO_NGEO_" & tabId
 
@@ -1156,7 +1136,6 @@ Public Sub AddHeader()
 
                     Set rng = .Range(cellRng.Cells(1, 1), cellRng.Cells(nGeo, 1))
                     rng.Name = "INPUTSPTGEO_USER_" & tabId
-                    allRangeNames.Push "INPUTSPTGEO_USER_" & tabId
                     rng.Locked = False
                     rng.Offset(, 1).Name = "INPUTPREVADM_USER_" & tabId
                     Set rng = cellRng.Offset(nGeo + 3)
@@ -1187,12 +1166,6 @@ Public Sub AddHeader()
                 rng.Cells(4, 11).Name = "VALIDATION_MAX_DATE_" & tabId
                 rng.Cells(4, 13).Name = "MIN_MIN_DATE_" & tabId
                 rng.Cells(4, 15).Name = "MAX_MAX_DATE_" & tabId
-
-                allRangeNames.Push "INFO_ANA_PERIOD_" & tabId, _
-                    "START_DATE_LABEL_" & tabId, "USER_START_DATE_" & tabId, _
-                    "INFO_START_DATE_" & tabId, "START_DATE_" & tabId, _
-                    "END_DATE_LABEL_" & tabId, "USER_END_DATE_" & tabId, _
-                    "INFO_END_DATE_" & tabId, "END_DATE_" & tabId
 
                 ' The formula writer binds the time unit dropdown to this same
                 ' name, and the two used to build it separately: this one
@@ -1273,14 +1246,10 @@ Public Sub AddHeader()
                     rng.Cells(1, 5).Name = "POPPREVFACT_" & tabId
                     rng.Cells(1, 5).Value = "0"
 
-                    allRangeNames.Push "DEVIDEPOP_" & tabId, "POPFACT_" & tabId, _
-                                        "ADM_DROPDOWN_" & tabId
-
                 ElseIf specs.SpatialTableScopes = "hf" Then
                     .Cells(startRw - 2, STANDARD_START_COL).Name = "HF_DROPDOWN_" & tabId
                     Set rng = .Range("HF_DROPDOWN_" & tabId)
                     rng.Cells(1, 1).Value = trans.TranslatedValue("MSG_HF")
-                    allRangeNames.Push "HF_DROPDOWN_" & tabId
                 End If
 
                 If specs.IsNewSection() Then
@@ -1289,13 +1258,11 @@ Public Sub AddHeader()
                     Next
                     rng.Cells(-3, 1).Value = specs.Value("section")
                     rng.Cells(-3, 1).Name = "SECTION_" & tabId
-                    allRangeNames.Push "SECTION_" & tabId
                 End If
 
                 .Rows(rng.Row - 1).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
                 rng.Cells(-1, 1).Value = specs.Value("title")
                 rng.Cells(-1, 1).Name = "TITLE_" & tabId
-                allRangeNames.Push "TITLE_" & tabId
             End If
 
         End Select
@@ -1316,8 +1283,8 @@ End Sub
 'time-period markers, per-column VALUES_COL_ and LABEL_COL_ ranges,
 'Missing/Total/Percent row and column ranges, intersection cells,
 'INTERIOR_VALUES_, OUTER_VALUES_ (spatial only), and COLUMN_CATEGORIES_.
-'All created range names are accumulated in the allRangeNames BetterArray
-'for retrieval via NamedRangesList.
+'Every name is created on the worksheet itself, which is where the export
+'reads them back from.
 '@throws ErrorUnexpectedState When NumberOfColumns is 0, indicating AddColumns was not called.
 '@remarks Exits immediately for ScopeGlobalSummary (which has no row categories or
 'column structure beyond the two fixed columns).
@@ -1367,8 +1334,6 @@ Public Sub NameRanges()
             Set catRng = RowsCategoriesRange(onlyCategories:=True, includeHeaders:=False)
             catRng.Name = "ROW_CATEGORIES_" & tabId
             catRng.Cells(0, 1).Name = "LABEL_ROW_CATEGORIES_" & tabId
-            allRangeNames.Push "LABEL_ROW_CATEGORIES_" & tabId
-            allRangeNames.Push "ROW_CATEGORIES_" & tabId
 
             If tablType = ScopeTimeSeries Or tablType = ScopeSpatioTemporal Then
                 Set rng = catRng.Offset(, -1)
@@ -1404,7 +1369,6 @@ Public Sub NameRanges()
 
         Do While (counter <= EndColumn) And (nbColCounter <= nbCols)
             rng.Name = "VALUES_COL_" & nbColCounter & "_" & tabId
-            allRangeNames.Push "VALUES_COL_" & nbColCounter & "_" & tabId
 
             Select Case tablType
             Case ScopeBivariate, ScopeTimeSeries, ScopeSpatial, ScopeSpatioTemporal
@@ -1414,17 +1378,14 @@ Public Sub NameRanges()
             End Select
 
             rng.Cells(labCol, 1).Name = "LABEL_COL_" & nbColCounter & "_" & tabId
-            allRangeNames.Push "LABEL_COL_" & nbColCounter & "_" & tabId
 
             Set rng = rng.Offset(, 1)
 
             If specs.HasPercentage Then
                 rng.Name = "PERC_COL_" & nbColCounter & "_" & tabId
-                allRangeNames.Push "PERC_COL_" & nbColCounter & "_" & tabId
 
                 If tablType = ScopeUnivariate Then
                     rng.Cells(labCol, 1).Name = "PERC_LABEL_COL_" & tabId
-                    allRangeNames.Push "PERC_LABEL_COL_" & tabId
                 End If
 
                 Set rng = rng.Offset(, 1)
@@ -1446,10 +1407,8 @@ Public Sub NameRanges()
             Set rng = RowRange(trans.TranslatedValue(tData.Item(counter)), includeHeaders:=True)
             If Not rng Is Nothing Then
                 rng.Name = cData.Item(counter) & "_ROW_" & tabId
-                allRangeNames.Push cData.Item(counter) & "_ROW_" & tabId
                 Set rng = RowRange(trans.TranslatedValue(tData.Item(counter)), includeHeaders:=False)
                 rng.Name = cData.Item(counter) & "_ROW_VALUES_" & tabId
-                allRangeNames.Push cData.Item(counter) & "_ROW_VALUES_" & tabId
             End If
 
             ' Column ranges (not for univariate)
@@ -1458,17 +1417,14 @@ Public Sub NameRanges()
                                       includeHeaders:=True, onlyCategories:=True)
                 If Not rng Is Nothing Then
                     rng.Name = cData.Item(counter) & "_COL_" & tabId
-                    allRangeNames.Push cData.Item(counter) & "_COL_" & tabId
                     rng.Cells(0, 1).Name = cData.Item(counter) & "_LABEL_COL_" & tabId
                     Set rng = ColumnRange(trans.TranslatedValue(tData.Item(counter)), _
                                           includeHeaders:=False, onlyCategories:=True)
                     rng.Name = cData.Item(counter) & "_COL_VALUES_" & tabId
-                    allRangeNames.Push cData.Item(counter) & "_COL_VALUES_" & tabId
 
                     If specs.HasPercentage Then
                         Set rng = rng.Offset(, 1)
                         rng.Name = cData.Item(counter) & "_PERC_VALUES_" & tabId
-                        allRangeNames.Push cData.Item(counter) & "_PERC_VALUES_" & tabId
                         .Range(cData.Item(counter) & "_COL_" & tabId).Offset(, 1).Name = _
                             cData.Item(counter) & "_PERC_" & tabId
                     End If
@@ -1482,17 +1438,14 @@ Public Sub NameRanges()
                 rw = .Range("TOTAL_ROW_" & tabId).Row
                 col = .Range("TOTAL_COL_" & tabId).Column
                 .Cells(rw, col).Name = "TOTAL_TOTAL_" & tabId
-                allRangeNames.Push "TOTAL_TOTAL_" & tabId
             End If
             If RangeExists("MISSING_ROW_" & tabId) Then
                 rw = .Range("MISSING_ROW_" & tabId).Row
                 col = .Range("TOTAL_COL_" & tabId).Column
                 .Cells(rw, col).Name = "MISSING_TOTAL_" & tabId
-                allRangeNames.Push "MISSING_TOTAL_" & tabId
                 If RangeExists("MISSING_COL_" & tabId) Then
                     col = .Range("MISSING_COL_" & tabId).Column
                     .Cells(rw, col).Name = "MISSING_MISSING_" & tabId
-                    allRangeNames.Push "MISSING_MISSING_" & tabId
                 End If
             End If
         End If
@@ -1502,7 +1455,6 @@ Public Sub NameRanges()
                 col = .Range("MISSING_COL_" & tabId).Column
                 rw = .Range("TOTAL_ROW_" & tabId).Row
                 .Cells(rw, col).Name = "TOTAL_MISSING_" & tabId
-                allRangeNames.Push "TOTAL_MISSING_" & tabId
             End If
         End If
 
@@ -1521,20 +1473,17 @@ Public Sub NameRanges()
         .Range(firstValRng.Cells(1, 1), _
                lastValRng.Cells(lastValRng.Rows.Count, 1)).Name = _
                "INTERIOR_VALUES_" & tabId
-        allRangeNames.Push "INTERIOR_VALUES_" & tabId
 
         ' Spatial outer values for population computation
         If tablType = ScopeSpatial Then
             Set rng = .Range("INTERIOR_VALUES_" & tabId)
             Set rng = .Range(rng.Cells(1, -1), rng.Cells(rng.Rows.Count + 1, rng.Columns.Count + 4))
             rng.Name = "OUTER_VALUES_" & tabId
-            allRangeNames.Push "OUTER_VALUES_" & tabId
         End If
 
         ' Column categories header
         Set rng = HeaderRange()
         rng.Name = "COLUMN_CATEGORIES_" & tabId
-        allRangeNames.Push "COLUMN_CATEGORIES_" & tabId
     End With
 End Sub
 

@@ -965,25 +965,41 @@ End Sub
 '@details
 'Copies values and formats from the four analysis sheets (univariate,
 'time series, spatial, spatio-temporal) in the source workbook to new
-'sheets in the output workbook. Removes gridlines and writes graph
-'objects via AnaTabIds.
+'sheets in the output workbook. Removes gridlines, then asks AnaTabIds to
+'recreate the named ranges and the charts of each sheet.
+'
+'WHAT THE ERROR TRAP COVERS
+'-------------------------------------------------------------------------------
+'The trap covers the clipboard steps alone. It used to cover the chart writing
+'too, and the chart writing raised on its first statement for every scope, so
+'the export reported success and delivered analysis sheets with no named ranges
+'and no charts. Each scope is written under its own trap now, the failures are
+'collected, and the export refuses to report success while one is held.
 '@param outwb Workbook. The output workbook.
 '@param afterSheetName String. Name of the sheet to insert after.
+'@throws ProjectError.SomethingWentWrong When a scope failed to write its
+'charts.
 Private Sub AddAnalysisSheets(ByVal outwb As Workbook, ByVal afterSheetName As String)
 
     Dim wkbNames As HiddenNames
     Dim sheetNamesList As BetterArray
     Dim scopesList As BetterArray
+    Dim failuresList As BetterArray
     Dim namObj As AnaTabIds
     Dim outsh As Worksheet
+    Dim inpsh As Worksheet
     Dim sheetName As String
     Dim scope As Byte
     Dim counter As Long
     Dim prevSheetName As String
+    Dim graphsErrNumber As Long
+    Dim graphsErrText As String
+    Dim failureText As String
 
     Set wkbNames = HiddenNames.Create(this.sourceWkb)
     Set sheetNamesList = New BetterArray
     Set scopesList = New BetterArray
+    Set failuresList = New BetterArray
     prevSheetName = afterSheetName
 
     sheetNamesList.Push wkbNames.ValueAsString("RNG_UASheet"), _
@@ -991,8 +1007,8 @@ Private Sub AddAnalysisSheets(ByVal outwb As Workbook, ByVal afterSheetName As S
                         wkbNames.ValueAsString("RNG_SPSheet"), _
                         wkbNames.ValueAsString("RNG_SPTSheet")
 
-    scopesList.Push AnalysisIdsScopeNormal, AnalysisIdsScopeTimeSeries, _
-                    AnalysisIdsScopeSpatial, AnalysisIdsScopeSpatioTemporal
+    scopesList.Push AnalysisScopeNormal, AnalysisScopeTimeSeries, _
+                    AnalysisScopeSpatial, AnalysisScopeSpatioTemporal
 
     Set namObj = AnaTabIds.Create(this.sourceWkb.Worksheets(ANANAMESSHEET))
 
@@ -1004,20 +1020,54 @@ Private Sub AddAnalysisSheets(ByVal outwb As Workbook, ByVal afterSheetName As S
         prevSheetName = sheetName
         Set outsh = outwb.Worksheets(sheetName)
 
-        ' Copy values and formats from source analysis sheet
+        ' Two of the four analysis sheets are built only when the setup asks
+        ' for them, so a missing source sheet is a scope with nothing to copy.
+        Set inpsh = Nothing
         On Error Resume Next
-        Application.CutCopyMode = False
-        this.sourceWkb.Worksheets(sheetName).Cells.Copy
-        outsh.Cells.PasteSpecial xlPasteValues
-
-        Application.CutCopyMode = False
-        this.sourceWkb.Worksheets(sheetName).Cells.Copy
-        outsh.Cells.PasteSpecial xlPasteFormats
-
-        RemoveGridLines outsh
-        namObj.WriteGraphs outsh, scope
+        Set inpsh = this.sourceWkb.Worksheets(sheetName)
         On Error GoTo 0
+
+        If Not inpsh Is Nothing Then
+            ' The clipboard steps, and only those
+            On Error Resume Next
+            Application.CutCopyMode = False
+            inpsh.Cells.Copy
+            outsh.Cells.PasteSpecial xlPasteValues
+
+            Application.CutCopyMode = False
+            inpsh.Cells.Copy
+            outsh.Cells.PasteSpecial xlPasteFormats
+            On Error GoTo 0
+
+            RemoveGridLines outsh
+
+            ' The names and the charts of this scope. A failure here is held
+            ' and reported after every scope has had its turn, so one broken
+            ' scope does not cost the others their values and formats.
+            graphsErrNumber = 0
+            On Error Resume Next
+            namObj.WriteGraphs outsh, scope, inpsh
+            graphsErrNumber = Err.Number
+            graphsErrText = Err.Description
+            On Error GoTo 0
+
+            If graphsErrNumber <> 0 Then
+                failuresList.Push sheetName & " (" & graphsErrNumber & _
+                                  ": " & graphsErrText & ")"
+            End If
+        End If
     Next counter
+
+    If failuresList.Length = 0 Then Exit Sub
+
+    failureText = vbNullString
+    For counter = failuresList.LowerBound To failuresList.UpperBound
+        If LenB(failureText) > 0 Then failureText = failureText & ", "
+        failureText = failureText & failuresList.Item(counter)
+    Next counter
+
+    ThrowError ProjectError.SomethingWentWrong, _
+               "The analysis charts could not be written on: " & failureText
 End Sub
 
 
