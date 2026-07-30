@@ -7,6 +7,17 @@ Private mBooting As Boolean
 '@ModuleDescription("Thin workbook-level event handlers delegating to the shared EventSetup service")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
+'The four sheets SetupPreparation.WatchedSheetNames registers a watcher on. A
+'committed edit on any other sheet in this workbook has nothing to record and
+'nothing to recalculate, so it is dropped here before any Application property
+'is written. The checking report sheet is one of those: SetupErrors writes to it
+'while events are live, and it must never come back through this handler.
+Private Const SHEET_DICTIONARY As String = "Dictionary"
+Private Const SHEET_CHOICES As String = "Choices"
+Private Const SHEET_EXPORTS As String = "Exports"
+Private Const SHEET_ANALYSIS As String = "Analysis"
+Private Const SHEET_CHECKING As String = "__checkRep"
+
 Private Sub Workbook_Open()
     Application.ScreenUpdating = False
 
@@ -19,14 +30,21 @@ Clean:
     mBooting = False
 End Sub
 
+Private Sub Workbook_BeforeClose(Cancel As Boolean)
+    'FormatStaleValues is an Application setting, so leaving it off would follow
+    'the user into every other workbook of the session.
+    On Error Resume Next
+    Application.FormatStaleValues = True
+    SetupEventsManager.DisposeEventSetup
+    On Error GoTo 0
+End Sub
+
 Private Sub Workbook_SheetActivate(ByVal sh As Object)
-    Application.ScreenUpdating = False
-
-
     If mBooting Then Exit Sub
     If TypeName(sh) <> "Worksheet" Then Exit Sub
-    If sh.Name = "__checkRep" Then Exit Sub
+    If sh.Name = SHEET_CHECKING Then Exit Sub
 
+    Application.ScreenUpdating = False
     mBooting = True
 
     On Error GoTo Clean
@@ -38,12 +56,14 @@ Clean:
 End Sub
 
 Private Sub Workbook_SheetChange(ByVal sh As Object, ByVal Target As Range)
-    Application.ScreenUpdating = False
-
-
     If mBooting Then Exit Sub
     If TypeName(sh) <> "Worksheet" Then Exit Sub
-    If sh.Name = "__checkRep" Then Exit Sub
+
+    Select Case sh.Name
+    Case SHEET_DICTIONARY, SHEET_CHOICES, SHEET_EXPORTS, SHEET_ANALYSIS
+    Case Else
+        Exit Sub
+    End Select
 
     mBooting = True
 

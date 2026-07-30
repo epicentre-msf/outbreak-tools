@@ -9,8 +9,14 @@ Private setupService As EventSetup
 Private appScope As ApplicationState
 Private busyDepth As Long
 Private persisted As Boolean
+Private eventsOnly As Boolean
+Private priorEvents As Boolean
 
 Private Const SNAPSHOT_KEY As String = "APPSTATE_SNAPSHOT"
+
+'Sheets whose change handler writes to a worksheet other than the hidden
+'registry. Everything else the workbook lets through only records a flag.
+Private Const SHEET_ANALYSIS As String = "Analysis"
 
 
 '@section Centralised BusyState
@@ -36,6 +42,7 @@ Public Sub EnterBusyState(Optional ByVal calculateOnSave As Boolean = True, _
     If busyDepth > 1 Then Exit Sub
 
     persisted = persist
+    eventsOnly = False
     If persist Then PersistCurrentState
 
     Set appScope = ApplicationState.Create(Application)
@@ -44,11 +51,33 @@ Public Sub EnterBusyState(Optional ByVal calculateOnSave As Boolean = True, _
                             busyCursor:=busyCursor
 End Sub
 
+'@sub-title Suppress events alone, for a handler that only records a flag
+'@details
+'The full busy state costs thirteen Application property writes, an
+'ApplicationState object, a cursor change and a Calculation flip. A handler that
+'writes one flag into the hidden registry needs one of those things: events off,
+'so the write does not raise the change event again. This is that state.
+'
+'It shares busyDepth with EnterBusyState, so ExitBusyState closes either one and
+'the nesting count stays right. Enter the full state instead when the handler
+'writes to a visible sheet.
+Public Sub EnterQuietState()
+    busyDepth = busyDepth + 1
+    If busyDepth > 1 Then Exit Sub
+
+    persisted = False
+    eventsOnly = True
+    priorEvents = Application.EnableEvents
+    Application.EnableEvents = False
+End Sub
+
 '@sub-title Exit busy state, restoring Application properties on the outermost call
 '@details
 'Decrements the nesting counter.  On the outermost exit: restores the
 'ApplicationState snapshot, clears the persisted HiddenName (only when
 'persistence was used), resets the cursor, and releases the scope reference.
+'When the outermost call was EnterQuietState, only Application.EnableEvents is
+'put back.
 Public Sub ExitBusyState()
     If busyDepth <= 0 Then
         busyDepth = 0
@@ -57,6 +86,14 @@ Public Sub ExitBusyState()
 
     busyDepth = busyDepth - 1
     If busyDepth > 0 Then Exit Sub
+
+    If eventsOnly Then
+        On Error Resume Next
+        Application.EnableEvents = priorEvents
+        On Error GoTo 0
+        eventsOnly = False
+        Exit Sub
+    End If
 
     On Error Resume Next
     If Not appScope Is Nothing Then appScope.Restore
@@ -71,6 +108,11 @@ End Sub
 '@sub-title Whether the manager is currently in busy state
 Public Property Get IsBusyState() As Boolean
     IsBusyState = (busyDepth > 0)
+End Property
+
+'@sub-title Whether the state currently held suppresses events alone
+Public Property Get IsQuietState() As Boolean
+    IsQuietState = ((busyDepth > 0) And eventsOnly)
 End Property
 
 
@@ -123,6 +165,13 @@ End Sub
 'Writes a pipe-delimited string containing six Application properties to a
 'single workbook-level HiddenName.  On failure the operation is silently skipped.
 'Format: ScreenUpdating|DisplayAlerts|Calculation|EnableEvents|Cursor|CalcBeforeSave
+'
+'THE NAME IS ENSURED BEFORE IT IS SET
+'-------------------------------------------------------------------------------
+'HiddenNames.SetValue raises ElementNotFound on a name that is not there yet, and
+'the whole routine sits under On Error Resume Next. Without the EnsureName line
+'below the snapshot was never written once, so RecoverIfNeeded had nothing to
+'read and the crash recovery did nothing at all.
 Private Sub PersistCurrentState()
     Dim hn As HiddenNames
     Dim raw As String
@@ -138,6 +187,7 @@ Private Sub PersistCurrentState()
           CStr(CLng(Application.Cursor)) & "|" & _
           CStr(Application.CalculateBeforeSave)
 
+    hn.EnsureName SNAPSHOT_KEY, raw, HiddenNameTypeString
     hn.SetValue SNAPSHOT_KEY, raw
 CleanExit:
     On Error GoTo 0
@@ -166,12 +216,18 @@ Private Function Service() As EventSetup
     Set Service = setupService
 End Function
 
+'@sub-title Drop the cached managers the service holds
+'@details
+'Called after an import or a clean, both of which rewrite whole sheets. The
+'managers the service cached before that point were built against columns the
+'sheets may no longer carry.
 Public Sub ResetEventSetupCaches()
     If Not setupService Is Nothing Then
         setupService.ResetCaches
     End If
 End Sub
 
+'@sub-title Release the service, called from Workbook_BeforeClose
 Public Sub DisposeEventSetup()
     Set setupService = Nothing
 End Sub
@@ -185,42 +241,61 @@ Public Sub WorkbookOpened()
     EnterBusyState
     Service.OnWorkbookOpen
 Cleanup:
+    If Err.Number <> 0 Then LogHandlerFailure "WorkbookOpened", ThisWorkbook.Name
     ExitBusyState
 End Sub
 
 Public Sub SheetActivated(ByVal sh As Worksheet)
     If sh Is Nothing Then Exit Sub
-    On Error Resume Next
+
+    On Error GoTo Cleanup
     Service.OnSheetActivate sh
-    On Error GoTo 0
+    Exit Sub
+
+Cleanup:
+    LogHandlerFailure "SheetActivated", sh.Name
 End Sub
 
+'@sub-title Route a committed edit to the service under the lightest state it needs
+'@details
+'The workbook handler has already dropped every sheet that watches nothing, so
+'what arrives here is one of the four watched sheets. Only the Analysis sheet
+'clears cells, rewrites validation and unlocks a sheet, so only Analysis is
+'given the full lockdown. The other three write one flag into the hidden
+'registry and take the quiet state.
 Public Sub SheetChanged(ByVal sh As Worksheet, ByVal target As Range)
     If (sh Is Nothing) Or (target Is Nothing) Then Exit Sub
 
     On Error GoTo Cleanup
-    EnterBusyState busyCursor:=xlNorthWestArrow, persist:=False
-    Application.ScreenUpdating = False
+
+    If StrComp(sh.Name, SHEET_ANALYSIS, vbTextCompare) = 0 Then
+        EnterBusyState persist:=False
+    Else
+        EnterQuietState
+    End If
+
     Service.OnSheetChange sh, target
+
 Cleanup:
+    If Err.Number <> 0 Then LogHandlerFailure "SheetChanged", sh.Name
     ExitBusyState
 End Sub
 
 Public Sub RefreshAnalysisDropdowns(Optional ByVal forceUpdate As Boolean = False)
     On Error GoTo Cleanup
     EnterBusyState busyCursor:=xlNorthWestArrow, persist:=False
-    Application.ScreenUpdating = False
     Service.UpdateAnalysisDropdowns forceUpdate
 Cleanup:
+    If Err.Number <> 0 Then LogHandlerFailure "RefreshAnalysisDropdowns", ThisWorkbook.Name
     ExitBusyState
 End Sub
 
 Public Sub RecalculateAnalysis()
     On Error GoTo Cleanup
     EnterBusyState busyCursor:=xlNorthWestArrow, persist:=False
-    Application.ScreenUpdating = False
     Service.RecalculateAnalysis
 Cleanup:
+    If Err.Number <> 0 Then LogHandlerFailure "RecalculateAnalysis", ThisWorkbook.Name
     ExitBusyState
 End Sub
 
@@ -231,3 +306,23 @@ End Sub
 Public Function EventSetupService() As EventSetup
     Set EventSetupService = Service()
 End Function
+
+
+'@section Reporting
+'===============================================================================
+
+'@sub-title Write a handler failure to the immediate window
+'@details
+'The event handlers stay silent for the user: a message box on every committed
+'edit is worse than a missing feature. They used to stay silent for the
+'developer too, which made every report of a broken column unreproducible. The
+'setup workbook carries no log file, so the immediate window is where this goes,
+'the same place every ribbon callback in EventsSetupRibbon already writes.
+'@param handlerName String. Name of the routine that failed.
+'@param context String. Sheet or workbook name the failure happened on.
+Private Sub LogHandlerFailure(ByVal handlerName As String, ByVal context As String)
+    On Error Resume Next
+    Debug.Print "SetupEventsManager." & handlerName & " on '" & context & "': " & _
+                Err.Number & " " & Err.Description
+    On Error GoTo 0
+End Sub
