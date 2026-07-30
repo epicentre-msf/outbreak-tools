@@ -15,10 +15,12 @@ Attribute VB_Exposed = False
 
 Option Explicit
 
+'Value 3 was TempSheetUpdates and it is gone. The sheet it named, updates__,
+'survives in no live code. The remaining values keep the numbers they had so a
+'stored scope byte still means what it meant.
 Public Enum TempSheetScope
     TempSheetSingle = 1
     TempSheetList = 2
-    TempSheetUpdates = 3
     TempSheetMetadata = 4
     TempSheetAnalysis = 5
     TempSheetImport = 6
@@ -28,24 +30,36 @@ End Enum
 
 '@class LinelistSpecs
 '@description
-'Modern facade that wraps a specifications workbook and exposes lazy-loaded,
-'cached accessors for every collaborator object (dictionary, choices,
-'translations, geo, analysis, passwords, format, exports, formulas).
-'Provides lifecycle orchestration methods for importing data from external
-'setup workbooks, preparing the dictionary with preserved sheet names,
-'exporting specifications to a destination linelist workbook, and surfacing
-'user-facing error dialogs. Uses a PredeclaredId factory pattern so callers
-'construct instances via LinelistSpecs.Create(workbook) and receive an
-'LinelistSpecs interface reference.
-'@depends LLdictionary, LLChoices, LLTranslation, DesignerTranslation
-'@depends LLGeo, LLExport, Passwords, LLFormat
-'@depends LinelistBuildService, TemporaryRepos
-'@depends FormulaData, LLVariables, Formulas
-'@depends TranslationObject, ApplicationState
-'@depends BetterArray, LLdictionary, LLChoices, LLTranslation
-'@depends DesignerTranslation, LLGeo, LLExport, Analysis, Passwords
-'@depends LLFormat, FormulaData, LLVariables, Formulas
-'@version 1.1 (2026-02-16)
+'Facade over the designer workbook. Before Prepare it answers the designer's
+'own specifications. After Prepare it is also the handle on the domain managers
+'that live on the generated linelist. Callers build one through
+'LinelistSpecs.Create(workbook).
+'
+'WHICH WORKBOOK EACH COLLABORATOR POINTS AT
+'-------------------------------------------------------------------------------
+'The type says nothing about this, and it is where most of this class's defects
+'came from. The table is the contract.
+'
+'  dictionary, choices, exports, ana    Linelist. Prepare sets them from the
+'                                       build service. Reading one earlier
+'                                       raises and names Prepare.
+'  geo, passwords, translations         Designer until Prepare runs, linelist
+'                                       afterwards. Prepare overwrites them.
+'  format, formulaData                  Designer, loaded on first read.
+'  Value, HasTemplate, DesWorkbook      Designer.
+'  TemporarySheetName                   A constant table, backed by no sheet.
+'
+'The four names on the first row had designer-side loaders until 2026-07-30.
+'RequiredSheetNames() stopped asking for those four worksheets when the build
+'service began importing them straight from the setup file, so a loader either
+'built a manager over a leftover designer sheet at the wrong anchor row, or
+'raised a message naming the designer when the caller's real mistake was
+'calling before Prepare. They are guards now.
+'@depends LLdictionary, LLChoices, LLTranslation, LLGeo, LLExport, Analysis
+'@depends Passwords, LLFormat, FormulaData, LLVariables, Formulas
+'@depends LinelistBuildService, TemporaryRepos, ApplicationState
+'@depends TranslationObject, HiddenNames, Checking, BetterArray
+'@version 1.2 (2026-07-30)
 
 
 
@@ -58,7 +72,6 @@ Private Type TLinelistSpecs
     dictionary As LLdictionary
     choices As LLChoices
     translations As LLTranslation
-    designerTranslations As DesignerTranslation
     geo As LLGeo
     exports As LLExport
     ana As Analysis
@@ -72,9 +85,13 @@ Private Type TLinelistSpecs
     transShapes As TranslationObject
     transForms As TranslationObject
     transRibbon As TranslationObject
-    'Category cache: parallel arrays (same index = same entry)
-    catKeys As BetterArray
-    catValues As BetterArray
+    'Category cache, keyed by variable name and label choice. Mac Excel has no
+    'Scripting.Dictionary, so a keyed Collection carries the lookup.
+    catCache As Collection
+    'What Value used to rebuild on every call
+    mainSheet As Worksheet
+    designerHidden As HiddenNames
+    checks As Checking
     outputWkb As Workbook
     tempRepos As TemporaryRepos
     prepared As Boolean
@@ -83,26 +100,28 @@ End Type
 
 Private this As TLinelistSpecs
 
-Private Const CLASSNAME As String = "LinelistSpecs"
-Private Const DEFAULT_DICT_START_ROW As Long = 1
-Private Const DEFAULT_DICT_START_COLUMN As Long = 1
-Private Const DEFAULT_CHOICES_START_ROW As Long = 1
-Private Const DEFAULT_CHOICES_START_COLUMN As Long = 1
+Private checkCounter As Long
 
-'Linelist Spec constants
-Private Const SHEET_DICTIONARY As String = "Dictionary"
-Private Const SHEET_CHOICES As String = "Choices"
-Private Const SHEET_GEO As String = "Geo"
-Private Const SHEET_PASSWORDS As String = "__pass"
-Private Const SHEET_FORMULAS As String = "__formula"
-Private Const SHEET_TRANSLATIONS_DICT As String = "Translations"
-Private Const SHEET_TRANSLATIONS_LL As String = "LinelistTranslation"
-Private Const SHEET_ANALYSIS As String = "Analysis"
-Private Const SHEET_EXPORT As String = "Exports"
-Private Const SHEET_FORMAT As String = "__formatter"
-Private Const SHEET_MAIN As String = "Main"
-Private Const SHEET_DESIGNER_TRANSLATION As String = "DesignerTranslation"
+Private Const CLASSNAME As String = "LinelistSpecs"
+
+'Worksheets read from the DESIGNER workbook (this.specsWkb). No constant here
+'names a worksheet of the output workbook. The one list that used to,
+'BuildPreservedSheetNames, reads the real worksheets of that workbook now.
+Private Const DESIGNER_SHEET_GEO As String = "Geo"
+Private Const DESIGNER_SHEET_PASSWORDS As String = "__pass"
+Private Const DESIGNER_SHEET_FORMULAS As String = "__formula"
+Private Const DESIGNER_SHEET_TRANSLATIONS_LL As String = "LinelistTranslation"
+Private Const DESIGNER_SHEET_FORMAT As String = "__formatter"
+Private Const DESIGNER_SHEET_MAIN As String = "Main"
+Private Const DESIGNER_SHEET_DESIGNER_TRANSLATION As String = "DesignerTranslation"
 Private Const RANGE_DESIGN_TYPE As String = "DESIGNTYPE"
+
+'The debugging password lives in this named range on the designer's Main
+'worksheet. The tag table asked for RNG_RNG_LLPassword, a doubled prefix that
+'matches no name in the workbook, so the lookup answered an empty string under
+'On Error Resume Next and every generated linelist got an empty debugging
+'password. Measured in .mock/designer_mock.xlsb, which defines RNG_LLPassword.
+Private Const RANGE_DEBUG_PASSWORD As String = "RNG_LLPassword"
 
 '@section Factory helpers
 '===============================================================================
@@ -202,7 +221,6 @@ Private Sub ResetObjectCaches()
     Set this.dictionary = Nothing
     Set this.choices = Nothing
     Set this.translations = Nothing
-    Set this.designerTranslations = Nothing
     Set this.geo = Nothing
     Set this.exports = Nothing
     Set this.ana = Nothing
@@ -212,6 +230,8 @@ Private Sub ResetObjectCaches()
     Set this.variables = Nothing
     Set this.outputWkb = Nothing
     Set this.tempRepos = Nothing
+    Set this.mainSheet = Nothing
+    Set this.designerHidden = Nothing
 End Sub
 
 '@label:reset-translation-cache
@@ -227,8 +247,7 @@ End Sub
 '@label:reset-category-cache
 '@sub-title Clear the category list cache
 Private Sub ResetCategoryCache()
-    Set this.catKeys = Nothing
-    Set this.catValues = Nothing
+    Set this.catCache = Nothing
 End Sub
 
 '@section Guard helpers
@@ -244,15 +263,10 @@ Private Sub EnsureWorkbook()
     End If
 End Sub
 
-'@label:ensure-category-arrays
-'@sub-title Create the parallel category arrays if they do not exist
-Private Sub EnsureCategoryArrays()
-    If this.catKeys Is Nothing Then
-        Set this.catKeys = New BetterArray
-        this.catKeys.LowerBound = 1
-        Set this.catValues = New BetterArray
-        this.catValues.LowerBound = 1
-    End If
+'@label:ensure-category-cache
+'@sub-title Create the category lookup if it does not exist
+Private Sub EnsureCategoryCache()
+    If this.catCache Is Nothing Then Set this.catCache = New Collection
 End Sub
 
 '@section Worksheet resolution
@@ -260,24 +274,21 @@ End Sub
 '@description Direct worksheet lookups by name within the specifications workbook.
 
 '@label:resolve-sheet
-'@sub-title Resolve a worksheet by name with optional error surfacing
+'@sub-title Resolve a worksheet of the designer workbook by name
 '@details
-'Looks up a worksheet in the specifications workbook by name. When the
-'sheet is not found and allowMissing is False, raises a descriptive error.
+'Looks a worksheet up in the designer workbook by name and raises a
+'descriptive error when it is absent.
 '@param sheetName String. The worksheet name to find.
-'@param allowMissing Boolean. When True, returns Nothing instead of raising.
-'@return Worksheet. The resolved worksheet, or Nothing if allowMissing.
-'@throws ProjectError.InvalidArgument When sheetName is empty and not allowMissing.
-'@throws ProjectError.ElementNotFound When the sheet is missing and not allowMissing.
-Private Function ResolveSheet(ByVal sheetName As String, _
-                              Optional ByVal allowMissing As Boolean = False) As Worksheet
+'@return Worksheet. The resolved worksheet.
+'@throws ProjectError.InvalidArgument When sheetName is empty.
+'@throws ProjectError.ElementNotFound When the sheet is missing.
+Private Function ResolveSheet(ByVal sheetName As String) As Worksheet
 
     Dim target As Worksheet
     Dim normalisedName As String
 
     normalisedName = Trim$(sheetName)
     If LenB(normalisedName) = 0 Then
-        If allowMissing Then Exit Function
         ThrowError ProjectError.InvalidArgument, "Worksheet name cannot be empty"
     End If
 
@@ -288,12 +299,39 @@ Private Function ResolveSheet(ByVal sheetName As String, _
     On Error GoTo 0
 
     If target Is Nothing Then
-        If allowMissing Then Exit Function
         ThrowError ProjectError.ElementNotFound, _
                   "Worksheet '" & normalisedName & "' not found in specifications workbook '" & SafeWorkbookName(this.specsWkb) & "'"
     End If
 
     Set ResolveSheet = target
+End Function
+
+'@label:main-sheet
+'@sub-title The designer's Main worksheet, resolved once per instance
+'@details
+'Value used to call ResolveSheet on every read, and Prepare and Linelist
+'together read a dozen tags. ResetCaches drops this reference.
+'@return Worksheet. The Main worksheet of the designer workbook.
+'@throws ProjectError.ElementNotFound When the Main worksheet is missing.
+Private Function MainSheet() As Worksheet
+    If this.mainSheet Is Nothing Then
+        Set this.mainSheet = ResolveSheet(DESIGNER_SHEET_MAIN)
+    End If
+    Set MainSheet = this.mainSheet
+End Function
+
+'@label:designer-hidden-store
+'@sub-title The designer workbook's hidden name store, built once per instance
+'@details
+'Building one runs EnsureReady and a full metadata rebuild, and Value used to
+'build a fresh store for each of the two hidden-name tags. ResetCaches drops it.
+'@return HiddenNames. The store over the designer workbook.
+Private Function DesignerHiddenStore() As HiddenNames
+    If this.designerHidden Is Nothing Then
+        EnsureWorkbook
+        Set this.designerHidden = HiddenNames.Create(this.specsWkb)
+    End If
+    Set DesignerHiddenStore = this.designerHidden
 End Function
 
 '@section External workbook helpers
@@ -323,31 +361,44 @@ Private Sub EnterBusyState(ByRef busyScope As ApplicationState)
 End Sub
 
 '@label:import-geobase
-'@sub-title Import geobase data from the user-specified path
+'@sub-title Import geobase data from the path the user gave
 '@details
-'Reads the geobase file path from the Main worksheet. If the path is not
-'empty, opens the geobase workbook, sets the dictionary language on the
-'exported geo worksheet via RNG_MetaLang, calls geoObj.Import to populate
-'the output geo sheet, then closes the geobase workbook. Silently skips
-'if the path is empty or the file cannot be opened.
+'Reads the geobase file path from the designer's Main worksheet. An empty path
+'is a choice the user made and the import is skipped. A path that is set and
+'will not open is a failure the user has to hear about: the linelist comes out
+'with no geographic data at all, so the reason is filed as a report entry
+'naming the path.
+'
+'The file is opened read only, the way ImportSetupToLinelist opens the setup
+'workbook. The geobase is read and never written.
 '@param geoObj LLGeo. The geo instance on the output workbook.
-'@param dictLang String. The dictionary language code for RNG_MetaLang.
 Private Sub ImportGeobase(ByVal geoObj As LLGeo)
     Dim geoPath As String
     Dim geoWkb As Workbook
-    Dim geoNames As HiddenNames
+    Dim openError As String
 
     geoPath = Trim$(Value("geopath"))
-    If LenB(geoPath) = 0 Then Exit Sub
+    If LenB(geoPath) = 0 Then
+        LogCheck "No geobase file was given, so the linelist carries no geographic data.", _
+                 checkingInfo
+        Exit Sub
+    End If
 
     On Error Resume Next
-    Set geoWkb = Workbooks.Open(geoPath)
+        Set geoWkb = Workbooks.Open(fileName:=geoPath, ReadOnly:=True)
+        openError = Err.Description
     On Error GoTo 0
 
-    If geoWkb Is Nothing Then Exit Sub
+    If geoWkb Is Nothing Then
+        LogCheck "The geobase file " & geoPath & " could not be opened, so the " & _
+                 "linelist carries no geographic data. " & openError, _
+                 checkingError
+        Exit Sub
+    End If
 
     geoObj.Import geoWkb
     geoWkb.Close saveChanges:=False
+    LogCheck "The geobase " & geoPath & " was imported.", checkingSuccess
 End Sub
 
 '@label:exit-busy-state
@@ -363,46 +414,55 @@ Private Sub ExitBusyState(ByRef busyScope As ApplicationState)
 End Sub
 
 '@label:build-preserved-sheet-names
-'@sub-title Build the list of sheet names to preserve during dictionary preparation
+'@sub-title Build the list of sheet names the dictionary must avoid
 '@details
-'Collects all specification sheet names and temporary sheet names into
-'a BetterArray, then appends translated linelist sheet names (Admin,
-'Analysis, Spatial, etc.) when message translations are available.
-'@param messageTranslations TranslationObject. The message translations
-'for resolving linelist sheet names, or Nothing to skip translated names.
+'The dictionary generates one data-entry worksheet per sheet name it holds, and
+'a generated name that collides with a worksheet already in the linelist breaks
+'the build. This is the list of names it has to keep clear of.
+'
+'It is read off the output workbook itself. Prepare has already run every
+'exporter against that workbook by the time it calls this, so the real
+'worksheets are the honest answer, and a list of constants drifts away from
+'them on every change to the architecture. The constant list this replaced
+'still carried a Translations worksheet the designer gave up, and it named
+'Metadata as a temporary sheet when LLGeo creates a real one.
+'
+'On top of the real worksheets go the temporary names that do not exist yet,
+'and the translated names of the worksheets the build is about to create.
+'@param messageTranslations TranslationObject. The message translations that
+'resolve the linelist worksheet names.
 '@return BetterArray. The list of preserved sheet names.
 Private Function BuildPreservedSheetNames(ByVal messageTranslations As TranslationObject) As BetterArray
     Dim preserved As BetterArray
+    Dim sh As Worksheet
+    Dim scopes As Variant
+    Dim labels As Variant
+    Dim idx As Long
 
     Set preserved = New BetterArray
     preserved.LowerBound = 1
 
-    preserved.Push SHEET_DICTIONARY, _
-                   SHEET_CHOICES, _
-                   SHEET_GEO, _
-                   SHEET_PASSWORDS, _
-                   SHEET_FORMULAS, _
-                   SHEET_TRANSLATIONS_DICT, _
-                   SHEET_TRANSLATIONS_LL, _
-                   SHEET_EXPORT, _
-                   TemporarySheetName(TempSheetSingle), _
-                   TemporarySheetName(TempSheetList), _
-                   TemporarySheetName(TempSheetUpdates), _
-                   TemporarySheetName(TempSheetMetadata), _
-                   TemporarySheetName(TempSheetAnalysis), _
-                   TemporarySheetName(TempSheetImport), _
-                   TemporarySheetName(TempSheetSpatial), _
-                   TemporarySheetName(TempSheetShowHide)
-
-    If Not messageTranslations Is Nothing Then
-        preserved.Push SafeTranslatedValue(messageTranslations, "LLSHEET_Admin"), _
-                       SafeTranslatedValue(messageTranslations, "LLSHEET_Analysis"), _
-                       SafeTranslatedValue(messageTranslations, "LLSHEET_SpatialAnalysis"), _
-                       SafeTranslatedValue(messageTranslations, "LLSHEET_TemporalAnalysis"), _
-                       SafeTranslatedValue(messageTranslations, "LLSHEET_CustomChoice"), _
-                       SafeTranslatedValue(messageTranslations, "LLSHEET_CustomPivotTable"), _
-                       SafeTranslatedValue(messageTranslations, "LLSHEET_SpatioTemporalAnalysis")
+    If Not this.outputWkb Is Nothing Then
+        For Each sh In this.outputWkb.Worksheets
+            preserved.Push sh.Name
+        Next sh
     End If
+
+    scopes = Array(TempSheetSingle, TempSheetList, TempSheetMetadata, _
+                   TempSheetAnalysis, TempSheetImport, TempSheetSpatial, _
+                   TempSheetShowHide)
+
+    For idx = LBound(scopes) To UBound(scopes)
+        preserved.Push TemporarySheetName(CByte(scopes(idx)))
+    Next idx
+
+    labels = Array("LLSHEET_Admin", "LLSHEET_Analysis", "LLSHEET_SpatialAnalysis", _
+                   "LLSHEET_TemporalAnalysis", "LLSHEET_CustomChoice", _
+                   "LLSHEET_CustomPivotTable", "LLSHEET_SpatioTemporalAnalysis")
+
+    For idx = LBound(labels) To UBound(labels)
+        preserved.Push SafeTranslatedValue(messageTranslations, CStr(labels(idx)))
+    Next idx
 
     Set BuildPreservedSheetNames = preserved
 End Function
@@ -479,14 +539,14 @@ Private Sub ValidateWorkbookStructure(ByVal specsWorkbook As Workbook)
 
     Dim formatSheet As Worksheet
     On Error Resume Next
-        Set formatSheet = specsWorkbook.Worksheets(SHEET_FORMAT)
+        Set formatSheet = specsWorkbook.Worksheets(DESIGNER_SHEET_FORMAT)
     On Error GoTo 0
 
     If formatSheet Is Nothing Then Exit Sub
 
     If Not RangeExistsInternal(formatSheet, RANGE_DESIGN_TYPE) Then
         ThrowError ProjectError.ElementNotFound, _
-                  "Worksheet '" & SHEET_FORMAT & "' must define the '" & RANGE_DESIGN_TYPE & "' named range"
+                  "Worksheet '" & DESIGNER_SHEET_FORMAT & "' must define the '" & RANGE_DESIGN_TYPE & "' named range"
     End If
 End Sub
 
@@ -500,13 +560,13 @@ End Sub
 '@return Variant. Array of sheet name strings.
 Private Function RequiredSheetNames() As Variant
     RequiredSheetNames = Array( _
-        SHEET_GEO, _
-        SHEET_PASSWORDS, _
-        SHEET_FORMULAS, _
-        SHEET_TRANSLATIONS_LL, _
-        SHEET_FORMAT, _
-        SHEET_MAIN, _
-        SHEET_DESIGNER_TRANSLATION)
+        DESIGNER_SHEET_GEO, _
+        DESIGNER_SHEET_PASSWORDS, _
+        DESIGNER_SHEET_FORMULAS, _
+        DESIGNER_SHEET_TRANSLATIONS_LL, _
+        DESIGNER_SHEET_FORMAT, _
+        DESIGNER_SHEET_MAIN, _
+        DESIGNER_SHEET_DESIGNER_TRANSLATION)
 End Function
 
 '@label:worksheet-exists-internal
@@ -566,135 +626,101 @@ End Function
 
 '@section Collaborator ensures
 '===============================================================================
-'@description Lazy-initialisation guards for each collaborator object. Each
-'EnsureXxx method creates the collaborator from its backing worksheet on first
-'access, then caches it for subsequent calls.
+'@description How each collaborator is obtained. Read the residency table in
+'the class description first: it says which workbook each one is backed by.
+'
+'The collaborators that live on the DESIGNER are built here on first read, from
+'a worksheet RequiredSheetNames() guarantees is present.
+'
+'The four that live on the LINELIST have no loader. Prepare sets them from the
+'build service, and their accessors raise before that. A loader for them used
+'to resolve a designer worksheet the designer no longer carries.
 
-'@label:ensure-exports
-'@sub-title Lazy-load the export collaborator
-Private Sub EnsureExports()
-    If this.exports Is Nothing Then
-        Dim exportSheet As Worksheet
-        Set exportSheet = ResolveSheet(SHEET_EXPORT)
-        Set this.exports = LLExport.Create(exportSheet)
-    End If
-End Sub
-
-'@label:ensure-dictionary
-'@sub-title Lazy-load the dictionary collaborator
+'@label:require-prepared
+'@sub-title Refuse a read of a collaborator Prepare has to supply
 '@details
-'Requires the export collaborator to be available first (for the number
-'of exports parameter), then creates the dictionary from the Dictionary
-'worksheet.
-Private Sub EnsureDictionary()
-    If this.dictionary Is Nothing Then
-        EnsureExports
-        Dim dictSheet As Worksheet
-        Set dictSheet = ResolveSheet(SHEET_DICTIONARY)
-        Set this.dictionary = LLdictionary.Create(dictSheet, _
-                                                  DEFAULT_DICT_START_ROW, _
-                                                  DEFAULT_DICT_START_COLUMN, _
-                                                  NumberOfExports())
-    End If
-End Sub
-
-'@label:ensure-choices
-'@sub-title Lazy-load the choices collaborator
-Private Sub EnsureChoices()
-    If this.choices Is Nothing Then
-        Dim choicesSheet As Worksheet
-        Set choicesSheet = ResolveSheet(SHEET_CHOICES)
-        Set this.choices = LLChoices.Create(choicesSheet, _
-                                            DEFAULT_CHOICES_START_ROW, _
-                                            DEFAULT_CHOICES_START_COLUMN)
-    End If
+'The four pass-through collaborators are imported from the setup file straight
+'into the linelist. Reading one before Prepare has run is a caller mistake, and
+'this is the message that says so.
+'@param memberName String. The accessor the caller asked for.
+'@throws ProjectError.ErrorUnexpectedState Always.
+Private Sub RequirePrepared(ByVal memberName As String)
+    ThrowError ProjectError.ErrorUnexpectedState, _
+              memberName & " is available only after Prepare has imported the " & _
+              "setup file into the linelist workbook"
 End Sub
 
 '@label:ensure-translations
-'@sub-title Lazy-load the translations collaborator
+'@sub-title Load the translations collaborator on first read
 '@details
-'Creates the LLTranslation instance from the linelist translation worksheet.
+'Creates the LLTranslation instance from the designer's linelist translation
+'worksheet. Prepare replaces it with the copy on the linelist.
 Private Sub EnsureTranslations()
     If this.translations Is Nothing Then
         Dim linelistTransSheet As Worksheet
-        Set linelistTransSheet = ResolveSheet(SHEET_TRANSLATIONS_LL)
+        Set linelistTransSheet = ResolveSheet(DESIGNER_SHEET_TRANSLATIONS_LL)
         Set this.translations = LLTranslation.Create(linelistTransSheet)
     End If
 End Sub
 
-'@label:ensure-designer-translations
-'@sub-title Lazy-load the designer translations collaborator
-Private Sub EnsureDesignerTranslations()
-    If this.designerTranslations Is Nothing Then
-        Dim designerSheet As Worksheet
-        Set designerSheet = ResolveSheet(SHEET_DESIGNER_TRANSLATION)
-        Set this.designerTranslations = DesignerTranslation.Create(designerSheet)
-    End If
-End Sub
-
 '@label:ensure-geo
-'@sub-title Lazy-load the geo collaborator
+'@sub-title Load the geo collaborator on first read
+'@details
+'Built over the designer's Geo worksheet. Prepare replaces it with the copy on
+'the linelist.
 Private Sub EnsureGeo()
     If this.geo Is Nothing Then
         Dim geoSheet As Worksheet
-        Set geoSheet = ResolveSheet(SHEET_GEO)
+        Set geoSheet = ResolveSheet(DESIGNER_SHEET_GEO)
         Set this.geo = LLGeo.Create(geoSheet)
     End If
 End Sub
 
-'@label:ensure-analysis
-'@sub-title Lazy-load the analysis collaborator
-Private Sub EnsureAnalysis()
-    If this.ana Is Nothing Then
-        Dim analysisSheet As Worksheet
-        Set analysisSheet = ResolveSheet(SHEET_ANALYSIS)
-        Set this.ana = Analysis.Create(analysisSheet)
-    End If
-End Sub
-
 '@label:ensure-passwords
-'@sub-title Lazy-load the passwords collaborator
+'@sub-title Load the passwords collaborator on first read
+'@details
+'Built over the designer's password worksheet. Prepare replaces it with the
+'copy on the linelist.
 Private Sub EnsurePasswords()
     If this.passwords Is Nothing Then
         Dim passwordSheet As Worksheet
-        Set passwordSheet = ResolveSheet(SHEET_PASSWORDS)
+        Set passwordSheet = ResolveSheet(DESIGNER_SHEET_PASSWORDS)
         Set this.passwords = Passwords.Create(passwordSheet)
     End If
 End Sub
 
 '@label:ensure-formula-data
-'@sub-title Lazy-load the formula data collaborator
+'@sub-title Load the formula data collaborator on first read
 Private Sub EnsureFormulaData()
     If this.formulaData Is Nothing Then
         Dim formulaSheet As Worksheet
-        Set formulaSheet = ResolveSheet(SHEET_FORMULAS)
+        Set formulaSheet = ResolveSheet(DESIGNER_SHEET_FORMULAS)
         Set this.formulaData = FormulaData.Create(formulaSheet)
     End If
 End Sub
 
 '@label:ensure-variables
-'@sub-title Lazy-load the variables collaborator
+'@sub-title Build the variables collaborator over the dictionary
 '@details
-'Requires the dictionary to be available first, then creates the
-'LLVariables instance from it.
+'Reads the dictionary through its accessor, so a call before Prepare raises
+'there and names Prepare.
 Private Sub EnsureVariables()
-    EnsureDictionary
     If this.variables Is Nothing Then
-        Set this.variables = LLVariables.Create(this.dictionary)
+        Set this.variables = LLVariables.Create(Dictionary())
     End If
 End Sub
 
 '@label:ensure-format
-'@sub-title Lazy-load the format collaborator
+'@sub-title Load the format collaborator on first read
 '@details
-'Resolves the design name from the DESIGNTYPE named range on the format
-'sheet, then creates the LLFormat instance.
+'Resolves the design name from the DESIGNTYPE named range on the designer's
+'format worksheet, then creates the LLFormat instance.
 Private Sub EnsureFormat()
     If this.format Is Nothing Then
         Dim formatSheet As Worksheet
         Dim designName As String
 
-        Set formatSheet = ResolveSheet(SHEET_FORMAT)
+        Set formatSheet = ResolveSheet(DESIGNER_SHEET_FORMAT)
         designName = ResolveDesignName(formatSheet)
 
         Set this.format = LLFormat.Create(formatSheet, designName)
@@ -722,19 +748,20 @@ Private Function ResolveDesignName(ByVal formatSheet As Worksheet) As String
 End Function
 
 '@label:ensure-category-lookup
-'@sub-title Ensure choices, variables, and category arrays are ready
+'@sub-title Ensure choices, variables and the category lookup are ready
+'@details
+'Choices reads through its accessor, so a call before Prepare raises there.
 Private Sub EnsureCategoryLookup()
-    EnsureChoices
+    Choices
     EnsureVariables
-    EnsureCategoryArrays
+    EnsureCategoryCache
 End Sub
 
 '@label:number-of-exports
 '@sub-title Return the number of exports defined in the export specifications
 '@return Long. The export count.
 Private Function NumberOfExports() As Long
-    EnsureExports
-    NumberOfExports = this.exports.NumberOfExports()
+    NumberOfExports = ExportObject().NumberOfExports()
 End Function
 
 '@section List auto helpers
@@ -847,43 +874,35 @@ End Sub
 Public Function Categories(ByVal varName As String, Optional ByVal useShortlabels As Boolean = False) As BetterArray
     Dim cacheKey As String
     Dim cached As BetterArray
-    Dim cacheIdx As Long
 
     EnsureCategoryLookup
 
     cacheKey = LCase$(Trim$(varName)) & "|" & CStr(useShortlabels)
 
-    'Look up in parallel arrays
-    cacheIdx = FindCategoryIndex(cacheKey)
-    If cacheIdx > 0 Then
-        Set cached = this.catValues.Item(cacheIdx)
-    End If
+    Set cached = CachedCategories(cacheKey)
 
     If cached Is Nothing Then
         Set cached = ResolveCategoryList(varName, useShortlabels)
-        this.catKeys.Push cacheKey
-        this.catValues.Push cached
+        this.catCache.Add cached, cacheKey
     End If
 
+    'The clone stays: callers do change what they are handed.
     Set Categories = cached.Clone
 End Function
 
-'@label:find-category-index
-'@sub-title Search the category keys array for a matching key
-'@param cacheKey String. The key to search for.
-'@return Long. The 1-based index if found, or 0 if not found.
-Private Function FindCategoryIndex(ByVal cacheKey As String) As Long
-    Dim idx As Long
-
-    If this.catKeys Is Nothing Then Exit Function
-    If this.catKeys.Length = 0 Then Exit Function
-
-    For idx = this.catKeys.LowerBound To this.catKeys.UpperBound
-        If StrComp(CStr(this.catKeys.Item(idx)), cacheKey, vbBinaryCompare) = 0 Then
-            FindCategoryIndex = idx
-            Exit Function
-        End If
-    Next idx
+'@label:cached-categories
+'@sub-title Read one category list out of the lookup
+'@details
+'A Collection raises on a key it does not hold, which is how a miss is read.
+'The lookup this replaced was two parallel BetterArrays walked one entry at a
+'time, and every walk opened with a full copy of the internal array. A
+'500-variable dictionary spent about 125,000 item reads on cache misses alone.
+'@param cacheKey String. The key to look up.
+'@return BetterArray. The cached list, or Nothing when the key is absent.
+Private Function CachedCategories(ByVal cacheKey As String) As BetterArray
+    On Error Resume Next
+        Set CachedCategories = this.catCache.Item(cacheKey)
+    On Error GoTo 0
 End Function
 
 '@label:resolve-category-list
@@ -982,24 +1001,26 @@ End Function
 '@label:dictionary
 '@prop-title Linelist dictionary
 '@details
-'Returns the LLdictionary instance providing column and row access to the
-'Dictionary worksheet. Lazy-loaded on first access.
+'The LLdictionary instance over the Dictionary worksheet of the LINELIST
+'workbook. Prepare sets it from the build service.
 '@return LLdictionary. The dictionary collaborator.
+'@throws ProjectError.ErrorUnexpectedState When Prepare has not run.
 '@export
 Public Property Get Dictionary() As LLdictionary
-    EnsureDictionary
+    If this.dictionary Is Nothing Then RequirePrepared "Dictionary"
     Set Dictionary = this.dictionary
 End Property
 
 '@label:choices
 '@prop-title Choices catalogue
 '@details
-'Returns the LLChoices instance providing category lookups from the
-'Choices worksheet. Lazy-loaded on first access.
+'The LLChoices instance over the Choices worksheet of the LINELIST workbook.
+'Prepare sets it from the build service.
 '@return LLChoices. The choices collaborator.
+'@throws ProjectError.ErrorUnexpectedState When Prepare has not run.
 '@export
 Public Property Get Choices() As LLChoices
-    EnsureChoices
+    If this.choices Is Nothing Then RequirePrepared "Choices"
     Set Choices = this.choices
 End Property
 
@@ -1018,24 +1039,26 @@ End Property
 '@label:analysis
 '@prop-title Analysis setup specifications
 '@details
-'Returns the Analysis instance providing access to the Analysis
-'worksheet configuration. Lazy-loaded on first access.
+'The Analysis instance over the Analysis worksheet of the LINELIST workbook.
+'Prepare sets it from the build service.
 '@return Analysis. The analysis collaborator.
+'@throws ProjectError.ErrorUnexpectedState When Prepare has not run.
 '@export
 Public Property Get AnalysisObject() As Analysis
-    EnsureAnalysis
+    If this.ana Is Nothing Then RequirePrepared "AnalysisObject"
     Set AnalysisObject = this.ana
 End Property
 
 '@label:export-object
 '@prop-title Export column specifications
 '@details
-'Returns the LLExport instance providing access to export column
-'definitions from the Exports worksheet. Lazy-loaded on first access.
+'The LLExport instance over the Exports worksheet of the LINELIST workbook.
+'Prepare sets it from the build service.
 '@return LLExport. The export collaborator.
+'@throws ProjectError.ErrorUnexpectedState When Prepare has not run.
 '@export
 Public Property Get ExportObject() As LLExport
-    EnsureExports
+    If this.exports Is Nothing Then RequirePrepared "ExportObject"
     Set ExportObject = this.exports
 End Property
 
@@ -1078,15 +1101,13 @@ End Property
 '@label:has-template
 '@prop-title Whether the workbook uses a ribbon template
 '@details
-'Reads the RNG_MainTemp named range on the Main worksheet and returns True
-'when the value equals "has template".
+'Reads the RNG_LLTemp named range on the designer's Main worksheet and answers
+'True when it holds anything. An absent range answers False.
 '@return Boolean. True when a template is configured.
 '@export
 Public Property Get HasTemplate() As Boolean
-    Dim mainSheet As Worksheet
-    Set mainSheet = ResolveSheet(SHEET_MAIN)
     On Error Resume Next
-    HasTemplate = (mainSheet.Range("RNG_LLTemp").Value <> vbNullString)
+        HasTemplate = (MainSheet().Range("RNG_LLTemp").Value <> vbNullString)
     On Error GoTo 0
 End Property
 
@@ -1102,18 +1123,6 @@ Public Property Get Translations() As LLTranslation
     Set Translations = this.translations
 End Property
 
-'@label:designer-translations
-'@prop-title Designer translation accessor
-'@details
-'Returns the DesignerTranslation instance providing designer UI translations
-'from the DesignerTranslation worksheet. Lazy-loaded on first access.
-'@return DesignerTranslation. The designer translation collaborator.
-'@export
-Public Property Get DesignerTranslations() As DesignerTranslation
-    EnsureDesignerTranslations
-    Set DesignerTranslations = this.designerTranslations
-End Property
-
 '@label:trans-object
 '@prop-title Scoped translation object
 '@details
@@ -1127,8 +1136,6 @@ End Property
 '@throws ProjectError.ElementNotFound When the scope is not available.
 '@export
 Public Property Get TransObject(Optional ByVal translationScope As Byte = TranslationOfMessages) As TranslationObject
-    Dim resolved As TranslationObject
-
     EnsureTranslations
 
     Select Case translationScope
@@ -1199,8 +1206,6 @@ Public Property Get TemporarySheetName(ByVal scope As Byte) As String
     Select Case scope
         Case TempSheetAnalysis
             TemporarySheetName = "ana_tabnames__"
-        Case TempSheetUpdates
-            TemporarySheetName = "updates__"
         Case TempSheetMetadata
             TemporarySheetName = "Metadata"
         Case TempSheetList
@@ -1222,20 +1227,27 @@ End Property
 '@label:value
 '@prop-title Configuration value by tag name
 '@details
-'Returns a configuration value from the Main worksheet for the given
-'tag name. The special tag "numberofexports" returns the export count
-'from the Exports worksheet; all other tags resolve the named range directly
-'on the Main worksheet.
+'Answers one configuration value the user typed into the designer's Main
+'worksheet. Most tags name a range on that worksheet; two read a hidden name
+'on the designer workbook, and one counts the exports.
+'
+'A tag this class does not know raises. It used to answer an empty string, and
+'that is what hid the debugging password fault for weeks: the tag table asked
+'for a range name that exists nowhere, the read failed under On Error Resume
+'Next, and every generated linelist got an empty password with nothing said.
+'
+'A tag the class knows whose RANGE is absent still answers an empty string.
+'That is a designer the user has yet to fill in, and Prepare's caller validates
+'the two values that have to be there.
 '@param tagName String. The configuration key to look up.
-'@return String. The configuration value, or empty string if tagName is empty.
+'@return String. The configuration value, or an empty string for an empty tag.
+'@throws ProjectError.InvalidArgument When the tag is unknown to this class.
 '@export
 Public Property Get Value(ByVal tagName As String) As String
     Dim normalizedTag As String
     Dim rngName As String
-    Dim mainSheet As Worksheet
     Dim retVal As String
     Dim useHidden As Boolean
-    Dim hn As HiddenNames
 
     normalizedTag = LCase$(Trim$(tagName))
     If LenB(normalizedTag) = 0 Then Exit Property
@@ -1247,7 +1259,7 @@ Public Property Get Value(ByVal tagName As String) As String
         Case "llpassword"
             rngName = "RNG_LLPwdOpen"
         Case "debugpassword"
-            rngName = "RNG_RNG_LLPassword"
+            rngName = RANGE_DEBUG_PASSWORD
         Case "geopath"
             rngName = "RNG_PathGeo"
         Case "setuppath"
@@ -1260,25 +1272,20 @@ Public Property Get Value(ByVal tagName As String) As String
             rngName = "RNG_LangSetup"
         Case "lllang"
             rngName = "RNG_LLForm"
-        Case "alert"
-            'HiddenName at workbook level on alerts (chkAlert)
-            rngName = "chkAlert"
-            useHidden = True
         Case "instruct"
+            'Hidden name at workbook level carrying the instructions choice
             rngName = "chkInstruct"
             useHidden = True
-            'HiddenName at workbook leven on instructions (chkInstruct)
         Case "epiweekstart"
-            Set mainSheet = ResolveSheet(SHEET_MAIN)
+            'Week 1 is the default when the designer holds no choice
             On Error Resume Next
-            Value = "1"
-            Value = Split(mainSheet.Range("RNG_DefaultEpiWeek").Value, "-")(0)
+                Value = "1"
+                Value = Split(MainSheet().Range("RNG_DefaultEpiWeek").Value, "-")(0)
             On Error GoTo 0
             Exit Property
         Case "temppath"
-            Set mainSheet = ResolveSheet(SHEET_MAIN)
             On Error Resume Next
-            retVal = mainSheet.Range("RNG_LLTemp").Value
+                retVal = MainSheet().Range("RNG_LLTemp").Value
             On Error GoTo 0
             If retVal = "_default" Or retVal = "default" Then
                 retVal = this.specsWkb.Path & Application.PathSeparator & _
@@ -1287,16 +1294,15 @@ Public Property Get Value(ByVal tagName As String) As String
             Value = retVal
             Exit Property
         Case Else
-            Exit Property
+            ThrowError ProjectError.InvalidArgument, _
+                      "This class knows no specification tag called '" & tagName & "'"
     End Select
 
     If useHidden Then
-        Set hn = HiddenNames.Create(this.specsWkb)
-        Value = hn.ValueAsString(rngName)
+        Value = DesignerHiddenStore().ValueAsString(rngName)
     Else
-        Set mainSheet = ResolveSheet(SHEET_MAIN)
         On Error Resume Next
-        Value = mainSheet.Range(rngName).Value
+            Value = MainSheet().Range(rngName).Value
         On Error GoTo 0
     End If
 End Property
@@ -1310,18 +1316,25 @@ End Property
 '@label:prepare
 '@sub-title Prepare all specifications using a build service
 '@details
-'Orchestrates the full specification preparation workflow:
+'Runs the whole preparation:
 '1. Creates a temporary repository for working files.
-'2. Creates a new output workbook (from template if configured).
-'3. Exports pass-through components directly from setup to linelist.
-'4. Exports designer-sourced components (geo, passwords, translations,
-'   formatter, language HiddenNames) to the linelist.
-'5. Builds domain manager instances on the linelist workbook.
-'6. Retrieves exported domain instances from the service.
-'7. Prepares the dictionary with preserved sheet names and geo references.
-'8. Adds the "list auto" column if not already present.
-'9. Translates and sorts all collaborators using dictionary translations.
-'Handles errors with cleanup and busy-state restoration.
+'2. Creates the output workbook, from the template when one is configured.
+'3. Imports the pass-through components straight from setup into the linelist.
+'4. Exports the designer-sourced components (geo, passwords, translations,
+'   formatter, language hidden names) into the linelist.
+'5. Builds the domain managers on the linelist workbook.
+'6. Takes those instances from the service, which is what points the four
+'   pass-through collaborators at the linelist.
+'7. Imports the geobase the user asked for.
+'8. Prepares the dictionary with the preserved sheet names.
+'9. Adds the "list auto" column when the dictionary has none.
+'10. Translates and sorts the collaborators.
+'11. Writes the debugging password into the linelist.
+'
+'A failure anywhere closes the output workbook, drops the temporary
+'repository and restores the application state, then re-raises. The caller
+'creates its Linelist after this returns, so a Prepare that leaked left an
+'orphaned workbook open and temporary files on disk every time.
 '@param buildService LinelistBuildService. The configured build service.
 '@param setupPath String. Full path to the setup workbook.
 '@throws ProjectError.ObjectNotInitialized When buildService is Nothing.
@@ -1337,11 +1350,12 @@ Public Sub Prepare(ByVal buildService As LinelistBuildService, ByVal setupPath A
     Dim msgTrads As TranslationObject
     Dim preservedNames As BetterArray
     Dim busyScope As ApplicationState
-    Dim prepared As Boolean
     Dim outWkb As Workbook
     Dim templatePath As String
     Dim tempPath As String
     Dim pass As Passwords
+    Dim errNumber As Long
+    Dim errDescription As String
 
     If buildService Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, _
@@ -1397,7 +1411,7 @@ Public Sub Prepare(ByVal buildService As LinelistBuildService, ByVal setupPath A
     Set dictTrads = TransObject(TranslationOfDictionary)
     Set msgTrads = TransObject()
 
-    'Import geobase from user-specified path (optional — skip if no path)
+    'Import the geobase the user asked for. An empty path is a valid choice.
     ImportGeobase geoObj
 
     Set preservedNames = BuildPreservedSheetNames(msgTrads)
@@ -1422,22 +1436,40 @@ CleanExit:
     If this.prepared Then ResetPostImportCaches
     Exit Sub
 
-CleanFail:
-    Dim errNumber As Long
-    Dim errDescription As String
-
-    errNumber = Err.Number
-    errDescription = Err.Description
-
-    ExitBusyState busyScope
+'The cleanup label runs with the handler disarmed, so the work below can raise
+'without ending the routine where it stands. A handler that does its own
+'cleanup throws away everything after the first raise, because VBA cannot trap
+'an error raised while a handler is active.
+CleanUpAfterFail:
+    On Error Resume Next
+        ExitBusyState busyScope
+        If Not outWkb Is Nothing Then outWkb.Close saveChanges:=False
+        Set this.outputWkb = Nothing
+        Set this.tempRepos = Nothing
+    On Error GoTo 0
 
     If errNumber = 0 Then Exit Sub
 
-    If errNumber >= ProjectError.ErrorNone And errNumber <= ProjectError.ElementNotFound Then
-        Err.Raise errNumber, CLASSNAME, errDescription
-    Else
-        ThrowError ProjectError.ErrorUnexpectedState, errDescription
-    End If
+    'ProjectError runs 1001, 1002 and 1004 to 1008. The test this replaced was
+    'a range from ErrorNone to ElementNotFound, which left SomethingWentWrong
+    'above the upper bound and rewrote it as ErrorUnexpectedState. The build
+    'service raises exactly that code when it cannot open the setup workbook,
+    'which is the most likely failure of the direct import path, and its
+    'identity was destroyed. The old window also swallowed the whole native VBA
+    'range, where Excel's own 1004 collides with ErrorUnexpectedState.
+    Select Case errNumber
+        Case ProjectError.InvalidArgument, ProjectError.ObjectNotInitialized, _
+             ProjectError.ErrorUnexpectedState To ProjectError.SomethingWentWrong
+            Err.Raise errNumber, CLASSNAME, errDescription
+        Case Else
+            ThrowError ProjectError.ErrorUnexpectedState, errDescription
+    End Select
+    Exit Sub
+
+CleanFail:
+    errNumber = Err.Number
+    errDescription = Err.Description
+    Resume CleanUpAfterFail
 End Sub
 
 '@label:ll-workbook
@@ -1479,6 +1511,55 @@ Public Sub ErrorManage(Optional ByVal textMessage As String = vbNullString)
     MsgBox messageBody, vbExclamation + vbOKOnly, "Linelist Specifications"
 End Sub
 
+'@section Checkings
+'===============================================================================
+'@description What this class reports into the generation report.
+'GenerationReport.HarvestSpecsCheckings collects these after Prepare, alongside
+'the entries of the dictionary, the choices, the exports, the analysis, the
+'passwords and the format.
+
+'@label:checks
+'@prop-title The report entries of this instance
+'@return Checking. The entries, created on first use.
+Private Property Get Checks() As Checking
+    If this.checks Is Nothing Then Set this.checks = Checking.Create(CLASSNAME)
+    Set Checks = this.checks
+End Property
+
+'@label:log-check
+'@sub-title File one report entry
+'@details
+'Checking.Add raises on a duplicate key, and one report carries the entries of
+'several classes, so the key names this class and a counter.
+'@param message String. The message text.
+'@param scope Optional Byte. The checking scope. Defaults to checkingNote.
+Private Sub LogCheck(ByVal message As String, _
+                     Optional ByVal scope As Byte = checkingNote)
+    Dim entries As Checking
+
+    Set entries = Checks
+    checkCounter = checkCounter + 1
+    entries.Add CLASSNAME & "-" & CStr(checkCounter), message, scope
+End Sub
+
+'@label:has-checkings
+'@prop-title Whether this instance has anything to report
+'@return Boolean. True once one entry has been filed.
+'@export
+Public Property Get HasCheckings() As Boolean
+    If this.checks Is Nothing Then Exit Property
+    HasCheckings = (this.checks.Length() > 0)
+End Property
+
+'@label:checking-values
+'@prop-title The entries filed while the specifications were prepared
+'@return Checking. The entries, or Nothing when none were filed.
+'@export
+Public Property Get CheckingValues() As Checking
+    If Not HasCheckings Then Exit Property
+    Set CheckingValues = this.checks
+End Property
+
 '@section Error handling
 '===============================================================================
 '@description Internal error-raising utility.
@@ -1494,24 +1575,6 @@ End Sub
 '@section Test support
 '===============================================================================
 '@description Backdoor setters for injecting mock collaborators during testing.
-
-'@label:test-assign-designer-translations
-'@sub-title Inject a mock DesignerTranslation instance for testing
-'@param designerTrads DesignerTranslation. The mock designer translations object.
-Public Sub TestAssignDesignerTranslations(ByVal designerTrads As DesignerTranslation)
-    Set this.designerTranslations = designerTrads
-End Sub
-
-'@label:test-assign-translations
-'@sub-title Inject a mock LLTranslation instance for testing
-'@details
-'Also resets the translation cache to ensure the mock object is used
-'for subsequent TransObject lookups.
-'@param translations LLTranslation. The mock translations object.
-Public Sub TestAssignTranslations(ByVal translations As LLTranslation)
-    Set this.translations = translations
-    ResetTranslationCache
-End Sub
 
 '@label:test-assign-dictionary
 '@sub-title Inject a dictionary collaborator for testing

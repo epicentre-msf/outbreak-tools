@@ -90,6 +90,13 @@ Public Function HarvestSpecsCheckings(ByVal specs As LinelistSpecs) As BetterArr
         result.Push specs.DesignFormat.CheckingValues
     End If
 
+    'The specifications themselves. A geobase the user asked for that would not
+    'open is filed here, and it used to leave the linelist with no geographic
+    'data and nothing said.
+    If specs.HasCheckings Then
+        result.Push specs.CheckingValues
+    End If
+
     Set HarvestSpecsCheckings = result
 End Function
 

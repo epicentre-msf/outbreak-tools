@@ -137,6 +137,13 @@ suites:
       # LLFormat needs CustomTable (Import and Export), Checking and BetterArray.
       # CustomTable is above and the other two are already in the workbook.
       - name: LLFormat
+      # TemporaryRepos manages the working folder Prepare writes into. It names
+      # ProjectError alone, which lives in Checking and is baked into the
+      # workbook, so this row closes its own compile closure. It is here rather
+      # than under `linelist` because a class row is resolved against
+      # src/classes/<the suite folder>/ and this class lives in
+      # src/classes/general/. LinelistSpecs holds one.
+      - name: TemporaryRepos
       # Do NOT add TranslationObject as a class. It is already baked into the
       # workbook, and importing it again makes Excel keep both copies under a
       # second name (TranslationObject1). Only its TEST module is registered.
@@ -169,6 +176,11 @@ suites:
         covers: [LLFormat]
       - module: TestLLChoices
         covers: [LLChoices]
+      # TestTemporaryRepos writes real files. Every test hands the factory a
+      # base folder under ThisWorkbook.Path, because the default base is
+      # Application.DefaultFilePath, which sits outside the granted folder.
+      - module: TestTemporaryRepos
+        covers: [TemporaryRepos]
       # TestPasswords is parked by owner decision: it ran once, green at 60
       # assertions, and is not wanted in the regular loop. Re-enable by
       # uncommenting -- nothing else has to change, and PasswordsTestFixture
@@ -429,8 +441,12 @@ suites:
   # a row here stages no file at all and the import wedges with no message. It
   # gets its own `graphs` block further down.
   #
-  # TestAnalysisOutput stays out until AnalysisOutput has a class row of its own,
-  # and that class brings its own compile closure through LinelistSpecs.
+  # TestAnalysisOutput stays out until AnalysisOutput has a class row of its own.
+  # LinelistSpecs is registered under `linelist` below, so that half of the wall
+  # is down. What AnalysisOutput still waits on is Linelist: it holds
+  # `anaLL As Linelist` and its factory takes `ByVal ll As Linelist`, both
+  # typed. It also needs a GraphSpecs row, which it types in three places.
+  # Those rows belong to the Linelist session.
   - folder: analyses
     classes:
       - name: Analysis
@@ -492,6 +508,82 @@ suites:
     classes:
       - name: Graphs
 
+  # --- geo (LLGeo, for LinelistSpecs) ----------------------------------------
+  # LLGeo owns the Geo worksheet: the four admin tables, the health facility
+  # table, the level-name translations and the metadata table. LinelistSpecs
+  # holds one and the build service returns one, so it travels with them.
+  #
+  # It names BetterArray, HiddenNames, Passwords and Checking, all baked into
+  # the driver workbook, plus LLdictionary and LLVariables (registered under
+  # `dictionary`) and CustomTable and DropdownLists (registered under
+  # `general`). So this one row closes its own compile closure.
+  #
+  # This block has no suite yet. src/tests/geo/ holds TestLLGeo and
+  # TestLLSpatial, both unregistered, and both belong to their own sessions.
+  # LLSpatial has no row here because nothing registered compiles against it.
+  - folder: geo
+    classes:
+      - name: LLGeo
+
+  # --- designer (LinelistBuildService) ---------------------------------------
+  # LinelistSpecs.Prepare takes a LinelistBuildService and the parameter is
+  # typed, so the class has to be in the workbook. A class row is resolved
+  # against src/classes/<the suite folder>/, so it needs a block naming its own
+  # folder.
+  #
+  # LinelistBuildService names Analysis, LLChoices, LLExport, LLFormat, LLGeo,
+  # LLTranslation, LLdictionary, Passwords and HiddenNames. LLGeo is right
+  # above, LLTranslation is under `linelist` below, Analysis is under
+  # `analyses`, and the rest are already registered or baked in. So this one
+  # row opens nothing further.
+  #
+  # DesignerTranslation has NO row here. LinelistSpecs held one in a field
+  # reached only through a property with no caller anywhere, and both went with
+  # the dead code, which took the class out of the compile closure. Nothing
+  # else registered names it. DesignerEntry and EventsDesignerCore still do,
+  # and they are unregistered.
+  #
+  # This block has no suite yet. src/tests/designer/ is unregistered.
+  - folder: designer
+    classes:
+      - name: LinelistBuildService
+
+  # --- linelist (LinelistSpecs, LLTranslation) -------------------------------
+  # THIS IS THE FIRST TIME EITHER CLASS HAS BEEN COMPILED. The whole generation
+  # path sat in the expansion backlog below, so LinelistSpecs, Linelist,
+  # ListBuilder, CodeTransfer, LLTranslation and LinelistBuildService were never
+  # imported and the green baseline said nothing about any of them.
+  #
+  # LinelistSpecs is the facade over the designer's seven required sheets, and
+  # after Prepare it is the handle on the linelist's domain managers. Its
+  # closure is five class rows across four blocks: these two, plus LLGeo under
+  # `geo`, LinelistBuildService under `designer`, and
+  # TemporaryRepos under `general`. Everything else it names is registered
+  # already (Analysis, ApplicationState, FormulaData, Formulas, LLChoices,
+  # LLExport, LLFormat, LLVariables, LLdictionary) or baked into the driver
+  # workbook (BetterArray, Checking, HiddenNames, Passwords, TranslationObject).
+  #
+  # LLTranslation names CustomTable (under `general`), BetterArray, HiddenNames
+  # and TranslationObject (all baked in), so it opens nothing further.
+  #
+  # Linelist, ListBuilder and CodeTransfer stay out. Linelist needs Buttons and
+  # its own suite, and ListBuilder opens the `sections` folder through
+  # SectionBuilder and VarWriter. Both belong to later sessions.
+  - folder: linelist
+    classes:
+      - name: LinelistSpecs
+      - name: LLTranslation
+    tests:
+      # TestLinelistSpecs moved here from the src/tests/ root, where it had no
+      # folder to be registered under. Its four tests had never run.
+      - module: TestLinelistSpecs
+        covers: [LinelistSpecs]
+      # TestLLTranslation builds a workbook carrying the five translation
+      # tables and the two language codes. It reaches no fixture module; its
+      # helper calls are unqualified, so they resolve to TestHelpersLite.
+      - module: TestLLTranslation
+        covers: [LLTranslation]
+
   # --- dev (Development) ----------------------------------------------------
   # THIS BLOCK CARRIES A TEST MODULE AND NO CLASS, AND IT MUST STAY THAT WAY.
   # Development is one of the components imported BY HAND into the driver
@@ -551,8 +643,12 @@ suites:
 # ---------------------------------------------------------------------------
 # TEMPLATE — copy per folder as coverage is added. Delete fields left empty.
 # Expansion backlog (suite folders under src/tests/ that are not yet
-# registered): dataio, designer, geo, graphs, linelist, mastersetup,
-# showhide, tables.
+# registered): dataio, mastersetup, showhide, tables. The designer, geo,
+# graphs and linelist folders now carry class rows; what they still lack is
+# suites. src/tests/geo/ holds TestLLGeo and TestLLSpatial, src/tests/graphs/
+# holds TestGraphs and TestGraphSpecs, and src/tests/linelist/ holds
+# TestLinelist, TestListBuilder, TestCodeTransfer and TestLLTranslation.
+# None of those has ever executed.
 #
 #   - folder: <subfolder>
 #     classes:
