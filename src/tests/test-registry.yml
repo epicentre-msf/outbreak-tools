@@ -391,6 +391,13 @@ suites:
   # TemporaryRepos across four more folders. TestCrossTable hands over
   # LinelistDataStub, registered under `helpers`.
   #
+  # AnalysisRanges names nothing at all. It holds one string and answers the
+  # named-range strings built from it, so its class row is a leaf and closes
+  # its own compile closure on its own. Its ThrowError reaches ProjectError,
+  # which lives in Checking, and Checking is baked into the workbook. That is
+  # also what makes it cheap for Linelist.TransferAllCode to carry, so the
+  # generated linelist and this builder can share one definition of every name.
+  #
   # The other three test modules in src/tests/analyses/ -- TestAnaTabIds,
   # TestAnalysisOutput and TestCrossTableFormula -- each bring their own
   # compile closure and stay out until their own class rows are here.
@@ -400,11 +407,14 @@ suites:
   - folder: analyses
     classes:
       - name: Analysis
+      - name: AnalysisRanges
       - name: TableSpecs
       - name: CrossTable
     tests:
       - module: TestAnalysis
         covers: [Analysis]
+      - module: TestAnalysisRanges
+        covers: [AnalysisRanges]
       - module: TestTableSpecs
         covers: [TableSpecs]
       - module: TestCrossTable
