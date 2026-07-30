@@ -18,14 +18,40 @@ Option Explicit
 
 '@class SpatialTables
 '@description
-'Creates spatial analysis ListObjects on the "spatial_tables__" worksheet at
-'linelist build time. For each cross-table row variable, builds either four
-'admin-level tables (adm1-adm4 for geo type) or one health-facility table
-'(for hf type), each with formula, population, and attack rate columns.
-'Manages formula conditions and validates that the spatial sheet exists
-'before writing.
-'@depends CrossTable, TableSpecs, Formulas, FormulaCondition, BetterArray
-'@version 2025-01-15
+'Creates the spatial analysis ListObjects on the "spatial_tables__" worksheet at
+'build time. For each cross-table row variable it builds either four
+'administrative tables (adm1 to adm4) or one health facility table, each with a
+'formula column, a population column and an attack rate column.
+'
+'THE CONTRACT WITH LLSPATIAL
+'-------------------------------------------------------------------------------
+'This class writes what LLSpatial reads in the generated linelist, and the two
+'never reference each other: the contract is the set of names below, agreed by
+'string convention across a workbook boundary. Change a name here and change it
+'in LLSpatial in the same commit.
+'
+'    listofgeovars              one row per spatial variable
+'    RNG_PastingCol             the scratch column LLSpatial pastes through
+'    spatial_<level>_<var>      one ListObject per level, four columns wide
+'      column 1  tabl_<level>_<var>    the lookup key
+'      column 2  formula_<level>       the value LLSpatial sorts on
+'      column 3  population_<level>
+'      column 4  attack_rate_<level>   the other value LLSpatial sorts on
+'
+'Every row of listofgeovars has to resolve to a real ListObject, because
+'LLSpatial walks that list and asks for the table by name. So the variable is
+'registered after its tables are built.
+'
+'WHAT A FACILITY TABLE HOLDS
+'-------------------------------------------------------------------------------
+'A facility table carries the same four columns as an administrative one, and
+'its population and attack rate columns stay empty. The population lookup reads
+'the administrative population columns of the geobase (adm1_pop to adm4_pop),
+'and a facility carries no population column of its own. The four columns are
+'kept because LLSpatial.Update resizes every spatial table to four columns as it
+'refreshes it.
+'@depends CrossTable, TableSpecs, Formulas, FormulaBuilder, Checking
+'@version 2026-07-30
 
 
 
@@ -35,17 +61,39 @@ Option Explicit
 Private Type TSpatialTables
     sh As Worksheet
     tab As CrossTable
-    condVars As BetterArray
-    condTests As BetterArray
+    build As FormulaBuilder
+    checks As Checking
     sealed As Boolean
 End Type
 
 Private this As TSpatialTables
+Private checkCounter As Long
+
 Private Const CLASS_NAME As String = "SpatialTables"
 Private Const SPATIAL_SHEET As String = "spatial_tables__"
 Private Const ADMIN As String = "adm"
 Private Const HF As String = "hf"
+Private Const GEO As String = "geo"
 Private Const CONCAT As String = "concat_"
+
+' The registry of spatial variables, and the column Prepare puts it in.
+Private Const REGISTRY_TABLE As String = "listofgeovars"
+Private Const REGISTRY_HEADER As String = "listofvars"
+Private Const REGISTRY_COL As Long = 3
+
+' The scratch column LLSpatial pastes through, and the name it reads it by.
+Private Const PASTING_COL As Long = 5
+Private Const PASTING_NAME As String = "RNG_PastingCol"
+
+' Where the first spatial table starts, how wide one is, and how far past the
+' last used column the next one starts. Prepare and LastColumn share these; the
+' two used to hold the same numbers as literals in different methods.
+Private Const FIRST_TABLE_COL As Long = 7
+Private Const TABLE_WIDTH As Long = 4
+Private Const TABLE_GAP As Long = 2
+
+' A geographic variable is spread over these four administrative levels.
+Private Const ADMIN_LEVELS As Long = 4
 
 '@section Instantiation
 '===============================================================================
@@ -53,29 +101,32 @@ Private Const CONCAT As String = "concat_"
 '@label:create
 '@sub-title Create a SpatialTables instance from a cross-table
 '@details
-'Factory method on the predeclared instance. Validates that the cross-table
-'is not Nothing and that the "spatial_tables__" worksheet exists in the same
-'workbook. Binds the cross-table to the new instance so subsequent Add calls
-'can read the row variable and table specifications.
-'@param tabl CrossTable. The cross-table whose row variable defines the
-'spatial tables to create.
+'Factory method on the predeclared instance. Validates that the cross-table is
+'given and that the "spatial_tables__" worksheet exists in the same workbook,
+'then hands the resolved worksheet to the instance so it is looked up once.
+'@param tabl CrossTable. The cross-table whose row variable defines the spatial
+'tables to create.
 '@return SpatialTables. A fully initialised spatial tables builder.
 '@throws ProjectError.ObjectNotInitialized When tabl is Nothing.
 '@throws ProjectError.ElementNotFound When the spatial worksheet is missing.
 '@depends CrossTable, TableSpecs
 '@export
 Public Function Create(ByVal tabl As CrossTable) As SpatialTables
-    CheckRequirements tabl
+    Dim spatialSh As Worksheet
+
+    Set spatialSh = CheckRequirements(tabl)
 
     Dim instance As SpatialTables
     Set instance = New SpatialTables
     Set instance.Table = tabl
+    Set instance.SpatialSheet = spatialSh
     instance.Seal
     Set Create = instance
 End Function
 
 '@label:seal
 '@sub-title Seal the instance against further setup writes.
+'@export
 Public Sub Seal()
     this.sealed = True
 End Sub
@@ -91,9 +142,10 @@ End Sub
 '@label:table
 '@prop-title Cross-table bound to this builder
 '@details
-'Returns the CrossTable instance whose row variable and specifications
-'drive the spatial table creation in Add.
+'Returns the CrossTable instance whose row variable and specifications drive the
+'spatial table creation in Add.
 '@return CrossTable. The bound cross-table.
+'@export
 Public Property Get Table() As CrossTable
     Set Table = this.tab
 End Property
@@ -101,88 +153,123 @@ End Property
 '@label:table-set
 '@prop-title Assign the cross-table reference
 '@param tabl CrossTable. The cross-table to bind.
+'@export
 Public Property Set Table(ByVal tabl As CrossTable)
     GuardNotSealed "Table"
     Set this.tab = tabl
+End Property
+
+'@label:spatial-sheet-set
+'@prop-title Assign the spatial worksheet the factory resolved
+'@param sh Worksheet. The "spatial_tables__" worksheet.
+'@export
+Public Property Set SpatialSheet(ByVal sh As Worksheet)
+    GuardNotSealed "SpatialSheet"
+    Set this.sh = sh
 End Property
 
 '@section Worksheet
 '===============================================================================
 
 '@label:wksh
-'@prop-title Lazy-loaded spatial worksheet reference
+'@prop-title The spatial worksheet
 '@details
-'Returns the "spatial_tables__" worksheet from the cross-table workbook.
-'The reference is cached after the first access to avoid repeated lookups.
+'The factory resolves the worksheet and hands it over, so this is a read of what
+'the instance already holds.
 '@return Worksheet. The spatial analysis worksheet.
 Private Property Get Wksh() As Worksheet
-    If this.sh Is Nothing Then
-        Dim wb As Workbook
-        Set wb = Table.Wksh().Parent
-        Set this.sh = wb.Worksheets(SPATIAL_SHEET)
-    End If
-
     Set Wksh = this.sh
+End Property
+
+'@label:id
+'@prop-title The identifier of the table these spatial tables belong to
+'@return String. The table identifier.
+Private Property Get ID() As String
+    ID = Table.Specifications.TableId()
 End Property
 
 '@section Naming Conventions
 '===============================================================================
-'@description Helpers for constructing spatial table and range names.
+'@description Helpers for building the spatial table and header names. LLSpatial
+'builds the same two strings from the same pieces.
 
 '@label:current-header-name
-'@prop-title Build the header named range name for a spatial table
+'@prop-title Build the header name of a spatial table
 '@details
-'Concatenates "tabl_", the admin name, and the variable name to form a
-'unique header range name (e.g. "tabl_adm1_cases_sp1").
+'The shape is "tabl_<level>_<variable>", for instance "tabl_adm1_cases_sp1". It
+'is written into the first cell of the table and is the lookup key LLSpatial
+'reads the unit names under.
 '@param varName String. The spatial variable name.
-'@param adminName String. The admin level identifier (e.g. "adm1", "hf").
-'@return String. The header named range name.
+'@param adminName String. The level identifier, such as "adm1" or "hf".
+'@return String. The header name.
 Private Property Get CurrentHeaderName(ByVal varName As String, _
                                        ByVal adminName As String) As String
     CurrentHeaderName = "tabl_" & adminName & "_" & varName
 End Property
 
 '@label:current-lo-name
-'@prop-title Build the ListObject name for a spatial table
+'@prop-title Build the ListObject name of a spatial table
 '@details
-'Concatenates "spatial_", the admin name, and the variable name to form a
-'unique ListObject name (e.g. "spatial_adm1_cases_sp1").
+'The shape is "spatial_<level>_<variable>", for instance "spatial_adm1_cases_sp1".
 '@param varName String. The spatial variable name.
-'@param adminName String. The admin level identifier.
+'@param adminName String. The level identifier.
 '@return String. The ListObject name.
 Private Property Get CurrentLoName(ByVal varName As String, _
                                    ByVal adminName As String) As String
     CurrentLoName = "spatial_" & adminName & "_" & varName
 End Property
 
+'@label:level-count
+'@prop-title How many tables one spatial variable takes
+'@details
+'A facility variable takes one table and a geographic one takes four. An empty
+'spatial type answers four, which is what a table whose spatial type cell was
+'never filled produces.
+'@param spatType String. The spatial type, "geo" or "hf".
+'@return Long. The number of tables to build.
+Private Property Get LevelCount(ByVal spatType As String) As Long
+    LevelCount = IIf(spatType = HF, 1, ADMIN_LEVELS)
+End Property
+
+'@label:level-name
+'@prop-title The level identifier of one table of a spatial variable
+'@param spatType String. The spatial type, "geo" or "hf".
+'@param counter Long. The 1-based table number.
+'@return String. "hf", or "adm" followed by the level number.
+Private Property Get LevelName(ByVal spatType As String, ByVal counter As Long) As String
+    LevelName = IIf(spatType = HF, HF, ADMIN & counter)
+End Property
+
 '@section Existence Checks
 '===============================================================================
 
 '@label:exists
-'@sub-title Check if spatial ListObjects already exist for a variable
+'@sub-title Whether the spatial tables of a variable are already built
 '@details
-'Iterates through admin levels 1-4 and tests whether each corresponding
-'ListObject exists on the spatial worksheet. Returns True only when all
-'four exist. Used by Add to skip duplicate creation.
-'@param varName String. The spatial variable name to check.
-'@return Boolean. True when all four admin-level ListObjects exist.
-Private Function Exists(ByVal varName As String) As Boolean
+'Asks for the tables the spatial type actually produces. It used to probe the
+'four administrative levels whatever the type, so a facility variable answered
+'False every time: the guard never fired, the variable was registered twice and
+'ListObjects.Add raised 1004 on the second pass over the same workbook.
+'@param varName String. The spatial variable name.
+'@param spatType String. The spatial type, "geo" or "hf".
+'@return Boolean. True when every table the type needs is present.
+Private Function Exists(ByVal varName As String, ByVal spatType As String) As Boolean
     Dim counter As Long
-    Dim testExistence As Boolean
 
-    For counter = 1 To 4
-        testExistence = LoExists(CurrentLoName(varName, ADMIN & counter))
-        If Not testExistence Then Exit For
+    If spatType = HF Then
+        Exists = LoExists(CurrentLoName(varName, HF))
+        Exit Function
+    End If
+
+    For counter = 1 To ADMIN_LEVELS
+        If Not LoExists(CurrentLoName(varName, ADMIN & counter)) Then Exit Function
     Next
 
-    Exists = testExistence
+    Exists = True
 End Function
 
 '@label:lo-exists
-'@sub-title Check if a ListObject exists on the spatial sheet
-'@details
-'Uses the standard VBA error-trapping pattern to test for ListObject
-'existence on the spatial worksheet.
+'@sub-title Whether a ListObject is on the spatial sheet
 '@param loName String. The ListObject name to look for.
 '@return Boolean. True when the ListObject exists.
 Private Function LoExists(ByVal loName As String) As Boolean
@@ -199,37 +286,33 @@ End Function
 '===============================================================================
 
 '@label:last-column
-'@prop-title Next available column on the spatial sheet
+'@prop-title The column the next spatial table starts in
 '@details
-'Finds the last used column on row 1 and returns the next available
-'position with a 2-column gap. Returns column 7 when the sheet only has
-'the initial 3-column setup (listofgeovars occupies column 3).
-'@return Long. The 1-based column index for the next spatial table.
+'Reads the last used column of row 1 and leaves a gap after it. A sheet carrying
+'only the registry answers with the first table column, which keeps the pasting
+'column free.
+'@return Long. The 1-based column index.
 Private Property Get LastColumn() As Long
     Dim sh As Worksheet
     Dim colIndex As Long
 
     Set sh = Wksh()
     colIndex = sh.Cells(1, sh.Columns.Count).End(xlToLeft).Column
-    colIndex = IIf(colIndex = 3, 7, colIndex + 2)
-
-    LastColumn = colIndex
+    LastColumn = IIf(colIndex = REGISTRY_COL, FIRST_TABLE_COL, colIndex + TABLE_GAP)
 End Property
 
 '@section Formula Helpers
 '===============================================================================
-'@description Helpers for building and testing Excel formula expressions.
 
 '@label:geo-population-function
-'@sub-title Build a geo population INDEX/MATCH formula for an admin level
+'@sub-title Build the population lookup of one administrative level
 '@details
-'Constructs an INDEX/MATCH formula that looks up the population value for
-'an admin level from the corresponding geo reference table (T_ADM1 through
-'T_ADM4). The formula is wrapped in ISERROR to return 0 when the lookup
-'fails. The population column index is derived from the admin level number.
-'@param adminName String. The admin level identifier (e.g. "adm1").
-'@param rangeAddress String. The cell address used as the MATCH lookup value.
-'@return String. The complete INDEX/MATCH formula string.
+'An INDEX and MATCH over the geobase table of the level, wrapped in ISERROR so a
+'unit the geobase does not carry reads 0. The population column index comes from
+'the level number: T_ADM1 holds it in column 2, T_ADM2 in column 3, and so on.
+'@param adminName String. The level identifier, such as "adm1".
+'@param rangeAddress String. The cell address MATCH looks the unit up by.
+'@return String. The formula text with no leading "=".
 Private Function GeoPopulationFunction(ByVal adminName As String, _
                                        ByVal rangeAddress As String) As String
     Dim tabName As String
@@ -249,154 +332,32 @@ Private Function GeoPopulationFunction(ByVal adminName As String, _
     GeoPopulationFunction = "IF(ISERROR(" & centralPart & "), 0," & centralPart & ")"
 End Function
 
-'@label:failed-formula
-'@sub-title Test whether a formula expression is valid
+'@label:builder
+'@prop-title The formula builder this class writes through
 '@details
-'Writes the formula to cell A1 of the spatial sheet inside an error
-'handler. If the assignment succeeds, the formula is valid and the cell
-'is cleared. If it fails, the method returns True. DisplayAlerts is
-'temporarily disabled to suppress Excel prompts.
-'@param frmName String. The formula expression to test (without leading "=").
-'@return Boolean. True when the formula is invalid.
-Private Function FailedFormula(ByVal frmName As String) As Boolean
-    Dim prevAlert As Long
-    Dim sh As Worksheet
+'Holds the criteria of the formula being built, asks the parser for the text and
+'writes it into the cell. CrossTableFormula writes through one of these too, so
+'both agree on how a formula is made and on what a refusal looks like.
+'@return FormulaBuilder. The builder, created on first use.
+Private Property Get Builder() As FormulaBuilder
+    Dim entries As Checking
 
-    prevAlert = Application.DisplayAlerts
-    Set sh = Wksh()
-
-    With sh
-        Application.DisplayAlerts = False
-        .Cells(1, 1).Clear
-
-        On Error GoTo Fail
-        .Cells(1, 1).FormulaArray = "= " & frmName
-        .Cells(1, 1).Clear
-        Application.DisplayAlerts = prevAlert
-        FailedFormula = False
-        Exit Function
-    End With
-
-Fail:
-    FailedFormula = True
-    Application.DisplayAlerts = prevAlert
-End Function
-
-'@label:emp-str
-'@sub-title Empty string constant for formula conditions
-'@details
-'Returns a pair of double-quote characters for use in Excel formula strings.
-'@return String. Two double-quote characters (empty string literal in Excel).
-Private Function EmpStr() As String
-    EmpStr = Chr(34) & Chr(34)
-End Function
-
-'@section Condition Management
-'===============================================================================
-'@description Manages variable/condition pairs for formula generation.
-
-'@label:add-table-conditions
-'@sub-title Add a variable/condition pair for formula generation
-'@details
-'Pushes the variable name and condition test onto the parallel condVars
-'and condTests BetterArrays. Lazily initialises both arrays with
-'LowerBound 1 on first use. Ignores empty variable names.
-'@param varName String. The variable name for the condition.
-'@param conditionName String. The condition expression.
-Private Sub AddTableConditions(ByVal varName As String, ByVal conditionName As String)
-    If this.condVars Is Nothing Then
-        Set this.condVars = New BetterArray
-        this.condVars.LowerBound = 1
+    If this.build Is Nothing Then
+        Set entries = Checks
+        Set this.build = FormulaBuilder.Create(CLASS_NAME, ID(), entries)
     End If
 
-    If this.condTests Is Nothing Then
-        Set this.condTests = New BetterArray
-        this.condTests.LowerBound = 1
-    End If
-
-    If varName <> vbNullString Then
-        this.condVars.Push varName
-        this.condTests.Push conditionName
-    End If
-End Sub
-
-'@label:clear-table-conditions
-'@sub-title Clear condition arrays
-'@details
-'When removeNumber is zero or negative, clears both arrays entirely.
-'When positive, removes only the last N entries from both arrays via Pop.
-'Lazily initialises the arrays if they are Nothing.
-'@param removeNumber Optional Long. Number of trailing entries to remove.
-'Defaults to 0 (clear all).
-Private Sub ClearTableConditions(Optional ByVal removeNumber As Long = 0)
-    If this.condVars Is Nothing Then
-        Set this.condVars = New BetterArray
-        this.condVars.LowerBound = 1
-        removeNumber = 0
-    End If
-
-    If this.condTests Is Nothing Then
-        Set this.condTests = New BetterArray
-        this.condTests.LowerBound = 1
-        removeNumber = 0
-    End If
-
-    If removeNumber <= 0 Then
-        this.condVars.Clear
-        this.condTests.Clear
-    Else
-        Dim counter As Long
-        For counter = 1 To removeNumber
-            this.condVars.Pop
-            this.condTests.Pop
-        Next
-    End If
-End Sub
-
-'@label:current-excel-formula
-'@prop-title Build an Excel formula string using the current conditions
-'@details
-'Constructs a parsed formula from the Formulas object, applying either
-'linelist scope (with table name prefix) or analysis scope (with condition
-'pairs from condVars/condTests). Validates the result via FailedFormula
-'and returns an empty string when the formula is invalid or the object
-'is not valid.
-'@param tabFormObject Formulas. The formula definition to parse.
-'@param scope Optional Byte. FormulaScopeLinelist or FormulaScopeAnalysis.
-'Defaults to FormulaScopeAnalysis.
-'@param prefix Optional String. Table name prefix for linelist scope.
-'Defaults to "f".
-'@return String. The parsed formula string, or empty when invalid.
-Private Property Get CurrentExcelFormula(ByVal tabFormObject As Formulas, _
-                                         Optional ByVal scope As Byte = FormulaScopeAnalysis, _
-                                         Optional ByVal prefix As String = "f") As String
-    Dim cond As FormulaCondition
-    Dim eform As String
-
-    If Not tabFormObject.Valid() Then Exit Property
-
-    If scope = FormulaScopeLinelist Then
-        eform = tabFormObject.ParsedLinelistFormula(useTableName:=True, tablePrefix:=prefix)
-    Else
-        If this.condVars Is Nothing Or this.condTests Is Nothing Then Exit Property
-        Set cond = FormulaCondition.Create(this.condVars, this.condTests)
-        eform = tabFormObject.ParsedAnalysisFormula(cond, tablePrefix:=prefix)
-    End If
-
-    If FailedFormula(eform) Then eform = vbNullString
-
-    CurrentExcelFormula = eform
+    Set Builder = this.build
 End Property
 
 '@section Preparation
 '===============================================================================
 
 '@label:prepare
-'@sub-title Initialise the spatial sheet with the listofgeovars ListObject
+'@sub-title Put the registry and the pasting column on the spatial sheet
 '@details
-'Creates the "listofgeovars" ListObject in column 3 and defines the
-'RNG_PastingCol and RNG_TestingFormula named ranges. Called by Add when
-'the listofgeovars table does not yet exist.
+'Creates the listofgeovars ListObject and names the pasting column LLSpatial
+'reads. Add calls this the first time it finds no registry.
 Private Sub Prepare()
     Dim rng As Range
     Dim sh As Worksheet
@@ -404,49 +365,57 @@ Private Sub Prepare()
     Set sh = Wksh()
 
     With sh
-        Set rng = .Range(.Cells(1, 3), .Cells(2, 3))
-        rng.Cells(1, 1).Value = "listofvars"
-        .ListObjects.Add(xlSrcRange, rng, , xlYes).Name = "listofgeovars"
+        Set rng = .Range(.Cells(1, REGISTRY_COL), .Cells(2, REGISTRY_COL))
+        rng.Cells(1, 1).Value = REGISTRY_HEADER
+        .ListObjects.Add(xlSrcRange, rng, , xlYes).Name = REGISTRY_TABLE
 
-        .Cells(1, 5).Name = "RNG_PastingCol"
-        .Cells(1, 1).Name = "RNG_TestingFormula"
+        .Cells(1, PASTING_COL).Name = PASTING_NAME
     End With
 End Sub
 
 '@label:add-var-name-to-list
-'@sub-title Register a variable name in the listofgeovars ListObject
+'@sub-title Register a variable in the registry
 '@details
-'Appends the variable name to the next empty row in the listofgeovars
-'ListObject. Uses CountA to determine the current row count.
+'Appends one row through the ListObject itself, which puts the value in the row
+'the table ends at and resizes the table with it. The row used to be computed
+'from CountA over the whole table range. CountA answers how many cells hold
+'something, and the write needed a row number, so one blank row anywhere in the
+'registry made the next variable overwrite an existing entry. LLSpatial walks that list to decide
+'which variables get refreshed, so a lost entry is a spatial table that never
+'updates in the delivered linelist.
 '@param varName String. The spatial variable name to register.
 Private Sub AddVarNameToList(ByVal varName As String)
-    Dim sh As Worksheet
     Dim Lo As ListObject
-    Dim nbRows As Long
+    Dim newRow As ListRow
 
-    Set sh = Wksh()
-    Set Lo = sh.ListObjects("listofgeovars")
+    Set Lo = Wksh().ListObjects(REGISTRY_TABLE)
 
-    nbRows = Application.WorksheetFunction.CountA(Lo.Range)
-    sh.Cells(nbRows + 1, Lo.Range.Column).Value = varName
+    If Lo.ListRows.Count = 0 Then
+        Set newRow = Lo.ListRows.Add
+    ElseIf Lo.ListRows(Lo.ListRows.Count).Range.Cells(1, 1).Value = vbNullString Then
+        Set newRow = Lo.ListRows(Lo.ListRows.Count)
+    Else
+        Set newRow = Lo.ListRows.Add
+    End If
+
+    newRow.Range.Cells(1, 1).Value = varName
 End Sub
 
 '@section Add
 '===============================================================================
 
 '@label:add
-'@sub-title Create spatial ListObjects for the cross-table row variable
+'@sub-title Build the spatial tables of the cross-table row variable
 '@details
-'Builds the spatial table set for the current cross-table. For geo-type
-'tables, creates four admin-level tables (adm1-adm4) each with formula,
-'population, and attack rate columns. For hf-type tables, creates a single
-'health-facility table with a formula column only. Each table is created
-'as a 2-row ListObject (header + one data row) positioned at the next
-'available column on the spatial sheet. The formula column is populated
-'from the parsed analysis formula via CurrentExcelFormula. Skips creation
-'when the tables already exist for this variable.
-'@param formObject Formulas. The formula object whose parsed expression
-'is written into each spatial table formula column.
+'A geographic variable gets four tables, one per administrative level, each with
+'the value formula, the population lookup and the attack rate. A facility
+'variable gets one table with the value formula. Every table is two rows and four
+'columns, and they are laid out left to right with a gap between them.
+'
+'The variable is registered in listofgeovars after its tables are built. It used
+'to be registered first, so a failure inside the loop left a name in the registry
+'with no table behind it and LLSpatial walked to a table that was not there.
+'@param formObject Formulas. The summary function the value column is built from.
 '@export
 Public Sub Add(ByVal formObject As Formulas)
     Dim sh As Worksheet
@@ -465,6 +434,7 @@ Public Sub Add(ByVal formObject As Formulas)
     Dim inputVarName As String
     Dim endCounter As Long
     Dim spatType As String
+    Dim formulaIsValid As Boolean
 
     Set tabl = Table
     Set specs = tabl.Specifications
@@ -472,44 +442,43 @@ Public Sub Add(ByVal formObject As Formulas)
     inputVarName = specs.Value("row")
     varName = inputVarName & "_" & specs.TableId()
 
-    If Exists(varName) Then Exit Sub
-    If Not LoExists("listofgeovars") Then Prepare
+    If Exists(varName, spatType) Then Exit Sub
+    If Not LoExists(REGISTRY_TABLE) Then Prepare
 
-    AddVarNameToList varName
+    If Not formObject Is Nothing Then formulaIsValid = formObject.Valid()
+
+    If Not formulaIsValid Then _
+        LogInfo "The summary function of table " & ID() & _
+                " could not be read, so its spatial tables carry no value formula", _
+                checkingError
 
     Set sh = Wksh()
+    endCounter = LevelCount(spatType)
+
+    ' The answer is the same scan for every level of one variable, so it is read
+    ' once and advanced by the width of a table plus the gap.
+    colIndex = LastColumn()
 
     With sh
-        Select Case spatType
-        Case "geo"
-            endCounter = 4
-        Case "hf"
-            endCounter = 1
-        Case Else
-            endCounter = 4
-        End Select
-
         For counter = 1 To endCounter
-            ClearTableConditions
+            Builder.ClearConditions
 
-            If spatType = "hf" Then
-                loName = CurrentLoName(varName, HF)
-                adminName = HF
+            adminName = LevelName(spatType, counter)
+            loName = CurrentLoName(varName, adminName)
+
+            If spatType = HF Then
                 rowVarName = HF & "_" & inputVarName
             Else
-                loName = CurrentLoName(varName, ADMIN & counter)
-                adminName = ADMIN & counter
                 rowVarName = CONCAT & adminName & "_" & inputVarName
             End If
 
-            colIndex = LastColumn()
             headerName = CurrentHeaderName(varName, adminName)
 
             Set cellRng = .Cells(1, colIndex)
             cellRng.Value = headerName
 
-            'Add condition on the row variable
-            AddTableConditions rowVarName, _
+            'The value of the table is read for the unit named one row below
+            Builder.AddCondition rowVarName, _
                 "= " & cellRng.Cells(2, 1).Address(RowAbsolute:=False)
 
             'Column headers
@@ -518,62 +487,121 @@ Public Sub Add(ByVal formObject As Formulas)
             cellRng.Cells(1, 4).Value = "attack_rate_" & adminName
 
             'Formula column value
-            finalFormula = CurrentExcelFormula(formObject)
-            If finalFormula <> vbNullString Then
-                cellRng.Cells(2, 2).FormulaArray = "= " & finalFormula
-            End If
+            finalFormula = vbNullString
+            If formulaIsValid Then finalFormula = Builder.ExcelFormula(formObject)
+            Builder.WriteFormula cellRng.Cells(2, 2), finalFormula
 
-            'Population and attack rate (geo only)
-            If spatType = "geo" Then
-                finalFormula = GeoPopulationFunction(adminName, _
-                    cellRng.Cells(2, 1).Address(RowAbsolute:=False))
-                cellRng.Cells(2, 3).Formula = "= " & finalFormula
+            'Population and attack rate, which the geobase carries per
+            'administrative level. A spatial type the setup workbook never filled
+            'reaches here too, and it gets the four administrative tables with no
+            'population, the way it always has.
+            If spatType = GEO Then
+                Builder.WriteFormula cellRng.Cells(2, 3), _
+                    GeoPopulationFunction(adminName, _
+                        cellRng.Cells(2, 1).Address(RowAbsolute:=False)), False
 
-                finalFormula = "= " & _
+                Builder.WriteFormula cellRng.Cells(2, 4), _
                     cellRng.Cells(2, 2).Address(RowAbsolute:=False) & "/" & _
-                    cellRng.Cells(2, 3).Address(RowAbsolute:=False)
-                cellRng.Cells(2, 4).Formula = finalFormula
+                    cellRng.Cells(2, 3).Address(RowAbsolute:=False), False
             End If
 
             'Create the ListObject
-            Set rng = .Range(cellRng.Cells(1, 1), cellRng.Cells(2, 4))
+            Set rng = .Range(cellRng.Cells(1, 1), cellRng.Cells(2, TABLE_WIDTH))
             .ListObjects.Add(xlSrcRange, rng, , xlYes).Name = loName
+
+            colIndex = colIndex + TABLE_WIDTH - 1 + TABLE_GAP
         Next
     End With
+
+    AddVarNameToList varName
 End Sub
+
+'@section Checkings
+'===============================================================================
+'@description What the class reports back to the generation report.
+'CrossTableFormula harvests these after Add, and AnalysisOutput harvests them
+'from there. A blank formula column used to reach the delivered table with
+'nothing said about it, and the attack rate two cells over divided by it.
+
+'@label:checks
+'@prop-title The report entries of this instance
+'@return Checking. The entries, created on first use.
+Private Property Get Checks() As Checking
+    If this.checks Is Nothing Then Set this.checks = Checking.Create(CLASS_NAME)
+    Set Checks = this.checks
+End Property
+
+'@label:log-info
+'@sub-title File one entry
+'@details
+'Checking.Add raises on a duplicate key, and one report carries the entries of
+'several classes over several tables, so the key names the class, the table and a
+'counter.
+'@param message String. The message text.
+'@param scope Optional Byte. The checking scope. Defaults to checkingSuccess.
+Private Sub LogInfo(ByVal message As String, _
+                    Optional ByVal scope As Byte = checkingSuccess)
+    Dim entries As Checking
+
+    Set entries = Checks
+    checkCounter = checkCounter + 1
+    entries.Add CLASS_NAME & "-" & ID() & "-" & CStr(checkCounter), message, scope
+End Sub
+
+'@label:has-checkings
+'@prop-title Whether this instance has anything to report
+'@return Boolean. True once one entry has been filed.
+'@export
+Public Property Get HasCheckings() As Boolean
+    If this.checks Is Nothing Then Exit Property
+    HasCheckings = (this.checks.Length() > 0)
+End Property
+
+'@label:checking-values
+'@prop-title The entries filed while the spatial tables were built
+'@return Checking. The entries, or Nothing when none were filed.
+'@export
+Public Property Get CheckingValues() As Checking
+    If Not HasCheckings Then Exit Property
+    Set CheckingValues = this.checks
+End Property
 
 '@section Validation
 '===============================================================================
 
 '@label:check-requirements
-'@sub-title Validate cross-table and spatial sheet existence
+'@sub-title Validate the cross-table and find the spatial worksheet
 '@details
-'Guards the Create factory by ensuring the cross-table is not Nothing and
-'that a worksheet named "spatial_tables__" exists in the same workbook.
+'The lookup used to overwrite the variable already holding the analysis
+'worksheet, and a failed Set leaves the target at what it held, so the guard
+'below could never fire and a missing worksheet surfaced later as a bare
+'subscript error with nothing pointing at the sheet.
 '@param tabl CrossTable. The cross-table to validate.
+'@return Worksheet. The spatial worksheet of the same workbook.
 '@throws ProjectError.ObjectNotInitialized When tabl is Nothing.
 '@throws ProjectError.ElementNotFound When the spatial worksheet is missing.
-Private Sub CheckRequirements(ByVal tabl As CrossTable)
+Private Function CheckRequirements(ByVal tabl As CrossTable) As Worksheet
     Dim wb As Workbook
-    Dim sh As Worksheet
+    Dim spatialSh As Worksheet
 
     If tabl Is Nothing Then
         ThrowError ObjectNotInitialized, _
             "No table provided for spatial tables creation"
     End If
 
-    Set sh = tabl.Wksh()
-    Set wb = sh.Parent
+    Set wb = tabl.Wksh().Parent
 
     On Error Resume Next
-    Set sh = wb.Worksheets(SPATIAL_SHEET)
+    Set spatialSh = wb.Worksheets(SPATIAL_SHEET)
     On Error GoTo 0
 
-    If sh Is Nothing Then
+    If spatialSh Is Nothing Then
         ThrowError ElementNotFound, _
             "Worksheet " & SPATIAL_SHEET & " not found in workbook"
     End If
-End Sub
+
+    Set CheckRequirements = spatialSh
+End Function
 
 '@section Error Handling
 '===============================================================================

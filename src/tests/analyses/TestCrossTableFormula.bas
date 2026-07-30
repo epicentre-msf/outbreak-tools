@@ -458,14 +458,17 @@ Private Sub BuildLinelistTables()
 
     columnNames = Array(ROW_CHOICE_VARIABLE, COL_CHOICE_VARIABLE, DATE_VARIABLE, _
                         NUMBER_VARIABLE, GEO_PREFIXED_VARIABLE, _
-                        GEO_CONCAT_VARIABLE, HF_PREFIXED_VARIABLE)
+                        GEO_CONCAT_VARIABLE, HF_PREFIXED_VARIABLE, _
+                        "concat_adm2_" & GEO_VARIABLE, _
+                        "concat_adm3_" & GEO_VARIABLE, _
+                        "concat_adm4_" & GEO_VARIABLE)
 
     ' One record, and its values are the ones the tests group by: the first
     ' category of the row variable, the first category of the column variable and
     ' a number a summary function can add up. A formula that computes the wrong
     ' answer is the only way to see that a formula was entered the wrong way.
     dataRow = Array("A", "X", DateSerial(2026, 1, 15), RECORD_NUMBER, _
-                    "Z1", "Z1", "C1")
+                    "Z1", "Z1", "C1", "Z2", "Z3", "Z4")
 
     WriteMatrix sh.Cells(1, 1), RowsToMatrix(Array(columnNames))
     WriteMatrix sh.Cells(4, 1), RowsToMatrix(Array(columnNames))
@@ -687,6 +690,7 @@ End Function
 Public Sub ModuleInitialize()
     Dim sh As Worksheet
     Dim appendRow As Long
+    Dim geoLevel As Long
 
     BusyApp
     EnsureWorksheet TEST_OUTPUT_SHEET, clearSheet:=False
@@ -697,13 +701,23 @@ Public Sub ModuleInitialize()
 
     ' adm1_zone gives the spatial scope a "geo" answer to find, hf_center gives
     ' it an "hf" answer, and concat_adm1_zone is the variable the geographic
-    ' formulas summarise. All three carry the sheet of the variables the rest of
-    ' the suite uses, so one linelist table serves every formula.
+    ' formulas summarise. All of them carry the sheet of the variables the rest
+    ' of the suite uses, so one linelist table serves every formula.
+    '
+    ' The four concatenated columns are all here because SpatialTables summarises
+    ' a geographic table over one of them per administrative level, and a linelist
+    ' carries all four. With only the first, Excel refused the value formula of the
+    ' other three spatial tables.
     Set sh = ThisWorkbook.Worksheets(DICT_SHEET)
     appendRow = 1 + DictionaryFixtureRowCount() + 1
     AppendGeoRow sh, appendRow, GEO_PREFIXED_VARIABLE, "Zone", "Zones"
     AppendGeoRow sh, appendRow + 1, GEO_CONCAT_VARIABLE, "Zone code", "Zones"
     AppendGeoRow sh, appendRow + 2, HF_PREFIXED_VARIABLE, "Health centre", vbNullString
+    For geoLevel = 2 To 4
+        AppendGeoRow sh, appendRow + 1 + geoLevel, _
+                     "concat_adm" & geoLevel & "_" & GEO_VARIABLE, _
+                     "Zone code " & geoLevel, "Zones"
+    Next
 
     Set dict = LLdictionary.Create(sh, 1, 1)
     dict.Prepare

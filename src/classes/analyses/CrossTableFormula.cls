@@ -16,18 +16,6 @@ Attribute VB_Description = "Formulas for all the cross tables in the analysis"
 
 Option Explicit
 
-'@section Enumerations
-'===============================================================================
-'@description
-'Target context for generated Excel formulas. Re-homed from the removed
-'ICrossTableFormula interface; depending on CrossTableFormula resolves these
-'everywhere.
-Public Enum ExcelFormulaScope
-    FormulaScopeLinelist = 1
-    FormulaScopeAnalysis = 2
-End Enum
-
-
 '@class CrossTableFormula
 '@description
 'Translates cross-table specifications into concrete Excel formulas and writes
@@ -53,14 +41,14 @@ End Enum
 'generation report names the table and the cell. Read AddFormulas for what is
 'written and Checkings for what is reported.
 '
-'THE 255 CHARACTER LIMIT ON FORMULAARRAY
+'ONE BUILDER, SHARED WITH SPATIALTABLES
 '-------------------------------------------------------------------------------
-'Range.FormulaArray refuses a formula longer than 255 characters, and an
-'analysis formula over three criteria passes that on ordinary variable names.
-'WriteFormula enters those through a short stub formula and Range.Replace, which
-'carries no such limit and keeps the cell an array formula. Array entry is
-'load-bearing: FormulaCondition builds IF(predicate, table[column]) fragments,
-'and a summary function other than a count wraps them in SUM or AVERAGE.
+'The criteria of a formula, the text the parser gives back, the write into the
+'cell and the 255 character limit of an array formula all live in FormulaBuilder,
+'and SpatialTables writes through one of those too. The two classes each carried
+'a copy of that machinery and the copies had drifted: one judged a formula with
+'Application.Evaluate and one by writing a probe into A1 of the live output
+'sheet.
 '
 'WHICH COLUMNS THE VALUE LOOP OWNS
 '-------------------------------------------------------------------------------
@@ -70,7 +58,7 @@ End Enum
 'they cross are written by their own blocks below each loop. CrossTable.EndColumn
 'counts the missing and total columns, so walking to it made the loop write
 'value formulas into them with the criteria of a data column.
-'@depends CrossTable, TableSpecs, FormulaData, Formulas, FormulaCondition, SpatialTables, AnalysisRanges, Checking, BetterArray
+'@depends CrossTable, TableSpecs, FormulaData, Formulas, FormulaBuilder, SpatialTables, AnalysisRanges, Checking
 '@version 1.1 (2026-07-30)
 
 
@@ -78,10 +66,8 @@ Private Type TCrossTableFormula
     tabl As CrossTable
     fData As FormulaData
     forml As Formulas
-    condVars As BetterArray
-    condTests As BetterArray
+    build As FormulaBuilder
     sealed As Boolean
-    hasChecks As Boolean
 End Type
 
 Private this As TCrossTableFormula
@@ -93,14 +79,6 @@ Private Const CLASS_NAME As String = "CrossTableFormula"
 ' The formula context the parser is asked for. Formulas.Valid and
 ' Formulas.ParsedAnalysisFormula both key off this string.
 Private Const CONTEXT_ANALYSIS As String = "analysis"
-
-' Range.FormulaArray refuses a longer formula. See the class description.
-Private Const FORMULA_ARRAY_LIMIT As Long = 255
-
-' The stub a long array formula is entered through. It is a name no workbook
-' defines, so the cell holds a name error for as long as the swap takes, and it
-' cannot appear inside a generated formula.
-Private Const LONG_FORMULA_STUB As String = "OBTLONGFORMULASTUB"
 
 ' The two count summary functions, which take a different formula shape from
 ' every other summary function.
@@ -317,6 +295,30 @@ Public Property Get Valid() As Boolean
     Valid = TableFormula.Valid(formulaType:=CONTEXT_ANALYSIS)
 End Property
 
+'@section Formula Builder
+'===============================================================================
+'@description The one place a formula is assembled and written. SpatialTables
+'writes through one of these too, so the two classes agree on how a formula is
+'made, on the 255 character limit of an array formula, and on what a refusal
+'looks like in the report.
+
+'@label:builder
+'@prop-title The builder this class writes its formulas through.
+'@details
+'Created on first use, because it carries the table identifier and the entries
+'both travel into every message it files.
+'@return FormulaBuilder. The builder of this instance.
+Private Property Get Builder() As FormulaBuilder
+    Dim entries As Checking
+
+    If this.build Is Nothing Then
+        Set entries = Checks
+        Set this.build = FormulaBuilder.Create(CLASS_NAME, ID(), entries)
+    End If
+
+    Set Builder = this.build
+End Property
+
 '@section Range and Formula Helpers
 '===============================================================================
 '@description Utility functions for range existence checks, string literals,
@@ -364,7 +366,7 @@ End Function
 'escaping issues and keeps the formula-building code readable.
 '@return String. The literal text consisting of two Chr(34) characters.
 Private Function EmpStr() As String
-    EmpStr = Chr(34) & Chr(34)
+    EmpStr = Builder.EmptyText
 End Function
 
 '@label:non-emp-str
@@ -376,7 +378,7 @@ End Function
 'functions, which need a comparison operator inside the criteria string.
 '@return String. The literal "<>" wrapped in double-quote characters for Excel formula use.
 Private Function NonEmpStr() As String
-    NonEmpStr = Chr(34) & "<>" & Chr(34)
+    NonEmpStr = Builder.NotEmptyText
 End Function
 
 '@label:percentage
@@ -396,10 +398,7 @@ End Function
 '@return String. The complete IF(ISERR(...)) Excel formula text without "=" prefix.
 Private Function Percentage(ByVal denomRng As Range, ByVal numRng As Range, _
                             Optional ByVal rowabs As Boolean = True) As String
-    Dim parsedForm As String
-    parsedForm = numRng.Address(RowAbsolute:=False) & "/" & _
-                 denomRng.Address(RowAbsolute:=rowabs, ColumnAbsolute:=True)
-    Percentage = "IF(ISERR(" & parsedForm & ")," & EmpStr & "," & parsedForm & ")"
+    Percentage = Builder.Percentage(denomRng, numRng, rowabs)
 End Function
 
 '@label:condition
@@ -418,9 +417,7 @@ End Function
 '@return String. The complete IF(...="","",formulaValue) Excel formula text.
 Private Function Condition(ByVal rngCondition As Range, ByVal formulaValue As String, _
                            Optional ByVal rowabs As Boolean = False) As String
-    If LenB(formulaValue) = 0 Then Exit Function
-    Condition = "IF(" & rngCondition.Address(RowAbsolute:=rowabs) & "=" & _
-                EmpStr & "," & EmpStr & "," & formulaValue & ")"
+    Condition = Builder.Condition(rngCondition, formulaValue, rowabs)
 End Function
 
 '@section Writing Formulas
@@ -444,99 +441,8 @@ End Function
 '@return Boolean. True when the formula reached the cell.
 Private Function WriteFormula(ByVal target As Range, ByVal frm As String, _
                               Optional ByVal asArray As Boolean = True) As Boolean
-    Dim targetAddress As String
-    Dim failureReason As String
-
-    targetAddress = target.Address(RowAbsolute:=False, ColumnAbsolute:=False)
-
-    If LenB(frm) = 0 Then
-        LogInfo "No formula could be built for cell " & targetAddress & _
-                " of table " & ID(), checkingError
-        Exit Function
-    End If
-
-    On Error GoTo WriteFailed
-
-    If asArray Then
-        If Len(frm) > FORMULA_ARRAY_LIMIT Then
-            WriteLongArrayFormula target, frm
-        Else
-            target.FormulaArray = "=" & frm
-        End If
-    Else
-        target.Formula = "=" & frm
-    End If
-
-    On Error GoTo 0
-    WriteFormula = True
-    Exit Function
-
-WriteCleanup:
-    On Error Resume Next
-    target.ClearContents
-    LogInfo "Excel refused the formula of cell " & targetAddress & " of table " & _
-            ID() & ": " & failureReason, checkingError
-    On Error GoTo 0
-    Exit Function
-
-WriteFailed:
-    failureReason = Err.Description
-    Resume WriteCleanup
+    WriteFormula = Builder.WriteFormula(target, frm, asArray)
 End Function
-
-'@label:write-long-array-formula
-'@sub-title Enter an array formula longer than 255 characters.
-'@details
-'Range.FormulaArray refuses the assignment, so a short stub goes in first and
-'Range.Replace swaps the real text in. Replace edits the cell the way a user
-'would and carries no length limit, and the cell stays an array formula.
-'Range.Replace is called as a statement and the cell is read back to see whether
-'the swap happened. Its return value is a Variant that this host does not always
-'fill, and testing it with Not raised a type mismatch that read as Excel refusing
-'the formula.
-'
-'When the host refuses the swap as well, the formula goes in as an ordinary
-'formula and a warning is filed carrying the step that refused it. Excel with
-'dynamic arrays gives the same answer either way; an older Excel returns the
-'first value of the range where the aggregate belongs, so the warning is the
-'reader's only sign of it.
-'@param target Range. The cell the formula belongs in.
-'@param frm String. The formula text with no leading "=".
-Private Sub WriteLongArrayFormula(ByVal target As Range, ByVal frm As String)
-    Dim stage As String
-    Dim refusal As String
-
-    On Error GoTo ArrayEntryFailed
-
-    stage = "stub"
-    target.FormulaArray = "=" & LONG_FORMULA_STUB
-
-    stage = "swap"
-    target.Replace What:=LONG_FORMULA_STUB, Replacement:=frm, _
-                   LookAt:=xlPart, MatchCase:=True
-
-    stage = "read back"
-    If InStr(1, CStr(target.Formula), LONG_FORMULA_STUB, vbBinaryCompare) > 0 Then
-        ThrowError ProjectError.SomethingWentWrong, "the stub survived the swap"
-    End If
-
-    On Error GoTo 0
-    Exit Sub
-
-ArrayEntryPlainFormula:
-    On Error GoTo 0
-    LogInfo "The formula of cell " & _
-            target.Address(RowAbsolute:=False, ColumnAbsolute:=False) & " of table " & _
-            ID() & " is " & Len(frm) & " characters, and the host refused an array " & _
-            "entry at [" & stage & "] with " & refusal & _
-            ". It was entered as an ordinary formula.", checkingWarning
-    target.Formula = "=" & frm
-    Exit Sub
-
-ArrayEntryFailed:
-    refusal = "(" & Err.Number & ") " & Err.Description
-    Resume ArrayEntryPlainFormula
-End Sub
 
 '@label:fill-down
 '@sub-title Copy the formula of one cell over a range.
@@ -548,25 +454,7 @@ End Sub
 '@param sourceCell Range. The cell holding the formula to copy.
 '@param destination Range. The range to fill, including the source cell.
 Private Sub FillDown(ByVal sourceCell As Range, ByVal destination As Range)
-    If destination.Cells.Count <= 1 Then Exit Sub
-
-    On Error GoTo FillFailed
-    sourceCell.AutoFill Destination:=destination, Type:=xlFillValues
-    On Error GoTo 0
-    Exit Sub
-
-FillCleanup:
-    On Error Resume Next
-    LogInfo "The formula of cell " & _
-            sourceCell.Address(RowAbsolute:=False, ColumnAbsolute:=False) & _
-            " could not be copied over " & _
-            destination.Address(RowAbsolute:=False, ColumnAbsolute:=False) & _
-            " of table " & ID(), checkingError
-    On Error GoTo 0
-    Exit Sub
-
-FillFailed:
-    Resume FillCleanup
+    Builder.FillDown sourceCell, destination
 End Sub
 
 '@label:write-percentage-twin
@@ -641,59 +529,32 @@ End Function
 
 '@section Condition Management
 '===============================================================================
-'@description Methods that maintain the parallel condVars/condTests accumulator
-'arrays used to build multi-criteria COUNTIFS/SUMPRODUCT formulas.
+'@description The criteria of the formula being built. The builder holds them,
+'and it starts a new set on the first criterion added after a formula was built,
+'so an arm that forgets to clear cannot carry the criteria of the previous cell.
 
 '@label:add-table-conditions
-'@sub-title Append a variable-name / condition-test pair to the accumulators.
+'@sub-title Add one criterion to the formula being built.
 '@details
-'Appends a variable name and its corresponding condition test string to the
-'parallel accumulator arrays (condVars and condTests). These arrays are consumed
-'by CurrentExcelFormula to build multi-criteria COUNTIFS/SUMPRODUCT formulas.
-'Each call adds one criteria pair. The BetterArray objects are lazily initialised
-'on first use with a 1-based lower bound. If varName is vbNullString, nothing
-'is pushed (silent no-op).
+'One criterion is a variable name and the test applied to it, and the two travel
+'as a pair into the COUNTIFS or SUMPRODUCT formula CurrentExcelFormula asks for.
+'An empty variable name is ignored, which is how a caller passes an absent
+'column.
 '@param varName String. The linelist variable name identifying the column the condition applies to.
-'@param conditionName String. The criteria string for the formula (e.g., "= $A3", "=""", "<>""").
-'@remarks condVars and condTests always have the same length and are consumed in parallel.
-'Call ClearTableConditions to reset them before building a new formula.
+'@param conditionName String. The criteria string for the formula.
 Private Sub AddTableConditions(ByVal varName As String, ByVal conditionName As String)
-    If this.condVars Is Nothing Then
-        Set this.condVars = New BetterArray
-        this.condVars.LowerBound = 1
-    End If
-
-    If this.condTests Is Nothing Then
-        Set this.condTests = New BetterArray
-        this.condTests.LowerBound = 1
-    End If
-
-    If varName <> vbNullString Then
-        this.condVars.Push varName
-        this.condTests.Push conditionName
-    End If
+    Builder.AddCondition varName, conditionName
 End Sub
 
 '@label:clear-table-conditions
-'@sub-title Empty the accumulator arrays before a new formula is built.
+'@sub-title Empty the criteria set before a new formula is built.
 '@details
-'Every formula starts from a blank accumulator, and the arm building it is
-'responsible for calling this first. The routine used to take a count of pairs to
-'pop off the end, and all sixty-odd call sites took the default, so that branch
-'was unreachable.
+'Every arm opens with this and says what it is about to build. The builder also
+'clears for itself, so a forgotten call costs nothing. The routine used to take a
+'count of pairs to pop off the end, and all sixty-odd call sites took the
+'default, so that branch was unreachable.
 Private Sub ClearTableConditions()
-    If this.condVars Is Nothing Then
-        Set this.condVars = New BetterArray
-        this.condVars.LowerBound = 1
-    End If
-
-    If this.condTests Is Nothing Then
-        Set this.condTests = New BetterArray
-        this.condTests.LowerBound = 1
-    End If
-
-    this.condVars.Clear
-    this.condTests.Clear
+    Builder.ClearConditions
 End Sub
 
 '@label:add-non-empty-table-conditions
@@ -715,21 +576,20 @@ Private Sub AddNonEmptyTableConditions(ByVal varName As String)
     End If
 End Sub
 
-'@section Excel Formula Builder
+'@section Excel Formula Text
 '===============================================================================
-'@description Central entry point that assembles the final Excel formula string
-'from the accumulated condition pairs.
+'@description Central entry point that asks the builder for the formula text the
+'current criteria describe.
 
 '@label:current-excel-formula
 '@prop-title Assembled Excel formula from the current condition accumulators.
 '@details
 'Builds and returns the complete Excel formula string from the currently
-'accumulated condition pairs (condVars/condTests). This is the central
-'formula-generation entry point that all table-type branches call after setting
-'up their conditions. It operates in two modes: (1) Linelist scope calls
-'ParsedLinelistFormula for unfiltered formulas; (2) Analysis scope wraps the
-'accumulated condVars and condTests into a FormulaCondition object and calls
-'ParsedAnalysisFormula for COUNTIFS/SUMPRODUCT formulas with all criteria.
+'criteria the arm has added. This is the central formula-generation entry point
+'that all table-type branches call after setting up their conditions. It operates
+'in two modes: (1) Linelist scope reads the whole column and ignores the
+'criteria; (2) Analysis scope builds a COUNTIFS or SUMPRODUCT formula carrying
+'every criterion.
 '
 'The text is handed back as the parser built it. Excel judges it when
 'WriteFormula assigns it.
@@ -738,20 +598,10 @@ End Sub
 '@return String. The Excel formula text without "=" prefix, or an empty string when the parser produced none.
 Private Property Get CurrentExcelFormula(Optional ByVal scope As Byte = FormulaScopeAnalysis, _
                                          Optional ByVal prefix As String = "f") As String
-    Dim cond As FormulaCondition
     Dim tabFormObject As Formulas
 
     Set tabFormObject = TableFormula
-
-    If scope = FormulaScopeLinelist Then
-        CurrentExcelFormula = tabFormObject.ParsedLinelistFormula(useTableName:=True, tablePrefix:=prefix)
-        Exit Property
-    End If
-
-    If this.condVars Is Nothing Or this.condTests Is Nothing Then Exit Property
-
-    Set cond = FormulaCondition.Create(this.condVars, this.condTests)
-    CurrentExcelFormula = tabFormObject.ParsedAnalysisFormula(cond, tablePrefix:=prefix)
+    CurrentExcelFormula = Builder.ExcelFormula(tabFormObject, scope, prefix)
 End Property
 
 '@section Number Format Helper
@@ -773,49 +623,7 @@ End Property
 'via Replace and CLng conversion. If the suffix is not a valid number, nbDecimals
 'defaults to 1.
 Private Sub AddRngFormat(ByVal formatValue As String, ByVal rng As Range)
-    Dim formatText As String
-    Dim nbDecimals As Long
-    Dim zerosDecimals As String
-
-    nbDecimals = 1
-
-    If formatValue = vbNullString Then
-        Exit Sub
-    ElseIf formatValue = "integer" Then
-        formatText = "###0;-###0;;@"
-    ElseIf formatValue = "round0" Then
-        formatText = "#,##0;-#,##0;0;@"
-    ElseIf formatValue = "percentage0" Then
-        formatText = "0%"
-    ElseIf InStr(1, formatValue, "round") > 0 Then
-        On Error Resume Next
-        nbDecimals = CLng(Replace(formatValue, "round", vbNullString))
-        On Error GoTo 0
-        zerosDecimals = String(nbDecimals, "0")
-        formatText = "#,###0." & zerosDecimals & ";-#,###0." & zerosDecimals & ";0." & zerosDecimals & ";@"
-    ElseIf InStr(1, formatValue, "percentage") > 0 Then
-        On Error Resume Next
-        nbDecimals = CLng(Replace(formatValue, "percentage", vbNullString))
-        On Error GoTo 0
-        zerosDecimals = String(nbDecimals, "0")
-        formatText = "0." & zerosDecimals & "%"
-    ElseIf formatValue = "euros" Then
-        formatText = "#,##0.00 $;-#,##0.00 $;0.00 $;@"
-    ElseIf formatValue = "dollars" Then
-        formatText = "[$$-en-US] #,##0.00;[$$-en-US] -#,##0.00;[$$-en-US] 0.00;@"
-    ElseIf formatValue = "text" Then
-        formatText = "@"
-    Else
-        formatText = "custom"
-    End If
-
-    If formatText <> "custom" Then
-        rng.NumberFormat = formatText
-    Else
-        On Error Resume Next
-        rng.NumberFormat = formatValue
-        On Error GoTo 0
-    End If
+    Builder.ApplyFormat formatValue, rng
 End Sub
 
 '@section Validation Lists
@@ -918,6 +726,8 @@ Public Sub AddFormulas()
     Dim totalRowNumber As Long
     Dim tabl As CrossTable
     Dim spTab As SpatialTables
+    Dim spatialChecks As Checking
+    Dim tableChecks As Checking
     Dim spTabType As String
     Dim specs As TableSpecs
     Dim tabNames As AnalysisRanges
@@ -1696,9 +1506,18 @@ Public Sub AddFormulas()
                 AddRngFormat tabFormat, cellRng
             End If
 
-            ' Create spatial table management
+            ' Write the spatial tables the generated linelist refreshes, and
+            ' carry what that reported into this report. Nothing harvested from
+            ' it before, so a spatial table with a blank value column reached
+            ' the delivered file with the analysis phase reading clean.
             Set spTab = SpatialTables.Create(tabl)
             spTab.Add TableFormula
+
+            If spTab.HasCheckings Then
+                Set spatialChecks = spTab.CheckingValues
+                Set tableChecks = Checks
+                tableChecks.Append spatialChecks
+            End If
 
         End Select
     End With
@@ -1708,24 +1527,33 @@ End Sub
 '===============================================================================
 '@description What the class reports back to the generation report. The report
 'used to show the analysis phase clean while a table carried a cell Excel had
-'refused.
+'refused. The formula builder and the spatial table builder file into the same
+'entries, so one harvest carries everything written for the table.
+
+'@label:checks
+'@prop-title The report entries of this instance.
+'@return Checking. The entries, created on first use.
+Private Property Get Checks() As Checking
+    If internalChecks Is Nothing Then Set internalChecks = Checking.Create(CLASS_NAME)
+    Set Checks = internalChecks
+End Property
 
 '@label:log-info
 '@sub-title File one diagnostic entry.
 '@details
-'Checking.Add takes a key, a label and a scope, and it raises on a duplicate
-'key, so a counter supplies the key and the message travels as the label.
+'Checking.Add raises on a duplicate key, and AnalysisOutput pours the entries of
+'several classes over several tables into one report, so the key names the class,
+'the table and a counter. A bare counter collided with the cross-table first
+'entry on the same table.
 '@param message String. The diagnostic message text.
 '@param scope Optional Byte. The checking scope (default checkingSuccess).
 Private Sub LogInfo(ByVal message As String, _
                     Optional ByVal scope As Byte = checkingSuccess)
-    If internalChecks Is Nothing Then
-        Set internalChecks = Checking.Create(CLASS_NAME)
-    End If
+    Dim entries As Checking
 
+    Set entries = Checks
     checkCounter = checkCounter + 1
-    internalChecks.Add CStr(checkCounter), message, scope
-    this.hasChecks = True
+    entries.Add CLASS_NAME & "-" & ID() & "-" & CStr(checkCounter), message, scope
 End Sub
 
 '@label:has-checkings
@@ -1733,7 +1561,8 @@ End Sub
 '@return Boolean. True once one entry has been filed.
 '@export
 Public Property Get HasCheckings() As Boolean
-    HasCheckings = this.hasChecks
+    If internalChecks Is Nothing Then Exit Property
+    HasCheckings = (internalChecks.Length() > 0)
 End Property
 
 '@label:checking-values

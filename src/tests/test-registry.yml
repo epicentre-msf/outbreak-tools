@@ -405,11 +405,19 @@ suites:
   # and Checking and BetterArray are baked into the workbook. So the pair of
   # rows below closes its own compile closure and opens no other folder.
   #
-  # SpatialTables names CrossTable, TableSpecs, Formulas, FormulaCondition and
-  # BetterArray, all of them already covered by the line above. Its own suite,
-  # TestSpatialTables, sits in src/tests/geo/ and stays out: the registry
-  # resolves a test module to src/tests/<folder>/, so registering it means a
-  # `geo` block, and that suite gets its own session.
+  # SpatialTables names CrossTable, TableSpecs, Formulas, FormulaBuilder and
+  # Checking, all of them either in this block or baked into the workbook. Its
+  # suite moved from src/tests/geo/ to src/tests/analyses/ and joined this
+  # block: the registry resolves a test module to src/tests/<folder>/, the class
+  # lives in src/classes/analyses/, and registering `geo` instead would split
+  # the analysis subsystem coverage over two folders.
+  #
+  # FormulaBuilder names Formulas, FormulaCondition, Checking and BetterArray.
+  # Formulas and FormulaCondition are registered under `formulas` and the last
+  # two are baked into the workbook, so its class row closes its own compile
+  # closure. It holds the criteria of one formula, asks the parser for the text
+  # and writes it into the cell, and CrossTableFormula and SpatialTables both
+  # write through one, so the row has to come with both of them.
   #
   # The other two test modules in src/tests/analyses/ -- TestAnaTabIds and
   # TestAnalysisOutput -- each bring their own compile closure and stay out
@@ -423,6 +431,7 @@ suites:
       - name: AnalysisRanges
       - name: TableSpecs
       - name: CrossTable
+      - name: FormulaBuilder
       - name: SpatialTables
       - name: CrossTableFormula
     tests:
@@ -436,6 +445,18 @@ suites:
         covers: [CrossTable]
       - module: TestCrossTableFormula
         covers: [CrossTableFormula]
+      # TestFormulaBuilder reaches PrepareDictionaryFixture in
+      # DictionaryTestFixture and PrepareFormulaFixtureSheet in
+      # FormulaTestFixture, both registered under `helpers`. Its helper calls are
+      # unqualified, so they resolve to TestHelpersLite.
+      - module: TestFormulaBuilder
+        covers: [FormulaBuilder]
+      # TestSpatialTables builds a real Tab_Spatial_Analysis fixture, a
+      # CrossTable on an output worksheet and a linelist for the formulas to
+      # point at, the same way TestCrossTableFormula does. It hands over
+      # LinelistDataStub, registered under `helpers`.
+      - module: TestSpatialTables
+        covers: [SpatialTables]
 
   # --- dev (Development) ----------------------------------------------------
   # THIS BLOCK CARRIES A TEST MODULE AND NO CLASS, AND IT MUST STAY THAT WAY.
