@@ -517,6 +517,25 @@ Public Property Get MaxMaxDate() As String
     MaxMaxDate = "MAX_MAX_DATE_" & this.rangeId
 End Property
 
+'@label:user-start-date
+'@prop-title Name of the cell the reader types the first date into
+'@details
+'The table writer names the cell and six formulas of the formula writer read it,
+'so it belongs here beside the two dates derived from it.
+'@return String. For example "USER_START_DATE_TS_tab2".
+'@export
+Public Property Get UserStartDate() As String
+    UserStartDate = "USER_START_DATE_" & this.rangeId
+End Property
+
+'@label:user-end-date
+'@prop-title Name of the cell the reader types the last date into
+'@return String. For example "USER_END_DATE_TS_tab2".
+'@export
+Public Property Get UserEndDate() As String
+    UserEndDate = "USER_END_DATE_" & this.rangeId
+End Property
+
 
 '@section Spatial control families
 '===============================================================================
@@ -583,6 +602,38 @@ End Property
 '@export
 Public Property Get TimeUnitList() As String
     TimeUnitList = "TIME_UNIT_LIST"
+End Property
+
+'@label:spatio-temporal-time-unit-list
+'@prop-title Name of the time unit choice list of the spatio-temporal sheet
+'@details
+'A spatio-temporal table takes its time units from a list of its own, because
+'the spatio-temporal tables are written to their own worksheet and a
+'workbook-wide name resolves to one cell range only. The table writer built this
+'name by prefixing the name above and the formula writer asked for the name
+'above, so the dropdown of every spatio-temporal table was bound to a list that
+'sheet did not carry.
+'@return String. "SPTIME_UNIT_LIST".
+'@export
+Public Property Get SpatioTemporalTimeUnitList() As String
+    SpatioTemporalTimeUnitList = "SP" & TimeUnitList()
+End Property
+
+'@label:time-unit-list-for-scope
+'@prop-title The time unit list one temporal table reads
+'@details
+'The two callers of this pair are the class that creates the list and the class
+'that binds the dropdown to it, and they disagreed. Asking one member which list
+'a scope reads is what stops them disagreeing again.
+'@param spatioTemporal Boolean. True for a spatio-temporal table.
+'@return String. One of the two list names.
+'@export
+Public Property Get TimeUnitListOfScope(ByVal spatioTemporal As Boolean) As String
+    If spatioTemporal Then
+        TimeUnitListOfScope = SpatioTemporalTimeUnitList()
+    Else
+        TimeUnitListOfScope = TimeUnitList()
+    End If
 End Property
 
 '@label:adm-unit-list

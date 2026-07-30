@@ -415,9 +415,41 @@ Public Sub TestPeriodInformationAndValidationNames()
     Assert.AreEqual "VALIDATION_MAX_DATE_TS_tab2", rangeNames.ValidationMaxDate, _
                     "ValidationMaxDate should spell the maximum date validation cell"
 
+    ' The two cells the reader types into. Six formulas of the formula writer
+    ' read them and the table writer names them, so they are a shared family.
+    Assert.AreEqual "USER_START_DATE_TS_tab2", rangeNames.UserStartDate, _
+                    "UserStartDate should spell the cell the reader types the first date into"
+    Assert.AreEqual "USER_END_DATE_TS_tab2", rangeNames.UserEndDate, _
+                    "UserEndDate should spell the cell the reader types the last date into"
+
     Exit Sub
 TestFail:
     CustomTestLogFailure Assert, "TestPeriodInformationAndValidationNames", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verify the two time unit lists and the scope that picks between them.
+'@details
+'The spatio-temporal tables live on a worksheet of their own and read a time unit
+'list of their own. The table writer built that name and the formula writer asked
+'for the plain one, so no spatio-temporal table ever got its dropdown. One member
+'answers for both callers now.
+'@TestMethod("AnalysisRanges")
+Public Sub TestTheTwoTimeUnitListsAndTheScopeThatPicks()
+    CustomTestSetTitles Assert, "AnalysisRanges", "TestTheTwoTimeUnitListsAndTheScopeThatPicks"
+    On Error GoTo TestFail
+
+    Assert.AreEqual "TIME_UNIT_LIST", AnalysisRanges.TimeUnitList, _
+                    "TimeUnitList should spell the shared time unit list"
+    Assert.AreEqual "SPTIME_UNIT_LIST", AnalysisRanges.SpatioTemporalTimeUnitList, _
+                    "The spatio-temporal list carries the SP prefix"
+    Assert.AreEqual "TIME_UNIT_LIST", AnalysisRanges.TimeUnitListOfScope(False), _
+                    "A time series table reads the shared list"
+    Assert.AreEqual "SPTIME_UNIT_LIST", AnalysisRanges.TimeUnitListOfScope(True), _
+                    "A spatio-temporal table reads its own list"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestTheTwoTimeUnitListsAndTheScopeThatPicks", Err.Number, Err.Description
 End Sub
 
 '@sub-title Verify the administrative dropdown and population divisor names.
@@ -608,7 +640,8 @@ Private Sub PushEveryIdSuffixedName(ByVal built As BetterArray, _
                rangeNames.FirstValueStartTime, rangeNames.InfoStartDate, _
                rangeNames.InfoEndDate, rangeNames.InfoAnaPeriod, _
                rangeNames.ValidationMinDate, rangeNames.ValidationMaxDate, _
-               rangeNames.MinMinDate, rangeNames.MaxMaxDate
+               rangeNames.MinMinDate, rangeNames.MaxMaxDate, _
+               rangeNames.UserStartDate, rangeNames.UserEndDate
 
     built.Push rangeNames.AdmDropdown, rangeNames.DevidePop, _
                rangeNames.PopFact, rangeNames.PopFactLabel, _
