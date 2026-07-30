@@ -48,7 +48,7 @@ End Enum
 'range, a graph id with no title row, a graph that ends with no series, and a
 'setup table with a column missing. Each one files an entry through LogInfo, and
 'AnalysisOutput reads them into the generation report. A user whose chart came
-'out with two series instead of five can now see why.
+'out with two series where the setup asked for five can now see the reason.
 '
 'THE THREE SETUP TABLES ARE IDENTIFIED BY NAME
 '-------------------------------------------------------------------------------
@@ -86,7 +86,7 @@ Private Const COLUMN_LABEL As String = "label"
 Private Const COLUMN_GRAPH_TITLE As String = "graph title"
 
 ' The graph setting values the simple builder knows, and the choice value that
-' asks for the total column rather than a category column.
+' asks for the total column.
 Private Const MODE_VALUES As String = "values"
 Private Const MODE_YES As String = "yes"
 Private Const MODE_PERCENTAGES As String = "percentages"

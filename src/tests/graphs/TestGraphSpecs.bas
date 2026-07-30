@@ -157,10 +157,10 @@ End Sub
 '@details
 'The names this suite writes are workbook-scoped and outlive a Cells.Clear, and
 'TimeSeriesColumnName asks the sheet for them, so a name left behind changes the
-'answer for the next test. The owning worksheet is read off RefersToRange rather
-'than matched in the RefersTo text, because that read is the one that cannot be
-'fooled by a quoted sheet name. A name holding a value has no range and raises,
-'so the read is guarded.
+'answer for the next test. The owning worksheet is read off RefersToRange. That
+'read holds whatever the sheet is called, while the RefersTo text quotes a name
+'carrying a space. A name holding a value has no range and raises, so the read is
+'guarded.
 '@param sh Worksheet. The worksheet whose names go.
 Private Sub ClearSheetNames(ByVal sh As Worksheet)
     Dim idx As Long
@@ -488,9 +488,9 @@ End Sub
 '@sub-title Suppress screen updates before each test.
 '@details
 'This routine is Public because the harness calls it by name through
-'Application.Run. BeginTest is deliberately not called here: it opens the
-'checking with whatever titles are pending, which files every result of the
-'module under the default label.
+'Application.Run. The first assertion of each test opens the checking, which
+'picks up the titles set a line above it. Calling BeginTest here would open it
+'with whatever titles are pending and file every result under the default label.
 '@TestInitialize
 Public Sub TestInitialize()
     BusyApp
