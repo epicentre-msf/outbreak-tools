@@ -466,10 +466,8 @@ End Property
 'stop before the totals, and `<= EndColumn` if it means to include them. The
 'formula writer currently uses `< tabEndColumn` for bivariate and
 '`<= tabEndColumn` for time series and spatial, which cannot be right for all
-'three against one definition. That is the audit's C12, and the loops live in
-'CrossTableFormula, so they are fixed in that class's own session -- see
-'.obt/gotchas/crosstableformula-adoption.md. Stating the contract here is the
-'half that belongs to this class.
+'three against one definition. The loops live in CrossTableFormula and are
+'fixed there. Stating the contract here is the half that belongs to this class.
 '@return Long. The ending column index, inclusive of total and missing columns.
 Public Property Get EndColumn() As Long
     EndColumn = this.endCol
@@ -1196,8 +1194,13 @@ Public Sub AddHeader()
                     "END_DATE_LABEL_" & tabId, "USER_END_DATE_" & tabId, _
                     "INFO_END_DATE_" & tabId, "END_DATE_" & tabId
 
-                timeUnitName = "TIME_UNIT_LIST"
-                If tablType = ScopeSpatioTemporal Then timeUnitName = "SP" & timeUnitName
+                ' The formula writer binds the time unit dropdown to this same
+                ' name, and the two used to build it separately: this one
+                ' prefixed the spatio-temporal spelling and the other one always
+                ' asked for the plain one, so no spatio-temporal table ever got
+                ' its dropdown. One member answers for both now.
+                timeUnitName = AnalysisRanges.TimeUnitListOfScope( _
+                                   tablType = ScopeSpatioTemporal)
 
                 Set cellRng = .Cells(1, 26)
                 If Not RangeExists(timeUnitName) Then

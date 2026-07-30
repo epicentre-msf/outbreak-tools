@@ -1757,6 +1757,13 @@ Public Sub TestSpatialTableWithoutAPrefixNamesTheProblem()
                     "A spatial table lacking both prefixes should raise " & _
                     "unexpected state - description was [" & errDescription & "]"
 
+    ' The guard raises a message naming adm1_ and hf_, and that message is gone
+    ' by the time it arrives here. This line prints what replaced it, so the
+    ' behaviour is on the record in test-results.csv. The LLFormat and LLSheets
+    ' suites assert the same shape for their own classes.
+    Assert.LogSuccesses "AddHeader boundary left description [" & _
+                        errDescription & "]"
+
     Exit Sub
 TestFail:
     CustomTestLogFailure Assert, "TestSpatialTableWithoutAPrefixNamesTheProblem", _
