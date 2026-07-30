@@ -317,7 +317,7 @@ End Function
 'edit is worse than a missing feature. They used to stay silent for the
 'developer too, which made every report of a broken column unreproducible. The
 'setup workbook carries no log file, so the immediate window is where this goes,
-'the same place every callback in the Ribbon module already writes.
+'the same place every callback in SetupRibbon already writes.
 '@param handlerName String. Name of the routine that failed.
 '@param context String. Sheet or workbook name the failure happened on.
 Private Sub LogHandlerFailure(ByVal handlerName As String, ByVal context As String)
