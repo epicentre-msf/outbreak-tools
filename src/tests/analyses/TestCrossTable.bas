@@ -1670,6 +1670,86 @@ TestFail:
     CustomTestLogFailure Assert, "TestSpatioTemporalNamesOneInputPerGeoUnit", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verify a facility table tags its inputs from the dictionary, not the setup column.
+'@details
+'THE SPATIAL TYPE CELL IS EMPTY ON PURPOSE HERE, AND THAT IS THE WHOLE TEST.
+'The setup workbook validates "spatial type" on Tab_SpatioTemporal_Specs and
+'deliberately leaves the column on Tab_SpatioTemporal_Analysis unvalidated;
+'the propagation from specs to analysis clears the geo cell and re-sets its
+'dropdown without ever writing the value across. So on a workbook filled the
+'documented way this cell is blank, and reading it tagged every table
+'geographic. The formula writer meanwhile probes the dictionary, agreed the
+'table was a facility one, and referenced INPUTSPTHF_ names that the writer
+'above had never created.
+'
+'Passing "hf" here instead would make this test pass against the old code and
+'prove nothing, because the fault is that the cell is empty in the field.
+'@TestMethod("CrossTable")
+Public Sub TestFacilityInputsAreTaggedWithoutTheSpatialTypeColumn()
+    CustomTestSetTitles Assert, "CrossTable", "TestFacilityInputsAreTaggedWithoutTheSpatialTypeColumn"
+    On Error GoTo TestFail
+
+    Dim sh As Worksheet
+    Dim tabl As CrossTable
+    Dim tabId As String
+
+    BuildFixture TABLE_SPATIOTEMPORAL, SpatioTemporalHeader(), _
+                 SpatioTemporalRows(HF_VARIABLE, "2", vbNullString)
+    Set sh = OutputSheet()
+    Set tabl = BuildTable(sh, 1)
+    tabId = tabl.Specifications.TableId
+
+    Assert.AreEqual vbNullString, CStr(tabl.Specifications.Value("spatial type")), _
+                    "The fixture leaves the spatial type cell empty, as the field does"
+    Assert.AreEqual "hf", tabl.Specifications.SpatialTableScopes, _
+                    "The dictionary probe still knows this is a facility table"
+
+    Assert.IsTrue RangeExistsOnSheet(sh, "INPUTSPTHF_1_" & tabId), _
+                  "The first facility input cell should carry the facility tag"
+    Assert.IsTrue RangeExistsOnSheet(sh, "INPUTSPTHF_2_" & tabId), _
+                  "The second facility input cell should carry the facility tag"
+    Assert.IsTrue Not RangeExistsOnSheet(sh, "INPUTSPTGEO_1_" & tabId), _
+                  "A facility table should not tag its inputs geographic"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestFacilityInputsAreTaggedWithoutTheSpatialTypeColumn", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title Verify an administrative table still tags its inputs geographic.
+'@details
+'The sibling of the test above. This one passed before the fix too, because the
+'geographic tag was what an unread column fell back to; it is here so a later
+'change that inverts the mapping trips something.
+'@TestMethod("CrossTable")
+Public Sub TestAdministrativeInputsKeepTheGeographicTag()
+    CustomTestSetTitles Assert, "CrossTable", "TestAdministrativeInputsKeepTheGeographicTag"
+    On Error GoTo TestFail
+
+    Dim sh As Worksheet
+    Dim tabl As CrossTable
+    Dim tabId As String
+
+    BuildFixture TABLE_SPATIOTEMPORAL, SpatioTemporalHeader(), _
+                 SpatioTemporalRows(GEO_VARIABLE, "2", vbNullString)
+    Set sh = OutputSheet()
+    Set tabl = BuildTable(sh, 1)
+    tabId = tabl.Specifications.TableId
+
+    Assert.AreEqual "geo", tabl.Specifications.SpatialTableScopes, _
+                    "The dictionary probe knows this is an administrative table"
+    Assert.IsTrue RangeExistsOnSheet(sh, "INPUTSPTGEO_1_" & tabId), _
+                  "An administrative table should tag its inputs geographic"
+    Assert.IsTrue Not RangeExistsOnSheet(sh, "INPUTSPTHF_1_" & tabId), _
+                  "An administrative table should not carry the facility tag"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestAdministrativeInputsKeepTheGeographicTag", _
+                         Err.Number, Err.Description
+End Sub
+
 '@sub-title Verify a spatio-temporal table takes its columns from the geo count.
 '@TestMethod("CrossTable")
 Public Sub TestSpatioTemporalColumnsFollowTheGeoCount()

@@ -33,7 +33,7 @@ Option Explicit
 'parameter as Object and dispatch on TypeName. A LinelistSpecs is what
 'AnalysisOutput passes, and the Object type keeps the 1,536-line LinelistSpecs
 'closure out of this class's compile dependencies, so the suite can drive it.
-'@depends TableSpecs, TranslationObject, LLVariables, LLFormat, HiddenNames, BetterArray, Checking
+'@depends AnalysisRanges, TableSpecs, TranslationObject, LLVariables, LLFormat, HiddenNames, BetterArray, Checking
 '@version 1.1 (2026-02-11)
 
 
@@ -1004,7 +1004,7 @@ Public Sub AddHeader()
     Dim tablType As Byte
     Dim nbShift As Long
     Dim timeUnitName As String
-    Dim sptGeoRngTag As String
+    Dim tabNames As AnalysisRanges
 
     Set sh = Wksh()
     Set specs = Specifications
@@ -1015,8 +1015,7 @@ Public Sub AddHeader()
     startRw = StartRow
     tabId = specs.TableId
     tablType = specs.TableScope
-    sptGeoRngTag = "INPUTSPTGEO_"
-    If specs.Value("spatial type") = "hf" Then sptGeoRngTag = "INPUTSPTHF_"
+    Set tabNames = AnalysisRanges.Create(tabId)
 
     With sh
         Select Case tablType
@@ -1078,9 +1077,19 @@ Public Sub AddHeader()
                     rng.Cells(1, 2).Value = nGeo
                     rng.Cells(1, 2).Name = "INPUTSPTGEO_NGEO_" & tabId
 
+                    ' The tag comes from the dictionary probe, which is what the
+                    ' formula writer uses to reference these same cells. It used
+                    ' to come from the "spatial type" column of this row, and
+                    ' that column is never filled: the setup workbook validates
+                    ' it on the spatio-temporal SPECS table and the analysis
+                    ' table only ever receives the geo dropdown, not the value.
+                    ' So the read returned empty, every table was tagged
+                    ' geographic, and a health facility table's label formulas
+                    ' pointed at INPUTSPTHF_ names that were never created.
                     Set cellRng = rng.Offset(2)
                     For counter = 1 To nGeo
-                        cellRng.Cells(counter, 1).Name = sptGeoRngTag & counter & "_" & tabId
+                        cellRng.Cells(counter, 1).Name = _
+                            tabNames.SpatialInput(counter, specs.SpatialTableScopes())
                         cellRng.Cells(counter, 2).Value = 1
                     Next
 
