@@ -1882,64 +1882,39 @@ TestFail:
     CustomTestLogFailure Assert, "TestSpatioTemporalColumnsFollowTheGeoCount", Err.Number, Err.Description
 End Sub
 
-'@section Named ranges list and checkings
+'@section Named ranges and checkings
 '===============================================================================
 
-'@sub-title Verify NamedRangesList reports the names the build created.
+'@sub-title Verify the build names its ranges on the worksheet.
+'@details
+'The export reads the names off the worksheet, so a name the build forgets to
+'create is a name no exported analysis sheet can carry. This replaces the two
+'tests that read the list the class used to keep by hand.
 '@TestMethod("CrossTable")
-Public Sub TestNamedRangesListReportsTheBuiltNames()
-    CustomTestSetTitles Assert, "CrossTable", "TestNamedRangesListReportsTheBuiltNames"
+Public Sub TestBuildNamesTheRangesOnTheSheet()
+    CustomTestSetTitles Assert, "CrossTable", "TestBuildNamesTheRangesOnTheSheet"
     On Error GoTo TestFail
 
     Dim tabl As CrossTable
-    Dim rangeNames As BetterArray
+    Dim sh As Worksheet
     Dim tabId As String
 
     BuildFixture TABLE_UNIVARIATE, UnivariateHeader(), _
                  UnivariateRows(ROW_CHOICE_VARIABLE, "no", "no")
-    Set tabl = BuildTable(OutputSheet(), 1)
+    Set sh = OutputSheet()
+    Set tabl = BuildTable(sh, 1)
     tabId = tabl.Specifications.TableId
-    Set rangeNames = tabl.NamedRangesList
 
-    Assert.IsTrue rangeNames.Length > 0, _
-                  "NamedRangesList should report the names the build created"
-    Assert.IsTrue rangeNames.Includes("INTERIOR_VALUES_" & tabId), _
-                  "NamedRangesList should include the interior values"
-    Assert.IsTrue rangeNames.Includes("ROW_CATEGORIES_" & tabId), _
-                  "NamedRangesList should include the row categories"
-
-    Exit Sub
-TestFail:
-    CustomTestLogFailure Assert, "TestNamedRangesListReportsTheBuiltNames", Err.Number, Err.Description
-End Sub
-
-'@sub-title Verify NamedRangesList hands back a copy.
-'@details
-'AnaTabIds reads this list and is free to mutate it. A live reference would let
-'that mutation reach the table's own record of what it named.
-'@TestMethod("CrossTable")
-Public Sub TestNamedRangesListIsACopy()
-    CustomTestSetTitles Assert, "CrossTable", "TestNamedRangesListIsACopy"
-    On Error GoTo TestFail
-
-    Dim tabl As CrossTable
-    Dim rangeNames As BetterArray
-    Dim lengthBefore As Long
-
-    BuildFixture TABLE_UNIVARIATE, UnivariateHeader(), _
-                 UnivariateRows(ROW_CHOICE_VARIABLE, "no", "no")
-    Set tabl = BuildTable(OutputSheet(), 1)
-
-    Set rangeNames = tabl.NamedRangesList
-    lengthBefore = rangeNames.Length
-    rangeNames.Push "A NAME THE TABLE NEVER MADE"
-
-    Assert.AreEqual lengthBefore, tabl.NamedRangesList.Length, _
-                    "Pushing onto the copy should leave the table's own list alone"
+    Assert.IsTrue RangeExistsOnSheet(sh, "INTERIOR_VALUES_" & tabId), _
+                  "The build should name the interior values on the sheet"
+    Assert.IsTrue RangeExistsOnSheet(sh, "ROW_CATEGORIES_" & tabId), _
+                  "The build should name the row categories on the sheet"
+    Assert.IsTrue RangeExistsOnSheet(sh, "LABEL_ROW_CATEGORIES_" & tabId), _
+                  "The build should name the row category labels on the sheet"
 
     Exit Sub
 TestFail:
-    CustomTestLogFailure Assert, "TestNamedRangesListIsACopy", Err.Number, Err.Description
+    CustomTestLogFailure Assert, "TestBuildNamesTheRangesOnTheSheet", Err.Number, Err.Description
 End Sub
 
 '@sub-title Verify Build files a check naming the table it built.

@@ -419,12 +419,18 @@ suites:
   # and writes it into the cell, and CrossTableFormula and SpatialTables both
   # write through one, so the row has to come with both of them.
   #
-  # The other two test modules in src/tests/analyses/ -- TestAnaTabIds and
-  # TestAnalysisOutput -- each bring their own compile closure and stay out
-  # until their own class rows are here. AnalysisOutput does not compile as it
-  # stands: WriteTimeSeriesGraphs omits a required argument in two early-bound
-  # calls, so the first session to give it a class row gets the opaque -50 with
-  # the import log reporting "done".
+  # AnaTabIds names Graphs alone, and Graphs names Checking, which is baked into
+  # the workbook. AnaTabIds also owns the AnalysisScope enum: it is the leaf that
+  # routes on the value, and the generated linelist carries this class and the
+  # export without carrying AnalysisOutput, so the definition has to live here.
+  #
+  # Graphs is NOT in the row list below. The runner resolves a class row to
+  # src/classes/<the suite folder>/, and Graphs lives in src/classes/graphs/, so
+  # a row here stages no file at all and the import wedges with no message. It
+  # gets its own `graphs` block further down.
+  #
+  # TestAnalysisOutput stays out until AnalysisOutput has a class row of its own,
+  # and that class brings its own compile closure through LinelistSpecs.
   - folder: analyses
     classes:
       - name: Analysis
@@ -434,6 +440,7 @@ suites:
       - name: FormulaBuilder
       - name: SpatialTables
       - name: CrossTableFormula
+      - name: AnaTabIds
     tests:
       - module: TestAnalysis
         covers: [Analysis]
@@ -457,6 +464,24 @@ suites:
       # LinelistDataStub, registered under `helpers`.
       - module: TestSpatialTables
         covers: [SpatialTables]
+      # TestAnaTabIds builds three sheets: one for the registry table, one
+      # standing in for an analysis sheet with its named ranges, and a visible
+      # one standing in for the sheet the export writes. The output sheet has to
+      # be selectable because WriteGraphs calls Application.GoTo.
+      - module: TestAnaTabIds
+        covers: [AnaTabIds]
+
+  # --- graphs (Graphs, for AnaTabIds) ----------------------------------------
+  # A class row is resolved against src/classes/<folder>/, so Graphs needs a
+  # block naming its own folder. It has no suite of its own yet: the block
+  # exists to stage the class AnaTabIds compiles against. Graphs names Checking
+  # alone, which is baked into the workbook, so this block closes its own
+  # compile closure. The folder copy carries GraphSpecs across too and nothing
+  # imports it, which is the same shape as the unregistered classes sitting in
+  # src/classes/analyses/.
+  - folder: graphs
+    classes:
+      - name: Graphs
 
   # --- dev (Development) ----------------------------------------------------
   # THIS BLOCK CARRIES A TEST MODULE AND NO CLASS, AND IT MUST STAY THAT WAY.
