@@ -139,6 +139,9 @@ Private Const VARIABLE_TYPE As String = "variable type"
 Private Const PREFIX_ADMIN As String = "adm1_"
 Private Const PREFIX_HEALTH_FACILITY As String = "hf_"
 
+' VBA raises this when a late-bound object has no such member.
+Private Const ERR_MEMBER_NOT_FOUND As Long = 438
+
 ' Bounds for the "N geo max" column, which is free text on the setup sheet.
 Private Const DEFAULT_GEO_COUNT As Long = 5
 Private Const MIN_GEO_COUNT As Long = 1
@@ -997,23 +1000,24 @@ End Function
 '@sub-title Build a BetterArray of categories for a row or column variable
 '@details
 'Shared implementation for RowCategories and ColumnCategories. Reads the
-'variable name from the specified field using Value(rowOrCol), then checks
-'whether lData is a LinelistSpecs instance via TypeName. If it is, the
-'categories are retrieved from lData.Categories(). If not, returns an empty
-'BetterArray. Handles a special case for SpatioTemporal tables: when
+'variable name from the specified field using Value(rowOrCol), then asks
+'lData for the categories of that variable. An object that supplies
+'Categories answers them; anything else leaves the list empty. Handles a
+'special case for SpatioTemporal tables: when
 'rowOrCol is "column", the categories are populated with GeoCount empty
 'strings. These empty placeholders represent geographic locations filled in
 'at runtime. The resulting BetterArray is cloned before returning to prevent
 'external mutations from affecting internal state.
 '@param rowOrCol String. Either "row" or "column", indicating which variable
 'field to read from the setup row.
-'@param lData Object. A LinelistSpecs instance providing category lookups,
-'or any other Object (categories will be empty).
+'@param lData Object. Any object supplying Categories, which in production is
+'a LinelistSpecs. An object without that member leaves the categories empty.
 '@return BetterArray. A cloned array containing the category strings.
 '@depends LLVariables
 Private Function CategoriesData(ByVal rowOrCol As String, _
                                 ByRef lData As Object) As BetterArray
     Dim varsCat As BetterArray
+    Dim suppliedCat As BetterArray
     Dim nameVar As String
     Dim vars As LLVariables
     Dim counter As Long
@@ -1040,15 +1044,45 @@ Private Function CategoriesData(ByVal rowOrCol As String, _
     nameVar = Value(rowOrCol)
 
     If vars.Contains(nameVar) Then
-        ' Only resolve categories when lData is a LinelistSpecs instance
         If Not lData Is Nothing Then
-            If TypeName(lData) = "LinelistSpecs" Then
-                Set varsCat = lData.Categories(nameVar)
-            End If
+            Set suppliedCat = CategoriesOf(lData, nameVar)
+            If Not suppliedCat Is Nothing Then Set varsCat = suppliedCat
         End If
     End If
 
     Set CategoriesData = varsCat.Clone()
+End Function
+
+'@label:categories-of
+'@sub-title Ask an object for the categories of one variable
+'@details
+'Asks lData for the categories of nameVar and answers what it gives back.
+'The parameter is typed Object so that no caller has to hold a LinelistSpecs,
+'and asking is the only way to learn whether the object supplies categories:
+'error 438 says the member is absent and answers Nothing. Every other error
+'belongs to the object itself and is raised on, so a fault inside a real
+'LinelistSpecs.Categories still reaches the caller.
+'@param lData Object. The object to ask.
+'@param nameVar String. The variable whose categories are wanted.
+'@return BetterArray. The categories, or Nothing when lData has no Categories member.
+Private Function CategoriesOf(ByVal lData As Object, _
+                              ByVal nameVar As String) As BetterArray
+    Dim supplied As BetterArray
+    Dim errNumber As Long
+    Dim errSource As String
+    Dim errDescription As String
+
+    On Error Resume Next
+    Set supplied = lData.Categories(nameVar)
+    errNumber = Err.Number
+    errSource = Err.Source
+    errDescription = Err.Description
+    On Error GoTo 0
+
+    If errNumber = ERR_MEMBER_NOT_FOUND Then Exit Function
+    If errNumber <> 0 Then Err.Raise errNumber, errSource, errDescription
+
+    Set CategoriesOf = supplied
 End Function
 
 '@label:compute-table-scope

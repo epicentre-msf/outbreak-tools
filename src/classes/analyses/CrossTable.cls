@@ -25,14 +25,22 @@ Option Explicit
 'ranges, and visual formatting. Consumers interact through the CrossTable
 'interface, and AnalysisOutput orchestrates the build sequence by calling
 'Build followed by Format for each table specification.
-'@depends TableSpecs, LinelistSpecs, TranslationObject, LLVariables, LLFormat, HiddenNames, BetterArray, Checking
+'
+'THE LINELIST DATA PARAMETER IS TYPED Object
+'-------------------------------------------------------------------------------
+'Create takes lData as an Object. The class asks it for TransObject and hands
+'it on to TableSpecs.RowCategories / ColumnCategories, which type the same
+'parameter as Object and dispatch on TypeName. A LinelistSpecs is what
+'AnalysisOutput passes, and the Object type keeps the 1,536-line LinelistSpecs
+'closure out of this class's compile dependencies, so the suite can drive it.
+'@depends TableSpecs, TranslationObject, LLVariables, LLFormat, HiddenNames, BetterArray, Checking
 '@version 1.1 (2026-02-11)
 
 
 Private Type TCrossTable
     specs As TableSpecs
     outputSh As Worksheet
-    lData As LinelistSpecs
+    lData As Object
     endRw As Long
     endCol As Long
     nbCols As Long
@@ -64,9 +72,11 @@ Private internalChecks As Checking
 'the interface reference.
 '@param specs TableSpecs. An TableSpecs object representing one row from the analysis setup sheet.
 '@param outputWksh Worksheet. The Excel Worksheet where this cross-table will physically write its headers, row labels, column labels, data placeholders, and named ranges.
-'@param lData LinelistSpecs. The linelist specifications object that provides the translation object
+'@param lData Object. The linelist specifications object that provides the translation object
 'for locale-aware labels and is passed to TableSpecs.RowCategories / ColumnCategories for
-'category resolution at build time.
+'category resolution at build time. Production passes a LinelistSpecs. The type is Object so
+'that this class carries no compile dependency on it; the two members it needs, TransObject
+'and Categories, are resolved at run time.
 '@return CrossTable. A fully initialized CrossTable ready for Build or individual step calls.
 '@throws InvalidArgument When specs is Nothing.
 '@throws InvalidArgument When outputWksh is Nothing.
@@ -74,7 +84,7 @@ Private internalChecks As Checking
 '@export
 Public Function Create(ByVal specs As TableSpecs, _
                        ByVal outputWksh As Worksheet, _
-                       ByRef lData As LinelistSpecs) As CrossTable
+                       ByVal lData As Object) As CrossTable
 
     If specs Is Nothing Then ThrowError InvalidArgument, "Table specifications not defined"
     If outputWksh Is Nothing Then ThrowError InvalidArgument, "Output worksheet not defined"
@@ -149,18 +159,18 @@ End Property
 '@label:linelist-data
 '@prop-title Linelist specifications providing translations and categories.
 '@details
-'Returns the LinelistSpecs instance stored at construction time. Used to
-'extract the translation object and to pass as the lData parameter when
+'Returns the linelist specifications object stored at construction time. Used
+'to extract the translation object and to pass as the lData parameter when
 'calling specs.RowCategories(lData) and specs.ColumnCategories(lData).
-'@return LinelistSpecs. The linelist specifications.
-Public Property Get LinelistData() As LinelistSpecs
+'@return Object. The linelist specifications.
+Public Property Get LinelistData() As Object
     Set LinelistData = this.lData
 End Property
 
 '@label:linelist-data-set
 '@prop-title Assign the linelist specifications.
-'@param lData LinelistSpecs. The linelist specifications to assign.
-Public Property Set LinelistData(ByVal lData As LinelistSpecs)
+'@param lData Object. The linelist specifications to assign.
+Public Property Set LinelistData(ByVal lData As Object)
     GuardNotSealed "LinelistData"
     Set this.lData = lData
 End Property
@@ -324,7 +334,14 @@ End Property
 'temporal tables, this property is typically called once during StartRow
 'resolution and should not be called in tight loops.
 Public Property Get Previous() As CrossTable
-    Set Previous = Create(Specifications.Previous, Wksh(), LinelistData())
+    Dim prevSpecs As TableSpecs
+
+    ' Create rejects a Nothing specification, so the first table of a section
+    ' is answered here instead of raising InvalidArgument out of the factory.
+    Set prevSpecs = Specifications.Previous
+    If prevSpecs Is Nothing Then Exit Property
+
+    Set Previous = Create(prevSpecs, Wksh(), LinelistData())
 End Property
 
 '@label:start-column
@@ -811,14 +828,17 @@ Private Sub BivariateColumns(ByVal startRw As Long, ByVal specs As TableSpecs, _
             labData.Clear
 
             If specs.HasPercentage Then
-                counter = 1
-                Do While counter <= colData.Length
+                ' The column list arrives from the linelist data object, which
+                ' this class holds as an Object and cannot type-check, so the
+                ' walk reads the bounds the supplier set rather than assuming
+                ' the list starts at one. The sibling branch below is already
+                ' bound-agnostic because Clone carries the bounds over.
+                For counter = colData.LowerBound To colData.UpperBound
                     newColData.Push colData.Item(counter), vbNullString
                     labData.Push colLab, PercentLabel(transPercent, percentageValue)
-                    counter = counter + 1
-                Loop
+                Next
             Else
-                For counter = 1 To colData.Length
+                For counter = colData.LowerBound To colData.UpperBound
                     labData.Push colLab
                 Next
                 Set newColData = colData.Clone()
@@ -827,7 +847,13 @@ Private Sub BivariateColumns(ByVal startRw As Long, ByVal specs As TableSpecs, _
             newColData.ToExcelRange .Cells(startRw, StartColumn + 1), TransposeValues:=True
             labData.ToExcelRange .Cells(startRw + 1, StartColumn + 1), TransposeValues:=True
         Else
-            ' No column data — just a summary function
+            ' No column data — just a summary function. The Missing and Total
+            ' labels collected above head columns cut from the column
+            ' categories, and a table grouped by nothing has none of those, so
+            ' they are dropped here rather than written as column headers. The
+            ' arm above drops them the same way once they have been folded into
+            ' the category list.
+            labData.Clear
             labData.Push colLab
             NumberOfColumns = 1
             labData.ToExcelRange .Cells(startRw, StartColumn + 1), TransposeValues:=True

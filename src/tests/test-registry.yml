@@ -108,6 +108,13 @@ suites:
       # Caption or a Value. It went with the whole src/tests/stubs/ folder in
       # d6897661 and came back here, beside the other fixtures.
       - name: ProgressDisplayStub
+      # LinelistDataStub stands in for the linelist specifications object that
+      # CrossTable is handed at creation. CrossTable reads two members off it,
+      # TransObject and Categories, and TableSpecs asks the second one on its
+      # behalf. The real class is 1,536 lines and its closure names six more
+      # classes across four folders, so the stub is what keeps the `analyses`
+      # block to one new class row.
+      - name: LinelistDataStub
 
   # --- general (OSFiles, DropdownLists) --------------------------------------
   # DropdownLists' whole dependency closure (HiddenNames, BetterArray, Checking)
@@ -369,22 +376,39 @@ suites:
   # dependency. TestTableSpecs adds CustomTest, baked in too, and reaches
   # PrepareDictionaryFixture in DictionaryTestFixture under `helpers`.
   #
-  # The other four test modules in src/tests/analyses/ -- TestAnaTabIds,
-  # TestAnalysisOutput, TestCrossTable and TestCrossTableFormula -- each bring
-  # their own compile closure and stay out until their own class rows are
-  # here. TestCrossTable and TestCrossTableFormula also build their fixture
-  # ranges on a bare worksheet, so both need a real ListObject before they can
-  # pass: TableSpecs reads the analysis scope from the name of the table the
-  # row sits in.
+  # CrossTable names TableSpecs, LLVariables, LLFormat, TranslationObject,
+  # HiddenNames, BetterArray and Checking. TableSpecs sits above, LLVariables
+  # is registered under `dictionary`, LLFormat under `general`, and the last
+  # four are baked into the workbook, so its class row closes its own compile
+  # closure and this block opens no other folder. The whole AnalysisScope enum
+  # its Format reads lives in LLFormat, so that one row carries it too.
+  #
+  # The linelist specifications are NOT in that list, and that is the reason
+  # this block stays this size. CrossTable.Create types the parameter Object
+  # and reads two members off it at run time, the same way
+  # TableSpecs.RowCategories does. Registering LinelistSpecs instead would pull
+  # in LLTranslation, LLGeo, DesignerTranslation, LinelistBuildService and
+  # TemporaryRepos across four more folders. TestCrossTable hands over
+  # LinelistDataStub, registered under `helpers`.
+  #
+  # The other three test modules in src/tests/analyses/ -- TestAnaTabIds,
+  # TestAnalysisOutput and TestCrossTableFormula -- each bring their own
+  # compile closure and stay out until their own class rows are here.
+  # TestCrossTableFormula also builds its fixture ranges on a bare worksheet,
+  # so it needs a real ListObject before it can pass: TableSpecs reads the
+  # analysis scope from the name of the table the row sits in.
   - folder: analyses
     classes:
       - name: Analysis
       - name: TableSpecs
+      - name: CrossTable
     tests:
       - module: TestAnalysis
         covers: [Analysis]
       - module: TestTableSpecs
         covers: [TableSpecs]
+      - module: TestCrossTable
+        covers: [CrossTable]
 
   # --- dev (Development) ----------------------------------------------------
   # THIS BLOCK CARRIES A TEST MODULE AND NO CLASS, AND IT MUST STAY THAT WAY.
