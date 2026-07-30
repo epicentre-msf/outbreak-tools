@@ -11,14 +11,45 @@
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>Analysis</h1>
-<p>Manages an analysis worksheet within an outbreak linelist workbook. Provides
-row manipulation (add, insert, delete, remove), data exchange (import, export,
-sort, clean), translation of analysis labels, and validation of required
-ListObjects. Each instance is bound to a single worksheet and delegates table
-operations to CustomTable. Trace diagnostics are recorded via Checking and
-can be retrieved through HasCheckings and CheckingValues.</p>
-<p><strong>Depends on:</strong> <a href="CustomTable.html">CustomTable</a>, <a href="Checking.html">Checking</a>, <a href="TranslationObject.html">TranslationObject</a>, <a href="BetterArray.html">BetterArray</a>, Checking support, ListObject names used in analysis worksheets</p>
-<p><strong>Version:</strong> 2025-01-15</p>
+<p>Manages the Analysis configuration worksheet of a setup workbook, and the
+pass-through copy of that same worksheet the designer places inside a
+generated linelist. Provides row manipulation (add, insert, delete, remove),
+data exchange (import, export, sort, clean), translation of analysis labels,
+and validation of the nine required ListObjects. Each instance is bound to a
+single worksheet and delegates table operations to CustomTable. Trace
+diagnostics are recorded via Checking and can be retrieved through
+HasCheckings and CheckingValues.</p>
+<details open class="doc-section" id="where-the-analysis-output-lives">
+<summary>WHERE THE ANALYSIS OUTPUT LIVES</summary>
+<div class="section-body">
+<p>The tables a field user reads at runtime are built by AnalysisOutput,
+CrossTable and TableSpecs. This class only ever handles the configuration
+sheet. A linelist instance of this class receives one call, Translate, from
+LinelistSpecs.</p>
+</div>
+</details>
+<details open class="doc-section" id="table-names-are-matched-without-regard-to-case">
+<summary>TABLE NAMES ARE MATCHED WITHOUT REGARD TO CASE</summary>
+<div class="section-body">
+<p>Excel matches sheet and table names without regard to case, so this class
+does the same everywhere. The required-table cache is walked with
+vbTextCompare and the table settings are dispatched on a lower-cased name.
+A binary compare here once dropped the whole global summary section on
+import, because the cache said &quot;Tab_global_summary&quot; and the shipped workbook
+says &quot;Tab_Global_Summary&quot;.</p>
+</div>
+</details>
+<details open class="doc-section" id="the-ten-instruction-strings-are-held-twice">
+<summary>THE TEN INSTRUCTION STRINGS ARE HELD TWICE</summary>
+<div class="section-body">
+<p>ManageRows matches the ten instruction strings the user picks from the
+dropdown in cell RNG_SelectTable. SetupPreparation holds the same ten strings,
+because it is the class that fills that dropdown. Changing one list means
+changing the other.</p>
+<p><strong>Depends on:</strong> <a href="CustomTable.html">CustomTable</a>, <a href="Checking.html">Checking</a>, <a href="TranslationObject.html">TranslationObject</a>, <a href="BetterArray.html">BetterArray</a>, ListObject names used in analysis worksheets, Named range holding the row-management instruction on the setup Analysis sheet</p>
+<p><strong>Version:</strong> 2026-07-29</p>
+</div>
+</details>
 <details open class="doc-section" id="instantiation">
 <summary>Instantiation</summary>
 <div class="section-body">
@@ -29,9 +60,9 @@ can be retrieved through HasCheckings and CheckingValues.</p>
 <pre><code class="language-vb">Public Function Create(ByVal hostsheet As Worksheet) As Analysis
 </code></pre>
 <p>Factory method on the predeclared instance. Validates that the worksheet
-is not Nothing, binds a new Analysis to it, and populates the required-
-tables cache on the predeclared instance. Callers interact with the
-returned Analysis instance.</p>
+is not Nothing and binds a new Analysis to it. Callers interact with the
+returned Analysis instance. The required-tables cache is filled lazily on
+the instance that needs it.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>hostsheet</code>: Worksheet. The worksheet hosting the analysis tables.</li>
@@ -60,7 +91,8 @@ returned Analysis instance.</p>
 </code></pre>
 <p>Add, insert, delete, and remove rows in analysis ListObjects.</p>
 <p>Delegates to ManageRows in append mode to add rows to each target
-analysis table based on the instruction in cell A1 of the worksheet.</p>
+analysis table based on the instruction held in the RNG_SelectTable cell
+of the worksheet.</p>
 <hr />
 <h3 id="insertrows">InsertRows <a class="anchor-link" href="#insertrows">#</a></h3>
 <p><em>insertrows</em></p>
@@ -86,18 +118,15 @@ inserted ahead of the resize. Defaults to True.</li>
 <p><strong>Delete rows intersecting the selection</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub DeleteRows(ByVal targetCell As Range, _
-                       Optional ByVal includeIds As Boolean = True, _
                        Optional ByVal forceShift As Boolean = True)
 </code></pre>
 <p>Locates the analysis table hosting the selection via ResolveSelectionTable,
-retrieves its settings, and delegates to CustomTable.DeleteRowsAt. The
-includeIds flag controls whether identifier columns are cleared, and
+retrieves its settings, and delegates to CustomTable.DeleteRowsAt.
+Identifier columns are cleared for every table that configures one, and
 forceShift controls whether worksheet rows are shifted up after deletion.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>targetCell</code>: Range. Anchor describing the rows to delete.</li>
-<li><code>includeIds</code>: Optional Boolean. When True, identifiers are cleared
-along with data. Defaults to True.</li>
 <li><code>forceShift</code>: Optional Boolean. When True, worksheet rows are shifted
 up after deletion. Defaults to True.</li>
 </ul>
@@ -116,17 +145,6 @@ its required minimum row count.</p>
 <details open class="doc-section" id="dataexchange">
 <summary>DataExchange</summary>
 <div class="section-body">
-<h3 id="clean">Clean <a class="anchor-link" href="#clean">#</a></h3>
-<p><em>clean</em></p>
-<p><strong>Clean all analysis tables on the worksheet</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub Clean()
-</code></pre>
-<p>Import, export, translate, sort, and clean operations.</p>
-<p>Iterates through all ListObjects on the analysis worksheet and delegates
-to CustomTable.Clean for each one. Ensures the required-tables cache is
-populated before processing.</p>
-<hr />
 <h3 id="import">Import <a class="anchor-link" href="#import">#</a></h3>
 <p><em>import</em></p>
 <p><strong>Import analysis tables from an external worksheet</strong></p>
@@ -134,10 +152,12 @@ populated before processing.</p>
 <pre><code class="language-vb">Public Sub Import(ByVal sourcesheet As Worksheet)
 </code></pre>
 <p>Copies each ListObject and its associated headers from the source worksheet
-into the managed worksheet. The method first cleans existing tables, then
-imports each valid ListObject via CustomTable.Import with strict column
-matching. Missing source tables are logged as warnings. After import the
-method validates all required tables and sorts them.</p>
+into the managed worksheet. Tables the source does not carry are cleared
+first; the rest are rewritten by CustomTable.Import with strict column
+matching. Source columns that found no home in the host table are reported,
+and so are required tables missing from the source. The worksheet is sorted
+at the end, which is also where the host worksheet is checked for missing
+tables.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>sourcesheet</code>: Worksheet. The worksheet providing the source analysis tables.</li>
@@ -149,10 +169,12 @@ method validates all required tables and sorts them.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub Sort()
 </code></pre>
-<p>Iterates through the required-tables cache, sorts each table by its
-primary key column (Section or Graph ID), applies secondary sorts where
-needed (Table order, Graph order), and trims trailing rows via
-CustomTable.RemoveRows to enforce structural rules.</p>
+<p>Resolves the nine required tables in one pass, reports the ones the
+worksheet does not carry, then sorts each table by its primary key column
+(Section or Graph ID), applies secondary sorts where needed (Table order,
+Graph order), and trims trailing rows via CustomTable.RemoveRows. The
+identifier column of each table is handed over, so rows that move are
+renumbered to match their new position.</p>
 <hr />
 <h3 id="export">Export <a class="anchor-link" href="#export">#</a></h3>
 <p><em>export</em></p>
@@ -162,8 +184,10 @@ CustomTable.RemoveRows to enforce structural rules.</p>
 </code></pre>
 <p>Duplicates the managed worksheet into the provided workbook. If a sheet
 with the same name already exists it is cleared and reused; otherwise a
-new sheet is created. Each ListObject is copied by value and its header
-rows (up to 3 rows above) are transferred with font formatting.</p>
+new sheet is created. The requested visibility is applied either way. Each
+ListObject is copied by value and the header rows above it are transferred
+with font formatting, up to four rows or up to the top of the sheet,
+whichever comes first.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>sourcewb</code>: Workbook. The workbook receiving the exported worksheet.</li>
@@ -181,7 +205,9 @@ exported sheet. Defaults to xlSheetHidden.</li>
 known textual columns (Section, Table Title, Graph Title, Summary label,
 Choices, Label, Section (select)) through the translation object. The
 Summary function column is translated with formula awareness enabled.
-Logs a note on completion and a warning when the translator is Nothing.</p>
+Each header row is read once and matched in memory, so a column a table
+does not carry costs nothing. Logs a note on completion and a warning when
+the translator is Nothing.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>TransObject</code>: TranslationObject. The translation engine to use.</li>
@@ -222,17 +248,34 @@ Called internally by the Create factory.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ManageRows(Optional ByVal del As Boolean = False)
 </code></pre>
-<p>Reads the header instruction from cell A1 of the analysis worksheet and
-determines which ListObject(s) to target. When del is False, rows are
-appended via CustomTable.AddRows and identifiers are regenerated. When
-del is True, rows are removed via CustomTable.RemoveRows down to the
-required minimum. Falls back to processing all known tables when the
-header text does not match a specific table name.</p>
+<p>Reads the instruction the user picked in the RNG_SelectTable cell of the
+analysis worksheet and determines which ListObject(s) to target. When del
+is False, rows are appended via CustomTable.AddRows, which renumbers the
+identifier column itself. When del is True, rows are removed via
+CustomTable.RemoveRows down to the required minimum. Falls back to
+processing all known tables when the instruction text does not match a
+specific table name.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>del</code>: Optional Boolean. When True, rows are removed; otherwise rows
 are added. Defaults to False.</li>
 </ul>
+<hr />
+<h3 id="int-instructioncell">InstructionCell <a class="anchor-link" href="#int-instructioncell">#</a></h3>
+<p><em>instruction-cell</em></p>
+<p><strong>Resolve the cell carrying the row-management instruction</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function InstructionCell(ByVal sh As Worksheet) As Range
+</code></pre>
+<p>The rest of the setup reaches this cell through the RNG_SelectTable named
+range, so this class asks for the name first and falls back to A1 when the
+workbook carries no such name. A name that resolves to another worksheet is
+refused, because a workbook-scoped name answers from any sheet.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The analysis worksheet.</li>
+</ul>
+<p><strong>Returns:</strong> Range. The single cell holding the instruction.</p>
 <hr />
 <h3 id="int-resolveselectiontable">ResolveSelectionTable <a class="anchor-link" href="#int-resolveselectiontable">#</a></h3>
 <p><em>resolve-selection-table</em></p>
@@ -263,7 +306,9 @@ the target table before delegating to CustomTable.</p>
 </code></pre>
 <p>Populates the three ByRef outputs based on the ListObject name. Only
 TIMESERIES, TITLEGRAPHTIMESERIES, GRAPHTIMESERIES, and SPATIOTEMPORAL
-have non-default settings; all other tables use empty strings and zero.</p>
+have non-default settings; all other tables use empty strings and zero.
+The name is lower-cased before it is matched, because a table name read
+back from a worksheet can carry any spelling of the same name.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>loName</code>: String. Name of the target ListObject.</li>
@@ -271,6 +316,54 @@ have non-default settings; all other tables use empty strings and zero.</p>
 <li><code>idColumn</code>: ByRef String. Populated with the identifier column name.</li>
 <li><code>minimumCount</code>: ByRef Long. Populated with the minimum row count.</li>
 </ul>
+<hr />
+<h2 id="int-dataexchange">DataExchange</h2>
+<h3 id="int-clean">Clean <a class="anchor-link" href="#int-clean">#</a></h3>
+<p><em>clean</em></p>
+<p><strong>Clean the analysis tables on the worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub Clean(Optional ByVal keepTables As Collection = Nothing)
+</code></pre>
+<p>Import, export, translate, sort, and clean operations.</p>
+<p>Iterates through the ListObjects on the analysis worksheet and delegates
+to CustomTable.Clean for each one. Tables listed in keepTables are left
+alone: Import passes the tables it is about to rewrite, and
+CustomTable.Import clears each of those itself.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>keepTables</code>: Optional Collection. Tables to skip, keyed on the
+lower-cased table name.</li>
+</ul>
+<hr />
+<h3 id="int-tableheadernames">TableHeaderNames <a class="anchor-link" href="#int-tableheadernames">#</a></h3>
+<p><em>table-header-names</em></p>
+<p><strong>Read one table's header row into an array</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function TableHeaderNames(ByVal csTab As CustomTable) As Variant
+</code></pre>
+<p>One worksheet crossing per table. A single-column table answers a scalar,
+so the value is wrapped into a one-element array and every caller reads
+the same shape.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>csTab</code>: CustomTable. The table whose header row is wanted.</li>
+</ul>
+<p><strong>Returns:</strong> Variant. A zero-based array of header texts.</p>
+<hr />
+<h3 id="int-hasheader">HasHeader <a class="anchor-link" href="#int-hasheader">#</a></h3>
+<p><em>has-header</em></p>
+<p><strong>Test a header name against one table's header row</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function HasHeader(ByVal headerList As Variant, ByVal colName As String) As Boolean
+</code></pre>
+<p>Whole-string match without regard to case, the same rule
+CustomTable.DataRange applies when strictSearch is True.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>headerList</code>: Variant. Header texts read by TableHeaderNames.</li>
+<li><code>colName</code>: String. Column name to look for.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the table carries the column.</p>
 <hr />
 <h2 id="int-checking">Checking</h2>
 <h3 id="int-loginfo">LogInfo <a class="anchor-link" href="#int-loginfo">#</a></h3>
@@ -282,12 +375,27 @@ have non-default settings; all other tables use empty strings and zero.</p>
 <p>Logging, validation, and error-raising support.</p>
 <p>Adds a trace entry to the internal Checking instance, initialising it
 on first use with a name derived from the class and worksheet. Each call
-increments the check counter and sets the hasChecks flag.</p>
+increments the check counter.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>label</code>: String. The message to record.</li>
-<li><code>scope</code>: Optional Byte. Severity level from CheckingLogType. Defaults
+<li><code>scope</code>: Optional Byte. Severity level from CheckingScope. Defaults
 to checkingNote.</li>
+</ul>
+<hr />
+<h3 id="int-logdroppedcolumns">LogDroppedColumns <a class="anchor-link" href="#int-logdroppedcolumns">#</a></h3>
+<p><em>log-dropped-columns</em></p>
+<p><strong>Report the source columns an import could not place</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub LogDroppedColumns(ByVal hostTab As CustomTable, ByVal loName As String)
+</code></pre>
+<p>CustomTable records every source column that found no matching header in
+the target table. Without this, a column renamed between two setup versions
+is dropped in silence.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>hostTab</code>: CustomTable. The table that has just been imported into.</li>
+<li><code>loName</code>: String. Name of that table, used in the message.</li>
 </ul>
 <hr />
 <h3 id="int-hascheckings">HasCheckings <a class="anchor-link" href="#int-hascheckings">#</a></h3>
@@ -304,11 +412,11 @@ Returns True when at least one trace entry has been logged via LogInfo.</p>
 <p><em>checkingvalues</em></p>
 <p><strong>Retrieve collected trace entries</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get CheckingValues() As Object
+<pre><code class="language-vb">Public Property Get CheckingValues() As Checking
 </code></pre>
 <p>Returns the underlying Checking object when traces are available.
 Returns Nothing when no traces have been logged.</p>
-<p><strong>Returns:</strong> Object. The Checking instance, or Nothing.</p>
+<p><strong>Returns:</strong> Checking. The Checking instance, or Nothing.</p>
 <hr />
 <h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
 <p><em>throw-error</em></p>
@@ -338,7 +446,22 @@ providing a consistent stack trace across all methods in this class.</p>
 <p>Private helper methods supporting the public API.</p>
 <p>Lazily initialises the requiredTablesCaches BetterArray with the names
 of all nine ListObjects expected on an analysis worksheet. Subsequent
-calls are no-ops once the cache is populated.</p>
+calls are no-ops once the cache is populated. The push order decides the
+order Import, Sort and EnsureAnalysisTables work in, so it is fixed.</p>
+<hr />
+<h3 id="int-isrequiredtable">IsRequiredTable <a class="anchor-link" href="#int-isrequiredtable">#</a></h3>
+<p><em>is-required-table</em></p>
+<p><strong>Test a table name against the required-tables cache</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function IsRequiredTable(ByVal loName As String) As Boolean
+</code></pre>
+<p>The comparison ignores case, because Excel does. A binary comparison here
+once made Import skip the whole global summary section without a word.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>loName</code>: String. Table name to look for.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the name is one of the nine required tables.</p>
 <hr />
 <h3 id="int-isvalidlistobject">IsValidListObject <a class="anchor-link" href="#int-isvalidlistobject">#</a></h3>
 <p><em>is-valid-list-object</em></p>
@@ -355,30 +478,48 @@ Used by Import to skip unrecognised tables from the source worksheet.</p>
 </ul>
 <p><strong>Returns:</strong> Boolean. True when the ListObject is valid for this analysis.</p>
 <hr />
-<h3 id="int-ensureanalysistables">EnsureAnalysisTables <a class="anchor-link" href="#int-ensureanalysistables">#</a></h3>
-<p><em>checktables</em></p>
-<p><strong>Ensure all expected analysis tables are present</strong></p>
+<h3 id="int-resolveanalysistables">ResolveAnalysisTables <a class="anchor-link" href="#int-resolveanalysistables">#</a></h3>
+<p><em>resolve-analysis-tables</em></p>
+<p><strong>Resolve the required tables of the host worksheet in one pass</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub EnsureAnalysisTables(Optional ByVal raiseError As Boolean = False)
+<pre><code class="language-vb">Private Function ResolveAnalysisTables() As Collection
 </code></pre>
-<p>Iterates through the required-tables cache and checks that each
-ListObject exists on the analysis worksheet. When raiseError is True,
-missing tables raise a ProjectError.ElementNotFound; otherwise a warning
-is logged via LogInfo.</p>
+<p>Nine lookups, once. The result is keyed on the lower-cased table name, so
+callers read a table by name without crossing to Excel again. A table the
+worksheet does not carry is left out of the collection.</p>
+<p><strong>Returns:</strong> Collection. The ListObjects found, keyed on the lower-cased name.</p>
+<hr />
+<h3 id="int-tablenamed">TableNamed <a class="anchor-link" href="#int-tablenamed">#</a></h3>
+<p><em>table-named</em></p>
+<p><strong>Read one table out of a resolved collection</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function TableNamed(ByVal tables As Collection, ByVal loName As String) As ListObject
+</code></pre>
+<p>A Collection cannot be asked whether a key exists, so the lookup itself is
+the test and a miss answers Nothing.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>raiseError</code>: Optional Boolean. When True, raises an error for
-missing tables instead of logging. Defaults to False.</li>
+<li><code>tables</code>: Collection. Tables keyed on the lower-cased name.</li>
+<li><code>loName</code>: String. Table name to read.</li>
 </ul>
-<p><strong>Throws:</strong></p>
+<p><strong>Returns:</strong> ListObject. The table, or Nothing when the collection has none.</p>
+<hr />
+<h3 id="int-ensureanalysistables">EnsureAnalysisTables <a class="anchor-link" href="#int-ensureanalysistables">#</a></h3>
+<p><em>checktables</em></p>
+<p><strong>Report the expected analysis tables the worksheet does not carry</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureAnalysisTables(ByVal hostTables As Collection)
+</code></pre>
+<p>Walks the required-tables cache and logs a warning for every name absent
+from the resolved collection.</p>
+<p><strong>Parameters:</strong></p>
 <ul>
-<li>ProjectError.ElementNotFound When raiseError is True and a
-required ListObject is missing.</li>
+<li><code>hostTables</code>: Collection. Tables resolved by ResolveAnalysisTables.</li>
 </ul>
 <hr />
 </details>
 <details>
-<summary>Used in (36 file(s))</summary>
+<summary>Used in (39 file(s))</summary>
 <ul>
 <li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
 <li><a href="AnaTabIds.html">AnaTabIds.cls</a></li>
@@ -404,6 +545,8 @@ required ListObject is missing.</li>
 <li>FormLogicEpiWeek.bas</li>
 <li>FormLogicGeo.bas</li>
 <li>CustomSetupFunctions.bas</li>
+<li>EventSetupWorkbook.bas</li>
+<li>EventsManager.bas</li>
 <li>SetupHelpers.bas</li>
 <li>TestAnalysis.bas</li>
 <li>TestFormulas.bas</li>
@@ -412,6 +555,7 @@ required ListObject is missing.</li>
 <li>SetupImportTestFixture.bas</li>
 <li>TestLLTranslation.bas</li>
 <li>TestEventSetup.bas</li>
+<li>TestEventsManager.bas</li>
 <li>TestSetupErrors.bas</li>
 <li>TestSetupImport.bas</li>
 <li>TestSetupPreparation.bas</li>

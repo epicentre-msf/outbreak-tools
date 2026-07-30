@@ -17,18 +17,43 @@ setup table specifies one output table (frequency, cross-tab, time series,
 spatial, or spatio-temporal). The class wraps that row together with the
 header range and a dictionary, providing typed access to the table scope,
 identifiers, navigation to neighboring rows, validation flags (total,
-missing, percentage, graph), and dictionary-based category lookups.
-Performance-sensitive data is cached eagerly at construction time: column
-names, cell values, table scope, and dictionary reference. Derived booleans
-(ValidTable, IsNewSection) are cached lazily on first access. Category
-lookups (RowCategories, ColumnCategories) accept an Object parameter: when
-a LinelistSpecs instance is passed, categories are resolved from its
-dictionary and choices; otherwise an empty BetterArray is returned. This
-design decouples TableSpecs from LinelistSpecs at instantiation, making it
-usable in the setup error-checking context without geo or translation
-dependencies. Consumers interact through the TableSpecs interface.</p>
-<p><strong>Depends on:</strong> <a href="LLdictionary.html">LLdictionary</a>, <a href="LLVariables.html">LLVariables</a>, <a href="BetterArray.html">BetterArray</a>, --- Column and cell value caches (Tier 1 + Tier 3) ---, --- Scalar caches (Tier 2 + Tier 4 + Tier 5) ---</p>
-<p><strong>Version:</strong> 2.0 (2026-02-11)</p>
+missing, percentage, graph), and dictionary-based category lookups.</p>
+<details open class="doc-section" id="where-the-scope-comes-from">
+<summary>WHERE THE SCOPE COMES FROM</summary>
+<div class="section-body">
+<p>The scope is the name of the ListObject the specification row sits in.
+The seven analysis tables carry seven fixed names and each name maps to one
+scope. An earlier version read a type label from a fixed row offset above
+the header. That offset is four rows in the workbook shipped from
+src/bin/setup and two rows in every published release, so on a released file
+the read landed on a blank cell and Create raised for every analysis row.
+The ListObject name holds the same fact and it survives a row being
+inserted.</p>
+</div>
+</details>
+<details open class="doc-section" id="what-is-cached-and-why-it-is-safe">
+<summary>WHAT IS CACHED AND WHY IT IS SAFE</summary>
+<div class="section-body">
+<p>Column names, cell values and the table scope are read once at construction
+time. ValidTable, IsNewSection, TableId, TableSectionId and
+SpatialTableScopes are computed on first access and held. Seal runs at the
+end of Create and stops the ranges changing after that, so a held answer
+cannot go stale within one instance's life.</p>
+</div>
+</details>
+<details open class="doc-section" id="category-lookups">
+<summary>CATEGORY LOOKUPS</summary>
+<div class="section-body">
+<p>RowCategories and ColumnCategories accept an Object parameter. When a
+LinelistSpecs instance is passed, categories are resolved from its
+dictionary and choices; any other object gives an empty BetterArray. That
+keeps TableSpecs usable in the setup error-checking context, where geo and
+translation dependencies are absent. LinelistSpecs is reached through a
+TypeName string, so it is never a compile dependency of this class.</p>
+<p><strong>Depends on:</strong> <a href="LLdictionary.html">LLdictionary</a>, <a href="LLVariables.html">LLVariables</a>, <a href="BetterArray.html">BetterArray</a>, <a href="Checking.html">Checking</a>, --- Column and cell value caches ---, --- Scalar caches ---, Names of the seven analysis ListObjects on the setup worksheet. Each name, is one table scope. Six other classes hold the same strings beside the code, that reads them, which is the house rule: a class keeps every constant it, needs inside itself., Column search terms. Every one is a partial, case-insensitive match against, the header row, so &quot;row&quot; finds &quot;Group by variable (row)&quot;., Column names read through LLVariables, on the dictionary sheet., Geo prefixes written by LLdictionary.AppendGeoLines., VBA raises this when a late-bound object has no such member., Bounds for the &quot;N geo max&quot; column, which is free text on the setup sheet.</p>
+<p><strong>Version:</strong> 3.0 (2026-07-29)</p>
+</div>
+</details>
 <details open class="doc-section" id="instantiation">
 <summary>Instantiation</summary>
 <div class="section-body">
@@ -38,7 +63,8 @@ dependencies. Consumers interact through the TableSpecs interface.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal headerRng As Range, _
                        ByVal tableSpecsRng As Range, _
-                       ByVal dict As LLdictionary) As TableSpecs
+                       ByVal dict As LLdictionary, _
+                       Optional ByVal vars As LLVariables) As TableSpecs
 </code></pre>
 <p>Factory method that creates a new TableSpecs instance representing one row
 from an analysis setup ListObject. Each row in the setup table defines a
@@ -49,18 +75,23 @@ missing, percentage, graph). Category lookups (RowCategories,
 ColumnCategories) are resolved later at call time by passing a
 LinelistSpecs object. Validation is performed immediately via
 CheckRequirements before the instance is populated. After property
-injection, InitCache scans the header and data row once to build column
-name and cell value caches, and eagerly resolves the table scope.</p>
+injection, InitCache reads the header and the data row with two array
+reads and resolves the table scope from the ListObject name.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>headerRng</code>: Range. The header row Range of the analysis setup ListObject.
-Column names in this range are used by Value() and ColumnIndex() to locate
-fields such as &quot;row&quot;, &quot;column&quot;, &quot;total&quot;, &quot;section&quot;, etc.</li>
-<li><code>tableSpecsRng</code>: Range. A single data-row Range from the same ListObject.
-Must be below headerRng and have the same number of columns.</li>
+<li><code>headerRng</code>: Range. The single header row Range of the analysis setup
+ListObject. Column names in this range are used by Value() to locate fields
+such as &quot;row&quot;, &quot;column&quot;, &quot;total&quot;, &quot;section&quot;, etc.</li>
+<li><code>tableSpecsRng</code>: Range. A single data-row Range from the same
+ListObject. Must sit below headerRng, start at the same column and have the
+same number of columns.</li>
 <li><code>dict</code>: LLdictionary. The linelist dictionary that provides variable
 definitions, existence checks, and control type lookups needed for
 validation and spatial type detection.</li>
+<li><code>vars</code>: LLVariables. Optional reader over the same dictionary. Pass one
+when the caller already holds it: an analysis run then builds a single
+LLVariables for every row instead of one per row and per category lookup.
+When it is omitted the class builds its own on first use.</li>
 </ul>
 <p><strong>Returns:</strong> TableSpecs. A fully initialised TableSpecs instance ready for use.</p>
 <p><strong>Throws:</strong></p>
@@ -69,8 +100,10 @@ validation and spatial type detection.</li>
 <li>InvalidArgument When tableSpecsRng is Nothing.</li>
 <li>InvalidArgument When dict is Nothing.</li>
 <li>InvalidArgument When headerRng and tableSpecsRng have different column counts.</li>
+<li>InvalidArgument When headerRng and tableSpecsRng start at different columns.</li>
+<li>InvalidArgument When either range spans more than one row.</li>
 <li>InvalidArgument When headerRng.Row is not above tableSpecsRng.Row.</li>
-<li>InvalidArgument When headerRng.Row is less than 1.</li>
+<li>ErrorUnexpectedState When the specification row sits outside a known analysis table.</li>
 </ul>
 <hr />
 </div>
@@ -80,17 +113,22 @@ validation and spatial type detection.</li>
 <div class="section-body">
 <h3 id="initcache">InitCache <a class="anchor-link" href="#initcache">#</a></h3>
 <p><em>init-cache</em></p>
-<p><strong>Populate all eager caches from header and data ranges</strong></p>
+<p><strong>Populate the column and value caches and resolve the scope</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub InitCache()
 </code></pre>
 <p>One-time cache population called from the factory.</p>
-<p>Scans the header range once to build parallel BetterArray caches of column
-names and cell values (Tier 1 + Tier 3). Also eagerly resolves the table
-scope from the cell above the header (Tier 2). Must be called exactly once
-after HeaderRange, TableRange, and DictionaryObject have been assigned.
-Lazy caches (ValidTable, IsNewSection) are NOT populated here; they are
-computed on first access.</p>
+<p>Reads the header range and the specification row with one array read each
+and builds parallel BetterArray caches of column names and cell values.
+Then resolves the table scope from the name of the ListObject the row sits
+in. Runs exactly once, from Create, before Seal: a later call raises,
+because the derived caches held elsewhere in the class are computed from
+this data.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>SomethingWentWrong When called after the instance is sealed.</li>
+<li>ErrorUnexpectedState When the specification row sits outside a known analysis table.</li>
+</ul>
 <hr />
 </div>
 </details>
@@ -104,10 +142,10 @@ computed on first access.</p>
 <pre><code class="language-vb">Public Property Get TableScope() As AnalysisTableScope
 </code></pre>
 <p>Type identification and identity properties for each table spec.</p>
-<p>Returns the cached AnalysisTableScope enum value. The scope is computed
-once eagerly during InitCache by reading the type label cell above the
-header range. On subsequent calls the cached Long value is returned
-directly without any worksheet access.</p>
+<p>Returns the cached AnalysisTableScope enum value. The scope is resolved
+once during InitCache from the name of the ListObject the specification row
+sits in. On subsequent calls the cached Long value is returned directly
+without any worksheet access.</p>
 <p><strong>Returns:</strong> AnalysisTableScope. The table scope category.</p>
 <hr />
 <h3 id="tableid">TableId <a class="anchor-link" href="#tableid">#</a></h3>
@@ -119,12 +157,17 @@ directly without any worksheet access.</p>
 <p>Generates a unique string identifier by combining a short type-based
 prefix with the row offset from the header. The prefix is derived from
 the TableScope: &quot;GS&quot; for GlobalSummary, &quot;UA&quot; for Univariate, &quot;BA&quot; for
-Bivariate, &quot;TS&quot; for TimeSeries, &quot;SA&quot; for Spatial, and &quot;SPT&quot; for
-SpatioTemporal. The row offset is computed as TableRange.Row minus
-HeaderRange.Row, producing a stable integer that uniquely locates this
-row within its analysis block. The resulting format is &quot;prefix_tabN&quot;,
-for example &quot;UA_tab3&quot;.</p>
+Bivariate, &quot;TS&quot; for TimeSeries, &quot;SA&quot; for Spatial, &quot;SPT&quot; for
+SpatioTemporal and &quot;TSG&quot; for the time series graph block. The row offset is
+computed as TableRange.Row minus HeaderRange.Row, producing a stable
+integer that uniquely locates this row within its analysis block. The
+resulting format is &quot;prefix_tabN&quot;, for example &quot;UA_tab3&quot;. Seal fixes both
+ranges, so the answer is computed once and held.</p>
 <p><strong>Returns:</strong> String. The unique table identifier such as &quot;GS_tab1&quot; or &quot;BA_tab5&quot;.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ErrorUnexpectedState When the table scope has no prefix.</li>
+</ul>
 <hr />
 <h3 id="tablesectionid">TableSectionId <a class="anchor-link" href="#tablesectionid">#</a></h3>
 <p><em>table-section-id</em></p>
@@ -135,16 +178,18 @@ for example &quot;UA_tab3&quot;.</p>
 <p>Returns the TableId of the first table in the current section group by
 walking backward through the Previous chain. If this table is itself the
 start of a new section (IsNewSection = True) or is a GlobalSummary table,
-it returns its own TableId immediately. Otherwise it delegates to
-Previous.TableSectionId, which continues walking backward until a section
-boundary is reached. All tables within the same section share a common
-section identifier.</p>
+it returns its own TableId immediately. The same answer is given when
+Previous finds no valid table left in the section. Otherwise it delegates
+to Previous.TableSectionId, which continues walking backward until a
+section boundary is reached. All tables within the same section share a
+common section identifier.</p>
 <p><strong>Returns:</strong> String. The TableId of the first table in this section.</p>
 <p><strong>Remarks:</strong></p>
 <ul>
-<li>This is a recursive property. For very long sections with many
-rows, it will traverse one row at a time via Previous. GlobalSummary
-tables short-circuit immediately because they are standalone.</li>
+<li>This is a recursive property. Resolving the section id of the k-th
+table in a section builds k instances, and a caller that walks a whole
+block row by row pays that once per row. A caller iterating in order can
+carry the section id in a local and avoid the walk entirely.</li>
 </ul>
 <hr />
 <h3 id="dictionary">Dictionary <a class="anchor-link" href="#dictionary">#</a></h3>
@@ -159,6 +204,19 @@ and spatial prefix detection used throughout validation and category
 resolution.</p>
 <p><strong>Returns:</strong> LLdictionary. The linelist dictionary instance.</p>
 <hr />
+<h3 id="geocount">GeoCount <a class="anchor-link" href="#geocount">#</a></h3>
+<p><em>geo-count</em></p>
+<p><strong>Number of geographic units this table shows</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get GeoCount() As Long
+</code></pre>
+<p>Reads the &quot;N geo max&quot; column and answers a usable count. The column is free
+text on the setup sheet, so the value is clamped: anything that is not a
+number, and an empty cell, answer the default of 5; a value below 1 answers
+1 and a value above 20 answers 20. Without the clamp a &quot;0&quot; builds a table
+with no columns and a large value builds a table that wide.</p>
+<p><strong>Returns:</strong> Long. The number of geographic units, between 1 and 20.</p>
+<hr />
 <h3 id="spatialtablescopes">SpatialTableScopes <a class="anchor-link" href="#spatialtablescopes">#</a></h3>
 <p><em>spatial-table-types</em></p>
 <p><strong>Spatial analysis sub-type</strong></p>
@@ -172,7 +230,9 @@ variable comes from the &quot;row&quot; field; for SpatioTemporal tables, the sp
 variable is in the &quot;column&quot; field. The method prepends &quot;hf_&quot; or &quot;adm1_&quot; to
 the variable name and checks whether that prefixed variable exists in the
 dictionary. Returns &quot;hf&quot; for health facility, &quot;geo&quot; for administrative
-geography, or vbNullString if neither prefix is found.</p>
+geography, or vbNullString if neither prefix is found. The answer is held
+after the first call: it costs up to two dictionary searches and nine
+production call sites ask for it.</p>
 <p><strong>Returns:</strong> String. The spatial sub-type (&quot;hf&quot;, &quot;geo&quot;, or empty string).</p>
 <p><strong>Remarks:</strong></p>
 <ul>
@@ -202,8 +262,10 @@ fields; Univariate requires the &quot;row&quot; variable to be a choice variable
 Bivariate requires both &quot;row&quot; and &quot;column&quot; to be choice variables;
 TimeSeries requires the &quot;row&quot; variable to be of type &quot;date&quot;; Spatial
 requires a geographic prefix in the dictionary; SpatioTemporal requires
-a geographic prefix on the column variable and a date-type row variable.
-Invalid table specs are skipped during navigation (Previous, NextSpecs).</p>
+a geographic prefix on the column variable and a date-type row variable;
+the time series graph block requires a graph title and a series title, the
+two columns the user picks from a dropdown. Invalid table specs are skipped
+during navigation (Previous, NextSpecs).</p>
 <p><strong>Returns:</strong> Boolean. True if the table specification meets all requirements for its type.</p>
 <p><strong>Depends on:</strong></p>
 <ul>
@@ -218,20 +280,21 @@ Invalid table specs are skipped during navigation (Previous, NextSpecs).</p>
 </code></pre>
 <p>Returns the cached section-boundary result. On first access, determines
 whether this table specification row begins a new section within the analysis
-setup block. Sections group related tables together. The method checks the
-&quot;section&quot; column: if the current row's section value differs from the
-previous row's section value, or if this is the first data row (where the
-previous row is the header), the table is considered a new section.
+setup block. Sections group related tables together. The method reads the
+&quot;section&quot; column of the nearest row above this one that the build will draw,
+and answers True when this row's section differs from it. A row with no valid
+row above it starts a section too, which covers the first data row of the
+block and the row whose section anchor failed validation.
 GlobalSummary tables are never considered new sections regardless of their
 section value, because each GlobalSummary table is standalone and does not
 participate in section grouping.</p>
 <p><strong>Returns:</strong> Boolean. True if this table starts a new section.</p>
 <p><strong>Remarks:</strong></p>
 <ul>
-<li>The comparison uses the cell at row offset 0 (prevCell =
-tRng.Cells(0, sectIndex)), which in Excel Range addressing corresponds
-to the row immediately above the current row. Section values are compared
-with exact string equality (case-sensitive).</li>
+<li>The row physically above may be one the build skips. Comparing
+against it made a section whose anchor row was invalid unopenable, so the
+comparison walks back to the nearest valid row instead. The section column
+is free text, so the two values are matched without regard to case.</li>
 </ul>
 <hr />
 </div>
@@ -248,14 +311,19 @@ with exact string equality (case-sensitive).</li>
 <p>Properties controlling optional table features: totals, missing,
 percentage, and graphs.</p>
 <p>Determines whether a total row/column is needed for this table. The logic
-varies by table scope: GlobalSummary and SpatioTemporal always return False;
-Univariate and Bivariate always return True; TimeSeries returns True when
-the user explicitly requested total=&quot;yes&quot; or when percentage is set to &quot;row&quot;
-or &quot;column&quot; (because percentage formulas need the total column as a
-denominator); Spatial returns True only when a column variable is specified.
-This is distinct from TotalRequested: HasTotal can be True even when the
-user did not ask for totals, solely because percentage needs them.</p>
+varies by table scope: GlobalSummary, SpatioTemporal and the time series
+graph block always return False; Univariate and Bivariate always return
+True; TimeSeries returns True when the user explicitly requested
+total=&quot;yes&quot; or when percentage is set to &quot;row&quot; or &quot;column&quot; (because
+percentage formulas need the total column as a denominator); Spatial
+returns True only when a column variable is specified. This is distinct
+from TotalRequested: HasTotal can be True even when the user did not ask
+for totals, solely because percentage needs them.</p>
 <p><strong>Returns:</strong> Boolean. True if a total row/column should be created.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ErrorUnexpectedState When the table scope is unmapped.</li>
+</ul>
 <hr />
 <h3 id="totalrequested">TotalRequested <a class="anchor-link" href="#totalrequested">#</a></h3>
 <p><em>total-requested</em></p>
@@ -274,7 +342,7 @@ created and visible.</p>
 <ul>
 <li>For Univariate and Bivariate tables, TotalRequested is not
 consulted because HasTotal is unconditionally True and totals are always
-shown. This property is primarily relevant for TimeSeries and Spatial types.</li>
+shown. Its one production caller reads it for time series tables.</li>
 </ul>
 <hr />
 <h3 id="hasmissing">HasMissing <a class="anchor-link" href="#hasmissing">#</a></h3>
@@ -284,13 +352,17 @@ shown. This property is primarily relevant for TimeSeries and Spatial types.</li
 <pre><code class="language-vb">Public Property Get HasMissing() As Boolean
 </code></pre>
 <p>Determines whether a &quot;missing&quot; row or column should be included in the
-output table. The logic varies by table scope: GlobalSummary and
-SpatioTemporal always return False; Univariate returns True when
-missing=&quot;yes&quot;; Bivariate returns True when missing=&quot;row&quot;, &quot;column&quot;, or
+output table. The logic varies by table scope: GlobalSummary, SpatioTemporal
+and the time series graph block always return False; Univariate returns True
+when missing=&quot;yes&quot;; Bivariate returns True when missing=&quot;row&quot;, &quot;column&quot;, or
 &quot;all&quot;; TimeSeries and Spatial return True when missing=&quot;yes&quot; and a column
 variable is present (without a column variable, there is no categorical
 axis to show missing values on).</p>
 <p><strong>Returns:</strong> Boolean. True if missing data should be shown in the output table.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ErrorUnexpectedState When the table scope is unmapped.</li>
+</ul>
 <hr />
 <h3 id="haspercentage">HasPercentage <a class="anchor-link" href="#haspercentage">#</a></h3>
 <p><em>has-percentage</em></p>
@@ -299,14 +371,19 @@ axis to show missing values on).</p>
 <pre><code class="language-vb">Public Property Get HasPercentage() As Boolean
 </code></pre>
 <p>Determines whether percentage values should be computed and displayed for
-this table. The logic varies by table scope: GlobalSummary and SpatioTemporal
-always return False; Univariate returns True when percentage=&quot;yes&quot;; Bivariate
-returns True when percentage=&quot;row&quot;, &quot;column&quot;, or &quot;total&quot;; TimeSeries returns
-True when percentage=&quot;row&quot; or &quot;column&quot; and HasTotal is True; Spatial returns
-True when percentage=&quot;yes&quot; and HasTotal is True. The interplay between
-HasPercentage and HasTotal for TimeSeries is intentional: requesting
-percentage implicitly forces HasTotal=True since percentage needs the total.</p>
+this table. The logic varies by table scope: GlobalSummary, SpatioTemporal
+and the time series graph block always return False; Univariate returns True
+when percentage=&quot;yes&quot;; Bivariate returns True when percentage=&quot;row&quot;,
+&quot;column&quot;, or &quot;total&quot;; TimeSeries returns True when percentage=&quot;row&quot; or
+&quot;column&quot; and HasTotal is True; Spatial returns True when percentage=&quot;yes&quot;
+and HasTotal is True. The interplay between HasPercentage and HasTotal for
+TimeSeries is intentional: requesting percentage implicitly forces
+HasTotal=True since percentage needs the total.</p>
 <p><strong>Returns:</strong> Boolean. True if percentage values should be included.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ErrorUnexpectedState When the table scope is unmapped.</li>
+</ul>
 <hr />
 <h3 id="hasgraph">HasGraph <a class="anchor-link" href="#hasgraph">#</a></h3>
 <p><em>has-graph</em></p>
@@ -315,13 +392,25 @@ percentage implicitly forces HasTotal=True since percentage needs the total.</p>
 <pre><code class="language-vb">Public Property Get HasGraph() As Boolean
 </code></pre>
 <p>Determines whether a chart/graph should be generated alongside the output
-table. The logic varies by table scope: GlobalSummary always returns False;
-Univariate, TimeSeries, Spatial, and SpatioTemporal return True when
-graph=&quot;yes&quot;; Bivariate returns True when graph=&quot;percentage&quot;, &quot;values&quot;, or
-&quot;both&quot;, letting the user choose whether the chart shows raw counts,
-percentages, or both. The actual graph rendering is handled downstream by
-the chart builder; this property only signals whether one should be created.</p>
+table. The logic varies by table scope: GlobalSummary and the time series
+graph block always return False; Univariate, TimeSeries, Spatial, and
+SpatioTemporal return True when graph=&quot;yes&quot;; Bivariate returns True when
+graph=&quot;percentages&quot; or &quot;values&quot;, the two entries of the __perc_val dropdown
+the setup binds to that column. The actual graph rendering is handled
+downstream by the chart builder; this property only signals whether one
+should be created. &quot;both&quot; stays in the bivariate list because GraphSpecs
+reads it too; the dropdown offers &quot;percentages&quot; and &quot;values&quot;.</p>
 <p><strong>Returns:</strong> Boolean. True if a graph should be created for this table.</p>
+<p><strong>Remarks:</strong></p>
+<ul>
+<li>The time series graph block answers False. Every one of its rows
+is already a graph, built by WriteTimeSeriesGraphs, and the term &quot;graph&quot;
+matches its &quot;Graph title (select)&quot; column, which holds a title.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ErrorUnexpectedState When the table scope is unmapped.</li>
+</ul>
 <hr />
 </div>
 </details>
@@ -336,23 +425,15 @@ the chart builder; this property only signals whether one should be created.</p>
 </code></pre>
 <p>Linked-list navigation between sibling specifications.</p>
 <p>Returns the nearest valid table specification that precedes this one within
-the same section. Starting from the row immediately above the current table
-range, it walks backward one row at a time until it finds a valid table or
-encounters a section boundary (IsNewSection on the candidate). The walk
-stops at the header row to prevent reading outside the data area. This
-property is used by TableSectionId to recursively find the first table in
-a section.</p>
-<p><strong>Returns:</strong> TableSpecs. The nearest valid preceding table in the same section.</p>
+the same section. The search itself is PreviousValidSpec, which walks back
+over the rows the build will skip. This property adds the section rule: a
+row that starts a section has no predecessor to hand back.</p>
+<p><strong>Returns:</strong> TableSpecs. The nearest valid preceding table in the same section,
+or Nothing when this row starts a section.</p>
 <p><strong>Remarks:</strong></p>
 <ul>
-<li>Callers must check IsNewSection before accessing Previous. Each
-candidate row examined creates a new TableSpecs instance, so performance
-degrades with many consecutive invalid rows.</li>
-</ul>
-<p><strong>Throws:</strong></p>
-<ul>
-<li>InvalidArgument When IsNewSection is True, because there is no
-previous table in the same section for a section-starting table.</li>
+<li>The walk runs once per instance and is shared with IsNewSection,
+which asks the same question of the same row.</li>
 </ul>
 <hr />
 <h3 id="nextspecs">NextSpecs <a class="anchor-link" href="#nextspecs">#</a></h3>
@@ -363,11 +444,10 @@ previous table in the same section for a section-starting table.</li>
 </code></pre>
 <p>Returns the next valid table specification after this row by walking forward
 through the setup ListObject. Starting from the row immediately below the
-current table range, it creates a TableSpecs for that row. If the row is
-invalid, it continues advancing one row at a time until it finds a valid
-table or passes the anchor range. Unlike Previous, NextSpecs does not stop
-at section boundaries. If no valid table is found within the data area, the
-property returns Nothing.</p>
+current table range, it creates a TableSpecs for each row until it finds a
+valid table or passes the anchor range. The walk crosses section
+boundaries. If no valid table is found within the data area, the property
+returns Nothing.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>anchorRng</code>: Range. A Range representing the last row of the setup
@@ -391,20 +471,24 @@ call NextSpecs repeatedly until Nothing is returned.</li>
 <p><em>value</em></p>
 <p><strong>Retrieve a value from the specification row by column name</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Value(ByVal colName As String) As String
+<pre><code class="language-vb">Public Function Value(ByVal colName As String, _
+                      Optional ByVal strictSearch As Boolean = False) As String
 </code></pre>
 <p>Value retrieval and category lookups from the specification row.</p>
 <p>Retrieves the cached cell value from this table specification row for a
-given column name. The column is located by scanning the cached column
-names array for a case-insensitive substring match (replicating the
-original Range.Find with xlPart and MatchCase:=False). Once found, the
-corresponding value is returned from the parallel cellValues cache without
-any worksheet access. If the column name does not exist in the header, the
-method returns vbNullString.</p>
+given column name. By default the column is located by scanning the cached
+column names for a case-insensitive substring match, so &quot;row&quot; finds
+&quot;Group by variable (row)&quot;. Pass strictSearch:=True to require the whole
+header to match the term, which is what a caller wants when two headers on
+the same sheet share a word. Once found, the corresponding value is
+returned from the parallel value cache without any worksheet access. A
+column name absent from the header returns vbNullString.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>colName</code>: String. The column name to search for in the header
-(partial, case-insensitive).</li>
+<li><code>colName</code>: String. The column name to search for in the header.</li>
+<li><code>strictSearch</code>: Boolean. Optional. True compares the whole header
+against colName. The default False keeps the substring match every existing
+caller relies on.</li>
 </ul>
 <p><strong>Returns:</strong> String. The cell value, or vbNullString if the column is not found.</p>
 <hr />
@@ -437,18 +521,18 @@ BetterArray if the row variable is not found or lData is not LinelistSpecs.</p>
 table. When lData is a LinelistSpecs instance, the categories come from it
 based on the variable name in the &quot;column&quot; field. When lData is any other
 type (or Nothing), returns an empty BetterArray. For SpatioTemporal tables,
-the column categories are empty placeholder strings whose count is determined
-by the &quot;n geo&quot; field in the setup row (defaulting to 5). These placeholders
-are filled in later at runtime with actual geographic location names.
-Internally delegates to CategoriesData(&quot;column&quot;, lData).</p>
+the column categories are empty placeholder strings whose count comes from
+GeoCount. These placeholders are filled in later at runtime with actual
+geographic location names. Internally delegates to
+CategoriesData(&quot;column&quot;, lData).</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>lData</code>: Object. A LinelistSpecs instance providing category lookups,
 or any other Object (categories will be empty).</li>
 </ul>
 <p><strong>Returns:</strong> BetterArray. The category strings for the column variable. For
-SpatioTemporal, contains N empty strings. Returns an empty BetterArray if the
-column variable is not found or not specified.</p>
+SpatioTemporal, contains GeoCount empty strings. Returns an empty
+BetterArray if the column variable is not found or not specified.</p>
 <hr />
 </div>
 </details>
@@ -464,7 +548,7 @@ column variable is not found or not specified.</p>
 <hr />
 <h3 id="int-guardnotsealed">GuardNotSealed <a class="anchor-link" href="#int-guardnotsealed">#</a></h3>
 <p><em>guard-not-sealed</em></p>
-<p><strong>Guard a setup setter against post-creation writes.</strong></p>
+<p><strong>Guard a setup routine against post-creation calls.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub GuardNotSealed(ByVal propName As String)
 </code></pre>
@@ -482,8 +566,7 @@ column variable is not found or not specified.</p>
 </code></pre>
 <p>Properties used by the factory pattern during initialisation.</p>
 <p>Returns the header row Range that contains column names such as &quot;row&quot;,
-&quot;column&quot;, &quot;total&quot;, &quot;section&quot;, etc. Used by Value() and ColumnIndex()
-for all field lookups.</p>
+&quot;column&quot;, &quot;total&quot;, &quot;section&quot;, etc. Used by Value() for all field lookups.</p>
 <p><strong>Returns:</strong> Range. The header row range.</p>
 <hr />
 <h3 id="int-headerrange">HeaderRange <a class="anchor-link" href="#int-headerrange">#</a></h3>
@@ -519,55 +602,92 @@ defines this table specification.</p>
 </ul>
 <hr />
 <h3 id="int-dictionaryobject">DictionaryObject <a class="anchor-link" href="#int-dictionaryobject">#</a></h3>
-<p><em>dictionary-object</em></p>
-<p><strong>Dictionary object used for validation and variable lookups</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get DictionaryObject() As LLdictionary
-</code></pre>
-<p>Returns the LLdictionary instance that provides variable existence
-checks, control type lookups, and spatial prefix detection. Set during
-factory construction.</p>
-<p><strong>Returns:</strong> LLdictionary. The dictionary object.</p>
-<hr />
-<h3 id="int-dictionaryobject">DictionaryObject <a class="anchor-link" href="#int-dictionaryobject">#</a></h3>
 <p><em>dictionary-object-set</em></p>
 <p><strong>Assign the dictionary object</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Set DictionaryObject(ByVal dict As LLdictionary)
 </code></pre>
+<p>The read side of this pair is the Dictionary property below, which is the
+one every consumer uses.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>dict</code>: LLdictionary. The dictionary to store.</li>
 </ul>
 <hr />
-<h2 id="int-helpers">Helpers</h2>
-<h3 id="int-columnexists">ColumnExists <a class="anchor-link" href="#int-columnexists">#</a></h3>
-<p><em>column-exists</em></p>
-<p><strong>Check whether a column name exists in the header cache</strong></p>
+<h3 id="int-variables">Variables <a class="anchor-link" href="#int-variables">#</a></h3>
+<p><em>variables-set</em></p>
+<p><strong>Assign the variable reader handed in by the caller</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ColumnExists(ByVal colName As String) As Boolean
+<pre><code class="language-vb">Public Property Set Variables(ByVal vars As LLVariables)
 </code></pre>
-<p>Private helper methods that support data access and validation.</p>
-<p>Delegates to ColumnIndex and checks for a positive return value. Replaces
-the original Range.Find call with a scan of the cached column names array.</p>
+<p>Set from the factory with whatever Create received. Passing Nothing leaves
+the class to build its own reader on first use.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>colName</code>: String. The column name to search for (partial, case-insensitive).</li>
+<li><code>vars</code>: LLVariables. The variable reader over the same dictionary.</li>
 </ul>
-<p><strong>Returns:</strong> Boolean. True if at least one cached column name contains the search term.</p>
+<hr />
+<h2 id="int-helpers">Helpers</h2>
+<h3 id="int-celltext">CellText <a class="anchor-link" href="#int-celltext">#</a></h3>
+<p><em>cell-text</em></p>
+<p><strong>Coerce one cell value to text, surviving an error value</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function CellText(ByVal cellValue As Variant) As String
+</code></pre>
+<p>Private helper methods that support data access and validation.</p>
+<p>A cell holding #REF!, #N/A, #VALUE! or #NAME? answers an Error variant, and
+CStr on an Error variant raises runtime error 13. The analysis setup sheet
+carries formula columns, so an ordinary edit can produce one. An error
+value, a Null and an empty cell all answer an empty string here.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>cellValue</code>: Variant. One value read out of a worksheet range.</li>
+</ul>
+<p><strong>Returns:</strong> String. The text of the cell, or vbNullString.</p>
+<hr />
+<h3 id="int-flagvalue">FlagValue <a class="anchor-link" href="#int-flagvalue">#</a></h3>
+<p><em>flag-value</em></p>
+<p><strong>Read a flag column, trimmed and lower-cased</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function FlagValue(ByVal colName As String) As String
+</code></pre>
+<p>The flag columns carry values picked from a dropdown, so the normal path is
+already clean. A value pasted into the cell bypasses Excel validation, so
+every flag comparison goes through here and reads &quot; Yes &quot; the same way it
+reads &quot;yes&quot;.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>colName</code>: String. The column name to search for in the header.</li>
+</ul>
+<p><strong>Returns:</strong> String. The flag value, trimmed and lower-cased.</p>
+<hr />
+<h3 id="int-variablesobject">VariablesObject <a class="anchor-link" href="#int-variablesobject">#</a></h3>
+<p><em>variables-object</em></p>
+<p><strong>The variable reader over this specification's dictionary</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function VariablesObject() As LLVariables
+</code></pre>
+<p>Answers the LLVariables handed to Create, or builds one on first use and
+holds it for the life of the instance. LLVariables.Create requires a
+fully-configured dictionary (a Data sheet and a &quot;variable name&quot; column). The
+setup error-checking context may not expose those, so a failure here answers
+Nothing and the callers fall back. The attempt is made once.</p>
+<p><strong>Returns:</strong> LLVariables. The variable reader, or Nothing when one cannot be built.</p>
 <hr />
 <h3 id="int-columnindex">ColumnIndex <a class="anchor-link" href="#int-columnindex">#</a></h3>
 <p><em>column-index</em></p>
 <p><strong>Return the 1-based column index of a named header column</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ColumnIndex(ByVal colName As String) As Long
+<pre><code class="language-vb">Private Function ColumnIndex(ByVal colName As String, _
+                             Optional ByVal strictSearch As Boolean = False) As Long
 </code></pre>
-<p>Scans the cached column names array for a case-insensitive substring match
-(replicating the original Range.Find with xlPart and MatchCase:=False).
+<p>Scans the cached column names for the search term. The default is a
+case-insensitive substring match; strictSearch compares the whole header.
 Returns the 1-based position within the header range, or -1 if not found.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>colName</code>: String. The column name to search for (partial, case-insensitive).</li>
+<li><code>colName</code>: String. The column name to search for.</li>
+<li><code>strictSearch</code>: Boolean. True compares the whole header against colName.</li>
 </ul>
 <p><strong>Returns:</strong> Long. The 1-based position within the header range, or -1 if not found.</p>
 <hr />
@@ -579,21 +699,20 @@ Returns the 1-based position within the header range, or -1 if not found.</p>
                                 ByRef lData As Object) As BetterArray
 </code></pre>
 <p>Shared implementation for RowCategories and ColumnCategories. Reads the
-variable name from the specified field using Value(rowOrCol), then checks
-whether lData is a LinelistSpecs instance via TypeName. If it is, the
-categories are retrieved from lData.Categories(). If not, returns an empty
-BetterArray. Handles a special case for SpatioTemporal tables: when
-rowOrCol is &quot;column&quot;, the categories are not looked up from the dictionary
-but instead populated with N empty strings (where N comes from the &quot;n geo&quot;
-setup field, defaulting to 5). These empty placeholders represent geographic
-locations filled in at runtime. The resulting BetterArray is cloned before
-returning to prevent external mutations from affecting internal state.</p>
+variable name from the specified field using Value(rowOrCol), then asks
+lData for the categories of that variable. An object that supplies
+Categories answers them; anything else leaves the list empty. Handles a
+special case for SpatioTemporal tables: when
+rowOrCol is &quot;column&quot;, the categories are populated with GeoCount empty
+strings. These empty placeholders represent geographic locations filled in
+at runtime. The resulting BetterArray is cloned before returning to prevent
+external mutations from affecting internal state.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>rowOrCol</code>: String. Either &quot;row&quot; or &quot;column&quot;, indicating which variable
 field to read from the setup row.</li>
-<li><code>lData</code>: Object. A LinelistSpecs instance providing category lookups,
-or any other Object (categories will be empty).</li>
+<li><code>lData</code>: Object. Any object supplying Categories, which in production is
+a LinelistSpecs. An object without that member leaves the categories empty.</li>
 </ul>
 <p><strong>Returns:</strong> BetterArray. A cloned array containing the category strings.</p>
 <p><strong>Depends on:</strong></p>
@@ -601,19 +720,41 @@ or any other Object (categories will be empty).</li>
 <li>LLVariables</li>
 </ul>
 <hr />
+<h3 id="int-categoriesof">CategoriesOf <a class="anchor-link" href="#int-categoriesof">#</a></h3>
+<p><em>categories-of</em></p>
+<p><strong>Ask an object for the categories of one variable</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function CategoriesOf(ByVal lData As Object, _
+                              ByVal nameVar As String) As BetterArray
+</code></pre>
+<p>Asks lData for the categories of nameVar and answers what it gives back.
+The parameter is typed Object so that no caller has to hold a LinelistSpecs,
+and asking is the only way to learn whether the object supplies categories:
+error 438 says the member is absent and answers Nothing. Every other error
+belongs to the object itself and is raised on, so a fault inside a real
+LinelistSpecs.Categories still reaches the caller.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>lData</code>: Object. The object to ask.</li>
+<li><code>nameVar</code>: String. The variable whose categories are wanted.</li>
+</ul>
+<p><strong>Returns:</strong> BetterArray. The categories, or Nothing when lData has no Categories member.</p>
+<hr />
 <h3 id="int-computetablescope">ComputeTableScope <a class="anchor-link" href="#int-computetablescope">#</a></h3>
 <p><em>compute-table-scope</em></p>
-<p><strong>Compute the AnalysisTableScope from the setup worksheet</strong></p>
+<p><strong>Compute the AnalysisTableScope from the ListObject name</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ComputeTableScope() As AnalysisTableScope
 </code></pre>
-<p>Reads the type label cell two rows above the header range, trims and
-lowercases it, then maps it to the corresponding AnalysisTableScope enum
-constant. Called once during InitCache to populate the scope cache.</p>
+<p>Reads the name of the ListObject the specification row sits in and maps it
+to the matching AnalysisTableScope constant. Called once during InitCache to
+populate the scope cache. The seven names are fixed by the setup template
+and the same in the mock, in the shipped file and in every release build.</p>
 <p><strong>Returns:</strong> AnalysisTableScope. The table scope category.</p>
 <p><strong>Throws:</strong></p>
 <ul>
-<li>ErrorUnexpectedState When the type label does not match any known analysis type.</li>
+<li>ErrorUnexpectedState When the row sits outside a ListObject.</li>
+<li>ErrorUnexpectedState When the ListObject is not one of the seven analysis tables.</li>
 </ul>
 <hr />
 <h3 id="int-computevalidtable">ComputeValidTable <a class="anchor-link" href="#int-computevalidtable">#</a></h3>
@@ -624,12 +765,34 @@ constant. Called once during InitCache to populate the scope cache.</p>
 </code></pre>
 <p>Validates whether this table specification row contains all required fields
 and references valid variables for its analysis type. Called once on first
-access of ValidTable to populate the Boolean cache.</p>
+access of ValidTable to populate the Boolean cache. Each branch resolves
+only the variables its own rule needs.</p>
 <p><strong>Returns:</strong> Boolean. True if the table specification meets all requirements.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ErrorUnexpectedState When the table scope is unmapped.</li>
+</ul>
 <p><strong>Depends on:</strong></p>
 <ul>
 <li>LLVariables</li>
 </ul>
+<hr />
+<h3 id="int-previousvalidspec">PreviousValidSpec <a class="anchor-link" href="#int-previousvalidspec">#</a></h3>
+<p><em>previous-valid-spec</em></p>
+<p><strong>The nearest row above this one that the build will draw</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function PreviousValidSpec() As TableSpecs
+</code></pre>
+<p>Walks backward one row at a time from the row above this one and answers
+the first candidate whose ValidTable is True, whatever section it belongs
+to. The walk stops at the header row, to stay inside the data area, and the
+answer is held for the life of the instance.</p>
+<p>This is the one search behind both IsNewSection and Previous, and it has to
+stay free of both: ComputeValidTable reads the scope, the cached values, the
+dictionary and the variable reader, and touches neither of them, so the walk
+cannot recurse.</p>
+<p><strong>Returns:</strong> TableSpecs. The nearest valid row above this one, or Nothing when
+there is none between here and the header.</p>
 <hr />
 <h3 id="int-computeisnewsection">ComputeIsNewSection <a class="anchor-link" href="#int-computeisnewsection">#</a></h3>
 <p><em>compute-is-new-section</em></p>
@@ -637,11 +800,21 @@ access of ValidTable to populate the Boolean cache.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function ComputeIsNewSection() As Boolean
 </code></pre>
-<p>Determines whether this table specification row begins a new section by
-comparing the current and previous row section values. Called once on first
-access of IsNewSection to populate the Boolean cache. The previous row cell
-value is the only remaining worksheet read (the current row value comes
-from the cellValues cache).</p>
+<p>Compares this row's section value against the section value of the nearest
+row above it that the build will actually draw. A row whose section differs
+from that one starts a section, and so does a row with no valid row above it
+at all. Called once on first access of IsNewSection to populate the Boolean
+cache.</p>
+<p>The comparison used to read the row physically above, whatever state it was
+in. Everything else in the pipeline works over valid tables only, and that
+mismatch is what broke a section whose anchor row failed validation: the
+anchor was skipped, every row below it still reported False, and each one
+appended itself to section infrastructure nothing had built. It broke the
+mirror case too, where an invalid row carrying a new section name hid the
+boundary from the valid row under it.</p>
+<p>Sections are matched without regard to case, because the section column is
+free text: a capitalisation slip would otherwise split one section in two
+and every section-keyed named range would follow it.</p>
 <p><strong>Returns:</strong> Boolean. True if this table starts a new section.</p>
 <hr />
 <h2 id="int-error-handling">Error Handling</h2>
@@ -674,9 +847,13 @@ providing a consistent stack trace across all methods in this class.</p>
 </code></pre>
 <p>Validates all preconditions required by the Create factory before populating
 a new TableSpecs instance. Checks that headerRng, tableSpecsRng, and dict
-are not Nothing, that the two ranges have the same column count, that the
-header is above the specification row, and that the header row is at least 1.
-If any check fails, a descriptive error is raised via ThrowError.</p>
+are not Nothing, that both ranges span a single row, that they start at the
+same column, that they have the same column count, and that the header sits
+above the specification row.</p>
+<p>The column-start check matters because ComputeIsNewSection resolves the
+section index against the header range and then indexes the specification
+range with it: two ranges starting at different columns make every section
+read land on the wrong column.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>headerRng</code>: Range. The header range to validate.</li>
@@ -690,8 +867,9 @@ If any check fails, a descriptive error is raised via ThrowError.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (11 file(s))</summary>
+<summary>Used in (13 file(s))</summary>
 <ul>
+<li><a href="Analysis.html">Analysis.cls</a></li>
 <li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
 <li><a href="CrossTable.html">CrossTable.cls</a></li>
 <li><a href="CrossTableFormula.html">CrossTableFormula.cls</a></li>
@@ -703,6 +881,7 @@ If any check fails, a descriptive error is raised via ThrowError.</p>
 <li>TestCrossTableFormula.bas</li>
 <li>TestTableSpecs.bas</li>
 <li>TestGraphSpecs.bas</li>
+<li><a href="LinelistDataStub.html">LinelistDataStub.cls</a></li>
 </ul>
 </details>
   </main>

@@ -15,10 +15,28 @@
 This class is the single entry point for all workbook event handling in the
 setup workbook. It reacts to worksheet activation, change, and open events,
 manages setup rows (add, insert, delete, sort) through cached helpers
-(LLdictionary, LLChoices, LLExport, Analysis), and provides analysis table
-value lookups. All domain managers are created lazily on first use and cached
-for the lifetime of the instance.</p>
-<p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="Passwords.html">Passwords</a>, <a href="UpdatedValues.html">UpdatedValues</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="LLdictionary.html">LLdictionary</a>, <a href="LLVariables.html">LLVariables</a>, <a href="LLChoices.html">LLChoices</a>, <a href="LLExport.html">LLExport</a>, <a href="Analysis.html">Analysis</a>, <a href="SetupTranslationsTable.html">SetupTranslationsTable</a>, <a href="CustomTable.html">CustomTable</a>, <a href="ChoiceFormula.html">ChoiceFormula</a>, RibbonDev, ProjectError</p>
+(LLdictionary, LLChoices, LLExport, Analysis), applies a translation across the
+four content sheets, and provides analysis table value lookups. All domain
+managers are created lazily on first use and cached for the lifetime of the
+instance.</p>
+<details open class="doc-section" id="sheet-names-are-declared-twice-on-purpose">
+<summary>SHEET NAMES ARE DECLARED TWICE ON PURPOSE</summary>
+<div class="section-body">
+<p>SetupHelpers.bas declares the same sheet names for the import and clean flow.
+Each file keeps the constants it needs, so neither depends on the other for a
+string. Change one and change the other.</p>
+</div>
+</details>
+<details open class="doc-section" id="protection-is-applied-in-one-place">
+<summary>PROTECTION IS APPLIED IN ONE PLACE</summary>
+<div class="section-body">
+<p>ProtectSetupSheet is the only routine that decides the protection flags of a
+setup sheet, and BeginSheetUpdate / EndSheetUpdate go through it. The ribbon
+calls it too, so a sheet unlocked on one path and re-locked on the other comes
+back with the flags it started with.</p>
+<p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="Passwords.html">Passwords</a>, <a href="TranslationObject.html">TranslationObject</a>, <a href="UpdatedValues.html">UpdatedValues</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="LLdictionary.html">LLdictionary</a>, <a href="LLVariables.html">LLVariables</a>, <a href="LLChoices.html">LLChoices</a>, <a href="LLExport.html">LLExport</a>, <a href="Analysis.html">Analysis</a>, <a href="CustomTable.html">CustomTable</a>, <a href="ChoiceFormula.html">ChoiceFormula</a>, RibbonDev, ProjectError</p>
+</div>
+</details>
 <details open class="doc-section" id="factory-helpers">
 <summary>Factory helpers</summary>
 <div class="section-body">
@@ -85,10 +103,10 @@ Silently skips each step when the required helper cannot be created.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub OnSheetActivate(ByVal sh As Worksheet)
 </code></pre>
-<p>Invalidates relevant ribbon controls (delete row, delete column, sort) so
-their enabled state reflects the newly active sheet. When the Analysis sheet
-becomes active, refreshes all analysis-related dropdown lists to ensure they
-are current.</p>
+<p>Refreshes the three ribbon controls whose visibility depends on the active
+sheet, and only when the answer they were last given has changed. When the
+Analysis sheet becomes active, primes the analysis table wrappers and asks the
+update watcher whether the dropdowns need rebuilding.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>sh</code>: Worksheet. The worksheet that became active.</li>
@@ -189,8 +207,8 @@ dictionary state.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub ManageRows(ByVal sheetName As String, Optional ByVal del As Boolean = False)
 </code></pre>
-<p>Delegates to the appropriate domain manager (dictionary, choices, analysis,
-exports, or translations) to add or remove rows. Each branch lazily creates
+<p>Delegates to the appropriate domain manager (dictionary, choices, analysis or
+exports) to add or remove rows. Each branch lazily creates
 its helper, unlocks the target sheet, invokes the manager, then re-locks the
 sheet in a cleanup block. For exports, the dictionary sheet is also unlocked
 because export row changes can propagate to dictionary columns. Silently exits
@@ -274,8 +292,99 @@ columns. Silently exits for unrecognised sheets.</p>
 <hr />
 </div>
 </details>
+<details open class="doc-section" id="translations">
+<summary>Translations</summary>
+<div class="section-body">
+<h3 id="applysetuptranslation">ApplySetupTranslation <a class="anchor-link" href="#applysetuptranslation">#</a></h3>
+<p><em>apply-setup-translation</em></p>
+<p><strong>Rewrite every header and label on the four content sheets.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ApplySetupTranslation(ByVal translator As TranslationObject)
+</code></pre>
+<p>Translates the Dictionary, Choices, Analysis and Exports sheets through the
+managers this service already holds, then drops every cache.</p>
+</div>
+</details>
+<details open class="doc-section" id="the-cache-drop-is-the-point">
+<summary>THE CACHE DROP IS THE POINT</summary>
+<div class="section-body">
+<p>A translation renames the columns the cached managers were built against. A row
+insert, a sort or a dropdown refresh made after it would look for a column name
+the sheet no longer carries, and the lazy getters answer Nothing on a failure,
+so nothing would report it. Dropping the caches here makes the next caller
+rebuild against the sheet as it now reads.</p>
+<p>Each sheet is unlocked, translated and locked again on its own, so a failure
+leaves no sheet unlocked. The failure is raised to the caller.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>translator</code>: TranslationObject. Label source for the target language.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When translator is Nothing.</li>
+<li>ProjectError.SomethingWentWrong When a sheet translation fails.</li>
+</ul>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="internal-helpers">
+<summary>Internal helpers</summary>
+<div class="section-body">
+<h3 id="unprotectsetupsheet">UnprotectSetupSheet <a class="anchor-link" href="#unprotectsetupsheet">#</a></h3>
+<p><em>unprotect-setup-sheet</em></p>
+<p><strong>Unlock a setup sheet through the cached password helper.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub UnprotectSetupSheet(ByVal sheetName As String)
+</code></pre>
+<p>The ribbon and the import flow call this, and so does BeginSheetUpdate, so a
+sheet is always unlocked the same way.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetName</code>: String. Name of the sheet to unprotect.</li>
+</ul>
+<hr />
+<h3 id="protectsetupsheet">ProtectSetupSheet <a class="anchor-link" href="#protectsetupsheet">#</a></h3>
+<p><em>protect-setup-sheet</em></p>
+<p><strong>Lock a setup sheet with the flags that sheet is entitled to.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ProtectSetupSheet(ByVal sheetName As String)
+</code></pre>
+<p>This is the one place the protection flags of a setup sheet are decided.
+Translations and Analysis are locked with row deletion off, because both carry
+stacked tables a deleted worksheet row would tear apart. Every other sheet
+keeps row deletion. The checking report sheet is left alone: SetupErrors writes
+to it while events are live.</p>
+<p>Passwords.Protect folds the flag it is given with the flag already stored for
+the sheet and never widens it back, so two callers passing two different
+answers leave the sheet with whichever answer came first. One rule here is what
+stops that.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetName</code>: String. Name of the sheet to re-protect.</li>
+</ul>
+<hr />
+</div>
+</details>
 <details>
 <summary>Internal members (not exported)</summary>
+<h2 id="int-event-handling-and-operations">Event handling and operations</h2>
+<h3 id="int-refreshsheetbuttons">RefreshSheetButtons <a class="anchor-link" href="#int-refreshsheetbuttons">#</a></h3>
+<p><em>refresh-sheet-buttons</em></p>
+<p><strong>Invalidate the three sheet-dependent ribbon controls when their answer changes.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RefreshSheetButtons(ByVal sh As Worksheet)
+</code></pre>
+<p>SetupButtonVisible answers one question for all three controls: whether the
+active sheet is Translations. Invalidating them on every activation asks the
+ribbon to re-read an answer it already has, so the answer is remembered here
+and the three calls are made only when the Translations boundary is crossed.
+The first activation of a session always refreshes, because no answer has been
+given yet.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The worksheet that became active.</li>
+</ul>
+<hr />
 <h2 id="int-internal-helpers">Internal helpers</h2>
 <h3 id="int-resetinternalcaches">ResetInternalCaches <a class="anchor-link" href="#int-resetinternalcaches">#</a></h3>
 <p><em>reset-internal-caches</em></p>
@@ -284,7 +393,10 @@ columns. Silently exits for unrecognised sheets.</p>
 <pre><code class="language-vb">Private Sub ResetInternalCaches()
 </code></pre>
 <p>Sets every cached reference to Nothing so the next access triggers lazy
-creation. Called by Configure and by the ResetCaches interface method.</p>
+creation. Called by Configure, by ResetCaches and at the end of
+ApplySetupTranslation. The password helper and the Choices table wrapper are
+cleared here too: Configure binds the service to another workbook, and a
+wrapper built against the old one answers for the wrong sheet.</p>
 <hr />
 <h3 id="int-addorupdatedrop">AddOrUpdateDrop <a class="anchor-link" href="#int-addorupdatedrop">#</a></h3>
 <p><em>add-or-update-drop</em></p>
@@ -379,17 +491,6 @@ cached. Returns True when the analysis helper is available.</p>
 cached. Returns True when the exports helper is available.</p>
 <p><strong>Returns:</strong> Boolean. True when the exports helper is available.</p>
 <hr />
-<h3 id="int-ensuretranslationsmanager">EnsureTranslationsManager <a class="anchor-link" href="#int-ensuretranslationsmanager">#</a></h3>
-<p><em>ensure-translations-manager</em></p>
-<p><strong>Lazily create the translations table manager.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function EnsureTranslationsManager() As Boolean
-</code></pre>
-<p>Creates a SetupTranslationsTable instance from the translations ListObject.
-Disables display prompts on the newly created manager so operations proceed
-silently. Returns True when available.</p>
-<p><strong>Returns:</strong> Boolean. True when the translations manager is available.</p>
-<hr />
 <h3 id="int-ensureanalysistable">EnsureAnalysisTable <a class="anchor-link" href="#int-ensureanalysistable">#</a></h3>
 <p><em>ensure-analysis-table</em></p>
 <p><strong>Ensure the cached analysis tables are created lazily and reused.</strong></p>
@@ -437,14 +538,6 @@ recalculates its data range. Silently exits when the table cannot be created.</p
 <li><code>loName</code>: String. Name of the ListObject to retrieve.</li>
 </ul>
 <p><strong>Returns:</strong> ListObject. The ListObject, or Nothing when not found.</p>
-<hr />
-<h3 id="int-translationslistobject">TranslationsListObject <a class="anchor-link" href="#int-translationslistobject">#</a></h3>
-<p><em>translations-list-object</em></p>
-<p><strong>Retrieve the translations ListObject from the Translations worksheet.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function TranslationsListObject() As ListObject
-</code></pre>
-<p><strong>Returns:</strong> ListObject. The translations ListObject, or Nothing when not found.</p>
 <hr />
 <h3 id="int-sheetornothing">SheetOrNothing <a class="anchor-link" href="#int-sheetornothing">#</a></h3>
 <p><em>sheet-or-nothing</em></p>
@@ -724,7 +817,7 @@ cells. Temporarily unlocks the Analysis sheet for the modification.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function GetCategories(ByVal columnVariable As String, _
                                ByVal seriesValue As String, _
-                               ByRef choiceName As String) As BetterArray
+                               ByRef resolvedChoice As String) As BetterArray
 </code></pre>
 <p>When the control details start with &quot;CHOICE_FORMULA&quot;, delegates to
 ChoiceFormula to parse the formula and retrieve categories. Otherwise fetches
@@ -734,7 +827,7 @@ time-series table indicates addTotal is &quot;yes&quot; for the series.</p>
 <ul>
 <li><code>columnVariable</code>: String. The variable whose control details determine the category list.</li>
 <li><code>seriesValue</code>: String. The series title for looking up the addTotal flag.</li>
-<li><code>choiceName</code>: ByRef String. Populated with the resolved choice list name.</li>
+<li><code>resolvedChoice</code>: ByRef String. Populated with the resolved choice list name.</li>
 </ul>
 <p><strong>Returns:</strong> BetterArray. The list of categories.</p>
 <hr />
@@ -786,7 +879,7 @@ providing a consistent stack trace across all methods in this class.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (12 file(s))</summary>
+<summary>Used in (14 file(s))</summary>
 <ul>
 <li><a href="LLdictionary.html">LLdictionary.cls</a></li>
 <li><a href="LLVariables.html">LLVariables.cls</a></li>
@@ -794,10 +887,12 @@ providing a consistent stack trace across all methods in this class.</p>
 <li><a href="SetupPreparation.html">SetupPreparation.cls</a></li>
 <li>CustomSetupFunctions.bas</li>
 <li>EventSetupWorkbook.bas</li>
-<li>SetupEventsManager.bas</li>
+<li>EventsManager.bas</li>
 <li>SetupHelpers.bas</li>
+<li>SetupRibbon.bas</li>
 <li>TestCaseWhen.bas</li>
 <li>TestEventSetup.bas</li>
+<li>TestEventsManager.bas</li>
 <li>TestSetupPreparation.bas</li>
 <li>TestUpdatedValues.bas</li>
 </ul>

@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LinelistDataStub - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>LinelistDataStub</h1>
+<p>Stands in for the linelist specifications object that CrossTable is handed at
+creation. CrossTable asks that object for two things only: TransObject, for
+the translated labels it writes, and Categories, which TableSpecs asks on its
+behalf when it resolves the row and column categories of a table. This stub
+answers both, and a test seeds each one so the layout under test is driven by
+known data.</p>
+<details open class="doc-section" id="why-a-stub-and-not-the-real-class">
+<summary>WHY A STUB AND NOT THE REAL CLASS</summary>
+<div class="section-body">
+<p>LinelistSpecs is 1,536 lines and its own dependency closure names six more
+classes across four folders. CrossTable.Create types the parameter Object for
+that reason, so the test workbook needs none of them.</p>
+<p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="TranslationObject.html">TranslationObject</a></p>
+</div>
+</details>
+<details>
+<summary>Internal members (not exported)</summary>
+<h2 id="int-seeding">Seeding</h2>
+<h3 id="int-settransobject">SetTransObject <a class="anchor-link" href="#int-settransobject">#</a></h3>
+<p><em>set-trans-object</em></p>
+<p><strong>Store the translation object the stub hands back.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub SetTransObject(ByVal trans As TranslationObject)
+</code></pre>
+<p>Members a test calls to load the stub before handing it over.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>trans</code>: TranslationObject. The translation object to store.</li>
+</ul>
+<hr />
+<h3 id="int-setcategories">SetCategories <a class="anchor-link" href="#int-setcategories">#</a></h3>
+<p><em>set-categories</em></p>
+<p><strong>Store the categories of one variable.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub SetCategories(ByVal varName As String, ByVal categories As BetterArray)
+</code></pre>
+<p>Later calls for the same variable name replace the earlier list. Collection
+keys are matched without regard to case, which is how the dictionary matches
+a variable name too.</p>
+<p>The list is copied into a one-based array whatever bounds it arrived with,
+because LLChoices.Categories sets LowerBound to 1 and everything that reads a
+category list reads it from there. A stub answering a zero-based list would
+test the readers against a shape they never meet.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>varName</code>: String. The variable name the categories belong to.</li>
+<li><code>categories</code>: BetterArray. The category list to answer for that variable.</li>
+</ul>
+<hr />
+<h3 id="int-setcategoriesverbatim">SetCategoriesVerbatim <a class="anchor-link" href="#int-setcategoriesverbatim">#</a></h3>
+<p><em>set-categories-verbatim</em></p>
+<p><strong>Store the categories of one variable with the bounds they arrived with.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub SetCategoriesVerbatim(ByVal varName As String, _
+                                 ByVal categories As BetterArray)
+</code></pre>
+<p>SetCategories normalises to a one-based list because that is what the real
+choices class answers. This member skips the normalisation, so a test can hand
+a reader a list starting at zero and check that the reader copes. One reader
+used to walk index one to Length regardless of where the list started, which
+read one past the end of a zero-based list.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>varName</code>: String. The variable name the categories belong to.</li>
+<li><code>categories</code>: BetterArray. The category list to answer, bounds untouched.</li>
+</ul>
+<hr />
+<h3 id="int-clearcategories">ClearCategories <a class="anchor-link" href="#int-clearcategories">#</a></h3>
+<p><em>clear-categories</em></p>
+<p><strong>Forget every seeded category list.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ClearCategories()
+</code></pre>
+<hr />
+<h2 id="int-members-crosstable-reads">Members CrossTable reads</h2>
+<h3 id="int-transobject">TransObject <a class="anchor-link" href="#int-transobject">#</a></h3>
+<p><em>trans-object</em></p>
+<p><strong>The translation object for locale-aware labels.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get TransObject() As TranslationObject
+</code></pre>
+<p><strong>Returns:</strong> TranslationObject. The stored translation object.</p>
+<hr />
+<h3 id="int-categories">Categories <a class="anchor-link" href="#int-categories">#</a></h3>
+<p><em>categories</em></p>
+<p><strong>Categories of one variable.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Categories(ByVal varName As String) As BetterArray
+</code></pre>
+<p>Answers the list a test seeded for varName. A variable with nothing seeded
+answers an empty list, which is what the real class answers for a variable
+that carries no choices.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>varName</code>: String. The variable whose categories are wanted.</li>
+</ul>
+<p><strong>Returns:</strong> BetterArray. The seeded categories, or an empty list.</p>
+<hr />
+</details>
+<details>
+<summary>Used in (1 file(s))</summary>
+<ul>
+<li>TestCrossTable.bas</li>
+</ul>
+</details>
+  </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
+</body>
+</html>
+

@@ -27,7 +27,7 @@ each step says what a second run does:</p>
 value reaches an old workbook. Seven placeholder lists are left as they
 are; see RegisterAllDropdowns.</li>
 <li>the update registry is dropped and rebuilt in full; see
-EnsureUpdatedRegistry.</li>
+ResetUpdatedRegistry.</li>
 <li>the 56 validations are applied again.</li>
 <li>a sheet that already exists keeps its visibility; see
 ResolveOrCreateWorksheet.</li>
@@ -113,11 +113,11 @@ populate every standard dropdown list on the dropdown worksheet. Safe to
 call again: the manager is built once, and a list that is already on the
 sheet is written with its current values.</p>
 <hr />
-<h3 id="ensureupdatedregistry">EnsureUpdatedRegistry <a class="anchor-link" href="#ensureupdatedregistry">#</a></h3>
-<p><em>ensure-updated-registry</em></p>
+<h3 id="resetupdatedregistry">ResetUpdatedRegistry <a class="anchor-link" href="#resetupdatedregistry">#</a></h3>
+<p><em>reset-updated-registry</em></p>
 <p><strong>Drop every registry table and build it again from the watched sheets</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub EnsureUpdatedRegistry()
+<pre><code class="language-vb">Public Sub ResetUpdatedRegistry()
 </code></pre>
 <p>This is a teardown. DeleteUp removes every registry ListObject on the
 registry sheet, then the watched setup sheets (Dictionary, Choices,
@@ -204,7 +204,7 @@ ApplyAnalysisValidations to wire each table column to its dropdown list.</p>
 (updated, variables, formatter, pass, formula, dev).</p>
 <p>__checkRep is left off this list on purpose. SetupErrors publishes its
 report there, so the sheet has to stay visible and writable.
-SetupHelpers.ProtectSetupSheet returns early for it by name for the same
+EventSetup.ProtectSetupSheet returns early for it by name for the same
 reason.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -495,13 +495,16 @@ all methods in this class.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (6 file(s))</summary>
+<summary>Used in (9 file(s))</summary>
 <ul>
+<li><a href="Analysis.html">Analysis.cls</a></li>
 <li><a href="DropdownLists.html">DropdownLists.cls</a></li>
 <li><a href="SetupTranslationsTable.html">SetupTranslationsTable.cls</a></li>
 <li><a href="UpdatedValues.html">UpdatedValues.cls</a></li>
-<li>EventsSetupRibbon.bas</li>
+<li>EventSetupWorkbook.bas</li>
 <li>SetupHelpers.bas</li>
+<li>SetupRibbon.bas</li>
+<li>TestTableSpecs.bas</li>
 <li>TestSetupPreparation.bas</li>
 </ul>
 </details>

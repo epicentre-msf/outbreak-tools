@@ -19,13 +19,20 @@ external workbooks. Uses HiddenNames for sequence counters.</p>
 <details open class="doc-section" id="label-matching-policy">
 <summary>LABEL MATCHING POLICY</summary>
 <div class="section-body">
-<p>A label is always matched without regard to case. FindLabelRow,
+<p>A label carries its case. &quot;Hello&quot; and &quot;hello&quot; are two labels, they take two
+rows, and neither one stands in for the other. FindLabelRow,
 DeduplicateLabels and ComputeDuplicateSummary all answer from one keyed
-Collection whose key is the lower-cased label, so &quot;Hello&quot; and &quot;hello&quot; are
-one label everywhere. Mac Excel has no Scripting.Dictionary, so a keyed
-Collection is the house lookup. The only comparison that stays
-case-sensitive is the <strong>TagInternal</strong> header title, which is a fixed
-internal marker.</p>
+Collection built by LabelKey, and that key spells the capitalisation out so
+two spellings never share it. Mac Excel has no Scripting.Dictionary, so a
+keyed Collection is the house lookup, and a Collection matches its own keys
+without regard to case: the case has to travel inside the key rather than be
+left to the Collection.</p>
+<p>TranslationObject.LookupRow is what reads this table at run time and it
+compares with vbBinaryCompare, so a row this class folded away was a row that
+class could never find. That reader is the reason for the rule.</p>
+<p>Column titles, registry status words, mode keywords and defined-name lookups
+are not labels and stay case-insensitive. Excel matches defined names that way
+itself.</p>
 </div>
 </details>
 <details open class="doc-section" id="the-helper-tag-column">
@@ -389,16 +396,30 @@ what makes IF(A1=&quot;&quot;, ...) skip its empty comparison string.</p>
 <hr />
 <h3 id="int-labelkey">LabelKey <a class="anchor-link" href="#int-labelkey">#</a></h3>
 <p><em>label-key</em></p>
-<p><strong>Build the lookup key for a label.</strong></p>
+<p><strong>Build the lookup key for a label, one key per spelling.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function LabelKey(ByVal label As String) As String
 </code></pre>
-<p>The leading character keeps a numeric label legal as a Collection key
-and the lower case is what makes matching ignore case.</p>
+<p>The leading character keeps a numeric label legal as a Collection key.
+The trailing signature is what makes two spellings different keys: a
+Collection matches its own keys without regard to case, so dropping
+the label in on its own would fold &quot;Hello&quot; onto &quot;hello&quot; no matter how
+it was cased here.</p>
+<hr />
+<h3 id="int-casesignature">CaseSignature <a class="anchor-link" href="#int-casesignature">#</a></h3>
+<p><em>case-signature</em></p>
+<p><strong>Spell a label's capitalisation out in digits.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function CaseSignature(ByVal label As String) As String
+</code></pre>
+<p>Digits carry no case of their own, so a Collection holds this part of
+the key exactly as written. A character reads 1 when it differs from
+its own lower case, which is the whole of what a case-insensitive
+comparison throws away.</p>
 <hr />
 <h3 id="int-registerlabelkey">RegisterLabelKey <a class="anchor-link" href="#int-registerlabelkey">#</a></h3>
 <p><em>register-label-key</em></p>
-<p><strong>Record the row a label sits on, keeping the first row when it repeats.</strong></p>
+<p><strong>Record the row a label sits on, keeping the first row when the same spelling repeats.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RegisterLabelKey(ByVal label As String, ByVal rowIndex As Long)
 </code></pre>
@@ -598,7 +619,8 @@ carries the separator still yields its sequence number.</p>
 <pre><code class="language-vb">Private Function ComputeDuplicateSummary(ByVal languageName As String) As TDuplicateSummary
 </code></pre>
 <p>Every label is counted through one keyed Collection, so the cost is
-linear in the row count and matching ignores case.</p>
+linear in the row count. Two spellings of the same word are two
+labels here, so neither is reported as a duplicate of the other.</p>
 <hr />
 <h3 id="int-labelcolumndata">LabelColumnData <a class="anchor-link" href="#int-labelcolumndata">#</a></h3>
 <p><em>label-column-data</em></p>
@@ -843,14 +865,13 @@ be heard.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (8 file(s))</summary>
+<summary>Used in (7 file(s))</summary>
 <ul>
-<li><a href="EventSetup.html">EventSetup.cls</a></li>
 <li><a href="SetupErrors.html">SetupErrors.cls</a></li>
 <li><a href="SetupImport.html">SetupImport.cls</a></li>
 <li><a href="UpdatedValues.html">UpdatedValues.cls</a></li>
 <li>EventsMasterSetupRibbon.bas</li>
-<li>EventsSetupRibbon.bas</li>
+<li>SetupRibbon.bas</li>
 <li>SetupImportTestFixture.bas</li>
 <li>TestSetupTranslationsTable.bas</li>
 </ul>
