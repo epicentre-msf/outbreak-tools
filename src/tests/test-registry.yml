@@ -557,12 +557,25 @@ suites:
   # `dictionary`) and CustomTable and DropdownLists (registered under
   # `general`). So this one row closes its own compile closure.
   #
-  # This block has no suite yet. src/tests/geo/ holds TestLLGeo and
-  # TestLLSpatial, both unregistered, and both belong to their own sessions.
-  # LLSpatial has no row here because nothing registered compiles against it.
+  # TestLLGeo joined the block on 2026-07-31. It declares CustomTest, LLGeo,
+  # BetterArray, HiddenNames and Passwords, all of them either the row below or
+  # baked into the driver workbook. It reaches PreparePasswordsFixture in
+  # PasswordsTestFixture, registered under `helpers`; its other helper calls are
+  # unqualified, so they resolve to TestHelpersLite.
+  #
+  # Two of its tests build a workbook of their own, because Update walks every
+  # worksheet of the workbook that owns the geo sheet and the driver workbook
+  # carries dozens.
+  #
+  # src/tests/geo/ still holds TestLLSpatial, unregistered, for its own session.
+  # LLSpatial has no class row here because nothing registered compiles against
+  # it.
   - folder: geo
     classes:
       - name: LLGeo
+    tests:
+      - module: TestLLGeo
+        covers: [LLGeo]
 
   # --- designer (LLBuild) ---------------------------------------
   # LinelistSpecs.Prepare takes a LLBuild and the parameter is

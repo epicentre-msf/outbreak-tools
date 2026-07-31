@@ -80,7 +80,15 @@ Private Const GEO_LANG_CODE As String = "RNG_GeoLangCode"
 Private Const GEO_NAME As String = "RNG_GeoName"
 Private Const GEO_META_LANG As String = "RNG_MetaLang"
 Private Const GEO_UPDATED As String = "RNG_GeoUpdated"
+Private Const GEO_TRANSLATED As String = "RNG_GeoTranslated"
 Private Const GEO_FORM_LOADED As String = "RNG_FormLoaded"
+
+'Geo workbook-level HiddenNames holding the five level labels
+Private Const GEO_ADM1_NAME As String = "RNG_ADM1NAME"
+Private Const GEO_ADM2_NAME As String = "RNG_ADM2NAME"
+Private Const GEO_ADM3_NAME As String = "RNG_ADM3NAME"
+Private Const GEO_ADM4_NAME As String = "RNG_ADM4NAME"
+Private Const GEO_HF_NAME As String = "RNG_HFNAME"
 
 'Dropdown names
 Private Const DROP_SETUP_LANGUAGES As String = "__setup_languages"
@@ -381,17 +389,25 @@ Private Sub EnsureWorkbookFlags()
 End Sub
 
 '@label:ensure-geo-flags
-'@sub-title Ensure Geo worksheet-level HiddenNames flags exist
+'@sub-title Ensure the Geo HiddenNames flags exist
 '@details
 'Creates worksheet-level HiddenNames on the Geo worksheet for language
-'code, geobase name, metadata language, update status, and form loaded
-'state. Also creates RNG_PastingGeoCol as a real cell-based named range
-'(not a HiddenName) because it is used as a paste anchor at runtime.
-'Silently exits when the Geo worksheet does not exist in the host
-'workbook.
+'code, geobase name, metadata language, update status, translation state
+'and form loaded state.
+'
+'The five level labels (RNG_ADM1NAME through RNG_ADM4NAME and RNG_HFNAME)
+'are created at WORKBOOK scope. LLGeo.CheckRequirements asks for them there,
+'and CrossTable resolves them from a worksheet formula on the spatial
+'analysis sheet, where a worksheet-scoped name would give #NAME?.
+'
+'RNG_PastingGeoCol stays a real cell-based named range. It is a paste anchor
+'at runtime and the paste needs a cell to land in.
+'
+'Exits with no work when the host workbook has no Geo worksheet.
 Private Sub EnsureGeoFlags()
     Dim geoSheet As Worksheet
     Dim geoStore As HiddenNames
+    Dim levelStore As HiddenNames
 
     Set geoSheet = ResolveWorksheet(SHEET_GEO)
     If geoSheet Is Nothing Then Exit Sub
@@ -401,10 +417,47 @@ Private Sub EnsureGeoFlags()
     geoStore.EnsureName GEO_NAME, vbNullString, HiddenNameTypeString
     geoStore.EnsureName GEO_META_LANG, vbNullString, HiddenNameTypeString
     geoStore.EnsureName GEO_UPDATED, "empty", HiddenNameTypeString
+    geoStore.EnsureName GEO_TRANSLATED, False, HiddenNameTypeBoolean
     geoStore.EnsureName GEO_FORM_LOADED, vbNullString, HiddenNameTypeString
 
-    'RNG_PastingGeoCol is a real cell-based named range, not a HiddenName
+    Set levelStore = HiddenNames.Create(geoSheet.Parent)
+    EnsureLevelName levelStore, geoSheet, GEO_ADM1_NAME
+    EnsureLevelName levelStore, geoSheet, GEO_ADM2_NAME
+    EnsureLevelName levelStore, geoSheet, GEO_ADM3_NAME
+    EnsureLevelName levelStore, geoSheet, GEO_ADM4_NAME
+    EnsureLevelName levelStore, geoSheet, GEO_HF_NAME
+
     EnsureGeoRange geoSheet, "RNG_PastingGeoCol"
+End Sub
+
+'@label:ensure-level-name
+'@sub-title Ensure one workbook-level hidden name holding a geo level label
+'@details
+'A Geo worksheet written before the level labels moved into HiddenNames
+'carries each label in a cell-based named range of the same identifier. The
+'cell is read first and its value seeds the hidden name, so the label the
+'designer already shows survives the move.
+'@param levelStore HiddenNames. The store over the workbook.
+'@param sh Worksheet. The Geo worksheet.
+'@param nameId String. The hidden name identifier.
+Private Sub EnsureLevelName(ByVal levelStore As HiddenNames, ByVal sh As Worksheet, _
+                            ByVal nameId As String)
+    Dim rng As Range
+    Dim seedValue As String
+    Dim cellValue As Variant
+
+    If levelStore.HasName(nameId) Then Exit Sub
+
+    On Error Resume Next
+    Set rng = sh.Range(nameId)
+    On Error GoTo 0
+
+    If Not rng Is Nothing Then
+        cellValue = rng.Cells(1, 1).Value
+        If Not IsError(cellValue) Then seedValue = CStr(cellValue)
+    End If
+
+    levelStore.EnsureName nameId, seedValue, HiddenNameTypeString
 End Sub
 
 

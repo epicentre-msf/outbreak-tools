@@ -19,10 +19,14 @@ Option Explicit
 '@section Enumerations
 '===============================================================================
 
-'@details Geographic scope selector: admin hierarchy vs health facility.
+'@details
+'Geographic scope selector. GeoScopeAdmin picks the admin hierarchy,
+'GeoScopeHF picks the health facility table, and GeoScopeBoth is used by
+'ClearHistoric to name both historic tables at once.
 Public Enum GeoScope
     GeoScopeAdmin = 0
     GeoScopeHF = 1
+    GeoScopeBoth = 3
 End Enum
 
 '@details
@@ -36,28 +40,39 @@ Public Enum AdminOnlyScope
     LevelAdmin4 = 3
 End Enum
 
-'@details
-'Extended scope that includes both admin levels and health facility. Used
-'for operations that need to address all five geographic tiers.
-Public Enum AdminAndHFScope
-    LevelGeoAdmin1 = 0
-    LevelGeoAdmin2 = 1
-    LevelGeoAdmin3 = 2
-    LevelGeoAdmin4 = 3
-    LevelHF = 4
-End Enum
-
 '@class LLGeo
 '@description
 'Manages the geobase worksheet that stores the four-level administrative
 'hierarchy (admin1 through admin4), health facility data, translation
 'names, and historic entries used across the linelist. Provides factory
-'creation with worksheet validation, lazy-loaded translation caching via
-'parallel BetterArray keys/values, hierarchical geo-level lookups using
-'AutoFilter cascades, import/export in both flat-data and full-structure
-'modes, and synchronisation of translated labels across linelist sheets,
-'dictionary, and show/hide tables.
-'@depends BetterArray, Passwords, LLdictionary, CustomTable, DropdownLists, DropdownLists, LLVariables, CustomTable, HiddenNames
+'creation with worksheet validation, cached translation names, hierarchical
+'geo-level lookups using AutoFilter cascades, import/export in both
+'flat-data and full-structure modes, and synchronisation of translated
+'labels across linelist sheets, dictionary, and show/hide tables.
+'
+'WHERE THE STATE OF THE GEOBASE LIVES
+'-------------------------------------------------------------------------------
+'Two hidden names on the geo worksheet hold two separate facts. RNG_GeoUpdated
+'answers whether the geobase carries data and reads "empty" or "updated".
+'RNG_GeoTranslated is a Boolean and answers whether the table headers carry
+'translated labels. A workbook built before this split holds one combined
+'string; the first read moves it to the two names and writes them back.
+'
+'WHERE THE FIVE LEVEL NAMES LIVE
+'-------------------------------------------------------------------------------
+'RNG_ADM1NAME through RNG_ADM4NAME and RNG_HFNAME are workbook-scoped hidden
+'names. The scope is what CrossTable needs: it writes "= RNG_ADM1NAME" as a
+'worksheet formula on the spatial analysis sheet, and a worksheet-scoped name
+'would resolve to #NAME? there. A geo sheet built before this change still
+'carries them as cells; the factory reads each cell once, writes the hidden
+'name and moves on. RNG_PastingGeoCol stays a real cell because
+'DesignerPreparation uses it as a paste anchor.
+'
+'WHO OWNS RNG_MetaLang
+'-------------------------------------------------------------------------------
+'This class reads RNG_MetaLang in ExportToWkb and never writes it. The writers
+'are LLBuild and the geobase import round trip.
+'@depends BetterArray, Checking, CustomTable, DropdownLists, HiddenNames, LLdictionary, LLVariables, Passwords
 
 '@section State
 '===============================================================================
@@ -65,9 +80,18 @@ End Enum
 Private Type TGeo
     geosh As Worksheet
     geoHidden As HiddenNames
-    namesCacheKeys As BetterArray
-    namesCacheValues As BetterArray
+    levelHidden As HiddenNames
+    tableNames As BetterArray
+    skipped As BetterArray
+    adm1Label As String
+    adm2Label As String
+    adm3Label As String
+    adm4Label As String
+    hfLabel As String
     namesCacheLoaded As Boolean
+    geoUpdated As String
+    translated As Boolean
+    flagsLoaded As Boolean
     sealed As Boolean
 End Type
 
@@ -85,15 +109,37 @@ Private Const HISTOHF As String = "HISTOHF"
 Private Const NAMES As String = "NAMES"
 Private Const METADATA As String = "METADATA"
 
-'HiddenNames identifiers (worksheet-level, not cell-based ranges)
+'Hidden names on the geo worksheet
 Private Const HN_GEO_UPDATED As String = "RNG_GeoUpdated"
+Private Const HN_GEO_TRANSLATED As String = "RNG_GeoTranslated"
 Private Const HN_GEO_NAME As String = "RNG_GeoName"
 Private Const HN_META_LANG As String = "RNG_MetaLang"
 Private Const HN_GEO_LANG_CODE As String = "RNG_GeoLangCode"
-Private Const HN_FORM_LOADED As String = "RNG_FormLoaded"
+
+'The two values RNG_GeoUpdated takes
+Private Const FLAG_EMPTY As String = "empty"
+Private Const FLAG_UPDATED As String = "updated"
+
+'Workbook-scoped hidden names holding the five translated level labels
+Private Const HN_ADM1_NAME As String = "RNG_ADM1NAME"
+Private Const HN_ADM2_NAME As String = "RNG_ADM2NAME"
+Private Const HN_ADM3_NAME As String = "RNG_ADM3NAME"
+Private Const HN_ADM4_NAME As String = "RNG_ADM4NAME"
+Private Const HN_HF_NAME As String = "RNG_HFNAME"
+
+'The cell-based named range that stays a cell
+Private Const RNG_PASTING_GEO_COL As String = "RNG_PastingGeoCol"
 
 'Column name in T_NAMES that holds the level identifiers (adm1_name, etc.)
 Private Const NAMES_LEVEL_COL As String = "level"
+
+'Worksheet-level hidden name holding the kind of a linelist sheet
+Private Const SHEET_TAG As String = "sheet_type"
+
+'Separator of the in-memory index UniqueRangeValue dedupes against. It sits on
+'both sides of every entry, so a run of short entries cannot match a longer
+'token. A Const takes a constant expression, which rules out Chr$ and ChrW$.
+Private Const UNIQUE_SEPARATOR As String = vbNullChar
 
 '@section Factory
 '===============================================================================
@@ -106,14 +152,30 @@ Private Const NAMES_LEVEL_COL As String = "level"
 'new LLGeo instance bound to that worksheet. This is the only supported
 'way to create a usable LLGeo object because the class relies on
 'specific ListObjects, named ranges, and HiddenNames being present.
+'
+'The two hidden name stores are built here, once each, and handed to the
+'instance. Building one walks every Name of its container, and the class
+'reads both stores on nearly every call.
 '@param sh Worksheet. The geobase worksheet containing T_ADM1 through T_ADM4, T_HF, T_NAMES, T_HISTOGEO, T_HISTOHF, T_METADATA, and required named ranges/hidden names.
-'@return LLGeo. A fully initialised LLGeo instance exposed through the LLGeo interface.
+'@return LLGeo. A fully initialised LLGeo instance.
+'@throws ProjectError.ObjectNotInitialized When the worksheet is Nothing.
+'@throws ProjectError.ElementNotFound When a required table, hidden name or named range is missing.
 '@export
 Public Function Create(ByVal sh As Worksheet) As LLGeo
-    CheckRequirements sh
     Dim instance As LLGeo
+    Dim geoStore As HiddenNames
+    Dim levelStore As HiddenNames
+
+    If sh Is Nothing Then ThrowError ObjectNotInitialized, "Geo sheet not defined"
+
+    Set geoStore = HiddenNames.Create(sh)
+    Set levelStore = HiddenNames.Create(sh.Parent)
+    CheckRequirements sh, geoStore, levelStore
+
     Set instance = New LLGeo
     Set instance.Wksh = sh
+    Set instance.GeoStore = geoStore
+    Set instance.LevelStore = levelStore
     instance.Seal
     Set Create = instance
 End Function
@@ -138,8 +200,8 @@ End Sub
 '@prop-title Get the geobase worksheet.
 '@details
 'Returns the worksheet that holds all geobase ListObjects and named ranges.
-'This worksheet is set during factory creation and should not change during
-'the lifetime of the object.
+'This worksheet is set during factory creation and holds for the lifetime of
+'the object.
 '@return Worksheet. The geobase worksheet.
 Public Property Get Wksh() As Worksheet
     Set Wksh = this.geosh
@@ -148,24 +210,46 @@ End Property
 '@label:wksh-set
 '@prop-title Set the geobase worksheet.
 '@details
-'Assigns the internal worksheet reference. Called only from the factory Create
-'method after validation. Not intended for external use.
+'Assigns the internal worksheet reference. Called from the factory Create
+'method after validation, and only from there.
 '@param sh Worksheet. The geobase worksheet to bind to this instance.
 Public Property Set Wksh(ByVal sh As Worksheet)
     GuardNotSealed "Wksh"
     Set this.geosh = sh
 End Property
 
-'@section Hidden Names Store
+'@label:geo-store-set
+'@prop-title Set the worksheet hidden name store.
+'@details
+'Setup-only setter. The factory builds the store while it validates the
+'worksheet and hands the same instance over, so the Names collection is
+'walked once per Create.
+'@param store HiddenNames. The store over the geobase worksheet.
+Public Property Set GeoStore(ByVal store As HiddenNames)
+    GuardNotSealed "GeoStore"
+    Set this.geoHidden = store
+End Property
+
+'@label:level-store-set
+'@prop-title Set the workbook hidden name store.
+'@details
+'Setup-only setter. Holds the store over the workbook that owns the geobase
+'worksheet, which is where the five translated level labels live.
+'@param store HiddenNames. The store over the workbook.
+Public Property Set LevelStore(ByVal store As HiddenNames)
+    GuardNotSealed "LevelStore"
+    Set this.levelHidden = store
+End Property
+
+'@section Hidden Names Stores
 '===============================================================================
 
 '@label:geo-hidden-store
-'@sub-title Lazy-loaded HiddenNames manager for the geo worksheet.
+'@sub-title HiddenNames manager for the geo worksheet.
 '@details
-'Creates and caches an HiddenNames instance bound to the geobase
-'worksheet on first access. Used by all methods that read or write
-'the 5 hidden name values (RNG_GeoUpdated, RNG_GeoName, RNG_MetaLang,
-'RNG_GeoLangCode, RNG_FormLoaded).
+'Returns the store the factory built. Builds one on demand when the instance
+'was made another way. It holds RNG_GeoUpdated, RNG_GeoTranslated,
+'RNG_GeoName, RNG_MetaLang and RNG_GeoLangCode.
 '@return HiddenNames. The worksheet-level hidden names manager.
 Private Function GeoHiddenStore() As HiddenNames
     If this.geoHidden Is Nothing Then
@@ -174,213 +258,304 @@ Private Function GeoHiddenStore() As HiddenNames
     Set GeoHiddenStore = this.geoHidden
 End Function
 
+'@label:level-name-store
+'@sub-title HiddenNames manager for the workbook holding the geo worksheet.
+'@details
+'Returns the store the factory built. The five level labels are
+'workbook-scoped because CrossTable resolves them from a worksheet formula
+'on the spatial analysis sheet.
+'@return HiddenNames. The workbook-level hidden names manager.
+Private Function LevelNameStore() As HiddenNames
+    If this.levelHidden Is Nothing Then
+        Set this.levelHidden = HiddenNames.Create(Wksh().Parent)
+    End If
+    Set LevelNameStore = this.levelHidden
+End Function
+
+'@section Geobase Flags
+'===============================================================================
+
+'@label:ensure-flags-cache
+'@sub-title Read the two geobase flags once per instance.
+'@details
+'Reads RNG_GeoUpdated and RNG_GeoTranslated into the instance. A geo sheet
+'written before the two facts were split carries one combined string in
+'RNG_GeoUpdated, such as "updated, translated". That string is parsed once
+'here, the two clean values are written back, and no reader parses a string
+'again.
+Private Sub EnsureFlagsCache()
+    Dim store As HiddenNames
+    Dim combined As String
+
+    If this.flagsLoaded Then Exit Sub
+
+    Set store = GeoHiddenStore()
+
+    If store.HasName(HN_GEO_TRANSLATED) Then
+        this.geoUpdated = store.ValueAsString(HN_GEO_UPDATED)
+        this.translated = store.ValueAsBoolean(HN_GEO_TRANSLATED)
+    Else
+        combined = store.ValueAsString(HN_GEO_UPDATED)
+        this.translated = (InStr(1, combined, ", translated") > 0)
+        combined = Replace(combined, ", not translated", vbNullString)
+        this.geoUpdated = Replace(combined, ", translated", vbNullString)
+
+        store.EnsureName HN_GEO_TRANSLATED, this.translated, HiddenNameTypeBoolean
+        store.SetValue HN_GEO_TRANSLATED, this.translated
+        store.SetValue HN_GEO_UPDATED, this.geoUpdated
+    End If
+
+    this.flagsLoaded = True
+End Sub
+
+'@label:reset-flags-cache
+'@sub-title Drop the cached flags so the next read goes to the store.
+'@details
+'Called after anything that writes the hidden names behind the class's back,
+'which today is the name import Import runs off a geobase Metadata sheet.
+Private Sub ResetFlagsCache()
+    this.flagsLoaded = False
+End Sub
+
+'@label:geo-updated-flag
+'@sub-title The data flag of the geobase.
+'@return String. "empty" or "updated".
+Private Function GeoUpdatedFlag() As String
+    EnsureFlagsCache
+    GeoUpdatedFlag = this.geoUpdated
+End Function
+
+'@label:set-geo-updated-flag
+'@sub-title Write the data flag and keep the cache in step.
+'@param flagValue String. "empty" or "updated".
+Private Sub SetGeoUpdatedFlag(ByVal flagValue As String)
+    EnsureFlagsCache
+    GeoHiddenStore().SetValue HN_GEO_UPDATED, flagValue
+    this.geoUpdated = flagValue
+End Sub
+
+'@label:is-translated
+'@sub-title Whether the table headers carry translated labels.
+'@return Boolean. True when the headers are translated.
+Private Function IsTranslated() As Boolean
+    EnsureFlagsCache
+    IsTranslated = this.translated
+End Function
+
+'@label:set-translated-flag
+'@sub-title Write the translation flag and keep the cache in step.
+'@param flagValue Boolean. True when the headers carry translated labels.
+Private Sub SetTranslatedFlag(ByVal flagValue As Boolean)
+    Dim store As HiddenNames
+
+    EnsureFlagsCache
+    Set store = GeoHiddenStore()
+    store.EnsureName HN_GEO_TRANSLATED, flagValue, HiddenNameTypeBoolean
+    store.SetValue HN_GEO_TRANSLATED, flagValue
+    this.translated = flagValue
+End Sub
+
 '@section Table Names
 '===============================================================================
 
 '@label:table-names
 '@prop-title Ordered list of all geobase table names.
 '@details
-'Builds and returns a BetterArray containing the eight canonical ListObject
-'names used on the geobase worksheet: T_ADM1, T_ADM2, T_ADM3, T_ADM4, T_HF,
-'T_NAMES, T_HISTOGEO, and T_HISTOHF. The order matches the admin hierarchy
-'followed by support tables.
+'Returns the eight canonical ListObject names of the geobase worksheet:
+'T_ADM1, T_ADM2, T_ADM3, T_ADM4, T_HF, T_NAMES, T_HISTOGEO and T_HISTOHF.
+'The order matches the admin hierarchy followed by support tables, and the
+'lower bound is 0, which is what GeoColumnIndex and GeoLevel index against.
+'The array is built once per instance and handed back as it stands, because
+'GeoColumnIndex asks for it on every column resolution.
 '@return BetterArray. Ordered list of table name strings.
-Public Property Get TableNames() As BetterArray
-    Dim tabl As BetterArray
-    Set tabl = New BetterArray
-    tabl.Push "T_" & ADMIN1, "T_" & ADMIN2, "T_" & ADMIN3, "T_" & ADMIN4, _
-              "T_" & HF, "T_" & NAMES, "T_" & HISTOGEO, "T_" & HISTOHF
-    Set TableNames = tabl.Clone()
+Private Property Get TableNames() As BetterArray
+    If this.tableNames Is Nothing Then
+        Set this.tableNames = New BetterArray
+        this.tableNames.Push "T_" & ADMIN1, "T_" & ADMIN2, "T_" & ADMIN3, "T_" & ADMIN4, _
+                             "T_" & HF, "T_" & NAMES, "T_" & HISTOGEO, "T_" & HISTOHF
+    End If
+    Set TableNames = this.tableNames
 End Property
 
-'@section Translation Cache
+'@label:table-name-at
+'@sub-title One geobase table name by position.
+'@param position Long. Zero-based position in the table name list.
+'@return String. The ListObject name at that position.
+Private Function TableNameAt(ByVal position As Long) As String
+    TableNameAt = CStr(TableNames().Item(position))
+End Function
+
+'@section Level Names
 '===============================================================================
 
-'@label:ensure-names-cache
-'@sub-title Ensure the translation name cache is loaded.
-'@details
-'Lazily initialises two parallel BetterArray instances (keys and values) that
-'map raw admin column names (adm1_name, adm2_name, etc.) to their translated
-'display names resolved from cell-based named ranges on the geo worksheet.
-'If the cache is already loaded this method returns immediately. The named
-'range values are populated by UpdateLevelNames (called from Import and
-'Translate) so no worksheet recalculation is needed here.
-Private Sub EnsureNamesCache()
-    Dim sh As Worksheet
+'@label:level-raw-name
+'@sub-title The raw column name of one level.
+'@param position Long. 1 to 4 for the admin levels, 5 for health facility.
+'@return String. "adm1_name" to "adm4_name", or "hf_name".
+Private Function LevelRawName(ByVal position As Long) As String
+    If position = 5 Then
+        LevelRawName = "hf_name"
+    Else
+        LevelRawName = "adm" & position & "_name"
+    End If
+End Function
 
+'@label:level-name-id
+'@sub-title The hidden name holding the label of one level.
+'@param rawName String. The raw column name of the level.
+'@return String. The hidden name identifier, or an empty string for an unknown level.
+Private Function LevelNameId(ByVal rawName As String) As String
+    Select Case rawName
+    Case "adm1_name"
+        LevelNameId = HN_ADM1_NAME
+    Case "adm2_name"
+        LevelNameId = HN_ADM2_NAME
+    Case "adm3_name"
+        LevelNameId = HN_ADM3_NAME
+    Case "adm4_name"
+        LevelNameId = HN_ADM4_NAME
+    Case "hf_name"
+        LevelNameId = HN_HF_NAME
+    End Select
+End Function
+
+'@label:ensure-names-cache
+'@sub-title Ensure the five level labels are held on the instance.
+'@details
+'Reads the five workbook-scoped hidden names into five String fields. A
+'level with no stored label answers its own raw column name, which is what
+'every reader falls back to.
+Private Sub EnsureNamesCache()
     If this.namesCacheLoaded Then Exit Sub
 
-    Set sh = Wksh()
-
-    Set this.namesCacheKeys = New BetterArray
-    Set this.namesCacheValues = New BetterArray
-
-    CacheOneName sh, "adm1_name", "RNG_ADM1NAME"
-    CacheOneName sh, "adm2_name", "RNG_ADM2NAME"
-    CacheOneName sh, "adm3_name", "RNG_ADM3NAME"
-    CacheOneName sh, "adm4_name", "RNG_ADM4NAME"
-    CacheOneName sh, "hf_name", "RNG_HFNAME"
+    this.adm1Label = ReadLevelName("adm1_name")
+    this.adm2Label = ReadLevelName("adm2_name")
+    this.adm3Label = ReadLevelName("adm3_name")
+    this.adm4Label = ReadLevelName("adm4_name")
+    this.hfLabel = ReadLevelName("hf_name")
 
     this.namesCacheLoaded = True
 End Sub
 
-'@label:cache-one-name
-'@sub-title Cache one translation mapping from a cell-based named range.
-'@details
-'Reads a single value from a cell-based named range on the worksheet and
-'stores the raw-name to resolved-value pair in the parallel cache arrays.
-'If the range does not exist or the value is not a non-empty string, the
-'raw name is stored as both key and value so lookups fall back gracefully.
-'@param sh Worksheet. The geobase worksheet to read from.
-'@param rawName String. The raw column name used as the cache key.
-'@param rngName String. The cell-based named range whose value provides the translation.
-Private Sub CacheOneName(ByVal sh As Worksheet, ByVal rawName As String, _
-                         ByVal rngName As String)
-    Dim rng As Range
-    Dim actualName As Variant
+'@label:read-level-name
+'@sub-title Read one level label from the workbook store.
+'@param rawName String. The raw column name of the level.
+'@return String. The stored label, or the raw name when nothing is stored.
+Private Function ReadLevelName(ByVal rawName As String) As String
+    Dim stored As String
 
-    On Error Resume Next
-    Set rng = sh.Range(rngName)
-    On Error GoTo 0
+    stored = LevelNameStore().ValueAsString(LevelNameId(rawName))
+    If LenB(stored) = 0 Then stored = rawName
+    ReadLevelName = stored
+End Function
 
-    If rng Is Nothing Then
-        this.namesCacheKeys.Push rawName
-        this.namesCacheValues.Push rawName
-        Exit Sub
-    End If
+'@label:write-level-name
+'@sub-title Write one level label into the workbook store.
+'@param rawName String. The raw column name of the level.
+'@param label String. The translated label to store.
+Private Sub WriteLevelName(ByVal rawName As String, ByVal label As String)
+    Dim nameId As String
+    Dim store As HiddenNames
 
-    actualName = rng.Value
-    
-    If TypeName(actualName) = "String" And LenB(CStr(actualName)) > 0 Then
-        this.namesCacheKeys.Push rawName
-        this.namesCacheValues.Push CStr(actualName)
-    Else
-        this.namesCacheKeys.Push rawName
-        this.namesCacheValues.Push rawName
-    End If
+    nameId = LevelNameId(rawName)
+    If LenB(nameId) = 0 Then Exit Sub
+
+    Set store = LevelNameStore()
+    store.EnsureName nameId, label, HiddenNameTypeString
+    store.SetValue nameId, label
 End Sub
 
 '@label:reset-names-cache
-'@sub-title Reset the translation cache.
+'@sub-title Reset the level label cache.
 '@details
-'Marks the cache as unloaded and releases the key/value BetterArray references.
-'Must be called after any operation that changes translation state (Import or
-'Translate) so the next GeoNames access rebuilds the cache from fresh data.
+'Marks the cache as unloaded so the next GeoNames access rebuilds it from the
+'store. Called after anything that changes translation state.
 Private Sub ResetNamesCache()
     this.namesCacheLoaded = False
-    Set this.namesCacheKeys = Nothing
-    Set this.namesCacheValues = Nothing
 End Sub
 
 '@label:update-level-names
-'@sub-title Programmatically update RNG_ADM*NAME and RNG_HFNAME from T_NAMES.
+'@sub-title Refresh the five level labels from T_NAMES.
 '@details
-'Reads the current language code from the RNG_GeoLangCode hidden name, looks up
-'the matching column in T_NAMES, and writes the translated level display name
-'into each cell-based named range (RNG_ADM1NAME through RNG_ADM4NAME and
-'RNG_HFNAME). This replaces the previous INDEX/MATCH formula approach that
-'required sh.Calculate and could fail when RNG_GeoLangCode was stored as a
-'hidden name rather than a cell-based range. Silently exits when no language
-'code is set or when T_NAMES does not have the expected columns.
+'Reads the current language code from RNG_GeoLangCode, finds the matching
+'column in T_NAMES, and writes each level label into its workbook-scoped
+'hidden name. The whole T_NAMES body is read in one crossing and all five
+'levels are resolved in one pass over it. Exits when no language code is set
+'or when T_NAMES lacks the level column or the language column.
 Private Sub UpdateLevelNames()
     Dim sh As Worksheet
     Dim langCode As String
     Dim loNames As ListObject
     Dim levelCol As Long
     Dim langCol As Long
-    Dim translatedName As String
-    Dim rng As Range
-    Dim levels As Variant
-    Dim rngNames As Variant
-    Dim counter As Long
+    Dim block As Variant
+    Dim rowIdx As Long
+    Dim rawName As String
+    Dim label As String
 
-    Set sh = Wksh()
     langCode = GeoHiddenStore().ValueAsString(HN_GEO_LANG_CODE)
-
-    'No language code set yet; skip update
     If LenB(langCode) = 0 Then Exit Sub
 
-    On Error Resume Next
+    Set sh = Wksh()
     Set loNames = sh.ListObjects("T_" & NAMES)
-    On Error GoTo 0
+    If loNames.ListRows.Count = 0 Then Exit Sub
 
-    If loNames Is Nothing Then Exit Sub
-    If loNames.DataBodyRange Is Nothing Then Exit Sub
-
-    'Find the "level" column and the language column in T_NAMES
     levelCol = ColumnIndex(NAMES_LEVEL_COL, loNames.HeaderRowRange)
     If levelCol < 0 Then Exit Sub
 
     langCol = ColumnIndex(langCode, loNames.HeaderRowRange)
     If langCol < 0 Then Exit Sub
 
-    'Map each level identifier to its corresponding named range
-    levels = Array("adm1_name", "adm2_name", "adm3_name", "adm4_name", "hf_name")
-    rngNames = Array("RNG_ADM1NAME", "RNG_ADM2NAME", "RNG_ADM3NAME", _
-                     "RNG_ADM4NAME", "RNG_HFNAME")
+    block = RangeValues(loNames.DataBodyRange)
 
-    For counter = LBound(levels) To UBound(levels)
-        translatedName = LookupLevelName(loNames, levelCol, langCol, CStr(levels(counter)))
-        If LenB(translatedName) > 0 Then
-            Set rng = Nothing
-            On Error Resume Next
-            Set rng = sh.Range(CStr(rngNames(counter)))
-            On Error GoTo 0
-            If Not rng Is Nothing Then rng.Value = translatedName
-        End If
+    For rowIdx = LBound(block, 1) To UBound(block, 1)
+        rawName = CellText(block(rowIdx, levelCol))
+
+        Select Case rawName
+        Case "adm1_name", "adm2_name", "adm3_name", "adm4_name", "hf_name"
+            label = CellText(block(rowIdx, langCol))
+            If LenB(label) > 0 Then WriteLevelName rawName, label
+        End Select
     Next
 End Sub
-
-'@label:lookup-level-name
-'@sub-title Find the translated name for a level in T_NAMES.
-'@details
-'Searches the data body of T_NAMES for a row where the level column matches
-'the requested level identifier, then returns the value from the language
-'column in that row. Returns vbNullString when no match is found.
-'@param loNames ListObject. The T_NAMES ListObject containing level translations.
-'@param levelCol Long. 1-based column index for the level identifiers in T_NAMES.
-'@param langCol Long. 1-based column index for the target language in T_NAMES.
-'@param levelName String. The level identifier to search for (e.g. "adm1_name").
-'@return String. The translated display name, or vbNullString if not found.
-Private Function LookupLevelName(ByVal loNames As ListObject, ByVal levelCol As Long, _
-                                  ByVal langCol As Long, ByVal levelName As String) As String
-    Dim dataRng As Range
-    Dim counter As Long
-
-    Set dataRng = loNames.DataBodyRange
-    For counter = 1 To dataRng.Rows.Count
-        If CStr(dataRng.Cells(counter, levelCol).Value) = levelName Then
-            LookupLevelName = CStr(dataRng.Cells(counter, langCol).Value)
-            Exit Function
-        End If
-    Next
-
-    LookupLevelName = vbNullString
-End Function
 
 '@label:geo-names
 '@prop-title Translated display name for a raw admin column name.
 '@details
-'Converts a raw admin column name (such as "adm1_name" or "hf_name")
-'to its translated display name by searching the lazily loaded translation
-'cache. If no mapping is found the raw name is returned unchanged. The cache
-'is built on first access from cell-based named ranges on the geo worksheet.
+'Converts a raw admin column name (such as "adm1_name" or "hf_name") to its
+'stored display label. An unknown key comes back unchanged, and so does a
+'level whose label has never been written.
 '@param admname String. Raw column name to translate.
-'@return String. Translated display name, or the raw name if no translation exists.
+'@return String. Display label, or the raw name when no label is stored.
 '@export
 Public Property Get GeoNames(ByVal admname As String) As String
-    Dim counter As Long
-
     EnsureNamesCache
 
-    For counter = this.namesCacheKeys.LowerBound To this.namesCacheKeys.UpperBound
-        If this.namesCacheKeys.Item(counter) = admname Then
-            GeoNames = CStr(this.namesCacheValues.Item(counter))
-            Exit Property
-        End If
-    Next
+    Select Case admname
+    Case "adm1_name"
+        GeoNames = this.adm1Label
+    Case "adm2_name"
+        GeoNames = this.adm2Label
+    Case "adm3_name"
+        GeoNames = this.adm3Label
+    Case "adm4_name"
+        GeoNames = this.adm4Label
+    Case "hf_name"
+        GeoNames = this.hfLabel
+    Case Else
+        GeoNames = admname
+    End Select
+End Property
 
-    GeoNames = admname
+'@label:geo-base-name
+'@prop-title The name of the geobase the worksheet was filled from.
+'@details
+'Import stores the source file name in RNG_GeoName. LLExporter reads this
+'when it builds the file name of an exported geobase.
+'@return String. The stored geobase name, or an empty string.
+'@export
+Public Property Get GeoBaseName() As String
+    GeoBaseName = GeoHiddenStore().ValueAsString(HN_GEO_NAME)
 End Property
 
 '@section Column Helpers
@@ -393,6 +568,11 @@ End Property
 'column name. When inRange is True the returned index is relative to the range
 'start (1-based); when False the absolute worksheet column number is returned.
 'Returns -1 when no match is found.
+'
+'Every option of the search is pinned. Range.Find inherits LookIn, SearchOrder
+'and SearchDirection from the last search of the Excel session, including one
+'the user ran from the Find dialog, and a prior LookIn:=xlComments makes every
+'column lookup in this class miss.
 '@param colName String. The column name to search for.
 '@param headerRng Range. The header row range to search in.
 '@param inRange Optional Boolean. True to return relative position, False for absolute column number. Defaults to True.
@@ -401,7 +581,12 @@ Private Function ColumnIndex(ByVal colName As String, ByVal headerRng As Range, 
                              Optional ByVal inRange As Boolean = True) As Long
     Dim matchCell As Range
 
-    Set matchCell = headerRng.Find(What:=colName, lookAt:=xlWhole, MatchCase:=True)
+    Set matchCell = headerRng.Find(What:=colName, _
+                                   lookAt:=xlWhole, _
+                                   LookIn:=xlValues, _
+                                   SearchOrder:=xlByColumns, _
+                                   SearchDirection:=xlNext, _
+                                   MatchCase:=True)
 
     If matchCell Is Nothing Then
         ColumnIndex = -1
@@ -416,28 +601,23 @@ End Function
 '@sub-title Resolve the column index for a geo admin table.
 '@details
 'Looks up a column name in the header of the specified admin-level ListObject.
-'If the geobase is in translated state the column name is first converted to
-'its translated display name via GeoNames. Raises an error when the column
-'cannot be found in the table header.
+'When the headers carry translated labels the column name is converted first.
+'Raises when the column cannot be found in the table header.
 '@param colName String. The raw column name to look up.
 '@param adminLevel Byte. Admin level index selecting which table to search (0-3 for T_ADM1 through T_ADM4).
 '@return Long. 1-based column index within the table.
 '@throws ProjectError.ElementNotFound When the column is not found in the admin table.
 Private Function GeoColumnIndex(ByVal colName As String, ByVal adminLevel As Byte) As Long
     Dim sh As Worksheet
-    Dim tabl As BetterArray
     Dim loName As String
     Dim actualColName As String
     Dim colIdx As Long
 
     Set sh = Wksh()
-    Set tabl = TableNames()
-    loName = tabl.Item(adminLevel)
+    loName = TableNameAt(adminLevel)
     actualColName = colName
 
-    If GeoHiddenStore().ValueAsString(HN_GEO_UPDATED) = "updated, translated" Then
-        actualColName = GeoNames(colName)
-    End If
+    If IsTranslated() Then actualColName = GeoNames(colName)
 
     colIdx = ColumnIndex(actualColName, sh.ListObjects(loName).HeaderRowRange)
     If colIdx < 0 Then ThrowError ElementNotFound, _
@@ -449,59 +629,114 @@ End Function
 '@label:hf-column-index
 '@sub-title Resolve the column index for the HF table.
 '@details
-'Looks up a column name in the header of the T_HF ListObject. If the geobase
-'is in translated state the column name is first converted to its translated
-'display name via GeoNames. Raises an error when the column cannot be found.
+'Looks up a column name in the header of the T_HF ListObject. When the headers
+'carry translated labels the column name is converted first. Raises when the
+'column cannot be found.
 '@param colName String. The raw column name to look up.
 '@return Long. 1-based column index within the T_HF table.
 '@throws ProjectError.ElementNotFound When the column is not found in the HF table.
 Private Function HFColumnIndex(ByVal colName As String) As Long
-    Dim sh As Worksheet
-    Dim actualColName As String
     Dim colIdx As Long
 
-    Set sh = Wksh()
-    actualColName = colName
-
-    If GeoHiddenStore().ValueAsString(HN_GEO_UPDATED) = "updated, translated" Then
-        actualColName = GeoNames(colName)
-    End If
-
-    colIdx = ColumnIndex(actualColName, sh.ListObjects("T_" & HF).HeaderRowRange)
+    colIdx = HFColumnIndexOrMissing(colName)
     If colIdx < 0 Then ThrowError ElementNotFound, _
-        "Column " & actualColName & " not found in table T_HF"
+        "Column " & colName & " not found in table T_HF"
 
     HFColumnIndex = colIdx
+End Function
+
+'@label:hf-column-index-or-missing
+'@sub-title Resolve a column of T_HF, answering -1 when it has none.
+'@details
+'The health facility table of a production geobase carries four levels and
+'the one of a test fixture can carry fewer, so the header translation walks
+'the levels and skips the ones the table has no column for.
+'@param colName String. The raw column name to look up.
+'@return Long. 1-based column index within T_HF, or -1 when absent.
+Private Function HFColumnIndexOrMissing(ByVal colName As String) As Long
+    Dim actualColName As String
+
+    actualColName = colName
+    If IsTranslated() Then actualColName = GeoNames(colName)
+
+    HFColumnIndexOrMissing = ColumnIndex(actualColName, _
+                                         Wksh().ListObjects("T_" & HF).HeaderRowRange)
+End Function
+
+'@label:cell-text
+'@sub-title Read one variant as text, answering an empty string for an error value.
+'@details
+'CStr on a cell holding #N/A raises 13. Every read of a cell value in this
+'class goes through here.
+'@param cellValue Variant. The value read from a cell.
+'@return String. The value as text, or an empty string when it is an error.
+Private Function CellText(ByVal cellValue As Variant) As String
+    If IsError(cellValue) Then Exit Function
+    CellText = CStr(cellValue)
+End Function
+
+'@label:range-values
+'@sub-title Read a range into a two-dimensional Variant array in one crossing.
+'@details
+'Range.Value answers a scalar for a single cell and a 2-D array for anything
+'larger, so a single cell is wrapped into a 1x1 array here and every caller
+'reads one shape.
+'@param rng Range. The range to read.
+'@return Variant. A two-dimensional array of the values.
+Private Function RangeValues(ByVal rng As Range) As Variant
+    Dim block As Variant
+
+    If rng.Cells.Count = 1 Then
+        ReDim block(1 To 1, 1 To 1)
+        block(1, 1) = rng.Value
+    Else
+        block = rng.Value
+    End If
+
+    RangeValues = block
 End Function
 
 '@label:unique-range-value
 '@sub-title Extract unique values from a range into a BetterArray.
 '@details
-'Iterates every cell in the supplied range and collects values that have not
-'already been added, producing a deduplicated list in encounter order. Used
-'internally to build dropdown-ready lists from filtered or unfiltered columns.
+'Reads one Variant array per area of the range and dedupes in memory against
+'a delimited string index, then pushes the values in encounter order. The
+'range handed in is the visible part of a filtered column, which on a large
+'geobase is tens of thousands of cells; one crossing per area and one InStr
+'per cell is what keeps that affordable.
 '@param rng Range. The range of cells to extract unique values from.
 '@return BetterArray. Deduplicated values in encounter order.
 Private Function UniqueRangeValue(ByVal rng As Range) As BetterArray
-    Dim cellRng As Range
     Dim retVal As BetterArray
+    Dim areaRng As Range
+    Dim block As Variant
+    Dim rowIdx As Long
+    Dim colIdx As Long
+    Dim cellValue As Variant
+    Dim entry As String
+    Dim seen As String
 
     Set retVal = New BetterArray
+    seen = UNIQUE_SEPARATOR
 
-    For Each cellRng In rng
-        If Not retVal.Includes(cellRng.Value) Then retVal.Push cellRng.Value
+    For Each areaRng In rng.Areas
+        block = RangeValues(areaRng)
+
+        For rowIdx = LBound(block, 1) To UBound(block, 1)
+            For colIdx = LBound(block, 2) To UBound(block, 2)
+                cellValue = block(rowIdx, colIdx)
+                entry = CellText(cellValue)
+
+                If InStr(1, seen, UNIQUE_SEPARATOR & entry & UNIQUE_SEPARATOR, _
+                         vbBinaryCompare) = 0 Then
+                    seen = seen & entry & UNIQUE_SEPARATOR
+                    retVal.Push cellValue
+                End If
+            Next
+        Next
     Next
 
-    Set UniqueRangeValue = retVal.Clone()
-End Function
-
-'@sub-title Get the sheet type tag from worksheet-level HiddenNames.
-'@param sh Worksheet. The worksheet to query.
-'@return String. The sheet type tag (HList, VList, etc.).
-Private Function SheetTagOf(ByVal sh As Worksheet) As String
-    Dim shHn As HiddenNames
-    Set shHn = HiddenNames.Create(sh)
-    SheetTagOf = shHn.ValueAsString("sheet_type")
+    Set UniqueRangeValue = retVal
 End Function
 
 '@label:hf-range
@@ -518,8 +753,54 @@ Private Function HFRange(ByVal colName As String) As Range
     Set HFRange = Wksh().ListObjects("T_" & HF).ListColumns(colIdx).DataBodyRange()
 End Function
 
+'@label:clear-list-filter
+'@sub-title Drop the AutoFilter of a table when it carries one.
+'@param Lo ListObject. The table to clear.
+Private Sub ClearListFilter(ByVal Lo As ListObject)
+    If Lo Is Nothing Then Exit Sub
+    If Lo.AutoFilter Is Nothing Then Exit Sub
+    If Not Lo.AutoFilter.FilterMode Then Exit Sub
+    Lo.AutoFilter.ShowAllData
+End Sub
+
 '@section GeoLevel
 '===============================================================================
+
+'@label:guard-level-names
+'@sub-title Validate the parent selections handed to GeoLevel.
+'@details
+'Admin 1 needs no parent. Admin 2 needs the name of one admin 1 and takes any
+'scalar, because two call sites in EventLinelist hand over a raw cell value:
+'an empty cell reads as Empty and a geobase whose admin 1 labels are numeric
+'codes reads as Double. Admin 3 and admin 4 need a BetterArray of the parent
+'names, one entry per level above them, with 1 as its lower bound.
+'@param adminLevel Byte. Admin level index (0-3 for admin1-admin4).
+'@param adminNames Variant. The parent selections handed in by the caller.
+'@throws ProjectError.InvalidArgument When the parent selections are the wrong shape.
+Private Sub GuardLevelNames(ByVal adminLevel As Byte, ByRef adminNames As Variant)
+    If adminLevel = LevelAdmin1 Then Exit Sub
+
+    If adminLevel = LevelAdmin2 Then
+        If IsObject(adminNames) Then _
+            ThrowError InvalidArgument, _
+                "Admin 2 needs the name of one admin 1 as a single value"
+        Exit Sub
+    End If
+
+    If Not TypeName(adminNames) = "BetterArray" Then _
+        ThrowError InvalidArgument, _
+            "Admin " & (CLng(adminLevel) + 1) & " needs a table of the " & _
+            CLng(adminLevel) & " admin names above it"
+
+    If adminNames.Length <> CLng(adminLevel) Then _
+        ThrowError InvalidArgument, _
+            "You should provide a table of length " & CLng(adminLevel) & _
+            " for admin " & (CLng(adminLevel) + 1)
+
+    If adminNames.LowerBound <> 1 Then _
+        ThrowError InvalidArgument, _
+            "Please ensure your BetterArray has 1 as LowerBound, it is mandatory"
+End Sub
 
 '@label:geo-level
 '@prop-title List of values at a given admin level.
@@ -529,20 +810,24 @@ End Function
 'list is returned. For admin2 through admin4 the caller supplies parent
 'selections so the result cascades hierarchically via AutoFilter. The geoType
 'parameter switches between the admin hierarchy and the health facility table.
-'Calculation is temporarily disabled for performance during filtering.
+'Calculation is turned off while the filtering runs.
+'
+'An empty geobase answers an empty list, and it answers before any handler is
+'armed. Every other failure is raised to the caller, and the AutoFilter of the
+'table is dropped on the way out whichever way the call ends.
 '@param adminLevel Byte. Admin level index (0-3 for admin1-admin4).
 '@param geoType Optional Byte. GeoScope value: GeoScopeAdmin (0) or GeoScopeHF (1). Defaults to GeoScopeAdmin.
-'@param adminNames Optional Variant. Parent admin selections for filtering: String for level 2, BetterArray for levels 3-4. Defaults to vbNullString.
+'@param adminNames Optional Variant. Parent admin selections: a single value for level 2, a BetterArray for levels 3-4. Defaults to vbNullString.
 '@return BetterArray. Unique values at the requested level, or an empty array when the geobase is empty.
-'@throws ProjectError.InvalidArgument When adminNames has wrong type or length.
+'@throws ProjectError.InvalidArgument When adminNames has the wrong shape or length.
 '@throws ProjectError.ErrorUnexpectedState When the ListObject has no data.
+'@throws ProjectError.ElementNotFound When a geo column is missing from the table.
 '@export
 Public Property Get GeoLevel(ByVal adminLevel As Byte, _
                               Optional ByVal geoType As Byte = GeoScopeAdmin, _
                               Optional adminNames As Variant = vbNullString) As BetterArray
 
     Dim sh As Worksheet
-    Dim tabl As BetterArray
     Dim outLevels As BetterArray
     Dim Lo As ListObject
     Dim LoRng As Range
@@ -552,50 +837,37 @@ Public Property Get GeoLevel(ByVal adminLevel As Byte, _
     Dim counter As Long
     Dim returnedRng As Range
     Dim prevCalc As Boolean
+    Dim errNumber As Long
+    Dim errSource As String
+    Dim errMessage As String
 
     Set sh = Wksh()
-    Set tabl = TableNames()
     Set outLevels = New BetterArray
 
-    'Disable calculation for performance during filtering
+    'An empty geobase answers an empty list, and it answers it here, outside
+    'the handler below.
+    If HasNoData() Then
+        Set GeoLevel = outLevels
+        Exit Property
+    End If
+
+    If geoType = GeoScopeAdmin Then
+        loName = TableNameAt(adminLevel)
+    Else
+        loName = TableNameAt(4) 'T_HF
+    End If
+
+    GuardLevelNames adminLevel, adminNames
+
     prevCalc = sh.EnableCalculation
     sh.EnableCalculation = False
 
-    On Error GoTo Cleanup
-
-    If geoType = GeoScopeAdmin Then
-        loName = tabl.Item(adminLevel)
-    Else
-        loName = tabl.Item(4) 'T_HF
-    End If
-
-    'Empty geobase: return empty array
-    If GeoHiddenStore().ValueAsString(HN_GEO_UPDATED) = "empty" Then GoTo Cleanup
-
-    'Validate adminNames
-    If (adminLevel > 1) And (Not TypeName(adminNames) = "BetterArray") Then
-        ThrowError InvalidArgument, _
-            "Admin names should be a list of all previous admin levels for admin " & adminLevel
-    ElseIf (adminLevel = LevelAdmin1 Or adminLevel = LevelAdmin2) _
-            And (Not TypeName(adminNames) = "String") Then
-        ThrowError InvalidArgument, _
-            "No need to add admin names if you want the list of all admin"
-    ElseIf TypeName(adminNames) = "BetterArray" Then
-        If adminNames.Length <> CLng(adminLevel) Then
-            ThrowError InvalidArgument, _
-                "You should provide a table of length " & CLng(adminLevel) & _
-                " for admin " & (CLng(adminLevel) + 1)
-        End If
-        If adminNames.LowerBound <> 1 Then
-            ThrowError InvalidArgument, _
-                "Please ensure your BetterArray has 1 as LowerBound, it is mandatory"
-        End If
-    End If
+    On Error GoTo CleanFail
 
     Set Lo = sh.ListObjects(loName)
     Set LoRng = Lo.Range
 
-    If Lo.DataBodyRange Is Nothing Then
+    If Lo.ListRows.Count = 0 Then
         ThrowError ErrorUnexpectedState, "The listobject " & loName & " has no data"
     End If
 
@@ -612,7 +884,7 @@ Public Property Get GeoLevel(ByVal adminLevel As Byte, _
 
         Case LevelAdmin2
             colIdx = GeoColumnIndex("adm1_name", LevelAdmin2)
-            LoRng.AutoFilter Field:=colIdx, Criteria1:=adminNames
+            LoRng.AutoFilter Field:=colIdx, Criteria1:=CStr(adminNames)
             colIdx = GeoColumnIndex("adm2_name", LevelAdmin2)
 
         Case LevelAdmin3, LevelAdmin4
@@ -633,7 +905,7 @@ Public Property Get GeoLevel(ByVal adminLevel As Byte, _
 
         Case LevelAdmin2
             colIdx = HFColumnIndex("adm1_name")
-            LoRng.AutoFilter Field:=colIdx, Criteria1:=adminNames
+            LoRng.AutoFilter Field:=colIdx, Criteria1:=CStr(adminNames)
             colIdx = HFColumnIndex("adm2_name")
 
         Case LevelAdmin3, LevelAdmin4
@@ -649,26 +921,35 @@ Public Property Get GeoLevel(ByVal adminLevel As Byte, _
         End Select
     End Select
 
-    'For levels beyond admin1, extract filtered visible cells
+    'For levels beyond admin1, read the filtered cells and then drop the filter
     If adminLevel <> LevelAdmin1 Then
+        Set returnedRng = Nothing
+
         On Error Resume Next
         Set returnedRng = Lo.ListColumns(colIdx).DataBodyRange _
                             .SpecialCells(xlCellTypeVisible)
-        On Error GoTo Cleanup
+        On Error GoTo CleanFail
 
-        If Not returnedRng Is Nothing Then
-            Lo.AutoFilter.ShowAllData
-            Set outLevels = UniqueRangeValue(returnedRng)
-        End If
-
-        On Error Resume Next
-        Lo.AutoFilter.ShowAllData
-        On Error GoTo Cleanup
+        If Not returnedRng Is Nothing Then Set outLevels = UniqueRangeValue(returnedRng)
+        ClearListFilter Lo
     End If
 
-Cleanup:
-    Set GeoLevel = outLevels.Clone()
     sh.EnableCalculation = prevCalc
+    Set GeoLevel = outLevels
+    Exit Property
+
+CleanFail:
+    errNumber = Err.Number
+    errSource = Err.Source
+    errMessage = Err.Description
+    Resume RaiseAfterFail
+
+RaiseAfterFail:
+    On Error Resume Next
+    ClearListFilter Lo
+    sh.EnableCalculation = prevCalc
+    On Error GoTo 0
+    Err.Raise errNumber, errSource, errMessage
 End Property
 
 '@section Translate
@@ -677,75 +958,81 @@ End Property
 '@label:translate
 '@sub-title Translate or revert geobase table headers.
 '@details
-'Applies or reverts translated display names on all geobase table headers
+'Applies or reverts translated display labels on all geobase table headers
 '(admin1 through admin4 and health facility). When rawNames is False, headers
-'are translated to display names read from the geobase named ranges. When True,
-'headers are reverted to raw column names. The method skips the operation when
-'the geobase is already in the requested translation state and resets the
-'translation cache both before and after the change.
-'@param rawNames Optional Boolean. True to revert to raw names, False to apply translated names. Defaults to False.
+'take the labels stored for the five levels. When True, headers go back to the
+'raw column names. The method exits when the headers already carry what is
+'asked for, and it refreshes the level labels from T_NAMES only once it knows
+'it has work to do.
+'
+'The admin table headers are written one array per table. The health facility
+'headers are resolved by name, because that table carries its levels in an
+'order the class does not fix.
+'@param rawNames Optional Boolean. True to revert to raw names, False to apply the stored labels. Defaults to False.
 '@export
 Public Sub Translate(Optional ByVal rawNames As Boolean = False)
     Dim sh As Worksheet
-    Dim tabl As BetterArray
     Dim counter As Long
     Dim counter2 As Long
     Dim Lo As ListObject
-    Dim loName As String
-    Dim admname As String
-    Dim transGeoName As String
     Dim hRng As Range
-    Dim cellRng As Range
-    Dim geoUpdatedVal As String
+    Dim headerValues As Variant
+    Dim rawName As String
+
+    If (Not rawNames) And IsTranslated() Then Exit Sub
+    If rawNames And (Not IsTranslated()) Then Exit Sub
+
+    UpdateLevelNames
+    ResetNamesCache
 
     Set sh = Wksh()
-    UpdateLevelNames
-    geoUpdatedVal = GeoHiddenStore().ValueAsString(HN_GEO_UPDATED)
 
-    'Skip if already in the requested state
-    If Not rawNames And (InStr(1, geoUpdatedVal, ", translated") > 0) Then Exit Sub
-    If rawNames And (InStr(1, geoUpdatedVal, ", not translated") > 0) Then Exit Sub
-
-    'Reset cache so GeoNames reads fresh values
-    ResetNamesCache
-
-    Set tabl = TableNames()
-    tabl.LowerBound = 1
-
-    'Translate admin tables (T_ADM1 through T_ADM4)
+    'Admin tables: table N carries the levels 1 to N in its first N columns
     For counter = 1 To 4
-        loName = tabl.Item(counter)
-        Set Lo = sh.ListObjects(loName)
+        Set Lo = sh.ListObjects(TableNameAt(counter - 1))
         Set hRng = Lo.HeaderRowRange
 
+        ReDim headerValues(1 To 1, 1 To counter)
         For counter2 = 1 To counter
-            admname = "adm" & counter2 & "_name"
-            transGeoName = GeoNames(admname)
-            hRng.Cells(1, counter2).Value = IIf(rawNames, admname, transGeoName)
+            rawName = "adm" & counter2 & "_name"
+            headerValues(1, counter2) = IIf(rawNames, rawName, GeoNames(rawName))
         Next
+
+        hRng.Cells(1, 1).Resize(1, counter).Value = headerValues
     Next
 
-    'Translate HF table headers
-    Set Lo = sh.ListObjects("T_HF")
-    Set hRng = Lo.HeaderRowRange
-    transGeoName = GeoNames("hf_name")
-    hRng.Cells(1, 1).Value = IIf(rawNames, "hf_name", transGeoName)
-    Set cellRng = hRng.Cells(1, 5)
+    TranslateHFHeaders rawNames
 
-    For counter = 1 To 3
-        admname = "adm" & counter & "_name"
-        transGeoName = GeoNames(admname)
-        cellRng.Offset(, -counter).Value = IIf(rawNames, admname, transGeoName)
-    Next
-
-    'Update translation state flag via HiddenNames
-    geoUpdatedVal = Replace(geoUpdatedVal, ", not translated", vbNullString)
-    geoUpdatedVal = Replace(geoUpdatedVal, ", translated", vbNullString)
-    geoUpdatedVal = IIf(rawNames, geoUpdatedVal & ", not translated", geoUpdatedVal & ", translated")
-    GeoHiddenStore().SetValue HN_GEO_UPDATED, geoUpdatedVal
-
-    'Reset cache after translation change
+    SetTranslatedFlag (Not rawNames)
     ResetNamesCache
+End Sub
+
+'@label:translate-hf-headers
+'@sub-title Write the level headers of T_HF, each one resolved by name.
+'@details
+'The health facility table holds the level columns in an order that is not
+'fixed and can carry a column this loop has nothing for. Each header is found
+'by the label it holds now, so the two directions are symmetric and an extra
+'column in the table shifts nothing.
+'@param rawNames Boolean. True to write the raw column names, False to write the stored labels.
+Private Sub TranslateHFHeaders(ByVal rawNames As Boolean)
+    Dim hRng As Range
+    Dim counter As Long
+    Dim rawName As String
+    Dim currentName As String
+    Dim colIdx As Long
+
+    Set hRng = Wksh().ListObjects("T_" & HF).HeaderRowRange
+
+    For counter = 1 To 5
+        rawName = LevelRawName(counter)
+        currentName = IIf(rawNames, GeoNames(rawName), rawName)
+        colIdx = ColumnIndex(currentName, hRng)
+
+        If colIdx > 0 Then
+            hRng.Cells(1, colIdx).Value = IIf(rawNames, rawName, GeoNames(rawName))
+        End If
+    Next
 End Sub
 
 '@section Clear
@@ -754,50 +1041,57 @@ End Sub
 '@label:clear
 '@sub-title Clear all geobase data.
 '@details
-'Removes all data from every ListObject on the geobase worksheet except
-'T_LevelNames and T_CONCAT, and sets the update flag to "empty". Resets the
-'translation name cache so subsequent GeoNames lookups will rebuild from
-'fresh data.
+'Puts the raw column names back on the table headers, empties the data body of
+'every ListObject on the geobase worksheet, and sets the data flag to "empty".
+'
+'The header revert is what lets a caller clear and stop. EventsDesignerAdvanced
+'calls this on its own, and a header left reading "Province" makes every column
+'lookup in the class raise afterwards.
+'
+'Values go and formats stay: the population columns keep their number format
+'and the validation of every column survives an import.
 '@export
 Public Sub Clear()
     Dim sh As Worksheet
     Dim Lo As ListObject
 
+    Translate rawNames:=True
+
     Set sh = Wksh()
 
     For Each Lo In sh.ListObjects
-        On Error Resume Next
-        If Lo.Name <> "T_LevelNames" And Lo.Name <> "T_CONCAT" Then
-            Lo.DataBodyRange.Cells.Clear
-        End If
-        On Error GoTo 0
+        If Lo.ListRows.Count > 0 Then Lo.DataBodyRange.ClearContents
     Next
 
-    GeoHiddenStore().SetValue HN_GEO_UPDATED, "empty"
+    SetGeoUpdatedFlag FLAG_EMPTY
     ResetNamesCache
 End Sub
 
 '@label:clear-historic
 '@sub-title Clear historic entries.
 '@details
-'Clears the data body of historic ListObjects. The scope parameter controls
-'which tables are cleared: 0 for geo only (T_HISTOGEO), 1 for HF only
-'(T_HISTOHF), and 3 for both. Errors are silently suppressed so the method
-'succeeds even when a table has no data body.
-'@param scope Optional Byte. 0 = geo only, 1 = HF only, 3 = both. Defaults to 3.
+'Empties the data body of the historic ListObjects named by the scope.
+'@param scope Optional Byte. GeoScope value: GeoScopeAdmin (0) for T_HISTOGEO, GeoScopeHF (1) for T_HISTOHF, GeoScopeBoth (3) for both. Defaults to GeoScopeBoth.
 '@export
-Public Sub ClearHistoric(Optional ByVal scope As Byte = 3)
-    Dim sh As Worksheet
-    Set sh = Wksh()
+Public Sub ClearHistoric(Optional ByVal scope As Byte = GeoScopeBoth)
+    If (scope = GeoScopeAdmin) Or (scope = GeoScopeBoth) Then
+        ClearHistoricTable "T_" & HISTOGEO
+    End If
 
-    On Error Resume Next
-    If (scope = 0) Or (scope = 3) Then
-        sh.ListObjects("T_" & HISTOGEO).DataBodyRange.Cells.Clear
+    If (scope = GeoScopeHF) Or (scope = GeoScopeBoth) Then
+        ClearHistoricTable "T_" & HISTOHF
     End If
-    If (scope = 1) Or (scope = 3) Then
-        sh.ListObjects("T_" & HISTOHF).DataBodyRange.Cells.Clear
-    End If
-    On Error GoTo 0
+End Sub
+
+'@label:clear-historic-table
+'@sub-title Empty the data body of one historic table.
+'@param loName String. The ListObject name.
+Private Sub ClearHistoricTable(ByVal loName As String)
+    Dim Lo As ListObject
+
+    Set Lo = Wksh().ListObjects(loName)
+    If Lo.ListRows.Count = 0 Then Exit Sub
+    Lo.DataBodyRange.ClearContents
 End Sub
 
 '@section Import
@@ -809,30 +1103,25 @@ End Sub
 'Imports geographic data from the supplied workbook into the geobase worksheet.
 'Each worksheet whose name matches a known table name (ADM1 through ADM4, HF,
 'NAMES, HISTOGEO, HISTOHF, METADATA) is imported column by column into the
-'corresponding ListObject. Concat formulas are regenerated for filtered lookup
-'support. When histoOnly is True only historic tables are refreshed and the
-'main admin/HF data is left intact. After import, the geobase is marked as
-'updated and headers are translated.
+'corresponding ListObject. Concat formulas are rewritten over the whole data
+'column. When histoOnly is True only historic tables are refreshed and the
+'main admin/HF data is left intact.
+'
+'A source workbook carrying a Metadata sheet also carries the hidden names
+'ExportToFile wrote there, including the language code, and those are read
+'back before the flags are set. The geobase is marked as carrying data only
+'when the ADM1 table came across, so a workbook holding none of the expected
+'sheets leaves the flag alone.
 '@param fromWkb Workbook. Source workbook containing geo data sheets.
 '@param histoOnly Optional Boolean. True to import only historic data. Defaults to False.
 '@export
 Public Sub Import(ByVal fromWkb As Workbook, _
                    Optional ByVal histoOnly As Boolean = False)
 
-    Dim sh As Worksheet
     Dim impsh As Worksheet
-    Dim Lo As ListObject
-    Dim hRng As Range
+    Dim metash As Worksheet
     Dim admNames As BetterArray
-    Dim counter As Long
-    Dim colName As String
-    Dim colIdx As Long
-    Dim lastRow As Long
-    Dim impRng As Range
-    Dim actRng As Range
-    Dim concatFormula As String
-    Dim sep As String
-    Dim concatRng As Range
+    Dim importedAdmin1 As Boolean
 
     Set admNames = New BetterArray
     admNames.Push HISTOGEO, HISTOHF, METADATA
@@ -844,98 +1133,157 @@ Public Sub Import(ByVal fromWkb As Workbook, _
         admNames.Push ADMIN1, ADMIN2, ADMIN3, ADMIN4, HF, NAMES
     End If
 
-    Set sh = Wksh()
-    sep = " & " & Chr(34) & " | " & Chr(34) & " & "
-
     Translate rawNames:=True
 
+    Set metash = Nothing
+
     For Each impsh In fromWkb.Worksheets
-        With impsh
-            If admNames.Includes(.Name) Then
-                lastRow = Application.WorksheetFunction.Max(.UsedRange.Rows.Count, 2)
-                Set Lo = sh.ListObjects("T_" & impsh.Name)
-                Set hRng = Lo.HeaderRowRange
-
-                'Import data column by column
-                counter = 1
-                Do While impsh.Cells(1, counter) <> vbNullString
-                    colName = .Cells(1, counter).Value
-                    colIdx = ColumnIndex(colName, hRng, inRange:=False)
-                    If colIdx > 0 Then
-                        Set impRng = .Range(.Cells(2, counter), .Cells(lastRow, counter))
-                        Set actRng = sh.Range(sh.Cells(2, colIdx), sh.Cells(lastRow, colIdx))
-                        actRng.Value = impRng.Value
-                    End If
-                    counter = counter + 1
-                Loop
-
-                'Build concat formula for the last column of the table
-                Set impRng = Lo.HeaderRowRange.Offset(1)
-
-                Select Case Lo.Name
-                Case "T_ADM1"
-                    concatFormula = "=" & impRng.Cells(1, 1).Address(RowAbsolute:=False)
-
-                Case "T_ADM2"
-                    concatFormula = "=" & impRng.Cells(1, 1).Address(RowAbsolute:=False) & _
-                                   sep & impRng.Cells(1, 2).Address(RowAbsolute:=False)
-
-                Case "T_ADM3"
-                    concatFormula = "=" & _
-                        impRng.Cells(1, 1).Address(RowAbsolute:=False) & sep & _
-                        impRng.Cells(1, 2).Address(RowAbsolute:=False) & sep & _
-                        impRng.Cells(1, 3).Address(RowAbsolute:=False)
-
-                Case "T_ADM4"
-                    concatFormula = "=" & _
-                        impRng.Cells(1, 1).Address(RowAbsolute:=False) & sep & _
-                        impRng.Cells(1, 2).Address(RowAbsolute:=False) & sep & _
-                        impRng.Cells(1, 3).Address(RowAbsolute:=False) & sep & _
-                        impRng.Cells(1, 4).Address(RowAbsolute:=False)
-
-                Case "T_HF"
-                    concatFormula = "=" & _
-                        impRng.Cells(1, 1).Address(RowAbsolute:=False) & sep & _
-                        impRng.Cells(1, 2).Address(RowAbsolute:=False) & sep & _
-                        impRng.Cells(1, 3).Address(RowAbsolute:=False) & sep & _
-                        impRng.Cells(1, 4).Address(RowAbsolute:=False)
-
-                Case Else
-                    concatFormula = vbNullString
-                End Select
-
-                'Clear concat column before resizing
-                Set concatRng = sh.Range( _
-                    sh.Cells(2, hRng.Column + hRng.Cells.Count - 1), _
-                    sh.Cells(Lo.Range.Rows.Count, hRng.Column + hRng.Cells.Count - 1))
-
-                If concatFormula <> vbNullString Then concatRng.ClearContents
-
-                'Resize the ListObject to fit imported data
-                Set actRng = sh.Range( _
-                    sh.Cells(1, hRng.Column), _
-                    sh.Cells(lastRow, hRng.Column + hRng.Cells.Count - 1))
-                Lo.Resize actRng
-
-                'Apply the concat formula
-                If concatFormula <> vbNullString Then
-                    sh.Cells(impRng.Row, hRng.Column + hRng.Cells.Count - 1).Formula = _
-                        concatFormula
-                End If
-            End If
-        End With
+        If admNames.Includes(impsh.Name) Then
+            ImportOneTable impsh
+            If impsh.Name = ADMIN1 Then importedAdmin1 = True
+            If impsh.Name = METADATA Then Set metash = impsh
+        End If
     Next
 
-    GeoHiddenStore().SetValue HN_GEO_NAME, Replace(fromWkb.Name, ".xlsx", vbNullString)
-    GeoHiddenStore().SetValue HN_GEO_UPDATED, "updated"
+    'The hidden names ExportToFile wrote travel on the Metadata sheet
+    If Not metash Is Nothing Then
+        GeoHiddenStore().ImportNames metash
+        ResetFlagsCache
+        'The headers are raw at this point, so the flag says so whatever the
+        'source workbook carried.
+        SetTranslatedFlag False
+    End If
 
-    'Populate RNG_ADM*NAME and RNG_HFNAME from T_NAMES before translating
-    UpdateLevelNames
+    GeoHiddenStore().SetValue HN_GEO_NAME, Replace(fromWkb.Name, ".xlsx", vbNullString)
+    If importedAdmin1 Then SetGeoUpdatedFlag FLAG_UPDATED
+
+    ResetNamesCache
     Translate rawNames:=False
 
     UpdateMetadata
     ResetNamesCache
 End Sub
+
+'@label:import-one-table
+'@sub-title Copy one source worksheet into its geobase table.
+'@details
+'The first row of the used range of the source is its header row, and the data
+'runs from the row under it to the last row of that used range. A source sheet
+'whose first row is blank therefore imports every record it holds.
+'
+'The destination row numbers come from the header row of the ListObject, so a
+'table that does not start on row 1 lands in the right place.
+'@param impsh Worksheet. The source worksheet, named after the table it feeds.
+Private Sub ImportOneTable(ByVal impsh As Worksheet)
+    Dim sh As Worksheet
+    Dim Lo As ListObject
+    Dim hRng As Range
+    Dim usedRng As Range
+    Dim sourceHeaderRow As Long
+    Dim sourceLastRow As Long
+    Dim dataRows As Long
+    Dim headerRow As Long
+    Dim firstDataRow As Long
+    Dim lastDataRow As Long
+    Dim lastTableRow As Long
+    Dim concatCol As Long
+    Dim counter As Long
+    Dim colName As String
+    Dim colIdx As Long
+    Dim concatFormula As String
+
+    Set sh = Wksh()
+    Set Lo = sh.ListObjects("T_" & impsh.Name)
+    Set hRng = Lo.HeaderRowRange
+    Set usedRng = impsh.UsedRange
+
+    sourceHeaderRow = usedRng.Row
+    sourceLastRow = usedRng.Row + usedRng.Rows.Count - 1
+    dataRows = sourceLastRow - sourceHeaderRow
+    If dataRows < 1 Then Exit Sub
+
+    headerRow = hRng.Row
+    firstDataRow = headerRow + 1
+    lastDataRow = firstDataRow + dataRows - 1
+    lastTableRow = Lo.Range.Row + Lo.Range.Rows.Count - 1
+    concatCol = hRng.Column + hRng.Cells.Count - 1
+
+    'Copy every source column whose header names a column of the table
+    counter = 1
+    Do While LenB(CellText(impsh.Cells(sourceHeaderRow, counter).Value)) > 0
+        colName = CellText(impsh.Cells(sourceHeaderRow, counter).Value)
+        colIdx = ColumnIndex(colName, hRng, inRange:=False)
+
+        If colIdx > 0 Then
+            sh.Range(sh.Cells(firstDataRow, colIdx), _
+                     sh.Cells(lastDataRow, colIdx)).Value = _
+                impsh.Range(impsh.Cells(sourceHeaderRow + 1, counter), _
+                            impsh.Cells(sourceLastRow, counter)).Value
+        End If
+
+        counter = counter + 1
+    Loop
+
+    concatFormula = ConcatFormulaFor(Lo)
+
+    'Clear the concat column over the table as it stands, then grow the table
+    If LenB(concatFormula) > 0 And lastTableRow >= firstDataRow Then
+        sh.Range(sh.Cells(firstDataRow, concatCol), _
+                 sh.Cells(lastTableRow, concatCol)).ClearContents
+    End If
+
+    Lo.Resize sh.Range(sh.Cells(headerRow, hRng.Column), _
+                       sh.Cells(lastDataRow, concatCol))
+
+    'Write the formula over the whole data column. A ListObject fills a
+    'calculated column down on its own only while
+    'Application.AutoCorrect.AutoFillFormulasInLists is on, and a user can
+    'switch that off.
+    If LenB(concatFormula) > 0 Then
+        sh.Range(sh.Cells(firstDataRow, concatCol), _
+                 sh.Cells(lastDataRow, concatCol)).Formula = concatFormula
+    End If
+End Sub
+
+'@label:concat-formula-for
+'@sub-title Build the concat formula of one geobase table.
+'@details
+'The concat column of a table joins the level columns above it with a pipe, so
+'a filtered lookup can match one full path. A table with no concat column
+'answers an empty string.
+'@param Lo ListObject. The geobase table.
+'@return String. The formula for the first data row, or an empty string.
+Private Function ConcatFormulaFor(ByVal Lo As ListObject) As String
+    Dim rowRng As Range
+    Dim sep As String
+    Dim parts As Long
+    Dim counter As Long
+    Dim formulaText As String
+
+    Select Case Lo.Name
+    Case "T_ADM1"
+        parts = 1
+    Case "T_ADM2"
+        parts = 2
+    Case "T_ADM3"
+        parts = 3
+    Case "T_ADM4", "T_HF"
+        parts = 4
+    Case Else
+        Exit Function
+    End Select
+
+    sep = " & " & Chr(34) & " | " & Chr(34) & " & "
+    Set rowRng = Lo.HeaderRowRange.Offset(1)
+
+    formulaText = "=" & rowRng.Cells(1, 1).Address(RowAbsolute:=False)
+    For counter = 2 To parts
+        formulaText = formulaText & sep & _
+                      rowRng.Cells(1, counter).Address(RowAbsolute:=False)
+    Next
+
+    ConcatFormulaFor = formulaText
+End Function
 
 '@section Export
 '===============================================================================
@@ -944,9 +1292,10 @@ End Sub
 '@sub-title Export geobase tables to a workbook as flat data.
 '@details
 'Exports geobase tables to the target workbook with one sheet per table and a
-'Metadata sheet. Headers are reverted to raw names before export and restored
-'to translated form afterwards. HiddenNames entries (RNG_GeoUpdated, RNG_GeoName,
-'etc.) are exported to the Metadata sheet so they survive round-trip import.
+'Metadata sheet. Headers go back to raw names before the export and take their
+'labels again afterwards, and they do so whichever way the export ends.
+'HiddenNames entries of the geo worksheet are written onto the Metadata sheet,
+'and Import reads them back from there.
 'When onlyHistory is True only the HISTOGEO and HISTOHF tables are exported.
 '@param outputWkb Workbook. Target workbook to receive exported sheets.
 '@param onlyHistory Optional Boolean. True to export only historic tables. Defaults to False.
@@ -963,16 +1312,24 @@ Public Sub ExportToFile(ByVal outputWkb As Workbook, _
     Dim sheetName As String
     Dim loName As String
     Dim counter As Long
+    Dim wasTranslated As Boolean
+    Dim errNumber As Long
+    Dim errSource As String
+    Dim errMessage As String
 
-    Set tabl = New BetterArray
     Set sh = Wksh()
-    Translate rawNames:=True
 
     If onlyHistory Then
+        Set tabl = New BetterArray
         tabl.Push "T_" & HISTOGEO, "T_" & HISTOHF
     Else
         Set tabl = TableNames()
     End If
+
+    wasTranslated = IsTranslated()
+    Translate rawNames:=True
+
+    On Error GoTo RestoreHeaders
 
     With outputWkb
         'Export metadata sheet first
@@ -1001,11 +1358,24 @@ Public Sub ExportToFile(ByVal outputWkb As Workbook, _
             outputRng.Value = inputRng.Value
         Next
 
-        'Export HiddenNames to the Metadata sheet so they survive round-trip
+        'The hidden names go onto the Metadata sheet, and Import reads them
         GeoHiddenStore().ExportNames .Worksheets(METADATASHEET)
     End With
 
-    Translate rawNames:=False
+    If wasTranslated Then Translate rawNames:=False
+    Exit Sub
+
+RestoreHeaders:
+    errNumber = Err.Number
+    errSource = Err.Source
+    errMessage = Err.Description
+    Resume RaiseAfterRestore
+
+RaiseAfterRestore:
+    On Error Resume Next
+    If wasTranslated Then Translate rawNames:=False
+    On Error GoTo 0
+    Err.Raise errNumber, errSource, errMessage
 End Sub
 
 '@label:export-to-wkb
@@ -1014,11 +1384,12 @@ End Sub
 'Copies the entire geobase worksheet to the target workbook, preserving
 'ListObjects, named ranges, formulas, pcode references, concat references,
 'and metadata. Creates a hidden Metadata sheet with creation metadata including
-'linelist name, setup name, language, and timestamp. Cell-based named ranges
-'(RNG_PastingGeoCol, RNG_HFNAME, RNG_ADM1NAME-4) are exported as regular
-'named ranges. HiddenNames entries (RNG_GeoUpdated, RNG_GeoName, etc.) are
-'exported via the HiddenNames manager. Raises an error when sheets with
-'conflicting names already exist in the target workbook.
+'linelist name, setup name, language, and timestamp. RNG_PastingGeoCol is
+'exported as a cell-based named range. The hidden names of the geo worksheet
+'go with the sheet, and the five workbook-scoped level labels are written into
+'the target workbook so CrossTable's spatial dropdown resolves them there.
+'Raises when sheets with conflicting names already exist in the target
+'workbook.
 '@param outputWkb Workbook. Target workbook.
 '@param llName Optional String. Linelist name for metadata. Defaults to vbNullString.
 '@param setupPath Optional String. Setup file path for metadata. Defaults to vbNullString.
@@ -1036,16 +1407,18 @@ Public Sub ExportToWkb(ByVal outputWkb As Workbook, _
     Dim expAddress As String
     Dim expRange As Range
     Dim rng As Range
-    Dim rngTable As BetterArray
-    Dim counter As Long
-    Dim rngName As String
     Dim metaKeys As BetterArray
     Dim metaValues As BetterArray
     Dim setupName As String
+    Dim wasTranslated As Boolean
+    Dim errNumber As Long
+    Dim errSource As String
+    Dim errMessage As String
 
     Set sh = Wksh()
 
     'Check that target sheets do not already exist
+    Set outsh = Nothing
     On Error Resume Next
     Set outsh = outputWkb.Worksheets(sh.Name)
     On Error GoTo 0
@@ -1054,6 +1427,7 @@ Public Sub ExportToWkb(ByVal outputWkb As Workbook, _
             "Unable to export, already a sheet named " & sh.Name & " in the workbook"
     End If
 
+    Set outsh = Nothing
     On Error Resume Next
     Set outsh = outputWkb.Worksheets(METADATASHEET)
     On Error GoTo 0
@@ -1062,7 +1436,10 @@ Public Sub ExportToWkb(ByVal outputWkb As Workbook, _
             "Unable to export, already a sheet named " & METADATASHEET & " in the workbook"
     End If
 
+    wasTranslated = IsTranslated()
     Translate rawNames:=False
+
+    On Error GoTo RestoreHeaders
 
     'Create the geo sheet and copy ListObjects
     outputWkb.Worksheets.Add.Name = sh.Name
@@ -1083,32 +1460,23 @@ Public Sub ExportToWkb(ByVal outputWkb As Workbook, _
         End With
     Next
 
-    outsh.Range("A:AZ").Locked = False
-    outsh.Range("A:AZ").EntireColumn.AutoFit
+    outsh.UsedRange.EntireColumn.Locked = False
+    outsh.UsedRange.EntireColumn.AutoFit
 
-    'Export cell-based named ranges (6 ranges that remain as cells)
-    Set rngTable = New BetterArray
-    rngTable.Push "RNG_PastingGeoCol", "RNG_HFNAME", "RNG_ADM1NAME", _
-                  "RNG_ADM2NAME", "RNG_ADM3NAME", "RNG_ADM4NAME"
+    'The paste anchor stays a real cell
+    expAddress = sh.Range(RNG_PASTING_GEO_COL).Address
+    Set expRange = outsh.Range(expAddress)
+    expRange.Name = RNG_PASTING_GEO_COL
+    expRange.Value = sh.Range(RNG_PASTING_GEO_COL).Value
+    expRange.Locked = True
 
-    For counter = rngTable.LowerBound To rngTable.UpperBound
-        rngName = rngTable.Item(counter)
-        expAddress = sh.Range(rngName).Address
-        Set expRange = outsh.Range(expAddress)
-
-        expRange.Name = rngName
-        expRange.Value = sh.Range(rngName).Value
-        expRange.Locked = True
-
-        If sh.Range(rngName).Formula <> vbNullString Then
-            On Error Resume Next
-            expRange.Formula = sh.Range(rngName).Formula
-            On Error GoTo 0
-        End If
-    Next
-
-    'Export HiddenNames entries (5 ranges stored as hidden names)
+    'The hidden names of the geo worksheet travel with the sheet
     GeoHiddenStore().ExportNames outsh
+
+    'The five level labels are workbook-scoped, so they are written into the
+    'target workbook. They are written after the translate, so they carry the
+    'labels the exported headers carry.
+    ExportLevelNames outputWkb
 
     'Create metadata sheet
     outputWkb.Worksheets.Add.Name = METADATASHEET
@@ -1118,7 +1486,7 @@ Public Sub ExportToWkb(ByVal outputWkb As Workbook, _
     On Error Resume Next
     setupName = Split(setupPath, Application.PathSeparator)( _
         UBound(Split(setupPath, Application.PathSeparator)))
-    On Error GoTo 0
+    On Error GoTo RestoreHeaders
 
     Set metaKeys = New BetterArray
     Set metaValues = New BetterArray
@@ -1163,6 +1531,42 @@ Public Sub ExportToWkb(ByVal outputWkb As Workbook, _
         .Add Name:="histo_geo", RefersToR1C1:="=T_HISTOGEO[HistoGeo]"
         .Add Name:="histo_hf", RefersToR1C1:="=T_HISTOHF[HistoFacility]"
     End With
+
+    Exit Sub
+
+RestoreHeaders:
+    errNumber = Err.Number
+    errSource = Err.Source
+    errMessage = Err.Description
+    Resume RaiseAfterRestore
+
+RaiseAfterRestore:
+    On Error Resume Next
+    If Not wasTranslated Then Translate rawNames:=True
+    On Error GoTo 0
+    Err.Raise errNumber, errSource, errMessage
+End Sub
+
+'@label:export-level-names
+'@sub-title Write the five level labels into another workbook.
+'@details
+'The five labels are workbook-scoped hidden names, so a sheet copy leaves them
+'behind. Each one is written by name into the target workbook.
+'@param outputWkb Workbook. The workbook to write them into.
+Private Sub ExportLevelNames(ByVal outputWkb As Workbook)
+    Dim destination As HiddenNames
+    Dim counter As Long
+    Dim nameId As String
+    Dim label As String
+
+    Set destination = HiddenNames.Create(outputWkb)
+
+    For counter = 1 To 5
+        nameId = LevelNameId(LevelRawName(counter))
+        label = GeoNames(LevelRawName(counter))
+        destination.EnsureName nameId, label, HiddenNameTypeString
+        destination.SetValue nameId, label
+    Next
 End Sub
 
 '@section Update
@@ -1171,11 +1575,14 @@ End Sub
 '@label:update
 '@sub-title Update linelist geo column headers and dropdowns.
 '@details
-'Iterates all HList worksheets in the parent workbook, finds columns controlled
-'by geo1 through geo4 and hf, and updates their header labels with translated
-'geo display names. Also updates corresponding labels on print sheets. Finally,
-'refreshes the admin1 dropdown list on the dropdown_lists__ sheet so that it
-'reflects the current geobase content.
+'Walks the HList worksheets of the parent workbook, finds the columns
+'controlled by geo1 through geo4 and hf, and writes the level labels into
+'their header cells and into the matching cells of the print sheet. Then
+'refreshes the admin1 dropdown list on the dropdown_lists__ sheet.
+'
+'A sheet the walk cannot finish leaves its name in SkippedSheets and the walk
+'carries on with the next one. Every sheet that is unprotected is protected
+'again, whichever way its own pass ends.
 '@param pass Passwords. Password manager for sheet protection and unprotection.
 '@export
 Public Sub Update(ByVal pass As Passwords)
@@ -1183,112 +1590,175 @@ Public Sub Update(ByVal pass As Passwords)
     Const DROPDOWNSHEET As String = "dropdown_lists__"
 
     Dim sh As Worksheet
+    Dim dropSh As Worksheet
     Dim wb As Workbook
-    Dim cellRng As Range
-    Dim controlValue As String
     Dim geoData As BetterArray
     Dim drop As DropdownLists
-    Dim cellPrintRng As Range
-    Dim printsh As Worksheet
     Dim shHn As HiddenNames
-    Dim varName As String
 
     Set wb = Wksh.Parent
+    Set this.skipped = New BetterArray
 
     For Each sh In wb.Worksheets
-        If SheetTagOf(sh) = "HList" Then
-            pass.UnProtect sh.Name
-            Set shHn = HiddenNames.Create(sh)
+        Set shHn = HiddenNames.Create(sh)
 
-            With sh
-                Set cellRng = .Range(shHn.ValueAsString("table_name") & "_START")
-                Set printsh = wb.Worksheets("print_" & sh.Name)
-                Set cellPrintRng = printsh.Range(cellRng.Address)
-
-                Do While Not IsEmpty(cellRng)
-                    varName = cellRng.Offset(-1).Value
-                    controlValue = shHn.ValueAsString(varName & "--control")
-
-                    Select Case controlValue
-                    Case "geo1"
-                        cellRng.Offset(-1).Value = GeoNames("adm1_name")
-                        cellPrintRng.Offset(-1).Value = GeoNames("adm1_name")
-                    Case "geo2"
-                        cellRng.Offset(-1).Value = GeoNames("adm2_name")
-                        cellPrintRng.Offset(-1).Value = GeoNames("adm2_name")
-                    Case "geo3"
-                        cellRng.Offset(-1).Value = GeoNames("adm3_name")
-                        cellPrintRng.Offset(-1).Value = GeoNames("adm3_name")
-                    Case "geo4"
-                        cellRng.Offset(-1).Value = GeoNames("adm4_name")
-                        cellPrintRng.Offset(-1).Value = GeoNames("adm4_name")
-                    Case "hf"
-                        cellRng.Offset(-1).Value = GeoNames("hf_name")
-                        cellPrintRng.Offset(-1).Value = GeoNames("hf_name")
-                    End Select
-
-                    Set cellRng = cellRng.Offset(, 1)
-                    Set cellPrintRng = cellPrintRng.Offset(, 1)
-                Loop
-            End With
-
-            pass.Protect sh.Name
+        If shHn.ValueAsString(SHEET_TAG) = "HList" Then
+            UpdateOneHList sh, wb, shHn, pass
         End If
     Next
 
-    'Update the admin1 dropdown
+    'The dropdown sheet gets its own variable, so the guard below reads the
+    'answer to its own question.
+    Set dropSh = Nothing
     On Error Resume Next
-    Set sh = wb.Worksheets(DROPDOWNSHEET)
+    Set dropSh = wb.Worksheets(DROPDOWNSHEET)
     On Error GoTo 0
 
-    If sh Is Nothing Then Exit Sub
+    If dropSh Is Nothing Then Exit Sub
 
-    Set drop = DropdownLists.Create(sh)
+    Set drop = DropdownLists.Create(dropSh)
     Set geoData = GeoLevel(LevelAdmin1)
     drop.Update geoData, "admin1"
 End Sub
+
+'@label:update-one-hlist
+'@sub-title Write the level labels into the headers of one HList sheet.
+'@details
+'The variable a column belongs to is the value of the _START cell of its
+'column, and its control value is a hidden name built from that variable name.
+'VarWriter writes that name as "<variable> -- control".
+'
+'The label goes into the row above the data, on the sheet and on its print
+'partner. A sheet with no print partner keeps its own headers updated and is
+'reported through SkippedSheets.
+'@param sh Worksheet. The HList worksheet.
+'@param wb Workbook. The workbook holding the sheet.
+'@param shHn HiddenNames. The hidden name store of that sheet.
+'@param pass Passwords. Password manager for sheet protection.
+Private Sub UpdateOneHList(ByVal sh As Worksheet, ByVal wb As Workbook, _
+                            ByVal shHn As HiddenNames, ByVal pass As Passwords)
+    Dim cellRng As Range
+    Dim cellPrintRng As Range
+    Dim printsh As Worksheet
+    Dim tableName As String
+    Dim controlValue As String
+    Dim levelLabel As String
+    Dim recorded As Boolean
+
+    tableName = shHn.ValueAsString("table_name")
+    If LenB(tableName) = 0 Then
+        this.skipped.Push sh.Name
+        Exit Sub
+    End If
+
+    pass.UnProtect sh.Name
+
+    On Error GoTo SkipSheet
+
+    Set cellRng = sh.Range(tableName & "_START")
+
+    Set printsh = Nothing
+    On Error Resume Next
+    Set printsh = wb.Worksheets("print_" & sh.Name)
+    On Error GoTo SkipSheet
+
+    If printsh Is Nothing Then
+        this.skipped.Push sh.Name
+        recorded = True
+    Else
+        Set cellPrintRng = printsh.Range(cellRng.Address)
+    End If
+
+    Do While Not IsEmpty(cellRng)
+        controlValue = shHn.ValueAsString(cellRng.Value & " -- control")
+        levelLabel = LevelLabelForControl(controlValue)
+
+        If LenB(levelLabel) > 0 Then
+            cellRng.Offset(-1).Value = levelLabel
+            If Not cellPrintRng Is Nothing Then cellPrintRng.Offset(-1).Value = levelLabel
+        End If
+
+        Set cellRng = cellRng.Offset(, 1)
+        If Not cellPrintRng Is Nothing Then Set cellPrintRng = cellPrintRng.Offset(, 1)
+    Loop
+
+    pass.Protect sh.Name
+    Exit Sub
+
+SkipSheet:
+    Resume ProtectAfterFail
+
+ProtectAfterFail:
+    On Error Resume Next
+    If Not recorded Then this.skipped.Push sh.Name
+    pass.Protect sh.Name
+    On Error GoTo 0
+End Sub
+
+'@label:level-label-for-control
+'@sub-title The level label a control value asks for.
+'@param controlValue String. The control value of a dictionary variable.
+'@return String. The label of the level, or an empty string for a control that is not geographic.
+Private Function LevelLabelForControl(ByVal controlValue As String) As String
+    Select Case controlValue
+    Case "geo1"
+        LevelLabelForControl = GeoNames("adm1_name")
+    Case "geo2"
+        LevelLabelForControl = GeoNames("adm2_name")
+    Case "geo3"
+        LevelLabelForControl = GeoNames("adm3_name")
+    Case "geo4"
+        LevelLabelForControl = GeoNames("adm4_name")
+    Case "hf"
+        LevelLabelForControl = GeoNames("hf_name")
+    End Select
+End Function
+
+'@label:skipped-sheets
+'@prop-title The sheets the last Update could not finish.
+'@details
+'Holds the name of every HList worksheet Update left part way through, which
+'today means a sheet with no table_name hidden name, a sheet whose _START cell
+'cannot be resolved, and a sheet with no print_ partner. An empty list means
+'every HList sheet was updated in full.
+'@return BetterArray. Worksheet names, empty when Update has not run.
+'@export
+Public Property Get SkippedSheets() As BetterArray
+    If this.skipped Is Nothing Then Set this.skipped = New BetterArray
+    Set SkippedSheets = this.skipped
+End Property
 
 '@label:update-dict
 '@sub-title Update dictionary labels for geo-related variables.
 '@details
 'Scans the dictionary control column for geo1 through geo4 and hf entries and
-'overwrites the corresponding main label cells with translated geo display
-'names from the geobase. This keeps the dictionary in sync after a geobase
-'import or translation change.
+'overwrites the corresponding main label cells with the level labels of the
+'geobase. This keeps the dictionary in step after a geobase import or a
+'translation change.
 '@param dict LLdictionary. The linelist dictionary whose labels should be updated.
 '@export
 Public Sub UpdateDict(ByVal dict As LLdictionary)
     Dim controlRng As Range
     Dim mainlabRng As Range
     Dim counter As Long
+    Dim levelLabel As String
 
     Set controlRng = dict.DataRange("control")
     Set mainlabRng = dict.DataRange("main label")
 
     For counter = 1 To controlRng.Rows.Count
-        Select Case controlRng.Cells(counter, 1).Value
-        Case "geo1"
-            mainlabRng.Cells(counter, 1).Value = GeoNames("adm1_name")
-        Case "geo2"
-            mainlabRng.Cells(counter, 1).Value = GeoNames("adm2_name")
-        Case "geo3"
-            mainlabRng.Cells(counter, 1).Value = GeoNames("adm3_name")
-        Case "geo4"
-            mainlabRng.Cells(counter, 1).Value = GeoNames("adm4_name")
-        Case "hf"
-            mainlabRng.Cells(counter, 1).Value = GeoNames("hf_name")
-        End Select
+        levelLabel = LevelLabelForControl(CellText(controlRng.Cells(counter, 1).Value))
+        If LenB(levelLabel) > 0 Then mainlabRng.Cells(counter, 1).Value = levelLabel
     Next
 End Sub
 
 '@label:update-show-hide
-'@sub-title Update show/hide tables with translated geo labels.
+'@sub-title Update show/hide tables with the geo labels.
 '@details
 'Iterates all ListObjects on the show/hide worksheet, finds variables
 'controlled by geo1 through geo4 and hf via the dictionary, and updates their
-'main label cells to include the subsection prefix followed by the translated
-'geo display name. This keeps the show/hide interface labels in sync with the
-'current geobase translation.
+'main label cells to the subsection prefix followed by the level label. This
+'keeps the show/hide interface labels in step with the geobase.
 '@param sh Worksheet. The show/hide worksheet containing ListObjects to update.
 '@param dict LLdictionary. The linelist dictionary for resolving control and subsection values.
 '@export
@@ -1302,6 +1772,7 @@ Public Sub UpdateShowHide(ByVal sh As Worksheet, ByVal dict As LLdictionary)
     Dim controlValue As String
     Dim varValue As String
     Dim subsecValue As String
+    Dim levelLabel As String
 
     Set vars = LLVariables.Create(dict)
 
@@ -1311,27 +1782,14 @@ Public Sub UpdateShowHide(ByVal sh As Worksheet, ByVal dict As LLdictionary)
         Set varRng = csTab.DataRange("variable name")
 
         For counter = 1 To varRng.Rows.Count
-            varValue = varRng.Cells(counter, 1).Value
+            varValue = CellText(varRng.Cells(counter, 1).Value)
             controlValue = vars.Value(colName:="control", varName:=varValue)
-            subsecValue = vars.Value(colName:="sub section", varName:=varValue)
+            levelLabel = LevelLabelForControl(controlValue)
 
-            Select Case controlValue
-            Case "geo1"
-                mainlabRng.Cells(counter, 1).Value = _
-                    subsecValue & ": " & GeoNames("adm1_name")
-            Case "geo2"
-                mainlabRng.Cells(counter, 1).Value = _
-                    subsecValue & ": " & GeoNames("adm2_name")
-            Case "geo3"
-                mainlabRng.Cells(counter, 1).Value = _
-                    subsecValue & ": " & GeoNames("adm3_name")
-            Case "geo4"
-                mainlabRng.Cells(counter, 1).Value = _
-                    subsecValue & ": " & GeoNames("adm4_name")
-            Case "hf"
-                mainlabRng.Cells(counter, 1).Value = _
-                    subsecValue & ": " & GeoNames("hf_name")
-            End Select
+            If LenB(levelLabel) > 0 Then
+                subsecValue = vars.Value(colName:="sub section", varName:=varValue)
+                mainlabRng.Cells(counter, 1).Value = subsecValue & ": " & levelLabel
+            End If
         Next
     Next
 End Sub
@@ -1343,14 +1801,14 @@ End Sub
 '@sub-title Add a new entry to the historic data.
 '@details
 'Appends a value to the appropriate historic ListObject (T_HISTOGEO or
-'T_HISTOHF), resizes the table to include the new row, removes duplicates,
-'and sorts alphabetically. Handles the edge case where the ListObject has no
-'data body or is empty by inserting at the first data row.
+'T_HISTOHF), grows the table to include the new row, then removes duplicates
+'and sorts the table as it now stands. The range is re-read after the resize,
+'so the row just written is de-duplicated and placed with the rest.
 '@param newValue String. The value to add to the historic list.
-'@param scope Optional Byte. 0 = geo historic (T_HISTOGEO), 1 = HF historic (T_HISTOHF). Defaults to 0.
+'@param scope Optional Byte. GeoScope value: GeoScopeAdmin (0) for T_HISTOGEO, GeoScopeHF (1) for T_HISTOHF. Defaults to GeoScopeAdmin.
 '@export
 Public Sub UpdateHistoric(ByVal newValue As String, _
-                           Optional ByVal scope As Byte = 0)
+                           Optional ByVal scope As Byte = GeoScopeAdmin)
     Dim sh As Worksheet
     Dim loName As String
     Dim LoRng As Range
@@ -1358,50 +1816,68 @@ Public Sub UpdateHistoric(ByVal newValue As String, _
     Dim Lo As ListObject
 
     Set sh = Wksh()
-    loName = IIf(scope = 0, HISTOGEO, HISTOHF)
+    loName = IIf(scope = GeoScopeHF, HISTOHF, HISTOGEO)
     loName = "T_" & loName
 
     Set Lo = sh.ListObjects(loName)
     Set LoRng = Lo.Range
     Set cellRng = LoRng.Cells(LoRng.Rows.Count + 1, 1)
 
-    If Lo.DataBodyRange Is Nothing Then
+    If Lo.ListRows.Count = 0 Then
         Set cellRng = LoRng.Cells(2, 1)
-    ElseIf IsEmpty(Lo.DataBodyRange) Then
-        Set cellRng = LoRng.Cells(2, 1)
+    ElseIf Lo.ListRows.Count = 1 Then
+        If LenB(CellText(Lo.DataBodyRange.Cells(1, 1).Value)) = 0 Then
+            Set cellRng = LoRng.Cells(2, 1)
+        End If
     End If
 
     cellRng.Value = newValue
     Lo.Resize sh.Range(LoRng.Cells(1, 1), cellRng)
 
-    On Error Resume Next
+    'Re-read the table: the two calls below work on the row just written
+    Set LoRng = Lo.Range
     LoRng.RemoveDuplicates Columns:=1, Header:=xlYes
-    LoRng.Sort key1:=LoRng, Header:=xlYes
-    On Error GoTo 0
+
+    If Lo.ListRows.Count > 1 Then
+        Lo.Range.Sort Key1:=Lo.ListColumns(1).Range, Header:=xlYes
+    End If
 End Sub
 
 '@section AdminCode
 '===============================================================================
 
 '@label:admin-code
-'@sub-title Resolve the admin code from a translated display name.
+'@sub-title Resolve the admin code from a level label.
 '@details
-'Compares the supplied translated admin name against GeoNames for each admin
-'level and returns the matching raw code ("adm1" through "adm4"). Falls back
-'to "adm1" when no match is found, which serves as a safe default for
-'downstream callers.
-'@param selectedAdmin String. The translated admin display name to resolve.
+'Compares the supplied label against the label of each admin level and returns
+'the matching raw code ("adm1" through "adm4").
+'
+'A label that matches no level answers "adm1". The four call sites in
+'EventLinelist act on the answer and none of them handles an empty one, so the
+'answer stays what it has always been until that class has a session of its
+'own.
+'@param selectedAdmin String. The level label to resolve.
 '@return String. Admin code ("adm1", "adm2", "adm3", or "adm4").
 '@export
 Public Function AdminCode(ByVal selectedAdmin As String) As String
+    Dim adm1Name As String
+    Dim adm2Name As String
+    Dim adm3Name As String
+    Dim adm4Name As String
+
+    adm1Name = GeoNames("adm1_name")
+    adm2Name = GeoNames("adm2_name")
+    adm3Name = GeoNames("adm3_name")
+    adm4Name = GeoNames("adm4_name")
+
     Select Case selectedAdmin
-    Case GeoNames("adm1_name")
+    Case adm1Name
         AdminCode = "adm1"
-    Case GeoNames("adm2_name")
+    Case adm2Name
         AdminCode = "adm2"
-    Case GeoNames("adm3_name")
+    Case adm3Name
         AdminCode = "adm3"
-    Case GeoNames("adm4_name")
+    Case adm4Name
         AdminCode = "adm4"
     Case Else
         AdminCode = "adm1"
@@ -1411,14 +1887,14 @@ End Function
 '@label:has-no-data
 '@prop-title Whether the geobase has no imported data.
 '@details
-'Returns True when the geobase update flag (RNG_GeoUpdated) reads "empty",
-'indicating that no geo data has been imported yet or that all data has been
-'cleared. Used by consumers to skip geo-dependent operations when no data is
-'available.
+'Answers True when the data flag reads "empty", which is the state a geobase
+'is in before its first import and after Clear. The flag says nothing about
+'the headers, so an export that reverts and re-applies the headers leaves this
+'answer alone.
 '@return Boolean. True when the geobase is empty.
 '@export
 Public Property Get HasNoData() As Boolean
-    HasNoData = (GeoHiddenStore().ValueAsString(HN_GEO_UPDATED) = "empty")
+    HasNoData = (GeoUpdatedFlag() = FLAG_EMPTY)
 End Property
 
 '@section Internal Helpers
@@ -1428,63 +1904,71 @@ End Property
 '@sub-title Update the metadata sheet from the geo metadata table.
 '@details
 'Copies the current content of T_METADATA into the hidden Metadata worksheet
-'at the RNG_Meta_Anchor position. Clears any previously written metadata rows
-'before writing the new data. Silently exits if the Metadata sheet or anchor
-'range does not exist.
+'at the RNG_Meta_Anchor position, after clearing whatever was written there
+'before. A workbook with no Metadata sheet and a sheet with no anchor are both
+'ordinary states and answer with no work. A failure of the write itself is
+'raised.
 Private Sub UpdateMetadata()
     Const METADATASHEET As String = "Metadata"
 
     Dim sh As Worksheet
     Dim metash As Worksheet
+    Dim anchorRng As Range
     Dim rng As Range
     Dim expRng As Range
     Dim lastRow As Long
 
-    On Error GoTo EndUpdate
-
     Set sh = Wksh()
+
+    Set metash = Nothing
+    On Error Resume Next
     Set metash = sh.Parent.Worksheets(METADATASHEET)
+    On Error GoTo 0
+    If metash Is Nothing Then Exit Sub
+
+    Set anchorRng = Nothing
+    On Error Resume Next
+    Set anchorRng = metash.Range("RNG_Meta_Anchor")
+    On Error GoTo 0
+    If anchorRng Is Nothing Then Exit Sub
 
     With metash
         lastRow = .Cells(.Rows.Count, 1).End(xlUp).Row
-        Set expRng = .Range("RNG_Meta_Anchor")
 
-        If lastRow >= expRng.Row Then
-            Set rng = .Range(expRng, .Cells(lastRow, 2))
+        If lastRow >= anchorRng.Row Then
+            Set rng = .Range(anchorRng, .Cells(lastRow, 2))
             rng.ClearContents
         End If
 
         Set rng = sh.ListObjects("T_" & METADATA).Range.Offset(1)
-        Set expRng = .Range(expRng, expRng.Offset(rng.Rows.Count - 1, 1))
+        Set expRng = .Range(anchorRng, anchorRng.Offset(rng.Rows.Count - 1, 1))
         expRng.Value = rng.Value
     End With
-
-EndUpdate:
 End Sub
 
 '@section Validation
 '===============================================================================
 
 '@label:check-requirements
-'@sub-title Validate that the worksheet has all required tables, named ranges, and hidden names.
+'@sub-title Validate that the worksheet carries what the class reads.
 '@details
-'Checks that the supplied worksheet is not Nothing, then verifies the presence
-'of all nine required ListObjects (T_ADM1 through T_ADM4, T_HF, T_NAMES,
-'T_HISTOGEO, T_HISTOHF, T_METADATA), five required HiddenNames entries
-'(RNG_GeoUpdated, RNG_GeoName, RNG_GeoLangCode, RNG_FormLoaded, RNG_MetaLang),
-'and six required cell-based named ranges (RNG_PastingGeoCol, RNG_HFNAME,
-'RNG_ADM1NAME through RNG_ADM4NAME). Raises an appropriate error when any
-'requirement is missing.
+'Verifies the presence of all nine required ListObjects (T_ADM1 through T_ADM4,
+'T_HF, T_NAMES, T_HISTOGEO, T_HISTOHF, T_METADATA), the four hidden names of
+'the geo worksheet (RNG_GeoUpdated, RNG_GeoName, RNG_GeoLangCode,
+'RNG_MetaLang), and the RNG_PastingGeoCol cell.
+'
+'The five level labels are ensured. A Geo worksheet built before they moved
+'into HiddenNames carries them as cells: the cell is read once, the hidden
+'name is written with that value, and no reader touches the cell again. A
+'worksheet with no such cell gets five empty names, which UpdateLevelNames
+'fills on the next Translate.
 '@param sh Worksheet. The worksheet to validate.
-'@throws ProjectError.ObjectNotInitialized When the worksheet is Nothing.
+'@param geoStore HiddenNames. The store over that worksheet.
+'@param levelStore HiddenNames. The store over the workbook that owns it.
 '@throws ProjectError.ElementNotFound When required tables, named ranges, or hidden names are missing.
-Private Sub CheckRequirements(ByVal sh As Worksheet)
+Private Sub CheckRequirements(ByVal sh As Worksheet, ByVal geoStore As HiddenNames, _
+                               ByVal levelStore As HiddenNames)
     Dim admTableNames As BetterArray
-    Dim geoStore As HiddenNames
-
-    If sh Is Nothing Then
-        ThrowError ObjectNotInitialized, "Geo sheet not defined"
-    End If
 
     Set admTableNames = New BetterArray
     admTableNames.Push "T_" & ADMIN1, "T_" & ADMIN2, "T_" & ADMIN3, "T_" & ADMIN4, _
@@ -1492,22 +1976,56 @@ Private Sub CheckRequirements(ByVal sh As Worksheet)
                        "T_" & METADATA
     LoExists admTableNames, sh
 
-    'Validate HiddenNames entries (5 names stored as hidden names)
-    Set geoStore = HiddenNames.Create(sh)
     HiddenNameRequired geoStore, HN_GEO_NAME
     HiddenNameRequired geoStore, HN_GEO_UPDATED
     HiddenNameRequired geoStore, HN_GEO_LANG_CODE
-    HiddenNameRequired geoStore, HN_FORM_LOADED
     HiddenNameRequired geoStore, HN_META_LANG
 
-    'Validate cell-based named ranges (6 ranges that remain as cells)
-    RangeExists sh, "RNG_PastingGeoCol"
-    RangeExists sh, "RNG_HFNAME"
-    RangeExists sh, "RNG_ADM1NAME"
-    RangeExists sh, "RNG_ADM2NAME"
-    RangeExists sh, "RNG_ADM3NAME"
-    RangeExists sh, "RNG_ADM4NAME"
+    RangeExists sh, RNG_PASTING_GEO_COL
+
+    EnsureLevelNames sh, levelStore
 End Sub
+
+'@label:ensure-level-names
+'@sub-title Ensure the five level labels exist as workbook hidden names.
+'@details
+'A level whose hidden name is missing takes the value of the cell-based named
+'range of the same identifier when the worksheet still carries one, and an
+'empty value otherwise. That read is the whole migration off the cells.
+'@param sh Worksheet. The geobase worksheet.
+'@param levelStore HiddenNames. The store over the workbook that owns it.
+Private Sub EnsureLevelNames(ByVal sh As Worksheet, ByVal levelStore As HiddenNames)
+    Dim counter As Long
+    Dim nameId As String
+    Dim seedValue As String
+
+    For counter = 1 To 5
+        nameId = LevelNameId(LevelRawName(counter))
+
+        If Not levelStore.HasName(nameId) Then
+            seedValue = CellSeedValue(sh, nameId)
+            levelStore.EnsureName nameId, seedValue, HiddenNameTypeString
+        End If
+    Next
+End Sub
+
+'@label:cell-seed-value
+'@sub-title Read the value of a cell-based named range, when there is one.
+'@param sh Worksheet. The worksheet to read from.
+'@param rngName String. The named range to look for.
+'@return String. The cell value, or an empty string when the range is absent or holds an error.
+Private Function CellSeedValue(ByVal sh As Worksheet, ByVal rngName As String) As String
+    Dim rng As Range
+
+    Set rng = Nothing
+    On Error Resume Next
+    Set rng = sh.Range(rngName)
+    On Error GoTo 0
+
+    If rng Is Nothing Then Exit Function
+
+    CellSeedValue = CellText(rng.Cells(1, 1).Value)
+End Function
 
 '@label:hidden-name-required
 '@sub-title Verify that a hidden name exists in the store.
@@ -1588,4 +2106,3 @@ End Sub
 Private Sub ThrowError(ByVal errNumber As Long, ByVal message As String)
     Err.Raise CLng(errNumber), CLASS_NAME, message
 End Sub
-

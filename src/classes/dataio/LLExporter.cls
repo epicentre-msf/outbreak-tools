@@ -426,8 +426,8 @@ Public Function ExportGeo(ByVal folderPath As String, _
     Set geo = GeoObject()
     Set outwb = CreateOutputWorkbook()
 
-    geobaseName = geo.GeoNames("geobase")
-    If LenB(geobaseName) = 0 Or geobaseName = "geobase" Then
+    geobaseName = geo.GeoBaseName()
+    If LenB(geobaseName) = 0 Then
         geobaseName = "OUTBREAK-TOOLS-GEOBASE-UNKNOWN"
     End If
 
