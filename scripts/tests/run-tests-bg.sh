@@ -94,15 +94,29 @@ run_suite() {
             || echo "No summary line was written. Read $LOG_FILE."
 
         if [[ -f "$RESULTS_CSV" ]]; then
+            # The runner writes its own tally into a __summary__ row, so read
+            # that rather than counting rows: a count and the runner's number
+            # can only ever disagree.
+            #
+            # The fallback greps "error", which is what a failed assertion is
+            # typed. Nothing in this file is ever typed "failure", which is what
+            # this block used to look for, so it printed 0 on every red run --
+            # including one carrying 13 of them.
+            local summary failures
+            summary=$(grep '"__summary__"' "$RESULTS_CSV" 2>/dev/null | head -1)
+            failures=$(sed -n 's/.*failures=\([0-9][0-9]*\).*/\1/p' <<<"$summary")
+
             # grep -c exits 1 on a zero count, so the fallback goes on the
             # assignment. Written as `|| echo 0` inside the substitution it
             # appends a second line and every clean run reads as a failure.
-            local failures
-            failures=$(grep -c '"failure"' "$RESULTS_CSV" 2>/dev/null) || failures=0
+            if [[ -z "$failures" ]]; then
+                failures=$(grep -c '"error"' "$RESULTS_CSV" 2>/dev/null) || failures=0
+            fi
+
             echo "failure rows in test-results.csv: $failures"
             if [[ "$failures" != "0" ]]; then
                 echo "--- failures ---"
-                grep '"failure"' "$RESULTS_CSV" | head -40
+                grep '"error"' "$RESULTS_CSV" | head -40
             fi
         fi
     } >"$SUMMARY_FILE" 2>&1
