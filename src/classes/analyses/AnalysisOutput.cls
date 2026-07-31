@@ -778,6 +778,8 @@ Private Sub WriteTable(ByVal loName As String, _
     ' Temporal state
     Dim section As TemporalSection
     Dim lastSecId As String
+    Dim sectionLabel As String
+    Dim openSectionLabel As String
     Dim tableName As String
     Dim rowVar As String
     Dim dict As LLdictionary
@@ -901,9 +903,23 @@ Private Sub WriteTable(ByVal loName As String, _
         ' A row that starts a section closes the one being held. A section that
         ' is not open yet is started whatever the row says, because every table
         ' of a temporal sheet belongs to some section.
-        If isNewSection Or (Not section.IsOpen()) Then
+        '
+        ' The third test is issue #337. IsNewSection compares against the
+        ' nearest row above that the build will DRAW, and a row can pass
+        ' validation and still fail inside Build -- which lands on TableError and
+        ' skips StartSection. The next row of that section then answers
+        ' IsNewSection = False against an anchor that was never opened, finds a
+        ' section still open, and appends its header to the section BEFORE it.
+        ' Comparing the section label as well closes the section that is open
+        ' whenever the label moves, so a failed anchor costs its own section a
+        ' warning rather than costing two sections the wrong dropdown.
+        sectionLabel = specs.Value("section")
+
+        If isNewSection Or (Not section.IsOpen()) Or _
+           (StrComp(sectionLabel, openSectionLabel, vbTextCompare) <> 0) Then
             CloseTemporalSection outsh, section, scope, goToHeaderLabel
             section.StartSection tabId
+            openSectionLabel = sectionLabel
         End If
 
         rowVar = specs.Value("row")
