@@ -705,21 +705,34 @@ suites:
       #   covers: [Development]
 
   # --- sections -------------------------------------------------------------
-  # (Also note: interface: true is stale -- IVarWriter /
-  # ISectionBuilder were folded and no longer exist; import skips missing files.)
-  # - folder: sections
-  #   classes:
-  #     - name: VarWriter
-  #       interface: true
-  #     - name: SectionBuilder
-  #       interface: true
-  #   modules: []          # general modules under src/modules/sections (none)
-  #   fixtures: []         # test-only helper classes under src/tests/classes/sections
-  #   tests:
-  #     - module: TestVarWriter
-  #       covers: [VarWriter]
-  #     - module: TestSectionBuilder
-  #       covers: [SectionBuilder]
+  # SectionBuilder and VarWriter are the terminals of linelist generation:
+  # SectionBuilder groups the dictionary rows of one sheet into sections and
+  # subsections, VarWriter puts each variable on the worksheet. These two rows
+  # are the first time either class has been compiled by the harness.
+  #
+  # The interface: true flag this block used to carry is gone with the files it
+  # named: ISectionBuilder and IVarWriter were folded away by 8beb1296, and both
+  # enums (SectionBuilderMode, VarWriterLayer) live in the classes now.
+  #
+  # The closure adds nothing. Everything the two classes name is registered
+  # already (LinelistSpecs, LLdictionary, LLVariables, LLSheets, LLFormat,
+  # FormulaData, Formulas, DropdownLists, LLGeo) or baked into the driver
+  # workbook (BetterArray, Checking, HiddenNames, TranslationObject).
+  #
+  # Both suites build a real LinelistSpecs through EnsureSpecsSheets and a real
+  # TranslationObject through BuildTranslationObject. Both routines were copied
+  # into TestHelpersLite for them, because the run imports Lite alone. They also
+  # call PrepareDictionaryFixture, PrepareLLFormatFixture and
+  # PrepareFormulaFixtureSheet, all three registered under `helpers`.
+  - folder: sections
+    classes:
+      - name: VarWriter
+      - name: SectionBuilder
+    tests:
+      - module: TestVarWriter
+        covers: [VarWriter]
+      - module: TestSectionBuilder
+        covers: [SectionBuilder]
 
 # ---------------------------------------------------------------------------
 # TEMPLATE — copy per folder as coverage is added. Delete fields left empty.

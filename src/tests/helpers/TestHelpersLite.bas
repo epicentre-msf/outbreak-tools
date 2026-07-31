@@ -643,3 +643,107 @@ Private Function ComponentExtensionName(ByVal componentType As Long) As String
             ComponentExtensionName = ".cls"
     End Select
 End Function
+
+'@section Linelist Specification Fixtures
+'===============================================================================
+'@description
+'Copied from the full TestHelpers for the sections suites. TestVarWriter and
+'TestSectionBuilder both build a real LinelistSpecs and a real
+'TranslationObject, and TestLLDataEntry wants the same two routines. The
+'bodies match TestHelpers line for line, because only one of the two modules
+'is ever imported and the two public surfaces have to stay identical.
+
+'@label BuildTranslationObject
+'@fun-title Build a real TranslationObject from an inline (code, value) mapping.
+'@details Seeds a two-column translation ListObject ("tag" + the language) on a
+'hidden fixture sheet in targetBook and returns TranslationObject.Create against
+'it. Pass an empty array for a pure pass-through translator (unmatched codes
+'return the input text).
+'@param targetBook Workbook hosting the fixture sheet.
+'@param language String. Language column header (e.g. "ENG").
+'@param pairs Variant. Array of Array(code, value) rows, or an empty array.
+'@return TranslationObject built from the seeded table.
+Public Function BuildTranslationObject(ByVal targetBook As workbook, _
+                                       ByVal language As String, _
+                                       ByVal pairs As Variant) As TranslationObject
+    Dim sh As Worksheet
+    Dim lo As ListObject
+    Dim rowCount As Long
+    Dim idx As Long
+
+    Set sh = EnsureWorksheet("__TransFixture__", targetBook, clearSheet:=True, visibility:=xlSheetHidden)
+
+    Do While sh.ListObjects.Count > 0
+        sh.ListObjects(1).Delete
+    Loop
+
+    sh.Range("A1").value = "tag"
+    sh.Range("B1").value = language
+
+    If IsArray(pairs) Then
+        If UBound(pairs) >= LBound(pairs) Then rowCount = UBound(pairs) - LBound(pairs) + 1
+    End If
+
+    If rowCount = 0 Then
+        sh.Range("A2").value = "__k"
+        sh.Range("B2").value = "__v"
+        rowCount = 1
+    Else
+        For idx = 0 To rowCount - 1
+            sh.Cells(2 + idx, 1).value = pairs(LBound(pairs) + idx)(0)
+            sh.Cells(2 + idx, 2).value = pairs(LBound(pairs) + idx)(1)
+        Next idx
+    End If
+
+    Set lo = sh.ListObjects.Add(xlSrcRange, sh.Range("A1").Resize(rowCount + 1, 2), , xlYes)
+    lo.Name = "T_transFixture"
+    Set BuildTranslationObject = TranslationObject.Create(lo, language)
+End Function
+
+'@label EnsureSpecsSheets
+'@fun-title Add the minimal sheets LinelistSpecs.Create validates.
+'@details Creates the seven required designer worksheets (Geo, __pass, __formula,
+'LinelistTranslation, __formatter, Main, DesignerTranslation), a DESIGNTYPE named
+'range on __formatter, and the four ListObjects LLTranslation.Create requires on
+'LinelistTranslation (so EnsureTranslations succeeds even though tests inject the
+'real TransObject). Lets a test build a real LinelistSpecs and drive it through the
+'TestAssign* hooks.
+'@param targetBook Workbook to receive the sheets.
+Public Sub EnsureSpecsSheets(ByVal targetBook As workbook)
+    Dim sheetNames As Variant
+    Dim idx As Long
+    Dim formatSheet As Worksheet
+    Dim transSheet As Worksheet
+
+    sheetNames = Array("Geo", "__pass", "__formula", "LinelistTranslation", _
+                       "__formatter", "Main", "DesignerTranslation")
+    For idx = LBound(sheetNames) To UBound(sheetNames)
+        EnsureWorksheet CStr(sheetNames(idx)), targetBook, clearSheet:=False, visibility:=xlSheetHidden
+    Next idx
+
+    Set formatSheet = targetBook.Worksheets("__formatter")
+    formatSheet.Range("A1").value = "UnitTestDesign"
+    On Error Resume Next
+        targetBook.Names("DESIGNTYPE").Delete
+        formatSheet.Names("DESIGNTYPE").Delete
+    On Error GoTo 0
+    targetBook.Names.Add Name:="DESIGNTYPE", RefersTo:=formatSheet.Range("A1")
+
+    Set transSheet = targetBook.Worksheets("LinelistTranslation")
+    transSheet.Cells.Clear
+    AddEmptyTable transSheet, transSheet.Range("A1"), "T_TradLLMsg"
+    AddEmptyTable transSheet, transSheet.Range("D1"), "T_TradLLShapes"
+    AddEmptyTable transSheet, transSheet.Range("G1"), "T_TradLLForms"
+    AddEmptyTable transSheet, transSheet.Range("J1"), "Tab_Translations"
+    AddEmptyTable transSheet, transSheet.Range("M1"), "T_TradLLRibbon"
+End Sub
+
+'@label AddEmptyTable
+'@sub-title Create a minimal two-column ListObject (tag + ENG, one blank row).
+Private Sub AddEmptyTable(ByVal sh As Worksheet, ByVal startCell As Range, ByVal tableName As String)
+    Dim lo As ListObject
+    startCell.value = "tag"
+    startCell.Offset(0, 1).value = "ENG"
+    Set lo = sh.ListObjects.Add(xlSrcRange, startCell.Resize(2, 2), , xlYes)
+    lo.Name = tableName
+End Sub

@@ -427,6 +427,7 @@ Public Sub EnsureSpecsSheets(ByVal targetBook As workbook)
     AddEmptyTable transSheet, transSheet.Range("D1"), "T_TradLLShapes"
     AddEmptyTable transSheet, transSheet.Range("G1"), "T_TradLLForms"
     AddEmptyTable transSheet, transSheet.Range("J1"), "Tab_Translations"
+    AddEmptyTable transSheet, transSheet.Range("M1"), "T_TradLLRibbon"
 End Sub
 
 '@label AddEmptyTable
