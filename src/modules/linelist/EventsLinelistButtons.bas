@@ -104,11 +104,13 @@ Private Function TableNameOf(ByVal sh As Worksheet) As String
     TableNameOf = shHn.ValueAsString("table_name")
 End Function
 
-'Get the blank row count from worksheet-level HiddenNames.
-Private Function RowCountOf(ByVal sh As Worksheet) As Long
+'The number of filled cells an untouched data row of this sheet carries.
+'LLDataEntry writes it when it makes the table, and a row holding more filled
+'cells than this is a row the user has typed into.
+Private Function BlankRowCountOf(ByVal sh As Worksheet) As Long
     Dim shHn As HiddenNames
     Set shHn = HiddenNames.Create(sh)
-    RowCountOf = shHn.ValueAsLong("row_count")
+    BlankRowCountOf = shHn.ValueAsLong("blank_row_count")
 End Function
 
 'Apply visibility from a ShowHideManager to a worksheet
@@ -692,7 +694,7 @@ Public Sub ClickResize()
 
     Application.EnableEvents = False
 
-    nbBlank = RowCountOf(sh)
+    nbBlank = BlankRowCountOf(sh)
     Set Lo = sh.ListObjects(1)
     Set csTab = CustomTable.Create(Lo)
 
@@ -1050,7 +1052,7 @@ Public Sub ClickOpenVarLab()
     Set actsh = wb.Worksheets(wkbNames.ValueAsString("RNG_CustomPivot"))
 
     'Pivot block titles are worksheet hidden names written by CustomPivotTable.
-    'One manager for the whole loop — creating one scans every name on the sheet.
+    'One manager for the whole loop - creating one scans every name on the sheet.
     Set pivotNames = HiddenNames.Create(actsh)
     BusyApp
 
@@ -1200,7 +1202,7 @@ Public Sub ClickImportData()
     Application.EnableEvents = False
     For Each sh In wb.Worksheets
         If SheetTag(sh) = "HList" Then
-            nbBlank = RowCountOf(sh)
+            nbBlank = BlankRowCountOf(sh)
             Set Lo = sh.ListObjects(1)
             Set csTab = CustomTable.Create(Lo)
             pass.UnProtect sh.Name

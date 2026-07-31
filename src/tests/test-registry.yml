@@ -697,9 +697,17 @@ suites:
   # typed CodeTransfer parameter, which means the dependency runs one way and
   # this row can land on its own.
   #
-  # Linelist and LLDataEntry stay out. Linelist needs Buttons and its own suite,
-  # and LLDataEntry opens the `sections` folder through SectionBuilder and
-  # VarWriter. Both belong to later sessions.
+  # LLDataEntry builds one data entry worksheet per dictionary sheet name, and
+  # this row is the first time it has been compiled. It was the most expensive
+  # row of the generation tree while it still opened the `sections` folder
+  # through SectionBuilder and VarWriter. Session 47 registered both of those,
+  # and CustomPivotTable landed under `analyses` the same day, so the closure is
+  # this row alone: everything else it names has one already -- Linelist and
+  # LinelistSpecs here, LLSheets and LLdictionary under `dictionary`, LLFormat,
+  # DropdownLists and Buttons under `general`, CustomPivotTable under
+  # `analyses`, SectionBuilder under `sections`, LLGeo under `geo`. Passwords,
+  # TranslationObject, HiddenNames, Checking and BetterArray are baked into the
+  # driver workbook.
   - folder: linelist
     classes:
       - name: LinelistSpecs
@@ -712,6 +720,7 @@ suites:
       # TranslationObject, HiddenNames, Checking and BetterArray are baked into
       # the driver workbook. AnalysisOutput waited on this row.
       - name: Linelist
+      - name: LLDataEntry
     tests:
       # TestLinelistSpecs moved here from the src/tests/ root, where it had no
       # folder to be registered under. Its four tests had never run.
@@ -740,6 +749,17 @@ suites:
       # PrepareDictionaryFixture in DictionaryTestFixture under `helpers`.
       - module: TestLinelist
         covers: [Linelist]
+      # TestLLDataEntry builds one designer-shaped workbook and one workbook
+      # standing in for the linelist, both once per module, then builds the
+      # VList sheet and the HList sheet once each and asserts over what they
+      # hold. Building a data entry sheet writes every label, dropdown and
+      # conditional format of that sheet, so a build per test is what put the
+      # sections folder on the runner cap. It reaches PrepareDictionaryFixture,
+      # PrepareChoicesFixture, PrepareLLFormatFixture,
+      # PrepareFormulaFixtureSheet and PreparePasswordsFixture under `helpers`,
+      # and its helper calls are unqualified so they resolve to TestHelpersLite.
+      - module: TestLLDataEntry
+        covers: [LLDataEntry]
 
   # --- dev (Development) ----------------------------------------------------
   # THIS BLOCK CARRIES A TEST MODULE AND NO CLASS, AND IT MUST STAY THAT WAY.
@@ -816,11 +836,11 @@ suites:
 # registered): dataio, mastersetup, showhide. src/tests/tables/ is gone as of
 # 2026-07-31 — it held TestCustomPivotTable alone, whose class lives in
 # src/classes/analyses/, so no suite could ever name both. The module moved to
-# src/tests/analyses/ and is registered there. The designer and linelist
-# folders carry class rows; what they still lack is suites. src/tests/linelist/
-# holds TestLinelist and TestLLDataEntry, and neither has ever executed.
-# src/tests/geo/ is fully registered as of 2026-07-31, and TestCodeTransfer
-# joined folder: linelist the same day.
+# src/tests/analyses/ and is registered there. src/tests/geo/ is fully
+# registered as of 2026-07-31, and so is src/tests/linelist/: TestCodeTransfer,
+# TestLinelist and TestLLDataEntry all joined folder: linelist that day, which
+# closes the generation path. The designer folder carries a class row and no
+# suite.
 #
 #   - folder: <subfolder>
 #     classes:

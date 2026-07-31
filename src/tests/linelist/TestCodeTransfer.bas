@@ -90,17 +90,44 @@ Public Sub ModuleInitialize()
     On Error GoTo 0
 End Sub
 
-'@sub-title Print results and tear down.
+'@sub-title Print results, empty the repository and tear down.
 '@details
 'This routine is Public because the harness calls it by name through
 'Application.Run.
+'
+'The repository folder sits directly under the run directory, and the suite
+'used to leave it there. An empty OBTApp_ folder in the runner output is what
+'this removes.
 '@ModuleCleanup
 Public Sub ModuleCleanup()
     If Not Assert Is Nothing Then
         Assert.PrintResults TEST_OUTPUT_SHEET
     End If
+
+    RemoveRepository
+
     RestoreApp
     Set Assert = Nothing
+End Sub
+
+'@sub-title Delete the repository files and the folder holding them.
+Private Sub RemoveRepository()
+    Dim sweeper As TemporaryRepos
+    Dim root As String
+
+    If LenB(BaseFolder) = 0 Then Exit Sub
+
+    On Error Resume Next
+        Set sweeper = TemporaryRepos.Create(BaseFolder)
+        root = sweeper.RootPath
+        sweeper.DeleteAll
+
+        'RootPath ends with a path separator and RmDir wants the folder itself.
+        If Right$(root, 1) = Application.PathSeparator Then
+            root = Left$(root, Len(root) - 1)
+        End If
+        If LenB(root) > 0 Then RmDir root
+    On Error GoTo 0
 End Sub
 
 '@sub-title Build two workbooks, a repository and the two probe components.

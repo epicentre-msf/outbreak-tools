@@ -494,7 +494,10 @@ Private Function BuildOneSheet(ByVal llshs As LLSheets, ByVal ll As Linelist, By
         Exit Function
     End If
 
-    Set listBld = LLDataEntry.Create(layer, sheetName, ll)
+    'The builder takes the LLSheets this loop already holds. It used to build
+    'its own, and so did each of the three members inside it, so one sheet cost
+    'five searches of the dictionary for the same row.
+    Set listBld = LLDataEntry.Create(layer, sheetName, ll, llshs)
     listBld.Build
 
     Set BuildOneSheet = listBld

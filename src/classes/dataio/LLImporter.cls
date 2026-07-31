@@ -140,8 +140,9 @@ End Sub
 '@label:has-data
 '@prop-title Whether the workbook contains user-entered data
 '@details
-'Scans all HList sheets for non-empty rows beyond the blank count
-'threshold stored in cell(1,6). Returns True as soon as a single row
+'Scans all HList sheets for rows carrying more filled cells than an untouched
+'row does. LLDataEntry records that figure per sheet under the hidden name
+'blank_row_count when it makes the table. Returns True as soon as a single row
 'has user data. Used to warn the user before clearing or overwriting.
 '@return Boolean. True when at least one HList row has user data.
 '@export
@@ -156,7 +157,7 @@ Public Property Get HasData() As Boolean
     For Each sh In this.sourceWkb.Worksheets
         If SheetTagOf(sh) = "HList" Then
             Set shHnData = HiddenNames.Create(sh)
-            nbBlanks = shHnData.ValueAsLong("row_count")
+            nbBlanks = shHnData.ValueAsLong("blank_row_count")
             Set lo = sh.ListObjects(1)
 
             If Not lo.DataBodyRange Is Nothing Then
