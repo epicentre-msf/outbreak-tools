@@ -359,6 +359,7 @@ Private Sub BuildHList()
     'Add pivot table for this sheet
     pivotObj.Add this.sheetName, tableName, trads.TranslatedValue("MSG_PivotTable")
     pivotObj.Format design
+    If pivotObj.HasCheckings Then HarvestCollaboratorCheckings pivotObj.CheckingValues
 
     'Printed companion ListObject
     With printSh

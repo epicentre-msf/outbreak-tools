@@ -462,6 +462,18 @@ suites:
       # analysis section. It names BetterArray alone, which is baked into the
       # workbook, so it adds no folder to this block.
       - name: TemporalSection
+      # CustomPivotTable stacks one titled PivotTable block per data-entry sheet
+      # on the custom pivot worksheet. It names LLFormat, HiddenNames and
+      # Checking (for ProjectError). LLFormat is registered under `general`;
+      # HiddenNames, Checking and BetterArray are baked into the driver workbook
+      # and must not be registered. So this row closes its own compile closure
+      # and brings no new folder with it.
+      #
+      # Its test module used to live in src/tests/tables/, which no suite could
+      # ever name: a suite resolves classes AND tests against one folder, and
+      # the class sits in src/classes/analyses/. Moving the module here is what
+      # made registration possible, and src/tests/tables/ is now gone.
+      - name: CustomPivotTable
     tests:
       - module: TestAnalysis
         covers: [Analysis]
@@ -496,6 +508,15 @@ suites:
       # no dictionary.
       - module: TestTemporalSection
         covers: [TemporalSection]
+      # TestCustomPivotTable builds its own workbook with a ListObject to pivot
+      # over and an empty sheet to stack blocks on, through NewWorkbook,
+      # DeleteWorkbook and EnsureWorksheet. Those calls are UNQUALIFIED so they
+      # resolve to TestHelpersLite; the module shipped with them written
+      # `TestHelpers.` and that never compiles, because the full TestHelpers is
+      # deliberately never imported. It also reaches PrepareLLFormatFixture
+      # under `helpers` for the tests that drive Format against a real LLFormat.
+      - module: TestCustomPivotTable
+        covers: [CustomPivotTable]
 
   # --- graphs (Graphs, SeriesBuffer, GraphSeries, TimeSeriesGraphs) ----------
   # A class row is resolved against src/classes/<folder>/, so every class here
@@ -737,7 +758,10 @@ suites:
 # ---------------------------------------------------------------------------
 # TEMPLATE — copy per folder as coverage is added. Delete fields left empty.
 # Expansion backlog (suite folders under src/tests/ that are not yet
-# registered): dataio, mastersetup, showhide, tables. The designer and linelist
+# registered): dataio, mastersetup, showhide. src/tests/tables/ is gone as of
+# 2026-07-31 — it held TestCustomPivotTable alone, whose class lives in
+# src/classes/analyses/, so no suite could ever name both. The module moved to
+# src/tests/analyses/ and is registered there. The designer and linelist
 # folders carry class rows; what they still lack is suites. src/tests/linelist/
 # holds TestLinelist and TestLLDataEntry, and neither has ever executed.
 # src/tests/geo/ is fully registered as of 2026-07-31, and TestCodeTransfer

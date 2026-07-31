@@ -1041,12 +1041,17 @@ Public Sub ClickOpenVarLab()
     Dim tablename As String
     Dim varLabTab As BetterArray
     Dim varName As String
+    Dim pivotNames As HiddenNames
 
     InitializeTrads
     On Error GoTo ErrHand
 
     'Prepare the temporary Sheet
     Set actsh = wb.Worksheets(wkbNames.ValueAsString("RNG_CustomPivot"))
+
+    'Pivot block titles are worksheet hidden names written by CustomPivotTable.
+    'One manager for the whole loop — creating one scans every name on the sheet.
+    Set pivotNames = HiddenNames.Create(actsh)
     BusyApp
 
     Set tempsh = ThisWorkbook.Worksheets(TEMPSHEET)
@@ -1071,7 +1076,7 @@ Public Sub ClickOpenVarLab()
             tablename = vars.Value(colName:="table name", varName:=varName)
 
             'Pivot table title
-            cellRng.Cells(1, 1).Value = actsh.Range("RNG_PivotTitle_" & tablename).Value
+            cellRng.Cells(1, 1).Value = pivotNames.ValueAsString("pivot_title_" & tablename)
             'Varname
             cellRng.Cells(1, 2).Value = varName
             'Corresponding variable label

@@ -968,15 +968,12 @@ Private Sub ApplyWorksheetFormat(ByVal sh As Worksheet, ByVal scope As Byte)
 
     Case HListCustomPivotTables
 
-        If Not IsEmpty(sh.Cells(1, 1).Value) And (sh.Cells(1, 2).Value <> "formated") Then
-            RemoveGridLines sh, DisplayZeros:=True
-            sh.Cells.EntireRow.RowHeight = 20
-            sh.Visible = xlSheetVisible
-            sh.Cells(1, 2).Value = "formated"
-            sh.Cells(1, 2).Font.color = vbWhite
-        ElseIf IsEmpty(sh.Cells(1, 1).Value) Then
-            sh.Visible = xlSheetVeryHidden
-        End If
+        'Visibility and the once-only guard belong to CustomPivotTable, which
+        'holds them as worksheet hidden names. This used to read them out of
+        'cells A1 and B1 of the pivot sheet, which nothing has written since
+        'that class moved its state into hidden names.
+        RemoveGridLines sh, DisplayZeros:=True
+        sh.Cells.EntireRow.RowHeight = 20
 
     End Select
 End Sub
