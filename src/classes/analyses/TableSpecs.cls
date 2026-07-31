@@ -837,7 +837,7 @@ End Property
 'graph="percentages" or "values", the two entries of the __perc_val dropdown
 'the setup binds to that column. The actual graph rendering is handled
 'downstream by the chart builder; this property only signals whether one
-'should be created. "both" stays in the bivariate list because GraphSpecs
+'should be created. "both" stays in the bivariate list because GraphSeries
 'reads it too; the dropdown offers "percentages" and "values".
 '@return Boolean. True if a graph should be created for this table.
 '@remarks The time series graph block answers False. Every one of its rows

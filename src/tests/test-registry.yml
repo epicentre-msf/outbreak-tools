@@ -443,8 +443,9 @@ suites:
   #
   # TestAnalysisOutput stays out until AnalysisOutput has a class row of its own.
   # LinelistSpecs is registered under `linelist` below, so that half of the wall
-  # is down, and GraphSpecs -- which AnalysisOutput types in three places -- has
-  # a row under `graphs` now. What AnalysisOutput still waits on is Linelist: it
+  # is down, and the three classes GraphSpecs was split into -- SeriesBuffer,
+  # GraphSeries and TimeSeriesGraphs, all typed by AnalysisOutput -- have rows
+  # under `graphs` now. What AnalysisOutput still waits on is Linelist: it
   # holds `anaLL As Linelist` and its factory takes `ByVal ll As Linelist`, both
   # typed. That row belongs to the Linelist session.
   - folder: analyses
@@ -496,28 +497,39 @@ suites:
       - module: TestTemporalSection
         covers: [TemporalSection]
 
-  # --- graphs (Graphs, GraphSpecs) -------------------------------------------
-  # A class row is resolved against src/classes/<folder>/, so both classes need
-  # a block naming their own folder.
+  # --- graphs (Graphs, SeriesBuffer, GraphSeries, TimeSeriesGraphs) ----------
+  # A class row is resolved against src/classes/<folder>/, so every class here
+  # needs a block naming its own folder.
   #
   # Graphs wraps one Excel ChartObject and names Checking alone, which is baked
-  # into the workbook. AnaTabIds compiles against it. It still has no suite.
+  # into the workbook. AnaTabIds compiles against it.
   #
-  # GraphSpecs decides what goes on every chart a linelist draws. It names
-  # CrossTable and TableSpecs (registered under `analyses`), LinelistSpecs
-  # (under `linelist`), and Checking and BetterArray, both baked into the
-  # driver workbook. So this row closes its own compile closure and waits on
-  # nothing. AnalysisOutput types it in three places, so the row is also half
-  # of what that class needs before it can be registered.
+  # GraphSpecs was split into three on 2026-07-31 and deleted. SeriesBuffer
+  # holds one chart's worth of series and names BetterArray and Checking, both
+  # baked in. GraphSeries answers the series of one built cross-table and names
+  # CrossTable and TableSpecs (registered under `analyses`) plus SeriesBuffer.
+  # TimeSeriesGraphs reads the three time series setup tables and names
+  # TableSpecs, LinelistSpecs (under `linelist`) and SeriesBuffer. So the block
+  # closes its own compile closure and waits on nothing. AnalysisOutput types
+  # all three, so they are also part of what that class needs before it can be
+  # registered.
+  #
+  # SeriesBuffer comes first: the other two hold one.
   - folder: graphs
     classes:
       - name: Graphs
-      - name: GraphSpecs
+      - name: SeriesBuffer
+      - name: GraphSeries
+      - name: TimeSeriesGraphs
     tests:
-      # TestGraphSpecs builds the three time series setup tables under the
-      # names the setup workbook gives them, plus a univariate and a
-      # spatio-temporal block for the simple builder. It reaches
-      # DictionaryTestFixture, registered under `helpers`; its other helper
+      # TestSeriesBuffer runs against plain values, which makes it the cheapest
+      # suite in the folder.
+      #
+      # TestGraphSeries and TestTimeSeriesGraphs came out of TestGraphSpecs,
+      # which covered both halves of the class that was split. They build their
+      # fixture tables under the names the setup workbook gives them, so each
+      # one frees the name before it claims it. They reach
+      # DictionaryTestFixture, registered under `helpers`; their other helper
       # calls are unqualified, so they resolve to TestHelpersLite.
       #
       # TestGraphs was rewritten to the CustomTest harness on 2026-07-31. The
@@ -526,8 +538,12 @@ suites:
       # CreateObject("Rubberduck.AssertClass") plus Rubberduck.FakesProvider,
       # which is a COM class this host does not have. It draws real charts on a
       # fixture worksheet, so read the clock after adding it.
-      - module: TestGraphSpecs
-        covers: [GraphSpecs]
+      - module: TestSeriesBuffer
+        covers: [SeriesBuffer]
+      - module: TestGraphSeries
+        covers: [GraphSeries]
+      - module: TestTimeSeriesGraphs
+        covers: [TimeSeriesGraphs]
       - module: TestGraphs
         covers: [Graphs]
 

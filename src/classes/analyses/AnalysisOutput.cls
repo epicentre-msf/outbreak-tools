@@ -59,7 +59,7 @@ End Enum
 'a TemporalSection. The loop closes the section it holds when it meets a table
 'that starts a new one, and closes the last one after the loop. Nothing reads
 'the row below to decide where a section ends.
-'@depends Linelist, LinelistSpecs, LLFormat, TranslationObject, TableSpecs, CrossTable, CrossTableFormula, Graphs, GraphSpecs, AnaTabIds, TemporalSection, Buttons, Passwords, DropdownLists, HiddenNames, LLdictionary, LLVariables, FormulaData, Checking, BetterArray
+'@depends Linelist, LinelistSpecs, LLFormat, TranslationObject, TableSpecs, CrossTable, CrossTableFormula, Graphs, GraphSeries, TimeSeriesGraphs, SeriesBuffer, AnaTabIds, TemporalSection, Buttons, Passwords, DropdownLists, HiddenNames, LLdictionary, LLVariables, FormulaData, Checking, BetterArray
 '@version 2026-07-30
 
 
@@ -762,7 +762,8 @@ Private Sub WriteTable(ByVal loName As String, _
     Dim trads As TranslationObject
     Dim formData As FormulaData
     Dim cellRng As Range
-    Dim grSpecs As GraphSpecs
+    Dim grSeries As GraphSeries
+    Dim buffer As SeriesBuffer
     Dim tabId As String
     Dim tabType As Byte
     Dim design As LLFormat
@@ -865,24 +866,24 @@ Private Sub WriteTable(ByVal loName As String, _
             Set cellRng = outsh.Cells(tabl.StartRow - 2, tabl.EndColumn + 2)
             If tabType = ScopeSpatial Then Set cellRng = cellRng.Offset(, 2)
 
-            Set grSpecs = GraphSpecs.Create(tabl)
-            grSpecs.CreateSeries
+            Set grSeries = GraphSeries.Create(tabl)
+            Set buffer = grSeries.Series()
 
             ' And the series builder's. It decides to build fewer series than
-            ' the setup asked for in nine places, and every one of them was
+            ' the setup asked for in four places, and every one of them was
             ' silent until this line.
-            If grSpecs.HasCheckings Then HarvestCollaboratorCheckings grSpecs.CheckingValues
+            If grSeries.HasCheckings Then HarvestCollaboratorCheckings grSeries.CheckingValues
 
             Set gr = Graphs.Create(outsh, cellRng)
             gr.Add
 
-            For seriesCounter = 1 To grSpecs.NumberOfSeries()
+            For seriesCounter = 1 To buffer.Count
                 AddGraphSeries gr:=gr, namObj:=namObj, scope:=scope, graphId:=tabId, _
-                               seriesName:=grSpecs.SeriesName(seriesCounter), _
-                               seriesType:=grSpecs.SeriesType(seriesCounter), _
-                               seriesPos:=grSpecs.SeriesPos(seriesCounter), _
-                               seriesLabel:=grSpecs.SeriesLabel(seriesCounter), _
-                               seriesColumnLabel:=grSpecs.SeriesColumnLabel(seriesCounter), _
+                               seriesName:=buffer.RangeName(seriesCounter), _
+                               seriesType:=buffer.ChartType(seriesCounter), _
+                               seriesPos:=buffer.AxisSide(seriesCounter), _
+                               seriesLabel:=buffer.CategoryRange(seriesCounter), _
+                               seriesColumnLabel:=buffer.LegendRange(seriesCounter), _
                                hardCodeLabels:=False, _
                                outRangeAddress:=cellRng.Address
             Next
@@ -1044,8 +1045,8 @@ End Function
 '@sub-title Build all time series charts from the graph definition ListObjects.
 '@details
 'Reads three setup ListObjects: the graph definition table, the graph title
-'table and the time series table. GraphSpecs.CreateRangeSpecs resolves them
-'into multi-series graphs with mixed chart types and separate axis positions.
+'table and the time series table. TimeSeriesGraphs resolves them into
+'multi-series graphs with mixed chart types and separate axis positions.
 'Each graph is then created, its series added and registered, formatted and
 'given its title cell, and the anchor moves down fifty rows. A graph dropdown
 'is placed at row 3 column 3 at the end.
@@ -1069,7 +1070,8 @@ Private Sub WriteTimeSeriesGraphs(ByVal graphLoName As String, _
     Dim grLo As ListObject
     Dim tabLo As ListObject
     Dim grTitleLo As ListObject
-    Dim grSpecs As GraphSpecs
+    Dim tsGraphs As TimeSeriesGraphs
+    Dim buffer As SeriesBuffer
     Dim gr As Graphs
     Dim trads As TranslationObject
     Dim design As LLFormat
@@ -1079,13 +1081,6 @@ Private Sub WriteTimeSeriesGraphs(ByVal graphLoName As String, _
     Dim valuesTitle As String
 
     Dim grBAinput As BetterArray
-    Dim grBAoutput As BetterArray
-    Dim tabGraphInfos As BetterArray
-    Dim tabSeries As BetterArray
-    Dim tabTypes As BetterArray
-    Dim tabPos As BetterArray
-    Dim tabLabel As BetterArray
-    Dim tabPrefLabel As BetterArray
     Dim plotTitle As String
 
     Dim outshHn As HiddenNames
@@ -1122,67 +1117,58 @@ Private Sub WriteTimeSeriesGraphs(ByVal graphLoName As String, _
     valuesTitle = trads.TranslatedValue("MSG_Values")
 
     grBAinput.Push grLo, tabLo, grTitleLo
-    Set grSpecs = GraphSpecs.CreateRangeSpecs(grBAinput, outsh, lData)
+    Set tsGraphs = TimeSeriesGraphs.Create(grBAinput, outsh, lData)
 
-    If grSpecs.Valid() Then
-        Set grBAoutput = grSpecs.SpecsLists()
-        For graphCounter = 1 To grSpecs.NumberOfGraphs()
-            On Error GoTo GraphError
+    ' A time series series is labelled by its prefix alone, so the chart and the
+    ' registry both read the prefix and leave the column label empty.
+    For graphCounter = 1 To tsGraphs.Count
+        On Error GoTo GraphError
 
-            Set tabGraphInfos = grBAoutput.Item(graphCounter)
-            Set tabSeries = tabGraphInfos.Item(1)
-            Set tabTypes = tabGraphInfos.Item(2)
-            Set tabPos = tabGraphInfos.Item(3)
-            Set tabLabel = tabGraphInfos.Item(4)
-            ' Item 5 holds the column label names. A time series series is
-            ' labelled by its prefix alone, so neither the chart nor the
-            ' registry reads them.
-            Set tabPrefLabel = tabGraphInfos.Item(6)
-            plotTitle = tabGraphInfos.Item(7)
+        Set buffer = tsGraphs.Series(graphCounter)
+        plotTitle = tsGraphs.Title(graphCounter)
 
-            Set gr = Graphs.Create(outsh, cellRng)
-            gr.Add
+        Set gr = Graphs.Create(outsh, cellRng)
+        gr.Add
 
-            For seriesCounter = 1 To tabSeries.Length
-                AddGraphSeries gr:=gr, namObj:=namObj, _
-                               scope:=AnalysisScopeTimeSeries, _
-                               graphId:=CStr(graphCounter), _
-                               seriesName:=tabSeries.Item(seriesCounter), _
-                               seriesType:=tabTypes.Item(seriesCounter), _
-                               seriesPos:=tabPos.Item(seriesCounter), _
-                               seriesLabel:=tabLabel.Item(seriesCounter), _
-                               seriesColumnLabel:=vbNullString, _
-                               hardCodeLabels:=True, _
-                               outRangeAddress:=cellRng.Address, _
-                               prefix:=tabPrefLabel.Item(seriesCounter), _
-                               prefixOnly:=True
-            Next
+        For seriesCounter = 1 To buffer.Count
+            AddGraphSeries gr:=gr, namObj:=namObj, _
+                           scope:=AnalysisScopeTimeSeries, _
+                           graphId:=CStr(graphCounter), _
+                           seriesName:=buffer.RangeName(seriesCounter), _
+                           seriesType:=buffer.ChartType(seriesCounter), _
+                           seriesPos:=buffer.AxisSide(seriesCounter), _
+                           seriesLabel:=buffer.CategoryRange(seriesCounter), _
+                           seriesColumnLabel:=vbNullString, _
+                           hardCodeLabels:=True, _
+                           outRangeAddress:=cellRng.Address, _
+                           prefix:=buffer.LabelPrefix(seriesCounter), _
+                           prefixOnly:=True
+        Next
 
-            FinishGraph gr:=gr, namObj:=namObj, scope:=AnalysisScopeTimeSeries, _
-                        graphId:=CStr(graphCounter), catTitle:=periodTitle, _
-                        valuesTitle:=valuesTitle, hardCodeLabels:=True, _
-                        heightFactor:=1, plotTitle:=plotTitle
+        FinishGraph gr:=gr, namObj:=namObj, scope:=AnalysisScopeTimeSeries, _
+                    graphId:=CStr(graphCounter), catTitle:=periodTitle, _
+                    valuesTitle:=valuesTitle, hardCodeLabels:=True, _
+                    heightFactor:=1, plotTitle:=plotTitle
 
-            cellRng.Value = plotTitle
-            design.ApplyFormat cellRng, scope:=LinelistHiddenCell
-            graphsList.Push goToGraphLabel & ": " & plotTitle
+        cellRng.Value = plotTitle
+        design.ApplyFormat cellRng, scope:=LinelistHiddenCell
+        graphsList.Push goToGraphLabel & ": " & plotTitle
 
-            On Error GoTo 0
-            GoTo NextGraph
+        On Error GoTo 0
+        GoTo NextGraph
 
 GraphError:
-            LogInfo "Time series chart " & graphCounter & " failed: " & Err.Description, _
-                    checkingError
-            Resume NextGraph
+        LogInfo "Time series chart " & graphCounter & " failed: " & Err.Description, _
+                checkingError
+        Resume NextGraph
 
 NextGraph:
-            Set cellRng = cellRng.Offset(GRAPHROWSTEP)
-        Next
-    End If
+        Set cellRng = cellRng.Offset(GRAPHROWSTEP)
+    Next
 
     ' Read after the loop, so a run that built no graph at all still reports
-    ' why. Valid() is what triggers the build, so the entries exist by here.
-    If grSpecs.HasCheckings Then HarvestCollaboratorCheckings grSpecs.CheckingValues
+    ' why. Count is what triggers the build, so the entries exist by here.
+    If tsGraphs.HasCheckings Then HarvestCollaboratorCheckings tsGraphs.CheckingValues
 
     ' Add GoTo graph dropdown
     AddGoTo outsh.Cells(3, 3), dropArray:=graphsList, _
@@ -1212,7 +1198,8 @@ Private Sub WriteSpatioTemporalGraph(ByVal loName As String, _
     Dim tabRng As Range
     Dim anchorRng As Range
     Dim gr As Graphs
-    Dim grSpecs As GraphSpecs
+    Dim grSeries As GraphSeries
+    Dim buffer As SeriesBuffer
     Dim plotTitle As String
     Dim tabId As String
     Dim seriesCounter As Long
@@ -1259,26 +1246,26 @@ Private Sub WriteSpatioTemporalGraph(ByVal loName As String, _
         ' builder takes the column count from the geographic unit count for
         ' this scope, so it never reads the geometry a Build would have set.
         Set tabl = CrossTable.Create(specs, outsh, lData)
-        Set grSpecs = GraphSpecs.Create(tabl)
+        Set grSeries = GraphSeries.Create(tabl)
 
         plotTitle = graphLabel & ": " & outsh.Range("STARTCOL_" & tabId).Value
 
-        grSpecs.CreateSeries
+        Set buffer = grSeries.Series()
 
         ' The series builder reports every series it left out.
-        If grSpecs.HasCheckings Then HarvestCollaboratorCheckings grSpecs.CheckingValues
+        If grSeries.HasCheckings Then HarvestCollaboratorCheckings grSeries.CheckingValues
 
         Set gr = Graphs.Create(outsh, cellRng)
         gr.Add
 
-        For seriesCounter = 1 To grSpecs.NumberOfSeries()
+        For seriesCounter = 1 To buffer.Count
             AddGraphSeries gr:=gr, namObj:=namObj, _
                            scope:=AnalysisScopeSpatioTemporal, graphId:=tabId, _
-                           seriesName:=grSpecs.SeriesName(seriesCounter), _
-                           seriesType:=grSpecs.SeriesType(seriesCounter), _
-                           seriesPos:=grSpecs.SeriesPos(seriesCounter), _
-                           seriesLabel:=grSpecs.SeriesLabel(seriesCounter), _
-                           seriesColumnLabel:=grSpecs.SeriesColumnLabel(seriesCounter), _
+                           seriesName:=buffer.RangeName(seriesCounter), _
+                           seriesType:=buffer.ChartType(seriesCounter), _
+                           seriesPos:=buffer.AxisSide(seriesCounter), _
+                           seriesLabel:=buffer.CategoryRange(seriesCounter), _
+                           seriesColumnLabel:=buffer.LegendRange(seriesCounter), _
                            hardCodeLabels:=False, _
                            outRangeAddress:=cellRng.Address
         Next
