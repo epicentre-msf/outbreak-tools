@@ -764,7 +764,12 @@ Public Sub AddRows()
                 For counter = 1 To 13
                     rowsData.Push vbNullString, vbNullString, vbNullString, vbNullString
                 Next
-                ' Total and Missing rows are ALWAYS present in time series
+                ' The Total and Missing rows of a temporal section are always
+                ' WRITTEN, because this block is a fixed NB_ROWS_TIME_SERIES
+                ' grid and RowsCategoriesRange trims its two footer rows by
+                ' count rather than by label. Whether the user SEES the Total
+                ' row is decided in Format, which hides it when no table of the
+                ' section asked for one -- issue #338.
                 rowsData.Push transTotal, transMissing
                 rowsData.ToExcelRange .Cells(startRw + 1, StartColumn)
             End If
@@ -1781,10 +1786,10 @@ Public Sub Format(ByVal desFormat As LLFormat)
             designFormat.ApplyFormat rng, scope:=AnalysisEndTable
         End If
 
-        ' Bug #1 fix: Hide Total COLUMN when not explicitly requested by user
-        ' For time series/spatio-temporal tables, HasTotal can be True because
-        ' percentage="row"/"column" needs the total column for computation.
-        ' When TotalRequested=False, hide the column to keep it invisible.
+        ' Total COLUMN, hidden when the user did not ask for it. For time series
+        ' and spatio-temporal tables HasTotal can be True because
+        ' percentage="row" needs the total column as its denominator, so the
+        ' column has to exist and the user still has no reason to see it.
         If (tablType = ScopeTimeSeries Or tablType = ScopeSpatioTemporal) And _
            specs.HasTotal And (Not specs.TotalRequested) Then
             If RangeExists("TOTAL_COL_" & tabId) Then
@@ -1793,6 +1798,30 @@ Public Sub Format(ByVal desFormat As LLFormat)
                 If hasPercent And RangeExists("TOTAL_PERC_VALUES_" & tabId) Then
                     .Range("TOTAL_PERC_VALUES_" & tabId).EntireColumn.Hidden = True
                 End If
+            End If
+        End If
+
+        ' Total ROW, the other half of the same answer -- issue #338. AddRows
+        ' writes the Total and Missing labels of a temporal section
+        ' unconditionally, because the row grid is a fixed NB_ROWS_TIME_SERIES
+        ' block with exactly two footer rows and RowsCategoriesRange trims them
+        ' BY COUNT. So the row cannot be dropped and it is hidden instead, the
+        ' way the column above is. Without this a table with "Add total" left at
+        ' no still showed a Total row, which is what the field reported.
+        '
+        ' The rows belong to the section rather than to one table, so the anchor
+        ' -- the table that wrote them -- is what hides them, and any later table
+        ' of the same section that does ask for a total shows them again. Nothing
+        ' hides a row a table has asked for, whatever order the section is built
+        ' in. Every table of the section names the same sheet row through its own
+        ' TOTAL_ROW_<tabId>, so the name is always this table's.
+        If (tablType = ScopeTimeSeries Or tablType = ScopeSpatioTemporal) And _
+           RangeExists("TOTAL_ROW_" & tabId) Then
+            Set rng = .Range("TOTAL_ROW_" & tabId)
+            If specs.TotalRequested() Then
+                rng.EntireRow.Hidden = False
+            ElseIf newSection Then
+                rng.EntireRow.Hidden = True
             End If
         End If
 
