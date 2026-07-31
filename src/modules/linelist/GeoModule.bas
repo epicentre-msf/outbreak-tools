@@ -307,6 +307,11 @@ End Sub
 '===============================================================================
 
 ' @description Update all spatial tables from HList filtered data.
+'              The busy state belongs to the caller. BusyApp switched the screen,
+'              the alerts and the calculation off here and NotBusyApp was skipped
+'              whenever Update raised, which left the application looking frozen
+'              with no message. ClickCalculate already wraps this call and
+'              restores the application on every path.
 '@EntryPoint
 Public Sub UpdateSpTables()
     Dim sp As LLSpatial
@@ -314,9 +319,7 @@ Public Sub UpdateSpTables()
 
     UpdateFilterTables calculate:=False
 
-    BusyApp
     sp.Update
-    NotBusyApp
 End Sub
 
 '@section Spatio-Temporal Formula Updates

@@ -567,15 +567,24 @@ suites:
   # worksheet of the workbook that owns the geo sheet and the driver workbook
   # carries dozens.
   #
-  # src/tests/geo/ still holds TestLLSpatial, unregistered, for its own session.
-  # LLSpatial has no class row here because nothing registered compiles against
-  # it.
+  # LLSpatial and TestLLSpatial joined the block on 2026-07-31, which is the
+  # whole of src/tests/geo/. LLSpatial names BetterArray, HiddenNames and
+  # Checking, all three baked into the driver workbook, so its row closes its own
+  # compile closure too. TestLLSpatial declares CustomTest, LLSpatial,
+  # HiddenNames and BetterArray, and its helper calls are unqualified.
+  #
+  # Most of its tests build a workbook of their own, for the same reason the
+  # LLGeo ones do: Update walks every worksheet of the workbook that owns the
+  # spatial sheet.
   - folder: geo
     classes:
       - name: LLGeo
+      - name: LLSpatial
     tests:
       - module: TestLLGeo
         covers: [LLGeo]
+      - module: TestLLSpatial
+        covers: [LLSpatial]
 
   # --- designer (LLBuild) ---------------------------------------
   # LinelistSpecs.Prepare takes a LLBuild and the parameter is
@@ -698,11 +707,11 @@ suites:
 # ---------------------------------------------------------------------------
 # TEMPLATE — copy per folder as coverage is added. Delete fields left empty.
 # Expansion backlog (suite folders under src/tests/ that are not yet
-# registered): dataio, mastersetup, showhide, tables. The designer, geo,
-# geo and linelist folders now carry class rows; what they still lack is
-# suites. src/tests/geo/ holds TestLLGeo and TestLLSpatial, src/tests/graphs/
-# holds TestGraphs, and src/tests/linelist/ holds TestLinelist, TestLLDataEntry
-# and TestCodeTransfer. None of those has ever executed.
+# registered): dataio, mastersetup, showhide, tables. The designer and linelist
+# folders carry class rows; what they still lack is suites. src/tests/graphs/
+# holds TestGraphs and src/tests/linelist/ holds TestLinelist, TestLLDataEntry
+# and TestCodeTransfer. None of those has ever executed. src/tests/geo/ is fully
+# registered as of 2026-07-31.
 #
 #   - folder: <subfolder>
 #     classes:

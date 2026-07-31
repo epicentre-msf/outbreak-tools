@@ -30,7 +30,7 @@ Option Explicit
 'in LLSpatial in the same commit.
 '
 '    listofgeovars              one row per spatial variable
-'    RNG_PastingCol             the scratch column LLSpatial pastes through
+'    RNG_PastingCol             a scratch column on the sheet
 '    spatial_<level>_<var>      one ListObject per level
 '      column 1  tabl_<level>_<var>    the lookup key
 '      column 2  formula_<level>       the value LLSpatial sorts on
@@ -83,7 +83,9 @@ Private Const REGISTRY_TABLE As String = "listofgeovars"
 Private Const REGISTRY_HEADER As String = "listofvars"
 Private Const REGISTRY_COL As Long = 3
 
-' The scratch column LLSpatial pastes through, and the name it reads it by.
+' A scratch column on the sheet, and the name it is reached by. LLSpatial used to
+' paste every value list through it to de-duplicate on the worksheet; it reads
+' the values into memory now and the column stays free.
 Private Const PASTING_COL As Long = 5
 Private Const PASTING_NAME As String = "RNG_PastingCol"
 
