@@ -40,8 +40,8 @@ End Enum
 'The type says nothing about this, and it is where most of this class's defects
 'came from. The table is the contract.
 '
-'  dictionary, choices, exports, ana    Linelist. Prepare sets them from the
-'                                       build service. Reading one earlier
+'  dictionary, choices, exports, ana    Linelist. Prepare sets them from
+'                                       InitTransfer. Reading one earlier
 '                                       raises and names Prepare.
 '  geo, passwords, translations         Designer until Prepare runs, linelist
 '                                       afterwards. Prepare overwrites them.
@@ -50,14 +50,14 @@ End Enum
 '  TemporarySheetName                   A constant table, backed by no sheet.
 '
 'The four names on the first row had designer-side loaders until 2026-07-30.
-'RequiredSheetNames() stopped asking for those four worksheets when the build
-'service began importing them straight from the setup file, so a loader either
+'RequiredSheetNames() stopped asking for those four worksheets when the
+'transfer began importing them straight from the setup file, so a loader either
 'built a manager over a leftover designer sheet at the wrong anchor row, or
 'raised a message naming the designer when the caller's real mistake was
 'calling before Prepare. They are guards now.
 '@depends LLdictionary, LLChoices, LLTranslation, LLGeo, LLExport, Analysis
 '@depends Passwords, LLFormat, FormulaData, LLVariables, Formulas
-'@depends LLBuild, TemporaryRepos, ApplicationState
+'@depends InitTransfer, TemporaryRepos, ApplicationState
 '@depends TranslationObject, HiddenNames, Checking, BetterArray
 '@version 1.2 (2026-07-30)
 
@@ -555,7 +555,7 @@ End Sub
 '@details
 'Only includes sheets that LinelistSpecs reads directly from the designer
 'workbook. Pass-through sheets (Dictionary, Choices, Analysis, Export) are
-'excluded because the build service imports them from the setup file
+'excluded because InitTransfer imports them from the setup file
 'directly into the linelist.
 '@return Variant. Array of sheet name strings.
 Private Function RequiredSheetNames() As Variant
@@ -633,7 +633,7 @@ End Function
 'a worksheet RequiredSheetNames() guarantees is present.
 '
 'The four that live on the LINELIST have no loader. Prepare sets them from the
-'build service, and their accessors raise before that. A loader for them used
+'transfer, and their accessors raise before that. A loader for them used
 'to resolve a designer worksheet the designer no longer carries.
 
 '@label:require-prepared
@@ -1010,7 +1010,7 @@ End Function
 '@prop-title Linelist dictionary
 '@details
 'The LLdictionary instance over the Dictionary worksheet of the LINELIST
-'workbook. Prepare sets it from the build service.
+'workbook. Prepare sets it from InitTransfer.
 '@return LLdictionary. The dictionary collaborator.
 '@throws ProjectError.ErrorUnexpectedState When Prepare has not run.
 '@export
@@ -1023,7 +1023,7 @@ End Property
 '@prop-title Choices catalogue
 '@details
 'The LLChoices instance over the Choices worksheet of the LINELIST workbook.
-'Prepare sets it from the build service.
+'Prepare sets it from InitTransfer.
 '@return LLChoices. The choices collaborator.
 '@throws ProjectError.ErrorUnexpectedState When Prepare has not run.
 '@export
@@ -1048,7 +1048,7 @@ End Property
 '@prop-title Analysis setup specifications
 '@details
 'The Analysis instance over the Analysis worksheet of the LINELIST workbook.
-'Prepare sets it from the build service.
+'Prepare sets it from InitTransfer.
 '@return Analysis. The analysis collaborator.
 '@throws ProjectError.ErrorUnexpectedState When Prepare has not run.
 '@export
@@ -1061,7 +1061,7 @@ End Property
 '@prop-title Export column specifications
 '@details
 'The LLExport instance over the Exports worksheet of the LINELIST workbook.
-'Prepare sets it from the build service.
+'Prepare sets it from InitTransfer.
 '@return LLExport. The export collaborator.
 '@throws ProjectError.ErrorUnexpectedState When Prepare has not run.
 '@export
@@ -1322,33 +1322,36 @@ End Property
 'error-managing the specifications workbook.
 
 '@label:prepare
-'@sub-title Prepare all specifications using a build service
+'@sub-title Prepare all specifications from the setup file and the designer
 '@details
 'Runs the whole preparation:
 '1. Creates a temporary repository for working files.
 '2. Creates the output workbook, from the template when one is configured.
-'3. Imports the pass-through components straight from setup into the linelist.
-'4. Exports the designer-sourced components (geo, passwords, translations,
-'   formatter, language hidden names) into the linelist.
-'5. Builds the domain managers on the linelist workbook.
-'6. Takes those instances from the service, which is what points the four
-'   pass-through collaborators at the linelist.
-'7. Imports the geobase the user asked for.
-'8. Prepares the dictionary with the preserved sheet names.
-'9. Adds the "list auto" column when the dictionary has none.
-'10. Translates and sorts the collaborators.
-'11. Writes the debugging password into the linelist.
+'3. Hands the setup path and that workbook to InitTransfer, which fills it with
+'   the pass-through components taken straight from the setup, the
+'   designer-sourced ones (geo, passwords, translations, formatter, language
+'   hidden names), and the setup translation table.
+'4. Builds the domain managers on the linelist workbook, which is what points
+'   the four pass-through collaborators at the linelist.
+'5. Imports the geobase the user asked for.
+'6. Prepares the dictionary with the preserved sheet names.
+'7. Adds the "list auto" column when the dictionary has none.
+'8. Translates and sorts the collaborators.
+'9. Writes the debugging password into the linelist.
 '
 'A failure anywhere closes the output workbook, drops the temporary
 'repository and restores the application state, then re-raises. The caller
 'creates its Linelist after this returns, so a Prepare that leaked left an
 'orphaned workbook open and temporary files on disk every time.
-'@param buildService LLBuild. The configured build service.
+'
+'The setup path is checked before any of that runs. The check InitTransfer does
+'is the same one, and it is the one that matters, but by the time it runs a
+'temporary folder and a workbook already exist.
 '@param setupPath String. Full path to the setup workbook.
-'@throws ProjectError.ObjectNotInitialized When buildService is Nothing.
+'@throws ProjectError.ObjectNotInitialized When setupPath is empty.
 '@throws ProjectError.ErrorUnexpectedState When an unexpected error occurs.
 '@export
-Public Sub Prepare(ByVal buildService As LLBuild, ByVal setupPath As String)
+Public Sub Prepare(ByVal setupPath As String)
     Dim dict As LLdictionary
     Dim choicesObj As LLChoices
     Dim exportsObj As LLExport
@@ -1365,9 +1368,9 @@ Public Sub Prepare(ByVal buildService As LLBuild, ByVal setupPath As String)
     Dim errNumber As Long
     Dim errDescription As String
 
-    If buildService Is Nothing Then
+    If LenB(Trim$(setupPath)) = 0 Then
         ThrowError ProjectError.ObjectNotInitialized, _
-                  "A build service is required to prepare specifications"
+                  "A setup file path is required to prepare specifications"
     End If
 
     On Error GoTo CleanFail
@@ -1389,34 +1392,28 @@ Public Sub Prepare(ByVal buildService As LLBuild, ByVal setupPath As String)
         Set outWkb = Workbooks.Add
     End If
 
-    'Export pass-through data directly from setup to linelist (skip designer)
-    buildService.ImportSetupToLinelist setupPath, outWkb
+    'Fill the linelist: the setup's pass-through components, the designer's own,
+    'and the setup translation table on top of the exported translation sheet.
+    InitTransfer.TransferToLinelist this.specsWkb, setupPath, outWkb
 
-    'Export designer-sourced components (geo, passwords, translations, etc.)
-    buildService.ExportDesignerComponents outWkb
+    'Build the domain managers on the linelist workbook
+    Set this.dictionary = InitTransfer.LinelistDictionary(outWkb)
+    Set this.choices = InitTransfer.LinelistChoices(outWkb)
+    Set this.exports = InitTransfer.LinelistExports(outWkb)
+    Set this.ana = InitTransfer.LinelistAnalysis(outWkb)
+    Set this.geo = InitTransfer.LinelistGeo(outWkb)
+    Set this.passwords = InitTransfer.LinelistPasswords(outWkb)
+    Set this.translations = InitTransfer.LinelistTranslations(outWkb)
 
-    'Build domain manager instances on the linelist workbook
-    buildService.BuildExportedInstances outWkb
-
-    'Retrieve exported domain instances from the service
-    Set this.dictionary = buildService.ExportedDictionary
-    Set this.choices = buildService.ExportedChoices
-    Set this.exports = buildService.ExportedExport
-    Set this.ana = buildService.ExportedAnalysis
-    Set this.geo = buildService.ExportedGeo
-    Set this.passwords = buildService.ExportedPasswords
-    Set this.translations = buildService.ExportedTranslations
-
-    'The build service swallows a failed Create, so this arrives Nothing when
-    'the linelist's translation sheet is missing a table. EnsureTranslations
-    'would then build one over the DESIGNER's translation sheet and the whole
-    'build would be translated from the designer's tables and the designer's
-    'language names, with nothing said.
+    'A missing worksheet is the one case that answers Nothing rather than
+    'raising, and this is the collaborator where a Nothing costs the most.
+    'EnsureTranslations would build one over the DESIGNER's translation sheet
+    'and the whole build would be translated from the designer's tables and the
+    'designer's language names, with nothing said.
     If this.translations Is Nothing Then
         ThrowError ProjectError.ElementNotFound, _
                    "The translation manager could not be built on the linelist " & _
-                   "workbook. Its translation worksheet is missing or one of its " & _
-                   "five tables is absent."
+                   "workbook: it carries no translation worksheet."
     End If
 
     Set this.outputWkb = outWkb
@@ -1472,11 +1469,11 @@ CleanUpAfterFail:
 
     'ProjectError runs 1001, 1002 and 1004 to 1008. The test this replaced was
     'a range from ErrorNone to ElementNotFound, which left SomethingWentWrong
-    'above the upper bound and rewrote it as ErrorUnexpectedState. The build
-    'service raises exactly that code when it cannot open the setup workbook,
-    'which is the most likely failure of the direct import path, and its
-    'identity was destroyed. The old window also swallowed the whole native VBA
-    'range, where Excel's own 1004 collides with ErrorUnexpectedState.
+    'above the upper bound and rewrote it as ErrorUnexpectedState. InitTransfer
+    'raises exactly that code when it cannot open the setup workbook, which is
+    'the most likely failure of the direct import path, and its identity was
+    'destroyed. The old window also swallowed the whole native VBA range, where
+    'Excel's own 1004 collides with ErrorUnexpectedState.
     Select Case errNumber
         Case ProjectError.InvalidArgument, ProjectError.ObjectNotInitialized, _
              ProjectError.ErrorUnexpectedState To ProjectError.SomethingWentWrong
@@ -1496,7 +1493,7 @@ End Sub
 '@prop-title The output linelist workbook created during Prepare
 '@details
 'Returns the linelist workbook created by Prepare that received exported
-'data from the import service. Returns Nothing before Prepare is called.
+'data from InitTransfer. Returns Nothing before Prepare is called.
 '@return Workbook. The linelist workbook, or Nothing.
 '@export
 Public Property Get LLWorkbook() As Workbook

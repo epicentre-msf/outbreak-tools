@@ -15,7 +15,7 @@ Option Explicit
 'The fixture is a designer workbook carrying the seven sheets
 'RequiredSheetNames() asks for. The four pass-through sheets are absent from it
 'on purpose, which is what a designer looks like after the setup-to-linelist
-'migration: the build service imports Dictionary, Choices, Analysis and Exports
+'migration: InitTransfer imports Dictionary, Choices, Analysis and Exports
 'straight from the setup file into the linelist.
 '@depends LinelistSpecs, CustomTest, LLdictionary
 
@@ -208,26 +208,35 @@ End Sub
 '@section Prepare
 '===============================================================================
 
-'@sub-title Prepare refuses to run without a build service.
+'@sub-title Prepare refuses to run without a setup file path.
+'@details
+'The check has to come before the temporary folder and the output workbook are
+'created, or an empty path costs a folder on disk and an orphaned workbook
+'before InitTransfer gets to say the same thing.
 '@TestMethod("LinelistSpecs")
-Public Sub TestPrepareRequiresImportService()
-    CustomTestSetTitles Assert, "LinelistSpecs", "TestPrepareRequiresImportService"
+Public Sub TestPrepareRequiresSetupPath()
+    CustomTestSetTitles Assert, "LinelistSpecs", "TestPrepareRequiresSetupPath"
     On Error GoTo TestFail
 
     Dim errNumber As Long
+    Dim openBooks As Long
+
+    openBooks = Workbooks.Count
 
     On Error Resume Next
-        Specs.Prepare Nothing, vbNullString
+        Specs.Prepare vbNullString
         errNumber = Err.Number
     On Error GoTo 0
 
     On Error GoTo TestFail
     Assert.AreEqual CLng(ProjectError.ObjectNotInitialized), errNumber, _
-                    "Prepare refuses to run with no build service"
+                    "Prepare refuses to run with no setup file path"
+    Assert.AreEqual CLng(openBooks), CLng(Workbooks.Count), _
+                    "The refusal leaves no output workbook open"
 
     Exit Sub
 TestFail:
-    CustomTestLogFailure Assert, "TestPrepareRequiresImportService", _
+    CustomTestLogFailure Assert, "TestPrepareRequiresSetupPath", _
                          Err.Number, Err.Description
 End Sub
 
@@ -254,7 +263,7 @@ End Sub
 
 '@sub-title Every pass-through collaborator raises before Prepare has run.
 '@details
-'These four live on the linelist workbook and the build service is what sets
+'These four live on the linelist workbook and InitTransfer is what sets
 'them. Reading one on a fresh facade used to resolve a designer worksheet that
 'the designer no longer carries, so the caller got either stale data or a
 'message pointing at the wrong workbook.
@@ -504,7 +513,7 @@ End Function
 '@sub-title Seed a workbook with the worksheets a designer has to carry.
 '@details
 'Only the seven sheets RequiredSheetNames() asks for are created. Dictionary,
-'Choices, Analysis and Exports are left out because the build service imports
+'Choices, Analysis and Exports are left out because InitTransfer imports
 'them straight from the setup file into the linelist.
 '@param targetBook Workbook. The workbook to seed.
 '@param excludeSheet String. One sheet name to leave out, for the refusal test.

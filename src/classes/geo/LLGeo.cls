@@ -71,7 +71,9 @@ End Enum
 'WHO OWNS RNG_MetaLang
 '-------------------------------------------------------------------------------
 'This class reads RNG_MetaLang in ExportToWkb and never writes it. The writers
-'are LLBuild and the geobase import round trip.
+'are InitTransfer, which stamps the meta language picked on the designer's Main
+'sheet onto the designer geo sheet just before the export, and the geobase
+'import round trip.
 '@depends BetterArray, Checking, CustomTable, DropdownLists, HiddenNames, LLdictionary, LLVariables, Passwords
 
 '@section State

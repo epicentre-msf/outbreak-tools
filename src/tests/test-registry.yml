@@ -399,7 +399,7 @@ suites:
   # this block stays this size. CrossTable.Create types the parameter Object
   # and reads two members off it at run time, the same way
   # TableSpecs.RowCategories does. Registering LinelistSpecs instead would pull
-  # in LLTranslation, LLGeo, DesignerTranslation, LLBuild and
+  # in LLTranslation, LLGeo, DesignerTranslation, InitTransfer and
   # TemporaryRepos across four more folders. TestCrossTable hands over
   # LinelistDataStub, registered under `helpers`.
   #
@@ -571,7 +571,7 @@ suites:
   # --- geo (LLGeo, for LinelistSpecs) ----------------------------------------
   # LLGeo owns the Geo worksheet: the four admin tables, the health facility
   # table, the level-name translations and the metadata table. LinelistSpecs
-  # holds one and the build service returns one, so it travels with them.
+  # holds one and InitTransfer returns one, so it travels with them.
   #
   # It names BetterArray, HiddenNames, Passwords and Checking, all baked into
   # the driver workbook, plus LLdictionary and LLVariables (registered under
@@ -607,17 +607,24 @@ suites:
       - module: TestLLSpatial
         covers: [LLSpatial]
 
-  # --- designer (LLBuild) ---------------------------------------
-  # LinelistSpecs.Prepare takes a LLBuild and the parameter is
-  # typed, so the class has to be in the workbook. A class row is resolved
-  # against src/classes/<the suite folder>/, so it needs a block naming its own
-  # folder.
+  # --- designer (InitTransfer) ----------------------------------------------
+  # LinelistSpecs.Prepare calls InitTransfer.TransferToLinelist and its seven
+  # manager builders, so the module has to be in the workbook. A module row is
+  # resolved against src/modules/<the suite folder>/, so it needs a block
+  # naming its own folder.
   #
-  # LLBuild names Analysis, LLChoices, LLExport, LLFormat, LLGeo,
+  # It replaced the LLBuild class on 2026-07-31, and the row moved from
+  # `classes` to `modules` with it. The class held its seven exported managers
+  # in a UDT only to carry them from one method call to the next, and
+  # LinelistSpecs.Prepare, its one caller, copied all seven out again the
+  # moment they were built.
+  #
+  # InitTransfer names Analysis, LLChoices, LLExport, LLFormat, LLGeo,
   # LLTranslation, LLdictionary, Passwords and HiddenNames. LLGeo is right
   # above, LLTranslation is under `linelist` below, Analysis is under
   # `analyses`, and the rest are already registered or baked in. So this one
-  # row opens nothing further.
+  # row opens nothing further. Its nine public names clash with nothing already
+  # in the driver workbook.
   #
   # DesignerTranslation has NO row here. LinelistSpecs held one in a field
   # reached only through a property with no caller anywhere, and both went with
@@ -627,19 +634,19 @@ suites:
   #
   # This block has no suite yet. src/tests/designer/ is unregistered.
   - folder: designer
-    classes:
-      - name: LLBuild
+    modules:
+      - InitTransfer
 
   # --- linelist (LinelistSpecs, LLTranslation) -------------------------------
   # THIS IS THE FIRST TIME EITHER CLASS HAS BEEN COMPILED. The whole generation
   # path sat in the expansion backlog below, so LinelistSpecs, Linelist,
-  # LLDataEntry, CodeTransfer, LLTranslation and LLBuild were never
+  # LLDataEntry, CodeTransfer and LLTranslation were never
   # imported and the green baseline said nothing about any of them.
   #
   # LinelistSpecs is the facade over the designer's seven required sheets, and
   # after Prepare it is the handle on the linelist's domain managers. Its
-  # closure is five class rows across four blocks: these two, plus LLGeo under
-  # `geo`, LLBuild under `designer`, and
+  # closure is five rows across four blocks: these two classes, plus LLGeo
+  # under `geo`, the InitTransfer module under `designer`, and
   # TemporaryRepos under `general`. Everything else LINELISTSPECS names is
   # registered already (Analysis, ApplicationState, FormulaData, Formulas,
   # LLChoices, LLExport, LLFormat, LLVariables, LLdictionary) or baked into the

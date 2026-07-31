@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Designer")
 '@ModuleDescription("Non-core ribbon callbacks for the designer workbook.")
-'@depends DesignerPreparation, DesignerEntry, RibbonDev, LLGeo, ApplicationState, OSFiles, HiddenNames, BetterArray, DropdownLists, DropdownLists, LLBuild, LinelistSpecs, LinelistSpecs, Linelist, Linelist, LLDataEntry, LLSheets, GenerationReport
+'@depends DesignerPreparation, DesignerEntry, RibbonDev, LLGeo, ApplicationState, OSFiles, HiddenNames, BetterArray, DropdownLists, DropdownLists, InitTransfer, LinelistSpecs, LinelistSpecs, Linelist, Linelist, LLDataEntry, LLSheets, GenerationReport
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 'Non-core ribbon logics are callbacks whose absence will not fire a
@@ -325,7 +325,6 @@ End Sub
 Public Sub clickGenerate()
     Dim entry As DesignerEntry
     Dim appScope As ApplicationState
-    Dim buildService As LLBuild
     Dim specs As LinelistSpecs
     Dim ll As Linelist
     Dim setupPath As String
@@ -344,17 +343,15 @@ Public Sub clickGenerate()
 
     setupPath = entry.ValueOf("setuppath")
 
-    'Build the linelist: export setup data directly to linelist, then
-    'export designer-sourced components (geo, passwords, translations, etc.)
+    'Build the linelist: Prepare creates the output workbook and hands it to
+    'InitTransfer, which fills it from the setup file and from this designer.
     entry.AddInfo entry.TranslateMessage("MSG_ReadSetup"), "edition"
 
     'Initialise the generation report on the designer __checking sheet
     GenerationReport.InitReport ThisWorkbook
 
-    Set buildService = LLBuild.Create(ThisWorkbook)
-
     Set specs = LinelistSpecs.Create(ThisWorkbook)
-    specs.Prepare buildService, setupPath
+    specs.Prepare setupPath
 
     'Flush Phase 1: specification checkings (dictionary, choices, exports, etc.)
     GenerationReport.FlushCheckings GenerationReport.HarvestSpecsCheckings(specs)

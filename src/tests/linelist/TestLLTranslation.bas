@@ -12,7 +12,7 @@ Option Explicit
 'Tab_Translations. That last one is the setup's own translation table, copied
 'onto the linelist translation worksheet while the linelist is built, and it is
 'what translates the dictionary, the choices and the analyses. Every linelist
-'form module builds one of these, and so do the build service, the exporter and
+'form module builds one of these, and so do InitTransfer, the exporter and
 'LinelistSpecs.
 '
 'THE FIXTURE SPEAKS TWO LANGUAGES

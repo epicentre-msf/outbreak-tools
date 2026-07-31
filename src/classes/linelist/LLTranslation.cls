@@ -49,9 +49,9 @@ End Enum
 'T_TradLLRibbon the ribbon labels.
 '
 'Tab_Translations is the SETUP's translation table, which is a different thing
-'from the linelist dictionary. The setup file carries it, the build service
-'copies it onto this worksheet while the linelist is being built, and it is
-'what translates the dictionary, the choices and the analyses.
+'from the linelist dictionary. The setup file carries it, InitTransfer copies it
+'onto the linelist's copy of this worksheet while the linelist is being built,
+'and it is what translates the dictionary, the choices and the analyses.
 'ImportDictionary is the copy in and ExportDictionary the copy out: a data
 'export from a linelist carries this table on its own.
 '
@@ -264,6 +264,12 @@ End Sub
 'sheet name, then exports every ListObject from the host sheet using
 'CustomTable.Export with stacking. Formats the used range and sets the sheet
 'visibility to the Hide parameter value.
+'
+'Tab_Translations is written LAST, under the other four. InitTransfer
+'overwrites it with the setup's own table as soon as the sheet has arrived, and
+'CustomTable.Import writes the incoming rows over the cells below the table
+'rather than inserting them. Anywhere but the bottom of the stack, a setup
+'table with more rows than the designer carries would land on the table below.
 '@param outputWkb Workbook. The destination workbook.
 '@param Hide Optional Long. Sheet visibility after export. Defaults to
 'xlSheetVeryHidden.
@@ -288,10 +294,18 @@ Public Sub Export(ByVal outputWkb As Workbook, _
     startLine = 1
 
     For Each Lo In sh.ListObjects
-        Set tableAdapter = CustomTable.Create(Lo)
-        tableAdapter.Export exportSheet, startLine:=startLine, addListObject:=True, clearSheet:=False
-        startLine = startLine + Lo.Range.Rows.Count + 2
+        If Lo.Name <> DICTTRANS Then
+            Set tableAdapter = CustomTable.Create(Lo)
+            tableAdapter.Export exportSheet, startLine:=startLine, addListObject:=True, clearSheet:=False
+            startLine = startLine + Lo.Range.Rows.Count + 2
+        End If
     Next
+
+    'The setup table closes the stack, so the rewrite it takes on the target
+    'sheet has empty rows under it to grow into.
+    Set Lo = ResolveListObject(DICTTRANS)
+    Set tableAdapter = CustomTable.Create(Lo)
+    tableAdapter.Export exportSheet, startLine:=startLine, addListObject:=True, clearSheet:=False
 
     FormatExportSheet exportSheet, Hide
 End Sub
@@ -363,9 +377,11 @@ End Sub
 'Overwrites Tab_Translations with the supplied ListObject, which is the
 'translation table of the setup file. The host table takes the source column
 'headers with keepSourceHeaders, so it comes out carrying the language columns
-'the setup carries. LLBuild calls this while the linelist is
-'being built, and what lands here is what translates the dictionary, the
-'choices and the analyses.
+'the setup carries. InitTransfer calls this on the LINELIST's translation
+'sheet while the linelist is being built, and what lands here is what
+'translates the dictionary, the choices and the analyses. The designer's own
+'translation sheet is never written this way: its four linelist tables are
+'maintained by hand, through the designer's import button.
 '@param dictionaryTable ListObject. The setup translation ListObject.
 '@throws ProjectError.ObjectNotInitialized When dictionaryTable is Nothing.
 '@throws ProjectError.ElementNotFound When the host dictionary table is
@@ -440,7 +456,7 @@ End Sub
 'Translates message and sheet-name tags using the TranslationOfMessages
 'scope, then writes each translated value as a workbook-level hidden name
 'on the target workbook. The three language names are left alone: they are
-'written by the build service and by Linelist before this runs.
+'written by InitTransfer and by Linelist before this runs.
 '
 'When the target workbook is the one holding the translation worksheet, the
 'store this instance already carries is used, which saves a second walk over
