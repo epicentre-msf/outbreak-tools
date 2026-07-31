@@ -432,7 +432,7 @@ Public Function TopHF(ByVal adminOrder As Integer, _
 End Function
 
 
-'@section Private — HList change handler
+'@section Private -- HList change handler
 '===============================================================================
 
 '@sub-title Handle value changes on HList sheets.
@@ -617,7 +617,7 @@ ErrHand:
 End Sub
 
 
-'@section Private — VList change handler
+'@section Private -- VList change handler
 '===============================================================================
 
 '@sub-title Handle value changes on VList sheets.
@@ -705,7 +705,7 @@ ErrHandler:
 End Sub
 
 
-'@section Private — Analysis change handler
+'@section Private -- Analysis change handler
 '===============================================================================
 
 '@sub-title Handle value changes on analysis sheets.
@@ -781,7 +781,7 @@ ErrHandler:
 End Sub
 
 
-'@section Private — Spatial table update handlers
+'@section Private -- Spatial table update handlers
 '===============================================================================
 
 '@sub-title Update formulas in a single spatial table when user changes admin level.
@@ -986,7 +986,7 @@ Private Sub FormatDevidePop(ByVal rngName As String)
 End Sub
 
 
-'@section Private — Selection change handler
+'@section Private -- Selection change handler
 '===============================================================================
 
 '@sub-title Handle selection changes on HList sheets.
@@ -1066,7 +1066,7 @@ ErrHand:
 End Sub
 
 
-'@section Private — List auto helpers
+'@section Private -- List auto helpers
 '===============================================================================
 
 '@sub-title Update the list-auto dropdowns for a single sheet.
@@ -1112,7 +1112,7 @@ NextCol:
 End Sub
 
 
-'@section Private — Multiple choice helper
+'@section Private -- Multiple choice helper
 '===============================================================================
 
 '@sub-title Handle multiple choice dropdown value toggling.
@@ -1161,7 +1161,7 @@ ErrHandler:
 End Sub
 
 
-'@section Private — Unique values helper
+'@section Private -- Unique values helper
 '===============================================================================
 
 '@sub-title Return unique values from a BetterArray.
@@ -1195,7 +1195,7 @@ Private Function GetUniqueBA(ByRef inputTable As BetterArray, _
 End Function
 
 
-'@section Private — Sheet metadata helpers
+'@section Private -- Sheet metadata helpers
 '===============================================================================
 
 '@sub-title Get the sheet type tag from worksheet-level HiddenNames.
@@ -1208,7 +1208,7 @@ Private Function SheetTag(ByRef sh As Worksheet) As String
 End Function
 
 
-'@section Private — Lazy initialisation
+'@section Private -- Lazy initialisation
 '===============================================================================
 
 '@sub-title Lazily initialise translation, message translator, and hidden names.
@@ -1337,7 +1337,7 @@ Private Function SheetOrNothing(ByRef sheetName As String) As Worksheet
 End Function
 
 
-'@section Private — Cache management
+'@section Private -- Cache management
 '===============================================================================
 
 '@sub-title Clear all lazily-cached domain managers.
@@ -1354,7 +1354,7 @@ Private Sub ResetInternalCaches()
 End Sub
 
 
-'@section Private — Error handling
+'@section Private -- Error handling
 '===============================================================================
 
 '@sub-title Raise a ProjectError-based exception.

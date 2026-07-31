@@ -68,7 +68,7 @@ Public Sub ExecuteModule(ByVal modName As String)
     If LenB(moduleName) = 0 Then Exit Sub
 
     BusyApp
-    SafeRun moduleName, "ModuleInitialize"
+    RunProcedure moduleName, "ModuleInitialize"
     DoEvents
 
     Set tests = DiscoverTests(moduleName)
@@ -81,7 +81,7 @@ Public Sub ExecuteModule(ByVal modName As String)
     End If
 
     DoEvents
-    SafeRun moduleName, "ModuleCleanup"
+    RunProcedure moduleName, "ModuleCleanup"
 End Sub
 
 '@label RunSingleTest
@@ -103,11 +103,11 @@ Private Sub RunSingleTest(ByVal moduleName As String, _
     routineName = Trim$(routineName)
     If LenB(routineName) = 0 Then Exit Sub
 
-    SafeRun moduleName, "TestInitialize"
+    RunProcedure moduleName, "TestInitialize"
     DoEvents
-    SafeRun moduleName, routineName
+    RunProcedure moduleName, routineName
     DoEvents
-    SafeRun moduleName, "TestCleanup"
+    RunProcedure moduleName, "TestCleanup"
 End Sub
 
 
@@ -125,10 +125,26 @@ CleanValue:
     NormaliseModuleName = vbNullString
 End Function
 
-'@label SafeRun
-'@sub-title Execute a module procedure while suppressing runtime errors
-Private Sub SafeRun(ByVal moduleName As String, _
-                    ByVal procedureName As String)
+'@label RunProcedure
+'@sub-title Execute one procedure of a test module by name
+'@details
+'The call is MODULE-QUALIFIED, and a qualified Application.Run reaches a Private
+'procedure. So a suite whose lifecycle hooks are declared Private is fine; what
+'a qualified run cannot reach is a module carrying Option Private Module.
+'
+'THIS SUPPRESSES NOTHING, AND THAT IS THE POINT
+'-------------------------------------------------------------------------------
+'The old name promised that it did, while the body has never carried an On Error
+'of any kind. Adding one would swallow a raise out of a test procedure as well,
+'because the test itself is run through here, and the run would come back green
+'over a fixture that never built. The name says what it does now.
+'
+'A module that defines none of the four hooks is fine: TestHelpersLite defines
+'none and every run is green with it first in the list.
+'@param moduleName String. The module holding the procedure.
+'@param procedureName String. The procedure to run.
+Private Sub RunProcedure(ByVal moduleName As String, _
+                         ByVal procedureName As String)
     If LenB(moduleName) = 0 Then Exit Sub
     If LenB(procedureName) = 0 Then Exit Sub
 

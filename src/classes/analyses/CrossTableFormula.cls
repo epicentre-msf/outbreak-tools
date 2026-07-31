@@ -514,6 +514,12 @@ Private Function PercentageDenominator(ByVal tabNames As AnalysisRanges, _
         Set rng = sh.Cells(totalRow, valueColumn)
     Case "total"
         Set rng = ResolvedRange(tabNames.TotalTotal)
+    Case Else
+        ' A setting the setup sheet never offered. The callers already test for
+        ' Nothing, so the cell is left alone; saying so is what stops an empty
+        ' percentage column reading as a formula the parser refused.
+        LogInfo "Table " & ID() & " asks for the percentage setting '" & _
+                percentageValue & "', which names no denominator", checkingWarning
     End Select
 
     Set PercentageDenominator = rng
@@ -994,6 +1000,13 @@ Public Sub AddFormulas()
                         AddNonEmptyTableConditions colVar
                         AddNonEmptyTableConditions rowVar
                         WriteFormula cellRng, CurrentExcelFormula()
+                    Case Else
+                        ' A missing setting outside the four leaves the cell
+                        ' where the total row meets the total column with no
+                        ' formula, and the table still reads as complete.
+                        LogInfo "Table " & ID() & " asks for the missing setting '" & _
+                                missingValue & "', which this class does not write", _
+                                checkingWarning
                     End Select
                 End If
                 AddRngFormat tabFormat, cellRng
@@ -1501,6 +1514,13 @@ Public Sub AddFormulas()
                         AddNonEmptyTableConditions colVar
                         AddNonEmptyTableConditions rowVar
                         WriteFormula cellRng, CurrentExcelFormula()
+                    Case Else
+                        ' A missing setting outside the four leaves the cell
+                        ' where the total row meets the total column with no
+                        ' formula, and the table still reads as complete.
+                        LogInfo "Table " & ID() & " asks for the missing setting '" & _
+                                missingValue & "', which this class does not write", _
+                                checkingWarning
                     End Select
                 End If
                 AddRngFormat tabFormat, cellRng
@@ -1518,6 +1538,12 @@ Public Sub AddFormulas()
                 Set tableChecks = Checks
                 tableChecks.Append spatialChecks
             End If
+
+        Case Else
+            ' A scope outside the five wrote no formula and said nothing, so the
+            ' table reached the delivered file empty and the report read clean.
+            LogInfo "Table " & tabId & " has a scope this class writes no formulas for", _
+                    checkingWarning
 
         End Select
     End With

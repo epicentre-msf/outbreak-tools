@@ -3204,3 +3204,86 @@ TestFail:
     CustomTestLogFailure Assert, "TestTemporalTableReportsNoTotalWithNoColumnVariable", _
                          Err.Number, Err.Description
 End Sub
+
+'@section Issue 338 - the total row of a temporal section
+'===============================================================================
+'@description
+'A temporal section writes its Total and Missing labels whatever the tables of
+'the section asked for, because the row block is a fixed grid and the category
+'range is trimmed by count. So the answer to "Add total" is carried by the
+'visibility of the row rather than by whether it was written, and these two
+'tests are the pair that says so.
+
+'@sub-title A temporal table that asked for no total hides the Total row.
+'@details
+'This is what the field reported in issue 338: "Add total" left empty and a
+'Total row on the sheet anyway. The row is written by AddRows and hidden by
+'Format, so the assertion has to come after both.
+'@TestMethod("CrossTable")
+Public Sub TestATemporalTableWithNoTotalHidesTheTotalRow()
+    Dim tabl As CrossTable
+    Dim sh As Worksheet
+    Dim designFormat As LLFormat
+    Dim tabId As String
+
+    CustomTestSetTitles Assert, "CrossTable", "TestATemporalTableWithNoTotalHidesTheTotalRow"
+    On Error GoTo TestFail
+
+    BuildFixture TABLE_TIMESERIES, TimeSeriesHeader(), TimeSeriesRows("")
+    Set sh = OutputSheet()
+    Set tabl = BuildTable(sh, 1)
+    tabId = tabl.Specifications.TableId
+    Set designFormat = LLFormat.Create(PrepareLLFormatFixture(FORMAT_SHEET))
+
+    tabl.Format designFormat
+
+    Assert.IsTrue (Not tabl.Specifications.TotalRequested), _
+                  "The row leaves Add total empty, so no total was asked for"
+    Assert.IsTrue RangeExistsOnSheet(sh, "TOTAL_ROW_" & tabId), _
+                  "The Total row is still written, because the temporal row " & _
+                  "block is a fixed grid trimmed by count"
+    Assert.IsTrue sh.Range("TOTAL_ROW_" & tabId).EntireRow.Hidden, _
+                  "And it is hidden, which is what issue 338 asked for"
+
+    sh.Range("TOTAL_ROW_" & tabId).EntireRow.Hidden = False
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestATemporalTableWithNoTotalHidesTheTotalRow", _
+                         Err.Number, Err.Description
+End Sub
+
+'@sub-title A temporal table that asked for a total shows the Total row.
+'@details
+'The other half of the same answer. Nothing hides a row a table has asked for,
+'which is what keeps the result independent of the order a section is built in.
+'@TestMethod("CrossTable")
+Public Sub TestATemporalTableWithATotalShowsTheTotalRow()
+    Dim tabl As CrossTable
+    Dim sh As Worksheet
+    Dim designFormat As LLFormat
+    Dim tabId As String
+
+    CustomTestSetTitles Assert, "CrossTable", "TestATemporalTableWithATotalShowsTheTotalRow"
+    On Error GoTo TestFail
+
+    BuildFixture TABLE_TIMESERIES, TimeSeriesHeader(), TimeSeriesRows("yes")
+    Set sh = OutputSheet()
+    Set tabl = BuildTable(sh, 1)
+    tabId = tabl.Specifications.TableId
+    Set designFormat = LLFormat.Create(PrepareLLFormatFixture(FORMAT_SHEET))
+
+    tabl.Format designFormat
+
+    Assert.IsTrue tabl.Specifications.TotalRequested, _
+                  "The row asks for a total"
+    Assert.IsTrue RangeExistsOnSheet(sh, "TOTAL_ROW_" & tabId), _
+                  "So the Total row is written"
+    Assert.IsTrue (Not sh.Range("TOTAL_ROW_" & tabId).EntireRow.Hidden), _
+                  "And it is left visible"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestATemporalTableWithATotalShowsTheTotalRow", _
+                         Err.Number, Err.Description
+End Sub

@@ -572,6 +572,15 @@ Private Sub AddGoTo(ByVal cellRng As Range, _
     Dim dropName As String
     Dim design As LLFormat
 
+    ' Five statements below can raise: the list add, the validation, the format,
+    ' the value write and the name. One of the two call sites is inside
+    ' BuildScope, which has nothing above it -- a raise there ends WriteAnalysis,
+    ' and clickGenerate's cleanup restores the application state and skips the
+    ' checkings flush, so the report the user needs to understand the failure is
+    ' the thing the failure destroys. A missing dropdown is worth a warning and
+    ' the rest of the sheet.
+    On Error GoTo DropdownFailed
+
     Set ll = OutputLL()
     Set design = DesignFormat()
 
@@ -585,6 +594,12 @@ Private Sub AddGoTo(ByVal cellRng As Range, _
     End If
 
     cellRng.Name = goToPrefix & GOTOSECCODE & goToSuffix
+    On Error GoTo 0
+    Exit Sub
+
+DropdownFailed:
+    LogInfo "The navigation dropdown " & goToPrefix & GOTOSECCODE & goToSuffix & _
+            " could not be built: " & Err.Description, checkingWarning
 End Sub
 
 '@section Temporal Section Helpers
@@ -666,7 +681,6 @@ Private Sub CloseTemporalSection(ByVal outsh As Worksheet, _
                                  ByVal goToHeaderLabel As String)
     Dim secId As String
     Dim lastTabId As String
-    Dim cellRng As Range
 
     If Not section.IsOpen() Then Exit Sub
 
@@ -675,18 +689,38 @@ Private Sub CloseTemporalSection(ByVal outsh As Worksheet, _
     section.EndSection
 
     WriteSectionBounds outsh, secId, section.MinFormula(), section.MaxFormula()
+    AddSectionGoTo outsh, secId, section.Headers(), scope, goToHeaderLabel
+
+    If scope = AnalysisScopeSpatioTemporal Then _
+        NameSpatioTemporalColumn outsh, secId, lastTabId
+End Sub
+
+'@label:add-section-go-to
+'@sub-title Hang the header dropdown of one section under its anchor
+'@details
+'The anchor is SECTION_<secId>, which CrossTable writes only in its new-section
+'branch, so a section whose anchor table failed has none. That failure used to
+'end CloseTemporalSection, which took NameSpatioTemporalColumn with it and left
+'SPT_FORMULA_COLUMN_<secId> uncreated -- a name GeoModule reads at runtime in the
+'delivered linelist. The two are guarded apart now, the way WriteSectionBounds
+'already was.
+'@param outsh Worksheet. The analysis sheet.
+'@param secId String. Identifier of the section.
+'@param headers BetterArray. The entries of the dropdown.
+'@param scope Byte. A constant from the AnalysisScope enum.
+'@param goToHeaderLabel String. Translated label of the dropdown.
+Private Sub AddSectionGoTo(ByVal outsh As Worksheet, ByVal secId As String, _
+                           ByVal headers As BetterArray, ByVal scope As Byte, _
+                           ByVal goToHeaderLabel As String)
+    Dim cellRng As Range
 
     On Error GoTo AnchorMissing
     Set cellRng = outsh.Range("SECTION_" & secId).Offset(2)
     On Error GoTo 0
 
-    AddGoTo cellRng:=cellRng, dropArray:=section.Headers(), _
+    AddGoTo cellRng:=cellRng, dropArray:=headers, _
             goToLabel:=goToHeaderLabel, goToPrefix:=GoToPrefixOf(scope), _
             goToSuffix:=secId
-
-    If scope = AnalysisScopeSpatioTemporal Then _
-        NameSpatioTemporalColumn outsh, secId, lastTabId
-
     Exit Sub
 
 AnchorMissing:
@@ -775,6 +809,14 @@ Private Sub WriteTable(ByVal loName As String, _
     Dim outshHn As HiddenNames
     Dim hasTable As Boolean
 
+    ' The last table this loop built. CrossTable.Previous reads the table above
+    ' it to place a continuation table, and building that ancestor from scratch
+    ' costs a cross-table and a specification walk per table. The loop already
+    ' holds it, so it hands it over. CrossTable compares the identifiers before
+    ' it trusts the gift: a row that passes validation and then fails inside
+    ' Build is still the nearest valid row above, so the two can disagree.
+    Dim prevTable As CrossTable
+
     ' Temporal state
     Dim section As TemporalSection
     Dim lastSecId As String
@@ -833,8 +875,9 @@ Private Sub WriteTable(ByVal loName As String, _
         ' mix their sections into one dropdown.
         If isNewSection Then sectionsList.Push goToSectionLabel & ": " & specs.Value("section")
 
-        Set tabl = CrossTable.Create(specs, outsh, lData)
+        Set tabl = CrossTable.Create(specs, outsh, lData, previousTable:=prevTable)
         tabl.Build
+        Set prevTable = tabl
         Set tabform = CrossTableFormula.Create(tabl, formData)
         tabform.AddFormulas
         tabl.Format design

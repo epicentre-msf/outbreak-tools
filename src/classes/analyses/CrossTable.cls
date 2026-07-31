@@ -33,8 +33,29 @@ Option Explicit
 'parameter as Object and dispatch on TypeName. A LinelistSpecs is what
 'AnalysisOutput passes, and the Object type keeps the 1,536-line LinelistSpecs
 'closure out of this class's compile dependencies, so the suite can drive it.
+'
+'THE FOUR BUILD PHASES RUN IN ONE ORDER AND THE ORDER IS LOAD-BEARING
+'-------------------------------------------------------------------------------
+'AddHeader inserts rows and shifts the sheet, AddRows sets EndRow, AddColumns
+'sets EndColumn and NumberOfColumns, and NameRanges reads all three. Build runs
+'them in that order and records how far it has gone; NameRanges and Format
+'refuse a table whose earlier phases have not run. Between AddHeader and AddRows
+'the layout is fixed: the start row is cached and the start column is written
+'onto the sheet.
+'
+'EACH OF THE THREE LARGE PHASES IS A DISPATCHER
+'-------------------------------------------------------------------------------
+'AddHeader, NameRanges and Format each carry one Select Case over the table
+'scope and hand the work to a small private aspect, the way VarWriter does.
+'
+'WHAT IS RESOLVED ONCE PER TABLE
+'-------------------------------------------------------------------------------
+'The table identifier, the table scope, the range-name builder, the spatial
+'type, the translation provider and the variable reader are read once and held.
+'Every phase used to re-derive its own copy, which is where two methods reading
+'one fact in two ways came from.
 '@depends AnalysisRanges, TableSpecs, TranslationObject, LLVariables, LLFormat, HiddenNames, BetterArray, Checking
-'@version 1.1 (2026-02-11)
+'@version 1.2 (2026-07-31)
 
 
 Private Type TCrossTable
@@ -47,12 +68,54 @@ Private Type TCrossTable
     tsHeader As String                           'Header for time series (used in go-to section)
     hasChecks As Boolean
     sealed As Boolean
+    tabId As String                              'Cached Specifications.TableId
+    tabType As Byte                              'Cached Specifications.TableScope
+    tabNames As AnalysisRanges                   'Range-name builder bound to tabId
+    spatialType As String                        'Cached Specifications.SpatialTableScopes
+    spatialTypeRead As Boolean
+    trans As TranslationObject                   'Cached translation provider
+    vars As LLVariables                          'Cached variable reader
+    prevTable As CrossTable                      'The table this one continues, kept
+    startRw As Long                              'Cached StartRow, valid after AddHeader
+    startRwRead As Boolean
+    phase As Byte                                'How far Build has gone
 End Type
 
 Private this As TCrossTable
 Private Const STANDARD_START_COL As Long = 3
 Private Const CLASS_NAME As String = "CrossTable"
 Private Const NB_ROWS_TIME_SERIES As Long = 56
+
+' The four build phases, in the order Build runs them. AddHeader inserts rows,
+' AddRows sets EndRow, AddColumns sets EndColumn and NumberOfColumns, and
+' NameRanges needs all three, so the order is load-bearing. RequirePhase is what
+' says so to the compiler-less reader and to the caller that gets it wrong.
+Private Const PHASE_HEADER As Byte = 1
+Private Const PHASE_ROWS As Byte = 2
+Private Const PHASE_COLUMNS As Byte = 3
+Private Const PHASE_NAMES As Byte = 4
+
+' The prefix lists Format walks. Each one was a BetterArray cleared and refilled
+' per table, and each list is the same for every table of a scope, so they are
+' written once here and split on use.
+Private Const TEMPORAL_DATE_CELLS As String = _
+    "START_DATE_|END_DATE_|VALIDATION_MIN_DATE_|" & _
+    "VALIDATION_MAX_DATE_|MIN_MIN_DATE_|MAX_MAX_DATE_"
+Private Const BAND_CELLS As String = _
+    "TOTAL_ROW_VALUES_|TOTAL_COL_VALUES_|MISSING_ROW_VALUES_|" & _
+    "MISSING_COL_VALUES_|TOTAL_PERC_VALUES_|MISSING_PERC_VALUES_"
+Private Const SINGLE_CELLS As String = _
+    "TOTAL_MISSING_|TOTAL_TOTAL_|USER_START_DATE_|USER_END_DATE_|TIME_UNIT_|" & _
+    "MISSING_TOTAL_|MISSING_MISSING_|START_DATE_LABEL_|TIME_UNIT_LABEL_|" & _
+    "END_DATE_LABEL_|POPFACT_|POPFACTLABEL_|INPUTSPTGEO_LABEL_"
+Private Const INFO_CELLS As String = _
+    "INFO_START_DATE_|INFO_END_DATE_|INFO_ANA_PERIOD_"
+Private Const HIDDEN_CELLS As String = _
+    "PREVIOUS_ADM_|POPPREVFACT_|POPFACT_|POPFACTLABEL_|" & _
+    "INPUTSPTGEO_NGEO_|INPUTPREVADM_USER_"
+Private Const PERCENT_CORNER_CELLS As String = _
+    "MISSING_MISSING_|TOTAL_TOTAL_|MISSING_TOTAL_"
+
 Private internalChecks As Checking
 
 ' Supplies the unique key every Checking.Add needs. It counts within one
@@ -81,6 +144,9 @@ Private checkCounter As Long
 'category resolution at build time. Production passes a LinelistSpecs. The type is Object so
 'that this class carries no compile dependency on it; the two members it needs, TransObject
 'and Categories, are resolved at run time.
+'@param previousTable Optional CrossTable. The table this one continues, when the
+'caller already holds it. A caller that walks the setup rows in order builds every
+'ancestor anyway, so handing the last one in saves this instance rebuilding it.
 '@return CrossTable. A fully initialized CrossTable ready for Build or individual step calls.
 '@throws InvalidArgument When specs is Nothing.
 '@throws InvalidArgument When outputWksh is Nothing.
@@ -88,7 +154,8 @@ Private checkCounter As Long
 '@export
 Public Function Create(ByVal specs As TableSpecs, _
                        ByVal outputWksh As Worksheet, _
-                       ByVal lData As Object) As CrossTable
+                       ByVal lData As Object, _
+                       Optional ByVal previousTable As CrossTable) As CrossTable
 
     If specs Is Nothing Then ThrowError InvalidArgument, "Table specifications not defined"
     If outputWksh Is Nothing Then ThrowError InvalidArgument, "Output worksheet not defined"
@@ -99,6 +166,7 @@ Public Function Create(ByVal specs As TableSpecs, _
     Set instance.Specifications = specs
     Set instance.Wksh = outputWksh
     Set instance.LinelistData = lData
+    If Not previousTable Is Nothing Then Set instance.PreviousTable = previousTable
     instance.Seal
     Set Create = instance
 End Function
@@ -109,9 +177,25 @@ End Function
 
 '@label:seal
 '@sub-title Seal the instance against further setup writes.
+'@details
+'Also resolves the two facts every phase of the build reads first -- the table
+'identifier and the table scope -- and binds the range-name builder to the
+'identifier. Neither can change while this instance lives, so each is read once
+'here instead of once per phase.
 Public Sub Seal()
     this.sealed = True
+    this.tabId = this.specs.TableId
+    this.tabType = this.specs.TableScope
+    Set this.tabNames = AnalysisRanges.Create(this.tabId)
 End Sub
+
+'@label:previous-table-set
+'@prop-title Assign the table this one continues.
+'@param tabl CrossTable. The preceding cross-table.
+Public Property Set PreviousTable(ByVal tabl As CrossTable)
+    GuardNotSealed "PreviousTable"
+    Set this.prevTable = tabl
+End Property
 
 '@label:guard-not-sealed
 '@sub-title Guard a setup setter against post-creation writes.
@@ -187,7 +271,8 @@ End Property
 '"Percent", and date-unit names.
 '@return TranslationObject. The translation object.
 Public Property Get Translations() As TranslationObject
-    Set Translations = this.lData.TransObject()
+    If this.trans Is Nothing Then Set this.trans = this.lData.TransObject()
+    Set Translations = this.trans
 End Property
 
 '@label:number-of-columns
@@ -206,6 +291,73 @@ End Property
 '@param col Long. The data column count to store.
 Private Property Let NumberOfColumns(ByVal col As Long)
     this.nbCols = col
+End Property
+
+'@section Cached Facts
+'===============================================================================
+'@description
+'Every phase of a build opened by re-deriving the same handful of facts, and
+'none of them can change while one instance lives. They are resolved once and
+'held here, the way VarWriter holds its collaborators.
+
+'@label:table-id
+'@prop-title Identifier of the table being built.
+'@return String. The table identifier, such as "TS_tab3".
+Private Property Get TableId() As String
+    TableId = this.tabId
+End Property
+
+'@label:table-scope
+'@prop-title Analysis scope of the table being built.
+'@return Byte. A member of AnalysisTableScope.
+Private Property Get TableScope() As Byte
+    TableScope = this.tabType
+End Property
+
+'@label:range-names
+'@prop-title Range-name builder bound to this table's identifier.
+'@return AnalysisRanges. The builder.
+Private Property Get RangeNames() As AnalysisRanges
+    Set RangeNames = this.tabNames
+End Property
+
+'@label:spatial-type
+'@prop-title Whether the spatial variable is geographic or a health facility.
+'@details
+'Resolved on first use rather than at creation, because the answer costs a
+'dictionary probe and the four non-spatial scopes never ask for it. An empty
+'answer is a real answer here, so a separate flag records that the probe ran.
+'@return String. "geo", "hf", or an empty string.
+Private Property Get SpatialType() As String
+    If Not this.spatialTypeRead Then
+        this.spatialType = this.specs.SpatialTableScopes()
+        this.spatialTypeRead = True
+    End If
+    SpatialType = this.spatialType
+End Property
+
+'@label:variables
+'@prop-title Variable reader over the dictionary of this build.
+'@details
+'AddRows and AddColumns each built one of these, and TableSpecs builds a third
+'for every category lookup. One per table is enough.
+'@return LLVariables. The variable reader.
+Private Property Get Variables() As LLVariables
+    If this.vars Is Nothing Then Set this.vars = LLVariables.Create(this.specs.Dictionary)
+    Set Variables = this.vars
+End Property
+
+'@label:value-of
+'@prop-title One setup column of the row this table is built from.
+'@details
+'Every read of the setup row goes through here. TableSpecs.Value scans its
+'cached header names, so the cost is one linear scan per call, and putting the
+'twenty-odd call sites behind one name is what makes a per-table memo a single
+'edit later.
+'@param colName String. The setup column to read, matched loosely.
+'@return String. The cell value, or an empty string.
+Private Property Get ValueOf(ByVal colName As String) As String
+    ValueOf = this.specs.Value(colName)
 End Property
 
 '@section Position Properties
@@ -235,23 +387,41 @@ End Property
 'mattered: ROWGS_SET, COLGS_SET, TIME_UNIT_LIST, ADM_UNIT_LIST and
 'POPULATION_FACTOR_LIST are each written on one sheet and read from four.
 Private Function RangeExists(ByVal rngName As String) As Boolean
+    RangeExists = (Not NamedRange(rngName) Is Nothing)
+End Function
+
+'@label:named-range
+'@sub-title Resolve a named range on the output worksheet, or Nothing.
+'@details
+'The answer to "does this name exist" and the answer to "give me the range"
+'were two separate name resolutions at every call site of RangeExists that went
+'on to read the range. Format alone did that about fifty times per table. This
+'answers both questions with one resolution.
+'@param rngName String. The name to look up.
+'@return Range. The range, or Nothing when the name is absent or owned by
+'another worksheet.
+'@remarks The owning sheet is compared by NAME. Wksh() hands back the stored
+'reference while Range.Worksheet builds a fresh wrapper over the same sheet, and
+'Is compares wrapper identity, so it can answer False for the very sheet it was
+'handed. An Is answering False for the right sheet makes this function answer
+'Nothing everywhere, and every "did I already build this" guard then rebuilds:
+'AddHeader re-inserts its section rows on each call and StartRow recomputes from
+'End(xlUp) against a sheet that just grew. The table walks down the sheet and the
+'run never finishes.
+Private Function NamedRange(ByVal rngName As String) As Range
     Dim rng As Range
+    Dim sh As Worksheet
+
+    Set sh = Wksh()
 
     On Error Resume Next
-    Set rng = Wksh().Range(rngName)
+    Set rng = sh.Range(rngName)
     On Error GoTo 0
 
     If rng Is Nothing Then Exit Function
+    If StrComp(rng.Worksheet.Name, sh.Name, vbTextCompare) <> 0 Then Exit Function
 
-    ' Compared by NAME. Wksh() hands back the stored reference while
-    ' Range.Worksheet builds a fresh wrapper over the same sheet, and Is compares
-    ' wrapper identity, so it can answer False for the very sheet it was handed.
-    ' An Is answering False for the right sheet makes this function answer False
-    ' everywhere, and every "did I already build this" guard then rebuilds: AddHeader
-    ' re-inserts its section rows on each call and StartRow recomputes from
-    ' End(xlUp) against a sheet that just grew. The table walks down the sheet and
-    ' the run never finishes.
-    RangeExists = (StrComp(rng.Worksheet.Name, Wksh().Name, vbTextCompare) = 0)
+    Set NamedRange = rng
 End Function
 
 '@label:start-row
@@ -271,71 +441,107 @@ End Function
 'row as if this were a new section.
 '@return Long. The 1-based row number on the output worksheet where this table begins.
 '@remarks This property is called many times during a single Build cycle (by
-'StartColumn, AddRows, AddColumns, AddHeader, NameRanges, Format). After the
-'first call creates the STARTROW_ named range, subsequent calls are cheap
-'lookups.
+'StartColumn, AddRows, AddColumns, AddHeader, NameRanges, Format). Build resolves
+'it once, straight after AddHeader, and every later read is a field read.
+'
+'WHY THE CACHE IS FILLED AFTER AddHeader AND NOT AT CREATION
+'-------------------------------------------------------------------------------
+'AddHeader inserts rows above the table, which moves it down the sheet. Excel
+'moves the STARTROW_ name with it; a Long held from before the insert would be
+'stale. Nothing inserts rows above a table once its own header is written, so
+'from that point on the value is fixed for the life of the instance.
 Public Property Get StartRow() As Long
+    If this.startRwRead Then
+        StartRow = this.startRw
+    Else
+        StartRow = ComputeStartRow()
+    End If
+End Property
+
+'@label:cache-start-row
+'@sub-title Resolve the start row once and hold it.
+Private Sub CacheStartRow()
+    this.startRw = ComputeStartRow()
+    this.startRwRead = True
+End Sub
+
+'@label:compute-start-row
+'@sub-title Read or compute the start row from the worksheet.
+'@return Long. The 1-based row this table begins at.
+'@throws ErrorUnexpectedState When no branch could resolve a row.
+Private Function ComputeStartRow() As Long
     Dim sh As Worksheet
     Dim specs As TableSpecs
     Dim strtRow As Long
     Dim tabId As String
+    Dim startRowName As String
+    Dim rng As Range
 
     Set specs = Specifications()
-    tabId = specs.TableId
+    tabId = TableId()
+    startRowName = "STARTROW_" & tabId
     Set sh = Wksh()
 
+    Set rng = NamedRange(startRowName)
+    If Not rng Is Nothing Then
+        ComputeStartRow = rng.Row
+        Exit Function
+    End If
+
     With sh
-        If Not RangeExists("STARTROW_" & tabId) Then
-            If specs.IsNewSection() Or _
-               (specs.TableScope <> ScopeTimeSeries And specs.TableScope <> ScopeSpatioTemporal) Then
-                ' New section or non-temporal: compute from last used row
+        If specs.IsNewSection() Or _
+           (TableScope() <> ScopeTimeSeries And TableScope() <> ScopeSpatioTemporal) Then
+            ' New section or non-temporal: compute from last used row
+            strtRow = .Cells(.Rows.Count, STANDARD_START_COL).End(xlUp).Row + 1
+            strtRow = IIf(strtRow = 2, 6, strtRow)
+
+            strtRow = Switch(TableScope() = ScopeSpatial, strtRow + 6, _
+                             TableScope() = ScopeGlobalSummary, strtRow, _
+                             True, strtRow + 4)
+
+            .Cells(strtRow, STANDARD_START_COL).Name = startRowName
+
+        Else
+            ' Non-new-section temporal: use previous table's start row.
+            ' Previous answers Nothing when the section holds no valid
+            ' table above this row, so the condition is read directly.
+            ' The previous table also has to have been built.
+            Dim prevSpecs As TableSpecs
+            Dim prevTabId As String
+
+            Set prevSpecs = specs.Previous
+            If Not prevSpecs Is Nothing Then prevTabId = prevSpecs.TableId
+
+            If prevTabId <> vbNullString And RangeExists("ENDTABLE_" & prevTabId) Then
+                strtRow = Previous.StartRow
+                ' The inherited branch is the one that pays for the ancestor
+                ' walk, and it was the one branch that never wrote the answer
+                ' down. Naming the cell here makes every later read of this
+                ' table's start row a lookup, the way the two fresh branches
+                ' already are.
+                .Cells(strtRow, STANDARD_START_COL).Name = startRowName
+            Else
+                ' Previous table was never built (invalid); treat as de-facto new section
                 strtRow = .Cells(.Rows.Count, STANDARD_START_COL).End(xlUp).Row + 1
                 strtRow = IIf(strtRow = 2, 6, strtRow)
-
-                strtRow = Switch(specs.TableScope = ScopeSpatial, strtRow + 6, _
-                                 specs.TableScope = ScopeGlobalSummary, strtRow, _
-                                 True, strtRow + 4)
-
-                .Cells(strtRow, STANDARD_START_COL).Name = "STARTROW_" & tabId
-
-            Else
-                ' Non-new-section temporal: use previous table's start row.
-                ' Previous answers Nothing when the section holds no valid
-                ' table above this row, so the condition is read directly.
-                ' The previous table also has to have been built.
-                Dim prevSpecs As TableSpecs
-                Dim prevTabId As String
-
-                Set prevSpecs = specs.Previous
-                If Not prevSpecs Is Nothing Then prevTabId = prevSpecs.TableId
-
-                If prevTabId <> vbNullString And RangeExists("ENDTABLE_" & prevTabId) Then
-                    strtRow = Previous.StartRow
-                Else
-                    ' Previous table was never built (invalid); treat as de-facto new section
-                    strtRow = .Cells(.Rows.Count, STANDARD_START_COL).End(xlUp).Row + 1
-                    strtRow = IIf(strtRow = 2, 6, strtRow)
-                    strtRow = strtRow + 4
-                    .Cells(strtRow, STANDARD_START_COL).Name = "STARTROW_" & tabId
-                End If
+                strtRow = strtRow + 4
+                .Cells(strtRow, STANDARD_START_COL).Name = startRowName
             End If
-
-            ' The two branches above are exhaustive today, so this cannot fire.
-            ' It is here because the second one used to be written as an ElseIf
-            ' repeating the first one's negation: a scope added to
-            ' AnalysisTableScope would have fallen past both arms, left strtRow
-            ' at zero, and handed every consumer row 0 to build from. That surfaces
-            ' as Cells(0, ...) raising 1004 several frames away from the cause.
-            If strtRow < 1 Then _
-                ThrowError ErrorUnexpectedState, _
-                           "Start row could not be resolved for " & tabId
-
-            StartRow = strtRow
-        Else
-            StartRow = .Range("STARTROW_" & tabId).Row
         End If
+
+        ' The two branches above are exhaustive today, so this cannot fire.
+        ' It is here because the second one used to be written as an ElseIf
+        ' repeating the first one's negation: a scope added to
+        ' AnalysisTableScope would have fallen past both arms, left strtRow
+        ' at zero, and handed every consumer row 0 to build from. That surfaces
+        ' as Cells(0, ...) raising 1004 several frames away from the cause.
+        If strtRow < 1 Then _
+            ThrowError ErrorUnexpectedState, _
+                       "Start row could not be resolved for " & tabId
+
+        ComputeStartRow = strtRow
     End With
-End Property
+End Function
 
 '@label:previous
 '@prop-title Previous cross-table in the same section.
@@ -350,18 +556,44 @@ End Property
 'table's TableSpecs, along with the same output worksheet and
 'translation object.
 '@return CrossTable. The preceding cross-table, or Nothing when this is the first table.
-'@remarks Each call creates a new CrossTable instance; the result is not cached. For
-'temporal tables, this property is typically called once during StartRow
-'resolution and should not be called in tight loops.
+'@remarks The instance is built once and held.
+'
+'WHY THIS PROPERTY USED TO COST O(n) PER CALL
+'-------------------------------------------------------------------------------
+'It built a fresh CrossTable every time it was read, and StartRow reads
+'Previous.StartRow, which reads Previous again. For a temporal section of n
+'tables, resolving the last table's start row constructed O(n) cross-tables and
+'walked O(n) specification chains, and StartRow is read from six places. Holding
+'the instance collapses that to one construction per table.
+'
+'AND WHY A HANDED-IN ANCESTOR IS CHECKED BEFORE IT IS USED
+'-------------------------------------------------------------------------------
+'AnalysisOutput walks the setup rows in order and keeps the last table it built,
+'so it can hand the ancestor in and save this instance building it again. The two
+'can disagree: a row that passes validation and then fails inside Build is still
+'the nearest valid row above, so the caller's last table is one further up. The
+'identifiers are compared and a mismatch falls back to building the real one.
 Public Property Get Previous() As CrossTable
     Dim prevSpecs As TableSpecs
 
     ' Create rejects a Nothing specification, so the first table of a section
     ' is answered here instead of raising InvalidArgument out of the factory.
     Set prevSpecs = Specifications.Previous
-    If prevSpecs Is Nothing Then Exit Property
+    If prevSpecs Is Nothing Then
+        Set this.prevTable = Nothing
+        Exit Property
+    End If
 
-    Set Previous = Create(prevSpecs, Wksh(), LinelistData())
+    If Not this.prevTable Is Nothing Then
+        If StrComp(this.prevTable.Specifications.TableId, prevSpecs.TableId, _
+                   vbBinaryCompare) = 0 Then
+            Set Previous = this.prevTable
+            Exit Property
+        End If
+    End If
+
+    Set this.prevTable = Create(prevSpecs, Wksh(), LinelistData())
+    Set Previous = this.prevTable
 End Property
 
 '@label:start-column
@@ -382,33 +614,65 @@ End Property
 'the actual named range cell is one column to the right and one row above the
 'logical start column. When reading back, the code subtracts 1 from the
 'named range's column to recover the true start column.
+'
+'THIS PROPERTY WRITES NOTHING
+'-------------------------------------------------------------------------------
+'It used to name STARTCOL_ on the worksheet, so reading it from a consumer turned
+'into writing names onto tables the caller had not built -- and, through StartRow,
+'into walking the whole ancestor chain. EnsureStartColumn is the assignment half
+'and Build calls it once, straight after AddHeader. A read before that answers
+'what the assignment would store.
 Private Property Get StartColumn() As Long
-    Dim sh As Worksheet
-    Dim specs As TableSpecs
-    Dim strtCol As Long
-    Dim tabId As String
-    Dim tablType As Byte
+    Dim rng As Range
 
-    Set specs = Specifications
-    tabId = specs.TableId
-    tablType = specs.TableScope
-    Set sh = Wksh
+    Set rng = NamedRange("STARTCOL_" & TableId())
 
-    With sh
-        If Not RangeExists("STARTCOL_" & tabId) Then
-            If (tablType = ScopeTimeSeries Or tablType = ScopeSpatioTemporal) And _
-                (Not specs.IsNewSection()) Then
-                strtCol = .Cells(StartRow + 1, .Columns.Count).End(xlToLeft).Column
-            Else
-                strtCol = STANDARD_START_COL
-            End If
-            StartColumn = strtCol
-            .Cells(StartRow - 1, strtCol + 1).Name = "STARTCOL_" & tabId
-        Else
-            StartColumn = .Range("STARTCOL_" & tabId).Column - 1
-        End If
-    End With
+    If Not rng Is Nothing Then
+        StartColumn = rng.Column - 1
+    Else
+        StartColumn = ComputeStartColumn()
+    End If
 End Property
+
+'@label:compute-start-column
+'@sub-title Work out which column this table starts in.
+'@details
+'A temporal table continuing a section sits to the right of the one before it,
+'which is what the End(xlToLeft) scan finds. Every other table, and the table
+'that opens a temporal section, starts at the standard column.
+'@return Long. The 1-based start column.
+Private Function ComputeStartColumn() As Long
+    Dim sh As Worksheet
+
+    Set sh = Wksh()
+
+    If ((TableScope() = ScopeTimeSeries) Or (TableScope() = ScopeSpatioTemporal)) And _
+       (Not Specifications.IsNewSection()) Then
+        ComputeStartColumn = sh.Cells(StartRow + 1, sh.Columns.Count).End(xlToLeft).Column
+    Else
+        ComputeStartColumn = STANDARD_START_COL
+    End If
+End Function
+
+'@label:ensure-start-column
+'@sub-title Fix this table's start column on the worksheet.
+'@details
+'Writes STARTCOL_<tableId> once. It has to run before AddColumns, because the
+'End(xlToLeft) scan behind a continuation table's column answers something else
+'as soon as that table's own columns are on the sheet, and because AddColumns
+'writes the column label into the named cell. Build calls it straight after
+'AddHeader; AddRows and AddColumns call it too, so a caller driving the phases
+'one at a time gets the same sheet.
+Private Sub EnsureStartColumn()
+    Dim sh As Worksheet
+    Dim strtCol As Long
+
+    If RangeExists("STARTCOL_" & TableId()) Then Exit Sub
+
+    Set sh = Wksh()
+    strtCol = ComputeStartColumn()
+    sh.Cells(StartRow - 1, strtCol + 1).Name = "STARTCOL_" & TableId()
+End Sub
 
 '@label:end-row-set
 '@prop-title Assign the ending row index.
@@ -540,7 +804,7 @@ Public Property Get RowsCategoriesRange(Optional ByVal includeHeaders As Boolean
     Dim tablType As Byte
 
     Set specs = Specifications
-    tablType = specs.TableScope
+    tablType = TableScope()
     If tablType = ScopeGlobalSummary Then ThrowError ErrorUnexpectedState, "Global summary has no row categories"
 
     Set sh = Wksh()
@@ -550,6 +814,14 @@ Public Property Get RowsCategoriesRange(Optional ByVal includeHeaders As Boolean
         startRw = StartRow + 1
     Case ScopeUnivariate
         startRw = StartRow
+    Case Else
+        ' StartRow carries the same guard and says why. Without it a scope
+        ' outside the five leaves startRw at zero and .Cells(0, 3) raises 1004
+        ' several frames from the cause. ScopeTimeSeriesGraph is a real member
+        ' of AnalysisTableScope, so the arm is reachable.
+        ThrowError ErrorUnexpectedState, _
+                   "Row categories were asked of table " & TableId() & _
+                   ", whose scope this class does not lay out"
     End Select
 
     If Not includeHeaders Then startRw = startRw + 1
@@ -559,19 +831,22 @@ Public Property Get RowsCategoriesRange(Optional ByVal includeHeaders As Boolean
         (specs.HasTotal Or tablType = ScopeSpatial) And onlyCategories, EndRow - 1, _
         True, EndRow)
 
-    ' STANDARD_START_COL, deliberately, until StartColumn is safe to call from a
-    ' read. StartColumn is a Property Get that MUTATES: it names
-    ' STARTCOL_<tabId> on the sheet, and it reaches StartRow, which walks the
-    ' ancestor chain through Previous. Calling it from here turned reading the
-    ' categories range into writing a name onto tables the caller had not built,
-    ' and the run stopped finishing.
+    ' STANDARD_START_COL is the right column for every scope, and this is the
+    ' place the reason is written down. The audit's item 47 asked for
+    ' StartColumn here, on the reading that a temporal table continuing a
+    ' section starts further right. It does -- and its row labels do not.
+    ' AddRows writes the Period, Total and Missing labels of a temporal section
+    ' ONCE, from the table that opens the section, into column 3, and every
+    ' later table of that section shares them. RowRange is the only caller this
+    ' property has on the continuation path, and what it looks for is exactly
+    ' those shared labels. Reading them in the continuation's own column finds
+    ' empty cells, so TOTAL_ROW_ and MISSING_ROW_ would stop being created and
+    ' every total formula of a continuation table would go with them.
     '
-    ' The audit's item 47 is real and still open: a temporal table CONTINUING a
-    ' section starts further right than column 3, so this range is built in the
-    ' wrong column for that one case. It stays latent because on that path
-    ' NameRanges derives its range from the ENDTABLE_ marker and bypasses this
-    ' property. Fixing it needs StartColumn split into a pure read and an explicit
-    ' assignment first -- audit P2 and Move 1 of section 5.2.
+    ' The other path agrees: NameRanges derives a continuation table's category
+    ' range from its own ENDTABLE_ marker, which sits in the continuation's
+    ' column, and the value columns hang off that. So the two paths use two
+    ' columns on purpose.
     With sh
         Set RowsCategoriesRange = .Range(.Cells(startRw, STANDARD_START_COL), _
                                           .Cells(endRw, STANDARD_START_COL))
@@ -666,7 +941,7 @@ Public Property Get ColumnRange(ByVal colVal As String, _
     Set rng = HeaderRange()
     Set sh = Wksh()
     Set specs = Specifications
-    tablType = specs.TableScope
+    tablType = TableScope()
 
     startRw = Switch(tablType = ScopeBivariate, StartRow + 2, _
                      (tablType = ScopeTimeSeries Or tablType = ScopeSpatioTemporal), StartRow + 2, _
@@ -711,6 +986,7 @@ End Property
 '@export
 Public Sub AddRows()
     Dim startRw As Long
+    Dim startCol As Long
     Dim specs As TableSpecs
     Dim sh As Worksheet
     Dim vars As LLVariables
@@ -722,63 +998,71 @@ Public Sub AddRows()
     Dim counter As Long
     Dim spatType As String
 
+    EnsureStartColumn
     startRw = StartRow
+    startCol = StartColumn
     Set sh = Wksh()
     Set specs = Specifications()
     Set trans = Translations()
-    Set vars = LLVariables.Create(specs.Dictionary)
+    Set vars = Variables()
 
     transMissing = trans.TranslatedValue("MSG_NA")
     transTotal = trans.TranslatedValue("MSG_Total")
-    Set rowsData = specs.RowCategories(LinelistData())
+
+    ' The categories are read inside the two arms that use them, and that is a
+    ' correctness fix rather than a saving.
+    '
+    ' THE ROW VARIABLE OF A TEMPORAL OR SPATIAL TABLE HAS NO CATEGORIES
+    ' ---------------------------------------------------------------------------
+    ' This used to read them for every scope, above the dispatch, and the
+    ' temporal and spatial arms then threw the answer away. A temporal table's
+    ' row variable is a DATE -- ValidTable requires it -- and a date exposes no
+    ' selectable categories, so LinelistSpecs.Categories raises ElementNotFound
+    ' for it and TableSpecs passes that on. Every temporal table therefore died
+    ' inside Build, landed on the per-table handler in AnalysisOutput, and was
+    ' skipped with one line in the report. The header of the section was already
+    ' on the sheet by then, because AddHeader runs first, so what a user saw was
+    ' a section banner with no table under it.
+    '
+    ' The two arms that do read the categories are the two whose row variable
+    ' ValidTable already requires to be a choice.
+    Set rowsData = New BetterArray
+    rowsData.LowerBound = 1
 
     With sh
-        Select Case specs.TableScope()
+        Select Case TableScope()
 
         Case ScopeGlobalSummary
-            .Cells(startRw, StartColumn).Value = specs.Value("label")
+            .Cells(startRw, startCol).Value = ValueOf("label")
 
         Case ScopeUnivariate
-            If specs.Value("missing") = "yes" Then rowsData.Push transMissing
+            Set rowsData = specs.RowCategories(LinelistData())
+            If ValueOf("missing") = "yes" Then rowsData.Push transMissing
             rowsData.Push transTotal
-            rowsData.ToExcelRange .Cells(startRw + 1, StartColumn)
-            rowVar = specs.Value("row")
-            .Cells(startRw, StartColumn).Value = vars.Value(colName:="main label", varName:=rowVar)
+            rowsData.ToExcelRange .Cells(startRw + 1, startCol)
+            rowVar = ValueOf("row")
+            .Cells(startRw, startCol).Value = vars.Value(colName:="main label", varName:=rowVar)
             EndRow = startRw + rowsData.Length
 
         Case ScopeBivariate
-            If specs.Value("missing") = "row" Or specs.Value("missing") = "all" Then
+            Set rowsData = specs.RowCategories(LinelistData())
+            If ValueOf("missing") = "row" Or ValueOf("missing") = "all" Then
                 rowsData.Push transMissing
             End If
             rowsData.Push transTotal
-            rowsData.ToExcelRange .Cells(startRw + 2, StartColumn)
-            rowVar = specs.Value("row")
-            .Cells(startRw + 1, StartColumn).Value = vars.Value(colName:="main label", varName:=rowVar)
+            rowsData.ToExcelRange .Cells(startRw + 2, startCol)
+            rowVar = ValueOf("row")
+            .Cells(startRw + 1, startCol).Value = vars.Value(colName:="main label", varName:=rowVar)
             EndRow = startRw + 1 + rowsData.Length
 
         Case ScopeTimeSeries, ScopeSpatioTemporal
             ' Add rows only on new sections (or de-facto new sections for Bug #3)
-            If specs.IsNewSection() Then
-                rowsData.Clear
-                rowsData.Push trans.TranslatedValue("MSG_Period"), vbNullString
-                For counter = 1 To 13
-                    rowsData.Push vbNullString, vbNullString, vbNullString, vbNullString
-                Next
-                ' The Total and Missing rows of a temporal section are always
-                ' WRITTEN, because this block is a fixed NB_ROWS_TIME_SERIES
-                ' grid and RowsCategoriesRange trims its two footer rows by
-                ' count rather than by label. Whether the user SEES the Total
-                ' row is decided in Format, which hides it when no table of the
-                ' section asked for one -- issue #338.
-                rowsData.Push transTotal, transMissing
-                rowsData.ToExcelRange .Cells(startRw + 1, StartColumn)
-            End If
+            If specs.IsNewSection() Then WriteTemporalRowGrid startRw, startCol
             EndRow = startRw + NB_ROWS_TIME_SERIES
 
         Case ScopeSpatial
-            rowVar = specs.Value("row")
-            rowsData.Clear
-            spatType = specs.SpatialTableScopes()
+            rowVar = ValueOf("row")
+            spatType = SpatialType()
 
             If spatType = "geo" Then
                 rowsData.Push vars.Value(colName:="sub section", varName:="adm1_" & rowVar)
@@ -793,11 +1077,52 @@ Public Sub AddRows()
             Next
 
             rowsData.Push transMissing
-            rowsData.ToExcelRange .Cells(startRw + 1, StartColumn)
+            rowsData.ToExcelRange .Cells(startRw + 1, startCol)
             EndRow = startRw + rowsData.Length
 
         End Select
     End With
+
+    MarkPhase PHASE_ROWS
+End Sub
+
+'@label:write-temporal-row-grid
+'@sub-title Write the fixed row block a temporal section shares.
+'@details
+'The block is NB_ROWS_TIME_SERIES rows tall: a Period label at the top, blank
+'rows for the periods themselves, then Total and Missing. It used to be built by
+'pushing 52 empty strings one at a time into a BetterArray, in a loop whose
+'bounds had to be kept in step with the constant by hand. The size comes from the
+'constant now and the block reaches the sheet in one crossing.
+'
+'THE TOTAL AND MISSING LABELS ARE ALWAYS WRITTEN
+'-------------------------------------------------------------------------------
+'RowsCategoriesRange trims the two footer rows BY COUNT, so dropping a label
+'would move every category range of the section up by one row and take every
+'total formula with it. Whether the user SEES the Total row is decided in Format,
+'which hides it when no table of the section asked for one -- issue #338.
+'@param startRw Long. The row this table starts at.
+'@param startCol Long. The column the shared labels go in.
+Private Sub WriteTemporalRowGrid(ByVal startRw As Long, ByVal startCol As Long)
+    Dim gridValues() As Variant
+    Dim counter As Long
+    Dim trans As TranslationObject
+    Dim sh As Worksheet
+
+    Set trans = Translations()
+    Set sh = Wksh()
+
+    ReDim gridValues(1 To NB_ROWS_TIME_SERIES, 1 To 1)
+    For counter = 1 To NB_ROWS_TIME_SERIES
+        gridValues(counter, 1) = vbNullString
+    Next
+
+    gridValues(1, 1) = trans.TranslatedValue("MSG_Period")
+    gridValues(NB_ROWS_TIME_SERIES - 1, 1) = trans.TranslatedValue("MSG_Total")
+    gridValues(NB_ROWS_TIME_SERIES, 1) = trans.TranslatedValue("MSG_NA")
+
+    sh.Range(sh.Cells(startRw + 1, startCol), _
+             sh.Cells(startRw + NB_ROWS_TIME_SERIES, startCol)).Value = gridValues
 End Sub
 
 '@section Helpers
@@ -864,13 +1189,13 @@ Private Sub BivariateColumns(ByVal startRw As Long, ByVal specs As TableSpecs, _
     labData.LowerBound = 1
     newColData.LowerBound = 1
 
-    percentageValue = specs.Value("percentage")
+    percentageValue = ValueOf("percentage")
     transMissing = trans.TranslatedValue("MSG_NA")
     transTotal = trans.TranslatedValue("MSG_Total")
     transPercent = trans.TranslatedValue("MSG_Percent")
 
     With sh
-        colLab = specs.Value("label")
+        colLab = ValueOf("label")
         If specs.HasMissing Then labData.Push transMissing
         If specs.HasTotal Then labData.Push transTotal
         Set colData = specs.ColumnCategories(LinelistData())
@@ -901,7 +1226,7 @@ Private Sub BivariateColumns(ByVal startRw As Long, ByVal specs As TableSpecs, _
             newColData.ToExcelRange .Cells(startRw, StartColumn + 1), TransposeValues:=True
             labData.ToExcelRange .Cells(startRw + 1, StartColumn + 1), TransposeValues:=True
         Else
-            ' No column data — just a summary function. The Missing and Total
+            ' No column data -- just a summary function. The Missing and Total
             ' labels collected above head columns cut from the column
             ' categories, and a table grouped by nothing has none of those, so
             ' they are dropped here rather than written as column headers. The
@@ -954,17 +1279,17 @@ Public Sub AddColumns()
     Dim percentageValue As String
     Dim transPercent As String
 
+    EnsureStartColumn
     startRw = StartRow
     Set sh = Wksh()
     Set specs = Specifications()
     Set trans = Translations()
-    Set vars = LLVariables.Create(specs.Dictionary)
-    tabId = specs.TableId()
-    tablType = specs.TableScope()
+    Set vars = Variables()
+    tabId = TableId()
+    tablType = TableScope()
     Set colData = New BetterArray
     colData.LowerBound = 1
-    spType = specs.SpatialTableScopes()
-    percentageValue = specs.Value("percentage")
+    percentageValue = ValueOf("percentage")
     transPercent = trans.TranslatedValue("MSG_Percent")
 
     With sh
@@ -981,7 +1306,7 @@ Public Sub AddColumns()
 
         Case ScopeUnivariate
             Dim colLab As String
-            colLab = specs.Value("label")
+            colLab = ValueOf("label")
             colData.Push colLab
             If percentageValue = "yes" Then colData.Push transPercent
             colData.ToExcelRange .Cells(startRw, StartColumn + 1), TransposeValues:=True
@@ -991,23 +1316,25 @@ Public Sub AddColumns()
         Case ScopeBivariate
             BivariateColumns startRw, specs, trans, sh
             .Range("STARTCOL_" & tabId).Value = vars.Value( _
-                colName:="main label", varName:=specs.Value("column"))
+                colName:="main label", varName:=ValueOf("column"))
 
         Case ScopeTimeSeries, ScopeSpatioTemporal
             BivariateColumns startRw, specs, trans, sh
 
+            spType = SpatialType()
+
             If tablType = ScopeTimeSeries Then
-                colVarLab = vars.Value(colName:="main label", varName:=specs.Value("column"))
+                colVarLab = vars.Value(colName:="main label", varName:=ValueOf("column"))
             ElseIf spType = "geo" Then
-                colVarLab = vars.Value(colName:="sub section", varName:="adm1_" & specs.Value("column"))
+                colVarLab = vars.Value(colName:="sub section", varName:="adm1_" & ValueOf("column"))
             ElseIf spType = "hf" Then
-                colVarLab = vars.Value(colName:="main label", varName:="hf_" & specs.Value("column"))
+                colVarLab = vars.Value(colName:="main label", varName:="hf_" & ValueOf("column"))
             End If
 
-            timeVarLab = vars.Value(colName:="main label", varName:=specs.Value("time"))
-            sumLab = specs.Value("label")
+            timeVarLab = vars.Value(colName:="main label", varName:=ValueOf("time"))
+            sumLab = ValueOf("label")
 
-            If specs.Value("column") = vbNullString Then
+            If ValueOf("column") = vbNullString Then
                 TimeSeriesHeader = sumLab & " " & ChrW(9472) & " " & timeVarLab
             Else
                 TimeSeriesHeader = sumLab & " " & ChrW(9472) & " " & timeVarLab & _
@@ -1021,6 +1348,8 @@ Public Sub AddColumns()
 
         End Select
     End With
+
+    MarkPhase PHASE_COLUMNS
 End Sub
 
 '@section AddHeader
@@ -1045,231 +1374,347 @@ End Sub
 'dates at runtime.
 '@export
 Public Sub AddHeader()
-    Dim startRw As Long
+    Select Case TableScope()
+    Case ScopeUnivariate, ScopeBivariate
+        AddTitleAndSectionHeader
+    Case ScopeGlobalSummary
+        AddGlobalSummaryHeader
+    Case ScopeTimeSeries, ScopeSpatioTemporal
+        AddTemporalHeader
+    Case ScopeSpatial
+        AddSpatialHeader
+    End Select
+
+    MarkPhase PHASE_HEADER
+End Sub
+
+'@label:add-title-and-section-header
+'@sub-title Write the title of a univariate or bivariate table.
+'@details
+'A table that opens a section also gets three rows inserted above it for the
+'section label. The insert shifts the sheet down and Excel carries the names
+'with it, which is why the local start row is read before the insert and the
+'section cell is addressed through the title name afterwards.
+Private Sub AddTitleAndSectionHeader()
     Dim sh As Worksheet
-    Dim specs As TableSpecs
-    Dim counter As Long
-    Dim trans As TranslationObject
+    Dim startRw As Long
     Dim tabId As String
-    Dim rng As Range
-    Dim cellRng As Range
-    Dim nGeo As Long
-    Dim tablType As Byte
-    Dim nbShift As Long
-    Dim timeUnitName As String
-    Dim tabNames As AnalysisRanges
+    Dim counter As Long
+    Dim sectionRng As Range
 
     Set sh = Wksh()
-    Set specs = Specifications
-    Set trans = Translations()
-
     startRw = StartRow
-    tabId = specs.TableId
-    tablType = specs.TableScope
-    Set tabNames = AnalysisRanges.Create(tabId)
+    tabId = TableId()
 
     With sh
-        Select Case tablType
+        .Cells(startRw - 2, STANDARD_START_COL).Value = ValueOf("title")
+        .Cells(startRw - 2, STANDARD_START_COL).Name = "TITLE_" & tabId
 
-        Case ScopeUnivariate, ScopeBivariate
-            .Cells(startRw - 2, STANDARD_START_COL).Value = specs.Value("title")
-            .Cells(startRw - 2, STANDARD_START_COL).Name = "TITLE_" & tabId
+        If Specifications.IsNewSection() And (Not RangeExists("SECTION_" & tabId)) Then
+            For counter = 1 To 3
+                .Rows(startRw - 2).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
+            Next
+            Set sectionRng = .Range("TITLE_" & tabId).Cells(-1, 1)
+            sectionRng.Value = ValueOf("section")
+            sectionRng.Name = "SECTION_" & tabId
+        End If
+    End With
+End Sub
 
-            If specs.IsNewSection() And (Not RangeExists("SECTION_" & tabId)) Then
-                For counter = 1 To 3
-                    .Rows(startRw - 2).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
-                Next
-                .Range("TITLE_" & tabId).Cells(-1, 1) = specs.Value("section")
-                .Range("TITLE_" & tabId).Cells(-1, 1).Name = "SECTION_" & tabId
-            End If
+'@label:add-global-summary-header
+'@sub-title Write the shared global summary label, once per sheet.
+'@details
+'Every global summary row of a sheet shares one label, so ROWGS_SET is both the
+'name of the cell and the guard that stops the second row writing it again.
+Private Sub AddGlobalSummaryHeader()
+    Dim sh As Worksheet
+    Dim startRw As Long
+    Dim counter As Long
 
-        Case ScopeGlobalSummary
-            If Not RangeExists("ROWGS_SET") Then
-                For counter = 1 To 3
-                    .Rows(startRw - 2).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
-                Next
-                .Cells(startRw - 2, STANDARD_START_COL).Value = trans.TranslatedValue("MSG_GlobalSummary")
-                .Cells(startRw - 2, STANDARD_START_COL).Name = "ROWGS_SET"
-            End If
+    If RangeExists("ROWGS_SET") Then Exit Sub
 
-        Case ScopeTimeSeries, ScopeSpatioTemporal
-            ' Bug #3 fix: treat as new section if previous table was never built
-            If specs.IsNewSection() And _
-               (Not RangeExists("SECTION_" & tabId)) Then
+    Set sh = Wksh()
+    startRw = StartRow
 
-                If tablType = ScopeSpatioTemporal Then
-                    ' GeoCount carries the default of 5 and clamps to 1..20, so
-                    ' an empty cell no longer raises out of CLng.
-                    nGeo = specs.GeoCount()
-                    nbShift = nGeo + 14
-                Else
-                    nbShift = 7
-                End If
+    With sh
+        For counter = 1 To 3
+            .Rows(startRw - 2).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
+        Next
+        .Cells(startRw - 2, STANDARD_START_COL).Value = Translations().TranslatedValue("MSG_GlobalSummary")
+        .Cells(startRw - 2, STANDARD_START_COL).Name = "ROWGS_SET"
+    End With
+End Sub
 
-                For counter = 1 To nbShift
-                    .Rows(startRw - 2).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
-                Next
-                .Cells(startRw - 2, StartColumn).Value = specs.Value("section")
-                .Cells(startRw - 2, StartColumn).Name = "SECTION_" & tabId
+'@label:add-temporal-header
+'@sub-title Open a temporal section and write the controls it carries.
+'@details
+'Runs for the table that opens the section only. A spatio-temporal section needs
+'room for its geographic input rows on top of the date controls, which is what
+'the taller insert is for.
+Private Sub AddTemporalHeader()
+    Dim sh As Worksheet
+    Dim startRw As Long
+    Dim tabId As String
+    Dim counter As Long
+    Dim nGeo As Long
+    Dim nbShift As Long
+    Dim anchorRng As Range
 
-                Set rng = .Range("SECTION_" & tabId)
+    If Not Specifications.IsNewSection() Then Exit Sub
+    If RangeExists("SECTION_" & TableId()) Then Exit Sub
 
-                ' Spatio-temporal geo-level selection
-                If tablType = ScopeSpatioTemporal Then
-                    Set rng = rng.Offset(4)
-                    rng.Value = trans.TranslatedValue("MSG_InputGeoLevels")
-                    rng.Name = "INPUTSPTGEO_LABEL_" & tabId
-                    rng.Cells(1, 2).Value = nGeo
-                    rng.Cells(1, 2).Name = "INPUTSPTGEO_NGEO_" & tabId
+    Set sh = Wksh()
+    startRw = StartRow
+    tabId = TableId()
 
-                    ' The tag comes from the dictionary probe, which is what the
-                    ' formula writer uses to reference these same cells. It used
-                    ' to come from the "spatial type" column of this row, and
-                    ' that column is never filled: the setup workbook validates
-                    ' it on the spatio-temporal SPECS table and the analysis
-                    ' table only ever receives the geo dropdown, not the value.
-                    ' So the read returned empty, every table was tagged
-                    ' geographic, and a health facility table's label formulas
-                    ' pointed at INPUTSPTHF_ names that were never created.
-                    Set cellRng = rng.Offset(2)
-                    For counter = 1 To nGeo
-                        cellRng.Cells(counter, 1).Name = _
-                            tabNames.SpatialInput(counter, specs.SpatialTableScopes())
-                        cellRng.Cells(counter, 2).Value = 1
-                    Next
+    With sh
+        If TableScope() = ScopeSpatioTemporal Then
+            ' GeoCount carries the default of 5 and clamps to 1..20, so
+            ' an empty cell no longer raises out of CLng.
+            nGeo = Specifications.GeoCount()
+            nbShift = nGeo + 14
+        Else
+            nbShift = 7
+        End If
 
-                    Set rng = .Range(cellRng.Cells(1, 1), cellRng.Cells(nGeo, 1))
-                    rng.Name = "INPUTSPTGEO_USER_" & tabId
-                    rng.Locked = False
-                    rng.Offset(, 1).Name = "INPUTPREVADM_USER_" & tabId
-                    Set rng = cellRng.Offset(nGeo + 3)
-                End If
+        For counter = 1 To nbShift
+            .Rows(startRw - 2).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
+        Next
 
-                ' Date controls (start date, time unit, end date)
-                rng.Cells(6, 1).Name = "INFO_ANA_PERIOD_" & tabId
-                rng.Cells(3, 3).Value = trans.TranslatedValue("MSG_StartDate")
-                rng.Cells(3, 3).Name = "START_DATE_LABEL_" & tabId
-                rng.Cells(4, 3).Locked = False
-                rng.Cells(4, 3).Name = "USER_START_DATE_" & tabId
-                rng.Cells(5, 3).Name = "INFO_START_DATE_" & tabId
-                rng.Cells(6, 3).Name = "START_DATE_" & tabId
+        .Cells(startRw - 2, StartColumn).Value = ValueOf("section")
+        .Cells(startRw - 2, StartColumn).Name = "SECTION_" & tabId
 
-                rng.Cells(3, 5).Value = trans.TranslatedValue("MSG_TimeUnit")
-                rng.Cells(3, 5).Name = "TIME_UNIT_LABEL_" & tabId
-                rng.Cells(4, 5).Name = "TIME_UNIT_" & tabId
-                rng.Cells(4, 5).Locked = False
+        Set anchorRng = .Range("SECTION_" & tabId)
+    End With
 
-                rng.Cells(3, 7).Value = trans.TranslatedValue("MSG_EndDate")
-                rng.Cells(3, 7).Name = "END_DATE_LABEL_" & tabId
-                rng.Cells(4, 7).Name = "USER_END_DATE_" & tabId
-                rng.Cells(4, 7).Locked = False
-                rng.Cells(5, 7).Name = "INFO_END_DATE_" & tabId
-                rng.Cells(6, 7).Name = "END_DATE_" & tabId
+    If TableScope() = ScopeSpatioTemporal Then _
+        Set anchorRng = AddSpatioTemporalGeoInputs(anchorRng, nGeo)
 
-                rng.Cells(4, 9).Name = "VALIDATION_MIN_DATE_" & tabId
-                rng.Cells(4, 11).Name = "VALIDATION_MAX_DATE_" & tabId
-                rng.Cells(4, 13).Name = "MIN_MIN_DATE_" & tabId
-                rng.Cells(4, 15).Name = "MAX_MAX_DATE_" & tabId
+    AddTemporalDateControls anchorRng
+End Sub
 
-                ' The formula writer binds the time unit dropdown to this same
-                ' name, and the two used to build it separately: this one
-                ' prefixed the spatio-temporal spelling and the other one always
-                ' asked for the plain one, so no spatio-temporal table ever got
-                ' its dropdown. One member answers for both now.
-                timeUnitName = AnalysisRanges.TimeUnitListOfScope( _
-                                   tablType = ScopeSpatioTemporal)
+'@label:add-spatio-temporal-geo-inputs
+'@sub-title Write the geographic input rows of a spatio-temporal section.
+'@details
+'One input cell per geographic unit, each named so the formula writer can point
+'at it. The tag comes from the dictionary probe, which is what the formula
+'writer uses to reference these same cells. It used to come from the "spatial
+'type" column of this row, and that column is never filled: the setup workbook
+'validates it on the spatio-temporal specification table and the analysis table
+'only ever receives the geo dropdown. So the read returned empty, every table
+'was tagged geographic, and a health facility table's label formulas pointed at
+'INPUTSPTHF_ names that were never created.
+'@param sectionRng Range. The section anchor cell.
+'@param nGeo Long. How many geographic units the table shows.
+'@return Range. The anchor the date controls hang from.
+Private Function AddSpatioTemporalGeoInputs(ByVal sectionRng As Range, _
+                                            ByVal nGeo As Long) As Range
+    Dim rng As Range
+    Dim cellRng As Range
+    Dim counter As Long
+    Dim tabId As String
+    Dim sh As Worksheet
 
-                Set cellRng = .Cells(1, 26)
-                If Not RangeExists(timeUnitName) Then
-                    cellRng.Cells(1, 1).Value = trans.TranslatedValue("MSG_Day")
-                    cellRng.Cells(2, 1).Value = trans.TranslatedValue("MSG_Week")
-                    cellRng.Cells(3, 1).Value = trans.TranslatedValue("MSG_Month")
-                    cellRng.Cells(4, 1).Value = trans.TranslatedValue("MSG_Quarter")
-                    cellRng.Cells(5, 1).Value = trans.TranslatedValue("MSG_Year")
-                    .Range(.Cells(1, cellRng.Column), .Cells(5, cellRng.Column)).Name = timeUnitName
-                    .Range(timeUnitName).Font.Color = vbWhite
-                    .Range(timeUnitName).Interior.Color = vbWhite
-                    .Range(timeUnitName).Locked = True
-                End If
+    Set sh = Wksh()
+    tabId = TableId()
 
-                .Range("TIME_UNIT_" & tabId).Value = cellRng.Cells(2, 1).Value
-            End If
+    Set rng = sectionRng.Offset(4)
+    rng.Value = Translations().TranslatedValue("MSG_InputGeoLevels")
+    rng.Name = "INPUTSPTGEO_LABEL_" & tabId
+    rng.Cells(1, 2).Value = nGeo
+    rng.Cells(1, 2).Name = "INPUTSPTGEO_NGEO_" & tabId
 
-        Case ScopeSpatial
-            If Not RangeExists("ADM_UNIT_LIST") Then
-                Set cellRng = .Cells(1, 26)
-                cellRng.Cells(1, 1).Formula = "= RNG_ADM1NAME"
-                cellRng.Cells(2, 1).Formula = "= RNG_ADM2NAME"
-                cellRng.Cells(3, 1).Formula = "= RNG_ADM3NAME"
-                cellRng.Cells(4, 1).Formula = "= RNG_ADM4NAME"
-                .Range(.Cells(1, cellRng.Column), .Cells(4, cellRng.Column)).Name = "ADM_UNIT_LIST"
-                .Range("ADM_UNIT_LIST").Font.Color = vbWhite
-                .Range("ADM_UNIT_LIST").Interior.Color = vbWhite
-                .Range("ADM_UNIT_LIST").Locked = True
-            End If
+    Set cellRng = rng.Offset(2)
+    For counter = 1 To nGeo
+        cellRng.Cells(counter, 1).Name = RangeNames().SpatialInput(counter, SpatialType())
+        cellRng.Cells(counter, 2).Value = 1
+    Next
 
-            If Not RangeExists("POPULATION_FACTOR_LIST") Then
-                Set cellRng = .Cells(1, 27)
-                cellRng.Cells(1, 1).Value = trans.TranslatedValue("MSG_NoDevide")
-                cellRng.Cells(2, 1).Value = trans.TranslatedValue("MSG_Devide")
-                .Range(.Cells(1, cellRng.Column), .Cells(2, cellRng.Column)).Name = "POPULATION_FACTOR_LIST"
-                .Range("POPULATION_FACTOR_LIST").Font.Color = vbWhite
-                .Range("POPULATION_FACTOR_LIST").Interior.Color = vbWhite
-                .Range("POPULATION_FACTOR_LIST").Locked = True
-            End If
+    Set rng = sh.Range(cellRng.Cells(1, 1), cellRng.Cells(nGeo, 1))
+    rng.Name = "INPUTSPTGEO_USER_" & tabId
+    rng.Locked = False
+    rng.Offset(, 1).Name = "INPUTPREVADM_USER_" & tabId
 
-            If (Not RangeExists("ADM_DROPDOWN_" & tabId)) And _
-               (Not RangeExists("HF_DROPDOWN_" & tabId)) Then
+    Set AddSpatioTemporalGeoInputs = cellRng.Offset(nGeo + 3)
+End Function
 
-                ' SpatialTableScopes has three outcomes and the two arms below
-                ' handle two of them. rng is assigned inside those arms and then
-                ' dereferenced unconditionally underneath, so the third outcome
-                ' reaches .Rows(rng.Row - 1) with rng still Nothing and raises 91
-                ' well away from the cause. TableSpecs already requires one of
-                ' the two prefixes before a spatial table is judged valid, so an
-                ' empty answer here means that invariant broke. Saying so costs
-                ' one line and names the table.
-                If LenB(specs.SpatialTableScopes()) = 0 Then _
-                    ThrowError ErrorUnexpectedState, _
-                               "Spatial table " & tabId & _
-                               " is missing both an adm1_ and an hf_ variable"
+'@label:add-temporal-date-controls
+'@sub-title Write the start date, time unit and end date controls of a section.
+'@param anchorRng Range. The cell the control block is measured from.
+Private Sub AddTemporalDateControls(ByVal anchorRng As Range)
+    Dim tabId As String
+    Dim trans As TranslationObject
+    Dim listRng As Range
 
-                If specs.SpatialTableScopes = "geo" Then
-                    .Cells(startRw - 2, STANDARD_START_COL).Name = "ADM_DROPDOWN_" & tabId
-                    .Cells(startRw - 2, STANDARD_START_COL).Value = trans.TranslatedValue("MSG_SelectAdmin")
+    tabId = TableId()
+    Set trans = Translations()
 
-                    Set rng = .Range("ADM_DROPDOWN_" & tabId)
-                    rng.Cells(1, 2).Value = "adm1"
-                    rng.Cells(1, 2).Name = "PREVIOUS_ADM_" & tabId
-                    rng.Cells(1, 3).Value = trans.TranslatedValue("MSG_SelectPOPFACT")
-                    rng.Cells(1, 3).Name = "DEVIDEPOP_" & tabId
-                    rng.Cells(0, 4).Value = trans.TranslatedValue("MSG_MultiplyBy")
-                    rng.Cells(0, 4).Name = "POPFACTLABEL_" & tabId
-                    rng.Cells(1, 4).Value = 100
-                    rng.Cells(1, 4).Name = "POPFACT_" & tabId
-                    rng.Cells(1, 5).Name = "POPPREVFACT_" & tabId
-                    rng.Cells(1, 5).Value = "0"
+    With anchorRng
+        .Cells(6, 1).Name = "INFO_ANA_PERIOD_" & tabId
+        .Cells(3, 3).Value = trans.TranslatedValue("MSG_StartDate")
+        .Cells(3, 3).Name = "START_DATE_LABEL_" & tabId
+        .Cells(4, 3).Locked = False
+        .Cells(4, 3).Name = "USER_START_DATE_" & tabId
+        .Cells(5, 3).Name = "INFO_START_DATE_" & tabId
+        .Cells(6, 3).Name = "START_DATE_" & tabId
 
-                ElseIf specs.SpatialTableScopes = "hf" Then
-                    .Cells(startRw - 2, STANDARD_START_COL).Name = "HF_DROPDOWN_" & tabId
-                    Set rng = .Range("HF_DROPDOWN_" & tabId)
-                    rng.Cells(1, 1).Value = trans.TranslatedValue("MSG_HF")
-                End If
+        .Cells(3, 5).Value = trans.TranslatedValue("MSG_TimeUnit")
+        .Cells(3, 5).Name = "TIME_UNIT_LABEL_" & tabId
+        .Cells(4, 5).Name = "TIME_UNIT_" & tabId
+        .Cells(4, 5).Locked = False
 
-                If specs.IsNewSection() Then
-                    For counter = 1 To 3
-                        .Rows(rng.Row - 1).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
-                    Next
-                    rng.Cells(-3, 1).Value = specs.Value("section")
-                    rng.Cells(-3, 1).Name = "SECTION_" & tabId
-                End If
+        .Cells(3, 7).Value = trans.TranslatedValue("MSG_EndDate")
+        .Cells(3, 7).Name = "END_DATE_LABEL_" & tabId
+        .Cells(4, 7).Name = "USER_END_DATE_" & tabId
+        .Cells(4, 7).Locked = False
+        .Cells(5, 7).Name = "INFO_END_DATE_" & tabId
+        .Cells(6, 7).Name = "END_DATE_" & tabId
 
+        .Cells(4, 9).Name = "VALIDATION_MIN_DATE_" & tabId
+        .Cells(4, 11).Name = "VALIDATION_MAX_DATE_" & tabId
+        .Cells(4, 13).Name = "MIN_MIN_DATE_" & tabId
+        .Cells(4, 15).Name = "MAX_MAX_DATE_" & tabId
+    End With
+
+    Set listRng = EnsureTimeUnitList()
+    Wksh().Range("TIME_UNIT_" & tabId).Value = listRng.Cells(2, 1).Value
+End Sub
+
+'@label:ensure-time-unit-list
+'@sub-title Build the five time unit names the dropdown reads, once per sheet.
+'@details
+'The formula writer binds the time unit dropdown to this same name, and the two
+'used to build it separately: this one prefixed the spatio-temporal spelling and
+'the other one always asked for the plain one, so no spatio-temporal table ever
+'got its dropdown. One member of AnalysisRanges answers for both now.
+'@return Range. The top cell of the list block, whether it was just built or
+'was already there.
+Private Function EnsureTimeUnitList() As Range
+    Dim sh As Worksheet
+    Dim cellRng As Range
+    Dim listRng As Range
+    Dim listName As String
+    Dim trans As TranslationObject
+
+    Set sh = Wksh()
+    listName = AnalysisRanges.TimeUnitListOfScope(TableScope() = ScopeSpatioTemporal)
+    Set cellRng = sh.Cells(1, 26)
+    Set EnsureTimeUnitList = cellRng
+
+    If RangeExists(listName) Then Exit Function
+
+    Set trans = Translations()
+    cellRng.Cells(1, 1).Value = trans.TranslatedValue("MSG_Day")
+    cellRng.Cells(2, 1).Value = trans.TranslatedValue("MSG_Week")
+    cellRng.Cells(3, 1).Value = trans.TranslatedValue("MSG_Month")
+    cellRng.Cells(4, 1).Value = trans.TranslatedValue("MSG_Quarter")
+    cellRng.Cells(5, 1).Value = trans.TranslatedValue("MSG_Year")
+
+    Set listRng = sh.Range(sh.Cells(1, cellRng.Column), sh.Cells(5, cellRng.Column))
+    listRng.Name = listName
+    listRng.Font.Color = vbWhite
+    listRng.Interior.Color = vbWhite
+    listRng.Locked = True
+End Function
+
+'@label:add-spatial-header
+'@sub-title Write the dropdowns and the title of a spatial table.
+'@details
+'Two of the three lists are shared by every spatial table of the sheet and are
+'built once. The third is this table's own dropdown, geographic or health
+'facility, and the title and section labels are inserted above it.
+'@throws ErrorUnexpectedState When the table names neither an adm1_ nor an hf_ variable.
+Private Sub AddSpatialHeader()
+    Dim sh As Worksheet
+    Dim startRw As Long
+    Dim tabId As String
+    Dim counter As Long
+    Dim rng As Range
+    Dim cellRng As Range
+    Dim listRng As Range
+    Dim trans As TranslationObject
+    Dim spatType As String
+
+    Set sh = Wksh()
+    Set trans = Translations()
+    startRw = StartRow
+    tabId = TableId()
+
+    With sh
+        If Not RangeExists("ADM_UNIT_LIST") Then
+            Set cellRng = .Cells(1, 26)
+            cellRng.Cells(1, 1).Formula = "= RNG_ADM1NAME"
+            cellRng.Cells(2, 1).Formula = "= RNG_ADM2NAME"
+            cellRng.Cells(3, 1).Formula = "= RNG_ADM3NAME"
+            cellRng.Cells(4, 1).Formula = "= RNG_ADM4NAME"
+            Set listRng = .Range(.Cells(1, cellRng.Column), .Cells(4, cellRng.Column))
+            listRng.Name = "ADM_UNIT_LIST"
+            listRng.Font.Color = vbWhite
+            listRng.Interior.Color = vbWhite
+            listRng.Locked = True
+        End If
+
+        If Not RangeExists("POPULATION_FACTOR_LIST") Then
+            Set cellRng = .Cells(1, 27)
+            cellRng.Cells(1, 1).Value = trans.TranslatedValue("MSG_NoDevide")
+            cellRng.Cells(2, 1).Value = trans.TranslatedValue("MSG_Devide")
+            Set listRng = .Range(.Cells(1, cellRng.Column), .Cells(2, cellRng.Column))
+            listRng.Name = "POPULATION_FACTOR_LIST"
+            listRng.Font.Color = vbWhite
+            listRng.Interior.Color = vbWhite
+            listRng.Locked = True
+        End If
+
+        If RangeExists("ADM_DROPDOWN_" & tabId) Then Exit Sub
+        If RangeExists("HF_DROPDOWN_" & tabId) Then Exit Sub
+
+        ' SpatialTableScopes has three outcomes and the two arms below
+        ' handle two of them. rng is assigned inside those arms and then
+        ' dereferenced unconditionally underneath, so the third outcome
+        ' reaches .Rows(rng.Row - 1) with rng still Nothing and raises 91
+        ' well away from the cause. TableSpecs already requires one of
+        ' the two prefixes before a spatial table is judged valid, so an
+        ' empty answer here means that invariant broke. Saying so costs
+        ' one line and names the table.
+        spatType = SpatialType()
+        If LenB(spatType) = 0 Then _
+            ThrowError ErrorUnexpectedState, _
+                       "Spatial table " & tabId & _
+                       " is missing both an adm1_ and an hf_ variable"
+
+        If spatType = "geo" Then
+            .Cells(startRw - 2, STANDARD_START_COL).Name = "ADM_DROPDOWN_" & tabId
+            .Cells(startRw - 2, STANDARD_START_COL).Value = trans.TranslatedValue("MSG_SelectAdmin")
+
+            Set rng = .Range("ADM_DROPDOWN_" & tabId)
+            rng.Cells(1, 2).Value = "adm1"
+            rng.Cells(1, 2).Name = "PREVIOUS_ADM_" & tabId
+            rng.Cells(1, 3).Value = trans.TranslatedValue("MSG_SelectPOPFACT")
+            rng.Cells(1, 3).Name = "DEVIDEPOP_" & tabId
+            rng.Cells(0, 4).Value = trans.TranslatedValue("MSG_MultiplyBy")
+            rng.Cells(0, 4).Name = "POPFACTLABEL_" & tabId
+            rng.Cells(1, 4).Value = 100
+            rng.Cells(1, 4).Name = "POPFACT_" & tabId
+            rng.Cells(1, 5).Name = "POPPREVFACT_" & tabId
+            rng.Cells(1, 5).Value = "0"
+
+        ElseIf spatType = "hf" Then
+            .Cells(startRw - 2, STANDARD_START_COL).Name = "HF_DROPDOWN_" & tabId
+            Set rng = .Range("HF_DROPDOWN_" & tabId)
+            rng.Cells(1, 1).Value = trans.TranslatedValue("MSG_HF")
+        End If
+
+        If Specifications.IsNewSection() Then
+            For counter = 1 To 3
                 .Rows(rng.Row - 1).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
-                rng.Cells(-1, 1).Value = specs.Value("title")
-                rng.Cells(-1, 1).Name = "TITLE_" & tabId
-            End If
+            Next
+            rng.Cells(-3, 1).Value = ValueOf("section")
+            rng.Cells(-3, 1).Name = "SECTION_" & tabId
+        End If
 
-        End Select
+        .Rows(rng.Row - 1).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
+        rng.Cells(-1, 1).Value = ValueOf("title")
+        rng.Cells(-1, 1).Name = "TITLE_" & tabId
     End With
 End Sub
 
@@ -1294,47 +1739,64 @@ End Sub
 'column structure beyond the two fixed columns).
 '@export
 Public Sub NameRanges()
-    Dim specs As TableSpecs
-    Dim sh As Worksheet
-    Dim nbCols As Long
     Dim catRng As Range
-    Dim rng As Range
-    Dim nbColCounter As Long
-    Dim counter As Long
-    Dim trans As TranslationObject
-    Dim labCol As Long
-    Dim cData As BetterArray
-    Dim tData As BetterArray
-    Dim rw As Long
-    Dim col As Long
-    Dim firstValRng As Range
-    Dim lastValRng As Range
-    Dim tabId As String
-    Dim cellRng As Range
-    Dim tablType As Byte
-    Dim isNewSect As Boolean
+
+    RequirePhase PHASE_COLUMNS, "NameRanges"
+    MarkPhase PHASE_NAMES
+
+    If TableScope() = ScopeGlobalSummary Then Exit Sub
+
+    NameEndTable
+
+    If NumberOfColumns() = 0 Then _
+        ThrowError ErrorUnexpectedState, "Table " & TableId() & " has 0 columns"
+
+    Set catRng = NameCategoryRows()
+    NameValueColumns catRng
+    NameTotalsAndMissing
+    NameIntersections
+    NameInteriorValues
+    NameColumnCategories
+End Sub
+
+'@label:name-end-table
+'@sub-title Mark the row under the table, which is what the next one measures from.
+Private Sub NameEndTable()
+    Dim sh As Worksheet
+
+    If RangeExists("ENDTABLE_" & TableId()) Then Exit Sub
 
     Set sh = Wksh()
-    Set trans = Translations()
-    Set specs = Specifications
-    tabId = specs.TableId
-    tablType = specs.TableScope
-    ' Bug #3 fix: treat as new section if previous table was never built
-    isNewSect = specs.IsNewSection()
+    sh.Cells(EndRow + 1, StartColumn).Name = "ENDTABLE_" & TableId()
+End Sub
 
-    If tablType = ScopeGlobalSummary Then Exit Sub
+'@label:name-category-rows
+'@sub-title Name the row category block and hand it back.
+'@details
+'A table that opens a section, and every non-temporal table, owns its category
+'block and names it. A temporal table continuing a section shares the labels the
+'anchor wrote, so it derives the block from its own ENDTABLE_ marker instead and
+'names nothing.
+'@return Range. The category block the value columns hang off.
+'@throws ErrorUnexpectedState When a continuation table finds no table above it.
+Private Function NameCategoryRows() As Range
+    Dim catRng As Range
+    Dim rng As Range
+    Dim cellRng As Range
+    Dim sh As Worksheet
+    Dim tabId As String
+    Dim tablType As Byte
+    Dim prevSpecs As TableSpecs
+    Dim prevTabId As String
+
+    Set sh = Wksh()
+    tabId = TableId()
+    tablType = TableScope()
 
     With sh
-        If Not RangeExists("ENDTABLE_" & tabId) Then
-            .Cells(EndRow + 1, StartColumn).Name = "ENDTABLE_" & tabId
-        End If
+        If Specifications.IsNewSection() Or _
+           (tablType <> ScopeTimeSeries And tablType <> ScopeSpatioTemporal) Then
 
-        nbCols = NumberOfColumns
-        If nbCols = 0 Then ThrowError ErrorUnexpectedState, _
-                                      "Table " & tabId & " has 0 columns"
-
-        ' Row categories — only for new sections or non-temporal tables
-        If isNewSect Or (tablType <> ScopeTimeSeries And tablType <> ScopeSpatioTemporal) Then
             Set catRng = RowsCategoriesRange(onlyCategories:=True, includeHeaders:=False)
             catRng.Name = "ROW_CATEGORIES_" & tabId
             catRng.Cells(0, 1).Name = "LABEL_ROW_CATEGORIES_" & tabId
@@ -1347,148 +1809,221 @@ Public Sub NameRanges()
                 Set rng = .Range(rng.Cells(2, 1), rng.Cells(rng.Rows.Count, 1))
                 rng.Name = "START_TIME_PERIOD_" & tabId
             End If
-        End If
 
-        ' Non-new-section temporal: derive catRng from ENDTABLE position
-        ' Bug #3 fix: only enter this block if section infrastructure actually exists
-        If (tablType = ScopeTimeSeries Or tablType = ScopeSpatioTemporal) And Not isNewSect Then
-            Dim prevSpecs As TableSpecs
-            Dim prevTabId As String
-
-            Set prevSpecs = specs.Previous
+        Else
+            Set prevSpecs = Specifications.Previous
             If Not prevSpecs Is Nothing Then prevTabId = prevSpecs.TableId
 
             If Not RangeExists("ENDTABLE_" & prevTabId) Then
                 ThrowError ErrorUnexpectedState, _
                            "Cannot append time series: no previous table found for " & prevTabId
             End If
-            Set cellRng = .Range("ENDTABLE_" & specs.TableId)
+
+            Set cellRng = .Range("ENDTABLE_" & tabId)
             Set catRng = .Range(cellRng.Offset(1 - NB_ROWS_TIME_SERIES), cellRng.Offset(-3))
         End If
+    End With
 
-        ' Name all value columns
-        counter = StartColumn
-        nbColCounter = 1
-        Set rng = catRng.Offset(, 1)
+    Set NameCategoryRows = catRng
+End Function
 
-        Do While (counter <= EndColumn) And (nbColCounter <= nbCols)
-            rng.Name = "VALUES_COL_" & nbColCounter & "_" & tabId
+'@label:name-value-columns
+'@sub-title Name every value column and its label cell.
+'@details
+'The label row sits one row above the values for every scope but the univariate
+'one, where it sits on the same row. That answer is the same for every column of
+'a table, so it is read once above the loop.
+'@param catRng Range. The category block the first value column sits beside.
+'@throws ErrorUnexpectedState When the table scope has no value column layout.
+Private Sub NameValueColumns(ByVal catRng As Range)
+    Dim rng As Range
+    Dim counter As Long
+    Dim nbColCounter As Long
+    Dim nbCols As Long
+    Dim labCol As Long
+    Dim tabId As String
+    Dim tablType As Byte
+    Dim hasPercent As Boolean
 
-            Select Case tablType
-            Case ScopeBivariate, ScopeTimeSeries, ScopeSpatial, ScopeSpatioTemporal
-                labCol = -1
-            Case ScopeUnivariate
-                labCol = 0
-            End Select
+    tabId = TableId()
+    tablType = TableScope()
+    nbCols = NumberOfColumns()
+    hasPercent = Specifications.HasPercentage
 
-            rng.Cells(labCol, 1).Name = "LABEL_COL_" & nbColCounter & "_" & tabId
+    Select Case tablType
+    Case ScopeBivariate, ScopeTimeSeries, ScopeSpatial, ScopeSpatioTemporal
+        labCol = -1
+    Case ScopeUnivariate
+        labCol = 0
+    Case Else
+        ' Same family as the guard in RowsCategoriesRange. A scope outside the
+        ' five leaves labCol at zero, which silently names the univariate label
+        ' row on a table that has no such row.
+        ThrowError ErrorUnexpectedState, _
+                   "Value columns were asked of table " & tabId & _
+                   ", whose scope this class does not lay out"
+    End Select
+
+    counter = StartColumn
+    nbColCounter = 1
+    Set rng = catRng.Offset(, 1)
+
+    Do While (counter <= EndColumn) And (nbColCounter <= nbCols)
+        rng.Name = "VALUES_COL_" & nbColCounter & "_" & tabId
+        rng.Cells(labCol, 1).Name = "LABEL_COL_" & nbColCounter & "_" & tabId
+
+        Set rng = rng.Offset(, 1)
+
+        If hasPercent Then
+            rng.Name = "PERC_COL_" & nbColCounter & "_" & tabId
+
+            If tablType = ScopeUnivariate Then
+                rng.Cells(labCol, 1).Name = "PERC_LABEL_COL_" & tabId
+            End If
 
             Set rng = rng.Offset(, 1)
-
-            If specs.HasPercentage Then
-                rng.Name = "PERC_COL_" & nbColCounter & "_" & tabId
-
-                If tablType = ScopeUnivariate Then
-                    rng.Cells(labCol, 1).Name = "PERC_LABEL_COL_" & tabId
-                End If
-
-                Set rng = rng.Offset(, 1)
-                counter = counter + 1
-            End If
-
             counter = counter + 1
-            nbColCounter = nbColCounter + 1
-        Loop
+        End If
 
-        ' Name Missing/Total/Percent rows and columns
-        Set cData = New BetterArray
-        Set tData = New BetterArray
-        cData.Push "MISSING", "TOTAL", "PERC"
-        tData.Push "MSG_NA", "MSG_Total", "MSG_Percent"
+        counter = counter + 1
+        nbColCounter = nbColCounter + 1
+    Loop
+End Sub
 
-        For counter = cData.LowerBound To cData.UpperBound
-            ' Row ranges
-            Set rng = RowRange(trans.TranslatedValue(tData.Item(counter)), includeHeaders:=True)
-            If Not rng Is Nothing Then
-                rng.Name = cData.Item(counter) & "_ROW_" & tabId
-                Set rng = RowRange(trans.TranslatedValue(tData.Item(counter)), includeHeaders:=False)
-                rng.Name = cData.Item(counter) & "_ROW_VALUES_" & tabId
-            End If
+'@label:name-totals-and-missing
+'@sub-title Name the Total, Missing and Percent rows and columns.
+'@details
+'Each of the three is found by its translated label, so a table that carries
+'none of them names none of them. The range just named is kept and offset for
+'the percentage twin instead of being resolved back by name.
+Private Sub NameTotalsAndMissing()
+    Dim rng As Range
+    Dim colRng As Range
+    Dim counter As Long
+    Dim tabId As String
+    Dim tablType As Byte
+    Dim hasPercent As Boolean
+    Dim trans As TranslationObject
+    Dim prefixes As Variant
+    Dim tags As Variant
+    Dim label As String
 
-            ' Column ranges (not for univariate)
-            If tablType <> ScopeUnivariate Then
-                Set rng = ColumnRange(trans.TranslatedValue(tData.Item(counter)), _
-                                      includeHeaders:=True, onlyCategories:=True)
-                If Not rng Is Nothing Then
-                    rng.Name = cData.Item(counter) & "_COL_" & tabId
-                    rng.Cells(0, 1).Name = cData.Item(counter) & "_LABEL_COL_" & tabId
-                    Set rng = ColumnRange(trans.TranslatedValue(tData.Item(counter)), _
-                                          includeHeaders:=False, onlyCategories:=True)
-                    rng.Name = cData.Item(counter) & "_COL_VALUES_" & tabId
+    tabId = TableId()
+    tablType = TableScope()
+    hasPercent = Specifications.HasPercentage
+    Set trans = Translations()
 
-                    If specs.HasPercentage Then
-                        Set rng = rng.Offset(, 1)
-                        rng.Name = cData.Item(counter) & "_PERC_VALUES_" & tabId
-                        .Range(cData.Item(counter) & "_COL_" & tabId).Offset(, 1).Name = _
-                            cData.Item(counter) & "_PERC_" & tabId
-                    End If
-                End If
-            End If
-        Next
+    prefixes = Split("MISSING|TOTAL|PERC", "|")
+    tags = Split("MSG_NA|MSG_Total|MSG_Percent", "|")
 
-        ' Intersection cells (total/missing combinations)
-        If RangeExists("TOTAL_COL_" & tabId) Then
-            If RangeExists("TOTAL_ROW_" & tabId) Then
-                rw = .Range("TOTAL_ROW_" & tabId).Row
-                col = .Range("TOTAL_COL_" & tabId).Column
-                .Cells(rw, col).Name = "TOTAL_TOTAL_" & tabId
-            End If
-            If RangeExists("MISSING_ROW_" & tabId) Then
-                rw = .Range("MISSING_ROW_" & tabId).Row
-                col = .Range("TOTAL_COL_" & tabId).Column
-                .Cells(rw, col).Name = "MISSING_TOTAL_" & tabId
-                If RangeExists("MISSING_COL_" & tabId) Then
-                    col = .Range("MISSING_COL_" & tabId).Column
-                    .Cells(rw, col).Name = "MISSING_MISSING_" & tabId
+    For counter = LBound(prefixes) To UBound(prefixes)
+        label = trans.TranslatedValue(CStr(tags(counter)))
+
+        ' Row ranges
+        Set rng = RowRange(label, includeHeaders:=True)
+        If Not rng Is Nothing Then
+            rng.Name = prefixes(counter) & "_ROW_" & tabId
+            Set rng = RowRange(label, includeHeaders:=False)
+            rng.Name = prefixes(counter) & "_ROW_VALUES_" & tabId
+        End If
+
+        ' Column ranges (not for univariate)
+        If tablType <> ScopeUnivariate Then
+            Set colRng = ColumnRange(label, includeHeaders:=True, onlyCategories:=True)
+            If Not colRng Is Nothing Then
+                colRng.Name = prefixes(counter) & "_COL_" & tabId
+                colRng.Cells(0, 1).Name = prefixes(counter) & "_LABEL_COL_" & tabId
+
+                Set rng = ColumnRange(label, includeHeaders:=False, onlyCategories:=True)
+                rng.Name = prefixes(counter) & "_COL_VALUES_" & tabId
+
+                If hasPercent Then
+                    rng.Offset(, 1).Name = prefixes(counter) & "_PERC_VALUES_" & tabId
+                    colRng.Offset(, 1).Name = prefixes(counter) & "_PERC_" & tabId
                 End If
             End If
         End If
+    Next
+End Sub
 
-        If RangeExists("TOTAL_ROW_" & tabId) Then
-            If RangeExists("MISSING_COL_" & tabId) Then
-                col = .Range("MISSING_COL_" & tabId).Column
-                rw = .Range("TOTAL_ROW_" & tabId).Row
-                .Cells(rw, col).Name = "TOTAL_MISSING_" & tabId
+'@label:name-intersections
+'@sub-title Name the cells where a total or missing row meets such a column.
+Private Sub NameIntersections()
+    Dim sh As Worksheet
+    Dim tabId As String
+    Dim totalCol As Range
+    Dim missingCol As Range
+    Dim totalRow As Range
+    Dim missingRow As Range
+
+    Set sh = Wksh()
+    tabId = TableId()
+
+    Set totalCol = NamedRange("TOTAL_COL_" & tabId)
+    Set missingCol = NamedRange("MISSING_COL_" & tabId)
+    Set totalRow = NamedRange("TOTAL_ROW_" & tabId)
+    Set missingRow = NamedRange("MISSING_ROW_" & tabId)
+
+    With sh
+        If Not totalCol Is Nothing Then
+            If Not totalRow Is Nothing Then _
+                .Cells(totalRow.Row, totalCol.Column).Name = "TOTAL_TOTAL_" & tabId
+
+            If Not missingRow Is Nothing Then
+                .Cells(missingRow.Row, totalCol.Column).Name = "MISSING_TOTAL_" & tabId
+                If Not missingCol Is Nothing Then _
+                    .Cells(missingRow.Row, missingCol.Column).Name = "MISSING_MISSING_" & tabId
             End If
         End If
 
-        ' Interior values (all data cells). The two end columns are already in
-        ' hand, so the range is built from them rather than from their addresses.
-        ' Splitting an address on a colon reads the second half of a one-cell
-        ' address that has no colon in it, and a value column is one cell tall
-        ' whenever the table has one category row: one category and no missing
-        ' row for a univariate table, or a geo count of one for a spatial one.
-        ' This range is not optional — Format and CrossTableFormula both read it,
-        ' and twenty-odd names are already on the sheet by the time it is built,
-        ' so the raise left the table half-named.
+        If (Not totalRow Is Nothing) And (Not missingCol Is Nothing) Then _
+            .Cells(totalRow.Row, missingCol.Column).Name = "TOTAL_MISSING_" & tabId
+    End With
+End Sub
+
+'@label:name-interior-values
+'@sub-title Name the block of data cells, and the outer block a spatial table adds.
+'@details
+'The two end columns are read as ranges and the block is built from them.
+'Splitting an address on a colon reads the second half of a one-cell address
+'that has no colon in it, and a value column is one cell tall whenever the table
+'has one category row: one category and no missing row for a univariate table,
+'or a geo count of one for a spatial one. This range is required -- Format and
+'CrossTableFormula both read it, and twenty-odd names are already on the sheet
+'by the time it is built, so a raise here left the table half-named.
+Private Sub NameInteriorValues()
+    Dim sh As Worksheet
+    Dim tabId As String
+    Dim firstValRng As Range
+    Dim lastValRng As Range
+    Dim interiorRng As Range
+    Dim rng As Range
+
+    Set sh = Wksh()
+    tabId = TableId()
+
+    With sh
         Set firstValRng = .Range("VALUES_COL_1_" & tabId)
-        Set lastValRng = .Range(IIf(specs.HasPercentage, "PERC_COL_", "VALUES_COL_") & _
-                                nbCols & "_" & tabId)
-        .Range(firstValRng.Cells(1, 1), _
-               lastValRng.Cells(lastValRng.Rows.Count, 1)).Name = _
-               "INTERIOR_VALUES_" & tabId
+        Set lastValRng = .Range(IIf(Specifications.HasPercentage, "PERC_COL_", "VALUES_COL_") & _
+                                NumberOfColumns() & "_" & tabId)
+        Set interiorRng = .Range(firstValRng.Cells(1, 1), _
+                                 lastValRng.Cells(lastValRng.Rows.Count, 1))
+        interiorRng.Name = "INTERIOR_VALUES_" & tabId
 
         ' Spatial outer values for population computation
-        If tablType = ScopeSpatial Then
-            Set rng = .Range("INTERIOR_VALUES_" & tabId)
-            Set rng = .Range(rng.Cells(1, -1), rng.Cells(rng.Rows.Count + 1, rng.Columns.Count + 4))
+        If TableScope() = ScopeSpatial Then
+            Set rng = .Range(interiorRng.Cells(1, -1), _
+                             interiorRng.Cells(interiorRng.Rows.Count + 1, _
+                                               interiorRng.Columns.Count + 4))
             rng.Name = "OUTER_VALUES_" & tabId
         End If
-
-        ' Column categories header
-        Set rng = HeaderRange()
-        rng.Name = "COLUMN_CATEGORIES_" & tabId
     End With
+End Sub
+
+'@label:name-column-categories
+'@sub-title Name the header row of the table.
+Private Sub NameColumnCategories()
+    HeaderRange().Name = "COLUMN_CATEGORIES_" & TableId()
 End Sub
 
 '@section Format
@@ -1514,318 +2049,420 @@ End Sub
 'ROWGS_FORMATSET and MERGED_.
 '@export
 Public Sub Format(ByVal desFormat As LLFormat)
+    Dim hn As HiddenNames
+
+    RequirePhase PHASE_NAMES, "Format"
+    Set hn = HiddenNames.Create(Wksh())
+
+    FormatSectionAndTitle desFormat, hn
+    FormatSpatialDropdown desFormat
+    FormatHeaders desFormat, hn
+    FormatCategories desFormat, hn
+    FormatInteriorValues desFormat
+    FormatBandsAndCells desFormat
+    FormatPercentageColumns desFormat
+    FormatWholeTable desFormat
+    HideUnrequestedTotals
+End Sub
+
+'@label:format-section-and-title
+'@sub-title Format the section label and the table title.
+'@details
+'The guard on the second arm is the table scope. ROWGS_SET, the name it used to
+'read, belongs to the global summary and is written on one sheet, but this arm
+'is reached by any table that does not start a section, on any of the four
+'analysis sheets. Asking whether the name resolved meant the time series builder
+'formatted a range on the normal sheet and then stamped ROWGS_FORMATSET, a
+'worksheet-scoped flag, onto its own -- so the flag described a sheet it was not
+'written on. Tightening RangeExists closes the same hole from the other side;
+'this states the intent.
+'@param desFormat LLFormat. The formatting provider.
+'@param hn HiddenNames. The worksheet's hidden name store.
+Private Sub FormatSectionAndTitle(ByVal desFormat As LLFormat, ByVal hn As HiddenNames)
     Dim sh As Worksheet
-    Dim specs As TableSpecs
-    Dim rng As Range
-    Dim rngTable As BetterArray
-    Dim counter As Long
-    Dim rngName As String
     Dim tabId As String
-    Dim designFormat As LLFormat
-    Dim wholeTableStart As Long
-    Dim hasPercent As Boolean
-    Dim newSection As Boolean
     Dim tablType As Byte
 
-    Set rngTable = New BetterArray
-    Set specs = Specifications
     Set sh = Wksh()
-    Set designFormat = desFormat
+    tabId = TableId()
+    tablType = TableScope()
 
-    tabId = specs.TableId
-    tablType = specs.TableScope
-    hasPercent = specs.HasPercentage
-    newSection = specs.IsNewSection()
+    If Specifications.IsNewSection() Then
+        desFormat.ApplyFormat sh.Range("SECTION_" & tabId), AnalysisSection
+    ElseIf (tablType = ScopeGlobalSummary) And (Not hn.HasName("ROWGS_FORMATSET")) Then
+        desFormat.ApplyFormat sh.Range("ROWGS_SET"), scope:=AnalysisSection
+        hn.EnsureName "ROWGS_FORMATSET", True, HiddenNameTypeBoolean
+    End If
+
+    ' Global summary and the two temporal scopes carry no title of their own.
+    If (tablType <> ScopeGlobalSummary) And (tablType <> ScopeTimeSeries) And _
+       (tablType <> ScopeSpatioTemporal) Then
+        desFormat.ApplyFormat sh.Range("TITLE_" & tabId), AnalysisTableTitle
+    End If
+End Sub
+
+'@label:format-spatial-dropdown
+'@sub-title Format the geo or health facility dropdown of a spatial table.
+'@param desFormat LLFormat. The formatting provider.
+Private Sub FormatSpatialDropdown(ByVal desFormat As LLFormat)
+    Dim sh As Worksheet
+    Dim tabId As String
+    Dim rng As Range
+    Dim spatType As String
+
+    If TableScope() <> ScopeSpatial Then Exit Sub
+
+    Set sh = Wksh()
+    tabId = TableId()
+    spatType = SpatialType()
+
+    If spatType = "geo" Then
+        desFormat.ApplyFormat sh.Range("ADM_DROPDOWN_" & tabId), scope:=LinelistSelectionDropdown
+        desFormat.ApplyFormat sh.Range("DEVIDEPOP_" & tabId), scope:=LinelistSelectionDropdown
+    ElseIf spatType = "hf" Then
+        desFormat.ApplyFormat sh.Range("HF_DROPDOWN_" & tabId), scope:=LinelistHiddenCell
+    End If
+
+    Set rng = sh.Range("ROW_CATEGORIES_" & tabId).Offset(, -1)
+    desFormat.ApplyFormat rng, scope:=LinelistHiddenCell
+    Set rng = rng.Offset(, -1)
+    desFormat.ApplyFormat rng, scope:=LinelistHiddenCell
+End Sub
+
+'@label:format-headers
+'@sub-title Format the header row of the table.
+'@param desFormat LLFormat. The formatting provider.
+'@param hn HiddenNames. The worksheet's hidden name store.
+Private Sub FormatHeaders(ByVal desFormat As LLFormat, ByVal hn As HiddenNames)
+    Dim sh As Worksheet
+    Dim rng As Range
+    Dim tabId As String
+
+    Set sh = Wksh()
+    tabId = TableId()
 
     With sh
-        Dim hn As HiddenNames
-        Set hn = HiddenNames.Create(sh)
-
-        ' Sections ==============================================================
-        If newSection Then
-            Set rng = .Range("SECTION_" & tabId)
-            designFormat.ApplyFormat rng, AnalysisSection
-        ' The guard is the table scope. ROWGS_SET, the name it used to read,
-        ' belongs to the global summary and is written on one sheet,
-        ' but this arm is reached by any table that does not start a section, on
-        ' any of the four analysis sheets. Asking whether the name resolved meant
-        ' the time series builder formatted a range on the NORMAL sheet and then
-        ' stamped ROWGS_FORMATSET, a worksheet-scoped flag, onto its own -- so
-        ' the flag described a sheet it was not written on. Tightening
-        ' RangeExists closes the same hole from the other side; this states the
-        ' intent.
-        ElseIf (tablType = ScopeGlobalSummary) And (Not hn.HasName("ROWGS_FORMATSET")) Then
-            Set rng = .Range("ROWGS_SET")
-            designFormat.ApplyFormat rng, scope:=AnalysisSection
-            hn.EnsureName "ROWGS_FORMATSET", True, HiddenNameTypeBoolean
-        End If
-
-        ' Title (GlobalSummary and TimeSeries don't have titles)
-        If (tablType <> ScopeGlobalSummary) And (tablType <> ScopeTimeSeries) And _
-           (tablType <> ScopeSpatioTemporal) Then
-            Set rng = .Range("TITLE_" & tabId)
-            designFormat.ApplyFormat rng, AnalysisTableTitle
-        End If
-
-        ' Spatial dropdown formatting
-        If tablType = ScopeSpatial Then
-            If specs.SpatialTableScopes = "geo" Then
-                Set rng = .Range("ADM_DROPDOWN_" & tabId)
-                designFormat.ApplyFormat rng, scope:=LinelistSelectionDropdown
-                Set rng = .Range("DEVIDEPOP_" & tabId)
-                designFormat.ApplyFormat rng, scope:=LinelistSelectionDropdown
-            ElseIf specs.SpatialTableScopes = "hf" Then
-                Set rng = .Range("HF_DROPDOWN_" & tabId)
-                designFormat.ApplyFormat rng, scope:=LinelistHiddenCell
-            End If
-            Set rng = .Range("ROW_CATEGORIES_" & tabId).Offset(, -1)
-            designFormat.ApplyFormat rng, scope:=LinelistHiddenCell
-            Set rng = rng.Offset(, -1)
-            designFormat.ApplyFormat rng, scope:=LinelistHiddenCell
-        End If
-
-        ' Headers ===============================================================
-        Select Case tablType
+        Select Case TableScope()
         Case ScopeGlobalSummary
             If Not hn.HasName("COLGS_FORMATSET") Then
                 Set rng = .Range("COLGS_SET")
                 Set rng = .Range(rng.Cells(1, 1), rng.Cells(1, 2))
-                designFormat.ApplyFormat rng, scope:=AnalysisUnivariateHeader
+                desFormat.ApplyFormat rng, scope:=AnalysisUnivariateHeader
                 hn.EnsureName "COLGS_FORMATSET", True, HiddenNameTypeBoolean
             End If
         Case ScopeUnivariate
-            Set rng = .Range("COLUMN_CATEGORIES_" & tabId)
-            designFormat.ApplyFormat rng, scope:=AnalysisUnivariateHeader
-            Set rng = .Range("LABEL_ROW_CATEGORIES_" & tabId)
-            designFormat.ApplyFormat rng, scope:=AnalysisCategoriesLabelRow
+            desFormat.ApplyFormat .Range("COLUMN_CATEGORIES_" & tabId), _
+                                  scope:=AnalysisUnivariateHeader
+            desFormat.ApplyFormat .Range("LABEL_ROW_CATEGORIES_" & tabId), _
+                                  scope:=AnalysisCategoriesLabelRow
         Case ScopeBivariate, ScopeSpatial
-            Set rng = .Range("LABEL_ROW_CATEGORIES_" & tabId)
-            designFormat.ApplyFormat rng, scope:=AnalysisCategoriesLabelRow
-            Set rng = .Range("STARTCOL_" & tabId)
-            designFormat.ApplyFormat rng, scope:=AnalysisCategoriesLabelColumn
+            desFormat.ApplyFormat .Range("LABEL_ROW_CATEGORIES_" & tabId), _
+                                  scope:=AnalysisCategoriesLabelRow
+            desFormat.ApplyFormat .Range("STARTCOL_" & tabId), _
+                                  scope:=AnalysisCategoriesLabelColumn
         Case ScopeTimeSeries, ScopeSpatioTemporal
-            If newSection Then
-                Set rng = .Range("LABEL_ROW_CATEGORIES_" & tabId)
-                designFormat.ApplyFormat rng, scope:=AnalysisCategoriesLabelRow
+            If Specifications.IsNewSection() Then
+                desFormat.ApplyFormat .Range("LABEL_ROW_CATEGORIES_" & tabId), _
+                                      scope:=AnalysisCategoriesLabelRow
             End If
             Set rng = .Range("STARTCOL_" & tabId)
             Set rng = .Range(.Cells(rng.Row, rng.Column), .Cells(rng.Row, EndColumn()))
-            designFormat.ApplyFormat rng, scope:=AnalysisTimeSeriesHeader
+            desFormat.ApplyFormat rng, scope:=AnalysisTimeSeriesHeader
         End Select
+    End With
+End Sub
 
-        ' Categories rows and columns ===========================================
+'@label:format-categories
+'@sub-title Format the category rows and columns, and merge the column labels.
+'@param desFormat LLFormat. The formatting provider.
+'@param hn HiddenNames. The worksheet's hidden name store.
+Private Sub FormatCategories(ByVal desFormat As LLFormat, ByVal hn As HiddenNames)
+    Dim sh As Worksheet
+    Dim rng As Range
+    Dim tabId As String
+    Dim tablType As Byte
+    Dim newSection As Boolean
+    Dim hasPercent As Boolean
+    Dim counter As Long
+    Dim dateCells As Variant
+
+    Set sh = Wksh()
+    tabId = TableId()
+    tablType = TableScope()
+    newSection = Specifications.IsNewSection()
+    hasPercent = Specifications.HasPercentage
+
+    With sh
         Select Case tablType
         Case ScopeGlobalSummary
-            Set rng = .Range("STARTROW_" & tabId)
-            designFormat.ApplyFormat rng, scope:=AnalysisGlobalSummaryRow
+            desFormat.ApplyFormat .Range("STARTROW_" & tabId), scope:=AnalysisGlobalSummaryRow
+            Exit Sub
         Case ScopeUnivariate
-            Set rng = .Range("ROW_CATEGORIES_" & tabId)
-            designFormat.ApplyFormat rng, scope:=AnalysisCategoriesUnivariateRow
+            desFormat.ApplyFormat .Range("ROW_CATEGORIES_" & tabId), _
+                                  scope:=AnalysisCategoriesUnivariateRow
+            Exit Sub
         Case ScopeBivariate, ScopeTimeSeries, ScopeSpatial, ScopeSpatioTemporal
-            If ((tablType <> ScopeTimeSeries) And (tablType <> ScopeSpatioTemporal)) Or newSection Then
-                Set rng = .Range("ROW_CATEGORIES_" & tabId)
-                designFormat.ApplyFormat rng, scope:=AnalysisCategoriesBivariateRow
-                If tablType = ScopeTimeSeries Or tablType = ScopeSpatioTemporal Then
-                    Set rng = rng.Offset(, -1)
-                    Set rng = .Range(rng.Cells(1, 0), rng.Cells(rng.Rows.Count + 1, 1))
-                    designFormat.ApplyFormat rng, scope:=LinelistHiddenCell
-                    rngTable.Clear
-                    rngTable.Push "START_DATE_", "END_DATE_", "VALIDATION_MIN_DATE_", _
-                                  "VALIDATION_MAX_DATE_", "MIN_MIN_DATE_", "MAX_MAX_DATE_"
-                    For counter = rngTable.LowerBound To rngTable.UpperBound
-                        rngName = rngTable.Item(counter) & tabId
-                        Set rng = .Range(rngName)
-                        designFormat.ApplyFormat rng, scope:=LinelistHiddenCell
-                        designFormat.ApplyFormat rng, scope:=AnalysisDateCell
-                    Next
-                End If
-            End If
-
-            If RangeExists("INPUTSPTGEO_USER_" & tabId) Then
-                Set rng = .Range("INPUTSPTGEO_USER_" & tabId)
-                designFormat.ApplyFormat rng, scope:=AnalysisCategoriesBivariateRow
-            End If
-
-            ' Column label merging
-            Set rng = .Range("LABEL_COL_1_" & tabId)
-            If Not hn.HasName("MERGED_" & tabId) Then
-                Do While rng.Column <= EndColumn()
-                    If hasPercent Then
-                        Set rng = rng.Offset(, 2)
-                        .Range(rng.Cells(1, -1), rng.Cells(1, 0)).Merge
-                    Else
-                        Set rng = rng.Offset(, 1)
-                    End If
-                Loop
-                hn.EnsureName "MERGED_" & tabId, True, HiddenNameTypeBoolean
-            End If
-
-            Set rng = .Range("COLUMN_CATEGORIES_" & tabId)
-            designFormat.ApplyFormat rng, scope:=AnalysisCategoriesBivariateColumn
-            Set rng = rng.Offset(1)
-            designFormat.ApplyFormat rng, scope:=AnalysisFirstRow
+            ' Handled below.
+        Case Else
+            Exit Sub
         End Select
 
-        ' Interior values =======================================================
-        If tablType <> ScopeGlobalSummary Then
-            Set rng = .Range("INTERIOR_VALUES_" & tabId)
-            designFormat.ApplyFormat rng, scope:=AnalysisInteriorTable
+        If ((tablType <> ScopeTimeSeries) And (tablType <> ScopeSpatioTemporal)) Or newSection Then
+            Set rng = .Range("ROW_CATEGORIES_" & tabId)
+            desFormat.ApplyFormat rng, scope:=AnalysisCategoriesBivariateRow
+
+            If tablType = ScopeTimeSeries Or tablType = ScopeSpatioTemporal Then
+                Set rng = rng.Offset(, -1)
+                Set rng = .Range(rng.Cells(1, 0), rng.Cells(rng.Rows.Count + 1, 1))
+                desFormat.ApplyFormat rng, scope:=LinelistHiddenCell
+
+                dateCells = Split(TEMPORAL_DATE_CELLS, "|")
+                For counter = LBound(dateCells) To UBound(dateCells)
+                    Set rng = .Range(dateCells(counter) & tabId)
+                    desFormat.ApplyFormat rng, scope:=LinelistHiddenCell
+                    desFormat.ApplyFormat rng, scope:=AnalysisDateCell
+                Next
+            End If
         End If
 
-        ' Unique cells — Total/Missing rows and columns ==========================
-        rngTable.Clear
-        rngTable.Push "TOTAL_ROW_VALUES_", "TOTAL_COL_VALUES_", _
-                      "MISSING_ROW_VALUES_", "MISSING_COL_VALUES_", _
-                      "TOTAL_PERC_VALUES_", "MISSING_PERC_VALUES_"
+        Set rng = NamedRange("INPUTSPTGEO_USER_" & tabId)
+        If Not rng Is Nothing Then _
+            desFormat.ApplyFormat rng, scope:=AnalysisCategoriesBivariateRow
 
-        For counter = rngTable.LowerBound To rngTable.UpperBound
-            rngName = rngTable.Item(counter) & tabId
-            If (InStr(1, rngName, "ROW") > 0) And RangeExists(rngName) Then
-                Set rng = .Range(rngName)
+        ' Column label merging
+        If Not hn.HasName("MERGED_" & tabId) Then
+            Set rng = .Range("LABEL_COL_1_" & tabId)
+            Do While rng.Column <= EndColumn()
+                If hasPercent Then
+                    Set rng = rng.Offset(, 2)
+                    .Range(rng.Cells(1, -1), rng.Cells(1, 0)).Merge
+                Else
+                    Set rng = rng.Offset(, 1)
+                End If
+            Loop
+            hn.EnsureName "MERGED_" & tabId, True, HiddenNameTypeBoolean
+        End If
+
+        Set rng = .Range("COLUMN_CATEGORIES_" & tabId)
+        desFormat.ApplyFormat rng, scope:=AnalysisCategoriesBivariateColumn
+        desFormat.ApplyFormat rng.Offset(1), scope:=AnalysisFirstRow
+    End With
+End Sub
+
+'@label:format-interior-values
+'@sub-title Format the block of data cells.
+'@param desFormat LLFormat. The formatting provider.
+Private Sub FormatInteriorValues(ByVal desFormat As LLFormat)
+    If TableScope() = ScopeGlobalSummary Then Exit Sub
+    desFormat.ApplyFormat Wksh().Range("INTERIOR_VALUES_" & TableId()), _
+                          scope:=AnalysisInteriorTable
+End Sub
+
+'@label:format-bands-and-cells
+'@sub-title Format the total and missing bands, the single cells, the info cells
+'and the hidden cells.
+'@details
+'Four walks over four constant prefix lists. Each entry used to cost two name
+'resolutions, one to ask whether it existed and one to read it, and about half
+'the entries of any list do not exist for the scope in hand. NamedRange answers
+'both questions at once.
+'@param desFormat LLFormat. The formatting provider.
+Private Sub FormatBandsAndCells(ByVal desFormat As LLFormat)
+    Dim sh As Worksheet
+    Dim rng As Range
+    Dim counter As Long
+    Dim rngName As String
+    Dim tabId As String
+    Dim tablType As Byte
+    Dim newSection As Boolean
+    Dim prefixes As Variant
+
+    Set sh = Wksh()
+    tabId = TableId()
+    tablType = TableScope()
+    newSection = Specifications.IsNewSection()
+
+    ' Total and missing bands
+    prefixes = Split(BAND_CELLS, "|")
+    For counter = LBound(prefixes) To UBound(prefixes)
+        rngName = prefixes(counter) & tabId
+        Set rng = NamedRange(rngName)
+        If Not rng Is Nothing Then
+            If InStr(1, rngName, "ROW") > 0 Then
                 If (tablType = ScopeTimeSeries Or tablType = ScopeSpatioTemporal) And _
                    (Not newSection) Then
-                    designFormat.ApplyFormat rng, scope:=AnalysisMissingRowWithoutHeader
+                    desFormat.ApplyFormat rng, scope:=AnalysisMissingRowWithoutHeader
                 Else
-                    designFormat.ApplyFormat rng, scope:=AnalysisMissingRow
+                    desFormat.ApplyFormat rng, scope:=AnalysisMissingRow
                 End If
-            ElseIf RangeExists(rngName) Then
-                Set rng = .Range(rngName)
-                designFormat.ApplyFormat rng, scope:=AnalysisMissingColumn
+            Else
+                desFormat.ApplyFormat rng, scope:=AnalysisMissingColumn
             End If
-        Next
+        End If
+    Next
 
-        ' Single cells
-        rngTable.Clear
-        rngTable.Push "TOTAL_MISSING_", "TOTAL_TOTAL_", _
-                      "USER_START_DATE_", "USER_END_DATE_", "TIME_UNIT_", _
-                      "MISSING_TOTAL_", "MISSING_MISSING_", "START_DATE_LABEL_", _
-                      "TIME_UNIT_LABEL_", "END_DATE_LABEL_", "POPFACT_", "POPFACTLABEL_", _
-                      "INPUTSPTGEO_LABEL_"
-
-        For counter = rngTable.LowerBound To rngTable.UpperBound
-            rngName = rngTable.Item(counter) & tabId
-            If RangeExists(rngName) Then
-                Set rng = .Range(rngName)
-                If (InStr(1, rngName, "LABEL") > 0) Or (InStr(1, rngName, "POP") > 0) Then
-                    designFormat.ApplyFormat rng, scope:=AnalysisUnivariateHeader
-                ElseIf (InStr(1, rngName, "USER") > 0) Or (rngName = "TIME_UNIT_" & tabId) Then
-                    designFormat.ApplyFormat rng, scope:=AnalysisOneCellCenter
-                Else
-                    designFormat.ApplyFormat rng, scope:=AnalysisOneCell
-                End If
+    ' Single cells
+    prefixes = Split(SINGLE_CELLS, "|")
+    For counter = LBound(prefixes) To UBound(prefixes)
+        rngName = prefixes(counter) & tabId
+        Set rng = NamedRange(rngName)
+        If Not rng Is Nothing Then
+            If (InStr(1, rngName, "LABEL") > 0) Or (InStr(1, rngName, "POP") > 0) Then
+                desFormat.ApplyFormat rng, scope:=AnalysisUnivariateHeader
+            ElseIf (InStr(1, rngName, "USER") > 0) Or (rngName = "TIME_UNIT_" & tabId) Then
+                desFormat.ApplyFormat rng, scope:=AnalysisOneCellCenter
+            Else
+                desFormat.ApplyFormat rng, scope:=AnalysisOneCell
             End If
-        Next
+        End If
+    Next
 
-        ' Info cells
-        rngTable.Clear
-        rngTable.Push "INFO_START_DATE_", "INFO_END_DATE_", "INFO_ANA_PERIOD_"
-        For counter = rngTable.LowerBound To rngTable.UpperBound
-            rngName = rngTable.Item(counter) & tabId
-            If RangeExists(rngName) Then
-                Set rng = .Range(rngName)
-                designFormat.ApplyFormat rng, scope:=AnalysisInfoCell
-                If InStr(1, rngName, "INFO_ANA_") > 0 Then
-                    designFormat.ApplyFormat rng, scope:=AnalysisInfoCellLeft
-                End If
+    ' Info cells
+    prefixes = Split(INFO_CELLS, "|")
+    For counter = LBound(prefixes) To UBound(prefixes)
+        rngName = prefixes(counter) & tabId
+        Set rng = NamedRange(rngName)
+        If Not rng Is Nothing Then
+            desFormat.ApplyFormat rng, scope:=AnalysisInfoCell
+            If InStr(1, rngName, "INFO_ANA_") > 0 Then
+                desFormat.ApplyFormat rng, scope:=AnalysisInfoCellLeft
             End If
-        Next
+        End If
+    Next
 
-        ' Hidden cells
-        rngTable.Clear
-        rngTable.Push "PREVIOUS_ADM_", "POPPREVFACT_", "POPFACT_", "POPFACTLABEL_", _
-                      "INPUTSPTGEO_NGEO_", "INPUTPREVADM_USER_"
-        For counter = rngTable.LowerBound To rngTable.UpperBound
-            rngName = rngTable.Item(counter) & tabId
-            If RangeExists(rngName) Then
-                Set rng = .Range(rngName)
-                designFormat.ApplyFormat rng, scope:=LinelistHiddenCell
-            End If
-        Next
+    ' Hidden cells
+    prefixes = Split(HIDDEN_CELLS, "|")
+    For counter = LBound(prefixes) To UBound(prefixes)
+        Set rng = NamedRange(prefixes(counter) & tabId)
+        If Not rng Is Nothing Then desFormat.ApplyFormat rng, scope:=LinelistHiddenCell
+    Next
+End Sub
 
-        ' Percentage columns ====================================================
-        If hasPercent Then
-            Set rng = .Range("PERC_COL_1_" & tabId)
-            If (specs.TableScope <> ScopeSpatial) Or specs.HasTotal Then
-                Set rng = .Range(rng.Cells(1, 1), rng.Cells(rng.Rows.Count + 1, 1))
-            End If
-            Do While rng.Column <= EndColumn()
-                designFormat.ApplyFormat rng, scope:=AnalysisPercent
-                Set rng = rng.Offset(, 2)
-            Loop
-            rngTable.Clear
-            rngTable.Push "MISSING_MISSING_", "TOTAL_TOTAL_", "MISSING_TOTAL_"
-            For counter = rngTable.LowerBound To rngTable.UpperBound
-                rngName = rngTable.Item(counter) & tabId
-                If RangeExists(rngName) Then
-                    Set rng = .Range(rngName).Offset(, 1)
-                    designFormat.ApplyFormat rng, scope:=AnalysisOneCellCenter
-                End If
-            Next
+'@label:format-percentage-columns
+'@sub-title Format every percentage column and the corner cells beside them.
+'@param desFormat LLFormat. The formatting provider.
+Private Sub FormatPercentageColumns(ByVal desFormat As LLFormat)
+    Dim sh As Worksheet
+    Dim rng As Range
+    Dim counter As Long
+    Dim tabId As String
+    Dim prefixes As Variant
+
+    If Not Specifications.HasPercentage Then Exit Sub
+
+    Set sh = Wksh()
+    tabId = TableId()
+
+    With sh
+        Set rng = .Range("PERC_COL_1_" & tabId)
+        If (TableScope() <> ScopeSpatial) Or Specifications.HasTotal Then
+            Set rng = .Range(rng.Cells(1, 1), rng.Cells(rng.Rows.Count + 1, 1))
         End If
 
-        ' Whole table ===========================================================
-        wholeTableStart = StartColumn
-        If (tablType = ScopeTimeSeries Or tablType = ScopeSpatioTemporal) And _
-           (Not newSection) Then
-            wholeTableStart = StartColumn + 1
-        End If
+        Do While rng.Column <= EndColumn()
+            desFormat.ApplyFormat rng, scope:=AnalysisPercent
+            Set rng = rng.Offset(, 2)
+        Loop
+    End With
 
+    prefixes = Split(PERCENT_CORNER_CELLS, "|")
+    For counter = LBound(prefixes) To UBound(prefixes)
+        Set rng = NamedRange(prefixes(counter) & tabId)
+        If Not rng Is Nothing Then _
+            desFormat.ApplyFormat rng.Offset(, 1), scope:=AnalysisOneCellCenter
+    Next
+End Sub
+
+'@label:format-whole-table
+'@sub-title Draw the outline of the table and the gap under it.
+'@param desFormat LLFormat. The formatting provider.
+Private Sub FormatWholeTable(ByVal desFormat As LLFormat)
+    Dim sh As Worksheet
+    Dim rng As Range
+    Dim tabId As String
+    Dim tablType As Byte
+    Dim wholeTableStart As Long
+
+    Set sh = Wksh()
+    tabId = TableId()
+    tablType = TableScope()
+
+    wholeTableStart = StartColumn
+    If (tablType = ScopeTimeSeries Or tablType = ScopeSpatioTemporal) And _
+       (Not Specifications.IsNewSection()) Then
+        wholeTableStart = StartColumn + 1
+    End If
+
+    With sh
         If (tablType <> ScopeUnivariate) And (tablType <> ScopeGlobalSummary) Then
             Set rng = .Range(.Cells(StartRow, wholeTableStart), .Cells(EndRow, EndColumn))
-            designFormat.ApplyFormat rng, scope:=AnalysisWholeTable
+            desFormat.ApplyFormat rng, scope:=AnalysisWholeTable
         ElseIf tablType = ScopeUnivariate Then
             Set rng = .Range(.Cells(StartRow + 1, wholeTableStart), .Cells(EndRow, EndColumn))
-            designFormat.ApplyFormat rng, scope:=AnalysisWholeTable
+            desFormat.ApplyFormat rng, scope:=AnalysisWholeTable
         End If
-
-        ' End table gap for graphs
-        If RangeExists("ENDTABLE_" & tabId) And _
-           (tablType <> ScopeTimeSeries) And _
-           (tablType <> ScopeSpatioTemporal) Then
-            Set rng = .Range("ENDTABLE_" & tabId)
-            designFormat.ApplyFormat rng, scope:=AnalysisEndTable
-        End If
-
-        ' Total COLUMN, hidden when the user did not ask for it. For time series
-        ' and spatio-temporal tables HasTotal can be True because
-        ' percentage="row" needs the total column as its denominator, so the
-        ' column has to exist and the user still has no reason to see it.
-        If (tablType = ScopeTimeSeries Or tablType = ScopeSpatioTemporal) And _
-           specs.HasTotal And (Not specs.TotalRequested) Then
-            If RangeExists("TOTAL_COL_" & tabId) Then
-                .Range("TOTAL_COL_" & tabId).EntireColumn.Hidden = True
-                ' Also hide the adjacent percentage column for Total if it exists
-                If hasPercent And RangeExists("TOTAL_PERC_VALUES_" & tabId) Then
-                    .Range("TOTAL_PERC_VALUES_" & tabId).EntireColumn.Hidden = True
-                End If
-            End If
-        End If
-
-        ' Total ROW, the other half of the same answer -- issue #338. AddRows
-        ' writes the Total and Missing labels of a temporal section
-        ' unconditionally, because the row grid is a fixed NB_ROWS_TIME_SERIES
-        ' block with exactly two footer rows and RowsCategoriesRange trims them
-        ' BY COUNT. So the row cannot be dropped and it is hidden instead, the
-        ' way the column above is. Without this a table with "Add total" left at
-        ' no still showed a Total row, which is what the field reported.
-        '
-        ' The rows belong to the section rather than to one table, so the anchor
-        ' -- the table that wrote them -- is what hides them, and any later table
-        ' of the same section that does ask for a total shows them again. Nothing
-        ' hides a row a table has asked for, whatever order the section is built
-        ' in. Every table of the section names the same sheet row through its own
-        ' TOTAL_ROW_<tabId>, so the name is always this table's.
-        If (tablType = ScopeTimeSeries Or tablType = ScopeSpatioTemporal) And _
-           RangeExists("TOTAL_ROW_" & tabId) Then
-            Set rng = .Range("TOTAL_ROW_" & tabId)
-            If specs.TotalRequested() Then
-                rng.EntireRow.Hidden = False
-            ElseIf newSection Then
-                rng.EntireRow.Hidden = True
-            End If
-        End If
-
     End With
+
+    ' End table gap for graphs
+    If (tablType = ScopeTimeSeries) Or (tablType = ScopeSpatioTemporal) Then Exit Sub
+
+    Set rng = NamedRange("ENDTABLE_" & tabId)
+    If Not rng Is Nothing Then desFormat.ApplyFormat rng, scope:=AnalysisEndTable
+End Sub
+
+'@label:hide-unrequested-totals
+'@sub-title Hide the total row and column of a temporal table that asked for neither.
+'@details
+'For time series and spatio-temporal tables HasTotal can be True while the user
+'asked for nothing: percentage="row" needs the total column as its denominator,
+'so the column has to exist and the user still has no reason to see it.
+'
+'THE ROW IS THE OTHER HALF OF THE SAME ANSWER -- ISSUE #338
+'-------------------------------------------------------------------------------
+'AddRows writes the Total and Missing labels of a temporal section
+'unconditionally, because the row grid is a fixed NB_ROWS_TIME_SERIES block with
+'exactly two footer rows and RowsCategoriesRange trims them BY COUNT. So the row
+'cannot be dropped and it is hidden instead, the way the column is. Without this
+'a table with "Add total" left empty still showed a Total row, which is what the
+'field reported.
+'
+'The rows belong to the section rather than to one table, so the anchor -- the
+'table that wrote them -- is what hides them, and any later table of the same
+'section that does ask for a total shows them again. Nothing hides a row a table
+'has asked for, whatever order the section is built in. Every table of the
+'section names the same sheet row through its own TOTAL_ROW_<tableId>, so the
+'name is always this table's.
+Private Sub HideUnrequestedTotals()
+    Dim tabId As String
+    Dim tablType As Byte
+    Dim totalCol As Range
+    Dim totalPerc As Range
+    Dim totalRow As Range
+
+    tablType = TableScope()
+    If (tablType <> ScopeTimeSeries) And (tablType <> ScopeSpatioTemporal) Then Exit Sub
+
+    tabId = TableId()
+
+    If Specifications.HasTotal And (Not Specifications.TotalRequested) Then
+        Set totalCol = NamedRange("TOTAL_COL_" & tabId)
+        If Not totalCol Is Nothing Then
+            totalCol.EntireColumn.Hidden = True
+            If Specifications.HasPercentage Then
+                Set totalPerc = NamedRange("TOTAL_PERC_VALUES_" & tabId)
+                If Not totalPerc Is Nothing Then totalPerc.EntireColumn.Hidden = True
+            End If
+        End If
+    End If
+
+    Set totalRow = NamedRange("TOTAL_ROW_" & tabId)
+    If totalRow Is Nothing Then Exit Sub
+
+    If Specifications.TotalRequested() Then
+        totalRow.EntireRow.Hidden = False
+    ElseIf Specifications.IsNewSection() Then
+        totalRow.EntireRow.Hidden = True
+    End If
 End Sub
 
 '@section Build
@@ -1848,10 +2485,45 @@ End Sub
 '@export
 Public Sub Build()
     AddHeader
+
+    ' The layout is fixed here, between the phase that moves the sheet and the
+    ' three that read it. AddHeader inserts rows, so the start row is only stable
+    ' once it has returned; and the start column has to be on the sheet before
+    ' AddColumns, because the scan that finds a continuation table's column
+    ' answers something else as soon as that table's own columns are written.
+    CacheStartRow
+    EnsureStartColumn
+
     AddRows
     AddColumns
     NameRanges
-    LogInfo "Table " & Specifications.TableId & " built"
+    LogInfo "Table " & TableId() & " built"
+End Sub
+
+'@label:mark-phase
+'@sub-title Record that a build phase has run.
+'@param reached Byte. The phase that has just finished.
+Private Sub MarkPhase(ByVal reached As Byte)
+    If this.phase < reached Then this.phase = reached
+End Sub
+
+'@label:require-phase
+'@sub-title Refuse a phase whose inputs have not been written yet.
+'@details
+'The four phases have to run in order and nothing said so. AddHeader inserts
+'rows and shifts the sheet, AddRows sets EndRow, AddColumns sets EndColumn and
+'NumberOfColumns, and NameRanges needs all three. Calling them out of order used
+'to give a table built at row zero or a name over an empty block, several frames
+'from the mistake.
+'@param completed Byte. The phase that must already have run.
+'@param caller String. The member refusing, for the message.
+'@throws ErrorUnexpectedState When the phase has not been reached.
+Private Sub RequirePhase(ByVal completed As Byte, ByVal caller As String)
+    If this.phase >= completed Then Exit Sub
+
+    ThrowError ErrorUnexpectedState, _
+               caller & " was called on table " & TableId() & _
+               " before the build reached phase " & completed
 End Sub
 
 '@section Checkings
@@ -1873,7 +2545,7 @@ Private Sub LogInfo(ByVal message As String, _
     ' this class raised was filed as a note carrying a bare number where its text
     ' belonged, and the scope the caller asked for was thrown away. Keys must
     ' also be unique or Add raises, and a message used as a key is only unique
-    ' while every message differs — a second call with a fixed message would have
+    ' while every message differs -- a second call with a fixed message would have
     ' taken its table down from inside the guarded window.
     '
     ' The key names the class and the table as well as the counter. AnalysisOutput
@@ -1881,7 +2553,7 @@ Private Sub LogInfo(ByVal message As String, _
     ' the sheet, into one report, and a bare counter made the second Append raise
     ' on a key the first had already taken.
     checkCounter = checkCounter + 1
-    internalChecks.Add "CrossTable-" & Specifications.TableId & "-" & CStr(checkCounter), _
+    internalChecks.Add "CrossTable-" & TableId() & "-" & CStr(checkCounter), _
                        message, scope
     this.hasChecks = True
 End Sub

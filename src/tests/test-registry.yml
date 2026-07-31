@@ -721,6 +721,22 @@ suites:
       # the driver workbook. AnalysisOutput waited on this row.
       - name: Linelist
       - name: LLDataEntry
+      # DO NOT ADD CustomLinelistFunctions, LinelistEventsManager OR
+      # EventLinelist HERE. Session 51 tried it, and the closure is what stops
+      # it: CustomLinelistFunctions reaches EventLinelist through
+      # LinelistEventsManager, and LinelistEventsManager declares the same six
+      # Public names as EventsManager under `setup` -- EnterBusyState,
+      # ExitBusyState, IsBusyState, SheetActivated, SheetChanged and
+      # WorkbookOpened. Two live copies of a Public name make every UNQUALIFIED
+      # call "Ambiguous name detected", and TestEventsManager makes exactly such
+      # a call, so the whole project stops compiling. The run wedges on the
+      # dialog: healthy import log, a zero-byte test-results.csv and Excel
+      # ignoring the graceful quit.
+      #
+      # src/tests/linelist/TestCustomLinelistFunctions.bas is on disk and
+      # unregistered for that reason. It closes issue 340 the moment the two
+      # managers stop sharing names -- one rename, or one merge, and it is its
+      # own piece of work.
     tests:
       # TestLinelistSpecs moved here from the src/tests/ root, where it had no
       # folder to be registered under. Its four tests had never run.

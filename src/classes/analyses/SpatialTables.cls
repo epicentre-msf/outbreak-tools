@@ -45,7 +45,7 @@ Option Explicit
 '-------------------------------------------------------------------------------
 'A facility table is two columns: the lookup key and the value. A health facility
 'has no population, so the population and the attack rate belong to an
-'administrative table alone — the geobase gives a population per administrative
+'administrative table alone -- the geobase gives a population per administrative
 'level (adm1_pop to adm4_pop) and none for a facility. The facility table used to
 'carry all four columns with the last two always blank.
 '
@@ -329,20 +329,34 @@ End Property
 'the level number: T_ADM1 holds it in column 2, T_ADM2 in column 3, and so on.
 '@param adminName String. The level identifier, such as "adm1".
 '@param rangeAddress String. The cell address MATCH looks the unit up by.
-'@return String. The formula text with no leading "=".
+'@return String. The formula text with no leading "=", or an empty string when
+'the name carries no level number.
+'@remarks A NAME THAT IS NOT adm<n> USED TO GIVE COLUMN ZERO. The level number
+'was read with CLng under On Error Resume Next, so anything else left the index
+'at 0 -- and INDEX(table, row, 0) is a whole-row reference rather than an error,
+'so ISERROR answered False and the cell took the first column of the row. The
+'level number is checked before it is used now, and a name without one files a
+'warning and leaves the population cell empty.
 Private Function GeoPopulationFunction(ByVal adminName As String, _
                                        ByVal rangeAddress As String) As String
     Dim tabName As String
     Dim concatName As String
     Dim centralPart As String
+    Dim levelText As String
     Dim popColIndex As Long
 
+    levelText = Replace(LCase(adminName), ADMIN, vbNullString)
+
+    If Not IsNumeric(levelText) Then
+        LogInfo "The population column of " & adminName & _
+                " could not be worked out: the name carries no level number", _
+                checkingWarning
+        Exit Function
+    End If
+
+    popColIndex = CLng(levelText) + 1
     tabName = "T_" & UCase(adminName)
     concatName = LCase(adminName) & "_concat"
-
-    On Error Resume Next
-    popColIndex = CLng(Replace(adminName, ADMIN, vbNullString)) + 1
-    On Error GoTo 0
 
     centralPart = "INDEX(" & tabName & ", MATCH(" & rangeAddress & _
                   ", " & concatName & ", 0), " & popColIndex & ")"
