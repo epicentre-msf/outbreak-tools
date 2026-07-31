@@ -34,6 +34,15 @@ Option Explicit
 'P1 appears twice, P2 and P3 once each, and the last row is empty on every
 'level. So a filled table holds three rows, P1 ranks first on a count, and a
 'blank row reaching the table is visible as a fourth row.
+'
+'ONE TEST SWITCHES THE CALCULATED-COLUMN AUTOFILL OF THE HOST OFF
+'-------------------------------------------------------------------------------
+'The host writes the same formula into the same cells as the class does, so a
+'filled row says nothing about which of the two filled it.
+'TestUpdateWritesTheFormulasOfNewRows switches
+'Application.AutoCorrect.AutoFillFormulasInLists off before it builds its
+'fixture and asserts the switch took. ModuleInitialize reads what the host held
+'and ModuleCleanup puts it back.
 '@depends LLSpatial, CustomTest, TestHelpers, HiddenNames, BetterArray
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
@@ -46,6 +55,12 @@ Private Const START_NAME As String = "TAB_ONE_START"
 
 Private Assert As CustomTest
 
+' What the host held for its list autofill before this module touched it, and
+' whether it answered at all. The formula test switches the autofill off and
+' ModuleCleanup puts it back whatever happens in between.
+Private hostFillWas As Boolean
+Private hostFillAnswered As Boolean
+
 '@section Module lifecycle
 '===============================================================================
 
@@ -53,28 +68,64 @@ Private Assert As CustomTest
 '@details
 'Suppresses screen updates via BusyApp, ensures the test output sheet
 'exists, creates the CustomTest assertion object targeting that sheet,
-'and sets the module name for result grouping.
+'and sets the module name for result grouping. The host setting the formula
+'test switches is read here, so the restore has something to put back however
+'that test ends.
 '@ModuleInitialize
 Public Sub ModuleInitialize()
     BusyApp
     EnsureWorksheet TEST_OUTPUT_SHEET, clearSheet:=False
     Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
     Assert.SetModuleName "TestLLSpatial"
+    hostFillWas = HostFillsListFormulas(hostFillAnswered)
 End Sub
 
 '@sub-title Tear down the module after all tests complete.
 '@details
 'Prints accumulated test results to the output sheet, restores the
 'application state via RestoreApp, releases the assertion object, and
-'deletes all temporary worksheets created during the test run.
+'deletes all temporary worksheets created during the test run. The host list
+'autofill goes back to what it held before the module ran.
 '@ModuleCleanup
 Public Sub ModuleCleanup()
+    If hostFillAnswered Then SetHostFillsListFormulas hostFillWas
+
     If Not Assert Is Nothing Then
         Assert.PrintResults TEST_OUTPUT_SHEET
     End If
     RestoreApp
     Set Assert = Nothing
     DeleteWorksheets SPATIAL_SHEET, SPATIAL_WRONG
+End Sub
+
+'@sub-title Whether the host fills the formulas of a table column by itself.
+'@details
+'Application.AutoCorrect.AutoFillFormulasInLists is the calculated-column
+'autofill of the host. The formula test needs it off, so that whichever rows
+'carry a formula afterwards carry it because LLSpatial wrote it.
+'
+'The answered flag is what tells a missing property apart from a property
+'holding False. Without it, a host with no such member would read as "the
+'autofill is already off" and the test would go back to proving nothing.
+'@param answered Boolean. Set True when the host answered the read.
+'@return Boolean. What the host holds.
+Private Function HostFillsListFormulas(ByRef answered As Boolean) As Boolean
+    answered = False
+
+    On Error Resume Next
+    Err.Clear
+    HostFillsListFormulas = Application.AutoCorrect.AutoFillFormulasInLists
+    answered = (Err.Number = 0)
+    Err.Clear
+    On Error GoTo 0
+End Function
+
+'@sub-title Switch the calculated-column autofill of the host on or off.
+'@param switchOn Boolean. True to let the host fill table formulas.
+Private Sub SetHostFillsListFormulas(ByVal switchOn As Boolean)
+    On Error Resume Next
+    Application.AutoCorrect.AutoFillFormulasInLists = switchOn
+    On Error GoTo 0
 End Sub
 
 '@sub-title Reset state before each individual test.
@@ -672,6 +723,14 @@ End Sub
 'rate. The class used to leave those rows to the calculated-column autofill of
 'the host, which is an option a user can switch off and which an array formula
 'seldom triggers, so only the first row held a number.
+'
+'THE HOST AUTOFILL IS SWITCHED OFF FIRST, AND THAT IS THE POINT OF THE TEST
+'-------------------------------------------------------------------------------
+'The host and the class write the same formula into the same cells, so a row
+'carrying a formula proves nothing about which of the two put it there. With
+'Application.AutoCorrect.AutoFillFormulasInLists off, the host cannot have
+'written it. The switch is asserted to have taken, so a host with no such member
+'fails here rather than quietly turning this back into a test of the host.
 '@TestMethod("LLSpatial")
 Public Sub TestUpdateWritesTheFormulasOfNewRows()
     CustomTestSetTitles Assert, "LLSpatial", "TestUpdateWritesTheFormulasOfNewRows"
@@ -682,6 +741,13 @@ Public Sub TestUpdateWritesTheFormulasOfNewRows()
     Dim filtSh As Worksheet
     Dim sp As LLSpatial
     Dim Lo As ListObject
+    Dim hostFills As Boolean
+    Dim hostAnswered As Boolean
+
+    'The switch comes before the fixture, so the value column is never made a
+    'calculated column in the first place.
+    SetHostFillsListFormulas False
+    hostFills = HostFillsListFormulas(hostAnswered)
 
     Set wb = BuildSpatialWorkbook(withRegistry:=True)
     Set sh = wb.Worksheets(SPATIAL_SHEET)
@@ -693,8 +759,13 @@ Public Sub TestUpdateWritesTheFormulasOfNewRows()
     Set sp = LLSpatial.Create(sh)
     sp.Update
 
+    If hostFillAnswered Then SetHostFillsListFormulas hostFillWas
+
     Set Lo = sh.ListObjects("spatial_adm1_cases_sp1")
 
+    Assert.IsTrue (hostAnswered And Not hostFills), _
+                  "The host list autofill should read as off, so the rows below the " & _
+                  "first carry a formula because the class wrote it"
     Assert.IsTrue (LenB(Lo.ListColumns("formula_adm1").DataBodyRange.Cells(2, 1).Formula) > 0), _
                   "The second row should carry the value formula"
     Assert.IsTrue (LenB(Lo.ListColumns("formula_adm1").DataBodyRange.Cells(3, 1).Formula) > 0), _
@@ -709,6 +780,7 @@ Public Sub TestUpdateWritesTheFormulasOfNewRows()
 
     Exit Sub
 TestFail:
+    If hostFillAnswered Then SetHostFillsListFormulas hostFillWas
     CustomTestLogFailure Assert, "TestUpdateWritesTheFormulasOfNewRows", Err.Number, Err.Description
 End Sub
 
