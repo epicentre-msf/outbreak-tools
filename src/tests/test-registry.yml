@@ -520,13 +520,16 @@ suites:
       # DictionaryTestFixture, registered under `helpers`; its other helper
       # calls are unqualified, so they resolve to TestHelpersLite.
       #
-      # TestGraphs stays out. It carries Option Private Module, every test proc
-      # is Private, and it builds its assert object with
+      # TestGraphs was rewritten to the CustomTest harness on 2026-07-31. The
+      # version before it carried Option Private Module, kept every test proc
+      # Private, and built its assert object with
       # CreateObject("Rubberduck.AssertClass") plus Rubberduck.FakesProvider,
-      # which is a COM class this host does not have. It is a rewrite, and it
-      # belongs to the Graphs session.
+      # which is a COM class this host does not have. It draws real charts on a
+      # fixture worksheet, so read the clock after adding it.
       - module: TestGraphSpecs
         covers: [GraphSpecs]
+      - module: TestGraphs
+        covers: [Graphs]
 
   # --- geo (LLGeo, for LinelistSpecs) ----------------------------------------
   # LLGeo owns the Geo worksheet: the four admin tables, the health facility
