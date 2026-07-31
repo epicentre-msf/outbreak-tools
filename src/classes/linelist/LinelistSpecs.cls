@@ -752,7 +752,15 @@ End Function
 '@details
 'Choices reads through its accessor, so a call before Prepare raises there.
 Private Sub EnsureCategoryLookup()
-    Choices
+    Dim choicesObj As LLChoices
+
+    'The read is the guard: Choices raises when Prepare has not run. It is read
+    'into a local because VBA refuses a Property Get written as a bare statement
+    '-- "invalid use of property" -- and that is a modal dialog in a headless
+    'run, which stops it with no results file. Nothing had called Categories
+    'from a registered suite, so the line sat here unexercised.
+    Set choicesObj = Choices
+
     EnsureVariables
     EnsureCategoryCache
 End Sub
@@ -1607,6 +1615,15 @@ End Sub
 '@param data FormulaData. The formula data to expose through FormulaDataObject().
 Public Sub TestAssignFormulaData(ByVal data As FormulaData)
     Set this.formulaData = data
+End Sub
+
+'@label:test-assign-choices
+'@sub-title Inject a choices collaborator for testing
+'@details Lets a suite reach Categories, and through it every dropdown a
+'variable can carry, without running Prepare.
+'@param choicesObj LLChoices. The choices object to expose through Choices().
+Public Sub TestAssignChoices(ByVal choicesObj As LLChoices)
+    Set this.choices = choicesObj
 End Sub
 
 '@label:test-assign-trans-object
