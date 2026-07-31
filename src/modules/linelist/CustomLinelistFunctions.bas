@@ -439,8 +439,16 @@ Public Function Epiweek(ByVal currentDate As Long, _
     Dim epiWeekNum As Long
     Dim rawStart As String
 
-    ' Read week start from HiddenNames, default to Monday (1)
+    ' A blank cell reaches a Long parameter as 0, which is 1899-12-30, and the
+    ' epi-year of that answers 1899. The formulas in the field guard the call
+    ' with ISBLANK; the ones that do not used to get a date nobody typed.
+    If currentDate <= 0 Then Exit Function
+
+    ' Read week start from HiddenNames, default to Monday (1). The name is user
+    ' data by the time a linelist is delivered, so a value that is not a number
+    ' falls back rather than raising 13 out of a worksheet function as #VALUE!.
     rawStart = HiddenNameValue("RNG_EpiWeekStart", "1")
+    If Not IsNumeric(rawStart) Then rawStart = "1"
     weekStart = CInt(rawStart)
 
     ' Allow caller to override the week start
