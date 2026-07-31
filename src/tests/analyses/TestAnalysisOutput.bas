@@ -30,7 +30,7 @@ Private Assert As CustomTest
 'CustomTest assertion object, and registers the module name for result
 'grouping. Called once before all tests in this module run.
 '@ModuleInitialize
-Private Sub ModuleInitialize()
+Public Sub ModuleInitialize()
     BusyApp
     EnsureWorksheet TEST_OUTPUT_SHEET, clearSheet:=False
     Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
@@ -43,7 +43,7 @@ End Sub
 'application state, and releases the assertion object. Called once after all
 'tests have run.
 '@ModuleCleanup
-Private Sub ModuleCleanup()
+Public Sub ModuleCleanup()
     If Not Assert Is Nothing Then
         Assert.PrintResults TEST_OUTPUT_SHEET
     End If
@@ -53,7 +53,7 @@ End Sub
 
 '@sub-title Suppress screen updates before each test
 '@TestInitialize
-Private Sub TestInitialize()
+Public Sub TestInitialize()
     BusyApp
 End Sub
 
@@ -62,7 +62,7 @@ End Sub
 'Ensures that any assertions recorded during the test are written to the
 'output sheet before the next test begins.
 '@TestCleanup
-Private Sub TestCleanup()
+Public Sub TestCleanup()
     If Not Assert Is Nothing Then
         Assert.Flush
     End If

@@ -144,6 +144,15 @@ suites:
       # src/classes/<the suite folder>/ and this class lives in
       # src/classes/general/. LinelistSpecs holds one.
       - name: TemporaryRepos
+      # Buttons draws the linelist's command shapes and gives each one its
+      # action. It names LLFormat, which is above, plus Checking and BetterArray,
+      # which are baked into the workbook, so this row closes its own compile
+      # closure. It is here rather than under `linelist` because a class row is
+      # resolved against src/classes/<the suite folder>/ and this class lives in
+      # src/classes/general/. Linelist.PrepareAdmin and AnalysisOutput both hold
+      # one, so neither of those two rows compiles without it. It carries no
+      # suite of its own yet.
+      - name: Buttons
       # Do NOT add TranslationObject as a class. It is already baked into the
       # workbook, and importing it again makes Excel keep both copies under a
       # second name (TranslationObject1). Only its TEST module is registered.
@@ -474,6 +483,20 @@ suites:
       # the class sits in src/classes/analyses/. Moving the module here is what
       # made registration possible, and src/tests/tables/ is now gone.
       - name: CustomPivotTable
+      # AnalysisOutput writes every analysis sheet of a linelist. It holds
+      # `anaLL As Linelist` and its factory takes `ByVal ll As Linelist`, both
+      # typed, so it could not be registered until Linelist had a row -- which
+      # is the row added under `linelist` in the same commit. Everything else it
+      # names is registered already: TableSpecs, CrossTable, CrossTableFormula,
+      # Graphs, SeriesBuffer, GraphSeries, TimeSeriesGraphs, AnaTabIds and
+      # TemporalSection here or under `graphs`, LLFormat, DropdownLists and
+      # Buttons under `general`, LLdictionary, LLVariables and LLExport under
+      # `dictionary`, FormulaData under `formulas`, LinelistSpecs under
+      # `linelist`. TranslationObject, Passwords, HiddenNames, Checking and
+      # BetterArray are baked into the driver workbook.
+      #
+      # This row closes the analyses folder.
+      - name: AnalysisOutput
     tests:
       - module: TestAnalysis
         covers: [Analysis]
@@ -517,6 +540,15 @@ suites:
       # under `helpers` for the tests that drive Format against a real LLFormat.
       - module: TestCustomPivotTable
         covers: [CustomPivotTable]
+      # TestAnalysisOutput reaches the two Create rejections and nothing else.
+      # AnalysisOutput is 1,551 lines and every other member needs a complete
+      # linelist workbook: the analysis setup ListObjects, the four output
+      # worksheets, the translation tables, the formula data and a prepared
+      # dictionary. Its lifecycle hooks shipped Private, which Application.Run
+      # cannot reach, and they are Public here. Registering it is what gives the
+      # class its first compile.
+      - module: TestAnalysisOutput
+        covers: [AnalysisOutput]
 
   # --- graphs (Graphs, SeriesBuffer, GraphSeries, TimeSeriesGraphs) ----------
   # A class row is resolved against src/classes/<folder>/, so every class here
@@ -673,6 +705,13 @@ suites:
       - name: LinelistSpecs
       - name: LLTranslation
       - name: CodeTransfer
+      # Linelist builds the output workbook. It names LinelistSpecs and
+      # CodeTransfer above, LLdictionary, LLVariables and LLSheets under
+      # `dictionary`, LLFormat, DropdownLists, TemporaryRepos and Buttons under
+      # `general`, CustomPivotTable and AnaTabIds under `analyses`. Passwords,
+      # TranslationObject, HiddenNames, Checking and BetterArray are baked into
+      # the driver workbook. AnalysisOutput waited on this row.
+      - name: Linelist
     tests:
       # TestLinelistSpecs moved here from the src/tests/ root, where it had no
       # folder to be registered under. Its four tests had never run.
@@ -692,6 +731,15 @@ suites:
       # Application.DefaultFilePath, outside the folder the run is granted.
       - module: TestCodeTransfer
         covers: [CodeTransfer]
+      # TestLinelist builds one designer-shaped workbook and one workbook
+      # standing in for the linelist, both once per module, and hands the second
+      # one over through LinelistSpecs.TestAssignLLWorkbook. That is what lets it
+      # drive AddOutputSheet, the three worksheet accessors, the scoped-name cut
+      # and the two memoised managers without running a generation. Its helper
+      # calls are unqualified, so they resolve to TestHelpersLite, and it reaches
+      # PrepareDictionaryFixture in DictionaryTestFixture under `helpers`.
+      - module: TestLinelist
+        covers: [Linelist]
 
   # --- dev (Development) ----------------------------------------------------
   # THIS BLOCK CARRIES A TEST MODULE AND NO CLASS, AND IT MUST STAY THAT WAY.

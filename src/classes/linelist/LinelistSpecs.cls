@@ -1365,6 +1365,8 @@ Public Sub Prepare(ByVal setupPath As String)
     Dim templatePath As String
     Dim tempPath As String
     Dim pass As Passwords
+    Dim defaultSheet As Worksheet
+    Dim prevAlert As Boolean
     Dim errNumber As Long
     Dim errDescription As String
 
@@ -1390,11 +1392,28 @@ Public Sub Prepare(ByVal setupPath As String)
         outWkb.SaveAs fileName:=tempPath, fileFormat:=xlExcel12
     Else
         Set outWkb = Workbooks.Add
+        'The reference to the empty worksheet Workbooks.Add made is taken here,
+        'before the first exporter writes to the workbook. Linelist used to
+        'record Worksheets(1).Name on its own first read and delete that sheet
+        'much later, and LLGeo inserts its two sheets near the front, so what
+        'was deleted was a real, populated worksheet.
+        Set defaultSheet = outWkb.Worksheets(1)
     End If
 
     'Fill the linelist: the setup's pass-through components, the designer's own,
     'and the setup translation table on top of the exported translation sheet.
     InitTransfer.TransferToLinelist this.specsWkb, setupPath, outWkb
+
+    'Drop the empty worksheet now that the transfer has put real ones in the
+    'workbook. Excel refuses to remove the last worksheet of a workbook, so this
+    'has to come after the transfer rather than straight after Workbooks.Add.
+    If Not defaultSheet Is Nothing Then
+        prevAlert = Application.DisplayAlerts
+        Application.DisplayAlerts = False
+        defaultSheet.Delete
+        Application.DisplayAlerts = prevAlert
+        Set defaultSheet = Nothing
+    End If
 
     'Build the domain managers on the linelist workbook
     Set this.dictionary = InitTransfer.LinelistDictionary(outWkb)
@@ -1500,6 +1519,19 @@ Public Property Get LLWorkbook() As Workbook
     Set LLWorkbook = this.outputWkb
 End Property
 
+'@label:release-ll-workbook
+'@sub-title Drop the reference to the output workbook
+'@details
+'Linelist.SaveLL closes the linelist, and both classes held a reference to it.
+'A read of either one after the close reached a closed workbook and raised an
+'automation error. The read that mattered is Linelist.ErrorManage, reached from
+'clickGenerate's cleanup, so the failure landed inside the error handler and hid
+'the error that got it there.
+'@export
+Public Sub ReleaseLLWorkbook()
+    Set this.outputWkb = Nothing
+End Sub
+
 '@label:temporary-repos
 '@prop-title The temporary repository created during Prepare
 '@details
@@ -1598,6 +1630,15 @@ End Sub
 '@param dict LLdictionary. The dictionary to expose through Dictionary().
 Public Sub TestAssignDictionary(ByVal dict As LLdictionary)
     Set this.dictionary = dict
+End Sub
+
+'@label:test-assign-ll-workbook
+'@sub-title Inject the output workbook for testing
+'@details Lets a suite drive Linelist's worksheet members over a plain workbook,
+'without running Prepare. Prepare is the only production writer of this field.
+'@param wkb Workbook. The workbook to expose through LLWorkbook().
+Public Sub TestAssignLLWorkbook(ByVal wkb As Workbook)
+    Set this.outputWkb = wkb
 End Sub
 
 '@label:test-assign-design-format

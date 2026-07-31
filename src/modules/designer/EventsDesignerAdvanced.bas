@@ -375,17 +375,23 @@ Public Sub clickGenerate()
         GenerationReport.FlushCheckings codeChecks
     End If
 
-    'Build data entry worksheets (sections, variables, formatting)
-    Set sheetLists = ll.Dictionary.UniqueValues("sheet name")
+    'Build data entry worksheets (sections, variables, formatting). The sheet
+    'name list is the one Linelist.Prepare already walked the dictionary for.
+    Set sheetLists = ll.SheetNames
 
     If sheetLists.Length > 0 Then
         Dim listBld As LLDataEntry
         Dim sheetChecks As BetterArray
+        Dim llSheetInfo As LLSheets
         Set sheetChecks = New BetterArray
         sheetChecks.LowerBound = 1
 
+        'One LLSheets for the whole loop. BuildOneSheet used to create its own
+        'per sheet, and building one reads the dictionary.
+        Set llSheetInfo = LLSheets.Create(specs.Dictionary)
+
         For counter = sheetLists.LowerBound To sheetLists.UpperBound
-            Set listBld = BuildOneSheet(specs, ll, sheetLists.Item(counter))
+            Set listBld = BuildOneSheet(llSheetInfo, ll, sheetLists.Item(counter))
             If Not listBld Is Nothing Then
                 If listBld.HasCheckings Then
                     sheetChecks.Push listBld.CheckingValues
@@ -473,15 +479,10 @@ End Sub
 '===============================================================================
 
 '@Description("Build a data entry worksheet from the dictionary and return the builder.")
-Private Function BuildOneSheet(ByVal specs As LinelistSpecs, ByVal ll As Linelist, ByVal sheetName As String) As LLDataEntry
-    Dim dict As LLdictionary
-    Dim llshs As LLSheets
+Private Function BuildOneSheet(ByVal llshs As LLSheets, ByVal ll As Linelist, ByVal sheetName As String) As LLDataEntry
     Dim sheetType As String
     Dim layer As Byte
     Dim listBld As LLDataEntry
-
-    Set dict = specs.Dictionary
-    Set llshs = LLSheets.Create(dict)
 
     sheetType = llshs.SheetInfo(sheetName)
 

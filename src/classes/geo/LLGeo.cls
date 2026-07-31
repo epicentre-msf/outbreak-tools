@@ -1443,8 +1443,13 @@ Public Sub ExportToWkb(ByVal outputWkb As Workbook, _
 
     On Error GoTo RestoreHeaders
 
-    'Create the geo sheet and copy ListObjects
-    outputWkb.Worksheets.Add.Name = sh.Name
+    'Create the geo sheet and copy ListObjects. The placement is explicit: a
+    'bare Add puts the new sheet before whatever sheet is active, which used to
+    'land Geo and Metadata at or near position 1. Every other exporter appends,
+    'and the final sheet order stopped depending on the active sheet.
+    outputWkb.Worksheets.Add( _
+        After:=outputWkb.Worksheets(outputWkb.Worksheets.Count) _
+    ).Name = sh.Name
     Set outsh = outputWkb.Worksheets(sh.Name)
 
     For Each Lo In sh.ListObjects
@@ -1480,8 +1485,10 @@ Public Sub ExportToWkb(ByVal outputWkb As Workbook, _
     'labels the exported headers carry.
     ExportLevelNames outputWkb
 
-    'Create metadata sheet
-    outputWkb.Worksheets.Add.Name = METADATASHEET
+    'Create metadata sheet, appended for the same reason as the geo sheet above
+    outputWkb.Worksheets.Add( _
+        After:=outputWkb.Worksheets(outputWkb.Worksheets.Count) _
+    ).Name = METADATASHEET
     Set outsh = outputWkb.Worksheets(METADATASHEET)
     Set rng = sh.ListObjects("T_" & METADATA).Range.Offset(1)
 
