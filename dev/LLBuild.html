@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>LinelistBuildService - OBT Dev Docs</title>
+  <title>LLBuild - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
-<h1>LinelistBuildService</h1>
+<h1>LLBuild</h1>
 <p>Orchestrates building a linelist by exporting pass-through components
 (dictionary, choices, exports, analysis, hidden names) directly from a
 setup workbook to the linelist workbook, eliminating the redundant
@@ -26,16 +26,16 @@ Replaces DesignerImportService for the generation flow.</p>
 <p><em>create</em></p>
 <p><strong>Create and configure a linelist build service</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Function Create(Optional ByVal hostBook As Workbook = Nothing) As LinelistBuildService
+<pre><code class="language-vb">Public Function Create(Optional ByVal hostBook As Workbook = Nothing) As LLBuild
 </code></pre>
-<p>Factory method that creates a new LinelistBuildService instance, binds it
+<p>Factory method that creates a new LLBuild instance, binds it
 to the supplied designer workbook, and returns the result. When no
 workbook is provided, defaults to ThisWorkbook.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>hostBook</code>: Optional Workbook. The designer workbook. Defaults to ThisWorkbook.</li>
 </ul>
-<p><strong>Returns:</strong> LinelistBuildService. A configured instance ready for use.</p>
+<p><strong>Returns:</strong> LLBuild. A configured instance ready for use.</p>
 <hr />
 </div>
 </details>
@@ -361,9 +361,11 @@ format the data always starts at row 1.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (2 file(s))</summary>
+<summary>Used in (4 file(s))</summary>
 <ul>
+<li><a href="LLGeo.html">LLGeo.cls</a></li>
 <li><a href="LinelistSpecs.html">LinelistSpecs.cls</a></li>
+<li><a href="LLTranslation.html">LLTranslation.cls</a></li>
 <li>EventsDesignerAdvanced.bas</li>
 </ul>
 </details>

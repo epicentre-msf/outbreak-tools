@@ -366,6 +366,13 @@ Iterates header columns and updates dropdown lists from unique data values.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureTranslation()
 </code></pre>
+<p>A translation sheet missing a table, or a workbook whose language code is
+empty, leaves the two translation fields Nothing and every event that needs
+them does nothing. The suppression is kept for that reason: an event handler
+has nothing above it to catch a raise.</p>
+<p>It covers the two translation reads alone. The hidden name store is built
+outside it, so a translation sheet in that state costs the events their
+labels and leaves everything else working.</p>
 <hr />
 <h3 id="int-ensuredropdown">EnsureDropdown <a class="anchor-link" href="#int-ensuredropdown">#</a></h3>
 <p><strong>Lazily initialise the dropdown manager.</strong></p>
@@ -435,12 +442,15 @@ Iterates header columns and updates dropdown lists from unique data values.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (4 file(s))</summary>
+<summary>Used in (7 file(s))</summary>
 <ul>
+<li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
+<li><a href="LLGeo.html">LLGeo.cls</a></li>
 <li><a href="Linelist.html">Linelist.cls</a></li>
 <li><a href="VarWriter.html">VarWriter.cls</a></li>
 <li>CustomLinelistFunctions.bas</li>
 <li>LinelistEventsManager.bas</li>
+<li>TestLLGeo.bas</li>
 </ul>
 </details>
   </main>

@@ -26,7 +26,7 @@ it on to TableSpecs.RowCategories / ColumnCategories, which type the same
 parameter as Object and dispatch on TypeName. A LinelistSpecs is what
 AnalysisOutput passes, and the Object type keeps the 1,536-line LinelistSpecs
 closure out of this class's compile dependencies, so the suite can drive it.</p>
-<p><strong>Depends on:</strong> <a href="TableSpecs.html">TableSpecs</a>, <a href="TranslationObject.html">TranslationObject</a>, <a href="LLVariables.html">LLVariables</a>, <a href="LLFormat.html">LLFormat</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="BetterArray.html">BetterArray</a>, <a href="Checking.html">Checking</a></p>
+<p><strong>Depends on:</strong> <a href="AnalysisRanges.html">AnalysisRanges</a>, <a href="TableSpecs.html">TableSpecs</a>, <a href="TranslationObject.html">TranslationObject</a>, <a href="LLVariables.html">LLVariables</a>, <a href="LLFormat.html">LLFormat</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="BetterArray.html">BetterArray</a>, <a href="Checking.html">Checking</a>, Supplies the unique key every Checking.Add needs. It counts within one, instance, which is all uniqueness requires: each instance owns its own, <a href="Checking.html">Checking</a>, and AnalysisOutput harvests them per table.</p>
 <p><strong>Version:</strong> 1.1 (2026-02-11)</p>
 </div>
 </details>
@@ -283,8 +283,7 @@ worksheet (shifting existing content down) to make room for the header.
 Behavior varies by table scope: univariate and bivariate write a title
 and optional section header; global summary writes a shared label once;
 temporal tables insert date controls and optional geo-level inputs;
-spatial tables create admin-unit or health-facility dropdowns. This sub
-also initializes the allRangeNames BetterArray.</p>
+spatial tables create admin-unit or health-facility dropdowns.</p>
 <p><strong>Remarks:</strong></p>
 <ul>
 <li>Row insertions shift the entire sheet down, which is why AddHeader must run
@@ -312,8 +311,8 @@ export tracking. The method creates ENDTABLE_, ROW_CATEGORIES_,
 time-period markers, per-column VALUES_COL_ and LABEL_COL_ ranges,
 Missing/Total/Percent row and column ranges, intersection cells,
 INTERIOR_VALUES_, OUTER_VALUES_ (spatial only), and COLUMN_CATEGORIES_.
-All created range names are accumulated in the allRangeNames BetterArray
-for retrieval via NamedRangesList.</p>
+Every name is created on the worksheet itself, which is where the export
+reads them back from.</p>
 <p><strong>Remarks:</strong></p>
 <ul>
 <li>Exits immediately for ScopeGlobalSummary (which has no row categories or
@@ -484,17 +483,6 @@ categories plus optional total and missing columns.</p>
 <li><code>col</code>: Long. The data column count to store.</li>
 </ul>
 <hr />
-<h3 id="int-namedrangeslist">NamedRangesList <a class="anchor-link" href="#int-namedrangeslist">#</a></h3>
-<p><em>named-ranges-list</em></p>
-<p><strong>List of named range names created by this table.</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get NamedRangesList() As BetterArray
-</code></pre>
-<p>Returns a cloned BetterArray containing all the named range names that
-were accumulated during the build process. Used by AnaTabIds to register
-the ranges for export tracking.</p>
-<p><strong>Returns:</strong> BetterArray. The collection of named range names.</p>
-<hr />
 <h2 id="int-position-properties">Position Properties</h2>
 <h3 id="int-rangeexists">RangeExists <a class="anchor-link" href="#int-rangeexists">#</a></h3>
 <p><em>range-exists</em></p>
@@ -519,10 +507,14 @@ reference is Nothing.</p>
 <p><strong>Returns:</strong> Boolean. True if the named range exists and resolves to a valid Range on the output worksheet; False otherwise.</p>
 <p><strong>Remarks:</strong></p>
 <ul>
-<li>This does not distinguish between workbook-scoped and worksheet-scoped names.
-If a workbook-level name exists but does not refer to a range on this sheet,
-the lookup may still succeed. All names in this class are created via
-Cell.Name which produces workbook-scoped names.</li>
+<li>Every name this class writes comes from Cell.Name, which produces a
+WORKBOOK-scoped name, and Wksh().Range(name) resolves one of those whichever
+sheet owns it. So the question &quot;does this name exist&quot; and the question this
+class actually asks -- &quot;did I already build that on MY sheet&quot; -- were the same
+question only while no two analysis sheets used a name in common. The answer is
+now filtered on the owning worksheet. The names without a table id are where it
+mattered: ROWGS_SET, COLGS_SET, TIME_UNIT_LIST, ADM_UNIT_LIST and
+POPULATION_FACTOR_LIST are each written on one sheet and read from four.</li>
 </ul>
 <hr />
 <h3 id="int-startrow">StartRow <a class="anchor-link" href="#int-startrow">#</a></h3>
@@ -641,7 +633,20 @@ cross-table. Used to compute the start row for the next stacked table.</p>
 <p>Returns the 1-based column index of the rightmost cell occupied by
 this cross-table. Used by sibling tables and formatting routines to
 avoid overlapping output.</p>
-<p><strong>Returns:</strong> Long. The ending column index.</p>
+<h2 id="int-the-contract-pinned-here-because-it-is-decided-here">THE CONTRACT, PINNED HERE BECAUSE IT IS DECIDED HERE</h2>
+<p>EndColumn is INCLUSIVE and it is the last column WRITTEN. The total and missing
+columns count toward it. NumberOfColumns stays outside it and stops at the data
+columns. Every assignment below obeys this -- StartColumn + labData.Length for the
+bivariate and temporal arms, StartColumn + 2 for the global summary pair,
+StartColumn + colData.Length for the spatial arm -- because labData and colData
+already carry whatever total and missing labels the table asked for.</p>
+<p>So a reader walking the value columns wants <code>&lt; EndColumn</code> only if it means to
+stop before the totals, and <code>&lt;= EndColumn</code> if it means to include them. The
+formula writer currently uses <code>&lt; tabEndColumn</code> for bivariate and
+<code>&lt;= tabEndColumn</code> for time series and spatial, which cannot be right for all
+three against one definition. The loops live in CrossTableFormula and are
+fixed there. Stating the contract here is the half that belongs to this class.</p>
+<p><strong>Returns:</strong> Long. The ending column index, inclusive of total and missing columns.</p>
 <hr />
 <h2 id="int-range-access">Range Access</h2>
 <h3 id="int-timeseriesheader">TimeSeriesHeader <a class="anchor-link" href="#int-timeseriesheader">#</a></h3>
@@ -784,17 +789,22 @@ providing a consistent stack trace across all methods in this class.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (10 file(s))</summary>
+<summary>Used in (15 file(s))</summary>
 <ul>
 <li><a href="Analysis.html">Analysis.cls</a></li>
 <li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
+<li><a href="AnaTabIds.html">AnaTabIds.cls</a></li>
 <li><a href="CrossTableFormula.html">CrossTableFormula.cls</a></li>
 <li><a href="SpatialTables.html">SpatialTables.cls</a></li>
-<li><a href="GraphSpecs.html">GraphSpecs.cls</a></li>
+<li><a href="DesignerPreparation.html">DesignerPreparation.cls</a></li>
+<li><a href="LLGeo.html">LLGeo.cls</a></li>
+<li><a href="GraphSeries.html">GraphSeries.cls</a></li>
 <li>TestCrossTable.bas</li>
 <li>TestCrossTableFormula.bas</li>
 <li>TestSpatialTables.bas</li>
-<li>TestGraphSpecs.bas</li>
+<li>TestLLGeo.bas</li>
+<li>TestGraphSeries.bas</li>
+<li>TestTimeSeriesGraphs.bas</li>
 <li><a href="LinelistDataStub.html">LinelistDataStub.cls</a></li>
 </ul>
 </details>

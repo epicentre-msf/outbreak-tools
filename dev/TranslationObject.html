@@ -15,9 +15,9 @@
 the first column and returns the value from the active language column.
 Supports plain text, formula-aware translation (quoted chunks only),
 range bulk-translation, and user-form caption translation.
-Each public call reads the table once into memory and matches every
-value against that copy, so a call costs the same two worksheet reads
-whatever the number of values it translates.</p>
+The table is read once into memory and every value is matched against that
+copy. The copy is kept until the table changes shape or Refresh is called, so
+a run that translates a thousand strings reads the worksheet twice.</p>
 <p><strong>Depends on:</strong> <a href="BetterArray.html">BetterArray</a>, <a href="Checking.html">Checking</a>, checking objects</p>
 <p><strong>Version:</strong> 1.0 (2026-02-09)</p>
 <details open class="doc-section" id="factory">
@@ -147,6 +147,20 @@ are translated; unquoted characters pass through unchanged.</p>
 <hr />
 </div>
 </details>
+<details open class="doc-section" id="helpers">
+<summary>Helpers</summary>
+<div class="section-body">
+<h3 id="refresh">Refresh <a class="anchor-link" href="#refresh">#</a></h3>
+<p><em>refresh</em></p>
+<p><strong>Drop the copy held in memory</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Refresh()
+</code></pre>
+<p>The next translation reads the table again. Call this after writing into the
+translation table through anything other than this object.</p>
+<hr />
+</div>
+</details>
 <details>
 <summary>Internal members (not exported)</summary>
 <h2 id="int-elements">Elements</h2>
@@ -254,15 +268,31 @@ wrapped to keep one shape for every caller.</p>
 </code></pre>
 <p><strong>Returns:</strong> Long. Column index, or -1 when not found.</p>
 <hr />
+<h3 id="int-tablesignature">TableSignature <a class="anchor-link" href="#int-tablesignature">#</a></h3>
+<p><em>table-signature</em></p>
+<p><strong>What the copy in memory was read from</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function TableSignature() As String
+</code></pre>
+<p>The table name, the address of its body and the target language. A row added
+or removed, a column added or removed, a table replaced or a language switched
+all change it, and each one is a reason to read the table again.</p>
+<p><strong>Returns:</strong> String. The signature of the table as it stands now.</p>
+<hr />
 <h3 id="int-refreshlookup">RefreshLookup <a class="anchor-link" href="#int-refreshlookup">#</a></h3>
 <p><em>refresh-lookup</em></p>
 <p><strong>Read the tags and the active language column into memory</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub RefreshLookup()
 </code></pre>
-<p>Called at the start of every public translation call. The table can be
-edited while this object is alive, so the copy is never kept between
-calls; inside a call it serves every value.</p>
+<p>Called at the start of every public translation call. The copy is kept between
+calls and reread when the table it came from changes shape or the language
+moves. Building one analysis sheet asks for four translations per chart, and
+every one of them used to read the whole table.</p>
+<h2 id="int-the-limit-of-this">THE LIMIT OF THIS</h2>
+<p>A value typed over an existing cell leaves the shape of the table alone, so
+the copy does not notice it. Refresh drops the copy for a caller that has just
+done that.</p>
 <hr />
 <h3 id="int-lookuprow">LookupRow <a class="anchor-link" href="#int-lookuprow">#</a></h3>
 <p><em>lookup-row</em></p>
@@ -394,7 +424,7 @@ calls; inside a call it serves every value.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (58 file(s))</summary>
+<summary>Used in (60 file(s))</summary>
 <ul>
 <li><a href="Analysis.html">Analysis.cls</a></li>
 <li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
@@ -409,7 +439,7 @@ calls; inside a call it serves every value.</p>
 <li><a href="EventLinelist.html">EventLinelist.cls</a></li>
 <li><a href="Linelist.html">Linelist.cls</a></li>
 <li><a href="LinelistSpecs.html">LinelistSpecs.cls</a></li>
-<li><a href="ListBuilder.html">ListBuilder.cls</a></li>
+<li><a href="LLDataEntry.html">LLDataEntry.cls</a></li>
 <li><a href="LLTranslation.html">LLTranslation.cls</a></li>
 <li><a href="DiseaseSheet.html">DiseaseSheet.cls</a></li>
 <li><a href="EventMasterSetup.html">EventMasterSetup.cls</a></li>
@@ -420,6 +450,7 @@ calls; inside a call it serves every value.</p>
 <li><a href="VarWriter.html">VarWriter.cls</a></li>
 <li><a href="EventSetup.html">EventSetup.cls</a></li>
 <li><a href="SetupTranslationsTable.html">SetupTranslationsTable.cls</a></li>
+<li><a href="LLShowHide.html">LLShowHide.cls</a></li>
 <li>EventsLinelistButtons.bas</li>
 <li>EventsLinelistRibbon.bas</li>
 <li>GeoModule.bas</li>
@@ -436,6 +467,7 @@ calls; inside a call it serves every value.</p>
 <li>TestAnalysis.bas</li>
 <li>TestCrossTable.bas</li>
 <li>TestCrossTableFormula.bas</li>
+<li>TestSpatialTables.bas</li>
 <li>TestExportButton.bas</li>
 <li>TestDropdownLists.bas</li>
 <li>TestLLChoices.bas</li>

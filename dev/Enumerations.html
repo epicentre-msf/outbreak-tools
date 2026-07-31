@@ -11,17 +11,6 @@
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>Enumerations</h1>
-<details open class="doc-section" id="analysisidsscope">
-<summary>AnalysisIdsScope</summary>
-<div class="section-body">
-<ul>
-<li><code>AnalysisIdsScopeTimeSeries = 1</code></li>
-<li><code>AnalysisIdsScopeSpatial = 2</code></li>
-<li><code>AnalysisIdsScopeNormal = 3</code></li>
-<li><code>AnalysisIdsScopeSpatioTemporal = 4</code></li>
-</ul>
-</div>
-</details>
 <details open class="doc-section" id="analysisscope">
 <summary>AnalysisScope</summary>
 <div class="section-body">
@@ -30,7 +19,18 @@
 <li><code>AnalysisScopeSpatial = 2</code></li>
 <li><code>AnalysisScopeNormal = 3</code></li>
 <li><code>AnalysisScopeSpatioTemporal = 4</code></li>
-<li><code>AnalysisScopeTimeSeriesTablesOnly = 5</code></li>
+</ul>
+</div>
+</details>
+<details open class="doc-section" id="analysisbuildstage">
+<summary>AnalysisBuildStage</summary>
+<div class="section-body">
+<ul>
+<li><code>AnalysisBuildStageAll = 0</code></li>
+<li><code>AnalysisBuildStageNormal = 1</code></li>
+<li><code>AnalysisBuildStageTimeSeriesTables = 2</code></li>
+<li><code>AnalysisBuildStageTimeSeries = 3</code></li>
+<li><code>AnalysisBuildStageSpatial = 4</code></li>
 </ul>
 </div>
 </details>
@@ -302,6 +302,7 @@
 <ul>
 <li><code>GeoScopeAdmin = 0</code></li>
 <li><code>GeoScopeHF = 1</code></li>
+<li><code>GeoScopeBoth = 3</code></li>
 </ul>
 </div>
 </details>
@@ -316,27 +317,6 @@
 </ul>
 </div>
 </details>
-<details open class="doc-section" id="adminandhfscope">
-<summary>AdminAndHFScope</summary>
-<div class="section-body">
-<ul>
-<li><code>LevelGeoAdmin1 = 0</code></li>
-<li><code>LevelGeoAdmin2 = 1</code></li>
-<li><code>LevelGeoAdmin3 = 2</code></li>
-<li><code>LevelGeoAdmin4 = 3</code></li>
-<li><code>LevelHF = 4</code></li>
-</ul>
-</div>
-</details>
-<details open class="doc-section" id="graphspecstype">
-<summary>GraphSpecsType</summary>
-<div class="section-body">
-<ul>
-<li><code>GraphTypeSimple = 1                          'Non-time-series (univariate, bivariate, spatial, spatio-temporal)</code></li>
-<li><code>GraphTypeComplex = 2                         'Time series (multiple graphs from setup listobjects)</code></li>
-</ul>
-</div>
-</details>
 <details open class="doc-section" id="graphscope">
 <summary>GraphScope</summary>
 <div class="section-body">
@@ -344,6 +324,15 @@
 <li><code>GraphScopeTimeSeries = 1 'A time series graph (long graph)</code></li>
 <li><code>GraphScopeSpatial = 2 'A spatial analysis graph</code></li>
 <li><code>GraphScopeNormal = 3 'A standard univariate / bivariate graph</code></li>
+</ul>
+</div>
+</details>
+<details open class="doc-section" id="lldataentrylayer">
+<summary>LLDataEntryLayer</summary>
+<div class="section-body">
+<ul>
+<li><code>LLDataEntryLayerHList = 1</code></li>
+<li><code>LLDataEntryLayerVList = 2</code></li>
 </ul>
 </div>
 </details>
@@ -365,21 +354,11 @@
 <ul>
 <li><code>TempSheetSingle = 1</code></li>
 <li><code>TempSheetList = 2</code></li>
-<li><code>TempSheetUpdates = 3</code></li>
 <li><code>TempSheetMetadata = 4</code></li>
 <li><code>TempSheetAnalysis = 5</code></li>
 <li><code>TempSheetImport = 6</code></li>
 <li><code>TempSheetSpatial = 7</code></li>
 <li><code>TempSheetShowHide = 8</code></li>
-</ul>
-</div>
-</details>
-<details open class="doc-section" id="listbuilderlayer">
-<summary>ListBuilderLayer</summary>
-<div class="section-body">
-<ul>
-<li><code>ListBuilderLayerHList = 1</code></li>
-<li><code>ListBuilderLayerVList = 2</code></li>
 </ul>
 </div>
 </details>

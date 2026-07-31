@@ -50,7 +50,7 @@ dictionary and choices; any other object gives an empty BetterArray. That
 keeps TableSpecs usable in the setup error-checking context, where geo and
 translation dependencies are absent. LinelistSpecs is reached through a
 TypeName string, so it is never a compile dependency of this class.</p>
-<p><strong>Depends on:</strong> <a href="LLdictionary.html">LLdictionary</a>, <a href="LLVariables.html">LLVariables</a>, <a href="BetterArray.html">BetterArray</a>, <a href="Checking.html">Checking</a>, --- Column and cell value caches ---, --- Scalar caches ---, Names of the seven analysis ListObjects on the setup worksheet. Each name, is one table scope. Six other classes hold the same strings beside the code, that reads them, which is the house rule: a class keeps every constant it, needs inside itself., Column search terms. Every one is a partial, case-insensitive match against, the header row, so &quot;row&quot; finds &quot;Group by variable (row)&quot;., Column names read through LLVariables, on the dictionary sheet., Geo prefixes written by LLdictionary.AppendGeoLines., VBA raises this when a late-bound object has no such member., Bounds for the &quot;N geo max&quot; column, which is free text on the setup sheet.</p>
+<p><strong>Depends on:</strong> <a href="LLdictionary.html">LLdictionary</a>, <a href="LLVariables.html">LLVariables</a>, <a href="BetterArray.html">BetterArray</a>, <a href="Checking.html">Checking</a>, --- Column and cell value caches ---, --- Scalar caches ---, Names of the seven analysis ListObjects on the setup worksheet. Each name, is one table scope. Six other classes hold the same strings beside the code, that reads them, which is the house rule: a class keeps every constant it, needs inside itself., Column search terms. Every one is a partial, case-insensitive match against, the header row, so &quot;row&quot; finds &quot;Group by variable (row)&quot;., Column names read through LLVariables, on the dictionary sheet., Geo prefixes written by LLdictionary.AppendGeoLines., The concatenated form of an administrative variable, which the spatial, formulas summarise over. Health facility tables have no concatenated form and, read the plain prefix in the same position., Dictionary columns carrying the label of a spatial variable. An, administrative level is labelled from its sub section, a health facility from, its main label., VBA raises this when a late-bound object has no such member., Bounds for the &quot;N geo max&quot; column, which is free text on the setup sheet.</p>
 <p><strong>Version:</strong> 3.0 (2026-07-29)</p>
 </div>
 </details>
@@ -242,6 +242,63 @@ likely return vbNullString since those variables typically lack geo/hf
 prefixes.</li>
 </ul>
 <hr />
+<h3 id="spatialprefix">SpatialPrefix <a class="anchor-link" href="#spatialprefix">#</a></h3>
+<p><em>spatial-prefix</em></p>
+<p><strong>Dictionary prefix for this table's spatial variable</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get SpatialPrefix() As String
+</code></pre>
+<p>The prefix SpatialTableScopes probed with, handed back so callers stop
+rebuilding it. Four sites across two classes wrote &quot;adm1_&quot; and &quot;hf_&quot; beside
+their own copy of the geo-against-facility test, which is how the tag that
+names the spatial input cells came to disagree with the tag the formulas
+referenced.</p>
+<p><strong>Returns:</strong> String. &quot;hf_&quot;, &quot;adm1_&quot;, or an empty string when neither prefix matched.</p>
+<hr />
+<h3 id="spatialvariablename">SpatialVariableName <a class="anchor-link" href="#spatialvariablename">#</a></h3>
+<p><em>spatial-variable-name</em></p>
+<p><strong>Dictionary variable holding the spatial value</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get SpatialVariableName(ByVal baseVar As String) As String
+</code></pre>
+<p>The prefixed variable name the dictionary answers for, which is the prefix
+above joined to a variable read off this specification row.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>baseVar</code>: String. The unprefixed variable name from the spec row.</li>
+</ul>
+<p><strong>Returns:</strong> String. For example &quot;adm1_zone&quot;, or an empty string when this table
+has no spatial type.</p>
+<hr />
+<h3 id="spatialconcatvariablename">SpatialConcatVariableName <a class="anchor-link" href="#spatialconcatvariablename">#</a></h3>
+<p><em>spatial-concat-variable-name</em></p>
+<p><strong>Dictionary variable the spatial formulas read</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get SpatialConcatVariableName(ByVal baseVar As String) As String
+</code></pre>
+<p>The formula writer reads a different variable from the table writer: an
+administrative table is summarised over the concatenated column, while a
+health facility table uses the same variable in both places. That asymmetry
+is the whole reason this is a second member rather than a prefix argument.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>baseVar</code>: String. The unprefixed variable name from the spec row.</li>
+</ul>
+<p><strong>Returns:</strong> String. For example &quot;concat_adm1_zone&quot; or &quot;hf_facility&quot;, or an empty
+string when this table has no spatial type.</p>
+<hr />
+<h3 id="spatiallabelcolumn">SpatialLabelColumn <a class="anchor-link" href="#spatiallabelcolumn">#</a></h3>
+<p><em>spatial-label-column</em></p>
+<p><strong>Dictionary column carrying the label of the spatial variable</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get SpatialLabelColumn() As String
+</code></pre>
+<p>An administrative level is labelled from its sub section and a health facility
+from its main label. The two travel with the prefix at every call site, so a
+caller that asked only for the prefix would still have to branch.</p>
+<p><strong>Returns:</strong> String. &quot;sub section&quot;, &quot;main label&quot;, or an empty string when this
+table has no spatial type.</p>
+<hr />
 </div>
 </details>
 <details open class="doc-section" id="validation-properties">
@@ -398,7 +455,7 @@ SpatioTemporal return True when graph=&quot;yes&quot;; Bivariate returns True wh
 graph=&quot;percentages&quot; or &quot;values&quot;, the two entries of the __perc_val dropdown
 the setup binds to that column. The actual graph rendering is handled
 downstream by the chart builder; this property only signals whether one
-should be created. &quot;both&quot; stays in the bivariate list because GraphSpecs
+should be created. &quot;both&quot; stays in the bivariate list because GraphSeries
 reads it too; the dropdown offers &quot;percentages&quot; and &quot;values&quot;.</p>
 <p><strong>Returns:</strong> Boolean. True if a graph should be created for this table.</p>
 <p><strong>Remarks:</strong></p>
@@ -411,6 +468,30 @@ matches its &quot;Graph title (select)&quot; column, which holds a title.</li>
 <ul>
 <li>ErrorUnexpectedState When the table scope is unmapped.</li>
 </ul>
+<hr />
+<h3 id="graphmode">GraphMode <a class="anchor-link" href="#graphmode">#</a></h3>
+<p><em>graph-mode</em></p>
+<p><strong>The kind of chart this table asks for</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get GraphMode() As String
+</code></pre>
+<p>Answers the &quot;add graph&quot; cell trimmed and lower-cased, which is the same
+reading HasGraph uses to decide whether a chart is wanted at all. The chart
+builder reads it to choose between value bars, percentage bars and both, so
+the two answers come from one place. A cell holding &quot; Yes &quot; reads &quot;yes&quot; here.</p>
+<p><strong>Returns:</strong> String. One of &quot;yes&quot;, &quot;values&quot;, &quot;percentages&quot;, &quot;both&quot;, or an empty
+string when the column is absent or the cell is empty.</p>
+<hr />
+<h3 id="flipcoordinates">FlipCoordinates <a class="anchor-link" href="#flipcoordinates">#</a></h3>
+<p><em>flip-coordinates</em></p>
+<p><strong>Whether the chart plots horizontal bars</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get FlipCoordinates() As Boolean
+</code></pre>
+<p>Answers the &quot;flip coordinates&quot; cell trimmed and lower-cased, compared against
+&quot;yes&quot;. The spatio-temporal block carries no such column, so it answers False
+there.</p>
+<p><strong>Returns:</strong> Boolean. True when the table asks for horizontal bars.</p>
 <hr />
 </div>
 </details>
@@ -867,20 +948,24 @@ read land on the wrong column.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (13 file(s))</summary>
+<summary>Used in (17 file(s))</summary>
 <ul>
 <li><a href="Analysis.html">Analysis.cls</a></li>
 <li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
+<li><a href="AnalysisRanges.html">AnalysisRanges.cls</a></li>
 <li><a href="CrossTable.html">CrossTable.cls</a></li>
 <li><a href="CrossTableFormula.html">CrossTableFormula.cls</a></li>
 <li><a href="SpatialTables.html">SpatialTables.cls</a></li>
 <li><a href="LLdictionary.html">LLdictionary.cls</a></li>
-<li><a href="GraphSpecs.html">GraphSpecs.cls</a></li>
+<li><a href="GraphSeries.html">GraphSeries.cls</a></li>
+<li><a href="TimeSeriesGraphs.html">TimeSeriesGraphs.cls</a></li>
 <li><a href="SetupErrors.html">SetupErrors.cls</a></li>
 <li>TestCrossTable.bas</li>
 <li>TestCrossTableFormula.bas</li>
+<li>TestSpatialTables.bas</li>
 <li>TestTableSpecs.bas</li>
-<li>TestGraphSpecs.bas</li>
+<li>TestGraphSeries.bas</li>
+<li>TestTimeSeriesGraphs.bas</li>
 <li><a href="LinelistDataStub.html">LinelistDataStub.cls</a></li>
 </ul>
 </details>

@@ -188,10 +188,14 @@ directory. Automatically deletes all content on termination.</p>
 <hr />
 <h3 id="int-deleteallinternal">DeleteAllInternal <a class="anchor-link" href="#int-deleteallinternal">#</a></h3>
 <p><em>delete-all-internal</em></p>
-<p><strong>Wipe every file inside the repository without recreating the folder</strong></p>
+<p><strong>Wipe every file inside the repository, keeping the folder itself</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub DeleteAllInternal()
 </code></pre>
+<p>The whole listing is read before the first file is deleted. Dir$ walks one
+folder through state the host holds, and deleting an entry part way through
+that walk makes the rest of the listing unreliable, so files were left behind.
+The listing is small: this folder holds the working files of one generation.</p>
 <hr />
 <h3 id="int-class-terminate">Class_Terminate <a class="anchor-link" href="#int-class-terminate">#</a></h3>
 <p><em>class-terminate</em></p>

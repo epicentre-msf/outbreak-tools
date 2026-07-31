@@ -325,10 +325,8 @@ import done, geo update manual, show all optionals, export init, number
 of exports, epi week start) — replaces the removed TemporarySheetUpdates.</li>
 <li>Creates four ListObjects on the import report sheet for tracking sheets
 and variables not imported/found.</li>
-<li>Creates twelve ListObjects on the analysis sheet (tab_ids, graph_ids,
-graph_formats for each of the four analysis scopes: uba, ts, sp,
-sptemp) plus four worksheet-level hidden names storing the translated
-analysis sheet names.</li>
+<li>Asks AnaTabIds to build its registry table on the analysis sheet. That
+class reads the columns, so it writes the headers.</li>
 </ol>
 <hr />
 <h3 id="int-initialiseworkbooknames">InitialiseWorkbookNames <a class="anchor-link" href="#int-initialiseworkbooknames">#</a></h3>
@@ -344,14 +342,16 @@ to resolve the correct language code for translation lookups.</p>
 <hr />
 <h3 id="int-initialisetranslationnames">InitialiseTranslationNames <a class="anchor-link" href="#int-initialisetranslationnames">#</a></h3>
 <p><em>initialise-translation-names</em></p>
-<p><strong>Propagate language HiddenNames to the translation worksheet and create translated names</strong></p>
+<p><strong>Create the translated message and sheet names on the output workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub InitialiseTranslationNames()
 </code></pre>
-<p>Calls InitialiseSheetNames on the LLTranslation instance to store
-dictionary and interface language codes as worksheet-level HiddenNames
-on the translation sheet. Then calls InitialiseHiddenNames to create
-all RNG_* translated message/sheet names on the output workbook.</p>
+<p>Calls InitialiseHiddenNames to create all RNG_* translated message and sheet
+names on the output workbook. The two language codes reach the workbook
+through InitialiseWorkbookNames, which runs just above this.</p>
+<p>A second copy of the two codes used to be written onto the translation
+worksheet here. LLTranslation reads its languages from the workbook store,
+so that copy was written and never read.</p>
 <hr />
 <h3 id="int-prepareadmin">PrepareAdmin <a class="anchor-link" href="#int-prepareadmin">#</a></h3>
 <p><em>prepare-admin</em></p>
@@ -418,7 +418,7 @@ error attribution across all methods in this class.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (39 file(s))</summary>
+<summary>Used in (41 file(s))</summary>
 <ul>
 <li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
 <li><a href="CrossTable.html">CrossTable.cls</a></li>
@@ -426,18 +426,19 @@ error attribution across all methods in this class.</p>
 <li><a href="TableSpecs.html">TableSpecs.cls</a></li>
 <li><a href="LLExporter.html">LLExporter.cls</a></li>
 <li><a href="LLImporter.html">LLImporter.cls</a></li>
-<li><a href="LinelistBuildService.html">LinelistBuildService.cls</a></li>
+<li><a href="LLBuild.html">LLBuild.cls</a></li>
 <li><a href="LLdictionary.html">LLdictionary.cls</a></li>
 <li><a href="LLSheets.html">LLSheets.cls</a></li>
 <li><a href="LLChoices.html">LLChoices.cls</a></li>
 <li><a href="TemporaryRepos.html">TemporaryRepos.cls</a></li>
 <li><a href="LLGeo.html">LLGeo.cls</a></li>
-<li><a href="GraphSpecs.html">GraphSpecs.cls</a></li>
+<li><a href="TimeSeriesGraphs.html">TimeSeriesGraphs.cls</a></li>
 <li><a href="CodeTransfer.html">CodeTransfer.cls</a></li>
 <li><a href="EventLinelist.html">EventLinelist.cls</a></li>
 <li><a href="LinelistSpecs.html">LinelistSpecs.cls</a></li>
-<li><a href="ListBuilder.html">ListBuilder.cls</a></li>
+<li><a href="LLDataEntry.html">LLDataEntry.cls</a></li>
 <li><a href="LLTranslation.html">LLTranslation.cls</a></li>
+<li><a href="LLShowHide.html">LLShowHide.cls</a></li>
 <li>EventsDesignerAdvanced.bas</li>
 <li>EventLinelistSelection.bas</li>
 <li>EventLinelistWorkbook.bas</li>
@@ -457,7 +458,8 @@ error attribution across all methods in this class.</p>
 <li><a href="LinelistDataStub.html">LinelistDataStub.cls</a></li>
 <li>LLFormatTestFixture.bas</li>
 <li>TestLinelist.bas</li>
-<li>TestListBuilder.bas</li>
+<li>TestLinelistSpecs.bas</li>
+<li>TestLLDataEntry.bas</li>
 <li>OBTImport.bas</li>
 </ul>
 </details>

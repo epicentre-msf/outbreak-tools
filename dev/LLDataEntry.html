@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>ListBuilder - OBT Dev Docs</title>
+  <title>LLDataEntry - OBT Dev Docs</title>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
-<h1>ListBuilder</h1>
+<h1>LLDataEntry</h1>
 <p>Builds horizontal (HList) or vertical (VList) data entry sheets for the
 linelist workbook. Each mode creates formatted sheets with freeze panes,
 sections via SectionBuilder, a GoTo-section dropdown, and worksheet
@@ -26,25 +26,25 @@ reference, then invoke Build to construct the sheet.</p>
 <div class="section-body">
 <h3 id="create">Create <a class="anchor-link" href="#create">#</a></h3>
 <p><em>create</em></p>
-<p><strong>Create a ListBuilder instance</strong></p>
+<p><strong>Create a LLDataEntry instance</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal layer As Byte, _
                        ByVal sheetName As String, _
-                       ByVal ll As Linelist) As ListBuilder
+                       ByVal ll As Linelist) As LLDataEntry
 </code></pre>
 <p>Factory method and Friend bindings for construction.</p>
-<p>Creates a new ListBuilder wired to build a data entry sheet of the given
+<p>Creates a new LLDataEntry wired to build a data entry sheet of the given
 layer type (HList or VList) for the named sheet within the linelist. The
 linelist object, sheet name, and presence in the dictionary are all
 validated before construction.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>layer</code>: Byte. The ListBuilderLayer mode (HList = 1, VList = 2).</li>
+<li><code>layer</code>: Byte. The LLDataEntryLayer mode (HList = 1, VList = 2).</li>
 <li><code>sheetName</code>: String. The dictionary sheet name to build.</li>
 <li><code>ll</code>: Linelist. The linelist workbook facade providing worksheets,
 dropdowns, pivots, and specs.</li>
 </ul>
-<p><strong>Returns:</strong> ListBuilder. A fully initialised instance ready for Build.</p>
+<p><strong>Returns:</strong> LLDataEntry. A fully initialised instance ready for Build.</p>
 <p><strong>Throws:</strong></p>
 <ul>
 <li>ProjectError.ObjectNotInitialized When ll is Nothing.</li>
@@ -70,7 +70,7 @@ mode delegates to BuildVList. Raises an error for unknown layer values.</p>
 <p><strong>Throws:</strong></p>
 <ul>
 <li>ProjectError.InvalidArgument When the layer value is not
-ListBuilderLayerHList or ListBuilderLayerVList.</li>
+LLDataEntryLayerHList or LLDataEntryLayerVList.</li>
 </ul>
 <hr />
 </div>
@@ -87,7 +87,7 @@ ListBuilderLayerHList or ListBuilderLayerVList.</li>
 <p>Friend setters used only during factory construction.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>value</code>: Byte. The ListBuilderLayer constant (HList or VList).</li>
+<li><code>value</code>: Byte. The LLDataEntryLayer constant (HList or VList).</li>
 </ul>
 <hr />
 <h3 id="int-binsheetname">BinSheetName <a class="anchor-link" href="#int-binsheetname">#</a></h3>
@@ -200,7 +200,7 @@ skipped to avoid redundant dropdown entries.</p>
 <li><a href="LLSheets.html">LLSheets.cls</a></li>
 <li>EventsDesignerAdvanced.bas</li>
 <li>TestLLSheets.bas</li>
-<li>TestListBuilder.bas</li>
+<li>TestLLDataEntry.bas</li>
 </ul>
 </details>
   </main>

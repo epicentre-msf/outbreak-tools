@@ -11,17 +11,33 @@
   <nav><a href="index.html">&larr; Index</a></nav>
   <main>
 <h1>LinelistSpecs</h1>
-<p>Modern facade that wraps a specifications workbook and exposes lazy-loaded,
-cached accessors for every collaborator object (dictionary, choices,
-translations, geo, analysis, passwords, format, exports, formulas).
-Provides lifecycle orchestration methods for importing data from external
-setup workbooks, preparing the dictionary with preserved sheet names,
-exporting specifications to a destination linelist workbook, and surfacing
-user-facing error dialogs. Uses a PredeclaredId factory pattern so callers
-construct instances via LinelistSpecs.Create(workbook) and receive an
-LinelistSpecs interface reference.</p>
-<p><strong>Depends on:</strong> <a href="LLdictionary.html">LLdictionary</a>, <a href="LLChoices.html">LLChoices</a>, <a href="LLTranslation.html">LLTranslation</a>, <a href="DesignerTranslation.html">DesignerTranslation</a>, <a href="LLGeo.html">LLGeo</a>, <a href="LLExport.html">LLExport</a>, <a href="Passwords.html">Passwords</a>, <a href="LLFormat.html">LLFormat</a>, <a href="LinelistBuildService.html">LinelistBuildService</a>, <a href="TemporaryRepos.html">TemporaryRepos</a>, <a href="FormulaData.html">FormulaData</a>, <a href="LLVariables.html">LLVariables</a>, <a href="Formulas.html">Formulas</a>, <a href="TranslationObject.html">TranslationObject</a>, <a href="ApplicationState.html">ApplicationState</a>, <a href="BetterArray.html">BetterArray</a>, <a href="LLdictionary.html">LLdictionary</a>, <a href="LLChoices.html">LLChoices</a>, <a href="LLTranslation.html">LLTranslation</a>, <a href="DesignerTranslation.html">DesignerTranslation</a>, <a href="LLGeo.html">LLGeo</a>, <a href="LLExport.html">LLExport</a>, <a href="Analysis.html">Analysis</a>, <a href="Passwords.html">Passwords</a>, <a href="LLFormat.html">LLFormat</a>, <a href="FormulaData.html">FormulaData</a>, <a href="LLVariables.html">LLVariables</a>, <a href="Formulas.html">Formulas</a></p>
-<p><strong>Version:</strong> 1.1 (2026-02-16)</p>
+<p>Facade over the designer workbook. Before Prepare it answers the designer's
+own specifications. After Prepare it is also the handle on the domain managers
+that live on the generated linelist. Callers build one through
+LinelistSpecs.Create(workbook).</p>
+<details open class="doc-section" id="which-workbook-each-collaborator-points-at">
+<summary>WHICH WORKBOOK EACH COLLABORATOR POINTS AT</summary>
+<div class="section-body">
+<p>The type says nothing about this, and it is where most of this class's defects
+came from. The table is the contract.</p>
+<p>dictionary, choices, exports, ana    Linelist. Prepare sets them from the
+build service. Reading one earlier
+raises and names Prepare.
+geo, passwords, translations         Designer until Prepare runs, linelist
+afterwards. Prepare overwrites them.
+format, formulaData                  Designer, loaded on first read.
+Value, HasTemplate, DesWorkbook      Designer.
+TemporarySheetName                   A constant table, backed by no sheet.</p>
+<p>The four names on the first row had designer-side loaders until 2026-07-30.
+RequiredSheetNames() stopped asking for those four worksheets when the build
+service began importing them straight from the setup file, so a loader either
+built a manager over a leftover designer sheet at the wrong anchor row, or
+raised a message naming the designer when the caller's real mistake was
+calling before Prepare. They are guards now.</p>
+<p><strong>Depends on:</strong> <a href="LLdictionary.html">LLdictionary</a>, <a href="LLChoices.html">LLChoices</a>, <a href="LLTranslation.html">LLTranslation</a>, <a href="LLGeo.html">LLGeo</a>, <a href="LLExport.html">LLExport</a>, <a href="Analysis.html">Analysis</a>, <a href="Passwords.html">Passwords</a>, <a href="LLFormat.html">LLFormat</a>, <a href="FormulaData.html">FormulaData</a>, <a href="LLVariables.html">LLVariables</a>, <a href="Formulas.html">Formulas</a>, <a href="LLBuild.html">LLBuild</a>, <a href="TemporaryRepos.html">TemporaryRepos</a>, <a href="ApplicationState.html">ApplicationState</a>, <a href="TranslationObject.html">TranslationObject</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="Checking.html">Checking</a>, <a href="BetterArray.html">BetterArray</a></p>
+<p><strong>Version:</strong> 1.2 (2026-07-30)</p>
+</div>
+</details>
 <details open class="doc-section" id="factory-helpers">
 <summary>Factory helpers</summary>
 <div class="section-body">
@@ -59,6 +75,17 @@ if the workbook has not been assigned via the factory method.</p>
 <ul>
 <li>ProjectError.ObjectNotInitialized When the workbook is not set.</li>
 </ul>
+<hr />
+<h3 id="prepared">Prepared <a class="anchor-link" href="#prepared">#</a></h3>
+<p><em>prepared</em></p>
+<p><strong>Whether Prepare has run on this instance</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Prepared() As Boolean
+</code></pre>
+<p>Prepare imports the setup workbook into the linelist and points the
+collaborators at it. Linelist refuses to build until that has happened, and
+this is the flag it reads.</p>
+<p><strong>Returns:</strong> Boolean. True once Prepare has completed.</p>
 <hr />
 </div>
 </details>
@@ -118,9 +145,13 @@ from modifying the cached copy.</p>
 </code></pre>
 <p>Public property accessors for each collaborator object, exposing
 the lazy-loaded instances through their respective interfaces.</p>
-<p>Returns the LLdictionary instance providing column and row access to the
-Dictionary worksheet. Lazy-loaded on first access.</p>
+<p>The LLdictionary instance over the Dictionary worksheet of the LINELIST
+workbook. Prepare sets it from the build service.</p>
 <p><strong>Returns:</strong> LLdictionary. The dictionary collaborator.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ErrorUnexpectedState When Prepare has not run.</li>
+</ul>
 <hr />
 <h3 id="choices">Choices <a class="anchor-link" href="#choices">#</a></h3>
 <p><em>choices</em></p>
@@ -128,9 +159,13 @@ Dictionary worksheet. Lazy-loaded on first access.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Choices() As LLChoices
 </code></pre>
-<p>Returns the LLChoices instance providing category lookups from the
-Choices worksheet. Lazy-loaded on first access.</p>
+<p>The LLChoices instance over the Choices worksheet of the LINELIST workbook.
+Prepare sets it from the build service.</p>
 <p><strong>Returns:</strong> LLChoices. The choices collaborator.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ErrorUnexpectedState When Prepare has not run.</li>
+</ul>
 <hr />
 <h3 id="designformat">DesignFormat <a class="anchor-link" href="#designformat">#</a></h3>
 <p><em>design-format</em></p>
@@ -148,9 +183,13 @@ methods based on the __formatter worksheet. Lazy-loaded on first access.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get AnalysisObject() As Analysis
 </code></pre>
-<p>Returns the Analysis instance providing access to the Analysis
-worksheet configuration. Lazy-loaded on first access.</p>
+<p>The Analysis instance over the Analysis worksheet of the LINELIST workbook.
+Prepare sets it from the build service.</p>
 <p><strong>Returns:</strong> Analysis. The analysis collaborator.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ErrorUnexpectedState When Prepare has not run.</li>
+</ul>
 <hr />
 <h3 id="exportobject">ExportObject <a class="anchor-link" href="#exportobject">#</a></h3>
 <p><em>export-object</em></p>
@@ -158,9 +197,13 @@ worksheet configuration. Lazy-loaded on first access.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get ExportObject() As LLExport
 </code></pre>
-<p>Returns the LLExport instance providing access to export column
-definitions from the Exports worksheet. Lazy-loaded on first access.</p>
+<p>The LLExport instance over the Exports worksheet of the LINELIST workbook.
+Prepare sets it from the build service.</p>
 <p><strong>Returns:</strong> LLExport. The export collaborator.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ErrorUnexpectedState When Prepare has not run.</li>
+</ul>
 <hr />
 <h3 id="password">Password <a class="anchor-link" href="#password">#</a></h3>
 <p><em>password</em></p>
@@ -198,8 +241,8 @@ the __formula worksheet. Lazy-loaded on first access.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get HasTemplate() As Boolean
 </code></pre>
-<p>Reads the RNG_MainTemp named range on the Main worksheet and returns True
-when the value equals &quot;has template&quot;.</p>
+<p>Reads the RNG_LLTemp named range on the designer's Main worksheet and answers
+True when it holds anything. An absent range answers False.</p>
 <p><strong>Returns:</strong> Boolean. True when a template is configured.</p>
 <hr />
 <h3 id="translations">Translations <a class="anchor-link" href="#translations">#</a></h3>
@@ -211,16 +254,6 @@ when the value equals &quot;has template&quot;.</p>
 <p>Returns the LLTranslation instance providing access to the linelist
 translation worksheet. Lazy-loaded on first access.</p>
 <p><strong>Returns:</strong> LLTranslation. The translations collaborator.</p>
-<hr />
-<h3 id="designertranslations">DesignerTranslations <a class="anchor-link" href="#designertranslations">#</a></h3>
-<p><em>designer-translations</em></p>
-<p><strong>Designer translation accessor</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get DesignerTranslations() As DesignerTranslation
-</code></pre>
-<p>Returns the DesignerTranslation instance providing designer UI translations
-from the DesignerTranslation worksheet. Lazy-loaded on first access.</p>
-<p><strong>Returns:</strong> DesignerTranslation. The designer translation collaborator.</p>
 <hr />
 <h3 id="transobject">TransObject <a class="anchor-link" href="#transobject">#</a></h3>
 <p><em>trans-object</em></p>
@@ -268,15 +301,25 @@ etc.) to its canonical name string.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Property Get Value(ByVal tagName As String) As String
 </code></pre>
-<p>Returns a configuration value from the Main worksheet for the given
-tag name. The special tag &quot;numberofexports&quot; returns the export count
-from the Exports worksheet; all other tags resolve the named range directly
-on the Main worksheet.</p>
+<p>Answers one configuration value the user typed into the designer's Main
+worksheet. Most tags name a range on that worksheet; two read a hidden name
+on the designer workbook, and one counts the exports.</p>
+<p>A tag this class does not know raises. It used to answer an empty string, and
+that is what hid the debugging password fault for weeks: the tag table asked
+for a range name that exists nowhere, the read failed under On Error Resume
+Next, and every generated linelist got an empty password with nothing said.</p>
+<p>A tag the class knows whose RANGE is absent still answers an empty string.
+That is a designer the user has yet to fill in, and Prepare's caller validates
+the two values that have to be there.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>tagName</code>: String. The configuration key to look up.</li>
 </ul>
-<p><strong>Returns:</strong> String. The configuration value, or empty string if tagName is empty.</p>
+<p><strong>Returns:</strong> String. The configuration value, or an empty string for an empty tag.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.InvalidArgument When the tag is unknown to this class.</li>
+</ul>
 <hr />
 </div>
 </details>
@@ -287,27 +330,33 @@ on the Main worksheet.</p>
 <p><em>prepare</em></p>
 <p><strong>Prepare all specifications using a build service</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub Prepare(ByVal buildService As LinelistBuildService, ByVal setupPath As String)
+<pre><code class="language-vb">Public Sub Prepare(ByVal buildService As LLBuild, ByVal setupPath As String)
 </code></pre>
 <p>Lifecycle methods for importing, preparing, exporting, and
 error-managing the specifications workbook.</p>
-<p>Orchestrates the full specification preparation workflow:</p>
+<p>Runs the whole preparation:</p>
 <ol>
 <li>Creates a temporary repository for working files.</li>
-<li>Creates a new output workbook (from template if configured).</li>
-<li>Exports pass-through components directly from setup to linelist.</li>
-<li>Exports designer-sourced components (geo, passwords, translations,
-formatter, language HiddenNames) to the linelist.</li>
-<li>Builds domain manager instances on the linelist workbook.</li>
-<li>Retrieves exported domain instances from the service.</li>
-<li>Prepares the dictionary with preserved sheet names and geo references.</li>
-<li>Adds the &quot;list auto&quot; column if not already present.</li>
-<li>Translates and sorts all collaborators using dictionary translations.
-Handles errors with cleanup and busy-state restoration.</li>
+<li>Creates the output workbook, from the template when one is configured.</li>
+<li>Imports the pass-through components straight from setup into the linelist.</li>
+<li>Exports the designer-sourced components (geo, passwords, translations,
+formatter, language hidden names) into the linelist.</li>
+<li>Builds the domain managers on the linelist workbook.</li>
+<li>Takes those instances from the service, which is what points the four
+pass-through collaborators at the linelist.</li>
+<li>Imports the geobase the user asked for.</li>
+<li>Prepares the dictionary with the preserved sheet names.</li>
+<li>Adds the &quot;list auto&quot; column when the dictionary has none.</li>
+<li>Translates and sorts the collaborators.</li>
+<li>Writes the debugging password into the linelist.</li>
 </ol>
+<p>A failure anywhere closes the output workbook, drops the temporary
+repository and restores the application state, then re-raises. The caller
+creates its Linelist after this returns, so a Prepare that leaked left an
+orphaned workbook open and temporary files on disk every time.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>buildService</code>: LinelistBuildService. The configured build service.</li>
+<li><code>buildService</code>: LLBuild. The configured build service.</li>
 <li><code>setupPath</code>: String. Full path to the setup workbook.</li>
 </ul>
 <p><strong>Throws:</strong></p>
@@ -348,6 +397,27 @@ the linelist creation process is being aborted.</p>
 <ul>
 <li><code>textMessage</code>: String. Error description. Defaults to vbNullString.</li>
 </ul>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="checkings">
+<summary>Checkings</summary>
+<div class="section-body">
+<h3 id="hascheckings">HasCheckings <a class="anchor-link" href="#hascheckings">#</a></h3>
+<p><em>has-checkings</em></p>
+<p><strong>Whether this instance has anything to report</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get HasCheckings() As Boolean
+</code></pre>
+<p><strong>Returns:</strong> Boolean. True once one entry has been filed.</p>
+<hr />
+<h3 id="checkingvalues">CheckingValues <a class="anchor-link" href="#checkingvalues">#</a></h3>
+<p><em>checking-values</em></p>
+<p><strong>The entries filed while the specifications were prepared</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get CheckingValues() As Checking
+</code></pre>
+<p><strong>Returns:</strong> Checking. The entries, or Nothing when none were filed.</p>
 <hr />
 </div>
 </details>
@@ -416,35 +486,57 @@ initialised. Not part of the public interface.</p>
 <li>ProjectError.ObjectNotInitialized When the workbook is Nothing.</li>
 </ul>
 <hr />
-<h3 id="int-ensurecategoryarrays">EnsureCategoryArrays <a class="anchor-link" href="#int-ensurecategoryarrays">#</a></h3>
-<p><em>ensure-category-arrays</em></p>
-<p><strong>Create the parallel category arrays if they do not exist</strong></p>
+<h3 id="int-ensurecategorycache">EnsureCategoryCache <a class="anchor-link" href="#int-ensurecategorycache">#</a></h3>
+<p><em>ensure-category-cache</em></p>
+<p><strong>Create the category lookup if it does not exist</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub EnsureCategoryArrays()
+<pre><code class="language-vb">Private Sub EnsureCategoryCache()
 </code></pre>
 <hr />
 <h2 id="int-worksheet-resolution">Worksheet resolution</h2>
 <h3 id="int-resolvesheet">ResolveSheet <a class="anchor-link" href="#int-resolvesheet">#</a></h3>
 <p><em>resolve-sheet</em></p>
-<p><strong>Resolve a worksheet by name with optional error surfacing</strong></p>
+<p><strong>Resolve a worksheet of the designer workbook by name</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function ResolveSheet(ByVal sheetName As String, _
-                              Optional ByVal allowMissing As Boolean = False) As Worksheet
+<pre><code class="language-vb">Private Function ResolveSheet(ByVal sheetName As String) As Worksheet
 </code></pre>
 <p>Direct worksheet lookups by name within the specifications workbook.</p>
-<p>Looks up a worksheet in the specifications workbook by name. When the
-sheet is not found and allowMissing is False, raises a descriptive error.</p>
+<p>Looks a worksheet up in the designer workbook by name and raises a
+descriptive error when it is absent.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>sheetName</code>: String. The worksheet name to find.</li>
-<li><code>allowMissing</code>: Boolean. When True, returns Nothing instead of raising.</li>
 </ul>
-<p><strong>Returns:</strong> Worksheet. The resolved worksheet, or Nothing if allowMissing.</p>
+<p><strong>Returns:</strong> Worksheet. The resolved worksheet.</p>
 <p><strong>Throws:</strong></p>
 <ul>
-<li>ProjectError.InvalidArgument When sheetName is empty and not allowMissing.</li>
-<li>ProjectError.ElementNotFound When the sheet is missing and not allowMissing.</li>
+<li>ProjectError.InvalidArgument When sheetName is empty.</li>
+<li>ProjectError.ElementNotFound When the sheet is missing.</li>
 </ul>
+<hr />
+<h3 id="int-mainsheet">MainSheet <a class="anchor-link" href="#int-mainsheet">#</a></h3>
+<p><em>main-sheet</em></p>
+<p><strong>The designer's Main worksheet, resolved once per instance</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function MainSheet() As Worksheet
+</code></pre>
+<p>Value used to call ResolveSheet on every read, and Prepare and Linelist
+together read a dozen tags. ResetCaches drops this reference.</p>
+<p><strong>Returns:</strong> Worksheet. The Main worksheet of the designer workbook.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ElementNotFound When the Main worksheet is missing.</li>
+</ul>
+<hr />
+<h3 id="int-designerhiddenstore">DesignerHiddenStore <a class="anchor-link" href="#int-designerhiddenstore">#</a></h3>
+<p><em>designer-hidden-store</em></p>
+<p><strong>The designer workbook's hidden name store, built once per instance</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function DesignerHiddenStore() As HiddenNames
+</code></pre>
+<p>Building one runs EnsureReady and a full metadata rebuild, and Value used to
+build a fresh store for each of the two hidden-name tags. ResetCaches drops it.</p>
+<p><strong>Returns:</strong> HiddenNames. The store over the designer workbook.</p>
 <hr />
 <h2 id="int-external-workbook-helpers">External workbook helpers</h2>
 <h3 id="int-enterbusystate">EnterBusyState <a class="anchor-link" href="#int-enterbusystate">#</a></h3>
@@ -464,19 +556,20 @@ state (suppressing screen updates and calculation) if not already busy.</p>
 <hr />
 <h3 id="int-importgeobase">ImportGeobase <a class="anchor-link" href="#int-importgeobase">#</a></h3>
 <p><em>import-geobase</em></p>
-<p><strong>Import geobase data from the user-specified path</strong></p>
+<p><strong>Import geobase data from the path the user gave</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ImportGeobase(ByVal geoObj As LLGeo)
 </code></pre>
-<p>Reads the geobase file path from the Main worksheet. If the path is not
-empty, opens the geobase workbook, sets the dictionary language on the
-exported geo worksheet via RNG_MetaLang, calls geoObj.Import to populate
-the output geo sheet, then closes the geobase workbook. Silently skips
-if the path is empty or the file cannot be opened.</p>
+<p>Reads the geobase file path from the designer's Main worksheet. An empty path
+is a choice the user made and the import is skipped. A path that is set and
+will not open is a failure the user has to hear about: the linelist comes out
+with no geographic data at all, so the reason is filed as a report entry
+naming the path.</p>
+<p>The file is opened read only, the way ImportSetupToLinelist opens the setup
+workbook. The geobase is read and never written.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>geoObj</code>: LLGeo. The geo instance on the output workbook.</li>
-<li><code>dictLang</code>: String. The dictionary language code for RNG_MetaLang.</li>
 </ul>
 <hr />
 <h3 id="int-exitbusystate">ExitBusyState <a class="anchor-link" href="#int-exitbusystate">#</a></h3>
@@ -492,17 +585,25 @@ if the path is empty or the file cannot be opened.</p>
 <hr />
 <h3 id="int-buildpreservedsheetnames">BuildPreservedSheetNames <a class="anchor-link" href="#int-buildpreservedsheetnames">#</a></h3>
 <p><em>build-preserved-sheet-names</em></p>
-<p><strong>Build the list of sheet names to preserve during dictionary preparation</strong></p>
+<p><strong>Build the list of sheet names the dictionary must avoid</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Function BuildPreservedSheetNames(ByVal messageTranslations As TranslationObject) As BetterArray
 </code></pre>
-<p>Collects all specification sheet names and temporary sheet names into
-a BetterArray, then appends translated linelist sheet names (Admin,
-Analysis, Spatial, etc.) when message translations are available.</p>
+<p>The dictionary generates one data-entry worksheet per sheet name it holds, and
+a generated name that collides with a worksheet already in the linelist breaks
+the build. This is the list of names it has to keep clear of.</p>
+<p>It is read off the output workbook itself. Prepare has already run every
+exporter against that workbook by the time it calls this, so the real
+worksheets are the honest answer, and a list of constants drifts away from
+them on every change to the architecture. The constant list this replaced
+still carried a Translations worksheet the designer gave up, and it named
+Metadata as a temporary sheet when LLGeo creates a real one.</p>
+<p>On top of the real worksheets go the temporary names that do not exist yet,
+and the translated names of the worksheets the build is about to create.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>messageTranslations</code>: TranslationObject. The message translations
-for resolving linelist sheet names, or Nothing to skip translated names.</li>
+<li><code>messageTranslations</code>: TranslationObject. The message translations that
+resolve the linelist worksheet names.</li>
 </ul>
 <p><strong>Returns:</strong> BetterArray. The list of preserved sheet names.</p>
 <hr />
@@ -625,93 +726,82 @@ directly into the linelist.</p>
 <p><strong>Returns:</strong> String. The workbook name or &quot;<unknown>&quot;.</p>
 <hr />
 <h2 id="int-collaborator-ensures">Collaborator ensures</h2>
-<h3 id="int-ensureexports">EnsureExports <a class="anchor-link" href="#int-ensureexports">#</a></h3>
-<p><em>ensure-exports</em></p>
-<p><strong>Lazy-load the export collaborator</strong></p>
+<h3 id="int-requireprepared">RequirePrepared <a class="anchor-link" href="#int-requireprepared">#</a></h3>
+<p><em>require-prepared</em></p>
+<p><strong>Refuse a read of a collaborator Prepare has to supply</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub EnsureExports()
+<pre><code class="language-vb">Private Sub RequirePrepared(ByVal memberName As String)
 </code></pre>
-<p>Lazy-initialisation guards for each collaborator object. Each
-EnsureXxx method creates the collaborator from its backing worksheet on first
-access, then caches it for subsequent calls.</p>
-<hr />
-<h3 id="int-ensuredictionary">EnsureDictionary <a class="anchor-link" href="#int-ensuredictionary">#</a></h3>
-<p><em>ensure-dictionary</em></p>
-<p><strong>Lazy-load the dictionary collaborator</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub EnsureDictionary()
-</code></pre>
-<p>Requires the export collaborator to be available first (for the number
-of exports parameter), then creates the dictionary from the Dictionary
-worksheet.</p>
-<hr />
-<h3 id="int-ensurechoices">EnsureChoices <a class="anchor-link" href="#int-ensurechoices">#</a></h3>
-<p><em>ensure-choices</em></p>
-<p><strong>Lazy-load the choices collaborator</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub EnsureChoices()
-</code></pre>
+<p>How each collaborator is obtained. Read the residency table in
+the class description first: it says which workbook each one is backed by.</p>
+<p>The collaborators that live on the DESIGNER are built here on first read, from
+a worksheet RequiredSheetNames() guarantees is present.</p>
+<p>The four that live on the LINELIST have no loader. Prepare sets them from the
+build service, and their accessors raise before that. A loader for them used
+to resolve a designer worksheet the designer no longer carries.</p>
+<p>The four pass-through collaborators are imported from the setup file straight
+into the linelist. Reading one before Prepare has run is a caller mistake, and
+this is the message that says so.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>memberName</code>: String. The accessor the caller asked for.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ErrorUnexpectedState Always.</li>
+</ul>
 <hr />
 <h3 id="int-ensuretranslations">EnsureTranslations <a class="anchor-link" href="#int-ensuretranslations">#</a></h3>
 <p><em>ensure-translations</em></p>
-<p><strong>Lazy-load the translations collaborator</strong></p>
+<p><strong>Load the translations collaborator on first read</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureTranslations()
 </code></pre>
-<p>Creates the LLTranslation instance from the linelist translation worksheet.</p>
-<hr />
-<h3 id="int-ensuredesignertranslations">EnsureDesignerTranslations <a class="anchor-link" href="#int-ensuredesignertranslations">#</a></h3>
-<p><em>ensure-designer-translations</em></p>
-<p><strong>Lazy-load the designer translations collaborator</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub EnsureDesignerTranslations()
-</code></pre>
+<p>Creates the LLTranslation instance from the designer's linelist translation
+worksheet. Prepare replaces it with the copy on the linelist.</p>
 <hr />
 <h3 id="int-ensuregeo">EnsureGeo <a class="anchor-link" href="#int-ensuregeo">#</a></h3>
 <p><em>ensure-geo</em></p>
-<p><strong>Lazy-load the geo collaborator</strong></p>
+<p><strong>Load the geo collaborator on first read</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureGeo()
 </code></pre>
-<hr />
-<h3 id="int-ensureanalysis">EnsureAnalysis <a class="anchor-link" href="#int-ensureanalysis">#</a></h3>
-<p><em>ensure-analysis</em></p>
-<p><strong>Lazy-load the analysis collaborator</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub EnsureAnalysis()
-</code></pre>
+<p>Built over the designer's Geo worksheet. Prepare replaces it with the copy on
+the linelist.</p>
 <hr />
 <h3 id="int-ensurepasswords">EnsurePasswords <a class="anchor-link" href="#int-ensurepasswords">#</a></h3>
 <p><em>ensure-passwords</em></p>
-<p><strong>Lazy-load the passwords collaborator</strong></p>
+<p><strong>Load the passwords collaborator on first read</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsurePasswords()
 </code></pre>
+<p>Built over the designer's password worksheet. Prepare replaces it with the
+copy on the linelist.</p>
 <hr />
 <h3 id="int-ensureformuladata">EnsureFormulaData <a class="anchor-link" href="#int-ensureformuladata">#</a></h3>
 <p><em>ensure-formula-data</em></p>
-<p><strong>Lazy-load the formula data collaborator</strong></p>
+<p><strong>Load the formula data collaborator on first read</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureFormulaData()
 </code></pre>
 <hr />
 <h3 id="int-ensurevariables">EnsureVariables <a class="anchor-link" href="#int-ensurevariables">#</a></h3>
 <p><em>ensure-variables</em></p>
-<p><strong>Lazy-load the variables collaborator</strong></p>
+<p><strong>Build the variables collaborator over the dictionary</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureVariables()
 </code></pre>
-<p>Requires the dictionary to be available first, then creates the
-LLVariables instance from it.</p>
+<p>Reads the dictionary through its accessor, so a call before Prepare raises
+there and names Prepare.</p>
 <hr />
 <h3 id="int-ensureformat">EnsureFormat <a class="anchor-link" href="#int-ensureformat">#</a></h3>
 <p><em>ensure-format</em></p>
-<p><strong>Lazy-load the format collaborator</strong></p>
+<p><strong>Load the format collaborator on first read</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureFormat()
 </code></pre>
-<p>Resolves the design name from the DESIGNTYPE named range on the format
-sheet, then creates the LLFormat instance.</p>
+<p>Resolves the design name from the DESIGNTYPE named range on the designer's
+format worksheet, then creates the LLFormat instance.</p>
 <hr />
 <h3 id="int-resolvedesignname">ResolveDesignName <a class="anchor-link" href="#int-resolvedesignname">#</a></h3>
 <p><em>resolve-design-name</em></p>
@@ -731,10 +821,11 @@ sheet, then creates the LLFormat instance.</p>
 <hr />
 <h3 id="int-ensurecategorylookup">EnsureCategoryLookup <a class="anchor-link" href="#int-ensurecategorylookup">#</a></h3>
 <p><em>ensure-category-lookup</em></p>
-<p><strong>Ensure choices, variables, and category arrays are ready</strong></p>
+<p><strong>Ensure choices, variables and the category lookup are ready</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureCategoryLookup()
 </code></pre>
+<p>Choices reads through its accessor, so a call before Prepare raises there.</p>
 <hr />
 <h3 id="int-numberofexports">NumberOfExports <a class="anchor-link" href="#int-numberofexports">#</a></h3>
 <p><em>number-of-exports</em></p>
@@ -774,17 +865,21 @@ or case_when types.</p>
 </ul>
 <hr />
 <h2 id="int-category-helpers">Category helpers</h2>
-<h3 id="int-findcategoryindex">FindCategoryIndex <a class="anchor-link" href="#int-findcategoryindex">#</a></h3>
-<p><em>find-category-index</em></p>
-<p><strong>Search the category keys array for a matching key</strong></p>
+<h3 id="int-cachedcategories">CachedCategories <a class="anchor-link" href="#int-cachedcategories">#</a></h3>
+<p><em>cached-categories</em></p>
+<p><strong>Read one category list out of the lookup</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Function FindCategoryIndex(ByVal cacheKey As String) As Long
+<pre><code class="language-vb">Private Function CachedCategories(ByVal cacheKey As String) As BetterArray
 </code></pre>
+<p>A Collection raises on a key it does not hold, which is how a miss is read.
+The lookup this replaced was two parallel BetterArrays walked one entry at a
+time, and every walk opened with a full copy of the internal array. A
+500-variable dictionary spent about 125,000 item reads on cache misses alone.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>cacheKey</code>: String. The key to search for.</li>
+<li><code>cacheKey</code>: String. The key to look up.</li>
 </ul>
-<p><strong>Returns:</strong> Long. The 1-based index if found, or 0 if not found.</p>
+<p><strong>Returns:</strong> BetterArray. The cached list, or Nothing when the key is absent.</p>
 <hr />
 <h3 id="int-resolvecategorylist">ResolveCategoryList <a class="anchor-link" href="#int-resolvecategorylist">#</a></h3>
 <p><em>resolve-category-list</em></p>
@@ -848,6 +943,34 @@ control details, then queries the choices collaborator.</p>
 <li>ProjectError.ElementNotFound When the scope returns Nothing.</li>
 </ul>
 <hr />
+<h2 id="int-checkings">Checkings</h2>
+<h3 id="int-checks">Checks <a class="anchor-link" href="#int-checks">#</a></h3>
+<p><em>checks</em></p>
+<p><strong>The report entries of this instance</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get Checks() As Checking
+</code></pre>
+<p>What this class reports into the generation report.
+GenerationReport.HarvestSpecsCheckings collects these after Prepare, alongside
+the entries of the dictionary, the choices, the exports, the analysis, the
+passwords and the format.</p>
+<p><strong>Returns:</strong> Checking. The entries, created on first use.</p>
+<hr />
+<h3 id="int-logcheck">LogCheck <a class="anchor-link" href="#int-logcheck">#</a></h3>
+<p><em>log-check</em></p>
+<p><strong>File one report entry</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub LogCheck(ByVal message As String, _
+                     Optional ByVal scope As Byte = checkingNote)
+</code></pre>
+<p>Checking.Add raises on a duplicate key, and one report carries the entries of
+several classes, so the key names this class and a counter.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>message</code>: String. The message text.</li>
+<li><code>scope</code>: Optional Byte. The checking scope. Defaults to checkingNote.</li>
+</ul>
+<hr />
 <h2 id="int-error-handling">Error handling</h2>
 <h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
 <p><em>throw-error</em></p>
@@ -863,37 +986,13 @@ control details, then queries the choices collaborator.</p>
 </ul>
 <hr />
 <h2 id="int-test-support">Test support</h2>
-<h3 id="int-testassigndesignertranslations">TestAssignDesignerTranslations <a class="anchor-link" href="#int-testassigndesignertranslations">#</a></h3>
-<p><em>test-assign-designer-translations</em></p>
-<p><strong>Inject a mock DesignerTranslation instance for testing</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub TestAssignDesignerTranslations(ByVal designerTrads As DesignerTranslation)
-</code></pre>
-<p>Backdoor setters for injecting mock collaborators during testing.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>designerTrads</code>: DesignerTranslation. The mock designer translations object.</li>
-</ul>
-<hr />
-<h3 id="int-testassigntranslations">TestAssignTranslations <a class="anchor-link" href="#int-testassigntranslations">#</a></h3>
-<p><em>test-assign-translations</em></p>
-<p><strong>Inject a mock LLTranslation instance for testing</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub TestAssignTranslations(ByVal translations As LLTranslation)
-</code></pre>
-<p>Also resets the translation cache to ensure the mock object is used
-for subsequent TransObject lookups.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>translations</code>: LLTranslation. The mock translations object.</li>
-</ul>
-<hr />
 <h3 id="int-testassigndictionary">TestAssignDictionary <a class="anchor-link" href="#int-testassigndictionary">#</a></h3>
 <p><em>test-assign-dictionary</em></p>
 <p><strong>Inject a dictionary collaborator for testing</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub TestAssignDictionary(ByVal dict As LLdictionary)
 </code></pre>
+<p>Backdoor setters for injecting mock collaborators during testing.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>dict</code>: LLdictionary. The dictionary to expose through Dictionary().</li>
@@ -936,33 +1035,35 @@ object regardless of scope, mirroring the former single-object test stubs.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (25 file(s))</summary>
+<summary>Used in (27 file(s))</summary>
 <ul>
 <li><a href="Analysis.html">Analysis.cls</a></li>
 <li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
 <li><a href="CrossTable.html">CrossTable.cls</a></li>
 <li><a href="TableSpecs.html">TableSpecs.cls</a></li>
 <li><a href="LLVariables.html">LLVariables.cls</a></li>
-<li><a href="GraphSpecs.html">GraphSpecs.cls</a></li>
+<li><a href="TimeSeriesGraphs.html">TimeSeriesGraphs.cls</a></li>
 <li><a href="Linelist.html">Linelist.cls</a></li>
-<li><a href="ListBuilder.html">ListBuilder.cls</a></li>
+<li><a href="LLDataEntry.html">LLDataEntry.cls</a></li>
 <li><a href="SectionBuilder.html">SectionBuilder.cls</a></li>
 <li><a href="VarWriter.html">VarWriter.cls</a></li>
 <li>EventsDesignerAdvanced.bas</li>
 <li>GenerationReport.bas</li>
 <li>TestCrossTable.bas</li>
-<li>TestCrossTableFormula.bas</li>
 <li>TestTableSpecs.bas</li>
 <li>TestLLVariables.bas</li>
 <li>TestApplicationState.bas</li>
-<li>TestGraphSpecs.bas</li>
+<li>TestTemporaryRepos.bas</li>
+<li>TestGraphSeries.bas</li>
+<li>TestTimeSeriesGraphs.bas</li>
 <li><a href="LinelistDataStub.html">LinelistDataStub.cls</a></li>
 <li>TestHelpers.bas</li>
 <li>TestLinelist.bas</li>
-<li>TestListBuilder.bas</li>
+<li>TestLinelistSpecs.bas</li>
+<li>TestLLDataEntry.bas</li>
+<li>TestLLTranslation.bas</li>
 <li>TestSectionBuilder.bas</li>
 <li>TestVarWriter.bas</li>
-<li>TestLinelistSpecs.bas</li>
 </ul>
 </details>
   </main>

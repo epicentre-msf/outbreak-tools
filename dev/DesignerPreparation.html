@@ -212,16 +212,38 @@ current date.</p>
 <hr />
 <h3 id="int-ensuregeoflags">EnsureGeoFlags <a class="anchor-link" href="#int-ensuregeoflags">#</a></h3>
 <p><em>ensure-geo-flags</em></p>
-<p><strong>Ensure Geo worksheet-level HiddenNames flags exist</strong></p>
+<p><strong>Ensure the Geo HiddenNames flags exist</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub EnsureGeoFlags()
 </code></pre>
 <p>Creates worksheet-level HiddenNames on the Geo worksheet for language
-code, geobase name, metadata language, update status, and form loaded
-state. Also creates RNG_PastingGeoCol as a real cell-based named range
-(not a HiddenName) because it is used as a paste anchor at runtime.
-Silently exits when the Geo worksheet does not exist in the host
-workbook.</p>
+code, geobase name, metadata language, update status, translation state
+and form loaded state.</p>
+<p>The five level labels (RNG_ADM1NAME through RNG_ADM4NAME and RNG_HFNAME)
+are created at WORKBOOK scope. LLGeo.CheckRequirements asks for them there,
+and CrossTable resolves them from a worksheet formula on the spatial
+analysis sheet, where a worksheet-scoped name would give #NAME?.</p>
+<p>RNG_PastingGeoCol stays a real cell-based named range. It is a paste anchor
+at runtime and the paste needs a cell to land in.</p>
+<p>Exits with no work when the host workbook has no Geo worksheet.</p>
+<hr />
+<h3 id="int-ensurelevelname">EnsureLevelName <a class="anchor-link" href="#int-ensurelevelname">#</a></h3>
+<p><em>ensure-level-name</em></p>
+<p><strong>Ensure one workbook-level hidden name holding a geo level label</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureLevelName(ByVal levelStore As HiddenNames, ByVal sh As Worksheet, _
+                            ByVal nameId As String)
+</code></pre>
+<p>A Geo worksheet written before the level labels moved into HiddenNames
+carries each label in a cell-based named range of the same identifier. The
+cell is read first and its value seeds the hidden name, so the label the
+designer already shows survives the move.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>levelStore</code>: HiddenNames. The store over the workbook.</li>
+<li><code>sh</code>: Worksheet. The Geo worksheet.</li>
+<li><code>nameId</code>: String. The hidden name identifier.</li>
+</ul>
 <hr />
 <h2 id="int-dropdown-helpers">Dropdown Helpers</h2>
 <h3 id="int-ensuredropdownmanager">EnsureDropdownManager <a class="anchor-link" href="#int-ensuredropdownmanager">#</a></h3>
@@ -439,8 +461,9 @@ overlap with existing ListObjects or other content.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (4 file(s))</summary>
+<summary>Used in (5 file(s))</summary>
 <ul>
+<li><a href="LLGeo.html">LLGeo.cls</a></li>
 <li>EventsDesignerAdvanced.bas</li>
 <li>EventsDesignerCore.bas</li>
 <li>TestDesignerPreparation.bas</li>

@@ -42,7 +42,7 @@
 </code></pre>
 <p>The match is case-insensitive, the same rule Excel applies to worksheet names.
 A sheet stored as &quot;Data&quot; and asked for as &quot;data&quot; is the same sheet, and
-<code>ListBuilder</code> refuses to build a sheet this call reports as missing.</p>
+<code>LLDataEntry</code> refuses to build a sheet this call reports as missing.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>sheetName</code>: String. Sheet identifier to locate.</li>
@@ -56,7 +56,7 @@ A sheet stored as &quot;Data&quot; and asked for as &quot;data&quot; is the same
 </code></pre>
 <p>Answers 0 for a sheet the dictionary does not hold, and for the header row.
 The sheet-name range is captured with its header, so this used to hand back
-the header row for a call asking about the header text, and <code>ListBuilder</code>
+the header row for a call asking about the header text, and <code>LLDataEntry</code>
 places rows from the answer.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -87,7 +87,7 @@ places rows from the answer.</p>
 <pre><code class="language-vb">Public Function NumberOfVars(ByVal sheetName As String) As Long
 </code></pre>
 <p>The count is read once per sheet name and held. One AutoFilter pass answers
-it, and <code>DataBounds</code> asks for it twice per sheet on the <code>ListBuilder</code> path,
+it, and <code>DataBounds</code> asks for it twice per sheet on the <code>LLDataEntry</code> path,
 which asks again on its own.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -127,7 +127,7 @@ column 5.</p>
                                  Optional ByVal Control As String = &quot;list_auto&quot;, _
                                  Optional ByVal colName As String = COL_CONTROL) As Boolean
 </code></pre>
-<p>The default control value is &quot;list_auto&quot;. <code>ListBuilder</code> asks for &quot;geo1&quot;,
+<p>The default control value is &quot;list_auto&quot;. <code>LLDataEntry</code> asks for &quot;geo1&quot;,
 which the dictionary holds only after <code>LLdictionary.AppendGeoLines</code> has run.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
@@ -558,16 +558,17 @@ module, so the two live where they are used.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (11 file(s))</summary>
+<summary>Used in (12 file(s))</summary>
 <ul>
 <li><a href="LLdictionary.html">LLdictionary.cls</a></li>
 <li><a href="LLVariables.html">LLVariables.cls</a></li>
 <li><a href="Formulas.html">Formulas.cls</a></li>
 <li><a href="ValueOfFormula.html">ValueOfFormula.cls</a></li>
 <li><a href="Linelist.html">Linelist.cls</a></li>
-<li><a href="ListBuilder.html">ListBuilder.cls</a></li>
+<li><a href="LLDataEntry.html">LLDataEntry.cls</a></li>
 <li><a href="VarWriter.html">VarWriter.cls</a></li>
 <li>EventsDesignerAdvanced.bas</li>
+<li>TestCrossTable.bas</li>
 <li>TestLLSheets.bas</li>
 <li>TestLLSheetsExtra.bas</li>
 <li>TestFormulas.bas</li>
