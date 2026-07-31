@@ -219,19 +219,19 @@ End Property
 '@details
 'Searches the keys BetterArray for the specified key name. Returns
 'False immediately for empty strings.
+'
+'The stored table is read directly. `ListOfKeys` hands out a clone, and `Add`
+'asks this question on every call, so a build that files 500 entries used to
+'copy an array averaging 250 items 500 times before recording anything.
 '@param keyName String. Key to search for.
 '@return Boolean. True when the key is found.
 '@export
 Public Function KeyExists(ByVal keyName As String) As Boolean
-  Dim keyTabl As BetterArray
 
-  If (keyName = vbNullString) Then
-    KeyExists = False
-    Exit Function
-  End If
+  If (keyName = vbNullString) Then Exit Function
+  If this.keysTable Is Nothing Then Exit Function
 
-  Set keyTabl = ListOfKeys()
-  KeyExists = keyTabl.Includes(keyName)
+  KeyExists = this.keysTable.Includes(keyName)
 End Function
 
 '@section InputOutput
@@ -381,6 +381,16 @@ End Function
 'Iterates through the supplied Checking entries and adds each one
 'to the current checking. Silently exits when the supplied checking
 'is Nothing or empty.
+'
+'WHAT HAPPENS TO A KEY BOTH SIDES HOLD
+'-------------------------------------------------------------------------------
+'It is numbered and the entry is kept. `Add` is the strict half of the contract
+'and still raises on a duplicate; this is the merge, and every caller in the
+'tree uses it as one. Two classes that both key their entries with a counter
+'from 0 -- `Formulas` and `FormulaCondition` do -- used to stop the caller dead
+'the second time their stores met.
+'
+'Owner decision, 2026-07-31.
 '@param checks Checking. Source checking to merge from.
 '@export
 Public Sub Append(ByVal checks As Checking)
@@ -402,11 +412,31 @@ Public Sub Append(ByVal checks As Checking)
     keyTypeLabel = checks.ValueOf(keyName, checkingType)
     keyScope = ScopeFromTypeLabel(keyTypeLabel)
 
-    Add keyName, _
+    Add FreeKey(keyName), _
       checks.ValueOf(keyName, checkingLabel), _
       keyScope
   Next idx
 End Sub
+
+'@label:free-key
+'@sub-title Answer a key this checking does not hold yet
+'@details
+'The root is numbered until it is free. Used by `Append` alone, so a direct
+'`Add` keeps raising on a duplicate.
+'@param keyRoot String. The key to start from.
+'@return String. A key that is free.
+Private Function FreeKey(ByVal keyRoot As String) As String
+  Dim candidate As String
+  Dim suffix As Long
+
+  candidate = keyRoot
+  Do While KeyExists(candidate)
+    suffix = suffix + 1
+    candidate = keyRoot & " #" & CStr(suffix)
+  Loop
+
+  FreeKey = candidate
+End Function
 
 '@section Helpers
 '===============================================================================
