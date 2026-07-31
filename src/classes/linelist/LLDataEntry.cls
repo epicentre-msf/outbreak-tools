@@ -2,7 +2,7 @@ VERSION 1.0 CLASS
 BEGIN
   MultiUse = -1  'True
 END
-Attribute VB_Name = "ListBuilder"
+Attribute VB_Name = "LLDataEntry"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = True
 Attribute VB_PredeclaredId = True
@@ -19,15 +19,15 @@ Option Explicit
 '@section Enumerations
 '===============================================================================
 '@description
-'Data-entry sheet layers built by ListBuilder. Re-homed from the removed
-'IListBuilder interface; depending on ListBuilder resolves these everywhere.
-Public Enum ListBuilderLayer
-    ListBuilderLayerHList = 1
-    ListBuilderLayerVList = 2
+'Data-entry sheet layers built by LLDataEntry. These live on the class
+'itself, so depending on LLDataEntry resolves them everywhere.
+Public Enum LLDataEntryLayer
+    LLDataEntryLayerHList = 1
+    LLDataEntryLayerVList = 2
 End Enum
 
 
-'@class ListBuilder
+'@class LLDataEntry
 '@description
 'Builds horizontal (HList) or vertical (VList) data entry sheets for the
 'linelist workbook. Each mode creates formatted sheets with freeze panes,
@@ -44,7 +44,7 @@ End Enum
 
 
 
-Private Const CLASS_NAME As String = "ListBuilder"
+Private Const CLASS_NAME As String = "LLDataEntry"
 Private Const GOTO_SECTION_CODE As String = "go_to_section"
 Private Const FILTERED_PREFIX As String = "f"
 Private Const PRINT_PREFIX As String = "print_"
@@ -56,14 +56,14 @@ Private Const SHP_REMOVE_FILT As String = "SHP_ClearFilters"
 Private Const SHP_SHOW_HIDE As String = "SHP_ShowHide"
 Private Const SHP_OPEN_PRINT As String = "SHP_OpenPrint"
 
-Private Type TListBuilder
+Private Type TLLDataEntry
     layer As Byte
     sheetName As String
     ll As Linelist
     hasChecks As Boolean
 End Type
 
-Private this As TListBuilder
+Private this As TLLDataEntry
 
 'Checking support
 Private checkCounter As Long
@@ -75,24 +75,24 @@ Private internalChecks As Checking
 '@description Factory method and Friend bindings for construction.
 
 '@label:create
-'@sub-title Create a ListBuilder instance
+'@sub-title Create a LLDataEntry instance
 '@details
-'Creates a new ListBuilder wired to build a data entry sheet of the given
+'Creates a new LLDataEntry wired to build a data entry sheet of the given
 'layer type (HList or VList) for the named sheet within the linelist. The
 'linelist object, sheet name, and presence in the dictionary are all
 'validated before construction.
-'@param layer Byte. The ListBuilderLayer mode (HList = 1, VList = 2).
+'@param layer Byte. The LLDataEntryLayer mode (HList = 1, VList = 2).
 '@param sheetName String. The dictionary sheet name to build.
 '@param ll Linelist. The linelist workbook facade providing worksheets,
 '  dropdowns, pivots, and specs.
-'@return ListBuilder. A fully initialised instance ready for Build.
+'@return LLDataEntry. A fully initialised instance ready for Build.
 '@throws ProjectError.ObjectNotInitialized When ll is Nothing.
 '@throws ProjectError.InvalidArgument When sheetName is empty or not
 '  present in the dictionary.
 '@export
 Public Function Create(ByVal layer As Byte, _
                        ByVal sheetName As String, _
-                       ByVal ll As Linelist) As ListBuilder
+                       ByVal ll As Linelist) As LLDataEntry
 
     If ll Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, "Linelist object is required"
@@ -110,8 +110,8 @@ Public Function Create(ByVal layer As Byte, _
                    "The sheet name " & sheetName & " is not present in the dictionary"
     End If
 
-    Dim instance As ListBuilder
-    Set instance = New ListBuilder
+    Dim instance As LLDataEntry
+    Set instance = New LLDataEntry
 
     instance.BinLayer = layer
     instance.BinSheetName = sheetName
@@ -127,7 +127,7 @@ End Function
 
 '@label:bin-layer
 '@prop-title Assign the builder layer mode
-'@param value Byte. The ListBuilderLayer constant (HList or VList).
+'@param value Byte. The LLDataEntryLayer constant (HList or VList).
 Friend Property Let BinLayer(ByVal value As Byte)
     this.layer = value
 End Property
@@ -158,13 +158,13 @@ End Property
 'during factory construction. HList mode delegates to BuildHList; VList
 'mode delegates to BuildVList. Raises an error for unknown layer values.
 '@throws ProjectError.InvalidArgument When the layer value is not
-'  ListBuilderLayerHList or ListBuilderLayerVList.
+'  LLDataEntryLayerHList or LLDataEntryLayerVList.
 '@export
 Public Sub Build()
     Select Case this.layer
-        Case ListBuilderLayerHList
+        Case LLDataEntryLayerHList
             BuildHList
-        Case ListBuilderLayerVList
+        Case LLDataEntryLayerVList
             BuildVList
         Case Else
             ThrowError ProjectError.InvalidArgument, _
@@ -520,7 +520,7 @@ Private Sub BuildSections(ByVal sh As Worksheet, ByVal printSh As Worksheet)
     Set dropdownObj = this.ll.Dropdown(1)
     Set customDropdownObj = this.ll.Dropdown(2)
 
-    If this.layer = ListBuilderLayerHList Then
+    If this.layer = LLDataEntryLayerHList Then
         On Error Resume Next
         Set crfSh = this.ll.CRFWksh(this.sheetName)
         On Error GoTo 0

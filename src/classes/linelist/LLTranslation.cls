@@ -363,7 +363,7 @@ End Sub
 'Overwrites Tab_Translations with the supplied ListObject, which is the
 'translation table of the setup file. The host table takes the source column
 'headers with keepSourceHeaders, so it comes out carrying the language columns
-'the setup carries. LinelistBuildService calls this while the linelist is
+'the setup carries. LLBuild calls this while the linelist is
 'being built, and what lands here is what translates the dictionary, the
 'choices and the analyses.
 '@param dictionaryTable ListObject. The setup translation ListObject.

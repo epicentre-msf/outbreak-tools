@@ -399,7 +399,7 @@ suites:
   # this block stays this size. CrossTable.Create types the parameter Object
   # and reads two members off it at run time, the same way
   # TableSpecs.RowCategories does. Registering LinelistSpecs instead would pull
-  # in LLTranslation, LLGeo, DesignerTranslation, LinelistBuildService and
+  # in LLTranslation, LLGeo, DesignerTranslation, LLBuild and
   # TemporaryRepos across four more folders. TestCrossTable hands over
   # LinelistDataStub, registered under `helpers`.
   #
@@ -545,13 +545,13 @@ suites:
     classes:
       - name: LLGeo
 
-  # --- designer (LinelistBuildService) ---------------------------------------
-  # LinelistSpecs.Prepare takes a LinelistBuildService and the parameter is
+  # --- designer (LLBuild) ---------------------------------------
+  # LinelistSpecs.Prepare takes a LLBuild and the parameter is
   # typed, so the class has to be in the workbook. A class row is resolved
   # against src/classes/<the suite folder>/, so it needs a block naming its own
   # folder.
   #
-  # LinelistBuildService names Analysis, LLChoices, LLExport, LLFormat, LLGeo,
+  # LLBuild names Analysis, LLChoices, LLExport, LLFormat, LLGeo,
   # LLTranslation, LLdictionary, Passwords and HiddenNames. LLGeo is right
   # above, LLTranslation is under `linelist` below, Analysis is under
   # `analyses`, and the rest are already registered or baked in. So this one
@@ -566,18 +566,18 @@ suites:
   # This block has no suite yet. src/tests/designer/ is unregistered.
   - folder: designer
     classes:
-      - name: LinelistBuildService
+      - name: LLBuild
 
   # --- linelist (LinelistSpecs, LLTranslation) -------------------------------
   # THIS IS THE FIRST TIME EITHER CLASS HAS BEEN COMPILED. The whole generation
   # path sat in the expansion backlog below, so LinelistSpecs, Linelist,
-  # ListBuilder, CodeTransfer, LLTranslation and LinelistBuildService were never
+  # LLDataEntry, CodeTransfer, LLTranslation and LLBuild were never
   # imported and the green baseline said nothing about any of them.
   #
   # LinelistSpecs is the facade over the designer's seven required sheets, and
   # after Prepare it is the handle on the linelist's domain managers. Its
   # closure is five class rows across four blocks: these two, plus LLGeo under
-  # `geo`, LinelistBuildService under `designer`, and
+  # `geo`, LLBuild under `designer`, and
   # TemporaryRepos under `general`. Everything else LINELISTSPECS names is
   # registered already (Analysis, ApplicationState, FormulaData, Formulas,
   # LLChoices, LLExport, LLFormat, LLVariables, LLdictionary) or baked into the
@@ -589,8 +589,8 @@ suites:
   # names LLdictionary. Its Tab_Translations table is the SETUP's translation
   # table, which is a different thing from the linelist dictionary.
   #
-  # Linelist, ListBuilder and CodeTransfer stay out. Linelist needs Buttons and
-  # its own suite, and ListBuilder opens the `sections` folder through
+  # Linelist, LLDataEntry and CodeTransfer stay out. Linelist needs Buttons and
+  # its own suite, and LLDataEntry opens the `sections` folder through
   # SectionBuilder and VarWriter. Both belong to later sessions.
   - folder: linelist
     classes:
@@ -669,7 +669,7 @@ suites:
 # registered): dataio, mastersetup, showhide, tables. The designer, geo,
 # geo and linelist folders now carry class rows; what they still lack is
 # suites. src/tests/geo/ holds TestLLGeo and TestLLSpatial, src/tests/graphs/
-# holds TestGraphs, and src/tests/linelist/ holds TestLinelist, TestListBuilder
+# holds TestGraphs, and src/tests/linelist/ holds TestLinelist, TestLLDataEntry
 # and TestCodeTransfer. None of those has ever executed.
 #
 #   - folder: <subfolder>

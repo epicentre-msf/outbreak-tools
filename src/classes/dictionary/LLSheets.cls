@@ -45,7 +45,7 @@ End Enum
 'Speed rule for this file: talk to Excel as little as possible.
 '`Formulas.ParsedLinelistFormula` calls `VariableAddress` once per variable
 'token of every formula in the workbook, and `VarWriter` calls it per variable.
-'`ListBuilder` asks `DataBounds` four times and `NumberOfVars` once per sheet
+'`LLDataEntry` asks `DataBounds` four times and `NumberOfVars` once per sheet
 'it builds, and each of those used to re-find the sheet row.
 '
 'What this object holds, and what each answer promises:
@@ -176,7 +176,7 @@ End Sub
 '@details
 'The match is case-insensitive, the same rule Excel applies to worksheet names.
 'A sheet stored as "Data" and asked for as "data" is the same sheet, and
-'`ListBuilder` refuses to build a sheet this call reports as missing.
+'`LLDataEntry` refuses to build a sheet this call reports as missing.
 '@param sheetName String. Sheet identifier to locate.
 '@return True when the sheet exists.
 '@export
@@ -192,7 +192,7 @@ End Function
 '@details
 'Answers 0 for a sheet the dictionary does not hold, and for the header row.
 'The sheet-name range is captured with its header, so this used to hand back
-'the header row for a call asking about the header text, and `ListBuilder`
+'the header row for a call asking about the header text, and `LLDataEntry`
 'places rows from the answer.
 '@param sheetName String. Sheet identifier to locate.
 '@return Worksheet row index for the sheet entry, or 0 when not found.
@@ -219,7 +219,7 @@ End Function
 '@sub-title Count the variables associated with a sheet
 '@details
 'The count is read once per sheet name and held. One AutoFilter pass answers
-'it, and `DataBounds` asks for it twice per sheet on the `ListBuilder` path,
+'it, and `DataBounds` asks for it twice per sheet on the `LLDataEntry` path,
 'which asks again on its own.
 '@param sheetName String. Sheet identifier.
 '@return Long number of variables present on the sheet.
@@ -336,7 +336,7 @@ End Function
 '@label:ContainsControl
 '@sub-title Test whether a sheet exposes a control of the requested type
 '@details
-'The default control value is "list_auto". `ListBuilder` asks for "geo1",
+'The default control value is "list_auto". `LLDataEntry` asks for "geo1",
 'which the dictionary holds only after `LLdictionary.AppendGeoLines` has run.
 '@param sheetName String. Sheet identifier.
 '@param Control String. Control type to search for.

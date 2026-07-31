@@ -2,7 +2,7 @@ VERSION 1.0 CLASS
 BEGIN
   MultiUse = -1  'True
 END
-Attribute VB_Name = "LinelistBuildService"
+Attribute VB_Name = "LLBuild"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
@@ -17,7 +17,7 @@ Attribute VB_Description = "Direct setup-to-linelist build service eliminating t
 
 Option Explicit
 
-'@class LinelistBuildService
+'@class LLBuild
 '@description
 'Orchestrates building a linelist by exporting pass-through components
 '(dictionary, choices, exports, analysis, hidden names) directly from a
@@ -32,7 +32,7 @@ Option Explicit
 '@section State
 '===============================================================================
 
-Private Type TLinelistBuildService
+Private Type TLLBuild
     hostBook As Workbook            'Designer workbook
     exportedDict As LLdictionary   'Dictionary manager on linelist workbook
     exportedChoices As LLChoices   'Choices manager on linelist workbook
@@ -43,12 +43,12 @@ Private Type TLinelistBuildService
     exportedTrans As LLTranslation 'Translations manager on linelist workbook
 End Type
 
-Private this As TLinelistBuildService
+Private this As TLLBuild
 
 '@section Constants
 '===============================================================================
 
-Private Const CLASS_NAME As String = "LinelistBuildService"
+Private Const CLASS_NAME As String = "LLBuild"
 
 'Sheet names in the setup workbook
 Private Const SHEET_DICTIONARY As String = "Dictionary"
@@ -96,16 +96,16 @@ Private Const EXPORTED_START_COLUMN As Long = 1
 '@label:create
 '@sub-title Create and configure a linelist build service
 '@details
-'Factory method that creates a new LinelistBuildService instance, binds it
+'Factory method that creates a new LLBuild instance, binds it
 'to the supplied designer workbook, and returns the result. When no
 'workbook is provided, defaults to ThisWorkbook.
 '@param hostBook Optional Workbook. The designer workbook. Defaults to ThisWorkbook.
-'@return LinelistBuildService. A configured instance ready for use.
+'@return LLBuild. A configured instance ready for use.
 '@export
-Public Function Create(Optional ByVal hostBook As Workbook = Nothing) As LinelistBuildService
-    Dim instance As LinelistBuildService
+Public Function Create(Optional ByVal hostBook As Workbook = Nothing) As LLBuild
+    Dim instance As LLBuild
 
-    Set instance = New LinelistBuildService
+    Set instance = New LLBuild
 
     If hostBook Is Nothing Then
         instance.Configure ThisWorkbook

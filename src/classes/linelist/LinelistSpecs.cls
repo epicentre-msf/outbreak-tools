@@ -57,7 +57,7 @@ End Enum
 'calling before Prepare. They are guards now.
 '@depends LLdictionary, LLChoices, LLTranslation, LLGeo, LLExport, Analysis
 '@depends Passwords, LLFormat, FormulaData, LLVariables, Formulas
-'@depends LinelistBuildService, TemporaryRepos, ApplicationState
+'@depends LLBuild, TemporaryRepos, ApplicationState
 '@depends TranslationObject, HiddenNames, Checking, BetterArray
 '@version 1.2 (2026-07-30)
 
@@ -1335,12 +1335,12 @@ End Property
 'repository and restores the application state, then re-raises. The caller
 'creates its Linelist after this returns, so a Prepare that leaked left an
 'orphaned workbook open and temporary files on disk every time.
-'@param buildService LinelistBuildService. The configured build service.
+'@param buildService LLBuild. The configured build service.
 '@param setupPath String. Full path to the setup workbook.
 '@throws ProjectError.ObjectNotInitialized When buildService is Nothing.
 '@throws ProjectError.ErrorUnexpectedState When an unexpected error occurs.
 '@export
-Public Sub Prepare(ByVal buildService As LinelistBuildService, ByVal setupPath As String)
+Public Sub Prepare(ByVal buildService As LLBuild, ByVal setupPath As String)
     Dim dict As LLdictionary
     Dim choicesObj As LLChoices
     Dim exportsObj As LLExport

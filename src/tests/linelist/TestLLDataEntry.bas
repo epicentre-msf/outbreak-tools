@@ -1,9 +1,9 @@
-Attribute VB_Name = "TestListBuilder"
-Attribute VB_Description = "Tests for ListBuilder class"
+Attribute VB_Name = "TestLLDataEntry"
+Attribute VB_Description = "Tests for LLDataEntry class"
 
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, UseMeaningfulName, HungarianNotation
 '@Folder("CustomTests")
-'@ModuleDescription("Tests for ListBuilder class")
+'@ModuleDescription("Tests for LLDataEntry class")
 
 Option Explicit
 
@@ -14,7 +14,7 @@ Private Specs As LinelistSpecs
 Private FakeLL As Linelist
 
 Private Const TESTOUTPUTSHEET As String = "testsOutputs"
-Private Const TESTMODULE As String = "ListBuilder"
+Private Const TESTMODULE As String = "LLDataEntry"
 Private Const DICTIONARY_SHEET As String = "DictFixture"
 
 
@@ -26,7 +26,7 @@ Private Sub ModuleInitialize()
     BusyApp
     TestHelpers.EnsureWorksheet TESTOUTPUTSHEET, clearSheet:=False
     Set Assert = CustomTest.Create(ThisWorkbook, TESTOUTPUTSHEET)
-    Assert.SetModuleName "TestListBuilder"
+    Assert.SetModuleName "TestLLDataEntry"
 End Sub
 
 '@ModuleCleanup
@@ -49,7 +49,7 @@ Private Sub TestInitialize()
     Set Specs = LinelistSpecs.Create(FixtureWorkbook)
     Specs.TestAssignDictionary Dict
 
-    'Real Linelist facade: ListBuilder.Create only reads ll.Dictionary (which
+    'Real Linelist facade: LLDataEntry.Create only reads ll.Dictionary (which
     'delegates to Specs.Dictionary), so no output workbook is materialised.
     Set FakeLL = Linelist.Create(Specs)
 
@@ -76,7 +76,7 @@ End Sub
 '@section Factory tests
 '===============================================================================
 
-'@TestMethod("ListBuilder")
+'@TestMethod("LLDataEntry")
 Public Sub TestCreateHListReturnsInstance()
     CustomTestSetTitles Assert, TESTMODULE, "TestCreateHListReturnsInstance"
     On Error GoTo TestFail
@@ -91,8 +91,8 @@ Public Sub TestCreateHListReturnsInstance()
     End If
 
     sheetName = sheetsList.Item(sheetsList.LowerBound)
-    Dim sut As ListBuilder
-    Set sut = ListBuilder.Create(ListBuilderLayerHList, sheetName, FakeLL)
+    Dim sut As LLDataEntry
+    Set sut = LLDataEntry.Create(LLDataEntryLayerHList, sheetName, FakeLL)
 
     Assert.IsTrue Not sut Is Nothing, _
                   "Create should return a non-Nothing instance for HList layer"
@@ -102,7 +102,7 @@ TestFail:
     CustomTestLogFailure Assert, "TestCreateHListReturnsInstance", Err.Number, Err.Description
 End Sub
 
-'@TestMethod("ListBuilder")
+'@TestMethod("LLDataEntry")
 Public Sub TestCreateVListReturnsInstance()
     CustomTestSetTitles Assert, TESTMODULE, "TestCreateVListReturnsInstance"
     On Error GoTo TestFail
@@ -117,8 +117,8 @@ Public Sub TestCreateVListReturnsInstance()
     End If
 
     sheetName = sheetsList.Item(sheetsList.LowerBound)
-    Dim sut As ListBuilder
-    Set sut = ListBuilder.Create(ListBuilderLayerVList, sheetName, FakeLL)
+    Dim sut As LLDataEntry
+    Set sut = LLDataEntry.Create(LLDataEntryLayerVList, sheetName, FakeLL)
 
     Assert.IsTrue Not sut Is Nothing, _
                   "Create should return a non-Nothing instance for VList layer"
@@ -128,13 +128,13 @@ TestFail:
     CustomTestLogFailure Assert, "TestCreateVListReturnsInstance", Err.Number, Err.Description
 End Sub
 
-'@TestMethod("ListBuilder")
+'@TestMethod("LLDataEntry")
 Public Sub TestCreateRejectsNothingLinelist()
     CustomTestSetTitles Assert, TESTMODULE, "TestCreateRejectsNothingLinelist"
     On Error GoTo ExpectError
 
-    Dim sut As ListBuilder
-    Set sut = ListBuilder.Create(ListBuilderLayerHList, "SomeSheet", Nothing)
+    Dim sut As LLDataEntry
+    Set sut = LLDataEntry.Create(LLDataEntryLayerHList, "SomeSheet", Nothing)
 
     CustomTestLogFailure Assert, "TestCreateRejectsNothingLinelist", , _
                          "Expected error when linelist is Nothing"
@@ -144,13 +144,13 @@ ExpectError:
                   "Should raise an error when linelist is Nothing"
 End Sub
 
-'@TestMethod("ListBuilder")
+'@TestMethod("LLDataEntry")
 Public Sub TestCreateRejectsEmptySheetName()
     CustomTestSetTitles Assert, TESTMODULE, "TestCreateRejectsEmptySheetName"
     On Error GoTo ExpectError
 
-    Dim sut As ListBuilder
-    Set sut = ListBuilder.Create(ListBuilderLayerHList, vbNullString, FakeLL)
+    Dim sut As LLDataEntry
+    Set sut = LLDataEntry.Create(LLDataEntryLayerHList, vbNullString, FakeLL)
 
     CustomTestLogFailure Assert, "TestCreateRejectsEmptySheetName", , _
                          "Expected error when sheet name is empty"
@@ -160,13 +160,13 @@ ExpectError:
                   "Should raise an error when sheet name is empty"
 End Sub
 
-'@TestMethod("ListBuilder")
+'@TestMethod("LLDataEntry")
 Public Sub TestCreateRejectsUnknownSheet()
     CustomTestSetTitles Assert, TESTMODULE, "TestCreateRejectsUnknownSheet"
     On Error GoTo ExpectError
 
-    Dim sut As ListBuilder
-    Set sut = ListBuilder.Create(ListBuilderLayerHList, "NonExistentSheet__xyz", FakeLL)
+    Dim sut As LLDataEntry
+    Set sut = LLDataEntry.Create(LLDataEntryLayerHList, "NonExistentSheet__xyz", FakeLL)
 
     CustomTestLogFailure Assert, "TestCreateRejectsUnknownSheet", , _
                          "Expected error when sheet name is not in dictionary"

@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Designer")
 '@ModuleDescription("Non-core ribbon callbacks for the designer workbook.")
-'@depends DesignerPreparation, DesignerEntry, RibbonDev, LLGeo, ApplicationState, OSFiles, HiddenNames, BetterArray, DropdownLists, DropdownLists, LinelistBuildService, LinelistSpecs, LinelistSpecs, Linelist, Linelist, ListBuilder, LLSheets, GenerationReport
+'@depends DesignerPreparation, DesignerEntry, RibbonDev, LLGeo, ApplicationState, OSFiles, HiddenNames, BetterArray, DropdownLists, DropdownLists, LLBuild, LinelistSpecs, LinelistSpecs, Linelist, Linelist, LLDataEntry, LLSheets, GenerationReport
 '@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 'Non-core ribbon logics are callbacks whose absence will not fire a
@@ -325,7 +325,7 @@ End Sub
 Public Sub clickGenerate()
     Dim entry As DesignerEntry
     Dim appScope As ApplicationState
-    Dim buildService As LinelistBuildService
+    Dim buildService As LLBuild
     Dim specs As LinelistSpecs
     Dim ll As Linelist
     Dim setupPath As String
@@ -351,7 +351,7 @@ Public Sub clickGenerate()
     'Initialise the generation report on the designer __checking sheet
     GenerationReport.InitReport ThisWorkbook
 
-    Set buildService = LinelistBuildService.Create(ThisWorkbook)
+    Set buildService = LLBuild.Create(ThisWorkbook)
 
     Set specs = LinelistSpecs.Create(ThisWorkbook)
     specs.Prepare buildService, setupPath
@@ -371,7 +371,7 @@ Public Sub clickGenerate()
     Set sheetLists = ll.Dictionary.UniqueValues("sheet name")
 
     If sheetLists.Length > 0 Then
-        Dim listBld As ListBuilder
+        Dim listBld As LLDataEntry
         Dim sheetChecks As BetterArray
         Set sheetChecks = New BetterArray
         sheetChecks.LowerBound = 1
@@ -465,12 +465,12 @@ End Sub
 '===============================================================================
 
 '@Description("Build a data entry worksheet from the dictionary and return the builder.")
-Private Function BuildOneSheet(ByVal specs As LinelistSpecs, ByVal ll As Linelist, ByVal sheetName As String) As ListBuilder
+Private Function BuildOneSheet(ByVal specs As LinelistSpecs, ByVal ll As Linelist, ByVal sheetName As String) As LLDataEntry
     Dim dict As LLdictionary
     Dim llshs As LLSheets
     Dim sheetType As String
     Dim layer As Byte
-    Dim listBld As ListBuilder
+    Dim listBld As LLDataEntry
 
     Set dict = specs.Dictionary
     Set llshs = LLSheets.Create(dict)
@@ -478,14 +478,14 @@ Private Function BuildOneSheet(ByVal specs As LinelistSpecs, ByVal ll As Linelis
     sheetType = llshs.SheetInfo(sheetName)
 
     If sheetType = "vlist1D" Then
-        layer = ListBuilderLayerVList
+        layer = LLDataEntryLayerVList
     ElseIf sheetType = "hlist2D" Then
-        layer = ListBuilderLayerHList
+        layer = LLDataEntryLayerHList
     Else
         Exit Function
     End If
 
-    Set listBld = ListBuilder.Create(layer, sheetName, ll)
+    Set listBld = LLDataEntry.Create(layer, sheetName, ll)
     listBld.Build
 
     Set BuildOneSheet = listBld

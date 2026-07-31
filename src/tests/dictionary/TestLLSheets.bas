@@ -220,7 +220,7 @@ End Sub
 '@details
 'Arranges by using the module-level Sheets instance, whose sheet-name range
 'is captured with its header row. Acts by calling RowIndex with the header
-'text. Asserts that the answer is 0. ListBuilder places rows from this
+'text. Asserts that the answer is 0. LLDataEntry places rows from this
 'answer, so a header row handed back as a sheet row would write over the
 'dictionary head.
 '@TestMethod("LLSheets")
