@@ -630,13 +630,21 @@ suites:
   # names LLdictionary. Its Tab_Translations table is the SETUP's translation
   # table, which is a different thing from the linelist dictionary.
   #
-  # Linelist, LLDataEntry and CodeTransfer stay out. Linelist needs Buttons and
-  # its own suite, and LLDataEntry opens the `sections` folder through
-  # SectionBuilder and VarWriter. Both belong to later sessions.
+  # CodeTransfer moves the VBA components of a generation into the output
+  # workbook, and this row is the first time it has been compiled. Its whole
+  # closure is TemporaryRepos, registered under `general`, and Checking, baked
+  # into the driver workbook, so the row opens nothing further. Linelist takes a
+  # typed CodeTransfer parameter, which means the dependency runs one way and
+  # this row can land on its own.
+  #
+  # Linelist and LLDataEntry stay out. Linelist needs Buttons and its own suite,
+  # and LLDataEntry opens the `sections` folder through SectionBuilder and
+  # VarWriter. Both belong to later sessions.
   - folder: linelist
     classes:
       - name: LinelistSpecs
       - name: LLTranslation
+      - name: CodeTransfer
     tests:
       # TestLinelistSpecs moved here from the src/tests/ root, where it had no
       # folder to be registered under. Its four tests had never run.
@@ -647,6 +655,15 @@ suites:
       # helper calls are unqualified, so they resolve to TestHelpersLite.
       - module: TestLLTranslation
         covers: [LLTranslation]
+      # TestCodeTransfer adds a standard module and a class module to a fresh
+      # workbook through VBComponents.Add, then moves them into a second one.
+      # The runner already needs "Trust access to the VBA project object model"
+      # for its own import, so the capability is there; a run without it makes
+      # every test of this module report the setup error rather than wedging.
+      # Its repository sits under ThisWorkbook.Path, because the default base is
+      # Application.DefaultFilePath, outside the folder the run is granted.
+      - module: TestCodeTransfer
+        covers: [CodeTransfer]
 
   # --- dev (Development) ----------------------------------------------------
   # THIS BLOCK CARRIES A TEST MODULE AND NO CLASS, AND IT MUST STAY THAT WAY.
@@ -708,10 +725,10 @@ suites:
 # TEMPLATE — copy per folder as coverage is added. Delete fields left empty.
 # Expansion backlog (suite folders under src/tests/ that are not yet
 # registered): dataio, mastersetup, showhide, tables. The designer and linelist
-# folders carry class rows; what they still lack is suites. src/tests/graphs/
-# holds TestGraphs and src/tests/linelist/ holds TestLinelist, TestLLDataEntry
-# and TestCodeTransfer. None of those has ever executed. src/tests/geo/ is fully
-# registered as of 2026-07-31.
+# folders carry class rows; what they still lack is suites. src/tests/linelist/
+# holds TestLinelist and TestLLDataEntry, and neither has ever executed.
+# src/tests/geo/ is fully registered as of 2026-07-31, and TestCodeTransfer
+# joined folder: linelist the same day.
 #
 #   - folder: <subfolder>
 #     classes:

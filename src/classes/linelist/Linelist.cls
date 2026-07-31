@@ -52,6 +52,7 @@ Private Type TLinelist
     outWkb As Workbook
     specs As LinelistSpecs
     tempRepos As TemporaryRepos
+    codeMover As CodeTransfer
     firstSheet As String
 End Type
 
@@ -215,6 +216,32 @@ Public Property Get Pivots() As CustomPivotTable
     Set trans = this.specs.TransObject
     Set sh = Wksh(trans.TranslatedValue("LLSHEET_CustomPivotTable"))
     Set Pivots = CustomPivotTable.Create(sh)
+End Property
+
+'@label:has-checkings
+'@prop-title Whether the code transfer filed anything
+'@details
+'Answers the CodeTransfer instance Prepare built. It stays False until Prepare
+'has run, and it turns True once a component the output workbook already carried
+'has been replaced.
+'@return Boolean. True when there is something to read.
+'@export
+Public Property Get HasCheckings() As Boolean
+    If this.codeMover Is Nothing Then Exit Property
+    HasCheckings = this.codeMover.HasCheckings
+End Property
+
+'@label:checking-values
+'@prop-title The diagnostic log of the code transfer
+'@details
+'Answers the Checking object the CodeTransfer instance filled, and Nothing while
+'it has filed none. clickGenerate flushes it into the generation report right
+'after Prepare returns.
+'@return Object. A Checking instance, or Nothing.
+'@export
+Public Property Get CheckingValues() As Object
+    If Not HasCheckings() Then Exit Property
+    Set CheckingValues = this.codeMover.CheckingValues
 End Property
 
 '@label:sheet-exists
@@ -423,8 +450,11 @@ Public Sub Prepare()
         Application.DisplayAlerts = prevAlert
     End If
 
-    'Transfer code via CodeTransfer
+    'Transfer code via CodeTransfer. The instance is kept, because it files a
+    'checking entry for every component it had to replace in the target and
+    'clickGenerate reads those entries through HasCheckings after Prepare.
     Set codeTrans = CodeTransfer.Create(this.specs.DesWorkbook, outWkb, this.tempRepos)
+    Set this.codeMover = codeTrans
     TransferAllCode codeTrans
 End Sub
 

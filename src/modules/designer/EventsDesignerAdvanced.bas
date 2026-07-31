@@ -367,6 +367,17 @@ Public Sub clickGenerate()
     Set ll = Linelist.Create(specs)
     ll.Prepare
 
+    'Flush Phase 1b: code transfer checkings. A component the output workbook
+    'already carried was replaced by the designer's copy, and this is where the
+    'report names it.
+    If ll.HasCheckings Then
+        Dim codeChecks As BetterArray
+        Set codeChecks = New BetterArray
+        codeChecks.LowerBound = 1
+        codeChecks.Push ll.CheckingValues
+        GenerationReport.FlushCheckings codeChecks
+    End If
+
     'Build data entry worksheets (sections, variables, formatting)
     Set sheetLists = ll.Dictionary.UniqueValues("sheet name")
 
