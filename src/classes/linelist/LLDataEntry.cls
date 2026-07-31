@@ -595,11 +595,21 @@ End Function
 '@section Checkings
 '===============================================================================
 
+'@label:log-info
+'@sub-title File one entry against the sheet being built
+'@details
+'The key carries the sheet name, so the entries of two sheets can be merged
+'into one Checking. The counter alone started at 0 in every instance and
+'`Checking.Add` raises on a duplicate, so the second sheet of a run stopped the
+'caller. `SectionBuilder` keys its entries by worksheet and variable for the
+'same reason.
+'@param label String. The message for the report.
+'@param scope Optional Byte. Severity. Defaults to checkingSuccess.
 Private Sub LogInfo(ByVal label As String, Optional ByVal scope As Byte = checkingSuccess)
     If internalChecks Is Nothing Then
         Set internalChecks = Checking.Create("Sheet build: " & this.sheetName)
     End If
-    internalChecks.Add CStr(checkCounter), label, scope
+    internalChecks.Add this.sheetName & " #" & CStr(checkCounter), label, scope
     checkCounter = checkCounter + 1
     this.hasChecks = True
 End Sub
