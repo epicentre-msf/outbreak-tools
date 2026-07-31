@@ -59,6 +59,12 @@ Private Const COMMENT_TYPE_PREFIX As String = "type="
 Private Const COMMENT_UPDATED_PREFIX As String = "updated="
 Private Const TIMESTAMP_FORMAT As String = "yyyy-mm-dd\THH:NN:SS"
 
+' What a Names collection raises for an identifier it does not hold. Excel
+' answers 1004 and the collection itself answers 9, so both are read as "the
+' container has no such name".
+Private Const NAME_NOT_DEFINED As Long = 1004
+Private Const NAME_OUT_OF_RANGE As Long = 9
+
 Private Const META_FIELD_NAME As String = "name"
 Private Const META_FIELD_TYPE As String = "type"
 Private Const META_FIELD_UPDATED As String = "updated"
@@ -480,9 +486,23 @@ End Function
 '@label:find-definition
 '@sub-title Locate a Name definition by identifier
 '@details Expects a pre-sanitized nameId (callers must call SanitizeNameId first).
+'
+'WHY THE MISS RETURNS EARLY
+'-------------------------------------------------------------------------------
+'The direct lookup raises for a name that does not exist yet, and a name that
+'does not exist yet is the common case for every caller that creates names. So
+'every first write used to fall through to the scan below, which walks the whole
+'container. `VarWriter` writes three to five names per variable, and the
+'collection grows with them, so the cost was quadratic in the variable count of
+'a sheet. The scan is kept for the sheet-qualified case the comment below names,
+'and it is skipped only when the container itself says it holds no such
+'identifier. What that gives up: a hidden WORKBOOK-scoped name whose RefersTo
+'points at a worksheet container is no longer reached through that worksheet's
+'store. Nothing in the tree writes one.
 Private Function FindDefinition(ByVal nameId As String) As Name
     Dim definition As Name
     Dim container As Object
+    Dim lookupError As Long
 
     Set container = NameOwner()
     If container Is Nothing Then Exit Function
@@ -490,9 +510,15 @@ Private Function FindDefinition(ByVal nameId As String) As Name
     If LenB(nameId) = 0 Then Exit Function
 
     ' Direct O(1) lookup — avoids iterating all Names in the container
+    Err.Clear
     On Error Resume Next
     Set definition = container.Names(nameId)
+    lookupError = Err.Number
     On Error GoTo 0
+
+    If definition Is Nothing Then
+        If (lookupError = NAME_NOT_DEFINED) Or (lookupError = NAME_OUT_OF_RANGE) Then Exit Function
+    End If
 
     If Not definition Is Nothing Then
         If ShouldTrack(definition) Then
