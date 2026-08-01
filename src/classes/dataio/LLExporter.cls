@@ -185,6 +185,7 @@ Public Function ExportCustom(ByVal exportNumber As Long, _
     Dim pass As Passwords
     Dim expDict As LLdictionary
     Dim sheetNames As BetterArray
+    Dim excluded As BetterArray
     Dim expName As String
     Dim withAnalysis As Boolean
     Dim withMetadata As Boolean
@@ -210,12 +211,12 @@ Public Function ExportCustom(ByVal exportNumber As Long, _
     Set pass = PasswordsObject()
     expName = "export " & CStr(exportNumber)
 
-    ' Remove p-codes and personal identifiers if configured
-    RemovePCodes dict, expObj, exportNumber, expName
-    RemovePersonalIdentifiers dict, expObj, exportNumber, expName
+    ' The p-codes and the personal identifiers this export leaves out. The
+    ' source dictionary is read and never written.
+    Set excluded = ExcludedVariables(dict, expObj, exportNumber)
 
     ' Filter dictionary for this export and write to temp sheet
-    PrepareTempDictionary dict, expName, False
+    PrepareTempDictionary dict, expName, False, excluded
     Set expDict = ExportDictionaryFromTemp(nbExp)
 
     ' Sort export dictionary by table name and export column
@@ -230,7 +231,7 @@ Public Function ExportCustom(ByVal exportNumber As Long, _
     If withMetadata Then
         AddMetadataSheets outwb, dict, nbExp
         AddCustomDropdowns outwb
-        AddDictionary outwb, dict, nbExp, expName
+        AddDictionary outwb, dict, nbExp, expName, excluded
         AddMetadataTags outwb, ExportScopeCustom, exportNumber, _
                         includeShowHide:=True, keepLabels:=True
         prevSheetName = METADATASHEET
@@ -299,6 +300,7 @@ Public Function ExportMigration(ByVal folderPath As String, _
     Dim pass As Passwords
     Dim expDict As LLdictionary
     Dim sheetNames As BetterArray
+    Dim excluded As BetterArray
     Dim fileName As String
     Dim filePath As String
     Dim counter As Long
@@ -314,8 +316,11 @@ Public Function ExportMigration(ByVal folderPath As String, _
     Set dict = SourceDictionary(nbExp)
     Set pass = PasswordsObject()
 
+    ' A migration carries the whole dictionary, so it excludes nothing.
+    Set excluded = New BetterArray
+
     ' Write full dictionary to temp sheet (no filtering)
-    PrepareTempDictionary dict, vbNullString, True
+    PrepareTempDictionary dict, vbNullString, True, excluded
 
     Set expDict = ExportDictionaryFromTemp(nbExp)
 
@@ -326,7 +331,7 @@ Public Function ExportMigration(ByVal folderPath As String, _
     ' Add metadata sheets
     AddMetadataSheets outwb, dict, nbExp
     AddCustomDropdowns outwb
-    AddDictionary outwb, dict, nbExp, "__all__"
+    AddDictionary outwb, dict, nbExp, "__all__", excluded
     AddMetadataTags outwb, ExportScopeMigration, 0, includeShowHide, keepLabels
 
     ' Add show/hide with column widths if requested
@@ -572,88 +577,216 @@ End Function
 '@section Private - Dictionary Preparation
 '===============================================================================
 
-'@label:remove-pcodes
-'@sub-title Remove p-codes variables from a custom export if configured
+'@label:excluded-variables
+'@sub-title The variables a custom export leaves out
 '@details
-'Checks the export configuration for "include p-codes". When set to "no",
-'clears the export column cells for all dictionary rows whose main label
-'matches a geo p-code or geo concat tag.
+'Reads the two "include" flags of the export row and answers the names of the
+'variables the export drops: the geo p-code and geo concat variables when
+'"include p-codes" is off, and every variable flagged as a personal identifier
+'when "include personal identifiers" is off. A variable that answers both is
+'listed twice, which costs a lookup and nothing else.
+'
+'WHY THIS READS AND NEVER WRITES
+'-------------------------------------------------------------------------------
+'The exclusion used to be done by clearing the export column of the linelist's
+'own Dictionary worksheet, so one export with p-codes off took those variables
+'out of that export for good and turning the flag back on could not bring them
+'back. The dictionary is the file the whole linelist is generated from and it is
+'what a migration ships, so the loss travelled to the next linelist. The names
+'answered here are dropped from the copies the export builds, and the source
+'sheet keeps what the setup put in it.
 '@param dict LLdictionary. The source dictionary.
 '@param expObj LLExport. The export configuration.
-'@param exportNumber Long. Which export definition to check.
-'@param expName String. The export column name (e.g. "export 1").
-Private Sub RemovePCodes(ByVal dict As LLdictionary, ByVal expObj As LLExport, _
-                         ByVal exportNumber As Long, ByVal expName As String)
+'@param exportNumber Long. Which export definition to read.
+'@return BetterArray. The variable names to drop, empty when the export keeps
+'everything.
+Private Function ExcludedVariables(ByVal dict As LLdictionary, ByVal expObj As LLExport, _
+                                   ByVal exportNumber As Long) As BetterArray
 
-    Dim exportPcodes As Boolean
+    Dim excluded As BetterArray
     Dim pcodesTagList As BetterArray
-    Dim expNumberRng As Range
-    Dim mainLabRng As Range
+    Dim varNames As Variant
+    Dim mainLabels As Variant
+    Dim identifiers As Variant
+    Dim dropPcodes As Boolean
+    Dim dropIdentifiers As Boolean
     Dim counter As Long
 
-    exportPcodes = (expObj.ColumnValue(exportNumber, "include p-codes") = "yes")
-    If exportPcodes Then Exit Sub
+    Set excluded = New BetterArray
+    Set ExcludedVariables = excluded
 
-    Set pcodesTagList = New BetterArray
-    pcodesTagList.Push PCODES_GEO_PCODE_ADM1, PCODES_GEO_PCODE_ADM2, _
-                       PCODES_GEO_PCODE_ADM3, PCODES_GEO_PCODE_ADM4, _
-                       PCODES_GEO_CONCAT_ADM1, PCODES_GEO_CONCAT_ADM2, _
-                       PCODES_GEO_CONCAT_ADM3, PCODES_GEO_CONCAT_ADM4
+    dropPcodes = (expObj.ColumnValue(exportNumber, "include p-codes") <> "yes")
+    dropIdentifiers = (expObj.ColumnValue(exportNumber, _
+                                          "include personal identifiers") <> "yes")
 
-    Set expNumberRng = dict.DataRange(expName)
-    Set mainLabRng = dict.DataRange("main label")
+    If Not dropPcodes And Not dropIdentifiers Then Exit Function
 
-    For counter = 1 To mainLabRng.Rows.count
-        If pcodesTagList.Includes(CStr(mainLabRng.Cells(counter, 1).Value)) Then
-            expNumberRng.Cells(counter, 1).ClearContents
-        End If
-    Next counter
-End Sub
+    varNames = ColumnValues(dict.DataRange("variable name"))
 
-'@label:remove-personal-identifiers
-'@sub-title Remove personal identifiers from a custom export if configured
+    If dropPcodes Then
+        Set pcodesTagList = New BetterArray
+        pcodesTagList.Push PCODES_GEO_PCODE_ADM1, PCODES_GEO_PCODE_ADM2, _
+                           PCODES_GEO_PCODE_ADM3, PCODES_GEO_PCODE_ADM4, _
+                           PCODES_GEO_CONCAT_ADM1, PCODES_GEO_CONCAT_ADM2, _
+                           PCODES_GEO_CONCAT_ADM3, PCODES_GEO_CONCAT_ADM4
+
+        mainLabels = ColumnValues(dict.DataRange("main label"))
+        For counter = LBound(varNames) To UBound(varNames)
+            If pcodesTagList.Includes(CStr(mainLabels(counter))) Then
+                excluded.Push CStr(varNames(counter))
+            End If
+        Next counter
+    End If
+
+    If dropIdentifiers Then
+        identifiers = ColumnValues(dict.DataRange("personal identifier"))
+        For counter = LBound(varNames) To UBound(varNames)
+            If CStr(identifiers(counter)) = "yes" Then
+                excluded.Push CStr(varNames(counter))
+            End If
+        Next counter
+    End If
+End Function
+
+'@label:column-values
+'@sub-title Read a one-column range into a 1-based array
 '@details
-'Checks the export configuration for "include personal identifiers". When
-'set to "no", clears the export column cells for all dictionary rows
-'flagged as personal identifiers.
-'@param dict LLdictionary. The source dictionary.
-'@param expObj LLExport. The export configuration.
-'@param exportNumber Long. Which export definition to check.
-'@param expName String. The export column name.
-Private Sub RemovePersonalIdentifiers(ByVal dict As LLdictionary, ByVal expObj As LLExport, _
-                                      ByVal exportNumber As Long, ByVal expName As String)
-
-    Dim exportPI As Boolean
-    Dim expNumberRng As Range
-    Dim identifierRng As Range
+'A range of one cell answers a scalar rather than an array, so that case is
+'built by hand. Everything else is one crossing for the whole column.
+'@param rng Range. A range one column wide.
+'@return Variant. A 1-based array of the cell values.
+Private Function ColumnValues(ByVal rng As Range) As Variant
+    Dim block As Variant
+    Dim values() As Variant
+    Dim rowCount As Long
     Dim counter As Long
 
-    exportPI = (expObj.ColumnValue(exportNumber, "include personal identifiers") = "yes")
-    If exportPI Then Exit Sub
+    rowCount = rng.Rows.count
+    ReDim values(1 To rowCount)
 
-    Set expNumberRng = dict.DataRange(expName)
-    Set identifierRng = dict.DataRange("personal identifier")
+    If rowCount = 1 Then
+        values(1) = rng.Cells(1, 1).Value
+    Else
+        block = rng.Value
+        For counter = 1 To rowCount
+            values(counter) = block(counter, 1)
+        Next counter
+    End If
 
-    For counter = 1 To identifierRng.Rows.count
-        If CStr(identifierRng.Cells(counter, 1).Value) = "yes" Then
-            expNumberRng.Cells(counter, 1).ClearContents
+    ColumnValues = values
+End Function
+
+'@label:without-excluded-rows
+'@sub-title Drop the excluded variables from a dictionary block
+'@details
+'The block carries its headers on the first row, so the variable name column is
+'found by its header and every row below is kept or dropped on the name it
+'holds. The block is answered unchanged when the export excludes nothing or
+'when the block carries no variable name column.
+'@param dictData BetterArray. A dictionary block, headers included.
+'@param excluded BetterArray. The variable names to drop.
+'@return BetterArray. The block with the excluded rows removed.
+Private Function WithoutExcludedRows(ByVal dictData As BetterArray, _
+                                     ByVal excluded As BetterArray) As BetterArray
+
+    Dim block As Variant
+    Dim kept() As Variant
+    Dim trimmed As BetterArray
+    Dim firstRow As Long
+    Dim lastRow As Long
+    Dim firstCol As Long
+    Dim lastCol As Long
+    Dim nameColumn As Long
+    Dim keptRow As Long
+    Dim rowCounter As Long
+    Dim colCounter As Long
+
+    Set WithoutExcludedRows = dictData
+    If excluded.Length = 0 Then Exit Function
+
+    'A block of one row comes back one-dimensional and holds the headers alone,
+    'so there is nothing to drop from it.
+    If dictData.ArrayType <> ArrayTypes.BA_MULTIDIMENSION Then Exit Function
+
+    block = dictData.Items
+    firstRow = LBound(block, 1)
+    lastRow = UBound(block, 1)
+    firstCol = LBound(block, 2)
+    lastCol = UBound(block, 2)
+
+    nameColumn = firstCol - 1
+    For colCounter = firstCol To lastCol
+        If LCase$(Trim$(CStr(block(firstRow, colCounter)))) = "variable name" Then
+            nameColumn = colCounter
+            Exit For
         End If
-    Next counter
-End Sub
+    Next colCounter
+    If nameColumn < firstCol Then Exit Function
+
+    ReDim kept(firstRow To lastRow, firstCol To lastCol)
+    keptRow = firstRow
+
+    For rowCounter = firstRow To lastRow
+        If rowCounter = firstRow Or _
+           Not excluded.Includes(CStr(block(rowCounter, nameColumn))) Then
+            For colCounter = firstCol To lastCol
+                kept(keptRow, colCounter) = block(rowCounter, colCounter)
+            Next colCounter
+            keptRow = keptRow + 1
+        End If
+    Next rowCounter
+
+    Set trimmed = New BetterArray
+    trimmed.LowerBound = firstRow
+    trimmed.Items = TopRowsOf(kept, firstRow, keptRow - 1, firstCol, lastCol)
+    Set WithoutExcludedRows = trimmed
+End Function
+
+'@label:top-rows-of
+'@sub-title Copy the first rows of a two-dimensional block
+'@details
+'ReDim Preserve reaches the last dimension alone, so a block that lost rows is
+'copied into a block of the right height instead.
+'@param block Variant. The source block.
+'@param firstRow Long. First row to copy.
+'@param lastRow Long. Last row to copy.
+'@param firstCol Long. First column of the block.
+'@param lastCol Long. Last column of the block.
+'@return Variant. A block holding the rows asked for.
+Private Function TopRowsOf(ByVal block As Variant, ByVal firstRow As Long, _
+                           ByVal lastRow As Long, ByVal firstCol As Long, _
+                           ByVal lastCol As Long) As Variant
+    Dim copied() As Variant
+    Dim rowCounter As Long
+    Dim colCounter As Long
+
+    ReDim copied(firstRow To lastRow, firstCol To lastCol)
+
+    For rowCounter = firstRow To lastRow
+        For colCounter = firstCol To lastCol
+            copied(rowCounter, colCounter) = block(rowCounter, colCounter)
+        Next colCounter
+    Next rowCounter
+
+    TopRowsOf = copied
+End Function
 
 '@label:prepare-temp-dictionary
 '@sub-title Write dictionary data to the temp sheet for export processing
 '@details
 'When fullExport is True, copies the entire dictionary. When False,
 'filters on the export column name to include only rows assigned to that
-'export. Writes the result to the temp__ sheet and adds a blue font tag
+'export. The variables the export excludes are dropped from the block in
+'memory. Writes the result to the temp__ sheet and adds a blue font tag
 'to mark the dictionary as prepared.
 '@param dict LLdictionary. The source dictionary.
 '@param expName String. The export column name to filter on, or vbNullString for full.
 '@param fullExport Boolean. When True, copies the entire dictionary unfiltered.
+'@param excluded BetterArray. Variable names to drop from the copy.
 Private Sub PrepareTempDictionary(ByVal dict As LLdictionary, _
                                   ByVal expName As String, _
-                                  ByVal fullExport As Boolean)
+                                  ByVal fullExport As Boolean, _
+                                  ByVal excluded As BetterArray)
 
     Dim dictData As BetterArray
     Dim tempsh As Worksheet
@@ -668,6 +801,8 @@ Private Sub PrepareTempDictionary(ByVal dict As LLdictionary, _
             varName:=expName, criteriaName:="<>", _
             returnedColumnName:="__all__", includeHeaders:=True)
     End If
+
+    Set dictData = WithoutExcludedRows(dictData, excluded)
 
     tempsh.Cells.Clear
     dictData.ToExcelRange tempsh.Cells(1, 1)
@@ -739,14 +874,25 @@ End Sub
 '@label:add-dictionary
 '@sub-title Add the dictionary to the output workbook
 '@details
-'Exports the dictionary filtered by exportColumn, then marks the output
-'dictionary as prepared with a blue font tag.
+'Exports the dictionary filtered by exportColumn, drops the rows this export
+'excludes from the copy, then marks the output dictionary as prepared with a
+'blue font tag.
+'
+'WHY THE EXCLUDED ROWS ARE DROPPED HERE
+'-------------------------------------------------------------------------------
+'The export column of the source sheet decides what this copy carries, and that
+'column is left as the setup wrote it. So the copy arrives holding the p-codes
+'and the personal identifiers the export leaves out, and the rows are taken off
+'the copy. The file then lists the variables its data sheets carry, and the
+'linelist keeps its own dictionary whole.
 '@param outwb Workbook. The output workbook.
 '@param dict LLdictionary. The source dictionary.
 '@param nbExp Long. Number of export columns.
 '@param exportColumn String. The export column to filter on, or "__all__".
+'@param excluded BetterArray. Variable names this export leaves out.
 Private Sub AddDictionary(ByVal outwb As Workbook, ByVal dict As LLdictionary, _
-                          ByVal nbExp As Long, ByVal exportColumn As String)
+                          ByVal nbExp As Long, ByVal exportColumn As String, _
+                          ByVal excluded As BetterArray)
 
     Dim outDict As LLdictionary
     Dim outDictRng As Range
@@ -754,10 +900,45 @@ Private Sub AddDictionary(ByVal outwb As Workbook, ByVal dict As LLdictionary, _
     dict.Export toWkb:=outwb, exportType:=exportColumn, _
                addListObject:=False, Hide:=xlSheetVisible
 
-    ' Mark the output dictionary as prepared
     Set outDict = LLdictionary.Create(outwb.Worksheets(DICTIONARYSHEET), 1, 1, nbExp)
+    DropExcludedFromCopy outDict, excluded
+
+    ' Mark the output dictionary as prepared
     Set outDictRng = outDict.DataRange()
     outDictRng.Cells(outDictRng.Rows.count + 1, 1).Font.Color = vbBlue
+End Sub
+
+'@label:drop-excluded-from-copy
+'@sub-title Take the excluded variables off an exported dictionary
+'@details
+'The rows are gathered into one range and deleted in a single call, so a
+'dictionary with many identifiers costs one crossing rather than one per row.
+'@param outDict LLdictionary. The dictionary of the output workbook.
+'@param excluded BetterArray. Variable names to remove.
+Private Sub DropExcludedFromCopy(ByVal outDict As LLdictionary, _
+                                 ByVal excluded As BetterArray)
+
+    Dim namesRng As Range
+    Dim deleteRng As Range
+    Dim varNames As Variant
+    Dim counter As Long
+
+    If excluded.Length = 0 Then Exit Sub
+
+    Set namesRng = outDict.DataRange("variable name")
+    varNames = ColumnValues(namesRng)
+
+    For counter = LBound(varNames) To UBound(varNames)
+        If excluded.Includes(CStr(varNames(counter))) Then
+            If deleteRng Is Nothing Then
+                Set deleteRng = namesRng.Cells(counter, 1)
+            Else
+                Set deleteRng = Application.Union(deleteRng, namesRng.Cells(counter, 1))
+            End If
+        End If
+    Next counter
+
+    If Not deleteRng Is Nothing Then deleteRng.EntireRow.Delete
 End Sub
 
 '@label:add-custom-dropdowns
