@@ -2,7 +2,7 @@ Attribute VB_Name = "FormLogicAdvanced"
 
 '@Folder("Linelist Forms")
 '@ModuleDescription("Import data, import geobase, and clear data workflows")
-'@depends LLImporter, ApplicationState, OSFiles
+'@depends LLImporter, ImportMetadata, ApplicationState, OSFiles
 
 Option Explicit
 
@@ -21,6 +21,7 @@ Public Sub HandleImportData(ByVal sourceWkb As Workbook, _
                             ByVal trads As TranslationObject)
 
     Dim impObj As LLImporter
+    Dim meta As ImportMetadata
     Dim appState As ApplicationState
     Dim io As OSFiles
     Dim filePath As String
@@ -28,6 +29,7 @@ Public Sub HandleImportData(ByVal sourceWkb As Workbook, _
     Dim actsh As Worksheet
     Dim pastingRule As Byte
     Dim pasteAtBottom As Boolean
+    Dim sameLanguage As Boolean
 
     On Error GoTo ErrHand
 
@@ -60,24 +62,27 @@ Public Sub HandleImportData(ByVal sourceWkb As Workbook, _
     Set impwb = Workbooks.Open(filePath)
     ActiveWindow.WindowState = xlMinimized
 
+    ' Read what the file says about itself, once
+    Set meta = ImportMetadata.Create(impwb)
+
     ' Check the import is in the language of this linelist
-    If Not impObj.HasSameLanguage(impwb) Then
-        If MsgBox(trads.TranslatedValue("MSG_NoLanguage"), _
-                  vbExclamation + vbYesNo, _
-                  trads.TranslatedValue("MSG_Imports")) = vbNo Then
-            GoTo EndImport
-        End If
+    sameLanguage = impObj.HasSameLanguage(meta)
+    If Not sameLanguage Then
+        If Not KeepGoingOnLanguage(meta, impObj, trads) Then GoTo EndImport
     End If
 
     ' Import all data
-    impObj.ImportData impwb, pasteAtBottom
+    impObj.ImportData impwb, pasteAtBottom, meta
     impObj.ImportCustomDropdown impwb, pasteAtBottom
     impObj.FinalizeReport
 
-    ' Import migration metadata
-    impObj.ImportShowHide impwb
-    impObj.ImportEditableLabels impwb
-    impObj.ImportSingleValues impwb
+    ' Import migration metadata. These three read the file's own dictionary and
+    ' labels, so they run only when the two files are in the same language.
+    If sameLanguage Then
+        impObj.ImportShowHide impwb, meta
+        impObj.ImportEditableLabels impwb, meta
+        impObj.ImportSingleValues meta
+    End If
 
     ' Close import workbook
     impwb.Close savechanges:=False
@@ -114,6 +119,55 @@ ErrHand:
     If Not actsh Is Nothing Then actsh.Activate
     If Not appState Is Nothing Then appState.Restore
 End Sub
+
+
+' @description Ask the user whether to go on when the languages do not match,
+' and say which of the three things happened.
+'
+' The three used to give one message, MSG_NoLanguage, so a user reading "unable
+' to find the language" could be looking at a file whose language was found and
+' was French against English. The four keys the other two messages need have
+' been translated in the workbook all along with nothing reading them.
+' @param meta ImportMetadata. What the file being imported says about itself.
+' @param impObj LLImporter. The importer, for the language this linelist is in.
+' @param trads TranslationObject. Translations for messages.
+' @return Boolean. True when the user wants the import to go on.
+Private Function KeepGoingOnLanguage(ByVal meta As ImportMetadata, _
+                                     ByVal impObj As LLImporter, _
+                                     ByVal trads As TranslationObject) As Boolean
+
+    Dim message As String
+
+    ' The file carries no Metadata sheet at all
+    If Not meta.Exists Then
+        KeepGoingOnLanguage = ( _
+            MsgBox(trads.TranslatedValue("MSG_NoMetadata"), _
+                   vbExclamation + vbYesNo, _
+                   trads.TranslatedValue("MSG_Imports")) = vbNo)
+        Exit Function
+    End If
+
+    ' The Metadata sheet is there and names no language
+    If LenB(meta.Language) = 0 Then
+        KeepGoingOnLanguage = ( _
+            MsgBox(trads.TranslatedValue("MSG_NoLanguage"), _
+                   vbExclamation + vbYesNo, _
+                   trads.TranslatedValue("MSG_Imports")) = vbYes)
+        Exit Function
+    End If
+
+    ' Both languages are known and they differ. Show the user both.
+    message = trads.TranslatedValue("MSG_LanguageDifferent") & vbNewLine & _
+              trads.TranslatedValue("MSG_ActualLanguage") & " " & _
+              impObj.CurrentLanguage & vbNewLine & _
+              trads.TranslatedValue("MSG_ImportLanguage") & " " & _
+              meta.Language & vbNewLine & vbNewLine & _
+              trads.TranslatedValue("MSG_QuitImports")
+
+    KeepGoingOnLanguage = ( _
+        MsgBox(message, vbExclamation + vbYesNo, _
+               trads.TranslatedValue("MSG_Imports")) = vbYes)
+End Function
 
 
 ' @description What an import does with the rows the linelist already holds.

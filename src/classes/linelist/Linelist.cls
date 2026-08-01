@@ -962,7 +962,9 @@ End Sub
 '@sub-title Transfer all VBA code components to the output workbook
 '@details
 'Moves the VBA the generated linelist runs on, in five steps:
-'1. 25 class modules.
+'1. 27 class modules. ChoiceKeys and ImportMetadata joined the list with the
+'   import work: LLExporter types the first and LLImporter types both, so a
+'   linelist without them fails project compilation.
 '2. 8 standard modules. Four carry the linelist toolbar and its helpers, and
 '   four hold the code behind the user forms: FormLogicAdvanced,
 '   FormLogicExportMig, FormLogicExport and FormLogicEpiWeek. Those four are the
@@ -990,7 +992,7 @@ Private Sub TransferAllCode(ByVal codeTransfer As CodeTransfer, _
 
     Set codesList = New BetterArray
 
-    'Transfer classes (25 classes)
+    'Transfer classes (27 classes)
     codesList.Push "BetterArray", "DataSheet", "LLExport", _
                    "LLChoices", _
                    "LLdictionary", "LLGeo", _
@@ -1005,6 +1007,7 @@ Private Sub TransferAllCode(ByVal codeTransfer As CodeTransfer, _
                    "CustomTable", _
                    "LLExporter", _
                     "LLImporter", _
+                   "ChoiceKeys", "ImportMetadata", _
                    "Graphs", "AnaTabIds", _
                    "ExportButton", _
                    "HiddenNames", _

@@ -899,9 +899,10 @@ suites:
   # active one. ModuleCleanup drops the fixture workbook before printing now,
   # and that change has never been run.
   #
-  # ChoiceKeys joined the folder on 2026-08-01. It is a leaf class with no
-  # dependency at all, and LLExporter now types it, so its row has to land with
-  # the exporter row.
+  # ChoiceKeys and ImportMetadata joined the folder on 2026-08-01. ChoiceKeys is
+  # a leaf class with no dependency at all; ImportMetadata types DataSheet,
+  # which is registered under general. LLExporter types ChoiceKeys, so that row
+  # has to land with the exporter row.
   #
   # ExportButton stays out whatever happens here: it declares
   # `WithEvents Btn As MSForms.CommandButton`, which would put a form-library
@@ -911,6 +912,7 @@ suites:
   #   - folder: dataio
   #     classes:
   #       - name: ChoiceKeys
+  #       - name: ImportMetadata
   #       - name: LLExporter
   #     tests:
   #       - module: TestLLExporter

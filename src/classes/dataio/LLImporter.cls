@@ -25,7 +25,7 @@ Option Explicit
 'imported or not touched.
 '@depends LLdictionary, Passwords, CustomTable, DataSheet
 '@depends LLGeo, LLChoices, LLVariables, DropdownLists, HiddenNames
-'@depends ShowHide, ShowHideLayout, ShowHideStore, ChoiceKeys
+'@depends ShowHide, ShowHideLayout, ShowHideStore, ChoiceKeys, ImportMetadata
 
 
 '@section Enumerations
@@ -64,7 +64,6 @@ Private Const RNGEPIWEEKSTART As String = "RNG_EpiWeekStart"
 
 Private Type TLLImporter
     sourceWkb As Workbook
-    hasSameLanguage As Boolean
     needReport As Boolean
     ' Report data
     sheetsNotImported As BetterArray
@@ -178,55 +177,45 @@ Public Property Get HasData() As Boolean
     Next sh
 End Property
 
-'@label:has-same-language
-'@sub-title Check whether the import workbook language matches
+'@label:current-language
+'@prop-title The language this linelist was built in
 '@details
-'Reads the language tag from the import workbook Metadata sheet and
-'compares it with the source workbook dictionary language via
-'LLTranslations. Stores the result internally so that ImportShowHide,
-'ImportEditableLabels, and ImportSingleValues silently skip when
-'languages differ. Returns False when the Metadata sheet is missing.
-'@param impwb Workbook. The opened import workbook.
-'@return Boolean. True when languages match.
+'The workbook-level RNG_DictionaryLanguage hidden name, which the build set to
+'the dictionary language. The Metadata sheet of an export carries the same fact
+'under `language`, so the two compare like with like.
+'@return String. The language code, empty when the workbook carries none.
 '@export
-Public Function HasSameLanguage(ByVal impwb As Workbook) As Boolean
-
-    Dim metaTab As DataSheet
-    Dim varRng As Range
-    Dim cellRng As Range
-    Dim impLang As String
-    Dim currLang As String
+Public Property Get CurrentLanguage() As String
     Dim wkbNames As HiddenNames
-
-    this.hasSameLanguage = False
-
-    ' Metadata sheet must exist
-    If Not SheetExists(impwb, METADATASHEET) Then
-        HasSameLanguage = False
-        Exit Function
-    End If
-
-    ' Read import language from metadata
-    Set metaTab = DataSheet.Create(impwb.Worksheets(METADATASHEET), 1, 1)
-    Set varRng = metaTab.DataRange("variable")
-    impLang = vbNullString
-
-    On Error Resume Next
-    Set cellRng = varRng.Find(What:="language", lookAt:=xlWhole, MatchCase:=False)
-    impLang = CStr(cellRng.Offset(, 1).Value)
-    On Error GoTo 0
-
-    If LenB(impLang) = 0 Then
-        HasSameLanguage = False
-        Exit Function
-    End If
-
-    ' Compare with current language
     Set wkbNames = HiddenNames.Create(this.sourceWkb)
-    currLang = wkbNames.ValueAsString("RNG_DictionaryLanguage")
+    CurrentLanguage = wkbNames.ValueAsString("RNG_DictionaryLanguage")
+End Property
 
-    this.hasSameLanguage = (impLang = currLang)
-    HasSameLanguage = this.hasSameLanguage
+'@label:has-same-language
+'@sub-title Check whether the file being imported is in this linelist's language
+'@details
+'Compares the `language` tag of the file with CurrentLanguage. A file naming no
+'language answers False, which is also the answer for a file carrying no
+'Metadata sheet at all. The caller tells those two apart through the metadata
+'object and says which happened.
+'
+'The answer used to be kept on the class and read by the three metadata imports,
+'so a caller that skipped this step got False by default and all three did
+'nothing with no diagnostic. The three take the metadata object now and the
+'caller decides whether to call them.
+'@param meta ImportMetadata. The metadata of the file being imported.
+'@return Boolean. True when the languages match.
+'@export
+Public Function HasSameLanguage(ByVal meta As ImportMetadata) As Boolean
+
+    Dim impLang As String
+
+    If meta Is Nothing Then Exit Function
+
+    impLang = meta.Language
+    If LenB(impLang) = 0 Then Exit Function
+
+    HasSameLanguage = (StrComp(impLang, CurrentLanguage, vbTextCompare) = 0)
 End Function
 
 
@@ -303,14 +292,22 @@ End Sub
 'entries for sheets and variables not found in the current workbook.
 '@param impwb Workbook. The opened import workbook.
 '@param pasteAtBottom Boolean. When True, appends data below existing rows.
+'@param meta ImportMetadata. The metadata of that workbook. It says which row of
+'  a data sheet holds the variable names, which is row 2 for a file written with
+'  the labels above them.
 '@export
-Public Sub ImportData(ByVal impwb As Workbook, ByVal pasteAtBottom As Boolean)
+Public Sub ImportData(ByVal impwb As Workbook, ByVal pasteAtBottom As Boolean, _
+                      ByVal meta As ImportMetadata)
 
     Dim dict As LLdictionary
     Dim sheetsList As BetterArray
     Dim pass As Passwords
     Dim impsh As Worksheet
     Dim currsh As Worksheet
+    Dim headerRow As Long
+
+    headerRow = 1
+    If Not meta Is Nothing Then headerRow = meta.HeaderRow
 
     Set dict = SourceDictionary()
     Set sheetsList = dict.UniqueValues("sheet name")
@@ -338,7 +335,7 @@ Public Sub ImportData(ByVal impwb As Workbook, ByVal pasteAtBottom As Boolean)
 
             Case "HList"
                 pass.UnProtect currsh.Name
-                ImportHListSheet currsh, impsh, pasteAtBottom
+                ImportHListSheet currsh, impsh, pasteAtBottom, headerRow
                 pass.Protect currsh.Name
 
             End Select
@@ -430,17 +427,13 @@ End Sub
 'width cell was read as a width of zero and written to the sheet, which is how
 'Excel hides a column, so entries vanished for the opposite reason.
 '
-'Silently skips when HasSameLanguage returned False, when the import workbook
-'lacks the Metadata or show_hide__ sheets, or when the metadata tag is not set
-'to "update on import".
+'Skips when the file carries no show_hide__ sheet, and when its `show_hide` tag
+'asks for no update.
 '@param impwb Workbook. The opened migration workbook.
+'@param meta ImportMetadata. The metadata of that workbook.
 '@export
-Public Sub ImportShowHide(ByVal impwb As Workbook)
+Public Sub ImportShowHide(ByVal impwb As Workbook, ByVal meta As ImportMetadata)
 
-    Dim metaTab As DataSheet
-    Dim varRng As Range
-    Dim cellRng As Range
-    Dim updateShowHide As Boolean
     Dim dict As LLdictionary
     Dim sheetNames As BetterArray
     Dim sheetName As String
@@ -453,21 +446,9 @@ Public Sub ImportShowHide(ByVal impwb As Workbook)
     Dim counter As Long
 
     ' Prerequisites
-    If Not this.hasSameLanguage Then Exit Sub
-    If Not SheetExists(impwb, METADATASHEET) Then Exit Sub
+    If meta Is Nothing Then Exit Sub
+    If Not meta.UpdatesOnImport("show_hide") Then Exit Sub
     If Not SheetExists(impwb, SHOWHIDESHEET) Then Exit Sub
-
-    ' Check metadata tag
-    Set metaTab = DataSheet.Create(impwb.Worksheets(METADATASHEET), 1, 1)
-    Set varRng = metaTab.DataRange("variable")
-    updateShowHide = False
-
-    On Error Resume Next
-    Set cellRng = varRng.Find(What:="show_hide", lookAt:=xlWhole, MatchCase:=False)
-    updateShowHide = (CStr(cellRng.Offset(, 1).Value) = "update on import")
-    On Error GoTo 0
-
-    If Not updateShowHide Then Exit Sub
 
     ' The show/hide table of the file being imported
     Set impsh = impwb.Worksheets(SHOWHIDESHEET)
@@ -587,17 +568,16 @@ End Function
 '@details
 'Reads the import workbook dictionary for editable label values and
 'updates both the worksheet cells and dictionary entries in the source
-'workbook. Silently skips when HasSameLanguage returned False, the import
-'dictionary is not prepared, or the metadata tag is not set to "update on
-'import".
+'workbook. Skips when the file carries no Dictionary sheet, when that
+'dictionary is not prepared, and when the `editable_labels` tag asks for no
+'update.
 '@param impwb Workbook. The opened migration workbook.
+'@param meta ImportMetadata. The metadata of that workbook.
 '@export
-Public Sub ImportEditableLabels(ByVal impwb As Workbook)
+Public Sub ImportEditableLabels(ByVal impwb As Workbook, ByVal meta As ImportMetadata)
 
-    Dim metaTab As DataSheet
     Dim varRng As Range
     Dim cellRng As Range
-    Dim updateLabels As Boolean
     Dim dict As LLdictionary
     Dim inpDict As LLdictionary
     Dim currVars As LLVariables
@@ -612,25 +592,13 @@ Public Sub ImportEditableLabels(ByVal impwb As Workbook)
     Dim shHn As HiddenNames
 
     ' Prerequisites
-    If Not this.hasSameLanguage Then Exit Sub
-    If Not SheetExists(impwb, METADATASHEET) Then Exit Sub
+    If meta Is Nothing Then Exit Sub
+    If Not meta.UpdatesOnImport("editable_labels") Then Exit Sub
     If Not SheetExists(impwb, DICTIONARYSHEET) Then Exit Sub
 
     ' Check imported dictionary is prepared
     Set inpDict = LLdictionary.Create(impwb.Worksheets(DICTIONARYSHEET), 1, 1)
     If Not inpDict.Prepared Then Exit Sub
-
-    ' Check metadata tag
-    Set metaTab = DataSheet.Create(impwb.Worksheets(METADATASHEET), 1, 1)
-    Set varRng = metaTab.DataRange("variable")
-    updateLabels = False
-
-    On Error Resume Next
-    Set cellRng = varRng.Find(What:="editable_labels", lookAt:=xlWhole, MatchCase:=False)
-    updateLabels = (CStr(cellRng.Offset(, 1).Value) = "update on import")
-    On Error GoTo 0
-
-    If Not updateLabels Then Exit Sub
 
     ' Build variables objects
     Set dict = SourceDictionary()
@@ -690,10 +658,9 @@ End Sub
 '@label:import-single-values
 '@sub-title Import single metadata values from a migration workbook
 '@details
-'Reads the epiweek start value from the import workbook Metadata sheet and
-'writes it into the RNG_EpiWeekStart hidden name of the source workbook, then
-'recalculates every sheet that carries an epiweek formula. Silently skips when
-'HasSameLanguage returned False or the Metadata sheet is missing.
+'Takes the epiweek start value the file carries and writes it into the
+'RNG_EpiWeekStart hidden name of the source workbook, then recalculates every
+'sheet that carries an epiweek formula. Skips when the file names no value.
 '
 'THE NAME HAS NO RANGE BEHIND IT
 '-------------------------------------------------------------------------------
@@ -703,29 +670,16 @@ End Sub
 'Names(RNG_EpiWeekStart).RefersToRange.Value under a swallow, which means the
 'value has never once landed. The store is what answers it, the same way
 'FormLogicEpiWeek and CustomLinelistFunctions already read and write it.
-'@param impwb Workbook. The opened migration workbook.
+'@param meta ImportMetadata. The metadata of the workbook being imported.
 '@export
-Public Sub ImportSingleValues(ByVal impwb As Workbook)
+Public Sub ImportSingleValues(ByVal meta As ImportMetadata)
 
-    Dim metaTab As DataSheet
-    Dim varRng As Range
-    Dim cellRng As Range
     Dim wkbNames As HiddenNames
     Dim varValue As String
 
-    If Not this.hasSameLanguage Then Exit Sub
-    If Not SheetExists(impwb, METADATASHEET) Then Exit Sub
+    If meta Is Nothing Then Exit Sub
 
-    Set metaTab = DataSheet.Create(impwb.Worksheets(METADATASHEET), 1, 1)
-    Set varRng = metaTab.DataRange("variable")
-
-    ' Retrieve and update epiweek start
-    varValue = vbNullString
-    On Error Resume Next
-    Set cellRng = varRng.Find(What:="epiweekstart", lookAt:=xlWhole, MatchCase:=False)
-    varValue = CStr(cellRng.Offset(, 1).Value)
-    On Error GoTo 0
-
+    varValue = meta.EpiWeekStart
     If LenB(varValue) = 0 Then Exit Sub
 
     Set wkbNames = HiddenNames.Create(this.sourceWkb)
@@ -1062,8 +1016,12 @@ End Sub
 '@param currsh Worksheet. The current source HList worksheet.
 '@param impsh Worksheet. The import HList worksheet.
 '@param pasteAtBottom Boolean. When True, appends data below existing rows.
+'@param headerRow Long. The row of the import sheet that holds the variable
+'  names. It was read as row 1 always, so a file written with the labels above
+'  the names had its label row read as the header row, and every column of it
+'  landed in "not imported".
 Private Sub ImportHListSheet(ByVal currsh As Worksheet, ByVal impsh As Worksheet, _
-                             ByVal pasteAtBottom As Boolean)
+                             ByVal pasteAtBottom As Boolean, ByVal headerRow As Long)
 
     Dim currTab As CustomTable
     Dim impTab As DataSheet
@@ -1072,7 +1030,7 @@ Private Sub ImportHListSheet(ByVal currsh As Worksheet, ByVal impsh As Worksheet
     Dim counter As Long
 
     Set currTab = CustomTable.Create(currsh.ListObjects(1))
-    Set impTab = DataSheet.Create(impsh, 1, 1, True)
+    Set impTab = DataSheet.Create(impsh, headerRow, 1, True)
 
     currTab.Import impTab, pasteAtBottom, True, False
 
