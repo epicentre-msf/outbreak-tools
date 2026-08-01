@@ -899,13 +899,18 @@ suites:
   # active one. ModuleCleanup drops the fixture workbook before printing now,
   # and that change has never been run.
   #
-  # LLImporter and ExportButton stay out whatever happens here. LLImporter is
-  # Session 54, and ExportButton declares
+  # ChoiceKeys joined the folder on 2026-08-01. It is a leaf class with no
+  # dependency at all, and LLExporter now types it, so its row has to land with
+  # the exporter row.
+  #
+  # ExportButton stays out whatever happens here: it declares
   # `WithEvents Btn As MSForms.CommandButton`, which would put a form-library
-  # type on the compile path of every run.
+  # type on the compile path of every run. LLImporter stays out with it until
+  # its suite reaches an import.
   #
   #   - folder: dataio
   #     classes:
+  #       - name: ChoiceKeys
   #       - name: LLExporter
   #     tests:
   #       - module: TestLLExporter

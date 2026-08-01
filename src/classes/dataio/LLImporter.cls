@@ -25,7 +25,7 @@ Option Explicit
 'imported or not touched.
 '@depends LLdictionary, Passwords, CustomTable, DataSheet
 '@depends LLGeo, LLChoices, LLVariables, DropdownLists, HiddenNames
-'@depends ShowHide, ShowHideLayout, ShowHideStore
+'@depends ShowHide, ShowHideLayout, ShowHideStore, ChoiceKeys
 
 
 '@section Enumerations
@@ -360,11 +360,17 @@ End Sub
 '@label:import-custom-dropdown
 '@sub-title Import custom dropdown choices from the import workbook
 '@details
-'Reads custom dropdown ListObjects from the source workbook custom
-'dropdown sheet, matches them to choices in the import workbook Choices
-'sheet, and updates each dropdown with the imported values. Silently
-'exits when the import workbook has no Choices sheet or the custom
-'dropdown sheet does not exist.
+'Walks the dropdown registry of the source workbook, reads the values the
+'import workbook holds for each dropdown, and writes them back. Silently exits
+'when the import workbook has no Choices sheet or the custom dropdown sheet does
+'not exist.
+'
+'The walk goes through DropdownLists.AllDropdowns, so each name is the one the
+'registry holds and the one Update takes. Reading the ListObject names off the
+'worksheet instead is what used to break this: the generated name ends with the
+'workbook counter, cutting the five characters of "list_" off the front left
+'that counter attached, and the lookup missed for every dropdown ever created.
+'ChoiceKeys builds the key both ends of the round trip use.
 '@param impwb Workbook. The opened import workbook.
 '@param pasteAtBottom Boolean. When True, appends choices below existing entries.
 '@export
@@ -372,12 +378,13 @@ Public Sub ImportCustomDropdown(ByVal impwb As Workbook, ByVal pasteAtBottom As 
 
     Dim wkbNames As HiddenNames
     Dim choi As LLChoices
-    Dim lo As ListObject
     Dim drop As DropdownLists
+    Dim keys As ChoiceKeys
     Dim dropsh As Worksheet
-    Dim listName As String
-    Dim choiceName As String
+    Dim dropNames As BetterArray
     Dim updateData As BetterArray
+    Dim listName As String
+    Dim counter As Long
 
     If Not SheetExists(impwb, CHOICESSHEET) Then Exit Sub
 
@@ -390,24 +397,19 @@ Public Sub ImportCustomDropdown(ByVal impwb As Workbook, ByVal pasteAtBottom As 
 
     Set choi = LLChoices.Create(impwb.Worksheets(CHOICESSHEET), 1, 1)
     Set drop = DropdownLists.Create(dropsh, vbNullString)
-    Set updateData = New BetterArray
+    Set keys = ChoiceKeys.Create()
+    Set dropNames = drop.AllDropdowns
 
-    For Each lo In dropsh.ListObjects
+    For counter = dropNames.LowerBound To dropNames.UpperBound
 
-        updateData.Clear
-        listName = lo.Name
-        listName = Right$(listName, Len(listName) - 5)
-        choiceName = "__choice_custom_" & listName
-
-        On Error Resume Next
-        Set updateData = choi.Categories(choiceName)
-        On Error GoTo 0
+        listName = CStr(dropNames.Item(counter))
+        Set updateData = choi.Categories(keys.CustomChoiceName(listName))
 
         If updateData.Length > 0 Then
             drop.Update updateData, listName, pasteAtBottom
         End If
 
-    Next lo
+    Next counter
 End Sub
 
 

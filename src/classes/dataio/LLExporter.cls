@@ -27,6 +27,7 @@ Option Explicit
 '@depends LLdictionary, LLVariables, LLExport, Passwords, CustomTable
 '@depends DataSheet, AnaTabIds, LLGeo, LLChoices, HiddenNames, LLTranslation
 '@depends ShowHide, ShowHideLayout, ShowHideStore, BetterArray, Checking
+'@depends DropdownLists, ChoiceKeys
 
 
 '@section Enumerations
@@ -986,34 +987,46 @@ End Sub
 '@label:add-custom-dropdowns
 '@sub-title Add custom dropdowns to the Choices sheet in the output workbook
 '@details
-'Reads custom dropdown ListObjects from the source workbook custom
-'dropdown sheet and adds each one to the output Choices sheet. Silently
-'exits when no custom dropdown sheet exists.
+'Walks the dropdown registry of the source workbook and writes the values of
+'each custom dropdown onto the output Choices sheet. Silently exits when no
+'custom dropdown sheet exists.
+'
+'The walk goes through DropdownLists.AllDropdowns, so the key carries the
+'dropdown name the registry holds. The header cell of the ListObject was read
+'before, and that cell holds the name with every space turned into an
+'underscore, so a dropdown called `contact type` went into the file under a name
+'the import side could not update. ChoiceKeys builds the key both ends use.
 '@param outwb Workbook. The output workbook.
 Private Sub AddCustomDropdowns(ByVal outwb As Workbook)
     Dim wkbNames As HiddenNames
     Dim choi As LLChoices
-    Dim lo As ListObject
+    Dim drop As DropdownLists
+    Dim keys As ChoiceKeys
+    Dim dropNames As BetterArray
     Dim loValues As BetterArray
     Dim sh As Worksheet
-    Dim choiceName As String
+    Dim listName As String
+    Dim counter As Long
 
     Set wkbNames = HiddenNames.Create(this.sourceWkb)
-    Set choi = LLChoices.Create(outwb.Worksheets(CHOICESSHEET), 1, 1)
-    Set loValues = New BetterArray
 
     On Error Resume Next
     Set sh = this.sourceWkb.Worksheets(wkbNames.ValueAsString("RNG_CustomDrop"))
     On Error GoTo 0
     If sh Is Nothing Then Exit Sub
 
-    For Each lo In sh.ListObjects
-        loValues.Clear
-        loValues.FromExcelRange lo.Range.Cells(2, 1), _
-            DetectLastRow:=True, DetectLastColumn:=False
-        choiceName = "__choice_custom_" & lo.Range.Cells(1, 1).Value
-        choi.AddChoice choiceName, loValues
-    Next lo
+    Set choi = LLChoices.Create(outwb.Worksheets(CHOICESSHEET), 1, 1)
+    Set drop = DropdownLists.Create(sh, vbNullString)
+    Set keys = ChoiceKeys.Create()
+    Set dropNames = drop.AllDropdowns
+
+    For counter = dropNames.LowerBound To dropNames.UpperBound
+        listName = CStr(dropNames.Item(counter))
+        Set loValues = drop.Values(listName)
+        If loValues.Length > 0 Then
+            choi.AddChoice keys.CustomChoiceName(listName), loValues
+        End If
+    Next counter
 End Sub
 
 '@label:add-metadata-tags
