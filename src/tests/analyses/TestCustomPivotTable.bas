@@ -16,6 +16,9 @@ Private Const TESTMODULE As String = "CustomPivotTable"
 Private Const PIVOT_SHEET_NAME As String = "PivotSheet"
 Private Const DATA_TABLE_NAME As String = "TestDataTable"
 Private Const SECOND_TABLE_NAME As String = "SecondDataTable"
+'A name the fixture workbook defines nowhere. `Add` resolves the source before
+'it calls the wizard, so this reaches the checking path and stops there.
+Private Const MISSING_TABLE_NAME As String = "NoSuchDataTable"
 Private Const FORMAT_SHEET As String = "PivotFormatFixture"
 
 'Geometry the class publishes: first block base 2, title at +2, pivot at +6,
@@ -149,9 +152,9 @@ Public Sub TestCreateRejectsNothingSheet()
                          "Expected error when sheet is Nothing"
     Exit Sub
 ExpectError:
-    'The number is asserted, not just its presence: this class used to offset
-    'every ProjectError by vbObjectError, so it raised a different number than
-    'every collaborator for the same condition.
+    'The number itself is asserted. This class used to offset every
+    'ProjectError by vbObjectError, so it raised a different number than every
+    'collaborator for the same condition.
     Assert.AreEqual CStr(CLng(ProjectError.InvalidArgument)), CStr(Err.Number), _
                     "Create(Nothing) should raise a plain ProjectError.InvalidArgument"
 End Sub
@@ -258,8 +261,8 @@ Public Sub TestAddStoresTitleText()
     sut.Add "patients", DATA_TABLE_NAME, "Pivot Table"
 
     'The name holds the TITLE TEXT. It used to hold the cell's address, which
-    'the linelist then failed to resolve as a range — asserting only that the
-    'name exists is what let that ship.
+    'the linelist then failed to resolve as a range. Asserting that the name
+    'exists is what let that ship, so the text is read here.
     Assert.AreEqual "Pivot Table 1 - patients", _
                     PivotNames().ValueAsString("pivot_title_" & DATA_TABLE_NAME), _
                     "Add should store the title text under pivot_title_<tableName>"
@@ -334,19 +337,95 @@ TestFail:
     CustomTestLogFailure Assert, "TestSecondAddStacksBelowTheFirst", Err.Number, Err.Description
 End Sub
 
-'THE FAILURE PATH OF Add HAS NO TEST, AND IT CANNOT HAVE ONE HERE.
+'WHICH FAILING PIVOT MAY BE TESTED HERE, AND WHICH MAY NEVER BE.
 '===============================================================================
-'The obvious way to reach the PivotFailed handler is a SourceData naming no
-'ListObject. Excel answers that with a MODAL DIALOG rather than a trappable
-'error, so `On Error` never sees it, the headless run hangs on the dialog, and
-'the harness writes a 0-byte test-results.csv — which reads exactly like an
-'infinite loop. Cost one run on 2026-07-31. Do not add that test back.
+'PivotTableWizard answers a SourceData naming no ListObject with a MODAL
+'DIALOG. `On Error` is blind to it, the headless run hangs on the dialog, and
+'the harness writes a 0-byte test-results.csv, which reads exactly like an
+'infinite loop. It cost one run on 2026-07-31. NEVER let a test reach
+'PivotTableWizard with a source that may be missing.
 '
-'The duplicate-source case does not reach the handler either: Excel accepts a
-'second pivot over the same table (see the test below). What the handler is
-'left guarding is whatever Excel raises rather than displays, which nothing in
-'the fixture can provoke. The happy path asserts HasCheckings is False, so a
-'handler firing when it should not would still be caught.
+'`Add` resolves the table name against the workbook first now and skips the
+'wizard when nothing holds it, so the two tests below drive an unknown source
+'with the wizard out of the picture. That is the only shape of unknown-source
+'test this module may carry: it stays green only while the resolution in `Add`
+'stands in front of the wizard.
+'
+'The PivotFailed handler is still untested. The duplicate-source case stays
+'outside it too, because Excel accepts a second pivot over the same table (see
+'the test below). What the handler is left guarding is an error Excel raises,
+'which nothing in the fixture can provoke. The happy path asserts HasCheckings
+'is False, so a handler firing when it should stay quiet would still be caught.
+
+'@TestMethod("CustomPivotTable")
+Public Sub TestAddRecordsACheckingForAnUnknownSource()
+    CustomTestSetTitles Assert, TESTMODULE, "TestAddRecordsACheckingForAnUnknownSource"
+    On Error GoTo TestFail
+
+    Dim sut As CustomPivotTable
+    Dim keys As BetterArray
+
+    Set sut = CustomPivotTable.Create(PivotSheet)
+    sut.Add "patients", MISSING_TABLE_NAME, "Pivot Table"
+
+    Assert.IsTrue sut.HasCheckings, _
+                  "A source table the workbook does not hold should record a checking"
+
+    Assert.AreEqual "1", CStr(sut.CheckingValues.Length), _
+                    "One unknown source should record one entry"
+
+    Set keys = sut.CheckingValues.ListOfKeys()
+    Assert.IsTrue InStr(1, CStr(keys.Item(keys.LowerBound)), MISSING_TABLE_NAME) > 0, _
+                  "The entry key should name the table the block was for"
+
+    Assert.AreEqual "0", CStr(PivotSheet.PivotTables.Count), _
+                    "An unknown source should leave the sheet with no pivot table"
+
+    Assert.AreEqual vbNullString, _
+                    CStr(PivotSheet.Cells(FIRST_TITLE_ROW, TITLE_COLUMN).Value), _
+                    "A block that took no pivot should carry no title"
+
+    Assert.IsTrue Not PivotNames().ValueAsBoolean("pivot_has_content"), _
+                  "pivot_has_content should stay False while no pivot has landed"
+
+    Assert.AreEqual "68", PivotNames().ValueAsString("pivot_output_row"), _
+                    "The cursor should advance past the block the failure left behind"
+
+    Assert.AreEqual "2", PivotNames().ValueAsString("pivot_counter"), _
+                    "The counter should advance whether or not the pivot landed"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestAddRecordsACheckingForAnUnknownSource", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("CustomPivotTable")
+Public Sub TestAGoodSourceStillLandsAfterABadOne()
+    CustomTestSetTitles Assert, TESTMODULE, "TestAGoodSourceStillLandsAfterABadOne"
+    On Error GoTo TestFail
+
+    Dim sut As CustomPivotTable
+
+    Set sut = CustomPivotTable.Create(PivotSheet)
+    sut.Add "ghosts", MISSING_TABLE_NAME, "Pivot Table"
+    sut.Add "patients", DATA_TABLE_NAME, "Pivot Table"
+
+    'One bad table is what the build has to survive: it leaves the rest of the
+    'run alone and the block below it lands where it always would.
+    Assert.AreEqual "1", CStr(PivotSheet.PivotTables.Count), _
+                    "The good source should still create its pivot table"
+
+    Assert.AreEqual "Pivot Table 2 - patients", _
+                    CStr(PivotSheet.Cells(SECOND_TITLE_ROW, TITLE_COLUMN).Value), _
+                    "The good block should land one block below the failed one"
+
+    Assert.IsTrue PivotNames().ValueAsBoolean("pivot_has_content"), _
+                  "The sheet should earn its visibility from the block that landed"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestAGoodSourceStillLandsAfterABadOne", Err.Number, Err.Description
+End Sub
 
 '@TestMethod("CustomPivotTable")
 Public Sub TestAddingTheSameTableTwiceLetsTheLaterBlockWin()
@@ -359,10 +438,10 @@ Public Sub TestAddingTheSameTableTwiceLetsTheLaterBlockWin()
     sut.Add "patients", DATA_TABLE_NAME, "Pivot Table"
     sut.Add "patients again", DATA_TABLE_NAME, "Pivot Table"
 
-    'Excel does NOT refuse a second pivot over the same source — it renames the
+    'Excel ACCEPTS a second pivot over the same source: it renames the
     'PivotTable itself and builds the block. So a rebuild over a populated sheet
     'stacks a second block for that table and the stored title follows the newer
-    'one. Pinned here because it reads like a failure case and is not one.
+    'one. Pinned here because it reads like a failure case and it is a success.
     Assert.IsTrue Not sut.HasCheckings, _
                   "A second pivot over the same table should not be treated as a failure"
 

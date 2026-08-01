@@ -53,12 +53,11 @@ Private Type TCustomPivotTable
     shNames As HiddenNames
     hasChecks As Boolean
     sealed As Boolean
+    checkCounter As Long
+    internalChecks As Checking
 End Type
 
 Private this As TCustomPivotTable
-
-Private checkCounter As Long
-Private internalChecks As Checking
 
 
 '@section Constants
@@ -83,7 +82,7 @@ Private Const TITLE_COLUMN     As Long = 2
 ' is a fixed generous constant.
 Private Const BLOCK_SIZE       As Long = 66
 
-' RGB(155, 109, 88) — a Const cannot call RGB.
+' RGB(155, 109, 88) - a Const cannot call RGB.
 Private Const TITLE_FONT_COLOR As Long = 5795227
 
 
@@ -155,10 +154,14 @@ End Property
 'PivotTable via PivotTableWizard, writes a styled title, stores the title text
 'under pivot_title_<tableName>, and advances the position for the next block.
 '
-'A failed PivotTableWizard call (an invalid source, or a pivot of that name
-'already on the sheet) is recorded as a checking rather than raised, so one bad
-'table cannot stop the build. The position still advances in that case, so the
-'next block cannot land on top of whatever the failed attempt left behind.
+'The source table is resolved against every worksheet of the workbook before
+'the wizard is called. A name that resolves to nothing is recorded as a
+'checking and the wizard is skipped: PivotTableWizard answers such a name with
+'a modal dialog, which On Error cannot see. That dialog freezes Excel in front
+'of the user in the middle of a build and hangs a headless run. An error the
+'wizard does raise is recorded the same way, so one bad table leaves the rest
+'of the build alone. The position advances in both cases, so the next block
+'cannot land on top of whatever the failed attempt left behind.
 '@param title String. Display label for the pivot block (typically the sheet name).
 '@param tableName String. Name of the source ListObject providing pivot data.
 '@param pivotName String. Localised prefix for the title. Defaults to "Pivot Table".
@@ -192,20 +195,27 @@ Public Sub Add(ByVal title As String, _
     Set titleCell = sh.Cells(startRow + TITLE_OFFSET, TITLE_COLUMN)
     Set outputCell = sh.Cells(startRow + PIVOT_OFFSET, TITLE_COLUMN)
 
-    'Create pivot table — a failure is logged, and the block is skipped
-    On Error GoTo PivotFailed
-    sh.PivotTableWizard SourceType:=xlDatabase, _
-                         SourceData:=tableName, _
-                         tableName:=PIVOT_PREFIX & tableName, _
-                         TableDestination:=outputCell
-    On Error GoTo 0
-    pivotAdded = True
+    'Create pivot table - a failure is logged, and the block is skipped. The
+    'source is resolved first, because the wizard shows a dialog for a name it
+    'cannot find and a dialog is out of reach of the handler below.
+    If SourceTableExists(tableName) Then
+        On Error GoTo PivotFailed
+        sh.PivotTableWizard SourceType:=xlDatabase, _
+                             SourceData:=tableName, _
+                             tableName:=PIVOT_PREFIX & tableName, _
+                             TableDestination:=outputCell
+        On Error GoTo 0
+        pivotAdded = True
+    Else
+        LogCheck tableName, "Unable to add pivot table " & tableName & _
+                 ": the workbook holds no table of that name", checkingError
+    End If
 
 AdvanceBlock:
     On Error GoTo 0
 
     If errNumber <> 0 Then
-        LogCheck "Unable to add pivot table " & tableName & ": " & _
+        LogCheck tableName, "Unable to add pivot table " & tableName & ": " & _
                  errNumber & " - " & errDescription, checkingError
     End If
 
@@ -220,8 +230,8 @@ AdvanceBlock:
             End With
         End With
 
-        'The title text is what the linelist reads back — store it, rather than
-        'a pointer to the cell holding it.
+        'The linelist reads the title text back, so the name holds the text
+        'itself.
         shNames.EnsureName TITLE_PREFIX & tableName, titleText, HiddenNameTypeString
         shNames.SetValue TITLE_PREFIX & tableName, titleText
 
@@ -330,6 +340,36 @@ Private Function SheetNames() As HiddenNames
     Set SheetNames = this.shNames
 End Function
 
+'@label:source-table-exists
+'@sub-title Whether the workbook defines the source ListObject
+'@details
+'PivotTableWizard shows a modal dialog for a SourceData naming no ListObject.
+'In production that is a frozen Excel in the middle of a generation, and in a
+'headless run it hangs the harness and leaves a zero-byte results file under a
+'healthy import log. On Error reaches none of it, so the name is resolved here
+'before the wizard is called.
+'
+'The source table of a pivot sits on the data entry sheet it was built from, so
+'the walk covers every worksheet of the pivot sheet's workbook. It runs once
+'per block added.
+'@param tableName String. Name of the source ListObject.
+'@return Boolean. True when one worksheet of the workbook defines that table.
+Private Function SourceTableExists(ByVal tableName As String) As Boolean
+    Dim candidateSheet As Worksheet
+    Dim candidateTable As ListObject
+
+    If tableName = vbNullString Then Exit Function
+
+    For Each candidateSheet In this.sh.Parent.Worksheets
+        For Each candidateTable In candidateSheet.ListObjects
+            If StrComp(candidateTable.Name, tableName, vbTextCompare) = 0 Then
+                SourceTableExists = True
+                Exit Function
+            End If
+        Next candidateTable
+    Next candidateSheet
+End Function
+
 '@label:guard-ready
 '@sub-title Guard a member against use on an instance with no worksheet
 '@param memberName String. The member name for the error message.
@@ -345,16 +385,23 @@ End Sub
 
 '@label:log-check
 '@sub-title Append a diagnostic entry to the internal checking log
+'@details
+'The key carries the source table, so a reader of the generation report can see
+'which pivot block the entry is about. The counter keeps the key free when the
+'same table files twice, which `Checking.Add` requires.
+'@param tableName String. Name of the source ListObject the entry is about.
 '@param label String. Message describing the issue.
 '@param scope Byte. Severity scope for the log entry.
-Private Sub LogCheck(ByVal label As String, _
+Private Sub LogCheck(ByVal tableName As String, _
+                     ByVal label As String, _
                      Optional ByVal scope As Byte = checkingNote)
 
-    If internalChecks Is Nothing Then _
-        Set internalChecks = Checking.Create("Custom pivot tables")
+    If this.internalChecks Is Nothing Then _
+        Set this.internalChecks = Checking.Create("Custom pivot tables")
 
-    internalChecks.Add CLASS_NAME & " #" & CStr(checkCounter), label, scope
-    checkCounter = checkCounter + 1
+    this.internalChecks.Add _
+        CLASS_NAME & " " & tableName & " #" & CStr(this.checkCounter), label, scope
+    this.checkCounter = this.checkCounter + 1
     this.hasChecks = True
 End Sub
 
@@ -372,7 +419,7 @@ End Property
 '@export
 Public Property Get CheckingValues() As Checking
     If Not HasCheckings Then Exit Property
-    Set CheckingValues = internalChecks
+    Set CheckingValues = this.internalChecks
 End Property
 
 
