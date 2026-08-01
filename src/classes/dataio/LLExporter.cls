@@ -810,6 +810,7 @@ Private Sub AddMetadataTags(ByVal outwb As Workbook, ByVal scope As Byte, _
                             ByVal keepLabels As Boolean)
 
     Dim csData As DataSheet
+    Dim srcNames As HiddenNames
     Dim varRng As Range
     Dim expName As String
     Dim rowOffset As Long
@@ -840,11 +841,11 @@ Private Sub AddMetadataTags(ByVal outwb As Workbook, ByVal scope As Byte, _
     varRng.Cells(rowOffset + 4, 1).Value = "show_hide"
     varRng.Cells(rowOffset + 4, 2).Value = IIf(includeShowHide, "update on import", "no update on import")
 
-    ' Epiweek start value
-    epiWeekStart = vbNullString
-    On Error Resume Next
-    epiWeekStart = CStr(this.sourceWkb.Names("RNG_EpiWeekStart").RefersToRange.Value)
-    On Error GoTo 0
+    ' Epiweek start value. RNG_EpiWeekStart is a HiddenNames entry and its
+    ' definition is a quoted string, so the name has no range behind it and
+    ' RefersToRange raises 1004. The store is what answers it.
+    Set srcNames = HiddenNames.Create(this.sourceWkb)
+    epiWeekStart = srcNames.ValueAsString("RNG_EpiWeekStart")
 
     varRng.Cells(rowOffset + 5, 1).Value = "epiweekstart"
     varRng.Cells(rowOffset + 5, 2).Value = epiWeekStart
