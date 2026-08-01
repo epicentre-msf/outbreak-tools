@@ -16,7 +16,10 @@ Private Const CRFPREFIX As String = "crf_"
 Private Const TEMPSHEET As String = "temp__"
 Private Const SHOWHIDESHEET As String = "show_hide__"
 
-Private showHideObject As ShowHideManager
+'The pair the show/hide form is open on: which variables the sheet offers, and
+'the sheet itself. Both are rebuilt each time the form opens.
+Private showHideEntries As ShowHide
+Private showHideLayout As ShowHideLayout
 Private activeShowHideForm As Object
 Private tradsform As TranslationObject   'Translation of forms
 Private tradsmess As TranslationObject   'Translation of messages
@@ -113,83 +116,96 @@ Private Function BlankRowCountOf(ByVal sh As Worksheet) As Long
     BlankRowCountOf = shHn.ValueAsLong("blank_row_count")
 End Function
 
-'Apply visibility from a ShowHideManager to a worksheet
-Private Sub ApplyShowHideVisibility(ByVal mgr As ShowHideManager, _
-                                     ByVal sh As Worksheet, _
-                                     ByVal shType As String)
-    Dim counter As Long
-    Dim posIdx As Long
+'The table name a sheet's PRINTSTART anchor is named after. VarWriter names the
+'anchor after the base table name, and a printed sheet stores its own table name
+'with the print_ prefix in front, so the prefix comes off here.
+Private Function BaseTableNameOf(ByVal sh As Worksheet) As String
+    Dim tabName As String
 
-    For counter = 1 To mgr.EntryCount
-        posIdx = mgr.PositionIndex(counter)
-        If posIdx > 0 Then
-            On Error Resume Next
-            Select Case shType
-            Case "VList"
-                sh.Rows(posIdx).Hidden = mgr.IsHidden(counter)
-            Case "HList", "HList Print", "HList CRF"
-                sh.Columns(posIdx).Hidden = mgr.IsHidden(counter)
-            End Select
-            On Error GoTo 0
-        End If
-    Next
-End Sub
+    tabName = TableNameOf(sh)
+    If InStr(1, tabName, PRINTPREFIX, vbTextCompare) = 1 Then
+        tabName = Mid$(tabName, Len(PRINTPREFIX) + 1)
+    End If
 
-'Load saved show/hide state from the persistence sheet
-Private Sub LoadShowHideState()
-    Dim shSH As Worksheet
+    BaseTableNameOf = tabName
+End Function
 
-    If showHideObject Is Nothing Then Exit Sub
+'The dictionary of the running linelist
+Private Function DictionaryObject() As LLdictionary
+    Set DictionaryObject = LLdictionary.Create(wb.Worksheets(DICTSHEET), 1, 1)
+End Function
 
+'The entry list of one sheet
+Private Function EntriesFor(ByVal sh As Worksheet, _
+                         ByVal layer As Byte, _
+                         ByVal dict As LLdictionary) As ShowHide
+    Set EntriesFor = ShowHide.Create(dict, layer, BaseSheetName(sh))
+End Function
+
+'The sheet half of the pair
+Private Function LayoutFor(ByVal sh As Worksheet, ByVal layer As Byte) As ShowHideLayout
+    Set LayoutFor = ShowHideLayout.Create(sh, layer, pass, BaseTableNameOf(sh))
+End Function
+
+'Build the entry list and the layout the form works on. Answers False on a sheet
+'that has no show/hide layer.
+Private Function OpenShowHideFor(ByVal sh As Worksheet) As Boolean
+    Dim layer As Byte
+
+    Set showHideEntries = Nothing
+    Set showHideLayout = Nothing
+
+    layer = ResolveShowHideLayer(SheetTag(sh))
+    If layer = 0 Then Exit Function
+
+    Set showHideEntries = EntriesFor(sh, layer, DictionaryObject())
+    Set showHideLayout = LayoutFor(sh, layer)
+
+    OpenShowHideFor = True
+End Function
+
+'The saved choices of this workbook. Answers Nothing when the workbook carries
+'no show/hide worksheet, which is what an older linelist looks like.
+Private Function ShowHideStoreOf() As ShowHideStore
     On Error Resume Next
-    Set shSH = wb.Worksheets(SHOWHIDESHEET)
+    Set ShowHideStoreOf = ShowHideStore.Create(wb)
     On Error GoTo 0
+End Function
 
-    If shSH Is Nothing Then Exit Sub
-    If shSH.ListObjects.Count = 0 Then Exit Sub
+'Read the saved choices of one entries back in. Answers how many rows matched.
+Private Function LoadShowHideState(ByVal entries As ShowHide, _
+                                  ByVal layout As ShowHideLayout) As Long
+    Dim store As ShowHideStore
 
-    showHideObject.ImportPlan shSH.ListObjects(1)
+    If entries Is Nothing Then Exit Function
+
+    Set store = ShowHideStoreOf()
+    If store Is Nothing Then Exit Function
+
+    LoadShowHideState = store.Load(entries, layout)
+End Function
+
+'Write the choices of one entries out. The layout is a parameter rather than the
+'module one, because a caller that saves two layers in a row would otherwise
+'record the printed sizes against the HList rows.
+Private Sub SaveShowHideState(ByVal entries As ShowHide, ByVal layout As ShowHideLayout)
+    Dim store As ShowHideStore
+
+    If entries Is Nothing Then Exit Sub
+
+    Set store = ShowHideStoreOf()
+    If store Is Nothing Then Exit Sub
+
+    store.Save entries, layout
 End Sub
 
-'Persist the module-level showHideObject state to show_hide__ sheet
-Private Sub PersistShowHideState()
-    Dim shSH As Worksheet
-
-    If showHideObject Is Nothing Then Exit Sub
-
-    On Error Resume Next
-    Set shSH = wb.Worksheets(SHOWHIDESHEET)
-    On Error GoTo 0
-
-    If shSH Is Nothing Then Exit Sub
-    If shSH.ListObjects.Count = 0 Then Exit Sub
-
-    showHideObject.ExportPlan shSH.ListObjects(1)
-End Sub
-
-'Persist a specific ShowHideManager instance to show_hide__ sheet
-Private Sub PersistShowHideManager(ByVal mgr As ShowHideManager)
-    Dim shSH As Worksheet
-
-    If mgr Is Nothing Then Exit Sub
-
-    On Error Resume Next
-    Set shSH = wb.Worksheets(SHOWHIDESHEET)
-    On Error GoTo 0
-
-    If shSH Is Nothing Then Exit Sub
-    If shSH.ListObjects.Count = 0 Then Exit Sub
-
-    mgr.ExportPlan shSH.ListObjects(1)
-End Sub
-
-'Populate a show/hide form's list control from ShowHideManager entries
+'Populate a show/hide form's list control from the entry list
 Private Sub PopulateShowHideList(ByVal frm As Object)
     Dim listCtrl As Object
     Dim counter As Long
 
     If frm Is Nothing Then Exit Sub
-    If showHideObject Is Nothing Then Exit Sub
+    If showHideEntries Is Nothing Then Exit Sub
 
     On Error Resume Next
     If frm.Name = "F_ShowHideLL" Then
@@ -202,8 +218,8 @@ Private Sub PopulateShowHideList(ByVal frm As Object)
     If listCtrl Is Nothing Then Exit Sub
 
     listCtrl.Clear
-    For counter = 1 To showHideObject.EntryCount
-        listCtrl.AddItem showHideObject.HeaderText(counter)
+    For counter = 1 To showHideEntries.EntryCount
+        listCtrl.AddItem showHideEntries.HeaderText(counter)
     Next
 End Sub
 
@@ -213,9 +229,7 @@ Public Sub ClickShowHide()
     Attribute ClickShowHide.VB_Description = "Callback for click on show/hide in a linelist worksheet on a button"
 
     Dim sh As Worksheet
-    Dim dict As LLdictionary
     Dim shType As String
-    Dim layer As Byte
     Dim frm As Object
 
     Set sh = ActiveSheet
@@ -229,17 +243,21 @@ Public Sub ClickShowHide()
 
     InitializeTrads
 
-    layer = ResolveShowHideLayer(shType)
-    If layer = 0 Then Exit Sub
+    If Not OpenShowHideFor(sh) Then Exit Sub
 
-    Set dict = LLdictionary.Create(ThisWorkbook.Worksheets(DICTSHEET), 1, 1)
-    Set showHideObject = ShowHideManager.Create(dict, layer, BaseSheetName(sh))
+    'Read the choices of the last session and put the sheet in step with them.
+    'With nothing saved yet, the sheet is the record: read it into the entries, so
+    'a column the user hid by hand shows as hidden in the form.
+    If LoadShowHideState(showHideEntries, showHideLayout) > 0 Then
+        showHideEntries.Apply showHideLayout
+    Else
+        showHideEntries.Adopt showHideLayout
+    End If
 
-    'Load saved show/hide state from persistence sheet
-    LoadShowHideState
-
-    'Show the appropriate form
-    If shType = "HList Print" Or shType = "HList CRF" Then
+    'A CRF holds one variable per row and reads its labels straight, so it takes
+    'the same form a data entry sheet does. The printed form is the only one
+    'carrying the two header direction buttons.
+    If shType = "HList Print" Then
         Set frm = F_ShowHidePrint
     Else
         Set frm = F_ShowHideLL
@@ -249,8 +267,8 @@ Public Sub ClickShowHide()
     PopulateShowHideList frm
     frm.Show
 
-    'After form closes, persist state
-    PersistShowHideState
+    'After form closes, save the choices
+    SaveShowHideState showHideEntries, showHideLayout
     Set activeShowHideForm = Nothing
 End Sub
 
@@ -260,33 +278,43 @@ Public Sub ClickListShowHide(ByVal Index As Long)
     Attribute ClickListShowHide.VB_Description = "Callback for click on the list of showhide"
 
     Dim entryIdx As Long
-    Dim isMand As Boolean
+    Dim canChange As Boolean
+    Dim isVertical As Boolean
 
-    If showHideObject Is Nothing Then Exit Sub
+    If showHideEntries Is Nothing Then Exit Sub
     If activeShowHideForm Is Nothing Then Exit Sub
 
     entryIdx = Index + 1
-    If entryIdx < 1 Or entryIdx > showHideObject.EntryCount Then Exit Sub
+    If entryIdx < 1 Or entryIdx > showHideEntries.EntryCount Then Exit Sub
 
-    isMand = showHideObject.IsMandatory(entryIdx)
+    'A mandatory entry and a locked entry both refuse the user, so the one
+    'question the buttons ask is whether the entry is free.
+    canChange = showHideEntries.IsFree(entryIdx)
 
     If activeShowHideForm.Name = "F_ShowHideLL" Then
-        If showHideObject.IsHidden(entryIdx) Then
+        If showHideEntries.IsHidden(entryIdx) Then
             activeShowHideForm.OPT_Hide.Value = True
         Else
             activeShowHideForm.OPT_Show.Value = True
         End If
-        activeShowHideForm.OPT_Show.Enabled = Not isMand
-        activeShowHideForm.OPT_Hide.Enabled = Not isMand
+        activeShowHideForm.OPT_Show.Enabled = canChange
+        activeShowHideForm.OPT_Hide.Enabled = canChange
     Else
-        If showHideObject.IsHidden(entryIdx) Then
+        isVertical = False
+        If Not showHideLayout Is Nothing Then
+            isVertical = showHideLayout.IsVertical(showHideEntries.PositionIndex(entryIdx))
+        End If
+
+        If showHideEntries.IsHidden(entryIdx) Then
             activeShowHideForm.OPT_Hide.Value = True
+        ElseIf isVertical Then
+            activeShowHideForm.OPT_PrintShowVerti.Value = True
         Else
             activeShowHideForm.OPT_PrintShowHoriz.Value = True
         End If
-        activeShowHideForm.OPT_PrintShowHoriz.Enabled = Not isMand
-        activeShowHideForm.OPT_PrintShowVerti.Enabled = Not isMand
-        activeShowHideForm.OPT_Hide.Enabled = Not isMand
+        activeShowHideForm.OPT_PrintShowHoriz.Enabled = canChange
+        activeShowHideForm.OPT_PrintShowVerti.Enabled = canChange
+        activeShowHideForm.OPT_Hide.Enabled = canChange
     End If
 End Sub
 
@@ -297,36 +325,38 @@ Public Sub ClickOptionsShowHide(ByVal Index As Long)
 
     Dim entryIdx As Long
     Dim shouldHide As Boolean
-    Dim sh As Worksheet
-    Dim shType As String
+    Dim wantsVertical As Boolean
     Dim posIdx As Long
 
-    If showHideObject Is Nothing Then Exit Sub
+    If showHideEntries Is Nothing Then Exit Sub
+    If showHideLayout Is Nothing Then Exit Sub
     If activeShowHideForm Is Nothing Then Exit Sub
 
     entryIdx = Index + 1
-    If entryIdx < 1 Or entryIdx > showHideObject.EntryCount Then Exit Sub
-    If showHideObject.IsMandatory(entryIdx) Then Exit Sub
+    If entryIdx < 1 Or entryIdx > showHideEntries.EntryCount Then Exit Sub
+    If Not showHideEntries.IsFree(entryIdx) Then Exit Sub
 
     shouldHide = activeShowHideForm.OPT_Hide.Value
-    showHideObject.SetHidden entryIdx, shouldHide
+    showHideEntries.SetHidden entryIdx, shouldHide
 
-    Set sh = ActiveSheet
-    shType = SheetTag(sh)
-    posIdx = showHideObject.PositionIndex(entryIdx)
+    posIdx = showHideEntries.PositionIndex(entryIdx)
+    If posIdx = 0 Then Exit Sub
 
-    If posIdx > 0 Then
-        pass.UnProtect sh.Name
+    showHideLayout.BeginBatch
+    showHideLayout.SetHidden posIdx, shouldHide
+
+    'The header direction belongs to the two show buttons of the printed form.
+    'Choosing Hide leaves the direction as it was, so showing the column again
+    'brings back the header the user had.
+    If showHideLayout.SupportsOrientation And Not shouldHide Then
+        wantsVertical = False
         On Error Resume Next
-        Select Case shType
-        Case "VList"
-            sh.Rows(posIdx).Hidden = shouldHide
-        Case "HList", "HList Print", "HList CRF"
-            sh.Columns(posIdx).Hidden = shouldHide
-        End Select
+        wantsVertical = activeShowHideForm.OPT_PrintShowVerti.Value
         On Error GoTo 0
-        pass.Protect sh.Name
+        showHideLayout.SetOrientation posIdx, wantsVertical
     End If
+
+    showHideLayout.EndBatch
 End Sub
 
 '@Description("Callback for click on column width in show/hide")
@@ -336,16 +366,15 @@ Public Sub ClickColWidth(ByVal Index As Long)
 
     Dim entryIdx As Long
     Dim posIdx As Long
-    Dim sh As Worksheet
     Dim inputValue As String
-    Dim colWidth As Long
 
-    If showHideObject Is Nothing Then Exit Sub
+    If showHideEntries Is Nothing Then Exit Sub
+    If showHideLayout Is Nothing Then Exit Sub
 
     entryIdx = Index + 1
-    If entryIdx < 1 Or entryIdx > showHideObject.EntryCount Then Exit Sub
+    If entryIdx < 1 Or entryIdx > showHideEntries.EntryCount Then Exit Sub
 
-    posIdx = showHideObject.PositionIndex(entryIdx)
+    posIdx = showHideEntries.PositionIndex(entryIdx)
     If posIdx = 0 Then Exit Sub
 
     InitializeTrads
@@ -359,14 +388,7 @@ Public Sub ClickColWidth(ByVal Index As Long)
                   vbOKCancel, vbNullString) = vbCancel Then Exit Sub
     Loop
 
-    colWidth = CLng(inputValue)
-    Set sh = ActiveSheet
-
-    pass.UnProtect sh.Name
-    On Error Resume Next
-    sh.Columns(posIdx).ColumnWidth = colWidth
-    On Error GoTo 0
-    pass.Protect sh.Name
+    showHideLayout.SetSize posIdx, CDbl(inputValue)
 End Sub
 
 
@@ -1232,126 +1254,54 @@ Public Sub ClickImportGeobase()
     HandleImportGeobase wb, tradsmess
 End Sub
 
-Private Sub RestaureHiddenStatus(ByVal cellRng As Range, Optional ByVal scope As Byte = 1)
-
-    'Scope can take 3 values:
-    '1- dictionary
-    '2- show/hide, on a linelist
-    '3- show/hide, on a linelist Print
-
-    Dim dict As LLdictionary
-    Dim vars As LLVariables
-    Dim sh As Worksheet
-    Dim varName As String
-    Dim tabName As String
-    Dim varSheetName As String
-    Dim hideStatus As Boolean
-    Dim varStatus As String
-    Dim varColumnIndex As Long
-    Dim sheetInfo As String
-    Dim labCellRng As Range
-
-    Set dict = LLdictionary.Create(wb.Worksheets(DICTSHEET), 1, 1)
-    Set vars = LLVariables.Create(dict)
-
-    'Hide all hidden variables
-
-    Do While (Not IsEmpty(cellRng))
-        
-        varName = cellRng.Value
-        varStatus = vbNullString
-
-        If (scope = 1) Then 
-            varStatus = vars.Value(colName:="status", varName:=varName)
-        Else
-            'on the show/hide worksheet the variable status is related
-            'to the language
-            Select Case cellRng.Offset( ,1).Value
-
-            Case tradsmess.TranslatedValue("MSG_Hidden")
-                varStatus = "hidden"
-            Case tradsmess.TranslatedValue("MSG_Mandatory")
-                varStatus = "mandatory"
-            Case tradsmess.TranslatedValue("MSG_Shown")
-                varStatus = "shown"
-            Case tradsmess.TranslatedValue("MSG_ShowHoriz")
-                varStatus = "showhoriz"
-            Case tradsmess.TranslatedValue("MSG_ShowVerti")
-                varStatus = "showverti"
-            End Select
-        End If
-
-        varSheetName = vars.Value(colName:="sheet name", varName:=varName)
-        
-        'On Print sheet, add the print tag to the worksheet name
-        If (scope = 3) Then varSheetName = "print_" & varSheetName
-        
-        varColumnIndex = 0
-        On Error Resume Next
-            varColumnIndex = CLng(vars.Value(colName:="column index", varName:=varName))
-        On Error GoTo 0
-
-        'If unable to identify the column, skip    
-        If varColumnIndex = 0 Then GoTo ContinueLoop
-        'On mandatory variables in the show/hide worksheet, skip
-        If ((scope <> 1) And (varStatus = "mandatory")) Then GoTo ContinueLoop
-
-        'Only hidden variables are hidden, otherwise show them (mandatory or shown)
-        hideStatus = IIF(varStatus = "hidden", True, False)
-        sheetInfo = vars.Value(colName:="sheet type", varName:=varName)
-        Set sh = ThisWorkbook.Worksheets(varSheetName)
-
-        'On VList, hide the line, on Hlist the column
-        If (sheetInfo = "vlist1D") Then
-            sh.Cells(varColumnIndex, 1).EntireRow.Hidden = hideStatus
-        ElseIf sheetInfo = "hlist2D" Then
-            sh.Cells(1, varColumnIndex).EntireColumn.Hidden = hideStatus
-        End If
-
-        'Rotate on print sheet
-        If (varStatus = "showverti") Then
-            tabName = TableNameOf(sh)
-            On Error Resume Next
-                Set labCellRng = sh.Range(Replace(tabName, "pr", vbNullString) & "_" & "PRINTSTART")
-                Set labCellRng = sh.Cells(labCellRng.Offset(-2).Row, varColumnIndex) 
-                labCellRng.EntireRow.RowHeight = 100
-                labCellRng.Orientation = 90
-            On Error GoTo 0
-        End If
-
-    ContinueLoop:
-        Set cellRng = cellRng.Offset(1)
-    Loop
-
-End Sub
-
 '@Description("Reset hidden columns in the linelist")
 '@EntryPoint
 Public Sub ClickResetColumns()
     Attribute clickResetColumns.VB_Description = "Reset hidden columns in the linelist"
-    
-   Dim Lo As ListObject
-   Dim cellRng As Range
-   Dim tabName As String
-   Dim scope As Byte
+
+    Dim sh As Worksheet
+    Dim dict As LLdictionary
+    Dim entries As ShowHide
+    Dim layout As ShowHideLayout
+    Dim store As ShowHideStore
+    Dim layer As Byte
+    Dim counter As Long
+    Dim posIdx As Long
 
     BusyApp
-
     InitializeTrads
 
     On Error GoTo ErrHand
 
-    'Return the state of variables in the dictionary
-    Set cellRng = wb.Worksheets(DICTSHEET).Cells(2, 1)
-    RestaureHiddenStatus cellRng, scope:=1
+    'A fresh entry list is the state the dictionary authored, so building one
+    'per sheet and applying it is the whole reset. The saved choices are
+    'overwritten with it, so the reset survives the workbook closing.
+    Set dict = DictionaryObject()
+    Set store = ShowHideStoreOf()
 
-    'Return the state of the variables in show/hide worksheet
-    For Each Lo in wb.Worksheets(SHOWHIDESHEET).ListObjects
-        'cellRange
-        tabName = Replace(Lo.Name, "ShowHideTable_", vbNullString)
-        scope = IIF(InStr(1, tabName, "pr") = 1, 3, 2)
-        Set cellRng = Lo.Range.Cells(2, 2)
-        RestaureHiddenStatus cellRng, scope:=scope
+    For Each sh In wb.Worksheets
+        layer = ResolveShowHideLayer(SheetTag(sh))
+
+        If layer > 0 Then
+            Set entries = EntriesFor(sh, layer, dict)
+            Set layout = LayoutFor(sh, layer)
+
+            entries.Apply layout
+
+            'Put every printed header back the way the dictionary asked
+            If layout.SupportsOrientation Then
+                layout.BeginBatch
+                For counter = 1 To entries.EntryCount
+                    posIdx = entries.PositionIndex(counter)
+                    If posIdx > 0 Then
+                        layout.SetOrientation posIdx, entries.AuthoredVertical(counter)
+                    End If
+                Next
+                layout.EndBatch
+            End If
+
+            If Not store Is Nothing Then store.Save entries
+        End If
     Next
 
 ErrHand:
@@ -1367,11 +1317,7 @@ Public Sub ClickShowHideMinimal()
 
     Dim showOptional As Boolean
     Dim checkConfirm As Boolean
-    Dim mgr As ShowHideManager
     Dim sh As Worksheet
-    Dim dict As LLdictionary
-    Dim shType As String
-    Dim layer As Byte
 
     On Error GoTo ErrHand
 
@@ -1388,20 +1334,11 @@ Public Sub ClickShowHideMinimal()
     If Not checkConfirm Then GoTo ErrHand
 
     Set sh = ActiveSheet
-    shType = SheetTag(sh)
-    layer = ResolveShowHideLayer(shType)
-    If layer = 0 Then GoTo ErrHand
+    If Not OpenShowHideFor(sh) Then GoTo ErrHand
 
-    Set dict = LLdictionary.Create(wb.Worksheets(DICTSHEET), 1, 1)
-    Set mgr = ShowHideManager.Create(dict, layer, BaseSheetName(sh))
-
-    'Toggle all optional entries
-    mgr.SetAllOptionalHidden Not showOptional
-
-    'Apply visibility to worksheet
-    pass.UnProtect sh.Name
-    ApplyShowHideVisibility mgr, sh, shType
-    pass.Protect sh.Name
+    'Toggle every entry the user owns, then put the sheet in step
+    showHideEntries.SetAllOptionalHidden Not showOptional
+    showHideEntries.Apply showHideLayout
 
     'Toggle the flag
     If showOptional Then
@@ -1410,10 +1347,8 @@ Public Sub ClickShowHideMinimal()
         wkbNames.SetValue RNGSHOWALLOPTIONALS, "yes"
     End If
 
-    PersistShowHideManager mgr
+    SaveShowHideState showHideEntries, showHideLayout
 
-    'Sync module-level state so ClickShowHide persist is coherent
-    Set showHideObject = mgr
     If Not activeShowHideForm Is Nothing Then
         PopulateShowHideList activeShowHideForm
     End If
@@ -1430,18 +1365,16 @@ Public Sub ClickMatchLinelistShowHide()
     Attribute ClickMatchLinelist.VB_Description = "Match the show/hide state in the linelist from the print sheet"
 
     Dim checkConfirm As Boolean
-    Dim baseMgr As ShowHideManager
-    Dim printMgr As ShowHideManager
+    Dim baseEntries As ShowHide
+    Dim printEntries As ShowHide
+    Dim printLayout As ShowHideLayout
     Dim printsh As Worksheet
     Dim sh As Worksheet
     Dim dict As LLdictionary
     Dim sheetName As String
-    Dim tabName As String
     Dim counter As Long
-    Dim fieldKey As String
     Dim printIdx As Long
     Dim posIdx As Long
-    Dim labCellRng As Range
 
     On Error GoTo ErrHand
 
@@ -1458,45 +1391,39 @@ Public Sub ClickMatchLinelistShowHide()
     Set printsh = ActiveSheet
     sheetName = Mid$(printsh.Name, Len(PRINTPREFIX) + 1)
     Set sh = wb.Worksheets(sheetName)
-    tabName = TableNameOf(sh)
 
-    Set dict = LLdictionary.Create(wb.Worksheets(DICTSHEET), 1, 1)
-    Set baseMgr = ShowHideManager.Create(dict, ShowHideLayerHList, sheetName)
-    Set printMgr = ShowHideManager.Create(dict, ShowHideLayerPrinted, sheetName)
+    Set dict = DictionaryObject()
+    Set baseEntries = ShowHide.Create(dict, ShowHideLayerHList, sheetName)
+    Set printEntries = ShowHide.Create(dict, ShowHideLayerPrinted, sheetName)
+    Set printLayout = LayoutFor(printsh, ShowHideLayerPrinted)
 
-    'Match print visibility to base sheet visibility
-    pass.UnProtect printsh.Name
-    For counter = 1 To baseMgr.EntryCount
-        fieldKey = baseMgr.FieldKey(counter)
-        printIdx = printMgr.IndexOf(fieldKey)
-        If printIdx > 0 Then
-            posIdx = printMgr.PositionIndex(printIdx)
-            If posIdx > 0 Then
-                If baseMgr.IsHidden(counter) Then
-                    printMgr.SetHidden printIdx, True
-                    printsh.Columns(posIdx).Hidden = True
-                Else
-                    printMgr.SetHidden printIdx, False
-                    printsh.Columns(posIdx).Hidden = False
-                    'Reset orientation to horizontal
-                    On Error Resume Next
-                    Set labCellRng = printsh.Range( _
-                        Replace(tabName, "pr", vbNullString) & "_PRINTSTART")
-                    Set labCellRng = printsh.Cells( _
-                        labCellRng.Offset(-2).Row, posIdx)
-                    labCellRng.Orientation = 0
-                    On Error GoTo 0
-                End If
-            End If
+    'Read what the data entry sheet shows today, then copy it over
+    LoadShowHideState baseEntries, Nothing
+    baseEntries.Adopt LayoutFor(sh, ShowHideLayerHList)
+
+    For counter = 1 To baseEntries.EntryCount
+        printIdx = printEntries.IndexOf(baseEntries.FieldKey(counter))
+        If printIdx > 0 Then printEntries.SetHidden printIdx, baseEntries.IsHidden(counter)
+    Next
+
+    printEntries.Apply printLayout
+
+    'Every column the print sheet now shows reads horizontally
+    printLayout.BeginBatch
+    For counter = 1 To printEntries.EntryCount
+        posIdx = printEntries.PositionIndex(counter)
+        If posIdx > 0 And Not printEntries.IsHidden(counter) Then
+            printLayout.SetOrientation posIdx, False
         End If
     Next
-    pass.Protect printsh.Name
+    printLayout.EndBatch
 
-    PersistShowHideManager baseMgr
-    PersistShowHideManager printMgr
+    SaveShowHideState baseEntries, Nothing
+    SaveShowHideState printEntries, printLayout
 
-    'Sync module-level state so ClickShowHide persist is coherent
-    Set showHideObject = printMgr
+    'Sync the module state so the open form reads the list that was just saved
+    Set showHideEntries = printEntries
+    Set showHideLayout = printLayout
     If Not activeShowHideForm Is Nothing Then
         PopulateShowHideList activeShowHideForm
     End If

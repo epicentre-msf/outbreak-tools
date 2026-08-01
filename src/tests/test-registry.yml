@@ -846,10 +846,40 @@ suites:
       - module: TestSectionBuilder
         covers: [SectionBuilder]
 
+  # --- showhide (ShowHide, ShowHideLayout, ShowHideStore) --------------------
+  # The show/hide feature is three classes: ShowHide says which variables a
+  # sheet offers and which of them are hidden, ShowHideLayout writes that to a
+  # worksheet, ShowHideStore keeps the choices between two sessions. They
+  # replace LLShowHide and ShowHideManager, which were two halves of the same
+  # feature and neither of them whole.
+  #
+  # These three rows are the first time any of this code has been compiled by
+  # the harness. src/tests/showhide/ held 506 lines that had never run, because
+  # the folder was absent from this file, so the runner never copied it into the
+  # run dir.
+  #
+  # The closure adds nothing. LLdictionary and LLVariables are registered under
+  # dictionary; Passwords, BetterArray and Checking are baked into the driver
+  # workbook, so none of the three may take a class row here. The suite calls
+  # PrepareDictionaryFixture, registered under helpers.
+  #
+  # LLExporter and LLImporter type all three, so the dataio folder unblocks on
+  # these rows.
+  - folder: showhide
+    classes:
+      - name: ShowHide
+      - name: ShowHideLayout
+      - name: ShowHideStore
+    tests:
+      - module: TestShowHide
+        covers: [ShowHide, ShowHideLayout, ShowHideStore]
+
 # ---------------------------------------------------------------------------
 # TEMPLATE — copy per folder as coverage is added. Delete fields left empty.
 # Expansion backlog (suite folders under src/tests/ that are not yet
-# registered): dataio, mastersetup, showhide. src/tests/tables/ is gone as of
+# registered): dataio, mastersetup. src/tests/showhide/ joined on 2026-08-01
+# with the three classes that replaced LLShowHide and ShowHideManager.
+# src/tests/tables/ is gone as of
 # 2026-07-31 — it held TestCustomPivotTable alone, whose class lives in
 # src/classes/analyses/, so no suite could ever name both. The module moved to
 # src/tests/analyses/ and is registered there. src/tests/geo/ is fully

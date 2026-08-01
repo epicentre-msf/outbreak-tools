@@ -47,8 +47,8 @@ Option Explicit
 '@depends LinelistSpecs, LLdictionary, LLSheets, TranslationObject,
 '  LLFormat, DropdownLists, CustomPivotTable, TemporaryRepos,
 '  Buttons, CodeTransfer, Passwords, HiddenNames, AnaTabIds,
-'  Checking, BetterArray
-'@version 1.3 (2026-07-31)
+'  ShowHideStore, Checking, BetterArray
+'@version 1.4 (2026-08-01)
 
 
 
@@ -846,6 +846,14 @@ Private Sub PrepareTemporarySheets()
     sheetName = this.specs.TemporarySheetName(TempSheetAnalysis)
     Set sh = outWkb.Worksheets(sheetName)
     AnaTabIds.PrepareSheet sh
+
+    'Show/hide sheet - the table the user's visibility choices are kept in.
+    'The sheet used to be provisioned empty and the only code that ever built a
+    'table on it wrote into the export workbook, so every choice a user made was
+    'thrown away when the workbook closed.
+    sheetName = this.specs.TemporarySheetName(TempSheetShowHide)
+    Set sh = outWkb.Worksheets(sheetName)
+    ShowHideStore.CreateOnSheet sh
 End Sub
 
 '@label:initialise-workbook-names
@@ -992,7 +1000,8 @@ Private Sub TransferAllCode(ByVal codeTransfer As CodeTransfer, _
                    "OSFiles", _
                    "TranslationObject", "LLVariables", _
                    "LLSpatial", _
-                   "DropdownLists", "ShowHideManager", _
+                   "DropdownLists", _
+                   "ShowHide", "ShowHideLayout", "ShowHideStore", _
                    "CustomTable", _
                    "LLExporter", _
                     "LLImporter", _

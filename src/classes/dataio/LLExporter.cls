@@ -26,6 +26,7 @@ Option Explicit
 'and closes it.
 '@depends LLdictionary, LLExport, Passwords, CustomTable
 '@depends DataSheet, AnaTabIds, LLGeo, LLChoices, HiddenNames
+'@depends ShowHide, ShowHideLayout, ShowHideStore
 
 
 '@section Enumerations
@@ -56,6 +57,10 @@ Private Const EXPORTSHEET As String = "Exports"
 Private Const ANANAMESSHEET As String = "ana_tabnames__"
 Private Const SHOWHIDESHEET As String = "show_hide__"
 Private Const GEOSHEET As String = "Geo"
+
+' Prefixes of the two companion sheets a data entry sheet can have
+Private Const PRINTPREFIX As String = "print_"
+Private Const CRFPREFIX As String = "crf_"
 
 ' P-codes tag list for removal from custom exports
 Private Const PCODES_GEO_PCODE_ADM1 As String = "geo_pcode_adm1"
@@ -846,12 +851,16 @@ Private Sub AddMetadataTags(ByVal outwb As Workbook, ByVal scope As Byte, _
 End Sub
 
 '@label:add-show-hide
-'@sub-title Export show/hide state with column widths to the output workbook
+'@sub-title Export the show/hide choices with their sizes to the output workbook
 '@details
-'Creates a show_hide__ sheet in the output workbook with a ListObject
-'containing layer, field_key, header_text, hidden_flag, and column_width
-'columns. For each data sheet, creates a ShowHideManager per applicable
-'layer (HList, Printed, VList) and exports the current visibility state.
+'Builds a show_hide__ sheet in the output workbook and asks ShowHideStore to
+'provision its table. Every data sheet contributes each layer it has: HList and
+'CRF for a data entry sheet, Printed for its companion, VList for an info sheet.
+'The choices the user made are read out of the source workbook first, so the
+'file carries what the user sees rather than what the dictionary authored.
+'
+'The CRF layer used to be left out of both ends of the migration, so a CRF
+'sheet lost its visibility and its sizes on every round trip.
 '@param outwb Workbook. The output workbook.
 Private Sub AddShowHide(ByVal outwb As Workbook)
 
@@ -861,74 +870,49 @@ Private Sub AddShowHide(ByVal outwb As Workbook)
     Dim sheetName As String
     Dim sheetType As String
     Dim sh As Worksheet
-    Dim lo As ListObject
-    Dim shm As ShowHideManager
+    Dim printSh As Worksheet
+    Dim crfSh As Worksheet
+    Dim outStore As ShowHideStore
     Dim counter As Long
     Dim nbExp As Long
-    Dim loRng As Range
 
     nbExp = ExportObject().NumberOfExports()
     Set dict = SourceDictionary(nbExp)
 
-    ' Create show_hide__ sheet in output workbook
     outwb.Worksheets.Add(outwb.Worksheets(outwb.Worksheets.count)).Name = SHOWHIDESHEET
     Set outsh = outwb.Worksheets(SHOWHIDESHEET)
+    Set outStore = ShowHideStore.CreateOnSheet(outsh)
 
-    ' Create ListObject with 5 migration columns
-    outsh.Cells(1, 1).Value = "layer"
-    outsh.Cells(1, 2).Value = "field_key"
-    outsh.Cells(1, 3).Value = "header_text"
-    outsh.Cells(1, 4).Value = "hidden_flag"
-    outsh.Cells(1, 5).Value = "column_width"
-
-    Set loRng = outsh.Range(outsh.Cells(1, 1), outsh.Cells(1, 5))
-    Set lo = outsh.ListObjects.Add( _
-        SourceType:=xlSrcRange, _
-        Source:=loRng, _
-        XlListObjectHasHeaders:=xlYes)
-    lo.Name = "show_hide_migration"
-    lo.TableStyle = "TableStyleLight4"
-
-    ' For each data sheet, export show/hide per applicable layer
     Set sheetNames = dict.UniqueValues("sheet name")
 
     For counter = sheetNames.LowerBound To sheetNames.UpperBound
         sheetName = sheetNames.Item(counter)
 
-        ' Determine sheet type from the source workbook
+        Set sh = Nothing
         On Error Resume Next
         Set sh = this.sourceWkb.Worksheets(sheetName)
         On Error GoTo 0
         If sh Is Nothing Then GoTo NextSheet
+
         sheetType = SheetTagOf(sh)
 
         If sheetType = "HList" Then
-            ' HList layer
-            Set shm = ShowHideManager.Create(dict, ShowHideLayerHList, sheetName)
-            ImportCurrentShowHide shm
-            shm.ExportForMigration lo, sh
+            SaveOneShowHideLayer outStore, dict, ShowHideLayerHList, sheetName, sh
 
-            ' Printed layer (companion print sheet)
-            Dim printSh As Worksheet
-            Set printSh = Nothing
-            On Error Resume Next
-            Set printSh = this.sourceWkb.Worksheets("print_" & sheetName)
-            On Error GoTo 0
-
+            Set printSh = CompanionSheet(PRINTPREFIX & sheetName)
             If Not printSh Is Nothing Then
-                Set shm = ShowHideManager.Create(dict, ShowHideLayerPrinted, sheetName)
-                ImportCurrentShowHide shm
-                shm.ExportForMigration lo, printSh
+                SaveOneShowHideLayer outStore, dict, ShowHideLayerPrinted, sheetName, printSh
+            End If
+
+            Set crfSh = CompanionSheet(CRFPREFIX & sheetName)
+            If Not crfSh Is Nothing Then
+                SaveOneShowHideLayer outStore, dict, ShowHideLayerCRF, sheetName, crfSh
             End If
 
         ElseIf sheetType = "VList" Then
-            ' VList layer
-            Set shm = ShowHideManager.Create(dict, ShowHideLayerVList, sheetName)
-            ImportCurrentShowHide shm
-            shm.ExportForMigration lo, sh
+            SaveOneShowHideLayer outStore, dict, ShowHideLayerVList, sheetName, sh
         End If
 
-        Set sh = Nothing
 NextSheet:
     Next counter
 
@@ -937,16 +921,79 @@ NextSheet:
     On Error GoTo 0
 End Sub
 
-'@label:import-current-show-hide
-'@sub-title Import current user overrides from the show_hide__ ListObject
+'@label:save-one-show-hide-layer
+'@sub-title Write one layer of one sheet into the export store
 '@details
-'Reads the show_hide__ sheet from the source workbook and imports the
-'user visibility plan into the ShowHideManager, ensuring the exported
-'show/hide reflects the user actual choices.
-'@param shm ShowHideManager. The manager to populate.
-Private Sub ImportCurrentShowHide(ByVal shm As ShowHideManager)
+'Reads the entry list from the dictionary, folds in whatever the user chose in
+'the running workbook, then saves it with the sheet so the sizes and the header
+'directions travel too.
+'@param outStore ShowHideStore. The store on the output workbook.
+'@param dict LLdictionary. The source dictionary.
+'@param layer Byte. A ShowHideWorksheetLayer value. Which layer to write.
+'@param sheetName String. The base sheet name.
+'@param sourceSh Worksheet. The sheet of that layer in the source workbook.
+Private Sub SaveOneShowHideLayer(ByVal outStore As ShowHideStore, _
+                                 ByVal dict As LLdictionary, _
+                                 ByVal layer As Byte, _
+                                 ByVal sheetName As String, _
+                                 ByVal sourceSh As Worksheet)
+
+    Dim entries As ShowHide
+    Dim layout As ShowHideLayout
+    Dim tableName As String
+
+    Set entries = ShowHide.Create(dict, layer, sheetName)
+    If entries.EntryCount = 0 Then Exit Sub
+
+    'The layout is handed the keys, because reading the real size of a hidden
+    'column means showing it for an instant and the source sheets are protected.
+    tableName = BaseTableNameOf(sourceSh)
+    Set layout = ShowHideLayout.Create(sourceSh, layer, PasswordsObject(), tableName)
+
+    ImportCurrentShowHide entries
+    entries.Adopt layout
+
+    outStore.Save entries, layout
+End Sub
+
+'@label:companion-sheet
+'@sub-title Find a prefixed companion sheet of the source workbook
+'@param sheetName String. The full sheet name, prefix included.
+'@return Worksheet. The sheet, or Nothing when the workbook has none.
+Private Function CompanionSheet(ByVal sheetName As String) As Worksheet
+    On Error Resume Next
+    Set CompanionSheet = this.sourceWkb.Worksheets(sheetName)
+    On Error GoTo 0
+End Function
+
+'@label:base-table-name-of
+'@sub-title The table name a sheet's PRINTSTART anchor is named after
+'@details
+'A printed companion stores its table name with the print_ prefix in front and
+'the anchor is named after the base one, so the prefix comes off here.
+'@param sh Worksheet. The sheet to read.
+'@return String. The table name with no print_ prefix.
+Private Function BaseTableNameOf(ByVal sh As Worksheet) As String
+    Dim tableName As String
+
+    tableName = SheetTagOf(sh, "table_name")
+    If InStr(1, tableName, PRINTPREFIX, vbTextCompare) = 1 Then
+        tableName = Mid$(tableName, Len(PRINTPREFIX) + 1)
+    End If
+
+    BaseTableNameOf = tableName
+End Function
+
+'@label:import-current-show-hide
+'@sub-title Fold the user's live choices into an entry list
+'@details
+'Reads the show/hide store of the source workbook. A workbook that has never
+'had the form opened carries an empty table, and the entry list then keeps the
+'state the dictionary authored.
+'@param entries ShowHide. The entry list to update.
+Private Sub ImportCurrentShowHide(ByVal entries As ShowHide)
     Dim showHideSh As Worksheet
-    Dim lo As ListObject
+    Dim srcStore As ShowHideStore
 
     Set showHideSh = Nothing
     On Error Resume Next
@@ -954,10 +1001,11 @@ Private Sub ImportCurrentShowHide(ByVal shm As ShowHideManager)
     On Error GoTo 0
 
     If showHideSh Is Nothing Then Exit Sub
-    If showHideSh.ListObjects.count = 0 Then Exit Sub
 
-    Set lo = showHideSh.ListObjects(1)
-    shm.ImportPlan lo
+    Set srcStore = ShowHideStore.CreateForRead(showHideSh)
+    If Not srcStore.HasTable Then Exit Sub
+
+    srcStore.Load entries
 End Sub
 
 '@label:add-analysis-sheets
