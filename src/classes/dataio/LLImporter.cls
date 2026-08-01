@@ -26,7 +26,7 @@ Option Explicit
 '@depends LLdictionary, Passwords, CustomTable, DataSheet
 '@depends LLGeo, LLChoices, LLVariables, DropdownLists, HiddenNames
 '@depends ShowHide, ShowHideLayout, ShowHideStore, ChoiceKeys, ImportMetadata
-'@depends Checking, BetterArray
+'@depends Checking, BetterArray, ImportReport
 
 
 '@section Enumerations
@@ -1254,6 +1254,40 @@ NextReportSheet:
     Next counter
 
     FileReportCheckings
+    SaveReport
+End Sub
+
+'@label:save-report
+'@sub-title Keep the report where it survives the workbook closing
+'@details
+'The four lists used to live in memory alone and die with this object at the end
+'of the import, while the four ListObjects they belong on sat on import_rep__
+'with nothing writing to them. They are written now, so F_ImportRep can be
+'opened again days later from the advanced form.
+'
+'A workbook that will not take the store - anything other than a generated
+'linelist - leaves the lists in memory and says so.
+Private Sub SaveReport()
+
+    Dim store As ImportReport
+
+    Set store = Nothing
+    On Error Resume Next
+    Set store = ImportReport.Create(this.sourceWkb)
+    On Error GoTo 0
+
+    If store Is Nothing Then
+        FileChecking "import report store", _
+                     "The report of this import could not be kept in the " & _
+                     "workbook, so it is gone once this workbook closes.", _
+                     checkingWarning
+        Exit Sub
+    End If
+
+    store.SaveSheets ImportReportNotImported, this.sheetsNotImported
+    store.SaveSheets ImportReportNotTouched, this.sheetsNotTouched
+    store.SaveVariables ImportReportNotImported, this.varsNotImported
+    store.SaveVariables ImportReportNotTouched, this.varsNotTouched
 End Sub
 
 '@label:file-report-checkings

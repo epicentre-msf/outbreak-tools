@@ -93,10 +93,15 @@ Public Sub HandleImportData(ByVal sourceWkb As Workbook, _
     actsh.Activate
     appState.Restore
 
-    ' Show result
+    ' Show result. MSG_FinishImportRep asks whether the user wants to see a
+    ' report, and it used to be asked with an OK button, so there was no way to
+    ' answer and nothing behind it either.
     If impObj.NeedReport Then
-        MsgBox trads.TranslatedValue("MSG_FinishImportRep"), _
-               vbQuestion + vbOKOnly, trads.TranslatedValue("MSG_Imports")
+        If MsgBox(trads.TranslatedValue("MSG_FinishImportRep"), _
+                  vbQuestion + vbYesNo, _
+                  trads.TranslatedValue("MSG_Imports")) = vbYes Then
+            F_ImportRep.Show
+        End If
     Else
         MsgBox trads.TranslatedValue("MSG_FinishImport"), _
                vbOKOnly, trads.TranslatedValue("MSG_Imports")

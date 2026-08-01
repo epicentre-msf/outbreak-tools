@@ -899,10 +899,12 @@ suites:
   # active one. ModuleCleanup drops the fixture workbook before printing now,
   # and that change has never been run.
   #
-  # ChoiceKeys and ImportMetadata joined the folder on 2026-08-01. ChoiceKeys is
-  # a leaf class with no dependency at all; ImportMetadata types DataSheet,
-  # which is registered under general. LLExporter types ChoiceKeys, so that row
-  # has to land with the exporter row.
+  # ChoiceKeys, ImportMetadata and ImportReport joined the folder on 2026-08-01.
+  # ChoiceKeys is a leaf class with no dependency at all; ImportMetadata types
+  # DataSheet, which is registered under general; ImportReport types BetterArray
+  # and reads the ImportReportScope enum, which LLImporter declares, so its row
+  # cannot land before the LLImporter row does. LLExporter types ChoiceKeys, so
+  # that row has to land with the exporter row.
   #
   # ExportButton stays out whatever happens here: it declares
   # `WithEvents Btn As MSForms.CommandButton`, which would put a form-library
