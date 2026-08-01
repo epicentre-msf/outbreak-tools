@@ -1236,8 +1236,9 @@ Public Sub ClickImportData()
         End If
     Next
 
-    'Import data using LLImporter API (handles file picker, busy state, report)
-    HandleImportData wb, tradsmess, False
+    'Import data using LLImporter API (handles file picker, the question about
+    'the rows already entered, busy state and report)
+    HandleImportData wb, tradsmess
 
     'Update all the listAuto in the workbook
     LinelistEventsManager.UpdateAllListAuto

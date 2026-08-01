@@ -6,15 +6,19 @@ Attribute VB_Name = "FormLogicAdvanced"
 
 Option Explicit
 
+' What an import does with the rows the linelist already holds
+Private Const PASTING_RULE_EMPTY As Byte = 0
+Private Const PASTING_RULE_BOTTOM As Byte = 1
+Private Const PASTING_RULE_STOP As Byte = 2
+
 
 ' @description Import data from a migration workbook.
-' Shows file picker, checks language, imports data and metadata, shows report.
+' Shows file picker, asks what to do with data already entered, checks language,
+' imports data and metadata, shows report.
 ' @param sourceWkb Workbook. The linelist workbook.
 ' @param trads TranslationObject. Translations for messages.
-' @param pasteAtBottom Boolean. When True, appends data below existing rows.
 Public Sub HandleImportData(ByVal sourceWkb As Workbook, _
-                            ByVal trads As TranslationObject, _
-                            ByVal pasteAtBottom As Boolean)
+                            ByVal trads As TranslationObject)
 
     Dim impObj As LLImporter
     Dim appState As ApplicationState
@@ -22,6 +26,8 @@ Public Sub HandleImportData(ByVal sourceWkb As Workbook, _
     Dim filePath As String
     Dim impwb As Workbook
     Dim actsh As Worksheet
+    Dim pastingRule As Byte
+    Dim pasteAtBottom As Boolean
 
     On Error GoTo ErrHand
 
@@ -37,6 +43,13 @@ Public Sub HandleImportData(ByVal sourceWkb As Workbook, _
         GoTo EndImport
     End If
 
+    ' Ask what happens to the rows this linelist already holds. The question is
+    ' asked before the busy state goes on, so the user answers a live workbook.
+    Set impObj = LLImporter.Create(sourceWkb)
+    pastingRule = PastingRuleFor(impObj, trads)
+    If pastingRule = PASTING_RULE_STOP Then GoTo EndImport
+    pasteAtBottom = (pastingRule = PASTING_RULE_BOTTOM)
+
     ' Busy state
     Set appState = ApplicationState.Create()
     appState.ApplyBusyState suppressEvents:=True, calculateOnSave:=True, _
@@ -47,9 +60,7 @@ Public Sub HandleImportData(ByVal sourceWkb As Workbook, _
     Set impwb = Workbooks.Open(filePath)
     ActiveWindow.WindowState = xlMinimized
 
-    ' Create importer and check language
-    Set impObj = LLImporter.Create(sourceWkb)
-
+    ' Check the import is in the language of this linelist
     If Not impObj.HasSameLanguage(impwb) Then
         If MsgBox(trads.TranslatedValue("MSG_NoLanguage"), _
                   vbExclamation + vbYesNo, _
@@ -103,6 +114,44 @@ ErrHand:
     If Not actsh Is Nothing Then actsh.Activate
     If Not appState Is Nothing Then appState.Restore
 End Sub
+
+
+' @description What an import does with the rows the linelist already holds.
+' A linelist holding no user data takes the import from the first row and the
+' user is asked nothing. A linelist holding data is asked, and the three answers
+' are the three rules: delete everything first, add the import under what is
+' there, or stop.
+'
+' The question used to be asked and the answer used to decide this. The whole
+' decision went away in the restructure and False was passed as a literal
+' instead, so every import blanked the tables and started at row 1. A user with
+' three weeks of entered cases lost them with no warning.
+' @param impObj LLImporter. The importer bound to the linelist.
+' @param trads TranslationObject. Translations for messages.
+' @return Byte. One of the three PASTING_RULE_ values.
+Private Function PastingRuleFor(ByVal impObj As LLImporter, _
+                                ByVal trads As TranslationObject) As Byte
+
+    Dim answer As Long
+
+    If Not impObj.HasData Then
+        PastingRuleFor = PASTING_RULE_EMPTY
+        Exit Function
+    End If
+
+    answer = MsgBox(trads.TranslatedValue("MSG_DeleteForImport"), _
+                    vbExclamation + vbYesNoCancel, _
+                    trads.TranslatedValue("MSG_Imports"))
+
+    Select Case answer
+    Case vbYes
+        PastingRuleFor = PASTING_RULE_EMPTY
+    Case vbNo
+        PastingRuleFor = PASTING_RULE_BOTTOM
+    Case Else
+        PastingRuleFor = PASTING_RULE_STOP
+    End Select
+End Function
 
 
 ' @description Import a geobase from an external workbook.
