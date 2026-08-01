@@ -225,7 +225,7 @@ End Function
 Public Sub SetHidden(ByVal position As Long, ByVal hidden As Boolean)
     If position < 1 Then Exit Sub
 
-    Unlock
+    UnprotectSheet
     On Error Resume Next
     If this.axis = ShowHideAxisRow Then
         this.sh.Rows(position).Hidden = hidden
@@ -234,7 +234,7 @@ Public Sub SetHidden(ByVal position As Long, ByVal hidden As Boolean)
     End If
     If Err.Number <> 0 Then this.failures = this.failures + 1
     On Error GoTo 0
-    Relock
+    ReprotectSheet
 End Sub
 
 
@@ -277,7 +277,7 @@ Public Sub SetSize(ByVal position As Long, ByVal newSize As Double)
     If position < 1 Then Exit Sub
     If newSize <= 0 Then Exit Sub
 
-    Unlock
+    UnprotectSheet
     On Error Resume Next
     If this.axis = ShowHideAxisRow Then
         this.sh.Rows(position).RowHeight = newSize
@@ -286,7 +286,7 @@ Public Sub SetSize(ByVal position As Long, ByVal newSize As Double)
     End If
     If Err.Number <> 0 Then this.failures = this.failures + 1
     On Error GoTo 0
-    Relock
+    ReprotectSheet
 End Sub
 
 '@label:size-when-shown
@@ -364,7 +364,7 @@ Public Sub SetOrientation(ByVal position As Long, ByVal vertical As Boolean)
     Set headerCell = PrintHeaderCell(position)
     If headerCell Is Nothing Then Exit Sub
 
-    Unlock
+    UnprotectSheet
     On Error Resume Next
     If vertical Then
         headerCell.Orientation = 90
@@ -375,7 +375,7 @@ Public Sub SetOrientation(ByVal position As Long, ByVal vertical As Boolean)
     End If
     If Err.Number <> 0 Then this.failures = this.failures + 1
     On Error GoTo 0
-    Relock
+    ReprotectSheet
 End Sub
 
 
@@ -390,14 +390,14 @@ End Sub
 'once instead of once per position. Every BeginBatch needs its EndBatch.
 '@export
 Public Sub BeginBatch()
-    Unlock
+    UnprotectSheet
 End Sub
 
 '@label:end-batch
 '@sub-title Close the bracket BeginBatch opened
 '@export
 Public Sub EndBatch()
-    Relock
+    ReprotectSheet
 End Sub
 
 
@@ -443,9 +443,12 @@ Private Function PrintHeaderCell(ByVal position As Long) As Range
     On Error GoTo 0
 End Function
 
-'@label:unlock
+'@label:unprotect-sheet
 '@sub-title Unprotect the sheet, counting how deep the bracket is
-Private Sub Unlock()
+'@details
+'Not called Unlock. Lock and Unlock are VBA file statements, so a line holding
+'nothing but the word Unlock is read as one of those and the compile breaks.
+Private Sub UnprotectSheet()
     this.lockDepth = this.lockDepth + 1
     If this.lockDepth > 1 Then Exit Sub
     If this.pass Is Nothing Then Exit Sub
@@ -455,9 +458,9 @@ Private Sub Unlock()
     On Error GoTo 0
 End Sub
 
-'@label:relock
+'@label:reprotect-sheet
 '@sub-title Protect the sheet once the outermost bracket closes
-Private Sub Relock()
+Private Sub ReprotectSheet()
     this.lockDepth = this.lockDepth - 1
     If this.lockDepth > 0 Then Exit Sub
 
