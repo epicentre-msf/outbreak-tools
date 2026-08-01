@@ -6,6 +6,12 @@ Attribute VB_Name = "FormLogicExportMig"
 
 Option Explicit
 
+' The three boxes below used to be built from MSG_Export, MSG_ExportSuccess and
+' MSG_ExportGeoSuccess. None of the three is in either translation workbook and
+' TranslateTag answers the tag itself on a miss, so the user read the raw key.
+' MSG_FileSaved is in the linelist message table in five languages, and the path
+' the export answered is what the user actually needs.
+
 
 ' @description Export all data for migration to another linelist.
 ' Shows a folder picker, creates the migration export, and handles errors.
@@ -22,6 +28,7 @@ Public Sub HandleMigrationExport(ByVal sourceWkb As Workbook, _
     Dim appState As ApplicationState
     Dim io As OSFiles
     Dim folderPath As String
+    Dim filePath As String
 
     On Error GoTo ErrHand
 
@@ -38,12 +45,12 @@ Public Sub HandleMigrationExport(ByVal sourceWkb As Workbook, _
 
     ' Export
     Set exporter = LLExporter.Create(sourceWkb)
-    exporter.ExportMigration folderPath, includeShowHide, keepLabels
+    filePath = exporter.ExportMigration(folderPath, includeShowHide, keepLabels)
 
     appState.Restore
 
-    MsgBox trads.TranslatedValue("MSG_ExportSuccess"), _
-           vbOKOnly + vbInformation, trads.TranslatedValue("MSG_Export")
+    MsgBox filePath, vbOKOnly + vbInformation, _
+           trads.TranslatedValue("MSG_FileSaved")
     Exit Sub
 
 ErrHand:
@@ -66,6 +73,7 @@ Public Sub HandleAnalysisExport(ByVal sourceWkb As Workbook, _
     Dim appState As ApplicationState
     Dim io As OSFiles
     Dim folderPath As String
+    Dim filePath As String
 
     On Error GoTo ErrHand
 
@@ -79,12 +87,12 @@ Public Sub HandleAnalysisExport(ByVal sourceWkb As Workbook, _
                             busyCursor:=xlWait, blockSecurity:=False
 
     Set exporter = LLExporter.Create(sourceWkb)
-    exporter.ExportAnalysis folderPath
+    filePath = exporter.ExportAnalysis(folderPath)
 
     appState.Restore
 
-    MsgBox trads.TranslatedValue("MSG_ExportSuccess"), _
-           vbOKOnly + vbInformation, trads.TranslatedValue("MSG_Export")
+    MsgBox filePath, vbOKOnly + vbInformation, _
+           trads.TranslatedValue("MSG_FileSaved")
     Exit Sub
 
 ErrHand:
@@ -109,6 +117,7 @@ Public Sub HandleGeoExport(ByVal sourceWkb As Workbook, _
     Dim appState As ApplicationState
     Dim io As OSFiles
     Dim folderPath As String
+    Dim filePath As String
 
     On Error GoTo ErrHand
 
@@ -122,12 +131,12 @@ Public Sub HandleGeoExport(ByVal sourceWkb As Workbook, _
                             busyCursor:=xlWait, blockSecurity:=False
 
     Set exporter = LLExporter.Create(sourceWkb)
-    exporter.ExportGeo folderPath, onlyHistoric
+    filePath = exporter.ExportGeo(folderPath, onlyHistoric)
 
     appState.Restore
 
-    MsgBox trads.TranslatedValue("MSG_ExportGeoSuccess"), _
-           vbOKOnly + vbInformation, trads.TranslatedValue("MSG_Export")
+    MsgBox filePath, vbOKOnly + vbInformation, _
+           trads.TranslatedValue("MSG_FileSaved")
     Exit Sub
 
 ErrHand:

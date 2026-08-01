@@ -189,8 +189,8 @@ End Sub
 '@details
 'Prompts the user to select a folder via OSFiles, applies busy state,
 'optionally confirms filter usage via MsgBox, then delegates to
-'LLExporter.ExportCustom. On error, displays a translated error message
-'and closes any orphaned output workbook.
+'LLExporter.ExportCustom and tells the user where the file went. On error,
+'displays a translated error message and closes any orphaned output workbook.
 Private Sub RunExport()
 
     Dim exporter As LLExporter
@@ -231,6 +231,8 @@ Private Sub RunExport()
     filePath = exporter.ExportCustom(ExportNumber, folderPath, useFilt)
 
     appState.Restore
+
+    ReportSavedFile filePath, exporter.LastExportPassword
     Exit Sub
 
 ErrHand:
@@ -262,6 +264,37 @@ End Function
 Private Function TranslatedValue(ByVal msgCode As String) As String
     TranslatedValue = this.trads.TranslatedValue(msgCode)
 End Function
+
+'@label:report-saved-file
+'@sub-title Tell the user where the file went and what opens it
+'@details
+'A password-protected export is encrypted with the linelist private key, and
+'that key sits in a very hidden worksheet. A user who is not told it here has
+'no way back to the file, and neither has the colleague they send it to. The
+'key is one value for the whole workbook, so every password-protected export
+'from this linelist shares it and generating a new key changes it for all of
+'them.
+'
+'Nothing is shown when the export answered no path, which is what a mode that
+'stopped early returns.
+'@param filePath String. The saved file path.
+'@param password String. The password applied to the file, or vbNullString.
+Private Sub ReportSavedFile(ByVal filePath As String, ByVal password As String)
+
+    Dim message As String
+
+    If LenB(filePath) = 0 Then Exit Sub
+
+    message = filePath & vbNewLine & vbNewLine
+
+    If LenB(password) > 0 Then
+        message = message & TranslatedValue("MSG_Password") & " " & password
+    Else
+        message = message & TranslatedValue("MSG_NoPassword")
+    End If
+
+    MsgBox message, vbOKOnly + vbInformation, TranslatedValue("MSG_FileSaved")
+End Sub
 
 '@label:update-filtered-data
 '@sub-title Sync filtered data sheets before a filtered export
@@ -328,8 +361,10 @@ Private Sub UpdateFilteredData()
     Exit Sub
 
 ErrUpdate:
-    MsgBox TranslatedValue("MSG_ErrUpdate") & ": " & Err.Description, _
-           vbCritical + vbOKOnly
+    'MSG_ErrUpdate is in neither translation workbook, and TranslateTag answers
+    'the tag itself on a miss, so this box used to show the raw key.
+    MsgBox TranslatedValue("MSG_ErrExportData") & ": " & Err.Description, _
+           vbCritical + vbOKOnly, TranslatedValue("MSG_Error")
 End Sub
 
 '@label:throw-error
