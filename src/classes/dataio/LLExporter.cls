@@ -261,7 +261,13 @@ Public Function ExportCustom(ByVal exportNumber As Long, _
     Set outwb = CreateOutputWorkbook()
     firstSheetName = outwb.Worksheets(1).Name
 
-    ' Add metadata if configured
+    ' Add metadata if configured. One flag decides the whole metadata set:
+    ' "export metadata sheets = yes" ships the Metadata, Choices, Translations
+    ' and Dictionary worksheets AND the show/hide sheet, so the tags the file
+    ' carries describe what is really in it. Owner decision, 2026-08-01.
+    ' AddShowHide used to run from ExportMigration alone while the tag was
+    ' written True here, so every custom export promised a show_hide__ sheet it
+    ' had no copy of.
     withMetadata = (expObj.ColumnValue(exportNumber, "export metadata sheets") = "yes")
     If withMetadata Then
         AddMetadataSheets outwb, dict, nbExp
@@ -269,6 +275,7 @@ Public Function ExportCustom(ByVal exportNumber As Long, _
         AddDictionary outwb, dict, nbExp, expName, excluded
         AddMetadataTags outwb, ExportScopeCustom, exportNumber, _
                         includeShowHide:=True, keepLabels:=True
+        AddShowHide outwb
         prevSheetName = METADATASHEET
     Else
         prevSheetName = firstSheetName
@@ -1090,7 +1097,9 @@ Private Sub AddShowHide(ByVal outwb As Workbook)
     nbExp = ExportObject().NumberOfExports()
     Set dict = SourceDictionary(nbExp)
 
-    outwb.Worksheets.Add(outwb.Worksheets(outwb.Worksheets.count)).Name = SHOWHIDESHEET
+    'The first positional argument of Worksheets.Add is Before, so this used to
+    'put the sheet in front of the last one while reading as "after".
+    outwb.Worksheets.Add(After:=outwb.Worksheets(outwb.Worksheets.count)).Name = SHOWHIDESHEET
     Set outsh = outwb.Worksheets(SHOWHIDESHEET)
     Set outStore = ShowHideStore.CreateOnSheet(outsh)
 
@@ -1395,7 +1404,7 @@ Private Sub AddDataSheets(ByVal outwb As Workbook, ByVal expDict As LLdictionary
             End If
 
         Case "VList"
-            ExportVListData inpsh, outsh, headersList, useLabels, startLine
+            ExportVListData inpsh, outsh, headersList, useLabels
 
         End Select
 
@@ -1406,31 +1415,45 @@ End Sub
 '@label:export-vlist-data
 '@sub-title Export VList data (variable/value pairs) to the output sheet
 '@details
-'Writes variable names and their values as rows. When useLabels is True,
-'replaces variable names with their labels.
+'Writes one row per variable: the variable name in column A, its label beside it
+'when the header format asks for labels, then the value.
+'
+'THE THREE HEADER FORMATS ON A VLIST SHEET
+'-------------------------------------------------------------------------------
+'Owner decision, 2026-08-01: the shape is `variable | label | value`, and the
+'label column is written in the two label formats alone.
+'
+'What it replaces was wrong in two ways at once. The data start ROW was fed into
+'a column index, so the `variable names + variable labels` format wrote the pair
+'into columns B and C and left column A empty; and in the same format the
+'variable name was overwritten by the label, so the file carried no variable
+'names at all. `LLImporter.ImportVListSheet` resolves each row through
+'`currsh.Range(varName)`, so every row of such a file landed in "not imported".
+'Column A now always holds the variable name, whatever the format.
 '@param inpsh Worksheet. The source VList worksheet.
 '@param outsh Worksheet. The output worksheet.
 '@param headersList BetterArray. Variable names to export.
-'@param useLabels Boolean. When True, writes labels instead of variable names.
-'@param startLine Long. Column offset for data start.
+'@param useLabels Boolean. When True, writes a label column beside the names.
 Private Sub ExportVListData(ByVal inpsh As Worksheet, ByVal outsh As Worksheet, _
                             ByVal headersList As BetterArray, _
-                            ByVal useLabels As Boolean, ByVal startLine As Long)
+                            ByVal useLabels As Boolean)
 
     Dim varName As String
     Dim varValue As String
     Dim varLabel As String
     Dim counter As Long
-    Dim headerCounter As Long
-    Dim startCol As Long
+    Dim outputRow As Long
+    Dim valueColumn As Long
 
     outsh.Cells.Clear
-    startCol = IIf(startLine > 1, startLine, 1)
 
-    outsh.Cells(1, startCol).Value = "variable"
-    outsh.Cells(1, startCol + 1).Value = "value"
+    valueColumn = IIf(useLabels, 3, 2)
 
-    headerCounter = 2
+    outsh.Cells(1, 1).Value = "variable"
+    If useLabels Then outsh.Cells(1, 2).Value = "label"
+    outsh.Cells(1, valueColumn).Value = "value"
+
+    outputRow = 2
 
     For counter = headersList.LowerBound To headersList.UpperBound
         varName = headersList.Item(counter)
@@ -1442,11 +1465,11 @@ Private Sub ExportVListData(ByVal inpsh As Worksheet, ByVal outsh As Worksheet, 
         varLabel = CStr(inpsh.Range(varName).Offset(, -1).Value)
         On Error GoTo 0
 
-        outsh.Cells(headerCounter, startCol).Value = varName
-        outsh.Cells(headerCounter, startCol + 1).Value = varValue
-        If useLabels Then outsh.Cells(headerCounter, startCol).Value = varLabel
+        outsh.Cells(outputRow, 1).Value = varName
+        If useLabels Then outsh.Cells(outputRow, 2).Value = varLabel
+        outsh.Cells(outputRow, valueColumn).Value = varValue
 
-        headerCounter = headerCounter + 1
+        outputRow = outputRow + 1
     Next counter
 End Sub
 
