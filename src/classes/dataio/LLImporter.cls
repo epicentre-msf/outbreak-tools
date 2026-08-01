@@ -690,10 +690,19 @@ End Sub
 '@label:import-single-values
 '@sub-title Import single metadata values from a migration workbook
 '@details
-'Reads the epiweek start value from the import workbook Metadata sheet
-'and updates the RNG_EpiWeekStart named range in the source workbook.
-'Silently skips when HasSameLanguage returned False or the Metadata
-'sheet is missing.
+'Reads the epiweek start value from the import workbook Metadata sheet and
+'writes it into the RNG_EpiWeekStart hidden name of the source workbook, then
+'recalculates every sheet that carries an epiweek formula. Silently skips when
+'HasSameLanguage returned False or the Metadata sheet is missing.
+'
+'THE NAME HAS NO RANGE BEHIND IT
+'-------------------------------------------------------------------------------
+'RNG_EpiWeekStart is a HiddenNames entry and HiddenNames writes a string as a
+'quoted literal in the name definition. So the name exists, Names(...) finds it,
+'and asking that name for a range raises 1004. The write used to go through
+'Names(RNG_EpiWeekStart).RefersToRange.Value under a swallow, which means the
+'value has never once landed. The store is what answers it, the same way
+'FormLogicEpiWeek and CustomLinelistFunctions already read and write it.
 '@param impwb Workbook. The opened migration workbook.
 '@export
 Public Sub ImportSingleValues(ByVal impwb As Workbook)
@@ -701,6 +710,7 @@ Public Sub ImportSingleValues(ByVal impwb As Workbook)
     Dim metaTab As DataSheet
     Dim varRng As Range
     Dim cellRng As Range
+    Dim wkbNames As HiddenNames
     Dim varValue As String
 
     If Not this.hasSameLanguage Then Exit Sub
@@ -716,11 +726,37 @@ Public Sub ImportSingleValues(ByVal impwb As Workbook)
     varValue = CStr(cellRng.Offset(, 1).Value)
     On Error GoTo 0
 
-    If LenB(varValue) > 0 Then
-        On Error Resume Next
-        this.sourceWkb.Names(RNGEPIWEEKSTART).RefersToRange.Value = varValue
-        On Error GoTo 0
-    End If
+    If LenB(varValue) = 0 Then Exit Sub
+
+    Set wkbNames = HiddenNames.Create(this.sourceWkb)
+    wkbNames.SetValue RNGEPIWEEKSTART, varValue
+
+    RecalculateEpiWeekSheets
+End Sub
+
+'@label:recalculate-epi-week-sheets
+'@sub-title Recompute every sheet whose formulas read the epiweek start
+'@details
+'Each epiweek formula in the workbook reads RNG_EpiWeekStart, so changing that
+'value leaves every one of them showing the old week until the sheet is
+'recalculated. FormLogicEpiWeek does the same after the user picks a day, and
+'this is the same list of sheet tags.
+Private Sub RecalculateEpiWeekSheets()
+
+    Dim sh As Worksheet
+    Dim tagValues As BetterArray
+
+    Set tagValues = New BetterArray
+    tagValues.Push "HList", "VList", "TS-Analysis", "SP-Analysis", _
+                   "Uni-Bi-Analysis", "SPT-Analysis"
+
+    For Each sh In this.sourceWkb.Worksheets
+        If tagValues.Includes(SheetTagOf(sh)) Then
+            On Error Resume Next
+            sh.UsedRange.Calculate
+            On Error GoTo 0
+        End If
+    Next sh
 End Sub
 
 '@label:import-geobase
