@@ -962,15 +962,18 @@ End Sub
 '@sub-title Transfer all VBA code components to the output workbook
 '@details
 'Moves the VBA the generated linelist runs on, in five steps:
-'1. 27 class modules. ChoiceKeys and ImportMetadata joined the list with the
-'   import work: LLExporter types the first and LLImporter types both, so a
-'   linelist without them fails project compilation.
-'2. 8 standard modules. Four carry the linelist toolbar and its helpers, and
+'1. 28 class modules. ChoiceKeys, ImportMetadata and CheckingOutput joined the
+'   list with the import work: LLExporter types the first, LLImporter types the
+'   first two, and ImportChecking types the third, so a linelist without them
+'   fails project compilation.
+'2. 9 standard modules. Five carry the linelist toolbar and its helpers, and
 '   four hold the code behind the user forms: FormLogicAdvanced,
 '   FormLogicExportMig, FormLogicExport and FormLogicEpiWeek. Those four are the
 '   only ones of the nine linelistform modules that export a Public procedure,
 '   and EventsLinelistButtons calls three of them, so a linelist without them
 '   fails project compilation on the first line of VBA that runs in it.
+'   ImportChecking is the fifth of the first group and FormLogicAdvanced calls
+'   it.
 '3. The ribbon module. A template workbook already carries EventsLinelistRibbon,
 '   so its code text is overwritten; otherwise the module is imported.
 '4. 9 user forms.
@@ -992,7 +995,7 @@ Private Sub TransferAllCode(ByVal codeTransfer As CodeTransfer, _
 
     Set codesList = New BetterArray
 
-    'Transfer classes (27 classes)
+    'Transfer classes (28 classes)
     codesList.Push "BetterArray", "DataSheet", "LLExport", _
                    "LLChoices", _
                    "LLdictionary", "LLGeo", _
@@ -1008,6 +1011,7 @@ Private Sub TransferAllCode(ByVal codeTransfer As CodeTransfer, _
                    "LLExporter", _
                     "LLImporter", _
                    "ChoiceKeys", "ImportMetadata", _
+                   "CheckingOutput", _
                    "Graphs", "AnaTabIds", _
                    "ExportButton", _
                    "HiddenNames", _
@@ -1019,11 +1023,11 @@ Private Sub TransferAllCode(ByVal codeTransfer As CodeTransfer, _
         codeTransfer.TransferClass codeName
     Next
 
-    'Transfer modules (8 modules, plus the ribbon just below)
+    'Transfer modules (9 modules, plus the ribbon just below)
     codesList.Clear
     codesList.Push "CustomLinelistFunctions", _
                    "GeoModule", "LinelistEventsManager", _
-                   "EventsLinelistButtons", _
+                   "EventsLinelistButtons", "ImportChecking", _
                    "FormLogicAdvanced", "FormLogicExportMig", _
                    "FormLogicExport", "FormLogicEpiWeek"
 

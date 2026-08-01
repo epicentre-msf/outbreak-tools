@@ -62,8 +62,9 @@ Public Sub HandleImportData(ByVal sourceWkb As Workbook, _
     Set impwb = Workbooks.Open(filePath)
     ActiveWindow.WindowState = xlMinimized
 
-    ' Read what the file says about itself, once
+    ' Read what the file says about itself, once, and read the file over
     Set meta = ImportMetadata.Create(impwb)
+    If Not impObj.CheckImportFile(impwb, meta) Then GoTo RefusedImport
 
     ' Check the import is in the language of this linelist
     sameLanguage = impObj.HasSameLanguage(meta)
@@ -74,6 +75,7 @@ Public Sub HandleImportData(ByVal sourceWkb As Workbook, _
     ' Import all data
     impObj.ImportData impwb, pasteAtBottom, meta
     impObj.ImportCustomDropdown impwb, pasteAtBottom
+    impObj.CompareWithImportFile impwb
     impObj.FinalizeReport
 
     ' Import migration metadata. These three read the file's own dictionary and
@@ -99,6 +101,23 @@ Public Sub HandleImportData(ByVal sourceWkb As Workbook, _
         MsgBox trads.TranslatedValue("MSG_FinishImport"), _
                vbOKOnly, trads.TranslatedValue("MSG_Imports")
     End If
+
+    ' Everything the import found, on one worksheet the user can close
+    ImportChecking.ShowImportCheckings sourceWkb, impObj.CheckingValues
+    Exit Sub
+
+RefusedImport:
+    ' The file cannot be read at all. The reason is on the checking worksheet,
+    ' because it is too long for a message box and it names what to do about it.
+    On Error Resume Next
+    If Not impwb Is Nothing Then impwb.Close savechanges:=False
+    Set impwb = Nothing
+    If Not actsh Is Nothing Then actsh.Activate
+    If Not appState Is Nothing Then appState.Restore
+    On Error GoTo 0
+    MsgBox trads.TranslatedValue("MSG_AbortImport"), _
+           vbExclamation + vbOKOnly, trads.TranslatedValue("MSG_Imports")
+    ImportChecking.ShowImportCheckings sourceWkb, impObj.CheckingValues
     Exit Sub
 
 EndImport:

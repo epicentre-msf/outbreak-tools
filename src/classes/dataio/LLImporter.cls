@@ -26,6 +26,7 @@ Option Explicit
 '@depends LLdictionary, Passwords, CustomTable, DataSheet
 '@depends LLGeo, LLChoices, LLVariables, DropdownLists, HiddenNames
 '@depends ShowHide, ShowHideLayout, ShowHideStore, ChoiceKeys, ImportMetadata
+'@depends Checking, BetterArray
 
 
 '@section Enumerations
@@ -73,6 +74,8 @@ Private Type TLLImporter
     ' Tracking
     importedSheets As BetterArray
     importedVars As BetterArray
+    ' Diagnostics
+    checkings As Checking
     sealed As Boolean
 End Type
 
@@ -135,6 +138,62 @@ End Sub
 Private Sub GuardNotSealed(ByVal propName As String)
     If this.sealed Then _
         ThrowError propName & " is set at creation only"
+End Sub
+
+
+'@section Diagnostics
+'===============================================================================
+'@description What the import found and what it decided to skip. Every entry is
+'in English and the worksheet the caller writes them to is what the user reads.
+
+'@label:has-checkings
+'@prop-title Whether the import filed anything worth reading
+'@return Boolean. True when at least one entry was filed.
+'@export
+Public Property Get HasCheckings() As Boolean
+    If this.checkings Is Nothing Then Exit Property
+    HasCheckings = (this.checkings.Length > 0)
+End Property
+
+'@label:checking-values
+'@prop-title The entries the import filed
+'@return Checking. The store, ready to hand to a CheckingOutput.
+'@export
+Public Property Get CheckingValues() As Checking
+    Set CheckingValues = ImportCheckings()
+End Property
+
+'@label:import-checkings
+'@sub-title The checking store, built on first use
+'@return Checking. The store this import files into.
+Private Function ImportCheckings() As Checking
+    If this.checkings Is Nothing Then _
+        Set this.checkings = Checking.Create("Import report", "What the import found")
+    Set ImportCheckings = this.checkings
+End Function
+
+'@label:file-checking
+'@sub-title File one entry, and never raise on a key already used
+'@details
+'Checking.Add raises on a key it already holds. An import walks a dictionary,
+'so a key built from a variable name can repeat when the same variable is on two
+'sheets. The counter suffix keeps every entry and keeps the key unique.
+'@param keyName String. The key of the entry.
+'@param label String. What to tell the user.
+'@param scope Byte. A CheckingScope value.
+Private Sub FileChecking(ByVal keyName As String, ByVal label As String, _
+                         ByVal scope As Byte)
+
+    Dim uniqueKey As String
+    Dim counter As Long
+
+    uniqueKey = keyName
+    Do While ImportCheckings().KeyExists(uniqueKey)
+        counter = counter + 1
+        uniqueKey = keyName & " (" & CStr(counter) & ")"
+    Loop
+
+    ImportCheckings().Add uniqueKey, label, scope
 End Sub
 
 
@@ -216,6 +275,85 @@ Public Function HasSameLanguage(ByVal meta As ImportMetadata) As Boolean
     If LenB(impLang) = 0 Then Exit Function
 
     HasSameLanguage = (StrComp(impLang, CurrentLanguage, vbTextCompare) = 0)
+End Function
+
+
+'@label:check-import-file
+'@sub-title Read the file over before importing it, and file what is wrong
+'@details
+'Every worksheet an export is supposed to carry is looked for, and the export
+'options are read. The dictionary and the choices are errors when they are
+'absent, because the labels and the category lists cannot be compared without
+'them; the other metadata sheets are warnings, because the data still lands.
+'
+'ONE THING STOPS AN IMPORT
+'-------------------------------------------------------------------------------
+'A custom export written with the labels as its header row carries no variable
+'name anywhere, so no column of it can be matched to a column of this linelist.
+'Every row of such a file used to land in "not imported" with nothing said. It
+'is refused here, with the reason.
+'@param impwb Workbook. The opened import workbook.
+'@param meta ImportMetadata. What that workbook says about itself.
+'@return Boolean. True when the import may go on.
+'@export
+Public Function CheckImportFile(ByVal impwb As Workbook, _
+                                ByVal meta As ImportMetadata) As Boolean
+
+    CheckImportFile = True
+
+    If Not meta.Exists Then
+        FileChecking "metadata sheet", _
+                     "The file carries no Metadata worksheet, so nothing is " & _
+                     "known about how it was written. It is read as a file " & _
+                     "with the variable names on the first row.", _
+                     checkingWarning
+    End If
+
+    If Not SheetExists(impwb, DICTIONARYSHEET) Then
+        FileChecking "dictionary sheet", _
+                     "The file carries no Dictionary worksheet. The labels and " & _
+                     "the choice lists of this linelist cannot be compared with " & _
+                     "the ones the file was written from.", _
+                     checkingError
+    End If
+
+    If Not SheetExists(impwb, CHOICESSHEET) Then
+        FileChecking "choices sheet", _
+                     "The file carries no Choices worksheet. The custom " & _
+                     "dropdowns are left as they are and the category lists " & _
+                     "cannot be compared.", _
+                     checkingError
+    End If
+
+    If Not SheetExists(impwb, SHOWHIDESHEET) Then
+        FileChecking "show hide sheet", _
+                     "The file carries no show_hide__ worksheet, so the " & _
+                     "hidden and shown state of this linelist is left as it is.", _
+                     checkingWarning
+    End If
+
+    If Not SheetExists(impwb, LINELISTTRANSLATIONSHEET) Then
+        FileChecking "linelist translation sheet", _
+                     "The file carries no LinelistTranslation worksheet.", _
+                     checkingWarning
+    End If
+
+    If Not SheetExists(impwb, DICTTRANSLATIONSHEET) Then
+        FileChecking "dictionary translation sheet", _
+                     "The file carries no Translations worksheet.", _
+                     checkingWarning
+    End If
+
+    If Not meta.CarriesVariableNames Then
+        FileChecking "header row", _
+                     "This file was exported with the variable labels as its " & _
+                     "header row (" & meta.ExportType & "), so it carries no " & _
+                     "variable name at all and no column of it can be matched " & _
+                     "to a column of this linelist. Export it again with a " & _
+                     "header format that keeps the variable names.", _
+                     checkingError
+        CheckImportFile = False
+    End If
 End Function
 
 
@@ -373,27 +511,26 @@ End Sub
 '@export
 Public Sub ImportCustomDropdown(ByVal impwb As Workbook, ByVal pasteAtBottom As Boolean)
 
-    Dim wkbNames As HiddenNames
     Dim choi As LLChoices
     Dim drop As DropdownLists
     Dim keys As ChoiceKeys
-    Dim dropsh As Worksheet
     Dim dropNames As BetterArray
     Dim updateData As BetterArray
     Dim listName As String
     Dim counter As Long
 
-    If Not SheetExists(impwb, CHOICESSHEET) Then Exit Sub
+    If Not SheetExists(impwb, CHOICESSHEET) Then
+        FileChecking "custom dropdowns", _
+                     "The file carries no Choices worksheet, so the custom " & _
+                     "dropdowns of this linelist are left as they are.", _
+                     checkingWarning
+        Exit Sub
+    End If
 
-    Set wkbNames = HiddenNames.Create(this.sourceWkb)
-
-    On Error Resume Next
-    Set dropsh = this.sourceWkb.Worksheets(wkbNames.ValueAsString("RNG_CustomDrop"))
-    On Error GoTo 0
-    If dropsh Is Nothing Then Exit Sub
+    Set drop = CustomDropdowns()
+    If drop Is Nothing Then Exit Sub
 
     Set choi = LLChoices.Create(impwb.Worksheets(CHOICESSHEET), 1, 1)
-    Set drop = DropdownLists.Create(dropsh, vbNullString)
     Set keys = ChoiceKeys.Create()
     Set dropNames = drop.AllDropdowns
 
@@ -755,6 +892,291 @@ Public Sub ImportGeobase(ByVal impwb As Workbook, Optional ByVal histoOnly As Bo
 End Sub
 
 
+'@section Comparing the two files
+'===============================================================================
+
+'@label:compare-with-import-file
+'@sub-title Compare the labels and the choice lists of the two files
+'@details
+'Walks the dictionary of this linelist and, for every variable the file also
+'carries, files a warning when the two disagree about the label or about the
+'values a choice variable may take.
+'
+'WHY THE CHOICE LISTS MATTER MORE THAN THE LABELS
+'-------------------------------------------------------------------------------
+'A data validation dropdown does not block a programmatic write. CustomTable
+'writes the imported column straight into the cells, so a value the receiving
+'linelist does not offer lands in the cell and stays there: the cell shows
+'something no dropdown can produce, the next hand edit of it is rejected, and
+'every analysis grouping by that variable gains a category the setup never
+'declared. None of that used to appear anywhere.
+'
+'Run this after ImportData, so the sheets that were touched are known.
+'@param impwb Workbook. The opened import workbook.
+'@export
+Public Sub CompareWithImportFile(ByVal impwb As Workbook)
+
+    Dim inpDict As LLdictionary
+    Dim currVars As LLVariables
+    Dim inpVars As LLVariables
+    Dim currChoi As LLChoices
+    Dim impChoi As LLChoices
+    Dim drop As DropdownLists
+    Dim varNames As BetterArray
+    Dim varName As String
+    Dim counter As Long
+
+    If Not SheetExists(impwb, DICTIONARYSHEET) Then Exit Sub
+
+    Set inpDict = LLdictionary.Create(impwb.Worksheets(DICTIONARYSHEET), 1, 1)
+    If Not inpDict.Prepared Then
+        FileChecking "import dictionary", _
+                     "The Dictionary worksheet of the file has never been " & _
+                     "prepared, so the labels and the choice lists of the two " & _
+                     "files cannot be compared.", _
+                     checkingWarning
+        Exit Sub
+    End If
+
+    Set currVars = LLVariables.Create(SourceDictionary())
+    Set inpVars = LLVariables.Create(inpDict)
+    Set varNames = currVars.VariableNames()
+
+    Set currChoi = ChoicesOf(this.sourceWkb)
+    Set impChoi = ChoicesOf(impwb)
+    Set drop = CustomDropdowns()
+
+    For counter = varNames.LowerBound To varNames.UpperBound
+        varName = CStr(varNames.Item(counter))
+
+        If inpVars.Contains(varName) Then
+            If SheetWasImported(currVars.SheetName(varName)) Then
+                CompareOneLabel currVars, inpVars, varName
+                CompareOneChoiceList currVars, inpVars, currChoi, impChoi, drop, varName
+            End If
+        End If
+    Next counter
+End Sub
+
+'@label:sheet-was-imported
+'@sub-title Whether one sheet of this linelist took data from the file
+'@details
+'A comparison run on its own, with no import before it, has no list of touched
+'sheets and answers True for every sheet.
+'@param sheetName String. The sheet to test.
+'@return Boolean. True when the sheet is worth comparing.
+Private Function SheetWasImported(ByVal sheetName As String) As Boolean
+    If this.importedSheets Is Nothing Then
+        SheetWasImported = True
+        Exit Function
+    End If
+    If this.importedSheets.Length = 0 Then
+        SheetWasImported = True
+        Exit Function
+    End If
+
+    SheetWasImported = this.importedSheets.Includes(sheetName)
+End Function
+
+'@label:compare-one-label
+'@sub-title File a warning when the two files give a variable different labels
+'@param currVars LLVariables. The variables of this linelist.
+'@param inpVars LLVariables. The variables of the file.
+'@param varName String. The variable to compare.
+Private Sub CompareOneLabel(ByVal currVars As LLVariables, _
+                            ByVal inpVars As LLVariables, _
+                            ByVal varName As String)
+
+    Dim currLabel As String
+    Dim impLabel As String
+
+    currLabel = currVars.Value(colName:="main label", varName:=varName)
+    impLabel = inpVars.Value(colName:="main label", varName:=varName)
+
+    If LenB(impLabel) = 0 Then Exit Sub
+    If StrComp(Trim$(currLabel), Trim$(impLabel), vbBinaryCompare) = 0 Then Exit Sub
+
+    FileChecking "label of " & varName, _
+                 "The label of " & varName & " differs. This linelist reads " & _
+                 Chr$(34) & currLabel & Chr$(34) & " and the file was written " & _
+                 "with " & Chr$(34) & impLabel & Chr$(34) & ".", _
+                 checkingWarning
+End Sub
+
+'@label:compare-one-choice-list
+'@sub-title File a warning when the two files offer a choice variable different values
+'@details
+'`choice_formula` is left alone: its list name is computed from a formula and
+'the routine that reads that formula lives in the setup, which a linelist does
+'not carry.
+'@param currVars LLVariables. The variables of this linelist.
+'@param inpVars LLVariables. The variables of the file.
+'@param currChoi LLChoices. The Choices worksheet of this linelist.
+'@param impChoi LLChoices. The Choices worksheet of the file.
+'@param drop DropdownLists. The custom dropdowns of this linelist.
+'@param varName String. The variable to compare.
+Private Sub CompareOneChoiceList(ByVal currVars As LLVariables, _
+                                 ByVal inpVars As LLVariables, _
+                                 ByVal currChoi As LLChoices, _
+                                 ByVal impChoi As LLChoices, _
+                                 ByVal drop As DropdownLists, _
+                                 ByVal varName As String)
+
+    Dim control As String
+    Dim currList As String
+    Dim impList As String
+    Dim currCats As BetterArray
+    Dim impCats As BetterArray
+    Dim keys As ChoiceKeys
+    Dim onlyImport As String
+    Dim onlyCurrent As String
+
+    If impChoi Is Nothing Then Exit Sub
+
+    control = LCase$(Trim$(currVars.ControlType(varName)))
+    If control <> "choice_manual" Then
+        If control <> "choice_multiple" Then
+            If control <> "choice_custom" Then Exit Sub
+        End If
+    End If
+
+    currList = currVars.Value(colName:="control details", varName:=varName)
+    impList = inpVars.Value(colName:="control details", varName:=varName)
+    If LenB(currList) = 0 Then Exit Sub
+    If LenB(impList) = 0 Then Exit Sub
+
+    Set keys = ChoiceKeys.Create()
+
+    If control = "choice_custom" Then
+        ' The values of a custom dropdown live on the dropdown worksheet in this
+        ' linelist and on the Choices worksheet in the file.
+        If drop Is Nothing Then Exit Sub
+        Set currCats = drop.Values(currList)
+        Set impCats = impChoi.Categories(keys.CustomChoiceName(impList))
+    Else
+        If currChoi Is Nothing Then Exit Sub
+        Set currCats = currChoi.Categories(currList)
+        Set impCats = impChoi.Categories(impList)
+    End If
+
+    If currCats.Length = 0 Then Exit Sub
+    If impCats.Length = 0 Then Exit Sub
+
+    onlyImport = ValuesMissingFrom(impCats, currCats)
+    onlyCurrent = ValuesMissingFrom(currCats, impCats)
+
+    If LenB(onlyImport) > 0 Then
+        FileChecking "choices of " & varName, _
+                     "The file offers values for " & varName & " that this " & _
+                     "linelist does not: " & onlyImport & ". Imported rows can " & _
+                     "carry them, and no dropdown of this linelist can produce " & _
+                     "them.", _
+                     checkingWarning
+    End If
+
+    If LenB(onlyCurrent) > 0 Then
+        FileChecking "choices of " & varName & " missing from the file", _
+                     "This linelist offers values for " & varName & " that the " & _
+                     "file does not: " & onlyCurrent & ".", _
+                     checkingWarning
+    End If
+End Sub
+
+'@label:values-missing-from
+'@sub-title The values of one list that the other does not hold
+'@details
+'Values are matched without regard to case and to surrounding spaces, and they
+'are shown as they were written, so "Yes" against "yes" is reported as a
+'difference a person can act on. The list is capped, because a user reads a
+'handful and the count is what tells them the size.
+'@param source BetterArray. The list to walk.
+'@param other BetterArray. The list to look each value up in.
+'@return String. The missing values, joined, empty when there are none.
+Private Function ValuesMissingFrom(ByVal source As BetterArray, _
+                                   ByVal other As BetterArray) As String
+
+    Const MAX_SHOWN As Long = 8
+
+    Dim missing As BetterArray
+    Dim oneValue As String
+    Dim counter As Long
+    Dim shown As Long
+    Dim answer As String
+
+    Set missing = New BetterArray
+    missing.LowerBound = 1
+
+    For counter = source.LowerBound To source.UpperBound
+        oneValue = Trim$(CStr(source.Item(counter)))
+        If LenB(oneValue) > 0 Then
+            If Not HoldsValue(other, oneValue) Then missing.Push oneValue
+        End If
+    Next counter
+
+    If missing.Length = 0 Then Exit Function
+
+    shown = missing.Length
+    If shown > MAX_SHOWN Then shown = MAX_SHOWN
+
+    For counter = missing.LowerBound To missing.LowerBound + shown - 1
+        If LenB(answer) > 0 Then answer = answer & ", "
+        answer = answer & Chr$(34) & CStr(missing.Item(counter)) & Chr$(34)
+    Next counter
+
+    If missing.Length > shown Then
+        answer = answer & " and " & CStr(missing.Length - shown) & " more"
+    End If
+
+    ValuesMissingFrom = answer
+End Function
+
+'@label:holds-value
+'@sub-title Whether a list holds one value, ignoring case and outer spaces
+'@param listValues BetterArray. The list to search.
+'@param oneValue String. The value to look for.
+'@return Boolean. True when the list holds it.
+Private Function HoldsValue(ByVal listValues As BetterArray, _
+                            ByVal oneValue As String) As Boolean
+
+    Dim counter As Long
+
+    For counter = listValues.LowerBound To listValues.UpperBound
+        If StrComp(Trim$(CStr(listValues.Item(counter))), oneValue, vbTextCompare) = 0 Then
+            HoldsValue = True
+            Exit Function
+        End If
+    Next counter
+End Function
+
+'@label:choices-of
+'@sub-title The Choices worksheet of one workbook
+'@param wb Workbook. The workbook to read.
+'@return LLChoices. The choices, or Nothing when the workbook carries none.
+Private Function ChoicesOf(ByVal wb As Workbook) As LLChoices
+    If Not SheetExists(wb, CHOICESSHEET) Then Exit Function
+    Set ChoicesOf = LLChoices.Create(wb.Worksheets(CHOICESSHEET), 1, 1)
+End Function
+
+'@label:custom-dropdowns
+'@sub-title The custom dropdown manager of this linelist
+'@return DropdownLists. The manager, or Nothing when the workbook has no custom
+'  dropdown worksheet.
+Private Function CustomDropdowns() As DropdownLists
+
+    Dim wkbNames As HiddenNames
+    Dim dropsh As Worksheet
+
+    Set wkbNames = HiddenNames.Create(this.sourceWkb)
+
+    On Error Resume Next
+    Set dropsh = this.sourceWkb.Worksheets(wkbNames.ValueAsString("RNG_CustomDrop"))
+    On Error GoTo 0
+    If dropsh Is Nothing Then Exit Function
+
+    Set CustomDropdowns = DropdownLists.Create(dropsh, vbNullString)
+End Function
+
+
 '@section Import Report
 '===============================================================================
 
@@ -830,6 +1252,59 @@ Public Sub FinalizeReport()
 
 NextReportSheet:
     Next counter
+
+    FileReportCheckings
+End Sub
+
+'@label:file-report-checkings
+'@sub-title Put the four report lists where the user can read them
+'@details
+'The four lists are the report the form shows. They are filed as checkings as
+'well, so one worksheet carries everything the import found and the user can
+'read it without opening a form.
+Private Sub FileReportCheckings()
+
+    Dim counter As Long
+    Dim entry As Variant
+
+    If this.sheetsNotImported Is Nothing Then Set this.sheetsNotImported = New BetterArray
+    If this.sheetsNotTouched Is Nothing Then Set this.sheetsNotTouched = New BetterArray
+    If this.varsNotImported Is Nothing Then Set this.varsNotImported = New BetterArray
+    If this.varsNotTouched Is Nothing Then Set this.varsNotTouched = New BetterArray
+
+    For counter = this.sheetsNotImported.LowerBound To this.sheetsNotImported.UpperBound
+        FileChecking "sheet not imported: " & CStr(this.sheetsNotImported.Item(counter)), _
+                     "The file carries a worksheet named " & _
+                     CStr(this.sheetsNotImported.Item(counter)) & _
+                     " and this linelist has none, so none of its data was read.", _
+                     checkingWarning
+    Next counter
+
+    For counter = this.sheetsNotTouched.LowerBound To this.sheetsNotTouched.UpperBound
+        FileChecking "sheet not touched: " & CStr(this.sheetsNotTouched.Item(counter)), _
+                     "The worksheet " & CStr(this.sheetsNotTouched.Item(counter)) & _
+                     " of this linelist took no data, because the file carries " & _
+                     "no worksheet of that name.", _
+                     checkingWarning
+    Next counter
+
+    For counter = this.varsNotImported.LowerBound To this.varsNotImported.UpperBound
+        entry = this.varsNotImported.Item(counter)
+        FileChecking "variable not imported: " & CStr(entry(0)), _
+                     "The file carries a variable named " & CStr(entry(0)) & _
+                     " on " & CStr(entry(1)) & " and this linelist has none, " & _
+                     "so its values were dropped.", _
+                     checkingWarning
+    Next counter
+
+    For counter = this.varsNotTouched.LowerBound To this.varsNotTouched.UpperBound
+        entry = this.varsNotTouched.Item(counter)
+        FileChecking "variable not touched: " & CStr(entry(0)), _
+                     "The variable " & CStr(entry(0)) & " on " & CStr(entry(1)) & _
+                     " took no data, because the file carries no variable of " & _
+                     "that name.", _
+                     checkingWarning
+    Next counter
 End Sub
 
 '@label:report-sheets
@@ -901,8 +1376,9 @@ End Function
 '@label:clear-report
 '@sub-title Reset report state
 '@details
-'Clears all report tracking arrays and resets the needReport flag. Call
-'before starting a new import session to ensure a clean report.
+'Clears all report tracking arrays, drops the diagnostics, and resets the
+'needReport flag. Call before starting a new import session to ensure a clean
+'report.
 '@export
 Public Sub ClearReport()
     this.needReport = False
@@ -912,6 +1388,7 @@ Public Sub ClearReport()
     Set this.varsNotTouched = New BetterArray
     Set this.importedSheets = New BetterArray
     Set this.importedVars = New BetterArray
+    Set this.checkings = Nothing
 End Sub
 
 
@@ -946,6 +1423,10 @@ End Function
 
 '@label:initialize-tracking
 '@sub-title Initialize tracking state for a new import session
+'@details
+'The two "not touched" lists are left alone because FinalizeReport replaces
+'them, and the diagnostics are left alone because CheckImportFile runs before
+'this and its entries belong to the same import.
 Private Sub InitializeTracking()
     this.needReport = False
     Set this.sheetsNotImported = New BetterArray
