@@ -22,9 +22,9 @@ configuration values into a workbook as hidden names.</p>
 T_TradLLShapes the button captions, T_TradLLForms the form labels and
 T_TradLLRibbon the ribbon labels.</p>
 <p>Tab_Translations is the SETUP's translation table, which is a different thing
-from the linelist dictionary. The setup file carries it, the build service
-copies it onto this worksheet while the linelist is being built, and it is
-what translates the dictionary, the choices and the analyses.
+from the linelist dictionary. The setup file carries it, InitTransfer copies it
+onto the linelist's copy of this worksheet while the linelist is being built,
+and it is what translates the dictionary, the choices and the analyses.
 ImportDictionary is the copy in and ExportDictionary the copy out: a data
 export from a linelist carries this table on its own.</p>
 </div>
@@ -155,6 +155,11 @@ other than this class.</p>
 sheet name, then exports every ListObject from the host sheet using
 CustomTable.Export with stacking. Formats the used range and sets the sheet
 visibility to the Hide parameter value.</p>
+<p>Tab_Translations is written LAST, under the other four. InitTransfer
+overwrites it with the setup's own table as soon as the sheet has arrived, and
+CustomTable.Import writes the incoming rows over the cells below the table
+rather than inserting them. Anywhere but the bottom of the stack, a setup
+table with more rows than the designer carries would land on the table below.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>outputWkb</code>: Workbook. The destination workbook.</li>
@@ -201,9 +206,11 @@ worksheet of the host sheet name.</li>
 <p>Overwrites Tab_Translations with the supplied ListObject, which is the
 translation table of the setup file. The host table takes the source column
 headers with keepSourceHeaders, so it comes out carrying the language columns
-the setup carries. LLBuild calls this while the linelist is
-being built, and what lands here is what translates the dictionary, the
-choices and the analyses.</p>
+the setup carries. InitTransfer calls this on the LINELIST's translation
+sheet while the linelist is being built, and what lands here is what
+translates the dictionary, the choices and the analyses. The designer's own
+translation sheet is never written this way: its four linelist tables are
+maintained by hand, through the designer's import button.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>dictionaryTable</code>: ListObject. The setup translation ListObject.</li>
@@ -259,7 +266,7 @@ not found.</li>
 <p>Translates message and sheet-name tags using the TranslationOfMessages
 scope, then writes each translated value as a workbook-level hidden name
 on the target workbook. The three language names are left alone: they are
-written by the build service and by Linelist before this runs.</p>
+written by InitTransfer and by Linelist before this runs.</p>
 <p>When the target workbook is the one holding the translation worksheet, the
 store this instance already carries is used, which saves a second walk over
 the same Names collection.</p>
@@ -457,13 +464,13 @@ names, which is why the two are branches here.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (14 file(s))</summary>
+<summary>Used in (15 file(s))</summary>
 <ul>
 <li><a href="LLExporter.html">LLExporter.cls</a></li>
-<li><a href="LLBuild.html">LLBuild.cls</a></li>
 <li><a href="EventLinelist.html">EventLinelist.cls</a></li>
 <li><a href="Linelist.html">Linelist.cls</a></li>
 <li><a href="LinelistSpecs.html">LinelistSpecs.cls</a></li>
+<li>InitTransfer.bas</li>
 <li>EventsLinelistButtons.bas</li>
 <li>EventsLinelistRibbon.bas</li>
 <li>GeoModule.bas</li>
@@ -472,6 +479,7 @@ names, which is why the two are branches here.</p>
 <li>FormLogicImportRep.bas</li>
 <li>FormLogicShowVarLabels.bas</li>
 <li>TestHelpers.bas</li>
+<li>TestHelpersLite.bas</li>
 <li>TestLLTranslation.bas</li>
 </ul>
 </details>

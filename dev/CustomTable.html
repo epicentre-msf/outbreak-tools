@@ -447,6 +447,21 @@ successful import; logs a diagnostic and exits when no import has
 occurred.</p>
 <p><strong>Returns:</strong> BetterArray. Unmatched column headers, or Nothing.</p>
 <hr />
+<h3 id="exportcolumnsnotfound">ExportColumnsNotFound <a class="anchor-link" href="#exportcolumnsnotfound">#</a></h3>
+<p><em>export-columns-not-found</em></p>
+<p><strong>Headers the last export was asked for and could not write</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get ExportColumnsNotFound() As BetterArray
+</code></pre>
+<p>Export skips a header it cannot resolve against this table and leaves its
+output column where it was, so the block it writes is narrower than the header
+list it was handed. A caller that writes a second row from that same list --
+the label row of a data export is the case -- has to take these entries out
+first, or every label after the first gap sits one column left of its data.</p>
+<p>The array is emptied at the start of every export, so it always describes the
+last one. It is empty when every header matched.</p>
+<p><strong>Returns:</strong> BetterArray. The headers that were skipped.</p>
+<hr />
 <h3 id="hascolumnsnotimported">HasColumnsNotImported <a class="anchor-link" href="#hascolumnsnotimported">#</a></h3>
 <p><em>has-columns-not-imported</em></p>
 <p><strong>Whether the last import had unmatched columns</strong></p>
@@ -1244,6 +1259,7 @@ for consistent stack traces.</p>
 <li><a href="LLFormat.html">LLFormat.cls</a></li>
 <li><a href="LLGeo.html">LLGeo.cls</a></li>
 <li><a href="Linelist.html">Linelist.cls</a></li>
+<li><a href="LLDataEntry.html">LLDataEntry.cls</a></li>
 <li><a href="LLTranslation.html">LLTranslation.cls</a></li>
 <li><a href="DiseaseSheet.html">DiseaseSheet.cls</a></li>
 <li><a href="MasterSetupVariables.html">MasterSetupVariables.cls</a></li>
@@ -1252,7 +1268,6 @@ for consistent stack traces.</p>
 <li><a href="SetupImport.html">SetupImport.cls</a></li>
 <li><a href="SetupPreparation.html">SetupPreparation.cls</a></li>
 <li><a href="SetupTranslationsTable.html">SetupTranslationsTable.cls</a></li>
-<li><a href="LLShowHide.html">LLShowHide.cls</a></li>
 <li>EventsDesignerCore.bas</li>
 <li>EventsDesignerMulti.bas</li>
 <li>RibbonDev.bas</li>

@@ -169,8 +169,8 @@ no checkbox was bound.</p>
 </code></pre>
 <p>Prompts the user to select a folder via OSFiles, applies busy state,
 optionally confirms filter usage via MsgBox, then delegates to
-LLExporter.ExportCustom. On error, displays a translated error message
-and closes any orphaned output workbook.</p>
+LLExporter.ExportCustom and tells the user where the file went. On error,
+displays a translated error message and closes any orphaned output workbook.</p>
 <hr />
 <h3 id="int-sheettagof">SheetTagOf <a class="anchor-link" href="#int-sheettagof">#</a></h3>
 <p><strong>Get the sheet type tag from worksheet-level HiddenNames.</strong></p>
@@ -196,6 +196,26 @@ and closes any orphaned output workbook.</p>
 <li><code>msgCode</code>: String. The message code to translate.</li>
 </ul>
 <p><strong>Returns:</strong> String. The translated message text.</p>
+<hr />
+<h3 id="int-reportsavedfile">ReportSavedFile <a class="anchor-link" href="#int-reportsavedfile">#</a></h3>
+<p><em>report-saved-file</em></p>
+<p><strong>Tell the user where the file went and what opens it</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ReportSavedFile(ByVal filePath As String, ByVal password As String)
+</code></pre>
+<p>A password-protected export is encrypted with the linelist private key, and
+that key sits in a very hidden worksheet. A user who is not told it here has
+no way back to the file, and neither has the colleague they send it to. The
+key is one value for the whole workbook, so every password-protected export
+from this linelist shares it and generating a new key changes it for all of
+them.</p>
+<p>Nothing is shown when the export answered no path, which is what a mode that
+stopped early returns.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>filePath</code>: String. The saved file path.</li>
+<li><code>password</code>: String. The password applied to the file, or vbNullString.</li>
+</ul>
 <hr />
 <h3 id="int-updatefiltereddata">UpdateFilteredData <a class="anchor-link" href="#int-updatefiltereddata">#</a></h3>
 <p><em>update-filtered-data</em></p>
@@ -225,9 +245,10 @@ filter state.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (4 file(s))</summary>
+<summary>Used in (5 file(s))</summary>
 <ul>
 <li><a href="Linelist.html">Linelist.cls</a></li>
+<li><a href="LLDataEntry.html">LLDataEntry.cls</a></li>
 <li>EventsLinelistButtons.bas</li>
 <li>FormLogicExport.bas</li>
 <li>TestExportButton.bas</li>

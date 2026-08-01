@@ -532,6 +532,29 @@ and once more after the loop.</p>
 <li><code>goToHeaderLabel</code>: String. Translated label of the header dropdown.</li>
 </ul>
 <hr />
+<h3 id="int-addsectiongoto">AddSectionGoTo <a class="anchor-link" href="#int-addsectiongoto">#</a></h3>
+<p><em>add-section-go-to</em></p>
+<p><strong>Hang the header dropdown of one section under its anchor</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AddSectionGoTo(ByVal outsh As Worksheet, ByVal secId As String, _
+                           ByVal headers As BetterArray, ByVal scope As Byte, _
+                           ByVal goToHeaderLabel As String)
+</code></pre>
+<p>The anchor is SECTION_<secId>, which CrossTable writes only in its new-section
+branch, so a section whose anchor table failed has none. That failure used to
+end CloseTemporalSection, which took NameSpatioTemporalColumn with it and left
+SPT_FORMULA_COLUMN_<secId> uncreated -- a name GeoModule reads at runtime in the
+delivered linelist. The two are guarded apart now, the way WriteSectionBounds
+already was.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>outsh</code>: Worksheet. The analysis sheet.</li>
+<li><code>secId</code>: String. Identifier of the section.</li>
+<li><code>headers</code>: BetterArray. The entries of the dropdown.</li>
+<li><code>scope</code>: Byte. A constant from the AnalysisScope enum.</li>
+<li><code>goToHeaderLabel</code>: String. Translated label of the dropdown.</li>
+</ul>
+<hr />
 <h3 id="int-namegraphstart">NameGraphStart <a class="anchor-link" href="#int-namegraphstart">#</a></h3>
 <p><em>name-graph-start</em></p>
 <p><strong>Name the cell the charts of a temporal sheet start at</strong></p>

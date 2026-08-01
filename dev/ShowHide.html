@@ -1,0 +1,621 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ShowHide - OBT Dev Docs</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+</head>
+<body>
+  <nav><a href="index.html">&larr; Index</a></nav>
+  <main>
+<h1>ShowHide</h1>
+<p>Holds the list of variables one worksheet layer offers the user, and the
+visible or hidden choice for each of them. The list is built from the
+dictionary. The class reads the dictionary and nothing else: the worksheet is
+ShowHideLayout's job and the saved choices are ShowHideStore's.</p>
+<details open class="doc-section" id="four-kinds-of-entry">
+<summary>FOUR KINDS OF ENTRY</summary>
+<div class="section-body">
+<p>A variable the dictionary marks as hidden is EXCLUDED. It never enters the
+list, because the designer said the user must never see it.</p>
+<p>Of the variables that do enter, each is one of three kinds:</p>
+<p>mandatory  listed, always visible, the user cannot change it.
+locked     listed, always hidden, the user cannot change it. A calculated
+column on a printed sheet or on a CRF lands here.
+free       listed, starts where the dictionary says, follows the user.</p>
+<p>IsFree is the single question a click handler asks before it changes anything.</p>
+</div>
+</details>
+<details open class="doc-section" id="which-dictionary-column-says-what">
+<summary>WHICH DICTIONARY COLUMN SAYS WHAT</summary>
+<div class="section-body">
+<p>HList, VList   visibility
+Printed        register book
+CRF            crf status</p>
+<p>The position of a variable comes from <code>column index</code>, and from <code>crf index</code> on
+the CRF layer. A variable with no position is listed and the layout leaves it
+alone.</p>
+</div>
+</details>
+<details open class="doc-section" id="the-state-is-a-boolean">
+<summary>THE STATE IS A BOOLEAN</summary>
+<div class="section-body">
+<p>Hidden is True or False. The display words the form shows (&quot;Shown&quot;, &quot;Hidden&quot;,
+&quot;Mandatory&quot;) are translated at the form and never stored. A user who changes
+the interface language between two sessions keeps every choice.</p>
+<p><strong>Depends on:</strong> <a href="LLdictionary.html">LLdictionary</a>, <a href="LLVariables.html">LLVariables</a>, <a href="ShowHideLayout.html">ShowHideLayout</a>, <a href="BetterArray.html">BetterArray</a>, <a href="Checking.html">Checking</a>, Dictionary column names, The one <code>register book</code> value that asks for a turned header</p>
+<p><strong>Version:</strong> 1.0 (2026-08-01)</p>
+</div>
+</details>
+<details open class="doc-section" id="instantiation">
+<summary>Instantiation</summary>
+<div class="section-body">
+<h3 id="create">Create <a class="anchor-link" href="#create">#</a></h3>
+<p><em>create</em></p>
+<p><strong>Build the entry list of one layer of one sheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Create(ByVal dict As LLdictionary, _
+                       ByVal layer As Byte, _
+                       ByVal sheetName As String) As ShowHide
+</code></pre>
+<p>The factory and the build it runs.</p>
+<p>Walks the dictionary once, keeps the variables of the named sheet whose sheet
+type suits the layer, and files each one as mandatory, locked or free. The
+dictionary is prepared when it arrives unprepared, because the four columns
+this class reads (visibility, crf status, column index, crf index) are all
+written by Prepare.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>dict</code>: LLdictionary. The dictionary to read.</li>
+<li><code>layer</code>: Byte. A ShowHideWorksheetLayer value. Which of the four layers to build.</li>
+<li><code>sheetName</code>: String. The base sheet name, with no print_ or crf_ prefix.</li>
+</ul>
+<p><strong>Returns:</strong> ShowHide. The entry list, ready to read.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.ObjectNotInitialized When the dictionary is Nothing.</li>
+<li>ProjectError.InvalidArgument When the sheet name is empty or the layer
+is outside the four values.</li>
+</ul>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="accessors">
+<summary>Accessors</summary>
+<div class="section-body">
+<h3 id="entrycount">EntryCount <a class="anchor-link" href="#entrycount">#</a></h3>
+<p><em>entry-count</em></p>
+<p><strong>The number of entries the user is offered</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get EntryCount() As Long
+</code></pre>
+<p>What the list holds, and what each entry is.</p>
+<hr />
+<h3 id="targetlayer">TargetLayer <a class="anchor-link" href="#targetlayer">#</a></h3>
+<p><em>target-layer</em></p>
+<p><strong>The layer this list was built for</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get TargetLayer() As Byte
+</code></pre>
+<hr />
+<h3 id="sheetname">SheetName <a class="anchor-link" href="#sheetname">#</a></h3>
+<p><em>sheet-name</em></p>
+<p><strong>The base sheet name the entries belong to</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get SheetName() As String
+</code></pre>
+<hr />
+<h3 id="fieldkey">FieldKey <a class="anchor-link" href="#fieldkey">#</a></h3>
+<p><em>field-key</em></p>
+<p><strong>The variable name of one entry</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function FieldKey(ByVal index As Long) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>index</code>: Long. A one based entry index.</li>
+</ul>
+<p><strong>Returns:</strong> String. The variable name as the dictionary spells it.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.InvalidArgument When the index is out of range.</li>
+</ul>
+<hr />
+<h3 id="headertext">HeaderText <a class="anchor-link" href="#headertext">#</a></h3>
+<p><em>header-text</em></p>
+<p><strong>The label the form shows for one entry</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function HeaderText(ByVal index As Long) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>index</code>: Long. A one based entry index.</li>
+</ul>
+<p><strong>Returns:</strong> String. The main label, carrying its sub section for a geo or hf
+variable.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.InvalidArgument When the index is out of range.</li>
+</ul>
+<hr />
+<h3 id="ishidden">IsHidden <a class="anchor-link" href="#ishidden">#</a></h3>
+<p><em>is-hidden</em></p>
+<p><strong>Whether one entry is hidden right now</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function IsHidden(ByVal index As Long) As Boolean
+</code></pre>
+<p>A mandatory entry answers False and a locked entry answers True, whatever the
+user asked for. Every other entry answers the stored choice.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>index</code>: Long. A one based entry index.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the variable is hidden.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.InvalidArgument When the index is out of range.</li>
+</ul>
+<hr />
+<h3 id="ismandatory">IsMandatory <a class="anchor-link" href="#ismandatory">#</a></h3>
+<p><em>is-mandatory</em></p>
+<p><strong>Whether one entry is always visible</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function IsMandatory(ByVal index As Long) As Boolean
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>index</code>: Long. A one based entry index.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the user cannot hide the variable.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.InvalidArgument When the index is out of range.</li>
+</ul>
+<hr />
+<h3 id="islocked">IsLocked <a class="anchor-link" href="#islocked">#</a></h3>
+<p><em>is-locked</em></p>
+<p><strong>Whether one entry is always hidden</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function IsLocked(ByVal index As Long) As Boolean
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>index</code>: Long. A one based entry index.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the variable is held hidden and the user cannot
+show it.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.InvalidArgument When the index is out of range.</li>
+</ul>
+<hr />
+<h3 id="isfree">IsFree <a class="anchor-link" href="#isfree">#</a></h3>
+<p><em>is-free</em></p>
+<p><strong>Whether the user may change one entry</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function IsFree(ByVal index As Long) As Boolean
+</code></pre>
+<p>The single guard a click handler asks. An entry that is neither mandatory nor
+locked follows whatever the user picks.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>index</code>: Long. A one based entry index.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the entry follows the user.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.InvalidArgument When the index is out of range.</li>
+</ul>
+<hr />
+<h3 id="positionindex">PositionIndex <a class="anchor-link" href="#positionindex">#</a></h3>
+<p><em>position-index</em></p>
+<p><strong>Where one entry sits on the worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function PositionIndex(ByVal index As Long) As Long
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>index</code>: Long. A one based entry index.</li>
+</ul>
+<p><strong>Returns:</strong> Long. The column or row number, or 0 when the dictionary gives none.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.InvalidArgument When the index is out of range.</li>
+</ul>
+<hr />
+<h3 id="controltype">ControlType <a class="anchor-link" href="#controltype">#</a></h3>
+<p><em>control-type</em></p>
+<p><strong>The dictionary control of one entry</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function ControlType(ByVal index As Long) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>index</code>: Long. A one based entry index.</li>
+</ul>
+<p><strong>Returns:</strong> String. The control value in lower case, such as &quot;geo1&quot; or &quot;formula&quot;.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.InvalidArgument When the index is out of range.</li>
+</ul>
+<hr />
+<h3 id="authoredvertical">AuthoredVertical <a class="anchor-link" href="#authoredvertical">#</a></h3>
+<p><em>authored-vertical</em></p>
+<p><strong>The header direction the dictionary asked for</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function AuthoredVertical(ByVal index As Long) As Boolean
+</code></pre>
+<p>Read only, and true for a variable whose <code>register book</code> reads
+&quot;print, vertical header&quot;. A reset restores this direction without the entry
+list ever owning the live orientation of the sheet.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>index</code>: Long. A one based entry index.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the printed header should be turned.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.InvalidArgument When the index is out of range.</li>
+</ul>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="lookup">
+<summary>Lookup</summary>
+<div class="section-body">
+<h3 id="indexof">IndexOf <a class="anchor-link" href="#indexof">#</a></h3>
+<p><em>index-of</em></p>
+<p><strong>Find an entry by variable name</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function IndexOf(ByVal fieldKey As String) As Long
+</code></pre>
+<p>Finding an entry by its variable name.</p>
+<p>The name is trimmed and lower cased on the way in and on the way out, so a
+dictionary name carrying a stray space is still reachable.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>fieldKey</code>: String. The variable name to look for.</li>
+</ul>
+<p><strong>Returns:</strong> Long. The one based entry index, or 0 when the name is absent.</p>
+<hr />
+<h3 id="hasfield">HasField <a class="anchor-link" href="#hasfield">#</a></h3>
+<p><em>has-field</em></p>
+<p><strong>Whether a variable name is in the list</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function HasField(ByVal fieldKey As String) As Boolean
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>fieldKey</code>: String. The variable name to look for.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the list carries the name.</p>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="choices">
+<summary>Choices</summary>
+<div class="section-body">
+<h3 id="sethidden">SetHidden <a class="anchor-link" href="#sethidden">#</a></h3>
+<p><em>set-hidden</em></p>
+<p><strong>Hide or show one entry</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub SetHidden(ByVal index As Long, ByVal hidden As Boolean)
+</code></pre>
+<p>Changing what the user sees.</p>
+<p>A mandatory or locked entry keeps its state and the call returns quietly, so a
+caller that loops the whole list needs no guard of its own.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>index</code>: Long. A one based entry index.</li>
+<li><code>hidden</code>: Boolean. True to hide the variable.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.InvalidArgument When the index is out of range.</li>
+</ul>
+<hr />
+<h3 id="setalloptionalhidden">SetAllOptionalHidden <a class="anchor-link" href="#setalloptionalhidden">#</a></h3>
+<p><em>set-all-optional-hidden</em></p>
+<p><strong>Hide or show every entry the user owns</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub SetAllOptionalHidden(ByVal hidden As Boolean)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>hidden</code>: Boolean. True to hide all the free entries.</li>
+</ul>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="worksheet">
+<summary>Worksheet</summary>
+<div class="section-body">
+<h3 id="apply">Apply <a class="anchor-link" href="#apply">#</a></h3>
+<p><em>apply</em></p>
+<p><strong>Put the worksheet in the state the list describes</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Apply(ByVal layout As ShowHideLayout) As Long
+</code></pre>
+<p>The two calls that put the list and a sheet in step.</p>
+<p>The one place the entry list reaches a sheet, and it goes through the layout,
+so the row versus column question and the protection bracket are answered in
+one place. Entries with no position are skipped.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>layout</code>: ShowHideLayout. The sheet to reconcile.</li>
+</ul>
+<p><strong>Returns:</strong> Long. The number of positions that were set.</p>
+<hr />
+<h3 id="adopt">Adopt <a class="anchor-link" href="#adopt">#</a></h3>
+<p><em>adopt</em></p>
+<p><strong>Read the worksheet back into the list</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Adopt(ByVal layout As ShowHideLayout) As Long
+</code></pre>
+<p>For the case where the user hid a column by hand rather than through the form.
+Mandatory and locked entries keep what the dictionary said.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>layout</code>: ShowHideLayout. The sheet to read.</li>
+</ul>
+<p><strong>Returns:</strong> Long. The number of entries that were read.</p>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="build">
+<summary>Build</summary>
+<div class="section-body">
+<h3 id="initialise">Initialise <a class="anchor-link" href="#initialise">#</a></h3>
+<p><em>initialise</em></p>
+<p><strong>Fill the entry list from the dictionary</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Initialise(ByVal dict As LLdictionary, _
+                      ByVal layer As Byte, _
+                      ByVal sheetName As String)
+</code></pre>
+<p>The dictionary walk the factory runs.</p>
+<p>Public because the factory calls it on a fresh instance. Every variable of the
+sheet is read once and the arrays are trimmed to what matched.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>dict</code>: LLdictionary. The dictionary to read.</li>
+<li><code>layer</code>: Byte. A ShowHideWorksheetLayer value. The layer being built.</li>
+<li><code>sheetName</code>: String. The base sheet name.</li>
+</ul>
+<hr />
+</div>
+</details>
+<details>
+<summary>Internal members (not exported)</summary>
+<h2 id="int-helpers">Helpers</h2>
+<h3 id="int-effectivehidden">EffectiveHidden <a class="anchor-link" href="#int-effectivehidden">#</a></h3>
+<p><em>effective-hidden</em></p>
+<p><strong>Work out the state one entry really has</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function EffectiveHidden(ByVal index As Long) As Boolean
+</code></pre>
+<p>Private workers of the build and the accessors.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>index</code>: Long. A one based entry index.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the entry is hidden.</p>
+<hr />
+<h3 id="int-matchessheet">MatchesSheet <a class="anchor-link" href="#int-matchessheet">#</a></h3>
+<p><em>matches-sheet</em></p>
+<p><strong>Whether a variable belongs to the sheet being built</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function MatchesSheet(ByVal vars As LLVariables, ByVal varName As String) As Boolean
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>vars</code>: LLVariables. The variable reader.</li>
+<li><code>varName</code>: String. The variable to test.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the sheet names agree.</p>
+<hr />
+<h3 id="int-matcheslayer">MatchesLayer <a class="anchor-link" href="#int-matcheslayer">#</a></h3>
+<p><em>matches-layer</em></p>
+<p><strong>Whether a dictionary sheet type suits the layer being built</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function MatchesLayer(ByVal sheetType As String) As Boolean
+</code></pre>
+<p>The dictionary vocabulary is &quot;vlist1D&quot; and &quot;hlist2D&quot;. A printed sheet and a CRF
+are both derived from an hlist2D sheet, so all three of HList, Printed and CRF
+test for &quot;hlist&quot;. The CRF case used to test for &quot;crf&quot;, a word the vocabulary
+has never held, so every CRF list came back empty.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetType</code>: String. The dictionary <code>sheet type</code> value, lower cased.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the variable belongs on this layer.</p>
+<hr />
+<h3 id="int-statusforlayer">StatusForLayer <a class="anchor-link" href="#int-statusforlayer">#</a></h3>
+<p><em>status-for-layer</em></p>
+<p><strong>Read the status column that belongs to the layer</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function StatusForLayer(ByVal vars As LLVariables, _
+                             ByVal varName As String, _
+                             ByVal registerBook As String, _
+                             ByVal hasVisibility As Boolean, _
+                             ByVal hasStatus As Boolean, _
+                             ByVal hasCrfStatus As Boolean) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>vars</code>: LLVariables. The variable reader.</li>
+<li><code>varName</code>: String. The variable to read.</li>
+<li><code>registerBook</code>: String. The <code>register book</code> value, already read.</li>
+<li><code>hasVisibility</code>: Boolean. Whether the dictionary carries <code>visibility</code>.</li>
+<li><code>hasStatus</code>: Boolean. Whether the dictionary carries <code>status</code>.</li>
+<li><code>hasCrfStatus</code>: Boolean. Whether the dictionary carries <code>crf status</code>.</li>
+</ul>
+<p><strong>Returns:</strong> String. The status text for this layer.</p>
+<hr />
+<h3 id="int-ismandatorystatus">IsMandatoryStatus <a class="anchor-link" href="#int-ismandatorystatus">#</a></h3>
+<p><em>is-mandatory-status</em></p>
+<p><strong>Whether a status makes an entry always visible</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function IsMandatoryStatus(ByVal layerStatus As String, _
+                                   ByVal controlVal As String, _
+                                   ByVal layer As Byte) As Boolean
+</code></pre>
+<p>The first geo level of an HList sheet is mandatory whatever its status says,
+because the geo cascade of every other level reads it.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>layerStatus</code>: String. The status of this layer, lower cased.</li>
+<li><code>controlVal</code>: String. The control value, lower cased.</li>
+<li><code>layer</code>: Byte. A ShowHideWorksheetLayer value. The layer being built.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the user cannot hide the entry.</p>
+<hr />
+<h3 id="int-islockedstatus">IsLockedStatus <a class="anchor-link" href="#int-islockedstatus">#</a></h3>
+<p><em>is-locked-status</em></p>
+<p><strong>Whether a status holds an entry hidden</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function IsLockedStatus(ByVal layerStatus As String, _
+                                ByVal controlVal As String, _
+                                ByVal layer As Byte, _
+                                ByVal isMandatoryEntry As Boolean, _
+                                ByVal hasListAuto As Boolean, _
+                                ByVal vars As LLVariables, _
+                                ByVal varName As String) As Boolean
+</code></pre>
+<p>A calculated column and an automatic list have nothing to give on a printed
+sheet or a CRF, so both layers hold them hidden. A mandatory entry is never
+locked as well.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>layerStatus</code>: String. The status of this layer, lower cased.</li>
+<li><code>controlVal</code>: String. The control value, lower cased.</li>
+<li><code>layer</code>: Byte. A ShowHideWorksheetLayer value. The layer being built.</li>
+<li><code>isMandatoryEntry</code>: Boolean. Whether the entry is already mandatory.</li>
+<li><code>hasListAuto</code>: Boolean. Whether the dictionary carries <code>list auto</code>.</li>
+<li><code>vars</code>: LLVariables. The variable reader.</li>
+<li><code>varName</code>: String. The variable being read.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the entry is held hidden.</p>
+<hr />
+<h3 id="int-initialhidden">InitialHidden <a class="anchor-link" href="#int-initialhidden">#</a></h3>
+<p><em>initial-hidden</em></p>
+<p><strong>The state a free entry starts in</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function InitialHidden(ByVal layerStatus As String) As Boolean
+</code></pre>
+<p>The <code>register book</code> vocabulary of a printed sheet is &quot;print, horizontal
+header&quot;, &quot;print, vertical header&quot; and &quot;hidden&quot;. An empty cell means the column
+prints, which is why the default answer is visible.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>layerStatus</code>: String. The status of this layer, lower cased.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when the entry starts hidden.</p>
+<hr />
+<h3 id="int-safevalue">SafeValue <a class="anchor-link" href="#int-safevalue">#</a></h3>
+<p><em>safe-value</em></p>
+<p><strong>Read a dictionary cell and answer empty when it is absent</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SafeValue(ByVal vars As LLVariables, _
+                           ByVal colName As String, _
+                           ByVal varName As String) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>vars</code>: LLVariables. The variable reader.</li>
+<li><code>colName</code>: String. The column to read.</li>
+<li><code>varName</code>: String. The variable to read.</li>
+</ul>
+<p><strong>Returns:</strong> String. The cell value, or an empty string.</p>
+<hr />
+<h3 id="int-normalise">Normalise <a class="anchor-link" href="#int-normalise">#</a></h3>
+<p><em>normalise</em></p>
+<p><strong>Trim and lower case a value for comparison</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function Normalise(ByVal value As String) As String
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>value</code>: String. The text to normalise.</li>
+</ul>
+<p><strong>Returns:</strong> String. The trimmed, lower cased text.</p>
+<hr />
+<h3 id="int-normalisekey">NormaliseKey <a class="anchor-link" href="#int-normalisekey">#</a></h3>
+<p><em>normalise-key</em></p>
+<p><strong>Build the lookup key of a variable name</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function NormaliseKey(ByVal value As String) As String
+</code></pre>
+<p>The same shape on the way in and on the way out. A dictionary name carrying a
+trailing space used to be stored untrimmed and looked up trimmed, so its saved
+state was dropped on every load.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>value</code>: String. The variable name.</li>
+</ul>
+<p><strong>Returns:</strong> String. The lookup key.</p>
+<hr />
+<h3 id="int-ensurevalidindex">EnsureValidIndex <a class="anchor-link" href="#int-ensurevalidindex">#</a></h3>
+<p><em>ensure-valid-index</em></p>
+<p><strong>Refuse an entry index outside the list</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureValidIndex(ByVal index As Long)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>index</code>: Long. The index to check.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.InvalidArgument When the index is out of range.</li>
+</ul>
+<hr />
+<h3 id="int-validatelayer">ValidateLayer <a class="anchor-link" href="#int-validatelayer">#</a></h3>
+<p><em>validate-layer</em></p>
+<p><strong>Refuse a layer outside the four values</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ValidateLayer(ByVal layer As Byte)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>layer</code>: Byte. A ShowHideWorksheetLayer value. The layer to check.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ProjectError.InvalidArgument When the layer is unknown.</li>
+</ul>
+<hr />
+<h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
+<p><em>throw-error</em></p>
+<p><strong>Raise a project error naming this class</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal message As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>errNumber</code>: ProjectError. The error to raise.</li>
+<li><code>message</code>: String. What went wrong.</li>
+</ul>
+<hr />
+</details>
+<details>
+<summary>Used in (7 file(s))</summary>
+<ul>
+<li><a href="LLExporter.html">LLExporter.cls</a></li>
+<li><a href="LLImporter.html">LLImporter.cls</a></li>
+<li><a href="Linelist.html">Linelist.cls</a></li>
+<li><a href="ShowHideLayout.html">ShowHideLayout.cls</a></li>
+<li><a href="ShowHideStore.html">ShowHideStore.cls</a></li>
+<li>EventsLinelistButtons.bas</li>
+<li>TestShowHide.bas</li>
+</ul>
+</details>
+  </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/vbnet.min.js"></script>
+  <script>hljs.highlightAll();</script>
+</body>
+</html>
+

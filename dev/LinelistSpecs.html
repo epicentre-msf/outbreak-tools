@@ -20,8 +20,8 @@ LinelistSpecs.Create(workbook).</p>
 <div class="section-body">
 <p>The type says nothing about this, and it is where most of this class's defects
 came from. The table is the contract.</p>
-<p>dictionary, choices, exports, ana    Linelist. Prepare sets them from the
-build service. Reading one earlier
+<p>dictionary, choices, exports, ana    Linelist. Prepare sets them from
+InitTransfer. Reading one earlier
 raises and names Prepare.
 geo, passwords, translations         Designer until Prepare runs, linelist
 afterwards. Prepare overwrites them.
@@ -29,12 +29,12 @@ format, formulaData                  Designer, loaded on first read.
 Value, HasTemplate, DesWorkbook      Designer.
 TemporarySheetName                   A constant table, backed by no sheet.</p>
 <p>The four names on the first row had designer-side loaders until 2026-07-30.
-RequiredSheetNames() stopped asking for those four worksheets when the build
-service began importing them straight from the setup file, so a loader either
+RequiredSheetNames() stopped asking for those four worksheets when the
+transfer began importing them straight from the setup file, so a loader either
 built a manager over a leftover designer sheet at the wrong anchor row, or
 raised a message naming the designer when the caller's real mistake was
 calling before Prepare. They are guards now.</p>
-<p><strong>Depends on:</strong> <a href="LLdictionary.html">LLdictionary</a>, <a href="LLChoices.html">LLChoices</a>, <a href="LLTranslation.html">LLTranslation</a>, <a href="LLGeo.html">LLGeo</a>, <a href="LLExport.html">LLExport</a>, <a href="Analysis.html">Analysis</a>, <a href="Passwords.html">Passwords</a>, <a href="LLFormat.html">LLFormat</a>, <a href="FormulaData.html">FormulaData</a>, <a href="LLVariables.html">LLVariables</a>, <a href="Formulas.html">Formulas</a>, <a href="LLBuild.html">LLBuild</a>, <a href="TemporaryRepos.html">TemporaryRepos</a>, <a href="ApplicationState.html">ApplicationState</a>, <a href="TranslationObject.html">TranslationObject</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="Checking.html">Checking</a>, <a href="BetterArray.html">BetterArray</a></p>
+<p><strong>Depends on:</strong> <a href="LLdictionary.html">LLdictionary</a>, <a href="LLChoices.html">LLChoices</a>, <a href="LLTranslation.html">LLTranslation</a>, <a href="LLGeo.html">LLGeo</a>, <a href="LLExport.html">LLExport</a>, <a href="Analysis.html">Analysis</a>, <a href="Passwords.html">Passwords</a>, <a href="LLFormat.html">LLFormat</a>, <a href="FormulaData.html">FormulaData</a>, <a href="LLVariables.html">LLVariables</a>, <a href="Formulas.html">Formulas</a>, InitTransfer, <a href="TemporaryRepos.html">TemporaryRepos</a>, <a href="ApplicationState.html">ApplicationState</a>, <a href="TranslationObject.html">TranslationObject</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="Checking.html">Checking</a>, <a href="BetterArray.html">BetterArray</a></p>
 <p><strong>Version:</strong> 1.2 (2026-07-30)</p>
 </div>
 </details>
@@ -146,7 +146,7 @@ from modifying the cached copy.</p>
 <p>Public property accessors for each collaborator object, exposing
 the lazy-loaded instances through their respective interfaces.</p>
 <p>The LLdictionary instance over the Dictionary worksheet of the LINELIST
-workbook. Prepare sets it from the build service.</p>
+workbook. Prepare sets it from InitTransfer.</p>
 <p><strong>Returns:</strong> LLdictionary. The dictionary collaborator.</p>
 <p><strong>Throws:</strong></p>
 <ul>
@@ -160,7 +160,7 @@ workbook. Prepare sets it from the build service.</p>
 <pre><code class="language-vb">Public Property Get Choices() As LLChoices
 </code></pre>
 <p>The LLChoices instance over the Choices worksheet of the LINELIST workbook.
-Prepare sets it from the build service.</p>
+Prepare sets it from InitTransfer.</p>
 <p><strong>Returns:</strong> LLChoices. The choices collaborator.</p>
 <p><strong>Throws:</strong></p>
 <ul>
@@ -184,7 +184,7 @@ methods based on the __formatter worksheet. Lazy-loaded on first access.</p>
 <pre><code class="language-vb">Public Property Get AnalysisObject() As Analysis
 </code></pre>
 <p>The Analysis instance over the Analysis worksheet of the LINELIST workbook.
-Prepare sets it from the build service.</p>
+Prepare sets it from InitTransfer.</p>
 <p><strong>Returns:</strong> Analysis. The analysis collaborator.</p>
 <p><strong>Throws:</strong></p>
 <ul>
@@ -198,7 +198,7 @@ Prepare sets it from the build service.</p>
 <pre><code class="language-vb">Public Property Get ExportObject() As LLExport
 </code></pre>
 <p>The LLExport instance over the Exports worksheet of the LINELIST workbook.
-Prepare sets it from the build service.</p>
+Prepare sets it from InitTransfer.</p>
 <p><strong>Returns:</strong> LLExport. The export collaborator.</p>
 <p><strong>Throws:</strong></p>
 <ul>
@@ -328,9 +328,9 @@ the two values that have to be there.</p>
 <div class="section-body">
 <h3 id="prepare">Prepare <a class="anchor-link" href="#prepare">#</a></h3>
 <p><em>prepare</em></p>
-<p><strong>Prepare all specifications using a build service</strong></p>
+<p><strong>Prepare all specifications from the setup file and the designer</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub Prepare(ByVal buildService As LLBuild, ByVal setupPath As String)
+<pre><code class="language-vb">Public Sub Prepare(ByVal setupPath As String)
 </code></pre>
 <p>Lifecycle methods for importing, preparing, exporting, and
 error-managing the specifications workbook.</p>
@@ -338,12 +338,12 @@ error-managing the specifications workbook.</p>
 <ol>
 <li>Creates a temporary repository for working files.</li>
 <li>Creates the output workbook, from the template when one is configured.</li>
-<li>Imports the pass-through components straight from setup into the linelist.</li>
-<li>Exports the designer-sourced components (geo, passwords, translations,
-formatter, language hidden names) into the linelist.</li>
-<li>Builds the domain managers on the linelist workbook.</li>
-<li>Takes those instances from the service, which is what points the four
-pass-through collaborators at the linelist.</li>
+<li>Hands the setup path and that workbook to InitTransfer, which fills it with
+the pass-through components taken straight from the setup, the
+designer-sourced ones (geo, passwords, translations, formatter, language
+hidden names), and the setup translation table.</li>
+<li>Builds the domain managers on the linelist workbook, which is what points
+the four pass-through collaborators at the linelist.</li>
 <li>Imports the geobase the user asked for.</li>
 <li>Prepares the dictionary with the preserved sheet names.</li>
 <li>Adds the &quot;list auto&quot; column when the dictionary has none.</li>
@@ -354,14 +354,16 @@ pass-through collaborators at the linelist.</li>
 repository and restores the application state, then re-raises. The caller
 creates its Linelist after this returns, so a Prepare that leaked left an
 orphaned workbook open and temporary files on disk every time.</p>
+<p>The setup path is checked before any of that runs. The check InitTransfer does
+is the same one, and it is the one that matters, but by the time it runs a
+temporary folder and a workbook already exist.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>buildService</code>: LLBuild. The configured build service.</li>
 <li><code>setupPath</code>: String. Full path to the setup workbook.</li>
 </ul>
 <p><strong>Throws:</strong></p>
 <ul>
-<li>ProjectError.ObjectNotInitialized When buildService is Nothing.</li>
+<li>ProjectError.ObjectNotInitialized When setupPath is empty.</li>
 <li>ProjectError.ErrorUnexpectedState When an unexpected error occurs.</li>
 </ul>
 <hr />
@@ -372,8 +374,20 @@ orphaned workbook open and temporary files on disk every time.</p>
 <pre><code class="language-vb">Public Property Get LLWorkbook() As Workbook
 </code></pre>
 <p>Returns the linelist workbook created by Prepare that received exported
-data from the import service. Returns Nothing before Prepare is called.</p>
+data from InitTransfer. Returns Nothing before Prepare is called.</p>
 <p><strong>Returns:</strong> Workbook. The linelist workbook, or Nothing.</p>
+<hr />
+<h3 id="releasellworkbook">ReleaseLLWorkbook <a class="anchor-link" href="#releasellworkbook">#</a></h3>
+<p><em>release-ll-workbook</em></p>
+<p><strong>Drop the reference to the output workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub ReleaseLLWorkbook()
+</code></pre>
+<p>Linelist.SaveLL closes the linelist, and both classes held a reference to it.
+A read of either one after the close reached a closed workbook and raised an
+automation error. The read that mattered is Linelist.ErrorManage, reached from
+clickGenerate's cleanup, so the failure landed inside the error handler and hid
+the error that got it there.</p>
 <hr />
 <h3 id="outputtemporaryrepos">OutputTemporaryRepos <a class="anchor-link" href="#outputtemporaryrepos">#</a></h3>
 <p><em>temporary-repos</em></p>
@@ -669,7 +683,7 @@ named range is present.</p>
 </code></pre>
 <p>Only includes sheets that LinelistSpecs reads directly from the designer
 workbook. Pass-through sheets (Dictionary, Choices, Analysis, Export) are
-excluded because the build service imports them from the setup file
+excluded because InitTransfer imports them from the setup file
 directly into the linelist.</p>
 <p><strong>Returns:</strong> Variant. Array of sheet name strings.</p>
 <hr />
@@ -737,7 +751,7 @@ the class description first: it says which workbook each one is backed by.</p>
 <p>The collaborators that live on the DESIGNER are built here on first read, from
 a worksheet RequiredSheetNames() guarantees is present.</p>
 <p>The four that live on the LINELIST have no loader. Prepare sets them from the
-build service, and their accessors raise before that. A loader for them used
+transfer, and their accessors raise before that. A loader for them used
 to resolve a designer worksheet the designer no longer carries.</p>
 <p>The four pass-through collaborators are imported from the setup file straight
 into the linelist. Reading one before Prepare has run is a caller mistake, and
@@ -998,6 +1012,19 @@ several classes, so the key names this class and a counter.</p>
 <li><code>dict</code>: LLdictionary. The dictionary to expose through Dictionary().</li>
 </ul>
 <hr />
+<h3 id="int-testassignllworkbook">TestAssignLLWorkbook <a class="anchor-link" href="#int-testassignllworkbook">#</a></h3>
+<p><em>test-assign-ll-workbook</em></p>
+<p><strong>Inject the output workbook for testing</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub TestAssignLLWorkbook(ByVal wkb As Workbook)
+</code></pre>
+<p>Lets a suite drive Linelist's worksheet members over a plain workbook,
+without running Prepare. Prepare is the only production writer of this field.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>wkb</code>: Workbook. The workbook to expose through LLWorkbook().</li>
+</ul>
+<hr />
 <h3 id="int-testassigndesignformat">TestAssignDesignFormat <a class="anchor-link" href="#int-testassigndesignformat">#</a></h3>
 <p><em>test-assign-design-format</em></p>
 <p><strong>Inject a design-format collaborator for testing</strong></p>
@@ -1020,6 +1047,19 @@ several classes, so the key names this class and a counter.</p>
 <li><code>data</code>: FormulaData. The formula data to expose through FormulaDataObject().</li>
 </ul>
 <hr />
+<h3 id="int-testassignchoices">TestAssignChoices <a class="anchor-link" href="#int-testassignchoices">#</a></h3>
+<p><em>test-assign-choices</em></p>
+<p><strong>Inject a choices collaborator for testing</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub TestAssignChoices(ByVal choicesObj As LLChoices)
+</code></pre>
+<p>Lets a suite reach Categories, and through it every dropdown a
+variable can carry, without running Prepare.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>choicesObj</code>: LLChoices. The choices object to expose through Choices().</li>
+</ul>
+<hr />
 <h3 id="int-testassigntransobject">TestAssignTransObject <a class="anchor-link" href="#int-testassigntransobject">#</a></h3>
 <p><em>test-assign-trans-object</em></p>
 <p><strong>Inject one TranslationObject for every translation scope</strong></p>
@@ -1035,7 +1075,7 @@ object regardless of scope, mirroring the former single-object test stubs.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (27 file(s))</summary>
+<summary>Used in (30 file(s))</summary>
 <ul>
 <li><a href="Analysis.html">Analysis.cls</a></li>
 <li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
@@ -1049,6 +1089,8 @@ object regardless of scope, mirroring the former single-object test stubs.</p>
 <li><a href="VarWriter.html">VarWriter.cls</a></li>
 <li>EventsDesignerAdvanced.bas</li>
 <li>GenerationReport.bas</li>
+<li>InitTransfer.bas</li>
+<li>TestAnalysisOutput.bas</li>
 <li>TestCrossTable.bas</li>
 <li>TestTableSpecs.bas</li>
 <li>TestLLVariables.bas</li>
@@ -1058,6 +1100,7 @@ object regardless of scope, mirroring the former single-object test stubs.</p>
 <li>TestTimeSeriesGraphs.bas</li>
 <li><a href="LinelistDataStub.html">LinelistDataStub.cls</a></li>
 <li>TestHelpers.bas</li>
+<li>TestHelpersLite.bas</li>
 <li>TestLinelist.bas</li>
 <li>TestLinelistSpecs.bas</li>
 <li>TestLLDataEntry.bas</li>

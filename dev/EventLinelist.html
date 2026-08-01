@@ -198,7 +198,7 @@ dropdown maintenance, and geo/spatial UDF delegation.</p>
 </details>
 <details>
 <summary>Internal members (not exported)</summary>
-<h2 id="int-private-hlist-change-handler">Private — HList change handler</h2>
+<h2 id="int-private-hlist-change-handler">Private -- HList change handler</h2>
 <h3 id="int-handlehlistchange">HandleHListChange <a class="anchor-link" href="#int-handlehlistchange">#</a></h3>
 <p><strong>Handle value changes on HList sheets.</strong></p>
 <p><strong>Signature:</strong></p>
@@ -216,7 +216,7 @@ list_auto flagging, go-to-section navigation, header protection
 <li><code>shHn</code>: HiddenNames. The worksheet-level hidden names (shared from caller).</li>
 </ul>
 <hr />
-<h2 id="int-private-vlist-change-handler">Private — VList change handler</h2>
+<h2 id="int-private-vlist-change-handler">Private -- VList change handler</h2>
 <h3 id="int-handlevlistchange">HandleVListChange <a class="anchor-link" href="#int-handlevlistchange">#</a></h3>
 <p><strong>Handle value changes on VList sheets.</strong></p>
 <p><strong>Signature:</strong></p>
@@ -232,7 +232,7 @@ navigation on vertical list sheets.</p>
 <li><code>shHn</code>: HiddenNames. The worksheet-level hidden names (shared from caller).</li>
 </ul>
 <hr />
-<h2 id="int-private-analysis-change-handler">Private — Analysis change handler</h2>
+<h2 id="int-private-analysis-change-handler">Private -- Analysis change handler</h2>
 <h3 id="int-handleanalysischange">HandleAnalysisChange <a class="anchor-link" href="#int-handleanalysischange">#</a></h3>
 <p><strong>Handle value changes on analysis sheets.</strong></p>
 <p><strong>Signature:</strong></p>
@@ -251,7 +251,7 @@ based on named range patterns.</p>
 <li><code>analysisType</code>: String. The sheet type tag (Uni-Bi-Analysis, TS-Analysis, etc.).</li>
 </ul>
 <hr />
-<h2 id="int-private-spatial-table-update-handlers">Private — Spatial table update handlers</h2>
+<h2 id="int-private-spatial-table-update-handlers">Private -- Spatial table update handlers</h2>
 <h3 id="int-updatesinglesptable">UpdateSingleSpTable <a class="anchor-link" href="#int-updatesinglesptable">#</a></h3>
 <p><strong>Update formulas in a single spatial table when user changes admin level.</strong></p>
 <p><strong>Signature:</strong></p>
@@ -293,7 +293,7 @@ to apply or remove the formula modifications.</p>
 <li><code>rngName</code>: String. Named range of the divide/no-divide dropdown.</li>
 </ul>
 <hr />
-<h2 id="int-private-selection-change-handler">Private — Selection change handler</h2>
+<h2 id="int-private-selection-change-handler">Private -- Selection change handler</h2>
 <h3 id="int-handleselectionhlist">HandleSelectionHList <a class="anchor-link" href="#int-handleselectionhlist">#</a></h3>
 <p><strong>Handle selection changes on HList sheets.</strong></p>
 <p><strong>Signature:</strong></p>
@@ -309,7 +309,7 @@ or geo4 cell.</p>
 <li><code>shHn</code>: HiddenNames. The worksheet-level hidden names (shared from caller).</li>
 </ul>
 <hr />
-<h2 id="int-private-list-auto-helpers">Private — List auto helpers</h2>
+<h2 id="int-private-list-auto-helpers">Private -- List auto helpers</h2>
 <h3 id="int-updatelistautosheet">UpdateListAutoSheet <a class="anchor-link" href="#int-updatelistautosheet">#</a></h3>
 <p><strong>Update the list-auto dropdowns for a single sheet.</strong></p>
 <p><strong>Signature:</strong></p>
@@ -322,7 +322,7 @@ Iterates header columns and updates dropdown lists from unique data values.</p>
 <li><code>sh</code>: Worksheet. The HList sheet to update.</li>
 </ul>
 <hr />
-<h2 id="int-private-multiple-choice-helper">Private — Multiple choice helper</h2>
+<h2 id="int-private-multiple-choice-helper">Private -- Multiple choice helper</h2>
 <h3 id="int-updatemultiplechoice">UpdateMultipleChoice <a class="anchor-link" href="#int-updatemultiplechoice">#</a></h3>
 <p><strong>Handle multiple choice dropdown value toggling.</strong></p>
 <p><strong>Signature:</strong></p>
@@ -334,7 +334,7 @@ Iterates header columns and updates dropdown lists from unique data values.</p>
 <li><code>choiSep</code>: String. Separator between choices (e.g. &quot;, &quot;).</li>
 </ul>
 <hr />
-<h2 id="int-private-unique-values-helper">Private — Unique values helper</h2>
+<h2 id="int-private-unique-values-helper">Private -- Unique values helper</h2>
 <h3 id="int-getuniqueba">GetUniqueBA <a class="anchor-link" href="#int-getuniqueba">#</a></h3>
 <p><strong>Return unique values from a BetterArray.</strong></p>
 <p><strong>Signature:</strong></p>
@@ -348,7 +348,7 @@ Iterates header columns and updates dropdown lists from unique data values.</p>
 </ul>
 <p><strong>Returns:</strong> BetterArray. Array of unique values.</p>
 <hr />
-<h2 id="int-private-sheet-metadata-helpers">Private — Sheet metadata helpers</h2>
+<h2 id="int-private-sheet-metadata-helpers">Private -- Sheet metadata helpers</h2>
 <h3 id="int-sheettag">SheetTag <a class="anchor-link" href="#int-sheettag">#</a></h3>
 <p><strong>Get the sheet type tag from worksheet-level HiddenNames.</strong></p>
 <p><strong>Signature:</strong></p>
@@ -360,7 +360,7 @@ Iterates header columns and updates dropdown lists from unique data values.</p>
 </ul>
 <p><strong>Returns:</strong> String. The sheet type tag (HList, VList, Uni-Bi-Analysis, etc.).</p>
 <hr />
-<h2 id="int-private-lazy-initialisation">Private — Lazy initialisation</h2>
+<h2 id="int-private-lazy-initialisation">Private -- Lazy initialisation</h2>
 <h3 id="int-ensuretranslation">EnsureTranslation <a class="anchor-link" href="#int-ensuretranslation">#</a></h3>
 <p><strong>Lazily initialise translation, message translator, and hidden names.</strong></p>
 <p><strong>Signature:</strong></p>
@@ -421,14 +421,14 @@ labels and leaves everything else working.</p>
 </ul>
 <p><strong>Returns:</strong> Worksheet. The worksheet, or Nothing when not found.</p>
 <hr />
-<h2 id="int-private-cache-management">Private — Cache management</h2>
+<h2 id="int-private-cache-management">Private -- Cache management</h2>
 <h3 id="int-resetinternalcaches">ResetInternalCaches <a class="anchor-link" href="#int-resetinternalcaches">#</a></h3>
 <p><strong>Clear all lazily-cached domain managers.</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ResetInternalCaches()
 </code></pre>
 <hr />
-<h2 id="int-private-error-handling">Private — Error handling</h2>
+<h2 id="int-private-error-handling">Private -- Error handling</h2>
 <h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
 <p><strong>Raise a ProjectError-based exception.</strong></p>
 <p><strong>Signature:</strong></p>
@@ -442,11 +442,13 @@ labels and leaves everything else working.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (7 file(s))</summary>
+<summary>Used in (9 file(s))</summary>
 <ul>
 <li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
 <li><a href="LLGeo.html">LLGeo.cls</a></li>
+<li><a href="LLSpatial.html">LLSpatial.cls</a></li>
 <li><a href="Linelist.html">Linelist.cls</a></li>
+<li><a href="LLDataEntry.html">LLDataEntry.cls</a></li>
 <li><a href="VarWriter.html">VarWriter.cls</a></li>
 <li>CustomLinelistFunctions.bas</li>
 <li>LinelistEventsManager.bas</li>

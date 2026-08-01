@@ -17,7 +17,7 @@ exports (ExportMigration), analysis-only exports (ExportAnalysis), and
 geobase exports (ExportGeo). Each mode builds a temporary output workbook,
 populates it with the relevant data, metadata, and formatting, then saves
 and closes it.</p>
-<p><strong>Depends on:</strong> <a href="LLdictionary.html">LLdictionary</a>, <a href="LLExport.html">LLExport</a>, <a href="Passwords.html">Passwords</a>, <a href="CustomTable.html">CustomTable</a>, <a href="DataSheet.html">DataSheet</a>, <a href="AnaTabIds.html">AnaTabIds</a>, <a href="LLGeo.html">LLGeo</a>, <a href="LLChoices.html">LLChoices</a>, <a href="HiddenNames.html">HiddenNames</a></p>
+<p><strong>Depends on:</strong> <a href="LLdictionary.html">LLdictionary</a>, <a href="LLVariables.html">LLVariables</a>, <a href="LLExport.html">LLExport</a>, <a href="Passwords.html">Passwords</a>, <a href="CustomTable.html">CustomTable</a>, <a href="DataSheet.html">DataSheet</a>, <a href="AnaTabIds.html">AnaTabIds</a>, <a href="LLGeo.html">LLGeo</a>, <a href="LLChoices.html">LLChoices</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="LLTranslation.html">LLTranslation</a>, <a href="ShowHide.html">ShowHide</a>, <a href="ShowHideLayout.html">ShowHideLayout</a>, <a href="ShowHideStore.html">ShowHideStore</a>, <a href="BetterArray.html">BetterArray</a>, <a href="Checking.html">Checking</a>, <a href="DropdownLists.html">DropdownLists</a>, <a href="ChoiceKeys.html">ChoiceKeys</a></p>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
 <div class="section-body">
@@ -54,6 +54,36 @@ and returns a new LLExporter instance. Called on the predeclared instance.</p>
 empty string when no password was used. Modules display this value to
 the user after a successful export so they can share it securely.</p>
 <p><strong>Returns:</strong> String. The password, or vbNullString.</p>
+<hr />
+<h3 id="epiweekstart">EpiWeekStart <a class="anchor-link" href="#epiweekstart">#</a></h3>
+<p><em>epi-week-start</em></p>
+<p><strong>First day of the epidemiological week, as the linelist holds it</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function EpiWeekStart() As String
+</code></pre>
+<p>RNG_EpiWeekStart is a HiddenNames entry and its definition is a quoted string,
+so the name has no range behind it. Every reader that went through
+Names(&quot;RNG_EpiWeekStart&quot;).RefersToRange raised 1004 into a swallow and answered
+an empty string, which is why the epiweek tag of every export file was blank.
+The store is what answers it, and this is what AddMetadataTags writes.</p>
+<p><strong>Returns:</strong> String. The stored value, empty when the workbook carries no such name.</p>
+<hr />
+<h3 id="excludedvariablesfor">ExcludedVariablesFor <a class="anchor-link" href="#excludedvariablesfor">#</a></h3>
+<p><em>excluded-variables-for</em></p>
+<p><strong>The variables a numbered export leaves out</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function ExcludedVariablesFor(ByVal exportNumber As Long) As BetterArray
+</code></pre>
+<p>The selection an export makes before it writes anything: the geo p-code and geo
+concat variables when the export row turns p-codes off, and the personal
+identifiers when it turns those off. Reading it costs three column reads and
+writes nothing, so a caller can ask what a file will be missing before asking
+for the file.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>exportNumber</code>: Long. Which export definition to read (1-based).</li>
+</ul>
+<p><strong>Returns:</strong> BetterArray. The variable names the export drops.</p>
 <hr />
 </div>
 </details>
@@ -279,41 +309,86 @@ optional password, then closes it without saving again.</p>
 <p><strong>Returns:</strong> String. The assembled file path.</p>
 <hr />
 <h2 id="int-private-dictionary-preparation">Private - Dictionary Preparation</h2>
-<h3 id="int-removepcodes">RemovePCodes <a class="anchor-link" href="#int-removepcodes">#</a></h3>
-<p><em>remove-pcodes</em></p>
-<p><strong>Remove p-codes variables from a custom export if configured</strong></p>
+<h3 id="int-excludedvariables">ExcludedVariables <a class="anchor-link" href="#int-excludedvariables">#</a></h3>
+<p><em>excluded-variables</em></p>
+<p><strong>The variables a custom export leaves out</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub RemovePCodes(ByVal dict As LLdictionary, ByVal expObj As LLExport, _
-                         ByVal exportNumber As Long, ByVal expName As String)
+<pre><code class="language-vb">Private Function ExcludedVariables(ByVal dict As LLdictionary, ByVal expObj As LLExport, _
+                                   ByVal exportNumber As Long) As BetterArray
 </code></pre>
-<p>Checks the export configuration for &quot;include p-codes&quot;. When set to &quot;no&quot;,
-clears the export column cells for all dictionary rows whose main label
-matches a geo p-code or geo concat tag.</p>
+<p>Reads the two &quot;include&quot; flags of the export row and answers the names of the
+variables the export drops: the geo p-code and geo concat variables when
+&quot;include p-codes&quot; is off, and every variable flagged as a personal identifier
+when &quot;include personal identifiers&quot; is off. A variable that answers both is
+listed twice, which costs a lookup and nothing else.</p>
+<h2 id="int-why-this-reads-and-never-writes">WHY THIS READS AND NEVER WRITES</h2>
+<p>The exclusion used to be done by clearing the export column of the linelist's
+own Dictionary worksheet, so one export with p-codes off took those variables
+out of that export for good and turning the flag back on could not bring them
+back. The dictionary is the file the whole linelist is generated from and it is
+what a migration ships, so the loss travelled to the next linelist. The names
+answered here are dropped from the copies the export builds, and the source
+sheet keeps what the setup put in it.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>dict</code>: LLdictionary. The source dictionary.</li>
 <li><code>expObj</code>: LLExport. The export configuration.</li>
-<li><code>exportNumber</code>: Long. Which export definition to check.</li>
-<li><code>expName</code>: String. The export column name (e.g. &quot;export 1&quot;).</li>
+<li><code>exportNumber</code>: Long. Which export definition to read.</li>
 </ul>
+<p><strong>Returns:</strong> BetterArray. The variable names to drop, empty when the export keeps
+everything.</p>
 <hr />
-<h3 id="int-removepersonalidentifiers">RemovePersonalIdentifiers <a class="anchor-link" href="#int-removepersonalidentifiers">#</a></h3>
-<p><em>remove-personal-identifiers</em></p>
-<p><strong>Remove personal identifiers from a custom export if configured</strong></p>
+<h3 id="int-columnvalues">ColumnValues <a class="anchor-link" href="#int-columnvalues">#</a></h3>
+<p><em>column-values</em></p>
+<p><strong>Read a one-column range into a 1-based array</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub RemovePersonalIdentifiers(ByVal dict As LLdictionary, ByVal expObj As LLExport, _
-                                      ByVal exportNumber As Long, ByVal expName As String)
+<pre><code class="language-vb">Private Function ColumnValues(ByVal rng As Range) As Variant
 </code></pre>
-<p>Checks the export configuration for &quot;include personal identifiers&quot;. When
-set to &quot;no&quot;, clears the export column cells for all dictionary rows
-flagged as personal identifiers.</p>
+<p>A range of one cell answers a scalar rather than an array, so that case is
+built by hand. Everything else is one crossing for the whole column.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>dict</code>: LLdictionary. The source dictionary.</li>
-<li><code>expObj</code>: LLExport. The export configuration.</li>
-<li><code>exportNumber</code>: Long. Which export definition to check.</li>
-<li><code>expName</code>: String. The export column name.</li>
+<li><code>rng</code>: Range. A range one column wide.</li>
 </ul>
+<p><strong>Returns:</strong> Variant. A 1-based array of the cell values.</p>
+<hr />
+<h3 id="int-withoutexcludedrows">WithoutExcludedRows <a class="anchor-link" href="#int-withoutexcludedrows">#</a></h3>
+<p><em>without-excluded-rows</em></p>
+<p><strong>Drop the excluded variables from a dictionary block</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function WithoutExcludedRows(ByVal dictData As BetterArray, _
+                                     ByVal excluded As BetterArray) As BetterArray
+</code></pre>
+<p>The block carries its headers on the first row, so the variable name column is
+found by its header and every row below is kept or dropped on the name it
+holds. The block is answered unchanged when the export excludes nothing or
+when the block carries no variable name column.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>dictData</code>: BetterArray. A dictionary block, headers included.</li>
+<li><code>excluded</code>: BetterArray. The variable names to drop.</li>
+</ul>
+<p><strong>Returns:</strong> BetterArray. The block with the excluded rows removed.</p>
+<hr />
+<h3 id="int-toprowsof">TopRowsOf <a class="anchor-link" href="#int-toprowsof">#</a></h3>
+<p><em>top-rows-of</em></p>
+<p><strong>Copy the first rows of a two-dimensional block</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function TopRowsOf(ByVal block As Variant, ByVal firstRow As Long, _
+                           ByVal lastRow As Long, ByVal firstCol As Long, _
+                           ByVal lastCol As Long) As Variant
+</code></pre>
+<p>ReDim Preserve reaches the last dimension alone, so a block that lost rows is
+copied into a block of the right height instead.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>block</code>: Variant. The source block.</li>
+<li><code>firstRow</code>: Long. First row to copy.</li>
+<li><code>lastRow</code>: Long. Last row to copy.</li>
+<li><code>firstCol</code>: Long. First column of the block.</li>
+<li><code>lastCol</code>: Long. Last column of the block.</li>
+</ul>
+<p><strong>Returns:</strong> Variant. A block holding the rows asked for.</p>
 <hr />
 <h3 id="int-preparetempdictionary">PrepareTempDictionary <a class="anchor-link" href="#int-preparetempdictionary">#</a></h3>
 <p><em>prepare-temp-dictionary</em></p>
@@ -321,17 +396,20 @@ flagged as personal identifiers.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub PrepareTempDictionary(ByVal dict As LLdictionary, _
                                   ByVal expName As String, _
-                                  ByVal fullExport As Boolean)
+                                  ByVal fullExport As Boolean, _
+                                  ByVal excluded As BetterArray)
 </code></pre>
 <p>When fullExport is True, copies the entire dictionary. When False,
 filters on the export column name to include only rows assigned to that
-export. Writes the result to the temp__ sheet and adds a blue font tag
+export. The variables the export excludes are dropped from the block in
+memory. Writes the result to the temp__ sheet and adds a blue font tag
 to mark the dictionary as prepared.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>dict</code>: LLdictionary. The source dictionary.</li>
 <li><code>expName</code>: String. The export column name to filter on, or vbNullString for full.</li>
 <li><code>fullExport</code>: Boolean. When True, copies the entire dictionary unfiltered.</li>
+<li><code>excluded</code>: BetterArray. Variable names to drop from the copy.</li>
 </ul>
 <hr />
 <h3 id="int-exportdictionaryfromtemp">ExportDictionaryFromTemp <a class="anchor-link" href="#int-exportdictionaryfromtemp">#</a></h3>
@@ -378,16 +456,40 @@ to mark the dictionary as prepared.</p>
 <p><strong>Add the dictionary to the output workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddDictionary(ByVal outwb As Workbook, ByVal dict As LLdictionary, _
-                          ByVal nbExp As Long, ByVal exportColumn As String)
+                          ByVal nbExp As Long, ByVal exportColumn As String, _
+                          ByVal excluded As BetterArray)
 </code></pre>
-<p>Exports the dictionary filtered by exportColumn, then marks the output
-dictionary as prepared with a blue font tag.</p>
+<p>Exports the dictionary filtered by exportColumn, drops the rows this export
+excludes from the copy, then marks the output dictionary as prepared with a
+blue font tag.</p>
+<h2 id="int-why-the-excluded-rows-are-dropped-here">WHY THE EXCLUDED ROWS ARE DROPPED HERE</h2>
+<p>The export column of the source sheet decides what this copy carries, and that
+column is left as the setup wrote it. So the copy arrives holding the p-codes
+and the personal identifiers the export leaves out, and the rows are taken off
+the copy. The file then lists the variables its data sheets carry, and the
+linelist keeps its own dictionary whole.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>outwb</code>: Workbook. The output workbook.</li>
 <li><code>dict</code>: LLdictionary. The source dictionary.</li>
 <li><code>nbExp</code>: Long. Number of export columns.</li>
 <li><code>exportColumn</code>: String. The export column to filter on, or &quot;<strong>all</strong>&quot;.</li>
+<li><code>excluded</code>: BetterArray. Variable names this export leaves out.</li>
+</ul>
+<hr />
+<h3 id="int-dropexcludedfromcopy">DropExcludedFromCopy <a class="anchor-link" href="#int-dropexcludedfromcopy">#</a></h3>
+<p><em>drop-excluded-from-copy</em></p>
+<p><strong>Take the excluded variables off an exported dictionary</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub DropExcludedFromCopy(ByVal outDict As LLdictionary, _
+                                 ByVal excluded As BetterArray)
+</code></pre>
+<p>The rows are gathered into one range and deleted in a single call, so a
+dictionary with many identifiers costs one crossing rather than one per row.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>outDict</code>: LLdictionary. The dictionary of the output workbook.</li>
+<li><code>excluded</code>: BetterArray. Variable names to remove.</li>
 </ul>
 <hr />
 <h3 id="int-addcustomdropdowns">AddCustomDropdowns <a class="anchor-link" href="#int-addcustomdropdowns">#</a></h3>
@@ -396,9 +498,14 @@ dictionary as prepared with a blue font tag.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddCustomDropdowns(ByVal outwb As Workbook)
 </code></pre>
-<p>Reads custom dropdown ListObjects from the source workbook custom
-dropdown sheet and adds each one to the output Choices sheet. Silently
-exits when no custom dropdown sheet exists.</p>
+<p>Walks the dropdown registry of the source workbook and writes the values of
+each custom dropdown onto the output Choices sheet. Silently exits when no
+custom dropdown sheet exists.</p>
+<p>The walk goes through DropdownLists.AllDropdowns, so the key carries the
+dropdown name the registry holds. The header cell of the ListObject was read
+before, and that cell holds the name with every space turned into an
+underscore, so a dropdown called <code>contact type</code> went into the file under a name
+the import side could not update. ChoiceKeys builds the key both ends use.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>outwb</code>: Workbook. The output workbook.</li>
@@ -411,7 +518,8 @@ exits when no custom dropdown sheet exists.</p>
 <pre><code class="language-vb">Private Sub AddMetadataTags(ByVal outwb As Workbook, ByVal scope As Byte, _
                             ByVal exportNumber As Long, _
                             ByVal includeShowHide As Boolean, _
-                            ByVal keepLabels As Boolean)
+                            ByVal keepLabels As Boolean, _
+                            ByVal useFilters As Boolean)
 </code></pre>
 <p>Appends export_type, export_date, editable_labels, show_hide, and
 epiweekstart tags to the Metadata sheet variable/value table. These tags
@@ -423,35 +531,125 @@ control import behaviour when the exported file is re-imported.</p>
 <li><code>exportNumber</code>: Long. The export number for custom exports.</li>
 <li><code>includeShowHide</code>: Boolean. When True, tags show_hide as &quot;update on import&quot;.</li>
 <li><code>keepLabels</code>: Boolean. When True, tags editable_labels as &quot;update on import&quot;.</li>
+<li><code>useFilters</code>: Boolean. When True, the data came from the filtered companions.</li>
 </ul>
+<hr />
+<h3 id="int-exportoptionstag">ExportOptionsTag <a class="anchor-link" href="#int-exportoptionstag">#</a></h3>
+<p><em>export-options-tag</em></p>
+<p><strong>The options of one export, written as one line the import reads back</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ExportOptionsTag(ByVal scope As Byte, ByVal exportNumber As Long, _
+                                  ByVal useFilters As Boolean) As String
+</code></pre>
+<p>The Exports worksheet stays in the linelist, so a file has no way of saying how
+it was written unless the export writes it down. Every option is a
+<code>name: value</code> pair and the pairs are joined with a pipe, so the import side
+splits on the pipe and then on the colon.</p>
+<p>The two pairs the import cannot work without are <code>variable names</code> and
+<code>header row</code>. A file whose header row carries labels alone holds no variable
+names anywhere, so it can never be read back; a file carrying both has its
+variable names on row 2 and reads back once the import knows to look there.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>scope</code>: Byte. ExportScope value.</li>
+<li><code>exportNumber</code>: Long. The export number, ignored for a migration.</li>
+<li><code>useFilters</code>: Boolean. Whether the data came from the filtered companions.</li>
+</ul>
+<p><strong>Returns:</strong> String. The options of this export on one line.</p>
+<hr />
+<h3 id="int-onepair">OnePair <a class="anchor-link" href="#int-onepair">#</a></h3>
+<p><em>one-pair</em></p>
+<p><strong>One <code>name: value</code> pair of the export options line</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function OnePair(ByVal optionName As String, ByVal optionValue As String) As String
+</code></pre>
+<p>An option the Exports row left empty is written as <code>no</code>, so the reader on the
+other side never has to tell an absent option from a false one.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>optionName</code>: String. The option name.</li>
+<li><code>optionValue</code>: String. What the Exports row holds for it.</li>
+</ul>
+<p><strong>Returns:</strong> String. The pair.</p>
 <hr />
 <h3 id="int-addshowhide">AddShowHide <a class="anchor-link" href="#int-addshowhide">#</a></h3>
 <p><em>add-show-hide</em></p>
-<p><strong>Export show/hide state with column widths to the output workbook</strong></p>
+<p><strong>Export the show/hide choices with their sizes to the output workbook</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub AddShowHide(ByVal outwb As Workbook)
 </code></pre>
-<p>Creates a show_hide__ sheet in the output workbook with a ListObject
-containing layer, field_key, header_text, hidden_flag, and column_width
-columns. For each data sheet, creates a ShowHideManager per applicable
-layer (HList, Printed, VList) and exports the current visibility state.</p>
+<p>Builds a show_hide__ sheet in the output workbook and asks ShowHideStore to
+provision its table. Every data sheet contributes each layer it has: HList and
+CRF for a data entry sheet, Printed for its companion, VList for an info sheet.
+The choices the user made are read out of the source workbook first, so the
+file carries what the user sees rather than what the dictionary authored.</p>
+<p>The CRF layer used to be left out of both ends of the migration, so a CRF
+sheet lost its visibility and its sizes on every round trip.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>outwb</code>: Workbook. The output workbook.</li>
 </ul>
 <hr />
-<h3 id="int-importcurrentshowhide">ImportCurrentShowHide <a class="anchor-link" href="#int-importcurrentshowhide">#</a></h3>
-<p><em>import-current-show-hide</em></p>
-<p><strong>Import current user overrides from the show_hide__ ListObject</strong></p>
+<h3 id="int-saveoneshowhidelayer">SaveOneShowHideLayer <a class="anchor-link" href="#int-saveoneshowhidelayer">#</a></h3>
+<p><em>save-one-show-hide-layer</em></p>
+<p><strong>Write one layer of one sheet into the export store</strong></p>
 <p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Private Sub ImportCurrentShowHide(ByVal shm As ShowHideManager)
+<pre><code class="language-vb">Private Sub SaveOneShowHideLayer(ByVal outStore As ShowHideStore, _
+                                 ByVal dict As LLdictionary, _
+                                 ByVal layer As Byte, _
+                                 ByVal sheetName As String, _
+                                 ByVal sourceSh As Worksheet)
 </code></pre>
-<p>Reads the show_hide__ sheet from the source workbook and imports the
-user visibility plan into the ShowHideManager, ensuring the exported
-show/hide reflects the user actual choices.</p>
+<p>Reads the entry list from the dictionary, folds in whatever the user chose in
+the running workbook, then saves it with the sheet so the sizes and the header
+directions travel too.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
-<li><code>shm</code>: ShowHideManager. The manager to populate.</li>
+<li><code>outStore</code>: ShowHideStore. The store on the output workbook.</li>
+<li><code>dict</code>: LLdictionary. The source dictionary.</li>
+<li><code>layer</code>: Byte. A ShowHideWorksheetLayer value. Which layer to write.</li>
+<li><code>sheetName</code>: String. The base sheet name.</li>
+<li><code>sourceSh</code>: Worksheet. The sheet of that layer in the source workbook.</li>
+</ul>
+<hr />
+<h3 id="int-companionsheet">CompanionSheet <a class="anchor-link" href="#int-companionsheet">#</a></h3>
+<p><em>companion-sheet</em></p>
+<p><strong>Find a prefixed companion sheet of the source workbook</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function CompanionSheet(ByVal sheetName As String) As Worksheet
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sheetName</code>: String. The full sheet name, prefix included.</li>
+</ul>
+<p><strong>Returns:</strong> Worksheet. The sheet, or Nothing when the workbook has none.</p>
+<hr />
+<h3 id="int-basetablenameof">BaseTableNameOf <a class="anchor-link" href="#int-basetablenameof">#</a></h3>
+<p><em>base-table-name-of</em></p>
+<p><strong>The table name a sheet's PRINTSTART anchor is named after</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function BaseTableNameOf(ByVal sh As Worksheet) As String
+</code></pre>
+<p>A printed companion stores its table name with the print_ prefix in front and
+the anchor is named after the base one, so the prefix comes off here.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sh</code>: Worksheet. The sheet to read.</li>
+</ul>
+<p><strong>Returns:</strong> String. The table name with no print_ prefix.</p>
+<hr />
+<h3 id="int-importcurrentshowhide">ImportCurrentShowHide <a class="anchor-link" href="#int-importcurrentshowhide">#</a></h3>
+<p><em>import-current-show-hide</em></p>
+<p><strong>Fold the user's live choices into an entry list</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub ImportCurrentShowHide(ByVal entries As ShowHide)
+</code></pre>
+<p>Reads the show/hide store of the source workbook. A workbook that has never
+had the form opened carries an empty table, and the entry list then keeps the
+state the dictionary authored.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>entries</code>: ShowHide. The entry list to update.</li>
 </ul>
 <hr />
 <h3 id="int-addanalysissheets">AddAnalysisSheets <a class="anchor-link" href="#int-addanalysissheets">#</a></h3>
@@ -503,23 +701,53 @@ delegates to ExportVListData. Applies formatting to each output sheet.</p>
 <li><code>useFilters</code>: Boolean. When True, reads from filtered companion sheets.</li>
 </ul>
 <hr />
+<h3 id="int-labelsforwrittencolumns">LabelsForWrittenColumns <a class="anchor-link" href="#int-labelsforwrittencolumns">#</a></h3>
+<p><em>labels-for-written-columns</em></p>
+<p><strong>The label row that lines up with the columns an export wrote</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function LabelsForWrittenColumns(ByVal expDict As LLdictionary, _
+                                         ByVal sheetName As String, _
+                                         ByVal headersList As BetterArray, _
+                                         ByVal skipped As BetterArray) As BetterArray
+</code></pre>
+<p>The dictionary answers one label per variable, in the same order as the
+variable names, so the two lists match until the export skips one. Dropping the
+label of every skipped variable is what keeps the row over its data.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>expDict</code>: LLdictionary. The export dictionary.</li>
+<li><code>sheetName</code>: String. The sheet the labels belong to.</li>
+<li><code>headersList</code>: BetterArray. The variable names the export was asked for.</li>
+<li><code>skipped</code>: BetterArray. The variable names the export could not write.</li>
+</ul>
+<p><strong>Returns:</strong> BetterArray. One label per column written, in column order.</p>
+<hr />
 <h3 id="int-exportvlistdata">ExportVListData <a class="anchor-link" href="#int-exportvlistdata">#</a></h3>
 <p><em>export-vlist-data</em></p>
 <p><strong>Export VList data (variable/value pairs) to the output sheet</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ExportVListData(ByVal inpsh As Worksheet, ByVal outsh As Worksheet, _
                             ByVal headersList As BetterArray, _
-                            ByVal useLabels As Boolean, ByVal startLine As Long)
+                            ByVal useLabels As Boolean)
 </code></pre>
-<p>Writes variable names and their values as rows. When useLabels is True,
-replaces variable names with their labels.</p>
+<p>Writes one row per variable: the variable name in column A, its label beside it
+when the header format asks for labels, then the value.</p>
+<h2 id="int-the-three-header-formats-on-a-vlist-sheet">THE THREE HEADER FORMATS ON A VLIST SHEET</h2>
+<p>Owner decision, 2026-08-01: the shape is <code>variable | label | value</code>, and the
+label column is written in the two label formats alone.</p>
+<p>What it replaces was wrong in two ways at once. The data start ROW was fed into
+a column index, so the <code>variable names + variable labels</code> format wrote the pair
+into columns B and C and left column A empty; and in the same format the
+variable name was overwritten by the label, so the file carried no variable
+names at all. <code>LLImporter.ImportVListSheet</code> resolves each row through
+<code>currsh.Range(varName)</code>, so every row of such a file landed in &quot;not imported&quot;.
+Column A now always holds the variable name, whatever the format.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>inpsh</code>: Worksheet. The source VList worksheet.</li>
 <li><code>outsh</code>: Worksheet. The output worksheet.</li>
 <li><code>headersList</code>: BetterArray. Variable names to export.</li>
-<li><code>useLabels</code>: Boolean. When True, writes labels instead of variable names.</li>
-<li><code>startLine</code>: Long. Column offset for data start.</li>
+<li><code>useLabels</code>: Boolean. When True, writes a label column beside the names.</li>
 </ul>
 <hr />
 <h2 id="int-private-formatting-helpers">Private - Formatting Helpers</h2>
@@ -568,14 +796,16 @@ or special sheets.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (11 file(s))</summary>
+<summary>Used in (13 file(s))</summary>
 <ul>
 <li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
 <li><a href="AnaTabIds.html">AnaTabIds.cls</a></li>
+<li><a href="ChoiceKeys.html">ChoiceKeys.cls</a></li>
 <li><a href="ExportButton.html">ExportButton.cls</a></li>
 <li><a href="LLdictionary.html">LLdictionary.cls</a></li>
 <li><a href="LLGeo.html">LLGeo.cls</a></li>
 <li><a href="Linelist.html">Linelist.cls</a></li>
+<li><a href="LLDataEntry.html">LLDataEntry.cls</a></li>
 <li><a href="LLTranslation.html">LLTranslation.cls</a></li>
 <li>FormLogicExportMig.bas</li>
 <li>TestLLExporter.bas</li>

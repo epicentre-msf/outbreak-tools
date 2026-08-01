@@ -26,8 +26,35 @@ it on to TableSpecs.RowCategories / ColumnCategories, which type the same
 parameter as Object and dispatch on TypeName. A LinelistSpecs is what
 AnalysisOutput passes, and the Object type keeps the 1,536-line LinelistSpecs
 closure out of this class's compile dependencies, so the suite can drive it.</p>
-<p><strong>Depends on:</strong> <a href="AnalysisRanges.html">AnalysisRanges</a>, <a href="TableSpecs.html">TableSpecs</a>, <a href="TranslationObject.html">TranslationObject</a>, <a href="LLVariables.html">LLVariables</a>, <a href="LLFormat.html">LLFormat</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="BetterArray.html">BetterArray</a>, <a href="Checking.html">Checking</a>, Supplies the unique key every Checking.Add needs. It counts within one, instance, which is all uniqueness requires: each instance owns its own, <a href="Checking.html">Checking</a>, and AnalysisOutput harvests them per table.</p>
-<p><strong>Version:</strong> 1.1 (2026-02-11)</p>
+</div>
+</details>
+<details open class="doc-section" id="the-four-build-phases-run-in-one-order-and-the-order-is-load-bearing">
+<summary>THE FOUR BUILD PHASES RUN IN ONE ORDER AND THE ORDER IS LOAD-BEARING</summary>
+<div class="section-body">
+<p>AddHeader inserts rows and shifts the sheet, AddRows sets EndRow, AddColumns
+sets EndColumn and NumberOfColumns, and NameRanges reads all three. Build runs
+them in that order and records how far it has gone; NameRanges and Format
+refuse a table whose earlier phases have not run. Between AddHeader and AddRows
+the layout is fixed: the start row is cached and the start column is written
+onto the sheet.</p>
+</div>
+</details>
+<details open class="doc-section" id="each-of-the-three-large-phases-is-a-dispatcher">
+<summary>EACH OF THE THREE LARGE PHASES IS A DISPATCHER</summary>
+<div class="section-body">
+<p>AddHeader, NameRanges and Format each carry one Select Case over the table
+scope and hand the work to a small private aspect, the way VarWriter does.</p>
+</div>
+</details>
+<details open class="doc-section" id="what-is-resolved-once-per-table">
+<summary>WHAT IS RESOLVED ONCE PER TABLE</summary>
+<div class="section-body">
+<p>The table identifier, the table scope, the range-name builder, the spatial
+type, the translation provider and the variable reader are read once and held.
+Every phase used to re-derive its own copy, which is where two methods reading
+one fact in two ways came from.</p>
+<p><strong>Depends on:</strong> <a href="AnalysisRanges.html">AnalysisRanges</a>, <a href="TableSpecs.html">TableSpecs</a>, <a href="TranslationObject.html">TranslationObject</a>, <a href="LLVariables.html">LLVariables</a>, <a href="LLFormat.html">LLFormat</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="BetterArray.html">BetterArray</a>, <a href="Checking.html">Checking</a>, The four build phases, in the order Build runs them. AddHeader inserts rows, AddRows sets EndRow, AddColumns sets EndColumn and NumberOfColumns, and, NameRanges needs all three, so the order is load-bearing. RequirePhase is what, says so to the compiler-less reader and to the caller that gets it wrong., The prefix lists Format walks. Each one was a BetterArray cleared and refilled, per table, and each list is the same for every table of a scope, so they are, written once here and split on use., Supplies the unique key every Checking.Add needs. It counts within one, instance, which is all uniqueness requires: each instance owns its own, <a href="Checking.html">Checking</a>, and AnalysisOutput harvests them per table.</p>
+<p><strong>Version:</strong> 1.2 (2026-07-31)</p>
 </div>
 </details>
 <details open class="doc-section" id="factory">
@@ -39,7 +66,8 @@ closure out of this class's compile dependencies, so the suite can drive it.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal specs As TableSpecs, _
                        ByVal outputWksh As Worksheet, _
-                       ByVal lData As Object) As CrossTable
+                       ByVal lData As Object, _
+                       Optional ByVal previousTable As CrossTable) As CrossTable
 </code></pre>
 <p>Factory method that creates and returns a new CrossTable instance from
 the given table specifications. A cross-table is a structured analysis
@@ -58,6 +86,9 @@ for locale-aware labels and is passed to TableSpecs.RowCategories / ColumnCatego
 category resolution at build time. Production passes a LinelistSpecs. The type is Object so
 that this class carries no compile dependency on it; the two members it needs, TransObject
 and Categories, are resolved at run time.</li>
+<li><code>previousTable</code>: Optional CrossTable. The table this one continues, when the
+caller already holds it. A caller that walks the setup rows in order builds every
+ancestor anyway, so handing the last one in saves this instance rebuilding it.</li>
 </ul>
 <p><strong>Returns:</strong> CrossTable. A fully initialized CrossTable ready for Build or individual step calls.</p>
 <p><strong>Throws:</strong></p>
@@ -394,6 +425,21 @@ and formula generation.</p>
 <pre><code class="language-vb">Public Sub Seal()
 </code></pre>
 <p>Properties used during factory instantiation and internal wiring.</p>
+<p>Also resolves the two facts every phase of the build reads first -- the table
+identifier and the table scope -- and binds the range-name builder to the
+identifier. Neither can change while this instance lives, so each is read once
+here instead of once per phase.</p>
+<hr />
+<h3 id="int-previoustable">PreviousTable <a class="anchor-link" href="#int-previoustable">#</a></h3>
+<p><em>previous-table-set</em></p>
+<p><strong>Assign the table this one continues.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Set PreviousTable(ByVal tabl As CrossTable)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>tabl</code>: CrossTable. The preceding cross-table.</li>
+</ul>
 <hr />
 <h3 id="int-guardnotsealed">GuardNotSealed <a class="anchor-link" href="#int-guardnotsealed">#</a></h3>
 <p><em>guard-not-sealed</em></p>
@@ -483,6 +529,71 @@ categories plus optional total and missing columns.</p>
 <li><code>col</code>: Long. The data column count to store.</li>
 </ul>
 <hr />
+<h2 id="int-cached-facts">Cached Facts</h2>
+<h3 id="int-tableid">TableId <a class="anchor-link" href="#int-tableid">#</a></h3>
+<p><em>table-id</em></p>
+<p><strong>Identifier of the table being built.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get TableId() As String
+</code></pre>
+<p>Every phase of a build opened by re-deriving the same handful of facts, and
+none of them can change while one instance lives. They are resolved once and
+held here, the way VarWriter holds its collaborators.</p>
+<p><strong>Returns:</strong> String. The table identifier, such as &quot;TS_tab3&quot;.</p>
+<hr />
+<h3 id="int-tablescope">TableScope <a class="anchor-link" href="#int-tablescope">#</a></h3>
+<p><em>table-scope</em></p>
+<p><strong>Analysis scope of the table being built.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get TableScope() As Byte
+</code></pre>
+<p><strong>Returns:</strong> Byte. A member of AnalysisTableScope.</p>
+<hr />
+<h3 id="int-rangenames">RangeNames <a class="anchor-link" href="#int-rangenames">#</a></h3>
+<p><em>range-names</em></p>
+<p><strong>Range-name builder bound to this table's identifier.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get RangeNames() As AnalysisRanges
+</code></pre>
+<p><strong>Returns:</strong> AnalysisRanges. The builder.</p>
+<hr />
+<h3 id="int-spatialtype">SpatialType <a class="anchor-link" href="#int-spatialtype">#</a></h3>
+<p><em>spatial-type</em></p>
+<p><strong>Whether the spatial variable is geographic or a health facility.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get SpatialType() As String
+</code></pre>
+<p>Resolved on first use rather than at creation, because the answer costs a
+dictionary probe and the four non-spatial scopes never ask for it. An empty
+answer is a real answer here, so a separate flag records that the probe ran.</p>
+<p><strong>Returns:</strong> String. &quot;geo&quot;, &quot;hf&quot;, or an empty string.</p>
+<hr />
+<h3 id="int-variables">Variables <a class="anchor-link" href="#int-variables">#</a></h3>
+<p><em>variables</em></p>
+<p><strong>Variable reader over the dictionary of this build.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get Variables() As LLVariables
+</code></pre>
+<p>AddRows and AddColumns each built one of these, and TableSpecs builds a third
+for every category lookup. One per table is enough.</p>
+<p><strong>Returns:</strong> LLVariables. The variable reader.</p>
+<hr />
+<h3 id="int-valueof">ValueOf <a class="anchor-link" href="#int-valueof">#</a></h3>
+<p><em>value-of</em></p>
+<p><strong>One setup column of the row this table is built from.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Property Get ValueOf(ByVal colName As String) As String
+</code></pre>
+<p>Every read of the setup row goes through here. TableSpecs.Value scans its
+cached header names, so the cost is one linear scan per call, and putting the
+twenty-odd call sites behind one name is what makes a per-table memo a single
+edit later.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>colName</code>: String. The setup column to read, matched loosely.</li>
+</ul>
+<p><strong>Returns:</strong> String. The cell value, or an empty string.</p>
+<hr />
 <h2 id="int-position-properties">Position Properties</h2>
 <h3 id="int-rangeexists">RangeExists <a class="anchor-link" href="#int-rangeexists">#</a></h3>
 <p><em>range-exists</em></p>
@@ -517,6 +628,34 @@ mattered: ROWGS_SET, COLGS_SET, TIME_UNIT_LIST, ADM_UNIT_LIST and
 POPULATION_FACTOR_LIST are each written on one sheet and read from four.</li>
 </ul>
 <hr />
+<h3 id="int-namedrange">NamedRange <a class="anchor-link" href="#int-namedrange">#</a></h3>
+<p><em>named-range</em></p>
+<p><strong>Resolve a named range on the output worksheet, or Nothing.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function NamedRange(ByVal rngName As String) As Range
+</code></pre>
+<p>The answer to &quot;does this name exist&quot; and the answer to &quot;give me the range&quot;
+were two separate name resolutions at every call site of RangeExists that went
+on to read the range. Format alone did that about fifty times per table. This
+answers both questions with one resolution.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>rngName</code>: String. The name to look up.</li>
+</ul>
+<p><strong>Returns:</strong> Range. The range, or Nothing when the name is absent or owned by
+another worksheet.</p>
+<p><strong>Remarks:</strong></p>
+<ul>
+<li>The owning sheet is compared by NAME. Wksh() hands back the stored
+reference while Range.Worksheet builds a fresh wrapper over the same sheet, and
+Is compares wrapper identity, so it can answer False for the very sheet it was
+handed. An Is answering False for the right sheet makes this function answer
+Nothing everywhere, and every &quot;did I already build this&quot; guard then rebuilds:
+AddHeader re-inserts its section rows on each call and StartRow recomputes from
+End(xlUp) against a sheet that just grew. The table walks down the sheet and the
+run never finishes.</li>
+</ul>
+<hr />
 <h3 id="int-startrow">StartRow <a class="anchor-link" href="#int-startrow">#</a></h3>
 <p><em>start-row</em></p>
 <p><strong>Starting row of the table on the output worksheet.</strong></p>
@@ -539,9 +678,32 @@ row as if this were a new section.</p>
 <p><strong>Remarks:</strong></p>
 <ul>
 <li>This property is called many times during a single Build cycle (by
-StartColumn, AddRows, AddColumns, AddHeader, NameRanges, Format). After the
-first call creates the STARTROW_ named range, subsequent calls are cheap
-lookups.</li>
+StartColumn, AddRows, AddColumns, AddHeader, NameRanges, Format). Build resolves
+it once, straight after AddHeader, and every later read is a field read.</li>
+</ul>
+<h2 id="int-why-the-cache-is-filled-after-addheader-and-not-at-creation">WHY THE CACHE IS FILLED AFTER AddHeader AND NOT AT CREATION</h2>
+<p>AddHeader inserts rows above the table, which moves it down the sheet. Excel
+moves the STARTROW_ name with it; a Long held from before the insert would be
+stale. Nothing inserts rows above a table once its own header is written, so
+from that point on the value is fixed for the life of the instance.</p>
+<hr />
+<h3 id="int-cachestartrow">CacheStartRow <a class="anchor-link" href="#int-cachestartrow">#</a></h3>
+<p><em>cache-start-row</em></p>
+<p><strong>Resolve the start row once and hold it.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub CacheStartRow()
+</code></pre>
+<hr />
+<h3 id="int-computestartrow">ComputeStartRow <a class="anchor-link" href="#int-computestartrow">#</a></h3>
+<p><em>compute-start-row</em></p>
+<p><strong>Read or compute the start row from the worksheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ComputeStartRow() As Long
+</code></pre>
+<p><strong>Returns:</strong> Long. The 1-based row this table begins at.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ErrorUnexpectedState When no branch could resolve a row.</li>
 </ul>
 <hr />
 <h3 id="int-previous">Previous <a class="anchor-link" href="#int-previous">#</a></h3>
@@ -562,10 +724,20 @@ translation object.</p>
 <p><strong>Returns:</strong> CrossTable. The preceding cross-table, or Nothing when this is the first table.</p>
 <p><strong>Remarks:</strong></p>
 <ul>
-<li>Each call creates a new CrossTable instance; the result is not cached. For
-temporal tables, this property is typically called once during StartRow
-resolution and should not be called in tight loops.</li>
+<li>The instance is built once and held.</li>
 </ul>
+<h2 id="int-why-this-property-used-to-cost-o-n-per-call">WHY THIS PROPERTY USED TO COST O(n) PER CALL</h2>
+<p>It built a fresh CrossTable every time it was read, and StartRow reads
+Previous.StartRow, which reads Previous again. For a temporal section of n
+tables, resolving the last table's start row constructed O(n) cross-tables and
+walked O(n) specification chains, and StartRow is read from six places. Holding
+the instance collapses that to one construction per table.</p>
+<h2 id="int-and-why-a-handed-in-ancestor-is-checked-before-it-is-used">AND WHY A HANDED-IN ANCESTOR IS CHECKED BEFORE IT IS USED</h2>
+<p>AnalysisOutput walks the setup rows in order and keeps the last table it built,
+so it can hand the ancestor in and save this instance building it again. The two
+can disagree: a row that passes validation and then fails inside Build is still
+the nearest valid row above, so the caller's last table is one further up. The
+identifiers are compared and a mismatch falls back to building the real one.</p>
 <hr />
 <h3 id="int-startcolumn">StartColumn <a class="anchor-link" href="#int-startcolumn">#</a></h3>
 <p><em>start-column</em></p>
@@ -591,6 +763,36 @@ the actual named range cell is one column to the right and one row above the
 logical start column. When reading back, the code subtracts 1 from the
 named range's column to recover the true start column.</li>
 </ul>
+<h2 id="int-this-property-writes-nothing">THIS PROPERTY WRITES NOTHING</h2>
+<p>It used to name STARTCOL_ on the worksheet, so reading it from a consumer turned
+into writing names onto tables the caller had not built -- and, through StartRow,
+into walking the whole ancestor chain. EnsureStartColumn is the assignment half
+and Build calls it once, straight after AddHeader. A read before that answers
+what the assignment would store.</p>
+<hr />
+<h3 id="int-computestartcolumn">ComputeStartColumn <a class="anchor-link" href="#int-computestartcolumn">#</a></h3>
+<p><em>compute-start-column</em></p>
+<p><strong>Work out which column this table starts in.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function ComputeStartColumn() As Long
+</code></pre>
+<p>A temporal table continuing a section sits to the right of the one before it,
+which is what the End(xlToLeft) scan finds. Every other table, and the table
+that opens a temporal section, starts at the standard column.</p>
+<p><strong>Returns:</strong> Long. The 1-based start column.</p>
+<hr />
+<h3 id="int-ensurestartcolumn">EnsureStartColumn <a class="anchor-link" href="#int-ensurestartcolumn">#</a></h3>
+<p><em>ensure-start-column</em></p>
+<p><strong>Fix this table's start column on the worksheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub EnsureStartColumn()
+</code></pre>
+<p>Writes STARTCOL_<tableId> once. It has to run before AddColumns, because the
+End(xlToLeft) scan behind a continuation table's column answers something else
+as soon as that table's own columns are on the sheet, and because AddColumns
+writes the column label into the named cell. Build calls it straight after
+AddHeader; AddRows and AddColumns call it too, so a caller driving the phases
+one at a time gets the same sheet.</p>
 <hr />
 <h3 id="int-endrow">EndRow <a class="anchor-link" href="#int-endrow">#</a></h3>
 <p><em>end-row-set</em></p>
@@ -703,6 +905,29 @@ attempting to locate its row or column position.</p>
 important because translated labels may have specific capitalization.</li>
 </ul>
 <hr />
+<h2 id="int-addrows">AddRows</h2>
+<h3 id="int-writetemporalrowgrid">WriteTemporalRowGrid <a class="anchor-link" href="#int-writetemporalrowgrid">#</a></h3>
+<p><em>write-temporal-row-grid</em></p>
+<p><strong>Write the fixed row block a temporal section shares.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub WriteTemporalRowGrid(ByVal startRw As Long, ByVal startCol As Long)
+</code></pre>
+<p>The block is NB_ROWS_TIME_SERIES rows tall: a Period label at the top, blank
+rows for the periods themselves, then Total and Missing. It used to be built by
+pushing 52 empty strings one at a time into a BetterArray, in a loop whose
+bounds had to be kept in step with the constant by hand. The size comes from the
+constant now and the block reaches the sheet in one crossing.</p>
+<h2 id="int-the-total-and-missing-labels-are-always-written">THE TOTAL AND MISSING LABELS ARE ALWAYS WRITTEN</h2>
+<p>RowsCategoriesRange trims the two footer rows BY COUNT, so dropping a label
+would move every category range of the section up by one row and take every
+total formula with it. Whether the user SEES the Total row is decided in Format,
+which hides it when no table of the section asked for one -- issue #338.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>startRw</code>: Long. The row this table starts at.</li>
+<li><code>startCol</code>: Long. The column the shared labels go in.</li>
+</ul>
+<hr />
 <h2 id="int-helpers">Helpers</h2>
 <h3 id="int-percentlabel">PercentLabel <a class="anchor-link" href="#int-percentlabel">#</a></h3>
 <p><em>percent-label</em></p>
@@ -751,6 +976,337 @@ EndColumn.</p>
 <ul>
 <li>NumberOfColumns counts only the &quot;pure&quot; data columns, not including Missing
 or Total. However, EndColumn includes all columns written.</li>
+</ul>
+<hr />
+<h2 id="int-addheader">AddHeader</h2>
+<h3 id="int-addtitleandsectionheader">AddTitleAndSectionHeader <a class="anchor-link" href="#int-addtitleandsectionheader">#</a></h3>
+<p><em>add-title-and-section-header</em></p>
+<p><strong>Write the title of a univariate or bivariate table.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AddTitleAndSectionHeader()
+</code></pre>
+<p>A table that opens a section also gets three rows inserted above it for the
+section label. The insert shifts the sheet down and Excel carries the names
+with it, which is why the local start row is read before the insert and the
+section cell is addressed through the title name afterwards.</p>
+<hr />
+<h3 id="int-addglobalsummaryheader">AddGlobalSummaryHeader <a class="anchor-link" href="#int-addglobalsummaryheader">#</a></h3>
+<p><em>add-global-summary-header</em></p>
+<p><strong>Write the shared global summary label, once per sheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AddGlobalSummaryHeader()
+</code></pre>
+<p>Every global summary row of a sheet shares one label, so ROWGS_SET is both the
+name of the cell and the guard that stops the second row writing it again.</p>
+<hr />
+<h3 id="int-addtemporalheader">AddTemporalHeader <a class="anchor-link" href="#int-addtemporalheader">#</a></h3>
+<p><em>add-temporal-header</em></p>
+<p><strong>Open a temporal section and write the controls it carries.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AddTemporalHeader()
+</code></pre>
+<p>Runs for the table that opens the section only. A spatio-temporal section needs
+room for its geographic input rows on top of the date controls, which is what
+the taller insert is for.</p>
+<hr />
+<h3 id="int-addspatiotemporalgeoinputs">AddSpatioTemporalGeoInputs <a class="anchor-link" href="#int-addspatiotemporalgeoinputs">#</a></h3>
+<p><em>add-spatio-temporal-geo-inputs</em></p>
+<p><strong>Write the geographic input rows of a spatio-temporal section.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function AddSpatioTemporalGeoInputs(ByVal sectionRng As Range, _
+                                            ByVal nGeo As Long) As Range
+</code></pre>
+<p>One input cell per geographic unit, each named so the formula writer can point
+at it. The tag comes from the dictionary probe, which is what the formula
+writer uses to reference these same cells. It used to come from the &quot;spatial
+type&quot; column of this row, and that column is never filled: the setup workbook
+validates it on the spatio-temporal specification table and the analysis table
+only ever receives the geo dropdown. So the read returned empty, every table
+was tagged geographic, and a health facility table's label formulas pointed at
+INPUTSPTHF_ names that were never created.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>sectionRng</code>: Range. The section anchor cell.</li>
+<li><code>nGeo</code>: Long. How many geographic units the table shows.</li>
+</ul>
+<p><strong>Returns:</strong> Range. The anchor the date controls hang from.</p>
+<hr />
+<h3 id="int-addtemporaldatecontrols">AddTemporalDateControls <a class="anchor-link" href="#int-addtemporaldatecontrols">#</a></h3>
+<p><em>add-temporal-date-controls</em></p>
+<p><strong>Write the start date, time unit and end date controls of a section.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AddTemporalDateControls(ByVal anchorRng As Range)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>anchorRng</code>: Range. The cell the control block is measured from.</li>
+</ul>
+<hr />
+<h3 id="int-ensuretimeunitlist">EnsureTimeUnitList <a class="anchor-link" href="#int-ensuretimeunitlist">#</a></h3>
+<p><em>ensure-time-unit-list</em></p>
+<p><strong>Build the five time unit names the dropdown reads, once per sheet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function EnsureTimeUnitList() As Range
+</code></pre>
+<p>The formula writer binds the time unit dropdown to this same name, and the two
+used to build it separately: this one prefixed the spatio-temporal spelling and
+the other one always asked for the plain one, so no spatio-temporal table ever
+got its dropdown. One member of AnalysisRanges answers for both now.</p>
+<p><strong>Returns:</strong> Range. The top cell of the list block, whether it was just built or
+was already there.</p>
+<hr />
+<h3 id="int-addspatialheader">AddSpatialHeader <a class="anchor-link" href="#int-addspatialheader">#</a></h3>
+<p><em>add-spatial-header</em></p>
+<p><strong>Write the dropdowns and the title of a spatial table.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub AddSpatialHeader()
+</code></pre>
+<p>Two of the three lists are shared by every spatial table of the sheet and are
+built once. The third is this table's own dropdown, geographic or health
+facility, and the title and section labels are inserted above it.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ErrorUnexpectedState When the table names neither an adm1_ nor an hf_ variable.</li>
+</ul>
+<hr />
+<h2 id="int-nameranges">NameRanges</h2>
+<h3 id="int-nameendtable">NameEndTable <a class="anchor-link" href="#int-nameendtable">#</a></h3>
+<p><em>name-end-table</em></p>
+<p><strong>Mark the row under the table, which is what the next one measures from.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub NameEndTable()
+</code></pre>
+<hr />
+<h3 id="int-namecategoryrows">NameCategoryRows <a class="anchor-link" href="#int-namecategoryrows">#</a></h3>
+<p><em>name-category-rows</em></p>
+<p><strong>Name the row category block and hand it back.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function NameCategoryRows() As Range
+</code></pre>
+<p>A table that opens a section, and every non-temporal table, owns its category
+block and names it. A temporal table continuing a section shares the labels the
+anchor wrote, so it derives the block from its own ENDTABLE_ marker instead and
+names nothing.</p>
+<p><strong>Returns:</strong> Range. The category block the value columns hang off.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ErrorUnexpectedState When a continuation table finds no table above it.</li>
+</ul>
+<hr />
+<h3 id="int-namevaluecolumns">NameValueColumns <a class="anchor-link" href="#int-namevaluecolumns">#</a></h3>
+<p><em>name-value-columns</em></p>
+<p><strong>Name every value column and its label cell.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub NameValueColumns(ByVal catRng As Range)
+</code></pre>
+<p>The label row sits one row above the values for every scope but the univariate
+one, where it sits on the same row. That answer is the same for every column of
+a table, so it is read once above the loop.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>catRng</code>: Range. The category block the first value column sits beside.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ErrorUnexpectedState When the table scope has no value column layout.</li>
+</ul>
+<hr />
+<h3 id="int-nametotalsandmissing">NameTotalsAndMissing <a class="anchor-link" href="#int-nametotalsandmissing">#</a></h3>
+<p><em>name-totals-and-missing</em></p>
+<p><strong>Name the Total, Missing and Percent rows and columns.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub NameTotalsAndMissing()
+</code></pre>
+<p>Each of the three is found by its translated label, so a table that carries
+none of them names none of them. The range just named is kept and offset for
+the percentage twin instead of being resolved back by name.</p>
+<hr />
+<h3 id="int-nameintersections">NameIntersections <a class="anchor-link" href="#int-nameintersections">#</a></h3>
+<p><em>name-intersections</em></p>
+<p><strong>Name the cells where a total or missing row meets such a column.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub NameIntersections()
+</code></pre>
+<hr />
+<h3 id="int-nameinteriorvalues">NameInteriorValues <a class="anchor-link" href="#int-nameinteriorvalues">#</a></h3>
+<p><em>name-interior-values</em></p>
+<p><strong>Name the block of data cells, and the outer block a spatial table adds.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub NameInteriorValues()
+</code></pre>
+<p>The two end columns are read as ranges and the block is built from them.
+Splitting an address on a colon reads the second half of a one-cell address
+that has no colon in it, and a value column is one cell tall whenever the table
+has one category row: one category and no missing row for a univariate table,
+or a geo count of one for a spatial one. This range is required -- Format and
+CrossTableFormula both read it, and twenty-odd names are already on the sheet
+by the time it is built, so a raise here left the table half-named.</p>
+<hr />
+<h3 id="int-namecolumncategories">NameColumnCategories <a class="anchor-link" href="#int-namecolumncategories">#</a></h3>
+<p><em>name-column-categories</em></p>
+<p><strong>Name the header row of the table.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub NameColumnCategories()
+</code></pre>
+<hr />
+<h2 id="int-format">Format</h2>
+<h3 id="int-formatsectionandtitle">FormatSectionAndTitle <a class="anchor-link" href="#int-formatsectionandtitle">#</a></h3>
+<p><em>format-section-and-title</em></p>
+<p><strong>Format the section label and the table title.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub FormatSectionAndTitle(ByVal desFormat As LLFormat, ByVal hn As HiddenNames)
+</code></pre>
+<p>The guard on the second arm is the table scope. ROWGS_SET, the name it used to
+read, belongs to the global summary and is written on one sheet, but this arm
+is reached by any table that does not start a section, on any of the four
+analysis sheets. Asking whether the name resolved meant the time series builder
+formatted a range on the normal sheet and then stamped ROWGS_FORMATSET, a
+worksheet-scoped flag, onto its own -- so the flag described a sheet it was not
+written on. Tightening RangeExists closes the same hole from the other side;
+this states the intent.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>desFormat</code>: LLFormat. The formatting provider.</li>
+<li><code>hn</code>: HiddenNames. The worksheet's hidden name store.</li>
+</ul>
+<hr />
+<h3 id="int-formatspatialdropdown">FormatSpatialDropdown <a class="anchor-link" href="#int-formatspatialdropdown">#</a></h3>
+<p><em>format-spatial-dropdown</em></p>
+<p><strong>Format the geo or health facility dropdown of a spatial table.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub FormatSpatialDropdown(ByVal desFormat As LLFormat)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>desFormat</code>: LLFormat. The formatting provider.</li>
+</ul>
+<hr />
+<h3 id="int-formatheaders">FormatHeaders <a class="anchor-link" href="#int-formatheaders">#</a></h3>
+<p><em>format-headers</em></p>
+<p><strong>Format the header row of the table.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub FormatHeaders(ByVal desFormat As LLFormat, ByVal hn As HiddenNames)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>desFormat</code>: LLFormat. The formatting provider.</li>
+<li><code>hn</code>: HiddenNames. The worksheet's hidden name store.</li>
+</ul>
+<hr />
+<h3 id="int-formatcategories">FormatCategories <a class="anchor-link" href="#int-formatcategories">#</a></h3>
+<p><em>format-categories</em></p>
+<p><strong>Format the category rows and columns, and merge the column labels.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub FormatCategories(ByVal desFormat As LLFormat, ByVal hn As HiddenNames)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>desFormat</code>: LLFormat. The formatting provider.</li>
+<li><code>hn</code>: HiddenNames. The worksheet's hidden name store.</li>
+</ul>
+<hr />
+<h3 id="int-formatinteriorvalues">FormatInteriorValues <a class="anchor-link" href="#int-formatinteriorvalues">#</a></h3>
+<p><em>format-interior-values</em></p>
+<p><strong>Format the block of data cells.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub FormatInteriorValues(ByVal desFormat As LLFormat)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>desFormat</code>: LLFormat. The formatting provider.</li>
+</ul>
+<hr />
+<h3 id="int-formatbandsandcells">FormatBandsAndCells <a class="anchor-link" href="#int-formatbandsandcells">#</a></h3>
+<p><em>format-bands-and-cells</em></p>
+<p><strong>Format the total and missing bands, the single cells, the info cells</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub FormatBandsAndCells(ByVal desFormat As LLFormat)
+</code></pre>
+<p>Four walks over four constant prefix lists. Each entry used to cost two name
+resolutions, one to ask whether it existed and one to read it, and about half
+the entries of any list do not exist for the scope in hand. NamedRange answers
+both questions at once.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>desFormat</code>: LLFormat. The formatting provider.</li>
+</ul>
+<hr />
+<h3 id="int-formatpercentagecolumns">FormatPercentageColumns <a class="anchor-link" href="#int-formatpercentagecolumns">#</a></h3>
+<p><em>format-percentage-columns</em></p>
+<p><strong>Format every percentage column and the corner cells beside them.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub FormatPercentageColumns(ByVal desFormat As LLFormat)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>desFormat</code>: LLFormat. The formatting provider.</li>
+</ul>
+<hr />
+<h3 id="int-formatwholetable">FormatWholeTable <a class="anchor-link" href="#int-formatwholetable">#</a></h3>
+<p><em>format-whole-table</em></p>
+<p><strong>Draw the outline of the table and the gap under it.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub FormatWholeTable(ByVal desFormat As LLFormat)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>desFormat</code>: LLFormat. The formatting provider.</li>
+</ul>
+<hr />
+<h3 id="int-hideunrequestedtotals">HideUnrequestedTotals <a class="anchor-link" href="#int-hideunrequestedtotals">#</a></h3>
+<p><em>hide-unrequested-totals</em></p>
+<p><strong>Hide the total row and column of a temporal table that asked for neither.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub HideUnrequestedTotals()
+</code></pre>
+<p>For time series and spatio-temporal tables HasTotal can be True while the user
+asked for nothing: percentage=&quot;row&quot; needs the total column as its denominator,
+so the column has to exist and the user still has no reason to see it.</p>
+<h2 id="int-the-row-is-the-other-half-of-the-same-answer-issue-338">THE ROW IS THE OTHER HALF OF THE SAME ANSWER -- ISSUE #338</h2>
+<p>AddRows writes the Total and Missing labels of a temporal section
+unconditionally, because the row grid is a fixed NB_ROWS_TIME_SERIES block with
+exactly two footer rows and RowsCategoriesRange trims them BY COUNT. So the row
+cannot be dropped and it is hidden instead, the way the column is. Without this
+a table with &quot;Add total&quot; left empty still showed a Total row, which is what the
+field reported.</p>
+<p>The rows belong to the section rather than to one table, so the anchor -- the
+table that wrote them -- is what hides them, and any later table of the same
+section that does ask for a total shows them again. Nothing hides a row a table
+has asked for, whatever order the section is built in. Every table of the
+section names the same sheet row through its own TOTAL_ROW_<tableId>, so the
+name is always this table's.</p>
+<hr />
+<h2 id="int-build">Build</h2>
+<h3 id="int-markphase">MarkPhase <a class="anchor-link" href="#int-markphase">#</a></h3>
+<p><em>mark-phase</em></p>
+<p><strong>Record that a build phase has run.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub MarkPhase(ByVal reached As Byte)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>reached</code>: Byte. The phase that has just finished.</li>
+</ul>
+<hr />
+<h3 id="int-requirephase">RequirePhase <a class="anchor-link" href="#int-requirephase">#</a></h3>
+<p><em>require-phase</em></p>
+<p><strong>Refuse a phase whose inputs have not been written yet.</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub RequirePhase(ByVal completed As Byte, ByVal caller As String)
+</code></pre>
+<p>The four phases have to run in order and nothing said so. AddHeader inserts
+rows and shifts the sheet, AddRows sets EndRow, AddColumns sets EndColumn and
+NumberOfColumns, and NameRanges needs all three. Calling them out of order used
+to give a table built at row zero or a name over an empty block, several frames
+from the mistake.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>completed</code>: Byte. The phase that must already have run.</li>
+<li><code>caller</code>: String. The member refusing, for the message.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ErrorUnexpectedState When the phase has not been reached.</li>
 </ul>
 <hr />
 <h2 id="int-checkings">Checkings</h2>

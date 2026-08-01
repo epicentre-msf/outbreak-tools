@@ -13,9 +13,28 @@
 <h1>CustomPivotTable</h1>
 <p>Manages pivot table creation on a dedicated worksheet during linelist
 building. Each call to Add creates a new PivotTable block (title + pivot)
-stacked vertically. Position tracking and title references are stored as
-worksheet-level HiddenNames instead of hidden cell values.</p>
-<p><strong>Depends on:</strong> <a href="LLFormat.html">LLFormat</a>, <a href="HiddenNames.html">HiddenNames</a>, ProjectError</p>
+stacked vertically, and decides whether the sheet has earned its place in
+front of the user.</p>
+<details open class="doc-section" id="published-state">
+<summary>PUBLISHED STATE</summary>
+<div class="section-body">
+<p>Every fact this class records lives in a worksheet-level HiddenName on the
+pivot sheet. Nothing is written into the sheet's cells except the pivot
+tables themselves and their titles. Three of the five names are read from
+outside this class, so renaming one is a breaking change:</p>
+<p>pivot_output_row    Long     private   the next block's base row
+pivot_counter       Long     private   the number printed in the next title
+pivot_has_content   Boolean  private   set once a pivot has actually landed
+pivot_formatted     Boolean  private   guards the once-only cosmetic pass
+pivot_title_<table> String   PUBLIC    read by EventsLinelistButtons
+(ClickOpenVarLab), which lists every
+variable under its pivot's title</p>
+<p>An earlier version of this class kept the first two in cell A1 and named the
+title cell as a range. Both were read from outside and both broke when the
+state moved. The table above is the contract; keep it accurate.</p>
+<p><strong>Depends on:</strong> <a href="LLFormat.html">LLFormat</a>, <a href="HiddenNames.html">HiddenNames</a>, <a href="Checking.html">Checking</a>, ProjectError</p>
+</div>
+</details>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
 <div class="section-body">
@@ -25,10 +44,10 @@ worksheet-level HiddenNames instead of hidden cell values.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Function Create(ByVal sh As Worksheet) As CustomPivotTable
 </code></pre>
-<p>Validates the worksheet argument and initialises worksheet-level HiddenNames
-for position tracking (pivot_output_row, pivot_counter) if they do not
-already exist. This allows multiple Create calls on the same sheet to
-resume from the current position.</p>
+<p>Validates the worksheet argument and initialises the worksheet-level
+HiddenNames listed under PUBLISHED STATE if they do not already exist. This
+allows multiple Create calls on the same sheet to resume from the current
+position.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>sh</code>: Worksheet. The dedicated pivot table worksheet in the output workbook.</li>
@@ -38,6 +57,108 @@ resume from the current position.</p>
 <ul>
 <li>InvalidArgument. When sh is Nothing.</li>
 </ul>
+<hr />
+<h3 id="wksh">Wksh <a class="anchor-link" href="#wksh">#</a></h3>
+<p><em>wksh-get</em></p>
+<p><strong>The dedicated pivot table worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get Wksh() As Worksheet
+</code></pre>
+<p><strong>Returns:</strong> Worksheet. The host worksheet.</p>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="public-api">
+<summary>Public API</summary>
+<div class="section-body">
+<h3 id="add">Add <a class="anchor-link" href="#add">#</a></h3>
+<p><em>add</em></p>
+<p><strong>Create a pivot table from a ListObject source and add a titled block</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Add(ByVal title As String, _
+               ByVal tableName As String, _
+               Optional ByVal pivotName As String = &quot;Pivot Table&quot;)
+</code></pre>
+<p>Reads the current position from the worksheet-level HiddenNames, creates a
+PivotTable via PivotTableWizard, writes a styled title, stores the title text
+under pivot_title_<tableName>, and advances the position for the next block.</p>
+<p>The source table is resolved against every worksheet of the workbook before
+the wizard is called. A name that resolves to nothing is recorded as a
+checking and the wizard is skipped: PivotTableWizard answers such a name with
+a modal dialog, which On Error cannot see. That dialog freezes Excel in front
+of the user in the middle of a build and hangs a headless run. An error the
+wizard does raise is recorded the same way, so one bad table leaves the rest
+of the build alone. The position advances in both cases, so the next block
+cannot land on top of whatever the failed attempt left behind.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>title</code>: String. Display label for the pivot block (typically the sheet name).</li>
+<li><code>tableName</code>: String. Name of the source ListObject providing pivot data.</li>
+<li><code>pivotName</code>: String. Localised prefix for the title. Defaults to &quot;Pivot Table&quot;.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ObjectNotInitialized. When the instance holds no worksheet.</li>
+</ul>
+<hr />
+<h3 id="format">Format <a class="anchor-link" href="#format">#</a></h3>
+<p><em>format</em></p>
+<p><strong>Apply design formatting to the pivot table worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Sub Format(ByVal design As LLFormat)
+</code></pre>
+<p>Owns the sheet's visibility: a pivot sheet that never took a pivot stays
+very hidden, and one that did becomes visible. The cosmetic pass rewrites
+every row of the worksheet, so pivot_formatted holds it to one run however
+many times this is called.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>design</code>: LLFormat. The format object providing style rules.</li>
+</ul>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ObjectNotInitialized. When the instance holds no worksheet.</li>
+<li>InvalidArgument. When design is Nothing.</li>
+</ul>
+<hr />
+<h3 id="title">Title <a class="anchor-link" href="#title">#</a></h3>
+<p><em>title</em></p>
+<p><strong>The stored title of one table's pivot block</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function Title(ByVal tableName As String) As String
+</code></pre>
+<p>Answers what Add wrote for that table, which is what the linelist shows when
+it lists variables under their pivot. Empty when that table has no block.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>tableName</code>: String. Name of the source ListObject.</li>
+</ul>
+<p><strong>Returns:</strong> String. The title text, or an empty string.</p>
+<p><strong>Throws:</strong></p>
+<ul>
+<li>ObjectNotInitialized. When the instance holds no worksheet.</li>
+</ul>
+<hr />
+</div>
+</details>
+<details open class="doc-section" id="checkings">
+<summary>Checkings</summary>
+<div class="section-body">
+<h3 id="hascheckings">HasCheckings <a class="anchor-link" href="#hascheckings">#</a></h3>
+<p><em>has-checkings</em></p>
+<p><strong>Whether diagnostic entries have been recorded</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get HasCheckings() As Boolean
+</code></pre>
+<p><strong>Returns:</strong> Boolean. True when at least one entry exists.</p>
+<hr />
+<h3 id="checkingvalues">CheckingValues <a class="anchor-link" href="#checkingvalues">#</a></h3>
+<p><em>checking-values</em></p>
+<p><strong>Retrieve the diagnostic log entries</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Property Get CheckingValues() As Checking
+</code></pre>
+<p><strong>Returns:</strong> Checking. The checking instance, or Nothing.</p>
 <hr />
 </div>
 </details>
@@ -63,14 +184,6 @@ resume from the current position.</p>
 </ul>
 <hr />
 <h3 id="int-wksh">Wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
-<p><em>wksh-get</em></p>
-<p><strong>The dedicated pivot table worksheet</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Property Get Wksh() As Worksheet
-</code></pre>
-<p><strong>Returns:</strong> Worksheet. The host worksheet.</p>
-<hr />
-<h3 id="int-wksh">Wksh <a class="anchor-link" href="#int-wksh">#</a></h3>
 <p><em>wksh-set</em></p>
 <p><strong>Assign the host worksheet (factory use only)</strong></p>
 <p><strong>Signature:</strong></p>
@@ -81,49 +194,77 @@ resume from the current position.</p>
 <li><code>sh</code>: Worksheet. The worksheet to assign.</li>
 </ul>
 <hr />
-<h2 id="int-public-api">Public API</h2>
-<h3 id="int-add">Add <a class="anchor-link" href="#int-add">#</a></h3>
-<p><em>add</em></p>
-<p><strong>Create a pivot table from a ListObject source and add a titled block</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub Add(ByVal title As String, _
-               ByVal tableName As String, _
-               Optional ByVal pivotName As String = &quot;Pivot Table&quot;)
-</code></pre>
-<p>Reads the current position from worksheet-level HiddenNames, creates a
-PivotTable via PivotTableWizard, writes a styled title, stores the title
-cell address as a HiddenName, and advances the position for the next block.
-If the PivotTableWizard call fails (e.g. invalid source), the error is
-logged to Debug.Print and the method exits without creating a title.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>title</code>: String. Display label for the pivot block (typically the sheet name).</li>
-<li><code>tableName</code>: String. Name of the source ListObject providing pivot data.</li>
-<li><code>pivotName</code>: String. Localised prefix for the title. Defaults to &quot;Pivot Table&quot;.</li>
-</ul>
-<hr />
-<h3 id="int-format">Format <a class="anchor-link" href="#int-format">#</a></h3>
-<p><em>format</em></p>
-<p><strong>Apply design formatting to the pivot table worksheet</strong></p>
-<p><strong>Signature:</strong></p>
-<pre><code class="language-vb">Public Sub Format(ByVal design As LLFormat)
-</code></pre>
-<p>Delegates to LLFormat.ApplyFormat with the HListCustomPivotTables scope.</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>design</code>: LLFormat. The format object providing style rules.</li>
-</ul>
-<hr />
 <h2 id="int-internal-helpers">Internal Helpers</h2>
 <h3 id="int-initialisemetadata">InitialiseMetadata <a class="anchor-link" href="#int-initialisemetadata">#</a></h3>
 <p><em>initialise-metadata</em></p>
-<p><strong>Initialise worksheet-level HiddenNames for position tracking</strong></p>
+<p><strong>Seed the worksheet-level HiddenNames this class reads</strong></p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Public Sub InitialiseMetadata()
 </code></pre>
-<p>Creates pivot_output_row and pivot_counter HiddenNames if they do not
-already exist. Called by the factory to allow resuming from the current
-position when the same sheet is re-wrapped.</p>
+<p>Creates the four private names if they do not already exist. Called by the
+factory, so every later write can be a bare SetValue and re-wrapping a
+populated sheet resumes from the position it left.</p>
+<hr />
+<h3 id="int-sheetnames">SheetNames <a class="anchor-link" href="#int-sheetnames">#</a></h3>
+<p><em>sheet-names</em></p>
+<p><strong>The one HiddenNames manager for the host worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SheetNames() As HiddenNames
+</code></pre>
+<p>Creating a HiddenNames scans and caches every name in the container, so the
+instance is built once and held. Add, Format and InitialiseMetadata all read
+through this.</p>
+<p><strong>Returns:</strong> HiddenNames. The cached manager.</p>
+<hr />
+<h3 id="int-sourcetableexists">SourceTableExists <a class="anchor-link" href="#int-sourcetableexists">#</a></h3>
+<p><em>source-table-exists</em></p>
+<p><strong>Whether the workbook defines the source ListObject</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Function SourceTableExists(ByVal tableName As String) As Boolean
+</code></pre>
+<p>PivotTableWizard shows a modal dialog for a SourceData naming no ListObject.
+In production that is a frozen Excel in the middle of a generation, and in a
+headless run it hangs the harness and leaves a zero-byte results file under a
+healthy import log. On Error reaches none of it, so the name is resolved here
+before the wizard is called.</p>
+<p>The source table of a pivot sits on the data entry sheet it was built from, so
+the walk covers every worksheet of the pivot sheet's workbook. It runs once
+per block added.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>tableName</code>: String. Name of the source ListObject.</li>
+</ul>
+<p><strong>Returns:</strong> Boolean. True when one worksheet of the workbook defines that table.</p>
+<hr />
+<h3 id="int-guardready">GuardReady <a class="anchor-link" href="#int-guardready">#</a></h3>
+<p><em>guard-ready</em></p>
+<p><strong>Guard a member against use on an instance with no worksheet</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub GuardReady(ByVal memberName As String)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>memberName</code>: String. The member name for the error message.</li>
+</ul>
+<hr />
+<h2 id="int-checkings">Checkings</h2>
+<h3 id="int-logcheck">LogCheck <a class="anchor-link" href="#int-logcheck">#</a></h3>
+<p><em>log-check</em></p>
+<p><strong>Append a diagnostic entry to the internal checking log</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Private Sub LogCheck(ByVal tableName As String, _
+                     ByVal label As String, _
+                     Optional ByVal scope As Byte = checkingNote)
+</code></pre>
+<p>The key carries the source table, so a reader of the generation report can see
+which pivot block the entry is about. The counter keeps the key free when the
+same table files twice, which <code>Checking.Add</code> requires.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>tableName</code>: String. Name of the source ListObject the entry is about.</li>
+<li><code>label</code>: String. Message describing the issue.</li>
+<li><code>scope</code>: Byte. Severity scope for the log entry.</li>
+</ul>
 <hr />
 <h2 id="int-error-handling">Error Handling</h2>
 <h3 id="int-throwerror">ThrowError <a class="anchor-link" href="#int-throwerror">#</a></h3>
@@ -132,8 +273,8 @@ position when the same sheet is re-wrapped.</p>
 <p><strong>Signature:</strong></p>
 <pre><code class="language-vb">Private Sub ThrowError(ByVal errNumber As Long, ByVal errMessage As String)
 </code></pre>
-<p>Wraps Err.Raise with CLASS_NAME as the source, providing consistent
-error attribution across all methods in this class.</p>
+<p>Wraps Err.Raise with CLASS_NAME as the source. The ProjectError value is
+raised as it stands, the way every other class in the tree raises it.</p>
 <p><strong>Parameters:</strong></p>
 <ul>
 <li><code>errNumber</code>: Long. The ProjectError constant to raise.</li>
@@ -142,11 +283,14 @@ error attribution across all methods in this class.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (3 file(s))</summary>
+<summary>Used in (6 file(s))</summary>
 <ul>
+<li><a href="LLFormat.html">LLFormat.cls</a></li>
 <li><a href="Linelist.html">Linelist.cls</a></li>
 <li><a href="LLDataEntry.html">LLDataEntry.cls</a></li>
+<li>EventsLinelistButtons.bas</li>
 <li>TestCustomPivotTable.bas</li>
+<li>TestLinelist.bas</li>
 </ul>
 </details>
   </main>

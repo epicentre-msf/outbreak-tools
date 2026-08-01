@@ -16,7 +16,7 @@ serialization and metadata caching. Each name carries a type annotation
 (String/Boolean/Long/Variant) and a last-updated timestamp stored in
 the Name.Comment field. Supports cross-scope import/export between
 worksheets and workbooks.</p>
-<p><strong>Depends on:</strong> <a href="Checking.html">Checking</a>, <a href="BetterArray.html">BetterArray</a></p>
+<p><strong>Depends on:</strong> <a href="Checking.html">Checking</a>, <a href="BetterArray.html">BetterArray</a>, What a Names collection raises for an identifier it does not hold. Excel, answers 1004 and the collection itself answers 9, so both are read as &quot;the, container has no such name&quot;.</p>
 <p><strong>Version:</strong> 1.0 (2026-02-09)</p>
 <details open class="doc-section" id="factory">
 <summary>Factory</summary>
@@ -357,6 +357,17 @@ internal methods receive pre-sanitized identifiers.</p>
 <pre><code class="language-vb">Private Function FindDefinition(ByVal nameId As String) As Name
 </code></pre>
 <p>Expects a pre-sanitized nameId (callers must call SanitizeNameId first).</p>
+<h2 id="int-why-the-miss-returns-early">WHY THE MISS RETURNS EARLY</h2>
+<p>The direct lookup raises for a name that does not exist yet, and a name that
+does not exist yet is the common case for every caller that creates names. So
+every first write used to fall through to the scan below, which walks the whole
+container. <code>VarWriter</code> writes three to five names per variable, and the
+collection grows with them, so the cost was quadratic in the variable count of
+a sheet. The scan is kept for the sheet-qualified case the comment below names,
+and it is skipped only when the container itself says it holds no such
+identifier. What that gives up: a hidden WORKBOOK-scoped name whose RefersTo
+points at a worksheet container is no longer reached through that worksheet's
+store. Nothing in the tree writes one.</p>
 <hr />
 <h3 id="int-comparename">CompareName <a class="anchor-link" href="#int-comparename">#</a></h3>
 <p><em>compare-name</em></p>
@@ -550,7 +561,7 @@ metadata index lookups when the record is already resolved.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (55 file(s))</summary>
+<summary>Used in (59 file(s))</summary>
 <ul>
 <li><a href="AnalysisOutput.html">AnalysisOutput.cls</a></li>
 <li><a href="CrossTable.html">CrossTable.cls</a></li>
@@ -560,7 +571,6 @@ metadata index lookups when the record is already resolved.</p>
 <li><a href="LLImporter.html">LLImporter.cls</a></li>
 <li><a href="DesignerPreparation.html">DesignerPreparation.cls</a></li>
 <li><a href="DesignerTranslation.html">DesignerTranslation.cls</a></li>
-<li><a href="LLBuild.html">LLBuild.cls</a></li>
 <li><a href="LLdictionary.html">LLdictionary.cls</a></li>
 <li><a href="CheckingOutput.html">CheckingOutput.cls</a></li>
 <li><a href="CustomTable.html">CustomTable.cls</a></li>
@@ -585,6 +595,7 @@ metadata index lookups when the record is already resolved.</p>
 <li>EventsDesignerCore.bas</li>
 <li>EventsDesignerMulti.bas</li>
 <li>GenerationReport.bas</li>
+<li>InitTransfer.bas</li>
 <li>CustomLinelistFunctions.bas</li>
 <li>EventsLinelistButtons.bas</li>
 <li>LinelistEventsManager.bas</li>
@@ -592,6 +603,8 @@ metadata index lookups when the record is already resolved.</p>
 <li>FormLogicGeo.bas</li>
 <li>MasterSetupHelpers.bas</li>
 <li>EventsManager.bas</li>
+<li>TestCustomPivotTable.bas</li>
+<li>TestLLExporter.bas</li>
 <li>TestDesignerPreparation.bas</li>
 <li>TestDesignerRibbon.bas</li>
 <li>TestCheckingOutput.bas</li>
@@ -599,6 +612,9 @@ metadata index lookups when the record is already resolved.</p>
 <li>TestDropdownLists.bas</li>
 <li>TestHiddenNames.bas</li>
 <li>TestLLGeo.bas</li>
+<li>TestLLSpatial.bas</li>
+<li>TestCustomLinelistFunctions.bas</li>
+<li>TestLLDataEntry.bas</li>
 <li>TestLLTranslation.bas</li>
 <li>TestDiseaseSheet.bas</li>
 <li>TestMasterSetupVariables.bas</li>
@@ -606,7 +622,6 @@ metadata index lookups when the record is already resolved.</p>
 <li>TestEventsManager.bas</li>
 <li>TestSetupImport.bas</li>
 <li>TestSetupTranslationsTable.bas</li>
-<li>TestCustomPivotTable.bas</li>
 </ul>
 </details>
   </main>

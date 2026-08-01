@@ -22,7 +22,7 @@ never reference each other: the contract is the set of names below, agreed by
 string convention across a workbook boundary. Change a name here and change it
 in LLSpatial in the same commit.</p>
 <p>listofgeovars              one row per spatial variable
-RNG_PastingCol             the scratch column LLSpatial pastes through
+RNG_PastingCol             a scratch column on the sheet
 spatial_<level><em><var>      one ListObject per level
 column 1  tabl</em><level><em><var>    the lookup key
 column 2  formula</em><level>       the value LLSpatial sorts on
@@ -38,7 +38,7 @@ registered after its tables are built.</p>
 <div class="section-body">
 <p>A facility table is two columns: the lookup key and the value. A health facility
 has no population, so the population and the attack rate belong to an
-administrative table alone — the geobase gives a population per administrative
+administrative table alone -- the geobase gives a population per administrative
 level (adm1_pop to adm4_pop) and none for a facility. The facility table used to
 carry all four columns with the last two always blank.</p>
 <p>LLSpatial.Update resizes a spatial table as it refreshes it and reads the width
@@ -331,7 +331,17 @@ the level number: T_ADM1 holds it in column 2, T_ADM2 in column 3, and so on.</p
 <li><code>adminName</code>: String. The level identifier, such as &quot;adm1&quot;.</li>
 <li><code>rangeAddress</code>: String. The cell address MATCH looks the unit up by.</li>
 </ul>
-<p><strong>Returns:</strong> String. The formula text with no leading &quot;=&quot;.</p>
+<p><strong>Returns:</strong> String. The formula text with no leading &quot;=&quot;, or an empty string when
+the name carries no level number.</p>
+<p><strong>Remarks:</strong></p>
+<ul>
+<li>A NAME THAT IS NOT adm<n> USED TO GIVE COLUMN ZERO. The level number
+was read with CLng under On Error Resume Next, so anything else left the index
+at 0 -- and INDEX(table, row, 0) is a whole-row reference rather than an error,
+so ISERROR answered False and the cell took the first column of the row. The
+level number is checked before it is used now, and a name without one files a
+warning and leaves the population cell empty.</li>
+</ul>
 <hr />
 <h3 id="int-builder">Builder <a class="anchor-link" href="#int-builder">#</a></h3>
 <p><em>builder</em></p>
@@ -443,13 +453,15 @@ subscript error with nothing pointing at the sheet.</p>
 <hr />
 </details>
 <details>
-<summary>Used in (5 file(s))</summary>
+<summary>Used in (7 file(s))</summary>
 <ul>
 <li><a href="CrossTableFormula.html">CrossTableFormula.cls</a></li>
 <li><a href="FormulaBuilder.html">FormulaBuilder.cls</a></li>
+<li><a href="LLSpatial.html">LLSpatial.cls</a></li>
 <li>TestCrossTableFormula.bas</li>
 <li>TestFormulaBuilder.bas</li>
 <li>TestSpatialTables.bas</li>
+<li>TestLLSpatial.bas</li>
 </ul>
 </details>
   </main>
