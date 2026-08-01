@@ -874,10 +874,49 @@ suites:
       - module: TestShowHide
         covers: [ShowHide, ShowHideLayout, ShowHideStore]
 
+  # --- dataio (LLExporter) -- WRITTEN, HELD BACK ------------------------------
+  # The block below is ready and it is commented out. Uncomment it and the two
+  # rows land; read this note first, because Session 52 measured what happens.
+  #
+  # The closure is closed. LLdictionary, LLVariables and LLExport are registered
+  # under dictionary; DataSheet, CustomTable and LLChoices under general; LLGeo
+  # under geo; AnaTabIds under analyses; LLTranslation under linelist; ShowHide,
+  # ShowHideLayout and ShowHideStore under showhide, which landed on 2026-08-01
+  # and was the last of it. Passwords, HiddenNames, TranslationObject, Checking
+  # and BetterArray are baked into the driver workbook and must not be
+  # registered.
+  #
+  # LLExporter IMPORTS AND COMPILES. Session 52 proved that on 2026-08-01: the
+  # component lands as `comp: LLExporter | type=2 | lines=1501` and the run
+  # reaches `ImportAll returned; components now = 136`.
+  #
+  # WHAT HELD IT BACK: `TestLLExporter.ModuleCleanup` raises 1004 out of
+  # `CustomTest.PrintResults`, which the owner read off the dialog. A raise in a
+  # lifecycle hook is a modal, and a modal costs the whole run, so the rows are
+  # out until that is answered. `CheckingOutput.PrintOutput` re-raises whatever
+  # its worksheet writes hit, and the suspect is the validation and named-range
+  # work in `EnsureFilterDropdown` running while the fixture workbook is the
+  # active one. ModuleCleanup drops the fixture workbook before printing now,
+  # and that change has never been run.
+  #
+  # LLImporter and ExportButton stay out whatever happens here. LLImporter is
+  # Session 54, and ExportButton declares
+  # `WithEvents Btn As MSForms.CommandButton`, which would put a form-library
+  # type on the compile path of every run.
+  #
+  #   - folder: dataio
+  #     classes:
+  #       - name: LLExporter
+  #     tests:
+  #       - module: TestLLExporter
+  #         covers: [LLExporter]
+
 # ---------------------------------------------------------------------------
 # TEMPLATE — copy per folder as coverage is added. Delete fields left empty.
 # Expansion backlog (suite folders under src/tests/ that are not yet
-# registered): dataio, mastersetup. src/tests/showhide/ joined on 2026-08-01
+# registered): dataio, mastersetup. The dataio block is written and held back
+# just above; read the note beside it before uncommenting.
+# src/tests/showhide/ joined on 2026-08-01
 # with the three classes that replaced LLShowHide and ShowHideManager.
 # src/tests/tables/ is gone as of
 # 2026-07-31 — it held TestCustomPivotTable alone, whose class lives in

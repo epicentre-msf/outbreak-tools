@@ -24,9 +24,9 @@ Option Explicit
 'geobase exports (ExportGeo). Each mode builds a temporary output workbook,
 'populates it with the relevant data, metadata, and formatting, then saves
 'and closes it.
-'@depends LLdictionary, LLExport, Passwords, CustomTable
-'@depends DataSheet, AnaTabIds, LLGeo, LLChoices, HiddenNames
-'@depends ShowHide, ShowHideLayout, ShowHideStore
+'@depends LLdictionary, LLVariables, LLExport, Passwords, CustomTable
+'@depends DataSheet, AnaTabIds, LLGeo, LLChoices, HiddenNames, LLTranslation
+'@depends ShowHide, ShowHideLayout, ShowHideStore, BetterArray, Checking
 
 
 '@section Enumerations
@@ -156,6 +156,41 @@ End Sub
 Public Property Get LastExportPassword() As String
     LastExportPassword = this.lastPassword
 End Property
+
+'@label:epi-week-start
+'@prop-title First day of the epidemiological week, as the linelist holds it
+'@details
+'RNG_EpiWeekStart is a HiddenNames entry and its definition is a quoted string,
+'so the name has no range behind it. Every reader that went through
+'Names("RNG_EpiWeekStart").RefersToRange raised 1004 into a swallow and answered
+'an empty string, which is why the epiweek tag of every export file was blank.
+'The store is what answers it, and this is what AddMetadataTags writes.
+'@return String. The stored value, empty when the workbook carries no such name.
+'@export
+Public Function EpiWeekStart() As String
+    EpiWeekStart = HiddenNames.Create(this.sourceWkb).ValueAsString("RNG_EpiWeekStart")
+End Function
+
+'@label:excluded-variables-for
+'@sub-title The variables a numbered export leaves out
+'@details
+'The selection an export makes before it writes anything: the geo p-code and geo
+'concat variables when the export row turns p-codes off, and the personal
+'identifiers when it turns those off. Reading it costs three column reads and
+'writes nothing, so a caller can ask what a file will be missing before asking
+'for the file.
+'@param exportNumber Long. Which export definition to read (1-based).
+'@return BetterArray. The variable names the export drops.
+'@export
+Public Function ExcludedVariablesFor(ByVal exportNumber As Long) As BetterArray
+    Dim expObj As LLExport
+    Dim nbExp As Long
+
+    Set expObj = ExportObject()
+    nbExp = expObj.NumberOfExports()
+    Set ExcludedVariablesFor = ExcludedVariables(SourceDictionary(nbExp), _
+                                                 expObj, exportNumber)
+End Function
 
 
 '@section Export Methods
@@ -991,11 +1026,9 @@ Private Sub AddMetadataTags(ByVal outwb As Workbook, ByVal scope As Byte, _
                             ByVal keepLabels As Boolean)
 
     Dim csData As DataSheet
-    Dim srcNames As HiddenNames
     Dim varRng As Range
     Dim expName As String
     Dim rowOffset As Long
-    Dim epiWeekStart As String
 
     Set csData = DataSheet.Create(outwb.Worksheets(METADATASHEET), 1, 1)
     Set varRng = csData.DataRange("variable")
@@ -1022,14 +1055,10 @@ Private Sub AddMetadataTags(ByVal outwb As Workbook, ByVal scope As Byte, _
     varRng.Cells(rowOffset + 4, 1).Value = "show_hide"
     varRng.Cells(rowOffset + 4, 2).Value = IIf(includeShowHide, "update on import", "no update on import")
 
-    ' Epiweek start value. RNG_EpiWeekStart is a HiddenNames entry and its
-    ' definition is a quoted string, so the name has no range behind it and
-    ' RefersToRange raises 1004. The store is what answers it.
-    Set srcNames = HiddenNames.Create(this.sourceWkb)
-    epiWeekStart = srcNames.ValueAsString("RNG_EpiWeekStart")
-
+    ' Epiweek start value. A local of that name would shadow the property that
+    ' answers it, so the property is called straight into the cell.
     varRng.Cells(rowOffset + 5, 1).Value = "epiweekstart"
-    varRng.Cells(rowOffset + 5, 2).Value = epiWeekStart
+    varRng.Cells(rowOffset + 5, 2).Value = EpiWeekStart()
 End Sub
 
 '@label:add-show-hide
