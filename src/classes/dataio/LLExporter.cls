@@ -1397,9 +1397,16 @@ Private Sub AddDataSheets(ByVal outwb As Workbook, ByVal expDict As LLdictionary
             csTab.Export outsh, headersList, startLine
             pass.Protect inpsh.Name
 
-            ' Add label row if configured
+            ' Add label row if configured. The export skips a header the table
+            ' has no column for and leaves its output column where it was, so
+            ' the labels of the skipped variables come out of the list before
+            ' the row is written. Without that, one variable that is in the
+            ' dictionary and absent from the ListObject put every label after
+            ' it one column left of its data, for the rest of the sheet.
             If useLabels Then
-                Set labelsList = expDict.Data.FilterData("sheet name", sheetName, "main label")
+                Set labelsList = LabelsForWrittenColumns(expDict, sheetName, _
+                                                         headersList, _
+                                                         csTab.ExportColumnsNotFound)
                 labelsList.ToExcelRange outsh.Cells(1, 1), TransposeValues:=True
             End If
 
@@ -1411,6 +1418,48 @@ Private Sub AddDataSheets(ByVal outwb As Workbook, ByVal expDict As LLdictionary
         FormatOutputSheet outsh
     Next counter
 End Sub
+
+'@label:labels-for-written-columns
+'@sub-title The label row that lines up with the columns an export wrote
+'@details
+'The dictionary answers one label per variable, in the same order as the
+'variable names, so the two lists match until the export skips one. Dropping the
+'label of every skipped variable is what keeps the row over its data.
+'@param expDict LLdictionary. The export dictionary.
+'@param sheetName String. The sheet the labels belong to.
+'@param headersList BetterArray. The variable names the export was asked for.
+'@param skipped BetterArray. The variable names the export could not write.
+'@return BetterArray. One label per column written, in column order.
+Private Function LabelsForWrittenColumns(ByVal expDict As LLdictionary, _
+                                         ByVal sheetName As String, _
+                                         ByVal headersList As BetterArray, _
+                                         ByVal skipped As BetterArray) As BetterArray
+
+    Dim allLabels As BetterArray
+    Dim written As BetterArray
+    Dim counter As Long
+    Dim labelIndex As Long
+
+    Set allLabels = expDict.Data.FilterData("sheet name", sheetName, "main label")
+    Set LabelsForWrittenColumns = allLabels
+
+    If skipped Is Nothing Then Exit Function
+    If skipped.Length = 0 Then Exit Function
+
+    Set written = New BetterArray
+    written.LowerBound = 1
+
+    For counter = headersList.LowerBound To headersList.UpperBound
+        labelIndex = allLabels.LowerBound + (counter - headersList.LowerBound)
+        If labelIndex > allLabels.UpperBound Then Exit For
+
+        If Not skipped.Includes(CStr(headersList.Item(counter))) Then
+            written.Push allLabels.Item(labelIndex)
+        End If
+    Next counter
+
+    Set LabelsForWrittenColumns = written
+End Function
 
 '@label:export-vlist-data
 '@sub-title Export VList data (variable/value pairs) to the output sheet

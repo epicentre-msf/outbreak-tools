@@ -1337,6 +1337,78 @@ Fail:
     CustomTestLogFailure Assert, "TestExportWritesSelectedHeadersAtRow", Err.Number, Err.Description
 End Sub
 
+'@sub-title Verifies that Export reports the headers it was asked for and could not write
+'@details Exports a header list holding one name the table has no column for. Asserts
+'   the written block closes up over the gap, and that ExportColumnsNotFound names the
+'   header that was skipped and nothing else. A caller writing a second row from the
+'   same list -- the label row of a data export -- reads this to keep that row over its
+'   data; without it every label after the gap sat one column left.
+'@TestMethod("CustomTable")
+Public Sub TestExportReportsTheHeadersItCouldNotWrite()
+    CustomTestSetTitles Assert, "CustomTable", "TestExportReportsTheHeadersItCouldNotWrite"
+    On Error GoTo Fail
+
+    Dim tableObject As CustomTable
+    Dim exportSheet As Worksheet
+    Dim selectedHeaders As BetterArray
+    Dim skipped As BetterArray
+
+    Set tableObject = BuildCustomTable
+    Set exportSheet = EnsureWorksheet(EXPORTSHEETNAME)
+    ClearWorksheet exportSheet
+
+    Set selectedHeaders = NewBetterArray("Name", "no_such_column", "Amount")
+
+    tableObject.Export exportSheet, headersTable:=selectedHeaders
+
+    Assert.AreEqual "Name", exportSheet.Cells(1, 1).Value, _
+                    "The first resolved header keeps the first column"
+    Assert.AreEqual "Amount", exportSheet.Cells(1, 2).Value, _
+                    "The block closes up over a header the table has no column for"
+
+    Set skipped = tableObject.ExportColumnsNotFound
+    Assert.AreEqual CLng(1), skipped.Length, _
+                    "One header of the three had no column"
+    Assert.IsTrue skipped.Includes("no_such_column"), _
+                  "The skipped header is the one the table does not carry"
+
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestExportReportsTheHeadersItCouldNotWrite", Err.Number, Err.Description
+End Sub
+
+'@sub-title Verifies that an export where every header resolves reports nothing skipped
+'@details Exports two headers the table does carry. Asserts ExportColumnsNotFound comes
+'   back empty, so a caller can read it without testing for Nothing first.
+'@TestMethod("CustomTable")
+Public Sub TestExportReportsNothingSkippedWhenEveryHeaderResolves()
+    CustomTestSetTitles Assert, "CustomTable", "TestExportReportsNothingSkippedWhenEveryHeaderResolves"
+    On Error GoTo Fail
+
+    Dim tableObject As CustomTable
+    Dim exportSheet As Worksheet
+    Dim selectedHeaders As BetterArray
+    Dim skipped As BetterArray
+
+    Set tableObject = BuildCustomTable
+    Set exportSheet = EnsureWorksheet(EXPORTSHEETNAME)
+    ClearWorksheet exportSheet
+
+    Set selectedHeaders = NewBetterArray("Name", "Amount")
+
+    tableObject.Export exportSheet, headersTable:=selectedHeaders
+
+    Set skipped = tableObject.ExportColumnsNotFound
+    Assert.IsNotNothing skipped, "The property answers an array on every export"
+    Assert.AreEqual CLng(0), skipped.Length, "Nothing was skipped"
+
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestExportReportsNothingSkippedWhenEveryHeaderResolves", Err.Number, Err.Description
+End Sub
+
 '@sub-title Verifies that Export restores hidden column state and includes hidden columns in output
 '@details Hides the Amount column, exports to a clean sheet without restricting headers.
 '   Asserts the Amount column remains hidden on the source table after export and that

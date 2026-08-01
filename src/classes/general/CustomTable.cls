@@ -44,6 +44,7 @@ Private Type TCustomTable
     hasHiddenList As Boolean
     hasShiftSetup As Boolean
     notImportedColumns As BetterArray
+    notExportedColumns As BetterArray
     hiddenColumnsList As BetterArray
     checkCounter As Long
     internalChecks As Checking
@@ -2120,6 +2121,24 @@ Public Property Get ImportColumnsNotFound() As BetterArray
     Set ImportColumnsNotFound = this.notImportedColumns.Clone()
 End Property
 
+'@label:export-columns-not-found
+'@prop-title Headers the last export was asked for and could not write
+'@details
+'Export skips a header it cannot resolve against this table and leaves its
+'output column where it was, so the block it writes is narrower than the header
+'list it was handed. A caller that writes a second row from that same list --
+'the label row of a data export is the case -- has to take these entries out
+'first, or every label after the first gap sits one column left of its data.
+'
+'The array is emptied at the start of every export, so it always describes the
+'last one. It is empty when every header matched.
+'@return BetterArray. The headers that were skipped.
+'@export
+Public Property Get ExportColumnsNotFound() As BetterArray
+    If this.notExportedColumns Is Nothing Then Set this.notExportedColumns = New BetterArray
+    Set ExportColumnsNotFound = this.notExportedColumns.Clone()
+End Property
+
 '@label:has-columns-not-imported
 '@prop-title Whether the last import had unmatched columns
 '@details
@@ -2264,6 +2283,9 @@ Public Sub Export(ByVal sh As Worksheet, _
 
     Set headersList = New BetterArray
 
+    If this.notExportedColumns Is Nothing Then Set this.notExportedColumns = New BetterArray
+    this.notExportedColumns.Clear
+
     If (TypeName(headersTable) = "BetterArray") Then
         Set headersList = headersTable.Clone()
     Else
@@ -2292,10 +2314,14 @@ Public Sub Export(ByVal sh As Worksheet, _
 
         headerName = headersList.Item(counter)
 
-        'One lookup per column. A header with no match is skipped in silence,
-        'so the "Unable to find the column name" message still does not
-        'appear on this path.
+        'One lookup per column. A header with no match writes nothing and does
+        'not advance the output column, so it is recorded for the caller to read
+        'back through ExportColumnsNotFound. A caller writing a second row from
+        'the same header list -- a label row, say -- has to drop those entries
+        'or every one after the gap sits one column left of its data.
         Set targetColumn = ResolveListColumn(headerName, strictSearch:=True)
+        If targetColumn Is Nothing Then this.notExportedColumns.Push headerName
+
         If Not targetColumn Is Nothing Then
             Set inpRng = targetColumn.Range
 
