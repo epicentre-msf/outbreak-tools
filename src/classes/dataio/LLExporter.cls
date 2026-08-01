@@ -63,6 +63,16 @@ Private Const GEOSHEET As String = "Geo"
 Private Const PRINTPREFIX As String = "print_"
 Private Const CRFPREFIX As String = "crf_"
 
+' The three values the "header format" column of the Exports sheet can hold.
+' An empty cell reads as HEADER_NAMES.
+Private Const HEADER_NAMES As String = "variable names"
+Private Const HEADER_LABELS As String = "variables labels"
+Private Const HEADER_NAMES_LABELS As String = "variable names + variable labels"
+
+' The serialised export options row, and the separators it is read back with
+Private Const OPTION_SEPARATOR As String = " | "
+Private Const OPTION_PAIR_SEPARATOR As String = ": "
+
 ' P-codes tag list for removal from custom exports
 Private Const PCODES_GEO_PCODE_ADM1 As String = "geo_pcode_adm1"
 Private Const PCODES_GEO_PCODE_ADM2 As String = "geo_pcode_adm2"
@@ -275,7 +285,8 @@ Public Function ExportCustom(ByVal exportNumber As Long, _
         AddCustomDropdowns outwb
         AddDictionary outwb, dict, nbExp, expName, excluded
         AddMetadataTags outwb, ExportScopeCustom, exportNumber, _
-                        includeShowHide:=True, keepLabels:=True
+                        includeShowHide:=True, keepLabels:=True, _
+                        useFilters:=useFilters
         AddShowHide outwb
         prevSheetName = METADATASHEET
     Else
@@ -301,9 +312,9 @@ Public Function ExportCustom(ByVal exportNumber As Long, _
 
     ' Export data to each sheet
     headerFormat = expObj.ColumnValue(exportNumber, "header format")
-    useLabels = (headerFormat = "variables labels") Or _
-                (headerFormat = "variable names + variable labels")
-    startLine = IIf(headerFormat = "variable names + variable labels", 2, 1)
+    useLabels = (headerFormat = HEADER_LABELS) Or _
+                (headerFormat = HEADER_NAMES_LABELS)
+    startLine = IIf(headerFormat = HEADER_NAMES_LABELS, 2, 1)
 
     AddDataSheets outwb, expDict, useLabels, startLine, useFilters
 
@@ -375,7 +386,7 @@ Public Function ExportMigration(ByVal folderPath As String, _
     AddMetadataSheets outwb, dict, nbExp
     AddCustomDropdowns outwb
     AddDictionary outwb, dict, nbExp, "__all__", excluded
-    AddMetadataTags outwb, ExportScopeMigration, 0, includeShowHide, keepLabels
+    AddMetadataTags outwb, ExportScopeMigration, 0, includeShowHide, keepLabels, False
 
     ' Add show/hide with column widths if requested
     If includeShowHide Then AddShowHide outwb
@@ -1040,10 +1051,12 @@ End Sub
 '@param exportNumber Long. The export number for custom exports.
 '@param includeShowHide Boolean. When True, tags show_hide as "update on import".
 '@param keepLabels Boolean. When True, tags editable_labels as "update on import".
+'@param useFilters Boolean. When True, the data came from the filtered companions.
 Private Sub AddMetadataTags(ByVal outwb As Workbook, ByVal scope As Byte, _
                             ByVal exportNumber As Long, _
                             ByVal includeShowHide As Boolean, _
-                            ByVal keepLabels As Boolean)
+                            ByVal keepLabels As Boolean, _
+                            ByVal useFilters As Boolean)
 
     Dim csData As DataSheet
     Dim varRng As Range
@@ -1079,7 +1092,99 @@ Private Sub AddMetadataTags(ByVal outwb As Workbook, ByVal scope As Byte, _
     ' answers it, so the property is called straight into the cell.
     varRng.Cells(rowOffset + 5, 1).Value = "epiweekstart"
     varRng.Cells(rowOffset + 5, 2).Value = EpiWeekStart()
+
+    ' The options this export was written with, so the import can read the file
+    ' knowing what is in it.
+    varRng.Cells(rowOffset + 6, 1).Value = "export_options"
+    varRng.Cells(rowOffset + 6, 2).Value = ExportOptionsTag(scope, exportNumber, useFilters)
+
+    ' The workbook the file came out of. The four generation rows the linelist
+    ' carries - linelist_creation_date, linelist_creation_name, used_setup_name
+    ' and used_designer_name - travel with the copied Metadata sheet, and they
+    ' name the workbook as it was built. This names it as it is today, which is
+    ' what a person holding the file wants when the linelist has been renamed.
+    varRng.Cells(rowOffset + 7, 1).Value = "source_linelist"
+    varRng.Cells(rowOffset + 7, 2).Value = this.sourceWkb.Name
 End Sub
+
+'@label:export-options-tag
+'@sub-title The options of one export, written as one line the import reads back
+'@details
+'The Exports worksheet stays in the linelist, so a file has no way of saying how
+'it was written unless the export writes it down. Every option is a
+'`name: value` pair and the pairs are joined with a pipe, so the import side
+'splits on the pipe and then on the colon.
+'
+'The two pairs the import cannot work without are `variable names` and
+'`header row`. A file whose header row carries labels alone holds no variable
+'names anywhere, so it can never be read back; a file carrying both has its
+'variable names on row 2 and reads back once the import knows to look there.
+'@param scope Byte. ExportScope value.
+'@param exportNumber Long. The export number, ignored for a migration.
+'@param useFilters Boolean. Whether the data came from the filtered companions.
+'@return String. The options of this export on one line.
+Private Function ExportOptionsTag(ByVal scope As Byte, ByVal exportNumber As Long, _
+                                  ByVal useFilters As Boolean) As String
+
+    Dim expObj As LLExport
+    Dim options As BetterArray
+    Dim headerFormat As String
+
+    Set options = New BetterArray
+    options.LowerBound = 1
+
+    If scope = ExportScopeMigration Then
+        options.Push OnePair("header format", HEADER_NAMES)
+        options.Push OnePair("variable names", "yes")
+        options.Push OnePair("variable labels", "no")
+        options.Push OnePair("header row", "1")
+        options.Push OnePair("filtered data", "no")
+        ExportOptionsTag = Join(options.Items, OPTION_SEPARATOR)
+        Exit Function
+    End If
+
+    Set expObj = ExportObject()
+    headerFormat = expObj.ColumnValue(exportNumber, "header format")
+    If LenB(headerFormat) = 0 Then headerFormat = HEADER_NAMES
+
+    options.Push OnePair("header format", headerFormat)
+    options.Push OnePair("variable names", _
+                         IIf(headerFormat = HEADER_LABELS, "no", "yes"))
+    options.Push OnePair("variable labels", _
+                         IIf(headerFormat = HEADER_NAMES, "no", "yes"))
+    options.Push OnePair("header row", _
+                         IIf(headerFormat = HEADER_NAMES_LABELS, "2", "1"))
+    options.Push OnePair("filtered data", IIf(useFilters, "yes", "no"))
+    options.Push OnePair("file format", expObj.ColumnValue(exportNumber, "file format"))
+    options.Push OnePair("password", expObj.ColumnValue(exportNumber, "password"))
+    options.Push OnePair("include personal identifiers", _
+                         expObj.ColumnValue(exportNumber, "include personal identifiers"))
+    options.Push OnePair("include p-codes", _
+                         expObj.ColumnValue(exportNumber, "include p-codes"))
+    options.Push OnePair("export metadata sheets", _
+                         expObj.ColumnValue(exportNumber, "export metadata sheets"))
+    options.Push OnePair("export analyses sheets", _
+                         expObj.ColumnValue(exportNumber, "export analyses sheets"))
+
+    ExportOptionsTag = Join(options.Items, OPTION_SEPARATOR)
+End Function
+
+'@label:one-pair
+'@sub-title One `name: value` pair of the export options line
+'@details
+'An option the Exports row left empty is written as `no`, so the reader on the
+'other side never has to tell an absent option from a false one.
+'@param optionName String. The option name.
+'@param optionValue String. What the Exports row holds for it.
+'@return String. The pair.
+Private Function OnePair(ByVal optionName As String, ByVal optionValue As String) As String
+    Dim writtenValue As String
+
+    writtenValue = optionValue
+    If LenB(writtenValue) = 0 Then writtenValue = "no"
+
+    OnePair = optionName & OPTION_PAIR_SEPARATOR & writtenValue
+End Function
 
 '@label:add-show-hide
 '@sub-title Export the show/hide choices with their sizes to the output workbook
