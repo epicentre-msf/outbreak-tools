@@ -39,7 +39,7 @@ Option Explicit
 '  export 1      p-codes off, identifiers off
 '  export 2      both on
 '  export 3      p-codes on, identifiers off
-'@depends LLExporter, LLdictionary, LLExport, HiddenNames, CustomTest
+'@depends LLExporter, LLdictionary, LLExport, HiddenNames, ChoiceKeys, CustomTest
 
 Private Assert As CustomTest
 Private FixtureWorkbook As Workbook
@@ -402,8 +402,245 @@ TestFail:
 End Sub
 
 
+'@section The options line a file carries about itself
+'===============================================================================
+
+'@sub-title Every option of the Exports row reaches the line.
+'@details
+'The Exports worksheet stays in the linelist, so a file has no way of saying how
+'it was written unless the export writes it down. The line is what the import
+'side splits back apart.
+'@TestMethod("LLExporter")
+Public Sub TestTheOptionsLineCarriesTheExportRow()
+    CustomTestSetTitles Assert, TESTMODULE, "TestTheOptionsLineCarriesTheExportRow"
+    If Not FixtureReady("TestTheOptionsLineCarriesTheExportRow") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim options As String
+
+    options = FixtureExporter().ExportOptionsFor(2)
+
+    Assert.IsTrue InStr(1, options, "include personal identifiers: yes") > 0, _
+                  "The identifiers flag of export 2 reaches the line"
+    Assert.IsTrue InStr(1, options, "include p-codes: yes") > 0, _
+                  "And the p-codes flag"
+    Assert.IsTrue InStr(1, options, "file format: xlsx") > 0, _
+                  "And the file format"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestTheOptionsLineCarriesTheExportRow", Err.Number, Err.Description
+End Sub
+
+'@sub-title The pairs are joined with a pipe, so the import can split them.
+'@TestMethod("LLExporter")
+Public Sub TestTheOptionsLineSplitsOnThePipe()
+    CustomTestSetTitles Assert, TESTMODULE, "TestTheOptionsLineSplitsOnThePipe"
+    If Not FixtureReady("TestTheOptionsLineSplitsOnThePipe") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim pairs As Variant
+
+    pairs = Split(FixtureExporter().ExportOptionsFor(1), "|")
+
+    Assert.IsTrue UBound(pairs) > 5, _
+                  "The line splits into one pair per option"
+    Assert.IsTrue InStr(1, CStr(pairs(0)), ":") > 0, _
+                  "And each pair carries its own colon"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestTheOptionsLineSplitsOnThePipe", Err.Number, Err.Description
+End Sub
+
+'@sub-title A default header format says the file carries its variable names.
+'@details
+'The fixture export rows use "default", which is anything other than the two
+'label formats, so the file holds its variable names on row 1 and reads back.
+'@TestMethod("LLExporter")
+Public Sub TestADefaultHeaderFormatKeepsTheVariableNames()
+    CustomTestSetTitles Assert, TESTMODULE, "TestADefaultHeaderFormatKeepsTheVariableNames"
+    If Not FixtureReady("TestADefaultHeaderFormatKeepsTheVariableNames") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim options As String
+
+    options = FixtureExporter().ExportOptionsFor(1)
+
+    Assert.IsTrue InStr(1, options, "variable names: yes") > 0, _
+                  "The file carries its variable names"
+    Assert.IsTrue InStr(1, options, "header row: 1") > 0, _
+                  "On the first row"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestADefaultHeaderFormatKeepsTheVariableNames", Err.Number, Err.Description
+End Sub
+
+'@sub-title A label header format says the file carries no variable name.
+'@details
+'The one case that cannot be read back at all. Every column of such a file used
+'to land in "not imported" with nothing said, because the import took row 1 as
+'the header row whatever the file was.
+'@TestMethod("LLExporter")
+Public Sub TestALabelHeaderFormatSaysThereAreNoNames()
+    CustomTestSetTitles Assert, TESTMODULE, "TestALabelHeaderFormatSaysThereAreNoNames"
+    If Not FixtureReady("TestALabelHeaderFormatSaysThereAreNoNames") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim options As String
+
+    SetHeaderFormat 1, "variables labels"
+    options = FixtureExporter().ExportOptionsFor(1)
+    SetHeaderFormat 1, "default"
+
+    Assert.IsTrue InStr(1, options, "variable names: no") > 0, _
+                  "The file carries no variable name anywhere"
+    Assert.IsTrue InStr(1, options, "variable labels: yes") > 0, _
+                  "Its header row holds the labels a user reads"
+
+    Exit Sub
+TestFail:
+    On Error Resume Next
+    SetHeaderFormat 1, "default"
+    On Error GoTo 0
+    CustomTestLogFailure Assert, "TestALabelHeaderFormatSaysThereAreNoNames", Err.Number, Err.Description
+End Sub
+
+'@sub-title A file carrying both puts its variable names on row 2.
+'@details
+'This one CAN be read back, and the options line is what tells the import where
+'to look. Refusing it would cost the user a file that works.
+'@TestMethod("LLExporter")
+Public Sub TestNamesAndLabelsPutTheNamesOnRowTwo()
+    CustomTestSetTitles Assert, TESTMODULE, "TestNamesAndLabelsPutTheNamesOnRowTwo"
+    If Not FixtureReady("TestNamesAndLabelsPutTheNamesOnRowTwo") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim options As String
+
+    SetHeaderFormat 1, "variable names + variable labels"
+    options = FixtureExporter().ExportOptionsFor(1)
+    SetHeaderFormat 1, "default"
+
+    Assert.IsTrue InStr(1, options, "variable names: yes") > 0, _
+                  "The file does carry its variable names"
+    Assert.IsTrue InStr(1, options, "header row: 2") > 0, _
+                  "Under the label row, on the second row"
+
+    Exit Sub
+TestFail:
+    On Error Resume Next
+    SetHeaderFormat 1, "default"
+    On Error GoTo 0
+    CustomTestLogFailure Assert, "TestNamesAndLabelsPutTheNamesOnRowTwo", Err.Number, Err.Description
+End Sub
+
+'@sub-title A migration export always carries its variable names on row 1.
+'@TestMethod("LLExporter")
+Public Sub TestAMigrationAlwaysCarriesItsNames()
+    CustomTestSetTitles Assert, TESTMODULE, "TestAMigrationAlwaysCarriesItsNames"
+    If Not FixtureReady("TestAMigrationAlwaysCarriesItsNames") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim options As String
+
+    options = FixtureExporter().MigrationOptions()
+
+    Assert.IsTrue InStr(1, options, "variable names: yes") > 0, _
+                  "A migration file carries its variable names"
+    Assert.IsTrue InStr(1, options, "header row: 1") > 0, _
+                  "On the first row, whatever the Exports rows say"
+    Assert.IsTrue InStr(1, options, "filtered data: no") > 0, _
+                  "And it carries the whole data"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestAMigrationAlwaysCarriesItsNames", Err.Number, Err.Description
+End Sub
+
+'@sub-title An option the Exports row leaves empty is written as no.
+'@details
+'So the reader on the other side never has to tell an absent option from a
+'false one.
+'@TestMethod("LLExporter")
+Public Sub TestAnEmptyOptionIsWrittenAsNo()
+    CustomTestSetTitles Assert, TESTMODULE, "TestAnEmptyOptionIsWrittenAsNo"
+    If Not FixtureReady("TestAnEmptyOptionIsWrittenAsNo") Then Exit Sub
+    On Error GoTo TestFail
+
+    Dim options As String
+
+    SetHeaderFormat 1, vbNullString
+    options = FixtureExporter().ExportOptionsFor(1)
+    SetHeaderFormat 1, "default"
+
+    Assert.IsTrue InStr(1, options, "header format: variable names") > 0, _
+                  "An empty header format reads as the variable names format"
+    Assert.IsTrue InStr(1, options, "variable names: yes") > 0, _
+                  "So the file carries its names"
+
+    Exit Sub
+TestFail:
+    On Error Resume Next
+    SetHeaderFormat 1, "default"
+    On Error GoTo 0
+    CustomTestLogFailure Assert, "TestAnEmptyOptionIsWrittenAsNo", Err.Number, Err.Description
+End Sub
+
+'@sub-title The filtered flag reaches the line.
+'@TestMethod("LLExporter")
+Public Sub TestTheFilteredFlagReachesTheLine()
+    CustomTestSetTitles Assert, TESTMODULE, "TestTheFilteredFlagReachesTheLine"
+    If Not FixtureReady("TestTheFilteredFlagReachesTheLine") Then Exit Sub
+    On Error GoTo TestFail
+
+    Assert.IsTrue InStr(1, FixtureExporter().ExportOptionsFor(1, True), _
+                        "filtered data: yes") > 0, _
+                  "A filtered export says so in the file"
+    Assert.IsTrue InStr(1, FixtureExporter().ExportOptionsFor(1, False), _
+                        "filtered data: no") > 0, _
+                  "And an unfiltered one says that"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestTheFilteredFlagReachesTheLine", Err.Number, Err.Description
+End Sub
+
+
+'@section The custom dropdown key
+'===============================================================================
+
+'@sub-title The export builds its choice key from the registry name.
+'@details
+'The export side of a round trip that has never once worked. It used to read the
+'header cell of the ListObject, which holds the name with every space turned
+'into an underscore, so a dropdown called `contact type` went into the file
+'under a name no DropdownLists call would take back.
+'@TestMethod("LLExporter")
+Public Sub TestTheExportKeyIsTheRegistryName()
+    CustomTestSetTitles Assert, TESTMODULE, "TestTheExportKeyIsTheRegistryName"
+    On Error GoTo TestFail
+
+    Assert.AreEqual "__choice_custom_contact type", _
+                    ChoiceKeys.Create().CustomChoiceName("contact type"), _
+                    "Both ends of the round trip name the choice this way"
+
+    Exit Sub
+TestFail:
+    CustomTestLogFailure Assert, "TestTheExportKeyIsTheRegistryName", Err.Number, Err.Description
+End Sub
+
+
 '@section Fixture helpers
 '===============================================================================
+
+'@sub-title Write one header format into the Exports worksheet of the fixture.
+'@param exportNumber Long. Which export row to change (1-based).
+'@param headerFormat String. The value to write.
+Private Sub SetHeaderFormat(ByVal exportNumber As Long, ByVal headerFormat As String)
+    FixtureWorkbook.Worksheets(EXPORTS_SHEET).Cells(exportNumber + 1, 9).Value = headerFormat
+End Sub
 
 '@fun-title Report a fixture that could not be built as this test's failure.
 '@param testName String. The test asking.

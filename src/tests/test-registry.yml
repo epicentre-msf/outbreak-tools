@@ -874,51 +874,50 @@ suites:
       - module: TestShowHide
         covers: [ShowHide, ShowHideLayout, ShowHideStore]
 
-  # --- dataio (LLExporter) -- WRITTEN, HELD BACK ------------------------------
-  # The block below is ready and it is commented out. Uncomment it and the two
-  # rows land; read this note first, because Session 52 measured what happens.
+  # --- dataio ---------------------------------------------------------------
+  # Registered on 2026-08-02. Every class of the folder had never been compiled
+  # by the harness before that day, and all five import clean:
+  #   ChoiceKeys 97 | ImportMetadata 367 | ImportReport 481
+  #   LLExporter 1691 | LLImporter 1598
   #
   # The closure is closed. LLdictionary, LLVariables and LLExport are registered
   # under dictionary; DataSheet, CustomTable and LLChoices under general; LLGeo
   # under geo; AnaTabIds under analyses; LLTranslation under linelist; ShowHide,
-  # ShowHideLayout and ShowHideStore under showhide, which landed on 2026-08-01
-  # and was the last of it. Passwords, HiddenNames, TranslationObject, Checking
-  # and BetterArray are baked into the driver workbook and must not be
-  # registered.
+  # ShowHideLayout and ShowHideStore under showhide. Passwords, HiddenNames,
+  # TranslationObject, Checking and BetterArray are baked into the driver
+  # workbook and must not be registered.
   #
-  # LLExporter IMPORTS AND COMPILES. Session 52 proved that on 2026-08-01: the
-  # component lands as `comp: LLExporter | type=2 | lines=1501` and the run
-  # reaches `ImportAll returned; components now = 136`.
+  # WHAT USED TO HOLD IT BACK, and no longer does: TestLLExporter.ModuleCleanup
+  # raised 1004 out of CustomTest.PrintResults, and a raise in a lifecycle hook
+  # is a modal that costs the whole run. Session 52 changed ModuleCleanup to
+  # drop its fixture workbook before printing, on the reading that the writes
+  # were aimed at a sheet of a book that was not active. That change is proved
+  # now: the suite runs.
   #
-  # WHAT HELD IT BACK: `TestLLExporter.ModuleCleanup` raises 1004 out of
-  # `CustomTest.PrintResults`, which the owner read off the dialog. A raise in a
-  # lifecycle hook is a modal, and a modal costs the whole run, so the rows are
-  # out until that is answered. `CheckingOutput.PrintOutput` re-raises whatever
-  # its worksheet writes hit, and the suspect is the validation and named-range
-  # work in `EnsureFilterDropdown` running while the fixture workbook is the
-  # active one. ModuleCleanup drops the fixture workbook before printing now,
-  # and that change has never been run.
-  #
-  # ChoiceKeys, ImportMetadata and ImportReport joined the folder on 2026-08-01.
-  # ChoiceKeys is a leaf class with no dependency at all; ImportMetadata types
-  # DataSheet, which is registered under general; ImportReport types BetterArray
-  # and reads the ImportReportScope enum, which LLImporter declares, so its row
-  # cannot land before the LLImporter row does. LLExporter types ChoiceKeys, so
-  # that row has to land with the exporter row.
-  #
-  # ExportButton stays out whatever happens here: it declares
+  # ExportButton stays out. It declares
   # `WithEvents Btn As MSForms.CommandButton`, which would put a form-library
-  # type on the compile path of every run. LLImporter stays out with it until
-  # its suite reaches an import.
+  # type on the compile path of every run. TestExportButton stays out with it,
+  # and it also calls TestHelpers.BuildTranslationObject, which the run does not
+  # import.
   #
-  #   - folder: dataio
-  #     classes:
-  #       - name: ChoiceKeys
-  #       - name: ImportMetadata
-  #       - name: LLExporter
-  #     tests:
-  #       - module: TestLLExporter
-  #         covers: [LLExporter]
+  - folder: dataio
+    classes:
+      - name: ChoiceKeys
+      - name: ImportMetadata
+      - name: ImportReport
+      - name: LLExporter
+      - name: LLImporter
+    tests:
+      - module: TestChoiceKeys
+        covers: [ChoiceKeys]
+      - module: TestImportMetadata
+        covers: [ImportMetadata]
+      - module: TestImportReport
+        covers: [ImportReport]
+      - module: TestLLExporter
+        covers: [LLExporter]
+      - module: TestLLImporter
+        covers: [LLImporter]
 
 # ---------------------------------------------------------------------------
 # TEMPLATE — copy per folder as coverage is added. Delete fields left empty.
