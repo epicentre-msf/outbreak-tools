@@ -15,6 +15,25 @@ Public Enum DayList
     Sunday = 0
 End Enum
 
+'@section VALUE_OF lookup cache
+'===============================================================================
+'VALUE_OF runs once per formula cell on every recalculation pass, so it caches
+'the two columns it reads instead of walking back to the sheet each time. Four
+'slots, the least recently used one evicted, so several lookup tables stay warm
+'at once. The state sits at module level rather than in Statics inside the
+'function because ResetValueOfCache has to reach it.
+
+Private Const VALUEOF_SLOT_COUNT As Long = 4
+
+Private valueOfSheetName(1 To VALUEOF_SLOT_COUNT) As String
+Private valueOfLookupIndex(1 To VALUEOF_SLOT_COUNT) As Long
+Private valueOfValueIndex(1 To VALUEOF_SLOT_COUNT) As Long
+Private valueOfKeys(1 To VALUEOF_SLOT_COUNT) As Variant
+Private valueOfValues(1 To VALUEOF_SLOT_COUNT) As Variant
+Private valueOfValid(1 To VALUEOF_SLOT_COUNT) As Boolean
+Private valueOfLastUsed(1 To VALUEOF_SLOT_COUNT) As Long
+Private valueOfCounter As Long
+
 
 '@section HiddenNames Helper
 '===============================================================================
@@ -84,7 +103,10 @@ Public Function PLAGE_VALUE(rng1 As Range, rng2 As Range) As String
 End Function
 
 '@description Lookup a value from a table on another sheet using cached arrays.
-'Uses a 4-slot LRU cache to avoid re-reading sheet data on every recalculation.
+'Reads the key column and the value column of the first ListObject on the named
+'sheet once, parks them in one of four slots, and matches inside the cached
+'arrays on every later call. ResetValueOfCache drops a slot when its sheet is
+'edited, which is what keeps the cached copy honest.
 '@param rng Range. Cell containing the lookup key.
 '@param lookupSheetName String. Name of the worksheet hosting the lookup table.
 '@param colLookupIndex Long. 1-based column index in the ListObject for the key.
@@ -94,262 +116,182 @@ End Function
 Public Function VALUE_OF(rng As Range, lookupSheetName As String, colLookupIndex As Long, colValueIndex As Long) As Variant
     Application.Volatile
 
-    ' Cache slot 1
-    Static slot1SheetName As String
-    Static slot1LookupIndex As Long
-    Static slot1ValueIndex As Long
-    Static slot1LookupArray() As Variant
-    Static slot1ValueArray() As Variant
-    Static slot1Valid As Boolean
-    Static slot1LastUsed As Long
-
-    ' Cache slot 2
-    Static slot2SheetName As String
-    Static slot2LookupIndex As Long
-    Static slot2ValueIndex As Long
-    Static slot2LookupArray() As Variant
-    Static slot2ValueArray() As Variant
-    Static slot2Valid As Boolean
-    Static slot2LastUsed As Long
-
-    ' Cache slot 3
-    Static slot3SheetName As String
-    Static slot3LookupIndex As Long
-    Static slot3ValueIndex As Long
-    Static slot3LookupArray() As Variant
-    Static slot3ValueArray() As Variant
-    Static slot3Valid As Boolean
-    Static slot3LastUsed As Long
-
-    ' Cache slot 4
-    Static slot4SheetName As String
-    Static slot4LookupIndex As Long
-    Static slot4ValueIndex As Long
-    Static slot4LookupArray() As Variant
-    Static slot4ValueArray() As Variant
-    Static slot4Valid As Boolean
-    Static slot4LastUsed As Long
-
-    ' LRU tracking
-    Static lruCounter As Long
-
-    Dim ws As Worksheet
-    Dim Lo As ListObject
     Dim lookupValue As Variant
-    Dim i As Long
-    Dim arraySize As Long
-    Dim slotToUse As Long
-    Dim rowCount As Long
-    Dim r As Long
-    Dim lruSlot As Long
-    Dim lruMinValue As Long
+    Dim matchPos As Variant
+    Dim slot As Long
+
+    ' Every path out of here answers an empty string, the error path included:
+    ' a key cell holding #N/A must not turn the formula cell into #VALUE!.
+    VALUE_OF = vbNullString
+    On Error GoTo ErrorHandler
 
     lookupValue = rng.Value
 
-    If lookupValue = vbNullString Then
-        VALUE_OF = vbNullString
-        Exit Function
-    End If
+    If lookupValue = vbNullString Then Exit Function
+    If Trim$(lookupSheetName) = vbNullString Then Exit Function
 
-    If Trim$(lookupSheetName) = vbNullString Then
-        VALUE_OF = vbNullString
-        Exit Function
-    End If
+    slot = CachedValueOfSlot(lookupSheetName, colLookupIndex, colValueIndex)
+    If slot = 0 Then slot = LoadValueOfSlot(lookupSheetName, colLookupIndex, colValueIndex)
+    If slot = 0 Then Exit Function
 
-    ' Search for matching cache slot
-    slotToUse = 0
+    ' Application.Match takes a VBA array as happily as it takes a Range, so
+    ' the lookup keeps the case-insensitive matching the Range version had
+    ' without going back to the sheet. The slot arrays are 1 To rowCount, so
+    ' the position Match answers indexes the value array directly.
+    matchPos = Application.Match(lookupValue, valueOfKeys(slot), 0)
+    If IsError(matchPos) Then Exit Function
 
-    If slot1Valid And slot1SheetName = lookupSheetName And slot1LookupIndex = colLookupIndex And slot1ValueIndex = colValueIndex Then
-        slotToUse = 1
-        lruCounter = lruCounter + 1
-        slot1LastUsed = lruCounter
-    ElseIf slot2Valid And slot2SheetName = lookupSheetName And slot2LookupIndex = colLookupIndex And slot2ValueIndex = colValueIndex Then
-        slotToUse = 2
-        lruCounter = lruCounter + 1
-        slot2LastUsed = lruCounter
-    ElseIf slot3Valid And slot3SheetName = lookupSheetName And slot3LookupIndex = colLookupIndex And slot3ValueIndex = colValueIndex Then
-        slotToUse = 3
-        lruCounter = lruCounter + 1
-        slot3LastUsed = lruCounter
-    ElseIf slot4Valid And slot4SheetName = lookupSheetName And slot4LookupIndex = colLookupIndex And slot4ValueIndex = colValueIndex Then
-        slotToUse = 4
-        lruCounter = lruCounter + 1
-        slot4LastUsed = lruCounter
-    End If
+    VALUE_OF = valueOfValues(slot)(matchPos)
+    Exit Function
 
-    ' Cache miss - load data into LRU slot
-    If slotToUse = 0 Then
-        ' Find LRU slot (smallest lastUsed value, or first invalid slot)
-        lruSlot = 1
-        lruMinValue = slot1LastUsed
-        If Not slot1Valid Then lruMinValue = -1
-
-        If Not slot2Valid Then
-            lruSlot = 2
-            lruMinValue = -1
-        ElseIf slot2LastUsed < lruMinValue Then
-            lruSlot = 2
-            lruMinValue = slot2LastUsed
-        End If
-
-        If Not slot3Valid Then
-            lruSlot = 3
-            lruMinValue = -1
-        ElseIf slot3LastUsed < lruMinValue Then
-            lruSlot = 3
-            lruMinValue = slot3LastUsed
-        End If
-
-        If Not slot4Valid Then
-            lruSlot = 4
-        ElseIf slot4LastUsed < lruMinValue Then
-            lruSlot = 4
-        End If
-
-        slotToUse = lruSlot
-
-        On Error Resume Next
-        Set ws = ThisWorkbook.Worksheets(lookupSheetName)
-        On Error GoTo 0
-
-        If ws Is Nothing Then
-            VALUE_OF = vbNullString
-            Exit Function
-        End If
-
-        If ws.ListObjects.Count = 0 Then
-            VALUE_OF = vbNullString
-            Exit Function
-        End If
-
-        Set Lo = ws.ListObjects(1)
-
-        If colLookupIndex < 1 Or colLookupIndex > Lo.ListColumns.Count Then
-            VALUE_OF = vbNullString
-            Exit Function
-        End If
-
-        If colValueIndex < 1 Or colValueIndex > Lo.ListColumns.Count Then
-            VALUE_OF = vbNullString
-            Exit Function
-        End If
-
-        If Lo.ListColumns(colLookupIndex).DataBodyRange Is Nothing Then
-            VALUE_OF = vbNullString
-            Exit Function
-        End If
-
-        If Lo.ListColumns(colValueIndex).DataBodyRange Is Nothing Then
-            VALUE_OF = vbNullString
-            Exit Function
-        End If
-
-        ' Load columns into 2D arrays, then convert to 1D
-        Dim lookupArray2D As Variant
-        Dim valueArray2D As Variant
-
-        lookupArray2D = Lo.ListColumns(colLookupIndex).DataBodyRange.Value
-        valueArray2D = Lo.ListColumns(colValueIndex).DataBodyRange.Value
-        rowCount = UBound(lookupArray2D, 1)
-
-        lruCounter = lruCounter + 1
-
-        Select Case slotToUse
-            Case 1
-                ReDim slot1LookupArray(1 To rowCount)
-                ReDim slot1ValueArray(1 To rowCount)
-                For r = 1 To rowCount
-                    slot1LookupArray(r) = lookupArray2D(r, 1)
-                    slot1ValueArray(r) = valueArray2D(r, 1)
-                Next r
-                slot1SheetName = lookupSheetName
-                slot1LookupIndex = colLookupIndex
-                slot1ValueIndex = colValueIndex
-                slot1Valid = True
-                slot1LastUsed = lruCounter
-
-            Case 2
-                ReDim slot2LookupArray(1 To rowCount)
-                ReDim slot2ValueArray(1 To rowCount)
-                For r = 1 To rowCount
-                    slot2LookupArray(r) = lookupArray2D(r, 1)
-                    slot2ValueArray(r) = valueArray2D(r, 1)
-                Next r
-                slot2SheetName = lookupSheetName
-                slot2LookupIndex = colLookupIndex
-                slot2ValueIndex = colValueIndex
-                slot2Valid = True
-                slot2LastUsed = lruCounter
-
-            Case 3
-                ReDim slot3LookupArray(1 To rowCount)
-                ReDim slot3ValueArray(1 To rowCount)
-                For r = 1 To rowCount
-                    slot3LookupArray(r) = lookupArray2D(r, 1)
-                    slot3ValueArray(r) = valueArray2D(r, 1)
-                Next r
-                slot3SheetName = lookupSheetName
-                slot3LookupIndex = colLookupIndex
-                slot3ValueIndex = colValueIndex
-                slot3Valid = True
-                slot3LastUsed = lruCounter
-
-            Case 4
-                ReDim slot4LookupArray(1 To rowCount)
-                ReDim slot4ValueArray(1 To rowCount)
-                For r = 1 To rowCount
-                    slot4LookupArray(r) = lookupArray2D(r, 1)
-                    slot4ValueArray(r) = valueArray2D(r, 1)
-                Next r
-                slot4SheetName = lookupSheetName
-                slot4LookupIndex = colLookupIndex
-                slot4ValueIndex = colValueIndex
-                slot4Valid = True
-                slot4LastUsed = lruCounter
-        End Select
-    End If
-
-    ' Perform lookup in cached slot (1D arrays)
-    Select Case slotToUse
-        Case 1
-            arraySize = UBound(slot1LookupArray)
-            For i = 1 To arraySize
-                If slot1LookupArray(i) = lookupValue Then
-                    VALUE_OF = slot1ValueArray(i)
-                    Exit Function
-                End If
-            Next i
-
-        Case 2
-            arraySize = UBound(slot2LookupArray)
-            For i = 1 To arraySize
-                If slot2LookupArray(i) = lookupValue Then
-                    VALUE_OF = slot2ValueArray(i)
-                    Exit Function
-                End If
-            Next i
-
-        Case 3
-            arraySize = UBound(slot3LookupArray)
-            For i = 1 To arraySize
-                If slot3LookupArray(i) = lookupValue Then
-                    VALUE_OF = slot3ValueArray(i)
-                    Exit Function
-                End If
-            Next i
-
-        Case 4
-            arraySize = UBound(slot4LookupArray)
-            For i = 1 To arraySize
-                If slot4LookupArray(i) = lookupValue Then
-                    VALUE_OF = slot4ValueArray(i)
-                    Exit Function
-                End If
-            Next i
-    End Select
-
-    ' No match found
+ErrorHandler:
     VALUE_OF = vbNullString
+End Function
+
+'@description Drop the cached copy of a lookup table.
+'Application.Volatile makes Excel call VALUE_OF again; it does not make the
+'cache notice that the table underneath it moved. Without this the first read
+'of a lookup table would answer every call for the rest of the session, and
+'Ctrl+Alt+F9 would not clear it either, because the slots outlive a full
+'recalculation. LinelistEventsManager.SheetChanged calls this with the name of
+'the sheet that changed. Code that writes to a lookup sheet from inside another
+'event handler, or with Application.EnableEvents off, gets no such event and
+'has to call this itself.
+'@param sheetName String. Name of the edited sheet. Blank drops every slot.
+'@EntryPoint
+Public Sub ResetValueOfCache(Optional ByVal sheetName As String = vbNullString)
+    Dim slot As Long
+
+    For slot = 1 To VALUEOF_SLOT_COUNT
+        If LenB(sheetName) = 0 Then
+            valueOfValid(slot) = False
+        ElseIf StrComp(valueOfSheetName(slot), sheetName, vbTextCompare) = 0 Then
+            valueOfValid(slot) = False
+        End If
+    Next slot
+End Sub
+
+'@description Find the slot already holding this sheet and column pair.
+'A hit stamps the slot as the most recently used one, which is what the
+'eviction walk reads.
+'@param sheetName String. Worksheet hosting the lookup table.
+'@param colLookupIndex Long. 1-based column index for the key.
+'@param colValueIndex Long. 1-based column index for the result.
+'@return Long. Slot number, or 0 when no slot matches.
+Private Function CachedValueOfSlot(ByVal sheetName As String, _
+                                   ByVal colLookupIndex As Long, _
+                                   ByVal colValueIndex As Long) As Long
+    Dim slot As Long
+
+    For slot = 1 To VALUEOF_SLOT_COUNT
+        If valueOfValid(slot) _
+           And valueOfLookupIndex(slot) = colLookupIndex _
+           And valueOfValueIndex(slot) = colValueIndex Then
+            If StrComp(valueOfSheetName(slot), sheetName, vbTextCompare) = 0 Then
+                valueOfCounter = valueOfCounter + 1
+                valueOfLastUsed(slot) = valueOfCounter
+                CachedValueOfSlot = slot
+                Exit Function
+            End If
+        End If
+    Next slot
+End Function
+
+'@description Pick the slot the next load may overwrite.
+'The first free slot, or the least recently used one when all four are taken.
+'@return Long. Slot number, always between 1 and VALUEOF_SLOT_COUNT.
+Private Function ValueOfSlotToEvict() As Long
+    Dim slot As Long
+    Dim oldest As Long
+
+    ValueOfSlotToEvict = 1
+    oldest = valueOfLastUsed(1)
+
+    For slot = 1 To VALUEOF_SLOT_COUNT
+        If Not valueOfValid(slot) Then
+            ValueOfSlotToEvict = slot
+            Exit Function
+        End If
+
+        If valueOfLastUsed(slot) < oldest Then
+            ValueOfSlotToEvict = slot
+            oldest = valueOfLastUsed(slot)
+        End If
+    Next slot
+End Function
+
+'@description Read the two columns off the sheet into the evicted slot.
+'Every way the sheet can disappoint answers 0, so VALUE_OF can treat a missing
+'sheet, a sheet with no table and an out-of-range column index the same way.
+'@param sheetName String. Worksheet hosting the lookup table.
+'@param colLookupIndex Long. 1-based column index for the key.
+'@param colValueIndex Long. 1-based column index for the result.
+'@return Long. The slot now holding the data, or 0 when nothing was loaded.
+Private Function LoadValueOfSlot(ByVal sheetName As String, _
+                                 ByVal colLookupIndex As Long, _
+                                 ByVal colValueIndex As Long) As Long
+    Dim ws As Worksheet
+    Dim Lo As ListObject
+    Dim lookupRange As Range
+    Dim valueRange As Range
+    Dim keyList() As Variant
+    Dim valueList() As Variant
+    Dim block As Variant
+    Dim rowCount As Long
+    Dim r As Long
+    Dim slot As Long
+
+    On Error Resume Next
+    Set ws = ThisWorkbook.Worksheets(sheetName)
+    On Error GoTo 0
+
+    If ws Is Nothing Then Exit Function
+    If ws.ListObjects.Count = 0 Then Exit Function
+
+    Set Lo = ws.ListObjects(1)
+
+    If colLookupIndex < 1 Or colLookupIndex > Lo.ListColumns.Count Then Exit Function
+    If colValueIndex < 1 Or colValueIndex > Lo.ListColumns.Count Then Exit Function
+
+    Set lookupRange = Lo.ListColumns(colLookupIndex).DataBodyRange
+    Set valueRange = Lo.ListColumns(colValueIndex).DataBodyRange
+
+    If lookupRange Is Nothing Then Exit Function
+    If valueRange Is Nothing Then Exit Function
+
+    rowCount = lookupRange.Rows.Count
+    ReDim keyList(1 To rowCount)
+    ReDim valueList(1 To rowCount)
+
+    If rowCount = 1 Then
+        ' A one-row DataBodyRange answers .Value as a scalar rather than as a
+        ' 2D array, and the walk below would raise a type mismatch on it.
+        keyList(1) = lookupRange.Value
+        valueList(1) = valueRange.Value
+    Else
+        block = lookupRange.Value
+        For r = 1 To rowCount
+            keyList(r) = block(r, 1)
+        Next r
+
+        block = valueRange.Value
+        For r = 1 To rowCount
+            valueList(r) = block(r, 1)
+        Next r
+    End If
+
+    slot = ValueOfSlotToEvict
+    valueOfCounter = valueOfCounter + 1
+
+    valueOfSheetName(slot) = sheetName
+    valueOfLookupIndex(slot) = colLookupIndex
+    valueOfValueIndex(slot) = colValueIndex
+    valueOfKeys(slot) = keyList
+    valueOfValues(slot) = valueList
+    valueOfValid(slot) = True
+    valueOfLastUsed(slot) = valueOfCounter
+
+    LoadValueOfSlot = slot
 End Function
 
 '@EntryPoint

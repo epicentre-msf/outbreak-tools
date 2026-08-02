@@ -201,6 +201,9 @@ Public Sub SheetChanged(ByVal sh As Worksheet, ByVal target As Range)
     If (sh Is Nothing) Or (target Is Nothing) Then Exit Sub
 
     On Error GoTo Cleanup
+    ' The edited sheet may be a VALUE_OF lookup table, and that cache outlives
+    ' a recalculation. Drop its slot before anything recalculates.
+    CustomLinelistFunctions.ResetValueOfCache sh.Name
     EnterBusyState busyCursor:=xlNorthwestArrow, persist:=False
     Application.ScreenUpdating = False
     Service.OnSheetChange sh, target

@@ -362,3 +362,39 @@ End Function
 - Performance gain: 10-100x faster during recalculation with thousands of formulas
 - Force cache rebuild: Ctrl+Alt+F9 (full recalculation)
 
+## What actually shipped
+
+The draft above went into `src/modules/linelist/CustomLinelistFunctions.bas` and
+then needed four corrections. Read the module, not this file, for the current
+code. Two of the usage notes above are wrong and are kept here only as a record
+of what the draft claimed.
+
+1. **The cache was never invalidated.** `Application.Volatile` makes Excel call
+   `VALUE_OF` again; it does not make the cache notice that the table under it
+   changed. An edit to a lookup table kept answering the first value read for
+   the rest of the session. Ctrl+Alt+F9 does not rebuild it either, because
+   `Static` state outlives a full recalculation — only a VBA project reset
+   clears it. Fixed with `ResetValueOfCache`, which
+   `LinelistEventsManager.SheetChanged` calls with the name of the edited
+   sheet, so only the slots holding that sheet are dropped.
+2. **A one-row lookup table crashed the formula.** A single-cell
+   `DataBodyRange` answers `.Value` as a scalar, so `UBound(lookupArray2D, 1)`
+   raised a type mismatch and the cell showed `#VALUE!`. The `Application.Match`
+   version had no such problem. The one-row shape is now built by hand.
+3. **The scan was case-sensitive.** The module runs under the default
+   `Option Compare Binary`, so the `If array(i) = lookupValue` loop stopped
+   matching keys that `Application.Match` used to match. `Application.Match`
+   takes a VBA array as happily as it takes a Range, so the lookup now matches
+   inside the cached array and keeps the original semantics.
+4. **A key cell holding an error surfaced as `#VALUE!`.** Every other failure
+   path answers an empty string; the function now has an error handler that
+   does the same.
+
+The four duplicated slot blocks were also folded into module-level arrays
+indexed by slot number — `ResetValueOfCache` has to reach the state, and
+`Static` locals cannot be reached from outside the function.
+
+Not covered by tests: `CustomLinelistFunctions` and `LinelistEventsManager` are
+both on the do-not-register list in `src/tests/test-registry.yml`, so the
+harness neither runs nor compiles them.
+
