@@ -80,8 +80,8 @@ Private Sub FillTwoColumnList(ByVal listControl As Object, ByVal entriesList As 
 
     For counter = entriesList.LowerBound To entriesList.UpperBound
         entry = entriesList.Item(counter)
-        listControl.AddItem CStr(entry(0))
-        listControl.List(rowIndex, 1) = CStr(entry(1))
+        listControl.AddItem CStr(entry(LBound(entry)))
+        listControl.List(rowIndex, 1) = CStr(entry(LBound(entry) + 1))
         rowIndex = rowIndex + 1
     Next counter
 End Sub

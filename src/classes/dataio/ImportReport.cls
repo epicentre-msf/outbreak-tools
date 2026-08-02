@@ -414,10 +414,16 @@ Private Sub WriteTwoColumns(ByVal tableName As String, ByVal valuesList As Bette
 
     Set loRng = lo.Range
 
+    'The pair is read through LBound rather than from 0. BetterArray.Push
+    'REBASES an inner array to the outer LowerBound, so Array(name, sheet)
+    'pushed into a 1-based list comes back 1-based and every reader written
+    'against element 0 raises subscript out of range.
     For counter = valuesList.LowerBound To valuesList.UpperBound
         entry = valuesList.Item(counter)
-        loRng.Cells(counter - valuesList.LowerBound + 2, 1).Value = CStr(entry(0))
-        loRng.Cells(counter - valuesList.LowerBound + 2, 2).Value = CStr(entry(1))
+        loRng.Cells(counter - valuesList.LowerBound + 2, 1).Value = _
+            CStr(entry(LBound(entry)))
+        loRng.Cells(counter - valuesList.LowerBound + 2, 2).Value = _
+            CStr(entry(LBound(entry) + 1))
     Next counter
 
     lo.Resize this.sh.Range(loRng.Cells(1, 1), _

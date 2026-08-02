@@ -1234,7 +1234,12 @@ Public Sub FinalizeReport()
         ' Only check variables on sheets that were touched
         If this.sheetsNotTouched.Includes(sheetName) Then GoTo NextReportSheet
 
-        Set currVarsList = dict.Data.FilterData("sheet name", sheetName, "variable name")
+        'matchCase defaults to True on FilterData, and a dictionary whose
+        'headers carry the setup file's own capitals then raises
+        'ElementNotFound out of a column that is plainly there. A header name
+        'is a contract resolved by name; its case decides nothing.
+        Set currVarsList = dict.Data.FilterData("sheet name", sheetName, _
+                                                "variable name", matchCase:=False)
 
         For varCounter = currVarsList.LowerBound To currVarsList.UpperBound
             varName = CStr(currVarsList.Item(varCounter))
@@ -1270,24 +1275,36 @@ End Sub
 Private Sub SaveReport()
 
     Dim store As ImportReport
+    Dim errNumber As Long
+    Dim errMessage As String
 
     Set store = Nothing
+
+    'Keeping the report is best effort from end to end. A workbook that will
+    'not take the store, a worksheet that will not take a ListObject, a table
+    'that will not resize - none of them is a reason to fail an import whose
+    'data has already landed. What went wrong is filed for the user instead.
     On Error Resume Next
-    Set store = ImportReport.Create(this.sourceWkb)
+        Set store = ImportReport.Create(this.sourceWkb)
+
+        If Not store Is Nothing Then
+            store.SaveSheets ImportReportNotImported, this.sheetsNotImported
+            store.SaveSheets ImportReportNotTouched, this.sheetsNotTouched
+            store.SaveVariables ImportReportNotImported, this.varsNotImported
+            store.SaveVariables ImportReportNotTouched, this.varsNotTouched
+        End If
+
+        errNumber = Err.Number
+        errMessage = Err.Description
     On Error GoTo 0
 
-    If store Is Nothing Then
+    If store Is Nothing Or errNumber <> 0 Then
         FileChecking "import report store", _
                      "The report of this import could not be kept in the " & _
-                     "workbook, so it is gone once this workbook closes.", _
+                     "workbook, so it is gone once this workbook closes. " & _
+                     errMessage, _
                      checkingWarning
-        Exit Sub
     End If
-
-    store.SaveSheets ImportReportNotImported, this.sheetsNotImported
-    store.SaveSheets ImportReportNotTouched, this.sheetsNotTouched
-    store.SaveVariables ImportReportNotImported, this.varsNotImported
-    store.SaveVariables ImportReportNotTouched, this.varsNotTouched
 End Sub
 
 '@label:file-report-checkings
@@ -1324,19 +1341,20 @@ Private Sub FileReportCheckings()
 
     For counter = this.varsNotImported.LowerBound To this.varsNotImported.UpperBound
         entry = this.varsNotImported.Item(counter)
-        FileChecking "variable not imported: " & CStr(entry(0)), _
-                     "The file carries a variable named " & CStr(entry(0)) & _
-                     " on " & CStr(entry(1)) & " and this linelist has none, " & _
-                     "so its values were dropped.", _
+        FileChecking "variable not imported: " & CStr(entry(LBound(entry))), _
+                     "The file carries a variable named " & _
+                     CStr(entry(LBound(entry))) & " on " & _
+                     CStr(entry(LBound(entry) + 1)) & " and this linelist has " & _
+                     "none, so its values were dropped.", _
                      checkingWarning
     Next counter
 
     For counter = this.varsNotTouched.LowerBound To this.varsNotTouched.UpperBound
         entry = this.varsNotTouched.Item(counter)
-        FileChecking "variable not touched: " & CStr(entry(0)), _
-                     "The variable " & CStr(entry(0)) & " on " & CStr(entry(1)) & _
-                     " took no data, because the file carries no variable of " & _
-                     "that name.", _
+        FileChecking "variable not touched: " & CStr(entry(LBound(entry))), _
+                     "The variable " & CStr(entry(LBound(entry))) & " on " & _
+                     CStr(entry(LBound(entry) + 1)) & " took no data, because " & _
+                     "the file carries no variable of that name.", _
                      checkingWarning
     Next counter
 End Sub
