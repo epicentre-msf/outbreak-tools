@@ -68,6 +68,37 @@ an empty string, which is why the epiweek tag of every export file was blank.
 The store is what answers it, and this is what AddMetadataTags writes.</p>
 <p><strong>Returns:</strong> String. The stored value, empty when the workbook carries no such name.</p>
 <hr />
+<h3 id="exportoptionsfor">ExportOptionsFor <a class="anchor-link" href="#exportoptionsfor">#</a></h3>
+<p><em>export-options-for</em></p>
+<p><strong>The options line a numbered export would write into its file</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function ExportOptionsFor(ByVal exportNumber As Long, _
+                                 Optional ByVal useFilters As Boolean = False) As String
+</code></pre>
+<p>The third read seam of this class, beside EpiWeekStart and
+ExcludedVariablesFor. It answers exactly what AddMetadataTags writes into the
+<code>export_options</code> row, so what a file will say about itself can be read without
+writing a file.</p>
+<p>The line is what lets an import know whether a file can be read back at all.
+<code>variable names: no</code> marks a file whose header row carries the labels a user
+reads and no variable name anywhere, and <code>header row: 2</code> marks one carrying
+both, names on the second row.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>exportNumber</code>: Long. Which export definition to read (1-based).</li>
+<li><code>useFilters</code>: Optional Boolean. Whether the data would come from the
+filtered companions. Defaults to False.</li>
+</ul>
+<p><strong>Returns:</strong> String. The options of that export on one line.</p>
+<hr />
+<h3 id="migrationoptions">MigrationOptions <a class="anchor-link" href="#migrationoptions">#</a></h3>
+<p><em>migration-options</em></p>
+<p><strong>The options line an export for migration writes into its file</strong></p>
+<p><strong>Signature:</strong></p>
+<pre><code class="language-vb">Public Function MigrationOptions() As String
+</code></pre>
+<p><strong>Returns:</strong> String. The options of a migration export on one line.</p>
+<hr />
 <h3 id="excludedvariablesfor">ExcludedVariablesFor <a class="anchor-link" href="#excludedvariablesfor">#</a></h3>
 <p><em>excluded-variables-for</em></p>
 <p><strong>The variables a numbered export leaves out</strong></p>
