@@ -922,9 +922,9 @@ suites:
 # ---------------------------------------------------------------------------
 # TEMPLATE — copy per folder as coverage is added. Delete fields left empty.
 # Expansion backlog (suite folders under src/tests/ that are not yet
-# registered): dataio, mastersetup. The dataio block is written and held back
-# just above; read the note beside it before uncommenting.
-# src/tests/showhide/ joined on 2026-08-01
+# registered): mastersetup. src/tests/dataio/ joined on 2026-08-02 with five
+# classes and five suites; TestExportButton is the one module of it left out,
+# for the reason in the block above. src/tests/showhide/ joined on 2026-08-01
 # with the three classes that replaced LLShowHide and ShowHideManager.
 # src/tests/tables/ is gone as of
 # 2026-07-31 — it held TestCustomPivotTable alone, whose class lives in
