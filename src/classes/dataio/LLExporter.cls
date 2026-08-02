@@ -182,6 +182,36 @@ Public Function EpiWeekStart() As String
     EpiWeekStart = HiddenNames.Create(this.sourceWkb).ValueAsString("RNG_EpiWeekStart")
 End Function
 
+'@label:export-options-for
+'@sub-title The options line a numbered export would write into its file
+'@details
+'The third read seam of this class, beside EpiWeekStart and
+'ExcludedVariablesFor. It answers exactly what AddMetadataTags writes into the
+'`export_options` row, so what a file will say about itself can be read without
+'writing a file.
+'
+'The line is what lets an import know whether a file can be read back at all.
+'`variable names: no` marks a file whose header row carries the labels a user
+'reads and no variable name anywhere, and `header row: 2` marks one carrying
+'both, names on the second row.
+'@param exportNumber Long. Which export definition to read (1-based).
+'@param useFilters Optional Boolean. Whether the data would come from the
+'  filtered companions. Defaults to False.
+'@return String. The options of that export on one line.
+'@export
+Public Function ExportOptionsFor(ByVal exportNumber As Long, _
+                                 Optional ByVal useFilters As Boolean = False) As String
+    ExportOptionsFor = ExportOptionsTag(ExportScopeCustom, exportNumber, useFilters)
+End Function
+
+'@label:migration-options
+'@sub-title The options line an export for migration writes into its file
+'@return String. The options of a migration export on one line.
+'@export
+Public Function MigrationOptions() As String
+    MigrationOptions = ExportOptionsTag(ExportScopeMigration, 0, False)
+End Function
+
 '@label:excluded-variables-for
 '@sub-title The variables a numbered export leaves out
 '@details
@@ -853,7 +883,8 @@ Private Sub PrepareTempDictionary(ByVal dict As LLdictionary, _
     Else
         Set dictData = dict.Data.FilterData( _
             varName:=expName, criteriaName:="<>", _
-            returnedColumnName:="__all__", includeHeaders:=True)
+            returnedColumnName:="__all__", includeHeaders:=True, _
+            matchCase:=False)
     End If
 
     Set dictData = WithoutExcludedRows(dictData, excluded)
@@ -1496,7 +1527,8 @@ Private Sub AddDataSheets(ByVal outwb As Workbook, ByVal expDict As LLdictionary
         Set inpsh = this.sourceWkb.Worksheets(sheetName)
         ' Build the sheet metadata once and read every tag from the same instance
         Set inpshNames = HiddenNames.Create(inpsh)
-        Set headersList = expDict.Data.FilterData("sheet name", sheetName, "variable name")
+        Set headersList = expDict.Data.FilterData("sheet name", sheetName, _
+                                                  "variable name", matchCase:=False)
         Set outsh = outwb.Worksheets(sheetName)
 
         Select Case inpshNames.ValueAsString("sheet_type")
@@ -1558,7 +1590,8 @@ Private Function LabelsForWrittenColumns(ByVal expDict As LLdictionary, _
     Dim counter As Long
     Dim labelIndex As Long
 
-    Set allLabels = expDict.Data.FilterData("sheet name", sheetName, "main label")
+    Set allLabels = expDict.Data.FilterData("sheet name", sheetName, _
+                                            "main label", matchCase:=False)
     Set LabelsForWrittenColumns = allLabels
 
     If skipped Is Nothing Then Exit Function
