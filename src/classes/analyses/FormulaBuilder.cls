@@ -19,41 +19,38 @@ Option Explicit
 '@class FormulaBuilder
 '@description
 'Holds the criteria of one analysis formula, asks the parser for the formula
-'text, and writes it into a cell. CrossTableFormula and SpatialTables both build
-'their formulas through one of these, so the two agree on how a formula is made
-'and on what happens when Excel refuses it.
+'text and writes it into a cell. AddCondition adds one criterion,
+'ConditionCount answers how many are held and ClearConditions drops them.
+'ExcelFormula gives the text, WriteFormula puts it in a cell, FillDown copies
+'it down a range and ApplyFormat sets the number format. Percentage and
+'Condition build the two smaller formulas, and EmptyText and NotEmptyText give
+'the strings an empty cell shows. CrossTableFormula and SpatialTables both
+'build their formulas through one of these.
 '
-'THE CRITERIA ARE CLEARED FOR YOU
+'THE CRITERIA
 '-------------------------------------------------------------------------------
 'A formula is built from the criteria added since the last one was built. The
-'first AddCondition after a build starts a new set, so an arm that forgets to
-'clear cannot carry the previous cell criteria into the next formula. That was
-'the one fault in this machinery no test could catch, because a formula carrying
-'one extra criterion still reads as a formula. ClearConditions stays available
-'and says the same thing at the top of an arm.
+'first AddCondition after a build starts a new set. ClearConditions empties the
+'set at any point.
 '
 'EXCEL IS THE JUDGE OF A FORMULA
 '-------------------------------------------------------------------------------
-'WriteFormula assigns the formula and traps what Excel raises. A refused formula
-'leaves the cell empty and files a check naming the cell. The two classes used to
-'test a formula before writing it: one through Application.Evaluate, whose string
-'argument stops at 255 characters, and one by writing a probe into A1 of the live
-'output sheet and clearing it, which destroyed whatever A1 held.
+'WriteFormula assigns the formula and traps what Excel raises. A refused
+'formula leaves the cell empty and files a check naming the cell.
 '
 'THE 255 CHARACTER LIMIT ON FORMULAARRAY
 '-------------------------------------------------------------------------------
-'Range.FormulaArray refuses a formula longer than 255 characters, and an analysis
-'formula over three criteria passes that on ordinary variable names. Those go in
-'through a short stub formula and Range.Replace, which carries no such limit and
-'keeps the cell an array formula. When the host refuses that too, the formula is
-'entered as an ordinary formula and a warning is filed.
+'Range.FormulaArray refuses a formula longer than 255 characters, and an
+'analysis formula over three criteria passes that on ordinary variable names.
+'Those go in through a short stub formula and Range.Replace, which carries no
+'such limit and keeps the cell an array formula. When the host refuses that
+'too, the formula is entered as an ordinary formula and a warning is filed.
 '
 'WHERE THE CHECKS GO
 '-------------------------------------------------------------------------------
 'The owning class hands its own Checking to Create, so everything filed here
-'reaches the generation report through the owner. Keys carry the owner name, the
-'table and an F, so the owner own entries and two owners sharing one report
-'cannot collide on a key. Checking.Add raises on a duplicate key.
+'reaches the generation report through that owner. A key carries the owner
+'name, the table and an F. Checking.Add raises on a duplicate key.
 '@depends Formulas, FormulaCondition, Checking, BetterArray
 '@version 2026-07-30
 
@@ -62,9 +59,8 @@ Option Explicit
 '@description
 'Target context for a generated formula. An analysis formula carries the criteria
 'of its cell; a linelist formula reads the whole column. The enum lived in
-'CrossTableFormula, which now takes it from here along with SpatialTables: the
-'class that reads the value owns it, and neither writer has to be present for the
-'other to compile.
+'CrossTableFormula. That class and SpatialTables both read it from here now.
+
 Public Enum ExcelFormulaScope
     FormulaScopeLinelist = 1
     FormulaScopeAnalysis = 2
