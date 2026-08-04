@@ -18,24 +18,22 @@ Option Explicit
 
 '@class ImportReport
 '@description
-'The store the import report is kept in. It owns four ListObjects on the
-'import_rep__ worksheet and knows nothing about forms.
+'The store an import report is kept in. It owns four ListObjects on the
+'import_rep__ worksheet. ProvisionTables builds the tables, SaveSheets and
+'SaveVariables write the entries, Clear empties them, HasEntries says whether
+'anything was recorded, and SheetNames and VariableEntries read the entries
+'back. The class knows nothing about forms.
 '
 'THE STORE MAKES ITS OWN TABLES
 '-------------------------------------------------------------------------------
 'Create builds any of the four that is absent. A linelist built by the current
-'generation already carries all four, and one built by an older one may carry
-'none, so the class provisions rather than assuming. This is the lesson the
-'show/hide store was written from: a class that assumes something else
-'provisioned its table saves nothing and reads nothing, in silence.
+'generation carries all four, and one built by an older generation may carry
+'none.
 '
-'WHY IT IS A WORKSHEET AND NOT FOUR ARRAYS
+'THE REPORT LIVES ON A WORKSHEET
 '-------------------------------------------------------------------------------
 'The report survives the workbook closing, so a user can open the last one from
-'the advanced form days later. The four arrays that carried it before died with
-'the import object at the end of the import, and the message box asking whether
-'the user wanted to see a report was shown with an OK button, so there was
-'nothing to answer and nothing behind it.
+'the advanced form days later.
 '
 'THE FOUR TABLES
 '-------------------------------------------------------------------------------
@@ -44,9 +42,9 @@ Option Explicit
 '  reptab_varsNotImp      a variable of the file this linelist has none of
 '  reptab_varsNotTouch    a variable of this linelist the file has none of
 '
-'The two variable tables carry the sheet the variable belongs to in a second
-'column. Nothing stored here is translated: the form translates its labels and
-'the values are names of worksheets and variables.
+'The two variable tables carry the sheet a variable belongs to in a second
+'column. The values stored here are names of worksheets and variables, and they
+'are stored untranslated. The form translates its own labels.
 '@depends BetterArray, LLImporter
 '@version 1.0 (2026-08-01)
 
