@@ -33,8 +33,12 @@ End Enum
 '@description
 'Holds the list of variables one worksheet layer offers the user, and the
 'visible or hidden choice for each of them. The list is built from the
-'dictionary. The class reads the dictionary and nothing else: the worksheet is
-'ShowHideLayout's job and the saved choices are ShowHideStore's.
+'dictionary. EntryCount, FieldKey, HeaderText, IsHidden, PositionIndex,
+'ControlType and AuthoredVertical read one entry, IndexOf and HasField find
+'one, SetHidden and SetAllOptionalHidden change the choices, Apply writes them
+'through a layout and Adopt reads them back from a saved set. The class reads
+'the dictionary alone: the worksheet is ShowHideLayout's work and the saved
+'choices are ShowHideStore's.
 '
 'FOUR KINDS OF ENTRY
 '-------------------------------------------------------------------------------
@@ -57,13 +61,13 @@ End Enum
 '  CRF            crf status
 '
 'The position of a variable comes from `column index`, and from `crf index` on
-'the CRF layer. A variable with no position is listed and the layout leaves it
-'alone.
+'the CRF layer. A variable with no position is listed, and the layout leaves it
+'where it is.
 '
 'THE STATE IS A BOOLEAN
 '-------------------------------------------------------------------------------
 'Hidden is True or False. The display words the form shows ("Shown", "Hidden",
-'"Mandatory") are translated at the form and never stored. A user who changes
+'"Mandatory") are translated at the form and stored nowhere. A user who changes
 'the interface language between two sessions keeps every choice.
 '@depends LLdictionary, LLVariables, ShowHideLayout, BetterArray, Checking
 '@version 1.0 (2026-08-01)
