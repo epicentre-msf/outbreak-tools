@@ -19,63 +19,59 @@ Option Explicit
 
 '@class SetupTranslationsTable
 '@description
-'Manages a translations ListObject backed by a helper tag column.
-'Synchronises translations from a watcher registry, handles language
-'column creation and promotion, removes obsolete and duplicate labels,
-'reports missing and duplicate entries, and exports the table to
-'external workbooks. Uses HiddenNames for sequence counters.
+'Manages the translations ListObject of a setup workbook, together with the
+'helper tag column that sits beside it. UpdateFromRegistry reads the watched
+'ranges of the update registry and writes one row per label. EnsureLanguages
+'creates the language columns, SwitchDefaultLanguage promotes one of them,
+'SwitchableLanguages and Languages list what is there, and ResetSequence puts
+'the row counter back. MissingLabels, NumberOfMissing, DuplicateLabels and
+'UnresolvedRanges report on the table, and Export writes it into another
+'workbook.
 '
 'LABEL MATCHING POLICY
 '-------------------------------------------------------------------------------
 'A label carries its case. "Hello" and "hello" are two labels, they take two
-'rows, and neither one stands in for the other. FindLabelRow,
-'DeduplicateLabels and ComputeDuplicateSummary all answer from one keyed
-'Collection built by LabelKey, and that key spells the capitalisation out so
-'two spellings never share it. Mac Excel has no Scripting.Dictionary, so a
-'keyed Collection is the house lookup, and a Collection matches its own keys
-'without regard to case: the case has to travel inside the key rather than be
-'left to the Collection.
-'
-'TranslationObject.LookupRow is what reads this table at run time and it
-'compares with vbBinaryCompare, so a row this class folded away was a row that
-'class could never find. That reader is the reason for the rule.
+'rows, and each one stands for itself. FindLabelRow, DeduplicateLabels and
+'ComputeDuplicateSummary all answer from one keyed Collection built by
+'LabelKey, and that key spells the capitalisation out so two spellings never
+'share it. A Collection matches its own keys without regard to case, so the
+'case travels inside the key. TranslationObject.LookupRow reads this table at
+'run time and compares with vbBinaryCompare.
 '
 'Column titles, registry status words, mode keywords and defined-name lookups
-'are not labels and stay case-insensitive. Excel matches defined names that way
+'are matched without regard to case. Excel matches defined names that way
 'itself.
 '
 'THE HELPER TAG COLUMN
 '-------------------------------------------------------------------------------
-'The translations ListObject sits with one spare worksheet column to its
-'left holding a tag per row, shaped <rangename>__<sequence>. That column
-'lives outside the ListObject most of the time. During an update the table
-'is resized one column left so each tag travels with its row through the
-'sort, then resized back. LabelColumnIndex() answers 2 while the tag column
-'is inside the table and 1 otherwise, and every column index in this class
-'comes from that one function.
+'The translations ListObject sits with one spare worksheet column to its left
+'holding a tag per row, shaped <rangename>__<sequence>. That column lives
+'outside the ListObject most of the time. During an update the table is resized
+'one column left so each tag travels with its row through the sort, then
+'resized back. LabelColumnIndex() answers 2 while the tag column is inside the
+'table and 1 otherwise, and every column index in this class comes from that
+'one function.
 '
 'CREATE WRITES NOTHING
 '-------------------------------------------------------------------------------
-'Create locates and validates the helper column. The title, the formatting
-'and the hidden language list are written by the update path alone
-'(EnsureTagColumnReady and EnsureLanguages), so a caller that only reads
-'can build a manager over a protected sheet.
+'Create locates and checks the helper column. The title, the formatting and the
+'hidden language list are written by the update path alone, through
+'EnsureTagColumnReady and EnsureLanguages, so a manager can be built over a
+'protected sheet and read from.
 '
 'SOURCE RANGES ARE CONTIGUOUS
 '-------------------------------------------------------------------------------
 'A registry range refers to one block of cells on one worksheet.
 'SetupPreparation and UpdatedValues both build their names over a single table
-'column, so that always holds. ProcessTextRange and ProcessFormulaRange read
-'each source in one crossing, and Range.Value2 answers for the first area of a
-'range, so a name built by hand over scattered cells would import its first
-'block and drop the rest.
+'column. ProcessTextRange and ProcessFormulaRange read each source in one
+'crossing, and Range.Value2 answers for the first area of a range, so a name
+'built by hand over scattered cells brings in its first block alone.
 '
 'ERROR NUMBERS
 '-------------------------------------------------------------------------------
-'ProjectError.ErrorUnexpectedState is 1004, which is also Excel's generic
-'error number. An Excel 1004 that escapes an update is re-raised as 1004,
-'so a caller reading the number alone cannot tell the two apart. Nothing
-'acts on that distinction today.
+'ProjectError.ErrorUnexpectedState is 1004, which is also Excel's generic error
+'number. An Excel 1004 that escapes an update is raised again as 1004, so a
+'caller reading the number alone sees one value for both.
 
 '@section State and constants
 '===============================================================================
