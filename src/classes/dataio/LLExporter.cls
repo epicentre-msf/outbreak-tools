@@ -18,12 +18,20 @@ Option Explicit
 
 '@class LLExporter
 '@description
-'Exports linelist data into standalone workbooks for distribution. Supports
-'four export modes: custom filtered exports (ExportCustom), full migration
-'exports (ExportMigration), analysis-only exports (ExportAnalysis), and
-'geobase exports (ExportGeo). Each mode builds a temporary output workbook,
-'populates it with the relevant data, metadata, and formatting, then saves
-'and closes it.
+'Exports the data of a linelist into standalone workbooks. Four modes are
+'offered: ExportCustom writes one of the exports defined on the export sheet,
+'ExportMigration writes the whole linelist for a move to another workbook,
+'ExportAnalysis writes the analysis sheets, and ExportGeo writes the geobase.
+'Each mode builds a temporary output workbook, fills it with the data, the
+'metadata and the formatting the mode calls for, then saves it and closes it.
+'CloseAll closes whatever is still open.
+'
+'WHAT AN EXPORT CARRIES
+'-------------------------------------------------------------------------------
+'ExportOptionsFor and MigrationOptions build the options line the metadata
+'sheet records, ExcludedVariablesFor answers the variables a mode leaves out,
+'EpiWeekStart answers the first day of the epidemiological week, and
+'LastExportPassword answers the password the last export was saved under.
 '@depends LLdictionary, LLVariables, LLExport, Passwords, CustomTable
 '@depends DataSheet, AnaTabIds, LLGeo, LLChoices, HiddenNames, LLTranslation
 '@depends ShowHide, ShowHideLayout, ShowHideStore, BetterArray, Checking
