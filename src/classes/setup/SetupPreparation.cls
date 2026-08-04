@@ -19,28 +19,28 @@ Option Explicit
 
 '@class SetupPreparation
 '@description
-'Orchestrates the preparation workflow for setup workbooks by registering
-'dropdown list objects, initialising the updated values registry, applying
-'data validations to setup tables (Dictionary, Exports, Analysis), and
-'configuring hidden and protected sheets. Consumed by the setup entry
-'point to prepare all worksheet assets before the workbook is ready for
-'use. Uses the predeclared factory pattern.
+'Prepares a setup workbook for use. Configure binds the workbook and Prepare
+'runs the whole sequence: it registers the dropdown lists, rebuilds the update
+'registry, applies the data validations of the Dictionary, Exports and Analysis
+'tables, and hands Development the sheets to hide and to protect.
+'EnsureDropdowns and ResetUpdatedRegistry run those two steps on their own,
+'Dropdowns answers the dropdown manager and HostWorkbook the workbook.
 '
 'RUNNING PREPARE MORE THAN ONCE
 '-------------------------------------------------------------------------------
-'Prepare is meant to be run again on a workbook it has already prepared, and
-'each step says what a second run does:
+'Prepare runs again on a workbook it has already prepared, and each step has
+'its own answer to a second run:
 '
-'- the 28 dropdowns are written again, so a new format or a new control
-'  value reaches an old workbook. Seven placeholder lists are left as they
-'  are; see RegisterAllDropdowns.
+'- the 28 dropdowns are written again, so a new format or a new control value
+'  reaches an old workbook. Seven placeholder lists are left as they are; see
+'  RegisterAllDropdowns.
 '- the update registry is dropped and rebuilt in full; see
 '  ResetUpdatedRegistry.
 '- the 56 validations are applied again.
 '- a sheet that already exists keeps its visibility; see
 '  ResolveOrCreateWorksheet.
-'- the hidden and protected sheet lists are handed to Development, which
-'  skips a name it already holds.
+'- the hidden and protected sheet lists are handed to Development, which skips
+'  a name it already holds.
 
 
 '@section State
