@@ -19,37 +19,35 @@ Option Explicit
 
 '@class SetupErrors
 '@description
-'Analyses setup sheets and publishes consistency reports. Validates the
-'dictionary for duplicate variables, missing labels, unknown controls,
-'and formula correctness; inspects choices for unused entries and missing
-'labels; audits exports for missing metadata and dictionary alignment;
-'and reviews translations for missing or duplicate labels. Results are
-'collected as Checking objects and published to the __checkRep reporting
-'worksheet via CheckingOutput.
+'Checks the setup sheets and publishes a report of what it finds. Create binds
+'the workbook, Initialise sets the run up, Run walks every check, and Checkings
+'answers the entries. The dictionary is checked for duplicate variables,
+'missing labels, unknown controls and formulas that fail to parse; the choices
+'for unused entries and missing labels; the exports for missing metadata and
+'for variables the dictionary has none of; and the translations for missing and
+'duplicate labels. Entries are collected as Checking objects and printed to the
+'__checkRep worksheet through CheckingOutput.
 '
-'WHAT THIS CLASS PREDICTS
+'THE CHECKS FOLLOW THE BUILDER
 '-------------------------------------------------------------------------------
-'Every check here predicts what the linelist build will do with the same
-'setup sheet, so a rule that differs from the builder is a report the user
-'cannot act on. Three rules are copied from their builder on purpose:
-'the file-name template is parsed the way LLExport.ResolveTemplateChunk
-'parses it, a formula is explained in the context it was validated in, and
-'a choice name is matched without regard to case because LLChoices.Categories
-'matches that way at build time.
+'Every check here answers what the linelist build will do with the same setup
+'sheet. Three rules are copied from the class that builds them: a file-name
+'template is parsed the way LLExport.ResolveTemplateChunk parses it, a formula
+'is explained in the context it was validated in, and a choice name is matched
+'without regard to case, the way LLChoices.Categories matches it at build time.
 '
-'THE SHEETS ARE TIDIED FIRST, ON PURPOSE
+'THE SHEETS ARE TIDIED FIRST
 '-------------------------------------------------------------------------------
 'Each checker sorts and resizes the sheet it is about to read, so every check
-'below can read the sheet as already being in good shape. The column arrays
-'CheckDictionary works from are therefore read AFTER the sort and the resize:
-'the tidy-up moves rows, and arrays taken before it point at rows that no
-'longer exist.
+'below reads a sheet already in shape. The column arrays CheckDictionary works
+'from are therefore read AFTER the sort and the resize: the tidy-up moves rows,
+'and an array taken before it points at rows that have moved.
 '
-'THE REPORT SHEET IS WRITABLE ON PURPOSE
+'THE REPORT SHEET IS WRITABLE
 '-------------------------------------------------------------------------------
 '__checkRep sits outside the hidden list and outside the protection list, and
 'Passwords returns early for it by name. PrintReport clears it and writes to it
-'directly, which is what the setup ribbon's check button is for.
+'directly, which is what the setup ribbon's check button reaches.
 
 '@section State
 '===============================================================================
