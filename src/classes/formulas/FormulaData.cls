@@ -18,13 +18,19 @@ Option Explicit
 
 '@class FormulaData
 '@description
-'Provides cached, in-memory lookups for the Excel functions and special
-'characters that the formula parser is allowed to accept. On creation it
-'reads two ListObjects from a worksheet (T_XlsFonctions for functions,
-'T_ascii for separator characters) and stores both as one delimited string
-'each. It also answers the grouped formula mappings that translate custom
-'tokens (e.g. SUMIFS, MEANIFS) into their canonical Excel aggregation
-'functions.
+'Answers what the formula parser is allowed to accept. Create reads two
+'ListObjects from a worksheet, T_XlsFonctions for the Excel function names and
+'T_ascii for the separator characters, and holds each of them as one delimited
+'string. ExcelFormulasIncludes says whether a token is a known Excel function,
+'and SpecialCharacterIncludes whether a character is a known separator.
+'
+'GROUPED FORMULAS
+'-------------------------------------------------------------------------------
+'Seven tokens stand for an aggregation over rows that match a set of criteria,
+'SUMIFS and MEANIFS among them. IsGroupFunction says whether a token is one of
+'the seven, GroupAggregator names the Excel function it stands for, and
+'GroupUsesNativeFunction says whether the output uses the matching Excel *IFS
+'function directly.
 '@version 1.0 (2026-02-09)
 
 
