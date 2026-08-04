@@ -13,7 +13,6 @@ Attribute VB_Description = "Linelist sheets of a dictionary"
 '@Folder("Dictionary")
 '@ModuleDescription("Linelist sheets of a dictionary")
 '@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
-'@depends BetterArray, DataSheet, LLdictionary, LLVariables
 
 Option Explicit
 
@@ -35,37 +34,35 @@ Public Enum SheetInfoType
     SheetInfoSheetTable = 2
 End Enum
 
-'@section Overview
-'===============================================================================
-'@details Answers questions about ONE sheet of the linelist: the dictionary row
-'that describes it, its type, its table name, how many variables it holds, and
-'where a variable sits on it. Every read validates the state it needs and
-'raises a ProjectError with a message that names the sheet.
+'@class LLSheets
+'@description
+'Answers questions about ONE sheet of a linelist: the dictionary row that
+'describes it, its type, its table name, how many variables it holds, and where
+'a variable sits on it. Contains says whether the dictionary knows the sheet,
+'RowIndex gives its dictionary row, SheetInfo answers its type or its table
+'name, NumberOfVars counts its variables, DataBounds answers the first and the
+'last row and column of its data, ContainsControl says whether a control
+'appears on it, and VariableAddress gives the address of one variable. Every
+'read checks the state it needs and raises a ProjectError whose message names
+'the sheet.
 '
-'Speed rule for this file: talk to Excel as little as possible.
-'`Formulas.ParsedLinelistFormula` calls `VariableAddress` once per variable
-'token of every formula in the workbook, and `VarWriter` calls it per variable.
-'`LLDataEntry` asks `DataBounds` four times and `NumberOfVars` once per sheet
-'it builds, and each of those used to re-find the sheet row.
+'WHAT THE INSTANCE HOLDS
+'-------------------------------------------------------------------------------
+'The dictionary row is held per sheet name. Before a held row is handed out,
+'the cell it points at is read once and compared with the name it should carry,
+'so a dictionary whose rows moved gives a fresh row.
 '
-'What this object holds, and what each answer promises:
+'The variable count is held per sheet name until InvalidateCaches.
+'LLdictionary.Prepare inserts geo rows, so an object built before preparation
+'answers over the dictionary as it stood then.
 '
-'- The sheet row, per sheet name. Before the held row is handed out, the cell
-'  it points at is read once and compared with the name it should hold, so a
-'  dictionary whose rows moved can never make this class answer for the wrong
-'  sheet. That check costs one cell read where the search it replaces costs a
-'  worksheet scan.
-'- The variable count, per sheet name. It is held until `InvalidateCaches`.
-'  That is the contract the captured sheet-name range already carries:
-'  `LLdictionary.Prepare` inserts geo rows, so an object built before
-'  preparation answers from what it captured.
-'- The sheet-type and table-name column indexes, as before.
+'The sheet-type and table-name column indexes are held too.
 '
 'The preparation flag is asked of the dictionary on every call that needs it.
-'`LLdictionary.Prepared` holds a True answer itself and drops it in every
-'routine that can turn True back into False, so the read costs one Boolean on
-'a prepared dictionary. A second copy here could go stale, because this class
-'has no way to see a `Clean` or an `AddColumn` run on the dictionary.
+'LLdictionary.Prepared holds a True answer itself and drops it in every routine
+'that can turn True back into False. This class has no way to see a Clean or
+'an AddColumn run on the dictionary, so it keeps no copy of that flag.
+'@depends BetterArray, DataSheet, LLdictionary, LLVariables
 
 '@section State
 '===============================================================================
