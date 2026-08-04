@@ -18,13 +18,16 @@ Option Explicit
 
 '@class UpdatedValues
 '@description
-'Tracks watched setup columns and exposes update status to events.
+'Tracks the setup columns that are watched for a change, and answers whether
+'one of them has been edited.
 '
 'A setup column is watched when one of the three rows above its header carries
-'a known tag: "watch for update", "translate as text" or "translate as formula".
-'AddColumns reads those tags and writes one row per watched column into the
-'registry table; the change handler flips that row's flag when the user edits
-'the column; the translations run and the analysis dropdowns read the flag.
+'a known tag: "watch for update", "translate as text" or "translate as
+'formula". AddColumns reads those tags and writes one row per watched column
+'into the registry table. CheckUpdate flips that row's flag when the user edits
+'the column, and IsUpdated answers the flag. AddSheet registers a worksheet,
+'RemoveLo drops one registry table, ClearUp and DeleteUp empty the registry,
+'and SwitchTagsToNo and SwitchTagsToYes set every flag at once.
 '
 'ON THE SHEET
 '-------------------------------------------------------------------------------
@@ -38,38 +41,37 @@ Option Explicit
 '
 'Each row also has a workbook-level defined name, RNG_<table>_<column>_<sheet>,
 'pointing at the watched column. That name is how a registry row turns back
-'into a Range for the translations run, so it is built at build time and the
-'change handler never touches it.
+'into a Range for the translations run. It is built at build time, and the
+'change handler leaves it alone.
 '
 'When the registry empties, the table is unlisted and its cells are cleared.
-'The sheet is then free of tables, which is what SetupTranslationsTable expects:
+'The sheet is then free of tables, which is what SetupTranslationsTable reads:
 'it treats every table it finds on that sheet as a registry.
 '
 'IN MEMORY
 '-------------------------------------------------------------------------------
-'The registry is read once, lazily, in a single .Value2 call, into keyed
+'The registry is read once, on first use, in a single .Value2 call, into keyed
 'Collections: the composite key "<tablekey>|<columnkey>" points at a row index
 'and a flag, an alias map answers IsUpdated, and a table set lets the change
 'handler leave an unwatched table without reading anything. Scripting.Dictionary
 'is missing on Mac Excel, so these are keyed Collections.
 '
 'An edit inside a watched table costs four to five COM crossings whatever the
-'registry holds, and the flag write happens only the first time a column flips
-'within a reset cycle.
+'registry holds, and the flag is written the first time a column flips within a
+'reset cycle.
 '
 'TWO READERS, ONE FLAG COLUMN
 '-------------------------------------------------------------------------------
 'The translations run resets the flags itself through SwitchTagsToNo. The
-'analysis dropdown refresh resets nothing, so it calls AcknowledgeUpdates: every
-'flag reading "yes" at that moment goes into an in-memory set, and IsUpdated
-'answers False for those keys until the user edits the column again. The set
-'lives in memory alone, so opening the workbook starts it empty.
+'analysis dropdown refresh resets nothing, so it calls AcknowledgeUpdates:
+'every flag reading "yes" at that moment goes into an in-memory set, and
+'IsUpdated answers False for those keys until the user edits the column again.
+'The set lives in memory alone, so opening the workbook starts it empty.
 '
 'CREATE WRITES NOTHING
 '-------------------------------------------------------------------------------
 'Building an instance binds a worksheet and stops there. Two helper factories
-'build a fresh instance on every ribbon click, so a factory that wrote to the
-'sheet would write on every click.
+'build a fresh instance on every ribbon click.
 
 
 '@section ConstantsAndState
